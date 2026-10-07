@@ -84,6 +84,8 @@ class NameVisitor final : public VNVisitorConst {
         m_modp = nodep;
         iterateChildrenConst(nodep);
         rename(nodep, false);
+        // Avoid clashing with the classes of the library model itself
+        if (nodep->verilatorLib()) nodep->name(nodep->name() + "__Vlibstub");
     }
     // Add __PVT__ to names of local signals
     void visit(AstVar* nodep) override {
@@ -93,7 +95,7 @@ class NameVisitor final : public VNVisitorConst {
                 && !nodep->isFuncLocal()  // Isn't exposed, and would mess up dpi import wrappers
                 && !nodep->isTemp()  // Don't bother to rename internal signals
                 // Special case, hardcoded m_process references in verilated_std.h and elsewhere
-                && !(m_modp && m_modp->name() == "std__03a__03aprocess"
+                && !(m_modp && m_modp->name() == "std__03A__03Aprocess"
                      && nodep->name() == "m_process")));
         iterateChildrenConst(nodep);
     }

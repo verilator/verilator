@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st')
 test.top_filename = "t/t_assert_synth.v"
 
 test.compile(v_flags2=['+define+FAILING_PARALLEL', '+define+ATTRIBUTES'],

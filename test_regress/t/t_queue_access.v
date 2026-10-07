@@ -96,12 +96,12 @@ module t;
     if (foo.fooQ[0] == foo) $stop;
 
     q.push_back(32'hA5);
-    nib = q.pop_front()[3:0] ^ 4'hF;
+    nib = q.pop_front() [3:0] ^ 4'hF;
     `checkd(nib, 4'hA);
     `checkd(q.size(), 0);
 
     q.push_back(32'hA5);
-    `checkd((q.pop_front()[3:0] === 4'h5), 1'b1);
+    `checkd((q.pop_front() [3:0] === 4'h5), 1'b1);
     `checkd(q.size(), 0);
 
     q.push_back(5);

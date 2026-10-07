@@ -61,7 +61,7 @@ module sub (
     output reg q
 );
 
-  // verilator public_module
+  // verilator no_inline_module
 
   reg [125:0] g_r;
 

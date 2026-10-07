@@ -7,6 +7,11 @@
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`ifdef verilator
+ `define no_optimize(v) $c(v)
+`else
+ `define no_optimize(v) (v)
+`endif
 // verilog_format: on
 
 module t;
@@ -58,6 +63,22 @@ module t;
     `checkd(int'($time), 5)
     ##1;
     `checkd(int'($time), 15)
+  end
+
+  // 1e: A count that is not constant: zero waits like ##0, others count cycles
+  int n0;
+  int n2;
+  initial begin
+    n0 = `no_optimize(0);
+    n2 = `no_optimize(2);
+    ##n0;
+    `checkd(int'($time), 5)
+    ##n0;
+    `checkd(int'($time), 5)
+    ##(n2 - 1);
+    `checkd(int'($time), 15)
+    ##n2;
+    `checkd(int'($time), 35)
   end
 
   // =========================================================

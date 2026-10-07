@@ -71,13 +71,6 @@ class WidthSelVisitor final : public VNVisitor {
         // What is the data type and information for this SEL-ish's from()?
         UINFO(9, "  fromData start ddtypep = " << basefromp);
         VNumRange fromRange;  // constructs to isRanged(false)
-        while (basefromp) {
-            if (VN_IS(basefromp, AttrOf)) {
-                basefromp = VN_AS(basefromp, AttrOf)->fromp();
-                continue;
-            }
-            break;
-        }
         UASSERT_OBJ(basefromp && basefromp->dtypep(), nodep, "Select with no from dtype");
         AstNodeDType* const ddtypep = basefromp->dtypep()->skipRefp();
         AstNodeDType* const errp = ddtypep;
@@ -169,13 +162,12 @@ class WidthSelVisitor final : public VNVisitor {
     }
     AstNodeExpr* newMulConst(FileLine* fl, uint32_t elwidth, AstNodeExpr* indexp) {
         AstNodeExpr* extendp;
+        const int widthMin = std::max(V3Number::log2b(elwidth) + 1, indexp->widthMin());
         if (indexp->width() > 32) {
-            extendp = new AstSel{fl, indexp, 0, 32};
+            extendp = new AstSel{fl, indexp, 0, 32, widthMin};
         } else {
-            extendp = new AstExtend{fl, indexp};
+            extendp = new AstExtend{fl, indexp, 32, widthMin};
         }
-        extendp->dtypeSetLogicUnsized(
-            32, std::max(V3Number::log2b(elwidth) + 1, indexp->widthMin()), VSigning::UNSIGNED);
         AstNodeExpr* const mulp
             = new AstMul{fl, new AstConst{fl, AstConst::Unsized32{}, elwidth},
                          // Extend needed as index might be e.g. 3 bits but constant e.g. 5 bits
@@ -320,22 +312,11 @@ class WidthSelVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (VN_IS(ddtypep, BasicDType) && ddtypep->isString()) {
             // SELBIT(string, index) -> GETC(string, index)
-            AstNodeExpr* exprp = fromp;
-            while (true) {
-                if (AstMemberSel* const memberselp = VN_CAST(exprp, MemberSel)) {
-                    exprp = memberselp->fromp();
-                } else if (AstStructSel* const structselp = VN_CAST(exprp, StructSel)) {
-                    exprp = structselp->fromp();
-                } else {
-                    break;
-                }
-            }
-            const AstNodeVarRef* const varrefp = VN_CAST(exprp, NodeVarRef);
             AstNodeExpr* newp;
-            if (!varrefp || varrefp->access().isReadOnly()) {
-                newp = new AstGetcN{nodep->fileline(), fromp, rhsp};
-            } else {
+            if (fromp->isLValue()) {
                 newp = new AstGetcRefN{nodep->fileline(), fromp, rhsp};
+            } else {
+                newp = new AstGetcN{nodep->fileline(), fromp, rhsp};
             }
             UINFO(6, "   new " << newp);
             nodep->replaceWith(newp);

@@ -1048,6 +1048,7 @@ public:
     VIdProtectImp() {
         passthru("this");
         passthru("TOP");
+        passthru("vlInst");
         passthru("vlSelf");
         passthru("vlSymsp");
     }

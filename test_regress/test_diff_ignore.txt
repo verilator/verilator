@@ -1,0 +1,45 @@
+# DESCRIPTION: Verilator: Files in test obj_dirs not used by 'make test-snap'
+#
+# Glob patterns matched against file and directory names, one per line.
+# Read by test_diff.py for 'make test-snap', and by driver.py for --driver-prune.
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+# C++ compiler and build system outputs
+*.a
+*.cmake
+*.d
+*.gch
+*.o
+*.so
+*.status
+CMakeFiles
+
+# Simulation outputs and logs, checked by the tests themselves
+*.dat
+*.fst
+*.html
+*.log
+*.log.sort
+*.out
+
+# Verilator debug dumps, mostly containing AstNode addresses
+*.dot
+*.hash
+*.tree
+*.tree*.json
+*line-coverage*.txt
+*linkcells.txt
+*linkdot*.txt
+
+# Depends on host timing/load
+*stats*.txt*
+gmon.out.*
+profile.vlt
+profile_exec.vcd
+t_pgo_threads
+t_pgo_threads_hier

@@ -33,7 +33,7 @@ class AstUserAllocatorBase VL_NOT_FINAL {
     static_assert(std::is_base_of<AstNode, T_Node>::value, "T_Node must be an AstNode type");
 
 private:
-    std::deque<T_Data> m_allocated;
+    std::deque<T_Data> m_allocated;  // Storage for the per-node data
 
     T_Data* getUserp(const T_Node* nodep) const {
         if VL_CONSTEXPR_CXX17 (N_UserN == 1) {

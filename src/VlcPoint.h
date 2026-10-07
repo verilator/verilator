@@ -102,6 +102,9 @@ public:
     }
     // METHODS
     static string typeExtract(const char* name) { return keyExtract(VL_CIK_TYPE, name); }
+    // The value of a key of a record, as the design writes it, so without the escapes of the
+    // coverage file, VerilatedCovKey::escape(), of characters that print, see unescape(); only
+    // the record's name() keeps them all, so that --write writes it back as read
     static string keyExtract(const char* shortKey, const char* name) {
         // Hot function
         const size_t shortLen = std::strlen(shortKey);
@@ -111,7 +114,7 @@ public:
                     cp += shortLen + 2;  // Skip \001+short+\002
                     const char* ep = cp;
                     while (*ep && *ep != '\001') ++ep;
-                    return string(cp, ep - cp);
+                    return VerilatedCovKey::unescape(string(cp, ep - cp));
                 }
             }
         }

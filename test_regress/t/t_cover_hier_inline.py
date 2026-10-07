@@ -15,7 +15,7 @@ test.scenarios('vlt')
 # source and golden so inline and no-inline coverage are checked for parity.
 test.compile(top_filename="t/t_cover_hier.v",
              v_flags2=[
-                 "+define+INLINE_CHILD --assert --coverage-line --coverage-user "
+                 "+define+INLINE_CHILD --assert --coverage-line --coverage-branch --coverage-user "
                  "t/t_cover_hier.cpp"
              ],
              verilator_flags2=["--exe --top-module t"],

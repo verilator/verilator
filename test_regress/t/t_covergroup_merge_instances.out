@@ -1,0 +1,95 @@
+t.cg_avg.checked.auto_0: 1
+t.cg_avg.checked.auto_1: 1
+t.cg_avg.helper.auto_0: 2
+t.cg_avg.helper.auto_1: 0
+t.cg_cross.cp_a.auto_0: 1
+t.cg_cross.cp_a.auto_1: 0
+t.cg_cross.cp_b.auto_0: 1
+t.cg_cross.cp_b.auto_1: 0
+t.cg_cross.cp_b.auto_2: 0
+t.cg_cross.cp_b.auto_3: 0
+t.cg_cross.x.<auto_0,auto_0> [cross]: 1
+t.cg_cross.x.<auto_0,auto_1> [cross]: 0
+t.cg_cross.x.<auto_0,auto_2> [cross]: 0
+t.cg_cross.x.<auto_0,auto_3> [cross]: 0
+t.cg_cross.x.<auto_1,auto_0> [cross]: 0
+t.cg_cross.x.<auto_1,auto_1> [cross]: 0
+t.cg_cross.x.<auto_1,auto_2> [cross]: 0
+t.cg_cross.x.<auto_1,auto_3> [cross]: 0
+t.cg_cross_ignore.cp_a.auto_0: 1
+t.cg_cross_ignore.cp_a.auto_1: 0
+t.cg_cross_ignore.cp_b.auto_0: 1
+t.cg_cross_ignore.cp_b.auto_1: 0
+t.cg_cross_ignore.x.<auto_0,auto_0> [cross]: 1
+t.cg_cross_ignore.x.<auto_0,auto_1> [cross]: 0
+t.cg_cross_ignore.x.skip [ignore,cross]: 0
+t.cg_cross_joined.p.a: 1
+t.cg_cross_joined.p.a_x_b: 0
+t.cg_cross_joined.q.b_x_c: 1
+t.cg_cross_joined.q.c: 0
+t.cg_cross_joined.xy.<a,b_x_c> [cross]: 1
+t.cg_cross_joined.xy.<a,c> [cross]: 0
+t.cg_cross_joined.xy.<a_x_b,b_x_c> [cross]: 0
+t.cg_cross_joined.xy.<a_x_b,c> [cross]: 0
+t.cg_cross_named.cp_a.auto_0: 1
+t.cg_cross_named.cp_a.auto_1: 0
+t.cg_cross_named.cp_b.auto_0: 1
+t.cg_cross_named.cp_b.auto_1: 0
+t.cg_cross_named.x.<auto_0,auto_1> [cross]: 0
+t.cg_cross_named.x.<auto_1,auto_0> [cross]: 0
+t.cg_cross_named.x.<auto_1,auto_1> [cross]: 0
+t.cg_cross_named.x.auto_1_x_auto_1 [cross]: 1
+t.cg_cross_opt.cp_a.auto_0: 1
+t.cg_cross_opt.cp_a.auto_1: 0
+t.cg_cross_opt.cp_b.auto_0: 1
+t.cg_cross_opt.cp_b.auto_1: 0
+t.cg_cross_opt.cp_b.auto_2: 0
+t.cg_cross_opt.cp_b.auto_3: 0
+t.cg_cross_opt.x.<auto_0,auto_0> [cross]: 1
+t.cg_cross_opt.x.<auto_0,auto_1> [cross]: 0
+t.cg_cross_opt.x.<auto_0,auto_2> [cross]: 0
+t.cg_cross_opt.x.<auto_0,auto_3> [cross]: 0
+t.cg_cross_opt.x.<auto_1,auto_0> [cross]: 0
+t.cg_cross_opt.x.<auto_1,auto_1> [cross]: 0
+t.cg_cross_opt.x.<auto_1,auto_2> [cross]: 0
+t.cg_cross_opt.x.<auto_1,auto_3> [cross]: 0
+t.cg_cross_union.cp_a.auto_0: 1
+t.cg_cross_union.cp_a.auto_1: 1
+t.cg_cross_union.cp_b.auto_0: 1
+t.cg_cross_union.cp_b.auto_1: 1
+t.cg_cross_union.x.<auto_0,auto_0> [cross]: 1
+t.cg_cross_union.x.<auto_0,auto_1> [cross]: 0
+t.cg_cross_union.x.<auto_1,auto_0> [cross]: 0
+t.cg_cross_union.x.<auto_1,auto_1> [cross]: 1
+t.cg_dead.cp.auto_0: 1
+t.cg_dead.cp.auto_1: 1
+t.cg_dead_union.a.b[0]: 1
+t.cg_dead_union.a.b[1]: 1
+t.cg_dead_union.a.b[2]: 1
+t.cg_dead_union.a.b[3]: 0
+t.cg_inst.checked.auto_0: 1
+t.cg_inst.checked.auto_1: 1
+t.cg_inst.helper.auto_0: 2
+t.cg_inst.helper.auto_1: 0
+t.cg_merged.checked.auto_0: 1
+t.cg_merged.checked.auto_1: 1
+t.cg_merged.helper.auto_0: 2
+t.cg_merged.helper.auto_1: 0
+t.cg_opt.checked.auto_0: 1
+t.cg_opt.checked.auto_1: 1
+t.cg_opt.helper.auto_0: 2
+t.cg_opt.helper.auto_1: 0
+t.cg_proc.cp.auto_0: 1
+t.cg_proc.cp.auto_1: 1
+t.cg_sum.cp.auto_0: 2
+t.cg_sum.cp.auto_1: 0
+t.cg_union.a.b[0]: 1
+t.cg_union.a.b[1]: 2
+t.cg_union.a.b[2]: 0
+t.cg_union_avg.a.b[0]: 1
+t.cg_union_avg.a.b[1]: 2
+t.cg_union_avg.a.b[2]: 0
+t.cg_zero.cp.auto_0: 1
+t.cg_zero.cp.auto_1: 0
+t.cg_zero_type.cp.auto_0: 1
+t.cg_zero_type.cp.auto_1: 0

@@ -1,0 +1,11 @@
+%Error: t/t_dpi_struct_unpacked_bad.v:20:57: DPI argument 's' has unpacked structure member 'q' of type 'int$[$]', which DPI does not allow (IEEE 1800-2023 35.5.6)
+   20 |   import "DPI-C" function void dpii_queue(input queue_t s);
+      |                                                         ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_dpi_struct_unpacked_bad.v:21:62: DPI argument 's' has unpacked structure member 'u' of type 'union t.union_t$[0:1]', which DPI does not allow (IEEE 1800-2023 35.5.6)
+   21 |   import "DPI-C" function void dpii_union(input with_union_t s);
+      |                                                              ^
+%Error: t/t_dpi_struct_unpacked_bad.v:22:57: DPI argument 's' has unpacked structure member 'e' of type 'event', which DPI does not allow (IEEE 1800-2023 35.5.6)
+   22 |   import "DPI-C" function void dpii_event(input event_t s);
+      |                                                         ^
+%Error: Exiting due to

@@ -364,7 +364,7 @@ bom             [\357\273\277]
         /* Reading definition value (declaration of a define's text) */
 <DEFVAL>"/*"            { LEXP->m_defCmtSlash=false; yy_push_state(DEFCMT); yymore(); }  /* Special comment parser */
 <DEFVAL>"//"[^\n\r]*[\\]{crnl}  { FL_FWDC; linenoInc(); appendDefValue((char*)"\n", 1); FL_BRK; }  /* Spec says // not part of define value */
-<DEFVAL>"//"[^\n\r]*    { FL_FWDC; return VP_COMMENT;}
+<DEFVAL>"//"            { FL_FWDC; yyless(0); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return VP_DEFVALUE; }  /* Spec says // not part of define value; comment is lexed as normal text after it */
 <DEFVAL>{drop}          { FL_FWDC; FL_BRK; }
 <DEFVAL><<EOF>>         { FL_FWDC; linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return VP_DEFVALUE; }  /* Technically illegal, but people complained */
 <DEFVAL>{crnl}          { FL_FWDC; linenoInc(); yy_pop_state(); yytext=(char*)"\n"; yyleng=1; return VP_DEFVALUE; }

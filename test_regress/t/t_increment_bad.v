@@ -8,28 +8,29 @@ module t (
     input clk
 );
 
-  int pos;
   int a;
-  int b;
-  int array[2][2] = '{'{0, 1}, '{2, 3}};
-
-  string test_string = "abcd";
-
-  initial begin
-    if (0 && test_string[pos++] != "e");
-    if (1 || pos-- != 1);
-
-    if (a <-> --b);
-    if (0 -> ++b);
-
-    // ++/-- nested in ?:/-> inside a supported &&/|| must still error
-    if (1 && (a > 0 ? a++ : --b));
-    if (0 || (a > 0 -> ++b));
-
-    pos = (a > 0) ? a++ : --b;
-
-    pos = array[0][0]++;
-  end
 
   assert property (@(posedge clk) a++ >= 0);
+
+  sequence s;
+    ++a > 0;
+  endsequence
+  assert property (@(posedge clk) s);
+
+  always @(a++) a = 0;
+  initial @(posedge clk iff a-- > 0);
+
+  class C;
+    rand int x;
+    int y;
+    constraint c {
+      x == y++;
+      if (--y > 0) x > 0;
+    }
+  endclass
+
+  initial begin
+    static C c = new;
+    void'(c.randomize() with {x == a++;});
+  end
 endmodule

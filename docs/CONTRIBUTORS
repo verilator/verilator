@@ -8,8 +8,9 @@ contribution terms including the AI policy in ``docs/CONTRIBUTING.rst``.
 Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
 00>> Please insert into sorted position, and see header as to agreement
-24bit-xjkp
-404allen404
+林俊杰
+24bit-xjkp  # REALWAIVE
+404allen404  # REALWAIVE
 Adam Bagley
 Adam Kostrzewski
 Aditya Shevade
@@ -26,19 +27,21 @@ Aliaksei Chapyzhenka
 Ameya Vikram Singh
 Andrea Calabrese
 Andreas Kuster
+Andrei Girjoaba
 Andrei Kostovski
 Andrew Miloradovsky
 Andrew Nolte
 Andrew Voznytsa
 Andrii Andrieiev
-anonkey
+anonkey  # REALWAIVE
 Anthony Donlon
 Anthony Moore
-apocelipes
+apocelipes  # REALWAIVE
 Arkadiusz Kozdra
 Arthur Rosa
 Artur Bieniek
-AUDIY
+Ashvin Vaidyanathan
+AUDIY  # REALWAIVE
 Aylon Chaim Porat
 Bartosz Skorowski
 Bartłomiej Chmiel
@@ -47,18 +50,18 @@ BRDR LIFE
 Brian Li
 Cameron Kirk
 Cameron Waite
-CatalpaEel
+CatalpaEel  # REALWAIVE
 Chih-Mao Chen
 Chris Bachhuber
 Chris Randall
 Christian Hecken
+Christopher Onyiuke
 Christopher Taylor
 Chuxuan Wang
-Chykon
+Chykon  # REALWAIVE
 Congcong Cai
 Conor McCullough
-Cookie
-cynicalmindset
+Cookie  # REALWAIVE
 Dan Ruelas-Petrisko
 Daniel Bates
 Danny Oler
@@ -72,12 +75,13 @@ David Stanford
 David Turner
 Deanyone Su
 dependabot[bot]
-Dercury
+Dercury  # REALWAIVE
 Demin Han
 Diego Roux
+Doha Nam
 Dominick Grochowina
 Don Williamson
-Dragon-Git
+Dragon-Git  # REALWAIVE
 Drew Ranck
 Drew Risinger
 Drew Taussig
@@ -85,8 +89,8 @@ Driss Hafdi
 Edgar E. Iglesias
 Edmund Lam
 Eddie Rydell
-em2machine
-emmettifelts
+em2machine  # REALWAIVE
+emmettifelts  # REALWAIVE
 Eric Mejdrich
 Eric Müller
 Eric Rippey
@@ -96,7 +100,8 @@ Eunseo Song
 Eyck Jentzsch
 Fabian Keßler-Schulz
 Fan Shupei
-february cozzocrea
+february cozzocrea  # REALWAIVE
+Felipe Paiva Alencar
 Felix Neumärker
 Felix Yan
 Francesco Urbani
@@ -110,6 +115,7 @@ Geza Lore
 Gianfranco Costamagna
 Gijs Burghoorn
 Gilberto Abram
+github action  # REALWAIVE
 Glen Gibb
 Graham Rushton
 Greg Davill
@@ -120,12 +126,12 @@ Gökçe Aydos
 Han Qi
 Harald Heckmann
 Hennadii Chernyshchyk
-hjsanjana
+hjsanjana  # REALWAIVE
 Hongseok Choi
 Howard Su
 Huang Rui
 Huanghuang Zhou
-HungMingWu
+HungMingWu  # REALWAIVE
 HyungKi Jeong
 Ibrahim Burak Yorulmaz
 Igor Zaworski
@@ -138,7 +144,7 @@ Jaeuk Lee (이재욱)
 Jake Merdich
 Jakub Michalski
 Jakub Wasilewski
-jalcim
+jalcim  # REALWAIVE
 James Bailey
 James Hanlon
 James Hutchinson
@@ -147,10 +153,11 @@ James Shi
 Jamey Hicks
 Jamie Iles
 Jan Van Winkel
+Jared Bold
 Jean Berniolles
 Jean-Nicolas Strauss
 Jeffrey Song
-jeffrey.song
+jeffrey.song  # REALWAIVE
 Jens Yuechao Liu
 Jeremy Bennett
 Jesse Taube
@@ -169,6 +176,7 @@ John Demme
 John Khoo
 John Wehle
 Jonathan Drolet
+Jonathan Kimmitt
 Jonathan Schröter
 Jordan McConnon
 Jose Drowne
@@ -187,6 +195,7 @@ Kaleb Barrett
 Kamil Danecki
 Kamil Rakoczy
 Kanad Kanhere
+Karel Peeters
 Kefa Chen
 Keith Colbert
 Kevin Kiningham
@@ -204,13 +213,15 @@ Kuba Ober
 Lan Zongwei
 Larry Doolittle
 Laurent CHARRIER
+Leandro Ajo
 Leela Pakanati
+Lim Jooyoung
 Liam Braun
 Luca Colagrande
 Lucas Amaral
 Ludwig Rogiers
 Lukasz Dalek
-M2kar
+M2kar  # REALWAIVE
 Maarten De Braekeleer
 Maciej Sobkowski
 Marcel Chang
@@ -235,6 +246,7 @@ Michael Bedford Taylor
 Michael Bikovitsky
 Michael Killough
 Michael Rogenmoser
+Michael Wrighton
 Michal Czyz
 Michaël Lefebvre
 Miguel Perez Andrade
@@ -245,9 +257,11 @@ Mladen Slijepcevic
 Morten Borup Petersen
 Mostafa Gamal
 Moubarak Jeje
+Muhammad Saad
 Muzaffer Kal
 Nandu Raj
 Natan Kreimer
+Nathan Chandrasekar
 Nathan Graybeal
 Nathan Kohagen
 Nathan Myers
@@ -259,6 +273,7 @@ Noam Gallmann
 Nolan Poe
 Oleh Maksymenko
 Patrick Creighton
+Patrick O'Neill
 Patrick Stewart
 Paul Bowen-Huggett
 Paul Campbell
@@ -280,11 +295,14 @@ Philipp Wagner
 Pierre-Henri Horrein
 Pieter Kapsenberg
 Piotr Binkowski
+qinkejiu  # REALWAIVE
 Qingyao Sun
 Quentin Corradi
 Rafal Kapuscik
 Rahul Behl
-Rasfunk
+Raj Bazx (bazx-bit)
+Raj bazx  # REALWAIVE
+Rasfunk  # REALWAIVE
 Raynard Qiao
 Ricardo Barbedo
 Richard Myers
@@ -301,7 +319,7 @@ Samuel Riedel
 Saqib Khan
 Sean Cross
 Sebastien Van Cauwenberghe
-Secturion
+Secturion  # REALWAIVE
 Sergey Chusov
 Sergey Fedorov
 Sergi Granell
@@ -310,13 +328,15 @@ Shashvat Prabhu
 Shogo Yamazaki
 Shou-Li Hsu
 Shriyans Sahoo
-spomatasmd
+Simon Zhang
+spomatasmd  # REALWAIVE
 Srinivasan Venkataramanan
 Stefan Wallentowitz
 Stephen Henry
+Steven Bellock
 Steven Hugg
 Stuart Morris
-sumpster
+sumpster  # REALWAIVE
 Szymon Gizler
 Szymon Jędras
 Sören Tempel
@@ -346,7 +366,7 @@ Tynan McAuley
 Tyrone Marhguy
 Udaya Raj Subedi
 Udi Finkelstein
-UnsignedByte
+UnsignedByte  # REALWAIVE
 Unai Martinez-Corral
 Valentin Atepalikhin
 Varun Koyyalagunta
@@ -355,20 +375,23 @@ Veripool API Bot
 Victor Besyakov
 Vikash Patel
 Vito Gamberini
+Vladimir Silyaev
 Wei-Lun Chiu
 William D. Jones
 Wilson Snyder
 Wolfgang Mayerwieser
 Xi Zhang
 Yan Xu
+Yanglin Xun
 Yangyu Chen
-yash
+Yash Raj
 Yilin Li
 Yilou Wang
 Yinan Xu
 Yoda Lee
 Yogish Sekhar
 Yossi Nivin
+Yu-Cheng Liu
 Yu-Sheng Lin
 Yuri Victorovich
 Yutetsu TAKATSUKASA

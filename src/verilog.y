@@ -261,6 +261,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_SC_BV                  "sc_bv"
 %token<fl>              yVLT_SFORMAT                "sformat"
 %token<fl>              yVLT_SPLIT_VAR              "split_var"
+%token<fl>              yVLT_THREADS_GROUP          "threads_group"
 %token<fl>              yVLT_TIMING_OFF             "timing_off"
 %token<fl>              yVLT_TIMING_ON              "timing_on"
 %token<fl>              yVLT_TRACING_OFF            "tracing_off"
@@ -806,9 +807,15 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SFORMAT               "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
 %token<fl>              yVL_FSM_ARC_INCL_COND     "/*verilator fsm_arc_include_cond*/"
-%token<fl>              yVL_FSM_RESET_ARC         "/*verilator fsm_reset_arc*/"
+%token<fl>              yVL_FSM_ARC_INCL_COND_AUTO        "/*verilator fsm_arc_include_cond_auto*/"
+%token<fl>              yVL_FSM_ARC_INCL_COND_AUTO_EXPAND "/*verilator fsm_arc_include_cond_auto_expand*/"
+%token<fl>              yVL_FSM_ARC_INCL_COND_FULL        "/*verilator fsm_arc_include_cond_full*/"
 %token<fl>              yVL_FSM_STATE             "/*verilator fsm_state*/"
+%token<fl>              yVL_FSM_STATE_AUTO        "/*verilator fsm_state_auto*/"
+%token<fl>              yVL_FSM_STATE_AUTO_EXPAND "/*verilator fsm_state_auto_expand*/"
+%token<fl>              yVL_FSM_STATE_FULL        "/*verilator fsm_state_full*/"
 %token<strp>            yVL_TAG                   "/*verilator tag*/"
+%token<fl>              yVL_THREADS_GROUP         "/*verilator threads_group*/"
 %token<fl>              yVL_UNROLL_DISABLE        "/*verilator unroll_disable*/"
 %token<fl>              yVL_UNROLL_FULL           "/*verilator unroll_full*/"
 
@@ -1990,7 +1997,7 @@ port_declaration<nodep>:        // ==IEEE: port_declaration
                           AstIfaceRefDType* const dtp = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3};
                           VARDTYPE(dtp); }
         /*cont*/    mpInstnameList
-                        { $$ = VARDONEP($5, nullptr, nullptr); DEL($5); }
+                        { $$ = $5; }
         //UNSUP: strengthSpecE for udp_instantiations
         ;
 
@@ -2094,6 +2101,12 @@ data_typeAny<nodeDTypep>:       // ==IEEE: data_type (accepting idAny)
 
 data_typeBasic<nodeDTypep>:             // IEEE: part of data_type
                 integer_vector_type signingE rangeListE { $1->setSignedState($2); $$ = GRAMMARP->addRange($1, $3, true); }
+        //                      // IEEE: packed_dimension: unsized_dimension, legal only in DPI import
+        |       integer_vector_type signingE '[' ']'
+                        { $1->setSignedState($2);
+                          AstUnsizedArrayDType* const dtp = new AstUnsizedArrayDType{$3, VFlagChildDType{}, $1};
+                          dtp->packed(true);
+                          $$ = dtp; }
         |       integer_atom_type signingE              { $1->setSignedState($2); $$ = $1; }
         |       non_integer_type                        { $$ = $1; }
         ;
@@ -2685,6 +2698,7 @@ non_port_module_item<nodep>:    // ==IEEE: non_port_module_item
         |       yVL_INLINE_MODULE                       { $$ = new AstPragma{$1, VPragmaType::INLINE_MODULE}; }
         |       yVL_NO_INLINE_MODULE                    { $$ = new AstPragma{$1, VPragmaType::NO_INLINE_MODULE}; }
         |       yVL_PUBLIC_MODULE                       { $$ = new AstPragma{$1, VPragmaType::PUBLIC_MODULE}; v3Global.dpi(true); }
+        |       yVL_THREADS_GROUP                       { $$ = new AstPragma{$1, VPragmaType::THREADS_GROUP}; }
         ;
 
 vlScBlock<nodep>:  // Verilator-specific `systemc_* blocks
@@ -3131,8 +3145,13 @@ sigAttr<nodep>:
         |       yVL_SFORMAT                             { $$ = new AstAttrOf{$1, VAttrType::VAR_SFORMAT}; }
         |       yVL_SPLIT_VAR                           { $$ = new AstAttrOf{$1, VAttrType::VAR_SPLIT_VAR}; }
         |       yVL_FSM_ARC_INCL_COND                   { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND}; }
-        |       yVL_FSM_RESET_ARC                       { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_RESET_ARC}; }
+        |       yVL_FSM_ARC_INCL_COND_AUTO              { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO}; }
+        |       yVL_FSM_ARC_INCL_COND_AUTO_EXPAND       { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND}; }
+        |       yVL_FSM_ARC_INCL_COND_FULL              { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND_FULL}; }
         |       yVL_FSM_STATE                           { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE}; }
+        |       yVL_FSM_STATE_AUTO                      { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE_AUTO}; }
+        |       yVL_FSM_STATE_AUTO_EXPAND               { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE_AUTO_EXPAND}; }
+        |       yVL_FSM_STATE_FULL                      { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE_FULL}; }
         ;
 
 rangeListE<nodeRangep>:         // IEEE: [{packed_dimension}]
@@ -6303,15 +6322,15 @@ endLabelE<strp>:
 
 clocking_declaration<nodep>:            // IEEE: clocking_declaration
                 yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, *$2, $3, $5, false, false}; }
+                        { $$ = new AstClocking{$<fl>2, *$2, new AstSenTree{$<fl>2, $3}, $5, false, false}; }
         |       yDEFAULT yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, true, false}; }
+                        { $$ = new AstClocking{$<fl>2, "", new AstSenTree{$<fl>2, $3}, $5, true, false}; }
         |       yDEFAULT yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, true, false}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, new AstSenTree{$<fl>3, $4}, $6, true, false}; }
         |       yGLOBAL__CLOCKING yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, false, true}; }
+                        { $$ = new AstClocking{$<fl>2, "", new AstSenTree{$<fl>2, $3}, $5, false, true}; }
         |       yGLOBAL__CLOCKING yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, false, true}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, new AstSenTree{$<fl>3, $4}, $6, false, true}; }
         ;
 
 clocking_eventE<senItemp>:      // IEEE: optional clocking_event
@@ -7173,8 +7192,9 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         |       yBINS idAny/*bin_identifier*/ '[' cgexpr ']' iffE
                         { // Check for automatic bins: bins auto[N]
                           if (*$2 == "auto") {
-                              $$ = new AstCoverBin{$<fl>2, *$2, $4};
-                              DEL($6);
+                              AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $4};
+                              binp->iffp($6);
+                              $$ = binp;
                           } else {
                               $$ = nullptr;
                               BBCOVERIGN($<fl>2, "Unsupported: 'bins' array (non-auto)");
@@ -7408,6 +7428,16 @@ cross_body_item<nodep>:  // ==IEEE: cross_body_item
 select_expression<nodep>:  // ==IEEE: select_expression
                 select_expression_r
                         { $$ = $1; }
+        //                      // IEEE: integer_covergroup_expression ::= covergroup_expression | '$'
+        //                      // '$' is part of our expr.  'matches' has higher precedence than
+        //                      // '&&' and '||', which end the count (IEEE 1800-2023 footnote 30).
+        //                      // A count could end in a function call followed by its 'with', so
+        //                      // a selection with a count is filtered further only in parentheses.
+        |       select_expression_r yWITH__PAREN '(' cgexpr ')' yMATCHES expr %prec yP_ANDAND
+                        { $$ = new AstCoverCrossWith{$2, $1, $4, $7}; }
+        //                      // IEEE: cross_set_expression yMATCHES integer_covergroup_expression
+        |       idAny '(' list_of_argumentsE ')' yMATCHES expr %prec yP_ANDAND
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Unsupported: function call in coverage select expression"); DEL($3, $6); }
         |       select_expression yP_ANDAND select_expression
                         { $$ = new AstCoverCrossSelect{$2, $1, $3, false}; }
         |       select_expression yP_OROR   select_expression
@@ -7431,7 +7461,7 @@ select_expression_r<nodep>:
         |       '!' yWITH__PAREN '(' cgexpr ')'
                         { $$ = nullptr; BBCOVERIGN($1, "Unsupported: 'with' in coverage select expression"); DEL($4); }
         |       select_expression_r yWITH__PAREN '(' cgexpr ')'
-                        { $$ = nullptr; BBCOVERIGN($2, "Unsupported: 'with' in coverage select expression"); DEL($1, $4); }
+                        { $$ = new AstCoverCrossWith{$2, $1, $4, nullptr}; }
         //                      // IEEE-2012: Need clarification as to precedence
         //UNSUP yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr    { }
         //                      // IEEE-2012: Need clarification as to precedence
@@ -7443,9 +7473,7 @@ select_expression_r<nodep>:
         //UNSUP  cgexpr  { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression"); }
         //
         //                      // IEEE: cross_set_expression [ yMATCHES integer_covergroup_expression ]
-        //                      // covergroup_expression [ yMATCHES ( integer_covergroup_expression | '$' ) ]
-        //                      // Need precedence fix
-        //UNSUP  cgexpr yMATCHES cgexpr    {..}
+        //UNSUP  cgexpr    {..}
         //UNSUP                 // Below are all removed
         |       idAny '(' list_of_argumentsE ')'
                         { $$ = nullptr; BBCOVERIGN($<fl>1, "Unsupported: function call in coverage select expression"); DEL($3); }
@@ -8490,6 +8518,8 @@ vltItem:
                         { V3Control::addProfileData($<fl>1, *$2, $3->toUQuad()); }
         |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
                         { V3Control::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
+        |       yVLT_THREADS_GROUP vltDModule
+                        { V3Control::addModulePragma(*$2, VPragmaType::THREADS_GROUP); }
         |       yVLT_FSM_REGISTER_WRAPPER vltDModule vltDFsmD vltDFsmQ vltDFsmClock vltDFsmResetE vltDFsmResetValueE
                         { V3Control::addFsmRegisterWrapper($<fl>1, *$2, *$3, *$4, *$5, *$6, *$7); }
         |       yVLT_VERILATOR_LIB vltDModule

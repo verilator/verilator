@@ -18,7 +18,7 @@ test.execute()
 
 # The parameter array should have been put in the constant pool
 if test.vlt_all:
-    test.file_grep(test.stats, r'ConstPool, Tables emitted\s+(\d+)', 3)
+    test.file_grep(test.stats, r'ConstPool, CONSARRAY emitted\s+(\d+)', 3)
 
 # Shouldn't have any references to the parameter array
 for filename in (test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*.h") +

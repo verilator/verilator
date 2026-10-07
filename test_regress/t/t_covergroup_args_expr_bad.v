@@ -23,18 +23,37 @@ module t;
   endgroup
 
   covergroup cg_constructor_ref(ref bit value);
-    cp_constructor_ref: coverpoint value {bins bad = {value};}
+    cp_constructor_ref: coverpoint value {
+      bins bad = {value};
+    }
   endgroup
 
   bit nonconstant_bound;
   covergroup cg_cross_bad;
-    cp_bad: coverpoint 0 iff (1) {bins bad = {[0 : nonconstant_bound]};}
-    cp_ok: coverpoint 0 {bins zero = {0};}
+    cp_bad: coverpoint 0 iff (1) {
+      bins bad = {[0 : nonconstant_bound]};
+    }
+    cp_ok: coverpoint 0 {
+      bins zero = {0};
+    }
     cross_bad: cross cp_bad, cp_ok;
+  endgroup
+
+  // Likewise in a cross bin's 'with' filter, or its 'matches' count
+  covergroup cg_cross_with(ref bit bound) with function sample (bit value);
+    cp_value: coverpoint value;
+    cp_bound: coverpoint bound;
+    cross_with: cross cp_value, cp_bound{
+      bins sampled = cross_with with (cp_bound == value);
+      bins referenced = cross_with with (cp_value < bound);
+      bins sampled_count = cross_with with (1) matches value;
+      bins referenced_count = cross_with with (1) matches bound;
+    }
   endgroup
 
   cg cov = new;
   bit constructor_value;
   cg_constructor_ref constructor_cov = new(constructor_value);
   cg_cross_bad cross_bad_cov = new;
+  cg_cross_with cross_with_cov = new(constructor_value);
 endmodule

@@ -9,6 +9,8 @@ i_bit_t 0
 i_logic_t 0
 i_array_2_state_1 0
 i_array_2_state_32 0
+i_bit_t_array_1 0
+i_bit_t_array_32 0
 i_struct_2_state_1 0
 i_struct_2_state_32 0
 i_union_2_state_1 0
@@ -24,6 +26,8 @@ e_bit_t 0
 e_logic_t 0
 e_array_2_state_1 0
 e_array_2_state_32 0
+e_bit_t_array_1 0
+e_bit_t_array_32 0
 e_struct_2_state_1 0
 e_struct_2_state_32 0
 e_union_2_state_1 0
@@ -39,6 +43,8 @@ i_bit_t 1
 i_logic_t 1
 i_array_2_state_1 1
 i_array_2_state_32 1
+i_bit_t_array_1 1
+i_bit_t_array_32 1
 i_struct_2_state_1 1
 i_struct_2_state_32 1
 i_union_2_state_1 1
@@ -54,6 +60,8 @@ e_bit_t 1
 e_logic_t 1
 e_array_2_state_1 1
 e_array_2_state_32 1
+e_bit_t_array_1 1
+e_bit_t_array_32 1
 e_struct_2_state_1 1
 e_struct_2_state_32 1
 e_union_2_state_1 1
@@ -69,6 +77,8 @@ i_bit_t 2
 i_logic_t 2
 i_array_2_state_1 2
 i_array_2_state_32 2
+i_bit_t_array_1 2
+i_bit_t_array_32 2
 i_struct_2_state_1 2
 i_struct_2_state_32 2
 i_union_2_state_1 2
@@ -84,6 +94,8 @@ e_bit_t 2
 e_logic_t 2
 e_array_2_state_1 2
 e_array_2_state_32 2
+e_bit_t_array_1 2
+e_bit_t_array_32 2
 e_struct_2_state_1 2
 e_struct_2_state_32 2
 e_union_2_state_1 2

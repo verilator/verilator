@@ -346,6 +346,9 @@ extern "C" int mon_check() {
     return 0;  // Ok
 }
 
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
+
 //======================================================================
 
 #ifdef IS_VPI
@@ -362,7 +365,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 // cver entry

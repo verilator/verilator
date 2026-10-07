@@ -5,7 +5,7 @@
                     ... Use "/* verilator lint_off UNOPTFLAT */" and lint_on around source to disable this message.
                     t/t_unoptflat_simple_3.v:16:14:      Example path: t.x
                     t/t_unoptflat_simple_3.v:76:18:      Example path: ASSIGNW
-                    t/t_unoptflat_simple_3.v:74:21:      Example path: t.__Vcellout__test2i__xvecout
+                    t/t_unoptflat_simple_3.v:74:21:      Example path: t.test2i.xvecout
                     t/t_unoptflat_simple_3.v:27:8:      Example path: ASSIGNW
                     t/t_unoptflat_simple_3.v:16:14:      Example path: t.x
 %Error: Exiting due to

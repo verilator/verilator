@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2024 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t_foreach_array;
   // Define various structures to test foreach behavior
   int dyn_arr[][];
@@ -31,6 +36,119 @@ module t_foreach_array;
   int count_unp_dyn, exp_count_unp_dyn;
 
   string k1, k2, k3;
+
+  // Queue/dynamic dimension after two or more fixed dimensions (#8891)
+  int unp_unp_queue[3][3][$];
+  int unp_unp_dyn[2][3][];
+  int unp_queue_unp[2][$][3];
+  int ranged_queue[3:2][4:3][$];
+  int unp_unp_assoc[2][2][int];
+  int queue_unp_queue[$][2][$];
+  int neg_queue[-1:0][2:1][$];
+
+  initial begin
+    int count, exp_count;
+    int sum, exp_sum;
+
+    unp_unp_queue[0][0] = '{1, 2, 3};
+    unp_unp_queue[1][2] = '{4, 5};
+    unp_unp_queue[2][1] = '{6, 7};
+    count = 0;
+    sum = 0;
+    foreach (unp_unp_queue[i, j, k]) begin
+      ++count;
+      sum += unp_unp_queue[i][j][k];
+    end
+    exp_count = 0;
+    exp_sum = 0;
+    foreach (unp_unp_queue[i])
+    foreach (unp_unp_queue[i][j])
+    foreach (unp_unp_queue[i][j][k]) begin
+      ++exp_count;
+      exp_sum += unp_unp_queue[i][j][k];
+    end
+    `checkd(exp_count, 7);
+    `checkd(count, exp_count);
+    `checkd(exp_sum, 28);
+    `checkd(sum, exp_sum);
+
+    unp_unp_dyn[0][1] = '{1, 2};
+    unp_unp_dyn[1][0] = '{3};
+    unp_unp_dyn[1][2] = '{4, 5, 6};
+    count = 0;
+    sum = 0;
+    foreach (unp_unp_dyn[i, j, k]) begin
+      ++count;
+      sum += unp_unp_dyn[i][j][k];
+    end
+    exp_count = 0;
+    exp_sum = 0;
+    foreach (unp_unp_dyn[i])
+    foreach (unp_unp_dyn[i][j])
+    foreach (unp_unp_dyn[i][j][k]) begin
+      ++exp_count;
+      exp_sum += unp_unp_dyn[i][j][k];
+    end
+    `checkd(exp_count, 6);
+    `checkd(count, exp_count);
+    `checkd(exp_sum, 21);
+    `checkd(sum, exp_sum);
+
+    unp_queue_unp[0] = '{'{1, 2, 3}, '{4, 5, 6}};
+    unp_queue_unp[1] = '{'{7, 8, 9}};
+    count = 0;
+    sum = 0;
+    foreach (unp_queue_unp[i, j, k]) begin
+      ++count;
+      sum += unp_queue_unp[i][j][k];
+    end
+    `checkd(count, 9);
+    `checkd(sum, 45);
+
+    ranged_queue[3][3] = '{1, 2};
+    ranged_queue[2][4] = '{3};
+    count = 0;
+    sum = 0;
+    foreach (ranged_queue[i, j, k]) begin
+      ++count;
+      sum += ranged_queue[i][j][k];
+    end
+    `checkd(count, 3);
+    `checkd(sum, 6);
+
+    queue_unp_queue = '{'{'{1}, '{2, 3}}, '{'{}, '{4, 5, 6}}};
+    count = 0;
+    sum = 0;
+    foreach (queue_unp_queue[i, j, k]) begin
+      ++count;
+      sum += queue_unp_queue[i][j][k];
+    end
+    `checkd(count, 6);
+    `checkd(sum, 21);
+
+    neg_queue[-1][2] = '{1, 2};
+    neg_queue[0][1] = '{3};
+    count = 0;
+    sum = 0;
+    foreach (neg_queue[i, j, k]) begin
+      ++count;
+      sum += neg_queue[i][j][k];
+    end
+    `checkd(count, 3);
+    `checkd(sum, 6);
+
+    unp_unp_assoc[0][1][5] = 1;
+    unp_unp_assoc[1][0][7] = 2;
+    unp_unp_assoc[1][0][9] = 3;
+    count = 0;
+    sum = 0;
+    foreach (unp_unp_assoc[i, j, k]) begin
+      ++count;
+      sum += unp_unp_assoc[i][j][k];
+    end
+    `checkd(count, 3);
+    `checkd(sum, 6);
+  end
 
   initial begin
     // Initialize
@@ -107,16 +225,19 @@ module t_foreach_array;
     foreach (unp_dyn[i]) foreach (unp_dyn[i][j]) exp_count_unp_dyn++;
 
     // Verification checks
-    if (count_que != 6 || count_que != exp_count_que) $stop;
-    if (count_dyn != 12 || count_dyn != exp_count_dyn) $stop;
-    if (count_unp != 6 || count_unp != exp_count_unp) $stop;
-    if (count_assoc != 9) $stop;
-    if (count_queue_unp != exp_count_queue_unp) $stop;
-    if (count_unp_queue != exp_count_unp_queue) $stop;
-    if (count_dyn_queue != exp_count_dyn_queue) $stop;
-    if (count_queue_dyn != exp_count_queue_dyn) $stop;
-    if (count_dyn_unp != exp_count_dyn_unp) $stop;
-    if (count_unp_dyn != exp_count_unp_dyn) $stop;
+    `checkd(count_que, 6);
+    `checkd(count_que, exp_count_que);
+    `checkd(count_dyn, 12);
+    `checkd(count_dyn, exp_count_dyn);
+    `checkd(count_unp, 6);
+    `checkd(count_unp, exp_count_unp);
+    `checkd(count_assoc, 9);
+    `checkd(count_queue_unp, exp_count_queue_unp);
+    `checkd(count_unp_queue, exp_count_unp_queue);
+    `checkd(count_dyn_queue, exp_count_dyn_queue);
+    `checkd(count_queue_dyn, exp_count_queue_dyn);
+    `checkd(count_dyn_unp, exp_count_dyn_unp);
+    `checkd(count_unp_dyn, exp_count_unp_dyn);
 
     $write("*-* All Finished *-*\\n");
     $finish;

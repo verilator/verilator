@@ -51,7 +51,7 @@ class InlineIntfRefVisitor final : public VNVisitor {
 
         AstNodeModule* const modp = nodep->modp();
         // Pass Cell pointers down to the next module
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+        for (AstPin* const pinp : nodep->pinspList()) {
             AstVar* const varp = pinp->modVarp();
             const AstVarRef* const varrefp = VN_CAST(pinp->exprp(), VarRef);
             if (!varrefp) continue;
@@ -69,7 +69,7 @@ class InlineIntfRefVisitor final : public VNVisitor {
             const AstIfaceRefDType* const portIrdtp = VN_CAST(varp->dtypep(), IfaceRefDType);
             const string modportName = portIrdtp ? portIrdtp->modportName() : irdtp->modportName();
             FileLine* const flp = pinp->fileline();
-            cellp->addIntfRefsp(new AstIntfRef{flp, alias, pinp->name(), modportName});
+            cellp->addIntfRefsp(new AstIntfRef{flp, alias, m_scope, pinp->name(), modportName});
         }
 
         iterateChildrenConst(modp);

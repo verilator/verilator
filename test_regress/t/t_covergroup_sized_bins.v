@@ -252,7 +252,7 @@ module t;
     v = 0;
     kinds_inst.sample();
     // dflt: both bins; excl: b[1] of b[1] and b[2]; gated: both bins; mixed: sized[0], one,
-    // arr[2] of 5 bins; xx: low and b[1]_x_b[1] of 3 bins
+    // arr[2] of 5 bins; xx: low and <b[1],b[1]> of 3 bins
     `checkr(kinds_inst.get_inst_coverage(), 100.0 * (1.0 + 1.0 / 2 + 1.0 + 3.0 / 5 + 2.0 / 3) / 5);
 
     $write("*-* All Finished *-*\n");

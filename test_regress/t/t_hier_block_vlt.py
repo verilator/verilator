@@ -21,7 +21,7 @@ test.clean_objs()
 test.compile(v_flags2=['t/t_hier_block.cpp'],
              verilator_flags2=[
                  '--stats', '--hierarchical', '+define+SHOW_TIMESCALE', '+define+USE_VLT',
-                 't/t_hier_block_vlt.vlt', '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"'
+                 test.vlt_filename, '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"'
              ],
              threads=(6 if test.vltmt else 1))
 
@@ -31,7 +31,7 @@ test.file_grep(test.obj_dir + "/Vsub0/sub0.sv", r'^\s+timeprecision\s+(\d+)ps;',
 test.file_grep(test.obj_dir + "/Vsub0/sub0.sv", r'^module\s+(\S+)\s+', "sub0")
 test.file_grep(test.obj_dir + "/Vsub1/sub1.sv", r'^module\s+(\S+)\s+', "sub1")
 test.file_grep(test.obj_dir + "/Vsub2/sub2.sv", r'^module\s+(\S+)\s+', "sub2")
-test.file_grep(test.stats, r'HierBlock,\s+Hierarchical blocks\s+(\d+)', 14)
+test.file_grep(test.stats, r'HierBlock,\s+Hierarchical blocks\s+(\d+)', 15)
 test.file_grep(test.run_log_filename, r'MACRO:(\S+) is defined', "cplusplus")
 
 test.passes()

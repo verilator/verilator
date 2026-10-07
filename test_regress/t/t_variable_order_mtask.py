@@ -41,7 +41,7 @@ if test.vltmt:
 test.compile(verilator_flags2=flags, threads=(2 if test.vltmt else 1))
 
 root_h = test.obj_dir + "/" + test.vm_prefix + "___024root.h"
-aligned_var_re = r'alignas\(VL_CACHE_LINE_BYTES\) (?:CData|SData|IData|QData|VlWide|VL_)'
+aligned_var_re = r'alignas\(VL_CACHE_LINE_BYTES\) (?:::)?(?:CData|SData|IData|QData|VlWide|VL_)'
 
 if test.vltmt:
     test.file_grep(root_h, aligned_var_re)

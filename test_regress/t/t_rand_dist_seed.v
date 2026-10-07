@@ -50,6 +50,12 @@ module t;
   // $urandom - seed or this is input, not inout
   int urandom_seed = 32'h4567_89ab;
 
+  // Seeds written by combinational logic
+  int comb_seed;
+  int comb_value;
+  int comb_values[CYCLES];
+  always_comb comb_value = cyc ^ $random(comb_seed) ^ $dist_uniform(comb_seed, 0, 15);
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
 
@@ -69,6 +75,12 @@ module t;
     random_values[cyc] = $random(random_seed);
     if (last) begin
       `checkd(all_different(random_values), 1'b1);
+    end
+
+    // Seeds written by combinational logic
+    comb_values[cyc] = comb_value ^ cyc;
+    if (last) begin
+      `checkd(all_different(comb_values), 1'b1);
     end
 
     // $urandom - seed must not change

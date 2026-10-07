@@ -34,12 +34,4 @@
                           t/t_lint_multidriven_clocking_bad.v:32:25: ... Location of other write
    32 |   always @(posedge clk) late_always <= 1'b1;
       |                         ^~~~~~~~~~~
-%Warning-MULTIDRIVEN: t/t_lint_multidriven_clocking_bad.v:53:12: Variable written to in clocking block also written by another clocking block (IEEE 1800-2023 14.3): 'dual_clocking'
-                                                               : ... note: In instance 't'
-                      t/t_lint_multidriven_clocking_bad.v:53:12: 
-   53 |     output dual_clocking;
-      |            ^~~~~~~~~~~~~
-                      t/t_lint_multidriven_clocking_bad.v:47:12: ... Location of other clocking block output
-   47 |     output dual_clocking;
-      |            ^~~~~~~~~~~~~
 %Error: Exiting due to

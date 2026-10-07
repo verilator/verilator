@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off UNOPTPUBLIC
+
 module t (
     input clk
 );

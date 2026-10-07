@@ -24,6 +24,12 @@ module t (
   wire foo, bar;
   assign {foo, bar} = 2'b1_0;
 
+  int logeqCnt = 0;
+  function automatic bit logeqOp(bit v);
+    ++logeqCnt;
+    return v;
+  endfunction
+
   // surefire lint_off STMINI
   initial _ranit = 0;
 
@@ -173,6 +179,11 @@ module t (
       if ((0 <-> 1) != 1'b0) $stop;
       if ((1 <-> 0) != 1'b0) $stop;
       if ((1 <-> 1) != 1'b1) $stop;
+      // Each operand is evaluated exactly once (IEEE 1800-2023 11.4.7)
+      if ((logeqOp(1) <-> logeqOp(1)) != 1'b1) $stop;
+      if (logeqCnt != 2) $stop;
+      if ((logeqOp(0) <-> logeqOp(1)) != 1'b0) $stop;
+      if (logeqCnt != 4) $stop;
 
       // bug2912
       // verilator lint_off WIDTH

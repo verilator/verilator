@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vltmt')
 
 test.compile(fails=True,
-             verilator_flags2=['t/t_hier_block_threads_bad.vlt', '-DWORKERS=8', '--hierarchical'],
+             verilator_flags2=[test.vlt_filename, '-DWORKERS=8', '--hierarchical'],
              expect_filename=test.golden_filename,
              threads=4)
 

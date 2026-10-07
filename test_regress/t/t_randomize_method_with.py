@@ -20,8 +20,8 @@ test.compile(
 
 test.execute()
 
-for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*Baz*.cpp"):
+for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*Baz*.h"):
     # Check that "Baz" has no constrained random generator
-    test.file_grep_not(filename, "this->__PVT__constraint")
+    test.file_grep_not(filename, "__PVT__constraint")
 
 test.passes()

@@ -53,6 +53,8 @@ module t (
     s="101"; `checkh(s.atooct(), 'o101);
     s="101"; `checkh(s.atobin(), 'b101);
     s="1.23"; `checkg(s.atoreal(), 1.23);
+    s="1_234.56"; `checkg(s.atoreal(), 1234.56);
+    s="1_000_000.5"; `checkg(s.atoreal(), 1000000.5);
     s.itoa(123); `checks(s, "123");
     s.hextoa(123); `checks(s, "7b");
     s.octtoa(123); `checks(s, "173");
@@ -131,6 +133,10 @@ module t (
     end
     else if (cyc == 12) begin
       `checkg(s.atoreal(), 1.23);
+      s = "1_234.56";
+      `checkg(s.atoreal(), 1234.56);
+      s = "1_000_000.5";
+      `checkg(s.atoreal(), 1000000.5);
     end
     else if (cyc == 13) begin
       s.itoa(123);

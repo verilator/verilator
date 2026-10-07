@@ -77,21 +77,22 @@ class VerilatedVarProps VL_NOT_FINAL {
     const VerilatedVarType m_vltype;  // Data type
     const VerilatedVarFlags m_vlflags;  // Direction
     const uint32_t m_entSize;  // Element size in bytes, or 0 to derive from type
+    const uint32_t m_bitOffset;  // Packed struct/union member offset within the parent storage
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     std::vector<VerilatedRange> m_packed;  // Packed array ranges
     VerilatedRange m_packedDpi;  // Flattened packed array range
-    void initUnpacked(int udims, const int* ulims) {
+    void initUnpacked(int udims, const int* ulimsp) {
         for (int i = 0; i < udims; ++i) {
-            const int uleft = ulims ? ulims[2 * i + 0] : 0;
-            const int uright = ulims ? ulims[2 * i + 1] : 0;
+            const int uleft = ulimsp ? ulimsp[2 * i + 0] : 0;
+            const int uright = ulimsp ? ulimsp[2 * i + 1] : 0;
             m_unpacked.emplace_back(uleft, uright);
         }
     }
-    void initPacked(int pdims, const int* plims) {
+    void initPacked(int pdims, const int* plimsp) {
         int packedSize = 1;
         for (int i = 0; i < pdims; ++i) {
-            const int pleft = plims ? plims[2 * i + 0] : 0;
-            const int pright = plims ? plims[2 * i + 1] : 0;
+            const int pleft = plimsp ? plimsp[2 * i + 0] : 0;
+            const int pright = plimsp ? plimsp[2 * i + 1] : 0;
             m_packed.emplace_back(pleft, pright);
             packedSize *= abs(pleft - pright) + 1;
         }
@@ -106,11 +107,12 @@ class VerilatedVarProps VL_NOT_FINAL {
 protected:
     friend class VerilatedScope;
     VerilatedVarProps(VerilatedVarType vltype, VerilatedVarFlags vlflags, int udims, int pdims,
-                      uint32_t entSize = 0)
+                      uint32_t entSize = 0, uint32_t bitOffset = 0)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags{vlflags}
-        , m_entSize{entSize} {
+        , m_entSize{entSize}
+        , m_bitOffset{bitOffset} {
         // Only preallocate the ranges
         initUnpacked(udims, nullptr);
         initPacked(pdims, nullptr);
@@ -123,32 +125,36 @@ public:
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_entSize{0} {}
+        , m_entSize{0}
+        , m_bitOffset{0} {}
 
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulimsp)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_entSize{0} {
-        initUnpacked(udims, ulims);
+        , m_entSize{0}
+        , m_bitOffset{0} {
+        initUnpacked(udims, ulimsp);
     }
     // With packed
     class Packed {};
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pdims, const int* plims)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pdims, const int* plimsp)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_entSize{0} {
-        initPacked(pdims, plims);
+        , m_entSize{0}
+        , m_bitOffset{0} {
+        initPacked(pdims, plimsp);
     }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims,
-                      Packed, int pdims, const int* plims)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulimsp,
+                      Packed, int pdims, const int* plimsp)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
-        , m_entSize{0} {
-        initUnpacked(udims, ulims);
-        initPacked(pdims, plims);
+        , m_entSize{0}
+        , m_bitOffset{0} {
+        initUnpacked(udims, ulimsp);
+        initPacked(pdims, plimsp);
     }
 
     ~VerilatedVarProps() = default;
@@ -183,6 +189,12 @@ public:
     bool isSigned() const { return ((m_vlflags & VLVF_SIGNED) != 0); }
     bool isBitVar() const { return ((m_vlflags & VLVF_BITVAR) != 0); }
     bool isNet() const { return ((m_vlflags & VLVF_NET) != 0); }
+    bool isPackedAgg() const { return ((m_vlflags & VLVF_PACKED_AGG) != 0); }
+    bool isPackedUnion() const { return ((m_vlflags & VLVF_PACKED_UNION) != 0); }
+    bool isPackedMember() const { return ((m_vlflags & VLVF_PACKED_MEMBER) != 0); }
+    bool isPackedNeedsIndex() const { return ((m_vlflags & VLVF_PACKED_NEEDS_INDEX) != 0); }
+    // Bit offset of a packed struct/union member within its (element 0) parent storage
+    uint32_t bitOffset() const VL_MT_SAFE { return m_bitOffset; }
     int udims() const VL_MT_SAFE { return m_unpacked.size(); }
     int pdims() const VL_MT_SAFE { return m_packed.size(); }
     int dims() const VL_MT_SAFE { return pdims() + udims(); }
@@ -192,6 +204,11 @@ public:
         if (dim < udims()) return &m_unpacked[dim];
         if (dim < dims()) return &m_packed[dim - udims()];
         return nullptr;
+    }
+    // Whether DPI dimension 'dim' is of a dynamic array or queue, so ranged [0:size-1] with
+    // increment -1, even if of size 0 or 1, unlike a VerilatedRange (IEEE 1800-2023 20.7)
+    bool isDynamic(int dim) const VL_MT_SAFE {
+        return dim == 1 && (m_vlflags & VLVF_DYNAMIC) != 0;
     }
     // DPI accessors (with packed dimensions flattened!)
     int left(int dim) const VL_MT_SAFE {
@@ -206,28 +223,32 @@ public:
     }
     int low(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.low()
+               : isDynamic(dim)                        ? left(dim)
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low()
                                                        : 0;
     }
     int high(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.high()
+               : isDynamic(dim)                        ? right(dim)
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high()
                                                        : 0;
     }
     int increment(int dim) const {
         return dim == 0                                ? m_packedDpi.increment()
+               : isDynamic(dim)                        ? -1
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment()
                                                        : 0;
     }
     int elements(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.elements()
+               : isDynamic(dim)                        ? right(dim) + 1
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements()
                                                        : 0;
     }
     // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const {
         size_t size = entSize();
-        for (int udim = 0; udim < udims(); ++udim) size *= m_unpacked[udim].elements();
+        for (int dim = 1; dim <= udims(); ++dim) size *= elements(dim);
         return size;
     }
     // Adjust a data pointer to access a given array element, NULL if something goes bad
@@ -289,7 +310,8 @@ protected:
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
-                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam, uint32_t entSize);
+                 VerilatedVarFlags vlflags, int udims, int pdims, bool isParam, uint32_t entSize,
+                 uint32_t bitOffset = 0);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
                  std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals);
@@ -323,8 +345,8 @@ inline VerilatedVar::VerilatedVar(const char* namep, void* datap, VerilatedVarTy
     , m_isParam{isParam} {}
 inline VerilatedVar::VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                                   VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
-                                  uint32_t entSize)
-    : VerilatedVarProps{vltype, vlflags, udims, pdims, entSize}
+                                  uint32_t entSize, uint32_t bitOffset)
+    : VerilatedVarProps{vltype, vlflags, udims, pdims, entSize, bitOffset}
     , m_datap{datap}
     , m_namep{namep}
     , m_isParam{isParam} {}

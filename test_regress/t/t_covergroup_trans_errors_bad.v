@@ -9,11 +9,18 @@
 
 module t;
   logic [3:0] cp_expr;
+  logic flag;
 
   covergroup cg;
     cp1: coverpoint cp_expr {
       bins t_single = (1);  // Error: requires at least two values
       bins t_repeat = (1 [* 2]);  // Error: unsupported repetition operator
+    }
+    cp_flag: coverpoint flag;
+    // Selecting by values reads each sequence's last value, of which t_repeat, left no items,
+    // has none
+    cx: cross cp1, cp_flag{
+      bins selected = binsof (cp1) intersect {1};
     }
   endgroup
 

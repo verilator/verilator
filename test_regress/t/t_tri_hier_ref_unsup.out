@@ -1,10 +1,18 @@
-%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:34:16: Unsupported tristate construct: hierarchical driver of non-interface tri signal: 'bus'
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:43:16: Unsupported tristate construct: hierarchical driver of non-interface tri signal: 'bus'
                                                   : ... note: In instance 't'
-   34 |   assign u_sub.bus = hier_we ? 8'hBB : 8'hzz;
+   43 |   assign u_sub.bus = hier_we ? 8'hBB : 8'hzz;
       |                ^~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:49:18: Unsupported tristate construct: hierarchical driver of non-interface tri signal: 'io'
+                                                  : ... note: In instance 't'
+   49 |   assign u_inout.io = 1'b1;
+      |                  ^~
 %Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:23:13: Unsupported tristate construct (in graph; not converted): VAR 'bus'
                                                   : ... note: In instance 't.u_sub'
    23 |   tri [7:0] bus;
       |             ^~~
+%Error-UNSUPPORTED: t/t_tri_hier_ref_unsup.v:29:16: Unsupported tristate construct (in graph; not converted): VAR 'io'
+                                                  : ... note: In instance 't.u_inout'
+   29 |     inout wire io
+      |                ^~
 %Error: Exiting due to

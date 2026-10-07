@@ -157,6 +157,14 @@ module t (
   import "DPI-C" function void i_array_2_state_65 (output bit [ 64:0] o);
   import "DPI-C" function void i_array_2_state_128(output bit [127:0] o);
 
+  // 2-state packed arrays of 1-bit typedef
+  import "DPI-C" function void i_bit_t_array_1  (output bit_t [  0:0] o);
+  import "DPI-C" function void i_bit_t_array_32 (output bit_t [ 31:0] o);
+  import "DPI-C" function void i_bit_t_array_33 (output bit_t [ 32:0] o);
+  import "DPI-C" function void i_bit_t_array_64 (output bit_t [ 63:0] o);
+  import "DPI-C" function void i_bit_t_array_65 (output bit_t [ 64:0] o);
+  import "DPI-C" function void i_bit_t_array_128(output bit_t [127:0] o);
+
   // 2-state packed structures
   import "DPI-C" function void i_struct_2_state_1   (output struct_2_state_1    o);
   import "DPI-C" function void i_struct_2_state_32  (output struct_2_state_32   o);
@@ -180,6 +188,14 @@ module t (
   import "DPI-C" function void i_array_4_state_64 (output logic [ 63:0] o);
   import "DPI-C" function void i_array_4_state_65 (output logic [ 64:0] o);
   import "DPI-C" function void i_array_4_state_128(output logic [127:0] o);
+
+  // 4-state packed arrays of 1-bit typedef
+  import "DPI-C" function void i_logic_t_array_1  (output logic_t [  0:0] o);
+  import "DPI-C" function void i_logic_t_array_32 (output logic_t [ 31:0] o);
+  import "DPI-C" function void i_logic_t_array_33 (output logic_t [ 32:0] o);
+  import "DPI-C" function void i_logic_t_array_64 (output logic_t [ 63:0] o);
+  import "DPI-C" function void i_logic_t_array_65 (output logic_t [ 64:0] o);
+  import "DPI-C" function void i_logic_t_array_128(output logic_t [127:0] o);
 
   // 4-state packed structures
   import "DPI-C" function void i_struct_4_state_1   (output struct_4_state_1    o);
@@ -257,6 +273,14 @@ module t (
   export "DPI-C" function e_array_2_state_65;
   export "DPI-C" function e_array_2_state_128;
 
+  // 2-state packed arrays of 1-bit typedef
+  export "DPI-C" function e_bit_t_array_1;
+  export "DPI-C" function e_bit_t_array_32;
+  export "DPI-C" function e_bit_t_array_33;
+  export "DPI-C" function e_bit_t_array_64;
+  export "DPI-C" function e_bit_t_array_65;
+  export "DPI-C" function e_bit_t_array_128;
+
   // 2-state packed structures
   export "DPI-C" function e_struct_2_state_1;
   export "DPI-C" function e_struct_2_state_32;
@@ -280,6 +304,14 @@ module t (
   export "DPI-C" function e_array_4_state_64;
   export "DPI-C" function e_array_4_state_65;
   export "DPI-C" function e_array_4_state_128;
+
+  // 4-state packed arrays of 1-bit typedef
+  export "DPI-C" function e_logic_t_array_1;
+  export "DPI-C" function e_logic_t_array_32;
+  export "DPI-C" function e_logic_t_array_33;
+  export "DPI-C" function e_logic_t_array_64;
+  export "DPI-C" function e_logic_t_array_65;
+  export "DPI-C" function e_logic_t_array_128;
 
   // 4-state packed structures
   export "DPI-C" function e_struct_4_state_1;
@@ -558,6 +590,49 @@ module t (
     n_array_2_state_128++;
   endfunction
 
+  // 2-state packed arrays of 1-bit typedef
+  int                       n_bit_t_array_1 = 0;
+  function void e_bit_t_array_1(output bit_t [ 0:0] o);
+    $display("e_bit_t_array_1 %1d", n_bit_t_array_1);
+    o = n_bit_t_array_1[0];
+    n_bit_t_array_1++;
+  endfunction
+
+  int                       n_bit_t_array_32 = 0;
+  function void e_bit_t_array_32(output bit_t [31:0] o);
+    $display("e_bit_t_array_32 %1d", n_bit_t_array_32);
+    o = ~32'd0 >> n_bit_t_array_32;
+    n_bit_t_array_32++;
+  endfunction
+
+  int                       n_bit_t_array_33 = 0;
+  function void e_bit_t_array_33(output bit_t [32:0] o);
+    $display("e_bit_t_array_33 %1d", n_bit_t_array_33);
+    o = ~33'd0 >> n_bit_t_array_33;
+    n_bit_t_array_33++;
+  endfunction
+
+  int                       n_bit_t_array_64 = 0;
+  function void e_bit_t_array_64(output bit_t [63:0] o);
+    $display("e_bit_t_array_64 %1d", n_bit_t_array_64);
+    o = ~64'd0 >> n_bit_t_array_64;
+    n_bit_t_array_64++;
+  endfunction
+
+  int                       n_bit_t_array_65 = 0;
+  function void e_bit_t_array_65(output bit_t [64:0] o);
+    $display("e_bit_t_array_65 %1d", n_bit_t_array_65);
+    o = ~65'd0 >> n_bit_t_array_65;
+    n_bit_t_array_65++;
+  endfunction
+
+  int                       n_bit_t_array_128 = 0;
+  function void e_bit_t_array_128(output bit_t [127:0] o);
+    $display("e_bit_t_array_128 %1d", n_bit_t_array_128);
+    o = ~128'd0 >> n_bit_t_array_128;
+    n_bit_t_array_128++;
+  endfunction
+
   // 2-state packed structures
   int                       n_struct_2_state_1 = 0;
   function void e_struct_2_state_1(output struct_2_state_1 o);
@@ -685,6 +760,49 @@ module t (
     $display("e_array_4_state_128 %1d", n_array_4_state_128);
     o = ~128'd0 >> n_array_4_state_128;
     n_array_4_state_128++;
+  endfunction
+
+  // 4-state packed arrays of 1-bit typedef
+  int                       n_logic_t_array_1 = 0;
+  function void e_logic_t_array_1(output logic_t [ 0:0] o);
+    $display("e_logic_t_array_1 %1d", n_logic_t_array_1);
+    o = n_logic_t_array_1[0];
+    n_logic_t_array_1++;
+  endfunction
+
+  int                       n_logic_t_array_32 = 0;
+  function void e_logic_t_array_32(output logic_t [31:0] o);
+    $display("e_logic_t_array_32 %1d", n_logic_t_array_32);
+    o = ~32'd0 >> n_logic_t_array_32;
+    n_logic_t_array_32++;
+  endfunction
+
+  int                       n_logic_t_array_33 = 0;
+  function void e_logic_t_array_33(output logic_t [32:0] o);
+    $display("e_logic_t_array_33 %1d", n_logic_t_array_33);
+    o = ~33'd0 >> n_logic_t_array_33;
+    n_logic_t_array_33++;
+  endfunction
+
+  int                       n_logic_t_array_64 = 0;
+  function void e_logic_t_array_64(output logic_t [63:0] o);
+    $display("e_logic_t_array_64 %1d", n_logic_t_array_64);
+    o = ~64'd0 >> n_logic_t_array_64;
+    n_logic_t_array_64++;
+  endfunction
+
+  int                       n_logic_t_array_65 = 0;
+  function void e_logic_t_array_65(output logic_t [64:0] o);
+    $display("e_logic_t_array_65 %1d", n_logic_t_array_65);
+    o = ~65'd0 >> n_logic_t_array_65;
+    n_logic_t_array_65++;
+  endfunction
+
+  int                       n_logic_t_array_128 = 0;
+  function void e_logic_t_array_128(output logic_t [127:0] o);
+    $display("e_logic_t_array_128 %1d", n_logic_t_array_128);
+    o = ~128'd0 >> n_logic_t_array_128;
+    n_logic_t_array_128++;
   endfunction
 
   // 4-state packed structures
@@ -937,6 +1055,14 @@ module t (
       i_array_2_state_65(x_bit_65);   if (x_bit_65  !== ~65'd0 << i) $stop;
       i_array_2_state_128(x_bit_128); if (x_bit_128 !== ~128'd0<< i) $stop;
 
+      // 2-state packed arrays of 1-bit typedef
+      i_bit_t_array_1(x_bit_1);     if (x_bit_1   !== ~i[0]      ) $stop;
+      i_bit_t_array_32(x_bit_32);   if (x_bit_32  !== ~32'd0 << i) $stop;
+      i_bit_t_array_33(x_bit_33);   if (x_bit_33  !== ~33'd0 << i) $stop;
+      i_bit_t_array_64(x_bit_64);   if (x_bit_64  !== ~64'd0 << i) $stop;
+      i_bit_t_array_65(x_bit_65);   if (x_bit_65  !== ~65'd0 << i) $stop;
+      i_bit_t_array_128(x_bit_128); if (x_bit_128 !== ~128'd0<< i) $stop;
+
       // 2-state packed structures
       i_struct_2_state_1(x_struct_2_state_1);     if (x_struct_2_state_1    !== ~i[0]      ) $stop;
       i_struct_2_state_32(x_struct_2_state_32);   if (x_struct_2_state_32   !== ~32'd0 << i) $stop;
@@ -960,6 +1086,14 @@ module t (
       i_array_4_state_64(x_logic_64);   if (x_logic_64  !== ~64'd0 << i) $stop;
       i_array_4_state_65(x_logic_65);   if (x_logic_65  !== ~65'd0 << i) $stop;
       i_array_4_state_128(x_logic_128); if (x_logic_128 !== ~128'd0<< i) $stop;
+
+      // 4-state packed arrays of 1-bit typedef
+      i_logic_t_array_1(x_logic_1);     if (x_logic_1   !== ~i[0]      ) $stop;
+      i_logic_t_array_32(x_logic_32);   if (x_logic_32  !== ~32'd0 << i) $stop;
+      i_logic_t_array_33(x_logic_33);   if (x_logic_33  !== ~33'd0 << i) $stop;
+      i_logic_t_array_64(x_logic_64);   if (x_logic_64  !== ~64'd0 << i) $stop;
+      i_logic_t_array_65(x_logic_65);   if (x_logic_65  !== ~65'd0 << i) $stop;
+      i_logic_t_array_128(x_logic_128); if (x_logic_128 !== ~128'd0<< i) $stop;
 
       // 4-state packed structures
       i_struct_4_state_1(x_struct_4_state_1);     if (x_struct_4_state_1    !== ~i[0]      ) $stop;

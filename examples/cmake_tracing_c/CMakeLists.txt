@@ -41,3 +41,7 @@ verilate(example COVERAGE TRACE_VCD
   VERILATOR_ARGS -f ../make_tracing_c/input.vc -x-assign fast
   SOURCES ../make_tracing_c/top.v
 )
+
+# Disable legacy vl_time_stamp. Otherwise would require weak symbols
+# that some platforms (e.g. MSVC, cygwin) do not have.
+target_compile_definitions(example PRIVATE VL_TIME_CONTEXT)

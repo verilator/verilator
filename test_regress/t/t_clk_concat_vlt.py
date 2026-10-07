@@ -11,10 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t/t_clk_concat.v"
+test.vlt_filename = "t/t_clk_concat.vlt"
 
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
-test.compile(verilator_flags2=["--no-json-edit-nums", "t/t_clk_concat.vlt"])
+test.compile(verilator_flags2=["--no-json-edit-nums", test.vlt_filename])
 
 test.execute()
 

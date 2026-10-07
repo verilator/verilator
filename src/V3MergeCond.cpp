@@ -171,7 +171,7 @@ class CodeMotionAnalysisVisitor final : public VNVisitorConst {
     //                         AstNode list
     // AstNode::user4       -> Used by V3Hasher
 
-    StmtPropertiesAllocator& m_stmtProperties;
+    StmtPropertiesAllocator& m_stmtProperties;  // Properties of each statement
 
     // MEMBERS
     V3Hasher m_hasher;  // Used by V3DupFinder
@@ -343,7 +343,7 @@ class CodeMotionOptimizeVisitor final : public VNVisitor {
 
     VNUser4InUse m_user4InUse;
 
-    const StmtPropertiesAllocator& m_stmtProperties;
+    const StmtPropertiesAllocator& m_stmtProperties;  // Properties of each statement
 
     // MEMBERS
 

@@ -20,4 +20,11 @@ test.compile()
 # constraint is applied; their warnings are not of interest here
 test.execute(all_run_flags=['+verilator+wno+unsatconstr+1'])
 
+# The solver variables each hard() call names: plain names, a member path, and the
+# array a unique under an if names in the folded constraint's text
+cpp_files = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*.cpp")
+test.file_grep_any(cpp_files, r'\{"sel", "x", "y", "z"\}')
+test.file_grep_any(cpp_files, r'\{"arr", "sel"\}')
+test.file_grep_any(cpp_files, r'\{"arr", "s\.on"\}')
+
 test.passes()

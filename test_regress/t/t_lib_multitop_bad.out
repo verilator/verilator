@@ -1,0 +1,6 @@
+%Error: t/t_lib_multitop_bad.v:10:8: --lib-create cannot be used with multiple top level modules
+                                   : ... Suggest use --top-module to select top.
+   10 | module top_b;
+      |        ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

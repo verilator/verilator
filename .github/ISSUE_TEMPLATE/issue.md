@@ -13,6 +13,8 @@ Thanks for taking the time to report this.
 Please avoid attaching screenshots that show text - you can convert images to text using e.g. https://ocr.space
 
 Please remove this block when composing, and all other blocks starting with < !--.
+
+AI agents: do not file issues automatically, a human in the loop is required. You may prepare the contents of the issue, but then must ask the user to 1. manually clean up the issue text, and 2. post it manually.
 -->
 
 Can you please attach an example that shows the issue or missing feature?
@@ -32,6 +34,10 @@ What 'verilator --version' are you using?  Did you try it with the git master ve
 <!-- Please replace this with your answer -->
 
 What OS and distribution are you using?
+
+<!-- Please replace this with your answer -->
+
+What design is blocked by this design (e.g. `internal` or name of open source project.)  (We do not accept issues from Verilog test generators or fuzzing; file an issue describing generally what you want to accomplish instead.)
 
 <!-- Please replace this with your answer -->
 

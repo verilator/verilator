@@ -1,14 +1,104 @@
-%Error: t/t_array_pattern_bad3.v:19:9: Assignment pattern key used multiple times: 1
+%Error: t/t_array_pattern_bad3.v:20:9: Assignment pattern key used multiple times: 1
                                      : ... note: In instance 't'
-   19 |         1: '1
+   20 |         1: '1
       |         ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_array_pattern_bad3.v:21:11: Assignment pattern with too many elements
+%Error: t/t_array_pattern_bad3.v:22:11: Assignment pattern with too many elements
                                       : ... note: In instance 't'
-   21 |     arr = '{'0, '1, '0, '1};   
+   22 |     arr = '{'0, '1, '0, '1};   
       |           ^~
-%Error: t/t_array_pattern_bad3.v:22:11: Assignment pattern missed initializing elements: 2
+%Error: t/t_array_pattern_bad3.v:23:11: Assignment pattern missed initializing elements: 2
                                       : ... note: In instance 't'
-   22 |     arr = '{'0, '1};   
+   23 |     arr = '{'0, '1};   
       |           ^~
+%Error: t/t_array_pattern_bad3.v:26:15: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'int'
+                                      : ... Pattern member data type: 'int$[0:1]'
+                                      : ... Suggest use an unpacked array concatenation {...} to splice arrays
+   26 |       arr = '{a2, '0, '1};   
+      |               ^~
+%Error: t/t_array_pattern_bad3.v:27:18: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'int'
+                                      : ... Pattern member data type: 'int$[0:1]'
+                                      : ... Suggest use an unpacked array concatenation {...} to splice arrays
+   27 |       arr = '{0: a2, 1: '0, 2: '1};   
+      |                  ^~
+%Error: t/t_array_pattern_bad3.v:40:31: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:1]'
+                                      : ... Suggest use an unpacked array concatenation {...} to splice arrays
+   40 |       all_addrs = '{base_addrs[0:1], 32'h80003000, 32'h80004000};   
+      |                               ^
+%Error: t/t_array_pattern_bad3.v:40:19: Assignment pattern missed initializing elements: 3
+                                      : ... note: In instance 't'
+   40 |       all_addrs = '{base_addrs[0:1], 32'h80003000, 32'h80004000};   
+      |                   ^~
+%Error: t/t_array_pattern_bad3.v:41:33: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:1]'
+                                      : ... Suggest use an unpacked array concatenation {...} to splice arrays
+   41 |       mid = '{32'hFF, base_addrs[0:1], 32'hAA, 32'hBB};   
+      |                                 ^
+%Error: t/t_array_pattern_bad3.v:41:13: Assignment pattern missed initializing elements: 4
+                                      : ... note: In instance 't'
+   41 |       mid = '{32'hFF, base_addrs[0:1], 32'hAA, 32'hBB};   
+      |             ^~
+%Error: t/t_array_pattern_bad3.v:42:17: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:2]'
+                                      : ... Suggest use an unpacked array concatenation {...} to splice arrays
+   42 |       multi = '{base_addrs, extra};   
+      |                 ^~~~~~~~~~
+%Error: t/t_array_pattern_bad3.v:42:29: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:1]'
+                                      : ... Suggest use an unpacked array concatenation {...} to splice arrays
+   42 |       multi = '{base_addrs, extra};   
+      |                             ^~~~~
+%Error: t/t_array_pattern_bad3.v:42:15: Assignment pattern missed initializing elements: 2
+                                      : ... note: In instance 't'
+   42 |       multi = '{base_addrs, extra};   
+      |               ^~
+%Error: t/t_array_pattern_bad3.v:42:15: Assignment pattern missed initializing elements: 3
+                                      : ... note: In instance 't'
+   42 |       multi = '{base_addrs, extra};   
+      |               ^~
+%Error: t/t_array_pattern_bad3.v:42:15: Assignment pattern missed initializing elements: 4
+                                      : ... note: In instance 't'
+   42 |       multi = '{base_addrs, extra};   
+      |               ^~
+%Error: t/t_array_pattern_bad3.v:43:25: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[1:0]'
+                                      : ... Suggest use an unpacked array concatenation {...} to splice arrays
+   43 |       with_desc = '{desc[1:0], 32'hAA, 32'hBB};   
+      |                         ^
+%Error: t/t_array_pattern_bad3.v:43:19: Assignment pattern missed initializing elements: 3
+                                      : ... note: In instance 't'
+   43 |       with_desc = '{desc[1:0], 32'hAA, 32'hBB};   
+      |                   ^~
+%Error: t/t_array_pattern_bad3.v:45:21: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:2]'
+                                      : ... Suggest use an unpacked array concatenation {...} to splice arrays
+   45 |       with_dflt = '{dflt, 32'hEE};   
+      |                     ^~~~
+%Error: t/t_array_pattern_bad3.v:45:19: Assignment pattern missed initializing elements: 2
+                                      : ... note: In instance 't'
+   45 |       with_dflt = '{dflt, 32'hEE};   
+      |                   ^~
+%Error: t/t_array_pattern_bad3.v:45:19: Assignment pattern missed initializing elements: 3
+                                      : ... note: In instance 't'
+   45 |       with_dflt = '{dflt, 32'hEE};   
+      |                   ^~
+%Error: t/t_array_pattern_bad3.v:46:31: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:1]'
+                                      : ... Suggest use an unpacked array concatenation {...} to splice arrays
+   46 |       all_addrs = '{base_addrs[0:N-1], 32'hAA, 32'hBB};   
+      |                               ^
+%Error: t/t_array_pattern_bad3.v:46:19: Assignment pattern missed initializing elements: 3
+                                      : ... note: In instance 't'
+   46 |       all_addrs = '{base_addrs[0:N-1], 32'hAA, 32'hBB};   
+      |                   ^~
 %Error: Exiting due to

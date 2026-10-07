@@ -40,7 +40,6 @@
 #include "V3Graph.h"
 #include "V3Sched.h"
 #include "V3SenTree.h"
-#include "V3SplitVar.h"
 #include "V3Stats.h"
 
 #include <map>
@@ -139,11 +138,11 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
         new V3GraphEdge{graphp.get(), fromp, top, weight, cuttable};
     };
 
-    for (const auto& pair : lbs) {
-        AstScope* const scopep = pair.first;
-        AstActive* const activep = pair.second;
+    for (const auto& entry : lbs) {
+        AstScope* const scopep = entry.m_scopep;
+        AstActive* const activep = entry.m_activep;
         UASSERT_OBJ(activep->hasCombo(), activep, "Not combinational logic");
-        for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : activep->stmtspList()) {
             // Can safely ignore Postponed as we generate them all
             if (VN_IS(nodep, AlwaysPostponed)) continue;
 
@@ -328,7 +327,7 @@ std::string reportLoopVars(FileLine* /*warnFl*/, Graph* graphp, SchedAcyclicVarV
             ss2 << V3Error::warnMore() << "    " << varp->fileline() << ' ' << varp->prettyName()
                 << ", width " << std::dec << varp->width() << ", circular fanout "
                 << candidate.second;
-            if (V3SplitVar::canSplitVar(varp)) {
+            if (!varp->cannotSplitKindReason()) {
                 ss2 << ", can split_var";
                 ++splittable;
             }
@@ -479,11 +478,11 @@ LogicByScope fixCuts(AstNetlist* netlistp,
             AstSenItem* const nextp = new AstSenItem{flp, VEdgeType::ET_HYBRID, refp};
             senItemsp = AstNode::addNext(senItemsp, nextp);
         }
-        AstSenTree* const senTree = new AstSenTree{flp, senItemsp};
+        AstSenTree* const senTreep = new AstSenTree{flp, senItemsp};
         // Add logic to result with new sensitivity
-        result.add(lvtxp->scopep(), finder.getSenTree(senTree), logicp);
+        result.add(lvtxp->scopep(), finder.getSenTree(senTreep), logicp);
         // SenTreeFinder::getSenTree clones, so clean up
-        VL_DO_DANGLING(senTree->deleteTree(), senTree);
+        VL_DO_DANGLING(senTreep->deleteTree(), senTreep);
     }
     return result;
 }

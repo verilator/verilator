@@ -131,6 +131,11 @@ For constraints:
 
    sudo apt-get install z3  # Optional solver
 
+On Windows, constrained randomization is supported by native builds: put a
+Windows ``z3.exe`` (or another SMT solver) on your ``PATH``, or point the
+:option:`VERILATOR_SOLVER` environment variable at it, see `Install Z3`_
+below.
+
 The following is optional but is recommended for nicely rendered command
 line help when running Verilator:
 
@@ -159,7 +164,7 @@ packages (see internals.rst), and a Python virtual environment:
 
 .. code-block:: bash
 
-   sudo apt-get install clang clang-format-18 cmake gdb gprof graphviz lcov
+   sudo apt-get install clang clang-format-21 cmake gdb gprof graphviz lcov
    sudo apt-get install python3-clang bear jq
    cpan install Pod::Perldoc
 
@@ -224,6 +229,14 @@ required at Verilator build time. There are other compatible SMT solvers,
 like CVC5/CVC4, but they are not guaranteed to work. Since different
 solvers are faster for different scenarios, the solver to use at run-time
 can be specified by the environment variable :option:`VERILATOR_SOLVER`.
+
+On Windows, download a `Z3 release
+<https://github.com/Z3Prover/z3/releases>`__ and put ``z3.exe`` on your
+``PATH``. Constrained randomization is supported on native Windows builds
+(MinGW and MSVC); as on Linux, the solver is looked up on the ``PATH``, and
+can be overridden at run time with the environment variable
+:option:`VERILATOR_SOLVER`, e.g. ``set
+VERILATOR_SOLVER=C:\path\to\z3.exe``.
 
 
 .. _obtain sources:

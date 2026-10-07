@@ -1,38 +1,62 @@
-%Error: t/t_queue_method_bad.v:15:7: The 1 arguments passed to .reverse method does not match its requiring 0 arguments
+%Error: t/t_queue_method_bad.v:20:7: The 1 arguments passed to .reverse method does not match its requiring 0 arguments
                                    : ... note: In instance 't'
-   15 |     q.reverse(1);   
+   20 |     q.reverse(1);   
       |       ^~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_queue_method_bad.v:16:7: The 1 arguments passed to .shuffle method does not match its requiring 0 arguments
+%Error: t/t_queue_method_bad.v:21:7: The 1 arguments passed to .shuffle method does not match its requiring 0 arguments
                                    : ... note: In instance 't'
-   16 |     q.shuffle(1);   
+   21 |     q.shuffle(1);   
       |       ^~~~~~~
-%Error: t/t_queue_method_bad.v:17:12: 'with' statement is required for .find method
+%Error: t/t_queue_method_bad.v:22:12: 'with' statement is required for .find method
                                     : ... note: In instance 't'
-   17 |     qv = q.find;   
+   22 |     qv = q.find;   
       |            ^~~~
-%Error: t/t_queue_method_bad.v:18:12: 'with' statement is required for .find_first method
+%Error: t/t_queue_method_bad.v:23:12: 'with' statement is required for .find_first method
                                     : ... note: In instance 't'
-   18 |     qv = q.find_first;   
+   23 |     qv = q.find_first;   
       |            ^~~~~~~~~~
-%Error: t/t_queue_method_bad.v:19:12: 'with' statement is required for .find_last method
+%Error: t/t_queue_method_bad.v:24:12: 'with' statement is required for .find_last method
                                     : ... note: In instance 't'
-   19 |     qv = q.find_last;   
+   24 |     qv = q.find_last;   
       |            ^~~~~~~~~
-%Error: t/t_queue_method_bad.v:20:12: 'with' statement is required for .find_index method
+%Error: t/t_queue_method_bad.v:25:12: 'with' statement is required for .find_index method
                                     : ... note: In instance 't'
-   20 |     qi = q.find_index;   
+   25 |     qi = q.find_index;   
       |            ^~~~~~~~~~
-%Error: t/t_queue_method_bad.v:21:12: 'with' statement is required for .find_first_index method
+%Error: t/t_queue_method_bad.v:26:12: 'with' statement is required for .find_first_index method
                                     : ... note: In instance 't'
-   21 |     qi = q.find_first_index;   
+   26 |     qi = q.find_first_index;   
       |            ^~~~~~~~~~~~~~~~
-%Error: t/t_queue_method_bad.v:22:12: 'with' statement is required for .find_last_index method
+%Error: t/t_queue_method_bad.v:27:12: 'with' statement is required for .find_last_index method
                                     : ... note: In instance 't'
-   22 |     qi = q.find_last_index;   
+   27 |     qi = q.find_last_index;   
       |            ^~~~~~~~~~~~~~~
-%Error: t/t_queue_method_bad.v:24:17: 'with' not legal on this method
+%Error: t/t_queue_method_bad.v:29:17: 'with' not legal on this method
                                     : ... note: In instance 't'
-   24 |     qi = q.size with (1);   
+   29 |     qi = q.size with (1);   
       |                 ^~~~
+%Error: t/t_queue_method_bad.v:31:7: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                   : ... note: In instance 't'
+                                   : ... Left-hand data type: 'int'
+                                   : ... Right-hand data type: 'int$[$]'
+   31 |     i = q.find_index(x) with (x == 2);   
+      |       ^
+%Error: t/t_queue_method_bad.v:32:7: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                   : ... note: In instance 't'
+                                   : ... Left-hand data type: 'int'
+                                   : ... Right-hand data type: 'int$[$]'
+   32 |     i = q.find(x) with (x == 2);   
+      |       ^
+%Error: t/t_queue_method_bad.v:33:8: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                   : ... note: In instance 't'
+                                   : ... Left-hand data type: 'int'
+                                   : ... Right-hand data type: 'IData$[$]'
+   33 |     it = q.find_first_index(x) with (x == 2);   
+      |        ^
+%Error: t/t_queue_method_bad.v:34:7: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                   : ... note: In instance 't'
+                                   : ... Left-hand data type: 'int'
+                                   : ... Right-hand data type: 'string$[$]'
+   34 |     i = aa.find_index(x) with (x == 2);   
+      |       ^
 %Error: Exiting due to

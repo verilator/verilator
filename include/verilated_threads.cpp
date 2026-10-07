@@ -40,16 +40,7 @@
 
 // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-std::atomic<uint64_t> VlMTaskVertex::s_yields;
-
-//=============================================================================
-// VlMTaskVertex
-
-VlMTaskVertex::VlMTaskVertex(uint32_t upstreamDepCount)
-    : m_upstreamDepsDone{0}
-    , m_upstreamDepCount{upstreamDepCount} {
-    assert(atomic_is_lock_free(&m_upstreamDepsDone));
-}
+std::atomic<uint64_t> VlThreadProgress::s_yields;
 
 //=============================================================================
 // VlWorkerThread
@@ -90,7 +81,7 @@ VlWorkerThread::~VlWorkerThread() {
 #endif
 }
 
-static void shutdownTask(void*, bool) {  // LCOV_EXCL_LINE
+static void shutdownTask(void*) {  // LCOV_EXCL_LINE
     // Deliberately empty, we use the address of this function as a magic number
 }
 
@@ -99,7 +90,7 @@ void VlWorkerThread::shutdown() { addTask(shutdownTask, nullptr); }
 void VlWorkerThread::wait() {
     // Enqueue a task that sets this flag. Execution is in-order so this ensures completion.
     std::atomic<bool> flag{false};
-    addTask([](void* flagp, bool) { static_cast<std::atomic<bool>*>(flagp)->store(true); }, &flag);
+    addTask([](void* flagp) { static_cast<std::atomic<bool>*>(flagp)->store(true); }, &flag);
     // Spin wait
     for (unsigned i = 0; i < VL_LOCK_SPINS; ++i) {
         if (flag.load()) return;
@@ -110,15 +101,17 @@ void VlWorkerThread::wait() {
 }
 
 void VlWorkerThread::main() {
-    // Initialize thread_locals
-    Verilated::threadContextp(m_contextp);
     // One work item
     ExecRec work;
     // Wait for the first task without spinning, in case the thread is never actually used.
     dequeWork</* SpinWait: */ false>(&work);
+    // Initialize thread_locals once the thread is used. Receiving the task synchronizes with
+    // the thread that added it, and a thread that is never used must not touch the context,
+    // which may already be destructing when the shutdown task arrives.
+    if (work.m_fnp != shutdownTask) Verilated::threadContextp(m_contextp);
     // Loop until shutdown task is received
     while (VL_UNLIKELY(work.m_fnp != shutdownTask)) {
-        work.m_fnp(work.m_selfp, work.m_evenCycle);
+        work.m_fnp(work.m_selfp);
         // Wait for next task with spinning.
         dequeWork</* SpinWait: */ true>(&work);
     }
@@ -292,4 +285,41 @@ std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
 #else
     return "non-supported host OS";
 #endif
+}
+
+//=============================================================================
+// VlExecGraph
+
+void vl_invokeExecGraph(VlExecGraph& graph, VlSelfP selfp, const QData* triggersp) VL_MT_UNSAFE {
+    // Sum the cost of the logic the set triggers guard, noting the trigger words with any trigger
+    // set. Run in parallel as soon as the pass is costly, or sets too many words to note.
+    constexpr size_t MAX_SET_WORDS = 16;
+    size_t setWords[MAX_SET_WORDS];
+    size_t nSetWords = 0;
+    uint64_t cost = 0;
+    for (size_t word = 0; word < graph.nTriggerWords(); ++word) {
+        if (!triggersp[word]) continue;
+        for (QData bits = triggersp[word]; bits;) {
+            const IData bit = VL_MOSTSETBITP1_Q(bits) - 1;
+            cost += graph.triggerCostsp()[word * VL_QUADSIZE + bit];
+            bits ^= VL_BIT_Q(bit);
+        }
+        if (cost > graph.serialCost() || nSetWords == MAX_SET_WORDS) {
+            graph.dispatchp()(selfp);
+            return;
+        }
+        setWords[nSetWords++] = word;
+    }
+    // Otherwise run on this thread the MTasks testing a set trigger, in their topological order.
+    // The others would do nothing.
+    const VlExecGraph::Vertex* const endp = graph.verticesp() + graph.nVertices();
+    for (const VlExecGraph::Vertex* vertexp = graph.verticesp(); vertexp != endp; ++vertexp) {
+        for (size_t i = 0; i < nSetWords; ++i) {
+            if (vertexp->m_maskp[setWords[i]] & triggersp[setWords[i]]) {
+                vertexp->m_fnp(selfp);
+                break;
+            }
+        }
+    }
+    Verilated::mtaskId(0);
 }

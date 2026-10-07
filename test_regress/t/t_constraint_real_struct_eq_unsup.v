@@ -10,14 +10,12 @@
 // and silently returns 0 for the real field instead of the constrained
 // value, since the real-value check only looked at the struct variable's
 // own dtype, never at whether a member nested inside it was real.
-typedef struct {
-  real r;
-} coord_t;
+typedef struct {real r;} coord_t;
 
 class C;
   rand coord_t s;
   coord_t target;
-  constraint c { s == target; }
+  constraint c {s == target;}
   function new();
     target.r = 1.5;
   endfunction

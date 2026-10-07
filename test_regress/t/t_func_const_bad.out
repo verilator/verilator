@@ -45,4 +45,11 @@
            a = ?32?h3
    51 |   localparam BFATAL = f_bad_fatal(3);
       |                       ^~~~~~~~~~~
+%Error: t/t_func_const_bad.v:61:21: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_bad_out_of_bounds'
+                                  : ... note: In instance 't'
+        t/t_func_const_bad.v:64:13: ... Location of non-constant ARRAYSEL: Array select out of range: 3
+        t/t_func_const_bad.v:61:21: ... Called from 'f_bad_out_of_bounds()' with parameters:
+           i = ?32?h3
+   61 |   localparam BOOB = f_bad_out_of_bounds(3);
+      |                     ^~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to

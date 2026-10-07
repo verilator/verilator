@@ -11,5 +11,6 @@
 %Warning-DEPRECATED: Option '-fno-dfg-break-cycles' is deprecated and has no effect
 %Warning-DEPRECATED: Option '-fno-lift-expr' is deprecated and has no effect
 %Warning-DEPRECATED: Option '-fno-merge-const-pool' is deprecated and has no effect
+%Warning-DEPRECATED: Option '-fno-var-split' is deprecated and has no effect
 %Warning-DEPRECATED: Option '--assert-unroll-limit' is deprecated and has no effect.
 %Error: Exiting due to

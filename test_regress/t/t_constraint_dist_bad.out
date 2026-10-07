@@ -1,0 +1,10 @@
+%Error: t/t_constraint_dist_bad.v:13:7: Operator DIST expects a numeric Dist Item operand, but it has data type 'int$[$]' (IEEE 1800-2023 11.3)
+                                      : ... note: In instance 't'
+   13 |     z dist {que};
+      |       ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_constraint_dist_bad.v:14:7: Operator DIST expects a numeric Dist Item operand, but it has data type 'int$[0:2]' (IEEE 1800-2023 11.3)
+                                      : ... note: In instance 't'
+   14 |     w dist {arr};
+      |       ^~~~
+%Error: Exiting due to

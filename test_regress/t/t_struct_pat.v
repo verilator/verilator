@@ -40,6 +40,18 @@ module t;
   sab4p_t ab4p[2][3];
   sir_t sir;
 
+  // A union member is not a structure, so a default applies to it as a whole, not to its
+  // members (IEEE 1800-2023 10.9.2)
+  typedef struct packed {
+    union packed {
+      logic [7:0] a;
+      logic [7:0] b;
+    } u;
+    logic [7:0] c;
+  } suc_t;
+
+  suc_t suc;
+
   initial begin
     abcp = '{1, 2, 3};
     abcu = '{1, 2, 3};
@@ -105,6 +117,11 @@ module t;
     sir = '{1, 2.2};
     if (sir.i !== 1) $stop;
     if (sir.r !== 2.2) $stop;
+
+    suc = '{default: 8'h5a};
+    if (suc !== 16'h5a5a) $stop;
+    suc = '{c: 8'h33, default: 8'h44};
+    if (suc !== 16'h4433) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

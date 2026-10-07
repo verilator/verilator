@@ -29,9 +29,8 @@
 %000009     case (state)
         // [FSM coverage]
 %000001        // [fsm_arc t.two_proc_u.state::IDLE->BUSY]
-%000006        // [fsm_arc t.two_proc_u.state::IDLE->IDLE]
 %000001        // [fsm_state t.two_proc_u.state::BUSY]
-%000001        // [fsm_state t.two_proc_u.state::IDLE]
+%000002        // [fsm_state t.two_proc_u.state::IDLE]
 %000008       IDLE: state_next = go ? BUSY : IDLE;
 %000001       default: state_next = IDLE;
             endcase
@@ -63,7 +62,7 @@
 %000002        // [fsm_arc t.oneblock_u.state::WAITING->SENDING]
 %000001        // [fsm_state t.oneblock_u.state::COLLECTING]
 %000003        // [fsm_state t.oneblock_u.state::SENDING]
-%000002        // [fsm_state t.oneblock_u.state::WAITING]
+%000003        // [fsm_state t.oneblock_u.state::WAITING]
 %000003         WAITING: state <= take_alt ? SENDING : COLLECTING;
 %000001         COLLECTING: state <= SENDING;
 %000002         SENDING: state <= WAITING;

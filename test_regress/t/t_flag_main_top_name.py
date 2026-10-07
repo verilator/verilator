@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_flag_main_top_name.v"
 
 test.compile(verilator_flags=["-Mdir " + test.obj_dir, "--exe", "--build", "--main"],
              verilator_flags2=["--top-module top", "--main-top-name ALTOP"],

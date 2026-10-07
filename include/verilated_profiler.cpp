@@ -91,7 +91,7 @@ VerilatedVirtualBase* VlExecutionProfiler::construct(VerilatedContext& context) 
 
             // Initialize worker thread
             threadPoolp->workerp(i)->addTask(
-                [](void* userp, bool) {
+                [](void* userp) {
                     Data* const datap = static_cast<Data*>(userp);
                     datap->selfp->setupThread(datap->threadId);
                 },
@@ -158,7 +158,7 @@ void VlExecutionProfiler::dump(const char* filenamep, uint64_t tickEnd)
         if (!pair.second->empty()) ++threads;
     }
     fprintf(fp, "VLPROF stat threads %u\n", threads);
-    fprintf(fp, "VLPROF stat yields %" PRIu64 "\n", VlMTaskVertex::yields());
+    fprintf(fp, "VLPROF stat yields %" PRIu64 "\n", VlThreadProgress::yields());
 
     // Copy /proc/cpuinfo into this output so verilator_gantt can be run on
     // a different machine

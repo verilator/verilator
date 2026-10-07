@@ -101,7 +101,6 @@ class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
 class VerilatedIfaceRef;
-class VerilatedIfaceRefMap;
 struct VlIfaceRefTableEntry;
 template <typename, typename>
 class VerilatedTrace;
@@ -161,22 +160,32 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
     VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
-    VLVF_NET = (1 << 15)  // Net object
+    VLVF_NET = (1 << 15),  // Net object
+    VLVF_PACKED_AGG = (1 << 16),  // Element type is a packed struct or union
+    VLVF_PACKED_UNION = (1 << 17),  // With VLVF_PACKED_AGG, element type is a packed union
+    VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see VlVarTableEntry
+    VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_PACKED_MEMBER, an ancestor is an array of
+                                          // packed structs/unions, so needs an element index
+    VLVF_DYNAMIC = (1 << 20)  // Unpacked dimension 1 is of a dynamic array or queue
 };
 
-// One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
-// replaces per-variable varInsert() calls, which compiles faster at scale.
+// One VPI-visible variable, a row for VerilatedScope::varsInsertFromTable() or
+// paramsInsertFromTable(); replaces per-variable varInsert() calls, which compiles faster.
 struct VlVarTableEntry final {
-    static constexpr int kMaxDims = 3;  // Max packed+unpacked dims a table row holds
     const char* namep;  // VPI-facing (protected) variable name, string literal
-    size_t byteOffset;  // offsetof of storage member from module instance base
-    VerilatedVarType vltype;
+    // offsetof from the instance base, 0 for a packed member; for a parameter, being static,
+    // an index into paramPtrsp
+    size_t byteOffset;
+    // (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
+    // nullptr if none. int32_t since large unpacked memories exceed int16 range.
+    const int32_t* dimsp;
     uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
-    uint8_t udims;  // udims + pdims <= kMaxDims
+    VerilatedVarType vltype;
+    uint8_t udims;
     uint8_t pdims;
-    // (left,right) pairs: unpacked dims first, then packed; int32_t since large
-    // unpacked memories exceed int16 range
-    int32_t dims[kMaxDims * 2];
+    // Only packed member rows set these
+    uint32_t bitOffset = 0;  // VLVF_PACKED_MEMBER: bit offset within the parent's element 0
+    uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
 };
 
 // IEEE 1800-2023 Table 20-6
@@ -206,6 +215,13 @@ enum class VerilatedAssertCtlQuery : uint8_t {
     ASSERT_CTL_PASS_ON_NONVACUOUS,
     ASSERT_CTL_FAIL_ON,
 };
+
+/// Which component samples randomize() results (+verilator+rand+sampler+<name>)
+enum class VerilatedRandSampler : uint8_t {
+    SAMPLER_DEFAULT = 0,  // Verilator samples over the solver: UniGen2 cells, diversity queries
+    SAMPLER_SOLVER = 1,  // The solver's seeded model is the result
+};
+
 using VerilatedAssertType_t = std::underlying_type<VerilatedAssertType>::type;
 using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirectiveType>::type;
 
@@ -586,6 +602,8 @@ protected:
         std::string m_profVltFilename;  // +prof+vlt filename
         std::string m_solverLogFilename;  // SMT solver log filename
         std::string m_solverProgram;  // SMT solver program
+        VerilatedRandSampler m_randSampler
+            = VerilatedRandSampler::SAMPLER_DEFAULT;  // Who samples randomize() results
         bool m_warnUnsatConstr = true;  // Warn on unsatisfied constraints
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
@@ -719,6 +737,11 @@ public:
     /// 1 = Set all bits to one
     /// 2 = Randomize all bits
     void randReset(int val) VL_MT_SAFE;
+    /// Return which component samples randomize() results
+    VerilatedRandSampler randSampler() const VL_MT_SAFE { return m_ns.m_randSampler; }
+    /// Select which component samples randomize() results; default from
+    /// $VERILATOR_RAND_SAMPLER, else as configured at build time, else `default`
+    void randSampler(VerilatedRandSampler sampler) VL_MT_SAFE { m_ns.m_randSampler = sampler; }
     /// Return default random seed
     int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
     /// Set default random seed, 0 = seed it automatically
@@ -845,6 +868,7 @@ public:
     // being constructed, so that the context can grow to the number of threads it requires.
     VerilatedVirtualBase* threadPoolp(unsigned modelThreads = 1);
     void prepareClone();
+    void threadPoolShutdown();
     VerilatedVirtualBase* threadPoolpOnClone();
     VerilatedVirtualBase*
     enableExecutionProfiler(VerilatedVirtualBase* (*construct)(VerilatedContext&));
@@ -968,18 +992,22 @@ private:
     int m_funcnumMax = 0;  // Maximum function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
     VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
+    // Non-owning pointers into the context map, for VPI iteration (Slowpath)
+    std::vector<const VerilatedIfaceRef*>* m_ifaceRefsp = nullptr;
     const char* const m_namep;  // Scope name (Slowpath)
     const char* const m_identifierp;  // Identifier of scope (with escapes removed)
     const char* const m_defnamep;  // Definition name (SCOPE_MODULE only)
     const int8_t m_timeunit;  // Timeunit in negative power-of-10
     const Type m_type;  // Type of the scope
 
+    void varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam) VL_MT_UNSAFE;
+
 public:  // But internals only - called from verilated modules, VerilatedSyms
-    VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
-                   const char* defnamep, int8_t timeunit, Type type);
+    VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
+                   const char* identifier, const char* defnamep, int8_t timeunit, Type type);
     ~VerilatedScope();
 
-    void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
+    void exportInsert(int finalize, const char* namep, void* cbp) VL_MT_UNSAFE;
     VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
                             int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
     VerilatedVar* varInsertSized(const char* namep, void* datap, bool isParam,
@@ -987,16 +1015,22 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                  ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
-                                     void* forceReadSignalData, const char* forceReadSignalName,
+                                     void* forceReadSignalDatap, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    void paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
+                               const void* const* paramPtrsp) VL_MT_UNSAFE;
+    void ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
-                                         VerilatedSyms* symsp) VL_MT_UNSAFE;
+                                         VerilatedSyms* symsp,
+                                         const std::string* topNamesp) VL_MT_UNSAFE;
     static void ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                         VerilatedSyms* symsp) VL_MT_UNSAFE;
+                                         VerilatedSyms* symsp,
+                                         const std::string* topNamesp) VL_MT_UNSAFE;
     static void ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                        const VerilatedSyms* symsp) VL_MT_UNSAFE;
+                                        const VerilatedSyms* symsp,
+                                        const std::string* topNamesp) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -1005,6 +1039,10 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedSyms* symsp() const VL_MT_SAFE_POSTINIT { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
+    // Interface references declared in this scope, in table order; nullptr if none
+    const std::vector<const VerilatedIfaceRef*>* ifaceRefsp() const VL_MT_SAFE_POSTINIT {
+        return m_ifaceRefsp;
+    }
     void scopeDump() const;
     void* exportFindError(int funcnum) const VL_MT_SAFE;
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
@@ -1013,13 +1051,20 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedContext* contextp() const { return m_symsp->_vm_contextp__; }
 };
 
+/// Sentinel parent offset for an interface reference whose declaring scope is not in the scope
+/// table
+constexpr uint32_t VL_IFACEREF_NO_PARENT = ~0U;
+
 // One interface reference, consumed by VerilatedScope::ifaceRefsInsertFromTable()
 struct VlIfaceRefTableEntry final {
     uint32_t ptrOffset;  // offsetof of the referred-to __Vscopep_* member within the Syms object
+    // offsetof of the enclosing scope's __Vscopep_* member, or VL_IFACEREF_NO_PARENT
+    uint32_t parentPtrOffset;
     const char* namep;  // Name of the reference port
-    // Path within the model; as VlScopeTableEntry::namep, instance name prepended at construction
+    // Path below the name selected by topIndex, which is prepended at construction
     const char* suffixp;
     const char* modportp;  // Modport name, or "" if none
+    uint32_t topIndex;  // As VlScopeTableEntry::topIndex
 };
 
 // One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces
@@ -1029,14 +1074,24 @@ struct VlScopeTableEntry final {
     const char* namep;  // Scope suffix name (protected), string literal
     const char* identp;  // Identifier with escapes removed (protected)
     const char* defnamep;  // Definition name (SCOPE_MODULE only), else "<null>"
+    // Run-time name namep is below: 0 for the model, else 1 + index of a top module instance
+    uint32_t topIndex;
     int8_t timeunit;  // Timeunit in negative power-of-10
     VerilatedScope::Type type;
 };
 
+// One VPI scope hierarchy edge, consumed by VerilatedHierarchy::addFromTable()
+struct VlHierTableEntry final {
+    // offsetof of the parent's __Vscopep_* member within the Syms object, or 0 for top level
+    uint32_t fromOffset;
+    uint32_t toOffset;  // Likewise, of the child's
+};
+
 class VerilatedHierarchy final {
 public:
-    static void add(const VerilatedScope* fromp, const VerilatedScope* top);
-    static void remove(const VerilatedScope* fromp, const VerilatedScope* top);
+    static void addFromTable(const VlHierTableEntry* entp, size_t n, const VerilatedSyms* symsp);
+    static void removeFromTable(const VlHierTableEntry* entp, size_t n,
+                                const VerilatedSyms* symsp);
     static void clear();
 };
 
@@ -1095,26 +1150,18 @@ public:
     /// Enable debug of internal verilated code
     static void debug(int level) VL_MT_SAFE;
 
-    /// Set the last VerilatedContext accessed
-    /// Generally threadContextp(value) should be called instead
-    static void lastContextp(VerilatedContext* contextp) VL_MT_SAFE { s_lastContextp = contextp; }
-    /// Return the last VerilatedContext accessed
-    /// Generally threadContextp() should be called instead
-    static VerilatedContext* lastContextp() VL_MT_SAFE {
-        if (!s_lastContextp) lastContextp(defaultContextp());
-        return s_lastContextp;
-    }
     /// Set the VerilatedContext used by the current thread
-
     /// If using multiple contexts, and threads are created by the user's
     /// wrapper (not Verilator itself) then this must be called to set the
     /// context that applies to each thread
     static void threadContextp(VerilatedContext* contextp) VL_MT_SAFE {
         t_s.t_contextp = contextp;
-        lastContextp(contextp);
+        lastContextp(contextp);  // Safe as only read by DPI's single thread
     }
     /// Return the VerilatedContext for the current thread
-    static VerilatedContext* threadContextp() VL_MT_SAFE {
+    static VerilatedContext* threadContextp() VL_MT_SAFE_PRETEND {
+        // Generally VL_MT_SAFE if called after a threadContextp(setter).
+        // If called from DPI may be unsafe, as uses lastContextp()
         if (VL_UNLIKELY(!t_s.t_contextp)) t_s.t_contextp = lastContextp();
         return t_s.t_contextp;
     }
@@ -1250,7 +1297,8 @@ public:
 #endif
 
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
-    // Internal: Create a new module name by concatenating two strings
+    // Internal: Create a new module name by concatenating two strings, with the delimiter
+    // between them if neither is empty
     // Returns pointer to thread-local static data (overwritten on next call)
     static const char* catName(const char* n1, const char* n2,
                                const char* delimiter = ".") VL_MT_SAFE;
@@ -1258,8 +1306,10 @@ public:
     // Internal: Throw signal assertion
     static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
     static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
+    static void queueBoundError(size_t maxSize, size_t attemptedSize) VL_MT_SAFE;
     static void scTimePrecisionError(int sc_prec, int vl_prec) VL_ATTR_NORETURN VL_MT_SAFE;
     static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
+    static void sizeMismatchError() VL_ATTR_NORETURN VL_MT_SAFE;
     static void stackCheck(QData needSize) VL_MT_UNSAFE;
 
     // Internal: Load a VPI shared library (+verilator+vpi+<lib>[:<bootstrap>])
@@ -1296,7 +1346,25 @@ public:
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 
 private:
+    friend class VerilatedContext;
+
     static void endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
+
+    // Set the last VerilatedContext accessed
+    VL_ATTR_NO_SANITIZE_THREAD static void
+    lastContextp(VerilatedContext* contextp) VL_MT_SAFE_PRETEND {
+        // Record last access, only for DPI and initial non-threaded contexts
+        // Marked VL_MT_SAFE_PRETEND due to writes always being safe, reading is the problem
+        s_lastContextp = contextp;
+    }
+    // Return the last VerilatedContext accessed
+    // Only for when no threaded context due to DPI and initial non-threaded contexts
+    // Generally threadContextp() should be called instead
+    static VerilatedContext* lastContextp() VL_MT_SAFE_PRETEND {
+        // Marked VL_MT_SAFE_PRETEND due to call tree, and use only when non-threaded
+        if (VL_UNLIKELY(!s_lastContextp)) lastContextp(defaultContextp());
+        return s_lastContextp;
+    }
 };
 
 void VerilatedContext::debug(int val) VL_MT_SAFE { Verilated::debug(val); }

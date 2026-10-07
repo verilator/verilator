@@ -28,7 +28,7 @@ endmodule
 
 module bot (
     input logic clkb,
-    output logic clk
+    output logic clk = 1'b1
 );
   timeunit 1s; timeprecision 1fs;
   integer count;

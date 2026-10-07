@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off UNOPTPUBLIC
+
 module t;
 
   sub sub ();
@@ -12,7 +14,7 @@ endmodule
 
 module sub;
 
-  wire pub /*verilator public*/;   // Ignore publics
+  wire pub  /*verilator public*/;  // Ignore publics
 
   wire [5:0] assunu1 = 0;  // Assigned but unused
 
@@ -23,7 +25,7 @@ module sub;
   assign udrb2[12] = 0;
   assign udrb2[10] = 0;
 
-  wire       unu3;  // Totally unused
+  wire unu3;  // Totally unused
 
   wire [3:0] mixed;  // [3] unused & undr, [2] unused, [1] undr, [0] ok
   assign mixed[2] = 0;
@@ -37,8 +39,8 @@ module sub;
   parameter UNUSED_P = 1;
   localparam UNUSED_LP = 2;
 
-  genvar     unused_gv;
-  genvar     ok_gv;
+  genvar unused_gv;
+  genvar ok_gv;
 
   // verilator lint_off UNUSEDSIGNAL
   wire linter_sig1;
@@ -77,17 +79,19 @@ module sub;
   endcase
 
   initial begin
-    if (0 && assunu1[0] != 0 && udrb2 != 0) begin end
-    if (0 && assunub2[THREE] && assunub2[1:0]!=0) begin end
-    if (0 && mixed[1:0] != 0) begin end
+    if (0 && assunu1[0] != 0 && udrb2 != 0) begin
+    end
+    if (0 && assunub2[THREE] && assunub2[1:0] != 0) begin
+    end
+    if (0 && mixed[1:0] != 0) begin
+    end
     if (named.BLOCK_PARAM != 20) $stop;
   end
 
   generate
     if (0) begin : gen_gv_if0
-      for (ok_gv = 0; ok_gv < 1; ++ok_gv)
-        begin : gen_gv_if0_for
-        end
+      for (ok_gv = 0; ok_gv < 1; ++ok_gv) begin : gen_gv_if0_for
+      end
     end
   endgenerate
 

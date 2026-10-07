@@ -1,4 +1,4 @@
-module Vt_debug_emitv_t;
+module t;
     input logic clk;
     input logic in;
     typedef enum logic [2:0] {
@@ -18,6 +18,8 @@ module Vt_debug_emitv_t;
     const struct packed {
         logic [2:0]  a;
     } ps[0:2];
+    const int c_scalar;
+    c_scalar = 32'sh5;
     struct {
         logic signed [2:0]  a;
         logic [1:0]  b;
@@ -25,15 +27,36 @@ module Vt_debug_emitv_t;
     union {
         logic a;
     } unu;
-    integer signed i1;
-    int signed array[0:2];
+    int unsigned uns_int;
+    logic [2:3]  ascending_packed;
+    typedef int queue_t[$];
+    int queue_of_t[$];
+    typedef struct {
+        logic [3:0]  marr[0:1];
+    } usarr_t;
+    struct {
+        logic [3:0]  marr[0:1];
+    } usarr;
+    logic [2:0]  plain_enum;
+    localparam logic [2:0]  LP_ENUM_ODD = 3'h7;
+    localparam logic [2:0]  LP_ENUM_ONE = ONE;
+    int r2i;
+    wire logic signed [3:0]  implicit_signed;
+    assign implicit_signed = 4'sh1;
+    Cls cls_arr[0:2];
+    ClsExt cls_ext;
+    ClsParam__Tz7d09f080_P2 cls_param;
+    ClsParam2__Tzc7cce3e0_P1_PB2 cls_param2;
+    VDer vder;
+    integer i1;
+    int array[0:2];
     initial begin
         array = '{0:32'sh1, 1:32'sh2, 2:32'sh3};
     end
     logic [63:32]  downto_32;
     downto_32 = 32'h0;
     function ident;
-        input int signed value;
+        input int value;
         begin : label0
             ident = /*CRESET*/;
             ident = value;
@@ -44,20 +67,21 @@ module Vt_debug_emitv_t;
     Iface the_ifaces[2] ();
     Iface the_ifaces[1] ();
     Iface the_ifaces[0] ();
+    localparam int CP_SCOPE_PARAM = 32'sh2;
     initial begin
         begin
             if ((| $test$plusargs("HELLO"))) begin
                 $display("Hello argument found.");
             end
-            if ((Pkg::FOO == 'sh0)) begin
+            if ((Pkg::FOO == 32'sh0)) begin
                 $write("");
             end
-            if ((ZERO == 'sh0)) begin
+            if ((ZERO == 32'sh0)) begin
                 $write("");
             end
             $display("%p", $_EXPRSTMT(
-                    __Venum_h99905942__0 = (in);
-                    , __Venum_h99905942__0);
+                    __Venum_ha0f45658__0 = in;
+                    , __Venum_ha0f45658__0);
             );
             if ((| $value$plusargs("TEST=%d", i1))) begin
                 $display("value was %d", i1);
@@ -68,7 +92,8 @@ module Vt_debug_emitv_t;
             if (downto_32[33]) begin
                 $write("");
             end
-            if (downto_32[(ident('sh21) - 'h20)[5:0] + 32
+            if (downto_32[$unsigned(6'((ident(32'sh21) 
+                                        - 32'h20))) + 32
                 +:1]) begin
                 $write("");
             end
@@ -86,21 +111,28 @@ module Vt_debug_emitv_t;
             end
             #1;
             $write("After #1 delay");
-            wait((clk == 'sh1)) $write("After wait(clk == 1)");
+            wait((clk == 32'sh1)) $write("After wait(clk == 1)");
         end
     end
     bit [6:5] [4:3] [2:1]  arraymanyd[10:11][12:13][14:15];
     logic [15:0]  pubflat;
     logic [15:0]  pubflat_r;
-    logic [15:0]  pubflat_w;
+    wire logic [15:0]  pubflat_w;
     assign pubflat_w = pubflat;
-    int signed fd;
-    int signed i;
-    int signed q[$];
-    int signed qb[$:'sh3];
-    int signed assoc[string];
-    int signed assocassoc[string][real];
-    int signed dyn[];
+    logic [15:0]  concat_src;
+    assign concat_src = {32'h1{{pubflat_r[7:0], pubflat_w[15:8]}}};
+    logic [3:0]  sel_idx;
+    wire logic [1:0]  var_part;
+    assign var_part = concat_src[sel_idx+:2];
+    tri logic [1:0]  tri_sig;
+    assign tri_sig = (in ? 2'h1 : 2'bzz);
+    int fd;
+    int i;
+    int q[$];
+    int qb[$:32'sh3];
+    int assoc[string];
+    int assocassoc[string][real];
+    int dyn[];
     typedef struct packed {
         logic nn1;
     } nested_named_t;
@@ -122,33 +154,84 @@ module Vt_debug_emitv_t;
         } nested_named;
         logic [11:10]  nn3;
     } [5:4] nibblearray[3:2];
+    logic after_struct_packed;
     task t;
         $display("stmt");
     endtask
     function f;
-        input int signed v;
+        input int v;
         begin : label1
             $display("stmt");
-            f = ((v == 'sh0) ? 'sh63 : ((~ v) + 'sh1));
+            f = ((v == 32'sh0) ? 32'sh63 : ((~ v) + 
+                                            32'sh1));
             disable label1;
         end
     endfunction
+    task refports;
+        ref int rq[$];
+        ref int ra[string];
+        ref int rd[];
+        input int withdef;
+        rq.push_back(withdef);
+        (ra["k"]) = 32'sh1;
+        rd.renew(32'sh1);
+    endtask
+    function implicit_ports;
+        input logic signed [3:0]  sa;
+        begin : label2
+            implicit_ports = /*CRESET*/;
+            implicit_ports = sa;
+            disable label2;
+        end
+    endfunction
+    function signed_val;
+        begin : label3
+            signed_val = /*CRESET*/;
+            signed_val = $unsigned(8'((- 32'sh1)));
+            disable label3;
+        end
+    endfunction
+    import "DPI-C" pure function int dpi_pure(input 
+                                              int a);
+    import "DPI-C" context function int dpi_ctx(input 
+                                                int a);
+    import "DPI-C" dpi_c_name = function int dpi_renamed(input 
+                                                         int a);
+    import "DPI-C" task dpi_task_i(input int a);
+    import "DPI-C" function int dpi_two(input int a, input 
+                                        int b);
+    import "DPI-C" function int dpi_def(input int a);
+    export "DPI-C" function dpi_exported;
+    function dpi_exported;
+        input int a;
+        begin : label4
+            dpi_exported = (a + 32'sh1);
+            disable label4;
+        end
+    endfunction
+    export "DPI-C" task dpi_exported_task;
+    task dpi_exported_task;
+        input int a;
+        $display("exported task %0d", a);
+    endtask
+    import "DPI-C" function void dpii_open(input bit [] h[]);
+    logic [2:0]  pm_out;
     initial begin
         begin : unnamedblk1
-            int signed other;
+            int other;
             other = /*CRESET*/;
             begin
                 begin : unnamedblk2
-                    int signed i;
-                    i = 'sh0;
-                    while ((i < 'sh3)) begin
+                    int i;
+                    i = 32'sh0;
+                    while ((i < 32'sh3)) begin
                         begin
                             other = f(i);
                             $display("stmt %d %d", 
                                      i, other);
                             t();
                         end
-                        i = (i + 'h1);
+                        i = (i + 32'h1);
                     end
                 end
             end
@@ -178,23 +261,24 @@ module Vt_debug_emitv_t;
             $display("negedge clk, pfr = %x", pubflat_r);
         end
     end
-    int signed cyc;
-    int signed fo;
-    int signed sum;
+    int cyc;
+    int fo;
+    int sum;
     real r;
     string str;
-    int signed mod_val;
-    int signed mod_res;
+    int mod_val;
+    int mod_res;
     always @(posedge clk) begin
         begin
-            cyc <= (cyc + 'sh1);
+            cyc <= (cyc + 32'sh1);
             r <= (r + 0.01);
             fo = cyc;
             sub.inc(fosum);
             sum = sub.f(sum);
             $display("[%0t] sum = %d", $time, sum);
-            $display("a?= %d", ((| $c('sh1)) ? $c('sh14)
-                                 : $c('sh1e)));
+            $display("a?= %d", ((| $c(32'sh1)) ? $c(
+                                                    32'sh14)
+                                 : $c(32'sh1e)));
             $c(;);
             $display("%d", $c(0));
             fd = $fopen("/dev/null");
@@ -206,56 +290,56 @@ module Vt_debug_emitv_t;
             $fflush(fd);
             $fscanf(fd, "%d", sum);
             ;
-            $fdisplay(32'h69203d20, "%d", sum);
+            $fdisplay("i = ", "%d", sum);
             $fwrite(fd, "hello");
             $readmemh(string'(fd), array);
-            $readmemh(string'(fd), array, 'sh0);
-            $readmemh(string'(fd), array, 'sh0, 'sh0);
-            sum = 'sh0;
+            $readmemh(string'(fd), array, 32'sh0);
+            $readmemh(string'(fd), array, 32'sh0, 32'sh0);
+            sum = 32'sh0;
             begin : unnamedblk3
-                int signed i;
-                i = 'sh0;
-                begin : label2
+                int i;
+                i = 32'sh0;
+                begin : label5
                     while ((i < cyc)) begin
                         begin
                             sum = (sum + i);
-                            if ((sum > 'sha)) begin
-                                disable label2;
+                            if ((sum > 32'sha)) begin
+                                disable label5;
                             end
                             else begin
-                                sum = (sum + 'sh1);
+                                sum = (sum + 32'sh1);
                             end
                         end
-                        i = (i + 'h1);
+                        i = (i + 32'h1);
                     end
                 end
             end
-            if ((cyc == 'sh63)) begin
+            if ((cyc == 32'sh63)) begin
                 $finish;
             end
-            if ((cyc == 'sh64)) begin
+            if ((cyc == 32'sh64)) begin
                 $stop;
             end
             case (in)
-                 // synopsys full_case parallel_case'sh1: begin $display("1");
+                 // synopsys full_case parallel_case32'sh1: begin $display("1");
                 end
                 default: begin $display("default");
                 end
             endcase
             priority case (in)
-                'sh1: begin $display("1");
+                32'sh1: begin $display("1");
                 end
                 default: begin $display("default");
                 end
             endcase
             unique case (in)
-                'sh1: begin $display("1");
+                32'sh1: begin $display("1");
                 end
                 default: begin $display("default");
                 end
             endcase
             unique0 case (in)
-                'sh1: begin $display("1");
+                32'sh1: begin $display("1");
                 end
                 default: begin $display("default");
                 end
@@ -285,29 +369,130 @@ module Vt_debug_emitv_t;
                 $display("0");
             end
             $display("%d%d", $past(cyc), $past(cyc, 
-                                               'sh1));
+                                               32'sh1));
             str = $sformatf("cyc=%d", cyc);
             ;
             $display("str = %s", str);
             $display("struct = %p", ps);
             $display("%% [%t] [%t] to=%o td=%d", $time, 
                      $realtime, $time, $time);
-            $sscanf(40'h666f6f3d35, "foo=%d", i);
+            $sscanf("foo=5", "foo=%d", i);
             ;
             $printtimescale;
-            if ((i != 'sh5)) begin
+            if ((i != 32'sh5)) begin
                 $stop;
             end
             sum = $random();
-            sum = $random('sha);
+            sum = $random(32'sha);
             sum = $urandom();
-            sum = $urandom('sha);
-            sum = array.r_sum() with ((item * 'sh2)) ;
-            if ((PKG_PARAM != 'sh1)) begin
+            sum = $urandom(32'sha);
+            sum = array.r_sum() with ((item * 32'sh2)) ;
+            if ((PKG_PARAM != 32'sh1)) begin
                 $stop;
             end
             sub.r = 62.0;
-            mod_res = (mod_val % 'sh5);
+            do begin
+                if ((SUB_B !== 2'h1)) begin
+                    begin
+                        $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", "t/t_debug_emitv.v", 
+                               32'sh191, SUB_B, 2'h1);
+                        $stop;
+                    end
+                end
+            end while (1'h0)
+            mod_res = (mod_val % 32'sh5);
+            if (((str).len() > 32'sh0)) begin
+                $write("");
+            end
+            sum = f(32'sh1);
+            r2i = 32'(r);
+            if ((r2i != 32'sh0)) begin
+                $write("");
+            end
+            refports(qassocdyn32'sh5);
+            sum = ((dpi_pure(32'sh1) + dpi_ctx(32'sh2)) 
+                   + dpi_renamed(32'sh3));
+            sum = (dpi_two(32'sh132'sh2) + dpi_def(
+                                                   32'sh7));
+            dpi_task_i(32'sh4);
+            dpi_exported_task(32'sh5);
+            if (((plain_enum == LP_ENUM_ODD) || (plain_enum 
+                                                 == 
+                                                 LP_ENUM_ONE))) begin
+                $write("");
+            end
+            if ((pm_out != 32'sh0)) begin
+                $write("");
+            end
+            if (us.a[1]) begin
+                $write("");
+            end
+            if ((c_scalar != 32'sh5)) begin
+                $stop;
+            end
+            if (sub.xr_vec[1]) begin
+                $write("");
+            end
+            if (((cls_ext != null) && cls_ext.member[1])) begin
+                $write("");
+            end
+            sum = implicit_ports((- 4'sh1));
+            if ((implicit_signed < 32'sh0)) begin
+                $write("");
+            end
+            if (((cls_ext != null) && (cls_ext.inherited() 
+                                       != 32'sh0))) begin
+                $write("");
+            end
+            if (((cls_param2 != null) && (SUM != 32'sh0))) begin
+                $write("");
+            end
+            sum = dpi_exported(32'sh3);
+            if (((cls_arr[2'h0]) == null)) begin
+                $write("");
+            end
+            if ((PP != 32'sh2)) begin
+                $write("");
+            end
+            if ((vder.vfunc() != 32'sh1)) begin
+                $write("");
+            end
+            if (after_struct_packed) begin
+                $write("");
+            end
+            if (ascending_packed[$unsigned(2'((32'h3 
+                                               - 32'sh2))) + 2
+                +:1]) begin
+                $write("");
+            end
+            if ((uns_int > 32'sh0)) begin
+                $write("");
+            end
+            if (((usarr.marr[1'h0]) != 32'sh0)) begin
+                $write("");
+            end
+            if ((((arraymanyd[4'h0])[4'h0])[4'h0])[$unsigned(5'(
+                                                                (32'h4 
+                                                                 * 
+                                                                 32'sh1)))
+                +:4][$unsigned(4'((32'h2 * 32'sh1)))
+                +:2][2]) begin
+                $write("");
+            end
+            if ((var_part != 32'sh0)) begin
+                $write("");
+            end
+            if (tri_sig[0]) begin
+                $write("");
+            end
+            if ((cls_param.tq.size() != 32'sh0)) begin
+                $write("");
+            end
+            if ((CP_SCOPE_PARAM != 32'sh2)) begin
+                $write("");
+            end
+            sel_idx <= cyc[3:0];
+            queue_of_t.push_back(32'sh1);
             $display("%g", $log10(r));
             $display("%g", $ln(r));
             $display("%g", $exp(r));
@@ -356,15 +541,18 @@ module Vt_debug_emitv_t;
             if ((! $stable(cyc, @( clk)))) begin
                 $write("");
             end
-            if ($past(cyc[1], 'sh5)) begin
+            if ($past(cyc[1], 32'sh5)) begin
                 $write("");
             end
-            force sum = 'sha;
+            if (($unsigned(4'(signed_val())) != 4'hf)) begin
+                $stop;
+            end
+            force sum = 32'sha;
             begin : unnamedblk1_1
-                int signed __Vrepeat0;
-                __Vrepeat0 = 'sh2;
+                int __Vrepeat0;
+                __Vrepeat0 = 32'sh2;
                 while ((__Vrepeat0 > 32'h0)) begin
-                    if ((sum != 'sha)) begin
+                    if ((sum != 32'sha)) begin
                         $stop;
                     end
                     __Vrepeat0 = (__Vrepeat0 - 32'h1);
@@ -676,16 +864,16 @@ module Vt_debug_emitv_t;
         end
     end
     begin : assert_prop_always
-        assert property (@(posedge clk) always ['sh0:
-                         'sh3] in
+        assert property (@(posedge clk) always [32'sh0:
+                         32'sh3] in
         ) begin
         end
         else begin
         end
     end
     begin : assert_prop_s_always
-        assert property (@(posedge clk) s_always ['sh1:
-                         'sh2] in
+        assert property (@(posedge clk) s_always [32'sh1:
+                         32'sh2] in
         ) begin
         end
         else begin
@@ -775,12 +963,12 @@ module Vt_debug_emitv_t;
         ) begin
         end
     end
-    int signed a;
-    int signed ao;
+    int a;
+    int ao;
     initial begin
         begin : assert_intrinsic
             assert ($_EXPRSTMT(
-                    ao = (a);
+                    ao = a;
                     , 1'h1);
             ) begin
             end
@@ -792,50 +980,50 @@ module Vt_debug_emitv_t;
     );
     logic [2:0]  cg_sig;
     logic [1:0]  cg_sig2;
-    covergroup Vt_debug_emitv_cg_basic;
+    covergroup cg_basic;
     function new;
-        option.weight = 'sh2;
-        type_option.weight = 'sh3;
+        option.weight = 32'sh2;
+        type_option.weight = 32'sh3;
         cp_sig: coverpoint cg_sig {
-            bins low = {['sh0:'sh3]} iff (cg_sig2[0]);
-            bins high = {['sh4:'sh6]};
-            bins multi = {'sh0, 'sh1, 'sh2};
-            bins sized['sh2] = {['sh0:'sh5], 'sh7};
+            bins low = {[32'sh0:32'sh3]} iff (cg_sig2[0]);
+            bins high = {[32'sh4:32'sh6]};
+            bins multi = {32'sh0, 32'sh1, 32'sh2};
+            bins sized[32'sh2] = {[32'sh0:32'sh5], 32'sh7};
             wildcard bins wild[] = {3'b1z};
-            bins filtered[] = {['sh0:'sh7]} with ((
-                                                   (item 
-                                                    % 
-                                                    'sh2) 
-                                                   == 
-                                                   'sh0));
-            bins named = cp_sig with ((item > 'sh5));
+            bins filtered[] = {[32'sh0:32'sh7]} with (
+                                                      ((item 
+                                                        % 
+                                                        32'sh2) 
+                                                       == 
+                                                       32'sh0));
+            bins named = cp_sig with ((item > 32'sh5));
             bins dflt = default;
-            ignore_bins ign = {'sh7};
-            illegal_bins ill = {'sh5};
+            ignore_bins ign = {32'sh7};
+            illegal_bins ill = {32'sh5};
         };
         cp_options: coverpoint cg_sig2 {
-            option.at_least = 'sh2;
-            option.weight = 'sh4;
-            type_option.weight = 'sh5;
+            option.at_least = 32'sh2;
+            option.weight = 32'sh4;
+            type_option.weight = 32'sh5;
         };
     endfunction
-    int signed __Vint;
+    static int __Vint;
     struct {
         string name;
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
-        int signed at_least;
-        int signed auto_bin_max;
-        int signed cross_num_print_missing;
+        int at_least;
+        int auto_bin_max;
+        int cross_num_print_missing;
         bit cross_retain_auto_bins;
         bit detect_overlap;
         bit per_instance;
         bit get_inst_coverage;
     } option;
-    struct {
-        int signed weight;
-        int signed goal;
+    static struct {
+        int weight = 'sh1;
+        int goal;
         string comment;
         bit strobe;
         bit merge_instances;
@@ -862,27 +1050,27 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
-    covergroup Vt_debug_emitv_cg_clocked;
+    covergroup cg_clocked;
     @(posedge clk)function new;
         cp_cyc: coverpoint cg_sig;
     endfunction
-    int signed __Vint;
+    static int __Vint;
     struct {
         string name;
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
-        int signed at_least;
-        int signed auto_bin_max;
-        int signed cross_num_print_missing;
+        int at_least;
+        int auto_bin_max;
+        int cross_num_print_missing;
         bit cross_retain_auto_bins;
         bit detect_overlap;
         bit per_instance;
         bit get_inst_coverage;
     } option;
-    struct {
-        int signed weight;
-        int signed goal;
+    static struct {
+        int weight = 'sh1;
+        int goal;
         string comment;
         bit strobe;
         bit merge_instances;
@@ -909,7 +1097,7 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
-    covergroup Vt_debug_emitv_cg_trans;
+    covergroup cg_trans;
     function new;
         cp_t: coverpoint cg_sig {
             bins t01 = (3'h0 => 3'h1);
@@ -920,23 +1108,23 @@ module Vt_debug_emitv_t;
                                            3'h2);
         };
     endfunction
-    int signed __Vint;
+    static int __Vint;
     struct {
         string name;
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
-        int signed at_least;
-        int signed auto_bin_max;
-        int signed cross_num_print_missing;
+        int at_least;
+        int auto_bin_max;
+        int cross_num_print_missing;
         bit cross_retain_auto_bins;
         bit detect_overlap;
         bit per_instance;
         bit get_inst_coverage;
     } option;
-    struct {
-        int signed weight;
-        int signed goal;
+    static struct {
+        int weight = 'sh1;
+        int goal;
         string comment;
         bit strobe;
         bit merge_instances;
@@ -963,27 +1151,27 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
-    covergroup Vt_debug_emitv_cg_cross;
+    covergroup cg_cross;
     function new;
         cp_x: coverpoint cg_sig {
-            bins x0 = {'sh0};
-            bins x1 = {'sh1};
+            bins x0 = {32'sh0};
+            bins x1 = {32'sh1};
         };
         cp_y: coverpoint cg_sig2 {
-            bins y0 = {'sh0};
-            bins y1 = {'sh1};
+            bins y0 = {32'sh0};
+            bins y1 = {32'sh1};
         };
       cx: cross cp_x, cp_y iff ((cg_sig[0] == cg_sig2[0]));
         cx_select: cross cp_x, cp_y {
-            option.weight = 'sh2;
+            option.weight = 32'sh2;
             bins entire = cx_select;
             bins plain = binsof(cp_x);
             bins named = binsof(cp_x.x0);
-            bins filtered = binsof(cp_x) intersect {'sh0, ['sh1:'sh2]};
-            bins lower = binsof(cp_x) intersect {[$:'sh0]};
-            bins upper = binsof(cp_x) intersect {['sh1:$]};
+            bins filtered = binsof(cp_x) intersect {32'sh0, [32'sh1:32'sh2]};
+            bins lower = binsof(cp_x) intersect {[$:32'sh0]};
+            bins upper = binsof(cp_x) intersect {[32'sh1:$]};
             bins negated = !binsof(cp_x.x0);
-            bins complemented = !binsof(cp_x) intersect {'sh0};
+            bins complemented = !binsof(cp_x) intersect {32'sh0};
             bins either = (binsof(cp_x.x0) || binsof(
                                                      cp_y.y0));
             bins both = (binsof(cp_x.x1) && binsof(
@@ -992,28 +1180,40 @@ module Vt_debug_emitv_t;
             bins grouped = ((binsof(cp_x.x0) || binsof(
                                                        cp_y.y0))
                              && !binsof(cp_x.x1));
+            bins paired = binsof(cp_x) with (((cp_x 
+                                               != 32'sh0) 
+                                              && (cp_y 
+                                                  == 
+                                                  32'sh0)));
+            bins counted = (binsof(cp_x) with ((cp_x 
+                                                != 
+                                                32'sh0)) matches 
+                            32'sh2);
+            bins every = (cx_select with ((cp_y == 
+                                           32'sh0)) matches 
+                          $);
             ignore_bins ignored = binsof(cp_x.x0) iff (
                                                        cg_sig[0]);
             illegal_bins forbidden = binsof(cp_y.y1);
         }
     endfunction
-    int signed __Vint;
+    static int __Vint;
     struct {
         string name;
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
-        int signed at_least;
-        int signed auto_bin_max;
-        int signed cross_num_print_missing;
+        int at_least;
+        int auto_bin_max;
+        int cross_num_print_missing;
         bit cross_retain_auto_bins;
         bit detect_overlap;
         bit per_instance;
         bit get_inst_coverage;
     } option;
-    struct {
-        int signed weight;
-        int signed goal;
+    static struct {
+        int weight = 'sh1;
+        int goal;
         string comment;
         bit strobe;
         bit merge_instances;
@@ -1040,33 +1240,33 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
-    covergroup Vt_debug_emitv_cg_live_cross;
+    covergroup cg_live_cross;
     function new;
         cp_x: coverpoint cg_sig {
-            ignore_bins removed = {'sh0};
+            ignore_bins removed = {32'sh0};
         };
         cp_y: coverpoint cg_sig2;
       cx: cross cp_x, cp_y {
             bins all = cx;
         }
     endfunction
-    int signed __Vint;
+    static int __Vint;
     struct {
         string name;
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
-        int signed at_least;
-        int signed auto_bin_max;
-        int signed cross_num_print_missing;
+        int at_least;
+        int auto_bin_max;
+        int cross_num_print_missing;
         bit cross_retain_auto_bins;
         bit detect_overlap;
         bit per_instance;
         bit get_inst_coverage;
     } option;
-    struct {
-        int signed weight;
-        int signed goal;
+    static struct {
+        int weight = 'sh1;
+        int goal;
         string comment;
         bit strobe;
         bit merge_instances;
@@ -1093,188 +1293,268 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
-    Vt_debug_emitv_cg_basic cg_basic_instVt_debug_emitv_cg_basic;
+    cg_basic cg_basic_inst;
     cg_basic_inst = new();
-    Vt_debug_emitv_cg_clocked cg_clocked_instVt_debug_emitv_cg_clocked;
+    cg_clocked cg_clocked_inst;
     cg_clocked_inst = new();
-    Vt_debug_emitv_cg_trans cg_trans_instVt_debug_emitv_cg_trans;
+    cg_trans cg_trans_inst;
     cg_trans_inst = new();
-    Vt_debug_emitv_cg_cross cg_cross_instVt_debug_emitv_cg_cross;
+    cg_cross cg_cross_inst;
     cg_cross_inst = new();
-    Vt_debug_emitv_cg_live_cross cg_live_cross_instVt_debug_emitv_cg_live_cross;
+    cg_live_cross cg_live_cross_inst;
     cg_live_cross_inst = new();
+    initial begin
+        begin : unnamedblk4
+            Cls obj;
+            obj = /*CRESET*/;
+            obj = new();
+            obj.delay_caller();
+        end
+    end
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1
-    } __Venum_h99905942__0;
+    } __Venum_ha0f45658__0;
 endmodule
-package Vt_debug_emitv___024unit;
-    class Vt_debug_emitv_Cls;
-        bit cg_clk;
-        int signed member;
-        member = 'sh1;
-        int signed rmember1;
-        int signed rmember2;
-        covergroup Vt_debug_emitv___vlAnonCG_cg_in_class;
-        @(posedge cg_clk)function new;
-            cp_m: coverpoint member {
-                bins one = {'sh1};
-                bins two = {'sh2};
-            };
-        endfunction
-        int signed __Vint;
-        struct {
-            string name;
-            int signed weight;
-            int signed goal;
-            string comment;
-            int signed at_least;
-            int signed auto_bin_max;
-            int signed cross_num_print_missing;
-            bit cross_retain_auto_bins;
-            bit detect_overlap;
-            bit per_instance;
-            bit get_inst_coverage;
-        } option;
-        struct {
-            int signed weight;
-            int signed goal;
-            string comment;
-            bit strobe;
-            bit merge_instances;
-            bit distribute_first;
-            real real_interval;
-        } type_option;
-        function sample;
-        endfunction
-        function start;
-        endfunction
-        function stop;
-        endfunction
-        function get_coverage;
-            get_coverage = /*CRESET*/;
-            input string covered_bins;
-            input string total_bins;
-        endfunction
-        function get_inst_coverage;
-            get_inst_coverage = /*CRESET*/;
-            input string covered_bins;
-            input string total_bins;
-        endfunction
-        function set_inst_name;
-            input string name;
-        endfunction
-        endcovergroup
-        Vt_debug_emitv___vlAnonCG_cg_in_class cg_in_classVt_debug_emitv___vlAnonCG_cg_in_class;
-        covergroup Vt_debug_emitv___vlAnonCG_cg_ref;
-        int signed value;
-        function new;
-            const ref int signed value;
-            value = value;
-            cp_ref: coverpoint value;
-        endfunction
-        int signed __Vint;
-        struct {
-            string name;
-            int signed weight;
-            int signed goal;
-            string comment;
-            int signed at_least;
-            int signed auto_bin_max;
-            int signed cross_num_print_missing;
-            bit cross_retain_auto_bins;
-            bit detect_overlap;
-            bit per_instance;
-            bit get_inst_coverage;
-        } option;
-        struct {
-            int signed weight;
-            int signed goal;
-            string comment;
-            bit strobe;
-            bit merge_instances;
-            bit distribute_first;
-            real real_interval;
-        } type_option;
-        function sample;
-        endfunction
-        function start;
-        endfunction
-        function stop;
-        endfunction
-        function get_coverage;
-            get_coverage = /*CRESET*/;
-            input string covered_bins;
-            input string total_bins;
-        endfunction
-        function get_inst_coverage;
-            get_inst_coverage = /*CRESET*/;
-            input string covered_bins;
-            input string total_bins;
-        endfunction
-        function set_inst_name;
-            input string name;
-        endfunction
-        endcovergroup
-        Vt_debug_emitv___vlAnonCG_cg_ref cg_refVt_debug_emitv___vlAnonCG_cg_ref;
-        function new;
-            cg_in_class = new();
-        endfunction
-        task method;
-            if ((this != this)) begin
-                $stop;
-            end
-        endtask
-        function randomize;
-        endfunction
-    endclass
-    function rand_restricted;
-        input Vt_debug_emitv_Cls objVt_debug_emitv_Cls;
-        input int signed member;
-        begin : label3
-            rand_restricted = randomize() with (
-                ???? // CONSTRAINTEXPR
-                (__Vrandwith_obj.rmember1 < member)) ;
-            disable label3;
+class Cls;
+    bit cg_clk;
+    int member;
+    member = 32'sh1;
+    local int lmember;
+    protected int pmember;
+    rand int rmember1;
+    rand int rmember2;
+    randc bit [1:0]  rcmember;
+    rand int rarray[0:2];
+
+    ???? // CONSTRAINT 'array_values'
+
+    ???? // CONSTRAINTBEFORE
+    (rarray[2'h0])rmember1
+    ???? // CONSTRAINTFOREACH
+
+    ???? // FOREACHHEADER
+    rarrayint i;
+
+    ???? // CONSTRAINTEXPR
+    ((rarray[i[1:0]]) == (rmember1 + i))covergroup __vlAnonCG_cg_in_class;
+    @(posedge cg_clk)function new;
+        cp_m: coverpoint member {
+            bins one = {32'sh1};
+            bins two = {32'sh2};
+        };
+    endfunction
+    static int __Vint;
+    struct {
+        string name;
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        int cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    static struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
+    __vlAnonCG_cg_in_class cg_in_class;
+    covergroup __vlAnonCG_cg_ref;
+    int value;
+    function new;
+        const ref int value;
+        value = value;
+        cp_ref: coverpoint value;
+    endfunction
+    static int __Vint;
+    struct {
+        string name;
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        int cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    static struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
+    __vlAnonCG_cg_ref cg_ref;
+    function new;
+        cg_in_class = new();
+    endfunction
+    task method;
+        if ((this != this)) begin
+            $stop;
+        end
+    endtask
+    task delay_method;
+        #1;
+    endtask
+    task delay_caller;
+        delay_method();
+    endtask
+    function randomize;
+    endfunction
+endclass
+virtual class VBase;
+    function vfunc;
+        vfunc = /*CRESET*/;
+    endfunction
+    function new;
+    endfunction
+endclass
+class VDer extends VBase;
+    function vfunc;
+        begin : label6
+            vfunc = /*CRESET*/;
+            vfunc = 32'sh1;
+            disable label6;
         end
     endfunction
+    function new;
+        new();
+    endfunction
+endclass
+class ClsExt extends Cls;
+    function inherited;
+        begin : label7
+            inherited = /*CRESET*/;
+            inherited = (rmember1 + member);
+            disable label7;
+        end
+    endfunction
+    function new;
+        new();
+    endfunction
+endclass
+class ClsParam__Tz7d09f080_P2;
+    bit pval;
+    bit tq[$];
+    localparam int PP = 32'sh2;
+    function new;
+    endfunction
+endclass
+class ClsParam2__Tzc7cce3e0_P1_PB2;
+    byte a;
+    bit b;
+    int c;
+    localparam int SUM = 32'h3;
+    function new;
+    endfunction
+endclass
+function rand_restricted;
+    input Cls obj;
+    input int member;
+    begin : label8
+        rand_restricted = obj.randomize() with (
+            ???? // CONSTRAINTEXPR
+            (__Vrandwith_obj.rmember1 < member)) ;
+        disable label8;
+    end
+endfunction
+package __Vconstpool;
+    const string CONSARRAY_0[1:0] = '{0:"ZERO", 1:"ONE"};
 endpackage
-package Vt_debug_emitv___Vconstpool;
-    string TABLE_0[1:0];
-endpackage
-package Vt_debug_emitv_std;
-    class Vt_debug_emitv_process;
-        typedef enum int signed{
+package std;
+    class process;
+        typedef enum int{
             FINISHED = 32'h0,
             RUNNING = 32'h1,
             WAITING = 32'h2,
             SUSPENDED = 32'h3,
             KILLED = 32'h4
         } state;
-        VlProcessRef m_process;
+        protected chandle m_process;
         function self;
-            Vt_debug_emitv_process pVt_debug_emitv_process;
-            begin : label4
+            process p;
+            begin : label9
                 self = /*CRESET*/;
-                p = new();
-                $c(p.m_process = vlProcess;);
+                p = /*CRESET*/;
+                $c(vlProcess->initFromSelf(p););
+                if ((p == null)) begin
+                    begin
+                        p = new();
+                        $c(p.m_process = vlProcess;);
+                        $c(vlProcess->setSelf(&*p););
+                    end
+                end
                 self = p;
-                disable label4;
+                disable label9;
             end
         endfunction
         task set_status;
-            input int signed s;
+            input int s;
             $c(m_process->state(s););
         endtask
         function status;
-            begin : label5
+            begin : label10
                 status = /*CRESET*/;
-                status = ($c(m_process->state()));
-                disable label5;
+                status = $c(m_process->state());
+                disable label10;
             end
         endfunction
         task kill;
-            set_status(process::KILLED);
+            $c(m_process->disable(););
         endtask
         task suspend;
             $error("std::process::suspend() not supported");
@@ -1288,66 +1568,30 @@ package Vt_debug_emitv_std;
                   (status() == process::KILLED)));
         endtask
         task killQueue;
-            ref Vt_debug_emitv_process processQueue[$]Vt_debug_emitv_process;
+            ref process processQueue[$];
             begin : unnamedblk1_1
-                int signed __Vrepeat0;
+                int __Vrepeat0;
                 __Vrepeat0 = processQueue.size();
                 while ((__Vrepeat0 > 32'h0)) begin
                     begin : unnamedblk1
-                        Vt_debug_emitv_process pVt_debug_emitv_process;
+                        process p;
                         p = processQueue.pop_front();
                         if ((null != p)) begin
-                            kill();
+                            p.kill();
                         end
                     end
                     __Vrepeat0 = (__Vrepeat0 - 32'h1);
                 end
             end
         endtask
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
         function get_randstate;
             string s;
-            begin : label6
+            begin : label11
                 get_randstate = /*CRESET*/;
                 s = string'($c(0));
                 $c(s = m_process->randstate(););
                 get_randstate = s;
-                disable label6;
+                disable label11;
             end
         endfunction
         task set_randstate;
@@ -1357,63 +1601,65 @@ package Vt_debug_emitv_std;
         function new;
         endfunction
         process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITINGendclass
-    class Vt_debug_emitv_semaphore;
+    class semaphore;
         typedef struct {
-            Vt_debug_emitv_process proc;
-            int signed reqKeys;
+            process proc;
+            int reqKeys;
         } procKeys;
         struct {
-            Vt_debug_emitv_process proc;
-            int signed reqKeys;
+            process proc;
+            int reqKeys;
         } m_queue[$];
-        int signed m_keyCount;
+        protected int m_keyCount;
         task dropKilled;
-            while (((m_queue.size() > 'sh0) && (status() 
-                                                == 
-                                                process::
-                                                KILLED))) begin
+            while (((m_queue.size() > 32'sh0) && (m_queue.at(
+                                                             32'sh0).proc.status() 
+                                                  == 
+                                                  process::
+                                                  KILLED))) begin
                 m_queue.pop_front();
             end
         endtask
         function new;
-            input int signed keyCount;
+            input int keyCount;
             m_keyCount = keyCount;
         endfunction
         task put;
-            input int signed keyCount;
+            input int keyCount;
             m_keyCount = (m_keyCount + keyCount);
         endtask
         task get;
-            input int signed keyCount;
-            begin : label7
+            input int keyCount;
+            begin : label12
                 dropKilled();
                 if (((m_keyCount >= keyCount) && ((
                                                    m_queue.size() 
                                                    == 
-                                                   'sh0) 
+                                                   32'sh0) 
                                                   || (m_queue.at(
-                                                                 'sh0).reqKeys 
+                                                                 32'sh0).reqKeys 
                                                       > 
                                                       keyCount)))) begin
                     begin
                         m_keyCount = (m_keyCount - 
                                       keyCount);
-                        disable label7;
+                        disable label12;
                     end
                 end
                 m_queue.push_back(
-                    ???? // CONSPACKUORSTRUCT
+                    ???? // CONSSTRUCT
 
-                    ???? // CONSPACKMEMBER
+                    ???? // CONSSTRUCTITEM
                     self()
-                    ???? // CONSPACKMEMBER
+                    ???? // CONSSTRUCTITEM
                     keyCount);
-                while ((m_queue.at('sh0).proc != self())) begin
+                while ((m_queue.at(32'sh0).proc != 
+                        self())) begin
                     begin
-                        wait(((status() == process::
-                               KILLED) || (m_queue.at(
-                                                      'sh0).proc 
-                                           == self())));
+                        wait(((m_queue.at(32'sh0).proc.status() 
+                               == process::KILLED) 
+                              || (m_queue.at(32'sh0).proc 
+                                  == self())));
                         dropKilled();
                     end
                 end
@@ -1423,54 +1669,54 @@ package Vt_debug_emitv_std;
             end
         endtask
         function try_get;
-            input int signed keyCount;
-            begin : label8
+            input int keyCount;
+            begin : label13
                 try_get = /*CRESET*/;
                 if ((m_keyCount < keyCount)) begin
-                    try_get = 'sh0;
-                    disable label8;
+                    try_get = 32'sh0;
+                    disable label13;
                 end
                 m_keyCount = (m_keyCount - keyCount);
-                try_get = 'sh1;
-                disable label8;
+                try_get = 32'sh1;
+                disable label13;
             end
         endfunction
     endclass
     function randomize;
-        randomize = 'sh0;
+        randomize = 32'sh0;
     endfunction
     typedef struct {
         string name;
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
-        int signed at_least;
-        int signed auto_bin_max;
-        int signed cross_num_print_missing;
+        int at_least;
+        int auto_bin_max;
+        int cross_num_print_missing;
         bit cross_retain_auto_bins;
         bit detect_overlap;
         bit per_instance;
         bit get_inst_coverage;
     } vl_covergroup_options_t;
     typedef struct {
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
-        int signed at_least;
-        int signed auto_bin_max;
+        int at_least;
+        int auto_bin_max;
         bit detect_overlap;
     } vl_coverpoint_options_t;
     typedef struct {
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
-        int signed at_least;
-        int signed cross_num_print_missing;
+        int at_least;
+        int cross_num_print_missing;
         bit cross_retain_auto_bins;
     } vl_cross_options_t;
     typedef struct {
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
         bit strobe;
         bit merge_instances;
@@ -1478,46 +1724,53 @@ package Vt_debug_emitv_std;
         real real_interval;
     } vl_covergroup_type_options_t;
     typedef struct {
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
         real real_interval;
     } vl_coverpoint_type_options_t;
     typedef struct {
-        int signed weight;
-        int signed goal;
+        int weight = 'sh1;
+        int goal;
         string comment;
     } vl_cross_type_options_t;
 endpackage
-interface Vt_debug_emitv_Iface;
+interface Iface;
     input logic clk;
     logic ifsig;
     modport mp (
         input logic ifsig
     );
 endinterface
-module Vt_debug_emitv_sub;
+module sub;
     input logic clk;
+    logic [7:0]  xr_vec;
+    /* generate */ begin : sub_gen
+        typedef enum logic [1:0] {
+            SUB_A = 2'h0,
+            SUB_B = 2'h1
+        } sub_e;
+    end : sub_gen
     task inc;
-        input int signed i;
-        output int signed o;
+        input int i;
+        output int o;
         o = /*CRESET*/;
         o = ({32'h1{{1'h0, i[31:1]}}} + 32'h1);
     endtask
     function f;
-        input int signed v;
-        begin : label9
-            if ((v == 'sh0)) begin
-                f = 'sh21;
-                disable label9;
+        input int v;
+        begin : label14
+            if ((v == 32'sh0)) begin
+                f = 32'sh21;
+                disable label14;
             end
             f = ({32'h1{{31'h0, v[2]}}} + 32'h1);
-            disable label9;
+            disable label14;
         end
     endfunction
     real r;
 endmodule
-module Vt_debug_emitv_seq_event;
+module seq_event;
     input logic clk;
     bit a;
     bit b;
@@ -1532,12 +1785,21 @@ module Vt_debug_emitv_seq_event;
             @( sq())end
     end
 endmodule
-package Vt_debug_emitv_p;
+package p;
     logic pkgvar;
 endpackage
-package Vt_debug_emitv_Pkg;
-    logic signed [31:0]  PKG_PARAM;
-    typedef enum int signed{
+module param_mod__Tzc7cce3e0_P3;
+    parameter int PW = 32'sh3;
+    input byte pin;
+    output logic [2:0]  pout;
+    typedef byte pt_alias_t;
+    byte pt_var;
+    assign pt_var = pin;
+    assign pout = pt_var[2:0];
+endmodule
+package Pkg;
+    localparam bit signed [31:0]  PKG_PARAM = 32'sh1;
+    typedef enum int{
         FOO = 32'h0,
         BAR = 32'h1,
         BAZ = 32'h2

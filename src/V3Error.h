@@ -178,6 +178,7 @@ public:
         UNDRIVEN,       // No drivers
         UNOPT,          // Unoptimizable block. Historical, never issued.
         UNOPTFLAT,      // Unoptimizable block after flattening
+        UNOPTPUBLIC,    // Public signal, task or module prevents optimization
         UNOPTTHREADS,   // Thread partitioner unable to fill all requested threads
         UNPACKED,       // Unsupported unpacked
         UNSATCONSTR,    // Unsatisfied constraint
@@ -195,6 +196,7 @@ public:
         WAITCONST,      // Wait condition is constant
         WIDTH,          // Width mismatch
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
+        WIDTHDIGITS,    // Mismatch between literal size and its value width in bits
         WIDTHEXPAND,    // Width mismatch- lhs > rhs
         WIDTHTRUNC,     // Width mismatch- lhs < rhs
         WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
@@ -244,19 +246,17 @@ public:
             "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
             "SHORTREAL", "SIDEEFFECT", "SIMILARNAME", "SPECIFYIGN", "SPLITVAR", "STATICVAR",
             "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR",
-            "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL",
-            "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
-            "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
-            " MAX"};
+            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTPUBLIC", "UNOPTTHREADS", "UNPACKED",
+            "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM",
+            "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN",
+            "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC",
+            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
     bool defaultsOff() const VL_MT_SAFE {
         return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == I_ERRORING || styleError());
     }
-    // Warnings that warn about nasty side effects
-    bool dangerous() const VL_MT_SAFE { return (m_e == COMBDLY); }
     // Insuppressible error codes that should always stop elaboration
     bool hardError() const VL_MT_SAFE {
         return (m_e != EC_INFO && m_e < V3ErrorCode::EC_FIRST_WARN);
@@ -274,7 +274,7 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
-                || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
+                || m_e == BLKLOOPINIT || m_e == COMBDLY || m_e == CONTASSREG || m_e == ENCAPSULATED
                 || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == FINALDLY
                 || m_e == HIERPARAM || m_e == FUNCTIMECTL || m_e == IMPURE || m_e == MODMISSING
                 || m_e == NOTREDOP || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND
@@ -294,7 +294,8 @@ public:
                 || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC || m_e == LATCH
                 || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO || m_e == PINMISSING
                 || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH
-                || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
+                || m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -346,6 +347,7 @@ public:
             action(V3ErrorCode{UNUSEDSIGNAL});
             return;
         case V3ErrorCode::WIDTH:
+            action(V3ErrorCode{WIDTHDIGITS});
             action(V3ErrorCode{WIDTHEXPAND});
             action(V3ErrorCode{WIDTHTRUNC});
             action(V3ErrorCode{WIDTHXZEXPAND});
@@ -365,7 +367,8 @@ public:
             return m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
                    || m_e == UNUSEDSIGNAL;
         case V3ErrorCode::WIDTH:
-            return m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND;
+            return m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                   || m_e == WIDTHXZEXPAND;
         default: return false;
         }
     }

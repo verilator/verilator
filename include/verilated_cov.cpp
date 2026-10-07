@@ -140,21 +140,6 @@ private:
         m_indexValues.emplace(m_nextIndex, value);
         return m_nextIndex;
     }
-    static std::string dequote(const std::string& text) VL_PURE {
-        // Quote any special characters
-        std::string rtn;
-        for (const char* pos = text.c_str(); *pos; ++pos) {
-            if (!std::isprint(*pos) || *pos == '%' || *pos == '"') {
-                constexpr size_t LEN_MAX_HEX = 20;
-                char hex[LEN_MAX_HEX];
-                (void)VL_SNPRINTF(hex, LEN_MAX_HEX, "%%%02X", pos[0]);
-                rtn += hex;
-            } else {
-                rtn += *pos;
-            }
-        }
-        return rtn;
-    }
     static bool legalKey(const std::string& key) VL_PURE {
         // Because we compress long keys to a single letter, and
         // don't want applications to either get confused if they use
@@ -170,9 +155,9 @@ private:
         if (key.length() == 1 && std::isalpha(key[0])) {
             name += "\001"s + key;
         } else {
-            name += "\001"s + dequote(key);
+            name += "\001"s + VerilatedCovKey::escape(key);
         }
-        name += "\002"s + dequote(value);
+        name += "\002"s + VerilatedCovKey::escape(value);
         return name;
     }
     static std::string combineHier(const std::string& old, const std::string& add) VL_PURE {
@@ -303,8 +288,10 @@ public:
         m_insertFilenamep = filenamep;
         m_insertLineno = lineno;
     }
-    void insertp(const char* ckeyps[VerilatedCovConst::MAX_KEYS],
-                 const char* valps[VerilatedCovConst::MAX_KEYS]) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    // Return the caller-owned illegal key, or nullptr on success.
+    const char* insertp(const char* ckeyps[VerilatedCovConst::MAX_KEYS],
+                        const char* valps[VerilatedCovConst::MAX_KEYS])
+        VL_MT_SAFE_EXCLUDES(m_mutex) {
         const VerilatedLockGuard lock{m_mutex};
         assert(m_insertp);
         // First two key/vals are filename
@@ -346,36 +333,31 @@ public:
         for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
             const std::string& key = keys[i];
             if (!keys[i].empty()) {
+                if (!legalKey(key)) {
+                    VL_DO_CLEAR(delete m_insertp, m_insertp = nullptr);
+                    return ckeyps[i];
+                }
                 const std::string& val = valps[i];
                 // std::cout << "   " << __FUNCTION__ << "  " << key << " = " << val << "\n";
                 m_insertp->m_keys[addKeynum] = valueIndex(key);
                 m_insertp->m_vals[addKeynum] = valueIndex(val);
                 ++addKeynum;
-                if (VL_UNCOVERABLE(!legalKey(key))) {
-                    const std::string msg
-                        = ("%Error: Coverage keys of one character, or letter+digit are illegal: "
-                           + key);  // LCOV_EXCL_LINE
-                    VL_FATAL_MT("", 0, "", msg.c_str());
-                }
             }
         }
         m_items.push_back(m_insertp);
         // Prepare for next
         m_insertp = nullptr;
+        return nullptr;
     }
 
     // cppcheck-suppress duplInheritedMember
-    void write(const std::string& filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
+    bool write(const std::string& filename) VL_MT_SAFE_EXCLUDES(m_mutex) {
         Verilated::quiesce();
-        const VerilatedLockGuard lock{m_mutex};
         selftest();
+        const VerilatedLockGuard lock{m_mutex};
 
         std::ofstream os{filename};
-        if (os.fail()) {
-            const std::string msg = "%Error: Can't write '"s + filename + "'";
-            VL_FATAL_MT("", 0, "", msg.c_str());
-            return;
-        }
+        if (os.fail()) return false;
         os << "# SystemC::Coverage-3\n";
 
         // Build list of events; totalize if collapsing hierarchy
@@ -435,6 +417,7 @@ public:
             os << "' " << i.second.second;
             os << '\n';
         }
+        return true;
     }
 };
 
@@ -451,7 +434,11 @@ void VerilatedCovContext::clearNonMatch(const char* matchp) VL_MT_SAFE {
 }
 void VerilatedCovContext::zero() VL_MT_SAFE { impp()->zero(); }
 void VerilatedCovContext::write(const std::string& filename) VL_MT_SAFE {
-    impp()->write(filename);
+    if (!impp()->write(filename)) {
+        // Fatal exit callbacks may access coverage, so release its mutex first.
+        const std::string msg = "Can't write '"s + filename + "'";
+        VL_FATAL_MT("", 0, "", msg.c_str());
+    }
 }
 void VerilatedCovContext::_inserti(uint32_t* itemp) VL_MT_SAFE {
     impp()->inserti(new VerilatedCoverItemSpec<uint32_t>{itemp});
@@ -482,7 +469,13 @@ void VerilatedCovContext::_insertp(A(0), A(1), A(2), A(3), A(4), A(5), A(6), A(7
            valp0,   valp1,   valp2,   valp3,  valp4,  valp5,  valp6,  valp7,  valp8,  valp9,
            valp10,  valp11,  valp12,  valp13, valp14, valp15, valp16, valp17, valp18, valp19,
            valp20,  valp21,  valp22,  valp23, valp24, valp25, valp26, valp27, valp28, valp29};
-    impp()->insertp(keyps, valps);
+    const char* const illegalKeyp = impp()->insertp(keyps, valps);
+    if (illegalKeyp) {
+        // Fatal exit callbacks may access coverage, so release its mutex first.
+        const std::string msg
+            = "Coverage keys of one character, or letter+digit are illegal: "s + illegalKeyp;
+        VL_FATAL_MT("", 0, "", msg.c_str());
+    }
 }
 
 // And versions with fewer arguments  (oh for a language with named parameters!)

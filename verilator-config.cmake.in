@@ -395,7 +395,14 @@ function(verilate TARGET)
     )
 
     if(VERILATE_DIRECTORY)
-        set(VDIR "${VERILATE_DIRECTORY}")
+        # Absolute, so the path Verilator writes back into the JSON  manifest,
+        # which a hierarchical top's verilate() call uses, is the same as VDIR
+        get_filename_component(
+            VDIR
+            "${VERILATE_DIRECTORY}"
+            ABSOLUTE
+            BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}"
+        )
     endif()
 
     file(MAKE_DIRECTORY ${VDIR})

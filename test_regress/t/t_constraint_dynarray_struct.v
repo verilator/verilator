@@ -9,15 +9,13 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-typedef struct {
-  rand int value;
-} Entry;
+typedef struct {rand int value;} Entry;
 
 class StructArray;
   rand Entry values[];
   int pre_randomize_count;
 
-  constraint c_size { values.size() == 3; }
+  constraint c_size {values.size() == 3;}
 
   constraint c_values {
     values[0].value == 0;
@@ -31,29 +29,29 @@ class StructArray;
 endclass
 
 class InheritedStructArray extends StructArray;
-  constraint c_inherited_value { values[2].value == 15; }
+  constraint c_inherited_value {values[2].value == 15;}
 endclass
 
 class AssocArrayControl;
   rand int values[int];
 
-  constraint c_size { values.size() == 2; }
+  constraint c_size {values.size() == 2;}
 
-  constraint c_value { values[1] == 31; }
+  constraint c_value {values[1] == 31;}
 endclass
 
 class OutOfBoundsArray;
   rand Entry values[];
 
-  constraint c_size { values.size() == 1; }
+  constraint c_size {values.size() == 1;}
 
-  constraint c_value { values[1].value == 31; }
+  constraint c_value {values[1].value == 31;}
 endclass
 
 class ScalarArray;
   rand int values[];
 
-  constraint c_size { values.size() == 3; }
+  constraint c_size {values.size() == 3;}
 
   constraint c_values {
     values[0] == 0;
@@ -94,9 +92,7 @@ module t;
       `checkd(inherited_struct_array.values[2].value, 15)
 
       inline_struct_array.values = new[3];
-      randomize_result = inline_struct_array.randomize() with {
-        values[1].value == 31;
-      };
+      randomize_result = inline_struct_array.randomize() with {values[1].value == 31;};
       `checkd(randomize_result, 1)
       `checkd(inline_struct_array.pre_randomize_count, 1)
       `checkd(inline_struct_array.values.size(), 3)

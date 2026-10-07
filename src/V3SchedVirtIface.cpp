@@ -49,9 +49,11 @@ private:
     std::set<std::pair<IfaceMember, AstVarScope*>> m_seenCandidateVscps;
     // VarScope index and callable worklist for VIF method-body writes.
     std::map<const AstVar*, std::vector<AstVarScope*>> m_vscpsByVar;
+    // Worklist of reachable interface callables
     std::vector<IfaceCallable> m_reachableIfaceCallables;
+    // Callables already added to the worklist
     std::set<IfaceCallable> m_seenReachableIfaceCallables;
-    VirtIfaceTriggers m_triggers;
+    VirtIfaceTriggers m_triggers;  // Triggers found for virtual interface writes
 
     // METHODS
     // Returns true if statement writes across a virtual interface boundary

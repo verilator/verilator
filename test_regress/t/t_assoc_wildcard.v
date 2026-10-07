@@ -18,6 +18,12 @@ module t (
 
   integer i;
 
+  localparam string KEY_S = "PPP";
+  localparam bit [23:0] KEY_I = 24'h515151;  // "QQQ"
+  typedef enum bit [23:0] {
+    KEY_E = 24'h525252  // "RRR"
+  } key_e;
+
   always @(posedge clk) begin
     cyc <= cyc + 1;
     begin
@@ -58,6 +64,30 @@ module t (
       a.delete(4'd3);
       i = a.size();
       `checkh(i, 4);
+    end
+    begin
+      // Wildcard with parameter and enum keys
+      static string p [*] = '{default: "nope", KEY_S: "sparam", KEY_I: "iparam", KEY_E: "enum"};
+      string v;
+
+      v = p["PPP"];
+      `checks(v, "sparam");
+      v = p["QQQ"];
+      `checks(v, "iparam");
+      v = p["RRR"];
+      `checks(v, "enum");
+      v = p["KEY_S"];  // Keyed by the value, not the name
+      `checks(v, "nope");
+
+      // Without a default, and empty
+      p = '{"x": "xed"};
+      v = p["x"];
+      `checks(v, "xed");
+      i = p.size();
+      `checkh(i, 1);
+      p = '{};
+      i = p.size();
+      `checkh(i, 0);
     end
 
     $write("*-* All Finished *-*\n");

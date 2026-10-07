@@ -1,26 +1,23 @@
-%Error-UNSUPPORTED: t/t_increment_bad.v:22:15: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   22 |     if (a <-> --b);
-      |               ^~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_increment_bad.v:23:14: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   23 |     if (0 -> ++b);
-      |              ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:26:24: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   26 |     if (1 && (a > 0 ? a++ : --b));
-      |                        ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:26:29: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   26 |     if (1 && (a > 0 ? a++ : --b));
-      |                             ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:27:24: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   27 |     if (0 || (a > 0 -> ++b));
-      |                        ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:29:22: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   29 |     pos = (a > 0) ? a++ : --b;
-      |                      ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:29:27: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   29 |     pos = (a > 0) ? a++ : --b;
-      |                           ^~
-%Error-UNSUPPORTED: t/t_increment_bad.v:34:36: Unsupported: Pre/post increment/decrement operator within a logical expression (&&, ||, ?:, etc.)
-   34 |   assert property (@(posedge clk) a++ >= 0);
+%Error: t/t_increment_bad.v:13:36: Pre/post increment/decrement operator not allowed in a property (IEEE 1800-2023 16.6)
+   13 |   assert property (@(posedge clk) a++ >= 0);
       |                                    ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_increment_bad.v:16:5: Pre/post increment/decrement operator not allowed in a sequence (IEEE 1800-2023 16.6)
+   16 |     ++a > 0;
+      |     ^~
+%Error: t/t_increment_bad.v:20:13: Pre/post increment/decrement operator not allowed in an event expression (IEEE 1800-2023 11.3.6)
+   20 |   always @(a++) a = 0;
+      |             ^~
+%Error: t/t_increment_bad.v:21:30: Pre/post increment/decrement operator not allowed in an event expression (IEEE 1800-2023 11.3.6)
+   21 |   initial @(posedge clk iff a-- > 0);
+      |                              ^~
+%Error: t/t_increment_bad.v:27:13: Pre/post increment/decrement operator not allowed in a constraint (IEEE 1800-2023 18.5)
+   27 |       x == y++;
+      |             ^~
+%Error: t/t_increment_bad.v:28:11: Pre/post increment/decrement operator not allowed in a constraint (IEEE 1800-2023 18.5)
+   28 |       if (--y > 0) x > 0;
+      |           ^~
+%Error: t/t_increment_bad.v:34:37: Pre/post increment/decrement operator not allowed in a constraint (IEEE 1800-2023 18.5)
+   34 |     void'(c.randomize() with {x == a++;});
+      |                                     ^~
 %Error: Exiting due to

@@ -1,0 +1,19 @@
+%Warning-LATCH: t/t_lint_latch_unique_bad.v:19:3: Latch inferred for signal 'o1' (not all control paths of combinational always assign a value)
+                                                : ... Suggest use of always_latch for intentional latches
+   19 |   always_comb begin
+      |   ^~~~~~~~~~~
+                ... For warning description see https://verilator.org/warn/LATCH?v=latest
+                ... Use "/* verilator lint_off LATCH */" and lint_on around source to disable this message.
+%Warning-LATCH: t/t_lint_latch_unique_bad.v:24:3: Latch inferred for signal 'o2' (not all control paths of combinational always assign a value)
+                                                : ... Suggest use of always_latch for intentional latches
+   24 |   always_comb begin
+      |   ^~~~~~~~~~~
+%Warning-LATCH: t/t_lint_latch_unique_bad.v:31:3: Latch inferred for signal 'o3' (not all control paths of combinational always assign a value)
+                                                : ... Suggest use of always_latch for intentional latches
+   31 |   always_comb begin
+      |   ^~~~~~~~~~~
+%Warning-LATCH: t/t_lint_latch_unique_bad.v:38:3: Latch inferred for signal 'o4' (not all control paths of combinational always assign a value)
+                                                : ... Suggest use of always_latch for intentional latches
+   38 |   always_comb begin
+      |   ^~~~~~~~~~~
+%Error: Exiting due to

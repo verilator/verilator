@@ -47,20 +47,24 @@ module t (
 
   function int live();
     live = $c32(
-        "Verilated::threadContextp()->covergroupRegistryp()->liveInstanceCount(\"cg_retain\")");
+        "Verilated::threadContextp()->covergroupRegistryp()->liveInstanceCount(\"t.cg_retain\")");
   endfunction
   function int created();
     created = $c32(
-        "Verilated::threadContextp()->covergroupRegistryp()->createdInstanceCount(\"cg_retain\")");
+        "Verilated::threadContextp()->covergroupRegistryp()",
+        "->createdInstanceCount(\"t.cg_retain\")"
+    );
   endfunction
   function int retired();
     retired = $c32(
-        "Verilated::threadContextp()->covergroupRegistryp()->retiredInstanceCount(\"cg_retain\")");
+        "Verilated::threadContextp()->covergroupRegistryp()",
+        "->retiredInstanceCount(\"t.cg_retain\")"
+    );
   endfunction
   function int retired_cov_x100();
     retired_cov_x100 = $c32(
         "(int)(Verilated::threadContextp()->covergroupRegistryp()",
-        "->retiredCoverage(\"cg_retain\") * 100.0 + 0.5)"
+        "->retiredCoverage(\"t.cg_retain\") * 100.0 + 0.5)"
     );
   endfunction
 

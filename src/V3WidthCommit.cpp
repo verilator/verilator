@@ -57,12 +57,13 @@ class WidthCommitVisitor final : public VNVisitor {
     // STATE
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeModule* m_modp = nullptr;  // Current module
-    const char* m_contNbap = nullptr;  // In continuous- or non-blocking assignment
+    const char* m_contNbap = nullptr;  // In continuous- or non-blocking assignment, or trigger
+    bool m_dlyFire = false;  // In a non-blocking event trigger
     bool m_contReads = false;  // Check read continuous automatic variables
-    bool m_dynsizedelem = false;  // Writing dynamically-sized array element, not the array itself
+    bool m_dynsizedelem = false;  // Under an element of a dynamically sized variable, not itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     bool m_taskRefWarn = true;  // Allow task reference warnings
-    bool m_underSel = false;  // Under AstMemberSel or AstSel
+    bool m_underSel = false;  // Under a MemberSel handle or what a Sel reads, unless m_contReads
     bool m_underAlwaysEdged = false;  // Under always with sequential SenTree
     std::vector<AstNew*> m_virtualNewsp;  // Instantiations of virtual classes
     std::vector<AstNodeFTask*> m_tasksp;  // All the tasks, we will check if they are ever called
@@ -165,21 +166,30 @@ private:
         if (!m_underSel && m_contNbap) {
             std::string varType;
             const AstNodeDType* const varDtp = varp->dtypep()->skipRefp();
-            if (varp->lifetime().isAutomatic() && !VN_IS(varDtp, IfaceRefDType)
+            const bool classPropOk = m_dlyFire && varp->isClassMember();
+            if (!classPropOk && varp->lifetime().isAutomatic() && !VN_IS(varDtp, IfaceRefDType)
                 && !(varp->isFuncLocal() && varp->isIO()))
                 varType = "Automatic lifetime";
-            else if (varp->isClassMember() && !varp->lifetime().isStatic()
+            else if (!classPropOk && varp->isClassMember() && !varp->lifetime().isStatic()
                      && !VN_IS(varDtp, IfaceRefDType))
                 varType = "Class non-static";
             else if (varDtp->isDynamicallySized() && m_dynsizedelem)
                 varType = "Dynamically-sized";
             if (!varType.empty()) {
                 UINFO(1, "    Related var dtype: " << varDtp);
-                nodep->v3error(varType
-                               << " variable not allowed in " << m_contNbap
-                               << " assignment (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
+                nodep->v3error(varType << " variable not allowed in " << m_contNbap
+                                       << " (IEEE 1800-2023 6.21): " << varp->prettyNameQ());
             }
         }
+    }
+    // Like varLifetimeCheck, for a member or element, which can be a dynamically-sized array too,
+    // named by the given node
+    void selLifetimeCheck(AstNodeExpr* nodep, const AstNode* namep) {
+        if (m_underSel || !m_contNbap || !m_dynsizedelem) return;
+        if (!nodep->isLValue() && !m_contReads) return;
+        if (!nodep->dtypep()->skipRefp()->isDynamicallySized()) return;
+        nodep->v3error("Dynamically-sized variable not allowed in "
+                       << m_contNbap << " (IEEE 1800-2023 6.21): " << namep->prettyNameQ());
     }
 
     void deadCheckTasks() {
@@ -209,8 +219,7 @@ private:
         //
         if (nodep->isVirtual()) isVirtualr = true;
         // Propagate value from extends/implements
-        for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
-             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+        for (AstClassExtends* const extendsp : classp->extendspList()) {
             const AstClass* const eclassp = extendsp->classp();
             if (AstNodeFTask* const fbasep
                 = VN_CAST(m_memberMap.findMember(eclassp, nodep->name()), NodeFTask)) {
@@ -380,8 +389,8 @@ private:
         m_ftaskp = nodep;
         iterateChildren(nodep);
         editDType(nodep);
-        bool isVirtual = false;
         if (const AstClass* const classp = VN_CAST(m_modp, Class)) {
+            bool isVirtual = false;
             virtualRecurse(nodep, classp, isVirtual /*ref*/);
         }
         if (nodep->isStatic() && nodep->isVirtual())  // After propagated isVirtual
@@ -470,7 +479,7 @@ private:
         {
             VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
-            m_contNbap = "continuous";
+            m_contNbap = "procedural continuous assignment";
             m_contReads = true;
             iterateAndNextNull(nodep->lhsp());
             iterateAndNextNull(nodep->rhsp());
@@ -483,7 +492,7 @@ private:
         {
             VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
-            m_contNbap = "nonblocking";
+            m_contNbap = "non-blocking assignment";
             m_contReads = false;
             iterateAndNextNull(nodep->lhsp());
         }
@@ -495,11 +504,20 @@ private:
         {
             VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
-            m_contNbap = "continuous";
+            m_contNbap = "continuous assignment";
             m_contReads = false;
             iterateAndNextNull(nodep->lhsp());
         }
         editDType(nodep);
+    }
+    void visit(AstFireEvent* nodep) override {
+        VL_RESTORER(m_contNbap);
+        VL_RESTORER(m_dlyFire);
+        if (nodep->isDelayed()) {
+            m_contNbap = "non-blocking event trigger";
+            m_dlyFire = true;
+        }
+        iterateChildren(nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
@@ -567,11 +585,43 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
     }
+    void visit(AstWildcardSel* nodep) override {
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstGetcN* nodep) override {
+        // A character of a string, which is dynamically sized
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstGetcRefN* nodep) override {
+        // A character of a string, which is dynamically sized
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstStructSel* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        selLifetimeCheck(nodep, nodep);
+    }
+    void visit(AstArraySel* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        selLifetimeCheck(nodep, nodep->baseFromp(/* overMembers: */ false));
+    }
     void visit(AstSel* nodep) override {
         {
             VL_RESTORER(m_underSel);
-            m_underSel = true;
-            iterateChildren(nodep);
+            if (!nodep->isLValue() && !m_contReads) m_underSel = true;
+            iterateAndNextNull(nodep->fromp());
+            if (!m_contReads) m_underSel = true;
+            iterateAndNextNull(nodep->lsbp());
         }
         editDType(nodep);
     }
@@ -587,15 +637,19 @@ private:
 public:
     // CONSTRUCTORS
     explicit WidthCommitVisitor(AstNetlist* nodep) {
-        // Name classes and interfaces while they have their parameter types, as this visit
-        // moves those to the type table, maybe from another module's types before their own
-        nodep->foreach([](AstNodeModule* modp) {
-            if (AstClass* const classp = VN_CAST(modp, Class)) {
-                classp->dtypeNameFreeze();
-            } else if (AstIface* const ifacep = VN_CAST(modp, Iface)) {
-                ifacep->dtypeNameFreeze();
-            }
-        });
+        {
+            // Name classes and interfaces while they have their parameter types, as this visit
+            // moves those to the type table, maybe from another module's types before their own,
+            // with the scopes declaring them indexed, as a class may be named with others
+            const VDTypeNameScopes scopes{nodep};
+            nodep->foreach([](AstNodeModule* modp) {
+                if (AstClass* const classp = VN_CAST(modp, Class)) {
+                    classp->dtypeNameFreeze();
+                } else if (AstIface* const ifacep = VN_CAST(modp, Iface)) {
+                    ifacep->dtypeNameFreeze();
+                }
+            });
+        }
         // Were changing widthMin's, so the table is now somewhat trashed
         nodep->typeTablep()->clearCache();
         iterate(nodep);

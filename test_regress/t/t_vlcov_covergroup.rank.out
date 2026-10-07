@@ -1,0 +1,3 @@
+Tests:
+  Covered,     Rank,  RankPts,  Filename
+      170,        1,      170,  "obj_vlt/t_vlcov_covergroup/coverage.dat"

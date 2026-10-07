@@ -1,0 +1,6 @@
+%Error: t/t_property_nested_instance_bad.v:19:41: Illegal 'disable iff' in a nested property instance (IEEE 1800-2023 16.12.1)
+                                                : ... note: In instance 't'
+   19 |   assert property (@(posedge clk) a |-> q_dis);
+      |                                         ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

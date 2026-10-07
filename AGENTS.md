@@ -67,6 +67,24 @@ top-of-file comment.
 | Wrong generated C++ | `V3EmitC*` |
 | Runtime model behavior | `include/verilated*` |
 
+## Write the least code that works
+
+Every change is reviewed by hand, and complicated code that is not needed is the
+biggest review cost. Apply this while writing code, not only before submitting:
+
+- Do not add a flag, guard, special case, helper, or re-check unless you can
+  state the invariant it maintains and why the existing code does not already
+  guarantee it. Usually it does -- find that invariant instead of adding a
+  mechanism. At most, document it with an assertion.
+- When two things answer the same question, merge them into one.
+- Make a decision where the information it needs is available, rather than
+  approximating it conservatively earlier.
+- Once a change works, delete everything in it that can be removed without a
+  test failing.
+- Less code does not mean terser code: do not trade clarity for brevity. Keep
+  descriptive names, straightforward control flow, and comments that explain why,
+  but brief and to the point -- do not explain behaviour obvious from the code.
+
 ## Build and run a test
 
 - Build in the source tree: `autoconf && ./configure && make -j8`. Configure with
@@ -90,6 +108,9 @@ ______________________________________________________________________
   own reproducer when possible.
 - [ ] New code aims for 100% line coverage; branch coverage far below line coverage
   signals guards callers never violate -- justify or remove them.
+- [ ] Followed "Write the least code that works": every new flag, guard, special
+  case, or helper maintains an invariant the existing code does not already
+  guarantee, and anything removable without a test failing is deleted.
 - [ ] Ran `make format` (clang-format), `make cppcheck`, and `make lint-py`;
   self-reviewed the diff for leftover debug code, stale comments, and
   copy-paste errors.
@@ -101,6 +122,10 @@ ______________________________________________________________________
   updates it near release).
 
 ## Drafting a PR
+
+- [ ] Do not post a PR directly, a human in the loop is required. You may
+  prepare the message for the PR, but then must ask the user to 1. manually
+  clean up the issue text, and 2. post it manually.
 
 - [ ] When creating a pull request message, omit itemized lists of changed
   files and changes, since reviewers already have access to the diff.
@@ -145,5 +170,5 @@ The API you choose determines which test must accompany the change.
 
 - Subject line is short and imperative and conventionally ends with the
   issue number being fixed. No need for the PR number this will be added
-  during git squash. e.g `Support property case (#7721)`. The commit body message is
-  optional and common for non-trivial changes.
+  during git squash. e.g `Support property case (#7721)`. The commit body
+  message is optional and will be ignored when merged.

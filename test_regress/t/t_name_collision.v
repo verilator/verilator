@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module HasNameParam #(
-    parameter name  /*verilator public*/ = 0
+    parameter name  /*verilator public_flat*/ = 0
 ) ();
 endmodule
 

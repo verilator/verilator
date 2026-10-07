@@ -43,7 +43,7 @@ AstNodeStmt* V3Order::createSerial(OrderMoveGraph& moveGraph, const std::string&
     }
 
     // Emit all logic as they become ready
-    V3OrderCFuncEmitter emitter{tag, slow};
+    V3OrderCFuncEmitter emitter{moveGraph.orderGraph().trigVscp(), tag, slow};
     OrderMoveDomScope* prevDomScopep = nullptr;
     while (OrderMoveVertex* const mVtxp = serializer.getNext()) {
         // We only really care about logic vertices

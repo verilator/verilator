@@ -7,6 +7,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=\"%s\" exp=\"%s\"\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
@@ -76,6 +77,39 @@ module t (
 `endif
 `endif
 `endif
+  end
+
+  // String as a condition is true when non-empty
+  initial begin
+    // Values known at compile time
+    string full;
+    string empty;
+    int n;
+    full = "abc";
+    empty = "";
+    if (full) n += 1;
+    if (empty) n += 2;
+    `checkd(n, 1);
+  end
+
+  typedef string str_t;
+  class StrCond;
+    str_t str;
+    function int count();
+      int n = 0;
+      if (str) n += 1;
+      n += str ? 2 : 0;
+      for (str_t rest = str; rest; rest = rest.substr(1, rest.len() - 1)) n += 4;
+      return n;
+    endfunction
+  endclass
+
+  always @(posedge clk) begin
+    // Values known only at runtime
+    StrCond c;
+    c = new;
+    if (cyc[0]) c.str = "ab";
+    `checkd(c.count(), cyc[0] ? 11 : 0);
   end
 
   // Test loop

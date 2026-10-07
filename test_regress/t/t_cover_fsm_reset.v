@@ -17,7 +17,7 @@ module fsm_reset_policy (
     S1 = 1'b1
   } state_t;
 
-  state_t state_incl  /*verilator fsm_reset_arc*/;
+  state_t state_incl  /*verilator fsm_state*/;
   state_t state_excl;
 
   always_ff @(posedge clk) begin

@@ -1,0 +1,14 @@
+%Error: t/t_dpi_open_packed_bad.v:8:7: Unsized packed dimension '[]' is only legal in a DPI import (IEEE 1800-2023 A.2.2.1)
+                                     : ... note: In instance 't'
+    8 |   bit [] bad;
+      |       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_dpi_open_packed_bad.v:9:16: Unsized packed dimension '[]' is only legal in a DPI import (IEEE 1800-2023 A.2.2.1)
+                                      : ... note: In instance 't'
+    9 |   logic signed [] bad2;
+      |                ^
+%Error: t/t_dpi_open_packed_bad.v:10:23: Unsized packed dimension '[]' is only legal in a DPI import (IEEE 1800-2023 A.2.2.1)
+                                       : ... note: In instance 't'
+   10 |   function void f(bit [] bad3);
+      |                       ^
+%Error: Exiting due to

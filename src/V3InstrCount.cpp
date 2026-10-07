@@ -52,16 +52,16 @@ class InstrCountVisitor final : public VNVisitorConst {
         // MEMBERS
         uint32_t m_savedCount;  // Count before visit applied
         AstNode* const m_nodep;  // Node helper is visiting
-        InstrCountVisitor* const m_visitor;  // Visitor whose start/endVisitBase are called
+        InstrCountVisitor* const m_visitorp;  // Visitor whose start/endVisitBase are called
 
     public:
         // CONSTRUCTORS
-        VisitBase(InstrCountVisitor* visitor, AstNode* nodep)
+        VisitBase(InstrCountVisitor* visitorp, AstNode* nodep)
             : m_nodep{nodep}
-            , m_visitor{visitor} {
-            m_savedCount = m_visitor->startVisitBase(nodep);
+            , m_visitorp{visitorp} {
+            m_savedCount = m_visitorp->startVisitBase(nodep);
         }
-        ~VisitBase() { m_visitor->endVisitBase(m_savedCount, m_nodep); }
+        ~VisitBase() { m_visitorp->endVisitBase(m_savedCount, m_nodep); }
 
     private:
         VL_UNCOPYABLE(VisitBase);
@@ -229,7 +229,7 @@ private:
         iterateAndNextConstNull(nodep->stmtsp());
         uint32_t totalCount = m_instrCount;
         // Sum counts in each statement until the first await
-        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->forkspList()) {
             reset();
             iterateConst(stmtp);
             totalCount += m_instrCount;
@@ -290,6 +290,12 @@ private:
         m_instrCount += savedCount;
 
         m_ignoreRemaining = false;
+    }
+    void visit(AstNodeCons* nodep) override {
+        if (m_ignoreRemaining) return;
+        const VisitBase vb{this, nodep};
+        // A constant value is not built at run time, so its parts cost nothing
+        if (!nodep->isConstantTree()) iterateChildrenConst(nodep);
     }
     void visit(AstNode* nodep) override {
         if (m_ignoreRemaining) return;

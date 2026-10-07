@@ -1,0 +1,6 @@
+%Warning-DEPRECATED: t/t_fsm_reset_arc_bad.v:21:18: /*verilator fsm_reset_arc*/ is deprecated and aliases /*verilator fsm_state*/
+   21 |   state_t state  /*verilator fsm_reset_arc*/;
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+                     ... For warning description see https://verilator.org/warn/DEPRECATED?v=latest
+                     ... Use "/* verilator lint_off DEPRECATED */" and lint_on around source to disable this message.
+%Error: Exiting due to

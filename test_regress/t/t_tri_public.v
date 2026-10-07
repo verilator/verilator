@@ -6,6 +6,8 @@
 // SPDX-FileCopyrightText: 2017 Rob Stoddard
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off UNOPTPUBLIC
+
 module t (  /*AUTOARG*/
     // Outputs
     out,

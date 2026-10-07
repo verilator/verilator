@@ -12,6 +12,8 @@ import vltest_bootstrap
 test.scenarios('linter')
 test.top_filename = "t/t_var_rsvd_port.v"
 
-test.lint(fails=test.vlt_all, expect_filename=test.golden_filename)
+test.lint(verilator_flags2=["-fno-inline"],
+          fails=test.vlt_all,
+          expect_filename=test.golden_filename)
 
 test.passes()

@@ -81,8 +81,7 @@ class ActiveTopVisitor final : public VNVisitor {
         }
 
         // Delete empty procedures
-        for (AstNode *stmtp = nodep->stmtsp(), *nextp; stmtp; stmtp = nextp) {
-            nextp = stmtp->nextp();
+        for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstNodeProcedure* const procp = VN_CAST(stmtp, NodeProcedure)) {
                 if (!procp->stmtsp()) VL_DO_DANGLING(pushDeletep(procp->unlinkFrBack()), stmtp);
             }
@@ -121,8 +120,7 @@ class ActiveTopVisitor final : public VNVisitor {
         if (nodep->sentreep()->hasCombo()) {
             FileLine* const flp = nodep->fileline();
             AstActive* initialp = nullptr;
-            for (AstNode *logicp = nodep->stmtsp(), *nextp; logicp; logicp = nextp) {
-                nextp = logicp->nextp();
+            for (AstNode* const logicp : nodep->stmtspList()) {
                 if (!isInitial(logicp)) continue;
                 if (!initialp) initialp = new AstActive{flp, "", m_finder.getInitial()};
                 initialp->addStmtsp(logicp->unlinkFrBack());

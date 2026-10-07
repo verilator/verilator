@@ -11,6 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
+TEST_FILENAME_RE = r'test_regress/t/.*\.(c|cpp|dat|gitattributes|gprof|h|map|mem|mk|out|pf|py|tree|vc|vh|vlt)$'
+TEST_FILENAME_EXEMPT = r't_inst_v2k__sub.vi'
+
 
 def get_source_files():
     git_files = test.run_capture("cd " + test.root + " && git ls-files")
@@ -50,6 +53,14 @@ for filename in sorted(files.keys()):
     if not os.path.exists(filename):  # git file might be deleted but not yet staged
         continue
     if not re.search(r'test_regress/t/.*\.v$', filename):
+        if (re.search(r'test_regress/t/[^/]*$', filename)
+                and not re.search(TEST_FILENAME_RE, filename)
+                and not re.search(TEST_FILENAME_EXEMPT, filename)):
+            if re.search(r'\.sv', filename):
+                test.error_keep_going(filename + ": Strange filename extension, use .v not .sv")
+            else:
+                test.error_keep_going(filename + ": Strange filename extension, should match '" +
+                                      TEST_FILENAME_RE + "'")
         continue
 
     contents = test.file_contents(filename)

@@ -122,8 +122,8 @@ public:
         *(reinterpret_cast<uint32_t*>(newp)) = activeMagic();
         return newp + 8;
     }
-    static void operator delete(void* obj, size_t /*size*/) VL_MT_SAFE {
-        uint8_t* const oldp = (static_cast<uint8_t*>(obj)) - 8;
+    static void operator delete(void* objp, size_t /*size*/) VL_MT_SAFE {
+        uint8_t* const oldp = (static_cast<uint8_t*>(objp)) - 8;
         if (VL_UNLIKELY(*(reinterpret_cast<uint32_t*>(oldp)) != activeMagic())) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "vpi_release_handle() called on same object twice, or on non-Verilator "
@@ -177,7 +177,7 @@ public:
 };
 
 class VerilatedVpioConst final : public VerilatedVpio {
-    const int32_t m_num;
+    const int32_t m_num;  // Constant integer value
 
 public:
     explicit VerilatedVpioConst(int32_t num)
@@ -194,14 +194,14 @@ public:
 
 class VerilatedVpioVarBase VL_NOT_FINAL : public VerilatedVpio {
 protected:
-    const VerilatedVar* m_varp = nullptr;
-    const VerilatedScope* m_scopep = nullptr;
+    const VerilatedVar* m_varp = nullptr;  // Variable this handle refers to
+    const VerilatedScope* m_scopep = nullptr;  // Scope containing the variable
 
     // Usually empty, only gets filled when fullname() is called. Has to be stored as a member so
     // the char* that fullname() returns is not a temporary.
     mutable std::string m_fullname;
 
-    int32_t m_indexedDim = -1;
+    int32_t m_indexedDim = -1;  // Array dimensions indexed so far, -1 if none
     const VerilatedRange* get_range() const { return m_varp->range(m_indexedDim + 1); }
 
 public:
@@ -223,6 +223,11 @@ public:
     const VerilatedScope* scopep() const { return m_scopep; }
     bool isStructOrUnion() const {
         return varp()->vltype() == VLVT_STRUCT || varp()->vltype() == VLVT_UNION;
+    }
+    // Whether this selects a whole packed struct/union, i.e. its own flattened packed range is
+    // the only dimension left, and there is no part-select
+    bool isPackedAgg() const {
+        return varp()->isPackedAgg() && indexedDim() + 2 == varp()->dims() && partselBits() < 0;
     }
     // Returns the number of the currently indexed dimension (starting at -1 for none).
     int32_t indexedDim() const { return m_indexedDim; }
@@ -282,7 +287,8 @@ public:
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_STRING););
         return static_cast<std::string*>(readDatap());
     }
-    virtual uint32_t bitOffset() const { return 0; }
+    virtual uint32_t bitOffset() const { return m_varp->bitOffset(); }
+    virtual int32_t partselBits() const { return -1; }
 };
 
 class VerilatedVpioParam final : public VerilatedVpioVarBase {
@@ -311,24 +317,24 @@ public:
 };
 
 class VerilatedVpioRange final : public VerilatedVpio {
-    const VerilatedRange* const m_rangep;
+    const VerilatedRange m_range;  // Range handle represents
 
 public:
-    explicit VerilatedVpioRange(const VerilatedRange* rangep)
-        : m_rangep{rangep} {}
+    explicit VerilatedVpioRange(const VerilatedRange& range)
+        : m_range{range} {}
     ~VerilatedVpioRange() override = default;
     // cppcheck-suppress duplInheritedMember
     static VerilatedVpioRange* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRange*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiRange; }
-    uint32_t size() const override { return m_rangep->elements(); }
-    const VerilatedRange* rangep() const override { return m_rangep; }
+    uint32_t size() const override { return m_range.elements(); }
+    const VerilatedRange* rangep() const override { return &m_range; }
 };
 
 class VerilatedVpioRangeIter final : public VerilatedVpio {
-    const std::vector<VerilatedRange> m_ranges;
-    std::vector<VerilatedRange>::const_iterator m_iter;
+    const std::vector<VerilatedRange> m_ranges;  // Ranges to iterate over
+    std::vector<VerilatedRange>::const_iterator m_iter;  // Next range to return
 
 public:
     explicit VerilatedVpioRangeIter(const std::vector<VerilatedRange>& ranges)
@@ -346,19 +352,17 @@ public:
             delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
             return nullptr;
         }
-        VerilatedRange* const rangep = new VerilatedRange{*m_iter};
-        ++m_iter;
-        return ((new VerilatedVpioRange{rangep})->castVpiHandle());
+        return ((new VerilatedVpioRange{*m_iter++})->castVpiHandle());
     }
 };
 
 class VerilatedVpioScope VL_NOT_FINAL : public VerilatedVpio {
 protected:
-    const VerilatedScope* const m_scopep;
-    bool m_toplevel = false;
-    const char* m_name;
-    const char* m_fullname;
-    const char* m_defname;
+    const VerilatedScope* const m_scopep;  // Scope handle refers to
+    bool m_toplevel = false;  // Scope is a top-level module
+    const char* m_name;  // Scope's identifier
+    const char* m_fullname;  // Scope's full hierarchical name
+    const char* m_defname;  // Scope's definition name
 
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
@@ -386,20 +390,21 @@ public:
 class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     uint8_t* m_prevDatap = nullptr;  // Previous value of data, for cbValueChange
     uint32_t m_entSize = 0;  // memoized variable size
-    uint32_t m_bitOffset = 0;
+    uint32_t m_bitOffset = 0;  // Bit offset of the variable
     int32_t m_partselBits = -1;  // Part-select width, -1 means no part-select active
-    std::string m_name;
-    std::string m_fullNameOverride;
+    std::string m_name;  // Variable name
+    std::string m_fullNameOverride;  // Full name used instead of default, if non-empty
 
 protected:
     void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
-    std::vector<int32_t> m_index;
+    std::vector<int32_t> m_index;  // Index into each unpacked dimension
 
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
         : VerilatedVpioVarBase{varp, scopep} {
         m_entSize = varp->entSize();
         m_varDatap = varp->datap();
+        m_bitOffset = varp->bitOffset();
         if (_vl_vpi_find_unescaped_dot(varp->name())) {
             m_name = _vl_vpi_member_local_name(varp->name());
         }
@@ -409,6 +414,7 @@ public:
         : VerilatedVpioVarBase{varp, scopep} {
         m_entSize = varp->entSize();
         m_varDatap = datap;
+        m_bitOffset = varp->bitOffset();
         m_name = name;
         m_fullNameOverride = fullname;
     }
@@ -436,7 +442,7 @@ public:
         return dynamic_cast<VerilatedVpioVar*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t bitOffset() const override { return m_bitOffset; }
-    int32_t partselBits() const { return m_partselBits; }
+    int32_t partselBits() const override { return m_partselBits; }
     uint32_t bitSize() const {
         if (isStructOrUnion() && !isIndexedDimUnpacked()) return 0;
         if (m_partselBits >= 0) return static_cast<uint32_t>(m_partselBits);
@@ -459,14 +465,14 @@ public:
         if (isIndexedDimUnpacked()) return nullptr;
 
         // Need a packed range to select from
-        const VerilatedRange* range = get_range();
-        if (!range) return nullptr;
+        const VerilatedRange* rangep = get_range();
+        if (!rangep) return nullptr;
 
         // Normalize so sel_lo <= sel_hi
         const int32_t sel_lo = std::min(hi, lo);
         const int32_t sel_hi = std::max(hi, lo);
-        const int32_t decl_left = range->left();
-        const int32_t decl_right = range->right();
+        const int32_t decl_left = rangep->left();
+        const int32_t decl_right = rangep->right();
         const int32_t decl_lo = std::min(decl_left, decl_right);
         const int32_t decl_hi = std::max(decl_left, decl_right);
 
@@ -481,10 +487,10 @@ public:
         else  // ascending [0:31]
             normalized_lo = decl_right - sel_hi;
 
-        auto* ret = new VerilatedVpioVar{this};
-        ret->m_bitOffset += normalized_lo;
-        ret->m_partselBits = width;
-        return ret;
+        auto* retp = new VerilatedVpioVar{this};
+        retp->m_bitOffset += normalized_lo;
+        retp->m_partselBits = width;
+        return retp;
     }
     VerilatedVpioVar* withIndex(int32_t index) const {
         if (VL_UNLIKELY(indexedDim() + 1 >= varp()->dims())) return nullptr;
@@ -511,6 +517,21 @@ public:
         const std::string memberName = memberVarp->name();
         const size_t parentLen = std::strlen(parentName);
 
+        if (!isStructOrUnion()) {
+            // Packed struct/union member: a narrower bit slice of the same storage. Member
+            // offsets are relative to the variable's element 0, so keep this handle's offset,
+            // which includes any packed/unpacked index already applied.
+            if (VL_UNLIKELY(!isPackedAgg())) return nullptr;
+            VerilatedVpioVar* const retp = new VerilatedVpioVar{this};  // LCOV_EXCL_BR_LINE
+            retp->m_fullNameOverride = std::string{fullname()} + memberName.substr(parentLen);
+            retp->m_name = _vl_vpi_member_local_name(memberVarp->name());
+            retp->m_varp = memberVarp;
+            retp->m_indexedDim = -1;
+            retp->m_index.clear();
+            retp->m_bitOffset += memberVarp->bitOffset() - varp()->bitOffset();
+            return retp;
+        }
+
         void* const parentDatap = varp()->datap();
         void* const memberDatap = memberVarp->datap();
         if (VL_UNLIKELY(!parentDatap) || VL_UNLIKELY(!memberDatap)) return nullptr;
@@ -535,6 +556,10 @@ public:
         }
         if (isIndexedDimUnpacked())
             return isStructOrUnion() && varp()->isNet() ? vpiNetArray : vpiRegArray;
+        if (isPackedAgg()) {
+            if (varp()->isPackedUnion()) return varp()->isNet() ? vpiUnionNet : vpiUnionVar;
+            return varp()->isNet() ? vpiStructNet : vpiStructVar;
+        }
         return type;
     }
     const char* fullname() const override {
@@ -555,11 +580,11 @@ public:
 };
 
 class VerilatedVpioVarIter final : public VerilatedVpio {
-    const VerilatedScope* const m_scopep;
-    VerilatedVarNameMap::const_iterator m_it;
-    bool m_started = false;
-    const VerilatedScope* m_topscopep = nullptr;
-    bool m_onlyParams;
+    const VerilatedScope* const m_scopep;  // Scope whose variables are iterated
+    VerilatedVarNameMap::const_iterator m_it;  // Next variable to return
+    bool m_started = false;  // Iteration has begun
+    const VerilatedScope* m_topscopep = nullptr;  // Top scope, found on first iteration
+    bool m_onlyParams;  // Iterate only parameters
 
 public:
     explicit VerilatedVpioVarIter(const VerilatedVpioScope* vop, bool onlyParams = false)
@@ -596,6 +621,8 @@ public:
                 return nullptr;
             }
             if (m_onlyParams && !m_it->second.isParam()) continue;
+            // Packed struct/union members are reached through their parent, see vpiMember
+            if (m_it->second.isPackedMember()) continue;
             if (VL_UNLIKELY(m_topscopep)) {
                 if (const VerilatedVar* topvarp = m_topscopep->varFind(m_it->second.name())) {
                     if (topvarp->isParam()) {
@@ -613,27 +640,27 @@ public:
 };
 
 class VerilatedVpioRegIter final : public VerilatedVpio {
-    VerilatedVpioVar* m_var;
-    std::vector<VerilatedRange> m_ranges;
-    std::vector<int> m_nextIndex;
-    const int32_t m_maxDim;
+    VerilatedVpioVar* m_varp;  // Variable whose elements are iterated
+    std::vector<VerilatedRange> m_ranges;  // Ranges of each dimension of the variable
+    std::vector<int> m_nextIndex;  // Next index to return in each dimension
+    const int32_t m_maxDim;  // Highest dimension to iterate
 
 public:
     explicit VerilatedVpioRegIter(const VerilatedVpioVar* vop)
-        : m_var{new VerilatedVpioVar(vop)}
+        : m_varp{new VerilatedVpioVar(vop)}
         , m_maxDim{vop->varp()->udims() - 1} {
         for (auto it = vop->indexedDim() + 1; it <= m_maxDim; ++it)
             m_ranges.push_back(*vop->varp()->range(it));
         for (auto it : m_ranges) m_nextIndex.push_back(it.right());
     }
-    ~VerilatedVpioRegIter() override = default;
+    ~VerilatedVpioRegIter() override { VL_DO_CLEAR(delete m_varp, m_varp = nullptr); }
     // cppcheck-suppress duplInheritedMember
     static VerilatedVpioRegIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRegIter*>(reinterpret_cast<VerilatedVpio*>(h));
     }
     uint32_t type() const override { return vpiIterator; }
     vpiHandle dovpi_scan() override {
-        if (VL_UNLIKELY(m_var->indexedDim() >= m_maxDim)) {
+        if (VL_UNLIKELY(m_varp->indexedDim() >= m_maxDim)) {
             // Trying to iterate over a non-array object
             delete this;
             return nullptr;
@@ -645,8 +672,8 @@ public:
             return nullptr;
         }
 
-        VerilatedVpioVar* ret = m_var;
-        for (auto it : m_nextIndex) ret = ret->withIndex(it);
+        VerilatedVpioVar* retp = m_varp;
+        for (auto it : m_nextIndex) retp = retp->withIndex(it);
 
         // Increase the index, pretending the dimensions are flattened
         for (int32_t it = m_ranges.size() - 1; it >= 0; it--) {
@@ -657,21 +684,14 @@ public:
             if (it > 0) m_nextIndex.at(it) = m_ranges.at(it).right();
         }
 
-        return ret->castVpiHandle();
+        return retp->castVpiHandle();
     }
 };
 
 class VerilatedVpioMemberIter final : public VerilatedVpio {
-    const VerilatedScope* const m_scopep;
-    const VerilatedVarNameMap* const m_varsp;
-    VerilatedVarNameMap::const_iterator m_it;
-    VerilatedVpioVar* m_varp;
-    const std::string m_namePrefix;
-    bool m_started = false;
-
-    static std::string namePrefix(const VerilatedVpioVar* vop) {
-        return std::string{vop->varp()->name()} + ".";
-    }
+    VerilatedVpioVar* m_varp;  // Variable whose members are iterated
+    std::vector<const VerilatedVar*> m_members;  // Direct members, in iteration order
+    size_t m_next = 0;  // Index of next member to return
 
     vpiHandle atEnd() {
         delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
@@ -680,10 +700,27 @@ class VerilatedVpioMemberIter final : public VerilatedVpio {
 
 public:
     explicit VerilatedVpioMemberIter(const VerilatedVpioVar* vop)
-        : m_scopep{vop->scopep()}
-        , m_varsp{m_scopep->varsp()}
-        , m_varp{new VerilatedVpioVar{vop}}
-        , m_namePrefix{namePrefix(vop)} {}
+        : m_varp{new VerilatedVpioVar{vop}} {  // LCOV_EXCL_BR_LINE
+        const VerilatedVarNameMap* const varsp = vop->scopep()->varsp();
+        // vop's own variable is in its scope, so the scope always has variables
+        if (VL_UNCOVERABLE(!varsp)) return;
+        const std::string namePrefix = std::string{vop->varp()->name()} + ".";
+        // The map is sorted by name, so all members are one contiguous range from the prefix
+        for (auto it = varsp->lower_bound(namePrefix.c_str()); it != varsp->end(); ++it) {
+            const char* const name = it->first;
+            if (std::strncmp(name, namePrefix.c_str(), namePrefix.length()) != 0) break;
+            // Only direct members, not grandchildren
+            if (_vl_vpi_find_unescaped_dot(name + namePrefix.length())) continue;
+            m_members.push_back(&it->second);
+        }
+        // Packed struct members are declared MSB first
+        if (vop->isPackedAgg()) {
+            std::stable_sort(m_members.begin(), m_members.end(),
+                             [](const VerilatedVar* ap, const VerilatedVar* bp) {
+                                 return ap->bitOffset() > bp->bitOffset();
+                             });
+        }
+    }
     ~VerilatedVpioMemberIter() override { VL_DO_CLEAR(delete m_varp, m_varp = nullptr); }
     // cppcheck-suppress duplInheritedMember
     static VerilatedVpioMemberIter* castp(vpiHandle h) {
@@ -691,19 +728,8 @@ public:
     }
     uint32_t type() const override { return vpiIterator; }
     vpiHandle dovpi_scan() override {
-        if (VL_UNLIKELY(!m_varsp)) return atEnd();
-        if (VL_UNLIKELY(!m_started)) {
-            m_it = m_varsp->begin();
-            m_started = true;
-        } else if (VL_LIKELY(m_it != m_varsp->end())) {
-            ++m_it;
-        }
-        for (; m_it != m_varsp->end(); ++m_it) {
-            const char* const name = m_it->second.name();
-            if (std::strncmp(name, m_namePrefix.c_str(), m_namePrefix.length()) != 0) continue;
-            // Only direct members, not grandchildren
-            if (_vl_vpi_find_unescaped_dot(name + m_namePrefix.length())) continue;
-            VerilatedVpioVar* const memberp = m_varp->withMember(&(m_it->second));
+        while (m_next < m_members.size()) {
+            VerilatedVpioVar* const memberp = m_varp->withMember(m_members[m_next++]);
             if (VL_UNLIKELY(!memberp)) continue;
             return memberp->castVpiHandle();
         }
@@ -738,13 +764,13 @@ public:
 };
 
 class VerilatedVpioModuleIter final : public VerilatedVpio {
-    const std::vector<const VerilatedScope*>* m_vec;
+    const std::vector<const VerilatedScope*>* m_vecp;
     std::vector<const VerilatedScope*>::const_iterator m_it;
 
 public:
     explicit VerilatedVpioModuleIter(const std::vector<const VerilatedScope*>& vec)
-        : m_vec{&vec} {
-        m_it = m_vec->begin();
+        : m_vecp{&vec} {
+        m_it = m_vecp->begin();
     }
     ~VerilatedVpioModuleIter() override = default;
     // cppcheck-suppress duplInheritedMember
@@ -754,7 +780,7 @@ public:
     uint32_t type() const override { return vpiIterator; }
     vpiHandle dovpi_scan() override {
         while (true) {
-            if (m_it == m_vec->end()) {
+            if (m_it == m_vecp->end()) {
                 delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
                 return nullptr;
             }
@@ -767,43 +793,9 @@ public:
     }
 };
 
-class VerilatedVpioScopeIter final : public VerilatedVpio {
-    const std::vector<const VerilatedScope*>* m_vec;
-    std::vector<const VerilatedScope*>::const_iterator m_it;
-
-public:
-    explicit VerilatedVpioScopeIter(const std::vector<const VerilatedScope*>& vec)
-        : m_vec{&vec} {
-        m_it = m_vec->begin();
-    }
-    ~VerilatedVpioScopeIter() override = default;
-    // cppcheck-suppress duplInheritedMember
-    static VerilatedVpioScopeIter* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioScopeIter*>(reinterpret_cast<VerilatedVpio*>(h));
-    }
-    uint32_t type() const override { return vpiIterator; }
-    vpiHandle dovpi_scan() override {
-        while (true) {
-            if (m_it == m_vec->end()) {
-                delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
-                return nullptr;
-            }
-            const VerilatedScope* const modp = *m_it++;
-            const VerilatedScope::Type itype = modp->type();
-            if (itype == VerilatedScope::SCOPE_OTHER) {
-                return (new VerilatedVpioScope{modp})->castVpiHandle();
-            } else if (itype == VerilatedScope::SCOPE_MODULE) {
-                return (new VerilatedVpioModule{modp})->castVpiHandle();
-            } else if (itype == VerilatedScope::SCOPE_INTERFACE) {
-                return (new VerilatedVpioInterface{modp})->castVpiHandle();
-            }
-        }
-    }
-};
-
 static const char* d_unit = "$unit";
 class VerilatedVpioPackage final : public VerilatedVpioScope {
-    std::string m_fullname_string;
+    std::string m_fullname_string;  // Package name with trailing "::"
 
 public:
     explicit VerilatedVpioPackage(const VerilatedScope* modulep)
@@ -876,14 +868,58 @@ public:
     }
 };
 
+// Child scopes of a scope, followed by the interface references it declares.
+// References are not scopes, but are yielded here so a tool walking the
+// hierarchy by vpiInternalScope alone can discover them
+class VerilatedVpioScopeIter final : public VerilatedVpio {
+    const std::vector<const VerilatedScope*>* const m_vecp;  // Child scopes, or nullptr
+    std::vector<const VerilatedScope*>::const_iterator m_it;  // Next child scope
+    const std::vector<const VerilatedIfaceRef*>* const
+        m_refsp;  // Interface references, or nullptr
+    std::vector<const VerilatedIfaceRef*>::const_iterator m_refIt;  // Next interface reference
+
+public:
+    VerilatedVpioScopeIter(const std::vector<const VerilatedScope*>* vecp,
+                           const std::vector<const VerilatedIfaceRef*>* refsp)
+        : m_vecp{vecp}
+        , m_refsp{refsp} {
+        if (m_vecp) m_it = m_vecp->begin();
+        if (m_refsp) m_refIt = m_refsp->begin();
+    }
+    ~VerilatedVpioScopeIter() override = default;
+    // cppcheck-suppress duplInheritedMember
+    static VerilatedVpioScopeIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioScopeIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiIterator; }
+    vpiHandle dovpi_scan() override {
+        while (m_vecp && m_it != m_vecp->end()) {
+            const VerilatedScope* const modp = *m_it++;
+            const VerilatedScope::Type itype = modp->type();
+            if (itype == VerilatedScope::SCOPE_OTHER) {
+                return (new VerilatedVpioScope{modp})->castVpiHandle();
+            } else if (itype == VerilatedScope::SCOPE_MODULE) {
+                return (new VerilatedVpioModule{modp})->castVpiHandle();
+            } else if (itype == VerilatedScope::SCOPE_INTERFACE) {
+                return (new VerilatedVpioInterface{modp})->castVpiHandle();
+            }
+        }
+        if (m_refsp && m_refIt != m_refsp->end()) {
+            return (new VerilatedVpioIfaceRef{**m_refIt++})->castVpiHandle();
+        }
+        delete this;  // IEEE 1800-2023 37.2.2 vpi_scan at end does a vpi_release_handle
+        return nullptr;
+    }
+};
+
 class VerilatedVpioInterfaceIter final : public VerilatedVpio {
-    const std::vector<const VerilatedScope*>* m_vec;
+    const std::vector<const VerilatedScope*>* m_vecp;
     std::vector<const VerilatedScope*>::const_iterator m_it;
 
 public:
     explicit VerilatedVpioInterfaceIter(const std::vector<const VerilatedScope*>& vec)
-        : m_vec{&vec} {
-        m_it = m_vec->begin();
+        : m_vecp{&vec} {
+        m_it = m_vecp->begin();
     }
     ~VerilatedVpioInterfaceIter() override = default;
     // cppcheck-suppress duplInheritedMember
@@ -893,7 +929,7 @@ public:
     uint32_t type() const override { return vpiIterator; }
     vpiHandle dovpi_scan() override {
         while (true) {
-            if (m_it == m_vec->end()) {
+            if (m_it == m_vecp->end()) {
                 delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
                 return nullptr;
             }
@@ -906,13 +942,13 @@ public:
 };
 
 class VerilatedVpioInstanceIter final : public VerilatedVpio {
-    const std::vector<const VerilatedScope*>* m_vec;
+    const std::vector<const VerilatedScope*>* m_vecp;
     std::vector<const VerilatedScope*>::const_iterator m_it;
 
 public:
     explicit VerilatedVpioInstanceIter(const std::vector<const VerilatedScope*>& vec)
-        : m_vec{&vec} {
-        m_it = m_vec->begin();
+        : m_vecp{&vec} {
+        m_it = m_vecp->begin();
     }
     ~VerilatedVpioInstanceIter() override = default;
     // cppcheck-suppress duplInheritedMember
@@ -922,7 +958,7 @@ public:
     uint32_t type() const override { return vpiIterator; }
     vpiHandle dovpi_scan() override {
         while (true) {
-            if (m_it == m_vec->end()) {
+            if (m_it == m_vecp->end()) {
                 delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
                 return nullptr;
             }
@@ -945,8 +981,8 @@ using VerilatedPliCb = PLI_INT32 (*)(struct t_cb_data*);
 class VerilatedVpiCbHolder final {
     // Holds information needed to call a callback
     uint64_t m_id;  // Unique id/sequence number to find schedule's event, 0 = invalid
-    s_cb_data m_cbData;
-    s_vpi_value m_value;
+    s_cb_data m_cbData;  // Callback registration data from the user
+    s_vpi_value m_value;  // Value passed to the callback
     VerilatedVpioVar m_varo;  // If a cbValueChange callback, the object we will return
 
 public:
@@ -973,13 +1009,13 @@ public:
 };
 
 class VerilatedVpiPutHolder final {
-    VerilatedVpioVar m_var;
-    s_vpi_value m_value;
+    VerilatedVpioVar m_var;  // Variable to be written
+    s_vpi_value m_value;  // Value to be written
     union Storage {
         char init = 0;  // to ensure trivial constructor
         std::string str;
         std::vector<s_vpi_vecval> vec;
-        ~Storage() noexcept {/* handled by VerilatedVpiPutHolder */};
+        ~Storage() noexcept { /* handled by VerilatedVpiPutHolder */ };
     } m_storage{};
 
 public:
@@ -1288,16 +1324,20 @@ public:
                                     varop->fullname(), *(static_cast<CData*>(varop->readDatap())),
                                     *(varop->prevDatap()), varop->readDatap(), varop->prevDatap(),
                                     varop->entSize()););
-        if (varop->bitSize() == 1) {
-            T* const prevDatap = reinterpret_cast<T*>(
-                varop->prevDatap());  // Was malloced when we added the callback
+        // Compare only this handle's bits, so e.g. a packed struct member or a part-select
+        // does not trigger on a change elsewhere in the same storage
+        T* const prevDatap
+            = reinterpret_cast<T*>(varop->prevDatap());  // Was malloced when we added the callback
+        constexpr size_t wordBits = sizeof(T) * 8;
+        const uint32_t varBits = varop->bitSize();
+        for (size_t addOffset = 0; addOffset < varBits; addOffset += wordBits) {
             const VarAccessInfo<T> currInfo
-                = vl_vpi_var_access_info<T>(varop, varop->bitSize(), 0);
+                = vl_vpi_var_access_info<T>(varop, wordBits, addOffset);
             VarAccessInfo<T> prevInfo = currInfo;
             prevInfo.m_datap = prevDatap;
-            return vl_vpi_get_word_gen(currInfo) != vl_vpi_get_word_gen(prevInfo);
+            if (vl_vpi_get_word_gen(currInfo) != vl_vpi_get_word_gen(prevInfo)) return true;
         }
-        return std::memcmp(varop->prevDatap(), varop->readDatap(), varop->entSize()) != 0;
+        return false;
     }
     static bool valueDiffersFromPrev(VerilatedVpioVar* varop) {
         switch (varop->varp()->vltype()) {
@@ -1316,37 +1356,9 @@ public:
             // LCOV_EXCL_STOP
         }
     }
-    template <typename T>
     static void updatePrev(const VerilatedVpioVar* const varop) {
-        if (varop->bitSize() == 1) {
-            const VarAccessInfo<T> currInfo
-                = vl_vpi_var_access_info<T>(varop, varop->bitSize(), 0);
-            VarAccessInfo<T> prevInfo = currInfo;
-            T* const prevDatap = reinterpret_cast<T*>(varop->prevDatap());
-            prevInfo.m_datap = prevDatap;
-            const T currWord = vl_vpi_get_word_gen(currInfo);
-            vl_vpi_put_word_gen(prevInfo, currWord);
-            assert(std::memcmp(varop->prevDatap(), varop->readDatap(), varop->entSize()) == 0);
-        } else {
-            std::memcpy(varop->prevDatap(), varop->readDatap(), varop->entSize());
-        }
-    }
-    static void updatePrev(const VerilatedVpioVar* const varop) {
-        switch (varop->varp()->vltype()) {
-        case VLVT_UINT8: updatePrev<CData>(varop); break;
-        case VLVT_UINT16: updatePrev<SData>(varop); break;
-        case VLVT_UINT32: updatePrev<IData>(varop); break;
-        case VLVT_UINT64: updatePrev<QData>(varop); break;
-        case VLVT_WDATA:
-            updatePrev<EData>(varop);
-            break;
-            // LCOV_EXCL_START - Would require earlier type check to not catch that
-        default:
-            const std::string msg
-                = "Unsupported type (" + std::to_string(varop->varp()->vltype()) + ")";
-            VL_FATAL_MT(__FILE__, __LINE__, "", msg.c_str());
-            // LCOV_EXCL_STOP
-        }
+        // valueDiffersFromPrev only compares this handle's bits, so copying all is fine
+        std::memcpy(varop->prevDatap(), varop->readDatap(), varop->entSize());
     }
     static bool callValueCbs() VL_MT_UNSAFE_ONE {
         assertOneCheck();
@@ -1435,14 +1447,14 @@ thread_local uint8_t* VerilatedVpio::t_freeHeadp = nullptr;
 // Internal container for vpi error info
 
 class VerilatedVpiError final {
-    t_vpi_error_info m_errorInfo;
-    bool m_flag = false;
+    t_vpi_error_info m_errorInfo;  // Error information returned to the user
+    bool m_flag = false;  // Error information has been set
     char m_buff[VL_VPI_LINE_SIZE_];
-    void setError(PLI_BYTE8* message, PLI_BYTE8* code, PLI_BYTE8* file, PLI_INT32 line) {
-        m_errorInfo.message = message;
-        m_errorInfo.file = file;
+    void setError(PLI_BYTE8* messagep, PLI_BYTE8* codep, PLI_BYTE8* filep, PLI_INT32 line) {
+        m_errorInfo.message = messagep;
+        m_errorInfo.file = filep;
         m_errorInfo.line = line;
-        m_errorInfo.code = code;
+        m_errorInfo.code = codep;
         do_callbacks();
     }
     void do_callbacks() {
@@ -1499,7 +1511,7 @@ public:
     static const char* strFromVpiMethod(PLI_INT32 vpiVal) VL_PURE;
     static const char* strFromVpiCallbackReason(PLI_INT32 vpiVal) VL_PURE;
     static const char* strFromVpiProp(PLI_INT32 vpiVal) VL_PURE;
-    static const char* strFromVpiConstType(PLI_INT32 vpiVal) VL_PURE;
+    static const char* strFromVpiConstType(PLI_INT32 constType) VL_PURE;
 };
 
 //======================================================================
@@ -1578,10 +1590,10 @@ VerilatedVpiError* VerilatedVpiImp::error_info() VL_MT_UNSAFE_ONE {
 
 VerilatedVpiImp::ForceControlSignalVops
 VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVar* const baseSignalVop) {
-    const VerilatedForceControlSignals* const forceControlSignals
+    const VerilatedForceControlSignals* const forceControlSignalsp
         = baseSignalVop->varp()->forceControlSignals();
     // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
-    if (VL_UNLIKELY(!forceControlSignals)) {
+    if (VL_UNLIKELY(!forceControlSignalsp)) {
         VL_VPI_ERROR_(
             __FILE__, __LINE__,
             "%s: VPI put or get requested for forceable signal '%s', but signal has no force "
@@ -1589,9 +1601,9 @@ VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVar* const baseSignal
             __func__, baseSignalVop->fullname());
         return {};
     }  // LCOV_EXCL_STOP
-    const VerilatedVar* const forceEnableSignalVarp = forceControlSignals->forceEnableSignalp;
-    const VerilatedVar* const forceValueSignalVarp = forceControlSignals->forceValueSignalp;
-    const VerilatedVar* const forceReadSignalVarp = &forceControlSignals->forceReadSignal;
+    const VerilatedVar* const forceEnableSignalVarp = forceControlSignalsp->forceEnableSignalp;
+    const VerilatedVar* const forceValueSignalVarp = forceControlSignalsp->forceValueSignalp;
+    const VerilatedVar* const forceReadSignalVarp = &forceControlSignalsp->forceReadSignal;
 
     // LCOV_EXCL_START - Would require a Verilation time error, so cannot test
     if (VL_UNLIKELY(!forceEnableSignalVarp || !forceValueSignalVarp || !forceReadSignalVarp)) {
@@ -1726,9 +1738,9 @@ VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVar* const baseSignal
 #endif  // VL_DEBUG
 
     return VerilatedVpiImp::ForceControlSignalVops{
-        .forceEnable{std::unique_ptr<VerilatedVpioVar>{forceEnableSignalVop}},
-        .forceValue{std::unique_ptr<VerilatedVpioVar>{forceValueSignalVop}},
-        .forceRead{std::unique_ptr<VerilatedVpioVar>{forceReadSignalVop}}};
+        std::unique_ptr<VerilatedVpioVar>{forceEnableSignalVop},
+        std::unique_ptr<VerilatedVpioVar>{forceValueSignalVop},
+        std::unique_ptr<VerilatedVpioVar>{forceReadSignalVop}};
 }
 
 QData vl_vpi_get_word(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset);
@@ -2624,7 +2636,7 @@ struct VlVpiBitRange final {
 // e.g., "signal[31:0]" -> name becomes "signal", indices = {}, bitRange = {31, 0}
 // Returns true if any brackets were parsed successfully, false otherwise.
 static bool vl_vpi_parse_indices(std::string& name, std::vector<PLI_INT32>& indices,
-                                 VlVpiBitRange* bitRange = nullptr) {
+                                 VlVpiBitRange* bitRangep = nullptr) {
     if (name.empty() || name.back() != ']') return false;
 
     // Only parse brackets after the last escaped identifier's terminating space
@@ -2651,7 +2663,7 @@ static bool vl_vpi_parse_indices(std::string& name, std::vector<PLI_INT32>& indi
         if (content.empty()) return false;  // Empty brackets []
 
         // On the first (rightmost) bracket, check for bit range [hi:lo]
-        if (first && bitRange) {
+        if (first && bitRangep) {
             const size_t colon = content.find(':');
             if (colon != std::string::npos) {
                 char* endp = nullptr;
@@ -2659,9 +2671,9 @@ static bool vl_vpi_parse_indices(std::string& name, std::vector<PLI_INT32>& indi
                 if (!endp || *endp != ':') return false;
                 const long lo_val = std::strtol(endp + 1, &endp, 10);
                 if (!endp || *endp != '\0') return false;
-                bitRange->hi = static_cast<int32_t>(hi_val);
-                bitRange->lo = static_cast<int32_t>(lo_val);
-                bitRange->valid = true;
+                bitRangep->hi = static_cast<int32_t>(hi_val);
+                bitRangep->lo = static_cast<int32_t>(lo_val);
+                bitRangep->valid = true;
                 end = open;
                 first = false;
                 continue;
@@ -2677,7 +2689,7 @@ static bool vl_vpi_parse_indices(std::string& name, std::vector<PLI_INT32>& indi
         end = open;
     }
 
-    if (indices.empty() && !(bitRange && bitRange->valid)) return false;
+    if (indices.empty() && !(bitRangep && bitRangep->valid)) return false;
 
     // Reverse indices to get them in forward order [0][3][2] -> {0, 3, 2}
     std::reverse(indices.begin(), indices.end());
@@ -2731,10 +2743,22 @@ static bool _vl_vpi_find_dotted_var(const std::string& scopename, const std::str
     }
 }
 
+static bool _vl_vpi_check_member_access(const char* funcp, const VerilatedVpioVar* vop) {
+    // Forceable packed struct/union members would bypass the force control signals
+    if (VL_UNLIKELY(vop->isPackedAgg() && vop->varp()->isForceable())) {
+        VL_VPI_ERROR_(__FILE__, __LINE__,
+                      "%s: Unsupported: member access of forceable packed struct/union '%s'",
+                      funcp, vop->fullname());
+        return false;
+    }
+    return true;
+}
+
 static VerilatedVpioVar* _vl_vpi_handle_member_by_name(const std::string& name,
                                                        const VerilatedVpioVar* vop) {
     const VerilatedScope* const scopep = vop->scopep();
     if (VL_UNLIKELY(!scopep)) return nullptr;
+    if (!_vl_vpi_check_member_access("vpi_handle_by_name", vop)) return nullptr;
     const std::string memberName = std::string{vop->varp()->name()} + "." + name;
     const VerilatedVar* const memberVarp = scopep->varFind(memberName.c_str());
     if (!memberVarp) return nullptr;
@@ -2879,7 +2903,7 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
         const bool scopeIsPackage = VerilatedVpioPackage::castp(scope) != nullptr;
         scopeAndName
             = std::string{voScopep->fullname()} + (scopeIsPackage ? "" : ".") + scopeAndName;
-    } else if (voVarp && voVarp->isStructOrUnion()) {
+    } else if (voVarp && (voVarp->isStructOrUnion() || voVarp->isPackedAgg())) {
         if (VerilatedVpioVar* const memberp
             = _vl_vpi_handle_member_by_name(scopeAndName, voVarp)) {
             return memberp->castVpiHandle();
@@ -2954,8 +2978,13 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
             // Unpacked struct members are exposed as synthetic variables with dotted names.
             // Exact unindexed member names can be found directly; indexed member paths need the
             // component walker so array indices are applied before member offsets.
-            if (!varp
-                && !_vl_vpi_find_dotted_var(scopename, basename, scopep, varp, fullnameOverride)) {
+            if (!varp)
+                _vl_vpi_find_dotted_var(scopename, basename, scopep, varp, fullnameOverride);
+            // Packed struct/union members are found the same way, but only valid on a whole
+            // struct. Selecting through an array without an index, e.g. "arr.hi", must not
+            // resolve, as the member table has one entry for all elements.
+            if (varp && varp->isPackedNeedsIndex()) varp = nullptr;
+            if (!varp) {
                 if (VerilatedVpioVar* const memberp
                     = _vl_vpi_handle_dotted_indexed_member_by_name(scopeAndName)) {
                     return memberp->castVpiHandle();
@@ -2994,13 +3023,13 @@ vpiHandle vpi_handle_by_name(PLI_BYTE8* namep, vpiHandle scope) {
             vpi_release_handle(resultHandle);
             return nullptr;
         }
-        VerilatedVpioVar* const partsel = varop->withPartSelect(bitRange.hi, bitRange.lo);
-        if (!partsel) {
+        VerilatedVpioVar* const partselp = varop->withPartSelect(bitRange.hi, bitRange.lo);
+        if (!partselp) {
             vpi_release_handle(resultHandle);
             return nullptr;
         }
         vpi_release_handle(resultHandle);
-        resultHandle = partsel->castVpiHandle();
+        resultHandle = partselp->castVpiHandle();
     }
 
     return resultHandle;
@@ -3135,7 +3164,8 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
     }
     case vpiMember: {
         const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(object);
-        if (!vop || !vop->isStructOrUnion()) return nullptr;
+        if (!vop || !(vop->isStructOrUnion() || vop->isPackedAgg())) return nullptr;
+        if (!_vl_vpi_check_member_access(__func__, vop)) return nullptr;
         return ((new VerilatedVpioMemberIter{vop})->castVpiHandle());
     }
     case vpiParameter: {
@@ -3165,8 +3195,13 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         const VerilatedHierarchyMap* const map = VerilatedImp::hierarchyMap();
         const VerilatedScope* const modp = vop ? vop->scopep() : nullptr;
         const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(modp));
-        if (it == map->end()) return nullptr;
-        return ((new VerilatedVpioScopeIter{it->second})->castVpiHandle());
+        const std::vector<const VerilatedScope*>* const scopesp
+            = (it == map->end()) ? nullptr : &it->second;
+        // A leaf module with interface ports has no child scopes, yet must iterate
+        const std::vector<const VerilatedIfaceRef*>* const refsp
+            = modp ? modp->ifaceRefsp() : nullptr;
+        if (!scopesp && !refsp) return nullptr;
+        return ((new VerilatedVpioScopeIter{scopesp, refsp})->castVpiHandle());
     }
     case vpiInstance: {
         if (object) return nullptr;
@@ -3242,14 +3277,14 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
     case vpiPacked: {
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_LIKELY(vop && vop->isStructOrUnion())) return 0;
-        [[fallthrough]];
+        if (VL_LIKELY(vop && vop->isPackedAgg())) return 1;
+        break;
     }
-    default:
-        VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: Unsupported property '%s', nothing will be returned", __func__,
-                      VerilatedVpiError::strFromVpiProp(property));
-        return vpiUndefined;
+    default: break;
     }
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported property '%s', nothing will be returned",
+                  __func__, VerilatedVpiError::strFromVpiProp(property));
+    return vpiUndefined;
 }
 
 PLI_INT64 vpi_get64(PLI_INT32 /*property*/, vpiHandle /*object*/) {
@@ -3892,9 +3927,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 = baseSignalVop->varp()->isContinuously()
                       ? s_vpi_value{}
                       : [&forceReadSignalVop]() {
-                            s_vpi_value val{.format = vl_get_vltype_format(
-                                                forceReadSignalVop->varp()->vltype()),
-                                            .value{}};
+                            s_vpi_value val{
+                                vl_get_vltype_format(forceReadSignalVop->varp()->vltype()), {}};
                             vl_vpi_get_value(forceReadSignalVop, &val);
                             return val;
                         }();
@@ -4136,10 +4170,10 @@ bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arra
 template <typename T, typename K>
 void vl_get_value_array_integrals(unsigned index, const unsigned num, const unsigned size,
                                   const unsigned /*packedSize*/, const bool leftIsLow,
-                                  const T* src, K* dst) {
+                                  const T* srcp, K* dstp) {
     static_assert(sizeof(K) >= sizeof(T), "size of type K is less than size of type T");
     for (int i = 0; i < num; ++i) {
-        dst[i] = src[index];
+        dstp[i] = srcp[index];
         index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
                 : index == 0 ? size - 1
                              : index - 1;
@@ -4148,8 +4182,8 @@ void vl_get_value_array_integrals(unsigned index, const unsigned num, const unsi
 
 template <typename T, typename K>
 void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsigned size,
-                                  const unsigned packedSize, const bool leftIsLow, const T* src,
-                                  K* dst) {
+                                  const unsigned packedSize, const bool leftIsLow, const T* srcp,
+                                  K* dstp) {
     static_assert(std::is_integral<T>::value, "type T is not an integral type");
     static_assert(std::is_unsigned<T>::value, "type T is not unsigned");
     static_assert(sizeof(T) >= sizeof(K), "size of type T is less than size of type K");
@@ -4158,7 +4192,7 @@ void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsi
                        ? static_cast<T>(-1)
                        : ~(static_cast<T>(-1) << (element_size_bytes * 8));
     for (unsigned i = 0; i < num; ++i) {
-        dst[index] = src[i] & static_cast<T>(mask);
+        dstp[index] = srcp[i] & static_cast<T>(mask);
         index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
                 : index == 0 ? size - 1
                              : index - 1;
@@ -4167,16 +4201,16 @@ void vl_put_value_array_integrals(unsigned index, const unsigned num, const unsi
 
 template <typename T>
 void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsigned size,
-                                const unsigned packedSize, const bool leftIsLow, const T* src,
+                                const unsigned packedSize, const bool leftIsLow, const T* srcp,
                                 p_vpi_vecval dst) {
     static_assert(std::is_unsigned<T>::value,
                   "type T is not unsigned");  // ensure logical right shift
     const unsigned element_size_words = VL_WORDS_I(packedSize);
     if (sizeof(T) == sizeof(QData)) {
         for (unsigned i = 0; i < num; ++i) {
-            dst[i * 2].aval = static_cast<QData>(src[index]);
+            dst[i * 2].aval = static_cast<QData>(srcp[index]);
             dst[i * 2].bval = 0;
-            dst[(i * 2) + 1].aval = static_cast<QData>(src[index]) >> 32;
+            dst[(i * 2) + 1].aval = static_cast<QData>(srcp[index]) >> 32;
             dst[(i * 2) + 1].bval = 0;
             index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
                     : index == 0 ? size - 1
@@ -4187,7 +4221,7 @@ void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsign
             const size_t dst_index = i * element_size_words;
             const size_t src_index = index * element_size_words;
             for (unsigned j = 0; j < element_size_words; ++j) {
-                dst[dst_index + j].aval = src[src_index + j];
+                dst[dst_index + j].aval = srcp[src_index + j];
                 dst[dst_index + j].bval = 0;
             }
             index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
@@ -4200,7 +4234,7 @@ void vl_get_value_array_vectors(unsigned index, const unsigned num, const unsign
 template <typename T>
 void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow,
-                                const bool /*fourState*/, const p_vpi_vecval src, T* dst) {
+                                const bool /*fourState*/, const p_vpi_vecval src, T* dstp) {
     static_assert(std::is_unsigned<T>::value, "type T is not unsigned");
     static_assert(std::is_integral<T>::value, "type T is not an integral type");
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
@@ -4210,8 +4244,8 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
                                ? static_cast<QData>(-1)
                                : ~(static_cast<QData>(-1) << (element_size_bytes * 8));
         for (unsigned i = 0; i < num; ++i) {
-            dst[index] = src[i * 2].aval;
-            dst[index]
+            dstp[index] = src[i * 2].aval;
+            dstp[index]
                 |= (static_cast<QData>(src[(i * 2) + 1].aval) << (sizeof(PLI_UINT32) * 8)) & mask;
             index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
                     : index == 0 ? size - 1
@@ -4226,7 +4260,7 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
                     = (element_size_bytes - bytes_stored) >= sizeof(PLI_UINT32)
                           ? static_cast<T>(-1)
                           : ~(static_cast<T>(-1) << ((element_size_bytes - bytes_stored) * 8));
-                dst[(index * element_size_words) + j]
+                dstp[(index * element_size_words) + j]
                     = static_cast<T>(src[(i * element_size_words) + j].aval) & mask;
                 bytes_stored += sizeof(PLI_UINT32);
             }
@@ -4240,7 +4274,7 @@ void vl_put_value_array_vectors(unsigned index, const unsigned num, const unsign
 template <typename T>
 void vl_get_value_array_rawvals(unsigned index, unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow,
-                                const bool fourState, const T* src, PLI_BYTE8* dst) {
+                                const bool fourState, const T* srcp, PLI_BYTE8* dstp) {
     static_assert(std::is_unsigned<T>::value,
                   "type T is not unsigned");  //ensure logical right shift
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
@@ -4250,14 +4284,14 @@ void vl_get_value_array_rawvals(unsigned index, unsigned num, const unsigned siz
         const size_t src_offset = index * element_size_repr;
         unsigned bytes_copied = 0;
         for (unsigned j = 0; j < element_size_repr; ++j) {
-            const T& src_data = src[src_offset + j];
+            const T& src_data = srcp[src_offset + j];
             for (unsigned k = 0; k < sizeof(T); ++k) {
                 if (bytes_copied++ == element_size_bytes) break;
-                dst[dst_index++] = src_data >> (k * 8);
+                dstp[dst_index++] = src_data >> (k * 8);
             }
         }
         if (fourState) {
-            std::fill(dst + dst_index, dst + dst_index + element_size_bytes, 0);
+            std::fill(dstp + dst_index, dstp + dst_index + element_size_bytes, 0);
             dst_index += element_size_bytes;
         }
         index = leftIsLow    ? index == (size - 1) ? 0 : index + 1
@@ -4269,7 +4303,7 @@ void vl_get_value_array_rawvals(unsigned index, unsigned num, const unsigned siz
 template <typename T>
 void vl_put_value_array_rawvals(unsigned index, const unsigned num, const unsigned size,
                                 const unsigned packedSize, const bool leftIsLow,
-                                const bool fourState, const PLI_UBYTE8* src, T* dst) {
+                                const bool fourState, const PLI_UBYTE8* srcp, T* dstp) {
     const unsigned element_size_bytes VL_BYTES_I(packedSize);
     const unsigned element_size_repr = (element_size_bytes + sizeof(T) - 1) / sizeof(T);
     for (unsigned i = 0; i < num; ++i) {
@@ -4277,13 +4311,13 @@ void vl_put_value_array_rawvals(unsigned index, const unsigned num, const unsign
         const size_t dst_offset = index * element_size_repr;
         const size_t src_offset = i * element_size_bytes;
         for (unsigned j = 0; j < element_size_repr; ++j) {
-            T& dst_data = dst[dst_offset + j];
+            T& dst_data = dstp[dst_offset + j];
             for (unsigned k = 0; k < sizeof(T); ++k) {
                 if (bytes_copied == element_size_bytes) break;
                 const unsigned src_index
                     = fourState ? (src_offset * 2) + bytes_copied : (src_offset) + bytes_copied;
                 dst_data &= ~((static_cast<T>(0xFF) & 0xFF) << (k * 8));
-                dst_data |= ((static_cast<T>(src[src_index]) & 0xFF) << (k * 8));
+                dst_data |= ((static_cast<T>(srcp[src_index]) & 0xFF) << (k * 8));
                 bytes_copied++;
             }
         }

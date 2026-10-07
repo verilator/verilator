@@ -35,6 +35,12 @@ module t (
       .in(in[31:0])
   );
 
+  Test4 test4 (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .in(in[31:0])
+  );
+
   always @(posedge clk) begin
     if (cyc != 0) begin
       cyc <= cyc + 1;
@@ -184,4 +190,50 @@ module Test3 (  /*AUTOARG*/
   global clocking gck @(posedge clk);
   endclocking
 
+endmodule
+
+module Test4 (  /*AUTOARG*/
+    // Inputs
+    clk,
+    in
+);
+
+  input clk;
+  input [31:0] in;
+
+  // Elements of unpacked arrays without an initializer
+  bit [3:0] arr[2];
+  bit m[2][2];
+  bit [3:0] dly;
+  bit mdly;
+  // With an initializer, which is the default
+  bit [3:0] ai[2] = '{4'd1, 4'd2};
+  bit [3:0] aidly;
+  bit [3:0] vdly;
+
+  always @(posedge clk) begin
+    arr[0] <= in[3:0];
+    arr[1] <= ~in[3:0];
+    m[1][0] <= in[0];
+    dly <= arr[0];
+    mdly <= m[1][0];
+    ai[1] <= in[3:0];
+    aidly <= ai[1];
+    vdly <= arr[in[1]];
+    if (in == 1) begin
+      // Before the first tick, the default of the element type
+      `checkd($past(arr[0]), 0);
+      `checkd($past(m[1][0]), 0);
+      `checkd($past(ai[1]), 2);
+    end
+    if (in > 2) begin
+      `checkd($past(arr[0]), dly);
+      `checkd($past(arr[1]), ~dly);
+      `checkd($past(m[1][0]), mdly);
+      `checkd($stable(arr[0]), arr[0] == dly);
+      `checkd($past(ai[1]), aidly);
+      // Variable index
+      `checkd($past(arr[in[1]]), vdly);
+    end
+  end
 endmodule

@@ -17,8 +17,6 @@ test.sim_time = 2000000
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
-test.top_filename = "t/t_dfg_break_cycles.v"
-
 # Read expected source lines hit
 expectedLines = set()
 
@@ -66,6 +64,7 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
 # Compile un-optimized
 test.compile(verilator_flags2=[
     "--stats",
+    "-fno-decompose",
     "--build",
     "-fno-dfg",
     "-fno-gate",
@@ -82,6 +81,7 @@ test.file_grep(test.obj_dir + "/obj_ref/Vref__stats.txt",
 # Compile optimized - also builds executable
 test.compile(verilator_flags2=[
     "--stats",
+    "-fno-decompose",
     "--build",
     "--exe",
     "-fdfg-synthesize-all",

@@ -81,8 +81,7 @@ void V3ParseImp::importIfInStd(FileLine* fileline, const string& id, bool doImpo
         if (doImport) {
             AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
             unitPackage(stdpkgp->fileline())->addStmtsp(impp);
-            for (AstNode* itemp = v3Global.rootp()->stdPackagep()->stmtsp(); itemp;
-                 itemp = itemp->nextp()) {
+            for (AstNode* const itemp : v3Global.rootp()->stdPackagep()->stmtspList()) {
                 if (itemp->name() == "process") {
                     v3Global.rootp()->stdPackageProcessp(VN_AS(itemp, Class));
                     UASSERT_OBJ(v3Global.rootp()->stdPackageProcessp(), v3Global.rootp(),
@@ -123,8 +122,7 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         }
 
         AstNodeExpr* itemMatchp = nullptr;
-        for (AstNodeExpr *condNextp, *condp = itemp->condsp(); condp; condp = condNextp) {
-            condNextp = VN_AS(condp->nextp(), NodeExpr);
+        for (AstNodeExpr* const condp : itemp->condspList()) {
             condp->unlinkFrBack();
             AstNodeExpr* const eqp
                 = new AstEqCase{condp->fileline(), exprp->cloneTreePure(false), condp};

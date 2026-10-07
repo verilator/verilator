@@ -33,6 +33,8 @@ test.run(logfile=secret_dir + "/vlt_compile.log",
               "t/t_lib_prot_secret.v"],
          verilator_run=True)  # yapf:disable
 
+test.file_grep(secret_dir + "/secret.sv", r'inout logic z_secret\b')
+
 test.run(logfile=secret_dir + "/secret_gcc.log",
          cmd=[os.environ["MAKE"], "-C", secret_dir, "-f", "Vt_lib_prot_secret.mk"])
 

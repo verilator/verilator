@@ -325,6 +325,10 @@ private:
         }
         if (nodep->access().isWriteOrRW()) ++m_nWriteRefs;
     }
+    void visit(AstMemberSel* nodep) override {
+        processAndIterate(nodep);
+        if (nodep->access().isWriteOrRW()) ++m_nWriteRefs;  // Writes the member
+    }
     void visit(AstNodeCCall* nodep) override {
         ++m_nCalls;
         processAndIterate(nodep);
@@ -333,6 +337,11 @@ private:
         ++m_nCalls;
         processAndIterate(nodep);
         checkArgRefs(nodep, nodep->method().args(), nodep->pinsp());
+    }
+    void visit(AstCFuncHard* nodep) override {
+        ++m_nCalls;
+        processAndIterate(nodep);
+        checkArgRefs(nodep, nodep->function().args(), nodep->pinsp());
     }
     void visit(AstNodeFTaskRef* nodep) override {
         ++m_nCalls;

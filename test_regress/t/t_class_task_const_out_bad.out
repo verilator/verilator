@@ -1,0 +1,19 @@
+%Error-ASSIGNIN: t/t_class_task_const_out_bad.v:30:12: Assigning to input/const variable: 'inport'
+                                                     : ... note: In instance 't'
+   30 |     c.yout(inport);
+      |            ^~~~~~
+                 ... For error description see https://verilator.org/warn/ASSIGNIN?v=latest
+%Error-ASSIGNIN: t/t_class_task_const_out_bad.v:31:12: Assigning to input/const variable: 'inport'
+                                                     : ... note: In instance 't'
+   31 |     c.yref(inport);
+      |            ^~~~~~
+%Error-CONSTWRITTEN: t/t_class_task_const_out_bad.v:33:12: Writing to 'const' data-typed variable 'cnst' (IEEE 1800-2023 6.20.6)
+                                                         : ... note: In instance 't'
+   33 |     c.xout(cnst);
+      |            ^~~~
+                     ... For error description see https://verilator.org/warn/CONSTWRITTEN?v=latest
+%Error-CONSTWRITTEN: t/t_class_task_const_out_bad.v:34:12: Writing to 'const' data-typed variable 'cnst' (IEEE 1800-2023 6.20.6)
+                                                         : ... note: In instance 't'
+   34 |     c.xref(cnst);
+      |            ^~~~
+%Error: Exiting due to

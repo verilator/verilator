@@ -37,6 +37,7 @@
 #include <map>
 #include <set>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -104,7 +105,7 @@ class VIfaceCaptureTag;
 //######################################################################
 
 struct VNTypeInfo final {
-    const char* m_namep;
+    const char* m_namep;  // Name of the node type
     enum OpEn : uint8_t {
         OP_UNUSED,
         OP_USED,
@@ -112,7 +113,7 @@ struct VNTypeInfo final {
         OP_OPTIONAL,
     } m_opType[4];
     const char* m_opNamep[4];
-    size_t m_sizeof;
+    size_t m_sizeof;  // Size of the node type
 };
 
 class VNType final {
@@ -120,7 +121,7 @@ class VNType final {
 
 public:
 #include "V3Ast__gen_type_enum.h"  // From ./astgen
-    const en m_e;
+    const en m_e;  // Enumeration value
     VNType() = delete;
 
     // VNType is interconvetible with VNType::en
@@ -224,32 +225,32 @@ public:
 //  user2.  When the member goes out of scope it will be automagically
 //  freed up.
 
-class VNUserInUseBase VL_NOT_FINAL {
-protected:
-    static void allocate(int id, uint32_t& cntGblRef, bool& userBusyRef) {
-        // Perhaps there's still a AstUserInUse in scope for this?
-        UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser" + cvtToStr(id)
-                                         + "InUse request when under another AstUserInUse");
-        userBusyRef = true;
-        clearcnt(id, cntGblRef, userBusyRef);
-    }
-    static void free(int id, uint32_t& cntGblRef, bool& userBusyRef) {
-        UASSERT_STATIC(userBusyRef, "Free of User" + cvtToStr(id) + "() not under AstUserInUse");
-        clearcnt(id, cntGblRef, userBusyRef);  // Includes a checkUse for us
-        userBusyRef = false;
-    }
-    static void clearcnt(int id, uint32_t& cntGblRef, const bool& userBusyRef) {
-        UASSERT_STATIC(userBusyRef, "Clear of User" + cvtToStr(id) + "() not under AstUserInUse");
-        // If this really fires and is real (after 2^32 edits???)
-        // we could just walk the tree and clear manually
-        ++cntGblRef;
-        UASSERT_STATIC(cntGblRef, "User*() overflowed!");
-    }
-    static void checkcnt(int id, uint32_t&, const bool& userBusyRef) {
-        UASSERT_STATIC(userBusyRef,
-                       "Check of User" + cvtToStr(id) + "() failed, not under AstUserInUse");
-    }
-};
+class VNUserInUseBase
+VL_NOT_FINAL{protected : static void allocate(int id, uint32_t& cntGblRef, bool& userBusyRef){
+    // Perhaps there's still a AstUserInUse in scope for this?
+    UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser" + cvtToStr(id)
+                                     + "InUse request when under another AstUserInUse");
+userBusyRef = true;
+clearcnt(id, cntGblRef, userBusyRef);
+}
+static void free(int id, uint32_t& cntGblRef, bool& userBusyRef) {
+    UASSERT_STATIC(userBusyRef, "Free of User" + cvtToStr(id) + "() not under AstUserInUse");
+    clearcnt(id, cntGblRef, userBusyRef);  // Includes a checkUse for us
+    userBusyRef = false;
+}
+static void clearcnt(int id, uint32_t& cntGblRef, const bool& userBusyRef) {
+    UASSERT_STATIC(userBusyRef, "Clear of User" + cvtToStr(id) + "() not under AstUserInUse");
+    // If this really fires and is real (after 2^32 edits???)
+    // we could just walk the tree and clear manually
+    ++cntGblRef;
+    UASSERT_STATIC(cntGblRef, "User*() overflowed!");
+}
+static void checkcnt(int id, uint32_t&, const bool& userBusyRef) {
+    UASSERT_STATIC(userBusyRef,
+                   "Check of User" + cvtToStr(id) + "() failed, not under AstUserInUse");
+}
+}
+;
 
 // For each user() declare the in use structure
 // We let AstNode peek into here, because when under low optimization even
@@ -393,8 +394,8 @@ protected:
     };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
     AstNode* m_backp = nullptr;  // Saved AstNode::m_backp of the unlinked node, to relink
-    AstNode** m_iterpp = nullptr;
-    RelinkWhatEn m_chg = RELINK_BAD;
+    AstNode** m_iterpp = nullptr;  // Iterator pointer of the unlinked node, to restore
+    RelinkWhatEn m_chg = RELINK_BAD;  // Kind of link the node previously had, to restore
 
 public:
     VNRelinker() = default;
@@ -416,10 +417,11 @@ inline std::ostream& operator<<(std::ostream& os, const VNRelinker& rhs) {
 // ######################################################################
 //  Callback base class to determine if node matches some formula
 
-class VNodeMatcher VL_NOT_FINAL {
-public:
-    virtual bool nodeMatch(const AstNode* nodep) const { return true; }
-};
+class VNodeMatcher
+VL_NOT_FINAL{public : virtual bool nodeMatch(const AstNode* nodep) const {return true;
+}
+}
+;
 
 // ######################################################################
 //   AstNode -- Base type of all Ast types
@@ -557,6 +559,11 @@ protected:
     void addOp3p(AstNode* newp);  // Append newp to end of op3
     void addOp4p(AstNode* newp);  // Append newp to end of op4
 
+    void prependOp1p(AstNode* newp);  // Prepend newp to front of op1
+    void prependOp2p(AstNode* newp);  // Prepend newp to front of op2
+    void prependOp3p(AstNode* newp);  // Prepend newp to front of op3
+    void prependOp4p(AstNode* newp);  // Prepend newp to front of op4
+
     // clang-format off
     void setNOp1p(AstNode* newp) { if (newp) setOp1p(newp); }
     void setNOp2p(AstNode* newp) { if (newp) setOp2p(newp); }
@@ -567,6 +574,11 @@ protected:
     void addNOp2p(AstNode* newp) { if (newp) addOp2p(newp); }
     void addNOp3p(AstNode* newp) { if (newp) addOp3p(newp); }
     void addNOp4p(AstNode* newp) { if (newp) addOp4p(newp); }
+
+    void prependNOp1p(AstNode* newp) { if (newp) prependOp1p(newp); }
+    void prependNOp2p(AstNode* newp) { if (newp) prependOp2p(newp); }
+    void prependNOp3p(AstNode* newp) { if (newp) prependOp3p(newp); }
+    void prependNOp4p(AstNode* newp) { if (newp) prependOp4p(newp); }
     // clang-format on
 
     void clonep(AstNode* nodep) {
@@ -622,7 +634,7 @@ public:
 
 #if defined(VL_LEAK_CHECKS) || defined(VL_ALLOC_RANDOM_CHECKS)
     static void* operator new(size_t size);
-    static void operator delete(void* obj, size_t size);
+    static void operator delete(void* objp, size_t size);
 #endif
 
     // CONSTANTS
@@ -639,7 +651,7 @@ public:
     static constexpr int INSTR_COUNT_STR = 100;  // String ops
     static constexpr int INSTR_COUNT_TIME = INSTR_COUNT_CALL + 5;  // Determine simulation time
     static constexpr int INSTR_COUNT_PLI = 20;  // PLI routines
-    static constexpr int INSTR_COUNT_SYM = 5;  // Syms ctor/dtor statements
+    static constexpr int INSTR_COUNT_CTOR_DTOR = 5;  // Syms and Module ctor/dtor statements
 
     // ACCESSORS
     virtual string name() const VL_MT_STABLE { return ""; }
@@ -820,30 +832,59 @@ public:
     void dtypeSetLogicSized(int width, VSigning numeric) {
         dtypep(findLogicDType(width, width, numeric));  // Since sized, widthMin is width
     }
+    void dtypeSetLogic2StateUnsized(int width, int widthMin, VSigning numeric) {
+        dtypep(findLogic2StateDType(width, widthMin, numeric));
+    }
+    void dtypeSetLogic2StateSized(int width, VSigning numeric) {
+        dtypep(findLogic2StateDType(width, width, numeric));  // Since sized, widthMin is width
+    }
+    void dtypeSetBitOrLogicUnsized(int width, int widthMin, VSigning numeric, bool isFourstate) {
+        dtypep(findBitOrLogicDType(width, widthMin, numeric, isFourstate));
+    }
+    void dtypeSetBitOrLogicSized(int width, VSigning numeric, bool isFourstate) {
+        dtypep(findBitOrLogicDType(width, width, numeric,
+                                   isFourstate));  // Since sized, widthMin is width
+    }
     void dtypeSetBit() { dtypep(findBitDType()); }
     void dtypeSetLogic() { dtypep(findLogicDType()); }
+    void dtypeSetLogic2State() { dtypep(findLogic2StateDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
     void dtypeSetInt() { dtypep(findIntDType()); }
     void dtypeSetInteger() { dtypep(findIntegerDType()); }
-    // TODO: add a type to handle 4-state integers with 2-state domain
-    void dtypeSetInteger2State() { dtypep(findIntegerDType()); }
+    void dtypeSetInteger2State() { dtypep(findInteger2StateDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
+    void dtypeSetTime() { dtypep(findTimeDType()); }
+    void dtypeSetTime2State() { dtypep(findTime2StateDType()); }
     void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
     void dtypeSetStream() { dtypep(findStreamDType()); }
     void dtypeSetVoid() { dtypep(findVoidDType()); }
+    void dtypeSetBitOrLogic(bool isFourstate) {
+        dtypep(isFourstate ? findLogicDType() : findBitDType());
+    }
 
     // Data type locators
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
     AstNodeDType* findLogicDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
+    AstNodeDType* findNullDType() const { return findBasicDType(VBasicDTypeKwd::NULLTYPE); }
+    AstNodeDType* findLogic2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::LOGIC2STATE);
+    }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
     AstNodeDType* findIntegerDType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
+    AstNodeDType* findInteger2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::INTEGER2STATE);
+    }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }
     AstNodeDType* findSigned8DType() const { return findBasicDType(VBasicDTypeKwd::BYTE); }
     AstNodeDType* findUInt32DType() const { return findBasicDType(VBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() const { return findBasicDType(VBasicDTypeKwd::UINT64); }
+    AstNodeDType* findTimeDType() const { return findBasicDType(VBasicDTypeKwd::TIME); }
+    AstNodeDType* findTime2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::TIME2STATE);
+    }
     AstNodeDType* findCHandleDType() const { return findBasicDType(VBasicDTypeKwd::CHANDLE); }
     AstNodeDType* findConstraintRefDType() const;
     AstNodeDType* findEmptyQueueDType() const;
@@ -852,10 +893,17 @@ public:
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findLogic2StateDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findBitOrLogicDType(int width, int widthMin, VSigning numeric,
                                       bool isFourstate) const {
         return isFourstate ? findLogicDType(width, widthMin, numeric)
                            : findBitDType(width, widthMin, numeric);
+    }
+    AstNodeDType* findBitOrLogicRangeDType(const VNumRange& range, const int widthMin,
+                                           const VSigning numeric,
+                                           const bool isFourstate) const VL_MT_STABLE {
+        return isFourstate ? findLogicRangeDType(range, widthMin, numeric)
+                           : findBitRangeDType(range, widthMin, numeric);
     }
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
                                       VSigning numeric) const VL_MT_STABLE;
@@ -866,7 +914,7 @@ public:
 
     static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
                                      const AstNode* fromConstp, bool checkIfaceArgCompat = false);
-    static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
+    static AstNodeDType* getCommonClassTypep(AstNode* node1p, AstNode* node2p);
 
     // METHODS - dump and error
     void v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
@@ -1563,13 +1611,13 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
     return N_Default;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
-    if (!rhs) {  // LCOV_EXCL_LINE
+inline std::ostream& operator<<(std::ostream& os, const AstNode* rhsp) {
+    if (!rhsp) {  // LCOV_EXCL_LINE
         os << "nullptr";  // LCOV_EXCL_LINE
-    } else if (VN_DELETED(rhs)) {  // LCOV_EXCL_LINE
+    } else if (VN_DELETED(rhsp)) {  // LCOV_EXCL_LINE
         os << "%E-0x1/deleted!";  // LCOV_EXCL_LINE
     } else {
-        rhs->dump(os);
+        rhsp->dump(os);
     }
     return os;
 }
@@ -1616,6 +1664,92 @@ struct std::equal_to<VNRef<T_Node>> final {
     size_t operator()(VNRef<T_Node> ra, VNRef<T_Node> rb) const {
         return ra.get().sameTree(&(rb.get()));
     }
+};
+
+//######################################################################
+// VNList - Proxy for a list of nodes chained via 'nextp()'
+
+template <typename T_Node>
+class VNList final {
+    T_Node* const m_headp;  // First node in the list, or nullptr if empty
+
+public:
+    class Iterator final {
+        AstNode* m_currp;  // Current node, or nullptr at end
+        AstNode* m_nextp;  // Successor of current node
+
+    public:
+        explicit Iterator(AstNode* nodep)
+            : m_currp{nodep}
+            , m_nextp{nodep ? nodep->nextp() : nullptr} {}
+        T_Node* operator*() const { return static_cast<T_Node*>(m_currp); }
+        Iterator& operator++() {
+            m_currp = m_nextp;
+            m_nextp = m_currp ? m_currp->nextp() : nullptr;
+            return *this;
+        }
+        bool operator!=(const Iterator& other) const { return m_currp != other.m_currp; }
+    };
+
+    explicit VNList(T_Node* headp)
+        : m_headp{headp} {}
+
+    // Iterates node list via nextp() in a ranged 'for' loop. Current node is editable
+    Iterator begin() const { return Iterator{m_headp}; }
+    Iterator end() const { return Iterator{nullptr}; }
+    // Number of nodes in the list - O(n)
+    size_t size() const {
+        size_t count = 0;
+        for (const AstNode* nodep = m_headp; nodep; nodep = nodep->nextp()) ++count;
+        return count;
+    }
+};
+
+//######################################################################
+// VDTypeNameScopes -- Index of the scopes declaring types, for naming them
+
+// While alive, indexes the scopes declaring the types that dtypeName() names, as $typename names
+// them: maps each class, typedef, generate block, and design unit to the generate block or design
+// unit declaring it, and each design unit to the parameters its name holds; and keeps the
+// prefixes of the names of the types each scope declares, once final.  So naming the types of a
+// scope costs no search up the tree for it, as AstNode::aboveLoopp() is linear in the number of
+// previous statements.  For passes that name many types but neither add, move, nor delete such
+// declarations, V3Width and V3WidthCommit; others, as V3Param, search the tree.
+class VDTypeNameScopes final {
+    // STATE
+    // Each class, typedef, generate block, and design unit to the generate block or design unit
+    // declaring it, or nullptr if none, as at the top
+    std::unordered_map<const AstNode*, AstNode*> m_outerps;
+    // The parameters of each design unit that its name holds
+    std::unordered_map<const AstNode*, std::vector<AstNode*>> m_paramps;
+    // Prefix of the names of the types each scope declares, once final
+    mutable std::unordered_map<const AstNode*, std::string> m_prefixes;
+    const VDTypeNameScopes* const m_prevp;  // Index in use before this one
+    static const VDTypeNameScopes* s_currentp;  // Index in use, or nullptr if none
+
+    // METHODS
+    void index(AstNode* nodep, AstNode* scopep);
+    VL_UNCOPYABLE(VDTypeNameScopes);
+    VL_UNMOVABLE(VDTypeNameScopes);
+
+public:
+    // CONSTRUCTORS
+    // Index the netlist, in use until destroyed
+    explicit VDTypeNameScopes(AstNetlist* nodep);
+    ~VDTypeNameScopes();
+
+    // METHODS
+    // The index in use, or nullptr if none
+    static const VDTypeNameScopes* currentp() { return s_currentp; }
+    // Whether 'nodep' is indexed, and if so 'outerpr', the generate block or design unit
+    // declaring it, or nullptr if none
+    bool outerp(const AstNode* nodep, AstNode*& outerpr) const;
+    // The parameters of design unit 'modp' that its name holds, or nullptr if not indexed
+    const std::vector<AstNode*>* paramsp(const AstNode* modp) const;
+    // The prefix kept for scope 'scopep', or nullptr if none
+    const std::string* prefixp(const AstNode* scopep) const;
+    // Keep 'prefix', final, for scope 'scopep'
+    void prefix(const AstNode* scopep, const std::string& prefix) const;
 };
 
 //######################################################################

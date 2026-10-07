@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # Use MSVC_RUNTIME_LIBRARY to select the runtime
 project(
     Verilator
-    VERSION 5.053
+    VERSION 5.055
     HOMEPAGE_URL https://verilator.org
     LANGUAGES CXX
 )
@@ -28,11 +28,13 @@ endif()
 
 option(
     DEBUG_AND_RELEASE_AND_COVERAGE
-    "Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild."
+    "Builds debug and release binaries for Verilator and coverage, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild."
 )
 
 find_package(Python3 COMPONENTS Interpreter)
-set(PYTHON3 ${Python3_EXECUTABLE})
+# Windows often installs python under "Program Files", which GNU make cannot
+# use unquoted in verilated.mk; use the space-free 8.3 short name instead.
+string(REPLACE "Program Files" "PROGRA~1" PYTHON3 "${Python3_EXECUTABLE}")
 # See also CMake built-in; CMAKE_INSTALL_PREFIX is applied by the install command.
 set(CMAKE_INSTALL_DATADIR .)
 include(GNUInstallDirs)
@@ -137,6 +139,8 @@ if(DEBUG_AND_RELEASE_AND_COVERAGE)
     add_subdirectory(src build-Release)
     set(CMAKE_BUILD_TYPE Coverage)
     add_subdirectory(src build-Coverage)
+    set(CMAKE_BUILD_TYPE CoverageRelease)
+    add_subdirectory(src build-CoverageRelease)
     set(CMAKE_BUILD_TYPE ${saved_build_type})
 else()
     add_subdirectory(src)
@@ -148,6 +152,22 @@ set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_VERSION ${PROJECT_VERSION})
 set(CXX ${CMAKE_CXX_COMPILER})
 set(AR ${CMAKE_AR})
+
+# Compiler precompiled header options, same detection as configure.ac
+execute_process(
+    COMMAND ${CMAKE_CXX_COMPILER} --help
+    OUTPUT_VARIABLE cxx_help
+    ERROR_QUIET
+)
+if(cxx_help MATCHES "include-pch")
+    # clang
+    set(CFG_CXXFLAGS_PCH_I -include-pch)
+    set(CFG_GCH_IF_CLANG .gch)
+else()
+    # GCC
+    set(CFG_CXXFLAGS_PCH_I -include)
+    set(CFG_GCH_IF_CLANG "")
+endif()
 
 configure_file(include/verilated_config.h.in include/verilated_config.h @ONLY)
 configure_file(include/verilated.mk.in include/verilated.mk @ONLY)

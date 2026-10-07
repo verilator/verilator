@@ -11,18 +11,19 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t/t_func_dotted.v"
+test.vlt_filename = "t/t_func_dotted_inl2.vlt"
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
-test.compile(v_flags2=["--no-json-edit-nums", "t/t_func_dotted_inl2.vlt"])
+test.compile(v_flags2=["--no-json-edit-nums", test.vlt_filename])
 
 if test.vlt_all:
     modps = test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"mb","addr":"([^"]*)","loc":"\w,99:[^"]*",.*"origName":"mb"')
+        r'{"type":"MODULE","name":"mb","addr":"([^"]*)","loc":"\w,107:[^"]*",.*"origName":"mb"')
     modp = modps[0]
     test.file_grep(
         out_filename,
-        r'{"type":"CELL","name":"t.ma0.mb0","addr":"[^"]*","loc":"\w,87:[^"]*",.*"origName":"mb0",.*"modp":"([^"]*)"',
+        r'{"type":"CELL","name":"t.ma0.mb0","addr":"[^"]*","loc":"\w,95:[^"]*",.*"origName":"mb0",.*"modp":"([^"]*)"',
         modp)
 
 test.execute()

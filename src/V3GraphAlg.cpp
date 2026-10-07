@@ -426,7 +426,7 @@ string V3Graph::reportLoops(V3EdgeFuncP edgeFuncp, V3GraphVertex* vertexp) {
 // Changes user()
 
 class GraphAlgSubtrees final : GraphAlg<> {
-    V3Graph* const m_loopGraphp;
+    V3Graph* const m_loopGraphp;  // Graph to clone subtrees into
 
     //! Iterate through all connected nodes of a graph with a loop or loops.
     V3GraphVertex* vertexIterateAll(V3GraphVertex* vertexp) {

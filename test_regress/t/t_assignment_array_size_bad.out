@@ -1,0 +1,38 @@
+%Error: t/t_assignment_array_size_bad.v:22:21: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                             : ... note: In instance 't'
+                                             : ... Left-hand data type: 'int$[0:2]'
+                                             : ... Right-hand data type: 'int$[0:3]'
+   22 |   localparam arr3_t PARAM3 = ARR4;
+      |                     ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assignment_array_size_bad.v:23:23: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                             : ... note: In instance 't'
+                                             : ... Left-hand data type: 'int$[0:1][0:2]'
+                                             : ... Right-hand data type: 'int$[0:1][0:3]'
+   23 |   localparam arr2x3_t PARAM2X3 = ARR2X4;
+      |                       ^~~~~~~~
+%Error: t/t_assignment_array_size_bad.v:27:21: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                             : ... note: In instance 't'
+                                             : ... Left-hand data type: 'int$[0:2]'
+                                             : ... Right-hand data type: 'int$[0:3]'
+   27 |   localparam arr3_t RETURN3 = f_return();
+      |                     ^~~~~~~
+%Error: t/t_assignment_array_size_bad.v:31:25: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                             : ... note: In instance 't'
+                                             : ... Left-hand data type: 'int$[0:2]'
+                                             : ... Right-hand data type: 'int$[0:3]'
+   31 |   localparam int ARG3 = f_arg(ARR4);
+      |                         ^~~~~
+%Error: t/t_assignment_array_size_bad.v:13:22: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                             : ... note: In instance 't.i_sub'
+                                             : ... Left-hand data type: 'int$[0:2]'
+                                             : ... Right-hand data type: 'int$[0:3]'
+   13 |     parameter arr3_t P = '{default: 0},
+      |                      ^
+%Error: t/t_assignment_array_size_bad.v:14:24: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                             : ... note: In instance 't.i_sub2'
+                                             : ... Left-hand data type: 'int$[0:1][0:2]'
+                                             : ... Right-hand data type: 'int$[0:1][0:3]'
+   14 |     parameter arr2x3_t P2 = '{default: 0}
+      |                        ^~
+%Error: Exiting due to

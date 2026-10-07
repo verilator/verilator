@@ -34,6 +34,8 @@
 #include <vector>
 
 class V3OrderCFuncEmitter final {
+    // The trigger vector the ordered logic is sensitive to
+    AstVarScope* const m_trigVscp;
     // Name component to add to function - must be unique
     const std::string m_tag;
     // True if creating slow functions
@@ -55,13 +57,13 @@ class V3OrderCFuncEmitter final {
     // Function ordinals to ensure unique names
     std::map<std::pair<AstNodeModule*, std::string>, unsigned> m_funcNums;
     // The resulting ordered CFuncs with the trigger conditions needed to call them
-    std::vector<std::pair<AstCFunc*, AstSenTree*>> m_result;
+    std::vector<std::pair<AstCFunc*, const OrderDomain*>> m_result;
 
     // Create a unique name for a new function
     std::string cfuncName(FileLine* flp, AstScope* scopep, AstNodeModule* modp,
-                          AstSenTree* domainp) {
+                          const OrderLogicVertex* lVtxp) {
         std::string name = "_" + m_tag;
-        name += domainp->isMulti() ? "_comb" : "_sequent";
+        name += lVtxp->hybridp() ? "_hybrid" : lVtxp->comb() ? "_comb" : "_sequent";
         name += "__" + scopep->nameDotless();
         name += "__" + std::to_string(m_funcNums[{modp, name}]++);
         if (v3Global.opt.profCFuncs()) name += "__PROF__" + flp->profileFuncname();
@@ -70,8 +72,9 @@ class V3OrderCFuncEmitter final {
 
 public:
     // CONSTRUCTOR
-    V3OrderCFuncEmitter(const std::string& tag, bool slow)
-        : m_tag{tag}
+    V3OrderCFuncEmitter(AstVarScope* trigVscp, const std::string& tag, bool slow)
+        : m_trigVscp{trigVscp}
+        , m_tag{tag}
         , m_slow{slow} {}
     VL_UNCOPYABLE(V3OrderCFuncEmitter);
     VL_UNMOVABLE(V3OrderCFuncEmitter);
@@ -83,39 +86,43 @@ public:
     }
 
     // Retrieve list of statements which when executed will call the constructed functions
-    AstNodeStmt* getStmts() {
+    AstIf* getStmts() {
         // The resulting list of statements we are constructing here
-        AstNodeStmt* stmtsp = nullptr;
-        // Current AstIf
-        AstIf* ifp = nullptr;
-        // Trigger conditoin of 'ifp'
-        AstSenTree* pervSenTreep = nullptr;
+        AstIf* stmtsp = nullptr;
+        // Current AstIf doing the trigger condition check
+        AstIf* currp = nullptr;
+        // The domain of the previously emitted logic
+        const OrderDomain* prevDomainp = nullptr;
         // Call each function under an AstIf that checks for the trigger condition
         for (const auto& pair : m_result) {
             AstCFunc* const cfuncp = pair.first;
-            AstSenTree* senTreep = pair.second;
+            const OrderDomain* const domainp = pair.second;
             // Create a new AstIf if the trigger is different
-            if (senTreep != pervSenTreep) {
-                pervSenTreep = senTreep;
-                ifp = V3Sched::util::createIfFromSenTree(senTreep);
-                stmtsp = AstNode::addNext(stmtsp, ifp);
+            if (domainp != prevDomainp) {
+                prevDomainp = domainp;
+                FileLine* const flp = m_trigVscp->fileline();
+                const std::set<uint32_t>& triggers = domainp->triggers();
+                AstTriggered* const condp
+                    = new AstTriggered{flp, m_trigVscp, {triggers.begin(), triggers.end()}};
+                currp = new AstIf{flp, condp};
+                stmtsp = AstNode::addNext(stmtsp, currp);
             }
             // Call function when triggered
             AstCCall* const callp = new AstCCall{cfuncp->fileline(), cfuncp};
             callp->dtypeSetVoid();
-            ifp->addThensp(callp->makeStmt());
+            currp->addThensp(callp->makeStmt());
         }
         // Result is now spent, reset the emitter state
         m_result.clear();
         forceNewFunction();
-        // Return the list of statement
+        // Return the list of statements
         return stmtsp;
     }
 
     // Emit one logic vertex
     void emitLogic(const OrderLogicVertex* lVtxp) {
         // Sensitivity domain of logic we are emitting
-        AstSenTree* const domainp = lVtxp->domainp();
+        const OrderDomain* const domainp = lVtxp->domainp();
         // We are move the logic into a CFunc
         AstNode* const logicp = lVtxp->nodep();
         // If the logic is a procedure, we need to do a few special things
@@ -133,7 +140,8 @@ public:
         if (suspendable) forceNewFunction();
         // When profCFuncs, create a new function for each logic vertex
         if (v3Global.opt.profCFuncs()) forceNewFunction();
-        // If the new domain is different, force a new function as it needs to be called separately
+        // If the new domain is different, force a new function as it needs to
+        // be called under different trigger conditions
         if (!m_result.empty() && m_result.back().second != domainp) forceNewFunction();
 
         // Process procedures per statement, so we can split CFuncs within procedures.
@@ -161,7 +169,7 @@ public:
                 FileLine* const flp = currp->fileline();
                 AstScope* const scopep = lVtxp->scopep();
                 AstNodeModule* const modp = scopep->modp();
-                const std::string name = cfuncName(flp, scopep, modp, domainp);
+                const std::string name = cfuncName(flp, scopep, modp, lVtxp);
                 m_funcp = new AstCFunc{flp, name, scopep, suspendable ? "VlCoroutine" : ""};
                 if (needProcess) m_funcp->setNeedProcess();
                 m_funcp->isStatic(false);

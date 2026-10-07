@@ -66,6 +66,11 @@
 // return references, and are marked as impure. For this reason only we still
 // need to special case their handling via AstNodeExpr::isLValue().
 //
+// $fscanf/$sscanf: the call is always lifted into a statement of its own,
+// and non-addressable destinations (part-selects, members, array elements)
+// are written through a temporary that is written back after the call.
+// Calls in contexts that cannot be lifted are rejected.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -102,15 +107,17 @@ class LiftExprVisitor final : public VNVisitor {
     size_t m_nTmps = 0;  // Sequence numbers for temporary variables
     // Statistics
     VDouble0 m_statLiftedExprs;
-    VDouble0 m_statLiftedCalls;
-    VDouble0 m_statLiftedLvalCalls;
-    VDouble0 m_statLiftedConds;
-    VDouble0 m_statLiftedLogAnds;
-    VDouble0 m_statLiftedLogOrs;
-    VDouble0 m_statLiftedLogIfs;
-    VDouble0 m_statLiftedExprStmts;
-    VDouble0 m_statTemporariesCreated;
-    VDouble0 m_statTemporariesReused;
+    VDouble0 m_statLiftedCalls;  // Statistic, calls lifted
+    VDouble0 m_statLiftedLvalCalls;  // Statistic, lvalue calls lifted
+    VDouble0 m_statLiftedConds;  // Statistic, conditionals lifted
+    VDouble0 m_statLiftedLogAnds;  // Statistic, logical ANDs lifted
+    VDouble0 m_statLiftedLogOrs;  // Statistic, logical ORs lifted
+    VDouble0 m_statLiftedLogIfs;  // Statistic, logical implications lifted
+    VDouble0 m_statLiftedExprStmts;  // Statistic, expression statements lifted
+    VDouble0 m_statLiftedCaseConds;  // Statistic, case conditions lifted
+    VDouble0 m_statScanfDests;  // Statistic, $fscanf/$sscanf destinations rewritten
+    VDouble0 m_statTemporariesCreated;  // Statistic, temporaries created
+    VDouble0 m_statTemporariesReused;  // Statistic, temporaries reused
 
     // METHODS
     AstVar* newVar(const char* baseName, const AstNodeExpr* exprp,
@@ -138,10 +145,10 @@ class LiftExprVisitor final : public VNVisitor {
 
         if (m_ftaskp) {
             varp->funcLocal(true);
-            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            m_ftaskp->prependStmtsp(varp);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         } else {
-            m_modp->stmtsp()->addHereThisAsNext(varp);
+            m_modp->prependStmtsp(varp);
             // 'automatic' on a variable inside a class actually means 'member'
             varp->lifetime(VN_IS(m_modp, Class) ? VLifetime::STATIC_EXPLICIT
                                                 : VLifetime::AUTOMATIC_EXPLICIT);
@@ -194,6 +201,32 @@ class LiftExprVisitor final : public VNVisitor {
         return m_newStmtps;
     }
 
+    template <class T>
+    void visitScanf(T* nodep) {
+        if (!m_lift) {
+            nodep->v3error("Unsupported: $fscanf/$sscanf in this context");
+            return;
+        }
+        iterateChildren(nodep);
+        // Lift the call into a statement of its own, ignoring any
+        // doNotLift, so the write-backs below can follow it
+        ++m_statLiftedExprs;
+        FileLine* const flp = nodep->fileline();
+        AstVar* const varp = newVar("Expr", nodep);
+        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep});
+        // Redirect the non-addressable destinations to temporary variables
+        // and write those back to the destinations
+        for (AstNodeExpr* const destp : nodep->exprspList()) {
+            if (!VN_IS(destp, VarRef)) {
+                AstVar* const tmp = newVar("Scanf", destp);
+                destp->replaceWith(new AstVarRef{flp, tmp, VAccess::WRITE});
+                addStmtps(new AstAssign{flp, destp, new AstVarRef{flp, tmp, VAccess::READ}});
+                ++m_statScanfDests;
+            }
+        }
+    }
+
     // VISITORS - non-statement, non-expression
     void visit(AstNode* nodep) override {
         VL_RESTORER(m_lift);
@@ -215,7 +248,22 @@ class LiftExprVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCaseItem* nodep) override {
-        // Do not lift from the case expressions, there is nowhere to put them
+        for (AstNode* const condp : nodep->condspList()) {
+            // Lift under the AstExprStmt that will hold the lifted statements, as lifting
+            // may replace the condition
+            VNRelinker relinker;
+            condp->unlinkFrBack(&relinker);
+            AstExprStmt* const exprStmtp
+                = new AstExprStmt{condp->fileline(), nullptr, VN_AS(condp, NodeExpr)};
+            if (AstNode* const newStmtps = lift(exprStmtp->resultp())) {
+                ++m_statLiftedCaseConds;
+                exprStmtp->addStmtsp(newStmtps);
+                relinker.relink(exprStmtp);
+            } else {
+                relinker.relink(exprStmtp->resultp()->unlinkFrBack());
+                VL_DO_DANGLING(exprStmtp->deleteTree(), exprStmtp);
+            }
+        }
         iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstCell* nodep) override {
@@ -342,6 +390,10 @@ class LiftExprVisitor final : public VNVisitor {
         // This one is a WRITE or READWRITE, same as the MemberSel
         nodep->fromp(new AstVarRef{flp, varp, nodep->access()});
     }
+
+    // VISITORS - $fscanf/$sscanf
+    void visit(AstFScanF* nodep) override { visitScanf(nodep); }
+    void visit(AstSScanF* nodep) override { visitScanf(nodep); }
 
     // VISITORS - RValue expressions
     void visit(AstCond* nodep) override {
@@ -509,6 +561,8 @@ public:
         V3Stats::addStat("LiftExpr, lifted LogOr", m_statLiftedLogOrs);
         V3Stats::addStat("LiftExpr, lifted LogIf", m_statLiftedLogIfs);
         V3Stats::addStat("LiftExpr, lifted ExprStmt", m_statLiftedExprStmts);
+        V3Stats::addStat("LiftExpr, lifted case conditions", m_statLiftedCaseConds);
+        V3Stats::addStat("LiftExpr, $fscanf/$sscanf destinations rewritten", m_statScanfDests);
         V3Stats::addStat("LiftExpr, temporaries created", m_statTemporariesCreated);
         V3Stats::addStat("LiftExpr, temporaries reused", m_statTemporariesReused);
     }

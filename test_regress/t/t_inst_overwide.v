@@ -40,8 +40,8 @@ module sub (  /*AUTOARG*/
   input clk;
   input [30:0] inw_w31;
   input [10:0] inx_w11;
-  output reg [91:0] outy_w92  /*verilator public*/;
-  output reg [21:0] outz_w22  /*verilator public*/;
+  output reg [91:0] outy_w92  /*verilator public_flat_rw*/;
+  output reg [21:0] outz_w22  /*verilator public_flat_rw*/;
 
   always @(posedge clk) begin
     outy_w92 <= {inw_w31[29:0], inw_w31[29:0], inw_w31[29:0], 2'b00};

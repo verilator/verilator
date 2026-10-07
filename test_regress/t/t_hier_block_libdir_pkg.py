@@ -13,11 +13,13 @@ test.scenarios('vlt_all')
 test.clean_objs()
 
 test.compile(verilator_flags2=[
-    '--hierarchical', test.t_dir + '/t_hier_block_libdir_pkg/hier.vlt', '-y',
+    '--stats', '--hierarchical', test.t_dir + '/t_hier_block_libdir_pkg/hier.vlt', '-y',
     test.t_dir + '/t_hier_block_libdir_pkg', test.t_dir + '/t_hier_block_libdir_pkg/pkg.vh'
 ],
              threads=(2 if test.vltmt else 1))
 
 test.execute()
+
+test.file_grep(test.stats, r'HierBlock,\s+Hierarchical blocks\s+(\d+)', 2)
 
 test.passes()

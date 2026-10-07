@@ -427,7 +427,7 @@ class RandSequenceVisitor final : public VNVisitor {
         if (nodep->prodp()) m_startProdp = nodep->prodp();  // Has a start production selected
 
         // Build production functions
-        for (AstRSProd* prodp = nodep->prodsp(); prodp; prodp = VN_AS(prodp->nextp(), RSProd)) {
+        for (AstRSProd* const prodp : nodep->prodspList()) {
             newProdFunc(prodp);
             // Don't iterate yet, need to have tasks we can reference
         }
@@ -437,17 +437,15 @@ class RandSequenceVisitor final : public VNVisitor {
         // before they are removed.  (Alternative would be to keep them until the end).
         UINFOTREE(9, nodep, "RS Tree pre-it", "-");
         std::unordered_set<AstRSProd*> prodHasRandJoin;
-        for (AstRSProd* prodp = nodep->prodsp(); prodp; prodp = VN_AS(prodp->nextp(), RSProd)) {
+        for (AstRSProd* const prodp : nodep->prodspList()) {
             prodp->foreach([&](const AstRSProdList* const prodlistp) {
                 if (prodlistp->randJoin()) prodHasRandJoin.emplace(prodp);
             });
         }
-        for (AstRSProd *nextp, *prodp = nodep->prodsp(); prodp; prodp = nextp) {
-            nextp = VN_AS(prodp->nextp(), RSProd);
+        for (AstRSProd* const prodp : nodep->prodspList()) {
             if (prodHasRandJoin.count(prodp)) VL_DO_DANGLING(iterate(prodp), prodp);
         }
-        for (AstRSProd *nextp, *prodp = nodep->prodsp(); prodp; prodp = nextp) {
-            nextp = VN_AS(prodp->nextp(), RSProd);
+        for (AstRSProd* const prodp : nodep->prodspList()) {
             if (!prodHasRandJoin.count(prodp)) VL_DO_DANGLING(iterate(prodp), prodp);
         }
         UINFOTREE(9, nodep, "RS Tree post-it", "-");
@@ -542,8 +540,7 @@ class RandSequenceVisitor final : public VNVisitor {
             // RSPROD(RSRULE(weight1, stmt!), RSRULE(weight2, stmt2))
             //   -> RANDCASE(CASEITEM(weight1, stmt1), CASEITEM(weight2, stmt2))
             AstRandCase* const randcasep = new AstRandCase{nodep->fileline(), nullptr};
-            for (AstRSRule* rulep = nodep->rulesp(); rulep;
-                 rulep = VN_AS(rulep->nextp(), RSRule)) {
+            for (AstRSRule* const rulep : nodep->rulespList()) {
                 AstNode* itemsp = nullptr;
                 if (rulep->weightStmtsp()) itemsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
                 if (rulep->prodlistsp())

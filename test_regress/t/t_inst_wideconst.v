@@ -14,7 +14,7 @@ module t (
   reg [41:0] aaa;
   wire [41:0] bbb;
 
-  // verilator public_module
+  // verilator no_inline_module
   wire [41:0] z_0;
   wire [41:0] z_1;
 
@@ -61,7 +61,7 @@ module wide (
     input [1:0] yyy,
     output [41:0] zzz
 );
-  // verilator public_module
+  // verilator no_inline_module
 
   assign zzz = xxx + {{40{1'b0}}, yyy};
 

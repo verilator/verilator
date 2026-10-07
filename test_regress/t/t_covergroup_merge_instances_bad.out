@@ -1,0 +1,6 @@
+%Error: t/t_covergroup_merge_instances_bad.v:13:35: Coverage option 'type_option.merge_instances' requires a constant expression (IEEE 1800-2023 19.7.1)
+                                                  : ... note: In instance 't'
+   13 |     type_option.merge_instances = merge;   
+      |                                   ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

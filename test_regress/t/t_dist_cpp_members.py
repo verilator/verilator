@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
+EXEMPT_COMMENTS = [r'VNUser.InUse']
+
 
 def check():
     for filename in (test.glob_some(test.root + "/include/*.cpp") +
@@ -26,7 +28,7 @@ def check():
                 line = line.rstrip()
                 lineno += 1
 
-                m = re.match(r'^(\s+)(class|struct) ', line)
+                m = re.match(r'^(\s*)(class|struct) ', line)
                 if m:
                     if test.verbose:
                         print(filename + ":" + str(lineno) + ": CLASS  : " + line)
@@ -53,17 +55,25 @@ def check():
                 if test.verbose:
                     print("? " + line)
                 m = re.match(
-                    r'^\s+(const\s+|static\s+)?[a-zA-Z0-9_]\S+\s+(const\s+)?(m_[a-zA-Z0-9_]+)(;|{| = )',
+                    r'^\s+(const\s+|static\s+|mutable\s+)*[a-zA-Z0-9_]\S+\s+(const\s+)?(m_[a-zA-Z0-9_]+)(;|{| = )',
                     line)
                 if m:
                     name = m.group(3)
                     if test.verbose:
                         print(filename + ":" + str(lineno) + ": MEMBER : " + line)
-                    if not last_was_comment and not '//' in line and not '/*' in line:
+                    if not last_was_comment and not '//' in line and not '/*' in line and not line_exempt(
+                            line):
                         test.error_keep_going(filename + ":" + str(lineno) + ": Member '" + name +
                                               "' is declared without any descriptive comment")
 
                 last_was_comment = False
+
+
+def line_exempt(line):
+    for exre in EXEMPT_COMMENTS:
+        if re.search(exre, line):
+            return True
+    return False
 
 
 if not os.path.exists(test.root + "/.git"):

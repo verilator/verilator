@@ -24,6 +24,7 @@
 
 #include "verilatedos.h"
 
+#include <cctype>
 #include <string>
 
 //=============================================================================
@@ -82,6 +83,44 @@ VLCOVGEN_ITEM("'name':'weight',      'short':'w',  'group':0, 'default':None, 'd
 
 class VerilatedCovKey final {
 public:
+    // The escaping of the keys and values of the records of a coverage file, which the Verilated
+    // model writes, and verilator_coverage reads, so defined only here: '%', '"', and characters
+    // that do not print, as '%' and two upper-case hex digits, so that each record is a line,
+    // whose fields readers can find
+    static std::string escape(const std::string& text) VL_PURE {
+        std::string result;
+        for (const char c : text) {
+            const unsigned char u = static_cast<unsigned char>(c);
+            if (std::isprint(u) && c != '%' && c != '"') {
+                result += c;
+            } else {
+                result += '%';
+                result += "0123456789ABCDEF"[u >> 4];
+                result += "0123456789ABCDEF"[u & 0xf];
+            }
+        }
+        return result;
+    }
+    // A key or value of a record, with the escapes of escape() of the characters that print, as
+    // '"' and '%', undone.  Those of characters that do not print stay, so that the text stays a
+    // line, as in readers' outputs; as does a '%' that does not begin an escape.
+    static std::string unescape(const std::string& text) VL_PURE {
+        if (text.find('%') == std::string::npos) return text;  // Speed: nothing escaped
+        std::string result;
+        for (size_t i = 0; i < text.size(); ++i) {
+            const int high = (text[i] == '%' && i + 2 < text.size()) ? hexValue(text[i + 1]) : -1;
+            const int low = high < 0 ? -1 : hexValue(text[i + 2]);
+            // The character escaped, or -1, as EOF, which does not print
+            const int c = low < 0 ? -1 : high * 16 + low;
+            if (std::isprint(c)) {
+                result += static_cast<char>(c);
+                i += 2;
+            } else {
+                result += text[i];
+            }
+        }
+        return result;
+    }
     // Return the short key code for a given a long coverage key
     static std::string shortKey(const std::string& key) VL_PURE {
         // VLCOVGEN_SHORT_AUTO_EDIT_BEGIN
@@ -106,6 +145,14 @@ public:
         if (key == "weight") return VL_CIK_WEIGHT;
         // VLCOVGEN_SHORT_AUTO_EDIT_END
         return key;
+    }
+
+private:
+    // The value of an upper-case hex digit of escape(), or -1 if not one
+    static int hexValue(char c) VL_PURE {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        return -1;
     }
 };
 

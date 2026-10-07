@@ -11,11 +11,17 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
+test.clean_objs()
 test.compile(verilator_flags2=['--stats', '--hierarchical'])
 
 test.execute()
 
 test.file_grep(test.obj_dir + "/Vsub/sub.sv", r'^module\s+(\S+)\s+', "sub")
+# Whole-vector transfers can hide a reversed range in the wrapper declaration.
+test.file_grep(test.obj_dir + "/Vsub/sub.sv", r'input logic\s+\[2:8\]\s+ascending_in')
+test.file_grep(test.obj_dir + "/Vsub/sub.sv", r'output logic\s+\[2:8\]\s+ascending_out')
+test.file_grep(test.obj_dir + "/Vsub/sub.sv", r'input logic\s+\[10:4\]\s+descending_in')
+test.file_grep(test.obj_dir + "/Vsub/sub.sv", r'output logic\s+\[10:4\]\s+descending_out')
 test.file_grep(test.stats, r'HierBlock,\s+Hierarchical blocks\s+(\d+)', 1)
 
 test.passes()

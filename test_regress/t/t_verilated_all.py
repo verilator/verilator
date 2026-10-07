@@ -21,7 +21,7 @@ test.compile(
     # Can't use --coverage and --savable together, or multiple trace formats, so cheat and compile inline
     verilator_flags2=[
         "--cc",
-        "--coverage-toggle --coverage-line --coverage-user",
+        "--coverage-toggle --coverage-line --coverage-branch --coverage-user",
         "--trace-fst",  # Also adds -lz4 and the like
         "--vpi",
         ("--timing" if test.have_coroutines else "--no-timing -Wno-STMTDLY"),

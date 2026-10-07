@@ -134,6 +134,41 @@ module t;
       default: $stop;
     endcase
 
+    case (4'b0011)
+      2'sb11: ;
+      default: $stop;
+    endcase
+
+    case (4'b1111)
+      2'sb11: $stop;
+      default: ;
+    endcase
+
+    case (4'b0011)
+      sb11: ;
+      default: $stop;
+    endcase
+
+    case (4'b1111)
+      sb11: $stop;
+      default: ;
+    endcase
+
+    case (2'b01)
+      1'sb1: ;
+      default: $stop;
+    endcase
+
+    case (2'b11)
+      1'sb1: $stop;
+      default: ;
+    endcase
+
+    casez (2'b01)
+      1'sb1: ;
+      default: $stop;
+    endcase
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

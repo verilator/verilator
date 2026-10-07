@@ -245,7 +245,7 @@ void V3OptionParser::finalize() {
 
 void V3OptionParser::dumpOptions() {
     for (const auto& opt : m_pimpl->m_spellCheck.candidates()) {
-        std::cout << "OPTION: \"" + opt + "\"\n";
+        std::cout << "OPTION: \"" + opt.msg + "\"\n";
     }
 }
 

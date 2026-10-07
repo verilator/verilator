@@ -388,7 +388,7 @@ class V3Number final {
     using V3NumberDataType = V3NumberData::V3NumberDataType;
 
     // MEMBERS
-    V3NumberData m_data;
+    V3NumberData m_data;  // Value and flags
     AstNode* m_nodep = nullptr;  // Parent node - for error reporting only
     FileLine* m_fileline = nullptr;  // Source location - if no parent node is reasonable
 
@@ -712,6 +712,7 @@ public:
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth = 0) const;
     bool isCaseEq(const V3Number& rhs) const;  // operator==
+    bool isLt(const V3Number& rhs) const;  // Unsigned operator<, false if unknown
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
     bool isAnyX() const VL_MT_SAFE;
     bool isAnyXZ() const;
@@ -782,6 +783,7 @@ public:
     V3Number& opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval);
     V3Number& opSelInto(const V3Number& lhs, const V3Number& lsb, int width);
     V3Number& opSelInto(const V3Number& lhs, int lsbval, int width);
+    V3Number& opCvtPackString(const V3Number& lhs);
     V3Number& opToLowerN(const V3Number& lhs);
     V3Number& opToUpperN(const V3Number& lhs);
     V3Number& opCaseEq(const V3Number& lhs, const V3Number& rhs);

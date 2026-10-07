@@ -11,7 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--hierarchical'])
+# The DPI update reads the inouts and writes their drivers in the same call.
+test.compile(verilator_flags2=['--hierarchical', '-Wno-UNOPTFLAT'])
 
 test.execute()
 

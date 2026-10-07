@@ -119,9 +119,9 @@ static void checkDataHazards(OrderMTaskGraph& mTaskGraph) {
 // of the logic nodes from the fine-grained graph.
 
 static std::unique_ptr<OrderMTaskGraph> partition(OrderMoveGraph& moveGraph) {
-    // Build the initial MTask graph. Initially, each MTask just wraps one OrderMoveVertex. We will
-    // merge MTasks together and eventually each MTask will wrap a large number of OrderMoveVertex
-    // (and the logic nodes therein).
+    // Build the initial MTask graph. Initially, each MTask just wraps one OrderMoveVertex, or a
+    // threads_group part of them. We will merge MTasks together and eventually each MTask will
+    // wrap a large number of OrderMoveVertex (and the logic nodes therein).
     std::unique_ptr<OrderMTaskGraph> mTaskGraphp = OrderMTaskGraph::build(moveGraph);
     mTaskGraphp->hashGraphDebug("initial MTask graph");
 
@@ -240,14 +240,14 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
     // Create the AstExecGraph node which represents the execution of the MTask graph.
     FileLine* const flp = v3Global.rootp()->fileline();
     AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
-    AstExecGraph* const execGraphp = new AstExecGraph{flp, tag};
+    AstExecGraph* const execGraphp = new AstExecGraph{flp, tag, moveGraph.orderGraph().trigVscp()};
     V3Graph* const depGraphp = execGraphp->depGraphp();
 
     // Translate the LogicMTask graph into the corresponding ExecMTask graph,
     // which will outlive ordering.
     std::unordered_map<const LogicMTask*, ExecMTask*> logicMTaskToExecMTask;
     OrderMoveGraphSerializer serializer{moveGraph};
-    V3OrderCFuncEmitter emitter{tag, slow};
+    V3OrderCFuncEmitter emitter{moveGraph.orderGraph().trigVscp(), tag, slow};
     // Sort LogicMTask vertices by their serial IDs.
     struct MTaskVxIdLessThan final {
         bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
@@ -305,7 +305,7 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
         // The order they are created here happens to be just such an order.
         AstCCall* const callp = new AstCCall{flp, execMTaskp->funcp()};
         callp->dtypeSetVoid();
-        execGraphp->addStmtsp(callp->makeStmt());
+        execGraphp->addCallsp(callp);
 
         // Add the dependency edges between ExecMTasks
         for (const V3GraphEdge& edge : mTaskp->inEdges()) {

@@ -214,11 +214,11 @@
 
           always_comb begin
             state_d = state_q;
-%000003     if ((state_q + 2'd0) == S0) state_d = S1;
+%000004     if ((state_q + 2'd0) == S0) state_d = S1;
         // [FSM coverage]
 %000003        // [fsm_arc t.nonvar_compare_u.state_q::S0->S1]
 %000003        // [fsm_arc t.nonvar_compare_u.state_q::S1->S0]
-%000003        // [fsm_state t.nonvar_compare_u.state_q::S0]
+%000004        // [fsm_state t.nonvar_compare_u.state_q::S0]
 %000003        // [fsm_state t.nonvar_compare_u.state_q::S1]
             else if (state_q == S1) state_d = S0;
           end
@@ -373,7 +373,7 @@
           logic side = 1'b0;
           logic dyn_side = 1'b0;
           logic [2:0] dyn_case = 3'd7;
-          state_t state  /*verilator fsm_reset_arc*/;
+          state_t state  /*verilator fsm_state*/;
 
           fsm_if_mixed_vars_bad mixed_vars_u (.clk(clk));
           fsm_if_one_branch_bad one_branch_u (.clk(clk));
@@ -431,7 +431,7 @@
 %000002       case (state)
         // [FSM coverage]
 %000002        // [fsm_arc t.state::S0->S1]
-%000001        // [fsm_state t.state::S0]
+%000002        // [fsm_state t.state::S0]
 %000002        // [fsm_state t.state::S1]
 %000002        // [fsm_state t.state::S2]
                 S0, state_t'(dyn_case): state <= S1;

@@ -356,6 +356,45 @@ static int mon_check() {
         }
     }
 
+    // The references must also be discoverable without knowing their names, by
+    // iterating the declaring module's vpiInternalScope children after any child
+    // scopes. Other simulators keep vpiInternalScope to scopes, so Verilator only.
+    // t.bar.foo is a leaf module, so this also covers a scope with no children.
+    if (TestSimulator::is_verilator()) {
+        for (const std::string& scopeName : {barScope, fooScope}) {
+            const TestVpiHandle scopeh
+                = vpi_handle_by_name(const_cast<PLI_BYTE8*>(scopeName.c_str()), NULL);
+            TestVpiHandle it = scopeh ? vpi_iterate(vpiInternalScope, scopeh) : NULL;
+            if (!it) {
+                check_failed("vpi_iterate(vpiInternalScope, <" + scopeName + ">) = NULL");
+                continue;
+            }
+            bool sawRef = false;
+            int nIntf = 0;
+            int nPlain = 0;
+            while (vpiHandle ih = vpi_scan(it)) {
+                const std::string what = "vpiInternalScope iteration item of '" + scopeName + "'";
+                const char* const fn = vpi_get_str(vpiFullName, ih);
+                const std::string fullname = fn ? fn : "<null>";
+                if (vpi_get(vpiType, ih) == vpiRefObj) {
+                    sawRef = true;
+                    if (fullname == scopeName + ".intf_ref") ++nIntf;
+                    if (fullname == scopeName + ".plain_ref") ++nPlain;
+                    check_not_a_scope(ih, what);
+                } else if (sawRef) {
+                    check_failed(what + " '" + fullname + "' is a scope after a reference");
+                }
+                vpi_release_handle(ih);
+            }
+            it.freed();
+            if (nIntf != 1 || nPlain != 1) {
+                check_failed("vpi_iterate(vpiInternalScope, <" + scopeName + ">) yielded intf_ref "
+                             + std::to_string(nIntf) + " and plain_ref " + std::to_string(nPlain)
+                             + " times, expected once each");
+            }
+        }
+    }
+
     // A plain interface port: vpiActual is the interface, not a modport
     {
         const TestVpiHandle intfh = concrete_of_plain(fooScope + ".plain_ref");

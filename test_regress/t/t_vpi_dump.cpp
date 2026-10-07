@@ -48,17 +48,28 @@ std::map<int32_t, std::vector<int32_t>> iterate_over = [] {
         // vpiModule,  // Aldec SEGV on mixed language
         // vpiModuleArray,       // Aldec SEGV on mixed language
         // vpiIODecl,            // Don't care about these
-        vpiMemory, vpiIntegerVar, vpiRealVar,
+        vpiMemory,
+        vpiIntegerVar,
+        vpiRealVar,
         // vpiRealNet, Vpi extension
-        vpiStructVar, vpiStructNet, vpiNamedEvent, vpiNamedEventArray, vpiParameter,
+        vpiStructVar,
+        vpiStructNet,
+        vpiNamedEvent,
+        vpiNamedEventArray,
+        vpiParameter,
         // vpiVariables, // parent of vpiReg, vpiRegArray, vpiIntegerVar, etc vars
         // vpiSpecParam,         // Don't care
         // vpiParamAssign,       // Aldec SEGV on mixed language
         // vpiDefParam,          // Don't care
-        vpiPrimitive, vpiPrimitiveArray,
+        vpiPrimitive,
+        vpiPrimitiveArray,
         // vpiContAssign,        // Don't care
         // vpiProcess,  // Don't care
-        vpiModPath, vpiTchk, vpiAttribute, vpiPort, vpiInternalScope,
+        vpiModPath,
+        vpiTchk,
+        vpiAttribute,
+        vpiPort,
+        vpiInternalScope,
         // vpiInterface,         // Aldec SEGV on mixed language
         // vpiInterfaceArray,    // Aldec SEGV on mixed language
     };

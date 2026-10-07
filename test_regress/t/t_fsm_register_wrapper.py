@@ -13,7 +13,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc --coverage-fsm t/t_fsm_register_wrapper.vlt'])
+test.compile(verilator_flags2=['--cc --coverage-fsm', test.vlt_filename])
 
 test.execute()
 

@@ -22,3 +22,8 @@ tcmalloc support
    Verilator currently supports the default malloc, tcmalloc, or jemalloc.
    As jemalloc has better performance, support for tcmalloc may be removed
    no sooner than January 2027.
+
+Pragma :option:`/*verilator&32;fsm_reset_arc*/`
+   Verilator currently supports :option:`/*verilator&32;fsm_reset_arc*/`
+   which aliases :option:`/*verilator&32;fsm_state*/`. This alias may be
+   removed no sooner than February 2027.

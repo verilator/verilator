@@ -182,7 +182,7 @@ class DataflowOptimize final {
         }
     }
 
-    DataflowOptimize(AstNetlist* netlistp) {
+    explicit DataflowOptimize(AstNetlist* netlistp) {
         // Mark variables with external references
         markExternallyReferencedVariables(netlistp);
         // Dump stage stats

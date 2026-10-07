@@ -132,6 +132,11 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     // - Call decl* for each signal (these eventually call ::declCode)
     // - Call the initialize callbacks of library instances underneath
     // - Store the base code
+    // Library instances are created by their parents, so register before them, but are only
+    // roots if not under a traced instance, so call the callbacks of the others first.
+    for (size_t i = 0; i < m_initCbs.size(); ++i) {
+        if (!m_initCbs[i].m_isLibInstance) runInitCallback(i, true);
+    }
     for (size_t i = 0; i < m_initCbs.size(); ++i) runInitCallback(i, true);
 
     if (expectedCodes && nextCode() != expectedCodes) {
@@ -151,7 +156,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
         // We don't want to still use m_signs_enabledVec as std::vector<bool> is not
         // guaranteed to be fast
         m_sigs_enabledp = new uint32_t[1 + VL_WORDS_I(nextCode())]{0};
-        m_sigs_enabledVec.reserve(nextCode());
+        m_sigs_enabledVec.resize(nextCode(), false);
         for (size_t code = 0; code < nextCode(); ++code) {
             if (m_sigs_enabledVec[code]) {
                 m_sigs_enabledp[VL_BITWORD_I(code)] |= 1U << VL_BITBIT_I(code);
@@ -244,7 +249,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& 
 }
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap, bool) {
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap) {
     ParallelWorkerData* const wdp = reinterpret_cast<ParallelWorkerData*>(datap);
     // Run the task
     wdp->m_cb(wdp->m_userp, wdp->m_bufp);
@@ -295,9 +300,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<Callback
             }
         }
         // Execute main thread jobs
-        for (ParallelWorkerData* const itemp : mainThreadWorkerData) {
-            parallelWorkerTask(itemp, false);
-        }
+        for (ParallelWorkerData* const itemp : mainThreadWorkerData) parallelWorkerTask(itemp);
         // Commit all trace buffers in order
         for (ParallelWorkerData& item : workerData) {
             // Wait until ready
@@ -559,14 +562,8 @@ template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, const VlEventBase* newvalp) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     // No need to update *oldp
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     if (newvalp->isTriggered()) emitEvent(code);
-}
-
-template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullEventTriggered(uint32_t* oldp) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    // No need to update *oldp
-    emitEvent(code);
 }
 
 template <>

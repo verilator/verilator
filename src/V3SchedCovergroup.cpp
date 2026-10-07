@@ -102,7 +102,7 @@ class CovergroupRefBindVisitor final : public VNVisitorConst {
 
     // True if this constructor takes a reference formal, and so has anything to bind
     static bool hasRefFormal(const AstCFunc* funcp) {
-        for (AstNode* portp = funcp->argsp(); portp; portp = portp->nextp()) {
+        for (AstNode* const portp : funcp->argspList()) {
             const AstVar* const varp = VN_AS(portp, Var);
             if (varp->declDirection().isRef() || varp->declDirection().isConstRef()) return true;
         }
@@ -119,7 +119,7 @@ class CovergroupRefBindVisitor final : public VNVisitorConst {
         // Actuals correspond one to one, in order, with the function's argument variables.
         // A constructor returns void, so none of them is a return value variable.
         AstNode* actualp = nodep->argsp();
-        for (AstNode* portp = nodep->funcp()->argsp(); portp; portp = portp->nextp()) {
+        for (AstNode* const portp : nodep->funcp()->argspList()) {
             AstNode* const thisActualp = actualp;
             actualp = actualp->nextp();
             const AstVar* const varp = VN_AS(portp, Var);

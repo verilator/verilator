@@ -278,8 +278,8 @@ BRDA:329,0,cond_else,0
 DA:330,10
 DA:331,10
 BRDA:331,0,block,10
-BRDA:331,0,(((cyc %25 32'sh3) == 32'sh0)==0) => 0,7
-BRDA:331,0,(((cyc %25 32'sh3) == 32'sh0)==1) => 1,3
+BRDA:331,0,(((cyc % 32'sh3) == 32'sh0)==0) => 0,7
+BRDA:331,0,(((cyc % 32'sh3) == 32'sh0)==1) => 1,3
 BRDA:331,0,cond_then,3
 BRDA:331,0,cond_else,7
 DA:332,10

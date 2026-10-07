@@ -1,0 +1,6 @@
+%Error: t/t_covergroup_exclusions_unsup.v:113:29: Non-constant expression in transition bin; values must be constants (IEEE 1800-2023 19.5)
+                                                : ... note: In instance 't.sub1'
+  113 |       bins nonconst = (1 => variable);
+      |                             ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

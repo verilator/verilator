@@ -77,6 +77,9 @@ class CUseVisitor final : public VNVisitorConst {
         } else if (const AstClassRefDType* const classp
                    = VN_CAST(nodep->skipRefp(), ClassRefDType)) {
             addNewUse(nodep, VUseType::INT_FWD_CLASS, classp->name());
+        } else if (const AstIfaceRefDType* const ifacep
+                   = VN_CAST(nodep->skipRefp(), IfaceRefDType)) {
+            addNewUse(nodep, VUseType::INT_FWD_CLASS, ifacep->ifaceViaCellp()->name());
         }
     }
     void visit(AstNode* nodep) override {
@@ -114,8 +117,7 @@ public:
 void V3CUse::cUseAll() {
     UINFO(2, __FUNCTION__ << ":");
     // Call visitor separately for each module, so visitor state is cleared
-    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-         modp = VN_AS(modp->nextp(), NodeModule)) {
+    for (AstNodeModule* const modp : v3Global.rootp()->modulespList()) {
         if (modp->isConstPool()) continue;  // Special emit rules
         // Insert under this module; someday we should e.g. make Ast
         // for each output file and put under that

@@ -9,13 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st')
 
 test.compile(verilator_flags2=["--stats"])
 
 if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, Tables created\s+(\d+)', 1)
-    test.file_grep(test.stats, r'ConstPool, Tables emitted\s+(\d+)', 2)
+    test.file_grep(test.stats, r'ConstPool, CONSARRAY emitted\s+(\d+)', 2)
 
 test.execute(expect_filename=test.golden_filename)
 

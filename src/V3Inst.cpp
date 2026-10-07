@@ -60,6 +60,8 @@ class InstVisitor final : public VNVisitor {
         AstVarRef* const refp = VN_CAST(exprp, VarRef);
         if (!refp) return false;
         AstVar* const exprVarp = refp->varp();
+        // A virtual interface port connected to a real interface can't be an alias
+        if (exprVarp->isIfaceRef()) return false;
         // A ref port must become an alias
         if (!modVarp->direction().isRef()) {
             // V3FsmDetect recognizes the registers of an fsm_register_wrapper instance via
@@ -89,7 +91,6 @@ class InstVisitor final : public VNVisitor {
         modVarp->fileline()->modifyStateInherit(exprVarp->fileline());
         exprVarp->propagateAttrFrom(modVarp);
         modVarp->propagateAttrFrom(exprVarp);
-        // The port is named first, so the net it connects to is the one that survives
         refp->access(VAccess::READWRITE);
         FileLine* const flp = exprp->fileline();
         AstNodeExpr* const itemsp
@@ -178,13 +179,7 @@ class InstVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit InstVisitor(AstNetlist* nodep) {
-        // Modules are level sorted, with the top module first. Visit them in reverse
-        // order, that is children before parents, so that the warning disables and the
-        // attributes of a port variable propagate all the way up through a chain of
-        // aliased port connections (see tryAliasPin).
-        iterateChildrenBackwardsConst(nodep);
-    }
+    explicit InstVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~InstVisitor() override = default;
 };
 
@@ -291,7 +286,15 @@ public:
                     assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsp};
                     V3Width::streamAssignLowerEdit(assignp);
                 } else {
-                    AstNodeExpr* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                    AstNodeExpr* rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                    // A reversed array is assigned by the left-to-right order of elements
+                    // (IEEE 1800-2023 7.6)
+                    const AstUnpackArrayDType* const arrayp
+                        = VN_CAST(pinexprp->dtypep()->skipRefp(), UnpackArrayDType);
+                    if (arrayp && arrayp->isReverseOf(rhsSelp->dtypep())) {
+                        rhsSelp = new AstCvtUnpackToUnpack{pinp->fileline(), rhsSelp,
+                                                           pinexprp->dtypep()};
+                    }
                     assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsSelp};
                 }
             } else {

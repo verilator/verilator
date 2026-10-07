@@ -9,7 +9,7 @@
 class C1;
   rand real frame[2];
   real target[2];
-  constraint c { frame == target; }
+  constraint c {frame == target;}
   function new();
     target[0] = 1.5;
     target[1] = 2.5;
@@ -19,7 +19,7 @@ endclass
 class C2;
   rand real frame[2];
   real target[2];
-  constraint c { frame != target; }
+  constraint c {frame != target;}
   function new();
     target[0] = 1.5;
     target[1] = 2.5;

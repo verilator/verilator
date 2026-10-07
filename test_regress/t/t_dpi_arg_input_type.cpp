@@ -328,6 +328,50 @@ void i_array_2_state_128(CONSTARG svBitVecVal* i) {
     if (i[3] != -1) stop();
 }
 
+// 2-state packed arrays of 1-bit typedef
+void i_bit_t_array_1(CONSTARG svBitVecVal* i) {
+    static int n = 0;
+    printf("i_bit_t_array_1 %d\n", n);
+    if ((*i & 1) != !(n++ % 2)) stop();
+}
+
+void i_bit_t_array_32(CONSTARG svBitVecVal* i) {
+    static int n = 0;
+    printf("i_bit_t_array_32 %d\n", n);
+    if (*i != 0xffffffffU << n++) stop();
+}
+
+void i_bit_t_array_33(CONSTARG svBitVecVal* i) {
+    static int n = 0;
+    printf("i_bit_t_array_33 %d\n", n);
+    if (i[0] != 0xffffffffU << n++) stop();
+    if ((i[1] & 1) != 1) stop();
+}
+
+void i_bit_t_array_64(CONSTARG svBitVecVal* i) {
+    static int n = 0;
+    printf("i_bit_t_array_64 %d\n", n);
+    if (i[0] != 0xffffffffU << n++) stop();
+    if (i[1] != -1) stop();
+}
+
+void i_bit_t_array_65(CONSTARG svBitVecVal* i) {
+    static int n = 0;
+    printf("i_bit_t_array_65 %d\n", n);
+    if (i[0] != 0xffffffffU << n++) stop();
+    if (i[1] != -1) stop();
+    if ((i[2] & 1) != 1) stop();
+}
+
+void i_bit_t_array_128(CONSTARG svBitVecVal* i) {
+    static int n = 0;
+    printf("i_bit_t_array_128 %d\n", n);
+    if (i[0] != 0xffffffffU << n++) stop();
+    if (i[1] != -1) stop();
+    if (i[2] != -1) stop();
+    if (i[3] != -1) stop();
+}
+
 // 2-state packed structures
 void i_struct_2_state_1(CONSTARG svBitVecVal* i) {
     static int n = 0;
@@ -459,6 +503,56 @@ void i_array_4_state_65(CONSTARG svLogicVecVal* i) {
 void i_array_4_state_128(CONSTARG svLogicVecVal* i) {
     static int n = 0;
     printf("i_array_4_state_128 %d\n", n);
+    if (i[0].aval != 0xffffffffU << n++) stop();
+    if (i[1].aval != -1) stop();
+    if (i[2].aval != -1) stop();
+    if (i[3].aval != -1) stop();
+    check_bvals(i, 4);
+}
+
+// 4-state packed arrays of 1-bit typedef
+void i_logic_t_array_1(CONSTARG svLogicVecVal* i) {
+    static int n = 0;
+    printf("i_logic_t_array_1 %d\n", n);
+    if ((i->aval & 1) != !(n++ % 2)) stop();
+    check_bvals(i, 1);
+}
+
+void i_logic_t_array_32(CONSTARG svLogicVecVal* i) {
+    static int n = 0;
+    printf("i_logic_t_array_32 %d\n", n);
+    if (i->aval != 0xffffffffU << n++) stop();
+    check_bvals(i, 1);
+}
+
+void i_logic_t_array_33(CONSTARG svLogicVecVal* i) {
+    static int n = 0;
+    printf("i_logic_t_array_33 %d\n", n);
+    if (i[0].aval != 0xffffffffU << n++) stop();
+    if ((i[1].aval & 1) != 1) stop();
+    check_bvals(i, 2);
+}
+
+void i_logic_t_array_64(CONSTARG svLogicVecVal* i) {
+    static int n = 0;
+    printf("i_logic_t_array_64 %d\n", n);
+    if (i[0].aval != 0xffffffffU << n++) stop();
+    if (i[1].aval != -1) stop();
+    check_bvals(i, 2);
+}
+
+void i_logic_t_array_65(CONSTARG svLogicVecVal* i) {
+    static int n = 0;
+    printf("i_logic_t_array_65 %d\n", n);
+    if (i[0].aval != 0xffffffffU << n++) stop();
+    if (i[1].aval != -1) stop();
+    if ((i[2].aval & 1) != 1) stop();
+    check_bvals(i, 3);
+}
+
+void i_logic_t_array_128(CONSTARG svLogicVecVal* i) {
+    static int n = 0;
+    printf("i_logic_t_array_128 %d\n", n);
     if (i[0].aval != 0xffffffffU << n++) stop();
     if (i[1].aval != -1) stop();
     if (i[2].aval != -1) stop();
@@ -684,6 +778,28 @@ void check_exports() {
     b4[3] = 0xffffffff >> n;
     e_array_2_state_128(b4);
 
+    // 2-state packed arrays of 1-bit typedef
+    b1[0] = n % 2;
+    e_bit_t_array_1(b1);
+
+    b1[0] = 0xffffffff >> n;
+    e_bit_t_array_32(b1);
+
+    b2[1] = 1 >> n;
+    b2[0] = 0xffffffff >> m;
+    e_bit_t_array_33(b2);
+
+    b2[1] = 0xffffffff >> n;
+    b2[0] = 0xffffffff;
+    e_bit_t_array_64(b2);
+
+    b3[2] = 1 >> n;
+    b3[1] = 0xffffffff >> m;
+    e_bit_t_array_65(b3);
+
+    b4[3] = 0xffffffff >> n;
+    e_bit_t_array_128(b4);
+
     // 2-state packed structures
     b1[0] = n % 2;
     e_struct_2_state_1(b1);
@@ -766,6 +882,28 @@ void check_exports() {
 
     l4[3].aval = 0xffffffff >> n;
     e_array_4_state_128(l4);
+
+    // 4-state packed arrays of 1-bit typedef
+    l1[0].aval = n % 2;
+    e_logic_t_array_1(l1);
+
+    l1[0].aval = 0xffffffff >> n;
+    e_logic_t_array_32(l1);
+
+    l2[1].aval = 1 >> n;
+    l2[0].aval = 0xffffffff >> m;
+    e_logic_t_array_33(l2);
+
+    l2[1].aval = 0xffffffff >> n;
+    l2[0].aval = 0xffffffff;
+    e_logic_t_array_64(l2);
+
+    l3[2].aval = 1 >> n;
+    l3[1].aval = 0xffffffff >> m;
+    e_logic_t_array_65(l3);
+
+    l4[3].aval = 0xffffffff >> n;
+    e_logic_t_array_128(l4);
 
     // 4-state packed structures
     l1[0].aval = n % 2;

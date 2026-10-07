@@ -77,7 +77,7 @@ const StmtNameMap& getOrBuild(AstNodeModule* modp) {
     auto it = s_moduleCache.find(modp);
     if (it != s_moduleCache.end()) return it->second;
     StmtNameMap& cache = s_moduleCache[modp];
-    for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+    for (AstNode* const stmtp : modp->stmtspList()) {
         const string& nm = stmtp->name();
         if (!nm.empty()) cache.m_byName[nm].push_back(stmtp);
     }
@@ -296,7 +296,7 @@ AstNodeModule* V3LinkDotIfaceCapture::followCellPath(AstNodeModule* startModp,
         // instantiate the same module, so any of them will do
         const string componentBase = AstNode::nameNoArray(component);
         AstNodeModule* nextModp = nullptr;
-        for (AstNode* sp = curModp->stmtsp(); sp; sp = sp->nextp()) {
+        for (AstNode* const sp : curModp->stmtspList()) {
             if (AstCell* const cellp = VN_CAST(sp, Cell)) {
                 if ((cellp->name() == component
                      || AstNode::nameNoArray(cellp->name()) == componentBase)
@@ -459,7 +459,7 @@ int V3LinkDotIfaceCapture::resolveCapturedRefs() {
 void V3LinkDotIfaceCapture::verifyNoDeadRefs(const LiveNodes& liveNodes) {
     // Assert: no REFDTYPE in any live module should have typedefp or refDTypep
     // pointing to a dead module.
-    for (AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
+    for (AstNode* const nodep : v3Global.rootp()->modulespList()) {
         if (AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) {
             if (modp->dead()) continue;
             modp->foreach([&](AstRefDType* refp) {
@@ -493,8 +493,7 @@ void V3LinkDotIfaceCapture::verifyNoDeadRefs(const LiveNodes& liveNodes) {
         }
     }
     if (v3Global.rootp()->typeTablep()) {
-        for (AstNode* nodep = v3Global.rootp()->typeTablep()->typesp(); nodep;
-             nodep = nodep->nextp()) {
+        for (AstNode* const nodep : v3Global.rootp()->typeTablep()->typespList()) {
             nodep->foreach([&](AstRefDType* refp) {
                 if (refp->typedefp()) {
                     UASSERT_OBJ(liveNodes.count(refp->typedefp()), refp,

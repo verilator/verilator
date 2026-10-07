@@ -121,6 +121,22 @@ module t;
     qv = q.map(x) with (x + x.index);
     `checkp(qv, "'{'h1, 'h3, 'h5, 'h7, 'h9}");
 
+    // Original reproducer for #8827.
+    begin
+      bit [3:0] q[$];
+      bit [3:0] v;
+      bit [3:0] p;
+      q = '{4'hF, 4'hF, 4'h1};
+      v = q.sum();
+      p = q.product();
+      `checkh(q.sum(), 4'd15);
+      `checkh(v, 4'd15);
+      `checkh(q.sum() == 4'd15, 1'b1);
+      `checkh($bits(q.sum()), 32'd4);
+      `checkh(q.product(), 4'd1);
+      `checkh(p, 4'd1);
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -77,7 +77,7 @@ class DfgDataType final {
 
     // METHODS
     static AstNodeDType* canonicalPackedDType(uint32_t width) {
-        return v3Global.rootp()->typeTablep()->findLogicDType(width, width, VSigning::UNSIGNED);
+        return v3Global.rootp()->typeTablep()->findBitDType(width, width, VSigning::UNSIGNED);
     }
     static AstNodeDType* canonicalArrayDType(uint32_t size, const DfgDataType& elemType) {
         AstNodeDType* const elemDTypep = elemType.m_astDtypep;

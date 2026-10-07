@@ -3,6 +3,11 @@
 // SPDX-FileCopyrightText: 2019 Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0x exp=%0x\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 `define DRIVE(sig) \
 /* Just throw a bunch of bits at the input */ \
 /* verilator lint_off WIDTH */ \
@@ -57,6 +62,10 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
       logic [128:0] s129_out;
       logic [3:0] [31:0] s4x32_in;
       logic [3:0] [31:0] s4x32_out;
+      logic [3:0]        s4x1t_in;
+      logic [3:0]        s4x1t_out;
+      logic [1:0] [39:0] s2x2x40up_in[2];
+      logic [1:0] [39:0] s2x2x40up_out[2];
       /*verilator lint_off ASCRANGE*/
       logic [0:15]       s6x16up_in[0:1][2:0];
       logic [0:15]       s6x16up_out[0:1][2:0];
@@ -65,6 +74,23 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
       logic [15:0]       s8x16up_out[1:0][0:3];
       logic [15:0]       s8x16up_3d_in[1:0][0:1][0:1];
       logic [15:0]       s8x16up_3d_out[1:0][0:1][0:1];
+
+      // Exercise every combination of internal enable, internal data, and external data.
+      wire z_oe = cyc[0];
+      wire z_drive = cyc[1];
+      wire z_external = cyc[2];
+      wire z_expected = z_oe ? z_drive : z_external;
+      // The DPI update reads this net and writes its driver in the same call.
+      /* verilator lint_off UNOPTFLAT */
+      wire z_secret;
+      /* verilator lint_on UNOPTFLAT */
+      wire z_read;
+      assign z_secret = z_oe ? 1'bz : z_external;
+
+      always @(negedge clk) begin
+        `checkh(z_secret, z_expected);
+        `checkh(z_read, z_expected);
+      end
 
       wire               clk_en = crc[0];
 
@@ -92,12 +118,20 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
              .s129_out,
              .s4x32_in,
              .s4x32_out,
+             .s4x1t_in,
+             .s4x1t_out,
+             .s2x2x40up_in,
+             .s2x2x40up_out,
              .s6x16up_in,
              .s6x16up_out,
              .s8x16up_in,
              .s8x16up_out,
              .s8x16up_3d_in,
              .s8x16up_3d_out,
+             .z_drive,
+             .z_oe,
+             .z_secret,
+             .z_read,
              .clk_en,
              .clk);
 
@@ -117,6 +151,8 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
         `DRIVE(s65)
         `DRIVE(s129)
         `DRIVE(s4x32)
+        `DRIVE(s4x1t)
+        {s2x2x40up_in[0], s2x2x40up_in[1]} <= {crc, ~crc, crc[31:0]};
         {s1up_in[1], s1up_in[0]} <= {^crc, ~(^crc)};
         {s6x16up_in[0][0], s6x16up_in[0][1], s6x16up_in[0][2]} <= crc[47:0];
         {s6x16up_in[1][0], s6x16up_in[1][1], s6x16up_in[1][2]} <= ~crc[63:16];
@@ -183,6 +219,8 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
         `CHECK(s65)
         `CHECK(s129)
         `CHECK(s4x32)
+        `CHECK(s4x1t)
+        `CHECK(s2x2x40up)
         `CHECK(s6x16up)
         `CHECK(s8x16up)
         `CHECK(s8x16up_3d)

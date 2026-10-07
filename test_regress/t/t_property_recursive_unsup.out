@@ -3,4 +3,12 @@
    19 |   property check(int n);
       |            ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_recursive_unsup.v:34:12: Unsupported: Recursive property call: 'p_self'
+                                                        : ... note: In instance 't'
+   34 |   property p_self;
+      |            ^~~~~~
+%Error-UNSUPPORTED: t/t_property_recursive_unsup.v:38:12: Unsupported: Recursive property call: 'p_mutual1'
+                                                        : ... note: In instance 't'
+   38 |   property p_mutual1;
+      |            ^~~~~~~~~
 %Error: Exiting due to

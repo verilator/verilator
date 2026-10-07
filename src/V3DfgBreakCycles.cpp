@@ -44,7 +44,7 @@ class SccInfo final {
     size_t m_nCyclicVertices = 0;  // Number of vertices in non-trivial SCCs
 
 public:
-    SccInfo(DfgGraph& dfg)
+    explicit SccInfo(DfgGraph& dfg)
         : m_dfg{dfg} {
         // Initialize m_vtx2Scc for the graph from a proper analysis
         DfgUserMap<uint64_t> vtx2Scc = dfg.makeUserMap<uint64_t>();
@@ -884,8 +884,10 @@ public:
                 m_sub.emplace_back(flp, m_dtype.elemDtype());
         }
     }
+    // cppcheck-suppress noExplicitConstructor
     BitMask(const DfgVertex& vtx)
         : BitMask{vtx.fileline(), vtx.dtype()} {}
+    // cppcheck-suppress noExplicitConstructor
     BitMask(const BitMask& other)
         : m_dtype{other.m_dtype} {
         if (m_dtype.isPacked()) {
@@ -1449,7 +1451,7 @@ public:
 class FixUp final {
     DfgGraph& m_dfg;  // The graph being processed
     SccInfo& m_sccInfo;  // The SccInfo instance
-    TraceDriver m_traceDriver{m_dfg, m_sccInfo};
+    TraceDriver m_traceDriver{m_dfg, m_sccInfo};  // Traces drivers of the cyclic variables
     // The independent bits map
     const std::unordered_map<const DfgVertex*, BitMask> m_independentBits
         = IndependentBits::apply(m_dfg, m_sccInfo);

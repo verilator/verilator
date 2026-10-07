@@ -16,8 +16,20 @@ module t (
     return odd;
   endfunction
 
+  typedef struct {logic odd;} odd_t;
+
+  // Returns an unpacked struct, so that 'odd_struct(...).odd' is a member select of a call
+  function automatic odd_t odd_struct(int value);
+    odd_t s;
+    s.odd = is_odd(value);
+    return s;
+  endfunction
+
   always_ff @(posedge clk) begin
     if (cyc[0] == 1'b0 || is_odd(cyc)) cyc <= cyc + 1;
+    if (cyc[0] == 1'b1 && !odd_struct(cyc).odd) $stop;
+    if (!(cyc[0] == 1'b0 || odd_struct(cyc).odd)) $stop;
+    if (!(cyc[0] == 1'b1 -> odd_struct(cyc).odd)) $stop;
     if (cyc == 10) begin
       $write("*-* All Finished *-*\n");
       $finish;

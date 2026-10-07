@@ -12,6 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.compile(verilator_flags2=[
+    "-Wno-UNOPTPUBLIC",
     "--protect-ids",
     "--trace",
     "--public",

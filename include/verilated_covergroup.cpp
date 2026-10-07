@@ -94,6 +94,7 @@ struct VlCoverpoint::ValueData final {
     };
     struct Values final {
         std::vector<Range> m_ranges;  // Source intervals and patterns associated with this bin
+        uint32_t m_intervals = 0;  // Length of the merged interval prefix of normalized m_ranges
         bool m_transition = false;  // State-value exclusions must not alter this transition bin
     };
     // Outcome of searching a range for a value outside every exclusion
@@ -136,7 +137,8 @@ struct VlCoverpoint::ValueData final {
         Value m_values;  // Values of m_kept, a position, for Values grouping
     };
     // Candidates each bin's filter may evaluate, when the covergroup is constructed
-    static constexpr QData CANDIDATE_LIMIT = 1ULL << 32;
+    static constexpr int CANDIDATE_LIMIT_LOG2 = 32;
+    static constexpr QData CANDIDATE_LIMIT = 1ULL << CANDIDATE_LIMIT_LOG2;
 
     // MEMBERS
     const uint32_t m_bits;  // Width of the coverpoint's effective integral type
@@ -403,6 +405,34 @@ struct VlCoverpoint::ValueData final {
     }
     Search hasValue(uint32_t bin, const Range& range) const;
     Search intersects(uint32_t bin, const Range& filter) const;
+    // A bin's values are given in value order by streams: one of its ordered intervals, and one
+    // per pattern after them, which may hold values of the intervals or other patterns.  Merged
+    // in a heap, the streams give each value once, without searching the bin's other ranges.
+    struct Stream final {
+        Value m_value;  // Next value
+        uint32_t m_range = 0;  // Range of m_value; the intervals' stream moves through them
+    };
+    using Streams = std::vector<Stream>;  // A heap, of the stream with the least value first
+    // Start the streams of a bin at its first value, at front(), not excluded unless of a
+    // transition bin; false if none
+    bool firstValue(uint32_t bin, Streams& streams) const;
+    // Advance to the bin's next value, as firstValue(); false after its last
+    bool nextValue(uint32_t bin, Streams& streams) const;
+    // Order the heap of streams
+    auto streamOrder() const {
+        return [this](const Stream& lhs, const Stream& rhs) {
+            return less(rhs.m_value, lhs.m_value);
+        };
+    }
+    // Advance a stream past 'last'; false once it has no value left
+    bool streamPast(uint32_t bin, Stream& stream, const Value& last) const;
+    // Advance each stream whose next value is not after 'last' past it
+    void streamsPast(uint32_t bin, Streams& streams, const Value& last) const;
+    // Advance the streams to their first value not excluded, unless of a transition bin; false
+    // if none
+    bool settle(uint32_t bin, Streams& streams) const;
+    // At least the number of values of a bin before exclusions, saturated to 'cap'
+    uint64_t binValueCount(uint32_t bin, uint64_t cap) const;
 };
 
 // One bounded search.  Shared ordered decisions avoid expanding the complement of wildcard
@@ -541,6 +571,84 @@ VlCoverpoint::ValueData::Search VlCoverpoint::ValueData::intersects(uint32_t bin
     return result;
 }
 
+bool VlCoverpoint::ValueData::streamPast(uint32_t bin, Stream& stream, const Value& last) const {
+    const Values& values = m_values[bin];
+    while (true) {
+        const Range& range = values.m_ranges[stream.m_range];
+        if (less(last, range.m_hi)) {
+            Value next = last;  // Before the range's last value, so in order
+            increment(next);
+            if (less(next, range.m_lo)) next = range.m_lo;
+            // 'next' is not after the range's last value, which is not after its pattern's last,
+            // so the pattern has a value at or after it
+            const bool found VL_ATTR_UNUSED = patternAtLeast(range, next, stream.m_value);
+            assert(found);
+            // A pattern clipped to a range may have no value left in it
+            return !less(range.m_hi, stream.m_value);
+        }
+        if (++stream.m_range >= values.m_intervals) return false;  // Of a pattern, or the last
+    }
+}
+
+void VlCoverpoint::ValueData::streamsPast(uint32_t bin, Streams& streams,
+                                          const Value& last) const {
+    while (!streams.empty() && !less(last, streams.front().m_value)) {
+        std::pop_heap(streams.begin(), streams.end(), streamOrder());
+        if (streamPast(bin, streams.back(), last)) {
+            std::push_heap(streams.begin(), streams.end(), streamOrder());
+        } else {
+            streams.pop_back();
+        }
+    }
+}
+
+bool VlCoverpoint::ValueData::settle(uint32_t bin, Streams& streams) const {
+    const bool excludes = !m_values[bin].m_transition && !m_exclusions.empty();
+    while (!streams.empty()) {
+        const Value& value = streams.front().m_value;
+        if (!excludes || !excluded(view(value))) return true;
+        // Skip an interval of excluded values at once, else one value
+        const Range* const intervalp = interval(m_exclusions, m_regularExclusions, view(value));
+        const Value last = intervalp ? intervalp->m_hi : value;  // A copy, as the streams advance
+        streamsPast(bin, streams, last);
+    }
+    return false;
+}
+
+bool VlCoverpoint::ValueData::firstValue(uint32_t bin, Streams& streams) const {
+    const Values& values = m_values[bin];
+    streams.clear();
+    if (values.m_intervals) streams.push_back({values.m_ranges.front().m_lo, 0});
+    for (uint32_t range = values.m_intervals; range < values.m_ranges.size(); ++range) {
+        streams.push_back({values.m_ranges[range].m_lo, range});
+    }
+    std::make_heap(streams.begin(), streams.end(), streamOrder());
+    return settle(bin, streams);
+}
+
+bool VlCoverpoint::ValueData::nextValue(uint32_t bin, Streams& streams) const {
+    const Value last = streams.front().m_value;  // A copy, as the streams advance
+    streamsPast(bin, streams, last);  // Each stream giving the value
+    return settle(bin, streams);
+}
+
+uint64_t VlCoverpoint::ValueData::binValueCount(uint32_t bin, uint64_t cap) const {
+    uint64_t total = 0;
+    for (const Range& range : m_values[bin].m_ranges) {
+        Value span{positionWords()};
+        countValues(range.m_lo, range.m_hi, span);
+        uint64_t count = narrow(span) ? std::min(number(span), cap) : cap;
+        // A pattern has a value per setting of its wildcard bits
+        const uint32_t wildcards
+            = range.m_mask.empty()
+                  ? m_bits
+                  : m_bits - VL_COUNTONES_W(static_cast<int>(m_words), view(range.m_mask));
+        if (wildcards < VL_QUADSIZE) count = std::min(count, uint64_t{1} << wildcards);
+        total = std::min(total + count, cap);
+    }
+    return total;
+}
+
 VlCoverpoint::VlCoverpoint() = default;
 VlCoverpoint::~VlCoverpoint() = default;
 
@@ -570,8 +678,8 @@ void VlCoverpoint::valueRuns(std::initializer_list<EData> entries) {
     static constexpr uint32_t VALUES = 3;  // Low, span, and high values
     ValueData& data = *m_valuesp;
     assert(!data.m_frozen);
-    const uint32_t words = data.m_words;
-    const uint32_t entryWords = HEADER_WORDS + VALUES * words;
+    const uint32_t wordsp = data.m_words;
+    const uint32_t entryWords = HEADER_WORDS + VALUES * wordsp;
     const EData* const endp = entries.end();
     for (const EData* entryp = entries.begin(); entryp != endp; entryp += entryWords) {
         assert(static_cast<size_t>(endp - entryp) >= entryWords);  // Only whole entries
@@ -579,8 +687,8 @@ void VlCoverpoint::valueRuns(std::initializer_list<EData> entries) {
         const uint32_t count = entryp[1];
         const EData* const valuesp = entryp + HEADER_WORDS;
         ValueData::Value lo = data.read(WDataInP::external(valuesp));
-        const ValueData::Value span = data.read(WDataInP::external(valuesp + words));
-        const ValueData::Value hi = data.read(WDataInP::external(valuesp + 2 * words));
+        const ValueData::Value span = data.read(WDataInP::external(valuesp + wordsp));
+        const ValueData::Value hi = data.read(WDataInP::external(valuesp + 2 * wordsp));
         // Expand the run into the value range of each of its bins, as valueRanges() gives them:
         // until valueRelease(), valueFinalize() finds the bins exclusions leave without values,
         // and runtime cross selections intersect their filters, from these ranges.  Each bin
@@ -645,7 +753,7 @@ void VlCoverpoint::valueFinalize() {
                                || namer.set() == VlCovBinKind::KIND_ILLEGAL;
         for (uint32_t bin = namer.base(); bin < namer.base() + namer.count(); ++bin) {
             ValueData::Values& values = data.m_values[bin];
-            data.normalize(values.m_ranges);
+            values.m_intervals = data.normalize(values.m_ranges);
             if (exclusion && !values.m_transition) {
                 data.m_exclusions.insert(data.m_exclusions.end(), values.m_ranges.begin(),
                                          values.m_ranges.end());
@@ -700,15 +808,14 @@ void VlCoverpoint::sizedRangeW(WDataInP lop, WDataInP hip) {
 
 // Warn that the bins 'name' are ignored, because of 'reason'.  From an mtask, VL_WARN_MT reports
 // after returning, so the text is kept for the program, once for all instances.
-static void _vl_cov_warn_ignored(const char* file, int line, const char* reason,
+static void _vl_cov_warn_ignored(const char* file, int line, const std::string& reason,
                                  const char* name) VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     static std::set<std::string> s_texts;  // Texts of the warnings
-    std::string text = std::string{reason} + "; bin '" + name + "' ignored";
     const char* textp;
     {
         const VerilatedLockGuard lock{s_mutex};
-        textp = s_texts.insert(std::move(text)).first->c_str();
+        textp = s_texts.insert(reason + "; bin '" + name + "' ignored").first->c_str();
     }
     VL_WARN_MT(file, line, "", textp);
 }
@@ -921,15 +1028,20 @@ void VlCoverpoint::withFinish(VlCovBinKind kind, QData count, bool positive, con
     kept.swap(with.m_kept);
     data.m_sizedElements.clear();
     const bool values = with.m_grouping == VlCovBinGrouping::Values;
-    if (VL_UNLIKELY(with.m_candidates || with.m_full)) {
+    if (VL_UNLIKELY(with.m_candidates)) {
         kept.clear();
-        _vl_cov_warn_ignored(
-            file, line,
-            with.m_candidates ? "Coverage bin 'with' filter has more than 2**32 candidate values"
-            : values          ? "Coverage bin array needs more bins than --coverage-max-bins"
-                              : "Coverage bin 'with' filter keeps values in more ranges than"
-                                " --coverage-max-bins",
-            name);
+        _vl_cov_warn_ignored(file, line,
+                             "Coverage bin 'with' filter has more than 2**"
+                                 + std::to_string(ValueData::CANDIDATE_LIMIT_LOG2)
+                                 + " candidate values",
+                             name);
+    } else if (VL_UNLIKELY(with.m_full)) {
+        kept.clear();
+        _vl_cov_warn_ignored(file, line,
+                             values ? "Coverage bin array needs more bins than --coverage-max-bins"
+                                    : "Coverage bin 'with' filter keeps values in more ranges than"
+                                      " --coverage-max-bins",
+                             name);
     }
     if (with.m_grouping == VlCovBinGrouping::Fixed) {
         // Filtered first, then distributed (IEEE 1800-2023 19.5.1.1)
@@ -1052,6 +1164,68 @@ bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled) {
     return last != UINT32_MAX;
 }
 
+void VlCoverpoint::transitionTable(std::initializer_list<EData> items) {
+    assert(!m_transitions.empty());  // transitionAdd() added the sequence
+    Transition& sequence = m_transitions.back();
+    for (const EData* itemp = items.begin(); itemp != items.end();) {
+        const EData* const valuesp = itemp + 1;
+        itemp = valuesp + *itemp * sequence.m_words;
+        sequence.m_values.insert(sequence.m_values.end(), valuesp, itemp);
+        sequence.m_ends.push_back(
+            static_cast<uint32_t>(sequence.m_values.size() / sequence.m_words));
+    }
+}
+
+VL_ATTR_ALWINLINE
+bool VlCoverpoint::Transition::matches(uint32_t item, WDataInP valuep) const {
+    // The item's values ascend: binary search them, comparing each from its top word
+    uint32_t lo = item ? m_ends[item - 1] : 0;
+    uint32_t hi = m_ends[item];
+    // A value of one word, of a coverpoint of up to 32 bits, compares directly
+    if (m_words == 1) {
+        return std::binary_search(m_values.data() + lo, m_values.data() + hi, valuep[0]);
+    }
+    while (lo < hi) {
+        const uint32_t mid = lo + (hi - lo) / 2;
+        const EData* const midp = m_values.data() + mid * m_words;
+        uint32_t word = m_words - 1;
+        while (word && midp[word] == valuep[word]) --word;
+        if (midp[word] == valuep[word]) return true;
+        if (midp[word] < valuep[word]) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    return false;
+}
+
+bool VlCoverpoint::transitionSample(uint32_t seq, QData value) {
+    // As words, for two stores per sample; matches() compares a value of one word directly
+    VlWide<VL_WQ_WORDS_E> words;
+    VL_SET_WQ(words, value);
+    return transitionSampleW(seq, words);
+}
+
+bool VlCoverpoint::transitionSampleW(uint32_t seq, WDataInP valuep) {
+    Transition& sequence = m_transitions[seq];
+    // A partial match grows by a value its next item holds, and completes once every item has
+    // held one; a value the first item holds also starts a partial match
+    bool complete = false;
+    sequence.m_next.clear();
+    for (const uint32_t length : sequence.m_active) {
+        if (!sequence.matches(length, valuep)) continue;
+        if (length + 1 == sequence.m_ends.size()) {
+            complete = true;
+        } else {
+            sequence.m_next.push_back(length + 1);
+        }
+    }
+    if (sequence.matches(0, valuep)) sequence.m_next.push_back(1);
+    sequence.m_active.swap(sequence.m_next);
+    return complete;
+}
+
 void VlCoverpoint::sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint32_t& last) {
     // The elements hold consecutive positions, so the bins holding a value come in order, and
     // one that two elements share repeats only in a row: count it once (IEEE 1800-2023 19.5)
@@ -1066,7 +1240,7 @@ void VlCoverpoint::sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint3
 }
 
 void VlCoverpoint::init(const char* hier, uint32_t atLeast, uint32_t nBins) {
-    m_hier = hier;
+    this->hier(hier);
     m_atLeast = atLeast;
     m_total = nBins;
     m_counts.assign(nBins, 0);
@@ -1091,6 +1265,13 @@ void VlCoverpoint::addNamer(VlCovBinKind set, uint32_t count, VlCovBinNaming nam
 std::string VlCoverpoint::normalBinName(uint32_t crossIdx) const {
     // Build the bin name based on the bin index
     return declaredBinName(m_crossToBin[crossIdx]);
+}
+
+void VlCoverpoint::mergeInto(VlCovMergedItems& items) const {
+    VlCovMergedItem& item = items.findNewItem(hier());
+    item.options(m_atLeast, typeWeight());
+    // The bins coverageParts() counts
+    for (const uint32_t bin : m_crossToBin) item.addBin(declaredBinName(bin), m_counts[bin]);
 }
 
 const VlCovNamer& VlCoverpoint::namerFor(uint32_t i) const {
@@ -1145,7 +1326,7 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
         const VlCovNamer& nm = namerFor(i);
         const VlCovBinKind kind = binKind(reported);
         const std::string binp = binName(reported);
-        const std::string full = m_hier + "." + binp;
+        const std::string full = hier() + "." + binp;
         const std::string lineStr = std::to_string(nm.line());
         const std::string colStr = std::to_string(nm.col());
         // An empty key leaves out the bin type of a Normal bin
@@ -1165,9 +1346,10 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
 //=============================================================================
 // VlCoverCross
 
-void VlCoverCross::init(const char* hier, uint32_t dims, VlCoverpoint* const* cps,
-                        const char* file, int line, int col) {
-    m_hier = hier;
+void VlCoverCross::init(const char* hier, uint32_t atLeast, uint32_t dims,
+                        VlCoverpoint* const* cps, const char* file, int line, int col) {
+    this->hier(hier);
+    m_atLeast = atLeast;
     m_file = file;
     m_line = line;
     m_col = col;
@@ -1253,11 +1435,11 @@ template <bool T_Explicit, bool T_RecordHits>
 void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
     const VlCoverpoint* const cpp = m_dimensionsp[dim].cpp;
     const uint32_t hits = cpp->hitCount();
-    const uint32_t* const list = m_dimensionsp[dim].hitsp;
+    const uint32_t* const listp = m_dimensionsp[dim].hitsp;
     const bool last = (dim == m_dims - 1);
     const uint32_t stride = m_dimensionsp[dim].stride;
     for (uint32_t hit = 0; hit < hits; ++hit) {
-        const uint32_t idx = baseIdx + list[hit] * stride;
+        const uint32_t idx = baseIdx + listp[hit] * stride;
         if (last) {
             if (T_Explicit) {
                 incrementTuple<T_RecordHits>(idx);
@@ -1271,16 +1453,16 @@ void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
 }
 
 void VlCoverCross::incrementBin(Bin& bin) {
-    if (bin.count++ == 0 && bin.kind == VlCovBinKind::KIND_NORMAL) ++m_numCovered;
+    if (++bin.count == m_atLeast && bin.kind == VlCovBinKind::KIND_NORMAL) ++m_numCovered;
     if (VL_UNLIKELY(bin.kind == VlCovBinKind::KIND_ILLEGAL)) {
         VL_PRINTF_MT("%%Error: %s:%d: Illegal cross bin '%s' hit in cross '%s'.\n", bin.filep,
-                     bin.line, bin.namep, m_hier.c_str());
+                     bin.line, bin.namep, hier().c_str());  // lintok-begin-on-ref
         VL_STOP_MT(bin.filep, bin.line, "");
     }
 }
 
 template <bool T_ApplyIffs>
-void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
+void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffsp) {
     Explicit& data = *m_explicitp;
     const uint32_t word = idx / VL_QUADSIZE;
     const uint64_t bit = uint64_t{1} << VL_BITBIT_Q(idx);
@@ -1289,13 +1471,13 @@ void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
         return;
     }
     for (Bin& bin : data.bins) {
-        if (T_ApplyIffs && !binIffs[bin.iffIndex]) continue;
+        if (T_ApplyIffs && !binIffsp[bin.iffIndex]) continue;
         if (bin.selectionp[word] & bit) incrementBin(bin);
     }
 }
 
 template <bool T_ApplyIffs, uint32_t T_Touched, bool T_Dense>
-void VlCoverCross::sampleBins(const bool* binIffs) {
+void VlCoverCross::sampleBins(const bool* binIffsp) {
     struct HitWord final {
         uint32_t index;
         uint64_t bits;
@@ -1311,7 +1493,7 @@ void VlCoverCross::sampleBins(const bool* binIffs) {
     }
     for (uint64_t binIdx = 0; binIdx < bins; ++binIdx) {
         Bin& bin = data.bins[binIdx];
-        if (T_ApplyIffs && !binIffs[bin.iffIndex]) continue;
+        if (T_ApplyIffs && !binIffsp[bin.iffIndex]) continue;
         bool matched = false;
         if (T_Touched == 1) {
             matched = (bin.selectionp[cached[0].index] & cached[0].bits) != 0;
@@ -1342,16 +1524,16 @@ void VlCoverCross::sampleBins(const bool* binIffs) {
 }
 
 template <bool T_ApplyIffs, bool T_Dense>
-void VlCoverCross::sampleHitWords(const bool* binIffs) {
+void VlCoverCross::sampleHitWords(const bool* binIffsp) {
     switch (m_explicitp->numTouchedWords) {
-    case 1: sampleBins<T_ApplyIffs, 1, T_Dense>(binIffs); break;
-    case 2: sampleBins<T_ApplyIffs, 2, T_Dense>(binIffs); break;
-    case 3: sampleBins<T_ApplyIffs, 3, T_Dense>(binIffs); break;
-    default: sampleBins<T_ApplyIffs, 0, T_Dense>(binIffs); break;
+    case 1: sampleBins<T_ApplyIffs, 1, T_Dense>(binIffsp); break;
+    case 2: sampleBins<T_ApplyIffs, 2, T_Dense>(binIffsp); break;
+    case 3: sampleBins<T_ApplyIffs, 3, T_Dense>(binIffsp); break;
+    default: sampleBins<T_ApplyIffs, 0, T_Dense>(binIffsp); break;
     }
 }
 
-void VlCoverCross::sample(const bool* binIffs) {
+void VlCoverCross::sample(const bool* binIffsp) {
     if (VL_UNLIKELY(!m_numAutoBins)) return;
     // Fast path: if any dimension had no Normal-bin hit, the cross cannot hit.
     bool single = true;
@@ -1366,8 +1548,8 @@ void VlCoverCross::sample(const bool* binIffs) {
             idx += m_dimensionsp[d].cpp->hitList()[0] * m_dimensionsp[d].stride;
         }
         if (hasExplicitBins()) {
-            if (binIffs) {
-                sampleSingleTuple<true>(idx, binIffs);
+            if (binIffsp) {
+                sampleSingleTuple<true>(idx, binIffsp);
             } else {
                 sampleSingleTuple<false>(idx, nullptr);
             }
@@ -1377,9 +1559,9 @@ void VlCoverCross::sample(const bool* binIffs) {
         return;
     }
     bool enabled = true;
-    if (hasExplicitBins() && binIffs && !binIffs[m_explicitp->bins[0].iffIndex]) {
+    if (hasExplicitBins() && binIffsp && !binIffsp[m_explicitp->bins[0].iffIndex]) {
         enabled = std::any_of(m_explicitp->bins.begin() + 1, m_explicitp->bins.end(),
-                              [binIffs](const Bin& bin) { return binIffs[bin.iffIndex]; });
+                              [binIffsp](const Bin& bin) { return binIffsp[bin.iffIndex]; });
         if (!enabled && m_explicitp->autoBins.empty()) return;
     }
     for (uint32_t d = 0; d < m_dims; ++d) {
@@ -1396,11 +1578,11 @@ void VlCoverCross::sample(const bool* binIffs) {
     iterateProduct<true>(0, 0);
     if (m_explicitp->numTouchedWords) {
         const bool dense = m_explicitp->minBinWords >= m_explicitp->numTouchedWords;
-        if (binIffs) {
+        if (binIffsp) {
             if (dense) {
-                sampleHitWords<true, true>(binIffs);
+                sampleHitWords<true, true>(binIffsp);
             } else {
-                sampleHitWords<true, false>(binIffs);
+                sampleHitWords<true, false>(binIffsp);
             }
         } else {
             if (dense) {
@@ -1421,15 +1603,36 @@ std::string VlCoverCross::binName(uint32_t i) const {
 }
 
 std::string VlCoverCross::autoBinName(uint32_t flat) const {
-    // Built on demand by concatenating each coverpoint's own bin name.
-    std::string name;
+    // Built on demand: the tuple of each coverpoint's own bin name, as IEEE 1800-2023 19.6
+    // writes a cross product, '<a1,b1>'
+    std::string name{"<"};
     for (uint32_t d = 0; d < m_dims; ++d) {
         const Dimension& dimension = m_dimensionsp[d];
         const uint32_t crossIdx = (flat / dimension.stride) % dimension.bins;
-        if (d > 0) name += "_x_";
+        if (d > 0) name += ',';
         name += dimension.cpp->normalBinName(crossIdx);
     }
+    name += '>';
     return name;
+}
+
+void VlCoverCross::mergeInto(VlCovMergedItems& items) const {
+    VlCovMergedItem& item = items.findNewItem(hier());
+    item.options(1, typeWeight());  // A cross bin is covered once hit
+    // The bins coverageParts() counts, which share a bin when they share its name.  As no bin
+    // name holds ',' or '<', an automatic bin's, <bin1,...,binN> (IEEE 1800-2023 19.11.3), is
+    // that of no other automatic bin, nor of an explicit bin.
+    const uint32_t explicitCount
+        = hasExplicitBins() ? static_cast<uint32_t>(m_explicitp->bins.size()) : 0;
+    for (uint32_t i = 0; i < binCount(); ++i) {
+        if (i < explicitCount) {
+            const Bin& bin = m_explicitp->bins[i];
+            if (bin.kind == VlCovBinKind::KIND_NORMAL) item.addBin(bin.namep, bin.count);
+            continue;
+        }
+        const uint32_t flat = autoIndex(i - explicitCount);
+        item.addBin(autoBinName(flat), m_flatCountsp[flat]);
+    }
 }
 
 #if VM_COVERAGE
@@ -1437,9 +1640,10 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
                                 uint32_t itemWeight, uint32_t groupWeight) {
     const std::string lineStr = std::to_string(m_line);
     const std::string colStr = std::to_string(m_col);
-    // A cross bin is covered once hit, which needs no option.at_least
+    const std::string threshStr = std::to_string(m_atLeast);
     const std::string weightStr = std::to_string(itemWeight);
     const std::string groupWeightStr = std::to_string(groupWeight);
+    const char* const threshKeyp = _vl_cov_score_key("thresh", m_atLeast);
     const char* const weightKeyp = _vl_cov_score_key("weight", itemWeight);
     const char* const groupWeightKeyp = _vl_cov_score_key("group_weight", groupWeight);
     const uint32_t explicitCount
@@ -1447,7 +1651,7 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
     // Use the same indexed names for registration and the runtime read interface.
     for (uint32_t i = 0; i < binCount(); ++i) {
         const std::string bin = binName(i);
-        const std::string full = m_hier + "." + bin;
+        const std::string full = hier() + "." + bin;
         if (i < explicitCount) {
             Bin& userBin = m_explicitp->bins[i];
             const std::string binLineStr = std::to_string(userBin.line);
@@ -1456,11 +1660,11 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
             const char* const binType = userBin.kind == VlCovBinKind::KIND_NORMAL   ? ""
                                         : userBin.kind == VlCovBinKind::KIND_IGNORE ? "ignore"
                                                                                     : "illegal";
-            VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page, "filename",
-                            userBin.filep, "lineno", binLineStr.c_str(), "column",
-                            binColStr.c_str(), "bin", bin.c_str(), "cross", "1",
-                            binType[0] ? "bin_type" : "", binType, weightKeyp, weightStr.c_str(),
-                            groupWeightKeyp, groupWeightStr.c_str());
+            VL_COVER_INSERT(
+                covcontextp, full.c_str(), &userBin.count, "page", page, "filename", userBin.filep,
+                "lineno", binLineStr.c_str(), "column", binColStr.c_str(), "bin", bin.c_str(),
+                "cross", "1", binType[0] ? "bin_type" : "", binType, threshKeyp, threshStr.c_str(),
+                weightKeyp, weightStr.c_str(), groupWeightKeyp, groupWeightStr.c_str());
             continue;
         }
         const uint32_t flat = autoIndex(i - explicitCount);
@@ -1474,8 +1678,9 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
         }
         VL_COVER_INSERT(covcontextp, full.c_str(), &m_flatCountsp[flat], "page", page, "filename",
                         m_file, "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                        bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str(), weightKeyp,
-                        weightStr.c_str(), groupWeightKeyp, groupWeightStr.c_str());
+                        bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str(), threshKeyp,
+                        threshStr.c_str(), weightKeyp, weightStr.c_str(), groupWeightKeyp,
+                        groupWeightStr.c_str());
     }
 }
 #endif  // VM_COVERAGE
@@ -1514,6 +1719,27 @@ class VlCoverCrossDyn::Layout final {
     bool m_negate = false;  // Complement the completed dimension membership mask
     Search m_limit = Search::EMPTY;  // A search limit left the current bin's selection unknown
     std::vector<bool> m_allowed;  // Normal-bin membership mask for the current dimension
+    // A 'with' filter being evaluated (IEEE 1800-2023 19.6.1.2).  Its result for a bin tuple
+    // depends only on the bins of the dimensions it reads, the bin tuple's projection on them
+    enum class Tested : uint8_t { UNKNOWN, ACCEPTED, REJECTED };
+    struct Cursor final {  // The values of the bin of a dimension the filter reads
+        using Streams = VlCoverpoint::ValueData::Streams;
+        uint32_t m_dim = 0;  // Dimension
+        uint32_t m_bin = 0;  // Declared coverpoint bin
+        Streams m_streams;  // Of the bin, at the value of the dimension in the value tuple
+        Streams m_first;  // Of the bin, at its first value
+    };
+    std::vector<Cursor> m_cursors;  // Of the dimensions the filter reads
+    std::vector<uint64_t> m_keyStrides;  // Projection index stride of each dimension read
+    std::vector<Tested> m_tested;  // By projection index
+    Mask m_candidates;  // Bin tuples the filter selects from
+    uint64_t m_nextTuple = 0;  // Bin tuple from which to find the next candidate
+    uint64_t m_key = 0;  // Projection index of the value tuples being evaluated
+    bool m_active = false;  // Evaluating the value tuples of m_key
+    uint64_t m_matches = 0;  // Value tuples for which the filter is true to select; 0 for all
+    uint64_t m_satisfied = 0;  // Value tuples of m_key for which the filter is true
+    bool m_failed = false;  // The filter is false for a value tuple of m_key
+    bool m_ignored = false;  // A filter of the bin being selected has too many value tuples
 
     static void setRange(Mask& mask, uint64_t first, uint64_t end) {
         while (first < end) {
@@ -1542,6 +1768,66 @@ class VlCoverCrossDyn::Layout final {
             }
         }
     }
+    uint32_t binIndex(uint32_t dim, uint64_t tuple) const {
+        const Dimension& dimension = m_dimensions[dim];
+        return static_cast<uint32_t>((tuple / dimension.stride) % dimension.bins);
+    }
+    // The declared coverpoint bin of a dimension of a bin tuple
+    uint32_t declaredBin(uint32_t dim, uint64_t tuple) const {
+        return m_dimensions[dim].cpp->m_crossToBin[binIndex(dim, tuple)];
+    }
+    uint64_t projection(uint64_t tuple) const {
+        uint64_t index = 0;
+        for (size_t i = 0; i < m_cursors.size(); ++i) {
+            index += binIndex(m_cursors[i].m_dim, tuple) * m_keyStrides[i];
+        }
+        return index;
+    }
+    // Find the next candidate bin tuple from m_nextTuple, then to look for one after it
+    bool nextCandidate(uint64_t& tuple) {
+        uint64_t word = VL_BITWORD_Q(m_nextTuple);
+        if (word >= m_words) return false;
+        uint64_t bits = m_candidates[word] & (~uint64_t{0} << VL_BITBIT_Q(m_nextTuple));
+        while (!bits) {
+            if (++word >= m_words) {
+                m_nextTuple = m_tuples;
+                return false;
+            }
+            bits = m_candidates[word];
+        }
+        // The lowest bit set, the number of bits below it
+        tuple = word * VL_QUADSIZE + VL_COUNTONES_Q((bits & (~bits + 1)) - 1);
+        m_nextTuple = tuple + 1;
+        return true;
+    }
+    const VlCoverpoint::ValueData& values(const Cursor& cursor) const {
+        return *m_dimensions[cursor.m_dim].cpp->m_valuesp;
+    }
+    const Cursor& dimCursor(uint32_t dim) const {
+        return *std::find_if(m_cursors.begin(), m_cursors.end(),
+                             [dim](const Cursor& cursor) { return cursor.m_dim == dim; });
+    }
+    // Start the value tuples of a bin tuple; false if a bin read has no value, all excluded
+    bool startTuple(uint64_t tuple) {
+        for (Cursor& cursor : m_cursors) {
+            cursor.m_bin = declaredBin(cursor.m_dim, tuple);
+            if (!values(cursor).firstValue(cursor.m_bin, cursor.m_streams)) return false;
+            cursor.m_first = cursor.m_streams;
+        }
+        return true;
+    }
+    // Advance to the next value tuple, the last dimension read first; false after the last
+    bool advance() {
+        for (size_t i = m_cursors.size(); i > 0;) {
+            Cursor& cursor = m_cursors[--i];
+            if (!values(cursor).nextValue(cursor.m_bin, cursor.m_streams)) continue;
+            for (size_t later = i + 1; later < m_cursors.size(); ++later) {
+                m_cursors[later].m_streams = m_cursors[later].m_first;
+            }
+            return true;
+        }
+        return false;
+    }
 };
 
 VlCoverCrossDyn::VlCoverCrossDyn()
@@ -1550,8 +1836,8 @@ VlCoverCrossDyn::VlCoverCrossDyn()
 
 VlCoverCrossDyn::~VlCoverCrossDyn() = default;
 
-void VlCoverCrossDyn::init(const char* hier, uint32_t dims, VlCoverpoint* const* cps,
-                           const char* file, int line, int col) {
+void VlCoverCrossDyn::init(const char* hier, uint32_t atLeast, uint32_t dims,
+                           VlCoverpoint* const* cps, const char* file, int line, int col) {
     Layout& data = *m_layoutp;
     uint64_t tuples = std::any_of(cps, cps + dims,
                                   [](const VlCoverpoint* cpp) { return !cpp->normalBinCount(); })
@@ -1573,7 +1859,7 @@ void VlCoverCrossDyn::init(const char* hier, uint32_t dims, VlCoverpoint* const*
     data.m_counts.resize(data.m_tuples, 0);
     shape(dims, data.m_tuples);
     bindStorage(data.m_dimensions.data(), data.m_counts.data());
-    VlCoverCross::init(hier, dims, cps, file, line, col);
+    VlCoverCross::init(hier, atLeast, dims, cps, file, line, col);
 }
 
 void VlCoverCrossDyn::selectAll() {
@@ -1644,9 +1930,126 @@ void VlCoverCrossDyn::selectOr() {
     for (uint32_t word = 0; word < data.m_words; ++word) data.m_stack.back()[word] |= rhs[word];
 }
 
+void VlCoverCrossDyn::withBegin(std::initializer_list<uint32_t> dims, QData matches, bool positive,
+                                const char* namep, const char* filep, int line) {
+    static constexpr uint64_t LIMIT = VlCoverpoint::ValueData::CANDIDATE_LIMIT;
+    static constexpr uint64_t CAP = LIMIT + 1;  // Saturated count, over the limit
+    Layout& data = *m_layoutp;
+    data.m_candidates = std::move(data.m_stack.back());
+    data.m_stack.back().assign(data.m_words, 0);
+    data.m_matches = matches;
+    if (VL_UNLIKELY(!positive)) {
+        // An error, after which (+verilator+error+limit) the bin is ignored
+        VL_PRINTF_MT("%%Error: %s:%d: Coverage cross bin '%s' 'matches' count must be a positive"
+                     " integer (IEEE 1800-2023 19.6.1.2)\n",
+                     filep, line, namep);
+        VL_STOP_MT(filep, line, "");
+        data.m_ignored = true;
+        std::fill(data.m_candidates.begin(), data.m_candidates.end(), 0);
+    }
+    data.m_cursors.clear();
+    data.m_keyStrides.clear();
+    uint64_t projections = 1;
+    for (const uint32_t dim : dims) {
+        data.m_cursors.emplace_back();
+        data.m_cursors.back().m_dim = dim;
+        data.m_keyStrides.push_back(projections);
+        projections *= data.m_dimensions[dim].bins;
+    }
+    // Without a bin tuple, the dimensions read may have more bins than an index holds
+    if (!data.m_tuples) projections = 0;
+    data.m_tested.assign(projections, Layout::Tested::UNKNOWN);
+    // The filter is evaluated for the value tuples of each projection, so bound their number
+    uint64_t total = 0;
+    data.m_nextTuple = 0;
+    for (uint64_t tuple; total <= LIMIT && data.nextCandidate(tuple);) {
+        Layout::Tested& tested = data.m_tested[data.projection(tuple)];
+        if (tested != Layout::Tested::UNKNOWN) continue;
+        tested = Layout::Tested::REJECTED;  // Counted
+        uint64_t product = 1;
+        for (const Layout::Cursor& cursor : data.m_cursors) {
+            const uint64_t count
+                = data.values(cursor).binValueCount(data.declaredBin(cursor.m_dim, tuple), CAP);
+            // A bin of a cross has a value, so 'count' is nonzero
+            product = product > CAP / count ? CAP : std::min(product * count, CAP);
+        }
+        total = std::min(total + product, CAP);
+    }
+    std::fill(data.m_tested.begin(), data.m_tested.end(), Layout::Tested::UNKNOWN);
+    data.m_nextTuple = 0;
+    data.m_active = false;
+    if (VL_UNLIKELY(total > LIMIT)) {
+        _vl_cov_warn_ignored(filep, line,
+                             "Coverage cross bin 'with' filter has more than 2**"
+                                 + std::to_string(VlCoverpoint::ValueData::CANDIDATE_LIMIT_LOG2)
+                                 + " candidate value tuples",
+                             namep);
+        data.m_ignored = true;
+        std::fill(data.m_candidates.begin(), data.m_candidates.end(), 0);
+    }
+}
+
+bool VlCoverCrossDyn::withNext() {
+    Layout& data = *m_layoutp;
+    if (data.m_active) {
+        // The filter decides the bin tuples once true for 'matches' value tuples, or for all,
+        // once false for one
+        const bool decided = data.m_matches ? data.m_satisfied >= data.m_matches : data.m_failed;
+        if (!decided && data.advance()) return true;
+        const bool accepted = data.m_matches ? decided : !data.m_failed;
+        data.m_tested[data.m_key] = accepted ? Layout::Tested::ACCEPTED : Layout::Tested::REJECTED;
+        data.m_active = false;
+    }
+    for (uint64_t tuple; data.nextCandidate(tuple);) {
+        data.m_key = data.projection(tuple);
+        if (data.m_tested[data.m_key] != Layout::Tested::UNKNOWN) continue;
+        if (!data.startTuple(tuple)) {  // A bin read has no value
+            data.m_tested[data.m_key] = Layout::Tested::REJECTED;
+            continue;
+        }
+        data.m_active = true;
+        data.m_satisfied = 0;
+        data.m_failed = false;
+        return true;
+    }
+    return false;
+}
+
+QData VlCoverCrossDyn::withValue(uint32_t dim) const {
+    return VlCoverpoint::ValueData::number(m_layoutp->dimCursor(dim).m_streams.front().m_value);
+}
+
+void VlCoverCrossDyn::withValueW(uint32_t dim, WDataOutP valuep) const {
+    const VlCoverpoint::ValueData::Value& value
+        = m_layoutp->dimCursor(dim).m_streams.front().m_value;
+    std::copy(value.begin(), value.end(), valuep.datap());
+}
+
+void VlCoverCrossDyn::withTest(bool keep) {
+    Layout& data = *m_layoutp;
+    data.m_satisfied += keep;
+    data.m_failed |= !keep;
+}
+
+void VlCoverCrossDyn::withEnd() {
+    Layout& data = *m_layoutp;
+    Layout::Mask& selection = data.m_stack.back();
+    data.m_nextTuple = 0;
+    for (uint64_t tuple; data.nextCandidate(tuple);) {
+        if (data.m_tested[data.projection(tuple)] == Layout::Tested::ACCEPTED) {
+            selection[VL_BITWORD_Q(tuple)] |= VL_BIT_Q(tuple);
+        }
+    }
+    Layout::Mask{}.swap(data.m_candidates);
+    std::vector<Layout::Tested>{}.swap(data.m_tested);
+    data.m_cursors.clear();  // Releasing their streams
+}
+
 void VlCoverCrossDyn::selectBin(VlCovBinKind kind, const char* namep, const char* filep, int line,
                                 int col, uint32_t iffIndex) {
     Layout& data = *m_layoutp;
+    const bool ignored = data.m_ignored;  // Warned when the filter began
+    data.m_ignored = false;
     if (VL_UNLIKELY(data.m_limit != Layout::Search::EMPTY)) {
         // Ignore a bin whose selection cannot be analyzed, rather than stop the simulation.
         VL_WARN_MT(
@@ -1655,6 +2058,10 @@ void VlCoverCrossDyn::selectBin(VlCovBinKind kind, const char* namep, const char
                 ? "Cross bin selection exceeds the decision-graph work limit; bin ignored"
                 : "Cross bin selection exceeds the decision-graph depth limit; bin ignored");
         data.m_limit = Layout::Search::EMPTY;
+        data.m_stack.pop_back();
+        return;
+    }
+    if (VL_UNLIKELY(ignored)) {
         data.m_stack.pop_back();
         return;
     }
@@ -1758,6 +2165,13 @@ void VlCoverpointIf::weight(uint32_t value, VlFileLineDebug fileline) {
     m_weight = _vl_cov_load_weight("option.weight", value, fileline);
 }
 
+double VlCoverpointIf::coverage() const {
+    double covered = 0.0;
+    double total = 0.0;
+    coverageParts(covered, total);
+    return _vl_cov_calculate(100.0 * covered, total, m_weight);
+}
+
 VlCoverCrossDyn* VlCovergroupInst::addCrossDyn() {
     VlCoverCrossDyn* const cxp = new VlCoverCrossDyn{};
     m_items.emplace_back(cxp);
@@ -1791,10 +2205,102 @@ double VlCovergroupInst::coverage() {
     return _vl_cov_calculate(sums.first, sums.second, m_weight);
 }
 
+void VlCovergroupInst::mergeInto(VlCovMergedItems& items) const {
+    for (const auto& itemp : m_items) itemp->mergeInto(items);
+}
+
+double VlCovergroupInst::mergedCoverage(const VlCoverpointIf* itemp) const {
+    return m_typep->mergedCoverage(itemp->hier());
+}
+
+//=============================================================================
+// VlCovMergedItem / VlCovMergedItems
+
+// Call 'f' with the values that sorted maps 'a' and 'b' have for each key of either, or nullptr
+// for a map without the key, so as with those of the maps merged, without merging them
+template <typename T_Map, typename T_Func>
+static void _vl_cov_union_walk(const T_Map& a, const T_Map& b, T_Func f) {
+    auto ait = a.cbegin();
+    auto bit = b.cbegin();
+    while (ait != a.cend() || bit != b.cend()) {
+        if (bit == b.cend() || (ait != a.cend() && ait->first < bit->first)) {
+            f(&ait->second, nullptr);
+            ++ait;
+        } else if (ait == a.cend() || bit->first < ait->first) {
+            f(nullptr, &bit->second);
+            ++bit;
+        } else {
+            f(&ait->second, &bit->second);
+            ++ait;
+            ++bit;
+        }
+    }
+}
+
+void VlCovMergedItem::coverageParts(double& covered, double& total) const {
+    uint64_t numCovered = 0;
+    for (const auto& it : m_counts) {
+        if (it.second >= m_atLeast) ++numCovered;
+    }
+    covered = static_cast<double>(numCovered);
+    total = static_cast<double>(m_counts.size());
+}
+
+void VlCovMergedItem::coverageParts(const VlCovMergedItem& other, double& covered,
+                                    double& total) const {
+    // As merged: a bin is covered once its counts sum to the larger option.at_least
+    const uint32_t atLeast = std::max(m_atLeast, other.m_atLeast);
+    uint64_t numCovered = 0;
+    uint64_t numTotal = 0;
+    _vl_cov_union_walk(m_counts, other.m_counts, [&](const uint64_t* ap, const uint64_t* bp) {
+        if ((ap ? *ap : 0) + (bp ? *bp : 0) >= atLeast) ++numCovered;
+        ++numTotal;
+    });
+    covered = static_cast<double>(numCovered);
+    total = static_cast<double>(numTotal);
+}
+
+std::pair<double, double> VlCovMergedItems::coverageSums(const VlCovMergedItems& other) const {
+    double weighted = 0.0;
+    double weights = 0.0;
+    const auto sumItem = [&](const VlCovMergedItem* ap, const VlCovMergedItem* bp) {
+        double covered = 0.0;
+        double total = 0.0;
+        const VlCovMergedItem& itemr = ap ? *ap : *bp;
+        if (ap && bp) {
+            ap->coverageParts(*bp, covered, total);
+        } else {
+            itemr.coverageParts(covered, total);
+        }
+        if (total == 0.0) return;  // No bins: excluded from both sums
+        weighted += itemr.typeWeight() * (covered / total);
+        weights += itemr.typeWeight();
+    };
+    _vl_cov_union_walk(m_items, other.m_items, sumItem);
+    return {100.0 * weighted, weights};
+}
+
+double VlCovMergedItems::coverage(const std::string& name, const VlCovMergedItems& other) const {
+    const auto it = m_items.find(name);
+    assert(it != m_items.end());
+    const VlCovMergedItem& item = it->second;
+    const auto otherIt = other.m_items.find(name);
+    double covered = 0.0;
+    double total = 0.0;
+    if (otherIt == other.m_items.end()) {
+        item.coverageParts(covered, total);
+    } else {
+        item.coverageParts(otherIt->second, covered, total);
+    }
+    return _vl_cov_calculate(100.0 * covered, total, item.typeWeight());
+}
+
 //=============================================================================
 // VlCovergroupType / VlCovRegistry
 
-VlCovergroupInst* VlCovergroupType::newInstance() {
+VlCovergroupInst* VlCovergroupType::newInstance(bool mayMerge) {
+    // Once set, kept: the bins of the instances that die from now on are kept
+    m_mayMerge = m_mayMerge || mayMerge;
     VlCovergroupInst* const instp = new VlCovergroupInst{this, m_nextInstId++};
     m_insts.emplace_back(instp);
 #if !VM_COVERAGE
@@ -1805,6 +2311,8 @@ VlCovergroupInst* VlCovergroupType::newInstance() {
 }
 
 void VlCovergroupType::foldResidue(VlCovergroupInst* instp) {
+    // Merged type coverage needs the dead instance's bins themselves
+    if (m_mayMerge) instp->mergeInto(m_mergedRetired);
     const std::pair<double, double> sums = instp->coverageSums();
     // Nothing coverable: excluded from both sums, so it moves neither the mean
     // nor the denominator.  Never-sampled is different: it has bins, none hit,
@@ -1861,10 +2369,25 @@ bool VlCovergroupType::anyAttached() const {
     return false;
 }
 
-double VlCovergroupType::coverage(IData typeWeight, VlFileLineDebug fileline) {
+VlCovMergedItems VlCovergroupType::mergeLive() const {
+    VlCovMergedItems live;
+    for (const auto& instp : m_insts) {
+        if (!instp->retained()) instp->mergeInto(live);  // Retained: in m_mergedRetired
+    }
+    return live;
+}
+
+double VlCovergroupType::coverage(IData typeWeight, bool mergeInstances,
+                                  VlFileLineDebug fileline) {
     if (typeWeight != m_loadedTypeWeight) {  // Only a new value, as in loadWeight()
         m_loadedTypeWeight = typeWeight;
         m_typeWeight = _vl_cov_load_weight("type_option.weight", typeWeight, fileline);
+    }
+    if (mergeInstances) {
+        // The union of the bins of every instance, including those that have died, kept in
+        // m_mergedRetired, so merged with the live ones' as read, not copied
+        const std::pair<double, double> sums = mergeLive().coverageSums(m_mergedRetired);
+        return _vl_cov_calculate(sums.first, sums.second, m_typeWeight);
     }
     // Instances that have died still count: their contribution is the residue
     double sumCoverage = m_retired.sumCoverage;
@@ -1878,6 +2401,19 @@ double VlCovergroupType::coverage(IData typeWeight, VlFileLineDebug fileline) {
         sumWeight += instp->weight();
     }
     return _vl_cov_calculate(sumCoverage, sumWeight, m_typeWeight);
+}
+
+double VlCovergroupType::mergedCoverage(const std::string& name) const {
+    // Only that item of each live instance, not all of them as mergeLive(); those of the
+    // instances that have died are in m_mergedRetired
+    VlCovMergedItems live;
+    for (const auto& instp : m_insts) {
+        if (instp->retained()) continue;
+        for (const auto& itemp : instp->m_items) {
+            if (itemp->hier() == name) itemp->mergeInto(live);
+        }
+    }
+    return live.coverage(name, m_mergedRetired);
 }
 
 double VlCovergroupType::retiredCoverage() const {
@@ -1910,14 +2446,14 @@ VlCovergroupType* VlCovRegistry::findOrCreateType(const char* typeName) {
     return typep;
 }
 
-VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName) {
-    return findOrCreateType(typeName)->newInstance();
+VlCovergroupInst* VlCovRegistry::newCovergroupInst(const char* typeName, bool mayMerge) {
+    return findOrCreateType(typeName)->newInstance(mayMerge);
 }
 
-double VlCovRegistry::typeCoverage(const char* typeName, IData typeWeight,
+double VlCovRegistry::typeCoverage(const char* typeName, IData typeWeight, bool mergeInstances,
                                    VlFileLineDebug fileline) {
     // Also for a type never instantiated, whose node then remembers type_option.weight
-    return findOrCreateType(typeName)->coverage(typeWeight, fileline);
+    return findOrCreateType(typeName)->coverage(typeWeight, mergeInstances, fileline);
 }
 
 // A covergroup object can outlive the registry: models must be destroyed before

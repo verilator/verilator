@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 typedef class Cls;
 
 class Base;
@@ -68,11 +73,44 @@ class Cls extends Base;
   endfunction
 endclass
 
+class ItemHolder #(
+    type P = Base
+) extends P;
+  Base item;
+  integer x;
+endclass
+
+// Note: shadowing occurs for implicit parameterized extends (without `#()`)
+class LocalHolder extends ItemHolder;
+  function Cls get();
+    Cls item;
+    int ok;
+    ok = $cast(item, this.item);
+    `checkd(ok, 1);
+    return item;
+  endfunction
+  function void set_shadowing(integer x);
+    // IEEE 1800-2023 8.11's own example: the argument shadows the property, and
+    // this.x is how the property is reached.
+    this.x = x;
+  endfunction
+  task read_back_shadowing();
+    `checkd(this.x, 42);
+    `checkd(super.x, 42);
+  endtask
+endclass
+
 module t;
   initial begin
     Cls c;
+    LocalHolder holder;
     c = new;
     c.test();
+    holder = new;
+    holder.item = c;
+    `checkd(holder.get() == c, 1);
+    holder.set_shadowing(42);
+    holder.read_back_shadowing();
     $write("*-* All Finished *-*\n");
     $finish;
   end

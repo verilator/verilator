@@ -1,0 +1,21 @@
+vif t.i1.name
+vif t.i2.name
+t.u1.named: t.u1.named
+t.u10.named: t.u10.named
+*-* All Finished *-*
+leaf t.u1
+named t.u1.named
+pvt t.u1.x__PVT__y
+show t.u1.show
+sub t.u1.u_sub
+leaf t.u10
+named t.u10.named
+pvt t.u10.x__PVT__y
+show t.u10.show
+sub t.u10.u_sub
+final t.u1
+show t.u1.show
+show t.u10.show
+final t.u10
+show t.u1.show
+show t.u10.show

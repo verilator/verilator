@@ -19,6 +19,10 @@ class Cls;
     #1 ->>e;
     `checkd(e.triggered, 0)
   endtask
+  task trig_idx(int n);
+    ->>ea[n];
+    n = 0;
+  endtask
 endclass
 
 interface ifc;
@@ -105,20 +109,21 @@ module t;
     // From an interface task, called by two processes
     #1 vif.trig();
     // In a loop with a jump
-    #2 for (int k = 0; k < 2; ++k) begin
+    #2
+    for (int k = 0; k < 2; ++k) begin
       if (k == 1) break;
       ->>c2.ea[k];
     end
     // Not a subprocess, so not disabled (IEEE 1800-2023 9.6.3)
-    #1 fork
-      #1 `stop;
-    join_none
+    #1 fork #1 `stop; join_none
     ->>c2.e;
     disable fork;
     // Including a handle selected from another
     #1 c1.next = c2;
     ->>c1.next.e;
     c1.next = null;
+    // With an index, in a class method
+    #1 c2.trig_idx(idx + 1);
   end
   initial #6 vif.trig();
 
@@ -127,7 +132,8 @@ module t;
     `checkd(init_time, 0)
     `checkd(dly_time, 1)
     `checkd(clk_times, 2)
-    `checks(log, "c1.e@1 se@2 c1.ea[1]@3 e_arr[1]@4 i.e@5 i.e@6 c2.ea[0]@7 c2.e@8 c2.e@9 ")
+    `checks(log,
+            "c1.e@1 se@2 c1.ea[1]@3 e_arr[1]@4 i.e@5 i.e@6 c2.ea[0]@7 c2.e@8 c2.e@9 c2.ea[1]@10 ")
     $write("*-* All Finished *-*\n");
     $finish;
   end

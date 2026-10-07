@@ -25,6 +25,12 @@ module t;
     return 2;
   endfunction
 
+  int cnt, hit, x;
+  function automatic int count(int v);
+    ++cnt;
+    return v;
+  endfunction
+
   class C;
     static int i = one() + 1;
     static int j = two() + 1;
@@ -99,6 +105,41 @@ module t;
     `checkh(impure_1() ? 1'b0 : impure_1(), 1'b0);
     `checkh(impure_1() ? 1'b1 : impure_0(), 1'b1);
     `checkh(impure_1() ? 1'b1 : impure_1(), 1'b1);
+    // Case conditions are evaluated in order, until the first match
+    cnt = 0;
+    x = 1;
+    case (x)
+      count(0): hit = 1;
+      count(1): hit = 2;
+      count(2): hit = 3;
+      default: hit = 4;
+    endcase
+    `checkh(hit, 2);
+    `checkh(cnt, 2);
+    cnt = 0;
+    x = 5;
+    case (x)
+      count(0), count(5), count(6): hit = 1;
+      count(5): hit = 2;
+      default: hit = 3;
+    endcase
+    `checkh(hit, 1);
+    `checkh(cnt, 2);
+    cnt = 0;
+    x = 7;
+    case (x)
+      count(0): hit = 1;
+      count(1): hit = 2;
+      default: hit = 3;
+    endcase
+    `checkh(hit, 3);
+    `checkh(cnt, 2);
+    case (impure_1())
+      impure_0(): hit = 1;
+      impure_1(): hit = 2;
+      default: hit = 3;
+    endcase
+    `checkh(hit, 2);
     // End test
     $write("*-* All Finished *-*\n");
     $finish;

@@ -40,7 +40,7 @@ class AstVar;
 class V3HierGraph final : public V3Graph {
 public:
     V3HierGraph() = default;
-    ~V3HierGraph() = default;
+    ~V3HierGraph() override = default;
     VL_UNCOPYABLE(V3HierGraph);
     VL_UNMOVABLE(V3HierGraph);
 
@@ -84,6 +84,9 @@ public:
     VL_UNMOVABLE(V3HierBlock);
 
     const AstModule* modp() const { return m_modp; }
+
+    // Whether a string parameter value can be passed to a hierarchical block's Verilation
+    static bool stringParamPassable(const string& value) VL_PURE;
 
     // For emitting Makefile and build definition JSON
     VStringList commandArgs(bool forMkJson) const VL_MT_DISABLED;

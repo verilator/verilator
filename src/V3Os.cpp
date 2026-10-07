@@ -255,6 +255,16 @@ string V3Os::filenameRealPath(const string& filename) VL_PURE {
     return filename;
 }
 
+string V3Os::filenameAbsolutePath(const string& filename) VL_PURE {
+#if defined(_WIN32) || defined(__MINGW32__)
+    // _fullpath does not resolve symlinks
+    return filenameRealPath(filename);
+#else
+    if (!filenameIsRel(filename)) return filename;
+    return filenameJoin(filenameRealPath("."), filename);
+#endif
+}
+
 string V3Os::filenameRelativePath(const string& filename, const string& base) VL_PURE {
     const string a = V3Os::filenameRealPath(filename);
     const string b = V3Os::filenameRealPath(base);

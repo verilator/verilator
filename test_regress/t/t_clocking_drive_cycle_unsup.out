@@ -1,0 +1,10 @@
+%Error-UNSUPPORTED: t/t_clocking_drive_cycle_unsup.v:18:24: Unsupported: cycle delay in synchronous drive to clockvar in another scope, whose clocking event has a hierarchical reference
+                                                          : ... note: In instance 't'
+   18 |   initial sub.scb.s <= ##1 1;
+      |                        ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_clocking_drive_cycle_unsup.v:24:19: Unsupported: cycle delay in synchronous drive through an interface reference outside a class, to clocking block with non-integral clocking event
+                                                          : ... note: In instance 't'
+   24 |     vvif.ecb.e <= ##1 1;
+      |                   ^~
+%Error: Exiting due to

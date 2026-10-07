@@ -4,12 +4,11 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (
+    input clk
+);
+
   parameter PAR = 3;
-  input clk;
 
   defparam i.L00 = 256'h000012300000000000000000000000000000000000000000000000000000cdef;
   defparam i.L01 = 256'h000012300000000000000000000000000000000000000000000000000000cdef;
@@ -92,15 +91,11 @@ module t (/*AUTOARG*/
 
 endmodule
 
-module i
-   (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module i (
+    input clk
+);
 
-  // verilator public_module
-
-  input       clk;
+  // verilator no_inline_module
 
   parameter [255:0] L00 = 256'h0;
   parameter [255:0] L01 = 256'h0;

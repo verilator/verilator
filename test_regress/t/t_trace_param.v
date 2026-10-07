@@ -16,7 +16,7 @@ package my_module_types;
   import my_funcs::*;
 
   localparam MY_PARAM = 3;
-  localparam MY_PARAM2  /*verilator public*/ = simple_func(12);
+  localparam MY_PARAM2  /*verilator public_flat_rd*/ = simple_func(12);
 endpackage
 
 module t

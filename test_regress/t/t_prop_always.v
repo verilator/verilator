@@ -18,7 +18,11 @@ module t (
   logic a_high = 1'b1;
   logic a_low = 1'b0;
   wire a_rand = crc[0];
+  // Unsampled disable conditions (IEEE 1800-2023 16.12): rst_rand changes in the
+  // NBA region of the assertion clock edge, rst_mid only between edges.
   wire rst_rand = crc[5];
+  bit rst_mid;
+  always @(negedge clk) rst_mid <= crc[5];
 
   // Per-assertion queues record the simulation cyc on each pass / else fire.
   // For "always [m:n] P" the action runs at cyc=K+n on success and at the
@@ -31,6 +35,8 @@ module t (
   int rand_bounded_fail_q[$];
   int disable_bounded_pass_q[$];
   int disable_bounded_fail_q[$];
+  int mid_disable_bounded_pass_q[$];
+  int mid_disable_bounded_fail_q[$];
 
   // Bare always (collapses to immediate P).
   assert property (@(posedge clk) always 1'b1);
@@ -56,10 +62,15 @@ module t (
   assert property (@(posedge clk) always[0: 3] a_rand) rand_bounded_pass_q.push_back(cyc);
   else rand_bounded_fail_q.push_back(cyc);
 
-  // disable iff suppresses attempts whose start cyc has rst_rand=1.
+  // disable iff also aborts pending windows when the disable becomes true. The
+  // disable window starts and ends in the Observed region, so it includes the
+  // rst_rand update made at the same clock edge.
   assert property (@(posedge clk) disable iff (rst_rand) always[0: 3] a_rand)
     disable_bounded_pass_q.push_back(cyc);
   else disable_bounded_fail_q.push_back(cyc);
+  assert property (@(posedge clk) disable iff (rst_mid) always[0: 3] a_rand)
+    mid_disable_bounded_pass_q.push_back(cyc);
+  else mid_disable_bounded_fail_q.push_back(cyc);
 
   // Bare always inside named property.
   property p_always_true;
@@ -92,7 +103,9 @@ module t (
       `checkd(rand_bounded_pass_q.size(), 0);
       `checkd(rand_bounded_fail_q.size(), 19);  // Some other sims: 11
       `checkd(disable_bounded_pass_q.size(), 0);
-      `checkd(disable_bounded_fail_q.size(), 7);  // Other sims: 5, 6
+      `checkd(disable_bounded_fail_q.size(), 4);  // Other sims: 5, 6
+      `checkd(mid_disable_bounded_pass_q.size(), 0);
+      `checkd(mid_disable_bounded_fail_q.size(), 4);  // Other sims: 4
       $write("*-* All Finished *-*\n");
       $finish;
     end

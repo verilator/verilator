@@ -56,6 +56,8 @@ public:
     static string filenameSubstitute(const string& filename);
     ///< @return realpath of filename
     static string filenameRealPath(const string& filename) VL_PURE;
+    // @return absolute path of filename, without resolving symlinks
+    static string filenameAbsolutePath(const string& filename) VL_PURE;
     ///< @return relative path of filename, relative to base
     static string filenameRelativePath(const string& filename, const string& base) VL_PURE;
     ///< @return filename is relative

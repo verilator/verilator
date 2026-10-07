@@ -39,7 +39,7 @@ VerilatedMutex sequentialMutex;
 void sim(VM_PREFIX* topp) {
 #ifdef T_WRAPPER_CONTEXT_SEQ
     // Run each sim sequentially
-    const VerilatedLockGuard seqLock(sequentialMutex);
+    const VerilatedLockGuard seqLock{sequentialMutex};
 #endif
 
     VerilatedContext* contextp = topp->contextp();
@@ -67,7 +67,7 @@ void sim(VM_PREFIX* topp) {
         contextp->timeInc(1);
 
         {
-            const VerilatedLockGuard lock(outputMutex);
+            const VerilatedLockGuard lock{outputMutex};
 #ifdef TEST_VERBOSE
             // std::endl needed to flush output before mutex release
             std::cout << "{top" << topp->trace_number

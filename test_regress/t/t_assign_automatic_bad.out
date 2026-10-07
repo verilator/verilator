@@ -1,34 +1,26 @@
-%Error: t/t_assign_automatic_bad.v:36:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'bad_dyn5'
+%Error: t/t_assign_automatic_bad.v:24:12: Automatic lifetime variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'm_bad1'
                                         : ... note: In instance 't'
-   36 |   assign bad_dyn5[0] = empty_dyn;   
-      |          ^~~~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assign_automatic_bad.v:38:12: Automatic lifetime variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'm_bad1'
-                                        : ... note: In instance 't'
-   38 |   assign c.m_bad1 = 2;   
+   24 |   assign c.m_bad1 = 2;   
       |            ^~~~~~
-%Error: t/t_assign_automatic_bad.v:48:5: Dynamically-sized variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'bad_dyn6'
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assign_automatic_bad.v:35:7: Automatic lifetime variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'm_bad2'
                                        : ... note: In instance 't'
-   48 |     bad_dyn6[0] <= 2;   
-      |     ^~~~~~~~
-%Error: t/t_assign_automatic_bad.v:50:5: Dynamically-sized variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'bad_queue'
-                                       : ... note: In instance 't'
-   50 |     bad_queue[0] <= 2;   
-      |     ^~~~~~~~~
-%Error: t/t_assign_automatic_bad.v:52:5: Dynamically-sized variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'bad_assoc'
-                                       : ... note: In instance 't'
-   52 |     bad_assoc[0] <= 2;   
-      |     ^~~~~~~~~
-%Error: t/t_assign_automatic_bad.v:55:7: Automatic lifetime variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'm_bad2'
-                                       : ... note: In instance 't'
-   55 |     c.m_bad2 <= 2;   
+   35 |     c.m_bad2 <= 2;   
       |       ^~~~~~
-%Error: t/t_assign_automatic_bad.v:57:10: Dynamically-sized variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 's_dyn'
+%Error: t/t_assign_automatic_bad.v:46:26: Automatic lifetime variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'l'
                                         : ... note: In instance 't'
-   57 |     Cls::s_dyn[0] <= 2;   
-      |          ^~~~~
-%Error: t/t_assign_automatic_bad.v:63:7: Dynamically-sized variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 's_dyn'
+   46 |       assign g = signed'(l);   
+      |                          ^
+%Error: t/t_assign_automatic_bad.v:56:21: Automatic lifetime variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'm_bad2'
+                                        : ... note: In instance 't'
+   56 |     bad_arr_h[0][0].m_bad2 <= 2;   
+      |                     ^~~~~~
+%Error: t/t_assign_automatic_bad.v:62:5: Automatic lifetime variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'bad_auto'
                                        : ... note: In instance 't'
-   63 |     ].s_dyn[0] <= '1;   
-      |       ^~~~~
+   62 |     bad_auto[3:0] <= 2;   
+      |     ^~~~~~~~
+%Error: t/t_assign_automatic_bad.v:63:7: Automatic lifetime variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'm_bad2'
+                                       : ... note: In instance 't'
+   63 |     c.m_bad2[3:0] <= 2;   
+      |       ^~~~~~
 %Error: Exiting due to

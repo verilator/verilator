@@ -43,4 +43,8 @@
                                  : ... note: In instance 't'
    39 |     $display(cb1.out);
       |                  ^~~
+%Error: t/t_clocking_bad4.v:46:33: Cycle delays cannot be used in synchronous drives to a concatenation (IEEE 1800-2023 14.16)
+                                 : ... note: In instance 't'
+   46 |   always {cb1.out, cb3.out3} <= ##1 2'b11;
+      |                                 ^~
 %Error: Exiting due to

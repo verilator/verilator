@@ -13,7 +13,7 @@ test.scenarios('simulator')
 test.top_filename = 't/t_math_real_public.v'
 
 # Test that --private overrides --public
-test.compile(verilator_flags2=['--cc --public --private'])
+test.compile(verilator_flags2=["-Wno-UNOPTPUBLIC", '--cc --public --private'])
 
 test.execute()
 

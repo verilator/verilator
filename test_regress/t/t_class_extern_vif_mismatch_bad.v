@@ -23,7 +23,9 @@ class Driver;
   extern function void drive_param_bad(virtual Bus #(7) bus);  // <--- Error (parameter)
   extern function void drive_queue_bad(virtual Bus.Source buses[$]);  // <--- Error (modport)
   extern function void drive_dyn_bad(virtual Bus buses[]);  // <--- Error (interface)
-  extern function void drive_assoc_bad(virtual Bus #(7).Source buses[int]);  // <--- Error (parameter)
+  extern function void drive_assoc_bad(
+      virtual Bus #(7).Source buses[int]
+  );  // <--- Error (parameter)
   extern function virtual Bus.Source get_bus_bad();  // <--- Error (return modport)
 endclass
 

@@ -1,0 +1,11 @@
+%Error: t/t_lint_range_huge_bad.v:8:17: Width of bit range is huge; vector of over 1 billion bits: 0xffffffff
+    8 |     output wire [32'hFFFF_FFFF:1] out0   
+      |                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_lint_range_huge_bad.v:11:9: Width of bit range is huge; vector of over 1 billion bits: 0xffffffff
+   11 |   logic [1:32'hFFFF_FFFF] right_huge;   
+      |         ^
+%Error: t/t_lint_range_huge_bad.v:12:9: Width of bit range is huge; vector of over 1 billion bits: 0xfffffffffffffff1
+   12 |   logic [64'hFFFF_FFFF_FFFF_FFF0:0] wide_huge;   
+      |         ^
+%Error: Exiting due to

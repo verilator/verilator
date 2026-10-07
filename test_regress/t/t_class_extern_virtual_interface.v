@@ -67,9 +67,9 @@ function SourceBus Driver::get_bus(SourceBus bus);
 endfunction
 
 module t;
-  Bus bus();
-  Bus #(7) parameter_bus();
-  Bus #(7) bus_array[2]();
+  Bus bus ();
+  Bus #(7) parameter_bus ();
+  Bus #(7) bus_array[2] ();
   Driver driver = new;
 
   initial begin

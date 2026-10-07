@@ -162,6 +162,18 @@ Hierarchy blocks have some limitations, including:
 
 - Delays are not allowed in hierarchy blocks.
 
+- Setting type parameters of a hierarchy block is unsupported.
+
+- A ``defparam`` setting a parameter inside a hierarchy block is
+  unsupported.
+
+- String parameter values of a hierarchy block containing a newline, a
+  double quote, ``/*``, or whitespace followed by ``//`` are unsupported.
+
+- Values that are equal but differ in width or signedness (``5`` and
+  ``8'd5``), including relative to the default value, are unsupported for a
+  hierarchy block parameter declared without a data type.
+
 But, the following usage is supported:
 
 - Nested hierarchy blocks. A hierarchy block may instantiate other

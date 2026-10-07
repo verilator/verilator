@@ -18,13 +18,13 @@ typedef enum int {
 class Base;
   rand Kind kind;
 
-  constraint c_kind { kind inside {FIRST, SECOND, THIRD}; }
+  constraint c_kind {kind inside {FIRST, SECOND, THIRD};}
 endclass
 
 class Intermediate extends Base;
   rand int value;
 
-  constraint c_value { value == 31; }
+  constraint c_value {value == 31;}
 
   function new;
     kind = THIRD;
@@ -35,13 +35,13 @@ endclass
 class Derived extends Intermediate;
   rand int extra;
 
-  constraint c_extra { extra == 15; }
+  constraint c_extra {extra == 15;}
 endclass
 
 class CombinedModes;
   rand int value;
 
-  constraint c_value { value == 7; }
+  constraint c_value {value == 7;}
 
   function new;
     value = 9;

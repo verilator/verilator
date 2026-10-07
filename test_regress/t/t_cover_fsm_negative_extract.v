@@ -367,7 +367,7 @@ module t (
   logic side = 1'b0;
   logic dyn_side = 1'b0;
   logic [2:0] dyn_case = 3'd7;
-  state_t state  /*verilator fsm_reset_arc*/;
+  state_t state  /*verilator fsm_state*/;
 
   fsm_if_mixed_vars_bad mixed_vars_u (.clk(clk));
   fsm_if_one_branch_bad one_branch_u (.clk(clk));

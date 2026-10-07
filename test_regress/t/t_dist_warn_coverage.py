@@ -26,6 +26,7 @@ for s in [
         'Expecting define formal arguments. Found:',  # Instead define syntax error
         'Need $SYSTEMC_INCLUDE in environment or when Verilator configured,',  # Would need ./configure
         'Running subcommands is not supported on this platform:',  # Only hit on e.g. wasm
+        'Slices of arrays in assignments have different unpacked dimensions,',  # Instead V3Width error
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance',  # Instead get syntax error
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         'exited with',  # Is hit; driver.py filters out
@@ -116,7 +117,7 @@ for s in [
         'Unsupported: super',
         'Unsupported: with[] stream expression',
         'loading other than unpacked-array variable',
-        'loading other than unpacked/associative-array variable',
+        'loading other than unpacked/dynamic/associative-array variable',
         # These are safety limits requiring >1000 bins or >10000 members to trigger
 ]:
     Suppressed[s] = True

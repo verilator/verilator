@@ -593,12 +593,13 @@ module t;
 `ifdef VERILATOR
       // Bin counts alone cannot detect leaked live instances. Standard SystemVerilog
       // cannot query the registry's live/retired state, so check retirement directly.
-      `checkd(
-          $c32(
-          "Verilated::threadContextp()->covergroupRegistryp()->liveInstanceCount(\"cg_registry\")"),
-          0);
       `checkd($c32(
-              "Verilated::threadContextp()->covergroupRegistryp()->retiredInstanceCount(\"cg_registry\")"
+              "Verilated::threadContextp()->covergroupRegistryp()",
+              "->liveInstanceCount(\"t.cg_registry\")"
+              ), 0);
+      `checkd($c32(
+              "Verilated::threadContextp()->covergroupRegistryp()",
+              "->retiredInstanceCount(\"t.cg_registry\")"
               ), 3);
 `endif
       $write("*-* All Finished *-*\n");

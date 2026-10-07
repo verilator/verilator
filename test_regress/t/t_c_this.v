@@ -9,9 +9,9 @@ module t (
 );
   input clk;
   always @(posedge clk) begin
-    $c("const CData xthis = this->clk;");
+    $c("const CData xthis = this->__VprimaryPorts.clk;");
     $c("const CData thisx = xthis;");
     $c("const CData xthisx = thisx;");
-    $c("this->clk = xthisx;");
+    $c("this->__VprimaryPorts.clk = xthisx;");
   end
 endmodule

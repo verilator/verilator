@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 test.top_filename = "t/t_cover_line.v"
 
-test.compile(verilator_flags2=['--sc --coverage-line +define+ATTRIBUTE'])
+test.compile(verilator_flags2=['--sc --coverage-line --coverage-branch +define+ATTRIBUTE'])
 
 test.execute()
 

@@ -40,9 +40,11 @@ int main(int argc, const char** argv) {
     top->eval();
 
 #if defined(T_X_ASSIGN_UNIQUE_0) || defined(T_X_ASSIGN_UNIQUE_1)
-    if (top->o_int == 0 || top->o_int == -1) {
-        vl_fatal(__FILE__, __LINE__, "TOP.t", "x assign was not unique");
-        exit(1);
+    for (const uint32_t value : {top->o_int, top->o_first, top->o_second}) {
+        if (value == 0 || value == 0xffffffff) {
+            vl_fatal(__FILE__, __LINE__, "TOP.t", "x assign was not unique");
+            exit(1);
+        }
     }
 #else
     if (top->o != EXPECTED) {
@@ -52,9 +54,11 @@ int main(int argc, const char** argv) {
 
     uint32_t o_int_expected = EXPECTED ? 0xffffffff : 0;
 
-    if (top->o_int != o_int_expected) {
-        vl_fatal(__FILE__, __LINE__, "TOP.t", "incorrect module output");
-        exit(1);
+    for (const uint32_t value : {top->o_int, top->o_first, top->o_second}) {
+        if (value != o_int_expected) {
+            vl_fatal(__FILE__, __LINE__, "TOP.t", "incorrect module output");
+            exit(1);
+        }
     }
 #endif
 

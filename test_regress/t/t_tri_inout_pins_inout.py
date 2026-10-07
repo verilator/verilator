@@ -14,9 +14,12 @@ test.top_filename = "t/t_tri_inout.v"
 test.scenarios('vlt_all')
 test.pli_filename = "t/t_tri_inout.cpp"
 
-test.compile(make_top_shell=False,
-             make_main=False,
-             verilator_flags2=["--exe --pins-inout-enables", test.pli_filename])
+# The connected tristate buses may not provide enough work for both threads.
+test.compile(
+    make_top_shell=False,
+    make_main=False,
+    verilator_flags2=["--exe --pins-inout-enables", test.pli_filename, "--Wno-UNOPTTHREADS"],
+    threads=(2 if test.vltmt else 1))
 
 test.execute()
 

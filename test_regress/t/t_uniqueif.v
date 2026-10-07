@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2007 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -78,8 +83,19 @@ module t (
     unique if (cyc > 5) l <= 17;
 `endif
 
+    // Statics in the branches, referenced hierarchically
+    unique if (cyc < 3) begin : uq_then
+      static int n = 0;
+      n++;
+    end
+    else begin : uq_else
+      static int n = 10;
+      n++;
+    end
 
     if (cyc == 10) begin
+      `checkd(uq_then.n, 2);
+      `checkd(uq_else.n, 18);
       $write("*-* All Finished *-*\n");
       $finish;
     end

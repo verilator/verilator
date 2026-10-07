@@ -104,8 +104,10 @@ text.
 `define FOOBAR foo /*this */ bar   /* this too */
 `line 35 "t/t_preproc.v" 0
  
+`line 35 "t/t_preproc.v" 0
 `define FOOBAR2 foobar2
-`line 36 "t/t_preproc.v" 0
+`line 35 "t/t_preproc.v" 0
+ 
 foo   bar    
 foobar2
 
@@ -248,8 +250,10 @@ arg suffix_after_space
 `define thru(x) x
 `line 104 "t/t_preproc.v" 0
  
+`line 104 "t/t_preproc.v" 0
 `define thruthru `ls `rs
-`line 105 "t/t_preproc.v" 0
+`line 104 "t/t_preproc.v" 0
+ 
  
 `define msg(x,y) `"x: `\`"y`\`"`"
 `undef msg
@@ -698,8 +702,10 @@ $display("bits %d %d", $bits(foo), 10);
 
 `line 356 "t/t_preproc.v" 0
  
-`define CMT1 /*verilator NOT IN DEFINE*/
-`line 357 "t/t_preproc.v" 0
+`line 356 "t/t_preproc.v" 0
+`define CMT1
+`line 356 "t/t_preproc.v" 0
+/*verilator NOT IN DEFINE*/
  
 `define CMT2 /* verilator PART OF DEFINE */
 `line 358 "t/t_preproc.v" 0
@@ -718,12 +724,14 @@ $display("bits %d %d", $bits(foo), 10);
  
 
 
+`line 364 "t/t_preproc.v" 0
 `define CMT5 also in  \
   also3
-`line 366 "t/t_preproc.v" 0
+`line 364 "t/t_preproc.v" 0
+ 
 
 `line 366 "t/t_preproc.v" 0
-1 /*verilator NOT IN DEFINE*/ (nodef)
+1  (nodef)
 2 /*verilator PART OF DEFINE*/ (hasdef)
 3 
 `line 368 "t/t_preproc.v" 0
@@ -739,18 +747,33 @@ $display("bits %d %d", $bits(foo), 10);
 `line 370 "t/t_preproc.v" 0
   also3 (nodef)
  
+`line 371 "t/t_preproc.v" 0
+`define CMT6 4
+`line 371 "t/t_preproc.v" 0
+ 
+ 
+`define CMT7 2
+`line 373 "t/t_preproc.v" 0
+6 (4 + 2)
+ 
+`line 374 "t/t_preproc.v" 0
+`define CMT8 8
+`line 374 "t/t_preproc.v" 0
+/*verilator public*/
+7 8
+ 
 
 `define NL HAS a NEW \
 LINE
-`line 373 "t/t_preproc.v" 0
+`line 378 "t/t_preproc.v" 0
 HAS a NEW 
-`line 373 "t/t_preproc.v" 0
+`line 378 "t/t_preproc.v" 0
 LINE
 
-`line 375 "t/t_preproc.v" 0
+`line 380 "t/t_preproc.v" 0
  
 
-`line 377 "t/t_preproc.v" 0
+`line 382 "t/t_preproc.v" 0
  
 
 
@@ -775,52 +798,52 @@ LINE
       end \
       /* synopsys translate_on */ \
    while(0)
-`line 390 "t/t_preproc.v" 0
+`line 395 "t/t_preproc.v" 0
 
-`line 390 "t/t_preproc.v" 0
+`line 395 "t/t_preproc.v" 0
  
 `define msg_scen_(cl) cl``_scen
-`line 391 "t/t_preproc.v" 0
+`line 396 "t/t_preproc.v" 0
  
 `define MSG_MACRO_TO_STRING(x) `"x`"
 
-`line 393 "t/t_preproc.v" 0
+`line 398 "t/t_preproc.v" 0
 EXP: clxx_scen
 clxx_scen
 EXP: clxx_scen
 "clxx_scen"
  
 `define mf(clx) `msg_fatal(this.log, {"Blah-", `MSG_MACRO_TO_STRING(`msg_scen_(clx)), " end"});
-`line 398 "t/t_preproc.v" 0
+`line 403 "t/t_preproc.v" 0
 EXP: do if (start("verilog/inc1.v", 25)) begin  message({"Blah-", "clx_scen", " end"}); end  while(0);
 
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
    do 
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
         
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
   
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
     
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
  
-`line 399 "t/t_preproc.v" 0
-      if (start("t/t_preproc.v", 399)) begin 
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
+      if (start("t/t_preproc.v", 404)) begin 
+`line 404 "t/t_preproc.v" 0
  
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
 	 message({"Blah-", "clx_scen", " end"}); 
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
       end 
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
         
-`line 399 "t/t_preproc.v" 0
+`line 404 "t/t_preproc.v" 0
    while(0);
 
-`line 401 "t/t_preproc.v" 0
+`line 406 "t/t_preproc.v" 0
  
 
-`line 403 "t/t_preproc.v" 0
+`line 408 "t/t_preproc.v" 0
  
 
 
@@ -829,18 +852,18 @@ EXP: do if (start("verilog/inc1.v", 25)) begin  message({"Blah-", "clx_scen", " 
    `define def_``name   This is name \
    `define def_``name``_2 This is name``_2 \
 
-`line 407 "t/t_preproc.v" 0
+`line 412 "t/t_preproc.v" 0
 
-`line 407 "t/t_preproc.v" 0
+`line 412 "t/t_preproc.v" 0
     
-`line 407 "t/t_preproc.v" 0
+`line 412 "t/t_preproc.v" 0
 `define def_fooed This is fooed
-`line 407 "t/t_preproc.v" 0
+`line 412 "t/t_preproc.v" 0
     
-`line 407 "t/t_preproc.v" 0
+`line 412 "t/t_preproc.v" 0
 `define def_fooed_2 This is fooed``_2
 
-`line 408 "t/t_preproc.v" 0
+`line 413 "t/t_preproc.v" 0
      
  
 EXP: This is fooed
@@ -848,69 +871,69 @@ This is fooed
 EXP: This is fooed_2
 This is fooed_2
 
-`line 415 "t/t_preproc.v" 0
+`line 420 "t/t_preproc.v" 0
  
  
 `define NOPARAM() np
-`line 417 "t/t_preproc.v" 0
+`line 422 "t/t_preproc.v" 0
 np
 np
  
  
  
 `define NODS_DEFINED
-`line 422 "t/t_preproc.v" 0
+`line 427 "t/t_preproc.v" 0
  
 `define NODS_INDIRECT(x) x
-`line 423 "t/t_preproc.v" 0
+`line 428 "t/t_preproc.v" 0
  
     
 
-`line 426 "t/t_preproc.v" 0
+`line 431 "t/t_preproc.v" 0
  
     
 
-`line 429 "t/t_preproc.v" 0
+`line 434 "t/t_preproc.v" 0
  
  
  
 `define REPEAT_0(d)
-`line 432 "t/t_preproc.v" 0
+`line 437 "t/t_preproc.v" 0
  
 `define REPEAT_1(d) d
-`line 433 "t/t_preproc.v" 0
+`line 438 "t/t_preproc.v" 0
  
 `define REPEAT_2(d) `REPEAT_1(d)d
-`line 434 "t/t_preproc.v" 0
+`line 439 "t/t_preproc.v" 0
  
 `define REPEAT_3(d) `REPEAT_2(d)d
-`line 435 "t/t_preproc.v" 0
+`line 440 "t/t_preproc.v" 0
  
 `define REPEAT_4(d) `REPEAT_3(d)d
 
-`line 437 "t/t_preproc.v" 0
+`line 442 "t/t_preproc.v" 0
  
 `define CONCAT(a, b) a``b
-`line 438 "t/t_preproc.v" 0
+`line 443 "t/t_preproc.v" 0
  
 `define REPEATC(n, d) `CONCAT(`REPEAT_, n)(d)
-`line 439 "t/t_preproc.v" 0
+`line 444 "t/t_preproc.v" 0
  
 `define REPEATT(n, d) `REPEAT_``n(d)
 
-`line 441 "t/t_preproc.v" 0
+`line 446 "t/t_preproc.v" 0
 hello3hello3hello3
 hello4hello4hello4hello4
  
  
  `undef T_PREPROC_INC4
 
-`line 446 "t/t_preproc.v" 0
+`line 451 "t/t_preproc.v" 0
  
 `define NODS_CONC_VH(m) `"m.vh`"
-`line 447 "t/t_preproc.v" 0
+`line 452 "t/t_preproc.v" 0
  
-`line 447 "t/t_preproc.v" 0
+`line 452 "t/t_preproc.v" 0
 `line 1 "t/t_preproc_inc4.vh" 1
  
 `line 2 "t/t_preproc_inc4.vh" 0
@@ -923,9 +946,9 @@ hello4hello4hello4hello4
 `define T_PREPROC_INC4
 
 `line 8 "t/t_preproc_inc4.vh" 0
-`line 447 "t/t_preproc.v" 2
+`line 452 "t/t_preproc.v" 2
 
-`line 448 "t/t_preproc.v" 0
+`line 453 "t/t_preproc.v" 0
    
  
  
@@ -934,123 +957,123 @@ hello4hello4hello4hello4
 
 `define DEFINEIT(d) d \
 
-`line 454 "t/t_preproc.v" 0
+`line 459 "t/t_preproc.v" 0
  
 `define _DEFIF_Z_0 1
-`line 455 "t/t_preproc.v" 0
+`line 460 "t/t_preproc.v" 0
  
 `define DEFIF_NZ(d,n) `undef d `ifndef _DEFIF_Z_``n `DEFINEIT(`define d 1) `endif
-`line 456 "t/t_preproc.v" 0
+`line 461 "t/t_preproc.v" 0
  `undef TEMP
-`line 456 "t/t_preproc.v" 0
+`line 461 "t/t_preproc.v" 0
     
-`line 456 "t/t_preproc.v" 0
+`line 461 "t/t_preproc.v" 0
 `define TEMP 1
-`line 456 "t/t_preproc.v" 0
+`line 461 "t/t_preproc.v" 0
  
      
  `undef TEMP
-`line 458 "t/t_preproc.v" 0
+`line 463 "t/t_preproc.v" 0
     
      
-Line_Preproc_Check 460
+Line_Preproc_Check 465
  
  
  
 
 `define MULQUOTE "FOO \
   BAR "
-`line 465 "t/t_preproc.v" 0
+`line 470 "t/t_preproc.v" 0
  
 `define MULQUOTE2(mq) `MULQUOTE mq `MULQUOTE
-`line 466 "t/t_preproc.v" 0
-Line_Preproc_Check 466
+`line 471 "t/t_preproc.v" 0
+Line_Preproc_Check 471
 "FOO \
   BAR " "arg_line1 \
   arg_line2" "FOO \
   BAR "
-`line 469 "t/t_preproc.v" 0
-Line_Preproc_Check 469
+`line 474 "t/t_preproc.v" 0
+Line_Preproc_Check 474
  
  
 
-`line 473 "t/t_preproc.v" 0
+`line 478 "t/t_preproc.v" 0
  
 `define A a
-`line 474 "t/t_preproc.v" 0
+`line 479 "t/t_preproc.v" 0
  
 `define B b
-`line 475 "t/t_preproc.v" 0
+`line 480 "t/t_preproc.v" 0
  
 `define C c
-`line 476 "t/t_preproc.v" 0
+`line 481 "t/t_preproc.v" 0
  
  
 `define C5 `A``b```C
-`line 478 "t/t_preproc.v" 0
+`line 483 "t/t_preproc.v" 0
 abc
  `undef A
 
-`line 480 "t/t_preproc.v" 0
+`line 485 "t/t_preproc.v" 0
  `undef B
 
-`line 481 "t/t_preproc.v" 0
+`line 486 "t/t_preproc.v" 0
  `undef C
 
 
-`line 483 "t/t_preproc.v" 0
+`line 488 "t/t_preproc.v" 0
  
 `define XTYPE sonet
-`line 484 "t/t_preproc.v" 0
+`line 489 "t/t_preproc.v" 0
  
 `define XJOIN(__arg1, __arg2) __arg1``__arg2
-`line 485 "t/t_preproc.v" 0
+`line 490 "t/t_preproc.v" 0
  
 `define XACTION `XJOIN(`XTYPE, _frame)
-`line 486 "t/t_preproc.v" 0
+`line 491 "t/t_preproc.v" 0
 EXP: sonet_frame
 sonet_frame
 
-`line 489 "t/t_preproc.v" 0
+`line 494 "t/t_preproc.v" 0
  
 `define XFRAME frame
-`line 490 "t/t_preproc.v" 0
+`line 495 "t/t_preproc.v" 0
  
 `define XACTION2 `XJOIN(sonet_, `XFRAME)
-`line 491 "t/t_preproc.v" 0
+`line 496 "t/t_preproc.v" 0
 EXP: sonet_frame
 sonet_frame
  
  
 `define sonet_frame other_frame
-`line 495 "t/t_preproc.v" 0
+`line 500 "t/t_preproc.v" 0
  
 `define XACTION3 `XTYPE``_frame
-`line 496 "t/t_preproc.v" 0
+`line 501 "t/t_preproc.v" 0
 EXP: sonet_frame
 sonet_frame
 
-`line 499 "t/t_preproc.v" 0
+`line 504 "t/t_preproc.v" 0
  
  
 `define QA_b zzz
-`line 501 "t/t_preproc.v" 0
+`line 506 "t/t_preproc.v" 0
  
 `define Q1 `QA``_b
-`line 502 "t/t_preproc.v" 0
+`line 507 "t/t_preproc.v" 0
 EXP: module zzz ; endmodule
 module zzz ; endmodule
 module zzz ; endmodule
 
-`line 506 "t/t_preproc.v" 0
+`line 511 "t/t_preproc.v" 0
  
 `define QA a
-`line 507 "t/t_preproc.v" 0
+`line 512 "t/t_preproc.v" 0
 EXP: module a_b ; endmodule
 module a_b ; endmodule
 module a_b ; endmodule
 
-`line 511 "t/t_preproc.v" 0
+`line 516 "t/t_preproc.v" 0
  
  
 integer foo;
@@ -1062,14 +1085,14 @@ module t;
     
  
 `define LEX_CAT(lexem1, lexem2) lexem1``lexem2
-`line 521 "t/t_preproc.v" 0
+`line 526 "t/t_preproc.v" 0
  
 
 `define LEX_ESC(name) \name  \
 
-`line 523 "t/t_preproc.v" 0
+`line 528 "t/t_preproc.v" 0
    initial begin : \`LEX_CAT(a[0],_assignment)  
-`line 523 "t/t_preproc.v" 0
+`line 528 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\`LEX_CAT(a[0],_assignment) ");   end
     
     
@@ -1079,125 +1102,125 @@ module t;
 
 `define ESC_CAT(name,name2) \name``_assignment_``name2 \
 
-`line 530 "t/t_preproc.v" 0
+`line 535 "t/t_preproc.v" 0
    initial begin : \a[0]_assignment_a[1] 
-`line 530 "t/t_preproc.v" 0
+`line 535 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\a[0]_assignment_a[1] ");   end
  `undef ESC_CAT
 
-`line 532 "t/t_preproc.v" 0
+`line 537 "t/t_preproc.v" 0
     
  
 `define CAT(a,b) a``b
-`line 534 "t/t_preproc.v" 0
+`line 539 "t/t_preproc.v" 0
  
 `define ESC(name) \`CAT(name,suffix)
-`line 535 "t/t_preproc.v" 0
+`line 540 "t/t_preproc.v" 0
     
     
    initial begin : \`CAT(pp,suffix)   $write("GOT%%m='%m' EXP='%s'\n", "t.\\`CAT(pp,suffix) ");   end
  `undef CAT
-`line 538 "t/t_preproc.v" 0
+`line 543 "t/t_preproc.v" 0
   `undef ESC
 
-`line 539 "t/t_preproc.v" 0
+`line 544 "t/t_preproc.v" 0
     
  
 `define CAT(a,b) a``b
-`line 541 "t/t_preproc.v" 0
+`line 546 "t/t_preproc.v" 0
  
 
 `define ESC(name) \name \
 
-`line 543 "t/t_preproc.v" 0
+`line 548 "t/t_preproc.v" 0
     
    initial begin : \`CAT(ff,bb) 
-`line 544 "t/t_preproc.v" 0
+`line 549 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\`CAT(ff,bb) ");   end
  `undef CAT
-`line 545 "t/t_preproc.v" 0
+`line 550 "t/t_preproc.v" 0
   `undef ESC
 
-`line 546 "t/t_preproc.v" 0
+`line 551 "t/t_preproc.v" 0
     
  
 
 `define ESC(name) \name \
 
-`line 549 "t/t_preproc.v" 0
+`line 554 "t/t_preproc.v" 0
     
    initial begin : \`zzz 
-`line 550 "t/t_preproc.v" 0
+`line 555 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\`zzz ");   end
  `undef ESC
 
-`line 552 "t/t_preproc.v" 0
+`line 557 "t/t_preproc.v" 0
     
  
 `define FOO bar
-`line 554 "t/t_preproc.v" 0
+`line 559 "t/t_preproc.v" 0
  
 
 `define ESC(name) \name \
 
-`line 556 "t/t_preproc.v" 0
+`line 561 "t/t_preproc.v" 0
     
    initial begin : \`FOO 
-`line 557 "t/t_preproc.v" 0
+`line 562 "t/t_preproc.v" 0
     $write("GOT%%m='%m' OTHER_EXP='%s'\n OUR_EXP='%s'", "t.bar ","t.\\`FOO ");  end
     
    initial begin : \xx`FOO 
-`line 559 "t/t_preproc.v" 0
+`line 564 "t/t_preproc.v" 0
    $write("GOT%%m='%m' EXP='%s'\n", "t.\\xx`FOO ");  end
  `undef FOO
-`line 560 "t/t_preproc.v" 0
+`line 565 "t/t_preproc.v" 0
   `undef ESC
 
-`line 561 "t/t_preproc.v" 0
+`line 566 "t/t_preproc.v" 0
     
     
  `undef UNKNOWN
 
-`line 564 "t/t_preproc.v" 0
+`line 569 "t/t_preproc.v" 0
    initial begin : \`UNKNOWN   $write("GOT%%m='%m' EXP='%s'\n", "t.\\`UNKNOWN ");   end
     
     
  
 `define DEF_NO_EXPAND error_dont_expand
-`line 568 "t/t_preproc.v" 0
+`line 573 "t/t_preproc.v" 0
    initial begin : \`DEF_NO_EXPAND   $write("GOT%%m='%m' EXP='%s'\n", "t.\\`DEF_NO_EXPAND ");   end
  `undef DEF_NO_EXPAND
 
-`line 570 "t/t_preproc.v" 0
+`line 575 "t/t_preproc.v" 0
     
-    
-    
- 
-`define STR(name) "foo name baz"
-`line 574 "t/t_preproc.v" 0
-   initial $write("GOT='%s' EXP='%s'\n", "foo name baz", "foo bar baz");
- `undef STR
-
-`line 576 "t/t_preproc.v" 0
     
     
  
 `define STR(name) "foo name baz"
 `line 579 "t/t_preproc.v" 0
+   initial $write("GOT='%s' EXP='%s'\n", "foo name baz", "foo bar baz");
+ `undef STR
+
+`line 581 "t/t_preproc.v" 0
+    
+    
+ 
+`define STR(name) "foo name baz"
+`line 584 "t/t_preproc.v" 0
  
 `define A(name) boo name hiss
-`line 580 "t/t_preproc.v" 0
+`line 585 "t/t_preproc.v" 0
    initial $write("GOT='%s' EXP='%s'\n", "foo name baz", "foo `A(bar) baz");
  `undef A
-`line 581 "t/t_preproc.v" 0
+`line 586 "t/t_preproc.v" 0
    `undef STR
 
-`line 582 "t/t_preproc.v" 0
+`line 587 "t/t_preproc.v" 0
     
     
  
 `define SLASHED "1//2.3"
-`line 585 "t/t_preproc.v" 0
+`line 590 "t/t_preproc.v" 0
    initial $write("Slashed=`%s'\n", "1//2.3");
     
     
@@ -1205,91 +1228,91 @@ module t;
 
 `define BUG915(a,b,c) \
        $display("%s%s",a,`"b``c``\n`")
-`line 590 "t/t_preproc.v" 0
+`line 595 "t/t_preproc.v" 0
    initial 
-`line 590 "t/t_preproc.v" 0
+`line 595 "t/t_preproc.v" 0
        $display("%s%s","a1","b2c3\n");
 endmodule
 
-`line 593 "t/t_preproc.v" 0
- 
- 
-
-`line 596 "t/t_preproc.v" 0
- 
-`define X_ITEM(SUB,UNIT) `X_STRING(SUB``UNIT)
-`line 597 "t/t_preproc.v" 0
- 
-`define X_STRING(A) `"A`"
 `line 598 "t/t_preproc.v" 0
-$display("RAM0");
-$display("CPU");
+ 
+ 
 
 `line 601 "t/t_preproc.v" 0
  
-`define EMPTY
+`define X_ITEM(SUB,UNIT) `X_STRING(SUB``UNIT)
 `line 602 "t/t_preproc.v" 0
  
-`define EMPTYP(foo)
+`define X_STRING(A) `"A`"
 `line 603 "t/t_preproc.v" 0
- 
-`define SOME some
-`line 604 "t/t_preproc.v" 0
- 
-`define SOMEP(foo) foo
+$display("RAM0");
+$display("CPU");
 
 `line 606 "t/t_preproc.v" 0
  
-`define XXE_FAMILY XXE_```EMPTY
+`define EMPTY
 `line 607 "t/t_preproc.v" 0
+ 
+`define EMPTYP(foo)
+`line 608 "t/t_preproc.v" 0
+ 
+`define SOME some
+`line 609 "t/t_preproc.v" 0
+ 
+`define SOMEP(foo) foo
+
+`line 611 "t/t_preproc.v" 0
+ 
+`define XXE_FAMILY XXE_```EMPTY
+`line 612 "t/t_preproc.v" 0
 XXE_FAMILY = XXE_
  
 `define XXE_
-`line 609 "t/t_preproc.v" 0
+`line 614 "t/t_preproc.v" 0
  
      $display("XXE_ is defined");
 
 
-`line 613 "t/t_preproc.v" 0
+`line 618 "t/t_preproc.v" 0
  
 `define XYE_FAMILY XYE_```EMPTYP(foo)
-`line 614 "t/t_preproc.v" 0
+`line 619 "t/t_preproc.v" 0
 XYE_FAMILY = XYE_
  
 `define XYE_
-`line 616 "t/t_preproc.v" 0
+`line 621 "t/t_preproc.v" 0
  
      $display("XYE_ is defined");
 
 
-`line 620 "t/t_preproc.v" 0
+`line 625 "t/t_preproc.v" 0
  
 `define XXS_FAMILY XXS_```SOME
-`line 621 "t/t_preproc.v" 0
+`line 626 "t/t_preproc.v" 0
 XXS_FAMILY = XXS_some
  
 `define XXS_some
-`line 623 "t/t_preproc.v" 0
+`line 628 "t/t_preproc.v" 0
  
      $display("XXS_some is defined");
 
 
-`line 627 "t/t_preproc.v" 0
+`line 632 "t/t_preproc.v" 0
  
 `define XYS_FAMILY XYS_```SOMEP(foo)
-`line 628 "t/t_preproc.v" 0
+`line 633 "t/t_preproc.v" 0
 XYS_FAMILY = XYS_foo
  
 `define XYS_foo
-`line 630 "t/t_preproc.v" 0
+`line 635 "t/t_preproc.v" 0
  
      $display("XYS_foo is defined");
 
 
-`line 634 "t/t_preproc.v" 0
+`line 639 "t/t_preproc.v" 0
  
 
-`line 636 "t/t_preproc.v" 0
+`line 641 "t/t_preproc.v" 0
  
   
   
@@ -1298,7 +1321,7 @@ XYS_FAMILY = XYS_foo
      
  
 
-`line 644 "t/t_preproc.v" 0
+`line 649 "t/t_preproc.v" 0
   
   
   
@@ -1306,7 +1329,7 @@ XYS_FAMILY = XYS_foo
      
  
 
-`line 651 "t/t_preproc.v" 0
+`line 656 "t/t_preproc.v" 0
   
   
   
@@ -1314,7 +1337,7 @@ XYS_FAMILY = XYS_foo
      
  
 
-`line 658 "t/t_preproc.v" 0
+`line 663 "t/t_preproc.v" 0
   
   
   
@@ -1322,38 +1345,38 @@ XYS_FAMILY = XYS_foo
      
  
 
-`line 665 "t/t_preproc.v" 0
+`line 670 "t/t_preproc.v" 0
   
 
-`line 667 "t/t_preproc.v" 0
+`line 672 "t/t_preproc.v" 0
   
 
-`line 669 "t/t_preproc.v" 0
+`line 674 "t/t_preproc.v" 0
  
  
 `define INSTANCE(NAME) (.mySig (myInterface.``NAME),
-`line 671 "t/t_preproc.v" 0
+`line 676 "t/t_preproc.v" 0
 (.mySig (myInterface.pa5),
 
-`line 673 "t/t_preproc.v" 0
+`line 678 "t/t_preproc.v" 0
  
  
 
-`line 676 "t/t_preproc.v" 0
+`line 681 "t/t_preproc.v" 0
  
 `define hack(GRP) `dbg_hdl(UVM_LOW, (`"Functional coverage enabled: GRP`"));
-`line 677 "t/t_preproc.v" 0
+`line 682 "t/t_preproc.v" 0
 `dbg_hdl(UVM_LOW, ("Functional coverage enabled: paramgrp"));
 
-`line 679 "t/t_preproc.v" 0
+`line 684 "t/t_preproc.v" 0
  
 `define dbg_hdl(LVL, MSG) $display ("DEBUG : %s [%m]", $sformatf MSG)
-`line 680 "t/t_preproc.v" 0
+`line 685 "t/t_preproc.v" 0
  
 
 `define svfcov_new(GRP) \
    initial do begin `dbg_hdl(UVM_LOW, (`"Functional coverage enabled: GRP`")); end while(0)
-`line 682 "t/t_preproc.v" 0
+`line 687 "t/t_preproc.v" 0
  
 
 
@@ -1362,32 +1385,32 @@ XYS_FAMILY = XYS_foo
   covergroup LBL @(posedge CLK); \
     c: coverpoint ARG iff ((RST) === 1'b1); endgroup \
       LBL u_``LBL; `svfcov_new(u_``LBL)
-`line 687 "t/t_preproc.v" 0
+`line 692 "t/t_preproc.v" 0
 
-`line 687 "t/t_preproc.v" 0
+`line 692 "t/t_preproc.v" 0
 module pcc2_cfg;
   generate
    
-`line 689 "t/t_preproc.v" 0
+`line 694 "t/t_preproc.v" 0
   covergroup a @(posedge b); 
-`line 689 "t/t_preproc.v" 0
+`line 694 "t/t_preproc.v" 0
     c: coverpoint d iff ((c) === 1'b1); endgroup 
-`line 689 "t/t_preproc.v" 0
+`line 694 "t/t_preproc.v" 0
       a u_a; 
-`line 689 "t/t_preproc.v" 0
+`line 694 "t/t_preproc.v" 0
    initial do begin $display ("DEBUG : %s [%m]", $sformatf ("Functional coverage enabled: u_a")); end while(0);
   endgenerate
 endmodule
 
-`line 693 "t/t_preproc.v" 0
+`line 698 "t/t_preproc.v" 0
  
  
  
 `define stringify(text) `"text`"
-`line 696 "t/t_preproc.v" 0
+`line 701 "t/t_preproc.v" 0
 "`NOT_DEFINED_STR"
 
-`line 698 "t/t_preproc.v" 0
+`line 703 "t/t_preproc.v" 0
  
 
 """First line with "quoted"\nSecond line\
@@ -1395,42 +1418,42 @@ Third line"""
 """First line
 Second line"""
 
-`line 705 "t/t_preproc.v" 0
+`line 710 "t/t_preproc.v" 0
  
 `define QQQ """QQQ defform"""
-`line 706 "t/t_preproc.v" 0
+`line 711 "t/t_preproc.v" 0
  
 `define QQQS(x) x
-`line 707 "t/t_preproc.v" 0
+`line 712 "t/t_preproc.v" 0
 """QQQ defform"""
 """QQQ defval"""
 
-`line 710 "t/t_preproc.v" 0
+`line 715 "t/t_preproc.v" 0
  
  
 `define IDENTITY(arg) ``arg
-`line 712 "t/t_preproc.v" 0
+`line 717 "t/t_preproc.v" 0
 "string argument"
 
-`line 714 "t/t_preproc.v" 0
+`line 719 "t/t_preproc.v" 0
  
  
-
-`line 717 "t/t_preproc.v" 0
- 
-`define MAC_WITH_STR(foo) foo "foo foo foo" foo
-`line 718 "t/t_preproc.v" 0
-bar "foo foo foo" bar
- 
-`define MAC_WITH_3STR(foo) foo """foo foo foo""" foo
-`line 720 "t/t_preproc.v" 0
-bar """foo foo foo""" bar
 
 `line 722 "t/t_preproc.v" 0
  
+`define MAC_WITH_STR(foo) foo "foo foo foo" foo
+`line 723 "t/t_preproc.v" 0
+bar "foo foo foo" bar
+ 
+`define MAC_WITH_3STR(foo) foo """foo foo foo""" foo
+`line 725 "t/t_preproc.v" 0
+bar """foo foo foo""" bar
+
+`line 727 "t/t_preproc.v" 0
+ 
  
 `undefineall
-`line 724 "t/t_preproc.v" 0
+`line 729 "t/t_preproc.v" 0
    
 predef 0 0
 predef 1 1
@@ -1452,40 +1475,40 @@ predef 2 2
  
 `define WITH_ARG(a) (a)(a)
 
-`line 744 "t/t_preproc.v" 0
+`line 749 "t/t_preproc.v" 0
  
  
  
 `define foo test
-`line 747 "t/t_preproc.v" 0
+`line 752 "t/t_preproc.v" 0
  
 `define a x,y
-`line 748 "t/t_preproc.v" 0
+`line 753 "t/t_preproc.v" 0
  
 `define bar(a, b) test a b
-`line 749 "t/t_preproc.v" 0
+`line 754 "t/t_preproc.v" 0
  
 `define baz(a, b) test``a``b
-`line 750 "t/t_preproc.v" 0
+`line 755 "t/t_preproc.v" 0
  
 `define qux(x) string boo = x;
-`line 751 "t/t_preproc.v" 0
+`line 756 "t/t_preproc.v" 0
  
 `define quux(x) `qux(`"x`")
-`line 752 "t/t_preproc.v" 0
+`line 757 "t/t_preproc.v" 0
 string boo = "test";
 string boo = "test x,y x,y";
 string boo = "testx,ytest x x,y";
 string boo = "testtest x,y xquux(test)";
 
-`line 757 "t/t_preproc.v" 0
+`line 762 "t/t_preproc.v" 0
  
  
 
-`line 760 "t/t_preproc.v" 0
+`line 765 "t/t_preproc.v" 0
  
 `define uvm_a(x) foo x bar
-`line 761 "t/t_preproc.v" 0
+`line 766 "t/t_preproc.v" 0
  
 
 
@@ -1500,6 +1523,6 @@ class uvm_master_imp``SFX  \
   `uvm_a(SFX, REQ, t) \
   \
 endclass
-`line 769 "t/t_preproc.v" 0
+`line 774 "t/t_preproc.v" 0
 
-`line 769 "t/t_preproc.v" 0
+`line 774 "t/t_preproc.v" 0

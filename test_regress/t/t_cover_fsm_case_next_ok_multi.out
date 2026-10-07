@@ -20,7 +20,7 @@
           } state_t;
         
           logic [1:0] aux;
-          state_t state_q  /*verilator fsm_reset_arc*/;
+          state_t state_q  /*verilator fsm_state*/;
           state_t state_d;
         
           initial aux = 2'b00;
@@ -30,10 +30,11 @@
             state_d = state_q;
 %000004     case (state_d)
         // [FSM coverage]
-%000001        // [fsm_arc t.case_next_other_assign_ok_u.state_q::ANY->S0[reset_include]] [reset arc, excluded from %]
 %000000        // [fsm_arc t.case_next_other_assign_ok_u.state_q::S0->S1]
 %000004        // [fsm_arc t.case_next_other_assign_ok_u.state_q::S0->S2]
-%000003        // [fsm_state t.case_next_other_assign_ok_u.state_q::S0]
+%000000        // [fsm_arc t.case_next_other_assign_ok_u.state_q::S1->S0]
+%000003        // [fsm_arc t.case_next_other_assign_ok_u.state_q::S2->S0]
+%000004        // [fsm_state t.case_next_other_assign_ok_u.state_q::S0]
 %000000        // [fsm_state t.case_next_other_assign_ok_u.state_q::S1] *** UNCOVERED ***
 %000004        // [fsm_state t.case_next_other_assign_ok_u.state_q::S2]
               S0: state_d = start ? S1 : S2;
@@ -62,7 +63,7 @@
             S2 = 2'b10
           } state_t;
         
-          state_t state_q  /*verilator fsm_reset_arc*/;
+          state_t state_q  /*verilator fsm_state*/;
           state_t state_d;
           state_t other_d;
         
@@ -71,10 +72,11 @@
             state_d = state_q;
 %000004     case (state_d)
         // [FSM coverage]
-%000001        // [fsm_arc t.case_next_other_lhs_ok_u.state_q::ANY->S0[reset_include]] [reset arc, excluded from %]
 %000000        // [fsm_arc t.case_next_other_lhs_ok_u.state_q::S0->S1]
 %000004        // [fsm_arc t.case_next_other_lhs_ok_u.state_q::S0->S2]
-%000003        // [fsm_state t.case_next_other_lhs_ok_u.state_q::S0]
+%000000        // [fsm_arc t.case_next_other_lhs_ok_u.state_q::S1->S0]
+%000003        // [fsm_arc t.case_next_other_lhs_ok_u.state_q::S2->S0]
+%000004        // [fsm_state t.case_next_other_lhs_ok_u.state_q::S0]
 %000000        // [fsm_state t.case_next_other_lhs_ok_u.state_q::S1] *** UNCOVERED ***
 %000004        // [fsm_state t.case_next_other_lhs_ok_u.state_q::S2]
               S0: state_d = start ? S1 : S2;

@@ -397,4 +397,17 @@
 %Error: t/t_dpi_result_type_bad.v:322:30: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2023 35.5.5)
   322 |   function union_4_state_128 e_union_4_state_128(); return 0; endfunction
       |                              ^~~~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:326:43: DPI function may not return type 'struct t_dpi_result_type_bad.struct_unpacked' (IEEE 1800-2023 35.5.5)
+  326 |   import "DPI-C" function struct_unpacked i_struct_unpacked();
+      |                                           ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:328:28: DPI function may not return type 'struct t_dpi_result_type_bad.struct_unpacked' (IEEE 1800-2023 35.5.5)
+  328 |   function struct_unpacked e_struct_unpacked(); return '{x: 0}; endfunction
+      |                            ^~~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:333:42: DPI function may not return a > 32 bits wide type other than basic types.
+                                        : ... Suggest make it an output argument instead?
+  333 |   import "DPI-C" function bit_t   [32:0] i_array_bit_t_33();
+      |                                          ^~~~~~~~~~~~~~~~
+%Error: t/t_dpi_result_type_bad.v:334:42: DPI function may not return a 4-state type other than a single 'logic' (IEEE 1800-2023 35.5.5)
+  334 |   import "DPI-C" function logic_t [3:0]  i_array_logic_t_4();
+      |                                          ^~~~~~~~~~~~~~~~~
 %Error: Exiting due to

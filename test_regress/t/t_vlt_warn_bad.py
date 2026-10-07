@@ -12,8 +12,6 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = "t/t_vlt_warn.v"
 
-test.lint(verilator_flags2=["t/t_vlt_warn_bad.vlt"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=[test.vlt_filename], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

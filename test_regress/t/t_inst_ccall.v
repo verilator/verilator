@@ -48,7 +48,7 @@ module sub (
     output [31:0] longout,
     output [63:0] quadout
 );
-  // verilator public_module
+  // verilator no_inline_module
 `ifdef verilator
   assign longout = $c32("(", narrow, "+1)");
   assign quadout = $c64("(", quad, "+1)");

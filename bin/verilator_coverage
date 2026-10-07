@@ -45,6 +45,7 @@ if (! GetOptions (
           # Major operating modes
           "help"        => \&usage,
           "debug:s"     => \&debug,
+          "debugi=i"    => sub { $Debug ||= 1; },
           # "version!"  => \&version,   # Also passthru'ed
           # Additional parameters
           "<>"          => sub {},      # Ignored
@@ -73,30 +74,48 @@ sub debug {
 # Builds
 
 sub verilator_coverage_bin {
-    my $bin = "";
-    # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
-    my $basename = ($ENV{VERILATOR_COVERAGE_BIN}
-                    || "verilator_coverage_bin_dbg");
-    if (defined($ENV{VERILATOR_ROOT})) {
-        my $dir = $ENV{VERILATOR_ROOT};
-        if (-x "$dir/bin/$basename"
-            || -x "$dir/bin/$basename.exe") {  # From a "make install" into VERILATOR_ROOT
-            $bin = "$dir/bin/$basename";
-        } else {
-            $bin = "$dir/$basename";  # From pointing to kit directory
-        }
+    my @basenames = ();
+    if ($ENV{VERILATOR_COVERAGE_BIN}) {
+        push @basenames, $ENV{VERILATOR_COVERAGE_BIN};
     } else {
-        if (-x "$RealBin/$basename"
-            || -x "$RealBin/$basename.exe") {
-            $bin = "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
-        } else {
-            $bin = $basename;  # Find in PATH
+        if (!$Debug) {
+            push @basenames, "verilator_coverage_bin";
         }
-        # Note we don't look under bin/$basename which would be right if running
-        # in the kit dir. Running that would likely break, since
-        # VERILATOR_ROOT wouldn't be set and Verilator won't find internal files.
+        # Fall back to dbg version if opt can't be found
+        push @basenames, "verilator_coverage_bin_dbg";
     }
-    return $bin;
+
+    for my $basename (@basenames) {
+        # Use VERILATOR_ROOT if defined, else assume verilator_bin is in the search path
+        if (defined($ENV{VERILATOR_ROOT})) {
+            my $dir = $ENV{VERILATOR_ROOT};
+            if (bin_exists("$dir/bin/$basename")) {  # From a "make install" into VERILATOR_ROOT
+                return "$dir/bin/$basename";
+            } elsif (bin_exists("$dir/$basename")) {
+                return "$dir/$basename";  # From pointing to kit directory
+            }
+        } else {
+            if (bin_exists("$RealBin/$basename")) {
+                return "$RealBin/$basename";  # From path/to/verilator with verilator_bin installed
+            }
+            # Note we don't look under bin/$basename which would be right if running
+            # in the kit dir. Running that would likely break, since
+            # VERILATOR_ROOT wouldn't be set and Verilator won't find internal files.
+        }
+    }
+    if (defined($ENV{VERILATOR_ROOT})) {
+        warn "%Error: verilator_coverage: VERILATOR_ROOT set but could not find coverage binary.\n";
+        warn "%Error: VERILATOR_ROOT=$ENV{VERILATOR_ROOT}\n";
+        exit 1;
+    }
+
+    # Find in path
+    return $basenames[0];
+}
+
+sub bin_exists {
+    my $path = shift;
+    return -x "$path" || -x "$path.exe";
 }
 
 #######################################################################
@@ -177,6 +196,8 @@ L<https://verilator.org/guide/latest/exe_verilator_coverage.html>.
     --annotate-all                All files should be shown.
     --annotate-min <count>        Minimum occurrence count for uncovered.
     --annotate-points             Annotates info from each coverage point.
+    --debug                       Enable debugging with the debug executable.
+    --debugi <level>              Set debug level using the debug executable.
     --filter-type <regex>         Keep only records of given coverage type.
     --help                        Displays this message and version and exits.
     --include-reset-arcs          Include reset arcs in FSM arc summaries.

@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["-Wno-SYMRSVDWORD"])
+test.compile(verilator_flags2=["-fno-inline", "-Wno-SYMRSVDWORD"])
 
 test.execute()
 

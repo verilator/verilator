@@ -11,13 +11,6 @@ function int postincrement_i;
 endfunction
 
 module t;
-  initial begin
-    automatic int arr[3][3] = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-    i = 0;
-    arr[postincrement_i()][postincrement_i()]++;
-    $display("Value: %d", i);
-  end
-
   bit clk;
   bus_if buses[2] (.clk);
   virtual bus_if vifs[2];

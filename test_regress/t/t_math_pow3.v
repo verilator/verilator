@@ -12,17 +12,17 @@ module t;
 
   bit fail;
 
+  reg [7:0] a8;
+  reg [6:0] a7;
+  reg signed [7:0] s8;
+  reg signed [63:0] qs64;
+  reg [63:0] q64;
+  reg [32:0] q33;
+
   // IEEE says for ** the size is L(i).  Thus Icarus Verilog is wrong in sizing some of the below.
 
-  // verilog_format: off
   initial begin
-    $display("15 ** 14    = %0x  expect 67b6cfc1b29a21", 64'b1111 ** 64'b1110);
-    $display("15 **-4'sd2 = %0x expect 0 (per IEEE negative power)", ((-4'd1 ** -4'sd2)));
-    $display("15 ** 14    = %0x expect 1 (LSB 4-bits of 67b6cfc1b29a21)", ((-4'd1 ** -4'd2)));
-    $display("15 ** 14    = %0x expect 1 (LSB 4-bits of 67b6cfc1b29a21)", ((4'd15 ** 4'd14)));
-    $display("64'big ** 1 = %0x  expect %0x", 64'h8765432187654321 ** 1, 64'h8765432187654321);
-    $display("\n");
-
+    // verilog_format: off
     `checkh( (64'b1111 ** 64'b1110),  64'h67b6cfc1b29a21);
 `ifndef NC
     `checkh( (-4'd1 ** -4'sd2),       4'h0);  //bug730
@@ -86,7 +86,27 @@ module t;
     `checkh(( 8'h3  ** -8'sh3),  8'h0 );  // 0
     `checkh(( 8'sh3 ** -8'sh3),  8'h0 );  // 0
 `endif
+    // verilog_format: on
 
+    // The left operand is context determined, so the result width of an assignment applies to
+    // it, including nested powers, and ** is right associative
+    a8 = 8'd4;
+    a7 = 7'd5;
+    // verilator lint_off WIDTHEXPAND
+    q64 = a8 ** 4 ** 1;
+    `checkh(q64, 64'h100);
+    q64 = a8 ** (4 ** 1);
+    `checkh(q64, 64'h100);
+    q64 = (a8 ** 4) ** 1;
+    `checkh(q64, 64'h100);
+    q64 = a8 ** 2 ** 2 ** 1;
+    `checkh(q64, 64'h100);
+    q33 = a7 ** 3 ** 1;
+    `checkh(q33, 33'd125);
+    s8 = -8'sd2;
+    qs64 = s8 ** 3 ** 1;
+    `checkh(qs64, -64'sd8);
+    // verilator lint_on WIDTHEXPAND
 
     if (fail) $stop;
     else $write("*-* All Finished *-*\n");

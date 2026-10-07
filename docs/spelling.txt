@@ -1,3 +1,4 @@
+AArch
 ABCp
 Aadi
 Accellera
@@ -186,6 +187,7 @@ Hammoud
 Hao
 Haojin
 Harboe
+Haroosh
 Hashimoto
 Hayenga
 Heng
@@ -443,6 +445,7 @@ Shankar
 Shanshan
 Sharad
 Shareef
+Sheehan
 Shen
 Sheng
 Shi
@@ -548,6 +551,7 @@ VlRNG
 VlWide
 Vlip
 Vm
+Vour
 Vukobratovic
 Wai
 Wajahat
@@ -637,6 +641,7 @@ bitOpTree
 bitaggregat
 bitop
 bitstoreal
+bitwise
 blackbox
 bokke
 bool
@@ -743,6 +748,7 @@ difftree
 dir
 disambiguates
 discoverability
+disjunction
 displayb
 distcc
 doxygen
@@ -993,6 +999,7 @@ muzafferkal
 myftptoyman
 mysignal
 namespace
+namespaces
 nand
 nanduraj
 nasties
@@ -1118,6 +1125,7 @@ rodata
 rolloverSize
 rr
 rst
+runnable
 runtime
 runtimes
 rw
@@ -1225,6 +1233,7 @@ typedef'ed
 typedefed
 typedefs
 typename
+typenames
 uint
 un
 unbased
@@ -1247,6 +1256,7 @@ unoptimizable
 unparenthesized
 unroller
 unsatisfiable
+unselected
 unsized
 unsup
 untyped
@@ -1302,12 +1312,15 @@ vpm
 vpp
 warmup
 wavealloca
+wavecat
 wavediff
 waveforms
+wavetools
 whitespace
 widthed
 wor
 wreal
+writablility
 writeb
 writeme
 writemem
