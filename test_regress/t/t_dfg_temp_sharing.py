@@ -15,5 +15,5 @@ test.scenarios('vlt', 'vltmt')
 # self-checks also exercise the shared declarations in the executed model.
 test.compile(verilator_flags2=['--binary', '--stats', '-fno-gate'])
 test.execute()
-test.file_grep(test.stats, r'Optimizations, DFG, temporary declarations reused\s+(\d+)', 36)
+test.file_grep(test.stats, r'Optimizations, DFG, temporary declarations reused\s+(\d+)', 72)
 test.passes()

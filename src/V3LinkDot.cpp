@@ -2650,12 +2650,12 @@ class LinkDotScopeVisitor final : public VNVisitor {
 
     // METHODS
 public:
-    // getAliasVarScopep and setAliasVarScope implement disjoint-set data structure.
+    // getAlias with setVarAlias and setIfaceAlias implement disjoint-set data structure.
     // This algorithm is needed for the case when multiple alias statements
     // reference partially the same variables.
-    static AstVarScope* getAliasVarScopep(AstVarScope* const vscp) {
+    static AstVarScope* getAlias(AstVarScope* const vscp) {
         if (vscp->user2p() && vscp != vscp->user2p()) {
-            AstVarScope* const aliasp = getAliasVarScopep(VN_AS(vscp->user2p(), VarScope));
+            AstVarScope* const aliasp = getAlias(VN_AS(vscp->user2p(), VarScope));
             vscp->user2p(aliasp);
             return aliasp;
         } else {
@@ -2664,8 +2664,47 @@ public:
     }
 
 private:
-    void setAliasVarScope(AstVarScope* const vscp, AstVarScope* const aliasp) {
-        getAliasVarScopep(vscp)->user2p(getAliasVarScopep(aliasp));
+    // Alias an interface reference to the interface it is connected to
+    void setIfaceAlias(AstVarScope* const vscp, AstVarScope* const aliasp) {
+        UASSERT_OBJ(vscp->varp()->isIfaceRef(), vscp, "Interface alias of non-interface");
+        UASSERT_OBJ(aliasp->varp()->isIfaceRef(), aliasp, "Interface alias of non-interface");
+        getAlias(vscp)->user2p(getAlias(aliasp));
+    }
+
+    // Alias two variables. An output port in the lower scope survives, unless the other
+    // must keep its own storage.
+    void setVarAlias(AstVarScope* ap, AstVarScope* bp) {
+        UASSERT_OBJ(!ap->varp()->isIfaceRef(), ap, "Variable alias of interface");
+        UASSERT_OBJ(!bp->varp()->isIfaceRef(), bp, "Variable alias of interface");
+        ap = getAlias(ap);
+        bp = getAlias(bp);
+        if (ap == bp) return;
+        const bool aWins = [&]() {
+            const AstVar* const aVarp = ap->varp();
+            const AstVar* const bVarp = bp->varp();
+            // A primary IO is accessed directly by the user of the model, so must survive
+            UASSERT_OBJ(!aVarp->isPrimaryIO() || !bVarp->isPrimaryIO(), ap,
+                        "Alias of two primary IOs");
+            if (bVarp->isPrimaryIO()) return false;
+            if (aVarp->isPrimaryIO()) return true;
+            // A forced or public variable must keep its own storage. If both are, either works.
+            if (aVarp->isForced() != bVarp->isForced()) return aVarp->isForced();
+            if (aVarp->isSigPublic() != bVarp->isSigPublic()) return aVarp->isSigPublic();
+            // Otherwise prefer an output port in the lower scope. This enables better V3Combine
+            // due to having fewer upward hierarchical references (which prevent combining).
+            if (aVarp->direction() != VDirection::OUTPUT) return false;
+            // Is 'ap' strictly below 'bp' in the hierarchy
+            for (const AstScope* scopep = ap->scopep()->aboveScopep(); scopep;
+                 scopep = scopep->aboveScopep()) {
+                if (scopep == bp->scopep()) return true;
+            }
+            return false;
+        }();
+        if (aWins) {
+            bp->user2p(ap);
+        } else {
+            ap->user2p(bp);
+        }
     }
 
     // VISITORS
@@ -2769,7 +2808,7 @@ private:
             }
             UASSERT_OBJ(vscp, nodep, "VarScope unset");
             if (aliasVscp) {
-                setAliasVarScope(aliasVscp, vscp);
+                setVarAlias(aliasVscp, vscp);
             } else {
                 aliasVscp = vscp;
             }
@@ -2839,7 +2878,7 @@ private:
         AstVarScope* const lhsVscp = VN_CAST(lhsSymp->nodep(), VarScope);
         AstVarScope* const rhsVscp = VN_CAST(rhsSymp->nodep(), VarScope);
         UASSERT_OBJ(lhsVscp && rhsVscp, nodep, "Interface alias missing variable scope");
-        setAliasVarScope(lhsVscp, rhsVscp);
+        setIfaceAlias(lhsVscp, rhsVscp);
         // We have stored the link, we don't need these any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -5051,7 +5090,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         AstVarScope* vscp = nodep->varScopep();
         if (vscp && vscp->user2p() != vscp && m_replaceWithAlias) {
-            vscp = LinkDotScopeVisitor::getAliasVarScopep(vscp);
+            vscp = LinkDotScopeVisitor::getAlias(vscp);
             nodep->varp(vscp->varp());
             nodep->varScopep(vscp);
             updateVarUse(nodep->varp());
@@ -5144,7 +5183,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                    << okSymp->cellErrorScopes(nodep));
                 } else {
                     if (vscp->user2p() && m_replaceWithAlias) {
-                        vscp = LinkDotScopeVisitor::getAliasVarScopep(vscp);
+                        vscp = LinkDotScopeVisitor::getAlias(vscp);
                     }
                     // Convert the VarXRef to a VarRef, so we don't need
                     // later optimizations to deal with VarXRef.
@@ -5275,7 +5314,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
         iterateChildren(nodep);
-        AstVarScope* aliasp = LinkDotScopeVisitor::getAliasVarScopep(nodep);
+        AstVarScope* aliasp = LinkDotScopeVisitor::getAlias(nodep);
         if (aliasp && aliasp != nodep && !nodep->varp()->isIfaceRef()) {
             // Aliased variable might still be references from outside,
             // eg through the VPI, and is traced, so we need the value to propagate.
@@ -5285,9 +5324,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 new AstVarRef{nodep->fileline(), aliasp, VAccess::READ}};
             assignp->user2(true);
             nodep->scopep()->addBlocksp(new AstAlways{assignp});
-            // Propagate attributes of the replaced variable,
+            // Propagate attributes and lint state of the replaced variable,
             // because all references to it are replaced with references to the alias variable
             aliasp->varp()->propagateAttrFrom(nodep->varp());
+            aliasp->varp()->fileline()->modifyStateInherit(nodep->varp()->fileline());
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
