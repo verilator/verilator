@@ -14,13 +14,12 @@ test.vm_prefix = "Vt_vpi_get"
 test.top_filename = "t/t_vpi_get.v"
 test.pli_filename = "t/t_vpi_get.cpp"
 
-test.compile(make_top_shell=False,
-             make_main=False,
-             make_pli=True,
-             verilator_flags2=[
-                 "--exe --vpi --vpi-lazy --prefix Vt_vpi_get --no-l2name", test.pli_filename
-             ],
-             v_flags2=["+define+USE_VPI_NOT_DPI"])
+test.compile(
+    make_top_shell=False,
+    make_main=False,
+    make_pli=True,
+    verilator_flags2=["--exe --vpi --vpi-lazy --prefix Vt_vpi_get --no-l2name", test.pli_filename],
+    v_flags2=["+define+USE_VPI_NOT_DPI"])
 
 test.execute(use_libvpi=True)
 

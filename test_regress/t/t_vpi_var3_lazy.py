@@ -20,8 +20,8 @@ test.compile(make_top_shell=False,
              sim_time=2100,
              v_flags2=["+define+USE_VPI_NOT_DPI"],
              verilator_flags2=[
-                 "--exe --vpi --vpi-lazy --no-l2name --prefix Vt_vpi_var3",
-                 "-CFLAGS -DT_VPI_VAR3", test.pli_filename
+                 "--exe --vpi --vpi-lazy --no-l2name --prefix Vt_vpi_var3", "-CFLAGS -DT_VPI_VAR3",
+                 test.pli_filename
              ])
 
 test.execute(use_libvpi=True, all_run_flags=['+PLUS +INT=1234 +STRSTR'])

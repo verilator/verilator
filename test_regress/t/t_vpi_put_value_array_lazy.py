@@ -19,7 +19,8 @@ test.compile(make_top_shell=False,
              make_main=False,
              make_pli=True,
              verilator_flags2=[
-                 "--exe --vpi --vpi-lazy --prefix Vt_vpi_put_value_array --no-l2name", test.pli_filename
+                 "--exe --vpi --vpi-lazy --prefix Vt_vpi_put_value_array --no-l2name",
+                 test.pli_filename
              ],
              v_flags2=["+define+USE_VPI_NOT_DPI +define+VERILATOR_COMMENTS"])
 
