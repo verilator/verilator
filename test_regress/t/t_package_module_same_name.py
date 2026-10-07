@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary"])
+test.compile(verilator_flags2=["--binary", "-y t/t_package_module_same_name"])
 test.execute()
 
 test.passes()
