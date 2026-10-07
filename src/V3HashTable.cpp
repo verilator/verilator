@@ -991,8 +991,7 @@ void testMap() {
         UASSERT_SELFTEST(it->second, static_cast<int>(i));  // With the value given
     }
 
-    // A value is changed by erasing the entry and inserting it again, as an iterator
-    // yields a const entry
+    // A value can be changed by erasing the entry and inserting it again
     for (size_t i = 0; i < N; ++i) {
         const std::string key = "key" + std::to_string(i);
         map.erase(map.find(key));
@@ -1004,6 +1003,17 @@ void testMap() {
         UASSERT_SELFTEST(it != map.end(), true);  // Each key is still there
         UASSERT_SELFTEST(it->second, static_cast<int>(i) + 100);  // With its new value
     }
+
+    // Or a value is changed in place, via 'value()', which leaves the key alone
+    for (size_t i = 0; i < N; ++i) map.find("key" + std::to_string(i)).value() += 100;
+    UASSERT_SELFTEST(map.size(), N);  // The map is unchanged otherwise
+    for (size_t i = 0; i < N; ++i) {
+        const Map::iterator it = map.find("key" + std::to_string(i));
+        UASSERT_SELFTEST(it != map.end(), true);  // Each key still finds its entry
+        UASSERT_SELFTEST(it->second, static_cast<int>(i) + 200);  // With its new value
+    }
+    // And back, as the checks below expect the earlier values
+    for (size_t i = 0; i < N; ++i) map.find("key" + std::to_string(i)).value() -= 100;
 
     // Adding a key that is present changes nothing
     {

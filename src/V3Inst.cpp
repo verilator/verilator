@@ -89,7 +89,6 @@ class InstVisitor final : public VNVisitor {
         modVarp->fileline()->modifyStateInherit(exprVarp->fileline());
         exprVarp->propagateAttrFrom(modVarp);
         modVarp->propagateAttrFrom(exprVarp);
-        // The port is named first, so the net it connects to is the one that survives
         refp->access(VAccess::READWRITE);
         FileLine* const flp = exprp->fileline();
         AstNodeExpr* const itemsp
@@ -178,13 +177,7 @@ class InstVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit InstVisitor(AstNetlist* nodep) {
-        // Modules are level sorted, with the top module first. Visit them in reverse
-        // order, that is children before parents, so that the warning disables and the
-        // attributes of a port variable propagate all the way up through a chain of
-        // aliased port connections (see tryAliasPin).
-        iterateChildrenBackwardsConst(nodep);
-    }
+    explicit InstVisitor(AstNetlist* nodep) { iterate(nodep); }
     ~InstVisitor() override = default;
 };
 

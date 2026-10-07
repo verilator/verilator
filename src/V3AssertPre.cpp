@@ -33,6 +33,36 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
+// Clocking blocks of clocking items
+
+class AssertPreClockingVisitor final : public VNVisitorConst {
+    // Captures the clocking block of each clocking item before AssertPreVisitor, which needs it
+    // at synchronous drives, often visited before the clocking block, e.g. in a parent module
+    // NODE STATE
+    // AstClockingItem::user3p()  // AstClocking*. Clocking block of the item, user3 claimed by
+    //                            //               AssertPreVisitor
+
+    // VISITORS
+    void visit(AstNetlist* nodep) override { iterateAndNextConstNull(nodep->modulesp()); }
+    void visit(AstNodeModule* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
+    void visit(AstGenBlock* nodep) override { iterateAndNextConstNull(nodep->itemsp()); }
+    void visit(AstClocking* nodep) override {
+        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+            if (AstClockingItem* const citemp = VN_CAST(itemp, ClockingItem)) {
+                citemp->user3p(nodep);
+            }
+        }
+    }
+    // Clocking blocks are only in modules and their generate blocks
+    void visit(AstNode*) override {}
+
+public:
+    // CONSTRUCTORS
+    explicit AssertPreClockingVisitor(AstNetlist* nodep) { iterateConst(nodep); }
+    ~AssertPreClockingVisitor() override = default;
+};
+
+//######################################################################
 // Assert class functions
 
 class AssertPreVisitor final : public VNVisitor {
@@ -49,9 +79,12 @@ private:
     // NODE STATE
     // AstClockingItem::user1p()         // AstVar*.      varp() of ClockingItem after unlink
     // AstClockingItem::user2p()         // AstVar*.      Flag set by drives of output clockvar
+    // AstClockingItem::user3p()         // AstClocking*. Clocking block of the item, captured
+    //                                   //               by AssertPreClockingVisitor
     // AstPExpr::user1()                 // bool.         Created from AstUntil
     const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
     // STATE
     // Current context:
     AstNetlist* const m_netlistp = nullptr;  // Current netlist
@@ -83,6 +116,7 @@ private:
     bool m_inAssign = false;  // True if in an AssignNode
     bool m_inAssignDlyLhs = false;  // True if in AssignDly's LHS
     bool m_inSynchDrive = false;  // True if in synchronous drive
+    bool m_inConcatAssign = false;  // True if in assignment to a concatenation
     std::vector<SynchDrive> m_drives;  // Clockvars written by the synchronous drive
     bool m_hasCycleDelay = false;  // True if node has cycle delay beneath
     std::vector<AstVarXRef*> m_xrefsp;  // list of xrefs that need name fixup
@@ -100,25 +134,96 @@ private:
         }
         return VN_AS(itemp->user2p(), Var);
     }
-    // Assignment setting the drive flag of a driven clockvar, referenced like the clockvar
-    AstAssign* newDrivenSetp(FileLine* flp, const SynchDrive& drive) {
-        AstVar* const varp = getCreateDrivenVarp(drive.itemp);
-        AstNodeExpr* refp;
+    // Reference to a variable in the scope of a driven clockvar, made like the clockvar's
+    static AstNodeExpr* newDriveRefp(FileLine* flp, const SynchDrive& drive, AstVar* varp,
+                                     const VAccess& access) {
         if (const AstVarXRef* const xrefp = VN_CAST(drive.refp, VarXRef)) {
-            refp = new AstVarXRef{flp, varp, xrefp->dotted(), VAccess::WRITE};
+            return new AstVarXRef{flp, varp, xrefp->dotted(), access};
         } else if (const AstMemberSel* const selp = VN_CAST(drive.refp, MemberSel)) {
-            // The interface expression is evaluated again for the flag, so it must not have side
-            // effects; cloneTreePure warns if it has any
+            // The interface expression is evaluated again, so it must not have side effects;
+            // cloneTreePure warns if it has any
             AstMemberSel* const newSelp
                 = new AstMemberSel{flp, selp->fromp()->cloneTreePure(false), varp};
-            newSelp->access(VAccess::WRITE);
-            refp = newSelp;
-        } else {
-            refp = new AstVarRef{flp, varp, VAccess::WRITE};
+            newSelp->access(access);
+            return newSelp;
         }
-        AstAssign* const setp = new AstAssign{flp, refp, new AstConst{flp, AstConst::BitTrue{}}};
+        return new AstVarRef{flp, varp, access};
+    }
+    // Assignment setting the drive flag of a driven clockvar
+    AstAssign* newDrivenSetp(FileLine* flp, const SynchDrive& drive) {
+        AstVar* const varp = getCreateDrivenVarp(drive.itemp);
+        AstAssign* const setp = new AstAssign{flp, newDriveRefp(flp, drive, varp, VAccess::WRITE),
+                                              new AstConst{flp, AstConst::BitTrue{}}};
         setp->user1(true);
         return setp;
+    }
+    // Clocking block of a clocking item
+    static AstClocking* clockingOf(const AstClockingItem* itemp) {
+        UASSERT_OBJ(itemp->user3p(), itemp, "Clocking item not captured in a clocking block");
+        return VN_AS(itemp->user3p(), Clocking);
+    }
+    // Clocking event of a driven clockvar, referenced from the drive like the clockvar, or
+    // nullptr if unsupported, which is reported on the drive's cycle delay
+    AstSenItem* newDriveSensesp(AstDelay* delayp, const SynchDrive& drive) {
+        AstSenItem* const origp = clockingOf(drive.itemp)->sensesp();
+        if (VN_IS(drive.refp, VarRef)) return origp->cloneTree(false);
+        if (origp->exists([](const AstVarXRef*) { return true; })) {
+            // The reference is relative to the clocking block
+            delayp->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in synchronous drive to"
+                                          " clockvar in another scope, whose clocking event"
+                                          " has a hierarchical reference");
+            return nullptr;
+        }
+        const AstMemberSel* const selp = VN_CAST(drive.refp, MemberSel);
+        // Processes outside classes evaluate their events also when not waiting on them,
+        // possibly before the interface reference is set, so the event is guarded against a
+        // null reference, which needs an integral value; scheduling does not guard it
+        const bool guardNull = selp && !VN_IS(m_modp, Class);
+        if (guardNull && !origp->sensp()->dtypep()->skipRefp()->isIntegralOrPacked()) {
+            delayp->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in synchronous drive through"
+                                          " an interface reference outside a class, to clocking"
+                                          " block with non-integral clocking event");
+            return nullptr;
+        }
+        // Interface declaring the clocking block, if driven through an interface reference
+        AstIface* const ifacep
+            = selp ? VN_AS(selp->fromp()->dtypep()->skipRefp(), IfaceRefDType)->ifaceViaCellp()
+                   : nullptr;
+        AstSenItem* const sensesp = origp->cloneTree(false);
+        std::vector<AstVarRef*> refps;
+        sensesp->foreach([&](AstVarRef* refp) {
+            if (!refp->classOrPackagep()) refps.push_back(refp);
+        });
+        for (AstVarRef* const refp : refps) {
+            AstVar* const varp = refp->varp();
+            if (ifacep) {
+                // Mark the variable as read through an interface reference, as V3Width does for
+                // a member select. The mark is the interface declaring the variable, whose
+                // instances all share it, so drives through references to any instances agree.
+                UASSERT_OBJ(!varp->sensIfacep() || varp->sensIfacep() == ifacep, refp,
+                            "Variable read through references to different interfaces");
+                varp->sensIfacep(ifacep);
+            }
+            refp->replaceWith(newDriveRefp(refp->fileline(), drive, varp, refp->access()));
+            VL_DO_DANGLING(pushDeletep(refp), refp);
+        }
+        if (guardNull) guardNullIface(sensesp, selp->fromp());
+        return sensesp;
+    }
+    // Make an integral clocking event through an interface reference false while the reference
+    // is null
+    static void guardNullIface(AstSenItem* sensesp, AstNodeExpr* fromp) {
+        FileLine* const flp = sensesp->fileline();
+        AstNodeExpr* const sensp = sensesp->sensp()->unlinkFrBack();
+        sensesp->sensp(new AstCond{flp, newNotNullp(flp, fromp), sensp,
+                                   new AstConst{flp, AstConst::DTyped{}, sensp->dtypep()}});
+        if (AstNodeExpr* const condp = sensesp->condp()) {
+            condp->unlinkFrBack();
+            sensesp->condp(new AstLogAnd{flp, newNotNullp(flp, fromp), condp});
+        }
+    }
+    static AstNodeExpr* newNotNullp(FileLine* flp, AstNodeExpr* fromp) {
+        return new AstNeq{flp, fromp->cloneTreePure(false), new AstConst{flp, AstConst::Null{}}};
     }
 
     static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp) {
@@ -499,12 +604,12 @@ private:
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         const AstConst* const constp = VN_CAST(valuep, Const);
-        if (!constp) {
+        if (!constp && !m_inSynchDrive) {
             // V3AssertNfa handles non-const delays before this pass and
             // replaces the property; this branch should never be reached.
             nodep->v3fatalSrc("Non-constant cycle delay in assertion: "
                               "should have been caught by V3AssertNfa");
-        } else if (constp->isZero()) {
+        } else if (constp && constp->isZero()) {
             VL_DO_DANGLING(pushDeletep(valuep), valuep);
             if (m_inSynchDrive) {
                 // ##0 has no effect in synchronous drives (IEEE 1800-2023 14.11)
@@ -541,20 +646,36 @@ private:
             return;
         }
         AstSenItem* sensesp = nullptr;
-        if (!m_defaultClockingp) {
+        if (!m_drives.empty()) {
+            if (m_inConcatAssign) {
+                // Also the clockvars may be of different clocking blocks
+                nodep->v3error("Cycle delays cannot be used in synchronous drives to a"
+                               " concatenation (IEEE 1800-2023 14.16)");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
+                return;
+            }
+            // Count the cycles of the driven clockvar's clocking block (IEEE 1800-2023 14.16)
+            sensesp = newDriveSensesp(nodep, m_drives.front());
+            if (!sensesp) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
+                return;
+            }
+        } else if (!m_defaultClockingp) {
             if (!m_pexprp) {
                 nodep->v3error("Usage of cycle delays requires default clocking"
                                " (IEEE 1800-2023 14.11)");
-                VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-                VL_DO_DANGLING(valuep->deleteTree(), valuep);
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
                 return;
             }
-            sensesp = m_senip;
+            sensesp = m_senip->cloneTree(false);
         } else {
-            sensesp = m_defaultClockingp->sensesp();
+            sensesp = m_defaultClockingp->sensesp()->cloneTree(false);
         }
-        AstEventControl* const controlp = new AstEventControl{
-            nodep->fileline(), new AstSenTree{flp, sensesp->cloneTree(false)}, nullptr};
+        AstEventControl* const controlp
+            = new AstEventControl{nodep->fileline(), new AstSenTree{flp, sensesp}, nullptr};
         const std::string delayName = m_cycleDlyNames.get(nodep);
         AstNodeExpr* throughoutp
             = nodep->throughoutp() ? nodep->throughoutp()->unlinkFrBack() : nullptr;
@@ -563,6 +684,15 @@ private:
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
+        // A non-constant delay of a synchronous drive is counted at runtime, waiting for none if
+        // zero, like a constant '##0' in a synchronous drive. The count is integral of 64 bits,
+        // as V3Width makes delays, or real, which is rounded (IEEE 1800-2023 6.12.1)
+        if (valuep->isDouble()) {
+            valuep = new AstRToIRoundS{flp, valuep};
+            valuep->dtypeFrom(cntVarp);
+        } else {
+            valuep = new AstSel{flp, valuep, 0, cntVarp->width()};
+        }
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
 
         // Throughout: create flag tracking whether condition held every tick
@@ -709,9 +839,16 @@ private:
         if (nodep->user1()) return;
         VL_RESTORER(m_inAssign);
         VL_RESTORER(m_inSynchDrive);
+        VL_RESTORER(m_inConcatAssign);
         VL_RESTORER_CLEAR(m_drives);
         m_inAssign = true;
         m_inSynchDrive = false;
+        {
+            // The braces of a concatenation are a replication, by one
+            const AstNodeExpr* lhsp = nodep->lhsp();
+            if (const AstReplicate* const repp = VN_CAST(lhsp, Replicate)) lhsp = repp->srcp();
+            m_inConcatAssign = VN_IS(lhsp, Concat);
+        }
         {
             VL_RESTORER(m_inAssignDlyLhs);
             m_inAssignDlyLhs = VN_IS(nodep, AssignDly);
@@ -984,6 +1121,7 @@ private:
         finalp->addStmtsp(initActiveCountp);
         finalp->addStmtsp(finalLoopp);
 
+        VL_RESTORER(m_pexprp);
         m_pexprp = new AstPExpr{flp, bodyp, finalp, nodep->dtypep()};
         VL_RESTORER(m_hasCycleDelay);
         m_hasCycleDelay = false;
@@ -1363,9 +1501,16 @@ private:
             }
             // Wrap existing PExpr body: if (antecedent) { <original body> } else { /* vacuous pass
             // */ }
+            // Only the statements are guarded; declarations stay directly in the block. After
+            // V3Fork moves the block's statements into a task, V3Task only handles variables
+            // that are direct statements of the task.
             AstBegin* const bodyp = pexprp->bodyp();
-            AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
-            AstIf* const guardp = new AstIf{flp, condp, origStmtsp};
+            AstIf* const guardp = new AstIf{flp, condp};
+            for (AstNode* stmtp = bodyp->stmtsp(); stmtp;) {
+                AstNode* const nextp = stmtp->nextp();
+                if (!VN_IS(stmtp, Var)) guardp->addThensp(stmtp->unlinkFrBack());
+                stmtp = nextp;
+            }
             bodyp->addStmtsp(guardp);
             nodep->replaceWith(pexprp);
             // Don't iterate pexprp here -- it was already iterated when created
@@ -1692,6 +1837,7 @@ public:
     // CONSTRUCTORS
     explicit AssertPreVisitor(AstNetlist* nodep)
         : m_netlistp{nodep} {
+        { AssertPreClockingVisitor{nodep}; }
         // Process
         iterate(nodep);
         // Fix up varref names

@@ -85,6 +85,9 @@ public:
 
     const AstModule* modp() const { return m_modp; }
 
+    // Whether a string parameter value can be passed to a hierarchical block's Verilation
+    static bool stringParamPassable(const string& value) VL_PURE;
+
     // For emitting Makefile and build definition JSON
     VStringList commandArgs(bool forMkJson) const VL_MT_DISABLED;
     VStringList hierBlockArgs() const VL_MT_DISABLED;

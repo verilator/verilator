@@ -508,6 +508,11 @@ class AssertVisitor final : public VNVisitor {
     AstNodeStmt* assertBody(const AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
                             AstNode* failsp) {
         if (AstPExpr* const pexprp = VN_CAST(propp, PExpr)) {
+            if (!v3Global.opt.timing().isSetTrue()) {
+                nodep->v3warn(E_NOTIMING, "This property expression requires --timing");
+                VL_DO_DANGLING(pushDeletep(pexprp), pexprp);
+                return new AstBegin{nodep->fileline(), "", nullptr, false};
+            }
             AstFork* const forkp = new AstFork{nodep->fileline(), VJoinType::JOIN_NONE};
             forkp->addForksp(pexprp->bodyp()->unlinkFrBack());
             if (AstNodeStmt* const finalp = pexprp->finalp()) {

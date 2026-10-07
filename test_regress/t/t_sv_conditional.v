@@ -397,6 +397,8 @@ module simple_test_3d (
 );
 
 
+  // The chain covers every value of 'selector', but latch detection cannot tell
+  /* verilator lint_off LATCH */
   always_comb begin
     unique if (selector == 4'h0) selected_out = wide_input_bus[7:0];
     else if (selector == 4'h1) selected_out = wide_input_bus[15:8];
@@ -415,6 +417,7 @@ module simple_test_3d (
     else if (selector == 4'he) selected_out = wide_input_bus[119:112];
     else if (selector == 4'hf) selected_out = wide_input_bus[127:120];
   end
+  /* verilator lint_on LATCH */
 
 endmodule  // simple_test_3d
 

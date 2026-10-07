@@ -2650,12 +2650,12 @@ class LinkDotScopeVisitor final : public VNVisitor {
 
     // METHODS
 public:
-    // getAliasVarScopep and setAliasVarScope implement disjoint-set data structure.
+    // getAlias with setVarAlias and setIfaceAlias implement disjoint-set data structure.
     // This algorithm is needed for the case when multiple alias statements
     // reference partially the same variables.
-    static AstVarScope* getAliasVarScopep(AstVarScope* const vscp) {
+    static AstVarScope* getAlias(AstVarScope* const vscp) {
         if (vscp->user2p() && vscp != vscp->user2p()) {
-            AstVarScope* const aliasp = getAliasVarScopep(VN_AS(vscp->user2p(), VarScope));
+            AstVarScope* const aliasp = getAlias(VN_AS(vscp->user2p(), VarScope));
             vscp->user2p(aliasp);
             return aliasp;
         } else {
@@ -2664,8 +2664,47 @@ public:
     }
 
 private:
-    void setAliasVarScope(AstVarScope* const vscp, AstVarScope* const aliasp) {
-        getAliasVarScopep(vscp)->user2p(getAliasVarScopep(aliasp));
+    // Alias an interface reference to the interface it is connected to
+    void setIfaceAlias(AstVarScope* const vscp, AstVarScope* const aliasp) {
+        UASSERT_OBJ(vscp->varp()->isIfaceRef(), vscp, "Interface alias of non-interface");
+        UASSERT_OBJ(aliasp->varp()->isIfaceRef(), aliasp, "Interface alias of non-interface");
+        getAlias(vscp)->user2p(getAlias(aliasp));
+    }
+
+    // Alias two variables. An output port in the lower scope survives, unless the other
+    // must keep its own storage.
+    void setVarAlias(AstVarScope* ap, AstVarScope* bp) {
+        UASSERT_OBJ(!ap->varp()->isIfaceRef(), ap, "Variable alias of interface");
+        UASSERT_OBJ(!bp->varp()->isIfaceRef(), bp, "Variable alias of interface");
+        ap = getAlias(ap);
+        bp = getAlias(bp);
+        if (ap == bp) return;
+        const bool aWins = [&]() {
+            const AstVar* const aVarp = ap->varp();
+            const AstVar* const bVarp = bp->varp();
+            // A primary IO is accessed directly by the user of the model, so must survive
+            UASSERT_OBJ(!aVarp->isPrimaryIO() || !bVarp->isPrimaryIO(), ap,
+                        "Alias of two primary IOs");
+            if (bVarp->isPrimaryIO()) return false;
+            if (aVarp->isPrimaryIO()) return true;
+            // A forced or public variable must keep its own storage. If both are, either works.
+            if (aVarp->isForced() != bVarp->isForced()) return aVarp->isForced();
+            if (aVarp->isSigPublic() != bVarp->isSigPublic()) return aVarp->isSigPublic();
+            // Otherwise prefer an output port in the lower scope. This enables better V3Combine
+            // due to having fewer upward hierarchical references (which prevent combining).
+            if (aVarp->direction() != VDirection::OUTPUT) return false;
+            // Is 'ap' strictly below 'bp' in the hierarchy
+            for (const AstScope* scopep = ap->scopep()->aboveScopep(); scopep;
+                 scopep = scopep->aboveScopep()) {
+                if (scopep == bp->scopep()) return true;
+            }
+            return false;
+        }();
+        if (aWins) {
+            bp->user2p(ap);
+        } else {
+            ap->user2p(bp);
+        }
     }
 
     // VISITORS
@@ -2769,7 +2808,7 @@ private:
             }
             UASSERT_OBJ(vscp, nodep, "VarScope unset");
             if (aliasVscp) {
-                setAliasVarScope(aliasVscp, vscp);
+                setVarAlias(aliasVscp, vscp);
             } else {
                 aliasVscp = vscp;
             }
@@ -2839,7 +2878,7 @@ private:
         AstVarScope* const lhsVscp = VN_CAST(lhsSymp->nodep(), VarScope);
         AstVarScope* const rhsVscp = VN_CAST(rhsSymp->nodep(), VarScope);
         UASSERT_OBJ(lhsVscp && rhsVscp, nodep, "Interface alias missing variable scope");
-        setAliasVarScope(lhsVscp, rhsVscp);
+        setIfaceAlias(lhsVscp, rhsVscp);
         // We have stored the link, we don't need these any more
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
     }
@@ -3508,6 +3547,37 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                                       << " in: " << inlinedDots);
         UINFO(9, indent() << "findInlinedDotsSym " << dotSymp
                           << " search start due to inlinedDots=" << inlinedDots);
+        return dotSymp;
+    }
+    VSymEnt* findDottedRefSymp(AstNode* nodep, VSymEnt* lookupSymp, const string& dotted,
+                               string& baddot, VSymEnt*& okSymp, bool* modportp = nullptr) {
+        // Return scope to search for a relinked hierarchical reference
+        // (AstVarXRef or AstEnumItemRef), or nullptr after error if not found
+        // If modportp is given, set true when the reference went through a modport
+        if (modportp) *modportp = false;
+        VSymEnt* dotSymp = m_statep->findDotted(nodep->fileline(), lookupSymp, dotted, baddot,
+                                                okSymp, true);  // Maybe nullptr
+        if (!dotSymp) {
+            nodep->v3error(
+                "Can't find definition of "
+                << (!baddot.empty() ? AstNode::prettyNameQ(baddot) : nodep->prettyNameQ()) << '\n'
+                << nodep->warnContextPrimary());
+            return nullptr;
+        }
+        if (const AstVar* const varp = VN_CAST(dotSymp->nodep(), Var)) {
+            if (const AstIfaceRefDType* const ifaceRefp
+                = VN_CAST(varp->childDTypep(), IfaceRefDType)) {
+                if (ifaceRefp->modportp()) {
+                    dotSymp = m_statep->getNodeSym(ifaceRefp->modportp());
+                    if (modportp) *modportp = true;
+                } else {
+                    dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
+                }
+            }
+        } else if (const AstModportClockingRef* const clockingRefp
+                   = VN_CAST(dotSymp->nodep(), ModportClockingRef)) {
+            dotSymp = m_statep->getNodeSym(clockingRefp->clockingp());
+        }
         return dotSymp;
     }
 
@@ -4731,8 +4801,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 }
             } else if (AstEnumItem* const valuep = VN_CAST(foundp->nodep(), EnumItem)) {
                 if (allowVar) {
-                    AstNode* const newp
+                    AstEnumItemRef* const refp
                         = new AstEnumItemRef{nodep->fileline(), valuep, foundp->classOrPackagep()};
+                    AstNode* newp = refp;
+                    // Hierarchical reference, relinked after V3Param as the referenced
+                    // module may be specialized, similar to AstVarXRef
+                    refp->dotted(m_ds.m_dotText);
+                    refp->containsGenBlock(m_ds.m_genBlk);
+                    if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
+                        UINFO(9, indent() << "deferring until post-V3Param: " << refp);
+                        newp = new AstUnlinkedRef{nodep->fileline(), refp, refp->name(),
+                                                  m_ds.m_unlinkedScopep->unlinkFrBack()};
+                        m_ds.m_unlinkedScopep = nullptr;
+                        m_ds.m_unresolvedCell = false;
+                    }
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     ok = true;
@@ -5008,7 +5090,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         AstVarScope* vscp = nodep->varScopep();
         if (vscp && vscp->user2p() != vscp && m_replaceWithAlias) {
-            vscp = LinkDotScopeVisitor::getAliasVarScopep(vscp);
+            vscp = LinkDotScopeVisitor::getAlias(vscp);
             nodep->varp(vscp->varp());
             nodep->varScopep(vscp);
             updateVarUse(nodep->varp());
@@ -5028,38 +5110,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
             UINFO(9, "Dead module for " << nodep);
             nodep->varp(nullptr);
         } else {
+            VSymEnt* lookupSymp = m_curSymp;  // Start search at current scope
+            if (nodep->inlinedDots() != "") {  // Correct for current post-inlined scope
+                lookupSymp = findInlinedDotsSym(nodep, nodep->inlinedDots());
+            }
             string baddot;
             VSymEnt* okSymp;
-            VSymEnt* dotSymp = m_curSymp;  // Start search at current scope
-            if (nodep->inlinedDots() != "") {  // Correct for current post-inlined scope
-                dotSymp = findInlinedDotsSym(nodep, nodep->inlinedDots());
-            }
-            dotSymp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->dotted(), baddot,
-                                           okSymp, true);  // Maybe nullptr
-            if (!dotSymp) {
-                nodep->v3error(
-                    "Can't find definition of "
-                    << (!baddot.empty() ? AstNode::prettyNameQ(baddot) : nodep->prettyNameQ())
-                    << '\n'
-                    << nodep->warnContextPrimary());
-                return;
-            }
-
-            bool modport = false;
-            if (const AstVar* const varp = VN_CAST(dotSymp->nodep(), Var)) {
-                if (const AstIfaceRefDType* const ifaceRefp
-                    = VN_CAST(varp->childDTypep(), IfaceRefDType)) {
-                    if (ifaceRefp->modportp()) {
-                        dotSymp = m_statep->getNodeSym(ifaceRefp->modportp());
-                        modport = true;
-                    } else {
-                        dotSymp = m_statep->getNodeSym(ifaceRefp->ifacep());
-                    }
-                }
-            } else if (const AstModportClockingRef* const clockingRefp
-                       = VN_CAST(dotSymp->nodep(), ModportClockingRef)) {
-                dotSymp = m_statep->getNodeSym(clockingRefp->clockingp());
-            }
+            bool modport;
+            VSymEnt* const dotSymp
+                = findDottedRefSymp(nodep, lookupSymp, nodep->dotted(), baddot, okSymp, &modport);
+            if (!dotSymp) return;
 
             if (!m_statep->forScopeCreation()) {
                 VSymEnt* foundp = nullptr;
@@ -5123,7 +5183,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                    << okSymp->cellErrorScopes(nodep));
                 } else {
                     if (vscp->user2p() && m_replaceWithAlias) {
-                        vscp = LinkDotScopeVisitor::getAliasVarScopep(vscp);
+                        vscp = LinkDotScopeVisitor::getAlias(vscp);
                     }
                     // Convert the VarXRef to a VarRef, so we don't need
                     // later optimizations to deal with VarXRef.
@@ -5157,7 +5217,27 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // EnumItemRefs are created by the first pass, but V3Param may regenerate due to
         // a parameterized class/module, so we shouldn't get can't find errors.
         // No checkNoDot; created and iterated from a parseRef
+        if (nodep->user3SetOnce()) return;
         LINKDOT_VISIT_START();
+        if (m_statep->forParamed() && !nodep->dotted().empty() && m_modSymp) {
+            // Hierarchical reference, relink as V3Param may have specialized the module
+            string baddot;
+            VSymEnt* okSymp = nullptr;
+            VSymEnt* const dotSymp
+                = findDottedRefSymp(nodep, m_curSymp, nodep->dotted(), baddot, okSymp);
+            if (!dotSymp) return;
+            VSymEnt* const foundp
+                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, true);
+            AstEnumItem* const itemp = foundp ? VN_CAST(foundp->nodep(), EnumItem) : nullptr;
+            if (!itemp) {
+                nodep->v3error("Enum item " << nodep->prettyNameQ() << " not found in "
+                                            << AstNode::prettyNameQ(nodep->dotted()) << '\n'
+                                            << nodep->warnContextPrimary());
+                return;
+            }
+            nodep->itemp(itemp);
+            UINFO(9, indent() << " relinked " << nodep);
+        }
         if (!nodep->itemp()) {
             UINFO(9, indent() << "linkEnumRef se" << cvtToHex(m_curSymp) << "  n=" << nodep);
             UASSERT_OBJ(m_curSymp, nodep, "nullptr lookup symbol table");
@@ -5234,7 +5314,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
         iterateChildren(nodep);
-        AstVarScope* aliasp = LinkDotScopeVisitor::getAliasVarScopep(nodep);
+        AstVarScope* aliasp = LinkDotScopeVisitor::getAlias(nodep);
         if (aliasp && aliasp != nodep && !nodep->varp()->isIfaceRef()) {
             // Aliased variable might still be references from outside,
             // eg through the VPI, and is traced, so we need the value to propagate.
@@ -5244,9 +5324,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 new AstVarRef{nodep->fileline(), aliasp, VAccess::READ}};
             assignp->user2(true);
             nodep->scopep()->addBlocksp(new AstAlways{assignp});
-            // Propagate attributes of the replaced variable,
+            // Propagate attributes and lint state of the replaced variable,
             // because all references to it are replaced with references to the alias variable
             aliasp->varp()->propagateAttrFrom(nodep->varp());
+            aliasp->varp()->fileline()->modifyStateInherit(nodep->varp()->fileline());
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
@@ -5550,6 +5631,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (m_ds.m_unresolvedClass) {
             UASSERT_OBJ(m_ds.m_dotPos != DP_SCOPE && m_ds.m_dotPos != DP_FIRST, nodep,
                         "Object of unresolved class on scope position in dotted reference");
+            // The index does not depend on the class, and V3Param must see its class references
+            symIterateNull(nodep->bitp(), m_curSymp);
+            symIterateNull(nodep->attrp(), m_curSymp);
             return;
         }
         if (m_ds.m_dotPos == DP_SCOPE
