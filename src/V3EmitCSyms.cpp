@@ -1121,7 +1121,7 @@ void EmitCSyms::emitSymHdr() {
         puts("\n// SCOPE NAMES\n");
         for (const auto& itpair : m_scopeNames) {
             const ScopeData& sd = itpair.second;
-            putns(sd.m_nodep, "VerilatedScope* " + protect("__Vscopep_" + sd.m_symName) + ";\n");
+            putns(sd.m_nodep, "::VerilatedScope* " + protect("__Vscopep_" + sd.m_symName) + ";\n");
         }
     }
 
