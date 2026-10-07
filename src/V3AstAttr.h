@@ -904,7 +904,8 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_SIZED_RANGE_W,           "sizedRangeW",            false,  "rr") \
     macro(COVERGROUP_SIZED_SAMPLE,            "sizedSample",            false,  "rrr") \
     macro(COVERGROUP_SIZED_SAMPLE_W,          "sizedSampleW",           false,  "rrr") \
-    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrr") \
+    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrrr") \
+    macro(COVERGROUP_TYPE_WEIGHT,             "typeWeight",             false,  "r") \
     macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   "r") \
     macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   "r") \
     macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  "") \

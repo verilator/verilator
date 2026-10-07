@@ -2286,7 +2286,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstPowSU* nodep) override { handlePow(nodep); }
     void visit(AstPowUS* nodep) override { handlePow(nodep); }
     // SMT-LIB2 shift operations (bvshl/bvlshr/bvashr) require both operands
-    // to have the same bitvector width. Zero-extend the RHS if narrower.
+    // to have the same bitvector width. Extend the narrower operand, then
+    // truncate the result if the value was widened. Never truncate the shift
+    // amount, as large shifts must still shift out all of the original bits.
     void handleShift(AstNodeBiop* nodep) {
         if (editFormat(nodep)) return;
         const int lhsWidth = nodep->lhsp()->width();
@@ -2294,10 +2296,34 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (rhsWidth < lhsWidth) {
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-            const bool rhsDependent = rhsp->user1();
             AstExtend* const extendp = new AstExtend{fl, rhsp, lhsWidth};
-            extendp->user1(rhsDependent);
+            // Always visit the wrapper: a rand MemberSel can have user1 unset until its
+            // own visitor translates it. Copying that flag would format the entire
+            // extension from the pre-randomize value. Non-rand children are still
+            // formatted as constants by their own visitors.
+            extendp->user1(true);
             nodep->rhsp(extendp);
+        } else if (rhsWidth > lhsWidth) {
+            FileLine* const fl = nodep->fileline();
+            AstNodeDType* const dtypep = nodep->dtypep();
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const extendp
+                = VN_IS(nodep, ShiftRS)
+                      ? static_cast<AstNodeExpr*>(new AstExtendS{fl, lhsp, rhsWidth})
+                      : static_cast<AstNodeExpr*>(new AstExtend{fl, lhsp, rhsWidth});
+            // Likewise, visit the extension instead of prematurely formatting rand
+            // member selections as constants.
+            extendp->user1(true);
+            nodep->lhsp(extendp);
+            nodep->dtypeSetLogicSized(rhsWidth, dtypep->numeric());
+            VNRelinker relinker;
+            nodep->unlinkFrBack(&relinker);
+            AstSel* const selp = new AstSel{fl, nodep, 0, lhsWidth};
+            selp->dtypep(dtypep);
+            selp->user1(nodep->user1());
+            relinker.relink(selp);
+            iterate(selp);
+            return;
         }
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
     }

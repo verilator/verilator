@@ -32,8 +32,8 @@
 #include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
+#include "V3SharedTmps.h"
 #include "V3Stats.h"
-#include "V3UniqueNames.h"
 
 #include <tuple>
 
@@ -431,19 +431,20 @@ class TaskVisitor final : public VNVisitor {
 
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
-    V3UniqueNames m_initArrayTmpNames;  // For generating unique temporary variable names for
-                                        // arguments being AstInitArray
     AstNodeModule* m_modp = nullptr;  // Current module
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_inSensesp = false;  // Are we under a senitem?
     bool m_inNew = false;  // Are we under a constructor?
-    int m_modNCalls = 0;  // Incrementing func # for making symbols
+    // Variables created by createVarScope, shared by instances
+    V3SharedTmps m_funcTmps{"__Vfunc", VVarType::BLOCKTEMP};  // For function calls
+    V3SharedTmps m_taskTmps{"__Vtask", VVarType::BLOCKTEMP};  // For task calls
+    V3SharedTmps m_initArrayTmps{"__VinitArrayTemp", VVarType::BLOCKTEMP};  // For InitArray args
+    V3SharedTmps m_forceTmps{"__Vforcefuncout", VVarType::VAR};  // For calls in force statements
     int m_unconVarNum = 0;  // Unique bad connection variable
 
     // STATE - across all visitors
-    V3UniqueNames m_forceTmpNames;  // For generating unique force-RHS helper names
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
     VDouble0 m_statInlines;  // Statistic tracking
     VDouble0 m_statHierDpisWithCosts;  // Statistic tracking
@@ -475,7 +476,9 @@ class TaskVisitor final : public VNVisitor {
         VL_DO_DANGLING(refp->deleteTree(), refp);
         return vscp;
     }
-    AstVarScope* createVarScope(AstVar* invarp, const string& name) {
+    // Create variable for 'invarp' of the call 'refp', named after the called task and 'suffix'
+    AstVarScope* createVarScope(const AstNodeFTaskRef* refp, AstVar* invarp,
+                                const std::string& suffix) {
         if (invarp->isParam() && VN_IS(invarp->valuep(), InitArray)) {
             return constPoolTable(invarp);
         } else {
@@ -483,14 +486,15 @@ class TaskVisitor final : public VNVisitor {
             // It shouldn't matter, as they are only local variables.
             // We choose to do it under whichever called this function, which results
             // in more cache locality.
-            AstVar* const newvarp
-                = new AstVar{invarp->fileline(), VVarType::BLOCKTEMP, name, invarp};
+            // Share the variable with the other scopes of the module, so the same calls in
+            // instances use the same variables
+            V3SharedTmps& tmps = VN_IS(refp, FuncRef) ? m_funcTmps : m_taskTmps;
+            AstVarScope* const newvscp = tmps.make(invarp->fileline(), m_scopep, invarp->dtypep(),
+                                                   refp->taskp()->shortName() + suffix);
+            AstVar* const newvarp = newvscp->varp();
             newvarp->funcLocal(false);
             newvarp->propagateAttrFrom(invarp);
             newvarp->isInternal(true);
-            m_modp->addStmtsp(newvarp);
-            AstVarScope* const newvscp = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
-            m_scopep->addVarsp(newvscp);
             return newvscp;
         }
     }
@@ -577,7 +581,7 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    void connectPort(AstVar* portp, AstArg* argp, const string& namePrefix, AstNode* beginp,
+    void connectPort(const AstNodeFTaskRef* refp, AstVar* portp, AstArg* argp, AstNode* beginp,
                      bool inlineTask) {
         AstNodeExpr* pinp = argp->exprp();
         if (inlineTask) {
@@ -645,7 +649,7 @@ class TaskVisitor final : public VNVisitor {
                 // UINFOTREE(9, pinp, "", "pinrsize-");
 
                 AstVarScope* const newvscp
-                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                    = createVarScope(refp, portp, "__" + portp->shortName());
                 portp->user2p(newvscp);
                 if (!inlineTask) {
                     pinp->replaceWith(
@@ -667,7 +671,7 @@ class TaskVisitor final : public VNVisitor {
                 // Even if it's referencing a varref, we still make a temporary
                 // Else task(x,x,x) might produce incorrect results
                 AstVarScope* const newvscp
-                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                    = createVarScope(refp, portp, "__" + portp->shortName());
                 portp->user2p(newvscp);
                 if (!inlineTask) {
                     pinp->replaceWith(new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE});
@@ -679,7 +683,7 @@ class TaskVisitor final : public VNVisitor {
             } else if (inlineTask && portp->isNonOutput()) {
                 // Make input variable
                 AstVarScope* const newvscp
-                    = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                    = createVarScope(refp, portp, "__" + portp->shortName());
                 portp->user2p(newvscp);
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, false);
                 // Put assignment in FRONT of all other statements
@@ -701,8 +705,7 @@ class TaskVisitor final : public VNVisitor {
         return false;
     }
 
-    AstNode* createInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
-                                AstVarScope* outvscp) {
+    AstNode* createInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstNode* const newbodysp
@@ -719,7 +722,7 @@ class TaskVisitor final : public VNVisitor {
             for (const auto& itr : tconnects) {
                 AstVar* const portp = itr.first;
                 AstArg* const argp = itr.second;
-                connectPort(portp, argp, namePrefix, beginp, true);
+                connectPort(refp, portp, argp, beginp, true);
             }
         }
         UASSERT_OBJ(!refp->argsp(), refp, "Arg wasn't removed by above loop");
@@ -732,7 +735,7 @@ class TaskVisitor final : public VNVisitor {
                     if (!portp->user2p()) {
                         // Move it to a new localized variable
                         AstVarScope* const localVscp
-                            = createVarScope(portp, namePrefix + "__" + portp->shortName());
+                            = createVarScope(refp, portp, "__" + portp->shortName());
                         portp->user2p(localVscp);
                         if (portp->needsCReset() && portp->lifetime().isAutomatic()
                             && !portp->valuep()) {
@@ -762,8 +765,7 @@ class TaskVisitor final : public VNVisitor {
         return beginp;
     }
 
-    AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, const string& namePrefix,
-                                   AstVarScope* outvscp, AstCNew*& cnewpr) {
+    AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp, AstCNew*& cnewpr) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstCFunc* const cfuncp = m_statep->ftaskCFuncp(refp->taskp());
@@ -800,7 +802,7 @@ class TaskVisitor final : public VNVisitor {
             for (const auto& itr : tconnects) {
                 AstVar* const portp = itr.first;
                 AstArg* const argp = itr.second;
-                connectPort(portp, argp, namePrefix, beginp, false);
+                connectPort(refp, portp, argp, beginp, false);
             }
         }
         // First argument is symbol table, then output if a function
@@ -1268,12 +1270,7 @@ class TaskVisitor final : public VNVisitor {
         if (!dpiExportTriggerp) {
             // Create the global DPI export trigger flag the first time we encounter a DPI export.
             // This flag is set any time a DPI export is invoked, and cleared at the end of eval.
-            FileLine* const fl = m_topScopep->fileline();
-            const string name{"__Vdpi_export_trigger"};
-            AstVar* const varp = new AstVar{fl, VVarType::VAR, name, VFlagBitPacked{}, 1};
-            m_topScopep->scopep()->modp()->addStmtsp(varp);
-            dpiExportTriggerp = new AstVarScope{fl, m_topScopep->scopep(), varp};
-            m_topScopep->scopep()->addVarsp(dpiExportTriggerp);
+            dpiExportTriggerp = m_topScopep->createTemp("__Vdpi_export_trigger", 1);
             netlistp->dpiExportTriggerp(dpiExportTriggerp);
         }
         return dpiExportTriggerp;
@@ -1576,18 +1573,15 @@ class TaskVisitor final : public VNVisitor {
             if (!arrayp) continue;
 
             FileLine* const flp = arrayp->fileline();
-            const std::string tempName = m_initArrayTmpNames.get(argp);
-            AstVar* const substp = new AstVar{flp, VVarType::VAR, tempName, arrayp->dtypep()};
-            substp->funcLocal(true);
-            AstVarScope* const substvscp = createVarScope(substp, tempName);
+            AstVarScope* const substvscp = m_initArrayTmps.make(flp, m_scopep, arrayp->dtypep());
+            substvscp->varp()->isInternal(true);
 
             AstAssign* const assignp
                 = new AstAssign{flp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::WRITE},
                                 arrayp->unlinkFrBack()};
 
             AstExprStmt* const exprstmtp = new AstExprStmt{
-                flp, substp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::READ}};
-            exprstmtp->stmtsp()->addNext(assignp);
+                flp, assignp, new AstVarRef{arrayp->fileline(), substvscp, VAccess::READ}};
             argp->exprp(exprstmtp);
         }
     }
@@ -1605,9 +1599,7 @@ class TaskVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_modp);
-        VL_RESTORER(m_modNCalls);
         m_modp = nodep;
-        m_modNCalls = 0;
         iterateChildren(nodep);
         UASSERT_OBJ(!m_insStmtp, nodep, "Didn't finish out last statement");
     }
@@ -1656,8 +1648,6 @@ class TaskVisitor final : public VNVisitor {
         UINFO(4, " FTask REF   " << nodep);
         UINFOTREE(9, nodep, "", "inlfunc");
         UASSERT_OBJ(m_scopep, nodep, "func ref not under scope");
-        const string namePrefix = ((VN_IS(nodep, FuncRef) ? "__Vfunc_" : "__Vtask_")
-                                   + nodep->taskp()->shortName() + "__" + cvtToStr(m_modNCalls++));
         // Create output variable
         AstVarScope* outvscp = nullptr;
         if (nodep->taskp()->isFunction()) {
@@ -1679,7 +1669,7 @@ class TaskVisitor final : public VNVisitor {
                 }
             }
             // Otherwise create a new variable for the result
-            if (!outvscp) outvscp = createVarScope(fvarp, namePrefix + "__Vfuncout");
+            if (!outvscp) outvscp = createVarScope(nodep, fvarp, "__Vfuncout");
         }
         // Create cloned statements
         AstNode* beginp;
@@ -1691,9 +1681,9 @@ class TaskVisitor final : public VNVisitor {
         if (m_statep->ftaskNoInline(nodep->taskp()) || virtualIfaceCall) {
             processArgs(nodep);
             // This may share VarScope's with a public task, if any.  Yuk.
-            beginp = createNonInlinedFTask(nodep, namePrefix, outvscp, cnewp /*ref*/);
+            beginp = createNonInlinedFTask(nodep, outvscp, cnewp /*ref*/);
         } else {
-            beginp = createInlinedFTask(nodep, namePrefix, outvscp);
+            beginp = createInlinedFTask(nodep, outvscp);
             ++m_statInlines;
         }
 
@@ -1857,16 +1847,10 @@ class TaskVisitor final : public VNVisitor {
         nodep->rhsp()->foreach([&refs](AstNodeFTaskRef* refp) { refs.push_back(refp); });
         for (AstNodeFTaskRef* const refp : refs) {
 
-            // Create the temporary variable and its scope
-            // Replicate the logic from V3Task, every function call gets
-            // a unique temp variable
-            AstVar* const interVarp = new AstVar{
-                nodep->fileline(), VVarType::VAR,
-                refp->name() + "__Vforcefuncout" + m_forceTmpNames.get(nodep), refp->dtypep()};
-            UASSERT_OBJ(m_modp->stmtsp(), m_modp, "Module should have statements in it");
-            m_modp->stmtsp()->addHereThisAsNext(interVarp);
-            AstVarScope* const interVscp = new AstVarScope{refp->fileline(), m_scopep, interVarp};
-            m_scopep->addVarsp(interVscp);
+            // Create the temporary variable and its scope. Every function call gets its own
+            // variable in each scope, which is shared with the same call in other instances.
+            AstVarScope* const interVscp
+                = m_forceTmps.make(refp->fileline(), m_scopep, refp->dtypep(), refp->name());
 
             // Recompute the helper in a combo block so any inlined function body stays
             // inside schedulable logic rather than spilling statements at module scope.
@@ -1914,8 +1898,7 @@ class TaskVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     TaskVisitor(AstNetlist* nodep, TaskStateVisitor* statep)
-        : m_statep{statep}
-        , m_initArrayTmpNames{"__VInitArrayTemp"} {
+        : m_statep{statep} {
         iterate(nodep);
     }
     ~TaskVisitor() {

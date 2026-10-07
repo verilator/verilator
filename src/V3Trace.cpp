@@ -599,7 +599,7 @@ class TraceVisitor final : public VNVisitor {
         ++m_statSettersSlow;
         if (!m_actAllFuncp) {
             FileLine* const flp = m_topScopep->fileline();
-            AstCFunc* const funcp = new AstCFunc{flp, "__Vm_traceActivitySetAll", m_topScopep};
+            AstCFunc* const funcp = new AstCFunc{flp, "__VtraceActivitySetAll", m_topScopep};
             funcp->slow(true);
             funcp->isStatic(false);
             funcp->isLoose(true);
@@ -630,12 +630,7 @@ class TraceVisitor final : public VNVisitor {
             = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};
         AstNodeDType* const newArrDtp = new AstUnpackArrayDType{flp, newScalarDtp, newArange};
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
-        AstVar* const newvarp
-            = new AstVar{flp, VVarType::MODULETEMP, "__Vm_traceActivity", newArrDtp};
-        m_topModp->addStmtsp(newvarp);
-        AstVarScope* const newvscp = new AstVarScope{flp, m_topScopep, newvarp};
-        m_topScopep->addVarsp(newvscp);
-        m_activityVscp = newvscp;
+        m_activityVscp = v3Global.rootp()->topScopep()->createTemp("__VtraceActivity", newArrDtp);
 
         // Insert activity setters
         for (const V3GraphVertex& vtx : m_graph.vertices()) {

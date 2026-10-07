@@ -362,7 +362,13 @@ public:
 
     int state() const { return m_state; }
     void state(int s);
+    // IEEE 1800-2023 9.7: killing a completed process still terminates its live
+    // descendants, but leaves the process state unchanged
     void disable() {
+        if (completed()) {
+            disableFork();
+            return;
+        }
         state(KILLED);
         disableFork();
         m_forkSyncOnKillp = nullptr;
