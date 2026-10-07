@@ -145,17 +145,23 @@ static const AstConst* decomposeTrigger(const AstNodeExpr* termp, AstVarScope*& 
 }
 
 // Returns the condition under which the graph should execute in parallel, or nullptr to always
-// execute it in parallel. Passes that only trigger nearly no logic run sequentially on the
-// calling thread instead, as dispatching them costs more than they do. Passes that trigger more
-// logic always run in parallel, as running them sequentially can lose more to moving data
-// between cores than it saves. 'domainCosts' is in first emitted order, which keeps the output
-// deterministic.
+// execute it in parallel. Passes that are nearly empty run sequentially on the calling thread
+// instead, as dispatching them costs more than they do. A sequential pass tests every trigger
+// condition in the graph, which costs 'testCost', and runs the logic of the triggers that fired.
+// A pass is nearly empty when, for each fired trigger, 'testCost' plus the logic of that trigger
+// costs less than --threads-serial-cost. The logic of triggers firing together is not added up.
+// 'domainCosts' is in first emitted order, which keeps the output deterministic.
 static AstNodeExpr*
-parallelCondition(const std::vector<std::pair<AstSenTree*, uint64_t>>& domainCosts) {
-    // Logic cost a trigger must select for its passes to run in parallel (V3InstrCount units).
-    // Zero disables the serial fallback.
-    const uint64_t lightCost = v3Global.opt.threadsSerialCost();
-    if (!lightCost) return nullptr;
+parallelCondition(const std::vector<std::pair<AstSenTree*, uint64_t>>& domainCosts,
+                  const uint64_t testCost) {
+    // Passes costing at least this run in parallel (V3InstrCount units). Zero disables the
+    // serial fallback.
+    const uint64_t serialCost = v3Global.opt.threadsSerialCost();
+    // With many trigger conditions, testing them alone costs too much to run any pass serially
+    UINFO(5, "Trigger test cost " << testCost);
+    if (testCost >= serialCost) return nullptr;
+    // Logic cost a trigger must select for its passes to run in parallel
+    const uint64_t lightCost = serialCost - testCost;
     FileLine* const flp = v3Global.rootp()->fileline();
     std::vector<TriggerWordCosts> words;
     std::map<std::pair<const AstVarScope*, int>, size_t> wordIndex;
@@ -368,6 +374,8 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
     // Estimated cost of the logic in each sensitivity domain, in first emitted order
     std::vector<std::pair<AstSenTree*, uint64_t>> domainCosts;
     std::unordered_map<const AstSenTree*, size_t> domainIndex;
+    // Estimated cost of testing all trigger conditions in the graph
+    uint64_t testCost = 0;
     // Sort LogicMTask vertices by their serial IDs.
     struct MTaskVxIdLessThan final {
         bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {
@@ -416,8 +424,13 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
             VL_DO_DANGLING(mVtxp->unlinkDelete(&moveGraph), mVtxp);
         }
 
-        // Create the ExecMTask
-        ExecMTask* const execMTaskp = new ExecMTask{execGraphp, scopep, emitter.getStmts()};
+        // Create the ExecMTask, accounting for the cost of testing its trigger conditions
+        AstNodeStmt* const stmtsp = emitter.getStmts();
+        for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+            AstIf* const ifp = VN_AS(nodep, If);
+            testCost += ifp->instrCount() + V3InstrCount::count(ifp->condp(), false);
+        }
+        ExecMTask* const execMTaskp = new ExecMTask{execGraphp, scopep, stmtsp};
         if (!v3Global.opt.hierBlocks().empty()) {
             execMTaskp->threads(DpiThreadsVisitor::apply(execMTaskp));
         }
@@ -444,7 +457,7 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
     }
 
     // Record when parallel execution is worthwhile
-    if (AstNodeExpr* const condp = parallelCondition(domainCosts)) {
+    if (AstNodeExpr* const condp = parallelCondition(domainCosts, testCost)) {
         execGraphp->parallelCondp(condp);
     }
 

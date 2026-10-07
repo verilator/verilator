@@ -353,7 +353,7 @@ private:
     bool        m_stopFail = true;  // main switch: --stop-fail
     int         m_threads = 1;      // main switch: --threads
     int         m_threadsMaxMTasks = 0;  // main switch: --threads-max-mtasks
-    int         m_threadsSerialCost = 10000;  // main switch: --threads-serial-cost
+    int         m_threadsSerialCost = 12500;  // main switch: --threads-serial-cost
     VTimescale  m_timeDefaultPrec;  // main switch: --timescale
     VTimescale  m_timeDefaultUnit;  // main switch: --timescale
     VTimescale  m_timeOverridePrec;  // main switch: --timescale-override
