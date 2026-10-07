@@ -50,6 +50,32 @@ class MixedShift #(
         actual = prot << amount;
         `checkh(actual, '0);
 
+        randomize_result = randomize() with {
+          rand_amount == amount;
+          (prot << rand_amount) == '0;
+        };
+        `checkh(randomize_result, 1);
+        actual = prot << rand_amount;
+        `checkh(actual, '0);
+
+        // Nested shifts revisit the result-width selection inside another shift.
+        randomize_result = randomize() with {
+          rand_amount == amount;
+          ((prot >> rand_amount) >> amount) == '0;
+        };
+        `checkh(randomize_result, 1);
+        actual = (prot >> rand_amount) >> amount;
+        `checkh(actual, '0);
+
+        // Also exercise a compound shift amount rather than a bare member.
+        randomize_result = randomize() with {
+          rand_amount == amount;
+          (prot << (rand_amount | amount)) == '0;
+        };
+        `checkh(randomize_result, 1);
+        actual = prot << (rand_amount | amount);
+        `checkh(actual, '0);
+
         expected_signed = WIDTH'(-37);
         expected_signed = expected_signed >>> amount;
         randomize_result = randomize() with {
@@ -58,6 +84,15 @@ class MixedShift #(
         };
         `checkh(randomize_result, 1);
         actual = signed_prot >>> amount;
+        `checkh(actual, expected_signed);
+
+        randomize_result = randomize() with {
+          rand_amount == amount;
+          signed_prot == WIDTH'(-37);
+          (signed_prot >>> rand_amount) == expected_signed;
+        };
+        `checkh(randomize_result, 1);
+        actual = signed_prot >>> rand_amount;
         `checkh(actual, expected_signed);
       end
     end

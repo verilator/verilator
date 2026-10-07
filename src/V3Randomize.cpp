@@ -2297,7 +2297,10 @@ class ConstraintExprVisitor final : public VNVisitor {
             FileLine* const fl = nodep->fileline();
             AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
             AstExtend* const extendp = new AstExtend{fl, rhsp, lhsWidth};
-            // Keep the extension symbolic so child member selections are processed.
+            // Always visit the wrapper: a rand MemberSel can have user1 unset until its
+            // own visitor translates it. Copying that flag would format the entire
+            // extension from the pre-randomize value. Non-rand children are still
+            // formatted as constants by their own visitors.
             extendp->user1(true);
             nodep->rhsp(extendp);
         } else if (rhsWidth > lhsWidth) {
@@ -2308,7 +2311,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = VN_IS(nodep, ShiftRS)
                       ? static_cast<AstNodeExpr*>(new AstExtendS{fl, lhsp, rhsWidth})
                       : static_cast<AstNodeExpr*>(new AstExtend{fl, lhsp, rhsWidth});
-            // Keep the extension symbolic so child member selections are processed.
+            // Likewise, visit the extension instead of prematurely formatting rand
+            // member selections as constants.
             extendp->user1(true);
             nodep->lhsp(extendp);
             nodep->dtypeSetLogicSized(rhsWidth, dtypep->numeric());
