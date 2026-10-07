@@ -37,6 +37,30 @@ static void markContinuousLhs(AstNode* const nodep) {
     });
 }
 
+// Flip the access of the driven leaves of a pin connection expression so it
+// can be used on the LHS of an assignment. Only the selected nodes are
+// flipped (the array/struct being written); index and select operands stay
+// read-only. Anything that is not a plain select chain over a variable cannot
+// be driven through a port connection.
+static bool markConnectionLhs(AstNodeExpr* const nodep) {
+    if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+        if (!refp->access().isReadOnly()) return false;
+        refp->access(VAccess::WRITE);
+        return true;
+    }
+    if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+        return markConnectionLhs(selp->fromp());
+    }
+    if (AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
+        return markConnectionLhs(selp->fromp());
+    }
+    if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
+        return markConnectionLhs(concatp->lhsp()) && markConnectionLhs(concatp->rhsp());
+    }
+    if (VN_IS(nodep, Const)) return true;  // Unconnected part of the pattern
+    return false;
+}
+
 //######################################################################
 // Inst state, as a visitor of each AstNode
 
@@ -290,10 +314,38 @@ public:
             } else {
                 // V3 width should have range/extended to make the widths correct
                 newvarp->isContinuously(true);
-                assignp = new AstAssignW{pinp->fileline(),
-                                         new AstVarRef{pinp->fileline(), newvarp, VAccess::WRITE},
-                                         pinexprp};
-                pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
+                if (!pinVarp->icoMaybeWritten()) {
+                    assignp = new AstAssignW{
+                        pinp->fileline(), new AstVarRef{pinp->fileline(), newvarp, VAccess::WRITE},
+                        pinexprp};
+                    pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
+                } else {
+                    // Input port with a complex connection, driven from inside the
+                    // cell (e.g. by a clocking block output). The drive must flow
+                    // out through the connection, so wire the temp back to the
+                    // connection leaves instead of feeding the temp from them.
+                    // Only plain select chains over variables can be driven this
+                    // way; anything else keeps the input-side wiring (the drive
+                    // is then lost, as before, rather than miscompiled).
+                    if (markConnectionLhs(pinexprp)) {
+                        pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
+                        markContinuousLhs(pinexprp);
+                        AstNodeExpr* rhsp
+                            = new AstVarRef{pinp->fileline(), newvarp, VAccess::READ};
+                        if (VN_IS(pinexprp, NodeStream)) {
+                            assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsp};
+                            V3Width::streamAssignLowerEdit(assignp);
+                        } else {
+                            rhsp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                            assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsp};
+                        }
+                    } else {
+                        assignp = new AstAssignW{
+                            pinp->fileline(),
+                            new AstVarRef{pinp->fileline(), newvarp, VAccess::WRITE}, pinexprp};
+                        pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
+                    }
+                }
             }
             if (assignp) cellp->addNextHere(new AstAlways{assignp});
             // UINFOTREE(1, pinp, "", "out");
