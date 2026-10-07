@@ -71,6 +71,7 @@
 #include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
 #include "V3SenTree.h"
+#include "V3SharedTmps.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
@@ -479,7 +480,8 @@ class TimingControlVisitor final : public VNVisitor {
     // STATE
     // Current context
     AstNetlist* const m_netlistp;  // Root node
-    AstScope* const m_scopeTopp = m_netlistp->topScopep()->scopep();  // Scope at the top
+    AstTopScope* const m_topScopep = m_netlistp->topScopep();  // The AstTopScope
+    AstScope* const m_scopeTopp = m_topScopep->scopep();  // Scope at the top
     AstClass* m_classp = nullptr;  // Current class
     AstScope* m_scopep = nullptr;  // Current scope
     AstActive* m_activep = nullptr;  // Current active
@@ -494,14 +496,14 @@ class TimingControlVisitor final : public VNVisitor {
 
     // Unique names
     V3UniqueNames m_dlyforkNames{"__Vdlyfork"};  // Names for temp AssignW vars
-    V3UniqueNames m_contAsgnTmpNames{"__VassignWtmp"};  // Names for temp AssignW vars
-    V3UniqueNames m_contAsgnGenNames{"__VassignWgen"};  // Continuous assign generation name
-                                                        // generator
     V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
     V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
     V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
     V3UniqueNames m_dynTrigNames{"__VdynTrigger"};  // Dynamic trigger name generator
+    // Module level temporary variables, shared by instances
+    V3SharedTmps m_assignWTmps{"__VassignWtmp", VVarType::MODULETEMP};  // Delayed AssignW values
+    V3SharedTmps m_assignWGens{"__VassignWgen", VVarType::MODULETEMP};  // AssignW generations
 
     // DTypes
     AstBasicDType* m_forkDtp = nullptr;  // Fork variable type
@@ -573,7 +575,7 @@ class TimingControlVisitor final : public VNVisitor {
         auto* const dlySchedDtp = new AstBasicDType{
             m_scopeTopp->fileline(), VBasicDTypeKwd::DELAY_SCHEDULER, VSigning::UNSIGNED};
         m_netlistp->typeTablep()->addTypesp(dlySchedDtp);
-        m_delaySchedp = m_scopeTopp->createTemp("__VdlySched", dlySchedDtp);
+        m_delaySchedp = m_topScopep->createTemp("__VdlySched", dlySchedDtp);
         // Delay scheduler has to be accessible from top
         m_delaySchedp->varp()->sigPublic(true);
         m_netlistp->delaySchedulerp(m_delaySchedp->varp());
@@ -599,7 +601,7 @@ class TimingControlVisitor final : public VNVisitor {
             = new AstBasicDType{m_scopeTopp->fileline(), VBasicDTypeKwd::DYNAMIC_TRIGGER_SCHEDULER,
                                 VSigning::UNSIGNED};
         m_netlistp->typeTablep()->addTypesp(dynSchedDtp);
-        m_dynamicSchedp = m_scopeTopp->createTemp("__VdynSched", dynSchedDtp);
+        m_dynamicSchedp = m_topScopep->createTemp("__VdynSched", dynSchedDtp);
         return m_dynamicSchedp;
     }
     // Creates the dynamic trigger sentree
@@ -621,7 +623,7 @@ class TimingControlVisitor final : public VNVisitor {
             auto* const nbaEventDtp = new AstBasicDType{m_scopeTopp->fileline(),
                                                         VBasicDTypeKwd::EVENT, VSigning::UNSIGNED};
             m_netlistp->typeTablep()->addTypesp(nbaEventDtp);
-            m_netlistp->nbaEventp(m_scopeTopp->createTemp("__VnbaEvent", nbaEventDtp));
+            m_netlistp->nbaEventp(m_topScopep->createTemp("__VnbaEvent", nbaEventDtp));
             v3Global.setHasEvents();
         }
         return new AstEventControl{
@@ -634,7 +636,7 @@ class TimingControlVisitor final : public VNVisitor {
     // Creates the variable that, if set, causes the NBA event to be triggered
     AstAssign* createNbaEventTriggerAssignment(FileLine* flp) {
         if (!m_netlistp->nbaEventTriggerp()) {
-            m_netlistp->nbaEventTriggerp(m_scopeTopp->createTemp("__VnbaEventTrigger", 1));
+            m_netlistp->nbaEventTriggerp(m_topScopep->createTemp("__VnbaEventTrigger", 1));
         }
         return new AstAssign{flp,
                              new AstVarRef{flp, m_netlistp->nbaEventTriggerp(), VAccess::WRITE},
@@ -660,7 +662,7 @@ class TimingControlVisitor final : public VNVisitor {
                 m_netlistp->typeTablep()->addTypesp(m_trigSchedDtp);
             }
             AstVarScope* const trigSchedp
-                = m_scopeTopp->createTemp(m_trigSchedNames.get(sentreep), m_trigSchedDtp);
+                = m_topScopep->createTemp(m_trigSchedNames.get(sentreep), m_trigSchedDtp);
             sentreep->user1p(trigSchedp);
         }
         return VN_AS(sentreep->user1p(), VarScope);
@@ -743,7 +745,7 @@ class TimingControlVisitor final : public VNVisitor {
             varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
             m_scopep->modp()->addStmtsp(varp);
         }
-        AstVarScope* vscp = new AstVarScope{flp, m_scopep, varp};
+        AstVarScope* const vscp = new AstVarScope{flp, m_scopep, varp};
         m_scopep->addVarsp(vscp);
         return vscp;
     }
@@ -1318,8 +1320,7 @@ class TimingControlVisitor final : public VNVisitor {
         if (netDelayp) {
             if (nodep->timingControlp()) {
                 // If this assignment has a delay, create another one to handle the net delay
-                AstVarScope* const newvscp
-                    = createTemp(flp, m_contAsgnTmpNames.get(nodep), nodep->dtypep());
+                AstVarScope* const newvscp = m_assignWTmps.make(flp, m_scopep, nodep->dtypep());
                 AstAssignW* assignp = new AstAssignW{
                     nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                     new AstVarRef{flp, newvscp, VAccess::READ}, netDelayp->cloneTree(false)};
@@ -1379,7 +1380,7 @@ class TimingControlVisitor final : public VNVisitor {
         UASSERT_OBJ(postAssignp, alwaysp, "Post-assign should be there from visit(AstFork)");
         // Increment generation and copy it to a local
         AstVarScope* const generationVarp
-            = createTemp(flp, m_contAsgnGenNames.get(alwaysp), alwaysp->findUInt64DType());
+            = m_assignWGens.make(flp, m_scopep, alwaysp->findUInt64DType());
         AstVarScope* const genLocalVarp
             = createTemp(flp, generationVarp->varp()->name() + "__local",
                          alwaysp->findUInt64DType(), preAssignp);
@@ -1398,7 +1399,7 @@ class TimingControlVisitor final : public VNVisitor {
                       postAssignp->unlinkFrBack()});
         // Save scheduled RHS value before delay
         AstVarScope* const tmpVarp
-            = createTemp(flp, m_contAsgnTmpNames.get(alwaysp), preAssignp->rhsp()->dtypep());
+            = m_assignWTmps.make(flp, m_scopep, preAssignp->rhsp()->dtypep());
         AstVarRef* const tmpAssignRhsp = VN_AS(preAssignp->lhsp(), VarRef)->cloneTree(false);
         tmpAssignRhsp->access(VAccess::WRITE);
         preAssignp->addNextHere(

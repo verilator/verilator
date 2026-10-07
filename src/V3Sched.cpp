@@ -144,8 +144,7 @@ void createEvalRegion(
     // nothing to evaluate, and what we create below reduces to a no-op function.
 
     const std::string tag = eval.tag();
-    const std::string varPrefix = "__V" + tag;
-    AstScope* const scopeTopp = netlistp->topScopep()->scopep();
+    AstTopScope* const topScopep = netlistp->topScopep();
     FileLine* const flp = netlistp->fileline();
 
     // Populate the trigger dump entry point function
@@ -183,7 +182,7 @@ void createEvalRegion(
         funcp->addStmtsp(phasePrepp);
 
         // The execute flag
-        AstVarScope* const executeFlagp = scopeTopp->createTemp(varPrefix + "Execute", 1);
+        AstVarScope* const executeFlagp = topScopep->createTemp("__V" + tag + "Execute", 1);
         executeFlagp->varp()->noReset(true);
 
         // If there is work in this region, execute it if any triggers fired
@@ -1116,7 +1115,7 @@ void schedule(AstNetlist* netlistp) {
         UASSERT_OBJ(trigAccDTypep->left() >= 0, trigAccp,
                     "Expected that trigger vector and accumulator has no negative indexes");
         FileLine* const flp = trigAccp->fileline();
-        AstVarScope* const vscp = netlistp->topScopep()->scopep()->createTemp("__Vi", 32);
+        AstVarScope* const vscp = netlistp->topScopep()->createTemp("__Vi", 32);
         AstLoop* const loopp = new AstLoop{flp};
         loopp->addStmtsp(
             new AstAssign{flp,

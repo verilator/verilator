@@ -39,6 +39,7 @@
 #include "V3Case.h"
 
 #include "V3ConstPool.h"
+#include "V3SharedTmps.h"
 #include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -175,7 +176,11 @@ class CaseVisitor final : public VNVisitor {
         VDouble0 provenAssertions;  // Assertions proven to hold
     } m_stats;
     const AstNode* m_alwaysp = nullptr;  // Always in which case is located
-    size_t m_nTmps = 0;  // Sequence numbers for temporary variables
+    // Temporary variables, shared by instances
+    // For table lookup results
+    V3SharedTmps m_tableOutTmps{"__VcaseTableOut", VVarType::MODULETEMP};
+    // For decoder results
+    V3SharedTmps m_decoderOutTmps{"__VcaseDecoderOut", VVarType::MODULETEMP};
     AstScope* m_scopep = nullptr;  // Current scope
 
     // STATE - per AstCase. Update by 'analyzeCase', treat 'const' otherwise
@@ -622,8 +627,7 @@ class CaseVisitor final : public VNVisitor {
         if (canBeDecoder) analyzeDecoderPattern(nodep);
     }
 
-    AstNodeStmt* connectDecoderOutputs(AstCase* nodep, AstNodeExpr* exprp,
-                                       const char* tmpPrefixp) {
+    AstNodeStmt* connectDecoderOutputs(AstCase* nodep, AstNodeExpr* exprp, V3SharedTmps& tmps) {
         FileLine* const flp = nodep->fileline();
 
         // If there is only one LHS, just use the result
@@ -643,8 +647,7 @@ class CaseVisitor final : public VNVisitor {
         }
 
         // There are multiple LHSs, store the lookup result in a temporary
-        const std::string name = tmpPrefixp + std::to_string(m_nTmps++);
-        AstVarScope* const tempVscp = m_scopep->createTemp(name, m_caseDecoderEntryWidth);
+        AstVarScope* const tempVscp = tmps.make(flp, m_scopep, m_caseDecoderEntryWidth);
         AstNodeExpr* const tempWritep = new AstVarRef{flp, tempVscp, VAccess::WRITE};
         AstNodeStmt* const resultp = new AstAssign{flp, tempWritep, exprp};
 
@@ -756,7 +759,7 @@ class CaseVisitor final : public VNVisitor {
             = new AstSel{flp, tableRefp, tableLsbp, static_cast<int>(m_caseDecoderEntryWidth)};
 
         // Connect outputs
-        return connectDecoderOutputs(nodep, tableSelp, "__VcaseTableOut");
+        return connectDecoderOutputs(nodep, tableSelp, m_tableOutTmps);
     }
 
     AstNodeStmt* convertCaseDecoder(AstCase* nodep) {
@@ -863,7 +866,7 @@ class CaseVisitor final : public VNVisitor {
         AstMatchMasked* const indexp = new AstMatchMasked{flp, caseExprp, matchRefp};
         AstNodeExpr* const entryp = new AstArraySel{flp, tableRefp, indexp};
 
-        return connectDecoderOutputs(nodep, entryp, "__VcaseDecoderOut");
+        return connectDecoderOutputs(nodep, entryp, m_decoderOutTmps);
     }
 
     // TODO: should return AstNodeStmt after #6280

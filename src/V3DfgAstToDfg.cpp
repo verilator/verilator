@@ -322,7 +322,7 @@ public:
 };
 
 std::unique_ptr<DfgGraph> V3DfgPasses::astToDfg(AstNetlist& netlist, V3DfgContext& ctx) {
-    DfgGraph* const dfgp = new DfgGraph{"netlist"};
+    DfgGraph* const dfgp = new DfgGraph{ctx, "netlist"};
     AstToDfgVisitor::apply(*dfgp, netlist, ctx.m_ast2DfgContext);
     return std::unique_ptr<DfgGraph>{dfgp};
 }
