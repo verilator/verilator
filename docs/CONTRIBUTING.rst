@@ -46,6 +46,14 @@ Did you write a patch that fixes a Verilator bug?
   Internals Documentation
   <https://github.com/verilator/verilator/blob/master/docs/internals.rst>`__.
 
+- To run the project's formatters automatically before each commit, install
+  `prek <https://prek.j178.dev/installation/>`__ or `pre-commit
+  <https://pre-commit.com/#installation>`__. After configuring the source
+  tree with ``./configure``, run ``prek install`` or ``pre-commit install``
+  from the repository root to enable the hooks. To run the formatters on
+  all files manually, use ``prek run --all-files`` or ``pre-commit run
+  --all-files``.
+
 - Verilator uses GitHub Actions to provide continuous integration. You may
   want to enable Actions on your GitHub branch to ensure your changes keep
   the tests passing.
