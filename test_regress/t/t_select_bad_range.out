@@ -28,48 +28,44 @@
                                                : ... note: In instance 't'
    40 |     packed_sel = packed_i[2+2];
       |                          ^
-%Warning-SELRANGE: t/t_select_bad_range.v:41:26: Selection index out of range: 4294967296 outside 3:0
+%Warning-SELRANGE: t/t_select_bad_range.v:41:28: Selection index out of range: 4 outside 3:0
                                                : ... note: In instance 't'
-   41 |     packed_sel = packed_i[64'd4294967296];
-      |                          ^
+   41 |     packed_slice = packed_i[4:4];
+      |                            ^
 %Warning-SELRANGE: t/t_select_bad_range.v:42:28: Selection index out of range: 4 outside 3:0
                                                : ... note: In instance 't'
-   42 |     packed_slice = packed_i[4:4];
+   42 |     packed_slice = packed_i[4+:1];
       |                            ^
 %Warning-SELRANGE: t/t_select_bad_range.v:43:28: Selection index out of range: 4 outside 3:0
                                                : ... note: In instance 't'
-   43 |     packed_slice = packed_i[4+:1];
+   43 |     packed_slice = packed_i[4-:1];
       |                            ^
-%Warning-SELRANGE: t/t_select_bad_range.v:44:28: Selection index out of range: 4 outside 3:0
+%Warning-SELRANGE: t/t_select_bad_range.v:44:29: Selection index out of range: 4:1 outside 3:0
                                                : ... note: In instance 't'
-   44 |     packed_slice = packed_i[4-:1];
-      |                            ^
-%Warning-SELRANGE: t/t_select_bad_range.v:45:29: Selection index out of range: 4:1 outside 3:0
-                                               : ... note: In instance 't'
-   45 |     packed_slice4 = packed_i[4:1];
+   44 |     packed_slice4 = packed_i[4:1];
       |                             ^
-%Warning-SELRANGE: t/t_select_bad_range.v:52:31: Selection index out of range: 4 outside 3:0
+%Warning-SELRANGE: t/t_select_bad_range.v:51:31: Selection index out of range: 4 outside 3:0
                                                : ... note: In instance 't'
-   52 |     packed_bit = packed_single[4];
+   51 |     packed_bit = packed_single[4];
       |                               ^
-%Warning-SELRANGE: t/t_select_bad_range.v:53:31: Selection index out of range: -1 outside 3:0
+%Warning-SELRANGE: t/t_select_bad_range.v:52:31: Selection index out of range: -1 outside 3:0
                                                : ... note: In instance 't'
-   53 |     packed_bit = packed_single[-1];
+   52 |     packed_bit = packed_single[-1];
       |                               ^
-%Warning-SELRANGE: t/t_select_bad_range.v:56:33: Selection index out of range: 1 outside 5:2
+%Warning-SELRANGE: t/t_select_bad_range.v:55:33: Selection index out of range: 1 outside 5:2
                                                : ... note: In instance 't'
-   56 |     packed_sel7 = packed_nonzero[1];
+   55 |     packed_sel7 = packed_nonzero[1];
       |                                 ^
-%Warning-SELRANGE: t/t_select_bad_range.v:57:33: Selection index out of range: 6 outside 5:2
+%Warning-SELRANGE: t/t_select_bad_range.v:56:33: Selection index out of range: 6 outside 5:2
                                                : ... note: In instance 't'
-   57 |     packed_sel7 = packed_nonzero[6];
+   56 |     packed_sel7 = packed_nonzero[6];
       |                                 ^
-%Warning-SELRANGE: t/t_select_bad_range.v:61:35: Selection index out of range: 0 outside 3:1
+%Warning-SELRANGE: t/t_select_bad_range.v:60:35: Selection index out of range: 0 outside 3:1
                                                : ... note: In instance 't'
-   61 |     packed_sel7 = packed_ascending[0];
+   60 |     packed_sel7 = packed_ascending[0];
       |                                   ^
-%Warning-SELRANGE: t/t_select_bad_range.v:62:35: Selection index out of range: 4 outside 3:1
+%Warning-SELRANGE: t/t_select_bad_range.v:61:35: Selection index out of range: 4 outside 3:1
                                                : ... note: In instance 't'
-   62 |     packed_sel7 = packed_ascending[4];
+   61 |     packed_sel7 = packed_ascending[4];
       |                                   ^
 %Error: Exiting due to

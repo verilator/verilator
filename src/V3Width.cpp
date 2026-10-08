@@ -1524,36 +1524,24 @@ class WidthVisitor final : public VNVisitor {
         return !m_doGenerate && !(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))
                && VN_IS(nodep->fromp()->dtypep()->skipRefp(), PackArrayDType);
     }
-    static bool packedSelectIndexValue(const AstConst* nodep, int64_t& value) {
-        if (!nodep || nodep->num().isFourState() || nodep->num().width() > 64) return false;
-        if (nodep->dtypep()->isSigned()) {
-            value = nodep->num().toSQuad();
-        } else {
-            // Keep the unsigned sign bit when comparing against the signed 64-bit limit.
-            V3Number maxSigned{&nodep->num(), 65};
-            maxSigned.setQuad(std::numeric_limits<int64_t>::max());
-            V3Number unsignedValue{&nodep->num(), 65};
-            unsignedValue.opAssign(nodep->num());
-            V3Number greater{&nodep->num(), 1};
-            greater.opGt(unsignedValue, maxSigned);
-            if (greater.isNeqZero()) return false;
-            value = static_cast<int64_t>(nodep->num().toUQuad());
-        }
+    static bool packedSelectIndexValue(const AstConst* nodep, int& value) {
+        if (!nodep || nodep->num().isFourState()) return false;
+        value = nodep->dtypep()->isSigned() && nodep->num().width() < 32
+                    ? nodep->num().toSInt()
+                    : static_cast<int>(nodep->num().toUInt());
         return true;
     }
-    bool warnPackedSelectRange(AstNodePreSel* nodep, int64_t first, int64_t last) const {
+    bool warnPackedSelectRange(AstNodePreSel* nodep, const VNumRange& selected) const {
         const AstPackArrayDType* const dtypep
             = VN_AS(nodep->fromp()->dtypep()->skipRefp(), PackArrayDType);
         const VNumRange range = dtypep->declRange();
-        // VNumRange stores int bounds, while a select index may be 64 bits wide.
-        const int64_t low = std::min(first, last);
-        const int64_t high = std::max(first, last);
-        if (low < range.lo() || high > range.hi()) {
-            nodep->v3warn(SELRANGE,
-                          "Selection index out of range: "
-                              << (low == high ? std::to_string(low)
-                                              : std::to_string(high) + ":" + std::to_string(low))
-                              << " outside " << range.hi() << ":" << range.lo());
+        if (selected.lo() < range.lo() || selected.hi() > range.hi()) {
+            nodep->v3warn(SELRANGE, "Selection index out of range: "
+                                        << (selected.lo() == selected.hi()
+                                                ? std::to_string(selected.lo())
+                                                : std::to_string(selected.hi()) + ":"
+                                                      + std::to_string(selected.lo()))
+                                        << " outside " << range.hi() << ":" << range.lo());
             return true;
         }
         return false;
@@ -1569,30 +1557,30 @@ class WidthVisitor final : public VNVisitor {
         // Try folding every index after its width check. Dynamic references stay
         // nonconstant; V3WidthSel lowers the resulting expression as usual.
         V3Const::constifyParamsNoWarnEdit(packedSelectIndexp(nodep));
-        int64_t first;
+        int first = 0;
         bool valid = packedSelectIndexValue(VN_CAST(packedSelectIndexp(nodep), Const), first);
-        int64_t last = valid ? first : 0;
+        int last = first;
         if (AstSelExtract* const extractp = VN_CAST(nodep, SelExtract)) {
             V3Const::constifyParamsNoWarnEdit(extractp->rightp());
             valid = packedSelectIndexValue(VN_CAST(extractp->rightp(), Const), last) && valid;
         } else if (AstSelPlus* const plusp = VN_CAST(nodep, SelPlus)) {
             V3Const::constifyParamsNoWarnEdit(plusp->widthp());
-            int64_t width;
+            int width = 0;
             valid = packedSelectIndexValue(VN_CAST(plusp->widthp(), Const), width) && valid;
             if (valid) {
-                valid = width > 0 && first <= std::numeric_limits<int64_t>::max() - width + 1;
+                valid = width > 0 && first <= std::numeric_limits<int>::max() - (width - 1);
                 if (valid) last = first + width - 1;
             }
         } else if (AstSelMinus* const minusp = VN_CAST(nodep, SelMinus)) {
             V3Const::constifyParamsNoWarnEdit(minusp->widthp());
-            int64_t width;
+            int width = 0;
             valid = packedSelectIndexValue(VN_CAST(minusp->widthp(), Const), width) && valid;
             if (valid) {
-                valid = width > 0 && first >= std::numeric_limits<int64_t>::min() + width - 1;
+                valid = width > 0 && first >= std::numeric_limits<int>::min() + (width - 1);
                 if (valid) last = first - width + 1;
             }
         }
-        return valid && warnPackedSelectRange(nodep, first, last);
+        return valid && warnPackedSelectRange(nodep, VNumRange{first, last});
     }
     AstNode* widthPackedSelect(AstNodePreSel* nodep) const {
         const bool warned = checkPackedSelectRange(nodep);
