@@ -1,11 +1,71 @@
-%Warning-SELRANGE: t/t_select_bad_range.v:17:13: Selection index out of range: 44:44 outside 43:0
+%Warning-SELRANGE: t/t_select_bad_range.v:31:13: Selection index out of range: 44:44 outside 43:0
                                                : ... note: In instance 't'
-   17 |     sel = mi[44];
+   31 |     sel = mi[44];
       |             ^
                    ... For warning description see https://verilator.org/warn/SELRANGE?v=latest
                    ... Use "/* verilator lint_off SELRANGE */" and lint_on around source to disable this message.
-%Warning-SELRANGE: t/t_select_bad_range.v:18:14: Selection index out of range: 44:41 outside 43:0
+%Warning-SELRANGE: t/t_select_bad_range.v:32:14: Selection index out of range: 44:41 outside 43:0
                                                : ... note: In instance 't'
-   18 |     sel2 = mi[44:41];
+   32 |     sel2 = mi[44:41];
       |              ^
+%Warning-SELRANGE: t/t_select_bad_range.v:36:26: Selection index out of range: 4 outside 3:0
+                                               : ... note: In instance 't'
+   36 |     packed_sel = packed_i[4];
+      |                          ^
+%Warning-SELRANGE: t/t_select_bad_range.v:37:26: Selection index out of range: -1 outside 3:0
+                                               : ... note: In instance 't'
+   37 |     packed_sel = packed_i[-1];
+      |                          ^
+%Warning-SELRANGE: t/t_select_bad_range.v:38:32: Selection index out of range: 4 outside 3:0
+                                               : ... note: In instance 't'
+   38 |     packed_sel = packed_typedef[4];
+      |                                ^
+%Warning-SELRANGE: t/t_select_bad_range.v:39:26: Selection index out of range: 4 outside 3:0
+                                               : ... note: In instance 't'
+   39 |     packed_sel = packed_i[PACKED_BAD_INDEX];
+      |                          ^
+%Warning-SELRANGE: t/t_select_bad_range.v:40:26: Selection index out of range: 4 outside 3:0
+                                               : ... note: In instance 't'
+   40 |     packed_sel = packed_i[2+2];
+      |                          ^
+%Warning-SELRANGE: t/t_select_bad_range.v:41:28: Selection index out of range: 4 outside 3:0
+                                               : ... note: In instance 't'
+   41 |     packed_slice = packed_i[4:4];
+      |                            ^
+%Warning-SELRANGE: t/t_select_bad_range.v:42:28: Selection index out of range: 4 outside 3:0
+                                               : ... note: In instance 't'
+   42 |     packed_slice = packed_i[4+:1];
+      |                            ^
+%Warning-SELRANGE: t/t_select_bad_range.v:43:28: Selection index out of range: 4 outside 3:0
+                                               : ... note: In instance 't'
+   43 |     packed_slice = packed_i[4-:1];
+      |                            ^
+%Warning-SELRANGE: t/t_select_bad_range.v:44:29: Selection index out of range: 4:1 outside 3:0
+                                               : ... note: In instance 't'
+   44 |     packed_slice4 = packed_i[4:1];
+      |                             ^
+%Warning-SELRANGE: t/t_select_bad_range.v:51:31: Selection index out of range: 4 outside 3:0
+                                               : ... note: In instance 't'
+   51 |     packed_bit = packed_single[4];
+      |                               ^
+%Warning-SELRANGE: t/t_select_bad_range.v:52:31: Selection index out of range: -1 outside 3:0
+                                               : ... note: In instance 't'
+   52 |     packed_bit = packed_single[-1];
+      |                               ^
+%Warning-SELRANGE: t/t_select_bad_range.v:55:33: Selection index out of range: 1 outside 5:2
+                                               : ... note: In instance 't'
+   55 |     packed_sel7 = packed_nonzero[1];
+      |                                 ^
+%Warning-SELRANGE: t/t_select_bad_range.v:56:33: Selection index out of range: 6 outside 5:2
+                                               : ... note: In instance 't'
+   56 |     packed_sel7 = packed_nonzero[6];
+      |                                 ^
+%Warning-SELRANGE: t/t_select_bad_range.v:60:35: Selection index out of range: 0 outside 3:1
+                                               : ... note: In instance 't'
+   60 |     packed_sel7 = packed_ascending[0];
+      |                                   ^
+%Warning-SELRANGE: t/t_select_bad_range.v:61:35: Selection index out of range: 4 outside 3:1
+                                               : ... note: In instance 't'
+   61 |     packed_sel7 = packed_ascending[4];
+      |                                   ^
 %Error: Exiting due to
