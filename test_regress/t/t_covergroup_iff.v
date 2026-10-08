@@ -8,6 +8,8 @@
 // Test iff (enable) guard: sampling is gated by the enable condition.
 // Covers iff on explicit value bins, default bin, array bins,
 // simple 2-step transition, and 3-step transition.
+// A false guard disables sampling entirely: the coverpoint expression is not
+// evaluated, and transitions skip the sample.
 // Also covers coverpoint iff propagation into crosses and cross-level iff guards.
 //
 // Also covers compound iff expressions (&&, ||, unary !, bit/part-select,
@@ -19,6 +21,7 @@
 
 // verilog_format: off
 `define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
@@ -51,6 +54,12 @@ endclass
 module t;
   logic enable;
   int value;
+  int calls;  // Evaluations of guarded_expression()
+
+  function automatic int guarded_expression(int result);
+    ++calls;
+    return result;
+  endfunction
 
   // Signals for the compound-iff covergroups below
   logic m_is_read;
@@ -93,6 +102,17 @@ module t;
   // iff on 3-step transition
   covergroup cg_trans3_iff;
     cp: coverpoint value iff (enable) {bins t3 = (1 => 2 => 3);}
+  endgroup
+
+  // A false iff guard: the coverpoint expression is not evaluated
+  covergroup cg_eval_iff;
+    cp: coverpoint guarded_expression(1) iff (0) {bins one = {1};}
+  endgroup
+
+  // A sample with a false iff guard neither starts, breaks, nor ends a transition
+  covergroup cg_trans_gap_iff;
+    cp_t2: coverpoint guarded_expression(value) iff (enable) {bins t2 = (1 => 2);}
+    cp_t3: coverpoint value iff (enable) {bins t3 = (1 => 2 => 3);}
   endgroup
 
   // --- compound iff expressions ---
@@ -178,6 +198,8 @@ module t;
   cg_array_iff cg3 = new;
   cg_trans2_iff cg4 = new;
   cg_trans3_iff cg5 = new;
+  cg_eval_iff eval_iff = new;
+  cg_trans_gap_iff trans_gap = new;
   cg_and ca = new;
   cg_or co = new;
   cg_part cpp = new;
@@ -301,7 +323,7 @@ module t;
     cg5.sample();  // mid-sequence, enable=1
     enable = 0;
     value = 3;
-    cg5.sample();  // iff is disabled at step 3 - incomplete sequence is discarded
+    cg5.sample();  // iff is disabled at step 3 - the sample is ignored, so no hit
     `checkr(cg5.get_inst_coverage(), 0.0);
     enable = 1;
     value = 1;
@@ -311,6 +333,41 @@ module t;
     value = 3;
     cg5.sample();  // (1=>2=>3) fully hit with enable=1
     `checkr(cg5.get_inst_coverage(), 100.0);
+
+    // eval_iff: the guarded coverpoint expression must not be evaluated
+    calls = 0;
+    eval_iff.sample();
+    `checkd(calls, 0);
+    `checkr(eval_iff.get_inst_coverage(), 0.0);
+
+    // trans_gap: samples with enable=0 are ignored by both transitions
+    enable = 1;
+    value = 5;
+    trans_gap.sample();
+    enable = 0;
+    value = 1;
+    trans_gap.sample();  // does not start (1=>2)
+    enable = 1;
+    value = 2;
+    trans_gap.sample();
+    `checkr(trans_gap.get_inst_coverage(), 0.0);
+    value = 1;
+    trans_gap.sample();
+    enable = 0;
+    value = 5;
+    trans_gap.sample();  // breaks neither (1=>2) nor (1=>2=>3)
+    enable = 1;
+    value = 2;
+    trans_gap.sample();  // (1=>2) hit
+    `checkr(trans_gap.get_inst_coverage(), 50.0);
+    enable = 0;
+    value = 3;
+    trans_gap.sample();  // does not end (1=>2=>3)
+    `checkr(trans_gap.get_inst_coverage(), 50.0);
+    enable = 1;
+    trans_gap.sample();  // (1=>2=>3) hit
+    `checkr(trans_gap.get_inst_coverage(), 100.0);
+    `checkd(calls, 5);  // Evaluated once per sample with enable=1
 
     // --- compound iff expressions ---
     // cg_and: guard true -> {0,1}=2'b01 sampled into b01

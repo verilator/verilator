@@ -262,6 +262,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     AstVar* m_embeddedVarp = nullptr;  // Embedded covergroup member of m_enclosingClassp, if any
     std::string m_covergroupName;  // Current covergroup's type name, see covergroupTypeName()
     AstFunc* m_sampleFuncp = nullptr;  // Current sample() function
+    AstIf* m_cpGuardp = nullptr;  // Current coverpoint's iff guard, holding its sampling
     AstFunc* m_constructorp = nullptr;  // Current constructor
     std::vector<AstCoverpoint*> m_coverpoints;  // Coverpoints in current covergroup
     std::map<std::string, AstCoverpoint*> m_coverpointMap;  // Name -> coverpoint for fast lookup
@@ -903,13 +904,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return new AstVarRef{fl, iffVarp, VAccess::READ};
     }
 
-    AstNodeExpr* applyCoverpointIffCondition(AstCoverpoint* coverpointp, FileLine* fl,
-                                             AstNodeExpr* condp) {
-        if (AstNodeExpr* const iffp = coverpointp->iffp()) {
-            UINFO(6, "      Adding iff condition");
-            condp = new AstAnd{fl, iffp->cloneTree(false), condp};
+    // Add a statement sampling the current coverpoint to sample(), under its iff guard if any
+    void addSampleStmt(AstNode* stmtp) {
+        if (m_cpGuardp) {
+            m_cpGuardp->addThensp(stmtp);
+        } else {
+            m_sampleFuncp->addStmtsp(stmtp);
         }
-        return condp;
     }
 
     // Create previous value variable for transition tracking
@@ -976,13 +977,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Create implicit automatic bins if no regular bins exist
         createImplicitAutoBins(coverpointp, exprp, autoBinMax);
 
+        // A false iff guard disables sampling of the coverpoint (IEEE 1800-2023 19.5), so
+        // neither is its expression evaluated, nor are its bins or transition state updated
+        VL_RESTORER(m_cpGuardp);
+        if (AstNodeExpr* const iffp = coverpointp->iffp()) {
+            m_cpGuardp = new AstIf{iffp->fileline(), iffp->unlinkFrBack()};
+        }
+
         AstVar* const valueVarp = new AstVar{
             coverpointp->fileline(), VVarType::BLOCKTEMP,
             "__VcpValue_" + sanitizeGeneratedName(coverpointp->name()), exprp->dtypep()};
         valueVarp->funcLocal(true);
         m_sampleFuncp->addStmtsp(valueVarp);
         exprp->unlinkFrBack();
-        m_sampleFuncp->addStmtsp(new AstAssign{
+        addSampleStmt(new AstAssign{
             coverpointp->fileline(),
             new AstVarRef{coverpointp->fileline(), valueVarp, VAccess::WRITE}, exprp});
         coverpointp->exprp(new AstVarRef{coverpointp->fileline(), valueVarp, VAccess::READ});
@@ -993,6 +1001,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // (see generateCoverpoint), but the bin hit is recorded in the runtime bin
         // rather than a bare counter.
         generateCoverpoint(coverpointp, exprp, atLeastValue);
+        // Sampling follows what generateCoverpoint added unguarded, such as clearing the hit list
+        if (m_cpGuardp) m_sampleFuncp->addStmtsp(m_cpGuardp);
     }
 
     // Build the condition under which a default bin matches: NOT(OR of all normal bins).
@@ -1740,9 +1750,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // The condition under which a bin counts a sample: condp, and the bin's iff, and for a
-    // Normal or default state bin, that the value is not excluded, and the coverpoint's iff
-    AstNodeExpr* binCondition(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp,
-                              AstNodeExpr* condp) {
+    // Normal or default state bin, that the value is not excluded
+    AstNodeExpr* binCondition(AstCoverBin* binp, AstVar* cpVarp, AstNodeExpr* condp) {
         FileLine* const fl = binp->fileline();
         if (binp->iffp()) condp = new AstLogAnd{fl, binp->iffp()->cloneTree(false), condp};
         const auto excluded = m_excludedVars.find(cpVarp);
@@ -1752,7 +1761,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             condp = new AstLogAnd{
                 fl, new AstNot{fl, new AstVarRef{fl, excluded->second, VAccess::READ}}, condp};
         }
-        return applyCoverpointIffCondition(coverpointp, fl, condp);
+        return condp;
     }
 
     void emitConvHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp,
@@ -1765,8 +1774,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                                           + coverpointp->prettyNameQ()));
         }
         UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for coverpoint");
-        m_sampleFuncp->addStmtsp(
-            new AstIf{fl, binCondition(coverpointp, binp, cpVarp, condp), actionp, nullptr});
+        addSampleStmt(new AstIf{fl, binCondition(binp, cpVarp, condp), actionp, nullptr});
     }
 
     // Emit the sample() code of sized array 'sized': count the value in its bins holding it when
@@ -1774,8 +1782,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void emitSizedSample(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp,
                          AstNodeExpr* exprp, uint32_t sized, AstVar* matchedp) {
         FileLine* const fl = binp->fileline();
-        AstNodeExpr* enabledp
-            = binCondition(coverpointp, binp, cpVarp, new AstConst{fl, AstConst::BitTrue{}});
+        AstNodeExpr* enabledp = binCondition(binp, cpVarp, new AstConst{fl, AstConst::BitTrue{}});
         UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for coverpoint");
         const bool illegal = binp->binsType() == VCoverBinsType::BINS_ILLEGAL;
         if (illegal) {
@@ -1788,8 +1795,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                              binp->findBitDType()};
             varp->funcLocal(true);
             m_sampleFuncp->addStmtsp(varp);
-            m_sampleFuncp->addStmtsp(
-                new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, enabledp});
+            addSampleStmt(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, enabledp});
             enabledp = new AstVarRef{fl, varp, VAccess::READ};
         }
         AstCMethodHard* const callp
@@ -1799,17 +1805,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                        {cnum(fl, sized), exprp->cloneTree(false), enabledp});
         callp->dtypeSetBit();
         if (illegal) {
-            m_sampleFuncp->addStmtsp(
-                new AstIf{fl, new AstLogAnd{fl, callp, enabledp->cloneTree(false)},
-                          makeIllegalBinAction(fl, "Illegal bin " + binp->prettyNameQ()
-                                                       + " hit in coverpoint "
-                                                       + coverpointp->prettyNameQ())});
+            addSampleStmt(new AstIf{fl, new AstLogAnd{fl, callp, enabledp->cloneTree(false)},
+                                    makeIllegalBinAction(fl, "Illegal bin " + binp->prettyNameQ()
+                                                                 + " hit in coverpoint "
+                                                                 + coverpointp->prettyNameQ())});
         } else if (matchedp && binp->binsType().binIsNormal()) {
-            m_sampleFuncp->addStmtsp(
+            addSampleStmt(
                 new AstAssign{fl, new AstVarRef{fl, matchedp, VAccess::WRITE},
                               new AstOr{fl, new AstVarRef{fl, matchedp, VAccess::READ}, callp}});
         } else {
-            m_sampleFuncp->addStmtsp(callp->makeStmt());
+            addSampleStmt(callp->makeStmt());
         }
     }
 
@@ -2207,7 +2212,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // Emit a transition bin's hit action into sample():
-    //   if (iff && cond) { m_cp.incrementBin/recordHit(idx); [illegal: $error; $stop] }
+    //   if (cond) { m_cp.incrementBin/recordHit(idx); [illegal: $error; $stop] }
     // Used by the transition generators so a completed sequence records into the runtime bin.
     void addConvTransHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, const ConvBinTarget& tgt,
                            AstNodeExpr* condp) {
@@ -2218,9 +2223,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 fl, "Illegal transition bin " + binp->prettyNameQ() + " hit in coverpoint "
                         + coverpointp->prettyNameQ()));
         }
-        AstNodeExpr* const guardedp = applyCoverpointIffCondition(coverpointp, fl, condp);
         UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for transition bin");
-        m_sampleFuncp->addStmtsp(new AstIf{fl, guardedp, actionp, nullptr});
+        addSampleStmt(new AstIf{fl, condp, actionp, nullptr});
     }
 
     // Route a coverpoint through a VlCoverpoint member: emit the member, its sample()
@@ -2229,11 +2233,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = coverpointp->fileline();
         const bool dynamic = m_runtimePoints.count(coverpointp);
         UINFO(4, "  Generating VlCoverpoint member: " << coverpointp->name());
-
-        if (AstNodeExpr* const iffp = coverpointp->iffp()) {
-            coverpointp->iffp(
-                captureIffToTemp(iffp, "__VcpIff_" + sanitizeGeneratedName(coverpointp->name())));
-        }
 
         // Size the hit list to the gen-time max bin overlap (1 unless cross-fed with
         // overlapping ranges), so no cross hit is ever dropped and storage is minimal.
@@ -2252,7 +2251,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         generateItemWeight(fl, cpVarp, coverpointp->optionsp());
 
         // A cross reads this coverpoint's hit list, so clear it at the start of the
-        // coverpoint's sample() contribution (before any incrementBin appends to it).
+        // coverpoint's sample() contribution (before any incrementBin appends to it), even
+        // when the iff guard disables sampling.
         if (crossFed) {
             UASSERT_OBJ(m_sampleFuncp, coverpointp, "sample() CFunc not set for clearHitList");
             m_sampleFuncp->addStmtsp(
@@ -2271,8 +2271,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                            : VCMethod::COVERGROUP_VALUE_EXCLUDED,
                            {exprp->cloneTree(false)});
             callp->dtypeSetBit();
-            m_sampleFuncp->addStmtsp(
-                new AstAssign{fl, new AstVarRef{fl, excludedp, VAccess::WRITE}, callp});
+            addSampleStmt(new AstAssign{fl, new AstVarRef{fl, excludedp, VAccess::WRITE}, callp});
             m_excludedVars.emplace(cpVarp, excludedp);
         }
 
@@ -2400,9 +2399,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                        coverpointp->findBitDType()};
             sizedMatchedp->funcLocal(true);
             m_sampleFuncp->addStmtsp(sizedMatchedp);
-            m_sampleFuncp->addStmtsp(
-                new AstAssign{fl, new AstVarRef{fl, sizedMatchedp, VAccess::WRITE},
-                              new AstConst{fl, AstConst::BitFalse{}}});
+            addSampleStmt(new AstAssign{fl, new AstVarRef{fl, sizedMatchedp, VAccess::WRITE},
+                                        new AstConst{fl, AstConst::BitFalse{}}});
         }
         for (uint32_t sized = 0; sized < sizedBins.size(); ++sized) {
             emitSizedSample(coverpointp, sizedBins[sized], cpVarp, exprp, sized, sizedMatchedp);
@@ -2431,7 +2429,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // transition matching above).
         if (coverpointHasTransition(coverpointp)) {
             AstVar* const prevVarp = VN_AS(coverpointp->user1p(), Var);
-            m_sampleFuncp->addStmtsp(
+            addSampleStmt(
                 new AstAssign{coverpointp->fileline(),
                               new AstVarRef{prevVarp->fileline(), prevVarp, VAccess::WRITE},
                               exprp->cloneTree(false)});
@@ -2519,7 +2517,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                           new AstConst{binp->fileline(), AstConst::WidthedValue{}, 8, 0}}};
         casep->addItemsp(defaultItemp);
 
-        m_sampleFuncp->addStmtsp(casep);
+        addSampleStmt(casep);
         UINFO(4, "      Successfully added multi-value transition state machine");
     }
 
@@ -2533,12 +2531,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = binp->fileline();
 
         // Build condition for current value matching expected item at this state
-        AstNodeExpr* matchCondp = buildTransitionItemCondition(items[state], exprp);
-
-        // Apply iff condition if present
-        if (AstNodeExpr* iffp = coverpointp->iffp()) {
-            matchCondp = new AstAnd{fl, iffp->cloneTree(false), matchCondp};
-        }
+        AstNodeExpr* const matchCondp = buildTransitionItemCondition(items[state], exprp);
 
         AstNodeStmt* matchActionp = nullptr;
 
@@ -2569,14 +2562,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstNodeStmt* noMatchActionp = nullptr;
         if (state > 0) {
             // Check if current value matches first item (restart condition)
-            AstNodeExpr* restartCondp = buildTransitionItemCondition(items[0], exprp);
+            AstNodeExpr* const restartCondp = buildTransitionItemCondition(items[0], exprp);
 
             UASSERT_OBJ(restartCondp, items[0],
                         "buildTransitionItemCondition returned nullptr for restart");
-            // Apply iff condition
-            if (AstNodeExpr* iffp = coverpointp->iffp()) {
-                restartCondp = new AstAnd{fl, iffp->cloneTree(false), restartCondp};
-            }
 
             // Restart to state 1
             AstNodeStmt* restartActionp
