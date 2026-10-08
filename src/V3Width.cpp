@@ -370,21 +370,21 @@ class WidthVisitor final : public VNVisitor {
     // These have different node types, as they operate differently
     // Must add to case statement below,
     // Widths: 1 bit out, lhs width == rhs width.  real if lhs|rhs real
-    void visit(AstEq* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstNeq* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstGt* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstGte* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstLt* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstLte* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstGtS* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstGteS* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstLtS* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstLteS* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstEqCase* nodep) override { visit_cmp_eq_gt(nodep, true); }
-    void visit(AstNeqCase* nodep) override { visit_cmp_eq_gt(nodep, true); }
+    void visit(AstEq* nodep) override { visit_cmp_eq_gt(nodep, true, true); }
+    void visit(AstNeq* nodep) override { visit_cmp_eq_gt(nodep, true, true); }
+    void visit(AstGt* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstGte* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstLt* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstLte* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstGtS* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstGteS* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstLtS* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstLteS* nodep) override { visit_cmp_eq_gt(nodep, true, false); }
+    void visit(AstEqCase* nodep) override { visit_cmp_eq_gt(nodep, true, true); }
+    void visit(AstNeqCase* nodep) override { visit_cmp_eq_gt(nodep, true, true); }
     // ...    These comparisons don't allow reals
-    void visit(AstEqWild* nodep) override { visit_cmp_eq_gt(nodep, false); }
-    void visit(AstNeqWild* nodep) override { visit_cmp_eq_gt(nodep, false); }
+    void visit(AstEqWild* nodep) override { visit_cmp_eq_gt(nodep, false, false); }
+    void visit(AstNeqWild* nodep) override { visit_cmp_eq_gt(nodep, false, false); }
     // ...    Real compares
     void visit(AstEqD* nodep) override { visit_cmp_real(nodep); }
     void visit(AstNeqD* nodep) override { visit_cmp_real(nodep); }
@@ -2393,7 +2393,6 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(replaceWithDVersion(nodep), nodep);
                 return;
             }
-
             checkCvtUS(nodep->lhsp(), false);
             iterateCheckSizedSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             nodep->dtypeFrom(nodep->lhsp());
@@ -4028,7 +4027,7 @@ class WidthVisitor final : public VNVisitor {
             nextip = itemp->nextp();  // iterate may cause the node to get replaced
             if (VN_IS(itemp, InsideRange)) {
                 userIterate(itemp, WidthVP{expDTypep, FINAL}.p());
-            } else if (!itemp->dtypep()->isNonPackedArray()) {
+            } else if (!itemp->dtypep()->skipRefp()->isNonPackedArray()) {
                 iterateCheck(nodep, "Inside Item", itemp, CONTEXT_DET, FINAL, expDTypep,
                              EXTEND_EXP);
             }
@@ -8770,7 +8769,7 @@ class WidthVisitor final : public VNVisitor {
         return dtypep->isAggregateType();
     }
 
-    void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok) {
+    void visit_cmp_eq_gt(AstNodeBiop* nodep, bool realok, bool nonNumericOk) {
         // CALLER: AstEq, AstGt, ..., AstLtS
         // Real allowed if and only if real_lhs set
         // See IEEE-2012 11.4.4, and 11.8.1:
@@ -8805,7 +8804,7 @@ class WidthVisitor final : public VNVisitor {
             const bool isAggrLhs = isAggregateType(nodep->lhsp());
             const bool isAggrRhs = isAggregateType(nodep->rhsp());
 
-            if ((isAggrLhs || isAggrRhs) && nodep->lhsp() && nodep->rhsp()) {
+            if ((isAggrLhs || isAggrRhs) && nonNumericOk) {
                 const AstNodeDType* const lhsDType = nodep->lhsp()->dtypep();
                 const AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
 
@@ -9754,8 +9753,9 @@ class WidthVisitor final : public VNVisitor {
         // V3AssertPre checks the actual type after property argument substitution.
         if (!checkDtp->isIntegralOrPacked()
             && !(deferUntyped && checkDtp->basicp() && checkDtp->basicp()->untyped())) {
-            parentp->v3error("Expected numeric type, but got a " << checkDtp->prettyDTypeNameQ()
-                                                                 << " data type");
+            parentp->v3error(ucfirst(parentp->prettyOperatorName())
+                             << " expects a numeric " << side << " operand, but it has data type "
+                             << checkDtp->prettyDTypeNameQ() << " (IEEE 1800-2023 11.3)");
         }
         (void)underp;  // cppcheck
     }
@@ -9834,10 +9834,10 @@ class WidthVisitor final : public VNVisitor {
                        && VN_AS(underVDTypep, BasicDType)->isCHandle())) {
             // Allow warning-free "if (handle)"
             VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
-        } else if (!underVDTypep->basicp()) {
-            parentp->v3error("Logical operator " << parentp->prettyTypeName()
-                                                 << " expects a non-complex data type on the "
-                                                 << side << ".");
+        } else if (!underVDTypep->basicp() || underVDTypep->isAggregateType()) {
+            parentp->v3error(ucfirst(parentp->prettyOperatorName())
+                             << " expects a numeric " << side << " operand, but it has data type "
+                             << underVDTypep->prettyDTypeNameQ() << " (IEEE 1800-2023 11.3)");
             underp->replaceWith(new AstConst{parentp->fileline(), AstConst::BitFalseErroring{}});
             VL_DO_DANGLING(pushDeletep(underp), underp);
         } else {
@@ -9908,6 +9908,19 @@ class WidthVisitor final : public VNVisitor {
             spliceCvtString(VN_AS(underp, NodeExpr));
             underp = userIterateSubtreeReturnEdits(oldp, WidthVP{SELF, FINAL, childStreamUse}.p());
         } else {
+            const AstNodeDType* const underDtp = underp->dtypep()->skipRefp();
+            if (determ != ASSIGN && expDTypep->skipRefp()->isIntegralOrPacked()
+                && underDtp->isAggregateType()) {
+                parentp->v3error(ucfirst(parentp->prettyOperatorName())
+                                 << " expects a numeric " << side
+                                 << " operand, but it has data type "
+                                 << underDtp->prettyDTypeNameQ() << " (IEEE 1800-2023 11.3)");
+                AstNode* const newp
+                    = new AstConst{underp->fileline(), AstConst::BitFalseErroring{}};
+                underp->replaceWith(newp);
+                VL_DO_DANGLING(pushDeletep(underp), underp);
+                underp = newp;
+            }
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
             if (expBasicp && underBasicp) {
