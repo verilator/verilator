@@ -80,11 +80,38 @@ class Counter;
   endtask
 endclass
 
+// Through handles to an interface instantiated only in a module not inlined, so that only the
+// commit refers to the interface in the top scope
+interface pin;
+  int x;
+endinterface
+
+class PinDriver;
+  virtual pin vif;
+  task put(int n);
+    vif.x <= n;
+  endtask
+endclass
+
+module pins;
+  /*verilator no_inline_module*/
+  pin p ();
+  PinDriver drv = new;
+  initial begin
+    #45;
+    drv.vif = p;
+    drv.put(7);
+    `checkd(p.x, 0);
+    #1 `checkd(p.x, 7);
+  end
+endmodule
+
 module t;
   bit clk;
   bit zero;
   always #5 clk = ~clk;
 
+  pins noinl ();
   bus a (.clk);
   bus b (.clk);
   bus fn (.clk(zero));

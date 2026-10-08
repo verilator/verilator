@@ -141,10 +141,14 @@
 //              __Vdly_Load0_0_1 = __VnbaQueue0_0_1.at(__Vdly_Index0__LHS);
 //              __Vdly_Load0_0_2 = __VnbaQueue0_0_2.at(__Vdly_Index0__LHS);
 //              __Vdly_Load0_0_2.LHS[__Vdly_Load0_0_1] = __VnbaQueue0_0_0.at(__Vdly_Index0__LHS);
-//          }
-//          ... the same for the other NBAs ("sites") of the variable
+//              if (__VnbaOrder0__LHS.last()) {
+//                  __VnbaQueue0_0_0.clear(); ...
+//              }
+//          } else if ... the same for the other NBAs ("sites") of the variable, but
+//            the last one, which needs no comparison
 //      }
-//      __VnbaQueue0_0_0.clear(); ...
+// With a single site, the commit applies its updates without comparisons, and
+// clears its queues after the loop.
 //
 // TODO: generic LHS scheme as discussed in #5092, also for other variables
 //
@@ -327,13 +331,12 @@ class DelayedVisitor final : public VNVisitor {
         bool m_queueable = true;  // All NBAs updating it can use a dynamic commit queue
         // Stuff needed for Scheme::GenericQueue
         uint32_t m_id = 0;  // Number for unique names
-        uint32_t m_nSites = 0;  // Number of NBAs using it
         AstVarScope* m_orderVscp = nullptr;  // The order of the updates (VlNBAOrder)
-        AstVarScope* m_siteVscp = nullptr;  // The site of the update the commit applies
         AstVarScope* m_indexVscp = nullptr;  // The index of its values in the queues of the site
         AstAlwaysPost* m_postp = nullptr;  // The commit
         AstLoop* m_loopp = nullptr;  // The loop of the commit applying the updates in order
-        std::vector<AstVarScope*> m_queueVscps;  // The queues of the values of all sites
+        std::vector<AstNodeStmt*> m_applyps;  // Commit statements applying updates, of each site
+        std::vector<AstNodeStmt*> m_clearps;  // Commit statements clearing queues, of each site
 
     private:
         // Combined sensitivities of all NBAs updating it
@@ -1184,8 +1187,6 @@ class DelayedVisitor final : public VNVisitor {
         dest.m_orderVscp = topScopep->createTemp("__VnbaOrder" + suffix, m_orderDTypep);
         dest.m_orderVscp->varp()->noReset(true);
         dest.m_orderVscp->varp()->setIgnorePostWrite();
-        dest.m_siteVscp = m_dlyTmps.make(flp, scopep, 32, "Site" + suffix);
-        dest.m_siteVscp->varp()->setIgnorePostWrite();
         dest.m_indexVscp = m_dlyTmps.make(flp, scopep, 32, "Index" + suffix);
         dest.m_indexVscp->varp()->setIgnorePostWrite();
         // Create the AstActive for the Post logic
@@ -1204,25 +1205,17 @@ class DelayedVisitor final : public VNVisitor {
                                  VCMethod::NBA_ORDER_NEXT};
         nextp->dtypeSetBit();
         dest.m_loopp->addStmtsp(new AstLoopTest{flp, dest.m_loopp, nextp});
-        const auto assignFromOrder = [&](AstVarScope* vscp, VCMethod method) {
-            AstCMethodHard* const callp = new AstCMethodHard{
-                flp, new AstVarRef{flp, dest.m_orderVscp, VAccess::READ}, method};
-            callp->dtypeSetUInt32();
-            dest.m_loopp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, callp});
-        };
-        assignFromOrder(dest.m_siteVscp, VCMethod::NBA_ORDER_SITE);
-        assignFromOrder(dest.m_indexVscp, VCMethod::NBA_ORDER_INDEX);
     }
     void convertSchemeGenericQueue(AstAssignDly* nodep, const NBA& nba) {
         DestInfo& dest = *nba.destp;
         FileLine* const flp = nodep->fileline();
         AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
-        const uint32_t site = dest.m_nSites++;
+        const uint32_t site = static_cast<uint32_t>(dest.m_applyps.size());
         const std::string suffix = std::to_string(dest.m_id) + "_" + std::to_string(site) + "_";
         size_t nQueues = 0;
         AstNodeStmt* enqueuesp = nullptr;  // Statements enqueueing the update, replacing the NBA
         AstNodeStmt* loadsp = nullptr;  // Statements of the commit loading values of the update
+        AstNodeStmt* clearsp = nullptr;  // Statements of the commit clearing the queues
         // Enqueue the value of the given expression, of the given type, in a new queue of the
         // site, and return the expression reading it in the commit
         const auto enqueue = [&](AstNodeExpr* valuep, AstNodeDType* dtypep) {
@@ -1232,12 +1225,15 @@ class DelayedVisitor final : public VNVisitor {
                 "__VnbaQueue" + suffix + std::to_string(nQueues++), queueDTypep);
             queueVscp->varp()->noReset(true);
             queueVscp->varp()->setIgnorePostWrite();
-            dest.m_queueVscps.push_back(queueVscp);
             AstCMethodHard* const pushp
                 = new AstCMethodHard{flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE},
                                      VCMethod::ARRAY_PUSH_BACK, valuep};
             pushp->dtypeSetVoid();
             enqueuesp = AstNode::addNext(enqueuesp, pushp->makeStmt());
+            AstCMethodHard* const clearp = new AstCMethodHard{
+                flp, new AstVarRef{flp, queueVscp, VAccess::WRITE}, VCMethod::DYN_CLEAR};
+            clearp->dtypeSetVoid();
+            clearsp = AstNode::addNext(clearsp, clearp->makeStmt());
             AstCMethodHard* const atp = new AstCMethodHard{
                 flp, new AstVarRef{flp, queueVscp, VAccess::READ}, VCMethod::ARRAY_AT,
                 new AstVarRef{flp, dest.m_indexVscp, VAccess::READ}};
@@ -1329,25 +1325,56 @@ class DelayedVisitor final : public VNVisitor {
                     flp, new AstVarRef{flp, v3Global.rootp()->nbaEventTriggerp(), VAccess::WRITE},
                     new AstConst{flp, AstConst::BitTrue{}}});
         }
-        // The commit applies the update if it is of this site
-        AstIf* const ifp
-            = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, dest.m_siteVscp, VAccess::READ},
-                                       new AstConst{flp, site}}};
-        if (loadsp) ifp->addThensp(loadsp);
-        ifp->addThensp(new AstAssign{flp, lhsp, valuep});
-        dest.m_loopp->addStmtsp(ifp);
+        // The commit applies the update by the statements of its site (NBA)
+        dest.m_applyps.push_back(
+            AstNode::addNext<AstNodeStmt, AstNodeStmt>(loadsp, new AstAssign{flp, lhsp, valuep}));
+        dest.m_clearps.push_back(clearsp);
         // Replace the NBA
         nodep->addHereThisAsNext(enqueuesp);
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void finishSchemeGenericQueue(const AstVar* varp, DestInfo& dest) {
         FileLine* const flp = varp->fileline();
-        // After the commit applied all updates, clear the queues of their values
-        for (AstVarScope* const queueVscp : dest.m_queueVscps) {
-            AstCMethodHard* const clearp = new AstCMethodHard{
-                flp, new AstVarRef{flp, queueVscp, VAccess::WRITE}, VCMethod::DYN_CLEAR};
-            clearp->dtypeSetVoid();
-            dest.m_postp->addStmtsp(clearp->makeStmt());
+        // In the loop, get the site of the update advanced to, and the index of its values
+        const auto assignFromOrder = [&](AstVarScope* vscp, VCMethod method) {
+            AstCMethodHard* const callp = new AstCMethodHard{
+                flp, new AstVarRef{flp, dest.m_orderVscp, VAccess::READ}, method};
+            callp->dtypeSetUInt32();
+            dest.m_loopp->addStmtsp(
+                new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, callp});
+        };
+        const size_t nSites = dest.m_applyps.size();
+        if (nSites == 1) {
+            // All updates are of the only site, so clear its queues after applying them
+            assignFromOrder(dest.m_indexVscp, VCMethod::NBA_ORDER_INDEX);
+            dest.m_loopp->addStmtsp(dest.m_applyps[0]);
+            dest.m_postp->addStmtsp(dest.m_clearps[0]);
+        } else {
+            // Apply the update by the statements of its site, which clear the queues of the site
+            // after its last update, instead of the commit clearing those of all sites
+            AstVarScope* const siteVscp
+                = m_dlyTmps.make(flp, v3Global.rootp()->topScopep()->scopep(), 32,
+                                 "Site" + std::to_string(dest.m_id) + "__" + varp->shortName());
+            siteVscp->varp()->setIgnorePostWrite();
+            assignFromOrder(siteVscp, VCMethod::NBA_ORDER_SITE);
+            assignFromOrder(dest.m_indexVscp, VCMethod::NBA_ORDER_INDEX);
+            for (size_t site = 0; site < nSites; ++site) {
+                AstCMethodHard* const lastp
+                    = new AstCMethodHard{flp, new AstVarRef{flp, dest.m_orderVscp, VAccess::READ},
+                                         VCMethod::NBA_ORDER_LAST};
+                lastp->dtypeSetBit();
+                dest.m_applyps[site]->addNext(new AstIf{flp, lastp, dest.m_clearps[site]});
+            }
+            // Select the statements by an 'if' chain comparing with each site, which C++
+            // compilers turn into a jump table, built from the last site, needing no comparison
+            AstNodeStmt* selectp = dest.m_applyps.back();
+            for (size_t i = 2; i <= nSites; ++i) {
+                const size_t site = nSites - i;
+                AstEq* const condp = new AstEq{flp, new AstVarRef{flp, siteVscp, VAccess::READ},
+                                               new AstConst{flp, static_cast<uint32_t>(site)}};
+                selectp = new AstIf{flp, condp, dest.m_applyps[site], selectp};
+            }
+            dest.m_loopp->addStmtsp(selectp);
         }
         // For scheduling, the commit through handles updates the variable of all instances of
         // the interface, which the handles can select (none if of a class, not scheduled)
