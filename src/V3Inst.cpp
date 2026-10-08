@@ -45,6 +45,8 @@ static void markContinuousLhs(AstNode* const nodep) {
 // connection.
 static bool markConnectionLhs(AstNodeExpr* const nodep) {
     if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+        // Note the false arm is intentionally uncovered: fresh clones start
+        // READ, so a non-read leaf cannot occur through normal elaboration.
         if (!refp->access().isReadOnly()) return false;
         refp->access(VAccess::WRITE);
         return true;
@@ -317,9 +319,9 @@ public:
                 // An input port is normally fed from the connection, but when
                 // the port is driven from inside the cell by a clocking block
                 // output, the drive must flow out through the connection
-                // instead. V3Tristate-built split pins (forTristate)
+                // V3Tristate-built split pins (forTristate)
                 // resolve separately and always keep the input-side wiring.
-                if (!pinVarp->isClockingDriven() || forTristate) {
+                if (forTristate || !pinVarp->isClockingDriven()) {
                     assignp = new AstAssignW{
                         pinp->fileline(), new AstVarRef{pinp->fileline(), newvarp, VAccess::WRITE},
                         pinexprp};
@@ -332,6 +334,9 @@ public:
                     // Only plain select chains over variables can be driven this
                     // way; anything else keeps the input-side wiring (the drive
                     // is then lost, as before, rather than miscompiled).
+                    // Note the else branch below is intentionally uncovered:
+                    // covering it would require asserting data-loss behavior
+                    // on non-invertible connections (e.g. .bus(a + b)).
                     if (markConnectionLhs(pinexprp)) {
                         pinp->exprp(new AstVarRef{pinexprp->fileline(), newvarp, VAccess::READ});
                         markContinuousLhs(pinexprp);
