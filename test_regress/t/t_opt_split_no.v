@@ -4,6 +4,10 @@
 // SPDX-FileCopyrightText: 2018 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+interface split_if;
+  reg [15:0] v;
+endinterface
+
 module t (
     input clk
 );
@@ -151,6 +155,22 @@ module t (
     end
   end
 
+  // An intra-assignment timing control, like other timing controls, prevents splitting
+  reg [15:0] r_split_1, r_split_2;
+  always @(posedge clk) begin
+    r_split_1 <= #5 m_din;
+    r_split_2 <= ~m_din;
+  end
+
+  // NBAs through a handle can update the same variable as other NBAs, so the last one must
+  // stay last
+  split_if s_if ();
+  virtual split_if s_vif = s_if;
+  always @(posedge clk) begin
+    s_if.v <= m_din;
+    s_vif.v <= ~m_din;
+  end
+
   always @(posedge clk) begin
     if (cyc == 1) begin
       m_din <= 16'hfeed;
@@ -167,6 +187,8 @@ module t (
       if (!(o_split_1 == 16'hfeed)) $stop;
       if (!(p_split_1 == 16'hfeed)) $stop;
       if (!(q_init_1 == 16'h2 && q_init_2 == 16'hbeef && q_init_3 == 16'h1)) $stop;
+      if (!(r_split_1 == 16'hfeed && r_split_2 == 16'h0112)) $stop;
+      if (!(s_if.v == 16'h0112)) $stop;
     end
     if (cyc == 5) begin
       m_din <= 16'he22e;
@@ -182,6 +204,8 @@ module t (
       if (!(n_split_1 == 16'he11e && n_split_2 == 16'h1ee1)) $stop;
       if (!(o_split_1 == 16'hfeed)) $stop;
       if (!(p_split_1 == 16'hfeed)) $stop;
+      if (!(r_split_1 == 16'hfeed && r_split_2 == 16'h0112)) $stop;
+      if (!(s_if.v == 16'h0112)) $stop;
     end
     if (cyc == 6) begin
       m_din <= 16'he33e;
@@ -197,6 +221,8 @@ module t (
       if (!(n_split_1 == 16'he22e && n_split_2 == 16'h1dd1)) $stop;
       if (!(o_split_1 == 16'he11e && o_split_2 == 16'h1ee1)) $stop;
       if (!(p_split_1 == 16'he11e)) $stop;
+      if (!(r_split_1 == 16'he11e && r_split_2 == 16'h1ee1)) $stop;
+      if (!(s_if.v == 16'h1ee1)) $stop;
     end
     if (cyc == 7) begin
       $write("*-* All Finished *-*\n");
