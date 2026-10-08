@@ -2295,6 +2295,8 @@ class AstVar final : public AstNode {
     VLifetime m_lifetime;  // Lifetime
     VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
     int m_pinNum = 0;  // For JSON, if non-zero the connection pin number
+    int m_libInoutId = 0;  // Identifies the three ports of a lowered library inout
+    bool m_libInoutEnable : 1;  // This port is the lowered library inout's enable
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
     bool m_tristate : 1;  // Inout or triwire or trireg
@@ -2362,6 +2364,7 @@ class AstVar final : public AstNode {
     bool m_processQueue : 1;  // Process queue variable
     bool m_mtaskCacheLineAlign : 1;  // Start MTask affinity group on a cache line
     void init() {
+        m_libInoutEnable = false;
         m_ansi = false;
         m_declTyped = false;
         m_tristate = false;
@@ -2497,6 +2500,10 @@ public:
     }
     void declDirection(const VDirection& flag) { m_declDirection = flag; }
     VDirection declDirection() const { return m_declDirection; }
+    int libInoutId() const { return m_libInoutId; }
+    void libInoutId(int id) { m_libInoutId = id; }
+    bool libInoutEnable() const { return m_libInoutEnable; }
+    void libInoutEnable(bool flag) { m_libInoutEnable = flag; }
     void varType(VVarType type) { m_varType = type; }
     void varType2Out() {
         m_tristate = false;

@@ -39,8 +39,8 @@ module pad_checker(input wire clk, output wire done);
   reg [1:0] in = '0;
   wire out_0, out_1;
 
-  pad u_pad0(.pad(tri_pad), .ie(ie[0]), .oe(oe[0]), .to_pad(in[0]), .from_pad(out_0));
-  pad u_pad1(.pad(tri_pad), .ie(ie[1]), .oe(oe[1]), .to_pad(in[1]), .from_pad(out_1));
+  tri_pad u_pad0(.pad(tri_pad), .ie(ie[0]), .oe(oe[0]), .to_pad(in[0]), .from_pad(out_0));
+  tri_pad u_pad1(.pad(tri_pad), .ie(ie[1]), .oe(oe[1]), .to_pad(in[1]), .from_pad(out_1));
 
   wire bin_pad_in_0, bin_pad_in_1;
   wire bin_pad_01, bin_pad_10;
@@ -91,7 +91,7 @@ module pad_checker(input wire clk, output wire done);
 
 endmodule
 
-module pad(inout wire pad, input wire ie, input wire oe, input wire to_pad, output wire from_pad);
+module tri_pad(inout wire pad, input wire ie, input wire oe, input wire to_pad, output wire from_pad);
 
   assign pad = oe ? to_pad : 1'bz;
   assign from_pad = ie ? pad : 1'bz;

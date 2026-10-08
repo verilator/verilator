@@ -11,10 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
+# Verify that the SV wrapper retains the original inout port.
 test.compile(verilator_flags2=["--protect-lib", "secret", "--protect-key", "secret-key"],
-             verilator_make_gcc=False,
-             make_main=False,
-             fails=True,
-             expect_filename=test.golden_filename)
+             verilator_make_gmake=False,
+             make_main=False)
+
+test.file_grep(test.obj_dir + "/secret.sv", r'inout logic z')
 
 test.passes()
