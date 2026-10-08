@@ -960,17 +960,15 @@ class SvaNfaBuilder final {
 
     // True if the sequence has a zero-minimum consecutive repetition, which may match empty
     static bool hasZeroMinRep(const AstNodeExpr* seqp) {
-        return seqp->exists([](const AstSConsRep* repp) {
-            const AstConst* const countp = VN_CAST(repp->countp(), Const);
-            return countp && countp->isZero();
-        });
+        return seqp->exists(
+            [](const AstSConsRep* repp) { return getConstUInt(repp->countp()) == 0; });
     }
 
-    // True if a boolean leaf's condition has no SVA construct in it
+    // True if a leaf's condition has no implication or multi-cycle sequence in it
+    // (a leaf can be e.g. 'not (x |-> y)')
     static bool isPlainBoolean(const AstNodeExpr* condp) {
-        return !condp->exists([](const AstNodeExpr* np) {
-            return np->isMultiCycleSva() || VN_IS(np, SEventually) || VN_IS(np, Implication);
-        });
+        return !condp->exists(
+            [](const AstNodeExpr* np) { return np->isMultiCycleSva() || VN_IS(np, Implication); });
     }
 
     // Build merge vertex for SOr / LogOr: both branches feed into one vertex.
@@ -997,11 +995,7 @@ class SvaNfaBuilder final {
             return BuildResult::failWithError();
         }
         if (booleanOnly && wantBoolLeaf) {
-            // Defensive: the only leaf with a boolean shape that is not a plain boolean is
-            // s_eventually, and such properties hit an internal error later either way
-            const bool lhsPlain = isPlainBoolean(lhs.finalCondp);
-            const bool rhsPlain = isPlainBoolean(rhs.finalCondp);
-            if (lhsPlain && rhsPlain) {  // LCOV_EXCL_BR_LINE
+            if (isPlainBoolean(lhs.finalCondp) && isPlainBoolean(rhs.finalCondp)) {
                 // As a |-> / |=> or top-level body, a disjunction of two plain booleans must
                 // be able to reject: return it as a boolean finalCondp. The merge vertex
                 // below drops the attempt silently when both operands are false.

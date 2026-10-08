@@ -14,12 +14,12 @@ module t (
 );
 
   int cyc = 0;
-  logic a = 0, x = 0, y = 0, a2 = 0, x2 = 0, y2 = 0;
+  logic a = 0, x = 0, y = 0, a2 = 0, x2 = 0, y2 = 0, a3 = 0, x3 = 0, y3 = 0;
   int fail_or = 0, fail_or_noparen = 0, fail_prop_or = 0, fail_multi_ante = 0;
   int fail_delay_or = 0, fail_and = 0;
   int cov_prop_or = 0, cov_prop_lor = 0, cov_seq_or = 0, cov_seq_lor = 0;
   int pass_top_or = 0, fail_top_or = 0, pass_top_not_or = 0, fail_top_not_or = 0;
-  int fail_rep0 = 0, fail_rep1 = 0;
+  int fail_rep0 = 0, fail_rep1 = 0, fail_nonbool_l = 0, fail_nonbool_l2 = 0, fail_nonbool_r = 0;
 
   // a in cycles 3, 6, 9, 12; the consequent cycle after each has
   //   cycle 4: x=0 y=0 -> every disjunction fails
@@ -51,6 +51,15 @@ module t (
   assert property (@(posedge clk) a [* 1:2] |=> (x or y))
   else fail_rep1 = fail_rep1 + 1;
 
+  // An operand that is not a plain boolean keeps the merge vertex. a3 is true in cycle 17
+  // and y3 in cycle 18, so each holds and nothing may be reported.
+  assert property (@(posedge clk) a3 |=> ((not (x3 |-> y3)) or y3))
+  else fail_nonbool_l = fail_nonbool_l + 1;
+  assert property (@(posedge clk) a3 |=> ((not (x3 |=> y3)) or y3))
+  else fail_nonbool_l2 = fail_nonbool_l2 + 1;
+  assert property (@(posedge clk) a3 |=> (y3 or (not (x3 |-> y3))))
+  else fail_nonbool_r = fail_nonbool_r + 1;
+
   // x or y is true in cycles 7, 10 and 13
   cover property (@(posedge clk) x or y) cov_prop_or = cov_prop_or + 1;
   cover property (@(posedge clk) x || y) cov_prop_lor = cov_prop_lor + 1;
@@ -64,6 +73,8 @@ module t (
     y <= (cyc == 9 || cyc == 12);
     a2 <= (cyc == 14);
     x2 <= (cyc == 15);
+    a3 <= (cyc == 16);
+    y3 <= (cyc == 17);
     if (cyc == 20) begin
       `checkd(fail_or, 1);
       `checkd(fail_or_noparen, 1);
@@ -81,6 +92,9 @@ module t (
       `checkd(fail_top_not_or, 3);
       `checkd(fail_rep0, 0);
       `checkd(fail_rep1, 1);
+      `checkd(fail_nonbool_l, 0);
+      `checkd(fail_nonbool_l2, 0);
+      `checkd(fail_nonbool_r, 0);
       $write("*-* All Finished *-*\n");
       $finish;
     end
