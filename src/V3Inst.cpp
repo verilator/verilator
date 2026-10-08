@@ -315,11 +315,11 @@ public:
                 // V3 width should have range/extended to make the widths correct
                 newvarp->isContinuously(true);
                 // An input port is normally fed from the connection, but when
-                // the port is also written from inside the cell (e.g. by a
-                // clocking block output), the drive must flow out through the
-                // V3Tristate-built split pins (forTristate)
+                // the port is driven from inside the cell by a clocking block
+                // output, the drive must flow out through the connection
+                // instead. V3Tristate-built split pins (forTristate)
                 // resolve separately and always keep the input-side wiring.
-                if (!pinVarp->icoMaybeWritten() || forTristate) {
+                if (!pinVarp->isClockingDriven() || forTristate) {
                     assignp = new AstAssignW{
                         pinp->fileline(), new AstVarRef{pinp->fileline(), newvarp, VAccess::WRITE},
                         pinexprp};
