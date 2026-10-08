@@ -38,26 +38,26 @@ static void markContinuousLhs(AstNode* const nodep) {
 }
 
 // Flip the access of the driven leaves of a pin connection expression so it
-// can be used on the LHS of an assignment. Only the selected nodes are
-// flipped (the array/struct being written); index and select operands stay
-// read-only. Anything that is not a plain select chain over a variable cannot
-// be driven through a port connection.
+// can be used on the LHS of an assignment. Only variables and bit/part
+// selects over variables are flipped; index and select operands stay
+// read-only. Struct-member selects cannot appear here: V3Width lowers them to
+// selects before V3Inst. Anything else cannot be driven through a port
+// connection.
 static bool markConnectionLhs(AstNodeExpr* const nodep) {
     if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
         if (!refp->access().isReadOnly()) return false;
         refp->access(VAccess::WRITE);
         return true;
     }
+    // Note AstSel (bit/part select) is not an AstNodeSel (array select);
+    // both expose fromp() for the selected value.
+    if (AstSel* const selp = VN_CAST(nodep, Sel)) return markConnectionLhs(selp->fromp());
     if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
-        return markConnectionLhs(selp->fromp());
-    }
-    if (AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
         return markConnectionLhs(selp->fromp());
     }
     if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
         return markConnectionLhs(concatp->lhsp()) && markConnectionLhs(concatp->rhsp());
     }
-    if (VN_IS(nodep, Const)) return true;  // Unconnected part of the pattern
     return false;
 }
 
@@ -317,7 +317,7 @@ public:
                 // An input port is normally fed from the connection, but when
                 // the port is also written from inside the cell (e.g. by a
                 // clocking block output), the drive must flow out through the
-                // connection instead. V3Tristate-built split pins (forTristate)
+                // V3Tristate-built split pins (forTristate)
                 // resolve separately and always keep the input-side wiring.
                 if (!pinVarp->icoMaybeWritten() || forTristate) {
                     assignp = new AstAssignW{
@@ -337,13 +337,10 @@ public:
                         markContinuousLhs(pinexprp);
                         AstNodeExpr* rhsp
                             = new AstVarRef{pinp->fileline(), newvarp, VAccess::READ};
-                        if (VN_IS(pinexprp, NodeStream)) {
-                            assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsp};
-                            V3Width::streamAssignLowerEdit(assignp);
-                        } else {
-                            rhsp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
-                            assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsp};
-                        }
+                        // No stream handling: V3Width lowers streaming
+                        // operators to concats before V3Inst runs.
+                        rhsp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                        assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsp};
                     } else {
                         assignp = new AstAssignW{
                             pinp->fileline(),
