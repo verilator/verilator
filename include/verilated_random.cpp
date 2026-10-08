@@ -48,11 +48,9 @@
 
 // clang-format off
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
-# define _VL_SOLVER_PIPE  // Allow pipe SMT solving.  Needs fork()
-# define _VL_SOLVER_PIPE_UNIX
+# define _VL_SOLVER_PIPE_UNIX  // Allow pipe SMT solving.  Needs fork()
 #elif defined(_WIN32) || defined(__MINGW32__)
-# define _VL_SOLVER_PIPE  // Allow pipe SMT solving.  Uses CreateProcess
-# define _VL_SOLVER_PIPE_WIN
+# define _VL_SOLVER_PIPE_WIN  // Allow pipe SMT solving.  Uses CreateProcess
 #endif
 
 #ifdef _VL_SOLVER_PIPE_UNIX
@@ -62,19 +60,42 @@
 #endif
 
 #ifdef _VL_SOLVER_PIPE_WIN
-# ifndef WIN32_LEAN_AND_MEAN
-#  define WIN32_LEAN_AND_MEAN
-# endif
-# ifndef NOMINMAX
-#  define NOMINMAX
-# endif
-# include <windows.h>  // CreatePipe, CreateProcessA, TerminateProcess
+// <windows.h> comes from verilatedos.h, with WIN32_LEAN_AND_MEAN and NOMINMAX
 # include <fcntl.h>  // _O_BINARY, _O_WRONLY, _O_RDONLY
 # include <io.h>  // _open_osfhandle, read, write, close
 # include <cstdlib>
 # include <cstring>
 #endif
 // clang-format on
+
+#ifdef _VL_SOLVER_PIPE_WIN
+// Quote one argument of a command line, following the MSVCRT parsing rules:
+// a backslash is special only before a quote, so double every run of
+// backslashes preceding a quote; quote the whole argument if it is empty or
+// contains whitespace
+static std::string winQuoteArg(const char* const arg) {
+    if (VL_UNLIKELY(!*arg)) return "\"\""s;
+    if (!strpbrk(arg, " \t\"")) return std::string{arg};
+    std::string quoted = "\"";
+    unsigned backslashes = 0;
+    for (const char* p = arg; *p; ++p) {
+        if (*p == '\\') {
+            ++backslashes;
+        } else if (*p == '"') {
+            quoted.append(2 * backslashes + 1, '\\');
+            quoted += '"';
+            backslashes = 0;
+        } else {
+            quoted.append(backslashes, '\\');
+            quoted += *p;
+            backslashes = 0;
+        }
+    }
+    quoted.append(2 * backslashes, '\\');  // Before our closing quote
+    quoted += '"';
+    return quoted;
+}
+#endif
 
 class VlRProcess final : private std::streambuf, public std::iostream {
     static constexpr int BUFFER_SIZE = 4096;
@@ -146,13 +167,12 @@ public:
 
     // Kill and reap a solver that is still running, so no child is left behind
     void terminate() {
-#ifdef _VL_SOLVER_PIPE_UNIX
+#if defined(_VL_SOLVER_PIPE_UNIX)
         if (!m_pidExited) {
             ::kill(m_pid, SIGKILL);
             waitpid(m_pid, &m_pidStatus, 0);
         }
-#endif
-#ifdef _VL_SOLVER_PIPE_WIN
+#elif defined(_VL_SOLVER_PIPE_WIN)
         if (!m_pidExited && m_pid) {
             TerminateProcess(m_pid, EXIT_FAILURE);
             WaitForSingleObject(m_pid, INFINITE);
@@ -160,62 +180,55 @@ public:
         }
 #endif
         m_pidExited = true;
-#ifdef _VL_SOLVER_PIPE_WIN
-        m_pid = nullptr;
-#else
-        m_pid = 0;
-#endif
+        m_pid = 0;  // Reaped pid, or null HANDLE
         closeFds();
+    }
+
+    // Report the subprocess' nonzero exit status or signal, if any
+    void reportFailure(const std::string& reason) const {
+        std::stringstream msg;
+        msg << "Subprocess command `" << m_cmd[0];
+        for (const char* const* arg = m_cmd + 1; *arg; ++arg) msg << ' ' << *arg;
+        msg << "' failed: " << reason;
+        const std::string str = msg.str();
+        VL_WARN_MT("", 0, "VlRProcess", str.c_str());
     }
 
     void wait_report() {
         if (m_pidExited) return;
         bool reaped = true;
-#ifdef _VL_SOLVER_PIPE_UNIX
+#if defined(_VL_SOLVER_PIPE_UNIX)
         const pid_t rc = waitpid(m_pid, &m_pidStatus, WNOHANG);
         if (rc != m_pid) m_pidStatus = 0;
         reaped = rc != 0;  // Zero means still running, so terminate() reaps it
         if (m_pidStatus) {
-            std::stringstream msg;
-            msg << "Subprocess command `" << m_cmd[0];
-            for (const char* const* arg = m_cmd + 1; *arg; ++arg) msg << ' ' << *arg;
-            msg << "' failed: ";
-            if (WIFSIGNALED(m_pidStatus))
-                msg << strsignal(WTERMSIG(m_pidStatus))
-                    << (WCOREDUMP(m_pidStatus) ? " (core dumped)" : "");
-            else if (WIFEXITED(m_pidStatus))
-                msg << "exit status " << WEXITSTATUS(m_pidStatus);
-            const std::string str = msg.str();
-            VL_WARN_MT("", 0, "VlRProcess", str.c_str());
+            std::string reason;
+            if (WIFSIGNALED(m_pidStatus)) {
+                reason = strsignal(WTERMSIG(m_pidStatus));
+                if (WCOREDUMP(m_pidStatus)) reason += " (core dumped)";
+            } else if (WIFEXITED(m_pidStatus)) {
+                reason = "exit status "s + std::to_string(WEXITSTATUS(m_pidStatus));
+            }
+            reportFailure(reason);
         }
-        if (reaped) {
-            m_pidExited = true;
-            m_pid = 0;
-        }
-#endif
-#ifdef _VL_SOLVER_PIPE_WIN
+#elif defined(_VL_SOLVER_PIPE_WIN)
         if (m_pid) {
             if (WaitForSingleObject(m_pid, 0) == WAIT_OBJECT_0) {
                 DWORD exitCode = 0;
                 GetExitCodeProcess(m_pid, &exitCode);
                 m_pidStatus = static_cast<int>(exitCode);
-                if (m_pidStatus) {
-                    std::stringstream msg;
-                    msg << "Subprocess command `" << m_cmd[0];
-                    for (const char* const* arg = m_cmd + 1; *arg; ++arg) msg << ' ' << *arg;
-                    msg << "' failed: ";
-                    msg << "exit status " << m_pidStatus;
-                    const std::string str = msg.str();
-                    VL_WARN_MT("", 0, "VlRProcess", str.c_str());
-                }
+                if (m_pidStatus) reportFailure("exit status "s + std::to_string(m_pidStatus));
                 CloseHandle(m_pid);
-                m_pid = nullptr;
+                m_pid = 0;
             } else {
                 reaped = false;  // Still running, so terminate() reaps it
             }
         }
-        if (reaped) m_pidExited = true;
 #endif
+        if (reaped) {
+            m_pidExited = true;
+            m_pid = 0;
+        }
         closeFds();
     }
 
@@ -234,13 +247,13 @@ public:
         clear();
         setp(std::begin(m_writeBuf), std::end(m_writeBuf));
         setg(m_readBuf, m_readBuf, m_readBuf);
-#ifdef _VL_SOLVER_PIPE_WIN
-        if (!cmd || !cmd[0]) return false;
+        if (VL_UNLIKELY(!cmd || !cmd[0])) return false;
         m_cmd = cmd;
         if (!m_logTried) {
             m_logTried = true;
             logOpen();
         }
+#if defined(_VL_SOLVER_PIPE_WIN)
         SECURITY_ATTRIBUTES sa;
         sa.nLength = sizeof(SECURITY_ATTRIBUTES);
         sa.lpSecurityDescriptor = nullptr;
@@ -272,16 +285,11 @@ public:
                             &stderrInheritable, 0, TRUE /* inheritable */, DUPLICATE_SAME_ACCESS);
         }
 
-        // Build the command line string; quote arguments containing whitespace
+        // Build the command line string, quoting each argument
         std::string cmdline;
         for (const char* const* arg = cmd; *arg; ++arg) {
             if (arg != cmd) cmdline += ' ';
-            if (strpbrk(*arg, " \t")) cmdline += '"';
-            for (const char* p = *arg; *p; ++p) {
-                if (*p == '"') cmdline += '\\';
-                cmdline += *p;
-            }
-            if (strpbrk(*arg, " \t")) cmdline += '"';
+            cmdline += winQuoteArg(*arg);
         }
 
         STARTUPINFOA si;
@@ -329,13 +337,7 @@ public:
             return false;
         }
         return true;
-#elif defined(_VL_SOLVER_PIPE)
-        if (!cmd || !cmd[0]) return false;
-        m_cmd = cmd;
-        if (!m_logTried) {
-            m_logTried = true;
-            logOpen();
-        }
+#elif defined(_VL_SOLVER_PIPE_UNIX)
         int fd_stdin[2];  // Can't use std::array
         int fd_stdout[2];  // Can't use std::array
         constexpr int P_RD = 0;
