@@ -9835,8 +9835,7 @@ class WidthVisitor final : public VNVisitor {
                     const auto castable
                         = AstNode::computeCastable(expEnump, underp->dtypep(), underp);
                     if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
-                        && castable != VCastable::ENUM_IMPLICIT && !VN_IS(underp, Cast)
-                        && !VN_IS(underp, CastDynamic) && !m_enumItemp
+                        && castable != VCastable::ENUM_IMPLICIT && !m_enumItemp
                         && !parentp->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
                         underp->v3warn(ENUMVALUE,
                                        "Implicit conversion to enum "
