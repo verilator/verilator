@@ -83,7 +83,7 @@
 //      LHS = (__Vdly__LHS & __Vdly_Mask__LHS) | (LHS & ~__Vdly_Mask__LHS);
 //      __Vdly_Mask__LHS = '0;
 //
-// "Unique flag" scheme. Used for all variables updated by NBAs
+// "Unique flag" scheme. Used for variables updated by a single NBA
 // in suspendable processees or forks. E.g.:
 //   #1 LHS <= RHS;
 // is converted to:
@@ -112,7 +112,11 @@
 // updates, from intra-assignment timing controls. V3Timing gives these NBAs
 // tickets, taken when the NBA is executed, and the commit performs the updates
 // in the order of their tickets (IEEE 1800-2023 4.6). Their other NBAs take a
-// ticket when enqueueing, instead of 0.
+// ticket when enqueueing, instead of 0. They are used as well for variables
+// updated in suspendable processes or forks by NBAs at several sites, which can
+// execute in another order than the sites, e.g. looping in an 'always', or at
+// one site in a loop, updating a varying part of the variable, so the commit
+// performs all updates, in the order they were enqueued.
 //
 // The "Generic Queue" scheme is used for all other NBAs that need such
 // ordering, for NBAs to a target selected by a handle, which can be of any
@@ -237,6 +241,7 @@ class DelayedVisitor final : public VNVisitor {
         bool m_inLoop = false;  // Used on LHS of NBA in a loop
         bool m_inSuspOrFork = false;  // Used on LHS of NBA in suspendable process or fork
         bool m_ordered = false;  // Used on LHS of NBA with a ticket, ordering its updates
+        uint32_t m_nSites = 0;  // Number of NBAs with it on the LHS
         Scheme m_scheme = Scheme::Undecided;  // Conversion scheme to use for this variable
 
     private:
@@ -297,6 +302,13 @@ class DelayedVisitor final : public VNVisitor {
 
         // Accessor
         AstSenTree* senTreep() const { return m_senTreep; }
+        // Whether its updates must be committed in the order the NBAs executed, as in suspendable
+        // processes or forks they can execute several times per time step, in an order not known
+        // statically: at several sites, e.g. executed by a loop in another order than the sites,
+        // or at one site in a loop, updating a varying part of the variable
+        bool inExecOrder() const {
+            return m_inSuspOrFork && (m_nSites > 1 || (m_inLoop && m_partial));
+        }
 
         // Add sensitivities
         void addSensitivity(AstSenItem* nodep) { addSensitivities(m_senTreep, nodep); }
@@ -311,6 +323,7 @@ class DelayedVisitor final : public VNVisitor {
         bool m_handle = false;  // Updated through a handle, or by a method of the interface
         bool m_inCFunc = false;  // Updated by an NBA in a non-inlined function
         bool m_ordered = false;  // Updated by an NBA with a ticket, ordering its pending updates
+        bool m_inExecOrder = false;  // Updated in the order NBAs executed (see inExecOrder)
         bool m_queueable = true;  // All NBAs updating it can use a dynamic commit queue
         // Stuff needed for Scheme::GenericQueue
         uint32_t m_id = 0;  // Number for unique names
@@ -336,7 +349,9 @@ class DelayedVisitor final : public VNVisitor {
         }
         VL_UNCOPYABLE(DestInfo);
         // Whether it uses Scheme::GenericQueue
-        bool isGeneric() const { return m_handle || m_inCFunc || (m_ordered && !m_queueable); }
+        bool isGeneric() const {
+            return m_handle || m_inCFunc || ((m_ordered || m_inExecOrder) && !m_queueable);
+        }
         // Accessor
         AstSenTree* senTreep() const { return m_senTreep; }
         // Add sensitivities
@@ -583,9 +598,11 @@ class DelayedVisitor final : public VNVisitor {
 
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
         // Updated by an NBA with a ticket from V3Timing, ordering its pending update with the
-        // others, so use a dynamic commit queue, committing all updates in the order of their
-        // tickets. V3Timing ensures the queue supports all NBAs to the variable (canQueue).
-        if (vscpInfo.m_ordered) {
+        // others, or in the order NBAs executed (inExecOrder), so use a dynamic commit queue,
+        // committing all updates in the order of their tickets, or else in the order they were
+        // enqueued (IEEE 1800-2023 4.6). If the queue cannot support all NBAs to the variable
+        // (canQueue), its destination uses Scheme::GenericQueue instead.
+        if (vscpInfo.m_ordered || vscpInfo.inExecOrder()) {
             UASSERT_OBJ(!vscpInfo.m_whole || !VN_IS(dtypep, UnpackArrayDType), vscp,
                         "Ordered NBAs to a whole array");
             if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
@@ -593,8 +610,12 @@ class DelayedVisitor final : public VNVisitor {
         }
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            // If whole array is target of NBA, use ShadowVar
-            if (vscpInfo.m_whole) return Scheme::ShadowVar;
+            // If whole array is target of NBA, use ShadowVar, but not in a suspendable process or
+            // fork, which resume outside the 'nba' region, so its 'pre' logic would overwrite the
+            // value they write in the shadow variable
+            if (vscpInfo.m_whole) {
+                return vscpInfo.m_inSuspOrFork ? Scheme::FlagUnique : Scheme::ShadowVar;
+            }
             // Basic underlying type of elements, if any.
             const AstBasicDType* const basicp = uaDTypep->basicp();
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
@@ -1109,8 +1130,8 @@ class DelayedVisitor final : public VNVisitor {
         // Extract array indices, none of a variable that is not an array
         std::vector<AstNodeExpr*> idxps;
         {
-            UASSERT_OBJ(vscpInfo.m_ordered || VN_IS(lhsNodep, ArraySel), lhsNodep,
-                        "Unexpected LHS form");
+            UASSERT_OBJ(vscpInfo.m_ordered || vscpInfo.inExecOrder() || VN_IS(lhsNodep, ArraySel),
+                        lhsNodep, "Unexpected LHS form");
             while (AstArraySel* const aSelp = VN_CAST(lhsNodep, ArraySel)) {
                 idxps.emplace_back(aSelp->bitp()->unlinkFrBack());
                 lhsNodep = aSelp->fromp();
@@ -1469,6 +1490,11 @@ class DelayedVisitor final : public VNVisitor {
                 if (!calls.m_procp->isSuspendable()) m_touchps.emplace_back(calls.m_procp, destp);
             }
             VL_DO_DANGLING(sensesp->deleteTree(), sensesp);
+        }
+        // Some variables must be updated in the order the NBAs executed, also if this needs
+        // Scheme::GenericQueue, as the commit queue cannot support all their NBAs
+        for (AstVarScope* const vscp : m_vscps) {
+            if (m_vscpInfo(vscp).inExecOrder()) m_dests.at(vscp->varp()).m_inExecOrder = true;
         }
         // Decide which destinations use Scheme::GenericQueue and do the 'prepare' step
         for (const auto& pair : m_destps) {
@@ -1848,6 +1874,7 @@ class DelayedVisitor final : public VNVisitor {
             vscpInfo.m_inLoop |= m_inLoop;
             vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
             vscpInfo.m_ordered |= nodep->ticketp() != nullptr;
+            ++vscpInfo.m_nSites;
         }
 
         // Record the NBA for later processing

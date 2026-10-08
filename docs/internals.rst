@@ -707,22 +707,26 @@ assignments after those timing controls, with the LHS and RHS values
 evaluated before them and stored in temporary variables.
 
 The updates of nonblocking assignments (NBAs) are performed in the order
-the NBAs executed (IEEE 1800-2023 4.6), also when their updates are pending
-after intra-assignment timing controls, and become ready in another order.
-These NBAs take a ticket (``VlNBATicket``) when executed, after evaluating
-their targets, values, and timing controls. ``V3Delayed`` enqueues the
-updates of all NBAs to a variable with pending updates in a
-``VlNBACommitQueue``, which commits them in ticket order. If it cannot
-queue them this way, e.g. of a member of a struct, and for all NBAs to a
-variable updated through handles, which select a member of an interface or
-class, or by NBAs in non-inlined functions, ``V3Delayed`` stores the values
-and targets of the updates in queues of each NBA, and their order in a
-``VlNBAOrder``. The logic committing them in the 'nba' region applies them
-in order, so they are committed with the other NBA updates of the time
-step, before the processes awaiting them resume. As ``V3Order`` does not
-see the NBAs in non-inlined functions, this logic is also triggered by the
-events of the processes calling these functions, and is ordered after the
-processes.
+the NBAs executed (IEEE 1800-2023 4.6), also when their updates are
+pending after intra-assignment timing controls, and become ready in
+another order. These NBAs take a ticket (``VlNBATicket``) when executed,
+after evaluating their targets, values, and timing controls. ``V3Delayed``
+enqueues the updates of all NBAs to a variable with pending updates in a
+``VlNBACommitQueue``, which commits them in ticket order. It does the
+same, committing in the order they were enqueued, for a variable updated
+in suspendable processes or forks by NBAs that can execute several times
+in a time step, in another order than in the source: NBAs at several
+sites, e.g. executed by a loop in another order, or at one site in a loop,
+updating a varying part of the variable. If it cannot queue them this way,
+e.g. of a member of a struct, and for all NBAs to a variable updated
+through handles, which select a member of an interface or class, or by
+NBAs in non-inlined functions, ``V3Delayed`` stores the values and targets
+of the updates in queues of each NBA, and their order in a ``VlNBAOrder``.
+The logic committing them in the 'nba' region applies them in order, so
+they are committed with the other NBA updates of the time step, before the
+processes awaiting them resume. As ``V3Order`` does not see the NBAs in
+non-inlined functions, this logic is also triggered by the events of the
+processes calling these functions, and is ordered after the processes.
 
 ``wait`` statements are transformed into while loops that check the
 condition and then await changes in variables used in the condition. If the
