@@ -33,7 +33,7 @@ test.run(logfile=secret_dir + "/secret_gcc.log",
 
 # Compile the simulator
 test.compile(verilator_flags2=[
-    '--no-timing', '-Wno-ASCRANGE', "--prof-exec", trace_opt, "-LDFLAGS", secret_prefix +
+    '--no-timing', "--prof-exec", trace_opt, "-LDFLAGS", secret_prefix +
     "/libsecret.a", secret_dir + "/secret.sv"
 ])
 

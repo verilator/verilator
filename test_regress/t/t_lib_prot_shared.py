@@ -40,7 +40,6 @@ test.run(logfile=secret_dir + "/secret_gcc.log",
          cmd=[os.environ["MAKE"], "-C", secret_dir, "-f", "Vt_lib_prot_secret.mk"])
 
 test.compile(verilator_flags2=['--no-timing',
-                               '-Wno-ASCRANGE',
                                "-LDFLAGS", "'-Wl,-rpath," + abs_secret_dir + " -L" + abs_secret_dir + " -l" + secret_prefix + "'",
                                secret_dir + "/secret.sv"],
              xsim_flags2=[secret_dir + "/secret.sv"],

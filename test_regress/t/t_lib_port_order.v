@@ -19,10 +19,14 @@ module sub (
     input logic [6:0] narrow,
     output logic [30:0] sum,
     output logic flag,
+    /*verilator lint_off ASCRANGE*/
     input logic [2:8] ascending_in,
+    /*verilator lint_on ASCRANGE*/
     output logic [10:4] descending_out,
     input logic [10:4] descending_in,
+    /*verilator lint_off ASCRANGE*/
     output logic [2:8] ascending_out
+    /*verilator lint_on ASCRANGE*/
 );
 
   always_ff @(posedge clk) begin
@@ -47,12 +51,18 @@ module top;
   logic flag;
   logic [30:0] exp_sum;
   logic exp_flag;
+  /*verilator lint_off ASCRANGE*/
   logic [2:8] ascending_in = 7'h53;
+  /*verilator lint_on ASCRANGE*/
   logic [10:4] descending_in = 7'h2d;
   logic [10:4] descending_out;
+  /*verilator lint_off ASCRANGE*/
   logic [2:8] ascending_out;
+  /*verilator lint_on ASCRANGE*/
   logic [10:4] exp_descending_out;
+  /*verilator lint_off ASCRANGE*/
   logic [2:8] exp_ascending_out;
+  /*verilator lint_on ASCRANGE*/
 
   always #5 clk = ~clk;
 

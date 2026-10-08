@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.clean_objs()
-test.compile(verilator_flags2=['--stats', '--hierarchical', '--Wno-ASCRANGE'])
+test.compile(verilator_flags2=['--stats', '--hierarchical'])
 
 test.execute()
 

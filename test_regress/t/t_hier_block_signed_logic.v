@@ -25,12 +25,18 @@ module t (
   logic signed out_small1;
   logic signed out_small2;
   int cyc = 0;
+  /*verilator lint_off ASCRANGE*/
   logic [2:8] ascending_in = 7'h53;
+  /*verilator lint_on ASCRANGE*/
   logic [10:4] descending_in = 7'h2d;
   logic [10:4] descending_out;
+  /*verilator lint_off ASCRANGE*/
   logic [2:8] ascending_out;
+  /*verilator lint_on ASCRANGE*/
   logic [10:4] descending_out2;
+  /*verilator lint_off ASCRANGE*/
   logic [2:8] ascending_out2;
+  /*verilator lint_on ASCRANGE*/
 
   sub sub1 (
       .in(in1),
@@ -82,10 +88,14 @@ module sub (
     input logic signed in_small,
     output logic signed [31:0] out,
     output logic signed out_small,
+    /*verilator lint_off ASCRANGE*/
     input logic [2:8] ascending_in,
+    /*verilator lint_on ASCRANGE*/
     output logic [10:4] descending_out,
     input logic [10:4] descending_in,
+    /*verilator lint_off ASCRANGE*/
     output logic [2:8] ascending_out
+    /*verilator lint_on ASCRANGE*/
 );  /*verilator hier_block*/
   assign out = -in;
   assign out_small = -in_small;
