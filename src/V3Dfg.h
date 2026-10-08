@@ -46,7 +46,6 @@
 #include <algorithm>
 #include <array>
 #include <functional>
-#include <map>
 #include <new>
 #include <type_traits>
 #include <unordered_map>
@@ -67,6 +66,7 @@ class DfgEdge;
 class DfgVertex;
 class DfgGraph;
 class DfgVisitor;
+class V3DfgContext;
 template <typename T_User, bool = fitsSpaceAllocatedFor<T_User, void*>()>
 class DfgUserMap;
 
@@ -428,21 +428,8 @@ class DfgGraph final {
     DfgVertex::List<DfgConst> m_constVertices;  // The constant vertices in the graph
     DfgVertex::List<DfgVertex> m_opVertices;  // The operation vertices in the graph
     size_t m_size = 0;  // Number of vertices in the graph
+    V3DfgContext& m_ctx;  // The DFG context this graph is optimized in
     const std::string m_name;  // Name of graph - need not be unique
-    std::string m_tmpNameStub{""};  // Name stub for temporary variables - computed lazy
-    size_t m_tmpNameCount = 0;  // Sequence number for newly created temporary declarations
-
-    // Slots are local to this graph and keyed by module, prefix and type.
-    // Different prefixes may carry different AstVar attributes, but temporaries
-    // with the same prefix may share an AstVar, so they must have identical ones.
-    // Each scope consumes each slot at most once.
-    struct TempDeclarations final {
-        std::map<AstScope*, size_t> m_scopeCounts;  // Next slot for each instance
-        std::vector<AstVar*> m_declps;  // Declarations indexed by slot
-    };
-    std::map<AstNodeModule*, std::map<std::pair<std::string, AstNodeDType*>, TempDeclarations>>
-        m_temporaries;  // Shared slots indexed by module, purpose, and type
-    uint64_t m_tempDeclarationsReused = 0;  // Declarations shared across instance scopes
 
     // The only way to access thes is via DfgUserMap, so mutable is appropriate,
     // the map can change while the graph is const.
@@ -451,7 +438,7 @@ class DfgGraph final {
 
 public:
     // CONSTRUCTOR
-    explicit DfgGraph(const string& name = "") VL_MT_DISABLED;
+    DfgGraph(V3DfgContext& ctx, const string& name) VL_MT_DISABLED;
     ~DfgGraph() VL_MT_DISABLED;
     VL_UNCOPYABLE(DfgGraph);
 
@@ -460,6 +447,7 @@ public:
     size_t size() const { return m_size; }
     // Name of this graph
     const string& name() const { return m_name; }
+    V3DfgContext& ctx() const { return m_ctx; }
 
     // Create a new DfgUserMap
     template <typename T_User>
@@ -541,11 +529,9 @@ public:
     // DfgVertexVar instances representing the same Ast variable are unified.
     void mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) VL_MT_DISABLED;
 
-    // Create a new scoped variable. Instances of a module share temporary
-    // declarations of the same prefix and type, but have independent storage.
-    // Each scope uses a declaration at most once; new declarations get unique names.
-    // As the AstVar may be shared, callers must set identical AstVar attributes
-    // on all temporaries created with the same prefix.
+    // Create a new temporary variable in the given scope. Temporaries are shared between
+    // instances via the context, keyed by 'prefix', so callers must set identical AstVar
+    // attributes on all temporaries created with the same prefix.
     DfgVertexVar* makeNewVar(FileLine*, const std::string& prefix, const DfgDataType&,
                              AstScope*) VL_MT_DISABLED;
 

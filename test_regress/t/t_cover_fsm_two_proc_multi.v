@@ -19,7 +19,7 @@ module fsm_basic (
     S_ERR = 2'd3
   } state_t;
 
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
@@ -151,7 +151,7 @@ module fsm_reset_policy (
     S1 = 1'b1
   } state_t;
 
-  state_t state_incl_q  /*verilator fsm_reset_arc*/;
+  state_t state_incl_q  /*verilator fsm_state*/;
   state_t state_incl_d;
   state_t state_excl_q;
   state_t state_excl_d;

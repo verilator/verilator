@@ -27,7 +27,7 @@
 %000001   logic rst;
 %000001   logic start;
           integer cyc;
-%000001   state_t state  /*verilator fsm_reset_arc*/;
+%000001   state_t state  /*verilator fsm_state*/;
 %000002   P::A a;
 %000001   logic done;
         
@@ -66,13 +66,13 @@
 %000007     else begin
 %000007       case (state)
         // [FSM coverage]
-%000001        // [fsm_arc t.state::ANY->S_IDLE[reset_include]] [reset arc, excluded from %]
-%000002        // [fsm_arc t.state::S_DONE->S_DONE]
-%000003        // [fsm_arc t.state::S_IDLE->S_IDLE]
+%000000        // [fsm_arc t.state::S_DONE->S_IDLE]
+%000000        // [fsm_arc t.state::S_ERR->S_IDLE]
 %000001        // [fsm_arc t.state::S_IDLE->S_RUN]
+%000000        // [fsm_arc t.state::S_RUN->S_IDLE]
 %000001        // [fsm_state t.state::S_DONE]
 %000000        // [fsm_state t.state::S_ERR] *** UNCOVERED ***
-%000000        // [fsm_state t.state::S_IDLE] *** UNCOVERED ***
+%000001        // [fsm_state t.state::S_IDLE]
 %000001        // [fsm_state t.state::S_RUN]
 %000002         S_IDLE:
 %000001         if (start) state <= S_RUN;

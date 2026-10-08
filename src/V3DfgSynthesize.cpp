@@ -2027,8 +2027,8 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
 
     // Otherwise figure out which vertices are likely worth synthesizing.
 
-    // Bather circular variables
     std::vector<DfgVertexVar*> circularVarps;
+    // Synthesize all drivers of circular variables
     {
         DfgUserMap<uint64_t> scc = dfg.makeUserMap<uint64_t>();
         V3DfgPasses::colorStronglyConnectedComponents(dfg, scc);
@@ -2039,7 +2039,7 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
         }
     }
 
-    // We need to expand the selection to cover all drivers, use a work list
+    // To cover all drivers, use a work list
     DfgWorklist worklist{dfg};
 
     // Synthesize all drivers of circular variables
@@ -2053,7 +2053,7 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
     // Choose some simple special cases to always synthesize
     for (DfgVertex& vtx : dfg.opVertices()) {
         DfgLogic* const logicp = vtx.cast<DfgLogic>();
-        if (!logicp) continue;
+        if (!logicp || worklist.contains(*logicp)) continue;
         // If drives an unused variable, synthesize it so the partial logic can be removed
         if (logicp->drivesUnusedVars()) {
             worklist.push_front(*logicp);
@@ -2074,6 +2074,8 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
         if (!logicp->hasMultipleSinks()) worklist.push_front(*logicp);
     }
 
+    std::unordered_set<DfgUnresolved*> isVisited;
+
     // Now expand to cover all logic driving the same set of variables and mark
     worklist.foreach([&](DfgVertex& vtx) {
         DfgLogic& logic = *vtx.as<DfgLogic>();
@@ -2082,7 +2084,9 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
         logic.setSelectedForSynthesis();
         // Enqueue all other logic driving the same variables as this one
         logic.foreachSink([&](DfgVertex& sink) {
-            sink.as<DfgUnresolved>()->foreachSource([&](DfgVertex& sibling) {
+            DfgUnresolved* unresolved = sink.as<DfgUnresolved>();
+            if (!isVisited.insert(unresolved).second) return false;
+            unresolved->foreachSource([&](DfgVertex& sibling) {
                 DfgLogic& siblingLogic = *sibling.as<DfgLogic>();
                 if (!siblingLogic.selectedForSynthesis()) worklist.push_front(siblingLogic);
                 return false;

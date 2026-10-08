@@ -177,6 +177,7 @@ set(HEADERS
     V3Scope.h
     V3SenExprBuilder.h
     V3SenTree.h
+    V3SharedTmps.h
     V3Simulate.h
     V3Slice.h
     V3Split.h

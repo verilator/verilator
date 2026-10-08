@@ -213,6 +213,17 @@ string VString::unquoteSVString(const string& text, string& errOut) {
     return newtext;
 }
 
+size_t VString::quotedEnd(const string& str, size_t pos) VL_PURE {
+    for (size_t i = pos + 1; i < str.size(); ++i) {
+        if (str[i] == '\\') {
+            ++i;  // Past the escaped character, as of '\"'
+        } else if (str[i] == '"') {
+            return i + 1;
+        }
+    }
+    return string::npos;
+}
+
 string VString::spaceUnprintable(const string& str) VL_PURE {
     string result;
     for (const char c : str) {

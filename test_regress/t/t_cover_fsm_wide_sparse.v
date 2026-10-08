@@ -18,7 +18,7 @@ module t (
   localparam logic [47:0] L_S1_BUSY = 48'h8000_0000_0002;
   localparam logic [47:0] L_S2_DONE = 48'hffff_0000_0003;
 
-  enum_state_t enum_state  /*verilator fsm_reset_arc*/;
+  enum_state_t enum_state  /*verilator fsm_state*/;
   logic rst;
   logic start;
   integer cyc;

@@ -312,6 +312,45 @@ Summary:
 
    Enables native FSM state and arc coverage. See :ref:`FSM Coverage`.
 
+.. option:: --coverage-fsm-expand <mode>
+
+   Specifies the mode of FSM expansion for coverage.
+   One of the following modes may be chosen:
+
+    * `auto`
+      * Counts how many times the FSM was in each of the used states.
+      * Count of how many times certain FSM transition occurred -
+        counted for:
+        * all defined transitions in the code,
+        * from all used states to a reset state,
+        * from any terminal state to default state.
+
+    * `auto-expand`
+      * Counts how many times the FSM was in each of the used states.
+      * Count of how many times certain FSM transition occurred -
+        counted for all possible transitions between used states.
+
+    * `full`
+      * Counts how many times the FSM was in each of the possible states.
+      * Count of how many times certain FSM transition occurred -
+        counted for all possible transitions between all
+        possible states.
+
+   `possible states` - means every value that variable of
+   a certain width representing an FSM may have i.e. 2^(width).
+
+   `all possible transitions between n-states` - all transitions
+   that may be created i.e. (2^n - n) - value is decreased by n
+   because transitions between same states are not counted.
+
+   Defaults to `auto`.
+
+.. option:: --coverage-fsm-max-arcs <value>
+
+   Specifies the maximum count of FSM transitions to be tracked by coverage for a single FSM.
+
+   Defaults to 4096.
+
 .. option:: --coverage-line
 
    Enables basic block line coverage analysis. See :ref:`Line Coverage`.
@@ -348,6 +387,28 @@ Summary:
    Rarely needed. Specify the maximum bit width of a signal subject to
    toggle coverage. Defaults to 256, as covering large vectors may greatly
    slow coverage simulations.
+
+.. option:: --coverage-merge-instances
+
+   Sets the default value of the covergroup type option
+   ``type_option.merge_instances`` to 1, for the covergroups that do not
+   set it (IEEE 1800-2023 19.11.3).
+
+   With "--coverage-merge-instances",
+     the type coverage of a covergroup merges its instances as a union of
+     their bins. This applies to ``get_coverage()``, to
+     ``get_inst_coverage()`` unless ``option.get_inst_coverage`` is set, and
+     to the coverage that :command:`verilator_coverage` reports. This is
+     like the default behavior of Synopsys VCS. In Questa, it is the
+     equivalent of ``vsim -cvgmergeinstances``, which sets
+     ``SVCovergroupMergeInstancesDefault`` to 1.
+
+   With "--no-coverage-merge-instances", the default, the value is 0, as
+     IEEE specifies, so the type coverage of a covergroup is the average of
+     the coverage of its instances.
+
+   This is unrelated to :vlopt:`--coverage-per-instance`, which keeps
+   Verilator-inserted coverage per hierarchy instance.
 
 .. option:: --coverage-per-instance
 

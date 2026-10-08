@@ -21,7 +21,7 @@ test.clean_objs()
 test.compile(v_flags2=['t/t_hier_block.cpp'],
              verilator_flags2=[
                  '--stats', '--hierarchical', '+define+SHOW_TIMESCALE', '+define+USE_VLT',
-                 't/t_hier_block_vlt.vlt', '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"'
+                 test.vlt_filename, '--CFLAGS', '"-pipe -DCPP_MACRO=cplusplus"'
              ],
              threads=(6 if test.vltmt else 1))
 

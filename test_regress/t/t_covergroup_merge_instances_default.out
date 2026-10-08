@@ -1,0 +1,11 @@
+$ verilator_coverage --report hierarchy --levels 1 coverage.dat
+Covergroup Coverage Summary:
+  t              :  93.8% (21/26)
+  t.C::cg_emb    : 100.0% ( 2/ 2)
+  t.cg_default   : 100.0% ( 3/ 4)
+  t.cg_inst      : 100.0% ( 3/ 4)
+  t.cg_multi     : 100.0% ( 2/ 2)
+  t.cg_multi_off : 100.0% ( 2/ 2)
+  t.cg_off       :  75.0% ( 3/ 4)
+  t.cg_on        : 100.0% ( 3/ 4)
+  t.cg_optw      :  75.0% ( 3/ 4)

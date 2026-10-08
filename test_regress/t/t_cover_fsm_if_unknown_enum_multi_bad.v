@@ -97,7 +97,7 @@ module unknown_reset (
 
   logic rst;
   integer cyc;
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   initial begin

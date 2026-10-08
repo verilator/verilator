@@ -94,8 +94,13 @@ class SampledVisitor final : public VNVisitor {
         const auto pair = m_forceSamples.emplace(*nodep, nullptr);
         AstVarScope*& vscp = pair.first->second;
         if (pair.second) {
-            vscp = m_scopep->createTemp(m_forceNames.get(nodep), nodep->dtypep());
-            vscp->varp()->sampled(true);
+            FileLine* const flp = m_scopep->fileline();
+            AstVar* const varp
+                = new AstVar{flp, VVarType::MODULETEMP, m_forceNames.get(nodep), nodep->dtypep()};
+            varp->sampled(true);
+            m_scopep->modp()->addStmtsp(varp);
+            vscp = new AstVarScope{flp, m_scopep, varp};
+            m_scopep->addVarsp(vscp);
         }
         AstVarRef* const refp = new AstVarRef{nodep->fileline(), vscp, VAccess::READ};
         refp->user1SetOnce();

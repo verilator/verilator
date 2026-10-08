@@ -587,15 +587,19 @@ private:
 public:
     // CONSTRUCTORS
     explicit WidthCommitVisitor(AstNetlist* nodep) {
-        // Name classes and interfaces while they have their parameter types, as this visit
-        // moves those to the type table, maybe from another module's types before their own
-        nodep->foreach([](AstNodeModule* modp) {
-            if (AstClass* const classp = VN_CAST(modp, Class)) {
-                classp->dtypeNameFreeze();
-            } else if (AstIface* const ifacep = VN_CAST(modp, Iface)) {
-                ifacep->dtypeNameFreeze();
-            }
-        });
+        {
+            // Name classes and interfaces while they have their parameter types, as this visit
+            // moves those to the type table, maybe from another module's types before their own,
+            // with the scopes declaring them indexed, as a class may be named with others
+            const VDTypeNameScopes scopes{nodep};
+            nodep->foreach([](AstNodeModule* modp) {
+                if (AstClass* const classp = VN_CAST(modp, Class)) {
+                    classp->dtypeNameFreeze();
+                } else if (AstIface* const ifacep = VN_CAST(modp, Iface)) {
+                    ifacep->dtypeNameFreeze();
+                }
+            });
+        }
         // Were changing widthMin's, so the table is now somewhat trashed
         nodep->typeTablep()->clearCache();
         iterate(nodep);

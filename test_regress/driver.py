@@ -917,6 +917,7 @@ class VlTest:
             self.top_filename = re.sub(r'\.py$', '', self.py_filename) + '.' + self.v_suffix
         self.pli_filename = re.sub(r'\.py$', '', self.py_filename) + '.cpp'
         self.top_shell_filename = self.obj_dir + "/" + self.vm_prefix + "__top.v"
+        self.vlt_filename = re.sub(r'\.py$', '', self.py_filename) + '.vlt'
 
     def _define_opt_calc(self) -> str:
         return "--define " if self.xsim else "+define+"
@@ -2791,7 +2792,9 @@ class VlTest:
             del self._file_contents_cache[filename]
 
     def file_sed(self, in_filename: str, out_filename, edit_lambda) -> None:
-        contents = self.file_contents(in_filename)
+        # Read without newline translation, so binary files are preserved exactly
+        with open(in_filename, 'r', encoding='latin-1', newline='') as fh:
+            contents = fh.read()
         contents = edit_lambda(contents)
         self.write_wholefile(out_filename, contents)
 

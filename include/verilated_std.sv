@@ -136,7 +136,10 @@ package std;
     endfunction
 
     function void kill();
-      set_status(KILLED);
+`ifdef VERILATOR_TIMING
+      // IEEE 1800-2023 9.7: kill() terminates the process and all its descendants
+      $c(m_process, "->disable();");
+`endif
     endfunction
 
     function void suspend();

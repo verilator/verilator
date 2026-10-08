@@ -1,0 +1,16 @@
+byte_parameter#(2).cg.cp.auto_0: 2
+byte_parameter#(2).cg.cp.auto_1: 1
+byte_parameter#(3).cg.cp.auto_0: 1
+byte_parameter#(3).cg.cp.auto_1: 1
+long_parameters#(1111111,2222222).cg.cp.auto_0: 2
+long_parameters#(1111111,2222222).cg.cp.auto_1: 1
+long_parameters#(3333333,4444444).cg.cp.auto_0: 1
+long_parameters#(3333333,4444444).cg.cp.auto_1: 1
+type_parameter#(byte).cg.cp.auto_0: 2
+type_parameter#(byte).cg.cp.auto_1: 1
+type_parameter#(shortint).cg.cp.auto_0: 1
+type_parameter#(shortint).cg.cp.auto_1: 1
+untyped_parameter#(5).cg.cp.auto_0: 1
+untyped_parameter#(5).cg.cp.auto_1: 1
+untyped_parameter#(8'd5).cg.cp.auto_0: 2
+untyped_parameter#(8'd5).cg.cp.auto_1: 1
