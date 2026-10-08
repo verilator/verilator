@@ -1404,7 +1404,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             iterateConstNull(nodep->withp());
         }
     }
-    void visit(AstCCall* nodep) override {
+    void visit(AstNodeCCall* nodep) override {
         puts(nodep->funcp()->name());
         puts("(");
         iterateAndNextConstNull(nodep->argsp());
@@ -1597,6 +1597,10 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
     }
     void visit(AstCAwait* nodep) override {
+        if (nodep->resultp()) {
+            iterateConst(nodep->resultp());
+            puts(" = ");
+        }
         putfs(nodep, "co_await ");
         iterateConst(nodep->exprp());
         puts(";\n");

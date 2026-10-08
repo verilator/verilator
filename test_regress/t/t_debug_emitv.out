@@ -1540,6 +1540,23 @@ module t;
             obj.delay_caller();
         end
     end
+    class ProcessKiller;
+        function new;
+            input process victim;
+            kill_virtual(victim);
+        endfunction
+        task kill_virtual;
+            input process victim;
+            victim.kill();
+        endtask
+    endclass
+    initial begin
+        begin : unnamedblk5
+            ProcessKiller killer;
+            killer = /*CRESET*/;
+            killer = new(self());
+        end
+    end
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1
@@ -1798,8 +1815,11 @@ package std;
                 disable label10;
             end
         endfunction
-        task kill;
+        task disable_process;
             $c(m_process->disable(););
+        endtask
+        task kill;
+            disable_process();
         endtask
         task suspend;
             $error("std::process::suspend() not supported");
@@ -1814,6 +1834,8 @@ package std;
         endtask
         task killQueue;
             ref process processQueue[$];
+            process current;
+            current = self();
             begin : unnamedblk1_1
                 int __Vrepeat0;
                 __Vrepeat0 = processQueue.size();
@@ -1822,11 +1844,14 @@ package std;
                         process p;
                         p = processQueue.pop_front();
                         if ((null != p)) begin
-                            p.kill();
+                            p.disable_process();
                         end
                     end
                     __Vrepeat0 = (__Vrepeat0 - 32'h1);
                 end
+            end
+            if ((current.status() == process::KILLED)) begin
+                current.kill();
             end
         endtask
         function get_randstate;

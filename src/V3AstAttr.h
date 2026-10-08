@@ -1056,6 +1056,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(FORK_ON_KILL,                       "onKill",                 false,  CLEAN,  false,      "r") \
     macro(NBA_COMMIT,                         "commit",                 false,  CLEAN,  false,      "w") \
     macro(NBA_ENQUEUE,                        "enqueue",                false,  CLEAN,  false,      "r+") \
+    macro(PROCESS_IS_KILLED,                  "isKilled",               PURE,   CLEAN,  false,      "") \
     macro(RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization",  false,  CLEAN,  false,      "mr") \
     macro(RANDOMIZER_CLEARCONSTRAINTS,        "clearConstraints",       false,  CLEAN,  false,      "") \
     macro(RANDOMIZER_CLEARALL,                "clearAll",               false,  CLEAN,  false,      "") \
