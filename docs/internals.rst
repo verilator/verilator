@@ -920,6 +920,12 @@ Chapter 5. Verilator takes this static approach. The only dynamic aspect is
 that each macro task may block before starting, to wait until its
 prerequisites on other threads have finished.
 
+The generated code also describes each macro-task graph as constant data:
+the function of each macro-task, its estimated cost, the trigger bits its
+code tests, and the dependencies between macro-tasks. Where the graph
+executes, the generated code passes this description and the trigger vector
+to the run-time library, which runs the graph with its static schedule.
+
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major
 source of overhead in this approach. The ``--prof-exec`` switch and the
