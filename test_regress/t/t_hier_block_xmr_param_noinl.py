@@ -11,11 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 test.top_filename = "t/t_hier_block_xmr_param.v"
+test.pli_filename = "t/t_hier_block_xmr_param.cpp"
 
 test.clean_objs()
 
 test.compile(make_main=False,
-             v_flags2=['t/t_hier_block_xmr_param.cpp'],
+             v_flags2=[test.pli_filename],
              verilator_flags2=["--exe", "--hierarchical", "-fno-inline"])
 
 test.execute()

@@ -20,6 +20,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3Control.h"
 #include "V3Graph.h"
 
 #include <map>
@@ -64,19 +65,10 @@ class V3HierBlock final : public V3GraphVertex {
     using StrGParams = std::vector<StrGParam>;
 
 public:
-    // A reference out of this block, promoted to an input port on it
-    struct XmrPort final {
-        string m_refModule;  // Module the reference appears in
-        string m_name;  // Generated port name
-        string m_path;  // Dotted path of the signal it reads
-        int m_width;  // Width, established before V3Width from the declared type
-        bool m_signed;  // Whether the referenced signal is signed
-    };
-
 private:
     // MEMBERS
     const AstModule* const m_modp;  // Hierarchical block module
-    std::vector<XmrPort> m_xmrPorts;  // Promoted outbound references
+    std::vector<VHierXmrPort> m_xmrPorts;  // Promoted outbound references
     // Value parameters that are overridden by #(.param(value)) syntax.
     const std::vector<AstVar*> m_params;
     // Types parameters that are overridden by #(.param(value)) syntax.
@@ -99,8 +91,8 @@ public:
     VL_UNMOVABLE(V3HierBlock);
 
     const AstModule* modp() const { return m_modp; }
-    const std::vector<XmrPort>& xmrPorts() const { return m_xmrPorts; }
-    void addXmrPort(const XmrPort& port) { m_xmrPorts.push_back(port); }
+    const std::vector<VHierXmrPort>& xmrPorts() const { return m_xmrPorts; }
+    void addXmrPort(const VHierXmrPort& port) { m_xmrPorts.push_back(port); }
 
     // Whether a string parameter value can be passed to a hierarchical block's Verilation
     static bool stringParamPassable(const string& value) VL_PURE;

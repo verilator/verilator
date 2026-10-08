@@ -801,7 +801,7 @@ class V3ControlResolver final {
     uint8_t m_mode = NONE;  // Kind of profile_data records is currently active
     std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
     // Promoted hierarchical-block references, by block module name
-    std::unordered_map<string, std::vector<V3Control::HierXmrPort>> m_hierXmrPorts;
+    std::unordered_map<string, std::vector<VHierXmrPort>> m_hierXmrPorts;
     // The same ports by name: V3LinkCells asks per missing pin of every
     // instance, which a scan of the vector would make ports x pins
     std::unordered_map<string, std::set<string>> m_hierXmrPortNames;
@@ -845,11 +845,10 @@ public:
     }
     void addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
                         const string& port, int width, bool isSigned, const string& path) {
-        m_hierXmrPorts[block].push_back(
-            V3Control::HierXmrPort{refModule, port, width, isSigned, path});
+        m_hierXmrPorts[block].emplace_back(refModule, port, path, width, isSigned);
         m_hierXmrPortNames[block].insert(port);
     }
-    const std::vector<V3Control::HierXmrPort>* getHierXmrPorts(const string& module) const {
+    const std::vector<VHierXmrPort>* getHierXmrPorts(const string& module) const {
         const auto it = m_hierXmrPorts.find(module);
         return it == m_hierXmrPorts.cend() ? nullptr : &it->second;
     }
@@ -921,7 +920,7 @@ void V3Control::addHierXmrPort(FileLine* fl, const string& block, const string& 
     V3ControlResolver::s().addHierXmrPort(fl, block, refModule, port, width, isSigned, path);
 }
 
-const std::vector<V3Control::HierXmrPort>* V3Control::getHierXmrPorts(const string& module) {
+const std::vector<VHierXmrPort>* V3Control::getHierXmrPorts(const string& module) {
     return V3ControlResolver::s().getHierXmrPorts(module);
 }
 

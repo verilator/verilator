@@ -1,10 +1,12 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
 // A parameterized hierarchical block whose cells reach outside it. The block is
 // de-parameterized to a mangled name, which the promoted ports must follow.
 //
-// SPDX-FileCopyrightText: 2026 Wilson Snyder
-// SPDX-License-Identifier: CC0-1.0
 
 module tech(input [7:0] phi);
 endmodule

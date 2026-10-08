@@ -27,6 +27,31 @@
 
 //######################################################################
 
+// A reference out of a hierarchical block, promoted to an input port on it.
+// Found in the plan run, written to the generated .vlt, and read back by the
+// child run that creates the port and the top run that connects it.
+class VHierXmrPort final {
+    string m_refModule;  // Module the reference appears in
+    string m_port;  // Generated port name
+    string m_path;  // Dotted path of the signal it reads
+    int m_width;  // Width, established before V3Width from the declared type
+    bool m_signed;  // Whether the referenced signal is signed
+
+public:
+    VHierXmrPort(const string& refModule, const string& port, const string& path, int width,
+                 bool isSigned)
+        : m_refModule{refModule}
+        , m_port{port}
+        , m_path{path}
+        , m_width{width}
+        , m_signed{isSigned} {}
+    const string& refModule() const { return m_refModule; }
+    const string& port() const { return m_port; }
+    const string& path() const { return m_path; }
+    int width() const { return m_width; }
+    bool isSigned() const { return m_signed; }
+};
+
 class V3Control final {
 public:
     struct FsmRegisterWrapper final {
@@ -49,14 +74,6 @@ public:
     static void addCoverageBlockOff(const string& file, int lineno);
     static void addCoverageBlockOff(const string& module, const string& blockname);
     static void addHierWorkers(FileLine* fl, const string& model, int workers);
-    // A reference out of a hierarchical block, promoted to a port on it
-    struct HierXmrPort final {
-        string m_refModule;  // Module the reference appears in
-        string m_port;  // Generated port name
-        int m_width;  // Width of the referenced signal
-        bool m_signed;  // Whether that signal is signed
-        string m_path;  // Dotted path the port reads
-    };
     static void addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
                                const string& port, int width, bool isSigned, const string& path);
     static void addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
@@ -87,7 +104,7 @@ public:
     static int getHierWorkers(const string& model);
     // nullptr if the module has none; a reference return trips gcc's
     // -Wdangling-reference at every call site
-    static const std::vector<HierXmrPort>* getHierXmrPorts(const string& module);
+    static const std::vector<VHierXmrPort>* getHierXmrPorts(const string& module);
     // Whether that module has a promoted port of this name
     static bool hasHierXmrPort(const string& module, const string& port);
     static FileLine* getHierWorkersFileLine(const string& model);

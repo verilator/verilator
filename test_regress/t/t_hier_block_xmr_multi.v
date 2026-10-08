@@ -1,11 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
 // Shapes the single-instance tests do not reach: one block instanced twice so
 // two instances share a promoted port, a block whose parent is not the top,
 // and a reference made from inside a generate block.
 //
-// SPDX-FileCopyrightText: 2026 Wilson Snyder
-// SPDX-License-Identifier: CC0-1.0
 
 module tech(input [7:0] phi);
 endmodule
