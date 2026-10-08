@@ -565,10 +565,8 @@ static void collectOutboundXRef(XRefScan& scan, AstNodeModule* modp, AstVarXRef*
     if (!xrefp->varp()) return;
     const auto vit = scan.m_varToMod.find(xrefp->varp());
     AstNodeModule* const targetp = vit == scan.m_varToMod.cend() ? nullptr : vit->second;
-    // An interface port member is not an outbound reference: the
-    // block reaches it through its own port, and interfaces at a
-    // hierarchical block boundary are diagnosed separately (see the
-    // modport check in HierBlockUsageCollectVisitor).
+    // An interface port member is reached through the block's own port, and a
+    // modport at the boundary is diagnosed in HierBlockUsageCollectVisitor
     if (VN_IS(targetp, Iface)) return;
     if (targetp && !scan.m_inBlock.exists(targetp)) {
         if (scan.m_hasNestedBlock) {
@@ -577,9 +575,8 @@ static void collectOutboundXRef(XRefScan& scan, AstNodeModule* modp, AstVarXRef*
                                              << ": it contains a nested hierarchical block");
             return;
         }
-        // Only reads can be promoted. A written reference would need
-        // an output port and raises ordering questions this does not
-        // address; refuse it rather than silently mis-modelling it.
+        // A write would need an output port, and raises ordering questions this
+        // does not address
         if (xrefp->access().isWriteOrRW()) {
             xrefp->v3warn(E_UNSUPPORTED, "Writing a signal outside a hierarchical block: '"
                                              << xrefp->dotted() << "." << xrefp->prettyName()
@@ -593,9 +590,8 @@ static void collectOutboundXRef(XRefScan& scan, AstNodeModule* modp, AstVarXRef*
                                              << "' indexes a scope or names a package");
             return;
         }
-        // A parameter is a constant, and a port is not: promoting one would
-        // leave constant contexts like 'ph[P]' or '[P-1:0]' reading a runtime
-        // value. The child run resolves its own parameters, so refuse instead.
+        // A port would leave constant contexts such as 'ph[P]' or '[P-1:0]'
+        // reading a runtime value; the child run resolves its own parameters
         if (xrefp->varp()->isParam()) {
             xrefp->v3warn(E_UNSUPPORTED, "Cannot promote reference out of a hierarchical block: '"
                                              << xrefp->dotted() << "." << xrefp->prettyName()
@@ -604,19 +600,16 @@ static void collectOutboundXRef(XRefScan& scan, AstNodeModule* modp, AstVarXRef*
         }
         ++scan.m_count;
         const std::string path = xrefp->dotted() + "." + xrefp->name();
-        // Index-based name: flattening the path to an identifier is
-        // not injective ("a.b_c" and "a_b.c" collide), and the path
-        // is passed explicitly anyway.
+        // Named by index because flattening a path to an identifier is not
+        // injective: "a.b_c" and "a_b.c" would collide
         V3HierBlock* const blockVtxp = scan.m_blockVtxp;
-        // Modules sharing a path share its port; each module that
-        // reads it still needs its own entry, because the rewrite
-        // is matched per module.
+        // Modules sharing a path share its port, but each still needs its own
+        // entry, because the rewrite matches per module
         auto pit = scan.m_pathToPort.find(path);
         const bool newPort = pit == scan.m_pathToPort.cend();
         const std::string portName
             = newPort ? "xmrport_" + cvtToStr(scan.m_pathToPort.size()) : pit->second;
-        // The synthesized name must not shadow anything the design
-        // already declares anywhere in the block's subtree.
+        // The generated name must not shadow anything the block's subtree declares
         const auto dit = scan.m_declared.find(portName);
         if (dit != scan.m_declared.cend()) {
             xrefp->v3warn(E_UNSUPPORTED, "Cannot promote reference out of a hierarchical block: "
@@ -750,11 +743,8 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
                 for (AstNodeModule* const childp : cit->second) todo.push_back(childp);
             }
         }
-        // A nested hierarchical block inside this one cannot be threaded
-        // through: by the time this block is compiled, the inner block is
-        // already a wrapper, so there is no reference left to rewrite and no
-        // way to create the port. Refuse rather than emit a half-connected
-        // model.
+        // By the time this block is compiled an inner block is already a wrapper,
+        // so there is no reference left to rewrite and no way to create the port
         bool hasNestedBlock = false;
         for (AstNodeModule* const modp : inBlock) {
             if (modp != blockp && modp->hierBlock()) hasNestedBlock = true;
