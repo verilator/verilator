@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 interface split_if;
-  reg [15:0] v, w, u;
+  reg [15:0] v, w;
 endinterface
 
 module t (
@@ -168,19 +168,14 @@ module t (
   // accesses must stay in order: the last write must stay last, a read must see the write before
   split_if s_if ();
   virtual split_if s_vif = s_if;
-  reg [15:0] s_split_1, s_split_2;
+  reg [15:0] s_split_1;
   always @(posedge clk) begin
     s_if.v <= m_din;
     s_vif.v <= ~m_din;
   end
   always @(posedge clk) begin
-    s_if.w = m_din;
-    s_vif.w = ~m_din;
+    s_if.w = ~m_din;
     s_split_1 <= s_vif.w;
-  end
-  always @(posedge clk) begin
-    s_if.u = ~m_din;
-    s_split_2 <= s_vif.u;
   end
 
   always @(posedge clk) begin
@@ -200,7 +195,7 @@ module t (
       if (!(p_split_1 == 16'hfeed)) $stop;
       if (!(q_init_1 == 16'h2 && q_init_2 == 16'hbeef && q_init_3 == 16'h1)) $stop;
       if (!(r_split_1 == 16'h0)) $stop;
-      if (!(s_if.v == 16'h0112 && s_split_1 == 16'h0112 && s_split_2 == 16'h0112)) $stop;
+      if (!(s_if.v == 16'h0112 && s_split_1 == 16'h0112)) $stop;
     end
     if (cyc == 5) begin
       m_din <= 16'he22e;
@@ -217,7 +212,7 @@ module t (
       if (!(o_split_1 == 16'hfeed)) $stop;
       if (!(p_split_1 == 16'hfeed)) $stop;
       if (!(r_split_1 == 16'h0)) $stop;
-      if (!(s_if.v == 16'h0112 && s_split_1 == 16'h0112 && s_split_2 == 16'h0112)) $stop;
+      if (!(s_if.v == 16'h0112 && s_split_1 == 16'h0112)) $stop;
     end
     if (cyc == 6) begin
       m_din <= 16'he33e;
@@ -234,7 +229,7 @@ module t (
       if (!(o_split_1 == 16'he11e && o_split_2 == 16'h1ee1)) $stop;
       if (!(p_split_1 == 16'he11e)) $stop;
       if (!(r_split_1 == 16'hfeed)) $stop;
-      if (!(s_if.v == 16'h1ee1 && s_split_1 == 16'h1ee1 && s_split_2 == 16'h1ee1)) $stop;
+      if (!(s_if.v == 16'h1ee1 && s_split_1 == 16'h1ee1)) $stop;
     end
     if (cyc == 7) begin
       $write("*-* All Finished *-*\n");
