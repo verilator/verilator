@@ -32,7 +32,7 @@ void VlCoroutineHandle::resume() {
     if (VL_LIKELY(m_coro)) {
         VL_DEBUG_IF(VL_DBG_MSGF("             Resuming: "); dump(););
         if (m_process) {  // If process state is managed with std::process
-            if (m_process->state() == VlProcess::KILLED) {
+            if (m_process->isKilled()) {
                 m_coro.destroy();
             } else {
                 m_process->state(VlProcess::RUNNING);

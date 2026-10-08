@@ -1128,6 +1128,23 @@ module Vt_debug_emitv_t;
     cg_cross_inst = new();
     Vt_debug_emitv_cg_live_cross cg_live_cross_instVt_debug_emitv_cg_live_cross;
     cg_live_cross_inst = new();
+    class Vt_debug_emitv_ProcessKiller;
+        function new;
+            input Vt_debug_emitv_process victimVt_debug_emitv_process;
+            kill_virtual(victim);
+        endfunction
+        task kill_virtual;
+            input Vt_debug_emitv_process victimVt_debug_emitv_process;
+            kill();
+        endtask
+    endclass
+    initial begin
+        begin : unnamedblk4
+            Vt_debug_emitv_ProcessKiller killerVt_debug_emitv_ProcessKiller;
+            killer = /*CRESET*/;
+            killer = new(self());
+        end
+    end
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1
@@ -1333,6 +1350,8 @@ package Vt_debug_emitv_std;
         endtask
         task killQueue;
             ref Vt_debug_emitv_process processQueue[$]Vt_debug_emitv_process;
+            Vt_debug_emitv_process currentVt_debug_emitv_process;
+            current = self();
             begin : unnamedblk1_1
                 int signed __Vrepeat0;
                 __Vrepeat0 = processQueue.size();
@@ -1341,11 +1360,14 @@ package Vt_debug_emitv_std;
                         Vt_debug_emitv_process pVt_debug_emitv_process;
                         p = processQueue.pop_front();
                         if ((null != p)) begin
-                            kill();
+                            $c(p.m_process->disable(););
                         end
                     end
                     __Vrepeat0 = (__Vrepeat0 - 32'h1);
                 end
+            end
+            if ((status() == process::KILLED)) begin
+                kill();
             end
         endtask
         function get_randstate;

@@ -165,10 +165,14 @@ package std;
 
     static task killQueue(ref process processQueue[$]);
 `ifdef VERILATOR_TIMING
+      process current = process::self();
       repeat (processQueue.size()) begin
         process p = processQueue.pop_front();
-        if (p) p.kill();
+        // Keep in sync with kill(); disable directly to avoid suspending mid-queue
+        if (p) $c(p.m_process, "->disable();");
       end
+      // Park already-killed caller
+      if (current.status() == KILLED) current.kill();
 `endif
     endtask
 

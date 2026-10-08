@@ -35,6 +35,7 @@
 //   through paths leading to nodes that actually use VlProcess.
 //
 // TimingControlVisitor is the one that actually performs transformations:
+// - keep combinational coroutines scheduler-activated and guard them against reentry
 // - for each intra-assignment timing control:
 //     - if it's a continuous assignment, transform it into an always
 //     - introduce an intermediate variable
@@ -85,7 +86,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 enum NodeFlag : uint8_t {
     T_SUSPENDEE = 1 << 0,  // Suspendable (due to dependence on another suspendable)
-    T_SUSPENDER = 1 << 1,  // Suspendable (has timing control)
+    T_SUSPENDER = 1 << 1,  // Suspendable due to a timing control (own or in a callee)
     T_ALLOCS_PROC = 1 << 2,  // Can allocate VlProcess
     T_FORCES_PROC = 1 << 3,  // Forces VlProcess allocation
     T_NEEDS_PROC = 1 << 4,  // Needs access to VlProcess if it's allocated
@@ -308,6 +309,8 @@ class TimingSuspendableVisitor final : public VNVisitor {
         m_procp = nodep;
         iterateChildren(nodep);
         if (nodep->needProcess()) addFlags(nodep, T_FORCES_PROC | T_NEEDS_PROC);
+        if (nodep->isProcessKill())
+            addFlags(nodep, T_SUSPENDEE);  // kill() either returns at once or never resumes
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
         if (!m_classp) return;
@@ -423,6 +426,7 @@ public:
         for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
             DepVtx& depVtx = static_cast<DepVtx&>(vtx);
             if (hasFlags(depVtx.nodep(), T_SUSPENDEE)) propagateFlags(&depVtx, T_SUSPENDEE);
+            if (hasFlags(depVtx.nodep(), T_SUSPENDER)) propagateFlags(&depVtx, T_SUSPENDER);
         }
         if (dumpGraphLevel() >= 6) m_suspGraph.dumpDotFilePrefixed("timing_deps");
 
@@ -505,6 +509,8 @@ class TimingControlVisitor final : public VNVisitor {
     // Module level temporary variables, shared by instances
     V3SharedTmps m_assignWTmps{"__VassignWtmp", VVarType::MODULETEMP};  // Delayed AssignW values
     V3SharedTmps m_assignWGens{"__VassignWgen", VVarType::MODULETEMP};  // AssignW generations
+    // Combinational active flags
+    V3SharedTmps m_combActive{"__VcombActive", VVarType::MODULETEMP};
 
     // DTypes
     AstBasicDType* m_forkDtp = nullptr;  // Fork variable type
@@ -904,8 +910,6 @@ class TimingControlVisitor final : public VNVisitor {
         m_underProcedure = true;
         // Workaround for killing `always` processes (doing that is pretty much UB)
         // TODO: Disallow killing `always` at runtime (throw an error)
-        // Skip for combinational blocks; if the body has timing controls
-        // iterateChildren will add T_SUSPENDEE, otherwise it would spin.
         if (hasFlags(nodep, T_HAS_PROC)
             && !(m_activep && m_activep->sentreep() && m_activep->sentreep()->hasCombo()))
             addFlags(nodep, T_SUSPENDEE);
@@ -916,6 +920,21 @@ class TimingControlVisitor final : public VNVisitor {
         nodep->setSuspendable();
         FileLine* const flp = nodep->fileline();
         AstSenTree* const sentreep = m_activep->sentreep();
+        if (sentreep->hasCombo() && !hasFlags(nodep, T_SUSPENDER)) {
+            // Suspendable only due to kill(). Leave active set permanently when killed.
+            AstVarScope* const activeVscp = m_combActive.make(flp, m_scopep, 1);
+            activeVscp->varp()->setIgnoreSchedWrite();  // Do not retrigger on guard changes
+            AstNode* const bodyp = nodep->stmtsp()->unlinkFrBackWithNext();
+            AstIf* const ifp = new AstIf{
+                flp, new AstLogNot{flp, new AstVarRef{flp, activeVscp, VAccess::READ}}};
+            ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, activeVscp, VAccess::WRITE},
+                                         new AstConst{flp, AstConst::BitTrue{}}});
+            ifp->addThensp(bodyp);
+            ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, activeVscp, VAccess::WRITE},
+                                         new AstConst{flp, AstConst::BitFalse{}}});
+            nodep->addStmtsp(ifp);
+            return;
+        }
         if (sentreep->hasClocked()) {
             AstNode* const bodysp = nodep->stmtsp()->unlinkFrBackWithNext();
             auto* const controlp = new AstEventControl{flp, sentreep->cloneTree(false), bodysp};
@@ -941,6 +960,28 @@ class TimingControlVisitor final : public VNVisitor {
         if (!(hasFlags(nodep, T_SUSPENDEE))) return;
 
         nodep->rtnType("VlCoroutine");
+
+        if (nodep->isProcessKill()) {
+            FileLine* const flp = nodep->fileline();
+            AstCExpr* const processp = new AstCExpr{flp, "vlProcess"};
+            processp->dtypeSetVoid();
+            AstCMethodHard* const isKilledp
+                = new AstCMethodHard{flp, processp, VCMethod::PROCESS_IS_KILLED};
+            isKilledp->usePtr(true);
+            isKilledp->dtypeSetBit();
+            AstIf* const ifp = new AstIf{flp, isKilledp};
+
+            AstCMethodHard* const foreverMethodp = new AstCMethodHard{
+                flp, new AstVarRef{flp, getCreateDelayScheduler(), VAccess::WRITE},
+                VCMethod::SCHED_WAIT_FOREVER};
+            foreverMethodp->dtypeSetVoid();
+            addProcessInfo(foreverMethodp);
+            addDebugInfo(foreverMethodp);
+            AstCAwait* const awaitp = new AstCAwait{flp, foreverMethodp};
+            ifp->addThensp(awaitp);
+
+            nodep->addStmtsp(ifp);
+        }
         // If in a class, create a shared pointer to 'this'
         if (m_classp) {
             AstCStmt* const cstmtp = new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"};
@@ -967,6 +1008,19 @@ class TimingControlVisitor final : public VNVisitor {
 
         if (funcp->needProcess()) m_hasProcess = true;
         if (hasFlags(funcp, T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
+            if (VN_IS(nodep, CNew)) {
+                if (VN_IS(nodep->dtypep(), VoidDType)) {
+                    iterateChildren(nodep);
+                    return;
+                }
+                AstAssign* const assignp = VN_AS(nodep->backp(), Assign);
+                AstCAwait* const awaitp = new AstCAwait{nodep->fileline(), nodep->unlinkFrBack()};
+                awaitp->resultp(assignp->lhsp()->unlinkFrBack());
+                assignp->replaceWith(awaitp);
+                VL_DO_DANGLING(pushDeletep(assignp), assignp);
+                iterateChildren(awaitp);
+                return;
+            }
             // Calls to suspendables are always void return type, hence parent must be StmtExpr
             AstStmtExpr* const stmtp = VN_AS(nodep->backp(), StmtExpr);
             stmtp->replaceWith(new AstCAwait{nodep->fileline(), nodep->unlinkFrBack()});

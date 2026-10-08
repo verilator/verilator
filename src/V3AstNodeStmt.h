@@ -287,10 +287,9 @@ public:
     bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
 class AstCAwait final : public AstNodeStmt {
-    // C++'s co_await. While this is an expression in C++, in Verilator it is only used
-    // with void result types and always appears in statement position. There must never
-    // be a suspendable process that returns a value, so modeling as a statement instead.
+    // C++ co_await statement, optionally assigning its result
     // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op2 := resultp : Optional[AstNodeExpr]  // Result assignment target
     //
     // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sentree related to this await
 public:
