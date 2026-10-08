@@ -14,10 +14,12 @@ module t (
 );
 
   int cyc = 0;
-  logic a = 0, x = 0, y = 0;
+  logic a = 0, x = 0, y = 0, a2 = 0, x2 = 0, y2 = 0;
   int fail_or = 0, fail_or_noparen = 0, fail_prop_or = 0, fail_multi_ante = 0;
   int fail_delay_or = 0, fail_and = 0;
   int cov_prop_or = 0, cov_prop_lor = 0, cov_seq_or = 0, cov_seq_lor = 0;
+  int pass_top_or = 0, fail_top_or = 0, pass_top_not_or = 0, fail_top_not_or = 0;
+  int fail_rep0 = 0, fail_rep1 = 0;
 
   // a in cycles 3, 6, 9, 12; the consequent cycle after each has
   //   cycle 4: x=0 y=0 -> every disjunction fails
@@ -35,6 +37,20 @@ module t (
   assert property (@(posedge clk) a |=> (x && y))
   else fail_and = fail_and + 1;
 
+  // A top-level disjunction must reject too; 'not' of it fails where it holds
+  assert property (@(posedge clk) x or y) pass_top_or = pass_top_or + 1;
+  else fail_top_or = fail_top_or + 1;
+  assert property (@(posedge clk) not (x or y)) pass_top_not_or = pass_top_not_or + 1;
+  else fail_top_not_or = fail_top_not_or + 1;
+
+  // Antecedents with a consecutive repetition. a2 is true only in cycle 15 and x2 in cycle 16,
+  // so every real match holds; the empty matches of a2[*0:2] must not start the consequent
+  assert property (@(posedge clk) a2 [* 0:2] |=> (x2 or y2))
+  else fail_rep0 = fail_rep0 + 1;
+  // a is true in cycles 3, 6, 9, 12: a[*1:2] fails once, in cycle 4
+  assert property (@(posedge clk) a [* 1:2] |=> (x or y))
+  else fail_rep1 = fail_rep1 + 1;
+
   // x or y is true in cycles 7, 10 and 13
   cover property (@(posedge clk) x or y) cov_prop_or = cov_prop_or + 1;
   cover property (@(posedge clk) x || y) cov_prop_lor = cov_prop_lor + 1;
@@ -46,6 +62,8 @@ module t (
     a <= (cyc == 2 || cyc == 5 || cyc == 8 || cyc == 11);
     x <= (cyc == 6 || cyc == 12);
     y <= (cyc == 9 || cyc == 12);
+    a2 <= (cyc == 14);
+    x2 <= (cyc == 15);
     if (cyc == 20) begin
       `checkd(fail_or, 1);
       `checkd(fail_or_noparen, 1);
@@ -57,6 +75,12 @@ module t (
       `checkd(cov_prop_lor, 3);
       `checkd(cov_seq_or, 3);
       `checkd(cov_seq_lor, 3);
+      `checkd(pass_top_or, 3);
+      `checkd(fail_top_or, 17);
+      `checkd(pass_top_not_or, 17);
+      `checkd(fail_top_not_or, 3);
+      `checkd(fail_rep0, 0);
+      `checkd(fail_rep1, 1);
       $write("*-* All Finished *-*\n");
       $finish;
     end
