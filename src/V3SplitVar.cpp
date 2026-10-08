@@ -1111,6 +1111,10 @@ class SplitPackedVarVisitor final : public VNVisitor, public SplitVarImpl {
                 dtypep = new AstBasicDType{varp->subDTypep()->fileline(), VFlagBitPacked{},
                                            newvar.bitwidth()};
                 break;
+            case VBasicDTypeKwd::LOGIC2STATE:
+                dtypep = new AstBasicDType{varp->subDTypep()->fileline(), VFlagLogic2StatePacked{},
+                                           newvar.bitwidth()};
+                break;
             case VBasicDTypeKwd::LOGIC:
                 dtypep = new AstBasicDType{varp->subDTypep()->fileline(), VFlagLogicPacked{},
                                            newvar.bitwidth()};

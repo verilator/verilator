@@ -557,7 +557,6 @@ class UnrollAllVisitor final : VNVisitor {
             reducep = new AstMostSetBitP1{flp, vecExprp->cloneTree(false)};
         } else {
             AstCountOnes* const conep = new AstCountOnes{flp, vecExprp->cloneTree(false)};
-            conep->dtypeSetInteger2State();
             reducep = conep;
         }
         reducep = resizeToWidth(reducep, targetRefp);
