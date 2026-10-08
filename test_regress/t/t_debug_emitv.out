@@ -1321,8 +1321,6 @@ package Vt_debug_emitv_std;
                 end
             end
         endtask
-
-        ???? // SYSTEMCSECTION
         function get_randstate;
             string s;
             begin : label6
@@ -1339,7 +1337,9 @@ package Vt_debug_emitv_std;
         endtask
         function new;
         endfunction
-        process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITINGendclass
+        process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITING
+        ???? // SYSTEMCSECTION
+    endclass
     class Vt_debug_emitv_semaphore;
         typedef struct {
             Vt_debug_emitv_process proc;

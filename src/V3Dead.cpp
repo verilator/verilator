@@ -721,7 +721,8 @@ class DeadVisitor final : public VNVisitor {
 
     void deadCheckCells() {
         for (AstCell* cellp : m_cellsp) {
-            if (cellp->user1() == 0 && !cellp->modp()->stmtsp() && v3Global.opt.fDeadCells()) {
+            if (cellp->user1() == 0 && v3Global.opt.fDeadCells() &&  //
+                !cellp->modp()->stmtsp() && !cellp->modp()->scSectionsp()) {
                 cellp->modp()->user1Inc(-1);
                 deleting(cellp);
             }

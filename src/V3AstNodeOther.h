@@ -304,6 +304,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     // excluding $unit package stuff
     // @astgen op1 := inlinesp : List[AstNode]
     // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op3 := scSectionsp : List[AstSystemCSection]
     string m_name;  // Name of the module
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
     // dist-ast-dump-suppress  // For some user errors messages only, visible where used
@@ -2024,9 +2025,7 @@ public:
     AstSystemCSection(FileLine* fl, VSystemCSectionType sectionType, const std::string& text)
         : ASTGEN_SUPER_SystemCSection(fl)
         , m_sectionType{sectionType}
-        , m_text{text} {
-        v3Global.setHasSystemCSections();
-    }
+        , m_text{text} {}
     ASTGEN_MEMBERS_AstSystemCSection;
     VSystemCSectionType sectionType() const { return m_sectionType; }
     const std::string& text() const { return m_text; }
