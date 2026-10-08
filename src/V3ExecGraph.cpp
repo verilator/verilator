@@ -1144,7 +1144,7 @@ void moveDispatchToFunction(AstExecGraph* const execGraphp) {
     // and call that function where the graph executes.
     FileLine* const flp = execGraphp->fileline();
     AstNodeModule* const modp = v3Global.rootp()->topModulep();
-    AstCFunc* const funcp = new AstCFunc{flp, execGraphp->name() + "_dispatch", nullptr};
+    AstCFunc* const funcp = new AstCFunc{flp, "runExecGraph_" + execGraphp->name(), nullptr};
     funcp->isLoose(true);
     funcp->dontCombine(true);
     funcp->addStmtsp(execGraphp->stmtsp()->unlinkFrBackWithNext());
