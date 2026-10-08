@@ -412,6 +412,7 @@ public:
     void clearSelf(const VlClass* selfp) {
         if (m_selfp == selfp) m_selfp = nullptr;
     }
+    bool isKilled() const { return state() == KILLED; }
 
     // Random state (IEEE 1800-2023 9.7, 18.14)
     void srandom(uint64_t seed) VL_MT_UNSAFE { m_rng.srandom(seed); }
@@ -2167,6 +2168,8 @@ struct VlNull final {
     }
 };
 
+struct VlClassRefNoInit final {};
+
 template <class T>
 inline bool operator==(T* lhsp, VlNull) {
     return !lhsp;
@@ -2212,6 +2215,10 @@ public:
         : m_objp{new T_Class} {
         // Instantly init the object to presevrve RAII
         m_objp->init(std::forward<T_Args>(args)...);
+        m_objp->m_deleterp = &deleter;
+    }
+    VlClassRef(VlDeleter& deleter, VlClassRefNoInit)
+        : m_objp{new T_Class} {
         m_objp->m_deleterp = &deleter;
     }
     VlClassRef(VlDeleter& deleter, T_Class&& args)
