@@ -78,6 +78,10 @@ module t;
   bit [1:0] q;
   int c;
   int dc;
+  int nd;
+  int nd_n;
+  int nd_z;
+  int lw;
   string x_log;
   string y_log;
   string z_at4;
@@ -91,6 +95,8 @@ module t;
   string u_log;
   string d_log;
   string dc_log;
+  string nd_log;
+  string lw_log;
   string e_log;
   string h_log;
   virtual bus mvif;
@@ -139,7 +145,7 @@ module t;
   always #7 clk2 = ~clk2;
 
   default clocking cb @(posedge clk);
-    output q, c, dc;
+    output q, c, dc, nd, lw;
   endclocking
 
   bus a (.clk);
@@ -187,6 +193,8 @@ module t;
   always @(q) if ($time != 0) q_log = {q_log, $sformatf("%0d@%0d ", q, $time)};
   always @(c) if ($time != 0) c_log = {c_log, $sformatf("%0d@%0d ", c, $time)};
   always @(dc) if ($time != 0) dc_log = {dc_log, $sformatf("%0d@%0d ", dc, $time)};
+  always @(nd) if ($time != 0) nd_log = {nd_log, $sformatf("%0d@%0d ", nd, $time)};
+  always @(lw) if ($time != 0) lw_log = {lw_log, $sformatf("%0d@%0d ", lw, $time)};
   always @(a.e) if ($time != 0) e_log = {e_log, $sformatf("a%0d@%0d ", a.e, $time)};
   always @(b.e) if ($time != 0) e_log = {e_log, $sformatf("b%0d@%0d ", b.e, $time)};
   always @(a.h) if ($time != 0) h_log = {h_log, $sformatf("a%0d@%0d ", a.h, $time)};
@@ -232,6 +240,29 @@ module t;
       @(cb);
       cb.c <= ##(count(i)) i;
     end
+  end
+
+  // Also when another process changes the count while the drives are pending
+  initial begin
+    nd_n = 3;
+    nd_z = 10;
+    for (int i = 0; i < 3; ++i) begin
+      @(cb);
+      cb.nd <= ##(nd_n) nd_z + 1;
+      nd_z += 10;
+    end
+  end
+  initial begin
+    #12 nd_n = 1;
+    #10 nd_n = 2;
+  end
+
+  // Of drives maturing in the same cycle, the last one executed wins (IEEE 1800-2023 14.16.2)
+  initial begin
+    @(cb);
+    cb.lw <= ##2 1;
+    @(cb);
+    cb.lw <= ##1 2;
   end
 
   // Also with an index selecting the handle computed by a function
@@ -420,6 +451,8 @@ module t;
     `checks(q_log, "1@25 2@35 ")
     `checks(c_log, "1@15 2@35 3@55 ")
     `checks(dc_log, "7@25 ")
+    `checks(nd_log, "21@25 11@35 31@45 ")
+    `checks(lw_log, "2@25 ")
     `checks(e_log, "a7@25 ")
     `checks($sformatf("%0b", rvif == b), "1")
     `checks($sformatf("%0.1f %0.1f %0d %0d", ora[0], ors, oua[0].f, oua[1].f), "1.5 2.5 4 3")
