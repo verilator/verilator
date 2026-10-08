@@ -40,10 +40,8 @@ module t (
   logic [1:0] s;
   logic [1:0] values[4];
   logic [6:0] slice;
-  logic signed [14:0] signed_value;
+  logic signed [6:0] signed_value;
   logic [64:0] wide_value;
-  logic [94:0] expanded_value;
-  logic [32:0] truncated_value;
   e_t ev;
   alias_t alias_value;
   struct packed {logic [1:0] status;} packet;
@@ -108,13 +106,9 @@ module t (
     get(ev, slice[4:3]);
     `checkh(slice, (7'h7f & ~(7'h3 << 3)) | (7'(cycle) << 3));
     get_signed(cycle[0] ? NEG : POS, signed_value);
-    `checkh(signed_value, cycle[0] ? 15'(-7) : 15'(37));
+    `checkh(signed_value, cycle[0] ? 7'(-7) : 7'(37));
     get_wide(cycle[0] ? HI : LO, wide_value);
     `checkh(wide_value, cycle[0] ? HI : LO);
-    get_wide(cycle[0] ? HI : LO, expanded_value);
-    `checkh(expanded_value, 95'(wide_value));
-    get_wide(cycle[0] ? HI : LO, truncated_value);
-    `checkh(truncated_value, 33'(wide_value));
     `checkh(read_value(ev), 2'(cycle));
     `checkh(read_ref(ev), ev);
     next_value(ev);

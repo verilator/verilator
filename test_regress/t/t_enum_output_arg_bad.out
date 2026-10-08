@@ -1,57 +1,82 @@
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:64:17: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:80:17: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   64 |     output_bits(ev);
+   80 |     output_bits(ev);
       |                 ^~
                   ... For error description see https://verilator.org/warn/ENUMVALUE?v=latest
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:66:18: Implicit conversion to enum 'enum p::e_t' from 'enum p::other_t' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:82:18: Implicit conversion to enum 'enum p::e_t' from 'enum p::other_t' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   66 |     output_other(ev);
+   82 |     output_other(ev);
       |                  ^~
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:67:24: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:83:24: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   67 |     output_bits(packet.status);
+   83 |     output_bits(packet.status);
       |                        ^~~~~~
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:68:19: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:84:19: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   68 |     function_bits(ev);
+   84 |     function_bits(ev);
       |                   ^~
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:70:16: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:86:16: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   70 |     inout_enum(bits);
+   86 |     inout_enum(bits);
       |                ^~~~
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:72:16: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:88:16: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   72 |     inout_bits(ev);
+   88 |     inout_bits(ev);
       |                ^~
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:74:16: Implicit conversion to enum 'enum p::e_t' from 'logic[6:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:90:22: Implicit conversion to enum 'enum p::wider_t' from 'logic[6:0]' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   74 |     inout_enum(wider_bits);
-      |                ^~~~~~~~~~
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:76:16: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+   90 |     inout_wider_enum(wider_bits);
+      |                      ^~~~~~~~~~
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:92:16: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   76 |     input_enum(bits);
+   92 |     input_enum(bits);
       |                ^~~~
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:78:17: Implicit conversion to enum 'enum p::wider_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:93:23: Implicit conversion to enum 'enum p::wider_t' from 'logic[6:0]' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   78 |     output_bits(wider_ev);
-      |                 ^~~~~~~~
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:79:16: Implicit conversion to enum 'enum p::wider_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+   93 |     output_wider_bits(wider_ev);
+      |                       ^~~~~~~~
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:94:22: Implicit conversion to enum 'enum p::wider_t' from 'logic[6:0]' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   79 |     inout_bits(wider_ev);
+   94 |     inout_wider_bits(wider_ev);
+      |                      ^~~~~~~~
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:96:16: Implicit conversion to enum 'enum p::other_t' from 'enum p::e_t' (IEEE 1800-2023 6.19.3)
+                                                 : ... note: In instance 't'
+                                                : ... Suggest use enum's mnemonic, or static cast
+   96 |     inout_enum(other_ev);
       |                ^~~~~~~~
-%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:81:14: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:96:16: Implicit conversion to enum 'enum p::e_t' from 'enum p::other_t' (IEEE 1800-2023 6.19.3)
                                                  : ... note: In instance 't'
                                                 : ... Suggest use enum's mnemonic, or static cast
-   81 |     ref_enum(bits);
+   96 |     inout_enum(other_ev);
+      |                ^~~~~~~~
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:98:14: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+                                                 : ... note: In instance 't'
+                                                : ... Suggest use enum's mnemonic, or static cast
+   98 |     ref_enum(bits);
       |              ^~~~
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:99:14: Implicit conversion to enum 'enum p::e_t' from 'enum p::other_t' (IEEE 1800-2023 6.19.3)
+                                                 : ... note: In instance 't'
+                                                : ... Suggest use enum's mnemonic, or static cast
+   99 |     ref_enum(other_ev);
+      |              ^~~~~~~~
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:100:20: Implicit conversion to enum 'enum p::e_t' from 'logic[1:0]' (IEEE 1800-2023 6.19.3)
+                                                  : ... note: In instance 't'
+                                                 : ... Suggest use enum's mnemonic, or static cast
+  100 |     const_ref_enum(bits);
+      |                    ^~~~
+%Error-ENUMVALUE: t/t_enum_output_arg_bad.v:101:20: Implicit conversion to enum 'enum p::e_t' from 'enum p::other_t' (IEEE 1800-2023 6.19.3)
+                                                  : ... note: In instance 't'
+                                                 : ... Suggest use enum's mnemonic, or static cast
+  101 |     const_ref_enum(other_ev);
+      |                    ^~~~~~~~
 %Error: Exiting due to

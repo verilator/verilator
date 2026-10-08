@@ -8070,12 +8070,22 @@ class WidthVisitor final : public VNVisitor {
                                      portp->direction() == VDirection::OUTPUT);
                     userIterate(pinp, WidthVP{portDTypep, FINAL, STREAM_USE_ASSIGN}.p());
                 } else {
-                    // Inouts copy both into and out of the formal (IEEE 1800-2023 13.5.1).
-                    if (portp->direction() == VDirection::INOUT) {
-                        checkEnumAssign(nodep, pinp, portDTypep, true);
+                    // Outputs copy formal to actual; inouts also copy actual to formal
+                    // (IEEE 1800-2023 13.5.1). Check before resizing changes either type.
+                    if (portp->direction() == VDirection::OUTPUT
+                        || portp->direction() == VDirection::INOUT) {
+                        // The actual is the destination, not the source expression.
+                        checkEnumAssign(nodep, pinp, pinDTypep, portDTypep, nullptr);
+                        if (portp->direction() == VDirection::INOUT) {
+                            checkEnumAssign(nodep, pinp, portDTypep, pinDTypep, pinp);
+                        }
+                        // Enum conversions were checked above; retain normal argument sizing.
+                        checkClassAssign(nodep, "Function Argument", pinp, portDTypep);
+                        iterateCheck(nodep, "Function Argument", pinp, ASSIGN, FINAL, portDTypep,
+                                     EXTEND_LHS, true, STREAM_USE_NONE, false);
+                    } else {
+                        iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep);
                     }
-                    iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep,
-                                       portp->direction() == VDirection::OUTPUT);
                 }
             }
         }
@@ -9684,19 +9694,14 @@ class WidthVisitor final : public VNVisitor {
         (void)underp;  // cppcheck
     }
     void checkEnumAssign(const AstNode* const parentp, AstNode* const underp,
-                         const AstNodeDType* const expDTypep, const bool isOutputArg = false,
-                         const bool warnOn = true) {
-        // Output arguments copy the formal to the actual on return (IEEE 1800-2023 13.5.1).
-        const AstNodeDType* const toDTypep = isOutputArg ? underp->dtypep() : expDTypep;
-        const AstNodeDType* const fromDTypep = isOutputArg ? expDTypep : underp->dtypep();
+                         const AstNodeDType* const toDTypep, const AstNodeDType* const fromDTypep,
+                         const AstNode* const fromp, const bool warnOn = true) {
         if (const AstEnumDType* const enump = VN_CAST(toDTypep->skipRefToEnump(), EnumDType)) {
-            const VCastable castable
-                = AstNode::computeCastable(enump, fromDTypep, isOutputArg ? nullptr : underp);
+            const VCastable castable = AstNode::computeCastable(enump, fromDTypep, fromp);
             if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
-                && castable != VCastable::ENUM_IMPLICIT
-                && (isOutputArg || (!VN_IS(underp, Cast) && !VN_IS(underp, CastDynamic)))
-                && !m_enumItemp && !parentp->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE)
-                && warnOn) {
+                && castable != VCastable::ENUM_IMPLICIT && !VN_IS(fromp, Cast)
+                && !VN_IS(fromp, CastDynamic) && !m_enumItemp
+                && !parentp->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
                 underp->v3warn(ENUMVALUE,
                                "Implicit conversion to enum "
                                    << toDTypep->prettyDTypeNameQ() << " from "
@@ -9708,7 +9713,7 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void iterateCheckAssign(AstNode* parentp, const char* side, AstNode* rhsp, Stage stage,
-                            AstNodeDType* lhsDTypep, const bool isOutputArg = false) {
+                            AstNodeDType* lhsDTypep) {
         // Check using assignment-like context rules
         // UINFOTREE(1, parentp, "", "checkass");
         UASSERT_OBJ(stage == FINAL, parentp, "Bad width call");
@@ -9749,8 +9754,7 @@ class WidthVisitor final : public VNVisitor {
         const bool lhsStream = (VN_IS(parentp, NodeAssign)
                                 && VN_IS(VN_AS(parentp, NodeAssign)->lhsp(), NodeStream));
         rhsp = iterateCheck(parentp, side, rhsp, ASSIGN, FINAL, lhsDTypep,
-                            lhsStream ? EXTEND_OFF : EXTEND_LHS, true, STREAM_USE_NONE,
-                            isOutputArg);
+                            lhsStream ? EXTEND_OFF : EXTEND_LHS);
         // UINFOTREE(1, parentp, "", "checkout");
         (void)rhsp;  // cppcheck
     }
@@ -9821,7 +9825,7 @@ class WidthVisitor final : public VNVisitor {
     AstNode* iterateCheck(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
                           Stage stage, AstNodeDType* expDTypep, ExtendRule extendRule,
                           bool warnOn = true, StreamUse streamUse = STREAM_USE_NONE,
-                          const bool isOutputArg = false) {
+                          const bool checkEnums = true) {
         // Perform data type check on underp, which is underneath parentp used for error reporting
         // Returns the new underp
         // Conversion to/from doubles and integers are before iterating.
@@ -9861,7 +9865,9 @@ class WidthVisitor final : public VNVisitor {
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
             if (expBasicp && underBasicp) {
-                checkEnumAssign(parentp, underp, expDTypep, isOutputArg, warnOn);
+                if (checkEnums) {
+                    checkEnumAssign(parentp, underp, expDTypep, underp->dtypep(), underp, warnOn);
+                }
                 AstNodeDType* subDTypep = expDTypep;
                 // We then iterate FINAL before width fixes, as if the under-operation
                 // is e.g. an ADD, the ADD will auto-adjust to the proper data type

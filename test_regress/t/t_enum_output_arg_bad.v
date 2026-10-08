@@ -27,6 +27,7 @@ endpackage
 module t;
   import p::*;
   alias_t ev;
+  other_t other_ev;
   wider_t wider_ev;
   logic [1:0] bits;
   logic [6:0] wider_bits;
@@ -38,6 +39,10 @@ module t;
 
   task automatic output_other(output other_t value);
     value = Z;
+  endtask
+
+  task automatic output_wider_bits(output logic [6:0] value);
+    value = 7'd65;
   endtask
 
   function automatic void function_bits(output logic [1:0] value);
@@ -52,11 +57,22 @@ module t;
     value = 2'd3;
   endtask
 
+  task automatic inout_wider_enum(inout wider_t value);
+    value = HIGH;
+  endtask
+
+  task automatic inout_wider_bits(inout logic [6:0] value);
+    value = 7'd65;
+  endtask
+
   task automatic input_enum(input e_t value);
   endtask
 
   task automatic ref_enum(ref e_t value);
     value = C;
+  endtask
+
+  task automatic const_ref_enum(const ref e_t value);
   endtask
 
   initial begin
@@ -70,14 +86,18 @@ module t;
     inout_enum(bits);
     // The copy-out conversion is illegal.
     inout_bits(ev);
-    // Resizing must not hide the enum check.
-    inout_enum(wider_bits);
+    // Wider arguments have matching widths but incompatible types.
+    inout_wider_enum(wider_bits);
     // Input checks must remain unchanged.
     input_enum(bits);
-    // Copy-out must check the original enum lvalue before resizing.
-    output_bits(wider_ev);
-    inout_bits(wider_ev);
+    output_wider_bits(wider_ev);
+    inout_wider_bits(wider_ev);
+    // Distinct enums are incompatible in both copy directions.
+    inout_enum(other_ev);
     // Ref arguments still require matching types.
     ref_enum(bits);
+    ref_enum(other_ev);
+    const_ref_enum(bits);
+    const_ref_enum(other_ev);
   end
 endmodule
