@@ -1042,6 +1042,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(NBA_ENQUEUE,                        "enqueue",                false,  "r+") \
     macro(NBA_ORDER_ADD,                      "add",                    false,  "rr") \
     macro(NBA_ORDER_INDEX,                    "index",                  false,  "") \
+    macro(NBA_ORDER_LAST,                     "last",                   false,  "") \
     macro(NBA_ORDER_NEXT,                     "next",                   false,  "") \
     macro(NBA_ORDER_SITE,                     "site",                   false,  "") \
     macro(NBA_ORDER_TOUCH,                    "touch",                  false,  "") \
