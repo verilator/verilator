@@ -360,11 +360,9 @@ class SplitVisitor final : public VNVisitor {
 
     void visit(AstAssignDly* nodep) override {
         if (!m_graphp || m_noSplitWhy) return;
-        // Like other timing controls, an intra-assignment one prevents splitting
-        if (nodep->timingControlp()) {
-            m_noSplitWhy = "TimingControl";
-            return;
-        }
+        // An intra-assignment timing control does not block, but it reads variables when the NBA
+        // executes, like the value
+        if (AstNode* const controlp = nodep->timingControlp()) iterateChildren(controlp);
         iterate(nodep->rhsp());
         VL_RESTORER(m_inDly);
         m_inDly = true;
@@ -372,9 +370,9 @@ class SplitVisitor final : public VNVisitor {
     }
 
     void visit(AstMemberSel* nodep) override {
-        // NBAs through handles can update the same variable, also as other NBAs, so must be kept
-        // in order (IEEE 1800-2023 4.6)
-        if (m_inDly) m_noSplitWhy = "NBA through handle";
+        // A variable selected through a handle can be the same as one accessed otherwise, which
+        // is not known here, so the accesses must be kept in order
+        if (m_graphp) m_noSplitWhy = "Handle";
         visit(static_cast<AstNode*>(nodep));
     }
 
