@@ -1139,6 +1139,23 @@ void implementExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& sc
     addThreadStartToExecGraph(execGraphp, funcps, schedule.id());
 }
 
+void moveDispatchToFunction(AstExecGraph* const execGraphp) {
+    // Move the statements that dispatch the graph to the thread pool into their own function,
+    // and call that function where the graph executes.
+    FileLine* const flp = execGraphp->fileline();
+    AstNodeModule* const modp = v3Global.rootp()->topModulep();
+    AstCFunc* const funcp = new AstCFunc{flp, "runExecGraph_" + execGraphp->name(), nullptr};
+    funcp->isLoose(true);
+    funcp->dontCombine(true);
+    funcp->addStmtsp(execGraphp->stmtsp()->unlinkFrBackWithNext());
+    modp->addStmtsp(funcp);
+    AstCCall* const callp = new AstCCall{flp, funcp};
+    const AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
+    callp->selfPointer(VSelfPointerText{VSelfPointerText::VlSyms{}, scopep->nameDotless()});
+    callp->dtypeSetVoid();
+    execGraphp->addStmtsp(callp->makeStmt());
+}
+
 // Called by Verilator top stage
 void implement(AstNetlist* netlistp) {
     // Gather all ExecGraphs
@@ -1190,6 +1207,8 @@ void implement(AstNetlist* netlistp) {
         }
 
         addThreadEndWrapper(execGraphp);
+
+        moveDispatchToFunction(execGraphp);
     }
 }
 
