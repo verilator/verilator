@@ -573,6 +573,14 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypeSetUInt64();  // A pointer, but not that it matters
     }
 
+    // Whether nodep, an override's value, is an untyped pattern, or a conditional of such
+    static bool isOverridePattern(const AstNode* nodep) {
+        if (const AstPattern* const patternp = VN_CAST(nodep, Pattern)) {
+            return !patternp->childDTypep();
+        }
+        const AstCond* const condp = VN_CAST(nodep, Cond);
+        return condp && isOverridePattern(condp->thenp()) && isOverridePattern(condp->elsep());
+    }
     void visit(AstCond* nodep) override {
         // op = cond ? expr1 : expr2
         // See IEEE-2012 11.4.11 and Table 11-21.
@@ -581,6 +589,32 @@ class WidthVisitor final : public VNVisitor {
         //   Signed: Output signed iff RHS & THS signed  (presumed, not in IEEE)
         //   Real: Output real if either expression is real, non-real argument gets converted
         assertAtExpr(nodep);
+        if (m_inParamOverride) {
+            // Choosing between override patterns, so type and fold only the condition, then
+            // keep the pattern it picks, which the specialized module types as a lone one
+            const int errors = V3Error::errorCount();
+            {
+                VL_RESTORER(m_inParamOverride);
+                m_inParamOverride = false;
+                iterateCheckBool(nodep, "Conditional Test", nodep->condp(), BOTH);
+                V3Const::constifyParamsEdit(nodep->condp());  // Reports a non-constant
+            }
+            const AstConst* const constp = VN_CAST(nodep->condp(), Const);
+            const bool known = constp && !constp->num().isFourState();
+            // Folding reports a non-constant, but leaves x or z, even inside a conditional
+            if (!known && V3Error::errorCount() == errors) {
+                nodep->condp()->v3warn(E_UNSUPPORTED,
+                                       "Unsupported: Parameter override '?:' with assignment"
+                                       " patterns and a condition without a known value.");
+            }
+            // After an error, keep the first pattern, so that no conditional is left untyped
+            AstNodeExpr* const keepp
+                = (known && constp->isZero() ? nodep->elsep() : nodep->thenp())->unlinkFrBack();
+            nodep->replaceWith(keepp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            userIterate(keepp, WidthVP{SELF, BOTH}.p());
+            return;
+        }
         if (m_vup->prelim()) {  // First stage evaluation
             // Just once, do the conditional, expect one bit out.
             iterateCheckBool(nodep, "Conditional Test", nodep->condp(), BOTH);
@@ -5972,6 +6006,9 @@ class WidthVisitor final : public VNVisitor {
             }
             return;
         }
+        // Any other pattern is typed here, so its members aren't override patterns
+        VL_RESTORER(m_inParamOverride);
+        m_inParamOverride = false;
         if (nodep->didWidthAndSet()) return;
         UINFO(9, "PATTERN " << nodep);
         if (nodep->childDTypep()) {  // data_type '{ pattern }
@@ -7516,7 +7553,7 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
             // An override pattern is left for the specialized module to type
             VL_RESTORER(m_inParamOverride);
-            m_inParamOverride = VN_IS(nodep->exprp(), Pattern);
+            m_inParamOverride = isOverridePattern(nodep->exprp());
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         } else if (!m_paramsOnly) {
             if (!nodep->modVarp()->didWidth()) {
