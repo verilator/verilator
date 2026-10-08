@@ -17,16 +17,13 @@ test.mkdir_ok(lib_dir)
 test.run(logfile=lib_dir + "/verilator.log",
          cmd=[
              "perl", os.environ["VERILATOR_ROOT"] + "/bin/verilator", "-cc", "-Mdir", lib_dir,
-             "--lib-create", "sub", "--prefix", "Vsub", "+define+LIB_CREATE",
-             test.top_filename
+             "--lib-create", "sub", "--prefix", "Vsub", "+define+LIB_CREATE", test.top_filename
          ],
          verilator_run=True)
 
 test.run(logfile=lib_dir + "/make.log", cmd=[os.environ["MAKE"], "-C", lib_dir, "-f", "Vsub.mk"])
 
-test.compile(verilator_flags2=[
-    "--binary", "-LDFLAGS", "sub/libsub.a", lib_dir + "/sub.sv"
-])
+test.compile(verilator_flags2=["--binary", "-LDFLAGS", "sub/libsub.a", lib_dir + "/sub.sv"])
 
 test.execute()
 
