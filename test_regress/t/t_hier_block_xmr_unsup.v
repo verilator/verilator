@@ -1,11 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
 // References out of a hierarchical block that cannot be promoted to a port.
 // Each must be refused rather than silently mis-modelled, since a wrong width
 // or a dropped write is wrong hardware.
 //
-// SPDX-FileCopyrightText: 2026 Wilson Snyder
-// SPDX-License-Identifier: CC0-1.0
 
 module tech #(parameter W = 8) (input [W-1:0] phi, input real anal, input bit flag);
   parameter CONSTVAL = 3;
@@ -118,7 +120,7 @@ module bench(output o, input i);
   blk_const  k0(o6, i);
   blk_call   f0(o7, i);
   blk_index  x0(o8, i);
-  assign o = o1 ^ o2 ^ o3 ^ o4 ^ o5;
+  assign o = o1 ^ o2 ^ o3 ^ o4 ^ o5 ^ o6 ^ o7 ^ o8;
 endmodule
 
 module t;

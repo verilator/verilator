@@ -1,11 +1,13 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
+// This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
+// SPDX-License-Identifier: CC0-1.0
+
 // A dotted path is relative to the module it appears in. Two modules in the
 // same hierarchical block spell the same path, but only one of them reaches
 // outside; the other resolves to its own instance and must be left alone.
 //
-// SPDX-FileCopyrightText: 2026 Wilson Snyder
-// SPDX-License-Identifier: CC0-1.0
 
 module tech(input [7:0] phi);
 endmodule
