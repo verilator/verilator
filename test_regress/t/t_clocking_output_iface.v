@@ -21,6 +21,9 @@ typedef struct packed {
   logic [7:0] value;
 } packet_t;
 
+// Clocking outputs drive input ports: the reproducer shape requires
+// input-direction ports, so waive ASSIGNIN on the sender interfaces.
+/* verilator lint_off ASSIGNIN */
 interface direct_sender_if (
     input wire clk,
     input wire enable,
@@ -92,6 +95,7 @@ interface select_sender_if (
 
   select_driver driver = new;
 endinterface
+/* verilator lint_on ASSIGNIN */
 
 // Control: struct crosses the harness boundary as one flat vector.
 interface direct_harness_if (
@@ -183,9 +187,24 @@ module t;
   packet_t got_direct;
   logic [3:0] exp_words [0:1];
 
-  dut_direct direct_i (.clk(clk));
-  dut_pattern pattern_i (.clk(clk));
-  dut_select select_i (.clk(clk));
+  // DUT inputs are driven through the bound harnesses; the top-level
+  // connections below are dummies that only satisfy pin connectivity.
+  logic unused_enable1, unused_enable2, unused_enable3;
+  logic unused_strobe1, unused_strobe2, unused_strobe3;
+  logic [$bits(packet_t)-1:0] unused_bus1;
+  logic unused_flag;
+  logic [5:0] unused_id;
+  logic [7:0] unused_value;
+  logic [3:0] unused_words [0:1];
+  logic unused_idx;
+  logic [7:0] unused_vec;
+
+  dut_direct direct_i (.clk(clk), .enable(unused_enable1), .strobe(unused_strobe1),
+                       .bus(unused_bus1));
+  dut_pattern pattern_i (.clk(clk), .enable(unused_enable2), .strobe(unused_strobe2),
+                          .flag(unused_flag), .id(unused_id), .value(unused_value));
+  dut_select select_i (.clk(clk), .enable(unused_enable3), .strobe(unused_strobe3),
+                        .words(unused_words), .idx(unused_idx), .vec(unused_vec));
 
   always #5 clk = ~clk;
 
@@ -216,8 +235,10 @@ module t;
 
       @(posedge clk);
       #1;
+      /* verilator lint_off ASSIGNIN */
       select_i.idx = (i & 1) != 0;
       select_i.vec = 8'((i * 17 + 9) & 255);
+      /* verilator lint_on ASSIGNIN */
       select_i.harness.sender.driver.drive({expected[7:4], expected[3:0], select_i.vec[7:4]});
       #1;
       `checkd(select_i.strobe, 1'b1);

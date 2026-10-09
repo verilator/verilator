@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary", "--timing", "-Wno-ASSIGNIN", "-Wno-PINMISSING"])
+test.compile(verilator_flags2=["--binary", "--timing"])
 
 test.execute()
 
