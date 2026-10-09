@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
             TEST_CHECK_EQ(VerilatedVpi::cbNextDeadline(), contextp->time() + 1);
         }
         if ((contextp->time() % 5) == 0) topp->clk = !topp->clk;
-            // mon_do();
+        // mon_do();
 #if VM_TRACE
         if (tfp) tfp->dump(contextp->time());
 #endif

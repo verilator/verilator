@@ -225,32 +225,32 @@ public:
 //  user2.  When the member goes out of scope it will be automagically
 //  freed up.
 
-class VNUserInUseBase VL_NOT_FINAL {
-protected:
-    static void allocate(int id, uint32_t& cntGblRef, bool& userBusyRef) {
-        // Perhaps there's still a AstUserInUse in scope for this?
-        UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser" + cvtToStr(id)
-                                         + "InUse request when under another AstUserInUse");
-        userBusyRef = true;
-        clearcnt(id, cntGblRef, userBusyRef);
-    }
-    static void free(int id, uint32_t& cntGblRef, bool& userBusyRef) {
-        UASSERT_STATIC(userBusyRef, "Free of User" + cvtToStr(id) + "() not under AstUserInUse");
-        clearcnt(id, cntGblRef, userBusyRef);  // Includes a checkUse for us
-        userBusyRef = false;
-    }
-    static void clearcnt(int id, uint32_t& cntGblRef, const bool& userBusyRef) {
-        UASSERT_STATIC(userBusyRef, "Clear of User" + cvtToStr(id) + "() not under AstUserInUse");
-        // If this really fires and is real (after 2^32 edits???)
-        // we could just walk the tree and clear manually
-        ++cntGblRef;
-        UASSERT_STATIC(cntGblRef, "User*() overflowed!");
-    }
-    static void checkcnt(int id, uint32_t&, const bool& userBusyRef) {
-        UASSERT_STATIC(userBusyRef,
-                       "Check of User" + cvtToStr(id) + "() failed, not under AstUserInUse");
-    }
-};
+class VNUserInUseBase
+VL_NOT_FINAL{protected : static void allocate(int id, uint32_t& cntGblRef, bool& userBusyRef){
+    // Perhaps there's still a AstUserInUse in scope for this?
+    UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser" + cvtToStr(id)
+                                     + "InUse request when under another AstUserInUse");
+userBusyRef = true;
+clearcnt(id, cntGblRef, userBusyRef);
+}
+static void free(int id, uint32_t& cntGblRef, bool& userBusyRef) {
+    UASSERT_STATIC(userBusyRef, "Free of User" + cvtToStr(id) + "() not under AstUserInUse");
+    clearcnt(id, cntGblRef, userBusyRef);  // Includes a checkUse for us
+    userBusyRef = false;
+}
+static void clearcnt(int id, uint32_t& cntGblRef, const bool& userBusyRef) {
+    UASSERT_STATIC(userBusyRef, "Clear of User" + cvtToStr(id) + "() not under AstUserInUse");
+    // If this really fires and is real (after 2^32 edits???)
+    // we could just walk the tree and clear manually
+    ++cntGblRef;
+    UASSERT_STATIC(cntGblRef, "User*() overflowed!");
+}
+static void checkcnt(int id, uint32_t&, const bool& userBusyRef) {
+    UASSERT_STATIC(userBusyRef,
+                   "Check of User" + cvtToStr(id) + "() failed, not under AstUserInUse");
+}
+}
+;
 
 // For each user() declare the in use structure
 // We let AstNode peek into here, because when under low optimization even
@@ -417,10 +417,11 @@ inline std::ostream& operator<<(std::ostream& os, const VNRelinker& rhs) {
 // ######################################################################
 //  Callback base class to determine if node matches some formula
 
-class VNodeMatcher VL_NOT_FINAL {
-public:
-    virtual bool nodeMatch(const AstNode* nodep) const { return true; }
-};
+class VNodeMatcher
+VL_NOT_FINAL{public : virtual bool nodeMatch(const AstNode* nodep) const {return true;
+}
+}
+;
 
 // ######################################################################
 //   AstNode -- Base type of all Ast types
