@@ -30,4 +30,4 @@ jobs:
           days-before-pr-close: 15
           days-before-pr-stale: 22
           exempt-pr-labels: "pr-blocked: wait-for-other"
-          debug-only: true
+          # debug-only: true
