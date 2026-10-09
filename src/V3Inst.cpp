@@ -324,11 +324,9 @@ public:
             } else {
                 // V3 width should have range/extended to make the widths correct
                 newvarp->isContinuously(true);
-                // An input port is normally fed from the connection, but when
-                // the port is driven from inside the cell by a clocking block
-                // output, the drive must flow out through the connection
-                // instead. V3Tristate-built split pins (forTristate)
-                // resolve separately and always keep the input-side wiring.
+                // An input port driven from inside the cell by a clocking block
+                // output flows out through the connection; V3Tristate split
+                // pins resolve separately.
                 AstNodeExpr* lhsp = nullptr;  // LHS of the interconnect assign
                 AstNodeExpr* rhsp = nullptr;  // RHS of the interconnect assign
                 if (forTristate || !pinVarp->isClockingDriven()) {
