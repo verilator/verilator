@@ -2064,7 +2064,8 @@ class ParamProcessor final {
                 const AstPattern* const patternp = VN_CAST(pinp->exprp(), Pattern);
                 if (patternp && !patternp->childDTypep()) continue;
                 if (!VN_IS(pinp->exprp(), Const) && !isAggregateParamValue(pinp->exprp())) {
-                    V3Const::constifyParamsEdit(pinp->exprp());
+                    // The pin, so a conditional of patterns is typed as an override's value
+                    V3Const::constifyParamsEdit(pinp);
                 }
             }
             for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
