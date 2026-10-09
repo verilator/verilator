@@ -2062,9 +2062,6 @@ List Of Warnings
 
    Warns that a selection index will go out of bounds.
 
-   This also applies to constant selections of an outer packed-array dimension,
-   such as selecting ``[4]`` from ``logic [3:0][3:0] data``.
-
    Faulty example:
 
    .. code-block:: sv
