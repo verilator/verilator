@@ -434,34 +434,36 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         AstConstraint* const cloneConstrp = constrp->cloneTree(false);
         cloneConstrp->name(newName);
-        cloneConstrp->foreach([&](AstVarRef* varRefp) {
-            if (varRefp->varp()->isClassMember()) {
+
+        // Replace FuncRefs afterwards, so VarRefs in their arguments are rewritten first
+        std::vector<AstFuncRef*> funcRefps;
+        cloneConstrp->foreach([&](AstNodeExpr* exprp) {
+            if (AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
+                if (!varRefp->varp()->isClassMember()) return;
                 AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
                 AstMemberSel* const finalSelp
                     = new AstMemberSel{varRefp->fileline(), chainp, varRefp->varp()};
                 finalSelp->user2p(m_classp);
                 varRefp->replaceWith(finalSelp);
-                VL_DO_DANGLING(varRefp->deleteTree(), varRefp);
+                VL_DO_DANGLING(pushDeletep(varRefp), varRefp);
+            } else if (AstFuncRef* const funcRefp = VN_CAST(exprp, FuncRef)) {
+                // Static and non-member calls are correctly qualified already
+                if (funcRefp->taskp()->classMethod() && !funcRefp->taskp()->isStatic()) {
+                    funcRefps.push_back(funcRefp);
+                }
             }
         });
-
-        // collect first, as mutation in foreach will error
-        std::vector<AstFuncRef*> refs;
-        cloneConstrp->foreach([&](AstFuncRef* refp) {
-            // static and non-member calls are correctly qualified already
-            if (refp->taskp()->classMethod() && !refp->taskp()->isStatic()) refs.push_back(refp);
-        });
-
-        for (AstFuncRef* refp : refs) {
+        for (AstFuncRef* funcRefp : funcRefps) {
             AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
-            AstArg* const argsp = refp->argsp() ? refp->argsp()->unlinkFrBackWithNext() : nullptr;
+            AstArg* const argsp
+                = funcRefp->argsp() ? funcRefp->argsp()->unlinkFrBackWithNext() : nullptr;
             AstMethodCall* const callp
-                = new AstMethodCall{refp->fileline(), chainp, refp->name(), argsp};
-            callp->taskp(refp->taskp());
-            callp->classOrPackagep(refp->classOrPackagep());
-            callp->dtypep(refp->dtypep());
-            refp->replaceWith(callp);
-            VL_DO_DANGLING(refp->deleteTree(), refp);
+                = new AstMethodCall{funcRefp->fileline(), chainp, funcRefp->name(), argsp};
+            callp->taskp(funcRefp->taskp());
+            callp->classOrPackagep(funcRefp->classOrPackagep());
+            callp->dtypep(funcRefp->dtypep());
+            funcRefp->replaceWith(callp);
+            VL_DO_DANGLING(funcRefp->deleteTree(), funcRefp);
         }
 
         // Add constraint directly to the target class

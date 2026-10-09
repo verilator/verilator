@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 function automatic int unit_lim();
   return 5;
 endfunction
@@ -41,25 +46,14 @@ endclass
 module t;
   initial begin
     B b;
+    int ok;
     b = new();
-    void'(b.randomize());
-
-    if (b.a.x != 104) begin
-      $write("%%Error: x=%0d, expected 104\n", b.a.x);
-      $stop;
-    end
-    if (b.a.y != 106) begin
-      $write("%%Error: y=%0d , expected 106\n", b.a.y);
-      $stop;
-    end
-    if (b.a.z != 105) begin
-      $write("%%Error: z=%0d, expected 105\n", b.a.z);
-      $stop;
-    end
-    if (b.a.w != 111) begin
-      $write("%%Error: w=%0d, expected 111\n", b.a.w);
-      $stop;
-    end
+    ok = b.randomize();
+    `checkd(ok, 1);
+    `checkd(b.a.x, 104);
+    `checkd(b.a.y, 106);
+    `checkd(b.a.z, 105);
+    `checkd(b.a.w, 111);
     $finish;
   end
 endmodule
