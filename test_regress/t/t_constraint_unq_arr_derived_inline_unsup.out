@@ -1,5 +1,4 @@
 %Warning-CONSTRAINTIGN: t/t_constraint_unq_arr_derived_inline_unsup.v:35:11: Unsupported: Unique constraint in randomize() with {}
-                                                                           : ... note: In instance 't'
    35 |           unique {foo.pmp_reg};
       |           ^~~~~~
                         ... For warning description see https://verilator.org/warn/CONSTRAINTIGN?v=latest
