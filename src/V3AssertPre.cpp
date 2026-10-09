@@ -1716,6 +1716,7 @@ private:
         VL_RESTORER(m_underCover);
         m_underCover = VN_IS(nodep->backp(), Cover);
         iterate(nodep->propp());
+        iterateNull(nodep->matchCountp());
     }
     void visit(AstPExpr* nodep) override {
         // V3AssertNfa handles multi-cycle property expressions before this pass,
