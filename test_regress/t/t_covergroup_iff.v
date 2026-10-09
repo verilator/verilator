@@ -9,7 +9,7 @@
 // Covers iff on explicit value bins, default bin, array bins,
 // simple 2-step transition, and 3-step transition.
 // A false guard disables sampling entirely: the coverpoint expression is not
-// evaluated, and transitions skip the sample.
+// evaluated, no bin of any kind counts or errors, and transitions skip the sample.
 // Also covers coverpoint iff propagation into crosses and cross-level iff guards.
 //
 // Also covers compound iff expressions (&&, ||, unary !, bit/part-select,
@@ -109,10 +109,33 @@ module t;
     cp: coverpoint guarded_expression(1) iff (0) {bins one = {1};}
   endgroup
 
-  // A sample with a false iff guard neither starts, breaks, nor ends a transition
+  // A sample with a false iff guard neither starts, breaks, nor ends a transition: it updates
+  // neither the previous value nor the sequence state
   covergroup cg_trans_gap_iff;
     cp_t2: coverpoint guarded_expression(value) iff (enable) {bins t2 = (1 => 2);}
     cp_t3: coverpoint value iff (enable) {bins t3 = (1 => 2 => 3);}
+  endgroup
+
+  // A false iff guard disables sampling of each kind of bin: the coverpoint expression is not
+  // evaluated, no bin counts, and no illegal bin errors
+  covergroup cg_kinds_iff;
+    // A sized array of bins
+    cp_sized: coverpoint guarded_expression(value) iff (enable) {bins sized[2] = {[4 : 7]};}
+    // A sized array of illegal bins
+    cp_illegal: coverpoint guarded_expression(value) iff (enable) {
+      bins legal = {[4 : 7]};
+      illegal_bins illegal[2] = {[0 : 3]};
+    }
+    // An excluded value
+    cp_ignore: coverpoint guarded_expression(value) iff (enable) {
+      bins legal = {[4 : 7]};
+      ignore_bins ignored = {5};
+    }
+    // A default bin, holding no value of a sized array of bins
+    cp_default: coverpoint guarded_expression(value) iff (enable) {
+      bins sized[2] = {[4 : 7]};
+      bins others = default;
+    }
   endgroup
 
   // --- compound iff expressions ---
@@ -200,6 +223,7 @@ module t;
   cg_trans3_iff cg5 = new;
   cg_eval_iff eval_iff = new;
   cg_trans_gap_iff trans_gap = new;
+  cg_kinds_iff kinds = new;
   cg_and ca = new;
   cg_or co = new;
   cg_part cpp = new;
@@ -368,6 +392,28 @@ module t;
     trans_gap.sample();  // (1=>2=>3) hit
     `checkr(trans_gap.get_inst_coverage(), 100.0);
     `checkd(calls, 5);  // Evaluated once per sample with enable=1
+
+    // kinds: samples with enable=0, even of illegal values, are neither evaluated nor counted
+    calls = 0;
+    enable = 0;
+    for (int i = 0; i < 9; ++i) begin
+      value = i;
+      kinds.sample();
+    end
+    `checkd(calls, 0);
+    `checkr(kinds.get_inst_coverage(), 0.0);
+    enable = 1;
+    value = 5;
+    kinds.sample();  // excluded from cp_ignore's bins
+    `checkr(kinds.get_inst_coverage(), 50.0);
+    value = 4;
+    kinds.sample();
+    value = 6;
+    kinds.sample();
+    value = 8;
+    kinds.sample();  // cp_default's default bin
+    `checkr(kinds.get_inst_coverage(), 100.0);
+    `checkd(calls, 16);  // Evaluated once per coverpoint and sample with enable=1
 
     // --- compound iff expressions ---
     // cg_and: guard true -> {0,1}=2'b01 sampled into b01
