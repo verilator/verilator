@@ -318,23 +318,31 @@ Summary:
    One of the following modes may be chosen:
 
     * `auto`
+
       * Counts how many times the FSM was in each of the used states.
-      * Count of how many times certain FSM transition occurred -
-        counted for:
-        * all defined transitions in the code,
-        * from all used states to a reset state,
-        * from any terminal state to default state.
+
+      * Count of how many times FSM transition occurred between all defined
+        transitions in the code,
+
+      * Count of how many times FSM transitioned from all used states to a
+        reset state,
+
+      * Count of how many times FSM transitioned from any terminal state to
+        default state.
 
     * `auto-expand`
+
       * Counts how many times the FSM was in each of the used states.
-      * Count of how many times certain FSM transition occurred -
-        counted for all possible transitions between used states.
+
+      * Count of how many times FSM transitions occurred for all possible
+        transitions between all possible states.
 
     * `full`
+
       * Counts how many times the FSM was in each of the possible states.
-      * Count of how many times certain FSM transition occurred -
-        counted for all possible transitions between all
-        possible states.
+
+      * Count of how many times FSM transitions occurred for all possible
+        transitions between all possible states.
 
    `possible states` - means every value that variable of
    a certain width representing an FSM may have i.e. 2^(width).

@@ -15,6 +15,7 @@ Verilator 5.053 devel
 
 **Other:**
 
+* Add warning on out-of-range packed selections (#3909) (#8607). [Yasir Mahmud]
 * Add covergroup runtime registry (#8134). [Matthew Ballance]
 * Add initial support for solo `binsof` (#8298). [Marco Bartoli]
 * Add `-fno-dead-members` and optimize dead class member functions (#8830).
@@ -43,6 +44,7 @@ Verilator 5.053 devel
 * Support wildcard bins (#8516). [Marco Bartoli]
 * Support coverpoint bin `with` filters (#8518). [Marco Bartoli]
 * Support waiting on clocking block event through modport (#8403) (#8530). [Saqib Khan]
+* Support more precise FSM coverage states and arcs (#8436). [Igor Zaworski, Antmicro Ltd.]
 * Optimize NBA shadow copies for partial writes (#8266). [Artur Bieniek, Antmicro Ltd.]
 * Optimize recursion depth in DFG circular driver tracing (#8272). [Drew Risinger]
 * Optimize DFG synthesis symbol table ordering (#8282). [Geza Lore, Testorrent USA, Inc.]
@@ -189,7 +191,10 @@ Verilator 5.053 devel
 * Fix process::kill() to terminate descendant processes (#8617) (#8334). [Jakub Wasilewski, Antmicro Ltd.]
 * Fix parameterized class reference inside a deferred class-scoped select (#8618) (#8638). [em2machine]
 * Fix --lib-create wrapper port order (#8626). [Michael Bedford Taylor]
+* Fix boolean disjunction consequent after a multi-cycle antecedent never failing (#8627) (#8631). [Marco Brambilla]
 * Fix type checks for aggregate types (#8634). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix type checking of enum expressions (#8659). [Ryszard Rozak, Antmicro Ltd.]
+* Fix class task output arguments generating invalid C++ (#8662). [Bartosz Skorowski, Antmicro Ltd.]
 
 
 Verilator 5.052 2026-09-05
