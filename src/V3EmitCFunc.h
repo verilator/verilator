@@ -85,9 +85,7 @@ class EmitCLazyDecls final : public VNVisitorConst {
     void visit(AstVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
         // Only constant pool symbols are lazy declared for now ...
-        if (EmitCUtil::isConstPoolMod(EmitCParentModule::get(varp))) {
-            lazyDeclareConstPoolVar(varp);
-        }
+        if (EmitCParentModule::get(varp)->isConstPool()) lazyDeclareConstPoolVar(varp);
     }
 
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -262,7 +260,6 @@ public:
                                const string& suffix, const AstNode* valuep);
     void emitVarResetScopeHash();
     void emitChangeDet();
-    void emitConstInit(AstNode* initp) { iterateConst(initp); }
     void putCommaIterateNext(AstNode* nodep, bool comma = false) {
         for (AstNode* subnodep = nodep; subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
@@ -1791,12 +1788,9 @@ public:
         const bool dereferenceCovergroupRef
             = varp->covergroupRefMember() && nodep->access().isReadOrRW();
         if (dereferenceCovergroupRef) putns(nodep, "(*");
-        if (EmitCUtil::isConstPoolMod(varModp)) {
+        if (varModp->isConstPool()) {
             // Reference to constant pool variable
             putns(nodep, EmitCUtil::topClassName() + "__ConstPool__");
-        } else if (varp->isStatic()) {
-            // Access static variable via the containing class
-            putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");
         } else if (VN_IS(varModp, Class) && varModp != m_modp) {
             // Superclass member reference
             putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");

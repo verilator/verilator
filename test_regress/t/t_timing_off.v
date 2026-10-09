@@ -31,9 +31,9 @@ module t;
     $finish;
   end
 
-  initial #2->e1;
+  initial #2 ->e1;
   // verilator timing_off
-  initial #2->e2;
+  initial #2 ->e2;
   // verilator timing_on
   initial #3 $stop;  // timeout
   initial #1 @(e1, e2) #1 $stop;  // timeout

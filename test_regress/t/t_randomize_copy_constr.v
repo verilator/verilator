@@ -58,18 +58,12 @@ class Base;
     pair.lo != 0;
     pair.hi != 0;
     foreach (fixed_arr[i]) fixed_arr[i] != 0;
-    foreach (pair_fixed_arr[i]) {
-      pair_fixed_arr[i].lo != 0;
-    }
-    queue.size() inside {[3:5]};
+    foreach (pair_fixed_arr[i]) {pair_fixed_arr[i].lo != 0;}
+    queue.size() inside {[3 : 5]};
     unique {queue};
-    foreach (pair_queue[i]) {
-      pair_queue[i].lo != 0;
-    }
+    foreach (pair_queue[i]) {pair_queue[i].lo != 0;}
     foreach (assoc[key]) {assoc[key] inside {[50 : 70]};}
-    foreach (pair_assoc[key]) {
-      pair_assoc[key].hi != 0;
-    }
+    foreach (pair_assoc[key]) {pair_assoc[key].hi != 0;}
   }
 endclass
 
@@ -94,9 +88,9 @@ class ClsRandC extends Empty;
 endclass
 
 module t;
-  Base  copied;
-  Base  base_for_copy;
-  Derv  derv;
+  Base copied;
+  Base base_for_copy;
+  Derv derv;
   Derv2 derv2;
 
   task test;
@@ -140,20 +134,20 @@ module t;
     copied = new base_for_copy;
     test();
 
-    if(derv.z != 0) $stop;
+    if (derv.z != 0) $stop;
     $cast(derv, copied);
     void'(derv.randomize());
     if (derv.z != 1) $stop;
 
     cr1 = new;
-    repeat(8) begin
+    repeat (8) begin
       cr1.randomize();
       visited[cr1.x] = 1;
     end
     empty1 = cr1;
     empty2 = new empty1;
     $cast(cr2, empty2);
-    repeat(8) begin
+    repeat (8) begin
       cr2.randomize();
       if (visited[cr2.x]) $stop;
       visited[cr2.x] = 1;

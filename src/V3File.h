@@ -285,7 +285,7 @@ class V3OutJsonFile final : public V3OutFile {
 private:
     std::stack<char> m_scope;  // Stack of ']' and '}'  to close currently open scopes
     std::string m_prefix;  // Prefix emitted before each line in current scope
-    bool m_empty = true;  // Current scope is empty, no comma later
+    std::stack<bool> m_empty;  // Current scope is empty, no comma later
 
 public:
     explicit V3OutJsonFile(const string& filename)
@@ -308,6 +308,8 @@ public:
         puts(m_prefix + "\"" + name + "\": " + type + "\n");
         m_prefix += INDENT;
         m_scope.push(type == '{' ? '}' : ']');
+        if (!m_empty.empty()) m_empty.top() = false;
+        m_empty.push(true);
         return *this;
     }
     V3OutJsonFile& begin(char type = '{') {
@@ -315,6 +317,8 @@ public:
         puts(m_prefix + type + "\n");
         m_prefix += INDENT;
         m_scope.push(type == '{' ? '}' : ']');
+        if (!m_empty.empty()) m_empty.top() = false;
+        m_empty.push(true);
         return *this;
     }
 
@@ -348,8 +352,10 @@ public:
         UASSERT(m_prefix.length() >= strlen(INDENT), "prefix underflow");
         m_prefix.erase(m_prefix.end() - strlen(INDENT), m_prefix.end());
         UASSERT(!m_scope.empty(), "end() without begin()");
+        UASSERT(!m_empty.empty(), "end() without begin()");
         puts("\n" + m_prefix + m_scope.top());
         m_scope.pop();
+        m_empty.pop();
         return *this;
     }
 
@@ -360,8 +366,9 @@ public:
 
 private:
     void comma() {
-        if (!m_empty) puts(",\n");
-        m_empty = true;
+        if (m_empty.empty()) return;
+        if (!m_empty.top()) puts(",\n");
+        m_empty.top() = true;
     }
     V3OutJsonFile& putNamed(const std::string& name, const std::string& value, bool quoted) {
         comma();
@@ -372,7 +379,7 @@ private:
         } else {
             puts(m_prefix + "\"" + name + "\": " + valueQ);
         }
-        m_empty = false;
+        m_empty.top() = false;
         return *this;
     }
 };

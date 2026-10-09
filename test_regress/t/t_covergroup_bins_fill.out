@@ -1,0 +1,12 @@
+t.cg.cp_b8.hi: 1
+t.cg.cp_b8.lo: 1
+t.cg.cp_insn.one: 0
+t.cg.cp_insn.ones: 1
+t.cg.cp_insn.rise: 1
+t.cg.cp_insn.zeros: 1
+t.cg.cp_mode.m: 2
+t.cg.cp_sb.m1: 2
+t.cg.cx.<m,one> [cross]: 0
+t.cg.cx.<m,ones> [cross]: 1
+t.cg.cx.<m,rise> [cross]: 1
+t.cg.cx.<m,zeros> [cross]: 1

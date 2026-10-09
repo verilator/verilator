@@ -1,0 +1,2 @@
+cov_pkg::CovBase#(32,64)::cg.cp_insn.ecall: 1
+cov_pkg::CovBase#(32,64)::cg2.cp_insn.ebreak: 1

@@ -1,6 +1,14 @@
-%Error: t/t_inst_array_bad.v:14:27: Input port connection 'onebit' as part of a module instance array requires 1 or 8 bits, but connection's VARREF 'onebitbad' generates 9 bits. (IEEE 1800-2023 23.3.3)
-                                  : ... note: In instance 't'
-   14 |   sub sub [7:0] (allbits, onebitbad, bitout);
-      |                           ^~~~~~~~~
+%Error: t/t_inst_array_bad.v:16:7: Input port connection 'onebit' as part of a module instance array requires 1 or 8 bits, but connection's VARREF 'onebitbad' generates 9 bits. (IEEE 1800-2023 23.3.3)
+                                 : ... note: In instance 't'
+   16 |       onebitbad,
+      |       ^~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_inst_array_bad.v:34:7: Input port connection 'onebit' as part of a module instance array requires 1 or 6 bits, but connection's VARREF 'sixbitbad' generates 7 bits. (IEEE 1800-2023 23.3.3)
+                                 : ... note: In instance 't'
+   34 |       sixbitbad,
+      |       ^~~~~~~~~
+%Error: t/t_inst_array_bad.v:43:7: Input port connection 'onebit' as part of a module instance array requires the connection's leading unpacked dimensions to match the instance array dimensions (IEEE 1800-2023 23.3.3.5)
+                                 : ... note: In instance 't'
+   43 |       onebits2,
+      |       ^~~~~~~~
 %Error: Exiting due to

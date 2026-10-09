@@ -37,6 +37,7 @@
 #include <map>
 #include <set>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -56,6 +57,7 @@
 // Forward declarations
 class V3Graph;
 class ExecMTask;
+class VIfaceCaptureTag;
 
 //######################################################################
 
@@ -391,7 +393,7 @@ protected:
         RELINK_OP4
     };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
-    AstNode* m_backp = nullptr;
+    AstNode* m_backp = nullptr;  // Saved AstNode::m_backp of the unlinked node, to relink
     AstNode** m_iterpp = nullptr;
     RelinkWhatEn m_chg = RELINK_BAD;
 
@@ -658,6 +660,7 @@ public:
     string origNameProtect() const;  // origName with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
+    static string nameNoArray(const string& namein);  // Name with any array index removed
     static string prettyName(const string& namein) VL_PURE;  // Name for printing out to the user
     static string vpiName(const string& namein);  // Name for vpi access
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
@@ -668,7 +671,10 @@ public:
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
-    string prettyNameQ() const { return prettyNameQ(name()); }
+    // Name for messages to the user, by default prettyName(), but friendlier for some nodes,
+    // such as a specialized class, whose name() is internal
+    virtual string prettyNameMsg() const { return prettyName(); }
+    string prettyNameQ() const { return "'"s + prettyNameMsg() + "'"; }  // Quoted, for messages
     string verilogName() const { return vpiName(origName()); }  // Decoded original Verilog name
     // "VARREF" for error messages (NOT dtype's pretty name)
     string prettyTypeName() const;
@@ -1611,6 +1617,53 @@ struct std::equal_to<VNRef<T_Node>> final {
     size_t operator()(VNRef<T_Node> ra, VNRef<T_Node> rb) const {
         return ra.get().sameTree(&(rb.get()));
     }
+};
+
+//######################################################################
+// VDTypeNameScopes -- Index of the scopes declaring types, for naming them
+
+// While alive, indexes the scopes declaring the types that dtypeName() names, as $typename names
+// them: maps each class, typedef, generate block, and design unit to the generate block or design
+// unit declaring it, and each design unit to the parameters its name holds; and keeps the
+// prefixes of the names of the types each scope declares, once final.  So naming the types of a
+// scope costs no search up the tree for it, as AstNode::aboveLoopp() is linear in the number of
+// previous statements.  For passes that name many types but neither add, move, nor delete such
+// declarations, V3Width and V3WidthCommit; others, as V3Param, search the tree.
+class VDTypeNameScopes final {
+    // STATE
+    // Each class, typedef, generate block, and design unit to the generate block or design unit
+    // declaring it, or nullptr if none, as at the top
+    std::unordered_map<const AstNode*, AstNode*> m_outerps;
+    // The parameters of each design unit that its name holds
+    std::unordered_map<const AstNode*, std::vector<AstNode*>> m_paramps;
+    // Prefix of the names of the types each scope declares, once final
+    mutable std::unordered_map<const AstNode*, std::string> m_prefixes;
+    const VDTypeNameScopes* const m_prevp;  // Index in use before this one
+    static const VDTypeNameScopes* s_currentp;  // Index in use, or nullptr if none
+
+    // METHODS
+    void index(AstNode* nodep, AstNode* scopep);
+    VL_UNCOPYABLE(VDTypeNameScopes);
+    VL_UNMOVABLE(VDTypeNameScopes);
+
+public:
+    // CONSTRUCTORS
+    // Index the netlist, in use until destroyed
+    explicit VDTypeNameScopes(AstNetlist* nodep);
+    ~VDTypeNameScopes();
+
+    // METHODS
+    // The index in use, or nullptr if none
+    static const VDTypeNameScopes* currentp() { return s_currentp; }
+    // Whether 'nodep' is indexed, and if so 'outerpr', the generate block or design unit
+    // declaring it, or nullptr if none
+    bool outerp(const AstNode* nodep, AstNode*& outerpr) const;
+    // The parameters of design unit 'modp' that its name holds, or nullptr if not indexed
+    const std::vector<AstNode*>* paramsp(const AstNode* modp) const;
+    // The prefix kept for scope 'scopep', or nullptr if none
+    const std::string* prefixp(const AstNode* scopep) const;
+    // Keep 'prefix', final, for scope 'scopep'
+    void prefix(const AstNode* scopep, const std::string& prefix) const;
 };
 
 //######################################################################

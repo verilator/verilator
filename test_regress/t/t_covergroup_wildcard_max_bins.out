@@ -1,0 +1,15 @@
+t.cg.ct.auto_0: 4
+t.cg.ct.auto_1: 4
+t.cg.ct.auto_2: 4
+t.cg.ct.auto_3: 4
+t.cg.ign.all: 8
+t.cg.ign.odd [ignore]: 8
+t.cg.ign_sized.all: 8
+t.cg.ign_sized.odd [ignore]: 8
+t.cg.ill.all: 16
+t.cg.ill.high [illegal]: 0
+t.cg.ill_sized.all: 16
+t.cg.ill_sized.odd [illegal]: 0
+t.cg.mixed.low: 4
+t.cg.with_ign.all: 16
+t.cg.xm.sel_low [cross]: 4

@@ -322,8 +322,10 @@
 // C++-2020
 
 #if __cplusplus >= 202002L
+# define VL_CONSTINIT_CXX20 constinit
 # define VL_NO_UNIQUE_ADDRESS_CXX20 [[no_unique_address]]
 #else
+# define VL_CONSTINIT_CXX20
 # define VL_NO_UNIQUE_ADDRESS_CXX20
 #endif
 
@@ -546,6 +548,7 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_BITBIT_I(bit) ((bit) & VL_SIZEBITS_I)  ///< Bit number for a bit in a long
 #define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
 #define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in an EData
+#define VL_BIT_Q(bit) (1ULL << VL_BITBIT_Q(bit))  ///< Quad with only the given bit set
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 #define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
@@ -747,7 +750,7 @@ namespace vlstd {
 
 template <typename T>
 struct reverse_wrapper final {
-    const T& m_v;
+    const T& m_v;  // Pre-wrapped iterator
 
     explicit reverse_wrapper(const T& a_v)
         : m_v(a_v) {}  // Need () constructor

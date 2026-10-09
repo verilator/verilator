@@ -1,211 +1,208 @@
-cg2.addr_cmd.addr0_x_read [cross]: 1
-cg2.addr_cmd.addr0_x_write [cross]: 1
-cg2.addr_cmd.addr1_x_read [cross]: 1
-cg2.addr_cmd.addr1_x_write [cross]: 1
-cg2.cp_addr.addr0: 2
-cg2.cp_addr.addr1: 2
-cg2.cp_cmd.read: 2
-cg2.cp_cmd.write: 2
-cg3.addr_cmd_mode.addr0_x_read_x_debug [cross]: 0
-cg3.addr_cmd_mode.addr0_x_read_x_normal [cross]: 1
-cg3.addr_cmd_mode.addr0_x_write_x_debug [cross]: 1
-cg3.addr_cmd_mode.addr0_x_write_x_normal [cross]: 0
-cg3.addr_cmd_mode.addr1_x_read_x_debug [cross]: 0
-cg3.addr_cmd_mode.addr1_x_read_x_normal [cross]: 0
-cg3.addr_cmd_mode.addr1_x_write_x_debug [cross]: 0
-cg3.addr_cmd_mode.addr1_x_write_x_normal [cross]: 1
-cg3.addr_cmd_mode.addr2_x_read_x_debug [cross]: 1
-cg3.addr_cmd_mode.addr2_x_read_x_normal [cross]: 0
-cg3.addr_cmd_mode.addr2_x_write_x_debug [cross]: 0
-cg3.addr_cmd_mode.addr2_x_write_x_normal [cross]: 0
-cg3.cp_addr.addr0: 2
-cg3.cp_addr.addr1: 1
-cg3.cp_addr.addr2: 1
-cg3.cp_cmd.read: 2
-cg3.cp_cmd.write: 2
-cg3.cp_mode.debug: 2
-cg3.cp_mode.normal: 2
-cg4.addr_cmd_mode_parity.addr0_x_read_x_debug_x_even [cross]: 0
-cg4.addr_cmd_mode_parity.addr0_x_read_x_debug_x_odd [cross]: 0
-cg4.addr_cmd_mode_parity.addr0_x_read_x_normal_x_even [cross]: 1
-cg4.addr_cmd_mode_parity.addr0_x_read_x_normal_x_odd [cross]: 0
-cg4.addr_cmd_mode_parity.addr0_x_write_x_debug_x_even [cross]: 1
-cg4.addr_cmd_mode_parity.addr0_x_write_x_debug_x_odd [cross]: 0
-cg4.addr_cmd_mode_parity.addr0_x_write_x_normal_x_even [cross]: 0
-cg4.addr_cmd_mode_parity.addr0_x_write_x_normal_x_odd [cross]: 0
-cg4.addr_cmd_mode_parity.addr1_x_read_x_debug_x_even [cross]: 0
-cg4.addr_cmd_mode_parity.addr1_x_read_x_debug_x_odd [cross]: 1
-cg4.addr_cmd_mode_parity.addr1_x_read_x_normal_x_even [cross]: 0
-cg4.addr_cmd_mode_parity.addr1_x_read_x_normal_x_odd [cross]: 0
-cg4.addr_cmd_mode_parity.addr1_x_write_x_debug_x_even [cross]: 0
-cg4.addr_cmd_mode_parity.addr1_x_write_x_debug_x_odd [cross]: 0
-cg4.addr_cmd_mode_parity.addr1_x_write_x_normal_x_even [cross]: 0
-cg4.addr_cmd_mode_parity.addr1_x_write_x_normal_x_odd [cross]: 1
-cg4.cp_addr.addr0: 2
-cg4.cp_addr.addr1: 2
-cg4.cp_cmd.read: 2
-cg4.cp_cmd.write: 2
-cg4.cp_mode.debug: 2
-cg4.cp_mode.normal: 2
-cg4.cp_parity.even: 2
-cg4.cp_parity.odd: 2
-cg5.addr_cmd_opt.addr0_x_read [cross]: 1
-cg5.addr_cmd_opt.addr0_x_write [cross]: 0
-cg5.addr_cmd_opt.addr1_x_read [cross]: 0
-cg5.addr_cmd_opt.addr1_x_write [cross]: 1
-cg5.cp_addr.addr0: 1
-cg5.cp_addr.addr1: 1
-cg5.cp_cmd.read: 1
-cg5.cp_cmd.write: 1
-cg_arr_4state.a4.av[0]_x_read [cross]: 1
-cg_arr_4state.a4.av[0]_x_write [cross]: 1
-cg_arr_4state.cp_addr.av[0]: 2
-cg_arr_4state.cp_cmd.read: 1
-cg_arr_4state.cp_cmd.write: 1
-cg_arr_range.ar.av[0]_x_read [cross]: 1
-cg_arr_range.ar.av[0]_x_write [cross]: 1
-cg_arr_range.ar.av[1]_x_read [cross]: 1
-cg_arr_range.ar.av[1]_x_write [cross]: 1
-cg_arr_range.cp_addr.av[0]: 2
-cg_arr_range.cp_addr.av[1]: 2
-cg_arr_range.cp_cmd.read: 2
-cg_arr_range.cp_cmd.write: 2
-cg_arr_vals.av.av[0]_x_read [cross]: 1
-cg_arr_vals.av.av[0]_x_write [cross]: 1
-cg_arr_vals.av.av[1]_x_read [cross]: 1
-cg_arr_vals.av.av[1]_x_write [cross]: 1
-cg_arr_vals.cp_addr.av[0]: 2
-cg_arr_vals.cp_addr.av[1]: 2
-cg_arr_vals.cp_cmd.read: 2
-cg_arr_vals.cp_cmd.write: 2
-cg_at_least.addr_cmd_al.addr0_x_read [cross]: 1
-cg_at_least.addr_cmd_al.addr0_x_write [cross]: 0
-cg_at_least.addr_cmd_al.addr1_x_read [cross]: 0
-cg_at_least.addr_cmd_al.addr1_x_write [cross]: 1
-cg_at_least.cp_addr.addr0: 1
-cg_at_least.cp_addr.addr1: 1
-cg_at_least.cp_cmd.read: 1
-cg_at_least.cp_cmd.write: 1
-cg_be.cp_addr.hi: 2
-cg_be.cp_addr.lo: 2
-cg_be.cp_cmd.read: 2
-cg_be.cp_cmd.write: 2
-cg_be.x.hi_x_read [cross]: 1
-cg_be.x.hi_x_write [cross]: 1
-cg_be.x.lo_x_read [cross]: 1
-cg_be.x.lo_x_write [cross]: 1
-cg_be_arr.ax.av[0]_x_read [cross]: 1
-cg_be_arr.ax.av[0]_x_write [cross]: 1
-cg_be_arr.ax.av[1]_x_read [cross]: 1
-cg_be_arr.ax.av[1]_x_write [cross]: 1
-cg_be_arr.cp_addr.av[0]: 2
-cg_be_arr.cp_addr.av[1]: 2
-cg_be_arr.cp_cmd.read: 2
-cg_be_arr.cp_cmd.write: 2
-cg_def_cross.axc.a0_x_read [cross]: 1
-cg_def_cross.axc.a0_x_write [cross]: 0
-cg_def_cross.axc.a1_x_read [cross]: 0
-cg_def_cross.axc.a1_x_write [cross]: 0
-cg_def_cross.cp_a.a0: 1
-cg_def_cross.cp_a.a1: 0
-cg_def_cross.cp_a.ad [default]: 1
-cg_def_cross.cp_c.read: 1
-cg_def_cross.cp_c.write: 1
-cg_goal.addr_cmd_goal.addr0_x_read [cross]: 1
-cg_goal.addr_cmd_goal.addr0_x_write [cross]: 0
-cg_goal.addr_cmd_goal.addr1_x_read [cross]: 0
-cg_goal.addr_cmd_goal.addr1_x_write [cross]: 1
-cg_goal.cp_addr.addr0: 1
-cg_goal.cp_addr.addr1: 1
-cg_goal.cp_cmd.read: 1
-cg_goal.cp_cmd.write: 1
-cg_ignore.cp_addr.a0: 2
-cg_ignore.cp_addr.a1: 2
-cg_ignore.cp_addr.ign [ignore]: 1
-cg_ignore.cp_cmd.read: 3
-cg_ignore.cp_cmd.write: 2
-cg_ignore.cross_ab.a0_x_read [cross]: 1
-cg_ignore.cross_ab.a0_x_write [cross]: 1
-cg_ignore.cross_ab.a1_x_read [cross]: 1
-cg_ignore.cross_ab.a1_x_write [cross]: 1
-cg_inv.cp_addr.inv: 0
-cg_inv.cp_cmd.read: 1
-cg_inv.cp_cmd.write: 1
-cg_inv.iv.inv_x_read [cross]: 0
-cg_inv.iv.inv_x_write [cross]: 0
-cg_mixed.ab.addr0_x_read [cross]: 1
-cg_mixed.ab.addr0_x_write [cross]: 1
-cg_mixed.ab.addr1_x_read [cross]: 1
-cg_mixed.ab.addr1_x_write [cross]: 1
-cg_mixed.cp_addr.addr0: 2
-cg_mixed.cp_addr.addr1: 2
-cg_mixed.cp_cmd.read: 2
-cg_mixed.cp_cmd.write: 2
-cg_mixed.cp_solo.debug: 2
-cg_mixed.cp_solo.normal: 2
-cg_noNormal.cp_addr.ig [ignore]: 2
-cg_noNormal.cp_cmd.read: 1
-cg_noNormal.cp_cmd.write: 1
-cg_openrange.cp_addr.hi: 2
-cg_openrange.cp_addr.lo: 2
-cg_openrange.cp_cmd.read: 2
-cg_openrange.cp_cmd.write: 2
-cg_openrange.orc.hi_x_read [cross]: 1
-cg_openrange.orc.hi_x_write [cross]: 1
-cg_openrange.orc.lo_x_read [cross]: 1
-cg_openrange.orc.lo_x_write [cross]: 1
-cg_overlap.cp_addr.hi: 3
-cg_overlap.cp_addr.lo: 3
-cg_overlap.cp_cmd.read: 3
-cg_overlap.cp_cmd.write: 2
-cg_overlap.ov.hi_x_read [cross]: 2
-cg_overlap.ov.hi_x_write [cross]: 1
-cg_overlap.ov.lo_x_read [cross]: 2
-cg_overlap.ov.lo_x_write [cross]: 1
-cg_range.addr_cmd_range.hi_range_x_read [cross]: 1
-cg_range.addr_cmd_range.hi_range_x_write [cross]: 1
-cg_range.addr_cmd_range.lo_range_x_read [cross]: 1
-cg_range.addr_cmd_range.lo_range_x_write [cross]: 1
-cg_range.cp_addr.hi_range: 2
-cg_range.cp_addr.lo_range: 2
-cg_range.cp_cmd.read: 2
-cg_range.cp_cmd.write: 2
-cg_trans.cp_t.t01: 1
-cg_trans.cp_v.v5: 2
-cg_trans.cp_v.v6: 1
-cg_trans.tx.t01_x_v5 [cross]: 1
-cg_trans.tx.t01_x_v6 [cross]: 0
-cg_unnamed_cross.__cross8.a0_x_read [cross]: 1
-cg_unnamed_cross.__cross8.a0_x_write [cross]: 0
-cg_unnamed_cross.__cross8.a1_x_read [cross]: 0
-cg_unnamed_cross.__cross8.a1_x_write [cross]: 1
-cg_unnamed_cross.cp_a.a0: 1
-cg_unnamed_cross.cp_a.a1: 1
-cg_unnamed_cross.cp_c.read: 1
-cg_unnamed_cross.cp_c.write: 1
-cg_unsup_cross_opt.addr_cmd_unsup.addr0_x_read [cross]: 1
-cg_unsup_cross_opt.addr_cmd_unsup.addr0_x_write [cross]: 0
-cg_unsup_cross_opt.addr_cmd_unsup.addr1_x_read [cross]: 0
-cg_unsup_cross_opt.addr_cmd_unsup.addr1_x_write [cross]: 1
-cg_unsup_cross_opt.cp_addr.addr0: 1
-cg_unsup_cross_opt.cp_addr.addr1: 1
-cg_unsup_cross_opt.cp_cmd.read: 1
-cg_unsup_cross_opt.cp_cmd.write: 1
-cg_wide.cp_cmd.read: 2
-cg_wide.cp_cmd.write: 2
-cg_wide.cp_wide.hi: 2
-cg_wide.cp_wide.lo: 2
-cg_wide.wd.hi_x_read [cross]: 1
-cg_wide.wd.hi_x_write [cross]: 1
-cg_wide.wd.lo_x_read [cross]: 1
-cg_wide.wd.lo_x_write [cross]: 1
-cg_wild_arr.cp_addr.wb: 4
-cg_wild_arr.cp_cmd.read: 2
-cg_wild_arr.cp_cmd.write: 2
-cg_wild_arr.wa.wb_x_read [cross]: 2
-cg_wild_arr.wa.wb_x_write [cross]: 2
-cg_wild_solo.cp_addr.wb: 2
-cg_wild_solo.cp_cmd.read: 1
-cg_wild_solo.cp_cmd.write: 1
-cg_wild_solo.ws.wb_x_read [cross]: 1
-cg_wild_solo.ws.wb_x_write [cross]: 1
+t.cg2.addr_cmd.<addr0,read> [cross]: 1
+t.cg2.addr_cmd.<addr0,write> [cross]: 1
+t.cg2.addr_cmd.<addr1,read> [cross]: 1
+t.cg2.addr_cmd.<addr1,write> [cross]: 1
+t.cg2.cp_addr.addr0: 2
+t.cg2.cp_addr.addr1: 2
+t.cg2.cp_cmd.read: 2
+t.cg2.cp_cmd.write: 2
+t.cg3.addr_cmd_mode.<addr0,read,debug> [cross]: 0
+t.cg3.addr_cmd_mode.<addr0,read,normal> [cross]: 1
+t.cg3.addr_cmd_mode.<addr0,write,debug> [cross]: 1
+t.cg3.addr_cmd_mode.<addr0,write,normal> [cross]: 0
+t.cg3.addr_cmd_mode.<addr1,read,debug> [cross]: 0
+t.cg3.addr_cmd_mode.<addr1,read,normal> [cross]: 0
+t.cg3.addr_cmd_mode.<addr1,write,debug> [cross]: 0
+t.cg3.addr_cmd_mode.<addr1,write,normal> [cross]: 1
+t.cg3.addr_cmd_mode.<addr2,read,debug> [cross]: 1
+t.cg3.addr_cmd_mode.<addr2,read,normal> [cross]: 0
+t.cg3.addr_cmd_mode.<addr2,write,debug> [cross]: 0
+t.cg3.addr_cmd_mode.<addr2,write,normal> [cross]: 0
+t.cg3.cp_addr.addr0: 2
+t.cg3.cp_addr.addr1: 1
+t.cg3.cp_addr.addr2: 1
+t.cg3.cp_cmd.read: 2
+t.cg3.cp_cmd.write: 2
+t.cg3.cp_mode.debug: 2
+t.cg3.cp_mode.normal: 2
+t.cg4.addr_cmd_mode_parity.<addr0,read,debug,even> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr0,read,debug,odd> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr0,read,normal,even> [cross]: 1
+t.cg4.addr_cmd_mode_parity.<addr0,read,normal,odd> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr0,write,debug,even> [cross]: 1
+t.cg4.addr_cmd_mode_parity.<addr0,write,debug,odd> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr0,write,normal,even> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr0,write,normal,odd> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr1,read,debug,even> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr1,read,debug,odd> [cross]: 1
+t.cg4.addr_cmd_mode_parity.<addr1,read,normal,even> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr1,read,normal,odd> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr1,write,debug,even> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr1,write,debug,odd> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr1,write,normal,even> [cross]: 0
+t.cg4.addr_cmd_mode_parity.<addr1,write,normal,odd> [cross]: 1
+t.cg4.cp_addr.addr0: 2
+t.cg4.cp_addr.addr1: 2
+t.cg4.cp_cmd.read: 2
+t.cg4.cp_cmd.write: 2
+t.cg4.cp_mode.debug: 2
+t.cg4.cp_mode.normal: 2
+t.cg4.cp_parity.even: 2
+t.cg4.cp_parity.odd: 2
+t.cg5.addr_cmd_opt.<addr0,read> [cross]: 1
+t.cg5.addr_cmd_opt.<addr0,write> [cross]: 0
+t.cg5.addr_cmd_opt.<addr1,read> [cross]: 0
+t.cg5.addr_cmd_opt.<addr1,write> [cross]: 1
+t.cg5.cp_addr.addr0: 1
+t.cg5.cp_addr.addr1: 1
+t.cg5.cp_cmd.read: 1
+t.cg5.cp_cmd.write: 1
+t.cg_arr_4state.cp_cmd.read: 1
+t.cg_arr_4state.cp_cmd.write: 1
+t.cg_arr_range.ar.<av[0],read> [cross]: 1
+t.cg_arr_range.ar.<av[0],write> [cross]: 1
+t.cg_arr_range.ar.<av[1],read> [cross]: 1
+t.cg_arr_range.ar.<av[1],write> [cross]: 1
+t.cg_arr_range.cp_addr.av[0]: 2
+t.cg_arr_range.cp_addr.av[1]: 2
+t.cg_arr_range.cp_cmd.read: 2
+t.cg_arr_range.cp_cmd.write: 2
+t.cg_arr_vals.av.<av[0],read> [cross]: 1
+t.cg_arr_vals.av.<av[0],write> [cross]: 1
+t.cg_arr_vals.av.<av[1],read> [cross]: 1
+t.cg_arr_vals.av.<av[1],write> [cross]: 1
+t.cg_arr_vals.cp_addr.av[0]: 2
+t.cg_arr_vals.cp_addr.av[1]: 2
+t.cg_arr_vals.cp_cmd.read: 2
+t.cg_arr_vals.cp_cmd.write: 2
+t.cg_at_least.addr_cmd_al.<addr0,read> [cross]: 1
+t.cg_at_least.addr_cmd_al.<addr0,write> [cross]: 0
+t.cg_at_least.addr_cmd_al.<addr1,read> [cross]: 0
+t.cg_at_least.addr_cmd_al.<addr1,write> [cross]: 1
+t.cg_at_least.cp_addr.addr0: 1
+t.cg_at_least.cp_addr.addr1: 1
+t.cg_at_least.cp_cmd.read: 1
+t.cg_at_least.cp_cmd.write: 1
+t.cg_be.cp_addr.hi: 2
+t.cg_be.cp_addr.lo: 2
+t.cg_be.cp_cmd.read: 2
+t.cg_be.cp_cmd.write: 2
+t.cg_be.x.<hi,read> [cross]: 1
+t.cg_be.x.<hi,write> [cross]: 1
+t.cg_be.x.<lo,read> [cross]: 1
+t.cg_be.x.<lo,write> [cross]: 1
+t.cg_be_arr.ax.<av[0],read> [cross]: 1
+t.cg_be_arr.ax.<av[0],write> [cross]: 1
+t.cg_be_arr.ax.<av[1],read> [cross]: 1
+t.cg_be_arr.ax.<av[1],write> [cross]: 1
+t.cg_be_arr.cp_addr.av[0]: 2
+t.cg_be_arr.cp_addr.av[1]: 2
+t.cg_be_arr.cp_cmd.read: 2
+t.cg_be_arr.cp_cmd.write: 2
+t.cg_def_cross.axc.<a0,read> [cross]: 1
+t.cg_def_cross.axc.<a0,write> [cross]: 0
+t.cg_def_cross.axc.<a1,read> [cross]: 0
+t.cg_def_cross.axc.<a1,write> [cross]: 0
+t.cg_def_cross.cp_a.a0: 1
+t.cg_def_cross.cp_a.a1: 0
+t.cg_def_cross.cp_a.ad [default]: 1
+t.cg_def_cross.cp_c.read: 1
+t.cg_def_cross.cp_c.write: 1
+t.cg_goal.addr_cmd_goal.<addr0,read> [cross]: 1
+t.cg_goal.addr_cmd_goal.<addr0,write> [cross]: 0
+t.cg_goal.addr_cmd_goal.<addr1,read> [cross]: 0
+t.cg_goal.addr_cmd_goal.<addr1,write> [cross]: 1
+t.cg_goal.cp_addr.addr0: 1
+t.cg_goal.cp_addr.addr1: 1
+t.cg_goal.cp_cmd.read: 1
+t.cg_goal.cp_cmd.write: 1
+t.cg_ignore.cp_addr.a0: 2
+t.cg_ignore.cp_addr.a1: 2
+t.cg_ignore.cp_addr.ign [ignore]: 1
+t.cg_ignore.cp_cmd.read: 3
+t.cg_ignore.cp_cmd.write: 2
+t.cg_ignore.cross_ab.<a0,read> [cross]: 1
+t.cg_ignore.cross_ab.<a0,write> [cross]: 1
+t.cg_ignore.cross_ab.<a1,read> [cross]: 1
+t.cg_ignore.cross_ab.<a1,write> [cross]: 1
+t.cg_inv.cp_cmd.read: 1
+t.cg_inv.cp_cmd.write: 1
+t.cg_mixed.ab.<addr0,read> [cross]: 1
+t.cg_mixed.ab.<addr0,write> [cross]: 1
+t.cg_mixed.ab.<addr1,read> [cross]: 1
+t.cg_mixed.ab.<addr1,write> [cross]: 1
+t.cg_mixed.cp_addr.addr0: 2
+t.cg_mixed.cp_addr.addr1: 2
+t.cg_mixed.cp_cmd.read: 2
+t.cg_mixed.cp_cmd.write: 2
+t.cg_mixed.cp_solo.debug: 2
+t.cg_mixed.cp_solo.normal: 2
+t.cg_noNormal.cp_addr.ig [ignore]: 2
+t.cg_noNormal.cp_cmd.read: 1
+t.cg_noNormal.cp_cmd.write: 1
+t.cg_openrange.cp_addr.hi: 2
+t.cg_openrange.cp_addr.lo: 2
+t.cg_openrange.cp_cmd.read: 2
+t.cg_openrange.cp_cmd.write: 2
+t.cg_openrange.orc.<hi,read> [cross]: 1
+t.cg_openrange.orc.<hi,write> [cross]: 1
+t.cg_openrange.orc.<lo,read> [cross]: 1
+t.cg_openrange.orc.<lo,write> [cross]: 1
+t.cg_overlap.cp_addr.hi: 3
+t.cg_overlap.cp_addr.lo: 3
+t.cg_overlap.cp_cmd.read: 3
+t.cg_overlap.cp_cmd.write: 2
+t.cg_overlap.ov.<hi,read> [cross]: 2
+t.cg_overlap.ov.<hi,write> [cross]: 1
+t.cg_overlap.ov.<lo,read> [cross]: 2
+t.cg_overlap.ov.<lo,write> [cross]: 1
+t.cg_range.addr_cmd_range.<hi_range,read> [cross]: 1
+t.cg_range.addr_cmd_range.<hi_range,write> [cross]: 1
+t.cg_range.addr_cmd_range.<lo_range,read> [cross]: 1
+t.cg_range.addr_cmd_range.<lo_range,write> [cross]: 1
+t.cg_range.cp_addr.hi_range: 2
+t.cg_range.cp_addr.lo_range: 2
+t.cg_range.cp_cmd.read: 2
+t.cg_range.cp_cmd.write: 2
+t.cg_trans.cp_t.t01: 1
+t.cg_trans.cp_v.v5: 2
+t.cg_trans.cp_v.v6: 1
+t.cg_trans.tx.<t01,v5> [cross]: 1
+t.cg_trans.tx.<t01,v6> [cross]: 0
+t.cg_unnamed_cross.__cross9.<a0,read> [cross]: 1
+t.cg_unnamed_cross.__cross9.<a0,write> [cross]: 0
+t.cg_unnamed_cross.__cross9.<a1,read> [cross]: 0
+t.cg_unnamed_cross.__cross9.<a1,write> [cross]: 1
+t.cg_unnamed_cross.cp_a.a0: 1
+t.cg_unnamed_cross.cp_a.a1: 1
+t.cg_unnamed_cross.cp_c.read: 1
+t.cg_unnamed_cross.cp_c.write: 1
+t.cg_unsup_cross_opt.addr_cmd_unsup.<addr0,read> [cross]: 1
+t.cg_unsup_cross_opt.addr_cmd_unsup.<addr0,write> [cross]: 0
+t.cg_unsup_cross_opt.addr_cmd_unsup.<addr1,read> [cross]: 0
+t.cg_unsup_cross_opt.addr_cmd_unsup.<addr1,write> [cross]: 1
+t.cg_unsup_cross_opt.cp_addr.addr0: 1
+t.cg_unsup_cross_opt.cp_addr.addr1: 1
+t.cg_unsup_cross_opt.cp_cmd.read: 1
+t.cg_unsup_cross_opt.cp_cmd.write: 1
+t.cg_wide.cp_cmd.read: 2
+t.cg_wide.cp_cmd.write: 2
+t.cg_wide.cp_wide.hi: 2
+t.cg_wide.cp_wide.lo: 2
+t.cg_wide.wd.<hi,read> [cross]: 1
+t.cg_wide.wd.<hi,write> [cross]: 1
+t.cg_wide.wd.<lo,read> [cross]: 1
+t.cg_wide.wd.<lo,write> [cross]: 1
+t.cg_wild_arr.cp_addr.wb[0]: 2
+t.cg_wild_arr.cp_addr.wb[1]: 2
+t.cg_wild_arr.cp_cmd.read: 2
+t.cg_wild_arr.cp_cmd.write: 2
+t.cg_wild_arr.wa.<wb[0],read> [cross]: 1
+t.cg_wild_arr.wa.<wb[0],write> [cross]: 1
+t.cg_wild_arr.wa.<wb[1],read> [cross]: 1
+t.cg_wild_arr.wa.<wb[1],write> [cross]: 1
+t.cg_wild_solo.cp_addr.wb: 2
+t.cg_wild_solo.cp_cmd.read: 1
+t.cg_wild_solo.cp_cmd.write: 1
+t.cg_wild_solo.ws.<wb,read> [cross]: 1
+t.cg_wild_solo.ws.<wb,write> [cross]: 1

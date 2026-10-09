@@ -35,7 +35,6 @@ EmitCParentModule::EmitCParentModule() {
     for (AstNode* modp = v3Global.rootp()->modulesp(); modp; modp = modp->nextp()) {
         setAll(VN_AS(modp, NodeModule));
     }
-    setAll(v3Global.rootp()->constPoolp()->modp());
 }
 
 //######################################################################
@@ -66,8 +65,8 @@ string EmitCUtil::prefixNameProtect(const AstNode* nodep) VL_MT_STABLE {
         } else if (it->second == prefix) {
             result = prefix;  // Same capitialization as last time
         } else {
-            VHashSha256 hash{prefix};
-            result = prefix + "__Vphsh" + hash.digestSymbol();
+            VHashSha512 hash{prefix};
+            result = prefix + "__Vphsh" + hash.digestSymbol24();
         }
     }
     s_memoized.emplace(prefix, result);
@@ -267,7 +266,7 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
                                   && name.substr(name.size() - suffix.size()) == suffix;
             if (beStatic) puts("static thread_local ");
         }
-        putns(nodep, nodep->vlArgType(true, false, false, "", asRef));
+        putns(nodep, nodep->vlArgType(true, false, false, asRef));
         puts(";\n");
     }
 }
@@ -292,26 +291,24 @@ void EmitCBaseVisitorConst::emitModCUse(const AstNodeModule* modp, VUseType useT
 
 std::pair<string, FileLine*> EmitCBaseVisitorConst::scSection(const AstNodeModule* modp,
                                                               VSystemCSectionType type) {
-    if (!v3Global.hasSystemCSections()) return std::make_pair("", nullptr);
     string text;
     FileLine* fl = nullptr;
     int last_line = -999;
-    for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-        const AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection);
-        if (!ssp) continue;
-        if (ssp->sectionType() != type) continue;
+    for (const AstSystemCSection* scSectionp = modp->scSectionsp(); scSectionp;
+         scSectionp = VN_AS(scSectionp->nextp(), SystemCSection)) {
+        if (scSectionp->sectionType() != type) continue;
         if (text.empty()) {
-            fl = ssp->fileline();
+            fl = scSectionp->fileline();
             text += "\n";
             if (v3Global.opt.decoration()) {
                 text += "\n//*** Below code from `systemc in Verilog file\n";
             }
         }
-        if (last_line + 1 != nodep->fileline()->lineno() && v3Global.opt.decoration()) {
-            text += "// From `systemc at " + nodep->fileline()->ascii() + "\n";
+        if (last_line + 1 != scSectionp->fileline()->lineno() && v3Global.opt.decoration()) {
+            text += "// From `systemc at " + scSectionp->fileline()->ascii() + "\n";
         }
-        last_line = ssp->fileline()->lineno();
-        text += ssp->text();
+        last_line = scSectionp->fileline()->lineno();
+        text += scSectionp->text();
     }
     if (!text.empty()) {
         if (v3Global.opt.decoration()) text += "//*** Above code from `systemc in Verilog file\n";
@@ -328,8 +325,6 @@ std::pair<string, FileLine*> EmitCBaseVisitorConst::scSection(const AstNodeModul
 
 void EmitCBaseVisitorConst::emitSystemCSection(const AstNodeModule* modp,
                                                VSystemCSectionType type) {
-    // Short circuit if nothing to do. This can save a lot of time on large designs as this
-    // function needs to traverse the entire module linearly.
     auto textAndFileline = scSection(modp, type);
     if (!textAndFileline.first.empty()) ofp()->putsNoTracking(textAndFileline.first);
 }

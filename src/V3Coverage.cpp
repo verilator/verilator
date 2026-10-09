@@ -199,6 +199,7 @@ class CoverageVisitor final : public VNVisitor {
             AstVar* const varp = new AstVar{fl_nowarn, VVarType::MODULETEMP, trace_var_name,
                                             incp->findUInt32DType()};
             varp->setIgnoreSchedWrite();  // Ignore the increment output, so no UNOPTFLAT
+            varp->lifetime(VLifetime::STATIC_IMPLICIT);
             varp->trace(true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp);
@@ -460,7 +461,7 @@ class CoverageVisitor final : public VNVisitor {
         if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
             toggleVarBottom(above, varp, basicp->nrange());
         } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
+            for (const int index_docs : adtypep->declRange().seqLoToHi()) {
                 const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
                                  new AstArraySel{varp->fileline(),
@@ -471,7 +472,7 @@ class CoverageVisitor final : public VNVisitor {
                 newent.cleanup();
             }
         } else if (const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType)) {
-            for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
+            for (const int index_docs : adtypep->declRange().seqLoToHi()) {
                 const AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
                 const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
@@ -1053,7 +1054,7 @@ class CoverageVisitor final : public VNVisitor {
                 unrolledp = new T_Oper{fl, selp, unrolledp};
             }
             iterate(unrolledp);
-            pushDeletep(unrolledp);
+            VL_DO_DANGLING(pushDeletep(unrolledp), unrolledp);
         } else {
             iterateChildren(nodep);
             lineTrack(nodep);

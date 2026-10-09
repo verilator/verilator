@@ -50,9 +50,10 @@
 // the probe runs short.
 //
 // Entries are referred to by iterators, as in the STL containers, but unlike
-// STL containers, the mapped value in a V3HashMap is not mutable through an
-// iterator. Iterators and entry addresses stay valid until the table grows or
-// an entry is erased; either invalidates all of them.
+// STL containers, mapped values in a V3HashMap are only mutable through
+// 'iterator::value()'. Iterators and entry addresses stay valid until the table grows,
+// an entry is erased, or the table is cleared; any of these invalidates all
+// of them.
 //
 // Erasure uses backward shift deletion: entries following the hole are moved
 // back over it where their probe run ran through it (no tombstones).
@@ -93,6 +94,7 @@ template <typename T_Key, typename T_Val>
 struct V3HashTableKeyIsFirst final {
     using Key = T_Key;  // What it yields, so the table need not deduce it
     const T_Key& operator()(const std::pair<T_Key, T_Val>& entry) const { return entry.first; }
+    static T_Val& valueOf(std::pair<T_Key, T_Val>& entry) { return entry.second; }
 };
 
 void selfTest();
@@ -131,7 +133,7 @@ private:
         // The entry comes first, so it starts the slot whatever its alignment.
         // It is a union so it is alive only while the slot is occupied.
         union {
-            Entry m_entry;
+            Entry m_entry;  // Stored entry; alive only while the slot is occupied
         };
         size_t m_hash = 0;  // Hash of the entry, or zero when the slot is free
 
@@ -182,12 +184,15 @@ public:
 
     public:
         iterator() = default;
-        // As opposed to the STL, this always returns a const reference so the
-        // collection is not mutable through an iterator alone. This is
-        // required because entries must be movable, hence can't be const, but
-        // the key of a map must not be modified.
+        // As opposed to the STL, this always returns a const reference so an
+        // entry is not mutable through an iterator alone. This is required
+        // because entries must be movable, hence can't be const, but the key
+        // of a map must not be modified. See 'value()' for the mapped value.
         const Entry& operator*() const { return m_slotp->m_entry; }
         const Entry* operator->() const { return &m_slotp->m_entry; }
+        // Mutable reference to the mapped value, for a V3HashMap only, as in a set
+        // the entry is the key. Changing it is safe, as it takes no part in the lookup.
+        auto& value() const { return T_KeyOf::valueOf(m_slotp->m_entry); }
         // Pre-increment, skipping the free slots
         iterator& operator++() {
             while (++m_slotp != m_endp && m_slotp->isFree()) {}
@@ -346,6 +351,14 @@ public:
                < count * V3HashTableInternals::LOAD_FACTOR_DEN)
             capacity *= 2;
         if (capacity > m_capacity) resize(capacity);
+    }
+
+    // Remove all entries. The table stays allocated. Invalidates every iterator.
+    void clear() {
+        for (size_t i = 0; i < m_capacity; ++i) {
+            if (!m_table[i].isFree()) m_table[i].destroy();
+        }
+        m_size = 0;
     }
 
     // Return iterator to the entry equal to the given key, or 'end()' if there

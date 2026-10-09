@@ -1,45 +1,45 @@
-__vlAnonCG_cg.cp_a.one: 1
-__vlAnonCG_cg.cp_b.one: 2
-__vlAnonCG_cg.cross_ab.one_x_one [cross]: 1
-cg_and.cp_concat.b00: 0
-cg_and.cp_concat.b01: 1
-cg_and.cp_concat.b10: 0
-cg_and.cp_concat.b11: 0
-cg_array_iff.cp.arr[0]: 1
-cg_array_iff.cp.arr[1]: 0
-cg_array_iff.cp.arr[2]: 0
-cg_bin_cross.cp_a.one: 2
-cg_bin_cross.cp_b.one: 2
-cg_bin_cross.cross_ab.one_x_one [cross]: 1
-cg_bitw.cp.seven: 1
-cg_cross_coverpoint_iff.cp_a.one: 2
-cg_cross_coverpoint_iff.cp_b.one: 2
-cg_cross_coverpoint_iff.cross_ab.one_x_one [cross]: 1
-cg_cross_iff.cp_a.one: 3
-cg_cross_iff.cp_b.one: 3
-cg_cross_iff.cross_ab.one_x_one [cross]: 1
-cg_cross_iff_unnamed.__cross7.one_x_one [cross]: 1
-cg_cross_iff_unnamed.cp_a.one: 2
-cg_cross_iff_unnamed.cp_b.one: 2
-cg_default_iff.cp.def [default]: 1
-cg_default_iff.cp.known: 1
-cg_iff.cp_value.disabled_hi: 0
-cg_iff.cp_value.disabled_lo: 0
-cg_iff.cp_value.enabled_hi: 1
-cg_iff.cp_value.enabled_lo: 1
-cg_or.cp.hi: 0
-cg_or.cp.lo: 1
-cg_part.cp.one: 1
-cg_rel.cp.five: 1
-cg_rel.cp.two: 0
-cg_state_bin_iff.cp.grouped: 2
-cg_state_bin_iff.cp.ignored [ignore]: 1
-cg_state_bin_iff.cp.illegal [illegal]: 0
-cg_state_bin_iff.cp.scalar: 1
-cg_state_bin_iff.cp.values[0]: 1
-cg_state_bin_iff.cp.values[1]: 1
-cg_state_bin_iff.cp.wild: 2
-cg_state_bin_iff.cp.wild_ignored [ignore]: 2
-cg_state_bin_iff.cp.wild_illegal [illegal]: 0
-cg_trans2_iff.cp.t2: 1
-cg_trans3_iff.cp.t3: 1
+$unit::CrossIffEmbedded::cg.cp_a.one: 1
+$unit::CrossIffEmbedded::cg.cp_b.one: 2
+$unit::CrossIffEmbedded::cg.cross_ab.<one,one> [cross]: 1
+t.cg_and.cp_concat.b00: 0
+t.cg_and.cp_concat.b01: 1
+t.cg_and.cp_concat.b10: 0
+t.cg_and.cp_concat.b11: 0
+t.cg_array_iff.cp.arr[0]: 1
+t.cg_array_iff.cp.arr[1]: 0
+t.cg_array_iff.cp.arr[2]: 0
+t.cg_bin_cross.cp_a.one: 2
+t.cg_bin_cross.cp_b.one: 2
+t.cg_bin_cross.cross_ab.<one,one> [cross]: 1
+t.cg_bitw.cp.seven: 1
+t.cg_cross_coverpoint_iff.cp_a.one: 2
+t.cg_cross_coverpoint_iff.cp_b.one: 2
+t.cg_cross_coverpoint_iff.cross_ab.<one,one> [cross]: 1
+t.cg_cross_iff.cp_a.one: 3
+t.cg_cross_iff.cp_b.one: 3
+t.cg_cross_iff.cross_ab.<one,one> [cross]: 1
+t.cg_cross_iff_unnamed.__cross8.<one,one> [cross]: 1
+t.cg_cross_iff_unnamed.cp_a.one: 2
+t.cg_cross_iff_unnamed.cp_b.one: 2
+t.cg_default_iff.cp.def [default]: 1
+t.cg_default_iff.cp.known: 1
+t.cg_iff.cp_value.disabled_hi: 0
+t.cg_iff.cp_value.disabled_lo: 0
+t.cg_iff.cp_value.enabled_hi: 1
+t.cg_iff.cp_value.enabled_lo: 1
+t.cg_or.cp.hi: 0
+t.cg_or.cp.lo: 1
+t.cg_part.cp.one: 1
+t.cg_rel.cp.five: 1
+t.cg_rel.cp.two: 0
+t.cg_state_bin_iff.cp.grouped: 2
+t.cg_state_bin_iff.cp.ignored [ignore]: 1
+t.cg_state_bin_iff.cp.illegal [illegal]: 0
+t.cg_state_bin_iff.cp.scalar: 1
+t.cg_state_bin_iff.cp.values[0]: 1
+t.cg_state_bin_iff.cp.values[1]: 1
+t.cg_state_bin_iff.cp.wild: 2
+t.cg_state_bin_iff.cp.wild_ignored [ignore]: 2
+t.cg_state_bin_iff.cp.wild_illegal [illegal]: 0
+t.cg_trans2_iff.cp.t2: 1
+t.cg_trans3_iff.cp.t3: 1

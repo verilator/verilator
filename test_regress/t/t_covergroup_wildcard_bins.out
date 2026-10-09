@@ -1,5 +1,146 @@
-cg.data.high: 1
-cg.data.low: 2
-cg.data.mid_range: 1
-cg.data.pattern: 2
-cg.data.wc_point: 2
+t.cg.data.high: 1
+t.cg.data.low: 2
+t.cg.data.mid_range: 1
+t.cg.data.pattern: 2
+t.cg.data.wc_point: 2
+t.cg_arrays.dups.b[11]: 4
+t.cg_arrays.dups.b[12]: 4
+t.cg_arrays.dups.b[13]: 4
+t.cg_arrays.dups.b[14]: 4
+t.cg_arrays.dups.b[15]: 4
+t.cg_arrays.excl.b[2]: 8
+t.cg_arrays.excl.b[3]: 8
+t.cg_arrays.excl.i[0] [ignore]: 12
+t.cg_arrays.excl.i[1] [ignore]: 12
+t.cg_arrays.excl.l[7] [illegal]: 0
+t.cg_arrays.excl.others [default]: 24
+t.cg_arrays.gaps.b[12]: 4
+t.cg_arrays.gaps.b[13]: 4
+t.cg_arrays.gaps.b[8]: 4
+t.cg_arrays.gaps.b[9]: 4
+t.cg_arrays.gated.b[12]: 1
+t.cg_arrays.gated.b[14]: 1
+t.cg_arrays.ieee.g12_15_array[12]: 4
+t.cg_arrays.ieee.g12_15_array[13]: 4
+t.cg_arrays.ieee.g12_15_array[14]: 4
+t.cg_arrays.ieee.g12_15_array[15]: 4
+t.cg_arrays.mixed.b[0]: 4
+t.cg_arrays.mixed.b[1]: 4
+t.cg_arrays.mixed.b[5]: 4
+t.cg_arrays.mixed.b[8]: 4
+t.cg_arrays.mixed.b[9]: 4
+t.cg_arrays.nonzero.b[2]: 16
+t.cg_arrays.nonzero.b[3]: 16
+t.cg_arrays.sgn.cast[-1]: 4
+t.cg_arrays.sgn.cast[-2]: 4
+t.cg_arrays.sgn.cast[-3]: 4
+t.cg_arrays.sgn.cast[-4]: 4
+t.cg_arrays.sgn.cast[-5]: 4
+t.cg_arrays.sgn.cast[-6]: 4
+t.cg_arrays.sgn.cast[-7]: 4
+t.cg_arrays.sgn.cast[-8]: 4
+t.cg_arrays.sgn.ext[-1]: 4
+t.cg_arrays.sgn.ext[-2]: 4
+t.cg_arrays.sgn.ext[-3]: 4
+t.cg_arrays.sgn.ext[-4]: 4
+t.cg_arrays.sgn2.b[-1]: 16
+t.cg_arrays.sgn2.b[1]: 16
+t.cg_arrays.split.b[1]: 12
+t.cg_arrays.split.b[5]: 8
+t.cg_arrays.split.i[0] [ignore]: 12
+t.cg_arrays.split.i[4] [ignore]: 8
+t.cg_arrays.wide.keep[12]: 4
+t.cg_arrays.wide.keep[13]: 4
+t.cg_arrays.wide.keep[14]: 4
+t.cg_arrays.wide.keep[15]: 4
+t.cg_arrays.wide.keep[1]: 4
+t.cg_arrays.wide100.b[16]: 4
+t.cg_arrays.wide100.b[17]: 4
+t.cg_arrays.wide100.b[18]: 4
+t.cg_arrays.wide100.b[19]: 4
+t.cg_arrays.wide100.b[20]: 4
+t.cg_arrays.wide100.b[21]: 4
+t.cg_arrays.wide100.b[22]: 4
+t.cg_arrays.wide100.b[23]: 4
+t.cg_arrays.wide100.b[24]: 4
+t.cg_arrays.wide100.b[25]: 4
+t.cg_arrays.wide100.b[26]: 4
+t.cg_arrays.wide100.b[27]: 4
+t.cg_arrays.wide100.b[28]: 4
+t.cg_arrays.wide100.b[29]: 4
+t.cg_arrays.wide100.b[30]: 4
+t.cg_arrays.wide100.b[31]: 4
+t.cg_arrays.wide100.f[24]: 4
+t.cg_arrays.wide100.f[25]: 4
+t.cg_arrays.wide100.f[28]: 4
+t.cg_arrays.wide100.f[29]: 4
+t.cg_arrays.ww.<b[2],b[16]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[17]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[18]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[19]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[20]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[21]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[22]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[23]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[24]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[25]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[26]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[27]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[28]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[29]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[30]> [cross]: 1
+t.cg_arrays.ww.<b[2],b[31]> [cross]: 1
+t.cg_arrays.ww.<b[2],f[24]> [cross]: 1
+t.cg_arrays.ww.<b[2],f[25]> [cross]: 1
+t.cg_arrays.ww.<b[2],f[28]> [cross]: 1
+t.cg_arrays.ww.<b[2],f[29]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[16]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[17]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[18]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[19]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[20]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[21]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[22]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[23]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[24]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[25]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[26]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[27]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[28]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[29]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[30]> [cross]: 1
+t.cg_arrays.ww.<b[3],b[31]> [cross]: 1
+t.cg_arrays.ww.<b[3],f[24]> [cross]: 1
+t.cg_arrays.ww.<b[3],f[25]> [cross]: 1
+t.cg_arrays.ww.<b[3],f[28]> [cross]: 1
+t.cg_arrays.ww.<b[3],f[29]> [cross]: 1
+t.cg_arrays.xx.<b[2],b[12]> [cross]: 1
+t.cg_arrays.xx.<b[2],b[13]> [cross]: 1
+t.cg_arrays.xx.<b[3],b[12]> [cross]: 1
+t.cg_arrays.xx.<b[3],b[13]> [cross]: 1
+t.cg_arrays.xx.sel [cross]: 4
+t.cg_s64.neg.b[-1]: 1
+t.cg_s64.neg.b[-3]: 1
+t.cg_s64.nx.<b[-1],b> [cross]: 1
+t.cg_s64.nx.<b[-3],b> [cross]: 1
+t.cg_s64.three.b: 18
+t.cg_s64.top.b[-1152921504606846978]: 1
+t.cg_s64.top.b[-2305843009213693954]: 1
+t.cg_s64.top.b[-2]: 1
+t.cg_s64.top.b[-3458764513820540930]: 1
+t.cg_s64.top.b[-4611686018427387906]: 1
+t.cg_s64.top.b[-5764607523034234882]: 1
+t.cg_s64.top.b[-6917529027641081858]: 1
+t.cg_s64.top.b[-8070450532247928834]: 1
+t.cg_s64.top.b[1152921504606846974]: 1
+t.cg_s64.top.b[2305843009213693950]: 1
+t.cg_s64.top.b[3458764513820540926]: 1
+t.cg_s64.top.b[4611686018427387902]: 1
+t.cg_s64.top.b[5764607523034234878]: 1
+t.cg_s64.top.b[6917529027641081854]: 1
+t.cg_s64.top.b[8070450532247928830]: 1
+t.cg_s64.top.b[9223372036854775806]: 1
+t.cg_sized.d.b[0]: 1
+t.cg_sized.d.b[1]: 1
+t.cg_sized.s.b[0]: 1
+t.cg_sized.s.b[1]: 1

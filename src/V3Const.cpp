@@ -110,12 +110,12 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
 
     class LeafInfo final {  // Leaf node (either AstConst or AstVarRef)
         // MEMBERS
-        bool m_polarity = true;
+        bool m_polarity = true;  // Invert result due to NOT
         int m_lsb = 0;  // LSB of actually used bit of m_refp->varp()
         int m_msb = 0;  // MSB of actually used bit of m_refp->varp()
         int m_wordIdx = -1;  // -1 means AstWordSel is not used.
-        AstVarRef* m_refp = nullptr;
-        const AstConst* m_constp = nullptr;
+        AstVarRef* m_refp = nullptr;  // Leaf's variable reference
+        const AstConst* m_constp = nullptr;  // Leaf's constant
 
     public:
         // CONSTRUCTORS
@@ -187,9 +187,9 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     };
 
     struct BitPolarityEntry final {  // Found bit polarity during iterate()
-        LeafInfo m_info;
-        bool m_polarity = false;
-        int m_bit = 0;
+        LeafInfo m_info;  // Leaf (variable or constant) bit polarity was found on
+        bool m_polarity = false;  // Polarity the bit must have to match
+        int m_bit = 0;  // Bit index within the leaf that was tested
         BitPolarityEntry(const LeafInfo& info, bool pol, int bit)
             : m_info{info}
             , m_polarity{pol}
@@ -198,8 +198,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     };
 
     struct FrozenNodeInfo final {  // Context when a frozen node is found
-        bool m_polarity;
-        int m_lsb;
+        bool m_polarity;  // Polarity the frozen node must match
+        int m_lsb;  // LSB position of the frozen node
         bool operator<(const FrozenNodeInfo& other) const {
             if (m_lsb != other.m_lsb) return m_lsb < other.m_lsb;
             return m_polarity < other.m_polarity;
@@ -207,12 +207,12 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     };
 
     class Restorer final {  // Restore the original state unless disableRestore() is called
-        ConstBitOpTreeVisitor& m_visitor;
-        const size_t m_polaritiesSize;
-        const size_t m_frozenSize;
-        const unsigned m_ops;
-        const bool m_polarity;
-        bool m_restore = true;
+        ConstBitOpTreeVisitor& m_visitor;  // Visitor whose state is saved and restored
+        const size_t m_polaritiesSize;  // Saved m_visitor.m_bitPolarities size to truncate back to
+        const size_t m_frozenSize;  // Saved m_visitor.m_frozenNodes size to truncate back to
+        const unsigned m_ops;  // Saved m_visitor.m_ops to restore
+        const bool m_polarity;  // Saved m_visitor.m_polarity to restore
+        bool m_restore = true;  // Whether the destructor still needs to restore state
 
     public:
         explicit Restorer(ConstBitOpTreeVisitor& visitor)
@@ -1015,14 +1015,10 @@ class ConstVisitor final : public VNVisitor {
                                     const bool packReal) {
         const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
         if (const AstUnpackArrayDType* const unpackDtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            const int left = unpackDtypep->left();
-            const int right = unpackDtypep->right();
-            const int step = left <= right ? 1 : -1;
-            for (int idx = left;; idx += step) {
+            for (const int idx : unpackDtypep->declRange().seqLeftToRight()) {
                 AstArraySel* const selp
                     = new AstArraySel{fromp->fileline(), fromp->cloneTreePure(false), idx};
                 collectFixedAggregateTerms(selp, termps, packReal);
-                if (idx == right) break;
             }
             VL_DO_DANGLING(pushDeletep(fromp), fromp);
         } else if (const AstNodeUOrStructDType* const sdtypep
@@ -1463,11 +1459,12 @@ class ConstVisitor final : public VNVisitor {
         }
         if (const AstShiftR* const shiftp = VN_CAST(rhsp, ShiftR)) {
             // 'a >> S' forces the high S bits to zero. Check against the width of the shifted
-            // operand, V3Expand can create shifts wider than their inputs
+            // operand, V3Expand can create shifts wider than their inputs. Must use width(),
+            // not widthMin(), as bits above widthMin() are not guaranteed to be zero.
             if (AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
                 return scp->num().fitsInUInt()
                        && (lsb + scp->num().toUInt()
-                           >= static_cast<uint32_t>(shiftp->lhsp()->widthMin()));
+                           >= static_cast<uint32_t>(shiftp->lhsp()->width()));
             }
         }
         if (const AstMul* const mulp = VN_CAST(rhsp, Mul)) {
@@ -4631,8 +4628,11 @@ class ConstVisitor final : public VNVisitor {
         // Default: Just iterate
         if (m_required) {
             if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
-                || VN_IS(nodep, Dot)) {
+                || VN_IS(nodep, Dot) || VN_IS(nodep, Text)) {
                 // ignore
+            } else if (VN_IS(nodep, Pattern) || VN_IS(nodep, PatMember)) {
+                // A parameter override pattern is typed later, so only fold its members
+                iterateChildren(nodep);
             } else if (AstCellRef* const crp = VN_CAST(nodep, CellRef)) {
                 iterate(crp->exprp());
                 if (AstNode* const newp = crp->exprp()) {

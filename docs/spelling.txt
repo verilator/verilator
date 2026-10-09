@@ -347,6 +347,7 @@ Narcis
 Nassim
 Nauticus
 Nayak
+Nazar
 Nenakhov
 Newgard
 Nigam
@@ -589,6 +590,7 @@ Yurii
 Zaruba
 Zhang
 Zhi
+Zibilyuk
 abirkmanis
 accessor
 accessors
@@ -635,6 +637,7 @@ bitOpTree
 bitaggregat
 bitop
 bitstoreal
+bitwise
 blackbox
 bokke
 bool
@@ -720,6 +723,7 @@ deduplication
 defenv
 defname
 defparam
+dehash
 demangling
 dep
 deparametrized
@@ -739,6 +743,8 @@ devel
 difftree
 dir
 disambiguates
+discoverability
+disjunction
 displayb
 distcc
 doxygen
@@ -1114,6 +1120,7 @@ rodata
 rolloverSize
 rr
 rst
+runnable
 runtime
 runtimes
 rw
@@ -1221,6 +1228,7 @@ typedef'ed
 typedefed
 typedefs
 typename
+typenames
 uint
 un
 unbased

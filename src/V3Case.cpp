@@ -38,6 +38,8 @@
 
 #include "V3Case.h"
 
+#include "V3ConstPool.h"
+#include "V3SharedTmps.h"
 #include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -174,7 +176,11 @@ class CaseVisitor final : public VNVisitor {
         VDouble0 provenAssertions;  // Assertions proven to hold
     } m_stats;
     const AstNode* m_alwaysp = nullptr;  // Always in which case is located
-    size_t m_nTmps = 0;  // Sequence numbers for temporary variables
+    // Temporary variables, shared by instances
+    // For table lookup results
+    V3SharedTmps m_tableOutTmps{"__VcaseTableOut", VVarType::MODULETEMP};
+    // For decoder results
+    V3SharedTmps m_decoderOutTmps{"__VcaseDecoderOut", VVarType::MODULETEMP};
     AstScope* m_scopep = nullptr;  // Current scope
 
     // STATE - per AstCase. Update by 'analyzeCase', treat 'const' otherwise
@@ -621,8 +627,7 @@ class CaseVisitor final : public VNVisitor {
         if (canBeDecoder) analyzeDecoderPattern(nodep);
     }
 
-    AstNodeStmt* connectDecoderOutputs(AstCase* nodep, AstNodeExpr* exprp,
-                                       const char* tmpPrefixp) {
+    AstNodeStmt* connectDecoderOutputs(AstCase* nodep, AstNodeExpr* exprp, V3SharedTmps& tmps) {
         FileLine* const flp = nodep->fileline();
 
         // If there is only one LHS, just use the result
@@ -642,8 +647,7 @@ class CaseVisitor final : public VNVisitor {
         }
 
         // There are multiple LHSs, store the lookup result in a temporary
-        const std::string name = tmpPrefixp + std::to_string(m_nTmps++);
-        AstVarScope* const tempVscp = m_scopep->createTemp(name, m_caseDecoderEntryWidth);
+        AstVarScope* const tempVscp = tmps.make(flp, m_scopep, m_caseDecoderEntryWidth);
         AstNodeExpr* const tempWritep = new AstVarRef{flp, tempVscp, VAccess::WRITE};
         AstNodeStmt* const resultp = new AstAssign{flp, tempWritep, exprp};
 
@@ -738,18 +742,15 @@ class CaseVisitor final : public VNVisitor {
             }
         }
 
-        // Create the table in the constant pool, unless using an inline table
-        AstVarScope* const tableVscp = [&]() -> AstVarScope* {
-            if (isTinyTable) return nullptr;
-            AstVarScope* vscp = v3Global.rootp()->constPoolp()->findConst(tablep, true);
+        // Create the lookup table reference, in the constant pool unless using an inline table
+        AstNodeExpr* const tableRefp = [&]() -> AstNodeExpr* {
+            if (isTinyTable) return tablep;
+            AstVarRef* const refp = V3ConstPool::findConst(tablep);
             VL_DO_DANGLING(tablep->deleteTree(), tablep);  // findConst clones
-            return vscp;
+            return refp;
         }();
 
-        // Create the lookup table reference and index
-        AstNodeExpr* const tableRefp
-            = tableVscp ? static_cast<AstNodeExpr*>(new AstVarRef{flp, tableVscp, VAccess::READ})
-                        : static_cast<AstNodeExpr*>(tablep);
+        // Create the lookup index
         AstNodeExpr* const caseExprp
             = new AstExtend{flp, nodep->exprp()->cloneTreePure(false), 32};
         AstNodeExpr* const scalep = new AstConst{flp, entryWidth};
@@ -758,7 +759,7 @@ class CaseVisitor final : public VNVisitor {
             = new AstSel{flp, tableRefp, tableLsbp, static_cast<int>(m_caseDecoderEntryWidth)};
 
         // Connect outputs
-        return connectDecoderOutputs(nodep, tableSelp, "__VcaseTableOut");
+        return connectDecoderOutputs(nodep, tableSelp, m_tableOutTmps);
     }
 
     AstNodeStmt* convertCaseDecoder(AstCase* nodep) {
@@ -855,18 +856,17 @@ class CaseVisitor final : public VNVisitor {
         }
 
         // Create the tables
-        AstVarScope* const matchVscp = v3Global.rootp()->constPoolp()->findConst(matchp, true);
-        AstVarScope* const tableVscp = v3Global.rootp()->constPoolp()->findTable(tablep);
+        AstVarRef* const matchRefp = V3ConstPool::findConst(matchp);
+        AstVarRef* const tableRefp = V3ConstPool::findTable(tablep);
         VL_DO_DANGLING(matchp->deleteTree(), matchp);
         VL_DO_DANGLING(tablep->deleteTree(), tablep);
 
         // AstMatchMasked produces the index of the matching entry
-        AstNodeExpr* const tableRefp = new AstVarRef{flp, tableVscp, VAccess::READ};
         AstNodeExpr* const caseExprp = nodep->exprp()->cloneTreePure(false);
-        AstMatchMasked* const indexp = new AstMatchMasked{flp, caseExprp, matchVscp};
+        AstMatchMasked* const indexp = new AstMatchMasked{flp, caseExprp, matchRefp};
         AstNodeExpr* const entryp = new AstArraySel{flp, tableRefp, indexp};
 
-        return connectDecoderOutputs(nodep, entryp, "__VcaseDecoderOut");
+        return connectDecoderOutputs(nodep, entryp, m_decoderOutTmps);
     }
 
     // TODO: should return AstNodeStmt after #6280
@@ -1004,11 +1004,22 @@ class CaseVisitor final : public VNVisitor {
             itemp->addCondsp(newCondp);
         }
 
-        // If there was no default, add a empty one, this greatly simplifies below code
+        // If there was no default, make one up, this greatly simplifies below code
         // and constant propagation will just eliminate it for us later.
         if (!hasDefault) {
-            nodep->addItemsp(new AstCaseItem{
-                nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}}, nullptr});
+            if (m_caseDetailsValid && m_caseDetails.exhaustive
+                && !m_caseDetails.exhaustiveOverEnumOnly) {
+                // Case is proven exhaustive, so the last is reached only when its test holds,
+                // make it unconditional
+                AstCaseItem* const lastp = VN_AS(nodep->itemsp()->lastp(), CaseItem);
+                pushDeletep(lastp->condsp()->unlinkFrBackWithNext());
+                lastp->addCondsp(new AstConst{lastp->fileline(), AstConst::BitTrue{}});
+            } else {
+                // Otherwise needs an explicit empty default
+                nodep->addItemsp(new AstCaseItem{
+                    nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}},
+                    nullptr});
+            }
         }
 
         // Now build the IF statement tree

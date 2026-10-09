@@ -90,7 +90,7 @@ jobs:
     with:
       cc: gcc
       dev-gcov: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       # For pull requests, build the head of the pull request branch, not the
       # merge commit, otherwise patch coverage would include the changes
       # between the root of the pull request and the target branch
@@ -104,7 +104,7 @@ jobs:
       archive: ${{ needs.build.outputs.archive }}
       cc: gcc
       dev-gcov: true
-      runs-on: ubuntu-24.04
+      runs-on: ubuntu-26.04
       suite: ${{ matrix.test }}${{ matrix.num }}
     strategy:
       fail-fast: false
@@ -118,7 +118,7 @@ jobs:
     name: Publish results to codecov.io
     needs: test
     if: ${{ contains(needs.*.result, 'success') && !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
@@ -151,7 +151,7 @@ jobs:
     name: Prepare HTML report
     needs: [build, test]
     if: ${{ contains(needs.*.result, 'success') && !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Download repository archive
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
@@ -222,7 +222,7 @@ jobs:
     name: Create issue on failure
     needs: [publish-codecov, prepare-report]
     if: ${{ github.event_name == 'schedule' && github.repository == 'verilator/verilator' && github.run_attempt == 1 && failure() && !cancelled() }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     steps:
       # Creating issues requires elevated privilege
       - name: Generate access token

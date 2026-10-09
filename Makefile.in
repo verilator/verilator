@@ -144,8 +144,9 @@ all_nomsg: verilator_exe $(VL_INST_MAN_FILES)
 .PHONY: verilator_exe
 .PHONY: verilator_bin$(EXEEXT)
 .PHONY: verilator_bin_dbg$(EXEEXT)
+.PHONY: verilator_coverage_bin$(EXEEXT)
 .PHONY: verilator_coverage_bin_dbg$(EXEEXT)
-verilator_exe verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT):
+verilator_exe verilator_bin$(EXEEXT) verilator_bin_dbg$(EXEEXT) verilator_coverage_bin$(EXEEXT) verilator_coverage_bin_dbg$(EXEEXT):
 	@echo ------------------------------------------------------------
 	@echo "making verilator in src"
 	$(MAKE) -C src $(OBJCACHE_JOBS)
@@ -244,6 +245,7 @@ VL_INST_PUBLIC_SCRIPT_FILES = \
 VL_INST_PUBLIC_BIN_FILES = \
   verilator_bin$(EXEEXT) \
   verilator_bin_dbg$(EXEEXT) \
+  verilator_coverage_bin$(EXEEXT) \
   verilator_coverage_bin_dbg$(EXEEXT) \
 
 # Private executabels intended to be invoked by internals
@@ -710,8 +712,10 @@ override undefine COVERAGE_BASE # Use the above variabels instead
 
 # 'fastcov' setup
 FASTCOV := nodist/fastcov.py
-FASTCOV_OPT := -j $(shell nproc)
-FASTCOV_OPT += --gcov $(GCOV)
+FASTCOV_JOBS ?= $(shell nproc)
+FASTCOV_OPT := -j $(FASTCOV_JOBS)
+# gcov does not free memory between files, so run it in batches via a wrapper
+FASTCOV_OPT += --gcov nodist/gcov_batch
 FASTCOV_OPT += --lcov
 FASTCOV_OPT += --process-gcno
 FASTCOV_OPT += --branch-coverage
@@ -763,6 +767,7 @@ GENHTML_OPT += --rc branch_coverage=1
 GENHTML_OPT += --rc genhtml_hi_limit=100
 GENHTML_OPT += --ignore-errors negative
 GENHTML_OPT += --ignore-errors inconsistent
+GENHTML_OPT += --ignore-errors empty
 ifeq ($(COVERAGE_REF_BASE),)
 GENHTML_OPT += --header-title "Code coverage for Verilator $(shell git describe --dirty)"
 else
@@ -784,7 +789,7 @@ $(COVERAGE_DIR)/verilator.info: $(GCNO_FILES) $(GCDA_FILES)
 	@echo "# fastcov: combining all .gcda files into lcov .info"
 	@echo "####################################################################"
 	@mkdir -p $(COVERAGE_DIR)
-	/usr/bin/time -f "That took %E" \
+	GCOV=$(GCOV) /usr/bin/time -f "That took %E" \
 	$(FASTCOV) $(FASTCOV_OPT) --output $@
 
 # Filter combined .info file for patch coverage
@@ -794,8 +799,8 @@ $(COVERAGE_DIR)/verilator-patch.info: $(COVERAGE_DIR)/verilator.info
 	@echo "####################################################################"
 	rm -f $(COVERAGE_DIR)/empty-patch
 	git diff $(COVERAGE_REF_BASE) -- include src > $(COVERAGE_DIR)/filter.patch
-	[ -s $(COVERAGE_DIR)/filter.patch ] || touch $(COVERAGE_DIR)/empty-patch
 	$(FASTCOV) -C $^ --lcov -o $@ --diff-filter $(COVERAGE_DIR)/filter.patch
+	grep -q '^DA:' $@ || touch $(COVERAGE_DIR)/empty-patch
 
 # Build coverage report
 $(COVERAGE_DIR)/report/index.html: $(COVERAGE_DIR)/verilator$(if $(COVERAGE_REF_BASE),-patch).info

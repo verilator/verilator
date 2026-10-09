@@ -40,10 +40,13 @@ module Vt_debug_emitv_t;
             disable label0;
         end
     endfunction
-    Iface the_ifaces[3:0] ();
+    Iface the_ifaces[3] ();
+    Iface the_ifaces[2] ();
+    Iface the_ifaces[1] ();
+    Iface the_ifaces[0] ();
     initial begin
         begin
-            if ($test$plusargs("HELLO")) begin
+            if ((| $test$plusargs("HELLO"))) begin
                 $display("Hello argument found.");
             end
             if ((Pkg::FOO == 'sh0)) begin
@@ -53,10 +56,10 @@ module Vt_debug_emitv_t;
                 $write("");
             end
             $display("%p", $_EXPRSTMT(
-                    __Venum_hf6514fb1__0 = (in);
-                    , __Venum_hf6514fb1__0);
+                    __Venum_h99905942__0 = (in);
+                    , __Venum_h99905942__0);
             );
-            if ($value$plusargs("TEST=%d", i1)) begin
+            if ((| $value$plusargs("TEST=%d", i1))) begin
                 $display("value was %d", i1);
             end
             else begin
@@ -190,7 +193,7 @@ module Vt_debug_emitv_t;
             sub.inc(fosum);
             sum = sub.f(sum);
             $display("[%0t] sum = %d", $time, sum);
-            $display("a?= %d", ($c('sh1) ? $c('sh14)
+            $display("a?= %d", ((| $c('sh1)) ? $c('sh14)
                                  : $c('sh1e)));
             $c(;);
             $display("%d", $c(0));
@@ -304,6 +307,16 @@ module Vt_debug_emitv_t;
                 $stop;
             end
             sub.r = 62.0;
+            do begin
+                if ((SUB_B !== 2'h1)) begin
+                    begin
+                        $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", 
+                               136'h742f745f64656275675f656d6974762e76, 
+                               'sh105, SUB_B, 2'h1);
+                        $stop;
+                    end
+                end
+            end while (1'h0)
             mod_res = (mod_val % 'sh5);
             $display("%g", $log10(r));
             $display("%g", $ln(r));
@@ -394,21 +407,21 @@ module Vt_debug_emitv_t;
     initial begin
         begin
             begin : assert_simple_immediate_else
-                assert ('sh0) begin
+                assert (1'h0) begin
                 end
                 else begin
                     $display("fail");
                 end
             end
             begin : assert_simple_immediate_stmt
-                assert ('sh0) begin
+                assert (1'h0) begin
                     $display("pass");
                 end
                 else begin
                 end
             end
             begin : assert_simple_immediate_stmt_else
-                assert ('sh0) begin
+                assert (1'h0) begin
                     $display("pass");
                 end
                 else begin
@@ -416,27 +429,27 @@ module Vt_debug_emitv_t;
                 end
             end
             begin : assume_simple_immediate
-                assume ('sh0) begin
+                assume (1'h0) begin
                 end
                 else begin
                 end
             end
             begin : assume_simple_immediate_else
-                assume ('sh0) begin
+                assume (1'h0) begin
                 end
                 else begin
                     $display("fail");
                 end
             end
             begin : assume_simple_immediate_stmt
-                assume ('sh0) begin
+                assume (1'h0) begin
                     $display("pass");
                 end
                 else begin
                 end
             end
             begin : assume_simple_immediate_stmt_else
-                assume ('sh0) begin
+                assume (1'h0) begin
                     $display("pass");
                 end
                 else begin
@@ -447,7 +460,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_observed_deferred_immediate
-            assert #0 ('sh0) begin
+            assert #0 (1'h0) begin
             end
             else begin
             end
@@ -455,7 +468,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_observed_deferred_immediate_else
-            assert #0 ('sh0) begin
+            assert #0 (1'h0) begin
             end
             else begin
                 $display("fail");
@@ -464,7 +477,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_observed_deferred_immediate_stmt
-            assert #0 ('sh0) begin
+            assert #0 (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -473,7 +486,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_observed_deferred_immediate_stmt_else
-            assert #0 ('sh0) begin
+            assert #0 (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -483,7 +496,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_observed_deferred_immediate
-            assume #0 ('sh0) begin
+            assume #0 (1'h0) begin
             end
             else begin
             end
@@ -491,7 +504,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_observed_deferred_immediate_else
-            assume #0 ('sh0) begin
+            assume #0 (1'h0) begin
             end
             else begin
                 $display("fail");
@@ -500,7 +513,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_observed_deferred_immediate_stmt
-            assume #0 ('sh0) begin
+            assume #0 (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -509,7 +522,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_observed_deferred_immediate_stmt_else
-            assume #0 ('sh0) begin
+            assume #0 (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -519,7 +532,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_final_deferred_immediate
-            assert final ('sh0) begin
+            assert final (1'h0) begin
             end
             else begin
             end
@@ -527,7 +540,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_final_deferred_immediate_else
-            assert final ('sh0) begin
+            assert final (1'h0) begin
             end
             else begin
                 $display("fail");
@@ -536,7 +549,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_final_deferred_immediate_stmt
-            assert final ('sh0) begin
+            assert final (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -545,7 +558,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assert_final_deferred_immediate_stmt_else
-            assert final ('sh0) begin
+            assert final (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -555,7 +568,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_final_deferred_immediate
-            assume final ('sh0) begin
+            assume final (1'h0) begin
             end
             else begin
             end
@@ -563,7 +576,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_final_deferred_immediate_else
-            assume final ('sh0) begin
+            assume final (1'h0) begin
             end
             else begin
                 $display("fail");
@@ -572,7 +585,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_final_deferred_immediate_stmt
-            assume final ('sh0) begin
+            assume final (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -581,7 +594,7 @@ module Vt_debug_emitv_t;
     end
     always  begin
         begin : assume_final_deferred_immediate_stmt_else
-            assume final ('sh0) begin
+            assume final (1'h0) begin
                 $display("pass");
             end
             else begin
@@ -590,7 +603,7 @@ module Vt_debug_emitv_t;
         end
     end
     property prop;
-    @(posedge clk) 'sh0
+    @(posedge clk) 1'h0
     endproperty
     begin : assert_concurrent
         assert property ( prop
@@ -776,10 +789,10 @@ module Vt_debug_emitv_t;
     int signed ao;
     initial begin
         begin : assert_intrinsic
-            assert ((| $_EXPRSTMT(
-                        ao = (a);
-                        , 32'h1);
-                )) begin
+            assert ($_EXPRSTMT(
+                    ao = (a);
+                    , 1'h1);
+            ) begin
             end
             else begin
             end
@@ -791,18 +804,30 @@ module Vt_debug_emitv_t;
     logic [1:0]  cg_sig2;
     covergroup Vt_debug_emitv_cg_basic;
     function new;
+        option.weight = 'sh2;
+        type_option.weight = 'sh3;
         cp_sig: coverpoint cg_sig {
             bins low = {['sh0:'sh3]} iff (cg_sig2[0]);
             bins high = {['sh4:'sh6]};
             bins multi = {'sh0, 'sh1, 'sh2};
+            bins sized['sh2] = {['sh0:'sh5], 'sh7};
+            wildcard bins wild[] = {3'b1z};
+            bins filtered[] = {['sh0:'sh7]} with ((
+                                                   (item 
+                                                    % 
+                                                    'sh2) 
+                                                   == 
+                                                   'sh0));
+            bins named = cp_sig with ((item > 'sh5));
             bins dflt = default;
             ignore_bins ign = {'sh7};
             illegal_bins ill = {'sh5};
         };
         cp_options: coverpoint cg_sig2 {
-
-            ???? // COVEROPTION
-            'sh2};
+            option.at_least = 'sh2;
+            option.weight = 'sh4;
+            type_option.weight = 'sh5;
+        };
     endfunction
     int signed __Vint;
     struct {
@@ -901,7 +926,8 @@ module Vt_debug_emitv_t;
             bins t12 = (3'h1 => 3'h2);
             bins talt = (3'h2 => 3'h3), (3'h4 => 3'h5);
             bins trep = (3'h0 => 3'h1);
-            bins tarr = (3'h0 => 3'h1), (3'h1 => 3'h2);
+            bins tarr[] = (3'h0 => 3'h1), (3'h1 => 
+                                           3'h2);
         };
     endfunction
     int signed __Vint;
@@ -959,6 +985,7 @@ module Vt_debug_emitv_t;
         };
       cx: cross cp_x, cp_y iff ((cg_sig[0] == cg_sig2[0]));
         cx_select: cross cp_x, cp_y {
+            option.weight = 'sh2;
             bins entire = cx_select;
             bins plain = binsof(cp_x);
             bins named = binsof(cp_x.x0);
@@ -1023,6 +1050,59 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
+    covergroup Vt_debug_emitv_cg_live_cross;
+    function new;
+        cp_x: coverpoint cg_sig {
+            ignore_bins removed = {'sh0};
+        };
+        cp_y: coverpoint cg_sig2;
+      cx: cross cp_x, cp_y {
+            bins all = cx;
+        }
+    endfunction
+    int signed __Vint;
+    struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
     Vt_debug_emitv_cg_basic cg_basic_instVt_debug_emitv_cg_basic;
     cg_basic_inst = new();
     Vt_debug_emitv_cg_clocked cg_clocked_instVt_debug_emitv_cg_clocked;
@@ -1031,10 +1111,12 @@ module Vt_debug_emitv_t;
     cg_trans_inst = new();
     Vt_debug_emitv_cg_cross cg_cross_instVt_debug_emitv_cg_cross;
     cg_cross_inst = new();
+    Vt_debug_emitv_cg_live_cross cg_live_cross_instVt_debug_emitv_cg_live_cross;
+    cg_live_cross_inst = new();
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1
-    } __Venum_hf6514fb1__0;
+    } __Venum_h99905942__0;
 endmodule
 package Vt_debug_emitv___024unit;
     class Vt_debug_emitv_Cls;
@@ -1166,64 +1248,11 @@ package Vt_debug_emitv___024unit;
             disable label3;
         end
     endfunction
-    string __Venumtab_enum_name34[1:0];
+endpackage
+package Vt_debug_emitv___Vconstpool;
+    string TABLE_0[1:0];
 endpackage
 package Vt_debug_emitv_std;
-    class Vt_debug_emitv_semaphore;
-        int signed m_keyCount;
-        int signed m_nextKeyCount;
-        m_nextKeyCount = 32'hffffffff;
-        longint m_ticket;
-        m_ticket = 64'h0;
-        longint m_nextTicket;
-        m_nextTicket = 64'h0;
-        function new;
-            input int signed keyCount;
-            m_keyCount = keyCount;
-        endfunction
-        task put;
-            input int signed keyCount;
-            m_keyCount = (m_keyCount + keyCount);
-        endtask
-        task get;
-            longint __Vincrement1;
-            input int signed keyCount;
-            longint ticket;
-            begin : label4
-                ticket = /*CRESET*/;
-                if (((m_keyCount >= keyCount) && (m_nextKeyCount 
-                                                  > 
-                                                  m_keyCount))) begin
-                    begin
-                        m_keyCount = (m_keyCount - 
-                                      keyCount);
-                        disable label4;
-                    end
-                end
-                __Vincrement1 = m_nextTicket;
-                m_nextTicket = (m_nextTicket + 64'h1);
-                ticket = __Vincrement1;
-                wait((m_ticket == ticket));
-                m_nextKeyCount = keyCount;
-                wait((m_keyCount >= keyCount));
-                m_keyCount = (m_keyCount - keyCount);
-                m_ticket = (m_ticket + 64'h1);
-            end
-        endtask
-        function try_get;
-            input int signed keyCount;
-            begin : label5
-                try_get = /*CRESET*/;
-                if ((m_keyCount < keyCount)) begin
-                    try_get = 'sh0;
-                    disable label5;
-                end
-                m_keyCount = (m_keyCount - keyCount);
-                try_get = 'sh1;
-                disable label5;
-            end
-        endfunction
-    endclass
     class Vt_debug_emitv_process;
         typedef enum int signed{
             FINISHED = 32'h0,
@@ -1235,12 +1264,19 @@ package Vt_debug_emitv_std;
         VlProcessRef m_process;
         function self;
             Vt_debug_emitv_process pVt_debug_emitv_process;
-            begin : label6
+            begin : label4
                 self = /*CRESET*/;
-                p = new();
-                $c(p.m_process = vlProcess;);
+                p = /*CRESET*/;
+                $c(vlProcess->initFromSelf(p););
+                if ((p == null)) begin
+                    begin
+                        p = new();
+                        $c(p.m_process = vlProcess;);
+                        $c(vlProcess->setSelf(&*p););
+                    end
+                end
                 self = p;
-                disable label6;
+                disable label4;
             end
         endfunction
         task set_status;
@@ -1248,14 +1284,14 @@ package Vt_debug_emitv_std;
             $c(m_process->state(s););
         endtask
         function status;
-            begin : label7
+            begin : label5
                 status = /*CRESET*/;
                 status = ($c(m_process->state()));
-                disable label7;
+                disable label5;
             end
         endfunction
         task kill;
-            set_status(process::KILLED);
+            $c(m_process->disable(););
         endtask
         task suspend;
             $error("std::process::suspend() not supported");
@@ -1285,50 +1321,14 @@ package Vt_debug_emitv_std;
                 end
             end
         endtask
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
         function get_randstate;
             string s;
-            begin : label8
+            begin : label6
                 get_randstate = /*CRESET*/;
                 s = string'($c(0));
                 $c(s = m_process->randstate(););
                 get_randstate = s;
-                disable label8;
+                disable label6;
             end
         endfunction
         task set_randstate;
@@ -1337,7 +1337,88 @@ package Vt_debug_emitv_std;
         endtask
         function new;
         endfunction
-        process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITINGendclass
+        process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITING
+        ???? // SYSTEMCSECTION
+    endclass
+    class Vt_debug_emitv_semaphore;
+        typedef struct {
+            Vt_debug_emitv_process proc;
+            int signed reqKeys;
+        } procKeys;
+        struct {
+            Vt_debug_emitv_process proc;
+            int signed reqKeys;
+        } m_queue[$];
+        int signed m_keyCount;
+        task dropKilled;
+            while (((m_queue.size() > 'sh0) && (status() 
+                                                == 
+                                                process::
+                                                KILLED))) begin
+                m_queue.pop_front();
+            end
+        endtask
+        function new;
+            input int signed keyCount;
+            m_keyCount = keyCount;
+        endfunction
+        task put;
+            input int signed keyCount;
+            m_keyCount = (m_keyCount + keyCount);
+        endtask
+        task get;
+            input int signed keyCount;
+            begin : label7
+                dropKilled();
+                if (((m_keyCount >= keyCount) && ((
+                                                   m_queue.size() 
+                                                   == 
+                                                   'sh0) 
+                                                  || (m_queue.at(
+                                                                 'sh0).reqKeys 
+                                                      > 
+                                                      keyCount)))) begin
+                    begin
+                        m_keyCount = (m_keyCount - 
+                                      keyCount);
+                        disable label7;
+                    end
+                end
+                m_queue.push_back(
+                    ???? // CONSPACKUORSTRUCT
+
+                    ???? // CONSPACKMEMBER
+                    self()
+                    ???? // CONSPACKMEMBER
+                    keyCount);
+                while ((m_queue.at('sh0).proc != self())) begin
+                    begin
+                        wait(((status() == process::
+                               KILLED) || (m_queue.at(
+                                                      'sh0).proc 
+                                           == self())));
+                        dropKilled();
+                    end
+                end
+                wait((m_keyCount >= keyCount));
+                m_keyCount = (m_keyCount - keyCount);
+                m_queue.pop_front();
+            end
+        endtask
+        function try_get;
+            input int signed keyCount;
+            begin : label8
+                try_get = /*CRESET*/;
+                if ((m_keyCount < keyCount)) begin
+                    try_get = 'sh0;
+                    disable label8;
+                end
+                m_keyCount = (m_keyCount - keyCount);
+                try_get = 'sh1;
+                disable label8;
+            end
+        endfunction
+    endclass
     function randomize;
         randomize = 'sh0;
     endfunction
@@ -1400,6 +1481,12 @@ interface Vt_debug_emitv_Iface;
 endinterface
 module Vt_debug_emitv_sub;
     input logic clk;
+    /* generate */ begin : sub_gen
+        typedef enum logic [1:0] {
+            SUB_A = 2'h0,
+            SUB_B = 2'h1
+        } sub_e;
+    end : sub_gen
     task inc;
         input int signed i;
         output int signed o;

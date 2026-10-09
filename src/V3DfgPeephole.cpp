@@ -209,7 +209,6 @@ class V3DfgPeephole final : public DfgVisitor {
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
     size_t m_currentGeneration = 0;  // Current generation number
     size_t m_lastId = 0;  // Last unique vertex ID assigned
-    size_t m_nTemps = 0;  // Number of temporary variables created
     // Scope for transient temporariy variables cerated in this pass. They should all be
     // eliminated wihtin this pass, so anything should be ok, pick the top scope as easy to find.
     AstScope* const m_tmpScopep = v3Global.rootp()->topScopep()->scopep();
@@ -902,10 +901,120 @@ class V3DfgPeephole final : public DfgVisitor {
                         return true;
                     }
                 }
+                // Selects from sources of different width or at different LSBs. If the
+                // narrower source lines up with a range of the wider source, select that range
+                // of the wider source, then apply the operation to the whole narrower source.
+                // E.g. with 'a' 8 bits and 'b' 64 bits: 'a[3] & b[20]' -> '(a & b[24:17])[3]'.
+                // This is helpful for chains over corresponding bits of the two sources, e.g.
+                // 'a[0] & b[17] | a[1] & b[18] | ... | a[7] & b[24]'. All terms become selects
+                // from the same 'a & b[24:17]', which then collapse into a single reduction:
+                // '|(a & b[24:17])'.
+                DfgSel* const nSelp = lFromp->width() <= rFromp->width() ? lSelp : rSelp;
+                DfgSel* const wSelp = nSelp == lSelp ? rSelp : lSelp;
+                DfgVertex* const nFromp = nSelp->fromp();
+                DfgVertex* const wFromp = wSelp->fromp();
+                if (nFromp->width() <= VL_QUADSIZE && wSelp->lsb() >= nSelp->lsb()
+                    && wSelp->lsb() - nSelp->lsb() + nFromp->width() <= wFromp->width()) {
+                    APPLYING(PUSH_BITWISE_THROUGH_UNALIGNED_SEL) {
+                        FileLine* const flp = vtxp->fileline();
+                        const uint32_t offset = wSelp->lsb() - nSelp->lsb();
+                        DfgSel* const slicep = make<DfgSel>(flp, nFromp->dtype(), wFromp, offset);
+                        Bitwise* const bwp = make<Bitwise>(flp, nFromp->dtype(), nFromp, slicep);
+                        DfgVertex* resp = make<DfgSel>(vtxp, bwp, nSelp->lsb());
+                        if (extrap) resp = make<Bitwise>(vtxp, resp, extrap);
+                        replace(resp);
+                        return true;
+                    }
+                }
             }
         }
 
         return false;
+    }
+
+    // Returns true if 'Concat(lhsp, rhsp)' is folded into a single vertex by another pattern
+    static bool isConcatFoldable(const DfgVertex* lhsp, const DfgVertex* rhsp) {
+        // Concatenation of the same vertex is a replicate
+        if (isSame(lhsp, rhsp)) return true;
+        if (const DfgRep* const lRepp = lhsp->cast<DfgRep>()) {
+            if (isSame(lRepp->srcp(), rhsp)) return true;
+        }
+        if (const DfgRep* const rRepp = rhsp->cast<DfgRep>()) {
+            if (isSame(lhsp, rRepp->srcp())) return true;
+        }
+        // Concatenation of adjoining selects is a select
+        if (const DfgSel* const lSelp = lhsp->cast<DfgSel>()) {
+            if (const DfgSel* const rSelp = rhsp->cast<DfgSel>()) {
+                return isSame(lSelp->fromp(), rSelp->fromp())
+                       && lSelp->lsb() == rSelp->lsb() + rSelp->width();
+            }
+        }
+        // Concatenation of Nots is pushed through the Nots (PUSH_CONCAT_THROUGH_NOTS)
+        if (const DfgNot* const lNotp = lhsp->cast<DfgNot>()) {
+            if (const DfgNot* const rNotp = rhsp->cast<DfgNot>()) {
+                return !lNotp->hasMultipleSinks()  //
+                       && !rNotp->hasMultipleSinks()  //
+                       && isConcatFoldable(lNotp->srcp(), rNotp->srcp());
+            }
+        }
+        return false;
+    }
+
+    // Returns true if 'lhsp' and 'rhsp' are the same bitwise operation
+    static bool isSameBitwise(const DfgVertex* lhsp, const DfgVertex* rhsp) {
+        if (lhsp->type() != rhsp->type()) return false;
+        return lhsp->is<DfgAnd>() || lhsp->is<DfgOr>() || lhsp->is<DfgXor>();
+    }
+
+    // Returns true if 'Concat(lhsp, rhsp)' folds into a single vertex, either directly, or
+    // after pushing it through the same bitwise operation on both sides
+    static bool isConcatSimplifiable(const DfgVertex* lhsp, const DfgVertex* rhsp) {
+        if (isConcatFoldable(lhsp, rhsp)) return true;
+        if (!isSameBitwise(lhsp, rhsp)) return false;
+        if (lhsp->hasMultipleSinks() || rhsp->hasMultipleSinks()) return false;
+        const DfgVertexBinary* const lp = lhsp->as<DfgVertexBinary>();
+        const DfgVertexBinary* const rp = rhsp->as<DfgVertexBinary>();
+        if (isConcatFoldable(lp->lhsp(), rp->lhsp()) && isConcatFoldable(lp->rhsp(), rp->rhsp()))
+            return true;
+        if (isConcatFoldable(lp->lhsp(), rp->rhsp()) && isConcatFoldable(lp->rhsp(), rp->lhsp()))
+            return true;
+        return false;
+    }
+
+    // Returns true if replacing 'Concat(a OP b, c OP d)' (the Concat of 'lhsp' and 'rhsp') with
+    // 'Concat(a, c) OP Concat(b, d)' removes vertices, that is if at least one of the resulting
+    // Concats simplifies. The other might be pushed further by a later application. Sets 'swap'
+    // if instead 'Concat(a, d) OP Concat(b, c)' should be used.
+    static bool isConcatPushableThroughBitwise(const DfgVertex* lhsp, const DfgVertex* rhsp,
+                                               bool& swap) {
+        if (!isSameBitwise(lhsp, rhsp)) return false;
+        if (lhsp->hasMultipleSinks() || rhsp->hasMultipleSinks()) return false;
+        const DfgVertexBinary* const lp = lhsp->as<DfgVertexBinary>();
+        const DfgVertexBinary* const rp = rhsp->as<DfgVertexBinary>();
+        swap = false;
+        if (isConcatSimplifiable(lp->lhsp(), rp->lhsp())) return true;
+        if (isConcatSimplifiable(lp->rhsp(), rp->rhsp())) return true;
+        swap = true;
+        if (isConcatSimplifiable(lp->lhsp(), rp->rhsp())) return true;
+        if (isConcatSimplifiable(lp->rhsp(), rp->lhsp())) return true;
+        return false;
+    }
+
+    // Create 'Concat(a, c) OP Concat(b, d)' from 'lhsp' = 'a OP b' and 'rhsp' = 'c OP d', or
+    // 'Concat(a, d) OP Concat(b, c)' if 'swap' is set
+    DfgVertex* makeConcatPushedThroughBitwise(FileLine* flp, const DfgVertex* lhsp,
+                                              const DfgVertex* rhsp, bool swap) {
+        const DfgVertexBinary* const lp = lhsp->as<DfgVertexBinary>();
+        const DfgVertexBinary* const rp = rhsp->as<DfgVertexBinary>();
+        const DfgDataType& dtype = DfgDataType::packed(lp->width() + rp->width());
+        DfgVertex* const cp = swap ? rp->rhsp() : rp->lhsp();
+        DfgVertex* const dp = swap ? rp->lhsp() : rp->rhsp();
+        DfgConcat* const newLhsp = make<DfgConcat>(flp, dtype, lp->lhsp(), cp);
+        DfgConcat* const newRhsp = make<DfgConcat>(flp, dtype, lp->rhsp(), dp);
+        if (lp->is<DfgAnd>()) return make<DfgAnd>(flp, dtype, newLhsp, newRhsp);
+        if (lp->is<DfgOr>()) return make<DfgOr>(flp, dtype, newLhsp, newRhsp);
+        UASSERT_OBJ(lp->is<DfgXor>(), lp, "Should be a bitwise operation");
+        return make<DfgXor>(flp, dtype, newLhsp, newRhsp);
     }
 
     template <typename Bitwise>
@@ -2018,6 +2127,29 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
+        {
+            bool swap = false;
+            if (isConcatPushableThroughBitwise(lhsp, rhsp, swap)) {
+                APPLYING(PUSH_CONCAT_THROUGH_BITWISE) {
+                    replace(makeConcatPushedThroughBitwise(flp, lhsp, rhsp, swap));
+                    return;
+                }
+            }
+            // The mirrored RHS match is not needed due to RIGHT_LEANING_ASSOC
+            if (DfgConcat* const rConcatp = rhsp->cast<DfgConcat>()) {
+                DfgVertex* const rlp = rConcatp->lhsp();
+                if (!rConcatp->hasMultipleSinks()
+                    && isConcatPushableThroughBitwise(lhsp, rlp, swap)) {
+                    APPLYING(PUSH_NESTED_CONCAT_THROUGH_BITWISE_ON_LHS) {
+                        DfgVertex* const newp
+                            = makeConcatPushedThroughBitwise(flp, lhsp, rlp, swap);
+                        replace(make<DfgConcat>(vtxp, newp, rConcatp->rhsp()));
+                        return;
+                    }
+                }
+            }
+        }
+
         if (DfgSel* const lSelp = lhsp->cast<DfgSel>()) {
             if (DfgSel* const rSelp = rhsp->cast<DfgSel>()) {
                 if (isSame(lSelp->fromp(), rSelp->fromp())) {
@@ -2181,9 +2313,8 @@ class V3DfgPeephole final : public DfgVisitor {
                     DfgSplicePacked* const sp = new DfgSplicePacked{m_dfg, flp, vtxp->dtype()};
                     m_vInfo[sp].m_id = ++m_lastId;
                     sp->addDriver(catp, lsb, flp);
-                    const std::string name = m_dfg.makeUniqueName("PeepholeNarrow", m_nTemps++);
                     DfgVertexVar* const varp
-                        = m_dfg.makeNewVar(flp, name, vtxp->dtype(), m_tmpScopep);
+                        = m_dfg.makeNewVar(flp, "PeepholeNarrow", vtxp->dtype(), m_tmpScopep);
                     varp->tmpForp(varp->vscp());
                     m_vInfo[varp].m_id = ++m_lastId;
                     varp->vscp()->varp()->isInternal(true);

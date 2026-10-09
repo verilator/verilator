@@ -39,7 +39,7 @@ class EmitCHeader final : public EmitCConstInit {
     // METHODS
 
     class CoverCountVisitor final : public VNVisitorConst {
-        int m_bins = 0;
+        int m_bins = 0;  // Running total of coverage bins counted so far
 
         void visit(AstNodeCoverDecl* nodep) override {
             // Each module class owns the counters for declarations it emits;
@@ -66,6 +66,7 @@ class EmitCHeader final : public EmitCConstInit {
         bool first = true;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
+                if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 decorateFirst(first, "// CELLS\n");
                 putns(cellp, EmitCUtil::prefixNameProtect(cellp->modp()) + "* "
                                  + cellp->nameProtect() + ";\n");
@@ -129,12 +130,14 @@ class EmitCHeader final : public EmitCConstInit {
         // Emit variables in consecutive anon and non-anon batches
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isIO() || varp->isSignal() || varp->isClassMember() || varp->isTemp()
-                    || varp->isGenVar()) {
+                if (varp->isModelState()) {
                     const bool anon = EmitCUtil::isAnonOk(varp);
                     if (anon != lastAnon) emitCurrentList();
                     lastAnon = anon;
                     varList.emplace_back(varp);
+                } else {
+                    // Cache line alignment is only effective on emitted fields
+                    UASSERT_OBJ(!varp->mtaskCacheLineAlign(), varp, "Aligned non-field");
                 }
             }
         }
@@ -175,10 +178,7 @@ class EmitCHeader final : public EmitCConstInit {
                     putns(varp, "static ");
                     puts(canBeConstexpr ? "constexpr " : "const ");
                     puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
-                    if (canBeConstexpr) {
-                        puts(" = ");
-                        iterateConst(varp->valuep());
-                    }
+                    if (canBeConstexpr) emitDirectInit(varp->valuep());
                     puts(";\n");
                 }
             }
@@ -607,6 +607,10 @@ class EmitCHeader final : public EmitCConstInit {
             AstNodeUOrStructDType* const sdtypep
                 = VN_CAST(tdefp->dtypep()->skipRefToEnump(), NodeUOrStructDType);
             if (!sdtypep) continue;
+            // V3Inline can copy one module into several parents. Only the module that
+            // declares the struct emits it, so C++ sees only one definition.
+            const bool declaredInOtherModule = sdtypep->classOrPackagep() != modp;
+            if (declaredInOtherModule) continue;
             emitStructDecl(modp, sdtypep, emitted);
         }
     }
@@ -768,6 +772,8 @@ void V3EmitC::emitcHeaders() {
     // Process each module in turn
     for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
         if (VN_IS(nodep, Class)) continue;  // Declared with the ClassPackage
-        EmitCHeader::main(VN_AS(nodep, NodeModule));
+        const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
+        if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
+        EmitCHeader::main(modp);
     }
 }

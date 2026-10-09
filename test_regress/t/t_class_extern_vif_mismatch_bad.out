@@ -1,0 +1,65 @@
+%Error-PROTOTYPEMIS: t/t_class_extern_vif_mismatch_bad.v:21:50: In prototype for 'drive_modport_bad', argument 'bus' data-type does not match out-of-block declaration's data-type (IEEE 1800-2023 8.24)
+                                                              : ... note: In instance 't'
+                                                              : ... Prototype data type: 'virtual interface Bus#(1).Source'
+                                                              : ... Declaration data type: 'virtual interface Bus#(1).Sink'
+   21 |   extern function void drive_modport_bad(virtual Bus.Source bus);   
+      |                                                  ^~~
+                     t/t_class_extern_vif_mismatch_bad.v:30:49: ... Location of out-of-block declaration
+   30 | function void Driver::drive_modport_bad(virtual Bus.Sink bus);
+      |                                                 ^~~
+                     ... For error description see https://verilator.org/warn/PROTOTYPEMIS?v=latest
+%Error-PROTOTYPEMIS: t/t_class_extern_vif_mismatch_bad.v:22:48: In prototype for 'drive_iface_bad', argument 'bus' data-type does not match out-of-block declaration's data-type (IEEE 1800-2023 8.24)
+                                                              : ... note: In instance 't'
+                                                              : ... Prototype data type: 'virtual interface Bus#(1)'
+                                                              : ... Declaration data type: 'virtual interface OtherBus'
+   22 |   extern function void drive_iface_bad(virtual Bus bus);   
+      |                                                ^~~
+                     t/t_class_extern_vif_mismatch_bad.v:33:47: ... Location of out-of-block declaration
+   33 | function void Driver::drive_iface_bad(virtual OtherBus bus);
+      |                                               ^~~~~~~~
+%Error-PROTOTYPEMIS: t/t_class_extern_vif_mismatch_bad.v:23:48: In prototype for 'drive_param_bad', argument 'bus' data-type does not match out-of-block declaration's data-type (IEEE 1800-2023 8.24)
+                                                              : ... note: In instance 't'
+                                                              : ... Prototype data type: 'virtual interface Bus#(7)'
+                                                              : ... Declaration data type: 'virtual interface Bus#(8)'
+   23 |   extern function void drive_param_bad(virtual Bus #(7) bus);   
+      |                                                ^~~
+                     t/t_class_extern_vif_mismatch_bad.v:36:47: ... Location of out-of-block declaration
+   36 | function void Driver::drive_param_bad(virtual Bus #(8) bus);
+      |                                               ^~~
+%Error-PROTOTYPEMIS: t/t_class_extern_vif_mismatch_bad.v:24:64: In prototype for 'drive_queue_bad', argument 'buses' data-type does not match out-of-block declaration's data-type (IEEE 1800-2023 8.24)
+                                                              : ... note: In instance 't'
+                                                              : ... Prototype data type: 'virtual interface Bus#(1).Source$[$]'
+                                                              : ... Declaration data type: 'virtual interface Bus#(1).Sink$[$]'
+   24 |   extern function void drive_queue_bad(virtual Bus.Source buses[$]);   
+      |                                                                ^
+                     t/t_class_extern_vif_mismatch_bad.v:39:61: ... Location of out-of-block declaration
+   39 | function void Driver::drive_queue_bad(virtual Bus.Sink buses[$]);
+      |                                                             ^
+%Error-PROTOTYPEMIS: t/t_class_extern_vif_mismatch_bad.v:25:55: In prototype for 'drive_dyn_bad', argument 'buses' data-type does not match out-of-block declaration's data-type (IEEE 1800-2023 8.24)
+                                                              : ... note: In instance 't'
+                                                              : ... Prototype data type: 'virtual interface Bus#(1)$[]'
+                                                              : ... Declaration data type: 'virtual interface OtherBus$[]'
+   25 |   extern function void drive_dyn_bad(virtual Bus buses[]);   
+      |                                                       ^
+                     t/t_class_extern_vif_mismatch_bad.v:42:59: ... Location of out-of-block declaration
+   42 | function void Driver::drive_dyn_bad(virtual OtherBus buses[]);
+      |                                                           ^
+%Error-PROTOTYPEMIS: t/t_class_extern_vif_mismatch_bad.v:26:69: In prototype for 'drive_assoc_bad', argument 'buses' data-type does not match out-of-block declaration's data-type (IEEE 1800-2023 8.24)
+                                                              : ... note: In instance 't'
+                                                              : ... Prototype data type: 'virtual interface Bus#(7).Source$[int]'
+                                                              : ... Declaration data type: 'virtual interface Bus#(8).Source$[int]'
+   26 |   extern function void drive_assoc_bad(virtual Bus #(7).Source buses[int]);   
+      |                                                                     ^
+                     t/t_class_extern_vif_mismatch_bad.v:45:68: ... Location of out-of-block declaration
+   45 | function void Driver::drive_assoc_bad(virtual Bus #(8).Source buses[int]);
+      |                                                                    ^
+%Error-PROTOTYPEMIS: t/t_class_extern_vif_mismatch_bad.v:27:27: In prototype for 'get_bus_bad', return data type does not match out-of-block declaration data-type (IEEE 1800-2023 8.24)
+                                                              : ... note: In instance 't'
+                                                              : ... Prototype data type: 'virtual interface Bus#(1).Source'
+                                                              : ... Declaration data type: 'virtual interface Bus#(1).Sink'
+   27 |   extern function virtual Bus.Source get_bus_bad();   
+      |                           ^~~
+                     t/t_class_extern_vif_mismatch_bad.v:48:18: ... Location of out-of-block declaration
+   48 | function virtual Bus.Sink Driver::get_bus_bad();
+      |                  ^~~
+%Error: Exiting due to

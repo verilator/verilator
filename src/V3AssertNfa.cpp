@@ -243,12 +243,6 @@ static AstNodeExpr* sampled(AstNodeExpr* exprp) {
     return new AstSampled{exprp->fileline(), exprp, exprp->dtypep(), true};
 }
 
-static string assertCtlGetCall(const char* query, VAssertType type,
-                               VAssertDirectiveType directiveType) {
-    return "vlSymsp->_vm_contextp__->assertCtlGet(VerilatedAssertCtlQuery::"s + query + ", "s
-           + std::to_string(type) + ", "s + std::to_string(directiveType) + ")"s;
-}
-
 static const char* assertPassOnQuery(bool vacuous) {
     static constexpr const char* queries[2]
         = {"ASSERT_CTL_PASS_ON_NONVACUOUS", "ASSERT_CTL_PASS_ON_VACUOUS"};
@@ -259,13 +253,14 @@ static AstNodeExpr* assertOnCond(FileLine* flp, VAssertType type,
                                  VAssertDirectiveType directiveType) {
     if (!v3Global.opt.assertOn()) { return new AstConst{flp, AstConst::BitFalse{}}; }
     return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
+                        V3AssertCommon::assertCtlGetCall("ASSERT_CTL_ON", type, directiveType), 1};
 }
 
 static AstNodeExpr* assertKillGet(FileLine* flp, VAssertType type,
                                   VAssertDirectiveType directiveType) {
     return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertCtlGetCall("ASSERT_CTL_KILL", type, directiveType), 32};
+                        V3AssertCommon::assertCtlGetCall("ASSERT_CTL_KILL", type, directiveType),
+                        32};
 }
 
 static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
@@ -280,19 +275,21 @@ static string assertActionControlPrefix(VAssertDirectiveType directiveType) {
 
 static AstNodeExpr* assertPassOnCond(FileLine* flp, VAssertType type,
                                      VAssertDirectiveType directiveType, bool vacuous) {
-    return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertActionControlPrefix(directiveType)
-                            + assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
-                            + "))"s,
-                        1};
+    return new AstCExpr{
+        flp, AstCExpr::Pure{},
+        assertActionControlPrefix(directiveType)
+            + V3AssertCommon::assertCtlGetCall(assertPassOnQuery(vacuous), type, directiveType)
+            + "))"s,
+        1};
 }
 
 static AstNodeExpr* assertFailOnCond(FileLine* flp, VAssertType type,
                                      VAssertDirectiveType directiveType) {
-    return new AstCExpr{flp, AstCExpr::Pure{},
-                        assertActionControlPrefix(directiveType)
-                            + assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType) + "))"s,
-                        1};
+    return new AstCExpr{
+        flp, AstCExpr::Pure{},
+        assertActionControlPrefix(directiveType)
+            + V3AssertCommon::assertCtlGetCall("ASSERT_CTL_FAIL_ON", type, directiveType) + "))"s,
+        1};
 }
 
 static AstIf* newPassOnIf(FileLine* flp, AstNodeExpr* firep, AstNode* bodyp, VAssertType type,
@@ -336,6 +333,7 @@ class SvaNfaBuilder final {
     // Unsupported endpoint topology must reject, not ignore, or the wait hangs
     bool m_isSeqEvent = false;
     bool m_inSequencePrefix = false;  // Prefix composition does not preserve every endpoint
+    bool m_wantBoolLeaf = false;  // Building a |-> / |=> or top-level body (see buildOrMerge)
 
     struct RangeDelayRejectInfo final {
         SvaStateVertex* startp = nullptr;
@@ -960,9 +958,22 @@ class SvaNfaBuilder final {
         return {mergeVtxp, nullptr, {}};
     }
 
+    // True if the sequence has a zero-minimum consecutive repetition, which may match empty
+    static bool hasZeroMinRep(const AstNodeExpr* seqp) {
+        return seqp->exists(
+            [](const AstSConsRep* repp) { return getConstUInt(repp->countp()) == 0; });
+    }
+
+    // True if a leaf's condition has no implication or multi-cycle sequence in it
+    // (a leaf can be e.g. 'not (x |-> y)')
+    static bool isPlainBoolean(const AstNodeExpr* condp) {
+        return !condp->exists(
+            [](const AstNodeExpr* np) { return np->isMultiCycleSva() || VN_IS(np, Implication); });
+    }
+
     // Build merge vertex for SOr / LogOr: both branches feed into one vertex.
     BuildResult buildOrMerge(AstNodeExpr* lhsp, AstNodeExpr* rhsp, SvaStateVertex* entryVtxp,
-                             FileLine* flp) {
+                             FileLine* flp, bool wantBoolLeaf) {
         const BuildResult lhs = buildExpr(lhsp, entryVtxp);
         const BuildResult rhs = buildExpr(rhsp, entryVtxp);
         if (!lhs.valid() || !rhs.valid()) {  // LCOV_EXCL_START -- sub-build fail bail
@@ -982,6 +993,19 @@ class SvaNfaBuilder final {
             freeUnlinkedCondp(lhs.finalCondp);
             freeUnlinkedCondp(rhs.finalCondp);
             return BuildResult::failWithError();
+        }
+        if (booleanOnly && wantBoolLeaf) {
+            if (isPlainBoolean(lhs.finalCondp) && isPlainBoolean(rhs.finalCondp)) {
+                // As a |-> / |=> or top-level body, a disjunction of two plain booleans must
+                // be able to reject: return it as a boolean finalCondp. The merge vertex
+                // below drops the attempt silently when both operands are false.
+                AstNodeExpr* const orCondp
+                    = new AstLogOr{flp, lhs.finalCondp->cloneTreePure(false),
+                                   rhs.finalCondp->cloneTreePure(false)};
+                freeUnlinkedCondp(lhs.finalCondp);
+                freeUnlinkedCondp(rhs.finalCondp);
+                return {entryVtxp, orCondp, {}};
+            }
         }
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
         if (booleanOnly) {
@@ -1607,6 +1631,9 @@ public:
 
     BuildResult buildExpr(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
                           bool isTopLevelStep = false) {
+        VL_RESTORER(m_wantBoolLeaf);
+        const bool wantBoolLeaf = m_wantBoolLeaf;
+        m_wantBoolLeaf = false;
         if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
             return buildSExpr(sexprp, entryVtxp, isTopLevelStep);
         }
@@ -1623,10 +1650,12 @@ public:
             return buildThroughout(throughoutp, entryVtxp, isTopLevelStep);
         }
         if (AstSOr* const orp = VN_CAST(nodep, SOr)) {
-            return buildOrMerge(orp->lhsp(), orp->rhsp(), entryVtxp, orp->fileline());
+            return buildOrMerge(orp->lhsp(), orp->rhsp(), entryVtxp, orp->fileline(),
+                                wantBoolLeaf);
         }
         if (AstLogOr* const orp = VN_CAST(nodep, LogOr)) {
-            return buildOrMerge(orp->lhsp(), orp->rhsp(), entryVtxp, orp->fileline());
+            return buildOrMerge(orp->lhsp(), orp->rhsp(), entryVtxp, orp->fileline(),
+                                wantBoolLeaf);
         }
         if (AstSAnd* const andp = VN_CAST(nodep, SAnd)) {
             return buildAndCombiner(andp->lhsp(), andp->rhsp(), entryVtxp, andp->fileline());
@@ -1731,11 +1760,17 @@ public:
             m_graph.addClockedEdge(trigVtxp, delayVtxp);
             bodyEntryp = delayVtxp;
         }
+        // An empty antecedent match must not start the consequent, but a zero-minimum
+        // repetition's empty match is not handled here; keep the merge vertex for those
+        VL_RESTORER(m_wantBoolLeaf);
+        m_wantBoolLeaf = !isFollowedBy && !hasZeroMinRep(antExprp);
         return buildExpr(bodyExprp, bodyEntryp, /*isTopLevelStep=*/true);
     }
 
     BuildResult build(AstNodeExpr* exprp) {
         m_graph.m_startVertexp = scopedCreateVertex();
+        VL_RESTORER(m_wantBoolLeaf);
+        m_wantBoolLeaf = true;
         return buildExpr(exprp, m_graph.m_startVertexp, /*isTopLevelStep=*/true);
     }
 };
@@ -1839,7 +1874,7 @@ class SvaNfaLowering final {
         };
         UASSERT_OBJ(size > 0, idxExprp, "Ring size must be positive");
         if (size == 1) {
-            idxExprp->deleteTree();
+            VL_DO_DANGLING(idxExprp->deleteTree(), idxExprp);
             return u32Const(0);
         }
         // idx == size - 1 ? 0 : idx + 1
@@ -2894,6 +2929,7 @@ class AssertNfaVisitor final : public VNVisitor {
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_disableCntNames{"__VnfaDis"};  // Disable-iff counter names
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
+    V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
 
     template <typename T_Node>
@@ -3276,13 +3312,12 @@ class AssertNfaVisitor final : public VNVisitor {
             // IEEE 1800-2023 16.12 requires one action-block evaluation per failed
             // thread. AstAssert handles the first, so replay the rest here.
             AstVar* const remainingFailCountVarp
-                = new AstVar{flp, VVarType::BLOCKTEMP, "__VnfaRemainingFailCount",
+                = new AstVar{flp, VVarType::MODULETEMP, m_failCountNames.get(""),
                              m_modp->findBasicDType(VBasicDTypeKwd::UINT32)};
-            remainingFailCountVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            AstBegin* const replayBlockp = new AstBegin{flp, "", remainingFailCountVarp, true};
-            replayBlockp->addStmtsp(
-                new AstAssign{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE},
-                              threadFailCountp});
+            remainingFailCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+            m_modp->addStmtsp(remainingFailCountVarp);
+            AstNode* const replayStmtsp = new AstAssign{
+                flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE}, threadFailCountp};
             AstLoop* const replayLoopp = new AstLoop{flp};
             replayLoopp->addStmtsp(new AstLoopTest{
                 flp, replayLoopp,
@@ -3296,9 +3331,9 @@ class AssertNfaVisitor final : public VNVisitor {
             replayLoopp->addStmtsp(
                 new AstAssign{flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE},
                               decrementedFailCountp});
-            replayBlockp->addStmtsp(replayLoopp);
+            replayStmtsp->addNext(replayLoopp);
             m_modp->addStmtsp(
-                new AstAlways{flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayBlockp});
+                new AstAlways{flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayStmtsp});
         }
     }
 

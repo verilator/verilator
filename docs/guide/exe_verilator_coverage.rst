@@ -131,6 +131,14 @@ verilator_coverage Arguments
 
    This option should be used together with :option:`--annotate`.
 
+.. option:: --debug
+
+   Runs the debug executable and enables debugging messages.
+
+.. option:: --debugi <level>
+
+   Runs the debug executable and sets the debugging level.
+
 .. option:: --filter-type <regex>
 
    Keeps records of coverage types that matches with <regex>

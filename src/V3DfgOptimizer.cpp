@@ -82,7 +82,7 @@ class DataflowOptimize final {
                 const bool hasExtRd =  //
                     varp->isPrimaryIO()  // Top level port - readable
                     || varp->isSigUserRdPublic()  // Readable by user
-                    || varp->constPoolEntry()  // Stored in AstConstPool hashmap, but read only
+                    || varp->constPoolEntry()  // Held in V3ConstPool lookup cache, keep
                     ;
                 const bool hasExtWr =  //
                     (varp->isPrimaryIO() && varp->isNonOutput())  // Top level port - writable
@@ -183,13 +183,6 @@ class DataflowOptimize final {
     }
 
     DataflowOptimize(AstNetlist* netlistp) {
-        // Mark interfaces that might be referenced by a virtual interface
-        if (v3Global.hasVirtIfaces()) {
-            netlistp->typeTablep()->foreach([](const AstIfaceRefDType* nodep) {
-                if (!nodep->isVirtual()) return;
-                nodep->ifaceViaCellp()->setHasVirtualRef();
-            });
-        }
         // Mark variables with external references
         markExternallyReferencedVariables(netlistp);
         // Dump stage stats

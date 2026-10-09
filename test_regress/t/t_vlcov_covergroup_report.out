@@ -1,0 +1,319 @@
+$ verilator_coverage --report summary,hierarchy coverage.dat
+Coverage Summary:
+  line       :   0.0% ( 0/ 0)
+  toggle     :   0.0% ( 0/ 0)
+  branch     :   0.0% ( 0/ 0)
+  expr       :   0.0% ( 0/ 0)
+  fsm_state  :   0.0% ( 0/ 0)
+  fsm_arc    :   0.0% ( 0/ 0)
+  covergroup :  66.1% (40/65)
+Covergroup Coverage Summary:
+  spec#(0.5,"a.\"(b%22")              :  50.0% ( 1/ 2)
+  spec#(0.5,"a.\"(b%22").cg           :  50.0% ( 1/ 2)
+  spec#(0.5,"a.\"(b%22").cg.cp        :  50.0% ( 1/ 2)
+  spec#(0.5,"a.\"(b%22").cg.cp.auto_0 :   0.0% ( 0/ 1)
+  spec#(0.5,"a.\"(b%22").cg.cp.auto_1 : 100.0% ( 1/ 1)
+  t                                   :  66.9% (39/63)
+  t.First::twin                       : 100.0% ( 2/ 2)
+  t.First::twin.cp                    : 100.0% ( 2/ 2)
+  t.First::twin.cp.hit                : 100.0% ( 1/ 1)
+  t.First::twin.cp.miss               : 100.0% ( 1/ 1)
+  t.Second::twin                      :   0.0% ( 0/ 2)
+  t.Second::twin.cp                   :   0.0% ( 0/ 2)
+  t.Second::twin.cp.hit               :   0.0% ( 0/ 1)
+  t.Second::twin.cp.miss              :   0.0% ( 0/ 1)
+  t.collide                           :  91.7% ( 7/ 8)
+  t.collide.p                         : 100.0% ( 2/ 2)
+  t.collide.p.a                       : 100.0% ( 1/ 1)
+  t.collide.p.a_x_b                   : 100.0% ( 1/ 1)
+  t.collide.q                         : 100.0% ( 2/ 2)
+  t.collide.q.b_x_c                   : 100.0% ( 1/ 1)
+  t.collide.q.c                       : 100.0% ( 1/ 1)
+  t.collide.x                         :  75.0% ( 3/ 4)
+  t.collide.x.<a,b_x_c>               : 100.0% ( 1/ 1)
+  t.collide.x.<a,c>                   : 100.0% ( 1/ 1)
+  t.collide.x.<a_x_b,b_x_c>           : 100.0% ( 1/ 1)
+  t.collide.x.<a_x_b,c>               :   0.0% ( 0/ 1)
+  t.crossed                           :  30.0% ( 3/10)
+  t.crossed.cp_a                      :  50.0% ( 1/ 2)
+  t.crossed.cp_a.auto_0               : 100.0% ( 1/ 1)
+  t.crossed.cp_a.auto_1               :   0.0% ( 0/ 1)
+  t.crossed.cp_b                      :  25.0% ( 1/ 4)
+  t.crossed.cp_b.auto_0               : 100.0% ( 1/ 1)
+  t.crossed.cp_b.auto_1               :   0.0% ( 0/ 1)
+  t.crossed.cp_b.auto_2               :   0.0% ( 0/ 1)
+  t.crossed.cp_b.auto_3               :   0.0% ( 0/ 1)
+  t.crossed.x                         :  25.0% ( 1/ 4)
+  t.crossed.x.<auto_0,auto_0>         : 100.0% ( 1/ 1)
+  t.crossed.x.<auto_0,auto_1>         :   0.0% ( 0/ 1)
+  t.crossed.x.<auto_0,auto_2>         :   0.0% ( 0/ 1)
+  t.crossed.x.<auto_0,auto_3>         :   0.0% ( 0/ 1)
+  t.empty                             :   0.0% ( 0/ 0)
+  t.empty.cp                          :   0.0% ( 0/ 0)
+  t.empty.unweighted                  : 100.0% ( 0/ 0)
+  t.excluded                          : 100.0% ( 1/ 1)
+  t.excluded.cp                       : 100.0% ( 1/ 1)
+  t.excluded.cp.hit                   : 100.0% ( 1/ 1)
+  t.free                              : 100.0% ( 0/ 0)
+  t.free.cp                           :   0.0% ( 0/ 0)
+  t.gen[0]                            : 100.0% ( 2/ 2)
+  t.gen[0].Gen::cg                    : 100.0% ( 2/ 2)
+  t.gen[0].Gen::cg.cp                 : 100.0% ( 2/ 2)
+  t.gen[0].Gen::cg.cp.auto_0          : 100.0% ( 1/ 1)
+  t.gen[0].Gen::cg.cp.auto_1          : 100.0% ( 1/ 1)
+  t.gen[1]                            :   0.0% ( 0/ 2)
+  t.gen[1].Gen::cg                    :   0.0% ( 0/ 2)
+  t.gen[1].Gen::cg.cp                 :   0.0% ( 0/ 2)
+  t.gen[1].Gen::cg.cp.auto_0          :   0.0% ( 0/ 1)
+  t.gen[1].Gen::cg.cp.auto_1          :   0.0% ( 0/ 1)
+  t.heavy                             :  50.0% ( 1/ 2)
+  t.heavy.cp                          :  50.0% ( 1/ 2)
+  t.heavy.cp.auto_0                   : 100.0% ( 1/ 1)
+  t.heavy.cp.auto_1                   :   0.0% ( 0/ 1)
+  t.inst_merged                       :  75.0% ( 3/ 4)
+  t.inst_merged.cp_a                  : 100.0% ( 2/ 2)
+  t.inst_merged.cp_a.auto_0           : 100.0% ( 1/ 1)
+  t.inst_merged.cp_a.auto_1           : 100.0% ( 1/ 1)
+  t.inst_merged.cp_b                  :  50.0% ( 1/ 2)
+  t.inst_merged.cp_b.auto_0           : 100.0% ( 1/ 1)
+  t.inst_merged.cp_b.auto_1           :   0.0% ( 0/ 1)
+  t.instance_weight                   : 100.0% ( 3/ 4)
+  t.instance_weight.cp_a              :  50.0% ( 1/ 2)
+  t.instance_weight.cp_a.auto_0       : 100.0% ( 1/ 1)
+  t.instance_weight.cp_a.auto_1       :   0.0% ( 0/ 1)
+  t.instance_weight.cp_b              : 100.0% ( 2/ 2)
+  t.instance_weight.cp_b.auto_0       : 100.0% ( 1/ 1)
+  t.instance_weight.cp_b.auto_1       : 100.0% ( 1/ 1)
+  t.merged                            : 100.0% ( 2/ 2)
+  t.merged.cp                         : 100.0% ( 2/ 2)
+  t.merged.cp.auto_0                  : 100.0% ( 1/ 1)
+  t.merged.cp.auto_1                  : 100.0% ( 1/ 1)
+  t.threshold                         :  50.0% ( 1/ 2)
+  t.threshold.cp                      :  50.0% ( 1/ 2)
+  t.threshold.cp.auto_0               : 100.0% ( 1/ 1)
+  t.threshold.cp.auto_1               :   0.0% ( 0/ 1)
+  t.type_merged                       : 100.0% ( 3/ 4)
+  t.type_merged.cp_a                  :  50.0% ( 1/ 2)
+  t.type_merged.cp_a.auto_0           : 100.0% ( 1/ 1)
+  t.type_merged.cp_a.auto_1           :   0.0% ( 0/ 1)
+  t.type_merged.cp_b                  : 100.0% ( 2/ 2)
+  t.type_merged.cp_b.auto_0           : 100.0% ( 1/ 1)
+  t.type_merged.cp_b.auto_1           : 100.0% ( 1/ 1)
+  t.type_weight                       :  75.0% ( 3/ 4)
+  t.type_weight.cp_a                  :  50.0% ( 1/ 2)
+  t.type_weight.cp_a.auto_0           : 100.0% ( 1/ 1)
+  t.type_weight.cp_a.auto_1           :   0.0% ( 0/ 1)
+  t.type_weight.cp_b                  : 100.0% ( 2/ 2)
+  t.type_weight.cp_b.auto_0           : 100.0% ( 1/ 1)
+  t.type_weight.cp_b.auto_1           : 100.0% ( 1/ 1)
+  t.unequal                           :  37.5% ( 2/ 6)
+  t.unequal.cp_a                      :  50.0% ( 1/ 2)
+  t.unequal.cp_a.auto_0               : 100.0% ( 1/ 1)
+  t.unequal.cp_a.auto_1               :   0.0% ( 0/ 1)
+  t.unequal.cp_b                      :  25.0% ( 1/ 4)
+  t.unequal.cp_b.auto_0               : 100.0% ( 1/ 1)
+  t.unequal.cp_b.auto_1               :   0.0% ( 0/ 1)
+  t.unequal.cp_b.auto_2               :   0.0% ( 0/ 1)
+  t.unequal.cp_b.auto_3               :   0.0% ( 0/ 1)
+  t.varying                           :  62.5% ( 3/ 4)
+  t.varying.cp                        :  50.0% ( 1/ 2)
+  t.varying.cp.auto_0                 : 100.0% ( 1/ 1)
+  t.varying.cp.auto_1                 :   0.0% ( 0/ 1)
+  t.varying.cq                        : 100.0% ( 2/ 2)
+  t.varying.cq.auto_0                 : 100.0% ( 1/ 1)
+  t.varying.cq.auto_1                 : 100.0% ( 1/ 1)
+  t.weighted                          : 100.0% ( 3/ 4)
+  t.weighted.cp_a                     :  50.0% ( 1/ 2)
+  t.weighted.cp_a.auto_0              : 100.0% ( 1/ 1)
+  t.weighted.cp_a.auto_1              :   0.0% ( 0/ 1)
+  t.weighted.cp_b                     : 100.0% ( 2/ 2)
+  t.weighted.cp_b.auto_0              : 100.0% ( 1/ 1)
+  t.weighted.cp_b.auto_1              : 100.0% ( 1/ 1)
+
+$ verilator_coverage --report summary,hierarchy edge.dat
+Coverage Summary:
+  line       :   0.0% ( 0/ 0)
+  toggle     :   0.0% ( 0/ 0)
+  branch     :   0.0% ( 0/ 0)
+  expr       :   0.0% ( 0/ 0)
+  fsm_state  :   0.0% ( 0/ 0)
+  fsm_arc    :   0.0% ( 0/ 0)
+  covergroup :  60.4% ( 9/15)
+Covergroup Coverage Summary:
+  esc                                                        :  50.0% (1/2)
+  esc.\g#("x                                                 :   0.0% (0/1)
+  esc.\g#("x .cg                                             :   0.0% (0/1)
+  esc.\g#("x .cg.cp                                          :   0.0% (0/1)
+  esc.\g#("x .cg.cp.b0                                       :   0.0% (0/1)
+  esc.\gen.cg                                                : 100.0% (1/1)
+  esc.\gen.cg .cp                                            : 100.0% (1/1)
+  esc.\gen.cg .cp.b0                                         : 100.0% (1/1)
+  pkg                                                        :  62.5% (3/5)
+  pkg.Cls#(0.1,"a.\"(b",class pkg::Inner#(1.5),2.5)          : 100.0% (1/1)
+  pkg.Cls#(0.1,"a.\"(b",class pkg::Inner#(1.5),2.5).cg       : 100.0% (1/1)
+  pkg.Cls#(0.1,"a.\"(b",class pkg::Inner#(1.5),2.5).cg.cp    : 100.0% (1/1)
+  pkg.Cls#(0.1,"a.\"(b",class pkg::Inner#(1.5),2.5).cg.cp.b0 : 100.0% (1/1)
+  pkg.alpha                                                  :  50.0% (1/2)
+  pkg.alpha.cp                                               :  50.0% (1/2)
+  pkg.alpha.cp.b0                                            : 100.0% (1/1)
+  pkg.alpha.cp.b1                                            :   0.0% (0/1)
+  pkg.beta                                                   : 100.0% (1/1)
+  pkg.beta.cp                                                : 100.0% (1/1)
+  pkg.beta.cp.b0                                             : 100.0% (1/1)
+  pkg.quote#("it' s")                                        :   0.0% (0/1)
+  pkg.quote#("it' s").cp                                     :   0.0% (0/1)
+  pkg.quote#("it' s").cp.b0                                  :   0.0% (0/1)
+  raw                                                        : 100.0% (1/1)
+  raw.cp                                                     : 100.0% (1/1)
+  raw.cp.%zz%                                                : 100.0% (1/1)
+  shared                                                     :  50.0% (1/2)
+  shared.cp                                                  :  50.0% (1/2)
+  shared.cp.b0                                               :  50.0% (1/2)
+  split                                                      :  25.0% (1/2)
+  split.cp                                                   :   0.0% (0/1)
+  split.cp.b0                                                :   0.0% (0/1)
+  split.cq                                                   : 100.0% (1/1)
+  split.cq.b0                                                : 100.0% (1/1)
+  unbal                                                      :  66.7% (2/3)
+  unbal.\e                                                   : 100.0% (1/1)
+  unbal.\e.cg                                                : 100.0% (1/1)
+  unbal.\e.cg.cp                                             : 100.0% (1/1)
+  unbal.\e.cg.cp.b0                                          : 100.0% (1/1)
+  unbal.g#(                                                  : 100.0% (1/1)
+  unbal.g#(.cg                                               : 100.0% (1/1)
+  unbal.g#(.cg.cp                                            : 100.0% (1/1)
+  unbal.g#(.cg.cp.b0                                         : 100.0% (1/1)
+  unbal.m#(e"x)                                              :   0.0% (0/1)
+  unbal.m#(e"x).cg                                           :   0.0% (0/1)
+  unbal.m#(e"x).cg.cp                                        :   0.0% (0/1)
+  unbal.m#(e"x).cg.cp.b0                                     :   0.0% (0/1)
+
+$ verilator_coverage --report summary zero.dat
+Coverage Summary:
+  line       :   0.0% (0/0)
+  toggle     :   0.0% (0/0)
+  branch     :   0.0% (0/0)
+  expr       :   0.0% (0/0)
+  fsm_state  :   0.0% (0/0)
+  fsm_arc    :   0.0% (0/0)
+  covergroup : 100.0% (0/1)
+
+$ verilator_coverage --report summary none.dat
+Coverage Summary:
+  line       :   0.0% (0/0)
+  toggle     :   0.0% (0/0)
+  branch     :   0.0% (0/0)
+  expr       :   0.0% (0/0)
+  fsm_state  :   0.0% (0/0)
+  fsm_arc    :   0.0% (0/0)
+  covergroup :   0.0% (0/0)
+
+$ verilator_coverage --report summary near.dat
+Coverage Summary:
+  line       :   0.0% (   0/   0)
+  toggle     :   0.0% (   0/   0)
+  branch     :   0.0% (   0/   0)
+  expr       :   0.0% (   0/   0)
+  fsm_state  :   0.0% (   0/   0)
+  fsm_arc    :   0.0% (   0/   0)
+  covergroup :  99.9% (2000/2001)
+
+$ verilator_coverage --report hierarchy mixed.dat
+Hierarchy Coverage Summary:
+  top
+    line      : 100.0% (2/2)
+    toggle    :   0.0% (0/1)
+  top.t
+    line      : 100.0% (2/2)
+    toggle    :   0.0% (0/1)
+  top.t."q%"
+    line      : 100.0% (1/1)
+Design Unit Coverage Summary:
+  m"x
+    line      : 100.0% (1/1)
+  t
+    line      : 100.0% (1/1)
+    toggle    :   0.0% (0/1)
+Covergroup Coverage Summary:
+  cg      :  50.0% (1/2)
+  cg.cp   :  50.0% (1/2)
+  cg.cp.a : 100.0% (1/1)
+  cg.cp.b :   0.0% (0/1)
+
+$ verilator_coverage --report hierarchy --levels 1 mixed.dat
+Hierarchy Coverage Summary:
+  top
+    line      : 100.0% (2/2)
+    toggle    :   0.0% (0/1)
+  top.t
+    line      : 100.0% (2/2)
+    toggle    :   0.0% (0/1)
+Design Unit Coverage Summary:
+  m"x
+    line      : 100.0% (1/1)
+  t
+    line      : 100.0% (1/1)
+    toggle    :   0.0% (0/1)
+Covergroup Coverage Summary:
+  cg    :  50.0% (1/2)
+  cg.cp :  50.0% (1/2)
+
+$ verilator_coverage --report summary,hierarchy names.dat
+Coverage Summary:
+  line       :   0.0% (0/0)
+  toggle     :   0.0% (0/0)
+  branch     :   0.0% (0/0)
+  expr       :   0.0% (0/0)
+  fsm_state  :   0.0% (0/0)
+  fsm_arc    :   0.0% (0/0)
+  covergroup :  50.0% (1/2)
+Covergroup Coverage Summary:
+  pkg::Cls#("a%<b%22")::cg         :  50.0% (1/2)
+  pkg::Cls#("a%<b%22")::cg.x       :  50.0% (1/2)
+  pkg::Cls#("a%<b%22")::cg.x.<p,q> : 100.0% (1/1)
+  pkg::Cls#("a%<b%22")::cg.x.<p,r> :   0.0% (0/1)
+
+$ verilator_coverage --annotate annotated --annotate-all --annotate-points names.dat
+Coverage Summary:
+  line       :   0.0% (0/0)
+  toggle     :   0.0% (0/0)
+  branch     :   0.0% (0/0)
+  expr       :   0.0% (0/0)
+  fsm_state  :   0.0% (0/0)
+  fsm_arc    :   0.0% (0/0)
+  covergroup :  50.0% (1/2)
+Annotation Summary:
+  lines with all attached points covered : 0.0%  (0/1)
+See lines with '%00' in obj_vlt/t_vlcov_covergroup_report/annotated
+
+$ cat annotated/names.v
+//      // verilator_coverage annotation
+        module names;
+%000001   // sampled
+-000001  point: type=covergroup comment="x%"%0A<p,q> #( :: hier=pkg::Cls#("a%<b%22")::cg.x.<p,q>
+        //  cross: [p, q]
+-000000  point: type=covergroup comment="x%" <p,r> #( :: hier=pkg::Cls#("a%<b%22")::cg.x.<p,r>
+        //  cross: [p, r]
+        endmodule
+        
+
+$ verilator_coverage --write-info names.info names.dat
+
+$ cat names.info
+TN:verilator_coverage
+SF:obj_vlt/t_vlcov_covergroup_report/names.v
+DA:2,1
+BRDA:2,0,"x%"%0A<p_q> #( ::,1
+BRDA:2,0,"x%" <p_r> #( ::,0
+BRF:2
+BRH:0
+end_of_record
+
+$ verilator_coverage --write merged.dat names.dat
+
+$ verilator_coverage --report hierarchy merged.dat
+Covergroup Coverage Summary:
+  pkg::Cls#("a%<b%22")::cg         :  50.0% (1/2)
+  pkg::Cls#("a%<b%22")::cg.x       :  50.0% (1/2)
+  pkg::Cls#("a%<b%22")::cg.x.<p,q> : 100.0% (1/1)
+  pkg::Cls#("a%<b%22")::cg.x.<p,r> :   0.0% (0/1)

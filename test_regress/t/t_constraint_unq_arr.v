@@ -14,28 +14,28 @@ endclass
 class C extends Subclass;
   rand int arr[];
 
-  function new ();
+  function new();
     arr = new[10];
     sub_arr = new[10];
   endfunction
 
   function void check_unique();
-      // dynamic array inside class
-      for (int i = 0; i < $size(arr); i++) begin
-        for (int j = i + 1; j < $size(arr); j++) begin
-          if (arr[i] == arr[j]) begin
-            $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
-          end
+    // dynamic array inside class
+    for (int i = 0; i < $size(arr); i++) begin
+      for (int j = i + 1; j < $size(arr); j++) begin
+        if (arr[i] == arr[j]) begin
+          $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
         end
       end
-      // dynamic array inside base class
-      for (int i = 0; i < $size(sub_arr); i++) begin
-        for (int j = i + 1; j < $size(sub_arr); j++) begin
-          if (sub_arr[i] == sub_arr[j]) begin
-            $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
-          end
+    end
+    // dynamic array inside base class
+    for (int i = 0; i < $size(sub_arr); i++) begin
+      for (int j = i + 1; j < $size(sub_arr); j++) begin
+        if (sub_arr[i] == sub_arr[j]) begin
+          $error("UNIQUENESS VIOLATION: arr[%0d] == arr[%0d] == 0x%h", i, j, arr[i]);
         end
       end
+    end
   endfunction
 
   constraint c {
@@ -120,7 +120,8 @@ module t;
             continue;
           end
           if (multiarr0[i] == multiarr0[j]) begin
-            $error("UNIQUENESS VIOLATION: multiarr0[%0d] == multiarr0[%0d] == 0x%h", i, j, multiarr0[i]);
+            $error("UNIQUENESS VIOLATION: multiarr0[%0d] == multiarr0[%0d] == 0x%h", i, j,
+                   multiarr0[i]);
           end
         end
       end
@@ -130,14 +131,16 @@ module t;
             continue;
           end
           if (multiarr1[i] == multiarr1[j]) begin
-            $error("UNIQUENESS VIOLATION: multiarr1[%0d] == multiarr1[%0d] == 0x%h", i, j, multiarr1[i]);
+            $error("UNIQUENESS VIOLATION: multiarr1[%0d] == multiarr1[%0d] == 0x%h", i, j,
+                   multiarr1[i]);
           end
         end
       end
       foreach (multiarr1[i]) begin
         foreach (multiarr0[j]) begin
           if (multiarr0[i] == multiarr1[j]) begin
-            $error("UNIQUENESS VIOLATION: multiarr0[%0d] == multiarr1[%0d] == 0x%h", i, j, multiarr0[i]);
+            $error("UNIQUENESS VIOLATION: multiarr0[%0d] == multiarr1[%0d] == 0x%h", i, j,
+                   multiarr0[i]);
           end
         end
       end
@@ -152,8 +155,8 @@ module t;
     cc.randomize();
     a.randomize();
 
-    repeat(20) cc.check_unique();
-    repeat(20) a.check_unique();
+    repeat (20) cc.check_unique();
+    repeat (20) a.check_unique();
 
     $write("*-* All Finished *-*\n");
     $finish;

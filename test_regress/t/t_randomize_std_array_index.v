@@ -17,20 +17,35 @@ module t;
 
   initial begin
     repeat (30) begin
-      ok = std::randomize(probe, cube, i) with { i inside {[0:3]}; probe == cube[i]; };
+      ok = std::randomize(
+          probe, cube, i
+      ) with {
+        i inside {[0 : 3]};
+        probe == cube[i];
+      };
       if (ok != 1) $stop;
       if (probe != cube[i]) $stop;
     end
 
     repeat (30) begin
-      ok = std::randomize(p0, cube, i) with { i inside {[0:3]}; p0 == cube[i][0]; };
+      ok = std::randomize(
+          p0, cube, i
+      ) with {
+        i inside {[0 : 3]};
+        p0 == cube[i][0];
+      };
       if (ok != 1) $stop;
       if (p0 != cube[i][0]) $stop;
     end
 
     repeat (30) begin
       q = {8'h1, 8'h2, 8'h3, 8'h4};
-      ok = std::randomize(p0, q, i) with { i inside {[0:3]}; p0 == q[i]; };
+      ok = std::randomize(
+          p0, q, i
+      ) with {
+        i inside {[0 : 3]};
+        p0 == q[i];
+      };
       if (ok != 1) $stop;
       if (p0 != q[i]) $stop;
     end

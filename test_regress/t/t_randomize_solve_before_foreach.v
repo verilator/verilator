@@ -32,24 +32,20 @@ module t;
     rand int y;
     rand int arr[4];
 
-    constraint mode_c {
-      mode inside {[0:3]};
-    }
+    constraint mode_c {mode inside {[0 : 3]};}
 
     constraint data_c {
       foreach (data[i]) {
         solve mode before data[i];
         if (mode == 0)
-          data[i] == 8'h00;
+        data[i] == 8'h00;
         else
-          data[i] inside {[8'd1:8'd255]};
+        data[i] inside {[8'd1 : 8'd255]};
       }
     }
 
     // Static array index in solve...before (non-foreach)
-    constraint arr_c {
-      solve arr[0] before y;
-    }
+    constraint arr_c {solve arr[0] before y;}
   endclass
 
   class Packet;

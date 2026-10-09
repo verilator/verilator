@@ -11,9 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t/t_func_dotted.v"
+test.vlt_filename = "t/t_func_dotted_inl2.vlt"
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
-test.compile(v_flags2=["--no-json-edit-nums", "t/t_func_dotted_inl2.vlt"])
+test.compile(v_flags2=["--no-json-edit-nums", test.vlt_filename])
 
 if test.vlt_all:
     modps = test.file_grep(

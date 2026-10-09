@@ -144,8 +144,7 @@ void createEvalRegion(
     // nothing to evaluate, and what we create below reduces to a no-op function.
 
     const std::string tag = eval.tag();
-    const std::string varPrefix = "__V" + tag;
-    AstScope* const scopeTopp = netlistp->topScopep()->scopep();
+    AstTopScope* const topScopep = netlistp->topScopep();
     FileLine* const flp = netlistp->fileline();
 
     // Populate the trigger dump entry point function
@@ -183,7 +182,7 @@ void createEvalRegion(
         funcp->addStmtsp(phasePrepp);
 
         // The execute flag
-        AstVarScope* const executeFlagp = scopeTopp->createTemp(varPrefix + "Execute", 1);
+        AstVarScope* const executeFlagp = topScopep->createTemp("__V" + tag + "Execute", 1);
         executeFlagp->varp()->noReset(true);
 
         // If there is work in this region, execute it if any triggers fired
@@ -309,7 +308,8 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                     }
                     subFuncp->addStmtsp(bodyp);
                     if (procp->needProcess()) subFuncp->setNeedProcess();
-                    util::splitCheck(subFuncp);
+                    // A coroutine holds a single process, so it is complete here
+                    if (procp->isSuspendable()) util::splitCheck(subFuncp);
                 }
             } else {
                 logicp->unlinkFrBack();
@@ -318,6 +318,14 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
         }
         if (activep->backp()) activep->unlinkFrBack();
         VL_DO_DANGLING(activep->deleteTree(), activep);
+    }
+    // Split sub-functions once complete
+    for (const auto& pair : lbs) {
+        AstScope* const scopep = pair.first;
+        if (AstCFunc* const subFuncp = VN_AS(scopep->user1p(), CFunc)) {
+            util::splitCheck(subFuncp);
+            scopep->user1p(nullptr);
+        }
     }
 }
 
@@ -581,7 +589,8 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
         util::callVoidFunc(icoFuncp));
 
     // Release temporary input change detect SenTrees
-    for (AstSenTree* const senTreep : icoChangeSenTreeps) senTreep->deleteTree();
+    for (AstSenTree* const senTreep : icoChangeSenTreeps)
+        VL_DO_DANGLING(senTreep->deleteTree(), senTreep);
     icoChangeSenTreeps.clear();
 }
 
@@ -1106,7 +1115,7 @@ void schedule(AstNetlist* netlistp) {
         UASSERT_OBJ(trigAccDTypep->left() >= 0, trigAccp,
                     "Expected that trigger vector and accumulator has no negative indexes");
         FileLine* const flp = trigAccp->fileline();
-        AstVarScope* const vscp = netlistp->topScopep()->scopep()->createTemp("__Vi", 32);
+        AstVarScope* const vscp = netlistp->topScopep()->createTemp("__Vi", 32);
         AstLoop* const loopp = new AstLoop{flp};
         loopp->addStmtsp(
             new AstAssign{flp,

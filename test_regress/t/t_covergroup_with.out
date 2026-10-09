@@ -1,0 +1,215 @@
+t.Holder::cg.cp.selected[1]: 1
+t.Holder::cg.cp.selected[2]: 1
+t.Holder::cg.cp.selected[3]: 1
+t.Holder::cg.cp.selected[4]: 1
+t.ItemMember::cg_member.cp.b[2]: 3
+t.ItemMember::cg_member.cp.b[3]: 4
+t.cg_bounds.lower.lower[2]: 1
+t.cg_bounds.lower.lower[3]: 1
+t.cg_bounds.lower.lower[4]: 1
+t.cg_bounds.single.single[2]: 1
+t.cg_bounds.upper.upper[0]: 1
+t.cg_bounds.upper.upper[1]: 2
+t.cg_capture.ar.b[0]: 0
+t.cg_capture.ar.b[1]: 0
+t.cg_capture.ar.b[2]: 0
+t.cg_capture.sc.b: 0
+t.cg_cross.aa.even_values[0]: 4
+t.cg_cross.aa.even_values[2]: 4
+t.cg_cross.bb.sized[0]: 8
+t.cg_cross.bb.sized[1]: 8
+t.cg_cross.xx.<even_values[0],sized[0]> [cross]: 2
+t.cg_cross.xx.sized_one [cross]: 4
+t.cg_cross.xx.two [cross]: 3
+t.cg_default.cp.gated: 1
+t.cg_default.cp.remaining [default]: 6
+t.cg_domain.cp.ignored [ignore]: 1
+t.cg_domain.cp.illegal [illegal]: 0
+t.cg_domain.cp.selected[0]: 1
+t.cg_domain.cp.selected[1]: 1
+t.cg_domain.cp.selected[2]: 1
+t.cg_domain.cp.selected[3]: 1
+t.cg_domain.cp__05b0__05d.excluded [ignore]: 2
+t.cg_domain.cp__05b0__05d.remaining [default]: 9
+t.cg_domain.cp__05b0__05d.selected: 2
+t.cg_domain.wild.ignored [ignore]: 1
+t.cg_domain.wild.ignored_set [ignore]: 0
+t.cg_domain.wild.illegal [illegal]: 0
+t.cg_domain.wild.illegal_set [illegal]: 0
+t.cg_domain.wild.selected[0]: 1
+t.cg_domain.wild.selected[1]: 1
+t.cg_domain.wild.selected[2]: 1
+t.cg_domain.wild.selected[3]: 1
+t.cg_guard.filtered.auto_1: 0
+t.cg_guard.filtered.auto_2: 0
+t.cg_guard.filtered.auto_3: 0
+t.cg_guard.filtered.auto_4: 0
+t.cg_guard.filtered.auto_5: 0
+t.cg_guard.filtered.auto_6: 0
+t.cg_guard.filtered.auto_7: 0
+t.cg_guard.filtered.bad [illegal]: 0
+t.cg_guard.sized.auto_2: 0
+t.cg_guard.sized.auto_3: 0
+t.cg_guard.sized.auto_4: 0
+t.cg_guard.sized.auto_5: 0
+t.cg_guard.sized.auto_6: 0
+t.cg_guard.sized.auto_7: 0
+t.cg_guard.sized.bad[0] [illegal]: 0
+t.cg_guard.sized.bad[1] [illegal]: 0
+t.cg_iff.checked.listed [illegal]: 0
+t.cg_iff.checked.named [illegal]: 0
+t.cg_iff.checked.probe[0]: 2
+t.cg_iff.checked.probe[5]: 1
+t.cg_iff.checked.wild_listed [illegal]: 0
+t.cg_iff.checked.wild_named [illegal]: 0
+t.cg_iff.counted.listed: 1
+t.cg_iff.counted.named[0]: 0
+t.cg_iff.counted.named[1]: 1
+t.cg_iff.counted.wild_listed: 1
+t.cg_iff.counted.wild_named[0]: 0
+t.cg_iff.counted.wild_named[1]: 1
+t.cg_iff.ignored.listed [ignore]: 1
+t.cg_iff.ignored.named [ignore]: 0
+t.cg_iff.ignored.probe[0]: 1
+t.cg_iff.ignored.probe[5]: 1
+t.cg_iff.ignored.wild_listed [ignore]: 0
+t.cg_iff.ignored.wild_named [ignore]: 0
+t.cg_ignore.auto_max.auto_1: 2
+t.cg_ignore.auto_max.auto_2: 1
+t.cg_ignore.auto_max.auto_3: 0
+t.cg_ignore.auto_max.ignored [ignore]: 4
+t.cg_ignore.cp.auto_0: 1
+t.cg_ignore.cp.auto_2: 1
+t.cg_ignore.cp.auto_4: 1
+t.cg_ignore.cp.never [illegal]: 0
+t.cg_ignore.cp.odd [ignore]: 4
+t.cg_ignore.wide.excluded [ignore]: 1
+t.cg_ignore.wide.values: 6
+t.cg_item_arg.listed.b[0]: 1
+t.cg_item_arg.listed.b[2]: 3
+t.cg_item_arg.sized.b[0]: 5
+t.cg_item_arg.sized.b[1]: 6
+t.cg_item_arg.sized.b[2]: 15
+t.cg_item_names.flag.on: 36
+t.cg_item_names.item.b[6]: 7
+t.cg_item_names.item.b[7]: 8
+t.cg_item_names.named.guarded: 7
+t.cg_item_names.named.item: 3
+t.cg_item_names.named.outer: 8
+t.cg_item_names.named.scoped[0]: 1
+t.cg_item_names.named.scoped[1]: 2
+t.cg_item_names.named.scoped[3]: 4
+t.cg_item_names.x.<guarded,on> [cross]: 7
+t.cg_item_names.x.<outer,on> [cross]: 8
+t.cg_item_names.x.<scoped[0],on> [cross]: 1
+t.cg_item_names.x.<scoped[1],on> [cross]: 2
+t.cg_item_names.x.<scoped[3],on> [cross]: 4
+t.cg_item_names.x.sel [cross]: 3
+t.cg_item_ref.cp.b[0]: 1
+t.cg_item_ref.cp.b[1]: 2
+t.cg_item_sample.cp.b[6]: 7
+t.cg_item_sample.cp.b[7]: 8
+t.cg_joined.p._q[5]: 6
+t.cg_joined.p._q[6]: 7
+t.cg_joined.p._q[7]: 8
+t.cg_joined.p_.q[1]: 2
+t.cg_joined.p_.q[2]: 3
+t.cg_joined.p_.q[3]: 4
+t.cg_types.calls.c_code: 4
+t.cg_types.calls.inside_set[100]: 0
+t.cg_types.calls.inside_set[101]: 1
+t.cg_types.calls.inside_set[3]: 1
+t.cg_types.calls.pow2[16]: 0
+t.cg_types.calls.pow2[1]: 1
+t.cg_types.calls.pow2[2]: 1
+t.cg_types.calls.pow2[4]: 1
+t.cg_types.calls.pow2[8]: 1
+t.cg_types.calls.sv_function[1]: 1
+t.cg_types.calls.sv_function[2]: 1
+t.cg_types.ee.chosen[2]: 5
+t.cg_types.ee.chosen[4]: 5
+t.cg_types.ee.named[0]: 8
+t.cg_types.ee.named[2]: 5
+t.cg_types.ee.named[4]: 5
+t.cg_types.ee.named_fixed[0]: 8
+t.cg_types.ee.named_fixed[1]: 5
+t.cg_types.ee.named_single: 13
+t.cg_types.oe.named_fixed[0]: 18
+t.cg_types.oe.named_fixed[1]: 0
+t.cg_types.pp.cast_one[13]: 1
+t.cg_types.pp.cast_one[1]: 1
+t.cg_types.pp.cast_one[5]: 1
+t.cg_types.pp.cast_one[9]: 1
+t.cg_types.pp.high_two: 4
+t.cg_types.pp.lo_one[13]: 1
+t.cg_types.pp.lo_one[1]: 1
+t.cg_types.pp.lo_one[5]: 1
+t.cg_types.pp.lo_one[9]: 1
+t.cg_types.se.named[-1]: 10
+t.cg_types.se.named[-2]: 8
+t.cg_types.se.named[1]: 0
+t.cg_types.se.named[2]: 0
+t.cg_types.se.named_fixed[0]: 8
+t.cg_types.se.named_fixed[1]: 10
+t.cg_types.se.named_fixed[2]: 0
+t.cg_types.ss.negatives[-1]: 3
+t.cg_types.ss.negatives[-2]: 3
+t.cg_types.ss.negatives[-3]: 3
+t.cg_types.truth.all: 18
+t.cg_types.truth.literal_truth: 18
+t.cg_types.truth.real_truth: 18
+t.cg_types.truth.wide_truth: 11
+t.cg_types.wild.selected[12]: 1
+t.cg_types.wild.selected[13]: 1
+t.cg_types.wild.selected[8]: 1
+t.cg_types.ws.values[-1]: 8
+t.cg_types.ws.values[-590295810358705651711]: 1
+t.cg_types.ws.values[3]: 9
+t.cg_types.ww.fixed[0]: 4
+t.cg_types.ww.fixed[1]: 10
+t.cg_types.ww.selected[18446744073709551617]: 4
+t.cg_types.ww.single: 8
+t.cg_values.dupfix.duplicated[0]: 1
+t.cg_values.dupfix.duplicated[1]: 3
+t.cg_values.dupran.duplicate_ranges[0]: 1
+t.cg_values.dupran.duplicate_ranges[1]: 2
+t.cg_values.dupran.duplicate_ranges[2]: 1
+t.cg_values.dupran.duplicate_ranges[3]: 1
+t.cg_values.dupran.duplicate_ranges[4]: 1
+t.cg_values.dupran.duplicate_ranges[5]: 1
+t.cg_values.dupval.duplicate_values[0]: 1
+t.cg_values.dupval.duplicate_values[1]: 2
+t.cg_values.dupval.duplicate_values[2]: 1
+t.cg_values.empty.some: 1
+t.cg_values.evens.evens[0]: 1
+t.cg_values.evens.evens[2]: 1
+t.cg_values.evens.evens[4]: 1
+t.cg_values.evens.evens[6]: 1
+t.cg_values.fixed.fixed[0]: 2
+t.cg_values.fixed.fixed[1]: 2
+t.cg_values.gated.gated: 1
+t.cg_values.joined.joined: 5
+t.cg_values.low.low_values: 4
+t.cg_values.order.ordered[0]: 3
+t.cg_values.order.ordered[1]: 2
+t.cg_values.outer.outer_item: 1
+t.cg_wide.fixed.b[0]: 1
+t.cg_wide.fixed.b[1]: 1
+t.cg_wide.fixed.b[2]: 1
+t.cg_wide.fixed_dup.b[0]: 2
+t.cg_wide.fixed_dup.b[1]: 2
+t.cg_wide.plain.b[0]: 1
+t.cg_wide.plain.b[1]: 1
+t.cg_wide.q_fixed.b[0]: 2
+t.cg_wide.q_fixed.b[1]: 2
+t.cg_wide.q_fixed.b[2]: 0
+t.cg_wide.q_fixed.b[3]: 0
+t.cg_wide.single.b: 3
+t.cg_wide.unit.b[0]: 1
+t.cg_wide.unit.b[1]: 0
+t.cg_wide.unit.b[2]: 0
+t.cg_wide.unit.b[3]: 1
+t.cg_wide.values.b[18446744073709551612]: 0
+t.cg_wide.values.b[18446744073709551614]: 1
+t.cg_wide.values.b[18446744073709551616]: 0
+t.cg_wide.values.b[18446744073709551618]: 0

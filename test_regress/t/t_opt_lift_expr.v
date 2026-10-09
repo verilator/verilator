@@ -34,7 +34,7 @@ module t;
     `checkh(C::i, 2);
     `checkh(C::j, 3);
     // Expr
-    `checkh(|$urandom_range(2,1), 1'b1);
+    `checkh(|$urandom_range(2, 1), 1'b1);
     // LogAnd
     `checkh(impure_0() && 1'b0, 1'b0);
     `checkh(impure_0() && 1'b1, 1'b0);

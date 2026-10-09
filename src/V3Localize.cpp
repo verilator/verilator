@@ -104,7 +104,7 @@ class LocalizeVisitor final : public VNVisitor {
 
             // Yank the VarScope from it's parent and schedule them for deletion. Leave the Var
             // for now, as not all VarScopes referencing this Var might be localized.
-            pushDeletep(nodep->unlinkFrBack());
+            pushDeletep(nodep->unlinkFrBack());  // TODO nodep used past here
 
             // In each referencing function, create a replacement local variable
             AstVar* const oldVarp = nodep->varp();
@@ -186,10 +186,10 @@ class LocalizeVisitor final : public VNVisitor {
         if (!nodep->varp()->isPrimaryIO()  // Not an IO the user wants to interact with
             && !nodep->varp()->isSigPublic()  // Not something the user wants to interact with
             && !nodep->varp()->isFuncLocal()  // Not already a function local (e.g.: argument)
-            && !nodep->varp()->isStatic()  // Not a static variable
             && !nodep->varp()->isClassMember()  // Statically exists in design hierarchy
             && !nodep->varp()->sensIfacep()  // Not sensitive to an interface
             && !nodep->varp()->isVirtIface()  // Not interface pointer
+            && !nodep->varp()->constPoolEntry()  // Not a const pool entry
             && !nodep->varp()->valuep()  // Does not have an initializer
         ) {
             UINFO(4, "Consider for localization: " << nodep);

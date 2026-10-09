@@ -66,6 +66,7 @@ class DfgEdge;
 class DfgVertex;
 class DfgGraph;
 class DfgVisitor;
+class V3DfgContext;
 template <typename T_User, bool = fitsSpaceAllocatedFor<T_User, void*>()>
 class DfgUserMap;
 
@@ -427,8 +428,8 @@ class DfgGraph final {
     DfgVertex::List<DfgConst> m_constVertices;  // The constant vertices in the graph
     DfgVertex::List<DfgVertex> m_opVertices;  // The operation vertices in the graph
     size_t m_size = 0;  // Number of vertices in the graph
+    V3DfgContext& m_ctx;  // The DFG context this graph is optimized in
     const std::string m_name;  // Name of graph - need not be unique
-    std::string m_tmpNameStub{""};  // Name stub for temporary variables - computed lazy
 
     // The only way to access thes is via DfgUserMap, so mutable is appropriate,
     // the map can change while the graph is const.
@@ -437,7 +438,7 @@ class DfgGraph final {
 
 public:
     // CONSTRUCTOR
-    explicit DfgGraph(const string& name = "") VL_MT_DISABLED;
+    DfgGraph(V3DfgContext& ctx, const string& name) VL_MT_DISABLED;
     ~DfgGraph() VL_MT_DISABLED;
     VL_UNCOPYABLE(DfgGraph);
 
@@ -446,6 +447,7 @@ public:
     size_t size() const { return m_size; }
     // Name of this graph
     const string& name() const { return m_name; }
+    V3DfgContext& ctx() const { return m_ctx; }
 
     // Create a new DfgUserMap
     template <typename T_User>
@@ -527,14 +529,10 @@ public:
     // DfgVertexVar instances representing the same Ast variable are unified.
     void mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) VL_MT_DISABLED;
 
-    // Genarete a unique name. The provided 'prefix' and 'n' values will be part of the name, and
-    // must be unique (as a pair) in each invocation for this graph.
-    std::string makeUniqueName(const std::string& prefix, size_t n) VL_MT_DISABLED;
-
-    // Create a new variable with the given name and data type. For a Scoped
-    // Dfg, the AstScope where the corresponding AstVarScope will be inserted
-    // must be provided
-    DfgVertexVar* makeNewVar(FileLine*, const std::string& name, const DfgDataType&,
+    // Create a new temporary variable in the given scope. Temporaries are shared between
+    // instances via the context, keyed by 'prefix', so callers must set identical AstVar
+    // attributes on all temporaries created with the same prefix.
+    DfgVertexVar* makeNewVar(FileLine*, const std::string& prefix, const DfgDataType&,
                              AstScope*) VL_MT_DISABLED;
 
     // Split this graph into individual components (unique sub-graphs with no edges between them).
@@ -594,14 +592,14 @@ namespace V3Dfg {
 // Returns true if variable can be represented in the graph
 inline bool isSupported(const AstVarScope* vscp) {
     const AstNodeModule* const modp = vscp->scopep()->modp();
-    if (VN_IS(modp, Module)) {
-        // Regular module supported
+    if (VN_IS(modp, Module) || VN_IS(modp, Package)) {
+        // Regular modules and packages supported
     } else if (const AstIface* const ifacep = VN_CAST(modp, Iface)) {
         // Interfaces supported if there are no virtual interfaces for
         // them, otherwise they cannot be resovled statically.
         if (ifacep->hasVirtualRef()) return false;
     } else {
-        return false;  // Anything else (package, class, etc) not supported
+        return false;  // Anything else (class, etc) not supported
     }
     if (DfgVertexVar::hasRWRefs(vscp)) return false;  // Referenced via READWRITE references
     // Check the AstVar

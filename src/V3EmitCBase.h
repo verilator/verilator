@@ -72,14 +72,9 @@ public:
     static bool isAnonOk(const AstVar* varp) VL_MT_STABLE {
         AstNodeDType* const dtp = varp->dtypep()->skipRefp();
         return v3Global.opt.compLimitMembers() != 0  // Enabled
-               && !varp->isStatic()  // Not a static variable
                && !varp->isSc()  // Aggregates can't be anon
-               && !VN_IS(dtp, SampleQueueDType)  // Aggregates can't be anon
-               && !(VN_IS(dtp, NodeUOrStructDType) && !VN_CAST(dtp, NodeUOrStructDType)->packed())
+               && !dtp->isCompound()  // Non-POD members are not allowed in an anonymous aggregate
                && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
-    }
-    static bool isConstPoolMod(const AstNode* modp) {
-        return modp == v3Global.rootp()->constPoolp()->modp();
     }
 };
 

@@ -44,6 +44,8 @@ public:
     VL_UNCOPYABLE(V3HierGraph);
     VL_UNMOVABLE(V3HierGraph);
 
+    // Explicit HDL inputs followed by the library-discovered top module file, if any.
+    static VStringList sourceFiles(const string& topModuleFile = "") VL_MT_DISABLED;
     // Write command line arguments to .f files for child Verilation run
     void writeCommandArgsFiles(bool forMkJson) const VL_MT_DISABLED;
     void writeParametersFiles() const VL_MT_DISABLED;
@@ -82,6 +84,9 @@ public:
     VL_UNMOVABLE(V3HierBlock);
 
     const AstModule* modp() const { return m_modp; }
+
+    // Whether a string parameter value can be passed to a hierarchical block's Verilation
+    static bool stringParamPassable(const string& value) VL_PURE;
 
     // For emitting Makefile and build definition JSON
     VStringList commandArgs(bool forMkJson) const VL_MT_DISABLED;

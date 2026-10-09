@@ -29,7 +29,7 @@ module t;
     bar.randomize();
     if (bar.foo_arr.size() != 10) $stop;
     foreach (bar.foo_arr[i]) begin
-      if (bar.foo_arr[i] >= 8) $stop;
+      if (bar.foo_arr[i].abcd >= 8) $stop;
     end
     $write("*-* All Finished *-*\n");
     $finish;

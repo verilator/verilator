@@ -13,7 +13,7 @@ test.scenarios('linter')
 test.top_filename = 't/t_lint_unused_bad.v'
 
 test.lint(verilator_flags2=[
-    "--lint-only --bbox-sys --bbox-unsup -Wall -Wno-DECLFILENAME", "t/t_lint_unused_vlt.vlt"
+    "--lint-only --bbox-sys --bbox-unsup -Wall -Wno-DECLFILENAME", test.vlt_filename
 ])
 
 test.passes()

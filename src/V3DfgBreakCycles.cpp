@@ -152,9 +152,9 @@ class TraceDriver final : public DfgVisitor {
     // TYPES
     // Key for caching the result of a trace
     struct CacheKey final {
-        DfgVertex* m_vtxp;
-        uint32_t m_lsb;
-        uint32_t m_msb;
+        DfgVertex* m_vtxp;  // Vertex being traced
+        uint32_t m_lsb;  // LSB of the range within m_vtxp being traced
+        uint32_t m_msb;  // MSB of the range within m_vtxp being traced
 
         CacheKey() = delete;
         CacheKey(DfgVertex* vtxp, uint32_t lsb, uint32_t msb)
@@ -239,12 +239,10 @@ class TraceDriver final : public DfgVisitor {
 
     // Create temporary capable of holding the result of 'vtxp'
     DfgVertexVar* createTmp(const char* prefix, DfgVertex* vtxp) {
-        AstNode* nodep = v3Global.rootp();
-        const std::string name = m_dfg.makeUniqueName(prefix, nodep->user2Inc());
         FileLine* const flp = vtxp->fileline();
         DfgVertex::ScopeCache scopeCache;
         AstScope* const scopep = vtxp->scopep(scopeCache);
-        DfgVertexVar* const varp = m_dfg.makeNewVar(flp, name, vtxp->dtype(), scopep);
+        DfgVertexVar* const varp = m_dfg.makeNewVar(flp, prefix, vtxp->dtype(), scopep);
         varp->vscp()->varp()->isInternal(true);
         varp->tmpForp(varp->vscp());
         m_sccInfo.add(*varp, 0);
@@ -484,7 +482,7 @@ class TraceDriver final : public DfgVisitor {
         m_splicep = nullptr;
 
         struct Driver final {
-            DfgVertex* m_vtxp;
+            DfgVertex* m_vtxp;  // Vertex driving this range
             uint32_t m_lsb;  // LSB of driven range (internal, not Verilog)
             uint32_t m_msb;  // MSB of driven range (internal, not Verilog)
             Driver() = delete;
@@ -567,7 +565,7 @@ class TraceDriver final : public DfgVisitor {
 
     void visit(DfgSpliceArray* vtxp) override {
         UASSERT_OBJ(m_splicep == vtxp, vtxp, "Unexpected trace of DfgSpliceArray");
-        // DfgVertex* defaultp = m_defaultp;
+        DfgVertex* const defaultp = m_defaultp;
         m_defaultp = nullptr;
         m_splicep = nullptr;
 
@@ -575,34 +573,17 @@ class TraceDriver final : public DfgVisitor {
         const uint32_t idx = m_idxs.back();
         if (DfgVertex* const driverp = vtxp->driverAt(idx)) {
             DfgVertex* const srcp = driverp->as<DfgUnitArray>()->srcp();
-            // TODO: this is unreachable today, but with e.g. #8316 it wouldn't be
-            // // TODO: replace DfgSplice with DfgInsert modeling
-            // // Annoying corner case: If the element itself is a splice, we need
-            // // a defaultp for that element if there was one for the whole array.
-            // // Make one up by selecting out of the default. It will be removed
-            // // later if unused. Pretend it's in the same component as the array
-            // // default as trace needs to continue in that case.
-            // if (defaultp && srcp->is<DfgVertexSplice>()) {
-            //     DfgArraySel* const aselp = new DfgArraySel{m_dfg,
-            //                                    vtxp->fileline(), srcp->dtype()};
-            //     m_sccInfo.add(*aselp, m_sccInfo.get(*defaultp));
-            //     DfgConst* const idxp = make<DfgConst>(vtxp, 32);
-            //     idxp->num().setLong(idx);
-            //     aselp->fromp(defaultp);
-            //     aselp->bitp(idxp);
-            //     m_defaultp = aselp;
-            //     m_splicep = srcp;
-            // }
+            if (srcp->is<DfgVertexSplice>()) {
+                // Partial-element propagation is rejected during synthesis.
+                UASSERT_OBJ(!defaultp, vtxp, "Array default with partial element driver");
+                m_splicep = srcp;
+            }
             // Consume this index, then trace the element value
-            if (srcp->is<DfgVertexSplice>()) m_splicep = srcp;
             RETURN_RESULT(tracePopIdx(srcp));
         }
-        // TODO: this is unreachable, as syntheis can't create it today.
-        // // Element not driven explicitly, so it comes from the default array. Keep the
-        // // index pending (the default is the whole array, indexed the same way) and
-        // // continue tracing it.
-        // UASSERT_OBJ(m_defaultp, vtxp, "Independent array element should have a driver or
-        // default"); RETURN RESULT(traceSameIdx(m_defaultp));
+        // An element not driven explicitly comes from the default array at the same index.
+        UASSERT_OBJ(defaultp, vtxp, "Independent array element should have a driver or default");
+        RETURN_RESULT(traceSameIdx(defaultp));
     }
 
     void visit(DfgVertexVar* vtxp) override {
@@ -612,9 +593,6 @@ class TraceDriver final : public DfgVisitor {
         DfgVertex* const drvp = srcp ? srcp : defaultp;
         // If we are about to trace a splice, set the defaultp to the corresponding default
         if (srcp && srcp->is<DfgVertexSplice>()) {
-            // Unreachable today: getting an array into a fixable cycle needs multiple
-            // assignments in a process, which V3DfgSynthesize rejects ("Can't do arrays yet").
-            UASSERT_OBJ(!defaultp || vtxp->isPacked(), vtxp, "Array variable with defaultp");
             m_defaultp = defaultp;
             m_splicep = srcp;
         }
@@ -1673,9 +1651,6 @@ void breakCycles(DfgGraph& dfg, V3DfgBreakCyclesContext& ctx) {
     const auto dump = [&](int level, const DfgGraph& dfg, const std::string& name) {
         if (dumpDfgLevel() >= level) dfg.dumpDotFilePrefixed("breakCycles-" + name);
     };
-
-    // AstNetlist/AstNodeModule user2 used as sequence numbers for temporaries
-    const VNUser2InUse user2InUse;
 
     // Show input for debugging
     dump(7, dfg, "input");

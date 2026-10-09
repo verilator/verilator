@@ -102,8 +102,8 @@ private:
         const int64_t intervalsNum = std::min<int64_t>(topScore + 1, MAX_INTERVALS_NUM);
 
         struct Interval final {
-            uint64_t m_lowerBound = 0;
-            int m_size = 0;
+            uint64_t m_lowerBound = 0;  // Lowest score included in this histogram bucket
+            int m_size = 0;  // Number of scores that fell into this bucket
         };
 
         std::vector<Interval> intervals;

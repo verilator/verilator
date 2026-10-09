@@ -1253,6 +1253,10 @@ public:
     int instrCount() const override { return widthInstrs(); }
     bool isEqAllOnes() const { return num().isEqAllOnes(width()); }
     bool isEqAllOnesV() const { return num().isEqAllOnes(widthMinV()); }
+    // Whether a parameter declared without a data type takes the same type from this value
+    // as from 'samep': both real, both string, or both integral with the same width and
+    // signedness. Unlike AstNodeDType::similarDType, ignores whether two-state or four-state.
+    bool sameValueType(const AstConst* samep) const;
     // Parse string and create appropriate type of AstConst.
     // May return nullptr on parse failure.
     static AstConst* parseParamLiteral(FileLine* fl, const string& literal);
@@ -1442,6 +1446,8 @@ class AstEnumItemRef final : public AstNodeExpr {
     // @astgen ptr := m_itemp : Optional[AstEnumItem]  // [AfterLink] Pointer to item
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Class/package defined in
     string m_name;  // Name of enum (for param relink)
+    string m_dotted;  // Dotted part of scope the name()'ed reference is under or ""
+    bool m_containsGenBlock = false;  // Contains gen block reference
 public:
     AstEnumItemRef(FileLine* fl, AstEnumItem* itemp, AstNodeModule* classOrPackagep)
         : ASTGEN_SUPER_EnumItemRef(fl)
@@ -1458,10 +1464,15 @@ public:
     int instrCount() const override { return 0; }
     bool sameNode(const AstNode* samep) const override {
         const AstEnumItemRef* const sp = VN_DBG_AS(samep, EnumItemRef);
-        return itemp() == sp->itemp();
+        return itemp() == sp->itemp() && dotted() == sp->dotted()
+               && containsGenBlock() == sp->containsGenBlock();
     }
     AstEnumItem* itemp() const VL_MT_STABLE { return m_itemp; }
     void itemp(AstEnumItem* nodep) { m_itemp = nodep; }
+    string dotted() const { return m_dotted; }
+    void dotted(const string& dotted) { m_dotted = dotted; }
+    bool containsGenBlock() const { return m_containsGenBlock; }
+    void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -1475,7 +1486,7 @@ class AstExprStmt final : public AstNodeExpr {
     // @astgen op1 := stmtsp : List[AstNode]
     // @astgen op2 := resultp : AstNodeExpr
 private:
-    bool m_hasResult = true;
+    bool m_hasResult = true;  // Returns result via resultp()
 
 public:
     AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
@@ -1907,7 +1918,7 @@ class AstMatchMasked final : public AstNodeExpr {
     // @astgen op1 := lhsp : AstNodeExpr
     // @astgen op2 := matchp : AstVarRef
 public:
-    inline AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarScope* matchp);
+    inline AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarRef* matchp);
     ASTGEN_MEMBERS_AstMatchMasked;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { return "VL_MATCHMASKED_%lq(%lw, %li, %ri)"; }
@@ -2035,7 +2046,7 @@ class AstParseRef final : public AstNodeExpr {
     // @astgen op1 := lhsp : Optional[AstNodeExpr]
     // @astgen op2 := ftaskrefp : Optional[AstNodeFTaskRef]
 
-    string m_name;
+    string m_name;  // Name of the variable/function/task
 
 public:
     AstParseRef(FileLine* fl, const string& name, AstNodeExpr* lhsp = nullptr,
@@ -2637,7 +2648,7 @@ class AstScopeName final : public AstNodeExpr {
     // For display %m and DPI context imports
     // Parents:  AstSFormatF, AstNodeFTaskRef, AstNodeFTask
     std::string m_scopeAttr;
-    std::string m_scopeEntr;
+    std::string m_scopeEntr;  // Scope path for the DPI import/export context name
     bool m_dpiExport = false;  // Is for dpiExport
     const bool m_forFormat;  // Is for a format %m
     static std::string scopeNameFormatter(const std::string& text);
@@ -6464,6 +6475,7 @@ class AstVarXRef final : public AstNodeVarRef {
     string m_dotted;  // Dotted part of scope the name()'ed reference is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
     bool m_containsGenBlock = false;  // Contains gen block reference
+    bool m_readOnlyModport = false;  // Linked via an input-only modport, until V3LinkLValue
 public:
     AstVarXRef(FileLine* fl, const string& name, const string& dotted, const VAccess& access)
         : ASTGEN_SUPER_VarXRef(fl, nullptr, access)
@@ -6481,6 +6493,8 @@ public:
     void inlinedDots(const string& flag) { m_inlinedDots = flag; }
     bool containsGenBlock() const { return m_containsGenBlock; }
     void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
+    bool readOnlyModport() const { return m_readOnlyModport; }
+    void readOnlyModport(const bool flag) { m_readOnlyModport = flag; }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

@@ -163,6 +163,43 @@ inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
 
 // ######################################################################
 
+class VFsmExpandType final {
+    // Defined here since it is used in V3Options which does not include V3Ast.h
+public:
+    enum en : uint8_t {
+        DEFAULT = 0,  // Use the global default expansion type
+        AUTO,  // Expands only reset and default
+        AUTO_EXPAND,  // Expands transitions between all possible states
+        FULL,  // Cover all possible transitions
+    } m_e;
+    VFsmExpandType()
+        : m_e{DEFAULT} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VFsmExpandType(en _e)
+        : m_e{_e} {}
+    explicit VFsmExpandType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    constexpr const char* ascii() const {
+        constexpr const char* const names[] = {"DEFAULT", "AUTO", "AUTO_EXPAND", "FULL"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VFsmExpandType& lhs, const VFsmExpandType& rhs) VL_MT_SAFE {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VFsmExpandType& lhs, VFsmExpandType::en rhs) VL_MT_SAFE {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VFsmExpandType::en lhs, const VFsmExpandType& rhs) VL_MT_SAFE {
+    return lhs == rhs.m_e;
+}
+inline std::ostream& operator<<(std::ostream& os, const VFsmExpandType& rhs) VL_MT_SAFE {
+    return os << rhs.ascii();
+}
+
+// ######################################################################
+
 // Information given by --hierarchical-block option
 class V3HierarchicalBlockOption final {
 public:
@@ -233,6 +270,7 @@ private:
     bool m_coverageExpr = false;    // main switch: --coverage-expr
     bool m_coverageFsm = false;     // main switch: --coverage-fsm
     bool m_coverageLine = false;    // main switch: --coverage-block
+    bool m_coverageMergeInstances = false;  // main switch: --coverage-merge-instances
     bool m_coveragePerInstance = false;  // main switch: --coverage-per-instance
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
@@ -318,7 +356,11 @@ private:
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
+    VFsmExpandType m_coverageFsmExpand;  // main switch: --coverage-fsm-expand <mode>
+    int         m_coverageFsmMaxArcs = 4096;  // main switch: --coverage-fsm-max-arcs
     int         m_convergeLimit = 10000;  // main switch: --converge-limit
+    uint32_t    m_coverageMaxBins = 1024;  // main switch: --coverage-max-bins
+    uint32_t    m_coverageMaxRealBins = 1024;  // main switch: --coverage-max-real-bins
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_debugAllocRandom = 0;  // main switch: --debug-alloc-random <seed>
     int         m_expandLimit = 256;  // main switch: --expand-limit
@@ -427,7 +469,6 @@ private:
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
     bool m_fMergeCond;   // main switch: -fno-merge-cond: merge conditionals
     bool m_fMergeCondMotion = true; // main switch: -fno-merge-cond-motion: perform code motion
-    bool m_fMergeConstPool = true;  // main switch: -fno-merge-const-pool
     bool m_fReloop;      // main switch: -fno-reloop: reform loops
     bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
     bool m_fSlice = true;  // main switch: -fno-slice: array assignment slicing
@@ -531,7 +572,10 @@ public:
     }
     bool coverageExpr() const { return m_coverageExpr; }
     bool coverageFsm() const { return m_coverageFsm; }
+    VFsmExpandType coverageFsmExpand() const { return m_coverageFsmExpand; }
+    int coverageFsmMaxArcs() const { return m_coverageFsmMaxArcs; }
     bool coverageLine() const { return m_coverageLine; }
+    bool coverageMergeInstances() const { return m_coverageMergeInstances; }
     bool coveragePerInstance() const { return m_coveragePerInstance; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
@@ -622,6 +666,8 @@ public:
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int coverageExprMax() const { return m_coverageExprMax; }
+    uint32_t coverageMaxBins() const { return m_coverageMaxBins; }
+    uint32_t coverageMaxRealBins() const { return m_coverageMaxRealBins; }
     int coverageMaxWidth() const { return m_coverageMaxWidth; }
     int debugAllocRandom() const { return m_debugAllocRandom; }
     bool dumpTreeAddrids() const VL_MT_SAFE;
@@ -767,7 +813,6 @@ public:
     bool fLocalize() const { return m_fLocalize; }
     bool fMergeCond() const { return m_fMergeCond; }
     bool fMergeCondMotion() const { return m_fMergeCondMotion; }
-    bool fMergeConstPool() const { return m_fMergeConstPool; }
     bool fReloop() const { return m_fReloop; }
     bool fReorder() const { return m_fReorder; }
     bool fSlice() const { return m_fSlice; }

@@ -1097,22 +1097,13 @@ public:
         case vpiOctStrVal:  // FALLTHRU
         case vpiDecStrVal:  // FALLTHRU
         case vpiHexStrVal:  // FALLTHRU
-        case vpiStringVal: {
-            if (VL_UNLIKELY(!valuep->value.str)) return false;
-            break;
-        }
+        case vpiStringVal:  // FALLTHRU
         case vpiScalarVal:  // FALLTHRU
         case vpiIntVal:  // FALLTHRU
-        case vpiRealVal: break;
-        case vpiVectorVal: {
-            if (VL_UNLIKELY(!valuep->value.vector)) return false;
-            break;
+        case vpiRealVal:  // FALLTHRU
+        case vpiVectorVal: return true;
+        default: return false;
         }
-        default: {
-            return false;
-        }
-        }
-        return true;
     }
 };
 
@@ -3379,6 +3370,18 @@ bool vl_check_format(const VerilatedVpioVarBase* vop, const p_vpi_value valuep, 
     return false;
 }
 
+static const char* vl_put_value_null_member(const p_vpi_value valuep) {
+    switch (valuep->format) {
+    case vpiBinStrVal:  // FALLTHRU
+    case vpiOctStrVal:  // FALLTHRU
+    case vpiDecStrVal:  // FALLTHRU
+    case vpiHexStrVal:  // FALLTHRU
+    case vpiStringVal: return valuep->value.str ? nullptr : "str";
+    case vpiVectorVal: return valuep->value.vector ? nullptr : "vector";
+    default: return nullptr;
+    }
+}
+
 // Get a VPI format that can be used to fully represent a signal of the given type
 PLI_INT32 vl_get_vltype_format(VerilatedVarType vlType) {
     switch (vlType) {
@@ -3758,6 +3761,16 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
             return nullptr;
         }
         if (!vl_check_format(baseSignalVop, valuep, false)) return nullptr;
+        // On release valuep is only written
+        if (forceFlag != vpiReleaseFlag) {
+            if (const char* const memberp = vl_put_value_null_member(valuep)) {
+                VL_VPI_WARNING_(__FILE__, __LINE__,
+                                "%s: Ignoring nullptr value.%s with format %s for '%s'", __func__,
+                                memberp, VerilatedVpiError::strFromVpiVal(valuep->format),
+                                baseSignalVop->fullname());
+                return nullptr;
+            }
+        }
         if (delay_mode == vpiInertialDelay) {
             if (!VerilatedVpiPutHolder::canInertialDelay(valuep)) {
                 VL_VPI_WARNING_(
@@ -3922,7 +3935,6 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
         }
 
         if (valuep->format == vpiVectorVal) {
-            if (VL_UNLIKELY(!valuep->value.vector)) return nullptr;
             if (valueVop->varp()->vltype() == VLVT_WDATA) {
                 const int words = VL_WORDS_I(varBits);
                 for (int i = 0; i < words; ++i)

@@ -116,6 +116,27 @@ public:
         AstNode::addNext<AstNode, AstNode>(nodep, new AstStop{fileline, false});
         return nodep;
     }
+    // Apply the array marker of a bins declaration of values: '[]' creates a bin per value, and
+    // '[N]' N bins holding the values (IEEE 1800-2023 19.5.1)
+    static AstCoverBin* coverBinArray(AstCoverBin* binp, AstNodeExpr* sizep) {
+        if (!sizep) return binp;
+        binp->isArray(true);
+        if (VN_IS(sizep, Unbounded)) {
+            VL_DO_DANGLING(sizep->deleteTree(), sizep);
+        } else {
+            binp->arraySizep(sizep);
+        }
+        return binp;
+    }
+    // The array marker of another bins declaration, which supports only '[]'; true if present
+    static bool coverBinArrayUnsized(AstNodeExpr* sizep) {
+        if (!sizep) return false;
+        if (!VN_IS(sizep, Unbounded)) {
+            sizep->v3warn(COVERIGN, "Unsupported: 'bins' explicit array size (treated as '[]')");
+        }
+        VL_DO_DANGLING(sizep->deleteTree(), sizep);
+        return true;
+    }
     AstNodeExpr* createGatePin(AstNodeExpr* exprp) {
         AstRange* const rangep = m_gateRangep;
         if (!rangep) return exprp;

@@ -1110,8 +1110,8 @@ string V3Options::protectKeyDefaulted() VL_MT_SAFE {
     if (m_protectKey.empty()) {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
-        VHashSha256 digest{V3Os::trueRandom(32)};
-        m_protectKey = "VL-KEY-" + digest.digestSymbol();
+        VHashSha512 digest{V3Os::trueRandom(64)};
+        m_protectKey = "VL-KEY-" + digest.digestBase64();
     }
     return m_protectKey;
 }
@@ -1373,8 +1373,41 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-expr", OnOff, &m_coverageExpr);
     DECL_OPTION("-coverage-expr-max", Set, &m_coverageExprMax);
     DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
+    DECL_OPTION("-coverage-fsm-expand", CbVal, [this, fl](const char* const valp) {
+        if (!std::strcmp(valp, "auto")) {
+            m_coverageFsmExpand = VFsmExpandType::AUTO;
+        } else if (!std::strcmp(valp, "auto-expand")) {
+            m_coverageFsmExpand = VFsmExpandType::AUTO_EXPAND;
+        } else if (!std::strcmp(valp, "full")) {
+            m_coverageFsmExpand = VFsmExpandType::FULL;
+        } else {
+            fl->v3error("Unknown setting for --coverage-fsm-expand: '"
+                        << valp << "'\n"
+                        << fl->warnMore() << "... Suggest 'auto', 'auto-expand', or 'full'");
+        }
+    });
+    DECL_OPTION("-coverage-fsm-max-arcs", Set, &m_coverageFsmMaxArcs);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
+    // Covergroup bins limits; the runtime indexes bins with 32 bits
+    const auto parseBinsLimit = [fl](const char* optp, const char* valp, uint32_t& limitr) {
+        char* endp = nullptr;
+        const unsigned long long value = std::strtoull(valp, &endp, 10);
+        if (*endp || value < 1 || value > std::numeric_limits<uint32_t>::max()) {
+            fl->v3error(optp << " requires an integer from 1 to "
+                             << std::numeric_limits<uint32_t>::max() << ", but '" << valp
+                             << "' was passed");
+            return;
+        }
+        limitr = static_cast<uint32_t>(value);
+    };
+    DECL_OPTION("-coverage-max-bins", CbVal, [this, parseBinsLimit](const char* valp) {
+        parseBinsLimit("--coverage-max-bins", valp, m_coverageMaxBins);
+    });
+    DECL_OPTION("-coverage-max-real-bins", CbVal, [this, parseBinsLimit](const char* valp) {
+        parseBinsLimit("--coverage-max-real-bins", valp, m_coverageMaxRealBins);
+    });
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
+    DECL_OPTION("-coverage-merge-instances", OnOff, &m_coverageMergeInstances);
     DECL_OPTION("-coverage-per-instance", OnOff, &m_coveragePerInstance);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
@@ -1524,7 +1557,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-flocalize", FOnOff, &m_fLocalize);
     DECL_OPTION("-fmerge-cond", FOnOff, &m_fMergeCond);
     DECL_OPTION("-fmerge-cond-motion", FOnOff, &m_fMergeCondMotion);
-    DECL_OPTION("-fmerge-const-pool", FOnOff, &m_fMergeConstPool);
+    DECL_OPTION("-fmerge-const-pool", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-merge-const-pool' is deprecated and has no effect");
+    });
     DECL_OPTION("-freloop", FOnOff, &m_fReloop);
     DECL_OPTION("-freorder", FOnOff, &m_fReorder);
     DECL_OPTION("-fslice", FOnOff, &m_fSlice);
@@ -2306,6 +2341,7 @@ void V3Options::showVersion(bool verbose) {
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
 
+    m_coverageFsmExpand = VFsmExpandType::AUTO;  // Auto is a default global default
     m_makeDir = "obj_dir";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";

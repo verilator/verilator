@@ -1,0 +1,832 @@
+t (vpiModule) t  vpiDefName=t
+    vpiReg:
+    INTF_QTY (vpiParameter) t.INTF_QTY  vpiConstType=vpiDecConst
+    alias1 (vpiReg) t.alias1 
+    alias2 (vpiReg) t.alias2 
+    bsel (vpiReg) t.bsel 
+    cf_case (vpiReg) t.cf_case 
+    cf_casepart (vpiReg) t.cf_casepart 
+    cf_cts (vpiReg) t.cf_cts 
+    cf_ctv (vpiReg) t.cf_ctv 
+    cf_ifdef (vpiReg) t.cf_ifdef 
+    cf_ifelse (vpiReg) t.cf_ifelse 
+    cf_latch (vpiReg) t.cf_latch 
+    cf_mixfull (vpiReg) t.cf_mixfull 
+    cf_mta (vpiReg) t.cf_mta 
+    cf_mtb (vpiReg) t.cf_mtb 
+    cf_nopre (vpiReg) t.cf_nopre 
+    cf_ovl (vpiReg) t.cf_ovl 
+    cf_partial (vpiReg) t.cf_partial 
+    cf_portop (vpiReg) t.cf_portop 
+    cf_readscomb (vpiReg) t.cf_readscomb 
+    cf_readsrecon (vpiReg) t.cf_readsrecon 
+    cf_selfread (vpiReg) t.cf_selfread 
+    cf_uncond (vpiReg) t.cf_uncond 
+    cf_vlsb (vpiReg) t.cf_vlsb 
+    clk (vpiReg) t.clk 
+    cmb1 (vpiReg) t.cmb1 
+    cmb2 (vpiReg) t.cmb2 
+    cmb3 (vpiReg) t.cmb3 
+    cmb3_reg (vpiReg) t.cmb3_reg 
+    cyc (vpiReg) t.cyc 
+    dead (vpiReg) t.dead 
+    init (vpiReg) t.init 
+    keep (vpiReg) t.keep 
+    mux0 (vpiReg) t.mux0 
+    nkeep (vpiReg) t.nkeep 
+    observe (vpiReg) TOP.observe 
+    pass_out (vpiReg) t.pass_out 
+    pcomb (vpiReg) t.pcomb 
+    pinned_rw (vpiReg) t.pinned_rw 
+    plain_ro (vpiReg) t.plain_ro 
+    psel (vpiReg) t.psel 
+    result (vpiReg) t.result 
+    rst (vpiReg) TOP.rst 
+    scmb (vpiReg) t.scmb 
+    skeep (vpiReg) t.skeep 
+    sshift (vpiReg) t.sshift 
+    sub_out (vpiReg) t.sub_out 
+    wcmb (vpiReg) t.wcmb 
+    wkeep (vpiReg) t.wkeep 
+    wo_plain (vpiReg) t.wo_plain 
+    wo_signed (vpiReg) t.wo_signed 
+    wo_wide (vpiReg) t.wo_wide 
+    wsel (vpiReg) t.wsel 
+    vpiParameter:
+    INTF_QTY (vpiParameter) t.INTF_QTY  vpiConstType=vpiDecConst
+    vpiInternalScope:
+    u_sub (vpiModule) t.u_sub  vpiDefName=sub
+        vpiReg:
+        sub_in (vpiReg) t.u_sub.sub_in 
+        sub_out (vpiReg) t.u_sub.sub_out 
+        vpiParameter:
+        vpiInternalScope:
+        u_sub2 (vpiModule) t.u_sub.u_sub2  vpiDefName=sub2
+            vpiReg:
+            p2_in (vpiReg) t.u_sub.u_sub2.p2_in 
+            p2_out (vpiReg) t.u_sub.u_sub2.p2_out 
+            vpiParameter:
+    u_subpass (vpiModule) t.u_subpass  vpiDefName=subpass
+        vpiReg:
+        port_in (vpiReg) t.u_subpass.port_in 
+        port_out (vpiReg) t.u_subpass.port_out 
+        vpiParameter:
+-- put t.rst = 0 flag=1 ok
+-- @0 readonly
+t.INTF_QTY = 00000003 vpiSize=32
+t.alias1 = 00 vpiSize=7
+t.alias2 = 00 vpiSize=7
+t.bsel = 0 vpiSize=1
+t.cf_case = 00 vpiSize=7
+t.cf_casepart = 01 vpiSize=7
+t.cf_cts = 00 vpiSize=8
+t.cf_ctv = 00 vpiSize=8
+t.cf_ifdef = 04 vpiSize=7
+t.cf_ifelse = 7f vpiSize=7
+t.cf_latch = 00 vpiSize=7
+t.cf_mta = 06 vpiSize=7
+t.cf_mtb = 07 vpiSize=7
+t.cf_nopre = 00 vpiSize=7
+t.cf_partial = 00 vpiSize=7
+t.cf_portop = 00 vpiSize=7
+t.cf_readscomb = 14 vpiSize=7
+t.cf_readsrecon = 05 vpiSize=7
+t.cf_selfread = 01 vpiSize=7
+t.cf_uncond = 11 vpiSize=7
+t.cf_vlsb = 00 vpiSize=8
+t.clk = 0 vpiSize=1
+t.cmb1 = 07 vpiSize=7
+t.cmb2 = 2d vpiSize=7
+t.cmb3 = 32 vpiSize=7
+t.cmb3_reg = 00 vpiSize=7
+t.cyc = 00 vpiSize=8
+t.dead = 00 vpiSize=7
+t.init = 1 vpiSize=1
+t.keep = 00 vpiSize=7
+t.mux0 = 2d vpiSize=7
+t.nkeep = 00 vpiSize=7
+TOP.observe = 00 vpiSize=7
+t.pass_out = 00 vpiSize=7
+t.pcomb = 00 vpiSize=7
+t.pinned_rw = 05 vpiSize=7
+t.plain_ro = 01 vpiSize=7
+t.psel = 68 vpiSize=7
+t.result = 00 vpiSize=7
+TOP.rst = 0 vpiSize=1
+t.scmb = 7d vpiSize=7
+t.skeep = 00 vpiSize=7
+t.sshift = 00 vpiSize=7
+t.sub_out = 15 vpiSize=7
+t.wcmb = 000000000000000001 vpiSize=70
+t.wkeep = 000000000000000000 vpiSize=70
+t.wo_plain = 00 vpiSize=7
+t.wo_signed = 00 vpiSize=7
+t.wo_wide = 000000000000000000 vpiSize=70
+t.wsel = 000000000000000000 vpiSize=70
+t.u_sub.sub_in = 00 vpiSize=7
+t.u_sub.sub_out = 15 vpiSize=7
+t.u_sub.u_sub2.p2_in = 00 vpiSize=7
+t.u_sub.u_sub2.p2_out = 15 vpiSize=7
+t.u_subpass.port_in = 00 vpiSize=7
+t.u_subpass.port_out = 00 vpiSize=7
+-- @5 cb t.cyc = 01
+-- @10 readonly
+t.cyc = 01
+t.init = 0
+-- @15 cb t.cmb1 = 0a
+-- @15 cb t.cyc = 02
+-- @20 readonly
+t.alias1 = 03
+t.alias2 = 03
+t.cf_case = 06
+t.cf_casepart = 7c
+t.cf_cts = 3e
+t.cf_ctv = e3
+t.cf_ifdef = 7c
+t.cf_ifelse = 04
+t.cf_mta = 09
+t.cf_mtb = 08
+t.cf_nopre = 03
+t.cf_partial = 03
+t.cf_portop = 03
+t.cf_readscomb = 15
+t.cf_readsrecon = 08
+t.cf_selfread = 04
+t.cf_uncond = 12
+t.cf_vlsb = 86
+t.cmb1 = 0a
+t.cmb2 = 20
+t.cmb3 = 25
+t.cmb3_reg = 32
+t.cyc = 02
+t.dead = 09
+t.keep = 03
+t.mux0 = 0a
+t.nkeep = 03
+TOP.observe = 6b
+t.pass_out = 03
+t.pcomb = 31
+t.pinned_rw = 06
+t.plain_ro = 04
+t.psel = 50
+t.result = 32
+t.scmb = 7b
+t.skeep = 7e
+t.sshift = 7f
+t.sub_out = 16
+t.wcmb = 000000000000000006
+t.wkeep = 000000000000000005
+t.wo_plain = 09
+t.wo_signed = 7f
+t.wo_wide = 00000000000000000b
+t.wsel = 000000000000000028
+t.u_sub.sub_in = 03
+t.u_sub.sub_out = 16
+t.u_sub.u_sub2.p2_in = 03
+t.u_sub.u_sub2.p2_out = 16
+t.u_subpass.port_in = 03
+t.u_subpass.port_out = 03
+-- @25 cb t.cmb1 = 0d
+-- @25 cb t.cyc = 03
+-- @30 readonly
+t.alias1 = 06
+t.alias2 = 06
+t.bsel = 1
+t.cf_case = 08
+t.cf_casepart = 79
+t.cf_cts = 6c
+t.cf_ctv = c6
+t.cf_ifdef = 79
+t.cf_ifelse = 05
+t.cf_latch = 06
+t.cf_mta = 0c
+t.cf_mtb = 0d
+t.cf_nopre = 06
+t.cf_partial = 06
+t.cf_portop = 06
+t.cf_readscomb = 1a
+t.cf_readsrecon = 0f
+t.cf_selfread = 07
+t.cf_uncond = 17
+t.cf_vlsb = 0c
+t.cmb1 = 0d
+t.cmb2 = 27
+t.cmb3 = 2c
+t.cmb3_reg = 25
+t.cyc = 03
+t.dead = 0c
+t.keep = 06
+t.mux0 = 27
+t.nkeep = 06
+TOP.observe = 76
+t.pass_out = 06
+t.pcomb = 23
+t.pinned_rw = 03
+t.plain_ro = 07
+t.psel = 38
+t.result = 25
+t.scmb = 79
+t.skeep = 7c
+t.sub_out = 13
+t.wcmb = 00000000000000000b
+t.wkeep = 00000000000000000a
+t.wo_plain = 0c
+t.wo_signed = 7d
+t.wo_wide = 000000000000000010
+t.wsel = 000000000000000050
+t.u_sub.sub_in = 06
+t.u_sub.sub_out = 13
+t.u_sub.u_sub2.p2_in = 06
+t.u_sub.u_sub2.p2_out = 13
+t.u_subpass.port_in = 06
+t.u_subpass.port_out = 06
+-- @35 cb t.cmb1 = 10
+-- @35 cb t.cyc = 04
+-- @40 readonly
+t.alias1 = 09
+t.alias2 = 09
+t.bsel = 0
+t.cf_case = 0a
+t.cf_casepart = 0a
+t.cf_cts = 9a
+t.cf_ctv = a9
+t.cf_ifdef = 0d
+t.cf_ifelse = 0a
+t.cf_mta = 0f
+t.cf_mtb = 0e
+t.cf_nopre = 09
+t.cf_partial = 09
+t.cf_portop = 09
+t.cf_readscomb = 1b
+t.cf_readsrecon = 12
+t.cf_selfread = 0a
+t.cf_uncond = 18
+t.cf_vlsb = 1a
+t.cmb1 = 10
+t.cmb2 = 3a
+t.cmb3 = 3f
+t.cmb3_reg = 2c
+t.cyc = 04
+t.dead = 0f
+t.keep = 09
+t.mux0 = 10
+t.nkeep = 09
+TOP.observe = 1d
+t.pass_out = 09
+t.pcomb = 25
+t.pinned_rw = 0c
+t.plain_ro = 0a
+t.psel = 00
+t.result = 2c
+t.scmb = 77
+t.skeep = 7a
+t.sshift = 7e
+t.sub_out = 1c
+t.wcmb = 000000000000000010
+t.wkeep = 00000000000000000f
+t.wo_plain = 0f
+t.wo_signed = 7b
+t.wo_wide = 000000000000000015
+t.wsel = 000000000000000078
+t.u_sub.sub_in = 09
+t.u_sub.sub_out = 1c
+t.u_sub.u_sub2.p2_in = 09
+t.u_sub.u_sub2.p2_out = 1c
+t.u_subpass.port_in = 09
+t.u_subpass.port_out = 09
+-- @45 cb t.cmb1 = 13
+-- @45 cb t.cyc = 05
+-- @50 readonly
+t.alias1 = 0c
+t.alias2 = 0c
+t.bsel = 1
+t.cf_case = 0c
+t.cf_casepart = 0d
+t.cf_cts = c8
+t.cf_ctv = 8c
+t.cf_ifdef = 10
+t.cf_ifelse = 0b
+t.cf_latch = 0c
+t.cf_mta = 12
+t.cf_mtb = 13
+t.cf_nopre = 0c
+t.cf_partial = 0c
+t.cf_portop = 0c
+t.cf_readscomb = 20
+t.cf_readsrecon = 11
+t.cf_selfread = 0d
+t.cf_uncond = 1d
+t.cf_vlsb = 18
+t.cmb1 = 13
+t.cmb2 = 39
+t.cmb3 = 3e
+t.cmb3_reg = 3f
+t.cyc = 05
+t.dead = 12
+t.keep = 0c
+t.mux0 = 39
+t.nkeep = 0c
+TOP.observe = 0d
+t.pass_out = 0c
+t.pcomb = 33
+t.pinned_rw = 09
+t.plain_ro = 0d
+t.psel = 48
+t.result = 3f
+t.scmb = 75
+t.skeep = 78
+t.sub_out = 19
+t.wcmb = 000000000000000015
+t.wkeep = 000000000000000014
+t.wo_plain = 12
+t.wo_signed = 79
+t.wo_wide = 00000000000000001a
+t.wsel = 0000000000000000a0
+t.u_sub.sub_in = 0c
+t.u_sub.sub_out = 19
+t.u_sub.u_sub2.p2_in = 0c
+t.u_sub.u_sub2.p2_out = 19
+t.u_subpass.port_in = 0c
+t.u_subpass.port_out = 0c
+-- @55 cb t.cmb1 = 16
+-- @55 cb t.cyc = 06
+-- @60 readonly
+t.alias1 = 0f
+t.alias2 = 0f
+t.cf_case = 12
+t.cf_casepart = 70
+t.cf_cts = f6
+t.cf_ctv = 6f
+t.cf_ifdef = 70
+t.cf_ifelse = 10
+t.cf_latch = 0f
+t.cf_mta = 15
+t.cf_mtb = 14
+t.cf_nopre = 0f
+t.cf_partial = 0f
+t.cf_portop = 0f
+t.cf_readscomb = 21
+t.cf_readsrecon = 14
+t.cf_selfread = 10
+t.cf_uncond = 1e
+t.cf_vlsb = 9e
+t.cmb1 = 16
+t.cmb2 = 3c
+t.cmb3 = 41
+t.cmb3_reg = 3e
+t.cyc = 06
+t.dead = 15
+t.keep = 0f
+t.mux0 = 16
+t.nkeep = 0f
+TOP.observe = 44
+t.pass_out = 0f
+t.pcomb = 31
+t.pinned_rw = 0a
+t.plain_ro = 10
+t.psel = 30
+t.result = 3e
+t.scmb = 73
+t.skeep = 76
+t.sshift = 7d
+t.sub_out = 1a
+t.wcmb = 00000000000000001a
+t.wkeep = 000000000000000019
+t.wo_plain = 15
+t.wo_signed = 77
+t.wo_wide = 00000000000000001f
+t.wsel = 0000000000000000c8
+t.u_sub.sub_in = 0f
+t.u_sub.sub_out = 1a
+t.u_sub.u_sub2.p2_in = 0f
+t.u_sub.u_sub2.p2_out = 1a
+t.u_subpass.port_in = 0f
+t.u_subpass.port_out = 0f
+-- @65 cb t.cmb1 = 19
+-- @65 cb t.cyc = 07
+-- put t.cf_nopre = 52 flag=1 ok
+-- put t.wo_signed = 2a flag=1 ok
+-- @65 after put
+t.alias1 = 12
+t.alias2 = 12
+t.bsel = 0
+t.cf_case = 14
+t.cf_casepart = 6d
+t.cf_cts = 24
+t.cf_ctv = 42
+t.cf_ifdef = 6d
+t.cf_ifelse = 11
+t.cf_mta = 18
+t.cf_mtb = 19
+t.cf_nopre = 52
+t.cf_partial = 02
+t.cf_portop = 12
+t.cf_readscomb = 06
+t.cf_readsrecon = 1b
+t.cf_selfread = 13
+t.cf_uncond = 03
+t.cf_vlsb = 04
+t.clk = 1
+t.cmb1 = 19
+t.cmb2 = 33
+t.cmb3 = 38
+t.cmb3_reg = 41
+t.cyc = 07
+t.dead = 18
+t.keep = 12
+t.mux0 = 33
+TOP.observe = 01
+t.pass_out = 12
+t.pcomb = 53
+t.plain_ro = 13
+t.psel = 19
+t.result = 41
+t.scmb = 71
+t.skeep = 74
+t.sub_out = 07
+t.wcmb = 00000000000000001f
+t.wkeep = 00000000000000001e
+t.wo_plain = 18
+t.wo_signed = 2a
+t.wo_wide = 000000000000000024
+t.wsel = 0000000000000000f0
+t.u_sub.sub_in = 12
+t.u_sub.sub_out = 07
+t.u_sub.u_sub2.p2_in = 12
+t.u_sub.u_sub2.p2_out = 07
+t.u_subpass.port_in = 12
+t.u_subpass.port_out = 12
+-- @70 readonly
+t.clk = 0
+t.nkeep = 12
+t.pinned_rw = 17
+-- @75 cb t.cmb1 = 1c
+-- @75 cb t.cyc = 08
+-- put t.dead = 2a flag=1 ok
+-- @75 after put
+t.alias1 = 15
+t.alias2 = 15
+t.bsel = 1
+t.cf_case = 16
+t.cf_casepart = 12
+t.cf_cts = 52
+t.cf_ctv = 25
+t.cf_ifdef = 19
+t.cf_ifelse = 16
+t.cf_latch = 15
+t.cf_mta = 1b
+t.cf_mtb = 1a
+t.cf_nopre = 55
+t.cf_partial = 05
+t.cf_portop = 15
+t.cf_readscomb = 07
+t.cf_readsrecon = 1e
+t.cf_selfread = 16
+t.cf_uncond = 04
+t.cf_vlsb = 2a
+t.clk = 1
+t.cmb1 = 1c
+t.cmb2 = 36
+t.cmb3 = 3b
+t.cmb3_reg = 38
+t.cyc = 08
+t.dead = 2a
+t.keep = 15
+t.mux0 = 1c
+TOP.observe = 64
+t.pass_out = 15
+t.pcomb = 2d
+t.plain_ro = 16
+t.psel = 61
+t.result = 38
+t.scmb = 6f
+t.skeep = 72
+t.sshift = 7c
+t.sub_out = 00
+t.wcmb = 000000000000000024
+t.wkeep = 000000000000000023
+t.wo_plain = 1b
+t.wo_signed = 73
+t.wo_wide = 000000000000000029
+t.wsel = 000000000000000118
+t.u_sub.sub_in = 15
+t.u_sub.sub_out = 00
+t.u_sub.u_sub2.p2_in = 15
+t.u_sub.u_sub2.p2_out = 00
+t.u_subpass.port_in = 15
+t.u_subpass.port_out = 15
+-- @80 readonly
+t.clk = 0
+t.nkeep = 15
+t.pinned_rw = 10
+-- @85 cb t.cmb1 = 1f
+-- @85 cb t.cyc = 09
+-- put t.keep = 20 flag=1 ok
+-- @85 after put
+t.alias1 = 18
+t.alias2 = 18
+t.bsel = 0
+t.cf_case = 18
+t.cf_casepart = 19
+t.cf_cts = 80
+t.cf_ctv = 08
+t.cf_ifdef = 1c
+t.cf_ifelse = 17
+t.cf_mta = 1e
+t.cf_mtb = 1f
+t.cf_nopre = 58
+t.cf_partial = 08
+t.cf_portop = 18
+t.cf_readscomb = 0c
+t.cf_readsrecon = 1d
+t.cf_selfread = 19
+t.cf_uncond = 09
+t.cf_vlsb = 30
+t.clk = 1
+t.cmb1 = 1f
+t.cmb2 = 35
+t.cmb3 = 3a
+t.cmb3_reg = 3b
+t.cyc = 09
+t.dead = 1e
+t.keep = 20
+t.mux0 = 35
+TOP.observe = 32
+t.pass_out = 18
+t.pcomb = 23
+t.plain_ro = 19
+t.psel = 29
+t.result = 3b
+t.scmb = 6d
+t.skeep = 70
+t.sub_out = 0d
+t.wcmb = 000000000000000029
+t.wkeep = 000000000000000028
+t.wo_plain = 1e
+t.wo_signed = 71
+t.wo_wide = 00000000000000002e
+t.wsel = 000000000000000140
+t.u_sub.sub_in = 18
+t.u_sub.sub_out = 0d
+t.u_sub.u_sub2.p2_in = 18
+t.u_sub.u_sub2.p2_out = 0d
+t.u_subpass.port_in = 18
+t.u_subpass.port_out = 18
+-- @85 cb t.cmb1 = 27
+-- @90 readonly
+t.alias1 = 20
+t.alias2 = 20
+t.cf_case = 20
+t.cf_casepart = 21
+t.cf_cts = 00
+t.cf_ctv = 00
+t.cf_ifdef = 24
+t.cf_ifelse = 1f
+t.cf_mta = 26
+t.cf_mtb = 27
+t.cf_nopre = 50
+t.cf_partial = 00
+t.cf_portop = 20
+t.cf_readscomb = 34
+t.cf_readsrecon = 25
+t.cf_selfread = 21
+t.cf_uncond = 31
+t.cf_vlsb = 40
+t.clk = 0
+t.cmb1 = 27
+t.cmb2 = 0d
+t.cmb3 = 12
+t.mux0 = 0d
+t.nkeep = 20
+t.pass_out = 20
+t.pcomb = 1b
+t.pinned_rw = 25
+t.plain_ro = 21
+t.psel = 6a
+t.sub_out = 35
+t.u_sub.sub_in = 20
+t.u_sub.sub_out = 35
+t.u_sub.u_sub2.p2_in = 20
+t.u_sub.u_sub2.p2_out = 35
+t.u_subpass.port_in = 20
+t.u_subpass.port_out = 20
+-- @95 cb t.cmb1 = 2a
+-- @95 cb t.cyc = 0a
+-- put t.pinned_rw = 69 flag=1 ok
+-- @95 after put
+t.alias1 = 23
+t.alias2 = 23
+t.cf_case = 26
+t.cf_casepart = 5c
+t.cf_cts = 3e
+t.cf_ctv = e3
+t.cf_ifdef = 5c
+t.cf_ifelse = 24
+t.cf_mta = 29
+t.cf_mtb = 28
+t.cf_nopre = 53
+t.cf_partial = 03
+t.cf_portop = 23
+t.cf_readscomb = 35
+t.cf_readsrecon = 28
+t.cf_selfread = 24
+t.cf_uncond = 32
+t.cf_vlsb = 86
+t.clk = 1
+t.cmb1 = 2a
+t.cmb2 = 00
+t.cmb3 = 05
+t.cmb3_reg = 12
+t.cyc = 0a
+t.dead = 29
+t.keep = 23
+t.mux0 = 2a
+TOP.observe = 15
+t.pass_out = 23
+t.pcomb = 31
+t.pinned_rw = 69
+t.plain_ro = 24
+t.psel = 52
+t.result = 12
+t.scmb = 6b
+t.skeep = 6e
+t.sshift = 7b
+t.sub_out = 36
+t.wcmb = 00000000000000002e
+t.wkeep = 00000000000000002d
+t.wo_plain = 29
+t.wo_signed = 6f
+t.wo_wide = 000000000000000033
+t.wsel = 000000000000000168
+t.u_sub.sub_in = 23
+t.u_sub.sub_out = 36
+t.u_sub.u_sub2.p2_in = 23
+t.u_sub.u_sub2.p2_out = 36
+t.u_subpass.port_in = 23
+t.u_subpass.port_out = 23
+-- @100 readonly
+t.clk = 0
+t.nkeep = 23
+t.pinned_rw = 26
+-- @105 cb t.cmb1 = 2d
+-- @105 cb t.cyc = 0b
+-- @110 readonly
+t.alias1 = 26
+t.alias2 = 26
+t.bsel = 1
+t.cf_case = 28
+t.cf_casepart = 59
+t.cf_cts = 6c
+t.cf_ctv = c6
+t.cf_ifdef = 59
+t.cf_ifelse = 25
+t.cf_latch = 26
+t.cf_mta = 2c
+t.cf_mtb = 2d
+t.cf_nopre = 56
+t.cf_partial = 06
+t.cf_portop = 26
+t.cf_readscomb = 3a
+t.cf_readsrecon = 2f
+t.cf_selfread = 27
+t.cf_uncond = 37
+t.cf_vlsb = 4c
+t.cmb1 = 2d
+t.cmb2 = 07
+t.cmb3 = 0c
+t.cmb3_reg = 05
+t.cyc = 0b
+t.dead = 2c
+t.keep = 26
+t.mux0 = 07
+t.nkeep = 26
+TOP.observe = 13
+t.pass_out = 26
+t.pcomb = 23
+t.pinned_rw = 23
+t.plain_ro = 27
+t.psel = 3a
+t.result = 05
+t.scmb = 69
+t.skeep = 6c
+t.sub_out = 33
+t.wcmb = 000000000000000033
+t.wkeep = 000000000000000032
+t.wo_plain = 2c
+t.wo_signed = 6d
+t.wo_wide = 000000000000000038
+t.wsel = 000000000000000190
+t.u_sub.sub_in = 26
+t.u_sub.sub_out = 33
+t.u_sub.u_sub2.p2_in = 26
+t.u_sub.u_sub2.p2_out = 33
+t.u_subpass.port_in = 26
+t.u_subpass.port_out = 26
+-- @115 cb t.cmb1 = 30
+-- @115 cb t.cyc = 0c
+-- @120 readonly
+t.alias1 = 29
+t.alias2 = 29
+t.bsel = 0
+t.cf_case = 2a
+t.cf_casepart = 2a
+t.cf_cts = 9a
+t.cf_ctv = a9
+t.cf_ifdef = 2d
+t.cf_ifelse = 2a
+t.cf_mta = 2f
+t.cf_mtb = 2e
+t.cf_nopre = 59
+t.cf_partial = 09
+t.cf_portop = 29
+t.cf_readscomb = 3b
+t.cf_readsrecon = 32
+t.cf_selfread = 2a
+t.cf_uncond = 38
+t.cf_vlsb = 5a
+t.cmb1 = 30
+t.cmb2 = 1a
+t.cmb3 = 1f
+t.cmb3_reg = 0c
+t.cyc = 0c
+t.dead = 2f
+t.keep = 29
+t.mux0 = 30
+t.nkeep = 29
+TOP.observe = 0d
+t.pass_out = 29
+t.pcomb = 25
+t.pinned_rw = 2c
+t.plain_ro = 2a
+t.psel = 02
+t.result = 0c
+t.scmb = 67
+t.skeep = 6a
+t.sshift = 7a
+t.sub_out = 3c
+t.wcmb = 000000000000000038
+t.wkeep = 000000000000000037
+t.wo_plain = 2f
+t.wo_signed = 6b
+t.wo_wide = 00000000000000003d
+t.wsel = 0000000000000001b8
+t.u_sub.sub_in = 29
+t.u_sub.sub_out = 3c
+t.u_sub.u_sub2.p2_in = 29
+t.u_sub.u_sub2.p2_out = 3c
+t.u_subpass.port_in = 29
+t.u_subpass.port_out = 29
+*-* All Finished *-*
+-- @125 cb t.cmb1 = 33
+-- @125 cb t.cyc = 0d
+-- @125 readonly
+t.alias1 = 2c
+t.alias2 = 2c
+t.bsel = 1
+t.cf_case = 2c
+t.cf_casepart = 2d
+t.cf_cts = c8
+t.cf_ctv = 8c
+t.cf_ifdef = 30
+t.cf_ifelse = 2b
+t.cf_latch = 2c
+t.cf_mta = 32
+t.cf_mtb = 33
+t.cf_nopre = 5c
+t.cf_partial = 0c
+t.cf_portop = 2c
+t.cf_readscomb = 40
+t.cf_readsrecon = 31
+t.cf_selfread = 2d
+t.cf_uncond = 3d
+t.cf_vlsb = 58
+t.clk = 1
+t.cmb1 = 33
+t.cmb2 = 19
+t.cmb3 = 1e
+t.cmb3_reg = 1f
+t.cyc = 0d
+t.dead = 32
+t.keep = 2c
+t.mux0 = 19
+TOP.observe = 1d
+t.pass_out = 2c
+t.pcomb = 33
+t.plain_ro = 2d
+t.psel = 4a
+t.result = 1f
+t.scmb = 65
+t.skeep = 68
+t.sub_out = 39
+t.wcmb = 00000000000000003d
+t.wkeep = 00000000000000003c
+t.wo_plain = 32
+t.wo_signed = 69
+t.wo_wide = 000000000000000042
+t.wsel = 0000000000000001e0
+t.u_sub.sub_in = 2c
+t.u_sub.sub_out = 39
+t.u_sub.u_sub2.p2_in = 2c
+t.u_sub.u_sub2.p2_out = 39
+t.u_subpass.port_in = 2c
+t.u_subpass.port_out = 2c

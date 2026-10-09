@@ -251,6 +251,26 @@ module t (
   `signal(ARRAY_3, 3);  // UNOPTFLAT
   assign ARRAY_3 = array_3[0];
 
+  logic [6:0] array_default[3];  // UNOPTFLAT
+  logic [6:0] array_default_in;
+  assign array_default[1] = rand_a[6:0];
+  always @* begin
+    array_default_in = array_default[1];
+    array_default[0] = rand_b[6:0] ^ array_default_in;
+    array_default[2] = array_default[1];
+  end
+  `signal(ARRAY_DEFAULT, 21);
+  assign ARRAY_DEFAULT = {array_default[2], array_default[1], array_default[0]};
+
+  // Element 0 is partially driven, with bits 5:4 undriven, so its packed splice
+  // is not coalesced. It sits on the cycle boundary and is traced via a temporary.
+  wire [7:0] array_splice[2];  // UNOPTFLAT
+  assign array_splice[0][3:0] = rand_a[3:0];
+  assign array_splice[0][7:6] = rand_a[7:6];
+  assign array_splice[1] = {array_splice[0][7:6], 2'd0, array_splice[0][3:0]} + 8'd1;
+  `signal(ARRAY_SPLICE, 8);
+  assign ARRAY_SPLICE = array_splice[1];
+
   `signal(ADD_A, 8);  // UNOPTFLAT
   `signal(ADD_B, 8);
   `signal(ADD_C, 8);
@@ -410,7 +430,7 @@ module t (
   `signal(PACKED_0_LSB, 1);
   assign PACKED_0_LSB = packed_0_lsb;
 
-  logic [3:0] packed_1; // Bit 3 deliberately undriven
+  logic [3:0] packed_1;  // Bit 3 deliberately undriven
   assign packed_1[1] = rand_a[0];
   always_comb begin
     packed_1[2] = rand_a[1];

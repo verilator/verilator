@@ -1,17 +1,17 @@
-%Error: t/t_math_countbits2_bad.v:15:13: Expected numeric type, but got a 'logic$[0:3]' data type
+%Error: t/t_math_countbits2_bad.v:15:13: Operator COUNTONES expects a numeric LHS operand, but it has data type 'logic$[0:3]' (IEEE 1800-2023 11.3)
                                        : ... note: In instance 't'
    15 |     count = $countones(my_vec);   
       |             ^~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_math_countbits2_bad.v:16:13: Expected numeric type, but got a 'logic$[0:3]' data type
+%Error: t/t_math_countbits2_bad.v:16:13: Operator COUNTBITS expects a numeric LHS operand, but it has data type 'logic$[0:3]' (IEEE 1800-2023 11.3)
                                        : ... note: In instance 't'
    16 |     count = $countbits(my_vec, '0);   
       |             ^~~~~~~~~~
-%Error: t/t_math_countbits2_bad.v:17:12: Expected numeric type, but got a 'logic$[0:3]' data type
+%Error: t/t_math_countbits2_bad.v:17:12: Operator ONEHOT expects a numeric LHS operand, but it has data type 'logic$[0:3]' (IEEE 1800-2023 11.3)
                                        : ... note: In instance 't'
    17 |     bool = $onehot(my_vec);   
       |            ^~~~~~~
-%Error: t/t_math_countbits2_bad.v:18:12: Expected numeric type, but got a 'logic$[0:3]' data type
+%Error: t/t_math_countbits2_bad.v:18:12: Operator ONEHOT0 expects a numeric LHS operand, but it has data type 'logic$[0:3]' (IEEE 1800-2023 11.3)
                                        : ... note: In instance 't'
    18 |     bool = $onehot0(my_vec);   
       |            ^~~~~~~~

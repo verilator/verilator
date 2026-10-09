@@ -222,7 +222,7 @@ class TraceVisitor final : public VNVisitor {
         m_ifaceMemberVscps;
 
     class TraceInitDeclCollector final : public VNVisitor {
-        std::vector<AstTraceDecl*>& m_declps;
+        std::vector<AstTraceDecl*>& m_declps;  // Output: trace declarations found so far
         std::set<const AstCFunc*> m_seenFuncps;
 
         void visit(AstTraceDecl* nodep) override { m_declps.push_back(nodep); }
@@ -355,7 +355,7 @@ class TraceVisitor final : public VNVisitor {
                             } while (emptyScope);
                         }
                         // Can't purge until we finish this pass
-                        pushDeletep(declp->unlinkFrBack());
+                        pushDeletep(declp->unlinkFrBack());  // declp used below
                         vvertexp->rerouteEdges(&m_graph);
                         vvertexp->unlinkDelete(&m_graph);
                     }
@@ -599,7 +599,7 @@ class TraceVisitor final : public VNVisitor {
         ++m_statSettersSlow;
         if (!m_actAllFuncp) {
             FileLine* const flp = m_topScopep->fileline();
-            AstCFunc* const funcp = new AstCFunc{flp, "__Vm_traceActivitySetAll", m_topScopep};
+            AstCFunc* const funcp = new AstCFunc{flp, "__VtraceActivitySetAll", m_topScopep};
             funcp->slow(true);
             funcp->isStatic(false);
             funcp->isLoose(true);
@@ -630,12 +630,7 @@ class TraceVisitor final : public VNVisitor {
             = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};
         AstNodeDType* const newArrDtp = new AstUnpackArrayDType{flp, newScalarDtp, newArange};
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
-        AstVar* const newvarp
-            = new AstVar{flp, VVarType::MODULETEMP, "__Vm_traceActivity", newArrDtp};
-        m_topModp->addStmtsp(newvarp);
-        AstVarScope* const newvscp = new AstVarScope{flp, m_topScopep, newvarp};
-        m_topScopep->addVarsp(newvscp);
-        m_activityVscp = newvscp;
+        m_activityVscp = v3Global.rootp()->topScopep()->createTemp("__VtraceActivity", newArrDtp);
 
         // Insert activity setters
         for (const V3GraphVertex& vtx : m_graph.vertices()) {
@@ -1137,8 +1132,7 @@ class TraceVisitor final : public VNVisitor {
         // TraceInc
         for (const auto& i : traces) {
             AstNode* const valuep = i.second->nodep()->valuep();
-            valuep->unlinkFrBack();
-            valuep->deleteTree();
+            VL_DO_DANGLING(valuep->unlinkFrBack()->deleteTree(), valuep);
         }
 
         // Create the trace cleanup function clearing the activity flags

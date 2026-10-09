@@ -95,6 +95,7 @@
 #include "V3Stats.h"
 #include "V3String.h"
 
+#include <cctype>
 #include <memory>
 #include <sstream>
 #include <utility>
@@ -112,11 +113,10 @@ static string V3HierParametersFileName(const string& prefix) {
 }
 
 static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of, bool forMkJson) {
-    string topModuleFile;
-    if (hblockp) topModuleFile = hblockp->vFileIfNecessary();
+    const string topModuleFile = hblockp ? hblockp->vFileIfNecessary() : "";
     if (!forMkJson) {
-        if (!topModuleFile.empty()) *of << topModuleFile << "\n";
-        for (const auto& i : v3Global.opt.vFiles()) *of << i.filename() << "\n";
+        for (const string& filename : V3HierGraph::sourceFiles(topModuleFile))
+            *of << filename << "\n";
     }
     for (const auto& i : v3Global.opt.libraryFiles()) {
         if (V3Os::filenameRealPath(i.filename()) != topModuleFile)
@@ -125,6 +125,19 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
 }
 
 //######################################################################
+
+bool V3HierBlock::stringParamPassable(const string& value) {
+    // stringifyParams writes string values in double quotes into the arguments file, which
+    // V3Options::parseOptsFile reads by lines, removing '/*' comments, and '//' comments after
+    // whitespace, before splitting the quoted arguments. AstConst::parseParamLiteral for -G,
+    // and V3HierarchicalBlockOption, then end each value at the next double quote.
+    if (value.find_first_of("\n\"") != string::npos) return false;
+    if (value.find("/*") != string::npos) return false;
+    for (size_t pos = value.find("//"); pos != string::npos; pos = value.find("//", pos + 1)) {
+        if (pos > 0 && std::isspace(static_cast<unsigned char>(value[pos - 1]))) return false;
+    }
+    return true;
+}
 
 V3HierBlock::StrGParams V3HierBlock::stringifyParams(const std::vector<AstVar*>& gparams,
                                                      bool forGOption) {
@@ -149,7 +162,10 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const std::vector<AstVar*>&
                 if (!forGOption) s = VString::quoteBackslash(s);
                 s = VString::quoteStringLiteralForShell(s);
             } else {  // Either signed or unsigned integer.
-                s = constp->num().ascii(true, true);
+                // Constant folding can leave the signedness on the dtype, not the V3Number.
+                V3Number num{constp->num()};
+                num.isSigned(constp->isSigned());
+                s = num.ascii(true, true);
                 s = VString::quoteAny(s, '\'', '\\');
             }
             strParams.emplace_back(gparam->name(), s);
@@ -281,8 +297,8 @@ string V3HierBlock::typeParametersFilename() const {
 void V3HierBlock::writeParametersFile() const {
     if (m_typeParams.empty()) return;
 
-    VHashSha256 hash{"type params"};
-    const string moduleName = "Vhsh" + hash.digestSymbol();
+    VHashSha512 hash{"type params"};
+    const string moduleName = "Vhsh" + hash.digestSymbol24();
     const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
     *of << "module " << moduleName << ";\n";
     for (AstParamTypeDType* const gparam : m_typeParams) {
@@ -373,7 +389,6 @@ class HierBlockUsageCollectVisitor final : public VNVisitorConst {
 
     void visit(AstNodeStmt*) override {}  // Accelerate
     void visit(AstNodeExpr*) override {}  // Accelerate
-    void visit(AstConstPool*) override {}  // Accelerate
     void visit(AstTypeTable*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
@@ -393,6 +408,15 @@ public:
         return HierBlockUsageCollectVisitor{netlistp}.m_graphp;
     }
 };
+
+VStringList V3HierGraph::sourceFiles(const string& topModuleFile) {
+    VStringList sources;
+    sources.reserve(v3Global.opt.vFiles().size() + 1);
+    for (const VFileLibName& vfile : v3Global.opt.vFiles()) sources.emplace_back(vfile.filename());
+    // Library-discovered blocks may depend on packages in the explicit input files.
+    if (!topModuleFile.empty()) sources.emplace_back(topModuleFile);
+    return sources;
+}
 
 void V3HierGraph::writeCommandArgsFiles(bool forMkJson) const {
 

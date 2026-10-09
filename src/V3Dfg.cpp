@@ -19,6 +19,7 @@
 #include "V3Dfg.h"
 
 #include "V3Ast.h"
+#include "V3DfgContext.h"
 #include "V3EmitV.h"
 #include "V3File.h"
 
@@ -27,8 +28,9 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //------------------------------------------------------------------------------
 // DfgGraph
 
-DfgGraph::DfgGraph(const string& name)
-    : m_name{name} {}
+DfgGraph::DfgGraph(V3DfgContext& ctx, const string& name)
+    : m_ctx{ctx}
+    , m_name{name} {}
 
 DfgGraph::~DfgGraph() {
     forEachVertex([&](DfgVertex& vtx) { vtx.unlinkDelete(*this); });
@@ -98,30 +100,9 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
     }
 }
 
-std::string DfgGraph::makeUniqueName(const std::string& prefix, size_t n) {
-    // Construct the tmpNameStub if we have not done so yet
-    if (m_tmpNameStub.empty()) {
-        // Use the hash of the graph name (avoid long names and non-identifiers)
-        const std::string hash = V3Hash{m_name}.toString();
-        // We need to keep every variable globally unique, and graph hashed
-        // names might not be, so keep a static table to track multiplicity
-        static std::unordered_map<std::string, uint32_t> s_multiplicity;
-        m_tmpNameStub += '_' + hash + '_' + std::to_string(s_multiplicity[hash]++) + '_';
-    }
-    // Assemble the globally unique name
-    return "__Vdfg" + prefix + m_tmpNameStub + std::to_string(n);
-}
-
-DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& name,
+DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& prefix,
                                    const DfgDataType& dtype, AstScope* scopep) {
-    // Create AstVar
-    AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, dtype.astDtypep()};
-    // Add AstVar to the scope's module
-    scopep->modp()->addStmtsp(varp);
-    // Create AstVarScope
-    AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
-    // Add to scope
-    scopep->addVarsp(vscp);
+    AstVarScope* const vscp = m_ctx.m_sharedTmps.make(flp, scopep, dtype.astDtypep(), prefix);
     // Create and return the corresponding variable vertex
     if (dtype.isArray()) return new DfgVarArray{*this, vscp};
     return new DfgVarPacked{*this, vscp};
@@ -794,19 +775,18 @@ AstScope* DfgVertex::scopep(ScopeCache& cache, bool tryResultVar) VL_MT_DISABLED
     }
 
     AstScope* const rootp = v3Global.rootp()->topScopep()->scopep();
-    AstScope* const constPoolp = v3Global.rootp()->constPoolp()->scopep();
 
     // Note: the recursive invocation can cause a re-hash but that will not invalidate references
     AstScope*& resultr = cache[this];
     if (!resultr) {
         // Mark to prevent infinite recursion on circular graphs - should never be called on such
         resultr = reinterpret_cast<AstScope*>(1);
-        // Find scope based on sources, falling back on the root scope,
-        // also make sure it's not the constant pool scope, which is special.
+        // Find scope based on sources, falling back on the root scope. Never use a package
+        // scope, including the constant pool, so new variables are not created in packages.
         AstScope* foundp = nullptr;
         foreachSource([&](DfgVertex& src) {
             AstScope* const scp = src.scopep(cache, true);
-            if (scp != rootp && scp != constPoolp) {
+            if (scp != rootp && !VN_IS(scp->modp(), Package)) {
                 foundp = scp;
                 return true;
             }

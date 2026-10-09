@@ -242,7 +242,7 @@ class DfgToAstVisitor final : DfgVisitor {
         FileLine* const flp = vtxp->fileline();
         AstNodeExpr* const lhsp = convertDfgVertexToAstNodeExpr(vtxp->lhsp());
         AstVarScope* const matchp = vtxp->matchp()->as<DfgVertexVar>()->vscp();
-        m_resultp = new AstMatchMasked{flp, lhsp, matchp};
+        m_resultp = new AstMatchMasked{flp, lhsp, new AstVarRef{flp, matchp, VAccess::READ}};
     }
 
     void visit(DfgRep* vtxp) override {

@@ -328,13 +328,29 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(";\n");
     }
+    // An option or type_option assignment, from a covergroup, coverpoint, or cross
+    void emitCoverageOption(AstNode* nodep, bool typeOption, VCoverOptionType optType,
+                            AstNodeExpr* valuep) {
+        putfs(nodep,
+              std::string{typeOption ? "type_option." : "option."} + optType.ascii() + " = ");
+        iterateConst(valuep);
+        puts(";\n");
+    }
+    void visit(AstCgOptionAssign* nodep) override {
+        emitCoverageOption(nodep, nodep->typeOption(), nodep->optType(), nodep->valuep());
+    }
+    void visit(AstCoverOption* nodep) override {
+        emitCoverageOption(nodep, nodep->typeOption(), nodep->optType(), nodep->valuep());
+    }
     void visit(AstCoverBin* nodep) override {
-        switch (nodep->binsType()) {
-        case VCoverBinsType::BINS_IGNORE: putfs(nodep, "ignore_bins "); break;
-        case VCoverBinsType::BINS_ILLEGAL: putfs(nodep, "illegal_bins "); break;
-        default: putfs(nodep, "bins "); break;
-        }
+        putfs(nodep, std::string{nodep->isWildcard() ? "wildcard " : ""}
+                         + nodep->binsType().verilogKwd() + " ");
         puts(nodep->name());
+        if (nodep->isArray()) {
+            puts("[");
+            if (nodep->arraySizep()) iterateConst(nodep->arraySizep());
+            puts("]");
+        }
         if (nodep->binsType() == VCoverBinsType::BINS_DEFAULT) {
             puts(" = default");
         } else if (nodep->transp()) {
@@ -343,6 +359,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
                 if (setp != nodep->transp()) puts(", ");
                 iterateConst(setp);
             }
+        } else if (VN_IS(nodep->rangesp(), CoverWith)) {
+            puts(" = ");
+            iterateConst(nodep->rangesp());
         } else if (nodep->rangesp()) {  // LCOV_EXCL_BR_LINE - false: CoverBin always has
                                         // transp/rangesp/default
             puts(" = {");
@@ -358,6 +377,15 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts(")");
         }
         puts(";\n");
+    }
+    void visit(AstCoverWith* nodep) override {
+        const bool rangeList = !VN_IS(nodep->subp(), CoverpointRef);
+        if (rangeList) putfs(nodep, "{");
+        iterateAndCommaConstNull(nodep->subp());
+        if (rangeList) puts("}");
+        puts(" with (");
+        iterateConst(nodep->filterp());
+        puts(")");
     }
     void visit(AstCoverBinsof* nodep) override {
         putfs(nodep, nodep->isNegated() ? "!binsof(" : "binsof(");
@@ -403,8 +431,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             iterateConst(nodep->iffp());
             puts(")");
         }
-        if (nodep->binsp()) {
+        if (nodep->binsp() || nodep->optionsp()) {
             puts(" {\n");
+            iterateAndNextConstNull(nodep->optionsp());
             iterateAndNextConstNull(nodep->binsp());
             puts("}\n");
         } else {
@@ -984,9 +1013,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts(" ");
         } else if (nodep->isRanged()) {
             puts(" [");
-            puts(cvtToStr(nodep->hi()));
+            puts(cvtToStr(nodep->left()));
             puts(":");
-            puts(cvtToStr(nodep->lo()));
+            puts(cvtToStr(nodep->right()));
             puts("] ");
         }
     }

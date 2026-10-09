@@ -38,4 +38,10 @@ module t (
     cb1.in = 1;
     $display(cb1.out);
   end
+
+  logic out3;
+  clocking cb3 @(posedge clk);
+    output out3;
+  endclocking
+  always {cb1.out, cb3.out3} <= ##1 2'b11;
 endmodule

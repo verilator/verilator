@@ -35,17 +35,18 @@ class EmitCConstPool final : public EmitCConstInit {
     using OutCFilePair = std::pair<V3OutCFile*, AstCFile*>;
 
     // MEMBERS
-    VDouble0 m_tablesEmitted;
     VDouble0 m_constsEmitted;
+    VDouble0 m_mapsEmitted;
+    VDouble0 m_tablesEmitted;
     V3UniqueNames m_uniqueNames;  // Generates unique file names
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "__ConstPool";
 
     // METHODS
-    void emitVars(const AstConstPool* poolp) {
+    void emitVars(const AstPackage* poolp) {
         UASSERT(!ofp(), "Output file should not be open");
 
         std::vector<const AstVar*> varps;
-        for (AstNode* nodep = poolp->modp()->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* nodep = poolp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) varps.push_back(varp);
         }
 
@@ -73,14 +74,28 @@ class EmitCConstPool final : public EmitCConstInit {
             const std::string nameProtect
                 = EmitCUtil::topClassName() + "__ConstPool__" + varp->nameProtect();
             puts("\n");
-            putns(varp, "extern const ");
+            putns(varp, "extern ");
+            // Literal types should be constinit (no code generation needed)
+            if (varp->dtypep()->isLiteralType()) putns(varp, "VL_CONSTINIT_CXX20 ");
+            putns(varp, "const ");
             putns(varp, varp->dtypep()->cType(nameProtect, false, false));
-            putns(varp, " = ");
             UASSERT_OBJ(varp, varp->valuep(), "Var without value");
-            iterateConst(varp->valuep());
+            emitDirectInit(varp->valuep());
+            // Account for file splitting
+            varp->valuep()->foreach([this](const AstConst* constp) {
+                if (constp->num().isString()) {
+                    splitSizeInc(AstNode::INSTR_COUNT_STR);
+                } else if (constp->isWide()) {
+                    splitSizeInc(constp->widthWords());
+                } else {
+                    splitSizeInc(1);
+                }
+            });
             putns(varp, ";\n");
             // Keep track of stats
-            if (VN_IS(varp->dtypep(), UnpackArrayDType)) {
+            if (VN_IS(varp->dtypep(), AssocArrayDType)) {
+                ++m_mapsEmitted;
+            } else if (VN_IS(varp->dtypep(), UnpackArrayDType)) {
                 ++m_tablesEmitted;
             } else {
                 ++m_constsEmitted;
@@ -90,23 +105,12 @@ class EmitCConstPool final : public EmitCConstInit {
         if (ofp()) closeOutputFile();
     }
 
-    // VISITORS
-    void visit(AstConst* nodep) override {
-        if (nodep->num().isString()) {
-            splitSizeInc(AstNode::INSTR_COUNT_STR);
-        } else if (nodep->isWide()) {
-            splitSizeInc(nodep->widthWords());
-        } else {
-            splitSizeInc(1);
-        }
-        EmitCConstInit::visit(nodep);
-    }
-
 public:
-    explicit EmitCConstPool(const AstConstPool* poolp) {
+    explicit EmitCConstPool(const AstPackage* poolp) {
         emitVars(poolp);
-        V3Stats::addStatSum("ConstPool, Tables emitted", m_tablesEmitted);
         V3Stats::addStatSum("ConstPool, Constants emitted", m_constsEmitted);
+        V3Stats::addStatSum("ConstPool, Maps emitted", m_mapsEmitted);
+        V3Stats::addStatSum("ConstPool, Tables emitted", m_tablesEmitted);
     }
 };
 
@@ -115,5 +119,5 @@ public:
 
 void V3EmitC::emitcConstPool() {
     UINFO(2, __FUNCTION__ << ":");
-    EmitCConstPool(v3Global.rootp()->constPoolp());
+    EmitCConstPool(v3Global.rootp()->constPoolPkgp());
 }

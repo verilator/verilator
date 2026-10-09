@@ -32,12 +32,16 @@
 #include <array>
 #include <atomic>
 #include <deque>
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
 #include <utility>
 
+class VlClass;
+template <typename T_Class>
+class VlClassRef;
 class VlProcess;
 template <typename T_Value, std::size_t N_Depth>
 class VlUnpacked;
@@ -326,6 +330,7 @@ class VlProcess final {
         = nullptr;  // Optional fork..join counter to decrement on kill
     bool m_forkSyncOnKillDone = false;  // Ensure on-kill callback fires only once
     VlRNG m_rng;  // Per-process RNG (IEEE 1800-2023 18.14)
+    VlClass* m_selfp = nullptr;  // std::process object of this process, not owned
 
     // Thread-local current process pointer for hierarchical object seeding
     static thread_local VlProcess* t_currentp;
@@ -361,7 +366,13 @@ public:
 
     int state() const { return m_state; }
     void state(int s);
+    // IEEE 1800-2023 9.7: killing a completed process still terminates its live
+    // descendants, but leaves the process state unchanged
     void disable() {
+        if (completed()) {
+            disableFork();
+            return;
+        }
         state(KILLED);
         disableFork();
         m_forkSyncOnKillp = nullptr;
@@ -378,6 +389,23 @@ public:
         for (const VlProcess* const childp : m_children)
             if (!childp->completed()) return false;
         return true;
+    }
+    template <typename T_Class>
+    void initFromSelf(VlClassRef<T_Class>& selfRef) const {
+        // std::process with 0 references may be waiting in VlDeleter, so don't assign it to avoid
+        // use-after-free. This can happen if self() gets called after the current std::process
+        // loses all references to it and gets queued for deletion.
+        T_Class* const selfp = dynamic_cast<T_Class*>(m_selfp);
+        if (!selfp || selfp->refCount() == 0) return;
+        selfRef = VlClassRef<T_Class>{selfp};
+    }
+    void setSelf(VlClass* selfp) { m_selfp = selfp; }
+
+    // Called from the std::process destructor.
+    // The destroyed object may have waited in VlDeleter while self() returned null and a newer
+    // object was created, so only clear m_selfp if it points to the destroyed object.
+    void clearSelf(const VlClass* selfp) {
+        if (m_selfp == selfp) m_selfp = nullptr;
     }
 
     // Random state (IEEE 1800-2023 9.7, 18.14)
@@ -1084,6 +1112,15 @@ public:
     // CONSTRUCTORS
     // m_defaultValue isn't defaulted. Caller's constructor must do it.
     VlAssocArray() = default;
+    // Construct with the given entries
+    explicit VlAssocArray(std::initializer_list<std::pair<const T_Key, T_Value>> init)
+        : m_map{init}
+        , m_defaultValue{} {}
+    // Construct with the given default value and entries
+    explicit VlAssocArray(const T_Value& defaultValue,
+                          std::initializer_list<std::pair<const T_Key, T_Value>> init)
+        : m_map{init}
+        , m_defaultValue{defaultValue} {}
     ~VlAssocArray() = default;
     VlAssocArray(const VlAssocArray&) = default;
     VlAssocArray(VlAssocArray&&) = default;
@@ -2077,6 +2114,7 @@ public:
     // Polymorphic shallow clone. Overridden in each generated concrete class.
     virtual VlClass* clone() const { return nullptr; }
     // METHODS
+    size_t refCount() const VL_MT_SAFE { return m_counter; }
     virtual const char* typeName() const { return "VlClass"; }
     virtual std::string to_string() const { return ""; }
 };

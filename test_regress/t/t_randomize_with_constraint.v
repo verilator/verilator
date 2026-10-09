@@ -22,7 +22,7 @@ class Cls;
   rand int a[];
 
   function new();
-    a = new [10];
+    a = new[10];
   endfunction
 
   // Randomize array inside class that is argument
