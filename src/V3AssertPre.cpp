@@ -466,7 +466,9 @@ private:
                 // Prevent confusing BLKANDNBLK warnings on clockvars due to generated assignments
                 varrefp->fileline()->warnOff(V3ErrorCode::BLKANDNBLK, true);
                 // Mark the driven signal so later passes (e.g. V3Inst port
-                // connection) know the drive flows out from inside the cell
+                // connection) know the drive flows out from inside the cell.
+                // Item expressions are plain signal references, so only the
+                // driven signal is marked, never index selects.
                 varrefp->varp()->isClockingDriven(true);
             });
             AstVarRef* const skewedReadRefp = new AstVarRef{flp, varp, VAccess::READ};
