@@ -167,7 +167,7 @@ public:
 
     // Kill and reap a solver that is still running, so no child is left behind
     void terminate() {
-#if defined(_VL_SOLVER_PIPE_UNIX)
+#ifdef _VL_SOLVER_PIPE_UNIX
         if (!m_pidExited) {
             ::kill(m_pid, SIGKILL);
             waitpid(m_pid, &m_pidStatus, 0);
@@ -197,7 +197,7 @@ public:
     void wait_report() {
         if (m_pidExited) return;
         bool reaped = true;
-#if defined(_VL_SOLVER_PIPE_UNIX)
+#ifdef _VL_SOLVER_PIPE_UNIX
         const pid_t rc = waitpid(m_pid, &m_pidStatus, WNOHANG);
         if (rc != m_pid) m_pidStatus = 0;
         reaped = rc != 0;  // Zero means still running, so terminate() reaps it
@@ -253,7 +253,72 @@ public:
             m_logTried = true;
             logOpen();
         }
-#if defined(_VL_SOLVER_PIPE_WIN)
+#ifdef _VL_SOLVER_PIPE_UNIX
+        int fd_stdin[2];  // Can't use std::array
+        int fd_stdout[2];  // Can't use std::array
+        constexpr int P_RD = 0;
+        constexpr int P_WR = 1;
+
+        if (VL_UNLIKELY(pipe(fd_stdin) != 0)) {
+            perror("VlRProcess::open: pipe");
+            return false;
+        }
+        if (VL_UNLIKELY(pipe(fd_stdout) != 0)) {
+            perror("VlRProcess::open: pipe");
+            close(fd_stdin[P_RD]);
+            close(fd_stdin[P_WR]);
+            return false;
+        }
+
+        if (fd_stdin[P_RD] <= 2 || fd_stdin[P_WR] <= 2 || fd_stdout[P_RD] <= 2
+            || fd_stdout[P_WR] <= 2) {
+            // We'd have to rearrange all of the FD usages in this case.
+            // Too unlikely; verilator isn't a daemon.
+            fprintf(stderr, "stdin/stdout closed before pipe opened\n");
+            close(fd_stdin[P_RD]);
+            close(fd_stdin[P_WR]);
+            close(fd_stdout[P_RD]);
+            close(fd_stdout[P_WR]);
+            return false;
+        }
+
+        log("", "# Open: "s + cmd[0]);
+        const pid_t pid = fork();
+        if (VL_UNLIKELY(pid < 0)) {
+            perror("VlRProcess::open: fork");
+            close(fd_stdin[P_RD]);
+            close(fd_stdin[P_WR]);
+            close(fd_stdout[P_RD]);
+            close(fd_stdout[P_WR]);
+            return false;
+        }
+        if (pid == 0) {
+            // Child
+            close(fd_stdin[P_WR]);
+            dup2(fd_stdin[P_RD], STDIN_FILENO);
+            close(fd_stdin[P_RD]);
+            close(fd_stdout[P_RD]);
+            dup2(fd_stdout[P_WR], STDOUT_FILENO);
+            close(fd_stdout[P_WR]);
+            execvp(cmd[0], const_cast<char* const*>(cmd));
+            std::stringstream msg;
+            msg << "VlRProcess::open: execvp(" << cmd[0] << ")";
+            const std::string str = msg.str();
+            perror(str.c_str());
+            _exit(127);
+        }
+        // Parent
+        m_pid = pid;
+        m_pidExited = false;
+        m_pidStatus = 0;
+        m_readFd = fd_stdout[P_RD];
+        m_writeFd = fd_stdin[P_WR];
+
+        close(fd_stdin[P_RD]);
+        close(fd_stdout[P_WR]);
+
+        return true;
+#elif defined(_VL_SOLVER_PIPE_WIN)
         SECURITY_ATTRIBUTES sa;
         sa.nLength = sizeof(SECURITY_ATTRIBUTES);
         sa.lpSecurityDescriptor = nullptr;
@@ -336,71 +401,6 @@ public:
             terminate();
             return false;
         }
-        return true;
-#elif defined(_VL_SOLVER_PIPE_UNIX)
-        int fd_stdin[2];  // Can't use std::array
-        int fd_stdout[2];  // Can't use std::array
-        constexpr int P_RD = 0;
-        constexpr int P_WR = 1;
-
-        if (VL_UNLIKELY(pipe(fd_stdin) != 0)) {
-            perror("VlRProcess::open: pipe");
-            return false;
-        }
-        if (VL_UNLIKELY(pipe(fd_stdout) != 0)) {
-            perror("VlRProcess::open: pipe");
-            close(fd_stdin[P_RD]);
-            close(fd_stdin[P_WR]);
-            return false;
-        }
-
-        if (fd_stdin[P_RD] <= 2 || fd_stdin[P_WR] <= 2 || fd_stdout[P_RD] <= 2
-            || fd_stdout[P_WR] <= 2) {
-            // We'd have to rearrange all of the FD usages in this case.
-            // Too unlikely; verilator isn't a daemon.
-            fprintf(stderr, "stdin/stdout closed before pipe opened\n");
-            close(fd_stdin[P_RD]);
-            close(fd_stdin[P_WR]);
-            close(fd_stdout[P_RD]);
-            close(fd_stdout[P_WR]);
-            return false;
-        }
-
-        log("", "# Open: "s + cmd[0]);
-        const pid_t pid = fork();
-        if (VL_UNLIKELY(pid < 0)) {
-            perror("VlRProcess::open: fork");
-            close(fd_stdin[P_RD]);
-            close(fd_stdin[P_WR]);
-            close(fd_stdout[P_RD]);
-            close(fd_stdout[P_WR]);
-            return false;
-        }
-        if (pid == 0) {
-            // Child
-            close(fd_stdin[P_WR]);
-            dup2(fd_stdin[P_RD], STDIN_FILENO);
-            close(fd_stdin[P_RD]);
-            close(fd_stdout[P_RD]);
-            dup2(fd_stdout[P_WR], STDOUT_FILENO);
-            close(fd_stdout[P_WR]);
-            execvp(cmd[0], const_cast<char* const*>(cmd));
-            std::stringstream msg;
-            msg << "VlRProcess::open: execvp(" << cmd[0] << ")";
-            const std::string str = msg.str();
-            perror(str.c_str());
-            _exit(127);
-        }
-        // Parent
-        m_pid = pid;
-        m_pidExited = false;
-        m_pidStatus = 0;
-        m_readFd = fd_stdout[P_RD];
-        m_writeFd = fd_stdin[P_WR];
-
-        close(fd_stdin[P_RD]);
-        close(fd_stdout[P_WR]);
-
         return true;
 #else
         return false;
