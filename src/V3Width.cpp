@@ -1553,94 +1553,13 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
-    bool isCheckedPackedSelect(AstNodePreSel* nodep) const {
-        // Generate-only evaluation and inactive or uninstantiated template modules do not
-        // have the final packed dimensions needed for a range warning.
-        return !m_doGenerate && !(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))
-               && VN_IS(nodep->fromp()->dtypep()->skipRefp(), PackArrayDType);
-    }
-    static bool packedSelectIndexValue(const AstConst* nodep, int& value) {
-        if (!nodep || nodep->num().isFourState()) return false;
-        value = nodep->dtypep()->isSigned() && nodep->num().width() < 32
-                    ? nodep->num().toSInt()
-                    : static_cast<int>(nodep->num().toUInt());
-        return true;
-    }
-    bool warnPackedSelectRange(AstNodePreSel* nodep, const VNumRange& selected) const {
-        const AstPackArrayDType* const dtypep
-            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), PackArrayDType);
-        const VNumRange range = dtypep->declRange();
-        if (selected.lo() < range.lo() || selected.hi() > range.hi()) {
-            nodep->v3warn(SELRANGE, "Selection index out of range: "
-                                        << (selected.lo() == selected.hi()
-                                                ? std::to_string(selected.lo())
-                                                : std::to_string(selected.hi()) + ":"
-                                                      + std::to_string(selected.lo()))
-                                        << " outside " << range.hi() << ":" << range.lo());
-            return true;
-        }
-        return false;
-    }
-    static AstNodeExpr* packedSelectIndexp(AstNodePreSel* nodep) {
-        if (AstSelBit* const bitp = VN_CAST(nodep, SelBit)) return bitp->bitp();
-        if (AstSelExtract* const extractp = VN_CAST(nodep, SelExtract)) return extractp->leftp();
-        if (AstSelPlus* const plusp = VN_CAST(nodep, SelPlus)) return plusp->bitp();
-        return VN_AS(nodep, SelMinus)->bitp();
-    }
-    bool checkPackedSelectRange(AstNodePreSel* nodep) const {
-        if (!isCheckedPackedSelect(nodep)) return false;
-        // Try folding every index after its width check. Dynamic references stay
-        // nonconstant; V3WidthSel lowers the resulting expression as usual.
-        V3Const::constifyParamsNoWarnEdit(packedSelectIndexp(nodep));
-        int first = 0;
-        bool valid = packedSelectIndexValue(VN_CAST(packedSelectIndexp(nodep), Const), first);
-        int last = first;
-        if (AstSelExtract* const extractp = VN_CAST(nodep, SelExtract)) {
-            V3Const::constifyParamsNoWarnEdit(extractp->rightp());
-            valid = packedSelectIndexValue(VN_CAST(extractp->rightp(), Const), last) && valid;
-        } else if (AstSelPlus* const plusp = VN_CAST(nodep, SelPlus)) {
-            V3Const::constifyParamsNoWarnEdit(plusp->widthp());
-            int width = 0;
-            valid = packedSelectIndexValue(VN_CAST(plusp->widthp(), Const), width) && valid;
-            if (valid) {
-                valid = width > 0 && first <= std::numeric_limits<int>::max() - (width - 1);
-                if (valid) last = first + width - 1;
-            }
-        } else if (AstSelMinus* const minusp = VN_CAST(nodep, SelMinus)) {
-            V3Const::constifyParamsNoWarnEdit(minusp->widthp());
-            int width = 0;
-            valid = packedSelectIndexValue(VN_CAST(minusp->widthp(), Const), width) && valid;
-            if (valid) {
-                valid = width > 0 && first >= std::numeric_limits<int>::min() + (width - 1);
-                if (valid) last = first - width + 1;
-            }
-        }
-        return valid && warnPackedSelectRange(nodep, VNumRange{first, last});
-    }
-    AstNode* widthPackedSelect(AstNodePreSel* nodep) const {
-        const bool warned = checkPackedSelectRange(nodep);
-        AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
-        if (warned) {
-            // The transformed AstSel uses flattened bit offsets. Keep its later range
-            // check from reporting the same selection in misleading bit units.
-            if (AstSel* const bitSelp = VN_CAST(selp, Sel)) {
-                FileLine* const flp = new FileLine{bitSelp->fileline()};
-                flp->warnOff(V3ErrorCode::SELRANGE, true);
-                bitSelp->fileline(flp);
-            }
-        }
-        return selp;
-    }
     void visit(AstSelBit* nodep) override {
         // Just a quick check as after V3Param these nodes instead are AstSel's
         userIterateAndNext(nodep->fromp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->bitp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->thsp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->attrp(), WidthVP{SELF, BOTH}.p());
-        // Packed-array indices become flattened bit offsets in V3WidthSel. A constant index
-        // above the declared range (or below it for ascending ranges) may wrap when that
-        // offset is narrowed, before the later AstSel range checks can see it.
-        AstNode* const selp = widthPackedSelect(nodep);
+        AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             VL_DANGLING(nodep);
             userIterate(selp, m_vup);
@@ -1654,7 +1573,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->leftp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->rightp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->attrp(), WidthVP{SELF, BOTH}.p());
-        AstNode* const selp = widthPackedSelect(nodep);
+        AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             nodep = nullptr;
             userIterate(selp, m_vup);
@@ -1667,7 +1586,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->bitp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->widthp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->attrp(), WidthVP{SELF, BOTH}.p());
-        AstNode* const selp = widthPackedSelect(nodep);
+        AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             nodep = nullptr;
             userIterate(selp, m_vup);
@@ -1680,7 +1599,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->bitp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->widthp(), WidthVP{CONTEXT_DET, PRELIM}.p());  // FINAL in AstSel
         userIterateAndNext(nodep->attrp(), WidthVP{SELF, BOTH}.p());
-        AstNode* const selp = widthPackedSelect(nodep);
+        AstNode* const selp = V3Width::widthSelNoIterEdit(nodep);
         if (selp != nodep) {
             nodep = nullptr;
             userIterate(selp, m_vup);

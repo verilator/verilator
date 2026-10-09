@@ -16,7 +16,7 @@ module t;
     c = 3;
     tt[0] = a;
     tt[1] = b;
-    tt[2] = c;
+    tt[2] = c;  // Out of bounds
     if (tt[0] != a) $stop;
     if (tt[1] != b) $stop;
     $write("*-* All Finished *-*\n");
