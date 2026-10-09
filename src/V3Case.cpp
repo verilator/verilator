@@ -924,6 +924,47 @@ class CaseVisitor final : public VNVisitor {
         return ifrootp && ifrootp->backp() ? ifrootp->cloneTree(true) : ifrootp;
     }
 
+    AstNodeExpr* newCaseCompare(const AstCase* casep, AstNodeExpr* itemExprp) {
+        FileLine* const flp = itemExprp->fileline();
+        if (neverItem(casep, itemExprp)) {
+            VL_DO_DANGLING(pushDeletep(itemExprp), itemExprp);
+            return new AstConst{flp, AstConst::BitFalse{}};
+        }
+
+        if (AstCond* const condp = VN_CAST(itemExprp, Cond)) {
+            // Bounds checks can leave X-valued branches in case items. Compare each
+            // branch using case semantics before lowering to two-state expressions.
+            AstNodeExpr* const testp = condp->condp()->unlinkFrBack();
+            AstNodeExpr* const thenp = newCaseCompare(casep, condp->thenp()->unlinkFrBack());
+            AstNodeExpr* const elsep = newCaseCompare(casep, condp->elsep()->unlinkFrBack());
+            VL_DO_DANGLING2(pushDeletep(itemExprp), itemExprp, condp);
+            return new AstCond{flp, testp, thenp, elsep};
+        }
+
+        AstNodeExpr* const caseExprp = casep->exprp()->cloneTreePure(false);
+        // InsideRange: Similar logic in V3Width::visit(AstInside)
+        if (AstInsideRange* const itemRangep = VN_CAST(itemExprp, InsideRange)) {
+            AstNodeExpr* const resultp = itemRangep->newAndFromInside(
+                caseExprp, itemRangep->lhsp()->unlinkFrBack(), itemRangep->rhsp()->unlinkFrBack());
+            VL_DO_DANGLING2(pushDeletep(itemExprp), itemExprp, itemRangep);
+            return resultp;
+        }
+
+        if (AstConst* const itemConstp = VN_CAST(itemExprp, Const)) {
+            // neverItem has already rejected X/Z values that cannot match.
+            if (itemConstp->num().isFourState()) {
+                const auto& match = matchPattern(casep, itemConstp);
+                const V3Number& matchMask = match.first;
+                const V3Number& matchBits = match.second;
+                VL_DO_DANGLING2(pushDeletep(itemExprp), itemExprp, itemConstp);
+                return AstEq::newTyped(flp, new AstConst{flp, matchBits},
+                                       new AstAnd{flp, caseExprp, new AstConst{flp, matchMask}});
+            }
+        }
+
+        return AstEq::newTyped(flp, caseExprp, itemExprp);
+    }
+
     // Convet case statement using generic if/else tree
     // CASEx(cexpr,ITEM(icond1,istmts1),ITEM(icond2,istmts2),ITEM(default,istmts3))
     // ->  IF((cexpr==icond1),istmts1,
@@ -955,45 +996,12 @@ class CaseVisitor final : public VNVisitor {
 
                 // If case never matches, ignore it
                 if (neverItem(nodep, itemExprp)) {
-                    VL_DO_DANGLING(itemExprp->deleteTree(), itemExprp);
+                    VL_DO_DANGLING(pushDeletep(itemExprp), itemExprp);
                     continue;
                 }
 
                 // Compute the term to add to the condition expression
-                AstNodeExpr* const termp = [&]() -> AstNodeExpr* {
-                    // Will need a copy of the caseExpr regardless
-                    AstNodeExpr* const caseExprp = nodep->exprp()->cloneTreePure(false);
-
-                    // InsideRange: Similar logic in V3Width::visit(AstInside)
-                    if (AstInsideRange* const itemRangep = VN_CAST(itemExprp, InsideRange)) {
-                        AstNodeExpr* const resultp = itemRangep->newAndFromInside(  //
-                            caseExprp,  //
-                            itemRangep->lhsp()->unlinkFrBack(),
-                            itemRangep->rhsp()->unlinkFrBack());
-                        VL_DO_DANGLING2(itemExprp->deleteTree(), itemExprp, itemRangep);
-                        return resultp;
-                    }
-
-                    // Check if we need to perform a wildcard match, this needs masking
-                    if (AstConst* const itemConstp = VN_CAST(itemExprp, Const)) {
-                        // TODO: 4-state will need to fix this
-                        if (itemConstp->num().isFourState()
-                            && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
-                            // Wildcard match, make 'caseExpr' & 'mask' == 'itemExpr' & 'mask'
-                            const auto& match = matchPattern(nodep, itemConstp);
-                            const V3Number& matchMask = match.first;
-                            const V3Number& matchBits = match.second;
-                            VL_DO_DANGLING2(itemExprp->deleteTree(), itemExprp, itemConstp);
-                            return AstEq::newTyped(
-                                flp,  //
-                                new AstConst{flp, matchBits},
-                                new AstAnd{flp, caseExprp, new AstConst{flp, matchMask}});
-                        }
-                    }
-
-                    // Regular case, use simple equality comparison
-                    return AstEq::newTyped(flp, caseExprp, itemExprp);
-                }();
+                AstNodeExpr* const termp = newCaseCompare(nodep, itemExprp);
 
                 // 'Or' new term with previous terms
                 newCondp = newCondp ? new AstLogOr{flp, newCondp, termp} : termp;
