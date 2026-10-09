@@ -4144,7 +4144,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
         {
             if (start) {  // Starting dot sequence
                 UINFOTREE(9, nodep, "", "dot-in");
+                // An undotted name in 'randomize() with' first resolves in the
+                // randomized object's class (IEEE 1800-2023 18.7). When that
+                // class is a parameterized class not yet specialized,
+                // visit(AstMethodCall) marked the target unresolved, which
+                // init() would otherwise clear: keep deferring the whole chain
+                // until after V3Param instead of erroring on its root.
+                const bool deferRandWith
+                    = m_ds.m_unresolvedClass && m_currentWithp && m_randMethodCallp && !m_randSymp;
                 m_ds.init(m_curSymp);  // Start from current point
+                if (m_statep->forPrimary() && deferRandWith) { m_ds.m_unresolvedClass = true; }
             }
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_FIRST;
@@ -4154,7 +4163,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
                 if (m_randSymp && m_currentWithp) classSymp = m_randSymp;
-                if (!classSymp) {
+                if (!classSymp && m_statep->forPrimary() && m_currentWithp && m_randMethodCallp
+                    && !m_randSymp) {
+                    // Randomized target is a parameterized class not yet specialized:
+                    // 'this' cannot bind until the post-V3Param pass. Leave the
+                    // chain unlinked; visit(AstParseRef) defers on m_unresolvedClass.
+                } else if (!classSymp) {
                     nodep->v3error("'this' used outside class (IEEE 1800-2023 8.11)");
                     m_ds.m_dotErr = true;
                 } else {

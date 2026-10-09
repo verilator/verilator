@@ -1929,17 +1929,20 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         // Global / inline / class-level member-select refs key on the full path
         // (so same-type sub-objects c1.x, c2.x stay distinct); a plain class-level
-        // variable keys on user3().
-        const bool alreadyWritten = isGlobalConstrained ? m_writtenVars.count(smtName) > 0
-                                    : m_inlineInitTaskp ? m_inlineWrittenVars.count(smtName) > 0
-                                    : memberselp        ? m_writtenVars.count(smtName) > 0
-                                                        : varp->user3();
+        // variable keys on user3(). Inline 'with' constraints get per-function
+        // dedup: each __Vrandwith owns a fresh solver, so a path registered by
+        // another call must be registered again here.
+        const bool alreadyWritten = m_inlineInitTaskp     ? m_inlineWrittenVars.count(smtName) > 0
+                                    : isGlobalConstrained ? m_writtenVars.count(smtName) > 0
+                                    : memberselp          ? m_writtenVars.count(smtName) > 0
+                                                          : varp->user3();
         const bool shouldWriteVar = !alreadyWritten;
         if (shouldWriteVar) {
             // Track this variable path as written
-            if (isGlobalConstrained || (memberselp && !m_inlineInitTaskp))
+            if (m_inlineInitTaskp)
+                m_inlineWrittenVars.insert(smtName);
+            else if (isGlobalConstrained || memberselp)
                 m_writtenVars.insert(smtName);
-            if (m_inlineInitTaskp) m_inlineWrittenVars.insert(smtName);
             // For global constraints, delete nodep after processing
             if (isGlobalConstrained && !nodep->backp()) VL_DO_DANGLING(pushDeletep(nodep), nodep);
 
