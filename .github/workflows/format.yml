@@ -78,7 +78,7 @@ jobs:
       - name: Format code
         run: |
           source .venv/bin/activate
-          make -j 4 format CLANGFORMAT=clang-format-18
+          make -j 4 format CLANGFORMAT=clang-format-21
           git status
 
       - name: Push

@@ -159,7 +159,7 @@ packages (see internals.rst), and a Python virtual environment:
 
 .. code-block:: bash
 
-   sudo apt-get install clang clang-format-18 cmake gdb gprof graphviz lcov
+   sudo apt-get install clang clang-format-21 cmake gdb gprof graphviz lcov
    sudo apt-get install python3-clang bear jq
    cpan install Pod::Perldoc
 
