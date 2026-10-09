@@ -24,8 +24,8 @@ concurrency:
 
 jobs:
   format:
-    runs-on: ubuntu-24.04
-    name: Ubuntu 24.04 | format
+    runs-on: ubuntu-26.04
+    name: Ubuntu 26.04 | format
     steps:
       # On the main repository, push as the Verilator CI app.
       # Forks do not have the app, so fall back to GITHUB_TOKEN there.

@@ -12,7 +12,7 @@ on:
         type: string
         required: true
       runs-on:
-        description: "Runner to use, e.g.: ubuntu-24.04"
+        description: "Runner to use, e.g.: ubuntu-##.04"
         type: string
         required: true
       cc:
