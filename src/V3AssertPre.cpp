@@ -488,8 +488,9 @@ private:
                             new AstAssign{flp, new AstVarRef{flp, drivenVarp, VAccess::WRITE},
                                           new AstConst{flp, AstConst::BitFalse{}}}};
             ifp->addThensp(assignp);
-            if (skewp->isZero()) {
-                // Drive the var in Re-NBA (IEEE 1800-2023 14.16)
+            if (skewp->isZero() || !skewp->fileline()->timingOn()) {
+                // Drive the var in Re-NBA (IEEE 1800-2023 14.16), ignoring skews where timing is
+                // turned off
                 AstSenTree* senTreep
                     = new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)};
                 senTreep->addSensesp(new AstSenItem{
@@ -501,7 +502,7 @@ private:
                 trigp->dtypeSetBit();
                 ifp->condp(new AstLogAnd{flp, ifp->condp()->unlinkFrBack(), trigp});
                 m_clockingp->addNextHere(new AstAlwaysReactive{flp, senTreep, ifp});
-            } else if (skewp->fileline()->timingOn()) {
+            } else {
                 // Create a fork so that this AlwaysObserved can be retriggered before the
                 // assignment happens. Also then it can be combo, avoiding the need for creating
                 // new triggers.
