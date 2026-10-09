@@ -1172,8 +1172,7 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 #define FOR_EACH_CFUNCTION(macro) \
     /*    id,                                 function,                             pure,   args */ \
     macro(_NONE,                              "_none",                              false,  "") \
-    macro(AWAIT_IMPORT_IN_FIBER,              "VerilatedDpi::awaitImportFiber",     false,  "TODO") \
-    macro(AWAIT_EXPORT_IN_FIBER,              "VerilatedDpi::awaitExportFiber",     false,  "TODO") \
+    macro(AWAIT_IMPORT_TASK,                  "VerilatedDpi::awaitImportTask",      false,  "TODO") \
     macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "TODO") \
     macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "TODO") \
     macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "TODO") \
@@ -1192,9 +1191,14 @@ public:
             _ENUM_MAX  // Leave last
     };
     enum en m_e;
+    VCFunction()
+        : m_e{_NONE} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VCFunction(en _e)
         : m_e{_e} {}
+    explicit VCFunction(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
         static const char* const values[] = {
 #define VL_CFUNCTION_NAME(id, function, pure, args) function,
@@ -1225,6 +1229,11 @@ public:
 };
 constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
     return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCFunction& lhs, VCFunction::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCFunction::en lhs, const VCFunction& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
+    return os << rhs.ascii();
 }
 
 // Static assert all argument descriptors are well formed
