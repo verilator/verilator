@@ -2295,7 +2295,7 @@ class AstVar final : public AstNode {
     VRandAttr m_rand;  // Randomizability of this variable (rand, randc, etc)
     int m_pinNum = 0;  // For JSON, if non-zero the connection pin number
     int m_libInoutId = 0;  // Identifies the three ports of a lowered library inout
-    bool m_libInoutEnable : 1;  // This port is the lowered library inout's enable
+    bool m_libInoutEnable : 1;  // Port is the lowered library inout's enable
     bool m_ansi : 1;  // Params or pins declared in the module header, rather than the body
     bool m_declTyped : 1;  // Declared as type (for dedup check)
     bool m_tristate : 1;  // Inout or triwire or trireg

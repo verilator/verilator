@@ -6,11 +6,11 @@
 module secret_impl (
     input a,
     input oe,
-    inout z,
+    inout z_secret,
     output y
 );
 
-  assign z = oe ? a : 1'bz;
-  assign y = z;
+  assign z_secret = oe ? a : 1'bz;
+  assign y = z_secret;
 
 endmodule

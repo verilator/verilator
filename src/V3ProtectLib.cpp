@@ -30,6 +30,14 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // ProtectLib top-level visitor
 
 class ProtectVisitor final : public VNVisitor {
+    // TYPES
+    struct InoutPorts final {
+        AstVar* inp = nullptr;  // Resolved input value and original public port
+        AstVar* outp = nullptr;  // Library drive value
+        AstVar* enp = nullptr;  // Per-bit drive enable
+    };
+
+    // MEMBERS
     AstVFile* m_vfilep = nullptr;  // DPI-enabled Verilog wrapper
     AstCFile* m_cfilep = nullptr;  // C implementation of DPI functions
     // Verilog text blocks
@@ -62,11 +70,6 @@ class ProtectVisitor final : public VNVisitor {
     const string m_topName;
     bool m_foundTop = false;  // Have seen the top module
     bool m_hasClk = false;  // True if the top module has sequential logic
-    struct InoutPorts final {
-        AstVar* inp = nullptr;  // Resolved input value and original public port
-        AstVar* outp = nullptr;  // Library drive value
-        AstVar* enp = nullptr;  // Per-bit drive enable
-    };
     std::map<int, InoutPorts> m_inouts;  // Lowered ports grouped by original inout
 
     // VISITORS

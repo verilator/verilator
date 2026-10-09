@@ -16,6 +16,6 @@ test.compile(verilator_flags2=["--protect-lib", "secret", "--protect-key", "secr
              verilator_make_gmake=False,
              make_main=False)
 
-test.file_grep(test.obj_dir + "/secret.sv", r'inout logic z')
+test.file_grep(test.obj_dir + "/secret.sv", r'inout logic z_secret')
 
 test.passes()
