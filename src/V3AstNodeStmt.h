@@ -717,8 +717,8 @@ class AstExecGraph final : public AstNodeStmt {
     // MTask function as children of the AstExecGraph in 'stmtsp'. These
     // are in a topological order so they represent a valid sequential
     // execution of the graph. In `V3ExecGraph::implement`, we replace these
-    // statements with statements that dispatch to the thread pool for
-    // parallel execution.
+    // statements with a call to a function that dispatches to the thread
+    // pool for parallel execution.
     // @astgen op1 := stmtsp : List[AstNode]
     V3Graph* const m_depGraphp;  // contains ExecMTask vertices
     const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)

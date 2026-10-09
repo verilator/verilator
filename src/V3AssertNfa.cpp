@@ -333,6 +333,7 @@ class SvaNfaBuilder final {
     // Unsupported endpoint topology must reject, not ignore, or the wait hangs
     bool m_isSeqEvent = false;
     bool m_inSequencePrefix = false;  // Prefix composition does not preserve every endpoint
+    bool m_wantBoolLeaf = false;  // Building a |-> / |=> or top-level body (see buildOrMerge)
 
     struct RangeDelayRejectInfo final {
         SvaStateVertex* startp = nullptr;
@@ -957,9 +958,22 @@ class SvaNfaBuilder final {
         return {mergeVtxp, nullptr, {}};
     }
 
+    // True if the sequence has a zero-minimum consecutive repetition, which may match empty
+    static bool hasZeroMinRep(const AstNodeExpr* seqp) {
+        return seqp->exists(
+            [](const AstSConsRep* repp) { return getConstUInt(repp->countp()) == 0; });
+    }
+
+    // True if a leaf's condition has no implication or multi-cycle sequence in it
+    // (a leaf can be e.g. 'not (x |-> y)')
+    static bool isPlainBoolean(const AstNodeExpr* condp) {
+        return !condp->exists(
+            [](const AstNodeExpr* np) { return np->isMultiCycleSva() || VN_IS(np, Implication); });
+    }
+
     // Build merge vertex for SOr / LogOr: both branches feed into one vertex.
     BuildResult buildOrMerge(AstNodeExpr* lhsp, AstNodeExpr* rhsp, SvaStateVertex* entryVtxp,
-                             FileLine* flp) {
+                             FileLine* flp, bool wantBoolLeaf) {
         const BuildResult lhs = buildExpr(lhsp, entryVtxp);
         const BuildResult rhs = buildExpr(rhsp, entryVtxp);
         if (!lhs.valid() || !rhs.valid()) {  // LCOV_EXCL_START -- sub-build fail bail
@@ -979,6 +993,19 @@ class SvaNfaBuilder final {
             freeUnlinkedCondp(lhs.finalCondp);
             freeUnlinkedCondp(rhs.finalCondp);
             return BuildResult::failWithError();
+        }
+        if (booleanOnly && wantBoolLeaf) {
+            if (isPlainBoolean(lhs.finalCondp) && isPlainBoolean(rhs.finalCondp)) {
+                // As a |-> / |=> or top-level body, a disjunction of two plain booleans must
+                // be able to reject: return it as a boolean finalCondp. The merge vertex
+                // below drops the attempt silently when both operands are false.
+                AstNodeExpr* const orCondp
+                    = new AstLogOr{flp, lhs.finalCondp->cloneTreePure(false),
+                                   rhs.finalCondp->cloneTreePure(false)};
+                freeUnlinkedCondp(lhs.finalCondp);
+                freeUnlinkedCondp(rhs.finalCondp);
+                return {entryVtxp, orCondp, {}};
+            }
         }
         SvaStateVertex* const mergeVtxp = scopedCreateVertex();
         if (booleanOnly) {
@@ -1604,6 +1631,9 @@ public:
 
     BuildResult buildExpr(AstNodeExpr* nodep, SvaStateVertex* entryVtxp,
                           bool isTopLevelStep = false) {
+        VL_RESTORER(m_wantBoolLeaf);
+        const bool wantBoolLeaf = m_wantBoolLeaf;
+        m_wantBoolLeaf = false;
         if (AstSExpr* const sexprp = VN_CAST(nodep, SExpr)) {
             return buildSExpr(sexprp, entryVtxp, isTopLevelStep);
         }
@@ -1620,10 +1650,12 @@ public:
             return buildThroughout(throughoutp, entryVtxp, isTopLevelStep);
         }
         if (AstSOr* const orp = VN_CAST(nodep, SOr)) {
-            return buildOrMerge(orp->lhsp(), orp->rhsp(), entryVtxp, orp->fileline());
+            return buildOrMerge(orp->lhsp(), orp->rhsp(), entryVtxp, orp->fileline(),
+                                wantBoolLeaf);
         }
         if (AstLogOr* const orp = VN_CAST(nodep, LogOr)) {
-            return buildOrMerge(orp->lhsp(), orp->rhsp(), entryVtxp, orp->fileline());
+            return buildOrMerge(orp->lhsp(), orp->rhsp(), entryVtxp, orp->fileline(),
+                                wantBoolLeaf);
         }
         if (AstSAnd* const andp = VN_CAST(nodep, SAnd)) {
             return buildAndCombiner(andp->lhsp(), andp->rhsp(), entryVtxp, andp->fileline());
@@ -1728,11 +1760,17 @@ public:
             m_graph.addClockedEdge(trigVtxp, delayVtxp);
             bodyEntryp = delayVtxp;
         }
+        // An empty antecedent match must not start the consequent, but a zero-minimum
+        // repetition's empty match is not handled here; keep the merge vertex for those
+        VL_RESTORER(m_wantBoolLeaf);
+        m_wantBoolLeaf = !isFollowedBy && !hasZeroMinRep(antExprp);
         return buildExpr(bodyExprp, bodyEntryp, /*isTopLevelStep=*/true);
     }
 
     BuildResult build(AstNodeExpr* exprp) {
         m_graph.m_startVertexp = scopedCreateVertex();
+        VL_RESTORER(m_wantBoolLeaf);
+        m_wantBoolLeaf = true;
         return buildExpr(exprp, m_graph.m_startVertexp, /*isTopLevelStep=*/true);
     }
 };

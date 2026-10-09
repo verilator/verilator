@@ -3,7 +3,7 @@
    10 |     if (a_task(1'b0)) $stop;   
       |         ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_func_task_bad.v:10:5: Logical operator IF expects a non-complex data type on the If.
+%Error: t/t_func_task_bad.v:10:5: Operator IF expects a numeric If operand, but it has data type 'VOIDDTYPE' (IEEE 1800-2023 11.3)
                                 : ... note: In instance 't'
    10 |     if (a_task(1'b0)) $stop;   
       |     ^~

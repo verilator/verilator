@@ -1266,8 +1266,15 @@ package Vt_debug_emitv_std;
             Vt_debug_emitv_process pVt_debug_emitv_process;
             begin : label4
                 self = /*CRESET*/;
-                p = new();
-                $c(p.m_process = vlProcess;);
+                p = /*CRESET*/;
+                $c(vlProcess->initFromSelf(p););
+                if ((p == null)) begin
+                    begin
+                        p = new();
+                        $c(p.m_process = vlProcess;);
+                        $c(vlProcess->setSelf(&*p););
+                    end
+                end
                 self = p;
                 disable label4;
             end
@@ -1314,42 +1321,6 @@ package Vt_debug_emitv_std;
                 end
             end
         endtask
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
-
-        ???? // SYSTEMCSECTION
         function get_randstate;
             string s;
             begin : label6
@@ -1366,7 +1337,9 @@ package Vt_debug_emitv_std;
         endtask
         function new;
         endfunction
-        process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITINGendclass
+        process::FINISHEDprocess::KILLEDprocess::RUNNINGprocess::SUSPENDEDprocess::WAITING
+        ???? // SYSTEMCSECTION
+    endclass
     class Vt_debug_emitv_semaphore;
         typedef struct {
             Vt_debug_emitv_process proc;
