@@ -1027,16 +1027,6 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(UNPACKED_ASSIGN,                    "assign",                 false,  "r") \
     macro(UNPACKED_FILL,                      "fill",                   false,  "r") \
     macro(UNPACKED_NEQ,                       "neq",                    PURE,   "r")
-
-#define FOR_EACH_CFUNCTION(macro) \
-    /*    id,                                 function,                             pure,   args */ \
-    macro(_NONE,                              "_none",                              false,  "") \
-    macro(AWAIT_IMPORT_TASK,                  "VerilatedDpi::awaitImportTask",      false,  "TODO") \
-    macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "TODO") \
-    macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "TODO") \
-    macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "TODO") \
-    macro(CALL_EXPORT_TASK,                   "VerilatedDpi::callExportTask",       false,  "TODO") \
-    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",                      PURE,   "r")
 // clang-format on
 
 class VCMethod final {
@@ -1105,9 +1095,14 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 
 // clang-format off
 #define FOR_EACH_CFUNCTION(macro) \
-    /*    id,                                 function,                 pure,   args */ \
-    macro(_NONE,                              "_none",                  false,  "") \
-    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r")
+    /*    id,                                 function,                             pure,   args */ \
+    macro(_NONE,                              "_none",                              false,  "") \
+    macro(AWAIT_IMPORT_TASK,                  "VerilatedDpi::awaitImportTask",      false,  "TODO") \
+    macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "TODO") \
+    macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "TODO") \
+    macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "TODO") \
+    macro(CALL_EXPORT_TASK,                   "VerilatedDpi::callExportTask",       false,  "TODO") \
+    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",                      PURE,   "r")
 // clang-format on
 
 class VCFunction final {
@@ -1121,9 +1116,14 @@ public:
             _ENUM_MAX  // Leave last
     };
     enum en m_e;
+    VCFunction()
+        : m_e{_NONE} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VCFunction(en _e)
         : m_e{_e} {}
+    explicit VCFunction(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
         static const char* const values[] = {
 #define VL_CFUNCTION_NAME(id, function, pure, args) function,
@@ -1152,6 +1152,14 @@ public:
         return values[m_e];
     }
 };
+constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VCFunction& lhs, VCFunction::en rhs) { return lhs.m_e == rhs; }
+constexpr bool operator==(VCFunction::en lhs, const VCFunction& rhs) { return lhs == rhs.m_e; }
+inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
+    return os << rhs.ascii();
+}
 
 // Static assert all argument descriptors are well formed
 #define VL_CFUNCTION_ARGS_CHECK(id, method, pure, args) \
