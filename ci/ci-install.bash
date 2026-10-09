@@ -172,7 +172,7 @@ elif [ "$STAGE" = "format" ]; then
 
   if [ "$HOST_OS" = "linux" ] && [ "$DISTRO_ID" = "ubuntu" ]; then
     PACKAGES=(
-      clang-format-18  # Version pinned, so all of CI formats alike
+      clang-format-21  # Version pinned, so all of CI formats alike
     )
     apt-get-retry update
     apt-get-retry install --yes "${PACKAGES[@]}"

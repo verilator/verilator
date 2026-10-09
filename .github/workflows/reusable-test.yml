@@ -26,7 +26,7 @@ on:
         default: false
         type: boolean
       runs-on:
-        description: "Runner to test on, e.g. ubuntu-24.04"
+        description: "Runner to test on, e.g. ubuntu-##.04"
         required: true
         type: string
       suite:

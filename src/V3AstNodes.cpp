@@ -44,33 +44,34 @@
 //======================================================================
 // CLASSES
 
-class DpiTypesToStringConverter VL_NOT_FINAL {
-public:
-    virtual string openArray(const AstVar*) const { return "const svOpenArrayHandle"; }
-    virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
-        return isBit ? "svBitVecVal" : "svLogicVecVal";
-    }
-    virtual string primitive(const AstVar* varp) const {
-        string type;
-        const VBasicDTypeKwd keyword = varp->basicp()->keyword();
-        if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
-        type += keyword.dpiType();
-        return type;
-    }
-    string convert(const AstVar* varp) const {
-        if (varp->isDpiOpenArray()) {
-            return openArray(varp);
-        } else if (const AstBasicDType* const basicp = varp->basicp()) {
-            if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
-                return bitLogicVector(varp, basicp->isDpiBitVec());
-            } else {
-                return primitive(varp);
-            }
+class DpiTypesToStringConverter VL_NOT_FINAL{public : virtual string openArray(const AstVar*)
+                                                 const {return "const svOpenArrayHandle";
+}
+virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
+    return isBit ? "svBitVecVal" : "svLogicVecVal";
+}
+virtual string primitive(const AstVar* varp) const {
+    string type;
+    const VBasicDTypeKwd keyword = varp->basicp()->keyword();
+    if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
+    type += keyword.dpiType();
+    return type;
+}
+string convert(const AstVar* varp) const {
+    if (varp->isDpiOpenArray()) {
+        return openArray(varp);
+    } else if (const AstBasicDType* const basicp = varp->basicp()) {
+        if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
+            return bitLogicVector(varp, basicp->isDpiBitVec());
         } else {
-            return "UNKNOWN";
+            return primitive(varp);
         }
+    } else {
+        return "UNKNOWN";
     }
-};
+}
+}
+;
 
 class AstNodeDType::CTypeRecursed final {
 public:

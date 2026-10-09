@@ -36,7 +36,7 @@ defaults:
 jobs:
   build:
     name: Build content
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # A skipped upstream run (e.g. Code coverage / RTLMeter on a branch push)
     # still fires workflow_run; don't rebuild and redeploy for it. deploy and
     # notify need this job, so they cascade-skip too.
@@ -60,7 +60,7 @@ jobs:
   deploy:
     name: Deploy
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     environment:
       name: github-pages
       url: ${{ steps.deploy-2.outputs.page_url || steps.deploy-1.outputs.page_url }}
@@ -78,7 +78,7 @@ jobs:
   notify:
     name: Notify
     needs: [build, deploy]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: ${{ github.repository == 'verilator/verilator' }}
     steps:
       - name: Checkout

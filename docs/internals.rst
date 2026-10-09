@@ -1189,7 +1189,7 @@ is appreciated if you could match our style for C/C++:
   (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
-using clang-format version 18, and yapf for Python, and is automatically
+using clang-format version 21, and yapf for Python, and is automatically
 corrected in the CI actions. For those manually formatting C code:
 
 - Use four spaces per level, and no tabs.
