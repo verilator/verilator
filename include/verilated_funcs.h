@@ -785,15 +785,22 @@ inline IData VL_REDXOR_W(int words, WDataInP const lwp) VL_PURE {
 
 // EMIT_RULE: VL_COUNTONES_II:  oclean = false; lhs clean
 inline IData VL_COUNTONES_I(IData lhs) VL_PURE {
-    // This is faster than __builtin_popcountl
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return static_cast<IData>(__builtin_popcount(lhs));
+#else
     IData r = lhs - ((lhs >> 1) & 033333333333) - ((lhs >> 2) & 011111111111);
     r = (r + (r >> 3)) & 030707070707;
     r = (r + (r >> 6));
     r = (r + (r >> 12) + (r >> 24)) & 077;
     return r;
+#endif
 }
 inline IData VL_COUNTONES_Q(QData lhs) VL_PURE {
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return static_cast<IData>(__builtin_popcountll(lhs));
+#else
     return VL_COUNTONES_I(static_cast<IData>(lhs)) + VL_COUNTONES_I(static_cast<IData>(lhs >> 32));
+#endif
 }
 #define VL_COUNTONES_E VL_COUNTONES_I
 inline IData VL_COUNTONES_W(int words, WDataInP const lwp) VL_PURE {
