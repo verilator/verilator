@@ -276,7 +276,7 @@ public:  // But only for verilated*.cpp
     void scopeErase(const VerilatedScope* scopep) VL_MT_SAFE;
 
     // METHODS - interface references - INTERNAL only for verilated*.cpp
-    void ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE;
+    const VerilatedIfaceRef* ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE;
     void ifaceRefErase(const std::string& fullname, const VerilatedScope* scopep) VL_MT_SAFE;
 
     // METHODS - file IO - INTERNAL only for verilated*.cpp

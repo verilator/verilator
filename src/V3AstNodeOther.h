@@ -1453,18 +1453,22 @@ public:
 class AstIntfRef final : public AstNode {
     // An interface reference
     string m_name;  // Hierarchical path of the reference
+    string m_parentName;  // Hierarchical path of the declaring module, before inlining
     string m_baseName;  // Final component of m_name, i.e. the reference port name
     string m_modportName;  // "" = no modport, else name of the modport referenced
 public:
-    AstIntfRef(FileLine* fl, const string& name, const string& baseName, const string& modportName)
+    AstIntfRef(FileLine* fl, const string& name, const string& parentName, const string& baseName,
+               const string& modportName)
         : ASTGEN_SUPER_IntfRef(fl)
         , m_name{name}
+        , m_parentName{parentName}
         , m_baseName{baseName}
         , m_modportName{modportName} {}
     ASTGEN_MEMBERS_AstIntfRef;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }
+    string parentName() const { return m_parentName; }
     string baseName() const { return m_baseName; }
     string modportName() const { return m_modportName; }
 };

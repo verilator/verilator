@@ -101,7 +101,6 @@ class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
 class VerilatedIfaceRef;
-class VerilatedIfaceRefMap;
 struct VlIfaceRefTableEntry;
 template <typename, typename>
 class VerilatedTrace;
@@ -968,6 +967,8 @@ private:
     int m_funcnumMax = 0;  // Maximum function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
     VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
+    // Non-owning pointers into the context map, for VPI iteration (Slowpath)
+    std::vector<const VerilatedIfaceRef*>* m_ifaceRefsp = nullptr;
     const char* const m_namep;  // Scope name (Slowpath)
     const char* const m_identifierp;  // Identifier of scope (with escapes removed)
     const char* const m_defnamep;  // Definition name (SCOPE_MODULE only)
@@ -991,6 +992,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    void ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
                                          VerilatedSyms* symsp) VL_MT_UNSAFE;
     static void ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
@@ -1005,6 +1007,10 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedSyms* symsp() const VL_MT_SAFE_POSTINIT { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
+    // Interface references declared in this scope, in table order; nullptr if none
+    const std::vector<const VerilatedIfaceRef*>* ifaceRefsp() const VL_MT_SAFE_POSTINIT {
+        return m_ifaceRefsp;
+    }
     void scopeDump() const;
     void* exportFindError(int funcnum) const VL_MT_SAFE;
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
@@ -1013,9 +1019,15 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedContext* contextp() const { return m_symsp->_vm_contextp__; }
 };
 
+/// Sentinel parent offset for an interface reference whose declaring scope is not in the scope
+/// table
+constexpr uint32_t VL_IFACEREF_NO_PARENT = ~0U;
+
 // One interface reference, consumed by VerilatedScope::ifaceRefsInsertFromTable()
 struct VlIfaceRefTableEntry final {
     uint32_t ptrOffset;  // offsetof of the referred-to __Vscopep_* member within the Syms object
+    // offsetof of the enclosing scope's __Vscopep_* member, or VL_IFACEREF_NO_PARENT
+    uint32_t parentPtrOffset;
     const char* namep;  // Name of the reference port
     // Path within the model; as VlScopeTableEntry::namep, instance name prepended at construction
     const char* suffixp;

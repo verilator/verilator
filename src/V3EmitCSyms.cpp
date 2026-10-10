@@ -62,13 +62,16 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             , m_type{type} {}
     };
     struct IfaceRefData final {
-        const AstScope* const m_scopep;  // Concrete interface scope referred to
-        const std::string m_suffix;  // Path relative to the model instance
-        const std::string m_name;  // Name of the reference port
-        const std::string m_modportName;  // "" = no modport
-        IfaceRefData(const AstScope* scopep, const std::string& suffix, const std::string& name,
+        const AstScope* m_scopep;  // Concrete interface scope referred to
+        std::string m_parentSym;  // Declaring scope symbol, including inlined levels
+        std::string m_suffix;  // Path relative to the model instance
+        std::string m_name;  // Name of the reference port
+        std::string m_modportName;  // "" = no modport
+        IfaceRefData(const AstScope* scopep, const std::string& parentSym,
+                     const std::string& suffix, const std::string& name,
                      const std::string& modportName)
             : m_scopep{scopep}
+            , m_parentSym{parentSym}
             , m_suffix{suffix}
             , m_name{name}
             , m_modportName{modportName} {}
@@ -732,7 +735,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             // Assume only references under the same parent scope reference the
             // same interface. Same limitation as the trace path in V3TraceDecl.
             if (!VString::startsWith(refName, parentPath)) continue;
-            m_ifaceRefs.emplace_back(nodep, refName, AstNode::vpiName(intfRefp->baseName()),
+            m_ifaceRefs.emplace_back(nodep, scopeSymString(intfRefp->parentName()), refName,
+                                     AstNode::vpiName(intfRefp->baseName()),
                                      intfRefp->modportName());
         }
     }
@@ -740,12 +744,25 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void buildIfaceRefTable() {
         if (m_ifaceRefs.empty()) return;
         const std::string symClass = symClassName();
+        // Sorted by path, as VPI iteration yields references in table order
+        std::stable_sort(
+            m_ifaceRefs.begin(), m_ifaceRefs.end(),
+            [](const IfaceRefData& a, const IfaceRefData& b) { return a.m_suffix < b.m_suffix; });
         for (const IfaceRefData& ird : m_ifaceRefs) {
             const std::string scopeSym = scopeSymString(ird.m_scopep->name());
             // Only reference scopes that actually made it into the scope table
             if (m_scopeNames.find(scopeSym) == m_scopeNames.end()) continue;
+            // The declaring scope may have been omitted from the public scope table.
+            // Keep such references reachable by name, without attaching them to a scope.
+            std::string parentOffset = "VL_IFACEREF_NO_PARENT";
+            const auto parent = m_scopeNames.find(ird.m_parentSym);
+            if (parent != m_scopeNames.end()) {
+                parentOffset = "offsetof(" + symClass + ", "
+                               + protect("__Vscopep_" + parent->second.m_symName) + ")";
+            }
             std::string row
-                = "{offsetof(" + symClass + ", " + protect("__Vscopep_" + scopeSym) + "), \"";
+                = "{offsetof(" + symClass + ", " + protect("__Vscopep_" + scopeSym) + "), ";
+            row += parentOffset + ", \"";
             row += V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(ird.m_name, true));
             row += "\", \"";
             row += V3OutFormatter::quoteNameControls(
