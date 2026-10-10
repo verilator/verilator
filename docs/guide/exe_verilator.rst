@@ -1471,6 +1471,14 @@ Summary:
    Defaults to the value of :vlopt:`--output-split`, unless explicitly
    specified.
 
+.. option:: --output-split-syms <elements>
+
+   Similar to :vlopt:`--output-split-cfuncs`, it enables splitting symbol tables
+   in the output .cpp files into multiple files.
+
+   Defaults to quadruple of the value of :vlopt:`--output-split`, unless explicitly
+   specified.
+
 .. option:: -P
 
    With :vlopt:`-E`, disable generation of ``&96;line`` markers and

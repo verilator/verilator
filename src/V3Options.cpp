@@ -1052,6 +1052,7 @@ void V3Options::notify() VL_MT_DISABLED {
     // Default split limits if not specified
     if (m_outputSplitCFuncs < 0) m_outputSplitCFuncs = m_outputSplit;
     if (m_outputSplitCTrace < 0) m_outputSplitCTrace = m_outputSplit;
+    if (m_outputSplitSyms < 0) m_outputSplitSyms = m_outputSplit * 4;
 
     if (v3Global.opt.main() && v3Global.opt.systemC()) {
         cmdfl->v3warn(E_UNSUPPORTED,
@@ -1700,6 +1701,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         if (m_outputSplitCTrace < 0) {
             fl->v3error("--output-split-ctrace must be >= 0: " << valp);
         }
+    });
+    DECL_OPTION("-output-split-syms", CbVal, [this, fl](const char* valp) {
+        m_outputSplitSyms = std::atoi(valp);
+        if (m_outputSplitSyms < 0) { fl->v3error("--output-split-syms must be >= 0: " << valp); }
     });
 
     DECL_OPTION("-P", Set, &m_preprocNoLine);

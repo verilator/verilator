@@ -83,6 +83,7 @@ if not test.make_version or float(test.make_version) < 4.1:
 test.compile(v_flags2=["--trace-vcd",
                        "--output-split 1",
                        "--output-split-cfuncs 1",
+                       "--output-split-syms 1",
                        "--exe",
                        "../" + test.main_filename],
              verilator_make_gmake=False)  # yapf:disable
