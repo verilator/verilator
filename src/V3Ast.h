@@ -367,6 +367,8 @@ public:
     inline void iterateNull(AstNode* nodep);
     /// Call visit()s on nodep's children
     inline void iterateChildren(AstNode* nodep);
+    /// Call visit()s on nodep's children, skipping the scope suffix
+    inline void iterateModuleChildrenWithoutScopes(AstNode* nodep);
     /// Call visit()s on nodep (maybe nullptr) and nodep's nextp() list
     inline void iterateAndNextNull(AstNode* nodep);
     /// Return edited nodep; see comments in V3Ast.cpp
@@ -1030,11 +1032,15 @@ protected:
     friend class VNVisitorConst;
     // Use instead VNVisitor::iterateChildren
     void iterateChildren(VNVisitor& v);
+    // Use instead VNVisitor::iterateModuleChildrenWithoutScopes
+    void iterateModuleChildrenWithoutScopes(VNVisitor& v);
     // Use instead VNVisitor::iterateChildrenBackwardsConst
     void iterateChildrenBackwardsConst(VNVisitorConst& v);
     // Use instead VNVisitor::iterateChildrenConst
     void iterateChildrenConst(VNVisitorConst& v);
     // Use instead VNVisitor::iterateAndNextNull
+    void iterateAndNext(VNVisitor& v);
+    template <bool T_StopAtScope>
     void iterateAndNext(VNVisitor& v);
     // Use instead VNVisitor::iterateAndNextConstNull
     void iterateAndNextConst(VNVisitorConst& v);
@@ -1687,6 +1693,9 @@ void VNVisitor::iterateNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->accept(*this);
 }
 void VNVisitor::iterateChildren(AstNode* nodep) { nodep->iterateChildren(*this); }
+void VNVisitor::iterateModuleChildrenWithoutScopes(AstNode* nodep) {
+    nodep->iterateModuleChildrenWithoutScopes(*this);
+}
 void VNVisitor::iterateAndNextNull(AstNode* nodep) {
     if (VL_LIKELY(nodep)) nodep->iterateAndNext(*this);
 }

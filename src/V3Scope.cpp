@@ -26,6 +26,7 @@
 #include "V3Scope.h"
 
 #include "V3ConstPool.h"
+#include "V3Stats.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -65,6 +66,7 @@ class ScopeVisitor final : public VNVisitor {
     VarScopeMap m_varScopes;  // Varscopes created for each scope and var
     // Varrefs-in-scopes needing fixup when done
     std::vector<std::pair<AstVarRef*, AstScope*>> m_varRefScopes;
+    uint64_t m_ignoredScopeVisits = 0;  // Visits to scopes whose contents are skipped
 
     // METHODS
 
@@ -164,6 +166,8 @@ class ScopeVisitor final : public VNVisitor {
         // Get list of cells before we edit, to avoid excess visits (issue #6059)
         std::deque<AstCell*> cells;
         for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
+            // Scopes form a suffix. Stop scanning for cells when we see one.
+            if (VN_IS(cellnextp, Scope)) break;
             if (AstCell* const cellp = VN_CAST(cellnextp, Cell)) cells.push_back(cellp);
         }
 
@@ -203,7 +207,7 @@ class ScopeVisitor final : public VNVisitor {
             UASSERT_OBJ(nInsts, nodep, "Module scoped more times than instantiated");
             nodep->user3(nInsts - 1);
             m_last = nInsts == 1;
-            iterateChildren(nodep);
+            iterateModuleChildrenWithoutScopes(nodep);
         }
 
         // ***Note m_scopep is passed back to the caller of the routine (above)
@@ -237,7 +241,7 @@ class ScopeVisitor final : public VNVisitor {
         AstNode::user1ClearTree();
         nodep->addMembersp(m_scopep);
 
-        iterateChildren(nodep);
+        iterateModuleChildrenWithoutScopes(nodep);
     }
     void visit(AstCellInline* nodep) override {  //
         if (v3Global.opt.vpi()) {
@@ -339,15 +343,18 @@ class ScopeVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstScope* nodep) override {
-        // Scope that was made by this module for different cell;
-        // Want to ignore blocks under it, so just do nothing
+        // Skip contents of an already-created scope.
+        ++m_ignoredScopeVisits;
     }
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit ScopeVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit ScopeVisitor(AstNetlist* nodep) {
+        iterate(nodep);
+        V3Stats::addStat("Scope, Ignored scope visits", m_ignoredScopeVisits);
+    }
     ~ScopeVisitor() override = default;
 };
 

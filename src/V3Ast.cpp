@@ -1062,6 +1062,19 @@ void AstNode::iterateChildren(VNVisitor& v) {
     if (m_op4p) m_op4p->iterateAndNext(v);
 }
 
+void AstNode::iterateModuleChildrenWithoutScopes(VNVisitor& v) {
+    UASSERT_OBJ(VN_IS(this, NodeModule), this, "Expected module");
+    ASTNODE_PREFETCH(m_op1p);
+    ASTNODE_PREFETCH(m_op2p);
+    ASTNODE_PREFETCH(m_op3p);
+    ASTNODE_PREFETCH(m_op4p);
+    if (m_op1p) m_op1p->iterateAndNext(v);
+    // Scopes form a suffix. Skip them during instance processing.
+    if (m_op2p) m_op2p->iterateAndNext<true>(v);
+    if (m_op3p) m_op3p->iterateAndNext(v);
+    if (m_op4p) m_op4p->iterateAndNext(v);
+}
+
 void AstNode::iterateChildrenConst(VNVisitorConst& v) {
     // This is a very hot function
     ASTNODE_PREFETCH(m_op1p);
@@ -1074,6 +1087,7 @@ void AstNode::iterateChildrenConst(VNVisitorConst& v) {
     if (m_op4p) m_op4p->iterateAndNextConst(v);
 }
 
+template <bool T_StopAtScope>
 void AstNode::iterateAndNext(VNVisitor& v) {
     // This is a very hot function
     // IMPORTANT: If you replace a node that's the target of this iterator,
@@ -1087,6 +1101,7 @@ void AstNode::iterateAndNext(VNVisitor& v) {
     // cppcheck-suppress knownConditionTrueFalse
     if (nodep) ASTNODE_PREFETCH(nodep->m_nextp);
     while (nodep) {  // effectively: if (!this) return;  // Callers rely on this
+        if (T_StopAtScope && VN_IS(nodep, Scope)) return;
         if (nodep->m_nextp) ASTNODE_PREFETCH(nodep->m_nextp->m_nextp);
         AstNode* niterp = nodep;  // Pointer may get stomped via m_iterpp if the node is edited
         // Desirable check, but many places where multiple iterations are OK
@@ -1108,6 +1123,8 @@ void AstNode::iterateAndNext(VNVisitor& v) {
         }
     }
 }
+
+void AstNode::iterateAndNext(VNVisitor& v) { iterateAndNext<false>(v); }
 
 void AstNode::iterateListBackwardsConst(VNVisitorConst& v) {
     AstNode* nodep = this;

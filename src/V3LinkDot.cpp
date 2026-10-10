@@ -71,6 +71,7 @@
 #include "V3MemberMap.h"
 #include "V3Parse.h"
 #include "V3Randomize.h"
+#include "V3Stats.h"
 #include "V3String.h"
 #include "V3SymTable.h"
 
@@ -1131,6 +1132,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     int m_modArgNum = 0;  // Arg block number for randomize(), 0=none seen
     std::vector<AstIface*> m_virtIfaces;  // interfaces used as virtual,
                                           // needed for handleUnvisitedVirtIfaces()
+    uint64_t m_ignoredScopeVisits = 0;  // Visits to scopes whose contents are skipped
 
     // METHODS
     void makeImplicitNew(AstClass* nodep) {
@@ -1180,6 +1182,13 @@ class LinkDotFindVisitor final : public VNVisitor {
         });
     }
 
+    void iterateModuleChildren(AstNodeModule* nodep) {
+        if (m_statep->forScopeCreation()) {
+            iterateModuleChildrenWithoutScopes(nodep);
+        } else {
+            iterateChildren(nodep);
+        }
+    }
     // VISITORS
     void visit(AstNetlist* nodep) override {  // FindVisitor::
         // Process $unit or other packages
@@ -1326,7 +1335,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
             // Iterate
             nodep->user2(true);
-            iterateChildren(nodep);
+            iterateModuleChildren(nodep);
             nodep->user2(false);
             nodep->user4(true);
             // Interfaces need another pass when signals are resolved. When creating
@@ -1343,7 +1352,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             VSymEnt* const upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
             m_curSymp = m_modSymp
                 = m_statep->insertBlock(upperSymp, nodep->name() + "::", nodep, m_classOrPackagep);
-            iterateChildren(nodep);
+            iterateModuleChildren(nodep);
             nodep->user4(true);
         } else {  // !doit
             if (nodep->hierParams()) {
@@ -1394,7 +1403,7 @@ class LinkDotFindVisitor final : public VNVisitor {
             m_explicitNew = false;
             // m_modSymp/m_curSymp for non-packages set by AstCell above this module
             // Iterate
-            iterateChildren(nodep);
+            iterateModuleChildren(nodep);
             nodep->user4(true);
             // Implicit new needed?
             if (!m_explicitNew && m_statep->forPrimary()) makeImplicitNew(nodep);
@@ -1409,7 +1418,8 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstScope* nodep) override {  // FindVisitor::
         UASSERT_OBJ(m_statep->forScopeCreation(), nodep,
                     "Scopes should only exist right after V3Scope");
-        // Ignored.  Processed in next step
+        // Scope contents processed later by LinkDotScopeVisitor.
+        ++m_ignoredScopeVisits;
     }
     void visit(AstCell* nodep) override {  // FindVisitor::
         UINFO(5, "   CELL under " << m_scope << " is " << nodep);
@@ -2345,6 +2355,9 @@ public:
         iterate(rootp);
 
         if (!m_virtIfaces.empty()) handleUnvisitedVirtIfaces();
+        if (m_statep->forScopeCreation()) {
+            V3Stats::addStat("LinkDot, Ignored scope visits", m_ignoredScopeVisits);
+        }
     }
     ~LinkDotFindVisitor() override = default;
 };
