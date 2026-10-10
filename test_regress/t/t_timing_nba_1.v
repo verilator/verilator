@@ -38,4 +38,30 @@ module t;
     end
   end
 
+  // NBAs to a whole unpacked array update it: after a delay, in a fork, and in a clocked
+  // process. An NBA to a single element updates it too.
+  logic clk = 0;
+  logic [7:0] arr[0:3];
+  logic [7:0] arr_fork[0:3];
+  logic [7:0] arr_clk[0:3];
+  logic [7:0] arr_elem[0:3];
+  logic [7:0] arr_src[0:3] = '{8'h11, 8'h22, 8'h33, 8'h44};
+  initial #1 arr <= arr_src;
+  initial
+  fork
+    #1 arr_fork <= arr_src;
+  join_none
+  initial #1 clk = 1;
+  always @(posedge clk) begin
+    arr_clk <= arr_src;
+    arr_elem[1] <= arr_src[1];
+  end
+  initial begin
+    #2;
+    foreach (arr_src[i]) begin
+      if (arr[i] !== arr_src[i] || arr_fork[i] !== arr_src[i] || arr_clk[i] !== arr_src[i]) $stop;
+    end
+    if (arr_elem[1] !== 8'h22) $stop;
+  end
+
 endmodule
