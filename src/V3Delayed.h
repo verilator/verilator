@@ -21,12 +21,20 @@
 #include "verilatedos.h"
 
 class AstNetlist;
+class AstNodeExpr;
+class AstVarScope;
+class FileLine;
 
 //============================================================================
 
 class V3Delayed final {
 public:
     static void delayedAll(AstNetlist* nodep) VL_MT_DISABLED;
+    // New expression taking the ticket of an NBA executed now (VlNBATicket), ordering its update
+    static AstNodeExpr* newTicketp(FileLine* flp) VL_MT_DISABLED;
+    // The named event that the NBA region triggers if the trigger flag
+    // (AstNetlist::nbaEventTriggerp) is set, both created if needed
+    static AstVarScope* nbaEventp(AstNetlist* netlistp) VL_MT_DISABLED;
 };
 
 #endif  // Guard

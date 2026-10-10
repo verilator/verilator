@@ -2462,7 +2462,10 @@ class ConstVisitor final : public VNVisitor {
             }
         } else if (m_doV && VN_IS(nodep->lhsp(), Concat)) {
             bool need_temp = false;
-            const bool need_temp_pure = !nodep->rhsp()->isPure();
+            // A blocking assignment with an intra-assignment timing control evaluates its value
+            // before waiting (IEEE 1800-2023 9.4.5)
+            const bool waits = VN_IS(nodep, Assign) && nodep->timingControlp();
+            const bool need_temp_pure = !nodep->rhsp()->isPure() || waits;
             if (m_warn && !VN_IS(nodep, AssignDly)
                 && !need_temp_pure) {  // Is same var on LHS and RHS?
                 // If the rhs is not pure, we need a temporary variable anyway
@@ -2491,7 +2494,7 @@ class ConstVisitor final : public VNVisitor {
                 AstVarRef* const tempPureRefp
                     = new AstVarRef{rhsp->fileline(), tempPurep, VAccess::WRITE};
                 AstNodeAssign* const asnp
-                    = VN_IS(nodep, AssignDly)
+                    = VN_IS(nodep, AssignDly) || waits
                           ? new AstAssign{nodep->fileline(), tempPureRefp, rhsp}
                           : nodep->cloneType(tempPureRefp, rhsp);
                 nodep->addHereThisAsNext(asnp);
@@ -2508,6 +2511,33 @@ class ConstVisitor final : public VNVisitor {
                 UINFO(4, "  ASSI " << nodep);
                 // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(lc1,SEL(rhs,{size})),
                 //                                ASSIGN(lc2,SEL(newrhs,{size}))
+            }
+            // An intra-assignment timing control applies to the whole assignment, so is evaluated
+            // once, also when assigning each part
+            if (AstNode* const controlp = nodep->timingControlp()) {
+                FileLine* const flp = nodep->fileline();
+                if (waits) {
+                    // Wait before assigning the parts
+                    controlp->unlinkFrBack();
+                    AstNode* stmtp = controlp;
+                    if (AstSenTree* const sentreep = VN_CAST(controlp, SenTree)) {
+                        stmtp = new AstEventControl{flp, sentreep, nullptr};
+                    }
+                    nodep->addHereThisAsNext(stmtp);
+                } else if (AstDelay* const delayp = VN_CAST(controlp, Delay)) {
+                    // Each part is updated by an NBA after the same delay
+                    AstNodeExpr* const valuep = delayp->lhsp();
+                    if (!valuep->isPure()) {
+                        valuep->unlinkFrBack();
+                        AstVar* const tempp
+                            = new AstVar{flp, VVarType::BLOCKTEMP, m_concswapNames.get(valuep),
+                                         valuep->dtypep()};
+                        m_modp->addStmtsp(tempp);
+                        nodep->addHereThisAsNext(
+                            new AstAssign{flp, new AstVarRef{flp, tempp, VAccess::WRITE}, valuep});
+                        delayp->lhsp(new AstVarRef{flp, tempp, VAccess::READ});
+                    }
+                }
             }
             UINFOTREE(9, nodep, "", "Ass_old");
             // Unlink the stuff

@@ -1882,22 +1882,39 @@ struct VlApplyIndices<N_Rank, N_Rank, T_Target> final {
 };
 
 //===================================================================
-// Commit queue for NBAs - currently only for unpacked arrays
+/// Scheduling tickets of nonblocking assignments (NBAs). Tickets increase in the order NBAs are
+/// executed, so their updates becoming ready together, e.g. after intra-assignment delays, can be
+/// performed in that order (IEEE 1800-2023 4.6). Ticket 0 is never taken.
+
+class VlNBATicket final {
+public:
+    /// Return the ticket of an NBA executed now
+    static uint64_t next() VL_MT_SAFE {
+        static std::atomic<uint64_t> s_next{1};  // Next ticket to take
+        return s_next.fetch_add(1, std::memory_order_relaxed);
+    }
+};
+
+//===================================================================
+// Commit queue for NBAs - for unpacked arrays, and for other variables (N_Rank 0) with updates
+// pending from intra-assignment timing controls
 //
 // This data-structure is used to handle non-blocking assignments
 // that might execute a variable number of times in a single
-// evaluation. It has 2 operations:
-// - 'enqueue' will add an update to the queue
+// evaluation, or whose updates become ready later. It has 2 operations:
+// - 'enqueue' will add an update to the queue, with the ticket of its
+//   NBA (VlNBATicket), or 0 if updates are enqueued in program order
 // - 'commit' will apply all enqueued updates to the target variable,
-//   in the order they were enqueued. This ensures the last NBA
-//   takes effect as it is expected.
+//   in the order of their tickets, which is the order they were
+//   enqueued, unless an update scheduled earlier became ready after
+//   others. This ensures the last NBA takes effect as it is expected.
 // There are 2 specializations of this class below:
 // - A version when a partial element update is not required,
 //   e.g, to handle:
 //      logic [31:0] array[N];
 //      for (int i = 0 ; i < N ; ++i) array[i] <= x;
-//   Here 'enqueue' takes the RHS ('x'), and the array indices ('i')
-//   as arguments.
+//   Here 'enqueue' takes the ticket, the RHS ('x'), and the array
+//   indices ('i') as arguments.
 // - A different version when a partial element update is required,
 //   e.g. for:
 //      logic [31:0] array[N];
@@ -1915,17 +1932,26 @@ template <typename T_Target,  // Type of the variable this commit queue updates
           >
 class VlNBACommitQueue;
 
+// Sort the pending updates of a VlNBACommitQueue by ticket, keeping the order of equal ones
+template <typename T_Entry>
+void VlNBASortByTicket(std::vector<T_Entry>& entries) {
+    std::stable_sort(entries.begin(), entries.end(),
+                     [](const T_Entry& a, const T_Entry& b) { return a.ticket < b.ticket; });
+}
+
 // Specialization for whole element updates only
 template <typename T_Target, typename T_Element, std::size_t N_Rank>
 class VlNBACommitQueue<T_Target, /* Partial: */ false, T_Element, N_Rank> final {
     // TYPES
     struct Entry final {
+        uint64_t ticket;
         T_Element value;
-        size_t indices[N_Rank];
+        size_t indices[N_Rank ? N_Rank : 1];
     };
 
     // STATE
-    std::vector<Entry> m_pending;  // Pending updates, in program order
+    std::vector<Entry> m_pending;  // Pending updates, in the order they were enqueued
+    bool m_unordered = false;  // Whether an update was enqueued after one with a later ticket
 
 public:
     // CONSTRUCTOR
@@ -1934,8 +1960,9 @@ public:
 
     // METHODS
     template <typename... T_Args>
-    void enqueue(const T_Element& value, T_Args... indices) {
-        m_pending.emplace_back(Entry{value, {indices...}});
+    void enqueue(uint64_t ticket, const T_Element& value, T_Args... indices) {
+        m_unordered |= !m_pending.empty() && ticket < m_pending.back().ticket;
+        m_pending.emplace_back(Entry{ticket, value, {indices...}});
     }
 
     // Note: T_Commit might be different from T_Target. Specifically, when the signal is a
@@ -1943,6 +1970,10 @@ public:
     template <typename T_Commit>
     void commit(T_Commit& target) {
         if (m_pending.empty()) return;
+        if (VL_UNLIKELY(m_unordered)) {
+            VlNBASortByTicket(m_pending);
+            m_unordered = false;
+        }
         for (const Entry& entry : m_pending) {
             VlApplyIndices<0, N_Rank, T_Commit>::apply(target, entry.indices) = entry.value;
         }
@@ -1955,13 +1986,15 @@ template <typename T_Target, typename T_Element, std::size_t N_Rank>
 class VlNBACommitQueue<T_Target, /* Partial: */ true, T_Element, N_Rank> final {
     // TYPES
     struct Entry final {
+        uint64_t ticket;
         T_Element value;
         T_Element mask;
-        size_t indices[N_Rank];
+        size_t indices[N_Rank ? N_Rank : 1];
     };
 
     // STATE
-    std::vector<Entry> m_pending;  // Pending updates, in program order
+    std::vector<Entry> m_pending;  // Pending updates, in the order they were enqueued
+    bool m_unordered = false;  // Whether an update was enqueued after one with a later ticket
 
     // STATIC METHODS
 
@@ -2019,8 +2052,10 @@ public:
 
     // METHODS
     template <typename... T_Args>
-    void enqueue(const T_Element& value, const T_Element& mask, T_Args... indices) {
-        m_pending.emplace_back(Entry{value, mask, {indices...}});
+    void enqueue(uint64_t ticket, const T_Element& value, const T_Element& mask,
+                 T_Args... indices) {
+        m_unordered |= !m_pending.empty() && ticket < m_pending.back().ticket;
+        m_pending.emplace_back(Entry{ticket, value, mask, {indices...}});
     }
 
     // Note: T_Commit might be different from T_Target. Specifically, when the signal is a
@@ -2028,6 +2063,10 @@ public:
     template <typename T_Commit>
     void commit(T_Commit& target) {
         if (m_pending.empty()) return;
+        if (VL_UNLIKELY(m_unordered)) {
+            VlNBASortByTicket(m_pending);
+            m_unordered = false;
+        }
         for (const Entry& entry : m_pending) {  //
             auto& ref = VlApplyIndices<0, N_Rank, T_Commit>::apply(target, entry.indices);
             // Maybe inefficient, but it works for now ...
@@ -2036,6 +2075,73 @@ public:
         }
         m_pending.clear();
     }
+};
+
+//===================================================================
+/// Order of the pending updates of nonblocking assignments (NBAs) to a variable, or to a member
+/// of interface instances selected through handles. Each NBA statement ("site") stores the
+/// values its update needs in its own queues, and adds the update here. The commit generated by
+/// Verilator then applies the updates in the order of their tickets (VlNBATicket), or in the
+/// order they were added if all tickets are 0, loading each from the queues of its site, which
+/// it clears after the last update of the site.
+
+class VlNBAOrder final {
+    // TYPES
+    struct Entry final {
+        uint64_t ticket;  // Ticket of the NBA
+        uint32_t site;  // Site that added the update
+        uint32_t index;  // Index of the values of the update in the queues of its site
+    };
+
+    // STATE
+    std::vector<Entry> m_entries;  // Pending updates, in the order they were added
+    std::vector<uint32_t> m_siteCounts;  // Number of pending updates of each site not advanced to
+    size_t m_next = 0;  // Number of updates the commit advanced over
+    bool m_unordered = false;  // Whether an update was added after one with a later ticket
+    bool m_last = false;  // Whether the update advanced to is the last of its site
+
+public:
+    // CONSTRUCTORS
+    VlNBAOrder() = default;
+    VL_UNCOPYABLE(VlNBAOrder);
+
+    // METHODS
+    /// Add an update by the given site, with the given ticket. Its values are at the next index of
+    /// the queues of the site.
+    void add(uint64_t ticket, uint32_t siteNum) {
+        if (VL_UNLIKELY(siteNum >= m_siteCounts.size())) m_siteCounts.resize(siteNum + 1, 0);
+        m_unordered |= !m_entries.empty() && ticket < m_entries.back().ticket;
+        m_entries.push_back(Entry{ticket, siteNum, m_siteCounts[siteNum]++});
+    }
+    /// Advance to the next update to commit. Return false once all were committed, leaving the
+    /// order empty.
+    bool next() {
+        if (VL_UNLIKELY(m_unordered)) {
+            VlNBASortByTicket(m_entries);
+            m_unordered = false;
+        }
+        if (m_next < m_entries.size()) {
+            m_last = !--m_siteCounts[m_entries[m_next++].site];
+            return true;
+        }
+        m_entries.clear();
+        m_next = 0;
+        return false;
+    }
+    /// The site of the update advanced to
+    uint32_t site() const { return m_entries[m_next - 1].site; }
+    /// The index of the values of the update advanced to, in the queues of its site
+    uint32_t index() const { return m_entries[m_next - 1].index; }
+    /// Whether the update advanced to is the last of its site, after which the commit clears
+    /// the queues of the site
+    bool last() const { return m_last; }
+    /// Do nothing. For scheduling, a call marks code that can add updates through functions
+    /// not visible to it.
+    static void touch() {}
+    /// Do nothing. For scheduling, a call in the commit marks variables it can update through
+    /// handles not visible to it.
+    template <typename... T_Args>
+    static void writes(T_Args&...) {}
 };
 
 //===================================================================
