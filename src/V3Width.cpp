@@ -8106,7 +8106,22 @@ class WidthVisitor final : public VNVisitor {
                                      portp->direction() == VDirection::OUTPUT);
                     userIterate(pinp, WidthVP{portDTypep, FINAL, STREAM_USE_ASSIGN}.p());
                 } else {
-                    iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep);
+                    // Outputs copy formal to actual; inouts also copy actual to formal
+                    // (IEEE 1800-2023 13.5.1). Check before resizing changes either type.
+                    if (portp->direction() == VDirection::OUTPUT
+                        || portp->direction() == VDirection::INOUT) {
+                        // The actual is the destination, not the source expression.
+                        checkEnumAssign(nodep, pinp, pinDTypep, portDTypep, nullptr);
+                        if (portp->direction() == VDirection::INOUT) {
+                            checkEnumAssign(nodep, pinp, portDTypep, pinDTypep, pinp);
+                        }
+                        // Enum conversions were checked above; retain normal argument sizing.
+                        checkClassAssign(nodep, "Function Argument", pinp, portDTypep);
+                        iterateCheck(nodep, "Function Argument", pinp, ASSIGN, FINAL, portDTypep,
+                                     EXTEND_LHS, true, STREAM_USE_NONE, false);
+                    } else {
+                        iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep);
+                    }
                 }
             }
         }
@@ -9715,6 +9730,24 @@ class WidthVisitor final : public VNVisitor {
         }
         (void)underp;  // cppcheck
     }
+    void checkEnumAssign(const AstNode* const parentp, AstNode* const underp,
+                         const AstNodeDType* const toDTypep, const AstNodeDType* const fromDTypep,
+                         const AstNode* const fromp, const bool warnOn = true) {
+        if (const AstEnumDType* const enump = VN_CAST(toDTypep->skipRefToEnump(), EnumDType)) {
+            const VCastable castable = AstNode::computeCastable(enump, fromDTypep, fromp);
+            if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
+                && castable != VCastable::ENUM_IMPLICIT && !m_enumItemp
+                && !parentp->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
+                underp->v3warn(ENUMVALUE,
+                               "Implicit conversion to enum "
+                                   << toDTypep->prettyDTypeNameQ() << " from "
+                                   << fromDTypep->prettyDTypeNameQ()
+                                   << " (IEEE 1800-2023 6.19.3)\n"
+                                   << parentp->warnMore()
+                                   << "... Suggest use enum's mnemonic, or static cast");
+            }
+        }
+    }
     void iterateCheckAssign(AstNode* parentp, const char* side, AstNode* rhsp, Stage stage,
                             AstNodeDType* lhsDTypep) {
         // Check using assignment-like context rules
@@ -9827,7 +9860,8 @@ class WidthVisitor final : public VNVisitor {
 
     AstNode* iterateCheck(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
                           Stage stage, AstNodeDType* expDTypep, ExtendRule extendRule,
-                          bool warnOn = true, StreamUse streamUse = STREAM_USE_NONE) {
+                          bool warnOn = true, StreamUse streamUse = STREAM_USE_NONE,
+                          const bool checkEnums = true) {
         // Perform data type check on underp, which is underneath parentp used for error reporting
         // Returns the new underp
         // Conversion to/from doubles and integers are before iterating.
@@ -9880,22 +9914,8 @@ class WidthVisitor final : public VNVisitor {
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
             if (expBasicp && underBasicp) {
-                if (const AstEnumDType* const expEnump
-                    = VN_CAST(expDTypep->skipRefToEnump(), EnumDType)) {
-                    const auto castable
-                        = AstNode::computeCastable(expEnump, underp->dtypep(), underp);
-                    if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
-                        && castable != VCastable::ENUM_IMPLICIT && !m_enumItemp
-                        && !parentp->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
-                        underp->v3warn(ENUMVALUE,
-                                       "Implicit conversion to enum "
-                                           << expDTypep->prettyDTypeNameQ() << " from "
-                                           << underp->dtypep()->prettyDTypeNameQ()
-                                           << " (IEEE 1800-2023 6.19.3)\n"
-                                           << parentp->warnMore()
-                                           << "... Suggest use enum's mnemonic, or static cast");
-                        // UINFOTREE(1, parentp->backp(), "", "back");
-                    }
+                if (checkEnums) {
+                    checkEnumAssign(parentp, underp, expDTypep, underp->dtypep(), underp, warnOn);
                 }
                 AstNodeDType* subDTypep = expDTypep;
                 // We then iterate FINAL before width fixes, as if the under-operation
