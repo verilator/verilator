@@ -15,12 +15,11 @@ test.pli_filename = "t/t_tri_inout.cpp"
 
 test.clean_objs()
 
-test.compile(
-    make_top_shell=False,
-    make_main=False,
-    verilator_flags2=[
-        "--exe", test.pli_filename, "--hierarchical", "--Wno-UNOPTFLAT", test.vlt_filename
-    ])
+test.compile(make_top_shell=False,
+             make_main=False,
+             verilator_flags2=[
+                 "--exe", test.pli_filename, "--hierarchical", "--Wno-UNOPTFLAT", test.vlt_filename
+             ])
 
 test.execute()
 
