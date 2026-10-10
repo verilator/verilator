@@ -68,6 +68,7 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
 # Compile un-optimized
 test.compile(verilator_flags2=[
     "--stats",
+    "-fno-decompose",
     "--build",
     "-fno-dfg",
     "+incdir+" + test.obj_dir,
@@ -88,6 +89,7 @@ if test.name == "t_dfg_peephole_off_each":
 
 test.compile(verilator_flags2=[
     "--stats",
+    "-fno-decompose",
     "--build",
     "--exe",
     "+incdir+" + test.obj_dir,

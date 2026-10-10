@@ -1,0 +1,70 @@
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:46:15: 'drd' marked split_var but will not be split because it is read via DPI.
+                                                              : ... note: In instance 't'
+   46 |   logic [6:0] drd [2]  /*verilator split_var*/;
+      |               ^~~
+                   ... For warning description see https://verilator.org/warn/SPLITVAR?v=latest
+                   ... Use "/* verilator lint_off SPLITVAR */" and lint_on around source to disable this message.
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:47:15: 'dwr' marked split_var but will not be split because it is written via DPI.
+                                                              : ... note: In instance 't'
+   47 |   logic [6:0] dwr [2]  /*verilator split_var*/;
+      |               ^~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:123:40: 'ia' marked split_var but will not be split because it is a function argument.
+                                                               : ... note: In instance 't'
+  123 |   task automatic tsk(input logic [6:0] ia [2]  /*verilator split_var*/,
+      |                                        ^~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:124:38: 'ra' marked split_var but will not be split because it is a function argument.
+                                                               : ... note: In instance 't'
+  124 |                      ref logic [6:0] ra [2]  /*verilator split_var*/);
+      |                                      ^~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:24:23: 'in_arr' marked split_var but will not be split because it is a primary input or output.
+   24 |     input logic [6:0] in_arr [2]  /*verilator split_var*/
+      |                       ^~~~~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:40:15: 'pub' marked split_var but will not be split because it is public.
+                                                              : ... note: In instance 't'
+   40 |   logic [6:0] pub [2]  /*verilator public*/  /*verilator split_var*/;
+      |               ^~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:44:15: 'fv' marked split_var but will not be split because it is forceable.
+                                                              : ... note: In instance 't'
+   44 |   logic [6:0] fv [2]  /*verilator forceable*/  /*verilator split_var*/;
+      |               ^~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:49:17: 'nd' marked split_var but will not be split because it has a net delay.
+                                                              : ... note: In instance 't'
+   49 |   wire [6:0] #1 nd [2]  /*verilator split_var*/;
+      |                 ^~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:113:20: 'whole' marked split_var but will not be split because it is referenced in an unsupported way.
+                                                               : ... note: In instance 't'
+  113 |   initial tcd = #1 whole;
+      |                    ^~~~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:113:11: 'tcd' marked split_var but will not be split because it is referenced in an unsupported way.
+                                                               : ... note: In instance 't'
+  113 |   initial tcd = #1 whole;
+      |           ^~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:140:13: 'dyn' marked split_var but will not be split because it is referenced in an unsupported way.
+                                                               : ... note: In instance 't'
+  140 |     do if ((dyn[crc[1:0]]) !== (crc[crc[1:0]*7+:7] ^ in_arr[0])) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_opt_decompose_unpacked_attr_bad.v",140, (dyn[crc[1:0]]), (crc[crc[1:0]*7+:7] ^ in_arr[0])); $stop; end while(0);;
+      |             ^~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:140:166: 'dyn' marked split_var but will not be split because it is referenced in an unsupported way.
+                                                                : ... note: In instance 't'
+  140 |     do if ((dyn[crc[1:0]]) !== (crc[crc[1:0]*7+:7] ^ in_arr[0])) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", "t/t_opt_decompose_unpacked_attr_bad.v",140, (dyn[crc[1:0]]), (crc[crc[1:0]*7+:7] ^ in_arr[0])); $stop; end while(0);;
+      |                                                                                                                                                                      ^~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:146:34: 'whole' marked split_var but will not be split because it is referenced in an unsupported way.
+                                                               : ... note: In instance 't'
+  146 |       $display("%p %p %p %p %p", whole, whole2, q, md2[0], stw);
+      |                                  ^~~~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:146:41: 'whole2' marked split_var but will not be split because it is referenced in an unsupported way.
+                                                               : ... note: In instance 't'
+  146 |       $display("%p %p %p %p %p", whole, whole2, q, md2[0], stw);
+      |                                         ^~~~~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:146:60: 'stw' marked split_var but will not be split because it is referenced in an unsupported way.
+                                                               : ... note: In instance 't'
+  146 |       $display("%p %p %p %p %p", whole, whole2, q, md2[0], stw);
+      |                                                            ^~~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:42:26: 'LP' marked split_var but will not be split because it is not a regular signal or temporary.
+                                                              : ... note: In instance 't'
+   42 |   localparam logic [6:0] LP [2]  /*verilator split_var*/ = '{7'd1, 7'd2};
+      |                          ^~
+%Warning-SPLITVAR: t/t_opt_decompose_unpacked_attr_bad.v:157:21: 'ra' marked split_var but will not be split because it is a ref port.
+                                                               : ... note: In instance 't.u_rsub'
+  157 |     ref logic [6:0] ra [2]  /*verilator split_var*/
+      |                     ^~
+%Error: Exiting due to

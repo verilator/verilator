@@ -804,6 +804,14 @@ Summary:
 
 .. option:: -fno-dead-methods
 
+.. option:: -fno-decompose
+
+   Alias for :vlopt:`-fno-decompose-packed` and :vlopt:`-fno-decompose-unpacked`.
+
+.. option:: -fno-decompose-packed
+
+.. option:: -fno-decompose-unpacked
+
 .. option:: -fno-dedup
 
 .. option:: -fno-dfg

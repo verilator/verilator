@@ -2730,6 +2730,15 @@ public:
         if (fromp->attrFileDescr()) attrFileDescr(true);
         if (fromp->isContinuously()) isContinuously(true);
     }
+    void propagateSplitAttrFrom(const AstVar* fromp) {
+        // Splitting a variable (element/member/fragment); keep attributes
+        propagateAttrFrom(fromp);
+        lifetime(fromp->lifetime());
+        funcLocal(fromp->isFuncLocal());
+        noReset(fromp->noReset());
+        noCReset(fromp->noCReset());
+        attrSplitVar(fromp->attrSplitVar());
+    }
     void propagateWrapAttrFrom(const AstVar* fromp) {
         // Creating a function wrapper; keep attributes
         propagateAttrFrom(fromp);

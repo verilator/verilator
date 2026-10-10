@@ -257,6 +257,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Covergroup.o \
   V3CoverageJoin.o \
   V3Dead.o \
+  V3Decompose.o \
   V3Delayed.o \
   V3Depth.o \
   V3DepthBlock.o \

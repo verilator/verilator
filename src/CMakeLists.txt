@@ -76,6 +76,7 @@ set(HEADERS
     V3Covergroup.h
     V3Dead.h
     V3DebugBisect.h
+    V3Decompose.h
     V3Delayed.h
     V3Depth.h
     V3DepthBlock.h
@@ -246,6 +247,7 @@ set(COMMON_SOURCES
     V3CoverageJoin.cpp
     V3Covergroup.cpp
     V3Dead.cpp
+    V3Decompose.cpp
     V3Delayed.cpp
     V3Depth.cpp
     V3DepthBlock.cpp
