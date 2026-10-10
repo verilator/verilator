@@ -9704,7 +9704,13 @@ class WidthVisitor final : public VNVisitor {
         underp = VN_IS(underp, NodeExpr) ? checkCvtUS(VN_AS(underp, NodeExpr), false) : underp;
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
-        AstNodeDType* const checkDtp = expDTypep->skipRefToEnump();
+        AstNodeDType* checkDtp = expDTypep->skipRefToEnump();
+        if (VN_IS(parentp, Past) || VN_IS(parentp, Stable) || VN_IS(parentp, Sampled)) {
+            // These sampling functions operate on the whole fixed-size array value.
+            while (const AstUnpackArrayDType* const arrayp = VN_CAST(checkDtp, UnpackArrayDType)) {
+                checkDtp = arrayp->subDTypep()->skipRefToEnump();
+            }
+        }
         // Sampling functions may still reference an untyped property formal here.
         // V3AssertPre checks the actual type after property argument substitution.
         if (!checkDtp->isIntegralOrPacked()

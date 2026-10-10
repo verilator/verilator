@@ -227,7 +227,13 @@ private:
     }
 
     static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp) {
-        const AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
+        const AstNodeDType* dtypep = exprp->dtypep()->skipRefp();
+        if (VN_IS(nodep, Past) || VN_IS(nodep, Stable) || VN_IS(nodep, Sampled)) {
+            // Check the element type, without treating array values as packed numbers.
+            while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+                dtypep = arrayp->subDTypep()->skipRefp();
+            }
+        }
         if (!dtypep->isIntegralOrPacked()) {
             nodep->v3error("Expected numeric type, but got a " << dtypep->prettyDTypeNameQ()
                                                                << " data type");

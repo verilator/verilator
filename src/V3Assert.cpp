@@ -256,11 +256,14 @@ public:
 // Prepare one default sampled expression.
 class DefaultSampledValueVisitor final : public VNVisitor {
     // METHODS
-    static AstConst* newTypeDefault(AstNodeExpr* nodep) {
-        AstConst* const constp
-            = new AstConst{nodep->fileline(), AstConst::DTyped{}, nodep->dtypep()};
-        if (nodep->dtypep()->isFourstate()) constp->num().setAllBitsX();
-        constp->dtypeFrom(nodep);
+    static AstNodeExpr* newTypeDefault(FileLine* const flp, AstNodeDType* const dtypep) {
+        if (const AstUnpackArrayDType* const arrayp
+            = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
+            return new AstInitArray{flp, dtypep, newTypeDefault(flp, arrayp->subDTypep())};
+        }
+        AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, dtypep};
+        if (dtypep->isFourstate()) constp->num().setAllBitsX();
+        constp->dtypep(dtypep);
         return constp;
     }
 
@@ -279,7 +282,7 @@ class DefaultSampledValueVisitor final : public VNVisitor {
             || (!varp->isNet() && varp->lifetime().isStatic() && varp->hasUserInit())) {
             return;
         }
-        nodep->replaceWith(newTypeDefault(nodep));
+        nodep->replaceWith(newTypeDefault(nodep->fileline(), nodep->dtypep()));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
