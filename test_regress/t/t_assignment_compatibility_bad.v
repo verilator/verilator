@@ -32,4 +32,37 @@ module t;
   assign nonAggregate = unpackedA;
   assign unpackedA = assocArrayA;
   assign queueA = queueB;
+
+  typedef bit [8191:0] wide_t;
+  typedef string string_t;
+  string_t text_value = "hello";
+  string_t text_array[2];
+  string_t text_assoc[int];
+  string_t text_wild[*];
+  string_t text_dyn[];
+  string_t text_queue[$];
+  wide_t wide_value;
+  bit [6:0] narrow_value;
+  int integer_value;
+
+  function int bad_return();
+    return text_value;
+  endfunction
+
+  task take_integer(input int value);
+  endtask
+
+  initial begin
+    wide_value = text_value;
+    narrow_value = text_value;
+    integer_value = text_value;
+    take_integer(text_value);
+    // No string conversion error on top of the earlier error
+    integer_value = text_array;
+    integer_value = text_array.bad_method;
+    integer_value = text_assoc.bad_method;
+    integer_value = text_wild.bad_method;
+    integer_value = text_dyn.bad_method;
+    integer_value = text_queue.bad_method;
+  end
 endmodule

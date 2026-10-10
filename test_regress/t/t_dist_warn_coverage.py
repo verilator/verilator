@@ -82,7 +82,6 @@ for s in [
         'Unsupported pullup/down (weak driver) construct.',
         'Unsupported tristate construct (not in propagation graph):',
         'Unsupported tristate port expression:',
-        'Unsupported/unknown built-in queue method',
         'Unsupported: $bits for queue',
         'Unsupported: 4-state numbers in this context',
         'Unsupported: Assignments with signal strength with LHS of type:',
