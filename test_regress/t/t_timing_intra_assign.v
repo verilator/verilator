@@ -26,6 +26,8 @@ module t;
   int dly_calls = 0, ones_calls = 0;
   process dly_proc, cap_proc;
   event cev;
+  int pend_x, pend_z[3];
+  string pend_log, pend_at4, pend_at6;
 
   function automatic int dly();
     ++dly_calls;
@@ -93,12 +95,29 @@ module t;
     `checkd(dly_proc == cap_proc, 1'b1)
   end
 
+  // Each pending NBA keeps its own target and value, even if its process schedules more
+  initial begin
+    for (int i = 1; i <= 3; ++i) begin
+      pend_x <= #5 i;
+      #1;
+    end
+  end
+  always @(pend_x) if ($time != 0) pend_log = {pend_log, $sformatf("%0d@%0t ", pend_x, $time)};
+  initial begin
+    for (int i = 0; i < 3; ++i) pend_z[i] <= #5 i + 1;
+    #4 pend_at4 = $sformatf("%0d %0d %0d", pend_z[0], pend_z[1], pend_z[2]);
+    #2 pend_at6 = $sformatf("%0d %0d %0d", pend_z[0], pend_z[1], pend_z[2]);
+  end
+
   initial begin
     #20;
     `checks(cat_log, "11@3 11@5 11@7 ")
     `checks(fork_log, "0102@2")
     `checkd({cat_c, cat_d, cat_g, cat_h, cat_i, cat_j, cat_k, cat_l, cat_m, cat_n, cap_x}, 11'h7ff)
     `checkd(ones_calls, 2)
+    `checks(pend_log, "1@5 2@6 3@7 ")
+    `checks(pend_at4, "0 0 0")
+    `checks(pend_at6, "1 2 3")
     // Last, as VCS evaluates the delay of an NBA to a concatenation for each part
     `checkd(dly_calls, 3)
   end
