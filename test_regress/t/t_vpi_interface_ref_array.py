@@ -13,9 +13,13 @@ import vltest_bootstrap
 # declaring module's vpiInternalScope children; see the .cpp.
 test.scenarios('vlt')
 
+# Debug to exercise checked STL iterators in the debug compiler, including table sorting.
 test.compile(make_top_shell=False,
              make_pli=True,
-             verilator_flags2=["--binary --vpi --no-l2name --public-flat-rw", test.pli_filename])
+             verilator_flags2=[
+                 "--debug --debugi 0 --no-skip-identical",
+                 "--binary --vpi --no-l2name --public-flat-rw", test.pli_filename
+             ])
 
 test.execute(use_libvpi=True)
 
