@@ -531,16 +531,20 @@ class DelayedVisitor final : public VNVisitor {
             nodep = selp->fromp();
         }
         UASSERT_OBJ(!VN_IS(nodep, Sel), lhsp, "Multiple 'AstSel' applied to LHS reference");
-        // Capture the indices of selects - might be many, also below struct members. 'foreach'
-        // visits a select before its index, which it replaces, so not the selects in the index.
+        // What remains below the selects is the variable, with members selected, which we can
+        // reuse
+        AstNode* const basep = nodep->baseFromp(/* overMembers: */ true);
+        UASSERT_OBJ(VN_IS(basep, NodeVarRef), lhsp, "Malformed LHS in NBA");
+        // Capture the indices of selects - might be many, also below members. Find them from the
+        // variable up.
         size_t nArraySels = 0;
-        nodep->foreach([&](AstNodeSel* const selp) {
+        for (AstNode* np = basep; np != nodep;) {
+            np = np->firstAbovep();
+            AstNodeSel* const selp = VN_CAST(np, NodeSel);
+            if (!selp) continue;
             const std::string tmpName{"Dim" + std::to_string(nArraySels++) + baseName};
             selp->bitp(captureVal(scopep, insertp, selp->bitp()->unlinkFrBack(), tmpName));
-        });
-        // What remains is the variable, with members selected, which we can reuse
-        UASSERT_OBJ(VN_IS(nodep->baseFromp(/* overMembers: */ true), NodeVarRef), lhsp,
-                    "Malformed LHS in NBA");
+        }
         // Now have been converted to use the captured values
         return lhsp;
     }
