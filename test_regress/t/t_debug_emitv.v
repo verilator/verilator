@@ -26,6 +26,11 @@ class Cls;
   int member = 1;
   rand int rmember1;
   rand int rmember2;
+  rand int rarray[3];
+  constraint array_values {
+    solve rarray[0] before rmember1;
+    foreach (rarray[i]) rarray[i] == rmember1 + i;
+  }
   covergroup cg_in_class @(posedge cg_clk);
     cp_m: coverpoint member {
       bins one = {1};
