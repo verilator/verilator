@@ -18,13 +18,22 @@ module t;
       // verilator lint_off WIDTH
       repeat (negcnt) $stop;
       // verilator lint_on  WIDTH
-      repeat (5) begin
-        repeat (2) begin
+      repeat (5) begin : repeat_5
+        repeat (2) begin : repeat_2
+          static integer static_var = 0;
+          static_var = static_var + 1;
           times = times + 1;
+        end
+      end
+      repeat (1) begin : repeat_1
+        $info();
+        repeat (1) begin : repeat_1_1
+          $info();
         end
       end
     end
     if (times != 10) $stop;
+    if (repeat_5.repeat_2.static_var != 10) $stop;
     //
     $write("*-* All Finished *-*\n");
     $finish;
