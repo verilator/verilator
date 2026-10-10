@@ -905,6 +905,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     V3UniqueNames& m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
     std::vector<AstVar*> m_rangeConstrainedEnums;  // Enums that are already range-constrained
     AstNode* m_firstExpressionInsideIndexp = nullptr;
+    AstConstraintForeach* m_foreachp = nullptr;  // Innermost constraint-foreach being processed
+    std::set<const AstVar*> m_foreachIdxVars;  // Index vars of all enclosing constraint-foreaches
 
     class NestedAccessPath final {
         AstMemberSel* m_topNestedArrayMemberSelp
@@ -948,7 +950,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstMemberSel* accessTree() { return m_topNestedArrayMemberSelp; }
         const std::string& smtName() { return m_smtName; }
 
-        void write_var(AstNodeFTask* initTaskp, AstVar* varp, AstVar* genp) {
+        AstStmtExpr* makeWriteVarStmt(AstVar* varp, AstVar* genp) {
             AstCMethodHard* const methodp = new AstCMethodHard{
                 varp->fileline(),
                 new AstVarRef{varp->fileline(), VN_AS(genp->user2p(), NodeModule), genp,
@@ -969,7 +971,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 new AstConst{dtypep->fileline(), AstConst::Unsized64{}, 0});  // Dimension
 
             m_topNestedArrayMemberSelp = nullptr;
-            initTaskp->addStmtsp(methodp->makeStmt());
+            return methodp->makeStmt();
         }
 
         AstNodeExpr* cloneName() { return m_nestedNameFormatTopp->cloneTree(false); }
@@ -1451,6 +1453,29 @@ class ConstraintExprVisitor final : public VNVisitor {
         return preamblep;
     }
 
+    // True if the statement references an index variable of an enclosing
+    // constraint-foreach. Such a statement must stay inside the loop body; hoisting
+    // it out leaves a dangling reference once task inlining deletes the index.
+    bool referencesForeachIdx(const AstNode* nodep) const {
+        if (m_foreachIdxVars.empty()) return false;
+        return nodep->exists(
+            [&](const AstVarRef* refp) { return m_foreachIdxVars.count(refp->varp()) != 0; });
+    }
+
+    // Place a solver-registration statement: into the enclosing foreach body when it
+    // references an enclosing foreach index (so it is not hoisted out of the index's
+    // scope), otherwise into the init task.
+    void addRegistrationStmt(AstNode* const stmtp, AstNodeFTask* const initTaskp) {
+        if (m_foreachp && referencesForeachIdx(stmtp)) {
+            // Appending to the body mid-iteration is safe: visit(AstStmtExpr) is a
+            // no-op so the appended node is not re-processed, and prependDistPreamble()
+            // correctly keeps it as a loop-body statement.
+            m_foreachp->addBodyp(stmtp);
+        } else {
+            initTaskp->addStmtsp(stmtp);
+        }
+    }
+
     // Create SFormatF for array dereference inside solver
     AstSFormatF* createSolverArrDerefp(FileLine* const fl, AstNodeExpr* const arrExprp,
                                        AstNodeExpr* const idxExprp) {
@@ -1461,7 +1486,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     void setRandMode(AstVar* const varp, AstMemberSel* const memberselp,
                      const std::string& smtName, const RandomizeMode& randMode,
-                     AstNodeFTask* const initTaskp) const {
+                     AstNodeFTask* const initTaskp) {
         AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
         AstVar* const subRandModeVarp = getRandModeVarFromClass(varClassp);
         if (subRandModeVarp) {
@@ -1496,12 +1521,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             disablep->addPinsp(disnp);
             AstIf* const ifp
                 = new AstIf{varp->fileline(), atp, enablep->makeStmt(), disablep->makeStmt()};
-            initTaskp->addStmtsp(ifp);
+            addRegistrationStmt(ifp, initTaskp);
         }
     }
 
-    void markRandc(AstVar* const varp, const std::string& smtName,
-                   AstNodeFTask* const initTaskp) const {
+    void markRandc(AstVar* const varp, const std::string& smtName, AstNodeFTask* const initTaskp) {
         AstCMethodHard* const markp = new AstCMethodHard{
             varp->fileline(),
             new AstVarRef{varp->fileline(), VN_AS(m_genp->user2p(), NodeModule), m_genp,
@@ -1513,7 +1537,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                              : new AstSFormatF{varp->fileline(), smtName, false, nullptr};
         nameExprp->dtypep(varp->dtypep());
         markp->addPinsp(nameExprp);
-        initTaskp->addStmtsp(markp->makeStmt());
+        addRegistrationStmt(markp->makeStmt(), initTaskp);
     }
 
     AstNodeModule* getLeftmostVarModulep(AstMemberSel* const memberselp,
@@ -1697,7 +1721,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                const bool isGlobalConstrained, const RandomizeMode randMode,
                                AstMemberSel* const memberselp, const std::string& smtName,
                                AstNodeModule* const classOrPackagep, AstNodeModule* const classp,
-                               AstNodeFTask* const initTaskp) const {
+                               AstNodeFTask* const initTaskp) {
         uint32_t unpackedDims = 0;
         if (varp->dtypeSkipRefp()->isNonPackedArray()) {
             unpackedDims = varp->dtypep()->dimensions(false).second;
@@ -1948,7 +1972,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNodeFTask* const initTaskp
                 = getInitTaskp(varp, memberselp || structSelOrCMeth, classp);
             if (m_nestedAccess) {
-                m_nestedAccess->write_var(initTaskp, varp, m_genp);
+                AstStmtExpr* const writeVarStmtp = m_nestedAccess->makeWriteVarStmt(varp, m_genp);
+                addRegistrationStmt(writeVarStmtp, initTaskp);
                 if (isGlobalConstrained && memberselp && randMode.usesMode) {
                     setRandMode(varp, memberselp, smtName, randMode, initTaskp);
                 }
@@ -2795,6 +2820,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
             nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         } else {
+            VL_RESTORER(m_foreachp);
+            VL_RESTORER_COPY(m_foreachIdxVars);
+            m_foreachp = nodep;
+            for (AstNode* elemp = nodep->headerp()->elementsp(); elemp; elemp = elemp->nextp()) {
+                if (const AstVar* const varp = VN_CAST(elemp, Var)) m_foreachIdxVars.insert(varp);
+            }
             iterateAndNextNull(nodep->bodyp());
             AstNode* const bodyp
                 = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
@@ -4760,11 +4791,15 @@ class RandomizeVisitor final : public VNVisitor {
         return classp->existsMember([](const AstClass*, const AstConstraint* constrp) {
             bool owns = false;
             constrp->foreach([&](const AstMemberSel* memberSelp) {
-                const AstNode* rootp = memberSelp->fromp();
-                while (const AstMemberSel* const sp = VN_CAST(rootp, MemberSel))
-                    rootp = sp->fromp();
+                const AstNode* const rootp
+                    = const_cast<AstMemberSel*>(memberSelp)->baseFromp(true);
                 if (const AstVarRef* const refp = VN_CAST(rootp, VarRef)) {
-                    if (VN_IS(refp->varp()->dtypep()->skipRefp(), ClassRefDType)) owns = true;
+                    // Owns a sub-object constraint if the root is a class handle, or
+                    // an array/assoc/queue/unpacked array of class handles.
+                    const AstNodeDType* dtypep = refp->varp()->dtypep()->skipRefp();
+                    while (const AstNodeDType* const subp = dtypep->subDTypep())
+                        dtypep = subp->skipRefp();
+                    if (VN_IS(dtypep, ClassRefDType)) owns = true;
                 }
             });
             return owns;
