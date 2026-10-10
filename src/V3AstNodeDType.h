@@ -584,13 +584,14 @@ public:
     int widthAlignBytes() const override { return 8; }  // Assume
     int widthTotalBytes() const override { return 8; }  // Assume
     bool isCompound() const override { return true; }
+    // Return the global runtime type storing the requested number of bits.
     static string typeToHold(int width) {
-        if (width <= 8) return "CData";
-        if (width <= 16) return "SData";
-        if (width <= VL_IDATASIZE) return "IData";
-        if (width <= VL_QUADSIZE) return "QData";
+        if (width <= 8) return "::CData";
+        if (width <= 16) return "::SData";
+        if (width <= VL_IDATASIZE) return "::IData";
+        if (width <= VL_QUADSIZE) return "::QData";
 
-        return "VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
+        return "::VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
     }
 };
 class AstClassRefDType final : public AstNodeDType {
