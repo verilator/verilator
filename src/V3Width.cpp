@@ -5168,7 +5168,11 @@ class WidthVisitor final : public VNVisitor {
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       VCMethod::arrayMethod("r_" + nodep->name())};
             newp->withp(withp);
-            newp->dtypeFrom(adtypep->subDTypep());
+            // The reduction's own dtype is the with-clause expression's
+            // type when there is one, not the array's element type --
+            // those differ whenever the element is a struct and the
+            // with-clause selects one scalar field out of it.
+            newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if ((newp = methodCallArray(nodep, adtypep))) {
         } else {
