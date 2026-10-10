@@ -10,6 +10,10 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 // verilog_format: on
 
+interface ifc;
+  int x;
+endinterface
+
 module t;
   logic clk = 0;
   always #5 clk = ~clk;
@@ -125,6 +129,29 @@ module t;
     nidx = 0;
     qidx = 0;
   end
+  // Also an index selecting a virtual interface
+  ifc ia (), ib ();
+  virtual ifc vifs[2];
+  int vidx = 0;
+  initial begin
+    vifs[0] = ia;
+    vifs[1] = ib;
+    @(posedge clk);
+    vifs[vidx].x <= 6;
+    vidx = 1;
+  end
+  typedef struct {int aa[int];} assoc_t;
+  assoc_t sassoc;
+  int akey = 1;
+  int wassoc[*];
+  int wkey = 1;
+  initial begin
+    @(posedge clk);
+    sassoc.aa[akey] <= 7;
+    akey = 2;
+    wassoc[wkey] <= 8;
+    wkey = 2;
+  end
   `at_posedge_clk_on_cycle(5) begin
     `checkh(warr[0].foo, 1);
     `checkh(warr[1].foo, 0);
@@ -133,6 +160,14 @@ module t;
     `checkh(nest.a[1].z.q[2], 5);
     `checkh(nest.a[0].z.q[2], 0);
     `checkh(nest.a[0].z.q[0], 0);
+    `checkh(ia.x, 6);
+    `checkh(ib.x, 0);
+    `checkh(sassoc.aa.exists(1), 1);
+    `checkh(sassoc.aa.exists(2), 0);
+    `checkh(sassoc.aa[1], 7);
+    `checkh(wassoc.exists(1), 1);
+    `checkh(wassoc.exists(2), 0);
+    `checkh(wassoc[1], 8);
   end
 
 

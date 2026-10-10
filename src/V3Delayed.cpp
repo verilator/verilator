@@ -522,7 +522,7 @@ class DelayedVisitor final : public VNVisitor {
                             AstNodeExpr* const lhsp, const std::string& baseName) {
         UASSERT_OBJ(!lhsp->backp(), lhsp, "Should have been unlinked");
         // Running node pointer
-        AstNode* nodep = lhsp;
+        AstNodeExpr* nodep = lhsp;
         // Capture AstSel indices - there should be only one
         if (AstSel* const selp = VN_CAST(nodep, Sel)) {
             const std::string tmpName{"Lsb" + baseName};
@@ -531,25 +531,16 @@ class DelayedVisitor final : public VNVisitor {
             nodep = selp->fromp();
         }
         UASSERT_OBJ(!VN_IS(nodep, Sel), lhsp, "Multiple 'AstSel' applied to LHS reference");
-        // Capture AstArraySel indices - might be many, also below unpacked struct members
+        // Capture the indices of selects - might be many, also below struct members. 'foreach'
+        // visits a select before its index, which it replaces, so not the selects in the index.
         size_t nArraySels = 0;
-        while (VN_IS(nodep, ArraySel) || VN_IS(nodep, StructSel)) {
-            if (const AstStructSel* const structSelp = VN_CAST(nodep, StructSel)) {
-                nodep = structSelp->fromp();
-                continue;
-            }
-            AstArraySel* const arrSelp = VN_AS(nodep, ArraySel);
+        nodep->foreach([&](AstNodeSel* const selp) {
             const std::string tmpName{"Dim" + std::to_string(nArraySels++) + baseName};
-            arrSelp->bitp(captureVal(scopep, insertp, arrSelp->bitp()->unlinkFrBack(), tmpName));
-            nodep = arrSelp->fromp();
-        }
-        // What remains must be an AstVarRef, or some sort of select, we assume can reuse it.
-        if (const AstAssocSel* const aselp = VN_CAST(nodep, AssocSel)) {
-            UASSERT_OBJ(aselp->fromp()->isPure() && aselp->bitp()->isPure(), lhsp,
-                        "Malformed LHS in NBA");
-        } else {
-            UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
-        }
+            selp->bitp(captureVal(scopep, insertp, selp->bitp()->unlinkFrBack(), tmpName));
+        });
+        // What remains is the variable, with members selected, which we can reuse
+        UASSERT_OBJ(VN_IS(nodep->baseFromp(/* overMembers: */ true), NodeVarRef), lhsp,
+                    "Malformed LHS in NBA");
         // Now have been converted to use the captured values
         return lhsp;
     }
