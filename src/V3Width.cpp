@@ -2548,9 +2548,16 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
             // Only worth asking while parameters are still being worked out.
             if (m_paramsOnly) {
-                // A module that is still being copied does not have its final sizes.
+                // A type on a module that is still being copied has no final size yet, so
+                // leave the query for the main width pass, by when the reference has been
+                // retargeted to the specialization.  Only a type reached from some other
+                // module gets retargeted though: V3Param reuses a template as the module
+                // of any instantiation that overrides nothing, so a type declared next to
+                // this query is already final, and deferring would leave it unresolved,
+                // breaking any parameter whose value depends on it.
                 const AstNodeModule* const ownModp = v3Global.rootp()->containingModule(dtypep);
-                if (ownModp && ownModp->parameterizedTemplate() && !ownModp->dead()) {
+                if (ownModp && ownModp != v3Global.rootp()->containingModule(nodep)
+                    && ownModp->parameterizedTemplate() && !ownModp->dead()) {
                     UINFO(9, "size deferred, type still on template " << ownModp->name());
                     // These queries always give an int, so set that now and let the
                     // value be worked out once the copy exists.
