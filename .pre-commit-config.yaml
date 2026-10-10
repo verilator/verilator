@@ -1,0 +1,58 @@
+---
+# DESCRIPTION: Commit-time formatting using the same tools as CI
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+default_stages: [pre-commit]
+
+repos:
+  - repo: local
+    hooks:
+      # Refresh Git's stat cache after formatters rewrite unchanged files.
+      - id: format-c
+        name: Format C/C++
+        entry: sh -c 'make format-c CLANGFORMAT=clang-format && git update-index --refresh'
+        language: python
+        additional_dependencies: &format-dependencies [clang-format==18.1.8, docstrfmt==2.2.0, gersemi==0.23.1, mdformat==1.0.0, yamlfix==1.19.1, yapf==0.43.0]
+        files: '\.(c|cc|cpp|cxx|h|hh|hpp|hxx|l|y)$|(^|/)\.clang-format$'
+        pass_filenames: false
+      - id: format-cmake
+        name: Format CMake
+        entry: sh -c 'make format-cmake && git update-index --refresh'
+        language: python
+        additional_dependencies: *format-dependencies
+        files: '(^|/)CMakeLists\.txt$|\.cmake(\.in)?$'
+        pass_filenames: false
+      - id: format-exec
+        name: Fix regression file permissions
+        entry: sh -c 'make format-exec && git update-index --refresh'
+        language: system
+        files: '^test_regress/t/(t_[^/]+\.py|[^/]+\.v)$'
+        pass_filenames: false
+      - id: format-md
+        name: Format Markdown
+        entry: sh -c 'make format-md && git update-index --refresh'
+        language: python
+        additional_dependencies: *format-dependencies
+        files: '\.md$'
+        pass_filenames: false
+      - id: format-py
+        name: Format Python
+        entry: sh -c 'make format-py && git update-index --refresh'
+        language: python
+        additional_dependencies: *format-dependencies
+        files: '\.py$'
+        pass_filenames: false
+      - id: format-rst
+        name: Format reStructuredText
+        entry: sh -c 'make format-rst && git update-index --refresh'
+        language: python
+        additional_dependencies: *format-dependencies
+        files: '\.rst$'
+        pass_filenames: false
+      - id: format-yaml
+        name: Format YAML
+        entry: sh -c 'make format-yaml && git update-index --refresh'
+        language: python
+        additional_dependencies: *format-dependencies
+        files: '\.ya?ml$|^CITATION\.cff$'
+        pass_filenames: false
