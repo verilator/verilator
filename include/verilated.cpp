@@ -2661,6 +2661,7 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     , m_bits{bits}
     , m_filename(filename)  // Need () or GCC 4.8 false warning
     , m_end{end}
+    , m_descending{start > end}
     , m_addr{start} {
     m_fp = std::fopen(filename.c_str(), "r");
     if (VL_UNLIKELY(!m_fp)) {
@@ -2702,7 +2703,11 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
             // printf("Got data @%lx = %s\n", m_addr, valuer.c_str());
             ungetc(c, m_fp);
             addrr = m_addr;
-            ++m_addr;
+            if (m_descending) {
+                --m_addr;
+            } else {
+                ++m_addr;
+            }
             return true;
         }
         // Parse line
@@ -2750,7 +2755,8 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         lastCh = c;
     }
 
-    if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end && !m_anyAddr)) {
+    const bool beforeEnd = m_descending ? m_addr >= m_end : m_addr <= m_end;
+    if (VL_UNLIKELY(m_end != ~0ULL && beforeEnd && !m_anyAddr)) {
         VL_WARN_MT(m_filename.c_str(), m_linenum, "",
                    "$readmem file ended before specified final address (IEEE 1800-2023 21.4)");
     }
@@ -2796,12 +2802,8 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
 
 VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData start, QData end)
     : m_hex{hex}
-    , m_bits{bits} {
-    if (VL_UNLIKELY(start > end)) {
-        VL_FATAL_MT(filename.c_str(), 0, "", "$writemem invalid address range");
-        return;
-    }
-
+    , m_bits{bits}
+    , m_descending{start > end} {  // IEEE 1800-2023 21.4
     m_fp = std::fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!m_fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
@@ -2819,7 +2821,7 @@ void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
     if (addr != m_addr && addrstamp) {  // Only assoc has time stamps
         fprintf(m_fp, "@%" PRIx64 "\n", addr);
     }
-    m_addr = addr + 1;
+    m_addr = m_descending ? addr - 1 : addr + 1;
     if (m_bits <= 8) {
         const CData* const datap = reinterpret_cast<const CData*>(valuep);
         if (m_hex) {
@@ -2947,13 +2949,20 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
                    QData end  // Last address to write, or ~0 when not specified
                    ) VL_MT_SAFE {
     const QData addr_max = array_lsb + depth - 1;
-    if (start < static_cast<QData>(array_lsb)) start = array_lsb;
-    if (end > addr_max) end = addr_max;
+    const bool descending = start > end;  // IEEE 1800-2023 21.4
+    start = std::min(std::max(start, static_cast<QData>(array_lsb)), addr_max);
+    end = std::min(std::max(end, static_cast<QData>(array_lsb)), addr_max);
+    if (VL_UNLIKELY(descending ? start < end : start > end)) {
+        VL_FATAL_MT(filename.c_str(), 0, "", "$writemem invalid address range");
+        return;
+    }
 
     VlWriteMem wmem{hex, bits, filename, start, end};
     if (VL_UNLIKELY(!wmem.isOpen())) return;
 
-    for (QData addr = start; addr <= end; ++addr) {
+    const QData count = (descending ? start - end : end - start) + 1;
+    for (QData i = 0; i < count; ++i) {
+        const QData addr = descending ? start - i : start + i;
         const QData row_offset = addr - array_lsb;
         if (bits <= 8) {
             const CData* const datap = &(reinterpret_cast<const CData*>(memp))[row_offset];

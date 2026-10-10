@@ -206,6 +206,7 @@ Verilator 5.053 devel
 * Fix skipping coverage sampling completely when iff is false (#8681). [Marco Bartoli]
 * Fix internal error on sampled value function in cover sequence (#8682) (#8683). [Doha Nam]
 * Fix reordering assignments through handles or with intra-assignment timing (#8688). [Marco Bartoli]
+* Fix $readmem/$writemem descending order (#8698).
 * Fix intra-assignment timing controls to be evaluated once by the executing process (#8712). [Marco Bartoli]
 
 
