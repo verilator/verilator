@@ -161,7 +161,12 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
     VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
-    VLVF_NET = (1 << 15)  // Net object
+    VLVF_NET = (1 << 15),  // Net object
+    VLVF_PACKED_AGG = (1 << 16),  // Element type is a packed struct or union
+    VLVF_PACKED_UNION = (1 << 17),  // With VLVF_PACKED_AGG, element type is a packed union
+    VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see varInsertMember
+    VLVF_PACKED_NEEDS_INDEX = (1 << 19)  // With VLVF_PACKED_MEMBER, an ancestor is an array of
+                                         // packed structs/unions, so needs an element index
 };
 
 // One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
@@ -985,6 +990,9 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedVar* varInsertSized(const char* namep, void* datap, bool isParam,
                                  VerilatedVarType vltype, int vlflags, int udims, uint32_t entSize,
                                  ...) VL_MT_UNSAFE;
+    VerilatedVar* varInsertMember(const char* namep, void* datap, bool isParam,
+                                  VerilatedVarType vltype, int vlflags, uint32_t bitOffset,
+                                  uint32_t entSize, int pdims, ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
                                      void* forceReadSignalData, const char* forceReadSignalName,
