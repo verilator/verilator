@@ -76,6 +76,32 @@ public:
                && !dtp->isCompound()  // Non-POD members are not allowed in an anonymous aggregate
                && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
     }
+    // Parameters per base class when over compLimitMembers, else 0
+    static int paramGroupSize(const AstNodeModule* modp) {
+        const int lim = v3Global.opt.compLimitMembers();
+        if (!lim || VN_IS(modp, Class)) return 0;
+        int params = 0;
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                if (varp->isParam() && ++params > lim) return lim;
+            }
+        }
+        return 0;
+    }
+    // Call f(varp, group) on each parameter, group being -1 when not grouped
+    template <typename T_Func>
+    static void foreachParam(const AstNodeModule* modp, T_Func&& f) {
+        const int groupSize = paramGroupSize(modp);
+        int params = 0;
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+                if (varp->isParam()) f(varp, groupSize ? params++ / groupSize : -1);
+            }
+        }
+    }
+    static string paramGroupName(const AstNodeModule* modp, int group) {
+        return prefixNameProtect(modp) + "__Vparams" + std::to_string(group);
+    }
 };
 
 //######################################################################

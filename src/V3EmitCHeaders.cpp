@@ -166,23 +166,44 @@ class EmitCHeader final : public EmitCConstInit {
             }
         }
     }
+    void emitParamDecl(const AstVar* varp) {
+        UASSERT_OBJ(varp->valuep(), varp, "No init for a param?");
+        // Only C++ LiteralTypes can be constexpr
+        const bool canBeConstexpr = varp->dtypep()->isLiteralType();
+        putns(varp, "static ");
+        puts(canBeConstexpr ? "constexpr " : "const ");
+        puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
+        if (canBeConstexpr) emitDirectInit(varp->valuep());
+        puts(";\n");
+    }
     void emitParamDecls(const AstNodeModule* modp) {
+        if (EmitCUtil::paramGroupSize(modp)) return;
         bool first = true;
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     decorateFirst(first, "\n// PARAMETERS\n");
-                    UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                    // Only C++ LiteralTypes can be constexpr
-                    const bool canBeConstexpr = varp->dtypep()->isLiteralType();
-                    putns(varp, "static ");
-                    puts(canBeConstexpr ? "constexpr " : "const ");
-                    puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
-                    if (canBeConstexpr) emitDirectInit(varp->valuep());
-                    puts(";\n");
+                    emitParamDecl(varp);
                 }
             }
         }
+    }
+    // Emit the parameter group structs, returning their count
+    int emitParamGroups(const AstNodeModule* modp) {
+        if (!EmitCUtil::paramGroupSize(modp)) return 0;
+        putsDecoration(nullptr, "\n// PARAMETERS, in base classes to work around the compiler "
+                                "member-count slowdown\n");
+        int groups = 0;
+        EmitCUtil::foreachParam(modp, [&](const AstVar* varp, int group) {
+            if (group == groups) {
+                if (groups) puts("};\n");
+                puts("struct " + EmitCUtil::paramGroupName(modp, group) + " {\n");
+                ++groups;
+            }
+            emitParamDecl(varp);
+        });
+        puts("};\n");
+        return groups;
     }
     void emitCtorDtorDecls(const AstNodeModule* modp) {
         // Classes use CFuncs with isConstructor/isDestructor
@@ -658,6 +679,7 @@ class EmitCHeader final : public EmitCConstInit {
         emitSystemCSection(modp, VSystemCSectionType::HDR);
 
         emitStructs(modp);
+        const int paramGroups = emitParamGroups(modp);
 
         // Open class body {{{
         puts("\n");
@@ -682,6 +704,10 @@ class EmitCHeader final : public EmitCConstInit {
             }
         } else {
             puts(" final");
+            for (int group = 0; group < paramGroups; ++group) {
+                puts(group ? ", " : " : ");
+                puts("public " + EmitCUtil::paramGroupName(modp, group));
+            }
         }
         puts(" {\n");
         ofp()->resetPrivate();
