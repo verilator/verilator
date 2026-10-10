@@ -1606,7 +1606,19 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-ignc", OnOff, &m_ignc).undocumented();
     DECL_OPTION("-inline-cfuncs", Set, &m_inlineCFuncs);
     DECL_OPTION("-inline-cfuncs-product", Set, &m_inlineCFuncsProduct);
+    DECL_OPTION("-inline-flatten-percent", CbVal, [this, fl](int val) {
+        if (val < 0 || val > 100) {
+            fl->v3fatal("--inline-flatten-percent must be between 0 and 100: " << val);
+        }
+        m_inlineFlattenPercent = val;
+    });
     DECL_OPTION("-inline-mult", Set, &m_inlineMult);
+    DECL_OPTION("-inline-total-percent", CbVal, [this, fl](int val) {
+        if (val < 0 || val > 100) {
+            fl->v3fatal("--inline-total-percent must be between 0 and 100: " << val);
+        }
+        m_inlineTotalPercent = val;
+    });
     DECL_OPTION("-instr-count-dpi", CbVal, [this, fl](int val) {
         m_instrCountDpi = val;
         if (m_instrCountDpi < 0) fl->v3fatal("--instr-count-dpi must be non-negative: " << val);

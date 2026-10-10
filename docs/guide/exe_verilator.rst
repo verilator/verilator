@@ -1129,6 +1129,18 @@ Summary:
 
    See also :vlopt:`--inline-cfuncs` and :vlopt:`-fno-inline-cfuncs`.
 
+.. option:: --inline-flatten-percent <value>
+
+   Tune automatic module flattening. Flatten a module's hierarchy when its
+   size is strictly less than this percentage of the complete design. The
+   default is 10. Values must be integers from 0 to 100; 0 disables this
+   heuristic. Other inlining heuristics and explicit flattening requests
+   still apply.
+
+   This setting is unchanged by :vlopt:`-O3`. When reducing inlining, also
+   specify a positive :vlopt:`--inline-mult` after :vlopt:`-O3`, which otherwise
+   enables unlimited module inlining. See also :vlopt:`--inline-total-percent`.
+
 .. option:: --inline-mult <value>
 
    Tune the inlining of modules. The default value of 2000 specifies that
@@ -1138,6 +1150,21 @@ Summary:
    longer compile times, but potentially faster simulation speed. This
    setting is ignored for very small modules; they will always be inlined,
    if allowed.
+
+   See also :vlopt:`--inline-flatten-percent` and
+   :vlopt:`--inline-total-percent` for additional automatic inlining heuristics.
+
+.. option:: --inline-total-percent <value>
+
+   Tune inlining based on the combined size of all instances of a module.
+   Inline those instances when their combined size is strictly less than
+   this percentage of the complete design. The default is 20. Values must
+   be integers from 0 to 100; 0 disables this heuristic. Other inlining
+   heuristics and explicit inlining requests still apply.
+
+   This setting is unchanged by :vlopt:`-O3`. When reducing inlining, also
+   specify a positive :vlopt:`--inline-mult` after :vlopt:`-O3`. See also
+   :vlopt:`--inline-flatten-percent`.
 
 .. option:: --instr-count-dpi <value>
 
