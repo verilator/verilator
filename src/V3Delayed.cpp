@@ -531,9 +531,14 @@ class DelayedVisitor final : public VNVisitor {
             nodep = selp->fromp();
         }
         UASSERT_OBJ(!VN_IS(nodep, Sel), lhsp, "Multiple 'AstSel' applied to LHS reference");
-        // Capture AstArraySel indices - might be many
+        // Capture AstArraySel indices - might be many, also below unpacked struct members
         size_t nArraySels = 0;
-        while (AstArraySel* const arrSelp = VN_CAST(nodep, ArraySel)) {
+        while (VN_IS(nodep, ArraySel) || VN_IS(nodep, StructSel)) {
+            if (const AstStructSel* const structSelp = VN_CAST(nodep, StructSel)) {
+                nodep = structSelp->fromp();
+                continue;
+            }
+            AstArraySel* const arrSelp = VN_AS(nodep, ArraySel);
             const std::string tmpName{"Dim" + std::to_string(nArraySels++) + baseName};
             arrSelp->bitp(captureVal(scopep, insertp, arrSelp->bitp()->unlinkFrBack(), tmpName));
             nodep = arrSelp->fromp();
