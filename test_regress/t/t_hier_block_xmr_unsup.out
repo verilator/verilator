@@ -1,0 +1,34 @@
+%Error-UNSUPPORTED: t/t_hier_block_xmr_unsup.v:21:39: Cannot promote reference out of a hierarchical block: 't.top.drv.tech_inst.phi' does not have a width known before elaboration (parameterized, unpacked, or non-integral type)
+                                                    : ... note: In instance 't.top.p0.l0'
+   21 |   wire [7:0] ph = t.top.drv.tech_inst.phi;
+      |                                       ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_hier_block_xmr_unsup.v:32:45: Cannot promote reference out of a hierarchical block: 't.top.drv.tech_inst.anal' does not have a width known before elaboration (parameterized, unpacked, or non-integral type)
+                                                    : ... note: In instance 't.top.r0.l0'
+   32 |   always @(i) begin r = t.top.drv.tech_inst.anal; o <= i; end
+      |                                             ^~~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_unsup.v:41:41: Writing a signal outside a hierarchical block: 't.top.drv.tech_inst.flag'
+                                                    : ... note: In instance 't.top.w0.l0'
+   41 |   always @(i) begin t.top.drv.tech_inst.flag = i; o <= i; end
+      |                                         ^~~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_unsup.v:64:53: Cannot promote reference out of a hierarchical block: generated port name 'xmrport_0' collides with an existing signal in 'leaf_collide'
+                                                    : ... note: In instance 't.top.c0.l0'
+   64 |   always @(i) begin xmrport_0 = t.top.drv.tech_inst.flag; o <= i ^ xmrport_0; end
+      |                                                     ^~~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_unsup.v:73:44: Cannot promote reference out of a hierarchical block: 't.top.drv.tech_inst.CONSTVAL' is a parameter, which a port cannot carry
+                                                    : ... note: In instance 't.top.k0.l0'
+   73 |   always @(i) o <= i ^ t.top.drv.tech_inst.CONSTVAL[0];
+      |                                            ^~~~~~~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_unsup.v:82:44: Cannot promote reference out of a hierarchical block: 't.top.drv.tech_inst.getflag' is a function or task, which a port cannot carry
+                                                    : ... note: In instance 't.top.f0.l0'
+   82 |   always @(i) o <= i ^ t.top.drv.tech_inst.getflag();
+      |                                            ^~~~~~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_unsup.v:91:44: Cannot promote reference out of a hierarchical block: 't.top.gen[1].g_tech.flag' indexes a scope or names a package
+                                                    : ... note: In instance 't.top.x0.l0'
+   91 |   always @(i) o <= i ^ t.top.gen[1].g_tech.flag;
+      |                                            ^~~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_unsup.v:50:44: Cannot promote reference out of hierarchical block 'blk_nest': it contains a nested hierarchical block
+                                                    : ... note: In instance 't.top.n0.n0.l0'
+   50 |   always @(i) o <= i ^ t.top.drv.tech_inst.flag;
+      |                                            ^~~~
+%Error: Exiting due to

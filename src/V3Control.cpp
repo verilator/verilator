@@ -800,6 +800,11 @@ class V3ControlResolver final {
         m_profileData;  // Access to profile_data records
     uint8_t m_mode = NONE;  // Kind of profile_data records is currently active
     std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
+    // Promoted hierarchical-block references, by block module name
+    std::unordered_map<string, std::vector<VHierXmrPort>> m_hierXmrPorts;
+    // The same ports by name: V3LinkCells asks per missing pin of every
+    // instance, which a scan of the vector would make ports x pins
+    std::unordered_map<string, std::set<string>> m_hierXmrPortNames;
     FileLine* m_profileFileLine = nullptr;  // Location profile_data was read from
 
     V3ControlResolver() = default;
@@ -837,6 +842,19 @@ public:
     void addHierWorkers(FileLine* flp, const string& model, int workers) {
         m_hierWorkers.emplace(std::piecewise_construct, std::forward_as_tuple(model),
                               std::forward_as_tuple(workers, flp));
+    }
+    void addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
+                        const string& port, int width, bool isSigned, const string& path) {
+        m_hierXmrPorts[block].emplace_back(refModule, port, path, width, isSigned);
+        m_hierXmrPortNames[block].insert(port);
+    }
+    const std::vector<VHierXmrPort>* getHierXmrPorts(const string& module) const {
+        const auto it = m_hierXmrPorts.find(module);
+        return it == m_hierXmrPorts.cend() ? nullptr : &it->second;
+    }
+    bool hasHierXmrPort(const string& module, const string& port) const {
+        const auto it = m_hierXmrPortNames.find(module);
+        return it != m_hierXmrPortNames.cend() && it->second.count(port);
     }
     int getHierWorkers(const string& model) const {
         const auto mit = m_hierWorkers.find(model);
@@ -895,6 +913,19 @@ void V3Control::addCoverageBlockOff(const string& module, const string& blocknam
 
 void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
     V3ControlResolver::s().addHierWorkers(fl, model, workers);
+}
+
+void V3Control::addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
+                               const string& port, int width, bool isSigned, const string& path) {
+    V3ControlResolver::s().addHierXmrPort(fl, block, refModule, port, width, isSigned, path);
+}
+
+const std::vector<VHierXmrPort>* V3Control::getHierXmrPorts(const string& module) {
+    return V3ControlResolver::s().getHierXmrPorts(module);
+}
+
+bool V3Control::hasHierXmrPort(const string& module, const string& port) {
+    return V3ControlResolver::s().hasHierXmrPort(module, port);
 }
 
 void V3Control::addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
