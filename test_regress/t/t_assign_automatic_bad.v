@@ -65,4 +65,28 @@ module t (
     $stop;
   end
 
+  // Also elements of dynamically sized arrays in structs, with a wildcard index, and in arrays
+  typedef struct {
+    int aa[int];
+    int da[];
+    int q[$];
+  } dyn_t;
+  dyn_t bad_s;
+  dyn_t bad_s7;
+  int bad_wild[*];
+  int bad_arr_aa[2][int];
+  int bad_arr_da[2][];
+
+  assign bad_s7.da[0] = 1;  // <--- Error: continuous dynarray element in struct
+
+  always @(posedge clk) begin
+    bad_s.aa[0] <= 2;  // Error: nonblocking associative array element in struct
+    bad_s.da[0] <= 2;  // Error: nonblocking dynarray element in struct
+    bad_s.q[0] <= 2;  // Error: nonblocking queue element in struct
+    bad_s.da <= empty_dyn;  // OK: nonblocking dynarray assignment in struct, not to its element
+    bad_wild[0] <= 2;  // Error: nonblocking wildcard associative array element
+    bad_arr_aa[0][0] <= 2;  // Error: nonblocking associative array element in array
+    bad_arr_da[0][0] <= 2;  // Error: nonblocking dynarray element in array
+  end
+
 endmodule
