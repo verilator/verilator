@@ -445,8 +445,12 @@ class DelayedVisitor final : public VNVisitor {
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            // If whole array is target of NBA, use ShadowVar
-            if (vscpInfo.m_whole) return Scheme::ShadowVar;
+            // If whole array is target of NBA, use ShadowVar, but not in a suspendable process or
+            // fork, which resume outside the 'nba' region, so its 'pre' logic would overwrite the
+            // value they write in the shadow variable
+            if (vscpInfo.m_whole) {
+                return vscpInfo.m_inSuspOrFork ? Scheme::FlagUnique : Scheme::ShadowVar;
+            }
             // Basic underlying type of elements, if any.
             const AstBasicDType* const basicp = uaDTypep->basicp();
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
@@ -461,7 +465,8 @@ class DelayedVisitor final : public VNVisitor {
                 if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
                 return Scheme::ValueQueueWhole;
             }
-            // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+            // A suspendable process or fork can resume outside the 'nba' region, so the 'pre'
+            // logic of the other schemes would undo its updates. The unique flag scheme has none.
             if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
             // Otherwise if an array of packed/basic elements, use the shared flag scheme
             if (basicp) return Scheme::FlagShared;
@@ -471,7 +476,8 @@ class DelayedVisitor final : public VNVisitor {
             return Scheme::ShadowVar;
         }
 
-        // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+        // Likewise, the 'pre' logic of the shadow variable scheme would undo the updates of a
+        // suspendable process or fork, so use the unique flag scheme
         if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
 
         const bool isIntegralOrPacked = dtypep->isIntegralOrPacked();
