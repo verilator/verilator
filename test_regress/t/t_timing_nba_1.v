@@ -46,6 +46,7 @@ module t;
   logic [7:0] arr_clk[0:3];
   logic [7:0] arr_elem[0:3];
   logic [7:0] arr_src[0:3] = '{8'h11, 8'h22, 8'h33, 8'h44};
+  int idx;
   initial #1 arr <= arr_src;
   initial
   fork
@@ -62,6 +63,9 @@ module t;
       if (arr[i] !== arr_src[i] || arr_fork[i] !== arr_src[i] || arr_clk[i] !== arr_src[i]) $stop;
     end
     if (arr_elem[1] !== 8'h22) $stop;
+    // With an index not known statically, so the arrays are not split into elements
+    idx = $urandom_range(1, 1);
+    $display("%x %x %x %x %x", arr[idx], arr_fork[idx], arr_clk[idx], arr_elem[idx], arr_src[idx]);
   end
 
 endmodule

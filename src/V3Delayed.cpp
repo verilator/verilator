@@ -465,7 +465,8 @@ class DelayedVisitor final : public VNVisitor {
                 if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
                 return Scheme::ValueQueueWhole;
             }
-            // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+            // A suspendable process or fork can resume outside the 'nba' region, so the 'pre'
+            // logic of the other schemes would undo its updates. The unique flag scheme has none.
             if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
             // Otherwise if an array of packed/basic elements, use the shared flag scheme
             if (basicp) return Scheme::FlagShared;
@@ -475,7 +476,8 @@ class DelayedVisitor final : public VNVisitor {
             return Scheme::ShadowVar;
         }
 
-        // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+        // Likewise, the 'pre' logic of the shadow variable scheme would undo the updates of a
+        // suspendable process or fork, so use the unique flag scheme
         if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
 
         const bool isIntegralOrPacked = dtypep->isIntegralOrPacked();
