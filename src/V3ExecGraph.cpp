@@ -27,8 +27,12 @@
 #include "V3Os.h"
 #include "V3Stats.h"
 
+#include <algorithm>
+#include <iterator>
+#include <map>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -1139,9 +1143,8 @@ void implementExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& sc
     addThreadStartToExecGraph(execGraphp, funcps, schedule.id());
 }
 
-void moveDispatchToFunction(AstExecGraph* const execGraphp) {
-    // Move the statements that dispatch the graph to the thread pool into their own function,
-    // and call that function where the graph executes.
+AstCFunc* moveDispatchToFunction(AstExecGraph* const execGraphp) {
+    // Move the statements that dispatch the graph to the thread pool into their own function
     FileLine* const flp = execGraphp->fileline();
     AstNodeModule* const modp = v3Global.rootp()->topModulep();
     AstCFunc* const funcp = new AstCFunc{flp, "runExecGraph_" + execGraphp->name(), nullptr};
@@ -1149,11 +1152,154 @@ void moveDispatchToFunction(AstExecGraph* const execGraphp) {
     funcp->dontCombine(true);
     funcp->addStmtsp(execGraphp->stmtsp()->unlinkFrBackWithNext());
     modp->addStmtsp(funcp);
-    AstCCall* const callp = new AstCCall{flp, funcp};
-    const AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
-    callp->selfPointer(VSelfPointerText{VSelfPointerText::VlSyms{}, scopep->nameDotless()});
-    callp->dtypeSetVoid();
-    execGraphp->addStmtsp(callp->makeStmt());
+    return funcp;
+}
+
+// Collect the bits of each trigger vector word that the code of an MTask tests, including the
+// functions it calls. A bit counts as tested if a change of it can change the value of an
+// expression. Bitwise operations keep the correspondence between the bits of their operands
+// and result, a constant shift or selection moves it, and a constant mask limits it. Through
+// any other operation all bits count as tested.
+class ExecMTaskTriggers final : public VNVisitorConst {
+    // STATE
+    const AstVar* const m_triggersp;  // Trigger vector
+    uint64_t m_bits = ~0ULL;  // Bits of the current expression that matter
+    std::map<uint32_t, uint64_t> m_masks;  // Tested bits of each word, keyed by word index
+    std::unordered_set<const AstCFunc*> m_funcps;  // Functions visited
+
+    // METHODS
+    void iterateBits(AstNode* nodep, uint64_t bits) {
+        VL_RESTORER(m_bits);
+        m_bits = bits;
+        iterateConst(nodep);
+    }
+    void iterateChildrenAllBits(AstNode* nodep) {
+        VL_RESTORER(m_bits);
+        m_bits = ~0ULL;
+        iterateChildrenConst(nodep);
+    }
+
+    // VISITORS
+    void visit(AstAnd* nodep) override {
+        // A constant operand masks the bits of the other operand that matter. V3Const puts
+        // constants on the left; otherwise both operands keep the bits that matter.
+        if (const AstConst* const constp = VN_CAST(nodep->lhsp(), Const)) {
+            iterateBits(nodep->rhsp(), m_bits & constp->num().toUQuad());
+        } else {
+            iterateChildrenConst(nodep);
+        }
+    }
+    void visit(AstOr* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstXor* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstNot* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstShiftR* nodep) override {
+        const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
+        if (!shiftp || shiftp->toUQuad() >= VL_QUADSIZE) return iterateChildrenAllBits(nodep);
+        iterateBits(nodep->lhsp(), m_bits << shiftp->toUInt());
+    }
+    void visit(AstShiftL* nodep) override {
+        const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
+        if (!shiftp || shiftp->toUQuad() >= VL_QUADSIZE) return iterateChildrenAllBits(nodep);
+        iterateBits(nodep->lhsp(), m_bits >> shiftp->toUInt());
+    }
+    void visit(AstSel* nodep) override {
+        const AstConst* const lsbp = VN_CAST(nodep->lsbp(), Const);
+        if (!lsbp || lsbp->toUQuad() >= VL_QUADSIZE) return iterateChildrenAllBits(nodep);
+        iterateBits(nodep->fromp(), (m_bits & VL_MASK_Q(nodep->widthConst())) << lsbp->toUInt());
+    }
+    void visit(AstArraySel* nodep) override {
+        const AstVarRef* const refp = VN_CAST(nodep->fromp(), VarRef);
+        if (!refp || refp->varp() != m_triggersp) return iterateChildrenAllBits(nodep);
+        m_masks[VN_AS(nodep->bitp(), Const)->toUInt()] |= m_bits;
+    }
+    void visit(AstVarRef* nodep) override {
+        UASSERT_OBJ(nodep->varp() != m_triggersp, nodep, "Trigger vector used other than by word");
+    }
+    void visit(AstNodeCCall* nodep) override {
+        iterateChildrenAllBits(nodep);
+        if (m_funcps.emplace(nodep->funcp()).second) iterateBits(nodep->funcp(), ~0ULL);
+    }
+    void visit(AstNode* nodep) override { iterateChildrenAllBits(nodep); }
+
+    // CONSTRUCTORS
+    ExecMTaskTriggers(const ExecMTask* mtaskp, const AstVar* triggersp)
+        : m_triggersp{triggersp} {
+        m_funcps.emplace(mtaskp->funcp());
+        iterateConst(mtaskp->funcp());
+    }
+
+public:
+    // Return the tested bits of each trigger vector word, for the words with any tested bits
+    static std::map<uint32_t, uint64_t> apply(const ExecMTask* mtaskp, const AstVar* triggersp) {
+        std::map<uint32_t, uint64_t> masks = ExecMTaskTriggers{mtaskp, triggersp}.m_masks;
+        for (auto it = masks.begin(); it != masks.end();) {
+            it = it->second ? std::next(it) : masks.erase(it);
+        }
+        return masks;
+    }
+};
+
+AstCStmt* createInvocation(AstExecGraph* const execGraphp, AstCFunc* const dispatchFuncp) {
+    // Describe the graph as constant data, and pass it to the run-time library, which runs the
+    // graph by calling 'dispatchFuncp'. Function addresses are AST nodes, so names are protected.
+    FileLine* const flp = execGraphp->fileline();
+    const string graphType
+        = "VlExecGraph<" + EmitCUtil::prefixNameProtect(v3Global.rootp()->topModulep()) + ">";
+    // MTasks in order of their IDs, which is a topological order
+    std::vector<const ExecMTask*> mtaskps;
+    for (const V3GraphVertex& vtx : execGraphp->depGraphp()->vertices()) {
+        mtaskps.push_back(vtx.as<const ExecMTask>());
+    }
+    std::sort(mtaskps.begin(), mtaskps.end(),
+              [](const ExecMTask* ap, const ExecMTask* bp) { return ap->id() < bp->id(); });
+    std::unordered_map<const ExecMTask*, uint32_t> indices;
+    for (const ExecMTask* const mtaskp : mtaskps) indices.emplace(mtaskp, indices.size());
+    UASSERT_OBJ(execGraphp->triggersp(), execGraphp, "Exec graph without trigger vector");
+    const AstVar* const triggersp = VN_AS(execGraphp->triggersp(), VarRef)->varp();
+
+    AstCStmt* const cstmtp = new AstCStmt{flp, "{\n"};
+    // MTasks and the trigger bits their final code tests
+    cstmtp->add("static const " + graphType + "::Vertex __Vvertices[] = {\n");
+    std::string masks;
+    uint32_t nMasks = 0;
+    for (const ExecMTask* const mtaskp : mtaskps) {
+        const std::map<uint32_t, uint64_t> wordMasks = ExecMTaskTriggers::apply(mtaskp, triggersp);
+        cstmtp->add("{");
+        cstmtp->add(new AstAddrOfCFunc{flp, mtaskp->funcp()});
+        cstmtp->add(", " + std::to_string(mtaskp->cost()) + ", " + std::to_string(nMasks) + ", "
+                    + std::to_string(wordMasks.size()) + "},\n");
+        for (const auto& wordMask : wordMasks) {
+            masks += "{" + std::to_string(wordMask.first) + ", 0x" + cvtToHex(wordMask.second)
+                     + "ULL},\n";
+            ++nMasks;
+        }
+    }
+    cstmtp->add("};\n");
+    if (nMasks)
+        cstmtp->add("static const " + graphType + "::Mask __Vmasks[] = {\n" + masks + "};\n");
+    // Dependencies between MTasks
+    std::string edges;
+    uint32_t nEdges = 0;
+    for (const ExecMTask* const mtaskp : mtaskps) {
+        for (const V3GraphEdge& edge : mtaskp->outEdges()) {
+            edges += "{" + std::to_string(indices.at(mtaskp)) + ", "
+                     + std::to_string(indices.at(edge.top()->as<ExecMTask>())) + "},\n";
+            ++nEdges;
+        }
+    }
+    if (nEdges)
+        cstmtp->add("static const " + graphType + "::Edge __Vedges[] = {\n" + edges + "};\n");
+    // The graph
+    cstmtp->add("static const " + graphType + " __VexecGraph{");
+    cstmtp->add(new AstAddrOfCFunc{flp, dispatchFuncp});
+    cstmtp->add(", __Vvertices, " + std::to_string(mtaskps.size()) + ", "
+                + (nMasks ? "__Vmasks" : "nullptr") + ", " + (nEdges ? "__Vedges" : "nullptr")
+                + ", " + std::to_string(nEdges) + "};\n");
+    // Run it
+    cstmtp->add("vl_invokeExecGraph(__VexecGraph, vlSelf, ");
+    cstmtp->add(execGraphp->triggersp()->unlinkFrBack());
+    cstmtp->add(".data());\n}");
+    return cstmtp;
 }
 
 // Called by Verilator top stage
@@ -1208,7 +1354,8 @@ void implement(AstNetlist* netlistp) {
 
         addThreadEndWrapper(execGraphp);
 
-        moveDispatchToFunction(execGraphp);
+        AstCFunc* const dispatchFuncp = moveDispatchToFunction(execGraphp);
+        execGraphp->addStmtsp(createInvocation(execGraphp, dispatchFuncp));
     }
 }
 

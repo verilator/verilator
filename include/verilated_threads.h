@@ -256,4 +256,49 @@ private:
     std::string numaAssign(VerilatedContext* contextp);
 };
 
+//=============================================================================
+// VlExecGraph
+
+/// Static description of a multithreaded exec graph, generated as constant data.
+/// 'T_Self' is the class of the model's top module, which the MTask and dispatch
+/// functions take as argument.
+template <typename T_Self>
+struct VlExecGraph final {
+    // TYPES
+    using Fnp = void (*)(T_Self*);  ///< MTask or dispatch function
+    /// Bits of one word of the trigger vector
+    struct Mask final {
+        uint32_t m_word;  ///< Index of the word in the trigger vector
+        QData m_bits;  ///< Bits of the word
+    };
+    /// An MTask, which needs to run when any bit of its trigger masks is set
+    struct Vertex final {
+        Fnp m_fnp;  ///< Function running the MTask
+        uint32_t m_cost;  ///< Estimated cost of the MTask
+        uint32_t m_firstMask;  ///< Index of the first trigger mask of the MTask in m_masksp
+        uint32_t m_nMasks;  ///< Number of trigger masks of the MTask
+    };
+    /// A dependency between two MTasks
+    struct Edge final {
+        uint32_t m_from;  ///< Index in m_verticesp of the MTask that runs first
+        uint32_t m_to;  ///< Index in m_verticesp of the MTask that depends on it
+    };
+
+    // MEMBERS
+    Fnp m_dispatchp;  ///< Runs the graph on the thread pool, as scheduled by Verilator
+    const Vertex* m_verticesp;  ///< MTasks, in a topological order
+    uint32_t m_nVertices;  ///< Number of MTasks
+    const Mask* m_masksp;  ///< Trigger masks of all MTasks
+    const Edge* m_edgesp;  ///< Dependencies between MTasks
+    uint32_t m_nEdges;  ///< Number of dependencies
+};
+
+/// Run an exec graph, when the trigger vector holds the given words.
+/// Only the thread evaluating the model may call this.
+template <typename T_Self>
+inline void vl_invokeExecGraph(const VlExecGraph<T_Self>& graph, T_Self* selfp,
+                               const QData* /*triggersp*/) VL_MT_UNSAFE {
+    graph.m_dispatchp(selfp);
+}
+
 #endif

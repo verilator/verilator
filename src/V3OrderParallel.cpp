@@ -198,6 +198,22 @@ public:
 };
 
 //######################################################################
+// Trigger vector of a graph
+
+// Record in 'execGraphp' the trigger vector whose bits select the logic of 'domainp'. All logic
+// of one graph is selected by the bits of one trigger vector.
+static void addTriggerVector(AstExecGraph* execGraphp, const AstSenTree* domainp) {
+    domainp->foreach([&](const AstVarRef* refp) {
+        if (!execGraphp->triggersp()) {
+            execGraphp->triggersp(
+                new AstVarRef{execGraphp->fileline(), refp->varScopep(), VAccess::READ});
+        }
+        UASSERT_OBJ(VN_AS(execGraphp->triggersp(), VarRef)->varScopep() == refp->varScopep(), refp,
+                    "Logic of one graph should be selected by one trigger vector");
+    });
+}
+
+//######################################################################
 // Entry point
 
 AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::string& tag,
@@ -283,6 +299,7 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
                 OrderMoveDomScope* const domScopep = &mVtxp->domScope();
                 if (domScopep != prevDomScopep) emitter.forceNewFunction();
                 prevDomScopep = domScopep;
+                addTriggerVector(execGraphp, logicp->domainp());
                 // Emit the logic under this vertex
                 emitter.emitLogic(logicp);
             }
