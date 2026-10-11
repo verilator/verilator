@@ -563,7 +563,7 @@ class AstCFunc final : public AstNode {
     bool m_noLife : 1;  // Disable V3Life on this function - has multiple calls, and reads Syms
                         // state
     bool m_isCovergroupSample : 1;  // Automatic covergroup sample() function
-    bool m_voidSelf : 1;  // Loose method taking its 'self' pointer as 'void* voidSelf'
+    bool m_voidSelf : 1;  // Loose method taking its 'self' pointer as 'void* vlVoidSelf'
     int m_cost;  // Function call cost
 public:
     AstCFunc(FileLine* fl, const string& name, AstScope* scopep, const string& rtnType = "")

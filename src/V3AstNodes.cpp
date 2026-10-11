@@ -1668,12 +1668,10 @@ AstExecGraph::AstExecGraph(FileLine* fileline, const string& name,
     : ASTGEN_SUPER_ExecGraph(fileline),
       m_depGraphp{new V3Graph},
       m_name{name} {
-    // Null only in self tests, which never emit the graph
-    if (trigVscp) triggerp(new AstVarRef{fileline, trigVscp, VAccess::READ});
+    triggerp(new AstVarRef{fileline, trigVscp, VAccess::READ});
 }
 const char* AstExecGraph::broken() const {
     BROKEN_RTN(!m_depGraphp);
-    BROKEN_RTN(!triggerp());
     for (const V3GraphVertex& vtx : m_depGraphp->vertices()) {
         const ExecMTask* const mtaskp = vtx.as<ExecMTask>();
         const AstCFunc* const funcp = mtaskp->funcp();

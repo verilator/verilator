@@ -543,12 +543,21 @@ class PackThreads final {
 public:
     // SELF TEST
     static void selfTest() {
-        selfTestHierFirst();
-        selfTestNormalFirst();
-    }
-    static void selfTestNormalFirst() {
+        // Dummy trigger vector for the test graphs, which are never emitted
         FileLine* const flp = v3Global.rootp()->fileline();
-        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test", nullptr};
+        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, "__VtestTriggered",
+                                        v3Global.rootp()->findUInt64DType()};
+        AstScope* const scopep = new AstScope{flp, nullptr, "test", nullptr, nullptr};
+        AstVarScope* const trigVscp = new AstVarScope{flp, scopep, varp};
+        selfTestHierFirst(trigVscp);
+        selfTestNormalFirst(trigVscp);
+        VL_DO_DANGLING(trigVscp->deleteTree(), trigVscp);
+        VL_DO_DANGLING(scopep->deleteTree(), scopep);
+        VL_DO_DANGLING(varp->deleteTree(), varp);
+    }
+    static void selfTestNormalFirst(AstVarScope* trigVscp) {
+        FileLine* const flp = v3Global.rootp()->fileline();
+        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test", trigVscp};
         V3Graph& graph = *execGraphp->depGraphp();
         const auto makeBody = [&]() -> AstNodeStmt* { return new AstComment{flp, ""}; };
         ExecMTask* const t0 = new ExecMTask{execGraphp, nullptr, makeBody()};
@@ -674,9 +683,9 @@ public:
         VL_DO_DANGLING(execGraphp->deleteTree(), execGraphp);
         ThreadSchedule::s_mtaskState.clear();
     }
-    static void selfTestHierFirst() {
+    static void selfTestHierFirst(AstVarScope* trigVscp) {
         FileLine* const flp = v3Global.rootp()->fileline();
-        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test", nullptr};
+        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test", trigVscp};
         V3Graph& graph = *execGraphp->depGraphp();
         const auto makeBody = [&]() -> AstNodeStmt* { return new AstComment{flp, ""}; };
         ExecMTask* const t0 = new ExecMTask{execGraphp, nullptr, makeBody()};
@@ -1214,9 +1223,6 @@ void implement(AstNetlist* netlistp) {
 
         if (dumpGraphLevel() >= 4) execGraphp->depGraphp()->dumpDotFilePrefixedAlways("pack");
 
-        // Record the trigger bits each MTask tests, before adding more code to the MTasks
-        addTriggerMasks(execGraphp);
-
         createRunFunction(execGraphp);
         addThreadStartWrapper(execGraphp);
 
@@ -1235,6 +1241,8 @@ void implement(AstNetlist* netlistp) {
         }
 
         addThreadEndWrapper(execGraphp);
+
+        addTriggerMasks(execGraphp);
     }
 }
 

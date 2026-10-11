@@ -99,7 +99,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
     string args;
     if (nodep->isLoose() && !nodep->isStatic()) {
         if (nodep->voidSelf()) {
-            args += "void* voidSelf";  // Converted to 'vlSelf' in the function body
+            args += "void* vlVoidSelf";  // Converted to 'vlSelf' in the function body
         } else {
             if (nodep->isConst().trueKnown()) args += "const ";
             args += EmitCUtil::prefixNameProtect(EmitCParentModule::get(nodep));

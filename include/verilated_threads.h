@@ -287,7 +287,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    // Constexpr, so the generated graphs are ready before any dynamic initialization
+    // constexpr, so the global graphs need no dynamic initialization, and can be used from
+    // static constructors
     constexpr VlExecGraph(const Vertex* verticesp, uint32_t nVertices, const Edge* edgesp,
                           uint32_t nEdges, size_t nTriggerWords, Fnp dispatchp)
         : m_verticesp{verticesp}

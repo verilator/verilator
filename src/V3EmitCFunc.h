@@ -89,7 +89,6 @@ class EmitCLazyDecls final : public VNVisitorConst {
     }
 
     void visit(AstExecGraph* nodep) override {
-        // The graph is defined in the ExecGraph file. Its children are referenced only there.
         if (!declaredOnce(nodep)) return;
         m_emitter.putns(nodep, "extern VlExecGraph " + EmitCUtil::execGraphName(nodep) + ";\n");
         m_needsBlankLine = true;
@@ -439,7 +438,7 @@ public:
                 if (nodep->voidSelf()) {
                     const string className = EmitCUtil::prefixNameProtect(m_modp);
                     puts(className + "* const vlSelf = static_cast<" + className
-                         + "*>(voidSelf);\n");
+                         + "*>(vlVoidSelf);\n");
                 }
                 if (!VN_IS(m_modp, Class)) {
                     puts(EmitCUtil::symClassAssign());  // Uses vlSelf
