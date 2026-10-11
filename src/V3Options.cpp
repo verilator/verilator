@@ -1494,6 +1494,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
     DECL_OPTION("-fbit-scan-loops", FOnOff, &m_fBitScanLoops);
+    DECL_OPTION("-fbitblast", FOnOff, &m_fBitblast);
     DECL_OPTION("-fcase", CbFOnOff, [this](bool flag) {
         m_fCaseDecoder = flag;
         m_fCaseTable = flag;
@@ -1578,7 +1579,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fsubst-const", FOnOff, &m_fSubstConst);
     DECL_OPTION("-ftable", FOnOff, &m_fTable);
     DECL_OPTION("-ftaskify-all-forked", FOnOff, &m_fTaskifyAll).undocumented();  // Debug
-    DECL_OPTION("-fvar-split", FOnOff, &m_fVarSplit);
+    DECL_OPTION("-fvar-split", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-var-split' is deprecated and has no effect");
+    });
     DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
     DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
     DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
@@ -2417,6 +2420,7 @@ void V3Options::optimize(int level) {
     m_fAcycSimp = flag;
     m_fAssemble = flag;
     m_fBitScanLoops = flag;
+    m_fBitblast = flag;
     m_fCaseDecoder = flag;
     m_fCaseTable = flag;
     m_fCaseTree = flag;
@@ -2444,7 +2448,6 @@ void V3Options::optimize(int level) {
     m_fSubst = flag;
     m_fSubstConst = flag;
     m_fTable = flag;
-    m_fVarSplit = flag;
     // And set specific optimization levels
     if (level >= 3) {
         m_inlineMult = -1;  // Maximum inlining

@@ -1903,6 +1903,8 @@ public:
     bool sameNode(const AstNode* samep) const override;
     string nameDotless() const;
     AstNodeModule* modp() const { return m_modp; }
+    // The combinational AstActive of the scope. If none, create one if 'create', else nullptr
+    AstActive* comboActivep(bool create);
     //
     AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
     void aboveScopep(AstScope* nodep) { m_aboveScopep = nodep; }
@@ -2739,6 +2741,8 @@ public:
         noCReset(fromp->noCReset());
         attrSplitVar(fromp->attrSplitVar());
     }
+    // Reason why the properties of the variable prevent splitting it, nullptr if none
+    const char* cannotSplitKindReason() const;
     void propagateWrapAttrFrom(const AstVar* fromp) {
         // Creating a function wrapper; keep attributes
         propagateAttrFrom(fromp);

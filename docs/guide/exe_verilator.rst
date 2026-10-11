@@ -766,6 +766,11 @@ Summary:
 
    Rarely needed. Disable converting bit counting loops into built-in operations.
 
+.. option:: -fno-bitblast
+
+   Rarely needed. Disable splitting packed variables into separate bit
+   ranges.
+
 .. option:: -fno-case
 
    Rarely needed. Disable all case statement optimizations.
@@ -954,8 +959,10 @@ Summary:
 
 .. option:: -fno-var-split
 
-   Rarely needed. Do not attempt to split variables
-   automatically. Variables explicitly annotated with
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.054: Rarely needed. Do not attempt to split
+   variables automatically. Variables explicitly annotated with
    :option:`/*verilator&32;split_var*/` are still split.
 
 .. option:: --fourstate

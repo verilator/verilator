@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Break variables into separate words to avoid UNOPTFLAT
+// DESCRIPTION: Verilator: Split packed variables into bit ranges
 //
 // Code available from: https://verilator.org
 //
@@ -14,24 +14,18 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3SPLITVAR_H_
-#define VERILATOR_V3SPLITVAR_H_
+#ifndef VERILATOR_V3BITBLAST_H_
+#define VERILATOR_V3BITBLAST_H_
 
 #include "verilatedos.h"
 
 //============================================================================
 
 class AstNetlist;
-class AstVar;
 
-class V3SplitVar final {
+class V3BitBlast final {
 public:
-    // Split variables marked with split_var metacomment.
-    static void splitVariable(AstNetlist* nodep) VL_MT_DISABLED;
-
-    // Return true if the variable can be split.
-    // This check is not perfect.
-    static bool canSplitVar(const AstVar* varp) VL_MT_DISABLED;
+    static void bitBlastAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

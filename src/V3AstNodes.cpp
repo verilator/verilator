@@ -3545,6 +3545,22 @@ void AstSampled::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, internal);
     dumpJsonGen(str);
 }
+AstActive* AstScope::comboActivep(bool create) {
+    // Use an existing one
+    for (AstNode* nodep = blocksp(); nodep; nodep = nodep->nextp()) {
+        AstActive* const activep = VN_CAST(nodep, Active);
+        if (activep && activep->hasCombo()) return activep;
+    }
+    if (!create) return nullptr;
+    // Otherwise create a new one
+    FileLine* const flp = fileline();
+    AstSenItem* const senItemp = new AstSenItem{flp, AstSenItem::Combo{}};
+    AstSenTree* const senTreep = new AstSenTree{flp, senItemp};
+    AstActive* const activep = new AstActive{flp, "", senTreep};
+    activep->senTreeStorep(activep->sentreep());
+    addBlocksp(activep);
+    return activep;
+}
 void AstScope::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [abovep=" << nodeAddr(aboveScopep()) << "]";
@@ -4112,6 +4128,19 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
         arg += dtypep()->cType((named ? name() : std::string{}), true, asRef);
     }
     return arg;
+}
+const char* AstVar::cannotSplitKindReason() const {
+    if (!isSignal() && !isTemp()) return "it is not a regular signal or temporary";
+    if (isConst()) return "it is a constant";
+    if (isPrimaryIO()) return "it is a primary input or output";
+    if (isFuncLocal() && isIO()) return "it is a function argument";
+    if (isRef()) return "it is a ref port";
+    if (isSigPublic()) return "it is public";
+    if (isForced()) return "it is forceable";
+    if (isReadByDpi()) return "it is read via DPI";
+    if (isWrittenByDpi()) return "it is written via DPI";
+    if (delayp()) return "it has a net delay";
+    return nullptr;
 }
 void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.

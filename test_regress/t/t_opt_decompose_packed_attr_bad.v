@@ -29,7 +29,7 @@ module t (
   ps_t ok  /*verilator split_var*/;
   // Public, not split
   ps_t pub  /*verilator public*/  /*verilator split_var*/;
-  // Select spanning members, not split
+  // Select spanning members, not decomposed, but bitblasted
   ps_t span  /*verilator split_var*/;
   // Variable index, not split
   logic [3:0][2:0] vix  /*verilator split_var*/;

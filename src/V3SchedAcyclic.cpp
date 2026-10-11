@@ -40,7 +40,6 @@
 #include "V3Graph.h"
 #include "V3Sched.h"
 #include "V3SenTree.h"
-#include "V3SplitVar.h"
 #include "V3Stats.h"
 
 #include <map>
@@ -328,7 +327,7 @@ std::string reportLoopVars(FileLine* /*warnFl*/, Graph* graphp, SchedAcyclicVarV
             ss2 << V3Error::warnMore() << "    " << varp->fileline() << ' ' << varp->prettyName()
                 << ", width " << std::dec << varp->width() << ", circular fanout "
                 << candidate.second;
-            if (V3SplitVar::canSplitVar(varp)) {
+            if (!varp->cannotSplitKindReason()) {
                 ss2 << ", can split_var";
                 ++splittable;
             }

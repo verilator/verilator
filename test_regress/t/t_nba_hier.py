@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 test.compile(verilator_flags2=[
-    '--binary', '--stats', '-fno-inline', '--unroll-count', '0', '-fno-decompose'
+    '--binary', '--stats', '-fno-inline', '--unroll-count', '0', '-fno-decompose', '-fno-bitblast'
 ])
 
 test.file_grep(test.stats, r'NBA, variables using ShadowVar scheme\s+(\d+)', 2)

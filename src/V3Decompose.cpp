@@ -388,25 +388,12 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
 
     // METHODS
 
-    // Reason why the properties of the variable prevent splitting, nullptr if none
-    static const char* cannotSplitKindReason(const AstVar* varp) {
-        if (!varp->isSignal() && !varp->isTemp()) return "it is not a regular signal or temporary";
-        if (varp->isConst()) return "it is a constant";
-        if (varp->isPrimaryIO()) return "it is a primary input or output";
-        if (varp->isFuncLocal() && varp->isIO()) return "it is a function argument";
-        if (varp->isRef()) return "it is a ref port";
-        if (varp->isSigPublic()) return "it is public";
-        if (varp->isForced()) return "it is forceable";
-        if (varp->isReadByDpi()) return "it is read via DPI";
-        if (varp->isWrittenByDpi()) return "it is written via DPI";
-        if (varp->delayp()) return "it has a net delay";
-        return nullptr;
-    }
-
     // Warn that splitting requested via split_var cannot be done, because of 'reasonp'
     static void warnNoSplit(AstVar* varp, const AstNode* wherep, const char* reasonp) {
         // Only warn if user requested splitting
         if (!varp->attrSplitVar()) return;
+        // A packed variable might still be split by V3BitBlast, which warns if not
+        if (isPacked(varp->dtypep())) return;
         wherep->v3warn(SPLITVAR, varp->prettyNameQ()
                                      << " marked split_var but will not be split because "
                                      << reasonp << ".\n");
@@ -423,7 +410,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
                 // Check data type
                 if (!isSplittableType(varp->dtypep())) return false;
                 // Check properties
-                const char* const reasonp = cannotSplitKindReason(varp);
+                const char* const reasonp = varp->cannotSplitKindReason();
                 // Warn that it cannot be split if user explicitly requested splitting
                 if (reasonp) warnNoSplit(varp, varp, reasonp);
                 // Eligible if no refusal reason returned
@@ -1348,24 +1335,8 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
 
     // The combinational AstActive of the scope, cached
     static AstActive* comboActive(AstScope* scopep) {
-        if (AstNode* const existingp = scopep->user1p()) return VN_AS(existingp, Active);
-        // Use an existing one
-        for (AstNode* nodep = scopep->blocksp(); nodep; nodep = nodep->nextp()) {
-            AstActive* const activep = VN_CAST(nodep, Active);
-            if (activep && activep->hasCombo()) {
-                scopep->user1p(activep);
-                return activep;
-            }
-        }
-        // Otherwise create a new one
-        FileLine* const flp = scopep->fileline();
-        AstSenItem* const senItemp = new AstSenItem{flp, AstSenItem::Combo{}};
-        AstSenTree* const senTreep = new AstSenTree{flp, senItemp};
-        AstActive* const activep = new AstActive{flp, "decompose", senTreep};
-        activep->senTreeStorep(activep->sentreep());
-        scopep->addBlocksp(activep);
-        scopep->user1p(activep);
-        return activep;
+        if (!scopep->user1p()) scopep->user1p(scopep->comboActivep(true));
+        return VN_AS(scopep->user1p(), Active);
     }
 
     // Drive the split Place 'placep' from its components, recursively,
