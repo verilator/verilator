@@ -59,4 +59,24 @@
                                         : ... note: In instance 't'
    89 |     bad_arr_da[0][0] <= 2;   
       |               ^
+%Error: t/t_assign_automatic_bad.v:96:26: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'da'
+                                        : ... note: In instance 't'
+   96 |     assign ok_r = bad_s7.da[0];   
+      |                          ^~
+%Error: t/t_assign_automatic_bad.v:97:19: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'bad_wild'
+                                        : ... note: In instance 't'
+   97 |     assign ok_r = bad_wild[0];   
+      |                   ^~~~~~~~
+%Error: t/t_assign_automatic_bad.v:98:29: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'bad_arr_aa'
+                                        : ... note: In instance 't'
+   98 |     assign ok_r = bad_arr_aa[0][0];   
+      |                             ^
+%Error: t/t_assign_automatic_bad.v:112:21: Automatic lifetime variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'm_bad2'
+                                         : ... note: In instance 't'
+  112 |     bad_arr_h[0][0].m_bad2 <= 2;   
+      |                     ^~~~~~
+%Error: t/t_assign_automatic_bad.v:113:18: Dynamically-sized variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'da'
+                                         : ... note: In instance 't'
+  113 |     bad_arr_s[1].da[0] <= 2;   
+      |                  ^~
 %Error: Exiting due to

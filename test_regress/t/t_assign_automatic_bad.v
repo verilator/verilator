@@ -89,4 +89,28 @@ module t (
     bad_arr_da[0][0] <= 2;  // Error: nonblocking dynarray element in array
   end
 
+  // Reading such elements is also not allowed in procedural continuous assignments
+  int ok_r;
+  initial begin
+    // verilator lint_off IEEEMAYDEPRECATE
+    assign ok_r = bad_s7.da[0];  // Error: continuous read of dynarray element in struct
+    assign ok_r = bad_wild[0];  // Error: continuous read of wildcard associative array element
+    assign ok_r = bad_arr_aa[0][0];  // Error: continuous read of associative array element in array
+    // verilator lint_on IEEEMAYDEPRECATE
+  end
+
+  // Reading such elements in a nonblocking assignment is allowed, also to get a handle
+  int ok_arr[2];
+  Cls bad_arr_h[2][];
+  dyn_t bad_arr_s[2];
+  always @(posedge clk) begin
+    ok_arr[bad_s.da[0]!=0] <= bad_s.da[1];  // OK: nonblocking, reads dynarray elements in struct
+    ok_arr[bad_arr_aa[0][0]!=0] <= 2;  // OK: nonblocking, indexed by associative array element
+    // Only the member is an error, as Verilator rejects NBAs to non-static class properties: the
+    // pending update would have to keep the object alive (#7541). The dynarray element is only
+    // read, to get the handle.
+    bad_arr_h[0][0].m_bad2 <= 2;  // Error: nonblocking class automatic
+    bad_arr_s[1].da[0] <= 2;  // Error: nonblocking dynarray element in struct in array
+  end
+
 endmodule
