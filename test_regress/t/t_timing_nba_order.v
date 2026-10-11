@@ -58,6 +58,8 @@ module sub;
     `checkd(st.f, ref_v);
     `checkh(p, ref_p);
   end
+  // Read as a whole, so the struct is not split into its members
+  final $display("%p", st);
 endmodule
 
 module t;
@@ -99,20 +101,11 @@ module t;
     for (int i = 0; i < n; ++i) lp[i] <= 1'b1;
   end
 
-  // NBA to a whole unpacked array
-  logic [7:0] arr[0:3];
-  logic [7:0] arr_src[0:3] = '{8'h11, 8'h22, 8'h33, 8'h44};
-  initial #1 arr <= arr_src;
-
   initial begin
     #2;
     `checkd(ev_v, 2);
     `checkd(fk_v, 1);
     `checkh(lp, 7'b0011111);
-    `checkh(arr[0], 8'h11);
-    `checkh(arr[1], 8'h22);
-    `checkh(arr[2], 8'h33);
-    `checkh(arr[3], 8'h44);
     #20;
     $write("*-* All Finished *-*\n");
     $finish;

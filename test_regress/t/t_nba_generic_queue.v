@@ -138,6 +138,8 @@ module t;
     s.v <= #1 1;
     s_clk <= #1 1;
     #2 `checkd(s_seen, 1);
+    // Read as a whole, so the struct is not split into its members
+    $display("%p", s);
   end
 
   // An NBA in a function of a class, through a handle, observed likewise

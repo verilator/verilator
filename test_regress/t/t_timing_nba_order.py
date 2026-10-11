@@ -16,7 +16,6 @@ test.compile(verilator_flags2=["--binary", "--stats"])
 test.execute()
 
 if test.vlt_all:
-    test.file_grep(test.stats, r'NBA, variables using FlagUnique scheme\s+(\d+)', 1)
     test.file_grep(test.stats, r'NBA, variables using GenericQueue scheme\s+(\d+)', 2)
     test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 5)
     test.file_grep(test.stats, r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 6)

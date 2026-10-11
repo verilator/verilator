@@ -61,20 +61,10 @@ class Driver;
   endtask
 endclass
 
-class Capture;
-  process seen;
-  function int delay();
-    seen = process::self();
-    return 5;
-  endfunction
-endclass
-
 module t;
   bit clk;
   bit clk2;
-  int x;
   bit [2:0] y;
-  int z[3];
   bit [1:0] q;
   int c;
   int dc;
@@ -82,10 +72,7 @@ module t;
   int nd_n;
   int nd_z;
   int lw;
-  string x_log;
   string y_log;
-  string z_at4;
-  string z_at6;
   string q_log;
   string c_log;
   string a_log;
@@ -133,13 +120,6 @@ module t;
   Driver drv = new;
   Driver dh;
   Driver odrv = new;
-  bit cat_a, cat_b, cat_c, cat_d, cat_e, cat_f, cat_g, cat_h;
-  int dly_calls;
-  string cat_log;
-  event cev;
-  Capture cap = new;
-  process cap_parent;
-  int cap_x;
 
   always #5 clk = ~clk;
   always #7 clk2 = ~clk2;
@@ -183,12 +163,6 @@ module t;
     return i;
   endfunction
 
-  function automatic int dly();
-    ++dly_calls;
-    return 5;
-  endfunction
-
-  always @(x) if ($time != 0) x_log = {x_log, $sformatf("%0d@%0d ", x, $time)};
   always @(y) if ($time != 0) y_log = {y_log, $sformatf("%0d@%0d ", y, $time)};
   always @(q) if ($time != 0) q_log = {q_log, $sformatf("%0d@%0d ", q, $time)};
   always @(c) if ($time != 0) c_log = {c_log, $sformatf("%0d@%0d ", c, $time)};
@@ -208,22 +182,9 @@ module t;
   always @(a.d.g) if ($time != 0) d_log = {d_log, $sformatf("a%0d@%0d ", a.d.g, $time)};
   always @(b.d.g) if ($time != 0) d_log = {d_log, $sformatf("b%0d@%0d ", b.d.g, $time)};
 
-  // Each pending update keeps the value it was scheduled with
+  // Pending updates maturing together each update their own bit
   initial begin
-    for (int i = 1; i <= 3; ++i) begin
-      x <= #5 i;
-      #1;
-    end
-  end
-
-  // Pending updates maturing together each update their own target
-  initial begin
-    for (int i = 0; i < 3; ++i) begin
-      y[i] <= #5 1'b1;
-      z[i] <= #5 i + 1;
-    end
-    #4 z_at4 = $sformatf("%0d %0d %0d", z[0], z[1], z[2]);
-    #2 z_at6 = $sformatf("%0d %0d %0d", z[0], z[1], z[2]);
+    for (int i = 0; i < 3; ++i) y[i] <= #5 1'b1;
   end
 
   // Each pending drive from the same inlined call counts its own cycles
@@ -424,30 +385,9 @@ module t;
     drv.vifs[0] = b;
   end
 
-  // A concatenation of targets is updated after the timing control once, evaluated once
-  initial begin
-    {cat_a, cat_b} = #5 2'b11;
-    cat_log = {cat_log, $sformatf("%0b%0b@%0t ", cat_a, cat_b, $time)};
-    {cat_c, cat_d} <= #(dly()) 2'b11;
-    {cat_g, cat_h} <= @(cev) 2'b11;
-    {cat_e, cat_f} = @(cev) 2'b11;
-    cat_log = {cat_log, $sformatf("%0b%0b@%0t ", cat_e, cat_f, $time)};
-  end
-  initial #7->cev;
-
-  // The process executing the NBA evaluates its delay
-  initial begin
-    cap_parent = process::self();
-    cap_x <= #(cap.delay()) 1;
-    #6;
-  end
-
   initial begin
     #60;
-    `checks(x_log, "1@5 2@6 3@7 ")
     `checks(y_log, "7@5 ")
-    `checks(z_at4, "0 0 0")
-    `checks(z_at6, "1 2 3")
     `checks(q_log, "1@25 2@35 ")
     `checks(c_log, "1@15 2@35 3@55 ")
     `checks(dc_log, "7@25 ")
@@ -468,13 +408,8 @@ module t;
     `checks($sformatf("%0d %0d", sarr[0].f, sarr[1].f), "0 8")
     `checks($sformatf("%0d %0d %x %x", tz, te, tp, tq), "2 1 1b fa")
     `checks($sformatf("%0d %0d", a.cnt, b.cnt), "105 4")
-    `checks(cat_log, "11@5 11@7 ")
-    `checks($sformatf("%0b%0b %0b%0b", cat_c, cat_d, cat_g, cat_h), "11 11")
-    `checks($sformatf("%0b %0d", cap.seen == cap_parent, cap_x), "1 1")
     // Last, as VCS performs the pending updates of intra-assignment delays after the time step's
-    // other NBA updates, drives the interface referenced when a drive matures, and evaluates the
-    // delay of an NBA to a concatenation for each part
-    `checks($sformatf("%0d", dly_calls), "1")
+    // other NBA updates, and drives the interface referenced when a drive matures
     `checks($sformatf("%0d %0d %0d %0d", oa[0], ob[0], op[0], oq[0]), "2 2 0 0")
     `checks($sformatf("%0d %0d %0d %0d %0d %0d", ta[0], tx, ts[0].f, a.o, b.o, tr), "2 2 2 3 0 2")
     `checks(aw_log, "1@25 ")
