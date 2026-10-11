@@ -112,8 +112,8 @@ class OrderGraph final : public V3Graph {
 public:
     // CONSTRUCTOR
     OrderGraph(const V3Sched::TriggerKit& trigKit, AstVarScope* trigVscp)
-        : m_trigVscp{trigVscp}
-        , m_trigKit{trigKit} {}
+        : m_trigKit{trigKit}
+        , m_trigVscp{trigVscp} {}
 
     // METHODS
     AstVarScope* trigVscp() const { return m_trigVscp; }
