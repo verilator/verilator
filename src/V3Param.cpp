@@ -1631,15 +1631,23 @@ class ParamProcessor final {
                             }
                             if (!any) break;
                         }
-                        // Bail if anything still points at the template.
-                        cloneVarp->foreach([&](AstVarRef* varrefp) {
-                            varrefp->v3fatalSrc(
-                                "Unresolved VarRef '"
-                                << varrefp->prettyName() << "' in pin dtype clone.  Pin: "
-                                << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
-                        });
-                        // Skip the widthing constify if any RefDType is unresolved.
-                        cloneVarp->foreach([&](AstRefDType* refp) {
+                        // Skip the widthing constify if anything left can't be evaluated here: a
+                        // reference, as to a variable or around a cycle, an unresolved type
+                        // parameter, or a type or enum item of the template
+                        cloneVarp->foreach([&](AstNode* np) {
+                            if (VN_IS(np, VarRef)) {
+                                cloneVarpUnresolved = true;
+                                return;
+                            }
+                            if (AstEnumItemRef* const itemRefp = VN_CAST(np, EnumItemRef)) {
+                                if (V3LinkDotIfaceCapture::findOwnerModule(itemRefp->itemp())
+                                    == srcModp) {
+                                    cloneVarpUnresolved = true;
+                                }
+                                return;
+                            }
+                            AstRefDType* const refp = VN_CAST(np, RefDType);
+                            if (!refp) return;
                             if (VN_IS(refp->refDTypep(), ParamTypeDType)) {
                                 UINFO(5, "  cellPinCleanup: skip normedNamep "
                                          "(unresolved RefDType->ParamTypeDType) pin="
