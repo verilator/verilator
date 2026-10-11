@@ -39,30 +39,31 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 namespace V3Sched {
 
 //============================================================================
-// Remaps external domains using the specified trigger map
+// Trigger indices of the external domains of each variable
 
-std::map<const AstVarScope*, std::vector<AstSenTree*>>
-TimingKit::remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const {
-    std::map<const AstVarScope*, std::vector<AstSenTree*>> remappedDomainMap;
+std::map<const AstVarScope*, std::vector<uint32_t>>
+TimingKit::externalTriggerIndices(const TriggerKit& trigKit) const {
+    std::map<const AstVarScope*, std::vector<uint32_t>> result;
     for (const auto& vscpDomains : m_externalDomains) {
-        const AstVarScope* const vscp = vscpDomains.first;
-        const auto& domains = vscpDomains.second;
-        auto& remappedDomains = remappedDomainMap[vscp];
-        remappedDomains.reserve(domains.size());
-        for (AstSenTree* const domainp : domains) {
-            remappedDomains.push_back(trigMap.at(domainp));
+        std::vector<uint32_t>& indices = result[vscpDomains.first];
+        for (const AstSenTree* const domainp : vscpDomains.second) {
+            for (const AstSenItem* itemp = domainp->sensesp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), SenItem)) {
+                indices.push_back(trigKit.senItem2TrigIdx(itemp));
+            }
         }
     }
-    return remappedDomainMap;
+    return result;
 }
 
 //============================================================================
 // Creates a timing resume call (if needed, else returns null)
 
-AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
+AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
     if (!m_resumeFuncp) {
         if (m_lbs.empty()) return nullptr;
         // Create global resume function
+        AstNetlist* const netlistp = v3Global.rootp();
         AstScope* const scopeTopp = netlistp->topScopep()->scopep();
         m_resumeFuncp = new AstCFunc{netlistp->fileline(), "_timing_resume", scopeTopp, ""};
         m_resumeFuncp->dontCombine(true);
@@ -100,7 +101,11 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 
             AstNode* const actionp = activep->stmtsp()->unlinkFrBackWithNext();
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
-                dlyShedIfp = V3Sched::util::createIfFromSenTree(activep->sentreep());
+                FileLine* const flp = trigVscp->fileline();
+                const std::set<uint32_t>& triggers = entry.m_triggers;
+                AstTriggered* const condp
+                    = new AstTriggered{flp, trigVscp, {triggers.begin(), triggers.end()}};
+                dlyShedIfp = new AstIf{flp, condp};
                 dlyShedIfp->addThensp(actionp);
             } else {
                 m_resumeFuncp->addStmtsp(actionp);
@@ -132,7 +137,7 @@ AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
 //============================================================================
 // Creates a timing ready call (if needed, else returns null)
 
-AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
+AstCCall* TimingKit::createReady(AstVarScope* trigVscp) {
     if (!m_readyFuncp) {
         for (const auto& entry : m_lbs) {
             AstActive* const activep = entry.m_activep;
@@ -146,6 +151,7 @@ AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
             if (!schedulerp->dtypep()->basicp()->isTriggerScheduler()) continue;
             // Create the global ready function only if we have trigger schedulers
             if (!m_readyFuncp) {
+                AstNetlist* const netlistp = v3Global.rootp();
                 AstScope* const scopeTopp = netlistp->topScopep()->scopep();
                 m_readyFuncp = new AstCFunc{netlistp->fileline(), "_timing_ready", scopeTopp, ""};
                 m_readyFuncp->dontCombine(true);
@@ -155,11 +161,13 @@ AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
                 scopeTopp->addBlocksp(m_readyFuncp);
             }
 
-            AstSenTree* const senTreep = activep->sentreep();
-            FileLine* const flp = senTreep->fileline();
+            FileLine* const flp = activep->sentreep()->fileline();
 
             // Create an 'AstIf' sensitive to the suspending triggers
-            AstIf* const ifp = V3Sched::util::createIfFromSenTree(senTreep);
+            const std::set<uint32_t>& triggers = entry.m_triggers;
+            AstTriggered* const condp
+                = new AstTriggered{flp, trigVscp, {triggers.begin(), triggers.end()}};
+            AstIf* const ifp = new AstIf{flp, condp};
             m_readyFuncp->addStmtsp(ifp);
 
             // Mark as ready the processes resumed on this sensitivity expression

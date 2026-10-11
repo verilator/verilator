@@ -3653,14 +3653,6 @@ void AstSenItem::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "edgeType", edgeType().ascii());
     dumpJsonGen(str);
 }
-void AstSenTree::dump(std::ostream& str) const {
-    Super::dump(str);
-    if (isMulti()) str << " [MULTI]";
-}
-void AstSenTree::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, isMulti);
-    dumpJsonGen(str);
-}
 bool AstSenTree::hasClocked() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
     for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
@@ -3858,6 +3850,27 @@ void AstTracePushPrefix::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "prefix", prefix());
     dumpJsonNumFunc(str, left);
     dumpJsonNumFunc(str, right);
+    dumpJsonGen(str);
+}
+AstTriggered::AstTriggered(FileLine* fl, AstVarScope* trigVscp,
+                           const std::vector<uint32_t>& indices)
+    : ASTGEN_SUPER_Triggered(fl)
+    , m_indices{indices} {
+    UASSERT(!m_indices.empty(), "AstTriggered requires at least one trigger index");
+    trigRefp(new AstVarRef{fl, trigVscp, VAccess::READ});
+    dtypeSetBit();
+}
+void AstTriggered::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " indices=";
+    for (size_t i = 0; i < m_indices.size(); ++i) str << (i ? "," : "") << m_indices[i];
+}
+void AstTriggered::dumpJson(std::ostream& str) const {
+    std::string text;
+    for (size_t i = 0; i < m_indices.size(); ++i) {
+        text += (i ? "," : "") + std::to_string(m_indices[i]);
+    }
+    dumpJsonStr(str, "indices", text);
     dumpJsonGen(str);
 }
 AstTypeTable::AstTypeTable(FileLine* fl)

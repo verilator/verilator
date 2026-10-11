@@ -2965,6 +2965,24 @@ public:
     VTimescale timeunit() const { return m_timeunit; }
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
 };
+class AstTriggered final : public AstNodeExpr {
+    // True if any of the triggers at 'm_indices' are set in 'trigRefp'.
+    // Explicit form of the trigger check, so the triggers tested can be recovered directly.
+    // @astgen op1 := trigRefp : AstVarRef  // Reference to the trigger vector
+    const std::vector<uint32_t> m_indices;  // Indices of the triggers tested
+public:
+    AstTriggered(FileLine* fl, AstVarScope* trigVscp, const std::vector<uint32_t>& indices);
+    ASTGEN_MEMBERS_AstTriggered;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return m_indices == VN_DBG_AS(samep, Triggered)->m_indices;
+    }
+    const std::vector<uint32_t>& indices() const { return m_indices; }
+};
 class AstUnbounded final : public AstNodeExpr {
     // A $ in the parser, used for unbounded and queues
     // Due to where is used, treated as int

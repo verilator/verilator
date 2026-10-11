@@ -25,12 +25,9 @@
 #include "V3OrderMoveGraph.h"
 
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-class AstNetlist;
-class AstSenItem;
-class AstSenTree;
+class AstVarScope;
 
 namespace V3Sched {
 class LogicByScope;
@@ -40,18 +37,17 @@ class LogicByScope;
 
 namespace V3Order {
 
-std::unique_ptr<OrderGraph> buildOrderGraph(AstNetlist* netlistp,  //
+std::unique_ptr<OrderGraph> buildOrderGraph(const V3Sched::TriggerKit& trigKit,  //
+                                            AstVarScope* trigVscp,  //
                                             const std::vector<V3Sched::LogicByScope*>& coll,  //
-                                            const TrigToSenMap& trigToSen,  //
                                             const V3Sched::CovergroupRefBindings& cgRefBindings,
                                             bool parallel);
 
 void orderOrderGraph(OrderGraph& graph, const std::string& tag);
 
-void processDomains(AstNetlist* netlistp,  //
-                    OrderGraph& graph,  //
+void processDomains(OrderGraph& graph,  //
                     const std::string& tag,  //
-                    const ExternalDomainsProvider& externalDomains);
+                    const ExternalTriggersProvider& externalTriggers);
 
 AstNodeStmt* createSerial(OrderMoveGraph& moveGraph, const std::string& tag, bool slow);
 
