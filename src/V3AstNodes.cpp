@@ -3850,11 +3850,11 @@ void AstTriggered::dump(std::ostream& str) const {
     for (size_t i = 0; i < m_indices.size(); ++i) str << (i ? "," : "") << m_indices[i];
 }
 void AstTriggered::dumpJson(std::ostream& str) const {
-    std::string indices;
+    std::string text;
     for (size_t i = 0; i < m_indices.size(); ++i) {
-        indices += (i ? "," : "") + std::to_string(m_indices[i]);
+        text += (i ? "," : "") + std::to_string(m_indices[i]);
     }
-    dumpJsonStr(str, "indices", indices);
+    dumpJsonStr(str, "indices", text);
     dumpJsonGen(str);
 }
 AstTypeTable::AstTypeTable(FileLine* fl)

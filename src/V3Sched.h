@@ -151,7 +151,7 @@ public:
 
     void foreachLogic(const std::function<void(AstNode*)>& f) const {
         for (const Entry& entry : m_entries) {
-            AstActive* const activep = entry.m_activep;
+            const AstActive* const activep = entry.m_activep;
             for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) f(nodep);
         }
     }
