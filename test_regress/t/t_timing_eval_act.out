@@ -47,6 +47,7 @@
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_inact
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_nba
 -V{t#,#}+    Vt_timing_eval_act___024root___trigger_anySet__act
+-V{t#,#}+    Vt_timing_eval_act___024root___trigger_clear__act
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_obs
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_react
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_postponed
@@ -189,6 +190,7 @@
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_inact
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_nba
 -V{t#,#}+    Vt_timing_eval_act___024root___trigger_anySet__act
+-V{t#,#}+    Vt_timing_eval_act___024root___trigger_clear__act
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_obs
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_react
 -V{t#,#}+    Vt_timing_eval_act___024root___eval_postponed
