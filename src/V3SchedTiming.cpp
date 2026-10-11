@@ -429,7 +429,10 @@ class TransformForksVisitor final : public VNVisitor {
             AstBasicDType* const dtypep = varp->dtypep()->basicp();
             // If not a fork..join, copy. All write refs should've been handled by V3Fork
             bool passByValue = !m_forkp->joinType().join();
-            if (!varp->isFuncLocal()) {
+            if (varp->forkByValue()) {
+                // Set just before the fork, for its processes to get by value
+                passByValue = true;
+            } else if (!varp->isFuncLocal()) {
                 // Not func local. Its lifetime is longer than the forked process. Skip
                 return;
             } else if (!varp->user1()) {
