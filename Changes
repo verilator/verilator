@@ -207,8 +207,11 @@ Verilator 5.053 devel
 * Fix internal error on sampled value function in cover sequence (#8682) (#8683). [Doha Nam]
 * Fix reordering assignments through handles or with intra-assignment timing (#8688). [Marco Bartoli]
 * Fix $readmem/$writemem descending order (#8698).
-* Fix intra-assignment timing controls to be evaluated once by the executing process (#8712). [Marco Bartoli]
 * Fix function ports with disable by name (#8700).
+* Fix intra-assignment timing controls to be evaluated once by the executing process (#8712). [Marco Bartoli]
+* Fix missing error on NBAs to elements of dynamically-sized struct members (#8715). [Marco Bartoli]
+* Fix pending intra-assignment NBAs of a process sharing their values (#8716). [Marco Bartoli]
+* Fix errors when naming parameter specializations (#8718). [Michael Bedford Taylor]
 
 
 Verilator 5.052 2026-09-05
