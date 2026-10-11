@@ -12,7 +12,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile()
+# AddressSanitizer is incompatible with ThreadSanitizer.
+sanitize = [] if test.tsan else ["-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address"]
+
+test.compile(verilator_flags2=sanitize)
 test.execute()
 
 test.passes()
