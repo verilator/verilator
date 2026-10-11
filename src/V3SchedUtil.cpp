@@ -59,13 +59,6 @@ AstVarScope* newArgument(AstCFunc* funcp, AstNodeDType* dtypep, const string& na
     return vscp;
 }
 
-AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow) {
-    AstCFunc* const funcp = makeSubFunction(netlistp, name, slow);
-    funcp->entryPoint(true);
-    funcp->keepIfEmpty(true);
-    return funcp;
-}
-
 AstNodeStmt* setVar(AstVarScope* vscp, uint32_t val) {
     FileLine* const flp = vscp->fileline();
     AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::WRITE};

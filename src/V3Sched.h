@@ -501,8 +501,6 @@ LogicReplicas replicateLogic(LogicRegions&) VL_MT_DISABLED;
 
 // Utility functions used by various steps in scheduling
 namespace util {
-// Create a new top level entry point
-AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow);
 // Create a new sub function (not an entry point)
 AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow);
 // Add an argument of the given type to the given function

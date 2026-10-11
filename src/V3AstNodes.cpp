@@ -2237,6 +2237,41 @@ void AstNetlist::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "resolvedTopModuleName", resolvedTopModuleName());
     dumpJsonGen(str);
 }
+AstCFunc* AstNetlist::dumpTriggersFuncp(VEval eval) {
+    UASSERT(eval.hasTriggers(), "Region has no triggers to dump: " << eval.ascii());
+    evalFuncp(eval);
+    return m_dumpTriggersFuncps[eval];
+}
+AstCFunc* AstNetlist::evalFuncp(VEval eval) {
+    const auto newEvalFunc = [this](const std::string& name, bool slow) {
+        AstScope* const scopeTopp = topScopep()->scopep();
+        AstCFunc* const funcp = new AstCFunc{fileline(), name, scopeTopp, ""};
+        funcp->dontCombine(true);
+        funcp->isStatic(false);
+        funcp->isLoose(true);
+        funcp->slow(slow);
+        funcp->isConst(false);
+        funcp->declPrivate(true);
+        funcp->entryPoint(true);
+        funcp->keepIfEmpty(true);
+        scopeTopp->addBlocksp(funcp);
+        return funcp;
+    };
+    if (m_evalFuncps[eval]) return m_evalFuncps[eval];
+    // Create all entry points at once, in order, as the runtime calls every one, even if empty
+    for (int i = 0; i < VEval::_ENUM_END; ++i) {
+        const VEval ieval{i};
+        AstCFunc* const funcp = newEvalFunc(ieval.funcName(), ieval.slow());
+        m_evalFuncps[ieval] = funcp;
+        // Only the iterated functions report whether they did any work
+        if (ieval.isIterated()) funcp->rtnType("bool");
+        // Only a region with a trigger vector has anything to dump
+        if (ieval.hasTriggers()) {
+            m_dumpTriggersFuncps[ieval] = newEvalFunc(ieval.dumpTriggersFuncName(), true);
+        }
+    }
+    return m_evalFuncps[eval];
+}
 AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
     UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
     AstFunc* selfp = nullptr;

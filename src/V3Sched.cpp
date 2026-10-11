@@ -149,7 +149,6 @@ void createEvalRegion(
 
     // Populate the trigger dump entry point function
     if (trigp) {
-        UASSERT(eval.hasTriggers(), "Region with a trigger vector must have triggers");
         netlistp->dumpTriggersFuncp(eval)->addStmtsp(trigKit.newDumpCall(trigp, tag, false));
     }
 
@@ -849,21 +848,6 @@ void schedule(AstNetlist* netlistp) {
         lbs.foreachLogic([&](AstNode* nodep) { size += nodep->nodeCount(); });
         V3Stats::addStat("Scheduling, " + name, size);
     };
-
-    // Step 1: Create every entry point called from the run-time eval loop
-    for (int i = 0; i < VEval::_ENUM_END; ++i) {
-        const VEval eval{i};
-        AstCFunc* const funcp = util::makeTopFunction(netlistp, eval.funcName(), eval.slow());
-        netlistp->evalFuncp(eval, funcp);
-        // Only the iterated functions report whether they did any work
-        if (eval.isIterated()) funcp->rtnType("bool");
-        // Only a region with a trigger vector has anything to dump
-        if (eval.hasTriggers()) {
-            AstCFunc* const dumpp
-                = util::makeTopFunction(netlistp, eval.dumpTriggersFuncName(), true);
-            netlistp->dumpTriggersFuncp(eval, dumpp);
-        }
-    }
 
     // Step 2: Prepare external domains for timing and virtual interfaces
     // Create extra triggers for virtual interfaces

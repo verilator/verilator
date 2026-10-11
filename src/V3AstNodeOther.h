@@ -1634,10 +1634,10 @@ public:
     AstPackage* constPoolPkgp() const { return m_constPoolPkgp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     void dollarUnitPkgp(AstPackage* const packagep) { m_dollarUnitPkgp = packagep; }
-    AstCFunc* evalFuncp(VEval eval) const { return m_evalFuncps[eval]; }
-    void evalFuncp(VEval eval, AstCFunc* funcp) { m_evalFuncps[eval] = funcp; }
-    AstCFunc* dumpTriggersFuncp(VEval eval) const { return m_dumpTriggersFuncps[eval]; }
-    void dumpTriggersFuncp(VEval eval, AstCFunc* funcp) { m_dumpTriggersFuncps[eval] = funcp; }
+    // Returns the entry point eval function, lazy constructed on first call
+    AstCFunc* evalFuncp(VEval eval);
+    // Returns the trigger dump function of the given eval function, lazy constructed
+    AstCFunc* dumpTriggersFuncp(VEval eval);
     AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }

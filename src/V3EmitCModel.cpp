@@ -418,13 +418,13 @@ class EmitCModel final : public EmitCFunc {
         puts("void " + topModNameProtected + "__" + protect("_eval_debug_assertions") + selfDecl
              + ";\n");
         puts("#endif  // VL_DEBUG\n");
-        const AstNetlist* const netlistp = v3Global.rootp();
+        AstNetlist* const netlistp = v3Global.rootp();
         for (int i = 0; i < VEval::_ENUM_END; ++i) {
             emitCFuncDecl(netlistp->evalFuncp(VEval{i}), modp);
         }
         for (int i = 0; i < VEval::_ENUM_END; ++i) {
-            const AstCFunc* const funcp = netlistp->dumpTriggersFuncp(VEval{i});
-            if (funcp) emitCFuncDecl(funcp, modp);
+            const VEval eval{i};
+            if (eval.hasTriggers()) emitCFuncDecl(netlistp->dumpTriggersFuncp(eval), modp);
         }
 
         if (optSystemC() && v3Global.usesTiming()) {
