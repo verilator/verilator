@@ -8,22 +8,18 @@
 `define checkd(got, expected) \
   if ((got) != (expected)) $stop
 
-typedef struct {
-  rand int value;
-} Entry;
+typedef struct {rand int value;} Entry;
 
 class Collection;
   rand Entry entries[];
 
-  constraint c_size {
-    entries.size() == 3;
-  }
+  constraint c_size {entries.size() == 3;}
 
   constraint c_values {
     foreach (entries[i]) {
       entries[i].value[3:0] dist {
-        0      :/ 0,
-        [1:15] :/ 1
+        0 :/ 0,
+        [1 : 15] :/ 1
       };
     }
   }

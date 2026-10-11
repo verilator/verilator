@@ -181,6 +181,7 @@ public:
     bool containsUnpackedStruct() const;
     int widthStream() const;
     string vlEnumType() const;  // Return VerilatedVarType: VLVT_UINT32, etc
+    string vlEnumPackedAgg() const;  // Return VLVF_PACKED_AGG etc flags, or empty
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isDouble() ? "D" : isQuad() ? "Q" : "I");
@@ -1531,6 +1532,7 @@ public:
     int widthAlignBytes() const override { return sizeof(std::map<std::string, std::string>); }
     int widthTotalBytes() const override { return sizeof(std::map<std::string, std::string>); }
     bool isCompound() const override { return true; }
+    bool isDynamicallySized() const override { return true; }
 };
 
 // === AstNodeArrayDType ===

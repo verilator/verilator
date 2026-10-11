@@ -364,37 +364,26 @@ AstVarScope* TriggerKit::newTrigVec(const std::string& name) const {
     return v3Global.rootp()->topScopep()->createTemp("__V" + name + "Triggered", m_trigVecDTypep);
 }
 
-AstSenTree* TriggerKit::newTriggerSenTree(AstVarScope* const vscp,
-                                          const std::vector<uint32_t>& indices) const {
-    AstNetlist* const netlistp = v3Global.rootp();
-    AstTopScope* const topScopep = netlistp->topScopep();
-    FileLine* const flp = topScopep->fileline();
-
-    AstSenTree* const senTreep = new AstSenTree{flp, nullptr};
-    topScopep->addSenTreesp(senTreep);
-    for (const uint32_t index : indices) {
-        UASSERT(index <= (m_nVecWords + m_nPreWords) * WORD_SIZE, "Invalid trigger index");
-        const uint32_t wordIndex = index / WORD_SIZE;
-        const uint32_t bitIndex = index % WORD_SIZE;
-        AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::READ};
-        AstNodeExpr* const aselp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
-        // Use a mask & _ to extract the bit, V3Const can optimize this to combine terms
-        AstConst* const maskp
-            = new AstConst{flp, AstConst::WidthedValue{}, static_cast<int>(WORD_SIZE), 0};
-        maskp->num().setBit(bitIndex, '1');
-        AstNodeExpr* const termp = new AstAnd{flp, maskp, aselp};
-        senTreep->addSensesp(new AstSenItem{flp, VEdgeType::ET_TRUE, termp});
-    }
-    return senTreep;
+uint32_t TriggerKit::extraTriggerIndex(uint32_t index) const {
+    UASSERT(index <= m_nExtraWords * WORD_SIZE, "Invalid external trigger index");
+    return index + m_nSenseWords * WORD_SIZE;
 }
 
-AstSenTree* TriggerKit::newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index) const {
-    UASSERT(index <= m_nExtraWords * WORD_SIZE, "Invalid external trigger index");
-    return newTriggerSenTree(vscp, {index + m_nSenseWords * WORD_SIZE});
+std::set<uint32_t> TriggerKit::triggerIndices(const AstSenTree* senTreep, bool pre) const {
+    std::set<uint32_t> indices;
+    for (const AstSenItem* sip = senTreep->sensesp(); sip; sip = VN_AS(sip->nextp(), SenItem)) {
+        uint32_t index = m_senItem2TrigIdx.at(*sip);
+        if (pre) {
+            UASSERT_OBJ(index < m_nPreWords * WORD_SIZE, sip, "Not a 'pre' trigger");
+            index += m_nVecWords * WORD_SIZE;
+        }
+        indices.insert(index);
+    }
+    return indices;
 }
 
 AstNodeStmt* TriggerKit::newExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const {
-    index += m_nSenseWords * WORD_SIZE;
+    index = extraTriggerIndex(index);
     const uint32_t wordIndex = index / WORD_SIZE;
     const uint32_t bitIndex = index % WORD_SIZE;
     FileLine* const flp = vscp->fileline();
@@ -505,16 +494,21 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
                        uint32_t nExtraWords, uint32_t nPreWords,
                        std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx,
-                       bool useAcc)
+                       const std::vector<const AstSenItem*>& senItemps, bool useAcc)
     : m_name{name}
     , m_slow{slow}
     , m_nSenseWords{nSenseWords}
     , m_nExtraWords{nExtraWords}
     , m_nPreWords{nPreWords}
-    , m_senItem2TrigIdx{std::move(senItem2TrigIdx)} {
+    , m_senItem2TrigIdx{std::move(senItem2TrigIdx)}
+    , m_trigIdx2SenItem{senItemps} {
     // If no triggers, we don't need to generate anything
     if (!m_nVecWords) return;
-    // Othewise construc the parts of the kit
+    // Otherwise construct the parts of the kit
+    // Map from bit index to SenItem, including the 'pre' copies in the extended vector
+    m_trigIdx2SenItem.resize((m_nVecWords + m_nPreWords) * WORD_SIZE);
+    std::copy(senItemps.begin(), senItemps.begin() + m_nPreWords * WORD_SIZE,
+              m_trigIdx2SenItem.begin() + m_nVecWords * WORD_SIZE);
     AstNetlist* const netlistp = v3Global.rootp();
     AstScope* const scopep = netlistp->topScopep()->scopep();
     FileLine* const flp = scopep->fileline();
@@ -636,7 +630,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     const uint32_t nExtraWords = nExtraTriggers / WORD_SIZE;
 
     // We can now construct the trigger kit - this constructs all items that will be kept
-    TriggerKit kit{name, slow, nSenseWords, nExtraWords, nPreWords, senItem2TrigIdx, useAcc};
+    TriggerKit kit{name,      slow,  nSenseWords, nExtraWords, nPreWords, senItem2TrigIdx,
+                   senItemps, useAcc};
 
     // If there are no triggers we are done
     if (!kit.m_nVecWords) return kit;
@@ -735,30 +730,6 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     for (unsigned i = 0; i < extraTriggers.size(); ++i) {
         addDebug(nSenseTriggers + i,
                  "Internal '" + name + "' trigger - " + extraTriggers.m_descriptions.at(i));
-    }
-
-    // Construct the maps from old SenTrees to new SenTrees
-    {
-        std::vector<uint32_t> indices;
-        indices.reserve(32);
-        // Map regular SenTrees to the Sense triggers
-        for (const AstSenTree* const senTreep : senTreeps) {
-            indices.clear();
-            for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), SenItem);
-                indices.push_back(senItem2TrigIdx.at(*itemp));
-            }
-            kit.m_mapVec[senTreep] = kit.newTriggerSenTree(kit.m_vscp, indices);
-        }
-        // Map Pre SenTrees to the Pre triggers
-        for (const AstSenTree* const senTreep : preTreeps) {
-            indices.clear();
-            for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), SenItem);
-                indices.push_back(senItem2TrigIdx.at(*itemp) + kit.m_nVecWords * WORD_SIZE);
-            }
-            kit.m_mapPre[senTreep] = kit.newTriggerSenTree(kit.m_vscp, indices);
-        }
     }
 
     // Get the SenExprBuilder results

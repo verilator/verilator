@@ -31,7 +31,6 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -1161,95 +1160,23 @@ void createRunFunction(AstExecGraph* const execGraphp) {
     execGraphp->runfuncp(funcp);
 }
 
-// Collect the bits of each trigger vector word that the code of an MTask tests, including the
-// functions it calls. A bit counts as tested if a change of it can change the value of an
-// expression. Bitwise operations keep the correspondence between the bits of their operands
-// and result, a constant shift or selection moves it, and a constant mask limits it. Through
-// any other operation all bits count as tested.
-class ExecMTaskTriggers final : public VNVisitorConst {
-    // STATE
-    const AstVar* const m_triggersp;  // Trigger vector
-    uint64_t m_bits = ~0ULL;  // Bits of the current expression that matter
-    std::map<uint32_t, uint64_t> m_masks;  // Tested bits of each word, keyed by word index
-    std::unordered_set<const AstCFunc*> m_funcps;  // Functions visited
-
-    // METHODS
-    void iterateBits(AstNode* nodep, uint64_t bits) {
-        VL_RESTORER(m_bits);
-        m_bits = bits;
-        iterateConst(nodep);
-    }
-    void iterateChildrenAllBits(AstNode* nodep) {
-        VL_RESTORER(m_bits);
-        m_bits = ~0ULL;
-        iterateChildrenConst(nodep);
-    }
-
-    // VISITORS
-    void visit(AstAnd* nodep) override {
-        // A constant operand masks the bits of the other operand that matter. V3Const puts
-        // constants on the left; otherwise both operands keep the bits that matter.
-        if (const AstConst* const constp = VN_CAST(nodep->lhsp(), Const)) {
-            iterateBits(nodep->rhsp(), m_bits & constp->num().toUQuad());
-        } else {
-            iterateChildrenConst(nodep);
-        }
-    }
-    void visit(AstOr* nodep) override { iterateChildrenConst(nodep); }
-    void visit(AstXor* nodep) override { iterateChildrenConst(nodep); }
-    void visit(AstNot* nodep) override { iterateChildrenConst(nodep); }
-    void visit(AstShiftR* nodep) override {
-        const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
-        if (!shiftp || shiftp->toUQuad() >= VL_QUADSIZE) return iterateChildrenAllBits(nodep);
-        iterateBits(nodep->lhsp(), m_bits << shiftp->toUInt());
-    }
-    void visit(AstShiftL* nodep) override {
-        const AstConst* const shiftp = VN_CAST(nodep->rhsp(), Const);
-        if (!shiftp || shiftp->toUQuad() >= VL_QUADSIZE) return iterateChildrenAllBits(nodep);
-        iterateBits(nodep->lhsp(), m_bits >> shiftp->toUInt());
-    }
-    void visit(AstSel* nodep) override {
-        const AstConst* const lsbp = VN_CAST(nodep->lsbp(), Const);
-        if (!lsbp || lsbp->toUQuad() >= VL_QUADSIZE) return iterateChildrenAllBits(nodep);
-        iterateBits(nodep->fromp(), (m_bits & VL_MASK_Q(nodep->widthConst())) << lsbp->toUInt());
-    }
-    void visit(AstArraySel* nodep) override {
-        const AstVarRef* const refp = VN_CAST(nodep->fromp(), VarRef);
-        if (!refp || refp->varp() != m_triggersp) return iterateChildrenAllBits(nodep);
-        m_masks[VN_AS(nodep->bitp(), Const)->toUInt()] |= m_bits;
-    }
-    void visit(AstVarRef* nodep) override {
-        UASSERT_OBJ(nodep->varp() != m_triggersp, nodep, "Trigger vector used other than by word");
-    }
-    void visit(AstNodeCCall* nodep) override {
-        iterateChildrenAllBits(nodep);
-        if (m_funcps.emplace(nodep->funcp()).second) iterateBits(nodep->funcp(), ~0ULL);
-    }
-    void visit(AstNode* nodep) override { iterateChildrenAllBits(nodep); }
-
-    // CONSTRUCTORS
-    ExecMTaskTriggers(AstCFunc* funcp, const AstVar* triggersp)
-        : m_triggersp{triggersp} {
-        m_funcps.emplace(funcp);
-        iterateConst(funcp);
-    }
-
-public:
-    // Return the tested bits of each trigger vector word, keyed by word index
-    static std::map<uint32_t, uint64_t> apply(AstCFunc* funcp, const AstVar* triggersp) {
-        return ExecMTaskTriggers{funcp, triggersp}.m_masks;
-    }
-};
-
 void addTriggerMasks(AstExecGraph* const execGraphp) {
-    // Add to 'maskps' a constant table for each MTask in 'callsp', with the bits of each
-    // trigger vector word that the MTask tests
+    // Add to 'maskps' a constant table for each MTask in 'callsp', with the trigger bits its
+    // code tests
     FileLine* const flp = execGraphp->fileline();
     AstVar* const triggersp = execGraphp->triggerp()->varp();
     for (AstCCall* callp = execGraphp->callsp(); callp; callp = VN_AS(callp->nextp(), CCall)) {
+        std::map<uint32_t, uint64_t> wordMasks;
+        callp->funcp()->foreach([&](const AstTriggered* trigp) {
+            UASSERT_OBJ(trigp->trigRefp()->varp() == triggersp, trigp,
+                        "MTask tests another trigger vector");
+            for (const uint32_t index : trigp->indices()) {
+                wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
+            }
+        });
         AstInitArray* const initp = new AstInitArray{flp, triggersp->dtypep(),
                                                      new AstConst{flp, AstConst::Unsized64{}, 0}};
-        for (const auto& wordMask : ExecMTaskTriggers::apply(callp->funcp(), triggersp)) {
+        for (const auto& wordMask : wordMasks) {
             initp->addIndexValuep(wordMask.first,
                                   new AstConst{flp, AstConst::Unsized64{}, wordMask.second});
         }

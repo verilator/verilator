@@ -23,10 +23,21 @@ t.cg_cross_iff_unnamed.cp_a.one: 2
 t.cg_cross_iff_unnamed.cp_b.one: 2
 t.cg_default_iff.cp.def [default]: 1
 t.cg_default_iff.cp.known: 1
+t.cg_eval_iff.cp.one: 0
 t.cg_iff.cp_value.disabled_hi: 0
 t.cg_iff.cp_value.disabled_lo: 0
 t.cg_iff.cp_value.enabled_hi: 1
 t.cg_iff.cp_value.enabled_lo: 1
+t.cg_kinds_iff.cp_default.others [default]: 1
+t.cg_kinds_iff.cp_default.sized[0]: 2
+t.cg_kinds_iff.cp_default.sized[1]: 1
+t.cg_kinds_iff.cp_ignore.ignored [ignore]: 1
+t.cg_kinds_iff.cp_ignore.legal: 2
+t.cg_kinds_iff.cp_illegal.illegal[0] [illegal]: 0
+t.cg_kinds_iff.cp_illegal.illegal[1] [illegal]: 0
+t.cg_kinds_iff.cp_illegal.legal: 3
+t.cg_kinds_iff.cp_sized.sized[0]: 2
+t.cg_kinds_iff.cp_sized.sized[1]: 1
 t.cg_or.cp.hi: 0
 t.cg_or.cp.lo: 1
 t.cg_part.cp.one: 1
@@ -43,3 +54,5 @@ t.cg_state_bin_iff.cp.wild_ignored [ignore]: 2
 t.cg_state_bin_iff.cp.wild_illegal [illegal]: 0
 t.cg_trans2_iff.cp.t2: 1
 t.cg_trans3_iff.cp.t3: 1
+t.cg_trans_gap_iff.cp_t2.t2: 1
+t.cg_trans_gap_iff.cp_t3.t3: 1

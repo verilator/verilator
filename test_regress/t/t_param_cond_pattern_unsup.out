@@ -1,0 +1,37 @@
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:21:14: Unsupported/Illegal: Assignment pattern member not underneath a supported construct: COND
+                                                        : ... note: In instance 't'
+   21 |   m #(.V(1 ? '{1, 2} : ARR)) i ();
+      |              ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Warning-WIDTHEXPAND: t/t_param_cond_pattern_unsup.v:21:12: Operator COND expects 32 bits on the Conditional True, but Conditional True's CONST '1'h0' generates 1 bits.
+                                                          : ... note: In instance 't'
+   21 |   m #(.V(1 ? '{1, 2} : ARR)) i ();
+      |            ^
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Error: t/t_param_cond_pattern_unsup.v:21:12: Operator COND expects a numeric Conditional False operand, but it has data type 'int$[0:1]' (IEEE 1800-2023 11.3)
+                                            : ... note: In instance 't'
+   21 |   m #(.V(1 ? '{1, 2} : ARR)) i ();
+      |            ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:22:27: Unsupported/Illegal: Assignment pattern member not underneath a supported construct: COND
+                                                        : ... note: In instance 't'
+   22 |   m #(.V(two_t'{$bits(1 ? '{1, 2} : '{3, 4}), 0})) i_bits ();
+      |                           ^~
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:22:37: Unsupported/Illegal: Assignment pattern member not underneath a supported construct: COND
+                                                        : ... note: In instance 't'
+   22 |   m #(.V(two_t'{$bits(1 ? '{1, 2} : '{3, 4}), 0})) i_bits ();
+      |                                     ^~
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:23:10: Unsupported: Parameter override '?:' with assignment patterns and a condition without a known value.
+                                                        : ... note: In instance 't'
+   23 |   m #(.V(1'bx ? '{1, 2} : '{3, 4})) i_x ();
+      |          ^~~~
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:24:10: Unsupported: Parameter override '?:' with assignment patterns and a condition without a known value.
+                                                        : ... note: In instance 't'
+   24 |   m #(.V(1'bz ? '{1, 2} : '{3, 4})) i_z ();
+      |          ^~~~
+%Error-UNSUPPORTED: t/t_param_cond_pattern_unsup.v:25:16: Unsupported: Parameter override '?:' with assignment patterns and a condition without a known value.
+                                                        : ... note: In instance 't'
+   25 |   m #(.V((1'bx ? 1'b1 : 1'b0) ? '{1, 2} : '{3, 4})) i_xcond ();
+      |                ^
+%Error: Exiting due to

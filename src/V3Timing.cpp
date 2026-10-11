@@ -1208,8 +1208,11 @@ class TimingControlVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
+        // The timing control, if any, which is put in a fork for an NBA
+        AstNode* const timingp = controlp;
         // Insert new vars before the timing control if we're in a function; in a process we can't
-        // do that. These intra-assignment vars will later be passed to forked processes by value.
+        // do that, as after V3Begin only modules and functions declare variables. These
+        // intra-assignment vars will later be passed to forked processes by value.
         AstNode* insertBeforep = m_underProcedure ? nullptr : controlp;
         // Special case for NBA
         if (inAssignDly) {
@@ -1244,6 +1247,8 @@ class TimingControlVisitor final : public VNVisitor {
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
             AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep(), insertBeforep);
+            // A pending update keeps its own value, even if its process schedules more
+            if (inAssignDly && !insertBeforep) newvscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
             controlp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
@@ -1267,6 +1272,15 @@ class TimingControlVisitor final : public VNVisitor {
         }
         // Replace the RHS with an intermediate value var
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
+        if (!inAssignDly) return;
+        // The process executing the NBA evaluates its delay (IEEE 1800-2023 4.9.4), not the forked
+        // process, if it has side effects, e.g. calling a function that checks its process. A pure
+        // one is evaluated as the forked process starts, at once.
+        if (AstDelay* const delayp = VN_CAST(timingp, Delay)) {
+            if (!delayp->lhsp()->isPure()) {
+                replaceWithIntermediate(delayp->lhsp(), m_intraValueNames.get(nodep));
+            }
+        }
     }
     void visit(AstFireEvent* nodep) override {
         // V3Delayed handles '->>' of a variable in a process. Like NBAs in non-inlined functions,
@@ -1284,7 +1298,10 @@ class TimingControlVisitor final : public VNVisitor {
         // The triggered event is the one referenced now, so evaluate handles and indices now
         AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
         const auto evalNow = [&](AstNodeExpr* const valuep, V3UniqueNames& names) {
-            AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(), forkp);
+            // Like for an NBA, a process uses a module variable, passed to the fork by value
+            AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(),
+                                                 m_underProcedure ? nullptr : forkp);
+            if (m_underProcedure) vscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, vscp, VAccess::READ});
             // Unlike an event, a handle selecting one is only read
             valuep->foreach([](AstNode* const np) {

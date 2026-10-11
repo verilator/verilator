@@ -2462,7 +2462,10 @@ class ConstVisitor final : public VNVisitor {
             }
         } else if (m_doV && VN_IS(nodep->lhsp(), Concat)) {
             bool need_temp = false;
-            const bool need_temp_pure = !nodep->rhsp()->isPure();
+            // A blocking assignment with an intra-assignment timing control evaluates its value,
+            // then waits once (IEEE 1800-2023 9.4.5), here to assign a temporary for the parts
+            const bool waits = VN_IS(nodep, Assign) && nodep->timingControlp();
+            const bool need_temp_pure = !nodep->rhsp()->isPure() || waits;
             if (m_warn && !VN_IS(nodep, AssignDly)
                 && !need_temp_pure) {  // Is same var on LHS and RHS?
                 // If the rhs is not pure, we need a temporary variable anyway
@@ -2487,6 +2490,8 @@ class ConstVisitor final : public VNVisitor {
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                 AstVar* const tempPurep = new AstVar{rhsp->fileline(), VVarType::BLOCKTEMP,
                                                      m_concswapNames.get(rhsp), rhsp->dtypep()};
+                // Static, as read right after written, also in a fork
+                tempPurep->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(tempPurep);
                 AstVarRef* const tempPureRefp
                     = new AstVarRef{rhsp->fileline(), tempPurep, VAccess::WRITE};
@@ -2496,6 +2501,8 @@ class ConstVisitor final : public VNVisitor {
                           : nodep->cloneType(tempPureRefp, rhsp);
                 nodep->addHereThisAsNext(asnp);
                 nodep->rhsp(new AstVarRef{rhsp->fileline(), tempPurep, VAccess::READ});
+                // Only the assignment of the temporary waits
+                if (waits) pushDeletep(nodep->timingControlp()->unlinkFrBack());
             } else if (need_temp) {
                 // The first time we constify, there may be the same variable on the LHS
                 // and RHS.  In that case, we must use temporaries, or {a,b}={b,a} will break.
@@ -2508,6 +2515,22 @@ class ConstVisitor final : public VNVisitor {
                 UINFO(4, "  ASSI " << nodep);
                 // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(lc1,SEL(rhs,{size})),
                 //                                ASSIGN(lc2,SEL(newrhs,{size}))
+            }
+            // The NBA evaluates its intra-assignment delay as it executes (IEEE 1800-2023 4.9.4),
+            // so once for the NBAs to all parts
+            AstDelay* const delayp
+                = VN_IS(nodep, AssignDly) ? VN_CAST(nodep->timingControlp(), Delay) : nullptr;
+            if (delayp && !delayp->lhsp()->isPure()) {
+                FileLine* const flp = nodep->fileline();
+                AstNodeExpr* const valuep = delayp->lhsp()->unlinkFrBack();
+                AstVar* const tempp = new AstVar{flp, VVarType::BLOCKTEMP,
+                                                 m_concswapNames.get(valuep), valuep->dtypep()};
+                // Static, as read right after written, when the NBAs to the parts start waiting
+                tempp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(tempp);
+                nodep->addHereThisAsNext(
+                    new AstAssign{flp, new AstVarRef{flp, tempp, VAccess::WRITE}, valuep});
+                delayp->lhsp(new AstVarRef{flp, tempp, VAccess::READ});
             }
             UINFOTREE(9, nodep, "", "Ass_old");
             // Unlink the stuff
@@ -3550,8 +3573,7 @@ class ConstVisitor final : public VNVisitor {
 
             if (const AstNodeBiop* const aBiOpp = VN_CAST(ap, NodeBiop)) {
                 const AstNodeBiop* const bBiOpp = VN_AS(bp, NodeBiop);
-                // Compare RHSs first as LHS might be const, but the variable term should become
-                // adjacent for optimization if identical.
+                // Compare RHSs first, as LHS might be const
                 if (const int c = cmp(aBiOpp->rhsp(), bBiOpp->rhsp())) return c;
                 return cmp(aBiOpp->lhsp(), bBiOpp->lhsp());
             }
@@ -3651,26 +3673,6 @@ class ConstVisitor final : public VNVisitor {
                     if (lItemp->edgeType() == rItemp->edgeType()) {
                         VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
                         nextp = lItemp;
-                    }
-
-                    continue;
-                }
-
-                // Not identical terms, check if they can be combined
-                if (lSenp->width() != rSenp->width()) continue;
-                if (const AstAnd* const lAndp = VN_CAST(lSenp, And)) {
-                    if (const AstAnd* const rAndp = VN_CAST(rSenp, And)) {
-                        if (AstConst* const lConstp = VN_CAST(lAndp->lhsp(), Const)) {
-                            if (AstConst* const rConstp = VN_CAST(rAndp->lhsp(), Const)) {
-                                if (lAndp->rhsp()->sameTree(rAndp->rhsp())) {
-                                    const V3Number lNum{lConstp->num()};
-                                    lConstp->num().opOr(lNum, rConstp->num());
-                                    // Remove redundant term
-                                    VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
-                                    nextp = lItemp;
-                                }
-                            }
-                        }
                     }
                 }
             }

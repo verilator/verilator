@@ -92,16 +92,18 @@ AI Policy
 
 Verilator follows the Linux Foundation recommendations regarding the usage
 of Generative Large Language Model Artificial Intelligence (LLM-AI) tools
-and agents for all contributions to the project, including source code,
-test benches, and documentation.
+and agents for all contributions to the project, including issues, pull
+requests, source code, test benches, and documentation.
 
-AI assistants and automated agents are not permitted to sign off on
-contributions. A human submitter is strictly responsible for reviewing,
-verifying, and testing all AI-generated content. By submitting, the
-contributor certifies that the generated content is effectively their work
-product and adheres to project standards. This accountability is affirmed
-when the human contributor signs the Developer Certificate of Origin (DCO)
-as outlined in ``docs/CONTRIBUTORS``.
+AI assistants and automated agents are not permitted to directly make
+contributions. A human must always be in-the-loop, including on issue and
+pull request submission. A human is strictly responsible for cleaning,
+reviewing, verifying, and testing all AI-generated content. By submitting,
+the contributor certifies that the generated content is effectively their
+work product and adheres to project standards. The contributor should be
+able to answer all questions about their work. This accountability is
+affirmed when the human contributor signs the Developer Certificate of
+Origin (DCO) as outlined in ``docs/CONTRIBUTORS``.
 
 Contributors are encouraged to disclose the significant use of generative
 AI tools in their commit messages or Pull Request descriptions to maintain

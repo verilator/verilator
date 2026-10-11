@@ -744,6 +744,7 @@ difftree
 dir
 disambiguates
 discoverability
+disjunction
 displayb
 distcc
 doxygen

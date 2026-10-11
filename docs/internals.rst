@@ -1195,7 +1195,7 @@ is appreciated if you could match our style for C/C++:
   (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
-using clang-format version 18, and yapf for Python, and is automatically
+using clang-format version 21, and yapf for Python, and is automatically
 corrected in the CI actions. For those manually formatting C code:
 
 - Use four spaces per level, and no tabs.
@@ -2246,7 +2246,7 @@ The following script is an example of this debugging:
    # Example script for finding nondeterminism
    cd $VERILATOR_ROOT
    set -e
-   t=t_split_var_0  # Test name
+   t=t_EXAMPLE  # Test name
    test_regress/t/$t.py --debug --debug-alloc-random 33 --dumpi-tree 9 --obj-suffix .33
    test_regress/t/$t.py --debug --debug-alloc-random 66 --dumpi-tree 9 --obj-suffix .66
    bin/verilator_difftree test_regress/obj_vlt/$t{.33,.66} | grep -v CFILE | grep -v "^ " | grep -v /tmp | grep -v @@

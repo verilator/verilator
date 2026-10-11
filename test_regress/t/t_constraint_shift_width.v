@@ -107,14 +107,12 @@ class AlignedPacket;
   typedef logic [SIZEW-1:0] size_t;
 
   rand address_t address;
-  rand size_t    size;
+  rand size_t size;
 
   // Constraint with mixed-width shift: address is 37-bit, size is 4-bit
   // The expression (1 << size) involves a width mismatch that must be
   // handled by zero-extending the shift RHS to match LHS width.
-  constraint c_aligned {
-    address % (1 << size) == 0;
-  }
+  constraint c_aligned {address % (1 << size) == 0;}
 endclass
 
 class ConstShiftPacket;
@@ -125,9 +123,7 @@ class ConstShiftPacket;
   rand address_t address;
 
   // Constraint with constant shift amount (different width from address)
-  constraint c_aligned {
-    address % (1 << 10) == 0;
-  }
+  constraint c_aligned {address % (1 << 10) == 0;}
 endclass
 
 class ImplicationShift;
@@ -137,16 +133,19 @@ class ImplicationShift;
   typedef logic [ADDRW-1:0] address_t;
   typedef logic [SIZEW-1:0] size_t;
   typedef enum {
-    TXN_READ, TXN_WRITE, TXN_IDLE
+    TXN_READ,
+    TXN_WRITE,
+    TXN_IDLE
   } txn_type_t;
 
   rand txn_type_t txn_type;
-  rand size_t     size;
-  rand address_t  address;
+  rand size_t size;
+  rand address_t address;
 
   // Implication with mixed-width shift in consequent
   constraint c_addr {
-    txn_type inside {TXN_READ, TXN_WRITE} -> address % (1 << size) == 0;
+    txn_type inside {TXN_READ, TXN_WRITE} ->
+    address % (1 << size) == 0;
   }
 endclass
 
@@ -181,7 +180,7 @@ module t;
     // Test 1: Variable shift amount with mixed widths
     pkt1 = new;
     pkt1.size = 6;
-    ok = pkt1.randomize() with { size == 6; };
+    ok = pkt1.randomize() with {size == 6;};
     if (ok != 1) begin
       $display("ERROR: Test 1 randomize failed");
       $stop;
@@ -201,8 +200,8 @@ module t;
     end
     // address must be aligned to 1<<size
     if (pkt1.address % (37'(1) << pkt1.size) != 0) begin
-      $display("ERROR: Test 2 alignment check failed: address=0x%0h size=%0d",
-               pkt1.address, pkt1.size);
+      $display("ERROR: Test 2 alignment check failed: address=0x%0h size=%0d", pkt1.address,
+               pkt1.size);
       $stop;
     end
 
@@ -221,7 +220,10 @@ module t;
 
     // Test 4: Implication with mixed-width shift
     pkt3 = new;
-    ok = pkt3.randomize() with { txn_type == ImplicationShift::TXN_READ; size == 4; };
+    ok = pkt3.randomize() with {
+      txn_type == ImplicationShift::TXN_READ;
+      size == 4;
+    };
     if (ok != 1) begin
       $display("ERROR: Test 4 randomize failed");
       $stop;

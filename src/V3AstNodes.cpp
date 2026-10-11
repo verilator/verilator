@@ -44,33 +44,34 @@
 //======================================================================
 // CLASSES
 
-class DpiTypesToStringConverter VL_NOT_FINAL {
-public:
-    virtual string openArray(const AstVar*) const { return "const svOpenArrayHandle"; }
-    virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
-        return isBit ? "svBitVecVal" : "svLogicVecVal";
-    }
-    virtual string primitive(const AstVar* varp) const {
-        string type;
-        const VBasicDTypeKwd keyword = varp->basicp()->keyword();
-        if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
-        type += keyword.dpiType();
-        return type;
-    }
-    string convert(const AstVar* varp) const {
-        if (varp->isDpiOpenArray()) {
-            return openArray(varp);
-        } else if (const AstBasicDType* const basicp = varp->basicp()) {
-            if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
-                return bitLogicVector(varp, basicp->isDpiBitVec());
-            } else {
-                return primitive(varp);
-            }
+class DpiTypesToStringConverter VL_NOT_FINAL{public : virtual string openArray(const AstVar*)
+                                                 const {return "const svOpenArrayHandle";
+}
+virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
+    return isBit ? "svBitVecVal" : "svLogicVecVal";
+}
+virtual string primitive(const AstVar* varp) const {
+    string type;
+    const VBasicDTypeKwd keyword = varp->basicp()->keyword();
+    if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
+    type += keyword.dpiType();
+    return type;
+}
+string convert(const AstVar* varp) const {
+    if (varp->isDpiOpenArray()) {
+        return openArray(varp);
+    } else if (const AstBasicDType* const basicp = varp->basicp()) {
+        if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
+            return bitLogicVector(varp, basicp->isDpiBitVec());
         } else {
-            return "UNKNOWN";
+            return primitive(varp);
         }
+    } else {
+        return "UNKNOWN";
     }
-};
+}
+}
+;
 
 class AstNodeDType::CTypeRecursed final {
 public:
@@ -2243,6 +2244,41 @@ void AstNetlist::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "resolvedTopModuleName", resolvedTopModuleName());
     dumpJsonGen(str);
 }
+AstCFunc* AstNetlist::dumpTriggersFuncp(VEval eval) {
+    UASSERT(eval.hasTriggers(), "Region has no triggers to dump: " << eval.ascii());
+    evalFuncp(eval);
+    return m_dumpTriggersFuncps[eval];
+}
+AstCFunc* AstNetlist::evalFuncp(VEval eval) {
+    const auto newEvalFunc = [this](const std::string& name, bool slow) {
+        AstScope* const scopeTopp = topScopep()->scopep();
+        AstCFunc* const funcp = new AstCFunc{fileline(), name, scopeTopp, ""};
+        funcp->dontCombine(true);
+        funcp->isStatic(false);
+        funcp->isLoose(true);
+        funcp->slow(slow);
+        funcp->isConst(false);
+        funcp->declPrivate(true);
+        funcp->entryPoint(true);
+        funcp->keepIfEmpty(true);
+        scopeTopp->addBlocksp(funcp);
+        return funcp;
+    };
+    if (m_evalFuncps[eval]) return m_evalFuncps[eval];
+    // Create all entry points at once, in order, as the runtime calls every one, even if empty
+    for (int i = 0; i < VEval::_ENUM_END; ++i) {
+        const VEval ieval{i};
+        AstCFunc* const funcp = newEvalFunc(ieval.funcName(), ieval.slow());
+        m_evalFuncps[ieval] = funcp;
+        // Only the iterated functions report whether they did any work
+        if (ieval.isIterated()) funcp->rtnType("bool");
+        // Only a region with a trigger vector has anything to dump
+        if (ieval.hasTriggers()) {
+            m_dumpTriggersFuncps[ieval] = newEvalFunc(ieval.dumpTriggersFuncName(), true);
+        }
+    }
+    return m_evalFuncps[eval];
+}
 AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
     UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
     AstFunc* selfp = nullptr;
@@ -2722,6 +2758,16 @@ const AstNodeDType* AstNodeDType::skipRefIterp(bool skipConst, bool skipEnum,
 
     // Not resolved
     return nullptr;
+}
+string AstNodeDType::vlEnumPackedAgg() const {
+    // Packed struct/union element, so VPI can select its members
+    const AstNodeDType* dtypep = skipRefp();
+    while (const AstNodeArrayDType* const adtypep = VN_CAST(dtypep, NodeArrayDType)) {
+        dtypep = adtypep->subDTypep()->skipRefp();
+    }
+    const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType);
+    if (!sdtypep || !sdtypep->packed()) return "";
+    return VN_IS(sdtypep, UnionDType) ? "|VLVF_PACKED_AGG|VLVF_PACKED_UNION" : "|VLVF_PACKED_AGG";
 }
 string AstNodeDType::vlEnumType() const {
     string arg;
@@ -3506,6 +3552,22 @@ void AstSampled::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, internal);
     dumpJsonGen(str);
 }
+AstActive* AstScope::comboActivep(bool create) {
+    // Use an existing one
+    for (AstNode* nodep = blocksp(); nodep; nodep = nodep->nextp()) {
+        AstActive* const activep = VN_CAST(nodep, Active);
+        if (activep && activep->hasCombo()) return activep;
+    }
+    if (!create) return nullptr;
+    // Otherwise create a new one
+    FileLine* const flp = fileline();
+    AstSenItem* const senItemp = new AstSenItem{flp, AstSenItem::Combo{}};
+    AstSenTree* const senTreep = new AstSenTree{flp, senItemp};
+    AstActive* const activep = new AstActive{flp, "", senTreep};
+    activep->senTreeStorep(activep->sentreep());
+    addBlocksp(activep);
+    return activep;
+}
 void AstScope::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [abovep=" << nodeAddr(aboveScopep()) << "]";
@@ -3596,14 +3658,6 @@ void AstSenItem::dump(std::ostream& str) const {
 }
 void AstSenItem::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "edgeType", edgeType().ascii());
-    dumpJsonGen(str);
-}
-void AstSenTree::dump(std::ostream& str) const {
-    Super::dump(str);
-    if (isMulti()) str << " [MULTI]";
-}
-void AstSenTree::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, isMulti);
     dumpJsonGen(str);
 }
 bool AstSenTree::hasClocked() const {
@@ -3803,6 +3857,27 @@ void AstTracePushPrefix::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "prefix", prefix());
     dumpJsonNumFunc(str, left);
     dumpJsonNumFunc(str, right);
+    dumpJsonGen(str);
+}
+AstTriggered::AstTriggered(FileLine* fl, AstVarScope* trigVscp,
+                           const std::vector<uint32_t>& indices)
+    : ASTGEN_SUPER_Triggered(fl)
+    , m_indices{indices} {
+    UASSERT(!m_indices.empty(), "AstTriggered requires at least one trigger index");
+    trigRefp(new AstVarRef{fl, trigVscp, VAccess::READ});
+    dtypeSetBit();
+}
+void AstTriggered::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " indices=";
+    for (size_t i = 0; i < m_indices.size(); ++i) str << (i ? "," : "") << m_indices[i];
+}
+void AstTriggered::dumpJson(std::ostream& str) const {
+    std::string text;
+    for (size_t i = 0; i < m_indices.size(); ++i) {
+        text += (i ? "," : "") + std::to_string(m_indices[i]);
+    }
+    dumpJsonStr(str, "indices", text);
     dumpJsonGen(str);
 }
 AstTypeTable::AstTypeTable(FileLine* fl)
@@ -4073,6 +4148,19 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
         arg += dtypep()->cType((named ? name() : std::string{}), true, asRef);
     }
     return arg;
+}
+const char* AstVar::cannotSplitKindReason() const {
+    if (!isSignal() && !isTemp()) return "it is not a regular signal or temporary";
+    if (isConst()) return "it is a constant";
+    if (isPrimaryIO()) return "it is a primary input or output";
+    if (isFuncLocal() && isIO()) return "it is a function argument";
+    if (isRef()) return "it is a ref port";
+    if (isSigPublic()) return "it is public";
+    if (isForced()) return "it is forceable";
+    if (isReadByDpi()) return "it is read via DPI";
+    if (isWrittenByDpi()) return "it is written via DPI";
+    if (delayp()) return "it has a net delay";
+    return nullptr;
 }
 void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.
@@ -4389,6 +4477,7 @@ string AstVar::vlEnumDir(bool forMember) const {
         if (basicp->keyword() == VBasicDTypeKwd::BIT && !forMember) out += "|VLVF_BITVAR";
     }
     if (isNet()) out += "|VLVF_NET";
+    if (!forMember) out += dtypep()->vlEnumPackedAgg();
     return out;
 }
 string AstVar::vlEnumType() const { return dtypep()->vlEnumType(); }

@@ -120,6 +120,7 @@
 #include "V3AstUserAllocator.h"
 #include "V3ClassGraph.h"
 #include "V3Const.h"
+#include "V3LinkLValue.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
 
@@ -445,8 +446,12 @@ class DelayedVisitor final : public VNVisitor {
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            // If whole array is target of NBA, use ShadowVar
-            if (vscpInfo.m_whole) return Scheme::ShadowVar;
+            // If whole array is target of NBA, use ShadowVar, but not in a suspendable process or
+            // fork, which resume outside the 'nba' region, so its 'pre' logic would overwrite the
+            // value they write in the shadow variable
+            if (vscpInfo.m_whole) {
+                return vscpInfo.m_inSuspOrFork ? Scheme::FlagUnique : Scheme::ShadowVar;
+            }
             // Basic underlying type of elements, if any.
             const AstBasicDType* const basicp = uaDTypep->basicp();
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
@@ -461,7 +466,8 @@ class DelayedVisitor final : public VNVisitor {
                 if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
                 return Scheme::ValueQueueWhole;
             }
-            // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+            // A suspendable process or fork can resume outside the 'nba' region, so the 'pre'
+            // logic of the other schemes would undo its updates. The unique flag scheme has none.
             if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
             // Otherwise if an array of packed/basic elements, use the shared flag scheme
             if (basicp) return Scheme::FlagShared;
@@ -471,7 +477,8 @@ class DelayedVisitor final : public VNVisitor {
             return Scheme::ShadowVar;
         }
 
-        // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+        // Likewise, the 'pre' logic of the shadow variable scheme would undo the updates of a
+        // suspendable process or fork, so use the unique flag scheme
         if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
 
         const bool isIntegralOrPacked = dtypep->isIntegralOrPacked();
@@ -522,7 +529,7 @@ class DelayedVisitor final : public VNVisitor {
                             AstNodeExpr* const lhsp, const std::string& baseName) {
         UASSERT_OBJ(!lhsp->backp(), lhsp, "Should have been unlinked");
         // Running node pointer
-        AstNode* nodep = lhsp;
+        AstNodeExpr* nodep = lhsp;
         // Capture AstSel indices - there should be only one
         if (AstSel* const selp = VN_CAST(nodep, Sel)) {
             const std::string tmpName{"Lsb" + baseName};
@@ -531,20 +538,33 @@ class DelayedVisitor final : public VNVisitor {
             nodep = selp->fromp();
         }
         UASSERT_OBJ(!VN_IS(nodep, Sel), lhsp, "Multiple 'AstSel' applied to LHS reference");
-        // Capture AstArraySel indices - might be many
+        // Capture the indices of selects - might be many, also below struct members. If a handle
+        // selects the instance the target is a member of, capture the handle instead, as it is
+        // only read, to select the target when the NBA is executed (IEEE 1800-2023 10.4.2).
         size_t nArraySels = 0;
-        while (AstArraySel* const arrSelp = VN_CAST(nodep, ArraySel)) {
-            const std::string tmpName{"Dim" + std::to_string(nArraySels++) + baseName};
-            arrSelp->bitp(captureVal(scopep, insertp, arrSelp->bitp()->unlinkFrBack(), tmpName));
-            nodep = arrSelp->fromp();
+        while (true) {
+            if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+                const std::string tmpName{"Dim" + std::to_string(nArraySels++) + baseName};
+                selp->bitp(captureVal(scopep, insertp, selp->bitp()->unlinkFrBack(), tmpName));
+                nodep = selp->fromp();
+            } else if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+                nodep = selp->fromp();
+            } else if (AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
+                AstNodeExpr* const handlep = selp->fromp()->unlinkFrBack();
+                V3LinkLValue::linkLValueSet(handlep, VAccess::READ);
+                AstVarRef* const refp
+                    = VN_AS(captureVal(scopep, insertp, handlep, "Handle" + baseName), VarRef);
+                refp->varp()->setIgnorePostWrite();
+                // Like the handle it replaces, mark it written, as is the member it selects
+                refp->access(selp->access());
+                selp->fromp(refp);
+                return lhsp;
+            } else {
+                break;
+            }
         }
-        // What remains must be an AstVarRef, or some sort of select, we assume can reuse it.
-        if (const AstAssocSel* const aselp = VN_CAST(nodep, AssocSel)) {
-            UASSERT_OBJ(aselp->fromp()->isPure() && aselp->bitp()->isPure(), lhsp,
-                        "Malformed LHS in NBA");
-        } else {
-            UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
-        }
+        // What remains must be the variable, or some sort of select, we assume can reuse it
+        UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
         // Now have been converted to use the captured values
         return lhsp;
     }

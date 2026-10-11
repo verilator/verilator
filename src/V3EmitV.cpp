@@ -1013,9 +1013,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts(" ");
         } else if (nodep->isRanged()) {
             puts(" [");
-            puts(cvtToStr(nodep->hi()));
+            puts(cvtToStr(nodep->left()));
             puts(":");
-            puts(cvtToStr(nodep->lo()));
+            puts(cvtToStr(nodep->right()));
             puts("] ");
         }
     }

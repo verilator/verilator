@@ -67,8 +67,14 @@ ______________________________________________________________________
   `varp->varType() == VVarType::MEMBER`.
 - `new*` functions return a `new` object; `make*` functions do something more
   complex -- pick the prefix accordingly.
+- Name new concepts with terms that do not already mean something else in
+  SystemVerilog, Verilator, or the same file; define a term of art once in the
+  top-of-file comment.
 - Name compiler-created temporaries with a `__V` prefix plus a context suffix
   (`__VInside`, `__VCase`); runtime utility functions use a `vl_` prefix.
+  After V3Scope and before V3Descope, create them with `V3SharedTmps` (in a given
+  scope, sharing the `AstVar` between scopes of a module) or
+  `AstTopScope::createTemp` (in the top scope).
 - Use `VL_*` bit/word macros from `verilatedos.h` (`VL_WORDS_I`, `VL_MASK_I`); do
   not include `<cstdint>` directly.
 - Replace magic numbers with named `static constexpr` constants.
@@ -94,6 +100,10 @@ ______________________________________________________________________
 - Use `VL_DO_DANGLING(pushDeletep(nodep), nodep)` instead of `deleteTree()` in
   visitors -- deferred deletion is safe against re-entry and unlinking order.
   `deleteTree()` is only for fresh nodes that never entered the tree.
+
+- `VL_DO_DANGLING`/`VL_DANGLING` null the pointer in debug builds only, so never
+  depend on it being null afterwards. If you need it null, use `VL_DO_CLEAR`, e.g.
+  `VL_DO_CLEAR(pushDeletep(nodep), nodep = nullptr)`.
 
 - Every new AST member needs both `dump()` and `dumpJson()` support -- never wrap
   these in `LCOV_EXCL`; cover them by adding a construct to `t_debug_emitv.v`.
@@ -140,6 +150,9 @@ ______________________________________________________________________
   children -- even when nesting "cannot happen" today.
 - Every pass using `userNp()` needs a `VNUserNInUse` guard, and the header
   documents which user fields it uses.
+- Claim `VNUserNInUse` in the narrowest scope that uses it (a visitor class, or a
+  single function), and document each field in that class's NODE STATE comment;
+  only state shared by multiple steps of a pass belongs at the pass level.
 - Use `iterateAndNextNull()` rather than `iterate()` -- the null-safe form
   prevents copy-paste errors during refactors.
 - Derive read-only visitors from `VNVisitorConst` with `iterateChildrenConst`.

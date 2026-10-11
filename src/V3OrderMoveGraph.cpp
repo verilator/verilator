@@ -35,7 +35,7 @@ OrderMoveDomScope::DomScopeMap OrderMoveDomScope::s_dsMap;
 // OrderMoveVertex implementation
 
 OrderMoveVertex::OrderMoveVertex(OrderMoveGraph& graph, OrderLogicVertex* lVtxp,
-                                 const AstSenTree* domainp) VL_MT_DISABLED
+                                 const OrderDomain* domainp) VL_MT_DISABLED
     : V3GraphVertex{&graph},
       m_logicp{lVtxp},
       m_domScope{OrderMoveDomScope::getOrCreate(domainp, lVtxp ? lVtxp->scopep() : nullptr)} {
@@ -46,26 +46,19 @@ OrderMoveVertex::OrderMoveVertex(OrderMoveGraph& graph, OrderLogicVertex* lVtxp,
 // OrderMoveGraphBuilder - for OrderMoveGraph::build
 
 class OrderMoveGraphBuilder final {
-    // NODE STATE
-    // AstSenTree::user1p()     -> AstSenTree:  Original AstSenTree for trigger
-    const VNUser1InUse m_user1InUse;
-
     // TYPES
-    using DomainMap = std::map<const AstSenTree*, OrderMoveVertex*>;
+    using DomainMap = std::map<const OrderDomain*, OrderMoveVertex*>;
 
     // MEMBERS
     OrderGraph& m_orderGraph;  // Input OrderGraph
     // Output OrderMoveGraph
     std::unique_ptr<OrderMoveGraph> m_moveGraphp{new OrderMoveGraph{m_orderGraph}};
-    // Map from Trigger reference AstSenItem to the original AstSenTree
-    const V3Order::TrigToSenMap& m_trigToSen;
     // Storage for domain -> OrderMoveVertex, maps held in OrderVarVertex::userp()
     std::deque<DomainMap> m_domainMaps;
 
     // CONSTRUCTORS
-    OrderMoveGraphBuilder(OrderGraph& orderGraph, const V3Order::TrigToSenMap& trigToSen)
-        : m_orderGraph{orderGraph}
-        , m_trigToSen{trigToSen} {
+    explicit OrderMoveGraphBuilder(OrderGraph& orderGraph)
+        : m_orderGraph{orderGraph} {
         // How this works:
         //  - Create a OrderMoveVertex for each OrderLogicVertex.
         //  - Following each OrderLogicVertex, search forward in the context of its domain
@@ -102,34 +95,7 @@ class OrderMoveGraphBuilder final {
 
     // METHODS
 
-    // Returns the AstSenItem that originally corresponds to this AstSenTree, or nullptr if no
-    // original AstSenTree, or if the original AstSenTree had multiple AstSenItems.
-    const AstSenItem* getOrigSenItem(AstSenTree* senTreep) {
-        if (!senTreep->user1p()) {
-            // Find the original simple AstSenTree, if any
-            AstNode* const origp = [&]() -> AstSenItem* {
-                // If more than one AstSenItems, then not a simple AstSenTree
-                if (senTreep->sensesp()->nextp()) return nullptr;
-
-                // Find the original AstSenTree
-                auto it = m_trigToSen.find(senTreep);
-                if (it == m_trigToSen.end()) return nullptr;
-
-                // If more than one AstSenItems on the original, then not a simple AstSenTree
-                if (it->second->sensesp()->nextp()) return nullptr;
-
-                // Else we found it.
-                return it->second->sensesp();
-            }();
-
-            // We use the node itself as a sentinel to denote 'no original node'
-            senTreep->user1p(origp ? origp : senTreep);
-        }
-
-        return senTreep->user1p() == senTreep ? nullptr : VN_AS(senTreep->user1p(), SenItem);
-    }
-
-    bool domainsExclusive(AstSenTree* fromp, AstSenTree* top) {
+    bool domainsExclusive(const OrderDomain* fromp, const OrderDomain* top) {
         // Return 'true' if we can prove that both 'from' and 'to' cannot both
         // be active on the same evaluation, or false if we can't prove this.
         //
@@ -143,9 +109,13 @@ class OrderMoveGraphBuilder final {
         //
         // ... unless you know more about A and B, which sounds hard.
 
-        const AstSenItem* const fromSenItemp = getOrigSenItem(fromp);
+        const std::set<uint32_t>& fromTriggers = fromp->triggers();
+        const std::set<uint32_t>& toTriggers = top->triggers();
+        if (fromTriggers.size() != 1) return false;
+        if (toTriggers.size() != 1) return false;
+        const AstSenItem* const fromSenItemp = m_orderGraph.trigSenItemp(*fromTriggers.begin());
         if (!fromSenItemp) return false;
-        const AstSenItem* const toSenItemp = getOrigSenItem(top);
+        const AstSenItem* const toSenItemp = m_orderGraph.trigSenItemp(*toTriggers.begin());
         if (!toSenItemp) return false;
 
         const AstNodeVarRef* const fromVarrefp = fromSenItemp->varrefp();
@@ -165,7 +135,7 @@ class OrderMoveGraphBuilder final {
     }
 
     void iterateLogicVertex(const OrderLogicVertex* lvtxp) {
-        AstSenTree* const domainp = lvtxp->domainp();
+        const OrderDomain* const domainp = lvtxp->domainp();
         OrderMoveVertex* const lMoveVtxp = static_cast<OrderMoveVertex*>(lvtxp->userp());
         // Search forward from lvtxp, making new edges from lMoveVtxp forward
         for (const V3GraphEdge& edge : lvtxp->outEdges()) {
@@ -194,7 +164,7 @@ class OrderMoveGraphBuilder final {
 
     // Return the OrderMoveVertex for this (var, domain) pair, iff it has downstream dependencies,
     // otherwise return nullptr.
-    OrderMoveVertex* iterateVarVertex(const OrderVarVertex* vvtxp, AstSenTree* domainp) {
+    OrderMoveVertex* iterateVarVertex(const OrderVarVertex* vvtxp, const OrderDomain* domainp) {
         OrderMoveVertex* vMoveVtxp = nullptr;
         // Search forward from vvtxp, making new edges from vMoveVtxp forward
         for (const V3GraphEdge& edge : vvtxp->outEdges()) {
@@ -215,16 +185,14 @@ class OrderMoveGraphBuilder final {
     }
 
 public:
-    static std::unique_ptr<OrderMoveGraph> apply(OrderGraph& orderGraph,
-                                                 const V3Order::TrigToSenMap& trigToSen) {
-        return std::move(OrderMoveGraphBuilder{orderGraph, trigToSen}.m_moveGraphp);
+    static std::unique_ptr<OrderMoveGraph> apply(OrderGraph& orderGraph) {
+        return std::move(OrderMoveGraphBuilder{orderGraph}.m_moveGraphp);
     }
 };
 
 //======================================================================
 // OrderMoveGraph implementation
 
-std::unique_ptr<OrderMoveGraph> OrderMoveGraph::build(OrderGraph& orderGraph,
-                                                      const V3Order::TrigToSenMap& trigToSen) {
-    return OrderMoveGraphBuilder::apply(orderGraph, trigToSen);
+std::unique_ptr<OrderMoveGraph> OrderMoveGraph::build(OrderGraph& orderGraph) {
+    return OrderMoveGraphBuilder::apply(orderGraph);
 }
