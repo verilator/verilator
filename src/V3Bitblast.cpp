@@ -85,9 +85,9 @@ class BitblastVisitor final : public VNVisitorConst, public VNDeleter {
 
     // A read of a variable: a constant bit select or a whole VarRef
     struct RdRef final {
-        AstNodeExpr* exprp;  // The Sel, or the VarRef if whole
-        int lsb;  // The first bit read
-        int msb;  // The last bit read
+        AstNodeExpr* exprp;  // Sel, or the VarRef if whole
+        int lsb;  // First bit read
+        int msb;  // Last bit read
     };
 
     // A write of a variable: a constant bit select or a whole VarRef
@@ -142,7 +142,7 @@ class BitblastVisitor final : public VNVisitorConst, public VNDeleter {
         if (!varp->attrSplitVar()) return;
         wherep->v3warn(SPLITVAR, varp->prettyNameQ()
                                      << " marked split_var but will not be split because "
-                                     << reasonp << ".\n");
+                                     << reasonp);
         wherep->fileline()->modifyWarnOff(V3ErrorCode::SPLITVAR, true);  // Warn only once
     }
 
