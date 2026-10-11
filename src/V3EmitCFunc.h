@@ -1784,7 +1784,7 @@ public:
         // Test each word of the trigger vector with a mask of the relevant bits
         std::map<uint32_t, uint64_t> wordMasks;
         for (const uint32_t index : nodep->indices()) {
-            wordMasks[index / VL_QUADSIZE] |= 1ULL << (index % VL_QUADSIZE);
+            wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
         }
         putns(nodep, "((");
         bool first = true;
