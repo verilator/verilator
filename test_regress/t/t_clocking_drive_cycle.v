@@ -173,7 +173,7 @@ module t;
   virtual bus_if mvif;
   virtual en_if evif;
 
-  initial forever #10->vbus.ev;
+  initial forever #10 ->vbus.ev;
 
   always @(v) if ($time != 0) v_log = {v_log, $sformatf("%0d@%0d ", v, $time)};
   always @(q) if ($time != 0) q_log = {q_log, $sformatf("%0d@%0d ", q, $time)};

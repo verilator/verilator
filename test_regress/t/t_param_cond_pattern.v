@@ -71,7 +71,10 @@ endclass
 // The condition reads a parameter that defparam sets
 module w;
   parameter bit SEL = 0;
-  m #(.N(2), .V(SEL ? '{1, 2} : '{3, 4})) u ();
+  m #(
+      .N(2),
+      .V(SEL ? '{1, 2} : '{3, 4})
+  ) u ();
 endmodule
 
 module t;
@@ -79,27 +82,63 @@ module t;
   localparam int TWO = 2;
   localparam real NEG_ZERO = -0.0;
 
-  m #(.N(2), .V(TWO > 1 ? '{1, 2} : '{3, 4})) i_then ();
-  m #(.N(3), .V(TWO > 2 ? '{1, 2, 3} : '{4, 5, 6})) i_else ();
-  m #(.N(2), .V(TWO > 2 ? '{1, 2} : TWO > 1 ? '{3, 4} : '{5, 6})) i_nest ();
-  m #(.N(2), .V(NEG_ZERO ? '{1, 2} : '{3, 4})) i_negz ();  // -0.0 is false
-  m #(.N(TWO > 1 ? 2 : 3), .V('{1, 2})) i_size ();  // A conditional of values, as before
-  mt #(.N(2), .V(TWO > 1 ? '{9, 10} : '{11, 12})) i_mt ();
+  m #(
+      .N(2),
+      .V(TWO > 1 ? '{1, 2} : '{3, 4})
+  ) i_then ();
+  m #(
+      .N(3),
+      .V(TWO > 2 ? '{1, 2, 3} : '{4, 5, 6})
+  ) i_else ();
+  m #(
+      .N(2),
+      .V(TWO > 2 ? '{1, 2} : TWO > 1 ? '{3, 4} : '{5, 6})
+  ) i_nest ();
+  m #(
+      .N(2),
+      .V(NEG_ZERO ? '{1, 2} : '{3, 4})
+  ) i_negz ();  // -0.0 is false
+  m #(
+      .N(TWO > 1 ? 2 : 3),
+      .V('{1, 2})
+  ) i_size ();  // A conditional of values, as before
+  mt #(
+      .N(2),
+      .V(TWO > 1 ? '{9, 10} : '{11, 12})
+  ) i_mt ();
   ms #(.S(TWO > 1 ? '{a: 1, b: 2} : '{a: 3, b: 4})) i_ms ();
-  ifc #(.N(2), .V(TWO > 1 ? '{5, 6} : '{0, 0})) i_ifc ();
-  m #(.N(2), .V(GSEL ? '{1, 2} : '{3, 4})) i_gsel ();
+  ifc #(
+      .N(2),
+      .V(TWO > 1 ? '{5, 6} : '{0, 0})
+  ) i_ifc ();
+  m #(
+      .N(2),
+      .V(GSEL ? '{1, 2} : '{3, 4})
+  ) i_gsel ();
   w i_w ();
   defparam i_w.SEL = 1;
   // A class reference in the condition, or in the operand not taken
-  ifs #(.V($typename(cls#(.N(3))) != "" ? '{"a", "b"} : '{"c", "d"})) i_ifs_cond ();
-  ifs #(.V(TWO > 1 ? '{"a", "b"} : '{$typename(cls#(.N(4))), "d"})) i_ifs_else ();
-  typedef cls#(.N(2), .V(TWO > 1 ? '{20, 22} : '{0, 0})) cls42_t;
-  typedef cls#(.N(2), .V('{20, 22})) cls42b_t;  // The same value, so the same class
+  ifs #(.V($typename(cls #(.N(3))) != "" ? '{"a", "b"} : '{"c", "d"})) i_ifs_cond ();
+  ifs #(.V(TWO > 1 ? '{"a", "b"} : '{$typename(cls #(.N(4))), "d"})) i_ifs_else ();
+  typedef cls#(
+      .N(2),
+      .V(TWO > 1 ? '{20, 22} : '{0, 0})
+  ) cls42_t;
+  typedef cls#(
+      .N(2),
+      .V('{20, 22})
+  ) cls42b_t;  // The same value, so the same class
   // A ?: inside a typed pattern is an ordinary one, so is signed and sized as usual
   // verilator lint_off WIDTHEXPAND
-  m #(.N(2), .V(two_t'{1 ? 4'shf : 4'h0, 1 ? 8'hff + 8'h01 : 8'h00})) i_typed ();
+  m #(
+      .N(2),
+      .V(two_t'{1 ? 4'shf : 4'h0, 1 ? 8'hff + 8'h01 : 8'h00})
+  ) i_typed ();
   mm #(.V('{two_t'{1 ? 4'shf : 4'h0, 1 ? 8'hff + 8'h01 : 8'h00}})) i_typed_nest ();
-  typedef cls#(.N(2), .V(two_t'{1 ? 4'shf : 4'h0, 1 ? 8'hff + 8'h01 : 8'h00})) cls_typed_t;
+  typedef cls#(
+      .N(2),
+      .V(two_t'{1 ? 4'shf : 4'h0, 1 ? 8'hff + 8'h01 : 8'h00})
+  ) cls_typed_t;
   // verilator lint_on WIDTHEXPAND
 
   initial begin
@@ -124,7 +163,12 @@ module t;
     `checkd(cls42_t::sum(), 42);
     cls42_t::count = 5;
     `checkd(cls42b_t::count, 5);
-    `checkd(cls#(.N(2), .V(TWO > 1 ? '{1, 1} : '{0, 0}))::sum(), 2);
+    `checkd(
+    cls#(
+    .N(2),
+    .V(TWO > 1 ? '{1, 1} : '{0, 0})
+    )::sum(),
+    2);
     `checkd(i_typed.V[0], 15);
     `checkd(i_typed.V[1], 256);
     `checkd(i_typed_nest.V[0][0], 15);

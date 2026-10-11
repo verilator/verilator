@@ -25,16 +25,30 @@ end
 class C;
   rand int x, y;
   constraint distrib {
-    x dist { [1:3] := 0, [5:6], [9:15] :/ 0 };
-    y dist { [1:3] := 0, 5, 6 := 8, [9:15] :/0 };  // /0 intentional to check yP_COLONDIV
+    x dist {
+      [1 : 3] := 0,
+      [5 : 6],
+      [9 : 15] :/ 0
+    };
+    y dist {
+      [1 : 3] := 0,
+      5,
+      6 := 8,
+      [9 : 15] :/ 0
+    };  // /0 intentional to check yP_COLONDIV
     x < 20;
-  };
+  }
+  ;
 endclass
 
 class DistNarrow;
   rand bit [3:0] x;
-  constraint c1 { x dist {[4'd1:4'd9] := 1}; }
-  constraint c2 { x > 4'd5; }
+  constraint c1 {
+    x dist {
+      [4'd1 : 4'd9] := 1
+    };
+  }
+  constraint c2 {x > 4'd5;}
 endclass
 
 module t;

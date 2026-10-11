@@ -36,7 +36,8 @@ module child #(
   end
   if (W == 1) begin : gif
     typedef enum logic [4:0] {G_ONE = 21} one_t;
-  end else begin : gif
+  end
+  else begin : gif
     typedef enum logic [4:0] {G_OTHER = 22} other_t;
   end
 endmodule

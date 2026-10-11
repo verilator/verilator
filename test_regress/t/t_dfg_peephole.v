@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2022 Geza Lore
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+
 `define signal(name, expr) wire [$bits(expr)-1:0] ``name = expr
 
 module t (

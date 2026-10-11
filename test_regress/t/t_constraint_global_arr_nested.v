@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define check_rand(cl, field, cond) \
@@ -23,6 +24,7 @@ begin \
    end \
    if (ok != 1) $stop; \
 end
+// verilog_format: on
 
 /* verilator lint_off WIDTHTRUNC */
 class Inner;
@@ -51,8 +53,7 @@ class Holder;
     cyclic[0] = new;
     m_string_assoc["abc"] = new;
     m_string_assoc["cba"] = new;
-    foreach (items[i])
-      items[i] = new;
+    foreach (items[i]) items[i] = new;
   endfunction
 endclass
 
@@ -129,8 +130,8 @@ class Outer;
 
   // Case 5: Nested array indexing with offset
   constraint c_nested_array_w_offset {
-    m_mid_arr2[m_idx + 1].m_obj.m_x == 500;
-    m_mid_arr2[m_idx + 1].m_obj.m_y == 501;
+    m_mid_arr2[m_idx+1].m_obj.m_x == 500;
+    m_mid_arr2[m_idx+1].m_obj.m_y == 501;
   }
 
   // Case 6: Associative array element member access
@@ -149,19 +150,13 @@ class Outer;
     m_holder.m_string_assoc["cba"].m_y < 103;
   }
 
-  constraint c_assoc_nested {
-    m_assoc_nested[123][1].m_x == 501;
-  }
+  constraint c_assoc_nested {m_assoc_nested[123][1].m_x == 501;}
 
   // Case 7: randmode
-  constraint c_mode {
-    m_holder.mode[0].x == 42;
-  }
+  constraint c_mode {m_holder.mode[0].x == 42;}
 
   // Case 7: randc
-  constraint c_randc {
-    m_holder.cyclic[0].cycle inside {[0:3]};
-  }
+  constraint c_randc {m_holder.cyclic[0].cycle inside {[0 : 3]};}
 endclass
 
 
@@ -215,13 +210,14 @@ module t_constraint_global_arr_nested;
     `check_rand(o, o.m_mid_arr[2].m_arr[2].m_y, o.m_mid_arr[2].m_arr[2].m_y < 400);
 
     `check_rand(o, o.m_holder.m_string_assoc["abc"].m_y, o.m_holder.m_string_assoc["abc"].m_y < 43);
-    `check_rand(o, o.m_holder.m_string_assoc["cba"].m_y, o.m_holder.m_string_assoc["cba"].m_y < 103);
+    `check_rand(o, o.m_holder.m_string_assoc["cba"].m_y,
+                o.m_holder.m_string_assoc["cba"].m_y < 103);
 
     repeat (4) begin
       rand_res = randc_o.randomize();
-     `checkd(rand_res, 1);
-     `checkd(seen[randc_o.m_holder.cyclic[0].cycle], 0);
-     seen[randc_o.m_holder.cyclic[0].cycle] = 1;
+      `checkd(rand_res, 1);
+      `checkd(seen[randc_o.m_holder.cyclic[0].cycle], 0);
+      seen[randc_o.m_holder.cyclic[0].cycle] = 1;
     end
     `checkd(seen, 4'b1111);
 

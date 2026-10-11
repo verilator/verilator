@@ -48,7 +48,7 @@ module t;
     endcase
     // verilator lint_off CASEX
     casex (1'b1)
-    // verilator lint_on CASEX
+      // verilator lint_on CASEX
       data[index]: match_x = 1'b1;
       default: match_x = 1'b0;
     endcase
@@ -66,7 +66,7 @@ module t;
     endcase
     // verilator lint_off CASEX
     casex (2'b10)
-    // verilator lint_on CASEX
+      // verilator lint_on CASEX
       (index == 7 ? 2'b?0 : index == 0 ? 2'bx0 : data[1:0]): match_cond_x = 1'b1;
       default: match_cond_x = 1'b0;
     endcase
@@ -83,17 +83,17 @@ module t;
       default: match_cond_inside = 1'b0;
     endcase
     case (1'b1)
-      (index[0] ? (data[2:0] inside {[3'd1:3'd3]}) : data[4]): match_cond_range = 1'b1;
+      (index[0] ? (data[2:0] inside {[3'd1 : 3'd3]}) : data[4]): match_cond_range = 1'b1;
       default: match_cond_range = 1'b0;
     endcase
     case (data[2:0]) inside
-      [(index[0] ? 3'd1 : 3'd4):(index[0] ? 3'd3 : 3'd5)]: match_range_bounds = 1'b1;
+      [(index[0] ? 3'd1 : 3'd4) : (index[0] ? 3'd3 : 3'd5)]: match_range_bounds = 1'b1;
       default: match_range_bounds = 1'b0;
     endcase
   end
 
   initial begin
-    for (int sample = 0; sample < 128; sample++) begin
+    for (int sample = 0; sample < 128; sample ++) begin
       data = 7'(sample);
       for (int j = 0; j < 8; j++) begin
         index = 3'(j);
@@ -104,7 +104,8 @@ module t;
           `checkh(match_one, data[j]);
           `checkh(match_x, data[j]);
           `checkh(match_z, data[j]);
-        end else begin
+        end
+        else begin
           `checkh(match_zero, 1'b0);
           `checkh(match_one, 1'b0);
           `checkh(match_x, 1'b1);
@@ -115,8 +116,8 @@ module t;
         `checkh(match_cond_z, j == 7 || (j != 0 && data[1:0] == 2'b10));
         `checkh(match_cond_inside, j == 7 || j == 0 || data[1:0] == 2'b10);
         `checkh(match_cond_range, j[0] ? (data[2:0] >= 1 && data[2:0] <= 3) : data[4]);
-        `checkh(match_range_bounds, j[0] ? (data[2:0] >= 1 && data[2:0] <= 3)
-                                       : (data[2:0] >= 4 && data[2:0] <= 5));
+        `checkh(match_range_bounds,
+                j[0] ? (data[2:0] >= 1 && data[2:0] <= 3) : (data[2:0] >= 4 && data[2:0] <= 5));
       end
     end
     $write("*-* All Finished *-*\n");

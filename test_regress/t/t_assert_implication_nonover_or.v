@@ -45,10 +45,10 @@ module t (
 
   // Antecedents with a consecutive repetition. a2 is true only in cycle 15 and x2 in cycle 16,
   // so every real match holds; the empty matches of a2[*0:2] must not start the consequent
-  assert property (@(posedge clk) a2 [* 0:2] |=> (x2 or y2))
+  assert property (@(posedge clk) a2 [* 0: 2] |=> (x2 or y2))
   else fail_rep0 = fail_rep0 + 1;
   // a is true in cycles 3, 6, 9, 12: a[*1:2] fails once, in cycle 4
-  assert property (@(posedge clk) a [* 1:2] |=> (x or y))
+  assert property (@(posedge clk) a [* 1: 2] |=> (x or y))
   else fail_rep1 = fail_rep1 + 1;
 
   // An operand that is not a plain boolean keeps the merge vertex. a3 is true in cycle 17
@@ -57,7 +57,7 @@ module t (
   else fail_nonbool_l = fail_nonbool_l + 1;
   assert property (@(posedge clk) a3 |=> ((not (x3 |=> y3)) or y3))
   else fail_nonbool_l2 = fail_nonbool_l2 + 1;
-  assert property (@(posedge clk) a3 |=> (y3 or (not (x3 |-> y3))))
+  assert property (@(posedge clk) a3 |=> (y3 or(not (x3 |-> y3))))
   else fail_nonbool_r = fail_nonbool_r + 1;
 
   // x or y is true in cycles 7, 10 and 13

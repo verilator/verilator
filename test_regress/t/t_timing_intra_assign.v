@@ -78,7 +78,7 @@ module t;
     {cat_o, cat_p} = #3 ones();
     cat_log = {cat_log, $sformatf("%0b%0b@%0t ", cat_o, cat_p, $time)};
   end
-  initial #7->cev;
+  initial #7 ->cev;
   initial begin
     fork
       begin

@@ -11,7 +11,7 @@ module t (
     output sink,
     output [1:0] o
 );
-  wire [1:0] arr [1:0];
+  wire [1:0] arr[1:0];
   assign o = arr | 1;
 
   initial begin

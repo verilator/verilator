@@ -105,14 +105,13 @@ module t;
     // From an interface task, called by two processes
     #1 vif.trig();
     // In a loop with a jump
-    #2 for (int k = 0; k < 2; ++k) begin
+    #2
+    for (int k = 0; k < 2; ++k) begin
       if (k == 1) break;
       ->>c2.ea[k];
     end
     // Not a subprocess, so not disabled (IEEE 1800-2023 9.6.3)
-    #1 fork
-      #1 `stop;
-    join_none
+    #1 fork #1 `stop; join_none
     ->>c2.e;
     disable fork;
     // Including a handle selected from another
