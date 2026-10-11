@@ -31,7 +31,7 @@ class AstSenTree;
 class AstVarScope;
 
 namespace V3Sched {
-struct LogicByScope;
+class LogicByScope;
 class CovergroupRefBindings;
 };  // namespace V3Sched
 

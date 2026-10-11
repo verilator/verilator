@@ -435,9 +435,9 @@ class OrderGraphBuilder final : public VNVisitor {
         , m_cgRefBindings{cgRefBindings} {
         // Build the graph
         for (const V3Sched::LogicByScope* const lbsp : coll) {
-            for (const auto& pair : *lbsp) {
-                m_scopep = pair.first;
-                iterate(pair.second);
+            for (const auto& entry : *lbsp) {
+                m_scopep = entry.m_scopep;
+                iterate(entry.m_activep);
                 m_scopep = nullptr;
             }
         }

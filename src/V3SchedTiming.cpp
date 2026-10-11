@@ -71,8 +71,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         m_resumeFuncp->declPrivate(true);
         scopeTopp->addBlocksp(m_resumeFuncp);
 
-        for (const auto& p : m_lbs) {
-            AstActive* const activep = p.second;
+        for (const auto& entry : m_lbs) {
+            AstActive* const activep = entry.m_activep;
             activep->foreach([this](AstCMethodHard* const exprp) {
                 if (exprp->method() != VCMethod::SCHED_RESUME) return;
                 AstNodeExpr* const fromp = exprp->fromp();
@@ -91,8 +91,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 
         // Put all the timing actives in the resume function
         AstIf* dlyShedIfp = nullptr;
-        for (auto& p : m_lbs) {
-            AstActive* const activep = p.second;
+        for (const auto& entry : m_lbs) {
+            AstActive* const activep = entry.m_activep;
             // Resume time delays last. For no particular reason other than
             // that's what we used to do prior to proper #0 support.
             AstVarRef* const schedrefp = VN_AS(
@@ -117,8 +117,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 }
 
 AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
-    for (auto& p : m_lbs) {
-        AstActive* const ap = p.second;
+    for (const auto& entry : m_lbs) {
+        AstActive* const ap = entry.m_activep;
         // TODO: this triple VN_AS expression is ridiculous
         AstVarRef* const schedrefp
             = VN_AS(VN_AS(VN_AS(ap->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
@@ -134,8 +134,8 @@ AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
 
 AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
     if (!m_readyFuncp) {
-        for (auto& p : m_lbs) {
-            AstActive* const activep = p.second;
+        for (const auto& entry : m_lbs) {
+            AstActive* const activep = entry.m_activep;
             auto* const resumep = VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard);
             UASSERT_OBJ(!resumep->nextp(), resumep, "Should be the only statement here");
             AstVarScope* const schedulerp = VN_AS(resumep->fromp(), VarRef)->varScopep();
@@ -280,7 +280,7 @@ class AwaitVisitor final : public VNVisitor {
         // Put it in an active
         AstActive* const activep = new AstActive{flp, "_timing", sentreep};
         activep->addStmtsp(resumep->makeStmt());
-        m_lbs.emplace_back(m_scopeTopp, activep);
+        m_lbs.add(m_scopeTopp, activep);
     }
     // Visit AstCFunc from a AstNodeCCall - this function is rather expensive to call therefore, it
     // only shall be called when necessary

@@ -33,7 +33,7 @@ class AstSenItem;
 class AstSenTree;
 
 namespace V3Sched {
-struct LogicByScope;
+class LogicByScope;
 };  // namespace V3Sched
 
 //============================================================================

@@ -62,8 +62,8 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
     const VNUser1InUse user1InUse;
     std::vector<const AstSenTree*> result;
     for (const LogicByScope* const lbsp : lbsps) {
-        for (const auto& pair : *lbsp) {
-            AstActive* const activep = pair.second;
+        for (const auto& entry : *lbsp) {
+            AstActive* const activep = entry.m_activep;
             AstSenTree* const senTreep = activep->sentreep();
             if (senTreep->user1SetOnce()) continue;
             if (senTreep->hasClocked() || senTreep->hasHybrid()) result.push_back(senTreep);
@@ -74,8 +74,8 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
 
 void remapSensitivities(const LogicByScope& lbs,
                         const std::unordered_map<const AstSenTree*, AstSenTree*>& senTreeMap) {
-    for (const auto& pair : lbs) {
-        AstActive* const activep = pair.second;
+    for (const auto& entry : lbs) {
+        AstActive* const activep = entry.m_activep;
         AstSenTree* const senTreep = activep->sentreep();
         if (senTreep->hasCombo()) continue;
         activep->sentreep(senTreeMap.at(senTreep));
@@ -223,31 +223,31 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
             if (senTreep->hasStatic()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "static initializer with additional sensitivities");
-                result.m_static.emplace_back(scopep, activep);
+                result.m_static.add(scopep, activep);
             } else if (senTreep->hasInitial()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "'initial' logic with additional sensitivities");
-                result.m_initial.emplace_back(scopep, activep);
+                result.m_initial.add(scopep, activep);
             } else if (senTreep->hasFinal()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "'final' logic with additional sensitivities");
-                result.m_final.emplace_back(scopep, activep);
+                result.m_final.add(scopep, activep);
             } else if (senTreep->hasCombo()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "combinational logic with additional sensitivities");
                 if (VN_IS(activep->stmtsp(), AlwaysPostponed)) {
-                    result.m_postponed.emplace_back(scopep, activep);
+                    result.m_postponed.add(scopep, activep);
                 } else {
-                    result.m_comb.emplace_back(scopep, activep);
+                    result.m_comb.add(scopep, activep);
                 }
             } else {
                 UASSERT_OBJ(senTreep->hasClocked(), activep, "What else could it be?");
                 if (VN_IS(activep->stmtsp(), AlwaysObserved)) {
-                    result.m_observed.emplace_back(scopep, activep);
+                    result.m_observed.add(scopep, activep);
                 } else if (VN_IS(activep->stmtsp(), AlwaysReactive)) {
-                    result.m_reactive.emplace_back(scopep, activep);
+                    result.m_reactive.add(scopep, activep);
                 } else {
-                    result.m_clocked.emplace_back(scopep, activep);
+                    result.m_clocked.add(scopep, activep);
                 }
             }
         });
@@ -275,9 +275,9 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
     };
     const VNUser1InUse user1InUse;  // AstScope -> AstCFunc: the sub-function for the scope
     const VNUser2InUse user2InUse;  // AstScope -> int: sub-function counter used for names
-    for (const auto& pair : lbs) {
-        AstScope* const scopep = pair.first;
-        AstActive* const activep = pair.second;
+    for (const auto& entry : lbs) {
+        AstScope* const scopep = entry.m_scopep;
+        AstActive* const activep = entry.m_activep;
         // Create a sub-function per scope so we can V3Combine them later
         if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
         // Add statements to sub-function
@@ -319,8 +319,8 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
         VL_DO_DANGLING(activep->deleteTree(), activep);
     }
     // Split sub-functions once complete
-    for (const auto& pair : lbs) {
-        AstScope* const scopep = pair.first;
+    for (const auto& entry : lbs) {
+        AstScope* const scopep = entry.m_scopep;
         if (AstCFunc* const subFuncp = VN_AS(scopep->user1p(), CFunc)) {
             util::splitCheck(subFuncp);
             scopep->user1p(nullptr);
@@ -346,8 +346,8 @@ AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     std::vector<size_t> indices(orig.size());
     for (size_t i = 0; i < orig.size(); ++i) indices[i] = i;
     std::stable_sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
-        const AstNodeModule* const modA = orig[a].first->modp();
-        const AstNodeModule* const modB = orig[b].first->modp();
+        const AstNodeModule* const modA = orig[a].m_scopep->modp();
+        const AstNodeModule* const modB = orig[b].m_scopep->modp();
         const bool isPkgA = VN_IS(modA, Package);
         const bool isPkgB = VN_IS(modB, Package);
         if (isPkgA != isPkgB) return isPkgA;  // Packages before non-packages
@@ -358,8 +358,7 @@ AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
         return false;  // Both non-package: preserve original order
     });
     LogicByScope sorted;
-    sorted.reserve(orig.size());
-    for (const size_t i : indices) sorted.emplace_back(orig[i].first, orig[i].second);
+    for (const size_t i : indices) sorted.add(orig[i].m_scopep, orig[i].m_activep);
 
     orderSequentially(funcp, sorted);
     return funcp;  // Not splitting yet as it is not final

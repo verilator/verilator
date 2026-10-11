@@ -79,32 +79,60 @@ inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
 }  // namespace util
 
 //============================================================================
-// Throughout scheduling, we need to keep hold of AstActive nodes, together with the AstScope that
-// they are under. LogicByScope is simply a vector of such pairs, with some additional convenience
-// methods.
-struct LogicByScope final : public std::vector<std::pair<AstScope*, AstActive*>> {
+// Throughout scheduling, we need to keep hold of AstActive nodes, together
+// with the AstScope that they are under. LogicByScope is simply a list of
+// such pairs, with some additional convenience methods.
+
+class LogicByScope final {
+public:
+    // TYPES
+    // An AstActive and the AstScope it is under
+    struct Entry final {
+        AstScope* m_scopep;  // The scope the AstActive is under
+        AstActive* m_activep;  // The AstActive holding the logic
+    };
+    using const_iterator = std::vector<Entry>::const_iterator;
+
+private:
+    // STATE
+    std::vector<Entry> m_entries;  // The AstActives held, with their scopes
+
+public:
+    // METHODS
+
+    // Iteration and access
+    const_iterator begin() const { return m_entries.begin(); }
+    const_iterator end() const { return m_entries.end(); }
+    bool empty() const { return m_entries.empty(); }
+    size_t size() const { return m_entries.size(); }
+    const Entry& operator[](size_t i) const { return m_entries[i]; }
+
+    // Add an AstActive under the given scope
+    void add(AstScope* scopep, AstActive* activep) { m_entries.push_back({scopep, activep}); }
+
     // Add logic
     void add(AstScope* scopep, AstSenTree* senTreep, AstNode* logicp) {
         UASSERT_OBJ(!logicp->backp(), logicp, "Already linked");
-        if (empty() || back().first != scopep || back().second->sentreep() != senTreep) {
-            emplace_back(scopep, new AstActive{logicp->fileline(), "", senTreep});
+        if (m_entries.empty() || m_entries.back().m_scopep != scopep
+            || m_entries.back().m_activep->sentreep() != senTreep) {
+            add(scopep, new AstActive{logicp->fileline(), "", senTreep});
         }
-        back().second->addStmtsp(logicp);
+        m_entries.back().m_activep->addStmtsp(logicp);
     };
 
     // Create copy, with the AstActives cloned
     LogicByScope clone() const {
         LogicByScope result;
-        for (const auto& pair : *this) {
-            result.emplace_back(pair.first, pair.second->cloneTree(false));
+        for (const Entry& entry : m_entries) {
+            result.add(entry.m_scopep, entry.m_activep->cloneTree(false));
         }
         return result;
     }
 
     // Delete actives (they should all be empty)
     void deleteActives() {
-        for (const auto& pair : *this) {
-            AstActive* const activep = pair.second;
+        for (const Entry& entry : m_entries) {
+            AstActive* const activep = entry.m_activep;
             if (v3Global.opt.debugCheck()) {
                 for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
                     AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
@@ -114,12 +142,13 @@ struct LogicByScope final : public std::vector<std::pair<AstScope*, AstActive*>>
             if (activep->backp()) activep->unlinkFrBack();
             VL_DO_DANGLING(activep->deleteTree(), activep);
         }
-        clear();
+        m_entries.clear();
     };
 
     void foreachLogic(const std::function<void(AstNode*)>& f) const {
-        for (const auto& pair : *this) {
-            for (AstNode* nodep = pair.second->stmtsp(); nodep; nodep = nodep->nextp()) f(nodep);
+        for (const Entry& entry : m_entries) {
+            AstActive* const activep = entry.m_activep;
+            for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) f(nodep);
         }
     }
 };

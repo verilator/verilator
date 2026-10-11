@@ -139,9 +139,9 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
         new V3GraphEdge{graphp.get(), fromp, top, weight, cuttable};
     };
 
-    for (const auto& pair : lbs) {
-        AstScope* const scopep = pair.first;
-        AstActive* const activep = pair.second;
+    for (const auto& entry : lbs) {
+        AstScope* const scopep = entry.m_scopep;
+        AstActive* const activep = entry.m_activep;
         UASSERT_OBJ(activep->hasCombo(), activep, "Not combinational logic");
         for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
             // Can safely ignore Postponed as we generate them all
