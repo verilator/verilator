@@ -1,0 +1,10 @@
+%Error: t/t_covergroup_cross_with_type_bad.v:20:30: Cross bin 'with' filter must be assignment compatible with an integral type, not 'class C' (IEEE 1800-2023 19.5.1.1)
+                                                  : ... note: In instance 't'
+   20 |       bins handle = xx with (object);   
+      |                              ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_cross_with_type_bad.v:21:29: Cross bin 'with' filter must be assignment compatible with an integral type, not 'int$[0:1]' (IEEE 1800-2023 19.5.1.1)
+                                                  : ... note: In instance 't'
+   21 |       bins array = xx with (array_value);   
+      |                             ^~~~~~~~~~~
+%Error: Exiting due to

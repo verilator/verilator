@@ -165,6 +165,10 @@ class CovergroupExprValidVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->selectp());
         scanSampleExpression(nodep->iffp());
     }
+    void visit(AstCoverCrossWith* nodep) override {
+        iterateAndNextNull(nodep->selectp());
+        scanCoverageExpression(nodep->filterp());
+    }
     void visit(AstCoverBinsof* nodep) override { scanCoverageExpression(nodep->rangesp()); }
     void visit(AstCoverBin* nodep) override {
         scanCoverageExpression(nodep->rangesp());
@@ -516,6 +520,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     consumers[point->second].push_back(crossp);
                     inputs[crossp].push_back(point->second);
                 }
+            }
+            // The values of a filter's bin tuples are known when the covergroup is constructed
+            if (crossp->exists([](const AstCoverCrossWith*) { return true; })) {
+                m_runtimeCrosses.emplace(crossp);
+                pending.push_back(crossp);
             }
         }
         for (size_t next = 0; next < pending.size(); ++next) {
@@ -3414,7 +3423,94 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return target;
     }
 
-    bool generateRuntimeSelection(AstNode* nodep, AstCoverCross* crossp, AstVar* cxp,
+    // Whether the runtime knows the values of the cross items a 'with' filter reads, of
+    // integral coverpoints; else warns
+    static bool crossFilterSupported(const AstCoverCrossWith* withp) {
+        std::set<const AstVar*> candidates;
+        for (const AstVar* varp = withp->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+            candidates.insert(varp);
+        }
+        AstVarRef* unsupportedp = nullptr;
+        withp->filterp()->foreach([&](AstVarRef* refp) {
+            if (!unsupportedp && candidates.count(refp->varp())
+                && !refp->varp()->dtypep()->skipRefp()->isIntegralOrPacked()) {
+                unsupportedp = refp;
+            }
+        });
+        if (!unsupportedp) return true;
+        unsupportedp->v3warn(COVERIGN, "Unsupported: cross bin 'with' filter reading the value "
+                                       "of non-integral coverpoint "
+                                           << unsupportedp->prettyNameQ());
+        return false;
+    }
+
+    // Emit the constructor code selecting, of the bin tuples of the selection, those with a value
+    // tuple for which the 'with' filter is true (IEEE 1800-2023 19.6.1.2).  The runtime gives
+    // the values of the cross items the filter reads, of each value tuple it may evaluate:
+    //   withBegin({dimensions read}, bin, file, line);
+    //   while (withNext()) {
+    //       item = withValue(dimension);  // Of each cross item read
+    //       withTest(filter);
+    //   }
+    //   withEnd();
+    void generateCrossFilter(const AstCoverCrossWith* withp, const AstCoverCrossBin* binp,
+                             const AstCoverCross* crossp, AstVar* cxp,
+                             const std::map<string, uint32_t>& dimensions) {
+        FileLine* const fl = withp->fileline();
+        std::set<const AstVar*> reads;
+        withp->filterp()->foreach([&](const AstVarRef* refp) { reads.insert(refp->varp()); });
+        const string prefix
+            = m_sizedNames.get(sanitizeGeneratedName(crossp->name() + "__" + binp->name()));
+        AstLoop* const loopp = new AstLoop{fl};
+        AstCMethodHard* const nextp = itemCall(fl, cxp, VCMethod::COVERGROUP_WITH_NEXT);
+        nextp->dtypeSetBit();
+        loopp->addStmtsp(new AstLoopTest{fl, loopp, nextp});
+        string dims;
+        while (AstVar* const varp = withp->varsp()) {
+            varp->unlinkFrBack();
+            if (!reads.count(varp)) {
+                VL_DO_DANGLING(pushDeletep(varp), varp);
+                continue;
+            }
+            const auto dimIt = dimensions.find(varp->name());
+            UASSERT_OBJ(dimIt != dimensions.end(), varp, "Cross 'with' candidate not of an item");
+            const uint32_t dim = dimIt->second;
+            dims += (dims.empty() ? "" : ", ") + cvtToStr(dim) + "U";
+            varp->name(prefix + "_" + sanitizeGeneratedName(varp->name()));
+            m_constructorp->addStmtsp(varp);
+            if (varp->isWide()) {
+                loopp->addStmtsp(itemCall(fl, cxp, VCMethod::COVERGROUP_CROSS_WITH_VALUE_W,
+                                          {cnum(fl, dim), new AstVarRef{fl, varp, VAccess::WRITE}})
+                                     ->makeStmt());
+            } else {
+                AstCMethodHard* const valuep
+                    = itemCall(fl, cxp, VCMethod::COVERGROUP_CROSS_WITH_VALUE, {cnum(fl, dim)});
+                valuep->dtypeSetUInt64();
+                AstNodeDType* const dtypep = varp->findLogicDType(
+                    varp->width(), varp->width(),
+                    varp->isSigned() ? VSigning::SIGNED : VSigning::UNSIGNED);
+                loopp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
+                                               resizeValue(valuep, dtypep)});
+            }
+        }
+        loopp->addStmtsp(itemCall(fl, cxp, VCMethod::COVERGROUP_CROSS_WITH_TEST,
+                                  {withp->filterp()->unlinkFrBack()})
+                             ->makeStmt());
+        const bool prot = v3Global.opt.protectIds();
+        m_constructorp->addStmtsp(
+            itemCall(fl, cxp, VCMethod::COVERGROUP_CROSS_WITH_BEGIN,
+                     {ctext(fl, "{" + dims + "}"),
+                      ctext(fl, quoted(VIdProtect::protectWordsIf(binp->name(), prot))),
+                      ctext(fl, quoted(VIdProtect::protectIf(fl->filename(), prot))),
+                      cnum(fl, static_cast<uint32_t>(fl->lineno()))})
+                ->makeStmt());
+        m_constructorp->addStmtsp(loopp);
+        m_constructorp->addStmtsp(
+            itemCall(fl, cxp, VCMethod::COVERGROUP_CROSS_WITH_END)->makeStmt());
+    }
+
+    bool generateRuntimeSelection(AstNode* nodep, const AstCoverCrossBin* binp,
+                                  AstCoverCross* crossp, AstVar* cxp,
                                   const std::vector<AstVar*>& cpVars,
                                   const std::map<string, uint32_t>& dimensions) {
         FileLine* const fl = nodep->fileline();
@@ -3425,14 +3521,23 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return true;
         }
         if (const AstCoverCrossSelect* const opp = VN_CAST(nodep, CoverCrossSelect)) {
-            if (!generateRuntimeSelection(opp->lhsp(), crossp, cxp, cpVars, dimensions)
-                || !generateRuntimeSelection(opp->rhsp(), crossp, cxp, cpVars, dimensions)) {
+            if (!generateRuntimeSelection(opp->lhsp(), binp, crossp, cxp, cpVars, dimensions)
+                || !generateRuntimeSelection(opp->rhsp(), binp, crossp, cxp, cpVars, dimensions)) {
                 return false;
             }
             m_constructorp->addStmtsp(itemCall(fl, cxp,
                                                opp->isOr() ? VCMethod::COVERGROUP_SELECT_OR
                                                            : VCMethod::COVERGROUP_SELECT_AND)
                                           ->makeStmt());
+            return true;
+        }
+        if (const AstCoverCrossWith* const withp = VN_CAST(nodep, CoverCrossWith)) {
+            if (!crossFilterSupported(withp)
+                || !generateRuntimeSelection(withp->selectp(), binp, crossp, cxp, cpVars,
+                                             dimensions)) {
+                return false;
+            }
+            generateCrossFilter(withp, binp, crossp, cxp, dimensions);
             return true;
         }
         AstCoverBinsof* const selectp = VN_AS(nodep, CoverBinsof);
@@ -3492,10 +3597,21 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstNode* itemp = crossp->binsp(); itemp; itemp = itemp->nextp()) {
             AstCoverCrossBin* const binp = VN_AS(itemp, CoverCrossBin);
             if (!checkCrossBinName(binp, names)) continue;
-            if (!generateRuntimeSelection(binp->selectp(), crossp, cxp, cpVars, dimensions)) {
-                continue;
-            }
             FileLine* const fl = binp->fileline();
+            // Generate the selection apart, so that an unsupported one leaves no code, which
+            // could leave its state for the next bin
+            AstFunc* const selectionp = new AstFunc{fl, "", nullptr, nullptr};
+            bool supported;
+            {
+                VL_RESTORER(m_constructorp);
+                m_constructorp = selectionp;
+                supported = generateRuntimeSelection(binp->selectp(), binp, crossp, cxp, cpVars,
+                                                     dimensions);
+            }
+            // A supported selection has code
+            if (supported) m_constructorp->addStmtsp(selectionp->stmtsp()->unlinkFrBackWithNext());
+            VL_DO_DANGLING(pushDeletep(selectionp), selectionp);
+            if (!supported) continue;
             const bool protect = v3Global.opt.protectIds();
             m_constructorp->addStmtsp(
                 itemCall(fl, cxp, VCMethod::COVERGROUP_SELECT_BIN,

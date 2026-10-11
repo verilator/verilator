@@ -2306,10 +2306,18 @@ class WidthVisitor final : public VNVisitor {
         if (!VN_IS(nodep->subp(), CoverpointRef)) {
             widthCovergroupRanges(nodep->subp(), m_vup->dtypep()->width());
         }
-        // The filter is true for a nonzero value (IEEE 1800-2023 12.4), of a type assignment
-        // compatible with an integral type (19.5.1.1)
-        AstNodeExpr* const filterp = VN_AS(
-            userIterateSubtreeReturnEdits(nodep->filterp(), WidthVP{SELF, BOTH}.p()), NodeExpr);
+        widthCoverFilter(nodep->filterp(), "Bin");
+    }
+    void visit(AstCoverCrossWith* nodep) override {
+        userIterateAndNext(nodep->selectp(), nullptr);
+        // Each cross item has the type of its coverpoint (IEEE 1800-2023 19.6.1.3)
+        userIterateAndNext(nodep->varsp(), nullptr);
+        widthCoverFilter(nodep->filterp(), "Cross bin");
+    }
+    // A 'with' filter is true for a nonzero value (IEEE 1800-2023 12.4), of a type assignment
+    // compatible with an integral type (19.5.1.1); 'whatp' names its bins
+    void widthCoverFilter(AstNodeExpr* filterp, const char* whatp) {
+        filterp = VN_AS(userIterateSubtreeReturnEdits(filterp, WidthVP{SELF, BOTH}.p()), NodeExpr);
         FileLine* const fl = filterp->fileline();
         const AstNodeDType* const resultp = filterp->dtypep()->skipRefp();
         if (resultp->isDouble()) {
@@ -2318,9 +2326,9 @@ class WidthVisitor final : public VNVisitor {
             relinker.relink(
                 new AstNeqD{fl, filterp, new AstConst{fl, AstConst::RealDouble{}, 0.0}});
         } else if (!resultp->isIntegralOrPacked()) {
-            filterp->v3error("Bin 'with' filter must be assignment compatible with an integral "
-                             "type, not "
-                             << resultp->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.1.1)");
+            filterp->v3error(whatp << " 'with' filter must be assignment compatible with an "
+                                      "integral type, not "
+                                   << resultp->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.1.1)");
             filterp->replaceWith(new AstConst{fl, AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(filterp), filterp);
         } else {

@@ -1,0 +1,29 @@
+%Warning-NONSTD: t/t_covergroup_cross_with_bad.v:30:22: Non-standard hierarchical reference as a coverage cross item (an implicit coverpoint)
+   30 |     xh: cross aa, cfg.f{   
+      |                      ^
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
+%Error: t/t_covergroup_cross_with_bad.v:20:37: Covergroup sample formal argument 's' may only be used in a coverpoint or conditional guard expression (IEEE 1800-2023 19.8.1).
+                                             : ... note: In instance 't'
+   20 |       bins sampled = xx with (aa == s);   
+      |                                     ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_cross_with_bad.v:21:45: Ref covergroup constructor formal argument 'bound' may not be used in a covergroup expression (IEEE 1800-2023 19.5).
+                                             : ... note: In instance 't'
+   21 |       bins referenced = xx with (int'(aa) < bound);   
+      |                                             ^~~~~
+%Error: t/t_covergroup_cross_with_bad.v:19:26: Cross selection 'missing' may only name its enclosing cross 'xx' (IEEE 1800-2023 19.6.1.2).
+                                             : ... note: In instance 't'
+   19 |       bins wrong_cross = missing with (aa == bb);   
+      |                          ^~~~~~~
+%Warning-COVERIGN: t/t_covergroup_cross_with_bad.v:24:35: Unsupported: cross bin 'with' filter reading the value of non-integral coverpoint 'rr'
+                                                        : ... note: In instance 't'
+   24 |       bins real_value = (xr with (rr < 0.5 || rr > 0.9)) || xr;   
+      |                                   ^~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_covergroup_cross_with_bad.v:30:22: Unsupported: cross of hierarchical reference (implicit coverpoint)
+                                                        : ... note: In instance 't'
+   30 |     xh: cross aa, cfg.f{   
+      |                      ^
+%Error: Exiting due to

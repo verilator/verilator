@@ -890,6 +890,11 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_ATTACH,                  "attach",                 false,  "r") \
     macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  "") \
     macro(COVERGROUP_COVERAGE,                "coverage",               false,  "") \
+    macro(COVERGROUP_CROSS_WITH_BEGIN,        "withBegin",              false,  "r+") \
+    macro(COVERGROUP_CROSS_WITH_END,          "withEnd",                false,  "") \
+    macro(COVERGROUP_CROSS_WITH_TEST,         "withTest",               false,  "r") \
+    macro(COVERGROUP_CROSS_WITH_VALUE,        "withValue",              false,  "r") \
+    macro(COVERGROUP_CROSS_WITH_VALUE_W,      "withValueW",             false,  "rw") \
     macro(COVERGROUP_FINALIZE_BINS,           "finalizeBins",           false,  "") \
     macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  "r") \
     macro(COVERGROUP_INIT,                    "init",                   false,  "r+") \
