@@ -111,6 +111,7 @@ module t;
   bit cr;
   bit cr5;
   bit d;
+  int lp;
   int cycles = 2;
   int nocycles = 0;
   bit [6:0] cycles7 = 2;
@@ -139,6 +140,7 @@ module t;
   string pw_log;
   string y_log;
   string e_log;
+  string lp_log;
   Driver drv = new;
 
   always #5 clk = ~clk;
@@ -151,7 +153,7 @@ module t;
   endclocking
 
   clocking fast @(posedge clk);
-    output v, c, c0, c7, cr, cr5;
+    output v, c, c0, c7, cr, cr5, lp;
   endclocking
 
   sub sub (
@@ -196,6 +198,7 @@ module t;
   always @(pbus.w) if ($time != 0) pw_log = {pw_log, $sformatf("%0d@%0d ", pbus.w, $time)};
   always @(ebus.y) if ($time != 0) y_log = {y_log, $sformatf("%0d@%0d ", ebus.y, $time)};
   always @(vbus.e) if ($time != 0) e_log = {e_log, $sformatf("%0d@%0d ", vbus.e, $time)};
+  always @(lp) if ($time != 0) lp_log = {lp_log, $sformatf("%0d@%0d ", lp, $time)};
 
   initial begin
     mvif = mbus;
@@ -237,6 +240,14 @@ module t;
     #20 ebus.en = 1;
   end
 
+  // Each pending drive keeps its own value, even if its process schedules more
+  initial begin
+    for (int i = 1; i <= 3; ++i) begin
+      @(fast);
+      fast.lp <= ##2 i;
+    end
+  end
+
   // Also in a procedural cycle delay, of the default clocking
   initial begin
     #2;
@@ -270,6 +281,7 @@ module t;
     `checks(pw_log, "1@25 ")
     `checks(y_log, "1@25 ")
     `checks(e_log, "1@20 ")
+    `checks(lp_log, "1@25 2@35 3@45 ")
     $write("*-* All Finished *-*\n");
     $finish;
   end

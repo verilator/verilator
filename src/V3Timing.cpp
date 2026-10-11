@@ -1211,7 +1211,8 @@ class TimingControlVisitor final : public VNVisitor {
         // The timing control, if any, which is put in a fork for an NBA
         AstNode* const timingp = controlp;
         // Insert new vars before the timing control if we're in a function; in a process we can't
-        // do that. These intra-assignment vars will later be passed to forked processes by value.
+        // do that, except before the fork of an NBA. These intra-assignment vars will later be
+        // passed to forked processes by value.
         AstNode* insertBeforep = m_underProcedure ? nullptr : controlp;
         // Special case for NBA
         if (inAssignDly) {
@@ -1227,9 +1228,10 @@ class TimingControlVisitor final : public VNVisitor {
                 nodep->replaceWith(trigAssignp);
                 trigAssignp->addNextHere(nbaEventControlp);
                 nbaEventControlp->addStmtsp(nodep);
-                insertBeforep = forkp;
                 if (!controlp) controlp = nbaEventControlp;
             }
+            // Pending updates keep their own values, even if their process schedules more
+            insertBeforep = forkp;
             controlp->replaceWith(forkp);
             AstBegin* beginp = VN_CAST(controlp, Begin);
             if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false};
