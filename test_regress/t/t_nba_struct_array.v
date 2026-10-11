@@ -11,7 +11,7 @@
 // verilog_format: on
 
 interface ifc;
-  int x;
+  int x, y, z;
 endinterface
 
 module t;
@@ -129,28 +129,24 @@ module t;
     nidx = 0;
     qidx = 0;
   end
-  // Also an index selecting a virtual interface
+  // Also through a virtual interface, which the NBA only reads, to select the target
   ifc ia (), ib ();
   virtual ifc vifs[2];
+  virtual ifc vifq[$];
+  virtual ifc vif;
   int vidx = 0;
   initial begin
     vifs[0] = ia;
     vifs[1] = ib;
+    vifq = '{ia, ib};
+    vif = ia;
     @(posedge clk);
     vifs[vidx].x <= 6;
+    vifq[vidx].y <= 7;
+    vif.z <= 8;
     vidx = 1;
-  end
-  typedef struct {int aa[int];} assoc_t;
-  assoc_t sassoc;
-  int akey = 1;
-  int wassoc[*];
-  int wkey = 1;
-  initial begin
-    @(posedge clk);
-    sassoc.aa[akey] <= 7;
-    akey = 2;
-    wassoc[wkey] <= 8;
-    wkey = 2;
+    vifs[0] = ib;
+    vif = ib;
   end
   `at_posedge_clk_on_cycle(5) begin
     `checkh(warr[0].foo, 1);
@@ -162,12 +158,10 @@ module t;
     `checkh(nest.a[0].z.q[0], 0);
     `checkh(ia.x, 6);
     `checkh(ib.x, 0);
-    `checkh(sassoc.aa.exists(1), 1);
-    `checkh(sassoc.aa.exists(2), 0);
-    `checkh(sassoc.aa[1], 7);
-    `checkh(wassoc.exists(1), 1);
-    `checkh(wassoc.exists(2), 0);
-    `checkh(wassoc[1], 8);
+    `checkh(ia.y, 7);
+    `checkh(ib.y, 0);
+    `checkh(ia.z, 8);
+    `checkh(ib.z, 0);
   end
 
 

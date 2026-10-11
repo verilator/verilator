@@ -120,6 +120,7 @@
 #include "V3AstUserAllocator.h"
 #include "V3ClassGraph.h"
 #include "V3Const.h"
+#include "V3LinkLValue.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
 
@@ -537,20 +538,33 @@ class DelayedVisitor final : public VNVisitor {
             nodep = selp->fromp();
         }
         UASSERT_OBJ(!VN_IS(nodep, Sel), lhsp, "Multiple 'AstSel' applied to LHS reference");
-        // What remains below the selects is the variable, with members selected, which we can
-        // reuse
-        AstNode* const basep = nodep->baseFromp(/* overMembers: */ true);
-        UASSERT_OBJ(VN_IS(basep, NodeVarRef), lhsp, "Malformed LHS in NBA");
-        // Capture the indices of selects - might be many, also below members. Find them from the
-        // variable up.
+        // Capture the indices of selects - might be many, also below struct members. If a handle
+        // selects the instance the target is a member of, capture the handle instead, as it is
+        // only read, to select the target when the NBA is executed (IEEE 1800-2023 10.4.2).
         size_t nArraySels = 0;
-        for (AstNode* np = basep; np != nodep;) {
-            np = np->firstAbovep();
-            AstNodeSel* const selp = VN_CAST(np, NodeSel);
-            if (!selp) continue;
-            const std::string tmpName{"Dim" + std::to_string(nArraySels++) + baseName};
-            selp->bitp(captureVal(scopep, insertp, selp->bitp()->unlinkFrBack(), tmpName));
+        while (true) {
+            if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+                const std::string tmpName{"Dim" + std::to_string(nArraySels++) + baseName};
+                selp->bitp(captureVal(scopep, insertp, selp->bitp()->unlinkFrBack(), tmpName));
+                nodep = selp->fromp();
+            } else if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+                nodep = selp->fromp();
+            } else if (AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
+                AstNodeExpr* const handlep = selp->fromp()->unlinkFrBack();
+                V3LinkLValue::linkLValueSet(handlep, VAccess::READ);
+                AstVarRef* const refp
+                    = VN_AS(captureVal(scopep, insertp, handlep, "Handle" + baseName), VarRef);
+                refp->varp()->setIgnorePostWrite();
+                // Like the handle it replaces, mark it written, as is the member it selects
+                refp->access(selp->access());
+                selp->fromp(refp);
+                return lhsp;
+            } else {
+                break;
+            }
         }
+        // What remains must be the variable, or some sort of select, we assume can reuse it
+        UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
         // Now have been converted to use the captured values
         return lhsp;
     }
