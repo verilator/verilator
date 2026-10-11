@@ -49,18 +49,6 @@ class EmitCImp final : public EmitCFunc {
         m_lazyDecls.reset();
     }
 
-    void emitStaticVarDefns(const AstNodeModule* modp) {
-        // Emit static variable definitions
-        const string modName = EmitCUtil::prefixNameProtect(modp);
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isStatic()) {
-                    putns(varp, varp->vlArgType(true, false, false, modName));
-                    puts(";\n");
-                }
-            }
-        }
-    }
     void emitParamDefns(const AstNodeModule* modp) {
         const string modName = EmitCUtil::prefixNameProtect(modp);
         bool first = true;
@@ -312,7 +300,6 @@ class EmitCImp final : public EmitCFunc {
                             // System C top I/O doesn't need loading, as the
                             // lower level subinst code does it.
                         } else if (varp->isParam()) {
-                        } else if (varp->isStatic() && varp->isConst()) {
                         } else if (VN_IS(varp->dtypep(), NBACommitQueueDType)) {
                         } else {
                             int vects = 0;
@@ -361,19 +348,15 @@ class EmitCImp final : public EmitCFunc {
         // We always need the slow file
         if (m_slow) return true;
         // The fast file is only required when we have `systemc_implementation nodes
-        if (v3Global.hasSystemCSections()) {
-            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (const AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection)) {
-                    if (ssp->sectionType() == VSystemCSectionType::IMP) return true;
-                }
-            }
+        for (const AstSystemCSection* scSectionp = modp->scSectionsp(); scSectionp;
+             scSectionp = VN_AS(scSectionp->nextp(), SystemCSection)) {
+            if (scSectionp->sectionType() == VSystemCSectionType::IMP) return true;
         }
         return false;
     }
     // Actually emit common implementation contents for given AstNodeModule
     void doCommonImp(const AstNodeModule* modp) {
         if (m_slow) {
-            emitStaticVarDefns(modp);
             if (!VN_IS(modp, Class)) {
                 emitParamDefns(modp);
                 emitCtorImp(modp);

@@ -21,7 +21,9 @@ def covergroup_coverage_report(test, outfile=None):
         outfile = test.obj_dir + "/covergroup_report.txt"
     contents = test.file_contents(test.coverage_filename)
     entries = []
-    for m in re.finditer(r"C '([^']+)' (\d+)", contents):
+    # The count follows the last "' " of the line, as a point may hold quotes, as a type named
+    # with a sized value, C#(8'd1)
+    for m in re.finditer(r"^C '(.*)' (\d+)$", contents, re.MULTILINE):
         entry, count = m.group(1), m.group(2)
         if '\x01t\x02covergroup' not in entry:
             continue
@@ -29,8 +31,8 @@ def covergroup_coverage_report(test, outfile=None):
         if not h_m:
             continue
         hier = h_m.group(1)
-        bt_m = re.search(r'\x01bin_type\x02([^\x01]+)', entry)
-        cross_m = re.search(r'\x01cross\x021', entry)
+        bt_m = re.search(r'\x01Bt\x02([^\x01]+)', entry)
+        cross_m = re.search(r'\x01C\x021', entry)
         annotations = []
         if bt_m:
             annotations.append(bt_m.group(1))

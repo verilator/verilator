@@ -1,0 +1,33 @@
+---
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+#
+name: "Maintenance - Close Stale PRs"
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/stale@4391f3da665fdf50b6810c1a66712fb9ba21aa93  # v11.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-label: stale
+          stale-pr-label: stale
+          stale-pr-message: "This PR has been open for 3 weeks with no activity. Add a comment to the PR to keep open, or it will be closed in 2 weeks if no further activity occurs."
+          close-pr-message: "Closing this PR due to inactivity."
+          days-before-issue-close: -1
+          days-before-issue-stale: -1
+          days-before-pr-close: 15
+          days-before-pr-stale: 22
+          exempt-pr-labels: "pr-blocked: wait-for-other"
+          # debug-only: true

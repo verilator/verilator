@@ -1111,7 +1111,7 @@ string V3Options::protectKeyDefaulted() VL_MT_SAFE {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
         VHashSha512 digest{V3Os::trueRandom(64)};
-        m_protectKey = "VL-KEY-" + digest.digestSymbol();
+        m_protectKey = "VL-KEY-" + digest.digestBase64();
     }
     return m_protectKey;
 }
@@ -1373,6 +1373,20 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-coverage-expr", OnOff, &m_coverageExpr);
     DECL_OPTION("-coverage-expr-max", Set, &m_coverageExprMax);
     DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
+    DECL_OPTION("-coverage-fsm-expand", CbVal, [this, fl](const char* const valp) {
+        if (!std::strcmp(valp, "auto")) {
+            m_coverageFsmExpand = VFsmExpandType::AUTO;
+        } else if (!std::strcmp(valp, "auto-expand")) {
+            m_coverageFsmExpand = VFsmExpandType::AUTO_EXPAND;
+        } else if (!std::strcmp(valp, "full")) {
+            m_coverageFsmExpand = VFsmExpandType::FULL;
+        } else {
+            fl->v3error("Unknown setting for --coverage-fsm-expand: '"
+                        << valp << "'\n"
+                        << fl->warnMore() << "... Suggest 'auto', 'auto-expand', or 'full'");
+        }
+    });
+    DECL_OPTION("-coverage-fsm-max-arcs", Set, &m_coverageFsmMaxArcs);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
     // Covergroup bins limits; the runtime indexes bins with 32 bits
     const auto parseBinsLimit = [fl](const char* optp, const char* valp, uint32_t& limitr) {
@@ -1393,6 +1407,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         parseBinsLimit("--coverage-max-real-bins", valp, m_coverageMaxRealBins);
     });
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
+    DECL_OPTION("-coverage-merge-instances", OnOff, &m_coverageMergeInstances);
     DECL_OPTION("-coverage-per-instance", OnOff, &m_coveragePerInstance);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
@@ -1495,6 +1510,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fdead-methods", FOnOff, &m_fDeadMethods);
+    DECL_OPTION("-fdecompose", CbFOnOff, [this](bool flag) {
+        m_fDecomposePacked = flag;
+        m_fDecomposeUnpacked = flag;
+    });
+    DECL_OPTION("-fdecompose-packed", FOnOff, &m_fDecomposePacked);
+    DECL_OPTION("-fdecompose-unpacked", FOnOff, &m_fDecomposeUnpacked);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
     DECL_OPTION("-fdfg-break-cycles", CbFOnOff, [fl](bool) {
@@ -2326,6 +2347,7 @@ void V3Options::showVersion(bool verbose) {
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
 
+    m_coverageFsmExpand = VFsmExpandType::AUTO;  // Auto is a default global default
     m_makeDir = "obj_dir";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
@@ -2406,6 +2428,8 @@ void V3Options::optimize(int level) {
     m_fDeadAssigns = flag;
     m_fDeadCells = flag;
     m_fDeadMethods = flag;
+    m_fDecomposePacked = flag;
+    m_fDecomposeUnpacked = flag;
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;

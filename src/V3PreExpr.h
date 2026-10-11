@@ -75,7 +75,7 @@ class V3PreExpr final {
         EE  // Error
     };
     static const char* actionAscii(action_t en) {
-        static const char* names[] = {"VV", "AA", "RR", "SS", "EE"};
+        static constexpr const char* names[] = {"VV", "AA", "RR", "SS", "EE"};
         return names[en];
     }
 

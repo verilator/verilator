@@ -24,8 +24,8 @@ int main(int, char**) {
     VerilatedContext ctx;
 
     // Create models
-    Vref ref{&ctx};
-    Vopt opt{&ctx};
+    Vref ref{&ctx, "ref"};
+    Vopt opt{&ctx, "opt"};
 
     uint64_t rand_a = 0x5aef0c8dd70a4497;
     uint64_t rand_b = 0xf0c0a8dd75ae4497;

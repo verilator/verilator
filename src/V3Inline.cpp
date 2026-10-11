@@ -446,7 +446,9 @@ void inlineScope(AstScope* scopep, AstCell* cellp, const std::string& prefix,
                 AstNodeCoverDecl* const declp = incp->declp();
                 if (declp->perInstance()) {
                     // Not cloned, fix up the path here, as only this scope refers to it
-                    declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+                    if (!incp->isDuplicate()) {
+                        declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+                    }
                     return;
                 }
                 if (AstNodeCoverDecl* const newDeclp = VN_CAST(declp->user3p(), NodeCoverDecl)) {
@@ -597,6 +599,11 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
     AstCellInline* const newCellInlinep
         = new AstCellInline{cellp->fileline(), cellp->name(), subModp->origName()};
     modp->addInlinesp(newCellInlinep);
+
+    // Move the `systemc_* blocks of the inlined module into 'modp'
+    if (AstSystemCSection* const sectionsp = inlinedp->scSectionsp()) {
+        modp->addScSectionsp(sectionsp->unlinkFrBackWithNext());
+    }
 
     // Move the module level declarations of the inlined module into 'modp'
     InlineModModuleVertex* const mVtxp = graph.getInlineModModuleVertexp(modp);

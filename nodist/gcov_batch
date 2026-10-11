@@ -1,0 +1,36 @@
+#!/bin/bash
+# DESCRIPTION: Verilator: gcov wrapper for fastcov, bounding gcov memory usage
+#
+# Usage: GCOV=<gcov> nodist/gcov_batch [gcov options] <files>
+#
+# fastcov passes all coverage files of a worker to a single gcov process, but
+# gcov does not free memory between input files, which can exhaust memory with
+# many files. This wrapper runs the gcov in $GCOV on batches of at most 16
+# files at a time instead. The output is the same as if all files were passed
+# to a single gcov.
+#
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+gcov="${GCOV:-gcov}"
+batch=16
+
+opts=()
+files=()
+for arg in "$@"; do
+  case "$arg" in
+    -*) opts+=("$arg") ;;
+    *) files+=("$arg") ;;
+  esac
+done
+
+# No files, e.g.: 'gcov -v'
+if [ ${#files[@]} -eq 0 ]; then
+  exec "$gcov" "${opts[@]}"
+fi
+
+status=0
+for ((i = 0; i < ${#files[@]}; i += batch)); do
+  "$gcov" "${opts[@]}" "${files[@]:i:batch}" || status=$?
+done
+exit $status

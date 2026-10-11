@@ -39,16 +39,24 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
                : elemBytes <= 8   ? 2  // QData
                                   : 1;
     }
+    // Constants in initializers use our form, not the expression form of EmitCFunc
+    void iterateInit(AstNode* nodep) {
+        if (AstConst* const constp = VN_CAST(nodep, Const)) {
+            EmitCConstInit::visit(constp);
+        } else {
+            iterateConst(nodep);
+        }
+    }
 
 protected:
     // METHODS
     // Emit the initializer of a definition, for direct initialization: 'type name{...}'
     void emitDirectInit(AstNode* valuep) {
         if (VN_IS(valuep, InitArray) || (VN_IS(valuep, Const) && valuep->isWide())) {
-            iterateConst(valuep);  // Already a braced initializer list
+            iterateInit(valuep);  // Already a braced initializer list
         } else {
             puts("{");
-            iterateConst(valuep);
+            iterateInit(valuep);
             puts("}");
         }
     }
@@ -67,7 +75,7 @@ protected:
             puts("{\n");
             if (defaultp) {
                 puts("/* default: */ ");
-                iterateConst(defaultp);
+                iterateInit(defaultp);
                 puts(",\n");
             }
             puts("/* items: */ {");
@@ -78,7 +86,7 @@ protected:
                 puts("\n{");
                 ofp()->printf("0x%" PRIx64 "ULL", itr.first);
                 puts(", ");
-                iterateConst(nodep->getIndexValuep(itr.first));
+                iterateInit(nodep->getIndexValuep(itr.first));
                 puts("}");
             }
             puts("\n}\n}");
@@ -97,7 +105,7 @@ protected:
                 if (n) puts((n % tabMod) ? ", " : ",\n");
                 AstNode* const itemp = nodep->getIndexDefaultedValuep(n);
                 UASSERT_OBJ(itemp, nodep, "Missing array init element");
-                iterateConst(itemp);
+                iterateInit(itemp);
             }
             puts("\n");
             puts("}");

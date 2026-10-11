@@ -1,0 +1,794 @@
+t (vpiModule) t  vpiDefName=t
+    vpiReg:
+    alc_x (vpiReg) t.alc_x 
+    alc_y (vpiReg) t.alc_y 
+    ali_a (vpiReg) t.ali_a 
+    ali_b (vpiReg) t.ali_b 
+    arr (vpiRegArray) t.arr 
+        vpiReg:
+        arr (vpiReg) t.arr[3] 
+        arr (vpiReg) t.arr[2] 
+        arr (vpiReg) t.arr[1] 
+        arr (vpiReg) t.arr[0] 
+    base (vpiReg) t.base 
+    chain_deep (vpiReg) t.chain_deep 
+    chain_l0 (vpiReg) t.chain_l0 
+    chain_l1 (vpiReg) t.chain_l1 
+    chain_l2 (vpiReg) t.chain_l2 
+    chain_l3 (vpiReg) t.chain_l3 
+    chain_l4 (vpiReg) t.chain_l4 
+    chain_tap (vpiReg) t.chain_tap 
+    chain_use (vpiReg) t.chain_use 
+    clk (vpiReg) t.clk 
+    crbase (vpiReg) t.crbase 
+    cyc (vpiReg) t.cyc 
+    cyc_a (vpiReg) t.cyc_a 
+    cyc_b (vpiReg) t.cyc_b 
+    cyc_boundary (vpiReg) t.cyc_boundary 
+    cyc_d (vpiReg) t.cyc_d 
+    cyc_down (vpiReg) t.cyc_down 
+    cyc_down2 (vpiReg) t.cyc_down2 
+    d (vpiReg) t.d 
+    flat_arr_gg (vpiReg) t.flat_arr_gg 
+    flat_gg (vpiReg) t.flat_gg 
+    flat_lb (vpiReg) t.flat_lb 
+    flat_ll (vpiReg) t.flat_ll 
+    idx (vpiReg) t.idx 
+    in0 (vpiReg) t.in0 
+    in1 (vpiReg) t.in1 
+    in2 (vpiReg) t.in2 
+    in3 (vpiReg) t.in3 
+    nib (vpiReg) t.nib 
+    o (vpiReg) t.o 
+    obs (vpiReg) t.obs 
+    out0 (vpiReg) t.out0 
+    out1 (vpiReg) t.out1 
+    pt_acc (vpiReg) t.pt_acc 
+    pt_o (vpiReg) t.pt_o 
+    pt_obs (vpiReg) t.pt_obs 
+    rndc (vpiReg) t.rndc 
+    s (vpiStructVar) t.s 
+        vpiReg:
+        *undefined*:
+        a (vpiReg) t.s.a 
+        b (vpiReg) t.s.b 
+        c (vpiReg) t.s.c 
+    a (vpiReg) t.s.a 
+    b (vpiReg) t.s.b 
+    c (vpiReg) t.s.c 
+    self_loop (vpiReg) t.self_loop 
+    tstamp (vpiReg) t.tstamp 
+    xscope_o (vpiReg) t.xscope_o 
+    vpiParameter:
+    vpiInternalScope:
+    if0 (vpiInterface) t.if0 
+        vpiReg:
+        W (vpiParameter) t.if0.W  vpiConstType=vpiDecConst
+        a (vpiReg) t.if0.a 
+        b (vpiReg) t.if0.b 
+        din (vpiReg) t.if0.din 
+    if1 (vpiInterface) t.if1 
+        vpiReg:
+        W (vpiParameter) t.if1.W  vpiConstType=vpiDecConst
+        a (vpiReg) t.if1.a 
+        b (vpiReg) t.if1.b 
+        din (vpiReg) t.if1.din 
+    intf (vpiInterface) t.intf 
+        vpiReg:
+        DBW (vpiParameter) t.intf.DBW  vpiConstType=vpiDecConst
+        swapped (vpiReg) t.intf.swapped 
+        wdata (vpiReg) t.intf.wdata 
+    u0 (vpiModule) t.u0  vpiDefName=sub_comb
+        vpiReg:
+        din (vpiReg) t.u0.din 
+        dout (vpiReg) t.u0.dout 
+        s1 (vpiReg) t.u0.s1 
+        s2 (vpiReg) t.u0.s2 
+        vpiParameter:
+    u1 (vpiModule) t.u1  vpiDefName=sub_comb
+        vpiReg:
+        din (vpiReg) t.u1.din 
+        dout (vpiReg) t.u1.dout 
+        s1 (vpiReg) t.u1.s1 
+        s2 (vpiReg) t.u1.s2 
+        vpiParameter:
+    u_chain (vpiModule) t.u_chain  vpiDefName=chain_pass8
+        vpiReg:
+        i (vpiReg) t.u_chain.i 
+        o (vpiReg) t.u_chain.o 
+        vpiParameter:
+    u_pass1 (vpiModule) t.u_pass1  vpiDefName=combloop_pass
+        vpiReg:
+        i (vpiReg) t.u_pass1.i 
+        o (vpiReg) t.u_pass1.o 
+        vpiParameter:
+    u_pass2 (vpiModule) t.u_pass2  vpiDefName=combloop_pass
+        vpiReg:
+        i (vpiReg) t.u_pass2.i 
+        o (vpiReg) t.u_pass2.o 
+        vpiParameter:
+    u_portsrc (vpiModule) t.u_portsrc  vpiDefName=portsrc
+        vpiReg:
+        cpy_a (vpiReg) t.u_portsrc.cpy_a 
+        cpy_c (vpiReg) t.u_portsrc.cpy_c 
+        i (vpiReg) t.u_portsrc.i 
+        mix (vpiReg) t.u_portsrc.mix 
+        o (vpiReg) t.u_portsrc.o 
+        obs (vpiReg) t.u_portsrc.obs 
+        vpiParameter:
+    u_xscope_drv (vpiModule) t.u_xscope_drv  vpiDefName=xscope_drv
+        vpiReg:
+        a (vpiReg) t.u_xscope_drv.a 
+        v (vpiReg) t.u_xscope_drv.v 
+        vpiParameter:
+    u_xscope_rcv (vpiModule) t.u_xscope_rcv  vpiDefName=xscope_rcv
+        vpiReg:
+        n (vpiReg) t.u_xscope_rcv.n 
+        o (vpiReg) t.u_xscope_rcv.o 
+        vpiParameter:
+    xscope_bus (vpiInterface) t.xscope_bus 
+        vpiReg:
+        v (vpiReg) t.xscope_bus.v 
+-- @0 readonly
+t.alc_x = 0a vpiSize=7
+t.alc_y = 0a vpiSize=7
+t.ali_a = 00 vpiSize=7
+t.ali_b = 00 vpiSize=7
+t.arr[3] = 00 vpiSize=8
+t.arr[2] = 00 vpiSize=8
+t.arr[1] = 00 vpiSize=8
+t.arr[0] = 00 vpiSize=8
+t.base = 00 vpiSize=8
+t.chain_deep = 23 vpiSize=8
+t.chain_l0 = 01 vpiSize=8
+t.chain_l1 = 03 vpiSize=8
+t.chain_l2 = 07 vpiSize=8
+t.chain_l3 = 0f vpiSize=8
+t.chain_l4 = 1f vpiSize=8
+t.chain_tap = 23 vpiSize=8
+t.chain_use = 86 vpiSize=8
+t.clk = 0 vpiSize=1
+t.crbase = 00 vpiSize=8
+t.cyc = 00 vpiSize=8
+t.cyc_boundary = 00 vpiSize=7
+t.cyc_d = 01 vpiSize=7
+t.cyc_down = 01 vpiSize=7
+t.cyc_down2 = 01 vpiSize=7
+t.d = 0000000000000000 vpiSize=64
+t.flat_arr_gg = 00000000 vpiSize=32
+t.flat_gg = 000000 vpiSize=24
+t.flat_lb = 000000 vpiSize=24
+t.flat_ll = 000000 vpiSize=24
+t.idx = 0 vpiSize=3
+t.in0 = 00 vpiSize=8
+t.in1 = 00 vpiSize=8
+t.in2 = 00 vpiSize=8
+t.in3 = 00 vpiSize=8
+t.nib = 0 vpiSize=4
+t.o = 0000000000000000 vpiSize=64
+t.out0 = 07 vpiSize=8
+t.out1 = 97 vpiSize=8
+t.pt_acc = 00000000 vpiSize=32
+t.pt_o = 5a5a0000 vpiSize=32
+t.pt_obs = 5a5a0003 vpiSize=32
+t.s.a = 00 vpiSize=8
+t.s.b = 00 vpiSize=8
+t.s.c = 00 vpiSize=8
+t.self_loop = 00 vpiSize=7
+t.xscope_o = 0 vpiSize=1
+t.if0.W = 00000008 vpiSize=32
+t.if0.a = 11 vpiSize=8
+t.if0.b = 4b vpiSize=8
+t.if0.din = 00 vpiSize=8
+t.if1.W = 00000008 vpiSize=32
+t.if1.a = 31 vpiSize=8
+t.if1.b = 6b vpiSize=8
+t.if1.din = 20 vpiSize=8
+t.intf.DBW = 00000008 vpiSize=32
+t.intf.swapped = 0000000000000000 vpiSize=64
+t.intf.wdata = 0000000000000000 vpiSize=64
+t.u0.din = 00 vpiSize=8
+t.u0.dout = 07 vpiSize=8
+t.u0.s1 = 07 vpiSize=8
+t.u0.s2 = 07 vpiSize=8
+t.u1.din = 30 vpiSize=8
+t.u1.dout = 97 vpiSize=8
+t.u1.s1 = 37 vpiSize=8
+t.u1.s2 = 97 vpiSize=8
+t.u_chain.i = 23 vpiSize=8
+t.u_chain.o = 23 vpiSize=8
+t.u_pass1.i = 0a vpiSize=7
+t.u_pass1.o = 0a vpiSize=7
+t.u_pass2.i = 0a vpiSize=7
+t.u_pass2.o = 0a vpiSize=7
+t.u_portsrc.cpy_a = 5a5a0000 vpiSize=32
+t.u_portsrc.cpy_c = 5a5a0000 vpiSize=32
+t.u_portsrc.i = 00000000 vpiSize=32
+t.u_portsrc.mix = 5a5a0003 vpiSize=32
+t.u_portsrc.o = 5a5a0000 vpiSize=32
+t.u_portsrc.obs = 5a5a0003 vpiSize=32
+t.u_xscope_drv.a = 0 vpiSize=1
+t.u_xscope_drv.v = 1 vpiSize=1
+t.u_xscope_rcv.n = 0 vpiSize=1
+t.u_xscope_rcv.o = 0 vpiSize=1
+t.xscope_bus.v = 1 vpiSize=1
+-- @10 readonly
+t.arr[3] = 55
+t.arr[2] = f0
+t.arr[1] = 22
+t.arr[0] = 11
+t.base = 01
+t.chain_deep = 1c
+t.chain_l0 = 02
+t.chain_l1 = 04
+t.chain_l2 = 08
+t.chain_l3 = 10
+t.chain_l4 = 20
+t.chain_tap = 1c
+t.chain_use = b9
+t.cyc = 01
+t.cyc_boundary = 01
+t.cyc_d = 02
+t.cyc_down = 02
+t.cyc_down2 = 03
+t.flat_arr_gg = 1122f055
+t.flat_gg = 1122f0
+t.flat_lb = f02211
+t.flat_ll = 0f4488
+t.in0 = 11
+t.in1 = 22
+t.in2 = f0
+t.in3 = 55
+t.out0 = 0a
+t.out1 = 9a
+t.s.a = 11
+t.s.b = 22
+t.s.c = f0
+t.if0.a = 12
+t.if0.b = 48
+t.if0.din = 01
+t.if1.a = 32
+t.if1.b = 68
+t.if1.din = 21
+t.u0.din = 01
+t.u0.dout = 0a
+t.u0.s1 = 08
+t.u0.s2 = 0a
+t.u1.din = 31
+t.u1.dout = 9a
+t.u1.s1 = 38
+t.u1.s2 = 9a
+t.u_chain.i = 1c
+t.u_chain.o = 1c
+-- @20 readonly
+t.arr[3] = ef
+t.arr[2] = be
+t.arr[1] = ad
+t.arr[0] = de
+t.base = 10
+t.chain_deep = 13
+t.chain_l0 = 11
+t.chain_l1 = 13
+t.chain_l2 = 17
+t.chain_l3 = 1f
+t.chain_l4 = 2f
+t.chain_tap = 13
+t.chain_use = b6
+t.cyc = 02
+t.cyc_boundary = 02
+t.cyc_d = 03
+t.cyc_down = 03
+t.cyc_down2 = 05
+t.flat_arr_gg = deadbeef
+t.flat_gg = deadbe
+t.flat_lb = beadde
+t.flat_ll = 7db57b
+t.in0 = de
+t.in1 = ad
+t.in2 = be
+t.in3 = ef
+t.out0 = 37
+t.out1 = c7
+t.pt_acc = 00000001
+t.pt_o = 5a5a0001
+t.pt_obs = 5a5a0006
+t.s.a = de
+t.s.b = ad
+t.s.c = be
+t.if0.a = 21
+t.if0.b = 7b
+t.if0.din = 10
+t.if1.a = 41
+t.if1.b = 1b
+t.if1.din = 30
+t.u0.din = 10
+t.u0.dout = 37
+t.u0.s1 = 17
+t.u0.s2 = 37
+t.u1.din = 40
+t.u1.dout = c7
+t.u1.s1 = 47
+t.u1.s2 = c7
+t.u_chain.i = 13
+t.u_chain.o = 13
+t.u_portsrc.cpy_a = 5a5a0001
+t.u_portsrc.cpy_c = 5a5a0001
+t.u_portsrc.i = 00000001
+t.u_portsrc.mix = 5a5a0004
+t.u_portsrc.o = 5a5a0001
+t.u_portsrc.obs = 5a5a0006
+-- @30 readonly
+t.arr[3] = 01
+t.arr[2] = 80
+t.arr[1] = 00
+t.arr[0] = ff
+t.base = 7f
+t.chain_deep = a2
+t.chain_l0 = 80
+t.chain_l1 = 82
+t.chain_l2 = 86
+t.chain_l3 = 8e
+t.chain_l4 = 9e
+t.chain_tap = a2
+t.chain_use = 07
+t.cyc = 03
+t.cyc_boundary = 03
+t.cyc_d = 04
+t.cyc_down = 04
+t.cyc_down2 = 07
+t.d = 0011223344556677
+t.flat_arr_gg = ff008001
+t.flat_gg = ff0080
+t.flat_lb = 8000ff
+t.flat_ll = 0100ff
+t.in0 = ff
+t.in1 = 00
+t.in2 = 80
+t.in3 = 01
+t.o = 7766554433221100
+t.out0 = 84
+t.out1 = 14
+t.pt_acc = 00000011
+t.pt_o = 5a5a0011
+t.pt_obs = 5a5a0016
+t.s.a = ff
+t.s.b = 00
+t.s.c = 80
+t.if0.a = 90
+t.if0.b = ca
+t.if0.din = 7f
+t.if1.a = b0
+t.if1.b = ea
+t.if1.din = 9f
+t.intf.swapped = 7766554433221100
+t.intf.wdata = 0011223344556677
+t.u0.din = 7f
+t.u0.dout = 84
+t.u0.s1 = 86
+t.u0.s2 = 84
+t.u1.din = af
+t.u1.dout = 14
+t.u1.s1 = b6
+t.u1.s2 = 14
+t.u_chain.i = a2
+t.u_chain.o = a2
+t.u_portsrc.cpy_a = 5a5a0011
+t.u_portsrc.cpy_c = 5a5a0011
+t.u_portsrc.i = 00000011
+t.u_portsrc.mix = 5a5a0014
+t.u_portsrc.o = 5a5a0011
+t.u_portsrc.obs = 5a5a0016
+-- @40 readonly
+t.base = 22
+t.chain_deep = 7d
+t.chain_l0 = 23
+t.chain_l1 = 25
+t.chain_l2 = 29
+t.chain_l3 = 31
+t.chain_l4 = 41
+t.chain_tap = 7d
+t.chain_use = d8
+t.crbase = 40
+t.cyc = 04
+t.cyc_boundary = 04
+t.cyc_d = 05
+t.cyc_down = 05
+t.cyc_down2 = 09
+t.idx = 5
+t.nib = a
+t.out0 = 6d
+t.out1 = fd
+t.pt_acc = 00000090
+t.pt_o = 5a5a0090
+t.pt_obs = 5a5a0093
+t.if0.a = 33
+t.if0.b = 69
+t.if0.din = 22
+t.if1.a = 53
+t.if1.b = 09
+t.if1.din = 42
+t.u0.din = 22
+t.u0.dout = 6d
+t.u0.s1 = 29
+t.u0.s2 = 6d
+t.u1.din = 52
+t.u1.dout = fd
+t.u1.s1 = 59
+t.u1.s2 = fd
+t.u_chain.i = 7d
+t.u_chain.o = 7d
+t.u_portsrc.cpy_a = 5a5a0090
+t.u_portsrc.cpy_c = 5a5a0090
+t.u_portsrc.i = 00000090
+t.u_portsrc.mix = 5a5a0093
+t.u_portsrc.o = 5a5a0090
+t.u_portsrc.obs = 5a5a0093
+-- @50 readonly
+t.base = 00
+t.chain_deep = 23
+t.chain_l0 = 01
+t.chain_l1 = 03
+t.chain_l2 = 07
+t.chain_l3 = 0f
+t.chain_l4 = 1f
+t.chain_tap = 23
+t.chain_use = 86
+t.crbase = 00
+t.cyc = 05
+t.cyc_boundary = 05
+t.cyc_d = 06
+t.cyc_down = 06
+t.cyc_down2 = 0b
+t.nib = 0
+t.out0 = 07
+t.out1 = 97
+t.pt_acc = 000000b2
+t.pt_o = 5a5a00b2
+t.pt_obs = 5a5a00b9
+t.if0.a = 11
+t.if0.b = 4b
+t.if0.din = 00
+t.if1.a = 31
+t.if1.b = 6b
+t.if1.din = 20
+t.u0.din = 00
+t.u0.dout = 07
+t.u0.s1 = 07
+t.u0.s2 = 07
+t.u1.din = 30
+t.u1.dout = 97
+t.u1.s1 = 37
+t.u1.s2 = 97
+t.u_chain.i = 23
+t.u_chain.o = 23
+t.u_portsrc.cpy_a = 5a5a00b2
+t.u_portsrc.cpy_c = 5a5a00b2
+t.u_portsrc.i = 000000b2
+t.u_portsrc.mix = 5a5a00b5
+t.u_portsrc.o = 5a5a00b2
+t.u_portsrc.obs = 5a5a00b9
+-- @60 readonly
+t.base = 13
+t.chain_deep = 0e
+t.chain_l0 = 14
+t.chain_l1 = 16
+t.chain_l2 = 1a
+t.chain_l3 = 22
+t.chain_l4 = 32
+t.chain_tap = 0e
+t.chain_use = ab
+t.crbase = 20
+t.cyc = 06
+t.cyc_boundary = 06
+t.cyc_d = 07
+t.cyc_down = 07
+t.cyc_down2 = 0d
+t.nib = 1
+t.out0 = 40
+t.out1 = d0
+t.xscope_o = 1
+t.if0.a = 24
+t.if0.b = 7e
+t.if0.din = 13
+t.if1.a = 44
+t.if1.b = 1e
+t.if1.din = 33
+t.u0.din = 13
+t.u0.dout = 40
+t.u0.s1 = 1a
+t.u0.s2 = 40
+t.u1.din = 43
+t.u1.dout = d0
+t.u1.s1 = 4a
+t.u1.s2 = d0
+t.u_chain.i = 0e
+t.u_chain.o = 0e
+t.u_xscope_drv.a = 1
+t.u_xscope_drv.v = 0
+t.u_xscope_rcv.n = 1
+t.u_xscope_rcv.o = 1
+t.xscope_bus.v = 0
+-- @70 readonly
+t.base = 40
+t.chain_deep = 63
+t.chain_l0 = 41
+t.chain_l1 = 43
+t.chain_l2 = 47
+t.chain_l3 = 4f
+t.chain_l4 = 5f
+t.chain_tap = 63
+t.chain_use = c6
+t.cyc = 07
+t.cyc_boundary = 07
+t.cyc_d = 08
+t.cyc_down = 08
+t.cyc_down2 = 0f
+t.out0 = c7
+t.out1 = 57
+t.pt_acc = 000000c5
+t.pt_o = 5a5a00c5
+t.pt_obs = 5a5a00d2
+t.if0.a = 51
+t.if0.b = 0b
+t.if0.din = 40
+t.if1.a = 71
+t.if1.b = 2b
+t.if1.din = 60
+t.u0.din = 40
+t.u0.dout = c7
+t.u0.s1 = 47
+t.u0.s2 = c7
+t.u1.din = 70
+t.u1.dout = 57
+t.u1.s1 = 77
+t.u1.s2 = 57
+t.u_chain.i = 63
+t.u_chain.o = 63
+t.u_portsrc.cpy_a = 5a5a00c5
+t.u_portsrc.cpy_c = 5a5a00c5
+t.u_portsrc.i = 000000c5
+t.u_portsrc.mix = 5a5a00c8
+t.u_portsrc.o = 5a5a00c5
+t.u_portsrc.obs = 5a5a00d2
+-- @80 readonly
+t.base = a5
+t.chain_deep = f8
+t.chain_l0 = a6
+t.chain_l1 = a8
+t.chain_l2 = ac
+t.chain_l3 = b4
+t.chain_l4 = c4
+t.chain_tap = f8
+t.chain_use = 5d
+t.cyc = 08
+t.cyc_boundary = 08
+t.cyc_d = 09
+t.cyc_down = 09
+t.cyc_down2 = 11
+t.out0 = f6
+t.out1 = 86
+t.pt_acc = 00000105
+t.pt_o = 5a5a0105
+t.pt_obs = 5a5a0112
+t.if0.a = b6
+t.if0.b = ec
+t.if0.din = a5
+t.if1.a = d6
+t.if1.b = 8c
+t.if1.din = c5
+t.u0.din = a5
+t.u0.dout = f6
+t.u0.s1 = ac
+t.u0.s2 = f6
+t.u1.din = d5
+t.u1.dout = 86
+t.u1.s1 = dc
+t.u1.s2 = 86
+t.u_chain.i = f8
+t.u_chain.o = f8
+t.u_portsrc.cpy_a = 5a5a0105
+t.u_portsrc.cpy_c = 5a5a0105
+t.u_portsrc.i = 00000105
+t.u_portsrc.mix = 5a5a0108
+t.u_portsrc.o = 5a5a0105
+t.u_portsrc.obs = 5a5a0112
+-- @90 readonly
+t.base = ff
+t.chain_deep = 22
+t.chain_l0 = 00
+t.chain_l1 = 02
+t.chain_l2 = 06
+t.chain_l3 = 0e
+t.chain_l4 = 1e
+t.chain_tap = 22
+t.chain_use = 87
+t.cyc = 09
+t.cyc_boundary = 09
+t.cyc_d = 0a
+t.cyc_down = 0a
+t.cyc_down2 = 13
+t.out0 = 04
+t.out1 = 94
+t.pt_acc = 000001aa
+t.pt_o = 5a5a01aa
+t.pt_obs = 5a5a01b1
+t.if0.a = 10
+t.if0.b = 4a
+t.if0.din = ff
+t.if1.a = 30
+t.if1.b = 6a
+t.if1.din = 1f
+t.u0.din = ff
+t.u0.dout = 04
+t.u0.s1 = 06
+t.u0.s2 = 04
+t.u1.din = 2f
+t.u1.dout = 94
+t.u1.s1 = 36
+t.u1.s2 = 94
+t.u_chain.i = 22
+t.u_chain.o = 22
+t.u_portsrc.cpy_a = 5a5a01aa
+t.u_portsrc.cpy_c = 5a5a01aa
+t.u_portsrc.i = 000001aa
+t.u_portsrc.mix = 5a5a01ad
+t.u_portsrc.o = 5a5a01aa
+t.u_portsrc.obs = 5a5a01b1
+-- @100 readonly
+t.base = 21
+t.chain_deep = 7c
+t.chain_l0 = 22
+t.chain_l1 = 24
+t.chain_l2 = 28
+t.chain_l3 = 30
+t.chain_l4 = 40
+t.chain_tap = 7c
+t.chain_use = d9
+t.cyc = 0a
+t.cyc_boundary = 0a
+t.cyc_d = 0b
+t.cyc_down = 0b
+t.cyc_down2 = 15
+t.out0 = 6a
+t.out1 = fa
+t.pt_acc = 000002a9
+t.pt_o = 5a5a02a9
+t.pt_obs = 5a5a02ae
+t.if0.a = 32
+t.if0.b = 68
+t.if0.din = 21
+t.if1.a = 52
+t.if1.b = 08
+t.if1.din = 41
+t.u0.din = 21
+t.u0.dout = 6a
+t.u0.s1 = 28
+t.u0.s2 = 6a
+t.u1.din = 51
+t.u1.dout = fa
+t.u1.s1 = 58
+t.u1.s2 = fa
+t.u_chain.i = 7c
+t.u_chain.o = 7c
+t.u_portsrc.cpy_a = 5a5a02a9
+t.u_portsrc.cpy_c = 5a5a02a9
+t.u_portsrc.i = 000002a9
+t.u_portsrc.mix = 5a5a02ac
+t.u_portsrc.o = 5a5a02a9
+t.u_portsrc.obs = 5a5a02ae
+-- @110 readonly
+t.base = 7e
+t.chain_deep = a1
+t.chain_l0 = 7f
+t.chain_l1 = 81
+t.chain_l2 = 85
+t.chain_l3 = 8d
+t.chain_l4 = 9d
+t.chain_tap = a1
+t.chain_use = 04
+t.cyc = 0b
+t.cyc_boundary = 0b
+t.cyc_d = 0c
+t.cyc_down = 0c
+t.cyc_down2 = 17
+t.out0 = 81
+t.out1 = 11
+t.pt_acc = 000002ca
+t.pt_o = 5a5a02ca
+t.pt_obs = 5a5a02d1
+t.if0.a = 8f
+t.if0.b = d5
+t.if0.din = 7e
+t.if1.a = af
+t.if1.b = f5
+t.if1.din = 9e
+t.u0.din = 7e
+t.u0.dout = 81
+t.u0.s1 = 85
+t.u0.s2 = 81
+t.u1.din = ae
+t.u1.dout = 11
+t.u1.s1 = b5
+t.u1.s2 = 11
+t.u_chain.i = a1
+t.u_chain.o = a1
+t.u_portsrc.cpy_a = 5a5a02ca
+t.u_portsrc.cpy_c = 5a5a02ca
+t.u_portsrc.i = 000002ca
+t.u_portsrc.mix = 5a5a02cd
+t.u_portsrc.o = 5a5a02ca
+t.u_portsrc.obs = 5a5a02d1
+-- @120 readonly
+t.base = c3
+t.chain_deep = de
+t.chain_l0 = c4
+t.chain_l1 = c6
+t.chain_l2 = ca
+t.chain_l3 = d2
+t.chain_l4 = e2
+t.chain_tap = de
+t.chain_use = 7b
+t.cyc = 0c
+t.cyc_boundary = 0c
+t.cyc_d = 0d
+t.cyc_down = 0d
+t.cyc_down2 = 19
+t.out0 = 50
+t.out1 = e0
+t.pt_acc = 00000348
+t.pt_o = 5a5a0348
+t.pt_obs = 5a5a034b
+t.if0.a = d4
+t.if0.b = 8e
+t.if0.din = c3
+t.if1.a = f4
+t.if1.b = ae
+t.if1.din = e3
+t.u0.din = c3
+t.u0.dout = 50
+t.u0.s1 = ca
+t.u0.s2 = 50
+t.u1.din = f3
+t.u1.dout = e0
+t.u1.s1 = fa
+t.u1.s2 = e0
+t.u_chain.i = de
+t.u_chain.o = de
+t.u_portsrc.cpy_a = 5a5a0348
+t.u_portsrc.cpy_c = 5a5a0348
+t.u_portsrc.i = 00000348
+t.u_portsrc.mix = 5a5a034b
+t.u_portsrc.o = 5a5a0348
+t.u_portsrc.obs = 5a5a034b
+-- @130 readonly
+t.cyc = 0d
+t.cyc_boundary = 0d
+t.cyc_d = 0e
+t.cyc_down = 0e
+t.cyc_down2 = 1b
+t.pt_acc = 0000040b
+t.pt_o = 5a5a040b
+t.pt_obs = 5a5a0410
+t.u_portsrc.cpy_a = 5a5a040b
+t.u_portsrc.cpy_c = 5a5a040b
+t.u_portsrc.i = 0000040b
+t.u_portsrc.mix = 5a5a040e
+t.u_portsrc.o = 5a5a040b
+t.u_portsrc.obs = 5a5a0410
+*-* All Finished *-*
+-- @135 readonly
+t.clk = 1
+t.cyc = 0e
+t.cyc_boundary = 0e
+t.cyc_d = 0f
+t.cyc_down = 0f
+t.cyc_down2 = 1d
+t.pt_acc = 000004ce
+t.pt_o = 5a5a04ce
+t.pt_obs = 5a5a04ed
+t.u_portsrc.cpy_a = 5a5a04ce
+t.u_portsrc.cpy_c = 5a5a04ce
+t.u_portsrc.i = 000004ce
+t.u_portsrc.mix = 5a5a04d1
+t.u_portsrc.o = 5a5a04ce
+t.u_portsrc.obs = 5a5a04ed

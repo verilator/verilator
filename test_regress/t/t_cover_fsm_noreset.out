@@ -31,7 +31,7 @@
 %000003     case (state)
         // [FSM coverage]
 %000003        // [fsm_arc t.state::S0->S1]
-%000002        // [fsm_state t.state::S0]
+%000003        // [fsm_state t.state::S0]
 %000003        // [fsm_state t.state::S1]
               S0: state <= S1;
               default: state <= S0;

@@ -1,0 +1,10 @@
+%Error: t/t_enum_param_xref_bad.v:26:27: Can't find definition of 'u'
+                                       : ... note: In instance 't'
+   26 |   int bad = int'(gen[2].u.S_WORK);
+      |                           ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_enum_param_xref_bad.v:27:27: Enum item 'G_OTHER' not found in 'one.gif'
+                                       : ... note: In instance 't'
+   27 |   int bad2 = int'(one.gif.G_OTHER);
+      |                           ^~~~~~~
+%Error: Exiting due to

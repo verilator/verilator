@@ -443,14 +443,14 @@ module t;
 
     // Sample cg_mixed: cp_addr, cp_cmd, and cp_solo have 2 bins each, and cross ab 4
     addr = 0; cmd = 0; mode = 0;
-    cg_mixed_inst.sample();  // addr0, read, solo normal, ab(addr0_x_read)
+    cg_mixed_inst.sample();  // addr0, read, solo normal, ab <addr0,read>
     `checkr(cg_mixed_inst.get_inst_coverage(), (50.0 + 50.0 + 50.0 + 25.0) / 4);
     addr = 0; cmd = 1; mode = 1;
-    cg_mixed_inst.sample();  // addr0, write, solo debug, ab(addr0_x_write)
+    cg_mixed_inst.sample();  // addr0, write, solo debug, ab <addr0,write>
     addr = 1; cmd = 0; mode = 0;
-    cg_mixed_inst.sample();  // addr1, read, ab(addr1_x_read)
+    cg_mixed_inst.sample();  // addr1, read, ab <addr1,read>
     addr = 1; cmd = 1; mode = 1;
-    cg_mixed_inst.sample();  // addr1, write, ab(addr1_x_write)
+    cg_mixed_inst.sample();  // addr1, write, ab <addr1,write>
     `checkr(cg_mixed_inst.get_inst_coverage(), 100.0);
 
     // Sample cg_def_cross (default bin in a crossed coverpoint, gated by iff)
@@ -532,10 +532,10 @@ module t;
     `checkr(cg_noNormal_inst.get_inst_coverage(), 100.0);  // 2/2
 
     // Sample cg_trans: transition coverpoint crossed with a value coverpoint
-    // cg_trans: t01_x_v6 never completes, so only the cross is partial (1/2)
+    // cg_trans: <t01,v6> never completes, so only the cross is partial (1/2)
     // __Vprev_cp_t initializes to 0.
     state = 0; val = 5; cg_trans_inst.sample();  // prev=0,cur=0: no t01; v5
-    state = 1; val = 5; cg_trans_inst.sample();  // prev=0,cur=1: t01 completes; t01_x_v5
+    state = 1; val = 5; cg_trans_inst.sample();  // prev=0,cur=1: t01 completes; <t01,v5>
     state = 0; val = 6; cg_trans_inst.sample();  // prev=1,cur=0: no t01; v6 (no cross)
     `checkr(cg_trans_inst.get_inst_coverage(), (100.0 + 100.0 + 50.0) / 3);
 

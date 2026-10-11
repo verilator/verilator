@@ -10,8 +10,22 @@ $ verilator_coverage --report hierarchy missing.dat
 %Warning: --report hierarchy input has no hierarchy fields; printing flat summary instead.
 Coverage Summary:
   line      : 100.0% (1/1)
-  toggle    : 0.0% (0/0)
-  branch    : 0.0% (0/0)
-  expr      : 0.0% (0/0)
-  fsm_state : 0.0% (0/0)
-  fsm_arc   : 0.0% (0/0)
+  toggle    :   0.0% (0/0)
+  branch    :   0.0% (0/0)
+  expr      :   0.0% (0/0)
+  fsm_state :   0.0% (0/0)
+  fsm_arc   :   0.0% (0/0)
+
+$ verilator_coverage --report hierarchy malformed.dat
+%Error: Malformed coverage point, without a count: obj_dist/t_vlcov_hier_report_bad/malformed.dat:3
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Malformed coverage point, without a count: obj_dist/t_vlcov_hier_report_bad/malformed.dat:4
+Hierarchy Coverage Summary:
+  top
+    line      :  50.0% (1/2)
+  top.m
+    line      :  50.0% (1/2)
+Design Unit Coverage Summary:
+  malformed
+    line      :  50.0% (1/2)
+%Error: Exiting due to 2 error(s)

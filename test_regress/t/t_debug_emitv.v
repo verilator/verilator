@@ -5,6 +5,8 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+
 package Pkg;
   localparam PKG_PARAM = 1;
 
@@ -256,6 +258,7 @@ module t (/*AUTOARG*/
 
     if (Pkg::PKG_PARAM != 1) $stop;
     sub.r = 62.0;
+    `checkd(sub.sub_gen.SUB_B, 2'd1);
 
     mod_res = mod_val % 5;
 
@@ -401,6 +404,8 @@ module t (/*AUTOARG*/
       bins multi  = {0, 1, 2};   // multiple values in one bins (exercises EmitV range loop)
       bins sized[2] = {[0:5], 7};  // sized array of bins (exercises EmitV array size)
       wildcard bins wild[] = {3'b01?};  // wildcard array of bins (exercises EmitV wildcard)
+      bins filtered[] = {[0:7]} with (item % 2 == 0);  // 'with' filter of a range list
+      bins named = cp_sig with (item > 5);  // 'with' filter of the coverpoint's values
       bins dflt   = default;
       ignore_bins ign = {7};
       illegal_bins ill = {5};
@@ -477,6 +482,9 @@ module t (/*AUTOARG*/
 endmodule
 
 module sub(input logic clk);
+  if (1) begin : sub_gen
+    typedef enum logic [1:0] {SUB_A, SUB_B} sub_e;
+  end
   task inc(input int i, output int o);
     o = {1'b0, i[31:1]} + 32'd1;
   endtask

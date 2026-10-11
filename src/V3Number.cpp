@@ -1085,6 +1085,24 @@ string V3Number::toDecimalU() const VL_MT_STABLE {
     return output;
 }
 
+string V3Number::toRealString() const VL_MT_STABLE {
+    const double value = toDouble();
+    // 15 digits suffice for most values, 17 digits for every value
+    std::ostringstream out;
+    out.precision(15);
+    out << value;
+    string result = out.str();
+    if (std::strtod(result.c_str(), nullptr) != value) {
+        out.str("");
+        out.precision(17);
+        out << value;
+        result = out.str();
+    }
+    // A real, as in Verilog, unless has an exponent, or is infinite or not-a-number
+    if (result.find_first_of(".en") == string::npos) result += ".0";
+    return result;
+}
+
 //======================================================================
 // ACCESSORS - as numbers
 

@@ -93,8 +93,9 @@ class V3FileDependImp final {
         time_t mnstime() const { return VL_STAT_MTIME_NSEC(m_stat); }  // Nanoseconds
         string hashDigestSymbol() {
             static VHashSha512 s_emptyHash;
-            return m_hash.digestSymbol() != s_emptyHash.digestSymbol() ? m_hash.digestSymbol()
-                                                                       : "unhashed";
+            return m_hash.digestSymbol24() != s_emptyHash.digestSymbol24()
+                       ? m_hash.digestSymbol24()
+                       : "unhashed";
         }
         void loadStats() {
             if (!m_stat.st_mtime) {
@@ -312,9 +313,10 @@ bool V3FileDependImp::checkTimes(const string& filename, const string& cmdlineIn
 
             VHashSha512 curHash;
             curHash.insertFile(chkFilename);
-            if (curHash.digestSymbol() != chkHash) {
-                UINFO(2, "   --check-times: hash differs "
-                             << chkFilename << "; " << curHash.digestSymbol() << "=?" << chkHash);
+            if (curHash.digestSymbol24() != chkHash) {
+                UINFO(2, "   --check-times: hash differs " << chkFilename << "; "
+                                                           << curHash.digestSymbol24() << "=?"
+                                                           << chkHash);
                 return false;
             }
         }
@@ -1080,7 +1082,7 @@ public:
                 VHashSha512 digest{v3Global.opt.protectKeyDefaulted()};
                 digest.insert(old);
                 // Add "PS" prefix (Protect Symbols) as cannot start symbol with number
-                out = "PS" + digest.digestSymbol();
+                out = "PS" + digest.digestSymbol24();
                 // See if we can shrink the digest symbol to something smaller
                 for (size_t len = 6; len < out.size() - 3; len += 3) {
                     const string tryout = out.substr(0, len);

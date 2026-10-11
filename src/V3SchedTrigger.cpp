@@ -27,6 +27,7 @@
 #include "V3Sched.h"
 #include "V3SenExprBuilder.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -360,8 +361,7 @@ AstNodeStmt* TriggerKit::newDumpCall(AstVarScope* const vscp, const std::string&
 
 AstVarScope* TriggerKit::newTrigVec(const std::string& name) const {
     if (!m_nVecWords) return nullptr;
-    AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
-    return scopep->createTemp("__V" + name + "Triggered", m_trigVecDTypep);
+    return v3Global.rootp()->topScopep()->createTemp("__V" + name + "Triggered", m_trigVecDTypep);
 }
 
 AstSenTree* TriggerKit::newTriggerSenTree(AstVarScope* const vscp,
@@ -425,7 +425,7 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     const uint32_t wordIndex = index / WORD_SIZE;
     const uint32_t bitIndex = index % WORD_SIZE;
 
-    AstScope* const scopeTopp = netlistp->topScopep()->scopep();
+    AstTopScope* const topScopep = netlistp->topScopep();
     FileLine* const flp = netlistp->fileline();
     AstNodeDType* const dtypep = instVscp->dtypep()->skipRefp();
 
@@ -452,7 +452,7 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     const std::string prevName = "__Vtrigprevvif_" + m_name + "_"
                                  + instVscp->scopep()->nameDotless() + "__"
                                  + instVscp->varp()->name();
-    AstVarScope* const prevVscp = scopeTopp->createTemp(prevName, instVscp->dtypep());
+    AstVarScope* const prevVscp = topScopep->createTemp(prevName, instVscp->dtypep());
 
     // Initialize prev = inst
     if (VN_IS(dtypep, UnpackArrayDType)) {
@@ -534,7 +534,7 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
         m_trigExtDTypep = m_trigVecDTypep;
     }
     // The AstVarScope representing the extended trigger vector
-    m_vscp = scopep->createTemp("__V" + m_name + "Triggered", m_trigExtDTypep);
+    m_vscp = netlistp->topScopep()->createTemp("__V" + m_name + "Triggered", m_trigExtDTypep);
     m_vscp->varp()->isInternal(true);
     // The trigger computation function
     m_compVecp = util::makeSubFunction(netlistp, "_eval_triggers_vec__" + m_name, m_slow);
@@ -543,7 +543,8 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
     m_dumpp->isStatic(true);
     m_dumpp->ifdef("VL_DEBUG");
     if (useAcc) {
-        m_vscAccp = scopep->createTemp("__V" + m_name + "TriggeredAcc", m_trigVecDTypep);
+        m_vscAccp
+            = netlistp->topScopep()->createTemp("__V" + m_name + "TriggeredAcc", m_trigVecDTypep);
         m_vscAccp->varp()->isInternal(true);
     }
 }
@@ -767,7 +768,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     for (AstNodeStmt* const nodep : senResults.m_inits) initFuncp->addStmtsp(nodep);
 
     // Assemble the base trigger computation function
-    AstScope* const scopep = netlistp->topScopep()->scopep();
+    AstTopScope* const topScopep = netlistp->topScopep();
     {
         AstCFunc* const fp = kit.m_compVecp;
         // Trigger computation
@@ -776,7 +777,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         for (AstNodeStmt* const nodep : senResults.m_postUpdates) fp->addStmtsp(nodep);
         // Add the initialization time triggers
         if (initialTrigsp) {
-            AstVarScope* const initVscp = scopep->createTemp("__V" + name + "DidInit", 1);
+            AstVarScope* const initVscp = topScopep->createTemp("__V" + name + "DidInit", 1);
             AstIf* const ifp = new AstIf{flp, new AstNot{flp, rd(initVscp)}};
             fp->addStmtsp(ifp);
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
@@ -792,7 +793,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         AstVarScope* const latchedp
             = newArgument(fp, kit.m_trigVecDTypep, "latched", VDirection::CONSTREF);
         // Add loop counter variable - this can't be local because we call util::splitCheck
-        AstVarScope* const nVscp = scopep->createTemp("__V" + name + "TrigPreLoopCounter", 32);
+        AstVarScope* const nVscp = topScopep->createTemp("__V" + name + "TrigPreLoopCounter", 32);
         nVscp->varp()->noReset(true);
         // Add a loop to compute the pre words
         AstLoop* const loopp = new AstLoop{flp};
@@ -931,16 +932,11 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
             senTreep->user1p(funcp);
 
             // Create a local temporary extended vector
-            AstVarScope* const vscAccp = m_trigKit.vscAccp();
-            AstVarScope* const tmpp = vscAccp->scopep()->createTempLike("__VTmp", vscAccp);
-            AstVar* const tmpVarp = tmpp->varp()->unlinkFrBack();
+            AstVarScope* const tmpp = newLocal(funcp, m_trigKit.vscAccp()->dtypep(), "__VTmp");
             funcp->user1p(tmpp);
-            funcp->addVarsp(tmpVarp);
             // This function can be called multiple times, and accesses model state, which
             // violates the assumption made in V3Life that there is no such function.
             funcp->noLife(true);
-            tmpVarp->funcLocal(true);
-            tmpVarp->noReset(true);
 
             AstVar* const argp = new AstVar{flp, VVarType::BLOCKTEMP, "__VeventDescription",
                                             senTreep->findBasicDType(VBasicDTypeKwd::CHARPTR)};

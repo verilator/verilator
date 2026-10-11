@@ -65,7 +65,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"FORWARD", "REVERSE"};
+        static constexpr const char* const names[] = {"FORWARD", "REVERSE"};
         return names[m_e];
     }
     // METHODS unique to this class

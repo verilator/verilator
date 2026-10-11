@@ -1,0 +1,50 @@
+$unit::First::cg.cp.auto_0: 1
+$unit::First::cg.cp.auto_1: 1
+$unit::Holder::cg.cp.auto_0: 0
+$unit::Holder::cg.cp.auto_1: 0
+$unit::Outer::\inner.cg .cp.auto_0: 1
+$unit::Outer::\inner.cg .cp.auto_1: 1
+$unit::Outer::inner::cg.cp.auto_0: 0
+$unit::Outer::inner::cg.cp.auto_1: 0
+$unit::Param#(1)::cg.cp.auto_0: 1
+$unit::Param#(1)::cg.cp.auto_1: 1
+$unit::Param#(2)::cg.cp.auto_0: 0
+$unit::Param#(2)::cg.cp.auto_1: 0
+$unit::Second::cg.cp.auto_0: 0
+$unit::Second::cg.cp.auto_1: 0
+$unit::Untyped#(-8'sd5)::cg.cp.auto_0: 0
+$unit::Untyped#(-8'sd5)::cg.cp.auto_1: 0
+$unit::Untyped#(1'd1)::cg.cp.auto_0: 1
+$unit::Untyped#(1'd1)::cg.cp.auto_1: 1
+$unit::Untyped#(1)::cg.cp.auto_0: 0
+$unit::Untyped#(1)::cg.cp.auto_1: 0
+$unit::Untyped#(8'd1)::cg.cp.auto_0: 0
+$unit::Untyped#(8'd1)::cg.cp.auto_1: 0
+$unit::\cg+symbol .cp.auto_0: 1
+$unit::\cg+symbol .cp.auto_1: 1
+pkg::Holder::cg.cp.auto_0: 1
+pkg::Holder::cg.cp.auto_1: 1
+sub_a.cg.cp.auto_0: 1
+sub_a.cg.cp.auto_1: 1
+sub_b.cg.cp.auto_0: 0
+sub_b.cg.cp.auto_1: 0
+sub_e.gen_e.cg.cp.auto_0: 0
+sub_e.gen_e.cg.cp.auto_1: 0
+sub_p#(1).cg.cp.auto_0: 1
+sub_p#(1).cg.cp.auto_1: 1
+sub_p#(2).cg.cp.auto_0: 0
+sub_p#(2).cg.cp.auto_1: 0
+t.\gen_esc.cg .cp.auto_0: 1
+t.\gen_esc.cg .cp.auto_1: 1
+t.\pack+gen .\Klass! ::\cg@symbol2 .cp.auto_0: 0
+t.\pack+gen .\Klass! ::\cg@symbol2 .cp.auto_1: 0
+t.cg.cp.auto_0: 0
+t.cg.cp.auto_1: 0
+t.gen[0].cg.cp.auto_0: 1
+t.gen[0].cg.cp.auto_1: 1
+t.gen[1].cg.cp.auto_0: 0
+t.gen[1].cg.cp.auto_1: 0
+t.gen_elif.cg.cp.auto_0: 1
+t.gen_elif.cg.cp.auto_1: 1
+t.gen_esc.cg.cp.auto_0: 0
+t.gen_esc.cg.cp.auto_1: 0

@@ -252,7 +252,13 @@ class LinkJumpVisitor final : public VNVisitor {
         // backed to ensure fork/join kill-accounting hooks are always emitted.
         taskBodyp->setNeedProcess();
         v3Global.setUsesTiming();
-        if (taskp->stmtsp()) taskBodyp->addStmtsp(taskp->stmtsp()->unlinkFrBackWithNext());
+        // Ports stay in the task so calls see them
+        for (AstNode* stmtp = taskp->stmtsp(); stmtp;) {
+            AstNode* const nextp = stmtp->nextp();
+            const AstVar* const varp = VN_CAST(stmtp, Var);
+            if (!varp || !varp->isIO()) taskBodyp->addStmtsp(stmtp->unlinkFrBack());
+            stmtp = nextp;
+        }
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};
         forkp->addForksp(taskBodyp);

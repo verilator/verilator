@@ -15,6 +15,5 @@ test.lint(verilator_flags2=['--stats', '--expand-limit 5', '-fno-var-split'])
 
 test.file_grep(test.stats, r'Optimizations, Gate signals not inlined due to cost\s+(\d+)', 2)
 test.file_grep(test.stats, r'Optimizations, Gate signals inlined\s+(\d+)', 1)
-test.file_grep(test.stats, r'SplitVar, packed variables split automatically\s+(\d+)', 0)
 
 test.passes()

@@ -42,5 +42,15 @@ module t;
     o = str.m_o;
     o = str.m_e;  // Bad
 
+    o = e_t'(1);  // Bad
+
+    e = e + 1;  // Bad
+    e = int'(e);  // Bad
+    e = (e == ONE);  // Bad
+    o = e + 1;  // Bad
+    e = o_t'(e);  // Bad
+    e = e_t'(1) + 1;  // Bad
+    o = e_t'(o_t'(e));  // Bad
+    e = int'(o_t'(e));  // Bad
   end
 endmodule

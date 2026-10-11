@@ -158,13 +158,6 @@ module t (
     { bins trans_sized[2] = ( 1 => 2 ); }
   endgroup
 
-  covergroup cg_coverpoint_ref;
-    coverpoint a {
-     bins div_by_2 = a with (item % 2 == 0);
-     bins div_by_2_paren[] = a with (item % 2 == 0);
-    }
-  endgroup
-
   covergroup cg_cross_bins;
     cross a, b {
       bins bin_e = with (a);

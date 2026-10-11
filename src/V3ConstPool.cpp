@@ -138,7 +138,6 @@ AstVarRef* V3ConstPool::findOrCreate(T_Set& set, uint32_t& nextr, const char* pr
         varp->setConstPoolEntry();
         varp->lifetime(VLifetime::STATIC_EXPLICIT);
         varp->isConst(true);
-        varp->isStatic(true);
         varp->valuep(initp->cloneTree(false));
         v3Global.rootp()->constPoolPkgp()->addStmtsp(varp);
         return varp;

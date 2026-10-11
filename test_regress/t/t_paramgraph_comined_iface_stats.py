@@ -18,12 +18,9 @@ test.top_filename = "t/t_paramgraph_comined_iface.v"
 
 test.compile(v_flags2=["--binary --stats"])
 
-test.file_grep(test.stats, r'IfaceCapture, Entries total\s+(\d+)', 18)
-test.file_grep(test.stats, r'IfaceCapture, Entries template\s+(\d+)', 8)
-test.file_grep(test.stats, r'IfaceCapture, Entries cloned\s+(\d+)', 10)
+test.file_grep(test.stats, r'IfaceCapture, Captured refs\s+(\d+)', 8)
 test.file_grep(test.stats, r'IfaceCapture, Ledger fixups in V3Param\s+(\d+)', 8)
 test.file_grep(test.stats, r'IfaceCapture, Captured refs resolved\s+(\d+)', 10)
-test.file_grep(test.stats, r'IfaceCapture, Dead refs fixed in modules\s+(\d+)', 0)
 
 test.execute()
 

@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_constraint_real_struct_eq_unsup.v:20:18: Unsupported: real value in this constraint expression
+   20 |   constraint c { s == target; }
+      |                  ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_constraint_real_struct_eq_unsup.v:20:23: Unsupported: real value in this constraint expression
+   20 |   constraint c { s == target; }
+      |                       ^~~~~~
+%Error: Exiting due to

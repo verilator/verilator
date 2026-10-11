@@ -41,6 +41,7 @@
 #include "V3CoverageJoin.h"
 #include "V3Covergroup.h"
 #include "V3Dead.h"
+#include "V3Decompose.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
 #include "V3DepthBlock.h"
@@ -48,6 +49,7 @@
 #include "V3DfgOptimizer.h"
 #include "V3DiagSarif.h"
 #include "V3EmitC.h"
+#include "V3EmitCBase.h"
 #include "V3EmitCMain.h"
 #include "V3EmitMk.h"
 #include "V3EmitMkJson.h"
@@ -282,7 +284,7 @@ static void process() {
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
             // Split packed variables into multiple pieces to resolve UNOPTFLAT.
             // should be after constifyAllLint() which flattens to 1D bit vector
-            V3SplitVar::splitVariable(v3Global.rootp());
+            if (v3Global.opt.fVarSplit()) V3SplitVar::splitVariable(v3Global.rootp());
 
             if (v3Global.opt.timing().isSetTrue()) {
                 // Generate classes and tasks required to maintain proper lifetimes for references
@@ -391,6 +393,13 @@ static void process() {
             // Push constants across variables and remove redundant assignments
             if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
 
+            // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
+            // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
+            V3Active::activeAll(v3Global.rootp());
+
+            // Decompose arrays and structs into their elements and members
+            if (v3Global.opt.fDecompose()) V3Decompose::decomposeAll(v3Global.rootp());
+
             if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
 
             // Make large low-fanin logic blocks into lookup tables
@@ -403,10 +412,6 @@ static void process() {
             if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAll(v3Global.rootp());
             V3Dead::deadifyDTypesScoped(v3Global.rootp());
             v3Global.checkTree();
-
-            // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
-            // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
-            V3Active::activeAll(v3Global.rootp());
 
             // Split single ALWAYS blocks into multiple blocks for better ordering chances
             if (v3Global.opt.fSplit()) V3Split::splitAll(v3Global.rootp());
@@ -628,6 +633,8 @@ static void process() {
         // Output the text
         if (!v3Global.opt.lintOnly() && !v3Global.opt.serializeOnly()
             && !v3Global.opt.dpiHdrOnly()) {
+            // Make parent module pointers available for all Emit stages below
+            const EmitCParentModule emitCParentModule;
             // emitcInlines is first, as it may set needHInlines which other emitters read
             V3EmitC::emitcInlines();
             V3EmitC::emitcSyms();

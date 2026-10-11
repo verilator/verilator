@@ -714,6 +714,21 @@ int expectVpiPutError(const std::string& signalName, s_vpi_value value_s, const 
     return 0;
 }
 
+// On release value_s is only written, so a nullptr member is filled in rather than rejected
+int expectVpiReleaseFills(const std::string& signalName, s_vpi_value value_s) {
+    const std::string fullSignalName = std::string{scopeName} + "." + signalName;
+    TestVpiHandle const signalHandle  //NOLINT(misc-misplaced-const)
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(fullSignalName.c_str()), nullptr);
+    CHECK_RESULT_NZ(signalHandle);  // NOLINT(concurrency-mt-unsafe)
+
+    vpi_put_value(signalHandle, &value_s, nullptr, vpiReleaseFlag);
+    CHECK_RESULT_Z(vpiGetErrorMessage().second);  // NOLINT(concurrency-mt-unsafe)
+    const bool filled = value_s.format == vpiVectorVal ? value_s.value.vector != nullptr
+                                                       : value_s.value.str != nullptr;
+    CHECK_RESULT_NZ(filled);  // NOLINT(concurrency-mt-unsafe)
+    return 0;
+}
+
 #endif
 
 bool vpiValuesEqual(const std::size_t bitCount, const s_vpi_value& first,
@@ -1961,9 +1976,25 @@ extern "C" int tryInvalidPutOperations() {
         "'t.test.onebit__VforceVal'"));
 
     CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
-        "onebit", {.format = vpiStringVal, .value = {}}, vpiInertialDelay,
+        "onebit", {.format = vpiSuppressVal, .value = {}}, vpiInertialDelay,
         "vpi_put_value: Unsupported p_vpi_value as requested for 't.test.onebit' with "
         "vpiInertialDelay"));
+
+    CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
+        "hexString", {.format = vpiHexStrVal, .value = {.str = nullptr}}, vpiForceFlag,
+        "vpi_put_value: Ignoring nullptr value.str with format vpiHexStrVal for "
+        "'t.test.hexString'"));
+
+    CHECK_RESULT_Z(expectVpiPutError(  // NOLINT(concurrency-mt-unsafe)
+        "onebit", {.format = vpiVectorVal, .value = {.vector = nullptr}}, vpiForceFlag,
+        "vpi_put_value: Ignoring nullptr value.vector with format vpiVectorVal for "
+        "'t.test.onebit'"));
+
+    CHECK_RESULT_Z(expectVpiReleaseFills(  // NOLINT(concurrency-mt-unsafe)
+        "hexString", {.format = vpiHexStrVal, .value = {.str = nullptr}}));
+
+    CHECK_RESULT_Z(expectVpiReleaseFills(  // NOLINT(concurrency-mt-unsafe)
+        "onebit", {.format = vpiVectorVal, .value = {.vector = nullptr}}));
 
     return 0;
 }
@@ -2778,46 +2809,48 @@ static int releaseSingleBitVpi(PLI_BYTE8*) {
 
 std::array<s_vpi_systf_data, 20> vpi_systf_data = {
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$forceValues",
-                     (PLI_INT32(*)(PLI_BYTE8*))forceValuesVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))forceValuesVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$releaseValues",
-                     (PLI_INT32(*)(PLI_BYTE8*))releaseValuesVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))releaseValuesVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$releasePartiallyForcedValues",
-                     (PLI_INT32(*)(PLI_BYTE8*))releasePartiallyForcedValuesVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))releasePartiallyForcedValuesVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$releaseSingleBitForcedValues",
-                     (PLI_INT32(*)(PLI_BYTE8*))releaseSingleBitForcedValuesVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))releaseSingleBitForcedValuesVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkValuesForced",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkValuesForcedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkValuesForcedVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkNonContinuousValuesForced",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkNonContinuousValuesForcedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkNonContinuousValuesForcedVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkContinuousValuesReleased",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkContinuousValuesReleasedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkContinuousValuesReleasedVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkContinuousValuesPartiallyReleased",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkContinuousValuesPartiallyReleasedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkContinuousValuesPartiallyReleasedVpi, 0, 0,
+                     0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkValuesPartiallyForced",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkValuesPartiallyForcedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkValuesPartiallyForcedVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkSingleBitForced",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkSingleBitForcedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkSingleBitForcedVpi, 0, 0, 0},
     s_vpi_systf_data{
         vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkNonContinuousValuesPartiallyForced",
-        (PLI_INT32(*)(PLI_BYTE8*))checkNonContinuousValuesPartiallyForcedVpi, 0, 0, 0},
+        (PLI_INT32 (*)(PLI_BYTE8*))checkNonContinuousValuesPartiallyForcedVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkContinuousValuesSingleBitReleased",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkContinuousValuesSingleBitReleasedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkContinuousValuesSingleBitReleasedVpi, 0, 0,
+                     0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkNonContinuousSingleBitForced",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkNonContinuousSingleBitForcedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkNonContinuousSingleBitForcedVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkValuesReleased",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkValuesReleasedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkValuesReleasedVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkValuesPartiallyReleased",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkValuesPartiallyReleasedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkValuesPartiallyReleasedVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$checkSingleBitReleased",
-                     (PLI_INT32(*)(PLI_BYTE8*))checkSingleBitReleasedVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))checkSingleBitReleasedVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$partiallyForceValues",
-                     (PLI_INT32(*)(PLI_BYTE8*))partiallyForceValuesVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))partiallyForceValuesVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$forceSingleBit",
-                     (PLI_INT32(*)(PLI_BYTE8*))forceSingleBitVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))forceSingleBitVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$partiallyReleaseValues",
-                     (PLI_INT32(*)(PLI_BYTE8*))partiallyReleaseValuesVpi, 0, 0, 0},
+                     (PLI_INT32 (*)(PLI_BYTE8*))partiallyReleaseValuesVpi, 0, 0, 0},
     s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$releaseSingleBit",
-                     (PLI_INT32(*)(PLI_BYTE8*))releaseSingleBitVpi, 0, 0, 0}};
+                     (PLI_INT32 (*)(PLI_BYTE8*))releaseSingleBitVpi, 0, 0, 0}};
 
 // cver entry
 extern "C" void vpi_compat_bootstrap(void) {

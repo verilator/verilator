@@ -82,7 +82,7 @@
                                            : ... note: In instance 't'
    70 |       bins b_xz_arr_hi[] = {[4'h0:4'bzzzz]};   
       |            ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:77:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin ignored
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:77:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin 'b_huge' ignored
                                                       : ... note: In instance 't'
                                                       : ... Suggest a larger --coverage-max-bins
    77 |       bins b_huge[] = {[0:$]};   
@@ -215,12 +215,12 @@
                                             : ... note: In instance 't'
   196 |       ignore_bins nonconstant = {size_var};
       |                                  ^~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:243:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin ignored
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:243:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin 'over_limit' ignored
                                                        : ... note: In instance 't'
                                                        : ... Suggest a larger --coverage-max-bins
   243 |       bins over_limit[] = {[0 : 1024]};   
       |            ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:244:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin ignored
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:244:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin 'split_over_limit' ignored
                                                        : ... note: In instance 't'
                                                        : ... Suggest a larger --coverage-max-bins
   244 |       bins split_over_limit[] = {[0 : 511], [512 : 1024]};   
@@ -233,7 +233,7 @@
                                             : ... note: In instance 't'
   253 |       bins auto[4];
       |            ^~~~
-%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:257:12: Unsupported: array 'bins' of a real coverpoint covering more than 1024 values; bin ignored.
+%Warning-COVERIGN: t/t_covergroup_autobins_bad.v:257:12: Unsupported: array 'bins' of a real coverpoint covering more than 1024 values; bin 'over_limit' ignored.
                                                        : ... note: In instance 't'
                                                        : ... Suggest a larger --coverage-max-real-bins
   257 |       bins over_limit[] = {[0 : 1024]};   

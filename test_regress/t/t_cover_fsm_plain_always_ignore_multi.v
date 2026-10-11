@@ -18,7 +18,7 @@ module ignore_sel_expr (
     S2 = 2'd2
   } state_t;
 
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   // Plain always with a non-VarRef selector should be ignored silently.
@@ -49,7 +49,7 @@ module ignore_other_selector (
     S2 = 2'd2
   } state_t;
 
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   // Plain always with an unrelated selector should also be ignored silently.

@@ -10,11 +10,11 @@
   <map from="PSFHpR" to="__PVT__secret_cyc"/>
   <map from="PSF0iF" to="__PVT__t__DOT__secret_inst"/>
   <map from="PSSAnA" to="__VactTriggered"/>
-  <map from="PSV8eb" to="__Vdly__secret_cyc"/>
+  <map from="PSqQuK" to="__Vdly__secret_cyc_1"/>
   <map from="PS6QbD" to="__Vdpiexp_dpix_a_func_TOP__t__DOT__secret_inst"/>
   <map from="PSvaLA" to="__Vdpiexp_dpix_a_task_TOP__t__DOT__secret_inst"/>
   <map from="PSRoM6" to="__Vdpiimwrap_dpii_a_func_TOP__t__DOT__secret_inst"/>
-  <map from="PSaJpj" to="__Vfunc_dpii_a_func__0__Vfuncout"/>
+  <map from="PSqcfQ" to="__Vfunc_dpii_a_func__Vfuncout_0"/>
   <map from="PS2a8q" to="__VicoDidInit"/>
   <map from="PS1huv" to="__VicoTriggered"/>
   <map from="PSijiH" to="__VnbaExecute"/>

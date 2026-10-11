@@ -50,8 +50,8 @@
 // the probe runs short.
 //
 // Entries are referred to by iterators, as in the STL containers, but unlike
-// STL containers, the mapped value in a V3HashMap is not mutable through an
-// iterator. Iterators and entry addresses stay valid until the table grows,
+// STL containers, mapped values in a V3HashMap are only mutable through
+// 'iterator::value()'. Iterators and entry addresses stay valid until the table grows,
 // an entry is erased, or the table is cleared; any of these invalidates all
 // of them.
 //
@@ -94,6 +94,7 @@ template <typename T_Key, typename T_Val>
 struct V3HashTableKeyIsFirst final {
     using Key = T_Key;  // What it yields, so the table need not deduce it
     const T_Key& operator()(const std::pair<T_Key, T_Val>& entry) const { return entry.first; }
+    static T_Val& valueOf(std::pair<T_Key, T_Val>& entry) { return entry.second; }
 };
 
 void selfTest();
@@ -183,12 +184,15 @@ public:
 
     public:
         iterator() = default;
-        // As opposed to the STL, this always returns a const reference so the
-        // collection is not mutable through an iterator alone. This is
-        // required because entries must be movable, hence can't be const, but
-        // the key of a map must not be modified.
+        // As opposed to the STL, this always returns a const reference so an
+        // entry is not mutable through an iterator alone. This is required
+        // because entries must be movable, hence can't be const, but the key
+        // of a map must not be modified. See 'value()' for the mapped value.
         const Entry& operator*() const { return m_slotp->m_entry; }
         const Entry* operator->() const { return &m_slotp->m_entry; }
+        // Mutable reference to the mapped value, for a V3HashMap only, as in a set
+        // the entry is the key. Changing it is safe, as it takes no part in the lookup.
+        auto& value() const { return T_KeyOf::valueOf(m_slotp->m_entry); }
         // Pre-increment, skipping the free slots
         iterator& operator++() {
             while (++m_slotp != m_endp && m_slotp->isFree()) {}

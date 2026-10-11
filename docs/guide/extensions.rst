@@ -337,6 +337,43 @@ or "`ifdef`"'s may break other tools.
 
    Same as :option:`forceable` in configuration  files.
 
+.. option:: /*verilator&32;fsm_state*/
+
+.. option:: /*verilator&32;fsm_state_auto*/
+
+.. option:: /*verilator&32;fsm_state_auto_expand*/
+
+.. option:: /*verilator&32;fsm_state_full*/
+
+Forces the variable to be treated as FSM state.
+
+Adding the suffix `_auto`, `_auto_expand` or `_full` makes this FSM use the
+expansion mode given, overriding the one set by
+:vlopt:`--coverage-fsm-expand`. See :vlopt:`--coverage-fsm-expand` for
+descriptions of the modes.
+
+.. option:: /*verilator&32;fsm_reset_arc*/
+
+Deprecated, aliases to :option:`/*verilator&32;fsm_state*/`.
+
+In versions before 5.054:
+
+Works the same as :option:`/*verilator&32;fsm_state*/` and additionally
+marks reset transitions as user-visible reset arcs instead of defaulting to
+a hidden reset-only summary.
+
+.. option:: /*verilator&32;fsm_arc_include_cond*/
+
+.. option:: /*verilator&32;fsm_arc_include_cond_auto*/
+
+.. option:: /*verilator&32;fsm_arc_include_cond_auto_expand*/
+
+.. option:: /*verilator&32;fsm_arc_include_cond_full*/
+
+Works the same as :option:`/*verilator&32;fsm_state*/` and additionally
+keeps conditional branch arcs that would otherwise be skipped by the
+conservative extractor.
+
 .. _verilator_hier_block:
 
 .. option:: /*verilator&32;hier_block*/
