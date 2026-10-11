@@ -3359,10 +3359,14 @@ class ConstVisitor final : public VNVisitor {
         else if (VN_IS(nodep->bitp(), Const) && VN_IS(nodep->fromp(), InitArray)) {
             const AstInitArray* const initarp = VN_AS(nodep->fromp(), InitArray);
             const uint32_t bit = VN_AS(nodep->bitp(), Const)->toUInt();
-            const AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
+            AstNodeExpr* const itemp = initarp->getIndexDefaultedValuep(bit);
             if (VN_IS(itemp, Const)) {
                 const V3Number& num = VN_AS(itemp, Const)->num();
                 VL_DO_DANGLING(replaceNum(nodep, num), nodep);
+            } else if (m_params && itemp) {
+                // An aggregate element, e.g. a structure in an array parameter
+                nodep->replaceWithKeepDType(itemp->cloneTree(false));
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
         m_selp = nullptr;
@@ -3417,6 +3421,11 @@ class ConstVisitor final : public VNVisitor {
             // UINFOTREE(1, valuep, "", "visitvaref");
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
             AstNode* const valuep = nodep->varp()->valuep();
+            // The selected element, when under a constant select of an array
+            const AstInitArray* const initarp = VN_CAST(valuep, InitArray);
+            const AstNode* const selItemp
+                = (m_selp && initarp) ? initarp->getIndexDefaultedValuep(m_selp->bitConst())
+                                      : nullptr;
             if (nodep->access().isReadOnly() && valuep
                 && ((!m_params  // Can reduce constant wires into equations
                      && m_doNConst && v3Global.opt.fConst() && nodep->varp()->isConst())
@@ -3428,17 +3437,10 @@ class ConstVisitor final : public VNVisitor {
                         = nodep->varp()->isParam() ? nodep->varp()->name() : "";
                     VL_DO_DANGLING(replaceNum(nodep, num, origParamName), nodep);
                     did = true;
-                } else if (m_selp && VN_IS(valuep, InitArray)) {
-                    const AstInitArray* const initarp = VN_AS(valuep, InitArray);
-                    const uint32_t bit = m_selp->bitConst();
-                    const AstNode* const itemp = initarp->getIndexDefaultedValuep(bit);
-                    if (VN_IS(itemp, Const)) {
-                        const V3Number& num = VN_AS(itemp, Const)->num();
-                        // UINFO(2, "constVisit " << cvtToHex(valuep) << " " << num);
-                        VL_DO_DANGLING(replaceNum(nodep, num), nodep);
-                        did = true;
-                    }
-                } else if (m_params && VN_IS(valuep, InitArray)) {
+                } else if (const AstConst* const itemp = VN_CAST(selItemp, Const)) {
+                    VL_DO_DANGLING(replaceNum(nodep, itemp->num()), nodep);
+                    did = true;
+                } else if (m_params && initarp) {
                     // Allow parameters to pass arrays
                     // Earlier recursion of InitArray made sure each array value is constant
                     // This exception is fairly fragile, i.e. doesn't
