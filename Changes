@@ -208,6 +208,7 @@ Verilator 5.053 devel
 * Fix reordering assignments through handles or with intra-assignment timing (#8688). [Marco Bartoli]
 * Fix $readmem/$writemem descending order (#8698).
 * Fix intra-assignment timing controls to be evaluated once by the executing process (#8712). [Marco Bartoli]
+* Fix function ports with disable by name (#8700).
 
 
 Verilator 5.052 2026-09-05
