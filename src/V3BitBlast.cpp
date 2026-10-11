@@ -13,7 +13,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 //
 //*************************************************************************
-// V3Bitblast replaces a packed variable with one variable per bit range,
+// V3BitBlast replaces a packed variable with one variable per bit range,
 // called a fragment. This avoids false combinational loops (UNOPTFLAT) through
 // the bits of a variable, and lets downstream passes optimize each fragment
 // separately.
@@ -68,7 +68,7 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Bitblast.h"
+#include "V3BitBlast.h"
 
 #include "V3AstUserAllocator.h"
 #include "V3SharedTmps.h"
@@ -80,7 +80,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
 
-class BitblastVisitor final : public VNVisitorConst, public VNDeleter {
+class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
     // TYPES
 
     // A read of a variable: a constant bit select or a whole VarRef
@@ -440,7 +440,7 @@ class BitblastVisitor final : public VNVisitorConst, public VNDeleter {
     }
 
     // CONSTRUCTORS
-    explicit BitblastVisitor(AstNetlist* netlistp) {
+    explicit BitBlastVisitor(AstNetlist* netlistp) {
         // Record the references
         iterateConst(netlistp);
 
@@ -486,14 +486,14 @@ class BitblastVisitor final : public VNVisitorConst, public VNDeleter {
     }
 
 public:
-    static void apply(AstNetlist* netlistp) { BitblastVisitor{netlistp}; }
+    static void apply(AstNetlist* netlistp) { BitBlastVisitor{netlistp}; }
 };
 
 //######################################################################
-// V3Bitblast class functions
+// V3BitBlast class functions
 
-void V3Bitblast::bitblastAll(AstNetlist* nodep) {
+void V3BitBlast::bitBlastAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
-    BitblastVisitor::apply(nodep);
+    BitBlastVisitor::apply(nodep);
     V3Global::dumpCheckGlobalTree("bitblast", 0, dumpTreeEitherLevel() >= 3);
 }

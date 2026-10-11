@@ -768,6 +768,9 @@ Summary:
 
 .. option:: -fno-bitblast
 
+   Rarely needed. Disable splitting packed variables into separate bit
+   ranges.
+
 .. option:: -fno-case
 
    Rarely needed. Disable all case statement optimizations.

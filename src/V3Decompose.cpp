@@ -392,7 +392,7 @@ class DecomposeRecord final : public VNVisitorConst, public DecomposeBase {
     static void warnNoSplit(AstVar* varp, const AstNode* wherep, const char* reasonp) {
         // Only warn if user requested splitting
         if (!varp->attrSplitVar()) return;
-        // A packed variable might still be split by V3Bitblast, which warns if not
+        // A packed variable might still be split by V3BitBlast, which warns if not
         if (isPacked(varp->dtypep())) return;
         wherep->v3warn(SPLITVAR, varp->prettyNameQ()
                                      << " marked split_var but will not be split because "

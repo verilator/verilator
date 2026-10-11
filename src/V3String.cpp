@@ -760,7 +760,7 @@ string VName::dehash(const string& in) {
         const auto begin_vhsh
             = std::search(search_begin, search_end, std::begin(VHSH), std::end(VHSH) - 1);
         if (begin_vhsh != search_end) {
-            // V3Decompose and V3Bitblast append suffixes to names already hashed, so the
+            // V3Decompose and V3BitBlast append suffixes to names already hashed, so the
             // hash does not always reach the end of the component.
             const auto end_vhsh
                 = begin_vhsh + std::min<size_t>(std::distance(begin_vhsh, search_end), VHSH_LEN);

@@ -24,7 +24,7 @@
 #include "V3Ast.h"
 #include "V3AstPatterns.h"
 #include "V3Begin.h"
-#include "V3Bitblast.h"
+#include "V3BitBlast.h"
 #include "V3Branch.h"
 #include "V3Broken.h"
 #include "V3CCtors.h"
@@ -397,7 +397,7 @@ static void process() {
             if (v3Global.opt.fDecompose()) V3Decompose::decomposeAll(v3Global.rootp());
 
             // Split packed variables into bit ranges
-            if (v3Global.opt.fBitblast()) V3Bitblast::bitblastAll(v3Global.rootp());
+            if (v3Global.opt.fBitblast()) V3BitBlast::bitBlastAll(v3Global.rootp());
 
             if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
 

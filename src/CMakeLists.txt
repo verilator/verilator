@@ -54,7 +54,7 @@ set(HEADERS
     V3AstPatterns.h
     V3AstUserAllocator.h
     V3Begin.h
-    V3Bitblast.h
+    V3BitBlast.h
     V3Branch.h
     V3Broken.h
     V3CCtors.h
@@ -225,7 +225,7 @@ set(COMMON_SOURCES
     V3Ast.cpp
     V3AstNodes.cpp
     V3Begin.cpp
-    V3Bitblast.cpp
+    V3BitBlast.cpp
     V3Branch.cpp
     V3Broken.cpp
     V3CCtors.cpp

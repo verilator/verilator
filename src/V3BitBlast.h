@@ -23,9 +23,9 @@
 
 class AstNetlist;
 
-class V3Bitblast final {
+class V3BitBlast final {
 public:
-    static void bitblastAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void bitBlastAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard
