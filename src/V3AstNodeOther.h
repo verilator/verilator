@@ -2354,7 +2354,6 @@ class AstVar final : public AstNode {
     bool m_ignorePostRead : 1;  // Ignore reads in 'Post' blocks during ordering
     bool m_ignorePostWrite : 1;  // Ignore writes in 'Post' blocks during ordering
     bool m_ignoreSchedWrite : 1;  // Ignore writes in scheduling (for special optimizations)
-    bool m_forkByValue : 1;  // Set before a fork, whose processes get it by value
     bool m_dfgTriLowered : 1;  // Signal/temporary introduced by tristate lowering
     bool m_dfgAllowMultidriveTri : 1;  // Allow DFG MULTIDRIVEN warning for intentional tri nets
     bool m_globalConstrained : 1;  // Global constraint per IEEE 1800-2023 18.5.8
@@ -2421,7 +2420,6 @@ class AstVar final : public AstNode {
         m_ignorePostRead = false;
         m_ignorePostWrite = false;
         m_ignoreSchedWrite = false;
-        m_forkByValue = false;
         m_dfgTriLowered = false;
         m_dfgAllowMultidriveTri = false;
         m_globalConstrained = false;
@@ -2624,8 +2622,6 @@ public:
     void setIgnorePostWrite() { m_ignorePostWrite = true; }
     bool ignoreSchedWrite() const { return m_ignoreSchedWrite; }
     void setIgnoreSchedWrite() { m_ignoreSchedWrite = true; }
-    bool forkByValue() const { return m_forkByValue; }
-    void setForkByValue() { m_forkByValue = true; }
     bool dfgTriLowered() const { return m_dfgTriLowered; }
     void setDfgTriLowered() { m_dfgTriLowered = true; }
     bool dfgAllowMultidriveTri() const { return m_dfgAllowMultidriveTri; }
@@ -2768,6 +2764,7 @@ class AstVarScope final : public AstNode {
     // @astgen ptr := m_varp : Optional[AstVar]  // [AfterLink] Pointer to variable itself
     bool m_trace : 1;  // Tracing is turned on for this scope
     bool m_optimizeLifePost : 1;  // One half of an NBA pair using ShadowVariable scheme. Optimize.
+    bool m_forkByValue : 1;  // Set before a fork, whose processes get it by value
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)
         : ASTGEN_SUPER_VarScope(fl)
@@ -2777,6 +2774,7 @@ public:
         UASSERT_OBJ(varp, fl, "Var must be non-null");
         m_trace = true;
         m_optimizeLifePost = false;
+        m_forkByValue = false;
         dtypeFrom(varp);
     }
     ASTGEN_MEMBERS_AstVarScope;
@@ -2800,6 +2798,8 @@ public:
     void trace(bool flag) { m_trace = flag; }
     bool optimizeLifePost() const { return m_optimizeLifePost; }
     void optimizeLifePost(bool flag) { m_optimizeLifePost = flag; }
+    bool forkByValue() const { return m_forkByValue; }
+    void forkByValue(bool flag) { m_forkByValue = flag; }
 };
 
 // === AstNodeCoverDecl ===

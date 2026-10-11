@@ -1248,7 +1248,7 @@ class TimingControlVisitor final : public VNVisitor {
                                                  const std::string& name) {
             AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep(), insertBeforep);
             // A pending update keeps its own value, even if its process schedules more
-            if (inAssignDly && !insertBeforep) newvscp->varp()->setForkByValue();
+            if (inAssignDly && !insertBeforep) newvscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
             controlp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
@@ -1301,7 +1301,7 @@ class TimingControlVisitor final : public VNVisitor {
             // Like for an NBA, a process uses a module variable, passed to the fork by value
             AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(),
                                                  m_underProcedure ? nullptr : forkp);
-            if (m_underProcedure) vscp->varp()->setForkByValue();
+            if (m_underProcedure) vscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, vscp, VAccess::READ});
             // Unlike an event, a handle selecting one is only read
             valuep->foreach([](AstNode* const np) {
