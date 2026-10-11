@@ -1211,8 +1211,8 @@ class TimingControlVisitor final : public VNVisitor {
         // The timing control, if any, which is put in a fork for an NBA
         AstNode* const timingp = controlp;
         // Insert new vars before the timing control if we're in a function; in a process we can't
-        // do that, except before the fork of an NBA. These intra-assignment vars will later be
-        // passed to forked processes by value.
+        // do that, as after V3Begin only modules and functions declare variables. These
+        // intra-assignment vars will later be passed to forked processes by value.
         AstNode* insertBeforep = m_underProcedure ? nullptr : controlp;
         // Special case for NBA
         if (inAssignDly) {
@@ -1228,10 +1228,9 @@ class TimingControlVisitor final : public VNVisitor {
                 nodep->replaceWith(trigAssignp);
                 trigAssignp->addNextHere(nbaEventControlp);
                 nbaEventControlp->addStmtsp(nodep);
+                insertBeforep = forkp;
                 if (!controlp) controlp = nbaEventControlp;
             }
-            // Pending updates keep their own values, even if their process schedules more
-            insertBeforep = forkp;
             controlp->replaceWith(forkp);
             AstBegin* beginp = VN_CAST(controlp, Begin);
             if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false};
@@ -1248,6 +1247,8 @@ class TimingControlVisitor final : public VNVisitor {
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
             AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep(), insertBeforep);
+            // A pending update keeps its own value, even if its process schedules more
+            if (inAssignDly && !insertBeforep) newvscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
             controlp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
@@ -1297,7 +1298,10 @@ class TimingControlVisitor final : public VNVisitor {
         // The triggered event is the one referenced now, so evaluate handles and indices now
         AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
         const auto evalNow = [&](AstNodeExpr* const valuep, V3UniqueNames& names) {
-            AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(), forkp);
+            // Like for an NBA, a process uses a module variable, passed to the fork by value
+            AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(),
+                                                 m_underProcedure ? nullptr : forkp);
+            if (m_underProcedure) vscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, vscp, VAccess::READ});
             // Unlike an event, a handle selecting one is only read
             valuep->foreach([](AstNode* const np) {

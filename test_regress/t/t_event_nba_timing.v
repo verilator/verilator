@@ -19,6 +19,10 @@ class Cls;
     #1 ->>e;
     `checkd(e.triggered, 0)
   endtask
+  task trig_idx(int n);
+    ->>ea[n];
+    n = 0;
+  endtask
 endclass
 
 interface ifc;
@@ -118,6 +122,8 @@ module t;
     #1 c1.next = c2;
     ->>c1.next.e;
     c1.next = null;
+    // With an index, in a class method
+    #1 c2.trig_idx(idx + 1);
   end
   initial #6 vif.trig();
 
@@ -126,7 +132,7 @@ module t;
     `checkd(init_time, 0)
     `checkd(dly_time, 1)
     `checkd(clk_times, 2)
-    `checks(log, "c1.e@1 se@2 c1.ea[1]@3 e_arr[1]@4 i.e@5 i.e@6 c2.ea[0]@7 c2.e@8 c2.e@9 ")
+    `checks(log, "c1.e@1 se@2 c1.ea[1]@3 e_arr[1]@4 i.e@5 i.e@6 c2.ea[0]@7 c2.e@8 c2.e@9 c2.ea[1]@10 ")
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -426,10 +426,14 @@ class TransformForksVisitor final : public VNVisitor {
         const VNUser2InUse user2InUse;  // AstVarScope -> AstVarScope: var to remap to
         funcp->foreach([&](AstNodeVarRef* refp) {
             AstVar* const varp = refp->varp();
+            AstVarScope* const vscp = refp->varScopep();
             AstBasicDType* const dtypep = varp->dtypep()->basicp();
             // If not a fork..join, copy. All write refs should've been handled by V3Fork
             bool passByValue = !m_forkp->joinType().join();
-            if (!varp->isFuncLocal()) {
+            if (vscp->forkByValue()) {
+                // Set just before the fork, for its processes to get by value
+                passByValue = true;
+            } else if (!varp->isFuncLocal()) {
                 // Not func local. Its lifetime is longer than the forked process. Skip
                 return;
             } else if (!varp->user1()) {
@@ -440,7 +444,6 @@ class TransformForksVisitor final : public VNVisitor {
                 passByValue = true;
             }
             // Remap the reference
-            AstVarScope* const vscp = refp->varScopep();
             if (!vscp->user2p()) {
                 // Clone the var to the new function
                 AstVar* const newvarp
