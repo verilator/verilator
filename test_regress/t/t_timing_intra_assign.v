@@ -28,6 +28,8 @@ module t;
   event cev;
   int pend_x, pend_z[3];
   string pend_log, pend_at4, pend_at6;
+  int alw_src, alw_x, cls_x, cls_z[3];
+  string alw_log, cls_log;
 
   function automatic int dly();
     ++dly_calls;
@@ -108,6 +110,22 @@ module t;
     #4 pend_at4 = $sformatf("%0d %0d %0d", pend_z[0], pend_z[1], pend_z[2]);
     #2 pend_at6 = $sformatf("%0d %0d %0d", pend_z[0], pend_z[1], pend_z[2]);
   end
+  // Also in an always
+  always @(alw_src) alw_x <= #5 alw_src;
+  initial for (int i = 1; i <= 3; ++i) #1 alw_src = i;
+  always @(alw_x) if ($time != 0) alw_log = {alw_log, $sformatf("%0d@%0t ", alw_x, $time)};
+  // Also in a class method, which is not inlined, with or without a delay
+  class Pend;
+    static task run();
+      for (int i = 1; i <= 3; ++i) begin
+        cls_x <= #5 i;
+        #1;
+      end
+      for (int i = 0; i < 3; ++i) cls_z[i] <= i + 1;
+    endtask
+  endclass
+  initial Pend::run();
+  always @(cls_x) if ($time != 0) cls_log = {cls_log, $sformatf("%0d@%0t ", cls_x, $time)};
 
   initial begin
     #20;
@@ -118,6 +136,9 @@ module t;
     `checks(pend_log, "1@5 2@6 3@7 ")
     `checks(pend_at4, "0 0 0")
     `checks(pend_at6, "1 2 3")
+    `checks(alw_log, "1@6 2@7 3@8 ")
+    `checks(cls_log, "1@5 2@6 3@7 ")
+    `checks($sformatf("%0d %0d %0d", cls_z[0], cls_z[1], cls_z[2]), "1 2 3")
     // Last, as VCS evaluates the delay of an NBA to a concatenation for each part
     `checkd(dly_calls, 3)
   end
