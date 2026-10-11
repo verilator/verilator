@@ -32,6 +32,7 @@ interface bus (
   bit f;
   bit h;
   int o;
+  int x;
   int cnt;
   clocking cb @(posedge clk);
     output w, u, d, e, f, h;
@@ -60,6 +61,8 @@ class Driver;
     vif.o <= #4 val;
   endtask
 endclass
+
+typedef struct {Driver drv;} drv_box_t;
 
 module t;
   bit clk;
@@ -92,6 +95,8 @@ module t;
   virtual bus svif;
   virtual bus svifs[2];
   pair_t sarr[2];
+  Driver bdrv = new;
+  drv_box_t sbox[2];
   virtual bus rvif;
   virtual bus hvifs[2];
   int hk;
@@ -354,10 +359,15 @@ module t;
     vifs[0] = b;
   end
 
-  // Also below members of unpacked structs, and with an index selecting a class member. The
-  // delay makes this a process with timing, which updates also arrays of structs this way.
+  // Also below members of unpacked structs, through a handle in an unpacked struct, and with an
+  // index selecting a class member. The delay makes this a process with timing, which updates
+  // also arrays of structs this way.
   initial begin
     drv.idx = 1;
+    sbox[1].drv = bdrv;
+    bdrv.vif = a;
+    sbox[drv.idx].drv.vif.x <= 11;
+    bdrv.vif = b;
     svif = a;
     svif.st.f <= 6;
     svif.sa[drv.idx].g <= 7;
@@ -406,6 +416,7 @@ module t;
     `checks($sformatf("%0d %0d %0d %0d", a.sa[0].f, a.sa[0].g, a.sa[1].f, a.sa[1].g), "0 0 10 7")
     `checks($sformatf("%0d %0d %0d %0d", b.sa[0].f, b.sa[0].g, b.sa[1].f, b.sa[1].g), "0 0 0 0")
     `checks($sformatf("%0d %0d", sarr[0].f, sarr[1].f), "0 8")
+    `checks($sformatf("%0d %0d", a.x, b.x), "11 0")
     `checks($sformatf("%0d %0d %x %x", tz, te, tp, tq), "2 1 1b fa")
     `checks($sformatf("%0d %0d", a.cnt, b.cnt), "105 4")
     // Last, as VCS performs the pending updates of intra-assignment delays after the time step's

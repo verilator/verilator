@@ -78,6 +78,10 @@ public:
     bool isLValue() const { return getVAccessRecurse().isWriteOrRW(); }
     // Return base var (or const) nodep dereferences
     AstNode* baseFromp(bool overMembers);
+    // This expression is a handle selecting the object or interface instance whose member is
+    // written. V3LinkLValue marks it written too, which tells later passes that the statement
+    // writes through it. Mark it read, as when it is evaluated alone, e.g. into a variable.
+    void markHandleRead();
 
     // Wrap This expression into an AstStmtExpr to denote it occurs in statement position
     inline AstStmtExpr* makeStmt();
@@ -5395,6 +5399,25 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     bool isSystemFunc() const override { return true; }
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+class AstNbaTicket final : public AstNodeTermop {
+    // Take the ticket of an NBA executed now, ordering its pending update with the others
+    // (IEEE 1800-2023 4.6), see VlNBATicket
+public:
+    explicit AstNbaTicket(FileLine* fl)
+        : ASTGEN_SUPER_NbaTicket(fl) {
+        dtypeSetBitSized(64, VSigning::UNSIGNED);
+    }
+    ASTGEN_MEMBERS_AstNbaTicket;
+    string emitVerilog() override { return "%f$nba_ticket"; }
+    string emitC() override { return "VlNBATicket::next()"; }
+    bool cleanOut() const override { return true; }
+    // Each takes a new ticket
+    bool isGateOptimizable() const override { return false; }
+    bool isOutputter() override { return true; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isPure() override { return false; }
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstTime final : public AstNodeTermop {

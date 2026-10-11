@@ -161,7 +161,6 @@
 #include "V3AstUserAllocator.h"
 #include "V3ClassGraph.h"
 #include "V3Const.h"
-#include "V3LinkLValue.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
 
@@ -713,7 +712,7 @@ class DelayedVisitor final : public VNVisitor {
                 nodep = selp->fromp();
             } else if (AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
                 AstNodeExpr* const handlep = selp->fromp()->unlinkFrBack();
-                V3LinkLValue::linkLValueSet(handlep, VAccess::READ);
+                handlep->markHandleRead();
                 AstVarRef* const refp
                     = VN_AS(captureVal(scopep, insertp, handlep, "Handle" + baseName), VarRef);
                 refp->varp()->setIgnorePostWrite();
@@ -1162,7 +1161,7 @@ class DelayedVisitor final : public VNVisitor {
         if (ticketp) {
             ticketp->unlinkFrBack();
         } else if (vscpInfo.m_ordered) {
-            ticketp = V3Delayed::newTicketp(flp);
+            ticketp = new AstNbaTicket{flp};
         } else {
             ticketp = new AstConst{flp, AstConst::Unsized64{}, 0};
         }
@@ -1287,7 +1286,7 @@ class DelayedVisitor final : public VNVisitor {
         if (AstMemberSel* const selp = VN_CAST(basep, MemberSel)) {
             // The handle selecting the target (IEEE 1800-2023 10.4.2), which is only read
             AstNodeExpr* const handlep = selp->fromp()->unlinkFrBack();
-            V3LinkLValue::linkLValueSet(handlep, VAccess::READ);
+            handlep->markHandleRead();
             AstVarRef* const refp = enqueueLoaded(handlep);
             // Like the handle it replaces, mark one selecting a written member written
             refp->access(selp->access());
@@ -1316,7 +1315,7 @@ class DelayedVisitor final : public VNVisitor {
         if (ticketp) {
             ticketp->unlinkFrBack();
         } else if (dest.m_ordered) {
-            ticketp = V3Delayed::newTicketp(flp);
+            ticketp = new AstNbaTicket{flp};
         } else {
             ticketp = new AstConst{flp, AstConst::Unsized64{}, 0};
         }
@@ -1331,9 +1330,10 @@ class DelayedVisitor final : public VNVisitor {
         if (nba.cfuncp) {
             enqueuesp = AstNode::addNext<AstNodeStmt, AstNodeStmt>(
                 enqueuesp,
-                new AstAssign{
-                    flp, new AstVarRef{flp, v3Global.rootp()->nbaEventTriggerp(), VAccess::WRITE},
-                    new AstConst{flp, AstConst::BitTrue{}}});
+                new AstAssign{flp,
+                              new AstVarRef{flp, v3Global.rootp()->getCreateNbaEventTriggerp(),
+                                            VAccess::WRITE},
+                              new AstConst{flp, AstConst::BitTrue{}}});
         }
         // The commit applies the update by the statements of its site (NBA)
         dest.m_applyps.push_back(
@@ -1543,7 +1543,7 @@ class DelayedVisitor final : public VNVisitor {
                 FileLine* const flp = pair.first->fileline();
                 AstSenItem* const itemp = new AstSenItem{
                     flp, VEdgeType::ET_EVENT,
-                    new AstVarRef{flp, V3Delayed::nbaEventp(nodep), VAccess::READ}};
+                    new AstVarRef{flp, nodep->getCreateNbaEventp(), VAccess::READ}};
                 dest.addSensitivity(itemp);
                 VL_DO_DANGLING(itemp->deleteTree(), itemp);
             }
@@ -2027,21 +2027,4 @@ void V3Delayed::delayedAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { DelayedVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("delayed", 0, dumpTreeEitherLevel() >= 3);
-}
-
-AstNodeExpr* V3Delayed::newTicketp(FileLine* flp) {
-    return new AstCExpr{flp, "VlNBATicket::next()", 64};
-}
-
-AstVarScope* V3Delayed::nbaEventp(AstNetlist* netlistp) {
-    if (!netlistp->nbaEventp()) {
-        AstTopScope* const topScopep = netlistp->topScopep();
-        AstBasicDType* const dtypep = new AstBasicDType{topScopep->scopep()->fileline(),
-                                                        VBasicDTypeKwd::EVENT, VSigning::UNSIGNED};
-        netlistp->typeTablep()->addTypesp(dtypep);
-        netlistp->nbaEventp(topScopep->createTemp("__VnbaEvent", dtypep));
-        netlistp->nbaEventTriggerp(topScopep->createTemp("__VnbaEventTrigger", 1));
-        v3Global.setHasEvents();
-    }
-    return netlistp->nbaEventp();
 }

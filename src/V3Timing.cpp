@@ -65,11 +65,9 @@
 #include "V3Timing.h"
 
 #include "V3Const.h"
-#include "V3Delayed.h"
 #include "V3EmitV.h"
 #include "V3Global.h"
 #include "V3Graph.h"
-#include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
 #include "V3SenTree.h"
@@ -619,16 +617,15 @@ class TimingControlVisitor final : public VNVisitor {
         return new AstEventControl{
             flp,
             new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_EVENT,
-                                               new AstVarRef{flp, V3Delayed::nbaEventp(m_netlistp),
+                                               new AstVarRef{flp, m_netlistp->getCreateNbaEventp(),
                                                              VAccess::READ}}},
             nullptr};
     }
     // Creates the variable that, if set, causes the NBA event to be triggered
     AstAssign* createNbaEventTriggerAssignment(FileLine* flp) {
-        V3Delayed::nbaEventp(m_netlistp);
-        return new AstAssign{flp,
-                             new AstVarRef{flp, m_netlistp->nbaEventTriggerp(), VAccess::WRITE},
-                             new AstConst{flp, AstConst::BitTrue{}}};
+        return new AstAssign{
+            flp, new AstVarRef{flp, m_netlistp->getCreateNbaEventTriggerp(), VAccess::WRITE},
+            new AstConst{flp, AstConst::BitTrue{}}};
     }
     // Returns true if we are under a class or interface function, or the tree references locals.
     // These are cases where static, globally-evaluated triggers are not suitable.
@@ -742,7 +739,7 @@ class TimingControlVisitor final : public VNVisitor {
     // process it is a module variable, passed to the fork by value.
     AstVarScope* takeNbaTicket(AstNode* const nodep, AstNode* const forkp) {
         FileLine* const flp = nodep->fileline();
-        AstNodeExpr* const ticketp = V3Delayed::newTicketp(flp);
+        AstNodeExpr* const ticketp = new AstNbaTicket{flp};
         AstVarScope* const vscp = createTemp(flp, m_nbaTicketNames.get(nodep), ticketp->dtypep(),
                                              m_underProcedure ? nullptr : forkp);
         if (m_underProcedure) vscp->forkByValue(true);
@@ -1308,7 +1305,7 @@ class TimingControlVisitor final : public VNVisitor {
                 // Like the handle it replaces, mark one selecting a written member written
                 VN_AS(selp->fromp(), VarRef)->access(selp->access());
                 if (selp == driveSelp) replaceDriveHandle(drive.second, vscp);
-                V3LinkLValue::linkLValueSet(fromp, VAccess::READ);
+                fromp->markHandleRead();
             });
         }
         // Replace the RHS with an intermediate value var
@@ -1357,7 +1354,7 @@ class TimingControlVisitor final : public VNVisitor {
             if (m_underProcedure) vscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, vscp, VAccess::READ});
             // Unlike an event, a handle selecting one is only read
-            V3LinkLValue::linkLValueSet(valuep, VAccess::READ);
+            valuep->markHandleRead();
             forkp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, valuep});
         };

@@ -25,7 +25,6 @@
 
 #include "V3Assert.h"
 #include "V3Const.h"
-#include "V3LinkLValue.h"
 #include "V3Task.h"
 #include "V3Timing.h"
 #include "V3UniqueNames.h"
@@ -167,7 +166,7 @@ private:
     void snapshotDriveHandle(AstNodeAssign* nodep, AstMemberSel* selp) {
         FileLine* const flp = selp->fileline();
         AstNodeExpr* const handlep = selp->fromp()->unlinkFrBack();
-        V3LinkLValue::linkLValueSet(handlep, VAccess::READ);
+        handlep->markHandleRead();
         const std::string name = m_driveHandleNames.get(nodep);
         AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, name, handlep->dtypep()};
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);

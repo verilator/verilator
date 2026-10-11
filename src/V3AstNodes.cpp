@@ -2288,6 +2288,21 @@ AstCFunc* AstNetlist::evalFuncp(VEval eval) {
     }
     return m_evalFuncps[eval];
 }
+AstVarScope* AstNetlist::getCreateNbaEventTriggerp() {
+    getCreateNbaEventp();
+    return m_nbaEventTriggerp;
+}
+AstVarScope* AstNetlist::getCreateNbaEventp() {
+    if (!m_nbaEventp) {
+        AstBasicDType* const dtypep = new AstBasicDType{m_topScopep->scopep()->fileline(),
+                                                        VBasicDTypeKwd::EVENT, VSigning::UNSIGNED};
+        typeTablep()->addTypesp(dtypep);
+        m_nbaEventp = m_topScopep->createTemp("__VnbaEvent", dtypep);
+        m_nbaEventTriggerp = m_topScopep->createTemp("__VnbaEventTrigger", 1);
+        v3Global.setHasEvents();
+    }
+    return m_nbaEventp;
+}
 AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
     UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
     AstFunc* selfp = nullptr;
@@ -2970,6 +2985,27 @@ const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
         }
     }
     return nullptr;  // nothing found
+}
+void AstNodeExpr::markHandleRead() {
+    // Follow the selects of the handle, not their indices, which are read already
+    AstNodeExpr* nodep = this;
+    while (true) {
+        if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+            refp->access(VAccess::READ);
+            return;
+        } else if (AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
+            selp->access(VAccess::READ);
+            nodep = selp->fromp();
+        } else if (const AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+            nodep = selp->fromp();
+        } else if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+            nodep = selp->fromp();
+        } else if (const AstCMethodHard* const callp = VN_CAST(nodep, CMethodHard)) {
+            nodep = callp->fromp();
+        } else {
+            return;
+        }
+    }
 }
 const char* AstNodeFTask::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());

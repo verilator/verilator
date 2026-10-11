@@ -1656,6 +1656,10 @@ public:
     void nbaEventp(AstVarScope* const varScopep) { m_nbaEventp = varScopep; }
     AstVarScope* nbaEventTriggerp() const { return m_nbaEventTriggerp; }
     void nbaEventTriggerp(AstVarScope* const varScopep) { m_nbaEventTriggerp = varScopep; }
+    // The named event that the NBA region triggers if the trigger flag (nbaEventTriggerp) is set,
+    // and that flag. Both are lazy constructed together.
+    AstVarScope* getCreateNbaEventp();
+    AstVarScope* getCreateNbaEventTriggerp();
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
     AstPackage* stdPackagep() const { return m_stdPackagep; }
     void stdPackageProcessp(AstClass* const classp) { m_stdPackageProcessp = classp; }
