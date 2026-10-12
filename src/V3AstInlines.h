@@ -59,7 +59,11 @@ bool AstNode::isZero() const {
 bool AstNode::isNeqZero() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isNeqZero());
 }
+bool AstNode::isTrue() const { return (VN_IS(this, Const) && VN_AS(this, Const)->num().isTrue()); }
 bool AstNode::isOne() const { return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqOne()); }
+bool AstNode::isAnyXZ() const {
+    return (VN_IS(this, Const) && VN_AS(this, Const)->num().isAnyXZ());
+}
 bool AstNode::isAllOnes() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->isEqAllOnes());
 }

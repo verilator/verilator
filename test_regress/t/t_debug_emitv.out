@@ -125,7 +125,7 @@ module t;
     wire logic [1:0]  var_part;
     assign var_part = concat_src[sel_idx+:2];
     tri logic [1:0]  tri_sig;
-    assign tri_sig = (in ? 2'h1 : 2'bzz);
+    assign tri_sig = (in ? 2'h1 : 2'bz);
     int fd;
     int i;
     int q[$];

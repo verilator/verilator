@@ -803,7 +803,10 @@ public:
     inline bool isNull() const;
     inline bool isZero() const;
     inline bool isOne() const;
+    inline bool isAnyXZ() const;
     inline bool isNeqZero() const;
+    // Whether value is true - same as !$isunknown(x) && x != 0  // x and z are false
+    inline bool isTrue() const;
     inline bool isAllOnes() const;
     inline bool isAllOnesV() const;  // Verilog width rules apply
 

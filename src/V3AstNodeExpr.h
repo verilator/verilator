@@ -4156,7 +4156,12 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     void numberOperate(V3Number& out, const V3Number& from, const V3Number& bit) override {
-        out.opSel(from, bit.toUInt() + widthConst() - 1, bit.toUInt());
+        if (bit.isFourState()) {
+            out.setAllBitsX();
+        } else {
+            out.opSel(from, bit.toUInt() + widthConst() - 1, bit.toUInt());
+        }
+        out.opCleanTwoStateNumber(dtypep());
     }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override {
@@ -5413,7 +5418,7 @@ public:
     ASTGEN_MEMBERS_AstCond;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs,
                        const V3Number& ths) override {
-        out.opAssign(lhs.isNeqZero() ? rhs : ths);
+        out.opCond(lhs, rhs, ths);
     }
     string emitVerilog() override { return "%k(%l %f? %r %k: %t)"; }
     string emitC() override { return "VL_COND_%nq%lq%rq%tq(%nw, %P, %li, %ri, %ti)"; }
@@ -5654,7 +5659,12 @@ public:
     AstCastWrap(FileLine* fl, AstNodeExpr* lhsp)
         : ASTGEN_SUPER_CastWrap(fl, lhsp) {}
     ASTGEN_MEMBERS_AstCastWrap;
-    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
+    void numberOperate(V3Number& out, const V3Number& lhs) override {
+        out.opAssign(lhs);
+        AstNodeDType* const castDTypep = dtypep();
+        out.opCleanTwoStateNumber(castDTypep->isIntegralOrPacked() ? castDTypep->basicp()
+                                                                   : castDTypep);
+    }
     string emitVerilog() override { return "(%l)"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return false; }
