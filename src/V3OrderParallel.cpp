@@ -247,7 +247,7 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
     // which will outlive ordering.
     std::unordered_map<const LogicMTask*, ExecMTask*> logicMTaskToExecMTask;
     OrderMoveGraphSerializer serializer{moveGraph};
-    V3OrderCFuncEmitter emitter{tag, slow};
+    V3OrderCFuncEmitter emitter{moveGraph.orderGraph().trigVscp(), tag, slow};
     // Sort LogicMTask vertices by their serial IDs.
     struct MTaskVxIdLessThan final {
         bool operator()(const V3GraphVertex* lhsp, const V3GraphVertex* rhsp) const {

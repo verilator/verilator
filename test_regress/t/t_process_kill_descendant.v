@@ -28,10 +28,19 @@ module t;
         fork
           #10 via_delay = 1'b1;
           @(posedge clk) via_event = 1'b1;
-          begin wait (flag); via_wait = 1'b1; end
-          begin fork #10 via_join = 1'b1; join end
           begin
-            fork #10 via_grandchild = 1'b1; join_none
+            wait (flag);
+            via_wait = 1'b1;
+          end
+          begin
+            fork
+              #10 via_join = 1'b1;
+            join
+          end
+          begin
+            fork
+              #10 via_grandchild = 1'b1;
+            join_none
             wait (0);
           end
         join_none
@@ -51,7 +60,9 @@ module t;
     // A process killing itself must take its descendants down as well
     fork
       begin
-        fork #10 self_child_ran = 1'b1; join_none
+        fork
+          #10 self_child_ran = 1'b1;
+        join_none
         process::self().kill();
         #1;
         self_resumed = 1'b1;

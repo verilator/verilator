@@ -54,6 +54,7 @@ set(HEADERS
     V3AstPatterns.h
     V3AstUserAllocator.h
     V3Begin.h
+    V3BitBlast.h
     V3Branch.h
     V3Broken.h
     V3CCtors.h
@@ -182,7 +183,6 @@ set(HEADERS
     V3Simulate.h
     V3Slice.h
     V3Split.h
-    V3SplitVar.h
     V3StackCount.h
     V3Stats.h
     V3StdFuture.h
@@ -225,6 +225,7 @@ set(COMMON_SOURCES
     V3Ast.cpp
     V3AstNodes.cpp
     V3Begin.cpp
+    V3BitBlast.cpp
     V3Branch.cpp
     V3Broken.cpp
     V3CCtors.cpp
@@ -362,7 +363,6 @@ set(COMMON_SOURCES
     V3Scope.cpp
     V3Slice.cpp
     V3Split.cpp
-    V3SplitVar.cpp
     V3StackCount.cpp
     V3Stats.cpp
     V3StatsReport.cpp

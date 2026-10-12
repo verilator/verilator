@@ -684,16 +684,13 @@ conservative extractor.
    metacomment because they may be split into smaller pieces according to
    the access patterns.
 
-   This only supports unpacked arrays, packed arrays, and packed structs of
-   integer types (reg, logic, bit, byte, int...); otherwise, if a split was
-   requested but cannot occur, a SPLITVAR warning is issued. Splitting
-   large arrays may slow down the Verilation speed, so use this only on
-   variables that require it.
+   This supports unpacked arrays, unpacked structs, and any packed type. If
+   a split was requested but cannot occur, a SPLITVAR warning is issued.
 
-   Packed variables that are only referenced locally (without hierarchical
-   references) via non-overlapping, constant-indexed bit or part select
-   expressions are split automatically. This covers the somewhat common
-   usage pattern:
+   Variables that are only referenced via constant-indexed selects are
+   split automatically, without the metacomment, as long as packed
+   vectors are only referenced via non-overlapping bit or part selects.
+   This covers the somewhat common usage pattern:
 
    .. code-block:: sv
 

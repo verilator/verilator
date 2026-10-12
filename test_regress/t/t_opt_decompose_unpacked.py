@@ -13,9 +13,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=[
-    '--stats', '-fno-var-split', '-fno-decompose-packed', '-fslice-element-limit 3'
-])
+test.compile(verilator_flags2=['--stats', '-fno-decompose-packed', '-fslice-element-limit 3'])
 
 test.execute()
 

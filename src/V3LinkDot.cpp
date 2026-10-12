@@ -4669,14 +4669,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             }
                         }
                         refp->containsGenBlock(m_ds.m_genBlk);
-                        if (varp->attrSplitVar()) {
-                            refp->v3warn(
-                                SPLITVAR,
-                                varp->prettyNameQ()
-                                    << " has split_var metacomment but will not be split because"
-                                    << " it is accessed from another module via a dot.");
-                            varp->attrSplitVar(false);
-                        }
                         m_ds.m_dotText = "";
                         if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
                             const string dotted = refp->dotted();

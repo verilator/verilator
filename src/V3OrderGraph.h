@@ -69,7 +69,9 @@
 
 #include "V3Ast.h"
 #include "V3Graph.h"
+#include "V3Sched.h"
 
+#include <set>
 #include <vector>
 
 class OrderLogicVertex;
@@ -88,9 +90,43 @@ enum OrderWeights : uint8_t {
 //======================================================================
 // Graph type
 
-class OrderGraph final : public V3Graph {
+// The sensitivity domain of a vertex: the set of trigger indices,
+// any of which being set means the logic needs to be executed.
+// Instances are interned in the OrderGraph, so can compare pointers.
+class OrderDomain final {
+    const std::set<uint32_t> m_triggers;  // The trigger indices
+
 public:
+    explicit OrderDomain(const std::set<uint32_t>& triggers)
+        : m_triggers{triggers} {}
+
+    const std::set<uint32_t>& triggers() const { return m_triggers; }
+    bool operator<(const OrderDomain& other) const { return m_triggers < other.m_triggers; }
+};
+
+class OrderGraph final : public V3Graph {
+    const V3Sched::TriggerKit& m_trigKit;  // The TriggerKit of the triggers
+    AstVarScope* const m_trigVscp;  // The trigger vector for this graph
+    std::set<OrderDomain> m_domains;  // The interned domains
+
+public:
+    // CONSTRUCTOR
+    OrderGraph(const V3Sched::TriggerKit& trigKit, AstVarScope* trigVscp)
+        : m_trigKit{trigKit}
+        , m_trigVscp{trigVscp} {}
+
     // METHODS
+    AstVarScope* trigVscp() const { return m_trigVscp; }
+
+    // The AstSenItem the given trigger index stands for, nullptr if none
+    const AstSenItem* trigSenItemp(uint32_t index) const {
+        return m_trigKit.trigIdx2SenItem().at(index);
+    }
+
+    // Get the interned instance of the given domain
+    const OrderDomain* domainp(const std::set<uint32_t>& triggers) {
+        return &*m_domains.emplace(triggers).first;
+    }
 
     // Methods to add edges representing constraints, utilizing the type system to help us ensure
     // the graph remains bipartite.
@@ -116,11 +152,11 @@ class OrderEitherVertex VL_NOT_FINAL : public V3GraphVertex {
     // ordering algorithm will compute the domain automatically based on the edges representing
     // data-flow (those between OrderLogicVertex and OrderVarStdVertex), otherwise the domain is
     // as given (e.g.: for those OrderLogicVertices that represent clocked logic).
-    AstSenTree* m_domainp;
+    const OrderDomain* m_domainp;
 
 protected:
     // CONSTRUCTOR
-    OrderEitherVertex(OrderGraph* graphp, AstSenTree* domainp) VL_MT_DISABLED
+    OrderEitherVertex(OrderGraph* graphp, const OrderDomain* domainp) VL_MT_DISABLED
         : V3GraphVertex{graphp},
           m_domainp{domainp} {}
     ~OrderEitherVertex() override = default;
@@ -130,8 +166,8 @@ public:
     virtual bool domainMatters() = 0;
 
     // ACCESSORS
-    AstSenTree* domainp() const VL_MT_STABLE { return m_domainp; }
-    void domainp(AstSenTree* domainp) VL_MT_DISABLED {
+    const OrderDomain* domainp() const VL_MT_STABLE { return m_domainp; }
+    void domainp(const OrderDomain* domainp) VL_MT_DISABLED {
 #if VL_DEBUG
         UASSERT(!m_domainp, "Domain should only be set once");
 #endif
@@ -152,19 +188,21 @@ public:
 private:
     AstNode* const m_nodep;  // The logic this vertex represents
     AstScope* const m_scopep;  // Scope the logic is under
-    AstSenTree* const m_hybridp;  // Additional sensitivities for hybrid combinational logic
+    const OrderDomain* const m_hybridp;  // Additional sensitivities for hybrid combinational logic
+    const bool m_comb;  // Is from combinational logic
     // Every variable accessed by this logic, in order of first access, at most one record per
     // variable. Only populated for multi-threaded ordering.
     std::vector<VarAccess> m_varAccesses;
 
 public:
     // CONSTRUCTOR
-    OrderLogicVertex(OrderGraph* graphp, AstScope* scopep, AstSenTree* domainp,
-                     AstSenTree* hybridp, AstNode* nodep) VL_MT_DISABLED
+    OrderLogicVertex(OrderGraph* graphp, AstScope* scopep, const OrderDomain* domainp,
+                     const OrderDomain* hybridp, AstNode* nodep) VL_MT_DISABLED
         : OrderEitherVertex{graphp, domainp},
           m_nodep{nodep},
           m_scopep{scopep},
-          m_hybridp{hybridp} {
+          m_hybridp{hybridp},
+          m_comb{!domainp && !hybridp} {
         UASSERT_OBJ(scopep, nodep, "Must not be null");
         UASSERT_OBJ(!(domainp && hybridp), nodep, "Cannot have bot domainp and hybridp set");
     }
@@ -176,7 +214,8 @@ public:
     // ACCESSORS
     AstNode* nodep() const VL_MT_STABLE { return m_nodep; }
     AstScope* scopep() const VL_MT_STABLE { return m_scopep; }
-    AstSenTree* hybridp() const { return m_hybridp; }
+    const OrderDomain* hybridp() const { return m_hybridp; }
+    bool comb() const { return m_comb; }
     const std::vector<VarAccess>& varAccesses() const { return m_varAccesses; }
     void addVarAccess(AstVarScope* vscp, VAccess access) {
         m_varAccesses.push_back({vscp, access});

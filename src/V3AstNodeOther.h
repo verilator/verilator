@@ -1634,10 +1634,10 @@ public:
     AstPackage* constPoolPkgp() const { return m_constPoolPkgp; }
     AstPackage* dollarUnitPkgp() const { return m_dollarUnitPkgp; }
     void dollarUnitPkgp(AstPackage* const packagep) { m_dollarUnitPkgp = packagep; }
-    AstCFunc* evalFuncp(VEval eval) const { return m_evalFuncps[eval]; }
-    void evalFuncp(VEval eval, AstCFunc* funcp) { m_evalFuncps[eval] = funcp; }
-    AstCFunc* dumpTriggersFuncp(VEval eval) const { return m_dumpTriggersFuncps[eval]; }
-    void dumpTriggersFuncp(VEval eval, AstCFunc* funcp) { m_dumpTriggersFuncps[eval] = funcp; }
+    // Returns the entry point eval function, lazy constructed on first call
+    AstCFunc* evalFuncp(VEval eval);
+    // Returns the trigger dump function of the given eval function, lazy constructed
+    AstCFunc* dumpTriggersFuncp(VEval eval);
     AstVarScope* dpiExportTriggerp() const { return m_dpiExportTriggerp; }
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
@@ -1903,6 +1903,8 @@ public:
     bool sameNode(const AstNode* samep) const override;
     string nameDotless() const;
     AstNodeModule* modp() const { return m_modp; }
+    // The combinational AstActive of the scope. If none, create one if 'create', else nullptr
+    AstActive* comboActivep(bool create);
     //
     AstScope* aboveScopep() const VL_MT_SAFE { return m_aboveScopep; }
     void aboveScopep(AstScope* nodep) { m_aboveScopep = nodep; }
@@ -1973,22 +1975,13 @@ public:
 class AstSenTree final : public AstNode {
     // A sensitivity list
     // @astgen op1 := sensesp : List[AstSenItem]
-    bool m_multi = false;  // Created from combo logic by ORing multiple clock domains
 public:
     AstSenTree(FileLine* fl, AstSenItem* sensesp)
         : ASTGEN_SUPER_SenTree(fl) {
         addSensesp(sensesp);
     }
     ASTGEN_MEMBERS_AstSenTree;
-    bool sameNode(const AstNode* samep) const override {
-        const AstSenTree* const asamep = VN_DBG_AS(samep, SenTree);
-        return m_multi == asamep->m_multi;
-    }
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    bool isMulti() const { return m_multi; }
-    void multi(bool flag) { m_multi = true; }
     // METHODS
     bool hasClocked() const;  // Includes a clocked statement
     bool hasEdge() const;  // Includes a posedge/negedge/bothedge clocked statement
@@ -2739,6 +2732,8 @@ public:
         noCReset(fromp->noCReset());
         attrSplitVar(fromp->attrSplitVar());
     }
+    // Reason why the properties of the variable prevent splitting it, nullptr if none
+    const char* cannotSplitKindReason() const;
     void propagateWrapAttrFrom(const AstVar* fromp) {
         // Creating a function wrapper; keep attributes
         propagateAttrFrom(fromp);
@@ -2764,6 +2759,7 @@ class AstVarScope final : public AstNode {
     // @astgen ptr := m_varp : Optional[AstVar]  // [AfterLink] Pointer to variable itself
     bool m_trace : 1;  // Tracing is turned on for this scope
     bool m_optimizeLifePost : 1;  // One half of an NBA pair using ShadowVariable scheme. Optimize.
+    bool m_forkByValue : 1;  // Set before a fork, whose processes get it by value
 public:
     AstVarScope(FileLine* fl, AstScope* scopep, AstVar* varp)
         : ASTGEN_SUPER_VarScope(fl)
@@ -2773,6 +2769,7 @@ public:
         UASSERT_OBJ(varp, fl, "Var must be non-null");
         m_trace = true;
         m_optimizeLifePost = false;
+        m_forkByValue = false;
         dtypeFrom(varp);
     }
     ASTGEN_MEMBERS_AstVarScope;
@@ -2796,6 +2793,8 @@ public:
     void trace(bool flag) { m_trace = flag; }
     bool optimizeLifePost() const { return m_optimizeLifePost; }
     void optimizeLifePost(bool flag) { m_optimizeLifePost = flag; }
+    bool forkByValue() const { return m_forkByValue; }
+    void forkByValue(bool flag) { m_forkByValue = flag; }
 };
 
 // === AstNodeCoverDecl ===

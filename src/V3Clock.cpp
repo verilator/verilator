@@ -24,7 +24,6 @@
 #include "V3Clock.h"
 
 #include "V3Const.h"
-#include "V3Sched.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -60,11 +59,6 @@ public:
 // Clock state, as a visitor of each AstNode
 
 class ClockVisitor final : public VNVisitor {
-    // NODE STATE
-
-    // STATE
-    AstCFunc* const m_sampleCFuncp;  // The CFunc to populate with sampled value assignments
-
     // VISITORS
     void visit(AstCoverToggle* nodep) override {
         // UINFOTREE(1, nodep, "", "ct");
@@ -100,30 +94,12 @@ class ClockVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);  // No longer needed
     }
 
-    //========== Move sampled assignments
-    void visit(AstVarScope* nodep) override {
-        AstVar* const varp = nodep->varp();
-        if (!varp->valuep()) return;
-        if (!varp->sampled()) return;
-
-        FileLine* const flp = nodep->fileline();
-        AstNodeExpr* const rhsp = VN_AS(varp->valuep()->unlinkFrBack(), NodeExpr);
-        AstVarRef* const lhsp = new AstVarRef{flp, nodep, VAccess::WRITE};
-        m_sampleCFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
-        varp->direction(VDirection::NONE);  // Restore defaults
-        varp->primaryIO(false);
-    }
-
     //--------------------
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
     // CONSTRUCTORS
-    explicit ClockVisitor(AstNetlist* netlistp)
-        : m_sampleCFuncp{netlistp->evalFuncp(VEval::SAMPLE)} {
-        iterate(netlistp);
-        V3Sched::util::splitCheck(m_sampleCFuncp);
-    }
+    explicit ClockVisitor(AstNetlist* netlistp) { iterate(netlistp); }
     ~ClockVisitor() override = default;
 };
 

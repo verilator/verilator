@@ -17,16 +17,14 @@
 typedef struct {
   logic [6:0] a;
   logic [32:0] b;
-  logic [4:0] c [2:3];
+  logic [4:0] c[2:3];
 } st_t;
 
-typedef struct {
-  logic [4:0] m [4];
-} sm_t;
+typedef struct {logic [4:0] m[4];} sm_t;
 
 typedef struct {
-  logic [6:0] x [4];
-  logic [6:0] y [4];
+  logic [6:0] x[4];
+  logic [6:0] y[4];
 } sxy_t;
 
 typedef struct {
@@ -35,7 +33,7 @@ typedef struct {
 } sk_t;
 
 typedef struct {
-  logic [6:0] v [4];
+  logic [6:0] v[4];
   logic i;  // Declared last, so the first component
 } suv_t;
 
@@ -67,78 +65,78 @@ module t (
   logic [63:0] crc_q = '0;
 
   // Descending, non-zero based, written in an unrolled loop
-  logic [6:0] dn [3:1];  // Split 1
+  logic [6:0] dn[3:1];  // Split 1
   // Ascending, non-zero based
-  logic [14:0] up [2:4];  // Split 1
+  logic [14:0] up[2:4];  // Split 1
   // Multi-dimensional with different ranges
-  logic [4:0] md [0:2][3:1];  // Split 4
+  logic [4:0] md[0:2][3:1];  // Split 4
   // Whole array copies, same and opposite direction
-  logic [6:0] cp [3:1];  // Split 1
-  logic [6:0] rev [1:3];  // Split 1
+  logic [6:0] cp[3:1];  // Split 1
+  logic [6:0] rev[1:3];  // Split 1
   // Whole array copy, opposite direction, more elements than the slice limit
-  logic [6:0] revd [3:0];  // No split: opposite direction
+  logic [6:0] revd[3:0];  // No split: opposite direction
   // Assignment patterns
-  logic [7:0] pat [0:3];  // No split: pattern value
+  logic [7:0] pat[0:3];  // No split: pattern value
   logic [7:0] pat_lo;
   logic [7:0] pat_hi;
-  logic [32:0] def [2:0];  // Split 1
+  logic [32:0] def[2:0];  // Split 1
   // Chain through elements, would be UNOPTFLAT if not split
-  logic [6:0] chain [0:3];  // Split 1
+  logic [6:0] chain[0:3];  // Split 1
   // Unpacked structs, whole copy
   st_t st;  // Split 2
   st_t st_cp;  // Split 2
   // Other element types
-  real rl [1:0];  // Split 1
-  string str [0:1];  // Split 1
+  real rl[1:0];  // Split 1
+  string str[0:1];  // Split 1
   // Non-blocking assignment in an unrolled loop
-  logic [6:0] q [3:1];  // Split 1
+  logic [6:0] q[3:1];  // Split 1
   // Variable index
-  logic [6:0] dyn [4];  // No split: variable index
+  logic [6:0] dyn[4];  // No split: variable index
   // Array of unpacked structs
-  st_t sa [2][2];  // Split 11
+  st_t sa[2][2];  // Split 11
   // Whole copy into an array that is not split
-  logic [4:0] mdp [0:2][3:1]  /*verilator public*/;  // No split: public
+  logic [4:0] mdp[0:2][3:1]  /*verilator public*/;  // No split: public
   // Whole copy of a struct element
   st_t sar;  // Split 2
   // Selected with variable indices, and assigned to and from them
   logic sel;
   logic nsel;
-  st_t sv [2];  // No split: variable index
-  st_t sv2 [2];  // No split: variable index
+  st_t sv[2];  // No split: variable index
+  st_t sv2[2];  // No split: variable index
   // Forced, and assigned from it
-  logic [6:0] frc [2];  // No split: forced
-  logic [6:0] frcr [2];  // No split: assigned from a forced variable
+  logic [6:0] frc[2];  // No split: forced
+  logic [6:0] frcr[2];  // No split: assigned from a forced variable
   // Struct pattern reading the variable itself
   st_t ssw = '{a: 7'd1, b: 33'd2, c: '{5'd3, 5'd4}};  // No split: pattern value
   // Struct selected with a cheap index expression, and assigned from it
-  st_t sx [2];  // No split: index expression
+  st_t sx[2];  // No split: index expression
   st_t sxr;  // Split 1
   // Struct copied to an element selected with an index expression
   st_t sz;  // No split: copied to a select with an index expression
-  st_t szz [2];  // No split: index expression
+  st_t szz[2];  // No split: index expression
   // Assigned from a member of an element selected with a variable index, more elements than the
   // slice limit
-  sm_t smv [2];  // No split: variable index
-  logic [4:0] cs [4];  // Split 1
+  sm_t smv[2];  // No split: variable index
+  logic [4:0] cs[4];  // Split 1
   // Assigned from an element selected with a narrow index, more elements than the slice limit
-  logic [6:0] t8 [8][4];  // No split: variable index
-  logic [6:0] ce [4];  // Split 1
+  logic [6:0] t8[8][4];  // No split: variable index
+  logic [6:0] ce[4];  // Split 1
   // Copied to elements selected with indices reading the variable itself
   st_t sref;  // Split 2
-  st_t srefs [2];  // No split: index expression
+  st_t srefs[2];  // No split: index expression
   // Member copied from another member of the same variable
   sxy_t sab;  // Split 3
   // Copied to an element selected with an index reading the element's own variable
   sk_t skb;  // Split 1
-  sk_t ska [2];  // No split: index expression
+  sk_t ska[2];  // No split: index expression
   // Same, with a non-blocking assignment, checked against a reference model
   sk_t skd;  // Split 1
-  sk_t skad [2];  // No split: index expression
-  logic [7:0] skr [2];
+  sk_t skad[2];  // No split: index expression
+  logic [7:0] skr[2];
   // Assigned from an element selected with an index reading its own member, assigned to a
   // temporary first
   suv_t uq;  // Split 2
-  suv_t utab [2];  // No split: variable index
+  suv_t utab[2];  // No split: variable index
   logic ui;
   // Struct with an unpacked union member, which is not split
   su_t su;  // Split 1
@@ -152,28 +150,28 @@ module t (
   ifc u_ifc ();
   virtual ifc vi = u_ifc;
   // Other element types: events, class handles, virtual interfaces, queues
-  event ev [2];  // Split 1
+  event ev[2];  // Split 1
   int evcnt0 = 0;
   int evcnt1 = 0;
-  Cls objs [2];  // Split 1
+  Cls objs[2];  // Split 1
   ifc u_ifc2 ();
-  virtual ifc vis [2];  // Split 1
-  int qs [2][$];  // Split 1
+  virtual ifc vis[2];  // Split 1
+  int qs[2][$];  // Split 1
   // Connected to unpacked ports of a module that is not inlined
-  logic [6:0] pin [2];  // Split 1
-  logic [6:0] pout [2];  // Split 1
+  logic [6:0] pin[2];  // Split 1
+  logic [6:0] pout[2];  // Split 1
   // Only copied whole, so not split
-  logic [6:0] cw1 [4];  // No split: only copied whole
-  logic [6:0] cw2 [4];  // No split: only copied whole
-  logic [6:0] cwo [4];  // No split: variable index
+  logic [6:0] cw1[4];  // No split: only copied whole
+  logic [6:0] cw2[4];  // No split: only copied whole
+  logic [6:0] cwo[4];  // No split: variable index
   // Only copied whole, but copied to a variable that is split, so split too
-  logic [6:0] cl1 [4];  // Split 1
-  logic [6:0] cl2 [4];  // Split 1
+  logic [6:0] cl1[4];  // Split 1
+  logic [6:0] cl2[4];  // Split 1
   // Chain of whole copies, only the last selected from, so split from the end of the chain
-  logic [6:0] wc0 [4];  // Split 1
-  logic [6:0] wc1 [4];  // Split 1
-  logic [6:0] wc2 [4];  // Split 1
-  logic [6:0] wc3 [4];  // Split 1
+  logic [6:0] wc0[4];  // Split 1
+  logic [6:0] wc1[4];  // Split 1
+  logic [6:0] wc2[4];  // Split 1
+  logic [6:0] wc3[4];  // Split 1
 
   always_comb begin
     for (int i = 1; i <= 3; i++) dn[i] = crc[i*7+:7];
@@ -326,7 +324,8 @@ module t (
       skad[1] <= '{d: 7'h2a, k: 1'b0};
       skr[0] <= {7'h55, 1'b0};
       skr[1] <= {7'h2a, 1'b0};
-    end else begin
+    end
+    else begin
       skad[skad[0].k] <= skd;
       skr[skr[0][0]] <= {skd.d, skd.k};
       `checkh(skad[0].d, skr[0][7:1]);
@@ -342,7 +341,8 @@ module t (
       utab[1] = '{v: '{7'h21, 7'h22, 7'h23, 7'h24}, i: 1'b0};
       for (int k = 0; k < 4; k++) uq.v[k] = 7'(k);
       uq.i = 1'b0;
-    end else begin
+    end
+    else begin
       ui = uq.i;
       uq = utab[uq.i];
       `checkh(uq.i, utab[ui].i);
@@ -362,7 +362,7 @@ module t (
   assign wc3 = wc2;
 
   function automatic logic [6:0] fx(input logic [6:0] v);
-    logic [6:0] tmp [2];  // Split 1
+    logic [6:0] tmp[2];  // Split 1
     tmp[0] = v;
     tmp[1] = ~v;
     return tmp[0] ^ tmp[1];
@@ -370,7 +370,7 @@ module t (
   assign fxo = fx(crc[6:0]);
 
   always_comb begin
-    automatic logic [6:0] loc [2];  // Split 1
+    automatic logic [6:0] loc[2];  // Split 1
     loc[0] = crc[6:0];
     loc[1] = crc[13:7];
     locx = loc[0] ^ loc[1];
@@ -528,14 +528,14 @@ module t (
 endmodule
 
 interface ifc;
-  logic [6:0] arr [2];  // No split: accessed via a virtual interface
+  logic [6:0] arr[2];  // No split: accessed via a virtual interface
 endinterface
 
 // Not inlined, with unpacked ports. The references are aliased to the connected variables,
 // so the ports are only copied whole to/from those, which are split, so split too.
 module psub (
-    input logic [6:0] pin [2],  // Split 1
-    output logic [6:0] pout [2]  // Split 1
+    input logic [6:0] pin[2],  // Split 1
+    output logic [6:0] pout[2]  // Split 1
 );
   /*verilator no_inline_module*/
   always_comb begin
@@ -551,7 +551,7 @@ module sub (
 );
   /*verilator no_inline_module*/
 
-  logic [6:0] arr [2];  // Split 1
+  logic [6:0] arr[2];  // Split 1
 
   always_comb begin
     arr[0] = crc[6:0];

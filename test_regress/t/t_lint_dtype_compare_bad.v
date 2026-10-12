@@ -85,7 +85,7 @@ module t;
     }
     bad_e2;
     aa5["a"] = 1;
-    aa6[1]   = 1;
+    aa6[1] = 1;
 
     // unpacked struct vs scalar
     if (x == 2) begin

@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=['-fno-var-split', '-fno-decompose-unpacked'],
+test.compile(verilator_flags2=['-fno-decompose-unpacked'],
              fails=True,
              expect_filename=test.golden_filename)
 

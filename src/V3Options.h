@@ -438,6 +438,7 @@ private:
     bool m_fAcycSimp;    // main switch: -fno-acyc-simp: acyclic pre-optimizations
     bool m_fAssemble;    // main switch: -fno-assemble: assign assemble
     bool m_fBitScanLoops;  // main switch: -fno-bit-scan-loops: convert bit scan loops to builtins
+    bool m_fBitblast;    // main switch: -fno-bitblast: split packed variables into bit ranges
     bool m_fCaseDecoder; // main switch: -fno-case-decoder: case decoder conversion
     bool m_fCaseTable;   // main switch: -fno-case-table: case table conversion
     bool m_fCaseTree;    // main switch: -fno-case-tree: case tree conversion
@@ -480,7 +481,6 @@ private:
     bool m_fSubstConst;  // main switch: -fno-subst-const: final constant substitution
     bool m_fTable;       // main switch: -fno-table: lookup table creation
     bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
-    bool m_fVarSplit;    // main switch: -fno-var-split: automatic variable splitting
     // clang-format on
 
     bool m_available = false;  // Set to true at the end of option parsing
@@ -781,6 +781,7 @@ public:
     bool fAcycSimp() const { return m_fAcycSimp; }
     bool fAssemble() const { return m_fAssemble; }
     bool fBitScanLoops() const { return m_fBitScanLoops; }
+    bool fBitblast() const { return m_fBitblast; }
     bool fCaseDecoder() const { return m_fCaseDecoder; }
     bool fCaseTable() const { return m_fCaseTable; }
     bool fCaseTree() const { return m_fCaseTree; }
@@ -827,7 +828,6 @@ public:
     bool fSubstConst() const { return m_fSubstConst; }
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
-    bool fVarSplit() const { return m_fVarSplit; }
 
     std::string traceClassBase() const VL_MT_SAFE;  // Deprecated
     std::string traceClassLang() const VL_MT_SAFE;  // Deprecated

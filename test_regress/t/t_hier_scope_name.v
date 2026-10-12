@@ -15,7 +15,10 @@ module t (
       $finish;
     end
   end
-  sub u_sub (.clk(clk), .cyc(cyc));
+  sub u_sub (
+      .clk(clk),
+      .cyc(cyc)
+  );
 endmodule
 
 `ifndef USE_LIB_SUB
@@ -34,7 +37,10 @@ module sub (
     end
     if (cyc == 3) show();
   end
-  leaf u_leaf (.clk(clk), .cyc(cyc));
+  leaf u_leaf (
+      .clk(clk),
+      .cyc(cyc)
+  );
 endmodule
 `endif
 

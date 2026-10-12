@@ -13,7 +13,11 @@
 // verilog_format: on
 
 package pkg;
-  typedef enum logic [1:0] {PA, PB, PC} pe_t;
+  typedef enum logic [1:0] {
+    PA,
+    PB,
+    PC
+  } pe_t;
 endpackage
 
 // The width depends on the size of a variable in the module
@@ -30,14 +34,22 @@ endinterface
 
 // The width depends on an item of an enum declared in the module
 module m_en;
-  typedef enum logic [1:0] {EA, EB, EC} e_t;
+  typedef enum logic [1:0] {
+    EA,
+    EB,
+    EC
+  } e_t;
   parameter int I = int'(EC);
   parameter logic [I:0] P = '0;
 endmodule
 
 // ... or in an interface
 interface ifc_en;
-  typedef enum logic [1:0] {EA, EB, EC} e_t;
+  typedef enum logic [1:0] {
+    EA,
+    EB,
+    EC
+  } e_t;
   parameter int I = int'(EC);
   parameter logic [I:0] P = '0;
 endinterface
