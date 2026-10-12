@@ -872,6 +872,12 @@ public:
         }
         puts(")");
     }
+    void visit(AstCFuncHard* nodep) override {
+        putns(nodep, nodep->name());
+        puts("(");
+        putCommaIterateNext(nodep->pinsp());
+        puts(")");
+    }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
     void visit(AstWith* nodep) override {
         // With uses a C++11 lambda
@@ -1836,7 +1842,8 @@ public:
     void visit(AstAddrOfCFunc* nodep) override {
         // Note: Can be thought to handle more, but this is all that is needed right now
         const AstCFunc* const funcp = nodep->funcp();
-        UASSERT_OBJ(funcp->isLoose(), nodep, "Cannot take address of non-loose method");
+        UASSERT_OBJ(funcp->isLoose() || funcp->dpiImportPrototype(), nodep,
+                    "Cannot take address of non-loose method");
         putns(nodep, "&");
         puts(funcNameProtect(funcp));
     }
