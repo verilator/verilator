@@ -92,7 +92,23 @@ module t;
     }
   endgroup
 
+  // A cross item has the type of its coverpoint's expression, whose names, in nested scopes too,
+  // are outside the filter, where the cross items hide them
+  logic [1:0] a;
+  int offset = 16;
+  bit one[1] = '{1};
+
+  covergroup cg_scope;
+    offset: coverpoint a;
+    // Of the module's 'offset', in the scope of the array method's 'with': 32 bits wide
+    total: coverpoint (one.sum() with (item + offset)) {bins values = {17};}
+    xx: cross offset, total{
+      bins wide = xx with ($bits(total) == 32);  // All 4 bin tuples
+    }
+  endgroup
+
   cg inst = new;
+  cg_scope scope_inst = new;
 
   initial begin
     v33 = 1;
@@ -103,11 +119,14 @@ module t;
     v1025 = 2;
     flag = 1;
     inst.sample();
+    scope_inst.sample();
     // x_big: unread of 2 bins; x_sum: one of 4 automatic bins; x_product: limit of 1 bin;
     // x_sparse: ends of 1 bin; x_unsup: <all,zero> of 1 automatic bin; x_words: none of 127
     // automatic bins; x_deep: <rest,low> of 4 automatic bins
     `checkr(inst.get_inst_coverage(),
             (50.0 + 25.0 + 100.0 + 100.0 + 100.0 + 0.0 + 25.0) / 7.0);
+    // offset: 1 of 4 bins; total: 1 of 1; xx: 'wide' of 1, not 1 of 4 automatic bins
+    `checkr(scope_inst.get_inst_coverage(), (25.0 + 100.0 + 100.0) / 3.0);
     $write("*-* All Finished *-*\n");
     $finish;
   end

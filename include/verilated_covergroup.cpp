@@ -771,11 +771,10 @@ static void _vl_cov_warn_ignored(const char* file, int line, const std::string& 
                                  const char* name) VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     static std::set<std::string> s_texts;  // Texts of the warnings
-    std::string text = reason + "; bin '" + name + "' ignored";
     const char* textp;
     {
         const VerilatedLockGuard lock{s_mutex};
-        textp = s_texts.insert(std::move(text)).first->c_str();
+        textp = s_texts.insert(reason + "; bin '" + name + "' ignored").first->c_str();
     }
     VL_WARN_MT(file, line, "", textp);
 }
@@ -988,17 +987,20 @@ void VlCoverpoint::withFinish(VlCovBinKind kind, QData count, bool positive, con
     kept.swap(with.m_kept);
     data.m_sizedElements.clear();
     const bool values = with.m_grouping == VlCovBinGrouping::Values;
-    if (VL_UNLIKELY(with.m_candidates || with.m_full)) {
+    if (VL_UNLIKELY(with.m_candidates)) {
         kept.clear();
-        _vl_cov_warn_ignored(
-            file, line,
-            with.m_candidates
-                ? "Coverage bin 'with' filter has more than 2**"
-                      + std::to_string(ValueData::CANDIDATE_LIMIT_LOG2) + " candidate values"
-            : values ? "Coverage bin array needs more bins than --coverage-max-bins"
-                     : "Coverage bin 'with' filter keeps values in more ranges than"
-                       " --coverage-max-bins",
-            name);
+        _vl_cov_warn_ignored(file, line,
+                             "Coverage bin 'with' filter has more than 2**"
+                                 + std::to_string(ValueData::CANDIDATE_LIMIT_LOG2)
+                                 + " candidate values",
+                             name);
+    } else if (VL_UNLIKELY(with.m_full)) {
+        kept.clear();
+        _vl_cov_warn_ignored(file, line,
+                             values ? "Coverage bin array needs more bins than --coverage-max-bins"
+                                    : "Coverage bin 'with' filter keeps values in more ranges than"
+                                      " --coverage-max-bins",
+                             name);
     }
     if (with.m_grouping == VlCovBinGrouping::Fixed) {
         // Filtered first, then distributed (IEEE 1800-2023 19.5.1.1)
