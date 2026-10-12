@@ -281,7 +281,9 @@ private:
     const Edge* const m_edgesp;  // Dependencies between MTasks
     const uint32_t m_nEdges;  // Number of dependencies
     const size_t m_nTriggerWords;  // Number of trigger words for MTasks
+    const IData* const m_triggerCostsp;  // Static cost of the logic each trigger guards
     const Fnp m_dispatchp;  // Runs the graph on the thread pool, as scheduled by Verilator
+    const uint64_t m_serialCost;  // Total cost of set triggers' logic run on the caller
 
     VL_UNCOPYABLE(VlExecGraph);
 
@@ -290,13 +292,16 @@ public:
     // constexpr, so the global graphs need no dynamic initialization, and can be used from
     // static constructors
     constexpr VlExecGraph(const Vertex* verticesp, uint32_t nVertices, const Edge* edgesp,
-                          uint32_t nEdges, size_t nTriggerWords, Fnp dispatchp)
+                          uint32_t nEdges, size_t nTriggerWords, const IData* triggerCostsp,
+                          Fnp dispatchp, uint64_t serialCost)
         : m_verticesp{verticesp}
         , m_nVertices{nVertices}
         , m_edgesp{edgesp}
         , m_nEdges{nEdges}
         , m_nTriggerWords{nTriggerWords}
-        , m_dispatchp{dispatchp} {}
+        , m_triggerCostsp{triggerCostsp}
+        , m_dispatchp{dispatchp}
+        , m_serialCost{serialCost} {}
 
     // ACCESSORS
     const Vertex* verticesp() const { return m_verticesp; }
@@ -304,7 +309,9 @@ public:
     const Edge* edgesp() const { return m_edgesp; }
     uint32_t nEdges() const { return m_nEdges; }
     size_t nTriggerWords() const { return m_nTriggerWords; }
+    const IData* triggerCostsp() const { return m_triggerCostsp; }
     Fnp dispatchp() const { return m_dispatchp; }
+    uint64_t serialCost() const { return m_serialCost; }
 };
 
 // Run 'graph' for the model's root instance 'selfp', when the trigger vector holds the

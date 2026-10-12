@@ -924,7 +924,9 @@ The generated code also describes each macro-task graph as static data: the
 function of each macro-task, its estimated cost, the trigger bits its code
 tests, and the dependencies between macro-tasks. Where the graph executes,
 the generated code passes this description and the trigger vector to the
-run-time library, which executes the graph.
+run-time library, which executes the graph. If the macro-tasks whose
+triggers are set are cheap in total, it runs only those, in a topological
+order on the calling thread, without waking the other threads.
 
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major

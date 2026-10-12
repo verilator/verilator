@@ -1203,6 +1203,8 @@ void addTriggerMasks(AstExecGraph* const execGraphp) {
                 wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
             }
         });
+        // The run-time library skips MTasks testing no set trigger, so all code must be guarded
+        UASSERT_OBJ(!wordMasks.empty(), callp->funcp(), "MTask without trigger check");
         AstInitArray* const initp = new AstInitArray{flp, triggersp->dtypep(),
                                                      new AstConst{flp, AstConst::Unsized64{}, 0}};
         for (const auto& wordMask : wordMasks) {
@@ -1212,6 +1214,35 @@ void addTriggerMasks(AstExecGraph* const execGraphp) {
         execGraphp->addMaskps(V3ConstPool::findTable(initp));
         VL_DO_DANGLING(initp->deleteTree(), initp);
     }
+}
+
+void addTriggerCosts(AstExecGraph* const execGraphp) {
+    // Set 'triggerCostsp' to a constant table with the static cost of the logic each trigger
+    // guards in the MTasks
+    FileLine* const flp = execGraphp->fileline();
+    const uint32_t nTriggers
+        = VN_AS(execGraphp->triggerp()->varp()->dtypep(), UnpackArrayDType)->elementsConst()
+          * VL_QUADSIZE;
+    std::vector<uint32_t> costs(nTriggers, 0);
+    for (AstCCall* callp = execGraphp->callsp(); callp; callp = VN_AS(callp->nextp(), CCall)) {
+        callp->funcp()->foreach([&](AstIf* ifp) {
+            if (const AstTriggered* const trigp = VN_CAST(ifp->condp(), Triggered)) {
+                const uint32_t cost = V3InstrCount::count(ifp, false);
+                for (const uint32_t index : trigp->indices()) costs.at(index) += cost;
+            }
+        });
+    }
+    AstNetlist* const netlistp = v3Global.rootp();
+    AstUnpackArrayDType* const dtypep
+        = new AstUnpackArrayDType{flp, netlistp->findBitDType(32, 32, VSigning::UNSIGNED),
+                                  new AstRange{flp, static_cast<int>(nTriggers - 1), 0}};
+    netlistp->typeTablep()->addTypesp(dtypep);
+    AstInitArray* const initp = new AstInitArray{flp, dtypep, new AstConst{flp, 0}};
+    for (uint32_t index = 0; index < nTriggers; ++index) {
+        if (costs[index]) initp->addIndexValuep(index, new AstConst{flp, costs[index]});
+    }
+    execGraphp->triggerCostsp(V3ConstPool::findTable(initp));
+    VL_DO_DANGLING(initp->deleteTree(), initp);
 }
 
 // Called by Verilator top stage
@@ -1263,6 +1294,7 @@ void implement(AstNetlist* netlistp) {
         addThreadEndWrapper(execGraphp);
 
         addTriggerMasks(execGraphp);
+        addTriggerCosts(execGraphp);
     }
 }
 
