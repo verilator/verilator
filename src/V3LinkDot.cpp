@@ -5152,16 +5152,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         foundp = getCreateClockingEventSymEnt(clockingp);
                     }
                 }
-       AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
-    if (!varp && foundp) {
-        if (AstVar* const paramVar = VN_CAST(foundp->nodep(), Var)) {
-            varp = paramVar;
-        }
-    }
-    nodep->varp(varp);
-
-
-
+                AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
+                if (!varp && foundp) {
+                    if (AstVar* const paramVar = VN_CAST(foundp->nodep(), Var)) {
+                        varp = paramVar;
+                    }
+                }
+                nodep->varp(varp);
 
                 updateVarUse(nodep->varp());
                 UINFO(7, indent() << "Resolved " << nodep);  // Also prints varp
