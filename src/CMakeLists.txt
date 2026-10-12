@@ -271,6 +271,7 @@ set(COMMON_SOURCES
     V3DupFinder.cpp
     V3EmitCBase.cpp
     V3EmitCConstPool.cpp
+    V3EmitCExecGraph.cpp
     V3EmitCFunc.cpp
     V3EmitCHeaders.cpp
     V3EmitCImp.cpp

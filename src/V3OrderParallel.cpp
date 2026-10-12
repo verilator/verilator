@@ -240,7 +240,7 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
     // Create the AstExecGraph node which represents the execution of the MTask graph.
     FileLine* const flp = v3Global.rootp()->fileline();
     AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
-    AstExecGraph* const execGraphp = new AstExecGraph{flp, tag};
+    AstExecGraph* const execGraphp = new AstExecGraph{flp, tag, moveGraph.orderGraph().trigVscp()};
     V3Graph* const depGraphp = execGraphp->depGraphp();
 
     // Translate the LogicMTask graph into the corresponding ExecMTask graph,
@@ -305,7 +305,7 @@ AstNodeStmt* V3Order::createParallel(OrderMoveGraph& moveGraph, const std::strin
         // The order they are created here happens to be just such an order.
         AstCCall* const callp = new AstCCall{flp, execMTaskp->funcp()};
         callp->dtypeSetVoid();
-        execGraphp->addStmtsp(callp->makeStmt());
+        execGraphp->addCallsp(callp);
 
         // Add the dependency edges between ExecMTasks
         for (const V3GraphEdge& edge : mTaskp->inEdges()) {
