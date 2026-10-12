@@ -1176,7 +1176,7 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     }
 
     // Default prefix to the filename
-    if (prefix() == "" && topModule() != "") m_prefix = "V"s + AstNode::encodeName(topModule());
+    if (prefix() == "" && topModule() != "") m_prefix = "V"s + topModule();  // Already encoded
     if (prefix() == "" && vFiles().size() >= 1)
         m_prefix
             = "V"s + AstNode::encodeName(V3Os::filenameNonDirExt(vFiles().begin()->filename()));

@@ -1975,22 +1975,13 @@ public:
 class AstSenTree final : public AstNode {
     // A sensitivity list
     // @astgen op1 := sensesp : List[AstSenItem]
-    bool m_multi = false;  // Created from combo logic by ORing multiple clock domains
 public:
     AstSenTree(FileLine* fl, AstSenItem* sensesp)
         : ASTGEN_SUPER_SenTree(fl) {
         addSensesp(sensesp);
     }
     ASTGEN_MEMBERS_AstSenTree;
-    bool sameNode(const AstNode* samep) const override {
-        const AstSenTree* const asamep = VN_DBG_AS(samep, SenTree);
-        return m_multi == asamep->m_multi;
-    }
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    bool isMulti() const { return m_multi; }
-    void multi(bool flag) { m_multi = true; }
     // METHODS
     bool hasClocked() const;  // Includes a clocked statement
     bool hasEdge() const;  // Includes a posedge/negedge/bothedge clocked statement

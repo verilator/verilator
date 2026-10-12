@@ -1780,6 +1780,25 @@ public:
         iterateAndNextConstNull(nodep->fhsp());
         puts(")");
     }
+    void visit(AstTriggered* nodep) override {
+        // Test each word of the trigger vector with a mask of the relevant bits
+        std::map<uint32_t, uint64_t> wordMasks;
+        for (const uint32_t index : nodep->indices()) {
+            wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
+        }
+        putns(nodep, "((");
+        bool first = true;
+        for (const auto& wordMask : wordMasks) {
+            if (!first) puts("\n| ");
+            first = false;
+            const bool allOnes = wordMask.second == ~0ULL;
+            if (!allOnes) puts("(" + V3Number{nodep, 64}.setQuad(wordMask.second).emitC() + " & ");
+            iterateConst(nodep->trigRefp());
+            puts("[" + std::to_string(wordMask.first) + "U]");
+            if (!allOnes) puts(")");
+        }
+        puts(") != 0ULL)");
+    }
     void visit(AstInitItem* nodep) override { iterateChildrenConst(nodep); }
     // Terminals
     void visit(AstVarRef* nodep) override {
