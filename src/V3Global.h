@@ -192,6 +192,8 @@ class V3Global final {
     bool m_hasVirtIfaces = false;  // Design uses virtual interfaces
     bool m_usesProbDist = false;  // Uses $dist_*
     bool m_usesStdPackage = false;  // Design uses the std package
+    bool m_usesSuspendableExports = false;  // Design uses timing constructs in suspendable exports
+                                            // (implies m_usesTiming)
     bool m_usesTiming = false;  // Design uses timing constructs
     bool m_usesForce = false;  // Design uses force/release statements
     bool m_usesZeroDelay = false;  // Design uses #0 delay (or non-constant delay)
@@ -274,6 +276,8 @@ public:
     void setUsesProbDist() { m_usesProbDist = true; }
     bool usesStdPackage() const { return m_usesStdPackage; }
     void setUsesStdPackage() { m_usesStdPackage = true; }
+    bool usesSuspendableExports() const { return m_usesSuspendableExports; }
+    void setUsesSuspendableExports() { m_usesSuspendableExports = true; }
     bool usesTiming() const { return m_usesTiming; }
     void setUsesTiming() { m_usesTiming = true; }
     bool usesZeroDelay() const { return m_usesZeroDelay; }
