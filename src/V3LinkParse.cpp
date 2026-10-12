@@ -65,7 +65,7 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
     AstCoverpoint* m_coverpointp = nullptr;  // Current coverpoint
     AstCoverCross* m_crossp = nullptr;  // Current cross
-    AstFunc* m_covergroupNewp = nullptr;  // Constructor holding the current covergroup's body
+    std::map<string, const AstCoverpoint*> m_coverpoints;  // Current covergroup's, by name
     int m_anonUdpId = 0;  // Counter for anonymous UDP instances
     int m_coverpointNum = 0;  // Counter for unnamed coverpoints within current covergroup
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
@@ -1426,9 +1426,13 @@ class LinkParseVisitor final : public VNVisitor {
         // Reset the unnamed-coverpoint counter so synthesized names are stable and
         // independent of unrelated covergroups elsewhere in the file.
         VL_RESTORER(m_coverpointNum);
-        VL_RESTORER(m_covergroupNewp);
+        VL_RESTORER_CLEAR(m_coverpoints);
         m_coverpointNum = 0;
-        m_covergroupNewp = newFuncp;
+        for (const AstNode* stmtp = newFuncp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (const AstCoverpoint* const pointp = VN_CAST(stmtp, Coverpoint)) {
+                m_coverpoints.emplace(coverpointName(pointp), pointp);
+            }
+        }
         nodep->replaceWith(cgClassp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(cgClassp);
@@ -1449,12 +1453,8 @@ class LinkParseVisitor final : public VNVisitor {
     // The coverpoint of the current covergroup a cross item names, or null
     const AstCoverpoint* findCoverpoint(const AstCoverpointRef* refp) const {
         if (refp->exprp()) return nullptr;  // A hierarchical reference, unsupported
-        UASSERT_OBJ(m_covergroupNewp, refp, "Cross outside a covergroup");
-        for (const AstNode* stmtp = m_covergroupNewp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            const AstCoverpoint* const pointp = VN_CAST(stmtp, Coverpoint);
-            if (pointp && coverpointName(pointp) == refp->name()) return pointp;
-        }
-        return nullptr;
+        const auto it = m_coverpoints.find(refp->name());
+        return it == m_coverpoints.end() ? nullptr : it->second;
     }
 
     void visit(AstCoverpoint* nodep) override {

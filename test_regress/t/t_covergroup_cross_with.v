@@ -57,6 +57,7 @@ module t;
       bins equal = xx with (aa == bb);  // <lo,lo>, <hi,hi>
       bins sum_five = xx with (aa + bb == 5);  // <hi,hi>
       bins compound = (binsof (aa.lo) && binsof (bb)) with (aa == bb);  // <lo,lo>
+      bins conjunction = binsof (aa.hi) && binsof (bb) with (aa == bb);  // <hi,hi>
       bins nested = (xx with (aa <= bb)) with (aa == bb);  // <lo,lo>, <hi,hi>
       // <lo,lo>, <hi,hi>
       bins combined = binsof (aa.lo) with (aa == bb) || binsof (bb.hi) with (aa + bb == 5);
@@ -108,8 +109,8 @@ module t;
       bins skipped_value = xx with (aa == 3);  // No bin tuple
       bins bad_value = xx with (bb == 0);  // No bin tuple
       bins equal = xx with (aa == bb);  // <low,low>, as <high,high> is ignored
-      ignore_bins high_sum = xx with (aa + bb >= 5);  // <high,high>
-      illegal_bins wrong = xx with (aa == 2 && bb == 1) iff (enabled);  // <high,low>
+      ignore_bins high_sum = binsof (aa.high) with (aa + bb >= 5);  // <high,high>
+      illegal_bins wrong = binsof (bb.low) with (aa == 2 && bb == 1) iff (enabled);  // <high,low>
     }
   endgroup
 

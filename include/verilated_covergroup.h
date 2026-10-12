@@ -537,7 +537,8 @@ public:
     /// Select, of the bin tuples of the selection, those with a value tuple for which a 'with'
     /// filter is true (IEEE 1800-2023 19.6.1.2).  The filter reads the values of the dimensions
     /// 'dims', so is evaluated for the value tuples of each distinct choice of bins of those
-    /// dimensions, until true; if more than 2**32 value tuples, the bin 'namep' is ignored.
+    /// dimensions, until true; with more value tuples than a filter may evaluate, the bin
+    /// 'namep' is ignored.
     void withBegin(std::initializer_list<uint32_t> dims, const char* namep, const char* filep,
                    int line);
     /// Advance to the next value tuple to evaluate the filter for; false after the last

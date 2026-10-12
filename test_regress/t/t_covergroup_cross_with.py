@@ -11,6 +11,7 @@ import vltest_bootstrap
 import coverage_covergroup_common
 
 test.scenarios('vlt_all')
-test.v_flags2 += ['t/t_covergroup_cross_with.cpp']
 
-coverage_covergroup_common.run(test, threads=(2 if test.vltmt else 1))
+coverage_covergroup_common.run(test,
+                               verilator_flags2=[test.pli_filename],
+                               threads=(2 if test.vltmt else 1))

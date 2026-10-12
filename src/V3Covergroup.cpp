@@ -3423,25 +3423,22 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return target;
     }
 
+    // The variables a 'with' filter reads, each by its first reference
+    using CrossFilterReads = std::map<const AstVar*, AstVarRef*>;
+
     // Whether the runtime knows the values of the cross items a 'with' filter reads, of
     // integral coverpoints; else warns
-    static bool crossFilterSupported(const AstCoverCrossWith* withp) {
-        std::set<const AstVar*> candidates;
+    static bool crossFilterSupported(const AstCoverCrossWith* withp,
+                                     const CrossFilterReads& reads) {
         for (const AstVar* varp = withp->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
-            candidates.insert(varp);
+            const auto it = reads.find(varp);
+            if (it == reads.end() || varp->dtypep()->skipRefp()->isIntegralOrPacked()) continue;
+            it->second->v3warn(COVERIGN, "Unsupported: cross bin 'with' filter reading the value "
+                                         "of non-integral coverpoint "
+                                             << it->second->prettyNameQ());
+            return false;
         }
-        AstVarRef* unsupportedp = nullptr;
-        withp->filterp()->foreach([&](AstVarRef* refp) {
-            if (!unsupportedp && candidates.count(refp->varp())
-                && !refp->varp()->dtypep()->skipRefp()->isIntegralOrPacked()) {
-                unsupportedp = refp;
-            }
-        });
-        if (!unsupportedp) return true;
-        unsupportedp->v3warn(COVERIGN, "Unsupported: cross bin 'with' filter reading the value "
-                                       "of non-integral coverpoint "
-                                           << unsupportedp->prettyNameQ());
-        return false;
+        return true;
     }
 
     // Emit the constructor code selecting, of the bin tuples of the selection, those with a value
@@ -3453,12 +3450,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     //       withTest(filter);
     //   }
     //   withEnd();
-    void generateCrossFilter(const AstCoverCrossWith* withp, const AstCoverCrossBin* binp,
-                             const AstCoverCross* crossp, AstVar* cxp,
-                             const std::map<string, uint32_t>& dimensions) {
+    void generateCrossFilter(const AstCoverCrossWith* withp, const CrossFilterReads& reads,
+                             const AstCoverCrossBin* binp, const AstCoverCross* crossp,
+                             AstVar* cxp, const std::map<string, uint32_t>& dimensions) {
         FileLine* const fl = withp->fileline();
-        std::set<const AstVar*> reads;
-        withp->filterp()->foreach([&](const AstVarRef* refp) { reads.insert(refp->varp()); });
         const string prefix
             = m_sizedNames.get(sanitizeGeneratedName(crossp->name() + "__" + binp->name()));
         AstLoop* const loopp = new AstLoop{fl};
@@ -3532,12 +3527,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return true;
         }
         if (const AstCoverCrossWith* const withp = VN_CAST(nodep, CoverCrossWith)) {
-            if (!crossFilterSupported(withp)
+            CrossFilterReads reads;
+            withp->filterp()->foreach([&](AstVarRef* refp) { reads.emplace(refp->varp(), refp); });
+            if (!crossFilterSupported(withp, reads)
                 || !generateRuntimeSelection(withp->selectp(), binp, crossp, cxp, cpVars,
                                              dimensions)) {
                 return false;
             }
-            generateCrossFilter(withp, binp, crossp, cxp, dimensions);
+            generateCrossFilter(withp, reads, binp, crossp, cxp, dimensions);
             return true;
         }
         AstCoverBinsof* const selectp = VN_AS(nodep, CoverBinsof);

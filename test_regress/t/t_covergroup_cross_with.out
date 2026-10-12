@@ -70,6 +70,7 @@ t.cg_select.bb.lo: 8
 t.cg_select.xx.all [cross]: 16
 t.cg_select.xx.combined [cross]: 8
 t.cg_select.xx.compound [cross]: 4
+t.cg_select.xx.conjunction [cross]: 4
 t.cg_select.xx.equal [cross]: 8
 t.cg_select.xx.intersected [cross]: 4
 t.cg_select.xx.negated [cross]: 4

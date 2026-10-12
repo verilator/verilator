@@ -11,9 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.top_filename = 't/t_covergroup_cross_with.v'
-test.v_flags2 += ['t/t_covergroup_cross_with.cpp']
+test.pli_filename = 't/t_covergroup_cross_with.cpp'
 
-test.compile(threads=(2 if test.vltmt else 1))
+test.compile(verilator_flags2=[test.pli_filename], threads=(2 if test.vltmt else 1))
 
 test.execute()
 

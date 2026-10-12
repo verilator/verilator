@@ -2313,8 +2313,10 @@ class LinkDotFindVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->filterp());
     }
     void visit(AstCoverCrossWith* nodep) override {  // FindVisitor::
-        // The selection, and the types of the cross items (of their coverpoints' expressions,
-        // with any nested scopes), are outside the scope of the filter, which declares the items
+        // The selection and the cross items' types, of their coverpoints' expressions with any
+        // nested scopes, are outside the filter's scope, which declares the items.  As
+        // visit(AstVar) would resolve a type in the scope declaring its variable, the items,
+        // generated and unique, are inserted directly.
         iterateAndNextNull(nodep->selectp());
         for (AstVar* varp = nodep->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
             iterateAndNextNull(varp->childDTypep());
@@ -5882,12 +5884,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         checkNoDot(nodep);
         iterateAndNextNull(nodep->selectp());
         // The type of a cross item is that of its coverpoint's expression, which may name items
-        for (AstVar* varp = nodep->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
-            iterateAndNextNull(varp->childDTypep());
-        }
+        iterateAndNextNull(nodep->varsp());
         VL_RESTORER(m_curSymp);
         m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
-        iterateAndNextNull(nodep->varsp());
         iterateAndNextNull(nodep->filterp());
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }

@@ -136,7 +136,8 @@ struct VlCoverpoint::ValueData final {
         Value m_values;  // Values of m_kept, a position, for Values grouping
     };
     // Candidates each bin's filter may evaluate, when the covergroup is constructed
-    static constexpr QData CANDIDATE_LIMIT = 1ULL << 32;
+    static constexpr int CANDIDATE_LIMIT_LOG2 = 32;
+    static constexpr QData CANDIDATE_LIMIT = 1ULL << CANDIDATE_LIMIT_LOG2;
 
     // MEMBERS
     const uint32_t m_bits;  // Width of the coverpoint's effective integral type
@@ -766,11 +767,11 @@ void VlCoverpoint::sizedRangeW(WDataInP lop, WDataInP hip) {
 
 // Warn that the bins 'name' are ignored, because of 'reason'.  From an mtask, VL_WARN_MT reports
 // after returning, so the text is kept for the program, once for all instances.
-static void _vl_cov_warn_ignored(const char* file, int line, const char* reason,
+static void _vl_cov_warn_ignored(const char* file, int line, const std::string& reason,
                                  const char* name) VL_MT_SAFE {
     static VerilatedMutex s_mutex;
     static std::set<std::string> s_texts;  // Texts of the warnings
-    std::string text = std::string{reason} + "; bin '" + name + "' ignored";
+    std::string text = reason + "; bin '" + name + "' ignored";
     const char* textp;
     {
         const VerilatedLockGuard lock{s_mutex};
@@ -991,10 +992,12 @@ void VlCoverpoint::withFinish(VlCovBinKind kind, QData count, bool positive, con
         kept.clear();
         _vl_cov_warn_ignored(
             file, line,
-            with.m_candidates ? "Coverage bin 'with' filter has more than 2**32 candidate values"
-            : values          ? "Coverage bin array needs more bins than --coverage-max-bins"
-                              : "Coverage bin 'with' filter keeps values in more ranges than"
-                                " --coverage-max-bins",
+            with.m_candidates
+                ? "Coverage bin 'with' filter has more than 2**"
+                      + std::to_string(ValueData::CANDIDATE_LIMIT_LOG2) + " candidate values"
+            : values ? "Coverage bin array needs more bins than --coverage-max-bins"
+                     : "Coverage bin 'with' filter keeps values in more ranges than"
+                       " --coverage-max-bins",
             name);
     }
     if (with.m_grouping == VlCovBinGrouping::Fixed) {
@@ -1866,8 +1869,9 @@ void VlCoverCrossDyn::withBegin(std::initializer_list<uint32_t> dims, const char
     data.m_active = false;
     if (VL_UNLIKELY(total > LIMIT)) {
         _vl_cov_warn_ignored(filep, line,
-                             "Coverage cross bin 'with' filter has more than 2**32 candidate "
-                             "value tuples",
+                             "Coverage cross bin 'with' filter has more than 2**"
+                                 + std::to_string(VlCoverpoint::ValueData::CANDIDATE_LIMIT_LOG2)
+                                 + " candidate value tuples",
                              namep);
         data.m_ignored = true;
         std::fill(data.m_candidates.begin(), data.m_candidates.end(), 0);

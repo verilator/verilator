@@ -13,12 +13,13 @@ import coverage_covergroup_common
 test.scenarios('vlt')
 test.top_filename = 't/t_covergroup_cross_with.v'
 test.golden_filename = 't/t_covergroup_cross_with.out'
-test.v_flags2 += ['t/t_covergroup_cross_with.cpp']
+test.pli_filename = 't/t_covergroup_cross_with.cpp'
 
 if test.tsan:
     test.skip("ThreadSanitizer not compatible with AddressSanitizer\n")
 
 coverage_covergroup_common.run(
-    test, verilator_flags2=['-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address'])
+    test,
+    verilator_flags2=['-CFLAGS -fsanitize=address -LDFLAGS -fsanitize=address', test.pli_filename])
 
 test.passes()
