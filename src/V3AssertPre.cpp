@@ -306,62 +306,62 @@ private:
         // Clear referenced flag; sequences with isReferenced==false are deleted in assertPreAll
         seqp->isReferenced(false);
     }
+    AstPropSpec* clonePropertyBody(AstFuncRef* funcrefp, const AstProperty* propp) {
+        AstPropSpec* propExprp = getPropertyExprp(propp);
+        // Substitute inner property call before copying in order to not doing the same for
+        // each call of outer property call.
+        propExprp = substitutePropertyCall(propExprp);
+        // Clone subtree after substitution. It is needed, because property might be called
+        // multiple times with different arguments.
+        propExprp = propExprp->cloneTree(false);
+        // Build substitution maps for formal arguments and property-local
+        // variables, then perform a single foreach to apply all replacements.
+        // Map port vars to their actual argument expressions
+        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->stmtsp());
+        std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
+        for (const auto& tconnect : tconnects) {
+            portMap[tconnect.first] = tconnect.second->exprp();
+        }
+
+        // Promote property-local variables (non-port vars, IEEE 16.10) to
+        // module-level __Vpropvar temps. Cross-cycle persistence is handled
+        // by the match item lowering in visit(AstImplication*).
+        std::unordered_map<const AstVar*, AstVar*> localVarMap;
+        for (AstNode* stmtp = propp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (!varp->isIO()) {
+                    const string newName = m_propVarNames.get(varp);
+                    AstVar* const newVarp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
+                                                       newName, varp->dtypep()};
+                    newVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+                    m_modp->addStmtsp(newVarp);
+                    localVarMap[varp] = newVarp;
+                }
+            }
+        }
+
+        // Single traversal: substitute ports and update local var references
+        propExprp->foreach([&](AstVarRef* refp) {
+            const auto portIt = portMap.find(refp->varp());
+            if (portIt != portMap.end()) {
+                refp->replaceWith(portIt->second->cloneTree(false));
+                VL_DO_DANGLING(pushDeletep(refp), refp);
+                return;
+            }
+            const auto localIt = localVarMap.find(refp->varp());
+            if (localIt != localVarMap.end()) refp->varp(localIt->second);
+        });  // LCOV_EXCL_LINE -- gcov attributes lambda's implicit return to `})`
+
+        // Clean up argument expressions
+        for (const auto& tconnect : tconnects) {
+            pushDeletep(tconnect.second->exprp()->unlinkFrBack());
+        }
+        return propExprp;
+    }
     AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
         if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
             if (const AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
-                AstPropSpec* propExprp = getPropertyExprp(propp);
-                // Substitute inner property call before copying in order to not doing the same for
-                // each call of outer property call.
-                propExprp = substitutePropertyCall(propExprp);
-                // Clone subtree after substitution. It is needed, because property might be called
-                // multiple times with different arguments.
-                propExprp = propExprp->cloneTree(false);
-                // Build substitution maps for formal arguments and property-local
-                // variables, then perform a single foreach to apply all replacements.
-                // Map port vars to their actual argument expressions
-                const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->stmtsp());
-                std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
-                for (const auto& tconnect : tconnects) {
-                    portMap[tconnect.first] = tconnect.second->exprp();
-                }
-
-                // Promote property-local variables (non-port vars, IEEE 16.10) to
-                // module-level __Vpropvar temps. Cross-cycle persistence is handled
-                // by the match item lowering in visit(AstImplication*).
-                std::unordered_map<const AstVar*, AstVar*> localVarMap;
-                for (AstNode* stmtp = propp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-                    if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                        if (!varp->isIO()) {
-                            const string newName = m_propVarNames.get(varp);
-                            AstVar* const newVarp = new AstVar{
-                                varp->fileline(), VVarType::MODULETEMP, newName, varp->dtypep()};
-                            newVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-                            m_modp->addStmtsp(newVarp);
-                            localVarMap[varp] = newVarp;
-                        }
-                    }
-                }
-
-                // Single traversal: substitute ports and update local var references
-                propExprp->foreach([&](AstVarRef* refp) {
-                    {
-                        const auto portIt = portMap.find(refp->varp());
-                        if (portIt != portMap.end()) {
-                            refp->replaceWith(portIt->second->cloneTree(false));
-                            VL_DO_DANGLING(pushDeletep(refp), refp);
-                            return;
-                        }
-                    }
-                    {
-                        const auto localIt = localVarMap.find(refp->varp());
-                        if (localIt != localVarMap.end()) { refp->varp(localIt->second); }
-                    }
-                });
-
-                // Clean up argument expressions
-                for (const auto& tconnect : tconnects) {
-                    pushDeletep(tconnect.second->exprp()->unlinkFrBack());
-                }
+                AstPropSpec* const propExprp = clonePropertyBody(funcrefp, propp);
 
                 // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
                 if (nodep->disablep() && propExprp->disablep()) {
@@ -394,6 +394,28 @@ private:
             }
         }
         return nodep;
+    }
+
+    void substituteNestedPropertyCall(AstFuncRef* funcrefp, const AstProperty* propp) {
+        AstPropSpec* const specp = clonePropertyBody(funcrefp, propp);
+        AstNode* replp = nullptr;
+        if (specp->disablep()) {
+            funcrefp->v3error("Illegal 'disable iff' in a nested property instance"
+                              " (IEEE 1800-2023 16.12.1)");
+        } else if (specp->sensesp()) {
+            funcrefp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: clock event in a nested property instance");
+        } else if (specp->propp()->exists(
+                       [](const AstNodeExpr* np) { return np->isMultiCycleSva(); })) {
+            funcrefp->v3warn(E_UNSUPPORTED,
+                             "Unsupported: multi-cycle body in a nested property instance");
+        } else {
+            replp = specp->propp()->unlinkFrBack();
+        }
+        if (!replp) replp = new AstConst{funcrefp->fileline(), AstConst::BitFalse{}};
+        funcrefp->replaceWith(replp);
+        VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
+        VL_DO_DANGLING(pushDeletep(specp), specp);
     }
 
     // VISITORS
@@ -1355,6 +1377,10 @@ private:
             substituteSequenceCall(nodep, seqp);
             // The FuncRef has been replaced; do not access nodep after this point.
             // The replacement node will be visited by the parent's iterateChildren.
+            return;
+        }
+        if (const AstProperty* const propp = VN_CAST(nodep->taskp(), Property)) {
+            substituteNestedPropertyCall(nodep, propp);
             return;
         }
         iterateChildren(nodep);
