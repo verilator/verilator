@@ -184,6 +184,7 @@ Verilator 5.053 devel
 * Fix coverage naming to separate/merge types correctly (#8563). [Marco Bartoli]
 * Fix VPI rows for dynamic and class type variables (#8564). [Nick Brereton]
 * Fix typenames to be more readable (#8568) (#8570). [Marco Bartoli]
+* Fix excessive top-module name mangling (#8569). [Ethan Uppal]
 * Fix Windows cmake flex error (#8571) (#8572). [yash]
 * Fix %m in hierarchical models (#8575). [Geza Lore, Testorrent USA, Inc.]
 * Fix underscore handling in decimal scans (#8576) (#8577). [Martin Velay]
