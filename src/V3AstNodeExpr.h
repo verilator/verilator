@@ -5493,7 +5493,7 @@ public:
         case ATOHEX: return "VL_ATOI_N(%li, 16)";
         case ATOOCT: return "VL_ATOI_N(%li, 8)";
         case ATOBIN: return "VL_ATOI_N(%li, 2)";
-        case ATOREAL: return "std::atof(%li.c_str())";
+        case ATOREAL: return "VL_ATOREAL_N(%li)";
         }
         V3ERROR_NA_RETURN("");
     }
