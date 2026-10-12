@@ -1190,6 +1190,20 @@ public:
         return m_isOr == VN_DBG_AS(samep, CoverCrossSelect)->m_isOr;
     }  // LCOV_EXCL_STOP
 };
+class AstCoverCrossWith final : public AstNode {
+    // The bin tuples of a cross-bin selection with a value tuple for which a 'with' filter is
+    // true (IEEE 1800-2023 19.6.1.2)
+    // @astgen op1 := selectp : Optional[AstNode]  // Selection filtered; null if unsupported
+    // @astgen op2 := filterp : AstNodeExpr
+    // @astgen op3 := varsp : List[AstVar]  // Candidate value of each cross item, from V3LinkParse
+public:
+    AstCoverCrossWith(FileLine* fl, AstNode* selectp, AstNodeExpr* filterp)
+        : ASTGEN_SUPER_CoverCrossWith(fl) {
+        this->selectp(selectp);
+        this->filterp(filterp);
+    }
+    ASTGEN_MEMBERS_AstCoverCrossWith;
+};
 class AstCoverOption final : public AstNode {
     // Coverage-option assignment
     // @astgen op1 := valuep : AstNodeExpr
