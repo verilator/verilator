@@ -5152,12 +5152,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         foundp = getCreateClockingEventSymEnt(clockingp);
                     }
                 }
-    AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
+       AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
     if (!varp && foundp) {
-        // Fallback to extract the underlying variable if the node is wrapped inside a symbol entity definition
-        varp = VN_CAST(foundp->nodep(), Var);
+        if (AstVar* const paramVar = VN_CAST(foundp->nodep(), Var)) {
+            varp = paramVar;
+        }
     }
     nodep->varp(varp);
+
 
 
 
