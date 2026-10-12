@@ -1189,7 +1189,8 @@ class VlTest:
         verilator_flags += ["--x-assign unique"]  # More likely to be buggy
 
         if param['vltmt']:
-            verilator_flags += ["--debug-partition"]
+            # Test the parallel execution, not the serial fallback for nearly empty passes
+            verilator_flags += ["--debug-partition", "--threads-serial-cost 0"]
         if param['threads'] >= 0:
             verilator_flags += ["--threads", str(param['threads'])]
         if param['make_main'] and param['verilator_make_gmake']:
