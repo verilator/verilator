@@ -28,7 +28,9 @@
 #error "verilated_funcs.h should only be included by verilated.h"
 #endif
 
+#include <new>
 #include <string>
+#include <type_traits>
 
 //=========================================================================
 // Extern functions -- User may override -- See verilated.cpp
@@ -195,6 +197,22 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE;  // PLIi
 
 //=========================================================================
 // Base macros
+
+// Construct object 'obj' in place with placement new, passing the remaining arguments
+// Type alias needed as a destructor call requires an unqualified type name.
+// std::remove_reference is needed to construct array elements individually.
+#define VL_INPLACE_CONSTRUCT(obj, ...) \
+    do { \
+        using __VlType = std::remove_reference<decltype(obj)>::type; \
+        ::new (&(obj)) __VlType{__VA_ARGS__}; \
+    } while (false)
+
+// Destroy object 'obj' in place
+#define VL_INPLACE_DESTRUCT(obj) \
+    do { \
+        using __VlType = std::remove_reference<decltype(obj)>::type; \
+        (obj).~__VlType(); \
+    } while (false)
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 // Arguments must not have side effects

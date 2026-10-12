@@ -2696,6 +2696,10 @@ public:
     bool isModelState() const {
         return isIO() || isSignal() || isClassMember() || isTemp() || isGenVar();
     }
+    // Variable needs no C++ constructor/destructor function run when default initialized/deleted
+    bool isTriviallyConstructible() const {
+        return !isSc() && dtypep()->isTriviallyConstructible();
+    }
     bool isBitLogic() const {
         const AstBasicDType* const bdtypep = basicp();
         return bdtypep && bdtypep->isBitLogic();
