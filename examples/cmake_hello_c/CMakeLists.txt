@@ -36,7 +36,11 @@ add_executable(example ../make_hello_c/sim_main.cpp)
 target_compile_features(example PUBLIC cxx_std_14)
 
 # Add the Verilated circuit to the target
+# Pass -DVL_TIME_CONTEXT to the model build as this example does not use the
+# legacy vl_time_stamp; platforms without weak symbol support (e.g. MSVC,
+# cygwin) would otherwise fail to link.
 verilate(example
   INCLUDE_DIRS "../make_hello_c"
   SOURCES ../make_hello_c/top.v
+  VERILATOR_ARGS -CFLAGS -DVL_TIME_CONTEXT
 )
