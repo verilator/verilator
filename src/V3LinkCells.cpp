@@ -264,7 +264,7 @@ class LinkCellsVisitor final : public VNVisitor {
             libSymp = m_mods.rootp()->insert(libname, new VSymEnt{&m_mods, v3Global.rootp()});
         libSymp->insert(name, new VSymEnt{&m_mods, nodep});
     }
-    void insertModInGlobalLib(const stding& name, AstNodeModule* nodep) {
+    void insertModInGlobalLib(const string& name, AstNodeModule* nodep) {
         insertModInLib(name, "__GLOBAL", nodep);
     }
 
@@ -929,10 +929,10 @@ class LinkCellsVisitor final : public VNVisitor {
                 UINFO(9, "Module rename as in multiple libraries " << newName << " <- " << nodep);
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);  // Original name
                 nodep->name(newName);
-                insertModInGlobal(nodep->name(), nodep);
+                insertModInGlobalLib(nodep->name(), nodep);
             } else {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);
-                insertModInGlobal(nodep->name(), nodep);
+                insertModInGlobalLib(nodep->name(), nodep);
             }
         }
         // Resolve package/module name collisions after collecting all declarations.
