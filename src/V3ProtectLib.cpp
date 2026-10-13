@@ -521,7 +521,7 @@ class ProtectVisitor final : public VNVisitor {
                 dimensions.emplace_back(arrayp->lo(), arrayp->hi());
                 dtypep = arrayp->subDTypep()->skipRefp();
             }
-            if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
+            if (const AstBasicDType* const basicp = dtypep->basicp()) {
                 if (basicp->isRanged()) dimensions.emplace_back(basicp->lo(), basicp->hi());
             }
             if (dimensions.empty()) {
