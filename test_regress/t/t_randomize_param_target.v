@@ -21,11 +21,18 @@ class item;
   rand int unsigned driver_delay;
 endclass
 
+class fast_item;
+  rand int unsigned driver_delay;
+endclass
+
 class generic_sequence #(type T = item);
   rand T cmd;
   rand int unsigned mode;
   function new();
     cmd = new;
+  endfunction
+  function int unsigned limit();
+    return 100;
   endfunction
 endclass
 
@@ -35,10 +42,19 @@ endclass
 
 task outer_sequence::body();
   generic_sequence#(item) seq;
+  generic_sequence#(fast_item) fseq;
   item cmd;  // Caller-scope 'cmd' for the local:: check below
   int ok;
   seq = new;
+  fseq = new;
   cmd = new;
+
+  // A second specialization of the same generic class resolves independently.
+  ok = fseq.randomize() with {
+    cmd.driver_delay == 11;
+  };
+  `checkd(ok, 1)
+  `checkd(fseq.cmd.driver_delay, 11)
 
   // Undotted 'cmd' reaches the randomized object's member, not caller scope.
   ok = seq.randomize() with {
@@ -63,6 +79,19 @@ task outer_sequence::body();
   };
   `checkd(ok, 1)
   `checkd(seq.cmd.driver_delay, 7)
+
+  // A method call in 'with' binds to the target's method, like any other
+  // undotted name (IEEE 1800-2023 18.7).
+  ok = seq.randomize() with {
+    cmd.driver_delay <= limit();
+    mode == 3;
+  };
+  `checkd(ok, 1)
+  `checkd(seq.mode, 3)
+  if (seq.cmd.driver_delay > 100) begin
+    $write("%%Error: driver_delay=%0d exceeds 100\n", seq.cmd.driver_delay);
+    `stop;
+  end
 
   // 'local::' forces caller scope: bound to the local handle's value.
   // The +1 keeps this from passing as a tautology when misbound: binding
