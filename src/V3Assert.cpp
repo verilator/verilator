@@ -19,6 +19,7 @@
 #include "V3Assert.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3Const.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
@@ -159,6 +160,84 @@ string V3AssertCommon::assertCtlGetCall(const char* query, VAssertType type,
     // Template arguments let the runtime build the type/directive mask at C++ compile time
     return "vlSymsp->_vm_contextp__->assertCtlGet<"s + std::to_string(type) + ", "s
            + std::to_string(directiveType) + ">(VerilatedAssertCtlQuery::"s + query + ")"s;
+}
+
+bool V3AssertCommon::checkSvaValueLimit(AstNode* nodep, const AstConst* constp, const char* what) {
+    // Temporal values can materialize as O(N) AST or state in later passes.
+    // Leave headroom for a range ring's extra slot and V3Number's signed
+    // `(bits + 31) / 32` word count.
+    static constexpr unsigned SVA_VALUE_HARD_LIMIT
+        = static_cast<unsigned>(std::numeric_limits<int>::max()) - 32U;
+    const unsigned configuredLimit = static_cast<unsigned>(v3Global.opt.maxNumWidth());
+    const unsigned limit = std::min(configuredLimit, SVA_VALUE_HARD_LIMIT);
+    if (constp->num().fitsInUInt() && constp->toUInt() <= limit) return true;
+    nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << what << " exceeds implementation limit of "
+                                                 << limit
+                                                 << (configuredLimit <= SVA_VALUE_HARD_LIMIT
+                                                         ? " (--max-num-width)"
+                                                         : " (host arithmetic limit)"));
+    return false;
+}
+
+// The bound of a cycle delay in a sequence, if a non-negative elaboration-time constant
+static const AstConst* checkSvaDelayBound(AstNode* errp, AstNodeExpr* boundp, const char* what) {
+    const AstConst* const constp = VN_CAST(boundp, Const);
+    if (!constp || (constp->dtypep()->isSigned() && constp->num().isNegative())) {
+        errp->v3error(what << " is not a non-negative elaboration-time constant"
+                              " (IEEE 1800-2023 16.7)");
+        return nullptr;
+    }
+    if (!V3AssertCommon::checkSvaValueLimit(errp, constp, "SVA cycle delay")) return nullptr;
+    return constp;
+}
+
+bool V3AssertCommon::checkSvaCycleDelay(const AstDelay* nodep, AstNode* errp) {
+    V3Const::constifyParamsNoWarnEdit(nodep->lhsp());
+    const AstConst* const minConstp = checkSvaDelayBound(
+        errp, nodep->lhsp(), nodep->isRangeDelay() ? "Range delay minimum" : "Delay value");
+    if (!nodep->rhsp() || nodep->isUnbounded()) return minConstp != nullptr;
+    V3Const::constifyParamsNoWarnEdit(nodep->rhsp());
+    const AstConst* const maxConstp
+        = checkSvaDelayBound(errp, nodep->rhsp(), "Range delay maximum");
+    if (!minConstp || !maxConstp) return false;
+    if (maxConstp->toUInt() < minConstp->toUInt()) {
+        errp->v3error("Range delay maximum must be >= minimum (IEEE 1800-2023 16.7)");
+        return false;
+    }
+    return true;
+}
+
+bool V3AssertCommon::refsSvaFormal(const AstNode* nodep) {
+    return nodep->exists([](const AstNodeVarRef* refp) {
+        const AstVar* const varp = refp->varp();
+        if (!varp || !varp->isIO()) return false;
+        const AstNode* const declp = varp->aboveLoopp();
+        return VN_IS(declp, Sequence) || VN_IS(declp, Property);
+    });
+}
+
+void V3AssertCommon::checkSvaInstanceDelays(AstNode* nodep, AstNode* instp) {
+    // A delay still referencing a formal argument of an enclosing sequence or property is
+    // checked when that is instanced. Collect first, as checking edits the delays.
+    std::vector<AstDelay*> delayps;
+    nodep->foreach([&](AstDelay* delayp) {
+        if (!delayp->isCycleDelay() || refsSvaFormal(delayp->lhsp())) return;
+        if (delayp->rhsp() && refsSvaFormal(delayp->rhsp())) return;
+        delayps.push_back(delayp);
+    });
+    for (AstDelay* const delayp : delayps) {
+        if (checkSvaCycleDelay(delayp, instp)) continue;
+        // Make the delay valid, so later steps do not fail after the error
+        FileLine* const flp = delayp->fileline();
+        AstNode* const oldMinp = delayp->lhsp()->unlinkFrBack();
+        VL_DO_DANGLING(oldMinp->deleteTree(), oldMinp);
+        delayp->lhsp(new AstConst{flp, 0});
+        if (delayp->rhsp() && !delayp->isUnbounded()) {
+            AstNode* const oldMaxp = delayp->rhsp()->unlinkFrBack();
+            VL_DO_DANGLING(oldMaxp->deleteTree(), oldMaxp);
+            delayp->rhsp(new AstConst{flp, 0});
+        }
+    }
 }
 
 //######################################################################

@@ -1,0 +1,22 @@
+%Error: t/t_sequence_arg_delay_bad.v:28:35: Delay value is not a non-negative elaboration-time constant (IEEE 1800-2023 16.7)
+                                          : ... note: In instance 't'
+   28 |   assert property (@(posedge clk) seq_delay(a, b, n));
+      |                                   ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_sequence_arg_delay_bad.v:29:20: Delay value is not a non-negative elaboration-time constant (IEEE 1800-2023 16.7)
+                                          : ... note: In instance 't'
+   29 |   assert property (prop_delay(n));
+      |                    ^~~~~~~~~~
+%Error: t/t_sequence_arg_delay_bad.v:31:35: Delay value is not a non-negative elaboration-time constant (IEEE 1800-2023 16.7)
+                                          : ... note: In instance 't'
+   31 |   assert property (@(posedge clk) seq_delay(a, b, -1));
+      |                                   ^~~~~~~~~
+%Error: t/t_sequence_arg_delay_bad.v:32:35: Range delay maximum must be >= minimum (IEEE 1800-2023 16.7)
+                                          : ... note: In instance 't'
+   32 |   assert property (@(posedge clk) seq_range(a, b, 3, 1));
+      |                                   ^~~~~~~~~
+%Error: t/t_sequence_arg_delay_bad.v:33:35: Delay value is not a non-negative elaboration-time constant (IEEE 1800-2023 16.7)
+                                          : ... note: In instance 't'
+   33 |   assert property (@(posedge clk) seq_sum(a, b, 1));
+      |                                   ^~~~~~~
+%Error: Exiting due to
