@@ -7,6 +7,11 @@
 // IEEE 1800-2023 3.13: Packages and modules are in separate name spaces,
 // but both have state here, so both must get their own generated class.
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+// verilog_format: on
+
 package foo;
   int count = 10;
   function automatic int next();
@@ -50,10 +55,10 @@ module t;
   initial begin
     #1 clk = 1;
     #1;
-    if (foo::next() != 11) $stop;
-    if (foo_o != 21) $stop;
-    if (bar_o != 31) $stop;
-    if (bar::next() != 41) $stop;
+    `checkd (foo::next(), 11);
+    `checkd (foo_o, 21);
+    `checkd (bar_o, 31);
+    `checkd (bar::next(), 41);
     $write("*-* All Finished *-*\n");
     $finish;
   end
