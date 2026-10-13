@@ -5145,7 +5145,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     }
                 }
                 AstVar* varp = foundp ? foundToVarp(foundp, nodep, nodep->access()) : nullptr;
-                
+
                 nodep->varp(varp);
 
                 updateVarUse(nodep->varp());
