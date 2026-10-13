@@ -27,6 +27,21 @@ fi
 # Run IDs of PR jobs processed
 PR_RUN_IDS=""
 
+# Downloads the artifact named $1 of each run in 'completedRuns.json', if
+# exists, into $2/<run ID>. Listing the artifacts up front means each download
+# takes a single API call. They are done in parallel, as one at a time this
+# adds up over hundreds of runs. A re-run uploads another artifact under the
+# same run ID, so take the newest.
+download_artifacts() {
+  gh api --paginate "repos/{owner}/{repo}/actions/artifacts?name=$1&per_page=100" --jq '.artifacts[]' \
+    | jq -rs --slurpfile runs completedRuns.json '
+        ($runs[0] | map(.databaseId)) as $ids
+        | map(select(.workflow_run.id | IN($ids[])))
+        | group_by(.workflow_run.id) | map(max_by(.created_at)) | .[]
+        | "\(.workflow_run.id) \(.id)"' \
+    | xargs -P 8 -n 2 sh -c 'gh api "repos/{owner}/{repo}/actions/artifacts/$3/zip" > "$1/$2.zip" && unzip -q "$1/$2.zip" -d "$1/$2"' sh "$2"
+}
+
 # Populates ${PAGES_ROOT}/coverage-reports
 compile_coverage_reports() {
   # We will process all runs up to and including this date. This is chosen to be
@@ -44,10 +59,8 @@ compile_coverage_reports() {
   local ARTIFACTS_ROOT=artifacts-coverage
   mkdir -p ${ARTIFACTS_ROOT}
 
-  # Download the artifacts of all runs, if exists. In parallel, as one at a time
-  # this takes over a second per run, which adds up over hundreds of runs.
-  jq '.[].databaseId' completedRuns.json \
-    | xargs -P 8 -I {} gh run download {} --name coverage-report --dir ${ARTIFACTS_ROOT}/{} &> /dev/null || true
+  # Download the artifacts of all runs, if exists
+  download_artifacts coverage-report ${ARTIFACTS_ROOT}
 
   # Create coverage reports root directory
   local COVERAGE_ROOT=${PAGES_ROOT}/coverage-reports
@@ -161,10 +174,8 @@ compile_rtlmeter_reports() {
   local ARTIFACTS_ROOT=artifacts-rtlmeter
   mkdir -p ${ARTIFACTS_ROOT}
 
-  # Download the artifacts of all runs, if exists. In parallel, as one at a time
-  # this takes over a second per run, which adds up over hundreds of runs.
-  jq '.[].databaseId' completedRuns.json \
-    | xargs -P 8 -I {} gh run download {} --name rtlmeter-report --dir ${ARTIFACTS_ROOT}/{} &> /dev/null || true
+  # Download the artifacts of all runs, if exists
+  download_artifacts rtlmeter-report ${ARTIFACTS_ROOT}
 
   # Create rtlmeter reports root directory
   local RTLMETER_ROOT=${PAGES_ROOT}/rtlmeter-reports
