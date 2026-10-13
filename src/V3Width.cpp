@@ -262,6 +262,8 @@ class WidthVisitor final : public VNVisitor {
     V3UniqueNames m_insideTempNames;  // For generating unique temporary variable names for
                                       // `inside` expressions
     VMemberMap m_memberMap;  // Member names cached for fast lookup
+    std::unordered_map<const AstModport*, std::unordered_set<string>>
+        m_modportNames;  // Names listed by each modport
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
     bool m_underFork = false;  // Visiting under a fork
@@ -4498,6 +4500,29 @@ class WidthVisitor final : public VNVisitor {
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return false;  // Caller handles error
     }
+    bool modportAllowsItem(AstNode* nodep, const AstIfaceRefDType* adtypep, const AstNode* itemp) {
+        // Variables, tasks/functions and clocking blocks of an interface are only visible
+        // through a modport when the modport lists them
+        const AstModport* const modportp = adtypep->modportp();
+        if (!modportp) return true;
+        if (const AstVar* const varp = VN_CAST(itemp, Var)) {
+            if (varp->isParam()) return true;
+        } else if (!VN_IS(itemp, NodeFTask) && !VN_IS(itemp, Clocking)) {
+            return true;
+        }
+        auto pair = m_modportNames.emplace(modportp, std::unordered_set<string>{});
+        if (pair.second) {
+            for (const AstNode* mpItemp = modportp->varsp(); mpItemp; mpItemp = mpItemp->nextp()) {
+                pair.first->second.insert(mpItemp->name());
+            }
+        }
+        if (pair.first->second.count(itemp->name())) return true;
+        nodep->v3error("Member " << itemp->prettyNameQ() << " found in interface "
+                                 << adtypep->ifaceViaCellp()->prettyNameQ()
+                                 << " but not in modport " << modportp->prettyNameQ()
+                                 << " (IEEE 1800-2023 25.5)");
+        return false;
+    }
     AstNode* memberSelIface(AstMemberSel* nodep, AstIfaceRefDType* adtypep) {
         // Returns node if ok
         // No need to width-resolve the interface, as it was done when we did the child
@@ -4507,7 +4532,12 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(ifacep, nodep, "Unlinked");
         VSpellCheck speller;
         for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
-            if (itemp->name() == nodep->name()) return itemp;
+            if (itemp->name() == nodep->name()) {
+                if (!modportAllowsItem(nodep, adtypep, itemp)) {
+                    return nullptr;  // Caller handles error
+                }
+                return itemp;
+            }
             if (VN_IS(itemp, Var) || VN_IS(itemp, Modport) || VN_IS(itemp, Cell)) {
                 speller.pushCandidate(itemp->prettyName());
             }
@@ -5317,6 +5347,10 @@ class WidthVisitor final : public VNVisitor {
         if (AstNodeFTask* const ftaskp
             = VN_CAST(m_memberMap.findMember(ifacep, nodep->name()), NodeFTask)) {
             UINFO(5, __FUNCTION__ << "AstNodeFTask" << nodep);
+            if (!modportAllowsItem(nodep, adtypep, ftaskp)) {
+                nodep->dtypeSetVoid();
+                return;
+            }
             if (adtypep->isVirtual()) {
                 for (AstNode* itemp = ifacep->stmtsp(); itemp; itemp = itemp->nextp()) {
                     if (AstVar* const mvarp = VN_CAST(itemp, Var)) { mvarp->sensIfacep(ifacep); }
