@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vltmt')
 
-test.compile(v_flags2=["t/t_dpi_threads_c.cpp --no-threads-coarsen"])
+test.compile(v_flags2=["t/t_dpi_threads_c.cpp --no-threads-coarsen --threads-serial-cost 0"])
 
 test.execute()
 

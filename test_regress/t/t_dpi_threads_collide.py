@@ -14,7 +14,10 @@ test.top_filename = "t/t_dpi_threads.v"
 
 test.skip_if_too_few_cores()
 
-test.compile(v_flags2=["t/t_dpi_threads_c.cpp --threads-dpi all --no-threads-coarsen"])
+# The race needs the DPI calls to run in parallel
+test.compile(v_flags2=[
+    "t/t_dpi_threads_c.cpp --threads-dpi all --no-threads-coarsen --threads-serial-cost 0"
+])
 
 # Similar to t_dpi_threads, which confirms that Verilator can prevent a
 # race between DPI import calls, this test confirms that the race exists

@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vltmt')
 test.top_filename = "t/t_threads_counter.v"
 
-test.compile(verilator_flags2=['--cc'], threads=4)
+test.compile(verilator_flags2=['--cc', '--threads-serial-cost 0'], threads=4)
 
 test.execute()
 

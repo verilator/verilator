@@ -1861,7 +1861,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     });
     DECL_OPTION("-threads-serial-cost", CbVal, [this](const char* valp) {
         m_threadsSerialCost = std::max(0, std::atoi(valp));
-    }).undocumented();  // Tuning
+    });  // Tuning
     DECL_OPTION("-timescale", CbVal, [this, fl](const char* valp) {
         VTimescale unit;
         VTimescale prec;
