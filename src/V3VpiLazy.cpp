@@ -192,7 +192,6 @@ public:
         std::vector<V3VpiLazy::CombRun> m_runs;  // Its masked bits, if PARTIAL
     };
     std::map<std::pair<std::string, const AstVar*>, InstComb> m_instComb;  // By scope name
-    bool m_anyInstStub = false;  // instanceCallee() made a stub for retargetInstanceCalls()
 
     VVpiLazyComb combOf(const std::string& scopeName, const AstVar* varp) const {
         if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
@@ -1850,7 +1849,7 @@ private:
 
     // V3Descope takes a call's self pointer from its callee's scope, which for a shared func is
     // the representative's. A stub in the operand's own scope gets the call that instance's
-    // self pointer; retargetInstanceCalls() then points the call at the shared func.
+    // self pointer; V3Descope then points the call at the shared func and deletes the stub.
     AstCFunc* instanceCallee(const Group* ugp) {
         if (ugp->funcp->scopep() == ugp->scopep) return ugp->funcp;
         AstCFunc*& stubp = m_instStubOf[ugp];
@@ -1862,7 +1861,6 @@ private:
             callp->dtypeSetVoid();
             stubp->addStmtsp(callp->makeStmt());
             stubp->vpiLazyInstStub(true);
-            m_ctx.m_anyInstStub = true;
         }
         return stubp;
     }
@@ -2404,7 +2402,7 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
     }
 
     // Per --output-split-cfuncs. splitCheck moves whole top-level statements, so an entry func's
-    // epoch guard stays whole. Instance stubs are left whole for retargetInstanceCalls().
+    // epoch guard stays whole. Instance stubs are left whole for V3Descope.
     for (AstCFunc* const funcp : splitFuncps) V3Sched::util::splitCheck(funcp);
 
     V3Global::dumpCheckGlobalTree("vpi-lazy-prepare", 0, dumpTreeEitherLevel() >= 3);
@@ -2543,30 +2541,6 @@ void V3VpiLazy::resolveCrossScopeSrcs(AstNetlist* nodep) {
         UASSERT_OBJ(inserted, dstVarp,
                     "Duplicate --vpi-lazy cross-scope copy row in " << dstScopep->prettyNameQ());
     }
-}
-
-void V3VpiLazy::retargetInstanceCalls(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ":");
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
-    if (!ctxp || !ctxp->m_anyInstStub) return;
-    std::unordered_map<const AstCFunc*, AstCFunc*> sharedOf;
-    std::vector<AstCFunc*> stubps;
-    nodep->foreach([&](AstCFunc* funcp) {
-        if (!funcp->vpiLazyInstStub()) return;
-        const AstStmtExpr* const stmtp = VN_CAST(funcp->stmtsp(), StmtExpr);
-        const AstCCall* const callp = stmtp ? VN_CAST(stmtp->exprp(), CCall) : nullptr;
-        UASSERT_OBJ(callp && !stmtp->nextp(), funcp, "--vpi-lazy instance stub is not one call");
-        sharedOf.emplace(funcp, callp->funcp());
-        stubps.push_back(funcp);
-    });
-    // The self pointer V3Descope gave the call stays, as when V3Combine retargets a call.
-    nodep->foreach([&](AstCCall* callp) {
-        const auto it = sharedOf.find(callp->funcp());
-        if (it != sharedOf.end()) callp->funcp(it->second);
-    });
-    for (AstCFunc* const stubp : stubps)
-        VL_DO_DANGLING(stubp->unlinkFrBack()->deleteTree(), stubp);
-    V3Global::dumpCheckGlobalTree("vpi-lazy-retarget", 0, dumpTreeEitherLevel() >= 3);
 }
 
 const V3VpiLazy::CrossScopeSrc* V3VpiLazy::crossScopeCopySrc(const AstNetlist* nodep,

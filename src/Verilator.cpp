@@ -522,7 +522,6 @@ static void process() {
 
             // Remove remaining scopes; make varrefs/funccalls relative to current module
             V3Descope::descopeAll(v3Global.rootp());
-            if (v3Global.opt.vpiLazy()) V3VpiLazy::retargetInstanceCalls(v3Global.rootp());
 
             // Icache packing; combine common code in each module's functions into subroutines
             if (v3Global.opt.fCombine()) V3Combine::combineAll(v3Global.rootp());
