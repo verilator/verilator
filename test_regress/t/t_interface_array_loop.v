@@ -64,12 +64,9 @@ module l1_param_sub #(
   end
 endmodule
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-
-  input clk;
 
   localparam N = 4;
 

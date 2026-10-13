@@ -33,6 +33,9 @@ extern "C" {
 
 extern void (*vlog_startup_routines[])();
 
+// Lets a VPI library linked into the model save and restore it
+VM_PREFIX* testVpiTopp = nullptr;
+
 static bool settle_value_callbacks() {
     bool cbs_called;
     bool again;
@@ -75,6 +78,7 @@ int main(int argc, char** argv) {
     const std::unique_ptr<VM_PREFIX> top{new VM_PREFIX{contextp.get(),
                                                        // Note null name - we're flattening it out
                                                        ""}};
+    testVpiTopp = top.get();
     contextp->fatalOnVpiError(false);  // otherwise it will fail on systemtf
 
 #ifdef VERILATOR_SIM_DEBUG

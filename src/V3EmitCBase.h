@@ -67,19 +67,18 @@ public:
     static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
+    // Return name of the VlExecGraph describing an AstExecGraph
+    static string execGraphName(const AstExecGraph* nodep) {
+        return topClassName() + "__ExecGraph__" + nodep->nameProtect();
+    }
     // Return C++ class name for a module/class object
     static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
     static bool isAnonOk(const AstVar* varp) VL_MT_STABLE {
         AstNodeDType* const dtp = varp->dtypep()->skipRefp();
         return v3Global.opt.compLimitMembers() != 0  // Enabled
-               && !varp->isStatic()  // Not a static variable
                && !varp->isSc()  // Aggregates can't be anon
-               && !VN_IS(dtp, SampleQueueDType)  // Aggregates can't be anon
-               && !(VN_IS(dtp, NodeUOrStructDType) && !VN_CAST(dtp, NodeUOrStructDType)->packed())
+               && !dtp->isCompound()  // Non-POD members are not allowed in an anonymous aggregate
                && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
-    }
-    static bool isConstPoolMod(const AstNode* modp) {
-        return modp == v3Global.rootp()->constPoolp()->modp();
     }
 };
 

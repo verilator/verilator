@@ -1,0 +1,12 @@
+%Error-NOTIMING: t/t_event_nba_notiming_bad.v:10:5: Nonblocking event trigger in a non-inlined function/task requires --timing
+                                                  : ... note: In instance '$unit::Cls'
+   10 |     ->>e;
+      |     ^~~
+                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
+%Error-NOTIMING: t/t_event_nba_notiming_bad.v:20:5: Nonblocking event trigger of a class or interface member or array element requires --timing
+   20 |     ->>c.e;
+      |     ^~~
+%Error-NOTIMING: t/t_event_nba_notiming_bad.v:21:5: Nonblocking event trigger of a class or interface member or array element requires --timing
+   21 |     ->>ea[idx];
+      |     ^~~
+%Error: Exiting due to

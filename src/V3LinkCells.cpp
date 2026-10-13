@@ -236,6 +236,7 @@ class LinkCellsVisitor final : public VNVisitor {
     const V3GraphVertex* m_topVertexp = nullptr;  // Vertex of top module
     std::unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
     string m_origTopModuleName;  // original name of the top module
+    int m_modDepth = 0;  // Depth of the current module
 
     // METHODS
     V3GraphVertex* vertex(AstNodeModule* nodep) {
@@ -452,22 +453,22 @@ class LinkCellsVisitor final : public VNVisitor {
                     << (suggest.empty() ? "" : V3Error::warnMore() + suggest));
         }
     }
-    void visit(AstConstPool* nodep) override {}
     void visit(AstNodeModule* nodep) override {
         // Module: Pick up modnames, so we can resolve cells later
+        VL_RESTORER(m_modDepth);
         VL_RESTORER(m_modp);
         {
             // For nested modules/classes, child below parent
             if (m_modp) newEdge(vertex(m_modp), vertex(nodep), 1, false);
-            //
             m_modp = nodep;
-            vertex(m_modp);  // Need vertex to levelize even if no edges
-
+            // Need vertex to levelize even if no edges
+            vertex(m_modp);
+            ++m_modDepth;
             UINFO(4, "Link Module: " << nodep);
             if (nodep->fileline()->filebasenameNoExt() != nodep->prettyName()
                 && !v3Global.opt.isLibraryFile(nodep->fileline()->filename(), nodep->libname())
                 && !VN_IS(nodep, NotFoundModule) && !nodep->recursiveClone()
-                && !nodep->internal()) {
+                && !nodep->isDollarUnit() && !nodep->isConstPool() && m_modDepth == 1) {
                 // We only complain once per file, otherwise library-like files
                 // have a huge mess of warnings
                 const auto itFoundPair = m_declfnWarned.insert(nodep->fileline()->filename());
@@ -778,7 +779,6 @@ class LinkCellsVisitor final : public VNVisitor {
                 idtypep->cellp(nodep);  // Only set when real parent cell known.
                 AstVar* varp;
                 if (nodep->rangep()) {
-                    // For arrayed interfaces, we replace cellp when de-arraying in V3Inst.
                     // Multi-dim arrays wrap one UnpackArrayDType per range, innermost first.
                     std::vector<AstRange*> rangesp;
                     for (AstRange* rp = nodep->rangep(); rp; rp = VN_CAST(rp->nextp(), Range)) {

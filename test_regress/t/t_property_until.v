@@ -4,16 +4,14 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
 `define stop $stop
-`define checkh(gotv,
-               expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%p exp='h%p\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%p exp='h%p\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+// verilog_format: on
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-
-  input clk;
 
   typedef struct {
     int fails;
@@ -26,58 +24,45 @@ module t (  /*AUTOARG*/
   localparam MAX = 15;
   integer cyc = 1;
 
-  assert property (@(posedge clk) 0 until 1)
-    results[1].passs++;
+  assert property (@(posedge clk) 0 until 1) results[1].passs++;
   else results[1].fails++;
 
-  assert property (@(posedge clk) 1 until 0)
-    results[2].passs++;
+  assert property (@(posedge clk) 1 until 0) results[2].passs++;
   else results[2].fails++;
 
-  assert property (@(posedge clk) cyc < 5 until cyc >= 5)
-    results[3].passs++;
+  assert property (@(posedge clk) cyc < 5 until cyc >= 5) results[3].passs++;
   else results[3].fails++;
 
-  assert property (@(posedge clk) cyc % 3 == 0 until cyc % 5 == 0)
-    results[4].passs++;
+  assert property (@(posedge clk) cyc % 3 == 0 until cyc % 5 == 0) results[4].passs++;
   else results[4].fails++;
 
-  assert property (@(posedge clk) cyc % 3 != 0 until_with cyc % 4 != 0)
-    results[5].passs++;
+  assert property (@(posedge clk) cyc % 3 != 0 until_with cyc % 4 != 0) results[5].passs++;
   else results[5].fails++;
 
-  assert property (@(posedge clk) 0 s_until 1)
-    results[6].passs++;
+  assert property (@(posedge clk) 0 s_until 1) results[6].passs++;
   else results[6].fails++;
 
-  assert property (@(posedge clk) cyc < 5 s_until cyc >= 5)
-    results[7].passs++;
+  assert property (@(posedge clk) cyc < 5 s_until cyc >= 5) results[7].passs++;
   else results[7].fails++;
 
-  assert property (@(posedge clk) cyc % 3 == 0 s_until cyc % 5 == 0)
-    results[8].passs++;
+  assert property (@(posedge clk) cyc % 3 == 0 s_until cyc % 5 == 0) results[8].passs++;
   else results[8].fails++;
 
   // Check that s_until accepts immediately when RHS is true, even if LHS is false.
-  assert property (@(posedge clk) cyc % 2 == 0 s_until 1)
-    results[9].passs++;
+  assert property (@(posedge clk) cyc % 2 == 0 s_until 1) results[9].passs++;
   else results[9].fails++;
 
   // Check that s_until_with requires LHS when RHS is true on the same tick.
-  assert property (@(posedge clk) 0 s_until_with 1)
-    results[10].passs++;
+  assert property (@(posedge clk) 0 s_until_with 1) results[10].passs++;
   else results[10].fails++;
 
-  assert property (@(posedge clk) 1 s_until_with cyc >= 5)
-    results[11].passs++;
+  assert property (@(posedge clk) 1 s_until_with cyc >= 5) results[11].passs++;
   else results[11].fails++;
 
-  assert property (@(posedge clk) cyc <= 5 s_until_with cyc >= 5)
-    results[12].passs++;
+  assert property (@(posedge clk) cyc <= 5 s_until_with cyc >= 5) results[12].passs++;
   else results[12].fails++;
 
-  assert property (@(posedge clk) cyc < 5 s_until_with cyc >= 5)
-    results[13].passs++;
+  assert property (@(posedge clk) cyc < 5 s_until_with cyc >= 5) results[13].passs++;
   else results[13].fails++;
 
   always @(edge clk) begin

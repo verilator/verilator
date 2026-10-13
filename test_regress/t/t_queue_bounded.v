@@ -36,6 +36,23 @@ module t;
     if (q[1] != 1) $stop;
     if (q[2] != 2) $stop;
 
+    // Test insert on bounded queue
+    q.delete();
+    q.push_back(10);
+    q.push_back(30);
+    if (q.size() != 2) $stop;
+    q.insert(1, 20);  // insert into middle while capacity remains
+    if (q.size() != 3) $stop;
+    if (q[0] != 10) $stop;
+    if (q[1] != 20) $stop;
+    if (q[2] != 30) $stop;
+    // Attempt insert on full bounded queue (should have no effect per IEEE 1800-2023)
+    q.insert(1, 99);
+    if (q.size() != 3) $stop;
+    if (q[0] != 10) $stop;
+    if (q[1] != 20) $stop;
+    if (q[2] != 30) $stop;
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

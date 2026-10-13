@@ -11,8 +11,20 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile()
+# -fno-const-before-dfg keeps V3Const from folding AstLogIf into AstLogOr,
+# which is the only way V3LiftExpr ever encounters an AstLogIf. Option
+# -fno-const-before-dfg itself is needed for testing Dfg, so needs to work.
+test.compile(verilator_flags2=['--binary', '--stats', '-fno-const-before-dfg', test.pli_filename])
 
 test.execute()
+
+test.file_grep(test.stats, r'LiftExpr, lifted LogAnd\s+(\d+)', 16)
+test.file_grep(test.stats, r'LiftExpr, lifted LogOr\s+(\d+)', 16)
+test.file_grep(test.stats, r'LiftExpr, lifted LogIf\s+(\d+)', 16)
+test.file_grep(test.stats, r'LiftExpr, lifted Cond\s+(\d+)', 32)
+test.file_grep(test.stats, r'LiftExpr, lifted calls\s+(\d+)', 178)
+test.file_grep(test.stats, r'LiftExpr, lifted impure expressions\s+(\d+)', 2)
+test.file_grep(test.stats, r'LiftExpr, temporaries created\s+(\d+)', 196)
+test.file_grep(test.stats, r'LiftExpr, temporaries reused\s+(\d+)', 16)
 
 test.passes()

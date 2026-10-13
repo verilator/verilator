@@ -4,6 +4,7 @@
 
 import argparse
 import glob
+import hashlib
 import os
 import re
 import sys
@@ -881,6 +882,16 @@ def write_type_enum(prefix, nodeList):
         fh.write("        return names[m_e];\n")
         fh.write("    }\n")
 
+        fh.write("    uint32_t hash() const VL_MT_SAFE {\n")
+        fh.write("        static const uint32_t hashes[] = {\n")
+        for node in sorted(filter(lambda _: _.isLeaf, nodeList), key=lambda _: _.typeId):
+            digest = hashlib.md5((prefix + node.name).encode("ascii")).hexdigest()
+            fh.write("            0x{h}U,  // {p}{n}\n".format(h=digest[:8], p=prefix,
+                                                               n=node.name))
+        fh.write("        };\n")
+        fh.write("        return hashes[m_e];\n")
+        fh.write("    }\n")
+
 
 def write_type_tests(prefix, nodeList):
     with open_file("V3{p}__gen_type_tests.h".format(p=prefix)) as fh:
@@ -1096,6 +1107,7 @@ def write_ast_macros(filename):
             #         kind=ptr['kind'])
 
             emitBlock('''\
+            using Super = Ast{s};
             Ast{t}* unlinkFrBack(VNRelinker* linkerp = nullptr) {{
                 return static_cast<Ast{t}*>(AstNode::unlinkFrBack(linkerp));
             }}
@@ -1116,7 +1128,8 @@ def write_ast_macros(filename):
             void dumpTreeJsonOpGen(std::ostream& str, const string& indent) const override;
             void dumpJsonGen(std::ostream& str) const;
             ''',
-                      t=node.name)
+                      t=node.name,
+                      s=(node.superClass.name if node.superClass else 'AstNode'))
             if node.ptrs:
                 emitBlock('''\
                 void cloneRelinkGen() override;

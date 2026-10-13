@@ -31,8 +31,7 @@ def run(test, *, verilator_flags2=()):
     ]
     flags.extend(verilator_flags2)
 
-    cflags = (f'-DVM_PREFIX={test.vm_prefix} '
-              f"-DVM_PREFIX_INCLUDE='<{test.vm_prefix}.h>' ")
+    cflags = f'-DVM_PREFIX={test.vm_prefix} '
 
     # Compile and run without lib-create
     test.compile(verilator_flags2=[test.pli_filename] + flags +

@@ -58,8 +58,16 @@ module t (
   // An 'and' operand carrying mid-window sources defers to later passes
   assert property (@(posedge clk) (1'b1 ##[1:2] b) and c);
   assert property (@(posedge clk) c and (1'b1 ##[1:2] b));
+  assert property (@(posedge clk) (1'b1 ##[1:300] b) and c);
 
   // A boolean 'and' operand of a rejected cover-sequence 'or' is freed
   cover sequence (@(posedge clk) ((a and b) or(c ##1 d)));
+
+  // Bounded range prefixes cannot propagate every candidate through a suffix.
+  assert property (@(posedge clk) a |-> (1 ##[1:3] b) ##1 c);
+  assert property (@(posedge clk) a |-> (##[0:1] b) ##1 c);
+  assert property (@(posedge clk) a |-> (1 ##[1:258] b) ##1 c);
+  assert property (@(posedge clk)
+      a |-> ##[1:2] (a | b | c | d | e) ##1 (a | b | c | d | e));
 
 endmodule

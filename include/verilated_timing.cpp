@@ -149,8 +149,7 @@ void VlTriggerScheduler::moveToResumeQueue(const char* eventDescription) {
     if (!m_fired.empty()) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Moving to resume queue processes waiting for %s:\n",
                                 eventDescription);
-                    for (const auto& susp
-                         : m_fired) {
+                    for (const auto& susp : m_fired) {
                         VL_DBG_MSGF("           - ");
                         susp.dump();
                     });
@@ -169,8 +168,7 @@ void VlTriggerScheduler::ready(const char* eventDescription) {
     if (!m_awaiting.empty()) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Committing processes waiting for %s:\n", eventDescription);
-            for (const auto& susp
-                 : m_awaiting) {
+            for (const auto& susp : m_awaiting) {
                 VL_DBG_MSGF("           - ");
                 susp.dump();
             });
@@ -239,8 +237,7 @@ bool VlDynamicTriggerScheduler::evaluate() {
 void VlDynamicTriggerScheduler::doPostUpdates() {
     VL_DEBUG_IF(if (!m_post.empty())
                     VL_DBG_MSGF("         Doing post updates for processes:\n");  //
-                for (const auto& susp
-                     : m_post) {
+                for (const auto& susp : m_post) {
                     VL_DBG_MSGF("           - ");
                     susp.dump();
                 });
@@ -254,8 +251,7 @@ void VlDynamicTriggerScheduler::doPostUpdates() {
 
 void VlDynamicTriggerScheduler::resume() {
     VL_DEBUG_IF(if (!m_triggered.empty()) VL_DBG_MSGF("         Resuming processes:\n");  //
-                for (const auto& susp
-                     : m_triggered) {
+                for (const auto& susp : m_triggered) {
                     VL_DBG_MSGF("           - ");
                     susp.dump();
                 });
@@ -284,36 +280,35 @@ void VlDynamicTriggerScheduler::dump() const {
 //======================================================================
 // VlForkSync:: Methods
 
-void VlProcess::forkSyncOnKill(VlForkSyncState* forkSyncp) {
+void VlProcess::forkSyncOnKill(std::shared_ptr<VlForkSyncState> forkSyncp) {
     m_forkSyncOnKillp = forkSyncp;
     m_forkSyncOnKillDone = false;
 }
 
 void VlProcess::forkSyncOnKillClear(VlForkSyncState* forkSyncp) {
-    if (m_forkSyncOnKillp != forkSyncp) return;
+    if (m_forkSyncOnKillp.get() != forkSyncp) return;
     m_forkSyncOnKillp = nullptr;
     m_forkSyncOnKillDone = false;
 }
 
 void VlProcess::state(int s) {
-    if (s == KILLED && m_state != KILLED && m_state != FINISHED && m_forkSyncOnKillp
-        && !m_forkSyncOnKillDone) {
+    if (completed()) {
+        // We can't change the sttaus of completed process
+        return;
+    }
+    if (s == KILLED && m_forkSyncOnKillp && !m_forkSyncOnKillDone) {
         m_forkSyncOnKillDone = true;
         m_state = s;
         m_forkSyncOnKillp->done();
+        m_forkSyncOnKillp = nullptr;
         return;
     }
     m_state = s;
 }
 
-VlForkSyncState::~VlForkSyncState() {
-    for (const VlProcessRef& processp : m_onKillProcessps) processp->forkSyncOnKillClear(this);
-}
-
 void VlForkSync::onKill(VlProcessRef process) {
     if (!process) return;
-    m_state->m_onKillProcessps.emplace_back(process);
-    process->forkSyncOnKill(m_state.get());
+    process->forkSyncOnKill(m_state);
 }
 
 void VlForkSyncState::done(const char* filename, int lineno) {
@@ -337,16 +332,18 @@ void VlForkSyncState::done(const char* filename, int lineno) {
 }
 
 //======================================================================
-// VlCoroutine:: Methods
+// VlPromise:: Methods
 
-VlCoroutine::VlPromise::~VlPromise() {
+VlCoroutine VlPromise::get_return_object() { return {this}; }
+
+VlPromise::~VlPromise() {
     // Indicate to the return object that the coroutine has finished or been destroyed
     if (m_corop) m_corop->m_promisep = nullptr;
     // If there is a continuation, destroy it
     if (m_continuation) m_continuation.destroy();
 }
 
-std::suspend_never VlCoroutine::VlPromise::final_suspend() noexcept {
+std::suspend_never VlPromise::final_suspend() noexcept {
     // Indicate to the return object that the coroutine has finished
     if (m_corop) {
         m_corop->m_promisep = nullptr;

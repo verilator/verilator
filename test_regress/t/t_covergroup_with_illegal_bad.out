@@ -1,0 +1,3 @@
+[0] %Error: t_covergroup_with_illegal_bad.v:22: Assertion failed in top.t.cg.sample: Illegal bin 'bad' hit in coverpoint 'cp'
+%Error: t/t_covergroup_with_illegal_bad.v:22: Verilog $stop
+Aborting...

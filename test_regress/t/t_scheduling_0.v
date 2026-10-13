@@ -14,34 +14,30 @@
 `define IMPURE_ONE |($random | $random);
 `endif
 
-module top(
-  clk
+module top (
+    clk
 );
 
   input clk;
 
   // Generate half speed 'clk_half', via non-blocking assignment
   reg clk_half = 0;
-  always @(posedge clk)
-    clk_half <= ~clk_half;
+  always @(posedge clk) clk_half <= ~clk_half;
 
   // 'clk_half_also' is the same as 'clk_half'.
   wire clk_half_also = clk_half & `IMPURE_ONE;
 
   // Random data updated by full speed clock
   reg q = 0;
-  always @(posedge clk)
-    q <= ($random % 2 == 1) ? 1'b1 : 1'b0;
+  always @(posedge clk) q <= ($random % 2 == 1) ? 1'b1 : 1'b0;
 
   // Flop `q` via `clk_half`
   reg a = 0;
-  always @(posedge clk_half)
-    a <= q;
+  always @(posedge clk_half) a <= q;
 
   // Flop `q` via `clk_half_also`
   reg b = 0;
-  always @(posedge clk_half_also)
-    b <= q;
+  always @(posedge clk_half_also) b <= q;
 
   // Cycle count
   reg [31:0] cyc = 0;

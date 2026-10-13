@@ -19,17 +19,18 @@ module t (
 
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-  wire [31:0]           out;                    // From test of Test.v
+  wire [31:0] out;  // From test of Test.v
   // End of automatics
 
   Test test (  /*AUTOINST*/
-             // Outputs
-             .out                       (out[31:0]),
-             // Inputs
-             .clk                       (clk),
-             .noswap                    (noswap),
-             .nibble                    (nibble),
-             .in                        (in[31:0]));
+      // Outputs
+      .out(out[31:0]),
+      // Inputs
+      .clk(clk),
+      .noswap(noswap),
+      .nibble(nibble),
+      .in(in[31:0])
+  );
 
   // Aggregate outputs into a single result vector
   wire [63:0] result = {32'h0, out};
@@ -63,11 +64,14 @@ module t (
 endmodule
 
 module Test (  /*AUTOARG*/
-  // Outputs
-  out,
-  // Inputs
-  clk, noswap, nibble, in
-  );
+    // Outputs
+    out,
+    // Inputs
+    clk,
+    noswap,
+    nibble,
+    in
+);
   input clk;
 
   input noswap;

@@ -10,13 +10,16 @@ class Bar;
   Foo foo;
 
   function automatic void test();
+    // verilog_format: off
     foreach(this.foo.x[i])
       foreach(this.foo.x[i][j])
         this.foo.x[i][j] = i * j;
     for (int i = 0; i < 9; i++)
       for (int j = 0; j < 9; j++)
         if (this.foo.x[i][j] != i * j) $stop;
+    // verilog_format: on
   endfunction
+
 endclass
 
 module t;

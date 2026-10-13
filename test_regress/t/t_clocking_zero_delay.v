@@ -15,10 +15,14 @@ module t;
 
   logic [7:0] data_ref;
   logic [7:0] data_test;
+  logic [7:0] data_last;
+  logic [7:0] data_last_cb;
 
   default clocking cb @(posedge clk);
     output #0 data_ref;
     output #0 data_test;
+    output #0 data_last;
+    output #0 data_last_cb;
   endclocking
 
   // =========================================================
@@ -71,6 +75,25 @@ module t;
     @(posedge clk);
     `checkd(data_test, data_ref)
     `checkd(data_test, 8'hAB)
+    wait (0);
+  end
+
+  // As ##0 has no effect, a later drive in the same cycle overrides the drive with ##0
+  // (IEEE 1800-2023 14.11, 14.16.2), also before the clocking block event occurs
+  always begin
+    @(posedge clk);
+    cb.data_last <= ##0 8'h12;
+    cb.data_last <= 8'h34;
+    @(posedge clk);
+    `checkd(data_last, 8'h34)
+    wait (0);
+  end
+  always begin
+    @(cb);
+    cb.data_last_cb <= ##0 8'h56;
+    cb.data_last_cb <= 8'h78;
+    @(cb);
+    `checkd(data_last_cb, 8'h78)
     wait (0);
   end
 

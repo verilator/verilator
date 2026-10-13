@@ -920,6 +920,12 @@ Chapter 5. Verilator takes this static approach. The only dynamic aspect is
 that each macro task may block before starting, to wait until its
 prerequisites on other threads have finished.
 
+The generated code also describes each macro-task graph as static data: the
+function of each macro-task, its estimated cost, the trigger bits its code
+tests, and the dependencies between macro-tasks. Where the graph executes,
+the generated code passes this description and the trigger vector to the
+run-time library, which executes the graph.
+
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major
 source of overhead in this approach. The ``--prof-exec`` switch and the
@@ -1029,15 +1035,6 @@ scramble things.
 
 Profile-guided optimization make this a bit better, by adjusting mtask
 scheduling, but this does not yet guide the packing into mtasks.
-
-
-Performance Regression
-++++++++++++++++++++++
-
-It would be nice if we had a regression of large designs, with some
-diversity of design styles, to test on both single- and multithreaded
-modes. This would help to avoid performance regressions, and also to
-evaluate the optimizations while minimizing the impact of parasitic noise.
 
 
 Per-Instance Classes
@@ -1198,7 +1195,7 @@ is appreciated if you could match our style for C/C++:
   (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
-using clang-format version 18, and yapf for Python, and is automatically
+using clang-format version 21, and yapf for Python, and is automatically
 corrected in the CI actions. For those manually formatting C code:
 
 - Use four spaces per level, and no tabs.
@@ -1645,7 +1642,7 @@ There are some traps to avoid when running regression tests
   Hat/Fedora/Centos offer *perl-Pod-Perldoc*', while Debian/Ubuntu/Linux
   Mint offer \`perl-doc'.
 
-- Running regression may exhaust resources on some Linux systems,
+- Running regression tests may exhaust resources on some Linux systems,
   particularly file handles and user processes. Increase these to
   respectively 16,384 and 4,096. The method of doing this is
   system-dependent, but on Fedora Linux it would require editing the
@@ -2249,7 +2246,7 @@ The following script is an example of this debugging:
    # Example script for finding nondeterminism
    cd $VERILATOR_ROOT
    set -e
-   t=t_split_var_0  # Test name
+   t=t_EXAMPLE  # Test name
    test_regress/t/$t.py --debug --debug-alloc-random 33 --dumpi-tree 9 --obj-suffix .33
    test_regress/t/$t.py --debug --debug-alloc-random 66 --dumpi-tree 9 --obj-suffix .66
    bin/verilator_difftree test_regress/obj_vlt/$t{.33,.66} | grep -v CFILE | grep -v "^ " | grep -v /tmp | grep -v @@
@@ -2422,7 +2419,7 @@ driver.py Non-Scenario Arguments
 .. option:: --quiet
 
    Suppress all output except for failures and progress messages every 15
-   seconds. Intended for use only in automated regressions. See also
+   seconds. Intended for use only in automated regression testing. See also
    ``--rerun``, and ``--verbose`` which is not the opposite of ``--quiet``.
 
 .. option:: --rerun

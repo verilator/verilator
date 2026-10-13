@@ -10,19 +10,17 @@
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
 
   // IEEE: integer_atom_type
   wire integer w_integer;
 
   // IEEE: integer_atom_type
-  wire logic  w_logic;
+  wire logic w_logic;
 
-  wire logic  [1:0]   w_logic2;
+  wire logic [1:0] w_logic2;
 
   assign w_integer = -123456;
 
@@ -30,7 +28,7 @@ module t (/*AUTOARG*/
 
   assign w_logic2 = 2'b10;
 
-  always @ (posedge clk) begin
+  always @(posedge clk) begin
     `checkh(w_integer, -123456);
     `checkh(w_logic, 1'b1);
     `checkh(w_logic2, 2'b10);

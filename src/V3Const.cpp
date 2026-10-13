@@ -110,12 +110,12 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
 
     class LeafInfo final {  // Leaf node (either AstConst or AstVarRef)
         // MEMBERS
-        bool m_polarity = true;
+        bool m_polarity = true;  // Invert result due to NOT
         int m_lsb = 0;  // LSB of actually used bit of m_refp->varp()
         int m_msb = 0;  // MSB of actually used bit of m_refp->varp()
         int m_wordIdx = -1;  // -1 means AstWordSel is not used.
-        AstVarRef* m_refp = nullptr;
-        const AstConst* m_constp = nullptr;
+        AstVarRef* m_refp = nullptr;  // Leaf's variable reference
+        const AstConst* m_constp = nullptr;  // Leaf's constant
 
     public:
         // CONSTRUCTORS
@@ -187,9 +187,9 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     };
 
     struct BitPolarityEntry final {  // Found bit polarity during iterate()
-        LeafInfo m_info;
-        bool m_polarity = false;
-        int m_bit = 0;
+        LeafInfo m_info;  // Leaf (variable or constant) bit polarity was found on
+        bool m_polarity = false;  // Polarity the bit must have to match
+        int m_bit = 0;  // Bit index within the leaf that was tested
         BitPolarityEntry(const LeafInfo& info, bool pol, int bit)
             : m_info{info}
             , m_polarity{pol}
@@ -198,8 +198,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     };
 
     struct FrozenNodeInfo final {  // Context when a frozen node is found
-        bool m_polarity;
-        int m_lsb;
+        bool m_polarity;  // Polarity the frozen node must match
+        int m_lsb;  // LSB position of the frozen node
         bool operator<(const FrozenNodeInfo& other) const {
             if (m_lsb != other.m_lsb) return m_lsb < other.m_lsb;
             return m_polarity < other.m_polarity;
@@ -207,12 +207,12 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
     };
 
     class Restorer final {  // Restore the original state unless disableRestore() is called
-        ConstBitOpTreeVisitor& m_visitor;
-        const size_t m_polaritiesSize;
-        const size_t m_frozenSize;
-        const unsigned m_ops;
-        const bool m_polarity;
-        bool m_restore = true;
+        ConstBitOpTreeVisitor& m_visitor;  // Visitor whose state is saved and restored
+        const size_t m_polaritiesSize;  // Saved m_visitor.m_bitPolarities size to truncate back to
+        const size_t m_frozenSize;  // Saved m_visitor.m_frozenNodes size to truncate back to
+        const unsigned m_ops;  // Saved m_visitor.m_ops to restore
+        const bool m_polarity;  // Saved m_visitor.m_polarity to restore
+        bool m_restore = true;  // Whether the destructor still needs to restore state
 
     public:
         explicit Restorer(ConstBitOpTreeVisitor& visitor)
@@ -1015,14 +1015,10 @@ class ConstVisitor final : public VNVisitor {
                                     const bool packReal) {
         const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
         if (const AstUnpackArrayDType* const unpackDtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            const int left = unpackDtypep->left();
-            const int right = unpackDtypep->right();
-            const int step = left <= right ? 1 : -1;
-            for (int idx = left;; idx += step) {
+            for (const int idx : unpackDtypep->declRange().seqLeftToRight()) {
                 AstArraySel* const selp
                     = new AstArraySel{fromp->fileline(), fromp->cloneTreePure(false), idx};
                 collectFixedAggregateTerms(selp, termps, packReal);
-                if (idx == right) break;
             }
             VL_DO_DANGLING(pushDeletep(fromp), fromp);
         } else if (const AstNodeUOrStructDType* const sdtypep
@@ -1463,11 +1459,12 @@ class ConstVisitor final : public VNVisitor {
         }
         if (const AstShiftR* const shiftp = VN_CAST(rhsp, ShiftR)) {
             // 'a >> S' forces the high S bits to zero. Check against the width of the shifted
-            // operand, V3Expand can create shifts wider than their inputs
+            // operand, V3Expand can create shifts wider than their inputs. Must use width(),
+            // not widthMin(), as bits above widthMin() are not guaranteed to be zero.
             if (AstConst* const scp = VN_CAST(shiftp->rhsp(), Const)) {
                 return scp->num().fitsInUInt()
                        && (lsb + scp->num().toUInt()
-                           >= static_cast<uint32_t>(shiftp->lhsp()->widthMin()));
+                           >= static_cast<uint32_t>(shiftp->lhsp()->width()));
             }
         }
         if (const AstMul* const mulp = VN_CAST(rhsp, Mul)) {
@@ -2465,7 +2462,10 @@ class ConstVisitor final : public VNVisitor {
             }
         } else if (m_doV && VN_IS(nodep->lhsp(), Concat)) {
             bool need_temp = false;
-            const bool need_temp_pure = !nodep->rhsp()->isPure();
+            // A blocking assignment with an intra-assignment timing control evaluates its value,
+            // then waits once (IEEE 1800-2023 9.4.5), here to assign a temporary for the parts
+            const bool waits = VN_IS(nodep, Assign) && nodep->timingControlp();
+            const bool need_temp_pure = !nodep->rhsp()->isPure() || waits;
             if (m_warn && !VN_IS(nodep, AssignDly)
                 && !need_temp_pure) {  // Is same var on LHS and RHS?
                 // If the rhs is not pure, we need a temporary variable anyway
@@ -2490,6 +2490,8 @@ class ConstVisitor final : public VNVisitor {
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                 AstVar* const tempPurep = new AstVar{rhsp->fileline(), VVarType::BLOCKTEMP,
                                                      m_concswapNames.get(rhsp), rhsp->dtypep()};
+                // Static, as read right after written, also in a fork
+                tempPurep->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(tempPurep);
                 AstVarRef* const tempPureRefp
                     = new AstVarRef{rhsp->fileline(), tempPurep, VAccess::WRITE};
@@ -2499,6 +2501,8 @@ class ConstVisitor final : public VNVisitor {
                           : nodep->cloneType(tempPureRefp, rhsp);
                 nodep->addHereThisAsNext(asnp);
                 nodep->rhsp(new AstVarRef{rhsp->fileline(), tempPurep, VAccess::READ});
+                // Only the assignment of the temporary waits
+                if (waits) pushDeletep(nodep->timingControlp()->unlinkFrBack());
             } else if (need_temp) {
                 // The first time we constify, there may be the same variable on the LHS
                 // and RHS.  In that case, we must use temporaries, or {a,b}={b,a} will break.
@@ -2511,6 +2515,22 @@ class ConstVisitor final : public VNVisitor {
                 UINFO(4, "  ASSI " << nodep);
                 // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(lc1,SEL(rhs,{size})),
                 //                                ASSIGN(lc2,SEL(newrhs,{size}))
+            }
+            // The NBA evaluates its intra-assignment delay as it executes (IEEE 1800-2023 4.9.4),
+            // so once for the NBAs to all parts
+            AstDelay* const delayp
+                = VN_IS(nodep, AssignDly) ? VN_CAST(nodep->timingControlp(), Delay) : nullptr;
+            if (delayp && !delayp->lhsp()->isPure()) {
+                FileLine* const flp = nodep->fileline();
+                AstNodeExpr* const valuep = delayp->lhsp()->unlinkFrBack();
+                AstVar* const tempp = new AstVar{flp, VVarType::BLOCKTEMP,
+                                                 m_concswapNames.get(valuep), valuep->dtypep()};
+                // Static, as read right after written, when the NBAs to the parts start waiting
+                tempp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(tempp);
+                nodep->addHereThisAsNext(
+                    new AstAssign{flp, new AstVarRef{flp, tempp, VAccess::WRITE}, valuep});
+                delayp->lhsp(new AstVarRef{flp, tempp, VAccess::READ});
             }
             UINFOTREE(9, nodep, "", "Ass_old");
             // Unlink the stuff
@@ -3553,8 +3573,7 @@ class ConstVisitor final : public VNVisitor {
 
             if (const AstNodeBiop* const aBiOpp = VN_CAST(ap, NodeBiop)) {
                 const AstNodeBiop* const bBiOpp = VN_AS(bp, NodeBiop);
-                // Compare RHSs first as LHS might be const, but the variable term should become
-                // adjacent for optimization if identical.
+                // Compare RHSs first, as LHS might be const
                 if (const int c = cmp(aBiOpp->rhsp(), bBiOpp->rhsp())) return c;
                 return cmp(aBiOpp->lhsp(), bBiOpp->lhsp());
             }
@@ -3654,26 +3673,6 @@ class ConstVisitor final : public VNVisitor {
                     if (lItemp->edgeType() == rItemp->edgeType()) {
                         VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
                         nextp = lItemp;
-                    }
-
-                    continue;
-                }
-
-                // Not identical terms, check if they can be combined
-                if (lSenp->width() != rSenp->width()) continue;
-                if (const AstAnd* const lAndp = VN_CAST(lSenp, And)) {
-                    if (const AstAnd* const rAndp = VN_CAST(rSenp, And)) {
-                        if (AstConst* const lConstp = VN_CAST(lAndp->lhsp(), Const)) {
-                            if (AstConst* const rConstp = VN_CAST(rAndp->lhsp(), Const)) {
-                                if (lAndp->rhsp()->sameTree(rAndp->rhsp())) {
-                                    const V3Number lNum{lConstp->num()};
-                                    lConstp->num().opOr(lNum, rConstp->num());
-                                    // Remove redundant term
-                                    VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
-                                    nextp = lItemp;
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -3969,7 +3968,12 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
         return true;
     }
-    void visit(AstSFormatArg* nodep) override { iterateChildren(nodep); }
+    void visit(AstSFormatArg* nodep) override {
+        // Skip namep(): requiring its runtime lookup to be constant can reject valid
+        // enum-valued constant-function calls in parameters. displayedEnum() resolves
+        // the name from the folded exprp() value and enum dtype instead.
+        iterateAndNextNull(nodep->exprp());
+    }
     void visit(AstSFormatF* nodep) override {
         // Substitute constants into displays.  The main point of this is to
         // simplify assertion methodologies which call functions with display's.
@@ -4033,7 +4037,9 @@ class ConstVisitor final : public VNVisitor {
                                       : VFormatAttr{};
                             if (VN_IS(subargp, Const)) {  // Convert it
                                 const string out
-                                    = constNumV(subargp).displayed(nodep, fmt, formatAttr);
+                                    = formatAttr.isEnum()
+                                          ? constNumV(subargp).displayedEnum(fargp, fmt)
+                                          : constNumV(subargp).displayed(nodep, fmt, formatAttr);
                                 UINFO(9, "     DispConst: " << fmt << " -> " << out << "  for "
                                                             << subargp);
                                 // fmt = out w/ replace % with %% as it must later when
@@ -4624,8 +4630,11 @@ class ConstVisitor final : public VNVisitor {
         // Default: Just iterate
         if (m_required) {
             if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
-                || VN_IS(nodep, Dot)) {
+                || VN_IS(nodep, Dot) || VN_IS(nodep, Text)) {
                 // ignore
+            } else if (VN_IS(nodep, Pattern) || VN_IS(nodep, PatMember)) {
+                // A parameter override pattern is typed later, so only fold its members
+                iterateChildren(nodep);
             } else if (AstCellRef* const crp = VN_CAST(nodep, CellRef)) {
                 iterate(crp->exprp());
                 if (AstNode* const newp = crp->exprp()) {

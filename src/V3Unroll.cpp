@@ -186,7 +186,7 @@ class UnrollOneVisitor final : VNVisitor {
                 if (AstLoopTest* const testp = VN_CAST(nodep, LoopTest)) {
                     foundLoopTest = true;
                     // Will not actually need it, nor any subsequent
-                    pushDeletep(testp);
+                    pushDeletep(testp);  // TODO testp used past here
                     // Loop continues - add rest of statements
                     if (testp->condp()->isNeqZero()) continue;
                     // Won't need any of the trailing statements

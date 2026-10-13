@@ -12,20 +12,23 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: CC0-1.0
 
-# These flags tested against verible-v0.0-4080-ga0a8d8eb
+# These flags tested against verible-v0.0-4192-g682a1d50
 
 verible-verilog-format \
     --inplace \
-    --wrap_end_else_clauses  \
+    \
     --assignment_statement_alignment=flush-left \
     --case_items_alignment=flush-left \
     --class_member_variable_alignment=flush-left \
     --distribution_items_alignment=flush-left \
     --enum_assignment_statement_alignment=flush-left \
+    --expand_coverpoints \
     --formal_parameters_alignment=flush-left \
     --module_net_variable_alignment=flush-left \
     --named_parameter_alignment=flush-left \
     --named_port_alignment=flush-left \
+    --parameter_declaration_alignment=flush-left \
     --port_declarations_alignment=flush-left \
     --struct_union_members_alignment=flush-left \
+    --wrap_end_else_clauses  \
     $*

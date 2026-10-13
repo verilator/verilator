@@ -94,6 +94,7 @@ class V3EmitMkJsonEmitter final {
             .putList("ldflags", v3Global.opt.ldLibs())
             .put("system_c", v3Global.opt.systemC())
             .put("coverage", v3Global.opt.coverage())
+            .put("dpi", v3Global.dpi())
             .put("use_timing", v3Global.usesTiming())
             .put("threads", v3Global.opt.threads())
             .put("trace", v3Global.opt.trace())
@@ -126,11 +127,7 @@ class V3EmitMkJsonEmitter final {
                     sources.emplace_back(makeDir + "/" + dependencyp->hierWrapperFilename(true));
                 }
 
-                const std::string vFile = hblockp->vFileIfNecessary();
-                if (!vFile.empty()) sources.emplace_back(vFile);
-
-                for (const VFileLibName& i : v3Global.opt.vFiles()) {
-                    const std::string fname = i.filename();
+                for (const string& fname : V3HierGraph::sourceFiles(hblockp->vFileIfNecessary())) {
                     sources.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(fname)));
                 }
 
@@ -158,8 +155,7 @@ class V3EmitMkJsonEmitter final {
                     sources.emplace_back(makeDir + "/" + blockp->hierWrapperFilename(true));
                 }
 
-                for (const VFileLibName& i : v3Global.opt.vFiles()) {
-                    const std::string fname = i.filename();
+                for (const string& fname : V3HierGraph::sourceFiles()) {
                     sources.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(fname)));
                 }
 

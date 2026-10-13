@@ -15,36 +15,36 @@
 // Case 1: Only soft, no hard -- soft should be satisfied
 class Case1;
   rand int x;
-  constraint c_soft { soft x == 5; }
+  constraint c_soft {soft x == 5;}
 endclass
 
 // Case 2: Two soft on same var -- last-wins (c_b declared after c_a)
 class Case2;
   rand int x;
-  constraint c_a { soft x == 5; }
-  constraint c_b { soft x == 10; }
+  constraint c_a {soft x == 5;}
+  constraint c_b {soft x == 10;}
 endclass
 
 // Case 3: Soft on different vars -- both should be satisfied
 class Case3;
   rand int x;
   rand int y;
-  constraint c_x { soft x == 7; }
-  constraint c_y { soft y == 3; }
+  constraint c_x {soft x == 7;}
+  constraint c_y {soft y == 3;}
 endclass
 
 // Case 4: Soft range partially covered by hard -- SAT at intersection
 class Case4;
   rand int x;
-  constraint c_soft { soft x inside {[1:10]}; }
-  constraint c_hard { x inside {[5:15]}; }
+  constraint c_soft {soft x inside {[1 : 10]};}
+  constraint c_hard {x inside {[5 : 15]};}
 endclass
 
 // Case 5: Soft completely overridden by hard -- hard wins
 class Case5;
   rand int x;
-  constraint c_soft { soft x == 5; }
-  constraint c_hard { x > 10; }
+  constraint c_soft {soft x == 5;}
+  constraint c_hard {x > 10;}
 endclass
 
 module t;

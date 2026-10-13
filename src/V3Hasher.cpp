@@ -55,11 +55,11 @@ class HasherVisitor final : public VNVisitorConst {
                               std::function<void()>&& f) {
         // See comments in visit(AstCFunc) about this breaking recursion
         if (m_cacheInUser4 && nodep->user4()) {
-            return V3Hash{nodep->user4()};
+            return V3Hash{static_cast<uint32_t>(nodep->user4())};
         } else {
             VL_RESTORER(m_hash);
             // Reset accumulator
-            m_hash = V3Hash{nodep->type()};  // Node type
+            m_hash = V3Hash{nodep->type().hash()};  // Node type
             f();  // Node-specific hash
             if (hashDType && nodep != nodep->dtypep())
                 iterateConstNull(nodep->dtypep());  // Node dtype
@@ -77,7 +77,7 @@ class HasherVisitor final : public VNVisitorConst {
     // Each visitor below contributes to the hash any node-specific content
     // that is not dependent on either of the following, as these are
     // included by default by hashNode:
-    // - Node type (as given by AstNode::type())
+    // - Node type (as given by AstNode::type().hash())
     // - Node dtype (unless !hashDType)
     // - child nodes (unless !hashChildren)
     //
@@ -267,6 +267,11 @@ class HasherVisitor final : public VNVisitorConst {
     void visit(AstAddrOfCFunc* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
             iterateConstNull(nodep->funcp());
+        });
+    }
+    void visit(AstTriggered* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
+            for (const uint32_t index : nodep->indices()) m_hash += index;
         });
     }
 
@@ -585,13 +590,13 @@ public:
 
 V3Hash V3Hasher::operator()(AstNode* nodep) const {
     if (!nodep->user4()) HasherVisitor{nodep};
-    return V3Hash{nodep->user4()};
+    return V3Hash{static_cast<uint32_t>(nodep->user4())};
 }
 
 V3Hash V3Hasher::rehash(AstNode* nodep) const {
     nodep->user4(0);
     { HasherVisitor{nodep}; }
-    return V3Hash{nodep->user4()};
+    return V3Hash{static_cast<uint32_t>(nodep->user4())};
 }
 
 V3Hash V3Hasher::uncachedHash(const AstNode* nodep) {

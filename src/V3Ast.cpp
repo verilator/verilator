@@ -66,7 +66,7 @@ VCMethod VCMethod::arrayMethod(const string& name) {
 
 std::string VNUser::dumpStr(std::string (*fmtAddrp)(const void*)) const {
 #ifdef VL_USER_TYPE_CHECKS
-    if (const int* const uip = std::get_if<int>(&m_u)) return "#"s + cvtToStr(*uip);
+    if (const uint64_t* const uip = std::get_if<uint64_t>(&m_u)) return "#"s + cvtToStr(*uip);
     if (void* const* const upp = std::get_if<void*>(&m_u)) return fmtAddrp(*upp);
     return "";
 #else
@@ -206,6 +206,10 @@ string AstNode::dedotName(const string& namein) {
     while ((pos = pretty.find("__DOT__")) != string::npos) pretty.replace(pos, 7, ".");
     if (pretty.substr(0, 4) == "TOP.") pretty.replace(0, 4, "");
     return pretty;
+}
+
+string AstNode::nameNoArray(const string& namein) {
+    return namein.substr(0, namein.find("__BRA__"));
 }
 
 string AstNode::vcdName(const string& namein) {
@@ -361,7 +365,7 @@ string AstNode::vpiName(const string& namein) {
 
 string AstNode::prettyTypeName() const {
     if (name() == "") return typeName();
-    return std::string{typeName()} + " '" + prettyName() + "'";
+    return std::string{typeName()} + " '" + prettyNameMsg() + "'";
 }
 
 //######################################################################

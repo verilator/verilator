@@ -25,7 +25,7 @@
 
 #ifdef T_VPI_PARAM
 #include "Vt_vpi_param.h"
-#include "Vt_vpi_param__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #elif defined(T_VPI_PUBLIC_PARAMS)
 #include "Vt_vpi_public_params.h"
 #else
@@ -170,7 +170,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 // cver entry

@@ -109,7 +109,7 @@ class Seq;
   endfunction
 endclass
 
-module t (  /*AUTOARG*/);
+module t;
   initial begin
     automatic Seq s = new();
     s.check_member_handle();

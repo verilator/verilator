@@ -319,6 +319,17 @@
 #endif
 
 //=========================================================================
+// C++-2020
+
+#if __cplusplus >= 202002L
+# define VL_CONSTINIT_CXX20 constinit
+# define VL_NO_UNIQUE_ADDRESS_CXX20 [[no_unique_address]]
+#else
+# define VL_CONSTINIT_CXX20
+# define VL_NO_UNIQUE_ADDRESS_CXX20
+#endif
+
+//=========================================================================
 // Optimization
 
 #ifndef VL_NO_LEGACY
@@ -452,7 +463,8 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_VFORMATATTR_SIGNED '~'  // (int widthMin, IData/VlWide/etc) Signed number; for %d showing sign
 #define VL_VFORMATATTR_COMPLEX '!'  // (std::string*); for non-POD; e.g. struct, requires %p typically
 #define VL_VFORMATATTR_DOUBLE 'D'  // (double); promote %p to %f
-#define VL_VFORMATATTR_ENUM 'E'  // (width, IData/QData, std::string* name); <= 64 bit enum with runtime %p/%s
+#define VL_VFORMATATTR_ENUM 'E'  // (width, IData/QData/const EData*, STRING, std::string* name)
+#define VL_VFORMATATTR_ENUM_SIGNED 'F'  // Same arguments as ENUM, with a signed numeric value
 #define VL_VFORMATATTR_SCOPE 'M'  // (char* name, char* scope); for scopes
 #define VL_VFORMATATTR_STRING 'S'  // (char* name, char* scope); for scopes  // (std::string*); for %p/%s
 #define VL_VFORMATATTR_TIMEUNIT 'T'  // (int timeunit); timeunits passed from V3Emit to runtime
@@ -531,10 +543,12 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_EUL(n) VL_UL(n)  // Make constant number EData sized
 
 #define VL_BITWORD_I(bit) ((bit) / VL_IDATASIZE)  ///< Word number for sv DPI vectors
+#define VL_BITWORD_Q(bit) ((bit) / VL_QUADSIZE)  ///< Quadword number for a bit
 #define VL_BITWORD_E(bit) ((bit) >> VL_EDATASIZE_LOG2)  ///< Word number for a wide quantity
 #define VL_BITBIT_I(bit) ((bit) & VL_SIZEBITS_I)  ///< Bit number for a bit in a long
 #define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
 #define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in an EData
+#define VL_BIT_Q(bit) (1ULL << VL_BITBIT_Q(bit))  ///< Quad with only the given bit set
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 #define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
@@ -736,7 +750,7 @@ namespace vlstd {
 
 template <typename T>
 struct reverse_wrapper final {
-    const T& m_v;
+    const T& m_v;  // Pre-wrapped iterator
 
     explicit reverse_wrapper(const T& a_v)
         : m_v(a_v) {}  // Need () constructor

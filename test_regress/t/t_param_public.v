@@ -22,6 +22,12 @@ endmodule
 module a;
   parameter ONE  /*verilator public*/ = 22;
   initial if (ONE != 1) $stop;
+  // Wide multi-dimensional packed, not a C++ literal type
+  localparam logic [1:0][63:0] WIDE  /*verilator public*/ = {
+    64'hfedc_ba98_7654_3210, 64'h0123_4567_89ab_cdef
+  };
+  initial if (WIDE[0] != 64'h0123_4567_89ab_cdef) $stop;
+  initial if (WIDE[1] != 64'hfedc_ba98_7654_3210) $stop;
 `ifdef VERILATOR
   initial if ($c32("this->ONE") != 1) $stop;
 `endif

@@ -75,11 +75,11 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"RD", "WR", "RW", "--"};
+        static constexpr const char* const names[] = {"RD", "WR", "RW", "--"};
         return names[m_e];
     }
     const char* arrow() const {
-        static const char* const names[] = {"[RV] <-", "[LV] =>", "[LRV] <=>", "--"};
+        static constexpr const char* const names[] = {"[RV] <-", "[LV] =>", "[LRV] <=>", "--"};
         return names[m_e];
     }
     VAccess()
@@ -119,7 +119,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"always", "always_ff", "always_latch", "always_comb", "cont_assign"};
         return names[m_e];
     }
@@ -160,18 +160,18 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
         // IEEE 1800-2023 20.11
-        static const char* const names[] = {"",
-                                            "",
-                                            "",
-                                            "$asserton",
-                                            "$assertoff",
-                                            "$assertkill",
-                                            "$assertpasson",
-                                            "$assertpassoff",
-                                            "$assertfailon",
-                                            "$assertfailoff",
-                                            "$assertnonvacuouson",
-                                            "$assertvacuousoff"};
+        static constexpr const char* const names[] = {"",
+                                                      "",
+                                                      "",
+                                                      "$asserton",
+                                                      "$assertoff",
+                                                      "$assertkill",
+                                                      "$assertpasson",
+                                                      "$assertpassoff",
+                                                      "$assertfailon",
+                                                      "$assertfailoff",
+                                                      "$assertnonvacuouson",
+                                                      "$assertvacuousoff"};
         return names[m_e];
     }
 };
@@ -311,7 +311,7 @@ public:
     constexpr VPropStrength(en _e)
         : m_e{_e} {}
     const char* ascii() const {
-        static const char* const names[] = {"default", "weak", "strong"};
+        static constexpr const char* const names[] = {"default", "weak", "strong"};
         return names[m_e];
     }
 };
@@ -363,8 +363,13 @@ public:
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
         VAR_FSM_ARC_INCLUDE_COND,       // V3LinkParse moves to AstVar::attrFsmArcInclCond
-        VAR_FSM_RESET_ARC,              // V3LinkParse moves to AstVar::attrFsmResetArc
+        VAR_FSM_ARC_INCLUDE_COND_AUTO,  // Flavors of above option - setting expand mode per FSM
+        VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND,
+        VAR_FSM_ARC_INCLUDE_COND_FULL,
         VAR_FSM_STATE,                  // V3LinkParse moves to AstVar::attrFsmState
+        VAR_FSM_STATE_AUTO,             // Flavors of above option - setting expand mode per FSM
+        VAR_FSM_STATE_AUTO_EXPAND,
+        VAR_FSM_STATE_FULL,
         VAR_PORT_DTYPE,                 // V3LinkDot for V3Width to check port dtype
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic
@@ -379,7 +384,7 @@ public:
     enum en m_e;
     const char* ascii() const {
         // clang-format off
-        static const char* const names[] = {
+        static constexpr const char* const names[] = {
             "%E-AT",
             "DIM_BITS", "DIM_BITS_OR_NUMBER", "DIM_DIMENSIONS",
             "DIM_HIGH", "DIM_INCREMENT", "DIM_LEFT",
@@ -389,8 +394,13 @@ public:
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
-            "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND", "VAR_FSM_RESET_ARC",
-            "VAR_FSM_STATE", "VAR_PORT_DTYPE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
+            "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND",
+            "VAR_FSM_ARC_INCLUDE_COND_AUTO",
+            "VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND",
+            "VAR_FSM_ARC_INCLUDE_COND_FULL",
+            "VAR_FSM_STATE", "VAR_FSM_STATE_AUTO",
+            "VAR_FSM_STATE_AUTO_EXPAND", "VAR_FSM_STATE_FULL",
+            "VAR_PORT_DTYPE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
             "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT", "VAR_SPLIT_VAR"
         };
@@ -509,6 +519,7 @@ public:
         PROCESS_REFERENCE,
         RANDOM_GENERATOR,
         RANDOM_STDGENERATOR,
+        COVERGROUP_INSTHANDLE,
         // Unsigned and two state; fundamental types
         UINT32,
         UINT64,
@@ -519,67 +530,69 @@ public:
     };
     enum en m_e;
     const char* ascii() const VL_MT_SAFE {
-        static const char* const names[] = {"%E-unk",
-                                            "bit",
-                                            "byte",
-                                            "chandle",
-                                            "void",
-                                            "event",
-                                            "int",
-                                            "integer",
-                                            "logic",
-                                            "longint",
-                                            "real",
-                                            "shortint",
-                                            "time",
-                                            "string",
-                                            "untyped",
-                                            "VerilatedScope*",
-                                            "char*",
-                                            "VlMTaskState",
-                                            "VlDelayScheduler",
-                                            "VlTriggerScheduler",
-                                            "VlDynamicTriggerScheduler",
-                                            "VlFork",
-                                            "VlProcessRef",
-                                            "VlRandomizer",
-                                            "VlStdRandomizer",
-                                            "IData",
-                                            "QData",
-                                            "LOGIC_IMPLICIT",
-                                            " MAX"};
+        static constexpr const char* const names[] = {"%E-unk",
+                                                      "bit",
+                                                      "byte",
+                                                      "chandle",
+                                                      "void",
+                                                      "event",
+                                                      "int",
+                                                      "integer",
+                                                      "logic",
+                                                      "longint",
+                                                      "real",
+                                                      "shortint",
+                                                      "time",
+                                                      "string",
+                                                      "untyped",
+                                                      "VerilatedScope*",
+                                                      "char*",
+                                                      "VlMTaskState",
+                                                      "VlDelayScheduler",
+                                                      "VlTriggerScheduler",
+                                                      "VlDynamicTriggerScheduler",
+                                                      "VlFork",
+                                                      "VlProcessRef",
+                                                      "VlRandomizer",
+                                                      "VlStdRandomizer",
+                                                      "VlCovInstHandle",
+                                                      "IData",
+                                                      "QData",
+                                                      "LOGIC_IMPLICIT",
+                                                      " MAX"};
         return names[m_e];
     }
     const char* dpiType() const {
-        static const char* const names[] = {"%E-unk",
-                                            "svBit",
-                                            "char",
-                                            "void*",
-                                            "void",
-                                            "char",
-                                            "int",
-                                            "%E-integer",
-                                            "svLogic",
-                                            "long long",
-                                            "double",
-                                            "short",
-                                            "%E-time",
-                                            "const char*",
-                                            "%E-untyped",
-                                            "dpiScope",
-                                            "const char*",
-                                            "%E-mtaskstate",
-                                            "%E-dly-sched",
-                                            "%E-trig-sched",
-                                            "%E-dyn-sched",
-                                            "%E-fork",
-                                            "%E-proc-ref",
-                                            "%E-rand-gen",
-                                            "%E-stdrand-gen",
-                                            "IData",
-                                            "QData",
-                                            "%E-logic-implct",
-                                            " MAX"};
+        static constexpr const char* const names[] = {"%E-unk",
+                                                      "svBit",
+                                                      "char",
+                                                      "void*",
+                                                      "void",
+                                                      "char",
+                                                      "int",
+                                                      "%E-integer",
+                                                      "svLogic",
+                                                      "long long",
+                                                      "double",
+                                                      "short",
+                                                      "%E-time",
+                                                      "const char*",
+                                                      "%E-untyped",
+                                                      "dpiScope",
+                                                      "const char*",
+                                                      "%E-mtaskstate",
+                                                      "%E-dly-sched",
+                                                      "%E-trig-sched",
+                                                      "%E-dyn-sched",
+                                                      "%E-fork",
+                                                      "%E-proc-ref",
+                                                      "%E-rand-gen",
+                                                      "%E-stdrand-gen",
+                                                      "%E-cg-insthandle",
+                                                      "IData",
+                                                      "QData",
+                                                      "%E-logic-implct",
+                                                      " MAX"};
         return names[m_e];
     }
     static void selfTest() {
@@ -620,6 +633,7 @@ public:
         case PROCESS_REFERENCE: return 0;  // opaque
         case RANDOM_GENERATOR: return 0;  // opaque
         case RANDOM_STDGENERATOR: return 0;  // opaque
+        case COVERGROUP_INSTHANDLE: return 0;  // opaque
         case UINT32: return 32;
         case UINT64: return 64;
         default: return 0;
@@ -660,8 +674,8 @@ public:
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
                 || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
-                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR || m_e == DOUBLE
-                || m_e == UNTYPED);
+                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR
+                || m_e == COVERGROUP_INSTHANDLE || m_e == DOUBLE || m_e == UNTYPED);
     }
     bool isCHandle() const VL_MT_SAFE { return m_e == CHANDLE; }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
@@ -690,7 +704,7 @@ public:
 
     const char* traceSigType() const {
         // VerilatedTraceSigType to used in trace signal declaration
-        static const char* const lut[] = {
+        static constexpr const char* const lut[] = {
             /* UNKNOWN:                   */ "",  // Should not be traced
             /* BIT:                       */ "BIT",
             /* BYTE:                      */ "BYTE",
@@ -716,6 +730,7 @@ public:
             /* PROCESS_REFERENCE:         */ "",  // Should not be traced
             /* RANDOM_GENERATOR:          */ "",  // Should not be traced
             /* RANDOM_STD_GENERATOR:      */ "",  // Should not be traced
+            /* COVERGROUP_INSTHANDLE:     */ "",  // Should not be traced
             /* UINT32:                    */ "BIT",
             /* UINT64:                    */ "BIT",
             /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
@@ -749,9 +764,10 @@ public:
     explicit VBoolOrUnknown(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     const char* ascii() const {
-        static const char* const names[] = {"FALSE", "TRUE", "UNK"};
+        static constexpr const char* const names[] = {"FALSE", "TRUE", "UNK"};
         return names[m_e];
     }
+    bool isKnown() const { return m_e != BU_UNKNOWN; }
     bool trueKnown() const { return m_e == BU_TRUE; }
     void setTrueOrFalse(bool flag) { m_e = flag ? BU_TRUE : BU_FALSE; }
 };
@@ -792,7 +808,11 @@ public:
         return m_e;
     }
     const char* ascii() const {
-        static const char* const names[] = {"", "VL_LIKELY", "VL_UNLIKELY"};
+        static constexpr const char* const names[] = {"", "VL_LIKELY", "VL_UNLIKELY"};
+        return names[m_e];
+    }
+    const char* asciiShort() const {
+        static constexpr const char* const names[] = {"", "L", "!L"};
         return names[m_e];
     }
 };
@@ -807,131 +827,218 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
 
 // ######################################################################
 
-// C++ methods invoked on runtime library data types via AstCMethodHard
+namespace {
+// Validate the arguments descriptor
+// LCOV_EXCL_START
+static constexpr bool validateArgsDescriptor(const char* descrp) {
+    // Is "TODO"
+    if (descrp[0] == 'T' && descrp[1] == 'O' && descrp[2] == 'D' && descrp[3] == 'O'
+        && !descrp[4]) {
+        return true;
+    }
+    // Is a sequence of 'r'/'w'/'m' with an optional trailing '+'
+    for (const char* cp = descrp; *cp; ++cp) {
+        if (*cp == '+') return cp != descrp && !cp[1];
+        if (*cp != 'r' && *cp != 'w' && *cp != 'm') return false;
+    }
+    return true;
+}
+// LCOV_EXCL_STOP
+};  //namespace
+
+// C++ methods invoked on runtime library data types via AstCMethodHard.
+// The argument descriptor gives the access direction of each argument:
+// - 'r' read by the call
+// - 'w' written by the call (Use only if unconditionally and wholly written,
+//   that is: a preceding write can be removed. Otherwise use 'm'.)
+// - 'm' read and written (modified) by the call
+// - '+' repeats the entry before it for all remaining arguments, must be last
+// - "" if the method takes no arguments
+// - "TODO" if not yet checked due to existing issues
 // clang-format off
 #define FOR_EACH_CMETHOD(macro) \
-    /*    id,                                 method,                   pure */ \
-    macro(_NONE,                              "_none",                  false) \
-    macro(ARRAY_AND,                          "and",                    true) \
-    macro(ARRAY_AT,                           "at",                     true) \
-    macro(ARRAY_AT_BACK,                      "atBack",                 true) \
-    macro(ARRAY_AT_WRITE,                     "atWrite",                true) \
-    macro(ARRAY_FIND,                         "find",                   true) \
-    macro(ARRAY_FIND_FIRST,                   "find_first",             true) \
-    macro(ARRAY_FIND_FIRST_INDEX,             "find_first_index",       true) \
-    macro(ARRAY_FIND_INDEX,                   "find_index",             true) \
-    macro(ARRAY_FIND_LAST,                    "find_last",              true) \
-    macro(ARRAY_FIND_LAST_INDEX,              "find_last_index",        true) \
-    macro(ARRAY_FIRST,                        "first",                  false) \
-    macro(ARRAY_INSIDE,                       "inside",                 true) \
-    macro(ARRAY_LAST,                         "last",                   false) \
-    macro(ARRAY_MAP,                          "map",                    true) \
-    macro(ARRAY_MAX,                          "max",                    true) \
-    macro(ARRAY_MIN,                          "min",                    true) \
-    macro(ARRAY_NEXT,                         "next",                   false) \
-    macro(ARRAY_OR,                           "or",                     true) \
-    macro(ARRAY_POP_BACK,                     "pop_back",               false) \
-    macro(ARRAY_POP_FRONT,                    "pop_front",              false) \
-    macro(ARRAY_PREV,                         "prev",                   false) \
-    macro(ARRAY_PRODUCT,                      "product",                true) \
-    macro(ARRAY_PUSH_BACK,                    "push_back",              false) \
-    macro(ARRAY_PUSH_FRONT,                   "push_front",             false) \
-    macro(ARRAY_REVERSE,                      "reverse",                false) \
-    macro(ARRAY_RSORT,                        "rsort",                  false) \
-    macro(ARRAY_R_AND,                        "r_and",                  true) \
-    macro(ARRAY_R_OR,                         "r_or",                   true) \
-    macro(ARRAY_R_PRODUCT,                    "r_product",              true) \
-    macro(ARRAY_R_SUM,                        "r_sum",                  true) \
-    macro(ARRAY_R_XOR,                        "r_xor",                  true) \
-    macro(ARRAY_SHUFFLE,                      "shuffle",                false) \
-    macro(ARRAY_SORT,                         "sort",                   false) \
-    macro(ARRAY_SUM,                          "sum",                    true) \
-    macro(ARRAY_UNIQUE,                       "unique",                 true) \
-    macro(ARRAY_UNIQUE_INDEX,                 "unique_index",           true) \
-    macro(ARRAY_XOR,                          "xor",                    true) \
-    macro(ASSOC_CLEAR,                        "clear",                  false) \
-    macro(ASSOC_ERASE,                        "erase",                  false) \
-    macro(ASSOC_EXISTS,                       "exists",                 true) \
-    macro(ASSOC_FIRST,                        "first",                  false) \
-    macro(ASSOC_NEXT,                         "next",                   false) \
-    macro(ASSOC_SIZE,                         "size",                   true) \
-    macro(CLASS_SET_RANDMODE,                 "set_randmode",           false) \
-    macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false) \
-    macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false) \
-    macro(DYN_CLEAR,                          "clear",                  false) \
-    macro(DYN_ERASE,                          "erase",                  false) \
-    macro(DYN_INSERT,                         "insert",                 false) \
-    macro(DYN_POP,                            "pop",                    false) \
-    macro(DYN_POP_FRONT,                      "pop_front",              false) \
-    macro(DYN_PUSH,                           "push",                   false) \
-    macro(DYN_PUSH_FRONT,                     "push_front",             false) \
-    macro(DYN_RENEW,                          "renew",                  false) \
-    macro(DYN_RENEW_COPY,                     "renew_copy",             false) \
-    macro(DYN_RESIZE,                         "resize",                 false) \
-    macro(DYN_SIZE,                           "size",                   true) \
-    macro(DYN_SLICE,                          "slice",                  true) \
-    macro(DYN_SLICE_ASSIGN,                   "sliceAssign",            false) \
-    macro(DYN_SLICE_ASSIGN_BACK_BACK,         "sliceAssignBackBack",    false) \
-    macro(DYN_SLICE_ASSIGN_FRONT_BACK,        "sliceAssignFrontBack",   false) \
-    macro(DYN_SLICE_BACK_BACK,                "sliceBackBack",          true) \
-    macro(DYN_SLICE_FRONT_BACK,               "sliceFrontBack",         true) \
-    macro(EVENT_CLEAR_FIRED,                  "clearFired",             false) \
-    macro(EVENT_CLEAR_TRIGGERED,              "clearTriggered",         false) \
-    macro(EVENT_FIRE,                         "fire",                   false) \
-    macro(EVENT_IS_FIRED,                     "isFired",                true) \
-    macro(EVENT_IS_TRIGGERED,                 "isTriggered",            true) \
-    macro(FORCE_ADD,                          "addForce",               false) \
-    macro(FORCE_READ,                         "read",                   true) \
-    macro(FORCE_READ_INDEX,                   "readIndex",              true) \
-    macro(FORCE_READ_SEL,                     "readSel",                true) \
-    macro(FORCE_RELEASE,                      "release",                false) \
-    macro(FORCE_TOUCH,                        "touch",                  false) \
-    macro(FORK_DONE,                          "done",                   false) \
-    macro(FORK_INIT,                          "init",                   false) \
-    macro(FORK_JOIN,                          "join",                   false) \
-    macro(FORK_ON_KILL,                       "onKill",                 false) \
-    macro(RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization",  false) \
-    macro(RANDOMIZER_CLEARCONSTRAINTS,        "clearConstraints",       false) \
-    macro(RANDOMIZER_CLEARALL,                "clearAll",               false) \
-    macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false) \
-    macro(RANDOMIZER_HARD,                    "hard",                   false) \
-    macro(RANDOMIZER_SOFT,                    "soft",                   false) \
-    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false) \
-    macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false) \
-    macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false) \
-    macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false) \
-    macro(RANDOMIZER_WRITE_VAR,               "write_var",              false) \
-    macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false) \
-    macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false) \
-    macro(RANDOMIZER_MARK_VAR_STATIC,         "mark_var_static",        false) \
-    macro(RANDOMIZER_SET_STATIC_RANDMODE,     "set_static_randmode",    false) \
-    macro(RNG_GET_RANDSTATE,                  "__Vm_rng.get_randstate", true) \
-    macro(RNG_SET_RANDSTATE,                  "__Vm_rng.set_randstate", false) \
-    macro(SCHED_ANY_TRIGGERED,                "anyTriggered",           false) \
-    macro(SCHED_AWAITING_CURRENT_TIME,        "awaitingCurrentTime",    true) \
-    macro(SCHED_AWAITING_ZERO_DELAY,          "awaitingZeroDelay",      true) \
-    macro(SCHED_READY,                        "ready",                  false) \
-    macro(SCHED_COMMIT,                       "commit",                 false) \
-    macro(SCHED_MOVE_TO_RESUME_QUEUE,         "moveToResumeQueue",      false) \
-    macro(SCHED_DELAY,                        "delay",                  false) \
-    macro(SCHED_DO_POST_UPDATES,              "doPostUpdates",          false) \
-    macro(SCHED_ENQUEUE,                      "enqueue",                false) \
-    macro(SCHED_EVALUATE,                     "evaluate",               false) \
-    macro(SCHED_EVALUATION,                   "evaluation",             false) \
-    macro(SCHED_POST_UPDATE,                  "postUpdate",             false) \
-    macro(SCHED_RESUME,                       "resume",                 false) \
-    macro(SCHED_RESUME_ZERO_DELAY,            "resumeZeroDelay",        false) \
-    macro(SCHED_RESUMPTION,                   "resumption",             false) \
-    macro(SCHED_TRIGGER,                      "trigger",                false) \
-    macro(UNPACKED_ASSIGN,                    "assign",                 false) \
-    macro(UNPACKED_FILL,                      "fill",                   false) \
-    macro(UNPACKED_NEQ,                       "neq",                    true)
+    /*    id,                                 method,                   pure,   args */ \
+    macro(_NONE,                              "_none",                  false,  "") \
+    macro(ARRAY_AT,                           "at",                     PURE,   "r") \
+    macro(ARRAY_AT_BACK,                      "atBack",                 PURE,   "r") \
+    macro(ARRAY_AT_WRITE,                     "atWrite",                PURE,   "r") \
+    macro(ARRAY_FIND,                         "find",                   PURE,   "") \
+    macro(ARRAY_FIND_FIRST,                   "find_first",             PURE,   "") \
+    macro(ARRAY_FIND_FIRST_INDEX,             "find_first_index",       PURE,   "") \
+    macro(ARRAY_FIND_INDEX,                   "find_index",             PURE,   "") \
+    macro(ARRAY_FIND_LAST,                    "find_last",              PURE,   "") \
+    macro(ARRAY_FIND_LAST_INDEX,              "find_last_index",        PURE,   "") \
+    macro(ARRAY_FIRST,                        "first",                  false,  "m") \
+    macro(ARRAY_INSIDE,                       "inside",                 PURE,   "r") \
+    macro(ARRAY_LAST,                         "last",                   false,  "m") \
+    macro(ARRAY_MAP,                          "map",                    PURE,   "") \
+    macro(ARRAY_MAX,                          "max",                    PURE,   "") \
+    macro(ARRAY_MIN,                          "min",                    PURE,   "") \
+    macro(ARRAY_NEXT,                         "next",                   false,  "m") \
+    macro(ARRAY_POP_BACK,                     "pop_back",               false,  "") \
+    macro(ARRAY_POP_FRONT,                    "pop_front",              false,  "") \
+    macro(ARRAY_PREV,                         "prev",                   false,  "m") \
+    macro(ARRAY_PUSH_BACK,                    "push_back",              false,  "r") \
+    macro(ARRAY_PUSH_FRONT,                   "push_front",             false,  "r") \
+    macro(ARRAY_REVERSE,                      "reverse",                false,  "") \
+    macro(ARRAY_RSORT,                        "rsort",                  false,  "") \
+    macro(ARRAY_R_AND,                        "r_and",                  PURE,   "") \
+    macro(ARRAY_R_OR,                         "r_or",                   PURE,   "") \
+    macro(ARRAY_R_PRODUCT,                    "r_product",              PURE,   "") \
+    macro(ARRAY_R_SUM,                        "r_sum",                  PURE,   "") \
+    macro(ARRAY_R_XOR,                        "r_xor",                  PURE,   "") \
+    macro(ARRAY_SHUFFLE,                      "shuffle",                false,  "") \
+    macro(ARRAY_SLICE,                        "slice",                  PURE,   "r") \
+    macro(ARRAY_SORT,                         "sort",                   false,  "") \
+    macro(ARRAY_UNIQUE,                       "unique",                 PURE,   "") \
+    macro(ARRAY_UNIQUE_INDEX,                 "unique_index",           PURE,   "") \
+    macro(ASSOC_CLEAR,                        "clear",                  false,  "") \
+    macro(ASSOC_ERASE,                        "erase",                  false,  "r") \
+    macro(ASSOC_EXISTS,                       "exists",                 PURE,   "r") \
+    macro(ASSOC_FIRST,                        "first",                  false,  "m") \
+    macro(ASSOC_NEXT,                         "next",                   false,  "m") \
+    macro(ASSOC_SIZE,                         "size",                   PURE,   "") \
+    macro(CLASS_SET_RANDMODE,                 "set_randmode",           false,  "r") \
+    macro(COVERGROUP_ADD_ARRAY_NAMER,         "addArrayNamer",          false,  "r+") \
+    macro(COVERGROUP_ADD_BIN,                 "addBin",                 false,  "r+") \
+    macro(COVERGROUP_ADD_COVERPOINT,          "addCoverpoint",          false,  "") \
+    macro(COVERGROUP_ADD_CROSS,               "addCross",               false,  "") \
+    macro(COVERGROUP_ADD_CROSS_DYN,           "addCrossDyn",            false,  "") \
+    macro(COVERGROUP_ADD_NUMBERED_NAMER,      "addNumberedNamer",       false,  "r+") \
+    macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false,  "r+") \
+    macro(COVERGROUP_ATTACH,                  "attach",                 false,  "r") \
+    macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  "") \
+    macro(COVERGROUP_COVERAGE,                "coverage",               false,  "") \
+    macro(COVERGROUP_CROSS_WITH_BEGIN,        "withBegin",              false,  "r+") \
+    macro(COVERGROUP_CROSS_WITH_END,          "withEnd",                false,  "") \
+    macro(COVERGROUP_CROSS_WITH_TEST,         "withTest",               false,  "r") \
+    macro(COVERGROUP_CROSS_WITH_VALUE,        "withValue",              false,  "r") \
+    macro(COVERGROUP_CROSS_WITH_VALUE_W,      "withValueW",             false,  "rw") \
+    macro(COVERGROUP_FINALIZE_BINS,           "finalizeBins",           false,  "") \
+    macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  "r") \
+    macro(COVERGROUP_INIT,                    "init",                   false,  "r+") \
+    macro(COVERGROUP_INST_P,                  "p",                      PURE,   "") \
+    macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  "rr") \
+    macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  "r") \
+    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  "rrrr") \
+    macro(COVERGROUP_SAMPLE,                  "sample",                 false,  "") \
+    macro(COVERGROUP_SAMPLE_IFFS,             "sample",                 false,  "r") \
+    macro(COVERGROUP_SELECT_ALL,              "selectAll",              false,  "") \
+    macro(COVERGROUP_SELECT_AND,              "selectAnd",              false,  "") \
+    macro(COVERGROUP_SELECT_BIN,              "selectBin",              false,  "r+") \
+    macro(COVERGROUP_SELECT_DIM,              "selectDim",              false,  "r+") \
+    macro(COVERGROUP_SELECT_DIM_END,          "selectDimEnd",           false,  "") \
+    macro(COVERGROUP_SELECT_OR,               "selectOr",               false,  "") \
+    macro(COVERGROUP_SELECT_RANGE,            "selectRange",            false,  "rr") \
+    macro(COVERGROUP_SELECT_RANGE_W,          "selectRangeW",           false,  "rr") \
+    macro(COVERGROUP_SIZED_END,               "sizedEnd",               PURE,   "r") \
+    macro(COVERGROUP_SIZED_FINISH,            "sizedFinish",            false,  "r+") \
+    macro(COVERGROUP_SIZED_FIRST,             "sizedFirst",             PURE,   "r") \
+    macro(COVERGROUP_SIZED_RANGE,             "sizedRange",             false,  "rr") \
+    macro(COVERGROUP_SIZED_RANGE_W,           "sizedRangeW",            false,  "rr") \
+    macro(COVERGROUP_SIZED_SAMPLE,            "sizedSample",            false,  "rrr") \
+    macro(COVERGROUP_SIZED_SAMPLE_W,          "sizedSampleW",           false,  "rrr") \
+    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrrr") \
+    macro(COVERGROUP_TYPE_WEIGHT,             "typeWeight",             false,  "r") \
+    macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   "r") \
+    macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   "r") \
+    macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  "") \
+    macro(COVERGROUP_VALUE_PATTERNS,          "valuePatterns",          false,  "r") \
+    macro(COVERGROUP_VALUE_RANGES,            "valueRanges",            false,  "r") \
+    macro(COVERGROUP_VALUE_RELEASE,           "valueRelease",           false,  "") \
+    macro(COVERGROUP_VALUE_RUNS,              "valueRuns",              false,  "r") \
+    macro(COVERGROUP_VALUE_TRANSITIONS,       "valueTransitions",       false,  "r") \
+    macro(COVERGROUP_VALUE_TYPE,              "valueType",              false,  "rr") \
+    macro(COVERGROUP_WEIGHT,                  "weight",                 false,  "rr") \
+    macro(COVERGROUP_WITH_BEGIN,              "withBegin",              false,  "rr") \
+    macro(COVERGROUP_WITH_FINISH,             "withFinish",             false,  "r+") \
+    macro(COVERGROUP_WITH_HI,                 "withHi",                 false,  "") \
+    macro(COVERGROUP_WITH_HI_W,               "withHiW",                false,  "w") \
+    macro(COVERGROUP_WITH_LO,                 "withLo",                 false,  "") \
+    macro(COVERGROUP_WITH_LO_W,               "withLoW",                false,  "w") \
+    macro(COVERGROUP_WITH_NEXT,               "withNext",               false,  "") \
+    macro(COVERGROUP_WITH_RUN,                "withRun",                false,  "rr") \
+    macro(COVERGROUP_WITH_RUN_W,              "withRunW",               false,  "rr") \
+    macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  "r") \
+    macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  "r") \
+    macro(DYN_CLEAR,                          "clear",                  false,  "") \
+    macro(DYN_ERASE,                          "erase",                  false,  "r") \
+    macro(DYN_INSERT,                         "insert",                 false,  "rr") \
+    macro(DYN_POP,                            "pop",                    false,  "rrm") \
+    macro(DYN_POP_FRONT,                      "pop_front",              false,  "") \
+    macro(DYN_PUSH,                           "push",                   false,  "rr") \
+    macro(DYN_PUSH_FRONT,                     "push_front",             false,  "r") \
+    macro(DYN_RENEW,                          "renew",                  false,  "r") \
+    macro(DYN_RENEW_COPY,                     "renew_copy",             false,  "rr") \
+    macro(DYN_RESIZE,                         "resize",                 false,  "TODO") \
+    macro(DYN_SIZE,                           "size",                   PURE,   "") \
+    macro(DYN_SLICE,                          "slice",                  PURE,   "rr") \
+    macro(DYN_SLICE_ASSIGN,                   "sliceAssign",            false,  "rrr") \
+    macro(DYN_SLICE_ASSIGN_BACK_BACK,         "sliceAssignBackBack",    false,  "rrr") \
+    macro(DYN_SLICE_ASSIGN_FRONT_BACK,        "sliceAssignFrontBack",   false,  "rrr") \
+    macro(DYN_SLICE_BACK_BACK,                "sliceBackBack",          PURE,   "rr") \
+    macro(DYN_SLICE_FRONT_BACK,               "sliceFrontBack",         PURE,   "rr") \
+    macro(EVENT_CLEAR_FIRED,                  "clearFired",             false,  "") \
+    macro(EVENT_CLEAR_TRIGGERED,              "clearTriggered",         false,  "") \
+    macro(EVENT_FIRE,                         "fire",                   false,  "") \
+    macro(EVENT_IS_FIRED,                     "isFired",                PURE,   "") \
+    macro(EVENT_IS_TRIGGERED,                 "isTriggered",            PURE,   "") \
+    macro(FORCE_ADD,                          "addForce",               false,  "rrrr+") \
+    macro(FORCE_READ,                         "read",                   PURE,   "r") \
+    macro(FORCE_READ_INDEX,                   "readIndex",              PURE,   "rr") \
+    macro(FORCE_READ_SEL,                     "readSel",                PURE,   "TODO") \
+    macro(FORCE_RELEASE,                      "release",                false,  "rr+") \
+    macro(FORCE_TOUCH,                        "touch",                  false,  "") \
+    macro(FORK_DONE,                          "done",                   false,  "rr") \
+    macro(FORK_INIT,                          "init",                   false,  "rr") \
+    macro(FORK_JOIN,                          "join",                   false,  "rrr") \
+    macro(FORK_ON_KILL,                       "onKill",                 false,  "r") \
+    macro(NBA_COMMIT,                         "commit",                 false,  "w") \
+    macro(NBA_ENQUEUE,                        "enqueue",                false,  "r+") \
+    macro(RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization",  false,  "mr") \
+    macro(RANDOMIZER_CLEARCONSTRAINTS,        "clearConstraints",       false,  "") \
+    macro(RANDOMIZER_CLEARALL,                "clearAll",               false,  "") \
+    macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false,  "r") \
+    macro(RANDOMIZER_HARD,                    "hard",                   false,  "r+") \
+    macro(RANDOMIZER_SOFT,                    "soft",                   false,  "rrrr") \
+    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  "rr") \
+    macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  "r") \
+    macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  "rr") \
+    macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  "rrr") \
+    macro(RANDOMIZER_UPDATE_VAR,              "update_var",             false,  "TODO") \
+    macro(RANDOMIZER_WRITE_VAR,               "write_var",              false,  "TODO") \
+    macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false,  "r") \
+    macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false,  "r") \
+    macro(RANDOMIZER_MARK_VAR_STATIC,         "mark_var_static",        false,  "r") \
+    macro(RANDOMIZER_SET_STATIC_RANDMODE,     "set_static_randmode",    false,  "r") \
+    macro(RNG_GET_RANDSTATE,                  "__Vm_rng.get_randstate", PURE,   "") \
+    macro(RNG_SET_RANDSTATE,                  "__Vm_rng.set_randstate", false,  "r") \
+    macro(SCHED_ANY_TRIGGERED,                "anyTriggered",           false,  "r") \
+    macro(SCHED_AWAITING_CURRENT_TIME,        "awaitingCurrentTime",    PURE,   "") \
+    macro(SCHED_AWAITING_ZERO_DELAY,          "awaitingZeroDelay",      PURE,   "") \
+    macro(SCHED_READY,                        "ready",                  false,  "r") \
+    macro(SCHED_MOVE_TO_RESUME_QUEUE,         "moveToResumeQueue",      false,  "r") \
+    macro(SCHED_DELAY,                        "delay",                  false,  "rrrr") \
+    macro(SCHED_DO_POST_UPDATES,              "doPostUpdates",          false,  "") \
+    macro(SCHED_EVALUATE,                     "evaluate",               false,  "") \
+    macro(SCHED_EVALUATION,                   "evaluation",             false,  "rrrr") \
+    macro(SCHED_POST_UPDATE,                  "postUpdate",             false,  "rrrr") \
+    macro(SCHED_RESUME,                       "resume",                 false,  "TODO") \
+    macro(SCHED_RESUME_ZERO_DELAY,            "resumeZeroDelay",        false,  "") \
+    macro(SCHED_RESUMPTION,                   "resumption",             false,  "rrrr") \
+    macro(SCHED_TRIGGER,                      "trigger",                false,  "rrrrr") \
+    macro(SCHED_WAIT_FOREVER,                 "waitForever",            false,  "rrr") \
+    macro(UNPACKED_ASSIGN,                    "assign",                 false,  "r") \
+    macro(UNPACKED_FILL,                      "fill",                   false,  "r") \
+    macro(UNPACKED_NEQ,                       "neq",                    PURE,   "r")
 // clang-format on
 
 class VCMethod final {
+    static constexpr bool PURE = true;  // For macro expansion of 'pure' field only
+
 public:
     enum en : uint8_t {
-#define VL_CMETHOD_ID(id, method, pure) id,
+#define VL_CMETHOD_ID(id, method, pure, args) id,
         FOR_EACH_CMETHOD(VL_CMETHOD_ID)
 #undef VL_CMETHOD_ID
             _ENUM_MAX  // Leave last
@@ -946,8 +1053,8 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
-        static const char* const values[] = {
-#define VL_CMETHOD_NAME(id, method, pure) method,
+        static constexpr const char* const values[] = {
+#define VL_CMETHOD_NAME(id, method, pure, args) method,
             FOR_EACH_CMETHOD(VL_CMETHOD_NAME)
 #undef VL_CMETHOD_NAME
                 "_ENUM_MAX"  //
@@ -955,11 +1062,20 @@ public:
         return values[m_e];
     }
     bool isPure() const VL_PURE {
-        static const bool values[] = {
-#define VL_CMETHOD_PURE(id, method, pure) pure,
+        static constexpr bool values[] = {
+#define VL_CMETHOD_PURE(id, method, pure, args) pure,
             FOR_EACH_CMETHOD(VL_CMETHOD_PURE)
 #undef VL_CMETHOD_PURE
                 false  //
+        };
+        return values[m_e];
+    }
+    const char* args() const VL_PURE {
+        static constexpr const char* const values[] = {
+#define VL_CMETHOD_ARGS(id, method, pure, args) args,
+            FOR_EACH_CMETHOD(VL_CMETHOD_ARGS)
+#undef VL_CMETHOD_ARGS
+                ""  //
         };
         return values[m_e];
     }
@@ -973,7 +1089,71 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
     return os << rhs.ascii();
 }
 
+// Static assert all argument descriptors are well formed
+#define VL_CMETHOD_ARGS_CHECK(id, method, pure, args) \
+    static_assert(validateArgsDescriptor(args), "Malformed argument descriptor for " #id);
+FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
+#undef VL_CMETHOD_ARGS_CHECK
+
 #undef FOR_EACH_CMETHOD
+
+// clang-format off
+#define FOR_EACH_CFUNCTION(macro) \
+    /*    id,                                 function,                 pure,   args */ \
+    macro(_NONE,                              "_none",                  false,  "") \
+    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r")
+// clang-format on
+
+class VCFunction final {
+    static constexpr bool PURE = true;  // For macro expansion of 'pure' field only
+
+public:
+    enum en : uint8_t {
+#define VL_CFUNCTION_ID(id, method, pure, args) id,
+        FOR_EACH_CFUNCTION(VL_CFUNCTION_ID)
+#undef VL_CFUNCTION_ID
+            _ENUM_MAX  // Leave last
+    };
+    enum en m_e;
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCFunction(en _e)
+        : m_e{_e} {}
+    const char* ascii() const VL_PURE {
+        static const char* const values[] = {
+#define VL_CFUNCTION_NAME(id, function, pure, args) function,
+            FOR_EACH_CFUNCTION(VL_CFUNCTION_NAME)
+#undef VL_CFUNCTION_NAME
+                "_ENUM_MAX"  //
+        };
+        return values[m_e];
+    }
+    bool isPure() const VL_PURE {
+        static const bool values[] = {
+#define VL_CFUNCTION_PURE(id, method, pure, args) pure,
+            FOR_EACH_CFUNCTION(VL_CFUNCTION_PURE)
+#undef VL_CFUNCTION_PURE
+                false  //
+        };
+        return values[m_e];
+    }
+    const char* args() const VL_PURE {
+        static const char* const values[] = {
+#define VL_CFUNCTION_ARGS(id, method, pure, args) args,
+            FOR_EACH_CFUNCTION(VL_CFUNCTION_ARGS)
+#undef VL_CFUNCTION_ARGS
+                ""  //
+        };
+        return values[m_e];
+    }
+};
+
+// Static assert all argument descriptors are well formed
+#define VL_CFUNCTION_ARGS_CHECK(id, method, pure, args) \
+    static_assert(validateArgsDescriptor(args), "Malformed argument descriptor for " #id);
+FOR_EACH_CFUNCTION(VL_CFUNCTION_ARGS_CHECK)
+#undef VL_CFUNCTION_ARGS_CHECK
+
+#undef FOR_EACH_CFUNCTION
 
 // ######################################################################
 
@@ -1003,7 +1183,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
-        static const char* const names[] = {"none", "ctor_var_reset_call"};
+        static constexpr const char* const names[] = {"none", "ctor_var_reset_call"};
         return names[m_e];
     }
     bool isNone() const { return m_e == NONE; }
@@ -1038,6 +1218,11 @@ public:
     explicit VCaseType(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    const char* ascii() const VL_PURE {
+        static constexpr const char* const names[]
+            = {"CASE", "CASEX", "CASEZ", "CASEINSIDE", "CASEMATCHES", "RANDSEQUENCE"};
+        return names[m_e];
+    }
 };
 constexpr bool operator==(const VCaseType& lhs, const VCaseType& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -1053,17 +1238,17 @@ public:
         UNSUPPORTED,
         SAMEISH,
         COMPATIBLE,
-        ENUM_EXPLICIT,
         ENUM_IMPLICIT,
+        ENUM_EXPLICIT,
         DYNAMIC_CLASS,
         INCOMPATIBLE,
         _ENUM_MAX  // Leave last
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[]
-            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_EXPLICIT",
-               "ENUM_IMPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
+        static constexpr const char* const names[]
+            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_IMPLICIT",
+               "ENUM_EXPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
         return names[m_e];
     }
     bool isAssignable() const { return m_e != UNSUPPORTED && m_e != INCOMPATIBLE; }
@@ -1091,7 +1276,8 @@ class VCoverBinsType final {
 public:
     enum en : uint8_t {
         BINS_ARRAY,  // Array of bins with user-speciifed size
-        BINS_AUTO,  // Auto-sized array of bins (eg auto_bin_max)
+        BINS_AUTO,  // Automatic bins of a 'bins auto[N]' declaration
+        BINS_AUTO_IMPLICIT,  // Automatic bins of a coverpoint without bins (IEEE 1800-2023 19.5.3)
         BINS_DEFAULT,  // Default bin
         BINS_IGNORE,  // Ignore bin
         BINS_ILLEGAL,  // Illegal bin
@@ -1107,8 +1293,15 @@ public:
         : m_e{_e} {}
     constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
-        static const char* const names[]
-            = {"user", "array", "auto", "ignore", "illegal", "default", "wildcard", "transition"};
+        static constexpr const char* const names[]
+            = {"array",        "auto",       "auto_implicit", "default", "ignore_bins",
+               "illegal_bins", "transition", "bins",          "wildcard"};
+        return names[m_e];
+    }
+    // Keyword declaring the bins, without any 'wildcard' prefix
+    const char* verilogKwd() const {
+        static constexpr const char* const names[] = {
+            "bins", "bins", "bins", "bins", "ignore_bins", "illegal_bins", "bins", "bins", "bins"};
         return names[m_e];
     }
     // VlCovBinKind enumerator naming the bin's set
@@ -1152,6 +1345,8 @@ public:
         MERGE_INSTANCES,
         DISTRIBUTE_FIRST,
         REAL_INTERVAL,
+        // Legacy option.* accepted for compatibility
+        CROSS_AUTO_BIN_MAX,
         // sentinel - should never appear after parse-time validation
         UNKNOWN
     };
@@ -1160,22 +1355,23 @@ public:
     constexpr VCoverOptionType(en _e)
         : m_e{_e} {}
     const char* ascii() const {
-        static const char* const names[] = {"weight",
-                                            "goal",
-                                            "at_least",
-                                            "auto_bin_max",
-                                            "per_instance",
-                                            "comment",
-                                            "name",
-                                            "cross_num_print_missing",
-                                            "cross_retain_auto_bins",
-                                            "detect_overlap",
-                                            "get_inst_coverage",
-                                            "strobe",
-                                            "merge_instances",
-                                            "distribute_first",
-                                            "real_interval",
-                                            "unknown"};
+        static constexpr const char* const names[] = {"weight",
+                                                      "goal",
+                                                      "at_least",
+                                                      "auto_bin_max",
+                                                      "per_instance",
+                                                      "comment",
+                                                      "name",
+                                                      "cross_num_print_missing",
+                                                      "cross_retain_auto_bins",
+                                                      "detect_overlap",
+                                                      "get_inst_coverage",
+                                                      "strobe",
+                                                      "merge_instances",
+                                                      "distribute_first",
+                                                      "real_interval",
+                                                      "cross_auto_bin_max",
+                                                      "unknown"};
         return names[m_e];
     }
 };
@@ -1203,11 +1399,12 @@ public:
         : m_e(static_cast<en>(_e)) {}  // LCOV_EXCL_STOP  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }  // LCOV_EXCL_LINE
     const char* ascii() const {
-        static const char* const names[] = {"", "[*]", "[->]", "[=]"};
+        static constexpr const char* const names[] = {"", "[*]", "[->]", "[=]"};
         return names[m_e];
     }
     const char* asciiJson() const {
-        static const char* const names[] = {"\"none\"", "\"consec\"", "\"goto\"", "\"noncons\""};
+        static constexpr const char* const names[]
+            = {"\"none\"", "\"consec\"", "\"goto\"", "\"noncons\""};
         return names[m_e];
     }
 };
@@ -1227,11 +1424,13 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const VL_MT_SAFE { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "INPUT", "OUTPUT", "INOUT", "REF", "CONSTREF"};
+        static constexpr const char* const names[]
+            = {"NONE", "INPUT", "OUTPUT", "INOUT", "REF", "CONSTREF"};
         return names[m_e];
     }
     string verilogKwd() const {
-        static const char* const names[] = {"", "input", "output", "inout", "ref", "const ref"};
+        static constexpr const char* const names[]
+            = {"", "input", "output", "inout", "ref", "const ref"};
         return names[m_e];
     }
     string prettyName() const { return verilogKwd(); }
@@ -1242,6 +1441,7 @@ public:
     bool isNonOutput() const {
         return m_e == INPUT || m_e == INOUT || m_e == REF || m_e == CONSTREF;
     }
+    bool isOutput() const { return m_e == OUTPUT; }
     bool isReadOnly() const VL_MT_SAFE { return m_e == INPUT || m_e == CONSTREF; }
     bool isWritable() const VL_MT_SAFE { return m_e == OUTPUT || m_e == INOUT || m_e == REF; }
     bool isRef() const VL_MT_SAFE { return m_e == REF; }
@@ -1255,6 +1455,17 @@ public:
             return "VerilatedTraceSigDirection::INPUT";
         }
         return "VerilatedTraceSigDirection::NONE";
+    }
+    VAccess pinAccess() const {
+        switch (m_e) {
+        case NONE: return VAccess::NOCHANGE;
+        case INPUT:
+        case CONSTREF: return VAccess::READ;
+        case OUTPUT: return VAccess::WRITE;
+        case INOUT:
+        case REF: return VAccess::READWRITE;
+        }
+        v3fatalSrc("Unhandled VDirection");
     }
 };
 constexpr bool operator==(const VDirection& lhs, const VDirection& rhs) VL_MT_SAFE {
@@ -1296,7 +1507,7 @@ public:
     bool addNewline() const { return m_e != DT_WRITE; }
     bool needScopeTracking() const { return m_e != DT_DISPLAY && m_e != DT_WRITE; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"display", "write", "monitor", "strobe", "info", "error", "warning", "fatal"};
         return names[m_e];
     }
@@ -1322,8 +1533,9 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"$dumpfile",  "$dumpvars", "$dumpall", "$dumpflush",
-                                            "$dumplimit", "$dumpoff",  "$dumpon"};
+        static constexpr const char* const names[]
+            = {"$dumpfile",  "$dumpvars", "$dumpall", "$dumpflush",
+               "$dumplimit", "$dumpoff",  "$dumpon"};
         return names[m_e];
     }
 };
@@ -1361,7 +1573,7 @@ public:
     };
     enum en m_e;
     bool clockedStmt() const {
-        static const bool clocked[] = {
+        static constexpr bool clocked[] = {
             true,  // ET_CHANGED
             true,  // ET_BOTHEDGE
             true,  // ET_POSEDGE
@@ -1391,13 +1603,13 @@ public:
         }
     }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"CHANGED", "BOTH",       "POS",    "NEG",    "EVENT",   "TRUE",  "ET_INITIAL_NBA",
                "COMBO",   "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
-        static const char* const names[] = {
+        static constexpr const char* const names[] = {
             "[changed]", "edge", "posedge",  "negedge",  "[event]",   "[true]",  "[initial_nba]",
             "*",         "*",    "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
@@ -1460,7 +1672,7 @@ public:
     enum en m_e;
 
     const char* ascii() const {
-        static const char* const values[] = {
+        static constexpr const char* const values[] = {
 #define VL_EVAL_NAME(id, iterated, triggers, first, slow) #id,
             FOR_EACH_EVAL(VL_EVAL_NAME)
 #undef VL_EVAL_NAME
@@ -1469,7 +1681,7 @@ public:
         return values[m_e];
     }
     bool isIterated() const {
-        static const bool values[] = {
+        static constexpr bool values[] = {
 #define VL_EVAL_IS_ITERATED(id, iterated, triggers, first, slow) iterated,
             FOR_EACH_EVAL(VL_EVAL_IS_ITERATED)
 #undef VL_EVAL_IS_ITERATED
@@ -1478,7 +1690,7 @@ public:
         return values[m_e];
     }
     bool hasTriggers() const {
-        static const bool values[] = {
+        static constexpr bool values[] = {
 #define VL_EVAL_HAS_TRIGGERS(id, iterated, triggers, first, slow) triggers,
             FOR_EACH_EVAL(VL_EVAL_HAS_TRIGGERS)
 #undef VL_EVAL_HAS_TRIGGERS
@@ -1487,7 +1699,7 @@ public:
         return values[m_e];
     }
     bool firstIteration() const {
-        static const bool values[] = {
+        static constexpr bool values[] = {
 #define VL_EVAL_FIRST(id, iterated, triggers, first, slow) first,
             FOR_EACH_EVAL(VL_EVAL_FIRST)
 #undef VL_EVAL_FIRST
@@ -1496,7 +1708,7 @@ public:
         return values[m_e];
     }
     bool slow() const {
-        static const bool values[] = {
+        static constexpr bool values[] = {
 #define VL_EVAL_SLOW(id, iterated, triggers, first, slow) slow,
             FOR_EACH_EVAL(VL_EVAL_SLOW)
 #undef VL_EVAL_SLOW
@@ -1539,7 +1751,7 @@ public:
     enum en : uint8_t { NONE, ENUM, STRUCT, UNION, CLASS, INTERFACE_CLASS, GENERIC_INTERFACE };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"none", "enum", "struct", "union", "class", "interface class", "generic interface"};
         return names[m_e];
     }
@@ -1609,11 +1821,11 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"JOIN", "JOIN_ANY", "JOIN_NONE"};
+        static constexpr const char* const names[] = {"JOIN", "JOIN_ANY", "JOIN_NONE"};
         return names[m_e];
     }
     const char* verilogKwd() const {
-        static const char* const names[] = {"join", "join_any", "join_none"};
+        static constexpr const char* const names[] = {"join", "join_any", "join_none"};
         return names[m_e];
     }
     bool join() const { return m_e == JOIN; }
@@ -1642,7 +1854,8 @@ public:
     };  // Static propagated from above
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "VAUTOM", "VAUTOMI", "VSTATIC", "VSTATICI"};
+        static constexpr const char* const names[]
+            = {"NONE", "VAUTOM", "VAUTOMI", "VSTATIC", "VSTATICI"};
         return names[m_e];
     }
     VLifetime()
@@ -1680,8 +1893,36 @@ inline std::ostream& operator<<(std::ostream& os, const VLifetime& rhs) {
 
 class VNumRange final {
 public:
-    int m_left = 0;
-    int m_right = 0;
+    // Iterable sequence of integers
+    class Sequence final {
+        class Iterator final {
+            int m_index;  // Current index
+            const int m_inc;  // Step, +1 or -1
+        public:
+            Iterator(int index, int inc)
+                : m_index{index}
+                , m_inc{inc} {}
+            int operator*() const { return m_index; }
+            Iterator& operator++() {
+                m_index += m_inc;
+                return *this;
+            }
+            bool operator!=(const Iterator& that) const { return m_index != that.m_index; }
+        };
+        const int m_begin;  // First index
+        const int m_end;  // One past the last index
+        const int m_inc;  // Step, +1 or -1
+    public:
+        Sequence(int first, int last, int inc)
+            : m_begin{first}
+            , m_end{last + inc}
+            , m_inc{inc} {}
+        Iterator begin() const { return Iterator{m_begin, m_inc}; }
+        Iterator end() const { return Iterator{m_end, m_inc}; }
+    };
+
+    int m_left = 0;  // Left side of range (pre-':')
+    int m_right = 0;  // Right side of range (post-':')
     bool m_ranged = false;  // Has a range
     bool operator==(const VNumRange& rhs) const {
         return m_left == rhs.m_left && m_right == rhs.m_right && m_ranged == rhs.m_ranged;
@@ -1719,19 +1960,28 @@ public:
         return m_left > m_right ? m_right : m_left;
     }  // How to show a declaration
     int leftToRightInc() const { return ascending() ? 1 : -1; }
+    // Iterate indices from left() to right() inclusive: 'for (int i : range.seqLeftToRight())'
+    Sequence seqLeftToRight() const { return {m_left, m_right, leftToRightInc()}; }
+    // Iterate indices from right() to left() inclusive: 'for (int i : range.seqRightToLeft())'
+    Sequence seqRightToLeft() const { return {m_right, m_left, -leftToRightInc()}; }
+    // Iterate indices from lo() to hi() inclusive: 'for (int i : range.seqLoToHi())'
+    Sequence seqLoToHi() const { return {lo(), hi(), 1}; }
+    // Iterate indices from hi() to lo() inclusive: 'for (int i : range.seqHiToLo())'
+    Sequence seqHiToLo() const { return {hi(), lo(), -1}; }
     int elements() const VL_MT_SAFE { return hi() - lo() + 1; }
     bool ranged() const { return m_ranged; }
     bool ascending() const { return m_left < m_right; }
     int hiMaxSelect() const {
         return (lo() < 0 ? hi() - lo() : hi());
     }  // Maximum value a [] select may index
-    void dump(std::ostream& str) const {
+    string ascii() const {
         if (ranged()) {
-            str << "[" << left() << ":" << right() << "]";
+            return "["s + std::to_string(left()) + ":" + std::to_string(right()) + "]";
         } else {
-            str << "[norg]";
+            return "[norg]";
         }
     }
+    void dump(std::ostream& str) const { str << ascii(); }
 };
 inline std::ostream& operator<<(std::ostream& os, const VNumRange& rhs) {
     rhs.dump(os);
@@ -1761,7 +2011,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {
+        static constexpr const char* const names[] = {
             "COVERAGE_BLOCK_OFF",  //
             "HIER_BLOCK",  //
             "HIER_PARAMS",  //
@@ -1809,7 +2059,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"NONE", "RAND", "RANDC", "RAND_INLINE"};
+        static constexpr const char* const names[] = {"NONE", "RAND", "RANDC", "RAND_INLINE"};
         return names[m_e];
     }
     VRandAttr()
@@ -1876,7 +2126,7 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"UNSIGNED", "SIGNED", "NOSIGN"};
+        static constexpr const char* const names[] = {"UNSIGNED", "SIGNED", "NOSIGN"};
         return names[m_e];
     }
     VSigning()
@@ -1915,7 +2165,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"highz", "small", "medium", "weak", "large", "pull", "strong", "supply"};
         return names[m_e];
     }
@@ -1945,13 +2195,13 @@ public:
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"`systemc_ctor",  //
-                                            "`systemc_dtor",  //
-                                            "`systemc_header",  //
-                                            "`systemc_header_post",  //
-                                            "`systemc_implementation",  //
-                                            "`systemc_imp_header",  //
-                                            "`systemc_interface"};
+        static constexpr const char* const names[] = {"`systemc_ctor",  //
+                                                      "`systemc_dtor",  //
+                                                      "`systemc_header",  //
+                                                      "`systemc_header_post",  //
+                                                      "`systemc_implementation",  //
+                                                      "`systemc_imp_header",  //
+                                                      "`systemc_interface"};
         return names[m_e];
     }
     // cppcheck-suppress noExplicitConstructor
@@ -1980,7 +2230,7 @@ public:
         : m_e{_e} {}
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"ARRAY_PACKED",  "ARRAY_UNPACKED",  "SCOPE_MODULE", "SCOPE_INTERFACE",
                "STRUCT_PACKED", "STRUCT_UNPACKED", "UNION_PACKED"};
         return names[m_e];
@@ -2018,11 +2268,11 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"CONSTANT", "FULL", "CHANGE"};
+        static constexpr const char* const names[] = {"CONSTANT", "FULL", "CHANGE"};
         return names[m_e];
     }
     const char* func_prefix() const {
-        static const char* const names[] = {"trace_const", "trace_full", "trace_chg"};
+        static constexpr const char* const names[] = {"trace_const", "trace_full", "trace_chg"};
         return names[m_e];
     }
 };
@@ -2055,7 +2305,7 @@ public:
     constexpr operator en() const { return m_e; }
     bool containsAny(VUseType other) const { return m_e & other.m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
+        static constexpr const char* const names[] = {"INT_FWD", "INT_INC", "INT_FWD_INC"};
         return names[m_e - 1];
     }
 };
@@ -2108,7 +2358,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[]
+        static constexpr const char* const names[]
             = {"?",        "GPARAM",  "LPARAM",   "SPECPARAM", "GENVAR",    "VAR",
                "SUPPLY0",  "SUPPLY1", "WIRE",     "WREAL",     "TRIAND",    "TRIOR",
                "TRIWIRE",  "TRI0",    "TRI1",     "PORT",      "BLOCKTEMP", "MODULETEMP",
@@ -2147,7 +2397,7 @@ public:
 
     const char* traceSigKind() const {
         // VerilatedTraceSigKind to used in trace signal declaration
-        static const char* const lut[] = {
+        static constexpr const char* const lut[] = {
             /* UNKNOWN:      */ "",  // Should not be traced
             /* GPARAM:       */ "PARAMETER",
             /* LPARAM:       */ "PARAMETER",

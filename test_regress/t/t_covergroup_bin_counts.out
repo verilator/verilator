@@ -1,18 +1,32 @@
-cg.data.low: 3
-cg.data.zero: 1
-cg_db.cp.high: 1
-cg_db.cp.low: 1
-cg_mixed.opcode.arith: 1
-cg_mixed.opcode.load: 1
-cg_mixed.opcode.nop: 1
-cg_mixed.opcode.other: 1
-cg_mixed.opcode.store: 1
-cg_sel.cp.hi: 1
-cg_sel.cp.lo: 1
-cg_unbounded.cp.lo: 1
-cg_unbounded.cp.others: 1
-cg_unbounded_all.cp.all: 1
-cg_unbounded_lo.cp.rest: 1
-cg_unbounded_lo.cp.start: 1
-cg_unbounded_signed.cp.hi: 1
-cg_unbounded_signed.cp.lo: 1
+t.cg.data.low: 3
+t.cg.data.zero: 1
+t.cg_db.cp.high: 1
+t.cg_db.cp.low: 1
+t.cg_mixed.opcode.arith: 1
+t.cg_mixed.opcode.load: 1
+t.cg_mixed.opcode.nop: 1
+t.cg_mixed.opcode.other: 1
+t.cg_mixed.opcode.store: 1
+t.cg_namers.cp.first: 1
+t.cg_namers.cp.ignored[0] [ignore]: 1
+t.cg_namers.cp.ignored[1] [ignore]: 1
+t.cg_namers.cp.illegal [illegal]: 0
+t.cg_namers.cp.last: 5
+t.cg_namers.cp.middle[0]: 2
+t.cg_namers.cp.middle[1]: 3
+t.cg_namers.cp.middle[2]: 4
+t.cg_namers.cp_tag.zero: 17
+t.cg_namers.cx.<first,zero> [cross]: 1
+t.cg_namers.cx.<last,zero> [cross]: 5
+t.cg_namers.cx.<middle[0],zero> [cross]: 2
+t.cg_namers.cx.<middle[1],zero> [cross]: 3
+t.cg_namers.cx.<middle[2],zero> [cross]: 4
+t.cg_sel.cp.hi: 1
+t.cg_sel.cp.lo: 1
+t.cg_unbounded.cp.lo: 1
+t.cg_unbounded.cp.others: 1
+t.cg_unbounded_all.cp.all: 1
+t.cg_unbounded_lo.cp.rest: 1
+t.cg_unbounded_lo.cp.start: 1
+t.cg_unbounded_signed.cp.hi: 1
+t.cg_unbounded_signed.cp.lo: 1

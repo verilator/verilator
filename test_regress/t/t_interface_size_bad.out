@@ -7,4 +7,24 @@
                                       : ... note: In instance 't'
    17 |   baz baz6_inst (.foo(foo6));
       |                   ^~~
+%Error: t/t_interface_size_bad.v:23:22: Illegal port connection 'foo', mismatch between port which is an interface array of size 2x3, and expression which is an interface array of size 2x4.
+                                      : ... note: In instance 't'
+   23 |   baz2 baz2x4_inst (.foo(foo2x4));
+      |                      ^~~
+%Error: t/t_interface_size_bad.v:24:22: Illegal port connection 'foo', mismatch between port which is an interface array of size 2x3, and expression which is an interface array of size 3x3.
+                                      : ... note: In instance 't'
+   24 |   baz2 baz3x3_inst (.foo(foo3x3));
+      |                      ^~~
+%Error: t/t_interface_size_bad.v:25:21: Illegal port connection 'foo', mismatch between port which is an interface array of size 2x3, and expression which is an interface array of size 6.
+                                      : ... note: In instance 't'
+   25 |   baz2 baz6r_inst (.foo(foo6));
+      |                     ^~~
+%Error: t/t_interface_size_bad.v:26:21: Illegal port connection 'foo', mismatch between port which is an interface array of size 5, and expression which is an interface array of size 2x5.
+                                      : ... note: In instance 't'
+   26 |   baz baz2x5_inst (.foo(foo2x5));
+      |                     ^~~
+%Error: t/t_interface_size_bad.v:29:27: Port connection 'foo' as part of a module instance array requires the connection's leading unpacked dimensions to match the instance array dimensions (IEEE 1800-2023 23.3.3.5)
+                                      : ... note: In instance 't'
+   29 |   baz baz_arr_inst[1:0] (.foo(foo3x3));
+      |                           ^~~
 %Error: Exiting due to

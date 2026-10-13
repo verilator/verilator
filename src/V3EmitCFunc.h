@@ -85,9 +85,13 @@ class EmitCLazyDecls final : public VNVisitorConst {
     void visit(AstVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
         // Only constant pool symbols are lazy declared for now ...
-        if (EmitCUtil::isConstPoolMod(EmitCParentModule::get(varp))) {
-            lazyDeclareConstPoolVar(varp);
-        }
+        if (EmitCParentModule::get(varp)->isConstPool()) lazyDeclareConstPoolVar(varp);
+    }
+
+    void visit(AstExecGraph* nodep) override {
+        if (!declaredOnce(nodep)) return;
+        m_emitter.putns(nodep, "extern VlExecGraph " + EmitCUtil::execGraphName(nodep) + ";\n");
+        m_needsBlankLine = true;
     }
 
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -262,7 +266,6 @@ public:
                                const string& suffix, const AstNode* valuep);
     void emitVarResetScopeHash();
     void emitChangeDet();
-    void emitConstInit(AstNode* initp) { iterateConst(initp); }
     void putCommaIterateNext(AstNode* nodep, bool comma = false) {
         for (AstNode* subnodep = nodep; subnodep; subnodep = subnodep->nextp()) {
             if (comma) puts(", ");
@@ -432,6 +435,11 @@ public:
             m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
             if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
+                if (nodep->voidSelf()) {
+                    const string className = EmitCUtil::prefixNameProtect(m_modp);
+                    puts(className + "* const vlSelf = static_cast<" + className
+                         + "*>(vlVoidSelf);\n");
+                }
                 if (!VN_IS(m_modp, Class)) {
                     puts(EmitCUtil::symClassAssign());  // Uses vlSelf
                 } else {
@@ -808,6 +816,21 @@ public:
         if (nodep->method() == VCMethod::FORCE_READ_SEL) {
             emitIQW(nodep);
             if (nodep->isWide()) puts("<" + cvtToStr(nodep->dtypep()->widthWords()) + ">");
+        } else if (nodep->method() == VCMethod::ARRAY_SLICE) {
+            // VlUnpacked::slice<N_Out>(loIdx) - N_Out is the (fixed) result array size
+            const AstUnpackArrayDType* const adtypep
+                = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+            puts("<" + cvtToStr(adtypep->elementsConst()) + ">");
+        } else if (nodep->method() == VCMethod::COVERGROUP_ADD_COVERPOINT) {
+            // The hit-list bound is a template argument of the returned VlCoverpointT<>, and the
+            // node's own dtype is that type, so it is the one source of truth for both.
+            const AstCoverpointDType* const cpdtypep
+                = VN_AS(nodep->dtypep()->skipRefp(), CoverpointDType);
+            puts("<" + cvtToStr(cpdtypep->hitBound()) + ">");
+        } else if (nodep->method() == VCMethod::COVERGROUP_ADD_CROSS) {
+            const AstCoverCrossDType* const cxdtypep
+                = VN_AS(nodep->dtypep()->skipRefp(), CoverCrossDType);
+            puts("<" + cxdtypep->cppTemplateArgs() + ">");
         }
         puts("(");
         bool comma = false;
@@ -847,6 +870,12 @@ public:
             if (comma) puts(", ");
             iterateConst(nodep->withp());
         }
+        puts(")");
+    }
+    void visit(AstCFuncHard* nodep) override {
+        putns(nodep, nodep->name());
+        puts("(");
+        putCommaIterateNext(nodep->pinsp());
         puts(")");
     }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
@@ -1768,6 +1797,25 @@ public:
         iterateAndNextConstNull(nodep->fhsp());
         puts(")");
     }
+    void visit(AstTriggered* nodep) override {
+        // Test each word of the trigger vector with a mask of the relevant bits
+        std::map<uint32_t, uint64_t> wordMasks;
+        for (const uint32_t index : nodep->indices()) {
+            wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
+        }
+        putns(nodep, "((");
+        bool first = true;
+        for (const auto& wordMask : wordMasks) {
+            if (!first) puts("\n| ");
+            first = false;
+            const bool allOnes = wordMask.second == ~0ULL;
+            if (!allOnes) puts("(" + V3Number{nodep, 64}.setQuad(wordMask.second).emitC() + " & ");
+            iterateConst(nodep->trigRefp());
+            puts("[" + std::to_string(wordMask.first) + "U]");
+            if (!allOnes) puts(")");
+        }
+        puts(") != 0ULL)");
+    }
     void visit(AstInitItem* nodep) override { iterateChildrenConst(nodep); }
     // Terminals
     void visit(AstVarRef* nodep) override {
@@ -1776,12 +1824,9 @@ public:
         const bool dereferenceCovergroupRef
             = varp->covergroupRefMember() && nodep->access().isReadOrRW();
         if (dereferenceCovergroupRef) putns(nodep, "(*");
-        if (EmitCUtil::isConstPoolMod(varModp)) {
+        if (varModp->isConstPool()) {
             // Reference to constant pool variable
             putns(nodep, EmitCUtil::topClassName() + "__ConstPool__");
-        } else if (varp->isStatic()) {
-            // Access static variable via the containing class
-            putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");
         } else if (VN_IS(varModp, Class) && varModp != m_modp) {
             // Superclass member reference
             putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");
@@ -1924,8 +1969,10 @@ public:
     }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to
-        // invoke the graph and wait for it to complete. Emitting the children does just that.
-        iterateChildrenConst(nodep);
+        // invoke the graph and wait for it to complete. The run-time library does just that.
+        putns(nodep, "vl_invokeExecGraph(" + EmitCUtil::execGraphName(nodep) + ", vlSelf, ");
+        iterateConst(nodep->triggerp());
+        puts(".data());\n");
     }
 
     // Default

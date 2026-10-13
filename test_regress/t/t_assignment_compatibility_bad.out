@@ -23,13 +23,13 @@
       |                    ^
 %Error: t/t_assignment_compatibility_bad.v:31:20: Assignment between 2-state and 4-state types requires equivalent element types (IEEE 1800-2023 6.22.2, 7.6)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand type: 'struct{}$unit::struct_t$[0:3][0:1]'(2-state)
+                                                : ... Left-hand type: 'struct $unit::struct_t$[0:3][0:1]'(2-state)
                                                 : ... Right-hand type: 'logic$[0:3][0:1]'(4-state)
    31 |   assign unpackedE = unpackedD;
       |                    ^
 %Error: t/t_assignment_compatibility_bad.v:31:20: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand data type: 'struct{}$unit::struct_t$[0:3][0:1]' (2-state)
+                                                : ... Left-hand data type: 'struct $unit::struct_t$[0:3][0:1]' (2-state)
                                                 : ... Right-hand data type: 'logic$[0:3][0:1]' (4-state)
    31 |   assign unpackedE = unpackedD;
       |                    ^

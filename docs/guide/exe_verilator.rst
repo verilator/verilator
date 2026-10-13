@@ -312,15 +312,111 @@ Summary:
 
    Enables native FSM state and arc coverage. See :ref:`FSM Coverage`.
 
+.. option:: --coverage-fsm-expand <mode>
+
+   Specifies the mode of FSM expansion for coverage.
+   One of the following modes may be chosen:
+
+    * `auto`
+
+      * Counts how many times the FSM was in each of the used states.
+
+      * Count of how many times FSM transition occurred between all defined
+        transitions in the code,
+
+      * Count of how many times FSM transitioned from all used states to a
+        reset state,
+
+      * Count of how many times FSM transitioned from any terminal state to
+        default state.
+
+    * `auto-expand`
+
+      * Counts how many times the FSM was in each of the used states.
+
+      * Count of how many times FSM transitions occurred for all possible
+        transitions between all possible states.
+
+    * `full`
+
+      * Counts how many times the FSM was in each of the possible states.
+
+      * Count of how many times FSM transitions occurred for all possible
+        transitions between all possible states.
+
+   `possible states` - means every value that variable of
+   a certain width representing an FSM may have i.e. 2^(width).
+
+   `all possible transitions between n-states` - all transitions
+   that may be created i.e. (2^n - n) - value is decreased by n
+   because transitions between same states are not counted.
+
+   Defaults to `auto`.
+
+.. option:: --coverage-fsm-max-arcs <value>
+
+   Specifies the maximum count of FSM transitions to be tracked by coverage for a single FSM.
+
+   Defaults to 4096.
+
 .. option:: --coverage-line
 
    Enables basic block line coverage analysis. See :ref:`Line Coverage`.
+
+.. option:: --coverage-max-bins <value>
+
+   Rarely needed. Specifies the maximum number of bins one covergroup bins
+   declaration of an integral coverpoint may create: an array of bins such
+   as ``bins b[] = {[0:$]}``, automatic bins ``bins auto[N]``, or the
+   automatic bins of a coverpoint from ``option.auto_bin_max``. Defaults to
+   1024, and may be at most 4294967295 (``2**32 - 1``).
+
+   A larger array of bins is ignored with a :option:`COVERIGN` warning, a
+   larger ``bins auto[N]`` is an error, and a larger
+   ``option.auto_bin_max`` is reduced to this limit with a
+   :option:`COVERIGN` warning. Increasing the limit increases the memory
+   the model uses for the bins. See also
+   :vlopt:`--coverage-max-real-bins`.
+
+.. option:: --coverage-max-real-bins <value>
+
+   Rarely needed. Specifies the maximum number of values of one array of
+   bins of a coverpoint of a ``real`` expression, such as
+   ``bins b[] = {[1:10]}``, each of which is a bin compared separately.
+   Defaults to 1024, and may be at most 4294967295 (``2**32 - 1``).
+
+   A larger array of bins is ignored with a :option:`COVERIGN` warning.
+   Increasing the limit increases the size of the generated code, which
+   grows with the number of these bins. See also
+   :vlopt:`--coverage-max-bins`.
 
 .. option:: --coverage-max-width <width>
 
    Rarely needed. Specify the maximum bit width of a signal subject to
    toggle coverage. Defaults to 256, as covering large vectors may greatly
    slow coverage simulations.
+
+.. option:: --coverage-merge-instances
+
+   Sets the default value of the covergroup type option
+   ``type_option.merge_instances`` to 1, for the covergroups that do not
+   set it (IEEE 1800-2023 19.11.3).
+
+   With "--coverage-merge-instances",
+     the type coverage of a covergroup merges its instances as a union of
+     their bins. This applies to ``get_coverage()``, to
+     ``get_inst_coverage()`` unless ``option.get_inst_coverage`` is set, and
+     to the coverage that :command:`verilator_coverage` reports. This is
+     like the default behavior of Synopsys VCS. In Questa, it is the
+     equivalent of ``vsim -cvgmergeinstances``, which sets
+     ``SVCovergroupMergeInstancesDefault`` to 1.
+
+   With "--no-coverage-merge-instances", the default, the value is 0, as
+     IEEE specifies, so the type coverage of a covergroup is the average of
+     the coverage of its instances.
+
+   This is unrelated to :vlopt:`--coverage-per-instance`, which keeps
+   Verilator-inserted coverage per hierarchy instance.
 
 .. option:: --coverage-per-instance
 
@@ -664,11 +760,21 @@ Summary:
 
 .. option:: -fno-acyc-simp
 
+   Rarely needed. Disable optimizations that simplify combinational logic.
+
 .. option:: -fno-assemble
+
+   Rarely needed. Disable merging adjacent bit selects and assignments of
+   the same signal into wider operations.
 
 .. option:: -fno-bit-scan-loops
 
    Rarely needed. Disable converting bit counting loops into built-in operations.
+
+.. option:: -fno-bitblast
+
+   Rarely needed. Disable splitting packed variables into separate bit
+   ranges.
 
 .. option:: -fno-case
 
@@ -690,7 +796,13 @@ Summary:
 
 .. option:: -fno-combine
 
+   Rarely needed. Disable combining identical C++ functions into single
+   copies.
+
 .. option:: -fno-const
+
+   Rarely needed. Disable replacing references to constant nets with their
+   constant values. This option may break functionality.
 
 .. option:: -fno-const-before-dfg
 
@@ -700,13 +812,47 @@ Summary:
 
 .. option:: -fno-const-bit-op-tree
 
+   Rarely needed. Disable simplifying single-bit expressions of bitwise
+   operations.
+
 .. option:: -fno-const-eager
+
+   Rarely needed. Disable eager constant folding, run immediately after
+   expanding wide operations.
 
 .. option:: -fno-dead-assigns
 
+   Rarely needed. Disable removing assignments to variables that are never
+   read.
+
 .. option:: -fno-dead-cells
 
+   Rarely needed. Disable removing modules that are not instantiated.
+
+.. option:: -fno-dead-methods
+
+   Rarely needed. Disable removing class methods that are never called, and
+   disable converting virtual methods that are never overridden into
+   non-virtual methods.
+
+.. option:: -fno-decompose
+
+   Alias for :vlopt:`-fno-decompose-packed` and :vlopt:`-fno-decompose-unpacked`.
+
+.. option:: -fno-decompose-packed
+
+   Rarely needed. Disable splitting packed arrays and packed structures into
+   separate variables.
+
+.. option:: -fno-decompose-unpacked
+
+   Rarely needed. Disable splitting unpacked arrays and unpacked structures
+   into separate variables.
+
 .. option:: -fno-dedup
+
+   Rarely needed. Disable removing duplicate combinational logic that
+   computes identical values.
 
 .. option:: -fno-dfg
 
@@ -758,11 +904,25 @@ Summary:
 
 .. option:: -fno-expand
 
+   Rarely needed. Disable expanding operations on wide signals into separate
+   operations on each word of the signal.
+
 .. option:: -fno-func-opt
+
+   Rarely needed. Disable all function optimizations.
+
+   Alias for :vlopt:`-fno-func-opt-balance-cat` and
+   :vlopt:`-fno-func-opt-split-cat`.
 
 .. option:: -fno-func-opt-balance-cat
 
+   Rarely needed. Disable rebalancing trees of concatenations inside
+   functions.
+
 .. option:: -fno-func-opt-split-cat
+
+   Rarely needed. Disable splitting assignments of concatenations to wide
+   variables into separate assignments.
 
 .. option:: -fno-gate
 
@@ -807,40 +967,82 @@ Summary:
 
 .. option:: -fno-life
 
+   Rarely needed. Disable removing assignments whose value is overwritten before
+   it is read.
+
 .. option:: -fno-life-post
+
+   Rarely needed. Disable eliminating temporary variables holding the
+   delayed value of nonblocking assignments.
 
 .. option:: -fno-lift-expr
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.054: Rarely needed. Disable lifting of expressions out of statements.
+
 .. option:: -fno-localize
+
+   Rarely needed. Disable converting temporary heap variables into local
+   stack variables.
 
 .. option:: -fno-merge-cond
 
+   Rarely needed. Disable merging sequences of statements that test the same
+   condition into a single conditional.
+
 .. option:: -fno-merge-cond-motion
+
+   Rarely needed. Disable moving statements across each other.
 
 .. option:: -fno-merge-const-pool
 
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.054: Disable merging constant pool entries that have
+   the same value but different data types.
+
 .. option:: -fno-reloop
+
+   Rarely needed. Disable converting sequences of similar array assignments
+   into loops.
 
 .. option:: -fno-reorder
 
+   Rarely needed. Disable reordering statements within blocks to reduce the
+   number of temporary variables needed for nonblocking assignments.
+
 .. option:: -fno-slice
+
+   Rarely needed. Disable converting assignments of whole unpacked arrays into
+   assignments of the individual elements. Signals that are accessed from
+   SystemC are always converted.
 
 .. option:: -fno-split
 
+   Rarely needed. Disable splitting large procedural blocks into smaller
+   blocks, which reduces ordering constraints between the statements.
+
 .. option:: -fno-subst
+
+   Rarely needed. Disable substituting the value last assigned to a word of
+   a wide variable into later usages.
 
 .. option:: -fno-subst-const
 
+   Rarely needed. Disable the constant folding and removal of dead code that
+   follows value substitution.
+
 .. option:: -fno-table
 
-   Rarely needed. Disables one of the internal optimization steps. These
-   are typically used only when recommended by a maintainer to help debug
-   or work around an issue.
+   Rarely needed. Disable replacing large case and statement trees with lookup tables.
 
 .. option:: -fno-var-split
 
-   Rarely needed. Do not attempt to split variables
-   automatically. Variables explicitly annotated with
+   Deprecated and has no effect (ignored).
+
+   In versions before 5.054: Rarely needed. Do not attempt to split
+   variables automatically. Variables explicitly annotated with
    :option:`/*verilator&32;split_var*/` are still split.
 
 .. option:: --fourstate
@@ -1790,12 +1992,11 @@ Summary:
 
 .. option:: --structs-packed
 
-   Deprecated; discontinue use of this option.
+   Removed in 5.054.
 
-   Converts all unpacked structures to packed structures, and issues an
-   :option:`UNPACKED` warning. Specifying this option allows for backward
-   compatibility with versions before Verilator 5.006, when Verilator would
-   always pack unpacked structures.
+   Converted all unpacked structures to packed structures, Specifying this
+   option allowed for backward compatibility with versions before Verilator
+   5.006, when Verilator would always pack unpacked structures.
 
 .. option:: -sv
 
@@ -2267,7 +2468,7 @@ Summary:
      If using `--x-assign unique`, use the
      :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
      runtime option, and seed the runtime random number generator such that
-     each regression run gets a different randomization sequence with
+     each regression test run gets a different randomization sequence with
      :vlopt:`+verilator+seed+\<value\>`. You'll probably also want to print
      any seeds selected, and code to enable rerunning with that same seed,
      so you can reproduce bugs.
@@ -2296,7 +2497,7 @@ Summary:
      If using `--x-initial unique`, use the
      :vlopt:`+verilator+rand+reset+2 <+verilator+rand+reset+\<value\>>`
      runtime option, and seed the runtime random number generator such that
-     each regression run gets a different randomization sequence with
+     each regression test run gets a different randomization sequence with
      :vlopt:`+verilator+seed+\<value\>`. You'll probably also want to print
      any seeds selected, and code to enable rerunning with that same seed,
      so you can reproduce bugs.

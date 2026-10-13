@@ -491,41 +491,41 @@ public:
         IgnIndices results;
         int nextChange = 0;
         tree.find(0, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 0);
-        UASSERT_SELFTEST(const int, nextChange, 10);
+        UASSERT_SELFTEST(results.size(), 0);
+        UASSERT_SELFTEST(nextChange, 10);
         tree.find(10, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 2);
-        UASSERT_SELFTEST(const int, results[0], 0);
-        UASSERT_SELFTEST(const int, results[1], 3);
-        UASSERT_SELFTEST(const int, nextChange, 11);
+        UASSERT_SELFTEST(results.size(), 2);
+        UASSERT_SELFTEST(results[0], 0);
+        UASSERT_SELFTEST(results[1], 3);
+        UASSERT_SELFTEST(nextChange, 11);
         tree.find(11, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 1);
-        UASSERT_SELFTEST(const int, results[0], 3);
-        UASSERT_SELFTEST(const int, nextChange, 15);  // Center, or would be 20
+        UASSERT_SELFTEST(results.size(), 1);
+        UASSERT_SELFTEST(results[0], 3);
+        UASSERT_SELFTEST(nextChange, 15);  // Center, or would be 20
         tree.find(20, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 3);
-        UASSERT_SELFTEST(const int, results[0], 1);
-        UASSERT_SELFTEST(const int, results[1], 3);
-        UASSERT_SELFTEST(const int, results[2], 4);
-        UASSERT_SELFTEST(const int, nextChange, 21);
+        UASSERT_SELFTEST(results.size(), 3);
+        UASSERT_SELFTEST(results[0], 1);
+        UASSERT_SELFTEST(results[1], 3);
+        UASSERT_SELFTEST(results[2], 4);
+        UASSERT_SELFTEST(nextChange, 21);
         tree.find(21, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 2);
-        UASSERT_SELFTEST(const int, results[0], 3);
-        UASSERT_SELFTEST(const int, results[1], 4);
-        UASSERT_SELFTEST(const int, nextChange, 25);  // Center, or would be 30
+        UASSERT_SELFTEST(results.size(), 2);
+        UASSERT_SELFTEST(results[0], 3);
+        UASSERT_SELFTEST(results[1], 4);
+        UASSERT_SELFTEST(nextChange, 25);  // Center, or would be 30
         tree.find(30, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 2);
-        UASSERT_SELFTEST(const int, results[0], 3);
-        UASSERT_SELFTEST(const int, results[1], 4);
-        UASSERT_SELFTEST(const int, nextChange, 31);
+        UASSERT_SELFTEST(results.size(), 2);
+        UASSERT_SELFTEST(results[0], 3);
+        UASSERT_SELFTEST(results[1], 4);
+        UASSERT_SELFTEST(nextChange, 31);
         tree.find(40, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 2);
-        UASSERT_SELFTEST(const int, results[0], 2);
-        UASSERT_SELFTEST(const int, results[1], 4);
-        UASSERT_SELFTEST(const int, nextChange, 41);
+        UASSERT_SELFTEST(results.size(), 2);
+        UASSERT_SELFTEST(results[0], 2);
+        UASSERT_SELFTEST(results[1], 4);
+        UASSERT_SELFTEST(nextChange, 41);
         tree.find(41, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 0);
-        UASSERT_SELFTEST(const int, nextChange, std::numeric_limits<int>::max());
+        UASSERT_SELFTEST(results.size(), 0);
+        UASSERT_SELFTEST(nextChange, std::numeric_limits<int>::max());
         //
         points = {{0, 0}};
         for (const auto& it : points) {
@@ -536,8 +536,8 @@ public:
         tree.build(data);
         //
         tree.find(50, results, nextChange);
-        UASSERT_SELFTEST(const size_t, results.size(), 1);
-        UASSERT_SELFTEST(const int, results[0], 5);
+        UASSERT_SELFTEST(results.size(), 1);
+        UASSERT_SELFTEST(results[0], 5);
     }
 };
 
@@ -709,8 +709,8 @@ public:
 // Tracks what matches are known to hit against V3ControlScopeTraceEntries
 class V3ControlScopeTraceEntryMatch final {
 public:
-    const V3ControlScopeTraceEntry* m_entryp;
-    const string m_scopepart;
+    const V3ControlScopeTraceEntry* m_entryp;  // Entry the match refers to
+    const string m_scopepart;  // Scope prefix being matched against the entry
     V3ControlScopeTraceEntryMatch(const V3ControlScopeTraceEntry* entryp, const string& scopepart)
         : m_entryp{entryp}
         , m_scopepart{scopepart} {}
@@ -780,8 +780,8 @@ public:
 // Resolve modules and files in the design
 
 class V3ControlResolverHierWorkerEntry final {
-    const int m_workers;
-    FileLine* const m_flp;
+    const int m_workers;  // Number of workers requested for the hierarchical block
+    FileLine* const m_flp;  // Location the worker count was specified at
 
 public:
     explicit V3ControlResolverHierWorkerEntry(int workers, FileLine* flp)
@@ -798,9 +798,9 @@ class V3ControlResolver final {
     V3ControlScopeTraceResolver m_scopeTraces;  // Regexp to trace enables
     std::unordered_map<string, std::unordered_map<string, uint64_t>>
         m_profileData;  // Access to profile_data records
-    uint8_t m_mode = NONE;
+    uint8_t m_mode = NONE;  // Kind of profile_data records is currently active
     std::unordered_map<string, V3ControlResolverHierWorkerEntry> m_hierWorkers;
-    FileLine* m_profileFileLine = nullptr;
+    FileLine* m_profileFileLine = nullptr;  // Location profile_data was read from
 
     V3ControlResolver() = default;
     ~V3ControlResolver() = default;
@@ -862,7 +862,7 @@ public:
         }
 
         // Without profiling data, sum the regions evaluated on each time step
-        const AstNetlist* const netlistp = v3Global.rootp();
+        AstNetlist* const netlistp = v3Global.rootp();
         uint64_t cost = 0;
         for (int i = 0; i < VEval::_ENUM_END; ++i) {
             const VEval eval{i};

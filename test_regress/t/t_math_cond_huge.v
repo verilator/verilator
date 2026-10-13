@@ -4,19 +4,17 @@
 // SPDX-FileCopyrightText: 2008 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-  input clk;
+module t (
+    input clk
+);
 
-  integer    cyc = 0;
-  reg [63:0]  crc;
-  reg [63:0]  sum;
+  integer cyc = 0;
+  reg [63:0] crc;
+  reg [63:0] sum;
 
   // Take CRC data and apply to testblock inputs
-  wire [7:0]  sel = crc[7:0];
-  wire [255+3:0]  in = {crc[2:0],crc,crc,crc,crc};
+  wire [7:0] sel = crc[7:0];
+  wire [255+3:0] in = {crc[2:0],crc,crc,crc,crc};
 
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)
@@ -323,12 +321,12 @@ module t (/*AUTOARG*/
 
 endmodule
 
-module Test
-  ( output wire [3:0] out,
+module Test (
+    output wire [3:0] out,
 
-   input [7:0] sel,
+    input [7:0] sel,
 
-  // verilog_format: off
+    // verilog_format: off
    input [3:0] i0, i1, i2, i3, i4, i5, i6, i7, i8, i9, i10, i11, i12, i13, i14, i15, i16,
    i17, i18, i19, i20, i21, i22, i23, i24, i25, i26, i27, i28, i29, i30, i31, i32, i33,
    i34, i35, i36, i37, i38, i39, i40, i41, i42, i43, i44, i45, i46, i47, i48, i49, i50,
@@ -347,7 +345,7 @@ module Test
    i228, i229, i230, i231, i232, i233, i234, i235, i236, i237, i238, i239, i240, i241,
    i242, i243, i244, i245, i246, i247, i248, i249, i250, i251, i252, i253, i254, i255
   // verilog_format: on
-  );
+);
 
   assign out
     = (sel==8'h00) ? i0 : (sel==8'h01) ? i1 : (sel==8'h02) ? i2 : (sel==8'h03) ? i3

@@ -12,7 +12,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.051 devel],
+AC_INIT([Verilator],[5.053 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -264,12 +264,29 @@ fi
 python3_version=$($PYTHON3 --version | head -1)
 AC_MSG_RESULT([$PYTHON3 --version = $python3_version])
 
+AC_ARG_VAR([LEX], [Flex executable])
 AC_CHECK_PROG(LEX,flex,flex)
 if test "x$LEX" = "x" ; then
    AC_MSG_ERROR([Cannot find "flex" in your PATH, please install it])
 fi
 flex_version=$($LEX --version | head -1)
 AC_MSG_RESULT([$LEX --version = $flex_version])
+
+# Use the header installed with the selected generator.
+flex_include=$($PYTHON3 -c '
+import pathlib
+import shutil
+import sys
+print(pathlib.Path(shutil.which(sys.argv@<:@1@:>@) or sys.argv@<:@1@:>@).resolve().parent.parent / "include")
+' "$LEX")
+if test -f "$flex_include/FlexLexer.h"; then
+   if test -n "$MSYSTEM"; then
+      # Search MSYS Flex headers after the active toolchain's system headers.
+      CPPFLAGS="$CPPFLAGS -idirafter $flex_include"
+   else
+      CPPFLAGS="$CPPFLAGS -I$flex_include"
+   fi
+fi
 
 AC_CHECK_PROG(YACC,bison,bison)
 if test "x$YACC" = "x" ; then

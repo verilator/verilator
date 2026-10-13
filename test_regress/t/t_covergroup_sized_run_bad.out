@@ -1,0 +1,6 @@
+%Error: t/t_covergroup_sized_run_bad.v:21: Coverage bin array 'b' size must be a positive integer (IEEE 1800-2023 19.5.1)
+-Info: t/t_covergroup_sized_run_bad.v:21: Verilog $stop, ignored due to +verilator+error+limit
+%Error: t/t_covergroup_sized_run_bad.v:21: Coverage bin array 'b' size must be a positive integer (IEEE 1800-2023 19.5.1)
+%Warning: t/t_covergroup_sized_run_bad.v:27: Coverage bin array needs more bins than --coverage-max-bins; bin 'b' ignored
+%Warning: t/t_covergroup_sized_run_bad.v:45: Unsupported: cross coverage with more than 2^32-1 tuples; cross ignored
+*-* All Finished *-*

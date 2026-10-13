@@ -46,11 +46,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
     // TYPES
     struct ScopeData final {
-        const AstNode* m_nodep;
-        const std::string m_symName;
-        const std::string m_prettyName;
-        const std::string m_defName;
-        const int m_timeunit;
+        const AstNode* m_nodep;  // Scope symbol-table entry corresponds to
+        const std::string m_symName;  // Mangled name used to build __Vscopep_ variable
+        const std::string m_prettyName;  // Pretty (unprotected) name for display
+        const std::string m_defName;  // Name registered for this scope
+        const int m_timeunit;  // Timeunit of this scope
         std::string m_type;  // TODO: this should be an enum
         ScopeData(const AstNode* nodep, const std::string& symName, const std::string& prettyName,
                   const std::string& defName, int timeunit, const std::string& type)
@@ -61,21 +61,33 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             , m_timeunit{timeunit}
             , m_type{type} {}
     };
+    struct IfaceRefData final {
+        const AstScope* const m_scopep;  // Concrete interface scope referred to
+        const std::string m_suffix;  // Path relative to the model instance
+        const std::string m_name;  // Name of the reference port
+        const std::string m_modportName;  // "" = no modport
+        IfaceRefData(const AstScope* scopep, const std::string& suffix, const std::string& name,
+                     const std::string& modportName)
+            : m_scopep{scopep}
+            , m_suffix{suffix}
+            , m_name{name}
+            , m_modportName{modportName} {}
+    };
     struct ScopeFuncData final {
-        const AstScopeName* const m_scopep;
-        const AstCFunc* const m_cfuncp;
-        const AstNodeModule* const m_modp;
+        const AstScopeName* const m_scopep;  // Scope the DPI export function is registered under
+        const AstCFunc* const m_cfuncp;  // DPI export function
+        const AstNodeModule* const m_modp;  // Module containing the DPI export function
         ScopeFuncData(const AstScopeName* scopep, const AstCFunc* funcp, const AstNodeModule* modp)
             : m_scopep{scopep}
             , m_cfuncp{funcp}
             , m_modp{modp} {}
     };
     struct ScopeVarData final {
-        const std::string m_scopeName;
-        const std::string m_varBasePretty;
-        const AstVar* const m_varp;
-        const AstNodeModule* const m_modp;
-        const AstScope* const m_scopep;
+        const std::string m_scopeName;  // Full name of the scope containing the variable
+        const std::string m_varBasePretty;  // Pretty base name of the variable, without scope
+        const AstVar* const m_varp;  // Public variable
+        const AstNodeModule* const m_modp;  // Module containing the variable
+        const AstScope* const m_scopep;  // Scope containing the variable
         ScopeVarData(const std::string& scopeName, const std::string& varBasePretty,
                      const AstVar* varp, const AstNodeModule* modp, const AstScope* scopep)
             : m_scopeName{scopeName}
@@ -102,6 +114,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     ScopeNames m_scopeNames;  // Each unique AstScopeName. Dpi scopes added later
     ScopeNames m_dpiScopeNames;  // Each unique AstScopeName for DPI export
     ScopeNames m_vpiScopeCandidates;  // All scopes for VPI
+    std::vector<IfaceRefData> m_ifaceRefs;  // Each interface reference, for VPI
     // The actual hierarchy of scopes
     std::map<const std::string, std::vector<std::string>> m_vpiScopeHierarchy;
     int m_coverBins = 0;  // Global coverage bin number for non-object helper functions
@@ -117,6 +130,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // Single VlScopeTableEntry[] table for all scopes, built in getSymCtorStmts()
     std::string m_scopeTableName;
     std::vector<std::string> m_scopeTableRows;
+    std::string m_ifaceRefTableName;
+    std::vector<std::string> m_ifaceRefTableRows;
 
     // METHODS
     void emitSymHdr();
@@ -294,13 +309,14 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
     static std::string memberVlEnumDir(const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
-        std::string out = "((" + varp->vlEnumDir() + ") & ~(VLVF_SIGNED|VLVF_BITVAR))";
+        std::string out = '(' + varp->vlEnumDir(/*forMember=*/true);
         const AstNodeDType* const skipDTypep = dtypep->skipRefp();
         if (skipDTypep->isSigned()) out += "|VLVF_SIGNED";
         if (const AstBasicDType* const basicp = skipDTypep->basicp()) {
             if (basicp->keyword() == VBasicDTypeKwd::BIT) out += "|VLVF_BITVAR";
         }
-        return out;
+        out += skipDTypep->vlEnumPackedAgg();
+        return out + ')';
     }
 
     static std::string insertVarStatement(const ScopeVarData& svd, const AstScope* const scopep,
@@ -406,13 +422,19 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += protect("__Vscopep_" + svd.m_scopeName);
         stmt += needsEntSize ? "->varInsertSized(\"" : "->varInsert(\"";
         stmt += V3OutFormatter::quoteNameControls(prettyName) + '"';
-        stmt += ", &(";
-        stmt += VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
-        stmt += ".";
-        stmt += cName;
-        stmt += "), false, ";
         const std::string varName
             = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "." + cName;
+        // A parameter is emitted 'static const', so its members are const too and
+        // need the same cast the whole-parameter insert uses.
+        if (svd.m_varp->isParam()) {
+            stmt += ", const_cast<void*>(static_cast<const void*>(&(";
+            stmt += varName;
+            stmt += "))), true, ";
+        } else {
+            stmt += ", &(";
+            stmt += varName;
+            stmt += "), false, ";
+        }
         const std::string entSize
             = needsEntSize
                   ? "sizeof(" + varName + ") / " + std::to_string(getUnpackedElements(dtypep))
@@ -429,6 +451,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             const AstNodeDType* const itemDTypep = itemp->dtypep();
+            if (itemDTypep->vlEnumType().empty()) continue;
             const std::string prettyName
                 = prettyPrefix + "." + AstNode::vpiName(itemp->shortName());
             const std::string cName = cPrefix + "." + itemp->nameProtect();
@@ -436,6 +459,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             stmts.emplace_back(insertDTypeVarStatement(svd, scopep, prettyName, cName, itemDTypep,
                                                        dims.udim, dims.pdim, boundsString(dims))
                                + ";");
+            addPackedAggMemberVars(stmts, svd, scopep, prettyName, cName, itemDTypep);
             if (const AstNodeUOrStructDType* const subp
                 = VN_CAST(itemDTypep->skipRefp(), NodeUOrStructDType)) {
                 if (!subp->packed())
@@ -462,6 +486,87 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             if (!sdtypep->packed())
                 addUOrStructMemberVars(stmts, svd, scopep, prettyPrefix, cPrefix, sdtypep);
         }
+    }
+
+    // Packed struct/union members have no storage of their own; each is registered as a bit
+    // slice of the parent's storage 'cName', with the parent's storage type and entSize, and its
+    // bit offset within the parent's element 0. VPI adds any packed/unpacked index offset.
+    // 'needsIndex' if an ancestor is an array, so the members are only valid after an index.
+    static void addPackedMemberVars(std::vector<std::string>& stmts, const ScopeVarData& svd,
+                                    const AstScope* const scopep, const std::string& prettyPrefix,
+                                    const std::string& cName, const std::string& vlEnumType,
+                                    const std::string& entSize,
+                                    const AstNodeUOrStructDType* const sdtypep,
+                                    const int parentBitOffset, const bool needsIndex) {
+        const std::string varName
+            = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "." + cName;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            const AstNodeDType* const itemDTypep = itemp->dtypep();
+            const std::string prettyName
+                = prettyPrefix + "." + AstNode::vpiName(itemp->shortName());
+            // Union members all have lsb 0, so share the parent's offset
+            const int bitOffset = parentBitOffset + itemp->lsb();
+            const VarDims dims = getVarDims(itemDTypep);
+            UASSERT_OBJ(dims.udim == 0, itemp, "Unpacked dimension in packed struct/union");
+            std::string stmt;
+            stmt += protect("__Vscopep_" + svd.m_scopeName);
+            stmt += "->varInsertMember(\"";
+            stmt += V3OutFormatter::quoteNameControls(prettyName) + '"';
+            // A parameter is emitted 'static const', see insertDTypeVarStatement
+            if (svd.m_varp->isParam()) {
+                stmt
+                    += ", const_cast<void*>(static_cast<const void*>(&(" + varName + "))), true, ";
+            } else {
+                stmt += ", &(" + varName + "), false, ";
+            }
+            stmt += vlEnumType + ", ";
+            stmt += memberVlEnumDir(svd.m_varp, itemDTypep);
+            if (needsIndex) stmt += "|VLVF_PACKED_NEEDS_INDEX";
+            stmt += ", ";
+            stmt += std::to_string(bitOffset) + ", ";
+            stmt += entSize + ", ";
+            stmt += std::to_string(dims.pdim);
+            stmt += boundsString(dims);
+            stmt += ");";
+            stmts.emplace_back(stmt);
+            // Nested packed struct/union, or packed array of them: register the members of
+            // the element at index offset 0
+            const AstNodeDType* subDTypep = itemDTypep->skipRefp();
+            bool isArray = false;
+            while (const AstPackArrayDType* const adtypep = VN_CAST(subDTypep, PackArrayDType)) {
+                subDTypep = adtypep->subDTypep()->skipRefp();
+                isArray = true;
+            }
+            if (const AstNodeUOrStructDType* const subp = VN_CAST(subDTypep, NodeUOrStructDType)) {
+                addPackedMemberVars(stmts, svd, scopep, prettyName, cName, vlEnumType, entSize,
+                                    subp, bitOffset, needsIndex || isArray);
+            }
+        }
+    }
+
+    // If 'dtypep' (the type of storage 'cName') has packed struct/union elements, register the
+    // members of its element 0
+    static void addPackedAggMemberVars(std::vector<std::string>& stmts, const ScopeVarData& svd,
+                                       const AstScope* const scopep,
+                                       const std::string& prettyPrefix, const std::string& cName,
+                                       const AstNodeDType* const dtypep) {
+        std::string elemCName = cName;
+        const AstNodeDType* elemDTypep = dtypep->skipRefp();
+        bool isArray = false;
+        while (const AstNodeArrayDType* const adtypep = VN_CAST(elemDTypep, NodeArrayDType)) {
+            if (VN_IS(adtypep, UnpackArrayDType)) elemCName += "[0]";
+            elemDTypep = adtypep->subDTypep()->skipRefp();
+            isArray = true;
+        }
+        const AstNodeUOrStructDType* const sdtypep = VN_CAST(elemDTypep, NodeUOrStructDType);
+        if (!sdtypep || !sdtypep->packed()) return;
+        const std::string varName
+            = VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "." + cName;
+        const std::string entSize
+            = "sizeof(" + varName + ") / " + std::to_string(getUnpackedElements(dtypep));
+        addPackedMemberVars(stmts, svd, scopep, prettyPrefix, elemCName, dtypep->vlEnumType(),
+                            entSize, sdtypep, 0, isArray);
     }
 
     std::string insertForceableVarStatement(const ScopeVarData& svd, const AstScope* const scopep,
@@ -524,7 +629,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     static std::string getKeyName(const AstScope* const scopep, const std::string& signal_name) {
-        // Copies the process from `varsExpand` which created the keys in the first place, in order
+        // Copies the process from `addScopeVarEntry` which created the keys in the first place, in
+        // order
         // signal can be found.
         std::string whole = scopep->name() + "__DOT__" + signal_name;
         std::string scpName;
@@ -640,6 +746,38 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
     }
 
+    void addScopeVarEntry(const AstScope* const scopep, const AstNodeModule* const modp,
+                          const AstVar* const varp) {
+        // Need to split the module + var name into the original-ish full scope
+        // and variable name under that scope. The module instance name is
+        // included later, when we know the scopes this module is under.
+        std::string whole = scopep->name() + "__DOT__" + varp->name();
+        if (VString::startsWith(whole, "__DOT__TOP")) whole.replace(0, 10, "");
+        const std::string::size_type dpos = whole.rfind("__DOT__");
+        UASSERT_OBJ(dpos != std::string::npos, varp,
+                    "Scope/variable name lost its appended __DOT__ separator");
+        const std::string scpName = whole.substr(0, dpos);
+        const std::string varBase = whole.substr(dpos + std::strlen("__DOT__"));
+        // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
+        // << scpName << "Var " << varBase);
+        const std::string varBasePretty = AstNode::vpiName(VName::dehash(varBase));
+        const std::string scpPretty = AstNode::prettyName(VName::dehash(scpName));
+        const std::string scpSym = scopeSymString(VName::dehash(scpName));
+        // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
+        // << scpSym);
+        if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
+
+        m_scopeNames.emplace(  //
+            std::piecewise_construct,  //
+            std::forward_as_tuple(scpSym),  //
+            std::forward_as_tuple(varp, scpSym, scpPretty, "<null>", 0, "SCOPE_OTHER"));
+
+        m_scopeVars.emplace(  //
+            std::piecewise_construct,  //
+            std::forward_as_tuple(scpSym + " " + varp->name()),  //
+            std::forward_as_tuple(scpSym, varBasePretty, varp, modp, scopep));
+    }
+
     void varsExpand() {
         // We didn't have all m_scopes loaded when we encountered variables, so expand them now
         // It would be less code if each module inserted its own variables.
@@ -651,42 +789,57 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 const AstNodeModule* const modp = mvPair.first;
                 const AstVar* const varp = mvPair.second;
                 if (modp != smodp) continue;
-
-                // Need to split the module + var name into the
-                // original-ish full scope and variable name under that scope.
-                // The module instance name is included later, when we
-                // know the scopes this module is under
-                std::string whole = scopep->name() + "__DOT__" + varp->name();
-                std::string scpName;
-                std::string varBase;
-                if (VString::startsWith(whole, "__DOT__TOP")) whole.replace(0, 10, "");
-                const std::string::size_type dpos = whole.rfind("__DOT__");
-                if (dpos != std::string::npos) {
-                    scpName = whole.substr(0, dpos);
-                    varBase = whole.substr(dpos + std::strlen("__DOT__"));
-                } else {
-                    varBase = whole;
-                }
-                // UINFO(9, "For " << scopep->name() << " - " << varp->name() << "  Scp "
-                // << scpName << "Var " << varBase);
-                const std::string varBasePretty = AstNode::vpiName(VName::dehash(varBase));
-                const std::string scpPretty = AstNode::prettyName(VName::dehash(scpName));
-                const std::string scpSym = scopeSymString(VName::dehash(scpName));
-                // UINFO(9, " scnameins sp " << scpName << " sp " << scpPretty << " ss "
-                // << scpSym);
-                if (v3Global.opt.vpi()) varHierarchyScopes(scpName);
-
-                m_scopeNames.emplace(  //
-                    std::piecewise_construct,  //
-                    std::forward_as_tuple(scpSym),  //
-                    std::forward_as_tuple(varp, scpSym, scpPretty, "<null>", 0, "SCOPE_OTHER"));
-
-                m_scopeVars.emplace(  //
-                    std::piecewise_construct,  //
-                    std::forward_as_tuple(scpSym + " " + varp->name()),  //
-                    std::forward_as_tuple(scpSym, varBasePretty, varp, modp, scopep));
+                addScopeVarEntry(scopep, modp, varp);
             }
         }
+    }
+
+    void collectIfaceRefs(const AstScope* nodep) {
+        const AstCell* const cellp = nodep->aboveCellp();
+        // Exclude classes inside interfaces; the cell's modp is the interface, not the Class
+        if (!cellp || !VN_IS(cellp->modp(), Iface) || !VN_IS(nodep->modp(), Iface)) return;
+
+        // vpiName() to match the scope table these are looked up alongside. Inlining
+        // flattens the hierarchy but leaves the inlined levels in the scope name, which
+        // therefore carries the full enclosing path.
+        const std::string path = AstNode::vpiName(nodep->name());
+        const std::string instName = AstNode::vpiName(cellp->origName());
+        UASSERT_OBJ(path.length() > instName.length() && VString::endsWith(path, instName), nodep,
+                    "Interface scope name " << path << " does not end with instance name "
+                                            << instName);
+        const std::string parentPath = path.substr(0, path.length() - instName.length());
+
+        for (AstIntfRef* intfRefp = cellp->intfRefsp(); intfRefp;
+             intfRefp = VN_AS(intfRefp->nextp(), IntfRef)) {
+            const std::string refName = AstNode::vpiName(intfRefp->name());
+            // Assume only references under the same parent scope reference the
+            // same interface. Same limitation as the trace path in V3TraceDecl.
+            if (!VString::startsWith(refName, parentPath)) continue;
+            m_ifaceRefs.emplace_back(nodep, refName, AstNode::vpiName(intfRefp->baseName()),
+                                     intfRefp->modportName());
+        }
+    }
+
+    void buildIfaceRefTable() {
+        if (m_ifaceRefs.empty()) return;
+        const std::string symClass = symClassName();
+        for (const IfaceRefData& ird : m_ifaceRefs) {
+            const std::string scopeSym = scopeSymString(ird.m_scopep->name());
+            // Only reference scopes that actually made it into the scope table
+            if (m_scopeNames.find(scopeSym) == m_scopeNames.end()) continue;
+            std::string row
+                = "{offsetof(" + symClass + ", " + protect("__Vscopep_" + scopeSym) + "), \"";
+            row += V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(ird.m_name, true));
+            row += "\", \"";
+            row += V3OutFormatter::quoteNameControls(
+                VIdProtect::protectWordsIf(ird.m_suffix, true));
+            row += "\", \"";
+            row += V3OutFormatter::quoteNameControls(
+                VIdProtect::protectWordsIf(ird.m_modportName, true));
+            row += "\"}";
+            m_ifaceRefTableRows.emplace_back(std::move(row));
+        }
+        if (!m_ifaceRefTableRows.empty()) m_ifaceRefTableName = symClass + "__VpiIfaceRefTable";
     }
 
     void buildVpiHierarchy() {
@@ -745,8 +898,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             if (!m_dpiHdrOnly) emitDpiImp();
         }
     }
-    void visit(AstConstPool* nodep) override {}  // Ignore
     void visit(AstNodeModule* nodep) override {
+        if (nodep->isConstPool()) return;  // Special emit rules
         nameCheck(nodep);
         VL_RESTORER(m_modp);
         VL_RESTORER(m_modCoverBins);
@@ -778,6 +931,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
         if (v3Global.opt.vpi() && !nodep->isTop()) {
             const std::string type = VN_IS(nodep->modp(), Package) ? "SCOPE_PACKAGE"  //
+                                     : VN_IS(nodep->modp(), Iface) ? "SCOPE_INTERFACE"  //
                                                                    : "SCOPE_MODULE";
             const int timeunit = m_modp->timeunit().powerOfTen();
             m_vpiScopeCandidates.emplace(  //
@@ -786,6 +940,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 std::forward_as_tuple(nodep, scopeSymString(nodep->name()),
                                       AstNode::vpiName(nodep->shortName()),
                                       nodep->modp()->origName(), timeunit, type));
+            collectIfaceRefs(nodep);
         }
         iterateChildrenConst(nodep);
     }
@@ -818,8 +973,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstVar* nodep) override {
         nameCheck(nodep);
         iterateChildrenConst(nodep);
-        // Record if public, ignoring locals
-        if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp) {
+        // Record if public, ignoring locals and types VPI cannot represent
+        if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp
+            && !nodep->vlEnumType().empty()) {
             m_modVars.emplace_back(m_modp, nodep);
         }
     }
@@ -878,6 +1034,7 @@ void EmitCSyms::emitSymHdr() {
     for (AstNodeModule *nodep = v3Global.rootp()->modulesp(), *nextp; nodep; nodep = nextp) {
         nextp = VN_AS(nodep->nextp(), NodeModule);
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
+        if (nodep->isConstPool()) continue;  // Special emit rules
         putns(nodep, "#include \"" + EmitCUtil::prefixNameProtect(nodep) + ".h\"\n");
     }
 
@@ -927,6 +1084,7 @@ void EmitCSyms::emitSymHdr() {
     }
     if (v3Global.hasClasses()) puts("VlDeleter __Vm_deleter;\n");
     puts("bool& __Vm_didInit;\n");
+    if (v3Global.opt.systemC()) puts("sc_core::sc_event __Vm_wakeEvent;\n");
 
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
@@ -1046,19 +1204,22 @@ void EmitCSyms::emitSymImpPreamble() {
 
     // So split ctor sub-functions in other translation units can reference
     // the VPI variable tables defined below.
-    if (!m_varTables.empty() || !m_scopeTableRows.empty()) {
+    if (!m_varTables.empty() || !m_scopeTableRows.empty() || !m_ifaceRefTableRows.empty()) {
         for (const auto& kv : m_varTables) {
             puts("extern const VlVarTableEntry " + kv.first + "[];\n");
         }
         if (!m_scopeTableRows.empty()) {
             puts("extern const VlScopeTableEntry " + m_scopeTableName + "[];\n");
         }
+        if (!m_ifaceRefTableRows.empty()) {
+            puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[];\n");
+        }
         puts("\n");
     }
 }
 
 void EmitCSyms::emitVarTables() {
-    if (m_varTables.empty() && m_scopeTableRows.empty()) return;
+    if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()) return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
     // offsetof on the (non-standard-layout) generated module/Syms classes is well
     // defined on all supported compilers but warns; suppress just here.
@@ -1078,6 +1239,15 @@ void EmitCSyms::emitVarTables() {
     if (!m_scopeTableRows.empty()) {
         puts("extern const VlScopeTableEntry " + m_scopeTableName + "[] = {\n");
         for (const std::string& row : m_scopeTableRows) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(row);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+    }
+    if (!m_ifaceRefTableRows.empty()) {
+        puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[] = {\n");
+        for (const std::string& row : m_ifaceRefTableRows) {
             ofp()->putsNoTracking("    ");
             ofp()->putsNoTracking(row);
             ofp()->putsNoTracking(",\n");
@@ -1200,15 +1370,17 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
         add(stmt);
     }
 
-    add("// Setup each module's pointer back to symbol table (for public functions)");
-    for (const ScopeModPair& i : m_scopes) {
-        const AstScope* const scopep = i.first;
-        AstNodeModule* const modp = i.second;
-        // first is used by AstCoverDecl's call to __vlCoverInsert
-        const bool first = !modp->user1();
-        modp->user1(true);
-        add(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
-            + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");");
+    if (v3Global.opt.coverage()) {
+        add("// Setup each module's pointer back to symbol table (for public functions)");
+        for (const ScopeModPair& i : m_scopes) {
+            const AstScope* const scopep = i.first;
+            AstNodeModule* const modp = i.second;
+            // first is used by AstCoverDecl's call to __vlCoverInsert
+            const bool first = !modp->user1();
+            modp->user1(true);
+            add(VIdProtect::protectIf(scopep->nameDotless(), scopep->protect()) + "."
+                + protect("__Vconfigure") + "(" + (first ? "true" : "false") + ");");
+        }
     }
 
     // Every scope has the same construction shape, so all fold into one table with no
@@ -1235,6 +1407,14 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
         m_scopeTableName = symClass + "__VpiScopeTable";
         add("VerilatedScope::scopesConstructFromTable(" + m_scopeTableName + ", "
             + std::to_string(m_scopeNames.size()) + ", this);");
+    }
+
+    // After the scopes above, as each row points at an already-built VerilatedScope
+    buildIfaceRefTable();
+    if (!m_ifaceRefTableRows.empty()) {
+        add("// Setup interface references");
+        add("VerilatedScope::ifaceRefsInsertFromTable(" + m_ifaceRefTableName + ", "
+            + std::to_string(m_ifaceRefTableRows.size()) + ", this);");
     }
 
     emitScopeHier(stmts, false);
@@ -1303,7 +1483,11 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                 const TableEntryKind kind
                     = tryBuildTableEntry(svd, varp, scopep, modClassName, dims, row);
                 switch (kind) {
-                case TableEntryKind::TABLE_ROW: rows.emplace_back(row); break;
+                case TableEntryKind::TABLE_ROW:
+                    rows.emplace_back(row);
+                    addPackedAggMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                           varp->nameProtect(), varp->dtypep());
+                    break;
                 case TableEntryKind::FORCEABLE_RESIDUAL: {
                     const std::string bounds = boundsString(dims);
                     residual.emplace_back(insertForceableVarStatement(svd, scopep, varp, dims.udim,
@@ -1315,20 +1499,24 @@ std::vector<std::string> EmitCSyms::getSymCtorStmts() {
                     const std::string bounds = boundsString(dims);
                     residual.emplace_back(
                         insertVarStatement(svd, scopep, varp, dims.udim, dims.pdim, bounds) + ";");
-                    if (const AstNodeUOrStructDType* const sdtypep
-                        = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
-                        if (!sdtypep->packed()) {
-                            addUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
-                                                   protect(varp->name()), sdtypep);
-                        }
-                    } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
-                        addUnpackedArrayUOrStructMemberVars(residual, svd, scopep,
-                                                            svd.m_varBasePretty,
-                                                            protect(varp->name()), varp->dtypep());
-                    }
                     break;
                 }
                 default: v3fatalSrc("Bad case");
+                }
+                if (kind == TableEntryKind::TABLE_ROW) continue;
+                if (const AstNodeUOrStructDType* const sdtypep
+                    = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
+                    if (!sdtypep->packed()) {
+                        addUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                               protect(varp->name()), sdtypep);
+                    }
+                } else if (VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
+                    addUnpackedArrayUOrStructMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                                        protect(varp->name()), varp->dtypep());
+                }
+                if (kind == TableEntryKind::PLAIN_RESIDUAL) {
+                    addPackedAggMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                           varp->nameProtect(), varp->dtypep());
                 }
             }
 
@@ -1374,6 +1562,13 @@ std::vector<std::string> EmitCSyms::getSymDtorStmts() {
         add("_vm_pgoProfiler.write(\"" + topClassName()
             + "\", _vm_contextp__->profVltFilename());");
     }
+    // Before the scopes below, as each row names a scope being torn down
+    if (!m_ifaceRefTableRows.empty()) {
+        add("// Tear down interface references");
+        add("VerilatedScope::ifaceRefsEraseFromTable(" + m_ifaceRefTableName + ", "
+            + std::to_string(m_ifaceRefTableRows.size()) + ", this);");
+    }
+
     add("// Tear down scopes");
     for (const auto& itpair : m_scopeNames) {
         const ScopeData& sd = itpair.second;
@@ -1483,7 +1678,8 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
     puts("    , __Vm_modelp{modelp}\n");
     puts("    , __Vm_didInit{modelp->m_didInit}\n");
     if (v3Global.opt.mtasks()) {
-        puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp())}\n");
+        puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp("
+             "modelp->threads()))}\n");
     }
     if (v3Global.opt.profExec()) {
         puts("    , __Vm_executionProfilerp{static_cast<VlExecutionProfiler*>(contextp->"

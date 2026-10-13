@@ -25,6 +25,8 @@
 
 #include "V3Table.h"
 
+#include "V3ConstPool.h"
+#include "V3SharedTmps.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
 
@@ -111,7 +113,11 @@ public:
     }
 
     AstVarScope* varScopep() {
-        if (!m_varScopep) m_varScopep = v3Global.rootp()->constPoolp()->findTable(m_initp);
+        if (!m_varScopep) {
+            AstVarRef* const refp = V3ConstPool::findTable(m_initp);
+            m_varScopep = refp->varScopep();
+            VL_DO_DANGLING(refp->deleteTree(), refp);
+        }
         return m_varScopep;
     }
 };
@@ -152,10 +158,7 @@ class TableVisitor final : public VNVisitor {
     // STATE
     double m_totalBytes = 0;  // Total bytes in tables created
     VDouble0 m_statTablesCre;  // Statistic tracking
-
-    //  State cleared on each module
-    AstNodeModule* m_modp = nullptr;  // Current MODULE
-    int m_modTables = 0;  // Number of tables created in this module
+    V3SharedTmps m_indexTmps{"__Vtableidx", VVarType::BLOCKTEMP};  // Table index variables
 
     //  State cleared on each scope
     AstScope* m_scopep = nullptr;  // Current SCOPE
@@ -244,18 +247,12 @@ private:
 
     void replaceWithTable(AstAlways* nodep) {
         // We've determined this table of nodes is optimizable, do it.
-        ++m_modTables;
         ++m_statTablesCre;
 
         FileLine* const fl = nodep->fileline();
 
         // We will need a table index variable, create it here.
-        AstVar* const indexVarp
-            = new AstVar{fl, VVarType::BLOCKTEMP, "__Vtableidx" + cvtToStr(m_modTables),
-                         VFlagBitPacked{}, static_cast<int>(m_inWidthBits)};
-        m_modp->addStmtsp(indexVarp);
-        AstVarScope* const indexVscp = new AstVarScope{indexVarp->fileline(), m_scopep, indexVarp};
-        m_scopep->addVarsp(indexVscp);
+        AstVarScope* const indexVscp = m_indexTmps.make(fl, m_scopep, m_inWidthBits);
 
         // The 'output assigned' table builder
         TableBuilder outputAssignedTableBuilder{fl};
@@ -273,7 +270,7 @@ private:
         createOutputAssigns(nodep, stmtsp, indexVscp, outputAssignedTableBuilder.varScopep());
 
         // Link it in.
-        // Keep sensitivity list, but delete all else
+        // Replace the body, keeping the AstAlways itself under its AstActive
         nodep->stmtsp()->unlinkFrBackWithNext()->deleteTree();
         nodep->addStmtsp(stmtsp);
         UINFOTREE(6, nodep, "", "table_new");
@@ -384,13 +381,6 @@ private:
 
     // VISITORS
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
-    void visit(AstNodeModule* nodep) override {
-        VL_RESTORER(m_modp);
-        VL_RESTORER(m_modTables);
-        m_modp = nodep;
-        m_modTables = 0;
-        iterateChildren(nodep);
-    }
     void visit(AstScope* nodep) override {
         UINFO(4, " SCOPE " << nodep);
         VL_RESTORER(m_scopep);

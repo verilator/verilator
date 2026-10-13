@@ -28,6 +28,9 @@
 #include <cstdint>
 #include <string>
 
+class VlCovMergedItems;
+class VlFileLineDebug;
+
 // Per-bin classification.  A bin's kind is which set it lives in (structural),
 // not a per-bin field.  Only Normal feeds coverage(); the rest are recorded.
 // Enumerators are 'KIND_'-prefixed because the bare LRM terms collide with
@@ -44,12 +47,16 @@ enum class VlCovBinKind : uint8_t {
 /// Read-side view of a coverpoint -- a named, index-addressable set of bins
 /// with a coverage fraction.  A cross is also a coverpoint from this view: its
 /// auto cross bins (one per element of the Cartesian product of the feeding
-/// coverpoints' Normal bins) are all Normal, and their names are built on
-/// demand by concatenating the feeding coverpoints' bin names.  The writer
+/// coverpoints' Normal bins) are all Normal, and their names, the tuples of
+/// the feeding coverpoints' bin names, are built on demand.  The writer
 /// queries bins by index; the implementor computes names/kinds on demand.
 /// Bounded bin count, so random access by index is the primary usage.
 
 class VlCoverpointIf VL_NOT_FINAL {
+    // MEMBERS
+    int32_t m_weight = 1;  // option.weight; never negative
+    int32_t m_typeWeight = 1;  // type_option.weight; never negative
+
 public:
     // CONSTRUCTORS
     virtual ~VlCoverpointIf() = default;
@@ -57,11 +64,25 @@ public:
     // METHODS
     // All bins, across every set; index range [0, binCount()).
     virtual uint32_t binCount() const = 0;
-    // Bin name in declaration order (e.g. "myBin" or "b[3]"); for a cross,
-    // the concatenated cross bin name (e.g. "b1_x_b2_x_b3")
+    // Bin name in declaration order (e.g. "myBin" or "b[3]"); for an auto
+    // cross bin, the tuple of its coverpoints' bin names (e.g. "<b1,b2,b3>")
     virtual std::string binName(uint32_t i) const = 0;
     // Bins covered / effective total (Normal set only) for the coverage calc
     virtual void coverageParts(double& covered, double& total) const = 0;
+    /// Weight of this item in its covergroup instance's coverage (option.weight,
+    /// IEEE 1800-2023 19.11)
+    int32_t weight() const { return m_weight; }
+    /// Load option.weight, as evaluated by the covergroup constructor.  A negative
+    /// weight is reported as an error, and counts as zero.
+    void weight(uint32_t value, VlFileLineDebug fileline);
+    /// Weight of this item in its covergroup type's coverage when the instances are merged
+    /// (type_option.weight, IEEE 1800-2023 19.11.3)
+    int32_t typeWeight() const { return m_typeWeight; }
+    /// Load type_option.weight, a constant that verilation checked is not negative
+    void typeWeight(uint32_t value) { m_typeWeight = static_cast<int32_t>(value); }
+    /// Merge this item's coverable bins into its entry in 'items', the covergroup type's
+    /// items merged over the instances
+    virtual void mergeInto(VlCovMergedItems& items) const = 0;
 };
 
 #endif  // Guard

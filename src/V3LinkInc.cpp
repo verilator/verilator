@@ -387,7 +387,7 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepost_stmt_visit(AstNode* const nodep, AstNodeExpr* const exprp,
                             AstNodeExpr* const storeTop, AstNodeExpr* const valuep) {
-        V3LinkLValue::linkLValueSet(valuep, false);
+        V3LinkLValue::linkLValueSet(valuep, VAccess::READ);
         AstAssign* const assignp
             = new AstAssign{nodep->fileline(), storeTop, getOperationp(nodep, valuep, exprp)};
         nodep->replaceWith(assignp);
@@ -403,7 +403,7 @@ class LinkIncVisitor final : public VNVisitor {
         const bool needGating = m_condEvalContext && m_incCondp;
         AstNodeExpr* const readp = nodep->lhsp();
         AstNodeExpr* const writep = nodep->lhsp()->cloneTreePure(true);
-        V3LinkLValue::linkLValueSet(readp, false);
+        V3LinkLValue::linkLValueSet(readp, VAccess::READ);
 
         FileLine* const fl = nodep->fileline();
         V3Number numOne{fl, 32, 1, false};

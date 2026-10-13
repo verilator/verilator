@@ -24,9 +24,11 @@ endclass
 class parent_cfg_c;
   rand bit enabled;
   rand sub_cfg_c sub_a;
-  constraint soft_defaults { soft enabled == 0; }
+  constraint soft_defaults {soft enabled == 0;}
   constraint propagate_cons {
-    if (enabled) { sub_a.enabled == 1; }
+    if (enabled) {
+      sub_a.enabled == 1;
+    }
   }
   function new();
     sub_a = new();
@@ -36,7 +38,7 @@ endclass
 class top_test_c;
   rand parent_cfg_c cfg;
   rand sub_cfg_c extra_cfg;
-  constraint cfg_hard_cons { cfg.enabled == 1; }
+  constraint cfg_hard_cons {cfg.enabled == 1;}
   constraint cfg_soft_cons {
     soft cfg.sub_a.timeout == 5000;
     soft extra_cfg.timeout == 9999;

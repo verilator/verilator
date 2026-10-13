@@ -1,68 +1,116 @@
-%Error: t/t_lint_dtype_compare_bad.v:52:19: Comparison requires matching data types
+%Error: t/t_lint_dtype_compare_bad.v:91:11: Comparison requires matching data types
                                           : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[$]'
+                                          : ... Left-hand data type: 'struct $unit::X_t'
                                           : ... Right-hand data type: 'bit[31:0]'
-   52 |     if (queue_var == 1) begin end
-      |                   ^~
+   91 |     if (x == 2) begin
+      |           ^~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_lint_dtype_compare_bad.v:55:11: Comparison requires matching data types
+%Error: t/t_lint_dtype_compare_bad.v:93:11: Comparison requires matching data types
                                           : ... note: In instance 't'
                                           : ... Left-hand data type: 'bit[31:0]'
-                                          : ... Right-hand data type: 'int$[$]'
-   55 |     if (1 == queue_var) begin end
+                                          : ... Right-hand data type: 'struct $unit::X_t'
+   93 |     if (2 == x) begin
       |           ^~
-%Error: t/t_lint_dtype_compare_bad.v:58:12: Comparison requires matching data types
+%Error: t/t_lint_dtype_compare_bad.v:97:11: Comparison requires matching data types
                                           : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[$]'
-                                          : ... Right-hand data type: 'bit$[$]'
-   58 |     if (q1 == q2) begin end
+                                          : ... Left-hand data type: 'union $unit::U_t'
+                                          : ... Right-hand data type: 'bit[31:0]'
+   97 |     if (u == 2) begin
+      |           ^~
+%Error: t/t_lint_dtype_compare_bad.v:99:11: Comparison requires matching data types
+                                          : ... note: In instance 't'
+                                          : ... Left-hand data type: 'bit[31:0]'
+                                          : ... Right-hand data type: 'union $unit::U_t'
+   99 |     if (2 == u) begin
+      |           ^~
+%Error: t/t_lint_dtype_compare_bad.v:103:11: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'enum $unit::E_t'
+                                           : ... Right-hand data type: 'struct $unit::X_t'
+  103 |     if (e == x) begin
+      |           ^~
+%Error: t/t_lint_dtype_compare_bad.v:105:11: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'struct $unit::X_t'
+                                           : ... Right-hand data type: 'enum $unit::E_t'
+  105 |     if (x == e) begin
+      |           ^~
+%Error: t/t_lint_dtype_compare_bad.v:109:16: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'struct t.__typeimpmod1'
+                                           : ... Right-hand data type: 'struct t.__typeimpmod2'
+  109 |     if (bad_s1 == bad_s2) begin
+      |                ^~
+%Error: t/t_lint_dtype_compare_bad.v:113:16: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'union t.__typeimpmod3'
+                                           : ... Right-hand data type: 'union t.__typeimpmod4'
+  113 |     if (bad_u1 == bad_u2) begin
+      |                ^~
+%Error: t/t_lint_dtype_compare_bad.v:121:19: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[$]'
+                                           : ... Right-hand data type: 'bit[31:0]'
+  121 |     if (queue_var == 1) begin
+      |                   ^~
+%Error: t/t_lint_dtype_compare_bad.v:125:11: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'bit[31:0]'
+                                           : ... Right-hand data type: 'int$[$]'
+  125 |     if (1 == queue_var) begin
+      |           ^~
+%Error: t/t_lint_dtype_compare_bad.v:129:12: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[$]'
+                                           : ... Right-hand data type: 'bit$[$]'
+  129 |     if (q1 == q2) begin
       |            ^~
-%Error: t/t_lint_dtype_compare_bad.v:61:12: Comparison requires matching data types
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[]'
-                                          : ... Right-hand data type: 'bit$[]'
-   61 |     if (d1 == d2) begin end
+%Error: t/t_lint_dtype_compare_bad.v:133:12: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[]'
+                                           : ... Right-hand data type: 'bit$[]'
+  133 |     if (d1 == d2) begin
       |            ^~
-%Error: t/t_lint_dtype_compare_bad.v:64:12: Comparison requires matching data types
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[0:1]'
-                                          : ... Right-hand data type: 'int$[0:1][0:0]'
-   64 |     if (u1 == u2) begin end
+%Error: t/t_lint_dtype_compare_bad.v:137:12: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[0:1]'
+                                           : ... Right-hand data type: 'int$[0:1][0:0]'
+  137 |     if (u1 == u2) begin
       |            ^~
-%Error: t/t_lint_dtype_compare_bad.v:67:12: Comparison requires matching data types
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[0:1]'
-                                          : ... Right-hand data type: 'int$[0:2]'
-   67 |     if (a1 == a2) begin end
+%Error: t/t_lint_dtype_compare_bad.v:141:12: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[0:1]'
+                                           : ... Right-hand data type: 'int$[0:2]'
+  141 |     if (a1 == a2) begin
       |            ^~
-%Error: t/t_lint_dtype_compare_bad.v:70:13: Comparison requires matching data types
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[string]'
-                                          : ... Right-hand data type: 'int$[int]'
-   70 |     if (aa1 == aa2) begin end
+%Error: t/t_lint_dtype_compare_bad.v:145:13: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[string]'
+                                           : ... Right-hand data type: 'int$[int]'
+  145 |     if (aa1 == aa2) begin
       |             ^~
-%Error: t/t_lint_dtype_compare_bad.v:73:13: Comparison requires matching data types
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[string]'
-                                          : ... Right-hand data type: 'logic[3:0]$[string]'
-   73 |     if (aa3 == aa4) begin end
+%Error: t/t_lint_dtype_compare_bad.v:149:13: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[string]'
+                                           : ... Right-hand data type: 'logic[3:0]$[string]'
+  149 |     if (aa3 == aa4) begin
       |             ^~
-%Error: t/t_lint_dtype_compare_bad.v:76:14: Comparison requires matching data types
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[0:1]'
-                                          : ... Right-hand data type: 'bit$[0:1]'
-   76 |     if (bad1 == bad2) begin end
+%Error: t/t_lint_dtype_compare_bad.v:153:14: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[0:1]'
+                                           : ... Right-hand data type: 'bit$[0:1]'
+  153 |     if (bad1 == bad2) begin
       |              ^~
-%Error: t/t_lint_dtype_compare_bad.v:79:14: Comparison requires matching data types
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[string]'
-                                          : ... Right-hand data type: 'logic[31:0]$[string]'
-   79 |     if (val1 == val2) begin end
+%Error: t/t_lint_dtype_compare_bad.v:157:14: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[string]'
+                                           : ... Right-hand data type: 'logic[31:0]$[string]'
+  157 |     if (val1 == val2) begin
       |              ^~
-%Error: t/t_lint_dtype_compare_bad.v:82:13: Comparison requires matching data types
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'int$[string]'
-                                          : ... Right-hand data type: 'int$[int]'
-   82 |     if (aa5 == aa6) begin end
+%Error: t/t_lint_dtype_compare_bad.v:161:13: Comparison requires matching data types
+                                           : ... note: In instance 't'
+                                           : ... Left-hand data type: 'int$[string]'
+                                           : ... Right-hand data type: 'int$[int]'
+  161 |     if (aa5 == aa6) begin
       |             ^~
 %Error: Exiting due to

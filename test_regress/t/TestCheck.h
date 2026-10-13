@@ -16,6 +16,7 @@
 #include "vpi_user.h"
 
 #include <iostream>
+#include <string>
 
 extern int errors;
 
@@ -27,17 +28,25 @@ static const bool verbose = false;
 
 //======================================================================
 
+inline std::string testCheckLabel(const std::string& label) {
+    return label.empty() ? "" : label + ": ";
+}
+
 // Use cout to avoid issues with %d/%lx etc
-#define TEST_CHECK(got, exp, test) \
+#define TEST_CHECK_LABEL(label, got, exp, test) \
     do { \
         if (!(test)) { \
-            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ \
-                      << ": GOT = " << (got) << "   EXP = " << (exp) << std::endl; \
+            std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << ": " \
+                      << testCheckLabel(label) << "GOT = " << (got) << "   EXP = " << (exp) \
+                      << std::endl; \
             ++errors; \
         } \
     } while (0)
 
-#define TEST_CHECK_EQ(got, exp) TEST_CHECK(got, exp, ((got) == (exp)));
+#define TEST_CHECK(got, exp, test) TEST_CHECK_LABEL("", got, exp, test)
+
+#define TEST_CHECK_EQ_LABEL(label, got, exp) TEST_CHECK_LABEL(label, got, exp, ((got) == (exp)))
+#define TEST_CHECK_EQ(got, exp) TEST_CHECK_EQ_LABEL("", got, exp);
 #define TEST_CHECK_NE(got, exp) TEST_CHECK(got, exp, ((got) != (exp)));
 #define TEST_CHECK_CSTR(got, exp) TEST_CHECK(got, exp, 0 == std::strcmp((got), (exp)));
 
@@ -68,14 +77,16 @@ static const bool verbose = false;
         } \
     } while (0)
 
-#define TEST_CHECK_NZ(got) \
+#define TEST_CHECK_NZ_LABEL(label, got) \
     do { \
         if (!(got)) { \
             std::cout << std::dec << "%Error: " << __FILE__ << ":" << __LINE__ << std::hex \
-                      << ": GOT= NULL   EXP!=NULL" << std::endl; \
+                      << ": " << testCheckLabel(label) << "GOT= NULL   EXP!=NULL" << std::endl; \
             ++errors; \
         } \
     } while (0)
+
+#define TEST_CHECK_NZ(got) TEST_CHECK_NZ_LABEL("", got)
 
 #define TEST_CHECK_REAL_EQ(got, exp, delta) \
     do { \

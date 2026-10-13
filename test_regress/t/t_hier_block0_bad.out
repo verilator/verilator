@@ -3,6 +3,11 @@
    21 |   sub0 #(UNPACKED) i_sub0 (
       |          ^~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error-UNSUPPORTED: t/t_hier_block0_bad.v:27:8: Unsupported: Setting type parameter 'T' of hierarchical block 'sub1'
+                                              : ... note: In instance 't'
+   27 |       .T(logic [7:0])
+      |        ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: t/t_hier_block0_bad.v:77:39: Cannot access non-port symbols inside hierarchical block
                                    : ... note: In instance 't.i_sub0'
    77 |     $display("%m: i_sub.x: %d", i_sub.x);

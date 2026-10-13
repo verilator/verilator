@@ -1,0 +1,11 @@
+  scopesDump:
+    SCOPE 0x#: t
+    SCOPE 0x#: t.concrete_intf
+       VAR 0x#: some_intf_var
+    SCOPE 0x#: t.foo
+       VAR 0x#: foo_saw_plain
+       VAR 0x#: foo_saw_some
+    IFACEREF 0x#: t.foo.intf_ref -> t.concrete_intf.SomeModport
+    IFACEREF 0x#: t.foo.plain_ref -> t.concrete_intf
+
+*-* All Finished *-*

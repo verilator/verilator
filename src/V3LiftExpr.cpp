@@ -49,9 +49,8 @@
 //      __VleLogAnd_0 = __VleCall_0;
 //    }
 //    z = __VleLogAnd_1;
-// Similar patterns are used for AstLogOr and AstCond to preserve the
-// short-circuiting semantics and side effects. All AstLogIf should have
-// been converted to AstLogOr earlier by V3Const.
+// Similar patterns are used for AstLogOr, AstLogIf and AstCond to preserve
+// the short-circuiting semantics and side effects.
 //
 // Care must be taken for impure LValues as well. While, all LValue expressions
 // permitted by IEEE-1800 are themselves pure (except possibly for the non-lvalue
@@ -108,6 +107,7 @@ class LiftExprVisitor final : public VNVisitor {
     VDouble0 m_statLiftedConds;
     VDouble0 m_statLiftedLogAnds;
     VDouble0 m_statLiftedLogOrs;
+    VDouble0 m_statLiftedLogIfs;
     VDouble0 m_statLiftedExprStmts;
     VDouble0 m_statTemporariesCreated;
     VDouble0 m_statTemporariesReused;
@@ -229,6 +229,17 @@ class LiftExprVisitor final : public VNVisitor {
     }
 
     // VISITORS - statements
+    void visit(AstWait* nodep) override {
+        if (nodep->user1SetOnce()) return;
+        VL_RESTORER(m_doNotLiftp);
+        m_doNotLiftp = nullptr;
+        // Keep lifted statements inside the repeatedly evaluated condition.
+        if (AstNode* const newStmtps = lift(nodep->condp())) {
+            AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
+            nodep->condp(new AstExprStmt{nodep->fileline(), newStmtps, condp});
+        }
+        iterateAndNextNull(nodep->stmtsp());
+    }
     void visit(AstNodeStmt* nodep) override {
         if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_doNotLiftp);
@@ -432,7 +443,27 @@ class LiftExprVisitor final : public VNVisitor {
     }
     void visit(AstLogIf* nodep) override {
         if (!m_lift) return;
-        nodep->v3fatalSrc("AstLogIf should have been folded by V3Const");
+
+        // Lift from LHS
+        iterate(nodep->lhsp());
+
+        // Lift from RHS, if nothing lifted, then nothing to do
+        AstNode* const rhsStmtps = lift(nodep->rhsp());
+        if (!rhsStmtps) return;
+
+        // Otherwise convert to an AstIf with a temporary variable
+        ++m_statLiftedLogIfs;
+        FileLine* const flp = nodep->fileline();
+        AstVar* varp = getExistingVar(nodep->rhsp());
+        if (!varp) varp = newVar("LogIf", nodep);
+        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE},
+                                new AstLogNot{flp, nodep->lhsp()->unlinkFrBack()}});
+        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, varp, VAccess::READ}};
+        addStmtps(ifp);
+        ifp->addElsesp(rhsStmtps);
+        ifp->addElsesp(assignIfDifferent(flp, varp, nodep->rhsp()));
+        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstExprStmt* nodep) override {
         if (!m_lift) return;
@@ -476,6 +507,7 @@ public:
         V3Stats::addStat("LiftExpr, lifted Cond", m_statLiftedConds);
         V3Stats::addStat("LiftExpr, lifted LogAnd", m_statLiftedLogAnds);
         V3Stats::addStat("LiftExpr, lifted LogOr", m_statLiftedLogOrs);
+        V3Stats::addStat("LiftExpr, lifted LogIf", m_statLiftedLogIfs);
         V3Stats::addStat("LiftExpr, lifted ExprStmt", m_statLiftedExprStmts);
         V3Stats::addStat("LiftExpr, temporaries created", m_statTemporariesCreated);
         V3Stats::addStat("LiftExpr, temporaries reused", m_statTemporariesReused);

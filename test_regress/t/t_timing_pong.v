@@ -26,10 +26,10 @@ module t;
 `ifdef TEST_VERBOSE
         $write("pong\n");
 `endif
-        if (cnt < 10)->ping;
+        if (cnt < 10) ->ping;
       end
 
-  initial #1->ping;
+  initial #1 ->ping;
   initial
     #2
       if (cnt == 10) begin

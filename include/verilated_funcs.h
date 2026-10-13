@@ -785,15 +785,22 @@ inline IData VL_REDXOR_W(int words, WDataInP const lwp) VL_PURE {
 
 // EMIT_RULE: VL_COUNTONES_II:  oclean = false; lhs clean
 inline IData VL_COUNTONES_I(IData lhs) VL_PURE {
-    // This is faster than __builtin_popcountl
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return static_cast<IData>(__builtin_popcount(lhs));
+#else
     IData r = lhs - ((lhs >> 1) & 033333333333) - ((lhs >> 2) & 011111111111);
     r = (r + (r >> 3)) & 030707070707;
     r = (r + (r >> 6));
     r = (r + (r >> 12) + (r >> 24)) & 077;
     return r;
+#endif
 }
 inline IData VL_COUNTONES_Q(QData lhs) VL_PURE {
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return static_cast<IData>(__builtin_popcountll(lhs));
+#else
     return VL_COUNTONES_I(static_cast<IData>(lhs)) + VL_COUNTONES_I(static_cast<IData>(lhs >> 32));
+#endif
 }
 #define VL_COUNTONES_E VL_COUNTONES_I
 inline IData VL_COUNTONES_W(int words, WDataInP const lwp) VL_PURE {
@@ -1438,8 +1445,8 @@ inline void _vl_insert_WI(WDataOutP iowp, IData ld, int hbit, int lbit, int rbit
             const int nbitsonright = VL_EDATASIZE - loffset;  // bits that end up in lword
             iowp[lword] = (iowp[lword] & ~linsmask) | ((lde << loffset) & linsmask);
             // Prevent unsafe write where lword was final writable location and hword is
-            // out-of-bounds.
-            if (VL_LIKELY(!(hword == rword && roffset == 0))) {
+            // out-of-bounds.  rbits==0 means the caller guarantees bounds.
+            if (VL_LIKELY(!(rbits && hword >= VL_WORDS_I(rbits)))) {
                 iowp[hword]
                     = (iowp[hword] & ~hinsmask) | ((lde >> nbitsonright) & (hinsmask & cleanmask));
             }
@@ -2837,8 +2844,8 @@ inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataInP const
         for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) owp[i] = ~0;
         owp[VL_WORDS_I(obits) - 1] = VL_MASK_E(obits);
     } else if (VL_BITBIT_E(lsb) == 0) {
-        // Just a word extract
-        for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = lwp[i + word_shift];
+        // Just a word extract use a memmove (should never overlap, but same speed as memcpy)
+        std::memmove(owp.datap(), lwp.datap() + word_shift, VL_WORDS_I(obits) * sizeof(EData));
     } else {
         // Not a _vl_insert because the bits come from any bit number and goto bit 0
         const int loffset = lsb & VL_SIZEBITS_E;
@@ -2948,8 +2955,8 @@ inline void VL_ZERO_INIT_QUEUE_ELEM(VlWide<N_Words>& elem) {
     for (size_t j = 0; j < N_Words; ++j) { elem.at(j) = 0; }
 }
 
-// This specialization works for both VlQueue<CData> (and similar) as well
-// as VlQueue<VlWide<N>>.
+// These overloads work for both VlQueue<CData> (and similar) as well
+// as VlQueue<VlWide<N>>, including queues with different element types.
 template <typename T>
 inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int /*lbits*/, int srcElementBits,
                       int dstElementBits) {
@@ -2971,16 +2978,32 @@ inline void VL_COPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int /*lbits*/, int 
     }
 }
 
-// This specialization works for both VlQueue<CData> (and similar) as well
-// as VlQueue<VlWide<N>>.
-template <typename T>
-inline void VL_REVCOPY_Q(VlQueue<T>& q, const VlQueue<T>& from, int lbits, int srcElementBits,
-                         int dstElementBits) {
+// Keep the same-type overload separate for its direct-copy optimization and alias handling;
+// differently typed queues cannot alias.
+template <typename T_Dst, typename T_Src>
+inline typename std::enable_if<!std::is_same<T_Dst, T_Src>::value>::type
+VL_COPY_Q(VlQueue<T_Dst>& q, const VlQueue<T_Src>& from, int /*lbits*/, int srcElementBits,
+          int dstElementBits) {
+    const size_t srcTotalBits = from.size() * srcElementBits;
+    const size_t dstSize = (srcTotalBits + dstElementBits - 1) / dstElementBits;
+    q.renew(dstSize);
+    for (size_t i = 0; i < dstSize; ++i) { VL_ZERO_INIT_QUEUE_ELEM(q.atWrite(i)); }
+    for (size_t bitIndex = 0; bitIndex < srcTotalBits; ++bitIndex) {
+        VL_SET_QUEUE_BIT(q, dstElementBits, bitIndex,
+                         VL_GET_QUEUE_BIT(from, srcElementBits, bitIndex));
+    }
+}
+
+// This works for both VlQueue<CData> (and similar) as well as VlQueue<VlWide<N>>,
+// including queues with different element types.
+template <typename T_Dst, typename T_Src>
+inline void VL_REVCOPY_Q(VlQueue<T_Dst>& q, const VlQueue<T_Src>& from, int lbits,
+                         int srcElementBits, int dstElementBits) {
     const size_t srcTotalBits = from.size() * srcElementBits;
     const size_t dstSize = (srcTotalBits + dstElementBits - 1) / dstElementBits;
 
     // Always make a copy to handle the case where q and from are the same queue
-    VlQueue<T> srcCopy = from;
+    VlQueue<T_Src> srcCopy = from;
 
     // Initialize all elements to zero using appropriate method
     q.renew(dstSize);
@@ -3613,6 +3636,7 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 }
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
+extern double VL_ATOREAL_N(const std::string& str) VL_PURE;
 extern IData VL_NTOI_I(int obits, const std::string& str) VL_PURE;
 extern QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE;
 extern void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str,

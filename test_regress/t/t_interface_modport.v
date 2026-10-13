@@ -42,12 +42,10 @@ module inout_mod_wrap(input we, inout d);
   inout_mod prph (.*);
 endmodule
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (
+    input clk
+);
 
-  input clk;
   integer cyc=1;
 
   counter_if c1_data();

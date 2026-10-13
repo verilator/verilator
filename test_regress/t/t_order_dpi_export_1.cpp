@@ -10,7 +10,7 @@
 //*************************************************************************
 
 #include <Vt_order_dpi_export_1.h>
-#include <Vt_order_dpi_export_1__Dpi.h>
+#include VM_PREFIX_INCLUDE_DPI
 #include <svdpi.h>
 
 int main(int argc, char* argv[]) {

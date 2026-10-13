@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.lint(
-    verilator_flags2=["--coverage-fsm", "-fno-inline", "t/t_fsm_register_wrapper_warn_bad.vlt"],
+    verilator_flags2=["--coverage-fsm", "-fno-inline", test.vlt_filename],
     fails=True,
     expect_filename=test.golden_filename,
 )

@@ -32,6 +32,7 @@ Bagri
 Balboni
 Baltazar
 Bardsley
+Barua
 Benchmarking
 Berman
 Bhagavatula
@@ -304,6 +305,7 @@ Mahmoudy
 Makefile
 Makefiles
 Maksymenko
+Manzoni
 Marche
 Markley
 Marquet
@@ -345,6 +347,7 @@ Narcis
 Nassim
 Nauticus
 Nayak
+Nazar
 Nenakhov
 Newgard
 Nigam
@@ -390,6 +393,7 @@ Preprocess
 Pretet
 Pretl
 Pringlemeir
+Prithayan
 Priyadharshini
 Pullup
 Pulver
@@ -586,6 +590,7 @@ Yurii
 Zaruba
 Zhang
 Zhi
+Zibilyuk
 abirkmanis
 accessor
 accessors
@@ -625,12 +630,14 @@ benchmarking
 biguint
 binToOneHot
 bindir
+binsof
 biops
 bisonpre
 bitOpTree
 bitaggregat
 bitop
 bitstoreal
+bitwise
 blackbox
 bokke
 bool
@@ -716,6 +723,7 @@ deduplication
 defenv
 defname
 defparam
+dehash
 demangling
 dep
 deparametrized
@@ -735,6 +743,8 @@ devel
 difftree
 dir
 disambiguates
+discoverability
+disjunction
 displayb
 distcc
 doxygen
@@ -945,6 +955,7 @@ makefile
 makefiles
 malloc
 manpages
+memoization
 metacomment
 metacomments
 miree
@@ -1109,6 +1120,7 @@ rodata
 rolloverSize
 rr
 rst
+runnable
 runtime
 runtimes
 rw
@@ -1130,6 +1142,7 @@ shortint
 shortreal
 signame
 signedness
+slp
 sp
 specparam
 splitme
@@ -1180,6 +1193,7 @@ systemc
 taskify
 tcmalloc
 tcmalloc
+teardown
 tenghtt
 testbench
 testbenches
@@ -1214,6 +1228,7 @@ typedef'ed
 typedefed
 typedefs
 typename
+typenames
 uint
 un
 unbased
@@ -1253,6 +1268,7 @@ vcddiff
 vcoverage
 vdhotre
 vec
+vectorize
 ventana
 venv
 ver

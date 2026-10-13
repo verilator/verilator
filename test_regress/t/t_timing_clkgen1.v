@@ -4,9 +4,11 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module clkgen(output bit clk);
+module clkgen (
+    output bit clk
+);
   initial begin
-    #(8.0:5:3) clk = 1;  // Middle is default
+    #(8.0: 5: 3) clk = 1;  // Middle is default
     forever begin
       #5 clk = ~clk;
     end
@@ -18,8 +20,8 @@ module t;
 
   clkgen clkgen (.clk);
 
-  int  cyc;
-  always @ (posedge clk) begin
+  int cyc;
+  always @(posedge clk) begin
     cyc <= cyc + 1;
 `ifdef TEST_VERBOSE
     $display("[%0t] cyc=%0d", $time, cyc);

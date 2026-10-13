@@ -12,34 +12,77 @@
 
 class DistScalar;
   rand bit [7:0] x;
-  constraint c { x dist { 8'd0 := 1, 8'd255 := 3 }; }
+  constraint c {
+    x dist {
+      8'd0 := 1,
+      8'd255 := 3
+    };
+  }
 endclass
 
 class DistRange;
   rand bit [7:0] x;
-  constraint c { x dist { [8'd0:8'd9] :/ 1, [8'd10:8'd19] :/ 3 }; }
+  constraint c {
+    x dist {
+      [8'd0 : 8'd9] :/ 1,
+      [8'd10 : 8'd19] :/ 3
+    };
+  }
 endclass
 
 class DistZeroWeight;
   rand bit [7:0] x;
-  constraint c { x dist { 8'd0 := 0, 8'd1 := 1, 8'd2 := 1 }; }
+  constraint c {
+    x dist {
+      8'd0 := 0,
+      8'd1 := 1,
+      8'd2 := 1
+    };
+  }
 endclass
 
 class DistAllZeroWeight;
   rand bit [7:0] x;
-  constraint c { x dist { 8'd0 := 0, 8'd1 := 0, 8'd2 := 0 }; }
+  constraint c {
+    x dist {
+      8'd0 := 0,
+      8'd1 := 0,
+      8'd2 := 0
+    };
+  }
 endclass
 
 class DistVarWeight;
   rand bit [7:0] x;
   int w1, w2;
-  constraint c { x dist { 8'd0 := w1, 8'd255 := w2 }; }
+  constraint c {
+    x dist {
+      8'd0 := w1,
+      8'd255 := w2
+    };
+  }
 endclass
 
 class DistVarWeightRange;
   rand bit [7:0] x;
   int w1, w2;
-  constraint c { x dist { [8'd0:8'd9] :/ w1, [8'd10:8'd19] :/ w2 }; }
+  constraint c {
+    x dist {
+      [8'd0 : 8'd9] :/ w1,
+      [8'd10 : 8'd19] :/ w2
+    };
+  }
+endclass
+
+class DistVarWeightWithExclusion;
+  rand bit [7:0] x;
+  constraint c {
+    x dist {
+      8'd13 := 10,
+      8'd10 := 2
+    };
+  }
+  constraint excl {x != 8'd13;}
 endclass
 
 module t;
@@ -50,6 +93,7 @@ module t;
     DistAllZeroWeight azw;
     DistVarWeight vw;
     DistVarWeightRange vwr;
+    DistVarWeightWithExclusion vwwe;
     int count_high;
     int count_range_high;
     int total;
@@ -129,6 +173,13 @@ module t;
       end
     end
     `check_range(count_range_high, total * 60 / 100, total * 90 / 100);
+
+    vwwe = new;
+    repeat (total) begin
+      randomize_result = vwwe.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(vwwe.x, 8'd10);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;

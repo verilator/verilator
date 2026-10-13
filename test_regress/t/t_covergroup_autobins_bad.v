@@ -11,6 +11,7 @@ module t;
   int size_var;
   logic [3:0] cp_expr;
   logic [15:0] cp_wide;
+  real cp_real;
 
   // Error: array size must be a constant
   covergroup cg1;
@@ -24,12 +25,15 @@ module t;
     cp1: coverpoint cp_expr {
       bins auto[0];
     }
+    cp2: coverpoint cp_expr {
+      bins auto[-1];  // Error: negative
+    }
   endgroup
 
-  // Error: array size exceeds limit of 1000
+  // Error: array size exceeds limit of 1024
   covergroup cg2b;
     cp1: coverpoint cp_expr {
-      bins auto[1001];
+      bins auto[1025];
     }
   endgroup
 
@@ -42,7 +46,7 @@ module t;
       bins b_range2 = {[0:size_var]}; // non-constant regular bin range (rhs non-const)
       bins b2 = {size_var};  // non-constant simple bin value
       ignore_bins ign = {size_var};  // non-constant ignore_bins value
-      ignore_bins ign_range = {[0:size_var]};  // non-constant ignore_bins range (rhs non-const)
+      ignore_bins ign_range = {[0:size_var]};
     }
   endgroup
 
@@ -59,7 +63,7 @@ module t;
       bins b_xz = {[4'bxxxx:4'hF]};  // four-state lower bound (match-code path)
       ignore_bins ign_xz_lo = {[4'bxxxx:4'hF]};  // four-state lower bound (range-enum path)
       ignore_bins ign_xz_hi = {[4'h0:4'bzzzz]};  // four-state upper bound (range-enum path)
-      ignore_bins ign_nclo = {[size_var:4]};  // non-constant lower bound
+      ignore_bins ign_nclo = {[size_var:4]};
       bins b_nc_ub = {[size_var:$]};  // non-constant lower bound, open-ended '$' upper
       bins b_xz_ub = {[4'bxxxx:$]};  // four-state lower bound, open-ended '$' upper
       bins b_xz_arr[] = {[4'bxxxx:4'hF]};  // four-state lower bound (array-bins path)
@@ -67,10 +71,17 @@ module t;
     }
   endgroup
 
-  // Warning (COVERIGN): array bins range exceeds COVER_BINS_LIMIT
+  // Warning (COVERIGN): array bins range exceeds --coverage-max-bins
   covergroup cg6;
     cp1: coverpoint cp_wide {
       bins b_huge[] = {[0:$]};  // open '[lo:$]' over 16-bit coverpoint exceeds bin limit
+    }
+  endgroup
+  covergroup cg_nonconst_transition;
+    coverpoint cp_expr {
+      bins bns1 = (1 => size_var);  // Transition values must be constant expr
+      bins bns2 = (size_var => 2);
+      bins bns3 = (size_var => size_var);
     }
   endgroup
 
@@ -83,7 +94,9 @@ module t;
   covergroup cgx_nc_value;  // non-constant value, non-array bin
     cp_a: coverpoint cp_expr {bins x = {size_var};}
     cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
-    xc: cross cp_a, cp_c;
+    xc: cross cp_a, cp_c {
+      bins filtered = binsof(cp_a) intersect {0};
+    }
   endgroup
   covergroup cgx_nc_range_lo;  // non-constant low bound, non-array range
     cp_a: coverpoint cp_expr {bins x = {[size_var : 1]};}
@@ -116,6 +129,145 @@ module t;
     xc: cross cp_a, cp_c;
   endgroup
 
+  covergroup cgx_binsof;
+    cp_a: coverpoint cp_expr {bins a = {0};}
+    cp_b: coverpoint cp_expr {bins b = {0};}
+    cp_other: coverpoint cp_expr {bins other = {0};}
+    xc: cross cp_a, cp_b {
+      bins missing_point = binsof(missing);
+      bins uncrossed_point = binsof(cp_other);
+      bins missing_bin = binsof(cp_a.missing);
+      bins duplicate = binsof(cp_a);
+      bins duplicate = binsof(cp_b);
+      ignore_bins duplicate = binsof(cp_a);
+      illegal_bins duplicate = binsof(cp_b);
+      ignore_bins ignored_duplicate = binsof(cp_a);
+      illegal_bins ignored_duplicate = binsof(cp_b);
+      illegal_bins illegal_duplicate = binsof(cp_a);
+      bins illegal_duplicate = binsof(cp_b);
+      ignore_bins missing_ignore = binsof(cp_a.missing);
+      illegal_bins uncrossed_illegal = binsof(cp_other);
+      bins nonconstant = binsof(cp_a) intersect {size_var} || binsof(cp_b);
+      bins nonconstant_range = binsof(cp_a) intersect {[0:size_var]};
+    }
+  endgroup
+
+  // Error: the implicit automatic bins of a coverpoint are selected by their reported names
+  covergroup cgx_binsof_auto;
+    cp_imp: coverpoint cp_expr;  // auto_0 .. auto_15
+    cp_a: coverpoint cp_expr {bins a = {0};}
+    xc: cross cp_imp, cp_a {
+      bins last_bin = binsof(cp_imp.auto_15);  // OK
+      bins out_of_range = binsof(cp_imp.auto_16);
+      bins leading_zero = binsof(cp_imp.auto_01);
+      bins not_a_number = binsof(cp_imp.auto_x);
+      bins no_index = binsof(cp_imp.auto_);
+      bins declaration = binsof(cp_imp.auto);
+    }
+  endgroup
+
+  covergroup cgx_binsof_large;
+    cp_a: coverpoint cp_wide;
+    cp_b: coverpoint cp_wide;
+    cp_c: coverpoint cp_wide;
+    cp_d: coverpoint cp_wide;
+    cp_e: coverpoint cp_wide;
+    cp_f: coverpoint cp_wide;
+    xc: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f {
+      bins selected = binsof(cp_a);
+    }
+    auto_only: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
+  endgroup
+
+  // Live bins only shrink a runtime cross, so its declared product is checked the same way.
+  covergroup cgx_dynamic_large;
+    cp_a: coverpoint cp_wide {ignore_bins removed = {0};}
+    cp_b: coverpoint cp_wide;
+    cp_c: coverpoint cp_wide;
+    cp_d: coverpoint cp_wide;
+    cp_e: coverpoint cp_wide;
+    cp_f: coverpoint cp_wide;
+    xc: cross cp_a, cp_b, cp_c, cp_d, cp_e, cp_f;
+  endgroup
+
+  covergroup cgx_binsof_excluded;
+    cp_a: coverpoint cp_expr {
+      bins normal = {0};
+      ignore_bins nonconstant = {size_var};
+    }
+    cp_b: coverpoint cp_expr {bins normal = {0};}
+    xc: cross cp_a, cp_b {
+      bins selected = binsof(cp_a) intersect {0};
+    }
+  endgroup
+
+  covergroup cgx_binsof_many_values;
+    cp_a: coverpoint cp_wide {
+      bins whole[] = {[0:767]};
+      // These singleton queries must not consume an aggregate nonlinear-search budget.
+      wildcard ignore_bins removed = {
+        16'b??1????11???????, 16'b?0????0??1??????, 16'b????1?1????????0, 16'b1??????1?1??????,
+        16'b???????????0??10, 16'b???????0?????1?0, 16'b????1????1???0??, 16'b?1??0?????1?????,
+        16'b??????0????0?0??, 16'b?????1?????00???, 16'b???????0??1?0???, 16'b????????0??0???0,
+        16'b???????0??1????0, 16'b?0??1??????????0, 16'b0?????????0???1?, 16'b???????1????01??,
+        16'b??0????????1???0, 16'b?1???????1??0???, 16'b?10??0??????????, 16'b10??????1???????,
+        16'b1???????1????1??, 16'b1????????????1?0, 16'b??1????????01???, 16'b???1???0???????0,
+        16'b1???????1?1?????, 16'b?10???0?????????, 16'b?1???1??1???????, 16'b10?0????????????,
+        16'b?00???0?????????, 16'b????????10???1??, 16'b??????1????10???, 16'b??????01???????0,
+        16'b???1????1???1???, 16'b???1????1??0????, 16'b???1?0????????1?, 16'b????0?0??0??????,
+        16'b????1??0?????1??, 16'b??0??1????????1?, 16'b?????11????????1, 16'b????1?01????????,
+        16'b?????0?00???????, 16'b???1????0????1??, 16'b?0????????0???1?, 16'b??????10??????0?,
+        16'b1?0??0??????????, 16'b10?????0????????, 16'b10?0????????????, 16'b???10??????????0,
+        16'b1????0????1?????, 16'b?0?????????1??0?, 16'b???0?????1?????0, 16'b?00???????0?????,
+        16'b????0????1????0?, 16'b0????1??????1???, 16'b?1??1????0??????, 16'b???????0??????10,
+        16'b?????0??01??????, 16'b?0???1?0????????, 16'b?1????1?1???????, 16'b?????00??0??????
+      };
+    }
+    cp_b: coverpoint cp_expr;
+    xc: cross cp_a, cp_b {
+      bins selected = binsof(cp_a.whole) intersect {[0:16'hffff]};
+    }
+  endgroup
+
+  // Exactly --coverage-max-bins (1024) bins are accepted
+  covergroup cg_limit;
+    cp_auto: coverpoint cp_wide {
+      bins auto[1024];
+    }
+    cp_open: coverpoint cp_wide {
+      bins all[] = {[16'hfc00 : $]};
+    }
+    cp_range: coverpoint cp_wide {
+      bins at_limit[] = {[0 : 1023]};
+      bins split_at_limit[] = {[0 : 511], [512 : 1023]};
+      bins over_limit[] = {[0 : 1024]};  // Warning (COVERIGN): 1025 values
+      bins split_over_limit[] = {[0 : 511], [512 : 1024]};  // Warning (COVERIGN)
+    }
+  endgroup
+
+  // Error: automatic bins are not allowed on a coverpoint of a real expression.  Its array
+  // bins have their own limit, --coverage-max-real-bins (1024).
+  covergroup cg_real;
+    cp_implicit: coverpoint cp_real;
+    cp_explicit: coverpoint cp_real {
+      bins auto[4];
+    }
+    cp_array: coverpoint cp_real {
+      bins at_limit[] = {[0 : 1023]};
+      bins over_limit[] = {[0 : 1024]};  // Warning (COVERIGN): 1025 values
+    }
+  endgroup
+
+  // Error: non-constant values of wildcard arrays of bins, also of a crossed coverpoint
+  covergroup cg_wild_nonconst;
+    cp_a: coverpoint cp_expr {
+      wildcard bins value[] = {size_var};
+      wildcard bins range[] = {[0 : size_var]};
+    }
+    cp_c: coverpoint cp_expr {bins r = {0}; bins w = {1};}
+    xc: cross cp_a, cp_c;
+  endgroup
+
   cg1 cg1_inst = new;
   cg2 cg2_inst = new;
   cg2b cg2b_inst = new;
@@ -130,6 +282,15 @@ module t;
   cgx_arr_4state_hi cgx_arr_4state_hi_inst = new;
   cgx_arr_ncval cgx_arr_ncval_inst = new;
   cgx_arr_open cgx_arr_open_inst = new;
+  cgx_binsof cgx_binsof_inst = new;
+  cgx_binsof_auto cgx_binsof_auto_inst = new;
+  cgx_binsof_large cgx_binsof_large_inst = new;
+  cgx_dynamic_large cgx_dynamic_large_inst = new;
+  cgx_binsof_excluded cgx_binsof_excluded_inst = new;
+  cgx_binsof_many_values cgx_binsof_many_values_inst = new;
+  cg_limit cg_limit_inst = new;
+  cg_real cg_real_inst = new;
+  cg_wild_nonconst cg_wild_nonconst_inst = new;
 
   initial $finish;
 endmodule
