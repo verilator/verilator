@@ -67,6 +67,10 @@ public:
     static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
+    // Return name of the VlExecGraph describing an AstExecGraph
+    static string execGraphName(const AstExecGraph* nodep) {
+        return topClassName() + "__ExecGraph__" + nodep->nameProtect();
+    }
     // Return C++ class name for a module/class object
     static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
     static bool isAnonOk(const AstVar* varp) VL_MT_STABLE {

@@ -3636,6 +3636,7 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 }
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
+extern double VL_ATOREAL_N(const std::string& str) VL_PURE;
 extern IData VL_NTOI_I(int obits, const std::string& str) VL_PURE;
 extern QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE;
 extern void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str,

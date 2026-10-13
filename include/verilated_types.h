@@ -1512,7 +1512,7 @@ public:
     // METHODS
     // Raw access
     T_Value* data() { return &m_storage[0]; }
-    const T_Value* data() const { return &m_storage[0]; }
+    constexpr const T_Value* data() const { return &m_storage[0]; }
 
     constexpr std::size_t size() const { return N_Depth; }
 

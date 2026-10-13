@@ -215,6 +215,7 @@ RAW_OBJS_PCH_ASTMT = \
   V3Control.o \
   V3EmitCBase.o \
   V3EmitCConstPool.o \
+  V3EmitCExecGraph.o \
   V3EmitCFunc.o \
   V3EmitCHeaders.o \
   V3EmitCImp.o \

@@ -16,7 +16,7 @@ module t;
     // Non-standard hierarchical/dotted cross item: can only be a data reference
     // (implicit coverpoint), never a coverpoint.  Accepted with a NONSTD warning;
     // implicit coverpoints are unsupported so the cross is dropped (COVERIGN).
-    cross_hier: cross cp_a, s_cfg.m_p;
+    cross_hier: cross cp_a, s_cfg.m_p{bins b0 = cross_hier with (cp_a == 0);}
   endgroup
   typedef struct packed {logic m_p; logic h_mode;} cfg_t;
   cfg_t s_cfg = '0;

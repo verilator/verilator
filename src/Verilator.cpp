@@ -638,6 +638,7 @@ static void process() {
             V3EmitC::emitcInlines();
             V3EmitC::emitcSyms();
             V3EmitC::emitcConstPool();
+            V3EmitC::emitcExecGraph();
             V3EmitC::emitcModel();
             V3EmitC::emitcPch();
             V3EmitC::emitcHeaders();

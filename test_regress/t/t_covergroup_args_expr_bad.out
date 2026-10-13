@@ -45,4 +45,12 @@
                                             : ... note: In instance 't'
    31 |     cp_bad: coverpoint 0 iff (1) {bins bad = {[0 : nonconstant_bound]};}
       |                                               ^
+%Error: t/t_covergroup_args_expr_bad.v:41:51: Covergroup sample formal argument 'value' may only be used in a coverpoint or conditional guard expression (IEEE 1800-2023 19.8.1).
+                                            : ... note: In instance 't'
+   41 |       bins sampled = cross_with with (cp_bound == value);
+      |                                                   ^~~~~
+%Error: t/t_covergroup_args_expr_bad.v:42:53: Ref covergroup constructor formal argument 'bound' may not be used in a covergroup expression (IEEE 1800-2023 19.5).
+                                            : ... note: In instance 't'
+   42 |       bins referenced = cross_with with (cp_value < bound);
+      |                                                     ^~~~~
 %Error: Exiting due to
