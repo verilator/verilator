@@ -5145,10 +5145,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         if (foundp) break;
                         UASSERT_OBJ(dotSymp->fallbackp(), nodep, "Modports shall have fallback");
                         foundp = dotSymp->fallbackp()->findIdFlat(prefix + nodep->name());
-                        if (const AstVar* const varp
-                            = foundToVarp(foundp, nodep, nodep->access())) {
-                            if (!varp->isParam()) foundp = nullptr;
-                        }
                         if (prefix.empty()) break;
                         string nextPrefix = LinkDotState::removeLastInlineScope(prefix);
                         if (prefix == nextPrefix) break;
