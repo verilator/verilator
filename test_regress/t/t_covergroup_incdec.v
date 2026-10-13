@@ -17,10 +17,13 @@ class Holder;
   bit [1:0] value;
   int count;
   int total;
+  int or_count;
 
   covergroup cg;
     cp: coverpoint value iff (count++ > 0) {bins b[] = {[0 : 3]};}  // Not value = 0
     tp: coverpoint (total += 2) {bins b[] = {2, 4, 6, 8};}
+    // Incremented only when '||' evaluates it, of value = 0, 2
+    op: coverpoint value iff (value[0] || or_count++ < 0) {bins b[] = {[0 : 3]};}  // value = 1, 3
   endgroup
 
   function new();
@@ -42,6 +45,8 @@ module t;
   int cross_guard;
   int sum;
   int step;
+  int cond_sum;
+  int cond_step;
   int weight = 1;
   int filtered;
   int group_weight = 1;
@@ -64,6 +69,8 @@ module t;
     ap: coverpoint a iff (a[0] && and_count++ >= 0) {bins b[] = {[0 : 3]};}  // a = 1, 3
     qp: coverpoint a iff (a[0] ? cond_count++ >= 0 : 0) {bins b[] = {[0 : 3]};}  // a = 1, 3
     np: coverpoint a iff ((sum += step++) > 0) {bins b[] = {[0 : 3]};}  // sum 0, 1, 3, 6
+    // Under an assignment operator, only when '?:' evaluates it: a = 3
+    nq: coverpoint a iff ((cond_sum += (a[0] ? cond_step++ : 0)) > 0) {bins b[] = {[0 : 3]};}
     aa: coverpoint a;
     bb: coverpoint b;
     xx: cross aa, bb{bins all = binsof (aa) iff (cross_guard++ > 0);}  // Not a = 0
@@ -111,10 +118,13 @@ module t;
     `checkd(cond_count, 2);
     `checkd(step, 4);
     `checkd(sum, 6);
+    `checkd(cond_step, 2);
+    `checkd(cond_sum, 1);
     `checkd(cross_guard, 4);
     `checkd(weight, 2);
     `checkd(holder.count, 4);
     `checkd(holder.total, 8);
+    `checkd(holder.or_count, 2);
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -278,15 +278,15 @@ class LinkIncVisitor final : public VNVisitor {
     void visit(AstCond* nodep) override { unsupported_visit(nodep); }
     void visit(AstPropSpec* nodep) override { unsupported_visit(nodep); }
     void prepost_visit(AstNodeUniop* const nodep) {
-        // Check if we are underneath a statement, else the increment is one, but in a covergroup
-        // expression, which is under none
-        const bool isStmt = !m_insStmtp && !m_inCovergroup;
+        // Not underneath a statement, the increment is one, unless in a covergroup expression,
+        // which is under none
+        const bool isStandaloneStmt = !m_insStmtp && !m_inCovergroup;
         AstSelBit* const selbitp = VN_CAST(nodep->lhsp(), SelBit);
-        if (isStmt && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
+        if (isStandaloneStmt && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
             && !selbitp->bitp()->isPure()) {
             prepost_stmt_sel_visit(nodep);
         } else {
-            if (isStmt) {
+            if (isStandaloneStmt) {
                 prepost_stmt_visit(nodep);
             } else {
                 prepost_expr_visit(nodep);
@@ -412,15 +412,15 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepost_expr_visit(AstNodeUniop* const nodep) {
         iterateChildren(nodep);
-        // A covergroup expression, under no statement, increments in an expression statement, as
-        // the parser makes '(x += 1)', so only where and when it is evaluated
-        const bool exprStmt = !m_insStmtp;
-        if (m_condEvalContext && !m_incCondp && !exprStmt) {
+        // In a covergroup, whose expressions are under no statement, the increment forms an
+        // expression statement in place, as the parser makes '(x += 1)', so it is evaluated only
+        // where and when its expression is
+        if (m_condEvalContext && !m_incCondp && !m_inCovergroup) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Pre/post increment/decrement operator"
                                          " within a logical expression (&&, ||, ?:, etc.)");
             return;
         }
-        const bool needGating = m_condEvalContext && m_incCondp && !exprStmt;
+        const bool needGating = m_condEvalContext && m_incCondp && !m_inCovergroup;
         AstNodeExpr* const readp = nodep->lhsp();
         AstNodeExpr* const writep = nodep->lhsp()->cloneTreePure(true);
         V3LinkLValue::linkLValueSet(readp, VAccess::READ);
@@ -443,7 +443,7 @@ class LinkIncVisitor final : public VNVisitor {
         // Define what operation will we be doing
         AstNodeExpr* const operp = getOperationp(nodep, readp->cloneTreePure(true), newconstp);
 
-        AstNode* stmtsp;
+        AstNode* stmtsp = nullptr;
         if (needGating) {
             // Short-circuit context: mutate the variable only when the gate is true.
             // The temp holds the old value, plus the new value for pre-inc/dec.
@@ -476,7 +476,7 @@ class LinkIncVisitor final : public VNVisitor {
 
         // Replace the node with the temporary, after the statements
         AstNodeExpr* newp = new AstVarRef{readp->fileline(), varp, VAccess::READ};
-        if (exprStmt) {
+        if (m_inCovergroup) {
             newp = new AstExprStmt{fl, stmtsp, newp};
         } else {
             insertBeforeStmt(nodep, stmtsp);
