@@ -6,6 +6,9 @@
 
 // Array real == has no type check of its own. The scalar case in
 // t_constraint_unsup.v does, and diagnoses cleanly instead of crashing.
+// Only the rand side (frame) is flagged, not the non-rand side (target):
+// a non-rand operand is evaluated directly rather than lowered to SMT, so
+// it never hits the real-in-SMT check that frame's rand side does.
 class C1;
   rand real frame[2];
   real target[2];
