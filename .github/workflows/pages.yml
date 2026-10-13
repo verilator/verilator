@@ -46,10 +46,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+      # Use the Verilator CI app to download the reports and to post the
+      # comments. Its rate limit is separate from, and higher than that of the
+      # GITHUB_TOKEN, which the hundreds of downloads would otherwise exhaust,
+      # failing the deployment that also uses it.
+      - name: Generate access token
+        id: generate-token
+        if: ${{ github.repository == 'verilator/verilator' }}
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
+        with:
+          client-id: ${{ vars.VERILATOR_CI_ID }}
+          private-key: ${{ secrets.VERILATOR_CI_KEY }}
+          permission-actions: write
+          permission-pull-requests: write
       - name: Build pages
         id: build
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token || github.token }}
         run: |
           ./ci/ci-pages.bash
       - name: Upload pages artifact
@@ -65,16 +78,6 @@ jobs:
         id: deploy-2
         if: steps.deploy-1.outcome == 'failure'
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5
-      # Use the Verilator CI app to post the comment
-      - name: Generate access token
-        id: generate-token
-        if: ${{ github.repository == 'verilator/verilator' }}
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3.2.0
-        with:
-          client-id: ${{ vars.VERILATOR_CI_ID }}
-          private-key: ${{ secrets.VERILATOR_CI_KEY }}
-          permission-actions: write
-          permission-pull-requests: write
       - name: Comment on PR
         if: ${{ github.repository == 'verilator/verilator' }}
         env:
