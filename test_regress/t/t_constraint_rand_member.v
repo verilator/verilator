@@ -20,7 +20,7 @@ class C;
 endclass
 
 class A;
-  rand int x, y, z, w;
+  rand int x, y, z, w, u;
   int k = 10;
   function int lim();
     return 4;
@@ -33,6 +33,7 @@ class A;
     y == 100 + C::lim();
     z == 100 + unit_lim();
     w == 100 + add(k);
+    u == 100 + add(lim());
   }
 endclass
 
@@ -54,6 +55,7 @@ module t;
     `checkd(b.a.y, 106);
     `checkd(b.a.z, 105);
     `checkd(b.a.w, 111);
+    `checkd(b.a.u, 105);
     $finish;
   end
 endmodule

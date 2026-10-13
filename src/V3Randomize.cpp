@@ -435,8 +435,9 @@ class RandomizeMarkVisitor final : public VNVisitor {
         AstConstraint* const cloneConstrp = constrp->cloneTree(false);
         cloneConstrp->name(newName);
 
-        // Replace FuncRefs afterwards, so VarRefs in their arguments are rewritten first
-        std::vector<AstFuncRef*> funcRefps;
+        // FuncRefs are converted after the traversal. Converting moves the args under the new
+        // MethodCall, where foreach would not visit VarRefs or nested calls such as add(lim()).
+        static std::vector<AstFuncRef*> funcRefps;
         cloneConstrp->foreach([&](AstNodeExpr* exprp) {
             if (AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
                 if (!varRefp->varp()->isClassMember()) return;
@@ -465,6 +466,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             funcRefp->replaceWith(callp);
             VL_DO_DANGLING(funcRefp->deleteTree(), funcRefp);
         }
+        funcRefps.clear();
 
         // Add constraint directly to the target class
         targetClassp->addStmtsp(cloneConstrp);
