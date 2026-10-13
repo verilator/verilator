@@ -23,10 +23,29 @@ module t;
     o_t m_o;
   } struct_t;
 
+  function automatic void output_int(output int status);
+  endfunction
+
+  function automatic void inout_int(inout int status);
+  endfunction
+
+  function automatic void ref_int(ref int status);
+  endfunction
+
+  function automatic void input_enum(input e_t status);
+  endfunction
+
+  function automatic void inout_enum(inout e_t status);
+  endfunction
+
+  function automatic void ref_enum(ref e_t status);
+  endfunction
+
   initial begin
     e_t e;
     o_t o;
     struct_t str;
+    int enum_int;
 
     e = ONE;
     e = $random() == 0 ? ONE : TWO;
@@ -52,5 +71,13 @@ module t;
     e = e_t'(1) + 1;  // Bad
     o = e_t'(o_t'(e));  // Bad
     e = int'(o_t'(e));  // Bad
+
+    output_int(e);
+    inout_int(e);
+    ref_int(e);
+
+    input_enum(enum_int);
+    inout_enum(enum_int);
+    ref_enum(enum_int);
   end
 endmodule

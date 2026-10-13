@@ -1,0 +1,111 @@
+t.Holder::cg.xp.hi: 2
+t.Holder::cg.xp.lo: 0
+t.Holder::cg.xy.rest [cross]: 2
+t.Holder::cg.xy.under [cross]: 1
+t.Holder::cg.yp.hi: 2
+t.Holder::cg.yp.lo: 0
+t.cg_alias.a.auto_0: 4
+t.cg_alias.a.auto_1: 4
+t.cg_alias.a.auto_2: 4
+t.cg_alias.a.auto_3: 4
+t.cg_alias.b.auto_0: 4
+t.cg_alias.b.auto_1: 4
+t.cg_alias.b.auto_2: 4
+t.cg_alias.b.auto_3: 4
+t.cg_alias.xx.<auto_0,auto_1> [cross]: 1
+t.cg_alias.xx.<auto_0,auto_2> [cross]: 1
+t.cg_alias.xx.<auto_0,auto_3> [cross]: 1
+t.cg_alias.xx.<auto_1,auto_0> [cross]: 1
+t.cg_alias.xx.<auto_1,auto_2> [cross]: 1
+t.cg_alias.xx.<auto_1,auto_3> [cross]: 1
+t.cg_alias.xx.<auto_2,auto_0> [cross]: 1
+t.cg_alias.xx.<auto_2,auto_1> [cross]: 1
+t.cg_alias.xx.<auto_2,auto_3> [cross]: 1
+t.cg_alias.xx.<auto_3,auto_0> [cross]: 1
+t.cg_alias.xx.<auto_3,auto_1> [cross]: 1
+t.cg_alias.xx.<auto_3,auto_2> [cross]: 1
+t.cg_alias.xx.equal [cross]: 4
+t.cg_constructed.aa.even[0]: 4
+t.cg_constructed.aa.even[2]: 4
+t.cg_constructed.bb.sized[0]: 8
+t.cg_constructed.bb.sized[1]: 8
+t.cg_constructed.xx.<even[0],sized[0]> [cross]: 2
+t.cg_constructed.xx.<even[2],sized[1]> [cross]: 2
+t.cg_constructed.xx.three [cross]: 4
+t.cg_empty.bb.auto_0: 4
+t.cg_empty.bb.auto_1: 4
+t.cg_empty.bb.auto_2: 4
+t.cg_empty.bb.auto_3: 4
+t.cg_exclusions.aa.high: 3
+t.cg_exclusions.aa.low: 6
+t.cg_exclusions.aa.skipped [ignore]: 3
+t.cg_exclusions.bb.bad [illegal]: 0
+t.cg_exclusions.bb.high: 8
+t.cg_exclusions.bb.low: 4
+t.cg_exclusions.xx.<low,high> [cross]: 4
+t.cg_exclusions.xx.equal [cross]: 2
+t.cg_exclusions.xx.high_sum [ignore,cross]: 2
+t.cg_exclusions.xx.wrong [illegal,cross]: 0
+t.cg_extended.bb.high: 32
+t.cg_extended.bb.low: 32
+t.cg_extended.ss.even: 16
+t.cg_extended.xx.<even,low> [cross]: 8
+t.cg_extended.xx.last [cross]: 8
+t.cg_gap.aa.ends: 4
+t.cg_gap.aa.zero [ignore]: 4
+t.cg_gap.bb.all: 16
+t.cg_gap.xx.three [cross]: 4
+t.cg_runtime.aa.hi: 2
+t.cg_runtime.aa.lo: 1
+t.cg_runtime.bb.hi: 2
+t.cg_runtime.bb.lo: 1
+t.cg_runtime.xx.dpi_function [cross]: 2
+t.cg_runtime.xx.rest [cross]: 3
+t.cg_runtime.xx.second_only [cross]: 2
+t.cg_runtime.xx.sv_function [cross]: 2
+t.cg_select.aa.hi: 8
+t.cg_select.aa.lo: 8
+t.cg_select.bb.hi: 8
+t.cg_select.bb.lo: 8
+t.cg_select.xx.all [cross]: 16
+t.cg_select.xx.combined [cross]: 8
+t.cg_select.xx.compound [cross]: 4
+t.cg_select.xx.conjunction [cross]: 4
+t.cg_select.xx.equal [cross]: 8
+t.cg_select.xx.intersected [cross]: 4
+t.cg_select.xx.negated [cross]: 4
+t.cg_select.xx.nested [cross]: 8
+t.cg_select.xx.one_item [cross]: 8
+t.cg_select.xx.sum_five [cross]: 4
+t.cg_transition.bb.hi: 2
+t.cg_transition.bb.lo: 2
+t.cg_transition.tt.one [ignore]: 2
+t.cg_transition.tt.rise: 2
+t.cg_transition.xx.ends_one [cross]: 2
+t.cg_typed.ee.auto[FOUR]: 5
+t.cg_typed.ee.auto[TWO]: 5
+t.cg_typed.ee.auto[ZERO]: 6
+t.cg_typed.pp.lo_one: 8
+t.cg_typed.pp.lo_two: 8
+t.cg_typed.ss.neg: 9
+t.cg_typed.ss.nonneg: 7
+t.cg_typed.ww.first: 8
+t.cg_typed.ww.second: 8
+t.cg_typed.x_ew.<auto[FOUR],first> [cross]: 2
+t.cg_typed.x_ew.<auto[FOUR],second> [cross]: 3
+t.cg_typed.x_ew.<auto[TWO],first> [cross]: 3
+t.cg_typed.x_ew.<auto[ZERO],first> [cross]: 3
+t.cg_typed.x_ew.<auto[ZERO],second> [cross]: 3
+t.cg_typed.x_ew.two_second [cross]: 2
+t.cg_typed.x_sp.<neg,lo_two> [cross]: 6
+t.cg_typed.x_sp.<nonneg,lo_one> [cross]: 5
+t.cg_typed.x_sp.<nonneg,lo_two> [cross]: 2
+t.cg_typed.x_sp.neg_lo_one [cross]: 3
+t.cg_wildcard.bb.high: 8
+t.cg_wildcard.bb.low: 8
+t.cg_wildcard.nn.high: 6
+t.cg_wildcard.nn.odd: 6
+t.cg_wildcard.nn.skipped [ignore]: 2
+t.cg_wildcard.xx.<high,high> [cross]: 3
+t.cg_wildcard.xx.high_even [cross]: 3
+t.cg_wildcard.xx.odd_high [cross]: 6

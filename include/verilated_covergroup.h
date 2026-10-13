@@ -534,6 +534,22 @@ public:
     void selectDimEnd();
     void selectAnd();
     void selectOr();
+    /// Select, of the bin tuples of the selection, those with a value tuple for which a 'with'
+    /// filter is true (IEEE 1800-2023 19.6.1.2).  The filter reads the values of the dimensions
+    /// 'dims', so is evaluated for the value tuples of each distinct choice of bins of those
+    /// dimensions, until true; with more value tuples than a filter may evaluate, the bin
+    /// 'namep' is ignored.
+    void withBegin(std::initializer_list<uint32_t> dims, const char* namep, const char* filep,
+                   int line);
+    /// Advance to the next value tuple to evaluate the filter for; false after the last
+    bool withNext();
+    /// The value of the dimension 'dim', one the filter reads, of the value tuple
+    QData withValue(uint32_t dim) const;
+    void withValueW(uint32_t dim, WDataOutP valuep) const;
+    /// Whether the filter is true for the value tuple
+    void withTest(bool keep);
+    /// Replace the selection with the bin tuples the filter selected
+    void withEnd();
     // Save a selection without renumbering guards when empty bins are removed.
     void selectBin(VlCovBinKind kind, const char* namep, const char* filep, int line, int col,
                    uint32_t iffIndex);

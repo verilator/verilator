@@ -787,6 +787,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (needProcess()) str << " [NPRC]";
     if (entryPoint()) str << " [ENTRY]";
     if (noLife()) str << " [NOLIFE]";
+    if (voidSelf()) str << " [VOIDSELF]";
     if (isConst().isKnown()) str << (isConst().trueKnown() ? " [CONST]" : " [!CONST]");
     if (m_cost) str << " cost=" << m_cost;
     if (!m_rtnType.empty()) str << " rt=" << m_rtnType;
@@ -810,6 +811,7 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isCoroutine);
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonBoolFuncIf(str, noLife);
+    dumpJsonBoolFuncIf(str, voidSelf);
     dumpJsonStr(str, "isConst", isConst().ascii());
     dumpJsonNum(str, "cost", m_cost);
     dumpJsonStr(str, "ifdef", ifdef());
@@ -819,6 +821,21 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, dpiCDecl);
     dumpJsonGen(str);
     // TODO: maybe try to shorten these flags somehow
+}
+void AstCFuncHard::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (m_purity.get()) str << " [PURE]";
+}
+void AstCFuncHard::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "pure", m_purity.get());
+    dumpJsonGen(str);
+}
+bool AstCFuncHard::getPurity() {
+    if (!function().isPure()) return false;
+    for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        if (!argp->isPure()) return false;
+    }
+    return true;
 }
 void AstCMethodHard::dump(std::ostream& str) const {
     Super::dump(str);
@@ -1661,10 +1678,13 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
         return new AstEqWild{fl, lhsp, rhsp};
     }
 }
-AstExecGraph::AstExecGraph(FileLine* fileline, const string& name) VL_MT_DISABLED
+AstExecGraph::AstExecGraph(FileLine* fileline, const string& name,
+                           AstVarScope* trigVscp) VL_MT_DISABLED
     : ASTGEN_SUPER_ExecGraph(fileline),
       m_depGraphp{new V3Graph},
-      m_name{name} {}
+      m_name{name} {
+    triggerp(new AstVarRef{fileline, trigVscp, VAccess::READ});
+}
 const char* AstExecGraph::broken() const {
     BROKEN_RTN(!m_depGraphp);
     for (const V3GraphVertex& vtx : m_depGraphp->vertices()) {

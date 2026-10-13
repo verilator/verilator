@@ -1826,10 +1826,11 @@ V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
             "base must be one of AstAtoN::ATOREAL, 2, 8, 10, or 16.");
 
     std::string str = lhs.toString();  // new instance to edit later
-    if (base == AstAtoN::ATOREAL) return setDouble(std::atof(str.c_str()));
 
     // IEEE 1800-2023 6.16.9 says '_' may exist.
     str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
+
+    if (base == AstAtoN::ATOREAL) return setDouble(std::atof(str.c_str()));
 
     errno = 0;
     auto v = std::strtol(str.c_str(), nullptr, base);
