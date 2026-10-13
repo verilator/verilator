@@ -72,8 +72,9 @@ class LocalizeVisitor final : public VNVisitor {
         // Variables used in super constructor call can't be localized, because
         // in C++ there is no way to declare them before base class constructor call
         return ((!nodep->user1()  // Not marked as not optimizable, or ...
-                                  // .. a block temp used in a single CFunc
-                 || (nodep->varp()->varType() == VVarType::BLOCKTEMP
+                                  // .. a block or --vpi-lazy temp used in a single CFunc
+                 || ((nodep->varp()->varType() == VVarType::BLOCKTEMP
+                      || nodep->varp()->isLazyReconstructTemp())
                      && m_accessors(nodep).size() == 1))
                 // and under size limit
                 && nodep->varp()->dtypep()->widthTotalBytes() <= v3Global.opt.localizeMaxSize());

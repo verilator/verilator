@@ -1921,7 +1921,8 @@ private:
     AstVarScope* attachShadow(AstVarScope* origp, AstVar* shadowVarp, bool isNew) {
         if (isNew) {
             shadowVarp->trace(false);
-            shadowVarp->sigPublic(true);  // Keep as a struct member; don't optimize/localize
+            // A VPI-facing shadow stays a member; V3Localize may take a temp
+            if (!shadowVarp->isLazyReconstructTemp()) shadowVarp->sigPublic(true);
             origp->scopep()->modp()->addStmtsp(shadowVarp);
             m_shadowVarOfOrig.emplace(origp->varp(), shadowVarp);
         }
@@ -2574,119 +2575,21 @@ const V3VpiLazy::CrossScopeSrc* V3VpiLazy::crossScopeCopySrc(const AstNetlist* n
 
 namespace {
 
-// Everything finalize() needs from the tree, in one walk: which reconstruct func (if only one)
-// uses each temp shadow, and the reconstruct funcs to split.
+// The reconstruct funcs, found by their flag: prepare()'s pointers do not survive the passes
+// between. CFuncs do not nest, so the walk stops at each.
 class FinalizeVisitor final : public VNVisitorConst {
 public:
-    struct Use final {
-        AstCFunc* m_funcp = nullptr;  // Null once a second func, or no func at all, uses it
-        AstNode* m_firstUsep = nullptr;  // First top-level statement of m_funcp using it
-        std::vector<AstNodeVarRef*> m_refps;  // Every reference, unscoped on localization
-    };
-    // STATE
-    std::vector<AstVar*> m_order;  // Temp shadows in encounter order (determinism)
-    std::unordered_map<AstVar*, Use> m_useOf;
-    std::unordered_map<AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Of temp shadows
     std::vector<AstCFunc*> m_reconFuncps;  // Encounter order (determinism)
-    std::unordered_map<AstCFunc*, std::vector<AstCFunc*>> m_calleesOf;
 
 private:
-    AstCFunc* m_funcp = nullptr;  // Func currently being descended, null outside one
-    AstNode* m_stmtp = nullptr;  // Top-level statement of m_funcp->stmtsp() being descended
-
     void visit(AstCFunc* nodep) override {
-        VL_RESTORER(m_funcp);
-        VL_RESTORER(m_stmtp);
-        m_funcp = nodep;
-        m_stmtp = nullptr;
         if (nodep->vpiLazyReconstruct()) m_reconFuncps.push_back(nodep);
-        iterateAndNextConstNull(nodep->argsp());
-        iterateAndNextConstNull(nodep->varsp());
-        iterateConstNull(nodep->scopeNamep());
-        // By hand: the declaration goes before a top-level statement, so only those count.
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            m_stmtp = stmtp;
-            iterateConst(stmtp);
-        }
-    }
-    void visit(AstVarScope* nodep) override {
-        if (nodep->varp()->isLazyReconstructTemp()) m_vscpsOf[nodep->varp()].push_back(nodep);
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstNodeCCall* nodep) override {
-        if (m_funcp) m_calleesOf[m_funcp].push_back(nodep->funcp());
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstNodeVarRef* nodep) override {
-        AstVar* const varp = nodep->varp();
-        if (varp->isLazyReconstructTemp()) {
-            const auto pair = m_useOf.emplace(varp, Use{m_funcp, m_stmtp, {}});
-            if (pair.second) {
-                m_order.push_back(varp);
-            } else if (pair.first->second.m_funcp != m_funcp) {
-                pair.first->second.m_funcp = nullptr;
-            } else if (!pair.first->second.m_firstUsep) {
-                // Only if first mentioned outside stmtsp, and shadow refs are statement-only
-                pair.first->second.m_firstUsep = m_stmtp;  // LCOV_EXCL_LINE
-            }
-            pair.first->second.m_refps.push_back(nodep);
-        }
-        iterateChildrenConst(nodep);
     }
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
     explicit FinalizeVisitor(AstNetlist* nodep) { iterateConst(nodep); }
 };
-
-// Reconstruct funcs and the V3DepthBlock and splitCheck sub-funcs they call, which lack the flag.
-std::unordered_set<const AstCFunc*> reconFamily(const FinalizeVisitor& uses) {
-    std::unordered_set<const AstCFunc*> family{uses.m_reconFuncps.begin(),
-                                               uses.m_reconFuncps.end()};
-    std::vector<AstCFunc*> work = uses.m_reconFuncps;
-    while (!work.empty()) {
-        AstCFunc* const funcp = work.back();
-        work.pop_back();
-        const auto it = uses.m_calleesOf.find(funcp);
-        if (it == uses.m_calleesOf.end()) continue;
-        for (AstCFunc* const calleep : it->second) {
-            if (family.insert(calleep).second) work.push_back(calleep);
-        }
-    }
-    return family;
-}
-
-// A temp shadow only one reconstruct func touches needs no per-instance member. Not V3Localize's
-// job: it skips the isSigPublic() attachShadow sets. Not before V3DepthBlock, which would move a
-// use into a sub-func that cannot see the local.
-int localizeTempShadows(const FinalizeVisitor& uses) {
-    const std::unordered_set<const AstCFunc*> family = reconFamily(uses);
-    int localized = 0;
-    for (AstVar* const varp : uses.m_order) {
-        const auto uit = uses.m_useOf.find(varp);
-        UASSERT_OBJ(uit != uses.m_useOf.end(), varp, "--vpi-lazy temp shadow has no recorded use");
-        const FinalizeVisitor::Use& use = uit->second;
-        AstCFunc* const funcp = use.m_funcp;
-        if (!funcp) continue;
-        if (!family.count(funcp)) continue;
-        if (!use.m_firstUsep) continue;
-        varp->unlinkFrBack();
-        varp->funcLocal(true);
-        varp->sigPublic(false);  // Was set only to hold it as a member
-        varp->noReset(false);  // Reset at declaration, as any func local is
-        use.m_firstUsep->addHereThisAsNext(varp);
-        // As V3Localize leaves a func local: unscoped, its VarScopes gone
-        for (AstNodeVarRef* const refp : use.m_refps) refp->varScopep(nullptr);
-        const auto vit = uses.m_vscpsOf.find(varp);
-        if (vit != uses.m_vscpsOf.end()) {
-            for (AstVarScope* vscp : vit->second) {
-                VL_DO_DANGLING(vscp->unlinkFrBack()->deleteTree(), vscp);
-            }
-        }
-        ++localized;
-    }
-    return localized;
-}
 
 }  // namespace
 
@@ -2698,18 +2601,7 @@ void V3VpiLazy::finalize(AstNetlist* nodep) {
     const FinalizeVisitor visitor{nodep};
 
     // Split oversized reconstruction funcs per --output-split-cfuncs, their size now settled.
-    // prepare()'s pointers do not survive the intervening passes, so the walk above found the
-    // funcs by their flag. splitCheck moves whole top-level statements, so an entry func's
-    // epoch guard stays whole.
+    // splitCheck moves whole top-level statements, so an entry func's epoch guard stays whole.
     for (AstCFunc* const cfuncp : visitor.m_reconFuncps) V3Sched::util::splitCheck(cfuncp);
     V3Global::dumpCheckGlobalTree("vpi-lazy-finalize", 0, dumpTreeEitherLevel() >= 3);
-}
-
-void V3VpiLazy::localizeTemps(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ":");
-    if (!nodep->vpiLazyContextp()) return;
-    const FinalizeVisitor visitor{nodep};
-    const int localized = localizeTempShadows(visitor);
-    if (v3Global.opt.stats()) V3Stats::addStat("VPI, lazy localized temps", localized);
-    V3Global::dumpCheckGlobalTree("vpi-lazy-localize", 0, dumpTreeEitherLevel() >= 3);
 }

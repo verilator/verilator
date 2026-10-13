@@ -65,8 +65,6 @@ public:
     static void prepare(AstNetlist* nodep) VL_MT_DISABLED;
     // Split reconstruction functions after optimisation.
     static void finalize(AstNetlist* nodep) VL_MT_DISABLED;
-    // Make single-func temp shadows func locals, once V3DepthBlock and V3Localize have run.
-    static void localizeTemps(AstNetlist* nodep) VL_MT_DISABLED;
     // AstNetlist owns this opaque context.
     static V3VpiLazyContext* newContext() VL_MT_DISABLED;
     static void deleteContext(V3VpiLazyContext* ctxp) VL_MT_DISABLED;

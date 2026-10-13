@@ -521,7 +521,6 @@ static void process() {
 
             // Move variables from modules to function local variables where possible
             if (v3Global.opt.fLocalize()) V3Localize::localizeAll(v3Global.rootp());
-            if (v3Global.opt.vpiLazy()) V3VpiLazy::localizeTemps(v3Global.rootp());
 
             // Remove remaining scopes; make varrefs/funccalls relative to current module
             V3Descope::descopeAll(v3Global.rootp());

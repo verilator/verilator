@@ -20,7 +20,8 @@ test.file_grep(test.stats, r'VPI, lazy group bail, partial gap\s+(\d+)', 2)
 # Dead stores are pruned from a reconstruction, and an unpacked struct member lvalue bails
 test.file_grep(test.stats, r'VPI, lazy pruned statements\s+(\d+)', 3)
 test.file_grep(test.stats, r'VPI, lazy group bail, unsupported statement\s+(\d+)', 1)
-test.file_grep(test.stats, r'VPI, lazy localized temps\s+(\d+)', 5)
+# A temp only one reconstruct func uses is a func local, not a member
+test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "___024root.h", r'__Vlazyrecon__t\d')
 
 syms = test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp"
 # An alias of a flop, which keeps its storage, copies it through a descriptor: no func, no thunk
