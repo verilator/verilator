@@ -3283,7 +3283,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         string m_dotText;  // String of dotted names found in below parseref
         DotStates() { init(nullptr); }
         ~DotStates() = default;
-        void init(VSymEnt* curSymp) {
+        void init(VSymEnt* curSymp, bool unresolvedClass = false) {
             m_dotPos = DP_NONE;
             m_dotSymp = curSymp;
             m_dotp = nullptr;
@@ -3291,7 +3291,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_dotErr = false;
             m_dotText = "";
             m_unresolvedCell = false;
-            m_unresolvedClass = false;
+            m_unresolvedClass = unresolvedClass;
             m_unresolvedGenericIface = false;
             m_genBlk = false;
             m_unlinkedScopep = nullptr;
@@ -3622,6 +3622,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
             classSymp = classSymp->parentp();
         }
         return classSymp;
+    }
+    // Inside 'randomize() with', undotted names first resolve in the randomized
+    // object's class (IEEE 1800-2023 18.7). True when that class is a
+    // parameterized class not yet specialized on the primary pass, so the chain
+    // must defer to the post-V3Param pass instead of resolving now.
+    bool randTargetUnresolved() const {
+        return m_statep->forPrimary() && m_currentWithp && m_randMethodCallp && !m_randSymp;
     }
     void importDerivedClass(AstClass* derivedClassp, VSymEnt* baseSymp, AstClass* baseClassp) {
         // Also used for standard 'extends' from a base class
@@ -4144,16 +4151,14 @@ class LinkDotResolveVisitor final : public VNVisitor {
         {
             if (start) {  // Starting dot sequence
                 UINFOTREE(9, nodep, "", "dot-in");
-                // An undotted name in 'randomize() with' first resolves in the
-                // randomized object's class (IEEE 1800-2023 18.7). When that
-                // class is a parameterized class not yet specialized,
-                // visit(AstMethodCall) marked the target unresolved, which
-                // init() would otherwise clear: keep deferring the whole chain
-                // until after V3Param instead of erroring on its root.
-                const bool deferRandWith
-                    = m_ds.m_unresolvedClass && m_currentWithp && m_randMethodCallp && !m_randSymp;
-                m_ds.init(m_curSymp);  // Start from current point
-                if (m_statep->forPrimary() && deferRandWith) { m_ds.m_unresolvedClass = true; }
+                // A fresh dot sequence restarts resolution from the current point,
+                // but a chain inside 'randomize() with' resolves its root in the
+                // randomized object (IEEE 1800-2023 18.7): when that class is not
+                // yet specialized, carry the deferral across the reset so the chain
+                // links after V3Param instead of erroring on its root. Requires the
+                // flag visit(AstMethodCall) set, proving the target (not an outer
+                // context) is what is still unresolved.
+                m_ds.init(m_curSymp, m_ds.m_unresolvedClass && randTargetUnresolved());
             }
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_FIRST;
@@ -4163,11 +4168,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
                 if (m_randSymp && m_currentWithp) classSymp = m_randSymp;
-                if (!classSymp && m_statep->forPrimary() && m_currentWithp && m_randMethodCallp
-                    && !m_randSymp) {
-                    // Randomized target is a parameterized class not yet specialized:
+                if (!classSymp && randTargetUnresolved()) {
                     // 'this' cannot bind until the post-V3Param pass. Leave the
                     // chain unlinked; visit(AstParseRef) defers on m_unresolvedClass.
+                    // Unlike the dot-sequence case above, no incoming flag is required:
+                    // reaching here with no enclosing class already proves the target
+                    // is what is still unresolved.
                 } else if (!classSymp) {
                     nodep->v3error("'this' used outside class (IEEE 1800-2023 8.11)");
                     m_ds.m_dotErr = true;
