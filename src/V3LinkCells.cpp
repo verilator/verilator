@@ -264,6 +264,9 @@ class LinkCellsVisitor final : public VNVisitor {
             libSymp = m_mods.rootp()->insert(libname, new VSymEnt{&m_mods, v3Global.rootp()});
         libSymp->insert(name, new VSymEnt{&m_mods, nodep});
     }
+    void insertModInGlobalLib(const stding& name, AstNodeModule* nodep) {
+        insertModInLib(name, "__GLOBAL", nodep);
+    }
 
     AstNodeModule* findModuleLibSym(const string& modName, const string& libname) {
         // Given module name and library name, find within that exact library
@@ -272,6 +275,10 @@ class LinkCellsVisitor final : public VNVisitor {
         const VSymEnt* const foundp = libSymp->findIdFallback(modName);
         return foundp ? VN_AS(foundp->nodep(), NodeModule) : nullptr;
     }
+    AstNodeModule* findModuleGlobalSym(const string& modName) {
+        return findModuleLibSym(modName, "__GLOBAL");
+    }
+
     AstNodeModule* findModuleSym(const string& modName, const string& libname) {
         // Given module and library to start search in, resolve using config library choices
         AstNodeModule* foundp;
@@ -301,7 +308,7 @@ class LinkCellsVisitor final : public VNVisitor {
         foundp = findModuleLibSym(modName, libname);
         if (foundp) return foundp;
         // Then search global
-        foundp = findModuleLibSym(modName, "__GLOBAL");
+        foundp = findModuleGlobalSym(modName);
         return foundp;
     }
 
@@ -894,20 +901,16 @@ class LinkCellsVisitor final : public VNVisitor {
                     warnModDup(pkgp, result.first->second);
                     pkgp->unlinkFrBack();
                     VL_DO_DANGLING(pushDeletep(pkgp), pkgp);
-                } else if (findModuleLibSym(pkgp->origName(), "__GLOBAL")) {
-                    renamePackageFromModule(pkgp);
                 }
                 continue;
             }
-            const auto pkgIt = m_packages.find(nodep->origName());
-            if (pkgIt != m_packages.end()) renamePackageFromModule(pkgIt->second);
             if (v3Global.opt.hierChild() && nodep->origName() == hierIt->second.origName()) {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
             }
             const AstNodeModule* const libFoundp
                 = findModuleLibSym(nodep->origName(), nodep->libname());
-            const AstNodeModule* const globalFoundp = findModuleLibSym(nodep->name(), "__GLOBAL");
+            const AstNodeModule* const globalFoundp = findModuleGlobalSym(nodep->name());
             if (libFoundp && libFoundp == nodep) {
                 // Ok
             } else if (libFoundp && !globalFoundp) {
@@ -926,11 +929,16 @@ class LinkCellsVisitor final : public VNVisitor {
                 UINFO(9, "Module rename as in multiple libraries " << newName << " <- " << nodep);
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);  // Original name
                 nodep->name(newName);
-                insertModInLib(nodep->name(), "__GLOBAL", nodep);
+                insertModInGlobal(nodep->name(), nodep);
             } else {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);
-                insertModInLib(nodep->name(), "__GLOBAL", nodep);
+                insertModInGlobal(nodep->name(), nodep);
             }
+        }
+        // Resolve package/module name collisions after collecting all declarations.
+        for (const auto& entry : m_packages) {
+            AstPackage* const pkgp = entry.second;
+            if (findModuleGlobalSym(pkgp->origName())) renamePackageFromModule(pkgp);
         }
         // if (debug() >= 9) m_mods.dump(cout, "-syms: ");
     }
