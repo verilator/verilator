@@ -460,6 +460,7 @@ class VpiLazyPreparer final {
     V3Graph m_depGraph;  // u -> v where v reads a variable u defines; vertices are GroupVertex
 
     std::vector<Group*> m_ordered;  // Topological order of reconstructed survivor groups
+    std::vector<AstCFunc*> m_splitFuncps;  // Entry and body funcs, emission order
 
     FileLine* m_funcFlp = nullptr;
     int m_reconstructed = 0;  // Reconstructed signals (per instance)
@@ -551,6 +552,7 @@ public:
 
     // Pre-run VarScope order; run() adds shadow and stamp VarScopes, which carry no lazy role
     const std::vector<AstVarScope*>& vscOrder() const { return m_gather.m_vscOrder; }
+    const std::vector<AstCFunc*>& splitFuncps() const { return m_splitFuncps; }
 
     void run() {
         classifyCombDriven();
@@ -2166,6 +2168,7 @@ private:
             AstCFunc* const funcp = newReconFunc(g->scopep, reconFuncName(g), true);
             g->funcp = funcp;
             key.funcp = funcp;
+            m_splitFuncps.push_back(funcp);
             // What V3EmitCSyms routes a row's refreshp to, here and on any fold of this shadow
             for (AstVarScope* const t : g->targets) {
                 const auto tit = m_shadowOf.find(t);
@@ -2217,6 +2220,7 @@ private:
                 for (AstNode* sp = bodyp; sp; sp = sp->nextp()) nodes += sp->nodeCount();
                 if (nodes >= splitAt / 4) {
                     bodyFuncp = newReconFunc(g->scopep, reconBodyFuncName(g), false);
+                    m_splitFuncps.push_back(bodyFuncp);
                     AstCCall* const bodyCallp = new AstCCall{m_funcFlp, bodyFuncp};
                     bodyCallp->dtypeSetVoid();
                     guardp->addThensp(bodyCallp->makeStmt());
@@ -2383,9 +2387,11 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
     V3VpiLazyContext& ctx = nodep->createVpiLazyContext();
     AstScope* const topScopep = nodep->topScopep() ? nodep->topScopep()->scopep() : nullptr;
     if (!topScopep) return;
+    std::vector<AstCFunc*> splitFuncps;
     {
         VpiLazyPreparer preparer{nodep, topScopep, ctx};
         preparer.run();
+        splitFuncps = preparer.splitFuncps();
 
         bool anyRetained = false;
         for (const AstVarScope* const vscp : preparer.vscOrder()) {
@@ -2396,6 +2402,10 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
         // next eval.
         if (anyRetained) v3Global.setHasVpiLazyRetained();
     }
+
+    // Per --output-split-cfuncs. splitCheck moves whole top-level statements, so an entry func's
+    // epoch guard stays whole. Instance stubs are left whole for retargetInstanceCalls().
+    for (AstCFunc* const funcp : splitFuncps) V3Sched::util::splitCheck(funcp);
 
     V3Global::dumpCheckGlobalTree("vpi-lazy-prepare", 0, dumpTreeEitherLevel() >= 3);
 }
@@ -2569,39 +2579,4 @@ const V3VpiLazy::CrossScopeSrc* V3VpiLazy::crossScopeCopySrc(const AstNetlist* n
             "crossScopeCopySrc() before V3VpiLazy::resolveCrossScopeSrcs()");
     const auto it = ctxp->m_crossScopeResolved.find(std::make_pair(scopep, shadowVarp));
     return it == ctxp->m_crossScopeResolved.end() ? nullptr : &it->second;
-}
-
-//######################################################################
-
-namespace {
-
-// The reconstruct funcs, found by their flag: prepare()'s pointers do not survive the passes
-// between. CFuncs do not nest, so the walk stops at each.
-class FinalizeVisitor final : public VNVisitorConst {
-public:
-    std::vector<AstCFunc*> m_reconFuncps;  // Encounter order (determinism)
-
-private:
-    void visit(AstCFunc* nodep) override {
-        if (nodep->vpiLazyReconstruct()) m_reconFuncps.push_back(nodep);
-    }
-    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
-
-public:
-    explicit FinalizeVisitor(AstNetlist* nodep) { iterateConst(nodep); }
-};
-
-}  // namespace
-
-//######################################################################
-
-void V3VpiLazy::finalize(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ":");
-
-    const FinalizeVisitor visitor{nodep};
-
-    // Split oversized reconstruction funcs per --output-split-cfuncs, their size now settled.
-    // splitCheck moves whole top-level statements, so an entry func's epoch guard stays whole.
-    for (AstCFunc* const cfuncp : visitor.m_reconFuncps) V3Sched::util::splitCheck(cfuncp);
-    V3Global::dumpCheckGlobalTree("vpi-lazy-finalize", 0, dumpTreeEitherLevel() >= 3);
 }
