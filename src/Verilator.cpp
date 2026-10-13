@@ -640,7 +640,6 @@ static void process() {
             const EmitCParentModule emitCParentModule;
             // emitcInlines is first, as it may set needHInlines which other emitters read
             V3EmitC::emitcInlines();
-            if (v3Global.opt.vpiLazy()) V3VpiLazy::resolveCrossScopeSrcs(v3Global.rootp());
             V3EmitC::emitcSyms();
             V3EmitC::emitcConstPool();
             V3EmitC::emitcExecGraph();

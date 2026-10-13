@@ -54,10 +54,8 @@ public:
     // A PARTIAL combOf() instance's runs, ordered by element then bit.
     static const std::vector<CombRun>& combRuns(const AstNetlist* nodep, const AstScope* scopep,
                                                 const AstVar* varp) VL_MT_DISABLED;
-    // Bind prepare() records after the final deleting pass.
-    static void resolveCrossScopeSrcs(AstNetlist* nodep) VL_MT_DISABLED;
-    // Valid after resolveCrossScopeSrcs() until the next tree change.
-    static const CrossScopeSrc* crossScopeCopySrc(const AstNetlist* nodep, const AstScope* scopep,
+    // Binds prepare()'s by-name records on first call, so only call after the last deleting pass.
+    static const CrossScopeSrc* crossScopeCopySrc(AstNetlist* nodep, const AstScope* scopep,
                                                   const AstVar* shadowVarp) VL_MT_DISABLED;
     // Preserve reconstructable lazy signals before optimisation.
     static void prepare(AstNetlist* nodep) VL_MT_DISABLED;

@@ -215,6 +215,7 @@ void V3VpiLazy::deleteContext(V3VpiLazyContext* ctxp) { delete ctxp; }
 
 namespace {
 
+using CrossScopeSrc = V3VpiLazy::CrossScopeSrc;
 using CrossScopeSrcNames = V3VpiLazyContext::CrossScopeSrcNames;
 using InstComb = V3VpiLazyContext::InstComb;
 
@@ -2486,14 +2487,8 @@ public:
     }
 };
 
-}  // namespace
-
-void V3VpiLazy::resolveCrossScopeSrcs(AstNetlist* nodep) {
-    UINFO(2, __FUNCTION__ << ":");
-    V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
-    if (!ctxp) return;
+void resolveCrossScopeSrcs(AstNetlist* nodep, V3VpiLazyContext* ctxp) {
     ctxp->m_crossScopeResolvedDone = true;
-    if (ctxp->m_crossScopeSrcs.empty()) return;
 
     // Only the names rows actually reference are looked up, so only those are collected and
     // only their uniqueness is asserted: a duplicate elsewhere is no business of this pass.
@@ -2543,14 +2538,14 @@ void V3VpiLazy::resolveCrossScopeSrcs(AstNetlist* nodep) {
     }
 }
 
-const V3VpiLazy::CrossScopeSrc* V3VpiLazy::crossScopeCopySrc(const AstNetlist* nodep,
-                                                             const AstScope* scopep,
-                                                             const AstVar* shadowVarp) {
+}  // namespace
+
+const V3VpiLazy::CrossScopeSrc*
+V3VpiLazy::crossScopeCopySrc(AstNetlist* nodep, const AstScope* scopep, const AstVar* shadowVarp) {
     // Most designs have no cross-scope row at all, and this runs per lazy descriptor slot
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+    V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
     if (!ctxp || ctxp->m_crossScopeSrcs.empty()) return nullptr;
-    UASSERT(ctxp->m_crossScopeResolvedDone,
-            "crossScopeCopySrc() before V3VpiLazy::resolveCrossScopeSrcs()");
+    if (!ctxp->m_crossScopeResolvedDone) resolveCrossScopeSrcs(nodep, ctxp);
     const auto it = ctxp->m_crossScopeResolved.find(std::make_pair(scopep, shadowVarp));
     return it == ctxp->m_crossScopeResolved.end() ? nullptr : &it->second;
 }
