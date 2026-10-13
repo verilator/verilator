@@ -11,7 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile()
+test.compile(verilator_flags2=["--output-split 20", "--output-split-cfuncs 20"])
+
+for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_t*.cpp"):
+    test.file_grep(filename, r"^#define DID_IMP_HEADER 1$")
 
 test.execute()
 

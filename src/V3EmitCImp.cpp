@@ -34,6 +34,7 @@ class EmitCImp final : public EmitCFunc {
     // MEMBERS
     // Base module (For non-classes, same as m_modp. For classes, it's the ClassPackage.)
     const AstNodeModule* const m_fileModp;
+    const std::string m_impHdr;
     const bool m_slow;  // Creating __Slow file
     V3UniqueNames m_uniqueNames;  // Generates unique file names
     const std::string m_fileBaseName = EmitCUtil::prefixNameProtect(m_fileModp);
@@ -44,7 +45,7 @@ class EmitCImp final : public EmitCFunc {
         puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
         puts("\n");
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
-        emitSystemCSection(m_fileModp, VSystemCSectionType::IMP_HDR);
+        ofp()->putsNoTracking(m_impHdr);
         // Need to emit new lazy declarations
         m_lazyDecls.reset();
     }
@@ -440,8 +441,9 @@ class EmitCImp final : public EmitCFunc {
         EmitCFunc::visit(nodep);
     }
 
-    explicit EmitCImp(const AstNodeModule* modp, bool slow)
+    explicit EmitCImp(const AstNodeModule* modp, const std::string& impHdr, bool slow)
         : m_fileModp{modp}
+        , m_impHdr{impHdr}
         , m_slow{slow} {
         UINFO(5, "  Emitting implementation of " << EmitCUtil::prefixNameProtect(modp));
 
@@ -462,7 +464,8 @@ class EmitCImp final : public EmitCFunc {
 
 public:
     static std::vector<AstCFile*> main(const AstNodeModule* modp, bool slow) VL_MT_STABLE {
-        EmitCImp emitCImp{modp, slow};
+        const std::string impHdr = scSection(modp, VSystemCSectionType::IMP_HDR).first;
+        EmitCImp emitCImp{modp, impHdr, slow};
         return emitCImp.getAndClearCfileps();
     }
 };
