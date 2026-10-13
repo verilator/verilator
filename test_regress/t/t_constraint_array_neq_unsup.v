@@ -32,23 +32,6 @@ class C4;
   constraint c { frame == target; }
 endclass
 
-// Same as C1, but with the queue as the outermost dimension.
-class C7;
-  rand bit frame[$][2];
-  bit target[$][2];
-  constraint c { frame == target; }
-endclass
-
-// Same fields as C7, but comparing a constant-indexed element of the queue
-// (frame[0]) rather than the whole array. Queue element access lowers to a
-// CMethodHard, not a plain ArraySel, so this is unsupported for a different
-// reason than C7 (an unresolvable operand, not a queue-shaped array).
-class C8;
-  rand bit frame[$][2];
-  bit target[$][2];
-  constraint c { frame[0] == target[0]; }
-endclass
-
 // A comparison operand that isn't a variable, member, or constant-indexed
 // slice (here, a function call) can't be cloned per array element either.
 typedef bit arr2d_t[2][2];
@@ -69,6 +52,23 @@ class C6;
     return target;
   endfunction
   constraint c { get_target() == frame; }
+endclass
+
+// Same as C1, but with the queue as the outermost dimension.
+class C7;
+  rand bit frame[$][2];
+  bit target[$][2];
+  constraint c { frame == target; }
+endclass
+
+// Same fields as C7, but comparing a constant-indexed element of the queue
+// (frame[0]) rather than the whole array. Queue element access lowers to a
+// CMethodHard, not a plain ArraySel, so this is unsupported for a different
+// reason than C7 (an unresolvable operand, not a queue-shaped array).
+class C8;
+  rand bit frame[$][2];
+  bit target[$][2];
+  constraint c { frame[0] == target[0]; }
 endclass
 
 // A hierarchical (module-scope) reference operand: unlike a plain variable
