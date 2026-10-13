@@ -287,6 +287,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     bool m_inStdWith = false;  // True when inside a 'with {}' clause
     std::set<AstNodeVarRef*> m_staticRefs;  // References to static variables under `with` clauses
     AstWith* m_withp = nullptr;  // Current 'with' constraint node
+    std::vector<AstFuncRef*> m_memberFuncRefps;  // Member calls to qualify, reused buffer
 
     // METHODS
     // Mark all rand variables in IS_RANDOMIZED_GLOBAL classes as globalConstrained
@@ -437,7 +438,6 @@ class RandomizeMarkVisitor final : public VNVisitor {
 
         // FuncRefs are converted after the traversal. Converting moves the args under the new
         // MethodCall, where foreach would not visit VarRefs or nested calls such as add(lim()).
-        static std::vector<AstFuncRef*> funcRefps;
         cloneConstrp->foreach([&](AstNodeExpr* exprp) {
             if (AstVarRef* const varRefp = VN_CAST(exprp, VarRef)) {
                 if (!varRefp->varp()->isClassMember()) return;
@@ -450,11 +450,11 @@ class RandomizeMarkVisitor final : public VNVisitor {
             } else if (AstFuncRef* const funcRefp = VN_CAST(exprp, FuncRef)) {
                 // Static and non-member calls are correctly qualified already
                 if (funcRefp->taskp()->classMethod() && !funcRefp->taskp()->isStatic()) {
-                    funcRefps.push_back(funcRefp);
+                    m_memberFuncRefps.push_back(funcRefp);
                 }
             }
         });
-        for (AstFuncRef* funcRefp : funcRefps) {
+        for (AstFuncRef* funcRefp : m_memberFuncRefps) {
             AstNodeExpr* const chainp = buildMemberSelChain(rootVarRefp, newPath);
             AstArg* const argsp
                 = funcRefp->argsp() ? funcRefp->argsp()->unlinkFrBackWithNext() : nullptr;
@@ -466,7 +466,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             funcRefp->replaceWith(callp);
             VL_DO_DANGLING(funcRefp->deleteTree(), funcRefp);
         }
-        funcRefps.clear();
+        m_memberFuncRefps.clear();
 
         // Add constraint directly to the target class
         targetClassp->addStmtsp(cloneConstrp);
