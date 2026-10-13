@@ -617,7 +617,8 @@ inline double VL_ROUND(double n) {
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory");
 #elif defined(__aarch64__)
 // YIELD does nothing on most AArch64 cores, so spin loops would end far sooner than on x86.
-// ISB stalls the core briefly, like x86 PAUSE.
+// ISB drains the spinning core's own pipeline so it stalls briefly like x86 PUASE.
+// It does not flush caches, TLBs or branch predictors, and the spinning core has nothing else in flight.
 # define VL_CPU_RELAX() asm volatile("isb" ::: "memory")
 #elif defined(__arm__)
 # define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
