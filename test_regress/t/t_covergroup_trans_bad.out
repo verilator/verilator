@@ -1,0 +1,47 @@
+%Warning-COVERIGN: t/t_covergroup_trans_bad.v:19:26: Unsupported: '[*]' in cover transition
+   19 |       bins t_repeat = (1 [* 2]);   
+      |                          ^~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: t/t_covergroup_trans_bad.v:16:24: Bin set expression must evaluate to an unpacked array, not 'bit[31:0]' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   16 |       bins t_single = (1);   
+      |                        ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_trans_bad.v:27:29: Bin set expression must evaluate to an unpacked array, not 'logic[3:0]' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   27 |       bins scalar_array[] = cp_expr;
+      |                             ^~~~~~~
+%Error: t/t_covergroup_trans_bad.v:28:36: Bin set expression must evaluate to an unpacked array, not 'bit[31:0]' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   28 |       ignore_bins scalar_ignore = (2);
+      |                                    ^
+%Error: t/t_covergroup_trans_bad.v:29:41: Bin set expression must evaluate to an unpacked array, not 'bit[31:0]' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   29 |       illegal_bins scalar_illegal[2] = (3);
+      |                                         ^
+%Error: t/t_covergroup_trans_bad.v:30:36: Bin set expression must evaluate to an unpacked array, not 'bit[31:0]' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   30 |       wildcard bins scalar_wild = (4);
+      |                                    ^
+%Error: t/t_covergroup_trans_bad.v:31:52: Bin set expression must evaluate to an unpacked array, not 'bit[31:0]' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   31 |       wildcard ignore_bins scalar_wild_ignore[] = (5);
+      |                                                    ^
+%Error: t/t_covergroup_trans_bad.v:32:55: Bin set expression must evaluate to an unpacked array, not 'bit[31:0]' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   32 |       wildcard illegal_bins scalar_wild_illegal[2] = (6);
+      |                                                       ^
+%Error: t/t_covergroup_trans_bad.v:33:29: Bin set expression must evaluate to an unpacked array, not 'logic[3:0][1:0]' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   33 |       bins packed_array[] = packed_values;
+      |                             ^~~~~~~~~~~~~
+%Error: t/t_covergroup_trans_bad.v:34:26: Bin set expression must evaluate to an unpacked array, not 'real' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   34 |       bins real_value = (1.5);
+      |                          ^~~
+%Error: t/t_covergroup_trans_bad.v:35:27: Bin set expression must evaluate to an unpacked array, not 'string' (IEEE 1800-2023 19.5.1).
+                                        : ... note: In instance 't'
+   35 |       bins string_value = string'("one");
+      |                           ^~~~~~
+%Error: Exiting due to

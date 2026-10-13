@@ -1,0 +1,15 @@
+%Warning-COVERIGN: t/t_covergroup_trans_bad.v:19:26: Unsupported: '[*]' in cover transition
+   19 |       bins t_repeat = (1 [* 2]);   
+      |                          ^~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: t/t_covergroup_trans_bad.v:18:12: Transition requires at least two values
+                                        : ... note: In instance 't'
+   18 |       bins t_double = (1, 2);   
+      |            ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_trans_bad.v:19:12: Transition set without items
+                                        : ... note: In instance 't'
+   19 |       bins t_repeat = (1 [* 2]);   
+      |            ^~~~~~~~
+%Error: Exiting due to
