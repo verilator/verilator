@@ -44,9 +44,21 @@ module t (
   wire [7:0] d = crc[7:0];
 
   wire [7:0] q0, q1, q2;
-  sub u0 (.clk, .d(d), .q(q0));
-  sub u1 (.clk, .d(d), .q(q1));
-  sub u2 (.clk, .d(d), .q(q2));
+  sub u0 (
+      .clk,
+      .d(d),
+      .q(q0)
+  );
+  sub u1 (
+      .clk,
+      .d(d),
+      .q(q1)
+  );
+  sub u2 (
+      .clk,
+      .d(d),
+      .q(q2)
+  );
 
   // Reference model
   logic [7:0] rr = 0, rs = 0;

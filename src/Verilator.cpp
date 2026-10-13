@@ -24,6 +24,7 @@
 #include "V3Ast.h"
 #include "V3AstPatterns.h"
 #include "V3Begin.h"
+#include "V3BitBlast.h"
 #include "V3Branch.h"
 #include "V3Broken.h"
 #include "V3CCtors.h"
@@ -41,6 +42,7 @@
 #include "V3CoverageJoin.h"
 #include "V3Covergroup.h"
 #include "V3Dead.h"
+#include "V3Decompose.h"
 #include "V3Delayed.h"
 #include "V3Depth.h"
 #include "V3DepthBlock.h"
@@ -100,7 +102,6 @@
 #include "V3Scope.h"
 #include "V3Slice.h"
 #include "V3Split.h"
-#include "V3SplitVar.h"
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3Subst.h"
@@ -281,10 +282,6 @@ static void process() {
         if (v3Global.opt.fConstBeforeDfg()) V3Const::constifyAllLint(v3Global.rootp());
 
         if (!(v3Global.opt.serializeOnly() && !v3Global.opt.flatten())) {
-            // Split packed variables into multiple pieces to resolve UNOPTFLAT.
-            // should be after constifyAllLint() which flattens to 1D bit vector
-            V3SplitVar::splitVariable(v3Global.rootp());
-
             if (v3Global.opt.timing().isSetTrue()) {
                 // Generate classes and tasks required to maintain proper lifetimes for references
                 // in forks
@@ -395,6 +392,12 @@ static void process() {
             // Move assignments/sensitives into a SBLOCK for each unique sensitivity list
             // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
             V3Active::activeAll(v3Global.rootp());
+
+            // Decompose arrays and structs into their elements and members
+            if (v3Global.opt.fDecompose()) V3Decompose::decomposeAll(v3Global.rootp());
+
+            // Split packed variables into bit ranges
+            if (v3Global.opt.fBitblast()) V3BitBlast::bitBlastAll(v3Global.rootp());
 
             if (v3Global.opt.fLife()) V3Life::lifeAll(v3Global.rootp());
 
@@ -635,6 +638,7 @@ static void process() {
             V3EmitC::emitcInlines();
             V3EmitC::emitcSyms();
             V3EmitC::emitcConstPool();
+            V3EmitC::emitcExecGraph();
             V3EmitC::emitcModel();
             V3EmitC::emitcPch();
             V3EmitC::emitcHeaders();

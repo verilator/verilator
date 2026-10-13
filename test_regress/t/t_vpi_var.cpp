@@ -897,7 +897,7 @@ int _mon_check_unpacked_struct_members() {
         CHECK_RESULT(tmpValue.value.integer, 0xace0);
     }
 
-    // unpacked array of a packed struct (element is a plain vector, not vpiStructVar)
+    // unpacked array of a packed struct (element is a packed vpiStructVar)
     {
         TestVpiHandle vh210 = VPI_HANDLE("packed_struct_array_signal");
         CHECK_RESULT_NZ(vh210);
@@ -906,7 +906,7 @@ int _mon_check_unpacked_struct_members() {
 
         TestVpiHandle vh211 = vpi_handle_by_index(vh210, 0);
         CHECK_RESULT_NZ(vh211);
-        CHECK_RESULT(vpi_get(vpiType, vh211), vpiReg);
+        CHECK_RESULT(vpi_get(vpiType, vh211), vpiStructVar);
         CHECK_RESULT(vpi_get(vpiSize, vh211), 8);
 
         s_vpi_value putValue;
@@ -918,7 +918,7 @@ int _mon_check_unpacked_struct_members() {
 
         TestVpiHandle vh212 = vpi_handle_by_index(vh210, 1);
         CHECK_RESULT_NZ(vh212);
-        CHECK_RESULT(vpi_get(vpiType, vh212), vpiReg);
+        CHECK_RESULT(vpi_get(vpiType, vh212), vpiStructVar);
         putValue.value.integer = 0x33;
         vpi_put_value(vh212, &putValue, NULL, vpiNoDelay);
         vpi_get_value(vh212, &tmpValue);

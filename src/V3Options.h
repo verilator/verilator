@@ -438,6 +438,7 @@ private:
     bool m_fAcycSimp;    // main switch: -fno-acyc-simp: acyclic pre-optimizations
     bool m_fAssemble;    // main switch: -fno-assemble: assign assemble
     bool m_fBitScanLoops;  // main switch: -fno-bit-scan-loops: convert bit scan loops to builtins
+    bool m_fBitblast;    // main switch: -fno-bitblast: split packed variables into bit ranges
     bool m_fCaseDecoder; // main switch: -fno-case-decoder: case decoder conversion
     bool m_fCaseTable;   // main switch: -fno-case-table: case table conversion
     bool m_fCaseTree;    // main switch: -fno-case-tree: case tree conversion
@@ -454,6 +455,8 @@ private:
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
     bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
     bool m_fDeadMethods;   // main switch: -fno-dead-methods: remove dead methods
+    bool m_fDecomposePacked;  // main switch: -fno-decompose-packed: packed decomposition
+    bool m_fDecomposeUnpacked;  // main switch: -fno-decompose-unpacked: unpacked decomposition
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
     bool m_fFuncBalanceCat = true;  // main switch: -fno-func-balance-cat: expansion of C macros
     bool m_fFuncSplitCat = true;  // main switch: -fno-func-split-cat: expansion of C macros
@@ -478,7 +481,6 @@ private:
     bool m_fSubstConst;  // main switch: -fno-subst-const: final constant substitution
     bool m_fTable;       // main switch: -fno-table: lookup table creation
     bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
-    bool m_fVarSplit;    // main switch: -fno-var-split: automatic variable splitting
     // clang-format on
 
     bool m_available = false;  // Set to true at the end of option parsing
@@ -779,6 +781,7 @@ public:
     bool fAcycSimp() const { return m_fAcycSimp; }
     bool fAssemble() const { return m_fAssemble; }
     bool fBitScanLoops() const { return m_fBitScanLoops; }
+    bool fBitblast() const { return m_fBitblast; }
     bool fCaseDecoder() const { return m_fCaseDecoder; }
     bool fCaseTable() const { return m_fCaseTable; }
     bool fCaseTree() const { return m_fCaseTree; }
@@ -798,6 +801,9 @@ public:
     bool fDeadAssigns() const { return m_fDeadAssigns; }
     bool fDeadCells() const { return m_fDeadCells; }
     bool fDeadMethods() const { return m_fDeadMethods; }
+    bool fDecompose() const { return m_fDecomposePacked || m_fDecomposeUnpacked; }
+    bool fDecomposePacked() const { return m_fDecomposePacked; }
+    bool fDecomposeUnpacked() const { return m_fDecomposeUnpacked; }
     bool fExpand() const { return m_fExpand; }
     bool fFuncBalanceCat() const { return m_fFuncBalanceCat; }
     bool fFuncSplitCat() const { return m_fFuncSplitCat; }
@@ -822,7 +828,6 @@ public:
     bool fSubstConst() const { return m_fSubstConst; }
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
-    bool fVarSplit() const { return m_fVarSplit; }
 
     std::string traceClassBase() const VL_MT_SAFE;  // Deprecated
     std::string traceClassLang() const VL_MT_SAFE;  // Deprecated

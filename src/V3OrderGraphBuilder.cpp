@@ -91,19 +91,18 @@ class OrderGraphBuilder final : public VNVisitor {
     AstUser1Allocator<AstVarScope, OrderUser> m_orderUser;
 
     // STATE
-    OrderGraph* const m_graphp = new OrderGraph;  // The ordering graph built by this visitor
+    OrderGraph* const m_graphp;  // The ordering graph built by this visitor
     OrderLogicVertex* m_logicVxp = nullptr;  // Current logic block being analyzed
     std::vector<AstVarScope*> m_accessedVscps;  // Variables accessed by the current logic block
 
-    // Map from Trigger reference AstSenItem to the original AstSenTree
-    const V3Order::TrigToSenMap& m_trigToSen;
-
     // Current AstScope being processed
     AstScope* m_scopep = nullptr;
+    // Domain of the triggers of the current AstActive being processed
+    const OrderDomain* m_activeDomainp = nullptr;
     // Sensitivity list for clocked logic, nullptr for combinational and hybrid logic
-    AstSenTree* m_domainp = nullptr;
+    const OrderDomain* m_domainp = nullptr;
     // Sensitivity list for hybrid logic, nullptr for everything else
-    AstSenTree* m_hybridp = nullptr;
+    const OrderDomain* m_hybridp = nullptr;
 
     bool m_inClocked = false;  // Underneath clocked AstActive
     bool m_inPre = false;  // Underneath AlwaysPre
@@ -163,11 +162,7 @@ class OrderGraphBuilder final : public VNVisitor {
         VL_RESTORER(m_hybridp);
         VL_RESTORER(m_inClocked);
 
-        // This is the original sensitivity of the block (i.e.: not the ref into the trigger vec)
-
-        const AstSenTree* const senTreep = nodep->sentreep()->hasCombo()
-                                               ? nodep->sentreep()
-                                               : m_trigToSen.at(nodep->sentreep());
+        const AstSenTree* const senTreep = nodep->sentreep();
 
         m_inClocked = senTreep->hasClocked();
 
@@ -176,12 +171,10 @@ class OrderGraphBuilder final : public VNVisitor {
         // the code being ordered.
 
         // Combinational and hybrid logic will have it's domain assigned based on the driver
-        // domains. For clocked logic, we already know its domain.
-        if (!senTreep->hasCombo() && !senTreep->hasHybrid()) m_domainp = nodep->sentreep();
-
-        // Hybrid logic also includes additional sensitivities
+        // domains. For clocked logic, we already know its domain. Hybrid logic also includes
+        // additional sensitivities.
         if (senTreep->hasHybrid()) {
-            m_hybridp = nodep->sentreep();
+            m_hybridp = m_activeDomainp;
             // Mark AstVarScopes that are explicit sensitivities
             AstNode::user3ClearTree();
             senTreep->foreach([](const AstVarRef* refp) {  //
@@ -189,6 +182,7 @@ class OrderGraphBuilder final : public VNVisitor {
             });
             m_readTriggersCombLogic = [](const AstVarScope* vscp) { return !vscp->user3(); };
         } else {
+            if (!senTreep->hasCombo()) m_domainp = m_activeDomainp;
             // Always triggers
             m_readTriggersCombLogic = [](const AstVarScope*) { return true; };
         }
@@ -427,18 +421,20 @@ class OrderGraphBuilder final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // CONSTRUCTOR
-    OrderGraphBuilder(AstNetlist* /*nodep*/, const std::vector<V3Sched::LogicByScope*>& coll,
-                      const V3Order::TrigToSenMap& trigToSen,
+    OrderGraphBuilder(const std::vector<V3Sched::LogicByScope*>& coll,
+                      const V3Sched::TriggerKit& trigKit, AstVarScope* trigVscp,
                       const V3Sched::CovergroupRefBindings& cgRefBindings, bool parallel)
-        : m_trigToSen{trigToSen}
+        : m_graphp{new OrderGraph{trigKit, trigVscp}}
         , m_parallel{parallel}
         , m_cgRefBindings{cgRefBindings} {
         // Build the graph
         for (const V3Sched::LogicByScope* const lbsp : coll) {
-            for (const auto& pair : *lbsp) {
-                m_scopep = pair.first;
-                iterate(pair.second);
+            for (const auto& entry : *lbsp) {
+                m_scopep = entry.m_scopep;
+                m_activeDomainp = m_graphp->domainp(entry.m_triggers);
+                iterate(entry.m_activep);
                 m_scopep = nullptr;
+                m_activeDomainp = nullptr;
             }
         }
     }
@@ -447,21 +443,21 @@ class OrderGraphBuilder final : public VNVisitor {
 public:
     // Process the netlist and return the constructed ordering graph. It's 'process' because
     // this visitor does change the tree (removes some nodes related to DPI export trigger).
-    static std::unique_ptr<OrderGraph> apply(AstNetlist* nodep,
-                                             const std::vector<V3Sched::LogicByScope*>& coll,
-                                             const V3Order::TrigToSenMap& trigToSen,
+    static std::unique_ptr<OrderGraph> apply(const std::vector<V3Sched::LogicByScope*>& coll,
+                                             const V3Sched::TriggerKit& trigKit,
+                                             AstVarScope* trigVscp,
                                              const V3Sched::CovergroupRefBindings& cgRefBindings,
                                              bool parallel) {
         return std::unique_ptr<OrderGraph>{
-            OrderGraphBuilder{nodep, coll, trigToSen, cgRefBindings, parallel}.m_graphp};
+            OrderGraphBuilder{coll, trigKit, trigVscp, cgRefBindings, parallel}.m_graphp};
     }
 };
 
 std::unique_ptr<OrderGraph>
-V3Order::buildOrderGraph(AstNetlist* netlistp,  //
+V3Order::buildOrderGraph(const V3Sched::TriggerKit& trigKit,  //
+                         AstVarScope* trigVscp,  //
                          const std::vector<V3Sched::LogicByScope*>& coll,  //
-                         const V3Order::TrigToSenMap& trigToSen,  //
                          const V3Sched::CovergroupRefBindings& cgRefBindings,  //
                          bool parallel) {
-    return OrderGraphBuilder::apply(netlistp, coll, trigToSen, cgRefBindings, parallel);
+    return OrderGraphBuilder::apply(coll, trigKit, trigVscp, cgRefBindings, parallel);
 }

@@ -1176,7 +1176,7 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     }
 
     // Default prefix to the filename
-    if (prefix() == "" && topModule() != "") m_prefix = "V"s + AstNode::encodeName(topModule());
+    if (prefix() == "" && topModule() != "") m_prefix = "V"s + topModule();  // Already encoded
     if (prefix() == "" && vFiles().size() >= 1)
         m_prefix
             = "V"s + AstNode::encodeName(V3Os::filenameNonDirExt(vFiles().begin()->filename()));
@@ -1494,6 +1494,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
     DECL_OPTION("-fbit-scan-loops", FOnOff, &m_fBitScanLoops);
+    DECL_OPTION("-fbitblast", FOnOff, &m_fBitblast);
     DECL_OPTION("-fcase", CbFOnOff, [this](bool flag) {
         m_fCaseDecoder = flag;
         m_fCaseTable = flag;
@@ -1510,6 +1511,12 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
     DECL_OPTION("-fdead-methods", FOnOff, &m_fDeadMethods);
+    DECL_OPTION("-fdecompose", CbFOnOff, [this](bool flag) {
+        m_fDecomposePacked = flag;
+        m_fDecomposeUnpacked = flag;
+    });
+    DECL_OPTION("-fdecompose-packed", FOnOff, &m_fDecomposePacked);
+    DECL_OPTION("-fdecompose-unpacked", FOnOff, &m_fDecomposeUnpacked);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
     DECL_OPTION("-fdfg-break-cycles", CbFOnOff, [fl](bool) {
@@ -1572,7 +1579,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fsubst-const", FOnOff, &m_fSubstConst);
     DECL_OPTION("-ftable", FOnOff, &m_fTable);
     DECL_OPTION("-ftaskify-all-forked", FOnOff, &m_fTaskifyAll).undocumented();  // Debug
-    DECL_OPTION("-fvar-split", FOnOff, &m_fVarSplit);
+    DECL_OPTION("-fvar-split", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-var-split' is deprecated and has no effect");
+    });
     DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
     DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
     DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
@@ -2411,6 +2420,7 @@ void V3Options::optimize(int level) {
     m_fAcycSimp = flag;
     m_fAssemble = flag;
     m_fBitScanLoops = flag;
+    m_fBitblast = flag;
     m_fCaseDecoder = flag;
     m_fCaseTable = flag;
     m_fCaseTree = flag;
@@ -2422,6 +2432,8 @@ void V3Options::optimize(int level) {
     m_fDeadAssigns = flag;
     m_fDeadCells = flag;
     m_fDeadMethods = flag;
+    m_fDecomposePacked = flag;
+    m_fDecomposeUnpacked = flag;
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;
@@ -2436,7 +2448,6 @@ void V3Options::optimize(int level) {
     m_fSubst = flag;
     m_fSubstConst = flag;
     m_fTable = flag;
-    m_fVarSplit = flag;
     // And set specific optimization levels
     if (level >= 3) {
         m_inlineMult = -1;  // Maximum inlining

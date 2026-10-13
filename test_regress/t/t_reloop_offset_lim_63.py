@@ -14,7 +14,8 @@ test.top_filename = "t/t_reloop_offset.v"
 test.golden_filename = "t/t_reloop_offset.out"
 
 test.compile(verilator_flags2=[
-    "-unroll-count 1024", test.wno_unopthreads_for_few_cores, "--reloop-limit 63", "--stats"
+    "-unroll-count 1024", test.wno_unopthreads_for_few_cores, "--reloop-limit 63", "--stats",
+    "-fno-decompose"
 ])
 
 test.execute(expect_filename=test.golden_filename)

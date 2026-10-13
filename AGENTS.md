@@ -123,6 +123,10 @@ ______________________________________________________________________
 
 ## Drafting a PR
 
+- [ ] Do not post a PR directly, a human in the loop is required. You may
+  prepare the message for the PR, but then must ask the user to 1. manually
+  clean up the issue text, and 2. post it manually.
+
 - [ ] When creating a pull request message, omit itemized lists of changed
   files and changes, since reviewers already have access to the diff.
 
@@ -166,5 +170,5 @@ The API you choose determines which test must accompany the change.
 
 - Subject line is short and imperative and conventionally ends with the
   issue number being fixed. No need for the PR number this will be added
-  during git squash. e.g `Support property case (#7721)`. The commit body message is
-  optional and common for non-trivial changes.
+  during git squash. e.g `Support property case (#7721)`. The commit body
+  message is optional and will be ignored when merged.

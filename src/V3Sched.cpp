@@ -62,8 +62,8 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
     const VNUser1InUse user1InUse;
     std::vector<const AstSenTree*> result;
     for (const LogicByScope* const lbsp : lbsps) {
-        for (const auto& pair : *lbsp) {
-            AstActive* const activep = pair.second;
+        for (const auto& entry : *lbsp) {
+            AstActive* const activep = entry.m_activep;
             AstSenTree* const senTreep = activep->sentreep();
             if (senTreep->user1SetOnce()) continue;
             if (senTreep->hasClocked() || senTreep->hasHybrid()) result.push_back(senTreep);
@@ -72,45 +72,34 @@ std::vector<const AstSenTree*> getSenTreesUsedBy(const std::vector<const LogicBy
     return result;
 }
 
-void remapSensitivities(const LogicByScope& lbs,
-                        const std::unordered_map<const AstSenTree*, AstSenTree*>& senTreeMap) {
-    for (const auto& pair : lbs) {
-        AstActive* const activep = pair.second;
-        AstSenTree* const senTreep = activep->sentreep();
+void addTriggerIndices(LogicByScope& lbs, const TriggerKit& trigKit, bool pre) {
+    for (LogicByScope::Entry& entry : lbs) {
+        AstSenTree* const senTreep = entry.m_activep->sentreep();
         if (senTreep->hasCombo()) continue;
-        activep->sentreep(senTreeMap.at(senTreep));
+        entry.m_triggers = trigKit.triggerIndices(senTreep, pre);
     }
 }
 
-void invertAndMergeSenTreeMap(
-    V3Order::TrigToSenMap& result,
-    const std::unordered_map<const AstSenTree*, AstSenTree*>& senTreeMap) {
-    for (const auto& pair : senTreeMap) result.emplace(pair.second, pair.first);
-}
-
-// Find VIF triggers that a given VarScope should be sensitive to.
+// Add the VIF triggers that a given VarScope should be sensitive to.
 // Case 2 (non-virtual interface read): sensitive to that specific VarScope's trigger only
 // Case 3 (virtual interface read): sensitive to all member triggers of the same interface type
-std::vector<AstSenTree*> findTriggeredIface(const AstVarScope* vscp,
-                                            const VirtIfaceTriggers::VscpSensMap& vscpToSens,
-                                            const VirtIfaceTriggers& virtIfaceTriggers) {
-    std::vector<AstSenTree*> result;
+void addTriggeredIface(const AstVarScope* vscp, const VirtIfaceTriggers::VscpTrigMap& vscpToTrig,
+                       const VirtIfaceTriggers& virtIfaceTriggers, std::set<uint32_t>& triggers) {
     if (vscp->varp()->isVirtIface()) {
         // Virtual interface variable -- sensitive to all member triggers of this interface type
         const AstIface* const ifacep = VN_AS(vscp->varp()->dtypep(), IfaceRefDType)->ifacep();
         for (const auto& entry : virtIfaceTriggers.m_triggers) {
             if (entry.m_ifacep == ifacep) {
-                const auto it = vscpToSens.find(entry.m_vscp);
-                if (it != vscpToSens.end()) result.push_back(it->second);
+                const auto it = vscpToTrig.find(entry.m_vscp);
+                if (it != vscpToTrig.end()) triggers.insert(it->second);
             }
         }
     } else {
         // Non-virtual interface member -- sensitive to this VarScope's trigger only
-        const auto it = vscpToSens.find(vscp);
-        if (it != vscpToSens.end()) result.push_back(it->second);
+        const auto it = vscpToTrig.find(vscp);
+        if (it != vscpToTrig.end()) triggers.insert(it->second);
     }
-    // May be empty if sensIfacep() is set but no VIF write targets this member
-    return result;
+    // May add none if sensIfacep() is set but no VIF write targets this member
 }
 
 //============================================================================
@@ -149,7 +138,6 @@ void createEvalRegion(
 
     // Populate the trigger dump entry point function
     if (trigp) {
-        UASSERT(eval.hasTriggers(), "Region with a trigger vector must have triggers");
         netlistp->dumpTriggersFuncp(eval)->addStmtsp(trigKit.newDumpCall(trigp, tag, false));
     }
 
@@ -224,31 +212,31 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
             if (senTreep->hasStatic()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "static initializer with additional sensitivities");
-                result.m_static.emplace_back(scopep, activep);
+                result.m_static.add(scopep, activep);
             } else if (senTreep->hasInitial()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "'initial' logic with additional sensitivities");
-                result.m_initial.emplace_back(scopep, activep);
+                result.m_initial.add(scopep, activep);
             } else if (senTreep->hasFinal()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "'final' logic with additional sensitivities");
-                result.m_final.emplace_back(scopep, activep);
+                result.m_final.add(scopep, activep);
             } else if (senTreep->hasCombo()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "combinational logic with additional sensitivities");
                 if (VN_IS(activep->stmtsp(), AlwaysPostponed)) {
-                    result.m_postponed.emplace_back(scopep, activep);
+                    result.m_postponed.add(scopep, activep);
                 } else {
-                    result.m_comb.emplace_back(scopep, activep);
+                    result.m_comb.add(scopep, activep);
                 }
             } else {
                 UASSERT_OBJ(senTreep->hasClocked(), activep, "What else could it be?");
                 if (VN_IS(activep->stmtsp(), AlwaysObserved)) {
-                    result.m_observed.emplace_back(scopep, activep);
+                    result.m_observed.add(scopep, activep);
                 } else if (VN_IS(activep->stmtsp(), AlwaysReactive)) {
-                    result.m_reactive.emplace_back(scopep, activep);
+                    result.m_reactive.add(scopep, activep);
                 } else {
-                    result.m_clocked.emplace_back(scopep, activep);
+                    result.m_clocked.add(scopep, activep);
                 }
             }
         });
@@ -276,9 +264,9 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
     };
     const VNUser1InUse user1InUse;  // AstScope -> AstCFunc: the sub-function for the scope
     const VNUser2InUse user2InUse;  // AstScope -> int: sub-function counter used for names
-    for (const auto& pair : lbs) {
-        AstScope* const scopep = pair.first;
-        AstActive* const activep = pair.second;
+    for (const auto& entry : lbs) {
+        AstScope* const scopep = entry.m_scopep;
+        AstActive* const activep = entry.m_activep;
         // Create a sub-function per scope so we can V3Combine them later
         if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
         // Add statements to sub-function
@@ -320,8 +308,8 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
         VL_DO_DANGLING(activep->deleteTree(), activep);
     }
     // Split sub-functions once complete
-    for (const auto& pair : lbs) {
-        AstScope* const scopep = pair.first;
+    for (const auto& entry : lbs) {
+        AstScope* const scopep = entry.m_scopep;
         if (AstCFunc* const subFuncp = VN_AS(scopep->user1p(), CFunc)) {
             util::splitCheck(subFuncp);
             scopep->user1p(nullptr);
@@ -347,8 +335,8 @@ AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
     std::vector<size_t> indices(orig.size());
     for (size_t i = 0; i < orig.size(); ++i) indices[i] = i;
     std::stable_sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
-        const AstNodeModule* const modA = orig[a].first->modp();
-        const AstNodeModule* const modB = orig[b].first->modp();
+        const AstNodeModule* const modA = orig[a].m_scopep->modp();
+        const AstNodeModule* const modB = orig[b].m_scopep->modp();
         const bool isPkgA = VN_IS(modA, Package);
         const bool isPkgB = VN_IS(modB, Package);
         if (isPkgA != isPkgB) return isPkgA;  // Packages before non-packages
@@ -359,8 +347,7 @@ AstCFunc* createStatic(AstNetlist* netlistp, const LogicClasses& logicClasses) {
         return false;  // Both non-package: preserve original order
     });
     LogicByScope sorted;
-    sorted.reserve(orig.size());
-    for (const size_t i : indices) sorted.emplace_back(orig[i].first, orig[i].second);
+    for (const size_t i : indices) sorted.add(orig[i].m_scopep, orig[i].m_activep);
 
     orderSequentially(funcp, sorted);
     return funcp;  // Not splitting yet as it is not final
@@ -413,21 +400,16 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
     const TriggerKit trigKit = TriggerKit::create(netlistp, initFuncp, senExprBulider, {},
                                                   senTreeps, "stl", extraTriggers, true, false);
 
-    // Remap sensitivities (comb has none, so only do the hybrid)
-    remapSensitivities(hybrid, trigKit.mapVec());
-
-    // Create the inverse map from trigger ref AstSenTree to original AstSenTree
-    V3Order::TrigToSenMap trigToSen;
-    invertAndMergeSenTreeMap(trigToSen, trigKit.mapVec());
+    // Add trigger indices (comb has none, so only do the hybrid)
+    addTriggerIndices(hybrid, trigKit, false);
 
     // First trigger is for pure combinational triggers (first iteration)
-    AstSenTree* const inputChanged
-        = trigKit.newExtraTriggerSenTree(trigKit.vscp(), firstIterationTrigger);
+    const uint32_t inputChanged = trigKit.extraTriggerIndex(firstIterationTrigger);
 
     // Create and the body function
     AstCFunc* const stlFuncp = V3Order::order(
-        netlistp, {&comb, &hybrid}, trigToSen, cgRefBindings, "stl", false, true,
-        [=](const AstVarScope*, std::vector<AstSenTree*>& out) { out.push_back(inputChanged); });
+        {&comb, &hybrid}, trigKit, trigKit.vscp(), cgRefBindings, "stl", false, true,
+        [=](const AstVarScope*, std::set<uint32_t>& triggers) { triggers.insert(inputChanged); });
     util::splitCheck(stlFuncp);
 
     // Create the region evaluation function
@@ -531,45 +513,33 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
     addVirtIfaceTriggerAssignments(netlistp, initFuncp, virtIfaceTriggers, firstVifTriggerIndex,
                                    trigKit);
 
-    // Remap sensitivities
-    remapSensitivities(logic, trigKit.mapVec());
-    for (auto& pair : inp2changedp) pair.second = trigKit.mapVec().at(pair.second);
-
-    // Create the inverse map from trigger ref AstSenTree to original AstSenTree
-    V3Order::TrigToSenMap trigToSen;
-    invertAndMergeSenTreeMap(trigToSen, trigKit.mapVec());
+    // Add trigger indices
+    addTriggerIndices(logic, trigKit, false);
 
     // The 'first iteration' trigger for top level inputs
-    AstSenTree* const firstIterTriggerp
-        = trigKit.newExtraTriggerSenTree(trigKit.vscp(), firstIterationTrigger);
+    const uint32_t firstIterTrigger = trigKit.extraTriggerIndex(firstIterationTrigger);
 
-    // The DPI Export trigger
-    AstSenTree* const dpiExportTriggered
-        = dpiExportTriggerVscp
-              ? trigKit.newExtraTriggerSenTree(trigKit.vscp(), dpiExportTriggerIndex)
-              : nullptr;
-    const auto& vifVscpToSensIco
-        = virtIfaceTriggers.makeVscpToSensMap(trigKit, firstVifTriggerIndex, trigKit.vscp());
+    const auto& vifVscpToTrigIco
+        = virtIfaceTriggers.makeVscpToTrigMap(trigKit, firstVifTriggerIndex);
 
     // Create and Order the body function
     AstCFunc* const icoFuncp = V3Order::order(
-        netlistp, {&logic}, trigToSen, cgRefBindings, "ico", false, false,
-        [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
+        {&logic}, trigKit, trigKit.vscp(), cgRefBindings, "ico", false, false,
+        [&](const AstVarScope* vscp, std::set<uint32_t>& triggers) {
             AstVar* const varp = vscp->varp();
             // If it has an explicit change detect trigger, use that,
             // otherwise fall back to using the 'first iteration' trigger
             auto it = inp2changedp.find(vscp);
             if (it != inp2changedp.end()) {
-                out.push_back(it->second);
+                triggers.insert(trigKit.senItem2TrigIdx(it->second->sensesp()));
             } else if (varp->isPrimaryInish() || varp->isSigUserRWPublic() || varp->sampled()) {
-                out.push_back(firstIterTriggerp);
+                triggers.insert(firstIterTrigger);
             }
             // Add other triggers
-            if (varp->isWrittenByDpi()) out.push_back(dpiExportTriggered);
+            if (varp->isWrittenByDpi())
+                triggers.insert(trigKit.extraTriggerIndex(dpiExportTriggerIndex));
             if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
-                const auto& ifaceTriggered
-                    = findTriggeredIface(vscp, vifVscpToSensIco, virtIfaceTriggers);
-                out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
+                addTriggeredIface(vscp, vifVscpToTrigIco, virtIfaceTriggers, triggers);
             }
         });
     util::splitCheck(icoFuncp);
@@ -623,8 +593,8 @@ void createEval(AstNetlist* netlistp,  //
     AstVarScope* const delaySchedVscp = timingKit.getDelayScheduler(netlistp);
 
     // 'createResume' consumes the contents that 'createReady' needs, so do the right order
-    AstCCall* const timingReadyp = timingKit.createReady(netlistp);
-    AstCCall* const timingResumep = timingKit.createResume(netlistp);
+    AstCCall* const timingReadyp = timingKit.createReady(trigKit.vscp());
+    AstCCall* const timingResumep = timingKit.createResume(trigKit.vscp());
 
     // Create the 'act' region
     createEvalRegion(  //
@@ -800,44 +770,15 @@ void createEval(AstNetlist* netlistp,  //
 //============================================================================
 // Helper that builds virtual interface trigger sentrees
 
-VirtIfaceTriggers::VscpSensMap VirtIfaceTriggers::makeVscpToSensMap(const TriggerKit& trigKit,
-                                                                    uint32_t firstIndex,
-                                                                    AstVarScope* trigVscp) const {
-    VscpSensMap map;
+VirtIfaceTriggers::VscpTrigMap VirtIfaceTriggers::makeVscpToTrigMap(const TriggerKit& trigKit,
+                                                                    uint32_t firstIndex) const {
+    VscpTrigMap map;
     uint32_t index = firstIndex;
     for (const auto& entry : m_triggers) {
-        map.emplace(entry.m_vscp, trigKit.newExtraTriggerSenTree(trigVscp, index));
+        map.emplace(entry.m_vscp, trigKit.extraTriggerIndex(index));
         ++index;
     }
     return map;
-}
-
-std::unordered_map<const AstSenTree*, AstSenTree*>
-cloneMapWithNewTriggerReferences(const std::unordered_map<const AstSenTree*, AstSenTree*>& map,
-                                 AstVarScope* vscp) {
-    AstTopScope* const topScopep = v3Global.rootp()->topScopep();
-    // Label global SenTrees by the order they are in the Ast
-    const VNUser1InUse user1InUse;
-    int n = 0;
-    for (AstNode* nodep = topScopep->senTreesp(); nodep; nodep = nodep->nextp()) nodep->user1(++n);
-    // Sort map by key order for determinism
-    using Pair = std::pair<const AstSenTree*, AstSenTree*>;
-    std::vector<Pair> pairs{map.begin(), map.end()};
-    std::sort(pairs.begin(), pairs.end(), [](const Pair& a, const Pair& b) {  //
-        return a.first->user1() < b.first->user1();
-    });
-    // Replace references in each mapped value with a reference to the given vscp
-    for (Pair& pair : pairs) {
-        pair.second = pair.second->cloneTree(false);
-        pair.second->foreach([&](AstVarRef* refp) {
-            UASSERT_OBJ(refp->access() == VAccess::READ, refp, "Should be read ref");
-            refp->replaceWith(new AstVarRef{refp->fileline(), vscp, VAccess::READ});
-            VL_DO_DANGLING(refp->deleteTree(), refp);
-        });
-        topScopep->addSenTreesp(pair.second);
-    }
-    // Convert back to map
-    return std::unordered_map<const AstSenTree*, AstSenTree*>{pairs.begin(), pairs.end()};
 }
 
 //============================================================================
@@ -849,21 +790,6 @@ void schedule(AstNetlist* netlistp) {
         lbs.foreachLogic([&](AstNode* nodep) { size += nodep->nodeCount(); });
         V3Stats::addStat("Scheduling, " + name, size);
     };
-
-    // Step 1: Create every entry point called from the run-time eval loop
-    for (int i = 0; i < VEval::_ENUM_END; ++i) {
-        const VEval eval{i};
-        AstCFunc* const funcp = util::makeTopFunction(netlistp, eval.funcName(), eval.slow());
-        netlistp->evalFuncp(eval, funcp);
-        // Only the iterated functions report whether they did any work
-        if (eval.isIterated()) funcp->rtnType("bool");
-        // Only a region with a trigger vector has anything to dump
-        if (eval.hasTriggers()) {
-            AstCFunc* const dumpp
-                = util::makeTopFunction(netlistp, eval.dumpTriggersFuncName(), true);
-            netlistp->dumpTriggersFuncp(eval, dumpp);
-        }
-    }
 
     // Step 2: Prepare external domains for timing and virtual interfaces
     // Create extra triggers for virtual interfaces
@@ -988,41 +914,32 @@ void schedule(AstNetlist* netlistp) {
 
     // Step 11: Create the 'act' region evaluation function
 
-    // Remap sensitivities of the input logic to the triggers
-    remapSensitivities(logicRegions.m_pre, trigKit.mapPre());
-    remapSensitivities(logicRegions.m_act, trigKit.mapVec());
-    remapSensitivities(logicReplicas.m_act, trigKit.mapVec());
-    remapSensitivities(timingKit.m_lbs, trigKit.mapVec());
-    const std::map<const AstVarScope*, std::vector<AstSenTree*>> actTimingDomains
-        = timingKit.remapDomains(trigKit.mapVec());
+    // Add the trigger indices of the input logic
+    addTriggerIndices(logicRegions.m_pre, trigKit, true);
+    addTriggerIndices(logicRegions.m_act, trigKit, false);
+    addTriggerIndices(logicReplicas.m_act, trigKit, false);
+    addTriggerIndices(timingKit.m_lbs, trigKit, false);
 
-    // Create the inverse map from trigger ref AstSenTree to original AstSenTree
-    V3Order::TrigToSenMap trigToSenAct;
-    invertAndMergeSenTreeMap(trigToSenAct, trigKit.mapPre());
-    invertAndMergeSenTreeMap(trigToSenAct, trigKit.mapVec());
+    // External triggers of variables. Trigger indices are the same in all regions, so share.
+    const std::map<const AstVarScope*, std::vector<uint32_t>> timingTriggers
+        = timingKit.externalTriggerIndices(trigKit);
+    const auto& vifVscpToTrig = virtIfaceTriggers.makeVscpToTrigMap(trigKit, firstVifTriggerIndex);
+    const V3Order::ExternalTriggersProvider externalTriggers
+        = [&](const AstVarScope* vscp, std::set<uint32_t>& triggers) {
+              auto it = timingTriggers.find(vscp);
+              if (it != timingTriggers.end())
+                  triggers.insert(it->second.begin(), it->second.end());
+              if (vscp->varp()->isWrittenByDpi()) {
+                  triggers.insert(trigKit.extraTriggerIndex(dpiExportTriggerIndex));
+              }
+              if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
+                  addTriggeredIface(vscp, vifVscpToTrig, virtIfaceTriggers, triggers);
+              }
+          };
 
-    // The DPI Export trigger AstSenTree
-    AstSenTree* const dpiExportTriggeredAct
-        = dpiExportTriggerVscp
-              ? trigKit.newExtraTriggerSenTree(trigKit.vscp(), dpiExportTriggerIndex)
-              : nullptr;
-
-    const auto& vifVscpToSensAct
-        = virtIfaceTriggers.makeVscpToSensMap(trigKit, firstVifTriggerIndex, trigKit.vscp());
-
-    AstCFunc* const actFuncp = V3Order::order(
-        netlistp, {&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigToSenAct,
-        cgRefBindings, "act", false, false,
-        [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
-            auto it = actTimingDomains.find(vscp);
-            if (it != actTimingDomains.end()) out = it->second;
-            if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggeredAct);
-            if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
-                const auto& ifaceTriggered
-                    = findTriggeredIface(vscp, vifVscpToSensAct, virtIfaceTriggers);
-                out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
-            }
-        });
+    AstCFunc* const actFuncp
+        = V3Order::order({&logicRegions.m_pre, &logicRegions.m_act, &logicReplicas.m_act}, trigKit,
+                         trigKit.vscp(), cgRefBindings, "act", false, false, externalTriggers);
     util::splitCheck(actFuncp);
     if (v3Global.opt.stats()) V3Stats::statsStage("sched-create-act");
 
@@ -1033,35 +950,12 @@ void schedule(AstNetlist* netlistp) {
                            const std::vector<V3Sched::LogicByScope*>& logic) -> EvalKit {
         UINFO(2, "Scheduling " << name << " #logic = " << logic.size());
         AstVarScope* const trigVscp = trigKit.newTrigVec(name);
-        const auto trigMap = cloneMapWithNewTriggerReferences(trigKit.mapVec(), trigVscp);
-        // Remap sensitivities of the input logic to the triggers
-        for (LogicByScope* lbs : logic) remapSensitivities(*lbs, trigMap);
+        // Add the trigger indices of the input logic
+        for (LogicByScope* lbs : logic) addTriggerIndices(*lbs, trigKit, false);
 
-        // Create the inverse map from trigger ref AstSenTree to original AstSenTree
-        V3Order::TrigToSenMap trigToSen;
-        invertAndMergeSenTreeMap(trigToSen, trigMap);
-
-        AstSenTree* const dpiExportTriggered
-            = dpiExportTriggerVscp
-                  ? trigKit.newExtraTriggerSenTree(trigVscp, dpiExportTriggerIndex)
-                  : nullptr;
-        const auto& vifVscpToSens
-            = virtIfaceTriggers.makeVscpToSensMap(trigKit, firstVifTriggerIndex, trigVscp);
-
-        const auto& timingDomains = timingKit.remapDomains(trigMap);
-        AstCFunc* const funcp = V3Order::order(
-            netlistp, logic, trigToSen, cgRefBindings, name,
-            name == "nba" && v3Global.opt.mtasks(), false,
-            [&](const AstVarScope* vscp, std::vector<AstSenTree*>& out) {
-                auto it = timingDomains.find(vscp);
-                if (it != timingDomains.end()) out = it->second;
-                if (vscp->varp()->isWrittenByDpi()) out.push_back(dpiExportTriggered);
-                if (vscp->varp()->sensIfacep() || vscp->varp()->isVirtIface()) {
-                    const auto& ifaceTriggered
-                        = findTriggeredIface(vscp, vifVscpToSens, virtIfaceTriggers);
-                    out.insert(out.end(), ifaceTriggered.begin(), ifaceTriggered.end());
-                }
-            });
+        AstCFunc* const funcp
+            = V3Order::order(logic, trigKit, trigVscp, cgRefBindings, name,
+                             name == "nba" && v3Global.opt.mtasks(), false, externalTriggers);
 
         return {trigVscp, funcp};
     };
@@ -1096,7 +990,7 @@ void schedule(AstNetlist* netlistp) {
     createEval(netlistp, trigKit, actKit, nbaKit, obsKit, reactKit, timingKit);
 
     // Step 17: Add neccessary evaluation before awaits
-    if (AstCCall* const readyp = timingKit.createReady(netlistp)) {
+    if (AstCCall* const readyp = timingKit.createReady(trigKit.vscp())) {
         staticp->addStmtsp(readyp->makeStmt());
         beforeTrigVisitor(netlistp, senExprBuilder, trigKit);
     } else {

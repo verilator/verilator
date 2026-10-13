@@ -566,6 +566,7 @@ class VlReadMem final {
     const int m_bits;  // Bit width of values
     const std::string& m_filename;  // Filename
     const QData m_end;  // End address (as specified by user)
+    const bool m_descending;  // Start address is above end, so addresses decrement
     FILE* m_fp = nullptr;  // File handle for filename
     QData m_addr = 0;  // Next address to read
     int m_linenum = 0;  // Line number last read from file
@@ -582,6 +583,7 @@ public:
 class VlWriteMem final {
     const bool m_hex;  // Hex format
     const int m_bits;  // Bit width of values
+    const bool m_descending;  // Start address is above end, so addresses decrement
     FILE* m_fp = nullptr;  // File handle for filename
     QData m_addr = 0;  // Next address to write
 public:
@@ -775,6 +777,7 @@ public:
     // function void q.insert(index, value);
     void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index > m_deque.size())) return;
+        if (VL_UNLIKELY(N_MaxSize != 0 && m_deque.size() >= N_MaxSize)) return;
         m_deque.insert(m_deque.begin() + index, value);
     }
 
@@ -1459,9 +1462,17 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
                    const VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
     VlWriteMem wmem{hex, bits, filename, start, end};
     if (VL_UNLIKELY(!wmem.isOpen())) return;
-    for (const auto& i : obj) {
-        const QData addr = i.first;
-        if (addr >= start && addr <= end) wmem.print(addr, true, &(i.second));
+    const QData lo = std::min(start, end);
+    const QData hi = std::max(start, end);
+    const auto printIfInRange
+        = [&](const typename VlAssocArray<T_Key, T_Value>::const_iterator& it) {
+              const QData addr = it->first;
+              if (addr >= lo && addr <= hi) wmem.print(addr, true, &(it->second));
+          };
+    if (start > end) {
+        for (auto it = obj.end(); it != obj.begin();) printIfInRange(--it);
+    } else {
+        for (auto it = obj.begin(); it != obj.end();) printIfInRange(it++);
     }
 }
 
@@ -1501,7 +1512,7 @@ public:
     // METHODS
     // Raw access
     T_Value* data() { return &m_storage[0]; }
-    const T_Value* data() const { return &m_storage[0]; }
+    constexpr const T_Value* data() const { return &m_storage[0]; }
 
     constexpr std::size_t size() const { return N_Depth; }
 

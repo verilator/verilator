@@ -39,11 +39,11 @@ module t (
   end
 
   for (genvar k = 0; k < 8; ++k) begin : g
-    always @(posedge clk) r[k] <= r[k] + (shared ^ TAB[r[k][1:0] ^ 2'(k)]);
+    always @(posedge clk) r[k] <= r[k] + (shared ^ TAB[r[k][1:0]^2'(k)]);
   end
 
   always @(posedge clk) begin
-    for (int k = 0; k < 8; ++k) e[k] <= e[k] + (shared ^ TAB[e[k][1:0] ^ 2'(k)]);
+    for (int k = 0; k < 8; ++k) e[k] <= e[k] + (shared ^ TAB[e[k][1:0]^2'(k)]);
   end
 
   // Read on the other clock edge from the write through the virtual interface

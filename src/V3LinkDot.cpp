@@ -2312,6 +2312,25 @@ class LinkDotFindVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->itemp());
         iterateAndNextNull(nodep->filterp());
     }
+    void visit(AstCoverCrossWith* nodep) override {  // FindVisitor::
+        // The selection and the cross items' types, of their coverpoints' expressions with any
+        // nested scopes, are outside the filter's scope, which declares the items.  As
+        // visit(AstVar) would resolve a type in the scope declaring its variable, the items,
+        // generated and unique, are inserted directly.
+        iterateAndNextNull(nodep->selectp());
+        for (AstVar* varp = nodep->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+            iterateAndNextNull(varp->childDTypep());
+        }
+        VL_RESTORER(m_curSymp);
+        ++m_modWithNum;
+        m_curSymp = m_statep->insertBlock(m_curSymp, "__VcoverWith" + cvtToStr(m_modWithNum),
+                                          nodep, m_classOrPackagep);
+        m_curSymp->fallbackp(VL_RESTORER_PREV(m_curSymp));
+        for (AstVar* varp = nodep->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+            m_statep->insertSym(m_curSymp, varp->name(), varp, m_classOrPackagep);
+        }
+        iterateAndNextNull(nodep->filterp());
+    }
 
     void visit(AstNode* nodep) override { iterateChildren(nodep); }  // FindVisitor::
 
@@ -4669,14 +4688,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             }
                         }
                         refp->containsGenBlock(m_ds.m_genBlk);
-                        if (varp->attrSplitVar()) {
-                            refp->v3warn(
-                                SPLITVAR,
-                                varp->prettyNameQ()
-                                    << " has split_var metacomment but will not be split because"
-                                    << " it is accessed from another module via a dot.");
-                            varp->attrSplitVar(false);
-                        }
                         m_ds.m_dotText = "";
                         if (m_ds.m_unresolvedCell && m_ds.m_unlinkedScopep) {
                             const string dotted = refp->dotted();
@@ -5864,6 +5875,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_curSymp);
         m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
         iterateAndNextNull(nodep->itemp());
+        iterateAndNextNull(nodep->filterp());
+        m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
+    }
+    void visit(AstCoverCrossWith* nodep) override {
+        LINKDOT_VISIT_START();
+        UINFO(5, indent() << "visit " << nodep);
+        checkNoDot(nodep);
+        iterateAndNextNull(nodep->selectp());
+        // The type of a cross item is that of its coverpoint's expression, which may name items
+        iterateAndNextNull(nodep->varsp());
+        VL_RESTORER(m_curSymp);
+        m_ds.m_dotSymp = m_curSymp = m_statep->getNodeSym(nodep);
         iterateAndNextNull(nodep->filterp());
         m_ds.m_dotSymp = VL_RESTORER_PREV(m_curSymp);
     }

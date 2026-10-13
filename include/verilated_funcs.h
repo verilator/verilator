@@ -2844,8 +2844,8 @@ inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataInP const
         for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) owp[i] = ~0;
         owp[VL_WORDS_I(obits) - 1] = VL_MASK_E(obits);
     } else if (VL_BITBIT_E(lsb) == 0) {
-        // Just a word extract
-        for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = lwp[i + word_shift];
+        // Just a word extract use a memmove (should never overlap, but same speed as memcpy)
+        std::memmove(owp.datap(), lwp.datap() + word_shift, VL_WORDS_I(obits) * sizeof(EData));
     } else {
         // Not a _vl_insert because the bits come from any bit number and goto bit 0
         const int loffset = lsb & VL_SIZEBITS_E;
@@ -3636,6 +3636,7 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 }
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
+extern double VL_ATOREAL_N(const std::string& str) VL_PURE;
 extern IData VL_NTOI_I(int obits, const std::string& str) VL_PURE;
 extern QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE;
 extern void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str,

@@ -25,6 +25,7 @@
 class V3EmitC final {
 public:
     static void emitcConstPool() VL_MT_DISABLED;
+    static void emitcExecGraph() VL_MT_DISABLED;
     static void emitcFiles() VL_MT_DISABLED;
     static void emitcHeaders() VL_MT_DISABLED;
     static void emitcImp();

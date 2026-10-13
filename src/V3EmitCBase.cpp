@@ -98,9 +98,13 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
     // Return argument list for given C function
     string args;
     if (nodep->isLoose() && !nodep->isStatic()) {
-        if (nodep->isConst().trueKnown()) args += "const ";
-        args += EmitCUtil::prefixNameProtect(EmitCParentModule::get(nodep));
-        args += "* vlSelf";
+        if (nodep->voidSelf()) {
+            args += "void* vlVoidSelf";  // Converted to 'vlSelf' in the function body
+        } else {
+            if (nodep->isConst().trueKnown()) args += "const ";
+            args += EmitCUtil::prefixNameProtect(EmitCParentModule::get(nodep));
+            args += "* vlSelf";
+        }
     }
     if (nodep->needProcess()) {
         if (!args.empty()) args += ", ";

@@ -268,9 +268,9 @@ class SchedGraphBuilder final : public VNVisitor {
                       const LogicByScope& hybridLogic) {
         // Build the data flow graph
         const auto iter = [this](const LogicByScope& lbs) {
-            for (const auto& pair : lbs) {
-                m_scopep = pair.first;
-                iterate(pair.second);
+            for (const auto& entry : lbs) {
+                m_scopep = entry.m_scopep;
+                iterate(entry.m_activep);
                 m_scopep = nullptr;
             }
         };
@@ -385,17 +385,17 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
             });
         };
 
-        for (const auto& pair : result.m_act) {
-            AstActive* const activep = pair.second;
+        for (const auto& entry : result.m_act) {
+            AstActive* const activep = entry.m_activep;
             markVars(activep->sentreep());
             markVars(activep);
         }
 
         // AstAlwaysPre and AstAlwaysPost should only appear under a clocked
         // AstActive, and should be the only thing left at this point.
-        for (const auto& pair : clockedLogic) {
-            AstScope* const scopep = pair.first;
-            AstActive* const activep = pair.second;
+        for (const auto& entry : clockedLogic) {
+            AstScope* const scopep = entry.m_scopep;
+            AstActive* const activep = entry.m_activep;
             for (AstNode *nodep = activep->stmtsp(), *nextp; nodep; nodep = nextp) {
                 nextp = nodep->nextp();
                 if (AstAlwaysPre* const logicp = VN_CAST(nodep, AlwaysPre)) {

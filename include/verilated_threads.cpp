@@ -293,3 +293,11 @@ std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
     return "non-supported host OS";
 #endif
 }
+
+//=============================================================================
+// VlExecGraph
+
+void vl_invokeExecGraph(VlExecGraph& graph, VlSelfP selfp,
+                        const QData* /*triggersp*/) VL_MT_UNSAFE {
+    graph.dispatchp()(selfp);
+}
