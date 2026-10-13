@@ -615,7 +615,11 @@ inline double VL_ROUND(double n) {
 # define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
 #elif defined(__armel__) || defined(__ARMEL__)  // Arm, but broken, must be before __arm__
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory");
-#elif defined(__aarch64__) || defined(__arm__)
+#elif defined(__aarch64__)
+// YIELD does nothing on most AArch64 cores, so spin loops would end far sooner than on x86.
+// ISB stalls the core briefly, like x86 PAUSE.
+# define VL_CPU_RELAX() asm volatile("isb" ::: "memory")
+#elif defined(__arm__)
 # define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
 #elif defined(__hppa__)  // HPPA does not currently have yield/pause
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
