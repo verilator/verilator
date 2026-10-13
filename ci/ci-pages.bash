@@ -33,16 +33,21 @@ compile_coverage_reports() {
   # slightly less than the artifact retention period for simplicity.
   local OLDEST=$(date --date="28 days ago" --iso-8601=date)
 
-  # Gather all coverage workflow runs within the time window
-  gh run list -w coverage.yml --limit 1000 --created ">=${OLDEST}" --json "databaseId,event,status,conclusion,createdAt,number" > recentRuns.json
-
-  # Select completd runs that were not cancelled or skipped, sort by descending run number
-  jq 'sort_by(-.number) | map(select(.status == "completed" and (.conclusion == "success" or .conclusion == "failure")))' recentRuns.json > completedRuns.json
-  echo "@@@ $(jq length completedRuns.json) of $(jq length recentRuns.json) runs since ${OLDEST} completed with success or failure"
+  # Gather all coverage workflow runs within the time window that completed with
+  # success or failure (not cancelled or skipped), sort by descending run number.
+  for STATUS in success failure; do
+    gh run list -w coverage.yml --limit 1000 --created ">=${OLDEST}" --status ${STATUS} --json "databaseId,event,createdAt,number"
+  done | jq -s 'add | sort_by(-.number)' > completedRuns.json
+  echo "@@@ $(jq length completedRuns.json) runs since ${OLDEST} completed with success or failure"
 
   # Create artifacts root directory
   local ARTIFACTS_ROOT=artifacts-coverage
   mkdir -p ${ARTIFACTS_ROOT}
+
+  # Download the artifacts of all runs, if exists. In parallel, as one at a time
+  # this takes over a second per run, which adds up over hundreds of runs.
+  jq '.[].databaseId' completedRuns.json \
+    | xargs -P 8 -I {} gh run download {} --name coverage-report --dir ${ARTIFACTS_ROOT}/{} &> /dev/null || true
 
   # Create coverage reports root directory
   local COVERAGE_ROOT=${PAGES_ROOT}/coverage-reports
@@ -67,12 +72,8 @@ compile_coverage_reports() {
       # Record run ID of PR job
       [[ $EVENT != "pull_request" ]] || PR_RUN_IDS="$PR_RUN_IDS $RUN_ID"
 
-      # Create workflow artifacts directory
+      # Artifacts of this run, if exists
       local ARTIFACTS_DIR=${ARTIFACTS_ROOT}/${RUN_ID}
-      mkdir -p ${ARTIFACTS_DIR}
-
-      # Download artifacts of this run, if exists
-      gh run download ${RUN_ID} --name coverage-report --dir ${ARTIFACTS_DIR} &> /dev/null || true
 
       # Move on if no coverage report is available
       if [ ! -d ${ARTIFACTS_DIR}/report ]; then
@@ -149,16 +150,21 @@ compile_rtlmeter_reports() {
   # slightly less than the artifact retention period for simplicity.
   local OLDEST=$(date --date="28 days ago" --iso-8601=date)
 
-  # Gather all RTLMeter workflow runs within the time window
-  gh run list -w rtlmeter.yml --limit 1000 --created ">=${OLDEST}" --json "databaseId,event,status,conclusion,createdAt,number" > recentRuns.json
-
-  # Select completd runs that were not cancelled or skipped, sort by descending run number
-  jq 'sort_by(-.number) | map(select(.status == "completed" and (.conclusion == "success" or .conclusion == "failure")))' recentRuns.json > completedRuns.json
-  echo "@@@ $(jq length completedRuns.json) of $(jq length recentRuns.json) runs since ${OLDEST} completed with success or failure"
+  # Gather all RTLMeter workflow runs within the time window that completed with
+  # success or failure (not cancelled or skipped), sort by descending run number.
+  for STATUS in success failure; do
+    gh run list -w rtlmeter.yml --limit 1000 --created ">=${OLDEST}" --status ${STATUS} --json "databaseId,event,createdAt,number"
+  done | jq -s 'add | sort_by(-.number)' > completedRuns.json
+  echo "@@@ $(jq length completedRuns.json) runs since ${OLDEST} completed with success or failure"
 
   # Create artifacts root directory
   local ARTIFACTS_ROOT=artifacts-rtlmeter
   mkdir -p ${ARTIFACTS_ROOT}
+
+  # Download the artifacts of all runs, if exists. In parallel, as one at a time
+  # this takes over a second per run, which adds up over hundreds of runs.
+  jq '.[].databaseId' completedRuns.json \
+    | xargs -P 8 -I {} gh run download {} --name rtlmeter-report --dir ${ARTIFACTS_ROOT}/{} &> /dev/null || true
 
   # Create rtlmeter reports root directory
   local RTLMETER_ROOT=${PAGES_ROOT}/rtlmeter-reports
@@ -183,12 +189,8 @@ compile_rtlmeter_reports() {
       # Record run ID of PR job
       [[ $EVENT != "pull_request" ]] || PR_RUN_IDS="$PR_RUN_IDS $RUN_ID"
 
-      # Create workflow artifacts directory
+      # Artifacts of this run, if exists
       local ARTIFACTS_DIR=${ARTIFACTS_ROOT}/${RUN_ID}
-      mkdir -p ${ARTIFACTS_DIR}
-
-      # Download artifacts of this run, if exists
-      gh run download ${RUN_ID} --name rtlmeter-report --dir ${ARTIFACTS_DIR} &> /dev/null || true
 
       # Move on if no RTLMeter report is available
       if [ ! -d ${ARTIFACTS_DIR}/report ]; then
