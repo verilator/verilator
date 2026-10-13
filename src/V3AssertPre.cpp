@@ -225,6 +225,22 @@ private:
     static AstNodeExpr* newNotNullp(FileLine* flp, AstNodeExpr* fromp) {
         return new AstNeq{flp, fromp->cloneTreePure(false), new AstConst{flp, AstConst::Null{}}};
     }
+    // Procedural '##0': if the default clocking event has not yet occurred in this time step,
+    // wait for it; otherwise continue without suspension (IEEE 1800-2023 14.11)
+    AstIf* newCycleDelayZerop(const AstDelay* delayp) const {
+        FileLine* const flp = delayp->fileline();
+        AstVar* const evtVarp = m_defaultClkEvtVarp;
+        UASSERT_OBJ(evtVarp, delayp, "Default clocking event var not pre-created");
+        AstCMethodHard* const isTriggeredp = new AstCMethodHard{
+            flp, new AstVarRef{flp, evtVarp, VAccess::READ}, VCMethod::EVENT_IS_TRIGGERED};
+        isTriggeredp->dtypeSetBit();
+        AstEventControl* const waitp = new AstEventControl{
+            flp,
+            new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_EVENT,
+                                               new AstVarRef{flp, evtVarp, VAccess::READ}}},
+            nullptr};
+        return new AstIf{flp, new AstNot{flp, isTriggeredp}, waitp};
+    }
 
     static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp) {
         const AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
@@ -626,8 +642,8 @@ private:
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* valuep = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
         const AstConst* const constp = VN_CAST(valuep, Const);
-        if (!constp && !m_inSynchDrive) {
-            // V3AssertNfa handles non-const delays before this pass and
+        if (!constp && m_pexprp) {
+            // V3AssertNfa handles non-const delays in sequences before this pass and
             // replaces the property; this branch should never be reached.
             nodep->v3fatalSrc("Non-constant cycle delay in assertion: "
                               "should have been caught by V3AssertNfa");
@@ -644,26 +660,13 @@ private:
                 return;
             }
             // Procedural ##0: synchronize with default clocking event (IEEE 1800-2023 14.11)
-            // If the clocking event has not yet occurred this timestep, wait for it;
-            // otherwise continue without suspension.
             if (!m_defaultClockingp) {
                 nodep->v3error("Usage of cycle delays requires default clocking"
                                " (IEEE 1800-2023 14.11)");
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
-            AstVar* const evtVarp = m_defaultClkEvtVarp;
-            UASSERT_OBJ(evtVarp, nodep, "Default clocking event var not pre-created");
-            AstCMethodHard* const isTriggeredp = new AstCMethodHard{
-                flp, new AstVarRef{flp, evtVarp, VAccess::READ}, VCMethod::EVENT_IS_TRIGGERED};
-            isTriggeredp->dtypeSetBit();
-            AstEventControl* const waitp = new AstEventControl{
-                flp,
-                new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_EVENT,
-                                                   new AstVarRef{flp, evtVarp, VAccess::READ}}},
-                nullptr};
-            AstIf* const ifp = new AstIf{flp, new AstNot{flp, isTriggeredp}, waitp};
-            nodep->replaceWith(ifp);
+            nodep->replaceWith(newCycleDelayZerop(nodep));
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
@@ -706,9 +709,8 @@ private:
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
-        // A non-constant delay of a synchronous drive is counted at runtime, waiting for none if
-        // zero, like a constant '##0' in a synchronous drive. The count is integral of 64 bits,
-        // as V3Width makes delays, or real, which is rounded (IEEE 1800-2023 6.12.1)
+        // A non-constant delay is counted at runtime. The count is integral of 64 bits, as
+        // V3Width makes delays, or real, which is rounded (IEEE 1800-2023 6.12.1)
         if (valuep->isDouble()) {
             valuep = new AstRToIRoundS{flp, valuep};
             valuep->dtypeFrom(cntVarp);
@@ -716,6 +718,14 @@ private:
             valuep = new AstSel{flp, valuep, 0, cntVarp->width()};
         }
         beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, valuep});
+        // If the count is zero, a synchronous drive waits for none, like with a constant '##0',
+        // and a procedural delay waits like a procedural '##0' (IEEE 1800-2023 14.11)
+        if (!constp && !m_inSynchDrive) {
+            beginp->addStmtsp(new AstIf{
+                flp,
+                new AstEq{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}},
+                newCycleDelayZerop(nodep)});
+        }
 
         // Throughout: create flag tracking whether condition held every tick
         AstVar* throughoutOkp = nullptr;

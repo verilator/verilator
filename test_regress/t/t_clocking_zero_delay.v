@@ -60,6 +60,20 @@ module t;
     `checkd(int'($time), 15)
   end
 
+  // 1e: A count that is not constant: zero waits like ##0, others count cycles
+  int n0 = 0;
+  int n2 = 2;
+  initial begin
+    ##n0;
+    `checkd(int'($time), 5)
+    ##n0;
+    `checkd(int'($time), 5)
+    ##(n2 - 1);
+    `checkd(int'($time), 15)
+    ##n2;
+    `checkd(int'($time), 35)
+  end
+
   // =========================================================
   // Branch 2: ##0 in synchronous drive (IEEE 1800-2023 14.11)
   // "shall have no effect, as if it were not present"
