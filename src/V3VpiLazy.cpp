@@ -2064,12 +2064,22 @@ private:
 
     // METHODS - Liveness prune
 
-    // The group variables one statement reads (its own subtree only: foreach ignores nextp()).
-    static void stmtRefs(AstNode* nodep, Defined& readsr) {
-        nodep->foreach([&](AstVarRef* refp) {
-            if (!refp->access().isWriteOnly()) readsr.insert(refp->varScopep());
-        });
-    }
+    // Adds the variables one statement reads to 'readsr'; its own subtree only, not its nextp().
+    class LazyStmtReadsVisitor final : public VNVisitorConst {
+        Defined& m_readsr;
+
+        // VISITORS
+        void visit(AstVarRef* nodep) override {
+            if (!nodep->access().isWriteOnly()) m_readsr.insert(nodep->varScopep());
+        }
+        void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    public:
+        LazyStmtReadsVisitor(AstNode* nodep, Defined& readsr)
+            : m_readsr{readsr} {
+            iterateConst(nodep);
+        }
+    };
 
     static std::vector<AstNode*> splitList(AstNode* listp) {
         std::vector<AstNode*> stmtps;
@@ -2108,7 +2118,7 @@ private:
             const AstVarRef* const refp = lhsBaseRef(asgnp->lhsp(), partial);
             UASSERT_OBJ(refp, asgnp, "--vpi-lazy group survived with an unmodelled lvalue");
             if (!neededr.count(refp->varScopep())) return false;
-            stmtRefs(asgnp, neededr);
+            LazyStmtReadsVisitor{asgnp, neededr};
             return true;
         }
         if (AstNodeIf* const ifp = VN_CAST(stmtp, NodeIf)) {
@@ -2121,7 +2131,7 @@ private:
             if (!thensp && !elsesp) return false;
             if (thensp) ifp->addThensp(thensp);
             if (elsesp) ifp->addElsesp(elsesp);
-            stmtRefs(ifp->condp(), neededr);
+            LazyStmtReadsVisitor{ifp->condp(), neededr};
             return true;
         }
         if (AstJumpBlock* const jblockp = VN_CAST(stmtp, JumpBlock)) {
@@ -2132,7 +2142,7 @@ private:
             jblockp->addStmtsp(stmtsp);
             return true;
         }
-        stmtRefs(stmtp, neededr);  // Loops and any unmodelled shape: keep whole
+        LazyStmtReadsVisitor{stmtp, neededr};  // Loops and any unmodelled shape: keep whole
         return true;
     }
 
@@ -2159,6 +2169,56 @@ private:
             }
         }
     }
+
+    // Redirects a group's body to shadows; no re-typing, a shadow keeps its dtype. Pre-order, so
+    // the cone operands are refreshed in the order the body first reads them.
+    class LazyConeRewireVisitor final : public VNVisitor {
+        VpiLazyPreparer& m_prep;
+        Group* const m_groupp;
+        std::unordered_set<Group*> m_seenOps;  // m_coneOps, for lookup
+
+    public:
+        std::vector<Group*> m_coneOps;  // Reconstructed operand groups, first-read order
+
+    private:
+        void redirect(AstVarRef* refp, AstVarScope* vscp) {
+            refp->varScopep(vscp);
+            refp->varp(vscp->varp());
+        }
+
+        // VISITORS
+        void visit(AstVarRef* nodep) override {
+            AstVarScope* u = nodep->varScopep();
+            if (m_groupp->members.count(u)) {  // Read or written by this group
+                redirect(nodep, m_prep.shadowForMember(u));
+                return;
+            }
+            if (AstVarScope* const srcp = m_prep.retargetSubstituteFor(u, m_groupp)) {
+                u = srcp;
+                redirect(nodep, srcp);
+                nodep->dtypeFrom(srcp->varp());
+            }
+            Group* const ugp = m_prep.liveGroupOf(u);
+            if (ugp && ugp != m_groupp) {
+                // Operand is reconstructed too: read its shadow, calling its func to freshen.
+                UASSERT_OBJ(ugp->funcp, m_groupp->keyp,
+                            "--vpi-lazy cone operand ordered after its consumer");
+                redirect(nodep, m_prep.shadowForMember(u));
+                if (m_seenOps.insert(ugp).second) m_coneOps.push_back(ugp);
+                return;
+            }
+            m_prep.pinBoundary(u);
+        }
+        void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    public:
+        LazyConeRewireVisitor(VpiLazyPreparer& prep, Group* groupp)
+            : m_prep{prep}
+            , m_groupp{groupp} {
+            // The body is a detached list, and iterateAndNext needs its head to have a back
+            for (AstNode* stmtp = groupp->bodyp; stmtp; stmtp = stmtp->nextp()) iterate(stmtp);
+        }
+    };
 
     // Added to the tree at once, so remapped clones' dtypep() links survive V3Dead's dtype GC.
     void emitReconstructions() {
@@ -2187,37 +2247,8 @@ private:
                 tit->second->varp()->lazyReconFuncp(funcp);
             }
 
-            // Redirect group variables to their shadows; no re-typing, a shadow keeps its dtype.
             AstNode* const bodyp = g->bodyp;
-            std::unordered_set<Group*> seenOps;
-            std::vector<Group*> coneOps;
-            bodyp->foreachAndNext([&](AstVarRef* refp) {
-                AstVarScope* u = refp->varScopep();
-                if (g->members.count(u)) {  // Read or written by this group
-                    AstVarScope* const shadowp = shadowForMember(u);
-                    refp->varScopep(shadowp);
-                    refp->varp(shadowp->varp());
-                    return;
-                }
-                if (AstVarScope* const srcp = retargetSubstituteFor(u, g)) {
-                    u = srcp;
-                    refp->varScopep(srcp);
-                    refp->varp(srcp->varp());
-                    refp->dtypeFrom(srcp->varp());
-                }
-                Group* const ugp = liveGroupOf(u);
-                if (ugp && ugp != g) {
-                    // Operand is reconstructed too: read its shadow, calling its func to freshen.
-                    UASSERT_OBJ(ugp->funcp, g->keyp,
-                                "--vpi-lazy cone operand ordered after its consumer");
-                    AstVarScope* const shadowp = shadowForMember(u);
-                    refp->varScopep(shadowp);
-                    refp->varp(shadowp->varp());
-                    if (seenOps.insert(ugp).second) coneOps.push_back(ugp);
-                    return;
-                }
-                pinBoundary(u);
-            });
+            const LazyConeRewireVisitor rewire{*this, g};
 
             // (1) epoch guard. Not an early return: split-cfuncs may move the body elsewhere.
             AstVarScope* const epochVscp = stampFor(g);
@@ -2244,7 +2275,7 @@ private:
                 }
             };
             // (2) refresh the operand cone; topo order guarantees each operand's func exists.
-            for (Group* const ugp : coneOps) {
+            for (Group* const ugp : rewire.m_coneOps) {
                 AstCCall* const callp = new AstCCall{m_funcFlp, instanceCallee(ugp)};
                 callp->dtypeSetVoid();
                 addBodyStmt(callp->makeStmt());
