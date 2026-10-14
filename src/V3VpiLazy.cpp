@@ -262,8 +262,7 @@ class GroupVertex;
 // See UNIT OF RECONSTRUCTION above.
 struct Group final {
     AstScope* scopep = nullptr;  // Scope that authored the statements (see restrictMulti...)
-    AstAlways* alwaysp = nullptr;  // Procedural block, or null for an assign group
-    std::vector<const CombBlock*> blockps;  // Its block, or an assign group's, one per part
+    std::vector<const CombBlock*> blockps;  // Its blocks, encounter order
     std::vector<AstVarScope*> targets;  // VPI candidates this group defines, encounter order
     std::vector<AstVarScope*> temps;  // Other variables it writes, encounter order
     std::unordered_set<AstVarScope*> members;
@@ -1087,10 +1086,10 @@ private:
         return partialLhs(b.m_assignwp->lhsp(), extr);
     }
 
-    Group* makeGroup(AstScope* scopep, AstAlways* alwaysp, std::vector<const CombBlock*>&& blockps,
+    Group* makeGroup(AstScope* scopep, std::vector<const CombBlock*>&& blockps,
                      const std::vector<AstVarScope*>& written,
                      const std::unordered_map<const AstVarScope*, int>& groupWrites,
-                     const std::unordered_set<const AstVar*>& notSole, bool zeroInit) {
+                     const std::unordered_set<const AstVar*>& notSole) {
         // V3EmitCSyms names the func from the target shadow's module: all group vars share it.
         for (AstVarScope* const w : written) {
             if (w->scopep() == scopep) continue;
@@ -1133,13 +1132,11 @@ private:
         auto ownp = std::make_unique<Group>();
         Group* const g = ownp.get();
         g->scopep = scopep;
-        g->alwaysp = alwaysp;
         g->blockps = std::move(blockps);
         g->targets = targets;
         g->temps = temps;
         g->members.insert(targets.begin(), targets.end());
         g->members.insert(temps.begin(), temps.end());
-        if (zeroInit) g->zeroInitps = targets;
         g->keyp = targets[0]->varp();
         for (size_t i = 0; i < targets.size(); ++i) {
             m_groupOf[targets[i]] = g;
@@ -1256,8 +1253,7 @@ private:
             if (AstAssignW* const awp = b.m_assignwp) {
                 AstNodeExpr* const lhsp = awp->lhsp();
                 if (VN_IS(lhsp, VarRef)) {
-                    makeGroup(b.m_scopep, nullptr, {&b}, b.m_targets, b.m_writeCount, notSole,
-                              /*zeroInit*/ false);
+                    makeGroup(b.m_scopep, {&b}, b.m_targets, b.m_writeCount, notSole);
                     continue;
                 }
                 // A write shape the shadow cannot mirror: retain rather than let it be dropped.
@@ -1266,8 +1262,7 @@ private:
                     retainTarget(basep2->varScopep(), Bail::UNSUPPORTED_LVALUE);
                 continue;
             }
-            makeGroup(b.m_scopep, b.m_alwaysp, {&b}, b.m_targets, b.m_writeCount, notSole,
-                      /*zeroInit*/ false);
+            makeGroup(b.m_scopep, {&b}, b.m_targets, b.m_writeCount, notSole);
         }
     }
 
@@ -1320,24 +1315,58 @@ private:
         std::vector<const CombBlock*> blockps;
         blockps.reserve(parts.size());
         for (const PartWrite& pw : parts) blockps.push_back(pw.m_blockp);
-        makeGroup(scopep, nullptr, std::move(blockps), {basep}, groupWrites, notSole,
-                  /*zeroInit*/ true);
+        makeGroup(scopep, std::move(blockps), {basep}, groupWrites, notSole);
     }
 
     // METHODS - Group analysis
 
-    // One ordered walk over a block group's statements: see UNIT OF RECONSTRUCTION above.
+    // True if 'fp' names every bit of 'varp'; then remembered as whole, so decided once.
+    static bool fullyDefined(CombFootprint& fp, const AstVar* varp) {
+        if (fp.whole) return true;
+        std::vector<int32_t> dims;
+        int elemWidth = 0;
+        if (!combMaskable(varp, dims, elemWidth)) return false;
+        uint64_t elements = 1;
+        for (const int32_t d : dims) elements *= static_cast<uint64_t>(d);
+        if (fp.runsOf.size() != elements) return false;
+        for (const auto& pr : fp.runsOf) {
+            if (pr.second.size() != 1 || pr.second[0].first != 0
+                || pr.second[0].second != elemWidth)
+                return false;
+        }
+        fp.whole = true;
+        fp.runsOf.clear();
+        return true;
+    }
+
+    // addBits keeps runs disjoint and non-adjacent, so a defined range lies within one run.
+    static bool bitsDefined(const CombFootprint& fp, int32_t elem, int lsb, int width) {
+        if (fp.whole) return true;
+        const auto it = fp.runsOf.find(elem);
+        if (it == fp.runsOf.end()) return false;
+        return std::any_of(it->second.begin(), it->second.end(),
+                           [&](const std::pair<int, int>& run) {
+                               return run.first <= lsb && lsb + width <= run.first + run.second;
+                           });
+    }
+
+    // One ordered walk over a group's statements: see UNIT OF RECONSTRUCTION above. Per bit, so
+    // `a[1] = f(a[0])` reads only what it already wrote.
     class LazyReadOrderVisitor final : public VNVisitorConst {
+        using ArmDefs = std::vector<std::pair<AstVarScope*, CombFootprint>>;
+
         const Group* const m_groupp;  // Group whose statements are walked
-        // Group vars the prefix wrote unconditionally full-width; conditionals intersect
-        Defined& m_definedr;
+        // Group var bits the prefix wrote on every path; conditionals intersect
+        DefinedBits& m_definedr;
         Bail& m_whyr;  // Why the walk failed, its first failure only
-        std::vector<AstVarScope*> m_addedps;  // What the current arm added to m_definedr
+        ArmDefs m_undo;  // Each var the current arm changed, as it was before the arm
+        std::unordered_set<const AstVarScope*> m_undoSet;  // m_undo's vars, for lookup
         const AstVarRef* m_skipp = nullptr;  // An assignment's LHS base ref, checked apart
         bool m_inExpr = false;  // Scanning an expression's reads, not walking statements
 
     public:
         bool m_ok = true;  // No statement bailed
+        std::vector<AstVarScope*> m_assembledps;  // Vars first defined in part, encounter order
 
     private:
         void bail(Bail why) {
@@ -1345,24 +1374,57 @@ private:
             m_ok = false;
             m_whyr = why;
         }
-        void define(AstVarScope* vscp) {
-            if (m_definedr.insert(vscp).second) m_addedps.push_back(vscp);
+        CombFootprint& changing(AstVarScope* vscp) {
+            CombFootprint& fp = m_definedr[vscp];
+            if (m_undoSet.insert(vscp).second) m_undo.emplace_back(vscp, fp);
+            return fp;
+        }
+        void defineWhole(AstVarScope* vscp) {
+            CombFootprint& fp = changing(vscp);
+            fp.whole = true;
+            fp.runsOf.clear();
+        }
+        void defineBits(AstVarScope* vscp, int32_t elem, int lsb, int width) {
+            CombFootprint& fp = changing(vscp);
+            if (!fp.whole && fp.runsOf.empty()
+                && std::find(m_assembledps.begin(), m_assembledps.end(), vscp)
+                       == m_assembledps.end())
+                m_assembledps.push_back(vscp);
+            addBits(fp, elem, lsb, width);
+        }
+        bool member(const AstVarRef* refp) const {
+            return m_groupp->members.count(refp->varScopep()) != 0;
         }
         void scanReads(AstNode* nodep) {
             VL_RESTORER(m_inExpr);
             m_inExpr = true;
             iterateAndNextConstNull(nodep);
         }
-        // Walks the arm from what the prefix defined, then undoes and returns what it added, so
-        // an if costs its arms' writes and not a copy of the defined set.
-        std::vector<AstVarScope*> walkArm(AstNode* stmtsp, AstNode* contsp = nullptr) {
-            VL_RESTORER_CLEAR(m_addedps);
+        // Walks the arm from what the prefix defined, then restores that and returns what the
+        // arm left defined of each var it changed, so an if costs its arms' writes alone.
+        ArmDefs walkArm(AstNode* stmtsp, AstNode* contsp = nullptr) {
+            VL_RESTORER_CLEAR(m_undo);
+            VL_RESTORER_CLEAR(m_undoSet);
             iterateAndNextConstNull(stmtsp);
             iterateAndNextConstNull(contsp);
-            for (AstVarScope* const vscp : m_addedps) m_definedr.erase(vscp);
-            std::vector<AstVarScope*> addedps;
-            addedps.swap(m_addedps);
-            return addedps;
+            for (std::pair<AstVarScope*, CombFootprint>& pr : m_undo)
+                std::swap(m_definedr[pr.first], pr.second);
+            ArmDefs armDefs;
+            armDefs.swap(m_undo);
+            return armDefs;
+        }
+        // A constant select of a group var reads only its own bits.
+        void visitSel(AstNodeExpr* nodep) {
+            PartExtent ext;
+            int32_t elem = 0;
+            const AstVarRef* const refp = partialLhsRef(nodep, ext);
+            if (refp && refp != m_skipp && !refp->access().isWriteOnly() && member(refp)
+                && combElement(refp->varp(), ext, elem)) {
+                if (!bitsDefined(m_definedr[refp->varScopep()], elem, ext.lsb, ext.width))
+                    bail(Bail::READ_BEFORE_WRITE);
+                return;
+            }
+            iterateChildrenConst(nodep);
         }
 
         // VISITORS
@@ -1398,26 +1460,32 @@ private:
                 scanReads(nodep->rhsp());
                 scanReads(nodep->lhsp());
             }
+            PartExtent ext;
+            int32_t elem = 0;
             if (!partial) {
-                define(basep);
-            } else if (!m_definedr.count(basep)) {
-                // The untouched bits keep their prior value, so the shadow must already hold it.
-                bail(Bail::READ_BEFORE_WRITE);
-            }
+                defineWhole(basep);
+            } else if (partialLhsRef(nodep->lhsp(), ext)
+                       && combElement(basep->varp(), ext, elem)) {
+                defineBits(basep, elem, ext.lsb, ext.width);
+            }  // Else no bit is provably defined; the untouched ones keep what they had
         }
         void visit(AstVarRef* nodep) override {
-            if (nodep == m_skipp || nodep->access().isWriteOnly()) return;
-            AstVarScope* const vscp = nodep->varScopep();
-            if (m_groupp->members.count(vscp) && !m_definedr.count(vscp))
+            if (nodep == m_skipp || nodep->access().isWriteOnly() || !member(nodep)) return;
+            if (!fullyDefined(m_definedr[nodep->varScopep()], nodep->varp()))
                 bail(Bail::READ_BEFORE_WRITE);
         }
+        void visit(AstSel* nodep) override { visitSel(nodep); }
+        void visit(AstArraySel* nodep) override { visitSel(nodep); }
         void visit(AstNodeIf* nodep) override {
             scanReads(nodep->condp());
-            const std::vector<AstVarScope*> thenps = walkArm(nodep->thensp());
-            const std::vector<AstVarScope*> elseps = walkArm(nodep->elsesp());
-            const Defined elseSet{elseps.begin(), elseps.end()};
-            for (AstVarScope* const vscp : thenps)
-                if (elseSet.count(vscp)) define(vscp);
+            const ArmDefs thenDefs = walkArm(nodep->thensp());
+            const ArmDefs elseDefs = walkArm(nodep->elsesp());
+            std::unordered_map<const AstVarScope*, const CombFootprint*> elseOf;
+            for (const auto& pr : elseDefs) elseOf.emplace(pr.first, &pr.second);
+            for (const auto& pr : thenDefs) {
+                const auto it = elseOf.find(pr.first);
+                if (it != elseOf.end()) changing(pr.first) = intersectBits(pr.second, *it->second);
+            }
         }
         // May run zero times, so it defines nothing on exit.
         void visit(AstLoop* nodep) override { walkArm(nodep->stmtsp(), nodep->contsp()); }
@@ -1435,130 +1503,33 @@ private:
         }
 
     public:
-        LazyReadOrderVisitor(AstNode* stmtsp, const Group* groupp, Defined& definedr, Bail& whyr)
+        LazyReadOrderVisitor(const Group* groupp, DefinedBits& definedr, Bail& whyr)
             : m_groupp{groupp}
             , m_definedr{definedr}
             , m_whyr{whyr} {
-            iterateAndNextConstNull(stmtsp);
+            for (const CombBlock* const bp : groupp->blockps)
+                iterateAndNextConstNull(bp->m_alwaysp->stmtsp());
         }
     };
 
-    // No part of a continuous-assign group may read the target: shadow-reads-shadow reads stale.
-    bool analyseAssignGroup(const Group* g, Bail& whyr) const {
+    // A var first defined in part is assembled into a zeroed shadow.
+    bool analyseGroup(Group* g, Bail& whyr) const {
         for (const CombBlock* const bp : g->blockps) {
             if (bp->m_impure) {
                 whyr = Bail::IMPURE;
                 return false;
             }
-            // Its LHS is a write-only ref under constant selects, so every read is the RHS's
-            if (std::any_of(bp->m_reads.begin(), bp->m_reads.end(),
-                            [&](AstVarScope* u) { return g->members.count(u); })) {
-                whyr = Bail::READ_BEFORE_WRITE;
-                return false;
-            }
         }
-        return true;
-    }
-
-    // An unpacked array covered by unconditional constant-index element assigns, and never
-    // read, is defined whatever the order: seed it defined, zeroing the shadow to assemble into.
-    void seedElementWrittenArrays(Group* g, Defined& defined) const {
-        const CombBlock& b = *g->blockps[0];
-        struct ElemInfo final {
-            std::map<std::vector<int32_t>, std::vector<PartExtent>> byElem;
-            int matched = 0;
-            size_t depth = 0;
-            bool mixedDepth = false;
-        };
-        const std::unordered_set<const AstVarScope*> reads{b.m_reads.begin(), b.m_reads.end()};
-        std::unordered_map<const AstVarScope*, ElemInfo> elems;
-        for (AstNode* sp = g->alwaysp->stmtsp(); sp; sp = sp->nextp()) {
-            AstNodeAssign* const asgnp = VN_CAST(sp, NodeAssign);
-            if (!asgnp) continue;
-            PartExtent ext;
-            const AstVarScope* const u = partialLhs(asgnp->lhsp(), ext);
-            if (!u || ext.idxs.empty()) continue;
-            ElemInfo& ei = elems[u];
-            if (ei.mixedDepth) continue;
-            if (!ei.matched) ei.depth = ext.idxs.size();
-            // V3Slice leaves element assigns at one depth; kept as the safe fallback
-            if (ext.idxs.size() != ei.depth) {  // LCOV_EXCL_START
-                ei.mixedDepth = true;
-                continue;
-            }  // LCOV_EXCL_STOP
-            ei.byElem[ext.idxs].push_back(ext);
-            ++ei.matched;
-        }
-
-        // Every member is written in the block, so has a write count
-        const auto trySeed = [&](AstVarScope* u) {
-            if (reads.count(u)) return;
-            const auto eit = elems.find(u);
-            if (eit == elems.end() || eit->second.mixedDepth) return;
-            if (eit->second.matched != b.m_writeCount.at(u)) return;  // Nested or variable-indexed
-            const size_t depth = eit->second.depth;
-            std::map<std::vector<int32_t>, std::vector<PartExtent>>& byElem = eit->second.byElem;
-            // An element this block never writes has no driver at all, so zeroing the shadow
-            // would invent a value the model's own storage does not hold. Prove full coverage.
-            AstNodeDType* dtypep = u->varp()->dtypeSkipRefp();
-            size_t elements = 1;
-            std::vector<int32_t> dimElements;  // Outermost first; idxs is innermost first
-            for (size_t d = 0; d < depth; ++d) {
-                const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
-                if (!adtypep) return;
-                const size_t extent = static_cast<size_t>(adtypep->elementsConst());
-                // A wrapped product would prove coverage of an element count nobody has
-                if (extent && elements > std::numeric_limits<size_t>::max() / extent) return;
-                dimElements.push_back(adtypep->elementsConst());
-                elements *= extent;
-                dtypep = adtypep->subDTypep()->skipRefp();
-            }
-            // A select shallower than the array leaves the sub-array's own extent unproven
-            if (VN_IS(dtypep, UnpackArrayDType)) return;
-            if (byElem.size() != elements) return;
-            const int elemWidth = dtypep->width();
-            // Per bucket, LSB-sorted so one walk proves contiguous coverage from bit 0
-            for (auto& pr : byElem) {
-                for (size_t k = 0; k < depth; ++k) {
-                    const int32_t idx = pr.first[depth - 1 - k];
-                    if (idx < 0 || idx >= dimElements[k]) return;
-                }
-                std::vector<PartExtent>& bucket = pr.second;
-                std::sort(bucket.begin(), bucket.end(),
-                          [](const PartExtent& a, const PartExtent& b) { return a.lsb < b.lsb; });
-                int covered = 0;
-                for (const PartExtent& ext : bucket) {
-                    if (ext.lsb != covered) return;  // A gap, or an overlap
-                    covered += ext.width;
-                }
-                if (covered != elemWidth) return;
-            }
-            defined.insert(u);
-            g->zeroInitps.push_back(u);
-        };
-        for (AstVarScope* const t : g->targets) trySeed(t);
-        for (AstVarScope* const t : g->temps) trySeed(t);
-    }
-
-    // 'defined' as LazyReadOrderVisitor has it for the whole block.
-    bool walkBlockGroup(Group* g, Defined& defined, Bail& whyr) const {
-        if (g->blockps[0]->m_impure) {
-            whyr = Bail::IMPURE;
-            return false;
-        }
-        seedElementWrittenArrays(g, defined);
-        return LazyReadOrderVisitor{g->alwaysp->stmtsp(), g, defined, whyr}.m_ok;
-    }
-
-    bool analyseBlockGroup(Group* g, Bail& whyr) const {
-        Defined defined;
-        if (!walkBlockGroup(g, defined, whyr)) return false;
+        DefinedBits defined;
+        LazyReadOrderVisitor walk{g, defined, whyr};
+        if (!walk.m_ok) return false;
         for (AstVarScope* const t : g->targets) {
-            if (!defined.count(t)) {
+            if (!fullyDefined(defined[t], t->varp())) {
                 whyr = Bail::LATCH;  // Not written on every path
                 return false;
             }
         }
+        g->zeroInitps = std::move(walk.m_assembledps);
         return true;
     }
 
@@ -1567,8 +1538,7 @@ private:
             Group* const g = ownp.get();
             if (!g->live) continue;
             Bail why = Bail::UNSUPPORTED_STMT;
-            const bool ok = g->alwaysp ? analyseBlockGroup(g, why) : analyseAssignGroup(g, why);
-            if (!ok) killGroupsOfKey(g->keyp, why);
+            if (!analyseGroup(g, why)) killGroupsOfKey(g->keyp, why);
         }
     }
 
