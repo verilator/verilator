@@ -1605,11 +1605,11 @@ private:
             if (!g->live || instancesOf(g->keyp) <= 1) continue;
             const auto elsewhere
                 = [&](const AstVarScope* vscp) { return vscp->scopep() != g->scopep; };
-            // Every ref is a read, a write, or both
-            const bool bad = std::any_of(g->blockps.begin(), g->blockps.end(), [&](const CombBlock* bp) {
-                return std::any_of(bp->m_reads.begin(), bp->m_reads.end(), elsewhere)
-                       || std::any_of(bp->m_targets.begin(), bp->m_targets.end(), elsewhere);
-            });
+            bool bad = false;
+            for (const CombBlock* const bp : g->blockps) {  // Every ref is a read or a write
+                bad = bad || std::any_of(bp->m_reads.begin(), bp->m_reads.end(), elsewhere)
+                      || std::any_of(bp->m_targets.begin(), bp->m_targets.end(), elsewhere);
+            }
             if (bad) killGroupsOfKey(g->keyp, Bail::CROSS_SCOPE_CONE);
         }
     }
