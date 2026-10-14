@@ -64,8 +64,6 @@ class V3HierBlock final : public V3GraphVertex {
     using StrGParam = std::pair<string, string>;
     using StrGParams = std::vector<StrGParam>;
 
-public:
-private:
     // MEMBERS
     const AstModule* const m_modp;  // Hierarchical block module
     std::vector<VHierXmrPort> m_xmrPorts;  // Promoted outbound references

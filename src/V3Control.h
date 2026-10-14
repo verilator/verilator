@@ -31,11 +31,11 @@
 // Found in the plan run, written to the generated .vlt, and read back by the
 // child run that creates the port and the top run that connects it.
 class VHierXmrPort final {
-    string m_refModule;  // Module the reference appears in
-    string m_port;  // Generated port name
-    string m_path;  // Dotted path of the signal it reads
-    int m_width;  // Width, established before V3Width from the declared type
-    bool m_signed;  // Whether the referenced signal is signed
+    const string m_refModule;  // Module the reference appears in
+    const string m_port;  // Generated port name
+    const string m_path;  // Dotted path of the signal it reads
+    const int m_width;  // Width, established before V3Width from the declared type
+    const bool m_signed;  // Whether the referenced signal is signed
 
 public:
     VHierXmrPort(const string& refModule, const string& port, const string& path, int width,
@@ -45,9 +45,9 @@ public:
         , m_path{path}
         , m_width{width}
         , m_signed{isSigned} {}
-    const string& refModule() const { return m_refModule; }
-    const string& port() const { return m_port; }
-    const string& path() const { return m_path; }
+    string refModule() const { return m_refModule; }
+    string port() const { return m_port; }
+    string path() const { return m_path; }
     int width() const { return m_width; }
     bool isSigned() const { return m_signed; }
 };
