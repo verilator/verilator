@@ -251,7 +251,21 @@ class VerilatedVcdBuffer VL_NOT_FINAL {
     VL_ATTR_ALWINLINE void emitSData(uint32_t code, SData newval, int bits);
     VL_ATTR_ALWINLINE void emitIData(uint32_t code, IData newval, int bits);
     VL_ATTR_ALWINLINE void emitQData(uint32_t code, QData newval, int bits);
-    VL_ATTR_ALWINLINE void emitWData(uint32_t code, WDataInP newval, int bits);
+    VL_ATTR_ALWINLINE void emitWData(uint32_t code, WDataInP<> newval, int bits);
+    template <std::size_t Offset>
+    VL_ATTR_ALWINLINE void emitWData(uint32_t code, WDataInP<Offset> newval, int bits) {
+        int words = VL_WORDS_I(bits);
+        char* wp = m_writep;
+        *wp++ = 'b';
+        const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
+        cvtEDataToStr(wp, newval[--words] << (VL_EDATASIZE - bitsInMSW));
+        wp += bitsInMSW;
+        while (words > 0) {
+            cvtEDataToStr(wp, newval[--words]);
+            wp += VL_EDATASIZE;
+        }
+        finishLine(code, wp);
+    }
     VL_ATTR_ALWINLINE void emitDouble(uint32_t code, double newval);
 };
 

@@ -215,6 +215,7 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     const vlFstHandle* const m_symbolp = m_owner.m_symbolp;
     // String buffer long enough to hold maxBits() chars
     char* const m_strbufp = m_owner.m_strbufp;
+    std::vector<EData> m_wideBuffer;  // Contiguous staging required by the FST writer API
 
     // CONSTRUCTOR
     explicit VerilatedFstBuffer(VerilatedFst& owner)
@@ -232,7 +233,14 @@ class VerilatedFstBuffer VL_NOT_FINAL {
     VL_ATTR_ALWINLINE void emitSData(uint32_t code, SData newval, int);
     VL_ATTR_ALWINLINE void emitIData(uint32_t code, IData newval, int);
     VL_ATTR_ALWINLINE void emitQData(uint32_t code, QData newval, int);
-    VL_ATTR_ALWINLINE void emitWData(uint32_t code, WDataInP newval, int);
+    VL_ATTR_ALWINLINE void emitWData(uint32_t code, WDataInP<> newval, int);
+    template <std::size_t Offset>
+    VL_ATTR_ALWINLINE void emitWData(uint32_t code, WDataInP<Offset> newval, int bits) {
+        const int words = VL_WORDS_I(bits);
+        m_wideBuffer.resize(words);
+        for (int i = 0; i < words; ++i) m_wideBuffer[i] = newval[i];
+        emitWData(code, WDataInP<>::external(m_wideBuffer.data()), bits);
+    }
     VL_ATTR_ALWINLINE void emitDouble(uint32_t code, double newval);
 };
 

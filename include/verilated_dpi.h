@@ -37,10 +37,15 @@
 // SETTING OPERATORS
 
 // Convert svBitVecVal to Verilator internal data
-inline void VL_SET_W_SVBV(int obits, WDataOutP owp, const svBitVecVal* lwp) VL_MT_SAFE {
+template <std::size_t O_Offset>
+inline void VL_SET_W_SVBV(int obits, WDataOutP<O_Offset> owp, const svBitVecVal* lwp) VL_MT_SAFE {
     const int words = VL_WORDS_I(obits);
     for (int i = 0; i < words - 1; ++i) owp[i] = lwp[i];
     owp[words - 1] = lwp[words - 1] & VL_MASK_I(obits);
+}
+template <std::size_t N_Words>
+inline void VL_SET_W_SVBV(int obits, VlWide<N_Words>& owp, const svBitVecVal* lwp) VL_MT_SAFE {
+    VL_SET_W_SVBV(obits, owp.aval_mut(), lwp);
 }
 inline void VL_SET_Q_SVBV(int obits, QData& out, const svBitVecVal* lwp) VL_MT_SAFE {
     out = VL_MASK_Q(obits) & VL_SET_QII(lwp[1], lwp[0]);
@@ -56,22 +61,33 @@ inline void VL_SET_C_SVBV(int obits, CData& out, const svBitVecVal* lwp) VL_MT_S
 }
 
 // Convert Verilator internal data to svBitVecVal
-inline void VL_SET_SVBV_W(int obits, svBitVecVal* owp, const WDataInP lwp) VL_MT_SAFE {
+template <std::size_t L_Offset>
+inline void VL_SET_SVBV_W(int obits, svBitVecVal* owp, WDataInP<L_Offset> lwp) VL_MT_SAFE {
     const int words = VL_WORDS_I(obits);
     for (int i = 0; i < words - 1; ++i) owp[i] = lwp[i];
     owp[words - 1] = lwp[words - 1] & VL_MASK_I(obits);
 }
+template <std::size_t N_Words>
+inline void VL_SET_SVBV_W(int obits, svBitVecVal* owp, const VlWide<N_Words>& lwp) VL_MT_SAFE {
+    VL_SET_SVBV_W(obits, owp, lwp.aval());
+}
 inline void VL_SET_SVBV_I(int, svBitVecVal* owp, const IData ld) VL_MT_SAFE { owp[0] = ld; }
 inline void VL_SET_SVBV_Q(int, svBitVecVal* owp, const QData ld) VL_MT_SAFE {
-    VL_SET_WQ(WDataOutP::external(owp), ld);
+    VL_SET_WQ(WDataOutP<>::external(owp), ld);
 }
 
 // Convert svLogicVecVal to Verilator internal data
 // Note these functions ignore X/Z in svLogicVecVal
-inline void VL_SET_W_SVLV(int obits, WDataOutP owp, const svLogicVecVal* lwp) VL_MT_SAFE {
+template <std::size_t O_Offset>
+inline void VL_SET_W_SVLV(int obits, WDataOutP<O_Offset> owp,
+                          const svLogicVecVal* lwp) VL_MT_SAFE {
     const int words = VL_WORDS_I(obits);
     for (int i = 0; i < words - 1; ++i) owp[i] = lwp[i].aval;
     owp[words - 1] = lwp[words - 1].aval & VL_MASK_I(obits);
+}
+template <std::size_t N_Words>
+inline void VL_SET_W_SVLV(int obits, VlWide<N_Words>& owp, const svLogicVecVal* lwp) VL_MT_SAFE {
+    VL_SET_W_SVLV(obits, owp.aval_mut(), lwp);
 }
 inline void VL_SET_Q_SVLV(int obits, QData& out, const svLogicVecVal* lwp) VL_MT_SAFE {
     out = VL_MASK_Q(obits) & VL_SET_QII(lwp[1].aval, lwp[0].aval);
@@ -88,11 +104,16 @@ inline void VL_SET_C_SVLV(int obits, CData& out, const svLogicVecVal* lwp) VL_MT
 
 // Convert Verilator internal data to svLogicVecVal
 // Note these functions never create X/Z in svLogicVecVal
-inline void VL_SET_SVLV_W(int obits, svLogicVecVal* owp, const WDataInP lwp) VL_MT_SAFE {
+template <std::size_t L_Offset>
+inline void VL_SET_SVLV_W(int obits, svLogicVecVal* owp, WDataInP<L_Offset> lwp) VL_MT_SAFE {
     const int words = VL_WORDS_I(obits);
     for (int i = 0; i < words; ++i) owp[i].bval = 0;
     for (int i = 0; i < words - 1; ++i) owp[i].aval = lwp[i];
     owp[words - 1].aval = lwp[words - 1] & VL_MASK_I(obits);
+}
+template <std::size_t N_Words>
+inline void VL_SET_SVLV_W(int obits, svLogicVecVal* owp, const VlWide<N_Words>& lwp) VL_MT_SAFE {
+    VL_SET_SVLV_W(obits, owp, lwp.aval());
 }
 inline void VL_SET_SVLV_I(int, svLogicVecVal* owp, const IData ld) VL_MT_SAFE {
     owp[0].aval = ld;
@@ -100,7 +121,7 @@ inline void VL_SET_SVLV_I(int, svLogicVecVal* owp, const IData ld) VL_MT_SAFE {
 }
 inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
     VlWide<2> lwp;
-    VL_SET_WQ(lwp, ld);
+    VL_SET_WQ(lwp.aval_mut(), ld);
     owp[0].aval = lwp[0];
     owp[0].bval = 0;
     owp[1].aval = lwp[1];

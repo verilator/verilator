@@ -950,6 +950,7 @@ class TaskVisitor final : public VNVisitor {
             AstCStmt* const cstmtp = new AstCStmt{flp};
             cstmtp->add(cvt);
             cstmtp->add(internalp);
+            if (internalp->isWide()) cstmtp->add(".aval_mut()");
             cstmtp->add(", ");
             cstmtp->add(dpip);
             cstmtp->add(");");
@@ -2557,10 +2558,12 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         if (unpackDim > 0) {  // Access multi-dimensional array as a 1D array
             stmt += "(&" + frName;
             for (int i = 0; i < unpackDim; ++i) stmt += "[0]";
-            stmt += ")[" + (needsFor ? idx : "0") + "])";
+            stmt += ")[" + (needsFor ? idx : "0") + "]";
         } else {
-            stmt += frName + ")";
+            stmt += frName;
         }
+        if (portp->basicp()->isWide()) stmt += ".aval()";
+        stmt += ")";
     } else {
         const bool isChandle
             = portp->basicp() && portp->basicp()->keyword() == VBasicDTypeKwd::CHANDLE;
@@ -2615,6 +2618,7 @@ std::string V3Task::assignDpiToInternal(const std::string& lhsName, AstVar* varp
         // extract a scalar from DPI temporary var that is scalar or 1D array
         if (useSvVec) {
             const std::string offset = std::to_string(i * widthWords);
+            if (varp->basicp()->isWide()) lhs += ".aval_mut()";
             statements += cvt + " " + lhs + ", " + varp->name() + " + " + offset + ");\n";
         } else {
             const std::string elem = strides.empty() ? "" : "[" + std::to_string(i) + "]";

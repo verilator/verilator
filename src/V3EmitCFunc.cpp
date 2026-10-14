@@ -119,6 +119,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                                         m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
                     }
                     out += varName(m_wideTempRefp->varp());
+                    out += ".aval_mut()";
                     m_wideTempRefp = nullptr;
                     needComma = true;
                 } else if (usesQueue) {
@@ -170,6 +171,23 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                     UASSERT_OBJ(detailp, nodep, "emitOperator() references undef node");
                     putOut();
                     iterateAndNextConstNull(detailp);
+                    if (const AstNodeExpr* const exprp = VN_CAST(detailp, NodeExpr)) {
+                        if (exprp->isWide()
+                            && !VN_IS(exprp->dtypep()->skipRefp(), UnpackArrayDType)
+                            && (VN_IS(exprp, NodeVarRef) || VN_IS(exprp, MemberSel)
+                                || VN_IS(exprp, StructSel) || VN_IS(exprp, ArraySel))) {
+                            out += ".aval()";
+                        }
+                    }
+                    needComma = true;
+                    break;
+                case 'p':
+                    commaOut();
+                    UASSERT_OBJ(detailp, nodep, "emitOperator() references undef node");
+                    putOut();
+                    iterateAndNextConstNull(detailp);
+                    UASSERT_OBJ(detailp->isWide(), nodep, "Pointer format requires wide node");
+                    out += ".aval_mut()";
                     needComma = true;
                     break;
                 default:
@@ -607,7 +625,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                               : (varp->isXTemp() ? "VL_SCOPED_RAND_RESET_ASSIGN_W("
                                                  : "VL_SCOPED_RAND_RESET_W(");
                 out += cvtToStr(dtypep->widthMin());
-                out += ", " + varNameProtected + suffix;
+                out += ", " + varNameProtected + suffix + ".aval_mut()";
                 if (!zeroit) {
                     emitVarResetScopeHash();
                     const uint64_t salt = VString::hashMurmur(varp->prettyName());

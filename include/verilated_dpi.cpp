@@ -71,7 +71,7 @@ svLogic svGetBitselLogic(const svLogicVecVal* sp, int bit) {
 }
 
 void svPutBitselBit(svBitVecVal* dp, int bit, svBit s) {
-    VL_ASSIGNBIT_WI(bit, WDataOutP::external(dp), s);
+    VL_ASSIGNBIT_WI(bit, WDataOutP<>::external(dp), s);
 }
 void svPutBitselLogic(svLogicVecVal* dp, int bit, svLogic s) {
     // Verilator doesn't support X/Z so only aval
@@ -286,13 +286,13 @@ static void _vl_svGetBitArrElemVecVal(svBitVecVal* d, const svOpenArrayHandle s,
     case VLVT_UINT32: d[0] = *(reinterpret_cast<IData*>(datap)); return;
     case VLVT_UINT64: {
         VlWide<2> lwp;
-        VL_SET_WQ(lwp, *(reinterpret_cast<QData*>(datap)));
+        VL_SET_WQ(lwp.aval_mut(), *(reinterpret_cast<QData*>(datap)));
         d[0] = lwp[0];
         d[1] = lwp[1];
         break;
     }
     case VLVT_WDATA: {
-        WDataInP wdatap = WDataInP::external(reinterpret_cast<EData*>(datap));
+        WDataInP<> wdatap = WDataInP<>::external(reinterpret_cast<EData*>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) d[i] = wdatap[i];
         return;
     }
@@ -323,7 +323,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         return;
     case VLVT_UINT64: {
         VlWide<2> lwp;
-        VL_SET_WQ(lwp, *(reinterpret_cast<QData*>(datap)));
+        VL_SET_WQ(lwp.aval_mut(), *(reinterpret_cast<QData*>(datap)));
         d[0].aval = lwp[0];
         d[0].bval = 0;
         d[1].aval = lwp[1];
@@ -331,7 +331,7 @@ static void _vl_svGetLogicArrElemVecVal(svLogicVecVal* d, const svOpenArrayHandl
         break;
     }
     case VLVT_WDATA: {
-        WDataInP wdatap = WDataInP::external(reinterpret_cast<EData*>(datap));
+        WDataInP<> wdatap = WDataInP<>::external(reinterpret_cast<EData*>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) {
             d[i].aval = wdatap[i];
             d[i].bval = 0;
@@ -357,7 +357,7 @@ static void _vl_svPutBitArrElemVecVal(const svOpenArrayHandle d, const svBitVecV
     case VLVT_UINT32: *(reinterpret_cast<IData*>(datap)) = s[0]; return;
     case VLVT_UINT64: *(reinterpret_cast<QData*>(datap)) = VL_SET_QII(s[1], s[0]); break;
     case VLVT_WDATA: {
-        WDataOutP wdatap = WDataOutP::external(reinterpret_cast<EData*>(datap));
+        WDataOutP<> wdatap = WDataOutP<>::external(reinterpret_cast<EData*>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) wdatap[i] = s[i];
         return;
     }
@@ -379,7 +379,7 @@ static void _vl_svPutLogicArrElemVecVal(const svOpenArrayHandle d, const svLogic
     case VLVT_UINT32: *(reinterpret_cast<IData*>(datap)) = s[0].aval; return;
     case VLVT_UINT64: *(reinterpret_cast<QData*>(datap)) = VL_SET_QII(s[1].aval, s[0].aval); break;
     case VLVT_WDATA: {
-        WDataOutP wdatap = WDataOutP::external(reinterpret_cast<EData*>(datap));
+        WDataOutP<> wdatap = WDataOutP<>::external(reinterpret_cast<EData*>(datap));
         for (int i = 0; i < VL_WORDS_I(varp->entBits()); ++i) wdatap[i] = s[i].aval;
         return;
     }
@@ -781,7 +781,7 @@ int svGetTime(const svScope /*scope*/, svTimeVal* time) {
     if (VL_UNLIKELY(!time)) return -1;
     const QData qtime = VL_TIME_Q();
     VlWide<2> itime;
-    VL_SET_WQ(itime, qtime);
+    VL_SET_WQ(itime.aval_mut(), qtime);
     time->low = itime[0];
     time->high = itime[1];
     return 0;

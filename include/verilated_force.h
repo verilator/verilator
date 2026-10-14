@@ -181,7 +181,7 @@ private:
             return (rhsVal >> rhsLsb) & mask;
         }
 
-        WDataInP rhswp = WDataInP::external(static_cast<const EData*>(entry.m_rhsDatap));
+        WDataInP<> rhswp = WDataInP<>::external(static_cast<const EData*>(entry.m_rhsDatap));
         return VL_SEL_QWII(rhsWidth, rhswp, rhsLsb, width) & mask;
     }
 
@@ -194,7 +194,8 @@ private:
         return static_cast<T>((cur & ~mask) | (rhsBits & mask));
     }
 
-    static void applyEntry(WDataOutP reswp, const Entry& entry, int entryLsb, int entryMsb,
+    template <std::size_t Offset>
+    static void applyEntry(WDataOutP<Offset> reswp, const Entry& entry, int entryLsb, int entryMsb,
                            int lsbOffset) {
         const int resLsb = entryLsb - lsbOffset;
         const int resMsb = entryMsb - lsbOffset;
@@ -243,14 +244,14 @@ private:
                                                                                   const Entry& e) {
         Elem res = cur;
         const Entry bitEntry{e.m_bitLsb, e.m_bitMsb, e.m_rhsLsb, e.m_rhsDatap, 0, 0, 0};
-        applyEntry(res, bitEntry, e.m_bitLsb, e.m_bitMsb, 0);
+        applyEntry(res.aval_mut(), bitEntry, e.m_bitLsb, e.m_bitMsb, 0);
         return res;
     }
 
     template <typename T>
     typename std::enable_if<VlIsVlWide<T>::value>::type applyEntries(T& val) const {
         for (const auto& entry : m_entries) {
-            applyEntry(val, entry, entry.m_lsb, entry.m_msb, 0);
+            applyEntry(val.aval_mut(), entry, entry.m_lsb, entry.m_msb, 0);
         }
     }
 
@@ -259,7 +260,9 @@ private:
         for (const auto& entry : m_entries) val = applyEntry(val, entry);
     }
 
-    void readSel(int lbits, WDataInP valp, WDataOutP reswp, int lsb, int width) const {
+    template <std::size_t V_Offset, std::size_t R_Offset>
+    void readSel(int lbits, WDataInP<V_Offset> valp, WDataOutP<R_Offset> reswp, int lsb,
+                 int width) const {
         VL_SEL_WWII(width, lbits, reswp, valp, lsb, width);
         const int msb = lsb + width - 1;
         auto it = std::lower_bound(m_entries.begin(), m_entries.end(), lsb,
@@ -320,26 +323,40 @@ public:
         return result;
     }
 
-    IData readSelI(int lbits, WDataInP valp, int lsb, int width) const {
+    template <std::size_t V_Offset>
+    IData readSelI(int lbits, WDataInP<V_Offset> valp, int lsb, int width) const {
         IData result;
-        readSel(lbits, valp, WDataOutP::external(reinterpret_cast<EData*>(&result)), lsb, width);
+        readSel(lbits, valp, WDataOutP<>::external(reinterpret_cast<EData*>(&result)), lsb, width);
         result &= VL_MASK_I(width);
         return result;
     }
+    template <std::size_t V_Words>
+    IData readSelI(int lbits, const VlWide<V_Words>& val, int lsb, int width) const {
+        return readSelI(lbits, val.aval(), lsb, width);
+    }
 
-    QData readSelQ(int lbits, WDataInP valp, int lsb, int width) const {
+    template <std::size_t V_Offset>
+    QData readSelQ(int lbits, WDataInP<V_Offset> valp, int lsb, int width) const {
         QData result;
-        readSel(lbits, valp, WDataOutP::external(reinterpret_cast<EData*>(&result)), lsb, width);
+        readSel(lbits, valp, WDataOutP<>::external(reinterpret_cast<EData*>(&result)), lsb, width);
         result &= VL_MASK_Q(width);
         return result;
     }
+    template <std::size_t V_Words>
+    QData readSelQ(int lbits, const VlWide<V_Words>& val, int lsb, int width) const {
+        return readSelQ(lbits, val.aval(), lsb, width);
+    }
 
-    template <std::size_t N_Words>
-    VlWide<N_Words> readSelW(int lbits, WDataInP valp, int lsb, int width) const {
+    template <std::size_t N_Words, std::size_t V_Offset>
+    VlWide<N_Words> readSelW(int lbits, WDataInP<V_Offset> valp, int lsb, int width) const {
         VlWide<N_Words> result;
-        readSel(lbits, valp, result, lsb, width);
+        readSel(lbits, valp, result.aval_mut(), lsb, width);
         result[N_Words - 1] &= VL_MASK_E(width);
         return result;
+    }
+    template <std::size_t N_Words, std::size_t V_Words>
+    VlWide<N_Words> readSelW(int lbits, const VlWide<V_Words>& val, int lsb, int width) const {
+        return readSelW<N_Words>(lbits, val.aval(), lsb, width);
     }
 
     void addForce(int lsb, int msb, const void* rhsDatap, int rhsLsb) {

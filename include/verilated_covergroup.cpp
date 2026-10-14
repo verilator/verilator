@@ -160,14 +160,19 @@ struct VlCoverpoint::ValueData final {
         , m_values{bins} {
         assert(m_bits);
     }
-    static WDataInP view(const Value& value) { return WDataInP::external(value.data()); }
-    static WDataOutP out(Value& value) { return WDataOutP::external(value.data()); }
-    Value read(WDataInP valuep) const {
+    static WDataInP<> view(const Value& value) { return WDataInP<>::external(value.data()); }
+    static WDataOutP<> out(Value& value) { return WDataOutP<>::external(value.data()); }
+    Value read(WDataInP<> valuep) const {
         Value result(valuep.datap(), valuep.datap() + m_words);
         return result;
     }
+    Value read(WDataInP<2> valuep) const {
+        Value result(m_words);
+        for (uint32_t i = 0; i < m_words; ++i) result[i] = valuep[i];
+        return result;
+    }
     // Operands have already been cleaned to m_bits.
-    bool less(WDataInP lhs, WDataInP rhs) const {
+    bool less(WDataInP<> lhs, WDataInP<> rhs) const {
         if (m_isSigned) {
             const EData leftSign = VL_SIGN_E(m_bits, lhs[m_words - 1]);
             const EData rightSign = VL_SIGN_E(m_bits, rhs[m_words - 1]);
@@ -181,8 +186,8 @@ struct VlCoverpoint::ValueData final {
         return false;
     }
     bool less(const Value& lhs, const Value& rhs) const { return less(view(lhs), view(rhs)); }
-    bool less(WDataInP lhs, const Value& rhs) const { return less(lhs, view(rhs)); }
-    bool less(const Value& lhs, WDataInP rhs) const { return less(view(lhs), rhs); }
+    bool less(WDataInP<> lhs, const Value& rhs) const { return less(lhs, view(rhs)); }
+    bool less(const Value& lhs, WDataInP<> rhs) const { return less(view(lhs), rhs); }
     void increment(Value& value) const {
         for (EData& word : value) {
             if (++word) break;
@@ -203,7 +208,7 @@ struct VlCoverpoint::ValueData final {
         return result;
     }
     // The position of hi after lo, which precedes it
-    Value distance(WDataInP lo, WDataInP hi) const {
+    Value distance(WDataInP<> lo, WDataInP<> hi) const {
         Value result{positionWords()};
         VL_SUB_W(static_cast<int>(m_words), out(result), hi, lo);
         result[m_words - 1] &= VL_MASK_E(m_bits);
@@ -263,7 +268,7 @@ struct VlCoverpoint::ValueData final {
                                 m_isSigned ? VL_VFORMATATTR_SIGNED : VL_VFORMATATTR_UNSIGNED,
                                 static_cast<int>(m_bits), value.data());
     }
-    bool contains(const Range& range, WDataInP value) const {
+    bool contains(const Range& range, WDataInP<> value) const {
         if (less(value, range.m_lo) || less(range.m_hi, value)) return false;
         if (!range.m_mask.empty()) {
             EData mismatch = 0;
@@ -274,10 +279,11 @@ struct VlCoverpoint::ValueData final {
         }
         return true;
     }
-    const Range* interval(const std::vector<Range>& ranges, uint32_t count, WDataInP value) const {
+    const Range* interval(const std::vector<Range>& ranges, uint32_t count,
+                          WDataInP<> value) const {
         auto it = std::upper_bound(
             ranges.begin(), ranges.begin() + count, value,
-            [&](WDataInP candidate, const Range& range) { return less(candidate, range.m_lo); });
+            [&](WDataInP<> candidate, const Range& range) { return less(candidate, range.m_lo); });
         if (it == ranges.begin()) return nullptr;
         --it;
         return contains(*it, value) ? &*it : nullptr;
@@ -310,7 +316,7 @@ struct VlCoverpoint::ValueData final {
         ranges = std::move(merged);
         return count;
     }
-    bool excluded(WDataInP value) const {
+    bool excluded(WDataInP<> value) const {
         return interval(m_exclusions, m_regularExclusions, value)
                || std::any_of(m_exclusions.begin() + m_regularExclusions, m_exclusions.end(),
                               [&](const Range& range) { return contains(range, value); });
@@ -363,7 +369,7 @@ struct VlCoverpoint::ValueData final {
         range.m_hi = upper;
         return true;
     }
-    bool pattern(WDataInP valuep, WDataInP maskp, WDataInP lop, WDataInP hip,
+    bool pattern(WDataInP<> valuep, WDataInP<> maskp, WDataInP<> lop, WDataInP<> hip,
                  Range& result) const {
         result = {read(valuep), read(valuep), read(maskp)};
         for (uint32_t i = 0; i < m_words; ++i) {
@@ -664,8 +670,8 @@ void VlCoverpoint::valueRanges(std::initializer_list<EData> entries) {
     assert(entries.size() % (1 + 2 * words) == 0);
     for (const EData* entryp = entries.begin(); entryp != entries.end(); entryp += 1 + 2 * words) {
         data.m_values[entryp[0]].m_ranges.push_back(
-            {data.read(WDataInP::external(entryp + 1)),
-             data.read(WDataInP::external(entryp + 1 + words)),
+            {data.read(WDataInP<>::external(entryp + 1)),
+             data.read(WDataInP<>::external(entryp + 1 + words)),
              {}});
     }
 }
@@ -686,9 +692,9 @@ void VlCoverpoint::valueRuns(std::initializer_list<EData> entries) {
         const uint32_t first = entryp[0];
         const uint32_t count = entryp[1];
         const EData* const valuesp = entryp + HEADER_WORDS;
-        ValueData::Value lo = data.read(WDataInP::external(valuesp));
-        const ValueData::Value span = data.read(WDataInP::external(valuesp + words));
-        const ValueData::Value hi = data.read(WDataInP::external(valuesp + 2 * words));
+        ValueData::Value lo = data.read(WDataInP<>::external(valuesp));
+        const ValueData::Value span = data.read(WDataInP<>::external(valuesp + words));
+        const ValueData::Value hi = data.read(WDataInP<>::external(valuesp + 2 * words));
         // Expand the run into the value range of each of its bins, as valueRanges() gives them:
         // until valueRelease(), valueFinalize() finds the bins exclusions leave without values,
         // and runtime cross selections intersect their filters, from these ranges.  Each bin
@@ -714,9 +720,10 @@ void VlCoverpoint::valuePatterns(std::initializer_list<EData> entries) {
     assert(entries.size() % (1 + 4 * words) == 0);
     for (const EData* entryp = entries.begin(); entryp != entries.end(); entryp += 1 + 4 * words) {
         ValueData::Range range;
-        if (data.pattern(WDataInP::external(entryp + 1), WDataInP::external(entryp + 1 + words),
-                         WDataInP::external(entryp + 1 + 2 * words),
-                         WDataInP::external(entryp + 1 + 3 * words), range)) {
+        if (data.pattern(WDataInP<>::external(entryp + 1),
+                         WDataInP<>::external(entryp + 1 + words),
+                         WDataInP<>::external(entryp + 1 + 2 * words),
+                         WDataInP<>::external(entryp + 1 + 3 * words), range)) {
             data.m_values[entryp[0]].m_ranges.push_back(std::move(range));
         }
     }
@@ -786,24 +793,35 @@ void VlCoverpoint::valueRelease() {
 
 bool VlCoverpoint::valueExcluded(QData value) const {
     VlWide<VL_WQ_WORDS_E> words;
-    VL_SET_WQ(words, value);
-    return valueExcludedW(words);
+    VL_SET_WQ(words.aval_mut(), value);
+    return valueExcludedW(words.aval());
 }
 
-bool VlCoverpoint::valueExcludedW(WDataInP valuep) const { return m_valuesp->excluded(valuep); }
+bool VlCoverpoint::valueExcludedW(WDataInP<> valuep) const { return m_valuesp->excluded(valuep); }
+bool VlCoverpoint::valueExcludedW(WDataInP<2> valuep) const {
+    const ValueData& data = *m_valuesp;
+    const ValueData::Value value = data.read(valuep);
+    return data.excluded(ValueData::view(value));
+}
 
 void VlCoverpoint::sizedRange(QData lo, QData hi) {
     VlWide<VL_WQ_WORDS_E> low;
     VlWide<VL_WQ_WORDS_E> high;
-    VL_SET_WQ(low, lo);
-    VL_SET_WQ(high, hi);
-    sizedRangeW(low, high);
+    VL_SET_WQ(low.aval_mut(), lo);
+    VL_SET_WQ(high.aval_mut(), hi);
+    sizedRangeW(low.aval(), high.aval());
 }
 
-void VlCoverpoint::sizedRangeW(WDataInP lop, WDataInP hip) {
+void VlCoverpoint::sizedRangeW(WDataInP<> lop, WDataInP<> hip) {
     ValueData& data = *m_valuesp;
     assert(!data.less(hip, lop));  // Elements without a coverpoint value are omitted
     data.m_sizedElements.push_back({data.read(lop), data.read(hip), {}});
+}
+void VlCoverpoint::sizedRangeW(WDataInP<2> lop, WDataInP<2> hip) {
+    ValueData& data = *m_valuesp;
+    const ValueData::Value lo = data.read(lop);
+    const ValueData::Value hi = data.read(hip);
+    sizedRangeW(ValueData::view(lo), ValueData::view(hi));
 }
 
 // Warn that the bins 'name' are ignored, because of 'reason'.  From an mtask, VL_WARN_MT reports
@@ -969,10 +987,15 @@ QData VlCoverpoint::withLo() const {
     return ValueData::number(data.m_sizedElements[data.m_with.m_next - 1].m_lo);
 }
 
-void VlCoverpoint::withLoW(WDataOutP valuep) const {
+void VlCoverpoint::withLoW(WDataOutP<> valuep) const {
     const ValueData& data = *m_valuesp;
     const ValueData::Value& value = data.m_sizedElements[data.m_with.m_next - 1].m_lo;
     std::copy(value.begin(), value.end(), valuep.datap());
+}
+void VlCoverpoint::withLoW(WDataOutP<2> valuep) const {
+    const ValueData& data = *m_valuesp;
+    const ValueData::Value& value = data.m_sizedElements[data.m_with.m_next - 1].m_lo;
+    for (uint32_t i = 0; i < data.m_words; ++i) valuep[i] = value[i];
 }
 
 QData VlCoverpoint::withHi() const {
@@ -980,21 +1003,26 @@ QData VlCoverpoint::withHi() const {
     return ValueData::number(data.m_sizedElements[data.m_with.m_next - 1].m_hi);
 }
 
-void VlCoverpoint::withHiW(WDataOutP valuep) const {
+void VlCoverpoint::withHiW(WDataOutP<> valuep) const {
     const ValueData& data = *m_valuesp;
     const ValueData::Value& value = data.m_sizedElements[data.m_with.m_next - 1].m_hi;
     std::copy(value.begin(), value.end(), valuep.datap());
+}
+void VlCoverpoint::withHiW(WDataOutP<2> valuep) const {
+    const ValueData& data = *m_valuesp;
+    const ValueData::Value& value = data.m_sizedElements[data.m_with.m_next - 1].m_hi;
+    for (uint32_t i = 0; i < data.m_words; ++i) valuep[i] = value[i];
 }
 
 bool VlCoverpoint::withRun(QData lo, QData hi) {
     VlWide<VL_WQ_WORDS_E> low;
     VlWide<VL_WQ_WORDS_E> high;
-    VL_SET_WQ(low, lo);
-    VL_SET_WQ(high, hi);
-    return withRunW(low, high);
+    VL_SET_WQ(low.aval_mut(), lo);
+    VL_SET_WQ(high.aval_mut(), hi);
+    return withRunW(low.aval(), high.aval());
 }
 
-bool VlCoverpoint::withRunW(WDataInP lop, WDataInP hip) {
+bool VlCoverpoint::withRunW(WDataInP<> lop, WDataInP<> hip) {
     ValueData& data = *m_valuesp;
     ValueData::With& with = data.m_with;
     ValueData::Value lo = data.read(lop);
@@ -1017,6 +1045,12 @@ bool VlCoverpoint::withRunW(WDataInP lop, WDataInP hip) {
     with.m_full = values ? data.compare(with.m_values, data.toPosition(with.m_limit)) > 0
                          : kept.size() > with.m_limit;
     return !with.m_full;
+}
+bool VlCoverpoint::withRunW(WDataInP<2> lop, WDataInP<2> hip) {
+    ValueData& data = *m_valuesp;
+    const ValueData::Value lo = data.read(lop);
+    const ValueData::Value hi = data.read(hip);
+    return withRunW(ValueData::view(lo), ValueData::view(hi));
 }
 
 void VlCoverpoint::withFinish(VlCovBinKind kind, QData count, bool positive, const char* name,
@@ -1099,8 +1133,8 @@ bool VlCoverpoint::sizedSample(uint32_t sized, QData value, bool enabled) {
     const ValueData::Sized& array = data.m_sized[sized];
     if (array.m_fast.empty() && !array.m_elements.empty()) {  // Positions beyond 64 bits
         VlWide<VL_WQ_WORDS_E> words;
-        VL_SET_WQ(words, value);
-        return sizedSampleW(sized, words, enabled);
+        VL_SET_WQ(words.aval_mut(), value);
+        return sizedSampleW(sized, words.aval(), enabled);
     }
     const uint64_t ordered = data.orderValue(value);
     auto beginIt = array.m_fast.begin();
@@ -1126,17 +1160,18 @@ bool VlCoverpoint::sizedSample(uint32_t sized, QData value, bool enabled) {
     return last != UINT32_MAX;
 }
 
-bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled) {
+bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP<> valuep, bool enabled) {
     ValueData& data = *m_valuesp;
     const ValueData::Sized& array = data.m_sized[sized];
     auto beginIt = array.m_elements.begin();
     auto endIt = array.m_elements.end();
     if (array.m_sorted) {
         // Of disjoint runs in value order, only the last one starting by the value may hold it
-        endIt = std::upper_bound(beginIt, endIt, valuep,
-                                 [&](WDataInP candidate, const ValueData::SizedElement& element) {
-                                     return data.less(candidate, element.m_lo);
-                                 });
+        endIt
+            = std::upper_bound(beginIt, endIt, valuep,
+                               [&](WDataInP<> candidate, const ValueData::SizedElement& element) {
+                                   return data.less(candidate, element.m_lo);
+                               });
         if (endIt != beginIt) beginIt = std::prev(endIt);
     }
     uint32_t last = UINT32_MAX;  // No bin yet; bins index below UINT32_MAX
@@ -1163,6 +1198,11 @@ bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled) {
     }
     return last != UINT32_MAX;
 }
+bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP<2> valuep, bool enabled) {
+    const ValueData& data = *m_valuesp;
+    const ValueData::Value value = data.read(valuep);
+    return sizedSampleW(sized, ValueData::view(value), enabled);
+}
 
 void VlCoverpoint::transitionTable(std::initializer_list<EData> items) {
     assert(!m_transitions.empty());  // transitionAdd() added the sequence
@@ -1177,7 +1217,7 @@ void VlCoverpoint::transitionTable(std::initializer_list<EData> items) {
 }
 
 VL_ATTR_ALWINLINE
-bool VlCoverpoint::Transition::matches(uint32_t item, WDataInP valuep) const {
+bool VlCoverpoint::Transition::matches(uint32_t item, WDataInPAny valuep) const {
     // The item's values ascend: binary search them, comparing each from its top word
     uint32_t lo = item ? m_ends[item - 1] : 0;
     uint32_t hi = m_ends[item];
@@ -1204,10 +1244,10 @@ bool VlCoverpoint::transitionSample(uint32_t seq, QData value) {
     // As words, for two stores per sample; matches() compares a value of one word directly
     VlWide<VL_WQ_WORDS_E> words;
     VL_SET_WQ(words, value);
-    return transitionSampleW(seq, words);
+    return transitionSampleWAny(seq, words);
 }
 
-bool VlCoverpoint::transitionSampleW(uint32_t seq, WDataInP valuep) {
+bool VlCoverpoint::transitionSampleWAny(uint32_t seq, WDataInPAny valuep) {
     Transition& sequence = m_transitions[seq];
     // A partial match grows by a value its next item holds, and completes once every item has
     // held one; a value the first item holds also starts a partial match
@@ -1754,7 +1794,7 @@ class VlCoverCrossDyn::Layout final {
         const uint32_t bin = m_dimensions[m_selectDimension].cpp->m_crossToBin[index];
         return bin >= m_selectFirst && bin < m_selectEnd;
     }
-    void range(WDataInP lop, WDataInP hip) {
+    void range(WDataInP<> lop, WDataInP<> hip) {
         const VlCoverpoint* const cpp = m_dimensions[m_selectDimension].cpp;
         const VlCoverpoint::ValueData& data = *cpp->m_valuesp;
         const VlCoverpoint::ValueData::Range filter{data.read(lop), data.read(hip), {}};
@@ -1767,6 +1807,13 @@ class VlCoverCrossDyn::Layout final {
                 m_limit = search;
             }
         }
+    }
+    void range(WDataInP<2> lop, WDataInP<2> hip) {
+        const VlCoverpoint* const cpp = m_dimensions[m_selectDimension].cpp;
+        const VlCoverpoint::ValueData& data = *cpp->m_valuesp;
+        const VlCoverpoint::ValueData::Value lo = data.read(lop);
+        const VlCoverpoint::ValueData::Value hi = data.read(hip);
+        range(VlCoverpoint::ValueData::view(lo), VlCoverpoint::ValueData::view(hi));
     }
     uint32_t binIndex(uint32_t dim, uint64_t tuple) const {
         const Dimension& dimension = m_dimensions[dim];
@@ -1884,12 +1931,15 @@ void VlCoverCrossDyn::selectDim(uint32_t dim, uint32_t first, uint32_t end, bool
 void VlCoverCrossDyn::selectRange(QData lo, QData hi) {
     VlWide<VL_WQ_WORDS_E> low;
     VlWide<VL_WQ_WORDS_E> high;
-    VL_SET_WQ(low, lo);
-    VL_SET_WQ(high, hi);
-    m_layoutp->range(low, high);
+    VL_SET_WQ(low.aval_mut(), lo);
+    VL_SET_WQ(high.aval_mut(), hi);
+    m_layoutp->range(low.aval(), high.aval());
 }
 
-void VlCoverCrossDyn::selectRangeW(WDataInP lop, WDataInP hip) { m_layoutp->range(lop, hip); }
+void VlCoverCrossDyn::selectRangeW(WDataInP<> lop, WDataInP<> hip) { m_layoutp->range(lop, hip); }
+void VlCoverCrossDyn::selectRangeW(WDataInP<2> lop, WDataInP<2> hip) {
+    m_layoutp->range(lop, hip);
+}
 
 void VlCoverCrossDyn::selectDimEnd() {
     Layout& data = *m_layoutp;
@@ -2019,10 +2069,16 @@ QData VlCoverCrossDyn::withValue(uint32_t dim) const {
     return VlCoverpoint::ValueData::number(m_layoutp->dimCursor(dim).m_streams.front().m_value);
 }
 
-void VlCoverCrossDyn::withValueW(uint32_t dim, WDataOutP valuep) const {
+void VlCoverCrossDyn::withValueW(uint32_t dim, WDataOutP<> valuep) const {
     const VlCoverpoint::ValueData::Value& value
         = m_layoutp->dimCursor(dim).m_streams.front().m_value;
     std::copy(value.begin(), value.end(), valuep.datap());
+}
+void VlCoverCrossDyn::withValueW(uint32_t dim, WDataOutP<2> valuep) const {
+    const VlCoverpoint::ValueData::Value& value
+        = m_layoutp->dimCursor(dim).m_streams.front().m_value;
+    uint32_t index = 0;
+    for (const EData word : value) valuep[index++] = word;
 }
 
 void VlCoverCrossDyn::withTest(bool keep) {
