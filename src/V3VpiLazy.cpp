@@ -1564,8 +1564,7 @@ private:
     void buildDependencyGraph() {
         for (const auto& ownp : m_groups) {
             Group* const g = ownp.get();
-            if (!g->live) continue;
-            g->vtxp = new GroupVertex{&m_depGraph, g};
+            g->vtxp = g->live ? new GroupVertex{&m_depGraph, g} : nullptr;
         }
         for (const auto& ownp : m_groups) {
             Group* const g = ownp.get();
@@ -1582,25 +1581,57 @@ private:
         m_depGraph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
     }
 
-    // Edges into a killed group must stop counting against its consumers' in-degree.
-    void dropDeadVertices() {
-        for (const auto& ownp : m_groups) {
-            Group* const g = ownp.get();
-            if (g->live || !g->vtxp) continue;
-            VL_DO_DANGLING(g->vtxp->unlinkDelete(&m_depGraph), g->vtxp);
-            g->vtxp = nullptr;
+    // A cycle between groups need not be one between bits. Merged into the first, its blocks run
+    // in encounter order, and analyseGroup proves every read follows its write.
+    bool mergeCycle(const std::vector<Group*>& sccps) {
+        Group* const g = sccps[0];
+        size_t members = 0;
+        for (const Group* const ugp : sccps) {
+            if (ugp->scopep != g->scopep) return false;  // One func addresses one scope
+            members += ugp->members.size();
         }
+        for (size_t i = 1; i < sccps.size(); ++i) {
+            Group* const ugp = sccps[i];
+            g->blockps.insert(g->blockps.end(), ugp->blockps.begin(), ugp->blockps.end());
+            for (AstVarScope* const t : ugp->targets) {
+                m_targetOf[t] = {g, g->targets.size()};
+                m_groupOf[t] = g;
+                g->targets.push_back(t);
+            }
+            for (AstVarScope* const t : ugp->temps) {
+                const auto it = m_groupOf.find(t);
+                if (it != m_groupOf.end() && it->second == ugp) it->second = g;
+                g->temps.push_back(t);
+            }
+            g->members.insert(ugp->members.begin(), ugp->members.end());
+            ugp->live = false;
+        }
+        // A var two of them write has no one order the model is known to share
+        if (g->members.size() != members) return false;
+        // Every CombBlock is an element of one vector, so address order is encounter order
+        std::sort(g->blockps.begin(), g->blockps.end());
+        Bail why = Bail::COMB_CYCLE;
+        return analyseGroup(g, why);
     }
 
     // A group downstream of a cycle still reconstructs cold, so only SCC members are retained.
     void splitCyclesRetainCores() {
         m_depGraph.stronglyConnected(&V3GraphEdge::followAlwaysTrue);
+        std::map<uint32_t, std::vector<Group*>> sccOf;  // Non-zero color: a multi-group SCC
         for (const auto& ownp : m_groups) {
             Group* const g = ownp.get();
-            // Non-zero color = a real comb cycle (multi-node SCC): retain it.
-            if (g->live && g->vtxp->color() != 0) killGroupsOfKey(g->keyp, Bail::COMB_CYCLE);
+            if (g->live && g->vtxp->color() != 0) sccOf[g->vtxp->color()].push_back(g);
         }
-        dropDeadVertices();
+        for (const auto& pr : sccOf) {
+            std::vector<AstVar*> keyps;
+            for (const Group* const g : pr.second) keyps.push_back(g->keyp);
+            if (mergeCycle(pr.second)) continue;
+            // The merged group holds every target, should it have absorbed the others
+            for (AstVar* const keyp : keyps) killGroupsOfKey(keyp, Bail::COMB_CYCLE);
+        }
+        // Merged and killed groups leave the condensation, a DAG
+        m_depGraph.clear();
+        buildDependencyGraph();
     }
 
     // Kahn topo-sort, preferring a ready group in the previous group's scope. Not GraphStream: it

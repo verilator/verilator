@@ -219,6 +219,36 @@ module t;
     md_gap[1][2] = {a, 8'h55};
   end
 
+  // Each stage reads only bits an earlier one wrote, so nothing is read before written.
+  // verilator lint_off ALWCOMBORDER
+  logic [3:0][7:0] comp_stage_n;
+  always_comb begin
+    comp_stage_n[0] = a;
+    for (int l = 1; l < 4; l++)
+      comp_stage_n[l] = comp_stage_n[l-1] ^ {comp_stage_n[l-1][6:0], 1'b0};
+  end
+  logic [7:0] mem_chain[0:2];
+  always_comb begin
+    mem_chain[0] = a;
+    mem_chain[1][3:0] = mem_chain[0][7:4];
+    mem_chain[1][7:4] = mem_chain[1][3:0] ^ b[3:0];
+    mem_chain[2] = mem_chain[1] + 8'd1;
+  end
+  // verilator lint_on ALWCOMBORDER
+
+  // A cycle between groups but not between bits; in encounter order it is acyclic.
+  // verilator lint_off UNOPTFLAT
+  logic [7:0] fcyc_x;
+  logic [3:0] fcyc_y;
+  assign fcyc_x[3:0] = a[3:0];
+  assign fcyc_y = fcyc_x[3:0] + 4'd1;
+  assign fcyc_x[7:4] = fcyc_y;
+  // Acyclic per bit too, but only out of encounter order: stays retained.
+  logic [7:0] fcyc_rev;
+  assign fcyc_rev[3:0] = fcyc_rev[7:4] ^ a[3:0];
+  assign fcyc_rev[7:4] = b[7:4];
+  // verilator lint_on UNOPTFLAT
+
   logic [7:0] obs_dtypes;
   assign obs_dtypes = {1'b0, v_comb} ^ i_comb[7:0] ^ mem[0] ^ ps_comb ^ pa_comb[0] ^ us_comb.a
                      ^ {6'b0, en_comb} ^ {7'b0, s_fmt.len() != 0};
