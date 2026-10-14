@@ -1210,15 +1210,17 @@ private:
         }
     }
 
-    // A copy whose source is a group temp has no shadow to read; a helper target gives it one.
+    // A group temp has no shadow, so another block reading it pins its storage; a helper target
+    // gives it one. Not a block's own temps: promoting a conditionally written one bails a latch.
     void findHelperCandidates() {
-        forEachCopyAssign([&](const CombBlock&, AstVarScope* dstp, AstVarScope* srcp) {
-            if (!dstp->varp()->isSigVpiLazyCandidate() || writeCountOf(dstp) != 1) return;
-            if (srcp->varp()->isSigVpiLazyCandidate()) return;
-            if (!reconstructableKind(srcp->varp())) return;
-            if (!canCopyFrom(dstp, srcp)) return;
-            m_helperCandVars.insert(srcp->varp());
-        });
+        for (const CombBlock& b : m_gather.m_combBlocks) {
+            for (const AstVarScope* const r : b.m_reads) {
+                const AstVar* const varp = r->varp();
+                if (varp->isSigVpiLazyCandidate()) continue;
+                if (b.m_writeCount.count(r)) continue;
+                if (reconstructableKind(varp)) m_helperCandVars.insert(varp);
+            }
+        }
     }
 
     // `otherScope.dst = u;` can never be a cone, makeGroup refusing a write outside the authoring
