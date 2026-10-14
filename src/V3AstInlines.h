@@ -164,12 +164,9 @@ AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr*
 
 bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
-    return m_name == asamep->m_name
-           // Attribute mismatches are difficult to exercise once the names match.
-           && varType() == asamep->varType()  // LCOV_EXCL_BR_LINE
-           && covergroupRefMember() == asamep->covergroupRefMember()  // LCOV_EXCL_BR_LINE
-           && libInoutId() == asamep->libInoutId()  // LCOV_EXCL_BR_LINE
-           && libInoutEnable() == asamep->libInoutEnable();  // LCOV_EXCL_BR_LINE
+    return m_name == asamep->m_name && varType() == asamep->varType()
+           && covergroupRefMember() == asamep->covergroupRefMember()
+           && libInoutId() == asamep->libInoutId() && libInoutEnable() == asamep->libInoutEnable();
 }
 
 AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarRef* matchp)
