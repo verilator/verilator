@@ -347,6 +347,9 @@ public:
         AstAssignW* m_assignwp = nullptr;  // Lone AstAssignW of a CONT_ASSIGN block
         std::vector<AstVarScope*> m_targets;  // Written vars, encounter order
         std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes within this block
+        std::vector<AstVarRef*> m_writeRefs;  // Its writing refs, encounter order
+        // Constant-select footprint of each assign's LHS base ref, where partialLhsRef finds one
+        std::unordered_map<const AstVarRef*, PartExtent> m_partialExts;
     };
     // STATE
     std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes per var
@@ -364,6 +367,8 @@ private:
     AstAlways* m_comboAlwaysp = nullptr;  // Non-null while inside a combo always body
     std::unordered_map<const AstVarScope*, int> m_blockWrites;  // Writes of the current block
     std::vector<AstVarScope*> m_blockWriteOrder;  // Vars written in this block, encounter order
+    std::vector<AstVarRef*> m_blockWriteRefs;  // Writing refs of this block, encounter order
+    std::unordered_map<const AstVarRef*, PartExtent> m_blockPartialExts;  // See CombBlock
 
     void bumpWrite(AstVarScope* vscp) {
         if (m_writeCount[vscp]++ == 0) m_writtenOrder.push_back(vscp);
@@ -374,8 +379,19 @@ private:
 
     // VISITORS
     void visit(AstVarRef* nodep) override {
-        if (!nodep->access().isReadOnly()) bumpWrite(nodep->varScopep());
+        if (!nodep->access().isReadOnly()) {
+            bumpWrite(nodep->varScopep());
+            if (m_comboAlwaysp) m_blockWriteRefs.push_back(nodep);
+        }
         if (!nodep->access().isWriteOnly()) ++m_readCount[nodep->varScopep()];
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeAssign* nodep) override {
+        if (m_comboAlwaysp) {
+            PartExtent ext;
+            if (const AstVarRef* const refp = partialLhsRef(nodep->lhsp(), ext))
+                m_blockPartialExts.emplace(refp, std::move(ext));
+        }
         iterateChildren(nodep);
     }
     void visit(AstActive* nodep) override {
@@ -392,6 +408,8 @@ private:
             }
             VL_RESTORER_CLEAR(m_blockWrites);
             VL_RESTORER_CLEAR(m_blockWriteOrder);
+            VL_RESTORER_CLEAR(m_blockWriteRefs);
+            VL_RESTORER_CLEAR(m_blockPartialExts);
             VL_RESTORER(m_comboAlwaysp);
             m_comboAlwaysp = alwaysp;
             iterateChildren(alwaysp);
@@ -399,8 +417,10 @@ private:
             CombBlock block;
             block.m_alwaysp = alwaysp;
             block.m_scopep = m_scopep;
-            block.m_targets = m_blockWriteOrder;
-            block.m_writeCount = m_blockWrites;
+            block.m_targets = std::move(m_blockWriteOrder);
+            block.m_writeCount = std::move(m_blockWrites);
+            block.m_writeRefs = std::move(m_blockWriteRefs);
+            block.m_partialExts = std::move(m_blockPartialExts);
             if (alwaysp->keyword() == VAlwaysKwd::CONT_ASSIGN) {
                 AstAssignW* const awp = VN_CAST(alwaysp->stmtsp(), AssignW);
                 if (awp && !awp->nextp() && !awp->timingControlp()) block.m_assignwp = awp;
@@ -953,10 +973,8 @@ private:
         std::unordered_set<const AstVarRef*> modelled;
         if (kwd != VAlwaysKwd::CONT_ASSIGN)
             latchWalk(b.m_alwaysp->stmtsp(), proof.defined, modelled);
-        b.m_alwaysp->foreach([&](const AstVarRef* refp) {
-            if (!refp->access().isReadOnly() && !modelled.count(refp))
-                proof.unprovable.insert(refp->varScopep());
-        });
+        for (const AstVarRef* const refp : b.m_writeRefs)
+            if (!modelled.count(refp)) proof.unprovable.insert(refp->varScopep());
         return proof;
     }
 
@@ -967,27 +985,20 @@ private:
                              [](const AstVarScope* t) { return combCandidate(t->varp()); }))
                 continue;
             const LatchProof proof = proveLatches(b);
-            std::unordered_map<const AstVarRef*, PartExtent> exact;
-            b.m_alwaysp->foreach([&](AstNodeAssign* asgnp) {
-                PartExtent ext;
-                if (const AstVarRef* const refp = partialLhsRef(asgnp->lhsp(), ext))
-                    exact.emplace(refp, std::move(ext));
-            });
             Defined proven;
-            b.m_alwaysp->foreach([&](AstVarRef* refp) {
-                if (refp->access().isReadOnly()) return;
+            for (AstVarRef* const refp : b.m_writeRefs) {
                 AstVarScope* const vscp = refp->varScopep();
-                if (!combCandidate(vscp->varp())) return;
+                if (!combCandidate(vscp->varp())) continue;
                 if (proof.unprovable.count(vscp)) {
-                    const auto it = exact.find(refp);
-                    addCombWrite(vscp, it == exact.end() ? nullptr : &it->second);
-                    return;
+                    const auto it = b.m_partialExts.find(refp);
+                    addCombWrite(vscp, it == b.m_partialExts.end() ? nullptr : &it->second);
+                    continue;
                 }
                 // Every bit defined on every path has a write, so the union of writes is these
                 const auto it = proof.defined.find(vscp);
                 if (it != proof.defined.end() && proven.insert(vscp).second)
                     addCombBits(vscp, it->second);
-            });
+            }
         }
         // V3Const made 'assign v = CONST' an initial plus a decl value, but it still drives v
         for (const AstVarScope* const vscp : m_gather.m_vscOrder) {
