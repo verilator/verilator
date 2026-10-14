@@ -361,10 +361,14 @@ public:
     std::unordered_map<const AstVar*, int> m_instanceCount;
     // Every VarScope in tree-encounter order; iterated by the completeness floor.
     std::vector<AstVarScope*> m_vscOrder;
+    // VPI candidates' constant-select reads, and those read any other way
+    std::unordered_map<const AstVarScope*, std::vector<PartExtent>> m_selReads;
+    std::unordered_set<const AstVarScope*> m_wholeReads;
 
 private:
     AstScope* m_scopep = nullptr;  // Scope currently being descended
     CombBlock* m_blockp = nullptr;  // Block being gathered, while inside a combo always body
+    const AstVarRef* m_selRefp = nullptr;  // Read whose constant select is being visited
 
     void checkPure(AstNode* nodep) {
         if (m_blockp && unsafeToReexecute(nodep)) m_blockp->m_impure = true;
@@ -383,6 +387,8 @@ private:
         }
         if (!nodep->access().isWriteOnly()) {
             ++m_readCount[vscp];
+            if (nodep != m_selRefp && vscp->varp()->isSigVpiLazyCandidate())
+                m_wholeReads.insert(vscp);
             if (m_blockp && !vscp->user1SetOnce()) m_blockp->m_reads.push_back(vscp);
         }
         iterateChildren(nodep);
@@ -396,6 +402,21 @@ private:
         }
         iterateChildren(nodep);
     }
+    void visitSel(AstNodeExpr* nodep) {
+        checkPure(nodep);
+        PartExtent ext;
+        const AstVarRef* const refp = partialLhsRef(nodep, ext);
+        VL_RESTORER(m_selRefp);
+        // An inner select of the same chain reads no less than this one
+        if (refp && refp != m_selRefp && refp->access().isReadOnly()
+            && refp->varp()->isSigVpiLazyCandidate()) {
+            m_selRefp = refp;
+            m_selReads[refp->varScopep()].push_back(std::move(ext));
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstSel* nodep) override { visitSel(nodep); }
+    void visit(AstArraySel* nodep) override { visitSel(nodep); }
     void visit(AstActive* nodep) override {
         if (!nodep->hasCombo()) {
             iterateChildren(nodep);
@@ -1266,6 +1287,28 @@ private:
         }
     }
 
+    // Every read of 'vscp', in the design or a cone, is a constant select of comb-driven bits.
+    bool gapUnread(const AstVarScope* vscp) const {
+        if (m_gather.m_wholeReads.count(vscp)) return false;
+        const auto rit = m_ctx.m_combRuns.find(vscp->varp());
+        if (rit == m_ctx.m_combRuns.end()) return false;  // Instances differ
+        const auto sit = m_gather.m_selReads.find(vscp);
+        if (sit == m_gather.m_selReads.end()) return true;
+        for (const PartExtent& ext : sit->second) {
+            int32_t elem = 0;
+            if (!combElement(vscp->varp(), ext, elem)) return false;
+            const uint32_t lsb = static_cast<uint32_t>(ext.lsb);
+            const uint32_t width = static_cast<uint32_t>(ext.width);
+            if (std::none_of(rit->second.begin(), rit->second.end(),
+                             [&](const V3VpiLazy::CombRun& run) {
+                                 return run.elem == static_cast<uint32_t>(elem) && run.lsb <= lsb
+                                        && lsb + width <= run.lsb + run.width;
+                             }))
+                return false;
+        }
+        return true;
+    }
+
     // Disjoint partial `assign`s have no full-width driver but assemble exactly from a zero base.
     void formPartialGroup(AstVarScope* basep, const std::vector<PartWrite>& parts,
                           AstScope* scopep, const std::unordered_set<const AstVar*>& notSole) {
@@ -1307,6 +1350,7 @@ private:
             }
         }
         if (varp->isVpiLazyCombPartial()) {
+            UINFO(9, "vpi-lazy gap " << (gapUnread(basep) ? "unread " : "read ") << basep->name());
             retainTarget(basep, Bail::PARTIAL_GAP);
             return;
         }
