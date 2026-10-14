@@ -66,6 +66,7 @@ class BeginVisitor final : public VNVisitor {
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstCellInline* m_inlinesp = nullptr;  // AstCellInlines to add to m_modp
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstNode* m_liftedp = nullptr;  // Local nodes we are lifting into m_ftaskp
@@ -98,7 +99,7 @@ class BeginVisitor final : public VNVisitor {
             // Create CellInline for dotted var resolution
             if (!m_ftaskp) {
                 AstCellInline* const inlinep = new AstCellInline{flp, m_unnamedScope, blockName};
-                m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
+                m_inlinesp = AstNode::addNextNull(m_inlinesp, inlinep);
             }
         }
     }
@@ -140,7 +141,17 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER_CLEAR(m_displayScope);
         VL_RESTORER_CLEAR(m_namedScope);
         VL_RESTORER_CLEAR(m_unnamedScope);
+        VL_RESTORER(m_inlinesp);
+        m_inlinesp = nullptr;
         iterateChildren(nodep);
+        // Must be parsed before any AstCells, so put them first
+        if (m_inlinesp) {
+            if (AstNode* const stmtsp = nodep->stmtsp()) {
+                stmtsp->unlinkFrBackWithNext();
+                AstNode::addNext<AstNode, AstNode>(m_inlinesp, stmtsp);
+            }
+            nodep->addStmtsp(m_inlinesp);
+        }
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procedurep);
