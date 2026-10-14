@@ -348,6 +348,75 @@ bool unsafeToReexecute(AstNode* nodep) {
     return !nodep->isPredictOptimizable() && !VN_IS(nodep, NodeCCall);
 }
 
+// Some bits of one instance of a variable: flat element -> {lsb, width}
+struct CombFootprint final {
+    bool whole = false;
+    std::map<int32_t, std::vector<std::pair<int, int>>> runsOf;
+};
+
+// A mask names bits of a table row's integral elements; any other kind is all or nothing.
+bool combMaskable(const AstVar* varp, std::vector<int32_t>& dimsr, int& elemWidthr) {
+    const AstNodeDType* dtypep = varp->dtypeSkipRefp();
+    while (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        dimsr.push_back(adtypep->elementsConst());
+        dtypep = adtypep->subDTypep()->skipRefp();
+    }
+    if (!dtypep->isIntegralOrPacked()) return false;
+    elemWidthr = dtypep->width();
+    return true;
+}
+
+// Row-major, as the storage is laid out; false unless the select names bits of one element.
+bool combElement(const AstVar* varp, const PartExtent& ext, int32_t& elemr) {
+    std::vector<int32_t> dims;
+    int elemWidth = 0;
+    if (!combMaskable(varp, dims, elemWidth)) return false;
+    if (ext.idxs.size() != dims.size()) return false;
+    if (ext.lsb < 0 || ext.width <= 0 || ext.lsb + ext.width > elemWidth) return false;
+    int64_t flat = 0;
+    for (size_t k = 0; k < dims.size(); ++k) {
+        const int32_t idx = ext.idxs[dims.size() - 1 - k];
+        if (idx < 0 || idx >= dims[k]) return false;
+        flat = flat * dims[k] + idx;
+        if (flat > std::numeric_limits<int32_t>::max()) return false;
+    }
+    elemr = static_cast<int32_t>(flat);
+    return true;
+}
+
+// Keeps an element's runs sorted, disjoint and non-adjacent, as intersectBits needs.
+void addBits(CombFootprint& fp, int32_t elem, int lsb, int width) {
+    if (fp.whole) return;
+    std::vector<std::pair<int, int>>& runs = fp.runsOf[elem];
+    int lo = lsb;
+    int hi = lsb + width;
+    // Disjoint runs have ascending ends too
+    const auto firstIt = std::lower_bound(
+        runs.begin(), runs.end(), lsb,
+        [](const std::pair<int, int>& run, int bit) { return run.first + run.second < bit; });
+    auto lastIt = firstIt;
+    for (; lastIt != runs.end() && lastIt->first <= hi; ++lastIt) {
+        lo = std::min(lo, lastIt->first);
+        hi = std::max(hi, lastIt->first + lastIt->second);
+    }
+    if (firstIt == lastIt) {
+        runs.emplace(firstIt, lo, hi - lo);
+        return;
+    }
+    *firstIt = {lo, hi - lo};
+    runs.erase(firstIt + 1, lastIt);
+}
+
+// addBits keeps runs disjoint and non-adjacent, so a defined range lies within one run.
+bool bitsDefined(const CombFootprint& fp, int32_t elem, int lsb, int width) {
+    if (fp.whole) return true;
+    const auto it = fp.runsOf.find(elem);
+    if (it == fp.runsOf.end()) return false;
+    return std::any_of(it->second.begin(), it->second.end(), [&](const std::pair<int, int>& run) {
+        return run.first <= lsb && lsb + width <= run.first + run.second;
+    });
+}
+
 // Pre-optimization walk: write/read counts per VarScope, and per-block write info.
 class LazyGatherVisitor final : public VNVisitor {
     // NODE STATE
@@ -362,9 +431,8 @@ public:
     std::unordered_map<const AstVar*, int> m_instanceCount;
     // Every VarScope in tree-encounter order; iterated by the completeness floor.
     std::vector<AstVarScope*> m_vscOrder;
-    // VPI candidates' constant-select reads, and those read any other way
-    std::unordered_map<const AstVarScope*, std::vector<PartExtent>> m_selReads;
-    std::unordered_set<const AstVarScope*> m_wholeReads;
+    // Bits of VPI candidates any read may reach
+    std::unordered_map<const AstVarScope*, CombFootprint> m_readBits;
 
 private:
     AstScope* m_scopep = nullptr;  // Scope currently being descended
@@ -388,8 +456,11 @@ private:
         }
         if (!nodep->access().isWriteOnly()) {
             ++m_readCount[vscp];
-            if (nodep != m_selRefp && vscp->varp()->isSigVpiLazyCandidate())
-                m_wholeReads.insert(vscp);
+            if (nodep != m_selRefp && vscp->varp()->isSigVpiLazyCandidate()) {
+                CombFootprint& fp = m_readBits[vscp];
+                fp.whole = true;
+                fp.runsOf.clear();
+            }
             if (m_blockp && !vscp->user1SetOnce()) m_blockp->m_reads.push_back(vscp);
         }
         iterateChildren(nodep);
@@ -411,8 +482,11 @@ private:
         // An inner select of the same chain reads no less than this one
         if (refp && refp != m_selRefp && refp->access().isReadOnly()
             && refp->varp()->isSigVpiLazyCandidate()) {
-            m_selRefp = refp;
-            m_selReads[refp->varScopep()].push_back(std::move(ext));
+            int32_t elem = 0;
+            if (combElement(refp->varp(), ext, elem)) {
+                m_selRefp = refp;
+                addBits(m_readBits[refp->varScopep()], elem, ext.lsb, ext.width);
+            }
         }
         iterateChildren(nodep);
     }
@@ -580,11 +654,6 @@ class VpiLazyPreparer final {
     int m_prunedStmts = 0;  // Cloned statements dropped as dead (pruneBodies)
     std::map<std::string, int> m_floorReason;  // Floor residual shape -> instances, for stats
     int m_crossScopeCopies = 0;  // Copy rows whose source is in another scope
-    // Comb-driven bits of one instance of a VPI candidate: flat element -> {lsb, width}
-    struct CombFootprint final {
-        bool whole = false;
-        std::map<int32_t, std::vector<std::pair<int, int>>> runsOf;
-    };
     std::unordered_map<const AstVarScope*, CombFootprint> m_combFootOf;
     std::unordered_set<const AstVar*> m_combFootVars;  // Variables of m_combFootOf keys
     std::vector<AstVar*> m_combFootOrder;  // m_combFootVars, encounter order
@@ -717,36 +786,6 @@ private:
         return varp->isSigVpiLazyCandidate() && !varp->isForceable() && !varp->isPrimaryInish();
     }
 
-    // A mask names bits of a table row's integral elements; any other kind is all or nothing.
-    static bool combMaskable(const AstVar* varp, std::vector<int32_t>& dimsr, int& elemWidthr) {
-        const AstNodeDType* dtypep = varp->dtypeSkipRefp();
-        while (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            dimsr.push_back(adtypep->elementsConst());
-            dtypep = adtypep->subDTypep()->skipRefp();
-        }
-        if (!dtypep->isIntegralOrPacked()) return false;
-        elemWidthr = dtypep->width();
-        return true;
-    }
-
-    // Row-major, as the storage is laid out; false unless the select names bits of one element.
-    static bool combElement(const AstVar* varp, const PartExtent& ext, int32_t& elemr) {
-        std::vector<int32_t> dims;
-        int elemWidth = 0;
-        if (!combMaskable(varp, dims, elemWidth)) return false;
-        if (ext.idxs.size() != dims.size()) return false;
-        if (ext.lsb < 0 || ext.width <= 0 || ext.lsb + ext.width > elemWidth) return false;
-        int64_t flat = 0;
-        for (size_t k = 0; k < dims.size(); ++k) {
-            const int32_t idx = ext.idxs[dims.size() - 1 - k];
-            if (idx < 0 || idx >= dims[k]) return false;
-            flat = flat * dims[k] + idx;
-            if (flat > std::numeric_limits<int32_t>::max()) return false;
-        }
-        elemr = static_cast<int32_t>(flat);
-        return true;
-    }
-
     CombFootprint& combFootprint(const AstVarScope* vscp) {
         AstVar* const varp = vscp->varp();
         const auto pr = m_combFootOf.emplace(vscp, CombFootprint{});
@@ -805,29 +844,6 @@ private:
             return lhs == 1 && rhs == 1 ? 1 : -1;
         }
         return -1;
-    }
-
-    // Keeps an element's runs sorted, disjoint and non-adjacent, as intersectBits needs.
-    static void addBits(CombFootprint& fp, int32_t elem, int lsb, int width) {
-        if (fp.whole) return;
-        std::vector<std::pair<int, int>>& runs = fp.runsOf[elem];
-        int lo = lsb;
-        int hi = lsb + width;
-        // Disjoint runs have ascending ends too
-        const auto firstIt = std::lower_bound(
-            runs.begin(), runs.end(), lsb,
-            [](const std::pair<int, int>& run, int bit) { return run.first + run.second < bit; });
-        auto lastIt = firstIt;
-        for (; lastIt != runs.end() && lastIt->first <= hi; ++lastIt) {
-            lo = std::min(lo, lastIt->first);
-            hi = std::max(hi, lastIt->first + lastIt->second);
-        }
-        if (firstIt == lastIt) {
-            runs.emplace(firstIt, lo, hi - lo);
-            return;
-        }
-        *firstIt = {lo, hi - lo};
-        runs.erase(firstIt + 1, lastIt);
     }
 
     static void unionBits(CombFootprint& dst, const CombFootprint& src) {
@@ -1290,22 +1306,18 @@ private:
 
     // Every read of 'vscp', in the design or a cone, is a constant select of comb-driven bits.
     bool gapUnread(const AstVarScope* vscp) const {
-        if (m_gather.m_wholeReads.count(vscp)) return false;
-        const auto rit = m_ctx.m_combRuns.find(vscp->varp());
-        if (rit == m_ctx.m_combRuns.end()) return false;  // Instances differ
-        const auto sit = m_gather.m_selReads.find(vscp);
-        if (sit == m_gather.m_selReads.end()) return true;
-        for (const PartExtent& ext : sit->second) {
-            int32_t elem = 0;
-            if (!combElement(vscp->varp(), ext, elem)) return false;
-            const uint32_t lsb = static_cast<uint32_t>(ext.lsb);
-            const uint32_t width = static_cast<uint32_t>(ext.width);
-            if (std::none_of(rit->second.begin(), rit->second.end(),
-                             [&](const V3VpiLazy::CombRun& run) {
-                                 return run.elem == static_cast<uint32_t>(elem) && run.lsb <= lsb
-                                        && lsb + width <= run.lsb + run.width;
-                             }))
-                return false;
+        const auto rit = m_gather.m_readBits.find(vscp);
+        if (rit == m_gather.m_readBits.end()) return true;
+        const auto cit = m_ctx.m_combRuns.find(vscp->varp());
+        if (rit->second.whole || cit == m_ctx.m_combRuns.end())
+            return false;  // Or instances differ
+        CombFootprint driven;
+        for (const V3VpiLazy::CombRun& run : cit->second)
+            addBits(driven, static_cast<int32_t>(run.elem), static_cast<int>(run.lsb),
+                    static_cast<int>(run.width));
+        for (const auto& pr : rit->second.runsOf) {
+            for (const std::pair<int, int>& run : pr.second)
+                if (!bitsDefined(driven, pr.first, run.first, run.second)) return false;
         }
         return true;
     }
@@ -1382,17 +1394,6 @@ private:
         fp.whole = true;
         fp.runsOf.clear();
         return true;
-    }
-
-    // addBits keeps runs disjoint and non-adjacent, so a defined range lies within one run.
-    static bool bitsDefined(const CombFootprint& fp, int32_t elem, int lsb, int width) {
-        if (fp.whole) return true;
-        const auto it = fp.runsOf.find(elem);
-        if (it == fp.runsOf.end()) return false;
-        return std::any_of(it->second.begin(), it->second.end(),
-                           [&](const std::pair<int, int>& run) {
-                               return run.first <= lsb && lsb + width <= run.first + run.second;
-                           });
     }
 
     // One ordered walk over a group's statements: see UNIT OF RECONSTRUCTION above. Per bit, so
