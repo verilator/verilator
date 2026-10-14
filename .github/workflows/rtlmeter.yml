@@ -198,7 +198,7 @@ jobs:
       verilator-archive-old: ${{ needs.build-clang-old.outputs.archive }}
       cases: ${{ matrix.cases }}
       run-name: "clang --threads 4"
-      compileArgs: "--threads 4"
+      compileArgs: "--threads 4 -CFLAGS -DVL_LOCK_SPINS=1000000000"
       executeArgs: ""
     strategy:
       fail-fast: ${{ github.event_name == 'pull_request' }}
