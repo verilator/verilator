@@ -21,7 +21,7 @@
 #include "verilated_vcd_c.h"
 #include "verilated_vpi.h"
 
-#include VM_PREFIX_INCLUDE
+#include "Vt_vpi_multidim.h"
 #include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
