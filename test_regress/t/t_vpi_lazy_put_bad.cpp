@@ -362,6 +362,33 @@ int main(int argc, char** argv) {
     merge("t.ple_l[1]", get(find("t.ple_l[1]")) ^ 0x0f, 0x0f);
     merge("t.plu_l[0]", get(find("t.plu_l[0]")) ^ 0xff, 0xf0);
     merge("t.plu_l[1]", get(find("t.plu_l[1]")) ^ 0xff, 0x0f);
+    {
+        // The encoder drives all of level 0 and one bit per segment of each level above
+        const auto ohDriven = [](uint32_t d) {
+            const uint32_t i = d & 0xf;
+            return i | (i & 3 ? 1U : 0U) << 4 | (i & 0xc ? 1U : 0U) << 6 | (i ? 1U : 0U) << 8;
+        };
+        constexpr uint32_t ohMask = 0x15f;
+        const uint32_t dWas = topp->d;
+        check("t.oh.v", get(find("t.oh.v")) & ohMask, ohDriven(dWas));
+        merge("t.oh.v", get(find("t.oh.v")) ^ 0x1, ohMask);
+        merge("t.oh.v", get(find("t.oh.v")) ^ 0xfff, ohMask);
+        const uint32_t held = get(find("t.oh.v")) & ~ohMask;
+        topp->d = 0x08;
+        topp->eval();
+        check("t.oh.v held", get(find("t.oh.v")), held | ohDriven(0x08));
+        check("t.oh_a", get(find("t.oh_a")), 3);
+        topp->d = dWas;
+        topp->eval();
+        check("t.oh.v restored", get(find("t.oh.v")), held | ohDriven(dWas));
+        // A variable read of the undriven bits sees the put
+        merge("t.dli", get(find("t.dli")) ^ 0xff00ff00, 0x00ff00ff);
+        topp->sel = 3;
+        topp->eval();
+        check("t.dli_o", get(find("t.dli_o")), get(find("t.dli")) >> 24);
+        topp->sel = 1;
+        topp->eval();
+    }
     reject("t.ac_c", 0, vpiInertialDelay);
     reject("t.ac_c", 0, vpiForceFlag);
     // public_flat_rw takes a put on a comb-driven net until the next eval
@@ -490,6 +517,7 @@ int main(int argc, char** argv) {
              {"t.ff_q", "retained"},
              {"t.st.cnt", "retained"},
              {"t.ia.q", "retained"},  // Per instance: ib.q is the comb-driven one
+             {"t.dli", "retained"},  // A variable select reads its undriven bits
              {"t.ib.q", "comb"},
              {"t.ret_c", "comb"},  // An impure driver is not re-executed on read
              {"t.rnd_w", "comb"},

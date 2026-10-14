@@ -157,6 +157,33 @@ module sub_na (
 endmodule
 
 // Writability follows the RTL name, whether or not the port is inlined.
+// One-hot encoder as bsg_encode_one_hot: each level drives only some bits, reading only those.
+// Literal selects, as -fno-const-before-dfg leaves a generate loop's index arithmetic unfolded.
+module put_oh (
+    input logic [3:0] i,
+    output logic [1:0] addr_o,
+    output logic v_o
+);
+  /* verilator lint_off UNOPTFLAT */
+  logic [2:0][3:0] addr;
+  logic [2:0][3:0] v;
+  logic [1:0] vs10, vs12, vs20;
+  /* verilator lint_on UNOPTFLAT */
+  assign v[0] = i;
+  assign addr[0] = '0;
+  assign vs10 = {v[0][1], v[0][0]};
+  assign vs12 = {v[0][3], v[0][2]};
+  assign v[1][0] = |vs10;
+  assign v[1][2] = |vs12;
+  assign addr[1][0] = vs10[1];
+  assign addr[1][2] = vs12[1];
+  assign vs20 = {v[1][2], v[1][0]};
+  assign v[2][0] = |vs20;
+  assign addr[2][1:0] = {vs20[1], addr[1][0] | addr[1][2]};
+  assign v_o = v[2][0];
+  assign addr_o = addr[2][1:0];
+endmodule
+
 module t (
     input logic clk,
     input logic rst,
@@ -336,6 +363,21 @@ module t (
   logic [7:0] m4_c;
   assign m4[0][0][0] = d[3:0];
   assign m4_c = {4'b0, m4[0][0][0]};
+
+  // Undriven bits no read reaches hold a put; the driven ones stay the encoder's
+  logic [1:0] oh_a;
+  logic oh_vo;
+  put_oh oh (
+      .i(d[3:0]),
+      .addr_o(oh_a),
+      .v_o(oh_vo)
+  );
+  // A variable read reaches the undriven bits, so they stay in the storage the design reads
+  logic [3:0][7:0] dli;
+  logic [7:0] dli_o;
+  assign dli[0] = '0;
+  assign dli[2] = d;
+  assign dli_o = dli[sel];
 
   // Ports: a child's output flop is writable, the parent's net on it and a child's input are not
   logic [7:0] w_ff;

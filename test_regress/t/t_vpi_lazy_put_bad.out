@@ -128,6 +128,8 @@ t.cy0.cy r
 t.cy0.din r
 t.cy1.cy r
 t.cy1.din r
+t.dli WWWWWWWWrrrrrrrrWWWWWWWWrrrrrrrr
+t.dli_o r
 t.dlp_c r
 t.dlp_t W
 t.dpf_c r
@@ -200,6 +202,16 @@ t.nopre_c WWWWrrrr
 t.np0.i r
 t.np0.o r
 t.np_o r
+t.oh.addr WWrrWrWrrrrr
+t.oh.addr_o r
+t.oh.i r
+t.oh.v WWWrWrWrrrrr
+t.oh.v_o r
+t.oh.vs10 r
+t.oh.vs12 r
+t.oh.vs20 r
+t.oh_a r
+t.oh_vo r
 t.ovl_w r
 t.pand_c r
 t.part_c r
