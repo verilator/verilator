@@ -923,7 +923,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 m_nestedNameFormatTopp = nodep;
                 m_nestedNameFormatp = m_nestedNameFormatTopp;
             } else {
-                m_nestedNameFormatp->exprsp()->addHereThisAsNext(nodep);
+                m_nestedNameFormatp->prependExprsp(nodep);
             }
             m_nestedNameFormatp = nodep;
 
@@ -1699,11 +1699,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             UASSERT_OBJ(initTaskp, varClassp, "No new() in class");
         }
         // At the beginning, so declared before referenced
-        if (AstNode* const initStmtsp = initTaskp->stmtsp()) {
-            initStmtsp->addHereThisAsNext(iterVarp);
-        } else {
-            initTaskp->addStmtsp(iterVarp);
-        }
+        initTaskp->prependStmtsp(iterVarp);
         initTaskp->addStmtsp(stmtsp);
     }
 
@@ -4426,10 +4422,8 @@ class RandomizeVisitor final : public VNVisitor {
         }
         if (!m_ftaskp) {
             m_modp->addStmtsp(varsp);
-        } else if (AstNode* const stmtsp = m_ftaskp->stmtsp()) {
-            stmtsp->addHereThisAsNext(varsp);
         } else {
-            m_ftaskp->addStmtsp(varsp);
+            m_ftaskp->prependStmtsp(varsp);
         }
     }
     AstNodeStmt* wrapIfRandMode(AstClass* classp, AstVar* const varp, AstNodeStmt* stmtp) {

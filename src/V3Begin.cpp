@@ -145,13 +145,7 @@ class BeginVisitor final : public VNVisitor {
         m_inlinesp = nullptr;
         iterateChildren(nodep);
         // Must be parsed before any AstCells, so put them first
-        if (m_inlinesp) {
-            if (AstNode* const stmtsp = nodep->stmtsp()) {
-                stmtsp->unlinkFrBackWithNext();
-                AstNode::addNext<AstNode, AstNode>(m_inlinesp, stmtsp);
-            }
-            nodep->addStmtsp(m_inlinesp);
-        }
+        nodep->prependStmtsp(m_inlinesp);
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procedurep);
@@ -185,15 +179,8 @@ class BeginVisitor final : public VNVisitor {
             initp->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(initp);
         });
-        if (m_liftedp) {
-            // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
-            if (AstNode* const stmtsp = nodep->stmtsp()) {
-                stmtsp->unlinkFrBackWithNext();
-                m_liftedp->addNext(stmtsp);
-            }
-            nodep->addStmtsp(m_liftedp);
-            m_liftedp = nullptr;
-        }
+        // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
+        nodep->prependStmtsp(m_liftedp);
     }
     void visit(AstGenBlock* nodep) override {
         // GenBlocks were only useful in variable creation, change names and delete

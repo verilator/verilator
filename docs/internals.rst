@@ -1331,9 +1331,10 @@ AstNodeExpr``.
 ``astnode`` generates accessors for the child nodes based on these
 directives. For non-list children, the names of the getter and setter both
 are that of the given ``<identifier>``. For list-type children, the getter
-is ``<identifier>``, and instead of the setter, there an
-``add<Identifier>`` method is generated that appends new nodes (or lists of
-nodes) to the child list.
+is ``<identifier>``, and instead of the setter, an ``add<Identifier>``
+method is generated that appends new nodes (or lists of nodes) to the child
+list, and a ``prepend<Identifier>`` method that prepends them to the front
+of the child list.
 
 
 ``alias op<N>`` operand alias directives

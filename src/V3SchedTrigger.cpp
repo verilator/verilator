@@ -400,10 +400,7 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) co
     AstNode* const setp = newExtraTriggerAssignment(vscp, index);
     setp->addNext(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
                                 new AstConst{flp, AstConst::BitFalse{}}});
-    if (AstNode* const nodep = m_compVecp->stmtsp()) {
-        setp->addNext(setp, nodep->unlinkFrBackWithNext());
-    }
-    m_compVecp->addStmtsp(setp);
+    m_compVecp->prependStmtsp(setp);
 }
 
 // Value-change detection for a single interface member VarScope written through a VIF.
@@ -484,11 +481,7 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     // Chain: set trigger bit -> update prev
     setp->addNext(updp);
 
-    // Prepend before existing statements
-    if (AstNode* const nodep = m_compVecp->stmtsp()) {
-        setp->addNext(setp, nodep->unlinkFrBackWithNext());
-    }
-    m_compVecp->addStmtsp(setp);
+    m_compVecp->prependStmtsp(setp);
 }
 
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,

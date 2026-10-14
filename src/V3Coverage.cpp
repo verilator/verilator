@@ -833,9 +833,9 @@ class CoverageVisitor final : public VNVisitor {
                         pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
-                            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+                            m_ftaskp->prependStmtsp(varp);
                         } else {
-                            m_modp->stmtsp()->addHereThisAsNext(varp);
+                            m_modp->prependStmtsp(varp);
                         }
                         VNRelinker relinkHandle;
                         frefp->unlinkFrBack(&relinkHandle);

@@ -2469,10 +2469,8 @@ class FsmLowerVisitor final {
             // after the delayed state update commits. This avoids a scheduler
             // race between a separate AstAlwaysPre task and the real state
             // commit for direct parent-level registers.
-            AstNode* const bodysp = alwaysp->stmtsp()->unlinkFrBackWithNext();
-            alwaysp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
-                                             new AstVarRef{flp, sampleVscp, VAccess::READ}});
-            alwaysp->addStmtsp(bodysp);
+            alwaysp->prependStmtsp(new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
+                                                 new AstVarRef{flp, sampleVscp, VAccess::READ}});
         } else {
             // Wrapper-derived register candidates do not have a parent
             // always_ff body to splice into. Sample coverage first, then save

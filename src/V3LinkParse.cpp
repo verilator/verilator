@@ -293,13 +293,7 @@ class LinkParseVisitor final : public VNVisitor {
         stmtsp = AstNode::addNextNull(stmtsp, getVarsAndUnlink(nodep->stmtsp()));
         // Follow vars by m_blockAddp's (if any)
         stmtsp = AstNode::addNextNull(stmtsp, getBlockAdds());
-        if (stmtsp) {
-            if (nodep->stmtsp()) {
-                nodep->stmtsp()->addHereThisAsNext(stmtsp);
-            } else {
-                nodep->addStmtsp(stmtsp);
-            }
-        }
+        nodep->prependStmtsp(stmtsp);
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
     void visit(AstConstraint* nodep) override {
@@ -979,13 +973,7 @@ class LinkParseVisitor final : public VNVisitor {
         stmtsp = AstNode::addNextNull(stmtsp, getVarsAndUnlink(nodep->stmtsp()));
         // Follow vars by m_blockAddp's (if any)
         stmtsp = AstNode::addNextNull(stmtsp, getBlockAdds());
-        if (stmtsp) {
-            if (nodep->stmtsp()) {
-                nodep->stmtsp()->addHereThisAsNext(stmtsp);
-            } else {
-                nodep->addStmtsp(stmtsp);
-            }
-        }
+        nodep->prependStmtsp(stmtsp);
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);
@@ -1196,25 +1184,27 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // Append, for each arg in argsp, a parameter plus a "this.<member> = <param>"
-    // assignment to funcp.  The parameter is a clone of the covergroup member and so shares its
+    // Return, for each arg in argsp, a parameter plus a "this.<member> = <param>"
+    // assignment.  The parameter is a clone of the covergroup member and so shares its
     // name; 'this.' on the LHS targets the member, otherwise the same-named local parameter
     // shadows it and the assignment self-assigns the parameter, leaving the member unwritten.
-    // argsp may be null (no args appended).
-    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp, bool readOnlyRefs) {
+    // argsp may be null (returns nullptr).
+    static AstNode* makeArgMemberCopies(AstNode* argsp, bool readOnlyRefs) {
+        AstNode* resultp = nullptr;
         for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             AstVar* const paramp = origVarp->cloneTree(false);
             paramp->funcLocal(true);
             paramp->direction(origVarp->direction());
             if (readOnlyRefs && origVarp->isRef()) paramp->direction(VDirection::CONSTREF);
-            funcp->addStmtsp(paramp);
+            resultp = AstNode::addNextNull(resultp, paramp);
             AstNodeExpr* const lhsp = new AstDot{
                 origVarp->fileline(), false, new AstParseRef{origVarp->fileline(), "this"},
                 new AstParseRef{origVarp->fileline(), origVarp->name()}};
             AstNodeExpr* const rhsp = new AstParseRef{paramp->fileline(), paramp->name()};
-            funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
+            resultp->addNext(new AstAssign{origVarp->fileline(), lhsp, rhsp});
         }
+        return resultp;
     }
 
     // Create boilerplate covergroup methods on the given AstClass.
@@ -1232,12 +1222,8 @@ class LinkParseVisitor final : public VNVisitor {
         if (argsp) {
             UASSERT_OBJ(newFuncp, nodep,
                         "Covergroup class must have a 'new' constructor function");
-            // Save the existing body statements and unlink them, so the arg assignments run
-            // before the coverage body, then re-append the body.
-            AstNode* const existingBodyp = newFuncp->stmtsp();
-            if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
-            addArgMemberCopies(newFuncp, argsp, true);
-            if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
+            // The arg assignments run before the coverage body
+            newFuncp->prependStmtsp(makeArgMemberCopies(argsp, true));
         }
 
         // IEEE: option / type_option members allow external access (cg_inst.option.X)
@@ -1267,7 +1253,7 @@ class LinkParseVisitor final : public VNVisitor {
         // IEEE: function void sample([arguments])
         {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-            addArgMemberCopies(funcp, sampleArgsp, false);
+            funcp->addStmtsp(makeArgMemberCopies(sampleArgsp, false));
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
             funcp->keepAlive(true);  // TODO create AstFuncRef and hold until findMethod("sample")
