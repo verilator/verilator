@@ -435,6 +435,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string member = rowStorageName(varp);
         const std::string dir = vlEnumDirOf(scopep, varp);
         const std::string flags = isLazy ? "(" + dir + ")|VLVF_PUB_RD|VLVF_LAZY_REMAT" : dir;
+        UASSERT_OBJ(dims.udim <= 255 && dims.pdim <= 255, varp,
+                    "VlVarTableEntry dim counts are uint8_t");
         // Flat dim (left,right) ints in varInsert() order: unpacked then packed.
         std::vector<int32_t> dv;
         for (const std::pair<int, int>& lr : dims.flatten()) {
