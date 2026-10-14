@@ -183,6 +183,10 @@ static void process() {
         // No more AstGenCase/AstGenFor/AstGenIf after this
         V3Param::param(v3Global.rootp());
 
+        // Specialize modules for instance-dependent upward targets and propagated child or
+        // interface variants, then relink before V3Width resolves argument and return types.
+        V3LinkDot::linkDotUpward(v3Global.rootp());
+
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
         V3Param::finalizeDeferredParams(v3Global.rootp());
         V3LinkLValue::linkLValue(v3Global.rootp());  // Resolve new VarRefs
