@@ -872,8 +872,8 @@ public:
 };
 class AstClocking final : public AstNode {
     // Parents:  MODULE
-    // Children: SENITEM, CLOCKING ITEMs, VARs
-    // @astgen op1 := sensesp : AstSenItem
+    // Children: SENTREE, CLOCKING ITEMs, VARs
+    // @astgen op1 := sentreep : AstSenTree
     // @astgen op2 := itemsp : List[AstNode]
     // @astgen op3 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
@@ -881,13 +881,13 @@ class AstClocking final : public AstNode {
     const bool m_isGlobal;  // True if global clocking
 
 public:
-    AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp, AstNode* itemsp,
+    AstClocking(FileLine* fl, const std::string& name, AstSenTree* sentreep, AstNode* itemsp,
                 bool isDefault, bool isGlobal)
         : ASTGEN_SUPER_Clocking(fl)
         , m_name{name}
         , m_isDefault{isDefault}
         , m_isGlobal{isGlobal} {
-        this->sensesp(sensesp);
+        this->sentreep(sentreep);
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstClocking;
@@ -2335,6 +2335,7 @@ class AstVar final : public AstNode {
     bool m_attrFileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
+    bool m_isClockingDriven : 1;  // Driven from inside by a clocking block output
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -2402,6 +2403,7 @@ class AstVar final : public AstNode {
         m_attrFileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
+        m_isClockingDriven = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -2594,6 +2596,8 @@ public:
     void hasUserInit(bool flag) { m_hasUserInit = flag; }
     void icoMaybeWritten(bool flag) { m_icoMaybeWritten = flag; }
     bool icoMaybeWritten() const { return m_icoMaybeWritten; }
+    void isClockingDriven(bool flag) { m_isClockingDriven = flag; }
+    bool isClockingDriven() const { return m_isClockingDriven; }
     bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isHideLocal() const { return m_isHideLocal; }

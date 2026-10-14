@@ -4148,8 +4148,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     void rewriteVarRef(AstVarRef* refp, AstVar* handleVarp) {
         FileLine* const fl = refp->fileline();
+        // As V3LinkLValue does, the handle of a written member select is marked written
         AstMemberSel* const selp
-            = new AstMemberSel{fl, new AstVarRef{fl, handleVarp, VAccess::READ}, refp->varp()};
+            = new AstMemberSel{fl, new AstVarRef{fl, handleVarp, refp->access()}, refp->varp()};
         selp->access(refp->access());
         refp->replaceWith(selp);
         VL_DO_DANGLING(pushDeletep(refp), refp);

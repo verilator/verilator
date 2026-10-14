@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_property_nested_instance_unsup.v:26:41: Unsupported: clock event in a nested property instance
+                                                              : ... note: In instance 't'
+   26 |   assert property (@(posedge clk) a |-> q_clk);
+      |                                         ^~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_nested_instance_unsup.v:27:41: Unsupported: multi-cycle body in a nested property instance
+                                                              : ... note: In instance 't'
+   27 |   assert property (@(posedge clk) a |-> q_seq);
+      |                                         ^~~~~
+%Error-UNSUPPORTED: t/t_property_nested_instance_unsup.v:28:41: Unsupported: multi-cycle body in a nested property instance
+                                                              : ... note: In instance 't'
+   28 |   assert property (@(posedge clk) a |-> q_rep);
+      |                                         ^~~~~
+%Error: Exiting due to

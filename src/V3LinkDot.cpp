@@ -1777,7 +1777,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstClocking* nodep) override {  // FindVisitor::
         VL_RESTORER(m_clockingp);
         m_clockingp = nodep;
-        iterate(nodep->sensesp());
+        iterate(nodep->sentreep());
         iterateAndNextNull(nodep->itemsp());
         // If the block has no name, one cannot reference the clockvars
         VSymEnt* itSymp = nullptr;
