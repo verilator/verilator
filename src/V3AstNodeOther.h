@@ -872,8 +872,8 @@ public:
 };
 class AstClocking final : public AstNode {
     // Parents:  MODULE
-    // Children: SENITEM, CLOCKING ITEMs, VARs
-    // @astgen op1 := sensesp : AstSenItem
+    // Children: SENTREE, CLOCKING ITEMs, VARs
+    // @astgen op1 := sentreep : AstSenTree
     // @astgen op2 := itemsp : List[AstNode]
     // @astgen op3 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
@@ -881,13 +881,13 @@ class AstClocking final : public AstNode {
     const bool m_isGlobal;  // True if global clocking
 
 public:
-    AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp, AstNode* itemsp,
+    AstClocking(FileLine* fl, const std::string& name, AstSenTree* sentreep, AstNode* itemsp,
                 bool isDefault, bool isGlobal)
         : ASTGEN_SUPER_Clocking(fl)
         , m_name{name}
         , m_isDefault{isDefault}
         , m_isGlobal{isGlobal} {
-        this->sensesp(sensesp);
+        this->sentreep(sentreep);
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstClocking;

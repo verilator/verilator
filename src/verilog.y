@@ -6313,15 +6313,15 @@ endLabelE<strp>:
 
 clocking_declaration<nodep>:            // IEEE: clocking_declaration
                 yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, *$2, $3, $5, false, false}; }
+                        { $$ = new AstClocking{$<fl>2, *$2, new AstSenTree{$<fl>2, $3}, $5, false, false}; }
         |       yDEFAULT yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, true, false}; }
+                        { $$ = new AstClocking{$<fl>2, "", new AstSenTree{$<fl>2, $3}, $5, true, false}; }
         |       yDEFAULT yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, true, false}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, new AstSenTree{$<fl>3, $4}, $6, true, false}; }
         |       yGLOBAL__CLOCKING yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, false, true}; }
+                        { $$ = new AstClocking{$<fl>2, "", new AstSenTree{$<fl>2, $3}, $5, false, true}; }
         |       yGLOBAL__CLOCKING yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, false, true}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, new AstSenTree{$<fl>3, $4}, $6, false, true}; }
         ;
 
 clocking_eventE<senItemp>:      // IEEE: optional clocking_event
