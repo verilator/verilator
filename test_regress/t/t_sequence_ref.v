@@ -58,10 +58,18 @@ module t (
 
   // Formal arguments used as cycle delays, whose actual arguments are elaboration-time
   // constants (IEEE 1800-2023 16.8): of a sequence, also as range bounds, and of a property,
-  // passing it on to a sequence
+  // passing it on to a sequence. Each matches 'e' after 'd' with its delay, and fails once with
+  // another delay.
   localparam int DLY = 2;
   logic d, e;
-  int dly1_fails = 0;
+  int delay_fails = 0;
+  int range_fails = 0;
+  int upto_fails = 0;
+  int prop_fails = 0;
+  int delay_other_fails = 0;
+  int range_other_fails = 0;
+  int upto_other_fails = 0;
+  int prop_other_fails = 0;
   sequence seq_delay(logic sig1, logic sig2, int dly);
     sig1 ##dly sig2;
   endsequence
@@ -74,12 +82,22 @@ module t (
   property prop_delay(untyped dly);
     @(posedge clk) d |-> seq_delay(1'b1, e, dly);
   endproperty
-  assert property (@(posedge clk) d |-> seq_delay(1'b1, e, DLY));
-  assert property (@(posedge clk) d |-> seq_range(1'b1, e, DLY - 1, DLY + 1));
-  assert property (@(posedge clk) d |-> seq_upto(1'b1, e, DLY + 1));
-  assert property (prop_delay(DLY));
+  assert property (@(posedge clk) d |-> seq_delay(1'b1, e, DLY))
+  else delay_fails++;
+  assert property (@(posedge clk) d |-> seq_range(1'b1, e, DLY - 1, DLY + 1))
+  else range_fails++;
+  assert property (@(posedge clk) d |-> seq_upto(1'b1, e, DLY + 1))
+  else upto_fails++;
+  assert property (prop_delay(DLY))
+  else prop_fails++;
   assert property (@(posedge clk) d |-> seq_delay(1'b1, e, DLY - 1))
-  else dly1_fails++;
+  else delay_other_fails++;
+  assert property (@(posedge clk) d |-> seq_range(1'b1, e, DLY + 1, DLY + 2))
+  else range_other_fails++;
+  assert property (@(posedge clk) d |-> seq_upto(1'b1, e, DLY - 1))
+  else upto_other_fails++;
+  assert property (prop_delay(DLY + 1))
+  else prop_other_fails++;
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
@@ -103,7 +121,14 @@ module t (
       end
     endcase
     if (cyc == 10) begin
-      `checkd(dly1_fails, 1)
+      `checkd(delay_fails, 0)
+      `checkd(range_fails, 0)
+      `checkd(upto_fails, 0)
+      `checkd(prop_fails, 0)
+      `checkd(delay_other_fails, 1)
+      `checkd(range_other_fails, 1)
+      `checkd(upto_other_fails, 1)
+      `checkd(prop_other_fails, 1)
       $write("*-* All Finished *-*\n");
       $finish;
     end

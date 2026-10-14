@@ -191,7 +191,9 @@ static const AstConst* checkSvaDelayBound(AstNode* errp, AstNodeExpr* boundp, co
     return constp;
 }
 
-bool V3AssertCommon::checkSvaCycleDelay(const AstDelay* nodep, AstNode* errp) {
+// Fold the bounds of a cycle delay in a sequence, and return if they are valid, else report it
+// on errp
+static bool svaCycleDelayValid(const AstDelay* nodep, AstNode* errp) {
     V3Const::constifyParamsNoWarnEdit(nodep->lhsp());
     const AstConst* const minConstp = checkSvaDelayBound(
         errp, nodep->lhsp(), nodep->isRangeDelay() ? "Range delay minimum" : "Delay value");
@@ -205,6 +207,20 @@ bool V3AssertCommon::checkSvaCycleDelay(const AstDelay* nodep, AstNode* errp) {
         return false;
     }
     return true;
+}
+
+void V3AssertCommon::checkSvaCycleDelay(AstDelay* nodep, AstNode* errp) {
+    if (svaCycleDelayValid(nodep, errp)) return;
+    // Make the delay valid, so later steps do not fail after the error
+    FileLine* const flp = nodep->fileline();
+    AstNodeExpr* const minp = nodep->lhsp();
+    minp->replaceWith(new AstConst{flp, AstConst::BitFalseErroring{}});
+    VL_DO_DANGLING(minp->deleteTree(), minp);
+    if (nodep->rhsp() && !nodep->isUnbounded()) {
+        AstNodeExpr* const maxp = nodep->rhsp();
+        maxp->replaceWith(new AstConst{flp, AstConst::BitFalseErroring{}});
+        VL_DO_DANGLING(maxp->deleteTree(), maxp);
+    }
 }
 
 bool V3AssertCommon::refsSvaFormal(const AstNode* nodep) {
@@ -225,19 +241,7 @@ void V3AssertCommon::checkSvaInstanceDelays(AstNode* nodep, AstNode* instp) {
         if (delayp->rhsp() && refsSvaFormal(delayp->rhsp())) return;
         delayps.push_back(delayp);
     });
-    for (AstDelay* const delayp : delayps) {
-        if (checkSvaCycleDelay(delayp, instp)) continue;
-        // Make the delay valid, so later steps do not fail after the error
-        FileLine* const flp = delayp->fileline();
-        AstNode* const oldMinp = delayp->lhsp()->unlinkFrBack();
-        VL_DO_DANGLING(oldMinp->deleteTree(), oldMinp);
-        delayp->lhsp(new AstConst{flp, 0});
-        if (delayp->rhsp() && !delayp->isUnbounded()) {
-            AstNode* const oldMaxp = delayp->rhsp()->unlinkFrBack();
-            VL_DO_DANGLING(oldMaxp->deleteTree(), oldMaxp);
-            delayp->rhsp(new AstConst{flp, 0});
-        }
-    }
+    for (AstDelay* const delayp : delayps) checkSvaCycleDelay(delayp, instp);
 }
 
 //######################################################################
