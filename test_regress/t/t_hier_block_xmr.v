@@ -16,12 +16,15 @@ typedef logic [7:0] phi_t;
 
 module tech(input phi_t phi, input en,
             input [3:0] pub /*verilator public_flat_rd*/,
-            input signed [7:0] sgn);
+            input signed [7:0] sgn,
+            // An escaped name longer than 128 characters, which the generated
+            // port and its pin have to carry across the boundary intact
+            input [7:0] \foo$signal[3]long_long_name_pushing_the_escaped_identifier_well_past_one_hundred_and_twenty_eight_characters_so_the_mangling_is_exercised );
 endmodule
 
 // --- The target forms -------------------------------------------------------
 module leaf(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, output o_bit,
-            output [3:0] o_part);
+            output [3:0] o_part, output [7:0] o_long);
   // Typedef'd target: a name for a packed basic type is still promotable
   wire [7:0] ph = t.top.drv.tech_inst.phi;
   wire       en = t.top.drv.tech_inst.en;
@@ -35,6 +38,8 @@ module leaf(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, ou
   wire [3:0] pt = t.top.drv.tech_inst.phi[7:4];
   // A package-scoped name is not a hierarchical reference and must not match
   wire       px = ph[cfg_pkg::SEL];
+  // Escaped target, longer than 128 characters
+  wire [7:0] lng = t.top.drv.tech_inst.\foo$signal[3]long_long_name_pushing_the_escaped_identifier_well_past_one_hundred_and_twenty_eight_characters_so_the_mangling_is_exercised ;
 
   assign o_ph = ph;
   assign o_en = en;
@@ -42,6 +47,7 @@ module leaf(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, ou
   assign o_neg = (sg < 0);
   assign o_bit = b2 ^ px;
   assign o_part = pt;
+  assign o_long = lng;
 endmodule
 
 // Reads the same path as leaf; both must share one generated port
@@ -51,9 +57,9 @@ module leaf2(output [7:0] o_ph2);
 endmodule
 
 module blk(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, output o_bit,
-           output [3:0] o_part, output [7:0] o_ph2);
+           output [3:0] o_part, output [7:0] o_ph2, output [7:0] o_long);
   /*verilator hier_block*/
-  leaf  l0(o_ph, o_en, o_pub, o_neg, o_bit, o_part);
+  leaf  l0(o_ph, o_en, o_pub, o_neg, o_bit, o_part, o_long);
   leaf2 l1(o_ph2);
 endmodule
 
@@ -127,23 +133,26 @@ module mid(output [3:0] o, input i);
 endmodule
 
 // --- The design under all of the above --------------------------------------
-module drv(output phi_t ph, output en, output [3:0] pub, output signed [7:0] sgn);
-  tech tech_inst(ph, en, pub, sgn);
+module drv(output phi_t ph, output en, output [3:0] pub, output signed [7:0] sgn,
+           output [7:0] lng);
+  tech tech_inst(ph, en, pub, sgn, lng);
   assign ph = 8'h5a;
   assign en = 1'b1;
   assign pub = 4'ha;
   assign sgn = -8'sd5;
+  assign lng = 8'he7;
 endmodule
 
 module bench(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, output o_bit,
              output [3:0] o_part, output [7:0] o_ph2, output [1:0] o_scope, output o_param,
-             output [3:0] o_gen, input i_zero, input i_one);
+             output [3:0] o_gen, output [7:0] o_long, input i_zero, input i_one);
   phi_t ph;
   wire  en;
   wire [3:0] pub;
   wire signed [7:0] sgn;
-  drv drv(ph, en, pub, sgn);
-  blk       b(o_ph, o_en, o_pub, o_neg, o_bit, o_part, o_ph2);
+  wire [7:0] lng;
+  drv drv(ph, en, pub, sgn, lng);
+  blk       b(o_ph, o_en, o_pub, o_neg, o_bit, o_part, o_ph2, o_long);
   blk_scope s(o_scope, i_zero);
   blk_param #(.P(2)) p(o_param, i_one);
   mid       m(o_gen, i_zero);
@@ -151,9 +160,9 @@ endmodule
 
 module t(output [7:0] o_ph, output o_en, output [3:0] o_pub, output o_neg, output o_bit,
          output [3:0] o_part, output [7:0] o_ph2, output [1:0] o_scope, output o_param,
-         output [3:0] o_gen);
+         output [3:0] o_gen, output [7:0] o_long);
   reg i_zero = 1'b0;
   reg i_one = 1'b1;
-  bench top(o_ph, o_en, o_pub, o_neg, o_bit, o_part, o_ph2, o_scope, o_param, o_gen,
+  bench top(o_ph, o_en, o_pub, o_neg, o_bit, o_part, o_ph2, o_scope, o_param, o_gen, o_long,
             i_zero, i_one);
 endmodule

@@ -38,6 +38,8 @@ int main(int argc, char** argv) {
     TEST_CHECK_EQ(static_cast<unsigned>(topp->o_param), 1);  // 1 ^ 0x5a[2], SEL parameterized to 2
     // Two instances of one block, each contributing 0x5a bits 0 and 1
     TEST_CHECK_HEX_EQ(static_cast<unsigned>(topp->o_gen), 0xa);
+    // Escaped target name longer than 128 characters
+    TEST_CHECK_HEX_EQ(static_cast<unsigned>(topp->o_long), 0xe7);
 
     topp->final();
     VL_DO_DANGLING(delete topp, topp);
