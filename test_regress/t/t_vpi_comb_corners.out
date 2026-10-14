@@ -111,6 +111,8 @@ t (vpiModule) t  vpiDefName=t
         vpiReg:
         l (vpiReg) t.unnamedblk1.l 
         vpiParameter:
+-- @0 start t.a = 86
+-- @0 start t.b = c2
 -- @0 readonly
 t.NumCycles = 14 vpiSize=8
 t.a = 00 vpiSize=8
@@ -128,10 +130,10 @@ t.fcyc_y = 1 vpiSize=4
 t.frc = 11 vpiSize=7
 t.frc2 = 22 vpiSize=7
 t.frc2__VforceEn = 00 vpiSize=7
-t.frc2__VforceVal = 00 vpiSize=7
+t.frc2__VforceVal = 7a vpiSize=7
 t.frc2_force = 0 vpiSize=1
 t.frc__VforceEn = 00 vpiSize=7
-t.frc__VforceVal = 00 vpiSize=7
+t.frc__VforceVal = 7b vpiSize=7
 t.handle = 0000000000000000 vpiSize=64
 t.i_comb = 00000001 vpiSize=32
 t.keep = 00 vpiSize=8
@@ -145,7 +147,7 @@ t.md_full[3][0] = 0044 vpiSize=16
 t.md_gap[1][0] = 0033 vpiSize=16
 t.md_gap[1][1] = 0044 vpiSize=16
 t.md_gap[1][2] = 0055 vpiSize=16
-t.md_gap[0][0] = 0000 vpiSize=16
+t.md_gap[0][0] = 6200 vpiSize=16
 t.md_gap[0][1] = 0011 vpiSize=16
 t.md_gap[0][2] = 0022 vpiSize=16
 t.mem[3] = 03 vpiSize=8
@@ -155,9 +157,9 @@ t.mem[0] = 00 vpiSize=8
 t.mem_chain[2] = 01 vpiSize=8
 t.mem_chain[1] = 00 vpiSize=8
 t.mem_chain[0] = 00 vpiSize=8
-t.mem_part[3] = 00 vpiSize=8
-t.mem_part[2] = 00 vpiSize=8
-t.mem_part[1] = 00 vpiSize=8
+t.mem_part[3] = 0d vpiSize=8
+t.mem_part[2] = 0d vpiSize=8
+t.mem_part[1] = 0d vpiSize=8
 t.mem_part[0] = 27 vpiSize=8
 t.mixdep[1][1] = ff vpiSize=8
 t.mixdep[1][0] = ff vpiSize=8
@@ -165,7 +167,7 @@ t.mixdep[0][1] = 00 vpiSize=8
 t.mixdep[0][0] = 00 vpiSize=8
 t.narrow = 01 vpiSize=8
 t.obs_dtypes = fa vpiSize=8
-t.orphan = 00 vpiSize=8
+t.orphan = b9 vpiSize=8
 t.out = f0 vpiSize=8
 t.p = 00 vpiSize=8
 t.pa_comb = 00ff01ff vpiSize=32
@@ -268,7 +270,7 @@ t.md_full[3][0] = 3c44
 t.md_gap[1][0] = 3c33
 t.md_gap[1][1] = 3c44
 t.md_gap[1][2] = 3c55
-t.md_gap[0][0] = 003c
+t.md_gap[0][0] = 623c
 t.md_gap[0][1] = 3c11
 t.md_gap[0][2] = 3c22
 t.mem[3] = 3f
@@ -323,7 +325,7 @@ t.md_full[3][0] = 2b44
 t.md_gap[1][0] = 2b33
 t.md_gap[1][1] = 2b44
 t.md_gap[1][2] = 2b55
-t.md_gap[0][0] = 002b
+t.md_gap[0][0] = 622b
 t.md_gap[0][1] = 2b11
 t.md_gap[0][2] = 2b22
 t.mem[3] = 2e
@@ -385,7 +387,7 @@ t.md_full[3][0] = 5a44
 t.md_gap[1][0] = 5a33
 t.md_gap[1][1] = 5a44
 t.md_gap[1][2] = 5a55
-t.md_gap[0][0] = 005a
+t.md_gap[0][0] = 625a
 t.md_gap[0][1] = 5a11
 t.md_gap[0][2] = 5a22
 t.mem[3] = 5d
@@ -449,7 +451,7 @@ t.md_full[3][0] = 0044
 t.md_gap[1][0] = 0033
 t.md_gap[1][1] = 0044
 t.md_gap[1][2] = 0055
-t.md_gap[0][0] = 0000
+t.md_gap[0][0] = 6200
 t.md_gap[0][1] = 0011
 t.md_gap[0][2] = 0022
 t.mem[3] = 03

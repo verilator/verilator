@@ -24,12 +24,14 @@ test.compile(make_top_shell=False,
              ],
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
-test.execute(use_libvpi=True, expect_filename=test.golden_filename)
+# Shadows reset as their signals would, so a read before the first eval() matches
+test.execute(use_libvpi=True,
+             all_run_flags=[
+                 "+verilator+rand+reset+2", "+verilator+seed+7", "+t_vpi_dump_start=t.a",
+                 "+t_vpi_dump_start=t.b"
+             ],
+             expect_filename=test.golden_filename)
 
 test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 31)
-
-# A shadow resets as its signal would under --public-flat-rw: t.a's seed, hash of "t.a"
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root__0__Slow.cpp",
-               r'__Vlazyrecon__\w+ = VL_SCOPED_RAND_RESET_I\(8, __VscopeHash, 568261790826559771ull\)')
 
 test.passes()

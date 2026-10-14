@@ -158,6 +158,7 @@ extern VM_PREFIX* testVpiTopp;
 //                          restore also dumps before it
 //   t_vpi_dump_restores()  restores so far; a restore rewinds the design, not this count
 //   t_vpi_dump_clock(name, halfperiod)  toggle name, for models without --timing
+// Plusarg +t_vpi_dump_start=<name> prints name at start of simulation, before the first eval().
 enum class OpKind : uint8_t { PUT, SAVE, RESTORE };
 struct RwOp {
     OpKind kind;
@@ -532,6 +533,16 @@ PLI_INT32 start_of_sim(t_cb_data* data) {
     TestVpiHandle it = vpi_iterate(vpiModule, nullptr);
     TEST_CHECK_NZ(it);
     modDump(it, 0, false);
+    s_vpi_vlog_info info{};
+    vpi_get_vlog_info(&info);
+    const std::string startOpt = "+t_vpi_dump_start=";
+    for (int i = 1; i < info.argc; ++i) {
+        const std::string arg = info.argv[i];
+        if (arg.compare(0, startOpt.size(), startOpt)) continue;
+        const std::string name = arg.substr(startOpt.size());
+        printf("-- @%" PRIu64 " start %s = %s\n", simTime(), name.c_str(),
+               valueByName(name).c_str());
+    }
     next_sim_time(nullptr);
     registerCb(cbEndOfSimulation, &end_of_sim, nullptr, nullptr);
     return 0;
