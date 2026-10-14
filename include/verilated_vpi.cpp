@@ -1728,9 +1728,9 @@ VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVar* const baseSignal
 #endif  // VL_DEBUG
 
     return VerilatedVpiImp::ForceControlSignalVops{
-        .forceEnable{std::unique_ptr<VerilatedVpioVar>{forceEnableSignalVop}},
-        .forceValue{std::unique_ptr<VerilatedVpioVar>{forceValueSignalVop}},
-        .forceRead{std::unique_ptr<VerilatedVpioVar>{forceReadSignalVop}}};
+        std::unique_ptr<VerilatedVpioVar>{forceEnableSignalVop},
+        std::unique_ptr<VerilatedVpioVar>{forceValueSignalVop},
+        std::unique_ptr<VerilatedVpioVar>{forceReadSignalVop}};
 }
 
 QData vl_vpi_get_word(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset);
@@ -3263,14 +3263,13 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_LIKELY(vop && vop->isStructOrUnion())) return 0;
         if (VL_LIKELY(vop && vop->isPackedAgg())) return 1;
-        [[fallthrough]];
+        break;
     }
-    default:
-        VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: Unsupported property '%s', nothing will be returned", __func__,
-                      VerilatedVpiError::strFromVpiProp(property));
-        return vpiUndefined;
+    default: break;
     }
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported property '%s', nothing will be returned",
+                  __func__, VerilatedVpiError::strFromVpiProp(property));
+    return vpiUndefined;
 }
 
 PLI_INT64 vpi_get64(PLI_INT32 /*property*/, vpiHandle /*object*/) {
@@ -3913,9 +3912,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 = baseSignalVop->varp()->isContinuously()
                       ? s_vpi_value{}
                       : [&forceReadSignalVop]() {
-                            s_vpi_value val{.format = vl_get_vltype_format(
-                                                forceReadSignalVop->varp()->vltype()),
-                                            .value{}};
+                            s_vpi_value val{
+                                vl_get_vltype_format(forceReadSignalVop->varp()->vltype()), {}};
                             vl_vpi_get_value(forceReadSignalVop, &val);
                             return val;
                         }();
