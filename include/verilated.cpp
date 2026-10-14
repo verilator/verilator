@@ -4405,12 +4405,12 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
         VerilatedVar var{e.namep, datap, e.vltype, vlflags, e.udims, e.pdims, /*isParam=*/false};
         if (isCombRow) var.m_lazyCombMask = e.lazyIdx;
         for (int d = 0; d < e.udims; ++d) {
-            var.m_unpacked[d].m_left = e.dims[2 * d];
-            var.m_unpacked[d].m_right = e.dims[2 * d + 1];
+            var.m_unpacked[d].m_left = e.dimsp[2 * d];
+            var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
         }
         for (int d = 0; d < e.pdims; ++d) {
-            var.m_packed[d].m_left = e.dims[2 * (e.udims + d)];
-            var.m_packed[d].m_right = e.dims[2 * (e.udims + d) + 1];
+            var.m_packed[d].m_left = e.dimsp[2 * (e.udims + d)];
+            var.m_packed[d].m_right = e.dimsp[2 * (e.udims + d) + 1];
         }
         // Recompute the flattened DPI packed range now dims are known (see
         // VerilatedVarProps::initPacked)

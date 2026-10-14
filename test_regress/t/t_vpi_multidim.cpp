@@ -375,6 +375,26 @@ void _multidim_check() {
     }
 }
 
+void _arr_6d_check() {
+    TestVpiHandle arr_h
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted("arr_6d")), NULL);
+    TEST_CHECK_NZ(arr_h);
+    _arr_type_check(arr_h, vpiRegArray, 8, 1, 0);
+    TestVpiHandle elem1_h = vpi_handle_by_index(arr_h, 1);
+    TEST_CHECK_NZ(elem1_h);
+    _arr_type_check(elem1_h, vpiRegArray, 4, 2, 1);
+    TestVpiHandle elem2_h = vpi_handle_by_index(elem1_h, 2);
+    TEST_CHECK_NZ(elem2_h);
+    _arr_type_check(elem2_h, vpiRegArray, 2, 3, 2);
+    TestVpiHandle reg_h = vpi_handle_by_index(elem2_h, 3);
+    TEST_CHECK_NZ(reg_h);
+    _arr_type_check(reg_h, vpiReg, 8, 3, 2);
+    s_vpi_value value;
+    value.format = vpiIntVal;
+    vpi_get_value(reg_h, &value);
+    TEST_CHECK_EQ(value.value.integer, 0xa5);
+}
+
 // TEST END
 
 extern "C" int mon_check() {
@@ -382,6 +402,7 @@ extern "C" int mon_check() {
     //if (int status = _mon_check_param()) return status;
     printf("-mon_check()\n");
     _multidim_check();
+    _arr_6d_check();
     return errors;
 }
 

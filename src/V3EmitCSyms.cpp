@@ -105,9 +105,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     using ScopeModPair = std::pair<const AstScope*, AstNodeModule*>;
     using ModVarPair = std::pair<const AstNodeModule*, const AstVar*>;
 
-    // Vars with more dims take the residual per-statement path.
-    static constexpr int VPI_TABLE_MAX_DIMS = V3VpiLazy::VPI_TABLE_MAX_DIMS;
-
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current function
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -133,6 +130,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
     // name -> initializer rows, built in getSymCtorStmts()
     std::vector<std::pair<std::string, std::vector<std::string>>> m_varTables;
+    // VlVarTableEntry::dimsp array; identical dim lists share an offset
+    std::vector<int32_t> m_varDims;
+    std::map<std::vector<int32_t>, size_t> m_varDimsOffset;
     // Single VlScopeTableEntry[] table for all scopes, built in getSymCtorStmts()
     std::string m_scopeTableName;
     std::vector<std::string> m_scopeTableRows;
@@ -380,6 +380,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         PLAIN_RESIDUAL,  // Residual, via insertVarStatement() (+ struct/array expansion)
     };
 
+    std::string varDimsTableName() const { return symClassName() + "__VpiVarDims"; }
     std::string combMaskTableName() const { return symClassName() + "__VlazyCombMasks"; }
     std::string combRunTableName() const { return symClassName() + "__VlazyCombRuns"; }
     int combMaskIdx(const AstScope* scopep, const AstVar* varp) {
@@ -414,14 +415,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     TableEntryKind tryBuildTableEntry(const ScopeVarData& svd, const AstVar* const varp,
                                       const AstScope* const scopep,
                                       const std::string& modClassName, int lazyIdx,
-                                      const VarDims& dims, std::string& rowOut) const {
-        const int pdim = dims.pdim;
-        const int udim = dims.udim;
+                                      const VarDims& dims, std::string& rowOut) {
         const bool isLazy = varp->isLazyReconstructShadow();
         if (!isLazy && varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
             return TableEntryKind::FORCEABLE_RESIDUAL;
         }
-        if (udim + pdim > VPI_TABLE_MAX_DIMS) return TableEntryKind::PLAIN_RESIDUAL;
 
         const std::string vlEnumType = varp->vlEnumType();
         if (!isLazy && needsEmittedEntSize(vlEnumType))
@@ -438,22 +436,24 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string dir = vlEnumDirOf(scopep, varp);
         const std::string flags = isLazy ? "(" + dir + ")|VLVF_PUB_RD|VLVF_LAZY_REMAT" : dir;
         // Flat dim (left,right) ints in varInsert() order: unpacked then packed.
-        std::vector<int> dv;
+        std::vector<int32_t> dv;
         for (const std::pair<int, int>& lr : dims.flatten()) {
             dv.push_back(lr.first);
             dv.push_back(lr.second);
         }
+        std::string dimsp = "nullptr";
+        if (!dv.empty()) {
+            const auto pr = m_varDimsOffset.emplace(dv, m_varDims.size());
+            if (pr.second) m_varDims.insert(m_varDims.end(), dv.begin(), dv.end());
+            dimsp = "&" + varDimsTableName() + "[" + std::to_string(pr.first->second) + "]";
+        }
 
         std::string row = "{\"" + name + "\", ";
         row += "offsetof(" + modClassName + ", " + member + "), ";
+        row += dimsp + ", ";
         row += vlEnumType + ", ";
         row += "(" + flags + "), ";
-        row += std::to_string(udim) + ", " + std::to_string(pdim) + ", {";
-        for (int i = 0; i < VPI_TABLE_MAX_DIMS * 2; ++i) {
-            if (i) row += ", ";
-            row += std::to_string(i < static_cast<int>(dv.size()) ? dv[i] : 0);
-        }
-        row += "}";
+        row += std::to_string(dims.udim) + ", " + std::to_string(dims.pdim);
         if (lazyIdx >= 0) row += ", " + std::to_string(lazyIdx);
         row += "}";
         rowOut = row;
@@ -1350,6 +1350,14 @@ void EmitCSyms::emitVarTables() {
     puts("# pragma GCC diagnostic push\n");
     puts("# pragma GCC diagnostic ignored \"-Winvalid-offsetof\"\n");
     puts("#endif\n");
+    if (!m_varDims.empty()) {
+        puts("static const int32_t " + varDimsTableName() + "[] = {\n");
+        for (size_t i = 0; i < m_varDims.size(); i += 2) {
+            ofp()->putsNoTracking("    " + std::to_string(m_varDims[i]) + ", "
+                                  + std::to_string(m_varDims[i + 1]) + ",\n");
+        }
+        puts("};\n");
+    }
     for (const auto& kv : m_varTables) {
         puts("extern const VlVarTableEntry " + kv.first + "[] = {\n");
         for (const std::string& row : kv.second) {

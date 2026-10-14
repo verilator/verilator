@@ -217,18 +217,17 @@ struct VlLazyUndo final {
 // One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
 // replaces per-variable varInsert() calls, which compiles faster at scale.
 struct VlVarTableEntry final {
-    static constexpr int kMaxDims = 3;  // Max packed+unpacked dims a table row holds
     const char* namep;  // VPI-facing (protected) variable name, string literal
     size_t byteOffset;  // offsetof of storage member from module instance base
+    // (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
+    // nullptr if none. int32_t since large unpacked memories exceed int16 range.
+    const int32_t* dimsp;
     VerilatedVarType vltype;
     uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*), incl VLVF_LAZY_REMAT
-    uint8_t udims;  // udims + pdims <= kMaxDims
+    uint8_t udims;
     uint8_t pdims;
-    // (left,right) pairs: unpacked dims first, then packed; int32_t since large
-    // unpacked memories exceed int16 range
-    int32_t dims[kMaxDims * 2];
     // Last and defaulted, so only --vpi-lazy rows spell it. One field for both meanings, as a
-    // second would pad the row from 56 to 64 bytes.
+    // second would pad the row from 40 to 48 bytes.
     int32_t lazyIdx = -1;  // VLVF_LAZY_COMB: model-wide VlLazyCombMask index; else module-relative
                            // descriptor slot; -1 for neither
 };
