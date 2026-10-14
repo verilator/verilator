@@ -8,23 +8,51 @@
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
+import glob
+import os
+import shutil
 
 test.scenarios('vlt_all')
 test.top_filename = "t/t_vpi_scope_topology.v"
 test.golden_filename = "t/t_vpi_scope_topology.out"
 test.pli_filename = "t/t_vpi_dump.cpp"
 
+flags = [
+    "--exe --vpi --timing --vpi-lazy --no-l2name --stats", test.pli_filename, "t/TestVpiMain.cpp"
+]
+
+# A stale file in obj_dir would read as a nondeterministic one
+test.clean_objs()
 test.compile(make_top_shell=False,
              make_main=False,
              make_pli=True,
-             verilator_flags2=[
-                 "--exe --vpi --timing --vpi-lazy --no-l2name --stats", test.pli_filename,
-                 "t/TestVpiMain.cpp"
-             ],
+             verilator_flags2=flags,
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
 test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 37)
+
+# A second verilation of the same source must generate identical files
+obj_dir2 = test.obj_dir + "/obj_dir_2"
+shutil.rmtree(obj_dir2, ignore_errors=True)
+os.makedirs(obj_dir2)
+vlt_cmd2 = test.compile_vlt_cmd(
+    verilator_flags=[obj_dir2 if f == test.obj_dir else f for f in test.verilator_flags],
+    verilator_flags2=flags,
+    make_main=False)
+test.run(cmd=vlt_cmd2, logfile=obj_dir2 + "/vlt_compile.log", tee=True, verilator_run=True)
+
+
+def gen_files(obj_dir):
+    names = glob.glob(obj_dir + "/*.cpp") + glob.glob(obj_dir + "/*.h")
+    return sorted(os.path.basename(f) for f in names if not f.endswith("__ALL.cpp"))
+
+
+files1 = gen_files(test.obj_dir)
+if files1 != gen_files(obj_dir2):
+    test.error("Generated file sets differ between two verilations")
+for fname in files1:
+    test.files_identical(test.obj_dir + "/" + fname, obj_dir2 + "/" + fname)
 
 test.passes()
