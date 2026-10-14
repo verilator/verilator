@@ -197,6 +197,9 @@ t.n_mix W
 t.n_q W
 t.nest_c r
 t.nopre_c WWWWrrrr
+t.np0.i r
+t.np0.o r
+t.np_o r
 t.ovl_w r
 t.pand_c r
 t.part_c r

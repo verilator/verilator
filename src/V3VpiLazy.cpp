@@ -227,20 +227,13 @@ bool storagePinnedElsewhere(const AstVar* varp) {
     return false;
 }
 
-bool copyTargetKind(const AstVar* varp) {
+bool reconstructableKind(const AstVar* varp) {
     if (storagePinnedElsewhere(varp)) return false;
     AstNodeDType* leafp = varp->dtypeSkipRefp();
     while (AstUnpackArrayDType* const adtypep = VN_CAST(leafp, UnpackArrayDType)) {
         leafp = adtypep->subDTypep()->skipRefp();
     }
     return VN_IS(leafp, BasicDType) || leafp->isIntegralOrPacked();
-}
-
-// A port is excluded: one loose func serves every instance, named from its target's module, so a
-// port written from its parent has nowhere to put one. A copy row has no func, so may claim it.
-bool reconstructableKind(const AstVar* varp) {
-    if (varp->isIO()) return false;
-    return copyTargetKind(varp);
 }
 
 // One partial write's footprint; idxs order need only be consistent between parts.
@@ -1198,7 +1191,7 @@ private:
             if (srcp->scopep() != b.m_scopep) return;
             if (!dstp->varp()->isSigVpiLazyCandidate()) return;
             if (writeCountOf(dstp) != 1) return;
-            if (!copyTargetKind(dstp->varp()) || srcp->varp()->isParam()) return;
+            if (!reconstructableKind(dstp->varp()) || srcp->varp()->isParam()) return;
             if (!sameLayout(dstp, srcp)) return;
             cand.emplace_back(dstp, srcp);
             ++instances[dstp->varp()];

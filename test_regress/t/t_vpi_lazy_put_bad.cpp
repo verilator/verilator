@@ -486,6 +486,7 @@ int main(int argc, char** argv) {
              {"t.sib_c", "reconstructed"},
              {"t.fyx0_c", "reconstructed"},  // Reads another instance's cone
              {"t.cts_c.hi", "reconstructed"},  // A member follows its parent
+             {"t.np0.o", "reconstructed"},  // A non-inlined module's port
              {"t.ff_q", "retained"},
              {"t.st.cnt", "retained"},
              {"t.ia.q", "retained"},  // Per instance: ib.q is the comb-driven one

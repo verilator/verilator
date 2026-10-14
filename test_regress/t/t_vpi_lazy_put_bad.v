@@ -117,6 +117,15 @@ module sub_tmp (
   assign obs = mix ^ cpy;
 endmodule
 
+// A non-inlined module's comb output port
+module sub_np (
+    input logic [7:0] i,
+    output logic [7:0] o
+);
+  /*verilator no_inline_module*/
+  assign o = i + 8'd7;
+endmodule
+
 interface ifc_din (
     input logic [7:0] din
 );
@@ -575,6 +584,11 @@ module t (
       .i(d),
       .o(tmp_o),
       .obs(tmp_obs)
+  );
+  logic [7:0] np_o;
+  sub_np np0 (
+      .i(d),
+      .o(np_o)
   );
   ifc_din ifd (.din(d));
   sub_pass u_lp1 (
