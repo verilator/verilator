@@ -518,6 +518,7 @@ int main(int argc, char** argv) {
              {"t.st.cnt", "retained"},
              {"t.ia.q", "retained"},  // Per instance: ib.q is the comb-driven one
              {"t.dli", "retained"},  // A variable select reads its undriven bits
+             {"t.oh.v", "reconstructed"},  // No design read reaches its undriven bits
              {"t.ib.q", "comb"},
              {"t.ret_c", "comb"},  // An impure driver is not re-executed on read
              {"t.rnd_w", "comb"},

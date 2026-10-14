@@ -4404,6 +4404,7 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
         const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | reconFlags);
         VerilatedVar var{e.namep, datap, e.vltype, vlflags, e.udims, e.pdims, /*isParam=*/false};
         if (isCombRow) var.m_lazyCombMask = e.lazyIdx;
+        if (reconFlags & VLVF_LAZY_COMB) var.m_lazyCombMask = lazyReconsp[descSlot].srcByteOffset;
         for (int d = 0; d < e.udims; ++d) {
             var.m_unpacked[d].m_left = e.dimsp[2 * d];
             var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];

@@ -33,7 +33,7 @@
 // AstActive (a continuous assign being an AstAlways{CONT_ASSIGN} wrapping one
 // AstAssignW), so the unit is one such block: a "group". Continuous assigns
 // writing disjoint constant ranges or constant-index elements of one variable
-// merge into one group, assembled from a zero base. A group's targets are the
+// merge into one group, assembled in its shadow. A group's targets are the
 // VPI-visible variables it solely drives, its other written variables temp
 // shadows. Its statements are cloned into a cold loose function with every
 // written variable redirected to a "shadow", leaving the originals deletable.
@@ -43,10 +43,11 @@
 // row, as a compiler temporary has no RTL name.
 //
 // A group is claimed only if one ordered walk over its statements proves that
-// every read of a group variable follows an unconditional full-width write of
-// it, that every statement is pure and of a modelled kind, and that every
-// target is written on all paths. Otherwise its targets are retained, and Bail
-// records why for --stats.
+// every read of a group variable's bits follows a write of them on every path,
+// that every statement is pure and of a modelled kind, and that every target
+// is written on all paths. Groups in a dependency cycle merge into one, its
+// blocks in encounter order, and are claimed if that walk proves the merged
+// group. Otherwise its targets are retained, and Bail records why for --stats.
 //
 // PHASES, in the fixed order run() lists
 //
@@ -98,7 +99,10 @@
 // the block does not change its answer. A target written under a loop or jump,
 // or through any other lvalue, is not proven, so each of its writes counts as
 // combinational. A variable driven whole is read-only; one driven in part
-// keeps its storage and a mask of the bits a put may not change. Instances of
+// keeps its storage and a mask of the bits a put may not change. Assembled
+// from constant-select assigns, and read in the design and in cones only in
+// the bits they drive, it is reconstructed instead: its shadow holds the
+// undriven bits, which the cone never writes, and takes the mask. Instances of
 // one AstVar, as a non-inlined module's or an interface's are, can differ,
 // driven from their parents: the variable is then PARTIAL, keeping its
 // storage, and each instance's row takes its own class, so writability follows
@@ -659,6 +663,8 @@ class VpiLazyPreparer final {
     std::vector<AstVar*> m_combFootOrder;  // m_combFootVars, encounter order
     int m_combWhole = 0;  // Read-only variables, per instance
     int m_combPartial = 0;  // Masked variables, per instance
+    // Assembled from constant-select assigns, whose undriven bits only a VPI read reaches
+    std::unordered_set<const AstVar*> m_gapVars;
 
 public:
     VpiLazyPreparer(AstNetlist* nodep, AstScope* topScopep, V3VpiLazyContext& ctx)
@@ -1277,6 +1283,7 @@ private:
             if (!winfo.count(w)) notSole.insert(w->varp());
 
         // Pass 2: form the groups, in block-encounter order.
+        const std::unordered_set<const AstVar*> gapRead = gapReadVars();
         std::unordered_set<AstVarScope*> partialDone;
         for (size_t i = 0; i < blocks.size(); ++i) {
             const CombBlock& b = blocks[i];
@@ -1285,7 +1292,7 @@ private:
                 const auto pit = partsOf.find(basep);
                 UASSERT_OBJ(pit != partsOf.end(), basep,
                             "--vpi-lazy partial-write base has no recorded parts");
-                formPartialGroup(basep, pit->second, b.m_scopep, notSole);
+                formPartialGroup(basep, pit->second, b.m_scopep, notSole, gapRead);
                 continue;
             }
             if (AstAssignW* const awp = b.m_assignwp) {
@@ -1304,27 +1311,36 @@ private:
         }
     }
 
-    // Every read of 'vscp', in the design or a cone, is a constant select of comb-driven bits.
-    bool gapUnread(const AstVarScope* vscp) const {
-        const auto rit = m_gather.m_readBits.find(vscp);
-        if (rit == m_gather.m_readBits.end()) return true;
-        const auto cit = m_ctx.m_combRuns.find(vscp->varp());
-        if (rit->second.whole || cit == m_ctx.m_combRuns.end())
-            return false;  // Or instances differ
-        CombFootprint driven;
-        for (const V3VpiLazy::CombRun& run : cit->second)
-            addBits(driven, static_cast<int32_t>(run.elem), static_cast<int>(run.lsb),
-                    static_cast<int>(run.width));
-        for (const auto& pr : rit->second.runsOf) {
-            for (const std::pair<int, int>& run : pr.second)
-                if (!bitsDefined(driven, pr.first, run.first, run.second)) return false;
+    // Masked variables some read, in the design or a cone, may reach the undriven bits of.
+    // Per variable, as the shadow and its row are per module.
+    std::unordered_set<const AstVar*> gapReadVars() const {
+        std::unordered_set<const AstVar*> readVars;
+        for (const auto& pr : m_gather.m_readBits) {
+            const AstVar* const varp = pr.first->varp();
+            if (!varp->isVpiLazyCombPartial() || readVars.count(varp)) continue;
+            const auto cit = m_ctx.m_combRuns.find(varp);
+            if (pr.second.whole || cit == m_ctx.m_combRuns.end()) {  // Or instances differ
+                readVars.insert(varp);
+                continue;
+            }
+            CombFootprint driven;
+            for (const V3VpiLazy::CombRun& run : cit->second)
+                addBits(driven, static_cast<int32_t>(run.elem), static_cast<int>(run.lsb),
+                        static_cast<int>(run.width));
+            for (const auto& epr : pr.second.runsOf) {
+                for (const std::pair<int, int>& run : epr.second)
+                    if (!bitsDefined(driven, epr.first, run.first, run.second))
+                        readVars.insert(varp);
+            }
         }
-        return true;
+        return readVars;
     }
 
-    // Disjoint partial `assign`s have no full-width driver but assemble exactly from a zero base.
+    // Disjoint partial `assign`s have no full-width driver but assemble exactly. Bits none drives
+    // stay in the shadow, holding a put, unless a read other than VPI's may reach them.
     void formPartialGroup(AstVarScope* basep, const std::vector<PartWrite>& parts,
-                          AstScope* scopep, const std::unordered_set<const AstVar*>& notSole) {
+                          AstScope* scopep, const std::unordered_set<const AstVar*>& notSole,
+                          const std::unordered_set<const AstVar*>& gapRead) {
         AstVar* const varp = basep->varp();
         if (!varp->isSigVpiLazyCandidate()) return;
         if (!reconstructableKind(varp)) {
@@ -1363,9 +1379,11 @@ private:
             }
         }
         if (varp->isVpiLazyCombPartial()) {
-            UINFO(9, "vpi-lazy gap " << (gapUnread(basep) ? "unread " : "read ") << basep->name());
-            retainTarget(basep, Bail::PARTIAL_GAP);
-            return;
+            if (gapRead.count(varp)) {
+                retainTarget(basep, Bail::PARTIAL_GAP);
+                return;
+            }
+            m_gapVars.insert(varp);
         }
         const std::unordered_map<const AstVarScope*, int> groupWrites{
             {basep, static_cast<int>(parts.size())}};
@@ -1562,7 +1580,16 @@ private:
         }
     };
 
-    // A var first defined in part is assembled into a zeroed shadow.
+    bool definesDriven(CombFootprint& fp, const AstVar* varp) const {
+        if (!m_gapVars.count(varp)) return fullyDefined(fp, varp);
+        const std::vector<V3VpiLazy::CombRun>& runs = m_ctx.m_combRuns.at(varp);
+        return std::all_of(runs.begin(), runs.end(), [&](const V3VpiLazy::CombRun& run) {
+            return bitsDefined(fp, static_cast<int32_t>(run.elem), static_cast<int>(run.lsb),
+                               static_cast<int>(run.width));
+        });
+    }
+
+    // A var first defined in part is assembled into a zeroed shadow, but for its undriven bits.
     bool analyseGroup(Group* g, Bail& whyr) const {
         for (const CombBlock* const bp : g->blockps) {
             if (bp->m_impure) {
@@ -1574,12 +1601,13 @@ private:
         LazyReadOrderVisitor walk{g, defined, whyr};
         if (!walk.m_ok) return false;
         for (AstVarScope* const t : g->targets) {
-            if (!fullyDefined(defined[t], t->varp())) {
+            if (!definesDriven(defined[t], t->varp())) {
                 whyr = Bail::LATCH;  // Not written on every path
                 return false;
             }
         }
-        g->zeroInitps = std::move(walk.m_assembledps);
+        for (AstVarScope* const u : walk.m_assembledps)
+            if (!m_gapVars.count(u->varp())) g->zeroInitps.push_back(u);
         return true;
     }
 
@@ -2341,6 +2369,7 @@ private:
                     ++m_helperCount;  // Never lazy-flagged; read only by the copies of it
                     continue;
                 }
+                if (m_gapVars.count(t->varp())) moveMaskToShadow(t);
                 dropStorage(t->varp());
                 m_reconstructed += instancesOf(t->varp());
             }
@@ -2348,6 +2377,18 @@ private:
         emitCopyRows(m_copyGroups, false);
         emitCopyRows(m_foldedCopies, true);
         emitCrossScopeCopies();
+    }
+
+    // The undriven bits a put may write are now the shadow's.
+    void moveMaskToShadow(AstVarScope* t) {
+        AstVar* const varp = t->varp();
+        AstVar* const shadowVarp = m_shadowOf.at(t)->varp();
+        if (shadowVarp->isVpiLazyCombPartial()) return;  // Another instance moved it
+        shadowVarp->vpiLazyComb(VVpiLazyComb::PARTIAL);
+        const auto it = m_ctx.m_combRuns.find(varp);
+        m_ctx.m_combRuns.emplace(shadowVarp, std::move(it->second));
+        m_ctx.m_combRuns.erase(it);
+        varp->vpiLazyComb(VVpiLazyComb::NONE);
     }
 
     // Copy rows: a shadow and a descriptor source, no func, no epoch slot. A copy names the

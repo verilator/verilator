@@ -167,7 +167,7 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_PACKED_UNION = (1 << 17),  // With VLVF_PACKED_AGG, element type is a packed union
     VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see varInsertMember
     VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_PACKED_MEMBER, an ancestor is an array of
-                                         // packed structs/unions, so needs an element index
+                                          // packed structs/unions, so needs an element index
     VLVF_LAZY_REMAT = (1 << 20),  // --vpi-lazy: rematerialized row; no storage, may be read-only
     VLVF_LAZY_RETAINED = (1 << 21),
     VLVF_LAZY_COPY = (1 << 22),  // --vpi-lazy: refreshed by memcpy from srcOffset, not a cone
@@ -190,7 +190,7 @@ static_assert(sizeof(VerilatedVarLazyDatap) <= 32, "VerilatedVarLazyDatap unexpe
 // One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyIdx
 struct VlLazyReconEntry final {
     void (*refreshp)(void* selfp);
-    int32_t srcByteOffset;
+    int32_t srcByteOffset;  // A copy's source; with VLVF_LAZY_COMB, a cone's VlLazyCombMask index
     uint32_t vlflags;
 };
 

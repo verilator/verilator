@@ -491,6 +491,13 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
     }
 }
 
+// A --vpi-lazy shadow holding undriven bits resets as the signal it stands for would.
+static uint64_t resetSalt(const AstVar* varp) {
+    return VString::hashMurmur(varp->isLazyReconstructShadow() && varp->isVpiLazyCombPartial()
+                                   ? AstNode::prettyName(varp->origName())
+                                   : varp->prettyName());
+}
+
 string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                       const string& varNameProtected, AstNodeDType* dtypep,
                                       int depth, const string& suffix, const AstNode* valuep) {
@@ -577,7 +584,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                || varp->isFuncLocal()  // Randomization too slow
                || (basicp && basicp->isZeroInit())
                || (v3Global.opt.underlineZero() && !varp->name().empty() && varp->name()[0] == '_')
-               || (varp->varType().isTemp() && !varp->isXTemp())
+               || (varp->varType().isTemp() && !varp->isXTemp() && !varp->isVpiLazyCombPartial())
                || (varp->isXTemp()
                        ? (v3Global.opt.xAssign() != "unique")
                        : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));
@@ -600,7 +607,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += ", " + varNameProtected + suffix;
                 if (!zeroit) {
                     emitVarResetScopeHash();
-                    const uint64_t salt = VString::hashMurmur(varp->prettyName());
+                    const uint64_t salt = resetSalt(varp);
                     out += ", ";
                     out += m_classOrPackage ? m_classOrPackageHash : "__VscopeHash";
                     out += ", ";
@@ -624,7 +631,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 out += " = 0;\n";
             } else {
                 emitVarResetScopeHash();
-                const uint64_t salt = VString::hashMurmur(varp->prettyName());
+                const uint64_t salt = resetSalt(varp);
                 out += " = VL_SCOPED_RAND_RESET_";
                 if (varp->isXTemp()) out += "ASSIGN_";
                 out += dtypep->charIQWN();
