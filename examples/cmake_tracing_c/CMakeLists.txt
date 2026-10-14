@@ -41,3 +41,9 @@ verilate(example COVERAGE TRACE_VCD
   VERILATOR_ARGS -f ../make_tracing_c/input.vc -x-assign fast
   SOURCES ../make_tracing_c/top.v
 )
+
+# This example does not use the legacy vl_time_stamp API, so define
+# VL_TIME_CONTEXT to not compile in the vl_time_stamp using code, which
+# requires weak symbol support that some platforms (e.g. MSVC, cygwin) do
+# not have. This applies to both the model sources and sim_main.cpp.
+target_compile_definitions(example PRIVATE VL_TIME_CONTEXT)
