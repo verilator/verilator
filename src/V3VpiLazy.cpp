@@ -247,13 +247,34 @@ bool reconstructableKind(const AstVar* varp) {
     return copyTargetKind(varp);
 }
 
+// One partial write's footprint; idxs order need only be consistent between parts.
+struct PartExtent final {
+    std::vector<int32_t> idxs;
+    int lsb = 0;
+    int width = 0;
+};
+
+// One combinational block as LazyGatherVisitor found it, before any optimisation.
+struct CombBlock final {
+    AstAlways* m_alwaysp = nullptr;  // The combo block
+    AstScope* m_scopep = nullptr;  // Scope that authored the block
+    AstAssignW* m_assignwp = nullptr;  // Lone AstAssignW of a CONT_ASSIGN block
+    std::vector<AstVarScope*> m_targets;  // Written vars, encounter order
+    std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes within this block
+    std::vector<AstVarRef*> m_writeRefs;  // Its writing refs, encounter order
+    // Constant-select footprint of each assign's LHS base ref, where partialLhsRef finds one
+    std::unordered_map<const AstVarRef*, PartExtent> m_partialExts;
+    std::vector<AstVarScope*> m_reads;  // Vars it reads, first-occurrence pre-order
+    bool m_impure = false;  // Some node in it is unsafeToReexecute
+};
+
 class GroupVertex;
 
 // See UNIT OF RECONSTRUCTION above.
 struct Group final {
     AstScope* scopep = nullptr;  // Scope that authored the statements (see restrictMulti...)
     AstAlways* alwaysp = nullptr;  // Procedural block, or null for an assign group
-    std::vector<AstAssignW*> partialps;  // Continuous assigns; empty unless an assign group
+    std::vector<const CombBlock*> blockps;  // Its block, or an assign group's, one per part
     std::vector<AstVarScope*> targets;  // VPI candidates this group defines, encounter order
     std::vector<AstVarScope*> temps;  // Other variables it writes, encounter order
     std::unordered_set<AstVarScope*> members;
@@ -279,15 +300,8 @@ public:
     Group* groupp() const { return m_groupp; }
 };
 
-// One partial write's footprint; idxs order need only be consistent between parts.
-struct PartExtent final {
-    std::vector<int32_t> idxs;
-    int lsb = 0;
-    int width = 0;
-};
-
 struct PartWrite final {
-    AstAssignW* m_awp = nullptr;
+    const CombBlock* m_blockp = nullptr;  // Its CONT_ASSIGN block
     PartExtent m_ext;
 };
 
@@ -338,19 +352,18 @@ AstVarRef* lhsBaseRef(AstNodeExpr* lhsp, bool& partialr) {
     }
 }
 
+// Calls are exempt: isPredictOptimizable() is false for every AstNodeCCall only as V3Simulate
+// cannot call one.
+bool unsafeToReexecute(AstNode* nodep) {
+    if (!nodep->isPure()) return true;
+    return !nodep->isPredictOptimizable() && !VN_IS(nodep, NodeCCall);
+}
+
 // Pre-optimization walk: write/read counts per VarScope, and per-block write info.
 class LazyGatherVisitor final : public VNVisitor {
+    // NODE STATE
+    //  AstVarScope::user1()  -> bool. Already in the current block's m_reads
 public:
-    struct CombBlock final {
-        AstAlways* m_alwaysp = nullptr;  // The combo block
-        AstScope* m_scopep = nullptr;  // Scope that authored the block
-        AstAssignW* m_assignwp = nullptr;  // Lone AstAssignW of a CONT_ASSIGN block
-        std::vector<AstVarScope*> m_targets;  // Written vars, encounter order
-        std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes within this block
-        std::vector<AstVarRef*> m_writeRefs;  // Its writing refs, encounter order
-        // Constant-select footprint of each assign's LHS base ref, where partialLhsRef finds one
-        std::unordered_map<const AstVarRef*, PartExtent> m_partialExts;
-    };
     // STATE
     std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes per var
     std::vector<AstVarScope*> m_writtenOrder;  // Vars with >=1 write, encounter order
@@ -358,39 +371,40 @@ public:
     std::vector<CombBlock> m_combBlocks;  // Combo blocks, encounter order
     // Per-AstVar VarScope count == instance count; keeps retain stats in per-instance units.
     std::unordered_map<const AstVar*, int> m_instanceCount;
-    // Every VarScope in tree-encounter order; iterated by the completeness floor and by
-    // prepare()'s residual scan.
+    // Every VarScope in tree-encounter order; iterated by the completeness floor.
     std::vector<AstVarScope*> m_vscOrder;
 
 private:
     AstScope* m_scopep = nullptr;  // Scope currently being descended
-    AstAlways* m_comboAlwaysp = nullptr;  // Non-null while inside a combo always body
-    std::unordered_map<const AstVarScope*, int> m_blockWrites;  // Writes of the current block
-    std::vector<AstVarScope*> m_blockWriteOrder;  // Vars written in this block, encounter order
-    std::vector<AstVarRef*> m_blockWriteRefs;  // Writing refs of this block, encounter order
-    std::unordered_map<const AstVarRef*, PartExtent> m_blockPartialExts;  // See CombBlock
+    CombBlock* m_blockp = nullptr;  // Block being gathered, while inside a combo always body
 
-    void bumpWrite(AstVarScope* vscp) {
-        if (m_writeCount[vscp]++ == 0) m_writtenOrder.push_back(vscp);
-        if (m_comboAlwaysp) {
-            if (m_blockWrites[vscp]++ == 0) m_blockWriteOrder.push_back(vscp);
-        }
+    void checkPure(AstNode* nodep) {
+        if (m_blockp && unsafeToReexecute(nodep)) m_blockp->m_impure = true;
     }
 
     // VISITORS
     void visit(AstVarRef* nodep) override {
+        checkPure(nodep);
+        AstVarScope* const vscp = nodep->varScopep();
         if (!nodep->access().isReadOnly()) {
-            bumpWrite(nodep->varScopep());
-            if (m_comboAlwaysp) m_blockWriteRefs.push_back(nodep);
+            if (m_writeCount[vscp]++ == 0) m_writtenOrder.push_back(vscp);
+            if (m_blockp) {
+                if (m_blockp->m_writeCount[vscp]++ == 0) m_blockp->m_targets.push_back(vscp);
+                m_blockp->m_writeRefs.push_back(nodep);
+            }
         }
-        if (!nodep->access().isWriteOnly()) ++m_readCount[nodep->varScopep()];
+        if (!nodep->access().isWriteOnly()) {
+            ++m_readCount[vscp];
+            if (m_blockp && !vscp->user1SetOnce()) m_blockp->m_reads.push_back(vscp);
+        }
         iterateChildren(nodep);
     }
     void visit(AstNodeAssign* nodep) override {
-        if (m_comboAlwaysp) {
+        checkPure(nodep);
+        if (m_blockp) {
             PartExtent ext;
             if (const AstVarRef* const refp = partialLhsRef(nodep->lhsp(), ext))
-                m_blockPartialExts.emplace(refp, std::move(ext));
+                m_blockp->m_partialExts.emplace(refp, std::move(ext));
         }
         iterateChildren(nodep);
     }
@@ -406,21 +420,18 @@ private:
                 iterate(stmtp);
                 continue;
             }
-            VL_RESTORER_CLEAR(m_blockWrites);
-            VL_RESTORER_CLEAR(m_blockWriteOrder);
-            VL_RESTORER_CLEAR(m_blockWriteRefs);
-            VL_RESTORER_CLEAR(m_blockPartialExts);
-            VL_RESTORER(m_comboAlwaysp);
-            m_comboAlwaysp = alwaysp;
-            iterateChildren(alwaysp);
-            if (m_blockWriteOrder.empty()) continue;
+            // V3Active moved the sensitivity to the AstActive, so the body is all there is
+            UASSERT_OBJ(!alwaysp->sentreep(), alwaysp, "--vpi-lazy combo block has a sentree");
             CombBlock block;
             block.m_alwaysp = alwaysp;
             block.m_scopep = m_scopep;
-            block.m_targets = std::move(m_blockWriteOrder);
-            block.m_writeCount = std::move(m_blockWrites);
-            block.m_writeRefs = std::move(m_blockWriteRefs);
-            block.m_partialExts = std::move(m_blockPartialExts);
+            {
+                VL_RESTORER(m_blockp);
+                m_blockp = &block;
+                AstNode::user1ClearTree();
+                iterateChildren(alwaysp);
+            }
+            if (block.m_targets.empty()) continue;
             if (alwaysp->keyword() == VAlwaysKwd::CONT_ASSIGN) {
                 AstAssignW* const awp = VN_CAST(alwaysp->stmtsp(), AssignW);
                 if (awp && !awp->nextp() && !awp->timingControlp()) block.m_assignwp = awp;
@@ -438,11 +449,17 @@ private:
         m_vscOrder.push_back(nodep);
         iterateChildren(nodep);
     }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+    void visit(AstNode* nodep) override {
+        checkPure(nodep);
+        iterateChildren(nodep);
+    }
 
 public:
     // CONSTRUCTORS
-    explicit LazyGatherVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit LazyGatherVisitor(AstNetlist* nodep) {
+        const VNUser1InUse user1InUse;
+        iterate(nodep);
+    }
 };
 
 // Rewrites a cloned block's continuous assigns as blocking ones.
@@ -461,7 +478,6 @@ public:
 };
 
 class VpiLazyPreparer final {
-    using CombBlock = LazyGatherVisitor::CombBlock;
     using Defined = std::unordered_set<AstVarScope*>;
 
     // STATE
@@ -641,15 +657,6 @@ private:
         const auto it = m_groupOf.find(u);
         if (it == m_groupOf.end()) return nullptr;
         return it->second->live ? it->second : nullptr;
-    }
-
-    template <typename T_Callable>
-    void forEachStmt(const Group* g, T_Callable&& f) const {
-        if (g->alwaysp) {
-            for (AstNode* sp = g->alwaysp->stmtsp(); sp; sp = sp->nextp()) f(sp);
-        } else {
-            for (AstAssignW* const awp : g->partialps) f(static_cast<AstNode*>(awp));
-        }
     }
 
     Bail combBoundaryReason(AstVarScope* u) {
@@ -1094,7 +1101,7 @@ private:
         return partialLhs(b.m_assignwp->lhsp(), extr);
     }
 
-    Group* makeGroup(AstScope* scopep, AstAlways* alwaysp, std::vector<AstAssignW*>&& parts,
+    Group* makeGroup(AstScope* scopep, AstAlways* alwaysp, std::vector<const CombBlock*>&& blockps,
                      const std::vector<AstVarScope*>& written,
                      const std::unordered_map<const AstVarScope*, int>& groupWrites,
                      const std::unordered_set<const AstVar*>& notSole, bool zeroInit) {
@@ -1141,7 +1148,7 @@ private:
         Group* const g = ownp.get();
         g->scopep = scopep;
         g->alwaysp = alwaysp;
-        g->partialps = std::move(parts);
+        g->blockps = std::move(blockps);
         g->targets = targets;
         g->temps = temps;
         g->members.insert(targets.begin(), targets.end());
@@ -1226,7 +1233,7 @@ private:
             PartExtent ext;
             AstVarScope* const basep = partialWriteBase(b, ext);
             partialBase[i] = basep;
-            if (basep) partsOf[basep].push_back(PartWrite{b.m_assignwp, std::move(ext)});
+            if (basep) partsOf[basep].push_back(PartWrite{&b, std::move(ext)});
             for (AstVarScope* const w : b.m_targets) {
                 const auto cit = b.m_writeCount.find(w);
                 UASSERT_OBJ(cit != b.m_writeCount.end(), w,
@@ -1263,7 +1270,7 @@ private:
             if (AstAssignW* const awp = b.m_assignwp) {
                 AstNodeExpr* const lhsp = awp->lhsp();
                 if (VN_IS(lhsp, VarRef)) {
-                    makeGroup(b.m_scopep, nullptr, {awp}, b.m_targets, b.m_writeCount, notSole,
+                    makeGroup(b.m_scopep, nullptr, {&b}, b.m_targets, b.m_writeCount, notSole,
                               /*zeroInit*/ false);
                     continue;
                 }
@@ -1273,7 +1280,7 @@ private:
                     retainTarget(basep2->varScopep(), Bail::UNSUPPORTED_LVALUE);
                 continue;
             }
-            makeGroup(b.m_scopep, b.m_alwaysp, {}, b.m_targets, b.m_writeCount, notSole,
+            makeGroup(b.m_scopep, b.m_alwaysp, {&b}, b.m_targets, b.m_writeCount, notSole,
                       /*zeroInit*/ false);
         }
     }
@@ -1324,26 +1331,14 @@ private:
         }
         const std::unordered_map<const AstVarScope*, int> groupWrites{
             {basep, static_cast<int>(parts.size())}};
-        std::vector<AstAssignW*> assignps;
-        assignps.reserve(parts.size());
-        for (const PartWrite& pw : parts) assignps.push_back(pw.m_awp);
-        makeGroup(scopep, nullptr, std::move(assignps), {basep}, groupWrites, notSole,
+        std::vector<const CombBlock*> blockps;
+        blockps.reserve(parts.size());
+        for (const PartWrite& pw : parts) blockps.push_back(pw.m_blockp);
+        makeGroup(scopep, nullptr, std::move(blockps), {basep}, groupWrites, notSole,
                   /*zeroInit*/ true);
     }
 
     // METHODS - Group analysis
-
-    // Calls are exempt: isPredictOptimizable() is false for every AstNodeCCall only as V3Simulate
-    // cannot call one.
-    static bool unsafeToReexecute(AstNode* nodep) {
-        if (!nodep->isPure()) return true;
-        return !nodep->isPredictOptimizable() && !VN_IS(nodep, NodeCCall);
-    }
-
-    // Asked per root statement: exists() does not follow nextp() from its root.
-    static bool impure(AstNode* stmtp) {
-        return stmtp->exists([](AstNode* nodep) { return unsafeToReexecute(nodep); });
-    }
 
     // 'skipp' is an assignment's LHS base ref, whose read is checked apart.
     static bool readsUndefined(AstNode* nodep, const AstVarRef* skipp, const Group* g,
@@ -1434,16 +1429,14 @@ private:
 
     // No part of a continuous-assign group may read the target: shadow-reads-shadow reads stale.
     bool analyseAssignGroup(const Group* g, Bail& whyr) const {
-        for (AstAssignW* const awp : g->partialps) {
-            if (impure(awp)) {
+        for (const CombBlock* const bp : g->blockps) {
+            if (bp->m_impure) {
                 whyr = Bail::IMPURE;
                 return false;
             }
-            const bool selfRead = awp->rhsp()->exists([&](AstNode* nodep) {
-                const AstVarRef* const refp = VN_CAST(nodep, VarRef);
-                return refp && g->members.count(refp->varScopep());
-            });
-            if (selfRead) {
+            // Its LHS is a write-only ref under constant selects, so every read is the RHS's
+            if (std::any_of(bp->m_reads.begin(), bp->m_reads.end(),
+                            [&](AstVarScope* u) { return g->members.count(u); })) {
                 whyr = Bail::READ_BEFORE_WRITE;
                 return false;
             }
@@ -1454,33 +1447,21 @@ private:
     // An unpacked array covered by unconditional constant-index element assigns, and never
     // read, is defined whatever the order: seed it defined, zeroing the shadow to assemble into.
     void seedElementWrittenArrays(Group* g, Defined& defined) const {
-        // Walked once and shared: each element-written array grows this same block, so
-        // re-walking it per candidate would be quadratic in the block size.
-        struct RefInfo final {
-            bool anyRead = false;
-            int writes = 0;
-        };
+        const CombBlock& b = *g->blockps[0];
         struct ElemInfo final {
             std::map<std::vector<int32_t>, std::vector<PartExtent>> byElem;
             int matched = 0;
             size_t depth = 0;
             bool mixedDepth = false;
         };
-        std::unordered_map<const AstVarScope*, RefInfo> refs;
-        g->alwaysp->foreach([&](AstVarRef* refp) {
-            const AstVarScope* const u = refp->varScopep();
-            if (!VN_IS(u->varp()->dtypeSkipRefp(), UnpackArrayDType)) return;
-            RefInfo& ri = refs[u];
-            if (!refp->access().isWriteOnly()) ri.anyRead = true;
-            if (!refp->access().isReadOnly()) ++ri.writes;
-        });
+        const std::unordered_set<const AstVarScope*> reads{b.m_reads.begin(), b.m_reads.end()};
         std::unordered_map<const AstVarScope*, ElemInfo> elems;
         for (AstNode* sp = g->alwaysp->stmtsp(); sp; sp = sp->nextp()) {
             AstNodeAssign* const asgnp = VN_CAST(sp, NodeAssign);
             if (!asgnp) continue;
             PartExtent ext;
             const AstVarScope* const u = partialLhs(asgnp->lhsp(), ext);
-            if (!u || ext.idxs.empty() || !refs.count(u)) continue;
+            if (!u || ext.idxs.empty()) continue;
             ElemInfo& ei = elems[u];
             if (ei.mixedDepth) continue;
             if (!ei.matched) ei.depth = ext.idxs.size();
@@ -1493,13 +1474,12 @@ private:
             ++ei.matched;
         }
 
+        // Every member is written in the block, so has a write count
         const auto trySeed = [&](AstVarScope* u) {
-            const auto rit = refs.find(u);
-            if (rit == refs.end()) return;
-            if (rit->second.anyRead || !rit->second.writes) return;
+            if (reads.count(u)) return;
             const auto eit = elems.find(u);
             if (eit == elems.end() || eit->second.mixedDepth) return;
-            if (eit->second.matched != rit->second.writes) return;  // Nested or variable-indexed
+            if (eit->second.matched != b.m_writeCount.at(u)) return;  // Nested or variable-indexed
             const size_t depth = eit->second.depth;
             std::map<std::vector<int32_t>, std::vector<PartExtent>>& byElem = eit->second.byElem;
             // An element this block never writes has no driver at all, so zeroing the shadow
@@ -1546,11 +1526,9 @@ private:
 
     // 'defined' as walkStmt has it for the whole block.
     bool walkBlockGroup(Group* g, Defined& defined, Bail& whyr) const {
-        for (AstNode* sp = g->alwaysp->stmtsp(); sp; sp = sp->nextp()) {
-            if (impure(sp)) {
-                whyr = Bail::IMPURE;
-                return false;
-            }
+        if (g->blockps[0]->m_impure) {
+            whyr = Bail::IMPURE;
+            return false;
         }
         seedElementWrittenArrays(g, defined);
         return walkStmts(g->alwaysp->stmtsp(), g, defined, whyr);
@@ -1585,11 +1563,12 @@ private:
         for (const auto& ownp : m_groups) {
             const Group* const g = ownp.get();
             if (!g->live || instancesOf(g->keyp) <= 1) continue;
-            bool bad = false;
-            forEachStmt(g, [&](AstNode* sp) {
-                bad = bad || sp->exists([&](const AstVarRef* refp) {
-                    return refp->varScopep()->scopep() != g->scopep;
-                });
+            const auto elsewhere
+                = [&](const AstVarScope* vscp) { return vscp->scopep() != g->scopep; };
+            // Every ref is a read, a write, or both
+            const bool bad = std::any_of(g->blockps.begin(), g->blockps.end(), [&](const CombBlock* bp) {
+                return std::any_of(bp->m_reads.begin(), bp->m_reads.end(), elsewhere)
+                       || std::any_of(bp->m_targets.begin(), bp->m_targets.end(), elsewhere);
             });
             if (bad) killGroupsOfKey(g->keyp, Bail::CROSS_SCOPE_CONE);
         }
@@ -1605,16 +1584,14 @@ private:
         for (const auto& ownp : m_groups) {
             Group* const g = ownp.get();
             if (!g->live) continue;
-            forEachStmt(g, [&](AstNode* sp) {
-                sp->foreach([&](AstVarRef* refp) {
-                    if (refp->access().isWriteOnly()) return;
-                    AstVarScope* u = refp->varScopep();
-                    if (g->members.count(u)) return;
+            for (const CombBlock* const bp : g->blockps) {
+                for (AstVarScope* const u : bp->m_reads) {
+                    if (g->members.count(u)) continue;
                     Group* const ugp = liveGroupOf(u);
-                    if (!ugp || ugp == g) return;
+                    if (!ugp || ugp == g) continue;
                     new V3GraphEdge{&m_depGraph, ugp->vtxp, g->vtxp, 1};
-                });
-            });
+                }
+            }
         }
         m_depGraph.removeRedundantEdgesMax(&V3GraphEdge::followAlwaysTrue);
     }
@@ -1777,16 +1754,9 @@ private:
     // Reads pre-optimisation statements, so a width change appears as a Cast/Extend and is
     // refused: memcpy cannot convert.
     AstVarScope* soleCopySource(const Group* g) const {
-        if (g->targets.size() != 1 || !g->temps.empty()) return nullptr;
-        AstNode* onlyp = nullptr;
-        size_t n = 0;
-        forEachStmt(g, [&](AstNode* sp) {
-            onlyp = sp;
-            ++n;
-        });
-        if (n != 1) return nullptr;
-        const AstNodeAssign* const asgnp = VN_CAST(onlyp, NodeAssign);
-        if (!asgnp) return nullptr;
+        if (g->targets.size() != 1 || !g->temps.empty() || g->blockps.size() != 1) return nullptr;
+        const AstNodeAssign* const asgnp = VN_CAST(g->blockps[0]->m_alwaysp->stmtsp(), NodeAssign);
+        if (!asgnp || asgnp->nextp()) return nullptr;
         const AstVarRef* const lhsp = VN_CAST(asgnp->lhsp(), VarRef);
         const AstVarRef* const rhsp = VN_CAST(asgnp->rhsp(), VarRef);
         if (!lhsp || !rhsp || lhsp->varScopep() != g->targets[0]) return nullptr;
@@ -2020,17 +1990,11 @@ private:
     // An AstAssignW must never sit under a CFunc, so continuous assigns are cloned as blocking.
     static AstNode* cloneBody(const Group* g) {
         AstNode* bodyp = nullptr;
-        if (g->alwaysp) {
-            AstAlways* const clonep = g->alwaysp->cloneTree(false);
+        for (const CombBlock* const bp : g->blockps) {
+            AstAlways* const clonep = bp->m_alwaysp->cloneTree(false);
             { LazyContAssignVisitor{clonep}; }
-            bodyp = clonep->stmtsp()->unlinkFrBackWithNext();
+            bodyp = AstNode::addNext(bodyp, clonep->stmtsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(clonep->deleteTree(), clonep);
-        } else {
-            for (AstAssignW* const awp : g->partialps)
-                bodyp = AstNode::addNext(
-                    bodyp, static_cast<AstNode*>(new AstAssign{awp->fileline(),
-                                                               awp->lhsp()->cloneTree(false),
-                                                               awp->rhsp()->cloneTree(false)}));
         }
         return bodyp;
     }
