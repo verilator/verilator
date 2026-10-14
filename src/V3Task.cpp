@@ -806,6 +806,31 @@ class TaskVisitor final : public VNVisitor {
                 connectPort(refp, portp, argp, beginp, false);
             }
         }
+        {
+            AstNode* nextNodep;
+            for (AstNode* nodep = refp->taskp()->op3p(); nodep; nodep = nextNodep) {
+                nextNodep = nodep->nextp();
+                
+                if(VN_IS(nodep,Assign)){
+                    if (AstVarRef* varRefp1 = VN_CAST(nodep->op1p(), VarRef) ){
+                        if (AstVarRef* varRefp2 = VN_CAST(nodep->op2p(), VarRef) ){
+                            if (varRefp1->varScopep() && varRefp2->varScopep()) {
+                                AstClass* classp = VN_CAST(varRefp1->varScopep()->scopep()->modp(), Class);
+                                if(classp && varRefp2->varScopep()->scopep()->name() == varRefp1->varScopep()->scopep()->aboveScopep()->name()){
+                                    AstVarRef* newVarRef = new AstVarRef(varRefp2->fileline(), varRefp2->varp(), varRefp2->access());
+                                    varRefp2->varp()->sigPublic(true); // this is over kill. I think my scoping just needs to be added correctly.
+                                    AstNodeVarRef* callFromp = VN_CAST(ccallp->op1p(), NodeVarRef);
+                                    UASSERT_OBJ(callFromp, ccallp, "Can not find where this call is coming from");
+                                    newVarRef->varScopep(callFromp->varScopep());
+                                    AstArg* argp = new AstArg(varRefp2->fileline(), "", newVarRef);
+                                    refp->addArgsp(argp);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         // First argument is symbol table, then output if a function
         const bool needSyms = !refp->taskp()->dpiImport() || v3Global.opt.profExec();
         if (needSyms) ccallp->argTypes("vlSymsp");
@@ -1617,8 +1642,37 @@ class TaskVisitor final : public VNVisitor {
                     portp->user2p(newvscp);
                 }
             }
-        }
+            if(AstAssign* assignp = VN_CAST(nextp,Assign)){
+                if (AstVarRef* varRefp1 = VN_CAST(nextp->op1p(), VarRef) ){
+                    if (AstVarRef* varRefp2 = VN_CAST(nextp->op2p(), VarRef) ){
+                        if (varRefp1->varScopep() && varRefp2->varScopep()) {
+                            AstClass* classp = VN_CAST(varRefp1->varScopep()->scopep()->modp(), Class);
+                            if(classp && varRefp2->varScopep()->scopep()->name() == varRefp1->varScopep()->scopep()->aboveScopep()->name()){
 
+                                AstVar* newVarp = new AstVar(varRefp2->fileline(), VVarType::PORT, varRefp2->name()+ "_REF", varRefp2->dtypep());
+
+                                newVarp->funcLocal(true);
+                                newVarp->funcReturn(false);
+                                newVarp->direction(VDirection::REF);
+
+                                AstVarScope* const newvscp
+                                    = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
+                                m_scopep->addVarsp(newvscp);
+                                cfuncp->addArgsp(newVarp);
+
+                                AstVarRef* oldVarRefp = VN_CAST(assignp->lhsp(), VarRef);
+
+                                AstVarRef* newArgRefp = new AstVarRef(oldVarRefp->fileline(), newVarp, VAccess::WRITE);
+                                newArgRefp->varScopep(newvscp);
+                                oldVarRefp->replaceWithKeepDType(newArgRefp);
+                                VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
         // Fake output variable if was a function.  It's more efficient to
         // have it last, rather than first, as the C compiler can sometimes
         // avoid copying variables when calling shells if argument 1
@@ -1783,6 +1837,7 @@ class TaskVisitor final : public VNVisitor {
         m_inNew = true;
         iterateChildren(nodep);
     }
+
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_inSensesp && !nodep->isPure()) {
             nodep->v3warn(E_UNSUPPORTED,
@@ -1989,6 +2044,8 @@ class TaskVisitor final : public VNVisitor {
                     UINFO(9, "   funcremovevsc " << vscp);
                     VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
                 }
+
+        
             }
             // Just push for deletion, as other references to func may
             // remain until visitor exits
