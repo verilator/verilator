@@ -1459,6 +1459,7 @@ private:
         }
         // A constant select of a group var reads only its own bits.
         void visitSel(AstNodeExpr* nodep) {
+            if (!m_ok) return;
             PartExtent ext;
             int32_t elem = 0;
             const AstVarRef* const refp = partialLhsRef(nodep, ext);
@@ -1473,6 +1474,7 @@ private:
 
         // VISITORS
         void visit(AstNodeAssign* nodep) override {
+            if (!m_ok) return;  // The first failure decides; the rest is not worth walking
             if (m_inExpr) {
                 iterateChildrenConst(nodep);
                 return;
@@ -1514,13 +1516,15 @@ private:
             }  // Else no bit is provably defined; the untouched ones keep what they had
         }
         void visit(AstVarRef* nodep) override {
-            if (nodep == m_skipp || nodep->access().isWriteOnly() || !member(nodep)) return;
+            if (!m_ok || nodep == m_skipp || nodep->access().isWriteOnly() || !member(nodep))
+                return;
             if (!fullyDefined(m_definedr[nodep->varScopep()], nodep->varp()))
                 bail(Bail::READ_BEFORE_WRITE);
         }
         void visit(AstSel* nodep) override { visitSel(nodep); }
         void visit(AstArraySel* nodep) override { visitSel(nodep); }
         void visit(AstNodeIf* nodep) override {
+            if (!m_ok) return;
             scanReads(nodep->condp());
             const ArmDefs thenDefs = walkArm(nodep->thensp());
             const ArmDefs elseDefs = walkArm(nodep->elsesp());
