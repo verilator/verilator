@@ -526,8 +526,12 @@ private:
             // Initialize the clockvar
             AstVarRef* const skewedWriteRefp = new AstVarRef{flp, varp, VAccess::WRITE};
             skewedWriteRefp->user1(true);
-            AstInitialStatic* const initClockvarp = new AstInitialStatic{
-                flp, new AstAssign{flp, skewedWriteRefp, exprp->cloneTreePure(false)}};
+            // The item expression is an lvalue; reading it here must not look like a
+            // driver, or V3Tristate turns the clockvar of an inout port into a tristate
+            AstNodeExpr* const initRhsp = exprp->cloneTreePure(false);
+            initRhsp->foreach([](AstNodeVarRef* refp) { refp->access(VAccess::READ); });
+            AstInitialStatic* const initClockvarp
+                = new AstInitialStatic{flp, new AstAssign{flp, skewedWriteRefp, initRhsp}};
             m_modp->addStmtsp(initClockvarp);
             // Each drive sets a flag, so the signal is also assigned when driven with the same
             // value again, e.g. after another assignment to the signal (IEEE 1800-2023 14.16.2)
@@ -1902,10 +1906,50 @@ public:
 };
 
 //######################################################################
+// Clocking driven port propagation
+
+// Mark the input ports among the driven leaves of a pin connection
+// (variables, bit/part/array selects and concatenations of them).
+static bool markClockingDrivenLeaves(AstNodeExpr* const nodep) {
+    if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+        AstVar* const varp = refp->varp();
+        if (varp->direction() != VDirection::INPUT) return false;
+        if (varp->isClockingDriven() || varp->isClockingDrivenThru()) return false;
+        varp->isClockingDrivenThru(true);
+        return true;
+    }
+    if (AstSel* const selp = VN_CAST(nodep, Sel)) return markClockingDrivenLeaves(selp->fromp());
+    if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+        return markClockingDrivenLeaves(selp->fromp());
+    }
+    if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
+        const bool lhsChanged = markClockingDrivenLeaves(concatp->lhsp());
+        return markClockingDrivenLeaves(concatp->rhsp()) || lhsChanged;
+    }
+    return false;
+}
+
+// The drive of a clocking driven input port is copied out through its connection
+// (V3Inst), so input ports of the parent feeding that connection carry it on
+static void propagateClockingDriven(AstNetlist* const nodep) {
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        nodep->foreach([&](AstPin* pinp) {
+            const AstVar* const modVarp = pinp->modVarp();
+            if (!modVarp || !pinp->exprp() || modVarp->direction() != VDirection::INPUT) return;
+            if (!modVarp->isClockingDriven() && !modVarp->isClockingDrivenThru()) return;
+            if (markClockingDrivenLeaves(VN_AS(pinp->exprp(), NodeExpr))) changed = true;
+        });
+    }
+}
+
+//######################################################################
 // Top Assert class
 
 void V3AssertPre::assertPreAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { AssertPreVisitor{nodep}; }  // Destruct before checking
+    propagateClockingDriven(nodep);
     V3Global::dumpCheckGlobalTree("assertpre", 0, dumpTreeEitherLevel() >= 3);
 }
