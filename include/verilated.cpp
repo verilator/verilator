@@ -1509,8 +1509,8 @@ static void _vl_vsss_skipspace(FILE* fp, int& floc, const WDataInP fromp,
     }
 }
 static void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp, const std::string& fstr,
-                              std::back_insert_iterator<std::string> tmpp,
-                              const char* acceptp, unsigned maxWidth) VL_MT_SAFE {
+                              std::back_insert_iterator<std::string> tmpp, const char* acceptp,
+                              unsigned maxWidth) VL_MT_SAFE {
     // Read into tmp, consisting of characters from acceptp list, at most maxWidth (0 = no limit)
     auto cp = tmpp;
     for (unsigned count = 0; !maxWidth || count < maxWidth; ++count) {
