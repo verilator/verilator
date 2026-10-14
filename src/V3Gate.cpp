@@ -609,7 +609,8 @@ class GateInline final {
         if (nReads > 1 && !allowMultiIn) return false;
         // Reads multiple variables, or is expensive to compute.
         // Inline if used only once, ignoring slow code, or dead code that can be deleted.
-        int n = 0;
+        // A --vpi-lazy kept store is a use.
+        int n = vVtxp->varScp()->varp()->isVpiLazyStorageKept() ? 1 : 0;
         for (V3GraphEdge& edge : vVtxp->outEdges()) {
             const GateLogicVertex* const dstVtxp = edge.top()->as<GateLogicVertex>();
             // Ignore slow code, or if the destination is not used
