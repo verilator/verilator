@@ -5,6 +5,7 @@
 import argparse
 import collections
 import ctypes
+import fnmatch
 import glob
 import hashlib
 import logging
@@ -521,6 +522,8 @@ class Runner:
             self.pass_tests.append(test)
             if Args.driver_clean:
                 test.clean()
+            elif Args.driver_prune:
+                test.prune()
         elif test._quit:
             pass
         elif test._scenario_off and not test.errors:
@@ -1107,6 +1110,27 @@ class VlTest:
             VtOs.system('/bin/mv ' + self.obj_dir + ' ' + self.obj_dir + '__fail1')
         else:
             VtOs.system('/bin/rm -rf ' + self.obj_dir)
+
+    def prune(self) -> None:
+        """Called on a --driver-prune to clean up files but keep the ones used by test-snap/test-diff."""
+        with open(os.path.dirname(os.path.abspath(__file__)) + "/test_diff_ignore.txt",
+                  encoding="utf8") as fh:
+            patterns = [line for line in fh.read().splitlines() if line and line[0] != '#']
+
+        def ignored(name: str) -> bool:
+            return any(fnmatch.fnmatchcase(name, pat) for pat in patterns)
+
+        if ignored(os.path.basename(self.obj_dir)):
+            shutil.rmtree(self.obj_dir)
+            return
+        for dirpath, dirnames, filenames in os.walk(self.obj_dir):
+            for name in [d for d in dirnames if ignored(d)]:
+                shutil.rmtree(os.path.join(dirpath, name))
+                dirnames.remove(name)
+            for name in filenames:
+                path = os.path.join(dirpath, name)
+                if ignored(name) or os.access(path, os.X_OK):
+                    os.remove(path)
 
     def clean_objs(self) -> None:
         VtOs.system("/bin/rm -rf " + ' '.join(glob.glob(self.obj_dir + "/*")))
@@ -3031,6 +3055,9 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
     # --debugi: see _parameter()
     parser.add_argument('--driver-clean', action='store_true', help='clean after test passes')
+    parser.add_argument('--driver-prune',
+                        action='store_true',
+                        help='clean after test passes, but keep files for test-snap/test-diff')
     parser.add_argument('--fail-max',
                         action='store',
                         default=None,

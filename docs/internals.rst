@@ -2372,6 +2372,11 @@ driver.py Non-Scenario Arguments
    requirements, but may result in longer runtime if the tests are run
    again.
 
+.. option:: --driver-prune
+
+   Similar to ``--driver-clean``, but keeps output required by
+   ``make test-snap`` / ``make test-diff``.
+
 .. option:: --dump-tree
 
    Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug
