@@ -860,7 +860,8 @@ VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t ca
     return (max_length + 2) / 3;
 }
 
-VSpellCheck::Candidate VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distancer) const {
+VSpellCheck::Candidate VSpellCheck::bestCandidateInfo(const string& goal,
+                                                      EditDistance& distancer) const {
     Candidate best;
     const size_t gLen = goal.length();
     distancer = LENGTH_LIMIT * 10;
@@ -876,7 +877,8 @@ VSpellCheck::Candidate VSpellCheck::bestCandidateInfo(const string& goal, EditDi
 
         const EditDistance dist = editDistance(goal, candidate.str);
         UINFO(9, "EditDistance dist=" << dist << " cutoff=" << cutoff << " goal=" << goal
-                                      << " candidate=" << candidate.str << ":'" << candidate.msg << "'");
+                                      << " candidate=" << candidate.str << ":'" << candidate.msg
+                                      << "'");
         if (dist < distancer && dist <= cutoff) {
             distancer = dist;
             best = candidate;

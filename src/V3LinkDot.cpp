@@ -1088,9 +1088,8 @@ public:
         string suggest
             = suggestSymFallback(lookSymp, nodep->name(), LinkNodeMatcherClassOrPackage{});
         if (suggest.empty()) {
-            suggest
-                = suggestSymFlat(packageEntp(), nodep->name(), LinkNodeMatcherClassOrPackage{}, classOnly);
-
+            suggest = suggestSymFlat(packageEntp(), nodep->name(), LinkNodeMatcherClassOrPackage{},
+                                     classOnly);
         }
         nodep->v3error((classOnly ? "Class" : "Package/class")
                        << " for '" << forWhat  // extends/implements
@@ -1108,7 +1107,8 @@ public:
         lookupSymp->candidateIdFallback(&speller, &matcher);
         return speller.bestCandidateMsg(name);
     }
-    string suggestSymFlat(VSymEnt* lookupSymp, const string& name, const VNodeMatcher& matcher, bool includeType) {
+    string suggestSymFlat(VSymEnt* lookupSymp, const string& name, const VNodeMatcher& matcher,
+                          bool includeType) {
         if (!lookupSymp) return "";
         VSpellCheck speller;
         lookupSymp->candidateIdFlat(&speller, &matcher, includeType);
@@ -4030,10 +4030,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     return;
                 } else {
                     const std::string suggest
-                        = (nodep->param() ? m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
-                                                                     LinkNodeMatcherVarParam{}, false)
-                                          : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
-                                                                     LinkNodeMatcherVarIO{}, false));
+                        = (nodep->param()
+                               ? m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
+                                                          LinkNodeMatcherVarParam{}, false)
+                               : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
+                                                          LinkNodeMatcherVarIO{}, false));
                     const std::string decl
                         = ((m_cellp && m_cellp->modp())
                                ? "\n"s + nodep->warnMore() + "... Location of instance's "

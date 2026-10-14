@@ -207,13 +207,14 @@ public:
         if (m_fallbackp) return m_fallbackp->findIdFallback(name);
         return nullptr;
     }
-    void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp, bool includeType) const {
+    void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp,
+                         bool includeType) const {
         // Suggest alternative symbol candidates without looking upward through symbol
         // hierarchy
         for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
             const AstNode* const itemp = it->second->nodep();
             if (itemp && (!matcherp || matcherp->nodeMatch(itemp))) {
-                if(includeType) {
+                if (includeType) {
                     spellerp->pushCandidate(itemp->prettyName(), itemp->prettyTypeName());
                 } else {
                     spellerp->pushCandidate(itemp->prettyName());
