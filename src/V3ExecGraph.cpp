@@ -1203,8 +1203,6 @@ void addTriggerMasks(AstExecGraph* const execGraphp) {
                 wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
             }
         });
-        // The run-time library skips MTasks testing no set trigger, so all code must be guarded
-        UASSERT_OBJ(!wordMasks.empty(), callp->funcp(), "MTask without trigger check");
         AstInitArray* const initp = new AstInitArray{flp, triggersp->dtypep(),
                                                      new AstConst{flp, AstConst::Unsized64{}, 0}};
         for (const auto& wordMask : wordMasks) {

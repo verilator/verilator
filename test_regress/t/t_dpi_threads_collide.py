@@ -16,7 +16,8 @@ test.skip_if_too_few_cores()
 
 # The race needs the DPI calls to run in parallel
 test.compile(v_flags2=[
-    "t/t_dpi_threads_c.cpp --threads-dpi all --no-threads-coarsen --threads-serial-cost 0"
+    "t/t_dpi_threads_c.cpp --threads-dpi all --no-threads-coarsen",
+    "-CFLAGS -DVL_THREADS_SERIAL_COST=0"
 ])
 
 # Similar to t_dpi_threads, which confirms that Verilator can prevent a

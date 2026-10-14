@@ -259,6 +259,11 @@ private:
 //=============================================================================
 // VlExecGraph
 
+#ifndef VL_THREADS_SERIAL_COST
+// Evaluations with at most this estimated cost run on the calling thread, without waking others
+#define VL_THREADS_SERIAL_COST 80000
+#endif
+
 // Static description of a multithreaded exec graph, emitted by Verilator
 class VlExecGraph final {
 public:

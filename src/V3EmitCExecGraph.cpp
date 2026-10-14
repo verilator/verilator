@@ -102,7 +102,8 @@ class EmitCExecGraph final : public EmitCFunc {
         puts("&" + funcNameProtect(nodep->runfuncp()) + ",\n");
         // Profiling measures the parallel execution, so never run serially
         const bool profiling = v3Global.opt.profExec() || v3Global.opt.profPgo();
-        puts(std::to_string(profiling ? 0 : v3Global.opt.threadsSerialCost()) + "\n};\n");
+        puts(profiling ? "0" : "VL_THREADS_SERIAL_COST");
+        puts("\n};\n");
     }
 
 public:

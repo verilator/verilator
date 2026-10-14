@@ -2050,13 +2050,6 @@ Summary:
    mtasks the model is to be partitioned into. If unspecified, Verilator
    approximates a good value.
 
-.. option:: --threads-serial-cost <count>
-
-   Rarely needed. With :vlopt:`--threads`, an evaluation whose estimated
-   work is at most <count> instructions runs entirely on the thread that
-   called eval, as waking the other threads would cost more than the work.
-   0 disables this. The default, 80000, should generally be appropriate.
-
 .. option:: --timescale <timeunit>/<timeprecision>
 
    Sets default timeunit and timeprecision when "`timescale" does not occur

@@ -314,7 +314,8 @@ void vl_invokeExecGraph(VlExecGraph& graph, VlSelfP selfp, const QData* triggers
             bits ^= VL_BIT_Q(bit);
         }
         if (cost > graph.serialCost() || nSetWords == MAX_SET_WORDS) {
-            return graph.dispatchp()(selfp);
+            graph.dispatchp()(selfp);
+            return;
         }
         setWords[nSetWords++] = word;
     }
