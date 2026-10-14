@@ -919,51 +919,65 @@ private:
         for (const auto& pr : src) unionBits(dst[pr.first], pr.second);
     }
 
-    // Adds to 'definedr' the bits every path through 'stmtsp' assigns. Arms only add, so
+    // Finds the bits every path through a block assigns. Arms only add, so
     // (D | then) & (D | else) == D | (then & else): each arm is walked from empty.
-    // 'modelledr': full-width and constant-select assigns reached through ifs alone, the only
-    // writes it decides. Both arms of a constant 'if' are walked, so a V3Const-folded branch
-    // reads the same.
-    static void latchWalk(AstNode* stmtsp, DefinedBits& definedr,
-                          std::unordered_set<const AstVarRef*>& modelledr) {
-        for (AstNode* sp = stmtsp; sp; sp = sp->nextp()) {
-            if (AstNodeAssign* const asgnp = VN_CAST(sp, NodeAssign)) {
-                PartExtent ext;
-                int32_t elem = 0;
-                if (AstVarRef* const refp = VN_CAST(asgnp->lhsp(), VarRef)) {
-                    modelledr.insert(refp);
-                    CombFootprint& fp = definedr[refp->varScopep()];
-                    fp.whole = true;
-                    fp.runsOf.clear();
-                } else if (AstVarRef* const prefp = partialLhsRef(asgnp->lhsp(), ext)) {
-                    if (combElement(prefp->varp(), ext, elem)) {
-                        modelledr.insert(prefp);
-                        addBits(definedr[prefp->varScopep()], elem, ext.lsb, ext.width);
-                    }
+    // Both arms of a constant 'if' are walked, so a V3Const-folded branch reads the same.
+    class LazyLatchVisitor final : public VNVisitorConst {
+    public:
+        DefinedBits m_defined;  // Bits assigned on every path so far
+        // Full-width and constant-select assigns reached through ifs alone, the only writes
+        // it decides
+        std::unordered_set<const AstVarRef*> m_modelled;
+
+    private:
+        DefinedBits walkArm(AstNode* stmtsp) {
+            VL_RESTORER_CLEAR(m_defined);
+            iterateAndNextConstNull(stmtsp);
+            DefinedBits armDefined;
+            armDefined.swap(m_defined);
+            return armDefined;
+        }
+
+        // VISITORS
+        void visit(AstNodeAssign* nodep) override {
+            PartExtent ext;
+            int32_t elem = 0;
+            if (AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
+                m_modelled.insert(refp);
+                CombFootprint& fp = m_defined[refp->varScopep()];
+                fp.whole = true;
+                fp.runsOf.clear();
+            } else if (AstVarRef* const prefp = partialLhsRef(nodep->lhsp(), ext)) {
+                if (combElement(prefp->varp(), ext, elem)) {
+                    m_modelled.insert(prefp);
+                    addBits(m_defined[prefp->varScopep()], elem, ext.lsb, ext.width);
                 }
-            } else if (AstNodeIf* const ifp = VN_CAST(sp, NodeIf)) {
-                // An else-if chain is folded from its last 'else' up, iteratively
-                std::vector<AstNodeIf*> chain{ifp};
-                while (AstNodeIf* const nextp = VN_CAST(chain.back()->elsesp(), NodeIf)) {
-                    if (nextp->nextp()) break;
-                    chain.push_back(nextp);
-                }
-                DefinedBits delta;
-                latchWalk(chain.back()->elsesp(), delta, modelledr);
-                for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
-                    DefinedBits thenDelta;
-                    latchWalk((*it)->thensp(), thenDelta, modelledr);
-                    const int truth = constTruth((*it)->condp());
-                    if (truth == 1) {
-                        delta = std::move(thenDelta);
-                    } else if (truth < 0) {
-                        delta = intersectDefined(thenDelta, delta);
-                    }
-                }
-                unionDefined(definedr, std::move(delta));
             }
         }
-    }
+        void visit(AstNodeIf* nodep) override {
+            // An else-if chain is folded from its last 'else' up, iteratively
+            std::vector<AstNodeIf*> chain{nodep};
+            while (AstNodeIf* const nextp = VN_CAST(chain.back()->elsesp(), NodeIf)) {
+                if (nextp->nextp()) break;
+                chain.push_back(nextp);
+            }
+            DefinedBits delta = walkArm(chain.back()->elsesp());
+            for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+                DefinedBits thenDelta = walkArm((*it)->thensp());
+                const int truth = constTruth((*it)->condp());
+                if (truth == 1) {
+                    delta = std::move(thenDelta);
+                } else if (truth < 0) {
+                    delta = intersectDefined(thenDelta, delta);
+                }
+            }
+            unionDefined(m_defined, std::move(delta));
+        }
+        void visit(AstNode*) override {}  // Writes under any other statement stay unmodelled
+
+    public:
+        explicit LazyLatchVisitor(AstNode* stmtsp) { iterateAndNextConstNull(stmtsp); }
+    };
 
     struct LatchProof final {
         DefinedBits defined;  // Bits assigned on every path; a target's others are a latch's
@@ -977,11 +991,10 @@ private:
         LatchProof proof;
         const VAlwaysKwd kwd = b.m_alwaysp->keyword();
         if (kwd == VAlwaysKwd::ALWAYS_LATCH) return proof;
-        std::unordered_set<const AstVarRef*> modelled;
-        if (kwd != VAlwaysKwd::CONT_ASSIGN)
-            latchWalk(b.m_alwaysp->stmtsp(), proof.defined, modelled);
+        LazyLatchVisitor latch{kwd == VAlwaysKwd::CONT_ASSIGN ? nullptr : b.m_alwaysp->stmtsp()};
+        proof.defined = std::move(latch.m_defined);
         for (const AstVarRef* const refp : b.m_writeRefs)
-            if (!modelled.count(refp)) proof.unprovable.insert(refp->varScopep());
+            if (!latch.m_modelled.count(refp)) proof.unprovable.insert(refp->varScopep());
         return proof;
     }
 
@@ -1340,92 +1353,119 @@ private:
 
     // METHODS - Group analysis
 
-    // 'skipp' is an assignment's LHS base ref, whose read is checked apart.
-    static bool readsUndefined(AstNode* nodep, const AstVarRef* skipp, const Group* g,
-                               const Defined& defined) {
-        return nodep->exists([&](AstNode* childp) {
-            AstVarRef* const refp = VN_CAST(childp, VarRef);
-            if (!refp || refp == skipp || refp->access().isWriteOnly()) return false;
-            return g->members.count(refp->varScopep()) && !defined.count(refp->varScopep());
-        });
-    }
+    // One ordered walk over a block group's statements: see UNIT OF RECONSTRUCTION above.
+    class LazyReadOrderVisitor final : public VNVisitorConst {
+        const Group* const m_groupp;
+        // Group vars the prefix wrote unconditionally full-width; conditionals intersect
+        Defined& m_definedr;
+        Bail& m_whyr;  // Why the walk failed, its first failure only
+        std::vector<AstVarScope*> m_addedps;  // What the current arm added to m_definedr
+        const AstVarRef* m_skipp = nullptr;  // An assignment's LHS base ref, checked apart
+        bool m_inExpr = false;  // Scanning an expression's reads, not walking statements
 
-    bool walkStmts(AstNode* stmtsp, const Group* g, Defined& defined, Bail& whyr) const {
-        for (AstNode* sp = stmtsp; sp; sp = sp->nextp())
-            if (!walkStmt(sp, g, defined, whyr)) return false;
-        return true;
-    }
+    public:
+        bool m_ok = true;
 
-    // 'defined': group vars the prefix wrote unconditionally full-width; conditionals intersect.
-    bool walkStmt(AstNode* stmtp, const Group* g, Defined& defined, Bail& whyr) const {
-        if (VN_IS(stmtp, Comment) || VN_IS(stmtp, JumpGo)) return true;
-        if (AstNodeAssign* const asgnp = VN_CAST(stmtp, NodeAssign)) {
+    private:
+        void bail(Bail why) {
+            if (!m_ok) return;
+            m_ok = false;
+            m_whyr = why;
+        }
+        void define(AstVarScope* vscp) {
+            if (m_definedr.insert(vscp).second) m_addedps.push_back(vscp);
+        }
+        void scanReads(AstNode* nodep) {
+            VL_RESTORER(m_inExpr);
+            m_inExpr = true;
+            iterateAndNextConstNull(nodep);
+        }
+        // Walks the arm from what the prefix defined, then undoes and returns what it added, so
+        // an if costs its arms' writes and not a copy of the defined set.
+        std::vector<AstVarScope*> walkArm(AstNode* stmtsp, AstNode* contsp = nullptr) {
+            VL_RESTORER_CLEAR(m_addedps);
+            iterateAndNextConstNull(stmtsp);
+            iterateAndNextConstNull(contsp);
+            for (AstVarScope* const vscp : m_addedps) m_definedr.erase(vscp);
+            std::vector<AstVarScope*> addedps;
+            addedps.swap(m_addedps);
+            return addedps;
+        }
+
+        // VISITORS
+        void visit(AstNodeAssign* nodep) override {
+            if (m_inExpr) {
+                iterateChildrenConst(nodep);
+                return;
+            }
             // V3Active rewrote '<=' and V3Force lowered AssignForce; only blocking/cont remain.
-            UASSERT_OBJ(VN_IS(stmtp, Assign) || VN_IS(stmtp, AssignW), stmtp,
+            UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep,
                         "--vpi-lazy: unexpected assignment kind in a combinational block");
             // Only --timing keeps a delay this far, and such a block never terminates: untested.
-            if (asgnp->timingControlp()) {  // LCOV_EXCL_START
-                whyr = Bail::UNSUPPORTED_STMT;
-                return false;
+            if (nodep->timingControlp()) {  // LCOV_EXCL_START
+                bail(Bail::UNSUPPORTED_STMT);
+                return;
             }  // LCOV_EXCL_STOP
             bool partial = false;
-            AstVarRef* const baserefp = lhsBaseRef(asgnp->lhsp(), partial);
+            AstVarRef* const baserefp = lhsBaseRef(nodep->lhsp(), partial);
             if (!baserefp) {
-                whyr = Bail::UNSUPPORTED_STMT;
-                return false;
+                bail(Bail::UNSUPPORTED_STMT);
+                return;
             }
             AstVarScope* const basep = baserefp->varScopep();
-            // The gather counted every write under this block, so its write set is g->members
-            UASSERT_OBJ(g->members.count(basep), stmtp,
+            // The gather counted every write under this block, so its write set is members
+            UASSERT_OBJ(m_groupp->members.count(basep), nodep,
                         "--vpi-lazy: group members miss a write of their own block");
-            if (readsUndefined(asgnp, baserefp, g, defined)) {
-                whyr = Bail::READ_BEFORE_WRITE;
-                return false;
+            {
+                VL_RESTORER(m_skipp);
+                m_skipp = baserefp;
+                scanReads(nodep->rhsp());
+                scanReads(nodep->lhsp());
             }
-            if (partial) {
+            if (!partial) {
+                define(basep);
+            } else if (!m_definedr.count(basep)) {
                 // The untouched bits keep their prior value, so the shadow must already hold it.
-                if (!defined.count(basep)) {
-                    whyr = Bail::READ_BEFORE_WRITE;
-                    return false;
-                }
+                bail(Bail::READ_BEFORE_WRITE);
+            }
+        }
+        void visit(AstVarRef* nodep) override {
+            if (nodep == m_skipp || nodep->access().isWriteOnly()) return;
+            AstVarScope* const vscp = nodep->varScopep();
+            if (m_groupp->members.count(vscp) && !m_definedr.count(vscp))
+                bail(Bail::READ_BEFORE_WRITE);
+        }
+        void visit(AstNodeIf* nodep) override {
+            scanReads(nodep->condp());
+            const std::vector<AstVarScope*> thenps = walkArm(nodep->thensp());
+            const std::vector<AstVarScope*> elseps = walkArm(nodep->elsesp());
+            const Defined elseSet{elseps.begin(), elseps.end()};
+            for (AstVarScope* const vscp : thenps)
+                if (elseSet.count(vscp)) define(vscp);
+        }
+        // May run zero times, so it defines nothing on exit.
+        void visit(AstLoop* nodep) override { walkArm(nodep->stmtsp(), nodep->contsp()); }
+        void visit(AstLoopTest* nodep) override { scanReads(nodep->condp()); }
+        // A jump may skip the tail: define nothing
+        void visit(AstJumpBlock* nodep) override { walkArm(nodep->stmtsp()); }
+        void visit(AstJumpGo*) override {}
+        void visit(AstComment*) override {}
+        void visit(AstNode* nodep) override {
+            if (m_inExpr) {
+                iterateChildrenConst(nodep);
             } else {
-                defined.insert(basep);
+                bail(Bail::UNSUPPORTED_STMT);  // V3Table and friends may leave odd shapes
             }
-            return true;
         }
-        if (AstNodeIf* const ifp = VN_CAST(stmtp, NodeIf)) {
-            if (readsUndefined(ifp->condp(), nullptr, g, defined)) {
-                whyr = Bail::READ_BEFORE_WRITE;
-                return false;
-            }
-            Defined thenDef = defined;
-            Defined elseDef = defined;
-            if (!walkStmts(ifp->thensp(), g, thenDef, whyr)) return false;
-            if (!walkStmts(ifp->elsesp(), g, elseDef, whyr)) return false;
-            for (AstVarScope* const v : thenDef)
-                if (elseDef.count(v)) defined.insert(v);
-            return true;
+
+    public:
+        LazyReadOrderVisitor(AstNode* stmtsp, const Group* groupp, Defined& definedr, Bail& whyr)
+            : m_groupp{groupp}
+            , m_definedr{definedr}
+            , m_whyr{whyr} {
+            iterateAndNextConstNull(stmtsp);
         }
-        if (AstLoop* const loopp = VN_CAST(stmtp, Loop)) {
-            // May run zero times, so it defines nothing on exit.
-            Defined body = defined;
-            if (!walkStmts(loopp->stmtsp(), g, body, whyr)) return false;
-            return walkStmts(loopp->contsp(), g, body, whyr);
-        }
-        if (AstLoopTest* const testp = VN_CAST(stmtp, LoopTest)) {
-            if (readsUndefined(testp->condp(), nullptr, g, defined)) {
-                whyr = Bail::READ_BEFORE_WRITE;
-                return false;
-            }
-            return true;
-        }
-        if (AstJumpBlock* const jblockp = VN_CAST(stmtp, JumpBlock)) {
-            Defined inner = defined;  // A jump may skip the tail: define nothing
-            return walkStmts(jblockp->stmtsp(), g, inner, whyr);
-        }
-        whyr = Bail::UNSUPPORTED_STMT;  // V3Table and friends may leave odd shapes
-        return false;
-    }
+    };
 
     // No part of a continuous-assign group may read the target: shadow-reads-shadow reads stale.
     bool analyseAssignGroup(const Group* g, Bail& whyr) const {
@@ -1524,14 +1564,14 @@ private:
         for (AstVarScope* const t : g->temps) trySeed(t);
     }
 
-    // 'defined' as walkStmt has it for the whole block.
+    // 'defined' as LazyReadOrderVisitor has it for the whole block.
     bool walkBlockGroup(Group* g, Defined& defined, Bail& whyr) const {
         if (g->blockps[0]->m_impure) {
             whyr = Bail::IMPURE;
             return false;
         }
         seedElementWrittenArrays(g, defined);
-        return walkStmts(g->alwaysp->stmtsp(), g, defined, whyr);
+        return LazyReadOrderVisitor{g->alwaysp->stmtsp(), g, defined, whyr}.m_ok;
     }
 
     bool analyseBlockGroup(Group* g, Bail& whyr) const {
