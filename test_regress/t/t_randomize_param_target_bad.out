@@ -1,6 +1,6 @@
-%Error: t/t_randomize_param_target_bad.v:25:7: Can't find definition of variable: 'bogus_member'
+%Error: t/t_randomize_param_target_bad.v:30:7: Can't find definition of variable: 'bogus_member'
                                              : ... note: In instance 't'
-   25 |       bogus_member == 1;
+   30 |       bogus_member == 1;
       |       ^~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
