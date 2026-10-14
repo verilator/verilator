@@ -2285,6 +2285,15 @@ class WidthVisitor final : public VNVisitor {
         // Each cross item has the type of its coverpoint (IEEE 1800-2023 19.6.1.3)
         userIterateAndNext(nodep->varsp(), nullptr);
         widthCoverFilter(nodep->filterp(), "Cross bin");
+        if (AstNodeExpr* const countp = nodep->countp()) {
+            if (VN_IS(countp, Unbounded)) {
+                countp->dtypeSetInt();  // 'matches $'
+            } else {
+                // The count of 'matches' is self-determined, which V3Covergroup checks once folded
+                userIterateAndNext(countp, WidthVP{SELF, BOTH}.p());
+                V3Const::constifyEdit(nodep->countp());  // countp may change
+            }
+        }
     }
     // A 'with' filter is true for a nonzero value (IEEE 1800-2023 12.4), of a type assignment
     // compatible with an integral type (19.5.1.1); 'whatp' names its bins

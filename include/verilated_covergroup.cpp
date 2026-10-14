@@ -561,13 +561,21 @@ bool VlCoverpoint::ValueData::firstFrom(uint32_t bin, size_t& range, Value& valu
         assert(found);
         // A pattern clipped to a range may have no value left in it
         if (!less(source.m_hi, candidate)) {
-            if (!excludes || !excluded(view(candidate))) {
+            // Normalized, a bin's ranges are disjoint intervals, then patterns, which may hold
+            // values of earlier ranges, so each value is given once
+            const bool repeated
+                = !source.m_mask.empty()
+                  && std::any_of(
+                      values.m_ranges.data(), values.m_ranges.data() + range,
+                      [&](const Range& prior) { return contains(prior, view(candidate)); });
+            if (!repeated && (!excludes || !excluded(view(candidate)))) {
                 value = std::move(candidate);
                 return true;
             }
-            // Skip an interval of excluded values at once, else one excluded value
+            // Skip an interval of excluded values at once, else one value
             const Range* const intervalp
-                = interval(m_exclusions, m_regularExclusions, view(candidate));
+                = repeated ? nullptr
+                           : interval(m_exclusions, m_regularExclusions, view(candidate));
             const Value& last = intervalp ? intervalp->m_hi : candidate;
             if (less(last, source.m_hi)) {
                 value = last;
@@ -1632,7 +1640,9 @@ class VlCoverCrossDyn::Layout final {
     uint64_t m_nextTuple = 0;  // Bin tuple from which to find the next candidate
     uint64_t m_key = 0;  // Projection index of the value tuples being evaluated
     bool m_active = false;  // Evaluating the value tuples of m_key
-    bool m_accepted = false;  // The filter is true for a value tuple of m_key
+    uint64_t m_matches = 0;  // Value tuples for which the filter is true to select; 0 for all
+    uint64_t m_satisfied = 0;  // Value tuples of m_key for which the filter is true
+    bool m_failed = false;  // The filter is false for a value tuple of m_key
     bool m_ignored = false;  // A filter of the bin being selected has too many value tuples
 
     static void setRange(Mask& mask, uint64_t first, uint64_t end) {
@@ -1831,13 +1841,23 @@ void VlCoverCrossDyn::selectOr() {
     for (uint32_t word = 0; word < data.m_words; ++word) data.m_stack.back()[word] |= rhs[word];
 }
 
-void VlCoverCrossDyn::withBegin(std::initializer_list<uint32_t> dims, const char* namep,
-                                const char* filep, int line) {
+void VlCoverCrossDyn::withBegin(std::initializer_list<uint32_t> dims, QData matches, bool positive,
+                                const char* namep, const char* filep, int line) {
     static constexpr uint64_t LIMIT = VlCoverpoint::ValueData::CANDIDATE_LIMIT;
     static constexpr uint64_t CAP = LIMIT + 1;  // Saturated count, over the limit
     Layout& data = *m_layoutp;
     data.m_candidates = std::move(data.m_stack.back());
     data.m_stack.back().assign(data.m_words, 0);
+    data.m_matches = matches;
+    if (VL_UNLIKELY(!positive)) {
+        // An error, after which (+verilator+error+limit) the bin is ignored
+        VL_PRINTF_MT("%%Error: %s:%d: Coverage cross bin '%s' 'matches' count must be a positive"
+                     " integer (IEEE 1800-2023 19.6.1.2)\n",
+                     filep, line, namep);
+        VL_STOP_MT(filep, line, "");
+        data.m_ignored = true;
+        std::fill(data.m_candidates.begin(), data.m_candidates.end(), 0);
+    }
     data.m_cursors.clear();
     data.m_keyStrides.clear();
     uint64_t projections = 1;
@@ -1883,10 +1903,12 @@ void VlCoverCrossDyn::withBegin(std::initializer_list<uint32_t> dims, const char
 bool VlCoverCrossDyn::withNext() {
     Layout& data = *m_layoutp;
     if (data.m_active) {
-        // One value tuple for which the filter is true selects the bin tuples
-        if (!data.m_accepted && data.advance()) return true;
-        data.m_tested[data.m_key]
-            = data.m_accepted ? Layout::Tested::ACCEPTED : Layout::Tested::REJECTED;
+        // The filter decides the bin tuples once true for 'matches' value tuples, or for all,
+        // once false for one
+        const bool decided = data.m_matches ? data.m_satisfied >= data.m_matches : data.m_failed;
+        if (!decided && data.advance()) return true;
+        const bool accepted = data.m_matches ? decided : !data.m_failed;
+        data.m_tested[data.m_key] = accepted ? Layout::Tested::ACCEPTED : Layout::Tested::REJECTED;
         data.m_active = false;
     }
     for (uint64_t tuple; data.nextCandidate(tuple);) {
@@ -1897,7 +1919,8 @@ bool VlCoverCrossDyn::withNext() {
             continue;
         }
         data.m_active = true;
-        data.m_accepted = false;
+        data.m_satisfied = 0;
+        data.m_failed = false;
         return true;
     }
     return false;
@@ -1912,7 +1935,11 @@ void VlCoverCrossDyn::withValueW(uint32_t dim, WDataOutP valuep) const {
     std::copy(value.begin(), value.end(), valuep.datap());
 }
 
-void VlCoverCrossDyn::withTest(bool keep) { m_layoutp->m_accepted |= keep; }
+void VlCoverCrossDyn::withTest(bool keep) {
+    Layout& data = *m_layoutp;
+    data.m_satisfied += keep;
+    data.m_failed |= !keep;
+}
 
 void VlCoverCrossDyn::withEnd() {
     Layout& data = *m_layoutp;

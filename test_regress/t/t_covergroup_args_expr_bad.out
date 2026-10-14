@@ -53,4 +53,12 @@
                                             : ... note: In instance 't'
    42 |       bins referenced = cross_with with (cp_value < bound);
       |                                                     ^~~~~
+%Error: t/t_covergroup_args_expr_bad.v:43:56: Covergroup sample formal argument 'value' may only be used in a coverpoint or conditional guard expression (IEEE 1800-2023 19.8.1).
+                                            : ... note: In instance 't'
+   43 |       bins sampled_count = cross_with with (1) matches value;
+      |                                                        ^~~~~
+%Error: t/t_covergroup_args_expr_bad.v:44:59: Ref covergroup constructor formal argument 'bound' may not be used in a covergroup expression (IEEE 1800-2023 19.5).
+                                            : ... note: In instance 't'
+   44 |       bins referenced_count = cross_with with (1) matches bound;
+      |                                                           ^~~~~
 %Error: Exiting due to

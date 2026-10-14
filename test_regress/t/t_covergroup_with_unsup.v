@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Unsupported 'with' filters: of wildcard patterns of more ranges of values than
-// --coverage-max-bins 8, distributed first, or of a cross bin reading a real value
+// --coverage-max-bins 8, distributed first, or of a cross bin reading, or counting, real values
 
 module t;
   bit [7:0] v;
@@ -61,6 +61,7 @@ module t;
     x: cross rr, tt{
       bins real_value = (x with (rr < 0.5 || rr > 0.9)) || x;  // <--- Unsupported: real value
       bins real_unread = x with (tt == 1);
+      bins real_counted = x with (tt == 1) matches 2;  // <--- Unsupported: count of real values
     }
   endgroup
   cg inst = new;

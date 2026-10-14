@@ -27,4 +27,20 @@
                                         : ... note: In instance 't'
    22 |       bins param_value[2] = {UNBOUNDED};   
       |            ^~~~~~~~~~~
+%Error: t/t_covergroup_sized_bad.v:31:46: Cross bin 'matches' count must be >= 1, got 0 (IEEE 1800-2023 19.6.1.2)
+                                        : ... note: In instance 't'
+   31 |       bins zero = xx with (aa == bb) matches 0;   
+      |                                              ^
+%Error: t/t_covergroup_sized_bad.v:32:50: Cross bin 'matches' count must be >= 1, got -1 (IEEE 1800-2023 19.6.1.2)
+                                        : ... note: In instance 't'
+   32 |       bins negative = xx with (aa == bb) matches -1;   
+      |                                                  ^
+%Error: t/t_covergroup_sized_bad.v:33:50: Cross bin 'matches' count must be integral (IEEE 1800-2023 19.6.1.2)
+                                        : ... note: In instance 't'
+   33 |       bins fraction = xx with (aa == bb) matches 1.5;   
+      |                                                  ^~~
+%Error: t/t_covergroup_sized_bad.v:34:52: Cross bin 'matches' count must be >= 1, got b1x (IEEE 1800-2023 19.6.1.2)
+                                        : ... note: In instance 't'
+   34 |       bins four_state = xx with (aa == bb) matches 2'b1x;   
+      |                                                    ^~~~~
 %Error: Exiting due to

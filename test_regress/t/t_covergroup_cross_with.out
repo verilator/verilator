@@ -1,5 +1,7 @@
 t.Holder::cg.xp.hi: 2
 t.Holder::cg.xp.lo: 0
+t.Holder::cg.xy.counted [cross]: 0
+t.Holder::cg.xy.high [cross]: 2
 t.Holder::cg.xy.rest [cross]: 2
 t.Holder::cg.xy.under [cross]: 1
 t.Holder::cg.yp.hi: 2
@@ -32,6 +34,14 @@ t.cg_constructed.bb.sized[1]: 8
 t.cg_constructed.xx.<even[0],sized[0]> [cross]: 2
 t.cg_constructed.xx.<even[2],sized[1]> [cross]: 2
 t.cg_constructed.xx.three [cross]: 4
+t.cg_count.aa.hi: 0
+t.cg_count.aa.lo: 2
+t.cg_count.nn.over: 0
+t.cg_count.nn.rest: 2
+t.cg_count.xx.all [cross]: 2
+t.cg_count.xx.counted [cross]: 0
+t.cg_count.xx.high [cross]: 0
+t.cg_count.xx.wide [cross]: 0
 t.cg_empty.bb.auto_0: 4
 t.cg_empty.bb.auto_1: 4
 t.cg_empty.bb.auto_2: 4
@@ -55,6 +65,17 @@ t.cg_gap.aa.ends: 4
 t.cg_gap.aa.zero [ignore]: 4
 t.cg_gap.bb.all: 16
 t.cg_gap.xx.three [cross]: 4
+t.cg_matches.aa.hi: 32
+t.cg_matches.aa.lo: 32
+t.cg_matches.nn.over: 48
+t.cg_matches.nn.rest: 16
+t.cg_matches.xx.all_lo [cross]: 32
+t.cg_matches.xx.all_nonzero [cross]: 48
+t.cg_matches.xx.conjunction [cross]: 24
+t.cg_matches.xx.disjunction [cross]: 56
+t.cg_matches.xx.exact [cross]: 48
+t.cg_matches.xx.nested [cross]: 24
+t.cg_matches.xx.unread [cross]: 48
 t.cg_runtime.aa.hi: 2
 t.cg_runtime.aa.lo: 1
 t.cg_runtime.bb.hi: 2

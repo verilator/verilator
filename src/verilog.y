@@ -7418,6 +7418,13 @@ cross_body_item<nodep>:  // ==IEEE: cross_body_item
 select_expression<nodep>:  // ==IEEE: select_expression
                 select_expression_r
                         { $$ = $1; }
+        //                      // A count could end in a function call followed by its 'with', so
+        //                      // a selection with a count is filtered further only in parentheses
+        |       select_expression_r yWITH__PAREN '(' cgexpr ')' matchesCount
+                        { $$ = new AstCoverCrossWith{$2, $1, $4, $6}; }
+        //                      // IEEE: cross_set_expression yMATCHES integer_covergroup_expression
+        |       idAny '(' list_of_argumentsE ')' matchesCount
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Unsupported: function call in coverage select expression"); DEL($3, $5); }
         |       select_expression yP_ANDAND select_expression
                         { $$ = new AstCoverCrossSelect{$2, $1, $3, false}; }
         |       select_expression yP_OROR   select_expression
@@ -7441,7 +7448,7 @@ select_expression_r<nodep>:
         |       '!' yWITH__PAREN '(' cgexpr ')'
                         { $$ = nullptr; BBCOVERIGN($1, "Unsupported: 'with' in coverage select expression"); DEL($4); }
         |       select_expression_r yWITH__PAREN '(' cgexpr ')'
-                        { $$ = new AstCoverCrossWith{$2, $1, $4}; }
+                        { $$ = new AstCoverCrossWith{$2, $1, $4, nullptr}; }
         //                      // IEEE-2012: Need clarification as to precedence
         //UNSUP yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr    { }
         //                      // IEEE-2012: Need clarification as to precedence
@@ -7453,13 +7460,18 @@ select_expression_r<nodep>:
         //UNSUP  cgexpr  { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression"); }
         //
         //                      // IEEE: cross_set_expression [ yMATCHES integer_covergroup_expression ]
-        //                      // covergroup_expression [ yMATCHES ( integer_covergroup_expression | '$' ) ]
-        //                      // Need precedence fix
-        //UNSUP  cgexpr yMATCHES cgexpr    {..}
+        //UNSUP  cgexpr    {..}
         //UNSUP                 // Below are all removed
         |       idAny '(' list_of_argumentsE ')'
                         { $$ = nullptr; BBCOVERIGN($<fl>1, "Unsupported: function call in coverage select expression"); DEL($3); }
         //UNSUP                 // Above are all removed, replace with:
+        ;
+
+matchesCount<nodeExprp>:  // IEEE: yMATCHES integer_covergroup_expression
+        //                      // IEEE: integer_covergroup_expression ::= covergroup_expression | '$'
+        //                      // '$' is part of our expr.  'matches' has higher precedence than
+        //                      // '&&' and '||', which end the count (IEEE 1800-2023 footnote 30)
+                yMATCHES expr %prec yP_ANDAND           { $$ = $2; }
         ;
 
 bins_expression<nodeExprp>:  // ==IEEE: bins_expression
