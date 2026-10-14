@@ -1910,14 +1910,14 @@ Tree Hierarchy
    The dump lines begin with numbers and colons to indicate the child node
    hierarchy. As noted above, ``AstNode`` has lists of items at the same
    level in the AST, connected by the ``nextp()`` and ``prevp()`` pointers.
-   These appear as nodes at the same level. For example, after inlining:
+   These appear as nodes at the same level. For example:
 
    ::
 
        NETLIST 0x929c1c8 <e1> {a0} w0
-      1: MODULE 0x92bac80 <e3144> {e14} w0  TOP_t  L1 [P]
-      1:1: CELLINLINE 0x92bab18 <e3686#> {e14} w0  v -> t
-      1:1: CELLINLINE 0x92bc1d8 <e3688#> {e24} w0  v__DOT__i_test_gen -> test_gen
+      1: MODULE 0x92bac80 <e3144> {e14} w0  t  L2
+      1:1: VAR 0x92a2e90 <e79> {e18} w0  clk [I] INPUT
+      1:1: CELL 0x92bc1d8 <e3688#> {e24} w0  i_test_gen -> MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
       1: MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
@@ -1984,8 +1984,8 @@ referred to. For example:
 In general, examine the ``dump()`` method in ``V3AstNodes.cpp`` of the node
 type in question to determine additional fields that may be printed.
 
-The ``MODULE`` has a list of ``CELLINLINE`` nodes referred to by its
-``op1p()`` pointer, connected by ``nextp()`` and ``prevp()`` pointers.
+The ``MODULE`` has a list of statements referred to by its ``op1p()``
+pointer, connected by ``nextp()`` and ``prevp()`` pointers.
 
 Similarly, the ``NETLIST`` has a list of modules referred to by its
 ``op1p()`` pointer.

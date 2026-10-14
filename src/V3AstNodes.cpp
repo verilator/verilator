@@ -957,7 +957,6 @@ void AstCellInline::dumpJson(std::ostream& str) const {
 void AstCellInlineScope::dump(std::ostream& str) const {
     Super::dump(str);
     str << " -> " << origModName();
-    str << " [scopep=" << nodeAddr(scopep()) << "]";
 }
 void AstCellInlineScope::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origModName);

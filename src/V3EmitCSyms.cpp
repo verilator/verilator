@@ -106,6 +106,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // STATE
     AstCFunc* m_cfuncp = nullptr;  // Current function
     AstNodeModule* m_modp = nullptr;  // Current module
+    const AstScope* m_scopep = nullptr;  // Current scope
     std::vector<ScopeModPair> m_scopes;  // Every scope by module
     std::vector<AstCFunc*> m_dpis;  // DPI functions
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
@@ -901,11 +902,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         iterateChildrenConst(nodep);
     }
     void visit(AstCellInlineScope* nodep) override {
-        if (!v3Global.opt.vpi()) return;
-
         const std::string type = (nodep->origModName() == "__BEGIN__") ? "SCOPE_OTHER"  //
                                                                        : "SCOPE_MODULE";
-        const std::string name = nodep->scopep()->shortName() + "__DOT__" + nodep->name();
+        const std::string name = m_scopep->shortName() + "__DOT__" + nodep->name();
         const int timeunit = m_modp->timeunit().powerOfTen();
         m_vpiScopeCandidates.emplace(  //
             std::piecewise_construct,  //
@@ -933,6 +932,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                       nodep->modp()->origName(), timeunit, type));
             collectIfaceRefs(nodep);
         }
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
         iterateChildrenConst(nodep);
     }
     void visit(AstScopeName* nodep) override {
