@@ -11,8 +11,13 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary", "--timing"])
+test.compile(verilator_flags2=["--binary", "--timing", "--x-initial unique"])
 
 test.execute()
+
+# The connection must not depend on the initial values of its internal state
+if test.vlt_all:
+    for seed in range(1, 5):
+        test.execute(all_run_flags=["+verilator+rand+reset+2", f"+verilator+seed+{seed}"])
 
 test.passes()
