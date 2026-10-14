@@ -1190,7 +1190,7 @@ AstVar* AstClocking::ensureEventp(bool childDType) {
         eventp(evp);
         // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
         addNextHere(new AstAlwaysObserved{
-            fileline(), new AstSenTree{fileline(), sensesp()->cloneTree(false)},
+            fileline(), sentreep()->cloneTree(false),
             new AstFireEvent{fileline(), new AstVarRef{fileline(), evp, VAccess::WRITE}, false}});
         v3Global.setHasEvents();
     }
