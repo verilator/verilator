@@ -30,6 +30,8 @@ module t;
     int qe[$];  // Empty
     int qv[$];  // Value returns
     int qvunused[$];  // Value returns (unused)
+    bit [95:0] wide_q[$];
+    bit [95:0] wide_qv[$];
     int qi[$];  // Index returns
     int i;
     bit b;
@@ -117,6 +119,11 @@ module t;
 
     // These require an with clause or are illegal
     // TODO add a lint check that with clause is provided
+    wide_q = '{96'h1_0000_0000_0000_0000, 96'h4};
+    wide_qv = wide_q.find with ($clog2(item) > 32);
+    `checkh(wide_qv.size(), 1);
+    `checkh(wide_qv[0], 96'h1_0000_0000_0000_0000);
+
     qv = q.find with (item == 2);
     `checkp(qv, "'{'h2, 'h2}");
     qv = q.find with (item[0] == 1);

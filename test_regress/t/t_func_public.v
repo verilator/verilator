@@ -122,8 +122,11 @@ module tpub (
         if (24'h11bca != got_long) $stop;
         $c("{ uint64_t qq; this->publicGetQuad(qq); this->got_quad=qq; }");
         if (60'haaaa_bbbb_cccc != got_quad) $stop;
-        $c("{ EData gw[3]; this->publicGetWide(gw); VL_ASSIGN_W(72,this->got_wide,WDataInP::external(gw)); }");
+        $c("{ EData gw[3]; this->publicGetWide(gw); VL_ASSIGN_W(72,this->got_wide,WDataInP<>::external(gw)); }");
         if (72'hac_abca_aaaa_bbbb_1234 != got_wide) $stop;
+        $c("{ const char* pathp = VL_STRINGIFY(TEST_OBJ_DIR) \"/t_func_public_4state.txt\"; FILE* fp = std::fopen(pathp, \"w\"); std::fputs(\"wide\\n\", fp); std::fclose(fp); const IData fd = VL_FOPEN_NN(pathp, \"r\"); Vl4Wide<3> wide{}; VL_MEMSET_ONES_W(wide.bval_mut(), 3); const IData got = VL_FGETS_IXI(72, wide.aval_mut(), fd); VL_FCLOSE_I(fd); std::remove(pathp); if (got != 5 || wide.bval()[0] != ~0U || wide.bval()[1] != ~0U || wide.bval()[2] != ~0U || VL_TO_STRING_W(3, wide.aval()).empty()) VL_FATAL_MT(__FILE__, __LINE__, \"\", \"Vl4Wide storage test failed\"); }");
+        $c("{ Vl4Wide<3> lhs{}; Vl4Wide<3> rhs{}; Vl4Wide<3> quotient{}; lhs.aval_mut()[0] = 100; rhs.aval_mut()[0] = 3; VL_DIV_WWW(72, quotient.aval_mut(), lhs.aval(), rhs.aval()); if (quotient.aval()[0] != 33 || VL_ITOR_D_W(72, quotient.aval()) != 33.0) VL_FATAL_MT(__FILE__, __LINE__, \"\", \"Vl4Wide arithmetic test failed\"); }");
+        $c("{ C4Data scalar{0U, 0xfU}; Vl4Wide<3> wide{}; wide.aval_mut()[0] = 1U; wide.bval_mut()[0] = 0xf0U; wide.aval_mut()[1] = 0xfU; wide.bval_mut()[1] = 0xfU; VlQueue<Vl4Wide<3>> queue; queue.push_back(wide); if (VL_TO_STRING(scalar) != \"'hz\" || VL_TO_STRING(wide) != \"'hx000000z1\" || VL_TO_STRING(queue) != \"'{\'hx000000z1}\") VL_FATAL_MT(__FILE__, __LINE__, \"\", \"Four-state string formatting test failed\"); }");
         //Below doesn't work, because we're calling it inside the loop that sets var_flop
         // if (12'h321 != var_flop) $stop;
       end

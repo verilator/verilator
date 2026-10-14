@@ -122,9 +122,10 @@ class VlCoverpoint VL_NOT_FINAL : public VlCoverpointIf {
         std::vector<uint32_t> m_next;  // m_active for the next sample, being computed
         explicit Transition(uint32_t words)
             : m_words{words} {}
-        bool matches(uint32_t item, WDataInP valuep) const;  // Whether item 'item' holds it
+        bool matches(uint32_t item, WDataInPAny valuep) const;  // Whether item 'item' holds it
     };
     std::vector<Transition> m_transitions;  // In transitionAdd() order
+    bool transitionSampleWAny(uint32_t seq, WDataInPAny valuep);
     friend class VlCoverCrossDyn;
 
 protected:
@@ -203,11 +204,13 @@ public:
     void valueRelease();
     /// Test state exclusions independently of sampling-time iff guards.
     bool valueExcluded(QData value) const;
-    bool valueExcludedW(WDataInP valuep) const;
+    bool valueExcludedW(WDataInP<> valuep) const;
+    bool valueExcludedW(WDataInP<2> valuep) const;
     /// Add the coverpoint values lo..hi of the next range list element of a sized array of
     /// bins, in declaration order.
     void sizedRange(QData lo, QData hi);
-    void sizedRangeW(WDataInP lop, WDataInP hip);
+    void sizedRangeW(WDataInP<> lop, WDataInP<> hip);
+    void sizedRangeW(WDataInP<2> lop, WDataInP<2> hip);
     /// Distribute the values sizedRange() added over the bins of the sized array 'name[count]'
     /// (IEEE 1800-2023 19.5.1).  'positive' is false for a count below one, which is invalid.
     /// At most 'limit' bins may hold values.  Needs valueType(); bins append after those of
@@ -226,12 +229,15 @@ public:
     /// once too many values are kept
     bool withNext();
     QData withLo() const;
-    void withLoW(WDataOutP valuep) const;
+    void withLoW(WDataOutP<> valuep) const;
+    void withLoW(WDataOutP<2> valuep) const;
     QData withHi() const;
-    void withHiW(WDataOutP valuep) const;
+    void withHiW(WDataOutP<> valuep) const;
+    void withHiW(WDataOutP<2> valuep) const;
     /// Keep the values lo..hi, in the order the filter kept them; false once too many are
     bool withRun(QData lo, QData hi);
-    bool withRunW(WDataInP lop, WDataInP hip);
+    bool withRunW(WDataInP<> lop, WDataInP<> hip);
+    bool withRunW(WDataInP<2> lop, WDataInP<2> hip);
     /// Make the bins of the values kept, a sized array 'name[count]' for Fixed grouping (see
     /// sizedFinish())
     void withFinish(VlCovBinKind kind, QData count, bool positive, const char* name,
@@ -252,14 +258,20 @@ public:
     /// Count a sample in the bins of the sized array 'sized' holding the value, once each,
     /// if 'enabled'.  True if a bin holds the value, enabled or not.
     bool sizedSample(uint32_t sized, QData value, bool enabled);
-    bool sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled);
+    bool sizedSampleW(uint32_t sized, WDataInP<> valuep, bool enabled);
+    bool sizedSampleW(uint32_t sized, WDataInP<2> valuep, bool enabled);
     // Sample a value into transition sequence 'seq'; true if it completes a match.  Matches
     // may overlap, and each counts (IEEE 1800-2023 19.5.2).  Costs, per partial match the
     // samples end with, a binary search of the values of its next item.  Partial matches
     // number at most one per item, and more than a few only for a sequence whose beginning
     // recurs in it, as in a periodic one.
     bool transitionSample(uint32_t seq, QData value);
-    bool transitionSampleW(uint32_t seq, WDataInP valuep);
+    bool transitionSampleW(uint32_t seq, WDataInP<> valuep) {
+        return transitionSampleWAny(seq, valuep);
+    }
+    bool transitionSampleW(uint32_t seq, WDataInP<2> valuep) {
+        return transitionSampleWAny(seq, valuep);
+    }
     // incrementBin (Normal bin: count + hit-list append) lives in VlCoverpointT<MaxHits>,
     // where MaxHits is the gen-time max per-sample bin overlap.
 
@@ -556,7 +568,8 @@ public:
     /// Start a binsof term over the live bins declared in [first, end) of dimension 'dim'.
     void selectDim(uint32_t dim, uint32_t first, uint32_t end, bool negated, bool intersect);
     void selectRange(QData lo, QData hi);
-    void selectRangeW(WDataInP lop, WDataInP hip);
+    void selectRangeW(WDataInP<> lop, WDataInP<> hip);
+    void selectRangeW(WDataInP<2> lop, WDataInP<2> hip);
     void selectDimEnd();
     void selectAnd();
     void selectOr();
@@ -571,7 +584,8 @@ public:
     bool withNext();
     /// The value of the dimension 'dim', one the filter reads, of the value tuple
     QData withValue(uint32_t dim) const;
-    void withValueW(uint32_t dim, WDataOutP valuep) const;
+    void withValueW(uint32_t dim, WDataOutP<> valuep) const;
+    void withValueW(uint32_t dim, WDataOutP<2> valuep) const;
     /// Whether the filter is true for the value tuple
     void withTest(bool keep);
     /// Replace the selection with the bin tuples the filter selected
