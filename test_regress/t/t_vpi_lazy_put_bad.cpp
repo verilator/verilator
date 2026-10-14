@@ -21,6 +21,7 @@
 #include <cstdio>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 int errors = 0;
@@ -475,6 +476,32 @@ int main(int argc, char** argv) {
         accept("t.st.cnt", get(find("t.st.cnt")) ^ 0x2a);
         topp->eval();
         TEST_CHECK_EQ_LABEL("t.st.cnt settles", settleRuns, runs + 2);
+    }
+
+    // Kinds every optimisation flag agrees on, so the checks above are not vacuous
+    for (const auto& pr : std::vector<std::pair<const char*, const char*>>{
+             {"t.al_nw", "copy"},  // An alias of a flop copies it, needing no func
+             {"t.al1", "copy"},
+             {"t.mid_c", "reconstructed"},
+             {"t.fmid_c", "reconstructed"},  // A fold and sibling aliases read their cone
+             {"t.sib_b", "reconstructed"},
+             {"t.sib_c", "reconstructed"},
+             {"t.fyx0_c", "reconstructed"},  // Reads another instance's cone
+             {"t.cts_c.hi", "reconstructed"},  // A member follows its parent
+             {"t.ff_q", "retained"},
+             {"t.st.cnt", "retained"},
+             {"t.ia.q", "retained"},  // Per instance: ib.q is the comb-driven one
+             {"t.ib.q", "comb"},
+             {"t.ret_c", "comb"},  // An impure driver is not re-executed on read
+             {"t.rnd_w", "comb"},
+             {"t.cy0.cy", "comb"},  // A comb cycle
+             {"t.frc_al", "stored"},  // Forceable signals take no lazy path
+             {"t.frw_c", "stored"},
+             {"t.rdpin", "stored"},
+             {"t.CST", "nullptr"}}) {
+        const char* const kindp = VerilatedVpi::storageKind(find(pr.first));
+        const std::string got = kindp ? kindp : "nullptr";
+        TEST_CHECK_LABEL(pr.first, got, pr.second, got == pr.second);
     }
 
     // The whole VPI-visible set and its writability, which no optimisation flag may change
