@@ -550,8 +550,6 @@ public:
         , m_ctx{ctx}
         , m_gather{nodep} {}
 
-    // Pre-run VarScope order; run() adds shadow and stamp VarScopes, which carry no lazy role
-    const std::vector<AstVarScope*>& vscOrder() const { return m_gather.m_vscOrder; }
     const std::vector<AstCFunc*>& splitFuncps() const { return m_splitFuncps; }
 
     void run() {
@@ -1586,7 +1584,6 @@ private:
                     if (refp->access().isWriteOnly()) return;
                     AstVarScope* u = refp->varScopep();
                     if (g->members.count(u)) return;
-                    if (AstVarScope* const srcp = retargetSubstituteFor(u, g)) u = srcp;
                     Group* const ugp = liveGroupOf(u);
                     if (!ugp || ugp == g) return;
                     new V3GraphEdge{&m_depGraph, ugp->vtxp, g->vtxp, 1};
@@ -2088,11 +2085,10 @@ private:
         if (VN_IS(stmtp, Comment)) return false;
         if (VN_IS(stmtp, JumpGo)) return true;
         if (AstNodeAssign* const asgnp = VN_CAST(stmtp, NodeAssign)) {
-            const bool live = asgnp->lhsp()->exists([&](AstNode* nodep) {
-                const AstVarRef* const refp = VN_CAST(nodep, VarRef);
-                return refp && !refp->access().isReadOnly() && neededr.count(refp->varScopep());
-            });
-            if (!live) return false;
+            bool partial = false;
+            const AstVarRef* const refp = lhsBaseRef(asgnp->lhsp(), partial);
+            UASSERT_OBJ(refp, asgnp, "--vpi-lazy group survived with an unmodelled lvalue");
+            if (!neededr.count(refp->varScopep())) return false;
             stmtRefs(asgnp, neededr);
             return true;
         }
@@ -2136,16 +2132,12 @@ private:
                 if (liveReads.count(u->varp())) g->neededps.insert(u);
             g->bodyp = pruneList(cloneBody(g), g->neededps);
             UASSERT_OBJ(g->bodyp, g->keyp, "--vpi-lazy pruned a group's whole body");
-            // Mirrors emitReconstructions's rewiring: a read on another group's shadow counts.
-            g->bodyp->foreachAndNext([&](AstVarRef* refp) {
-                if (refp->access().isWriteOnly()) return;
-                AstVarScope* u = refp->varScopep();
-                if (g->members.count(u)) return;
-                if (AstVarScope* const srcp = retargetSubstituteFor(u, g)) u = srcp;
+            // 'neededps' is now the targets plus every read of the pruned body. A retargeted
+            // read's source holds storage, so only a read on another group's shadow counts.
+            for (AstVarScope* const u : g->neededps) {
                 const Group* const ugp = liveGroupOf(u);
-                if (!ugp || ugp == g) return;
-                liveReads.insert(u->varp());
-            });
+                if (ugp && ugp != g) liveReads.insert(u->varp());
+            }
         }
     }
 
@@ -2311,20 +2303,25 @@ private:
     void retainCompletenessFloor() {
         for (AstVarScope* const vscp : m_gather.m_vscOrder) {
             AstVar* const varp = vscp->varp();
-            if (!varp->isSigVpiLazyCandidate()) continue;  // reconstructed / retained already
-            // Its row keeps --public-flat-rw semantics, so give it that flag: V3Force pins a
-            // forceable net's force vars, not the net itself, and DFG may alias it away.
-            if (storagePinnedElsewhere(varp)) {
-                varp->sigUserRWPublic(true);
-                varp->vpiLazyRole(VVpiLazyRole::NONE);
-                const bool dpi = varp->isReadByDpi() || varp->isWrittenByDpi();
-                m_floorReason[dpi ? "storage pinned (DPI)" : "storage pinned"]
-                    += instancesOf(varp);
-                continue;
+            if (varp->isSigVpiLazyCandidate()) {  // Else reconstructed / retained already
+                // Its row keeps --public-flat-rw semantics, so give it that flag: V3Force pins a
+                // forceable net's force vars, not the net itself, and DFG may alias it away.
+                if (storagePinnedElsewhere(varp)) {
+                    varp->sigUserRWPublic(true);
+                    varp->vpiLazyRole(VVpiLazyRole::NONE);
+                    const bool dpi = varp->isReadByDpi() || varp->isWrittenByDpi();
+                    m_floorReason[dpi ? "storage pinned (DPI)" : "storage pinned"]
+                        += instancesOf(varp);
+                } else {
+                    m_floorReason[floorReason(vscp)] += instancesOf(varp);
+                    UINFO(9, "vpi-lazy floor: " << floorReason(vscp) << " " << vscp->name());
+                    retainTarget(vscp, Bail::COMPLETENESS_FLOOR);  // Flips the shared AstVar once
+                }
             }
-            m_floorReason[floorReason(vscp)] += instancesOf(varp);
-            UINFO(9, "vpi-lazy floor: " << floorReason(vscp) << " " << vscp->name());
-            retainTarget(vscp, Bail::COMPLETENESS_FLOOR);  // flips the shared AstVar flag once
+            // A VPI write into a writable retained signal is propagated by re-running 'settle'
+            // on the next eval.
+            if (varp->isSigVpiLazyRetained() && !varp->isVpiLazyCombWhole())
+                v3Global.setHasVpiLazyRetained();
         }
     }
 
@@ -2391,15 +2388,6 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
         VpiLazyPreparer preparer{nodep, topScopep, ctx};
         preparer.run();
         splitFuncps = preparer.splitFuncps();
-
-        bool anyRetained = false;
-        for (const AstVarScope* const vscp : preparer.vscOrder()) {
-            const AstVar* const varp = vscp->varp();
-            if (varp->isSigVpiLazyRetained() && !varp->isVpiLazyCombWhole()) anyRetained = true;
-        }
-        // A VPI write into a writable retained signal is propagated by re-running 'settle' on the
-        // next eval.
-        if (anyRetained) v3Global.setHasVpiLazyRetained();
     }
 
     // Per --output-split-cfuncs. splitCheck moves whole top-level statements, so an entry func's
