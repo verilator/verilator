@@ -676,6 +676,7 @@ private:
         AstVar* const varp = target->varp();
         // Already reconstructed / retained, or holding storage regardless
         if (!varp->isSigVpiLazyCandidate() || storagePinnedElsewhere(varp)) return;
+        UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << target->name());
         varp->vpiLazyRole(VVpiLazyRole::RETAINED);
         m_combBailRetained += instancesOf(varp);
         m_bailCount[static_cast<size_t>(why)] += instancesOf(varp);
@@ -2048,6 +2049,7 @@ private:
             m_fallback += instancesOf(uVarp);
             // Sequential/undriven operands hold storage regardless, so pinning them is free.
             const Bail why = hasCombDriver(u) ? combBoundaryReason(u) : Bail::BOUNDARY_OPERAND_SEQ;
+            UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << u->name());
             m_bailCount[static_cast<size_t>(why)] += instancesOf(uVarp);
             uVarp->vpiLazyRole(VVpiLazyRole::RETAINED);
         } else {
