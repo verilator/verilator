@@ -184,6 +184,89 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
     if (!funcp->ifdef().empty()) putns(funcp, "#endif  // " + funcp->ifdef() + "\n");
 }
 
+std::string EmitCBaseVisitorConst::emitSplitTextStmts(TextStmts& stmts, const std::string& prefix,
+                                                      const std::string& params,
+                                                      const std::string& args,  //
+                                                      size_t maxCost, bool support,
+                                                      const char* descriptionp,
+                                                      const std::function<void()>& emitHeader) {
+    const auto subFuncName = [&](size_t n) { return prefix + "__" + std::to_string(n); };
+    size_t nSubFunctions = 0;
+    std::string funcName;  // Name of last sub-function, which is the root at the end
+    // After the first level, statement 'j' is a call to sub-function 'calleeBase + j'
+    bool callsSubFuncs = false;
+    size_t calleeBase = 0;
+    // Reduce into a balanced tree of sub-function calls until we end up with a single statement
+    while (stmts.size() > 1) {
+        const size_t levelBase = nSubFunctions;
+        TextStmts calls;  // Calls to the sub-functions of this level
+        const size_t nStmts = stmts.size();
+        for (size_t splitStart = 0, splitEnd = 0; splitStart < nStmts; splitStart = splitEnd) {
+            // Gather up at at most 'maxCost' worth of statements in this split,
+            // but always at least 2 (if less than 2, the reduction makes no
+            // progress and the loop will not terminate).
+            size_t cost = 0;
+            while (((cost < maxCost) || (splitEnd - splitStart < 2)) && splitEnd < nStmts) {
+                cost += stmts[splitEnd++].m_cost;
+            }
+            UASSERT(splitStart < splitEnd, "Empty split");
+
+            // Name of sub-function we are emitting now
+            funcName = subFuncName(nSubFunctions++);
+
+            // Open split file
+            openNewOutputSourceFile(funcName, true, support, descriptionp);
+            // Emit header
+            emitHeader();
+            // Declare called sub-functions
+            if (callsSubFuncs) {
+                puts("\n");
+                for (size_t j = splitStart; j < splitEnd; ++j) {
+                    puts("void " + subFuncName(calleeBase + j) + "(" + params + ");\n");
+                }
+                puts("\n");
+            }
+            // Open sub-function definition in the split file
+            puts("void " + funcName + "(" + params + ") {\n");
+            // Emit statements
+            for (size_t j = splitStart; j < splitEnd; ++j) {
+                ofp()->putsNoTracking("    ");
+                ofp()->putsNoTracking(stmts[j].m_text);
+                ofp()->putsNoTracking("\n");
+            }
+            // Close sub-function
+            puts("}\n");
+            // Close split file
+            closeOutputFile();
+
+            // Replace statements with a call to the sub-function
+            calls.add(funcName + "(" + args + ");");
+        }
+        stmts = std::move(calls);
+        callsSubFuncs = true;
+        calleeBase = levelBase;
+    }
+    return funcName.empty() ? "" : "void " + funcName + "(" + params + ");\n";
+}
+
+std::pair<std::string, std::string> EmitCBaseVisitorConst::emitSplitCtorDtor(
+    TextStmts& ctorStmts, TextStmts& dtorStmts, size_t baseCost, const std::string& prefix,
+    const std::string& params, const std::string& args, bool support, const char* descriptionp,
+    const std::function<void()>& emitHeader) {
+    const size_t maxCost = static_cast<size_t>(v3Global.opt.outputSplitCFuncs());
+    if (!maxCost) return {};
+    size_t totalCost = baseCost;
+    for (const TextStmts::Stmt& stmt : ctorStmts) totalCost += stmt.m_cost;
+    for (const TextStmts::Stmt& stmt : dtorStmts) totalCost += stmt.m_cost;
+    if (totalCost <= maxCost) return {};
+    v3Global.useParallelBuild(true);  // Splitting files, so using parallel build.
+    std::string ctorDecl = emitSplitTextStmts(ctorStmts, prefix + "__ctor", params, args, maxCost,
+                                              support, descriptionp, emitHeader);
+    std::string dtorDecl = emitSplitTextStmts(dtorStmts, prefix + "__dtor", params, args, maxCost,
+                                              support, descriptionp, emitHeader);
+    return {std::move(ctorDecl), std::move(dtorDecl)};
+}
+
 void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
     const AstBasicDType* const basicp = nodep->basicp();
     const bool refNeedParens = VN_IS(nodep->dtypeSkipRefp(), UnpackArrayDType);

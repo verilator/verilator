@@ -641,7 +641,7 @@ public:
     static constexpr int INSTR_COUNT_STR = 100;  // String ops
     static constexpr int INSTR_COUNT_TIME = INSTR_COUNT_CALL + 5;  // Determine simulation time
     static constexpr int INSTR_COUNT_PLI = 20;  // PLI routines
-    static constexpr int INSTR_COUNT_SYM = 5;  // Syms ctor/dtor statements
+    static constexpr int INSTR_COUNT_CTOR_DTOR = 5;  // Syms and Module ctor/dtor statements
 
     // ACCESSORS
     virtual string name() const VL_MT_STABLE { return ""; }
