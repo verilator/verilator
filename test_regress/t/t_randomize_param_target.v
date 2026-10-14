@@ -10,12 +10,7 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// IEEE 1800-2023 18.7: an undotted name in 'randomize() with' first resolves
-// in the randomized object's class, falling back to the caller's scope only
-// if absent there. When the target is a parameterized class, its scope is
-// unavailable until V3Param specialization, so the whole constraint must be
-// deferred rather than resolved (or errored) up front. The call below sits
-// in an extern-defined task body, as in the original report.
+// 'randomize() with' on a parameterized class target (IEEE 1800-2023 18.7)
 
 class item;
   rand int unsigned driver_delay;
@@ -80,8 +75,7 @@ task outer_sequence::body();
   `checkd(ok, 1)
   `checkd(seq.cmd.driver_delay, 7)
 
-  // A method call in 'with' binds to the target's method, like any other
-  // undotted name (IEEE 1800-2023 18.7).
+  // Method call binds to the target's method.
   ok = seq.randomize() with {
     cmd.driver_delay <= limit();
     mode == 3;
@@ -93,9 +87,7 @@ task outer_sequence::body();
     `stop;
   end
 
-  // 'local::' forces caller scope: bound to the local handle's value.
-  // The +1 keeps this from passing as a tautology when misbound: binding
-  // either side to the wrong 'cmd' makes the constraint unsatisfiable.
+  // 'local::' forces caller scope; +1 makes a misbind unsatisfiable.
   cmd.driver_delay = 42;
   ok = seq.randomize() with {
     cmd.driver_delay == local::cmd.driver_delay + 1;
