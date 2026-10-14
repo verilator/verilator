@@ -8,9 +8,9 @@
 // duplicated across instances, a submodule that drives an interface member owned by
 // another scope, a cross-scope interface member read back through a different
 // instance's port, an alias chain crossing a non-inlined instance boundary, a comb
-// cycle closed through two instances, impure ($random/$time) and variable-index
-// driven combinational logic, and a submodule output that is itself only a
-// temporary feeding another output.
+// cycle closed through two instances, a block-level cycle through an instance,
+// impure ($random/$time) and variable-index driven combinational logic, and a
+// submodule output that is itself only a temporary feeding another output.
 
 interface iface_t #(
     parameter W = 8
@@ -88,6 +88,14 @@ module combloop_pass (
     output logic [6:0] o
 );
   assign o = i;
+endmodule
+
+module hs_pump (
+    input logic [7:0] h,
+    input logic [7:0] k,
+    output logic l
+);
+  assign l = h == k;
 endmodule
 
 // Not inlined, so the alias chain through u_chain crosses a real instance boundary.
@@ -274,6 +282,28 @@ module t;
       .i(alc_y | 7'h0a),
       .o(alc_x)
   );
+
+  // A block-level cycle through u_hs: neither block can run first, so both stay
+  // retained. hs_v's kept store is a use, so V3Gate must not also inline its logic
+  // into hs_q.
+  logic hs_sel;
+  logic [7:0] hs_hdr;
+  logic hs_v;
+  // verilator lint_off UNOPTFLAT
+  logic hs_l;
+  // verilator lint_on UNOPTFLAT
+  logic hs_q = 1'b0;
+  hs_pump u_hs (
+      .h(hs_hdr),
+      .k(base),
+      .l(hs_l)
+  );
+  always_comb begin
+    hs_sel = nib[0];
+    hs_hdr = hs_sel ? in0 : in1;
+    hs_v = hs_sel & hs_l;
+  end
+  always_ff @(posedge clk) hs_q <= hs_v;
 
   // sub_ifwrite drives intf.swapped from another scope entirely.
   swap_if intf ();

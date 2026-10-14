@@ -33,6 +33,11 @@ t (vpiModule) t  vpiDefName=t
     flat_gg (vpiReg) t.flat_gg 
     flat_lb (vpiReg) t.flat_lb 
     flat_ll (vpiReg) t.flat_ll 
+    hs_hdr (vpiReg) t.hs_hdr 
+    hs_l (vpiReg) t.hs_l 
+    hs_q (vpiReg) t.hs_q 
+    hs_sel (vpiReg) t.hs_sel 
+    hs_v (vpiReg) t.hs_v 
     idx (vpiReg) t.idx 
     in0 (vpiReg) t.in0 
     in1 (vpiReg) t.in1 
@@ -96,6 +101,12 @@ t (vpiModule) t  vpiDefName=t
         vpiReg:
         i (vpiReg) t.u_chain.i 
         o (vpiReg) t.u_chain.o 
+        vpiParameter:
+    u_hs (vpiModule) t.u_hs  vpiDefName=hs_pump
+        vpiReg:
+        h (vpiReg) t.u_hs.h 
+        k (vpiReg) t.u_hs.k 
+        l (vpiReg) t.u_hs.l 
         vpiParameter:
     u_pass1 (vpiModule) t.u_pass1  vpiDefName=combloop_pass
         vpiReg:
@@ -161,6 +172,11 @@ t.flat_arr_gg = 00000000 vpiSize=32
 t.flat_gg = 000000 vpiSize=24
 t.flat_lb = 000000 vpiSize=24
 t.flat_ll = 000000 vpiSize=24
+t.hs_hdr = 00 vpiSize=8
+t.hs_l = 1 vpiSize=1
+t.hs_q = 0 vpiSize=1
+t.hs_sel = 0 vpiSize=1
+t.hs_v = 0 vpiSize=1
 t.idx = 0 vpiSize=3
 t.in0 = 00 vpiSize=8
 t.in1 = 00 vpiSize=8
@@ -199,6 +215,9 @@ t.u1.s1 = 37 vpiSize=8
 t.u1.s2 = 97 vpiSize=8
 t.u_chain.i = 23 vpiSize=8
 t.u_chain.o = 23 vpiSize=8
+t.u_hs.h = 00 vpiSize=8
+t.u_hs.k = 00 vpiSize=8
+t.u_hs.l = 1 vpiSize=1
 t.u_pass1.i = 0a vpiSize=7
 t.u_pass1.o = 0a vpiSize=7
 t.u_pass2.i = 0a vpiSize=7
@@ -237,6 +256,8 @@ t.flat_arr_gg = 1122f055
 t.flat_gg = 1122f0
 t.flat_lb = f02211
 t.flat_ll = 0f4488
+t.hs_hdr = 22
+t.hs_l = 0
 t.in0 = 11
 t.in1 = 22
 t.in2 = f0
@@ -262,6 +283,9 @@ t.u1.s1 = 38
 t.u1.s2 = 9a
 t.u_chain.i = 1c
 t.u_chain.o = 1c
+t.u_hs.h = 22
+t.u_hs.k = 01
+t.u_hs.l = 0
 -- @20 readonly
 t.arr[3] = ef
 t.arr[2] = be
@@ -285,6 +309,7 @@ t.flat_arr_gg = deadbeef
 t.flat_gg = deadbe
 t.flat_lb = beadde
 t.flat_ll = 7db57b
+t.hs_hdr = ad
 t.in0 = de
 t.in1 = ad
 t.in2 = be
@@ -313,6 +338,8 @@ t.u1.s1 = 47
 t.u1.s2 = c7
 t.u_chain.i = 13
 t.u_chain.o = 13
+t.u_hs.h = ad
+t.u_hs.k = 10
 t.u_portsrc.cpy_a = 5a5a0001
 t.u_portsrc.cpy_c = 5a5a0001
 t.u_portsrc.i = 00000001
@@ -343,6 +370,7 @@ t.flat_arr_gg = ff008001
 t.flat_gg = ff0080
 t.flat_lb = 8000ff
 t.flat_ll = 0100ff
+t.hs_hdr = 00
 t.in0 = ff
 t.in1 = 00
 t.in2 = 80
@@ -374,6 +402,8 @@ t.u1.s1 = b6
 t.u1.s2 = 14
 t.u_chain.i = a2
 t.u_chain.o = a2
+t.u_hs.h = 00
+t.u_hs.k = 7f
 t.u_portsrc.cpy_a = 5a5a0011
 t.u_portsrc.cpy_c = 5a5a0011
 t.u_portsrc.i = 00000011
@@ -419,6 +449,7 @@ t.u1.s1 = 59
 t.u1.s2 = fd
 t.u_chain.i = 7d
 t.u_chain.o = 7d
+t.u_hs.k = 22
 t.u_portsrc.cpy_a = 5a5a0090
 t.u_portsrc.cpy_c = 5a5a0090
 t.u_portsrc.i = 00000090
@@ -441,6 +472,7 @@ t.cyc_boundary = 05
 t.cyc_d = 06
 t.cyc_down = 06
 t.cyc_down2 = 0b
+t.hs_l = 1
 t.nib = 0
 t.out0 = 07
 t.out1 = 97
@@ -463,6 +495,8 @@ t.u1.s1 = 37
 t.u1.s2 = 97
 t.u_chain.i = 23
 t.u_chain.o = 23
+t.u_hs.k = 00
+t.u_hs.l = 1
 t.u_portsrc.cpy_a = 5a5a00b2
 t.u_portsrc.cpy_c = 5a5a00b2
 t.u_portsrc.i = 000000b2
@@ -485,6 +519,9 @@ t.cyc_boundary = 06
 t.cyc_d = 07
 t.cyc_down = 07
 t.cyc_down2 = 0d
+t.hs_hdr = ff
+t.hs_l = 0
+t.hs_sel = 1
 t.nib = 1
 t.out0 = 40
 t.out1 = d0
@@ -505,6 +542,9 @@ t.u1.s1 = 4a
 t.u1.s2 = d0
 t.u_chain.i = 0e
 t.u_chain.o = 0e
+t.u_hs.h = ff
+t.u_hs.k = 13
+t.u_hs.l = 0
 t.u_xscope_drv.a = 1
 t.u_xscope_drv.v = 0
 t.u_xscope_rcv.n = 1
@@ -546,6 +586,7 @@ t.u1.s1 = 77
 t.u1.s2 = 57
 t.u_chain.i = 63
 t.u_chain.o = 63
+t.u_hs.k = 40
 t.u_portsrc.cpy_a = 5a5a00c5
 t.u_portsrc.cpy_c = 5a5a00c5
 t.u_portsrc.i = 000000c5
@@ -588,6 +629,7 @@ t.u1.s1 = dc
 t.u1.s2 = 86
 t.u_chain.i = f8
 t.u_chain.o = f8
+t.u_hs.k = a5
 t.u_portsrc.cpy_a = 5a5a0105
 t.u_portsrc.cpy_c = 5a5a0105
 t.u_portsrc.i = 00000105
@@ -609,6 +651,8 @@ t.cyc_boundary = 09
 t.cyc_d = 0a
 t.cyc_down = 0a
 t.cyc_down2 = 13
+t.hs_l = 1
+t.hs_v = 1
 t.out0 = 04
 t.out1 = 94
 t.pt_acc = 000001aa
@@ -630,6 +674,8 @@ t.u1.s1 = 36
 t.u1.s2 = 94
 t.u_chain.i = 22
 t.u_chain.o = 22
+t.u_hs.k = ff
+t.u_hs.l = 1
 t.u_portsrc.cpy_a = 5a5a01aa
 t.u_portsrc.cpy_c = 5a5a01aa
 t.u_portsrc.i = 000001aa
@@ -651,6 +697,9 @@ t.cyc_boundary = 0a
 t.cyc_d = 0b
 t.cyc_down = 0b
 t.cyc_down2 = 15
+t.hs_l = 0
+t.hs_q = 1
+t.hs_v = 0
 t.out0 = 6a
 t.out1 = fa
 t.pt_acc = 000002a9
@@ -672,6 +721,8 @@ t.u1.s1 = 58
 t.u1.s2 = fa
 t.u_chain.i = 7c
 t.u_chain.o = 7c
+t.u_hs.k = 21
+t.u_hs.l = 0
 t.u_portsrc.cpy_a = 5a5a02a9
 t.u_portsrc.cpy_c = 5a5a02a9
 t.u_portsrc.i = 000002a9
@@ -693,6 +744,7 @@ t.cyc_boundary = 0b
 t.cyc_d = 0c
 t.cyc_down = 0c
 t.cyc_down2 = 17
+t.hs_q = 0
 t.out0 = 81
 t.out1 = 11
 t.pt_acc = 000002ca
@@ -714,6 +766,7 @@ t.u1.s1 = b5
 t.u1.s2 = 11
 t.u_chain.i = a1
 t.u_chain.o = a1
+t.u_hs.k = 7e
 t.u_portsrc.cpy_a = 5a5a02ca
 t.u_portsrc.cpy_c = 5a5a02ca
 t.u_portsrc.i = 000002ca
@@ -756,6 +809,7 @@ t.u1.s1 = fa
 t.u1.s2 = e0
 t.u_chain.i = de
 t.u_chain.o = de
+t.u_hs.k = c3
 t.u_portsrc.cpy_a = 5a5a0348
 t.u_portsrc.cpy_c = 5a5a0348
 t.u_portsrc.i = 00000348
