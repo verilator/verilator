@@ -22,6 +22,8 @@ module t;
   longint signed scanned;
   real scanned_real;
   byte next_char;
+  string s1;
+  string s2;
 
   reg [255:0] line;
   reg [63:0] token;
@@ -101,6 +103,48 @@ module t;
     code = $sscanf("_", "%f", scanned_real);
     `checkd(code, 0);
     `checkh($realtobits(scanned_real), $realtobits(99.0));
+
+    // Maximum field widths limit the characters a conversion consumes (IEEE 1800-2023 21.3.4.3)
+    code = $sscanf("12345", "%2d%3d", idx, val);
+    `checkd(code, 2);
+    `checkd(idx, 12);
+    `checkd(val, 345);
+    code = $sscanf("abcd", "%2h%2h", idx, val);
+    `checkd(code, 2);
+    `checkh(idx, 32'hab);
+    `checkh(val, 32'hcd);
+    code = $sscanf("HELLOWORLD", "%5s%5s", s1, s2);
+    `checkd(code, 2);
+    `checks(s1, "HELLO");
+    `checks(s2, "WORLD");
+    code = $sscanf("1011", "%3b%b", idx, val);
+    `checkd(code, 2);
+    `checkd(idx, 5);
+    `checkd(val, 1);
+    code = $sscanf("7654", "%2o%2o", idx, val);
+    `checkd(code, 2);
+    `checkd(idx, 32'o76);
+    `checkd(val, 32'o54);
+    code = $sscanf("3.14159", "%4f%c", scanned_real, next_char);
+    `checkd(code, 2);
+    `checkh($realtobits(scanned_real), $realtobits(3.14));
+    `checkd(next_char, "1");
+    // Leading space is not counted, a wide or zero width does not limit the field
+    code = $sscanf("  12  345", "%2d%3d", idx, val);
+    `checkd(code, 2);
+    `checkd(idx, 12);
+    `checkd(val, 345);
+    code = $sscanf("12 34", "%5d%5d", idx, val);
+    `checkd(code, 2);
+    `checkd(idx, 12);
+    `checkd(val, 34);
+    code = $sscanf("12345", "%0d", idx);
+    `checkd(code, 1);
+    `checkd(idx, 12345);
+    // Width of a skipped conversion
+    code = $sscanf("12345", "%*2d%d", idx);
+    `checkd(code, 1);
+    `checkd(idx, 345);
 
     $finish;
   end
