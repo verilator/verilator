@@ -164,8 +164,8 @@ private:
     }
     // Clocking event of a driven clockvar, referenced from the drive like the clockvar, or
     // nullptr if unsupported, which is reported on the drive's cycle delay
-    AstSenItem* newDriveSensesp(AstDelay* delayp, const SynchDrive& drive) {
-        AstSenItem* const origp = clockingOf(drive.itemp)->sensesp();
+    AstSenTree* newDriveSentreep(AstDelay* delayp, const SynchDrive& drive) {
+        AstSenTree* const origp = clockingOf(drive.itemp)->sentreep();
         if (VN_IS(drive.refp, VarRef)) return origp->cloneTree(false);
         if (origp->exists([](const AstVarXRef*) { return true; })) {
             // The reference is relative to the clocking block
@@ -179,19 +179,25 @@ private:
         // possibly before the interface reference is set, so the event is guarded against a
         // null reference, which needs an integral value; scheduling does not guard it
         const bool guardNull = selp && !VN_IS(m_modp, Class);
-        if (guardNull && !origp->sensp()->dtypep()->skipRefp()->isIntegralOrPacked()) {
-            delayp->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in synchronous drive through"
-                                          " an interface reference outside a class, to clocking"
-                                          " block with non-integral clocking event");
-            return nullptr;
+        if (guardNull) {
+            for (AstSenItem* itemp = origp->sensesp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), SenItem)) {
+                if (!itemp->sensp()->dtypep()->skipRefp()->isIntegralOrPacked()) {
+                    delayp->v3warn(E_UNSUPPORTED,
+                                   "Unsupported: cycle delay in synchronous drive through"
+                                   " an interface reference outside a class, to clocking"
+                                   " block with non-integral clocking event");
+                    return nullptr;
+                }
+            }
         }
         // Interface declaring the clocking block, if driven through an interface reference
         AstIface* const ifacep
             = selp ? VN_AS(selp->fromp()->dtypep()->skipRefp(), IfaceRefDType)->ifaceViaCellp()
                    : nullptr;
-        AstSenItem* const sensesp = origp->cloneTree(false);
+        AstSenTree* const sentreep = origp->cloneTree(false);
         std::vector<AstVarRef*> refps;
-        sensesp->foreach([&](AstVarRef* refp) {
+        sentreep->foreach([&](AstVarRef* refp) {
             if (!refp->classOrPackagep()) refps.push_back(refp);
         });
         for (AstVarRef* const refp : refps) {
@@ -207,8 +213,13 @@ private:
             refp->replaceWith(newDriveRefp(refp->fileline(), drive, varp, refp->access()));
             VL_DO_DANGLING(pushDeletep(refp), refp);
         }
-        if (guardNull) guardNullIface(sensesp, selp->fromp());
-        return sensesp;
+        if (guardNull) {
+            for (AstSenItem* itemp = sentreep->sensesp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), SenItem)) {
+                guardNullIface(itemp, selp->fromp());
+            }
+        }
+        return sentreep;
     }
     // Make an integral clocking event through an interface reference false while the reference
     // is null
@@ -242,7 +253,7 @@ private:
         AstSenTree* newp = nullptr;
         AstSenItem* senip = m_senip;
         bool fromAlways = false;
-        if (!senip && m_defaultClockingp) senip = m_defaultClockingp->sensesp();
+        if (!senip && m_defaultClockingp) senip = m_defaultClockingp->sentreep()->sensesp();
         if (!senip) {
             senip = m_seniAlwaysp;
             fromAlways = true;
@@ -518,8 +529,7 @@ private:
             if (skewp->isZero() || !skewp->fileline()->timingOn()) {
                 // Drive the var in Re-NBA (IEEE 1800-2023 14.16), ignoring skews where timing is
                 // turned off
-                AstSenTree* senTreep
-                    = new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)};
+                AstSenTree* senTreep = m_clockingp->sentreep()->cloneTree(false);
                 senTreep->addSensesp(new AstSenItem{
                     flp, VEdgeType::ET_CHANGED, new AstVarRef{flp, drivenVarp, VAccess::READ}});
                 AstCMethodHard* const trigp = new AstCMethodHard{
@@ -536,8 +546,8 @@ private:
                 AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
                 forkp->addForksp(new AstBegin{flp, "", ifp, true});
                 // Use Observed for this to make sure we do not miss the event
-                m_clockingp->addNextHere(new AstAlwaysObserved{
-                    flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, forkp});
+                m_clockingp->addNextHere(
+                    new AstAlwaysObserved{flp, m_clockingp->sentreep()->cloneTree(false), forkp});
                 if (v3Global.opt.timing().isSetTrue()) {
                     AstDelay* const delayp = new AstDelay{flp, skewp->unlinkFrBack(), false};
                     delayp->timeunit(m_modp->timeunit());
@@ -562,13 +572,12 @@ private:
                     = new AstSampled{flp, exprp->cloneTreePure(false), exprp->dtypep(), true};
                 AstAssign* const assignp = new AstAssign{flp, refp, sampledp};
                 m_clockingp->addNextHere(new AstAlways{
-                    flp, VAlwaysKwd::ALWAYS,
-                    new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
+                    flp, VAlwaysKwd::ALWAYS, m_clockingp->sentreep()->cloneTree(false), assignp});
             } else if (skewp->isZero()) {
                 // #0 means the var has to be sampled in Observed (IEEE 1800-2023 14.13)
                 AstAssign* const assignp = new AstAssign{flp, refp, exprp->cloneTreePure(false)};
                 m_clockingp->addNextHere(new AstAlwaysObserved{
-                    flp, new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)}, assignp});
+                    flp, m_clockingp->sentreep()->cloneTree(false), assignp});
             } else {
                 // Create a queue where we'll store sampled values with timestamps
                 AstSampleQueueDType* const queueDtp
@@ -596,10 +605,9 @@ private:
                 refp->access(VAccess::READWRITE);  // Only conditionally assigned
                 popp->addPinsp(refp);
                 popp->dtypeSetVoid();
-                m_clockingp->addNextHere(
-                    new AstAlways{flp, VAlwaysKwd::ALWAYS,
-                                  new AstSenTree{flp, m_clockingp->sensesp()->cloneTree(false)},
-                                  popp->makeStmt()});
+                m_clockingp->addNextHere(new AstAlways{flp, VAlwaysKwd::ALWAYS,
+                                                       m_clockingp->sentreep()->cloneTree(false),
+                                                       popp->makeStmt()});
             }
         } else {
             nodep->v3fatalSrc("Invalid direction");
@@ -667,7 +675,7 @@ private:
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
-        AstSenItem* sensesp = nullptr;
+        AstSenTree* sentreep = nullptr;
         if (!m_drives.empty()) {
             if (m_inConcatAssign) {
                 // Also the clockvars may be of different clocking blocks
@@ -678,8 +686,8 @@ private:
                 return;
             }
             // Count the cycles of the driven clockvar's clocking block (IEEE 1800-2023 14.16)
-            sensesp = newDriveSensesp(nodep, m_drives.front());
-            if (!sensesp) {
+            sentreep = newDriveSentreep(nodep, m_drives.front());
+            if (!sentreep) {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 VL_DO_DANGLING(pushDeletep(valuep), valuep);
                 return;
@@ -692,12 +700,12 @@ private:
                 VL_DO_DANGLING(pushDeletep(valuep), valuep);
                 return;
             }
-            sensesp = m_senip->cloneTree(false);
+            sentreep = new AstSenTree{flp, m_senip->cloneTree(false)};
         } else {
-            sensesp = m_defaultClockingp->sensesp()->cloneTree(false);
+            sentreep = m_defaultClockingp->sentreep()->cloneTree(false);
         }
         AstEventControl* const controlp
-            = new AstEventControl{nodep->fileline(), new AstSenTree{flp, sensesp}, nullptr};
+            = new AstEventControl{nodep->fileline(), sentreep, nullptr};
         const std::string delayName = m_cycleDlyNames.get(nodep);
         AstNodeExpr* throughoutp
             = nodep->throughoutp() ? nodep->throughoutp()->unlinkFrBack() : nullptr;
