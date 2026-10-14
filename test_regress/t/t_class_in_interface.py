@@ -9,6 +9,8 @@
 
 import vltest_bootstrap
 
+test.top_filename = "t/t_class_in_interface.sv"
+
 test.scenarios('simulator')
 
 test.compile()
