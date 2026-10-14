@@ -380,7 +380,7 @@ inline VerilatedVar::VerilatedVar(VerilatedVar&&) = default;
 void VerilatedVar::datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE {
     if (!isLazyRemat()) return;
     VerilatedLazyState* const lazyp = symsp->lazyp();
-    // A --public-flat-rw signal holds its reset value until the first eval() settles it
+    // Until the first eval() a shadow holds the reset value its --public-flat-rw signal would
     if (lazyp->beforeFirstEval()) return;
     auto* const lazyDatap = static_cast<VerilatedVarLazyDatap*>(m_datap);
     uint8_t* const basep = static_cast<uint8_t*>(lazyDatap->selfp);

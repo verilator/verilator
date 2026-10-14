@@ -28,4 +28,8 @@ test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 31)
 
+# A shadow resets as its signal would under --public-flat-rw: t.a's seed, hash of "t.a"
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "___024root__0__Slow.cpp",
+               r'__Vlazyrecon__\w+ = VL_SCOPED_RAND_RESET_I\(8, __VscopeHash, 568261790826559771ull\)')
+
 test.passes()
