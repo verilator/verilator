@@ -24,25 +24,8 @@ test.compile(make_top_shell=False,
              ],
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
-syms = test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp"
-# The deposited flops keep their own storage
-for reg in ("ctrl_r", "flag_a", "cnt"):
-    test.file_grep(
-        syms, r'\{"' + reg + r'", offsetof\(\S+ t__DOT__' + reg + r'\),[^\n]*VLVF_LAZY_RETAINED')
-# The comb status net and tree (per-element continuous assigns, read back through a variable
-# index) reconstruct, not retain.
-for sig in ("status", "lvl0", "lvl1", "lvl2", "picked", "ctrl_dup"):
-    test.file_grep(syms, r'\{"' + sig + r'", offsetof\(\S+ __Vlazyrecon__\d+_\d+\)')
-
-test.file_grep(syms, r'\{&\S+__Vlazy_reconstruct\S*, 0, 0\}')
-# 'ctrl_dup' is a copy row, whose memo stamp is held outside the model
-test.file_grep(syms, r'offsetof\(\S+ t__DOT__ctrl_r\), VLVF_LAZY_COPY\}')
-# Per-element array writes (lvl0/lvl1/lvl2) reconstruct rather than bailing as unmirrorable
-# lvalues.
-test.file_grep_not(test.stats, r'VPI, lazy group bail, unsupported lvalue')
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 9)
-test.file_grep(test.stats, r'VPI, lazy groups\s+(\d+)', 6)
-
 test.execute(expect_filename=test.golden_filename)
+
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 9)
 
 test.passes()

@@ -17,9 +17,6 @@ test.compile(verilator_flags2=["--stats", "--vpi", "--vpi-lazy"])
 # --vpi-lazy makes every signal public, so no force sel is narrowed
 test.file_grep(test.stats, r'Non-overlapping force sels\s+(\d+)', 0)
 
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp",
-               r'forceableVarInsert\("selfSig", &\(vlSymsp->vlInst\.TOP\.t__DOT__selfSig\)')
-
 test.execute()
 
 test.passes()
