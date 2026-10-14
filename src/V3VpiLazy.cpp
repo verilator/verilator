@@ -463,20 +463,6 @@ public:
 };
 
 // Rewrites a cloned block's continuous assigns as blocking ones.
-class LazyContAssignVisitor final : public VNVisitor {
-    // VISITORS
-    void visit(AstAssignW* nodep) override {
-        nodep->replaceWith(new AstAssign{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
-                                         nodep->rhsp()->unlinkFrBack()});
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit LazyContAssignVisitor(AstAlways* nodep) { iterate(nodep); }
-};
-
 class VpiLazyPreparer final {
     using Defined = std::unordered_set<AstVarScope*>;
 
@@ -1401,6 +1387,9 @@ private:
             // V3Active rewrote '<=' and V3Force lowered AssignForce; only blocking/cont remain.
             UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep,
                         "--vpi-lazy: unexpected assignment kind in a combinational block");
+            // cloneBody converts only top-level continuous assigns
+            UASSERT_OBJ(!VN_IS(nodep, AssignW) || VN_IS(nodep->abovep(), Always), nodep,
+                        "--vpi-lazy: nested continuous assign");
             // Only --timing keeps a delay this far, and such a block never terminates: untested.
             if (nodep->timingControlp()) {  // LCOV_EXCL_START
                 bail(Bail::UNSUPPORTED_STMT);
@@ -2031,10 +2020,16 @@ private:
     static AstNode* cloneBody(const Group* g) {
         AstNode* bodyp = nullptr;
         for (const CombBlock* const bp : g->blockps) {
-            AstAlways* const clonep = bp->m_alwaysp->cloneTree(false);
-            { LazyContAssignVisitor{clonep}; }
-            bodyp = AstNode::addNext(bodyp, clonep->stmtsp()->unlinkFrBackWithNext());
-            VL_DO_DANGLING(clonep->deleteTree(), clonep);
+            for (AstNode* stmtp = bp->m_alwaysp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                AstNode* clonep;
+                if (const AstAssignW* const awp = VN_CAST(stmtp, AssignW)) {
+                    clonep = new AstAssign{awp->fileline(), awp->lhsp()->cloneTree(false),
+                                           awp->rhsp()->cloneTree(false)};
+                } else {
+                    clonep = stmtp->cloneTree(false);
+                }
+                bodyp = AstNode::addNext(bodyp, clonep);
+            }
         }
         return bodyp;
     }
