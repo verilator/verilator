@@ -297,10 +297,11 @@ struct PartWrite final {
 AstVarRef* partialLhsRef(AstNodeExpr* lhsp, PartExtent& extr) {
     AstNodeExpr* nodep = lhsp;
     bool anySel = false;
-    if (AstSel* const selp = VN_CAST(nodep, Sel)) {
+    // Nested, as V3Const has not flattened them under -fno-const-before-dfg
+    while (AstSel* const selp = VN_CAST(nodep, Sel)) {
         if (!VN_IS(selp->lsbp(), Const)) return nullptr;
-        extr.lsb = selp->lsbConst();
-        extr.width = selp->widthConst();
+        extr.lsb += selp->lsbConst();
+        if (!anySel) extr.width = selp->widthConst();
         nodep = selp->fromp();
         anySel = true;
     }
