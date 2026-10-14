@@ -227,10 +227,9 @@ private:
     }
     // Procedural '##0': if the default clocking event has not yet occurred in this time step,
     // wait for it; otherwise continue without suspension (IEEE 1800-2023 14.11)
-    AstIf* newCycleDelayZerop(const AstDelay* delayp) const {
-        FileLine* const flp = delayp->fileline();
+    AstIf* newCycleDelayZerop(FileLine* flp) const {
         AstVar* const evtVarp = m_defaultClkEvtVarp;
-        UASSERT_OBJ(evtVarp, delayp, "Default clocking event var not pre-created");
+        UASSERT_OBJ(evtVarp, flp, "Default clocking event var not pre-created");
         AstCMethodHard* const isTriggeredp = new AstCMethodHard{
             flp, new AstVarRef{flp, evtVarp, VAccess::READ}, VCMethod::EVENT_IS_TRIGGERED};
         isTriggeredp->dtypeSetBit();
@@ -666,7 +665,7 @@ private:
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }
-            nodep->replaceWith(newCycleDelayZerop(nodep));
+            nodep->replaceWith(newCycleDelayZerop(flp));
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
@@ -724,7 +723,7 @@ private:
             beginp->addStmtsp(new AstIf{
                 flp,
                 new AstEq{flp, new AstVarRef{flp, cntVarp, VAccess::READ}, new AstConst{flp, 0}},
-                newCycleDelayZerop(nodep)});
+                newCycleDelayZerop(flp)});
         }
 
         // Throughout: create flag tracking whether condition held every tick
