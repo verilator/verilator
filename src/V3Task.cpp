@@ -809,31 +809,36 @@ class TaskVisitor final : public VNVisitor {
                 connectPort(refp, portp, argp, beginp, false);
             }
         }
-        {
-            AstNode* nextNodep;
-            for (AstNode* nodep = refp->taskp()->op3p(); nodep; nodep = nextNodep) {
-                nextNodep = nodep->nextp();
-                
-                if(VN_IS(nodep,Assign)){
-                    if (AstVarRef* varRefp1 = VN_CAST(nodep->op1p(), VarRef) ){
-                        if (AstVarRef* varRefp2 = VN_CAST(nodep->op2p(), VarRef) ){
-                            if (varRefp1->varScopep() && varRefp2->varScopep()) {
-                                AstClass* classp = VN_CAST(varRefp1->varScopep()->scopep()->modp(), Class);
-                                if(classp && varRefp2->varScopep()->scopep()->name() == varRefp1->varScopep()->scopep()->aboveScopep()->name()){
-                                    AstVarRef* newVarRef = new AstVarRef(varRefp2->fileline(), varRefp2->varp(), varRefp2->access());
-                                    varRefp2->varp()->sigPublic(true); // this is over kill. I think my scoping just needs to be added correctly.
-                                    AstNodeVarRef* callFromp = VN_CAST(ccallp->op1p(), NodeVarRef);
-                                    UASSERT_OBJ(callFromp, ccallp, "Can not find where this call is coming from");
-                                    newVarRef->varScopep(callFromp->varScopep());
-                                    AstArg* argp = new AstArg(varRefp2->fileline(), "", newVarRef);
-                                    refp->addArgsp(argp);
-                                }
-                            }
+        // Find all assignment nodes in this task if it is a method.
+        // If an Assign in the method refences a variable one scope above itself then pass it by refence
+        std::vector<AstNode*> unsetUserp;
+        AstNode* nextNodep;
+        for (AstNode* nodep = refp->taskp()->op3p(); nodep; nodep = nextNodep) {
+            nextNodep = nodep->nextp();
+            if(AstAssign* assignp = VN_CAST(nodep,Assign)){
+                if (AstVarRef* varRefp2 = VN_CAST(nodep->op2p(), VarRef) ){
+                    if (!varRefp2->varp()->user3SetOnce() && varRefp2->varScopep()) {
+                        unsetUserp.push_back(varRefp2->varp());
+                        AstClass* classp = VN_CAST(cfuncp->scopep()->modp(), Class);
+                        // If it is a method and the lhsp of our AssignNode is scoped one above
+                        if(classp && varRefp2->varScopep()->scopep()->name() == cfuncp->scopep()->aboveScopep()->name()){
+                            AstVarRef* newVarRef = new AstVarRef(varRefp2->fileline(), varRefp2->varp(), varRefp2->access());
+                            varRefp2->varp()->sigPublic(true); // make sure this doesn't get optimized away
+                            AstNodeVarRef* callFromp = VN_CAST(ccallp->op1p(), NodeVarRef);
+                            UASSERT_OBJ(callFromp, ccallp, "Can not find where this call is coming from");
+                            newVarRef->varScopep(callFromp->varScopep());
+                            AstArg* argp = new AstArg(varRefp2->fileline(), "", newVarRef);
+                            refp->addArgsp(argp);
                         }
                     }
                 }
             }
         }
+        // Reset the user3p
+        for(auto unset : unsetUserp){
+            unset->user3p(nullptr);
+        }
+
         // First argument is symbol table, then output if a function
         const bool needSyms = !refp->taskp()->dpiImport() || v3Global.opt.profExec();
         if (needSyms) ccallp->argTypes("vlSymsp");
@@ -1653,6 +1658,7 @@ class TaskVisitor final : public VNVisitor {
             cfuncp->scopeNamep(snp);
         }
 
+        std::vector<AstNode*> unsetUserp;
         // Create list of arguments and move to function
         for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
@@ -1685,36 +1691,45 @@ class TaskVisitor final : public VNVisitor {
                     portp->user2p(newvscp);
                 }
             }
+
+            // Find all assignment nodes in this task if it is a method.
+            // If an Assign in the method refences a variable one scope above itself then pass it by refence
             if(AstAssign* assignp = VN_CAST(nextp,Assign)){
-                if (AstVarRef* varRefp1 = VN_CAST(nextp->op1p(), VarRef) ){
-                    if (AstVarRef* varRefp2 = VN_CAST(nextp->op2p(), VarRef) ){
-                        if (varRefp1->varScopep() && varRefp2->varScopep()) {
-                            AstClass* classp = VN_CAST(varRefp1->varScopep()->scopep()->modp(), Class);
-                            if(classp && varRefp2->varScopep()->scopep()->name() == varRefp1->varScopep()->scopep()->aboveScopep()->name()){
-
-                                AstVar* newVarp = new AstVar(varRefp2->fileline(), VVarType::PORT, varRefp2->name()+ "_REF", varRefp2->dtypep());
-
+                if (AstVarRef* varRefp2 = VN_CAST(nextp->op2p(), VarRef) ){
+                    if ( varRefp2->varScopep()) {
+                        AstClass* classp = VN_CAST(cfuncp->scopep()->modp(), Class);
+                        if(classp && varRefp2->varScopep()->scopep()->name() == cfuncp->scopep()->aboveScopep()->name()){
+                            AstVar* newVarp;
+                            // If we haven't emum over this node yet
+                            if(!varRefp2->varp()->user3SetOnce()){
+                                newVarp = new AstVar(varRefp2->fileline(), VVarType::PORT, varRefp2->name()+ "_REF", varRefp2->dtypep());
                                 newVarp->funcLocal(true);
                                 newVarp->funcReturn(false);
                                 newVarp->direction(VDirection::REF);
 
-                                AstVarScope* const newvscp
-                                    = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
-                                m_scopep->addVarsp(newvscp);
                                 cfuncp->addArgsp(newVarp);
-
-                                AstVarRef* oldVarRefp = VN_CAST(assignp->lhsp(), VarRef);
-
-                                AstVarRef* newArgRefp = new AstVarRef(oldVarRefp->fileline(), newVarp, VAccess::WRITE);
-                                newArgRefp->varScopep(newvscp);
-                                oldVarRefp->replaceWithKeepDType(newArgRefp);
-                                VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
+                                varRefp2->varp()->user3p(newVarp);
+                                unsetUserp.push_back(varRefp2->varp());
+                            }else{
+                                newVarp = VN_AS(varRefp2->varp()->user3p(), Var);
                             }
+                            AstVarScope* const newvscp
+                                = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
+                            m_scopep->addVarsp(newvscp);
+                            // Replace all lhsp of this AssignNode with the varible that is passed by reference
+                            AstVarRef* oldVarRefp = VN_CAST(assignp->lhsp(), VarRef);
+                            AstVarRef* newArgRefp = new AstVarRef(oldVarRefp->fileline(), newVarp, VAccess::WRITE);
+                            newArgRefp->varScopep(newvscp);
+                            oldVarRefp->replaceWithKeepDType(newArgRefp);
+                            VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
                         }
                     }
                 }
             }
 
+        }
+        for(auto unset : unsetUserp){
+            unset->user3p(nullptr);
         }
         // Fake output variable if was a function.  It's more efficient to
         // have it last, rather than first, as the C compiler can sometimes
