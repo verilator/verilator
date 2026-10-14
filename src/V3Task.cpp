@@ -812,7 +812,7 @@ class TaskVisitor final : public VNVisitor {
         // Find all assignment nodes in this task if it is a method.
         // If an Assign in the method refences a variable one scope above itself then pass it by refence
         std::vector<AstNode*> unsetUserp;
-        if(cfuncp->isMethod()){
+        if(cfuncp->isMethod() && !refp->taskp()->isStatic()){
             for (AstNode *nextp, *taskOp3 = refp->taskp()->op3p(); taskOp3; taskOp3 = nextp) {
                 nextp = taskOp3->nextp();
                 if(VN_IS(nextp,Assign)){
