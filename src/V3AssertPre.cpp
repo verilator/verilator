@@ -1926,6 +1926,11 @@ static bool markClockingDrivenLeaves(AstNodeExpr* const nodep) {
         const bool lhsChanged = markClockingDrivenLeaves(concatp->lhsp());
         return markClockingDrivenLeaves(concatp->rhsp()) || lhsChanged;
     }
+    // V3Width wraps a concatenated port connection in a single replication
+    if (AstReplicate* const repp = VN_CAST(nodep, Replicate)) {
+        const AstConst* const countp = VN_CAST(repp->countp(), Const);
+        if (countp && countp->toUInt() == 1) return markClockingDrivenLeaves(repp->srcp());
+    }
     return false;
 }
 
