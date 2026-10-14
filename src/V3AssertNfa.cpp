@@ -3523,7 +3523,7 @@ class AssertNfaVisitor final : public VNVisitor {
         const bool countMatches = isCoverSeq && !isSeqEvent;
         // Inherit module defaults (IEEE 14.12, 16.15) when assertion has none.
         if (!propp->sensesp() && m_defaultClockingp) {
-            propp->sensesp(m_defaultClockingp->sensesp()->cloneTree(true));
+            propp->sensesp(m_defaultClockingp->sentreep()->sensesp()->cloneTree(true));
         }
         if (!propp->disablep() && m_defaultDisablep && !isSeqEvent) {
             propp->disablep(m_defaultDisablep->condp()->cloneTreePure(true));

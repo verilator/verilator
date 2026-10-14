@@ -380,10 +380,9 @@ class UnknownVisitor final : public VNVisitor {
                                       new AstVarRef{nodep->fileline(), newvarp, VAccess::READ}}}}};
                 // Add inits in front of other statement.
                 // In the future, we should stuff the initp into the module's constructor.
-                AstNode* const afterp = m_modp->stmtsp()->unlinkFrBackWithNext();
-                m_modp->addStmtsp(newvarp);
-                m_modp->addStmtsp(newinitp);
-                m_modp->addStmtsp(afterp);
+                // Must not unlink the statements, as one of them is being iterated
+                AstNode* const newStmtsp = AstNode::addNext<AstNode, AstNode>(newvarp, newinitp);
+                m_modp->stmtsp()->addHereThisAsNext(newStmtsp);
                 UINFOTREE(9, newref1p, "", "_newref");
                 UINFOTREE(9, newvarp, "", "_newvar");
                 UINFOTREE(9, newinitp, "", "_newini");

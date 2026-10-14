@@ -189,6 +189,8 @@ public:
     string cType(const string& name, bool forFunc, bool isRef, bool packed = false) const;
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
+    // C++ type (as emitted by cType) is trivially default constructible and destructible?
+    bool isTriviallyConstructible() const VL_MT_STABLE;
     virtual bool isDynamicallySized() const { return false; }
 
 private:

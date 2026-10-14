@@ -957,7 +957,6 @@ void AstCellInline::dumpJson(std::ostream& str) const {
 void AstCellInlineScope::dump(std::ostream& str) const {
     Super::dump(str);
     str << " -> " << origModName();
-    str << " [scopep=" << nodeAddr(scopep()) << "]";
 }
 void AstCellInlineScope::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, origModName);
@@ -1190,7 +1189,7 @@ AstVar* AstClocking::ensureEventp(bool childDType) {
         eventp(evp);
         // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
         addNextHere(new AstAlwaysObserved{
-            fileline(), new AstSenTree{fileline(), sensesp()->cloneTree(false)},
+            fileline(), sentreep()->cloneTree(false),
             new AstFireEvent{fileline(), new AstVarRef{fileline(), evp, VAccess::WRITE}, false}});
         v3Global.setHasEvents();
     }
@@ -2695,6 +2694,43 @@ bool AstNodeDType::isStreamableFixedAggregate() const {
         return true;
     }
     return dtypep->isIntegralOrPacked() || dtypep->isDouble();
+}
+bool AstNodeDType::isTriviallyConstructible() const VL_MT_STABLE {
+    // Mirrors the cases in cTypeRecurse
+    const AstNodeDType* const dtypep = skipRefp();
+    // Containers
+    if (VN_IS(dtypep, AssocArrayDType)) return false;
+    if (VN_IS(dtypep, CDType)) return false;
+    if (VN_IS(dtypep, WildcardArrayDType)) return false;
+    if (VN_IS(dtypep, DynArrayDType)) return false;
+    if (VN_IS(dtypep, QueueDType)) return false;
+    if (VN_IS(dtypep, SampleQueueDType)) return false;
+    if (VN_IS(dtypep, NBACommitQueueDType)) return false;
+    // Pointers
+    if (VN_IS(dtypep, CoverCrossDType)) return true;
+    if (VN_IS(dtypep, CoverpointDType)) return true;
+    if (VN_IS(dtypep, IfaceRefDType)) return true;
+    // Others
+    if (const auto* const adtypep = VN_CAST(dtypep, ClassRefDType)) {  //
+        return adtypep->rawPointer();
+    }
+    if (const auto* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->isTriviallyConstructible();
+    }
+    if (const auto* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        if (sdtypep->packed()) return true;
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (!itemp->dtypep()->isTriviallyConstructible()) return false;
+        }
+        return true;
+    }
+    if (const AstBasicDType* const bdtypep = dtypep->basicp()) {
+        return !bdtypep->isOpaque() || bdtypep->isDouble()
+               || bdtypep->keyword() == VBasicDTypeKwd::CHARPTR
+               || bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR;
+    }
+    dtypep->v3fatalSrc("Unknown data type: " << dtypep->prettyName());
 }
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
@@ -4304,6 +4340,7 @@ void AstVar::dump(std::ostream& str) const {
     }
     if (hasUserInit()) str << " [UINIT]";
     if (icoMaybeWritten()) str << " [ICOMAYBEWRITTEN]";
+    if (isClockingDriven()) str << " [CLOCKINGDRIVEN]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -4340,6 +4377,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     }
     dumpJsonBoolFuncIf(str, attrFileDescr);
     dumpJsonBoolFuncIf(str, icoMaybeWritten);
+    dumpJsonBoolFuncIf(str, isClockingDriven);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
     dumpJsonBoolFuncIf(str, isFuncReturn);
     dumpJsonBoolFuncIf(str, isFuncLocal);

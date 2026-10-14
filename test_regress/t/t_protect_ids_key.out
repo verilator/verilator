@@ -62,6 +62,7 @@
   <map from="PSudpO" to="tag"/>
   <map from="this" to="this"/>
   <map from="PSTB9I" to="triggers"/>
+  <map from="vlInst" to="vlInst"/>
   <map from="vlSelf" to="vlSelf"/>
   <map from="vlSymsp" to="vlSymsp"/>
 </verilator_id_map>

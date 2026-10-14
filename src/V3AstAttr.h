@@ -2102,7 +2102,7 @@ public:
         : m_strp{std::make_shared<const string>("this->" + field)} {}
     class VlSyms {};  // for creator type-overload selection
     VSelfPointerText(VlSyms, const string& field)
-        : m_strp{std::make_shared<const string>("(&vlSymsp->" + field + ')')} {}
+        : m_strp{std::make_shared<const string>("(&vlSymsp->vlInst." + field + ')')} {}
 
     // METHODS
     bool isEmpty() const { return m_strp == s_emptyp; }

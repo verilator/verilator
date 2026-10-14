@@ -302,9 +302,9 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     // A module, package, program or interface declaration;
     // something that can live directly under the TOP,
     // excluding $unit package stuff
-    // @astgen op1 := inlinesp : List[AstNode]
-    // @astgen op2 := stmtsp : List[AstNode]
-    // @astgen op3 := scSectionsp : List[AstSystemCSection]
+    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op2 := scSectionsp : List[AstSystemCSection]
+    // op3: Reserved, do not use (including in subclasses)
     string m_name;  // Name of the module
     const string m_origName;  // Name of the module, ignoring name() changes, for dot lookup
     // dist-ast-dump-suppress  // For some user errors messages only, visible where used
@@ -766,16 +766,12 @@ public:
     bool recursive() const { return m_recursive; }
 };
 class AstCellInline final : public AstNode {
-    // A instantiation cell that was removed by inlining
-    // For communication between V3Inline and V3LinkDot,
-    // except for VPI runs where it exists until the end.
-    // It is augmented with the scope in V3Scope for VPI.
-    // Children: When 2 levels inlined, other CellInline under this
-    // @astgen ptr := m_scopep : Optional[AstScope]  // The scope that the cell is inlined into
-    string m_name;  // Cell name, possibly {a}__DOT__{b}...
-    const string m_origModName;  // Original name of module, ignoring name() changes, for LinkDot
+    // A named block flattened by V3Begin, for name resolution in V3LinkDot.
+    // Deleted by V3LinkDot::linkDotScope, after V3Scope made AstCellInlineScope for VPI.
+    const std::string m_name;  // Block path within the module, possibly {a}__DOT__{b}...
+    const std::string m_origModName;  // __BEGIN__ or __FORK__
 public:
-    AstCellInline(FileLine* fl, const string& name, const string& origModName)
+    AstCellInline(FileLine* fl, const std::string& name, const std::string& origModName)
         : ASTGEN_SUPER_CellInline(fl)
         , m_name{name}
         , m_origModName{origModName} {}
@@ -783,40 +779,29 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     // ACCESSORS
-    string name() const override VL_MT_STABLE { return m_name; }  // * = Cell name
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    string origModName() const { return m_origModName; }  // * = modp()->origName() before inlining
-    void name(const string& name) override { m_name = name; }
+    std::string name() const override VL_MT_STABLE { return m_name; }
+    std::string origModName() const { return m_origModName; }
 };
 class AstCellInlineScope final : public AstNode {
-    // A particular scoped usage of a Cell Inline
+    // A named block or inlined cell flattened into a scope, kept so it can be
+    // reported as a VPI scope. Only created with --vpi, by V3Scope for named
+    // blocks, and by V3Inline for inlined cells.
     // Parents: Scope
     // Children: none
-    //
-    // @astgen ptr := m_scopep : Optional[AstScope]  // Scope variable is underneath
-    // @astgen ptr := m_cellp : Optional[AstCellInline]  // Cell ref
-    const string m_origModName;  // Original name of module, ignoring name() changes, for LinkDot
+    std::string m_name;  // Flattened name relative to the containing scope
+    const std::string m_origModName;  // Original name of module, or __BEGIN__/__FORK__
 public:
-    AstCellInlineScope(FileLine* fl, AstScope* scopep, AstCellInline* cellp)
+    AstCellInlineScope(FileLine* fl, const std::string& name, const std::string& origModName)
         : ASTGEN_SUPER_CellInlineScope(fl)
-        , m_scopep{scopep}
-        , m_cellp{cellp} {
-        UASSERT_OBJ(scopep, fl, "Scope must be non-null");
-        UASSERT_OBJ(cellp, fl, "CellInline must be non-null");
-    }
+        , m_name{name}
+        , m_origModName{origModName} {}
     ASTGEN_MEMBERS_AstCellInlineScope;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     // ACCESSORS
-    string name() const override VL_MT_STABLE { return m_cellp->name(); }
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    AstScope* scopep() const VL_MT_STABLE { return m_scopep; }  // Pointer to scope it's under
-    void scopep(AstScope* nodep) { m_scopep = nodep; }
-    AstCellInline* cellp() const VL_MT_STABLE { return m_cellp; }  // Pointer to the CellInline
-    void cellp(AstCellInline* nodep) { m_cellp = nodep; }
-    string origModName() const {
-        return m_cellp->origModName();
-    }  // * = modp()->origName() before inlining
+    std::string name() const override VL_MT_STABLE { return m_name; }
+    void name(const std::string& name) override { m_name = name; }
+    std::string origModName() const { return m_origModName; }
 };
 class AstCgOptionAssign final : public AstNode {
     // A covergroup set of option
@@ -872,8 +857,8 @@ public:
 };
 class AstClocking final : public AstNode {
     // Parents:  MODULE
-    // Children: SENITEM, CLOCKING ITEMs, VARs
-    // @astgen op1 := sensesp : AstSenItem
+    // Children: SENTREE, CLOCKING ITEMs, VARs
+    // @astgen op1 := sentreep : AstSenTree
     // @astgen op2 := itemsp : List[AstNode]
     // @astgen op3 := eventp : Optional[AstVar]
     std::string m_name;  // Clocking block name
@@ -881,13 +866,13 @@ class AstClocking final : public AstNode {
     const bool m_isGlobal;  // True if global clocking
 
 public:
-    AstClocking(FileLine* fl, const std::string& name, AstSenItem* sensesp, AstNode* itemsp,
+    AstClocking(FileLine* fl, const std::string& name, AstSenTree* sentreep, AstNode* itemsp,
                 bool isDefault, bool isGlobal)
         : ASTGEN_SUPER_Clocking(fl)
         , m_name{name}
         , m_isDefault{isDefault}
         , m_isGlobal{isGlobal} {
-        this->sensesp(sensesp);
+        this->sentreep(sentreep);
         addItemsp(itemsp);
     }
     ASTGEN_MEMBERS_AstClocking;
@@ -1891,7 +1876,7 @@ class AstScope final : public AstNode {
     // Children: NODEBLOCK
     // @astgen op1 := varsp : List[AstVarScope]
     // @astgen op2 := blocksp : List[AstNode] // Logic blocks/AstActive/AstCFunc
-    // @astgen op3 := inlinesp : List[AstCellInlineScope] // Cell Inlines
+    // @astgen op3 := inlinesp : List[AstCellInlineScope] // VPI records of flattened scopes
     //
     // Below scope and cell are nullptr if top scope
     // @astgen ptr := m_aboveScopep : Optional[AstScope]  // Scope above this one in the hierarchy
@@ -2335,6 +2320,7 @@ class AstVar final : public AstNode {
     bool m_attrFileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
+    bool m_isClockingDriven : 1;  // Driven from inside by a clocking block output
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -2402,6 +2388,7 @@ class AstVar final : public AstNode {
         m_attrFileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
+        m_isClockingDriven = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -2594,6 +2581,8 @@ public:
     void hasUserInit(bool flag) { m_hasUserInit = flag; }
     void icoMaybeWritten(bool flag) { m_icoMaybeWritten = flag; }
     bool icoMaybeWritten() const { return m_icoMaybeWritten; }
+    void isClockingDriven(bool flag) { m_isClockingDriven = flag; }
+    bool isClockingDriven() const { return m_isClockingDriven; }
     bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isHideLocal() const { return m_isHideLocal; }
@@ -2691,6 +2680,10 @@ public:
     // Return whether this variable is emitted as a member of its module's C++ class
     bool isModelState() const {
         return isIO() || isSignal() || isClassMember() || isTemp() || isGenVar();
+    }
+    // Variable needs no C++ constructor/destructor function run when default initialized/deleted
+    bool isTriviallyConstructible() const {
+        return !isSc() && dtypep()->isTriviallyConstructible();
     }
     bool isBitLogic() const {
         const AstBasicDType* const bdtypep = basicp();
