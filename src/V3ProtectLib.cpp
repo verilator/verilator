@@ -521,9 +521,9 @@ class ProtectVisitor final : public VNVisitor {
                 dimensions.emplace_back(arrayp->lo(), arrayp->hi());
                 dtypep = arrayp->subDTypep()->skipRefp();
             }
-            if (const AstBasicDType* const basicp = dtypep->basicp()) {
-                if (basicp->isRanged()) dimensions.emplace_back(basicp->lo(), basicp->hi());
-            }
+            const AstBasicDType* const basicp = dtypep->basicp();
+            UASSERT_OBJ(basicp, ports.inp, "Library inout must have a packed integral type");
+            if (basicp->isRanged()) dimensions.emplace_back(basicp->lo(), basicp->hi());
             if (dimensions.empty()) {
                 m_inoutDeclsp->add("assign " + in + " = " + en + " ? " + out + " : 1'bz;\n");
             } else {
