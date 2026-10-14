@@ -425,6 +425,21 @@ public:
     explicit LazyGatherVisitor(AstNetlist* nodep) { iterate(nodep); }
 };
 
+// Rewrites a cloned block's continuous assigns as blocking ones.
+class LazyContAssignVisitor final : public VNVisitor {
+    // VISITORS
+    void visit(AstAssignW* nodep) override {
+        nodep->replaceWith(new AstAssign{nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
+                                         nodep->rhsp()->unlinkFrBack()});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit LazyContAssignVisitor(AstAlways* nodep) { iterate(nodep); }
+};
+
 class VpiLazyPreparer final {
     using CombBlock = LazyGatherVisitor::CombBlock;
     using Defined = std::unordered_set<AstVarScope*>;
@@ -1995,27 +2010,16 @@ private:
     static AstNode* cloneBody(const Group* g) {
         AstNode* bodyp = nullptr;
         if (g->alwaysp) {
-            bodyp = g->alwaysp->stmtsp()->cloneTree(true);
+            AstAlways* const clonep = g->alwaysp->cloneTree(false);
+            { LazyContAssignVisitor{clonep}; }
+            bodyp = clonep->stmtsp()->unlinkFrBackWithNext();
+            VL_DO_DANGLING(clonep->deleteTree(), clonep);
         } else {
             for (AstAssignW* const awp : g->partialps)
-                bodyp = AstNode::addNext(bodyp, static_cast<AstNode*>(awp->cloneTree(false)));
-        }
-        std::vector<AstAssignW*> contps;
-        bodyp->foreachAndNext([&](AstAssignW* nodep) { contps.push_back(nodep); });
-        for (AstAssignW* const contp : contps) {
-            AstAssign* const asgnp = new AstAssign{
-                contp->fileline(), contp->lhsp()->unlinkFrBack(), contp->rhsp()->unlinkFrBack()};
-            if (contp->backp()) {
-                contp->replaceWith(asgnp);
-            } else {  // The detached list head has no back to replace through
-                UASSERT_OBJ(contp == bodyp, contp, "detached assign is not the body root");
-                bodyp = asgnp;
-                if (AstNode* const nextp = contp->nextp()) {
-                    nextp->unlinkFrBackWithNext();
-                    bodyp = AstNode::addNext(bodyp, nextp);
-                }
-            }
-            VL_DO_DANGLING(contp->deleteTree(), contp);
+                bodyp = AstNode::addNext(
+                    bodyp, static_cast<AstNode*>(new AstAssign{awp->fileline(),
+                                                               awp->lhsp()->cloneTree(false),
+                                                               awp->rhsp()->cloneTree(false)}));
         }
         return bodyp;
     }
