@@ -901,9 +901,13 @@ class LinkCellsVisitor final : public VNVisitor {
                     warnModDup(pkgp, result.first->second);
                     pkgp->unlinkFrBack();
                     VL_DO_DANGLING(pushDeletep(pkgp), pkgp);
+                } else if (findModuleGlobalSym(pkgp->origName())) {
+                    renamePackageFromModule(pkgp);
                 }
                 continue;
             }
+            const auto pkgIt = m_packages.find(nodep->origName());
+            if (pkgIt != m_packages.end()) renamePackageFromModule(pkgIt->second);
             if (v3Global.opt.hierChild() && nodep->origName() == hierIt->second.origName()) {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
@@ -934,11 +938,6 @@ class LinkCellsVisitor final : public VNVisitor {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);
                 insertModInGlobalLib(nodep->name(), nodep);
             }
-        }
-        // Resolve package/module name collisions after collecting all declarations.
-        for (const auto& entry : m_packages) {
-            AstPackage* const pkgp = entry.second;
-            if (findModuleGlobalSym(pkgp->origName())) renamePackageFromModule(pkgp);
         }
         // if (debug() >= 9) m_mods.dump(cout, "-syms: ");
     }
