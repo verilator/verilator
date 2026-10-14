@@ -1663,14 +1663,27 @@ private:
     // in encounter order, and analyseGroup proves every read follows its write.
     bool mergeCycle(const std::vector<Group*>& sccps) {
         Group* const g = sccps[0];
+        Group merged;
+        merged.scopep = g->scopep;
         size_t members = 0;
         for (const Group* const ugp : sccps) {
             if (ugp->scopep != g->scopep) return false;  // One func addresses one scope
+            merged.blockps.insert(merged.blockps.end(), ugp->blockps.begin(), ugp->blockps.end());
+            merged.targets.insert(merged.targets.end(), ugp->targets.begin(), ugp->targets.end());
+            merged.members.insert(ugp->members.begin(), ugp->members.end());
             members += ugp->members.size();
         }
+        // A var two of them write has no one order the model is known to share
+        if (merged.members.size() != members) return false;
+        // Every CombBlock is an element of one vector, so address order is encounter order
+        std::sort(merged.blockps.begin(), merged.blockps.end());
+        Bail why = Bail::COMB_CYCLE;
+        if (!analyseGroup(&merged, why)) return false;
+        g->blockps = std::move(merged.blockps);
+        g->members = std::move(merged.members);
+        g->zeroInitps = std::move(merged.zeroInitps);
         for (size_t i = 1; i < sccps.size(); ++i) {
             Group* const ugp = sccps[i];
-            g->blockps.insert(g->blockps.end(), ugp->blockps.begin(), ugp->blockps.end());
             for (AstVarScope* const t : ugp->targets) {
                 m_targetOf[t] = {g, g->targets.size()};
                 m_groupOf[t] = g;
@@ -1681,35 +1694,50 @@ private:
                 if (it != m_groupOf.end() && it->second == ugp) it->second = g;
                 g->temps.push_back(t);
             }
-            g->members.insert(ugp->members.begin(), ugp->members.end());
             ugp->live = false;
         }
-        // A var two of them write has no one order the model is known to share
-        if (g->members.size() != members) return false;
-        // Every CombBlock is an element of one vector, so address order is encounter order
-        std::sort(g->blockps.begin(), g->blockps.end());
-        Bail why = Bail::COMB_CYCLE;
-        return analyseGroup(g, why);
+        return true;
+    }
+
+    // Greedy feedback vertex: the member on the most paths through its SCC
+    static Group* cycleCut(const std::vector<Group*>& sccps) {
+        Group* cutp = nullptr;
+        size_t best = 0;
+        for (Group* const g : sccps) {
+            const uint32_t color = g->vtxp->color();
+            size_t in = 0;
+            size_t out = 0;
+            for (const V3GraphEdge& edge : g->vtxp->inEdges())
+                in += edge.fromp()->color() == color;
+            for (const V3GraphEdge& edge : g->vtxp->outEdges())
+                out += edge.top()->color() == color;
+            if (!cutp || in * out > best) {
+                cutp = g;
+                best = in * out;
+            }
+        }
+        return cutp;
     }
 
     // A group downstream of a cycle still reconstructs cold, so only SCC members are retained.
+    // An SCC that does not merge loses one group, retained, and what remains is retried.
     void splitCyclesRetainCores() {
-        m_depGraph.stronglyConnected(&V3GraphEdge::followAlwaysTrue);
-        std::map<uint32_t, std::vector<Group*>> sccOf;  // Non-zero color: a multi-group SCC
-        for (const auto& ownp : m_groups) {
-            Group* const g = ownp.get();
-            if (g->live && g->vtxp->color() != 0) sccOf[g->vtxp->color()].push_back(g);
+        while (true) {
+            m_depGraph.stronglyConnected(&V3GraphEdge::followAlwaysTrue);
+            std::map<uint32_t, std::vector<Group*>> sccOf;  // Non-zero color: a multi-group SCC
+            for (const auto& ownp : m_groups) {
+                Group* const g = ownp.get();
+                if (g->live && g->vtxp->color() != 0) sccOf[g->vtxp->color()].push_back(g);
+            }
+            if (sccOf.empty()) return;
+            for (const auto& pr : sccOf) {
+                const std::vector<Group*>& sccps = pr.second;
+                if (!mergeCycle(sccps)) killGroupsOfKey(cycleCut(sccps)->keyp, Bail::COMB_CYCLE);
+            }
+            // Merged and killed groups leave the graph
+            m_depGraph.clear();
+            buildDependencyGraph();
         }
-        for (const auto& pr : sccOf) {
-            std::vector<AstVar*> keyps;
-            for (const Group* const g : pr.second) keyps.push_back(g->keyp);
-            if (mergeCycle(pr.second)) continue;
-            // The merged group holds every target, should it have absorbed the others
-            for (AstVar* const keyp : keyps) killGroupsOfKey(keyp, Bail::COMB_CYCLE);
-        }
-        // Merged and killed groups leave the condensation, a DAG
-        m_depGraph.clear();
-        buildDependencyGraph();
     }
 
     // Kahn topo-sort, preferring a ready group in the previous group's scope. Not GraphStream: it

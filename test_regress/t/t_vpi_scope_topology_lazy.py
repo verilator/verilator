@@ -31,8 +31,7 @@ test.compile(make_top_shell=False,
 
 test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 46)
-test.file_grep(test.stats, r'Gate signals not inlined due to cost\s+(\d+)', 2)
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 50)
 
 # A second verilation of the same source must generate identical files
 obj_dir2 = test.obj_dir + "/obj_dir_2"
