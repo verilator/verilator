@@ -16,8 +16,6 @@ test.clean_objs()
 
 # --lint-only skips the hierarchical plan entirely, so the refusal only
 # surfaces in a real compile.
-test.compile(fails=True,
-             verilator_flags2=['--hierarchical'],
-             expect_filename=test.golden_filename)
+test.compile(fails=True, verilator_flags2=['--hierarchical'], expect_filename=test.golden_filename)
 
 test.passes()
