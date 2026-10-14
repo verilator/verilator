@@ -1189,8 +1189,6 @@ class VlTest:
         verilator_flags += ["--x-assign unique"]  # More likely to be buggy
 
         if param['vltmt']:
-            # Most test models are small, so --threads-serial-cost runs their evaluations
-            # serially. Tests of parallel execution itself pass --threads-serial-cost 0.
             verilator_flags += ["--debug-partition"]
         if param['threads'] >= 0:
             verilator_flags += ["--threads", str(param['threads'])]

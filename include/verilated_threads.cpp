@@ -311,7 +311,7 @@ void vl_invokeExecGraph(VlExecGraph& graph, VlSelfP selfp, const QData* triggers
         for (QData bits = triggersp[word]; bits;) {
             const IData bit = VL_MOSTSETBITP1_Q(bits) - 1;
             cost += graph.triggerCostsp()[word * VL_QUADSIZE + bit];
-            bits ^= 1ULL << bit;
+            bits ^= VL_BIT_Q(bit);
         }
         if (cost > graph.serialCost() || nSetWords == MAX_SET_WORDS) {
             return graph.dispatchp()(selfp);
