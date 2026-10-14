@@ -792,6 +792,8 @@ class TaskVisitor final : public VNVisitor {
             ccallp->superReference(funcRefp->superReference());
         } else if (const AstTaskRef* const taskRefp = VN_CAST(refp, TaskRef)) {
             ccallp->superReference(taskRefp->superReference());
+        } else if (const AstMethodCall* const methodCallp = VN_CAST(refp, MethodCall)) {
+            ccallp->superReference(methodCallp->superReference());
         }
 
         // Convert complicated outputs to temp signals
