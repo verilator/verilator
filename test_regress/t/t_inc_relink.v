@@ -27,8 +27,20 @@ module C;  // Like above but in a module
   initial if ($random) n = n++;
 endmodule
 
+module D;  // Like above but in the module's first statement, and again after it
+  initial begin
+    int n;
+    if (n++ > 0) n = n + 1;
+  end
+  initial begin
+    int n;
+    if (n++ > 0) n = n + 1;
+  end
+endmodule
+
 module t;  // Actually use those to test relinking
   C c ();
+  D d ();
 
   initial begin
     A::t();

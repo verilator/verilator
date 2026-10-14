@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload the pull request number
         if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with:
           name: pr-number
           path: pr-number.txt
@@ -198,7 +198,7 @@ jobs:
       verilator-archive-old: ${{ needs.build-clang-old.outputs.archive }}
       cases: ${{ matrix.cases }}
       run-name: "clang --threads 4"
-      compileArgs: "--threads 4"
+      compileArgs: "--threads 4 -CFLAGS -DVL_LOCK_SPINS=1000000000"
       executeArgs: ""
     strategy:
       fail-fast: ${{ github.event_name == 'pull_request' }}
@@ -284,7 +284,7 @@ jobs:
             ./rtlmeter collate ../all-results-$tag/*.json > ../all-results-$tag.json
           done
       - name: Upload combined results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with:
           path: all-results-*.json
           name: all-results
@@ -311,7 +311,7 @@ jobs:
           done
       - name: Upload reference results
         if: ${{ github.event_name == 'pull_request' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with:
           path: all-reference-*.json
           name: all-reference
@@ -330,12 +330,12 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - name: Download combined results
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8
         with:
           name: all-results
           path: results
       - name: Upload published results
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with:
           path: results/*.json
           name: published-results
@@ -415,7 +415,7 @@ jobs:
           echo ${{ github.event.number }} > ../report-artifact/pr-number.txt
 
       - name: Upload report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7
         with:
           path: report-artifact
           name: rtlmeter-report

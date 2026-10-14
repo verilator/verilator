@@ -67,6 +67,7 @@
 
 #include "V3Width.h"
 
+#include "V3Assert.h"
 #include "V3Ast.h"
 #include "V3Begin.h"
 #include "V3Const.h"
@@ -815,51 +816,20 @@ class WidthVisitor final : public VNVisitor {
         // it's like an if() condition.
         iterateCheckBool(nodep, "default disable iff condition", nodep->condp(), BOTH);
     }
-    static bool widthCheckSvaValueLimit(AstNode* nodep, const AstConst* constp, const char* what) {
-        // Temporal values can materialize as O(N) AST or state in later passes.
-        // Leave headroom for a range ring's extra slot and V3Number's signed
-        // `(bits + 31) / 32` word count.
-        static constexpr unsigned SVA_VALUE_HARD_LIMIT
-            = static_cast<unsigned>(std::numeric_limits<int>::max()) - 32U;
-        const unsigned configuredLimit = static_cast<unsigned>(v3Global.opt.maxNumWidth());
-        const unsigned limit = std::min(configuredLimit, SVA_VALUE_HARD_LIMIT);
-        if (constp->num().fitsInUInt() && constp->toUInt() <= limit) return true;
-        nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << what << " exceeds implementation limit of "
-                                                     << limit
-                                                     << (configuredLimit <= SVA_VALUE_HARD_LIMIT
-                                                             ? " (--max-num-width)"
-                                                             : " (host arithmetic limit)"));
-        return false;
-    }
-    static const AstConst* widthCheckSvaDelayBound(AstDelay* nodep, AstNodeExpr* boundp,
-                                                   const char* what) {
-        const AstConst* const constp = VN_CAST(boundp, Const);
-        if (!constp || (constp->dtypep()->isSigned() && constp->num().isNegative())) {
-            nodep->v3error(what << " is not a non-negative elaboration-time constant"
-                                   " (IEEE 1800-2023 16.7)");
-            return nullptr;
-        }
-        if (!widthCheckSvaValueLimit(nodep, constp, "SVA cycle delay")) return nullptr;
-        return constp;
-    }
     void visit(AstDelay* nodep) override {
         if (nodep->isCycleDelay() && m_underSExpr) {
-            // Fold parameterized SVA cycle-delay bounds
             userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
-            V3Const::constifyParamsNoWarnEdit(nodep->lhsp());
-            const AstConst* const minConstp = widthCheckSvaDelayBound(
-                nodep, nodep->lhsp(),
-                nodep->isRangeDelay() ? "Range delay minimum" : "Delay value");
             if (nodep->rhsp() && !nodep->isUnbounded()) {
-                // Fold parametrized SVA cycle-delay max bound
                 userIterateAndNext(nodep->rhsp(), WidthVP{SELF, BOTH}.p());
-                V3Const::constifyParamsNoWarnEdit(nodep->rhsp());
-                const AstConst* const maxConstp
-                    = widthCheckSvaDelayBound(nodep, nodep->rhsp(), "Range delay maximum");
-                if (minConstp && maxConstp && maxConstp->toUInt() < minConstp->toUInt()) {
-                    nodep->v3error("Range delay maximum must be >= minimum (IEEE 1800-2023 16.7)");
-                }
             }
+            // A delay with a formal argument of a sequence or property is checked when that is
+            // instanced, with the actual argument (IEEE 1800-2023 16.8)
+            if (V3AssertCommon::refsSvaFormal(nodep->lhsp())
+                || (nodep->rhsp() && V3AssertCommon::refsSvaFormal(nodep->rhsp()))) {
+                return;
+            }
+            // Fold parameterized SVA cycle-delay bounds
+            V3AssertCommon::checkSvaCycleDelay(nodep, nodep);
             return;
         }
         if (AstNodeExpr* const fallDelayp = nodep->fallDelay()) {
@@ -1691,7 +1661,7 @@ class WidthVisitor final : public VNVisitor {
                 } else if (constp->toSInt() < 1) {
                     constp->v3error("$past tick value must be >= 1 (IEEE 1800-2023 16.9.3)");
                     nodep->ticksp()->unlinkFrBack()->deleteTree();
-                } else if (widthCheckSvaValueLimit(nodep, constp, "$past tick value")) {
+                } else if (V3AssertCommon::checkSvaValueLimit(nodep, constp, "$past tick value")) {
                     if (constp->toSInt() > 10) {
                         constp->v3warn(TICKCOUNT, "$past tick value of "
                                                       << constp->toSInt()
@@ -1783,10 +1753,12 @@ class WidthVisitor final : public VNVisitor {
                 nodep->loBoundp()->v3error("always range low bound must be non-negative"
                                            " (IEEE 1800-2023 16.12.11)");
             } else if (loConstp) {
-                widthCheckSvaValueLimit(nodep->loBoundp(), loConstp, "always range bound");
+                V3AssertCommon::checkSvaValueLimit(nodep->loBoundp(), loConstp,
+                                                   "always range bound");
             }
             if (!hiUnbounded && hiConstp) {
-                widthCheckSvaValueLimit(nodep->hiBoundp(), hiConstp, "always range bound");
+                V3AssertCommon::checkSvaValueLimit(nodep->hiBoundp(), hiConstp,
+                                                   "always range bound");
             }
             if (!hiUnbounded && loConstp && hiConstp && hiConstp->toSInt() < loConstp->toSInt()) {
                 nodep->hiBoundp()->v3error("always range high bound must be >= low bound"
@@ -6692,7 +6664,7 @@ class WidthVisitor final : public VNVisitor {
         for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
             for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
                 nextcp = condp->nextp();  // Final may cause the node to get replaced
-                iterateCheck(casep, "Case Item", condp, CONTEXT_DET, FINAL, subDTypep, EXTEND_LHS);
+                iterateCheck(casep, "Case Item", condp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
             }
         }
     }
