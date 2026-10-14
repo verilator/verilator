@@ -227,17 +227,13 @@ bool storagePinnedElsewhere(const AstVar* varp) {
     return false;
 }
 
-// Dims past VPI_TABLE_MAX_DIMS are rejected: the shadow must fit a VlVarTableEntry row.
 bool copyTargetKind(const AstVar* varp) {
     if (storagePinnedElsewhere(varp)) return false;
-    AstNodeDType* const dtypep = varp->dtypeSkipRefp();
-    AstNodeDType* leafp = dtypep;
+    AstNodeDType* leafp = varp->dtypeSkipRefp();
     while (AstUnpackArrayDType* const adtypep = VN_CAST(leafp, UnpackArrayDType)) {
         leafp = adtypep->subDTypep()->skipRefp();
     }
-    if (!(VN_IS(leafp, BasicDType) || leafp->isIntegralOrPacked())) return false;
-    const std::pair<uint32_t, uint32_t> dims = dtypep->dimensions(/*includeBasic*/ true);
-    return dims.first + dims.second <= static_cast<uint32_t>(V3VpiLazy::VPI_TABLE_MAX_DIMS);
+    return VN_IS(leafp, BasicDType) || leafp->isIntegralOrPacked();
 }
 
 // A port is excluded: one loose func serves every instance, named from its target's module, so a
@@ -506,7 +502,7 @@ class VpiLazyPreparer final {
     // Why each retained signal missed reconstruction.
     enum class Bail : uint8_t {
         MULTIDRIVEN,  // Written by more than one group, or outside any group
-        DTYPE,  // Kind reconstruction cannot express (unpacked aggregate, over dim cap)
+        DTYPE,  // Kind reconstruction cannot express (unpacked aggregate)
         PARTIAL_MIXED_WRITE,  // Partial-write target also has a full/comb/impure/var-lsb write
         PARTIAL_OVERLAP,  // Partial writes overlap, so no unambiguous assembly
         PARTIAL_GAP,  // Partial writes leave bits undriven, which a VPI put may write
@@ -715,9 +711,6 @@ private:
             dtypep = adtypep->subDTypep()->skipRefp();
         }
         if (!dtypep->isIntegralOrPacked()) return false;
-        const std::pair<uint32_t, uint32_t> dims = varp->dtypeSkipRefp()->dimensions(true);
-        if (dims.first + dims.second > static_cast<uint32_t>(V3VpiLazy::VPI_TABLE_MAX_DIMS))
-            return false;
         elemWidthr = dtypep->width();
         return true;
     }

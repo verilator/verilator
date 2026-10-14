@@ -322,8 +322,7 @@ module t (
   always_ff @(posedge clk) out_m[7:1] <= d[7:1];
   assign out_m[0] = en;
 
-  // A partial write past VPI_TABLE_MAX_DIMS can't build a per-bit mask, so the whole
-  // variable is treated as comb-driven, even the element the write never touches.
+  // A partial write into a 4-dim variable masks only the bits it drives
   logic [1:0][3:0] m4[2][2];
   logic [7:0] m4_c;
   assign m4[0][0][0] = d[3:0];

@@ -32,8 +32,6 @@ class VVpiLazyComb;
 
 class V3VpiLazy final {
 public:
-    // Must match the runtime table limit.
-    static constexpr int VPI_TABLE_MAX_DIMS = 3;
     // Copy source after V3Descope.
     struct CrossScopeSrc final {
         const AstScope* scopep;

@@ -80,8 +80,6 @@ vpi_chk_error: vpi_put_value used with vpiForceFlag on non-forceable signal 't.s
 vpi_chk_error: vpi_put_value used with vpiReleaseFlag on non-forceable signal 't.st'
 vpi_chk_error: vl_check_format: Unsupported format (vpiTimeVal) for 't.st'
 vpi_chk_error: Ignoring vpi_put_value_array to signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.vidx'
-vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.m4[0][0]'
-vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.m4[1][1]'
 vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ret_c'
 vpi_chk_error: vpi_put_value: Parsing failed for 'A123' as value vpiDecStrVal for 't.ff_q'
 vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cts_c.hi'

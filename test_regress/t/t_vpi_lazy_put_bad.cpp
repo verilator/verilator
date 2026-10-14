@@ -428,10 +428,8 @@ int main(int argc, char** argv) {
     check("t.pmem[1] array kept", get(find("t.pmem[1]")), pmem1);
     putArray("t.vidx", 0, one, 1, true);
 
-    // 4 array dims exceed VPI_TABLE_MAX_DIMS: no per-bit mask, so the whole variable
-    // is refused, including the element the partial assign never touches
-    reject("t.m4[0][0]", get(find("t.m4[0][0]")) ^ 0xf0);
-    reject("t.m4[1][1]", get(find("t.m4[1][1]")) ^ 0xff);
+    accept("t.m4[1][1]", get(find("t.m4[1][1]")) ^ 0xff);
+    merge("t.m4[0][0]", get(find("t.m4[0][0]")) ^ 0xff, 0x0f);
 
     // A refused put into a retained comb signal leaves the flop sampling it its driven value
     {
