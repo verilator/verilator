@@ -1341,7 +1341,7 @@ private:
 
     // One ordered walk over a block group's statements: see UNIT OF RECONSTRUCTION above.
     class LazyReadOrderVisitor final : public VNVisitorConst {
-        const Group* const m_groupp;
+        const Group* const m_groupp;  // Group whose statements are walked
         // Group vars the prefix wrote unconditionally full-width; conditionals intersect
         Defined& m_definedr;
         Bail& m_whyr;  // Why the walk failed, its first failure only
@@ -1350,7 +1350,7 @@ private:
         bool m_inExpr = false;  // Scanning an expression's reads, not walking statements
 
     public:
-        bool m_ok = true;
+        bool m_ok = true;  // No statement bailed
 
     private:
         void bail(Bail why) {
@@ -2061,7 +2061,7 @@ private:
 
     // Adds the variables one statement reads to 'readsr'; its own subtree only, not its nextp().
     class LazyStmtReadsVisitor final : public VNVisitorConst {
-        Defined& m_readsr;
+        Defined& m_readsr;  // Where the reads are added
 
         // VISITORS
         void visit(AstVarRef* nodep) override {
@@ -2168,8 +2168,8 @@ private:
     // Redirects a group's body to shadows; no re-typing, a shadow keeps its dtype. Pre-order, so
     // the cone operands are refreshed in the order the body first reads them.
     class LazyConeRewireVisitor final : public VNVisitor {
-        VpiLazyPreparer& m_prep;
-        Group* const m_groupp;
+        VpiLazyPreparer& m_prep;  // Owns the shadows and group maps
+        Group* const m_groupp;  // Group whose cloned body is rewired
         std::unordered_set<Group*> m_seenOps;  // m_coneOps, for lookup
 
     public:
