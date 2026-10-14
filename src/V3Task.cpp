@@ -1694,7 +1694,7 @@ class TaskVisitor final : public VNVisitor {
 
             // Find all assignment nodes in this task if it is a method.
             // If an Assign in the method refences a variable one scope above itself then pass it by refence
-            if(nodep->classMethod())
+            if(nodep->classMethod() && !nodep->isStatic())
                 if(AstAssign* assignp = VN_CAST(nextp,Assign)){
                     if (AstVarRef* varRefp2 = VN_CAST(nextp->op2p(), VarRef) ){
                         if ( varRefp2->varScopep() && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module) || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface)) ) {
