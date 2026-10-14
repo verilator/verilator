@@ -80,12 +80,8 @@ class LinkIncVisitor final : public VNVisitor {
             if (VN_IS(m_modp, Class)) VN_AS(newp, Var)->varType(VVarType::MEMBER);
         }
         UASSERT_OBJ(stmtsp, newp, "Variable not under FTASK/MODULE");
-        newp->addNext(stmtsp->unlinkFrBackWithNext());
-        if (m_ftaskp) {
-            m_ftaskp->addStmtsp(newp);
-        } else if (m_modp) {
-            m_modp->addStmtsp(newp);
-        }
+        // Must not unlink the statements, as one of them is being iterated
+        stmtsp->addHereThisAsNext(newp);
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any
