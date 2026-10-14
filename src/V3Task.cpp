@@ -815,7 +815,7 @@ class TaskVisitor final : public VNVisitor {
         AstNode* nextNodep;
         for (AstNode* nodep = refp->taskp()->op3p(); nodep; nodep = nextNodep) {
             nextNodep = nodep->nextp();
-            if(AstAssign* assignp = VN_CAST(nodep,Assign)){
+            if(VN_IS(nodep,Assign)){
                 if (AstVarRef* varRefp2 = VN_CAST(nodep->op2p(), VarRef) ){
                     if (!varRefp2->varp()->user3SetOnce() && varRefp2->varScopep()) {
                         unsetUserp.push_back(varRefp2->varp());
