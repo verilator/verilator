@@ -47,6 +47,7 @@ Verilator 5.053 devel
 * Support waiting on clocking block event through modport (#8403) (#8530). [Saqib Khan]
 * Support more precise FSM coverage states and arcs (#8436). [Igor Zaworski, Antmicro Ltd.]
 * Support parameter overrides that use ?: to pick a pattern (#8671). [Michael Bedford Taylor]
+* Support cross cover 'with' filters (#8729). [Marco Bartoli]
 * Optimize NBA shadow copies for partial writes (#8266). [Artur Bieniek, Antmicro Ltd.]
 * Optimize recursion depth in DFG circular driver tracing (#8272). [Drew Risinger]
 * Optimize DFG synthesis symbol table ordering (#8282). [Geza Lore, Testorrent USA, Inc.]
@@ -83,6 +84,8 @@ Verilator 5.053 devel
 * Optimize DFG synthesize selection flag propagation (#8637). [Bartłomiej Chmiel, Antmicro Ltd.]
 * Optimize temporary variable reuse across multiple instances (#8639). [Geza Lore, Testorrent USA, Inc.]
 * Optimize compiler builtins for population counts (#8676). [Patrick O'Neill]
+* Optimize aligned word extract. [Geza Lore, Testorrent USA, Inc.]
+* Optimize spin waits on AArch64 (#8748). [Michael Bedford Taylor]
 * Move module inlining after V3Scope (#8453) (#1539). [Geza Lore, Testorrent USA, Inc.]
 * Improve parameterized hierarchical block substitution (#7009) (#8605). [Michael Bedford Taylor]
 * Fix array slice crash when used as a bare value (#5132) (#8262). [Marco Frank]
@@ -98,6 +101,7 @@ Verilator 5.053 devel
 * Fix CMake to call Verilator Perl wrapper (#8269) (#8270) (#8311). [Drew Risinger]
 * Fix real values and unenforced rand/randc type-eligibility rules in constraints (#8273) (#8275) (#8276). [Aditya Shevade]
 * Fix assignment pattern default fill of an array of unpacked structs (#8289). [Nick Brereton]
+* Fix internal error on nested property instance (#8295) (#8734). [Ashvin Vaidyanathan]
 * Fix escape strings in pattern formatting (#8297). [Marco Bartoli]
 * Fix DECLFILENAME warning on nested declarations (#8302). [Martijn Wobbes]
 * Fix cache of boundary vertices in DFG cycle-breaking (#8308). [Shriyans Sahoo]
@@ -157,6 +161,7 @@ Verilator 5.053 devel
 * Fix cycle delay in synchronous drive not counting its clocking block (#8487). [Marco Bartoli]
 * Fix false MULTIDRIVEN for a signal driven by multiple clocking blocks (#8489). [Marco Bartoli]
 * Fix setting status of finished process immediately (#8503). [Ryszard Rozak, Antmicro Ltd.]
+* Fix compilation error on invalid arithmetic operations (#5664) (#8504).
 * Fix constant oversized shifts in V3Premit. [Geza Lore, Testorrent USA, Inc.]
 * Fix semaphore waiting on killed process (#8505). [Ryszard Rozak, Antmicro Ltd.]
 * Fix mis-setting of process state from FINISHED to KILLED (#8506). [Ryszard Rozak, Antmicro Ltd.]
@@ -182,6 +187,7 @@ Verilator 5.053 devel
 * Fix coverage naming to separate/merge types correctly (#8563). [Marco Bartoli]
 * Fix VPI rows for dynamic and class type variables (#8564). [Nick Brereton]
 * Fix typenames to be more readable (#8568) (#8570). [Marco Bartoli]
+* Fix excessive top-module name mangling (#8569). [Ethan Uppal]
 * Fix Windows cmake flex error (#8571) (#8572). [yash]
 * Fix %m in hierarchical models (#8575). [Geza Lore, Testorrent USA, Inc.]
 * Fix underscore handling in decimal scans (#8576) (#8577). [Martin Velay]
@@ -199,6 +205,7 @@ Verilator 5.053 devel
 * Fix --lib-create wrapper port order (#8626). [Michael Bedford Taylor]
 * Fix boolean disjunction consequent after a multi-cycle antecedent never failing (#8627) (#8631). [Marco Brambilla]
 * Fix type checks for aggregate types (#8634). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix clocking-block output driven through struct assignment-pattern port (#8651) (#8652). [Kristof Marien]
 * Fix type checking of enum expressions (#8659). [Ryszard Rozak, Antmicro Ltd.]
 * Fix class task output arguments generating invalid C++ (#8662). [Bartosz Skorowski, Antmicro Ltd.]
 * Fix splitting assignments through handles or with intra-assignment timing (#8668). [Marco Bartoli]
@@ -207,8 +214,18 @@ Verilator 5.053 devel
 * Fix internal error on sampled value function in cover sequence (#8682) (#8683). [Doha Nam]
 * Fix reordering assignments through handles or with intra-assignment timing (#8688). [Marco Bartoli]
 * Fix $readmem/$writemem descending order (#8698).
-* Fix intra-assignment timing controls to be evaluated once by the executing process (#8712). [Marco Bartoli]
 * Fix function ports with disable by name (#8700).
+* Fix clocking blocks with multiple edges (#8709).
+* Fix intra-assignment timing controls to be evaluated once by the executing process (#8712). [Marco Bartoli]
+* Fix NBAs to struct members of array elements in a suspendable process or fork (#8714). [Marco Bartoli]
+* Fix missing error on NBAs to elements of dynamically-sized struct members (#8715). [Marco Bartoli]
+* Fix pending intra-assignment NBAs of a process sharing their values (#8716). [Marco Bartoli]
+* Fix errors when naming parameter specializations (#8718). [Michael Bedford Taylor]
+* Fix narrower signed case item extension against unsigned case (#8720) (#8755). [Raj bazx]
+* Fix bounded queue insert() ignoring size limit (#8724). [Yash Raj]
+* Fix pending NBA values declared inside processes (#8725). [Marco Bartoli]
+* Fix overly aggressive DFG peephole pattern (#8728). [Geza Lore, Testorrent USA, Inc.]
+* Fix internal error on increment/decrement in covergroup expressions (#8753). [Marco Bartoli]
 
 
 Verilator 5.052 2026-09-05

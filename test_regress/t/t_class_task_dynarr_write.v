@@ -37,7 +37,7 @@ endclass
 module t;
   cls c;
   int arr[];
-  int q  [$];
+  int q[$];
 
   initial begin
     c = new;

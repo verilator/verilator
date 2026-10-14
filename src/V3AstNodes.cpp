@@ -787,6 +787,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (needProcess()) str << " [NPRC]";
     if (entryPoint()) str << " [ENTRY]";
     if (noLife()) str << " [NOLIFE]";
+    if (voidSelf()) str << " [VOIDSELF]";
     if (isConst().isKnown()) str << (isConst().trueKnown() ? " [CONST]" : " [!CONST]");
     if (m_cost) str << " cost=" << m_cost;
     if (!m_rtnType.empty()) str << " rt=" << m_rtnType;
@@ -810,6 +811,7 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isCoroutine);
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonBoolFuncIf(str, noLife);
+    dumpJsonBoolFuncIf(str, voidSelf);
     dumpJsonStr(str, "isConst", isConst().ascii());
     dumpJsonNum(str, "cost", m_cost);
     dumpJsonStr(str, "ifdef", ifdef());
@@ -819,6 +821,21 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonStrFunc(str, dpiCDecl);
     dumpJsonGen(str);
     // TODO: maybe try to shorten these flags somehow
+}
+void AstCFuncHard::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (m_purity.get()) str << " [PURE]";
+}
+void AstCFuncHard::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "pure", m_purity.get());
+    dumpJsonGen(str);
+}
+bool AstCFuncHard::getPurity() {
+    if (!function().isPure()) return false;
+    for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        if (!argp->isPure()) return false;
+    }
+    return true;
 }
 void AstCMethodHard::dump(std::ostream& str) const {
     Super::dump(str);
@@ -1173,7 +1190,7 @@ AstVar* AstClocking::ensureEventp(bool childDType) {
         eventp(evp);
         // Trigger the clocking event in Observed (IEEE 1800-2023 14.13)
         addNextHere(new AstAlwaysObserved{
-            fileline(), new AstSenTree{fileline(), sensesp()->cloneTree(false)},
+            fileline(), sentreep()->cloneTree(false),
             new AstFireEvent{fileline(), new AstVarRef{fileline(), evp, VAccess::WRITE}, false}});
         v3Global.setHasEvents();
     }
@@ -1661,10 +1678,13 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
         return new AstEqWild{fl, lhsp, rhsp};
     }
 }
-AstExecGraph::AstExecGraph(FileLine* fileline, const string& name) VL_MT_DISABLED
+AstExecGraph::AstExecGraph(FileLine* fileline, const string& name,
+                           AstVarScope* trigVscp) VL_MT_DISABLED
     : ASTGEN_SUPER_ExecGraph(fileline),
       m_depGraphp{new V3Graph},
-      m_name{name} {}
+      m_name{name} {
+    triggerp(new AstVarRef{fileline, trigVscp, VAccess::READ});
+}
 const char* AstExecGraph::broken() const {
     BROKEN_RTN(!m_depGraphp);
     for (const V3GraphVertex& vtx : m_depGraphp->vertices()) {
@@ -2236,6 +2256,41 @@ void AstNetlist::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "timeprecision", timeprecision().ascii());
     dumpJsonStr(str, "resolvedTopModuleName", resolvedTopModuleName());
     dumpJsonGen(str);
+}
+AstCFunc* AstNetlist::dumpTriggersFuncp(VEval eval) {
+    UASSERT(eval.hasTriggers(), "Region has no triggers to dump: " << eval.ascii());
+    evalFuncp(eval);
+    return m_dumpTriggersFuncps[eval];
+}
+AstCFunc* AstNetlist::evalFuncp(VEval eval) {
+    const auto newEvalFunc = [this](const std::string& name, bool slow) {
+        AstScope* const scopeTopp = topScopep()->scopep();
+        AstCFunc* const funcp = new AstCFunc{fileline(), name, scopeTopp, ""};
+        funcp->dontCombine(true);
+        funcp->isStatic(false);
+        funcp->isLoose(true);
+        funcp->slow(slow);
+        funcp->isConst(false);
+        funcp->declPrivate(true);
+        funcp->entryPoint(true);
+        funcp->keepIfEmpty(true);
+        scopeTopp->addBlocksp(funcp);
+        return funcp;
+    };
+    if (m_evalFuncps[eval]) return m_evalFuncps[eval];
+    // Create all entry points at once, in order, as the runtime calls every one, even if empty
+    for (int i = 0; i < VEval::_ENUM_END; ++i) {
+        const VEval ieval{i};
+        AstCFunc* const funcp = newEvalFunc(ieval.funcName(), ieval.slow());
+        m_evalFuncps[ieval] = funcp;
+        // Only the iterated functions report whether they did any work
+        if (ieval.isIterated()) funcp->rtnType("bool");
+        // Only a region with a trigger vector has anything to dump
+        if (ieval.hasTriggers()) {
+            m_dumpTriggersFuncps[ieval] = newEvalFunc(ieval.dumpTriggersFuncName(), true);
+        }
+    }
+    return m_evalFuncps[eval];
 }
 AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
     UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
@@ -3510,6 +3565,22 @@ void AstSampled::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, internal);
     dumpJsonGen(str);
 }
+AstActive* AstScope::comboActivep(bool create) {
+    // Use an existing one
+    for (AstNode* nodep = blocksp(); nodep; nodep = nodep->nextp()) {
+        AstActive* const activep = VN_CAST(nodep, Active);
+        if (activep && activep->hasCombo()) return activep;
+    }
+    if (!create) return nullptr;
+    // Otherwise create a new one
+    FileLine* const flp = fileline();
+    AstSenItem* const senItemp = new AstSenItem{flp, AstSenItem::Combo{}};
+    AstSenTree* const senTreep = new AstSenTree{flp, senItemp};
+    AstActive* const activep = new AstActive{flp, "", senTreep};
+    activep->senTreeStorep(activep->sentreep());
+    addBlocksp(activep);
+    return activep;
+}
 void AstScope::dump(std::ostream& str) const {
     Super::dump(str);
     str << " [abovep=" << nodeAddr(aboveScopep()) << "]";
@@ -3600,14 +3671,6 @@ void AstSenItem::dump(std::ostream& str) const {
 }
 void AstSenItem::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "edgeType", edgeType().ascii());
-    dumpJsonGen(str);
-}
-void AstSenTree::dump(std::ostream& str) const {
-    Super::dump(str);
-    if (isMulti()) str << " [MULTI]";
-}
-void AstSenTree::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, isMulti);
     dumpJsonGen(str);
 }
 bool AstSenTree::hasClocked() const {
@@ -3807,6 +3870,27 @@ void AstTracePushPrefix::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "prefix", prefix());
     dumpJsonNumFunc(str, left);
     dumpJsonNumFunc(str, right);
+    dumpJsonGen(str);
+}
+AstTriggered::AstTriggered(FileLine* fl, AstVarScope* trigVscp,
+                           const std::vector<uint32_t>& indices)
+    : ASTGEN_SUPER_Triggered(fl)
+    , m_indices{indices} {
+    UASSERT(!m_indices.empty(), "AstTriggered requires at least one trigger index");
+    trigRefp(new AstVarRef{fl, trigVscp, VAccess::READ});
+    dtypeSetBit();
+}
+void AstTriggered::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " indices=";
+    for (size_t i = 0; i < m_indices.size(); ++i) str << (i ? "," : "") << m_indices[i];
+}
+void AstTriggered::dumpJson(std::ostream& str) const {
+    std::string text;
+    for (size_t i = 0; i < m_indices.size(); ++i) {
+        text += (i ? "," : "") + std::to_string(m_indices[i]);
+    }
+    dumpJsonStr(str, "indices", text);
     dumpJsonGen(str);
 }
 AstTypeTable::AstTypeTable(FileLine* fl)
@@ -4078,6 +4162,19 @@ string AstVar::cPubArgType(bool named, bool forReturn) const {
     }
     return arg;
 }
+const char* AstVar::cannotSplitKindReason() const {
+    if (!isSignal() && !isTemp()) return "it is not a regular signal or temporary";
+    if (isConst()) return "it is a constant";
+    if (isPrimaryIO()) return "it is a primary input or output";
+    if (isFuncLocal() && isIO()) return "it is a function argument";
+    if (isRef()) return "it is a ref port";
+    if (isSigPublic()) return "it is public";
+    if (isForced()) return "it is forceable";
+    if (isReadByDpi()) return "it is read via DPI";
+    if (isWrittenByDpi()) return "it is written via DPI";
+    if (delayp()) return "it has a net delay";
+    return nullptr;
+}
 void AstVar::combineType(VVarType type) {
     // These flags get combined with the existing settings of the flags.
     // We don't test varType for certain types, instead set flags since
@@ -4207,6 +4304,7 @@ void AstVar::dump(std::ostream& str) const {
     }
     if (hasUserInit()) str << " [UINIT]";
     if (icoMaybeWritten()) str << " [ICOMAYBEWRITTEN]";
+    if (isClockingDriven()) str << " [CLOCKINGDRIVEN]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -4243,6 +4341,7 @@ void AstVar::dumpJson(std::ostream& str) const {
     }
     dumpJsonBoolFuncIf(str, attrFileDescr);
     dumpJsonBoolFuncIf(str, icoMaybeWritten);
+    dumpJsonBoolFuncIf(str, isClockingDriven);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
     dumpJsonBoolFuncIf(str, isFuncReturn);
     dumpJsonBoolFuncIf(str, isFuncLocal);

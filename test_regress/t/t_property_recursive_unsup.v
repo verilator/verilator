@@ -29,6 +29,23 @@ module t (
     $stop;
   end
 
+
+  // Nested recursive instances (#8295)
+  property p_self;
+    val |-> p_self;
+  endproperty
+
+  property p_mutual1;
+    val |-> p_mutual2;
+  endproperty
+
+  property p_mutual2;
+    !val |-> p_mutual1;
+  endproperty
+
+  assert property (@(posedge clk) val |-> p_self);
+  assert property (@(posedge clk) val |-> p_mutual1);
+
   always @(posedge clk) begin
     $write("*-* All Finished *-*\n");
     $finish;

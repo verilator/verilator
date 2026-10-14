@@ -88,6 +88,12 @@ class EmitCLazyDecls final : public VNVisitorConst {
         if (EmitCParentModule::get(varp)->isConstPool()) lazyDeclareConstPoolVar(varp);
     }
 
+    void visit(AstExecGraph* nodep) override {
+        if (!declaredOnce(nodep)) return;
+        m_emitter.putns(nodep, "extern VlExecGraph " + EmitCUtil::execGraphName(nodep) + ";\n");
+        m_needsBlankLine = true;
+    }
+
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
@@ -429,6 +435,11 @@ public:
             m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
             if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
+                if (nodep->voidSelf()) {
+                    const string className = EmitCUtil::prefixNameProtect(m_modp);
+                    puts(className + "* const vlSelf = static_cast<" + className
+                         + "*>(vlVoidSelf);\n");
+                }
                 if (!VN_IS(m_modp, Class)) {
                     puts(EmitCUtil::symClassAssign());  // Uses vlSelf
                 } else {
@@ -859,6 +870,12 @@ public:
             if (comma) puts(", ");
             iterateConst(nodep->withp());
         }
+        puts(")");
+    }
+    void visit(AstCFuncHard* nodep) override {
+        putns(nodep, nodep->name());
+        puts("(");
+        putCommaIterateNext(nodep->pinsp());
         puts(")");
     }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
@@ -1780,6 +1797,25 @@ public:
         iterateAndNextConstNull(nodep->fhsp());
         puts(")");
     }
+    void visit(AstTriggered* nodep) override {
+        // Test each word of the trigger vector with a mask of the relevant bits
+        std::map<uint32_t, uint64_t> wordMasks;
+        for (const uint32_t index : nodep->indices()) {
+            wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
+        }
+        putns(nodep, "((");
+        bool first = true;
+        for (const auto& wordMask : wordMasks) {
+            if (!first) puts("\n| ");
+            first = false;
+            const bool allOnes = wordMask.second == ~0ULL;
+            if (!allOnes) puts("(" + V3Number{nodep, 64}.setQuad(wordMask.second).emitC() + " & ");
+            iterateConst(nodep->trigRefp());
+            puts("[" + std::to_string(wordMask.first) + "U]");
+            if (!allOnes) puts(")");
+        }
+        puts(") != 0ULL)");
+    }
     void visit(AstInitItem* nodep) override { iterateChildrenConst(nodep); }
     // Terminals
     void visit(AstVarRef* nodep) override {
@@ -1933,8 +1969,10 @@ public:
     }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to
-        // invoke the graph and wait for it to complete. Emitting the children does just that.
-        iterateChildrenConst(nodep);
+        // invoke the graph and wait for it to complete. The run-time library does just that.
+        putns(nodep, "vl_invokeExecGraph(" + EmitCUtil::execGraphName(nodep) + ", vlSelf, ");
+        iterateConst(nodep->triggerp());
+        puts(".data());\n");
     }
 
     // Default

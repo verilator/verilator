@@ -862,7 +862,7 @@ public:
         }
 
         // Without profiling data, sum the regions evaluated on each time step
-        const AstNetlist* const netlistp = v3Global.rootp();
+        AstNetlist* const netlistp = v3Global.rootp();
         uint64_t cost = 0;
         for (int i = 0; i < VEval::_ENUM_END; ++i) {
             const VEval eval{i};

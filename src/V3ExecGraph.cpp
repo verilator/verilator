@@ -18,6 +18,7 @@
 
 #include "V3ExecGraph.h"
 
+#include "V3ConstPool.h"
 #include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3File.h"
@@ -27,6 +28,7 @@
 #include "V3Os.h"
 #include "V3Stats.h"
 
+#include <map>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -38,6 +40,7 @@ AstCFunc* ExecMTask::createCFunc(AstExecGraph* execGraphp, AstScope* scopep, Ast
     const std::string newName = execGraphp->name() + "_mtask" + std::to_string(id);
     AstCFunc* const newp = new AstCFunc{execGraphp->fileline(), newName, scopep};
     newp->isLoose(true);
+    newp->voidSelf(true);  // Called through VlExecGraph::Fnp
     newp->dontCombine(true);
     newp->addStmtsp(stmtsp);
     if (scopep) scopep->addBlocksp(newp);
@@ -540,12 +543,21 @@ class PackThreads final {
 public:
     // SELF TEST
     static void selfTest() {
-        selfTestHierFirst();
-        selfTestNormalFirst();
-    }
-    static void selfTestNormalFirst() {
+        // Dummy trigger vector for the test graphs, which are never emitted
         FileLine* const flp = v3Global.rootp()->fileline();
-        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test"};
+        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, "__VtestTriggered",
+                                        v3Global.rootp()->findUInt64DType()};
+        AstScope* const scopep = new AstScope{flp, nullptr, "test", nullptr, nullptr};
+        AstVarScope* const trigVscp = new AstVarScope{flp, scopep, varp};
+        selfTestHierFirst(trigVscp);
+        selfTestNormalFirst(trigVscp);
+        VL_DO_DANGLING(trigVscp->deleteTree(), trigVscp);
+        VL_DO_DANGLING(scopep->deleteTree(), scopep);
+        VL_DO_DANGLING(varp->deleteTree(), varp);
+    }
+    static void selfTestNormalFirst(AstVarScope* trigVscp) {
+        FileLine* const flp = v3Global.rootp()->fileline();
+        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test", trigVscp};
         V3Graph& graph = *execGraphp->depGraphp();
         const auto makeBody = [&]() -> AstNodeStmt* { return new AstComment{flp, ""}; };
         ExecMTask* const t0 = new ExecMTask{execGraphp, nullptr, makeBody()};
@@ -671,9 +683,9 @@ public:
         VL_DO_DANGLING(execGraphp->deleteTree(), execGraphp);
         ThreadSchedule::s_mtaskState.clear();
     }
-    static void selfTestHierFirst() {
+    static void selfTestHierFirst(AstVarScope* trigVscp) {
         FileLine* const flp = v3Global.rootp()->fileline();
-        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test"};
+        AstExecGraph* const execGraphp = new AstExecGraph{flp, "test", trigVscp};
         V3Graph& graph = *execGraphp->depGraphp();
         const auto makeBody = [&]() -> AstNodeStmt* { return new AstComment{flp, ""}; };
         ExecMTask* const t0 = new ExecMTask{execGraphp, nullptr, makeBody()};
@@ -788,7 +800,13 @@ void normalizeCosts(Costs& costs) {
     }
 }
 
-void removeEmptyMTasks(V3Graph* execMTaskGraphp) {
+void removeEmptyMTasks(AstExecGraph* execGraphp) {
+    // Remove the calls to empty MTask functions, then the MTasks
+    for (AstCCall *callp = execGraphp->callsp(), *nextp; callp; callp = nextp) {
+        nextp = VN_AS(callp->nextp(), CCall);
+        if (!callp->funcp()->stmtsp()) VL_DO_DANGLING(callp->unlinkFrBack()->deleteTree(), callp);
+    }
+    V3Graph* const execMTaskGraphp = execGraphp->depGraphp();
     for (V3GraphVertex* const vtxp : execMTaskGraphp->vertices().unlinkable()) {
         ExecMTask* const mtaskp = vtxp->as<ExecMTask>();
         AstCFunc* const funcp = mtaskp->funcp();
@@ -898,8 +916,35 @@ void finalizeCosts(V3Graph* execMTaskGraphp) {
     }
 }
 
+// Create an mtask state variable in the top module, waiting for 'nDependencies'
+AstVar* newMTaskStateVar(const std::string& name, uint32_t nDependencies) {
+    AstNodeModule* const modp = v3Global.rootp()->topModulep();
+    FileLine* const fl = modp->fileline();
+    AstBasicDType* const dtypep
+        = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
+    AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, "__Vm_mtaskstate_" + name, dtypep};
+    varp->isConst(true);
+    varp->valuep(new AstConst{fl, nDependencies});
+    modp->addStmtsp(varp);
+    return varp;
+}
+
+// Statement calling 'method' on the given mtask state variable
+AstCStmt* newMTaskStateCall(AstVar* varp, const std::string& method) {
+    FileLine* const fl = varp->fileline();
+    AstVarRef* const refp = new AstVarRef{fl, varp, VAccess::READWRITE};
+    // Not 'this', the thread functions are static
+    const AstScope* const topScopep = v3Global.rootp()->topScopep()->scopep();
+    refp->selfPointer(VSelfPointerText{VSelfPointerText::VlSyms{}, topScopep->nameDotless()});
+    AstCStmt* const stmtp = new AstCStmt{fl};
+    stmtp->add(refp);
+    stmtp->add("." + method + ";");
+    return stmtp;
+}
+
 void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId, AstCFunc* funcp,
-                        const ExecMTask* mtaskp) {
+                        const ExecMTask* mtaskp,
+                        const std::unordered_map<const ExecMTask*, AstVar*>& stateVars) {
     AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
     AstNodeModule* const modp = v3Global.rootp()->topModulep();
     FileLine* const fl = modp->fileline();
@@ -909,22 +954,14 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
         funcp->addStmtsp(new AstCStmt{fl, stmt});
     };
 
-    if (const uint32_t nDependencies = schedule.crossThreadDependencies(mtaskp)) {
-        // This mtask has dependencies executed on another thread, so it may block. Create the task
-        // state variable and wait to be notified.
-        const string name = "__Vm_mtaskstate_" + cvtToStr(mtaskp->id());
-        AstBasicDType* const s_mtaskStateDtypep
-            = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
-        AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, name, s_mtaskStateDtypep};
-        varp->isConst(true);
-        varp->valuep(new AstConst{fl, nDependencies});
-        varp->protect(false);  // Do not protect as we have references in text
-        modp->addStmtsp(varp);
-        // For now, reference is still via text bashing
+    if (schedule.crossThreadDependencies(mtaskp)) {
+        // This mtask has dependencies executed on another thread, so it may block. Wait on the
+        // task state variable to be notified.
         if (v3Global.opt.profExec()) {
             addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitBegin();");
         }
-        addCStmt("vlSelf->" + name + +".waitUntilUpstreamDone(even_cycle);");
+        funcp->addStmtsp(
+            newMTaskStateCall(stateVars.at(mtaskp), "waitUntilUpstreamDone(even_cycle)"));
         if (v3Global.opt.profExec()) {
             addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();");
         }
@@ -950,8 +987,8 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
     for (const V3GraphEdge& edge : mtaskp->outEdges()) {
         const ExecMTask* const nextp = edge.top()->as<ExecMTask>();
         if (schedule.threadId(nextp) != threadId && schedule.contains(nextp)) {
-            addCStmt("vlSelf->__Vm_mtaskstate_" + cvtToStr(nextp->id())
-                     + ".signalUpstreamDone(even_cycle);");
+            funcp->addStmtsp(
+                newMTaskStateCall(stateVars.at(nextp), "signalUpstreamDone(even_cycle)"));
         }
     }
 }
@@ -962,6 +999,16 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
     FileLine* const fl = modp->fileline();
 
     std::vector<AstCFunc*> funcps;
+
+    // Create the task state variables up front, as threads signal mtasks on other threads
+    std::unordered_map<const ExecMTask*, AstVar*> stateVars;
+    for (const std::vector<const ExecMTask*>& thread : schedule.m_threads) {
+        for (const ExecMTask* const mtaskp : thread) {
+            if (const uint32_t nDependencies = schedule.crossThreadDependencies(mtaskp)) {
+                stateVars.emplace(mtaskp, newMTaskStateVar(cvtToStr(mtaskp->id()), nDependencies));
+            }
+        }
+    }
 
     // For each thread, create a function representing its entry point
     for (const std::vector<const ExecMTask*>& thread : schedule.m_threads) {
@@ -983,25 +1030,9 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
 
         // Invoke each mtask scheduled to this thread from the thread function
         for (const ExecMTask* const mtaskp : thread) {
-            addMTaskToFunction(schedule, threadId, funcp, mtaskp);
+            addMTaskToFunction(schedule, threadId, funcp, mtaskp, stateVars);
         }
-
-        // Unblock the fake "final" mtask when this thread is finished
-        funcp->addStmtsp(new AstCStmt{fl, "vlSelf->__Vm_mtaskstate_final__"
-                                              + cvtToStr(schedule.id()) + tag
-                                              + ".signalUpstreamDone(even_cycle);"});
     }
-
-    // Create the fake "final" mtask state variable
-    AstBasicDType* const s_mtaskStateDtypep
-        = v3Global.rootp()->typeTablep()->findBasicDType(fl, VBasicDTypeKwd::MTASKSTATE);
-    AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP,
-                                    "__Vm_mtaskstate_final__" + cvtToStr(schedule.id()) + tag,
-                                    s_mtaskStateDtypep};
-    varp->isConst(true);
-    varp->valuep(new AstConst(fl, funcps.size()));
-    varp->protect(false);  // Do not protect as we have references in text
-    modp->addStmtsp(varp);
 
     return funcps;
 }
@@ -1013,7 +1044,7 @@ void addThreadStartWrapper(AstExecGraph* const execGraphp) {
 
     // Add thread function invocations to execGraph
     const auto addCStmt = [=](const string& stmt) -> void {  //
-        execGraphp->addStmtsp(new AstCStmt{fl, stmt});
+        execGraphp->runfuncp()->addStmtsp(new AstCStmt{fl, stmt});
     };
 
     if (v3Global.opt.profExec()) {
@@ -1029,7 +1060,7 @@ void addThreadEndWrapper(AstExecGraph* const execGraphp) {
     // Add thread function invocations to execGraph
     const auto addCStmt = [=](const string& stmt) -> void {  //
         FileLine* const flp = v3Global.rootp()->fileline();
-        execGraphp->addStmtsp(new AstCStmt{flp, stmt});
+        execGraphp->runfuncp()->addStmtsp(new AstCStmt{flp, stmt});
     };
 
     addCStmt("Verilated::mtaskId(0);");
@@ -1041,9 +1072,16 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
     FileLine* const fl = v3Global.rootp()->fileline();
     const string& tag = execGraphp->name();
 
+    // The fake "final" mtask state variable, signaled by each thread when finished
+    AstVar* const finalVarp
+        = newMTaskStateVar("final__" + cvtToStr(scheduleId) + "__" + tag, funcps.size());
+    for (AstCFunc* const funcp : funcps) {
+        funcp->addStmtsp(newMTaskStateCall(finalVarp, "signalUpstreamDone(even_cycle)"));
+    }
+
     // Add thread function invocations to execGraph
     const auto addCStmt = [=](const string& stmt) -> void {  //
-        execGraphp->addStmtsp(new AstCStmt{fl, stmt});
+        execGraphp->runfuncp()->addStmtsp(new AstCStmt{fl, stmt});
     };
 
     const uint32_t last = funcps.size() - 1;
@@ -1057,7 +1095,7 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
         if (i != last) {
             // The first N-1 will run on the thread pool.
             AstCStmt* const cstmtp = new AstCStmt{fl};
-            execGraphp->addStmtsp(cstmtp);
+            execGraphp->runfuncp()->addStmtsp(cstmtp);
             cstmtp->add("vlSymsp->__Vm_threadPoolp->workerp(");
             if (v3Global.opt.hierChild() || !v3Global.opt.hierBlocks().empty()) {
                 cstmtp->add("indexes[" + std::to_string(i) + "]");
@@ -1072,7 +1110,7 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
             AstCCall* const callp = new AstCCall{fl, funcp};
             callp->dtypeSetVoid();
             callp->argTypes("vlSelf, vlSymsp->__Vm_even_cycle__" + tag);
-            execGraphp->addStmtsp(callp->makeStmt());
+            execGraphp->runfuncp()->addStmtsp(callp->makeStmt());
         }
         ++i;
     }
@@ -1081,8 +1119,8 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
     if (v3Global.opt.profExec()) {
         addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitBegin();");
     }
-    addCStmt("vlSelf->__Vm_mtaskstate_final__" + std::to_string(scheduleId) + tag
-             + ".waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle__" + tag + ");");
+    execGraphp->runfuncp()->addStmtsp(newMTaskStateCall(
+        finalVarp, "waitUntilUpstreamDone(vlSymsp->__Vm_even_cycle__" + tag + ")"));
     if (v3Global.opt.profExec()) {
         addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();");
     }
@@ -1135,25 +1173,45 @@ void implementExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& sc
     const std::vector<AstCFunc*>& funcps = createThreadFunctions(schedule, execGraphp->name());
     UASSERT(!funcps.empty(), "Non-empty ExecGraph yields no threads?");
 
-    // Start the thread functions at the point this AstExecGraph is located in the tree.
+    // Start the thread functions from the function that dispatches the graph.
     addThreadStartToExecGraph(execGraphp, funcps, schedule.id());
 }
 
-void moveDispatchToFunction(AstExecGraph* const execGraphp) {
-    // Move the statements that dispatch the graph to the thread pool into their own function,
-    // and call that function where the graph executes.
+void createRunFunction(AstExecGraph* const execGraphp) {
+    // Create the function that dispatches the graph to the thread pool, as scheduled statically
     FileLine* const flp = execGraphp->fileline();
     AstNodeModule* const modp = v3Global.rootp()->topModulep();
     AstCFunc* const funcp = new AstCFunc{flp, "runExecGraph_" + execGraphp->name(), nullptr};
     funcp->isLoose(true);
+    funcp->voidSelf(true);  // Called through VlExecGraph::Fnp
     funcp->dontCombine(true);
-    funcp->addStmtsp(execGraphp->stmtsp()->unlinkFrBackWithNext());
     modp->addStmtsp(funcp);
-    AstCCall* const callp = new AstCCall{flp, funcp};
-    const AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
-    callp->selfPointer(VSelfPointerText{VSelfPointerText::VlSyms{}, scopep->nameDotless()});
-    callp->dtypeSetVoid();
-    execGraphp->addStmtsp(callp->makeStmt());
+    execGraphp->runfuncp(funcp);
+}
+
+void addTriggerMasks(AstExecGraph* const execGraphp) {
+    // Add to 'maskps' a constant table for each MTask in 'callsp', with the trigger bits its
+    // code tests
+    FileLine* const flp = execGraphp->fileline();
+    AstVar* const triggersp = execGraphp->triggerp()->varp();
+    for (AstCCall* callp = execGraphp->callsp(); callp; callp = VN_AS(callp->nextp(), CCall)) {
+        std::map<uint32_t, uint64_t> wordMasks;
+        callp->funcp()->foreach([&](const AstTriggered* trigp) {
+            UASSERT_OBJ(trigp->trigRefp()->varp() == triggersp, trigp,
+                        "MTask tests another trigger vector");
+            for (const uint32_t index : trigp->indices()) {
+                wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
+            }
+        });
+        AstInitArray* const initp = new AstInitArray{flp, triggersp->dtypep(),
+                                                     new AstConst{flp, AstConst::Unsized64{}, 0}};
+        for (const auto& wordMask : wordMasks) {
+            initp->addIndexValuep(wordMask.first,
+                                  new AstConst{flp, AstConst::Unsized64{}, wordMask.second});
+        }
+        execGraphp->addMaskps(V3ConstPool::findTable(initp));
+        VL_DO_DANGLING(initp->deleteTree(), initp);
+    }
 }
 
 // Called by Verilator top stage
@@ -1164,14 +1222,9 @@ void implement(AstNetlist* netlistp) {
 
     // Process each
     for (AstExecGraph* const execGraphp : execGraphps) {
-        // We can delete the placeholder calls to the MTask functions that
-        // were used for code analysis until now. We will replace them with
-        // statements that dispatch execution to the thread pool.
-        if (execGraphp->stmtsp()) execGraphp->stmtsp()->unlinkFrBackWithNext()->deleteTree();
-
         // Some MTasks may have become empty after scheduling due to
         // optimizations after scheduling. Remove those.
-        removeEmptyMTasks(execGraphp->depGraphp());
+        removeEmptyMTasks(execGraphp);
 
         // In some very small test cases, we might end up with a completely
         // empty ExecGraph, if so just delete it.
@@ -1190,6 +1243,7 @@ void implement(AstNetlist* netlistp) {
 
         if (dumpGraphLevel() >= 4) execGraphp->depGraphp()->dumpDotFilePrefixedAlways("pack");
 
+        createRunFunction(execGraphp);
         addThreadStartWrapper(execGraphp);
 
         // Schedule the mtasks: statically associate each mtask with a thread,
@@ -1208,7 +1262,7 @@ void implement(AstNetlist* netlistp) {
 
         addThreadEndWrapper(execGraphp);
 
-        moveDispatchToFunction(execGraphp);
+        addTriggerMasks(execGraphp);
     }
 }
 

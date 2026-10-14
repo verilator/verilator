@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Unsupported 'with' filters: of wildcard patterns of more ranges of values than
-// --coverage-max-bins 8, or distributed first
+// --coverage-max-bins 8, distributed first, or of a cross bin reading a real value
 
 module t;
   bit [7:0] v;
@@ -54,9 +54,19 @@ module t;
       bins at_limit = {[0 : 33'h0_ffff_ffff]} with (item < 5);
     }
   endgroup
+  real r;
+  covergroup cg_real;
+    rr: coverpoint r {bins low = {[0.0 : 1.0]};}
+    tt: coverpoint t;
+    x: cross rr, tt{
+      bins real_value = (x with (rr < 0.5 || rr > 0.9)) || x;  // <--- Unsupported: real value
+      bins real_unread = x with (tt == 1);
+    }
+  endgroup
   cg inst = new;
   cg_first first_inst = new;
   cg_candidates candidates_inst = new;
   cg_default default_inst = new;
+  cg_real real_inst = new;
   initial $finish;
 endmodule

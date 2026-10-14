@@ -215,6 +215,7 @@ RAW_OBJS_PCH_ASTMT = \
   V3Control.o \
   V3EmitCBase.o \
   V3EmitCConstPool.o \
+  V3EmitCExecGraph.o \
   V3EmitCFunc.o \
   V3EmitCHeaders.o \
   V3EmitCImp.o \
@@ -238,6 +239,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3AssertNfa.o \
   V3AssertPre.o \
   V3Begin.o \
+  V3BitBlast.o \
   V3Branch.o \
   V3CCtors.o \
   V3CUse.o \
@@ -342,7 +344,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Scope.o \
   V3Slice.o \
   V3Split.o \
-  V3SplitVar.o \
   V3StackCount.o \
   V3Subst.o \
   V3Table.o \

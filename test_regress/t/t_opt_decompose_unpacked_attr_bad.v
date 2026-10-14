@@ -15,13 +15,13 @@
 
 typedef struct {
   logic [6:0] a;
-  logic [4:0] c [1:0];
+  logic [4:0] c[1:0];
 } st_t;
 
 module t (
     input clk,
     // Primary input, not split
-    input logic [6:0] in_arr [2]  /*verilator split_var*/
+    input logic [6:0] in_arr[2]  /*verilator split_var*/
 );
 
   int cyc = 0;
@@ -30,35 +30,35 @@ module t (
   // Marked and split, elements of marked aggregates are split too
   st_t st  /*verilator split_var*/;
   // Real and wreal elements, connected to ports
-  real vin [0:1]  /*verilator split_var*/;
-  wreal vout [0:1]  /*verilator split_var*/;
+  real vin[0:1]  /*verilator split_var*/;
+  wreal vout[0:1]  /*verilator split_var*/;
   // Variable index, not split
-  logic [6:0] dyn [4]  /*verilator split_var*/;
+  logic [6:0] dyn[4]  /*verilator split_var*/;
   // Referenced whole, not split
-  logic [6:0] whole [2]  /*verilator split_var*/;
+  logic [6:0] whole[2]  /*verilator split_var*/;
   // Public, not split
-  logic [6:0] pub [2]  /*verilator public*/  /*verilator split_var*/;
+  logic [6:0] pub[2]  /*verilator public*/  /*verilator split_var*/;
   // Not a signal, not split
-  localparam logic [6:0] LP [2]  /*verilator split_var*/ = '{7'd1, 7'd2};
+  localparam logic [6:0] LP[2]  /*verilator split_var*/ = '{7'd1, 7'd2};
   // Forceable, not split
-  logic [6:0] fv [2]  /*verilator forceable*/  /*verilator split_var*/;
+  logic [6:0] fv[2]  /*verilator forceable*/  /*verilator split_var*/;
   // Read or written by DPI exports, not split
-  logic [6:0] drd [2]  /*verilator split_var*/;
-  logic [6:0] dwr [2]  /*verilator split_var*/;
+  logic [6:0] drd[2]  /*verilator split_var*/;
+  logic [6:0] dwr[2]  /*verilator split_var*/;
   // Net delay, not split
-  wire [6:0] #1 nd [2]  /*verilator split_var*/;
+  wire [6:0] #1 nd[2]  /*verilator split_var*/;
   // Assignment with a timing control, not split
-  logic [6:0] tcd [2]  /*verilator split_var*/;
+  logic [6:0] tcd[2]  /*verilator split_var*/;
   // Assigned from 'whole', and also referenced whole, not split
-  logic [6:0] whole2 [2]  /*verilator split_var*/;
+  logic [6:0] whole2[2]  /*verilator split_var*/;
   // Element referenced whole, the element is not split
-  logic [6:0] md2 [2][2]  /*verilator split_var*/;
-  typedef logic [6:0] pair_t [2];
+  logic [6:0] md2[2][2]  /*verilator split_var*/;
+  typedef logic [6:0] pair_t[2];
   // Referenced whole after member selects, not split
   st_t stw  /*verilator split_var*/;
-  pair_t q [$];
+  pair_t q[$];
   // Connected to the ref task argument and module port
-  logic [6:0] rtgt [2];
+  logic [6:0] rtgt[2];
 
   always_comb begin
     st.a = crc[6:0];
@@ -120,8 +120,8 @@ module t (
     stw.c[1] = crc[16:12];
   end
 
-  task automatic tsk(input logic [6:0] ia [2]  /*verilator split_var*/,
-                     ref logic [6:0] ra [2]  /*verilator split_var*/);
+  task automatic tsk(input logic [6:0] ia[2]  /*verilator split_var*/,
+                     ref logic [6:0] ra[2]  /*verilator split_var*/);
     /*verilator no_inline_task*/
     ra[0] = ia[1];
   endtask
@@ -154,7 +154,7 @@ endmodule
 
 // Ref port of a module that is not inlined, not split
 module rsub (
-    ref logic [6:0] ra [2]  /*verilator split_var*/
+    ref logic [6:0] ra[2]  /*verilator split_var*/
 );
   /*verilator no_inline_module*/
   initial ra[1] = 7'd1;
@@ -166,7 +166,7 @@ module swap (
     output wreal out0,
     out1
 );
-  wreal tmp [0:1]  /*verilator split_var*/;
+  wreal tmp[0:1]  /*verilator split_var*/;
   assign tmp[0] = in0;
   assign tmp[1] = in1;
   assign out0 = tmp[1];

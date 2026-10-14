@@ -1,88 +1,118 @@
-%Error-ENUMVALUE: t/t_enum_type_bad.v:36:9: Implicit conversion to enum 'enum t.e_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:55:9: Implicit conversion to enum 'enum t.e_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
                                           : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   36 |     e = 1;   
+   55 |     e = 1;   
       |         ^
                   ... For error description see https://verilator.org/warn/ENUMVALUE?v=latest
-%Error-ENUMVALUE: t/t_enum_type_bad.v:37:9: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:56:9: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
                                           : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   37 |     o = e;   
+   56 |     o = e;   
       |         ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:43:13: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:62:13: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   43 |     o = str.m_e;   
+   62 |     o = str.m_e;   
       |             ^~~
-%Error-ENUMVALUE: t/t_enum_type_bad.v:45:12: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:64:12: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   45 |     o = e_t'(1);   
+   64 |     o = e_t'(1);   
       |            ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:47:11: Implicit conversion to enum 'enum t.e_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:66:11: Implicit conversion to enum 'enum t.e_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   47 |     e = e + 1;   
+   66 |     e = e + 1;   
       |           ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:47:13: Implicit conversion to enum 'enum t.e_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:66:13: Implicit conversion to enum 'enum t.e_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                            : ... Suggest use enum's mnemonic, or static cast
-   47 |     e = e + 1;   
+   66 |     e = e + 1;   
       |             ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:48:12: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:67:12: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   48 |     e = int'(e);   
+   67 |     e = int'(e);   
       |            ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:49:12: Implicit conversion to enum 'enum t.e_t' from 'bit' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:68:12: Implicit conversion to enum 'enum t.e_t' from 'bit' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   49 |     e = (e == ONE);   
+   68 |     e = (e == ONE);   
       |            ^~
-%Warning-WIDTHEXPAND: t/t_enum_type_bad.v:49:7: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's EQ generates 1 bits.
+%Warning-WIDTHEXPAND: t/t_enum_type_bad.v:68:7: Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's EQ generates 1 bits.
                                               : ... note: In instance 't'
-   49 |     e = (e == ONE);   
+   68 |     e = (e == ONE);   
       |       ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
-%Error-ENUMVALUE: t/t_enum_type_bad.v:50:11: Implicit conversion to enum 'enum t.o_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:69:11: Implicit conversion to enum 'enum t.o_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   50 |     o = e + 1;   
+   69 |     o = e + 1;   
       |           ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:50:9: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:69:9: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
                                           : ... note: In instance 't'
                                            : ... Suggest use enum's mnemonic, or static cast
-   50 |     o = e + 1;   
+   69 |     o = e + 1;   
       |         ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:50:13: Implicit conversion to enum 'enum t.o_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:69:13: Implicit conversion to enum 'enum t.o_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                            : ... Suggest use enum's mnemonic, or static cast
-   50 |     o = e + 1;   
+   69 |     o = e + 1;   
       |             ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:51:12: Implicit conversion to enum 'enum t.e_t' from 'enum t.o_t' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:70:12: Implicit conversion to enum 'enum t.e_t' from 'enum t.o_t' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   51 |     e = o_t'(e);   
+   70 |     e = o_t'(e);   
       |            ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:52:17: Implicit conversion to enum 'enum t.e_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:71:17: Implicit conversion to enum 'enum t.e_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   52 |     e = e_t'(1) + 1;   
+   71 |     e = e_t'(1) + 1;   
       |                 ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:52:19: Implicit conversion to enum 'enum t.e_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:71:19: Implicit conversion to enum 'enum t.e_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                            : ... Suggest use enum's mnemonic, or static cast
-   52 |     e = e_t'(1) + 1;   
+   71 |     e = e_t'(1) + 1;   
       |                   ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:53:12: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:72:12: Implicit conversion to enum 'enum t.o_t' from 'enum t.e_t' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   53 |     o = e_t'(o_t'(e));   
+   72 |     o = e_t'(o_t'(e));   
       |            ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:54:12: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:73:12: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
-   54 |     e = int'(o_t'(e));   
+   73 |     e = int'(o_t'(e));   
       |            ^
+%Error-ENUMVALUE: t/t_enum_type_bad.v:75:16: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                          : ... Suggest use enum's mnemonic, or static cast
+   75 |     output_int(e);
+      |                ^
+%Error-ENUMVALUE: t/t_enum_type_bad.v:76:15: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                          : ... Suggest use enum's mnemonic, or static cast
+   76 |     inout_int(e);
+      |               ^
+%Error-ENUMVALUE: t/t_enum_type_bad.v:77:13: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                          : ... Suggest use enum's mnemonic, or static cast
+   77 |     ref_int(e);
+      |             ^
+%Error-ENUMVALUE: t/t_enum_type_bad.v:79:16: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                          : ... Suggest use enum's mnemonic, or static cast
+   79 |     input_enum(enum_int);
+      |                ^~~~~~~~
+%Error-ENUMVALUE: t/t_enum_type_bad.v:80:16: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                          : ... Suggest use enum's mnemonic, or static cast
+   80 |     inout_enum(enum_int);
+      |                ^~~~~~~~
+%Error-ENUMVALUE: t/t_enum_type_bad.v:81:14: Implicit conversion to enum 'enum t.e_t' from 'int' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                          : ... Suggest use enum's mnemonic, or static cast
+   81 |     ref_enum(enum_int);
+      |              ^~~~~~~~
 %Error: Exiting due to

@@ -43,9 +43,7 @@ typedef struct packed {
   logic [3:0] e;
 } pout_t;
 
-typedef struct packed {
-  pin_t a;
-} pone_t;
+typedef struct packed {pin_t a;} pone_t;
 
 typedef logic bit_t;
 
@@ -210,7 +208,8 @@ module t (
         localparam int N = (i * 2 + j) * 4 + k;
         if (N == 0) begin : gen_first
           assign p4[i][j][k] = crc[1:0];
-        end else begin : gen_rest
+        end
+        else begin : gen_rest
           assign p4[i][j][k] = p4[(N-1)/8][((N-1)/4)%2][(N-1)%4] + crc[2*N+:2];
         end
       end
@@ -224,7 +223,8 @@ module t (
         localparam int N = ((i - 1) * 2 + j) * 3 + (k - 1);
         if (N == 0) begin : gen_first
           assign p4m[i][j][k] = crc[1:0];
-        end else begin : gen_rest
+        end
+        else begin : gen_rest
           assign p4m[i][j][k] = p4m[(N-1)/6+1][((N-1)/3)%2][(N-1)%3+1] ^ crc[2*N+:2];
         end
       end
@@ -310,7 +310,8 @@ module t (
     if (cyc == 0) begin
       psw = crc[11:0];
       swr = crc[11:0];
-    end else begin
+    end
+    else begin
       psw = {psw.lo, psw.hi};
       swr = {swr[5:0], swr[11:6]};
     end
@@ -322,7 +323,8 @@ module t (
     if (cyc == 0) begin
       pov = crc[7:0];
       povr = crc[7:0];
-    end else begin
+    end
+    else begin
       pov.a = pov;
     end
     `checkh(pov.a.g, povr[7:4]);
@@ -333,7 +335,8 @@ module t (
     if (cyc == 0) begin
       pswd <= crc[11:0];
       swrd <= crc[11:0];
-    end else begin
+    end
+    else begin
       pswd <= {pswd.lo, pswd.hi};
       swrd <= {swrd[5:0], swrd[11:6]};
     end

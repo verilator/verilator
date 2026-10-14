@@ -2306,10 +2306,18 @@ class WidthVisitor final : public VNVisitor {
         if (!VN_IS(nodep->subp(), CoverpointRef)) {
             widthCovergroupRanges(nodep->subp(), m_vup->dtypep()->width());
         }
-        // The filter is true for a nonzero value (IEEE 1800-2023 12.4), of a type assignment
-        // compatible with an integral type (19.5.1.1)
-        AstNodeExpr* const filterp = VN_AS(
-            userIterateSubtreeReturnEdits(nodep->filterp(), WidthVP{SELF, BOTH}.p()), NodeExpr);
+        widthCoverFilter(nodep->filterp(), "Bin");
+    }
+    void visit(AstCoverCrossWith* nodep) override {
+        userIterateAndNext(nodep->selectp(), nullptr);
+        // Each cross item has the type of its coverpoint (IEEE 1800-2023 19.6.1.3)
+        userIterateAndNext(nodep->varsp(), nullptr);
+        widthCoverFilter(nodep->filterp(), "Cross bin");
+    }
+    // A 'with' filter is true for a nonzero value (IEEE 1800-2023 12.4), of a type assignment
+    // compatible with an integral type (19.5.1.1); 'whatp' names its bins
+    void widthCoverFilter(AstNodeExpr* filterp, const char* whatp) {
+        filterp = VN_AS(userIterateSubtreeReturnEdits(filterp, WidthVP{SELF, BOTH}.p()), NodeExpr);
         FileLine* const fl = filterp->fileline();
         const AstNodeDType* const resultp = filterp->dtypep()->skipRefp();
         if (resultp->isDouble()) {
@@ -2318,9 +2326,9 @@ class WidthVisitor final : public VNVisitor {
             relinker.relink(
                 new AstNeqD{fl, filterp, new AstConst{fl, AstConst::RealDouble{}, 0.0}});
         } else if (!resultp->isIntegralOrPacked()) {
-            filterp->v3error("Bin 'with' filter must be assignment compatible with an integral "
-                             "type, not "
-                             << resultp->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.1.1)");
+            filterp->v3error(whatp << " 'with' filter must be assignment compatible with an "
+                                      "integral type, not "
+                                   << resultp->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.1.1)");
             filterp->replaceWith(new AstConst{fl, AstConst::BitFalse{}});
             VL_DO_DANGLING(pushDeletep(filterp), filterp);
         } else {
@@ -6684,7 +6692,7 @@ class WidthVisitor final : public VNVisitor {
         for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
             for (AstNode *nextcp, *condp = itemp->condsp(); condp; condp = nextcp) {
                 nextcp = condp->nextp();  // Final may cause the node to get replaced
-                iterateCheck(casep, "Case Item", condp, CONTEXT_DET, FINAL, subDTypep, EXTEND_LHS);
+                iterateCheck(casep, "Case Item", condp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
             }
         }
     }
@@ -8106,7 +8114,8 @@ class WidthVisitor final : public VNVisitor {
                                      portp->direction() == VDirection::OUTPUT);
                     userIterate(pinp, WidthVP{portDTypep, FINAL, STREAM_USE_ASSIGN}.p());
                 } else {
-                    iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep);
+                    iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep,
+                                       portp->direction().pinAccess());
                 }
             }
         }
@@ -9716,7 +9725,7 @@ class WidthVisitor final : public VNVisitor {
         (void)underp;  // cppcheck
     }
     void iterateCheckAssign(AstNode* parentp, const char* side, AstNode* rhsp, Stage stage,
-                            AstNodeDType* lhsDTypep) {
+                            AstNodeDType* lhsDTypep, VAccess rhsAccess = VAccess::READ) {
         // Check using assignment-like context rules
         // UINFOTREE(1, parentp, "", "checkass");
         UASSERT_OBJ(stage == FINAL, parentp, "Bad width call");
@@ -9757,7 +9766,7 @@ class WidthVisitor final : public VNVisitor {
         const bool lhsStream = (VN_IS(parentp, NodeAssign)
                                 && VN_IS(VN_AS(parentp, NodeAssign)->lhsp(), NodeStream));
         rhsp = iterateCheck(parentp, side, rhsp, ASSIGN, FINAL, lhsDTypep,
-                            lhsStream ? EXTEND_OFF : EXTEND_LHS);
+                            lhsStream ? EXTEND_OFF : EXTEND_LHS, true, STREAM_USE_NONE, rhsAccess);
         // UINFOTREE(1, parentp, "", "checkout");
         (void)rhsp;  // cppcheck
     }
@@ -9825,9 +9834,28 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    static void checkEnum(AstNode* nodep, AstNode* parentp, const AstNodeDType* targetDTypep,
+                          const AstNodeDType* sourceDTypep, const AstNodeExpr* sourceExprp) {
+        if (const AstEnumDType* const targetEnump
+            = VN_CAST(targetDTypep->skipRefToEnump(), EnumDType)) {
+            const VCastable castable
+                = AstNode::computeCastable(targetEnump, sourceDTypep, sourceExprp);
+            if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
+                && castable != VCastable::ENUM_IMPLICIT) {
+                nodep->v3warn(ENUMVALUE, "Implicit conversion to enum "
+                                             << targetDTypep->prettyDTypeNameQ() << " from "
+                                             << sourceDTypep->prettyDTypeNameQ()
+                                             << " (IEEE 1800-2023 6.19.3)\n"
+                                             << parentp->warnMore()
+                                             << "... Suggest use enum's mnemonic, or static cast");
+            }
+        }
+    }
+
     AstNode* iterateCheck(AstNode* parentp, const char* side, AstNode* underp, Determ determ,
                           Stage stage, AstNodeDType* expDTypep, ExtendRule extendRule,
-                          bool warnOn = true, StreamUse streamUse = STREAM_USE_NONE) {
+                          bool warnOn = true, StreamUse streamUse = STREAM_USE_NONE,
+                          VAccess rhsAccess = VAccess::READ) {
         // Perform data type check on underp, which is underneath parentp used for error reporting
         // Returns the new underp
         // Conversion to/from doubles and integers are before iterating.
@@ -9880,21 +9908,14 @@ class WidthVisitor final : public VNVisitor {
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
             if (expBasicp && underBasicp) {
-                if (const AstEnumDType* const expEnump
-                    = VN_CAST(expDTypep->skipRefToEnump(), EnumDType)) {
-                    const auto castable
-                        = AstNode::computeCastable(expEnump, underp->dtypep(), underp);
-                    if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
-                        && castable != VCastable::ENUM_IMPLICIT && !m_enumItemp
-                        && !parentp->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE) && warnOn) {
-                        underp->v3warn(ENUMVALUE,
-                                       "Implicit conversion to enum "
-                                           << expDTypep->prettyDTypeNameQ() << " from "
-                                           << underp->dtypep()->prettyDTypeNameQ()
-                                           << " (IEEE 1800-2023 6.19.3)\n"
-                                           << parentp->warnMore()
-                                           << "... Suggest use enum's mnemonic, or static cast");
-                        // UINFOTREE(1, parentp->backp(), "", "back");
+                if (!m_enumItemp && !parentp->fileline()->warnIsOff(V3ErrorCode::ENUMVALUE)
+                    && warnOn) {
+                    if (rhsAccess.isReadOrRW()) {
+                        checkEnum(underp, parentp, expDTypep, underp->dtypep(),
+                                  VN_AS(underp, NodeExpr));
+                    }
+                    if (rhsAccess.isWriteOrRW()) {
+                        checkEnum(underp, parentp, underp->dtypep(), expDTypep, nullptr);
                     }
                 }
                 AstNodeDType* subDTypep = expDTypep;

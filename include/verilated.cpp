@@ -2595,6 +2595,14 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
     if (errno != 0) v = 0;
     return static_cast<IData>(v);
 }
+
+double VL_ATOREAL_N(const std::string& str) VL_PURE {
+    std::string str_mod = str;
+    // IEEE 1800-2023 6.16.9 says '_' may exist.
+    str_mod.erase(std::remove(str_mod.begin(), str_mod.end(), '_'), str_mod.end());
+    return std::atof(str_mod.c_str());
+}
+
 IData VL_NTOI_I(int obits, const std::string& str) VL_PURE { return VL_NTOI_Q(obits, str); }
 QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE {
     QData out = 0;

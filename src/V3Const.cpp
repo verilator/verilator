@@ -3573,8 +3573,7 @@ class ConstVisitor final : public VNVisitor {
 
             if (const AstNodeBiop* const aBiOpp = VN_CAST(ap, NodeBiop)) {
                 const AstNodeBiop* const bBiOpp = VN_AS(bp, NodeBiop);
-                // Compare RHSs first as LHS might be const, but the variable term should become
-                // adjacent for optimization if identical.
+                // Compare RHSs first, as LHS might be const
                 if (const int c = cmp(aBiOpp->rhsp(), bBiOpp->rhsp())) return c;
                 return cmp(aBiOpp->lhsp(), bBiOpp->lhsp());
             }
@@ -3674,26 +3673,6 @@ class ConstVisitor final : public VNVisitor {
                     if (lItemp->edgeType() == rItemp->edgeType()) {
                         VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
                         nextp = lItemp;
-                    }
-
-                    continue;
-                }
-
-                // Not identical terms, check if they can be combined
-                if (lSenp->width() != rSenp->width()) continue;
-                if (const AstAnd* const lAndp = VN_CAST(lSenp, And)) {
-                    if (const AstAnd* const rAndp = VN_CAST(rSenp, And)) {
-                        if (AstConst* const lConstp = VN_CAST(lAndp->lhsp(), Const)) {
-                            if (AstConst* const rConstp = VN_CAST(rAndp->lhsp(), Const)) {
-                                if (lAndp->rhsp()->sameTree(rAndp->rhsp())) {
-                                    const V3Number lNum{lConstp->num()};
-                                    lConstp->num().opOr(lNum, rConstp->num());
-                                    // Remove redundant term
-                                    VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
-                                    nextp = lItemp;
-                                }
-                            }
-                        }
                     }
                 }
             }

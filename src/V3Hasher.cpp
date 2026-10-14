@@ -269,6 +269,11 @@ class HasherVisitor final : public VNVisitorConst {
             iterateConstNull(nodep->funcp());
         });
     }
+    void visit(AstTriggered* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
+            for (const uint32_t index : nodep->indices()) m_hash += index;
+        });
+    }
 
     //------------------------------------------------------------
     // AstNodeStmt
