@@ -1600,6 +1600,17 @@ QData VerilatedVpi::cbNextDeadline() VL_MT_UNSAFE_ONE { return VerilatedVpiImp::
 
 void VerilatedVpi::dumpCbs() VL_MT_UNSAFE_ONE { VerilatedVpiImp::dumpCbs(); }
 
+const char* VerilatedVpi::storageKind(vpiHandle h) VL_MT_UNSAFE_ONE {
+    const VerilatedVpioVar* const vop = VerilatedVpioVar::castp(h);
+    if (VL_UNLIKELY(!vop)) return nullptr;
+    const VerilatedVar* const varp = vop->storageVarp();
+    if (varp->isLazyCopy()) return "copy";
+    if (varp->isLazyRemat()) return "reconstructed";
+    if (varp->isLazyRetained()) return "retained";
+    if (varp->isLazyComb()) return "comb";
+    return "stored";
+}
+
 PLI_INT32 VerilatedVpioReasonCb::dovpi_remove_cb() {
     VerilatedVpiImp::cbReasonRemove(m_id, m_reason, m_time);
     delete this;  // IEEE 37.2.2 a vpi_remove_cb does a vpi_release_handle
