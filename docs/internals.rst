@@ -2569,6 +2569,14 @@ VERILATOR_SOLVER
    SMT solver command for constrained randomization; see primary Verilator
    documentation.
 
+VERILATOR_TESTS_OBJ_ROOT
+   If set, each output ``obj_*`` directory the driver creates is instead a
+   symlink to the same absolute path mirrored under this directory, e.g.
+   ``test_regress/obj_vlt`` links to ``$VERILATOR_TESTS_OBJ_ROOT/<path
+   to>/test_regress/obj_vlt``. Use to put test outputs on a different (e.g.
+   faster, not backed up) disk. Consider using with ``--driver-clean`` or
+   ``--driver-prue`` to save disk space.
+
 VERILATOR_TESTS_SITE
    Used with ``--site``, a colon-separated list of directories with tests
    to be added to testlist.

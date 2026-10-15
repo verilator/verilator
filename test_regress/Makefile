@@ -77,7 +77,7 @@ print-cxx-version:
 ######################################################################
 maintainer-copy::
 clean mostlyclean distclean maintainer-clean::
-	-rm -rf obj_* simv* simx* csrc cov_work INCA_libs *.log *.key logs vc_hdrs.h
+	-rm -rf obj_*/ obj_* simv* simx* csrc cov_work INCA_libs *.log *.key logs vc_hdrs.h
 	-rm -rf t/obj_* t/__pycache__
 
 distclean::
@@ -103,7 +103,7 @@ TEST_SNAP_IGNORE := $(shell grep -v '^\#' test_diff_ignore.txt)
 define TEST_SNAP_template
 mkdir -p $(TEST_SNAP_DIR)
 rm -rf $(TEST_SNAP_DIR)/obj_$(1)
-cp -r obj_$(1) $(TEST_SNAP_DIR)/
+cp -RH obj_$(1) $(TEST_SNAP_DIR)/
 $(GNU_FIND) $(TEST_SNAP_DIR)/obj_$(1) \( $(TEST_SNAP_IGNORE:%=-name "%" -o) \
   -type f -executable \) -prune | xargs rm -r
 endef
