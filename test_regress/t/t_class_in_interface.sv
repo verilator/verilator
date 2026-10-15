@@ -34,11 +34,11 @@ interface interface_with_class (input logic clk);
 endinterface
 
 
-module test_tb4;
-    logic clk = 0;
-    
-    // Generate a simple clock
-    always #5 clk = ~clk;
+module t(  /*AUTOARG*/
+    // Inputs
+    clk
+);
+    input clk;
 
     // Instantiate TWO distinct interfaces
     interface_with_class intf_1 (clk);
