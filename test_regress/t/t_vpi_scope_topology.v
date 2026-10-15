@@ -107,6 +107,15 @@ module chain_pass8 (
   assign o = i;
 endmodule
 
+// Single instance; sharing chain_pass8 with u_chain keeps u_cat's temp off pinBoundary even unfixed.
+module cat_pass8 (
+    input logic [7:0] i,
+    output logic [7:0] o
+);
+  /*verilator no_inline_module*/
+  assign o = i;
+endmodule
+
 module t;
 
   logic clk;
@@ -333,6 +342,15 @@ module t;
       .o(chain_tap)
   );
   assign chain_use = chain_tap ^ 8'ha5;
+
+  // The concatenated output pin goes through a V3Inst temp with no VPI row; the
+  // split writes into cat_hi/cat_lo read it through a helper shadow, not pinned storage.
+  logic [3:0] cat_hi;
+  logic [3:0] cat_lo;
+  cat_pass8 u_cat (
+      .i(in0 ^ in1),
+      .o({cat_hi, cat_lo})
+  );
 
   // Variable-index write: only the selected 4-bit window is ever assigned.
   logic [7:0] crbase;

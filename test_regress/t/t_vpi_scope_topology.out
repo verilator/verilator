@@ -11,6 +11,8 @@ t (vpiModule) t  vpiDefName=t
         arr (vpiReg) t.arr[1] 
         arr (vpiReg) t.arr[0] 
     base (vpiReg) t.base 
+    cat_hi (vpiReg) t.cat_hi 
+    cat_lo (vpiReg) t.cat_lo 
     chain_deep (vpiReg) t.chain_deep 
     chain_l0 (vpiReg) t.chain_l0 
     chain_l1 (vpiReg) t.chain_l1 
@@ -97,6 +99,11 @@ t (vpiModule) t  vpiDefName=t
         s1 (vpiReg) t.u1.s1 
         s2 (vpiReg) t.u1.s2 
         vpiParameter:
+    u_cat (vpiModule) t.u_cat  vpiDefName=cat_pass8
+        vpiReg:
+        i (vpiReg) t.u_cat.i 
+        o (vpiReg) t.u_cat.o 
+        vpiParameter:
     u_chain (vpiModule) t.u_chain  vpiDefName=chain_pass8
         vpiReg:
         i (vpiReg) t.u_chain.i 
@@ -152,6 +159,8 @@ t.arr[2] = 00 vpiSize=8
 t.arr[1] = 00 vpiSize=8
 t.arr[0] = 00 vpiSize=8
 t.base = 00 vpiSize=8
+t.cat_hi = 0 vpiSize=4
+t.cat_lo = 0 vpiSize=4
 t.chain_deep = 23 vpiSize=8
 t.chain_l0 = 01 vpiSize=8
 t.chain_l1 = 03 vpiSize=8
@@ -213,6 +222,8 @@ t.u1.din = 30 vpiSize=8
 t.u1.dout = 97 vpiSize=8
 t.u1.s1 = 37 vpiSize=8
 t.u1.s2 = 97 vpiSize=8
+t.u_cat.i = 00 vpiSize=8
+t.u_cat.o = 00 vpiSize=8
 t.u_chain.i = 23 vpiSize=8
 t.u_chain.o = 23 vpiSize=8
 t.u_hs.h = 00 vpiSize=8
@@ -239,6 +250,8 @@ t.arr[2] = f0
 t.arr[1] = 22
 t.arr[0] = 11
 t.base = 01
+t.cat_hi = 3
+t.cat_lo = 3
 t.chain_deep = 1c
 t.chain_l0 = 02
 t.chain_l1 = 04
@@ -281,6 +294,8 @@ t.u1.din = 31
 t.u1.dout = 9a
 t.u1.s1 = 38
 t.u1.s2 = 9a
+t.u_cat.i = 33
+t.u_cat.o = 33
 t.u_chain.i = 1c
 t.u_chain.o = 1c
 t.u_hs.h = 22
@@ -292,6 +307,7 @@ t.arr[2] = be
 t.arr[1] = ad
 t.arr[0] = de
 t.base = 10
+t.cat_hi = 7
 t.chain_deep = 13
 t.chain_l0 = 11
 t.chain_l1 = 13
@@ -336,6 +352,8 @@ t.u1.din = 40
 t.u1.dout = c7
 t.u1.s1 = 47
 t.u1.s2 = c7
+t.u_cat.i = 73
+t.u_cat.o = 73
 t.u_chain.i = 13
 t.u_chain.o = 13
 t.u_hs.h = ad
@@ -352,6 +370,8 @@ t.arr[2] = 80
 t.arr[1] = 00
 t.arr[0] = ff
 t.base = 7f
+t.cat_hi = f
+t.cat_lo = f
 t.chain_deep = a2
 t.chain_l0 = 80
 t.chain_l1 = 82
@@ -400,6 +420,8 @@ t.u1.din = af
 t.u1.dout = 14
 t.u1.s1 = b6
 t.u1.s2 = 14
+t.u_cat.i = ff
+t.u_cat.o = ff
 t.u_chain.i = a2
 t.u_chain.o = a2
 t.u_hs.h = 00

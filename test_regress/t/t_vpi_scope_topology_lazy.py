@@ -31,9 +31,11 @@ test.compile(make_top_shell=False,
 
 test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 54)
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 58)
 # hs_v's kept store counts as a use, so V3Gate does not also inline it into hs_q
 test.file_grep(test.stats, r'Gate signals not inlined due to cost\s+(\d+)', 2)
+# u_cat's output temp is read through a helper shadow, not pinned storage
+test.file_grep(test.stats, r'VPI, lazy boundary storage pinned\s+(\d+)', 1)
 
 # A second verilation of the same source must generate identical files
 obj_dir2 = test.obj_dir + "/obj_dir_2"
