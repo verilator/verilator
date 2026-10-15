@@ -3865,6 +3865,7 @@ class ConstVisitor final : public VNVisitor {
                 nodep->condp(new AstLogNot{condp->fileline(),
                                            condp});  // LogNot, as C++ optimization also possible
                 nodep->addThensp(elsesp);
+                nodep->branchPred(nodep->branchPred().invert());
             } else if (((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
                         || VN_IS(nodep->condp(), LogNot))
                        && nodep->thensp() && nodep->elsesp()) {
