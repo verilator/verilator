@@ -35,6 +35,8 @@ module t (
   int count_fail11 = 0;
   int count_fail12 = 0;
   int count_fail13 = 0;
+  int count_fail14 = 0;
+  int count_fail15 = 0;
   int count_cover_nested = 0;
   int count_cover_inline = 0;
 
@@ -105,6 +107,13 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2) p_top)
   else count_fail13 <= count_fail13 + 1;
 
+  // Test 14/15: nested instance after a multi-cycle antecedent vs inline body
+  assert property (@(posedge clk) disable iff (cyc < 2) (a ##1 c) |-> p_b)
+  else count_fail14 <= count_fail14 + 1;
+
+  assert property (@(posedge clk) disable iff (cyc < 2) (a ##1 c) |-> b)
+  else count_fail15 <= count_fail15 + 1;
+
   // Cover: nested instance vs inline body, counted only with --coverage
   cover property (@(posedge clk) disable iff (cyc < 2) a |-> p_b)
     count_cover_nested <= count_cover_nested + 1;
@@ -137,6 +146,8 @@ module t (
       `checkd(count_fail11, 8);
       `checkd(count_fail12, 8);
       `checkd(count_fail13, 8);
+      `checkd(count_fail14, 10);
+      `checkd(count_fail15, 10);
 `ifdef TEST_COVERAGE
       `checkd(count_cover_nested, 28);
       `checkd(count_cover_inline, 28);

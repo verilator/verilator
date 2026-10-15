@@ -8746,8 +8746,7 @@ class WidthVisitor final : public VNVisitor {
             return;
         }
         nodep->doingWidth(true);
-        // Temporaries made for the body are property-local variables, promoted per instance by
-        // V3AssertPre/V3AssertNfa
+        // Temporaries made for the body are property-local variables, promoted per instance
         VL_RESTORER(m_propertyp);
         m_propertyp = nodep;
         userIterateAndNext(nodep->declsp(), nullptr);
@@ -8759,7 +8758,6 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstSequence* nodep) override {
         // IEEE 1800-2023 16.7 (sequence declarations), 16.8 (sequence instances)
         // Width-check the sequence body so expressions are typed for later inlining.
-        // Referenced sequences in assertion context will be inlined by V3AssertPre.
         if (nodep->didWidth()) return;
         userIterateAndNext(nodep->declsp(), nullptr);
         iterateCheckSelf(nodep, "SeqBody", nodep->exprp(), SELF, BOTH);
