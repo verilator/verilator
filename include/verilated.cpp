@@ -4371,13 +4371,15 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
                                          VerilatedVarLazyDatap* lazyBasep,
                                          const VlLazyReconEntry* lazyReconsp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
+    // For packed member rows, basep is the parent's storage.
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
     for (size_t i = 0; i < n; ++i) {
         const VlVarTableEntry& e = entp[i];
         void* datap;
         const bool isCombRow = e.vlflags & VLVF_LAZY_COMB;
-        const int32_t descSlot = isCombRow ? -1 : e.lazyIdx;
+        const bool isMember = e.vlflags & VLVF_PACKED_MEMBER;
+        const int32_t descSlot = isCombRow || isMember ? -1 : e.lazyIdx;
         const bool lazyDesc = descSlot >= 0;
         if (lazyDesc) {
             const VlLazyReconEntry& recon = lazyReconsp[descSlot];
@@ -4402,7 +4404,9 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
         // Per-scope table: the VlVarTableEntry rows are module-relative and shared.
         const uint32_t reconFlags = lazyDesc ? lazyReconsp[descSlot].vlflags : 0;
         const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | reconFlags);
-        VerilatedVar var{e.namep, datap, e.vltype, vlflags, e.udims, e.pdims, /*isParam=*/false};
+        const uint32_t bitOffset = isMember ? static_cast<uint32_t>(e.lazyIdx) : 0;
+        VerilatedVar var{e.namep, datap,     e.vltype,  vlflags,  e.udims,
+                         e.pdims, e.isParam, e.entSize, bitOffset};
         if (isCombRow) var.m_lazyCombMask = e.lazyIdx;
         if (reconFlags & VLVF_LAZY_COMB) var.m_lazyCombMask = lazyReconsp[descSlot].srcByteOffset;
         for (int d = 0; d < e.udims; ++d) {
@@ -4499,31 +4503,6 @@ VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, boo
         const int lsb = va_arg(ap, int);
         var.m_unpacked[i].m_left = msb;
         var.m_unpacked[i].m_right = lsb;
-    }
-    va_end(ap);
-
-    m_varsp->emplace(namep, std::move(var));
-    return &(m_varsp->find(namep)->second);
-}
-
-VerilatedVar* VerilatedScope::varInsertMember(const char* namep, void* datap, bool isParam,
-                                              VerilatedVarType vltype, int vlflags,
-                                              uint32_t bitOffset, uint32_t entSize, int pdims,
-                                              ...) VL_MT_UNSAFE {
-    // Member is a bit slice of the parent: datap/vltype/entSize are the parent's.
-    // The parent was inserted into this scope first, so m_varsp already exists.
-    // LCOV_EXCL_START - gcov attributes the never-run exception cleanup of 'var' here
-    VerilatedVar var(namep, datap, vltype,
-                     static_cast<VerilatedVarFlags>(vlflags | VLVF_PACKED_MEMBER), 0, pdims,
-                     isParam, entSize, bitOffset);
-    va_list ap;
-    // LCOV_EXCL_STOP
-    va_start(ap, pdims);
-    for (int i = 0; i < pdims; ++i) {
-        const int msb = va_arg(ap, int);
-        const int lsb = va_arg(ap, int);
-        var.m_packed[i].m_left = msb;
-        var.m_packed[i].m_right = lsb;
     }
     va_end(ap);
 

@@ -165,7 +165,7 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_NET = (1 << 15),  // Net object
     VLVF_PACKED_AGG = (1 << 16),  // Element type is a packed struct or union
     VLVF_PACKED_UNION = (1 << 17),  // With VLVF_PACKED_AGG, element type is a packed union
-    VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see varInsertMember
+    VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see VlVarTableEntry
     VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_PACKED_MEMBER, an ancestor is an array of
                                           // packed structs/unions, so needs an element index
     VLVF_LAZY_REMAT = (1 << 20),  // --vpi-lazy: rematerialized row; no storage, may be read-only
@@ -222,14 +222,16 @@ struct VlVarTableEntry final {
     // (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
     // nullptr if none. int32_t since large unpacked memories exceed int16 range.
     const int32_t* dimsp;
-    VerilatedVarType vltype;
     uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*), incl VLVF_LAZY_REMAT
+    VerilatedVarType vltype;
     uint8_t udims;
     uint8_t pdims;
-    // Last and defaulted, so only --vpi-lazy rows spell it. One field for both meanings, as a
-    // second would pad the row from 40 to 48 bytes.
-    int32_t lazyIdx = -1;  // VLVF_LAZY_COMB: model-wide VlLazyCombMask index; else module-relative
-                           // descriptor slot; -1 for neither
+    bool isParam;
+    // Defaulted, so only --vpi-lazy and member rows spell them. lazyIdx has three meanings, as
+    // another field would pad the row from 40 to 48 bytes.
+    int32_t lazyIdx = -1;  // VLVF_LAZY_COMB: model-wide VlLazyCombMask index; VLVF_PACKED_MEMBER:
+                           // bit offset; else module-relative descriptor slot; -1 for none
+    uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
 };
 
 // IEEE 1800-2023 Table 20-6
@@ -1088,9 +1090,6 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedVar* varInsertSized(const char* namep, void* datap, bool isParam,
                                  VerilatedVarType vltype, int vlflags, int udims, uint32_t entSize,
                                  ...) VL_MT_UNSAFE;
-    VerilatedVar* varInsertMember(const char* namep, void* datap, bool isParam,
-                                  VerilatedVarType vltype, int vlflags, uint32_t bitOffset,
-                                  uint32_t entSize, int pdims, ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
                                      void* forceReadSignalData, const char* forceReadSignalName,
