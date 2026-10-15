@@ -921,7 +921,6 @@ class AssertVisitor final : public VNVisitor {
                     ifp = nextifp;
                 } while (ifp);
 
-                AstIf* const newifp = nodep->cloneTree(false);
                 const bool allow_none = nodep->unique0Pragma();
 
                 // Empty case means no property
@@ -935,15 +934,17 @@ class AssertVisitor final : public VNVisitor {
                            : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
                 const VAssertType assertType
                     = nodep->uniquePragma() ? VAssertType::UNIQUE : VAssertType::UNIQUE0;
+                // Move, not clone, as the branches might declare referenced variables
+                VNRelinker relinker;
+                nodep->unlinkFrBack(&relinker);
                 AstIf* const checkifp
                     = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
                                 newFireAssert(nodep, VAssertDirectiveType::VIOLATION_IF,
                                               assertType, "'unique if' statement violated"),
-                                newifp};
+                                nodep};
                 checkifp->isBoundsCheck(true);  // To avoid LATCH warning
                 checkifp->branchPred(VBranchPred::BP_UNLIKELY);
-                nodep->replaceWith(checkifp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                relinker.relink(checkifp);
                 return;
             }
         }
