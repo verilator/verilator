@@ -22,6 +22,7 @@
 
 #include <vector>
 
+class AstCFunc;
 class AstNetlist;
 class AstScope;
 class AstVar;
@@ -52,6 +53,9 @@ public:
     // A PARTIAL combOf() instance's runs, ordered by element then bit.
     static const std::vector<CombRun>& combRuns(const AstNetlist* nodep, const AstScope* scopep,
                                                 const AstVar* varp) VL_MT_DISABLED;
+    // Func a reconstructed row in 'scopep' calls to refresh 'shadowVarp', null for a stored copy.
+    static const AstCFunc* refreshFuncp(const AstNetlist* nodep, const AstScope* scopep,
+                                        const AstVar* shadowVarp) VL_MT_DISABLED;
     // Binds prepare()'s by-name records on first call, so only call after the last deleting pass.
     static const CrossScopeSrc* crossScopeCopySrc(AstNetlist* nodep, const AstScope* scopep,
                                                   const AstVar* shadowVarp) VL_MT_DISABLED;

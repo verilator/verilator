@@ -136,7 +136,11 @@
 //
 // One function serves every instance of a module, so it must read variables
 // rather than instance-specific driver expressions; AstCFunc::vpiLazyReconstruct
-// tells V3Gate and V3Dfg to leave those reads alone.
+// tells V3Gate and V3Dfg to leave those reads alone. A group writing outside the
+// scope that authored it is anchored in the written scope if that has one
+// instance, else in the top scope: one function per instance, addressing every
+// variable absolute, which a row in another module reaches through a stub. Every
+// instance of a variable shares its shadow member, so all are claimed or none.
 //
 // Determinism: pointer-keyed maps are never iterated where order reaches
 // output; iteration always walks a companion vector in tree-encounter order.
@@ -197,6 +201,8 @@ public:
         std::vector<V3VpiLazy::CombRun> m_runs;  // Its masked bits, if PARTIAL
     };
     std::map<std::pair<std::string, const AstVar*>, InstComb> m_instComb;  // By scope name
+    // Refresh func of a shadow's row in a scope other than its group's; see rowStub()
+    std::map<std::pair<std::string, const AstVar*>, const AstCFunc*> m_rowRefresh;
 
     VVpiLazyComb combOf(const std::string& scopeName, const AstVar* varp) const {
         if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
@@ -273,7 +279,8 @@ struct Group final {
     std::unordered_set<AstVarScope*> members;
     std::vector<AstVarScope*> zeroInitps;  // Partial assembly: zero these shadows first
     AstVarScope* copyFromp = nullptr;  // Converted: refresh by copying this variable instead
-    AstVar* keyp = nullptr;  // targets[0]->varp(): cross-instance group identity
+    // targets[0]->varp(), cross-instance group identity; targets[0] itself if anchored elsewhere
+    const AstNode* keyp = nullptr;
     AstCFunc* funcp = nullptr;
     bool live = true;  // Cleared when the group is abandoned and its targets retained
     GroupVertex* vtxp = nullptr;  // Its vertex in the dependency graph, null once dead
@@ -563,7 +570,9 @@ class VpiLazyPreparer final {
     int m_combBailRetained = 0;  // Group-bail / non-sole-driver / cycle retains
 
     std::vector<std::unique_ptr<Group>> m_groups;  // Formation order (deterministic)
-    std::unordered_map<AstVar*, std::vector<Group*>> m_groupsOfKey;
+    std::unordered_map<const AstNode*, std::vector<Group*>> m_groupsOfKey;
+    // VPI-visible targets of groups anchored outside their scope, per variable (makeGroup)
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_anchoredOfVar;
     std::unordered_map<AstVarScope*, Group*> m_groupOf;  // Solely-written var -> its group
     // Group target -> its group and index in its 'targets'
     std::unordered_map<AstVarScope*, std::pair<Group*, size_t>> m_targetOf;
@@ -605,7 +614,7 @@ class VpiLazyPreparer final {
         IMPURE,  // The block has a side effect reconstruction must not repeat
         UNSUPPORTED_STMT,  // A statement kind the ordered walk does not model
         UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
-        CROSS_SCOPE_WRITE,  // Writes a variable outside the scope that authored the statements
+        CROSS_SCOPE_WRITE,  // Another instance of an anchored target has no group to define it
         CROSS_SCOPE_CONE,  // Multi-instance cone reading outside its scope; one func cannot serve
         CROSS_SCOPE_SOURCE,  // Feeds several cross-scope copies, which claim only a stored source
         COMB_CYCLE,  // Genuine combinational cycle (SCC member)
@@ -654,8 +663,9 @@ class VpiLazyPreparer final {
         AstCFunc* funcp = nullptr;  // Reconstruct func shared by every instance
         int epochSlot = -1;  // Index into the module's stamp array (assignEpochSlots)
     };
-    std::unordered_map<const AstVar*, KeyInfo> m_keyInfo;
+    std::unordered_map<const AstNode*, KeyInfo> m_keyInfo;
     std::unordered_map<const Group*, AstCFunc*> m_instStubOf;  // instanceCallee
+    std::map<std::pair<const AstNodeModule*, const Group*>, AstCFunc*> m_rowStubOf;  // rowStub
     int m_nextGid = 0;
     int m_nextTempIdx = 0;
 
@@ -705,6 +715,11 @@ private:
         return it != m_gather.m_instanceCount.end() ? it->second : 1;
     }
 
+    int keyInstances(const Group* g) const {
+        const AstVar* const varp = VN_CAST(g->keyp, Var);
+        return varp ? instancesOf(varp) : 1;
+    }
+
     int writeCountOf(const AstVarScope* vscp) const {
         const auto it = m_gather.m_writeCount.find(vscp);
         return it == m_gather.m_writeCount.end() ? 0 : it->second;
@@ -749,7 +764,7 @@ private:
         if (it == m_retargetSrcOf.end()) return nullptr;
         AstVarScope* const srcp = it->second;
         if (!sameLayout(u, srcp)) return nullptr;
-        if (instancesOf(g->keyp) > 1 && srcp->scopep() != g->scopep) return nullptr;
+        if (keyInstances(g) > 1 && srcp->scopep() != g->scopep) return nullptr;
         return srcp;
     }
 
@@ -773,13 +788,22 @@ private:
     }
 
     // All-or-nothing per module: flag and func are shared, so a survivor gets the wrong instance.
-    void killGroupsOfKey(AstVar* keyp, Bail why) {
+    // Likewise per variable, so the anchored groups defining its other instances die too.
+    void killGroupsOfKey(const AstNode* keyp, Bail why) {
         const auto git = m_groupsOfKey.find(keyp);
         UASSERT_OBJ(git != m_groupsOfKey.end(), keyp, "--vpi-lazy group key has no groups");
         for (Group* const g : git->second) {
             if (!g->live) continue;
             g->live = false;
-            for (AstVarScope* const t : g->targets) retainTarget(t, why);
+            for (AstVarScope* const t : g->targets) {
+                retainTarget(t, why);
+                const auto ait = m_anchoredOfVar.find(t->varp());
+                if (ait == m_anchoredOfVar.end()) continue;
+                for (AstVarScope* const s : ait->second) {
+                    const Group* const sgp = m_targetOf.at(s).first;
+                    if (sgp->live) killGroupsOfKey(sgp->keyp, why);
+                }
+            }
         }
     }
 
@@ -1141,30 +1165,29 @@ private:
                      const std::vector<AstVarScope*>& written,
                      const std::unordered_map<const AstVarScope*, int>& groupWrites,
                      const std::unordered_set<const AstVar*>& notSole) {
-        // V3EmitCSyms names the func from the target shadow's module: all group vars share it.
-        // A cross-scope copy candidate forms no group either way. Writes into one other,
-        // single-instance scope, but for the writer's own temps, anchor the group there: its one
-        // func reads the writer's variables absolute.
+        // A lone `dst = src;`, so crossScopeCopySources() may claim it
+        if (m_xscopeSrcOf.count(written[0])) return nullptr;
+        // Writes into one other, single-instance scope, but for the writer's own temps, anchor the
+        // group there: its one func reads the writer's variables absolute. Any other write outside
+        // the writer anchors it in the top scope, which writes them all absolute, and a row
+        // elsewhere refreshes through a rowStub().
         AstScope* const writerp = scopep;
         const auto it = std::find_if(written.begin(), written.end(),
                                      [&](AstVarScope* w) { return w->scopep() != writerp; });
-        AstScope* const anchorp = it != written.end() ? (*it)->scopep() : writerp;
-        const auto writerTemp = [&](AstVarScope* w) {
-            return w->scopep() == writerp && !w->varp()->isSigVpiLazyCandidate()
-                   && !m_helperCandVars.count(w->varp());
-        };
-        if (std::all_of(written.begin(), written.end(), [&](AstVarScope* w) {
-                return writerTemp(w) || (w->scopep() == anchorp && instancesOf(w->varp()) == 1);
-            }))
-            scopep = anchorp;
-        for (AstVarScope* const w : written) {
-            if (w->scopep() == scopep && !m_xscopeSrcOf.count(w)) continue;
-            if (scopep != writerp && writerTemp(w)) continue;
-            for (AstVarScope* const t : written) {
-                if (m_xscopeSrcOf.count(t)) continue;  // crossScopeCopySources() may claim it
-                retainTarget(t, Bail::CROSS_SCOPE_WRITE);
-            }
-            return nullptr;
+        if (it != written.end()) {
+            AstScope* const anchorp = (*it)->scopep();
+            const auto writerTemp = [&](AstVarScope* w) {
+                return w->scopep() == writerp && !w->varp()->isSigVpiLazyCandidate()
+                       && !m_helperCandVars.count(w->varp());
+            };
+            scopep = std::all_of(written.begin(), written.end(),
+                                 [&](AstVarScope* w) {
+                                     return writerTemp(w)
+                                            || (w->scopep() == anchorp
+                                                && instancesOf(w->varp()) == 1);
+                                 })
+                         ? anchorp
+                         : m_topScopep;
         }
         std::vector<AstVarScope*> targets;
         std::vector<AstVarScope*> temps;
@@ -1208,6 +1231,12 @@ private:
         g->members.insert(targets.begin(), targets.end());
         g->members.insert(temps.begin(), temps.end());
         g->keyp = targets[0]->varp();
+        if (std::any_of(targets.begin(), targets.end(),
+                        [&](const AstVarScope* t) { return t->scopep() != scopep; })) {
+            g->keyp = targets[0];
+            for (AstVarScope* const t : targets)
+                if (t->varp()->isSigVpiLazyCandidate()) m_anchoredOfVar[t->varp()].push_back(t);
+        }
         for (size_t i = 0; i < targets.size(); ++i) {
             m_groupOf[targets[i]] = g;
             m_targetOf[targets[i]] = {g, i};
@@ -1346,6 +1375,19 @@ private:
                 continue;
             }
             makeGroup(b.m_scopep, {&b}, b.m_targets, b.m_writeCount, notSole);
+        }
+        // Every instance of a variable shares its shadow member and lazy flag, so must be defined
+        for (const auto& ownp : m_groups) {
+            Group* const g = ownp.get();
+            if (!g->live || VN_IS(g->keyp, Var)) continue;
+            for (const AstVarScope* const t : g->targets) {
+                const auto it = m_anchoredOfVar.find(t->varp());
+                if (it != m_anchoredOfVar.end()
+                    && static_cast<int>(it->second.size()) != instancesOf(t->varp())) {
+                    killGroupsOfKey(g->keyp, Bail::CROSS_SCOPE_WRITE);
+                    break;
+                }
+            }
         }
     }
 
@@ -1658,12 +1700,15 @@ private:
     // METHODS - Scheduling
 
     // One loose vlSelf-relative func per instance, and a cross-scope VarRef descopes absolute.
+    // Nor can it call the one instance's func that an operand group anchored elsewhere has.
     void restrictMultiInstanceToLocalCones() {
         for (const auto& ownp : m_groups) {
             const Group* const g = ownp.get();
-            if (!g->live || instancesOf(g->keyp) <= 1) continue;
-            const auto elsewhere
-                = [&](const AstVarScope* vscp) { return vscp->scopep() != g->scopep; };
+            if (!g->live || keyInstances(g) <= 1) continue;
+            const auto elsewhere = [&](AstVarScope* vscp) {
+                const Group* const ugp = liveGroupOf(vscp);
+                return vscp->scopep() != g->scopep || (ugp && ugp->scopep != g->scopep);
+            };
             bool bad = false;
             for (const CombBlock* const bp : g->blockps) {  // Every ref is a read or a write
                 bad = bad || std::any_of(bp->m_reads.begin(), bp->m_reads.end(), elsewhere)
@@ -1916,6 +1961,7 @@ private:
     // refused: memcpy cannot convert.
     AstVarScope* soleCopySource(const Group* g) const {
         if (g->targets.size() != 1 || !g->temps.empty() || g->blockps.size() != 1) return nullptr;
+        if (!VN_IS(g->keyp, Var)) return nullptr;  // An anchored group's instances may differ
         const AstNodeAssign* const asgnp = VN_CAST(g->blockps[0]->m_alwaysp->stmtsp(), NodeAssign);
         if (!asgnp || asgnp->nextp()) return nullptr;
         const AstVarRef* const lhsp = VN_CAST(asgnp->lhsp(), VarRef);
@@ -1952,14 +1998,14 @@ private:
             if (ugp->copyFromp) u = ugp->copyFromp;  // Source folded too; chase it
             // srcOffset is from the target's own selfp, so the source must be the same instance.
             if (!sameLayout(g->targets[0], u) || u->scopep() != g->targets[0]->scopep()) continue;
-            ++foldable[g->keyp];
+            ++foldable[g->targets[0]->varp()];
             g->copyFromp = u;
         }
         // m_ordered order, not foldable's, so what is emitted does not depend on pointer hashing
         for (Group* const g : m_ordered) {
             if (!g->copyFromp) continue;
             // One instance could not fold: none may. Instances fold alike, so this is untested.
-            if (!claimPerVar(foldable, g->keyp)) {  // LCOV_EXCL_START
+            if (!claimPerVar(foldable, g->targets[0]->varp())) {  // LCOV_EXCL_START
                 g->copyFromp = nullptr;
                 continue;
             }  // LCOV_EXCL_STOP
@@ -2007,6 +2053,16 @@ private:
         return funcp;
     }
 
+    AstCFunc* newCallStub(AstScope* scopep, const Group* g) {
+        AstCFunc* const stubp = newReconFunc(
+            scopep, std::string{RECONSTRUCT_INST_FUNC_NAME} + "__" + std::to_string(gidOf(g)),
+            true);
+        AstCCall* const callp = new AstCCall{m_funcFlp, g->funcp};
+        callp->dtypeSetVoid();
+        stubp->addStmtsp(callp->makeStmt());
+        return stubp;
+    }
+
     // V3Descope takes a call's self pointer from its callee's scope, which for a shared func is
     // the representative's. A stub in the operand's own scope gets the call that instance's
     // self pointer; V3Descope then points the call at the shared func and deletes the stub.
@@ -2014,14 +2070,17 @@ private:
         if (ugp->funcp->scopep() == ugp->scopep) return ugp->funcp;
         AstCFunc*& stubp = m_instStubOf[ugp];
         if (!stubp) {
-            stubp = newReconFunc(
-                ugp->scopep,
-                std::string{RECONSTRUCT_INST_FUNC_NAME} + "__" + std::to_string(gidOf(ugp)), true);
-            AstCCall* const callp = new AstCCall{m_funcFlp, ugp->funcp};
-            callp->dtypeSetVoid();
-            stubp->addStmtsp(callp->makeStmt());
+            stubp = newCallStub(ugp->scopep, ugp);
             stubp->vpiLazyInstStub(true);
         }
+        return stubp;
+    }
+
+    // A row is refreshed with its own instance's self pointer, so a row outside an anchored
+    // group's scope calls a stub of its own module, which calls the func absolute.
+    AstCFunc* rowStub(AstScope* scopep, const Group* g) {
+        AstCFunc*& stubp = m_rowStubOf[{scopep->modp(), g}];
+        if (!stubp) stubp = newCallStub(scopep, g);
         return stubp;
     }
 
@@ -2031,8 +2090,6 @@ private:
         std::vector<std::pair<AstNodeModule*, int>> slotsOfMod;
         for (Group* const g : m_ordered) {
             AstNodeModule* const modp = g->scopep->modp();
-            UASSERT_OBJ(g->targets[0]->scopep()->modp() == modp, g->keyp,
-                        "Lazy group key variable outside the group scope's module");
             const auto pair = idxOfMod.emplace(modp, slotsOfMod.size());
             if (pair.second) slotsOfMod.emplace_back(modp, 0);
             int& slot = m_keyInfo[g->keyp].epochSlot;
@@ -2284,7 +2341,7 @@ private:
     // order makes temp liveness exact: every consumer is pruned first.
     void pruneBodies() {
         std::vector<Group*> repps;
-        std::unordered_set<AstVar*> seenKeys;
+        std::unordered_set<const AstNode*> seenKeys;
         for (Group* const g : m_ordered)
             if (seenKeys.insert(g->keyp).second) repps.push_back(g);
         std::unordered_set<const AstVar*> liveReads;  // What a pruned body still reads
@@ -2377,7 +2434,13 @@ private:
                 const auto tit = m_shadowOf.find(t);
                 UASSERT_OBJ(tit != m_shadowOf.end(), t->varp(),
                             "--vpi-lazy reconstruct target has no shadow");
-                tit->second->varp()->lazyReconFuncp(funcp);
+                AstVar* const shadowVarp = tit->second->varp();
+                if (t->scopep() == g->scopep) {
+                    shadowVarp->lazyReconFuncp(funcp);
+                } else {
+                    m_ctx.m_rowRefresh.emplace(std::make_pair(t->scopep()->name(), shadowVarp),
+                                               rowStub(t->scopep(), g));
+                }
             }
 
             AstNode* const bodyp = g->bodyp;
@@ -2442,7 +2505,7 @@ private:
                 }
                 if (m_gapVars.count(t->varp())) moveMaskToShadow(t);
                 dropStorage(t->varp());
-                m_reconstructed += instancesOf(t->varp());
+                m_reconstructed += keyInstances(g);
             }
         }
         emitCopyRows(m_copyGroups, false);
@@ -2613,6 +2676,14 @@ V3VpiLazy::combRuns(const AstNetlist* nodep, const AstScope* scopep, const AstVa
     const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
     UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
     return ctxp->combRunsOf(scopep->name(), varp);
+}
+
+const AstCFunc* V3VpiLazy::refreshFuncp(const AstNetlist* nodep, const AstScope* scopep,
+                                        const AstVar* shadowVarp) {
+    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+    UASSERT_OBJ(ctxp, shadowVarp, "--vpi-lazy row without a context");
+    const auto it = ctxp->m_rowRefresh.find({scopep->name(), shadowVarp});
+    return it != ctxp->m_rowRefresh.end() ? it->second : shadowVarp->lazyReconFuncp();
 }
 
 //######################################################################

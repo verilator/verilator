@@ -28,6 +28,8 @@ test.compile(make_top_shell=False,
 
 test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 39)
+# Interface members t drives per instance are anchored in t's scope; a cone in their own shared
+# scope that reads them is retained
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 43)
 
 test.passes()

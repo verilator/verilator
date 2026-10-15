@@ -400,9 +400,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return pr.first->second;
     }
 
-    static const AstCFunc* lazyRefreshFuncp(const AstVar* varp) {
-        if (const AstVar* const srcp = varp->lazyCopySrc()) return srcp->lazyReconFuncp();
-        return varp->lazyReconFuncp();
+    const AstCFunc* lazyRefreshFuncp(const AstScope* scopep, const AstVar* varp) const {
+        if (const AstVar* const srcp = varp->lazyCopySrc()) varp = srcp;
+        return V3VpiLazy::refreshFuncp(m_netlistp, scopep, varp);
     }
 
     // An alias shadow's row is its source cone's storage
@@ -1271,7 +1271,7 @@ void EmitCSyms::emitSymHdr() {
             const ScopeVarData& svd = itpair.second;
             const AstVar* const varp = svd.m_varp;
             if (!varp->isLazyReconstructShadow()) continue;
-            const AstCFunc* const funcp = lazyRefreshFuncp(varp);
+            const AstCFunc* const funcp = lazyRefreshFuncp(svd.m_scopep, varp);
             if (!funcp) continue;
             const std::string modClassName = EmitCUtil::prefixNameProtect(svd.m_modp);
             const std::string sym = modClassName + "__" + funcp->nameProtect();
@@ -1702,7 +1702,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                     rows.emplace_back(row);
                     if (isLazy) {
                         ++lazyRel;
-                        const AstCFunc* const funcp = lazyRefreshFuncp(varp);
+                        const AstCFunc* const funcp = lazyRefreshFuncp(scopep, varp);
                         const std::string fn
                             = funcp ? "&" + modClassName + "__" + funcp->nameProtect() : "nullptr";
                         std::string src;  // Empty for a cone

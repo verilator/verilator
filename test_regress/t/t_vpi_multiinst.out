@@ -49,10 +49,14 @@ t (vpiModule) t  vpiDefName=t
         vpiReg:
         a (vpiReg) t.if0.a 
         b (vpiReg) t.if0.b 
+        l (vpiReg) t.if0.l 
+        s (vpiReg) t.if0.s 
     if1 (vpiInterface) t.if1 
         vpiReg:
         a (vpiReg) t.if1.a 
         b (vpiReg) t.if1.b 
+        l (vpiReg) t.if1.l 
+        s (vpiReg) t.if1.s 
     if_a (vpiInterface) t.if_a 
         vpiReg:
         derived (vpiReg) t.if_a.derived 
@@ -186,8 +190,12 @@ t.bc1.bc = 00 vpiSize=8
 t.bc1.bd = 33 vpiSize=8
 t.if0.a = 00 vpiSize=7
 t.if0.b = 7f vpiSize=7
+t.if0.l = 3c vpiSize=7
+t.if0.s = 09 vpiSize=7
 t.if1.a = 01 vpiSize=7
 t.if1.b = 54 vpiSize=7
+t.if1.l = 00 vpiSize=7
+t.if1.s = 00 vpiSize=7
 t.if_a.derived = 02 vpiSize=7
 t.if_a.val = 01 vpiSize=7
 t.if_b.derived = 2b vpiSize=7
@@ -274,8 +282,11 @@ t.observe = 7c
 t.observe2 = 2b
 t.if0.a = 03
 t.if0.b = 7c
+t.if0.l = 3f
+t.if0.s = 0c
 t.if1.a = 04
 t.if1.b = 51
+t.if1.l = 03
 t.if_a.derived = 05
 t.if_a.val = 04
 t.if_b.derived = 2a
@@ -293,6 +304,8 @@ t.observe = 7a
 t.observe2 = 2d
 t.if0.a = 06
 t.if0.b = 79
+t.if0.l = 3a
+t.if0.s = 0f
 t.if1.a = 07
 t.if1.b = 52
 t.if_a.derived = 08
@@ -318,8 +331,11 @@ t.observe = 70
 t.observe2 = 2b
 t.if0.a = 09
 t.if0.b = 76
+t.if0.l = 35
+t.if0.s = 12
 t.if1.a = 0a
 t.if1.b = 5f
+t.if1.l = 09
 t.if_a.derived = 0b
 t.if_a.val = 0a
 t.if_b.derived = 24
@@ -343,6 +359,8 @@ t.observe = 7a
 t.observe2 = 29
 t.if0.a = 0c
 t.if0.b = 73
+t.if0.l = 30
+t.if0.s = 15
 t.if1.a = 0d
 t.if1.b = 58
 t.if_a.derived = 0e
@@ -368,8 +386,11 @@ t.observe = 7c
 t.observe2 = 2b
 t.if0.a = 0f
 t.if0.b = 70
+t.if0.l = 33
+t.if0.s = 18
 t.if1.a = 10
 t.if1.b = 45
+t.if1.l = 0f
 t.if_a.derived = 11
 t.if_a.val = 10
 t.if_b.derived = 26
@@ -403,6 +424,8 @@ t.bc1.bc = f6
 t.bc1.bd = c5
 t.if0.a = 12
 t.if0.b = 6d
+t.if0.l = 2e
+t.if0.s = 1b
 t.if1.a = 13
 t.if1.b = 46
 t.if_a.derived = 14
@@ -450,8 +473,11 @@ t.bc1.bc = c9
 t.bc1.bd = fa
 t.if0.a = 15
 t.if0.b = 6a
+t.if0.l = 29
+t.if0.s = 1e
 t.if1.a = 16
 t.if1.b = 43
+t.if1.l = 15
 t.if_a.derived = 17
 t.if_a.val = 16
 t.if_b.derived = 40
@@ -506,6 +532,8 @@ t.bc1.bc = 25
 t.bc1.bd = 16
 t.if0.a = 18
 t.if0.b = 67
+t.if0.l = 24
+t.if0.s = 21
 t.if1.a = 19
 t.if1.b = 4c
 t.if_a.derived = 1a
@@ -549,8 +577,11 @@ t.bc1.bc = 74
 t.bc1.bd = 47
 t.if0.a = 1b
 t.if0.b = 64
+t.if0.l = 27
+t.if0.s = 24
 t.if1.a = 1c
 t.if1.b = 49
+t.if1.l = 1b
 t.if_a.derived = 1d
 t.if_a.val = 1c
 t.if_b.derived = 32
@@ -588,6 +619,8 @@ t.bc1.bc = 40
 t.bc1.bd = 73
 t.if0.a = 1e
 t.if0.b = 61
+t.if0.l = 22
+t.if0.s = 27
 t.if1.a = 1f
 t.if1.b = 4a
 t.if_a.derived = 20
@@ -635,8 +668,11 @@ t.bc1.bc = 9a
 t.bc1.bd = a9
 t.if0.a = 21
 t.if0.b = 5e
+t.if0.l = 1d
+t.if0.s = 2a
 t.if1.a = 22
 t.if1.b = 77
+t.if1.l = 21
 t.if_a.derived = 23
 t.if_a.val = 22
 t.if_b.derived = 0c
@@ -693,6 +729,8 @@ t.bc1.bc = e5
 t.bc1.bd = d6
 t.if0.a = 24
 t.if0.b = 5b
+t.if0.l = 18
+t.if0.s = 2d
 t.if1.a = 25
 t.if1.b = 70
 t.if_a.derived = 26
@@ -748,8 +786,11 @@ t.qf = 00000018
 t.rcanonr = 17.25
 t.if0.a = 27
 t.if0.b = 58
+t.if0.l = 1b
+t.if0.s = 30
 t.if1.a = 28
 t.if1.b = 7d
+t.if1.l = 27
 t.if_a.derived = 29
 t.if_a.val = 28
 t.if_b.derived = 0e
@@ -791,6 +832,8 @@ t.qf = 0000124c
 t.rcanonr = 4677.25
 t.if0.a = 2a
 t.if0.b = 55
+t.if0.l = 16
+t.if0.s = 33
 t.if1.a = 2b
 t.if1.b = 7e
 t.if_a.derived = 2c
@@ -843,8 +886,11 @@ t.rcanonr = 4804.25
 t.scanonr = "even"
 t.if0.a = 2d
 t.if0.b = 52
+t.if0.l = 11
+t.if0.s = 36
 t.if1.a = 2e
 t.if1.b = 7b
+t.if1.l = 2d
 t.if_a.derived = 2f
 t.if_a.val = 2e
 t.if_b.derived = 08
@@ -898,6 +944,8 @@ t.rcanonr = 4807.25
 t.scanonr = "odd"
 t.if0.a = 30
 t.if0.b = 4f
+t.if0.l = 0c
+t.if0.s = 39
 t.if1.a = 31
 t.if1.b = 64
 t.if_a.derived = 32
@@ -937,8 +985,11 @@ t.observe = 7c
 t.observe2 = 2b
 t.if0.a = 33
 t.if0.b = 4c
+t.if0.l = 0f
+t.if0.s = 3c
 t.if1.a = 34
 t.if1.b = 61
+t.if1.l = 33
 t.if_a.derived = 35
 t.if_a.val = 34
 t.if_b.derived = 1a
