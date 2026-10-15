@@ -329,6 +329,22 @@ module t;
   logic [7:0] r;
   assign r = a & b;
 
+  // V3Decompose splits 'dpk' into rows, temps assembled bit by bit and read by another block
+  logic [1:0][3:0] dpk;
+  for (genvar i = 0; i < 8; ++i) begin : g_dpk
+    assign dpk[i/4][i%4] = a[i] ^ b[7-i];
+  end
+  logic [3:0] obs_dpk;
+  assign obs_dpk = dpk[0] & dpk[1];
+
+  // A cone reads 'lc' through the 'bit' it copies
+  bit [3:0] bs;
+  always_ff @(posedge clk) bs <= a[7:4];
+  logic [3:0] lc;
+  assign lc = bs;
+  logic [3:0] obs_lc;
+  assign obs_lc = lc ^ a[3:0];
+
   // Forceable signals
   logic [6:0] keep_frc = 7'h0;
   logic [6:0] frc  /* verilator forceable */;

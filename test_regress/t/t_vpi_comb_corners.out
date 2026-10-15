@@ -3,12 +3,14 @@ t (vpiModule) t  vpiDefName=t
     NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
     a (vpiReg) t.a 
     b (vpiReg) t.b 
+    bs (vpiBitVar) t.bs 
     clk (vpiReg) t.clk 
     comb_inc (vpiReg) t.comb_inc 
     comp_stage_n (vpiReg) t.comp_stage_n 
     ctr (vpiReg) t.ctr 
     cyc (vpiReg) t.cyc 
     data (vpiReg) t.data 
+    dpk (vpiReg) t.dpk 
     en_comb (vpiReg) t.en_comb 
     fcyc_rev (vpiReg) t.fcyc_rev 
     fcyc_x (vpiReg) t.fcyc_x 
@@ -24,6 +26,7 @@ t (vpiModule) t  vpiDefName=t
     i_comb (vpiReg) t.i_comb 
     keep (vpiReg) t.keep 
     keep_frc (vpiReg) t.keep_frc 
+    lc (vpiReg) t.lc 
     md_full (vpiRegArray) t.md_full 
         vpiReg:
         md_full (vpiReg) t.md_full[1][1] 
@@ -69,8 +72,10 @@ t (vpiModule) t  vpiDefName=t
         mixdep (vpiReg) t.mixdep[0][1] 
         mixdep (vpiReg) t.mixdep[0][0] 
     narrow (vpiReg) t.narrow 
+    obs_dpk (vpiReg) t.obs_dpk 
     obs_dtypes (vpiReg) t.obs_dtypes 
     obs_impureidx (vpiReg) t.obs_impureidx 
+    obs_lc (vpiReg) t.obs_lc 
     orphan (vpiReg) t.orphan 
     out (vpiReg) t.out 
     p (vpiReg) t.p 
@@ -122,12 +127,14 @@ t (vpiModule) t  vpiDefName=t
 t.NumCycles = 14 vpiSize=8
 t.a = 00 vpiSize=8
 t.b = 00 vpiSize=8
+t.bs = 0 vpiSize=4
 t.clk = 0 vpiSize=1
 t.comb_inc = 01 vpiSize=8
 t.comp_stage_n = 00000000 vpiSize=32
 t.ctr = 00 vpiSize=8
 t.cyc = 00 vpiSize=8
 t.data = 5 vpiSize=4
+t.dpk = 00 vpiSize=8
 t.en_comb = 0 vpiSize=2
 t.fcyc_rev = 00 vpiSize=8
 t.fcyc_x = 10 vpiSize=8
@@ -143,6 +150,7 @@ t.handle = 0000000000000000 vpiSize=64
 t.i_comb = 00000001 vpiSize=32
 t.keep = 00 vpiSize=8
 t.keep_frc = 00 vpiSize=7
+t.lc = 0 vpiSize=4
 t.md_full[1][1] = 0011 vpiSize=16
 t.md_full[1][0] = ff00 vpiSize=16
 t.md_full[2][1] = 0033 vpiSize=16
@@ -174,7 +182,9 @@ t.mixdep[1][0] = ff vpiSize=8
 t.mixdep[0][1] = 00 vpiSize=8
 t.mixdep[0][0] = 00 vpiSize=8
 t.narrow = 01 vpiSize=8
+t.obs_dpk = 0 vpiSize=4
 t.obs_dtypes = fa vpiSize=8
+t.obs_lc = 0 vpiSize=4
 t.orphan = b9 vpiSize=8
 t.out = f0 vpiSize=8
 t.p = 00 vpiSize=8
@@ -261,6 +271,7 @@ t.comb_inc = 3d
 t.comp_stage_n = 54cc443c
 t.ctr = 0c
 t.cyc = 04
+t.dpk = 3c
 t.fcyc_rev = 0c
 t.fcyc_x = dc
 t.fcyc_y = d
@@ -296,6 +307,7 @@ t.mixdep[1][0] = c3
 t.mixdep[0][0] = 3c
 t.narrow = 0d
 t.obs_dtypes = 02
+t.obs_lc = c
 t.out = b4
 t.p = 3c
 t.pa_comb = 3cc33d3b
@@ -313,11 +325,13 @@ t.clk = 0
 -- @55 readonly
 t.a = 2b
 t.b = 74
+t.bs = 3
 t.clk = 1
 t.comb_inc = 2c
 t.comp_stage_n = 89877d2b
 t.ctr = 0f
 t.cyc = 05
+t.dpk = 05
 t.en_comb = 3
 t.fcyc_rev = 7c
 t.fcyc_x = cb
@@ -327,6 +341,7 @@ t.frc2 = 31
 t.i_comb = 0000002c
 t.keep = 55
 t.keep_frc = 0f
+t.lc = 3
 t.md_full[1][1] = 2b11
 t.md_full[1][0] = d42b
 t.md_full[2][1] = 2b33
@@ -356,6 +371,7 @@ t.mixdep[0][1] = 74
 t.mixdep[0][0] = 2b
 t.narrow = 10
 t.obs_dtypes = 01
+t.obs_lc = 8
 t.out = a5
 t.p = 2b
 t.pa_comb = 2bd42c2a
@@ -378,11 +394,13 @@ t.clk = 0
 -- @65 readonly
 t.a = 5a
 t.b = 33
+t.bs = 2
 t.clk = 1
 t.comb_inc = 5b
 t.comp_stage_n = 5632ee5a
 t.ctr = 12
 t.cyc = 06
+t.dpk = 96
 t.en_comb = 2
 t.fcyc_rev = 39
 t.fcyc_x = ba
@@ -392,6 +410,7 @@ t.frc2 = 34
 t.i_comb = 0000005b
 t.keep = 66
 t.keep_frc = 12
+t.lc = 2
 t.md_full[1][1] = 5a11
 t.md_full[1][0] = a55a
 t.md_full[2][1] = 5a33
@@ -445,11 +464,13 @@ t.clk = 0
 -- @75 readonly
 t.a = 00
 t.b = 00
+t.bs = 5
 t.clk = 1
 t.comb_inc = 01
 t.comp_stage_n = 00000000
 t.ctr = 15
 t.cyc = 07
+t.dpk = 00
 t.en_comb = 0
 t.fcyc_rev = 00
 t.fcyc_x = 10
@@ -459,6 +480,7 @@ t.frc2 = 37
 t.i_comb = 00000001
 t.keep = 77
 t.keep_frc = 15
+t.lc = 5
 t.md_full[1][1] = 0011
 t.md_full[1][0] = ff00
 t.md_full[2][1] = 0033
@@ -488,6 +510,7 @@ t.mixdep[0][1] = 00
 t.mixdep[0][0] = 00
 t.narrow = 16
 t.obs_dtypes = fa
+t.obs_lc = 5
 t.out = 87
 t.p = 00
 t.pa_comb = 00ff01ff
@@ -511,6 +534,7 @@ t.clk = 0
 -- @85 cb t.cyc = 08
 -- put t.orphan = 2a flag=1 ok
 -- @85 after put
+t.bs = 0
 t.clk = 1
 t.ctr = 18
 t.cyc = 08
@@ -518,7 +542,9 @@ t.frc = 29
 t.frc2 = 3a
 t.keep = 88
 t.keep_frc = 18
+t.lc = 0
 t.narrow = 19
+t.obs_lc = 0
 t.orphan = 2a
 t.out = 78
 t.rc_alias = 0.5

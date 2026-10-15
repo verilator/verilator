@@ -748,7 +748,7 @@ private:
         const auto it = m_retargetSrcOf.find(u);
         if (it == m_retargetSrcOf.end()) return nullptr;
         AstVarScope* const srcp = it->second;
-        if (!u->varp()->dtypep()->similarDType(srcp->varp()->dtypep())) return nullptr;
+        if (!sameLayout(u, srcp)) return nullptr;
         if (instancesOf(g->keyp) > 1 && srcp->scopep() != g->scopep) return nullptr;
         return srcp;
     }
@@ -1365,7 +1365,7 @@ private:
                           AstScope* scopep, const std::unordered_set<const AstVar*>& notSole,
                           const std::unordered_set<const AstVar*>& gapRead) {
         AstVar* const varp = basep->varp();
-        if (!varp->isSigVpiLazyCandidate()) return;
+        if (!varp->isSigVpiLazyCandidate() && !m_helperCandVars.count(varp)) return;
         if (!reconstructableKind(varp)) {
             retainTarget(basep, Bail::DTYPE);
             return;
@@ -2315,7 +2315,6 @@ private:
             if (AstVarScope* const srcp = m_prep.retargetSubstituteFor(u, m_groupp)) {
                 u = srcp;
                 redirect(nodep, srcp);
-                nodep->dtypeFrom(srcp->varp());
             }
             Group* const ugp = m_prep.liveGroupOf(u);
             if (ugp && ugp != m_groupp) {
