@@ -38,27 +38,15 @@ static void markContinuousLhs(AstNode* const nodep) {
 }
 
 // Flip the access of the driven leaves of a pin connection expression so it
-// can be used on the LHS of an assignment. Only variables and bit/part
-// selects over variables are flipped; index and select operands stay
+// can be used on the LHS of an assignment; index and select operands stay
 // read-only. Struct-member selects cannot appear here: V3Width lowers them to
-// selects before V3Inst. Returns false if the connection cannot be driven
-// (e.g. arithmetic), in which case the expression is left unmodified.
+// selects before V3Inst.
 static bool markConnectionLhs(AstNodeExpr* const nodep) {
-    if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+    return V3Inst::forEachDrivenLeaf(nodep, [](AstNodeVarRef* refp) {
         if (!refp->access().isReadOnly()) return false;
         refp->access(VAccess::WRITE);
         return true;
-    }
-    // Note AstSel (bit/part select) is not an AstNodeSel (array select);
-    // both expose fromp() for the selected value.
-    if (AstSel* const selp = VN_CAST(nodep, Sel)) return markConnectionLhs(selp->fromp());
-    if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
-        return markConnectionLhs(selp->fromp());
-    }
-    if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
-        return markConnectionLhs(concatp->lhsp()) && markConnectionLhs(concatp->rhsp());
-    }
-    return false;
+    });
 }
 
 // Prepare a pin connection expression as the LHS of the reverse (inside-out)
@@ -416,6 +404,9 @@ public:
                 AstNodeExpr* const drivenp = !forTristate && isClockingDrivenPort(pinVarp)
                                                  ? tryConnectionLhs(pinexprp)
                                                  : nullptr;
+                // A port the clocking block drives itself would silently lose the drive.
+                // A port only reached through a sub-instance keeps the plain input
+                // connection, so connections that compiled before still do.
                 if (!drivenp && !forTristate && pinVarp->isClockingDriven()) {
                     pinp->v3error("Unsupported: Clocking block output driving input port "
                                   "through non-decomposable connection "
@@ -449,6 +440,28 @@ public:
 
 //######################################################################
 // Inst class functions
+
+bool V3Inst::forEachDrivenLeaf(AstNodeExpr* nodep,
+                               const std::function<bool(AstNodeVarRef*)>& leaff) {
+    if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) return leaff(refp);
+    // Note AstSel (bit/part select) is not an AstNodeSel (array select);
+    // both expose fromp() for the selected value.
+    if (AstSel* const selp = VN_CAST(nodep, Sel)) return forEachDrivenLeaf(selp->fromp(), leaff);
+    if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+        return forEachDrivenLeaf(selp->fromp(), leaff);
+    }
+    if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
+        const bool lhsOk = forEachDrivenLeaf(concatp->lhsp(), leaff);
+        return forEachDrivenLeaf(concatp->rhsp(), leaff) && lhsOk;
+    }
+    // V3Width wraps a concatenated port connection in a single replication; V3Const
+    // removes it before V3Inst, but V3AssertPre still sees it
+    if (AstReplicate* const repp = VN_CAST(nodep, Replicate)) {
+        const AstConst* const countp = VN_CAST(repp->countp(), Const);
+        if (countp && countp->toUInt() == 1) return forEachDrivenLeaf(repp->srcp(), leaff);
+    }
+    return false;
+}
 
 AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, bool forTristate,
                                        bool alwaysCvt) {
