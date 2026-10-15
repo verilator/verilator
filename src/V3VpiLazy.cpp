@@ -1142,9 +1142,24 @@ private:
                      const std::unordered_map<const AstVarScope*, int>& groupWrites,
                      const std::unordered_set<const AstVar*>& notSole) {
         // V3EmitCSyms names the func from the target shadow's module: all group vars share it.
-        // A cross-scope copy candidate forms no group either way.
+        // A cross-scope copy candidate forms no group either way. Writes into one other,
+        // single-instance scope, but for the writer's own temps, anchor the group there: its one
+        // func reads the writer's variables absolute.
+        AstScope* const writerp = scopep;
+        const auto it = std::find_if(written.begin(), written.end(),
+                                     [&](AstVarScope* w) { return w->scopep() != writerp; });
+        AstScope* const anchorp = it != written.end() ? (*it)->scopep() : writerp;
+        const auto writerTemp = [&](AstVarScope* w) {
+            return w->scopep() == writerp && !w->varp()->isSigVpiLazyCandidate()
+                   && !m_helperCandVars.count(w->varp());
+        };
+        if (std::all_of(written.begin(), written.end(), [&](AstVarScope* w) {
+                return writerTemp(w) || (w->scopep() == anchorp && instancesOf(w->varp()) == 1);
+            }))
+            scopep = anchorp;
         for (AstVarScope* const w : written) {
             if (w->scopep() == scopep && !m_xscopeSrcOf.count(w)) continue;
+            if (scopep != writerp && writerTemp(w)) continue;
             for (AstVarScope* const t : written) {
                 if (m_xscopeSrcOf.count(t)) continue;  // crossScopeCopySources() may claim it
                 retainTarget(t, Bail::CROSS_SCOPE_WRITE);
