@@ -714,6 +714,26 @@ public:
         default: return m_e == other.m_e;
         }
     }
+    // Canonical keyword for IEEE 1800-2023 6.22.1 matching types
+    VBasicDTypeKwd matchingType() const VL_MT_SAFE {
+        switch (m_e) {
+        case BYTE:
+        case SHORTINT:
+        case INT:
+        case LONGINT: return BIT;
+        case INTEGER:
+        case INTEGER2STATE:
+        case TIME:
+        case TIME2STATE:
+        case LOGIC2STATE:
+        case LOGIC_IMPLICIT: return LOGIC;
+        default: return *this;
+        }
+    }
+    bool isPredefinedInteger() const VL_MT_SAFE {
+        return m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
+               || m_e == INTEGER2STATE || m_e == TIME || m_e == TIME2STATE;
+    }
     // Does this represent a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_SAFE {
         switch (m_e) {
@@ -1292,9 +1312,10 @@ constexpr bool operator==(VCaseType::en lhs, const VCaseType& rhs) { return lhs 
 class VCastable final {
 public:
     enum en : uint8_t {
-        UNSUPPORTED,
-        SAMEISH,
-        COMPATIBLE,
+        UNSUPPORTED,  // Types are incompatible or unsupported
+        MATCHING,  // IEEE 1800-2023 6.22.1 matching types
+        SAMEISH,  // IEEE 1800-2023 6.22.2 equivalent types
+        COMPATIBLE,  // Types are assignable/castable
         ENUM_IMPLICIT,
         ENUM_EXPLICIT,
         DYNAMIC_CLASS,
@@ -1304,10 +1325,12 @@ public:
     enum en m_e;
     const char* ascii() const {
         static constexpr const char* const names[]
-            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_IMPLICIT",
-               "ENUM_EXPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
+            = {"UNSUPPORTED",   "MATCHING",      "SAMEISH",       "COMPATIBLE",
+               "ENUM_IMPLICIT", "ENUM_EXPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
         return names[m_e];
     }
+    bool isMatching() const { return m_e == MATCHING; }
+    bool isSameish() const { return m_e == MATCHING || m_e == SAMEISH; }
     bool isAssignable() const { return m_e != UNSUPPORTED && m_e != INCOMPATIBLE; }
     VCastable()
         : m_e{UNSUPPORTED} {}

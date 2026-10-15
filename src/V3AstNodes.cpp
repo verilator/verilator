@@ -725,6 +725,28 @@ void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int 
     this->rangep(rangep);
     this->dtypep(this);
 }
+bool AstBasicDType::matchingDTypeNode(const AstNodeDType* samep) const {
+    if (sameNode(samep)) return true;
+    const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
+
+    if (keyword().matchingType() != sp->keyword().matchingType()) return false;
+    if (keyword().isFourstate() != sp->keyword().isFourstate()) return false;
+    if (numeric().isSigned() != sp->numeric().isSigned()) return false;
+    if (width() != sp->width()) return false;
+
+    // Both are ranged: ranges must match exactly (IEEE 1800-2023 6.22.1(d))
+    if (isRanged() && sp->isRanged()) {
+        return left() == sp->left() && right() == sp->right() && ascending() == sp->ascending();
+    }
+    // Neither is ranged: matching keywords with same width/signing match
+    if (!isRanged() && !sp->isRanged()) return true;
+
+    // One is predefined integer type and the other is a vector (IEEE 1800-2023 6.22.1(e)):
+    const AstBasicDType* const predp = isRanged() ? sp : this;
+    if (!predp->keyword().isPredefinedInteger()) return false;
+    const AstBasicDType* const vecp = isRanged() ? this : sp;
+    return !vecp->ascending() && vecp->lo() == 0 && vecp->hi() == vecp->width() - 1;
+}
 string AstBasicDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     os << keyword().typeName();
@@ -744,6 +766,7 @@ bool AstBasicDType::sameNode(const AstNode* samep) const {
     if (!rangep() && !sp->rangep()) return true;
     return rangep() && rangep()->sameTree(sp->rangep());
 }
+
 bool AstBasicDType::similarDTypeNode(const AstNodeDType* samep) const {
     if (sameNode(samep)) return true;
     const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
@@ -2866,6 +2889,15 @@ bool AstNodeDType::isTriviallyConstructible() const VL_MT_STABLE {
                || bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR;
     }
     dtypep->v3fatalSrc("Unknown data type: " << dtypep->prettyName());
+}
+bool AstNodeDType::matchingDType(const AstNodeDType* samep) const {
+    if (!samep) return false;
+    const AstNodeDType* nodep = this;
+    nodep = nodep->skipRefToNonRefp();
+    samep = samep->skipRefToNonRefp();
+    if (nodep == samep) return true;
+    if (nodep->type() != samep->type()) return false;
+    return nodep->matchingDTypeNode(samep);
 }
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
