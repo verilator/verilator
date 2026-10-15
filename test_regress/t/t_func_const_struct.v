@@ -182,6 +182,22 @@ module t;
     d.w = c.w - 1;
     return c.w + f_recurse(d);
   endfunction
+  // Issue #3826: an array of structures built in a loop over its size, used by a generate
+  typedef cfg_t list_t[3];
+  function list_t make_list;
+    for (int j = 0; j < $size(make_list); ++j) begin
+      make_list[j].en = j[0];
+      make_list[j].w = 10 * j + 1;
+    end
+  endfunction
+  localparam list_t LIST = make_list();
+  for (genvar j = 0; j < $size(LIST); ++j) begin : g_list
+    logic [LIST[j].w-1:0] q;
+    initial begin
+      `checkd($bits(q), 10 * j + 1);
+      `checkd(LIST[j].en, 1'(j % 2));
+    end
+  end
 
   localparam config_pkg::config_struct_t MY_CONFIG = config_pkg::static_config(1);
   struct_submodule #(.MY_CONFIG(MY_CONFIG)) a_submodule_I ();
