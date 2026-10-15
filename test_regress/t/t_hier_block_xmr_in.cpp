@@ -33,6 +33,9 @@ int main(int argc, char** argv) {
     TEST_CHECK_EQ(static_cast<unsigned>(topp->o_neg), 1);  // -5 through a signed port
     TEST_CHECK_HEX_EQ(static_cast<unsigned>(topp->o_tdef), 0x3c);  // typedef'd target
     TEST_CHECK_HEX_EQ(static_cast<unsigned>(topp->o_above), 0x5a);  // from above the parent
+    // The reference sits in a de-parameterized module, read at two parameters
+    TEST_CHECK_EQ(static_cast<unsigned>(topp->o_h0), 1);  // 0x5a[1]
+    TEST_CHECK_EQ(static_cast<unsigned>(topp->o_h1), 0);  // 0x5a[2]
 
     if (!errors) printf("*-* All Finished *-*\n");
     topp->final();

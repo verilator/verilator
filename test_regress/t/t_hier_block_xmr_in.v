@@ -33,10 +33,20 @@ module blk_param #(parameter int P = 1) (output [7:0] o);
   mid m(o);
 endmodule
 
+// The module the reference sits in is itself de-parameterized, so the record
+// has to be written under both spellings of its name
+module holder #(parameter int SEL = 0) (output [7:0] o, output b);
+  blk bk(o);
+  assign b = bk.m.d.sig[SEL];
+endmodule
+
 module bench(output [7:0] o_blk, output [7:0] o_param,
              output [7:0] o_sig, output [7:0] o_again, output o_bit,
-             output [3:0] o_part, output o_neg, output [7:0] o_tdef);
+             output [3:0] o_part, output o_neg, output [7:0] o_tdef,
+             output o_h0, output o_h1);
   blk bk(o_blk);
+  holder #(.SEL(1)) h0(, o_h0);   // 0x5a[1] is 1
+  holder #(.SEL(2)) h1(, o_h1);   // 0x5a[2] is 0
   blk_param #(.P(2)) bp(o_param);
   assign o_sig = bk.m.d.sig;        // three levels inside the block
   assign o_again = bk.m.d.sig;      // the same path again: one port, read twice
@@ -49,8 +59,8 @@ endmodule
 module t(output [7:0] o_blk, output [7:0] o_param,
          output [7:0] o_sig, output [7:0] o_again, output o_bit,
          output [3:0] o_part, output o_neg, output [7:0] o_tdef,
-         output [7:0] o_above);
-  bench top(o_blk, o_param, o_sig, o_again, o_bit, o_part, o_neg, o_tdef);
+         output [7:0] o_above, output o_h0, output o_h1);
+  bench top(o_blk, o_param, o_sig, o_again, o_bit, o_part, o_neg, o_tdef, o_h0, o_h1);
   // Reached from two levels above the block, not from its parent
   assign o_above = top.bk.m.d.sig;
 endmodule
