@@ -20,30 +20,64 @@ interface proc_ifc;
   logic [1:0] d;
 endinterface
 
+module upward_driver (
+    input logic [1:0] value
+);
+  always @* begin
+    t.up_if.d = value[0] ? ~value : 'z;
+    $root.t.up_if.d = value;
+  end
+endmodule
+
+module generic_driver (
+    interface port,
+    input logic [1:0] value
+);
+  always @* begin
+    port.d = value[0] ? ~value : 'z;
+    port.d = value;
+  end
+endmodule
+
 module t;
   logic [3:0][1:0] src = {2'd3, 2'd2, 2'd1, 2'd3};
   wire [3:0][1:0] observed;
   wire [2:1][3:2][1:0] nested;
   wire [3:0][1:0] array_observed;
   wire [3:0][1:0] proc_observed;
+  wire [1:0] generic_observed;
   wire [3:0][1:0] out_observed;
   wire [1:0] scoped_observed;
   wire [1:0] flat_observed;
   ifc array_if[3:0] ();
   proc_ifc blk_if ();
   proc_ifc self_if ();
+  proc_ifc root_if ();
+  proc_ifc up_if ();
   proc_ifc out_if[3:0] ();
   ifc g_u_if ();
+  upward_driver u_upward (src[1]);
+
+  if (1) begin : generic_scope
+    proc_ifc generic_if ();
+    generic_driver u_generic (
+        generic_if,
+        src[1]
+    );
+    assign generic_observed = generic_if.d;
+  end
 
   // The later write in a process wins, also from another named block
   always @* begin
     begin : first
       blk_if.d = src[0][0] ? src[2] : 'z;
       t.self_if.d = src[0][1] ? ~src[3] : 'z;
+      $root.t.root_if.d = src[0][0] ? ~src[2] : 'z;
     end
     begin : second
       blk_if.d = ~src[2];
-      t.self_if.d = src[3];
+      self_if.d = src[3];
+      root_if.d = src[2];
     end
   end
 
@@ -63,7 +97,7 @@ module t;
         end
       end
       begin : second
-        gen[i].p_if.d = src[i] ^ 2'(i);
+        t.gen[i].p_if.d = src[i] ^ 2'(i);
         out_if[i].d = ~src[3-i];
       end
     end
@@ -92,6 +126,7 @@ module t;
       #1;
       `checkh(observed, src);
       `checkh(array_observed, src);
+      `checkh(generic_observed, src[1]);
       for (int j = 1; j <= 2; j++) begin
         for (int i = 2; i <= 3; i++) begin
           `checkh(nested[j][i], src[i-2] ^ 2'(j));
@@ -99,6 +134,8 @@ module t;
       end
       `checkh(blk_if.d, ~src[2]);
       `checkh(self_if.d, src[3]);
+      `checkh(root_if.d, src[2]);
+      `checkh(up_if.d, src[1]);
       for (int i = 0; i < 4; i++) begin
         `checkh(proc_observed[i], src[i] ^ 2'(i));
         `checkh(out_observed[i], ~src[3-i]);

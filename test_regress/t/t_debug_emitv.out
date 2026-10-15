@@ -44,6 +44,14 @@ module Vt_debug_emitv_t;
     Iface the_ifaces[2] ();
     Iface the_ifaces[1] ();
     Iface the_ifaces[0] ();
+    /* generate */ begin : iface_scope
+        Iface nested_iface ();
+        initial begin
+            if (nested_iface.ifsig) begin
+                $write("");
+            end
+        end
+    end : iface_scope
     initial begin
         begin
             if ((| $test$plusargs("HELLO"))) begin
@@ -312,7 +320,7 @@ module Vt_debug_emitv_t;
                     begin
                         $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", 
                                136'h742f745f64656275675f656d6974762e76, 
-                               'sh10a, SUB_B, 2'h1);
+                               'sh10f, SUB_B, 2'h1);
                         $stop;
                     end
                 end

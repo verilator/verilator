@@ -535,38 +535,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
         return nullptr;
     }
-    // Collect the variable, instance and named scope names of a module, which V3Begin
-    // flattened into names prefixed by their named scope
-    static void collectScopedNames(const AstNodeModule* modp, std::set<string>& names) {
-        for (const AstNode* nodep = modp->inlinesp(); nodep; nodep = nodep->nextp()) {
-            names.emplace(nodep->name());
-        }
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (VN_IS(nodep, Var) || VN_IS(nodep, Cell)) names.emplace(nodep->name());
-        }
-    }
-    // Return the dotted path, relative to the module, of the interface instance a driver
-    // reference targets. Like V3LinkDot findDotted, look up the first dotted component in the
-    // named scope of the reference, then in the module, then in the enclosing named scopes.
-    // A component declared in the module, or outside it, resolves the same from every scope,
-    // so its dotted path is already relative to the module.
-    static string ifaceInstancePath(const AstNodeModule* modp, const AstVarXRef* xrefp,
-                                    std::set<string>& scopedNames) {
-        const string dotted = xrefp->dotted();
-        string scope = xrefp->inlinedDots();
-        if (scope.empty()) return dotted;
-        if (scopedNames.empty()) collectScopedNames(modp, scopedNames);
-        const string ident = dotted.substr(0, dotted.find('.'));
-        if (!scopedNames.count(scope + "__DOT__" + ident)) {
-            if (scopedNames.count(ident)) return dotted;
-            do {
-                const string::size_type pos = scope.rfind("__DOT__");
-                scope = pos == string::npos ? "" : scope.substr(0, pos);
-            } while (!scope.empty() && !scopedNames.count(scope + "__DOT__" + ident));
-            if (scope.empty()) return dotted;
-        }
-        return AstNode::dedotName(scope) + "." + dotted;
-    }
     AstNodeExpr* getEnp(AstNode* nodep) {
         if (nodep->user1p()) {
             if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
@@ -831,7 +799,6 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Now go through the lhs driver map and generate the output
         // enable logic for any tristates.
         // Note there might not be any drivers.
-        std::set<string> scopedNames;  // Names in nodep, collected by ifaceInstancePath
         for (AstVar* varp : vars) {  // Use vector instead of m_lhsmap iteration for stability
             const std::map<AstVar*, RefStrengthVec*>::iterator it = m_lhsmap.find(varp);
             if (it == m_lhsmap.end()) continue;
@@ -869,8 +836,13 @@ class TristateVisitor final : public TristateBaseVisitor {
                     std::map<string, RefStrengthVec> partitions;
                     for (const RefStrength& rs : *refsp) {
                         // Before V3Inline, a driver in another module is a hierarchical reference
-                        const AstVarXRef* const xrefp = VN_AS(rs.m_varrefp, VarXRef);
-                        partitions[ifaceInstancePath(nodep, xrefp, scopedNames)].push_back(rs);
+                        const AstVarXRef* const xrefp = VN_CAST(rs.m_varrefp, VarXRef);
+                        UASSERT_OBJ(
+                            xrefp, rs.m_varrefp,
+                            "Cross-module interface driver must be a hierarchical reference");
+                        UASSERT_OBJ(!xrefp->resolvedDotted().empty(), xrefp,
+                                    "Interface driver without a resolved scope path");
+                        partitions[xrefp->resolvedDotted()].push_back(rs);
                     }
                     for (auto& kv : partitions) {
                         insertTristatesSignal(nodep, invarp, &kv.second, true, kv.first,
@@ -1060,7 +1032,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     // isIfaceTri: true when the var is a tristate in an interface module (local or external).
     // ifaceDottedPath/ifaceModportp are non-empty only for external (cross-module) drivers;
     // empty for local drivers within the interface itself. ifaceDottedPath is the interface
-    // instance path relative to nodep, see ifaceInstancePath().
+    // instance path relative to nodep, recorded by V3LinkDot.
     void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp, RefStrengthVec* refsp,
                                bool isIfaceTri, const string& ifaceDottedPath,
                                AstModport* ifaceModportp) {
