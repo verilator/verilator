@@ -62,9 +62,9 @@ class C7;
 endclass
 
 // Same fields as C7, but comparing a constant-indexed element of the queue
-// (frame[0]) rather than the whole array. Queue element access lowers to a
-// CMethodHard, not a plain ArraySel, so this is unsupported for a different
-// reason than C7 (an unresolvable operand, not a queue-shaped array).
+// (frame[0]) rather than the whole array -- a different reason than C7
+// (an unresolvable operand, not a queue-shaped array), since indexing a
+// queue doesn't resolve to a plain variable the way a fixed array does.
 class C8;
   rand bit frame[$][2];
   bit target[$][2];

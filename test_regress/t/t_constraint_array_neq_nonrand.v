@@ -18,10 +18,8 @@ class frame_bothrand;
   constraint c { frame != other; }
 endclass
 
-// Both the array and the index are rand -- this must keep going through
-// native SMT array equality (a rand index used here is not the "can't
-// evaluate a non-rand operand at solve time" problem an index into a
-// non-rand array runs into, since there's no non-rand value being frozen).
+// This still goes through native SMT array equality, not the elementwise
+// path, since nothing non-rand is being frozen at a rand index here.
 class frame_bothrand_randidx;
   rand int idx;
   rand bit [7:0] cube[4][2];
@@ -81,9 +79,6 @@ class frame_via_member;
   endfunction
 endclass
 
-// Same non-rand member access, but the handle itself is rand -- a class
-// member has its own rand qualifier independent of its handle, unlike a
-// struct field, which shares its parent's.
 class frame_via_rand_handle;
   rand bit [7:0] frame[2][2];
   rand Holder holder;
@@ -93,10 +88,6 @@ class frame_via_rand_handle;
   endfunction
 endclass
 
-// Mirror of frame_via_rand_handle: the member is declared rand, but the
-// handle reaching it isn't -- since the handle is never included in this
-// randomize() call, the member's value is fixed, same as any other
-// non-rand operand.
 class RandMember;
   rand bit [7:0] target[2][2];
   function new();
@@ -116,9 +107,6 @@ class frame_via_nonrand_handle_rand_member;
   endfunction
 endclass
 
-// Non-rand side reached via a struct field (StructSel), not a class member
-// (MemberSel) -- a plain, non-rand struct-typed variable whose array field
-// is the whole-array comparison operand.
 typedef struct {
   bit [7:0] arr[2];
 } plain_struct_t;
@@ -132,10 +120,6 @@ class frame_via_struct_field;
   endfunction
 endclass
 
-// Rand side reached through a two-level chain, a class member (MemberSel)
-// that is itself a struct field (StructSel) -- both the handle and the
-// struct-typed member it holds are rand, so the whole chain shares that
-// rand-ness down to the array field.
 class HolderStruct;
   rand plain_struct_t sv;
 endclass
