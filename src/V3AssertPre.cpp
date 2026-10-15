@@ -28,6 +28,7 @@
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
+#include <cmath>
 #include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -549,7 +550,14 @@ private:
                 VCMethod::EVENT_IS_TRIGGERED};
             trigp->dtypeSetBit();
             ifp->condp(new AstLogAnd{flp, ifp->condp()->unlinkFrBack(), trigp});
-            if (skewp->isZero() || !skewp->fileline()->timingOn()) {
+            // Match the rounding used by V3Timing when converting real delays to ticks.
+            const double timescaleFactor = std::pow(
+                10.0, m_modp->timeunit().powerOfTen() - m_netlistp->timeprecision().powerOfTen());
+            const bool zeroSkew
+                = skewp->isZero()
+                  || (skewp->isDouble()
+                      && VL_ROUND(skewp->num().toDouble() * timescaleFactor) == 0.0);
+            if (zeroSkew || !skewp->fileline()->timingOn()) {
                 // Drive the var in Re-NBA (IEEE 1800-2023 14.16), ignoring skews where timing is
                 // turned off
                 AstSenTree* senTreep = m_clockingp->sentreep()->cloneTree(false);
@@ -560,6 +568,7 @@ private:
                 // Fork only the assignment, so this AlwaysPostponed can be retriggered
                 // before the assignment happens
                 AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
+                forkp->immediateStart(true);
                 forkp->addForksp(new AstBegin{flp, "", assignp->unlinkFrBack(), true});
                 ifp->addThensp(forkp);
                 // Read the clockvar in Postponed, so a drive late in the time step is applied
