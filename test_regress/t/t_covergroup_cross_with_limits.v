@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // A cross bin 'with' filter is evaluated for the value tuples of each choice of bins of the cross
-// items it reads, at most 2**32 when the covergroup is constructed
+// items it reads, or of all to count them, at most 2**32 when the covergroup is constructed
 
 // verilog_format: off
 `define stop $stop
@@ -64,6 +64,7 @@ module t;
     x_big: cross big, ff{
       bins over = x_big with (big == 1);  // <--- Bad: 2**33 value tuples
       bins unread = x_big with (ff == 1);  // Of 'ff' only: <all,auto[1]>
+      bins counted = x_big with (ff == 1) matches 2;  // <--- Bad: 2**33 value tuples, of 'big' too
     }
     x_sum: cross halves, ff{
       bins over = x_sum with (halves == 0);  // <--- Bad: 2 * (2**31 + 1) value tuples
@@ -93,7 +94,7 @@ module t;
   endgroup
 
   // A cross item has the type of its coverpoint's expression, whose names, in nested scopes too,
-  // are outside the filter, where the cross items hide them
+  // are outside the filter, where the cross items hide them, as are a 'matches' count's
   logic [1:0] a;
   int offset = 16;
   bit one[1] = '{1};
@@ -104,6 +105,7 @@ module t;
     total: coverpoint (one.sum() with (item + offset)) {bins values = {17};}
     xx: cross offset, total{
       bins wide = xx with ($bits(total) == 32);  // All 4 bin tuples
+      bins counted = xx with (1) matches offset - 15;  // Of the module's 'offset', 1: all 4
     }
   endgroup
 
@@ -125,7 +127,7 @@ module t;
     // automatic bins; x_deep: <rest,low> of 4 automatic bins
     `checkr(inst.get_inst_coverage(),
             (50.0 + 25.0 + 100.0 + 100.0 + 100.0 + 0.0 + 25.0) / 7.0);
-    // offset: 1 of 4 bins; total: 1 of 1; xx: 'wide' of 1, not 1 of 4 automatic bins
+    // offset: 1 of 4 bins; total: 1 of 1; xx: 'wide' and 'counted' of 2, not 1 of 4 automatic bins
     `checkr(scope_inst.get_inst_coverage(), (25.0 + 100.0 + 100.0) / 3.0);
     $write("*-* All Finished *-*\n");
     $finish;

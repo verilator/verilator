@@ -1176,16 +1176,18 @@ public:
     }  // LCOV_EXCL_STOP
 };
 class AstCoverCrossWith final : public AstNode {
-    // The bin tuples of a cross-bin selection with a value tuple for which a 'with' filter is
-    // true (IEEE 1800-2023 19.6.1.2)
+    // The bin tuples of a cross-bin selection with enough value tuples for which a 'with' filter
+    // is true: one, or as many as a 'matches' clause gives (IEEE 1800-2023 19.6.1.2)
     // @astgen op1 := selectp : Optional[AstNode]  // Selection filtered; null if unsupported
     // @astgen op2 := filterp : AstNodeExpr
     // @astgen op3 := varsp : List[AstVar]  // Candidate value of each cross item, from V3LinkParse
+    // @astgen op4 := countp : Optional[AstNodeExpr]  // Of 'matches', AstUnbounded for '$'
 public:
-    AstCoverCrossWith(FileLine* fl, AstNode* selectp, AstNodeExpr* filterp)
+    AstCoverCrossWith(FileLine* fl, AstNode* selectp, AstNodeExpr* filterp, AstNodeExpr* countp)
         : ASTGEN_SUPER_CoverCrossWith(fl) {
         this->selectp(selectp);
         this->filterp(filterp);
+        this->countp(countp);
     }
     ASTGEN_MEMBERS_AstCoverCrossWith;
 };

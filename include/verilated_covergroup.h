@@ -534,13 +534,13 @@ public:
     void selectDimEnd();
     void selectAnd();
     void selectOr();
-    /// Select, of the bin tuples of the selection, those with a value tuple for which a 'with'
-    /// filter is true (IEEE 1800-2023 19.6.1.2).  The filter reads the values of the dimensions
-    /// 'dims', so is evaluated for the value tuples of each distinct choice of bins of those
-    /// dimensions, until true; with more value tuples than a filter may evaluate, the bin
-    /// 'namep' is ignored.
-    void withBegin(std::initializer_list<uint32_t> dims, const char* namep, const char* filep,
-                   int line);
+    /// Select, of the bin tuples of the selection, those with enough value tuples for which a
+    /// 'with' filter is true (IEEE 1800-2023 19.6.1.2): 'matches' of them, or all for 0 ('$');
+    /// 'positive' is false for a count below one, which is invalid.  The filter is evaluated for
+    /// the value tuples of each distinct choice of bins of the dimensions 'dims', until decided;
+    /// with more value tuples than a filter may evaluate, the bin 'namep' is ignored.
+    void withBegin(std::initializer_list<uint32_t> dims, QData matches, bool positive,
+                   const char* namep, const char* filep, int line);
     /// Advance to the next value tuple to evaluate the filter for; false after the last
     bool withNext();
     /// The value of the dimension 'dim', one the filter reads, of the value tuple
