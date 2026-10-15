@@ -269,12 +269,9 @@ deeply nested control recovery, or cross-module state alias tracing.
 The following metacomments may be attached to the state variable to steer
 the extracted coverage model:
 
-- ``/*verilator fsm_state*/`` forces the variable to be treated as FSM
-  state.
-- ``/*verilator fsm_reset_arc*/`` marks reset transitions as user-visible
-  reset arcs instead of defaulting to a hidden reset-only summary.
-- ``/*verilator fsm_arc_include_cond*/`` keeps conditional branch arcs that
-  would otherwise be skipped by the conservative extractor.
+- :option:`/*verilator&32;fsm_state*/`
+- :option:`/*verilator&32;fsm_reset_arc*/`
+- :option:`/*verilator&32;fsm_arc_include_cond*/`
 
 State registers may also be wrapped by a transparent instance, for example
 a project flop wrapper or primitive. Such wrappers must be described

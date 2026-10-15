@@ -52,9 +52,7 @@ private:
                                                         // has an update statement in m_preUpdates
     std::unordered_set<VNRef<AstNode>> m_hasPostUpdate;  // Likewise for m_postUpdates
 
-    V3UniqueNames m_currNames{"__Vtrigcurrexpr"};  // For generating unique current value
-                                                   // signal names
-    V3UniqueNames m_prevNames{"__Vtrigprevexpr"};  // Likewise for previous values
+    V3UniqueNames m_prevNames{"__Vtrigprevexpr"};  // For generating unique temporary names
 
     static bool isSupportedDType(AstNodeDType* dtypep) {
         dtypep = dtypep->skipRefp();
@@ -122,9 +120,14 @@ private:
         } else {
             name = m_prevNames.get(exprp);
         }
-        AstVarScope* const vscp = m_scopep->createTemp(name, exprp->dtypep());
-        vscp->varp()->isInternal(true);
-        m_results.m_vars.push_back(vscp->varp());
+        // Not shared between instances, as the users might move the variables into processes
+        FileLine* const flp = m_scopep->fileline();
+        AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, name, exprp->dtypep()};
+        varp->isInternal(true);
+        m_scopep->modp()->addStmtsp(varp);
+        AstVarScope* const vscp = new AstVarScope{flp, m_scopep, varp};
+        m_scopep->addVarsp(vscp);
+        m_results.m_vars.push_back(varp);
         return vscp;
     }
 

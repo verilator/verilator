@@ -806,8 +806,13 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SFORMAT               "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
 %token<fl>              yVL_FSM_ARC_INCL_COND     "/*verilator fsm_arc_include_cond*/"
-%token<fl>              yVL_FSM_RESET_ARC         "/*verilator fsm_reset_arc*/"
+%token<fl>              yVL_FSM_ARC_INCL_COND_AUTO        "/*verilator fsm_arc_include_cond_auto*/"
+%token<fl>              yVL_FSM_ARC_INCL_COND_AUTO_EXPAND "/*verilator fsm_arc_include_cond_auto_expand*/"
+%token<fl>              yVL_FSM_ARC_INCL_COND_FULL        "/*verilator fsm_arc_include_cond_full*/"
 %token<fl>              yVL_FSM_STATE             "/*verilator fsm_state*/"
+%token<fl>              yVL_FSM_STATE_AUTO        "/*verilator fsm_state_auto*/"
+%token<fl>              yVL_FSM_STATE_AUTO_EXPAND "/*verilator fsm_state_auto_expand*/"
+%token<fl>              yVL_FSM_STATE_FULL        "/*verilator fsm_state_full*/"
 %token<strp>            yVL_TAG                   "/*verilator tag*/"
 %token<fl>              yVL_UNROLL_DISABLE        "/*verilator unroll_disable*/"
 %token<fl>              yVL_UNROLL_FULL           "/*verilator unroll_full*/"
@@ -3131,8 +3136,13 @@ sigAttr<nodep>:
         |       yVL_SFORMAT                             { $$ = new AstAttrOf{$1, VAttrType::VAR_SFORMAT}; }
         |       yVL_SPLIT_VAR                           { $$ = new AstAttrOf{$1, VAttrType::VAR_SPLIT_VAR}; }
         |       yVL_FSM_ARC_INCL_COND                   { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND}; }
-        |       yVL_FSM_RESET_ARC                       { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_RESET_ARC}; }
+        |       yVL_FSM_ARC_INCL_COND_AUTO              { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO}; }
+        |       yVL_FSM_ARC_INCL_COND_AUTO_EXPAND       { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND}; }
+        |       yVL_FSM_ARC_INCL_COND_FULL              { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_ARC_INCLUDE_COND_FULL}; }
         |       yVL_FSM_STATE                           { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE}; }
+        |       yVL_FSM_STATE_AUTO                      { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE_AUTO}; }
+        |       yVL_FSM_STATE_AUTO_EXPAND               { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE_AUTO_EXPAND}; }
+        |       yVL_FSM_STATE_FULL                      { $$ = new AstAttrOf{$1, VAttrType::VAR_FSM_STATE_FULL}; }
         ;
 
 rangeListE<nodeRangep>:         // IEEE: [{packed_dimension}]
@@ -6303,15 +6313,15 @@ endLabelE<strp>:
 
 clocking_declaration<nodep>:            // IEEE: clocking_declaration
                 yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, *$2, $3, $5, false, false}; }
+                        { $$ = new AstClocking{$<fl>2, *$2, new AstSenTree{$<fl>2, $3}, $5, false, false}; }
         |       yDEFAULT yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, true, false}; }
+                        { $$ = new AstClocking{$<fl>2, "", new AstSenTree{$<fl>2, $3}, $5, true, false}; }
         |       yDEFAULT yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, true, false}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, new AstSenTree{$<fl>3, $4}, $6, true, false}; }
         |       yGLOBAL__CLOCKING yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, false, true}; }
+                        { $$ = new AstClocking{$<fl>2, "", new AstSenTree{$<fl>2, $3}, $5, false, true}; }
         |       yGLOBAL__CLOCKING yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, false, true}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, new AstSenTree{$<fl>3, $4}, $6, false, true}; }
         ;
 
 clocking_eventE<senItemp>:      // IEEE: optional clocking_event
@@ -7431,7 +7441,7 @@ select_expression_r<nodep>:
         |       '!' yWITH__PAREN '(' cgexpr ')'
                         { $$ = nullptr; BBCOVERIGN($1, "Unsupported: 'with' in coverage select expression"); DEL($4); }
         |       select_expression_r yWITH__PAREN '(' cgexpr ')'
-                        { $$ = nullptr; BBCOVERIGN($2, "Unsupported: 'with' in coverage select expression"); DEL($1, $4); }
+                        { $$ = new AstCoverCrossWith{$2, $1, $4}; }
         //                      // IEEE-2012: Need clarification as to precedence
         //UNSUP yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr    { }
         //                      // IEEE-2012: Need clarification as to precedence
@@ -7978,10 +7988,11 @@ class_item<nodep>:                      // ==IEEE: class_item
         |       covergroup_declaration
                         {
                           if ($1) {
-                              const string cgName = $1->name();
-                              $1->name("__vlAnonCG_" + cgName);
-                              AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR, cgName,
-                                  VFlagChildDType{}, new AstRefDType($1->fileline(), $1->name())};
+                              // Also declares an instance variable, of the covergroup's type
+                              AstVar* const newp = new AstVar{$1->fileline(), VVarType::VAR,
+                                  $1->name(), VFlagChildDType{},
+                                  new AstRefDType($1->fileline(), $1->name())};
+                              newp->embeddedCovergroup(true);
                               $$ = addNextNull($1, newp);
                           } else {
                               $$ = nullptr;

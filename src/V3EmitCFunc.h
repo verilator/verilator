@@ -88,6 +88,12 @@ class EmitCLazyDecls final : public VNVisitorConst {
         if (EmitCParentModule::get(varp)->isConstPool()) lazyDeclareConstPoolVar(varp);
     }
 
+    void visit(AstExecGraph* nodep) override {
+        if (!declaredOnce(nodep)) return;
+        m_emitter.putns(nodep, "extern VlExecGraph " + EmitCUtil::execGraphName(nodep) + ";\n");
+        m_needsBlankLine = true;
+    }
+
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:
@@ -322,7 +328,7 @@ public:
             if (!assigntop->selfPointer().isEmpty()) {
                 emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
             }
-            puts(assigntop->varp()->nameProtect());
+            puts(varName(assigntop->varp()));
             for (int word = VL_WORDS_I(upWidth) - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
                 ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
@@ -340,7 +346,7 @@ public:
             if (!assigntop->selfPointer().isEmpty()) {
                 emitDereference(assigntop, assigntop->selfPointerProtect(m_useSelfForThis));
             }
-            puts(assigntop->varp()->nameProtect());
+            puts(varName(assigntop->varp()));
             for (int word = EMITC_NUM_CONSTW - 1; word >= 0; word--) {
                 // Only 32 bits - llx + long long here just to appease CPP format warning
                 ofp()->printf(",0x%08" PRIx64, static_cast<uint64_t>(nodep->num().edataWord(
@@ -429,6 +435,11 @@ public:
             m_lazyDecls.declared(nodep);  // Defined here, so no longer needs declaration
             if (!nodep->isStatic()) {  // Standard prologue
                 m_useSelfForThis = true;
+                if (nodep->voidSelf()) {
+                    const string className = EmitCUtil::prefixNameProtect(m_modp);
+                    puts(className + "* const vlSelf = static_cast<" + className
+                         + "*>(vlVoidSelf);\n");
+                }
                 if (!VN_IS(m_modp, Class)) {
                     puts(EmitCUtil::symClassAssign());  // Uses vlSelf
                 } else {
@@ -452,12 +463,12 @@ public:
             AstCStmt* const vlprocp = new AstCStmt{nodep->fileline()};
             vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();\n");
             vlprocp->add("VlProcess::currentp(vlProcess.get());");
-            nodep->stmtsp()->addHereThisAsNext(vlprocp);
+            nodep->prependStmtsp(vlprocp);
         } else if (nodep->needProcess() && nodep->stmtsp()) {
             // Set current process so VlRNG() constructors in this function seed from it
             AstCStmt* const setProcessp = new AstCStmt{nodep->fileline()};
             setProcessp->add("VlProcess::currentp(vlProcess.get());");
-            nodep->stmtsp()->addHereThisAsNext(setProcessp);
+            nodep->prependStmtsp(setProcessp);
         }
 
         for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
@@ -565,7 +576,7 @@ public:
                      + (fromVarRefp->selfPointer().isEmpty()
                             ? ""
                             : dereferenceString(fromVarRefp->selfPointerProtect(m_useSelfForThis)))
-                     + fromVarRefp->varp()->nameProtect() + ", \""
+                     + varName(fromVarRefp->varp()) + ", \""
                      + V3OutFormatter::quoteNameControls(protect(nodep->fileline()->filename()))
                      + "\", " + std::to_string(nodep->fileline()->lineno()) + ")->"),
                     memberVarp, resetp->constructing());
@@ -859,6 +870,12 @@ public:
             if (comma) puts(", ");
             iterateConst(nodep->withp());
         }
+        puts(")");
+    }
+    void visit(AstCFuncHard* nodep) override {
+        putns(nodep, nodep->name());
+        puts("(");
+        putCommaIterateNext(nodep->pinsp());
         puts(")");
     }
     void visit(AstLambdaArgRef* nodep) override { putbs(nodep->nameProtect()); }
@@ -1579,13 +1596,13 @@ public:
             = VN_CAST(nodep->dtypep()->skipRefp(), ClassRefDType)) {
             putns(nodep, "(" + classDtypep->cType("", false, false) + ")(");
         } else if (nodep->size() <= VL_BYTESIZE) {
-            putns(nodep, "(CData)(");
+            putns(nodep, "(::CData)(");
         } else if (nodep->size() <= VL_SHORTSIZE) {
-            putns(nodep, "(SData)(");
+            putns(nodep, "(::SData)(");
         } else if (nodep->size() <= VL_IDATASIZE) {
-            putns(nodep, "(IData)(");
+            putns(nodep, "(::IData)(");
         } else {
-            putns(nodep, "(QData)(");
+            putns(nodep, "(::QData)(");
         }
         iterateAndNextConstNull(nodep->lhsp());
         puts(")");
@@ -1619,7 +1636,7 @@ public:
             // MemberSel name which matches the cell's C++ member (e.g. "tx").
             puts(nodep->nameProtect());
         } else {
-            puts(varp->nameProtect());
+            puts(varName(varp));
         }
         if (dereferenceCovergroupRef) puts(")");
     }
@@ -1780,6 +1797,25 @@ public:
         iterateAndNextConstNull(nodep->fhsp());
         puts(")");
     }
+    void visit(AstTriggered* nodep) override {
+        // Test each word of the trigger vector with a mask of the relevant bits
+        std::map<uint32_t, uint64_t> wordMasks;
+        for (const uint32_t index : nodep->indices()) {
+            wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
+        }
+        putns(nodep, "((");
+        bool first = true;
+        for (const auto& wordMask : wordMasks) {
+            if (!first) puts("\n| ");
+            first = false;
+            const bool allOnes = wordMask.second == ~0ULL;
+            if (!allOnes) puts("(" + V3Number{nodep, 64}.setQuad(wordMask.second).emitC() + " & ");
+            iterateConst(nodep->trigRefp());
+            puts("[" + std::to_string(wordMask.first) + "U]");
+            if (!allOnes) puts(")");
+        }
+        puts(") != 0ULL)");
+    }
     void visit(AstInitItem* nodep) override { iterateChildrenConst(nodep); }
     // Terminals
     void visit(AstVarRef* nodep) override {
@@ -1791,9 +1827,6 @@ public:
         if (varModp->isConstPool()) {
             // Reference to constant pool variable
             putns(nodep, EmitCUtil::topClassName() + "__ConstPool__");
-        } else if (varp->isStatic()) {
-            // Access static variable via the containing class
-            putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");
         } else if (VN_IS(varModp, Class) && varModp != m_modp) {
             // Superclass member reference
             putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");
@@ -1803,7 +1836,7 @@ public:
         } else if (!nodep->selfPointer().isEmpty()) {
             emitDereference(nodep, nodep->selfPointerProtect(m_useSelfForThis));
         }
-        putns(nodep, nodep->varp()->nameProtect());
+        putns(nodep, varName(varp));
         if (dereferenceCovergroupRef) puts(")");
     }
     void visit(AstAddrOfCFunc* nodep) override {
@@ -1936,8 +1969,10 @@ public:
     }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to
-        // invoke the graph and wait for it to complete. Emitting the children does just that.
-        iterateChildrenConst(nodep);
+        // invoke the graph and wait for it to complete. The run-time library does just that.
+        putns(nodep, "vl_invokeExecGraph(" + EmitCUtil::execGraphName(nodep) + ", vlSelf, ");
+        iterateConst(nodep->triggerp());
+        puts(".data());\n");
     }
 
     // Default

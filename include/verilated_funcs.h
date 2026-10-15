@@ -28,7 +28,9 @@
 #error "verilated_funcs.h should only be included by verilated.h"
 #endif
 
+#include <new>
 #include <string>
+#include <type_traits>
 
 //=========================================================================
 // Extern functions -- User may override -- See verilated.cpp
@@ -195,6 +197,22 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE;  // PLIi
 
 //=========================================================================
 // Base macros
+
+// Construct object 'obj' in place with placement new, passing the remaining arguments
+// Type alias needed as a destructor call requires an unqualified type name.
+// std::remove_reference is needed to construct array elements individually.
+#define VL_INPLACE_CONSTRUCT(obj, ...) \
+    do { \
+        using __VlType = std::remove_reference<decltype(obj)>::type; \
+        ::new (&(obj)) __VlType{__VA_ARGS__}; \
+    } while (false)
+
+// Destroy object 'obj' in place
+#define VL_INPLACE_DESTRUCT(obj) \
+    do { \
+        using __VlType = std::remove_reference<decltype(obj)>::type; \
+        (obj).~__VlType(); \
+    } while (false)
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 // Arguments must not have side effects
@@ -785,15 +803,22 @@ inline IData VL_REDXOR_W(int words, WDataInP const lwp) VL_PURE {
 
 // EMIT_RULE: VL_COUNTONES_II:  oclean = false; lhs clean
 inline IData VL_COUNTONES_I(IData lhs) VL_PURE {
-    // This is faster than __builtin_popcountl
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return static_cast<IData>(__builtin_popcount(lhs));
+#else
     IData r = lhs - ((lhs >> 1) & 033333333333) - ((lhs >> 2) & 011111111111);
     r = (r + (r >> 3)) & 030707070707;
     r = (r + (r >> 6));
     r = (r + (r >> 12) + (r >> 24)) & 077;
     return r;
+#endif
 }
 inline IData VL_COUNTONES_Q(QData lhs) VL_PURE {
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return static_cast<IData>(__builtin_popcountll(lhs));
+#else
     return VL_COUNTONES_I(static_cast<IData>(lhs)) + VL_COUNTONES_I(static_cast<IData>(lhs >> 32));
+#endif
 }
 #define VL_COUNTONES_E VL_COUNTONES_I
 inline IData VL_COUNTONES_W(int words, WDataInP const lwp) VL_PURE {
@@ -2837,8 +2862,8 @@ inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataInP const
         for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) owp[i] = ~0;
         owp[VL_WORDS_I(obits) - 1] = VL_MASK_E(obits);
     } else if (VL_BITBIT_E(lsb) == 0) {
-        // Just a word extract
-        for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = lwp[i + word_shift];
+        // Just a word extract use a memmove (should never overlap, but same speed as memcpy)
+        std::memmove(owp.datap(), lwp.datap() + word_shift, VL_WORDS_I(obits) * sizeof(EData));
     } else {
         // Not a _vl_insert because the bits come from any bit number and goto bit 0
         const int loffset = lsb & VL_SIZEBITS_E;
@@ -3629,6 +3654,7 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 }
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
+extern double VL_ATOREAL_N(const std::string& str) VL_PURE;
 extern IData VL_NTOI_I(int obits, const std::string& str) VL_PURE;
 extern QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE;
 extern void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str,

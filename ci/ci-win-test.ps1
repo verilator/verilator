@@ -24,3 +24,14 @@ cmake --build . --config Release -j $NPROC
 
 cd ..
 Remove-Item -path build -recurse
+
+cd ../cmake_hello_c
+mkdir build
+cd build
+# /Od skips optimization; this only checks the example verilates and builds, so
+# an optimized binary is not needed (see ci-win-compile.ps1).
+cmake .. "-DCMAKE_CXX_FLAGS_RELEASE=/Od /DNDEBUG"
+cmake --build . --config Release -j $NPROC
+
+cd ..
+Remove-Item -path build -recurse

@@ -1015,14 +1015,10 @@ class ConstVisitor final : public VNVisitor {
                                     const bool packReal) {
         const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
         if (const AstUnpackArrayDType* const unpackDtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            const int left = unpackDtypep->left();
-            const int right = unpackDtypep->right();
-            const int step = left <= right ? 1 : -1;
-            for (int idx = left;; idx += step) {
+            for (const int idx : unpackDtypep->declRange().seqLeftToRight()) {
                 AstArraySel* const selp
                     = new AstArraySel{fromp->fileline(), fromp->cloneTreePure(false), idx};
                 collectFixedAggregateTerms(selp, termps, packReal);
-                if (idx == right) break;
             }
             VL_DO_DANGLING(pushDeletep(fromp), fromp);
         } else if (const AstNodeUOrStructDType* const sdtypep
@@ -1062,8 +1058,7 @@ class ConstVisitor final : public VNVisitor {
         collectFixedAggregateTerms(dstp, termps, false);
         int srcWidth = srcp->width();
         if (srcWidth < dstWidth) {
-            AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
-            extendp->dtypeSetLogicSized(dstWidth, VSigning::UNSIGNED);
+            AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dstWidth};
             srcp = new AstShiftL{
                 extendp->fileline(), extendp,
                 new AstConst{extendp->fileline(), static_cast<uint32_t>(dstWidth - srcWidth)},
@@ -2466,7 +2461,10 @@ class ConstVisitor final : public VNVisitor {
             }
         } else if (m_doV && VN_IS(nodep->lhsp(), Concat)) {
             bool need_temp = false;
-            const bool need_temp_pure = !nodep->rhsp()->isPure();
+            // A blocking assignment with an intra-assignment timing control evaluates its value,
+            // then waits once (IEEE 1800-2023 9.4.5), here to assign a temporary for the parts
+            const bool waits = VN_IS(nodep, Assign) && nodep->timingControlp();
+            const bool need_temp_pure = !nodep->rhsp()->isPure() || waits;
             if (m_warn && !VN_IS(nodep, AssignDly)
                 && !need_temp_pure) {  // Is same var on LHS and RHS?
                 // If the rhs is not pure, we need a temporary variable anyway
@@ -2491,6 +2489,8 @@ class ConstVisitor final : public VNVisitor {
                 AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
                 AstVar* const tempPurep = new AstVar{rhsp->fileline(), VVarType::BLOCKTEMP,
                                                      m_concswapNames.get(rhsp), rhsp->dtypep()};
+                // Static, as read right after written, also in a fork
+                tempPurep->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(tempPurep);
                 AstVarRef* const tempPureRefp
                     = new AstVarRef{rhsp->fileline(), tempPurep, VAccess::WRITE};
@@ -2500,6 +2500,8 @@ class ConstVisitor final : public VNVisitor {
                           : nodep->cloneType(tempPureRefp, rhsp);
                 nodep->addHereThisAsNext(asnp);
                 nodep->rhsp(new AstVarRef{rhsp->fileline(), tempPurep, VAccess::READ});
+                // Only the assignment of the temporary waits
+                if (waits) pushDeletep(nodep->timingControlp()->unlinkFrBack());
             } else if (need_temp) {
                 // The first time we constify, there may be the same variable on the LHS
                 // and RHS.  In that case, we must use temporaries, or {a,b}={b,a} will break.
@@ -2512,6 +2514,22 @@ class ConstVisitor final : public VNVisitor {
                 UINFO(4, "  ASSI " << nodep);
                 // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(lc1,SEL(rhs,{size})),
                 //                                ASSIGN(lc2,SEL(newrhs,{size}))
+            }
+            // The NBA evaluates its intra-assignment delay as it executes (IEEE 1800-2023 4.9.4),
+            // so once for the NBAs to all parts
+            AstDelay* const delayp
+                = VN_IS(nodep, AssignDly) ? VN_CAST(nodep->timingControlp(), Delay) : nullptr;
+            if (delayp && !delayp->lhsp()->isPure()) {
+                FileLine* const flp = nodep->fileline();
+                AstNodeExpr* const valuep = delayp->lhsp()->unlinkFrBack();
+                AstVar* const tempp = new AstVar{flp, VVarType::BLOCKTEMP,
+                                                 m_concswapNames.get(valuep), valuep->dtypep()};
+                // Static, as read right after written, when the NBAs to the parts start waiting
+                tempp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(tempp);
+                nodep->addHereThisAsNext(
+                    new AstAssign{flp, new AstVarRef{flp, tempp, VAccess::WRITE}, valuep});
+                delayp->lhsp(new AstVarRef{flp, tempp, VAccess::READ});
             }
             UINFOTREE(9, nodep, "", "Ass_old");
             // Unlink the stuff
@@ -2590,8 +2608,9 @@ class ConstVisitor final : public VNVisitor {
                 if (lowerAsFixedAggregate(streamSrcp->dtypep())) {
                     AstNodeExpr* const packedp = packFixedAggregate(streamSrcp->unlinkFrBack());
                     streamp->lhsp(packedp);
-                    streamp->dtypeSetLogicUnsized(packedp->width(), packedp->widthMin(),
-                                                  VSigning::UNSIGNED);
+                    streamp->dtypeSetBitOrLogicUnsized(packedp->width(), packedp->widthMin(),
+                                                       VSigning::UNSIGNED,
+                                                       packedp->isFourstateOrNoDtype());
                 }
             }
             VL_DO_DANGLING(pushDeletep(cvtp), cvtp);
@@ -2640,8 +2659,7 @@ class ConstVisitor final : public VNVisitor {
                 const int sWidth = srcp->width();
                 const int dWidth = nodep->lhsp()->width();
                 if (sWidth < dWidth) {
-                    AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
-                    extendp->dtypeSetLogicSized(dWidth, VSigning::UNSIGNED);
+                    AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dWidth};
                     srcp = new AstShiftL{
                         srcp->fileline(), extendp,
                         new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
@@ -2694,7 +2712,9 @@ class ConstVisitor final : public VNVisitor {
                 || VN_IS(srcDTypep, UnpackArrayDType)) {
                 streamp->dtypeSetStream();
             } else {
-                streamp->dtypeSetLogicUnsized(srcp->width(), srcp->widthMin(), VSigning::UNSIGNED);
+                streamp->dtypeSetBitOrLogicUnsized(srcp->width(), srcp->widthMin(),
+                                                   VSigning::UNSIGNED,
+                                                   srcp->isFourstateOrNoDtype());
             }
             if (VN_IS(dstDTypep, UnpackArrayDType)) {
                 streamp = new AstCvtPackedToArray{nodep->fileline(), streamp, dstDTypep};
@@ -2778,8 +2798,7 @@ class ConstVisitor final : public VNVisitor {
                     // The right stream operator packs left-to-right, so remaining
                     // LSBs are zero-filled (IEEE 1800-2023 11.4.14.3).
                     if (!VN_IS(srcp->dtypep()->skipRefp(), QueueDType)) {
-                        AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp};
-                        extendp->dtypeSetLogicSized(dWidth, VSigning::UNSIGNED);
+                        AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dWidth};
                         srcp = new AstShiftL{
                             srcp->fileline(), extendp,
                             new AstConst{srcp->fileline(), static_cast<uint32_t>(dWidth - sWidth)},
@@ -2803,8 +2822,9 @@ class ConstVisitor final : public VNVisitor {
             if (lowerAsFixedAggregate(srcDTypep)) {
                 AstNodeExpr* const packedp = packFixedAggregate(srcp->unlinkFrBack());
                 streamp->lhsp(packedp);
-                streamp->dtypeSetLogicUnsized(packedp->width(), packedp->widthMin(),
-                                              VSigning::UNSIGNED);
+                streamp->dtypeSetBitOrLogicUnsized(packedp->width(), packedp->widthMin(),
+                                                   VSigning::UNSIGNED,
+                                                   packedp->isFourstateOrNoDtype());
                 srcp = packedp;
             } else if ((VN_IS(srcDTypep, QueueDType) || VN_IS(srcDTypep, DynArrayDType)
                         || VN_IS(srcDTypep, UnpackArrayDType))) {
@@ -2880,7 +2900,6 @@ class ConstVisitor final : public VNVisitor {
         AstAnd* const newp
             = new AstAnd{nodep->fileline(), new AstConst{nodep->fileline(), val}, fromp};
         // widthMin no longer applicable if different C-expanded width
-        newp->dtypeSetLogicSized(nodep->width(), VSigning::UNSIGNED);
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         UINFOTREE(9, newp, "", "_new");
@@ -3554,8 +3573,7 @@ class ConstVisitor final : public VNVisitor {
 
             if (const AstNodeBiop* const aBiOpp = VN_CAST(ap, NodeBiop)) {
                 const AstNodeBiop* const bBiOpp = VN_AS(bp, NodeBiop);
-                // Compare RHSs first as LHS might be const, but the variable term should become
-                // adjacent for optimization if identical.
+                // Compare RHSs first, as LHS might be const
                 if (const int c = cmp(aBiOpp->rhsp(), bBiOpp->rhsp())) return c;
                 return cmp(aBiOpp->lhsp(), bBiOpp->lhsp());
             }
@@ -3655,26 +3673,6 @@ class ConstVisitor final : public VNVisitor {
                     if (lItemp->edgeType() == rItemp->edgeType()) {
                         VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
                         nextp = lItemp;
-                    }
-
-                    continue;
-                }
-
-                // Not identical terms, check if they can be combined
-                if (lSenp->width() != rSenp->width()) continue;
-                if (const AstAnd* const lAndp = VN_CAST(lSenp, And)) {
-                    if (const AstAnd* const rAndp = VN_CAST(rSenp, And)) {
-                        if (AstConst* const lConstp = VN_CAST(lAndp->lhsp(), Const)) {
-                            if (AstConst* const rConstp = VN_CAST(rAndp->lhsp(), Const)) {
-                                if (lAndp->rhsp()->sameTree(rAndp->rhsp())) {
-                                    const V3Number lNum{lConstp->num()};
-                                    lConstp->num().opOr(lNum, rConstp->num());
-                                    // Remove redundant term
-                                    VL_DO_DANGLING(pushDeletep(rItemp->unlinkFrBack()), rItemp);
-                                    nextp = lItemp;
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -4632,8 +4630,11 @@ class ConstVisitor final : public VNVisitor {
         // Default: Just iterate
         if (m_required) {
             if (VN_IS(nodep, NodeDType) || VN_IS(nodep, Range) || VN_IS(nodep, SliceSel)
-                || VN_IS(nodep, Dot)) {
+                || VN_IS(nodep, Dot) || VN_IS(nodep, Text)) {
                 // ignore
+            } else if (VN_IS(nodep, Pattern) || VN_IS(nodep, PatMember)) {
+                // A parameter override pattern is typed later, so only fold its members
+                iterateChildren(nodep);
             } else if (AstCellRef* const crp = VN_CAST(nodep, CellRef)) {
                 iterate(crp->exprp());
                 if (AstNode* const newp = crp->exprp()) {

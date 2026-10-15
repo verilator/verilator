@@ -1,0 +1,14 @@
+%Error-UNSUPPORTED: t/t_assert_implication_nonover_or_unsup.v:13:39: Unsupported: sequence expression as antecedent of followed-by (#-# / #=#) (IEEE 1800-2023 16.12.9)
+                                                                   : ... note: In instance 't'
+   13 |   assert property (@(posedge clk) ((x or y) #-# b) or c);
+      |                                       ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_implication_nonover_or_unsup.v:14:38: Unsupported: sequence expression as antecedent of followed-by (#-# / #=#) (IEEE 1800-2023 16.12.9)
+                                                                   : ... note: In instance 't'
+   14 |   assert property (@(posedge clk) (x or y) #=# b);
+      |                                      ^~
+%Error-UNSUPPORTED: t/t_assert_implication_nonover_or_unsup.v:15:38: Unsupported: sequence expression as antecedent of followed-by (#-# / #=#) (IEEE 1800-2023 16.12.9)
+                                                                   : ... note: In instance 't'
+   15 |   assert property (@(posedge clk) (x or y) #-# s_eventually b);
+      |                                      ^~
+%Error: Exiting due to

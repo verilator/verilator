@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('simulator_st')
 test.top_filename = "t/t_opt_table_sparse.v"
 test.golden_filename = "t/t_opt_table_sparse.out"
 

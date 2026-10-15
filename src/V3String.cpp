@@ -213,6 +213,17 @@ string VString::unquoteSVString(const string& text, string& errOut) {
     return newtext;
 }
 
+size_t VString::quotedEnd(const string& str, size_t pos) VL_PURE {
+    for (size_t i = pos + 1; i < str.size(); ++i) {
+        if (str[i] == '\\') {
+            ++i;  // Past the escaped character, as of '\"'
+        } else if (str[i] == '"') {
+            return i + 1;
+        }
+    }
+    return string::npos;
+}
+
 string VString::spaceUnprintable(const string& str) VL_PURE {
     string result;
     for (const char c : str) {
@@ -656,7 +667,7 @@ string VHashSha512::digestSymbol24() {
                          | (static_cast<int>(binhash[pos + 2] & 0xc0) >> 6)];
         result += digits[((binhash[pos + 2] & 0x3f))];
         // Keep symbols short-ish, with 24 chars/144 bits we won't have hash collisions
-        if (result.size() >= 24) break;
+        if (result.size() >= DIGEST_SYMBOL24_LENGTH) break;
     }
     // Any leftover bits don't matter for our purpose
     return result;
@@ -732,6 +743,7 @@ void VHashSha512::selfTest() {
 
 string VName::dehash(const string& in) {
     static constexpr const char VHSH[] = "__Vhsh";
+    static constexpr size_t VHSH_LEN = sizeof(VHSH) - 1 + VHashSha512::DIGEST_SYMBOL24_LENGTH;
     static const size_t DOT_LEN = std::strlen("__DOT__");
     std::string dehashed;
 
@@ -748,7 +760,11 @@ string VName::dehash(const string& in) {
         const auto begin_vhsh
             = std::search(search_begin, search_end, std::begin(VHSH), std::end(VHSH) - 1);
         if (begin_vhsh != search_end) {
-            const std::string vhsh{begin_vhsh, search_end};
+            // V3Decompose and V3BitBlast append suffixes to names already hashed, so the
+            // hash does not always reach the end of the component.
+            const auto end_vhsh
+                = begin_vhsh + std::min<size_t>(std::distance(begin_vhsh, search_end), VHSH_LEN);
+            const std::string vhsh{begin_vhsh, end_vhsh};
             const auto& it = s_dehashMap.find(vhsh);
             UASSERT(it != s_dehashMap.end(), "String not in reverse hash map '" << vhsh << "'");
             // Is this not the first component, but the first to require dehashing?
@@ -760,6 +776,8 @@ string VName::dehash(const string& in) {
             dehashed += std::string{search_begin, begin_vhsh};
             // Append the bit that was lost to truncation but retrieved from the dehash map.
             dehashed += it->second;
+            // Append what follows the hash, such as a split variable bit range.
+            dehashed += std::string{end_vhsh, search_end};
         }
         // This component doesn't need dehashing but a previous one might have.
         else if (!dehashed.empty()) {

@@ -28,7 +28,7 @@ endif()
 
 option(
     DEBUG_AND_RELEASE_AND_COVERAGE
-    "Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild."
+    "Builds debug and release binaries for Verilator and coverage, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild."
 )
 
 find_package(Python3 COMPONENTS Interpreter)
@@ -49,18 +49,17 @@ if(WIN32)
     if(DEFINED ENV{WIN_FLEX_BISON})
         set(WIN_FLEX_BISON "$ENV{WIN_FLEX_BISON}")
     endif()
-    if(IS_DIRECTORY ${WIN_FLEX_BISON})
-        list(APPEND CMAKE_PREFIX_PATH ${WIN_FLEX_BISON})
-    else()
-        message(
-            FATAL_ERROR
-            "The path specified by WIN_FLEX_BISON environment variable is not an existing folder: ${WIN_FLEX_BISON}"
-        )
-    endif()
     if(NOT WIN_FLEX_BISON)
         message(
             FATAL_ERROR
             "Please install https://github.com/lexxmark/winflexbison and set WIN_FLEX_BISON environment variable. Please use install cmake target after a successful build."
+        )
+    elseif(IS_DIRECTORY "${WIN_FLEX_BISON}")
+        list(APPEND CMAKE_PREFIX_PATH "${WIN_FLEX_BISON}")
+    else()
+        message(
+            FATAL_ERROR
+            "The path specified by WIN_FLEX_BISON environment variable is not an existing folder: ${WIN_FLEX_BISON}"
         )
     endif()
     set(CMAKE_CXX_STANDARD 20)
@@ -138,6 +137,8 @@ if(DEBUG_AND_RELEASE_AND_COVERAGE)
     add_subdirectory(src build-Release)
     set(CMAKE_BUILD_TYPE Coverage)
     add_subdirectory(src build-Coverage)
+    set(CMAKE_BUILD_TYPE CoverageRelease)
+    add_subdirectory(src build-CoverageRelease)
     set(CMAKE_BUILD_TYPE ${saved_build_type})
 else()
     add_subdirectory(src)

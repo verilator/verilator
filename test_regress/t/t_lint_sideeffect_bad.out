@@ -16,4 +16,14 @@
                                                     : ... Suggest use a temporary variable in place of this expression
    17 |     arr[postincrement_i()][postincrement_i()]++;
       |                            ^~~~~~~~~~~~~~~
+%Warning-SIDEEFFECT: t/t_lint_sideeffect_bad.v:29:9: Expression side effect may be mishandled
+                                                   : ... note: In instance 't'
+                                                   : ... Suggest use a temporary variable in place of this expression
+   29 |     vifs[postincrement_i()].cb.w <= 1;
+      |         ^
+%Warning-SIDEEFFECT: t/t_lint_sideeffect_bad.v:29:10: Expression side effect may be mishandled
+                                                    : ... note: In instance 't'
+                                                    : ... Suggest use a temporary variable in place of this expression
+   29 |     vifs[postincrement_i()].cb.w <= 1;
+      |          ^~~~~~~~~~~~~~~
 %Error: Exiting due to

@@ -365,7 +365,7 @@ string AstNode::vpiName(const string& namein) {
 
 string AstNode::prettyTypeName() const {
     if (name() == "") return typeName();
-    return std::string{typeName()} + " '" + prettyName() + "'";
+    return std::string{typeName()} + " '" + prettyNameMsg() + "'";
 }
 
 //######################################################################
@@ -572,6 +572,46 @@ void AstNode::addOp4p(AstNode* newp) {
         op4p(newp);
     } else {
         m_op4p->addNext(newp);
+    }
+}
+
+void AstNode::prependOp1p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp1p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op1p) {
+        op1p(newp);
+    } else {
+        m_op1p->addHereThisAsNext(newp);
+    }
+}
+
+void AstNode::prependOp2p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp2p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op2p) {
+        op2p(newp);
+    } else {
+        m_op2p->addHereThisAsNext(newp);
+    }
+}
+
+void AstNode::prependOp3p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp3p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op3p) {
+        op3p(newp);
+    } else {
+        m_op3p->addHereThisAsNext(newp);
+    }
+}
+
+void AstNode::prependOp4p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp4p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op4p) {
+        op4p(newp);
+    } else {
+        m_op4p->addHereThisAsNext(newp);
     }
 }
 
@@ -1590,29 +1630,23 @@ void AstNode::dtypeChgSigned(bool flag) {
     dtypeChgWidthSigned(dtypep()->width(), dtypep()->widthMin(), VSigning::fromBool(flag));
 }
 void AstNode::dtypeChgWidth(int width, int widthMin) {
-    UASSERT_OBJ(dtypep(), this,
-                "No dtype when changing width");  // Use ChgWidthSigned(...UNSIGNED) otherwise
+    UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
     dtypeChgWidthSigned(width, widthMin, dtypep()->numeric());
 }
 
 void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
-    if (!dtypep()) {
-        // We allow dtypep() to be null, as before/during widthing dtypes are not resolved
-        dtypeSetLogicUnsized(width, widthMin, numeric);
-    } else {
-        if (width == dtypep()->width() && widthMin == dtypep()->widthMin()
-            && numeric == dtypep()->numeric()
-            // Enums need to become direct sizes to avoid later ENUMVALUE errors
-            && !VN_IS(dtypep()->skipRefToEnump(), EnumDType))
-            return;  // Correct already
-        if (AstBasicDType* const basicp = VN_CAST(dtypep(), BasicDType)) {
-            if (!basicp->keyword().isFourstate()) {
-                dtypeSetBitUnsized(width, widthMin, numeric);
-                return;
-            }
-        }
-        dtypeSetLogicUnsized(width, widthMin, numeric);
+    UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
+    const AstNodeDType* const enumDTypep = dtypep()->skipRefToEnump();
+    if (width == dtypep()->width() && widthMin == dtypep()->widthMin()
+        && numeric == dtypep()->numeric()
+        // Enums need to become direct sizes to avoid later ENUMVALUE errors
+        && !VN_IS(enumDTypep, EnumDType)) {
+        return;  // Correct already
     }
+    const AstNodeDType* const dtypep = enumDTypep->skipRefp();
+    // This cannot be asserted yet, because V3Clean tends to change width of everything
+    // UASSERT_OBJ(!dtypep->isCompound(), this, "Cannot change width of compound dtype.");
+    dtypeSetBitOrLogicUnsized(width, widthMin, numeric, dtypep->isFourstate());
 }
 
 AstNodeDType* AstNode::findBasicDType(VBasicDTypeKwd kwd) const {
@@ -1627,6 +1661,10 @@ AstNodeDType* AstNode::findBitDType(int width, int widthMin, VSigning numeric) c
 AstNodeDType* AstNode::findLogicDType(int width, int widthMin, VSigning numeric) const {
     return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::LOGIC,
                                                              width, widthMin, numeric);
+}
+AstNodeDType* AstNode::findLogic2StateDType(int width, int widthMin, VSigning numeric) const {
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(
+        fileline(), VBasicDTypeKwd::LOGIC2STATE, width, widthMin, numeric);
 }
 AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
                                            VSigning numeric) const {

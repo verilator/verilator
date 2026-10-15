@@ -416,6 +416,12 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateConstNull(nodep->rhsp());
         puts(")");
     }
+    void visit(AstCoverCrossWith* nodep) override {
+        iterateConstNull(nodep->selectp());
+        putfs(nodep, " with (");
+        iterateConst(nodep->filterp());
+        puts(")");
+    }
     void visit(AstCoverpointRef* nodep) override {
         putfs(nodep, nodep->name());
         iterateConstNull(nodep->exprp());
@@ -1013,9 +1019,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts(" ");
         } else if (nodep->isRanged()) {
             puts(" [");
-            puts(cvtToStr(nodep->hi()));
+            puts(cvtToStr(nodep->left()));
             puts(":");
-            puts(cvtToStr(nodep->lo()));
+            puts(cvtToStr(nodep->right()));
             puts("] ");
         }
     }

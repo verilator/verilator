@@ -105,15 +105,46 @@ string reportHier(const VlcPoint& point) {
     return point.hier();
 }
 
+// The components of a hierarchy, split at its dots.  A covergroup's is the name of its type, as
+// $typename names it (dtypeName() in V3AstNodes.cpp), whose escaped identifiers, from a '\' to
+// the white space ending each (IEEE 1800-2023 23.6), hold no separating dots; nor do the values
+// of the parameters of a specialization, '#(...)', as of a real value, or the string values
+// within, which V3OutFormatter::quoteNameControls() escapes, as VString::quotedEnd() finds the
+// end of.  A name whose identifiers, parentheses, or quotes do not end is not as $typename writes
+// a type, so splits at each dot.
 std::vector<string> splitHier(const string& hier) {
-    // Verilator emits dot-separated non-empty hierarchy components.
     std::vector<string> parts;
     string::size_type start = 0;
-    while (true) {
-        const string::size_type dot = hier.find('.', start);
-        if (dot == string::npos) break;
-        parts.push_back(hier.substr(start, dot - start));
-        start = dot + 1;
+    int depth = 0;  // Of the parentheses of the values of parameters
+    string::size_type pos = 0;
+    while (pos < hier.size()) {
+        const char c = hier[pos];
+        if (c == '\\') {
+            pos = hier.find(' ', pos);  // npos if not ended
+            continue;
+        } else if (!depth && hier.compare(pos, 2, "#(") == 0) {
+            depth = 1;
+            ++pos;
+        } else if (!depth && c == '.') {
+            parts.push_back(hier.substr(start, pos - start));
+            start = pos + 1;
+        } else if (depth && c == '"') {
+            pos = VString::quotedEnd(hier, pos);  // npos if not terminated
+            continue;
+        } else if (depth && c == '(') {
+            ++depth;
+        } else if (depth && c == ')') {
+            --depth;
+        }
+        ++pos;
+    }
+    if (depth || pos != hier.size()) {  // Unbalanced
+        parts.clear();
+        start = 0;
+        for (string::size_type dot; (dot = hier.find('.', start)) != string::npos;
+             start = dot + 1) {
+            parts.push_back(hier.substr(start, dot - start));
+        }
     }
     parts.push_back(hier.substr(start));
     return parts;
@@ -229,7 +260,7 @@ bool isScoreField(const string& field) {
 
 // The name of a bin's record without the keys of the coverage computation, which the records of
 // a bin may differ in, so identifying the bin.  Its name does not: covergroups of distinct scopes
-// may share a name, as may cross bins, of the names of their coverpoints' bins joined.
+// may share a name.
 string binIdentity(const string& recordName) {
     string identity;
     string::size_type start = 0;
@@ -433,13 +464,19 @@ void VlcTop::readCoverage(const string& filename, bool nonfatal) {
     // Testrun and computrons argument unsupported as yet
     VlcTest* const testp = tests().newTest(filename, 0, 0);
 
+    uint64_t lineno = 0;
     while (!is.eof()) {
         const string line = V3Os::getline(is);
+        ++lineno;
         // UINFO(9, " got " << line);
         if (line[0] == 'C') {
-            string::size_type secspace = 3;
-            for (; secspace < line.length(); secspace++) {
-                if (line[secspace] == '\'' && line[secspace + 1] == ' ') break;
+            // The count follows the last "' ": a point may hold one too, as does a covergroup
+            // type named with the value of a string parameter
+            const string::size_type secspace = line.rfind("' ");
+            if (secspace == string::npos || secspace < 3) {
+                v3error("Malformed coverage point, without a count: " << filename << ":"
+                                                                      << lineno);
+                continue;
             }
             const string point = line.substr(3, secspace - 3);
             if (!opt.isTypeMatch(point.c_str())) continue;
@@ -674,7 +711,7 @@ void VlcTop::annotateCalcNeeded() {
     }
     std::cout << "Annotation Summary:\n";
     std::cout << "  lines with all attached points covered : ";
-    std::cout << pctString(totOk, totCases) << "%  (" << totOk << "/" << totCases << ")\n";
+    std::cout << pctString(totOk, totCases) << "  (" << totOk << "/" << totCases << ")\n";
     if (totOk != totCases) cout << "See lines with '%00' in " << opt.annotateOut() << '\n';
 }
 

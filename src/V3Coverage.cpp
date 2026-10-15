@@ -461,7 +461,7 @@ class CoverageVisitor final : public VNVisitor {
         if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
             toggleVarBottom(above, varp, basicp->nrange());
         } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
+            for (const int index_docs : adtypep->declRange().seqLoToHi()) {
                 const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
                                  new AstArraySel{varp->fileline(),
@@ -472,7 +472,7 @@ class CoverageVisitor final : public VNVisitor {
                 newent.cleanup();
             }
         } else if (const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType)) {
-            for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
+            for (const int index_docs : adtypep->declRange().seqLoToHi()) {
                 const AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
                 const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
@@ -833,9 +833,9 @@ class CoverageVisitor final : public VNVisitor {
                         pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
-                            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+                            m_ftaskp->prependStmtsp(varp);
                         } else {
-                            m_modp->stmtsp()->addHereThisAsNext(varp);
+                            m_modp->prependStmtsp(varp);
                         }
                         VNRelinker relinkHandle;
                         frefp->unlinkFrBack(&relinkHandle);
@@ -1117,12 +1117,16 @@ class CoverageVisitor final : public VNVisitor {
     // VISITORS - BOTH
     void visit(AstProperty* nodep) override {
         VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
         m_state.m_on = false;
+        m_inToggleOff = true;
         iterateChildren(nodep);
     }
     void visit(AstSequence* nodep) override {
         VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
         m_state.m_on = false;
+        m_inToggleOff = true;
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {

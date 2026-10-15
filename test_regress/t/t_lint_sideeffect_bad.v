@@ -17,4 +17,24 @@ module t;
     arr[postincrement_i()][postincrement_i()]++;
     $display("Value: %d", i);
   end
+
+  bit clk;
+  bus_if buses[2] (.clk);
+  virtual bus_if vifs[2];
+
+  initial begin
+    vifs[0] = buses[0];
+    vifs[1] = buses[1];
+    // The interface is evaluated again to note the synchronous drive
+    vifs[postincrement_i()].cb.w <= 1;
+  end
 endmodule
+
+interface bus_if (
+    input bit clk
+);
+  bit w;
+  clocking cb @(posedge clk);
+    output w;
+  endclocking
+endinterface

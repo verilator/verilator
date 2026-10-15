@@ -10,7 +10,7 @@
                                  : ... note: In instance 't'
    21 |   wire Cls bad_class;   
       |            ^~~~~~~~~
-        t/t_net_dtype_bad.v:21:8: ... Location of failing data type 'class{}Cls'
+        t/t_net_dtype_bad.v:21:8: ... Location of failing data type 'class Cls'
    21 |   wire Cls bad_class;   
       |        ^~~
 %Error: t/t_net_dtype_bad.v:23:15: Net 'bad_string' data type must be 4-state integral or array/union/struct of such (IEEE 1800-2023 6.7.1)

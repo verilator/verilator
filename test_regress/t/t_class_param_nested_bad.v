@@ -15,7 +15,7 @@ class Wrap #(
   function new;
     c1 = new;
   endfunction
-  Cls #(PMINUS1 + 1) c1;
+  static Cls #(PMINUS1 + 1) c1;
   localparam PMINUS1 = P - 1;  // Checking works when last
 endclass
 
@@ -48,13 +48,12 @@ endclass
 typedef Cls#(8) Cls8_t;
 
 module t;
-
   Cls c12;
   Cls #(.PBASE(4)) c4;
   Cls8_t c8;
   Wrap #(.P(16)) w16;
   Wrap2 #(.P(32)) w32;
-  Wrap2 #(Wrap #(19)::PBASE * 2) w38;
+  Wrap2 #(Wrap #(19)::c1::PBASE * 2) w38;
   initial begin
     c12 = new;
     c4 = new;
@@ -63,7 +62,6 @@ module t;
     w32 = new;
     w38 = new;
     if (w38.get_p() != 38) $stop;
-
     $write("*-* All Finished *-*\n");
     $finish;
   end

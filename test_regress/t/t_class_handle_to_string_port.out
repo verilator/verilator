@@ -1,4 +1,4 @@
-%Error: t/t_class_handle_to_string_port.v:21:9: Cannot convert 'class{}' handle to a string:'class{}Base'
+%Error: t/t_class_handle_to_string_port.v:21:9: Cannot convert 'class' handle to a string:'class Base'
                                               : ... note: In instance 't'
    21 |     c.f(seq);
       |         ^~~

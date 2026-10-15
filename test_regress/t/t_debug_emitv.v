@@ -5,6 +5,8 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); $stop; end while(0);
+
 package Pkg;
   localparam PKG_PARAM = 1;
 
@@ -24,6 +26,11 @@ class Cls;
   int member = 1;
   rand int rmember1;
   rand int rmember2;
+  rand int rarray[3];
+  constraint array_values {
+    solve rarray[0] before rmember1;
+    foreach (rarray[i]) rarray[i] == rmember1 + i;
+  }
   covergroup cg_in_class @(posedge cg_clk);
     cp_m: coverpoint member {
       bins one = {1};
@@ -256,6 +263,7 @@ module t (/*AUTOARG*/
 
     if (Pkg::PKG_PARAM != 1) $stop;
     sub.r = 62.0;
+    `checkd(sub.sub_gen.SUB_B, 2'd1);
 
     mod_res = mod_val % 5;
 
@@ -455,6 +463,7 @@ module t (/*AUTOARG*/
       bins either = binsof (cp_x.x0) || binsof (cp_y.y0);
       bins both = binsof (cp_x.x1) && binsof (cp_y.y1) iff (cg_sig[1]);
       bins grouped = (binsof (cp_x.x0) || binsof (cp_y.y0)) && !binsof (cp_x.x1);
+      bins paired = binsof (cp_x) with (cp_x != 0 && cp_y == 0);  // 'with' filter of bin tuples
       ignore_bins ignored = binsof (cp_x.x0) iff (cg_sig[0]);
       illegal_bins forbidden = binsof (cp_y.y1);
     }
@@ -479,6 +488,9 @@ module t (/*AUTOARG*/
 endmodule
 
 module sub(input logic clk);
+  if (1) begin : sub_gen
+    typedef enum logic [1:0] {SUB_A, SUB_B} sub_e;
+  end
   task inc(input int i, output int o);
     o = {1'b0, i[31:1]} + 32'd1;
   endtask

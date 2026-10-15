@@ -920,6 +920,14 @@ Chapter 5. Verilator takes this static approach. The only dynamic aspect is
 that each macro task may block before starting, to wait until its
 prerequisites on other threads have finished.
 
+The generated code also describes each macro-task graph as static data: the
+function of each macro-task, its estimated cost, the trigger bits its code
+tests, and the dependencies between macro-tasks. Where the graph executes,
+the generated code passes this description and the trigger vector to the
+run-time library, which executes the graph. If the macro-tasks whose
+triggers are set are cheap in total, it runs only those, in a topological
+order on the calling thread, without waking the other threads.
+
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major
 source of overhead in this approach. The ``--prof-exec`` switch and the
@@ -1189,7 +1197,7 @@ is appreciated if you could match our style for C/C++:
   (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
-using clang-format version 18, and yapf for Python, and is automatically
+using clang-format version 21, and yapf for Python, and is automatically
 corrected in the CI actions. For those manually formatting C code:
 
 - Use four spaces per level, and no tabs.
@@ -1325,9 +1333,10 @@ AstNodeExpr``.
 ``astnode`` generates accessors for the child nodes based on these
 directives. For non-list children, the names of the getter and setter both
 are that of the given ``<identifier>``. For list-type children, the getter
-is ``<identifier>``, and instead of the setter, there an
-``add<Identifier>`` method is generated that appends new nodes (or lists of
-nodes) to the child list.
+is ``<identifier>``, and instead of the setter, an ``add<Identifier>``
+method is generated that appends new nodes (or lists of nodes) to the child
+list, and a ``prepend<Identifier>`` method that prepends them to the front
+of the child list.
 
 
 ``alias op<N>`` operand alias directives
@@ -1904,14 +1913,14 @@ Tree Hierarchy
    The dump lines begin with numbers and colons to indicate the child node
    hierarchy. As noted above, ``AstNode`` has lists of items at the same
    level in the AST, connected by the ``nextp()`` and ``prevp()`` pointers.
-   These appear as nodes at the same level. For example, after inlining:
+   These appear as nodes at the same level. For example:
 
    ::
 
        NETLIST 0x929c1c8 <e1> {a0} w0
-      1: MODULE 0x92bac80 <e3144> {e14} w0  TOP_t  L1 [P]
-      1:1: CELLINLINE 0x92bab18 <e3686#> {e14} w0  v -> t
-      1:1: CELLINLINE 0x92bc1d8 <e3688#> {e24} w0  v__DOT__i_test_gen -> test_gen
+      1: MODULE 0x92bac80 <e3144> {e14} w0  t  L2
+      1:1: VAR 0x92a2e90 <e79> {e18} w0  clk [I] INPUT
+      1:1: CELL 0x92bc1d8 <e3688#> {e24} w0  i_test_gen -> MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
       1: MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
@@ -1978,8 +1987,8 @@ referred to. For example:
 In general, examine the ``dump()`` method in ``V3AstNodes.cpp`` of the node
 type in question to determine additional fields that may be printed.
 
-The ``MODULE`` has a list of ``CELLINLINE`` nodes referred to by its
-``op1p()`` pointer, connected by ``nextp()`` and ``prevp()`` pointers.
+The ``MODULE`` has a list of statements referred to by its ``op1p()``
+pointer, connected by ``nextp()`` and ``prevp()`` pointers.
 
 Similarly, the ``NETLIST`` has a list of modules referred to by its
 ``op1p()`` pointer.
@@ -2240,7 +2249,7 @@ The following script is an example of this debugging:
    # Example script for finding nondeterminism
    cd $VERILATOR_ROOT
    set -e
-   t=t_split_var_0  # Test name
+   t=t_EXAMPLE  # Test name
    test_regress/t/$t.py --debug --debug-alloc-random 33 --dumpi-tree 9 --obj-suffix .33
    test_regress/t/$t.py --debug --debug-alloc-random 66 --dumpi-tree 9 --obj-suffix .66
    bin/verilator_difftree test_regress/obj_vlt/$t{.33,.66} | grep -v CFILE | grep -v "^ " | grep -v /tmp | grep -v @@

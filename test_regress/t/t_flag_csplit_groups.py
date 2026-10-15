@@ -41,7 +41,7 @@ def check_cpp(filename):
     funcs = []
     with open(filename, 'r', encoding="utf8") as fh:
         for line in fh:
-            m = re.search(r'^(void|IData)\s+(.*::.*){', line)
+            m = re.search(r'^(void|(?:::)?IData)\s+(.*::.*){', line)
             if not m:
                 continue
             func = m.group(2)

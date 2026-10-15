@@ -101,7 +101,7 @@ class SplitIntoComponents final {
         // Allocate the component graphs
         m_components.resize(m_componentCounter - 1);
         for (size_t i = 1; i < m_componentCounter; ++i) {
-            m_components[i - 1].reset(new DfgGraph{m_prefix + cvtToStr(i - 1)});
+            m_components[i - 1].reset(new DfgGraph{m_dfg.ctx(), m_prefix + cvtToStr(i - 1)});
         }
         // Move the vertices to the component graphs
         moveVertices(m_dfg.varVertices());
@@ -316,7 +316,7 @@ class ExtractCyclicComponents final {
         // Allocate result graphs
         m_components.resize(nComponents);
         for (uint32_t i = 0; i < nComponents; ++i) {
-            m_components[i].reset(new DfgGraph{m_prefix + cvtToStr(i)});
+            m_components[i].reset(new DfgGraph{m_dfg.ctx(), m_prefix + cvtToStr(i)});
         }
 
         // Fix up edges crossing components (we can only do this at variable boundaries, and the

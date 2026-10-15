@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of either the GNU Lesser General Public License Version 3
+# or the Perl Artistic License Version 2.0.
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+import vltest_bootstrap
+
+# An array of interface reference ports, discovered by iterating the
+# declaring module's vpiInternalScope children; see the .cpp.
+test.scenarios('vlt')
+
+# Debug to exercise checked STL iterators in the debug compiler, including table sorting.
+test.compile(make_top_shell=False,
+             make_pli=True,
+             verilator_flags2=[
+                 "--debug --debugi 0 --no-skip-identical",
+                 "--binary --vpi --no-l2name --public-flat-rw", test.pli_filename
+             ])
+
+test.execute(use_libvpi=True)
+
+test.passes()

@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t;
 
   integer p_i;  // signal type IData
@@ -15,6 +20,8 @@ module t;
   reg [7*8:1] p_in;
   string sv_in;
   integer unread;  // never read
+  longint signed p_decimal;
+  int code;
 
   initial begin
     if ($test$plusargs("PLUS") !== 1) $stop;
@@ -127,6 +134,23 @@ module t;
     unread = $value$plusargs("REAL=%e", p_r);
     if (p_i !== 32'd1234) $stop;
     if (p_r !== 1.2345) $stop;
+
+    code = $value$plusargs("DECIMAL=%d", p_decimal);
+    `checkd(code, 1);
+    `checkd(p_decimal, 64'sd300_000_000_000);
+    code = $value$plusargs("NEGATIVE=%d", p_decimal);
+    `checkd(code, 1);
+    `checkd(p_decimal, -64'sd300_000_000_000);
+    code = $value$plusargs("LEADING=%0d", p_decimal);
+    `checkd(code, 1);
+    `checkd(p_decimal, 1_234);
+    code = $value$plusargs("TRAILING=%d", p_decimal);
+    `checkd(code, 1);
+    `checkd(p_decimal, 1_234);
+    // A matching plusarg returns 1 even when its value contains no digits.
+    code = $value$plusargs("UNDERSCORE=%d", p_decimal);
+    `checkd(code, 1);
+    `checkd(p_decimal, 0);
 
     $write("*-* All Finished *-*\n");
     $finish;

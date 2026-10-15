@@ -96,6 +96,10 @@ public:
     // Convert SV quoted string input from source code to normal form.
     // Reverse is V3OutFormatter::quoteNameControls(...)
     static string unquoteSVString(const string& text, string& errOut);
+    // Position just past the string literal 'pos' opens with '"', as written by
+    // V3OutFormatter::quoteNameControls(...), whose escapes each begin with '\', or npos if the
+    // literal does not end
+    static size_t quotedEnd(const string& str, size_t pos) VL_PURE;
     // Escape path in Windows
     // e.g. input `C:\Program Files\My Program\My Program.exe` becomes
     // `C:\\Program\ Files\\My\ Program\\My\ Program.exe`
@@ -177,6 +181,10 @@ public:
         insert(data);
     }
     ~VHashSha512() = default;
+
+    // CONSTANTS
+    // Characters digestSymbol24 keeps, 6 bits each, so 144 bits and no collisions in practice
+    static constexpr size_t DIGEST_SYMBOL24_LENGTH = 24;
 
     // METHODS
     string digestBase64();  // Return digest formatted in Base64 (non-URL flavor)

@@ -103,6 +103,9 @@ public:
         return const_cast<AstNodeDType*>(
             static_cast<const AstNodeDType*>(this)->skipRefIterp(true, false));
     }
+    // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType|ConstDType to EnumDType,
+    // Returns null if not resolved
+    const AstNodeDType* skipRefToEnumOrNullp() const { return skipRefIterp(true, false, false); }
     // (Slow) Recurse over MemberDType|ParamTypeDType|RefDType to other type
     const AstNodeDType* skipRefToNonRefp() const { return skipRefIterp(false, false); }
     AstNodeDType* skipRefToNonRefp() {
@@ -178,6 +181,7 @@ public:
     bool containsUnpackedStruct() const;
     int widthStream() const;
     string vlEnumType() const;  // Return VerilatedVarType: VLVT_UINT32, etc
+    string vlEnumPackedAgg() const;  // Return VLVF_PACKED_AGG etc flags, or empty
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isDouble() ? "D" : isQuad() ? "Q" : "I");
@@ -185,6 +189,8 @@ public:
     string cType(const string& name, bool forFunc, bool isRef, bool packed = false) const;
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
+    // C++ type (as emitted by cType) is trivially default constructible and destructible?
+    bool isTriviallyConstructible() const VL_MT_STABLE;
     virtual bool isDynamicallySized() const { return false; }
 
 private:
@@ -250,6 +256,7 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     //
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package emitted with
     string m_name;  // Name from upper typedef, if any
+    string m_typedefName;  // Typedef's dtypeName() once moved off the typedef declaring it
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
     bool m_packed;  // Packed struct/union, else unpacked
     bool m_isFourstate = false;  // V3Width computes; true if any member is 4-state
@@ -267,6 +274,7 @@ protected:
     AstNodeUOrStructDType(const AstNodeUOrStructDType& other)
         : AstNodeDType{other}
         , m_name{other.m_name}
+        , m_typedefName{other.m_typedefName}
         , m_uniqueNum{uniqueNumInc()}
         , m_packed{other.m_packed}
         , m_isFourstate{other.m_isFourstate} {}
@@ -294,6 +302,8 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
+    // Keep the name the typedef declaring it gives, as it moves off it to the type table
+    void typedefName(const string& name) { m_typedefName = name; }
     bool packed() const VL_MT_SAFE { return m_packed; }
     void packed(bool flag) { m_packed = flag; }
     // packed() but as don't support unpacked, presently all structs
@@ -311,6 +321,7 @@ public:
     void markConstrainedRand(bool flag) { m_constrainedRand = flag; }
     bool emitToString() const { return m_emitToString; }
     void setEmitToString() { m_emitToString = true; }
+    bool isAggregateType() const override { return !packed(); }
 };
 
 // === Concrete node types =====================================================
@@ -425,6 +436,10 @@ public:
         : ASTGEN_SUPER_BasicDType(fl) {
         init(VBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, nullptr);
     }
+    AstBasicDType(FileLine* fl, VFlagLogic2StatePacked, int wantwidth)
+        : ASTGEN_SUPER_BasicDType(fl) {
+        init(VBasicDTypeKwd::LOGIC2STATE, VSigning::NOSIGN, wantwidth, -1, nullptr);
+    }
     AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER_BasicDType(fl) {
         init(VBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, nullptr);
@@ -450,7 +465,7 @@ public:
     // width/widthMin/numeric compared elsewhere
     bool sameNode(const AstNode* samep) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override;
-    string name() const override VL_MT_STABLE { return m.m_keyword.ascii(); }
+    string name() const override VL_MT_STABLE { return m.m_keyword.typeName(); }
     string prettyDTypeName(bool full) const override;
     const char* broken() const override {
         BROKEN_RTN(dtypep() != this);
@@ -510,6 +525,10 @@ public:
     }
     bool isDpiLogicVec() const {  // DPI uses svLogicVecVal
         return keyword().isFourstate() && !(keyword() == VBasicDTypeKwd::LOGIC && !isRanged());
+    }
+    bool isDpiCLayout() const {
+        return keyword().isDpiCLayout()
+               || (keyword().isSameish(VBasicDTypeKwd::LOGIC) && !isRanged());
     }
     bool isDpiPrimitive() const {  // DPI uses a primitive type
         return !isDpiBitVec() && !isDpiLogicVec();
@@ -576,13 +595,14 @@ public:
     int widthAlignBytes() const override { return 8; }  // Assume
     int widthTotalBytes() const override { return 8; }  // Assume
     bool isCompound() const override { return true; }
+    // Return the global runtime type storing the requested number of bits.
     static string typeToHold(int width) {
-        if (width <= 8) return "CData";
-        if (width <= 16) return "SData";
-        if (width <= VL_IDATASIZE) return "IData";
-        if (width <= VL_QUADSIZE) return "QData";
+        if (width <= 8) return "::CData";
+        if (width <= 16) return "::SData";
+        if (width <= VL_IDATASIZE) return "::IData";
+        if (width <= VL_QUADSIZE) return "::QData";
 
-        return "VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
+        return "::VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
     }
 };
 class AstClassRefDType final : public AstNodeDType {
@@ -611,6 +631,7 @@ public:
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
     string prettyDTypeName(bool full) const override;
+    string prettyNameMsg() const override;
     string name() const override VL_MT_STABLE;
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     int widthAlignBytes() const override { return 0; }
@@ -883,6 +904,7 @@ class AstEnumDType final : public AstNodeDType {
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
     string m_name;  // Name from upper typedef, if any
+    string m_typedefName;  // Typedef's dtypeName() once moved off the typedef declaring it
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
 
 public:
@@ -898,6 +920,7 @@ public:
     AstEnumDType(const AstEnumDType& other)
         : AstNodeDType{other}
         , m_name{other.m_name}
+        , m_typedefName{other.m_typedefName}
         , m_uniqueNum{uniqueNumInc()} {}
     ASTGEN_MEMBERS_AstEnumDType;
 
@@ -917,6 +940,8 @@ public:
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
+    // Keep the name the typedef declaring it gives, as it moves off it to the type table
+    void typedefName(const string& name) { m_typedefName = name; }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
@@ -1009,6 +1034,7 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
+    string prettyDTypeName(bool full) const override;
     AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
     bool similarDTypeNode(const AstNodeDType* samep) const override {
         // Each occurrence of a virtual interface type parses to its own node,
@@ -1078,6 +1104,7 @@ public:
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     void dumpSmall(std::ostream& str) const override;
+    string prettyDTypeName(bool full) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     bool hasDType() const override VL_MT_SAFE { return true; }
     bool maybePointedTo() const override VL_MT_SAFE { return true; }
@@ -1161,6 +1188,7 @@ public:
     ASTGEN_MEMBERS_AstParamTypeDType;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
+    string prettyDTypeName(bool full) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return dtypep() ? dtypep() : childDTypep();
@@ -1310,7 +1338,7 @@ public:
     void dumpSmall(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     string prettyDTypeName(bool full) const override {
-        return subDTypep() ? prettyName(subDTypep()->prettyDTypeName(full)) : prettyName();
+        return subDTypep() ? subDTypep()->prettyDTypeName(full) : prettyName();
     }
     AstBasicDType* basicp() const override VL_MT_STABLE {
         return subDTypep() ? subDTypep()->basicp() : nullptr;
@@ -1502,6 +1530,7 @@ public:
     bool sameNode(const AstNode* samep) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override;
     void dumpSmall(std::ostream& str) const override;
+    string prettyDTypeName(bool full) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
@@ -1514,6 +1543,7 @@ public:
     int widthAlignBytes() const override { return sizeof(std::map<std::string, std::string>); }
     int widthTotalBytes() const override { return sizeof(std::map<std::string, std::string>); }
     bool isCompound() const override { return true; }
+    bool isDynamicallySized() const override { return true; }
 };
 
 // === AstNodeArrayDType ===

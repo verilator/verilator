@@ -533,16 +533,21 @@ class AstCoverInc final : public AstNodeStmt {
     // These are expressions to which the node corresponds. Used only in toggle coverage
     //
     // @astgen ptr := m_declp : AstNodeCoverDecl  // [After V3CoverageJoin] Declaration
+
+    bool m_isDuplicate = false;  // Duplicate AstCoverInc associated with one AstNodeCoverDecl
+
 public:
-    AstCoverInc(FileLine* fl, AstNodeCoverDecl* declp)
+    AstCoverInc(FileLine* fl, AstNodeCoverDecl* declp, const bool isDuplicate = false)
         : ASTGEN_SUPER_CoverInc(fl)
+        , m_isDuplicate{isDuplicate}
         , m_declp{declp} {}
     ASTGEN_MEMBERS_AstCoverInc;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     int instrCount() const override { return 1 + 2 * INSTR_COUNT_LD; }
     bool sameNode(const AstNode* samep) const override {
-        return declp() == VN_DBG_AS(samep, CoverInc)->declp();
+        const AstCoverInc* const otherp = VN_DBG_AS(samep, CoverInc);
+        return declp() == otherp->declp() && isDuplicate() == otherp->isDuplicate();
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
@@ -550,6 +555,7 @@ public:
     bool isPure() override { return false; }
     AstNodeCoverDecl* declp() const { return m_declp; }  // Where defined
     void declp(AstNodeCoverDecl* nodep) { m_declp = nodep; }
+    bool isDuplicate() const { return m_isDuplicate; }
 };
 class AstDeassign final : public AstNodeStmt {
     // Procedural 'deassign' statement
@@ -707,18 +713,22 @@ class AstExecGraph final : public AstNodeStmt {
     // where the parallel graph will be executed. Execution proceeds after
     // the AstExecGraph when all threads have joined.
     //
-    // For code analysis purposes after scheduling, we keep a call to each
-    // MTask function as children of the AstExecGraph in 'stmtsp'. These
-    // are in a topological order so they represent a valid sequential
-    // execution of the graph. In `V3ExecGraph::implement`, we replace these
-    // statements with statements that dispatch to the thread pool for
-    // parallel execution.
-    // @astgen op1 := stmtsp : List[AstNode]
+    // The calls to the MTask functions in 'callsp' are in a topological
+    // order, so they represent a valid sequential execution of the graph for
+    // code analysis purposes. The emitted code passes a description of the
+    // graph to the run-time library, which executes the graph.
+    // @astgen op1 := callsp : List[AstCCall]  // Calls to MTask bodies
+    // Trigger masks zipped with callsp, populated by V3ExecGraph::implement
+    // @astgen op2 := maskps : List[AstVarRef]
+    // @astgen op3 := triggerp : AstVarRef  // Trigger vector this graph is sensitive to
+    // Static cost of the logic each trigger guards, populated by V3ExecGraph::implement
+    // @astgen op4 := triggerCostsp : Optional[AstVarRef]
+    // @astgen ptr := m_runfuncp : Optional[AstCFunc]  // Statically scheduled dispatch function
     V3Graph* const m_depGraphp;  // contains ExecMTask vertices
     const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)
 
 public:
-    explicit AstExecGraph(FileLine* fl, const string& name) VL_MT_DISABLED;
+    AstExecGraph(FileLine* fl, const string& name, AstVarScope* trigVscp) VL_MT_DISABLED;
     ~AstExecGraph() override;
     ASTGEN_MEMBERS_AstExecGraph;
     void cloneRelink() override { V3ERROR_NA; }  // Not cloneable
@@ -726,6 +736,8 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }
     V3Graph* depGraphp() { return m_depGraphp; }
     const V3Graph* depGraphp() const { return m_depGraphp; }
+    AstCFunc* runfuncp() const { return m_runfuncp; }
+    void runfuncp(AstCFunc* funcp) { m_runfuncp = funcp; }
 };
 class AstFClose final : public AstNodeStmt {
     // Parents: stmtlist

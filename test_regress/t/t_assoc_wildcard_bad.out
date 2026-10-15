@@ -71,7 +71,7 @@
                                      : ... note: In instance 't'
    43 |     a[x] = "bad";
       |      ^
-%Error: t/t_assoc_wildcard_bad.v:43:7: Cannot convert 'class{}' handle to a string:'class{}Cls'
+%Error: t/t_assoc_wildcard_bad.v:43:7: Cannot convert 'class' handle to a string:'class Cls'
                                      : ... note: In instance 't'
    43 |     a[x] = "bad";
       |       ^

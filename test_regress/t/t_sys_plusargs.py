@@ -13,6 +13,10 @@ test.scenarios('simulator')
 
 test.compile(v_flags2=['-v', 't/t_flag_libinc.v'])
 
-test.execute(all_run_flags=['+PLUS +INT=1234 +STRSTR +REAL=1.2345 +IP%P101'])
+test.execute(all_run_flags=[
+    '+PLUS +INT=1234 +STRSTR +REAL=1.2345 +IP%P101',
+    '+DECIMAL=300_000_000_000 +NEGATIVE=-300_000_000_000',
+    '+LEADING=_1_234 +TRAILING=1_234_ +UNDERSCORE=_',
+])
 
 test.passes()

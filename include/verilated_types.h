@@ -39,6 +39,9 @@
 #include <string>
 #include <utility>
 
+class VlClass;
+template <typename T_Class>
+class VlClassRef;
 class VlProcess;
 template <typename T_Value, std::size_t N_Depth>
 class VlUnpacked;
@@ -327,6 +330,7 @@ class VlProcess final {
         = nullptr;  // Optional fork..join counter to decrement on kill
     bool m_forkSyncOnKillDone = false;  // Ensure on-kill callback fires only once
     VlRNG m_rng;  // Per-process RNG (IEEE 1800-2023 18.14)
+    VlClass* m_selfp = nullptr;  // std::process object of this process, not owned
 
     // Thread-local current process pointer for hierarchical object seeding
     static thread_local VlProcess* t_currentp;
@@ -362,7 +366,13 @@ public:
 
     int state() const { return m_state; }
     void state(int s);
+    // IEEE 1800-2023 9.7: killing a completed process still terminates its live
+    // descendants, but leaves the process state unchanged
     void disable() {
+        if (completed()) {
+            disableFork();
+            return;
+        }
         state(KILLED);
         disableFork();
         m_forkSyncOnKillp = nullptr;
@@ -379,6 +389,23 @@ public:
         for (const VlProcess* const childp : m_children)
             if (!childp->completed()) return false;
         return true;
+    }
+    template <typename T_Class>
+    void initFromSelf(VlClassRef<T_Class>& selfRef) const {
+        // std::process with 0 references may be waiting in VlDeleter, so don't assign it to avoid
+        // use-after-free. This can happen if self() gets called after the current std::process
+        // loses all references to it and gets queued for deletion.
+        T_Class* const selfp = dynamic_cast<T_Class*>(m_selfp);
+        if (!selfp || selfp->refCount() == 0) return;
+        selfRef = VlClassRef<T_Class>{selfp};
+    }
+    void setSelf(VlClass* selfp) { m_selfp = selfp; }
+
+    // Called from the std::process destructor.
+    // The destroyed object may have waited in VlDeleter while self() returned null and a newer
+    // object was created, so only clear m_selfp if it points to the destroyed object.
+    void clearSelf(const VlClass* selfp) {
+        if (m_selfp == selfp) m_selfp = nullptr;
     }
 
     // Random state (IEEE 1800-2023 9.7, 18.14)
@@ -539,6 +566,7 @@ class VlReadMem final {
     const int m_bits;  // Bit width of values
     const std::string& m_filename;  // Filename
     const QData m_end;  // End address (as specified by user)
+    const bool m_descending;  // Start address is above end, so addresses decrement
     FILE* m_fp = nullptr;  // File handle for filename
     QData m_addr = 0;  // Next address to read
     int m_linenum = 0;  // Line number last read from file
@@ -555,6 +583,7 @@ public:
 class VlWriteMem final {
     const bool m_hex;  // Hex format
     const int m_bits;  // Bit width of values
+    const bool m_descending;  // Start address is above end, so addresses decrement
     FILE* m_fp = nullptr;  // File handle for filename
     QData m_addr = 0;  // Next address to write
 public:
@@ -748,6 +777,7 @@ public:
     // function void q.insert(index, value);
     void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index > m_deque.size())) return;
+        if (VL_UNLIKELY(N_MaxSize != 0 && m_deque.size() >= N_MaxSize)) return;
         m_deque.insert(m_deque.begin() + index, value);
     }
 
@@ -1432,9 +1462,17 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
                    const VlAssocArray<T_Key, T_Value>& obj, QData start, QData end) VL_MT_SAFE {
     VlWriteMem wmem{hex, bits, filename, start, end};
     if (VL_UNLIKELY(!wmem.isOpen())) return;
-    for (const auto& i : obj) {
-        const QData addr = i.first;
-        if (addr >= start && addr <= end) wmem.print(addr, true, &(i.second));
+    const QData lo = std::min(start, end);
+    const QData hi = std::max(start, end);
+    const auto printIfInRange
+        = [&](const typename VlAssocArray<T_Key, T_Value>::const_iterator& it) {
+              const QData addr = it->first;
+              if (addr >= lo && addr <= hi) wmem.print(addr, true, &(it->second));
+          };
+    if (start > end) {
+        for (auto it = obj.end(); it != obj.begin();) printIfInRange(--it);
+    } else {
+        for (auto it = obj.begin(); it != obj.end();) printIfInRange(it++);
     }
 }
 
@@ -1474,7 +1512,7 @@ public:
     // METHODS
     // Raw access
     T_Value* data() { return &m_storage[0]; }
-    const T_Value* data() const { return &m_storage[0]; }
+    constexpr const T_Value* data() const { return &m_storage[0]; }
 
     constexpr std::size_t size() const { return N_Depth; }
 
@@ -2087,6 +2125,7 @@ public:
     // Polymorphic shallow clone. Overridden in each generated concrete class.
     virtual VlClass* clone() const { return nullptr; }
     // METHODS
+    size_t refCount() const VL_MT_SAFE { return m_counter; }
     virtual const char* typeName() const { return "VlClass"; }
     virtual std::string to_string() const { return ""; }
 };
@@ -2152,7 +2191,7 @@ public:
     VlClassRef() = default;
     // Init with nullptr
     // cppcheck-suppress noExplicitConstructor
-    VlClassRef(VlNull){};
+    VlClassRef(VlNull) {};
     template <typename... T_Args>
     VlClassRef(VlDeleter& deleter, T_Args&&... args)
         : m_objp{new T_Class} {
