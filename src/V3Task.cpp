@@ -307,14 +307,6 @@ private:
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
         if (m_underPortVar) return;
-        if(m_classp){
-            for (auto itp : m_varToScopeMap){
-                // UINFO(5, "looking for edge case " + itp.first.first->aboveScopep()->name() + " " + nodep->varScopep()->scopep()->name());
-                if(itp.first.first->aboveScopep()->name() == nodep->varScopep()->scopep()->name()){
-                    UINFO(5, "found edge case \n");
-                }
-            }
-        }
         AstVar* const varp = nodep->varp();
         // Reading a constant pool entry does not depend on external runtime state.
         if (nodep->access().isReadOnly() && varp->constPoolEntry()) return;
