@@ -175,7 +175,7 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_LAZY_COMB = (1 << 23)
 };
 
-// --vpi-lazy descriptor. srcOffset is signed for cross-scope copy rows.
+// --vpi-lazy descriptor.
 struct VerilatedVarLazyDatap final {
     void (*refreshp)(void* selfp);
     void* selfp;

@@ -152,7 +152,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void emitVarTables();
     void emitScopeHier(TextStmts& stmts, bool destroy);
     void emitSymImp(const AstNetlist* netlistp);
-    std::string symsMemberOffset(const AstScope* scopep);
     void emitDpiHdr();
     void emitDpiStruct(const AstNodeDType* dtypep, std::set<std::string>& namesr);
     void emitDpiImp();
@@ -1711,14 +1710,6 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                         } else if (const AstVar* const srcp = varp->lazyCopySrc()) {
                             // Must match the emitted member under --protect-ids.
                             src = "offsetof(" + modClassName + ", " + varName(srcp) + ")";
-                        } else if (const V3VpiLazy::CrossScopeSrc* const xsp
-                                   = V3VpiLazy::crossScopeCopySrc(m_netlistp, scopep, varp)) {
-                            // Widen unsigned offsets before subtracting.
-                            src = "(int32_t)((std::ptrdiff_t)" + symsMemberOffset(xsp->scopep)
-                                  + " + (std::ptrdiff_t)offsetof("
-                                  + EmitCUtil::prefixNameProtect(xsp->scopep->modp()) + ", "
-                                  + varName(xsp->varp) + ") - (std::ptrdiff_t)"
-                                  + symsMemberOffset(scopep) + ")";
                         }
                         std::string tail = src.empty() ? "0, 0" : src + ", VLVF_LAZY_COPY";
                         // A cone has no copy source, so the offset names its mask instead
@@ -1816,11 +1807,6 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
     }
 
     return stmts;
-}
-
-// offsetof of one scope instance's member in the Syms class; see V3VpiLazy::CrossScopeSrc.
-std::string EmitCSyms::symsMemberOffset(const AstScope* scopep) {
-    return "offsetof(" + symClassName() + ", " + instName(scopep) + ")";
 }
 
 EmitCSyms::TextStmts EmitCSyms::getSymDtorStmts() {

@@ -522,7 +522,7 @@ int main(int argc, char** argv) {
              {"t.ib.q", "comb"},
              {"t.ret_c", "comb"},  // An impure driver is not re-executed on read
              {"t.rnd_w", "comb"},
-             {"t.cy0.cy", "comb"},  // A comb cycle
+             {"t.cy0.cy", "reconstructed"},  // Its port reads the parent: anchored per instance
              {"t.frc_al", "stored"},  // Forceable signals take no lazy path
              {"t.frw_c", "stored"},
              {"t.rdpin", "stored"},

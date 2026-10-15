@@ -33,11 +33,6 @@ class VVpiLazyComb;
 
 class V3VpiLazy final {
 public:
-    // Copy source after V3Descope.
-    struct CrossScopeSrc final {
-        const AstScope* scopep;
-        const AstVar* varp;
-    };
     // Combinationally driven bits of one flat unpacked element; see VVpiLazyComb::PARTIAL.
     struct CombRun final {
         uint32_t elem;
@@ -56,9 +51,6 @@ public:
     // Func a reconstructed row in 'scopep' calls to refresh 'shadowVarp', null for a stored copy.
     static const AstCFunc* refreshFuncp(const AstNetlist* nodep, const AstScope* scopep,
                                         const AstVar* shadowVarp) VL_MT_DISABLED;
-    // Binds prepare()'s by-name records on first call, so only call after the last deleting pass.
-    static const CrossScopeSrc* crossScopeCopySrc(AstNetlist* nodep, const AstScope* scopep,
-                                                  const AstVar* shadowVarp) VL_MT_DISABLED;
     // Mark candidates' combinationally driven bits ahead of prepare(), which re-marks them.
     static void classifyComb(AstNetlist* nodep) VL_MT_DISABLED;
     // Preserve reconstructable lazy signals before optimisation.

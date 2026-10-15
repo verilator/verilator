@@ -53,14 +53,11 @@
 //
 //   classifyCombDriven                       the bits a VPI put may not change
 //   findHelperCandidates                     vars a copy needs promoted to a target
-//   findCrossScopeCopyCandidates             `otherScope.dst = u;` targets formGroups must not
-//                                            retain, so crossScopeCopySources may claim them
 //   formGroups, analyseGroups                form, then prove or bail
-//   restrictMultiInstanceToLocalCones        retain cones not class-internal
+//   restrictMultiInstanceToLocalCones        retain shared cones reading an anchored one
 //   buildDependencyGraph, splitCyclesRetainCores, topoOrderSurvivors
 //                                            retain cycle cores, order the rest
 //   copyStoredSources                        copy rows: the source holds storage
-//   crossScopeCopySources                    copy rows whose source is in another scope
 //   pruneBodies                              backward liveness over the clones
 //   foldTrivialCopyGroups                    fold rows: the source is another cone
 //   emitReconstructions                      emit the funcs and shadows
@@ -73,12 +70,6 @@
 // keeps a shadow of its own, refreshed by memcpy from u. foldTrivialCopyGroups
 // takes a u that is another live cone's target: the row is that cone's shadow,
 // its read that cone's, and it has no member of its own (isLazyShadowAlias).
-//
-// crossScopeCopySources is copyStoredSources for the shapes that never form a
-// group at all: a continuous `otherScope.dst = u;`, as an SV interface port
-// driven from its parent is, and `dst = otherScope.u;` in a module instanced more
-// than once, as its input ports are. Its descriptor's source is in another
-// scope, and so addressed relative to the Syms object both scopes are members of.
 //
 // A copy of stored state keeps its own shadow, as each alias has storage of
 // its own under --public-flat-rw: after a put into u and before the next eval,
@@ -182,18 +173,6 @@ static const char* const RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_inst"
 //######################################################################
 class V3VpiLazyContext final {
 public:
-    // Names survive the intervening optimisation passes.
-    struct CrossScopeSrcNames final {
-        std::string m_dstScopeName;  // Scope holding the copied shadow
-        std::string m_dstVarName;  // Shadow variable
-        std::string m_srcScopeName;  // Scope holding the copy source
-        std::string m_srcVarName;  // Copy source variable
-    };
-
-    std::vector<CrossScopeSrcNames> m_crossScopeSrcs;
-    std::map<std::pair<const AstScope*, const AstVar*>, V3VpiLazy::CrossScopeSrc>
-        m_crossScopeResolved;
-    bool m_crossScopeResolvedDone = false;
     std::map<const AstVar*, std::vector<V3VpiLazy::CombRun>> m_combRuns;
     // One instance of a PARTIAL variable whose instances differ.
     struct InstComb final {
@@ -226,8 +205,6 @@ void V3VpiLazy::deleteContext(V3VpiLazyContext* ctxp) { delete ctxp; }
 
 namespace {
 
-using CrossScopeSrc = V3VpiLazy::CrossScopeSrc;
-using CrossScopeSrcNames = V3VpiLazyContext::CrossScopeSrcNames;
 using InstComb = V3VpiLazyContext::InstComb;
 
 bool storagePinnedElsewhere(const AstVar* varp) {
@@ -586,12 +563,6 @@ class VpiLazyPreparer final {
     int m_copyCount = 0;
     // Converted target -> the variable its row copies, for cone operand substitution.
     std::unordered_map<AstVarScope*, AstVarScope*> m_retargetSrcOf;
-    // Cross-scope copy candidates found before grouping: target -> its local source
-    std::unordered_map<AstVarScope*, AstVarScope*> m_xscopeSrcOf;
-    std::vector<AstVarScope*> m_xscopeOrder;  // m_xscopeSrcOf keys, encounter order
-    std::unordered_set<const AstVarScope*> m_xscopeSharedSrcs;  // Sources of several of them
-    std::vector<AstVarScope*> m_crossScopeCopyTargets;  // Claimed, awaiting emit
-    std::unordered_map<const AstVar*, int> m_xscopeShadowIdx;
 
     V3Graph m_depGraph;  // u -> v where v reads a variable u defines; vertices are GroupVertex
 
@@ -615,8 +586,7 @@ class VpiLazyPreparer final {
         UNSUPPORTED_STMT,  // A statement kind the ordered walk does not model
         UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
         CROSS_SCOPE_WRITE,  // Another instance of an anchored target has no group to define it
-        CROSS_SCOPE_CONE,  // Multi-instance cone reading outside its scope; one func cannot serve
-        CROSS_SCOPE_SOURCE,  // Feeds several cross-scope copies, which claim only a stored source
+        CROSS_SCOPE_CONE,  // Multi-instance cone reading a cone anchored elsewhere
         COMB_CYCLE,  // Genuine combinational cycle (SCC member)
         COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
         BOUNDARY_COMB_DTYPE,  // Comb boundary operand of a kind reconstruction cannot express
@@ -638,7 +608,6 @@ class VpiLazyPreparer final {
                                             "unsupported lvalue",
                                             "cross-scope write",
                                             "cross-scope cone",
-                                            "cross-scope source",
                                             "comb cycle",
                                             "completeness floor",
                                             "boundary comb (dtype)",
@@ -671,7 +640,6 @@ class VpiLazyPreparer final {
 
     int m_prunedStmts = 0;  // Cloned statements dropped as dead (pruneBodies)
     std::map<std::string, int> m_floorReason;  // Floor residual shape -> instances, for stats
-    int m_crossScopeCopies = 0;  // Copy rows whose source is in another scope
     std::unordered_map<const AstVarScope*, CombFootprint> m_combFootOf;
     std::unordered_set<const AstVar*> m_combFootVars;  // Variables of m_combFootOf keys
     std::vector<AstVar*> m_combFootOrder;  // m_combFootVars, encounter order
@@ -692,7 +660,6 @@ public:
     void run() {
         classifyCombDriven();
         findHelperCandidates();
-        findCrossScopeCopyCandidates();
         formGroups();
         analyseGroups();
         restrictMultiInstanceToLocalCones();
@@ -700,7 +667,6 @@ public:
         splitCyclesRetainCores();
         topoOrderSurvivors();
         copyStoredSources();
-        crossScopeCopySources();
         pruneBodies();
         foldTrivialCopyGroups();
         emitReconstructions();
@@ -1165,16 +1131,20 @@ private:
                      const std::vector<AstVarScope*>& written,
                      const std::unordered_map<const AstVarScope*, int>& groupWrites,
                      const std::unordered_set<const AstVar*>& notSole) {
-        // A lone `dst = src;`, so crossScopeCopySources() may claim it
-        if (m_xscopeSrcOf.count(written[0])) return nullptr;
         // Writes into one other, single-instance scope, but for the writer's own temps, anchor the
         // group there: its one func reads the writer's variables absolute. Any other write outside
-        // the writer anchors it in the top scope, which writes them all absolute, and a row
-        // elsewhere refreshes through a rowStub().
+        // the writer, or a read outside one with several instances, anchors it in the top scope,
+        // which addresses them all absolute, and a row elsewhere refreshes through a rowStub().
         AstScope* const writerp = scopep;
-        const auto it = std::find_if(written.begin(), written.end(),
-                                     [&](AstVarScope* w) { return w->scopep() != writerp; });
-        if (it != written.end()) {
+        const auto foreign = [&](const AstVarScope* vscp) { return vscp->scopep() != writerp; };
+        const auto it = std::find_if(written.begin(), written.end(), foreign);
+        if (it == written.end()) {
+            if (instancesOf(written[0]->varp()) > 1
+                && std::any_of(blockps.begin(), blockps.end(), [&](const CombBlock* bp) {
+                       return std::any_of(bp->m_reads.begin(), bp->m_reads.end(), foreign);
+                   }))
+                scopep = m_topScopep;
+        } else {
             AstScope* const anchorp = (*it)->scopep();
             const auto writerTemp = [&](AstVarScope* w) {
                 return w->scopep() == writerp && !w->varp()->isSigVpiLazyCandidate()
@@ -1211,9 +1181,6 @@ private:
                 }
             } else if (!reconstructableKind(varp)) {
                 retainTarget(w, Bail::DTYPE);
-            } else if (m_xscopeSharedSrcs.count(w)) {
-                // A cone source would leave each copy retained instead: one store serves them all
-                retainTarget(w, Bail::CROSS_SCOPE_SOURCE);
             } else {
                 targets.push_back(w);
                 continue;
@@ -1254,17 +1221,6 @@ private:
                && !srcp->varp()->isParam() && sameLayout(dstp, srcp);
     }
 
-    template <typename T_Callable>
-    void forEachCopyAssign(T_Callable&& f) const {
-        for (const CombBlock& b : m_gather.m_combBlocks) {
-            if (!b.m_assignwp) continue;
-            const AstVarRef* const dstRefp = VN_CAST(b.m_assignwp->lhsp(), VarRef);
-            const AstVarRef* const srcRefp = VN_CAST(b.m_assignwp->rhsp(), VarRef);
-            if (!dstRefp || !srcRefp || !srcRefp->access().isReadOnly()) continue;
-            f(b, dstRefp->varScopep(), srcRefp->varScopep());
-        }
-    }
-
     // A group temp has no shadow, so another block reading it pins its storage; a helper target
     // gives it one. Not a block's own temps: promoting a conditionally written one bails a latch.
     void findHelperCandidates() {
@@ -1275,39 +1231,6 @@ private:
                 if (b.m_writeCount.count(r)) continue;
                 if (reconstructableKind(varp)) m_helperCandVars.insert(varp);
             }
-        }
-    }
-
-    // `otherScope.dst = u;` can never be a cone, makeGroup refusing a write outside the authoring
-    // scope, but it is a copy row: record it here so makeGroup does not retain it instead. So is
-    // `dst = otherScope.u;` in a multi-instance module, which restrictMultiInstanceToLocalCones
-    // would retain as a cone.
-    void findCrossScopeCopyCandidates() {
-        std::unordered_map<const AstVar*, int> instances;
-        std::vector<std::pair<AstVarScope*, AstVarScope*>> cand;
-        std::unordered_set<const AstVarScope*> localCopies;
-        forEachCopyAssign([&](const CombBlock& b, AstVarScope* dstp, AstVarScope* srcp) {
-            if (dstp->scopep() == srcp->scopep()) {  // copyStoredSources' shape
-                localCopies.insert(dstp);
-                return;
-            }
-            const bool pull = dstp->scopep() == b.m_scopep && instancesOf(dstp->varp()) > 1;
-            if (srcp->scopep() != b.m_scopep && !pull) return;
-            if (!dstp->varp()->isSigVpiLazyCandidate()) return;
-            if (writeCountOf(dstp) != 1) return;
-            if (!reconstructableKind(dstp->varp()) || srcp->varp()->isParam()) return;
-            if (!sameLayout(dstp, srcp)) return;
-            cand.emplace_back(dstp, srcp);
-            ++instances[dstp->varp()];
-        });
-        std::unordered_map<const AstVarScope*, int> dependants;
-        for (const auto& pr : cand) {
-            if (!claimPerVar(instances, pr.first->varp())) continue;
-            if (!m_xscopeSrcOf.emplace(pr.first, pr.second).second) continue;
-            m_xscopeOrder.push_back(pr.first);
-            // A local copy's row hands its dependants its own stored source instead
-            if (++dependants[pr.second] == 2 && !localCopies.count(pr.second))
-                m_xscopeSharedSrcs.insert(pr.second);
         }
     }
 
@@ -1699,21 +1622,19 @@ private:
 
     // METHODS - Scheduling
 
-    // One loose vlSelf-relative func per instance, and a cross-scope VarRef descopes absolute.
-    // Nor can it call the one instance's func that an operand group anchored elsewhere has.
+    // A func shared by every instance cannot call the one instance's func that an operand group
+    // anchored elsewhere has.
     void restrictMultiInstanceToLocalCones() {
         for (const auto& ownp : m_groups) {
             const Group* const g = ownp.get();
             if (!g->live || keyInstances(g) <= 1) continue;
             const auto elsewhere = [&](AstVarScope* vscp) {
                 const Group* const ugp = liveGroupOf(vscp);
-                return vscp->scopep() != g->scopep || (ugp && ugp->scopep != g->scopep);
+                return ugp && ugp->scopep != g->scopep;
             };
             bool bad = false;
-            for (const CombBlock* const bp : g->blockps) {  // Every ref is a read or a write
-                bad = bad || std::any_of(bp->m_reads.begin(), bp->m_reads.end(), elsewhere)
-                      || std::any_of(bp->m_targets.begin(), bp->m_targets.end(), elsewhere);
-            }
+            for (const CombBlock* const bp : g->blockps)
+                bad = bad || std::any_of(bp->m_reads.begin(), bp->m_reads.end(), elsewhere);
             if (bad) killGroupsOfKey(g->keyp, Bail::CROSS_SCOPE_CONE);
         }
     }
@@ -1906,55 +1827,6 @@ private:
             m_copyGroups.push_back(g);
         }
         dropFromOrdered();
-    }
-
-    // Runs after copyStoredSources, so liveGroupOf() already says what kept its storage.
-    void crossScopeCopySources() {
-        std::unordered_map<const AstVar*, int> viable;
-        std::vector<AstVarScope*> cand;
-        for (AstVarScope* const dstp : m_xscopeOrder) {
-            AstVarScope*& srcr = m_xscopeSrcOf.at(dstp);
-            if (!dstp->varp()->isSigVpiLazyCandidate()) continue;  // retained meanwhile
-            // A copy row's source is stored, so read that instead
-            const auto rit = m_retargetSrcOf.find(srcr);
-            if (rit != m_retargetSrcOf.end() && sameLayout(dstp, rit->second)) srcr = rit->second;
-            if (liveGroupOf(srcr) || m_retargetSrcOf.count(srcr)) continue;  // no own storage
-            cand.push_back(dstp);
-            ++viable[dstp->varp()];
-        }
-        std::unordered_set<const AstVar*> claimed;
-        for (AstVarScope* const dstp : cand)
-            if (claimPerVar(viable, dstp->varp())) claimed.insert(dstp->varp());
-        // Claiming a target costs it its storage, so one that is also some other candidate's
-        // source must not be claimed. Dropping only ever removes sources, so one pass suffices.
-        for (AstVarScope* const dstp : cand)
-            if (claimed.count(dstp->varp())) claimed.erase(m_xscopeSrcOf.at(dstp)->varp());
-        for (AstVarScope* const dstp : m_xscopeOrder) {
-            // makeGroup() left it unretained for this pass, and a cone may yet read it
-            if (!claimed.count(dstp->varp())) {
-                retainTarget(dstp, Bail::CROSS_SCOPE_WRITE);
-                continue;
-            }
-            // The retarget is what keeps a cone reading this target off pinBoundary().
-            m_retargetSrcOf.emplace(dstp, m_xscopeSrcOf.at(dstp));
-            m_crossScopeCopyTargets.push_back(dstp);
-        }
-    }
-
-    // Cross-scope copies: a shadow and a Syms-relative descriptor source, no func, no epoch slot.
-    void emitCrossScopeCopies() {
-        for (AstVarScope* const dstp : m_crossScopeCopyTargets) {
-            if (dstp->varp()->isSigVpiLazyRetained()) continue;
-            AstVarScope* const srcp = m_xscopeSrcOf.at(dstp);
-            pinBoundary(srcp);
-            AstVarScope* const shadowp = crossScopeShadow(dstp);
-            m_ctx.m_crossScopeSrcs.push_back(
-                CrossScopeSrcNames{dstp->scopep()->name(), shadowp->varp()->name(),
-                                   srcp->scopep()->name(), srcp->varp()->name()});
-            dropStorage(dstp->varp());
-            ++m_reconstructed;
-            ++m_crossScopeCopies;
-        }
     }
 
     // Reads pre-optimisation statements, so a width change appears as a Cast/Extend and is
@@ -2166,14 +2038,6 @@ private:
         if (AstVarScope* const vscp = reuseShadow(origp)) return vscp;
         return newTargetShadow(origp,
                                SHADOW_PREFIX + std::to_string(gid) + "_" + std::to_string(slot));
-    }
-
-    // Shadow of a cross-scope copy target, which belongs to no group and so has no group id.
-    AstVarScope* crossScopeShadow(AstVarScope* origp) {
-        const int idx
-            = m_xscopeShadowIdx.emplace(origp->varp(), m_xscopeShadowIdx.size()).first->second;
-        if (AstVarScope* const vscp = reuseShadow(origp)) return vscp;
-        return newTargetShadow(origp, std::string{SHADOW_PREFIX} + "x" + std::to_string(idx));
     }
 
     AstVarScope* newTargetShadow(AstVarScope* origp, const std::string& name) {
@@ -2510,7 +2374,6 @@ private:
         }
         emitCopyRows(m_copyGroups, false);
         emitCopyRows(m_foldedCopies, true);
-        emitCrossScopeCopies();
     }
 
     // The undriven bits a put may write are now the shadow's.
@@ -2603,9 +2466,9 @@ private:
         UINFO(3, "vpi-lazy: reconstructed="
                      << m_reconstructed << " groups=" << m_ordered.size()
                      << " members=" << reconstructedMembers << " fallback=" << m_fallback
-                     << " copyGroups=" << m_copyCount << " crossScopeCopies=" << m_crossScopeCopies
-                     << " foldedCopies=" << m_foldedCount << " prunedStmts=" << m_prunedStmts
-                     << " helpers=" << m_helperCount << " floorRetained=" << floorRetained);
+                     << " copyGroups=" << m_copyCount << " foldedCopies=" << m_foldedCount
+                     << " prunedStmts=" << m_prunedStmts << " helpers=" << m_helperCount
+                     << " floorRetained=" << floorRetained);
         if (v3Global.opt.stats()) {
             V3Stats::addStat("VPI, lazy reconstructed", m_reconstructed);
             V3Stats::addStat("VPI, lazy groups", m_ordered.size());
@@ -2613,7 +2476,6 @@ private:
             V3Stats::addStat("VPI, lazy fallback retained", m_fallback);
             V3Stats::addStat("VPI, lazy boundary storage pinned", m_boundaryStorage);
             V3Stats::addStat("VPI, lazy copy descriptors", m_copyCount);
-            V3Stats::addStat("VPI, lazy cross-scope copy descriptors", m_crossScopeCopies);
             V3Stats::addStat("VPI, lazy folded copy cones", m_foldedCount);
             V3Stats::addStat("VPI, lazy helper targets", m_helperCount);
             V3Stats::addStat("VPI, lazy pruned statements", m_prunedStmts);
@@ -2684,130 +2546,4 @@ const AstCFunc* V3VpiLazy::refreshFuncp(const AstNetlist* nodep, const AstScope*
     UASSERT_OBJ(ctxp, shadowVarp, "--vpi-lazy row without a context");
     const auto it = ctxp->m_rowRefresh.find({scopep->name(), shadowVarp});
     return it != ctxp->m_rowRefresh.end() ? it->second : shadowVarp->lazyReconFuncp();
-}
-
-//######################################################################
-
-namespace {
-
-// Everything resolveCrossScopeSrcs() needs from the tree, in one walk: the AstScope of each
-// wanted scope name and the module-level AstVar of each wanted variable name.
-class CrossScopeGatherVisitor final : public VNVisitorConst {
-    // STATE
-    const std::set<std::string>& m_wantScopes;
-    const std::set<std::string>& m_wantVars;
-    const AstNodeModule* m_modp = nullptr;
-    bool m_modLevel = false;  // Directly under a module's stmtsp
-
-public:
-    std::map<std::string, const AstScope*> m_scopeps;
-    std::map<std::pair<const AstNodeModule*, std::string>, const AstVar*> m_varps;
-
-private:
-    // VISITORS
-    void visit(AstNodeModule* nodep) override {
-        VL_RESTORER(m_modp);
-        VL_RESTORER(m_modLevel);
-        m_modp = nodep;
-        m_modLevel = true;
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstScope* nodep) override {
-        // Not folded into the module stmtsp walk: the top scope is op2 of an AstTopScope, one
-        // level deeper than a direct stmtsp child
-        if (m_wantScopes.count(nodep->name())) {
-            const bool inserted = m_scopeps.emplace(nodep->name(), nodep).second;
-            // A collision would bind a row to the wrong instance, which is what naming avoids
-            UASSERT_OBJ(inserted, nodep, "Duplicate scope name '" << nodep->name() << "'");
-        }
-        VL_RESTORER(m_modLevel);
-        m_modLevel = false;
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstVar* nodep) override {
-        if (!m_modLevel) return;
-        if (!m_wantVars.count(nodep->name())) return;
-        const bool inserted = m_varps.emplace(std::make_pair(m_modp, nodep->name()), nodep).second;
-        UASSERT_OBJ(inserted, nodep,
-                    "Duplicate module-level variable name in " << m_modp->prettyNameQ());
-    }
-    // Module-level vars only: V3Descope moves CFuncs up but leaves their locals inside
-    void visit(AstCFunc*) override {}
-    void visit(AstNode* nodep) override {
-        VL_RESTORER(m_modLevel);
-        m_modLevel = false;
-        iterateChildrenConst(nodep);
-    }
-
-public:
-    // CONSTRUCTORS
-    CrossScopeGatherVisitor(AstNetlist* nodep, const std::set<std::string>& wantScopes,
-                            const std::set<std::string>& wantVars)
-        : m_wantScopes{wantScopes}
-        , m_wantVars{wantVars} {
-        iterateConst(nodep);
-    }
-};
-
-void resolveCrossScopeSrcs(AstNetlist* nodep, V3VpiLazyContext* ctxp) {
-    ctxp->m_crossScopeResolvedDone = true;
-
-    // Only the names rows actually reference are looked up, so only those are collected and
-    // only their uniqueness is asserted: a duplicate elsewhere is no business of this pass.
-    std::set<std::string> wantScopes;
-    std::set<std::string> wantVars;
-    for (const CrossScopeSrcNames& names : ctxp->m_crossScopeSrcs) {
-        wantScopes.emplace(names.m_dstScopeName);
-        wantScopes.emplace(names.m_srcScopeName);
-        wantVars.emplace(names.m_dstVarName);
-        wantVars.emplace(names.m_srcVarName);
-    }
-    const CrossScopeGatherVisitor gather{nodep, wantScopes, wantVars};
-
-    const auto findScope = [&gather](const std::string& name) -> const AstScope* {
-        const auto it = gather.m_scopeps.find(name);
-        return it == gather.m_scopeps.end() ? nullptr : it->second;
-    };
-    const auto findVar
-        = [&gather](const AstScope* scopep, const std::string& varName) -> const AstVar* {
-        if (!scopep) return nullptr;
-        const auto it = gather.m_varps.find(std::make_pair(scopep->modp(), varName));
-        return it == gather.m_varps.end() ? nullptr : it->second;
-    };
-
-    for (const CrossScopeSrcNames& names : ctxp->m_crossScopeSrcs) {
-        const AstScope* const dstScopep = findScope(names.m_dstScopeName);
-        const AstVar* const dstVarp = findVar(dstScopep, names.m_dstVarName);
-        // Shadow, or the scope holding it, went away: no descriptor row can ask for its source
-        if (!dstVarp) continue;
-        const AstScope* const srcScopep = findScope(names.m_srcScopeName);
-        const AstVar* const srcVarp = findVar(srcScopep, names.m_srcVarName);
-        if (!srcVarp) {
-            v3fatalSrc("--vpi-lazy cross-scope copy source '"
-                       << names.m_srcScopeName << "." << names.m_srcVarName
-                       << "' did not survive; its VPI row would copy garbage");
-        }
-        // pinBoundary() promised this source keeps its storage; a dead member would copy garbage.
-        UASSERT_OBJ(srcVarp->isVpiLazyStorageKept() || srcVarp->isSigUserRWPublic()
-                        || srcVarp->isSigUserRdPublic() || srcVarp->isPrimaryIO(),
-                    srcVarp, "--vpi-lazy cross-scope copy source was not pinned");
-        const bool inserted
-            = ctxp->m_crossScopeResolved
-                  .emplace(std::make_pair(dstScopep, dstVarp), CrossScopeSrc{srcScopep, srcVarp})
-                  .second;
-        UASSERT_OBJ(inserted, dstVarp,
-                    "Duplicate --vpi-lazy cross-scope copy row in " << dstScopep->prettyNameQ());
-    }
-}
-
-}  // namespace
-
-const V3VpiLazy::CrossScopeSrc*
-V3VpiLazy::crossScopeCopySrc(AstNetlist* nodep, const AstScope* scopep, const AstVar* shadowVarp) {
-    // Most designs have no cross-scope row at all, and this runs per lazy descriptor slot
-    V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
-    if (!ctxp || ctxp->m_crossScopeSrcs.empty()) return nullptr;
-    if (!ctxp->m_crossScopeResolvedDone) resolveCrossScopeSrcs(nodep, ctxp);
-    const auto it = ctxp->m_crossScopeResolved.find(std::make_pair(scopep, shadowVarp));
-    return it == ctxp->m_crossScopeResolved.end() ? nullptr : &it->second;
 }
