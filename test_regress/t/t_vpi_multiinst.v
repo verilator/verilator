@@ -25,7 +25,7 @@ endmodule
 interface iface2_t;
   logic [6:0] a;
   logic [6:0] b;
-  logic [6:0] l;  // A latch in if1, so if0's cone, sharing its shadow member, is not claimed
+  logic [6:0] l;  // A latch in if1, which keeps its storage apart from if0's cone
   logic [6:0] s;  // Undriven but read in if1, likewise
 endinterface
 
@@ -151,6 +151,8 @@ module t;
   always @(negedge clk) t_vpi_dump_values();
   // A put to one instance's flop leaves the other instance's alone
   always @(cyc) if (cyc == 8'd7) t_vpi_dump_put_rw("t.p0.uc.cflop", "3c");
+  // A put into an instance kept apart reaches its readers
+  always @(cyc) if (cyc == 8'd5) t_vpi_dump_put_rw("t.if1.s", "2a");
 
   // Interface and submodule instances with differing inputs
   logic [6:0] ctr = 7'h0;

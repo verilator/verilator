@@ -28,8 +28,9 @@ test.compile(make_top_shell=False,
 
 test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
-# Interface members t drives per instance, and ports read from the parent, are anchored in the
-# top scope; a cone in their own shared scope that reads them is retained
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 62)
+# Interface members t drives per instance, ports read from the parent, and a cone in their own
+# shared scope that reads them are anchored in the top scope; if1.l and if1.s keep their storage
+# apart from if0's reconstructed instances
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 69)
 
 test.passes()

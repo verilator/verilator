@@ -840,6 +840,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 if (modp != smodp) continue;
 
                 if (varp->isLazyReconstructHelper()) continue;
+                if (!V3VpiLazy::hasRow(v3Global.rootp(), scopep, varp)) continue;
                 const std::string vpiVarName
                     = varp->isLazyReconstructShadow() ? varp->origName() : varp->name();
                 addScopeVarEntry(scopep, modp, vpiVarName, varp->name(), varp);

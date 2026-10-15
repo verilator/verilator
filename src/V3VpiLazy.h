@@ -51,6 +51,9 @@ public:
     // Func a reconstructed row in 'scopep' calls to refresh 'shadowVarp', null for a stored copy.
     static const AstCFunc* refreshFuncp(const AstNetlist* nodep, const AstScope* scopep,
                                         const AstVar* shadowVarp) VL_MT_DISABLED;
+    // False where 'varp' has no instance in 'scopep': it is kept apart from its other instances.
+    static bool hasRow(const AstNetlist* nodep, const AstScope* scopep,
+                       const AstVar* varp) VL_MT_DISABLED;
     // Mark candidates' combinationally driven bits ahead of prepare(), which re-marks them.
     static void classifyComb(AstNetlist* nodep) VL_MT_DISABLED;
     // Preserve reconstructable lazy signals before optimisation.

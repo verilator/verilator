@@ -54,7 +54,7 @@
 //   classifyCombDriven                       the bits a VPI put may not change
 //   findHelperCandidates                     vars a copy needs promoted to a target
 //   formGroups, analyseGroups                form, then prove or bail
-//   restrictMultiInstanceToLocalCones        retain shared cones reading an anchored one
+//   anchorConsumersOfAnchored                anchor shared cones reading an anchored one
 //   buildDependencyGraph, splitCyclesRetainCores, topoOrderSurvivors
 //                                            retain cycle cores, order the rest
 //   copyStoredSources                        copy rows: the source holds storage
@@ -129,8 +129,12 @@
 // tells V3Gate and V3Dfg to leave those reads alone. A group writing outside the
 // scope that authored it is anchored in the written scope if that has one
 // instance, else in the top scope: one function per instance, addressing every
-// variable absolute, which a row in another module reaches through a stub. Every
-// instance of a variable shares its shadow member, so all are claimed or none.
+// variable absolute, which a row in another module reaches through a stub. So is
+// a shared group reading an anchored one, as a shared function cannot call one
+// instance's. An anchored group's instance may thus be claimed while another of
+// its variable is retained: the variable keeps its role and storage for the
+// retained instances, and the claimed ones move to an unflagged twin the
+// optimiser is free to eliminate, so storage is kept per instance.
 //
 // Determinism: pointer-keyed maps are never iterated where order reaches
 // output; iteration always walks a companion vector in tree-encounter order.
@@ -181,6 +185,8 @@ public:
     std::map<std::pair<std::string, const AstVar*>, InstComb> m_instComb;  // By scope name
     // Refresh func of a shadow's row in a scope other than its group's; see rowStub()
     std::map<std::pair<std::string, const AstVar*>, const AstCFunc*> m_rowRefresh;
+    // A split variable's or its shadow's instances held by the other; see splitKeptInstances()
+    std::set<std::pair<std::string, const AstVar*>> m_noRow;
 
     VVpiLazyComb combOf(const std::string& scopeName, const AstVar* varp) const {
         if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
@@ -248,7 +254,7 @@ class GroupVertex;
 
 // See UNIT OF RECONSTRUCTION above.
 struct Group final {
-    AstScope* scopep = nullptr;  // Scope that authored the statements (see restrictMulti...)
+    AstScope* scopep = nullptr;  // Scope that authored the statements, unless anchored elsewhere
     std::vector<const CombBlock*> blockps;  // Its blocks, encounter order
     std::vector<AstVarScope*> targets;  // VPI candidates this group defines, encounter order
     std::vector<AstVarScope*> temps;  // Other variables it writes, encounter order
@@ -412,8 +418,7 @@ public:
     std::vector<AstVarScope*> m_writtenOrder;  // Vars with >=1 write, encounter order
     std::unordered_map<const AstVarScope*, int> m_readCount;  // Reads (RW counts as read)
     std::vector<CombBlock> m_combBlocks;  // Combo blocks, encounter order
-    // Per-AstVar VarScope count == instance count; keeps retain stats in per-instance units.
-    std::unordered_map<const AstVar*, int> m_instanceCount;
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Its instances
     // Every VarScope in tree-encounter order; iterated by the completeness floor.
     std::vector<AstVarScope*> m_vscOrder;
     // Bits of VPI candidates any read may reach
@@ -514,7 +519,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstVarScope* nodep) override {
-        ++m_instanceCount[nodep->varp()];
+        m_vscpsOf[nodep->varp()].push_back(nodep);
         m_vscOrder.push_back(nodep);
         iterateChildren(nodep);
     }
@@ -544,8 +549,8 @@ class VpiLazyPreparer final {
 
     std::vector<std::unique_ptr<Group>> m_groups;  // Formation order (deterministic)
     std::unordered_map<const AstNode*, std::vector<Group*>> m_groupsOfKey;
-    // VPI-visible targets of groups anchored outside their scope, per variable (makeGroup)
-    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_anchoredOfVar;
+    // Instances keeping their storage: RETAINED if VPI candidates, else PINNED (splitKept...)
+    std::unordered_set<const AstVarScope*> m_kept;
     std::unordered_map<AstVarScope*, Group*> m_groupOf;  // Solely-written var -> its group
     // Group target -> its group and index in its 'targets'
     std::unordered_map<AstVarScope*, std::pair<Group*, size_t>> m_targetOf;
@@ -581,8 +586,6 @@ class VpiLazyPreparer final {
         IMPURE,  // The block has a side effect reconstruction must not repeat
         UNSUPPORTED_STMT,  // A statement kind the ordered walk does not model
         UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
-        CROSS_SCOPE_WRITE,  // Another instance of an anchored target has no group to define it
-        CROSS_SCOPE_CONE,  // Multi-instance cone reading a cone anchored elsewhere
         COMB_CYCLE,  // Genuine combinational cycle (SCC member)
         COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
         BOUNDARY_COMB_DTYPE,  // Comb boundary operand of a kind reconstruction cannot express
@@ -602,8 +605,6 @@ class VpiLazyPreparer final {
                                             "impure",
                                             "unsupported statement",
                                             "unsupported lvalue",
-                                            "cross-scope write",
-                                            "cross-scope cone",
                                             "comb cycle",
                                             "completeness floor",
                                             "boundary comb (dtype)",
@@ -657,7 +658,7 @@ public:
         findHelperCandidates();
         formGroups();
         analyseGroups();
-        restrictMultiInstanceToLocalCones();
+        anchorConsumersOfAnchored();
         buildDependencyGraph();
         splitCyclesRetainCores();
         topoOrderSurvivors();
@@ -671,8 +672,8 @@ public:
 private:
     // METHODS
     int instancesOf(const AstVar* varp) const {
-        const auto it = m_gather.m_instanceCount.find(varp);
-        return it != m_gather.m_instanceCount.end() ? it->second : 1;
+        const auto it = m_gather.m_vscpsOf.find(varp);
+        return it != m_gather.m_vscpsOf.end() ? static_cast<int>(it->second.size()) : 1;
     }
 
     int keyInstances(const Group* g) const {
@@ -737,41 +738,30 @@ private:
         return m_combTargets.count(vscp) != 0;
     }
 
-    void retainTarget(AstVarScope* target, Bail why) {
-        AstVar* const varp = target->varp();
-        // Already reconstructed / retained, or holding storage regardless
-        if (!varp->isSigVpiLazyCandidate() || storagePinnedElsewhere(varp)) return;
-        UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << target->name());
-        varp->vpiLazyRole(VVpiLazyRole::RETAINED);
-        m_combBailRetained += instancesOf(varp);
-        m_bailCount[static_cast<size_t>(why)] += instancesOf(varp);
+    bool kept(const AstVarScope* vscp) const { return m_kept.count(vscp); }
+    bool candidate(const AstVarScope* vscp) const {
+        return vscp->varp()->isSigVpiLazyCandidate() && !kept(vscp);
     }
 
-    // All-or-nothing per module: flag and func are shared, so a survivor gets the wrong instance.
-    // Likewise per variable, so the anchored groups defining its other instances die too.
+    void retainTarget(AstVarScope* target, Bail why) {
+        // Holding storage regardless, or no VPI row to keep
+        if (!target->varp()->isSigVpiLazyCandidate() || storagePinnedElsewhere(target->varp()))
+            return;
+        if (!m_kept.insert(target).second) return;
+        UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << target->name());
+        ++m_combBailRetained;
+        ++m_bailCount[static_cast<size_t>(why)];
+    }
+
+    // All-or-nothing per module: the func is shared, so a survivor gets the wrong instance.
     void killGroupsOfKey(const AstNode* keyp, Bail why) {
         const auto git = m_groupsOfKey.find(keyp);
         UASSERT_OBJ(git != m_groupsOfKey.end(), keyp, "--vpi-lazy group key has no groups");
         for (Group* const g : git->second) {
             if (!g->live) continue;
             g->live = false;
-            for (AstVarScope* const t : g->targets) {
-                retainTarget(t, why);
-                const auto ait = m_anchoredOfVar.find(t->varp());
-                if (ait == m_anchoredOfVar.end()) continue;
-                for (AstVarScope* const s : ait->second) {
-                    const Group* const sgp = m_targetOf.at(s).first;
-                    if (sgp->live) killGroupsOfKey(sgp->keyp, why);
-                }
-            }
+            for (AstVarScope* const t : g->targets) retainTarget(t, why);
         }
-    }
-
-    // Its VPI presence moves to a shadow; a masked variable's undriven bits need the storage.
-    static void dropStorage(AstVar* varp) {
-        UASSERT_OBJ(!varp->isVpiLazyCombPartial(), varp,
-                    "--vpi-lazy drops the storage of a variable with undriven bits");
-        varp->vpiLazyRole(VVpiLazyRole::NONE);
     }
 
     // METHODS - Writability
@@ -1034,10 +1024,8 @@ private:
                 && !varp->isParam())
                 addCombWrite(vscp, nullptr);
         }
-        std::unordered_map<const AstVar*, std::vector<const AstVarScope*>> vscpsOf;
-        for (const AstVarScope* const vscp : m_gather.m_vscOrder)
-            if (m_combFootVars.count(vscp->varp())) vscpsOf[vscp->varp()].push_back(vscp);
-        for (AstVar* const varp : m_combFootOrder) finishCombFootprint(varp, vscpsOf.at(varp));
+        for (AstVar* const varp : m_combFootOrder)
+            finishCombFootprint(varp, m_gather.m_vscpsOf.at(varp));
     }
 
     // Merged runs covering every bit of every element are the whole variable, and have none.
@@ -1084,7 +1072,7 @@ private:
 
     // Instances alike share the variable's class. Otherwise each keeps its own, as each has its
     // own row, and PARTIAL keeps the storage the writable ones need.
-    void finishCombFootprint(AstVar* varp, const std::vector<const AstVarScope*>& vscps) {
+    void finishCombFootprint(AstVar* varp, const std::vector<AstVarScope*>& vscps) {
         std::vector<InstComb> insts;
         for (const AstVarScope* const vscp : vscps) {
             const auto it = m_combFootOf.find(vscp);
@@ -1121,10 +1109,19 @@ private:
         return partialLhs(b.m_assignwp->lhsp(), extr);
     }
 
+    // A write from another scope is one instance's own; the module's own code is every one's.
+    bool multidriven(const std::unordered_set<const AstVarScope*>& notSole, AstVarScope* w,
+                     const AstScope* writerp) const {
+        if (w->scopep() != writerp) return notSole.count(w);
+        const std::vector<AstVarScope*>& vscps = m_gather.m_vscpsOf.at(w->varp());
+        return std::any_of(vscps.begin(), vscps.end(),
+                           [&](AstVarScope* vscp) { return notSole.count(vscp); });
+    }
+
     Group* makeGroup(AstScope* scopep, std::vector<const CombBlock*>&& blockps,
                      const std::vector<AstVarScope*>& written,
                      const std::unordered_map<const AstVarScope*, int>& groupWrites,
-                     const std::unordered_set<const AstVar*>& notSole) {
+                     const std::unordered_set<const AstVarScope*>& notSole) {
         // Writes into one other, single-instance scope, but for the writer's own temps, anchor the
         // group there: its one func reads the writer's variables absolute. Any other write outside
         // the writer, or a read outside one with several instances, anchors it in the top scope,
@@ -1141,7 +1138,7 @@ private:
         } else {
             AstScope* const anchorp = (*it)->scopep();
             const auto writerTemp = [&](AstVarScope* w) {
-                return w->scopep() == writerp && !w->varp()->isSigVpiLazyCandidate()
+                return w->scopep() == writerp && !candidate(w)
                        && !m_helperCandVars.count(w->varp());
             };
             scopep = std::all_of(written.begin(), written.end(),
@@ -1162,10 +1159,9 @@ private:
             UASSERT_OBJ(wit != groupWrites.end(), w,
                         "--vpi-lazy group writes a variable it did not count");
             const bool sole = writeCountOf(w) == wit->second;
-            if (notSole.count(varp)) {
-                // Multidriven in some instance: never a target, the choice being per module.
+            if (multidriven(notSole, w, writerp)) {
                 retainTarget(w, Bail::MULTIDRIVEN);
-            } else if (!varp->isSigVpiLazyCandidate()) {
+            } else if (!candidate(w)) {
                 // A temp, unless a VPI-visible copy reads it: then a "helper target" with a
                 // shadow, and no row of its own.
                 if (m_helperCandVars.count(varp)) {
@@ -1193,11 +1189,8 @@ private:
         g->members.insert(temps.begin(), temps.end());
         g->keyp = targets[0]->varp();
         if (std::any_of(targets.begin(), targets.end(),
-                        [&](const AstVarScope* t) { return t->scopep() != scopep; })) {
+                        [&](const AstVarScope* t) { return t->scopep() != scopep; }))
             g->keyp = targets[0];
-            for (AstVarScope* const t : targets)
-                if (t->varp()->isSigVpiLazyCandidate()) m_anchoredOfVar[t->varp()].push_back(t);
-        }
         for (size_t i = 0; i < targets.size(); ++i) {
             m_groupOf[targets[i]] = g;
             m_targetOf[targets[i]] = {g, i};
@@ -1255,16 +1248,16 @@ private:
                 if (basep != w) wi.m_allParts = false;
             }
         }
-        std::unordered_set<const AstVar*> notSole;
+        std::unordered_set<const AstVarScope*> notSole;
         for (const auto& pr : winfo) {
             const WInfo& wi = pr.second;
             const bool sole
                 = wi.m_sum == writeCountOf(pr.first) && (wi.m_blocks == 1 || wi.m_allParts);
-            if (!sole) notSole.insert(pr.first->varp());
+            if (!sole) notSole.insert(pr.first);
         }
         // Anything written outside a combinational block entirely has no group to define it.
         for (AstVarScope* const w : m_gather.m_writtenOrder)
-            if (!winfo.count(w)) notSole.insert(w->varp());
+            if (!winfo.count(w)) notSole.insert(w);
 
         // Pass 2: form the groups, in block-encounter order.
         const std::unordered_set<const AstVar*> gapRead = gapReadVars();
@@ -1292,19 +1285,6 @@ private:
                 continue;
             }
             makeGroup(b.m_scopep, {&b}, b.m_targets, b.m_writeCount, notSole);
-        }
-        // Every instance of a variable shares its shadow member and lazy flag, so must be defined
-        for (const auto& ownp : m_groups) {
-            Group* const g = ownp.get();
-            if (!g->live || VN_IS(g->keyp, Var)) continue;
-            for (const AstVarScope* const t : g->targets) {
-                const auto it = m_anchoredOfVar.find(t->varp());
-                if (it != m_anchoredOfVar.end()
-                    && static_cast<int>(it->second.size()) != instancesOf(t->varp())) {
-                    killGroupsOfKey(g->keyp, Bail::CROSS_SCOPE_WRITE);
-                    break;
-                }
-            }
         }
     }
 
@@ -1336,15 +1316,16 @@ private:
     // Disjoint partial `assign`s have no full-width driver but assemble exactly. Bits none drives
     // stay in the shadow, holding a put, unless a read other than VPI's may reach them.
     void formPartialGroup(AstVarScope* basep, const std::vector<PartWrite>& parts,
-                          AstScope* scopep, const std::unordered_set<const AstVar*>& notSole,
+                          AstScope* scopep, const std::unordered_set<const AstVarScope*>& notSole,
                           const std::unordered_set<const AstVar*>& gapRead) {
         AstVar* const varp = basep->varp();
-        if (!varp->isSigVpiLazyCandidate() && !m_helperCandVars.count(varp)) return;
+        if (!candidate(basep) && !m_helperCandVars.count(varp)) return;
         if (!reconstructableKind(varp)) {
             retainTarget(basep, Bail::DTYPE);
             return;
         }
-        if (static_cast<int>(parts.size()) != writeCountOf(basep) || notSole.count(varp)) {
+        if (static_cast<int>(parts.size()) != writeCountOf(basep)
+            || multidriven(notSole, basep, scopep)) {
             // A full / procedural / impure / variable-range write exists too.
             retainTarget(basep, Bail::PARTIAL_MIXED_WRITE);
             return;
@@ -1375,7 +1356,7 @@ private:
                 }
             }
         }
-        if (varp->isVpiLazyCombPartial()) {
+        if (combOf(basep) == VVpiLazyComb::PARTIAL) {
             if (gapRead.count(varp)) {
                 retainTarget(basep, Bail::PARTIAL_GAP);
                 return;
@@ -1617,19 +1598,31 @@ private:
     // METHODS - Scheduling
 
     // A func shared by every instance cannot call the one instance's func that an operand group
-    // anchored elsewhere has.
-    void restrictMultiInstanceToLocalCones() {
-        for (const auto& ownp : m_groups) {
-            const Group* const g = ownp.get();
-            if (!g->live || keyInstances(g) <= 1) continue;
-            const auto elsewhere = [&](AstVarScope* vscp) {
-                const Group* const ugp = liveGroupOf(vscp);
-                return ugp && ugp->scopep != g->scopep;
-            };
-            bool bad = false;
-            for (const CombBlock* const bp : g->blockps)
-                bad = bad || std::any_of(bp->m_reads.begin(), bp->m_reads.end(), elsewhere);
-            if (bad) killGroupsOfKey(g->keyp, Bail::CROSS_SCOPE_CONE);
+    // anchored elsewhere has, so is anchored in the top scope too: one func per instance.
+    void anchorConsumersOfAnchored() {
+        for (bool changed = true; changed;) {
+            changed = false;
+            for (const auto& ownp : m_groups) {
+                const Group* const g = ownp.get();
+                if (!g->live || keyInstances(g) <= 1) continue;
+                const auto elsewhere = [&](AstVarScope* vscp) {
+                    const Group* const ugp = liveGroupOf(vscp);
+                    return ugp && ugp->scopep != g->scopep;
+                };
+                bool bad = false;
+                for (const CombBlock* const bp : g->blockps)
+                    bad = bad || std::any_of(bp->m_reads.begin(), bp->m_reads.end(), elsewhere);
+                if (!bad) continue;
+                const auto kit = m_groupsOfKey.find(g->keyp);
+                const std::vector<Group*> groups = std::move(kit->second);
+                m_groupsOfKey.erase(kit);
+                for (Group* const instp : groups) {
+                    instp->scopep = m_topScopep;
+                    instp->keyp = instp->targets[0];
+                    m_groupsOfKey[instp->keyp].push_back(instp);
+                }
+                changed = true;
+            }
         }
     }
 
@@ -1827,7 +1820,8 @@ private:
     // refused: memcpy cannot convert.
     AstVarScope* soleCopySource(const Group* g) const {
         if (g->targets.size() != 1 || !g->temps.empty() || g->blockps.size() != 1) return nullptr;
-        if (!VN_IS(g->keyp, Var)) return nullptr;  // An anchored group's instances may differ
+        // Another scope's write may differ per instance
+        if (g->blockps[0]->m_scopep != g->targets[0]->scopep()) return nullptr;
         const AstNodeAssign* const asgnp = VN_CAST(g->blockps[0]->m_alwaysp->stmtsp(), NodeAssign);
         if (!asgnp || asgnp->nextp()) return nullptr;
         const AstVarRef* const lhsp = VN_CAST(asgnp->lhsp(), VarRef);
@@ -2086,27 +2080,30 @@ private:
         return bodyp;
     }
 
-    // The cone is shared by every instance, so it must read the variable, not a driver expression.
-    void pinBoundary(AstVarScope* u) {
+    // The cone must read the variable, not a driver expression: every instance's if 'shared' by
+    // them, else only u, as a func anchored elsewhere reads it absolute.
+    void pinBoundary(AstVarScope* u, bool shared) {
         AstVar* const uVarp = u->varp();
-        if (uVarp->isPrimaryIO() || uVarp->isSigUserRWPublic() || uVarp->isVpiLazyStorageKept())
-            return;
+        if (uVarp->isPrimaryIO() || uVarp->isSigUserRWPublic() || kept(u)) return;
         if (uVarp->isSigUserRdPublic()) {
             // Retaining would arm the write gate on a row that refuses writes.
             UASSERT_OBJ(!uVarp->isSigVpiLazyCandidate(), uVarp, "public_flat_rd is still lazy");
             return;
         }
-        if (uVarp->isSigVpiLazyCandidate()) {
-            m_fallback += instancesOf(uVarp);
-            // Sequential/undriven operands hold storage regardless, so pinning them is free.
-            const Bail why = hasCombDriver(u) ? combBoundaryReason(u) : Bail::BOUNDARY_OPERAND_SEQ;
-            UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << u->name());
-            m_bailCount[static_cast<size_t>(why)] += instancesOf(uVarp);
-            uVarp->vpiLazyRole(VVpiLazyRole::RETAINED);
-        } else {
-            // No RTL name, so no row: --public-flat-rw would not have one either.
-            m_boundaryStorage += instancesOf(uVarp);
-            uVarp->vpiLazyRole(VVpiLazyRole::PINNED);
+        const bool cand = uVarp->isSigVpiLazyCandidate();
+        // Sequential/undriven operands hold storage regardless, so pinning them is free.
+        const Bail why
+            = cand && hasCombDriver(u) ? combBoundaryReason(u) : Bail::BOUNDARY_OPERAND_SEQ;
+        for (AstVarScope* const vscp :
+             shared ? m_gather.m_vscpsOf.at(uVarp) : std::vector<AstVarScope*>{u}) {
+            if (!m_kept.insert(vscp).second) continue;
+            if (!cand) {  // No RTL name, so no row: --public-flat-rw would not have one either.
+                ++m_boundaryStorage;
+                continue;
+            }
+            UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << vscp->name());
+            ++m_fallback;
+            ++m_bailCount[static_cast<size_t>(why)];
         }
     }
 
@@ -2146,7 +2143,7 @@ private:
                 if (m_seenOps.insert(ugp).second) m_coneOps.push_back(ugp);
                 return;
             }
-            m_prep.pinBoundary(u);
+            m_prep.pinBoundary(u, m_prep.keyInstances(m_groupp) > 1);
         }
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
@@ -2252,7 +2249,6 @@ private:
                     continue;
                 }
                 if (m_gapVars.count(t->varp())) moveMaskToShadow(t);
-                dropStorage(t->varp());
                 m_reconstructed += keyInstances(g);
             }
         }
@@ -2266,10 +2262,7 @@ private:
         AstVar* const shadowVarp = m_shadowOf.at(t)->varp();
         if (shadowVarp->isVpiLazyCombPartial()) return;  // Another instance moved it
         shadowVarp->vpiLazyComb(VVpiLazyComb::PARTIAL);
-        const auto it = m_ctx.m_combRuns.find(varp);
-        m_ctx.m_combRuns.emplace(shadowVarp, std::move(it->second));
-        m_ctx.m_combRuns.erase(it);
-        varp->vpiLazyComb(VVpiLazyComb::NONE);
+        m_ctx.m_combRuns.emplace(shadowVarp, m_ctx.m_combRuns.at(varp));
     }
 
     // Copy rows: a shadow and a descriptor source, no func, no epoch slot. A copy names the
@@ -2278,18 +2271,20 @@ private:
         for (Group* const g : groups) {
             AstVar* const targetVarp = g->targets[0]->varp();
             // A shadow row on top of the retained row a consumer pinned would name it twice.
-            if (targetVarp->isSigVpiLazyRetained()) continue;
+            if (kept(g->targets[0])) continue;
             AstVar* srcVarp;
             if (folded) {
                 const auto sit = m_shadowOf.find(g->copyFromp);
                 UASSERT_OBJ(sit != m_shadowOf.end(), g->copyFromp->varp(),
                             "--vpi-lazy folded copy source has no shadow");
                 srcVarp = sit->second->varp();
-                UASSERT_OBJ(srcVarp->lazyReconFuncp(), srcVarp,
-                            "--vpi-lazy folded copy source has no reconstruct func");
+                UASSERT_OBJ(
+                    srcVarp->lazyReconFuncp()
+                        || m_ctx.m_rowRefresh.count({g->copyFromp->scopep()->name(), srcVarp}),
+                    srcVarp, "--vpi-lazy folded copy source has no reconstruct func");
                 ++m_foldedCount;
             } else {
-                pinBoundary(g->copyFromp);  // The cone this row replaced would have pinned it too
+                pinBoundary(g->copyFromp, false);  // As the cone this row replaced would have
                 srcVarp = g->copyFromp->varp();
                 ++m_copyCount;
             }
@@ -2298,7 +2293,6 @@ private:
                         shadowVarp, "--vpi-lazy copy instances disagree on their source");
             shadowVarp->lazyCopySrc(srcVarp);
             if (shadowVarp->isLazyShadowAlias()) shadowVarp->noReset(true);  // No member to reset
-            dropStorage(targetVarp);
             m_reconstructed += instancesOf(targetVarp);
         }
     }
@@ -2309,26 +2303,75 @@ private:
     void retainCompletenessFloor() {
         for (AstVarScope* const vscp : m_gather.m_vscOrder) {
             AstVar* const varp = vscp->varp();
-            if (varp->isSigVpiLazyCandidate()) {  // Else reconstructed / retained already
-                // Its row keeps --public-flat-rw semantics, so give it that flag: V3Force pins a
-                // forceable net's force vars, not the net itself, and DFG may alias it away.
-                if (storagePinnedElsewhere(varp)) {
-                    varp->sigUserRWPublic(true);
-                    varp->vpiLazyRole(VVpiLazyRole::NONE);
-                    const bool dpi = varp->isReadByDpi() || varp->isWrittenByDpi();
-                    m_floorReason[dpi ? "storage pinned (DPI)" : "storage pinned"]
-                        += instancesOf(varp);
-                } else {
-                    m_floorReason[floorReason(vscp)] += instancesOf(varp);
-                    UINFO(9, "vpi-lazy floor: " << floorReason(vscp) << " " << vscp->name());
-                    retainTarget(vscp, Bail::COMPLETENESS_FLOOR);  // Flips the shared AstVar once
-                }
+            if (!candidate(vscp) || m_shadowOf.count(vscp)) continue;  // Retained, or has a row
+            // Its row keeps --public-flat-rw semantics, so give it that flag: V3Force pins a
+            // forceable net's force vars, not the net itself, and DFG may alias it away.
+            if (storagePinnedElsewhere(varp)) {
+                varp->sigUserRWPublic(true);
+                varp->vpiLazyRole(VVpiLazyRole::NONE);
+                const bool dpi = varp->isReadByDpi() || varp->isWrittenByDpi();
+                m_floorReason[dpi ? "storage pinned (DPI)" : "storage pinned"]
+                    += instancesOf(varp);
+            } else {
+                ++m_floorReason[floorReason(vscp)];
+                UINFO(9, "vpi-lazy floor: " << floorReason(vscp) << " " << vscp->name());
+                retainTarget(vscp, Bail::COMPLETENESS_FLOOR);
             }
+        }
+        splitKeptInstances();
+        for (AstVarScope* const vscp : m_gather.m_vscOrder) {
             // A VPI write into a writable retained signal is propagated by re-running 'settle'
             // on the next eval.
-            if (varp->isSigVpiLazyRetained() && !varp->isVpiLazyCombWhole())
+            if (vscp->varp()->isSigVpiLazyRetained() && !vscp->varp()->isVpiLazyCombWhole())
                 v3Global.setHasVpiLazyRetained();
         }
+    }
+
+    // The lazy role is per variable, but storage is kept per instance: instances not kept move
+    // to a twin with no role, which the optimiser is free to eliminate.
+    void splitKeptInstances() {
+        bool split = false;
+        for (AstVarScope* const vscp : m_gather.m_vscOrder) {
+            AstVar* const varp = vscp->varp();
+            const auto vit = m_gather.m_vscpsOf.find(varp);
+            if (vit == m_gather.m_vscpsOf.end()) continue;  // A twin made below
+            const std::vector<AstVarScope*>& vscps = vit->second;
+            if (vscp != vscps.front()) continue;
+            const bool cand = varp->isSigVpiLazyCandidate();
+            std::vector<AstVarScope*> freed;
+            for (AstVarScope* const instp : vscps)
+                if (!kept(instp)) freed.push_back(instp);
+            if (freed.size() == vscps.size()) {
+                if (!cand) continue;
+                // Every instance's VPI presence moved to a shadow, its undriven bits too.
+                UASSERT_OBJ(!varp->isVpiLazyCombPartial() || m_gapVars.count(varp), varp,
+                            "--vpi-lazy drops the storage of a variable with undriven bits");
+                varp->vpiLazyRole(VVpiLazyRole::NONE);
+                varp->vpiLazyComb(VVpiLazyComb::NONE);
+                continue;
+            }
+            varp->vpiLazyRole(cand ? VVpiLazyRole::RETAINED : VVpiLazyRole::PINNED);
+            if (freed.empty()) continue;
+            AstVar* const twinp = varp->cloneTree(false);
+            twinp->name(varp->name() + "__Vlazyfreed");
+            twinp->vpiLazyRole(VVpiLazyRole::NONE);
+            twinp->vpiLazyComb(VVpiLazyComb::NONE);
+            varp->addNextHere(twinp);
+            for (AstVarScope* const instp : freed) {
+                m_ctx.m_noRow.emplace(instp->scopep()->name(), varp);
+                instp->varp(twinp);
+            }
+            const auto sit = m_shadowVarOfOrig.find(varp);
+            if (sit != m_shadowVarOfOrig.end()) {
+                for (AstVarScope* const instp : vscps)
+                    if (kept(instp)) m_ctx.m_noRow.emplace(instp->scopep()->name(), sit->second);
+            }
+            split = true;
+        }
+        if (!split) return;
+        v3Global.rootp()->foreach([](AstVarRef* refp) {
+            if (refp->varScopep()) refp->varp(refp->varScopep()->varp());
+        });
     }
 
     // A floor residual is one no classifier claimed, so no bail count records its shape.
@@ -2420,6 +2463,11 @@ V3VpiLazy::combRuns(const AstNetlist* nodep, const AstScope* scopep, const AstVa
     const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
     UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
     return ctxp->combRunsOf(scopep->name(), varp);
+}
+
+bool V3VpiLazy::hasRow(const AstNetlist* nodep, const AstScope* scopep, const AstVar* varp) {
+    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+    return !ctxp || !ctxp->m_noRow.count({scopep->name(), varp});
 }
 
 const AstCFunc* V3VpiLazy::refreshFuncp(const AstNetlist* nodep, const AstScope* scopep,

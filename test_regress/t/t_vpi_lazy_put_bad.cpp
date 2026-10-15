@@ -519,7 +519,7 @@ int main(int argc, char** argv) {
              {"t.ia.q", "retained"},  // Per instance: ib.q is the comb-driven one
              {"t.dli", "retained"},  // A variable select reads its undriven bits
              {"t.oh.v", "reconstructed"},  // No design read reaches its undriven bits
-             {"t.ib.q", "comb"},
+             {"t.ib.q", "reconstructed"},  // Its instance of ia.q's variable is retained apart
              {"t.ret_c", "comb"},  // An impure driver is not re-executed on read
              {"t.rnd_w", "comb"},
              {"t.cy0.cy", "reconstructed"},  // Its port reads the parent: anchored per instance
