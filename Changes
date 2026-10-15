@@ -233,6 +233,7 @@ Verilator 5.053 devel
 * Fix --x-assign unique skipping statements after the first. [Geza Lore, Testorrent USA, Inc.]
 * Fix internal error on procedural cycle delay with non-constant count (#8754). [Marco Bartoli]
 * Fix cycle delays with sequence or property arguments rejected as non-constant (#8759). [Marco Bartoli]
+* Fix exponentiation width resolution (#8775).
 
 
 Verilator 5.052 2026-09-05
