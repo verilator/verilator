@@ -938,4 +938,13 @@ void VSpellCheck::selfTest() {
         UASSERT_SELFTEST(speller.bestCandidate("Barney").str, "barney");
         UASSERT_SELFTEST(speller.bestCandidate("nothing close").str, "");
     }
+    {
+        VSpellCheck speller;
+        for (unsigned i = 0; i < NUM_CANDIDATE_LIMIT; ++i) speller.pushCandidate("fred");
+        UASSERT_SELFTEST(speller.m_candidates.size(), NUM_CANDIDATE_LIMIT);
+        speller.pushCandidate("wilma");
+        UASSERT_SELFTEST(speller.m_candidates.size(), NUM_CANDIDATE_LIMIT);
+        UASSERT_SELFTEST(speller.bestCandidate("fre").str, "fred");
+        UASSERT_SELFTEST(speller.bestCandidate("wilma").str, "");
+    }
 }
