@@ -31,11 +31,12 @@ test.compile(make_top_shell=False,
 
 test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 77)
-# u_pull0.pi and u_pull1.pi among them, read from t's scope
-test.file_grep(test.stats, r'VPI, lazy cross-scope copy descriptors\s+(\d+)', 3)
-# hs_v's kept store counts as a use, so V3Gate does not also inline it into hs_q
-test.file_grep(test.stats, r'Gate signals not inlined due to cost\s+(\d+)', 2)
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 95)
+# Every u_pull*.pi, read from t's scope: pull_x is stored, feeding two of them
+test.file_grep(test.stats, r'VPI, lazy cross-scope copy descriptors\s+(\d+)', 4)
+# hs_v's kept store counts as a use, so V3Gate does not also inline it into hs_q; nor pull_x
+# into its two readers
+test.file_grep(test.stats, r'Gate signals not inlined due to cost\s+(\d+)', 3)
 # u_cat's output temp is read through a helper shadow, not pinned storage
 test.file_grep(test.stats, r'VPI, lazy boundary storage pinned\s+(\d+)', 1)
 

@@ -56,7 +56,9 @@ t (vpiModule) t  vpiDefName=t
     pull_b (vpiBitVar) t.pull_b 
     pull_o0 (vpiReg) t.pull_o0 
     pull_o1 (vpiReg) t.pull_o1 
+    pull_o2 (vpiReg) t.pull_o2 
     pull_w (vpiReg) t.pull_w 
+    pull_x (vpiReg) t.pull_x 
     rndc (vpiReg) t.rndc 
     s (vpiStructVar) t.s 
         vpiReg:
@@ -164,6 +166,19 @@ t (vpiModule) t  vpiDefName=t
             d (vpiReg) t.u_pull1.u_leaf.d 
             q (vpiReg) t.u_pull1.u_leaf.q 
             vpiParameter:
+    u_pull2 (vpiModule) t.u_pull2  vpiDefName=pull_mod
+        vpiReg:
+        pi (vpiReg) t.u_pull2.pi 
+        pi_cast (vpiReg) t.u_pull2.pi_cast 
+        pi_cp (vpiReg) t.u_pull2.pi_cp 
+        po (vpiReg) t.u_pull2.po 
+        vpiParameter:
+        vpiInternalScope:
+        u_leaf (vpiModule) t.u_pull2.u_leaf  vpiDefName=pull_leaf
+            vpiReg:
+            d (vpiReg) t.u_pull2.u_leaf.d 
+            q (vpiReg) t.u_pull2.u_leaf.q 
+            vpiParameter:
     u_xscope_drv (vpiModule) t.u_xscope_drv  vpiDefName=xscope_drv
         vpiReg:
         a (vpiReg) t.u_xscope_drv.a 
@@ -231,7 +246,9 @@ t.pt_obs = 5a5a0003 vpiSize=32
 t.pull_b = 00 vpiSize=8
 t.pull_o0 = 0f vpiSize=8
 t.pull_o1 = 0f vpiSize=8
+t.pull_o2 = 0f vpiSize=8
 t.pull_w = 00 vpiSize=8
+t.pull_x = 00 vpiSize=8
 t.s.a = 00 vpiSize=8
 t.s.b = 00 vpiSize=8
 t.s.c = 00 vpiSize=8
@@ -285,6 +302,12 @@ t.u_pull1.pi_cp = 00 vpiSize=8
 t.u_pull1.po = 0f vpiSize=8
 t.u_pull1.u_leaf.d = 00 vpiSize=8
 t.u_pull1.u_leaf.q = 0f vpiSize=8
+t.u_pull2.pi = 00 vpiSize=8
+t.u_pull2.pi_cast = 00 vpiSize=8
+t.u_pull2.pi_cp = 00 vpiSize=8
+t.u_pull2.po = 0f vpiSize=8
+t.u_pull2.u_leaf.d = 00 vpiSize=8
+t.u_pull2.u_leaf.q = 0f vpiSize=8
 t.u_xscope_drv.a = 0 vpiSize=1
 t.u_xscope_drv.v = 1 vpiSize=1
 t.u_xscope_rcv.n = 0 vpiSize=1
@@ -325,8 +348,10 @@ t.out0 = 0a
 t.out1 = 9a
 t.pull_b = 3c
 t.pull_o0 = 33
-t.pull_o1 = 1e
+t.pull_o1 = 1f
+t.pull_o2 = 1f
 t.pull_w = 3c
+t.pull_x = 10
 t.s.a = 11
 t.s.b = 22
 t.s.c = f0
@@ -357,12 +382,18 @@ t.u_pull0.pi_cp = 3c
 t.u_pull0.po = 33
 t.u_pull0.u_leaf.d = 3c
 t.u_pull0.u_leaf.q = 33
-t.u_pull1.pi = 11
-t.u_pull1.pi_cast = 11
-t.u_pull1.pi_cp = 11
-t.u_pull1.po = 1e
-t.u_pull1.u_leaf.d = 11
-t.u_pull1.u_leaf.q = 1e
+t.u_pull1.pi = 10
+t.u_pull1.pi_cast = 10
+t.u_pull1.pi_cp = 10
+t.u_pull1.po = 1f
+t.u_pull1.u_leaf.d = 10
+t.u_pull1.u_leaf.q = 1f
+t.u_pull2.pi = 10
+t.u_pull2.pi_cast = 10
+t.u_pull2.pi_cp = 10
+t.u_pull2.po = 1f
+t.u_pull2.u_leaf.d = 10
+t.u_pull2.u_leaf.q = 1f
 -- @20 readonly
 t.arr[3] = ef
 t.arr[2] = be
@@ -399,8 +430,10 @@ t.pt_o = 5a5a0001
 t.pt_obs = 5a5a0006
 t.pull_b = 3d
 t.pull_o0 = 32
-t.pull_o1 = d1
+t.pull_o1 = c1
+t.pull_o2 = c1
 t.pull_w = 3d
+t.pull_x = ce
 t.s.a = de
 t.s.b = ad
 t.s.c = be
@@ -436,12 +469,18 @@ t.u_pull0.pi_cp = 3d
 t.u_pull0.po = 32
 t.u_pull0.u_leaf.d = 3d
 t.u_pull0.u_leaf.q = 32
-t.u_pull1.pi = de
-t.u_pull1.pi_cast = de
-t.u_pull1.pi_cp = de
-t.u_pull1.po = d1
-t.u_pull1.u_leaf.d = de
-t.u_pull1.u_leaf.q = d1
+t.u_pull1.pi = ce
+t.u_pull1.pi_cast = ce
+t.u_pull1.pi_cp = ce
+t.u_pull1.po = c1
+t.u_pull1.u_leaf.d = ce
+t.u_pull1.u_leaf.q = c1
+t.u_pull2.pi = ce
+t.u_pull2.pi_cast = ce
+t.u_pull2.pi_cp = ce
+t.u_pull2.po = c1
+t.u_pull2.u_leaf.d = ce
+t.u_pull2.u_leaf.q = c1
 -- @30 readonly
 t.arr[3] = 01
 t.arr[2] = 80
@@ -481,8 +520,10 @@ t.pt_o = 5a5a0011
 t.pt_obs = 5a5a0016
 t.pull_b = 2c
 t.pull_o0 = 23
-t.pull_o1 = f0
+t.pull_o1 = 8f
+t.pull_o2 = 8f
 t.pull_w = 2c
+t.pull_x = 80
 t.s.a = ff
 t.s.b = 00
 t.s.c = 80
@@ -520,12 +561,18 @@ t.u_pull0.pi_cp = 2c
 t.u_pull0.po = 23
 t.u_pull0.u_leaf.d = 2c
 t.u_pull0.u_leaf.q = 23
-t.u_pull1.pi = ff
-t.u_pull1.pi_cast = ff
-t.u_pull1.pi_cp = ff
-t.u_pull1.po = f0
-t.u_pull1.u_leaf.d = ff
-t.u_pull1.u_leaf.q = f0
+t.u_pull1.pi = 80
+t.u_pull1.pi_cast = 80
+t.u_pull1.pi_cp = 80
+t.u_pull1.po = 8f
+t.u_pull1.u_leaf.d = 80
+t.u_pull1.u_leaf.q = 8f
+t.u_pull2.pi = 80
+t.u_pull2.pi_cast = 80
+t.u_pull2.pi_cp = 80
+t.u_pull2.po = 8f
+t.u_pull2.u_leaf.d = 80
+t.u_pull2.u_leaf.q = 8f
 -- @40 readonly
 t.base = 22
 t.chain_deep = 7d
@@ -551,7 +598,10 @@ t.pt_o = 5a5a0090
 t.pt_obs = 5a5a0093
 t.pull_b = 43
 t.pull_o0 = 4c
+t.pull_o1 = d2
+t.pull_o2 = d2
 t.pull_w = 43
+t.pull_x = dd
 t.if0.a = 33
 t.if0.b = 69
 t.if0.din = 22
@@ -581,6 +631,18 @@ t.u_pull0.pi_cp = 43
 t.u_pull0.po = 4c
 t.u_pull0.u_leaf.d = 43
 t.u_pull0.u_leaf.q = 4c
+t.u_pull1.pi = dd
+t.u_pull1.pi_cast = dd
+t.u_pull1.pi_cp = dd
+t.u_pull1.po = d2
+t.u_pull1.u_leaf.d = dd
+t.u_pull1.u_leaf.q = d2
+t.u_pull2.pi = dd
+t.u_pull2.pi_cast = dd
+t.u_pull2.pi_cp = dd
+t.u_pull2.po = d2
+t.u_pull2.u_leaf.d = dd
+t.u_pull2.u_leaf.q = d2
 -- @50 readonly
 t.base = 00
 t.chain_deep = 23
@@ -606,7 +668,10 @@ t.pt_o = 5a5a00b2
 t.pt_obs = 5a5a00b9
 t.pull_b = 1e
 t.pull_o0 = 11
+t.pull_o1 = f0
+t.pull_o2 = f0
 t.pull_w = 1e
+t.pull_x = ff
 t.if0.a = 11
 t.if0.b = 4b
 t.if0.din = 00
@@ -637,6 +702,18 @@ t.u_pull0.pi_cp = 1e
 t.u_pull0.po = 11
 t.u_pull0.u_leaf.d = 1e
 t.u_pull0.u_leaf.q = 11
+t.u_pull1.pi = ff
+t.u_pull1.pi_cast = ff
+t.u_pull1.pi_cp = ff
+t.u_pull1.po = f0
+t.u_pull1.u_leaf.d = ff
+t.u_pull1.u_leaf.q = f0
+t.u_pull2.pi = ff
+t.u_pull2.pi_cast = ff
+t.u_pull2.pi_cp = ff
+t.u_pull2.po = f0
+t.u_pull2.u_leaf.d = ff
+t.u_pull2.u_leaf.q = f0
 -- @60 readonly
 t.base = 13
 t.chain_deep = 0e
@@ -661,7 +738,10 @@ t.out0 = 40
 t.out1 = d0
 t.pull_b = 3c
 t.pull_o0 = 33
+t.pull_o1 = e3
+t.pull_o2 = e3
 t.pull_w = 3c
+t.pull_x = ec
 t.xscope_o = 1
 t.if0.a = 24
 t.if0.b = 7e
@@ -688,6 +768,18 @@ t.u_pull0.pi_cp = 3c
 t.u_pull0.po = 33
 t.u_pull0.u_leaf.d = 3c
 t.u_pull0.u_leaf.q = 33
+t.u_pull1.pi = ec
+t.u_pull1.pi_cast = ec
+t.u_pull1.pi_cp = ec
+t.u_pull1.po = e3
+t.u_pull1.u_leaf.d = ec
+t.u_pull1.u_leaf.q = e3
+t.u_pull2.pi = ec
+t.u_pull2.pi_cast = ec
+t.u_pull2.pi_cp = ec
+t.u_pull2.po = e3
+t.u_pull2.u_leaf.d = ec
+t.u_pull2.u_leaf.q = e3
 t.u_xscope_drv.a = 1
 t.u_xscope_drv.v = 0
 t.u_xscope_rcv.n = 1
@@ -715,7 +807,10 @@ t.pt_o = 5a5a00c5
 t.pt_obs = 5a5a00d2
 t.pull_b = 2f
 t.pull_o0 = 20
+t.pull_o1 = b0
+t.pull_o2 = b0
 t.pull_w = 2f
+t.pull_x = bf
 t.if0.a = 51
 t.if0.b = 0b
 t.if0.din = 40
@@ -745,6 +840,18 @@ t.u_pull0.pi_cp = 2f
 t.u_pull0.po = 20
 t.u_pull0.u_leaf.d = 2f
 t.u_pull0.u_leaf.q = 20
+t.u_pull1.pi = bf
+t.u_pull1.pi_cast = bf
+t.u_pull1.pi_cp = bf
+t.u_pull1.po = b0
+t.u_pull1.u_leaf.d = bf
+t.u_pull1.u_leaf.q = b0
+t.u_pull2.pi = bf
+t.u_pull2.pi_cast = bf
+t.u_pull2.pi_cp = bf
+t.u_pull2.po = b0
+t.u_pull2.u_leaf.d = bf
+t.u_pull2.u_leaf.q = b0
 -- @80 readonly
 t.base = a5
 t.chain_deep = f8
@@ -767,7 +874,10 @@ t.pt_o = 5a5a0105
 t.pt_obs = 5a5a0112
 t.pull_b = 7c
 t.pull_o0 = 73
+t.pull_o1 = 55
+t.pull_o2 = 55
 t.pull_w = 7c
+t.pull_x = 5a
 t.if0.a = b6
 t.if0.b = ec
 t.if0.din = a5
@@ -797,6 +907,18 @@ t.u_pull0.pi_cp = 7c
 t.u_pull0.po = 73
 t.u_pull0.u_leaf.d = 7c
 t.u_pull0.u_leaf.q = 73
+t.u_pull1.pi = 5a
+t.u_pull1.pi_cast = 5a
+t.u_pull1.pi_cp = 5a
+t.u_pull1.po = 55
+t.u_pull1.u_leaf.d = 5a
+t.u_pull1.u_leaf.q = 55
+t.u_pull2.pi = 5a
+t.u_pull2.pi_cast = 5a
+t.u_pull2.pi_cp = 5a
+t.u_pull2.po = 55
+t.u_pull2.u_leaf.d = 5a
+t.u_pull2.u_leaf.q = 55
 -- @90 readonly
 t.base = ff
 t.chain_deep = 22
@@ -821,7 +943,10 @@ t.pt_o = 5a5a01aa
 t.pt_obs = 5a5a01b1
 t.pull_b = 99
 t.pull_o0 = 96
+t.pull_o1 = 0f
+t.pull_o2 = 0f
 t.pull_w = 99
+t.pull_x = 00
 t.if0.a = 10
 t.if0.b = 4a
 t.if0.din = ff
@@ -852,6 +977,18 @@ t.u_pull0.pi_cp = 99
 t.u_pull0.po = 96
 t.u_pull0.u_leaf.d = 99
 t.u_pull0.u_leaf.q = 96
+t.u_pull1.pi = 00
+t.u_pull1.pi_cast = 00
+t.u_pull1.pi_cp = 00
+t.u_pull1.po = 0f
+t.u_pull1.u_leaf.d = 00
+t.u_pull1.u_leaf.q = 0f
+t.u_pull2.pi = 00
+t.u_pull2.pi_cast = 00
+t.u_pull2.pi_cp = 00
+t.u_pull2.po = 0f
+t.u_pull2.u_leaf.d = 00
+t.u_pull2.u_leaf.q = 0f
 -- @100 readonly
 t.base = 21
 t.chain_deep = 7c
@@ -877,7 +1014,10 @@ t.pt_o = 5a5a02a9
 t.pt_obs = 5a5a02ae
 t.pull_b = c3
 t.pull_o0 = cc
+t.pull_o1 = d1
+t.pull_o2 = d1
 t.pull_w = c3
+t.pull_x = de
 t.if0.a = 32
 t.if0.b = 68
 t.if0.din = 21
@@ -908,6 +1048,18 @@ t.u_pull0.pi_cp = c3
 t.u_pull0.po = cc
 t.u_pull0.u_leaf.d = c3
 t.u_pull0.u_leaf.q = cc
+t.u_pull1.pi = de
+t.u_pull1.pi_cast = de
+t.u_pull1.pi_cp = de
+t.u_pull1.po = d1
+t.u_pull1.u_leaf.d = de
+t.u_pull1.u_leaf.q = d1
+t.u_pull2.pi = de
+t.u_pull2.pi_cast = de
+t.u_pull2.pi_cp = de
+t.u_pull2.po = d1
+t.u_pull2.u_leaf.d = de
+t.u_pull2.u_leaf.q = d1
 -- @110 readonly
 t.base = 7e
 t.chain_deep = a1
@@ -931,7 +1083,10 @@ t.pt_o = 5a5a02ca
 t.pt_obs = 5a5a02d1
 t.pull_b = 1d
 t.pull_o0 = 12
+t.pull_o1 = 8e
+t.pull_o2 = 8e
 t.pull_w = 1d
+t.pull_x = 81
 t.if0.a = 8f
 t.if0.b = d5
 t.if0.din = 7e
@@ -961,6 +1116,18 @@ t.u_pull0.pi_cp = 1d
 t.u_pull0.po = 12
 t.u_pull0.u_leaf.d = 1d
 t.u_pull0.u_leaf.q = 12
+t.u_pull1.pi = 81
+t.u_pull1.pi_cast = 81
+t.u_pull1.pi_cp = 81
+t.u_pull1.po = 8e
+t.u_pull1.u_leaf.d = 81
+t.u_pull1.u_leaf.q = 8e
+t.u_pull2.pi = 81
+t.u_pull2.pi_cast = 81
+t.u_pull2.pi_cp = 81
+t.u_pull2.po = 8e
+t.u_pull2.u_leaf.d = 81
+t.u_pull2.u_leaf.q = 8e
 -- @120 readonly
 t.base = c3
 t.chain_deep = de
@@ -983,7 +1150,10 @@ t.pt_o = 5a5a0348
 t.pt_obs = 5a5a034b
 t.pull_b = 42
 t.pull_o0 = 4d
+t.pull_o1 = 33
+t.pull_o2 = 33
 t.pull_w = 42
+t.pull_x = 3c
 t.if0.a = d4
 t.if0.b = 8e
 t.if0.din = c3
@@ -1013,6 +1183,18 @@ t.u_pull0.pi_cp = 42
 t.u_pull0.po = 4d
 t.u_pull0.u_leaf.d = 42
 t.u_pull0.u_leaf.q = 4d
+t.u_pull1.pi = 3c
+t.u_pull1.pi_cast = 3c
+t.u_pull1.pi_cp = 3c
+t.u_pull1.po = 33
+t.u_pull1.u_leaf.d = 3c
+t.u_pull1.u_leaf.q = 33
+t.u_pull2.pi = 3c
+t.u_pull2.pi_cast = 3c
+t.u_pull2.pi_cp = 3c
+t.u_pull2.po = 33
+t.u_pull2.u_leaf.d = 3c
+t.u_pull2.u_leaf.q = 33
 -- @130 readonly
 t.cyc = 0d
 t.cyc_boundary = 0d

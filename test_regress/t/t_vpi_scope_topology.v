@@ -11,7 +11,8 @@
 // cycle closed through two instances, a block-level cycle through an instance,
 // impure ($random/$time) and variable-index driven combinational logic, a
 // submodule output that is itself only a temporary feeding another output, and a
-// twice-instanced non-inlined module whose ports copy its parent's state.
+// thrice-instanced non-inlined module whose ports copy its parent's state, two of
+// them the same combinational net.
 
 interface iface_t #(
     parameter W = 8
@@ -418,20 +419,27 @@ module t;
   logic [7:0] pull_w;
   logic [7:0] pull_o0;
   logic [7:0] pull_o1;
+  logic [7:0] pull_o2;
+  logic [7:0] pull_x;
   always_ff @(posedge clk) pull_b <= base ^ 8'h3c;
   assign pull_w = pull_b;
   pull_mod u_pull0 (
       .pi(pull_w),
       .po(pull_o0)
   );
+  assign pull_x = in0 ^ base;
   pull_mod u_pull1 (
-      .pi(in0),
+      .pi(pull_x),
       .po(pull_o1)
+  );
+  pull_mod u_pull2 (
+      .pi(pull_x),
+      .po(pull_o2)
   );
 
   assign obs = out0 ^ out1 ^ flat_gg[7:0] ^ {1'b0, cyc_down2} ^ o[0] ^ crbase ^ rndc
              ^ tstamp ^ {1'b0, alc_x} ^ chain_use ^ pt_obs[7:0] ^ {7'h0, xscope_o} ^ pull_o0
-             ^ pull_o1;
+             ^ pull_o1 ^ pull_o2;
 
 endmodule
 

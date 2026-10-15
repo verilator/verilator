@@ -580,6 +580,7 @@ class VpiLazyPreparer final {
     // Cross-scope copy candidates found before grouping: target -> its local source
     std::unordered_map<AstVarScope*, AstVarScope*> m_xscopeSrcOf;
     std::vector<AstVarScope*> m_xscopeOrder;  // m_xscopeSrcOf keys, encounter order
+    std::unordered_set<const AstVarScope*> m_xscopeSharedSrcs;  // Sources of several of them
     std::vector<AstVarScope*> m_crossScopeCopyTargets;  // Claimed, awaiting emit
     std::unordered_map<const AstVar*, int> m_xscopeShadowIdx;
 
@@ -606,6 +607,7 @@ class VpiLazyPreparer final {
         UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
         CROSS_SCOPE_WRITE,  // Writes a variable outside the scope that authored the statements
         CROSS_SCOPE_CONE,  // Multi-instance cone reading outside its scope; one func cannot serve
+        CROSS_SCOPE_SOURCE,  // Feeds several cross-scope copies, which claim only a stored source
         COMB_CYCLE,  // Genuine combinational cycle (SCC member)
         COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
         BOUNDARY_COMB_DTYPE,  // Comb boundary operand of a kind reconstruction cannot express
@@ -627,6 +629,7 @@ class VpiLazyPreparer final {
                                             "unsupported lvalue",
                                             "cross-scope write",
                                             "cross-scope cone",
+                                            "cross-scope source",
                                             "comb cycle",
                                             "completeness floor",
                                             "boundary comb (dtype)",
@@ -1170,6 +1173,9 @@ private:
                 }
             } else if (!reconstructableKind(varp)) {
                 retainTarget(w, Bail::DTYPE);
+            } else if (m_xscopeSharedSrcs.count(w)) {
+                // A cone source would leave each copy retained instead: one store serves them all
+                retainTarget(w, Bail::CROSS_SCOPE_SOURCE);
             } else {
                 targets.push_back(w);
                 continue;
@@ -1235,8 +1241,12 @@ private:
     void findCrossScopeCopyCandidates() {
         std::unordered_map<const AstVar*, int> instances;
         std::vector<std::pair<AstVarScope*, AstVarScope*>> cand;
+        std::unordered_set<const AstVarScope*> localCopies;
         forEachCopyAssign([&](const CombBlock& b, AstVarScope* dstp, AstVarScope* srcp) {
-            if (dstp->scopep() == srcp->scopep()) return;  // copyStoredSources' shape
+            if (dstp->scopep() == srcp->scopep()) {  // copyStoredSources' shape
+                localCopies.insert(dstp);
+                return;
+            }
             const bool pull = dstp->scopep() == b.m_scopep && instancesOf(dstp->varp()) > 1;
             if (srcp->scopep() != b.m_scopep && !pull) return;
             if (!dstp->varp()->isSigVpiLazyCandidate()) return;
@@ -1246,10 +1256,14 @@ private:
             cand.emplace_back(dstp, srcp);
             ++instances[dstp->varp()];
         });
+        std::unordered_map<const AstVarScope*, int> dependants;
         for (const auto& pr : cand) {
             if (!claimPerVar(instances, pr.first->varp())) continue;
-            if (m_xscopeSrcOf.emplace(pr.first, pr.second).second)
-                m_xscopeOrder.push_back(pr.first);
+            if (!m_xscopeSrcOf.emplace(pr.first, pr.second).second) continue;
+            m_xscopeOrder.push_back(pr.first);
+            // A local copy's row hands its dependants its own stored source instead
+            if (++dependants[pr.second] == 2 && !localCopies.count(pr.second))
+                m_xscopeSharedSrcs.insert(pr.second);
         }
     }
 
