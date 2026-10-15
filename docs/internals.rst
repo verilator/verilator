@@ -1666,8 +1666,8 @@ provides the *test-snap* and *test-diff* targets:
 - See the changes in the output with ``make test-diff``
 
 ``make test-snap`` copies the ``obj_*``, test output directories into
-``test_regress/snapshot``. Set ``TEST_SNAP_DIR`` to use a different location,
-e.g. to keep multiple snapshots. Files matching the patterns in
+``test_regress/snapshot``. Set ``TEST_SNAP_DIR`` to use a different
+location, e.g. to keep multiple snapshots. Files matching the patterns in
 ``test_regress/test_diff_ignore.txt`` are not copied: build products, logs,
 debug dumps, and outputs that depend on host timing.
 
