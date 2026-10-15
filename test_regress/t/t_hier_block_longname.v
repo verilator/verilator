@@ -14,6 +14,7 @@
 `define LONG_IN data_input_name_that_is_well_over_the_limit_where_verilator_hashes_identifiers_to_keep_generated_cpp_names_and_file_names_reasonably_short
 `define LONG_COMB comb_output_name_that_is_well_over_the_limit_where_verilator_hashes_identifiers_to_keep_generated_cpp_names_and_file_names_reasonably_short
 `define LONG_SEQ seq_output_name_that_is_well_over_the_limit_where_verilator_hashes_identifiers_to_keep_generated_cpp_names_and_file_names_reasonably_short
+`define LONG_INOUT bidirectional_port_name_that_is_well_over_the_limit_where_verilator_hashes_identifiers_to_keep_generated_cpp_names_and_file_names_reasonably_short
 
 module t (
     input clk
@@ -23,19 +24,29 @@ module t (
   logic [7:0] in;
   logic [7:0] comb;
   logic [7:0] seq;
+  // The DPI update reads this net and writes its driver in the same call.
+  /* verilator lint_off UNOPTFLAT */
+  wire pad;
+  /* verilator lint_on UNOPTFLAT */
+  wire pad_read;
 
   assign in = cyc[7:0];
+  assign pad = cyc[0] ? 1'bz : cyc[2];
 
   sub u_sub (
       .`LONG_CLK(clk),
       .`LONG_IN(in),
       .`LONG_COMB(comb),
-      .`LONG_SEQ(seq)
+      .`LONG_SEQ(seq),
+      .`LONG_INOUT(pad),
+      .pad_read(pad_read)
   );
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
     `checkd(comb, in + 8'd1);
+    `checkd(pad, cyc[0] ? cyc[1] : cyc[2]);
+    `checkd(pad_read, cyc[0] ? cyc[1] : cyc[2]);
     if (cyc > 0) `checkd(seq, in - 8'd1);
     if (cyc == 10) begin
       $write("*-* All Finished *-*\n");
@@ -48,8 +59,12 @@ module sub (
     input `LONG_CLK,
     input logic [7:0] `LONG_IN,
     output logic [7:0] `LONG_COMB,
-    output logic [7:0] `LONG_SEQ
+    output logic [7:0] `LONG_SEQ,
+    inout wire `LONG_INOUT,
+    output wire pad_read
 );  /*verilator hier_block*/
   assign `LONG_COMB = `LONG_IN + 8'd1;
+  assign `LONG_INOUT = `LONG_IN[0] ? `LONG_IN[1] : 1'bz;
+  assign pad_read = `LONG_INOUT;
   always_ff @(posedge `LONG_CLK) `LONG_SEQ <= `LONG_IN;
 endmodule
