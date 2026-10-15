@@ -823,7 +823,7 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // If this is a static method we need to check the scope of the VarRefs
-        if (cfuncp->isMethod() && !refp->taskp()->isStatic()) {
+        if (cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample() && !refp->taskp()->dpiContext()) {
             m_nonInlinedFTaskRef = refp;
             std::vector<AstNode*> unsetUser3p;
             methodCallArgsRefs(refp->taskp()->op3p(), cfuncp, ccallp, refp, unsetUser3p);
@@ -1775,7 +1775,7 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
-        if (nodep->classMethod() && !nodep->isStatic()) {
+        if (nodep->classMethod() && !nodep->isStatic() && !nodep->isCovergroupSample() && !nodep->dpiContext()) {
             std::vector<AstNode*> unsetUser3p;
             methodBodyRefs(nodep, cfuncp, unsetUser3p);
             for (auto unset : unsetUser3p) { unset->user3p(nullptr); }
