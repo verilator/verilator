@@ -646,7 +646,10 @@ class TraceDeclVisitor final : public VNVisitor {
         UASSERT_OBJ(m_traName.empty(), nodep, "Should not nest");
 
         // If this is a stub for a --lib-create library, skip.
-        if (nodep->modp()->verilatorLib()) return;
+        // Check parent scopes for bound instances
+        for (const AstScope* scopep = nodep; scopep; scopep = scopep->aboveScopep()) {
+            if (scopep->modp()->verilatorLib()) return;
+        }
 
         VL_RESTORER(m_currScopep);
         m_currScopep = nodep;
