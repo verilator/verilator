@@ -97,38 +97,11 @@ distclean::
 # Can be overridden for multiple snapshots
 TEST_SNAP_DIR ?= snapshot
 
-define CMD_EXISTS
-$(shell which $(1) > /dev/null 2>&1 && echo ok)
-endef
-
-# GNU find
-GNU_FIND := $(if $(call CMD_EXISTS, gfind), gfind, find)
-# Command to diff directories
-TEST_DIFF_TOOL ?= $(if $(call CMD_EXISTS, icdiff), icdiff -N -r --cols=$(shell tput cols), diff -r)
-
-TEST_SNAP_IGNORE := $(shell grep -v '^\#' test_diff_ignore.txt)
-
-define TEST_SNAP_template
-mkdir -p $(TEST_SNAP_DIR)
-rm -rf $(TEST_SNAP_DIR)/obj_$(1)
-cp -RH obj_$(1) $(TEST_SNAP_DIR)/
-$(GNU_FIND) $(TEST_SNAP_DIR)/obj_$(1) \( $(TEST_SNAP_IGNORE:%=-name "%" -o) \
-  -type f -executable \) -prune | xargs rm -r
-endef
-
 .PHONY: test-snap
 test-snap:
-	$(call TEST_SNAP_template,vlt)
-	$(call TEST_SNAP_template,vltmt)
-	$(call TEST_SNAP_template,dist)
-
-.PHONY: impl-test-diff
-impl-test-diff:
-	$(TEST_DIFF_TOOL) $(TEST_SNAP_DIR)/obj_vlt   obj_vlt || true
-	$(TEST_DIFF_TOOL) $(TEST_SNAP_DIR)/obj_vltmt obj_vltmt || true
-	$(TEST_DIFF_TOOL) $(TEST_SNAP_DIR)/obj_dist  obj_dist || true
+	$(PYTHON3) test_diff.py snap --snap-dir $(TEST_SNAP_DIR)
 
 .PHONY: test-diff
 test-diff:
-	$(MAKE) impl-test-diff | grep -v "Only in obj_" \
+	$(PYTHON3) test_diff.py diff --snap-dir $(TEST_SNAP_DIR) \
 	| $$(git config --default less --global --get core.pager)

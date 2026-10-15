@@ -1,7 +1,7 @@
 # DESCRIPTION: Verilator: Files in test obj_dirs not used by 'make test-snap'
 #
 # Glob patterns matched against file and directory names, one per line.
-# Read by Makefile for 'make test-snap', and by driver.py for --driver-prune.
+# Read by test_diff.py for 'make test-snap', and by driver.py for --driver-prune.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -9,41 +9,37 @@
 # SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-*.status
-*.log
-*.dat
-*.d
-*.o
+# C++ compiler and build system outputs
 *.a
+*.cmake
+*.d
 *.gch
+*.o
 *.so
-*stats*.txt
-*.html
-*.includecache
-*.out
+*.status
+CMakeFiles
+
+# Simulation outputs and logs, checked by the tests themselves
+*.dat
 *.fst
-*.fst.vcd
+*.html
+*.log
+*.log.sort
+*.out
+
+# Verilator debug dumps, mostly containing AstNode addresses
+*.dot
+*.hash
 *.tree
 *.tree*.json
-*.dot
-*.csv
-*.xml
-*.hash
-*.cmake
-gmon.out.*
-CMakeFiles
-profile_exec.vcd
 *line-coverage*.txt
-profile.vlt
-*linkdot.txt
 *linkcells.txt
-*.log.sort
-*.vpp
-*.sarif
-t_flag_debugi9
-t_flag_decorations_node
-t_flag_runtime_debug
-t_mod_empty
+*linkdot*.txt
+
+# Depends on host timing/load
+*stats*.txt*
+gmon.out.*
+profile.vlt
+profile_exec.vcd
 t_pgo_threads
 t_pgo_threads_hier
-t_trace_ub_misaligned_address

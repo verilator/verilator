@@ -1665,6 +1665,18 @@ provides the *test-snap* and *test-diff* targets:
 - Run the test suite again with ``make test``
 - See the changes in the output with ``make test-diff``
 
+``make test-snap`` copies the ``obj_*``, test output directories into
+``test_regress/snapshot``. Set ``TEST_SNAP_DIR`` to use a different location,
+e.g. to keep multiple snapshots. Files matching the patterns in
+``test_regress/test_diff_ignore.txt`` are not copied: build products, logs,
+debug dumps, and outputs that depend on host timing.
+
+``make test-diff`` shows in a pager the files that exist only in the
+snapshot or only in the current output, and the differences in files
+present in both. In C++ sources, hashed names (``_hHASH_``) and AstNode
+addresses from ``--decorations node`` are masked, as they change without
+the generated code changing.
+
 Continuous Integration
 ----------------------
 
