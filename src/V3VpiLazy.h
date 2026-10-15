@@ -55,6 +55,8 @@ public:
     // Binds prepare()'s by-name records on first call, so only call after the last deleting pass.
     static const CrossScopeSrc* crossScopeCopySrc(AstNetlist* nodep, const AstScope* scopep,
                                                   const AstVar* shadowVarp) VL_MT_DISABLED;
+    // Mark candidates' combinationally driven bits ahead of prepare(), which re-marks them.
+    static void classifyComb(AstNetlist* nodep) VL_MT_DISABLED;
     // Preserve reconstructable lazy signals before optimisation.
     static void prepare(AstNetlist* nodep) VL_MT_DISABLED;
     // AstNetlist owns this opaque context.

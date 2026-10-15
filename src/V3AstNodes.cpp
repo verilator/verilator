@@ -4369,7 +4369,7 @@ const char* AstVar::cannotSplitKindReason() const {
     if (isPrimaryIO()) return "it is a primary input or output";
     if (isFuncLocal() && isIO()) return "it is a function argument";
     if (isRef()) return "it is a ref port";
-    if (isSigPublic() || isSigVpiLazyCandidate()) return "it is public";
+    if (isSigPublic() || (isSigVpiLazyCandidate() && !isVpiLazyCombWhole())) return "it is public";
     if (isForced()) return "it is forceable";
     if (isReadByDpi()) return "it is read via DPI";
     if (isWrittenByDpi()) return "it is written via DPI";

@@ -673,6 +673,7 @@ public:
         , m_gather{nodep} {}
 
     const std::vector<AstCFunc*>& splitFuncps() const { return m_splitFuncps; }
+    void classifyOnly() { classifyCombDriven(); }
 
     void run() {
         classifyCombDriven();
@@ -1016,6 +1017,8 @@ private:
 
     // See WRITABILITY above.
     void classifyCombDriven() {
+        for (const AstVarScope* const vscp : m_gather.m_vscOrder)
+            vscp->varp()->vpiLazyComb(VVpiLazyComb::NONE);
         for (const CombBlock& b : m_gather.m_combBlocks) {
             if (std::none_of(b.m_targets.begin(), b.m_targets.end(),
                              [](const AstVarScope* t) { return combCandidate(t->varp()); }))
@@ -2547,6 +2550,13 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
     for (AstCFunc* const funcp : splitFuncps) V3Sched::util::splitCheck(funcp);
 
     V3Global::dumpCheckGlobalTree("vpi-lazy-prepare", 0, dumpTreeEitherLevel() >= 3);
+}
+
+void V3VpiLazy::classifyComb(AstNetlist* nodep) {
+    AstScope* const topScopep = nodep->topScopep() ? nodep->topScopep()->scopep() : nullptr;
+    if (!topScopep) return;
+    V3VpiLazyContext ctx;
+    VpiLazyPreparer{nodep, topScopep, ctx}.classifyOnly();
 }
 
 VVpiLazyComb V3VpiLazy::combOf(const AstNetlist* nodep, const AstScope* scopep,

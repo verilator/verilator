@@ -32,6 +32,6 @@ test.execute(use_libvpi=True,
              ],
              expect_filename=test.golden_filename)
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 32)
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 35)
 
 test.passes()
