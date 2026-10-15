@@ -790,6 +790,11 @@ public:
         UASSERT_OBJ(!funcp->isLoose(), nodep, "Loose method called via AstCMethodCall");
         iterateConst(nodep->fromp());
         putnbs(nodep, "->");
+        if (nodep->superReference()) {
+            // Super call, so the base implementation is used rather than the override
+            const AstNodeModule* const funcModp = EmitCParentModule::get(funcp);
+            putns(funcModp, EmitCUtil::prefixNameProtect(funcModp) + "::");
+        }
         putns(funcp, funcp->nameProtect());
         emitCCallArgs(nodep, "", m_cfuncp->needProcess());
     }
@@ -1596,13 +1601,13 @@ public:
             = VN_CAST(nodep->dtypep()->skipRefp(), ClassRefDType)) {
             putns(nodep, "(" + classDtypep->cType("", false, false) + ")(");
         } else if (nodep->size() <= VL_BYTESIZE) {
-            putns(nodep, "(CData)(");
+            putns(nodep, "(::CData)(");
         } else if (nodep->size() <= VL_SHORTSIZE) {
-            putns(nodep, "(SData)(");
+            putns(nodep, "(::SData)(");
         } else if (nodep->size() <= VL_IDATASIZE) {
-            putns(nodep, "(IData)(");
+            putns(nodep, "(::IData)(");
         } else {
-            putns(nodep, "(QData)(");
+            putns(nodep, "(::QData)(");
         }
         iterateAndNextConstNull(nodep->lhsp());
         puts(")");

@@ -40,3 +40,7 @@ verilate(example
   INCLUDE_DIRS "../make_hello_c"
   SOURCES ../make_hello_c/top.v
 )
+
+# Disable legacy vl_time_stamp. Otherwise would require weak symbols
+# that some platforms (e.g. MSVC, cygwin) do not have.
+target_compile_definitions(example PRIVATE VL_TIME_CONTEXT)

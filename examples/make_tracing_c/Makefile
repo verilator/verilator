@@ -49,6 +49,9 @@ VERILATOR_FLAGS += --coverage
 #VERILATOR_FLAGS += --debug
 # Add this trace to get a backtrace in gdb
 #VERILATOR_FLAGS += --gdbbt
+# Disable legacy vl_time_stamp. Otherwise would require weak symbols
+# that some platforms (e.g. MSVC, cygwin) do not have.
+VERILATOR_FLAGS += -CFLAGS -DVL_TIME_CONTEXT
 
 # Input files for Verilator
 VERILATOR_INPUT = -f input.vc top.v sim_main.cpp
