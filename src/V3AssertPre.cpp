@@ -26,6 +26,7 @@
 #include "V3Assert.h"
 #include "V3Const.h"
 #include "V3Task.h"
+#include "V3Timing.h"
 #include "V3UniqueNames.h"
 
 #include <unordered_map>
@@ -549,7 +550,12 @@ private:
                 VCMethod::EVENT_IS_TRIGGERED};
             trigp->dtypeSetBit();
             ifp->condp(new AstLogAnd{flp, ifp->condp()->unlinkFrBack(), trigp});
-            if (skewp->isZero() || !skewp->fileline()->timingOn()) {
+            // A skew rounding to no time precision ticks is a zero skew
+            AstNodeExpr* const ticksp
+                = V3Timing::delayToTicks(skewp->cloneTree(false), m_modp->timeunit());
+            const bool zeroSkew = ticksp->isZero();
+            VL_DO_DANGLING(ticksp->deleteTree(), ticksp);
+            if (zeroSkew || !skewp->fileline()->timingOn()) {
                 // Drive the var in Re-NBA (IEEE 1800-2023 14.16), ignoring skews where timing is
                 // turned off
                 AstSenTree* senTreep = m_clockingp->sentreep()->cloneTree(false);
@@ -560,6 +566,7 @@ private:
                 // Fork only the assignment, so this AlwaysPostponed can be retriggered
                 // before the assignment happens
                 AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
+                forkp->immediateStart(true);
                 forkp->addForksp(new AstBegin{flp, "", assignp->unlinkFrBack(), true});
                 ifp->addThensp(forkp);
                 // Read the clockvar in Postponed, so a drive late in the time step is applied
