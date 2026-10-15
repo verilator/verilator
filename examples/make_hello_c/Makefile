@@ -32,10 +32,8 @@ else
   VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 endif
 
-# This example does not use the legacy vl_time_stamp API, so define
-# VL_TIME_CONTEXT to not compile in the vl_time_stamp using code, which
-# requires weak symbol support that some platforms (e.g. MSVC, cygwin) do
-# not have.
+# Disable legacy vl_time_stamp. Otherwise would require weak symbols
+# that some platforms (e.g. MSVC, cygwin) do not have.
 
 default:
 	@echo "-- Verilator hello-world simple example"
