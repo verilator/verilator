@@ -1838,10 +1838,8 @@ private:
                                 readCntRefp->cloneTree(false)};
             // Prepend to the sequence body to keep statement list structure valid.
             UASSERT_OBJ(!bodyp->name().empty(), bodyp, "Sequence body should be named");
-            AstNode* const origStmtsp = bodyp->stmtsp()->unlinkFrBackWithNext();
-            bodyp->addStmtsp(initialCntp);
-            initialCntp->addNextHere(assignp);
-            assignp->addNextHere(origStmtsp);
+            AstNode* const newStmtsp = AstNode::addNext<AstNode, AstNode>(initialCntp, assignp);
+            bodyp->prependStmtsp(newStmtsp);
 
             m_disableSeqIfp
                 = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, initialCntp, VAccess::READ},

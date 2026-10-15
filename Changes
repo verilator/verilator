@@ -213,6 +213,8 @@ Verilator 5.053 devel
 * Fix skipping coverage sampling completely when iff is false (#8681). [Marco Bartoli]
 * Fix internal error on sampled value function in cover sequence (#8682) (#8683). [Doha Nam]
 * Fix reordering assignments through handles or with intra-assignment timing (#8688). [Marco Bartoli]
+* Fix randomize() with on parameterized class target (#8689) (#8749). [Kristof Marien]
+* Fix $sscanf format widths (#8696).
 * Fix $readmem/$writemem descending order (#8698).
 * Fix function ports with disable by name (#8700).
 * Fix clocking blocks with multiple edges (#8709).
@@ -225,7 +227,12 @@ Verilator 5.053 devel
 * Fix bounded queue insert() ignoring size limit (#8724). [Yash Raj]
 * Fix pending NBA values declared inside processes (#8725). [Marco Bartoli]
 * Fix overly aggressive DFG peephole pattern (#8728). [Geza Lore, Testorrent USA, Inc.]
+* Fix crash on toggle coverage of property and sequence ports (#8745) (#8760). [Ashvin Vaidyanathan]
 * Fix internal error on increment/decrement in covergroup expressions (#8753). [Marco Bartoli]
+* Fix ++/-- not lowered after the first statement needing a temporary. [Geza Lore, Testorrent USA, Inc.]
+* Fix --x-assign unique skipping statements after the first. [Geza Lore, Testorrent USA, Inc.]
+* Fix internal error on procedural cycle delay with non-constant count (#8754). [Marco Bartoli]
+* Fix cycle delays with sequence or property arguments rejected as non-constant (#8759). [Marco Bartoli]
 
 
 Verilator 5.052 2026-09-05

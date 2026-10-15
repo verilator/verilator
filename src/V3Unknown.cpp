@@ -68,15 +68,9 @@ class UnknownVisitor final : public VNVisitor {
         if (m_ftaskp) {
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            if (m_ftaskp->stmtsp())
-                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
-            else
-                m_ftaskp->addStmtsp(varp);
+            m_ftaskp->prependStmtsp(varp);
         } else {
-            if (m_modp->stmtsp())
-                m_modp->stmtsp()->addHereThisAsNext(varp);
-            else
-                m_modp->addStmtsp(varp);
+            m_modp->prependStmtsp(varp);
         }
     }
 
@@ -382,7 +376,7 @@ class UnknownVisitor final : public VNVisitor {
                 // In the future, we should stuff the initp into the module's constructor.
                 // Must not unlink the statements, as one of them is being iterated
                 AstNode* const newStmtsp = AstNode::addNext<AstNode, AstNode>(newvarp, newinitp);
-                m_modp->stmtsp()->addHereThisAsNext(newStmtsp);
+                m_modp->prependStmtsp(newStmtsp);
                 UINFOTREE(9, newref1p, "", "_newref");
                 UINFOTREE(9, newvarp, "", "_newvar");
                 UINFOTREE(9, newinitp, "", "_newini");

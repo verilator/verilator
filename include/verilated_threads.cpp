@@ -110,12 +110,14 @@ void VlWorkerThread::wait() {
 }
 
 void VlWorkerThread::main() {
-    // Initialize thread_locals
-    Verilated::threadContextp(m_contextp);
     // One work item
     ExecRec work;
     // Wait for the first task without spinning, in case the thread is never actually used.
     dequeWork</* SpinWait: */ false>(&work);
+    // Initialize thread_locals once the thread is used. Receiving the task synchronizes with
+    // the thread that added it, and a thread that is never used must not touch the context,
+    // which may already be destructing when the shutdown task arrives.
+    if (work.m_fnp != shutdownTask) Verilated::threadContextp(m_contextp);
     // Loop until shutdown task is received
     while (VL_UNLIKELY(work.m_fnp != shutdownTask)) {
         work.m_fnp(work.m_selfp, work.m_evenCycle);
@@ -297,7 +299,36 @@ std::string VlThreadPool::numaAssign(VerilatedContext* contextp) {
 //=============================================================================
 // VlExecGraph
 
-void vl_invokeExecGraph(VlExecGraph& graph, VlSelfP selfp,
-                        const QData* /*triggersp*/) VL_MT_UNSAFE {
-    graph.dispatchp()(selfp);
+void vl_invokeExecGraph(VlExecGraph& graph, VlSelfP selfp, const QData* triggersp) VL_MT_UNSAFE {
+    // Sum the cost of the logic the set triggers guard, noting the trigger words with any trigger
+    // set. Run in parallel as soon as the pass is costly, or sets too many words to note.
+    constexpr size_t MAX_SET_WORDS = 16;
+    size_t setWords[MAX_SET_WORDS];
+    size_t nSetWords = 0;
+    uint64_t cost = 0;
+    for (size_t word = 0; word < graph.nTriggerWords(); ++word) {
+        if (!triggersp[word]) continue;
+        for (QData bits = triggersp[word]; bits;) {
+            const IData bit = VL_MOSTSETBITP1_Q(bits) - 1;
+            cost += graph.triggerCostsp()[word * VL_QUADSIZE + bit];
+            bits ^= VL_BIT_Q(bit);
+        }
+        if (cost > graph.serialCost() || nSetWords == MAX_SET_WORDS) {
+            graph.dispatchp()(selfp);
+            return;
+        }
+        setWords[nSetWords++] = word;
+    }
+    // Otherwise run on this thread the MTasks testing a set trigger, in their topological order.
+    // The others would do nothing.
+    const VlExecGraph::Vertex* const endp = graph.verticesp() + graph.nVertices();
+    for (const VlExecGraph::Vertex* vertexp = graph.verticesp(); vertexp != endp; ++vertexp) {
+        for (size_t i = 0; i < nSetWords; ++i) {
+            if (vertexp->m_maskp[setWords[i]] & triggersp[setWords[i]]) {
+                vertexp->m_fnp(selfp);
+                break;
+            }
+        }
+    }
+    Verilated::mtaskId(0);
 }

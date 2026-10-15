@@ -231,10 +231,7 @@ class VariableOrder final {
                 nodesp = AstNode::addNextNull(nodesp, varp->unlinkFrBack());
             }
         }
-        if (AstNode* const stmtsp = modp->stmtsp()) {
-            nodesp = AstNode::addNext(nodesp, stmtsp->unlinkFrBackWithNext());
-        }
-        modp->addStmtsp(nodesp);
+        modp->prependStmtsp(nodesp);
     }
 
 public:

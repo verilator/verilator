@@ -97,7 +97,13 @@ class EmitCExecGraph final : public EmitCFunc {
         puts(name + "__vertices, " + std::to_string(indices.size()) + ",\n");
         puts(edgesName + ", " + std::to_string(nEdges) + ",\n");
         puts(std::to_string(trigDtypep->elementsConst()) + ",\n");
-        puts("&" + funcNameProtect(nodep->runfuncp()) + "\n};\n");
+        iterateConst(nodep->triggerCostsp());
+        puts(".data(),\n");
+        puts("&" + funcNameProtect(nodep->runfuncp()) + ",\n");
+        // Profiling measures the parallel execution, so never run serially
+        const bool profiling = v3Global.opt.profExec() || v3Global.opt.profPgo();
+        puts(profiling ? "0" : "VL_THREADS_SERIAL_COST");
+        puts("\n};\n");
     }
 
 public:

@@ -1697,6 +1697,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_outputGroups = std::atoi(valp);
         if (m_outputGroups < -1) fl->v3error("--output-groups must be >= -1: " << valp);
     });
+    DECL_OPTION("-output-groups-size", CbVal, [this, fl](const char* valp) {
+        m_outputGroupsSize = std::atoll(valp);
+        if (m_outputGroupsSize < 0) fl->v3error("--output-groups-size must be >= 0: " << valp);
+    });
     DECL_OPTION("-output-split", Set, &m_outputSplit);
     DECL_OPTION("-output-split-cfuncs", CbVal, [this, fl](const char* valp) {
         m_outputSplitCFuncs = std::atoi(valp);

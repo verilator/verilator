@@ -11,10 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
+# Without --timing, the run-time library must build as C++14
 test.compile(make_top_shell=False,
              make_main=False,
              make_pli=True,
-             verilator_flags2=["--exe --vpi --no-l2name", test.pli_filename],
+             verilator_flags2=["--exe --vpi --no-l2name -CFLAGS -std=c++14", test.pli_filename],
              iv_flags2=["-g2005-sv -D USE_VPI_NOT_DPI"],
              v_flags2=["+define+USE_VPI_NOT_DPI +define+VERILATOR_COMMENTS"])
 

@@ -2519,6 +2519,13 @@ class VlTest:
         if is_logfile:
             l1o = []
             for line in l1s:
+                # Build progress and echoed Verilator commands contain unstable paths.
+                if (re.match(r'^g?make(?:\[\d+\])?: (?:Entering|Leaving) directory ', line)
+                        or re.match(
+                            r'''^(?:"(?:[^"\n]*[/\\])?verilator(?:_bin(?:_dbg)?)?"'''
+                            r"|'(?:[^'\n]*[/\\])?verilator(?:_bin(?:_dbg)?)?'"
+                            r'''|(?:[^\s"']*[/\\])?verilator(?:_bin(?:_dbg)?)?)[ \t]+-''', line)):
+                    continue
                 if (re.match(r'^- [^\n]+\n', line)  #
                         or re.match(r'^- [a-z.0-9]+:\d+:[^\n]+\n', line)
                         or re.match(r'^-node:', line)  #

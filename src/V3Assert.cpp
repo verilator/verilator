@@ -506,11 +506,7 @@ class AssertVisitor final : public VNVisitor {
         nodep->displayType(VDisplayType::DT_WRITE);
         // cppcheck-suppress nullPointer
         AstNodeExpr* const timenewp = new AstTime{nodep->fileline(), m_modp->timeunit()};
-        if (AstNodeExpr* const timesp = nodep->fmtp()->exprsp()) {
-            timesp->unlinkFrBackWithNext();
-            timenewp->addNext(timesp);
-        }
-        nodep->fmtp()->addExprsp(timenewp);
+        nodep->fmtp()->prependExprsp(timenewp);
         if (!nodep->fmtp()->scopeNamep() && nodep->fmtp()->formatScopeTracking()) {
             nodep->fmtp()->scopeNamep(new AstScopeName{nodep->fileline(), true});
         }
@@ -647,11 +643,7 @@ class AssertVisitor final : public VNVisitor {
         // Actually set the delayed value
         AstNodeExpr* const lhsp = new AstVarRef{flp, varp, VAccess::WRITE};
         AstAssignDly* const assignp = new AstAssignDly{flp, lhsp, exprp};
-        if (!alwaysp->stmtsp()) {
-            alwaysp->addStmtsp(assignp);
-        } else {
-            alwaysp->stmtsp()->addHereThisAsNext(assignp);
-        }
+        alwaysp->prependStmtsp(assignp);
         return varp;
     }
 
@@ -1031,9 +1023,9 @@ class AssertVisitor final : public VNVisitor {
             if (m_ftaskp) {
                 varp->funcLocal(true);
                 varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+                m_ftaskp->prependStmtsp(varp);
             } else {
-                m_modp->stmtsp()->addHereThisAsNext(varp);
+                m_modp->prependStmtsp(varp);
             }
             VIsCached::clearCacheTree();
         }
