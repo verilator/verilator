@@ -34,22 +34,28 @@ class VHierXmrPort final {
     const string m_refModule;  // Module the reference appears in
     const string m_port;  // Generated port name
     const string m_path;  // Dotted path of the signal it reads
+    const string m_inner;  // Path inside the block, empty when the reference runs out of it
     const int m_width;  // Width, established before V3Width from the declared type
     const bool m_signed;  // Whether the referenced signal is signed
 
 public:
-    VHierXmrPort(const string& refModule, const string& port, const string& path, int width,
-                 bool isSigned)
+    VHierXmrPort(const string& refModule, const string& port, const string& path,
+                 const string& inner, int width, bool isSigned)
         : m_refModule{refModule}
         , m_port{port}
         , m_path{path}
+        , m_inner{inner}
         , m_width{width}
         , m_signed{isSigned} {}
     string refModule() const { return m_refModule; }
     string port() const { return m_port; }
     string path() const { return m_path; }
+    string inner() const { return m_inner; }
     int width() const { return m_width; }
     bool isSigned() const { return m_signed; }
+    // A reference into the block reads a signal the block already has, so it
+    // leaves as an output; one out of the block arrives as an input.
+    bool isOutput() const { return !m_inner.empty(); }
 };
 
 class V3Control final {
@@ -75,7 +81,8 @@ public:
     static void addCoverageBlockOff(const string& module, const string& blockname);
     static void addHierWorkers(FileLine* fl, const string& model, int workers);
     static void addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
-                               const string& port, int width, bool isSigned, const string& path);
+                               const string& port, int width, bool isSigned, const string& path,
+                               const string& inner);
     static void addFsmRegisterWrapper(FileLine* fl, const string& module, const string& d,
                                       const string& q, const string& clock, const string& reset,
                                       const string& resetValue);

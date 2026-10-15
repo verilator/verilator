@@ -276,6 +276,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_FILE     "--file"
 %token<fl>              yVLT_D_FUNCTION "--function"
 %token<fl>              yVLT_D_HIER_DPI "--hier-dpi"
+%token<fl>              yVLT_D_INNER    "--inner"
 %token<fl>              yVLT_D_LEVELS   "--levels"
 %token<fl>              yVLT_D_LINES    "--lines"
 %token<fl>              yVLT_D_MATCH    "--match"
@@ -8509,11 +8510,19 @@ vltItem:
                         { V3Control::addHierWorkers($<fl>1, *$2, $3->toSInt()); }
         |       yVLT_HIER_XMR_PORT vltDModule vltDBlock vltDXmrPort vltDWidth vltDScope
                         { V3Control::addHierXmrPort($<fl>1, *$3, *$2, *$4, $5->toSInt(), false,
-                                                    *$6); }
+                                                    *$6, ""); }
         |       yVLT_HIER_XMR_PORT vltDModule vltDBlock vltDXmrPort vltDWidth yVLT_D_SIGNED
                     vltDScope
                         { V3Control::addHierXmrPort($<fl>1, *$3, *$2, *$4, $5->toSInt(), true,
-                                                    *$7); }
+                                                    *$7, ""); }
+        |       yVLT_HIER_XMR_PORT vltDModule vltDBlock vltDXmrPort vltDWidth vltDScope
+                    vltDInner
+                        { V3Control::addHierXmrPort($<fl>1, *$3, *$2, *$4, $5->toSInt(), false,
+                                                    *$6, *$7); }
+        |       yVLT_HIER_XMR_PORT vltDModule vltDBlock vltDXmrPort vltDWidth yVLT_D_SIGNED
+                    vltDScope vltDInner
+                        { V3Control::addHierXmrPort($<fl>1, *$3, *$2, *$4, $5->toSInt(), true,
+                                                    *$7, *$8); }
         |       yVLT_PARALLEL_CASE vltDFile
                         { V3Control::addCaseParallel(*$2, 0); }
         |       yVLT_PARALLEL_CASE vltDFile yVLT_D_LINES yaINTNUM
@@ -8615,6 +8624,10 @@ vltDModuleE<strp>:  // [--module <arg>]
                         { static string unit = "$unit"; $$ = &unit; }  // .vlt uses prettyName
         |       vltDModule
                         { $$ = $1; }
+        ;
+
+vltDInner<strp>:  // --inner <arg>
+                yVLT_D_INNER str                        { $$ = $2; }
         ;
 
 vltDScope<strp>:  // --scope <arg>

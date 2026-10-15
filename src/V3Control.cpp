@@ -849,8 +849,9 @@ public:
                               std::forward_as_tuple(workers, flp));
     }
     void addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
-                        const string& port, int width, bool isSigned, const string& path) {
-        m_hierXmrPorts[block].emplace_back(refModule, port, path, width, isSigned);
+                        const string& port, int width, bool isSigned, const string& path,
+                        const string& inner) {
+        m_hierXmrPorts[block].emplace_back(refModule, port, path, inner, width, isSigned);
         m_hierXmrPortNames[block].insert(port);
     }
     const std::vector<VHierXmrPort>* getHierXmrPorts(const string& module) const {
@@ -921,8 +922,10 @@ void V3Control::addHierWorkers(FileLine* fl, const string& model, int workers) {
 }
 
 void V3Control::addHierXmrPort(FileLine* fl, const string& block, const string& refModule,
-                               const string& port, int width, bool isSigned, const string& path) {
-    V3ControlResolver::s().addHierXmrPort(fl, block, refModule, port, width, isSigned, path);
+                               const string& port, int width, bool isSigned, const string& path,
+                               const string& inner) {
+    V3ControlResolver::s().addHierXmrPort(fl, block, refModule, port, width, isSigned, path,
+                                          inner);
 }
 
 const std::vector<VHierXmrPort>* V3Control::getHierXmrPorts(const string& module) {
