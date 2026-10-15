@@ -419,6 +419,7 @@ public:
     std::unordered_map<const AstVarScope*, int> m_readCount;  // Reads (RW counts as read)
     std::vector<CombBlock> m_combBlocks;  // Combo blocks, encounter order
     std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Its instances
+    std::unordered_map<const AstVarScope*, std::vector<AstVarRef*>> m_refsOf;  // Its refs
     // Every VarScope in tree-encounter order; iterated by the completeness floor.
     std::vector<AstVarScope*> m_vscOrder;
     // Bits of VPI candidates any read may reach
@@ -437,6 +438,7 @@ private:
     void visit(AstVarRef* nodep) override {
         checkPure(nodep);
         AstVarScope* const vscp = nodep->varScopep();
+        m_refsOf[vscp].push_back(nodep);
         if (!nodep->access().isReadOnly()) {
             if (m_writeCount[vscp]++ == 0) m_writtenOrder.push_back(vscp);
             if (m_blockp) {
@@ -2330,7 +2332,6 @@ private:
     // The lazy role is per variable, but storage is kept per instance: instances not kept move
     // to a twin with no role, which the optimiser is free to eliminate.
     void splitKeptInstances() {
-        bool split = false;
         for (AstVarScope* const vscp : m_gather.m_vscOrder) {
             AstVar* const varp = vscp->varp();
             const auto vit = m_gather.m_vscpsOf.find(varp);
@@ -2357,21 +2358,18 @@ private:
             twinp->vpiLazyRole(VVpiLazyRole::NONE);
             twinp->vpiLazyComb(VVpiLazyComb::NONE);
             varp->addNextHere(twinp);
+            // Refs cloned since the gather read only shadows or kept instances; see pinBoundary()
             for (AstVarScope* const instp : freed) {
                 m_ctx.m_noRow.emplace(instp->scopep()->name(), varp);
                 instp->varp(twinp);
+                for (AstVarRef* const refp : m_gather.m_refsOf[instp]) refp->varp(twinp);
             }
             const auto sit = m_shadowVarOfOrig.find(varp);
             if (sit != m_shadowVarOfOrig.end()) {
                 for (AstVarScope* const instp : vscps)
                     if (kept(instp)) m_ctx.m_noRow.emplace(instp->scopep()->name(), sit->second);
             }
-            split = true;
         }
-        if (!split) return;
-        v3Global.rootp()->foreach([](AstVarRef* refp) {
-            if (refp->varScopep()) refp->varp(refp->varScopep()->varp());
-        });
     }
 
     // A floor residual is one no classifier claimed, so no bail count records its shape.
