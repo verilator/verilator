@@ -1508,7 +1508,7 @@ class TaskVisitor final : public VNVisitor {
         // Find all assignment nodes in this task if it is a method.
         // If an Assign in the method refences a variable one scope above itself then pass it by
         // refence
-        if (varRefp && varRefp->varScopep() && methodp
+        if (VN_IS(nodep, VarRef) && varRefp->varScopep() && methodp
             && (VN_IS(methodp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(methodp->scopep()->aboveScopep()->modp(), Iface))) {
             if (varRefp->varScopep()->scopep()->name()
@@ -1516,13 +1516,18 @@ class TaskVisitor final : public VNVisitor {
                 if (!varRefp->varp()->user3SetOnce()) {
                     unsetUser3p.push_back(varRefp->varp());
                     AstVarRef* newVarRef
-                        = new AstVarRef(varRefp->fileline(), varRefp->varp(), varRefp->access());
+                        = new AstVarRef{varRefp->fileline(), varRefp->varp(), varRefp->access()};
                     varRefp->varp()->sigPublic(true);  // make sure this doesn't get optimized away
                     AstNodeVarRef* callFromp = VN_CAST(methodCallp->op1p(), NodeVarRef);
                     UASSERT_OBJ(callFromp, methodCallp,
                                 "Can not find where this call is coming from");
-                    newVarRef->varScopep(callFromp->varScopep());
-                    AstArg* argp = new AstArg(varRefp->fileline(), "", newVarRef);
+                    // If the scope is the tame keep it.
+                    if (callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
+                        newVarRef->varScopep(varRefp->varScopep());
+                    } else {
+                        newVarRef->varScopep(callFromp->varScopep());
+                    }
+                    AstArg* argp = new AstArg{varRefp->fileline(), "", newVarRef};
                     refp->addArgsp(argp);
                 }
             }
@@ -1542,7 +1547,7 @@ class TaskVisitor final : public VNVisitor {
         // Find all assignment nodes in this task if it is a method.
         // If an Assign in the method refences a variable one scope above itself then pass it by
         // refence
-        if (varRefp && varRefp->varScopep() && methodp
+        if (VN_IS(nodep, VarRef) && varRefp->varScopep() && methodp
             && (VN_IS(methodp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(methodp->scopep()->aboveScopep()->modp(), Iface))) {
             if (varRefp->varScopep()->scopep()->name()
@@ -1550,8 +1555,8 @@ class TaskVisitor final : public VNVisitor {
                 AstVar* newVarp;
                 // If we haven't emum over this node yet
                 if (!varRefp->varp()->user3SetOnce()) {
-                    newVarp = new AstVar(varRefp->fileline(), VVarType::PORT,
-                                         varRefp->name() + "_REF", varRefp->dtypep());
+                    newVarp = new AstVar{varRefp->fileline(), VVarType::PORT,
+                                         varRefp->name() + "_REF", varRefp->dtypep()};
                     newVarp->funcLocal(true);
                     newVarp->funcReturn(false);
                     newVarp->direction(VDirection::REF);
@@ -1569,7 +1574,7 @@ class TaskVisitor final : public VNVisitor {
                 // Replace all lhsp of this AssignNode with the varible that is passed by reference
                 AstVarRef* oldVarRefp = varRefp;
                 AstVarRef* newArgRefp
-                    = new AstVarRef(oldVarRefp->fileline(), newVarp, VAccess::WRITE);
+                    = new AstVarRef{oldVarRefp->fileline(), newVarp, VAccess::WRITE};
                 newArgRefp->varScopep(newvscp);
                 oldVarRefp->replaceWithKeepDType(newArgRefp);
                 VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
