@@ -94,6 +94,7 @@ struct VlCoverpoint::ValueData final {
     };
     struct Values final {
         std::vector<Range> m_ranges;  // Source intervals and patterns associated with this bin
+        uint32_t m_intervals = 0;  // Length of the merged interval prefix of normalized m_ranges
         bool m_transition = false;  // State-value exclusions must not alter this transition bin
     };
     // Outcome of searching a range for a value outside every exclusion
@@ -561,13 +562,15 @@ bool VlCoverpoint::ValueData::firstFrom(uint32_t bin, size_t& range, Value& valu
         assert(found);
         // A pattern clipped to a range may have no value left in it
         if (!less(source.m_hi, candidate)) {
-            // Normalized, a bin's ranges are disjoint intervals, then patterns, which may hold
-            // values of earlier ranges, so each value is given once
+            // Normalized, a bin's ranges are disjoint ordered intervals, then patterns, which may
+            // hold values of an interval or of an earlier pattern, so each value is given once
             const bool repeated
                 = !source.m_mask.empty()
-                  && std::any_of(
-                      values.m_ranges.data(), values.m_ranges.data() + range,
-                      [&](const Range& prior) { return contains(prior, view(candidate)); });
+                  && (interval(values.m_ranges, values.m_intervals, view(candidate))
+                      || std::any_of(values.m_ranges.data() + values.m_intervals,
+                                     values.m_ranges.data() + range, [&](const Range& prior) {
+                                         return contains(prior, view(candidate));
+                                     }));
             if (!repeated && (!excludes || !excluded(view(candidate)))) {
                 value = std::move(candidate);
                 return true;
@@ -720,7 +723,7 @@ void VlCoverpoint::valueFinalize() {
                                || namer.set() == VlCovBinKind::KIND_ILLEGAL;
         for (uint32_t bin = namer.base(); bin < namer.base() + namer.count(); ++bin) {
             ValueData::Values& values = data.m_values[bin];
-            data.normalize(values.m_ranges);
+            values.m_intervals = data.normalize(values.m_ranges);
             if (exclusion && !values.m_transition) {
                 data.m_exclusions.insert(data.m_exclusions.end(), values.m_ranges.begin(),
                                          values.m_ranges.end());

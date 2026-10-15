@@ -585,15 +585,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const AstConst* const constp = VN_CAST(countp, Const);
         if (!countp->dtypep()->skipRefp()->isIntegralOrPacked()) {
             countp->v3error(whatp << " must be integral (IEEE 1800-2023 " << clausep << ")");
+            return false;
         } else if (constp && (constp->num().isFourState() || constCount(constp) < 1)) {
             countp->v3error(whatp << " must be >= 1, got "
                                   << (constp->num().isFourState() ? constp->num().ascii(false)
                                                                   : constp->num().toDecimalS())
                                   << " (IEEE 1800-2023 " << clausep << ")");
-        } else {
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
     // The number of bins requested by a valid 'bins auto[N]', or 0

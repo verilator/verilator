@@ -235,7 +235,8 @@ module t;
       bins hi = {[2 : 3]};
     }
     nn: coverpoint nibble {
-      wildcard bins over = {4'b???1, 4'b1???};  // 12 values, each once: 1, 3, 5, 7, 8 to 15
+      // 12 values, each once, of an interval or an earlier pattern too: 1, 3, 5, 7, 8 to 15
+      wildcard bins over = {4'b???1, 4'b1???, 4'b?1?1};
       bins rest = {0, 2, 4, 6};
     }
     xx: cross aa, nn{
