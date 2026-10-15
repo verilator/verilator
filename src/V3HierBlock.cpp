@@ -682,7 +682,7 @@ static std::string innerPathOf(const XRefScan& scan, const AstNodeModule* fromp,
             for (size_t j = i + 1; j < parts.size(); ++j) inner += parts[j] + ".";
             return inner + name;
         }
-    }
+    }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
     return "";
 }
 
@@ -871,7 +871,7 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
             const auto vit = varsIn.find(modp);
             if (vit == varsIn.cend()) continue;
             for (const AstVar* const varp : vit->second) declared.emplace(varp->name(), modp);
-        }
+        }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
         XRefScan scan{blockp,
                       blockVtxp,
                       inBlock,
@@ -905,7 +905,7 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
             const auto vit = varToMod.find(xrefp->varp());
             if (vit == varToMod.cend() || !inBlock.exists(vit->second)) continue;
             collectInboundXRef(scan, refModp, xrefp);
-        }
+        }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
 
         if (scan.m_count) {
             UINFO(4, "HIER-XMR: block " << blockp->prettyNameQ() << " has " << scan.m_count
