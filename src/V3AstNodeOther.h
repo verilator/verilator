@@ -1881,7 +1881,7 @@ class AstScope final : public AstNode {
     // Parents: MODULE
     // Children: NODEBLOCK
     // @astgen op1 := varsp : List[AstVarScope]
-    // @astgen op2 := blocksp : List[AstNode] // Logic blocks/AstActive/AstCFunc
+    // @astgen op2 := blocksp : List[AstNode] // Logic blocks/AstActive/AstCFunc/AstScopeName
     // @astgen op3 := inlinesp : List[AstCellInlineScope] // VPI records of flattened scopes
     //
     // Below scope and cell are nullptr if top scope

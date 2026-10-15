@@ -3648,12 +3648,14 @@ void AstScopeName::dump(std::ostream& str) const {
     Super::dump(str);
     if (dpiExport()) str << " [DPIEX]";
     if (forFormat()) str << " [FMT]";
+    if (selfRelative()) str << " [SELFREL]";
     str << " scopeAttr=\"" << m_scopeAttr << "\"";
     str << " scopeEntr=\"" << m_scopeEntr << "\"";
 }
 void AstScopeName::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, dpiExport);
     dumpJsonBoolFuncIf(str, forFormat);
+    dumpJsonBoolFuncIf(str, selfRelative);
     dumpJsonStr(str, "scopeAttr", m_scopeAttr);
     dumpJsonStr(str, "scopeEntr", m_scopeEntr);
     dumpJsonGen(str);
