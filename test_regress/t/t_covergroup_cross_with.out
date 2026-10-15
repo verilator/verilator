@@ -98,6 +98,10 @@ t.cg_select.xx.negated [cross]: 4
 t.cg_select.xx.nested [cross]: 8
 t.cg_select.xx.one_item [cross]: 8
 t.cg_select.xx.sum_five [cross]: 4
+t.cg_skip.aa.lo: 32
+t.cg_skip.nn.mixed: 8
+t.cg_skip.nn.skipped [ignore]: 28
+t.cg_skip.xx.all [cross]: 4
 t.cg_transition.bb.hi: 2
 t.cg_transition.bb.lo: 2
 t.cg_transition.tt.one [ignore]: 2

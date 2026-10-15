@@ -275,6 +275,19 @@ module t;
     }
   endgroup
 
+  // An excluded interval skips values of several intervals and patterns of a bin at once
+  covergroup cg_skip;
+    aa: coverpoint a {bins lo = {[0 : 1]};}
+    nn: coverpoint nibble {
+      wildcard bins mixed = {0, 2, 4, 12, 4'b?001, 4'b01?0};  // 9, 12
+      ignore_bins skipped = {[0 : 6]};
+    }
+    xx: cross aa, nn{
+      bins all = xx with (nn > 6) matches 4;  // <lo,mixed>
+      bins over = xx with (nn > 6) matches 5;  // No bin tuple
+    }
+  endgroup
+
   // A filter of an embedded covergroup reads the enclosing object's members, and a count its
   // instance constants (IEEE 1800-2023 19.5)
   class Holder;
@@ -319,6 +332,7 @@ module t;
   cg_empty empty_inst = new;
   cg_alias alias_inst = new;
   cg_matches matches_inst = new;
+  cg_skip skip_inst = new;
   cg_count count_inst = new(12, 12);
   cg_count over_count_inst = new(13, 65'h1_0000_0000_0000_000c);
   cg_runtime low_inst;
@@ -390,6 +404,7 @@ module t;
         a = 2'(i);
         nibble = 4'(j);
         matches_inst.sample();
+        skip_inst.sample();
       end
     end
     for (int i = -8; i < 8; ++i) begin
@@ -423,6 +438,7 @@ module t;
     `checkr(empty_inst.get_inst_coverage(), 100.0);
     `checkr(alias_inst.get_inst_coverage(), 100.0);
     `checkr(matches_inst.get_inst_coverage(), 100.0);
+    `checkr(skip_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;
