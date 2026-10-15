@@ -711,24 +711,9 @@ class WidthVisitor final : public VNVisitor {
                     handled = true;
                 } else if (VN_IS(thenEnumDTypep, EnumDType)
                            && thenEnumDTypep->sameTree(elseDTypep->skipRefToEnump())) {
-                    // if enum is two-state we have to check condp() - because if it is
-                    // four-state the result must be four-state as well
-                    if (isAnyResultFourstate || !isCondpFourstate) {
-                        nodep->dtypep(thenEnumDTypep);
-                        handled = true;
-                    } else {
-                        // This is similar case to what happens with strings
-                        // So, to avoid cases where:
-                        // enum int {A, B} type_t;
-                        // logic'(foo) ? A : B
-                        // throws an ENUMVALUE error for this error is disabled for this expression
-                        // This is a result of how Verilator's type system works - to avoid such
-                        // situations Verilator would need to either treat everything as four-state
-                        // or separate idea of type and values domain - since four-state values are
-                        // casted to two-state only with explicit casts or with assignments
-                        nodep->fileline(new FileLine{nodep->fileline()});
-                        nodep->fileline()->warnOff(V3ErrorCode::ENUMVALUE, true);
-                    }
+                    // Preserve enum identity even when the condition can contain X or Z.
+                    nodep->dtypep(thenEnumDTypep);
+                    handled = true;
                 }
                 if (!handled) {
                     const int width = std::max(thenDTypep->width(), elseDTypep->width());
