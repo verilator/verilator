@@ -110,17 +110,18 @@ class C10b;
   endfunction
 endclass
 
-// A non-rand array indexed by a rand variable: buildElementwiseEqp can only
-// evaluate a non-rand operand once, at constraint-setup time, using the
-// index's pre-solve value -- the solver may later choose a different index,
-// so this can't be expanded correctly and must be rejected instead of
+// Same fields as t_constraint_array_neq_nonrand.v's frame_bothrand_randidx,
+// but only idx is rand, not cube: buildElementwiseEqp can only evaluate a
+// non-rand operand once, at constraint-setup time, using the index's
+// pre-solve value -- the solver may later choose a different index, so
+// this can't be expanded correctly and must be rejected instead of
 // silently selecting the wrong row.
 class C11;
   rand int idx;
-  bit [7:0] nra[2][2];
+  bit [7:0] cube[4][2];
   rand bit [7:0] probe[2];
-  constraint ci { idx inside {[0:1]}; }
-  constraint c { probe == nra[idx]; }
+  constraint ci { idx inside {[0:3]}; }
+  constraint c { probe == cube[idx]; }
 endclass
 
 // Same underlying problem reached through a member select instead of
