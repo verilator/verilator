@@ -57,6 +57,11 @@ t (vpiModule) t  vpiDefName=t
         mem_part (vpiReg) t.mem_part[2] 
         mem_part (vpiReg) t.mem_part[1] 
         mem_part (vpiReg) t.mem_part[0] 
+    mem_rev (vpiRegArray) t.mem_rev 
+        vpiReg:
+        mem_rev (vpiReg) t.mem_rev[0] 
+        mem_rev (vpiReg) t.mem_rev[1] 
+        mem_rev (vpiReg) t.mem_rev[2] 
     mixdep (vpiRegArray) t.mixdep 
         vpiReg:
         mixdep (vpiReg) t.mixdep[1][1] 
@@ -161,6 +166,9 @@ t.mem_part[3] = 0d vpiSize=8
 t.mem_part[2] = 0d vpiSize=8
 t.mem_part[1] = 0d vpiSize=8
 t.mem_part[0] = 27 vpiSize=8
+t.mem_rev[0] = 01 vpiSize=8
+t.mem_rev[1] = 00 vpiSize=8
+t.mem_rev[2] = 00 vpiSize=8
 t.mixdep[1][1] = ff vpiSize=8
 t.mixdep[1][0] = ff vpiSize=8
 t.mixdep[0][1] = 00 vpiSize=8
@@ -281,6 +289,9 @@ t.mem_chain[2] = 34
 t.mem_chain[1] = 33
 t.mem_chain[0] = 3c
 t.mem_part[0] = 1b
+t.mem_rev[0] = 34
+t.mem_rev[1] = 33
+t.mem_rev[2] = 3c
 t.mixdep[1][0] = c3
 t.mixdep[0][0] = 3c
 t.narrow = 0d
@@ -336,6 +347,9 @@ t.mem_chain[2] = 63
 t.mem_chain[1] = 62
 t.mem_chain[0] = 2b
 t.mem_part[0] = 0c
+t.mem_rev[0] = 63
+t.mem_rev[1] = 62
+t.mem_rev[2] = 2b
 t.mixdep[1][1] = 8b
 t.mixdep[1][0] = d4
 t.mixdep[0][1] = 74
@@ -398,6 +412,9 @@ t.mem_chain[2] = 66
 t.mem_chain[1] = 65
 t.mem_chain[0] = 5a
 t.mem_part[0] = 7d
+t.mem_rev[0] = 66
+t.mem_rev[1] = 65
+t.mem_rev[2] = 5a
 t.mixdep[1][1] = cc
 t.mixdep[1][0] = a5
 t.mixdep[0][1] = 33
@@ -462,6 +479,9 @@ t.mem_chain[2] = 01
 t.mem_chain[1] = 00
 t.mem_chain[0] = 00
 t.mem_part[0] = 27
+t.mem_rev[0] = 01
+t.mem_rev[1] = 00
+t.mem_rev[2] = 00
 t.mixdep[1][1] = ff
 t.mixdep[1][0] = ff
 t.mixdep[0][1] = 00

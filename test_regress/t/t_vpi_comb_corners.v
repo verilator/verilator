@@ -234,6 +234,9 @@ module t;
     mem_chain[1][7:4] = mem_chain[1][3:0] ^ b[3:0];
     mem_chain[2] = mem_chain[1] + 8'd1;
   end
+  // Opposite ranges slice into one continuous assign per element, all in one block
+  logic [7:0] mem_rev[2:0];
+  assign mem_rev = mem_chain;
   // verilator lint_on ALWCOMBORDER
 
   // A cycle between groups but not between bits; in encounter order it is acyclic.

@@ -1504,9 +1504,6 @@ private:
             // V3Active rewrote '<=' and V3Force lowered AssignForce; only blocking/cont remain.
             UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep,
                         "--vpi-lazy: unexpected assignment kind in a combinational block");
-            // cloneBody converts only top-level continuous assigns
-            UASSERT_OBJ(!VN_IS(nodep, AssignW) || VN_IS(nodep->abovep(), Always), nodep,
-                        "--vpi-lazy: nested continuous assign");
             // Only --timing keeps a delay this far, and such a block never terminates: untested.
             if (nodep->timingControlp()) {  // LCOV_EXCL_START
                 bail(Bail::UNSUPPORTED_STMT);
