@@ -94,6 +94,7 @@ struct VlCoverpoint::ValueData final {
     };
     struct Values final {
         std::vector<Range> m_ranges;  // Source intervals and patterns associated with this bin
+        uint32_t m_intervals = 0;  // Length of the merged interval prefix of normalized m_ranges
         bool m_transition = false;  // State-value exclusions must not alter this transition bin
     };
     // Outcome of searching a range for a value outside every exclusion
@@ -404,11 +405,32 @@ struct VlCoverpoint::ValueData final {
     }
     Search hasValue(uint32_t bin, const Range& range) const;
     Search intersects(uint32_t bin, const Range& filter) const;
-    // From 'value' of the range 'range' of a bin, advance them to the bin's first value there or
-    // after, not excluded unless of a transition bin; false if none
-    bool firstFrom(uint32_t bin, size_t& range, Value& value) const;
-    // Advance to the bin's next value, as firstFrom(); false after its last
-    bool nextValue(uint32_t bin, size_t& range, Value& value) const;
+    // A bin's values are given in value order by streams: one of its ordered intervals, and one
+    // per pattern after them, which may hold values of the intervals or other patterns.  Merged
+    // in a heap, the streams give each value once, without searching the bin's other ranges.
+    struct Stream final {
+        Value m_value;  // Next value
+        uint32_t m_range = 0;  // Range of m_value; the intervals' stream moves through them
+    };
+    using Streams = std::vector<Stream>;  // A heap, of the stream with the least value first
+    // Start the streams of a bin at its first value, at front(), not excluded unless of a
+    // transition bin; false if none
+    bool firstValue(uint32_t bin, Streams& streams) const;
+    // Advance to the bin's next value, as firstValue(); false after its last
+    bool nextValue(uint32_t bin, Streams& streams) const;
+    // Order the heap of streams
+    auto streamOrder() const {
+        return [this](const Stream& lhs, const Stream& rhs) {
+            return less(rhs.m_value, lhs.m_value);
+        };
+    }
+    // Advance a stream past 'last'; false once it has no value left
+    bool streamPast(uint32_t bin, Stream& stream, const Value& last) const;
+    // Advance each stream whose next value is not after 'last' past it
+    void streamsPast(uint32_t bin, Streams& streams, const Value& last) const;
+    // Advance the streams to their first value not excluded, unless of a transition bin; false
+    // if none
+    bool settle(uint32_t bin, Streams& streams) const;
     // At least the number of values of a bin before exclusions, saturated to 'cap'
     uint64_t binValueCount(uint32_t bin, uint64_t cap) const;
 };
@@ -549,46 +571,65 @@ VlCoverpoint::ValueData::Search VlCoverpoint::ValueData::intersects(uint32_t bin
     return result;
 }
 
-bool VlCoverpoint::ValueData::firstFrom(uint32_t bin, size_t& range, Value& value) const {
+bool VlCoverpoint::ValueData::streamPast(uint32_t bin, Stream& stream, const Value& last) const {
     const Values& values = m_values[bin];
-    const bool excludes = !values.m_transition && !m_exclusions.empty();
-    while (range < values.m_ranges.size()) {
-        const Range& source = values.m_ranges[range];
-        // 'value' is not after the range's last value, which is not after its pattern's last, so
-        // the pattern has a value at or after it
-        Value candidate;
-        const bool found VL_ATTR_UNUSED = patternAtLeast(source, value, candidate);
-        assert(found);
-        // A pattern clipped to a range may have no value left in it
-        if (!less(source.m_hi, candidate)) {
-            if (!excludes || !excluded(view(candidate))) {
-                value = std::move(candidate);
-                return true;
-            }
-            // Skip an interval of excluded values at once, else one excluded value
-            const Range* const intervalp
-                = interval(m_exclusions, m_regularExclusions, view(candidate));
-            const Value& last = intervalp ? intervalp->m_hi : candidate;
-            if (less(last, source.m_hi)) {
-                value = last;
-                increment(value);
-                continue;
-            }
+    while (true) {
+        const Range& range = values.m_ranges[stream.m_range];
+        if (less(last, range.m_hi)) {
+            Value next = last;  // Before the range's last value, so in order
+            increment(next);
+            if (less(next, range.m_lo)) next = range.m_lo;
+            // 'next' is not after the range's last value, which is not after its pattern's last,
+            // so the pattern has a value at or after it
+            const bool found VL_ATTR_UNUSED = patternAtLeast(range, next, stream.m_value);
+            assert(found);
+            // A pattern clipped to a range may have no value left in it
+            return !less(range.m_hi, stream.m_value);
         }
-        if (++range < values.m_ranges.size()) value = values.m_ranges[range].m_lo;
+        if (++stream.m_range >= values.m_intervals) return false;  // Of a pattern, or the last
+    }
+}
+
+void VlCoverpoint::ValueData::streamsPast(uint32_t bin, Streams& streams,
+                                          const Value& last) const {
+    while (!streams.empty() && !less(last, streams.front().m_value)) {
+        std::pop_heap(streams.begin(), streams.end(), streamOrder());
+        if (streamPast(bin, streams.back(), last)) {
+            std::push_heap(streams.begin(), streams.end(), streamOrder());
+        } else {
+            streams.pop_back();
+        }
+    }
+}
+
+bool VlCoverpoint::ValueData::settle(uint32_t bin, Streams& streams) const {
+    const bool excludes = !m_values[bin].m_transition && !m_exclusions.empty();
+    while (!streams.empty()) {
+        const Value& value = streams.front().m_value;
+        if (!excludes || !excluded(view(value))) return true;
+        // Skip an interval of excluded values at once, else one value
+        const Range* const intervalp = interval(m_exclusions, m_regularExclusions, view(value));
+        const Value last = intervalp ? intervalp->m_hi : value;  // A copy, as the streams advance
+        streamsPast(bin, streams, last);
     }
     return false;
 }
 
-bool VlCoverpoint::ValueData::nextValue(uint32_t bin, size_t& range, Value& value) const {
-    const std::vector<Range>& ranges = m_values[bin].m_ranges;
-    if (value == ranges[range].m_hi) {
-        if (++range == ranges.size()) return false;
-        value = ranges[range].m_lo;
-    } else {
-        increment(value);  // Below the range's last value, so in order
+bool VlCoverpoint::ValueData::firstValue(uint32_t bin, Streams& streams) const {
+    const Values& values = m_values[bin];
+    streams.clear();
+    if (values.m_intervals) streams.push_back({values.m_ranges.front().m_lo, 0});
+    for (uint32_t range = values.m_intervals; range < values.m_ranges.size(); ++range) {
+        streams.push_back({values.m_ranges[range].m_lo, range});
     }
-    return firstFrom(bin, range, value);
+    std::make_heap(streams.begin(), streams.end(), streamOrder());
+    return settle(bin, streams);
+}
+
+bool VlCoverpoint::ValueData::nextValue(uint32_t bin, Streams& streams) const {
+    const Value last = streams.front().m_value;  // A copy, as the streams advance
+    streamsPast(bin, streams, last);  // Each stream giving the value
+    return settle(bin, streams);
 }
 
 uint64_t VlCoverpoint::ValueData::binValueCount(uint32_t bin, uint64_t cap) const {
@@ -712,7 +753,7 @@ void VlCoverpoint::valueFinalize() {
                                || namer.set() == VlCovBinKind::KIND_ILLEGAL;
         for (uint32_t bin = namer.base(); bin < namer.base() + namer.count(); ++bin) {
             ValueData::Values& values = data.m_values[bin];
-            data.normalize(values.m_ranges);
+            values.m_intervals = data.normalize(values.m_ranges);
             if (exclusion && !values.m_transition) {
                 data.m_exclusions.insert(data.m_exclusions.end(), values.m_ranges.begin(),
                                          values.m_ranges.end());
@@ -1617,13 +1658,11 @@ class VlCoverCrossDyn::Layout final {
     // depends only on the bins of the dimensions it reads, the bin tuple's projection on them
     enum class Tested : uint8_t { UNKNOWN, ACCEPTED, REJECTED };
     struct Cursor final {  // The values of the bin of a dimension the filter reads
-        using Value = VlCoverpoint::ValueData::Value;
+        using Streams = VlCoverpoint::ValueData::Streams;
         uint32_t m_dim = 0;  // Dimension
         uint32_t m_bin = 0;  // Declared coverpoint bin
-        size_t m_range = 0;  // Index of the bin's range holding m_value
-        Value m_value;  // Value of the dimension in the value tuple
-        size_t m_firstRange = 0;  // Index of the bin's range holding m_first
-        Value m_first;  // First value of the bin
+        Streams m_streams;  // Of the bin, at the value of the dimension in the value tuple
+        Streams m_first;  // Of the bin, at its first value
     };
     std::vector<Cursor> m_cursors;  // Of the dimensions the filter reads
     std::vector<uint64_t> m_keyStrides;  // Projection index stride of each dimension read
@@ -1632,7 +1671,9 @@ class VlCoverCrossDyn::Layout final {
     uint64_t m_nextTuple = 0;  // Bin tuple from which to find the next candidate
     uint64_t m_key = 0;  // Projection index of the value tuples being evaluated
     bool m_active = false;  // Evaluating the value tuples of m_key
-    bool m_accepted = false;  // The filter is true for a value tuple of m_key
+    uint64_t m_matches = 0;  // Value tuples for which the filter is true to select; 0 for all
+    uint64_t m_satisfied = 0;  // Value tuples of m_key for which the filter is true
+    bool m_failed = false;  // The filter is false for a value tuple of m_key
     bool m_ignored = false;  // A filter of the bin being selected has too many value tuples
 
     static void setRange(Mask& mask, uint64_t first, uint64_t end) {
@@ -1705,14 +1746,8 @@ class VlCoverCrossDyn::Layout final {
     bool startTuple(uint64_t tuple) {
         for (Cursor& cursor : m_cursors) {
             cursor.m_bin = declaredBin(cursor.m_dim, tuple);
-            cursor.m_range = 0;
-            // A bin of a cross has a range (VlCoverpoint::liveBin())
-            cursor.m_value = values(cursor).m_values[cursor.m_bin].m_ranges.front().m_lo;
-            if (!values(cursor).firstFrom(cursor.m_bin, cursor.m_range, cursor.m_value)) {
-                return false;
-            }
-            cursor.m_firstRange = cursor.m_range;
-            cursor.m_first = cursor.m_value;
+            if (!values(cursor).firstValue(cursor.m_bin, cursor.m_streams)) return false;
+            cursor.m_first = cursor.m_streams;
         }
         return true;
     }
@@ -1720,10 +1755,9 @@ class VlCoverCrossDyn::Layout final {
     bool advance() {
         for (size_t i = m_cursors.size(); i > 0;) {
             Cursor& cursor = m_cursors[--i];
-            if (!values(cursor).nextValue(cursor.m_bin, cursor.m_range, cursor.m_value)) continue;
+            if (!values(cursor).nextValue(cursor.m_bin, cursor.m_streams)) continue;
             for (size_t later = i + 1; later < m_cursors.size(); ++later) {
-                m_cursors[later].m_range = m_cursors[later].m_firstRange;
-                m_cursors[later].m_value = m_cursors[later].m_first;
+                m_cursors[later].m_streams = m_cursors[later].m_first;
             }
             return true;
         }
@@ -1831,13 +1865,23 @@ void VlCoverCrossDyn::selectOr() {
     for (uint32_t word = 0; word < data.m_words; ++word) data.m_stack.back()[word] |= rhs[word];
 }
 
-void VlCoverCrossDyn::withBegin(std::initializer_list<uint32_t> dims, const char* namep,
-                                const char* filep, int line) {
+void VlCoverCrossDyn::withBegin(std::initializer_list<uint32_t> dims, QData matches, bool positive,
+                                const char* namep, const char* filep, int line) {
     static constexpr uint64_t LIMIT = VlCoverpoint::ValueData::CANDIDATE_LIMIT;
     static constexpr uint64_t CAP = LIMIT + 1;  // Saturated count, over the limit
     Layout& data = *m_layoutp;
     data.m_candidates = std::move(data.m_stack.back());
     data.m_stack.back().assign(data.m_words, 0);
+    data.m_matches = matches;
+    if (VL_UNLIKELY(!positive)) {
+        // An error, after which (+verilator+error+limit) the bin is ignored
+        VL_PRINTF_MT("%%Error: %s:%d: Coverage cross bin '%s' 'matches' count must be a positive"
+                     " integer (IEEE 1800-2023 19.6.1.2)\n",
+                     filep, line, namep);
+        VL_STOP_MT(filep, line, "");
+        data.m_ignored = true;
+        std::fill(data.m_candidates.begin(), data.m_candidates.end(), 0);
+    }
     data.m_cursors.clear();
     data.m_keyStrides.clear();
     uint64_t projections = 1;
@@ -1883,10 +1927,12 @@ void VlCoverCrossDyn::withBegin(std::initializer_list<uint32_t> dims, const char
 bool VlCoverCrossDyn::withNext() {
     Layout& data = *m_layoutp;
     if (data.m_active) {
-        // One value tuple for which the filter is true selects the bin tuples
-        if (!data.m_accepted && data.advance()) return true;
-        data.m_tested[data.m_key]
-            = data.m_accepted ? Layout::Tested::ACCEPTED : Layout::Tested::REJECTED;
+        // The filter decides the bin tuples once true for 'matches' value tuples, or for all,
+        // once false for one
+        const bool decided = data.m_matches ? data.m_satisfied >= data.m_matches : data.m_failed;
+        if (!decided && data.advance()) return true;
+        const bool accepted = data.m_matches ? decided : !data.m_failed;
+        data.m_tested[data.m_key] = accepted ? Layout::Tested::ACCEPTED : Layout::Tested::REJECTED;
         data.m_active = false;
     }
     for (uint64_t tuple; data.nextCandidate(tuple);) {
@@ -1897,22 +1943,28 @@ bool VlCoverCrossDyn::withNext() {
             continue;
         }
         data.m_active = true;
-        data.m_accepted = false;
+        data.m_satisfied = 0;
+        data.m_failed = false;
         return true;
     }
     return false;
 }
 
 QData VlCoverCrossDyn::withValue(uint32_t dim) const {
-    return VlCoverpoint::ValueData::number(m_layoutp->dimCursor(dim).m_value);
+    return VlCoverpoint::ValueData::number(m_layoutp->dimCursor(dim).m_streams.front().m_value);
 }
 
 void VlCoverCrossDyn::withValueW(uint32_t dim, WDataOutP valuep) const {
-    const VlCoverpoint::ValueData::Value& value = m_layoutp->dimCursor(dim).m_value;
+    const VlCoverpoint::ValueData::Value& value
+        = m_layoutp->dimCursor(dim).m_streams.front().m_value;
     std::copy(value.begin(), value.end(), valuep.datap());
 }
 
-void VlCoverCrossDyn::withTest(bool keep) { m_layoutp->m_accepted |= keep; }
+void VlCoverCrossDyn::withTest(bool keep) {
+    Layout& data = *m_layoutp;
+    data.m_satisfied += keep;
+    data.m_failed |= !keep;
+}
 
 void VlCoverCrossDyn::withEnd() {
     Layout& data = *m_layoutp;
@@ -1925,6 +1977,7 @@ void VlCoverCrossDyn::withEnd() {
     }
     Layout::Mask{}.swap(data.m_candidates);
     std::vector<Layout::Tested>{}.swap(data.m_tested);
+    data.m_cursors.clear();  // Releasing their streams
 }
 
 void VlCoverCrossDyn::selectBin(VlCovBinKind kind, const char* namep, const char* filep, int line,

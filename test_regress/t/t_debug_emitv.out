@@ -1007,6 +1007,13 @@ module Vt_debug_emitv_t;
                                               && (cp_y 
                                                   == 
                                                   'sh0)));
+            bins counted = (binsof(cp_x) with ((cp_x 
+                                                != 
+                                                'sh0)) matches 
+                            'sh2);
+            bins every = (cx_select with ((cp_y == 
+                                           'sh0)) matches 
+                          $);
             ignore_bins ignored = binsof(cp_x.x0) iff (
                                                        cg_sig[0]);
             illegal_bins forbidden = binsof(cp_y.y1);

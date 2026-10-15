@@ -975,6 +975,10 @@ class ConstVisitor final : public VNVisitor {
 
     // METHODS
 
+    // Return true if statements may be deleted. Until statics are lifted, a variable declared
+    // in a statement might be referenced from elsewhere (e.g. hierarchically).
+    static bool canDeleteStatements() { return v3Global.staticsLifted(); }
+
     void deleteVarScopesUnder(AstNode* subtreep) {
         if (!subtreep) return;
         if (!m_scopep) return;
@@ -1311,6 +1315,8 @@ class ConstVisitor final : public VNVisitor {
         // Could reduce cost with hash table, but seems unlikely to be worth cost
         if (truesp.size() > 4 || falsesp.size() > 4) return;
         if (!nodep->condp()->isPure()) return;
+        // A constant condition is folded by visit(AstNodeIf), once statements can be deleted
+        if (VN_IS(nodep->condp(), Const)) return;
         bool replaced = false;
         for (const AstNodeExpr* condp : truesp) {
             if (replaced) break;
@@ -1346,6 +1352,7 @@ class ConstVisitor final : public VNVisitor {
     void matchIfSameLast(AstNodeIf* nodep) {
         if (!nodep->thensp()) return;
         if (!nodep->elsesp()) return;
+        if (!canDeleteStatements()) return;
         // Iterate bodies in reverse
         AstNode* tp = nodep->thensp()->lastp();
         AstNode* ep = nodep->elsesp()->lastp();
@@ -3820,6 +3827,10 @@ class ConstVisitor final : public VNVisitor {
                     UINFO(4, "IF condition is X, retaining: " << nodep);
                     return;
                 }
+                if (!canDeleteStatements()) {
+                    UINFO(4, "IF retained until statics lifted: " << nodep);
+                    return;
+                }
 
                 // If we delete a branch that contains variable declarations, also delete the
                 // corresponding varscopes so we don't leave dangling AstVarScope::m_varp pointers.
@@ -3865,6 +3876,7 @@ class ConstVisitor final : public VNVisitor {
                 nodep->condp(new AstLogNot{condp->fileline(),
                                            condp});  // LogNot, as C++ optimization also possible
                 nodep->addThensp(elsesp);
+                nodep->branchPred(nodep->branchPred().invert());
             } else if (((VN_IS(nodep->condp(), Not) && nodep->condp()->width() == 1)
                         || VN_IS(nodep->condp(), LogNot))
                        && nodep->thensp() && nodep->elsesp()) {
@@ -4131,7 +4143,7 @@ class ConstVisitor final : public VNVisitor {
         m_hasJumpDelay = thisLoopHasJumpDelay || oldHasJumpDelay;
         // If the first statement always break, the loop is useless
         if (const AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {
-            if (testp->condp()->isZero()) {
+            if (testp->condp()->isZero() && (!testp->nextp() || canDeleteStatements())) {
                 nodep->v3warn(UNUSEDLOOP, "Loop condition is always false");
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
@@ -4168,7 +4180,8 @@ class ConstVisitor final : public VNVisitor {
 
         // If always breaks, subsequent statements are dead code, delete them
         if (nodep->condp()->isZero()) {
-            if (AstNode* const nextp = nodep->nextp()) {
+            AstNode* const nextp = nodep->nextp();
+            if (nextp && canDeleteStatements()) {
                 VL_DO_DANGLING(pushDeletep(nextp->unlinkFrBackWithNext()), nodep);
             }
             return;
@@ -4234,18 +4247,22 @@ class ConstVisitor final : public VNVisitor {
 
     void visit(AstJumpGo* nodep) override {
         // Any statements following the JumpGo (at this statement level) never execute, delete
-        if (nodep->nextp()) pushDeletep(nodep->nextp()->unlinkFrBackWithNext());
+        if (nodep->nextp() && canDeleteStatements()) {
+            pushDeletep(nodep->nextp()->unlinkFrBackWithNext());
+        }
 
         // JumpGo as last statement in target JumpBlock (including last in a last sub-list),
         // is a no-op, remove it.
-        for (AstNode* abovep = nodep->abovep(); abovep; abovep = abovep->abovep()) {
-            if (abovep == nodep->blockp()) {
-                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-                return;
+        if (!nodep->nextp()) {
+            for (AstNode* abovep = nodep->abovep(); abovep; abovep = abovep->abovep()) {
+                if (abovep == nodep->blockp()) {
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    return;
+                }
+                // Stop if not doing expensive, or if the above node is not the last in its list,
+                // ... or if it's not an 'if' TODO: it would be enough if it was not a branch.
+                if (!m_doExpensive || abovep->nextp() || !VN_IS(abovep, If)) break;
             }
-            // Stop if not doing expensive, or if the above node is not the last in its list,
-            // ... or if it's not an 'if' TODO: it would be enough if it was not a branch.
-            if (!m_doExpensive || abovep->nextp() || !VN_IS(abovep, If)) break;
         }
         // Mark JumpBlock as used
         m_usedJumpBlocks.emplace(nodep->blockp());

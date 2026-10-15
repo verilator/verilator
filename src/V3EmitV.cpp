@@ -417,10 +417,17 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(")");
     }
     void visit(AstCoverCrossWith* nodep) override {
+        // A selection with a count is filtered further only in parentheses
+        if (nodep->countp()) putfs(nodep, "(");
         iterateConstNull(nodep->selectp());
         putfs(nodep, " with (");
         iterateConst(nodep->filterp());
         puts(")");
+        if (nodep->countp()) {
+            puts(" matches ");
+            iterateConst(nodep->countp());
+            puts(")");
+        }
     }
     void visit(AstCoverpointRef* nodep) override {
         putfs(nodep, nodep->name());
