@@ -457,8 +457,9 @@ bool V3Inst::forEachDrivenLeaf(AstNodeExpr* nodep,
     // V3Width wraps a concatenated port connection in a single replication; V3Const
     // removes it before V3Inst, but V3AssertPre still sees it
     if (AstReplicate* const repp = VN_CAST(nodep, Replicate)) {
-        const AstConst* const countp = VN_CAST(repp->countp(), Const);
-        if (countp && countp->toUInt() == 1) return forEachDrivenLeaf(repp->srcp(), leaff);
+        if (VN_AS(repp->countp(), Const)->toUInt() == 1) {
+            return forEachDrivenLeaf(repp->srcp(), leaff);
+        }
     }
     return false;
 }
