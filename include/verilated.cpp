@@ -1509,11 +1509,11 @@ static void _vl_vsss_skipspace(FILE* fp, int& floc, const WDataInP fromp,
     }
 }
 static void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp, const std::string& fstr,
-                              std::back_insert_iterator<std::string> tmpp,
-                              const char* acceptp) VL_MT_SAFE {
-    // Read into tmp, consisting of characters from acceptp list
+                              std::back_insert_iterator<std::string> tmpp, const char* acceptp,
+                              unsigned maxWidth) VL_MT_SAFE {
+    // Read into tmp, consisting of characters from acceptp list, at most maxWidth (0 = no limit)
     auto cp = tmpp;
-    while (true) {
+    for (unsigned count = 0; !maxWidth || count < maxWidth; ++count) {
         int c = _vl_vsss_peek(fp, floc, fromp, fstr);
         if (c == EOF || std::isspace(c)) break;
         if (acceptp && nullptr == std::strchr(acceptp, c)) break;  // String - allow anything
@@ -1571,6 +1571,8 @@ void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, si
     }
 }
 
+static constexpr unsigned MAX_SCAN_WIDTH = 100000000;  // Larger field widths are not limited
+
 IData _vl_vsscanf(FILE* fp,  // If a fscanf
                   int fbits, const WDataInP fromp,  // Else if a sscanf
                   const std::string& fstr,  // if a sscanf to string
@@ -1583,6 +1585,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     IData got = 0;
     bool inPct = false;
     bool inIgnore = false;
+    unsigned width = 0;  // Maximum field width of the current conversion, 0 = no limit
     int argn = 0;
 
     char formatAttr = '\0';  // Fetched format for _next_ argument
@@ -1610,6 +1613,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
         if (!inPct && pos[0] == '%') {
             inPct = true;
             inIgnore = false;
+            width = 0;
         } else if (!inPct && std::isspace(pos[0])) {  // Format spaces
             while (std::isspace(pos[1])) ++pos;
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
@@ -1639,6 +1643,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             case '7':  // FALLTHRU
             case '8':  // FALLTHRU
             case '9': {
+                // Maximum field width, saturating as a very large width means no limit
+                if (width < MAX_SCAN_WIDTH) width = width * 10 + (fmt - '0');
                 inPct = true;
                 break;
             }
@@ -1680,7 +1686,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 case 's': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
-                                      std::back_insert_iterator<std::string>{t_tmp}, nullptr);
+                                      std::back_insert_iterator<std::string>{t_tmp}, nullptr,
+                                      width);
                     if (!t_tmp[0]) goto done;
                     int lpos = (static_cast<int>(t_tmp.size())) - 1;
                     int lsb = 0;
@@ -1694,7 +1701,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "0123456789+-xXzZ?_");
+                                      "0123456789+-xXzZ?_", width);
                     t_tmp.erase(std::remove(t_tmp.begin(), t_tmp.end(), '_'), t_tmp.end());
                     if (t_tmp.empty()) goto done;
                     if (formatAttr == VL_VFORMATATTR_SIGNED) {
@@ -1714,7 +1721,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "+-.0123456789eE");
+                                      "+-.0123456789eE", width);
                     if (!t_tmp[0]) goto done;
                     union {
                         double r;
@@ -1729,7 +1736,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "+-.0123456789eE");
+                                      "+-.0123456789eE", width);
                     if (!t_tmp[0]) goto done;
                     // Timeunit was read earlier from up-front arguments
                     const int userUnits = Verilated::threadContextp()->impp()->timeFormatUnits();
@@ -1742,7 +1749,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 case 'b': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
-                                      std::back_insert_iterator<std::string>{t_tmp}, "01xXzZ?_");
+                                      std::back_insert_iterator<std::string>{t_tmp}, "01xXzZ?_",
+                                      width);
                     if (!t_tmp[0]) goto done;
                     _vl_vsss_based(owp, obits, 1, t_tmp.c_str(), 0, t_tmp.size());
                     break;
@@ -1751,7 +1759,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "01234567xXzZ?_");
+                                      "01234567xXzZ?_", width);
                     if (!t_tmp[0]) goto done;
                     _vl_vsss_based(owp, obits, 3, t_tmp.c_str(), 0, t_tmp.size());
                     break;
@@ -1761,7 +1769,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "0123456789abcdefABCDEFxXzZ?_");
+                                      "0123456789abcdefABCDEFxXzZ?_", width);
                     if (!t_tmp[0]) goto done;
                     _vl_vsss_based(owp, obits, 4, t_tmp.c_str(), 0, t_tmp.size());
                     break;
@@ -3807,28 +3815,33 @@ const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
     return &(impp()->m_impdatap->m_nameMap);
 }
 
-void VerilatedContextImp::ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE {
+const VerilatedIfaceRef*
+VerilatedContextImp::ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE {
     // Slow ok - called once/interface-reference at construction
     const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
-    m_impdatap->m_ifaceRefMap.emplace(ifaceRef.fullname(), ifaceRef);
+    const auto it = m_impdatap->m_ifaceRefMap.emplace(ifaceRef.fullname(), ifaceRef);
+    return &it->second;
 }
 void VerilatedContextImp::ifaceRefErase(const std::string& fullname,
                                         const VerilatedScope* scopep) VL_MT_SAFE {
     // Slow ok - called once/interface-reference at destruction
     const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
-    const auto it = m_impdatap->m_ifaceRefMap.find(fullname);
-    // Models sharing an instance name collide on the key; only erase our own,
-    // so tearing one down leaves another's live reference registered
-    if (it != m_impdatap->m_ifaceRefMap.end() && it->second.scopep() == scopep) {
-        m_impdatap->m_ifaceRefMap.erase(it);
+    const auto range = m_impdatap->m_ifaceRefMap.equal_range(fullname);
+    // Each model owns its entries, even when instance names collide.
+    for (auto it = range.first; it != range.second; ++it) {
+        if (it->second.scopep() == scopep) {
+            m_impdatap->m_ifaceRefMap.erase(it);
+            break;
+        }
     }
 }
 const VerilatedIfaceRef*
 VerilatedContext::ifaceRefFind(const char* namep) const VL_MT_SAFE_POSTINIT {
     // Thread safe only assuming this is called only after model construction completed
     const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
-    const auto& it = m_impdatap->m_ifaceRefMap.find(namep);
-    if (VL_UNLIKELY(it == m_impdatap->m_ifaceRefMap.end())) return nullptr;
+    // Keep name lookup deterministic when live models share an instance name.
+    const auto it = m_impdatap->m_ifaceRefMap.lower_bound(namep);
+    if (VL_UNLIKELY(it == m_impdatap->m_ifaceRefMap.end() || it->first != namep)) return nullptr;
     return &it->second;
 }
 
@@ -4244,7 +4257,16 @@ VerilatedScope::~VerilatedScope() {
     VL_DO_DANGLING(delete[] m_namep, m_namep);
     VL_DO_DANGLING(delete[] m_callbacksp, m_callbacksp);
     VL_DO_DANGLING(delete m_varsp, m_varsp);
+    VL_DO_DANGLING(delete m_ifaceRefsp, m_ifaceRefsp);
     VL_DEBUG_IFDEF(m_funcnumMax = 0;);
+}
+
+void VerilatedScope::ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE {
+    // Slowpath - called once/scope*reference at construction
+    // Appended in table order; the emitter sorts the table by path, so VPI
+    // iteration is deterministic and sorted
+    if (VL_UNLIKELY(!m_ifaceRefsp)) m_ifaceRefsp = new std::vector<const VerilatedIfaceRef*>;
+    m_ifaceRefsp->emplace_back(ifaceRefp);
 }
 
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
@@ -4352,6 +4374,11 @@ static std::string vl_ifaceRefFullname(const VerilatedSyms* symsp, const char* s
     return out;
 }
 
+static VerilatedScope* vl_ifaceRefParentp(uint8_t* basep, const VlIfaceRefTableEntry& e) {
+    if (e.parentPtrOffset == VL_IFACEREF_NO_PARENT) return nullptr;
+    return *reinterpret_cast<VerilatedScope**>(basep + e.parentPtrOffset);
+}
+
 void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
                                               VerilatedSyms* symsp) VL_MT_UNSAFE {
     // Use the model's own context; at destruction threadContextp() may be another's
@@ -4361,8 +4388,14 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        impp->ifaceRefInsert(
-            VerilatedIfaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp), e.modportp});
+        const VerilatedIfaceRef ifaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp),
+                                         e.modportp};
+        const VerilatedIfaceRef* const refp = impp->ifaceRefInsert(ifaceRef);
+        // Map nodes remain stable until this model's teardown. The scope only owns
+        // the pointer vector; destroying it does not dereference the erased entries.
+        if (VerilatedScope* const parentp = vl_ifaceRefParentp(base, e)) {
+            parentp->ifaceRefInsert(refp);
+        }
     }
 }
 

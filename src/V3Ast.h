@@ -559,6 +559,11 @@ protected:
     void addOp3p(AstNode* newp);  // Append newp to end of op3
     void addOp4p(AstNode* newp);  // Append newp to end of op4
 
+    void prependOp1p(AstNode* newp);  // Prepend newp to front of op1
+    void prependOp2p(AstNode* newp);  // Prepend newp to front of op2
+    void prependOp3p(AstNode* newp);  // Prepend newp to front of op3
+    void prependOp4p(AstNode* newp);  // Prepend newp to front of op4
+
     // clang-format off
     void setNOp1p(AstNode* newp) { if (newp) setOp1p(newp); }
     void setNOp2p(AstNode* newp) { if (newp) setOp2p(newp); }
@@ -569,6 +574,11 @@ protected:
     void addNOp2p(AstNode* newp) { if (newp) addOp2p(newp); }
     void addNOp3p(AstNode* newp) { if (newp) addOp3p(newp); }
     void addNOp4p(AstNode* newp) { if (newp) addOp4p(newp); }
+
+    void prependNOp1p(AstNode* newp) { if (newp) prependOp1p(newp); }
+    void prependNOp2p(AstNode* newp) { if (newp) prependOp2p(newp); }
+    void prependNOp3p(AstNode* newp) { if (newp) prependOp3p(newp); }
+    void prependNOp4p(AstNode* newp) { if (newp) prependOp4p(newp); }
     // clang-format on
 
     void clonep(AstNode* nodep) {
@@ -822,30 +832,59 @@ public:
     void dtypeSetLogicSized(int width, VSigning numeric) {
         dtypep(findLogicDType(width, width, numeric));  // Since sized, widthMin is width
     }
+    void dtypeSetLogic2StateUnsized(int width, int widthMin, VSigning numeric) {
+        dtypep(findLogic2StateDType(width, widthMin, numeric));
+    }
+    void dtypeSetLogic2StateSized(int width, VSigning numeric) {
+        dtypep(findLogic2StateDType(width, width, numeric));  // Since sized, widthMin is width
+    }
+    void dtypeSetBitOrLogicUnsized(int width, int widthMin, VSigning numeric, bool isFourstate) {
+        dtypep(findBitOrLogicDType(width, widthMin, numeric, isFourstate));
+    }
+    void dtypeSetBitOrLogicSized(int width, VSigning numeric, bool isFourstate) {
+        dtypep(findBitOrLogicDType(width, width, numeric,
+                                   isFourstate));  // Since sized, widthMin is width
+    }
     void dtypeSetBit() { dtypep(findBitDType()); }
     void dtypeSetLogic() { dtypep(findLogicDType()); }
+    void dtypeSetLogic2State() { dtypep(findLogic2StateDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
     void dtypeSetInt() { dtypep(findIntDType()); }
     void dtypeSetInteger() { dtypep(findIntegerDType()); }
-    // TODO: add a type to handle 4-state integers with 2-state domain
-    void dtypeSetInteger2State() { dtypep(findIntegerDType()); }
+    void dtypeSetInteger2State() { dtypep(findInteger2StateDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
+    void dtypeSetTime() { dtypep(findTimeDType()); }
+    void dtypeSetTime2State() { dtypep(findTime2StateDType()); }
     void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
     void dtypeSetStream() { dtypep(findStreamDType()); }
     void dtypeSetVoid() { dtypep(findVoidDType()); }
+    void dtypeSetBitOrLogic(bool isFourstate) {
+        dtypep(isFourstate ? findLogicDType() : findBitDType());
+    }
 
     // Data type locators
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
     AstNodeDType* findLogicDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
+    AstNodeDType* findNullDType() const { return findBasicDType(VBasicDTypeKwd::NULLTYPE); }
+    AstNodeDType* findLogic2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::LOGIC2STATE);
+    }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
     AstNodeDType* findIntegerDType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
+    AstNodeDType* findInteger2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::INTEGER2STATE);
+    }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }
     AstNodeDType* findSigned8DType() const { return findBasicDType(VBasicDTypeKwd::BYTE); }
     AstNodeDType* findUInt32DType() const { return findBasicDType(VBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() const { return findBasicDType(VBasicDTypeKwd::UINT64); }
+    AstNodeDType* findTimeDType() const { return findBasicDType(VBasicDTypeKwd::TIME); }
+    AstNodeDType* findTime2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::TIME2STATE);
+    }
     AstNodeDType* findCHandleDType() const { return findBasicDType(VBasicDTypeKwd::CHANDLE); }
     AstNodeDType* findConstraintRefDType() const;
     AstNodeDType* findEmptyQueueDType() const;
@@ -854,10 +893,17 @@ public:
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findLogic2StateDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findBitOrLogicDType(int width, int widthMin, VSigning numeric,
                                       bool isFourstate) const {
         return isFourstate ? findLogicDType(width, widthMin, numeric)
                            : findBitDType(width, widthMin, numeric);
+    }
+    AstNodeDType* findBitOrLogicRangeDType(const VNumRange& range, const int widthMin,
+                                           const VSigning numeric,
+                                           const bool isFourstate) const VL_MT_STABLE {
+        return isFourstate ? findLogicRangeDType(range, widthMin, numeric)
+                           : findBitRangeDType(range, widthMin, numeric);
     }
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
                                       VSigning numeric) const VL_MT_STABLE;

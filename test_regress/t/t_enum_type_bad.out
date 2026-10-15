@@ -19,7 +19,7 @@
                                           : ... Suggest use enum's mnemonic, or static cast
    64 |     o = e_t'(1);   
       |            ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:66:11: Implicit conversion to enum 'enum t.e_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:66:11: Implicit conversion to enum 'enum t.e_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
    66 |     e = e + 1;   
@@ -45,7 +45,7 @@
       |       ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
-%Error-ENUMVALUE: t/t_enum_type_bad.v:69:11: Implicit conversion to enum 'enum t.o_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:69:11: Implicit conversion to enum 'enum t.o_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
    69 |     o = e + 1;   
@@ -65,7 +65,7 @@
                                           : ... Suggest use enum's mnemonic, or static cast
    70 |     e = o_t'(e);   
       |            ^
-%Error-ENUMVALUE: t/t_enum_type_bad.v:71:17: Implicit conversion to enum 'enum t.e_t' from 'logic[31:0]' (IEEE 1800-2023 6.19.3)
+%Error-ENUMVALUE: t/t_enum_type_bad.v:71:17: Implicit conversion to enum 'enum t.e_t' from 'bit[31:0]' (IEEE 1800-2023 6.19.3)
                                            : ... note: In instance 't'
                                           : ... Suggest use enum's mnemonic, or static cast
    71 |     e = e_t'(1) + 1;   

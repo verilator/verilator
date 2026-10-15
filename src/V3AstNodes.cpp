@@ -659,7 +659,7 @@ void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int 
 }
 string AstBasicDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
-    os << keyword().ascii();
+    os << keyword().typeName();
     // In full, as for $typename, with signing other than the default (IEEE 1800-2023 20.6.1)
     if (full && keyword().isIntNumeric() && isSigned() != keyword().isSigned()) {
         os << (isSigned() ? " signed" : " unsigned");
@@ -679,12 +679,7 @@ bool AstBasicDType::sameNode(const AstNode* samep) const {
 bool AstBasicDType::similarDTypeNode(const AstNodeDType* samep) const {
     if (sameNode(samep)) return true;
     const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
-    if (!(m.m_keyword == sp->m.m_keyword
-          || (m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT
-              && sp->m.m_keyword == VBasicDTypeKwd::LOGIC)
-          || (m.m_keyword == VBasicDTypeKwd::LOGIC
-              && sp->m.m_keyword == VBasicDTypeKwd::LOGIC_IMPLICIT)))
-        return false;
+    if (!m.m_keyword.isSameish(sp->m.m_keyword)) return false;
     // IEEE 1800-2023 6.22.2: equivalent by bit width, not range direction
     if (m.m_nrange.ranged() != sp->m.m_nrange.ranged()) return false;
     if (m.m_nrange.elements() != sp->m.m_nrange.elements()) return false;
@@ -1928,10 +1923,12 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
 }
 void AstIntfRef::dump(std::ostream& str) const {  // LCOV_EXCL_START
     Super::dump(str);
+    if (parentName() != "") str << " parent=" << parentName();
     if (baseName() != "") str << " base=" << baseName();
     if (modportName() != "") str << " mp=" << modportName();
 }  // LCOV_EXCL_STOP
 void AstIntfRef::dumpJson(std::ostream& str) const {
+    dumpJsonStrFunc(str, parentName);
     dumpJsonStrFunc(str, baseName);
     dumpJsonStrFunc(str, modportName);
     dumpJsonGen(str);
@@ -4519,7 +4516,9 @@ string AstVar::vlEnumDir(bool forMember) const {
     if (isContinuously()) out += "|VLVF_CONTINUOUSLY";
     //
     if (const AstBasicDType* const bdtypep = basicp()) {
-        if (bdtypep->keyword().isDpiCLayout()) out += "|VLVF_DPI_CLAY";
+        if (bdtypep->keyword().isDpiCLayout() || (isDpiOpenArray() && bdtypep->isDpiCLayout())) {
+            out += "|VLVF_DPI_CLAY";
+        }
     }
     //
     if (dtypep()->skipRefp()->isSigned() && !forMember) out += "|VLVF_SIGNED";

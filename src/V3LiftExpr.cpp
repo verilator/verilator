@@ -138,10 +138,10 @@ class LiftExprVisitor final : public VNVisitor {
 
         if (m_ftaskp) {
             varp->funcLocal(true);
-            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            m_ftaskp->prependStmtsp(varp);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         } else {
-            m_modp->stmtsp()->addHereThisAsNext(varp);
+            m_modp->prependStmtsp(varp);
             // 'automatic' on a variable inside a class actually means 'member'
             varp->lifetime(VN_IS(m_modp, Class) ? VLifetime::STATIC_EXPLICIT
                                                 : VLifetime::AUTOMATIC_EXPLICIT);

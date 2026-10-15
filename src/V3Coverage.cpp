@@ -833,9 +833,9 @@ class CoverageVisitor final : public VNVisitor {
                         pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
-                            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+                            m_ftaskp->prependStmtsp(varp);
                         } else {
-                            m_modp->stmtsp()->addHereThisAsNext(varp);
+                            m_modp->prependStmtsp(varp);
                         }
                         VNRelinker relinkHandle;
                         frefp->unlinkFrBack(&relinkHandle);
@@ -1117,12 +1117,16 @@ class CoverageVisitor final : public VNVisitor {
     // VISITORS - BOTH
     void visit(AstProperty* nodep) override {
         VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
         m_state.m_on = false;
+        m_inToggleOff = true;
         iterateChildren(nodep);
     }
     void visit(AstSequence* nodep) override {
         VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
         m_state.m_on = false;
+        m_inToggleOff = true;
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {

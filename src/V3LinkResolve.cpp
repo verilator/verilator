@@ -142,11 +142,7 @@ class LinkResolveVisitor final : public VNVisitor {
                 fvarp->fileline(), new AstVarRef{fvarp->fileline(), fvarp, VAccess::WRITE},
                 new AstCReset{fvarp->fileline(), fvarp, false}};
             fvarp->noCReset(true);
-            if (nodep->stmtsp()) {
-                nodep->stmtsp()->addHereThisAsNext(crstp);
-            } else {
-                nodep->addStmtsp(crstp);
-            }
+            nodep->prependStmtsp(crstp);
         }
         iterateChildren(nodep);
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});

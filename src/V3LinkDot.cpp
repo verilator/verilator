@@ -3276,7 +3276,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         string m_dotText;  // String of dotted names found in below parseref
         DotStates() { init(nullptr); }
         ~DotStates() = default;
-        void init(VSymEnt* curSymp) {
+        void init(VSymEnt* curSymp, bool unresolvedClass = false) {
             m_dotPos = DP_NONE;
             m_dotSymp = curSymp;
             m_dotp = nullptr;
@@ -3284,7 +3284,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_dotErr = false;
             m_dotText = "";
             m_unresolvedCell = false;
-            m_unresolvedClass = false;
+            m_unresolvedClass = unresolvedClass;
             m_unresolvedGenericIface = false;
             m_genBlk = false;
             m_unlinkedScopep = nullptr;
@@ -3615,6 +3615,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
             classSymp = classSymp->parentp();
         }
         return classSymp;
+    }
+    // 'randomize() with' target class not yet specialized; defer to post-V3Param pass
+    bool randTargetUnresolved() const {
+        return m_statep->forPrimary() && m_currentWithp && m_randMethodCallp && !m_randSymp;
     }
     void importDerivedClass(AstClass* derivedClassp, VSymEnt* baseSymp, AstClass* baseClassp) {
         // Also used for standard 'extends' from a base class
@@ -4135,7 +4139,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         {
             if (start) {  // Starting dot sequence
                 UINFOTREE(9, nodep, "", "dot-in");
-                m_ds.init(m_curSymp);  // Start from current point
+                // Keep deferral from visit(AstMethodCall) for unspecialized rand target
+                m_ds.init(m_curSymp, m_ds.m_unresolvedClass && randTargetUnresolved());
             }
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_FIRST;
@@ -4145,7 +4150,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
                 if (m_randSymp && m_currentWithp) classSymp = m_randSymp;
-                if (!classSymp) {
+                if (!classSymp && randTargetUnresolved()) {
+                    // Bind 'this' in post-V3Param pass
+                } else if (!classSymp) {
                     nodep->v3error("'this' used outside class (IEEE 1800-2023 8.11)");
                     m_ds.m_dotErr = true;
                 } else {
