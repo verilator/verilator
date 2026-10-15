@@ -425,7 +425,7 @@ class TaskVisitor final : public VNVisitor {
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
     AstNodeModule* m_modp = nullptr;  // Current module
-    
+
     AstNodeCCall* m_nonStaticCCall;
     AstNodeFTaskRef* m_nonInlinedFTaskRef;
 
@@ -812,16 +812,14 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // If this is a static method we need to check the scope of the VarRefs
-        if(cfuncp->isMethod() && !refp->taskp()->isStatic()){
+        if (cfuncp->isMethod() && !refp->taskp()->isStatic()) {
             m_nonInlinedFTaskRef = refp;
             std::vector<AstNode*> unsetUser3p;
             methodCallArgsRefs(refp->taskp()->op3p(), cfuncp, ccallp, refp, unsetUser3p);
             m_nonInlinedFTaskRef = nullptr;
             m_nonStaticCCall = nullptr;
             // Reset the user3p
-            for(auto unset : unsetUser3p){
-                unset->user3p(nullptr);
-            }
+            for (auto unset : unsetUser3p) { unset->user3p(nullptr); }
         }
 
         // First argument is symbol table, then output if a function
@@ -1451,19 +1449,26 @@ class TaskVisitor final : public VNVisitor {
         return dpiExportTriggerp;
     }
 
-    void methodCallArgsRefs(AstNode* nodep, AstCFunc* methodp, AstNodeCCall* methodCallp, AstNodeFTaskRef* refp, std::vector<AstNode*>& unsetUser3p) {
+    void methodCallArgsRefs(AstNode* nodep, AstCFunc* methodp, AstNodeCCall* methodCallp,
+                            AstNodeFTaskRef* refp, std::vector<AstNode*>& unsetUser3p) {
         if (!nodep) return;
         AstVarRef* varRefp = VN_CAST(nodep, VarRef);
         // Find all assignment nodes in this task if it is a method.
-        // If an Assign in the method refences a variable one scope above itself then pass it by refence
-        if (varRefp && varRefp->varScopep() && methodp && (VN_IS(methodp->scopep()->aboveScopep()->modp(), Module) || VN_IS(methodp->scopep()->aboveScopep()->modp(), Iface)) ) {
-            if(varRefp->varScopep()->scopep()->name() == methodp->scopep()->aboveScopep()->name()){
-                if(!varRefp->varp()->user3SetOnce()){
+        // If an Assign in the method refences a variable one scope above itself then pass it by
+        // refence
+        if (varRefp && varRefp->varScopep() && methodp
+            && (VN_IS(methodp->scopep()->aboveScopep()->modp(), Module)
+                || VN_IS(methodp->scopep()->aboveScopep()->modp(), Iface))) {
+            if (varRefp->varScopep()->scopep()->name()
+                == methodp->scopep()->aboveScopep()->name()) {
+                if (!varRefp->varp()->user3SetOnce()) {
                     unsetUser3p.push_back(varRefp->varp());
-                    AstVarRef* newVarRef = new AstVarRef(varRefp->fileline(), varRefp->varp(), varRefp->access());
-                    varRefp->varp()->sigPublic(true); // make sure this doesn't get optimized away
+                    AstVarRef* newVarRef
+                        = new AstVarRef(varRefp->fileline(), varRefp->varp(), varRefp->access());
+                    varRefp->varp()->sigPublic(true);  // make sure this doesn't get optimized away
                     AstNodeVarRef* callFromp = VN_CAST(methodCallp->op1p(), NodeVarRef);
-                    UASSERT_OBJ(callFromp, methodCallp, "Can not find where this call is coming from");
+                    UASSERT_OBJ(callFromp, methodCallp,
+                                "Can not find where this call is coming from");
                     newVarRef->varScopep(callFromp->varScopep());
                     AstArg* argp = new AstArg(varRefp->fileline(), "", newVarRef);
                     refp->addArgsp(argp);
@@ -1472,10 +1477,10 @@ class TaskVisitor final : public VNVisitor {
         }
 
         for (AstNode* p = nodep; p; p = p->nextp()) {
-            if (p->op1p()) methodCallArgsRefs(p->op1p(),methodp,methodCallp,refp,unsetUser3p);
-            if (p->op2p()) methodCallArgsRefs(p->op2p(),methodp,methodCallp,refp,unsetUser3p);
-            if (p->op3p()) methodCallArgsRefs(p->op3p(),methodp,methodCallp,refp,unsetUser3p);
-            if (p->op4p()) methodCallArgsRefs(p->op4p(),methodp,methodCallp,refp,unsetUser3p);
+            if (p->op1p()) methodCallArgsRefs(p->op1p(), methodp, methodCallp, refp, unsetUser3p);
+            if (p->op2p()) methodCallArgsRefs(p->op2p(), methodp, methodCallp, refp, unsetUser3p);
+            if (p->op3p()) methodCallArgsRefs(p->op3p(), methodp, methodCallp, refp, unsetUser3p);
+            if (p->op4p()) methodCallArgsRefs(p->op4p(), methodp, methodCallp, refp, unsetUser3p);
         }
     }
 
@@ -1483,21 +1488,26 @@ class TaskVisitor final : public VNVisitor {
         if (!nodep) return;
         AstVarRef* varRefp = VN_CAST(nodep, VarRef);
         // Find all assignment nodes in this task if it is a method.
-        // If an Assign in the method refences a variable one scope above itself then pass it by refence
-        if (varRefp && varRefp->varScopep() && methodp && (VN_IS(methodp->scopep()->aboveScopep()->modp(), Module) || VN_IS(methodp->scopep()->aboveScopep()->modp(), Iface)) ) {
-            if(varRefp->varScopep()->scopep()->name() == methodp->scopep()->aboveScopep()->name()){
+        // If an Assign in the method refences a variable one scope above itself then pass it by
+        // refence
+        if (varRefp && varRefp->varScopep() && methodp
+            && (VN_IS(methodp->scopep()->aboveScopep()->modp(), Module)
+                || VN_IS(methodp->scopep()->aboveScopep()->modp(), Iface))) {
+            if (varRefp->varScopep()->scopep()->name()
+                == methodp->scopep()->aboveScopep()->name()) {
                 AstVar* newVarp;
                 // If we haven't emum over this node yet
-                if(!varRefp->varp()->user3SetOnce()){
-                    newVarp = new AstVar(varRefp->fileline(), VVarType::PORT, varRefp->name()+ "_REF", varRefp->dtypep());
+                if (!varRefp->varp()->user3SetOnce()) {
+                    newVarp = new AstVar(varRefp->fileline(), VVarType::PORT,
+                                         varRefp->name() + "_REF", varRefp->dtypep());
                     newVarp->funcLocal(true);
                     newVarp->funcReturn(false);
                     newVarp->direction(VDirection::REF);
 
                     methodp->addArgsp(newVarp);
                     varRefp->varp()->user3p(newVarp);
-                    
-                }else{
+
+                } else {
                     newVarp = VN_AS(varRefp->varp()->user3p(), Var);
                 }
                 unsetUser3p.push_back(varRefp->varp());
@@ -1506,20 +1516,20 @@ class TaskVisitor final : public VNVisitor {
                 m_scopep->addVarsp(newvscp);
                 // Replace all lhsp of this AssignNode with the varible that is passed by reference
                 AstVarRef* oldVarRefp = varRefp;
-                AstVarRef* newArgRefp = new AstVarRef(oldVarRefp->fileline(), newVarp, VAccess::WRITE);
+                AstVarRef* newArgRefp
+                    = new AstVarRef(oldVarRefp->fileline(), newVarp, VAccess::WRITE);
                 newArgRefp->varScopep(newvscp);
                 oldVarRefp->replaceWithKeepDType(newArgRefp);
                 VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
-            
             }
         }
 
         // Loop horizontally through all siblings in this list
         for (AstNode* p = nodep; p; p = p->nextp()) {
-            if (p->op1p()) methodBodyRefs(p->op1p(),methodp,unsetUser3p);
-            if (p->op2p()) methodBodyRefs(p->op2p(),methodp,unsetUser3p);
-            if (p->op3p()) methodBodyRefs(p->op3p(),methodp,unsetUser3p);
-            if (p->op4p()) methodBodyRefs(p->op4p(),methodp,unsetUser3p);
+            if (p->op1p()) methodBodyRefs(p->op1p(), methodp, unsetUser3p);
+            if (p->op2p()) methodBodyRefs(p->op2p(), methodp, unsetUser3p);
+            if (p->op3p()) methodBodyRefs(p->op3p(), methodp, unsetUser3p);
+            if (p->op4p()) methodBodyRefs(p->op4p(), methodp, unsetUser3p);
         }
     }
 
@@ -1674,7 +1684,6 @@ class TaskVisitor final : public VNVisitor {
             cfuncp->scopeNamep(snp);
         }
 
-
         // Create list of arguments and move to function
         for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
             nextp = stmtp->nextp();
@@ -1708,15 +1717,12 @@ class TaskVisitor final : public VNVisitor {
                     portp->user2p(newvscp);
                 }
             }
-
         }
 
-        if(nodep->classMethod() && !nodep->isStatic()){
+        if (nodep->classMethod() && !nodep->isStatic()) {
             std::vector<AstNode*> unsetUser3p;
             methodBodyRefs(nodep, cfuncp, unsetUser3p);
-            for(auto unset : unsetUser3p){
-                unset->user3p(nullptr);
-            }
+            for (auto unset : unsetUser3p) { unset->user3p(nullptr); }
         }
 
         // Fake output variable if was a function.  It's more efficient to
@@ -2090,8 +2096,6 @@ class TaskVisitor final : public VNVisitor {
                     UINFO(9, "   funcremovevsc " << vscp);
                     VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
                 }
-
-        
             }
             // Just push for deletion, as other references to func may
             // remain until visitor exits
