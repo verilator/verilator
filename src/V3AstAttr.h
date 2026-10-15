@@ -1291,6 +1291,7 @@ class VCastable final {
 public:
     enum en : uint8_t {
         UNSUPPORTED,
+        MATCHING,
         SAMEISH,
         COMPATIBLE,
         ENUM_IMPLICIT,
@@ -1302,10 +1303,12 @@ public:
     enum en m_e;
     const char* ascii() const {
         static constexpr const char* const names[]
-            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_IMPLICIT",
-               "ENUM_EXPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
+            = {"UNSUPPORTED",   "MATCHING",      "SAMEISH",       "COMPATIBLE",
+               "ENUM_IMPLICIT", "ENUM_EXPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
         return names[m_e];
     }
+    bool isMatching() const { return m_e == MATCHING; }
+    bool isSameish() const { return m_e == MATCHING || m_e == SAMEISH; }
     bool isAssignable() const { return m_e != UNSUPPORTED && m_e != INCOMPATIBLE; }
     VCastable()
         : m_e{UNSUPPORTED} {}

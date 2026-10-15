@@ -59,6 +59,9 @@ private:
 protected:
     // METHODS
     virtual bool similarDTypeNode(const AstNodeDType* samep) const = 0;
+    virtual bool matchingDTypeNode(const AstNodeDType* samep) const {
+        return similarDTypeNode(samep);
+    }
 
 public:
     ASTGEN_MEMBERS_AstNodeDType;
@@ -132,6 +135,8 @@ public:
     virtual AstNodeDType* virtRefDType2p() const { return nullptr; }
     // Iff has second dtype, set as generic node function
     virtual void virtRefDType2p(AstNodeDType* nodep) {}
+    // Matching equivalence (IEEE 1800-2023 6.22.1). Calls skipRefToNonRefp() during comparisons.
+    bool matchingDType(const AstNodeDType* samep) const;
     // Assignable equivalence.  Calls skipRefToNonRefp() during comparisons.
     bool similarDType(const AstNodeDType* samep) const;
     // Iff has a non-null subDTypep(), as generic node function
@@ -229,6 +234,12 @@ public:
         const AstNodeArrayDType* const asamep = VN_DBG_AS(samep, NodeArrayDType);
         return elementsConst() == asamep->elementsConst()
                && subDTypep()->similarDType(asamep->subDTypep());
+    }
+    bool matchingDTypeNode(const AstNodeDType* samep) const override {
+        const AstNodeArrayDType* const asamep = VN_DBG_AS(samep, NodeArrayDType);
+        return rangep() && asamep->rangep() && elementsConst() == asamep->elementsConst()
+               && left() == asamep->left() && right() == asamep->right() && subDTypep()
+               && asamep->subDTypep() && subDTypep()->matchingDType(asamep->subDTypep());
     }
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
@@ -393,6 +404,11 @@ public:
         return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep())
                && asamep->keyDTypep() && keyDTypep()->similarDType(asamep->keyDTypep());
     }
+    bool matchingDTypeNode(const AstNodeDType* samep) const override {
+        const AstAssocArrayDType* const asamep = VN_DBG_AS(samep, AssocArrayDType);
+        return asamep->subDTypep() && subDTypep()->matchingDType(asamep->subDTypep())
+               && asamep->keyDTypep() && keyDTypep()->matchingDType(asamep->keyDTypep());
+    }
     string prettyDTypeName(bool full) const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
@@ -471,6 +487,7 @@ public:
     // width/widthMin/numeric compared elsewhere
     bool sameNode(const AstNode* samep) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override;
+    bool matchingDTypeNode(const AstNodeDType* samep) const override;
     string name() const override VL_MT_STABLE { return m.m_keyword.typeName(); }
     string prettyDTypeName(bool full) const override;
     const char* broken() const override {
@@ -864,6 +881,10 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override {
         const AstDynArrayDType* const asamep = VN_DBG_AS(samep, DynArrayDType);
         return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep());
+    }
+    bool matchingDTypeNode(const AstNodeDType* samep) const override {
+        const AstDynArrayDType* const asamep = VN_DBG_AS(samep, DynArrayDType);
+        return asamep->subDTypep() && subDTypep()->matchingDType(asamep->subDTypep());
     }
     string prettyDTypeName(bool full) const override;
     void dumpSmall(std::ostream& str) const override;
@@ -1277,6 +1298,10 @@ public:
     bool similarDTypeNode(const AstNodeDType* samep) const override {
         const AstQueueDType* const asamep = VN_DBG_AS(samep, QueueDType);
         return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep());
+    }
+    bool matchingDTypeNode(const AstNodeDType* samep) const override {
+        const AstQueueDType* const asamep = VN_DBG_AS(samep, QueueDType);
+        return asamep->subDTypep() && subDTypep()->matchingDType(asamep->subDTypep());
     }
     void dumpSmall(std::ostream& str) const override;
     string prettyDTypeName(bool full) const override;

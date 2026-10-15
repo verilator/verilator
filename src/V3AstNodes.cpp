@@ -399,6 +399,27 @@ static string dtypeNameTypedef(const AstNodeDType* dtypep, const string& frozen)
 static string dtypeNameKwd(const string& kwd, const string& name) {
     return name.empty() ? kwd : kwd + " " + name;
 }
+static bool isPredefinedVectorMatch(const AstBasicDType* predp, const AstBasicDType* vecp) {
+    if (predp->rangep() || predp->width() != predp->keyword().width()) return false;
+    if (!vecp->isRanged()) return false;
+    if (vecp->ascending()) return false;
+    if (vecp->lo() != 0 || vecp->hi() != predp->width() - 1) return false;
+    if (vecp->width() != predp->width()) return false;
+    if (vecp->isSigned() != predp->isSigned()) return false;
+    if (predp->keyword().isFourstate() != vecp->keyword().isFourstate()) return false;
+
+    switch (predp->keyword()) {
+    case VBasicDTypeKwd::BYTE:
+    case VBasicDTypeKwd::SHORTINT:
+    case VBasicDTypeKwd::INT:
+    case VBasicDTypeKwd::LONGINT: return vecp->keyword() == VBasicDTypeKwd::BIT;
+    case VBasicDTypeKwd::INTEGER:
+    case VBasicDTypeKwd::INTEGER2STATE:
+    case VBasicDTypeKwd::TIME:
+    case VBasicDTypeKwd::TIME2STATE: return vecp->keyword().isSameish(VBasicDTypeKwd::LOGIC);
+    default: return false;
+    }
+}
 
 //======================================================================
 // VDTypeNameScopes
@@ -701,6 +722,25 @@ void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int 
     this->rangep(rangep);
     this->dtypep(this);
 }
+bool AstBasicDType::matchingDTypeNode(const AstNodeDType* samep) const {
+    if (sameNode(samep)) return true;
+    const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
+
+    // IEEE 1800-2023 6.22.1(e): Predefined integer vs vector
+    if (isPredefinedVectorMatch(this, sp)) return true;
+    if (isPredefinedVectorMatch(sp, this)) return true;
+
+    if (!m.m_keyword.isSameish(sp->m.m_keyword)) return false;
+    if (keyword().isFourstate() != sp->keyword().isFourstate()) return false;
+    if (numeric().isSigned() != sp->numeric().isSigned()) return false;
+    if (isRanged() != sp->isRanged()) return false;
+    if (isRanged()) {
+        if (left() != sp->left() || right() != sp->right()) return false;
+    } else {
+        if (width() != sp->width()) return false;
+    }
+    return true;
+}
 string AstBasicDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     os << keyword().typeName();
@@ -720,10 +760,13 @@ bool AstBasicDType::sameNode(const AstNode* samep) const {
     if (!rangep() && !sp->rangep()) return true;
     return rangep() && rangep()->sameTree(sp->rangep());
 }
+
 bool AstBasicDType::similarDTypeNode(const AstNodeDType* samep) const {
     if (sameNode(samep)) return true;
+    if (matchingDTypeNode(samep)) return true;
     const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
     if (!m.m_keyword.isSameish(sp->m.m_keyword)) return false;
+    if (keyword().isFourstate() != sp->keyword().isFourstate()) return false;
     // IEEE 1800-2023 6.22.2: equivalent by bit width, not range direction
     if (m.m_nrange.ranged() != sp->m.m_nrange.ranged()) return false;
     if (m.m_nrange.elements() != sp->m.m_nrange.elements()) return false;
@@ -2834,6 +2877,15 @@ bool AstNodeDType::isTriviallyConstructible() const VL_MT_STABLE {
                || bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR;
     }
     dtypep->v3fatalSrc("Unknown data type: " << dtypep->prettyName());
+}
+bool AstNodeDType::matchingDType(const AstNodeDType* samep) const {
+    if (!samep) return false;
+    const AstNodeDType* nodep = this;
+    nodep = nodep->skipRefToNonRefp();
+    samep = samep->skipRefToNonRefp();
+    if (nodep == samep) return true;
+    if (nodep->type() != samep->type()) return false;
+    return nodep->matchingDTypeNode(samep);
 }
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
