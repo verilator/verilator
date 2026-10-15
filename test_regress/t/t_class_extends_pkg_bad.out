@@ -1,5 +1,5 @@
 %Error: t/t_class_extends_pkg_bad.v:22:21: Class for 'extends' not found: 'pkg'
-                                         : ... Suggested alternative: 'PACKAGE 'pkg'' 
+                                         : ... Suggested alternative: PACKAGE 'pkg'
    22 |   class bar extends pkg;
       |                     ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

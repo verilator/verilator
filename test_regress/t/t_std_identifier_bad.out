@@ -1,4 +1,5 @@
 %Error: t/t_std_identifier.v:16:18: Package/class for ':: reference' not found: 'std'
+                                  : ... Suggested alternative: 'std'
    16 |   int baz = foo::std::bar;
       |                  ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
