@@ -877,8 +877,7 @@ struct PortState final {
 
 // Add an input port to modp, if not already present. Returns the variable.
 static AstVar* ensurePort(AstNodeModule* modp, const std::string& name, const PortSpec& spec,
-                          AstNetlist* netlistp, std::map<AstNodeModule*, PortState>& havePort) {
-    PortState& state = havePort[modp];
+                          AstNetlist* netlistp, PortState& state) {
     // Membership is tracked as ports are added; a foreach over every variable
     // on each call would be quadratic
     if (!state.m_names.insert(name).second) return nullptr;
@@ -903,37 +902,6 @@ static AstVar* ensurePort(AstNodeModule* modp, const std::string& name, const Po
     return varp;
 }
 
-// Give one instance the ports its module needs, and its parent the same ports
-// to drive them with. Returns true if anything was added.
-static void threadCellPorts(AstCell* cellp,
-                            std::map<AstNodeModule*, std::map<std::string, PortSpec>>& needs,
-                            AstNetlist* netlistp, std::map<AstNodeModule*, PortState>& havePort) {
-    AstNodeModule* const childp = cellp->modp();
-    if (!childp) return;
-    const auto it = needs.find(childp);
-    if (it == needs.end()) return;
-    AstNodeModule* parentp = nullptr;
-    for (AstNode* upp = cellp; upp; upp = upp->backp()) {
-        if ((parentp = VN_CAST(upp, NodeModule))) break;
-    }
-    if (!parentp) return;
-    // Indexed once, not rescanned per port: a cell with many promoted ports
-    // would otherwise cost ports x pins
-    std::set<std::string> havePin;
-    for (AstPin* pinp = cellp->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
-        havePin.insert(pinp->name());
-    }
-    for (const auto& np : it->second) {
-        const std::string& name = np.first;
-        if (havePin.count(name)) continue;
-        ensurePort(parentp, name, np.second, netlistp, havePort);
-        needs[parentp].emplace(name, np.second);
-        cellp->addPinsp(
-            new AstPin{cellp->fileline(), -1, name, new AstParseRef{cellp->fileline(), name}});
-        UINFO(4, "HIER-XMR: pinned " << name << " on instance " << cellp->prettyNameQ());
-    }
-}
-
 // (module the reference is in, dotted path) -> the port it becomes. A dotted
 // path is relative to its module, so matching on the text alone would rewrite
 // an unrelated module's identically-spelled internal reference.
@@ -955,9 +923,8 @@ struct XmrHit final {
 // Find the references this run must rewrite, and what each module then has to
 // declare. Collected rather than rewritten in place: replaceWith/deleteTree on
 // the node being traversed corrupts the iteration.
-static std::vector<XmrHit>
-findXmrHits(AstNetlist* netlistp, const XmrWants& wanted,
-            std::map<AstNodeModule*, std::map<std::string, PortSpec>>& needsr) {
+static std::vector<XmrHit> findXmrHits(AstNetlist* netlistp, const XmrWants& wanted,
+                                       std::map<std::string, PortSpec>& needsr) {
     std::vector<XmrHit> hits;
     netlistp->foreach([&](AstDot* dotp) {
         if (VN_IS(dotp->backp(), Dot)) return;  // only the outermost of a chain
@@ -980,18 +947,25 @@ findXmrHits(AstNetlist* netlistp, const XmrWants& wanted,
         auto wit = wanted.find(std::make_pair(modp->name(), path));
         if (wit == wanted.cend()) wit = wanted.find(std::make_pair(modp->origName(), path));
         if (wit == wanted.cend()) return;
-        needsr[modp].emplace(wit->second.m_port,
-                             PortSpec{wit->second.m_width, wit->second.m_signed});
+        needsr.emplace(wit->second.m_port, PortSpec{wit->second.m_width, wit->second.m_signed});
         hits.push_back(XmrHit{dotp, modp, selp, wit->second.m_port});
     });
     return hits;
 }
 
-// Replace each reference with a read of the port it was promoted to.
-static void rewriteXmrHits(const std::vector<XmrHit>& hits) {
+// Replace each reference with a read of the port it was promoted to. The port
+// is on the block top, so a module below it names the block to reach up.
+static void rewriteXmrHits(const std::vector<XmrHit>& hits, const AstNodeModule* blockp) {
     for (const XmrHit& hit : hits) {
         AstDot* const dotp = hit.m_dotp;
-        AstNodeExpr* newp = new AstParseRef{dotp->fileline(), hit.m_portName};
+        FileLine* const flp = dotp->fileline();
+        AstNodeExpr* newp = new AstParseRef{flp, hit.m_portName};
+        if (hit.m_modp != blockp) {
+            // origName, not name: a de-parameterized block's name() is a
+            // mangled spelling that appears nowhere in the source and so
+            // names no scope.
+            newp = new AstDot{flp, false, new AstParseRef{flp, blockp->origName()}, newp};
+        }
         if (hit.m_selp) {
             // Keep the select, re-based on the promoted port
             AstNodePreSel* const keepSelp = hit.m_selp->unlinkFrBack();
@@ -1006,19 +980,6 @@ static void rewriteXmrHits(const std::vector<XmrHit>& hits) {
     }
 }
 
-// Thread each port up to the block top, adding a pin at every instance. Adding
-// a port to a parent may require its own parent to supply it, so the deepest
-// module is taken first and one pass then suffices, where repeating to a
-// fixpoint would cost depth x cells. The cells are gathered first, because
-// creating ports and pins mutates the tree a traversal would be walking.
-static void threadXmrPortsUp(AstNetlist* netlistp,
-                             std::map<AstNodeModule*, std::map<std::string, PortSpec>>& needs,
-                             std::map<AstNodeModule*, PortState>& havePort) {
-    std::vector<AstCell*> cells = CellCollectVisitor::apply(netlistp);
-    std::reverse(cells.begin(), cells.end());  // Root first becomes deepest first
-    for (AstCell* const cellp : cells) threadCellPorts(cellp, needs, netlistp, havePort);
-}
-
 void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
     // This run's top module is the hierarchical block being compiled
     const std::vector<VHierXmrPort>* const wantedp
@@ -1030,20 +991,17 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
                        XmrWant{port.port(), port.width(), port.isSigned()});
     }
 
-    // module -> (port name, width) it must declare
-    std::map<AstNodeModule*, std::map<std::string, PortSpec>> needs;
-    rewriteXmrHits(findXmrHits(netlistp, wanted, needs));
+    // The port goes on the block top, which this run compiles as its top
+    // module, and a module below reaches up to it. One port per module holding
+    // a reference would instead need a pin at every instance between the two,
+    // threading the signal through levels that make no use of it.
+    AstNodeModule* const blockp = netlistp->topModulep();
+    std::map<std::string, PortSpec> needs;  // Port name -> what to declare it as
+    rewriteXmrHits(findXmrHits(netlistp, wanted, needs), blockp);
     if (needs.empty()) return;
 
-    // Create the ports where the references were
-    std::map<AstNodeModule*, PortState> havePort;
-    for (const auto& pair : needs) {
-        for (const auto& np : pair.second) {
-            ensurePort(pair.first, np.first, np.second, netlistp, havePort);
-        }
-    }
-
-    threadXmrPortsUp(netlistp, needs, havePort);
+    PortState state;
+    for (const auto& np : needs) ensurePort(blockp, np.first, np.second, netlistp, state);
 }
 
 // In the top run, connect each promoted port to the signal it came from. The
