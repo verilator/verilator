@@ -159,6 +159,12 @@ Hierarchy blocks have some limitations, including:
   that indexes a scope are all unsupported, as is any such reference out of
   a nested hierarchy block.
 
+- A read of a signal inside the hierarchy block, from outside it, is
+  likewise promoted, to an output port driven from that signal, and the
+  reference reads the port instead. Ports of the block are already
+  accessible and are left alone. The same type restrictions apply, and
+  writing a signal inside the block is unsupported.
+
 - Modport cannot be used at the hierarchical block boundary.
 
 - The simulation speed is likely not as fast as flat Verilation, in which

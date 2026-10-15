@@ -173,6 +173,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-file"             { FL; return yVLT_D_FILE; }
   -?"-function"         { FL; return yVLT_D_FUNCTION; }
   -?"-hier-dpi"         { FL; return yVLT_D_HIER_DPI; }
+  -?"-inner"            { FL; return yVLT_D_INNER; }
   -?"-levels"           { FL; return yVLT_D_LEVELS; }
   -?"-lines"            { FL; return yVLT_D_LINES; }
   -?"-match"            { FL; return yVLT_D_MATCH; }

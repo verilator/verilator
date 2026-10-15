@@ -123,6 +123,9 @@ public:
 
 class V3Hierarchical final {
 public:
+    // True while building the plan, where a reference across a block boundary
+    // is a candidate for promotion rather than an error
+    static bool planning() VL_MT_DISABLED;
     static void createGraph(AstNetlist* nodep) VL_MT_DISABLED;
     // In the child run, turn the XMRs named by the hier_xmr_port records of
     // the generated .vlt into input ports threaded up to the block boundary.

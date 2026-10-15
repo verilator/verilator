@@ -67,6 +67,7 @@
 
 #include "V3Global.h"
 #include "V3Graph.h"
+#include "V3HierBlock.h"
 #include "V3LinkDotIfaceCapture.h"
 #include "V3MemberMap.h"
 #include "V3Parse.h"
@@ -902,7 +903,11 @@ public:
             if (lookupSymp) {
                 if (const AstCell* const cellp = VN_CAST(lookupSymp->nodep(), Cell)) {
                     if (const AstNodeModule* const modp = cellp->modp()) {
-                        if (modp->hierBlock() && !leftname.empty()) {
+                        if (modp->hierBlock() && !leftname.empty()
+                            && !V3Hierarchical::planning()) {
+                            // The plan run lets this through: V3HierBlock decides
+                            // whether the reference becomes a port on the block,
+                            // and reports it if it cannot
                             refLocationp->v3error("Cannot access scope inside hierarchical block");
                         } else if (VN_IS(modp, NotFoundModule)) {
                             refLocationp->v3error("Dotted reference to instance that refers to "
