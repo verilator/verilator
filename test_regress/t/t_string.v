@@ -28,6 +28,12 @@ module t (
 
   byte unpack1[0:4];
 
+  typedef bit [8191:0] wide_t;
+  typedef bit [64:0] boundary_t;
+  string cast_text;
+  wide_t cast_wide;
+  boundary_t cast_boundary;
+
   // Operators == != < <= > >=  {a,b}  {a{b}}  a[b]
   // a.len, a.putc, a.getc, a.toupper, a.tolower, a.compare, a.icompare, a.substr
   // a.atoi, a.atohex, a.atooct, a.atobin, a.atoreal,
@@ -80,6 +86,12 @@ module t (
 
   // Test loop
   always @(posedge clk) begin
+    cast_text = cyc[0] ? "hello" : "world";
+    cast_wide = wide_t'(cast_text);
+    cast_boundary = boundary_t'(cast_text);
+    `checkh(cast_wide[39:0], cyc[0] ? 40'h68656c6c6f : 40'h776f726c64);
+    `checkh(cast_wide[8191:40], '0);
+    `checkh(cast_boundary, cyc[0] ? 65'h68656c6c6f : 65'h776f726c64);
     cyc <= cyc + 1;
     if (cyc == 0) begin
       // Setup

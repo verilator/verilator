@@ -22,6 +22,7 @@ module t;
     int qvunused[$];  // Value returns (unused)
     int qi[$];  // Index returns
     int i;
+    bit b;
 
     d = '{1, 2, 2, 4, 3};
     `checkp(d, "'{'h1, 'h2, 'h2, 'h4, 'h3}");
@@ -169,6 +170,26 @@ module t;
     qi = s.find_last_index with (item == "sad");
     `checkh(qi.size, 1);
     `checkh(qi[0], 2);
+
+    // Reductions over strings return the 'with' expression type
+    i = s.sum with (item.len);
+    `checkh(i, 16);
+    i = s.product with (item.len);
+    `checkh(i, 225);
+    i = s.and with (item.len);
+    `checkh(i, 1);
+    i = s.or with (item.len);
+    `checkh(i, 7);
+    i = s.xor with (item.len);
+    `checkh(i, 0);
+    b = s.sum with (item == "hello");
+    `checkh(b, 1'b1);
+    b = s.sum with (item == "");
+    `checkh(b, 1'b0);
+    b = s.product with (item inside {"hello", "sad"});
+    `checkh(b, 1'b0);
+    b = s.product with (item inside {"hello", "sad", "world"});
+    `checkh(b, 1'b1);
 
     d = '{1, 2};
     de = '{1, 2};
