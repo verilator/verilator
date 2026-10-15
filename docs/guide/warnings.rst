@@ -2735,8 +2735,8 @@ List Of Warnings
    fit the required size.
 
    Disabling/enabling WIDTH is equivalent to disabling/enabling the
-   :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`, and :option:`WIDTHXZEXPAND`
-   warnings.
+   :option:`WIDTHDIGITS`, :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`,
+   and :option:`WIDTHXZEXPAND` warnings.
 
    Ignoring these warnings will only suppress the lint check; it will
    simulate correctly.
@@ -2791,6 +2791,18 @@ List Of Warnings
    The correct fix is to either size the 1 (``32'h1``), add the
    width to the parameter definition (``parameter [31:0]``), or add the
    width to the parameter usage (``{PAR[31:0], PAR[31:0]}``).
+
+.. option:: WIDTHDIGITS
+
+   Warns when a literal contains more digits than its declared width.
+   The excess high-order digits are truncated, which can change the
+   value of the literal. For example:
+
+   .. include:: ../../docs/gen/ex_WIDTHDIGITS_faulty.rst
+
+   Results in a :option:`WIDTHDIGITS` warning:
+
+   .. include:: ../../docs/gen/ex_WIDTHDIGITS_msg.rst
 
 
 .. option:: WIDTHEXPAND
