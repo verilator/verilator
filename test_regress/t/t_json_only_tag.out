@@ -14,7 +14,7 @@
      "stmtsp": [
       {"type":"ASSIGNW","addr":"(V)","loc":"d,33:22,33:23","dtypep":"(T)",
        "rhsp": [
-        {"type":"VARXREF","name":"value","addr":"(W)","loc":"d,33:29,33:34","dtypep":"(X)","dotted":"itop","access":"RD","varp":"(Y)"}
+        {"type":"VARXREF","name":"value","addr":"(W)","loc":"d,33:29,33:34","dtypep":"(X)","dotted":"itop","resolvedDotted":"itop","access":"RD","varp":"(Y)"}
       ],
        "lhsp": [
         {"type":"VARREF","name":"dotted","addr":"(Z)","loc":"d,33:15,33:21","dtypep":"(T)","access":"WR","varp":"(S)"}
