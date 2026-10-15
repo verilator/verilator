@@ -3301,9 +3301,7 @@ class AssertNfaVisitor final : public VNVisitor {
             assertp->addPasssp(ifp);
             // Fail-handler prefix for overlapping instances (IEEE 16.12):
             // fires when reject=1 && match=1 in the same cycle.
-            if (AstNode* const failsp = assertp->failsp()) {
-                failsp->addHereThisAsNext(ifp->cloneTree(false));
-            }
+            if (assertp->failsp()) assertp->prependFailsp(ifp->cloneTree(false));
         }
 
         if (threadFailCountp) {

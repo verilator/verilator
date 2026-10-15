@@ -559,6 +559,11 @@ protected:
     void addOp3p(AstNode* newp);  // Append newp to end of op3
     void addOp4p(AstNode* newp);  // Append newp to end of op4
 
+    void prependOp1p(AstNode* newp);  // Prepend newp to front of op1
+    void prependOp2p(AstNode* newp);  // Prepend newp to front of op2
+    void prependOp3p(AstNode* newp);  // Prepend newp to front of op3
+    void prependOp4p(AstNode* newp);  // Prepend newp to front of op4
+
     // clang-format off
     void setNOp1p(AstNode* newp) { if (newp) setOp1p(newp); }
     void setNOp2p(AstNode* newp) { if (newp) setOp2p(newp); }
@@ -569,6 +574,11 @@ protected:
     void addNOp2p(AstNode* newp) { if (newp) addOp2p(newp); }
     void addNOp3p(AstNode* newp) { if (newp) addOp3p(newp); }
     void addNOp4p(AstNode* newp) { if (newp) addOp4p(newp); }
+
+    void prependNOp1p(AstNode* newp) { if (newp) prependOp1p(newp); }
+    void prependNOp2p(AstNode* newp) { if (newp) prependOp2p(newp); }
+    void prependNOp3p(AstNode* newp) { if (newp) prependOp3p(newp); }
+    void prependNOp4p(AstNode* newp) { if (newp) prependOp4p(newp); }
     // clang-format on
 
     void clonep(AstNode* nodep) {

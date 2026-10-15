@@ -4534,9 +4534,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         argumentp->noReset(true);
         argumentp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         m_constructorp->addStmtsp(argumentp);
-        m_constructorp->stmtsp()->addHereThisAsNext(
-            new AstAssign{fl, memberRef(fl, handleVarp, VAccess::WRITE),
-                          new AstVarRef{fl, argumentp, VAccess::READ}});
+        m_constructorp->prependStmtsp(new AstAssign{fl, memberRef(fl, handleVarp, VAccess::WRITE),
+                                                    new AstVarRef{fl, argumentp, VAccess::READ}});
 
         // Route each enclosing-member reference through the back-pointer: 'm' -> 'h.m'.
         for (AstVarRef* const refp : refsToRewrite) { rewriteVarRef(refp, handleVarp); }

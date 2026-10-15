@@ -72,16 +72,14 @@ class LinkIncVisitor final : public VNVisitor {
     // METHODS
     void insertOnTop(AstNode* newp) {
         // Add the thing directly under the current TFunc/Module, or class, as a member
-        AstNode* stmtsp = nullptr;
-        if (m_ftaskp) {
-            stmtsp = m_ftaskp->stmtsp();
-        } else if (m_modp) {
-            stmtsp = m_modp->stmtsp();
-            if (VN_IS(m_modp, Class)) VN_AS(newp, Var)->varType(VVarType::MEMBER);
-        }
-        UASSERT_OBJ(stmtsp, newp, "Variable not under FTASK/MODULE");
         // Must not unlink the statements, as one of them is being iterated
-        stmtsp->addHereThisAsNext(newp);
+        if (m_ftaskp) {
+            m_ftaskp->prependStmtsp(newp);
+        } else {
+            UASSERT_OBJ(m_modp, newp, "Variable not under FTASK/MODULE");
+            if (VN_IS(m_modp, Class)) VN_AS(newp, Var)->varType(VVarType::MEMBER);
+            m_modp->prependStmtsp(newp);
+        }
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
         // Return node that must be visited, if any

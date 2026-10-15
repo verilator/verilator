@@ -330,13 +330,7 @@ private:
             VL_DO_DANGLING(pushDeletep(initialp->unlinkFrBack()), initialp);
         }
         m_initialps.clear();
-        if (insertp) {
-            if (!m_ctorp->stmtsp()) {
-                m_ctorp->addStmtsp(insertp);
-            } else {
-                m_ctorp->stmtsp()->addHereThisAsNext(insertp);
-            }
-        }
+        m_ctorp->prependStmtsp(insertp);
     }
     void visit(AstInitialAutomatic* nodep) override {
         m_initialps.push_back(nodep);
@@ -658,11 +652,7 @@ class TaskVisitor final : public VNVisitor {
                 }
                 // Put input assignment in FRONT of all other statements
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, true);
-                if (AstNode* const afterp = beginp->nextp()) {
-                    afterp->unlinkFrBackWithNext();
-                    AstNode::addNext<AstNode, AstNode>(preassp, afterp);
-                }
-                beginp->addNext(preassp);
+                beginp->addNextHere(preassp);
 
                 AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, true);
                 beginp->addNext(postassp);
@@ -687,11 +677,7 @@ class TaskVisitor final : public VNVisitor {
                 portp->user2p(newvscp);
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, false);
                 // Put assignment in FRONT of all other statements
-                if (AstNode* const afterp = beginp->nextp()) {
-                    afterp->unlinkFrBackWithNext();
-                    AstNode::addNext<AstNode, AstNode>(preassp, afterp);
-                }
-                beginp->addNext(preassp);
+                beginp->addNextHere(preassp);
             }
         }
     }
@@ -1526,11 +1512,7 @@ class TaskVisitor final : public VNVisitor {
                                     new AstConst{flp, AstConst::BitTrue{}}};
 
                 // Add as first statement (to avoid issues with early returns) to exported function
-                if (cfuncp->stmtsp()) {
-                    cfuncp->stmtsp()->addHereThisAsNext(assignp);
-                } else {
-                    cfuncp->addStmtsp(assignp);
-                }
+                cfuncp->prependStmtsp(assignp);
 
                 // With --sc, also wake the SystemC wrapper: it cannot see the flag, and may
                 // otherwise sleep until its next timed slot. (usesTiming() is not known yet.)
@@ -1726,7 +1708,7 @@ class TaskVisitor final : public VNVisitor {
                 });
 
                 // Add variable initialization
-                lambdap->stmtsp()->addHereThisAsNext(newvarp);
+                lambdap->prependStmtsp(newvarp);
                 lambdap->hasResult(false);
 
                 // Add return statement - TODO: Why not VarRef(outvscp)?

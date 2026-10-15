@@ -236,13 +236,6 @@ class LinkJumpVisitor final : public VNVisitor {
         killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         return new AstStmtExpr{fl, killQueueCall};
     }
-    static void prependStmtsp(AstBegin* const nodep, AstNode* const stmtp) {
-        if (AstNode* const origStmtsp = nodep->stmtsp()) {
-            origStmtsp->unlinkFrBackWithNext();
-            stmtp->addNext(origStmtsp);
-        }
-        nodep->addStmtsp(stmtp);
-    }
     AstBegin* getOrCreateTaskDisableBeginp(AstTask* const taskp, FileLine* const fl) {
         const auto it = m_taskDisableBegins.find(taskp);
         if (it != m_taskDisableBegins.end()) return it->second;
@@ -301,7 +294,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstVar* const processQueuep = getProcessQueuep(taskp, fl);
         AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(fl, processQueuep);
         AstBegin* const taskBodyp = getOrCreateTaskDisableBeginp(taskp, fl);
-        prependStmtsp(taskBodyp, pushCurrentProcessp);
+        taskBodyp->prependStmtsp(pushCurrentProcessp);
         m_taskDisableQueues.emplace(taskp, processQueuep);
         return processQueuep;
     }
@@ -328,7 +321,7 @@ class LinkJumpVisitor final : public VNVisitor {
         for (AstBegin* branchp = forkp->forksp(); branchp;
              branchp = VN_AS(branchp->nextp(), Begin)) {
             if (needProcess) branchp->setNeedProcess();
-            prependStmtsp(branchp, getQueuePushProcessSelfp(fl, processQueuep));
+            branchp->prependStmtsp(getQueuePushProcessSelfp(fl, processQueuep));
         }
     }
     void prependNestedForkBranchQueuePushes(AstNode* const nodep, AstVar* const processQueuep,
@@ -344,7 +337,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstVar* const processQueuep = getProcessQueuep(beginp, fl);
         AstStmtExpr* const pushCurrentProcessp = getQueuePushProcessSelfp(fl, processQueuep);
         AstBegin* const beginBodyp = getOrCreateBeginDisableBeginp(beginp, fl);
-        prependStmtsp(beginBodyp, pushCurrentProcessp);
+        beginBodyp->prependStmtsp(pushCurrentProcessp);
 
         // Named-block disable must also terminate detached descendants created by forks
         // under the block, so track each fork branch process in the same queue.

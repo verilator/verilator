@@ -786,11 +786,7 @@ class TimingControlVisitor final : public VNVisitor {
             ->dtypeSetVoid();  // Opaque process reference; type is irrelevant for hardcoded emit
         onKillp->addPinsp(processp);
         AstNodeStmt* const stmtp = onKillp->makeStmt();
-        if (beginp->stmtsp()) {
-            beginp->stmtsp()->addHereThisAsNext(stmtp);
-        } else {
-            beginp->addStmtsp(stmtp);
-        }
+        beginp->prependStmtsp(stmtp);
     }
     // Handle the 'join' part of a fork..join
     void makeForkJoin(AstFork* const forkp) {
@@ -830,32 +826,22 @@ class TimingControlVisitor final : public VNVisitor {
     // `varsp` vector of vars which shall be localized.
     static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
         UASSERT(procp, "procp is nullptr");
-        AstNode* firstStmtp;
+        AstVar* newVarsp = nullptr;
+        for (AstVar* const varp : varsp) {
+            varp->funcLocal(true);
+            newVarsp = AstNode::addNextNull(newVarsp, varp->unlinkFrBack());
+        }
         if (AstNodeProcedure* const nodeProcp = VN_CAST(procp, NodeProcedure)) {
-            firstStmtp = nodeProcp->stmtsp();
+            nodeProcp->prependStmtsp(newVarsp);
         } else if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {
-            if (!cfuncp->varsp()) {
-                for (AstVar* const varp : varsp) {
-                    varp->funcLocal(true);
-                    cfuncp->addVarsp(varp->unlinkFrBack());
-                }
-                return;
-            }
-            firstStmtp = cfuncp->varsp();
+            cfuncp->prependVarsp(newVarsp);
         } else if (AstBegin* const beginp = VN_CAST(procp, Begin)) {
-            firstStmtp = beginp->stmtsp();
+            beginp->prependStmtsp(newVarsp);
         } else {
             procp->v3fatalSrc(
                 procp->prettyNameQ()
                 << " is not of an expected type NodeProcedure/CFunc/Begin instead it is: "
                 << procp->prettyTypeName());
-        }
-        UASSERT_OBJ(firstStmtp, procp,
-                    procp->prettyNameQ() << " has no non-var statement. 'localizeVars()' is ment "
-                                            "to be called on non-empty NodeProcedure/CFunc/Begin");
-        for (AstVar* const varp : varsp) {
-            varp->funcLocal(true);
-            firstStmtp->addHereThisAsNext(varp->unlinkFrBack());
         }
     }
 
@@ -980,11 +966,7 @@ class TimingControlVisitor final : public VNVisitor {
         // If in a class, create a shared pointer to 'this'
         if (m_classp) {
             AstCStmt* const cstmtp = new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"};
-            if (AstNode* const stmtsp = nodep->stmtsp()) {
-                stmtsp->addHereThisAsNext(cstmtp);
-            } else {
-                nodep->addStmtsp(cstmtp);
-            }
+            nodep->prependStmtsp(cstmtp);
         }
         if (nodep->dpiExportImpl()) {
             nodep->exists([](AstCAwait* const awaitp) -> bool {

@@ -575,6 +575,46 @@ void AstNode::addOp4p(AstNode* newp) {
     }
 }
 
+void AstNode::prependOp1p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp1p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op1p) {
+        op1p(newp);
+    } else {
+        m_op1p->addHereThisAsNext(newp);
+    }
+}
+
+void AstNode::prependOp2p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp2p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op2p) {
+        op2p(newp);
+    } else {
+        m_op2p->addHereThisAsNext(newp);
+    }
+}
+
+void AstNode::prependOp3p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp3p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op3p) {
+        op3p(newp);
+    } else {
+        m_op3p->addHereThisAsNext(newp);
+    }
+}
+
+void AstNode::prependOp4p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp4p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op4p) {
+        op4p(newp);
+    } else {
+        m_op4p->addHereThisAsNext(newp);
+    }
+}
+
 void AstNode::replaceWith(AstNode* newp) {
     // Replace oldp with this
     // Unlike a unlink/relink, children are changed to point to the new node.
