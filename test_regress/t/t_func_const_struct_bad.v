@@ -33,6 +33,7 @@ module t;
   localparam U15 = f_uadd('{a: 7, b: 8});
   localparam Q1 = f_queue(1);
   localparam N1 = f_union(1);
+  localparam S1 = f_slice(1);
 
   initial begin
     // Should never get here
@@ -70,5 +71,12 @@ module t;
     union_t u;
     u.a = a;
     f_union = u.b;
+  endfunction
+
+  // Element of a slice
+  function integer f_slice(input int a);
+    int s[4];
+    s[1:2][1] = a;
+    f_slice = s[2];
   endfunction
 endmodule

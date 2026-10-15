@@ -3,8 +3,8 @@
                     ... Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
 %Error: t/t_func_const_struct_bad.v:32:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_add2'
                                          : ... note: In instance 't'
-        t/t_func_const_struct_bad.v:45:22: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_func_const_struct_bad.v:52:14: ... Called from 'f_add()' with parameters:
+        t/t_func_const_struct_bad.v:46:22: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_func_const_struct_bad.v:53:14: ... Called from 'f_add()' with parameters:
            params = '{a: 32'h7, b: 32'h8}
         t/t_func_const_struct_bad.v:32:20: ... Called from 'f_add2()' with parameters:
            a = ?32?h7
@@ -16,23 +16,30 @@
 %Warning-USERFATAL: "f_uadd = 15"
 %Error: t/t_func_const_struct_bad.v:33:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_uadd'
                                          : ... note: In instance 't'
-        t/t_func_const_struct_bad.v:58:23: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_func_const_struct_bad.v:59:23: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
         t/t_func_const_struct_bad.v:33:20: ... Called from 'f_uadd()' with parameters:
            params = '{a:'h7, b:'h8}
    33 |   localparam U15 = f_uadd('{a: 7, b: 8});
       |                    ^~~~~~
 %Error: t/t_func_const_struct_bad.v:34:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_queue'
                                          : ... note: In instance 't'
-        t/t_func_const_struct_bad.v:64:5: ... Location of non-constant VARREF 's': Assigned variable has unsupported data type
+        t/t_func_const_struct_bad.v:65:5: ... Location of non-constant VARREF 's': Assigned variable has unsupported data type
         t/t_func_const_struct_bad.v:34:19: ... Called from 'f_queue()' with parameters:
            a = ?32?h1
    34 |   localparam Q1 = f_queue(1);
       |                   ^~~~~~~
 %Error: t/t_func_const_struct_bad.v:35:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_union'
                                          : ... note: In instance 't'
-        t/t_func_const_struct_bad.v:71:5: ... Location of non-constant VARREF 'u': Assigned variable has unsupported data type
+        t/t_func_const_struct_bad.v:72:5: ... Location of non-constant VARREF 'u': Assigned variable has unsupported data type
         t/t_func_const_struct_bad.v:35:19: ... Called from 'f_union()' with parameters:
            a = ?32?h1
    35 |   localparam N1 = f_union(1);
+      |                   ^~~~~~~
+%Error: t/t_func_const_struct_bad.v:36:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_slice'
+                                         : ... note: In instance 't'
+        t/t_func_const_struct_bad.v:79:6: ... Location of non-constant SLICESEL: Array select LHS isn't simple variable
+        t/t_func_const_struct_bad.v:36:19: ... Called from 'f_slice()' with parameters:
+           a = ?32?h1
+   36 |   localparam S1 = f_slice(1);
       |                   ^~~~~~~
 %Error: Exiting due to

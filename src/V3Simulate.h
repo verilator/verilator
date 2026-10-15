@@ -726,7 +726,9 @@ private:
         nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num());
     }
     // Set resultr to whether the aggregate values are equal, like a logical and of comparing
-    // each element or member
+    // each element or member. V3Width allows comparing only values of matching types, so the
+    // values have the same shape, and an array value is of an unpacked array, as associative
+    // and dynamic arrays and queues are not values here.
     void aggregateEqRecurse(V3Number& resultr, AstNode* nodep, bool caseEq, AstNodeExpr* lhsp,
                             AstNodeExpr* rhsp) {
         if (const AstConst* const lconstp = VN_CAST(lhsp, Const)) {
@@ -779,6 +781,8 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (m_checkOnly || !optimizable()) return;
+        // A value that is not a constant is an aggregate, and V3Width allows only
+        // equality operators on aggregates (IEEE 1800-2023 11.3)
         if (!VN_IS(fetchValue(nodep->lhsp()), Const)) {
             handleAggregateCompare(nodep);
             return;
@@ -924,13 +928,9 @@ private:
         AstNode* const vscp = varOrScope(varrefp);
         AstNodeExpr* rootp = fetchOutValueNull(vscp);
         if (!rootp) rootp = fetchValueNull(vscp);
-        if (!rootp) {  // Assignment to unassigned variable
-            rootp = newInitValuep(varrefp, varrefp->varp()->dtypep());
-            if (!rootp) {
-                clearOptimizable(varrefp, "Assigned variable has unsupported data type");
-                return;
-            }
-            m_reclaimValuesp.push_back(rootp);
+        if (!rootp) {  // As initVar couldn't make an initial value of its type
+            clearOptimizable(varrefp, "Assigned variable has unsupported data type");
+            return;
         }
         // Find the value of the selected element, making a defaulted array element explicit
         AstNodeExpr* itemp = rootp;
