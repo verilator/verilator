@@ -241,7 +241,8 @@
 // This is not necessarily the same as "#UL", depending on what the IData typedef is.
 #define VL_UL(c) (static_cast<IData>(c##UL))
 
-#if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
+#if defined(VL_CPPCHECK) || defined(__clang_analyzer__) \
+    || (__cplusplus < 201103L && (!defined(_MSVC_LANG) || _MSVC_LANG < 201103L))
 # define VL_DANGLING(var)
 #else
 /// After e.g. delete, set variable to nullptr to indicate must not use later
