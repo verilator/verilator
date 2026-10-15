@@ -1716,7 +1716,8 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     const VCastable castable = VCastable::UNSUPPORTED;
     toDtp = toDtp->skipRefToEnump();
     fromDtp = fromDtp->skipRefToEnump();
-    if (toDtp == fromDtp) return VCastable::SAMEISH;
+    if (toDtp == fromDtp) return VCastable::MATCHING;
+    if (toDtp->matchingDType(fromDtp)) return VCastable::MATCHING;
     if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
     // UNSUP unpacked struct/unions (treated like BasicDType)
     const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
@@ -1781,7 +1782,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
             return castable;
         }
         if (toIfp->isVirtual() == fromIfp->isVirtual() && sameModport) {
-            return VCastable::SAMEISH;
+            return VCastable::MATCHING;
         }
         // An unqualified interface or virtual interface may bind to a modport-qualified
         // virtual interface.
@@ -1812,8 +1813,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     if (VN_IS(node1p, Const)) std::swap(node1p, node2p);
     {
         const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
-        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE)
-            return node1p->dtypep();
+        if (castable.isSameish() || castable == VCastable::COMPATIBLE) return node1p->dtypep();
         if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
     }
 

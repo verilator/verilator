@@ -132,7 +132,7 @@ class SliceVisitor final : public VNVisitor {
                 const AstNodeDType* itemRawDTypep = itemp->dtypep()->skipRefp();
                 const VCastable castable
                     = AstNode::computeCastable(expectedItemDTypep, itemRawDTypep, itemp);
-                if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
+                if (castable.isSameish() || castable == VCastable::COMPATIBLE) {
                     if (i == elemIdx) {
                         newp = itemp->cloneTree(false, !directItem && needPure);
                         break;
