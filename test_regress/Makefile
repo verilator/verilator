@@ -34,9 +34,17 @@ ifneq ($(NC_ROOT),)
 #PRODUCTS += --nc
 endif
 
-# Run tests in parallel.
 ifeq ($(CFG_WITH_LONGTESTS),yes)
+  # Run tests in parallel.
   DRIVER_FLAGS ?= -j 0 --quiet --rerun
+  # Save memory when test output directories are on a ramdisk, unless user set DRIVER_FLAGS
+  ifeq ($(origin DRIVER_FLAGS),file)
+    ifneq ($(VERILATOR_TESTS_OBJ_ROOT),)
+      ifneq ($(filter tmpfs ramfs,$(shell stat -f -c %T $(VERILATOR_TESTS_OBJ_ROOT) 2>/dev/null)),)
+        DRIVER_FLAGS += --driver-prune
+      endif
+    endif
+  endif
 endif
 
 .SUFFIXES:
