@@ -256,7 +256,7 @@ public:
     // METHODS
     // Push a symbol table value to be considered as a candidate
     // The first item pushed has highest priority, all else being equal
-    void pushCandidate(const string& str) { pushCandidate(str, "'" + str + "'"); }
+    void pushCandidate(const string& str) { pushCandidate(str, str); }
     // Push a symbol table value to be considered as a candidate
     // First argument is string to be matched, the second one is message to print on success
     // The first item pushed has highest priority, all else being equal
@@ -272,7 +272,7 @@ public:
     string bestCandidateMsg(const string& goal) const {
         const auto candidate = bestCandidate(goal);
         if (candidate.str.empty()) return "";
-        return "... Suggested alternative: "s + candidate.msg + "";
+        return "... Suggested alternative: '"s + candidate.msg + "'";
     }
     static void selfTest();
     const std::vector<Candidate> candidates() const { return m_candidates; }
