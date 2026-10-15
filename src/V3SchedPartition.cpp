@@ -63,7 +63,7 @@ public:
     string name() const override {
         std::ostringstream os;
         V3EmitV::verilogForTree(const_cast<AstSenItem*>(m_senItemp), os);
-        return os.str();
+        return VString::quoteBackslash(os.str());
     }
     string dotShape() const override { return "doubleoctagon"; }
     string dotColor() const override { return "red"; }
