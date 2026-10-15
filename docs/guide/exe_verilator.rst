@@ -933,17 +933,16 @@ Summary:
 .. option:: -fno-ico-change-detect
 
    Rarely needed. Disable input change detection in the input combinational
-   ('ico') region. With change detection enabled (the default, unless
-   :vlopt:`--vpi` is passed), the input combinational logic is evaluated only
-   when a top level input has actually changed, rather than unconditionally on
-   the first scheduling iteration.
+   ('ico') region. With change detection enabled, the input combinational logic
+   is evaluated only when a top level input has actually changed, rather than
+   unconditionally on the first scheduling iteration.
 
    The change detection logic assumes a top level input only ever changes
    externally between evaluations. The optimization is automatically disabled
-   for top level input signals that are written within the design. Accesses via
-   the VPI cannot be analyzed at compile time, therefore :vlopt:`--vpi`
-   disables this optimization for all inputs; it may be turned back on by
-   explicitly passing :vlopt:`-fico-change-detect <-fno-ico-change-detect>`.
+   for top level input signals that are written within the design. When
+   :vlopt:`--vpi` is used, this option does not disable change detection for
+   signals marked ``public_flat_rw``. This ensures that values deposited
+   through VPI persist until a driver changes the signal's value.
 
 .. option:: -fno-inline
 

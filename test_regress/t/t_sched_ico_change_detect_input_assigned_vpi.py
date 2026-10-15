@@ -22,6 +22,6 @@ test.compile(make_top_shell=False,
 
 test.execute()
 
-test.file_grep(test.stats, r"Scheduling, 'ico' change detect triggers\s+(\d+)", 0)
+test.file_grep(test.stats, r"Scheduling, 'ico' change detect triggers\s+(\d+)", 1)
 
 test.passes()
