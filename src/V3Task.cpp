@@ -62,7 +62,7 @@ class TaskFTaskVertex final : public TaskBaseVertex {
     VL_RTTI_IMPL(TaskFTaskVertex, TaskBaseVertex);
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* const m_nodep;
-    AstCFunc* m_cFuncp = nullptr;
+    AstCFunc* m_nonStaticCMethod = nullptr;
     bool m_needsNonInlineCFunc = false;  // Needs CFunc for selected non-inlined call sites
 
 public:
@@ -73,8 +73,8 @@ public:
     AstNodeFTask* nodep() const VL_MT_STABLE { return m_nodep; }
     string name() const override VL_MT_STABLE { return nodep()->name(); }
     string dotColor() const override { return pure() ? "black" : "red"; }
-    AstCFunc* cFuncp() const { return m_cFuncp; }
-    void cFuncp(AstCFunc* nodep) { m_cFuncp = nodep; }
+    AstCFunc* cFuncp() const { return m_nonStaticCMethod; }
+    void cFuncp(AstCFunc* nodep) { m_nonStaticCMethod = nodep; }
     bool needsNonInlineCFunc() const { return m_needsNonInlineCFunc; }
     void needsNonInlineCFunc(bool flag) { m_needsNonInlineCFunc = flag; }
 };
@@ -301,6 +301,14 @@ private:
     void visit(AstVarRef* nodep) override {
         iterateChildren(nodep);
         if (m_underPortVar) return;
+        if(m_classp){
+            for (auto itp : m_varToScopeMap){
+                // UINFO(5, "looking for edge case " + itp.first.first->aboveScopep()->name() + " " + nodep->varScopep()->scopep()->name());
+                if(itp.first.first->aboveScopep()->name() == nodep->varScopep()->scopep()->name()){
+                    UINFO(5, "found edge case \n");
+                }
+            }
+        }
         AstVar* const varp = nodep->varp();
         // Reading a constant pool entry does not depend on external runtime state.
         if (nodep->access().isReadOnly() && varp->constPoolEntry()) return;
@@ -425,6 +433,11 @@ class TaskVisitor final : public VNVisitor {
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstCFunc* m_nonStaticCMethod = nullptr;
+    std::vector<AstNode*> m_unsetUser3p;
+    AstNodeCCall* m_nonStaticCCall;
+    AstNodeFTaskRef* m_nonInlinedFTaskRef;
+
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
@@ -806,34 +819,20 @@ class TaskVisitor final : public VNVisitor {
                 connectPort(refp, portp, argp, beginp, false);
             }
         }
-        // Find all assignment nodes in this task if it is a method.
-        // If an Assign in the method refences a variable one scope above itself then pass it by refence
-        std::vector<AstNode*> unsetUserp;
+
+        // If this is a static method we need to check the scope of the VarRefs
         if(cfuncp->isMethod() && !refp->taskp()->isStatic()){
-            for (AstNode *nextp, *taskOp3 = refp->taskp()->op3p(); taskOp3; taskOp3 = nextp) {
-                nextp = taskOp3->nextp();
-                if(VN_IS(nextp,Assign)){
-                    if (AstVarRef* varRefp2 = VN_CAST(nextp->op2p(), VarRef) ){
-                        if (!varRefp2->varp()->user3SetOnce() && varRefp2->varScopep() && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module) || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))) {
-                            unsetUserp.push_back(varRefp2->varp());
-                            // If it is a method and the lhsp of our AssignNode is scoped one above
-                            if(varRefp2->varScopep()->scopep()->name() == cfuncp->scopep()->aboveScopep()->name()){
-                                AstVarRef* newVarRef = new AstVarRef(varRefp2->fileline(), varRefp2->varp(), varRefp2->access());
-                                varRefp2->varp()->sigPublic(true); // make sure this doesn't get optimized away
-                                AstNodeVarRef* callFromp = VN_CAST(ccallp->op1p(), NodeVarRef);
-                                UASSERT_OBJ(callFromp, ccallp, "Can not find where this call is coming from");
-                                newVarRef->varScopep(callFromp->varScopep());
-                                AstArg* argp = new AstArg(varRefp2->fileline(), "", newVarRef);
-                                refp->addArgsp(argp);
-                            }
-                        }
-                    }
-                }
+            m_nonInlinedFTaskRef = refp;
+            m_nonStaticCCall = ccallp;
+            m_nonStaticCMethod = cfuncp;
+            iterateAndNextNull(refp->taskp()->op3p());
+            m_nonInlinedFTaskRef = nullptr;
+            m_nonStaticCCall = nullptr;
+            m_nonStaticCMethod = nullptr;
+            // Reset the user3p
+            for(auto unset : m_unsetUser3p){
+                unset->user3p(nullptr);
             }
-        }
-        // Reset the user3p
-        for(auto unset : unsetUserp){
-            unset->user3p(nullptr);
         }
 
         // First argument is symbol table, then output if a function
@@ -1463,6 +1462,52 @@ class TaskVisitor final : public VNVisitor {
         return dpiExportTriggerp;
     }
 
+    void visit(AstVarRef* nodep) override {
+        // Find all assignment nodes in this task if it is a method.
+        // If an Assign in the method refences a variable one scope above itself then pass it by refence
+        if ( nodep->varScopep() && m_nonStaticCMethod && (VN_IS(m_nonStaticCMethod->scopep()->aboveScopep()->modp(), Module) || VN_IS(m_nonStaticCMethod->scopep()->aboveScopep()->modp(), Iface)) ) {
+            if(nodep->varScopep()->scopep()->name() == m_nonStaticCMethod->scopep()->aboveScopep()->name()){
+                if(m_nonInlinedFTaskRef){
+                    if(!nodep->varp()->user3SetOnce()){
+                        m_unsetUser3p.push_back(nodep->varp());
+                        AstVarRef* newVarRef = new AstVarRef(nodep->fileline(), nodep->varp(), nodep->access());
+                        nodep->varp()->sigPublic(true); // make sure this doesn't get optimized away
+                        AstNodeVarRef* callFromp = VN_CAST(m_nonStaticCCall->op1p(), NodeVarRef);
+                        UASSERT_OBJ(callFromp, m_nonStaticCCall, "Can not find where this call is coming from");
+                        newVarRef->varScopep(callFromp->varScopep());
+                        AstArg* argp = new AstArg(nodep->fileline(), "", newVarRef);
+                        m_nonInlinedFTaskRef->addArgsp(argp);
+                    }
+                }
+                else{
+                    AstVar* newVarp;
+                    // If we haven't emum over this node yet
+                    if(!nodep->varp()->user3SetOnce()){
+                        newVarp = new AstVar(nodep->fileline(), VVarType::PORT, nodep->name()+ "_REF", nodep->dtypep());
+                        newVarp->funcLocal(true);
+                        newVarp->funcReturn(false);
+                        newVarp->direction(VDirection::REF);
+
+                        m_nonStaticCMethod->addArgsp(newVarp);
+                        nodep->varp()->user3p(newVarp);
+                        m_unsetUser3p.push_back(nodep->varp());
+                    }else{
+                        newVarp = VN_AS(nodep->varp()->user3p(), Var);
+                    }
+                    AstVarScope* const newvscp
+                        = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
+                    m_scopep->addVarsp(newvscp);
+                    // Replace all lhsp of this AssignNode with the varible that is passed by reference
+                    AstVarRef* oldVarRefp = nodep;
+                    AstVarRef* newArgRefp = new AstVarRef(oldVarRefp->fileline(), newVarp, VAccess::WRITE);
+                    newArgRefp->varScopep(newvscp);
+                    oldVarRefp->replaceWithKeepDType(newArgRefp);
+                    VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
+                }
+            }
+        }
+    }
+
     AstCFunc* makeUserFunc(AstNodeFTask* nodep, bool ftaskNoInline) {
         // Given a already cloned node, make a public C function, or a non-inline C function
         // Probably some of this work should be done later, but...
@@ -1614,7 +1659,7 @@ class TaskVisitor final : public VNVisitor {
             cfuncp->scopeNamep(snp);
         }
 
-        std::vector<AstNode*> unsetUserp;
+
         // Create list of arguments and move to function
         for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
             nextp = stmtp->nextp();
@@ -1648,46 +1693,17 @@ class TaskVisitor final : public VNVisitor {
                     portp->user2p(newvscp);
                 }
             }
-
-            // Find all assignment nodes in this task if it is a method.
-            // If an Assign in the method refences a variable one scope above itself then pass it by refence
-            if(nodep->classMethod() && !nodep->isStatic())
-                if(AstAssign* assignp = VN_CAST(nextp,Assign)){
-                    if (AstVarRef* varRefp2 = VN_CAST(nextp->op2p(), VarRef) ){
-                        if ( varRefp2->varScopep() && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module) || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface)) ) {
-                            if(varRefp2->varScopep()->scopep()->name() == cfuncp->scopep()->aboveScopep()->name()){
-                                AstVar* newVarp;
-                                // If we haven't emum over this node yet
-                                if(!varRefp2->varp()->user3SetOnce()){
-                                    newVarp = new AstVar(varRefp2->fileline(), VVarType::PORT, varRefp2->name()+ "_REF", varRefp2->dtypep());
-                                    newVarp->funcLocal(true);
-                                    newVarp->funcReturn(false);
-                                    newVarp->direction(VDirection::REF);
-
-                                    cfuncp->addArgsp(newVarp);
-                                    varRefp2->varp()->user3p(newVarp);
-                                    unsetUserp.push_back(varRefp2->varp());
-                                }else{
-                                    newVarp = VN_AS(varRefp2->varp()->user3p(), Var);
-                                }
-                                AstVarScope* const newvscp
-                                    = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
-                                m_scopep->addVarsp(newvscp);
-                                // Replace all lhsp of this AssignNode with the varible that is passed by reference
-                                AstVarRef* oldVarRefp = VN_CAST(assignp->lhsp(), VarRef);
-                                AstVarRef* newArgRefp = new AstVarRef(oldVarRefp->fileline(), newVarp, VAccess::WRITE);
-                                newArgRefp->varScopep(newvscp);
-                                oldVarRefp->replaceWithKeepDType(newArgRefp);
-                                VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
-                            }
-                        }
-                    }
-                }
-
         }
-        for(auto unset : unsetUserp){
-            unset->user3p(nullptr);
+
+        if(nodep->classMethod() && !nodep->isStatic()){
+            m_nonStaticCMethod = cfuncp;
+            iterateChildren(nodep);
+            m_nonStaticCMethod = nullptr;
+            for(auto unset : m_unsetUser3p){
+                unset->user3p(nullptr);
+            }
         }
+
         // Fake output variable if was a function.  It's more efficient to
         // have it last, rather than first, as the C compiler can sometimes
         // avoid copying variables when calling shells if argument 1
