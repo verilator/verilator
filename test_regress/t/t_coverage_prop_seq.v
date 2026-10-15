@@ -39,11 +39,17 @@ module t;
     inner_prop;
   endproperty : outer_prop
 
+  property proc_prop;
+    1'b1;
+  endproperty : proc_prop
+
   cover property (c_prop);
   assert property (asrt_prop);
   assume property (assm_prop);
   cover property (prop_seq);
   cover property (outer_prop);
+
+  always @(negedge clk) assert property (proc_prop);
 
   always #1 clk = ~clk;
 
@@ -79,5 +85,14 @@ module t;
   cover property (port_prop(p_a));
   cover property (local_prop);
   cover property (prop_port_seq);
+
+  // A sequence event control is not a cover statement of its own
+  int ev_count = 0;
+
+  sequence ev_seq;
+    @(negedge clk) 1'b1;
+  endsequence : ev_seq
+
+  always @(ev_seq) ev_count <= ev_count + 1;
 
 endmodule

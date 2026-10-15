@@ -46,8 +46,7 @@ module t (
   assert property (prop_check_nested);
 
   // Multi-cycle sequence refs: two distinct named sequences chained with ##1.
-  // Exercises inlineAllSequenceRefs re-iteration after the first sequence is
-  // inlined (early-return branch on the second visit).
+  // Both multi-cycle sequence instances in the same property are inlined.
   sequence seq_cycle_ab;
     a ##1 b;
   endsequence

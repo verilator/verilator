@@ -9,9 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt_all')
 
-test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing'])
+test.compile(timing_loop=True, verilator_flags2=['--assert', '--timing', '--stats'])
+
+test.file_grep(test.stats, r'Assertions, inlined property instances\s+(\d+)', 4)
+test.file_grep(test.stats, r'Assertions, inlined sequence instances\s+(\d+)', 15)
 
 test.execute()
 

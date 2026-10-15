@@ -15,6 +15,9 @@ test.compile(verilator_flags2=['--binary --coverage'])
 
 test.execute(all_run_flags=[" +verilator+coverage+file+" + test.obj_dir + "/coverage.dat"])
 
+# Only the cover statements get a user coverage point, not the sequence event control
+test.file_grep_count(test.obj_dir + "/coverage.dat", r"v_user/", 6)
+
 test.run(cmd=[
     os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage", "--filter-type line", "--write-info",
     test.obj_dir + "/line.info", test.obj_dir + "/coverage.dat"

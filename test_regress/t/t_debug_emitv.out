@@ -565,7 +565,8 @@ module t;
     @(posedge clk) in
     endsequence
     begin : assert_seq_clocked
-        assert property ( s_clocked()
+        assert property (@() @(posedge clk) in
+
         ) begin
         end
         else begin
@@ -577,6 +578,21 @@ module t;
     property p1;
     @( clk) sum[0]
     endproperty
+    property p_args;
+    input untyped x;
+    input untyped y;
+    @(posedge clk) (| x)
+    endproperty
+    property p_chain;
+     p_args
+    endproperty
+    begin : assert_chain
+        assert property (@(posedge clk) (| in)
+        ) begin
+        end
+        else begin
+        end
+    end
     assert property (@( clk) (! ##1 in)
     ) begin
     end
@@ -784,14 +800,14 @@ module t;
     @(posedge clk) 1'h0
     endproperty
     begin : assert_concurrent
-        assert property ( prop
+        assert property (@(posedge clk) 1'h0
         ) begin
         end
         else begin
         end
     end
     begin : assert_concurrent_else
-        assert property ( prop
+        assert property (@(posedge clk) 1'h0
         ) begin
         end
         else begin
@@ -799,7 +815,7 @@ module t;
         end
     end
     begin : assert_concurrent_stmt
-        assert property ( prop
+        assert property (@(posedge clk) 1'h0
         ) begin
             $display("pass");
         end
@@ -807,7 +823,7 @@ module t;
         end
     end
     begin : assert_concurrent_stmt_else
-        assert property ( prop
+        assert property (@(posedge clk) 1'h0
         ) begin
             $display("pass");
         end
@@ -816,14 +832,14 @@ module t;
         end
     end
     begin : assume_concurrent
-        assume property ( prop
+        assume property (@(posedge clk) 1'h0
         ) begin
         end
         else begin
         end
     end
     begin : assume_concurrent_else
-        assume property ( prop
+        assume property (@(posedge clk) 1'h0
         ) begin
         end
         else begin
@@ -831,7 +847,7 @@ module t;
         end
     end
     begin : assume_concurrent_stmt
-        assume property ( prop
+        assume property (@(posedge clk) 1'h0
         ) begin
             $display("pass");
         end
@@ -839,7 +855,7 @@ module t;
         end
     end
     begin : assume_concurrent_stmt_else
-        assume property ( prop
+        assume property (@(posedge clk) 1'h0
         ) begin
             $display("pass");
         end
@@ -848,12 +864,12 @@ module t;
         end
     end
     begin : cover_concurrent
-        cover property ( prop
+        cover property (@(posedge clk) 1'h0
         ) begin
         end
     end
     begin : cover_concurrent_stmt
-        cover property ( prop
+        cover property (@(posedge clk) 1'h0
         ) begin
             $display("pass");
         end
@@ -1824,8 +1840,15 @@ module seq_event;
         begin
 
             ???? // EVENTCONTROL
-            @( sq())end
+            @( __VseqEvent_h9d9f741d__0)end
     end
+    event __VseqEvent_h9d9f741d__0;
+    cover property (@() @(posedge clk) a##1 b##1 c
+
+    ) begin
+
+        ???? // FIREEVENT
+        __VseqEvent_h9d9f741d__0end
 endmodule
 package p;
     logic pkgvar;

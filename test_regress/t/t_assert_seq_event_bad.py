@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(expect_filename=test.golden_filename, verilator_flags2=['--timing'], fails=True)
+# -Wall checks that nothing a rejected event control leaves is linted
+test.lint(expect_filename=test.golden_filename, verilator_flags2=['-Wall --timing'], fails=True)
 
 test.passes()
