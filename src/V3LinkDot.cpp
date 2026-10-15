@@ -57,7 +57,7 @@
 //        aa         (VSymEnt->AstCell)
 //          var        (AstVar) -- no sub symbol table needed
 //          beg        (VSymEnt->AstBegin) -- can see "upper" a's symbol table
-//      a__DOT__aa (VSymEnt->AstCellInline) -- points to a.aa's symbol table
+//          beg        (VSymEnt->AstCellInline) -- once V3Begin flattened it, prefix "beg__DOT__"
 //      b          (VSymEnt->AstCell)
 //*************************************************************************
 
@@ -449,8 +449,8 @@ public:
 
     VSymEnt* insertInline(VSymEnt* abovep, VSymEnt* modSymp, AstCellInline* nodep,
                           const string& basename) {
-        // A fake point in the hierarchy, corresponding to an inlined module
-        // This references to another Sym, and eventually resolves to a module with a prefix
+        // A fake point in the hierarchy, corresponding to a named block flattened by V3Begin.
+        // Names are looked up in the module with the block's flattened prefix.
         UASSERT_OBJ(abovep, nodep, "Null symbol table inserting node");
         VSymEnt* const symp = new VSymEnt{&m_syms, nodep};
         UINFO(9, "      INSERTinl se" << cvtToHex(symp) << "  " << basename << " above=se"
@@ -807,16 +807,12 @@ public:
                 // Check this module - subcellnames
                 const AstCell* cellp = lookupSymp ? VN_CAST(lookupSymp->nodep(), Cell)
                                                   : nullptr;  // Replicated below
-                const AstCellInline* inlinep = lookupSymp
-                                                   ? VN_CAST(lookupSymp->nodep(), CellInline)
-                                                   : nullptr;  // Replicated below
                 if (VSymEnt* const findSymp = findWithAltFallback(lookupSymp, ident, altIdent)) {
                     lookupSymp = findSymp;
                 }
 
                 // Check this module - cur modname
-                else if ((cellp && cellp->modp()->origName() == ident)
-                         || (inlinep && inlinep->origModName() == ident)) {
+                else if (cellp && cellp->modp()->origName() == ident) {
                 }
                 // $root we walk up to Netlist
                 else if (ident == "$root") {
@@ -834,13 +830,12 @@ public:
                         lookupSymp = lookupSymp->parentp();
                         cellp = lookupSymp ? VN_CAST(lookupSymp->nodep(), Cell)
                                            : nullptr;  // Replicated above
-                        inlinep = lookupSymp ? VN_CAST(lookupSymp->nodep(), CellInline)
-                                             : nullptr;  // Replicated above
                         if (lookupSymp) {
                             UINFO(9, "    Up to " << lookupSymp);
-                            if (cellp || inlinep) crossedCell = true;
-                            if ((cellp && cellp->modp()->origName() == ident)
-                                || (inlinep && inlinep->origModName() == ident)) {
+                            if (cellp || VN_IS(lookupSymp->nodep(), CellInline)) {
+                                crossedCell = true;
+                            }
+                            if (cellp && cellp->modp()->origName() == ident) {
                                 break;
                             } else if (VSymEnt* const findSym2p
                                        = findWithAltFallback(lookupSymp, ident, altIdent)) {
@@ -1448,23 +1443,21 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstCellInline* nodep) override {  // FindVisitor::
         UINFO(5, "   CELLINLINE under " << m_scope << " is " << nodep);
         VSymEnt* aboveSymp = m_curSymp;
+        std::string ident = nodep->name();
         // If baz__DOT__foo__DOT__bar, we need to find baz__DOT__foo and add bar to it.
-        const string dottedname = nodep->name();
-        string::size_type pos = dottedname.rfind("__DOT__");
-        if (pos != string::npos) {
-            const string dotted = dottedname.substr(0, pos);
-            const string ident = dottedname.substr(pos + std::strlen("__DOT__"));
-            string baddot;
+        const std::string::size_type pos = ident.rfind("__DOT__");
+        if (pos != std::string::npos) {
+            const std::string dotted = ident.substr(0, pos);
+            ident = ident.substr(pos + std::strlen("__DOT__"));
+            std::string baddot;
             VSymEnt* okSymp;
             aboveSymp = m_statep->findDotted(nodep->fileline(), aboveSymp, dotted, baddot, okSymp,
                                              false);
             UASSERT_OBJ(aboveSymp, nodep,
                         "Can't find cellinline insertion point at "
                             << AstNode::prettyNameQ(baddot) << " in: " << nodep->prettyNameQ());
-            m_statep->insertInline(aboveSymp, m_modSymp, nodep, ident);
-        } else {  // No __DOT__, just directly underneath
-            m_statep->insertInline(aboveSymp, m_modSymp, nodep, nodep->name());
         }
+        m_statep->insertInline(aboveSymp, m_modSymp, nodep, ident);
     }
     void visit(AstDefParam* nodep) override {  // FindVisitor::
         nodep->user1p(m_curSymp);
@@ -3283,7 +3276,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         string m_dotText;  // String of dotted names found in below parseref
         DotStates() { init(nullptr); }
         ~DotStates() = default;
-        void init(VSymEnt* curSymp) {
+        void init(VSymEnt* curSymp, bool unresolvedClass = false) {
             m_dotPos = DP_NONE;
             m_dotSymp = curSymp;
             m_dotp = nullptr;
@@ -3291,7 +3284,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_dotErr = false;
             m_dotText = "";
             m_unresolvedCell = false;
-            m_unresolvedClass = false;
+            m_unresolvedClass = unresolvedClass;
             m_unresolvedGenericIface = false;
             m_genBlk = false;
             m_unlinkedScopep = nullptr;
@@ -3622,6 +3615,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
             classSymp = classSymp->parentp();
         }
         return classSymp;
+    }
+    // 'randomize() with' target class not yet specialized; defer to post-V3Param pass
+    bool randTargetUnresolved() const {
+        return m_statep->forPrimary() && m_currentWithp && m_randMethodCallp && !m_randSymp;
     }
     void importDerivedClass(AstClass* derivedClassp, VSymEnt* baseSymp, AstClass* baseClassp) {
         // Also used for standard 'extends' from a base class
@@ -3987,10 +3984,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
     void visit(AstCellInline* nodep) override {
         LINKDOT_VISIT_START();
         checkNoDot(nodep);
-        if (m_statep->forScopeCreation() && !v3Global.opt.vpi()) {
-            nodep->unlinkFrBack();
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        }
+        UASSERT_OBJ(m_statep->forScopeCreation(), nodep, "CellInline should not exist yet");
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstCell* nodep) override {
         // Cell: Recurse inside or cleanup not founds
@@ -4144,7 +4139,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         {
             if (start) {  // Starting dot sequence
                 UINFOTREE(9, nodep, "", "dot-in");
-                m_ds.init(m_curSymp);  // Start from current point
+                // Keep deferral from visit(AstMethodCall) for unspecialized rand target
+                m_ds.init(m_curSymp, m_ds.m_unresolvedClass && randTargetUnresolved());
             }
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_FIRST;
@@ -4154,7 +4150,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
                 if (m_randSymp && m_currentWithp) classSymp = m_randSymp;
-                if (!classSymp) {
+                if (!classSymp && randTargetUnresolved()) {
+                    // Bind 'this' in post-V3Param pass
+                } else if (!classSymp) {
                     nodep->v3error("'this' used outside class (IEEE 1800-2023 8.11)");
                     m_ds.m_dotErr = true;
                 } else {

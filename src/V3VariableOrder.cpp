@@ -36,10 +36,11 @@
 #include "V3VariableOrder.h"
 
 #include "V3AstUserAllocator.h"
-#include "V3EmitCBase.h"
 #include "V3ExecGraph.h"
+#include "V3Stats.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -101,20 +102,16 @@ public:
     }
 };
 
-struct VarAttributes final {
-    uint8_t stratum;  // Roughly equivalent to alignment requirement, to avoid padding
-    bool anonOk;  // Can be emitted as part of anonymous structure
-};
 class VariableOrder final {
-    std::unordered_map<const AstVar*, VarAttributes> m_attributes;
+    // NODE STATE
+    //  AstVar::user1()   ->   uint64_t: Stratum, roughly equivalent to alignment
+    //                                   requirement, to avoid padding
+    const VNUser1InUse m_user1InUse;
 
     const MTaskWritersMap& m_mTaskWriters;
-    std::vector<AstVar*>& m_varps;
 
-    VariableOrder(AstNodeModule* modp, const MTaskWritersMap& mTaskWriters,
-                  std::vector<AstVar*>& varps)
-        : m_mTaskWriters{mTaskWriters}
-        , m_varps{varps} {
+    VariableOrder(AstNodeModule* modp, const MTaskWritersMap& mTaskWriters)
+        : m_mTaskWriters{mTaskWriters} {
         orderModuleVars(modp);
     }
     ~VariableOrder() = default;
@@ -122,20 +119,11 @@ class VariableOrder final {
 
     //######################################################################
 
-    // Simple sort
+    // Simple sort by stratum
     void simpleSortVars(std::vector<AstVar*>& varps) {
-        stable_sort(varps.begin(), varps.end(),
-                    [this](const AstVar* ap, const AstVar* bp) -> bool {
-                        UASSERT(m_attributes.find(ap) != m_attributes.end()
-                                    && m_attributes.find(bp) != m_attributes.end(),
-                                "m_attributes should be populated for each AstVar");
-                        const auto& attrA = m_attributes.at(ap);
-                        const auto& attrB = m_attributes.at(bp);
-                        if (attrA.anonOk != attrB.anonOk) {  // Anons before non-anons
-                            return attrA.anonOk;
-                        }
-                        return attrA.stratum < attrB.stratum;  // Finally sort by stratum
-                    });
+        stable_sort(varps.begin(), varps.end(), [](const AstVar* ap, const AstVar* bp) -> bool {
+            return ap->user1() < bp->user1();
+        });
     }
 
     // Sort by writing MTasks first, then the same as simpleSortVars
@@ -183,50 +171,72 @@ class VariableOrder final {
 
     // cppcheck-suppress constParameterPointer
     void orderModuleVars(AstNodeModule* modp) {
-        // Top level ports stay first in source order, as a --lib-create wrapper must match
-        // the interface of the module it replaces
+        // Top level ports stay first, in source order (--lib-create wrapper must match original)
         std::vector<AstVar*> portps;
-        // Unlink all module variables from the module, compute attributes
+        // Followed by trivially constructible variables
+        std::vector<AstVar*> trivps;
+        // Followed by not trivially constructible variables
+        std::vector<AstVar*> nontps;
+        // Followed by variables that are not model state, in source order
+        std::vector<AstVar*> restps;
+
+        // Gather variables, compute stratum
         for (AstNode *nodep = modp->stmtsp(), *nextp; nodep; nodep = nextp) {
             nextp = nodep->nextp();
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (modp->isTop() && varp->isIO()) {
+                if (varp->isPrimaryIO()) {
                     portps.push_back(varp);
                     continue;
                 }
-                m_varps.push_back(varp);
+                if (!varp->isModelState()) {
+                    restps.push_back(varp);
+                    continue;
+                }
 
-                // Compute attributes up front
-                // Stratum
-                const int sigbytes = varp->dtypeSkipRefp()->widthAlignBytes();
-                const uint8_t stratum = (v3Global.opt.hierChild() && varp->isPrimaryIO())   ? 0
-                                        : (varp->isPrimaryClock() && varp->widthMin() == 1) ? 1
-                                        : VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)    ? 9
-                                        : (varp->basicp() && varp->basicp()->isOpaque())    ? 8
-                                        : (varp->isScBv() || varp->isScBigUint())           ? 7
-                                        : (sigbytes == 8)                                   ? 6
-                                        : (sigbytes == 4)                                   ? 5
-                                        : (sigbytes == 2)                                   ? 3
-                                        : (sigbytes == 1)                                   ? 2
-                                                                                            : 10;
-                m_attributes.emplace(varp, VarAttributes{stratum, EmitCUtil::isAnonOk(varp)});
+                if (varp->isTriviallyConstructible()) {
+                    trivps.push_back(varp);
+                } else {
+                    nontps.push_back(varp);
+                }
+
+                AstNodeDType* const dtypep = varp->dtypeSkipRefp();
+                const int sigbytes = dtypep->widthAlignBytes();
+                const uint64_t stratum = VN_IS(dtypep, UnpackArrayDType)                  ? 9
+                                         : (varp->basicp() && varp->basicp()->isString()) ? 4
+                                         : (varp->basicp() && varp->basicp()->isOpaque()) ? 8
+                                         : (sigbytes == 8)                                ? 3
+                                         : (sigbytes == 4)                                ? 2
+                                         : (sigbytes == 2)                                ? 1
+                                         : (sigbytes == 1)                                ? 0
+                                                                                          : 10;
+                varp->user1(stratum);
             }
         }
 
-        if (!m_varps.empty()) {
+        // Sort them
+        for (std::vector<AstVar*>* const varpsp : {&trivps, &nontps}) {
+            if (varpsp->empty()) continue;
             if (!v3Global.opt.mtasks()) {
-                simpleSortVars(m_varps);
+                simpleSortVars(*varpsp);
             } else {
-                mtaskSortVars(m_varps);
+                mtaskSortVars(*varpsp);
             }
         }
-        m_varps.insert(m_varps.begin(), portps.begin(), portps.end());
+
+        // Insert them back under the module, in the new order, but at
+        // the front of the list so they come out first in dumps/JSON.
+        AstNode* nodesp = nullptr;
+        for (const std::vector<AstVar*>* const varpsp : {&portps, &trivps, &nontps, &restps}) {
+            for (AstVar* const varp : *varpsp) {
+                nodesp = AstNode::addNextNull(nodesp, varp->unlinkFrBack());
+            }
+        }
+        modp->prependStmtsp(nodesp);
     }
 
 public:
-    static void processModule(AstNodeModule* modp, const MTaskWritersMap& mTaskWriters,
-                              std::vector<AstVar*>& varps) {
-        VariableOrder{modp, mTaskWriters, varps};
+    static void apply(AstNodeModule* modp, const MTaskWritersMap& mTaskWriters) {
+        VariableOrder{modp, mTaskWriters};
     }
 };
 
@@ -246,41 +256,13 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
             }
         });
     }
-    if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-gather");
 
-    // Sort variables for each module
-    std::unordered_map<AstNodeModule*, std::vector<AstVar*>> sortedVars;
+    // Sort variables of each module
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_AS(modp->nextp(), NodeModule)) {
         if (modp->isConstPool()) continue;
-        VariableOrder::processModule(modp, mTaskWriters, sortedVars[modp]);
-    }
-    if (v3Global.opt.stats()) V3Stats::statsStage("variableorder-sort");
-
-    // Insert them back under the module, in the new order, but at
-    // the front of the list so they come out first in dumps/JSON.
-    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-         modp = VN_AS(modp->nextp(), NodeModule)) {
-        if (modp->isConstPool()) continue;
-        const std::vector<AstVar*>& varps = sortedVars[modp];
-
-        if (!varps.empty()) {
-            auto it = varps.cbegin();
-            AstVar* const firstp = *it++;
-            firstp->unlinkFrBack();
-            for (; it != varps.cend(); ++it) {
-                AstVar* const varp = *it;
-                varp->unlinkFrBack();
-                firstp->addNext(varp);
-            }
-            if (AstNode* const stmtsp = modp->stmtsp()) {
-                stmtsp->unlinkFrBackWithNext();
-                AstNode::addNext<AstNode, AstNode>(firstp, stmtsp);
-            }
-            modp->addStmtsp(firstp);
-        }
+        VariableOrder::apply(modp, mTaskWriters);
     }
 
-    // Done
     V3Global::dumpCheckGlobalTree("variableorder", 0, dumpTreeEitherLevel() >= 3);
 }

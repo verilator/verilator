@@ -1160,6 +1160,7 @@ def write_ast_macros(filename):
                     emitBlock('''\
                     Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
                     void add{Name}(Ast{kind}* nodep) {{ addNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
+                    void prepend{Name}(Ast{kind}* nodep) {{ prependNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
                               kind=kind,
                               name=name,
@@ -1168,6 +1169,7 @@ def write_ast_macros(filename):
                               retrieve=retrieve)
                     if superOp:
                         hiddenMethods.append("add" + superName[0].upper() + superName[1:])
+                        hiddenMethods.append("prepend" + superName[0].upper() + superName[1:])
                 elif monad == "Optional":
                     emitBlock('''\
                     Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}

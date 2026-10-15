@@ -189,6 +189,8 @@ public:
     string cType(const string& name, bool forFunc, bool isRef, bool packed = false) const;
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
+    // C++ type (as emitted by cType) is trivially default constructible and destructible?
+    bool isTriviallyConstructible() const VL_MT_STABLE;
     virtual bool isDynamicallySized() const { return false; }
 
 private:
@@ -434,6 +436,10 @@ public:
         : ASTGEN_SUPER_BasicDType(fl) {
         init(VBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, nullptr);
     }
+    AstBasicDType(FileLine* fl, VFlagLogic2StatePacked, int wantwidth)
+        : ASTGEN_SUPER_BasicDType(fl) {
+        init(VBasicDTypeKwd::LOGIC2STATE, VSigning::NOSIGN, wantwidth, -1, nullptr);
+    }
     AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER_BasicDType(fl) {
         init(VBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, nullptr);
@@ -459,7 +465,7 @@ public:
     // width/widthMin/numeric compared elsewhere
     bool sameNode(const AstNode* samep) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override;
-    string name() const override VL_MT_STABLE { return m.m_keyword.ascii(); }
+    string name() const override VL_MT_STABLE { return m.m_keyword.typeName(); }
     string prettyDTypeName(bool full) const override;
     const char* broken() const override {
         BROKEN_RTN(dtypep() != this);
@@ -519,6 +525,10 @@ public:
     }
     bool isDpiLogicVec() const {  // DPI uses svLogicVecVal
         return keyword().isFourstate() && !(keyword() == VBasicDTypeKwd::LOGIC && !isRanged());
+    }
+    bool isDpiCLayout() const {
+        return keyword().isDpiCLayout()
+               || (keyword().isSameish(VBasicDTypeKwd::LOGIC) && !isRanged());
     }
     bool isDpiPrimitive() const {  // DPI uses a primitive type
         return !isDpiBitVec() && !isDpiLogicVec();

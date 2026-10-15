@@ -4,6 +4,12 @@
 // SPDX-FileCopyrightText: 2005 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -25,6 +31,31 @@ module t (
 
   reg [31:0] w0;
   assign w[0] = w0;
+
+  // Members which are constructed explicitly, so the ctor/dtor of 't' is split
+  int assoc[string];
+  int queue[$];
+
+  always @(posedge clk) begin
+    assoc[$sformatf("%0d", cyc)] = cyc;
+    queue.push_back(cyc);
+    if (cyc == 10) begin
+      `checkd(assoc.size(), 11);
+      `checkd(assoc["10"], 10);
+      `checkd(queue.size(), 11);
+      `checkd(queue[10], 10);
+    end
+  end
+
+  // Non-inlined instances, with strings, so their ctor/dtor is split
+  subNoInline subNoInline1 (
+      .clk(clk),
+      .cyc(cyc)
+  );
+  subNoInline subNoInline2 (
+      .clk(clk),
+      .cyc(cyc)
+  );
 
   // Test loop
   always @(posedge clk) begin
@@ -62,6 +93,26 @@ module sub (
 
   always @(posedge z_tmp == 32'b11) begin
     $display("%m z_tmp: %0d, $past(z_tmp): $0d", z_tmp, $past(z_tmp));
+  end
+
+endmodule
+
+module subNoInline (
+    input clk,
+    input integer cyc
+);
+  /*verilator no_inline_module*/
+
+  // string members cause ctor/dtor of this module to split
+  string s_cyc;
+  string s_cyc2;
+  string s_cat;
+
+  always @(posedge clk) begin
+    s_cyc <= $sformatf("%0d", cyc);
+    s_cyc2 <= $sformatf("%0d", cyc * 2);
+    s_cat <= {s_cyc, ":", s_cyc2};
+    if (cyc == 10) `checks(s_cat, "8:16");
   end
 
 endmodule
