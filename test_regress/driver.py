@@ -1112,7 +1112,8 @@ class VlTest:
             VtOs.system('/bin/rm -rf ' + self.obj_dir)
 
     def prune(self) -> None:
-        """Called on a --driver-prune to clean up files but keep the ones used by test-snap/test-diff."""
+        """Called on a --driver-prune to clean up files,
+        but keep the ones used by test-snap/test-diff."""
         with open(os.path.dirname(os.path.abspath(__file__)) + "/test_diff_ignore.txt",
                   encoding="utf8") as fh:
             patterns = [line for line in fh.read().splitlines() if line and line[0] != '#']
