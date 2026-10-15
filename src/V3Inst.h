@@ -20,9 +20,13 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include <functional>
+
 class AstAssignW;
 class AstCell;
 class AstNetlist;
+class AstNodeExpr;
+class AstNodeVarRef;
 class AstPin;
 
 //============================================================================
@@ -33,6 +37,12 @@ public:
     static AstAssignW* pinReconnectSimple(AstPin* pinp, AstCell* cellp, bool forTristate,
                                           bool alwaysCvt = false) VL_MT_DISABLED;
     static void checkOutputShort(const AstPin* nodep) VL_MT_DISABLED;
+    // Call 'leaff' on each variable a pin connection would drive if it were assigned
+    // (through bit/part/array selects, concatenations and single replications).
+    // Returns false if the connection cannot be driven (e.g. arithmetic), or 'leaff'
+    // returned false for a leaf. All leaves are visited either way.
+    static bool forEachDrivenLeaf(AstNodeExpr* nodep,
+                                  const std::function<bool(AstNodeVarRef*)>& leaff) VL_MT_DISABLED;
 };
 
 #endif  // Guard

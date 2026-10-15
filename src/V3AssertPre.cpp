@@ -25,6 +25,7 @@
 
 #include "V3Assert.h"
 #include "V3Const.h"
+#include "V3Inst.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
@@ -1908,44 +1909,35 @@ public:
 //######################################################################
 // Clocking driven port propagation
 
-// Mark the input ports among the driven leaves of a pin connection
-// (variables, bit/part/array selects and concatenations of them).
-static bool markClockingDrivenLeaves(AstNodeExpr* const nodep) {
-    if (const AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
-        AstVar* const varp = refp->varp();
-        if (varp->direction() != VDirection::INPUT) return false;
-        if (varp->isClockingDriven() || varp->isClockingDrivenThru()) return false;
-        varp->isClockingDrivenThru(true);
-        return true;
-    }
-    if (AstSel* const selp = VN_CAST(nodep, Sel)) return markClockingDrivenLeaves(selp->fromp());
-    if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
-        return markClockingDrivenLeaves(selp->fromp());
-    }
-    if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
-        const bool lhsChanged = markClockingDrivenLeaves(concatp->lhsp());
-        return markClockingDrivenLeaves(concatp->rhsp()) || lhsChanged;
-    }
-    // V3Width wraps a concatenated port connection in a single replication
-    if (AstReplicate* const repp = VN_CAST(nodep, Replicate)) {
-        const AstConst* const countp = VN_CAST(repp->countp(), Const);
-        if (countp && countp->toUInt() == 1) return markClockingDrivenLeaves(repp->srcp());
-    }
-    return false;
-}
-
 // The drive of a clocking driven input port is copied out through its connection
 // (V3Inst), so input ports of the parent feeding that connection carry it on
 static void propagateClockingDriven(AstNetlist* const nodep) {
-    bool changed = true;
-    while (changed) {
-        changed = false;
-        nodep->foreach([&](AstPin* pinp) {
-            const AstVar* const modVarp = pinp->modVarp();
-            if (!modVarp || !pinp->exprp() || modVarp->direction() != VDirection::INPUT) return;
-            if (!modVarp->isClockingDriven() && !modVarp->isClockingDrivenThru()) return;
-            if (markClockingDrivenLeaves(VN_AS(pinp->exprp(), NodeExpr))) changed = true;
-        });
+    const auto isDrivenInput = [](const AstVar* varp) {
+        return varp->direction() == VDirection::INPUT
+               && (varp->isClockingDriven() || varp->isClockingDrivenThru());
+    };
+    // Pins by the port they connect, and the driven ports whose pins are still to visit
+    std::unordered_map<const AstVar*, std::vector<AstPin*>> pinsByPort;
+    std::vector<const AstVar*> worklist;
+    nodep->foreach([&](AstPin* pinp) {
+        const AstVar* const modVarp = pinp->modVarp();
+        if (!modVarp || !pinp->exprp() || modVarp->direction() != VDirection::INPUT) return;
+        std::vector<AstPin*>& pins = pinsByPort[modVarp];
+        if (pins.empty() && isDrivenInput(modVarp)) worklist.push_back(modVarp);
+        pins.push_back(pinp);
+    });
+    while (!worklist.empty()) {
+        const AstVar* const portp = worklist.back();
+        worklist.pop_back();
+        for (AstPin* const pinp : pinsByPort[portp]) {
+            V3Inst::forEachDrivenLeaf(VN_AS(pinp->exprp(), NodeExpr), [&](AstNodeVarRef* refp) {
+                AstVar* const varp = refp->varp();
+                if (varp->direction() != VDirection::INPUT || isDrivenInput(varp)) return true;
+                varp->isClockingDrivenThru(true);
+                worklist.push_back(varp);
+                return true;
+            });
+        }
     }
 }
 
