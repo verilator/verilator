@@ -58,7 +58,6 @@
 //   buildDependencyGraph, splitCyclesRetainCores, topoOrderSurvivors
 //                                            retain cycle cores, order the rest
 //   copyStoredSources                        copy rows: the source holds storage
-//   pruneBodies                              backward liveness over the clones
 //   foldTrivialCopyGroups                    fold rows: the source is another cone
 //   emitReconstructions                      emit the funcs and shadows
 //   retainCompletenessFloor                  retain what is left
@@ -261,9 +260,6 @@ struct Group final {
     AstCFunc* funcp = nullptr;
     bool live = true;  // Cleared when the group is abandoned and its targets retained
     GroupVertex* vtxp = nullptr;  // Its vertex in the dependency graph, null once dead
-    // Representatives only: the pruned statement clone and the group vars it still produces.
-    AstNode* bodyp = nullptr;
-    std::unordered_set<AstVarScope*> neededps;
 };
 
 class GroupVertex final : public V3GraphVertex {
@@ -638,7 +634,6 @@ class VpiLazyPreparer final {
     int m_nextGid = 0;
     int m_nextTempIdx = 0;
 
-    int m_prunedStmts = 0;  // Cloned statements dropped as dead (pruneBodies)
     std::map<std::string, int> m_floorReason;  // Floor residual shape -> instances, for stats
     std::unordered_map<const AstVarScope*, CombFootprint> m_combFootOf;
     std::unordered_set<const AstVar*> m_combFootVars;  // Variables of m_combFootOf keys
@@ -667,7 +662,6 @@ public:
         splitCyclesRetainCores();
         topoOrderSurvivors();
         copyStoredSources();
-        pruneBodies();
         foldTrivialCopyGroups();
         emitReconstructions();
         retainCompletenessFloor();
@@ -1885,7 +1879,6 @@ private:
             m_retargetSrcOf.emplace(g->targets[0], g->copyFromp);
             m_foldedCopies.push_back(g);
             g->live = false;
-            if (g->bodyp) VL_DO_DANGLING(g->bodyp->deleteTree(), g->bodyp);
         }
         dropFromOrdered();
     }
@@ -2117,114 +2110,6 @@ private:
         }
     }
 
-    // METHODS - Liveness prune
-
-    // Adds the variables one statement reads to 'readsr'; its own subtree only, not its nextp().
-    class LazyStmtReadsVisitor final : public VNVisitorConst {
-        Defined& m_readsr;  // Where the reads are added
-
-        // VISITORS
-        void visit(AstVarRef* nodep) override {
-            if (!nodep->access().isWriteOnly()) m_readsr.insert(nodep->varScopep());
-        }
-        void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
-
-    public:
-        LazyStmtReadsVisitor(AstNode* nodep, Defined& readsr)
-            : m_readsr{readsr} {
-            iterateConst(nodep);
-        }
-    };
-
-    static std::vector<AstNode*> splitList(AstNode* listp) {
-        std::vector<AstNode*> stmtps;
-        while (listp) {
-            AstNode* const nextp = listp->nextp();
-            if (nextp) nextp->unlinkFrBackWithNext();
-            stmtps.push_back(listp);
-            listp = nextp;
-        }
-        return stmtps;
-    }
-
-    // 'neededr' only grows, so one backward pass suffices; no dead-store elimination.
-    AstNode* pruneList(AstNode* listp, Defined& neededr) {
-        std::vector<AstNode*> stmtps = splitList(listp);
-        std::vector<bool> keep(stmtps.size(), true);
-        for (size_t i = stmtps.size(); i-- > 0;) keep[i] = pruneStmt(stmtps[i], neededr);
-        AstNode* newp = nullptr;
-        for (size_t i = 0; i < stmtps.size(); ++i) {
-            if (keep[i]) {
-                newp = AstNode::addNext(newp, stmtps[i]);
-            } else {
-                ++m_prunedStmts;
-                VL_DO_DANGLING(stmtps[i]->deleteTree(), stmtps[i]);
-            }
-        }
-        return newp;
-    }
-
-    // Prunes inside 'stmtp' too; everything is pure, so a drop shows only through what it writes.
-    bool pruneStmt(AstNode* stmtp, Defined& neededr) {
-        if (VN_IS(stmtp, Comment)) return false;
-        if (VN_IS(stmtp, JumpGo)) return true;
-        if (AstNodeAssign* const asgnp = VN_CAST(stmtp, NodeAssign)) {
-            bool partial = false;
-            const AstVarRef* const refp = lhsBaseRef(asgnp->lhsp(), partial);
-            UASSERT_OBJ(refp, asgnp, "--vpi-lazy group survived with an unmodelled lvalue");
-            if (!neededr.count(refp->varScopep())) return false;
-            LazyStmtReadsVisitor{asgnp, neededr};
-            return true;
-        }
-        if (AstNodeIf* const ifp = VN_CAST(stmtp, NodeIf)) {
-            AstNode* thensp = ifp->thensp();
-            if (thensp) thensp->unlinkFrBackWithNext();
-            AstNode* elsesp = ifp->elsesp();
-            if (elsesp) elsesp->unlinkFrBackWithNext();
-            thensp = pruneList(thensp, neededr);
-            elsesp = pruneList(elsesp, neededr);
-            if (!thensp && !elsesp) return false;
-            if (thensp) ifp->addThensp(thensp);
-            if (elsesp) ifp->addElsesp(elsesp);
-            LazyStmtReadsVisitor{ifp->condp(), neededr};
-            return true;
-        }
-        if (AstJumpBlock* const jblockp = VN_CAST(stmtp, JumpBlock)) {
-            AstNode* stmtsp = jblockp->stmtsp();
-            if (stmtsp) stmtsp->unlinkFrBackWithNext();
-            stmtsp = pruneList(stmtsp, neededr);
-            if (!stmtsp) return false;
-            jblockp->addStmtsp(stmtsp);
-            return true;
-        }
-        LazyStmtReadsVisitor{stmtp, neededr};  // Loops and any unmodelled shape: keep whole
-        return true;
-    }
-
-    // Before operand rewiring, so the cone refresh calls follow the pruned reads. REVERSE topo
-    // order makes temp liveness exact: every consumer is pruned first.
-    void pruneBodies() {
-        std::vector<Group*> repps;
-        std::unordered_set<const AstNode*> seenKeys;
-        for (Group* const g : m_ordered)
-            if (seenKeys.insert(g->keyp).second) repps.push_back(g);
-        std::unordered_set<const AstVar*> liveReads;  // What a pruned body still reads
-        for (size_t i = repps.size(); i-- > 0;) {
-            Group* const g = repps[i];
-            g->neededps.insert(g->targets.begin(), g->targets.end());
-            for (AstVarScope* const u : g->temps)
-                if (liveReads.count(u->varp())) g->neededps.insert(u);
-            g->bodyp = pruneList(cloneBody(g), g->neededps);
-            UASSERT_OBJ(g->bodyp, g->keyp, "--vpi-lazy pruned a group's whole body");
-            // 'neededps' is now the targets plus every read of the pruned body. A retargeted
-            // read's source holds storage, so only a read on another group's shadow counts.
-            for (AstVarScope* const u : g->neededps) {
-                const Group* const ugp = liveGroupOf(u);
-                if (ugp && ugp != g) liveReads.insert(u->varp());
-            }
-        }
-    }
-
     // Redirects a group's body to shadows; no re-typing, a shadow keeps its dtype. Pre-order, so
     // the cone operands are refreshed in the order the body first reads them.
     class LazyConeRewireVisitor final : public VNVisitor {
@@ -2266,11 +2151,11 @@ private:
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     public:
-        LazyConeRewireVisitor(VpiLazyPreparer& prep, Group* groupp)
+        LazyConeRewireVisitor(VpiLazyPreparer& prep, Group* groupp, AstNode* bodyp)
             : m_prep{prep}
             , m_groupp{groupp} {
             // The body is a detached list, and iterateAndNext needs its head to have a back
-            for (AstNode* stmtp = groupp->bodyp; stmtp; stmtp = stmtp->nextp()) iterate(stmtp);
+            for (AstNode* stmtp = bodyp; stmtp; stmtp = stmtp->nextp()) iterate(stmtp);
         }
     };
 
@@ -2307,8 +2192,8 @@ private:
                 }
             }
 
-            AstNode* const bodyp = g->bodyp;
-            const LazyConeRewireVisitor rewire{*this, g};
+            AstNode* const bodyp = cloneBody(g);
+            const LazyConeRewireVisitor rewire{*this, g, bodyp};
 
             // (1) epoch guard. Not an early return: split-cfuncs may move the body elsewhere.
             AstVarScope* const epochVscp = stampFor(g);
@@ -2342,7 +2227,6 @@ private:
             }
             // (3) zero the shadows a partial assembly builds up, then (4) run its statements.
             for (AstVarScope* const u : g->zeroInitps) {
-                if (!g->neededps.count(u)) continue;  // Its element writes were pruned away
                 AstVarScope* const shadowp = shadowForMember(u);
                 AstVar* const shadowVarp = shadowp->varp();
                 AstNodeDType* const dtypep = shadowVarp->dtypep();
@@ -2467,8 +2351,7 @@ private:
                      << m_reconstructed << " groups=" << m_ordered.size()
                      << " members=" << reconstructedMembers << " fallback=" << m_fallback
                      << " copyGroups=" << m_copyCount << " foldedCopies=" << m_foldedCount
-                     << " prunedStmts=" << m_prunedStmts << " helpers=" << m_helperCount
-                     << " floorRetained=" << floorRetained);
+                     << " helpers=" << m_helperCount << " floorRetained=" << floorRetained);
         if (v3Global.opt.stats()) {
             V3Stats::addStat("VPI, lazy reconstructed", m_reconstructed);
             V3Stats::addStat("VPI, lazy groups", m_ordered.size());
@@ -2478,7 +2361,6 @@ private:
             V3Stats::addStat("VPI, lazy copy descriptors", m_copyCount);
             V3Stats::addStat("VPI, lazy folded copy cones", m_foldedCount);
             V3Stats::addStat("VPI, lazy helper targets", m_helperCount);
-            V3Stats::addStat("VPI, lazy pruned statements", m_prunedStmts);
             V3Stats::addStat("VPI, lazy floor retained", floorRetained);
             V3Stats::addStat("VPI, lazy comb read-only", m_combWhole);
             V3Stats::addStat("VPI, lazy comb masked", m_combPartial);
