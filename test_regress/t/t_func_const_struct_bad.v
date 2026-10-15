@@ -21,12 +21,18 @@ module t;
     int q[$];
   } queue_t;
 
+  typedef union {
+    int a;
+    int b;
+  } union_t;
+
   localparam params_t P = '{a: 5, b: 1};
   localparam P6 = f_add(P);
   localparam P14 = f_add2(2, 3, f_add(P));
   localparam P24 = f_add2(7, 8, 9);
   localparam U15 = f_uadd('{a: 7, b: 8});
   localparam Q1 = f_queue(1);
+  localparam N1 = f_union(1);
 
   initial begin
     // Should never get here
@@ -57,5 +63,12 @@ module t;
     queue_t s;
     s.a = a;
     f_queue = s.a;
+  endfunction
+
+  // Unpacked union, whose members a constant function can't hold
+  function integer f_union(input int a);
+    union_t u;
+    u.a = a;
+    f_union = u.b;
   endfunction
 endmodule

@@ -477,6 +477,8 @@ private:
         }
         AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType);
         if (structp && !structp->packed()) {
+            // Members of an unpacked union share storage, which member values do not model
+            if (VN_IS(structp, UnionDType)) return nullptr;
             AstConsPackUOrStruct* const newp
                 = new AstConsPackUOrStruct{nodep->fileline(), structp};
             for (AstMemberDType* memberp = structp->membersp(); memberp;

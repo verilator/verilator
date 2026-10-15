@@ -1,31 +1,38 @@
 %Warning-USERFATAL: "f_add = 15"
                     ... For warning description see https://verilator.org/warn/USERFATAL?v=latest
                     ... Use "/* verilator lint_off USERFATAL */" and lint_on around source to disable this message.
-%Error: t/t_func_const_struct_bad.v:27:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_add2'
+%Error: t/t_func_const_struct_bad.v:32:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_add2'
                                          : ... note: In instance 't'
-        t/t_func_const_struct_bad.v:39:22: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_func_const_struct_bad.v:46:14: ... Called from 'f_add()' with parameters:
+        t/t_func_const_struct_bad.v:45:22: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_func_const_struct_bad.v:52:14: ... Called from 'f_add()' with parameters:
            params = '{a: 32'h7, b: 32'h8}
-        t/t_func_const_struct_bad.v:27:20: ... Called from 'f_add2()' with parameters:
+        t/t_func_const_struct_bad.v:32:20: ... Called from 'f_add2()' with parameters:
            a = ?32?h7
            b = ?32?h8
            c = ?32?h9
-   27 |   localparam P24 = f_add2(7, 8, 9);
+   32 |   localparam P24 = f_add2(7, 8, 9);
       |                    ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Warning-USERFATAL: "f_uadd = 15"
-%Error: t/t_func_const_struct_bad.v:28:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_uadd'
+%Error: t/t_func_const_struct_bad.v:33:20: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_uadd'
                                          : ... note: In instance 't'
-        t/t_func_const_struct_bad.v:52:23: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
-        t/t_func_const_struct_bad.v:28:20: ... Called from 'f_uadd()' with parameters:
+        t/t_func_const_struct_bad.v:58:23: ... Location of non-constant STOP: $stop executed during function constification; maybe indicates assertion firing
+        t/t_func_const_struct_bad.v:33:20: ... Called from 'f_uadd()' with parameters:
            params = '{a:'h7, b:'h8}
-   28 |   localparam U15 = f_uadd('{a: 7, b: 8});
+   33 |   localparam U15 = f_uadd('{a: 7, b: 8});
       |                    ^~~~~~
-%Error: t/t_func_const_struct_bad.v:29:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_queue'
+%Error: t/t_func_const_struct_bad.v:34:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_queue'
                                          : ... note: In instance 't'
-        t/t_func_const_struct_bad.v:58:5: ... Location of non-constant VARREF 's': Assigned variable has unsupported data type
-        t/t_func_const_struct_bad.v:29:19: ... Called from 'f_queue()' with parameters:
+        t/t_func_const_struct_bad.v:64:5: ... Location of non-constant VARREF 's': Assigned variable has unsupported data type
+        t/t_func_const_struct_bad.v:34:19: ... Called from 'f_queue()' with parameters:
            a = ?32?h1
-   29 |   localparam Q1 = f_queue(1);
+   34 |   localparam Q1 = f_queue(1);
+      |                   ^~~~~~~
+%Error: t/t_func_const_struct_bad.v:35:19: Expecting expression to be constant, but can't determine constant for FUNCREF 'f_union'
+                                         : ... note: In instance 't'
+        t/t_func_const_struct_bad.v:71:5: ... Location of non-constant VARREF 'u': Assigned variable has unsupported data type
+        t/t_func_const_struct_bad.v:35:19: ... Called from 'f_union()' with parameters:
+           a = ?32?h1
+   35 |   localparam N1 = f_union(1);
       |                   ^~~~~~~
 %Error: Exiting due to
