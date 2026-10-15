@@ -272,7 +272,7 @@ public:
     string bestCandidateMsg(const string& goal) const {
         const auto candidate = bestCandidate(goal);
         if (candidate.str.empty()) return "";
-        return "... Suggested alternative: '"s + candidate.msg + "' ";
+        return "... Suggested alternative: '"s + candidate.msg + "'";
     }
     static void selfTest();
     const std::vector<Candidate> candidates() const { return m_candidates; }
