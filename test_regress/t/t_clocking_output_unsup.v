@@ -5,8 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // A clocking block output driving an input port through a connection that
-// cannot be decomposed (arithmetic) is unsupported: the drive has nowhere
-// to flow.
+// cannot be decomposed (arithmetic, also within a concatenation, or a
+// replication) is unsupported: the drive has nowhere to flow.
 
 interface sender_if (
     input wire clk,
@@ -28,6 +28,9 @@ module dut (
     input wire [7:0] b
 );
   sender_if sender (.clk(clk), .bus(a + b));
+  sender_if sender_cat_lhs (.clk(clk), .bus({a[3:0] + b[3:0], b[3:0]}));
+  sender_if sender_cat_rhs (.clk(clk), .bus({b[3:0], a[3:0] & b[3:0]}));
+  sender_if sender_rep (.clk(clk), .bus({2{a[3:0]}}));
 endmodule
 
 module t;
