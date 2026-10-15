@@ -9,8 +9,9 @@
 // another scope, a cross-scope interface member read back through a different
 // instance's port, an alias chain crossing a non-inlined instance boundary, a comb
 // cycle closed through two instances, a block-level cycle through an instance,
-// impure ($random/$time) and variable-index driven combinational logic, and a
-// submodule output that is itself only a temporary feeding another output.
+// impure ($random/$time) and variable-index driven combinational logic, a
+// submodule output that is itself only a temporary feeding another output, and a
+// twice-instanced non-inlined module whose ports copy its parent's state.
 
 interface iface_t #(
     parameter W = 8
@@ -114,6 +115,29 @@ module cat_pass8 (
 );
   /*verilator no_inline_module*/
   assign o = i;
+endmodule
+
+// Not inlined and instanced twice: its port, and its inlined child's, copy parent state.
+module pull_leaf (
+    input logic [7:0] d,
+    output logic [7:0] q
+);
+  assign q = d ^ 8'h0f;
+endmodule
+
+module pull_mod (
+    input logic [7:0] pi,
+    output logic [7:0] po
+);
+  /*verilator no_inline_module*/
+  logic [7:0] pi_cast;
+  logic [7:0] pi_cp;
+  assign pi_cast = pi;
+  assign pi_cp = pi_cast;
+  pull_leaf u_leaf (
+      .d(pi_cp),
+      .q(po)
+  );
 endmodule
 
 module t;
@@ -389,8 +413,25 @@ module t;
       .o(xscope_o)
   );
 
+  // u_pull0's port reads pull_b through a `logic` copy of the `bit`.
+  bit [7:0] pull_b = 8'h0;
+  logic [7:0] pull_w;
+  logic [7:0] pull_o0;
+  logic [7:0] pull_o1;
+  always_ff @(posedge clk) pull_b <= base ^ 8'h3c;
+  assign pull_w = pull_b;
+  pull_mod u_pull0 (
+      .pi(pull_w),
+      .po(pull_o0)
+  );
+  pull_mod u_pull1 (
+      .pi(in0),
+      .po(pull_o1)
+  );
+
   assign obs = out0 ^ out1 ^ flat_gg[7:0] ^ {1'b0, cyc_down2} ^ o[0] ^ crbase ^ rndc
-             ^ tstamp ^ {1'b0, alc_x} ^ chain_use ^ pt_obs[7:0] ^ {7'h0, xscope_o};
+             ^ tstamp ^ {1'b0, alc_x} ^ chain_use ^ pt_obs[7:0] ^ {7'h0, xscope_o} ^ pull_o0
+             ^ pull_o1;
 
 endmodule
 

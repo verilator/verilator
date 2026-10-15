@@ -53,6 +53,10 @@ t (vpiModule) t  vpiDefName=t
     pt_acc (vpiReg) t.pt_acc 
     pt_o (vpiReg) t.pt_o 
     pt_obs (vpiReg) t.pt_obs 
+    pull_b (vpiBitVar) t.pull_b 
+    pull_o0 (vpiReg) t.pull_o0 
+    pull_o1 (vpiReg) t.pull_o1 
+    pull_w (vpiReg) t.pull_w 
     rndc (vpiReg) t.rndc 
     s (vpiStructVar) t.s 
         vpiReg:
@@ -134,6 +138,32 @@ t (vpiModule) t  vpiDefName=t
         o (vpiReg) t.u_portsrc.o 
         obs (vpiReg) t.u_portsrc.obs 
         vpiParameter:
+    u_pull0 (vpiModule) t.u_pull0  vpiDefName=pull_mod
+        vpiReg:
+        pi (vpiReg) t.u_pull0.pi 
+        pi_cast (vpiReg) t.u_pull0.pi_cast 
+        pi_cp (vpiReg) t.u_pull0.pi_cp 
+        po (vpiReg) t.u_pull0.po 
+        vpiParameter:
+        vpiInternalScope:
+        u_leaf (vpiModule) t.u_pull0.u_leaf  vpiDefName=pull_leaf
+            vpiReg:
+            d (vpiReg) t.u_pull0.u_leaf.d 
+            q (vpiReg) t.u_pull0.u_leaf.q 
+            vpiParameter:
+    u_pull1 (vpiModule) t.u_pull1  vpiDefName=pull_mod
+        vpiReg:
+        pi (vpiReg) t.u_pull1.pi 
+        pi_cast (vpiReg) t.u_pull1.pi_cast 
+        pi_cp (vpiReg) t.u_pull1.pi_cp 
+        po (vpiReg) t.u_pull1.po 
+        vpiParameter:
+        vpiInternalScope:
+        u_leaf (vpiModule) t.u_pull1.u_leaf  vpiDefName=pull_leaf
+            vpiReg:
+            d (vpiReg) t.u_pull1.u_leaf.d 
+            q (vpiReg) t.u_pull1.u_leaf.q 
+            vpiParameter:
     u_xscope_drv (vpiModule) t.u_xscope_drv  vpiDefName=xscope_drv
         vpiReg:
         a (vpiReg) t.u_xscope_drv.a 
@@ -198,6 +228,10 @@ t.out1 = 97 vpiSize=8
 t.pt_acc = 00000000 vpiSize=32
 t.pt_o = 5a5a0000 vpiSize=32
 t.pt_obs = 5a5a0003 vpiSize=32
+t.pull_b = 00 vpiSize=8
+t.pull_o0 = 0f vpiSize=8
+t.pull_o1 = 0f vpiSize=8
+t.pull_w = 00 vpiSize=8
 t.s.a = 00 vpiSize=8
 t.s.b = 00 vpiSize=8
 t.s.c = 00 vpiSize=8
@@ -239,6 +273,18 @@ t.u_portsrc.i = 00000000 vpiSize=32
 t.u_portsrc.mix = 5a5a0003 vpiSize=32
 t.u_portsrc.o = 5a5a0000 vpiSize=32
 t.u_portsrc.obs = 5a5a0003 vpiSize=32
+t.u_pull0.pi = 00 vpiSize=8
+t.u_pull0.pi_cast = 00 vpiSize=8
+t.u_pull0.pi_cp = 00 vpiSize=8
+t.u_pull0.po = 0f vpiSize=8
+t.u_pull0.u_leaf.d = 00 vpiSize=8
+t.u_pull0.u_leaf.q = 0f vpiSize=8
+t.u_pull1.pi = 00 vpiSize=8
+t.u_pull1.pi_cast = 00 vpiSize=8
+t.u_pull1.pi_cp = 00 vpiSize=8
+t.u_pull1.po = 0f vpiSize=8
+t.u_pull1.u_leaf.d = 00 vpiSize=8
+t.u_pull1.u_leaf.q = 0f vpiSize=8
 t.u_xscope_drv.a = 0 vpiSize=1
 t.u_xscope_drv.v = 1 vpiSize=1
 t.u_xscope_rcv.n = 0 vpiSize=1
@@ -277,6 +323,10 @@ t.in2 = f0
 t.in3 = 55
 t.out0 = 0a
 t.out1 = 9a
+t.pull_b = 3c
+t.pull_o0 = 33
+t.pull_o1 = 1e
+t.pull_w = 3c
 t.s.a = 11
 t.s.b = 22
 t.s.c = f0
@@ -301,6 +351,18 @@ t.u_chain.o = 1c
 t.u_hs.h = 22
 t.u_hs.k = 01
 t.u_hs.l = 0
+t.u_pull0.pi = 3c
+t.u_pull0.pi_cast = 3c
+t.u_pull0.pi_cp = 3c
+t.u_pull0.po = 33
+t.u_pull0.u_leaf.d = 3c
+t.u_pull0.u_leaf.q = 33
+t.u_pull1.pi = 11
+t.u_pull1.pi_cast = 11
+t.u_pull1.pi_cp = 11
+t.u_pull1.po = 1e
+t.u_pull1.u_leaf.d = 11
+t.u_pull1.u_leaf.q = 1e
 -- @20 readonly
 t.arr[3] = ef
 t.arr[2] = be
@@ -335,6 +397,10 @@ t.out1 = c7
 t.pt_acc = 00000001
 t.pt_o = 5a5a0001
 t.pt_obs = 5a5a0006
+t.pull_b = 3d
+t.pull_o0 = 32
+t.pull_o1 = d1
+t.pull_w = 3d
 t.s.a = de
 t.s.b = ad
 t.s.c = be
@@ -364,6 +430,18 @@ t.u_portsrc.i = 00000001
 t.u_portsrc.mix = 5a5a0004
 t.u_portsrc.o = 5a5a0001
 t.u_portsrc.obs = 5a5a0006
+t.u_pull0.pi = 3d
+t.u_pull0.pi_cast = 3d
+t.u_pull0.pi_cp = 3d
+t.u_pull0.po = 32
+t.u_pull0.u_leaf.d = 3d
+t.u_pull0.u_leaf.q = 32
+t.u_pull1.pi = de
+t.u_pull1.pi_cast = de
+t.u_pull1.pi_cp = de
+t.u_pull1.po = d1
+t.u_pull1.u_leaf.d = de
+t.u_pull1.u_leaf.q = d1
 -- @30 readonly
 t.arr[3] = 01
 t.arr[2] = 80
@@ -401,6 +479,10 @@ t.out1 = 14
 t.pt_acc = 00000011
 t.pt_o = 5a5a0011
 t.pt_obs = 5a5a0016
+t.pull_b = 2c
+t.pull_o0 = 23
+t.pull_o1 = f0
+t.pull_w = 2c
 t.s.a = ff
 t.s.b = 00
 t.s.c = 80
@@ -432,6 +514,18 @@ t.u_portsrc.i = 00000011
 t.u_portsrc.mix = 5a5a0014
 t.u_portsrc.o = 5a5a0011
 t.u_portsrc.obs = 5a5a0016
+t.u_pull0.pi = 2c
+t.u_pull0.pi_cast = 2c
+t.u_pull0.pi_cp = 2c
+t.u_pull0.po = 23
+t.u_pull0.u_leaf.d = 2c
+t.u_pull0.u_leaf.q = 23
+t.u_pull1.pi = ff
+t.u_pull1.pi_cast = ff
+t.u_pull1.pi_cp = ff
+t.u_pull1.po = f0
+t.u_pull1.u_leaf.d = ff
+t.u_pull1.u_leaf.q = f0
 -- @40 readonly
 t.base = 22
 t.chain_deep = 7d
@@ -455,6 +549,9 @@ t.out1 = fd
 t.pt_acc = 00000090
 t.pt_o = 5a5a0090
 t.pt_obs = 5a5a0093
+t.pull_b = 43
+t.pull_o0 = 4c
+t.pull_w = 43
 t.if0.a = 33
 t.if0.b = 69
 t.if0.din = 22
@@ -478,6 +575,12 @@ t.u_portsrc.i = 00000090
 t.u_portsrc.mix = 5a5a0093
 t.u_portsrc.o = 5a5a0090
 t.u_portsrc.obs = 5a5a0093
+t.u_pull0.pi = 43
+t.u_pull0.pi_cast = 43
+t.u_pull0.pi_cp = 43
+t.u_pull0.po = 4c
+t.u_pull0.u_leaf.d = 43
+t.u_pull0.u_leaf.q = 4c
 -- @50 readonly
 t.base = 00
 t.chain_deep = 23
@@ -501,6 +604,9 @@ t.out1 = 97
 t.pt_acc = 000000b2
 t.pt_o = 5a5a00b2
 t.pt_obs = 5a5a00b9
+t.pull_b = 1e
+t.pull_o0 = 11
+t.pull_w = 1e
 t.if0.a = 11
 t.if0.b = 4b
 t.if0.din = 00
@@ -525,6 +631,12 @@ t.u_portsrc.i = 000000b2
 t.u_portsrc.mix = 5a5a00b5
 t.u_portsrc.o = 5a5a00b2
 t.u_portsrc.obs = 5a5a00b9
+t.u_pull0.pi = 1e
+t.u_pull0.pi_cast = 1e
+t.u_pull0.pi_cp = 1e
+t.u_pull0.po = 11
+t.u_pull0.u_leaf.d = 1e
+t.u_pull0.u_leaf.q = 11
 -- @60 readonly
 t.base = 13
 t.chain_deep = 0e
@@ -547,6 +659,9 @@ t.hs_sel = 1
 t.nib = 1
 t.out0 = 40
 t.out1 = d0
+t.pull_b = 3c
+t.pull_o0 = 33
+t.pull_w = 3c
 t.xscope_o = 1
 t.if0.a = 24
 t.if0.b = 7e
@@ -567,6 +682,12 @@ t.u_chain.o = 0e
 t.u_hs.h = ff
 t.u_hs.k = 13
 t.u_hs.l = 0
+t.u_pull0.pi = 3c
+t.u_pull0.pi_cast = 3c
+t.u_pull0.pi_cp = 3c
+t.u_pull0.po = 33
+t.u_pull0.u_leaf.d = 3c
+t.u_pull0.u_leaf.q = 33
 t.u_xscope_drv.a = 1
 t.u_xscope_drv.v = 0
 t.u_xscope_rcv.n = 1
@@ -592,6 +713,9 @@ t.out1 = 57
 t.pt_acc = 000000c5
 t.pt_o = 5a5a00c5
 t.pt_obs = 5a5a00d2
+t.pull_b = 2f
+t.pull_o0 = 20
+t.pull_w = 2f
 t.if0.a = 51
 t.if0.b = 0b
 t.if0.din = 40
@@ -615,6 +739,12 @@ t.u_portsrc.i = 000000c5
 t.u_portsrc.mix = 5a5a00c8
 t.u_portsrc.o = 5a5a00c5
 t.u_portsrc.obs = 5a5a00d2
+t.u_pull0.pi = 2f
+t.u_pull0.pi_cast = 2f
+t.u_pull0.pi_cp = 2f
+t.u_pull0.po = 20
+t.u_pull0.u_leaf.d = 2f
+t.u_pull0.u_leaf.q = 20
 -- @80 readonly
 t.base = a5
 t.chain_deep = f8
@@ -635,6 +765,9 @@ t.out1 = 86
 t.pt_acc = 00000105
 t.pt_o = 5a5a0105
 t.pt_obs = 5a5a0112
+t.pull_b = 7c
+t.pull_o0 = 73
+t.pull_w = 7c
 t.if0.a = b6
 t.if0.b = ec
 t.if0.din = a5
@@ -658,6 +791,12 @@ t.u_portsrc.i = 00000105
 t.u_portsrc.mix = 5a5a0108
 t.u_portsrc.o = 5a5a0105
 t.u_portsrc.obs = 5a5a0112
+t.u_pull0.pi = 7c
+t.u_pull0.pi_cast = 7c
+t.u_pull0.pi_cp = 7c
+t.u_pull0.po = 73
+t.u_pull0.u_leaf.d = 7c
+t.u_pull0.u_leaf.q = 73
 -- @90 readonly
 t.base = ff
 t.chain_deep = 22
@@ -680,6 +819,9 @@ t.out1 = 94
 t.pt_acc = 000001aa
 t.pt_o = 5a5a01aa
 t.pt_obs = 5a5a01b1
+t.pull_b = 99
+t.pull_o0 = 96
+t.pull_w = 99
 t.if0.a = 10
 t.if0.b = 4a
 t.if0.din = ff
@@ -704,6 +846,12 @@ t.u_portsrc.i = 000001aa
 t.u_portsrc.mix = 5a5a01ad
 t.u_portsrc.o = 5a5a01aa
 t.u_portsrc.obs = 5a5a01b1
+t.u_pull0.pi = 99
+t.u_pull0.pi_cast = 99
+t.u_pull0.pi_cp = 99
+t.u_pull0.po = 96
+t.u_pull0.u_leaf.d = 99
+t.u_pull0.u_leaf.q = 96
 -- @100 readonly
 t.base = 21
 t.chain_deep = 7c
@@ -727,6 +875,9 @@ t.out1 = fa
 t.pt_acc = 000002a9
 t.pt_o = 5a5a02a9
 t.pt_obs = 5a5a02ae
+t.pull_b = c3
+t.pull_o0 = cc
+t.pull_w = c3
 t.if0.a = 32
 t.if0.b = 68
 t.if0.din = 21
@@ -751,6 +902,12 @@ t.u_portsrc.i = 000002a9
 t.u_portsrc.mix = 5a5a02ac
 t.u_portsrc.o = 5a5a02a9
 t.u_portsrc.obs = 5a5a02ae
+t.u_pull0.pi = c3
+t.u_pull0.pi_cast = c3
+t.u_pull0.pi_cp = c3
+t.u_pull0.po = cc
+t.u_pull0.u_leaf.d = c3
+t.u_pull0.u_leaf.q = cc
 -- @110 readonly
 t.base = 7e
 t.chain_deep = a1
@@ -772,6 +929,9 @@ t.out1 = 11
 t.pt_acc = 000002ca
 t.pt_o = 5a5a02ca
 t.pt_obs = 5a5a02d1
+t.pull_b = 1d
+t.pull_o0 = 12
+t.pull_w = 1d
 t.if0.a = 8f
 t.if0.b = d5
 t.if0.din = 7e
@@ -795,6 +955,12 @@ t.u_portsrc.i = 000002ca
 t.u_portsrc.mix = 5a5a02cd
 t.u_portsrc.o = 5a5a02ca
 t.u_portsrc.obs = 5a5a02d1
+t.u_pull0.pi = 1d
+t.u_pull0.pi_cast = 1d
+t.u_pull0.pi_cp = 1d
+t.u_pull0.po = 12
+t.u_pull0.u_leaf.d = 1d
+t.u_pull0.u_leaf.q = 12
 -- @120 readonly
 t.base = c3
 t.chain_deep = de
@@ -815,6 +981,9 @@ t.out1 = e0
 t.pt_acc = 00000348
 t.pt_o = 5a5a0348
 t.pt_obs = 5a5a034b
+t.pull_b = 42
+t.pull_o0 = 4d
+t.pull_w = 42
 t.if0.a = d4
 t.if0.b = 8e
 t.if0.din = c3
@@ -838,6 +1007,12 @@ t.u_portsrc.i = 00000348
 t.u_portsrc.mix = 5a5a034b
 t.u_portsrc.o = 5a5a0348
 t.u_portsrc.obs = 5a5a034b
+t.u_pull0.pi = 42
+t.u_pull0.pi_cast = 42
+t.u_pull0.pi_cp = 42
+t.u_pull0.po = 4d
+t.u_pull0.u_leaf.d = 42
+t.u_pull0.u_leaf.q = 4d
 -- @130 readonly
 t.cyc = 0d
 t.cyc_boundary = 0d
@@ -847,12 +1022,21 @@ t.cyc_down2 = 1b
 t.pt_acc = 0000040b
 t.pt_o = 5a5a040b
 t.pt_obs = 5a5a0410
+t.pull_b = ff
+t.pull_o0 = f0
+t.pull_w = ff
 t.u_portsrc.cpy_a = 5a5a040b
 t.u_portsrc.cpy_c = 5a5a040b
 t.u_portsrc.i = 0000040b
 t.u_portsrc.mix = 5a5a040e
 t.u_portsrc.o = 5a5a040b
 t.u_portsrc.obs = 5a5a0410
+t.u_pull0.pi = ff
+t.u_pull0.pi_cast = ff
+t.u_pull0.pi_cp = ff
+t.u_pull0.po = f0
+t.u_pull0.u_leaf.d = ff
+t.u_pull0.u_leaf.q = f0
 *-* All Finished *-*
 -- @135 readonly
 t.clk = 1

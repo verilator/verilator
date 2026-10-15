@@ -74,10 +74,11 @@
 // takes a u that is another live cone's target: the row is that cone's shadow,
 // its read that cone's, and it has no member of its own (isLazyShadowAlias).
 //
-// crossScopeCopySources is copyStoredSources for the shape that never forms a
+// crossScopeCopySources is copyStoredSources for the shapes that never form a
 // group at all: a continuous `otherScope.dst = u;`, as an SV interface port
-// driven from its parent is. Its descriptor's source is in another scope, and
-// so addressed relative to the Syms object both scopes are members of.
+// driven from its parent is, and `dst = otherScope.u;` in a module instanced more
+// than once, as its input ports are. Its descriptor's source is in another
+// scope, and so addressed relative to the Syms object both scopes are members of.
 //
 // A copy of stored state keeps its own shadow, as each alias has storage of
 // its own under --public-flat-rw: after a put into u and before the next eval,
@@ -1138,8 +1139,9 @@ private:
                      const std::unordered_map<const AstVarScope*, int>& groupWrites,
                      const std::unordered_set<const AstVar*>& notSole) {
         // V3EmitCSyms names the func from the target shadow's module: all group vars share it.
+        // A cross-scope copy candidate forms no group either way.
         for (AstVarScope* const w : written) {
-            if (w->scopep() == scopep) continue;
+            if (w->scopep() == scopep && !m_xscopeSrcOf.count(w)) continue;
             for (AstVarScope* const t : written) {
                 if (m_xscopeSrcOf.count(t)) continue;  // crossScopeCopySources() may claim it
                 retainTarget(t, Bail::CROSS_SCOPE_WRITE);
@@ -1227,14 +1229,16 @@ private:
     }
 
     // `otherScope.dst = u;` can never be a cone, makeGroup refusing a write outside the authoring
-    // scope, but it is a copy row: record it here so makeGroup does not retain it instead.
+    // scope, but it is a copy row: record it here so makeGroup does not retain it instead. So is
+    // `dst = otherScope.u;` in a multi-instance module, which restrictMultiInstanceToLocalCones
+    // would retain as a cone.
     void findCrossScopeCopyCandidates() {
         std::unordered_map<const AstVar*, int> instances;
         std::vector<std::pair<AstVarScope*, AstVarScope*>> cand;
         forEachCopyAssign([&](const CombBlock& b, AstVarScope* dstp, AstVarScope* srcp) {
-            if (dstp->scopep() == b.m_scopep) return;  // copyStoredSources' shape
-            // pinBoundary reasons within one scope, and that is the scope V3EmitCSyms addresses.
-            if (srcp->scopep() != b.m_scopep) return;
+            if (dstp->scopep() == srcp->scopep()) return;  // copyStoredSources' shape
+            const bool pull = dstp->scopep() == b.m_scopep && instancesOf(dstp->varp()) > 1;
+            if (srcp->scopep() != b.m_scopep && !pull) return;
             if (!dstp->varp()->isSigVpiLazyCandidate()) return;
             if (writeCountOf(dstp) != 1) return;
             if (!reconstructableKind(dstp->varp()) || srcp->varp()->isParam()) return;
@@ -1835,9 +1839,12 @@ private:
         std::unordered_map<const AstVar*, int> viable;
         std::vector<AstVarScope*> cand;
         for (AstVarScope* const dstp : m_xscopeOrder) {
-            AstVarScope* const srcp = m_xscopeSrcOf.at(dstp);
+            AstVarScope*& srcr = m_xscopeSrcOf.at(dstp);
             if (!dstp->varp()->isSigVpiLazyCandidate()) continue;  // retained meanwhile
-            if (liveGroupOf(srcp) || m_retargetSrcOf.count(srcp)) continue;  // no own storage
+            // A copy row's source is stored, so read that instead
+            const auto rit = m_retargetSrcOf.find(srcr);
+            if (rit != m_retargetSrcOf.end() && sameLayout(dstp, rit->second)) srcr = rit->second;
+            if (liveGroupOf(srcr) || m_retargetSrcOf.count(srcr)) continue;  // no own storage
             cand.push_back(dstp);
             ++viable[dstp->varp()];
         }
@@ -1892,10 +1899,15 @@ private:
     // entSize() has no width for VLVT_REAL or VLVT_STRING, so such a row would copy nothing,
     // and a std::string could not be raw-copied even if it did; those stay cones.
     static bool sameLayout(const AstVarScope* a, const AstVarScope* b) {
+        const AstNodeDType* const adtp = a->varp()->dtypep()->skipRefp();
+        const AstNodeDType* const bdtp = b->varp()->dtypep()->skipRefp();
         return !a->varp()->isDouble() && !a->varp()->isString()
                && a->varp()->vlEnumType() == b->varp()->vlEnumType()
-               && a->varp()->dtypep()->widthTotalBytes() == b->varp()->dtypep()->widthTotalBytes()
-               && a->varp()->dtypep()->similarDType(b->varp()->dtypep());
+               && adtp->widthTotalBytes() == bdtp->widthTotalBytes()
+               && (adtp->similarDType(bdtp)
+                   // `bit` and `logic` of one width are stored alike
+                   || (VN_IS(adtp, BasicDType) && VN_IS(bdtp, BasicDType)
+                       && adtp->width() == bdtp->width()));
     }
 
     void foldTrivialCopyGroups() {
