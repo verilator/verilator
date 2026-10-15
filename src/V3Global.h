@@ -179,6 +179,7 @@ class V3Global final {
     std::atomic_int m_debugFileNumber{0};  // Number to append to debug files created
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
     bool m_assertScoped = false;  // Tree is scoped
+    bool m_staticsLifted = false;  // Static variables have been lifted to module scope
     bool m_assignsEvents = false;  // Design uses assignments on SystemVerilog Events
     bool m_constRemoveXs = false;  // Const needs to strip any Xs
     // Experimenting with always requiring heavy, see issue #2701
@@ -237,6 +238,7 @@ public:
     VWidthMinUsage widthMinUsage() const VL_PURE { return m_widthMinUsage; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
     bool assertScoped() const { return m_assertScoped; }
+    bool staticsLifted() const { return m_staticsLifted; }
 
     // METHODS
     void readFiles() VL_MT_DISABLED;
@@ -246,6 +248,7 @@ public:
                                     bool doCheck = true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
     void assertScoped(bool flag) { m_assertScoped = flag; }
+    void staticsLifted(bool flag) { m_staticsLifted = flag; }
     void widthMinUsage(const VWidthMinUsage& flag) { m_widthMinUsage = flag; }
     bool constRemoveXs() const { return m_constRemoveXs; }
     void constRemoveXs(bool flag) { m_constRemoveXs = flag; }
