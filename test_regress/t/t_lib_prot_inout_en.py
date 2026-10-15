@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_lib_prot_inout.v"
+test.top_filename = "t/t_lib_prot_secret.v"
 
 # Keep the lowered ports exposed, and dump their library inout attributes.
 test.compile(verilator_flags2=[
