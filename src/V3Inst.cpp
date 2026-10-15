@@ -105,8 +105,9 @@ static void addClockingConnection(AstCell* const cellp, const string& name,
     };
     const auto newRefp
         = [&](AstVar* varp, VAccess access) { return new AstVarRef{flp, varp, access}; };
+    portp->access(VAccess::READ);
     AstSenTree* const sentreep
-        = new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_CHANGED, newPortp(VAccess::READ)}};
+        = new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_CHANGED, portp}};
     sentreep->addSensesp(new AstSenItem{flp, VEdgeType::ET_CHANGED, connp->cloneTree(false)});
     AstNodeExpr* const connChangedp
         = new AstNeq{flp, connp->cloneTree(false), newRefp(lastConnVarp, VAccess::READ)};
