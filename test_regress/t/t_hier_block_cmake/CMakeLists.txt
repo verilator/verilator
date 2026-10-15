@@ -23,5 +23,9 @@ if(TEST_THREADS)
 endif()
 set(VERILATOR_OPTIONS "${VERILATOR_OPTIONS}" --hierarchical --stats --CFLAGS "-pipe -DCPP_MACRO=cplusplus")
 
-verilate(t_hier_block_cmake VERILATOR_ARGS ${VERILATOR_OPTIONS} SOURCES
+if(TEST_DIRECTORY)
+    set(DIRECTORY_ARGS DIRECTORY ${TEST_DIRECTORY})
+endif()
+
+verilate(t_hier_block_cmake VERILATOR_ARGS ${VERILATOR_OPTIONS} ${DIRECTORY_ARGS} SOURCES
     ../t_hier_block.v )

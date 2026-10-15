@@ -7,8 +7,11 @@
   102 |       function void crossfunc; endfunction
       |                     ^~~~~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:103:18: Unsupported: function call in coverage select expression
-  103 |       bins one = crossfunc();
+  103 |       bins one = crossfunc(); bins two = crossfunc() matches 2;
       |                  ^~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:103:42: Unsupported: function call in coverage select expression
+  103 |       bins one = crossfunc(); bins two = crossfunc() matches 2;
+      |                                          ^~~~~~~~~
 %Warning-COVERIGN: t/t_covergroup_unsup.v:123:27: Unsupported: 'sequence' in default cover bin
   123 |     { bins defs = default sequence; }
       |                           ^~~~~~~~

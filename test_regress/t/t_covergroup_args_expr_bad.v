@@ -33,13 +33,15 @@ module t;
     cross_bad: cross cp_bad, cp_ok;
   endgroup
 
-  // Likewise in a cross bin's 'with' filter
+  // Likewise in a cross bin's 'with' filter, or its 'matches' count
   covergroup cg_cross_with(ref bit bound) with function sample (bit value);
     cp_value: coverpoint value;
     cp_bound: coverpoint bound;
     cross_with: cross cp_value, cp_bound{
       bins sampled = cross_with with (cp_bound == value);
       bins referenced = cross_with with (cp_value < bound);
+      bins sampled_count = cross_with with (1) matches value;
+      bins referenced_count = cross_with with (1) matches bound;
     }
   endgroup
 

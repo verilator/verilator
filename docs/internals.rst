@@ -1665,6 +1665,18 @@ provides the *test-snap* and *test-diff* targets:
 - Run the test suite again with ``make test``
 - See the changes in the output with ``make test-diff``
 
+``make test-snap`` copies the ``obj_*``, test output directories into
+``test_regress/snapshot``. Set ``TEST_SNAP_DIR`` to use a different
+location, e.g. to keep multiple snapshots. Files matching the patterns in
+``test_regress/test_diff_ignore.txt`` are not copied: build products, logs,
+debug dumps, and outputs that depend on host timing.
+
+``make test-diff`` shows in a pager the files that exist only in the
+snapshot or only in the current output, and the differences in files
+present in both. In C++ sources, hashed names (``_hHASH_``) and AstNode
+addresses from ``--decorations node`` are masked, as they change without
+the generated code changing.
+
 Continuous Integration
 ----------------------
 
@@ -2372,6 +2384,11 @@ driver.py Non-Scenario Arguments
    requirements, but may result in longer runtime if the tests are run
    again.
 
+.. option:: --driver-prune
+
+   Similar to ``--driver-clean``, but keeps output required by
+   ``make test-snap`` / ``make test-diff``.
+
 .. option:: --dump-tree
 
    Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug
@@ -2563,6 +2580,14 @@ VERILATOR_ROOT
 VERILATOR_SOLVER
    SMT solver command for constrained randomization; see primary Verilator
    documentation.
+
+VERILATOR_TESTS_OBJ_ROOT
+   If set, each output ``obj_*`` directory the driver creates is instead a
+   symlink to the same absolute path mirrored under this directory, e.g.
+   ``test_regress/obj_vlt`` links to ``$VERILATOR_TESTS_OBJ_ROOT/<path
+   to>/test_regress/obj_vlt``. Use to put test outputs on a different (e.g.
+   faster, not backed up) disk. Consider using with ``--driver-clean`` or
+   ``--driver-prue`` to save disk space.
 
 VERILATOR_TESTS_SITE
    Used with ``--site``, a colon-separated list of directories with tests

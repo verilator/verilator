@@ -1797,8 +1797,7 @@ class SvaNfaLowering final {
         AstSenTree* senTreep;  // Clock sensitivity tree
         AstNodeExpr* disableExprp;  // disable iff expression (may be nullptr)
         AstNodeExpr* matchCondp;  // Final boolean match condition (may be nullptr)
-        AstVar* disableCntVarp;  // disable counter var (may be nullptr)
-        AstVar* snapshotVarp;  // disable snapshot var (may be nullptr)
+        bool asyncDisable;  // Disable condition also aborts attempts between clock events
         VAssertType assertType;  // Assertion type for control tasks
         VAssertDirectiveType directiveType;  // Directive type for control tasks
         AstVar* killVarp;  // Last observed kill generation
@@ -1935,11 +1934,33 @@ class SvaNfaLowering final {
         AstNodeExpr* threadFailCountp = nullptr;  // Number of threads rejected on this tick
     };
 
+    // Emit the clocked update block of registers that hold pending attempts. The clearp
+    // statements reset the same registers: a disable rising between clock events also
+    // aborts pending attempts (IEEE 1800-2023 16.12), so clearp runs on that rising edge
+    // in a separate block. It must clear unconditionally, as the disable may already be
+    // false again when it runs, and the update block must not run on that edge, as it
+    // would advance the attempts as if the clock had ticked. Blocks that hold no attempt
+    // state, such as the $assertkill acknowledge in emitKillAckNba, do not go through here.
+    void addStateAlways(LowerCtx& c, AstNode* bodyp, AstNode* clearp) {
+        m_modp->addStmtsp(
+            new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), bodyp});
+        if (!c.asyncDisable) {
+            VL_DO_DANGLING(clearp->deleteTree(), clearp);
+            return;
+        }
+        m_modp->addStmtsp(new AstAlways{
+            c.flp, VAlwaysKwd::ALWAYS,
+            new AstSenTree{c.flp, new AstSenItem{c.flp, VEdgeType::ET_POSEDGE,
+                                                 c.disableExprp->cloneTreePure(false)}},
+            clearp});
+    }
+
     // Phase 2/2b/2c: Emit NBA register updates and in-place delay-ring writes.
     // Phase 2: State register NBA always block. Each clocked-edge target
     // latches the OR of its incoming contributions.
     void emitStateRegisterNba(LowerCtx& c) {
         AstNode* bodyp = nullptr;
+        AstNode* clearp = nullptr;
         for (int i = 0; i < c.N; ++i) {
             if (!c.vtx[i]->datap()->stateVarp) continue;
 
@@ -1970,21 +1991,13 @@ class SvaNfaLowering final {
                 c.flp, new AstVarRef{c.flp, c.vtx[i]->datap()->stateVarp, VAccess::WRITE},
                 nextStatep};
             bodyp = AstNode::addNextNull(bodyp, assignp);
+            clearp = AstNode::addNextNull(
+                clearp,
+                new AstAssignDly{
+                    c.flp, new AstVarRef{c.flp, c.vtx[i]->datap()->stateVarp, VAccess::WRITE},
+                    new AstConst{c.flp, AstConst::BitFalse{}}});
         }
-
-        // Capture disableCnt in Phase-2 NBA before any reactive re-evaluation.
-        // Emitted even for stateless graphs; snapshotOk gates rejects there too.
-        if (c.snapshotVarp) {
-            UASSERT_OBJ(c.disableCntVarp, c.senTreep, "snapshotVarp set without disableCntVarp");
-            // disable_snapshot <= disable_count;
-            AstAssignDly* const snapshotp
-                = new AstAssignDly{c.flp, new AstVarRef{c.flp, c.snapshotVarp, VAccess::WRITE},
-                                   new AstVarRef{c.flp, c.disableCntVarp, VAccess::READ}};
-            bodyp = AstNode::addNextNull(bodyp, snapshotp);
-        }
-        if (!bodyp) return;
-        m_modp->addStmtsp(
-            new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), bodyp});
+        if (bodyp) addStateAlways(c, bodyp, clearp);
     }
 
     // Phase 2b: In-place ring storage and registered ring metadata.
@@ -2132,8 +2145,7 @@ class SvaNfaLowering final {
                                                   newTypedConstp(c.flp, idxp->dtypep(), 0)});
             updateBodyp = new AstIf{c.flp, clearCondp, clearCountp, updateBodyp};
 
-            m_modp->addStmtsp(new AstAlways{c.flp, VAlwaysKwd::ALWAYS,
-                                            c.senTreep->cloneTree(false), updateBodyp});
+            addStateAlways(c, updateBodyp, clearCountp->cloneTree(true));
         }
     }
 
@@ -2187,11 +2199,13 @@ class SvaNfaLowering final {
             AstIf* const setRIfp = new AstIf{c.flp, gateRp, setRp, nullptr};
             setLIfp->addNext(setRIfp);
 
-            AstNodeExpr* const clearCondp = new AstLogOr{
+            AstNodeExpr* clearCondp = new AstLogOr{
                 c.flp, killActive(c), c.vtx[ai]->datap()->stateSigp->cloneTreePure(false)};
+            if (c.disableExprp) {
+                clearCondp = orExprs(c.flp, clearCondp, c.disableExprp->cloneTreePure(false));
+            }
             AstIf* const topp = new AstIf{c.flp, clearCondp, clearLp, setLIfp};
-            m_modp->addStmtsp(
-                new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), topp});
+            addStateAlways(c, topp, clearLp->cloneTree(true));
         }
     }
 
@@ -2209,8 +2223,7 @@ class SvaNfaLowering final {
     // Builder only adds Links (non-clocked) to matchVertex via addLink in
     // wireMatchAndMidSources. For cover sequence, also count each end-of-match
     // so the action can be replayed without unrolling endpoints.
-    void computeTerminalMatchAndReject(LowerCtx& c, AstNodeExpr* snapshotOkp, SignalSet& sigs,
-                                       const bool needMatchCount) {
+    void computeTerminalMatchAndReject(LowerCtx& c, SignalSet& sigs, const bool needMatchCount) {
         for (const SvaTransEdge* const tedgep : c.edges) {
             if (tedgep->toVtxp() != c.graph.m_matchVertexp) continue;
             const int fi = tedgep->fromVtxp()->color();
@@ -2219,9 +2232,6 @@ class SvaNfaLowering final {
 
             AstNodeExpr* srcSigp = c.vtx[fi]->datap()->stateSigp->cloneTreePure(false);
             srcSigp = andCond(c.flp, srcSigp, tedgep->m_condp);
-            if (snapshotOkp) {
-                srcSigp = new AstLogAnd{c.flp, srcSigp, snapshotOkp->cloneTreePure(false)};
-            }
             if (needMatchCount) {
                 UASSERT_OBJ(c.vtx[fi]->datap()->stateCountSigp, tedgep->fromVtxp(),
                             "Terminal-link source missing stateCountSig");
@@ -2235,10 +2245,6 @@ class SvaNfaLowering final {
                     contributionp = gateCheckedCountp(c.flp, contributionp, contributionOverflowp,
                                                       tedgep->m_condp->cloneTreePure(false));
                 }
-                if (snapshotOkp) {
-                    contributionp = gateCheckedCountp(c.flp, contributionp, contributionOverflowp,
-                                                      snapshotOkp->cloneTreePure(false));
-                }
                 sigs.matchCountp
                     = addCheckedCountp(c.flp, sigs.matchCountp, contributionp,
                                        sigs.matchCountOverflowp, contributionOverflowp);
@@ -2250,10 +2256,6 @@ class SvaNfaLowering final {
                 // reject |= (wrapped || idx == size - 1) && head && final_condition;
                 AstNodeExpr* expireContribp = delayRingOutputCount(c.flp, tedgep->fromVtxp());
                 expireContribp = andCond(c.flp, expireContribp, tedgep->m_condp);
-                if (snapshotOkp) {
-                    expireContribp
-                        = new AstLogAnd{c.flp, expireContribp, snapshotOkp->cloneTreePure(false)};
-                }
                 sigs.rejectBasep = orExprs(c.flp, sigs.rejectBasep, expireContribp);
                 VL_DO_DANGLING(srcSigp->deleteTree(), srcSigp);
             } else if (tedgep->fromVtxp()->m_isUnbounded || tedgep->fromVtxp()->m_isAndCombiner) {
@@ -2350,16 +2352,7 @@ class SvaNfaLowering final {
                              const bool needThroughoutThreadFailCount, const bool needMatchCount) {
         SignalSet sigs;
 
-        // Snapshot comparison expression for disable-iff counter.
-        // snapshotVarp and disableCntVarp are allocated together.
-        AstNodeExpr* snapshotOkp = nullptr;
-        if (c.snapshotVarp) {
-            UASSERT_OBJ(c.disableCntVarp, c.senTreep, "snapshotVarp set without disableCntVarp");
-            snapshotOkp = new AstEq{c.flp, new AstVarRef{c.flp, c.snapshotVarp, VAccess::READ},
-                                    new AstVarRef{c.flp, c.disableCntVarp, VAccess::READ}};
-        }
-
-        computeTerminalMatchAndReject(c, snapshotOkp, sigs, needMatchCount);
+        computeTerminalMatchAndReject(c, sigs, needMatchCount);
 
         // Phase 3a: required-step rejection.
         // Builder only sets m_rejectOnFail on non-clocked Links with m_condp
@@ -2424,8 +2417,7 @@ class SvaNfaLowering final {
             AstNodeExpr*& overflowp = c.vtx[i]->datap()->stateCountOverflowSigp;
             if (overflowp) VL_DO_DANGLING(overflowp->deleteTree(), overflowp);
         }
-        // Disable iff gating (IEEE 1800-2023 16.12). The edge counter misses a
-        // continuously-true disable, so gate on the current level value too.
+        // Disable iff gating (IEEE 1800-2023 16.12) on the current level value.
         if (c.disableExprp) {
             // terminalActivep is always set, so gate it unconditionally.
             AstNodeExpr* const notTermp
@@ -2451,11 +2443,6 @@ class SvaNfaLowering final {
                     c.flp, sigs.matchCountp, sigs.matchCountOverflowp,
                     new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)});
             }
-        }
-
-        if (snapshotOkp) {
-            VL_DO_DANGLING(snapshotOkp->deleteTree(), snapshotOkp);
-            snapshotOkp = nullptr;
         }
 
         if (sigs.matchCountOverflowp) {
@@ -2701,8 +2688,7 @@ public:
     // Links are combinational; Edges are registered (NBA).
     SignalSet lower(AstNodeCoverOrAssert* const assertp, SvaGraph& graph,
                     AstSenTree* const senTreep, AstNodeExpr* const matchCondp,
-                    AstNodeExpr* const disableExprp, AstVar* const disableCntVarp,
-                    AstVar* const snapshotVarp, const bool needThreadFailCount,
+                    AstNodeExpr* const disableExprp, const bool needThreadFailCount,
                     const bool needThroughoutThreadFailCount) {
         FileLine* const flp = assertp->fileline();
         AstCover* const coverp = VN_CAST(assertp, Cover);
@@ -2775,6 +2761,13 @@ public:
             }
         }
 
+        // A constant disable never rises, and $sampled is unsupported in a sensitivity list.
+        const bool asyncDisable = disableExprp && !VN_IS(disableExprp, Const)
+                                  && !disableExprp->exists([](const AstSampled*) { return true; });
+        // Registers cleared on a rising disable are also written by their clocked block.
+        FileLine* const regFlp = asyncDisable ? new FileLine{flp} : flp;
+        if (asyncDisable) regFlp->warnOff(V3ErrorCode::MULTIDRIVEN, true);
+
         AstVar* const killVarp
             = new AstVar{flp, VVarType::MODULETEMP, baseName + "__kill", m_u32DTypep};
         killVarp->lifetime(VLifetime::STATIC_EXPLICIT);
@@ -2782,12 +2775,12 @@ public:
         for (int i = 0; i < N; ++i) {
             if (vtx[i]->m_isAndCombiner) {
                 const std::string base = baseName + "__a" + std::to_string(i);
-                AstVar* const lp = new AstVar{flp, VVarType::MODULETEMP, base + "_doneL",
+                AstVar* const lp = new AstVar{regFlp, VVarType::MODULETEMP, base + "_doneL",
                                               m_modp->findBitDType()};
                 lp->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(lp);
                 vtx[i]->datap()->doneLVarp = lp;
-                AstVar* const rp = new AstVar{flp, VVarType::MODULETEMP, base + "_doneR",
+                AstVar* const rp = new AstVar{regFlp, VVarType::MODULETEMP, base + "_doneR",
                                               m_modp->findBitDType()};
                 rp->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(rp);
@@ -2823,18 +2816,18 @@ public:
                 vtx[i]->datap()->delayRingHeadVarp = headp;
                 // int unsigned idx;
                 AstVar* const idxp
-                    = new AstVar{flp, VVarType::MODULETEMP, base + "_idx", m_u32DTypep};
+                    = new AstVar{regFlp, VVarType::MODULETEMP, base + "_idx", m_u32DTypep};
                 idxp->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(idxp);
                 vtx[i]->datap()->delayRingIdxVarp = idxp;
                 // int unsigned live_count;
                 AstVar* const liveCountVarp
-                    = new AstVar{flp, VVarType::MODULETEMP, base + "_liveCount", m_u32DTypep};
+                    = new AstVar{regFlp, VVarType::MODULETEMP, base + "_liveCount", m_u32DTypep};
                 liveCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(liveCountVarp);
                 vtx[i]->datap()->delayRingLiveCountVarp = liveCountVarp;
-                AstVar* const wrappedp = new AstVar{flp, VVarType::MODULETEMP, base + "_wrapped",
-                                                    m_modp->findBitDType()};
+                AstVar* const wrappedp = new AstVar{regFlp, VVarType::MODULETEMP,
+                                                    base + "_wrapped", m_modp->findBitDType()};
                 wrappedp->lifetime(VLifetime::STATIC_EXPLICIT);
                 m_modp->addStmtsp(wrappedp);
                 vtx[i]->datap()->delayRingWrappedVarp = wrappedp;
@@ -2844,16 +2837,16 @@ public:
             if (i == startIdx || vtx[i]->m_isMatch) continue;
             const std::string varName = baseName + "__s" + std::to_string(i);
             AstVar* const varp
-                = new AstVar{flp, VVarType::MODULETEMP, varName, m_modp->findBitDType()};
+                = new AstVar{regFlp, VVarType::MODULETEMP, varName, m_modp->findBitDType()};
             varp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(varp);
             vtx[i]->datap()->stateVarp = varp;
         }
 
         // Build lowering context for phase sub-functions.
-        LowerCtx c{flp,          N,          vtx,           edges,      startIdx,
-                   matchIdx,     senTreep,   disableExprp,  matchCondp, disableCntVarp,
-                   snapshotVarp, assertType, directiveType, killVarp,   graph};
+        LowerCtx c{
+            flp,          N,          vtx,          edges,      startIdx,      matchIdx, senTreep,
+            disableExprp, matchCondp, asyncDisable, assertType, directiveType, killVarp, graph};
 
         // Phase 1: Resolve combinational Links via fixed-point propagation.
         AstNodeExpr* const triggerExprp
@@ -2927,7 +2920,6 @@ class AssertNfaVisitor final : public VNVisitor {
     SvaNfaLowering* m_loweringp = nullptr;  // NFA-to-hardware lowering engine
     AstSenTree* m_sampledValueClockp = nullptr;  // Inherited clock during scoped attachment
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
-    V3UniqueNames m_disableCntNames{"__VnfaDis"};  // Disable-iff counter names
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
@@ -3186,42 +3178,6 @@ class AssertNfaVisitor final : public VNVisitor {
         splitsp = splitsp ? AstNode::addNext<AstNode, AstNode>(splitsp, nonvacuousp)
                           : static_cast<AstNode*>(nonvacuousp);
         assertp->addPasssp(splitsp);
-    }
-
-    // Allocate disable-iff counter + snapshot vars and unlink the original
-    // disable expression from the PropSpec. Returns {cntp, snapp} or
-    // {nullptr, nullptr} if no counter is needed.
-    struct DisableVars final {
-        AstVar* cntp = nullptr;
-        AstVar* snapp = nullptr;
-    };
-    DisableVars createDisableCounterMechanism(FileLine* flp, AstNodeExpr* disableExprp,
-                                              bool hasImplication, AstPropSpec* propSpecp) {
-        if (!disableExprp || hasImplication || VN_IS(disableExprp, Const)) return {};
-        if (disableExprp->exists([](const AstSampled*) { return true; })) return {};
-
-        AstNodeDType* const u32DTypep = m_modp->findBasicDType(VBasicDTypeKwd::UINT32);
-        const std::string cntName = m_disableCntNames.get("");
-        AstVar* const cntp = new AstVar{flp, VVarType::MODULETEMP, cntName, u32DTypep};
-        cntp->lifetime(VLifetime::STATIC_EXPLICIT);
-        m_modp->addStmtsp(cntp);
-
-        AstNodeExpr* const incrExprp
-            = new AstAdd{flp, new AstVarRef{flp, cntp, VAccess::READ},
-                         new AstConst{flp, AstConst::WidthedValue{}, 32, 1u}};
-        incrExprp->dtypeFrom(cntp);
-        m_modp->addStmtsp(new AstAlways{
-            flp, VAlwaysKwd::ALWAYS,
-            new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_POSEDGE,
-                                               disableExprp->cloneTreePure(false)}},
-            new AstAssign{flp, new AstVarRef{flp, cntp, VAccess::WRITE}, incrExprp}});
-
-        AstVar* const snapp = new AstVar{flp, VVarType::MODULETEMP, cntName + "__snap", u32DTypep};
-        snapp->lifetime(VLifetime::STATIC_EXPLICIT);
-        m_modp->addStmtsp(snapp);
-
-        if (propSpecp && propSpecp->disablep()) propSpecp->disablep()->unlinkFrBack();
-        return {cntp, snapp};
     }
 
     // On a PropSpec-wrapped assertion whose NFA build failed with a semantic
@@ -3531,7 +3487,7 @@ class AssertNfaVisitor final : public VNVisitor {
         if (!propp->sensesp()) return;
         AstSenTree* senTreep
             = new AstSenTree{propp->fileline(), propp->sensesp()->cloneTree(true)};
-        AstNodeExpr* disableExprp = propp->disablep();
+        AstNodeExpr* const disableExprp = propp->disablep();
 
         // NFA lowering clones repeated operands and may hoist them into an
         // always_comb block. Resolve implicit sampled-value clocks first, while
@@ -3576,14 +3532,6 @@ class AssertNfaVisitor final : public VNVisitor {
             return;
         }
 
-        // Build succeeded. Now create snapshot mechanism for disable iff if needed.
-        // Done here (not before build) so failed builds don't pollute the AST.
-        const DisableVars disableVars
-            = createDisableCounterMechanism(flp, disableExprp, parts.hasImplication, propp);
-        AstVar* const disableCntVarp = disableVars.cntp;
-        AstVar* const snapshotVarp = disableVars.snapp;
-        const bool disableExprUnlinked = disableCntVarp && disableExprp;
-
         AstAssert* const assertAssertp = VN_CAST(assertp, Assert);
         const bool splitImplicationPasssp = assertAssertp && assertAssertp->passsp()
                                             && parts.hasImplication
@@ -3593,9 +3541,9 @@ class AssertNfaVisitor final : public VNVisitor {
 
         const bool needsThreadFailReplay
             = assertAssertp && assertAssertp->failsp() && !parts.hasImplication;
-        const auto signals = m_loweringp->lower(
-            assertp, graph, senTreep, result.finalCondp, disableExprp, disableCntVarp,
-            snapshotVarp, needsThreadFailReplay, needsThreadFailReplay && !negated);
+        const auto signals
+            = m_loweringp->lower(assertp, graph, senTreep, result.finalCondp, disableExprp,
+                                 needsThreadFailReplay, needsThreadFailReplay && !negated);
         AstNodeExpr* matchExprp = nullptr;
         AstNodeExpr* outputExprp = m_loweringp->assembleResult(
             assertp, negated, result.finalCondp, signals, needMatch ? &matchExprp : nullptr);
@@ -3611,7 +3559,6 @@ class AssertNfaVisitor final : public VNVisitor {
             = signals.threadFailCountp ? senTreep->cloneTree(false) : nullptr;
 
         VL_DO_DANGLING(pushDeletep(senTreep), senTreep);
-        if (disableExprUnlinked) VL_DO_DANGLING(pushDeletep(disableExprp), disableExprp);
         if (result.finalCondp && !result.finalCondp->backp()) pushDeletep(result.finalCondp);
 
         if (splitImplicationPasssp) {

@@ -233,6 +233,7 @@ void V3Number::create(const char* sourcep) {
         int got_x = 0;
         int got_z = 0;
         int got_01 = 0;
+        bool warnedTooMany = false;
         for (const char* cp = value_startp; *cp; ++cp) {
             switch (std::tolower(*cp)) {
             case '0':  // FALLTHRU
@@ -257,9 +258,9 @@ void V3Number::create(const char* sourcep) {
                     const V3Number addend(this, width(), (*cp - '0'));
                     product.opMul(*this, ten);
                     opAdd(product, addend);
-                    if (product.bitsValue(width(), 4)) {  // Overflowed
+                    if (!warnedTooMany && product.bitsValue(width(), 4)) {  // Overflowed
                         warnTooMany(sourcep);
-                        while (*(cp + 1)) ++cp;  // Skip ahead so don't get multiple warnings
+                        warnedTooMany = true;
                     }
                 }
                 ++olen;
@@ -394,7 +395,7 @@ void V3Number::create(const char* sourcep) {
 }
 
 void V3Number::warnTooMany(const string& value) {
-    v3error("Too many digits for " << width() << " bit number: '" << value << "'\n");
+    v3warn(WIDTHDIGITS, "Too many digits for " << width() << " bit number: '" << value << "'");
 }
 
 void V3Number::nodep(AstNode* nodep) VL_MT_STABLE {
@@ -1003,7 +1004,7 @@ string V3Number::emitC() const VL_MT_STABLE {
         // Note the double {{ initializer. The first { starts the initializer of the VlWide,
         // and the second starts the initializer of m_storage within the VlWide.
         // Alternative is to have constructor with std::initializer_list
-        result = "VlWide<" + std::to_string(words()) + ">{{";
+        result = "::VlWide<" + std::to_string(words()) + ">{{";
         if (words() > 4) result += '\n';
         for (int n = 0; n < words(); ++n) {
             if (n) result += ((n % 4) ? ", " : ",\n");
