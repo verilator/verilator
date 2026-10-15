@@ -126,6 +126,8 @@ t (vpiModule) t  vpiDefName=t
         n (vpiReg) t.u_xscope_rcv.n 
         o (vpiReg) t.u_xscope_rcv.o 
         vpiParameter:
+        vpiInternalScope:
+        s (vpiRefObj) t.u_xscope_rcv.s 
     xscope_bus (vpiInterface) t.xscope_bus 
         vpiReg:
         v (vpiReg) t.xscope_bus.v 
