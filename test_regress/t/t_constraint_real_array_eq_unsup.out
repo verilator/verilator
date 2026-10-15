@@ -1,8 +1,8 @@
-%Error-UNSUPPORTED: t/t_constraint_real_array_eq_unsup.v:15:17: Unsupported: real value in this constraint expression
-   15 |   constraint c {frame == target;}
+%Error-UNSUPPORTED: t/t_constraint_real_array_eq_unsup.v:16:17: Unsupported: real value in this constraint expression
+   16 |   constraint c {frame == target;}
       |                 ^~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_constraint_real_array_eq_unsup.v:25:17: Unsupported: real value in this constraint expression
-   25 |   constraint c {frame != target;}
+%Error-UNSUPPORTED: t/t_constraint_real_array_eq_unsup.v:26:17: Unsupported: real value in this constraint expression
+   26 |   constraint c {frame != target;}
       |                 ^~~~~
 %Error: Exiting due to

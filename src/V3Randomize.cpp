@@ -2361,9 +2361,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstShiftL* nodep) override { handleShift(nodep); }
     void visit(AstShiftR* nodep) override { handleShift(nodep); }
     void visit(AstShiftRS* nodep) override { handleShift(nodep); }
-    // Root var behind a VarRef/MemberSel/StructSel/ArraySel chain. MemberSel
-    // resolves via its own varp(), not the handle's -- unlike a struct
-    // field, a class member's rand qualifier is independent of its handle.
+    // Root var behind a VarRef/MemberSel/StructSel/ArraySel chain.
     static AstVar* arrayCompareRootVarp(AstNodeExpr* exprp) {
         if (const AstNodeVarRef* const refp = VN_CAST(exprp, NodeVarRef)) return refp->varp();
         if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) return mselp->varp();
@@ -2375,9 +2373,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         return nullptr;
     }
-    // True iff exprp is part of this randomize() call's rand set. An
-    // ArraySel's own user1() is tainted by its index's, so this walks
-    // fromp() to a leaf rather than trusting a stored bit along the way.
+    // True iff exprp is part of this randomize() call's rand set -- walks
+    // to a leaf via fromp(), since an ArraySel's own user1() is tainted by its index.
     static bool arrayCompareOperandIsRand(AstNodeExpr* exprp) {
         if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
             return arrayCompareOperandIsRand(selp->fromp());
@@ -2390,9 +2387,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         return exprp->user1();
     }
-    // True iff exprp's access path has a rand-dependent index -- otherwise
-    // buildElementwiseEqp would freeze a non-rand operand at the index's
-    // pre-solve value, wrong once the solver picks another.
+    // True iff exprp's access path has a rand-dependent index anywhere.
     static bool arrayCompareOperandHasRandIndex(AstNodeExpr* exprp) {
         if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
             return selp->bitp()->user1() || arrayCompareOperandHasRandIndex(selp->fromp());
@@ -2405,10 +2400,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         return false;
     }
-    // True iff exprp's chain can be cloned once per array element: every
-    // step is pure and bottoms out in a real variable. Rejects AstVarXRef
-    // (cloning it leaves a dangling classOrPackagep after V3Inline) and
-    // anything impure, such as a function-call handle or index.
+    // True iff exprp's chain can be cloned once per array element -- rejects
+    // AstVarXRef specifically (not just any NodeVarRef) and anything impure.
     static bool arrayCompareOperandCloneSafe(AstNodeExpr* exprp) {
         if (VN_IS(exprp, VarRef)) return true;
         if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
@@ -2422,17 +2415,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         return false;
     }
-    // Retires the whole node, the way V3Assert.cpp drops an unsupported
-    // subexpression -- it may contain an AstVarXRef that only survives
-    // until V3LinkResolve's one pass.
     void discardUnsupportedCompare(AstNodeBiop* nodep) {
         AstConst* const constp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
         constp->dtypeFrom(nodep);
         nodep->replaceWith(constp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    // Marks the value-path chain only, never an ArraySel's index -- an
-    // index's rand-ness doesn't make the element it selects symbolic.
+    // Marks the value-path chain only, never an ArraySel's index.
     static void markRandDependentPathRecurse(AstNodeExpr* exprp) {
         exprp->user1(true);
         if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
@@ -2443,8 +2432,6 @@ class ConstraintExprVisitor final : public VNVisitor {
             markRandDependentPathRecurse(selp->fromp());
         }
     }
-    // buildElementwiseEqp can't expand a queue, dynamic, associative, or
-    // wildcard array, at the top level or nested inside a fixed array.
     static bool isDynamicSizedArrayDType(const AstNodeDType* dtp) {
         return VN_IS(dtp, QueueDType) || VN_IS(dtp, DynArrayDType) || VN_IS(dtp, AssocArrayDType)
                || VN_IS(dtp, WildcardArrayDType);
@@ -2456,30 +2443,28 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         return !isDynamicSizedArrayDType(dtp);
     }
-    // Combines elemsp via a balanced (log2(N)-deep) AstLogAnd tree rather
-    // than a left-deep (N-deep) fold -- left-deep overflows the stack in a
-    // later recursive pass once N reaches a few thousand, an ordinary UVM
-    // payload array size.
+    // Balanced (log2(N)-deep) AstLogAnd tree, not a left-deep (N-deep) fold --
+    // left-deep overflows the stack in a later pass past a few thousand elements.
     static AstNodeExpr* balancedLogAndp(FileLine* fl, std::vector<AstNodeExpr*>& elemsp) {
+        std::vector<AstNodeExpr*> nextp;
+        nextp.reserve((elemsp.size() + 1) / 2);
         while (elemsp.size() > 1) {
-            std::vector<AstNodeExpr*> nextp;
-            nextp.reserve((elemsp.size() + 1) / 2);
+            nextp.resize((elemsp.size() + 1) / 2);
             for (size_t i = 0; i < elemsp.size(); i += 2) {
                 if (i + 1 == elemsp.size()) {
-                    nextp.push_back(elemsp[i]);
+                    nextp[i / 2] = elemsp[i];
                 } else {
                     AstNodeExpr* const andp = new AstLogAnd{fl, elemsp[i], elemsp[i + 1]};
                     andp->user1(true);
-                    nextp.push_back(andp);
+                    nextp[i / 2] = andp;
                 }
             }
-            elemsp = std::move(nextp);
+            elemsp.swap(nextp);
         }
         return elemsp.front();
     }
-    // Builds lhs[0]==rhs[0] && lhs[1]==rhs[1] && ..., recursing into
-    // sub-arrays. Takes ownership of lhsp/rhsp. markLhs/markRhs: mark that
-    // side's element accesses symbolic (only for genuinely-rand arrays).
+    // Builds lhs[0]==rhs[0] && lhs[1]==rhs[1] && ..., recursing into sub-arrays.
+    // markLhs/markRhs mark that side's clones symbolic (rand arrays only).
     AstNodeExpr* buildElementwiseEqp(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                                      const AstUnpackArrayDType* arrDtp, bool markLhs,
                                      bool markRhs) {
@@ -2487,22 +2472,19 @@ class ConstraintExprVisitor final : public VNVisitor {
         const AstUnpackArrayDType* const subArrDtp = VN_CAST(subDtp, UnpackArrayDType);
         std::vector<AstNodeExpr*> elemEqps;
         elemEqps.reserve(arrDtp->elementsConst());
-        // Index with 0-based k, not arrDtp->lo()+k: a source-level constant
-        // index is bias-adjusted to 0-based by an earlier pass, but one
-        // built fresh here skips that pass and needs k directly.
+        // 0-based k, not arrDtp->lo()+k -- a fresh AstArraySel needs the raw
+        // index, skipping the bias-adjustment an elaborated one already got.
         for (int k = 0; k < arrDtp->elementsConst(); ++k) {
             AstNodeExpr* const lhsBasep = lhsp->cloneTreePure(false);
             AstNodeExpr* const rhsBasep = rhsp->cloneTreePure(false);
-            if (markLhs) markRandDependentPathRecurse(lhsBasep);
-            if (markRhs) markRandDependentPathRecurse(rhsBasep);
             AstArraySel* const lhsElemp = new AstArraySel{
                 fl, lhsBasep,
                 new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
             AstArraySel* const rhsElemp = new AstArraySel{
                 fl, rhsBasep,
                 new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
-            if (markLhs) lhsElemp->user1(true);
-            if (markRhs) rhsElemp->user1(true);
+            if (markLhs) markRandDependentPathRecurse(lhsElemp);
+            if (markRhs) markRandDependentPathRecurse(rhsElemp);
             AstNodeExpr* const elemEqp
                 = subArrDtp
                       ? buildElementwiseEqp(fl, lhsElemp, rhsElemp, subArrDtp, markLhs, markRhs)
@@ -2519,9 +2501,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeDType* const lhsDtp = nodep->lhsp()->dtypep()->skipRefp();
         const bool isArrayShaped
             = VN_IS(lhsDtp, UnpackArrayDType) || isDynamicSizedArrayDType(lhsDtp);
-        // A null root (function call, ternary, anything buildElementwiseEqp
-        // can't clone) is diagnosed directly below rather than left for a
-        // later check to catch.
         AstVar* const lhsRootVarp = isArrayShaped ? arrayCompareRootVarp(nodep->lhsp()) : nullptr;
         AstVar* const rhsRootVarp = isArrayShaped ? arrayCompareRootVarp(nodep->rhsp()) : nullptr;
         const bool lhsIsRand = lhsRootVarp && arrayCompareOperandIsRand(nodep->lhsp());
