@@ -3946,7 +3946,11 @@ class WidthVisitor final : public VNVisitor {
             if (!nodep->dtypep() || (vdtypep && !isIfaceArrayDType(nodep->dtypep()))) {
                 UASSERT_OBJ(vdtypep, nodep,
                             "InitArray type not assigned by AstPattern/Var visitor");
-                nodep->dtypep(vdtypep);
+                if (nodep->dtypep()) {  // A value, e.g. from a parameter or function
+                    nodep->retypeOrdered(vdtypep);
+                } else {
+                    nodep->dtypep(vdtypep);
+                }
             }
             const AstNodeDType* const arrayp = nodep->dtypep()->skipRefp();
             if (VN_IS(arrayp, NodeArrayDType) || VN_IS(arrayp, AssocArrayDType)) {

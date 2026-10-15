@@ -1919,6 +1919,9 @@ public:
     void addIndexValuep(uint64_t index, AstNodeExpr* newp);
     AstNodeExpr* getIndexValuep(uint64_t index) const;
     AstNodeExpr* getIndexDefaultedValuep(uint64_t index) const;
+    // Retype as dtypep, reindexing an array of the other direction, and recursively the arrays
+    // under it, to keep elements' left-to-right order (IEEE 1800-2023 7.6)
+    void retypeOrdered(AstNodeDType* dtypep);
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
