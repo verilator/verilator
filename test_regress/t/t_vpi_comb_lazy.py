@@ -29,6 +29,10 @@ test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 39)
 
+# Reconstruction storage follows every eval-path member, off their cache lines
+test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "___024root.h",
+                   r'__Vlazy\w*;[\s\S]*\n\s+::(?:[CSIQ]Data|VlWide|VlUnpacked)[^\n;]*\s(?!__Vlazy)\w+;\n')
+
 # Without --vpi-lazy the same design must emit no lazy machinery at all. Verilate only: the
 # eager model is t_vpi_comb's.
 eager_dir = test.obj_dir + "/obj_eager"

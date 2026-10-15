@@ -2504,12 +2504,13 @@ public:
         PINNED,  // Storage kept only as a reconstruction source; no VPI row
         SHADOW,  // Cold storage holding a reconstructed signal's value
         SHADOW_HELPER,  // Shadow of a non-VPI source; only its copies get VPI rows
-        SHADOW_TEMP  // Cold storage for a group variable with no VPI descriptor slot of its own
+        SHADOW_TEMP,  // Cold storage for a group variable with no VPI descriptor slot of its own
+        STAMP  // Cold per-instance reconstruction freshness stamps
     };
     enum en m_e;
     const char* ascii() const {
-        static const char* const names[] = {"NONE",   "CANDIDATE",     "RETAINED",   "PINNED",
-                                            "SHADOW", "SHADOW_HELPER", "SHADOW_TEMP"};
+        static const char* const names[] = {"NONE",   "CANDIDATE",     "RETAINED",    "PINNED",
+                                            "SHADOW", "SHADOW_HELPER", "SHADOW_TEMP", "STAMP"};
         return names[m_e];
     }
     VVpiLazyRole()

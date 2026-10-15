@@ -2010,6 +2010,7 @@ private:
         v3Global.rootp()->typeTablep()->addTypesp(dtypep);
         AstVar* const varp = new AstVar{flp, VVarType::MODULETEMP, EPOCH_NAME, dtypep};
         varp->trace(false);
+        varp->vpiLazyRole(VVpiLazyRole::STAMP);
         m_epochVarOfMod.emplace(modp, varp);
         return varp;
     }

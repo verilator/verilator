@@ -2782,6 +2782,11 @@ public:
                && m_lazyCopySrcp->isLazyReconstructShadow();
     }
     bool isLazyReconstructTemp() const { return m_vpiLazyRole == VVpiLazyRole::SHADOW_TEMP; }
+    // Only reconstruction touches it, so it is never on the eval path
+    bool isLazyColdStorage() const {
+        return isLazyReconstructShadow() || isLazyReconstructTemp()
+               || m_vpiLazyRole == VVpiLazyRole::STAMP;
+    }
     bool isLazyShadowNet() const { return m_lazyShadowNet; }
     bool isTrace() const { return m_trace; }
     bool isRand() const { return m_rand.isRand(); }
