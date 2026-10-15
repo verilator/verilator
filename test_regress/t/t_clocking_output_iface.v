@@ -217,7 +217,8 @@ module t;
       @(posedge clk);
       #1;
       direct_i.harness.sender.driver.drive(expected);
-      #1;
+      // The #1step output skew drives one step after the clocking event
+      #2;
       `checkd(direct_i.strobe, 1'b1);
       got_direct = packet_t'(direct_i.bus);
       `checkd(got_direct.flag, expected.flag);
@@ -227,7 +228,7 @@ module t;
       @(posedge clk);
       #1;
       pattern_i.harness.sender.driver.drive(expected);
-      #1;
+      #2;
       `checkd(pattern_i.strobe, 1'b1);
       `checkd(pattern_i.flag, expected.flag);
       `checkd(pattern_i.id, expected.id);
@@ -240,7 +241,7 @@ module t;
       select_i.vec = 8'((i * 17 + 9) & 255);
       /* verilator lint_on ASSIGNIN */
       select_i.harness.sender.driver.drive({expected[7:4], expected[3:0], select_i.vec[7:4]});
-      #1;
+      #2;
       `checkd(select_i.strobe, 1'b1);
       // Connection leaf order is words[1] then words[idx]: the second write
       // wins when idx==1, so words[1] holds expected[7:4] only when idx==0.

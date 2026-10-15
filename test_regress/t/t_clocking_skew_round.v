@@ -17,10 +17,12 @@ interface scaled_if (
   bit zero_skew;
   bit half_skew;
   bit nonzero_skew;
+  bit step_skew;
   clocking cb @(posedge clk);
     output #0.04 zero_skew;
     output #0.05 half_skew;
     output #0.1 nonzero_skew;
+    output #1step step_skew;
   endclocking
 endinterface
 
@@ -53,9 +55,10 @@ module t;
     scaled.cb.zero_skew <= expected;
     scaled.cb.half_skew <= expected;
     scaled.cb.nonzero_skew <= expected;
+    scaled.cb.step_skew <= expected;
     // Effective-zero skews must be visible before Postponed observers run.
-    $strobe("%0t: %0d %0d %0d %0d %0d %0d %0d", $time, zero_skew, below_half, half_skew,
-            above_half, scaled.zero_skew, scaled.half_skew, scaled.nonzero_skew);
+    $strobe("%0t: %0d %0d %0d %0d %0d %0d %0d %0d", $time, zero_skew, below_half, half_skew,
+            above_half, scaled.zero_skew, scaled.half_skew, scaled.nonzero_skew, scaled.step_skew);
   end
 
   always @(negedge clk) begin
@@ -66,6 +69,7 @@ module t;
     `checkd(scaled.zero_skew, expected)
     `checkd(scaled.half_skew, expected)
     `checkd(scaled.nonzero_skew, expected)
+    `checkd(scaled.step_skew, expected)
   end
 
   initial begin

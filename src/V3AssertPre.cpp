@@ -26,9 +26,9 @@
 #include "V3Assert.h"
 #include "V3Const.h"
 #include "V3Task.h"
+#include "V3Timing.h"
 #include "V3UniqueNames.h"
 
-#include <cmath>
 #include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -550,13 +550,11 @@ private:
                 VCMethod::EVENT_IS_TRIGGERED};
             trigp->dtypeSetBit();
             ifp->condp(new AstLogAnd{flp, ifp->condp()->unlinkFrBack(), trigp});
-            // Match the rounding used by V3Timing when converting real delays to ticks.
-            const double timescaleFactor = std::pow(
-                10.0, m_modp->timeunit().powerOfTen() - m_netlistp->timeprecision().powerOfTen());
-            const bool zeroSkew
-                = skewp->isZero()
-                  || (skewp->isDouble()
-                      && VL_ROUND(skewp->num().toDouble() * timescaleFactor) == 0.0);
+            // A skew rounding to no time precision ticks is a zero skew
+            AstNodeExpr* const ticksp
+                = V3Timing::delayToTicks(skewp->cloneTree(false), m_modp->timeunit());
+            const bool zeroSkew = ticksp->isZero();
+            VL_DO_DANGLING(ticksp->deleteTree(), ticksp);
             if (zeroSkew || !skewp->fileline()->timingOn()) {
                 // Drive the var in Re-NBA (IEEE 1800-2023 14.16), ignoring skews where timing is
                 // turned off
