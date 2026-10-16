@@ -384,6 +384,7 @@ private:
     int         m_outputSplit = 20000;  // main switch: --output-split
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
+    int         m_outputSplitSyms = -1;  // main switch: --ouput-split-syms
     int         m_pinsBv = 65;       // main switch: --pins-bv
     int         m_preprocTokenLimit = 40000; // main switch: --preproc-token-limit
     int         m_publicDepth = 0;   // main switch: --public-depth
@@ -691,6 +692,7 @@ public:
     int outputSplit() const { return m_outputSplit; }
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
+    int outputSplitSyms() const { return m_outputSplitSyms; }
     int outputGroups() const { return m_outputGroups; }
     int64_t outputGroupsSize() const { return m_outputGroupsSize; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
