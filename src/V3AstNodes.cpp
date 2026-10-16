@@ -1833,26 +1833,6 @@ void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
         pair.first->second->valuep(newp);
     }
 }
-void AstInitArray::retypeOrdered(AstNodeDType* dtypep) {
-    const AstUnpackArrayDType* const fromp = VN_CAST(this->dtypep()->skipRefp(), UnpackArrayDType);
-    const AstUnpackArrayDType* const top = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
-    this->dtypep(dtypep);
-    if (!fromp || !top) return;
-    if (fromp->declRange().ascending() != top->declRange().ascending()) {
-        const uint64_t lastIndex = fromp->elementsConst() - 1;
-        KeyItemMap map;
-        for (const auto& itr : m_map) map.emplace(lastIndex - itr.first, itr.second);
-        m_map.swap(map);
-    }
-    for (const auto& itr : m_map) {
-        if (AstInitArray* const subp = VN_CAST(itr.second->valuep(), InitArray)) {
-            subp->retypeOrdered(top->subDTypep());
-        }
-    }
-    if (AstInitArray* const subp = VN_CAST(defaultp(), InitArray)) {
-        subp->retypeOrdered(top->subDTypep());
-    }
-}
 const char* AstInitArray::broken() const {
     for (KeyItemMap::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
         BROKEN_RTN(!it->second);
@@ -1898,6 +1878,26 @@ AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
     const auto it = m_map.find(index);
     if (it == m_map.end()) { return nullptr; }
     return it->second->valuep();
+}
+void AstInitArray::retypeOrdered(AstNodeDType* dtypep) {
+    const AstUnpackArrayDType* const fromp = VN_CAST(this->dtypep()->skipRefp(), UnpackArrayDType);
+    const AstUnpackArrayDType* const top = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
+    this->dtypep(dtypep);
+    if (!fromp || !top) return;
+    if (fromp->declRange().ascending() != top->declRange().ascending()) {
+        const uint64_t lastIndex = fromp->elementsConst() - 1;
+        KeyItemMap map;
+        for (const auto& itr : m_map) map.emplace(lastIndex - itr.first, itr.second);
+        m_map.swap(map);
+    }
+    for (const auto& itr : m_map) {
+        if (AstInitArray* const subp = VN_CAST(itr.second->valuep(), InitArray)) {
+            subp->retypeOrdered(top->subDTypep());
+        }
+    }
+    if (AstInitArray* const subp = VN_CAST(defaultp(), InitArray)) {
+        subp->retypeOrdered(top->subDTypep());
+    }
 }
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
