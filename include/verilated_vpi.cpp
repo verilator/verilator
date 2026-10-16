@@ -4920,8 +4920,9 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
 
-    if (VL_UNLIKELY(!vop->varp()->isPublicRW())) {
-        if (vop->varp()->isLazyComb()) {
+    const VerilatedVar* const varp = vop->storageVarp();
+    if (VL_UNLIKELY(!varp->isPublicRW())) {
+        if (varp->isLazyComb()) {
             VL_VPI_ERROR_(__FILE__, __LINE__,
                           "Ignoring vpi_put_value_array to signal combinationally driven under"
                           " --vpi-lazy, use a public_flat_rw attribute to write '%s'",
@@ -4951,7 +4952,6 @@ void vpi_put_value_array(vpiHandle object, p_vpi_arrayvalue arrayvalue_p, PLI_IN
         return;
     }
     if (num == 0) return;
-    const VerilatedVar* const varp = vop->varp();
     VerilatedSyms* const symsp = vop->scopep()->symsp();
     if (VL_UNLIKELY(varp->isLazyComb())) {
         // A --vpi-lazy put keeps the masked bits; the undo log needs the bytes from before it
