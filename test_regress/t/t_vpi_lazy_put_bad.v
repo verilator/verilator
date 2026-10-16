@@ -642,7 +642,7 @@ module t (
       .o(alc_x)
   );
 
-  // Statement shapes a cone refuses or prunes: a read before its write, by a statement, an if
+  // Statement shapes a cone refuses or keeps: a read before its write, by a statement, an if
   // and a loop test; a break out of a loop; a dead store, alone or in a loop; an unpacked struct
   // member lvalue; an impure continuous assign
   /* verilator lint_off UNOPTFLAT */
