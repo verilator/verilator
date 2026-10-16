@@ -1691,6 +1691,8 @@ public:
                                 isTopLevelStep);
         }
         if (VN_IS(nodep, SNonConsRep)) return BuildResult::fail();
+        // s_eventually is lowered by V3AssertPre; leave the whole property to it
+        if (VN_IS(nodep, SEventually)) return BuildResult::fail();
         if (AstImplication* const implp = VN_CAST(nodep, Implication)) {
             return buildImplicationEdges(implp->lhsp(), implp->rhsp(), entryVtxp,
                                          implp->isOverlapped(), implp->isFollowedBy(),
