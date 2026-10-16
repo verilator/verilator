@@ -1456,9 +1456,8 @@ class TaskVisitor final : public VNVisitor {
                             AstNodeFTaskRef* refp, std::vector<AstNode*>& unsetUser3p) {
         if (!nodep) return;
         AstVarRef* varRefp = VN_CAST(nodep, VarRef);
-        // Find all assignment nodes in this task if it is a method.
-        // If an Assign in the method refences a variable one scope above itself then pass it by
-        // refence
+        // Find all assignment nodes in this method task
+        // If an Assign in the method refences a variable one scope above itself then pass it by reference
         if (VN_IS(nodep, VarRef) && varRefp->varScopep() ) {
             if (varRefp->varScopep()->scopep()->name()
                 == methodp->scopep()->aboveScopep()->name()) {
@@ -1468,13 +1467,14 @@ class TaskVisitor final : public VNVisitor {
                         = new AstVarRef{varRefp->fileline(), varRefp->varp(), varRefp->access()};
                     varRefp->varp()->sigPublic(true);  // make sure this doesn't get optimized away
                     AstNodeVarRef* callFromp = VN_CAST(methodCallp->op1p(), NodeVarRef);
-                    UASSERT_OBJ(callFromp, methodCallp,
-                                "Can not find where this call is coming from");
+ 
                     // If the scope is the same keep it.
-                    if (callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
+                    if (!callFromp || callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
                         newVarRef->varScopep(varRefp->varScopep());
                     } else {
                         newVarRef->varScopep(callFromp->varScopep());
+                        UASSERT_OBJ(callFromp, methodCallp,
+                                "Can not find where this call is coming from");
                     }
                     AstArg* argp = new AstArg{varRefp->fileline(), "", newVarRef};
                     refp->addArgsp(argp);
