@@ -3943,15 +3943,7 @@ class WidthVisitor final : public VNVisitor {
         if (m_vup->prelim()) {  // First stage evaluation
             AstNodeDType* const vdtypep = m_vup->dtypeNullp();
             // A whole array of interfaces keeps its type, for its connections to be checked
-            if (!nodep->dtypep() || (vdtypep && !isIfaceArrayDType(nodep->dtypep()))) {
-                UASSERT_OBJ(vdtypep, nodep,
-                            "InitArray type not assigned by AstPattern/Var visitor");
-                if (nodep->dtypep()) {  // A value, e.g. from a parameter or function
-                    nodep->retypeOrdered(vdtypep);
-                } else {
-                    nodep->dtypep(vdtypep);
-                }
-            }
+            if (vdtypep && !isIfaceArrayDType(nodep->dtypep())) nodep->retypeOrdered(vdtypep);
             const AstNodeDType* const arrayp = nodep->dtypep()->skipRefp();
             if (VN_IS(arrayp, NodeArrayDType) || VN_IS(arrayp, AssocArrayDType)) {
                 userIterateChildren(nodep,
