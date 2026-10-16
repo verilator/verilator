@@ -163,6 +163,18 @@ module t;
   always_comb i_comb = integer'(a) + 1;
   e_t en_comb;
   always_comb en_comb = e_t'(a[1:0]);
+  // Split from 'rst_lo', V3Const makes 'rst ? ~rst : 1' into '~rst || ~rst', which C++
+  // -Wlogical-op rejects
+  logic rst_lo;
+  logic rst_pow2;
+  always_comb
+    if (rst) begin
+      rst_lo = 1'b0;
+      rst_pow2 = ~rst;
+    end else begin
+      rst_lo = 1'b1;
+      rst_pow2 = 1'b1;
+    end
   string s_var;
   always_comb s_var = "hi";
   logic [6:0] v_comb;

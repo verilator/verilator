@@ -92,6 +92,8 @@ t (vpiModule) t  vpiDefName=t
     rdpin (vpiReg) t.rdpin 
     rf_mid (vpiRealVar) t.rf_mid 
     rst (vpiReg) t.rst 
+    rst_lo (vpiReg) t.rst_lo 
+    rst_pow2 (vpiReg) t.rst_pow2 
     s_fmt (vpiStringVar) t.s_fmt 
     s_var (vpiStringVar) t.s_var 
     sc_alias (vpiStringVar) t.sc_alias 
@@ -199,6 +201,8 @@ t.rc_src = 0 vpiSize=1
 t.rdpin = 00 vpiSize=8
 t.rf_mid = 1.5 vpiSize=1
 t.rst = 1 vpiSize=1
+t.rst_lo = 0 vpiSize=1
+t.rst_pow2 = 0 vpiSize=1
 t.s_fmt = "v0" vpiSize=1
 t.s_var = "hi" vpiSize=1
 t.sc_alias = "" vpiSize=1
@@ -221,6 +225,8 @@ t.sc_src = "even"
 -- @10 readonly
 t.clk = 0
 t.rst = 0
+t.rst_lo = 1
+t.rst_pow2 = 1
 -- @15 cb t.cyc = 01
 -- @15 readonly
 t.clk = 1

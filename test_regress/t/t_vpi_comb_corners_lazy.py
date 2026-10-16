@@ -32,7 +32,7 @@ test.execute(use_libvpi=True,
              ],
              expect_filename=test.golden_filename)
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 55)
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 57)
 test.file_grep(test.stats, r'VPI, lazy boundary storage pinned\s+(\d+)', 1)
 test.file_grep(test.stats, r'Decompose, unpacked variables split\s+(\d+)', 6)
 
