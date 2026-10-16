@@ -4283,6 +4283,26 @@ static vpiHandle vl_vpi_put_value_lazy_comb(vpiHandle object, const VerilatedVpi
     // Not forceable, so a force or release is refused as it stands
     if (mode == vpiForceFlag || mode == vpiReleaseFlag || mode == vpiInertialDelay)
         return vpi_put_value(object, vop, valuep, flags);
+// A trial put writes only a scratch buffer: leaves the put state as it found it, and keeps the
+// buffer out of the undo log
+class VlLazyTrialPut final {
+    VerilatedLazyState* const m_lazyp;
+    const bool m_evalWas = VerilatedVpiImp::evalNeeded();
+    const bool m_writtenWas = m_lazyp->written;
+    const bool m_undoWas = m_lazyp->undoOn;
+
+public:
+    explicit VlLazyTrialPut(VerilatedLazyState* lazyp)
+        : m_lazyp{lazyp} {
+        m_lazyp->undoOn = false;
+    }
+    ~VlLazyTrialPut() {
+        m_lazyp->undoOn = m_undoWas;
+        VerilatedVpiImp::evalNeeded(m_evalWas);
+        m_lazyp->written = m_writtenWas;
+    }
+};
+
     VerilatedSyms* const symsp = vop->scopep()->symsp();
     const VerilatedVar* const varp = vop->storageVarp();
     // Rebuilt first, so the masked bits merged back are current
@@ -4290,17 +4310,10 @@ static vpiHandle vl_vpi_put_value_lazy_comb(vpiHandle object, const VerilatedVpi
     const uint32_t entSize = varp->entSize();
     std::vector<uint8_t> scratch(elemp, elemp + entSize);
     VerilatedVpioVarScratch trial{vop, scratch.data()};
-    const bool evalWas = VerilatedVpiImp::evalNeeded();
-    VerilatedLazyState* const lazyp = symsp->lazyp();
-    const bool writtenWas = lazyp->written;
-    const bool undoWas = lazyp->undoOn;
-    // The scratch buffer is not model state, so must not reach the undo log
-    lazyp->undoOn = false;
-    vpiHandle const trialp = vpi_put_value(trial.castVpiHandle(), &trial, valuep, vpiNoDelay);
-    lazyp->undoOn = undoWas;
-    VerilatedVpiImp::evalNeeded(evalWas);
-    lazyp->written = writtenWas;
-    if (!trialp) return nullptr;
+    {
+        const VlLazyTrialPut trialPut{symsp->lazyp()};
+        if (!vpi_put_value(trial.castVpiHandle(), &trial, valuep, vpiNoDelay)) return nullptr;
+    }
     const size_t elem
         = (elemp - static_cast<const uint8_t*>(VerilatedVpioVar::storagep(varp))) / entSize;
     vl_vpi_lazy_comb_merge(varp, symsp, elemp, scratch.data(), elem, 1);
