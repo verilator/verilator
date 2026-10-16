@@ -1469,7 +1469,7 @@ class TaskVisitor final : public VNVisitor {
                     AstNodeVarRef* callFromp = VN_CAST(methodCallp->op1p(), NodeVarRef);
                     UASSERT_OBJ(callFromp, methodCallp,
                                 "Can not find where this call is coming from");
-                    // If the scope is the tame keep it.
+                    // If the scope is the same keep it.
                     if (callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
                         newVarRef->varScopep(varRefp->varScopep());
                     } else {
