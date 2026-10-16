@@ -3942,8 +3942,14 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {  // First stage evaluation
             AstNodeDType* const vdtypep = m_vup->dtypeNullp();
-            // A whole array of interfaces keeps its type, for its connections to be checked
-            if (vdtypep && !isIfaceArrayDType(nodep->dtypep())) nodep->retypeOrdered(vdtypep);
+            // A whole array of interfaces keeps its type, for its connections to be checked.
+            // Another value, e.g. from a parameter, takes the type, unless its sizes differ,
+            // which iterateCheck reports
+            if (vdtypep && !isIfaceArrayDType(nodep->dtypep())
+                && unpackedArraySizesMismatch(vdtypep->skipRefp(), nodep->dtypep()->skipRefp())
+                       .empty()) {
+                nodep->retypeOrdered(vdtypep);
+            }
             const AstNodeDType* const arrayp = nodep->dtypep()->skipRefp();
             if (VN_IS(arrayp, NodeArrayDType) || VN_IS(arrayp, AssocArrayDType)) {
                 userIterateChildren(nodep,
@@ -9604,6 +9610,25 @@ class WidthVisitor final : public VNVisitor {
                + " data type: " + lhsDtp->prettyDTypeNameQ() + lhsState + "\n" + nodep->warnMore()
                + "... " + rhsName + " data type: " + rhsDtp->prettyDTypeNameQ() + rhsState;
     }
+    // Fixed-size unpacked arrays are assignment compatible only with the same number of
+    // elements in each dimension (IEEE 1800-2023 7.6); dynamically sized ones always are.
+    // Return the first difference, or empty
+    static std::string unpackedArraySizesMismatch(const AstNodeDType* lhsDtp,
+                                                  const AstNodeDType* rhsDtp) {
+        for (int dim = 0; lhsDtp->isNonPackedArray() && rhsDtp->isNonPackedArray(); ++dim) {
+            const AstUnpackArrayDType* const lhsArrayp = VN_CAST(lhsDtp, UnpackArrayDType);
+            const AstUnpackArrayDType* const rhsArrayp = VN_CAST(rhsDtp, UnpackArrayDType);
+            if (lhsArrayp && rhsArrayp
+                && lhsArrayp->elementsConst() != rhsArrayp->elementsConst()) {
+                return "Unmatched array sizes in dimension " + cvtToStr(dim) + " ("
+                       + cvtToStr(lhsArrayp->elementsConst()) + " vs "
+                       + cvtToStr(rhsArrayp->elementsConst()) + ")";
+            }
+            lhsDtp = lhsDtp->subDTypep()->skipRefp();
+            rhsDtp = rhsDtp->subDTypep()->skipRefp();
+        }
+        return "";
+    }
     // Checks whether two types are assignment-compatible according to IEEE 1800-2023 7.6
     // Currently, this function only supports variables, which are of following types:
     // - Fixed-size unpacked array
@@ -9651,19 +9676,7 @@ class WidthVisitor final : public VNVisitor {
 
         const AstNodeDType* lhsDtpIterp = lhsDtp;
         const AstNodeDType* rhsDtpIterp = rhsDtp;
-        // Sizes of fixed-size arrays should be the same
-        // Dynamic-sized arrays are always assignable
         for (uint32_t dim = 0; dim < rhsDim.second; dim++) {
-            if (const AstNodeArrayDType* rhsArrayp = VN_CAST(rhsDtpIterp, NodeArrayDType)) {
-                if (const AstNodeArrayDType* lhsArrayp = VN_CAST(lhsDtpIterp, NodeArrayDType)) {
-                    if (lhsArrayp->elementsConst() != rhsArrayp->elementsConst()) {
-                        nodep->v3error("Illegal assignment: Unmatched array sizes in dimension "
-                                       << dim << " " << "(" << lhsArrayp->elementsConst() << " vs "
-                                       << rhsArrayp->elementsConst() << ")");
-                        return;
-                    }
-                }
-            }
             // Associative arrays are compatible only with each other
             if (VN_IS(lhsDtpIterp, AssocArrayDType) ^ VN_IS(rhsDtpIterp, AssocArrayDType)) {
                 nodep->v3error("Illegal assignment: Associative arrays are assignment compatible "
@@ -9671,8 +9684,8 @@ class WidthVisitor final : public VNVisitor {
 
                 return;
             }
-            lhsDtpIterp = lhsDtpIterp->subDTypep();
-            rhsDtpIterp = rhsDtpIterp->subDTypep();
+            lhsDtpIterp = lhsDtpIterp->subDTypep()->skipRefp();
+            rhsDtpIterp = rhsDtpIterp->subDTypep()->skipRefp();
         }
         // Element types of source and target shall be equivalent
         if (!isEquivalentDType(lhsDtpIterp, rhsDtpIterp)) {
@@ -10023,6 +10036,11 @@ class WidthVisitor final : public VNVisitor {
                 parentp->v3error("Illegal assignment: types are not assignment compatible (IEEE "
                                  "1800-2023 7.6)"
                                  << warnDTypes(parentp, expDtp, underDtp));
+            }
+            // Connections of interface arrays have their own check, with a better message
+            if (determ == ASSIGN && !isIfaceArrayDType(expDtp)) {
+                const std::string mismatch = unpackedArraySizesMismatch(expDtp, underDtp);
+                if (!mismatch.empty()) parentp->v3error("Illegal assignment: " << mismatch);
             }
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();

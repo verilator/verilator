@@ -1,5 +1,6 @@
-%Error: t/t_interface_array_size_bad.v:23:13: Slices of arrays in assignments have different unpacked dimensions, 6 versus 7
+%Error: t/t_interface_array_size_bad.v:23:11: Illegal assignment: Unmatched array sizes in dimension 0 (6 vs 7)
+                                            : ... note: In instance 't'
    23 |     c.vif = b;
-      |             ^
+      |           ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

@@ -1,0 +1,26 @@
+%Error: t/t_assignment_array_size_bad.v:22:21: Illegal assignment: Unmatched array sizes in dimension 0 (3 vs 4)
+                                             : ... note: In instance 't'
+   22 |   localparam arr3_t PARAM3 = ARR4;
+      |                     ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assignment_array_size_bad.v:23:23: Illegal assignment: Unmatched array sizes in dimension 1 (3 vs 4)
+                                             : ... note: In instance 't'
+   23 |   localparam arr2x3_t PARAM2X3 = ARR2X4;
+      |                       ^~~~~~~~
+%Error: t/t_assignment_array_size_bad.v:27:21: Illegal assignment: Unmatched array sizes in dimension 0 (3 vs 4)
+                                             : ... note: In instance 't'
+   27 |   localparam arr3_t RETURN3 = f_return();
+      |                     ^~~~~~~
+%Error: t/t_assignment_array_size_bad.v:31:25: Illegal assignment: Unmatched array sizes in dimension 0 (3 vs 4)
+                                             : ... note: In instance 't'
+   31 |   localparam int ARG3 = f_arg(ARR4);
+      |                         ^~~~~
+%Error: t/t_assignment_array_size_bad.v:13:22: Illegal assignment: Unmatched array sizes in dimension 0 (3 vs 4)
+                                             : ... note: In instance 't.i_sub'
+   13 |     parameter arr3_t P = '{default: 0},
+      |                      ^
+%Error: t/t_assignment_array_size_bad.v:14:24: Illegal assignment: Unmatched array sizes in dimension 1 (3 vs 4)
+                                             : ... note: In instance 't.i_sub2'
+   14 |     parameter arr2x3_t P2 = '{default: 0}
+      |                        ^~
+%Error: Exiting due to

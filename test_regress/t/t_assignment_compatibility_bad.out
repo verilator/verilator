@@ -107,4 +107,8 @@
                                                 : ... Right-hand data type: 'bit[31:0]'
    52 |   uunion_t uunionA = 7;
       |                      ^
+%Error: t/t_assignment_compatibility_bad.v:58:16: Illegal assignment: Unmatched array sizes in dimension 1 (3 vs 2)
+                                                : ... note: In instance 't'
+   58 |   assign rows3 = rows2;
+      |                ^
 %Error: Exiting due to

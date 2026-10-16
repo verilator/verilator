@@ -3,4 +3,8 @@
    12 |   localparam int unsigned B32_T[1:0] = A3[3:1];
       |                                          ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_const_slicesel_bad.v:12:27: Illegal assignment: Unmatched array sizes in dimension 0 (2 vs 3)
+                                      : ... note: In instance 't'
+   12 |   localparam int unsigned B32_T[1:0] = A3[3:1];
+      |                           ^~~~~
 %Error: Exiting due to
