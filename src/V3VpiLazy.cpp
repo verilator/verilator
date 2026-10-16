@@ -2153,89 +2153,107 @@ private:
                 g->funcp = key.funcp;
                 continue;  // non-representative instance: share the func
             }
-            AstCFunc* const funcp = newReconFunc(g->scopep, reconFuncName(g), true);
-            g->funcp = funcp;
-            key.funcp = funcp;
-            m_splitFuncps.push_back(funcp);
-            // What V3EmitCSyms routes a row's refreshp to, here and on any fold of this shadow
-            for (AstVarScope* const t : g->targets) {
-                const auto tit = m_shadowOf.find(t);
-                UASSERT_OBJ(tit != m_shadowOf.end(), t->varp(),
-                            "--vpi-lazy reconstruct target has no shadow");
-                AstVar* const shadowVarp = tit->second->varp();
-                if (t->scopep() == g->scopep) {
-                    shadowVarp->lazyReconFuncp(funcp);
-                } else {
-                    m_ctx.m_rowRefresh.emplace(std::make_pair(t->scopep()->name(), shadowVarp),
-                                               rowStub(t->scopep(), g));
-                }
-            }
-
-            AstNode* const bodyp = cloneBody(g);
-            const LazyConeRewireVisitor rewire{*this, g, bodyp};
-
-            // (1) epoch guard. Not an early return: split-cfuncs may move the body elsewhere.
-            AstVarScope* const epochVscp = stampFor(g);
-            AstIf* const guardp = new AstIf{m_funcFlp, newStaleCheck(epochVscp, key.epochSlot)};
-            funcp->addStmtsp(guardp);
-            // The guard cannot move with the body; /4 slack for the optimizer growing it.
-            AstCFunc* bodyFuncp = nullptr;
-            if (const int splitAt = v3Global.opt.outputSplitCFuncs()) {
-                int nodes = 0;
-                for (AstNode* sp = bodyp; sp; sp = sp->nextp()) nodes += sp->nodeCount();
-                if (nodes >= splitAt / 4) {
-                    bodyFuncp = newReconFunc(g->scopep, reconBodyFuncName(g), false);
-                    m_splitFuncps.push_back(bodyFuncp);
-                    AstCCall* const bodyCallp = new AstCCall{m_funcFlp, bodyFuncp};
-                    bodyCallp->dtypeSetVoid();
-                    guardp->addThensp(bodyCallp->makeStmt());
-                }
-            }
-            const auto addBodyStmt = [&](AstNode* stmtp) {
-                if (bodyFuncp) {
-                    bodyFuncp->addStmtsp(stmtp);
-                } else {
-                    guardp->addThensp(stmtp);
-                }
-            };
-            // (2) refresh the operand cone; topo order guarantees each operand's func exists.
-            for (Group* const ugp : rewire.m_coneOps) {
-                AstCCall* const callp = new AstCCall{m_funcFlp, instanceCallee(ugp)};
-                callp->dtypeSetVoid();
-                addBodyStmt(callp->makeStmt());
-            }
-            // (3) zero the shadows a partial assembly builds up, then (4) run its statements.
-            for (AstVarScope* const u : g->zeroInitps) {
-                AstVarScope* const shadowp = shadowForMember(u);
-                AstVar* const shadowVarp = shadowp->varp();
-                AstNodeDType* const dtypep = shadowVarp->dtypep();
-                AstNodeExpr* zerop;
-                if (VN_IS(dtypep->skipRefp(), UnpackArrayDType)) {
-                    // No whole-array Const exists; CReset is V3's array clear.
-                    zerop = new AstCReset{m_funcFlp, shadowVarp, /*constructing*/ false};
-                } else {
-                    AstConst* const constp
-                        = new AstConst{m_funcFlp, V3Number{m_funcFlp, dtypep->width(), 0}};
-                    constp->dtypep(dtypep);
-                    zerop = constp;
-                }
-                addBodyStmt(new AstAssign{
-                    m_funcFlp, new AstVarRef{m_funcFlp, shadowp, VAccess::WRITE}, zerop});
-            }
-            addBodyStmt(bodyp);
-
-            // The shadows carry the original signals' VPI presence.
-            for (AstVarScope* const t : g->targets) {
-                if (m_helperTargets.count(t)) {
-                    ++m_helperCount;  // Never lazy-flagged; read only by the copies of it
-                    continue;
-                }
-                if (m_gapVars.count(t->varp())) moveMaskToShadow(t);
-                m_reconstructed += keyInstances(g);
-            }
+            emitReconFunc(g, key);
         }
         emitCopyRows(m_copyGroups, false);
         emitCopyRows(m_foldedCopies, true);
+    }
+
+    void emitReconFunc(Group* g, KeyInfo& key) {
+        AstCFunc* const funcp = newReconFunc(g->scopep, reconFuncName(g), true);
+        g->funcp = funcp;
+        key.funcp = funcp;
+        m_splitFuncps.push_back(funcp);
+        bindRowRefresh(g, funcp);
+        AstNode* const bodyp = cloneBody(g);
+        const LazyConeRewireVisitor rewire{*this, g, bodyp};
+        AstIf* const guardp = newEpochGuard(g, key.epochSlot);
+        funcp->addStmtsp(guardp);
+        AstCFunc* const bodyFuncp = splitBodyFunc(g, guardp, bodyp);
+        const auto addBodyStmt = [&](AstNode* stmtp) {
+            if (bodyFuncp) {
+                bodyFuncp->addStmtsp(stmtp);
+            } else {
+                guardp->addThensp(stmtp);
+            }
+        };
+        // Refresh the operand cone; topo order guarantees each operand's func exists.
+        for (Group* const ugp : rewire.m_coneOps) {
+            AstCCall* const callp = new AstCCall{m_funcFlp, instanceCallee(ugp)};
+            callp->dtypeSetVoid();
+            addBodyStmt(callp->makeStmt());
+        }
+        for (AstVarScope* const u : g->zeroInitps) addBodyStmt(newZeroShadow(u));
+        addBodyStmt(bodyp);
+        moveRowsToShadows(g);
+    }
+
+    // What V3EmitCSyms routes a row's refreshp to, here and on any fold of this shadow
+    void bindRowRefresh(Group* g, AstCFunc* funcp) {
+        for (AstVarScope* const t : g->targets) {
+            const auto tit = m_shadowOf.find(t);
+            UASSERT_OBJ(tit != m_shadowOf.end(), t->varp(),
+                        "--vpi-lazy reconstruct target has no shadow");
+            AstVar* const shadowVarp = tit->second->varp();
+            if (t->scopep() == g->scopep) {
+                shadowVarp->lazyReconFuncp(funcp);
+            } else {
+                m_ctx.m_rowRefresh.emplace(std::make_pair(t->scopep()->name(), shadowVarp),
+                                           rowStub(t->scopep(), g));
+            }
+        }
+    }
+
+    // Not an early return: split-cfuncs may move the body elsewhere.
+    AstIf* newEpochGuard(Group* g, int epochSlot) {
+        return new AstIf{m_funcFlp, newStaleCheck(stampFor(g), epochSlot)};
+    }
+
+    // The guard cannot move with the body, so a large body moves to a func the guard calls;
+    // /4 slack for the optimizer growing it. Returns that func, or nullptr if not split.
+    AstCFunc* splitBodyFunc(Group* g, AstIf* guardp, const AstNode* bodyp) {
+        const int splitAt = v3Global.opt.outputSplitCFuncs();
+        if (!splitAt) return nullptr;
+        int nodes = 0;
+        for (const AstNode* sp = bodyp; sp; sp = sp->nextp()) nodes += sp->nodeCount();
+        if (nodes < splitAt / 4) return nullptr;
+        AstCFunc* const bodyFuncp = newReconFunc(g->scopep, reconBodyFuncName(g), false);
+        m_splitFuncps.push_back(bodyFuncp);
+        AstCCall* const bodyCallp = new AstCCall{m_funcFlp, bodyFuncp};
+        bodyCallp->dtypeSetVoid();
+        guardp->addThensp(bodyCallp->makeStmt());
+        return bodyFuncp;
+    }
+
+    // A partial assembly builds its shadow up from zero
+    AstAssign* newZeroShadow(AstVarScope* u) {
+        AstVarScope* const shadowp = shadowForMember(u);
+        AstVar* const shadowVarp = shadowp->varp();
+        AstNodeDType* const dtypep = shadowVarp->dtypep();
+        AstNodeExpr* zerop;
+        if (VN_IS(dtypep->skipRefp(), UnpackArrayDType)) {
+            // No whole-array Const exists; CReset is V3's array clear.
+            zerop = new AstCReset{m_funcFlp, shadowVarp, /*constructing*/ false};
+        } else {
+            AstConst* const constp
+                = new AstConst{m_funcFlp, V3Number{m_funcFlp, dtypep->width(), 0}};
+            constp->dtypep(dtypep);
+            zerop = constp;
+        }
+        return new AstAssign{m_funcFlp, new AstVarRef{m_funcFlp, shadowp, VAccess::WRITE},
+                             zerop};
+    }
+
+    // The shadows carry the original signals' VPI presence.
+    void moveRowsToShadows(Group* g) {
+        for (AstVarScope* const t : g->targets) {
+            if (m_helperTargets.count(t)) {
+                ++m_helperCount;  // Never lazy-flagged; read only by the copies of it
+                continue;
+            }
+            if (m_gapVars.count(t->varp())) moveMaskToShadow(t);
+            m_reconstructed += keyInstances(g);
+        }
     }
 
     // The undriven bits a put may write are now the shadow's.
