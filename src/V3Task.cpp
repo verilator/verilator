@@ -799,8 +799,9 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // If this is a non static method we need to check the scope of the VarRefs
-        if (!outvscp && cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample()
-            && !refp->taskp()->dpiImport() && cfuncp->op1p() && cfuncp->scopep()->aboveScopep() && cfuncp && !cfuncp->isVirtual()
+        if (!outvscp && cfuncp->isMethod() && !refp->taskp()->isStatic()
+            && !refp->taskp()->isCovergroupSample() && !refp->taskp()->dpiImport()
+            && cfuncp->op1p() && cfuncp->scopep()->aboveScopep() && cfuncp && !cfuncp->isVirtual()
             && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))) {
             m_nonInlinedFTaskRef = refp;
@@ -1288,8 +1289,9 @@ class TaskVisitor final : public VNVisitor {
         if (!nodep) return;
         AstVarRef* varRefp = VN_CAST(nodep, VarRef);
         // Find all assignment nodes in this method task
-        // If an Assign in the method refences a variable one scope above itself then pass it by reference
-        if (VN_IS(nodep, VarRef) && varRefp->varScopep() ) {
+        // If an Assign in the method refences a variable one scope above itself then pass it by
+        // reference
+        if (VN_IS(nodep, VarRef) && varRefp->varScopep()) {
             if (varRefp->varScopep()->scopep()->name()
                 == methodp->scopep()->aboveScopep()->name()) {
                 if (!varRefp->varp()->user3SetOnce()) {
@@ -1298,14 +1300,15 @@ class TaskVisitor final : public VNVisitor {
                         = new AstVarRef{varRefp->fileline(), varRefp->varp(), varRefp->access()};
                     varRefp->varp()->sigPublic(true);  // make sure this doesn't get optimized away
                     AstNodeVarRef* callFromp = VN_CAST(methodCallp->op1p(), NodeVarRef);
- 
+
                     // If the scope is the same keep it.
-                    if (!callFromp || callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
+                    if (!callFromp
+                        || callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
                         newVarRef->varScopep(varRefp->varScopep());
                     } else {
                         newVarRef->varScopep(callFromp->varScopep());
                         UASSERT_OBJ(callFromp, methodCallp,
-                                "Can not find where this call is coming from");
+                                    "Can not find where this call is coming from");
                     }
                     AstArg* argp = new AstArg{varRefp->fileline(), "", newVarRef};
                     refp->addArgsp(argp);
@@ -1547,7 +1550,10 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
-        if (nodep->classMethod() && !nodep->isStatic() && !nodep->isCovergroupSample() && !nodep->dpiImport() && !nodep->isVirtual() // We are dealing with a pure system verilog class method, where we aren't already doing pass by ref.
+        if (nodep->classMethod() && !nodep->isStatic() && !nodep->isCovergroupSample()
+            && !nodep->dpiImport()
+            && !nodep->isVirtual()  // We are dealing with a pure system verilog class method,
+                                    // where we aren't already doing pass by ref.
             && cfuncp->op1p() && cfuncp && cfuncp->scopep()->aboveScopep()
             && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))) {
@@ -1722,7 +1728,7 @@ class TaskVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeFTaskRef* nodep) override {
-        if ( m_inSensesp && !nodep->isPure()) {
+        if (m_inSensesp && !nodep->isPure()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Impure function calls in sensitivity lists");
             nodep->taskp(nullptr);  // So V3Broken doesn't complain
