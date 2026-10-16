@@ -798,8 +798,9 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
-        // If this is a static method we need to check the scope of the VarRefs
-        if (!outvscp && cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample() && !refp->taskp()->dpiImport() && cfuncp->op1p() && cfuncp->scopep()->aboveScopep() && cfuncp
+        // If this is a non static method we need to check the scope of the VarRefs
+        if (!outvscp && cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample() 
+            && !refp->taskp()->dpiImport() && cfuncp->op1p() && cfuncp->scopep()->aboveScopep() && cfuncp && !cfuncp->isVirtual()
             && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))) {
             m_nonInlinedFTaskRef = refp;
@@ -1546,7 +1547,7 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
-        if (nodep->classMethod() && !nodep->isStatic() && !nodep->isCovergroupSample() && !nodep->dpiImport() // We are dealing with a pure system verilog class method, where we aren't already doing pass by ref.
+        if (nodep->classMethod() && !nodep->isStatic() && !nodep->isCovergroupSample() && !nodep->dpiImport() && !nodep->isVirtual() // We are dealing with a pure system verilog class method, where we aren't already doing pass by ref.
             && cfuncp->op1p() && cfuncp && cfuncp->scopep()->aboveScopep()
             && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))) {
@@ -1721,7 +1722,7 @@ class TaskVisitor final : public VNVisitor {
     }
 
     void visit(AstNodeFTaskRef* nodep) override {
-        if (m_inSensesp && !nodep->isPure()) {
+        if ( m_inSensesp && !nodep->isPure()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Impure function calls in sensitivity lists");
             nodep->taskp(nullptr);  // So V3Broken doesn't complain
