@@ -43,9 +43,8 @@ static void markContinuousLhs(AstNode* const nodep) {
 // selects before V3Inst.
 static bool markConnectionLhs(AstNodeExpr* const nodep) {
     return V3Inst::forEachDrivenLeaf(nodep, [](AstNodeVarRef* refp) {
-        if (!refp->access().isReadOnly()) return false;
+        UASSERT_OBJ(refp->access().isReadOnly(), refp, "Input connection should be read-only");
         refp->access(VAccess::WRITE);
-        return true;
     });
 }
 
@@ -442,8 +441,11 @@ public:
 // Inst class functions
 
 bool V3Inst::forEachDrivenLeaf(AstNodeExpr* nodep,
-                               const std::function<bool(AstNodeVarRef*)>& leaff) {
-    if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) return leaff(refp);
+                               const std::function<void(AstNodeVarRef*)>& leaff) {
+    if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+        leaff(refp);
+        return true;
+    }
     // Note AstSel (bit/part select) is not an AstNodeSel (array select);
     // both expose fromp() for the selected value.
     if (AstSel* const selp = VN_CAST(nodep, Sel)) return forEachDrivenLeaf(selp->fromp(), leaff);

@@ -26,6 +26,7 @@
 #include "V3Assert.h"
 #include "V3Const.h"
 #include "V3Inst.h"
+#include "V3LinkLValue.h"
 #include "V3Task.h"
 #include "V3Timing.h"
 #include "V3UniqueNames.h"
@@ -529,9 +530,10 @@ private:
             AstVarRef* const skewedWriteRefp = new AstVarRef{flp, varp, VAccess::WRITE};
             skewedWriteRefp->user1(true);
             // The item expression is an lvalue; reading it here must not look like a
-            // driver, or V3Tristate turns the clockvar of an inout port into a tristate
+            // driver, or V3Tristate turns the clockvar of an inout port into a tristate.
+            // V3LinkLValue keeps the lvalues of any statements inside the expression.
             AstNodeExpr* const initRhsp = exprp->cloneTreePure(false);
-            initRhsp->foreach([](AstNodeVarRef* refp) { refp->access(VAccess::READ); });
+            V3LinkLValue::linkLValueSet(initRhsp, VAccess::READ);
             AstInitialStatic* const initClockvarp
                 = new AstInitialStatic{flp, new AstAssign{flp, skewedWriteRefp, initRhsp}};
             m_modp->addStmtsp(initClockvarp);
@@ -1938,10 +1940,9 @@ static void propagateClockingDriven(AstNetlist* const nodep) {
         for (AstPin* const pinp : pinsByPort[portp]) {
             V3Inst::forEachDrivenLeaf(VN_AS(pinp->exprp(), NodeExpr), [&](AstNodeVarRef* refp) {
                 AstVar* const varp = refp->varp();
-                if (varp->direction() != VDirection::INPUT || isMarked(varp)) return true;
+                if (varp->direction() != VDirection::INPUT || isMarked(varp)) return;
                 varp->isClockingDrivenThru(true);
                 worklist.push_back(varp);
-                return true;
             });
         }
     }
