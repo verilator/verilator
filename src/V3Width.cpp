@@ -9664,8 +9664,9 @@ class WidthVisitor final : public VNVisitor {
                                       rhsDim = rhsDtp->dimensions(false);
         // Check if unpacked array dimensions are matching
         if (lhsDim.second != rhsDim.second) {
-            nodep->v3error("Illegal assignment: Unmatched number of unpacked dimensions "
-                           << "(" << lhsDim.second << " vs " << rhsDim.second << ")");
+            nodep->v3error("Illegal assignment: Unmatched number of unpacked dimensions (IEEE "
+                           "1800-2023 7.6)"
+                           << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
             return;
         }
 
@@ -9675,8 +9676,8 @@ class WidthVisitor final : public VNVisitor {
             // Associative arrays are compatible only with each other
             if (VN_IS(lhsDtpIterp, AssocArrayDType) ^ VN_IS(rhsDtpIterp, AssocArrayDType)) {
                 nodep->v3error("Illegal assignment: Associative arrays are assignment compatible "
-                               "only with associative arrays (IEEE 1800-2023 7.6)");
-
+                               "only with associative arrays (IEEE 1800-2023 7.6)"
+                               << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
                 return;
             }
             lhsDtpIterp = lhsDtpIterp->subDTypep()->skipRefp();

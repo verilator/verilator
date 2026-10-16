@@ -17,8 +17,10 @@
                                                 : ... Right-hand data type: 'logic$[0:1]'
    38 |   assign unpackedB = unpackedA;
       |                    ^
-%Error: t/t_assignment_compatibility_bad.v:39:20: Illegal assignment: Unmatched number of unpacked dimensions (1 vs 2)
+%Error: t/t_assignment_compatibility_bad.v:39:20: Illegal assignment: Unmatched number of unpacked dimensions (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
+                                                : ... Left-hand data type: 'logic$[0:2]'
+                                                : ... Right-hand data type: 'logic$[0:2][0:1]'
    39 |   assign unpackedB = unpackedC;
       |                    ^
 %Error: t/t_assignment_compatibility_bad.v:40:20: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
@@ -59,6 +61,8 @@
       |                    ^
 %Error: t/t_assignment_compatibility_bad.v:43:20: Illegal assignment: Associative arrays are assignment compatible only with associative arrays (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
+                                                : ... Left-hand data type: 'logic$[0:1]' (4-state)
+                                                : ... Right-hand data type: 'logic$[string]' (2-state)
    43 |   assign unpackedA = assocArrayA;
       |                    ^
 %Error: t/t_assignment_compatibility_bad.v:44:17: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
