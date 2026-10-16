@@ -588,7 +588,6 @@ class VpiLazyPreparer final {
         COMB_CYCLE,  // Genuine combinational cycle (SCC member)
         COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
         BOUNDARY_COMB_DTYPE,  // Comb boundary operand of a kind reconstruction cannot express
-        BOUNDARY_COMB_COPY,  // Comb boundary operand whose own row copies another variable
         _COUNT
     };
     // METHODS
@@ -610,8 +609,7 @@ class VpiLazyPreparer final {
                                             "unsupported lvalue",
                                             "comb cycle",
                                             "completeness floor",
-                                            "boundary comb (dtype)",
-                                            "boundary comb (copy)"};
+                                            "boundary comb (dtype)"};
         static_assert(sizeof(names) / sizeof(names[0]) == static_cast<size_t>(Bail::_COUNT),
                       "Bail name table out of sync with enum");
         return names[static_cast<size_t>(b)];
@@ -708,22 +706,12 @@ private:
         return it->second->live ? it->second : nullptr;
     }
 
-    Bail combBoundaryReason(AstVarScope* u) {
-        if (!reconstructableKind(u->varp())) return Bail::BOUNDARY_COMB_DTYPE;
-        // A bailed group's targets are retained, so pinBoundary() returns before asking.
-        UASSERT_OBJ(m_retargetSrcOf.count(u), u,
-                    "--vpi-lazy comb boundary operand no skip path explains");
-        return Bail::BOUNDARY_COMB_COPY;
-    }
-
-    // A converted target has no storage, so a cone reading it reads what its row copies.
-    AstVarScope* retargetSubstituteFor(AstVarScope* u, const Group* g) const {
+    // A converted target has no storage, so a cone reading it reads what its row copies. Both
+    // conversions take a source of the target's layout and scope, which a multi-instance
+    // group's reads are confined to, so the substitute is valid wherever the target is read.
+    AstVarScope* retargetSubstituteFor(AstVarScope* u) const {
         const auto it = m_retargetSrcOf.find(u);
-        if (it == m_retargetSrcOf.end()) return nullptr;
-        AstVarScope* const srcp = it->second;
-        if (!sameLayout(u, srcp)) return nullptr;
-        if (keyInstances(g) > 1 && srcp->scopep() != g->scopep) return nullptr;
-        return srcp;
+        return it == m_retargetSrcOf.end() ? nullptr : it->second;
     }
 
     bool hasCombDriver(AstVarScope* vscp) {
@@ -1810,7 +1798,7 @@ private:
         for (Group* const g : m_ordered) {
             AstVarScope* u = soleCopySource(g);
             if (!u) continue;
-            if (AstVarScope* const srcp = retargetSubstituteFor(u, g)) u = srcp;
+            if (AstVarScope* const srcp = retargetSubstituteFor(u)) u = srcp;
             const Group* const ugp = liveGroupOf(u);
             // m_groupOf covers temps too, and only a target has a shadow with a func to call
             if (!ugp || ugp == g || !m_targetOf.count(u)) continue;
@@ -2060,7 +2048,10 @@ private:
                 ++m_boundaryStorage;
                 continue;
             }
-            const Bail why = combBoundaryReason(u);
+            // A bailed group's targets are retained and a converted one is substituted
+            UASSERT_OBJ(!reconstructableKind(uVarp), u,
+                        "--vpi-lazy comb boundary operand no skip path explains");
+            const Bail why = Bail::BOUNDARY_COMB_DTYPE;
             UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << vscp->name());
             ++m_fallback;
             ++m_bailCount[static_cast<size_t>(why)];
@@ -2090,7 +2081,7 @@ private:
                 redirect(nodep, m_prep.shadowForMember(u));
                 return;
             }
-            if (AstVarScope* const srcp = m_prep.retargetSubstituteFor(u, m_groupp)) {
+            if (AstVarScope* const srcp = m_prep.retargetSubstituteFor(u)) {
                 u = srcp;
                 redirect(nodep, srcp);
             }
@@ -2246,8 +2237,8 @@ private:
     // stored source; a fold's shadow aliases the source cone's, whose func its row calls.
     void emitCopyRows(const std::vector<Group*>& groups, bool folded) {
         for (Group* const g : groups) {
-            // A shadow row on top of the retained row a consumer pinned would name it twice.
-            if (kept(g->targets[0])) continue;
+            UASSERT_OBJ(!kept(g->targets[0]), g->targets[0],
+                        "--vpi-lazy converted target pinned, not substituted");
             AstVar* srcVarp;
             if (folded) {
                 const auto sit = m_shadowOf.find(g->copyFromp);
