@@ -187,7 +187,7 @@ struct VerilatedVarLazyDatap final {
 // ILP32 lays the same members out in 24 bytes, so this is a cap, not an equality
 static_assert(sizeof(VerilatedVarLazyDatap) <= 32, "VerilatedVarLazyDatap unexpectedly grew");
 
-// One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyIdx
+// One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyDescSlot()
 struct VlLazyReconEntry final {
     void (*refreshp)(void* selfp);
     int32_t srcByteOffset;  // A copy's source; with VLVF_LAZY_COMB, a cone's VlLazyCombMask index
@@ -201,7 +201,7 @@ struct VlLazyCombRun final {
     uint32_t width;
 };
 
-// Bits a VPI put may not change, indexed by a VLVF_LAZY_COMB row's lazyIdx
+// Bits a VPI put may not change, indexed by VlVarTableEntry::lazyCombMask()
 struct VlLazyCombMask final {
     const VlLazyCombRun* runsp;  // Ordered by element, then bit
     uint32_t nRuns;
@@ -229,12 +229,21 @@ struct VlVarTableEntry final {
     uint8_t udims;
     uint8_t pdims;
     bool isParam;
-    // Defaulted, so only --vpi-lazy and member rows spell them. lazyIdx has three meanings, as
-    // another field would pad the row from 40 to 48 bytes.
-    int32_t lazyIdx = -1;  // VLVF_LAZY_COMB: model-wide VlLazyCombMask index; VLVF_PACKED_MEMBER:
-                           // bit offset; else module-relative descriptor slot; -1 for none
+    // Defaulted, so only --vpi-lazy and member rows spell them. Read 'aux' through the accessors
+    // below: the row is 40 bytes with no padding, so a field per meaning would make it 48.
+    int32_t aux = -1;
     uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
+
+    bool isPackedMember() const { return vlflags & VLVF_PACKED_MEMBER; }
+    bool isLazyComb() const { return vlflags & VLVF_LAZY_COMB; }
+    // Bit offset of a packed member within its parent's element 0
+    uint32_t memberBitOffset() const { return isPackedMember() ? static_cast<uint32_t>(aux) : 0; }
+    // Model-wide VlLazyCombMask index of a VLVF_LAZY_COMB row, else -1
+    int32_t lazyCombMask() const { return isLazyComb() ? aux : -1; }
+    // Module-relative --vpi-lazy descriptor slot, else -1
+    int32_t lazyDescSlot() const { return isPackedMember() || isLazyComb() ? -1 : aux; }
 };
+static_assert(sizeof(VlVarTableEntry) <= 40, "VlVarTableEntry unexpectedly grew");
 
 // IEEE 1800-2023 Table 20-6
 enum class VerilatedAssertType : uint8_t {
@@ -1097,7 +1106,8 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      void* forceReadSignalData, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
-    // lazyBasep/lazyReconsp are null when the table has no lazy rows; both keyed by lazyIdx
+    // lazyBasep/lazyReconsp are null when the table has no lazy rows; both keyed by
+    // VlVarTableEntry::lazyDescSlot()
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
                              VerilatedVarLazyDatap* lazyBasep = nullptr,
                              const VlLazyReconEntry* lazyReconsp = nullptr) VL_MT_UNSAFE;

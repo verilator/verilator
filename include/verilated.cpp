@@ -4378,9 +4378,7 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
     for (size_t i = 0; i < n; ++i) {
         const VlVarTableEntry& e = entp[i];
         void* datap;
-        const bool isCombRow = e.vlflags & VLVF_LAZY_COMB;
-        const bool isMember = e.vlflags & VLVF_PACKED_MEMBER;
-        const int32_t descSlot = isCombRow || isMember ? -1 : e.lazyIdx;
+        const int32_t descSlot = e.lazyDescSlot();
         const bool lazyDesc = descSlot >= 0;
         if (lazyDesc) {
             const VlLazyReconEntry& recon = lazyReconsp[descSlot];
@@ -4399,7 +4397,7 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
             desc.srcOffset = recon.srcByteOffset;
             datap = &desc;
             m_symsp->lazyp()->undoOn = true;
-        } else if (e.isParam && !isMember) {
+        } else if (e.isParam && !e.isPackedMember()) {
             datap = const_cast<void*>(static_cast<const void* const*>(basep)[e.byteOffset]);
         } else {
             datap = base + e.byteOffset;
@@ -4407,10 +4405,9 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
         // Per-scope table: the VlVarTableEntry rows are module-relative and shared.
         const uint32_t reconFlags = lazyDesc ? lazyReconsp[descSlot].vlflags : 0;
         const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | reconFlags);
-        const uint32_t bitOffset = isMember ? static_cast<uint32_t>(e.lazyIdx) : 0;
-        VerilatedVar var{e.namep, datap,     e.vltype,  vlflags,  e.udims,
-                         e.pdims, e.isParam, e.entSize, bitOffset};
-        if (isCombRow) var.m_lazyCombMask = e.lazyIdx;
+        VerilatedVar var{e.namep,   datap,     e.vltype,           vlflags, e.udims, e.pdims,
+                         e.isParam, e.entSize, e.memberBitOffset()};
+        var.m_lazyCombMask = e.lazyCombMask();
         if (reconFlags & VLVF_LAZY_COMB) var.m_lazyCombMask = lazyReconsp[descSlot].srcByteOffset;
         for (int d = 0; d < e.udims; ++d) {
             var.m_unpacked[d].m_left = e.dimsp[2 * d];

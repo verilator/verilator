@@ -147,7 +147,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::string m_ifaceRefTableName;
     std::vector<std::string> m_ifaceRefTableRows;
     std::vector<std::string> m_hierTableRows;  // VlHierTableEntry rows, built in emitScopeHier()
-    // --vpi-lazy comb masks, model-wide as VerilatedSyms holds the one table lazyIdx indexes
+    // --vpi-lazy comb masks; model-wide, as VerilatedSyms holds the one table they index
     std::unordered_map<const std::vector<V3VpiLazy::CombRun>*, int> m_combMaskIdx;
     std::vector<std::string> m_combMaskRows;
     std::vector<std::string> m_combRunRows;
@@ -419,7 +419,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     // Builds one VlVarTableEntry row for 'varp', or reports which residual
-    // path it must take instead. 'lazyIdx' is VlVarTableEntry::lazyIdx.
+    // path it must take instead. 'lazyIdx' is VlVarTableEntry::aux.
     TableEntryKind tryBuildTableEntry(const ScopeVarData& svd, const AstVar* const varp,
                                       const AstScope* const scopep,
                                       const std::string& modClassName, int lazyIdx,
