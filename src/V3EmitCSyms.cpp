@@ -129,9 +129,13 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     const bool m_dpiHdrOnly;  // Only emit the DPI header
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
     // name -> initializer rows, built in getSymCtorStmts()
-    std::vector<std::pair<std::string, std::vector<std::string>>> m_varTables;
+    using NamedTables = std::vector<std::pair<std::string, std::vector<std::string>>>;
+    NamedTables m_varTables;
     // '\0'-joined rows -> m_varTables name, so identical tables are shared
     std::unordered_map<std::string, std::string> m_varTableByRows;
+    // Parameter address arrays, which parameter rows index; shared likewise
+    NamedTables m_paramPtrTables;
+    std::unordered_map<std::string, std::string> m_paramPtrTableByRows;
     // VlVarTableEntry::dimsp array; identical dim lists share an offset
     std::vector<int32_t> m_varDims;
     std::map<std::vector<int32_t>, size_t> m_varDimsOffset;
@@ -377,6 +381,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // not re-derive (and risk desyncing) the forceable-eligibility test.
     enum class TableEntryKind : uint8_t {
         TABLE_ROW,  // Registered via a VlVarTableEntry[] table row
+        PARAM_ROW,  // Likewise, in the scope's parameter table
         FORCEABLE_RESIDUAL,  // Residual, via insertForceableVarStatement()
         PLAIN_RESIDUAL,  // Residual, via insertVarStatement() (+ struct/array expansion)
     };
@@ -416,7 +421,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     TableEntryKind tryBuildTableEntry(const ScopeVarData& svd, const AstVar* const varp,
                                       const AstScope* const scopep,
                                       const std::string& modClassName, int lazyIdx,
-                                      const VarDims& dims, std::string& rowOut) {
+                                      const VarDims& dims, std::vector<std::string>& paramPtrs,
+                                      std::string& rowOut) {
         const bool isLazy = varp->isLazyReconstructShadow();
         if (!isLazy && varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
             return TableEntryKind::FORCEABLE_RESIDUAL;
@@ -425,9 +431,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string vlEnumType = varp->vlEnumType();
         if (!isLazy && needsEmittedEntSize(vlEnumType))
             return TableEntryKind::PLAIN_RESIDUAL;  // struct/union whole
-        // Params are static members (offsetof is invalid on those);
-        // string params also need a runtime .c_str().
-        if (varp->isParam()) return TableEntryKind::PLAIN_RESIDUAL;
+        // A string parameter's VPI data is its runtime .c_str()
+        if (varp->isParam() && vlEnumType == "VLVT_STRING"
+            && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
+            return TableEntryKind::PLAIN_RESIDUAL;
+        }
 
         const std::string name = V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty));
         // nameProtect() (not protect(name())) so the offsetof member matches the
@@ -437,12 +445,18 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string dir = vlEnumDirOf(scopep, varp);
         const std::string flags = isLazy ? "(" + dir + ")|VLVF_PUB_RD|VLVF_LAZY_REMAT" : dir;
         std::string row = "{\"" + name + "\", ";
-        row += "offsetof(" + modClassName + ", " + member + "), ";
-        row += tableRowProps(varp, vlEnumType, flags, dims, false);
+        if (varp->isParam()) {
+            // Emitted 'static', so indexes the scope's array of parameter addresses
+            row += std::to_string(paramPtrs.size()) + ", ";
+            paramPtrs.emplace_back("&" + modClassName + "::" + member);
+        } else {
+            row += "offsetof(" + modClassName + ", " + member + "), ";
+        }
+        row += tableRowProps(varp, vlEnumType, flags, dims, varp->isParam());
         if (lazyIdx >= 0) row += ", " + std::to_string(lazyIdx);
         row += "}";
         rowOut = row;
-        return TableEntryKind::TABLE_ROW;
+        return varp->isParam() ? TableEntryKind::PARAM_ROW : TableEntryKind::TABLE_ROW;
     }
 
     // The VlVarTableEntry fields from dimsp to isParam
@@ -466,19 +480,26 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                + std::to_string(dims.pdim) + ", " + (isParam ? "true" : "false");
     }
 
-    // Name of a VlVarTableEntry[] table of 'rows'; identical tables are shared
-    std::string varTableName(const std::string& prefix, std::vector<std::string>&& rows) {
+    // Name of a table in 'tables' of 'rows'; identical tables are shared
+    static std::string sharedTableName(NamedTables& tables,
+                                       std::unordered_map<std::string, std::string>& byRows,
+                                       const std::string& prefix,
+                                       std::vector<std::string>&& rows) {
         std::string key;
         for (const std::string& r : rows) {
             key += r;
             key += '\0';
         }
-        const auto pr = m_varTableByRows.emplace(std::move(key), "");
+        const auto pr = byRows.emplace(std::move(key), "");
         if (pr.second) {
-            pr.first->second = prefix + "__VpiVarTable" + std::to_string(m_varTables.size());
-            m_varTables.emplace_back(pr.first->second, std::move(rows));
+            pr.first->second = prefix + std::to_string(tables.size());
+            tables.emplace_back(pr.first->second, std::move(rows));
         }
         return pr.first->second;
+    }
+    std::string varTableName(const std::string& prefix, std::vector<std::string>&& rows) {
+        return sharedTableName(m_varTables, m_varTableByRows, prefix + "__VpiVarTable",
+                               std::move(rows));
     }
 
     static std::string insertDTypeVarStatement(const ScopeVarData& svd,
@@ -1339,10 +1360,13 @@ void EmitCSyms::emitSymImpPreamble() {
 
 bool EmitCSyms::emitVarTableExterns() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
-        && m_lazyReconFnTables.empty() && m_combMaskRows.empty())
+        && m_lazyReconFnTables.empty() && m_combMaskRows.empty() && m_paramPtrTables.empty())
         return false;
     for (const auto& kv : m_varTables) {
         puts("extern const VlVarTableEntry " + kv.first + "[];\n");
+    }
+    for (const auto& kv : m_paramPtrTables) {
+        puts("extern const void* const " + kv.first + "[];\n");
     }
     if (!m_scopeTableRows.empty()) {
         puts("extern const VlScopeTableEntry " + m_scopeTableName + "[];\n");
@@ -1361,7 +1385,7 @@ bool EmitCSyms::emitVarTableExterns() {
 
 void EmitCSyms::emitVarTables() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
-        && m_lazyReconFnTables.empty() && m_combMaskRows.empty())
+        && m_lazyReconFnTables.empty() && m_combMaskRows.empty() && m_paramPtrTables.empty())
         return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
     // offsetof on the (non-standard-layout) generated module/Syms classes is well
@@ -1380,6 +1404,15 @@ void EmitCSyms::emitVarTables() {
     }
     for (const auto& kv : m_varTables) {
         puts("extern const VlVarTableEntry " + kv.first + "[] = {\n");
+        for (const std::string& row : kv.second) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(row);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+    }
+    for (const auto& kv : m_paramPtrTables) {
+        puts("extern const void* const " + kv.first + "[] = {\n");
         for (const std::string& row : kv.second) {
             ofp()->putsNoTracking("    ");
             ofp()->putsNoTracking(row);
@@ -1679,6 +1712,8 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
             const std::string modClassName = EmitCUtil::prefixNameProtect(modp);
 
             std::vector<std::string> rows;
+            std::vector<std::string> paramRows;
+            std::vector<std::string> paramPtrs;
             std::vector<std::string> residual;
             std::vector<std::string> reconFns;
             int lazyRel = 0;
@@ -1708,8 +1743,9 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                 }
                 const int descSlot = isLazy ? lazyRel : -1;
                 std::string row;
-                const TableEntryKind kind = tryBuildTableEntry(
-                    svd, varp, scopep, modClassName, isLazy ? descSlot : maskIdx, dims, row);
+                const TableEntryKind kind
+                    = tryBuildTableEntry(svd, varp, scopep, modClassName,
+                                         isLazy ? descSlot : maskIdx, dims, paramPtrs, row);
                 UASSERT_OBJ(kind == TableEntryKind::TABLE_ROW || (!isLazy && maskIdx < 0), varp,
                             "lazy shadow or masked row must be table-eligible");
                 switch (kind) {
@@ -1738,6 +1774,11 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                     addPackedAggMemberVars(residual, svd, scopep, svd.m_varBasePretty,
                                            rowStorageName(varp), varp->dtypep());
                     break;
+                case TableEntryKind::PARAM_ROW:
+                    paramRows.emplace_back(row);
+                    addPackedAggMemberVars(residual, svd, scopep, svd.m_varBasePretty,
+                                           varp->nameProtect(), varp->dtypep());
+                    break;
                 case TableEntryKind::FORCEABLE_RESIDUAL: {
                     const std::string bounds = boundsString(dims);
                     residual.emplace_back(insertForceableVarStatement(svd, scopep, varp, dims.udim,
@@ -1753,7 +1794,8 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                 }
                 default: v3fatalSrc("Bad case");
                 }
-                if (kind == TableEntryKind::TABLE_ROW) continue;
+                if (kind == TableEntryKind::TABLE_ROW || kind == TableEntryKind::PARAM_ROW)
+                    continue;
                 if (const AstNodeUOrStructDType* const sdtypep
                     = VN_CAST(varp->dtypeSkipRefp(), NodeUOrStructDType)) {
                     if (!sdtypep->packed()) {
@@ -1798,6 +1840,17 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                 }
                 call += ");";
                 stmts.add(call);
+            }
+            if (!paramRows.empty()) {
+                const size_t rowCount = paramRows.size();
+                const std::string ptrsName
+                    = sharedTableName(m_paramPtrTables, m_paramPtrTableByRows,
+                                      modClassName + "__VpiParamPtrs", std::move(paramPtrs));
+                stmts.add("vlSymsp->" + protect("__Vscopep_" + scopeName)
+                          + "->varsInsertFromTable("
+                          + varTableName(modClassName, std::move(paramRows)) + ", "
+                          + std::to_string(rowCount) + ", const_cast<void**>(" + ptrsName
+                          + "));");
             }
             for (const std::string& r : residual) stmts.add(r);
             lazyBaseRunning += lazyRel;

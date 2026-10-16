@@ -218,7 +218,9 @@ struct VlLazyUndo final {
 // replaces per-variable varInsert() calls, which compiles faster at scale.
 struct VlVarTableEntry final {
     const char* namep;  // VPI-facing (protected) variable name, string literal
-    size_t byteOffset;  // offsetof of storage member from module instance base
+    // offsetof of storage member from module instance base; for a parameter, being static, the
+    // index of its address in the array basep points to; 0 for a packed member
+    size_t byteOffset;
     // (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
     // nullptr if none. int32_t since large unpacked memories exceed int16 range.
     const int32_t* dimsp;

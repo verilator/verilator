@@ -4371,7 +4371,8 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
                                          VerilatedVarLazyDatap* lazyBasep,
                                          const VlLazyReconEntry* lazyReconsp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
-    // For packed member rows, basep is the parent's storage.
+    // For packed member rows, basep is the parent's storage; for parameter rows, an array of
+    // their addresses.
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
     for (size_t i = 0; i < n; ++i) {
@@ -4398,6 +4399,8 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
             desc.srcOffset = recon.srcByteOffset;
             datap = &desc;
             m_symsp->lazyp()->undoOn = true;
+        } else if (e.isParam && !isMember) {
+            datap = const_cast<void*>(static_cast<const void* const*>(basep)[e.byteOffset]);
         } else {
             datap = base + e.byteOffset;
         }
