@@ -39,10 +39,10 @@ public:
     static void checkOutputShort(const AstPin* nodep) VL_MT_DISABLED;
     // Call 'leaff' on each variable a pin connection would drive if it were assigned
     // (through bit/part/array selects, concatenations and single replications).
-    // Returns false if the connection cannot be driven (e.g. arithmetic), or 'leaff'
-    // returned false for a leaf. All leaves are visited either way.
+    // Returns false if the connection cannot be driven (e.g. arithmetic); all
+    // drivable leaves are visited either way.
     static bool forEachDrivenLeaf(AstNodeExpr* nodep,
-                                  const std::function<bool(AstNodeVarRef*)>& leaff) VL_MT_DISABLED;
+                                  const std::function<void(AstNodeVarRef*)>& leaff) VL_MT_DISABLED;
 };
 
 #endif  // Guard
