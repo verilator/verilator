@@ -81,6 +81,7 @@ t (vpiModule) t  vpiDefName=t
             vpiReg:
             cflop (vpiReg) t.p0.uc.cflop 
             clk (vpiReg) t.p0.uc.clk 
+            cpart (vpiReg) t.p0.uc.cpart 
             cy (vpiReg) t.p0.uc.cy 
             din (vpiReg) t.p0.uc.din 
             vpiParameter:
@@ -96,6 +97,7 @@ t (vpiModule) t  vpiDefName=t
             vpiReg:
             cflop (vpiReg) t.p1.uc.cflop 
             clk (vpiReg) t.p1.uc.clk 
+            cpart (vpiReg) t.p1.uc.cpart 
             cy (vpiReg) t.p1.uc.cy 
             din (vpiReg) t.p1.uc.din 
             vpiParameter:
@@ -208,6 +210,7 @@ t.p0.py = a8 vpiSize=8
 t.p0.xali = 00 vpiSize=8
 t.p0.uc.cflop = 00 vpiSize=8
 t.p0.uc.clk = 0 vpiSize=1
+t.p0.uc.cpart = 00 vpiSize=8
 t.p0.uc.cy = a5 vpiSize=8
 t.p0.uc.din = 00 vpiSize=8
 t.p1.clk = 0 vpiSize=1
@@ -216,6 +219,7 @@ t.p1.py = e8 vpiSize=8
 t.p1.xali = 00 vpiSize=8
 t.p1.uc.cflop = 00 vpiSize=8
 t.p1.uc.clk = 0 vpiSize=1
+t.p1.uc.cpart = 00 vpiSize=8
 t.p1.uc.cy = e5 vpiSize=8
 t.p1.uc.din = 40 vpiSize=8
 t.u0.din = 00 vpiSize=7
@@ -402,12 +406,14 @@ t.p0.clk = 1
 t.p0.din = 13
 t.p0.py = b9
 t.p0.uc.clk = 1
+t.p0.uc.cpart = 03
 t.p0.uc.cy = b6
 t.p0.uc.din = 13
 t.p1.clk = 1
 t.p1.din = 53
 t.p1.py = f9
 t.p1.uc.clk = 1
+t.p1.uc.cpart = 03
 t.p1.uc.cy = f6
 t.p1.uc.din = 53
 -- @60 readonly
@@ -449,12 +455,14 @@ t.p0.din = 2c
 t.p0.py = 8c
 t.p0.xali = 49
 t.p0.uc.cflop = 49
+t.p0.uc.cpart = 0c
 t.p0.uc.cy = 89
 t.p0.uc.din = 2c
 t.p1.din = 6c
 t.p1.py = cc
 t.p1.xali = 09
 t.p1.uc.cflop = 09
+t.p1.uc.cpart = 0c
 t.p1.uc.cy = c9
 t.p1.uc.din = 6c
 t.u0.din = 10
@@ -501,6 +509,7 @@ t.p0.py = e8
 t.p0.xali = 76
 t.p0.uc.cflop = 3c
 t.p0.uc.clk = 1
+t.p0.uc.cpart = 00
 t.p0.uc.cy = e5
 t.p0.uc.din = 40
 t.p1.clk = 1
@@ -509,6 +518,7 @@ t.p1.py = 28
 t.p1.xali = 36
 t.p1.uc.cflop = 36
 t.p1.uc.clk = 1
+t.p1.uc.cpart = 00
 t.p1.uc.cy = 25
 t.p1.uc.din = 80
 t.u0.din = 14
@@ -557,12 +567,14 @@ t.p0.din = 91
 t.p0.py = 37
 t.p0.xali = 1a
 t.p0.uc.cflop = 1a
+t.p0.uc.cpart = 01
 t.p0.uc.cy = 34
 t.p0.uc.din = 91
 t.p1.din = d1
 t.p1.py = 77
 t.p1.xali = da
 t.p1.uc.cflop = da
+t.p1.uc.cpart = 01
 t.p1.uc.cy = 74
 t.p1.uc.din = d1
 t.u0.din = 18
@@ -603,12 +615,14 @@ t.p0.din = a5
 t.p0.py = 03
 t.p0.xali = cb
 t.p0.uc.cflop = cb
+t.p0.uc.cpart = 05
 t.p0.uc.cy = 00
 t.p0.uc.din = a5
 t.p1.din = e5
 t.p1.py = 43
 t.p1.xali = 8b
 t.p1.uc.cflop = 8b
+t.p1.uc.cpart = 05
 t.p1.uc.cy = 40
 t.p1.uc.din = e5
 -- @105 cb t.cyc = 0a
@@ -644,12 +658,14 @@ t.p0.din = ff
 t.p0.py = 5d
 t.p0.xali = ff
 t.p0.uc.cflop = ff
+t.p0.uc.cpart = 0f
 t.p0.uc.cy = 5a
 t.p0.uc.din = ff
 t.p1.din = 3f
 t.p1.py = 9d
 t.p1.xali = bf
 t.p1.uc.cflop = bf
+t.p1.uc.cpart = 0f
 t.p1.uc.cy = 9a
 t.p1.uc.din = 3f
 t.u0.din = 1c
@@ -694,12 +710,14 @@ t.p0.din = 00
 t.p0.py = a8
 t.p0.xali = a5
 t.p0.uc.cflop = a5
+t.p0.uc.cpart = 00
 t.p0.uc.cy = a5
 t.p0.uc.din = 00
 t.p1.din = 40
 t.p1.py = e8
 t.p1.xali = 65
 t.p1.uc.cflop = 65
+t.p1.uc.cpart = 00
 t.p1.uc.cy = e5
 t.p1.uc.din = 40
 t.u0.din = 20

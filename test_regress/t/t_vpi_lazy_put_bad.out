@@ -121,6 +121,7 @@ t.ch1 r
 t.ch2 r
 t.cp.p WWWWrrrr
 t.cst_w r
+t.ct_c r
 t.cts_c r
 t.ctv_c r
 t.cu.p W
@@ -158,6 +159,8 @@ t.fyx0_c r
 t.fyx1_c r
 t.g_q W
 t.gclk r
+t.gmem W
+t.gmem_r r
 t.hl_c r
 t.ia.q W
 t.ib.q r
@@ -182,6 +185,8 @@ t.m4_c r
 t.mc0.m WWWWrrrr
 t.mc1.m rrrrWWWW
 t.mc2.m W
+t.mc_x r
+t.mc_y r
 t.mdp_c r
 t.mem_c r
 t.mid_c r
@@ -232,6 +237,7 @@ t.plv_c r
 t.pmem W
 t.pon_c r
 t.px_o r
+t.rbs_c r
 t.rbw_c r
 t.rbw_t r
 t.rdpin r
@@ -293,6 +299,10 @@ t.undr_mem W
 t.us_c ?
 t.us_c.a r
 t.us_c.b r
+t.uv_c r
+t.uw_c r
+t.ux_c r
+t.vax r
 t.vec WWWWWWWr
 t.vidx r
 t.w_ff r

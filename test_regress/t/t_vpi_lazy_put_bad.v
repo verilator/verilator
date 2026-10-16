@@ -731,6 +731,54 @@ module t (
     end
   end
 
+  // Shapes a cone refuses: a variable-index continuous assign, and a constant select read before
+  // its write. Shapes it takes: a branch both constant operands of which hold under
+  // -fno-const-before-dfg, and a variable defined in part then whole on every path.
+  logic [3:0] vax;
+  assign vax[sel] = en;
+  /* verilator lint_off UNOPTFLAT */
+  logic [7:0] rbs_c;
+  /* verilator lint_on UNOPTFLAT */
+  /* verilator lint_off ALWCOMBORDER */
+  always_comb begin
+    rbs_c[7:4] = rbs_c[3:0] ^ d[7:4];
+    rbs_c[3:0] = d[3:0];
+  end
+  /* verilator lint_on ALWCOMBORDER */
+  logic [7:0] ct_c;
+  always_comb begin
+    if (1'b1 && 1'b1) ct_c = d;
+    else ct_c = in_a;
+  end
+  logic [7:0] uw_c, uv_c, ux_c;
+  always_comb begin
+    uw_c[3:0] = d[3:0];
+    uv_c = {4'h0, uw_c[3:0]} ^ in_a;
+    if (sel[0]) begin
+      uw_c = d;
+      ux_c = in_a;
+    end else begin
+      uw_c = in_a;
+      ux_c = d;
+    end
+  end
+
+  // A cycle between groups, not bits, merged with a function's temporaries (under -O0, as
+  // V3BitBlast otherwise splits it)
+  /* verilator lint_off UNOPTFLAT */
+  logic [1:0][3:0] mc_x;
+  logic [3:0] mc_y;
+  /* verilator lint_on UNOPTFLAT */
+  assign mc_x[0] = d[3:0];
+  always_comb mc_y = 4'(nest_f({4'h0, mc_x[0]}));
+  assign mc_x[1] = mc_y;
+
+  // Its undriven element read by the design, so retained with storage
+  logic [7:0] gmem[2];
+  logic [7:0] gmem_r;
+  assign gmem[1] = d;
+  assign gmem_r = gmem[0];
+
   // Explicitly writable
   logic [7:0] frw_c  /*verilator public_flat_rw*/;
   logic [7:0] frc_al  /*verilator forceable*/;

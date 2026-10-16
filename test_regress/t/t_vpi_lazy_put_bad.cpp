@@ -454,6 +454,21 @@ int main(int argc, char** argv) {
     putArray("t.pmem", 1, masked, 1, false);
     check("t.pmem[1] array kept", get(find("t.pmem[1]")), pmem1);
     putArray("t.vidx", 0, one, 1, true);
+    // A retained memory's array put reaches a cone reading it only at the next eval
+    {
+        topp->eval();
+        const uint32_t g0 = get(find("t.gmem[0]"));
+        const PLI_INT32 flipped[1] = {static_cast<PLI_INT32>(g0 ^ 0xff)};
+        putArray("t.gmem", 0, flipped, 1, false);
+        check("t.gmem_r before eval", get(find("t.gmem_r")), g0);
+        topp->eval();
+        check("t.gmem_r after eval", get(find("t.gmem_r")), g0 ^ 0xff);
+    }
+    check("t.vax", (get(find("t.vax")) >> topp->sel) & 1, topp->en);
+    check("t.ct_c", get(find("t.ct_c")), topp->d);
+    check("t.uw_c", get(find("t.uw_c")), topp->sel & 1 ? topp->d : topp->in_a);
+    check("t.uv_c", get(find("t.uv_c")), (topp->d & 0xf) ^ topp->in_a);
+    check("t.mc_x", get(find("t.mc_x")), (((topp->d + 3) & 0xf) << 4) | (topp->d & 0xf));
 
     accept("t.m4[1][1]", get(find("t.m4[1][1]")) ^ 0xff);
     merge("t.m4[0][0]", get(find("t.m4[0][0]")) ^ 0xff, 0x0f);
@@ -518,6 +533,8 @@ int main(int argc, char** argv) {
              {"t.st.cnt", "retained"},
              {"t.ia.q", "retained"},  // Per instance: ib.q is the comb-driven one
              {"t.dli", "retained"},  // A variable select reads its undriven bits
+             {"t.gmem", "retained"},
+             {"t.vax", "comb"},  // Stored: a shadow cannot mirror its lvalue
              {"t.oh.v", "reconstructed"},  // No design read reaches its undriven bits
              {"t.ib.q", "reconstructed"},  // Its instance of ia.q's variable is retained apart
              {"t.ret_c", "comb"},  // An impure driver is not re-executed on read

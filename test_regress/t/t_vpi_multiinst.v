@@ -40,6 +40,9 @@ module child (
   assign cy = din ^ 8'hA5;
   logic [7:0] cflop = 8'h0;
   always_ff @(posedge clk) cflop <= din ^ 8'h5a;
+  // Driven in part alike in both instances, so they share one comb mask
+  logic [7:0] cpart;
+  assign cpart[3:0] = din[3:0];
 endmodule
 
 // bc is driven only by cross-scope assigns in module t; bd reads bc back
