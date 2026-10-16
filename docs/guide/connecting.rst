@@ -477,6 +477,12 @@ the evaluation path as it would without VPI. When VPI reads such a signal,
 it is rematerialized, giving the value it had at the end of the last
 ``eval()``. Simulation is faster, at the cost of a slower read.
 
+:vlopt:`--public-flat-rw` remains preferable where signals are read
+directly as members of the generated C++ model rather than through VPI, or
+where a client reads many signals on every time step, since a reconstructed
+read costs more than a load from storage. Marking only the signals that
+need public access is typically better performing than either option.
+
 Signals that hold their value until something updates them can be written
 with ``vpi_put_value``, and behave as under :vlopt:`--public-flat-rw`:
 flops, latches, top-level inputs, and initial-only or undriven variables.
