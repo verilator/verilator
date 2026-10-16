@@ -50,4 +50,10 @@ module t;
   assign ustructC = '0;
   ustruct_t ustructE = '0;  // Issue #7460
   uunion_t uunionA = 7;
+
+  typedef logic row3_t[3];
+  typedef logic row2_t[2];
+  row3_t rows3[2];
+  row2_t rows2[2];
+  assign rows3 = rows2;
 endmodule
