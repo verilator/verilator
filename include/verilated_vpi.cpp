@@ -3960,12 +3960,10 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
             VerilatedVpiImp::inertialDelay(baseSignalVop, valuep);
             return object;
         }
-        // A malformed decimal string is rejected only once parsed below, so must not re-settle;
-        // a force has by then already set its enable bits
-        unsigned long long decVal;
+        // A malformed decimal string writes nothing, so must not re-settle: noted once parsed
+        // below. A force has by then already set its enable bits.
         if (forceFlag == vpiForceFlag || forceFlag == vpiReleaseFlag
-            || valuep->format != vpiDecStrVal
-            || std::sscanf(valuep->value.str, "%30llu", &decVal) == 1)  // lintok-format-ll
+            || valuep->format != vpiDecStrVal)
             vl_vpi_note_write(baseSignalVop);
         VerilatedVpiImp::evalNeeded(true);
         const int varBits = baseSignalVop->bitSize();
@@ -4180,6 +4178,7 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
                               valueVop->fullname());
                 return nullptr;
             }
+            vl_vpi_note_write(baseSignalVop);
             if (success > 1) {
                 VL_VPI_WARNING_(
                     __FILE__, __LINE__, "%s: Trailing garbage '%s' in '%s' as value %s for '%s'",
