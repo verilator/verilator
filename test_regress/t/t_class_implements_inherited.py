@@ -9,7 +9,6 @@
 
 import vltest_bootstrap
 
-
 test.scenarios("simulator")
 
 test.compile()
