@@ -272,22 +272,13 @@ VerilatedDeserialize& operator>>(VerilatedDeserialize& os, VerilatedContext* rhs
 //=============================================================================
 // --vpi-lazy undo log
 
-void VerilatedLazyState::undoSave(VerilatedSerialize& os, const void* symsp,
-                                  size_t symsSize) const VL_MT_UNSAFE_ONE {
-    // Offsets, as a restore may be into another model. Should an entry lie outside the symbol
-    // table the log is dropped whole, and the restored model reads the puts as settled
+void VerilatedLazyState::undoSave(VerilatedSerialize& os,
+                                  const void* symsp) const VL_MT_UNSAFE_ONE {
+    // Offsets, as a restore may be into another model; every logged put is to storage in the
+    // symbol table's module instances
     const char* const basep = static_cast<const char*>(symsp);
-    uint64_t n = undo.size();
+    os << static_cast<uint64_t>(undo.size());
     for (const VlLazyUndo& entry : undo) {
-        const char* const datap = static_cast<const char*>(entry.datap);
-        if (VL_UNLIKELY(datap < basep || datap >= basep + symsSize)) {
-            n = 0;
-            break;
-        }
-    }
-    os << n;
-    for (uint64_t i = 0; i < n; ++i) {
-        const VlLazyUndo& entry = undo[i];
         os << static_cast<uint64_t>(static_cast<const char*>(entry.datap) - basep);
         os << entry.isStr << entry.old;
     }

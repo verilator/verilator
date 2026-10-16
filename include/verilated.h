@@ -1011,8 +1011,7 @@ struct VerilatedLazyState final {
     }
     void undoSwap(bool in) VL_MT_UNSAFE_ONE;
     // --savable: the undo log, relative to 'symsp', the derived symbol table
-    void undoSave(VerilatedSerialize& os, const void* symsp,
-                  size_t symsSize) const VL_MT_UNSAFE_ONE;
+    void undoSave(VerilatedSerialize& os, const void* symsp) const VL_MT_UNSAFE_ONE;
     void undoRestore(VerilatedDeserialize& os, void* symsp) VL_MT_UNSAFE_ONE;
 };
 

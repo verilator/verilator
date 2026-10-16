@@ -2055,7 +2055,7 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
                     puts("__Vm_lazy.restore(__Vm_lazyEpochSaved);\n");
                     puts("__Vm_lazy.undoRestore(os, this);\n");
                 } else {
-                    puts("__Vm_lazy.undoSave(os, this, sizeof(*this));\n");
+                    puts("__Vm_lazy.undoSave(os, this);\n");
                     puts("if (VL_UNLIKELY(__Vm_lazyUndoWasIn)) __Vm_lazy.undoSwap(true);\n");
                 }
             }
