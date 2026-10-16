@@ -2388,11 +2388,9 @@ private:
 void V3VpiLazy::prepare(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     V3VpiLazyContext& ctx = nodep->createVpiLazyContext();
-    AstScope* const topScopep = nodep->topScopep() ? nodep->topScopep()->scopep() : nullptr;
-    if (!topScopep) return;
     std::vector<AstCFunc*> splitFuncps;
     {
-        VpiLazyPreparer preparer{nodep, topScopep, ctx};
+        VpiLazyPreparer preparer{nodep, nodep->topScopep()->scopep(), ctx};
         preparer.run();
         splitFuncps = preparer.splitFuncps();
     }
@@ -2405,10 +2403,8 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
 }
 
 void V3VpiLazy::classifyComb(AstNetlist* nodep) {
-    AstScope* const topScopep = nodep->topScopep() ? nodep->topScopep()->scopep() : nullptr;
-    if (!topScopep) return;
     V3VpiLazyContext ctx;
-    VpiLazyPreparer{nodep, topScopep, ctx}.classifyOnly();
+    VpiLazyPreparer{nodep, nodep->topScopep()->scopep(), ctx}.classifyOnly();
 }
 
 VVpiLazyComb V3VpiLazy::combOf(const AstNetlist* nodep, const AstScope* scopep,
