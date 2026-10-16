@@ -595,6 +595,11 @@ class VpiLazyPreparer final {
         _COUNT
     };
     // METHODS
+    // Returns 'cond', so a caller bails and returns in one line
+    static bool bailIf(Bail& whyr, Bail why, bool cond) {
+        if (cond) whyr = why;
+        return cond;
+    }
     static const char* bailName(Bail b) {
         static const char* const names[] = {"multidriven",
                                             "dtype",
@@ -752,6 +757,12 @@ private:
         UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << target->name());
         ++m_combBailRetained;
         ++m_bailCount[static_cast<size_t>(why)];
+    }
+
+    // Returns 'cond', so a caller retains and returns in one line
+    bool retainIf(AstVarScope* target, Bail why, bool cond) {
+        if (cond) retainTarget(target, why);
+        return cond;
     }
 
     // All-or-nothing per module: the func is shared, so a survivor gets the wrong instance.
@@ -1302,16 +1313,12 @@ private:
                           const std::unordered_set<const AstVar*>& gapRead) {
         AstVar* const varp = basep->varp();
         if (!candidate(basep) && !m_helperCandVars.count(varp)) return;
-        if (!reconstructableKind(varp)) {
-            retainTarget(basep, Bail::DTYPE);
+        if (retainIf(basep, Bail::DTYPE, !reconstructableKind(varp))) return;
+        // A full / procedural / impure / variable-range write exists too.
+        if (retainIf(basep, Bail::PARTIAL_MIXED_WRITE,
+                     static_cast<int>(parts.size()) != writeCountOf(basep)
+                         || multidriven(notSole, basep, scopep)))
             return;
-        }
-        if (static_cast<int>(parts.size()) != writeCountOf(basep)
-            || multidriven(notSole, basep, scopep)) {
-            // A full / procedural / impure / variable-range write exists too.
-            retainTarget(basep, Bail::PARTIAL_MIXED_WRITE);
-            return;
-        }
         // Overlapping writes are multidriven: assembly would depend on encounter order. Bucketed
         // by element index, then LSB-sorted so only adjacent pairs need testing.
         const size_t depth = parts[0].m_ext.idxs.size();
@@ -1327,17 +1334,13 @@ private:
                 bucket.begin(), bucket.end(),
                 [](const PartExtent* ap, const PartExtent* bp) { return ap->lsb < bp->lsb; });
             for (size_t i = 1; i < bucket.size(); ++i) {
-                if (bucket[i]->lsb < bucket[i - 1]->lsb + bucket[i - 1]->width) {
-                    retainTarget(basep, Bail::PARTIAL_OVERLAP);
+                if (retainIf(basep, Bail::PARTIAL_OVERLAP,
+                             bucket[i]->lsb < bucket[i - 1]->lsb + bucket[i - 1]->width))
                     return;
-                }
             }
         }
         if (combOf(basep) == VVpiLazyComb::PARTIAL) {
-            if (gapRead.count(varp)) {
-                retainTarget(basep, Bail::PARTIAL_GAP);
-                return;
-            }
+            if (retainIf(basep, Bail::PARTIAL_GAP, gapRead.count(varp))) return;
             m_gapVars.insert(varp);
         }
         const std::unordered_map<const AstVarScope*, int> groupWrites{
@@ -1388,10 +1391,13 @@ private:
         std::vector<AstVarScope*> m_assembledps;  // Vars first defined in part, encounter order
 
     private:
-        void bail(Bail why) {
-            if (!m_ok) return;
-            m_ok = false;
-            m_whyr = why;
+        // Records the first failure; returns 'cond', so a caller bails and returns in one line
+        bool bailIf(Bail why, bool cond) {
+            if (cond && m_ok) {
+                m_ok = false;
+                m_whyr = why;
+            }
+            return cond;
         }
         CombFootprint& changing(AstVarScope* vscp) {
             CombFootprint& fp = m_definedr[vscp];
@@ -1440,8 +1446,8 @@ private:
             const AstVarRef* const refp = partialLhsRef(nodep, ext);
             if (refp && refp != m_skipp && !refp->access().isWriteOnly() && member(refp)
                 && combElement(refp->varp(), ext, elem)) {
-                if (!bitsDefined(m_definedr[refp->varScopep()], elem, ext.lsb, ext.width))
-                    bail(Bail::READ_BEFORE_WRITE);
+                bailIf(Bail::READ_BEFORE_WRITE,
+                       !bitsDefined(m_definedr[refp->varScopep()], elem, ext.lsb, ext.width));
                 return;
             }
             iterateChildrenConst(nodep);
@@ -1458,16 +1464,11 @@ private:
             UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep,
                         "--vpi-lazy: unexpected assignment kind in a combinational block");
             // Only --timing keeps a delay this far, and such a block never terminates: untested.
-            if (VL_UNCOVERABLE(nodep->timingControlp())) {  // LCOV_EXCL_START
-                bail(Bail::UNSUPPORTED_STMT);
-                return;
-            }  // LCOV_EXCL_STOP
+            if (bailIf(Bail::UNSUPPORTED_STMT, VL_UNCOVERABLE(nodep->timingControlp())))
+                return;  // LCOV_EXCL_LINE
             bool partial = false;
             AstVarRef* const baserefp = lhsBaseRef(nodep->lhsp(), partial);
-            if (!baserefp) {
-                bail(Bail::UNSUPPORTED_STMT);
-                return;
-            }
+            if (bailIf(Bail::UNSUPPORTED_STMT, !baserefp)) return;
             AstVarScope* const basep = baserefp->varScopep();
             // The gather counted every write under this block, so its write set is members
             UASSERT_OBJ(m_groupp->members.count(basep), nodep,
@@ -1490,8 +1491,8 @@ private:
         void visit(AstVarRef* nodep) override {
             if (!m_ok || nodep == m_skipp || nodep->access().isWriteOnly() || !member(nodep))
                 return;
-            if (!fullyDefined(m_definedr[nodep->varScopep()], nodep->varp()))
-                bail(Bail::READ_BEFORE_WRITE);
+            bailIf(Bail::READ_BEFORE_WRITE,
+                   !fullyDefined(m_definedr[nodep->varScopep()], nodep->varp()));
         }
         void visit(AstSel* nodep) override { visitSel(nodep); }
         void visit(AstArraySel* nodep) override { visitSel(nodep); }
@@ -1515,11 +1516,9 @@ private:
         void visit(AstJumpGo*) override {}
         void visit(AstComment*) override {}
         void visit(AstNode* nodep) override {
-            if (m_inExpr) {
-                iterateChildrenConst(nodep);
-            } else {
-                bail(Bail::UNSUPPORTED_STMT);  // V3Table and friends may leave odd shapes
-            }
+            // V3Table and friends may leave odd shapes
+            if (bailIf(Bail::UNSUPPORTED_STMT, !m_inExpr)) return;
+            iterateChildrenConst(nodep);
         }
 
     public:
@@ -1543,20 +1542,14 @@ private:
 
     // A var first defined in part is assembled into a zeroed shadow, but for its undriven bits.
     bool analyseGroup(Group* g, Bail& whyr) const {
-        for (const CombBlock* const bp : g->blockps) {
-            if (bp->m_impure) {
-                whyr = Bail::IMPURE;
-                return false;
-            }
-        }
+        for (const CombBlock* const bp : g->blockps)
+            if (bailIf(whyr, Bail::IMPURE, bp->m_impure)) return false;
         DefinedBits defined;
         LazyReadOrderVisitor walk{g, defined, whyr};
         if (!walk.m_ok) return false;
         for (AstVarScope* const t : g->targets) {
-            if (!definesDriven(defined[t], t->varp())) {
-                whyr = Bail::LATCH;  // Not written on every path
-                return false;
-            }
+            // Not written on every path
+            if (bailIf(whyr, Bail::LATCH, !definesDriven(defined[t], t->varp()))) return false;
         }
         for (AstVarScope* const u : walk.m_assembledps)
             if (!m_gapVars.count(u->varp())) g->zeroInitps.push_back(u);
