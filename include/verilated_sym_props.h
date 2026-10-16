@@ -321,8 +321,6 @@ public:
     // ACCESSORS
     /// Null for a --vpi-lazy computed signal, which has no storage
     void* datap() const { return VL_UNCOVERABLE(isLazyRemat()) ? nullptr : m_datap; }
-    /// Reconstruct a --vpi-lazy row; nothing for a plain one
-    inline void datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE;
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
     /// VerilatedLazyState::combMasksp index of a VLVF_LAZY_COMB row, else -1
@@ -340,6 +338,8 @@ private:
         VL_DEBUG_IFDEF(assert(isLazyRemat()););
         return static_cast<VerilatedVarLazyDatap*>(m_datap);
     }
+    // Reconstruct a --vpi-lazy row; only when isLazyRemat()
+    inline void datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE;
     friend class VerilatedVpioVarBase;
     friend class VerilatedVpioVar;
 };
@@ -382,7 +382,7 @@ inline VerilatedVar::~VerilatedVar() = default;
 inline VerilatedVar::VerilatedVar(VerilatedVar&&) = default;
 // Not MT safe: runs generated reconstruction code and writes the model's shadow storage
 void VerilatedVar::datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE {
-    if (!isLazyRemat()) return;
+    VL_DEBUG_IFDEF(assert(isLazyRemat()););
     VerilatedLazyState* const lazyp = symsp->lazyp();
     // Until the first eval() a shadow holds the reset value its --public-flat-rw signal would
     if (lazyp->beforeFirstEval()) return;
