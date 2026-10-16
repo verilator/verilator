@@ -215,9 +215,7 @@ using InstComb = V3VpiLazyContext::InstComb;
 bool storagePinnedElsewhere(const AstVar* varp) {
     if (varp->isPrimaryIO()) return true;
     if (varp->isForceable()) return true;
-    if (varp->isReadByDpi() || varp->isWrittenByDpi()) return true;
-    if (varp->isSigModPublic()) return true;
-    return false;
+    return varp->isReadByDpi() || varp->isWrittenByDpi();
 }
 
 bool reconstructableKind(const AstVar* varp) {
