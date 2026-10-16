@@ -799,7 +799,7 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // If this is a non static method we need to check the scope of the VarRefs
-        if (!outvscp && cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample() 
+        if (!outvscp && cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample()
             && !refp->taskp()->dpiImport() && cfuncp->op1p() && cfuncp->scopep()->aboveScopep() && cfuncp && !cfuncp->isVirtual()
             && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))) {
@@ -1332,7 +1332,7 @@ class TaskVisitor final : public VNVisitor {
                 == methodp->scopep()->aboveScopep()->name()) {
                 AstVar* newVarp;
                 // If we haven't emum over this node yet
-                if (!varRefp->varp()->user3SetOnce()) {
+                if (!varRefp->varp()->user3p()) {
                     newVarp = new AstVar{varRefp->fileline(), VVarType::PORT,
                                          varRefp->name() + "_REF", varRefp->dtypep()};
                     newVarp->funcLocal(true);
