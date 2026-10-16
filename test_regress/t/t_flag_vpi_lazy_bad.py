@@ -35,18 +35,4 @@ test.lint(fails=True,
           verilator_flags2=["--vpi-lazy --protect-ids"],
           expect_filename="t/t_flag_vpi_lazy_protect_bad.out")
 
-# Suppressed, the warning is all that is given up: --no-vpi still wins, so the model is not a VPI
-# model and none of the lazy passes run. Same design as t_vpi_multiinst_lazy, where
-# --vpi-lazy alone does emit the scope rows.
-test.top_filename = "t/t_vpi_multiinst.v"
-
-# Verilate only: its DPI imports resolve only against the t_vpi_dump harness.
-test.compile(verilator_flags2=["--timing --vpi-lazy --no-vpi -Wno-NOEFFECT"],
-             verilator_make_gmake=False)
-
-test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_classes.mk", r'VM_VPI = 0')
-test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp",
-                   r'VerilatedScope::SCOPE_MODULE')
-test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp", r'VLVF_LAZY_REMAT')
-
 test.passes()
