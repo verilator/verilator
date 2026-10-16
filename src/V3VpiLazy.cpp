@@ -591,7 +591,6 @@ class VpiLazyPreparer final {
         COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
         BOUNDARY_COMB_DTYPE,  // Comb boundary operand of a kind reconstruction cannot express
         BOUNDARY_COMB_COPY,  // Comb boundary operand whose own row copies another variable
-        BOUNDARY_OPERAND_SEQ,  // Read by another cone, no comb driver: sequential/undriven
         _COUNT
     };
     // METHODS
@@ -614,8 +613,7 @@ class VpiLazyPreparer final {
                                             "comb cycle",
                                             "completeness floor",
                                             "boundary comb (dtype)",
-                                            "boundary comb (copy)",
-                                            "boundary operand (seq)"};
+                                            "boundary comb (copy)"};
         static_assert(sizeof(names) / sizeof(names[0]) == static_cast<size_t>(Bail::_COUNT),
                       "Bail name table out of sync with enum");
         return names[static_cast<size_t>(b)];
@@ -2055,9 +2053,8 @@ private:
             return;
         }
         const bool cand = uVarp->isSigVpiLazyCandidate();
-        // Sequential/undriven operands hold storage regardless, so pinning them is free.
-        const Bail why
-            = cand && hasCombDriver(u) ? combBoundaryReason(u) : Bail::BOUNDARY_OPERAND_SEQ;
+        // Holds storage regardless, so the completeness floor retains it.
+        if (cand && !hasCombDriver(u)) return;
         for (AstVarScope* const vscp :
              shared ? m_gather.m_vscpsOf.at(uVarp) : std::vector<AstVarScope*>{u}) {
             if (!m_kept.insert(vscp).second) continue;
@@ -2065,6 +2062,7 @@ private:
                 ++m_boundaryStorage;
                 continue;
             }
+            const Bail why = combBoundaryReason(u);
             UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << vscp->name());
             ++m_fallback;
             ++m_bailCount[static_cast<size_t>(why)];
