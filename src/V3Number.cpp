@@ -2801,6 +2801,10 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
     for (unsigned times = 0; times < rhsval; ++times) out += lhs.toString();
     return setString(out);
 }
+V3Number& V3Number::opCvtPackString(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    return setString(lhs.toString());
+}
 V3Number& V3Number::opToLowerN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);
     NUM_ASSERT_STRING_ARGS1(lhs);

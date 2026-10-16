@@ -3501,10 +3501,6 @@ class ConstVisitor final : public VNVisitor {
         }
     }
 
-    //  void visit(AstCvtPackString* nodep) override {
-    // Not constant propagated (for today) because AstNodeExpr::isOpaque is set
-    // Someday if lower is constant, convert to quoted "string".
-
     bool onlySenItemInSenTree(const AstSenItem* nodep) {
         // Only one if it's not in a list
         return (!nodep->nextp() && nodep->backp()->nextp() != nodep);
@@ -4330,7 +4326,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOP1("AstSel{warnSelect(nodep)}",        "NEVER");
     // Generic constants on both side.  Do this first to avoid other replacements
     TREEOPA("AstNodeBiop {$lhsp.castConst, $rhsp.castConst, nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
-    TREEOPA("AstNodeUniop{$lhsp.castConst, !nodep->isOpaque(), nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
+    TREEOPA("AstNodeUniop{$lhsp.castConst, nodep->isPredictOptimizable()}",  "replaceConst(nodep)");
     TREEOPA("AstNodeQuadop{$lhsp.castConst, $rhsp.castConst, $thsp.castConst, $fhsp.castConst}",  "replaceConst(nodep)");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
@@ -4622,7 +4618,6 @@ class ConstVisitor final : public VNVisitor {
     // Strings
     TREEOPA("AstPutcN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
     TREEOPA("AstSubstrN{$lhsp.castConst, $rhsp.castConst, $thsp.castConst}",  "replaceConst(nodep)");
-    TREEOPA("AstCvtPackString{$lhsp.castConst}", "replaceConstString(nodep, VN_AS(nodep->lhsp(), Const)->num().toString())");
     TREEOP ("AstToStringN{DISABLE_BASE}", "DONE");  // Avoid uniop(const); use matchToStringNConst
     TREEOP ("AstToStringN{matchToStringNConst(nodep)}", "DONE");
     // Custom

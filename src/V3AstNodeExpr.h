@@ -61,9 +61,6 @@ public:
     virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
-    // Someday we will generically support data types on every expr node
-    // Until then isOpaque indicates we shouldn't constant optimize this node type
-    bool isOpaque() const { return VN_IS(this, CvtPackString); }
     // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
     virtual bool isMultiCycleSva() const { return false; }
     const AstNodeExpr* getVAccessTargetRecurse() const;
@@ -5726,7 +5723,7 @@ public:
         dtypeSetString();
     }
     ASTGEN_MEMBERS_AstCvtPackString;
-    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opCvtPackString(lhs); }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
