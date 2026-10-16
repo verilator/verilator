@@ -57,9 +57,6 @@ public:
     static QData cbNextDeadline() VL_MT_UNSAFE_ONE;
     /// Debug dump of callbacks
     static void dumpCbs() VL_MT_UNSAFE_ONE;
-    /// Debug: how this signal's value is held ("stored", "retained", "reconstructed",
-    /// "copy", "comb"); every signal is "stored" without --vpi-lazy. nullptr if not a signal.
-    static const char* storageKind(vpiHandle h) VL_MT_UNSAFE_ONE;
     /// Checks VPI dirty state (i.e. whether vpi_put_value() has
     /// been called since the last clearEvalNeeded())
     static bool evalNeeded() VL_MT_UNSAFE_ONE;
