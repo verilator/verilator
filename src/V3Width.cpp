@@ -7013,12 +7013,8 @@ class WidthVisitor final : public VNVisitor {
                 if (lhsIsUnpackArray && rhsIsUnpackArray) {
                     if (lhsDtp->isFourstate() != rhsDtp->isFourstate()) {
                         nodep->v3error("Assignment between 2-state and 4-state types requires "
-                                       "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)\n"
-                                       << nodep->warnMore()
-                                       << "... Left-hand type: " << lhsDtp->prettyDTypeNameQ()
-                                       << lhsDtp->stateDTypeName() << "\n"
-                                       << nodep->warnMore() << "... Right-hand type: "
-                                       << rhsDtp->prettyDTypeNameQ() << rhsDtp->stateDTypeName());
+                                       "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)"
+                                       << warnDTypes(nodep, lhsDtp, rhsDtp));
                     }
                 }
                 checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(
@@ -8870,11 +8866,8 @@ class WidthVisitor final : public VNVisitor {
                 const AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
 
                 if (lhsDType && rhsDType && !isEquivalentDType(lhsDType, rhsDType)) {
-                    nodep->v3error("Comparison requires matching data types\n"
-                                   << nodep->warnMore() << "... Left-hand data type: "
-                                   << lhsDType->prettyDTypeNameQ() << "\n"
-                                   << nodep->warnMore() << "... Right-hand data type: "
-                                   << rhsDType->prettyDTypeNameQ());
+                    nodep->v3error("Comparison requires matching data types"
+                                   << warnDTypes(nodep, lhsDType, rhsDType));
                     AstNode* const newp
                         = new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}};
                     nodep->replaceWith(newp);
@@ -9603,6 +9596,16 @@ class WidthVisitor final : public VNVisitor {
         }
         return false;
     }
+    // Lines to end a message on nodep with the data types of its operands
+    static string warnDTypes(const AstNode* nodep, const AstNodeDType* lhsDtp,
+                             const AstNodeDType* rhsDtp, const string& lhsName = "Left-hand",
+                             const string& rhsName = "Right-hand")
+        VL_REQUIRES(V3Error::s().m_mutex) {
+        return "\n" + nodep->warnMore() + "... " + lhsName
+               + " data type: " + lhsDtp->prettyDTypeNameQ() + " " + lhsDtp->stateDTypeName()
+               + "\n" + nodep->warnMore() + "... " + rhsName
+               + " data type: " + rhsDtp->prettyDTypeNameQ() + " " + rhsDtp->stateDTypeName();
+    }
     // Checks whether two types are assignment-compatible according to IEEE 1800-2023 7.6
     // Currently, this function only supports variables, which are of following types:
     // - Fixed-size unpacked array
@@ -9633,11 +9636,8 @@ class WidthVisitor final : public VNVisitor {
         if (!isLhsAggregate && !isRhsAggregate) return;
         if (isLhsAggregate ^ isRhsAggregate) {
             nodep->v3error(
-                "Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)\n"
-                << nodep->warnMore() << "... " << lhsName << " data type: "
-                << lhsDtp->prettyDTypeNameQ() << " " << lhsDtp->stateDTypeName() << "\n"
-                << nodep->warnMore() << "... " << rhsName << " data type: "
-                << rhsDtp->prettyDTypeNameQ() << " " << rhsDtp->stateDTypeName() << "\n");
+                "Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)"
+                << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
             return;
         } else if (VN_IS(lhsDtp, QueueDType) && VN_IS(rhsDtp, EmptyQueueDType)) {
             return;
@@ -10022,6 +10022,13 @@ class WidthVisitor final : public VNVisitor {
                 underp->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(underp), underp);
                 underp = newp;
+            }
+            const AstNodeDType* const expDtp = expDTypep->skipRefp();
+            if (determ == ASSIGN && VN_IS(expDtp, NodeUOrStructDType) && expDtp->isAggregateType()
+                && !underDtp->isAggregateType()) {
+                parentp->v3error("Illegal assignment: types are not assignment compatible (IEEE "
+                                 "1800-2023 7.6)"
+                                 << warnDTypes(parentp, expDtp, underDtp));
             }
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
