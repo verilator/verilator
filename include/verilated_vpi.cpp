@@ -3894,10 +3894,10 @@ void vpi_get_value(vpiHandle object, p_vpi_value valuep) {
     VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
 }
 
-// The put itself, less the --vpi-lazy comb mask; named for its messages' __func__
-// 'baseSignalVop' is VerilatedVpioVar::castp(object), made once by the caller
-static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSignalVop,
-                                  p_vpi_value valuep, PLI_INT32 flags) {
+// The put itself, less the --vpi-lazy comb mask; overloads the entry point so its messages'
+// __func__ name it. 'baseSignalVop' is VerilatedVpioVar::castp(object), made once by the caller
+static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSignalVop,
+                               p_vpi_value valuep, PLI_INT32 flags) {
     VL_DEBUG_IF_PLI(VL_DBG_MSGF("- vpi: vpi_put_value %p %p\n", object, valuep););
     VerilatedVpiImp::assertOneCheck();
     VL_VPI_ERROR_RESET_();
@@ -3944,7 +3944,7 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
             if (const char* const memberp = vl_put_value_null_member(valuep)) {
                 VL_VPI_WARNING_(
                     __FILE__, __LINE__, "%s: Ignoring nullptr value.%s with format %s for '%s'",
-                    "vpi_put_value", memberp, VerilatedVpiError::strFromVpiVal(valuep->format),
+                    __func__, memberp, VerilatedVpiError::strFromVpiVal(valuep->format),
                     baseSignalVop->fullname());
                 return nullptr;
             }
@@ -3954,7 +3954,7 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
                 VL_VPI_WARNING_(
                     __FILE__, __LINE__,
                     "%s: Unsupported p_vpi_value as requested for '%s' with vpiInertialDelay",
-                    "vpi_put_value", baseSignalVop->fullname());
+                    __func__, baseSignalVop->fullname());
                 return nullptr;
             }
             VerilatedVpiImp::inertialDelay(baseSignalVop, valuep);
@@ -4002,7 +4002,7 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
             VL_VPI_ERROR_(__FILE__, __LINE__,
                           "%s: Signal '%s' with vpiHandle '%p' is marked forceable, but force "
                           "control signals could not be retrieved.%s",
-                          "vpi_put_value", baseSignalVop->fullname(), object,
+                          __func__, baseSignalVop->fullname(), object,
                           gotErrorMessage ? previousErrorMessage.c_str() : "");
             return nullptr;
         }  // LCOV_EXCL_STOP
@@ -4102,7 +4102,7 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
                 VL_VPI_ERROR_(__FILE__, __LINE__,
                               "%s: Could not retrieve value of signal '%s' with "
                               "vpiHandle '%p'. Error message: %s",
-                              "vpi_put_value", baseValueSignalName.c_str(), object,
+                              __func__, baseValueSignalName.c_str(), object,
                               previousErrorMessage.c_str());
                 return nullptr;
             }
@@ -4160,7 +4160,7 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
                 if (digit > 7) {  // If str was < '0', then as unsigned, digit > 7
                     VL_VPI_WARNING_(__FILE__, __LINE__,
                                     "%s: Non octal character '%c' in '%s' as value %s for '%s'",
-                                    "vpi_put_value", digit + '0', valuep->value.str,
+                                    __func__, digit + '0', valuep->value.str,
                                     VerilatedVpiError::strFromVpiVal(valuep->format),
                                     valueVop->fullname());
                     digit = 0;
@@ -4175,7 +4175,7 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
                                             &val, remainder);
             if (success < 1) {
                 VL_VPI_ERROR_(__FILE__, __LINE__,
-                              "%s: Parsing failed for '%s' as value %s for '%s'", "vpi_put_value",
+                              "%s: Parsing failed for '%s' as value %s for '%s'", __func__,
                               valuep->value.str, VerilatedVpiError::strFromVpiVal(valuep->format),
                               valueVop->fullname());
                 return nullptr;
@@ -4183,7 +4183,7 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
             if (success > 1) {
                 VL_VPI_WARNING_(
                     __FILE__, __LINE__, "%s: Trailing garbage '%s' in '%s' as value %s for '%s'",
-                    "vpi_put_value", remainder, valuep->value.str,
+                    __func__, remainder, valuep->value.str,
                     VerilatedVpiError::strFromVpiVal(valuep->format), valueVop->fullname());
             }
             put_word(valueVop, val, 64, 0);
@@ -4208,7 +4208,7 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
                     } else {
                         VL_VPI_WARNING_(__FILE__, __LINE__,
                                         "%s: Non hex character '%c' in '%s' as value %s for '%s'",
-                                        "vpi_put_value", digit, valuep->value.str,
+                                        __func__, digit, valuep->value.str,
                                         VerilatedVpiError::strFromVpiVal(valuep->format),
                                         valueVop->fullname());
                         hex = 0;
@@ -4249,21 +4249,21 @@ static vpiHandle vl_vpi_put_value(vpiHandle object, const VerilatedVpioVar* base
             return object;
         }
         VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported format (%s) as requested for '%s'",
-                      "vpi_put_value", VerilatedVpiError::strFromVpiVal(valuep->format),
+                      __func__, VerilatedVpiError::strFromVpiVal(valuep->format),
                       valueVop->fullname());
         return nullptr;
     }
     if (const VerilatedVpioParam* const vop = VerilatedVpioParam::castp(object)) {
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Ignoring vpi_put_value to vpiParameter '%s'",
-                        "vpi_put_value", vop->fullname());
+                        __func__, vop->fullname());
         return nullptr;
     }
     if (const VerilatedVpioConst* const vop = VerilatedVpioConst::castp(object)) {
         VL_VPI_WARNING_(__FILE__, __LINE__, "%s: Ignoring vpi_put_value to vpiConstant '%s'",
-                        "vpi_put_value", vop->fullname());
+                        __func__, vop->fullname());
         return nullptr;
     }
-    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", "vpi_put_value", object);
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported vpiHandle '%p'", __func__, object);
     return nullptr;
 }
 
@@ -4283,7 +4283,7 @@ static vpiHandle vl_vpi_put_value_lazy_comb(vpiHandle object, const VerilatedVpi
     const PLI_INT32 mode = flags & 0xfff;
     // Not forceable, so a force or release is refused as it stands
     if (mode == vpiForceFlag || mode == vpiReleaseFlag || mode == vpiInertialDelay)
-        return vl_vpi_put_value(object, vop, valuep, flags);
+        return vpi_put_value(object, vop, valuep, flags);
     VerilatedSyms* const symsp = vop->scopep()->symsp();
     const VerilatedVar* const varp = vop->storageVarp();
     // Rebuilt first, so the masked bits merged back are current
@@ -4297,7 +4297,7 @@ static vpiHandle vl_vpi_put_value_lazy_comb(vpiHandle object, const VerilatedVpi
     const bool undoWas = lazyp->undoOn;
     // The scratch buffer is not model state, so must not reach the undo log
     lazyp->undoOn = false;
-    vpiHandle const trialp = vl_vpi_put_value(trial.castVpiHandle(), &trial, valuep, vpiNoDelay);
+    vpiHandle const trialp = vpi_put_value(trial.castVpiHandle(), &trial, valuep, vpiNoDelay);
     lazyp->undoOn = undoWas;
     VerilatedVpiImp::evalNeeded(evalWas);
     lazyp->written = writtenWas;
@@ -4320,7 +4320,7 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
     if (VL_UNLIKELY(vop && valuep && vop->storageVarp()->isPublicRW()
                     && vop->storageVarp()->isLazyComb()))
         return vl_vpi_put_value_lazy_comb(object, vop, valuep, flags);
-    return vl_vpi_put_value(object, vop, valuep, flags);
+    return vpi_put_value(object, vop, valuep, flags);
 }
 
 bool vl_check_array_format(const VerilatedVar* varp, const p_vpi_arrayvalue arrayvalue_p,
