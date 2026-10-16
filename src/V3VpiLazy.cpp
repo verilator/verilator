@@ -1317,13 +1317,8 @@ private:
         const size_t depth = parts[0].m_ext.idxs.size();
         std::map<std::vector<int32_t>, std::vector<const PartExtent*>> byElem;
         for (const PartWrite& pw : parts) {
-            // V3Slice leaves parts at one depth; degraded not asserted, a wrong guess miscompiles
-            if (pw.m_ext.idxs.size() != depth) {
-                // LCOV_EXCL_START
-                retainTarget(basep, Bail::PARTIAL_OVERLAP);
-                return;
-                // LCOV_EXCL_STOP
-            }
+            UASSERT_OBJ(pw.m_ext.idxs.size() == depth, basep,
+                        "--vpi-lazy: V3Slice leaves partial writes at one depth");
             byElem[pw.m_ext.idxs].push_back(&pw.m_ext);
         }
         for (auto& pr : byElem) {
@@ -1463,7 +1458,7 @@ private:
             UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep,
                         "--vpi-lazy: unexpected assignment kind in a combinational block");
             // Only --timing keeps a delay this far, and such a block never terminates: untested.
-            if (nodep->timingControlp()) {  // LCOV_EXCL_START
+            if (VL_UNCOVERABLE(nodep->timingControlp())) {  // LCOV_EXCL_START
                 bail(Bail::UNSUPPORTED_STMT);
                 return;
             }  // LCOV_EXCL_STOP
@@ -1847,7 +1842,7 @@ private:
         for (Group* const g : m_ordered) {
             if (!g->copyFromp) continue;
             // One instance could not fold: none may. Instances fold alike, so this is untested.
-            if (!claimPerVar(foldable, g->targets[0]->varp())) {  // LCOV_EXCL_START
+            if (VL_UNCOVERABLE(!claimPerVar(foldable, g->targets[0]->varp()))) {  // LCOV_EXCL_START
                 g->copyFromp = nullptr;
                 continue;
             }  // LCOV_EXCL_STOP
