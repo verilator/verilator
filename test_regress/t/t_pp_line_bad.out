@@ -18,6 +18,7 @@
    13 | `line 600 "some file" 3
       | ^
 %Error: t/t_pp_line_bad.v:7:1: Define or directive not defined: '`line'
+                             : ... Suggested alternative: '`line'
     7 | `line
       | ^~~~~
 %Error: t/t_pp_line_bad.v:14:1: `line was not properly formed with '`line number "filename" level'
