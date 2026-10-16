@@ -2251,7 +2251,6 @@ private:
     // stored source; a fold's shadow aliases the source cone's, whose func its row calls.
     void emitCopyRows(const std::vector<Group*>& groups, bool folded) {
         for (Group* const g : groups) {
-            AstVar* const targetVarp = g->targets[0]->varp();
             // A shadow row on top of the retained row a consumer pinned would name it twice.
             if (kept(g->targets[0])) continue;
             AstVar* srcVarp;
@@ -2275,7 +2274,7 @@ private:
                         shadowVarp, "--vpi-lazy copy instances disagree on their source");
             shadowVarp->lazyCopySrc(srcVarp);
             if (shadowVarp->isLazyShadowAlias()) shadowVarp->noReset(true);  // No member to reset
-            m_reconstructed += instancesOf(targetVarp);
+            ++m_reconstructed;  // Each instance is its own group
         }
     }
 
