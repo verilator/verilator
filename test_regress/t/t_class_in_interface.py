@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_class_in_interface.sv"
 
 test.compile(verilator_flags2=["--assert --timing"])
 
