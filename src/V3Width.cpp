@@ -7573,6 +7573,17 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
+            // An unpacked array concatenation is a pattern of its items (IEEE 1800-2023 10.10)
+            AstReplicate* const concatp = VN_CAST(nodep->exprp(), Replicate);
+            const AstConst* const countp = concatp ? VN_CAST(concatp->countp(), Const) : nullptr;
+            const AstNodeDType* const dtypep = nodep->modVarp()->subDTypep()->skipRefOrNullp();
+            if (countp && countp->toUInt() == 1
+                && (VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, BracketArrayDType))) {
+                AstPattern* const patternp = new AstPattern{concatp->fileline(), nullptr};
+                patConcatConvertRecurse(patternp, concatp->srcp());
+                concatp->replaceWith(patternp);
+                VL_DO_DANGLING(pushDeletep(concatp), concatp);
+            }
             // An override pattern is left for the specialized module to type
             VL_RESTORER(m_inParamOverride);
             m_inParamOverride = isOverridePattern(nodep->exprp());
@@ -10863,20 +10874,14 @@ class WidthVisitor final : public VNVisitor {
         return patmap;
     }
 
-    void patConcatConvertRecurse(AstPattern* patternp, AstConcat* nodep) {
-        if (AstConcat* lhsp = VN_CAST(nodep->lhsp(), Concat)) {
-            patConcatConvertRecurse(patternp, lhsp);
+    // Add to patternp the items of nodep, a concatenation or a single item
+    void patConcatConvertRecurse(AstPattern* patternp, AstNodeExpr* nodep) {
+        if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
+            patConcatConvertRecurse(patternp, concatp->lhsp());
+            patConcatConvertRecurse(patternp, concatp->rhsp());
         } else {
-            AstPatMember* const newp = new AstPatMember{
-                nodep->lhsp()->fileline(), nodep->lhsp()->unlinkFrBack(), nullptr, nullptr};
-            newp->isConcat(true);
-            patternp->addItemsp(newp);
-        }
-        if (AstConcat* rhsp = VN_CAST(nodep->rhsp(), Concat)) {
-            patConcatConvertRecurse(patternp, rhsp);
-        } else {
-            AstPatMember* const newp = new AstPatMember{
-                nodep->rhsp()->fileline(), nodep->rhsp()->unlinkFrBack(), nullptr, nullptr};
+            AstPatMember* const newp
+                = new AstPatMember{nodep->fileline(), nodep->unlinkFrBack(), nullptr, nullptr};
             newp->isConcat(true);
             patternp->addItemsp(newp);
         }
