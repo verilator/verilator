@@ -490,7 +490,8 @@ class LinkParseVisitor final : public VNVisitor {
             && nodep->varType().isVPIAccessible()) {
             if (v3Global.opt.vpiLazy()) {
                 if (nodep->isParam()) {
-                    nodep->sigUserRWPublic(true);
+                    // vpi_put_value ignores a parameter; RW would make every reader 'ico' logic
+                    nodep->sigUserRdPublic(true);
                 } else {
                     nodep->vpiLazyRole(VVpiLazyRole::CANDIDATE);
                 }
