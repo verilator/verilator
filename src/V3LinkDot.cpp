@@ -3632,7 +3632,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     const VSymEnt* const foundp = m_curSymp->findIdFlat(baseSubp->name());
                     const AstNodeFTask* const baseFuncp = VN_CAST(baseSubp, NodeFTask);
                     if (!baseFuncp || !baseFuncp->pureVirtual()) continue;
-                    const bool existsInDerived = foundp && !foundp->imported();
+                    // A concrete method inherited via 'extends' also implements it
+                    const AstNodeFTask* const foundFuncp
+                        = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
+                    const bool existsInDerived
+                        = foundp
+                          && (!foundp->imported() || (foundFuncp && !foundFuncp->pureVirtual()));
                     if (m_statep->forPrimary() && !existsInDerived
                         && !derivedClassp->isInterfaceClass() && !derivedClassp->isVirtual()) {
                         derivedClassp->v3error(
