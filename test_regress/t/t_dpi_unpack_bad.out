@@ -17,8 +17,10 @@
                                               : ... note: In instance 't'
    25 |     import_func2(sig1);
       |                  ^~~~
-%Error: t/t_dpi_unpack_bad.v:25:5: Illegal assignment: Unmatched array sizes in dimension 1 (3 vs 2)
+%Error: t/t_dpi_unpack_bad.v:25:5: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
                                  : ... note: In instance 't'
+                                 : ... Left-hand data type: 'logic[2:0]$[0:2][0:2]'
+                                 : ... Right-hand data type: 'logic[2:0]$[0:2][0:1]'
    25 |     import_func2(sig1);
       |     ^~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
