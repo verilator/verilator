@@ -19,7 +19,7 @@
 //         or a $stop
 //              Insert a COVERDECL node in the module.
 //              (V3Emit reencodes into per-module numbers for emitting.)
-//              Insert a COVERINC node at the end of the statement list
+//              Insert a COVERINC node at the beginning of the statement list
 //              for that if/else/case.
 //
 //*************************************************************************
