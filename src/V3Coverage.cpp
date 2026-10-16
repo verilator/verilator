@@ -656,7 +656,7 @@ class CoverageVisitor final : public VNVisitor {
                     = new AstCoverOtherDecl{nodep->fileline(), "v_branch/" + m_modp->prettyName(),
                                             "if", linesCov(ifState, nodep), 0};
                 m_modp->addStmtsp(ifDeclp);
-                nodep->addThensp(
+                nodep->prependThensp(
                     newCoverInc(nodep->fileline(), ifDeclp, traceNameForLine(nodep, "if")));
                 // The else has a column offset of 1 to uniquify it relative to the if
                 // As "if" and "else" are more than one character wide, this won't overlap
@@ -665,7 +665,7 @@ class CoverageVisitor final : public VNVisitor {
                     = new AstCoverOtherDecl{nodep->fileline(), "v_branch/" + m_modp->prettyName(),
                                             "else", linesCov(elseState, nodep), 1};
                 m_modp->addStmtsp(elseDeclp);
-                nodep->addElsesp(
+                nodep->prependElsesp(
                     newCoverInc(nodep->fileline(), elseDeclp, traceNameForLine(nodep, "else")));
             }
             // If/else attributes to each block as non-branch coverage
@@ -677,8 +677,8 @@ class CoverageVisitor final : public VNVisitor {
                         linesCov(ifState, nodep), 0};
                     m_modp->addStmtsp(elsifDeclp);
 
-                    nodep->addThensp(newCoverInc(nodep->fileline(), elsifDeclp,
-                                                 traceNameForLine(nodep, "elsif")));
+                    nodep->prependThensp(newCoverInc(nodep->fileline(), elsifDeclp,
+                                                     traceNameForLine(nodep, "elsif")));
                 }
                 // and we don't insert the else as the child if-else will do so
             } else {
@@ -689,7 +689,7 @@ class CoverageVisitor final : public VNVisitor {
                         nodep->fileline(), "v_line/" + m_modp->prettyName(), "if",
                         linesCov(ifState, nodep), 0};
                     m_modp->addStmtsp(ifDeclp);
-                    nodep->addThensp(
+                    nodep->prependThensp(
                         newCoverInc(nodep->fileline(), ifDeclp, traceNameForLine(nodep, "if")));
                 }
                 if (elseState.lineCoverageOn(nodep)) {
@@ -699,8 +699,8 @@ class CoverageVisitor final : public VNVisitor {
                         linesCov(elseState, nodep), 1};
                     m_modp->addStmtsp(elseDeclp);
 
-                    nodep->addElsesp(newCoverInc(nodep->fileline(), elseDeclp,
-                                                 traceNameForLine(nodep, "else")));
+                    nodep->prependElsesp(newCoverInc(nodep->fileline(), elseDeclp,
+                                                     traceNameForLine(nodep, "else")));
                 }
             }
             m_state = lastState;
@@ -725,7 +725,7 @@ class CoverageVisitor final : public VNVisitor {
                     = new AstCoverOtherDecl{nodep->fileline(), "v_line/" + m_modp->prettyName(),
                                             "case", linesCov(m_state, nodep), 0};
                 m_modp->addStmtsp(declp);
-                nodep->addStmtsp(
+                nodep->prependStmtsp(
                     newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "case")));
             }
         }
