@@ -241,7 +241,9 @@ class DelayedVisitor final : public VNVisitor {
         const AstActive* m_fistActivep = nullptr;
         bool m_whole = false;  // Used on LHS of NBA directly via VarRef
         bool m_partial = false;  // Used on LHS of NBA under a Sel
+        bool m_varying = false;  // Used on LHS of NBA under a select by a non-constant index
         bool m_inLoop = false;  // Used on LHS of NBA in a loop
+        bool m_repeated = false;  // Used on LHS of NBA in a loop, or in a suspendable 'always'
         bool m_inSuspOrFork = false;  // Used on LHS of NBA in suspendable process or fork
         bool m_ordered = false;  // Used on LHS of NBA with a ticket, ordering its updates
         uint32_t m_nSites = 0;  // Number of NBAs with it on the LHS
@@ -308,9 +310,10 @@ class DelayedVisitor final : public VNVisitor {
         // Whether its updates must be committed in the order the NBAs executed, as in suspendable
         // processes or forks they can execute several times per time step, in an order not known
         // statically: at several sites, e.g. executed by a loop in another order than the sites,
-        // or at one site in a loop, updating a varying part of the variable
+        // or at one site executed again, by a loop or a suspendable 'always', updating a part
+        // selected by an index that can vary
         bool inExecOrder() const {
-            return m_inSuspOrFork && (m_nSites > 1 || (m_inLoop && m_partial));
+            return m_inSuspOrFork && (m_nSites > 1 || (m_repeated && m_varying));
         }
 
         // Add sensitivities
@@ -1537,13 +1540,17 @@ class DelayedVisitor final : public VNVisitor {
         for (const auto& pair : m_destps) {
             DestInfo& dest = *pair.second;
             if (!dest.isGeneric()) continue;
-            // A function can be executed in a context not known above, so commit also after the
-            // NBA event, which the NBA sets the trigger of
+            // A function can be executed in a context not known above, e.g. by a combinational
+            // process, which triggers no commit. So commit also when the NBA sets the trigger of
+            // the NBA event: in the next NBA region if set before it, else after it, by the event
             if (dest.m_inCFunc) {
                 FileLine* const flp = pair.first->fileline();
                 AstSenItem* const itemp = new AstSenItem{
                     flp, VEdgeType::ET_EVENT,
                     new AstVarRef{flp, nodep->getCreateNbaEventp(), VAccess::READ}};
+                itemp->addNext(new AstSenItem{
+                    flp, VEdgeType::ET_POSEDGE,
+                    new AstVarRef{flp, nodep->getCreateNbaEventTriggerp(), VAccess::READ}});
                 dest.addSensitivity(itemp);
                 VL_DO_DANGLING(itemp->deleteTree(), itemp);
             }
@@ -1908,7 +1915,18 @@ class DelayedVisitor final : public VNVisitor {
             // Note usage context
             vscpInfo.m_whole |= VN_IS(nodep->lhsp(), VarRef);
             vscpInfo.m_partial |= VN_IS(nodep->lhsp(), Sel);
+            vscpInfo.m_varying |= nodep->lhsp()->exists([](const AstNode* selp) {
+                if (const AstSel* const sp = VN_CAST(selp, Sel)) return !VN_IS(sp->lsbp(), Const);
+                if (const AstNodeSel* const sp = VN_CAST(selp, NodeSel)) {
+                    return !VN_IS(sp->bitp(), Const);
+                }
+                return false;
+            });
             vscpInfo.m_inLoop |= m_inLoop;
+            // The body of a suspendable 'always' is a loop too, executed again in a time step if
+            // it does not suspend
+            vscpInfo.m_repeated
+                |= m_inLoop || (VN_IS(m_procp, Always) && m_procp->isSuspendable());
             vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
             vscpInfo.m_ordered |= nodep->ticketp() != nullptr;
             ++vscpInfo.m_nSites;

@@ -80,6 +80,14 @@ class Counter;
   endtask
 endclass
 
+// Its task is called only by combinational logic, so only that logic triggers the update
+interface comb_bus;
+  int x;
+  task automatic set_x(int n);
+    x <= n;
+  endtask
+endinterface
+
 // Through handles to an interface instantiated only in a module not inlined, so that only the
 // commit refers to the interface in the top scope
 interface pin;
@@ -125,8 +133,8 @@ module t;
   bus parts_task (.clk(zero));
   bus wide (.clk(zero));
   bus over (.clk(zero));
-  bus comb (.clk(zero));
-  bus comb_star (.clk(zero));
+  comb_bus comb ();
+  comb_bus comb_star ();
   bus clocked (.clk(zero));
 
   // A delayed NBA to a member of a struct, observed by the NBA of a clock in the same time step
@@ -336,26 +344,38 @@ module t;
     `checkd(over_seen, 1003);
   end
 
-  // In a task of an interface, called by combinational logic
-  virtual bus comb_vif = comb;
-  virtual bus comb_star_vif = comb_star;
+  // In a task of an interface, called by combinational logic, observed by the NBA of a clock in
+  // the same time step
+  virtual comb_bus comb_vif = comb;
+  virtual comb_bus comb_star_vif = comb_star;
   int comb_in;
   int comb_star_in;
   int comb_out;
   int comb_star_out;
+  bit comb_clk;
+  int comb_seen;
+  int comb_star_seen;
   always_comb comb_vif.set_x(comb_in);
   always @* comb_star_vif.set_x(comb_star_in);
   assign comb_out = comb.x + 1;
   assign comb_star_out = comb_star.x + 1;
   initial begin
+    @(posedge comb_clk);
+    comb_seen = comb.x;
+    comb_star_seen = comb_star.x;
+  end
+  initial begin
     #30;
     comb_in = 5;
     comb_star_in = 7;
+    comb_clk <= 1;
     #1;
     `checkd(comb.x, 5);
     `checkd(comb_out, 6);
     `checkd(comb_star.x, 7);
     `checkd(comb_star_out, 8);
+    `checkd(comb_seen, 5);
+    `checkd(comb_star_seen, 7);
     comb_in = 6;
     comb_star_in = 8;
     #1;

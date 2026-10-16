@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2026 Ethan Sifferman
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 // Test that mixing whole-variable and partial NBAs with suspend points
 // correctly implements "last NBA wins" semantics for both scalars and arrays.
 
@@ -12,7 +17,9 @@ module t;
   int delay = 0;
   always #1 delay = int'($time) / 4;
   task automatic do_delay;
+    // verilator lint_off ZERODLY
     if (delay > 0) #(delay);
+    // verilator lint_on ZERODLY
   endtask
 
   // ---- Scalar tests ----
@@ -24,8 +31,7 @@ module t;
     do_delay();
     s1[3:0] <= 4'h0;
     #1;
-    assert (s1 == 8'hf0)
-    else $fatal(0, "S1 whole->partial: expected f0, got %0h", s1);
+    `checkh(s1, 8'hf0)
   end
 
   // Test S2: partial then whole with suspend between
@@ -35,8 +41,7 @@ module t;
     do_delay();
     s2 <= 8'hff;
     #1;
-    assert (s2 == 8'hff)
-    else $fatal(0, "S2 partial->whole: expected ff, got %0h", s2);
+    `checkh(s2, 8'hff)
   end
 
   // Test S3: two partials to non-overlapping ranges
@@ -46,8 +51,7 @@ module t;
     do_delay();
     s3[3:0] <= 4'h5;
     #1;
-    assert (s3 == 8'ha5)
-    else $fatal(0, "S3 partial+partial: expected a5, got %0h", s3);
+    `checkh(s3, 8'ha5)
   end
 
   // Test S4: two partials to same range (last wins)
@@ -57,8 +61,7 @@ module t;
     do_delay();
     s4[3:0] <= 4'h5;
     #1;
-    assert (s4 == 8'h05)
-    else $fatal(0, "S4 partial overwrite: expected 05, got %0h", s4);
+    `checkh(s4, 8'h05)
   end
 
   // Test S5: whole, partial, whole (last wins)
@@ -70,11 +73,14 @@ module t;
     do_delay();
     s5 <= 8'hcc;
     #1;
-    assert (s5 == 8'hcc)
-    else $fatal(0, "S5 whole-partial-whole: expected cc, got %0h", s5);
+    `checkh(s5, 8'hcc)
   end
 
   // ---- Unpacked array element tests ----
+
+  // Checked by an index not known statically, so the arrays are not split into variables
+  int k;
+  initial k = $urandom_range(0, 0);
 
   // Test A1: whole element then partial element with suspend between
   logic [7:0] a1[0:3];
@@ -84,8 +90,7 @@ module t;
     do_delay();
     a1[1][3:0] <= 4'h0;
     #1;
-    assert (a1[1] == 8'hf0)
-    else $fatal(0, "A1 elem->partial: expected f0, got %0h", a1[1]);
+    `checkh(a1[k+1], 8'hf0)
   end
 
   // Test A2: partial element then whole element with suspend between
@@ -96,8 +101,7 @@ module t;
     do_delay();
     a2[2] <= 8'h00;
     #1;
-    assert (a2[2] == 8'h00)
-    else $fatal(0, "A2 partial->elem: expected 00, got %0h", a2[2]);
+    `checkh(a2[k+2], 8'h00)
   end
 
   // Test A3: writes to different indices (both should apply)
@@ -108,10 +112,8 @@ module t;
     do_delay();
     a3[1] <= 8'hbb;
     #1;
-    assert (a3[0] == 8'haa)
-    else $fatal(0, "A3 idx0: expected aa, got %0h", a3[0]);
-    assert (a3[1] == 8'hbb)
-    else $fatal(0, "A3 idx1: expected bb, got %0h", a3[1]);
+    `checkh(a3[k], 8'haa)
+    `checkh(a3[k+1], 8'hbb)
   end
 
   // Test A4: same index overwrite (last wins)
@@ -122,8 +124,7 @@ module t;
     do_delay();
     a4[0] <= 8'hbb;
     #1;
-    assert (a4[0] == 8'hbb)
-    else $fatal(0, "A4 idx overwrite: expected bb, got %0h", a4[0]);
+    `checkh(a4[k], 8'hbb)
   end
 
   // ---- Full array assignment tests ----
@@ -143,14 +144,10 @@ module t;
     do_delay();
     f1[1] <= 8'hff;
     #1;
-    assert (f1[0] == 8'h11)
-    else $fatal(0, "F1 [0]: expected 11, got %0h", f1[0]);
-    assert (f1[1] == 8'hff)
-    else $fatal(0, "F1 [1]: expected ff, got %0h", f1[1]);
-    assert (f1[2] == 8'h33)
-    else $fatal(0, "F1 [2]: expected 33, got %0h", f1[2]);
-    assert (f1[3] == 8'h44)
-    else $fatal(0, "F1 [3]: expected 44, got %0h", f1[3]);
+    `checkh(f1[k], 8'h11)
+    `checkh(f1[k+1], 8'hff)
+    `checkh(f1[k+2], 8'h33)
+    `checkh(f1[k+3], 8'h44)
   end
 
   // Test F2: element then full array (full array wins)
@@ -168,14 +165,10 @@ module t;
     do_delay();
     f2 <= f2_src;
     #1;
-    assert (f2[0] == 8'h11)
-    else $fatal(0, "F2 [0]: expected 11, got %0h", f2[0]);
-    assert (f2[1] == 8'h22)
-    else $fatal(0, "F2 [1]: expected 22, got %0h", f2[1]);
-    assert (f2[2] == 8'h33)
-    else $fatal(0, "F2 [2]: expected 33, got %0h", f2[2]);
-    assert (f2[3] == 8'h44)
-    else $fatal(0, "F2 [3]: expected 44, got %0h", f2[3]);
+    `checkh(f2[k], 8'h11)
+    `checkh(f2[k+1], 8'h22)
+    `checkh(f2[k+2], 8'h33)
+    `checkh(f2[k+3], 8'h44)
   end
 
   // Test F3: full array then partial element (partial wins for that element's bits)
@@ -193,14 +186,10 @@ module t;
     do_delay();
     f3[2][3:0] <= 4'h0;
     #1;
-    assert (f3[0] == 8'haa)
-    else $fatal(0, "F3 [0]: expected aa, got %0h", f3[0]);
-    assert (f3[1] == 8'hbb)
-    else $fatal(0, "F3 [1]: expected bb, got %0h", f3[1]);
-    assert (f3[2] == 8'hc0)
-    else $fatal(0, "F3 [2]: expected c0, got %0h", f3[2]);
-    assert (f3[3] == 8'hdd)
-    else $fatal(0, "F3 [3]: expected dd, got %0h", f3[3]);
+    `checkh(f3[k], 8'haa)
+    `checkh(f3[k+1], 8'hbb)
+    `checkh(f3[k+2], 8'hc0)
+    `checkh(f3[k+3], 8'hdd)
   end
 
   // Test F4: partial element then full array (full array wins)
@@ -218,14 +207,47 @@ module t;
     do_delay();
     f4 <= f4_src;
     #1;
-    assert (f4[0] == 8'haa)
-    else $fatal(0, "F4 [0]: expected aa, got %0h", f4[0]);
-    assert (f4[1] == 8'hbb)
-    else $fatal(0, "F4 [1]: expected bb, got %0h", f4[1]);
-    assert (f4[2] == 8'hcc)
-    else $fatal(0, "F4 [2]: expected cc, got %0h", f4[2]);
-    assert (f4[3] == 8'hdd)
-    else $fatal(0, "F4 [3]: expected dd, got %0h", f4[3]);
+    `checkh(f4[k], 8'haa)
+    `checkh(f4[k+1], 8'hbb)
+    `checkh(f4[k+2], 8'hcc)
+    `checkh(f4[k+3], 8'hdd)
+  end
+
+  // ---- One NBA executed twice in a time step, to another part each time ----
+
+  // Test R1: partial with a varying range (both should apply)
+  logic [7:0] r1 = 0;
+  bit r1_hi;
+  always begin
+    r1[r1_hi*4+:4] <= r1_hi ? 4'h5 : 4'ha;
+    r1_hi = ~r1_hi;
+    if (r1_hi) do_delay();
+    else begin
+      #1;
+      `checkh(r1, 8'h5a)
+    end
+  end
+
+  // Test R2: elements with a varying index, also of structs (both should apply)
+  typedef struct {
+    logic [7:0] f;
+    logic [7:0] g;
+  } pair_t;
+  logic [7:0] r2[0:1];
+  pair_t r2s[0:1];
+  bit r2_i;
+  always begin
+    r2[r2_i] <= r2_i ? 8'h55 : 8'haa;
+    r2s[r2_i] <= '{f: r2_i ? 8'h77 : 8'h88, g: 0};
+    r2_i = ~r2_i;
+    if (r2_i) do_delay();
+    else begin
+      #1;
+      `checkh(r2[k], 8'haa)
+      `checkh(r2[k+1], 8'h55)
+      `checkh(r2s[k].f, 8'h88)
+      `checkh(r2s[k+1].f, 8'h77)
+    end
   end
 
   initial begin

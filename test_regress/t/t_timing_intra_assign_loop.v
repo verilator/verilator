@@ -31,11 +31,12 @@ interface bus (
   int e;
   bit f;
   bit h;
+  bit j;
   int o;
   int x;
   int cnt;
   clocking cb @(posedge clk);
-    output w, u, d, e, f, h;
+    output w, u, d, e, f, h, j;
   endclocking
   always @(posedge clk) cnt <= cnt + 1;
   task automatic set_cnt(int val);
@@ -89,6 +90,7 @@ module t;
   string lw_log;
   string e_log;
   string h_log;
+  string j_log;
   virtual bus mvif;
   virtual bus vifs[2];
   int k;
@@ -100,6 +102,7 @@ module t;
   virtual bus rvif;
   virtual bus hvifs[2];
   int hk;
+  virtual bus jvifs[2];
   int oa[2];
   int ob[2];
   bit [1:0] op;
@@ -178,6 +181,8 @@ module t;
   always @(b.e) if ($time != 0) e_log = {e_log, $sformatf("b%0d@%0d ", b.e, $time)};
   always @(a.h) if ($time != 0) h_log = {h_log, $sformatf("a%0d@%0d ", a.h, $time)};
   always @(b.h) if ($time != 0) h_log = {h_log, $sformatf("b%0d@%0d ", b.h, $time)};
+  always @(a.j) if ($time != 0) j_log = {j_log, $sformatf("a%0d@%0d ", a.j, $time)};
+  always @(b.j) if ($time != 0) j_log = {j_log, $sformatf("b%0d@%0d ", b.j, $time)};
   always @(a.v) if ($time != 0) a_log = {a_log, $sformatf("%0d@%0d ", a.v, $time)};
   always @(b.v) if ($time != 0) b_log = {b_log, $sformatf("%0d@%0d ", b.v, $time)};
   always @(a.w) if ($time != 0) aw_log = {aw_log, $sformatf("%0d@%0d ", a.w, $time)};
@@ -240,6 +245,17 @@ module t;
     hvifs[idx_of(hk)].cb.h <= ##2 1;
     hk = 1;
   end
+
+  // Also in a loop, to interfaces with different clocks
+`ifndef VCS
+  // VCS does not find the interface, selected by the loop variable
+  initial begin
+    jvifs[0] = a;
+    jvifs[1] = b;
+    @(b.cb);
+    for (int i = 0; i < 2; ++i) jvifs[i].cb.j <= ##2 1;
+  end
+`endif
 
   // Pending updates of evaluated targets are in order with the time step's other updates, also
   // when scheduled before them (IEEE 1800-2023 4.6)
@@ -428,9 +444,12 @@ module t;
     `checks(d_log, "a1@25 ")
 `ifndef MODEL_TECH
     // Questa drops these drives, through an interface selected from an array, changed while
-    // pending
+    // pending, or selected by a loop variable
     `checks(u_log, "a1@25 ")
     `checks(h_log, "a1@25 ")
+`ifndef VCS
+    `checks(j_log, "a1@25 b1@35 ")
+`endif
 `endif
     $write("*-* All Finished *-*\n");
     $finish;

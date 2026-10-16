@@ -717,8 +717,9 @@ commits them in ticket order. It does the same, committing in the order
 they were enqueued, for a variable updated in suspendable processes or
 forks by NBAs that can execute several times in a time step, in another
 order than in the source: NBAs at several sites, e.g. executed by a loop
-in another order, or at one site in a loop, updating a varying part of the
-variable. If it cannot queue them this way, e.g. of a member of a struct,
+in another order, or at one site executed again, by a loop or a
+suspendable ``always``, updating a part selected by an index that can
+vary. If it cannot queue them this way, e.g. of a member of a struct,
 and for all NBAs to a variable updated through handles, which select a
 member of an interface or class, or by NBAs in non-inlined functions,
 ``V3Delayed`` stores the values and targets of the updates in queues of
@@ -727,7 +728,9 @@ in the 'nba' region applies them in order, so they are committed with the
 other NBA updates of the time step, before the processes awaiting them
 resume. As ``V3Order`` does not see the NBAs in non-inlined functions,
 this logic is also triggered by the events of the processes calling these
-functions, and is ordered after the processes.
+functions, and is ordered after the processes. As callers such as
+combinational processes trigger nothing, these NBAs also set a trigger
+of this logic.
 
 ``wait`` statements are transformed into while loops that check the
 condition and then await changes in variables used in the condition. If the

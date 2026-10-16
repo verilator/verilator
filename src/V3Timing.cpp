@@ -460,6 +460,16 @@ public:
 //  Transform nodes affected by timing
 
 class TimingControlVisitor final : public VNVisitor {
+    // TYPES
+    // Temporary variables of a kind, see createTemp
+    struct TempNames final {
+        V3UniqueNames m_names;  // Names of those in functions
+        V3SharedTmps m_tmps;  // Those in processes, as module variables
+        explicit TempNames(const std::string& prefix)
+            : m_names{prefix}
+            , m_tmps{prefix, VVarType::MODULETEMP} {}
+    };
+
     // NODE STATE
     //  Ast{Always,NodeCCall,Fork,NodeAssign}::user1()  -> bool.         Set true if the node has
     //                                                                   been processed.
@@ -496,11 +506,11 @@ class TimingControlVisitor final : public VNVisitor {
 
     // Unique names
     V3UniqueNames m_dlyforkNames{"__Vdlyfork"};  // Names for temp AssignW vars
-    V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
-    V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
-    V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
-    V3UniqueNames m_nbaTicketNames{"__VnbaTicket"};  // NBA ticket var names
-    V3UniqueNames m_driveTempNames{"__VdriveTemp"};  // Local drive temporary var names
+    TempNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value vars
+    TempNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index vars
+    TempNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB vars
+    TempNames m_nbaTicketNames{"__VnbaTicket"};  // NBA ticket vars
+    TempNames m_driveTempNames{"__VdriveTemp"};  // Local drive temporary vars
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
     V3UniqueNames m_dynTrigNames{"__VdynTrigger"};  // Dynamic trigger name generator
     // Module level temporary variables, shared by instances
@@ -632,7 +642,8 @@ class TimingControlVisitor final : public VNVisitor {
     bool needDynamicTrigger(AstNode* const nodep) const {
         return m_classp || m_underIfaceCFunc || nodep->exists([](AstNode* const nodep) {
             if (AstNodeVarRef* varp = VN_CAST(nodep, NodeVarRef)) {
-                return varp->varp()->isFuncLocal();
+                // A variable passed to a fork by value has a value in each forked process
+                return varp->varp()->isFuncLocal() || varp->varScopep()->forkByValue();
             }
             return !nodep->isPure();
         });
@@ -718,21 +729,23 @@ class TimingControlVisitor final : public VNVisitor {
         handle.relink(cscopep);
         return cscopep;
     }
-    // Create a temp variable and optionally put it before the specified node (mark local if so)
+    // Create a temporary variable, declared before the given node
     AstVarScope* createTemp(FileLine* const flp, const std::string& name,
-                            AstNodeDType* const dtypep, AstNode* const insertBeforep = nullptr) {
-        AstVar* varp;
-        if (insertBeforep) {
-            varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
-            varp->funcLocal(true);
-            insertBeforep->addHereThisAsNext(varp);
-        } else {
-            varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
-            m_scopep->modp()->addStmtsp(varp);
-        }
+                            AstNodeDType* const dtypep, AstNode* const insertBeforep) {
+        AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
+        varp->funcLocal(true);
+        insertBeforep->addHereThisAsNext(varp);
         AstVarScope* const vscp = new AstVarScope{flp, m_scopep, varp};
         m_scopep->addVarsp(vscp);
         return vscp;
+    }
+    // Create a temporary variable of the given kind for nodep. In a function, it is declared
+    // before insertBeforep. In a process it is a module variable, shared by the instances of the
+    // module, as after V3Begin only modules and functions declare variables.
+    AstVarScope* createTemp(FileLine* const flp, TempNames& names, const AstNode* const nodep,
+                            AstNodeDType* const dtypep, AstNode* const insertBeforep) {
+        if (!insertBeforep) return names.m_tmps.make(flp, m_scopep, dtypep);
+        return createTemp(flp, names.m_names.get(nodep), dtypep, insertBeforep);
     }
     // Take the ticket of an NBA (IEEE 1800-2023 4.6) in a new variable, before the given fork, so
     // after evaluating the target and value of the NBA, and return the variable. Like those, in a
@@ -740,7 +753,7 @@ class TimingControlVisitor final : public VNVisitor {
     AstVarScope* takeNbaTicket(AstNode* const nodep, AstNode* const forkp) {
         FileLine* const flp = nodep->fileline();
         AstNodeExpr* const ticketp = new AstNbaTicket{flp};
-        AstVarScope* const vscp = createTemp(flp, m_nbaTicketNames.get(nodep), ticketp->dtypep(),
+        AstVarScope* const vscp = createTemp(flp, m_nbaTicketNames, nodep, ticketp->dtypep(),
                                              m_underProcedure ? nullptr : forkp);
         if (m_underProcedure) vscp->forkByValue(true);
         forkp->addHereThisAsNext(
@@ -790,7 +803,7 @@ class TimingControlVisitor final : public VNVisitor {
         // value
         AstVarScope* localp = nullptr;
         if (!cntVscp->varp()->isFuncLocal()) {
-            localp = createTemp(cntVscp->fileline(), m_driveTempNames.get(beginp),
+            localp = createTemp(cntVscp->fileline(), m_driveTempNames, beginp,
                                 cntVscp->varp()->dtypep(), m_underProcedure ? nullptr : forkp);
             if (m_underProcedure) localp->forkByValue(true);
         }
@@ -1268,9 +1281,9 @@ class TimingControlVisitor final : public VNVisitor {
             = driveBeginp ? localizeDrive(driveBeginp, nodep, driveHandleVscp, forkp)
                           : std::pair<AstLoop*, std::vector<AstVarRef*>>{};
         // Function for replacing values with intermediate variables
-        const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
-                                                 const std::string& name) {
-            AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep(), insertBeforep);
+        const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep, TempNames& names) {
+            AstVarScope* const newvscp
+                = createTemp(flp, names, nodep, valuep->dtypep(), insertBeforep);
             // A pending update keeps its own value, even if its process schedules more
             if (inAssignDly && !insertBeforep) newvscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
@@ -1287,12 +1300,12 @@ class TimingControlVisitor final : public VNVisitor {
             // = b[j]; x[t1][t0] = y'.
             nodep->lhsp()->foreach([&](AstSel* selp) {
                 if (VN_IS(selp->lsbp(), Const)) return;
-                replaceWithIntermediate(selp->lsbp(), m_intraLsbNames.get(nodep));
+                replaceWithIntermediate(selp->lsbp(), m_intraLsbNames);
                 // widthp should be const
             });
             nodep->lhsp()->foreach([&](AstNodeSel* selp) {
                 if (VN_IS(selp->bitp(), Const)) return;
-                replaceWithIntermediate(selp->bitp(), m_intraIndexNames.get(nodep));
+                replaceWithIntermediate(selp->bitp(), m_intraIndexNames);
             });
             // Also a handle of a class or virtual interface selecting the target (IEEE 1800-2023
             // 10.4.2). As above, 'foreach' then cannot reach a member select under the handle,
@@ -1300,8 +1313,7 @@ class TimingControlVisitor final : public VNVisitor {
             // clocking event and driven flag, so use the handle evaluated now also there.
             nodep->lhsp()->foreach([&](AstMemberSel* selp) {
                 AstNodeExpr* const fromp = selp->fromp();
-                AstVarScope* const vscp
-                    = replaceWithIntermediate(fromp, m_intraValueNames.get(nodep));
+                AstVarScope* const vscp = replaceWithIntermediate(fromp, m_intraValueNames);
                 // Like the handle it replaces, mark one selecting a written member written
                 VN_AS(selp->fromp(), VarRef)->access(selp->access());
                 if (selp == driveSelp) replaceDriveHandle(drive.second, vscp);
@@ -1309,14 +1321,14 @@ class TimingControlVisitor final : public VNVisitor {
             });
         }
         // Replace the RHS with an intermediate value var
-        replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
+        replaceWithIntermediate(nodep->rhsp(), m_intraValueNames);
         if (!inAssignDly) return;
         // The process executing the NBA evaluates its delay (IEEE 1800-2023 4.9.4), not the forked
         // process, if it has side effects, e.g. calling a function that checks its process. A pure
         // one is evaluated as the forked process starts, at once.
         if (AstDelay* const delayp = VN_CAST(timingp, Delay)) {
             if (!delayp->lhsp()->isPure()) {
-                replaceWithIntermediate(delayp->lhsp(), m_intraValueNames.get(nodep));
+                replaceWithIntermediate(delayp->lhsp(), m_intraValueNames);
             }
         }
         // Likewise evaluate the count of the cycle delay of a drive, before its counting loop
@@ -1347,9 +1359,9 @@ class TimingControlVisitor final : public VNVisitor {
         if (m_underJumpBlock) addCLocalScope(flp, forkp);
         // The triggered event is the one referenced now, so evaluate handles and indices now
         AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
-        const auto evalNow = [&](AstNodeExpr* const valuep, V3UniqueNames& names) {
+        const auto evalNow = [&](AstNodeExpr* const valuep, TempNames& names) {
             // Like for an NBA, a process uses a module variable, passed to the fork by value
-            AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(),
+            AstVarScope* const vscp = createTemp(flp, names, nodep, valuep->dtypep(),
                                                  m_underProcedure ? nullptr : forkp);
             if (m_underProcedure) vscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, vscp, VAccess::READ});
