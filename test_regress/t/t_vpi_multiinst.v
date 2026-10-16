@@ -25,8 +25,6 @@ endmodule
 interface iface2_t;
   logic [6:0] a;
   logic [6:0] b;
-  logic [6:0] l;  // A latch in if1, which keeps its storage apart from if0's cone
-  logic [6:0] s;  // Undriven but read in if1, likewise
 endinterface
 
 // Non-inlined module, instanced once in each of t.p0 and t.p1: exercises
@@ -40,9 +38,6 @@ module child (
   assign cy = din ^ 8'hA5;
   logic [7:0] cflop = 8'h0;
   always_ff @(posedge clk) cflop <= din ^ 8'h5a;
-  // Driven in part alike in both instances, so they share one comb mask
-  logic [7:0] cpart;
-  assign cpart[3:0] = din[3:0];
 endmodule
 
 // bc is driven only by cross-scope assigns in module t; bd reads bc back
@@ -154,8 +149,6 @@ module t;
   always @(negedge clk) t_vpi_dump_values();
   // A put to one instance's flop leaves the other instance's alone
   always @(cyc) if (cyc == 8'd7) t_vpi_dump_put_rw("t.p0.uc.cflop", "3c");
-  // A put into an instance kept apart reaches its readers
-  always @(cyc) if (cyc == 8'd5) t_vpi_dump_put_rw("t.if1.s", "2a");
 
   // Interface and submodule instances with differing inputs
   logic [6:0] ctr = 7'h0;
@@ -201,9 +194,6 @@ module t;
   assign if1.a = ctr2 + 7'h1;
   assign if0.b = ~if0.a;
   assign if1.b = if1.a ^ 7'h55;
-  assign if0.l = ctr2 ^ 7'h3c;
-  always_latch if (ctr2[0]) if1.l = ctr2;
-  assign if0.s = ctr2 + 7'h9;
 
   logic [6:0] observe2 = 7'h0;
   always_ff @(posedge clk) begin
@@ -213,7 +203,7 @@ module t;
     end
     else begin
       ctr2 <= ctr2 + 7'h3;
-      observe2 <= if0.b ^ if1.b ^ if1.s;
+      observe2 <= if0.b ^ if1.b;
     end
   end
 

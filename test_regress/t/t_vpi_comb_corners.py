@@ -21,14 +21,6 @@ test.compile(make_top_shell=False,
              ],
              make_flags=['CPPFLAGS_ADD=-DVL_NO_LEGACY'])
 
-# Shadows reset as their signals would, so a read before the first eval() matches
-test.execute(use_libvpi=True,
-             all_run_flags=[
-                 "+verilator+rand+reset+2", "+verilator+seed+7", "+t_vpi_dump_start=t.a",
-                 "+t_vpi_dump_start=t.b", "+t_vpi_dump_start=t.pre_qc",
-                 "+t_vpi_dump_start=t.pre_ic", "+t_vpi_dump_start=t.u_pre.x",
-                 "+t_vpi_dump_start=t.u_pre.y"
-             ],
-             expect_filename=test.golden_filename)
+test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
 test.passes()

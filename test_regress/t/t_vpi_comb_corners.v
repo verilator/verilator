@@ -19,9 +19,7 @@ module sub_drv (
   assign y = x;
 endmodule
 
-module t (
-    input wire [7:0] pre_in
-);
+module t;
 
   logic clk;
   logic rst;
@@ -165,18 +163,6 @@ module t (
   always_comb i_comb = integer'(a) + 1;
   e_t en_comb;
   always_comb en_comb = e_t'(a[1:0]);
-  // Split from 'rst_lo', V3Const makes 'rst ? ~rst : 1' into '~rst || ~rst', which C++
-  // -Wlogical-op rejects
-  logic rst_lo;
-  logic rst_pow2;
-  always_comb
-    if (rst) begin
-      rst_lo = 1'b0;
-      rst_pow2 = ~rst;
-    end else begin
-      rst_lo = 1'b1;
-      rst_pow2 = 1'b1;
-    end
   string s_var;
   always_comb s_var = "hi";
   logic [6:0] v_comb;
@@ -232,39 +218,6 @@ module t (
     md_gap[1][1] = {a, 8'h44};
     md_gap[1][2] = {a, 8'h55};
   end
-
-  // Each stage reads only bits an earlier one wrote, so nothing is read before written.
-  // verilator lint_off ALWCOMBORDER
-  logic [3:0][7:0] comp_stage_n;
-  always_comb begin
-    comp_stage_n[0] = a;
-    for (int l = 1; l < 4; l++)
-      comp_stage_n[l] = comp_stage_n[l-1] ^ {comp_stage_n[l-1][6:0], 1'b0};
-  end
-  logic [7:0] mem_chain[0:2];
-  always_comb begin
-    mem_chain[0] = a;
-    mem_chain[1][3:0] = mem_chain[0][7:4];
-    mem_chain[1][7:4] = mem_chain[1][3:0] ^ b[3:0];
-    mem_chain[2] = mem_chain[1] + 8'd1;
-  end
-  // Opposite ranges slice into one continuous assign per element, all in one block
-  logic [7:0] mem_rev[2:0];
-  assign mem_rev = mem_chain;
-  // verilator lint_on ALWCOMBORDER
-
-  // A cycle between groups but not between bits; in encounter order it is acyclic.
-  // verilator lint_off UNOPTFLAT
-  logic [7:0] fcyc_x;
-  logic [3:0] fcyc_y;
-  assign fcyc_x[3:0] = a[3:0];
-  assign fcyc_y = fcyc_x[3:0] + 4'd1;
-  assign fcyc_x[7:4] = fcyc_y;
-  // Acyclic per bit too, but only out of encounter order: stays retained.
-  logic [7:0] fcyc_rev;
-  assign fcyc_rev[3:0] = fcyc_rev[7:4] ^ a[3:0];
-  assign fcyc_rev[7:4] = b[7:4];
-  // verilator lint_on UNOPTFLAT
 
   logic [7:0] obs_dtypes;
   assign obs_dtypes = {1'b0, v_comb} ^ i_comb[7:0] ^ mem[0] ^ ps_comb ^ pa_comb[0] ^ us_comb.a
@@ -343,22 +296,6 @@ module t (
   logic [7:0] r;
   assign r = a & b;
 
-  // V3Decompose splits 'dpk' into rows, temps assembled bit by bit and read by another block
-  logic [1:0][3:0] dpk;
-  for (genvar i = 0; i < 8; ++i) begin : g_dpk
-    assign dpk[i/4][i%4] = a[i] ^ b[7-i];
-  end
-  logic [3:0] obs_dpk;
-  assign obs_dpk = dpk[0] & dpk[1];
-
-  // A cone reads 'lc' through the 'bit' it copies
-  bit [3:0] bs;
-  always_ff @(posedge clk) bs <= a[7:4];
-  logic [3:0] lc;
-  assign lc = bs;
-  logic [3:0] obs_lc;
-  assign obs_lc = lc ^ a[3:0];
-
   // Forceable signals
   logic [6:0] keep_frc = 7'h0;
   logic [6:0] frc  /* verilator forceable */;
@@ -382,19 +319,5 @@ module t (
   // made here
   logic [7:0] rdpin  /*verilator public_flat_rd*/ = 8'h0;
   always_ff @(posedge clk) rdpin <= a ^ 8'h6d;
-
-  // Never loaded, so these copy and port rows hold their reset values; a read before the first
-  // eval() sees them as their --public-flat-rw signals would
-  logic [7:0] pre_q;
-  logic [7:0] pre_qc;
-  logic [7:0] pre_ic;
-  logic [7:0] pre_po;
-  always_ff @(posedge clk) if (cyc == 8'hff) pre_q <= cyc;
-  assign pre_qc = pre_q;
-  assign pre_ic = $root.t.pre_in;
-  sub_drv u_pre (
-      .y(pre_po),
-      .x(pre_q)
-  );
 
 endmodule

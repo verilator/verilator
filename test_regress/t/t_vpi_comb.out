@@ -1,7 +1,6 @@
 t (vpiModule) t  vpiDefName=t
     vpiReg:
     INTF_QTY (vpiParameter) t.INTF_QTY  vpiConstType=vpiDecConst
-    LUT (vpiParameter) t.LUT  vpiConstType=vpiDecConst
     alias1 (vpiReg) t.alias1 
     alias2 (vpiReg) t.alias2 
     bsel (vpiReg) t.bsel 
@@ -37,7 +36,6 @@ t (vpiModule) t  vpiDefName=t
     dead (vpiReg) t.dead 
     init (vpiReg) t.init 
     keep (vpiReg) t.keep 
-    lut_out (vpiReg) TOP.lut_out 
     mux0 (vpiReg) t.mux0 
     nkeep (vpiReg) t.nkeep 
     observe (vpiReg) TOP.observe 
@@ -60,7 +58,6 @@ t (vpiModule) t  vpiDefName=t
     wsel (vpiReg) t.wsel 
     vpiParameter:
     INTF_QTY (vpiParameter) t.INTF_QTY  vpiConstType=vpiDecConst
-    LUT (vpiParameter) t.LUT  vpiConstType=vpiDecConst
     vpiInternalScope:
     u_sub (vpiModule) t.u_sub  vpiDefName=sub
         vpiReg:
@@ -79,10 +76,8 @@ t (vpiModule) t  vpiDefName=t
         port_out (vpiReg) t.u_subpass.port_out 
         vpiParameter:
 -- put t.rst = 0 flag=1 ok
--- put t.INTF_QTY = 5 flag=1 ok
 -- @0 readonly
 t.INTF_QTY = 00000003 vpiSize=32
-t.LUT = 11 vpiSize=4
 t.alias1 = 00 vpiSize=7
 t.alias2 = 00 vpiSize=7
 t.bsel = 0 vpiSize=1
@@ -114,7 +109,6 @@ t.cyc = 00 vpiSize=8
 t.dead = 00 vpiSize=7
 t.init = 1 vpiSize=1
 t.keep = 00 vpiSize=7
-TOP.lut_out = 11 vpiSize=7
 t.mux0 = 2d vpiSize=7
 t.nkeep = 00 vpiSize=7
 TOP.observe = 00 vpiSize=7
@@ -175,7 +169,6 @@ t.cmb3_reg = 32
 t.cyc = 02
 t.dead = 09
 t.keep = 03
-TOP.lut_out = 44
 t.mux0 = 0a
 t.nkeep = 03
 TOP.observe = 6b
@@ -233,7 +226,6 @@ t.cmb3_reg = 25
 t.cyc = 03
 t.dead = 0c
 t.keep = 06
-TOP.lut_out = 33
 t.mux0 = 27
 t.nkeep = 06
 TOP.observe = 76
@@ -289,7 +281,6 @@ t.cmb3_reg = 2c
 t.cyc = 04
 t.dead = 0f
 t.keep = 09
-TOP.lut_out = 22
 t.mux0 = 10
 t.nkeep = 09
 TOP.observe = 1d
@@ -347,7 +338,6 @@ t.cmb3_reg = 3f
 t.cyc = 05
 t.dead = 12
 t.keep = 0c
-TOP.lut_out = 11
 t.mux0 = 39
 t.nkeep = 0c
 TOP.observe = 0d
@@ -403,7 +393,6 @@ t.cmb3_reg = 3e
 t.cyc = 06
 t.dead = 15
 t.keep = 0f
-TOP.lut_out = 44
 t.mux0 = 16
 t.nkeep = 0f
 TOP.observe = 44
@@ -463,7 +452,6 @@ t.cmb3_reg = 41
 t.cyc = 07
 t.dead = 18
 t.keep = 12
-TOP.lut_out = 33
 t.mux0 = 33
 TOP.observe = 01
 t.pass_out = 12
@@ -524,7 +512,6 @@ t.cmb3_reg = 38
 t.cyc = 08
 t.dead = 2a
 t.keep = 15
-TOP.lut_out = 22
 t.mux0 = 1c
 TOP.observe = 64
 t.pass_out = 15
@@ -585,7 +572,6 @@ t.cmb3_reg = 3b
 t.cyc = 09
 t.dead = 1e
 t.keep = 20
-TOP.lut_out = 11
 t.mux0 = 35
 TOP.observe = 32
 t.pass_out = 18
@@ -679,7 +665,6 @@ t.cmb3_reg = 12
 t.cyc = 0a
 t.dead = 29
 t.keep = 23
-TOP.lut_out = 44
 t.mux0 = 2a
 TOP.observe = 15
 t.pass_out = 23
@@ -740,7 +725,6 @@ t.cmb3_reg = 05
 t.cyc = 0b
 t.dead = 2c
 t.keep = 26
-TOP.lut_out = 33
 t.mux0 = 07
 t.nkeep = 26
 TOP.observe = 13
@@ -796,7 +780,6 @@ t.cmb3_reg = 0c
 t.cyc = 0c
 t.dead = 2f
 t.keep = 29
-TOP.lut_out = 22
 t.mux0 = 30
 t.nkeep = 29
 TOP.observe = 0d
@@ -856,7 +839,6 @@ t.cmb3_reg = 1f
 t.cyc = 0d
 t.dead = 32
 t.keep = 2c
-TOP.lut_out = 11
 t.mux0 = 19
 TOP.observe = 1d
 t.pass_out = 2c

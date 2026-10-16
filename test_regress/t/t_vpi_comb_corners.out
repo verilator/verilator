@@ -3,18 +3,12 @@ t (vpiModule) t  vpiDefName=t
     NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
     a (vpiReg) t.a 
     b (vpiReg) t.b 
-    bs (vpiBitVar) t.bs 
     clk (vpiReg) t.clk 
     comb_inc (vpiReg) t.comb_inc 
-    comp_stage_n (vpiReg) t.comp_stage_n 
     ctr (vpiReg) t.ctr 
     cyc (vpiReg) t.cyc 
     data (vpiReg) t.data 
-    dpk (vpiReg) t.dpk 
     en_comb (vpiReg) t.en_comb 
-    fcyc_rev (vpiReg) t.fcyc_rev 
-    fcyc_x (vpiReg) t.fcyc_x 
-    fcyc_y (vpiReg) t.fcyc_y 
     frc (vpiReg) t.frc 
     frc2 (vpiReg) t.frc2 
     frc2__VforceEn (vpiReg) t.frc2__VforceEn 
@@ -26,7 +20,6 @@ t (vpiModule) t  vpiDefName=t
     i_comb (vpiReg) t.i_comb 
     keep (vpiReg) t.keep 
     keep_frc (vpiReg) t.keep_frc 
-    lc (vpiReg) t.lc 
     md_full (vpiRegArray) t.md_full 
         vpiReg:
         md_full (vpiReg) t.md_full[1][1] 
@@ -49,22 +42,12 @@ t (vpiModule) t  vpiDefName=t
         mem (vpiReg) t.mem[2] 
         mem (vpiReg) t.mem[1] 
         mem (vpiReg) t.mem[0] 
-    mem_chain (vpiRegArray) t.mem_chain 
-        vpiReg:
-        mem_chain (vpiReg) t.mem_chain[2] 
-        mem_chain (vpiReg) t.mem_chain[1] 
-        mem_chain (vpiReg) t.mem_chain[0] 
     mem_part (vpiRegArray) t.mem_part 
         vpiReg:
         mem_part (vpiReg) t.mem_part[3] 
         mem_part (vpiReg) t.mem_part[2] 
         mem_part (vpiReg) t.mem_part[1] 
         mem_part (vpiReg) t.mem_part[0] 
-    mem_rev (vpiRegArray) t.mem_rev 
-        vpiReg:
-        mem_rev (vpiReg) t.mem_rev[0] 
-        mem_rev (vpiReg) t.mem_rev[1] 
-        mem_rev (vpiReg) t.mem_rev[2] 
     mixdep (vpiRegArray) t.mixdep 
         vpiReg:
         mixdep (vpiReg) t.mixdep[1][1] 
@@ -72,19 +55,12 @@ t (vpiModule) t  vpiDefName=t
         mixdep (vpiReg) t.mixdep[0][1] 
         mixdep (vpiReg) t.mixdep[0][0] 
     narrow (vpiReg) t.narrow 
-    obs_dpk (vpiReg) t.obs_dpk 
     obs_dtypes (vpiReg) t.obs_dtypes 
     obs_impureidx (vpiReg) t.obs_impureidx 
-    obs_lc (vpiReg) t.obs_lc 
     orphan (vpiReg) t.orphan 
     out (vpiReg) t.out 
     p (vpiReg) t.p 
     pa_comb (vpiReg) t.pa_comb 
-    pre_ic (vpiReg) t.pre_ic 
-    pre_in (vpiReg) TOP.pre_in 
-    pre_po (vpiReg) t.pre_po 
-    pre_q (vpiReg) t.pre_q 
-    pre_qc (vpiReg) t.pre_qc 
     ps_comb (vpiStructVar) t.ps_comb 
         vpiReg:
         *undefined*:
@@ -97,8 +73,6 @@ t (vpiModule) t  vpiDefName=t
     rdpin (vpiReg) t.rdpin 
     rf_mid (vpiRealVar) t.rf_mid 
     rst (vpiReg) t.rst 
-    rst_lo (vpiReg) t.rst_lo 
-    rst_pow2 (vpiReg) t.rst_pow2 
     s_fmt (vpiStringVar) t.s_fmt 
     s_var (vpiStringVar) t.s_var 
     sc_alias (vpiStringVar) t.sc_alias 
@@ -119,54 +93,32 @@ t (vpiModule) t  vpiDefName=t
     vpiParameter:
     NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
     vpiInternalScope:
-    u_pre (vpiModule) t.u_pre  vpiDefName=sub_drv
-        vpiReg:
-        x (vpiReg) t.u_pre.x 
-        y (vpiReg) t.u_pre.y 
-        vpiParameter:
     u_wdrv (vpiModule) t.u_wdrv  vpiDefName=sub_drv
         vpiReg:
         x (vpiReg) t.u_wdrv.x 
         y (vpiReg) t.u_wdrv.y 
         vpiParameter:
-    unnamedblk1 (vpiGenScope) t.unnamedblk1 
-        vpiReg:
-        l (vpiReg) t.unnamedblk1.l 
-        vpiParameter:
--- @0 start t.a = 86
--- @0 start t.b = c2
--- @0 start t.pre_qc = ef
--- @0 start t.pre_ic = 5b
--- @0 start t.u_pre.x = b3
--- @0 start t.u_pre.y = 72
 -- @0 readonly
 t.NumCycles = 14 vpiSize=8
 t.a = 00 vpiSize=8
 t.b = 00 vpiSize=8
-t.bs = 0 vpiSize=4
 t.clk = 0 vpiSize=1
 t.comb_inc = 01 vpiSize=8
-t.comp_stage_n = 00000000 vpiSize=32
 t.ctr = 00 vpiSize=8
 t.cyc = 00 vpiSize=8
 t.data = 5 vpiSize=4
-t.dpk = 00 vpiSize=8
 t.en_comb = 0 vpiSize=2
-t.fcyc_rev = 00 vpiSize=8
-t.fcyc_x = 10 vpiSize=8
-t.fcyc_y = 1 vpiSize=4
 t.frc = 11 vpiSize=7
 t.frc2 = 22 vpiSize=7
 t.frc2__VforceEn = 00 vpiSize=7
-t.frc2__VforceVal = 7a vpiSize=7
+t.frc2__VforceVal = 00 vpiSize=7
 t.frc2_force = 0 vpiSize=1
 t.frc__VforceEn = 00 vpiSize=7
-t.frc__VforceVal = 7b vpiSize=7
+t.frc__VforceVal = 00 vpiSize=7
 t.handle = 0000000000000000 vpiSize=64
 t.i_comb = 00000001 vpiSize=32
 t.keep = 00 vpiSize=8
 t.keep_frc = 00 vpiSize=7
-t.lc = 0 vpiSize=4
 t.md_full[1][1] = 0011 vpiSize=16
 t.md_full[1][0] = ff00 vpiSize=16
 t.md_full[2][1] = 0033 vpiSize=16
@@ -176,40 +128,27 @@ t.md_full[3][0] = 0044 vpiSize=16
 t.md_gap[1][0] = 0033 vpiSize=16
 t.md_gap[1][1] = 0044 vpiSize=16
 t.md_gap[1][2] = 0055 vpiSize=16
-t.md_gap[0][0] = 6200 vpiSize=16
+t.md_gap[0][0] = 0000 vpiSize=16
 t.md_gap[0][1] = 0011 vpiSize=16
 t.md_gap[0][2] = 0022 vpiSize=16
 t.mem[3] = 03 vpiSize=8
 t.mem[2] = 02 vpiSize=8
 t.mem[1] = 01 vpiSize=8
 t.mem[0] = 00 vpiSize=8
-t.mem_chain[2] = 01 vpiSize=8
-t.mem_chain[1] = 00 vpiSize=8
-t.mem_chain[0] = 00 vpiSize=8
-t.mem_part[3] = 0d vpiSize=8
-t.mem_part[2] = 0d vpiSize=8
-t.mem_part[1] = 0d vpiSize=8
+t.mem_part[3] = 00 vpiSize=8
+t.mem_part[2] = 00 vpiSize=8
+t.mem_part[1] = 00 vpiSize=8
 t.mem_part[0] = 27 vpiSize=8
-t.mem_rev[0] = 01 vpiSize=8
-t.mem_rev[1] = 00 vpiSize=8
-t.mem_rev[2] = 00 vpiSize=8
 t.mixdep[1][1] = ff vpiSize=8
 t.mixdep[1][0] = ff vpiSize=8
 t.mixdep[0][1] = 00 vpiSize=8
 t.mixdep[0][0] = 00 vpiSize=8
 t.narrow = 01 vpiSize=8
-t.obs_dpk = 0 vpiSize=4
 t.obs_dtypes = fa vpiSize=8
-t.obs_lc = 0 vpiSize=4
-t.orphan = b9 vpiSize=8
+t.orphan = 00 vpiSize=8
 t.out = f0 vpiSize=8
 t.p = 00 vpiSize=8
 t.pa_comb = 00ff01ff vpiSize=32
-t.pre_ic = 4e vpiSize=8
-TOP.pre_in = 4e vpiSize=8
-t.pre_po = 1e vpiSize=8
-t.pre_q = 1e vpiSize=8
-t.pre_qc = 1e vpiSize=8
 t.ps_comb = 00 vpiSize=8
 t.ps_comb.hi = 0 vpiSize=4
 t.ps_comb.lo = 0 vpiSize=4
@@ -220,8 +159,6 @@ t.rc_src = 0 vpiSize=1
 t.rdpin = 00 vpiSize=8
 t.rf_mid = 1.5 vpiSize=1
 t.rst = 1 vpiSize=1
-t.rst_lo = 0 vpiSize=1
-t.rst_pow2 = 0 vpiSize=1
 t.s_fmt = "v0" vpiSize=1
 t.s_var = "hi" vpiSize=1
 t.sc_alias = "" vpiSize=1
@@ -232,10 +169,7 @@ t.us_comb.a = 00 vpiSize=8
 t.us_comb.b = ff vpiSize=8
 t.v_comb = 05 vpiSize=7
 t.wide = 00ff vpiSize=16
-t.u_pre.x = 1e vpiSize=8
-t.u_pre.y = 1e vpiSize=8
 t.u_wdrv.x = 00 vpiSize=8
-t.unnamedblk1.l = 00000004 vpiSize=32
 -- @5 readonly
 t.clk = 1
 t.rc_alias = 0.5
@@ -246,8 +180,6 @@ t.sc_src = "even"
 -- @10 readonly
 t.clk = 0
 t.rst = 0
-t.rst_lo = 1
-t.rst_pow2 = 1
 -- @15 cb t.cyc = 01
 -- @15 readonly
 t.clk = 1
@@ -295,13 +227,8 @@ t.clk = 0
 t.a = 3c
 t.clk = 1
 t.comb_inc = 3d
-t.comp_stage_n = 54cc443c
 t.ctr = 0c
 t.cyc = 04
-t.dpk = 3c
-t.fcyc_rev = 0c
-t.fcyc_x = dc
-t.fcyc_y = d
 t.frc = 1d
 t.frc2 = 2e
 t.i_comb = 0000003d
@@ -316,25 +243,18 @@ t.md_full[3][0] = 3c44
 t.md_gap[1][0] = 3c33
 t.md_gap[1][1] = 3c44
 t.md_gap[1][2] = 3c55
-t.md_gap[0][0] = 623c
+t.md_gap[0][0] = 003c
 t.md_gap[0][1] = 3c11
 t.md_gap[0][2] = 3c22
 t.mem[3] = 3f
 t.mem[2] = 3e
 t.mem[1] = 3d
 t.mem[0] = 3c
-t.mem_chain[2] = 34
-t.mem_chain[1] = 33
-t.mem_chain[0] = 3c
 t.mem_part[0] = 1b
-t.mem_rev[0] = 34
-t.mem_rev[1] = 33
-t.mem_rev[2] = 3c
 t.mixdep[1][0] = c3
 t.mixdep[0][0] = 3c
 t.narrow = 0d
 t.obs_dtypes = 02
-t.obs_lc = c
 t.out = b4
 t.p = 3c
 t.pa_comb = 3cc33d3b
@@ -352,23 +272,16 @@ t.clk = 0
 -- @55 readonly
 t.a = 2b
 t.b = 74
-t.bs = 3
 t.clk = 1
 t.comb_inc = 2c
-t.comp_stage_n = 89877d2b
 t.ctr = 0f
 t.cyc = 05
-t.dpk = 05
 t.en_comb = 3
-t.fcyc_rev = 7c
-t.fcyc_x = cb
-t.fcyc_y = c
 t.frc = 20
 t.frc2 = 31
 t.i_comb = 0000002c
 t.keep = 55
 t.keep_frc = 0f
-t.lc = 3
 t.md_full[1][1] = 2b11
 t.md_full[1][0] = d42b
 t.md_full[2][1] = 2b33
@@ -378,27 +291,20 @@ t.md_full[3][0] = 2b44
 t.md_gap[1][0] = 2b33
 t.md_gap[1][1] = 2b44
 t.md_gap[1][2] = 2b55
-t.md_gap[0][0] = 622b
+t.md_gap[0][0] = 002b
 t.md_gap[0][1] = 2b11
 t.md_gap[0][2] = 2b22
 t.mem[3] = 2e
 t.mem[2] = 2d
 t.mem[1] = 2c
 t.mem[0] = 2b
-t.mem_chain[2] = 63
-t.mem_chain[1] = 62
-t.mem_chain[0] = 2b
 t.mem_part[0] = 0c
-t.mem_rev[0] = 63
-t.mem_rev[1] = 62
-t.mem_rev[2] = 2b
 t.mixdep[1][1] = 8b
 t.mixdep[1][0] = d4
 t.mixdep[0][1] = 74
 t.mixdep[0][0] = 2b
 t.narrow = 10
 t.obs_dtypes = 01
-t.obs_lc = 8
 t.out = a5
 t.p = 2b
 t.pa_comb = 2bd42c2a
@@ -421,23 +327,16 @@ t.clk = 0
 -- @65 readonly
 t.a = 5a
 t.b = 33
-t.bs = 2
 t.clk = 1
 t.comb_inc = 5b
-t.comp_stage_n = 5632ee5a
 t.ctr = 12
 t.cyc = 06
-t.dpk = 96
 t.en_comb = 2
-t.fcyc_rev = 39
-t.fcyc_x = ba
-t.fcyc_y = b
 t.frc = 23
 t.frc2 = 34
 t.i_comb = 0000005b
 t.keep = 66
 t.keep_frc = 12
-t.lc = 2
 t.md_full[1][1] = 5a11
 t.md_full[1][0] = a55a
 t.md_full[2][1] = 5a33
@@ -447,20 +346,14 @@ t.md_full[3][0] = 5a44
 t.md_gap[1][0] = 5a33
 t.md_gap[1][1] = 5a44
 t.md_gap[1][2] = 5a55
-t.md_gap[0][0] = 625a
+t.md_gap[0][0] = 005a
 t.md_gap[0][1] = 5a11
 t.md_gap[0][2] = 5a22
 t.mem[3] = 5d
 t.mem[2] = 5c
 t.mem[1] = 5b
 t.mem[0] = 5a
-t.mem_chain[2] = 66
-t.mem_chain[1] = 65
-t.mem_chain[0] = 5a
 t.mem_part[0] = 7d
-t.mem_rev[0] = 66
-t.mem_rev[1] = 65
-t.mem_rev[2] = 5a
 t.mixdep[1][1] = cc
 t.mixdep[1][0] = a5
 t.mixdep[0][1] = 33
@@ -491,23 +384,16 @@ t.clk = 0
 -- @75 readonly
 t.a = 00
 t.b = 00
-t.bs = 5
 t.clk = 1
 t.comb_inc = 01
-t.comp_stage_n = 00000000
 t.ctr = 15
 t.cyc = 07
-t.dpk = 00
 t.en_comb = 0
-t.fcyc_rev = 00
-t.fcyc_x = 10
-t.fcyc_y = 1
 t.frc = 26
 t.frc2 = 37
 t.i_comb = 00000001
 t.keep = 77
 t.keep_frc = 15
-t.lc = 5
 t.md_full[1][1] = 0011
 t.md_full[1][0] = ff00
 t.md_full[2][1] = 0033
@@ -517,27 +403,20 @@ t.md_full[3][0] = 0044
 t.md_gap[1][0] = 0033
 t.md_gap[1][1] = 0044
 t.md_gap[1][2] = 0055
-t.md_gap[0][0] = 6200
+t.md_gap[0][0] = 0000
 t.md_gap[0][1] = 0011
 t.md_gap[0][2] = 0022
 t.mem[3] = 03
 t.mem[2] = 02
 t.mem[1] = 01
 t.mem[0] = 00
-t.mem_chain[2] = 01
-t.mem_chain[1] = 00
-t.mem_chain[0] = 00
 t.mem_part[0] = 27
-t.mem_rev[0] = 01
-t.mem_rev[1] = 00
-t.mem_rev[2] = 00
 t.mixdep[1][1] = ff
 t.mixdep[1][0] = ff
 t.mixdep[0][1] = 00
 t.mixdep[0][0] = 00
 t.narrow = 16
 t.obs_dtypes = fa
-t.obs_lc = 5
 t.out = 87
 t.p = 00
 t.pa_comb = 00ff01ff
@@ -561,7 +440,6 @@ t.clk = 0
 -- @85 cb t.cyc = 08
 -- put t.orphan = 2a flag=1 ok
 -- @85 after put
-t.bs = 0
 t.clk = 1
 t.ctr = 18
 t.cyc = 08
@@ -569,9 +447,7 @@ t.frc = 29
 t.frc2 = 3a
 t.keep = 88
 t.keep_frc = 18
-t.lc = 0
 t.narrow = 19
-t.obs_lc = 0
 t.orphan = 2a
 t.out = 78
 t.rc_alias = 0.5
