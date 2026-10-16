@@ -438,23 +438,11 @@ private:
         if (const AstInitArray* const avaluep = VN_CAST(valuep, InitArray)) {
             string result = "'{";
             string comma;
-            if (VN_IS(valuep->dtypep()->skipRefp(), AssocArrayDType)) {
-                if (avaluep->defaultp()) {
-                    result += comma + "default:" + toStringRecurse(avaluep->defaultp());
-                    comma = ", ";
-                }
-                const auto& mapr = avaluep->map();
-                for (const auto& itr : mapr) {
-                    result += comma + cvtToStr(itr.first) + ":"
-                              + toStringRecurse(itr.second->valuep());
-                    comma = ", ";
-                }
-            } else if (const AstUnpackArrayDType* const dtypep
-                       = VN_CAST(valuep->dtypep()->skipRefp(), UnpackArrayDType)) {
-                for (int n = 0; n < dtypep->elementsConst(); ++n) {
-                    result += comma + toStringRecurse(avaluep->getIndexDefaultedValuep(n));
-                    comma = ", ";
-                }
+            const AstUnpackArrayDType* const dtypep
+                = VN_AS(valuep->dtypep()->skipRefp(), UnpackArrayDType);
+            for (int n = 0; n < dtypep->elementsConst(); ++n) {
+                result += comma + toStringRecurse(avaluep->getIndexDefaultedValuep(n));
+                comma = ", ";
             }
             result += "}";
             return result;

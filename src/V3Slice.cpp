@@ -313,6 +313,11 @@ class SliceVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstConsAssoc* nodep) override {
+        VL_RESTORER(m_okInitArray);
+        m_okInitArray = true;
+        iterateChildren(nodep);
+    }
     void visit(AstConsPackUOrStruct* nodep) override {
         VL_RESTORER(m_okInitArray);
         m_okInitArray = true;
@@ -324,6 +329,11 @@ class SliceVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstConsQueue* nodep) override {
+        VL_RESTORER(m_okInitArray);
+        m_okInitArray = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstConsWildcard* nodep) override {
         VL_RESTORER(m_okInitArray);
         m_okInitArray = true;
         iterateChildren(nodep);

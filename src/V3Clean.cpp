@@ -236,6 +236,38 @@ class CleanVisitor final : public VNVisitor {
         ensureClean(nodep->rhsp());
         setClean(nodep, true);
     }
+    // Constructor values are stored, so must be clean
+    void visit(AstConsAssoc* nodep) override {
+        iterateChildren(nodep);
+        if (nodep->defaultp()) ensureClean(nodep->defaultp());
+        setClean(nodep, true);
+    }
+    void visit(AstConsDynArray* nodep) override {
+        iterateChildren(nodep);
+        if (nodep->defaultp()) ensureClean(nodep->defaultp());
+        setClean(nodep, true);
+    }
+    void visit(AstConsWildcard* nodep) override {
+        iterateChildren(nodep);
+        if (nodep->defaultp()) ensureClean(nodep->defaultp());
+        setClean(nodep, true);
+    }
+    void visit(AstConsAssocItem* nodep) override {
+        iterateChildren(nodep);
+        ensureClean(nodep->valuep());
+    }
+    void visit(AstConsDynArrayItem* nodep) override {
+        iterateChildren(nodep);
+        ensureClean(nodep->valuep());
+    }
+    void visit(AstConsQueueItem* nodep) override {
+        iterateChildren(nodep);
+        ensureClean(nodep->valuep());
+    }
+    void visit(AstConsWildcardItem* nodep) override {
+        iterateChildren(nodep);
+        ensureClean(nodep->valuep());
+    }
     void visit(AstMatchMasked* nodep) override {
         iterateChildren(nodep);
         ensureClean(nodep->lhsp());
