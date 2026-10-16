@@ -73,8 +73,13 @@ public:
         // Resolve entry when first requested, cache the result
         if (pair.second) {
             // Inserted: update the entity with all matches in the patterns
+            // On Windows, filenames may use backslashes as directory separators,
+            // so normalize both sides to forward slashes before matching. On
+            // other platforms this is a no-op as filenames do not contain '\'.
+            const string normName = VString::replaceSubstr(name, "\\", "/");
             for (const auto& patEnt : m_mapPatterns) {
-                if (VString::wildmatch(name, patEnt.first)) {
+                const string normPat = VString::replaceSubstr(patEnt.first, "\\", "/");
+                if (VString::wildmatch(normName, normPat)) {
                     if (!entryr) entryr.reset(new T{});
                     entryr->update(patEnt.second);
                 }
