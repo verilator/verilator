@@ -38,5 +38,18 @@ endclass
 class from_nonvirtual_cls extends nonvirtual_cls implements top_if;
 endclass
 
+// Bad: inherited method is not virtual, and does not override a virtual method
+class empty_base_cls;
+endclass
+
+class nonvirtual_derived_cls extends empty_base_cls;
+  function int get_a();
+    return 3;
+  endfunction
+endclass
+
+class from_nonvirtual_derived_cls extends nonvirtual_derived_cls implements top_if;
+endclass
+
 module t;
 endmodule

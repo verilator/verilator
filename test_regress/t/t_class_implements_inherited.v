@@ -93,6 +93,26 @@ endclass
 class from_pass_plain_cls extends pass_plain_cls implements other_if;
 endclass
 
+// Implementation that is virtual because it overrides a virtual method (IEEE 1800-2023 8.20)
+interface class f_if;
+  pure virtual function int get_f();
+endclass
+
+class vbase_cls;
+  virtual function int get_f();
+    return 1;
+  endfunction
+endclass
+
+class override_cls extends vbase_cls;
+  function int get_f();
+    return 60;
+  endfunction
+endclass
+
+class from_override_cls extends override_cls implements f_if;
+endclass
+
 module t;
   initial begin
     derived_cls obj;
@@ -100,9 +120,11 @@ module t;
     from_pass_cls pobj;
     from_plain_cls plobj;
     from_pass_plain_cls pplobj;
+    from_override_cls ovobj;
     if_pkg::leaf_if ifc;
     if_pkg::mid_if mifc;
     other_if oifc;
+    f_if fifc;
     int v;
 
     obj = new;
@@ -134,6 +156,10 @@ module t;
     `checkd(oifc.get_d(3), 43)
     oifc.get_e(v, 4);
     `checkd(v, 54)
+
+    ovobj = new;
+    fifc = ovobj;
+    `checkd(fifc.get_f(), 60)
 
     $write("*-* All Finished *-*\n");
     $finish;
