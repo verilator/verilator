@@ -41,8 +41,8 @@
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
 %Error: t/t_assignment_compatibility_bad.v:42:23: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand data type: 'logic' (4-state)
-                                                : ... Right-hand data type: 'logic$[0:1]' (4-state)
+                                                : ... Left-hand data type: 'logic'
+                                                : ... Right-hand data type: 'logic$[0:1]'
    42 |   assign nonAggregate = unpackedA;
       |                       ^
 %Error: t/t_assignment_compatibility_bad.v:43:20: Assignment between 2-state and 4-state types requires equivalent element types (IEEE 1800-2023 6.22.2, 7.6)
@@ -57,54 +57,54 @@
       |                    ^
 %Error: t/t_assignment_compatibility_bad.v:44:17: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand data type: 'logic$[$]' (2-state)
-                                                : ... Right-hand data type: 'bit$[$]' (2-state)
+                                                : ... Left-hand data type: 'logic$[$]'
+                                                : ... Right-hand data type: 'bit$[$]'
    44 |   assign queueA = queueB;
       |                 ^
 %Error: t/t_assignment_compatibility_bad.v:46:24: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand data type: 'struct $unit::ustruct_t' (2-state)
-                                                : ... Right-hand data type: 'bit[31:0]' (2-state)
+                                                : ... Left-hand data type: 'struct $unit::ustruct_t'
+                                                : ... Right-hand data type: 'bit[31:0]'
    46 |   ustruct_t ustructA = 7;
       |                        ^
 %Error: t/t_assignment_compatibility_bad.v:47:29: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand data type: 'struct $unit::ustruct_t' (2-state)
-                                                : ... Right-hand data type: 'bit[31:0]' (2-state)
+                                                : ... Left-hand data type: 'struct $unit::ustruct_t'
+                                                : ... Right-hand data type: 'bit[31:0]'
    47 |   ustruct_t ustructB[2] = '{7, 8};
       |                             ^
 %Error: t/t_assignment_compatibility_bad.v:47:32: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand data type: 'struct $unit::ustruct_t' (2-state)
-                                                : ... Right-hand data type: 'bit[31:0]' (2-state)
+                                                : ... Left-hand data type: 'struct $unit::ustruct_t'
+                                                : ... Right-hand data type: 'bit[31:0]'
    47 |   ustruct_t ustructB[2] = '{7, 8};
       |                                ^
 %Error: t/t_assignment_compatibility_bad.v:49:43: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
-                                                : ... Left-hand data type: 'struct $unit::ustruct_t' (2-state)
-                                                : ... Right-hand data type: 'bit[31:0]' (2-state)
+                                                : ... Left-hand data type: 'struct $unit::ustruct_t'
+                                                : ... Right-hand data type: 'bit[31:0]'
    49 |   ustruct_t ustructD[2][2] = '{default: '{7, 8}};
       |                                           ^
 %Error: t/t_assignment_compatibility_bad.v:49:46: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
-                                                : ... Left-hand data type: 'struct $unit::ustruct_t' (2-state)
-                                                : ... Right-hand data type: 'bit[31:0]' (2-state)
+                                                : ... Left-hand data type: 'struct $unit::ustruct_t'
+                                                : ... Right-hand data type: 'bit[31:0]'
    49 |   ustruct_t ustructD[2][2] = '{default: '{7, 8}};
       |                                              ^
 %Error: t/t_assignment_compatibility_bad.v:50:19: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand data type: 'struct $unit::ustruct_t' (2-state)
-                                                : ... Right-hand data type: 'bit' (2-state)
+                                                : ... Left-hand data type: 'struct $unit::ustruct_t'
+                                                : ... Right-hand data type: 'bit'
    50 |   assign ustructC = '0;
       |                   ^
 %Error: t/t_assignment_compatibility_bad.v:51:24: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand data type: 'struct $unit::ustruct_t' (2-state)
-                                                : ... Right-hand data type: 'bit' (2-state)
+                                                : ... Left-hand data type: 'struct $unit::ustruct_t'
+                                                : ... Right-hand data type: 'bit'
    51 |   ustruct_t ustructE = '0;   
       |                        ^~
 %Error: t/t_assignment_compatibility_bad.v:52:22: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
                                                 : ... note: In instance 't'
-                                                : ... Left-hand data type: 'union $unit::uunion_t' (2-state)
-                                                : ... Right-hand data type: 'bit[31:0]' (2-state)
+                                                : ... Left-hand data type: 'union $unit::uunion_t'
+                                                : ... Right-hand data type: 'bit[31:0]'
    52 |   uunion_t uunionA = 7;
       |                      ^
 %Error: Exiting due to

@@ -9601,10 +9601,12 @@ class WidthVisitor final : public VNVisitor {
                              const AstNodeDType* rhsDtp, const string& lhsName = "Left-hand",
                              const string& rhsName = "Right-hand")
         VL_REQUIRES(V3Error::s().m_mutex) {
+        string lhsState = " " + lhsDtp->stateDTypeName();
+        string rhsState = " " + rhsDtp->stateDTypeName();
+        if (lhsState == rhsState) lhsState = rhsState = "";
         return "\n" + nodep->warnMore() + "... " + lhsName
-               + " data type: " + lhsDtp->prettyDTypeNameQ() + " " + lhsDtp->stateDTypeName()
-               + "\n" + nodep->warnMore() + "... " + rhsName
-               + " data type: " + rhsDtp->prettyDTypeNameQ() + " " + rhsDtp->stateDTypeName();
+               + " data type: " + lhsDtp->prettyDTypeNameQ() + lhsState + "\n" + nodep->warnMore()
+               + "... " + rhsName + " data type: " + rhsDtp->prettyDTypeNameQ() + rhsState;
     }
     // Checks whether two types are assignment-compatible according to IEEE 1800-2023 7.6
     // Currently, this function only supports variables, which are of following types:
@@ -9679,12 +9681,8 @@ class WidthVisitor final : public VNVisitor {
         // Element types of source and target shall be equivalent
         if (!isEquivalentDType(lhsDtpIterp, rhsDtpIterp)) {
             nodep->v3error("Illegal assignment: Array element types are not equivalent (IEEE "
-                           "1800-2023 6.22.2)\n"
-                           << nodep->warnMore() << "... " << lhsName << " data type: "
-                           << lhsDtp->prettyDTypeNameQ() << " " << lhsDtp->stateDTypeName() << "\n"
-                           << nodep->warnMore() << "... " << rhsName
-                           << " data type: " << rhsDtp->prettyDTypeNameQ() << " "
-                           << rhsDtp->stateDTypeName() << "\n");
+                           "1800-2023 6.22.2)"
+                           << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
         }
     }
     void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
