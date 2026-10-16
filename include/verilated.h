@@ -181,7 +181,7 @@ struct VerilatedVarLazyDatap final {
     void* selfp;
     uint64_t stamp;
     uint32_t storageOffset;
-    int32_t srcOffset;  // Copy rows' source; unused for cones
+    uint32_t srcOffset;  // Copy rows' source; unused for cones
 };
 
 // ILP32 lays the same members out in 24 bytes, so this is a cap, not an equality
@@ -190,7 +190,7 @@ static_assert(sizeof(VerilatedVarLazyDatap) <= 32, "VerilatedVarLazyDatap unexpe
 // One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyDescSlot()
 struct VlLazyReconEntry final {
     void (*refreshp)(void* selfp);
-    int32_t srcByteOffset;  // A copy's source; with VLVF_LAZY_COMB, a cone's VlLazyCombMask index
+    uint32_t srcByteOffset;  // A copy's source; with VLVF_LAZY_COMB, a cone's VlLazyCombMask index
     uint32_t vlflags;
 };
 
