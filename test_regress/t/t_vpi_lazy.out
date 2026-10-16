@@ -110,6 +110,9 @@ TOP.set_n 1 W
 t.CST 3c r
 t.ON 1 r
 t.ac_c 3d r
+t.ae_c 00 r
+t.ae_f 00 r
+t.ae_g 5a r
 t.al1 3c r
 t.al2 3c r
 t.al_nw 3c r
@@ -117,6 +120,9 @@ t.al_q 3c W
 t.al_sw 3c r
 t.alc_x 3c r
 t.alc_y 3c r
+t.am_m 3c r
+t.am_x 3c r
+t.am_z 00 r
 t.arn_q 3c W
 t.arp_q 3c W
 t.as_q 3c W
@@ -165,10 +171,16 @@ t.frc_al__VforceVal ff W
 t.frw_c 3c W
 t.fy0.a 3c r
 t.fy0.clk 0 r
+t.fy0.cyc_p fc r
+t.fy0.cyc_q c0 r
+t.fy0.imp_c 3d r
 t.fy0.r 3c W
 t.fy0.y 3d r
 t.fy1.a c3 r
 t.fy1.clk 0 r
+t.fy1.cyc_p f3 r
+t.fy1.cyc_q 30 r
+t.fy1.imp_c c2 r
 t.fy1.r c3 W
 t.fy1.y c4 r
 t.fyx0_c 68 r
@@ -260,6 +272,8 @@ t.px_o 99 r
 t.rbs_c fc r
 t.rbw_c 7e r
 t.rbw_t 7e r
+t.rbw_u 7e r
+t.rbw_v 5a r
 t.rdpin 51 r
 t.rdpin_c 40 r
 t.ret_c 66 r
@@ -354,10 +368,12 @@ t.u_mi.bc0.bc 99 r
 t.u_mi.bc0.bd aa r
 t.u_mi.bc0.bx 9a r
 t.u_mi.bc0.by 99 r
+t.u_mi.bc0.bz 9a r
 t.u_mi.bc1.bc 66 r
 t.u_mi.bc1.bd 55 r
 t.u_mi.bc1.bx 66 r
 t.u_mi.bc1.by 99 r
+t.u_mi.bc1.bz 67 r
 t.u_mi.bflop0 99 W
 t.u_mi.bflop1 66 W
 t.u_mi.clk 0 r
@@ -488,6 +504,7 @@ t.uv_c 56 r
 t.uw_c 3c r
 t.ux_c 5a r
 t.vax 5 r
+t.vbx 1 r
 t.vec 3c WWWWWWWr
 t.vidx ff r
 t.w_ff 3c r

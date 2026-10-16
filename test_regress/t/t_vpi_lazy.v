@@ -101,6 +101,14 @@ module sub_fy (
   logic [7:0] y;
   always_ff @(posedge clk) r <= a;
   assign y = r + 8'd1;
+  // Refused alike in every instance: a cycle no merge can order, and an impure cone
+  /* verilator lint_off UNOPTFLAT */
+  logic [7:0] cyc_p, cyc_q;
+  /* verilator lint_on UNOPTFLAT */
+  assign cyc_p = cyc_q ^ r;
+  assign cyc_q = {cyc_p[3:0], 4'h0};
+  logic [7:0] imp_c;
+  assign imp_c = r ^ 8'($c(1));
 endmodule
 
 // 'o' is a port, but only a temporary of the block computing 'mix'
@@ -657,7 +665,7 @@ module t (
   // and a loop test; a break out of a loop; a dead store, alone or in a loop; an unpacked struct
   // member lvalue; an impure continuous assign
   /* verilator lint_off UNOPTFLAT */
-  logic [7:0] rbw_t, rbw_c, ifc_c, lt_lim, lt_c, brk_c, dpf_c, dlp_c, dus_c;
+  logic [7:0] rbw_t, rbw_c, rbw_u, rbw_v, ifc_c, lt_lim, lt_c, brk_c, dpf_c, dlp_c, dus_c;
   logic ifc_t;
   /* verilator lint_on UNOPTFLAT */
   logic [7:0] dpf_t  /*verilator public_flat_rw*/;
@@ -668,6 +676,13 @@ module t (
   always_comb begin
     rbw_c = rbw_t;
     rbw_t = d | in_a;
+    if (sel[0]) begin
+      rbw_u = rbw_c;
+      rbw_v = in_a;
+    end else begin
+      rbw_u = in_a;
+      rbw_v = rbw_c;
+    end
   end
   always_comb begin
     ifc_c = d;
@@ -771,6 +786,39 @@ module t (
       ux_c = d;
     end
   end
+
+  // Arms defining different elements and variables, and an else holding an if and more
+  logic [7:0] am_m[2];
+  logic [7:0] am_x, am_z, ae_c, ae_f, ae_g;
+  always_comb begin
+    am_m[0] = 8'h0;
+    am_x = 8'h0;
+    am_z = 8'h0;
+    if (sel[0]) begin
+      am_m[0] = d;
+      am_m[1] = in_a;
+      am_x = d;
+    end else begin
+      am_m[1] = d;
+      am_z = in_a;
+    end
+  end
+  always_comb begin
+    ae_f = 8'h0;
+    ae_g = 8'h0;
+    if (sel[1]) ae_c = d;
+    else begin
+      if (d[0]) begin
+        ae_c = in_a;
+        ae_f = d;
+      end else ae_c = 8'h0;
+      ae_g = in_a;
+    end
+  end
+  // Written whole by one block and in part by another
+  logic [3:0] vbx;
+  assign vbx[sel] = en;
+  always_comb vbx[3:2] = d[1:0];
 
   // A cycle between groups, not bits, merged with a function's temporaries (under -O0, as
   // V3BitBlast otherwise splits it)
@@ -1009,6 +1057,7 @@ module bcell;
   logic [7:0] bd;
   assign bd = bc ^ 8'h33;
   logic [7:0] bx, by;
+  logic [7:0] bz;
 endmodule
 
 module parent (
@@ -1074,6 +1123,9 @@ module lz_multi (
     bc0.by = tmp ^ 8'h3;
   end
   assign {bc1.bx, bc1.by} = {bflop1, ~bflop1};
+  // Reconstructed in one instance, kept in the other
+  assign bc0.bz = bflop0 + 8'h1;
+  assign bc1.bz = bflop1 ^ 8'($c(1));
 endmodule
 
 // From comb corners: aggregate, real, string, enum and chandle dtypes, multi-dimensional and
