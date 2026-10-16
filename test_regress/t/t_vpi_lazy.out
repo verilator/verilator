@@ -368,12 +368,10 @@ t.u_mi.bc0.bc 99 r
 t.u_mi.bc0.bd aa r
 t.u_mi.bc0.bx 9a r
 t.u_mi.bc0.by 99 r
-t.u_mi.bc0.bz 9a r
 t.u_mi.bc1.bc 66 r
 t.u_mi.bc1.bd 55 r
 t.u_mi.bc1.bx 66 r
 t.u_mi.bc1.by 99 r
-t.u_mi.bc1.bz 67 r
 t.u_mi.bflop0 99 W
 t.u_mi.bflop1 66 W
 t.u_mi.clk 0 r

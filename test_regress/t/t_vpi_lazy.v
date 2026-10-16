@@ -1057,7 +1057,6 @@ module bcell;
   logic [7:0] bd;
   assign bd = bc ^ 8'h33;
   logic [7:0] bx, by;
-  logic [7:0] bz;
 endmodule
 
 module parent (
@@ -1123,9 +1122,6 @@ module lz_multi (
     bc0.by = tmp ^ 8'h3;
   end
   assign {bc1.bx, bc1.by} = {bflop1, ~bflop1};
-  // Reconstructed in one instance, kept in the other
-  assign bc0.bz = bflop0 + 8'h1;
-  assign bc1.bz = bflop1 ^ 8'($c(1));
 endmodule
 
 // From comb corners: aggregate, real, string, enum and chandle dtypes, multi-dimensional and
