@@ -320,7 +320,7 @@ public:
     VerilatedVar(VerilatedVar&&);
     // ACCESSORS
     /// Null for a --vpi-lazy computed signal, which has no storage
-    void* datap() const { return VL_UNLIKELY(isLazyRemat()) ? nullptr : m_datap; }
+    void* datap() const { return VL_UNCOVERABLE(isLazyRemat()) ? nullptr : m_datap; }
     /// Reconstruct a --vpi-lazy row; nothing for a plain one
     inline void datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE;
     const char* name() const { return m_namep; }
