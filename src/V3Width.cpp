@@ -7579,15 +7579,7 @@ class WidthVisitor final : public VNVisitor {
             if (countp && countp->toUInt() == 1
                 && (VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, BracketArrayDType))) {
                 AstPattern* const patternp = new AstPattern{concatp->fileline(), nullptr};
-                if (AstConcat* const itemsp = VN_CAST(concatp->srcp(), Concat)) {
-                    patConcatConvertRecurse(patternp, itemsp);
-                } else {
-                    AstPatMember* const itemp
-                        = new AstPatMember{concatp->srcp()->fileline(),
-                                           concatp->srcp()->unlinkFrBack(), nullptr, nullptr};
-                    itemp->isConcat(true);
-                    patternp->addItemsp(itemp);
-                }
+                patConcatConvertRecurse(patternp, concatp->srcp());
                 concatp->replaceWith(patternp);
                 VL_DO_DANGLING(pushDeletep(concatp), concatp);
             }
@@ -10871,20 +10863,14 @@ class WidthVisitor final : public VNVisitor {
         return patmap;
     }
 
-    void patConcatConvertRecurse(AstPattern* patternp, AstConcat* nodep) {
-        if (AstConcat* lhsp = VN_CAST(nodep->lhsp(), Concat)) {
-            patConcatConvertRecurse(patternp, lhsp);
+    // Add to patternp the items of nodep, a concatenation or a single item
+    void patConcatConvertRecurse(AstPattern* patternp, AstNodeExpr* nodep) {
+        if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
+            patConcatConvertRecurse(patternp, concatp->lhsp());
+            patConcatConvertRecurse(patternp, concatp->rhsp());
         } else {
-            AstPatMember* const newp = new AstPatMember{
-                nodep->lhsp()->fileline(), nodep->lhsp()->unlinkFrBack(), nullptr, nullptr};
-            newp->isConcat(true);
-            patternp->addItemsp(newp);
-        }
-        if (AstConcat* rhsp = VN_CAST(nodep->rhsp(), Concat)) {
-            patConcatConvertRecurse(patternp, rhsp);
-        } else {
-            AstPatMember* const newp = new AstPatMember{
-                nodep->rhsp()->fileline(), nodep->rhsp()->unlinkFrBack(), nullptr, nullptr};
+            AstPatMember* const newp
+                = new AstPatMember{nodep->fileline(), nodep->unlinkFrBack(), nullptr, nullptr};
             newp->isConcat(true);
             patternp->addItemsp(newp);
         }

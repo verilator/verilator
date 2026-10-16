@@ -8,7 +8,9 @@ typedef int unsigned one_t[1];
 
 module sub #(
     parameter int unsigned VAL[2] = '{1, 2},
-    parameter one_t ONE = '{1}
+    parameter one_t ONE = '{1},
+    parameter int N = 1,
+    parameter int unsigned NVAL[N] = '{0}
 ) ();
 endmodule
 
@@ -20,7 +22,9 @@ module t;
   // Unpacked array concatenations (#6686)
   sub #(
       .VAL({32'd5, 32'd6}),
-      .ONE({NINE[0]})
+      .ONE({NINE[0]}),
+      .N(3),
+      .NVAL({32'd7, 32'd8, NINE[0]})
   ) sub56 ();
 
   initial begin
@@ -31,6 +35,9 @@ module t;
     if (sub56.VAL[0] != 5) $stop;
     if (sub56.VAL[1] != 6) $stop;
     if (sub56.ONE[0] != 9) $stop;
+    if (sub56.NVAL[0] != 7) $stop;
+    if (sub56.NVAL[1] != 8) $stop;
+    if (sub56.NVAL[2] != 9) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
