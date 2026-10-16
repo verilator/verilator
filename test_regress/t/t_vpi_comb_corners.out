@@ -80,6 +80,11 @@ t (vpiModule) t  vpiDefName=t
     out (vpiReg) t.out 
     p (vpiReg) t.p 
     pa_comb (vpiReg) t.pa_comb 
+    pre_ic (vpiReg) t.pre_ic 
+    pre_in (vpiReg) TOP.pre_in 
+    pre_po (vpiReg) t.pre_po 
+    pre_q (vpiReg) t.pre_q 
+    pre_qc (vpiReg) t.pre_qc 
     ps_comb (vpiStructVar) t.ps_comb 
         vpiReg:
         *undefined*:
@@ -114,6 +119,11 @@ t (vpiModule) t  vpiDefName=t
     vpiParameter:
     NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
     vpiInternalScope:
+    u_pre (vpiModule) t.u_pre  vpiDefName=sub_drv
+        vpiReg:
+        x (vpiReg) t.u_pre.x 
+        y (vpiReg) t.u_pre.y 
+        vpiParameter:
     u_wdrv (vpiModule) t.u_wdrv  vpiDefName=sub_drv
         vpiReg:
         x (vpiReg) t.u_wdrv.x 
@@ -125,6 +135,10 @@ t (vpiModule) t  vpiDefName=t
         vpiParameter:
 -- @0 start t.a = 86
 -- @0 start t.b = c2
+-- @0 start t.pre_qc = ef
+-- @0 start t.pre_ic = 5b
+-- @0 start t.u_pre.x = b3
+-- @0 start t.u_pre.y = 72
 -- @0 readonly
 t.NumCycles = 14 vpiSize=8
 t.a = 00 vpiSize=8
@@ -191,6 +205,11 @@ t.orphan = b9 vpiSize=8
 t.out = f0 vpiSize=8
 t.p = 00 vpiSize=8
 t.pa_comb = 00ff01ff vpiSize=32
+t.pre_ic = 4e vpiSize=8
+TOP.pre_in = 4e vpiSize=8
+t.pre_po = 1e vpiSize=8
+t.pre_q = 1e vpiSize=8
+t.pre_qc = 1e vpiSize=8
 t.ps_comb = 00 vpiSize=8
 t.ps_comb.hi = 0 vpiSize=4
 t.ps_comb.lo = 0 vpiSize=4
@@ -213,6 +232,8 @@ t.us_comb.a = 00 vpiSize=8
 t.us_comb.b = ff vpiSize=8
 t.v_comb = 05 vpiSize=7
 t.wide = 00ff vpiSize=16
+t.u_pre.x = 1e vpiSize=8
+t.u_pre.y = 1e vpiSize=8
 t.u_wdrv.x = 00 vpiSize=8
 t.unnamedblk1.l = 00000004 vpiSize=32
 -- @5 readonly

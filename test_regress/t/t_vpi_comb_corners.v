@@ -19,7 +19,9 @@ module sub_drv (
   assign y = x;
 endmodule
 
-module t;
+module t (
+    input wire [7:0] pre_in
+);
 
   logic clk;
   logic rst;
@@ -380,5 +382,19 @@ module t;
   // made here
   logic [7:0] rdpin  /*verilator public_flat_rd*/ = 8'h0;
   always_ff @(posedge clk) rdpin <= a ^ 8'h6d;
+
+  // Never loaded, so these copy and port rows hold their reset values; a read before the first
+  // eval() sees them as their --public-flat-rw signals would
+  logic [7:0] pre_q;
+  logic [7:0] pre_qc;
+  logic [7:0] pre_ic;
+  logic [7:0] pre_po;
+  always_ff @(posedge clk) if (cyc == 8'hff) pre_q <= cyc;
+  assign pre_qc = pre_q;
+  assign pre_ic = $root.t.pre_in;
+  sub_drv u_pre (
+      .y(pre_po),
+      .x(pre_q)
+  );
 
 endmodule

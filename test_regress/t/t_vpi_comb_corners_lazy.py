@@ -28,11 +28,13 @@ test.compile(make_top_shell=False,
 test.execute(use_libvpi=True,
              all_run_flags=[
                  "+verilator+rand+reset+2", "+verilator+seed+7", "+t_vpi_dump_start=t.a",
-                 "+t_vpi_dump_start=t.b"
+                 "+t_vpi_dump_start=t.b", "+t_vpi_dump_start=t.pre_qc",
+                 "+t_vpi_dump_start=t.pre_ic", "+t_vpi_dump_start=t.u_pre.x",
+                 "+t_vpi_dump_start=t.u_pre.y"
              ],
              expect_filename=test.golden_filename)
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 57)
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 63)
 test.file_grep(test.stats, r'VPI, lazy boundary storage pinned\s+(\d+)', 1)
 test.file_grep(test.stats, r'Decompose, unpacked variables split\s+(\d+)', 6)
 
