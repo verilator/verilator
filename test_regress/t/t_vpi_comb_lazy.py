@@ -27,7 +27,9 @@ test.compile(make_top_shell=False,
 
 test.execute(use_libvpi=True, expect_filename=test.golden_filename)
 
-test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 39)
+test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 40)
+# A parameter is not writable, so its readers stay out of the 'ico' region
+test.file_grep(test.stats, r'Scheduling, size of replicated logic: Input\s+(\d+)', 0)
 
 # Reconstruction storage follows every eval-path member, off their cache lines
 test.file_grep_not(test.obj_dir + "/" + test.vm_prefix + "___024root.h",

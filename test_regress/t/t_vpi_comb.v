@@ -36,7 +36,8 @@ module t #(
     parameter int INTF_QTY = 3
 ) (
     input logic rst,
-    output logic [6:0] observe = 7'h0
+    output logic [6:0] observe = 7'h0,
+    output logic [6:0] lut_out
 );
 
   logic clk = 1'b0;
@@ -74,6 +75,7 @@ module t #(
     t_vpi_dump_cb("t.cmb1");
     t_vpi_dump_cb("t.cyc");
     t_vpi_dump_put("t.rst", "0");
+    t_vpi_dump_put("t.INTF_QTY", "5");
     t_vpi_dump_values();
   end
   always @(negedge clk) t_vpi_dump_values();
@@ -113,6 +115,10 @@ module t #(
 
   logic [69:0] wcmb;  // >64 bits
   assign wcmb = wkeep + 70'd1;
+
+  // An unpacked parameter stays a variable; its eval-path reader must not become 'ico' logic
+  localparam logic [6:0] LUT[4] = '{7'h11, 7'h22, 7'h33, 7'h44};
+  assign lut_out = LUT[keep[1:0]];
 
   // Bit/part select, conditional and >>> operators
   logic bsel;
