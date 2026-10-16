@@ -7580,25 +7580,6 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
-            // An unpacked array concatenation is a pattern of its items (IEEE 1800-2023 10.10)
-            AstReplicate* const concatp = VN_CAST(nodep->exprp(), Replicate);
-            const AstConst* const countp = concatp ? VN_CAST(concatp->countp(), Const) : nullptr;
-            const AstNodeDType* const dtypep = nodep->modVarp()->subDTypep()->skipRefOrNullp();
-            if (countp && countp->toUInt() == 1
-                && (VN_IS(dtypep, UnpackArrayDType) || VN_IS(dtypep, BracketArrayDType))) {
-                AstPattern* const patternp = new AstPattern{concatp->fileline(), nullptr};
-                if (AstConcat* const itemsp = VN_CAST(concatp->srcp(), Concat)) {
-                    patConcatConvertRecurse(patternp, itemsp);
-                } else {
-                    AstPatMember* const itemp
-                        = new AstPatMember{concatp->srcp()->fileline(),
-                                           concatp->srcp()->unlinkFrBack(), nullptr, nullptr};
-                    itemp->isConcat(true);
-                    patternp->addItemsp(itemp);
-                }
-                concatp->replaceWith(patternp);
-                VL_DO_DANGLING(pushDeletep(concatp), concatp);
-            }
             // An override pattern is left for the specialized module to type
             VL_RESTORER(m_inParamOverride);
             m_inParamOverride = isOverridePattern(nodep->exprp());
