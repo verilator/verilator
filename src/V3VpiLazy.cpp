@@ -1779,13 +1779,12 @@ private:
 
     // Layouts must match exactly: the descriptor refreshes by memcpy of totalSize() bytes.
     // entSize() has no width for VLVT_REAL or VLVT_STRING, so such a row would copy nothing,
-    // and a std::string could not be raw-copied even if it did; those stay cones.
+    // and a std::string could not be raw-copied even if it did; those stay cones. 'b'
+    // reaches 'a' only through cast-free assignments, so is no real or string either.
     static bool sameLayout(const AstVarScope* a, const AstVarScope* b) {
         const AstNodeDType* const adtp = a->varp()->dtypep()->skipRefp();
         const AstNodeDType* const bdtp = b->varp()->dtypep()->skipRefp();
         return !a->varp()->isDouble() && !a->varp()->isString()
-               && a->varp()->vlEnumType() == b->varp()->vlEnumType()
-               && adtp->widthTotalBytes() == bdtp->widthTotalBytes()
                && (adtp->similarDType(bdtp)
                    // `bit` and `logic` of one width are stored alike
                    || (VN_IS(adtp, BasicDType) && VN_IS(bdtp, BasicDType)
