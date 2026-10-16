@@ -1811,12 +1811,11 @@ private:
         // m_ordered order, not foldable's, so what is emitted does not depend on pointer hashing
         for (Group* const g : m_ordered) {
             if (!g->copyFromp) continue;
-            // One instance could not fold: none may. Instances fold alike, so this is untested.
-            // LCOV_EXCL_START
-            if (VL_UNCOVERABLE(!claimPerVar(foldable, g->targets[0]->varp()))) {
+            // One instance could not fold: none may
+            if (!claimPerVar(foldable, g->targets[0]->varp())) {
                 g->copyFromp = nullptr;
                 continue;
-            }  // LCOV_EXCL_STOP
+            }
             // Killing it makes the retarget safe: a consumer that cannot substitute pins instead.
             m_retargetSrcOf.emplace(g->targets[0], g->copyFromp);
             m_foldedCopies.push_back(g);
