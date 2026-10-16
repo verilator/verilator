@@ -2518,15 +2518,12 @@ public:
     // cppcheck-suppress noExplicitConstructor
     constexpr VVpiLazyRole(en _e)
         : m_e{_e} {}
-    explicit VVpiLazyRole(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
 };
 constexpr bool operator==(const VVpiLazyRole& lhs, const VVpiLazyRole& rhs) {
     return lhs.m_e == rhs.m_e;
 }
 constexpr bool operator==(const VVpiLazyRole& lhs, VVpiLazyRole::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(VVpiLazyRole::en lhs, const VVpiLazyRole& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VVpiLazyRole& rhs) {
     return os << rhs.ascii();
 }
@@ -2549,15 +2546,12 @@ public:
     // cppcheck-suppress noExplicitConstructor
     constexpr VVpiLazyComb(en _e)
         : m_e{_e} {}
-    explicit VVpiLazyComb(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
 };
 constexpr bool operator==(const VVpiLazyComb& lhs, const VVpiLazyComb& rhs) {
     return lhs.m_e == rhs.m_e;
 }
 constexpr bool operator==(const VVpiLazyComb& lhs, VVpiLazyComb::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(VVpiLazyComb::en lhs, const VVpiLazyComb& rhs) { return lhs == rhs.m_e; }
 inline std::ostream& operator<<(std::ostream& os, const VVpiLazyComb& rhs) {
     return os << rhs.ascii();
 }
