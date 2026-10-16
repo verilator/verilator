@@ -184,8 +184,8 @@ public:
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
     bool isLazyRemat() const { return ((m_vlflags & VLVF_LAZY_REMAT) != 0); }
     bool isLazyRetained() const { return ((m_vlflags & VLVF_LAZY_RETAINED) != 0); }
-    // --vpi-lazy: reconstructed or combinationally driven, so a put may not change it, or with
-    // isPublicRW(), its masked bits
+    /// --vpi-lazy: reconstructed or combinationally driven, so a put may not change it, or with
+    /// isPublicRW(), its masked bits
     bool isLazyComb() const { return ((m_vlflags & (VLVF_LAZY_COMB | VLVF_LAZY_REMAT)) != 0); }
     bool isLazyCopy() const { return ((m_vlflags & VLVF_LAZY_COPY) != 0); }
     bool isForceable() const { return ((m_vlflags & VLVF_FORCEABLE) != 0); }
@@ -199,7 +199,7 @@ public:
     bool isPackedUnion() const { return ((m_vlflags & VLVF_PACKED_UNION) != 0); }
     bool isPackedMember() const { return ((m_vlflags & VLVF_PACKED_MEMBER) != 0); }
     bool isPackedNeedsIndex() const { return ((m_vlflags & VLVF_PACKED_NEEDS_INDEX) != 0); }
-    // Bit offset of a packed struct/union member within its (element 0) parent storage
+    /// Bit offset of a packed struct/union member within its (element 0) parent storage
     uint32_t bitOffset() const VL_MT_SAFE { return m_bitOffset; }
     int udims() const VL_MT_SAFE { return m_unpacked.size(); }
     int pdims() const VL_MT_SAFE { return m_packed.size(); }
@@ -319,12 +319,13 @@ public:
     ~VerilatedVar();
     VerilatedVar(VerilatedVar&&);
     // ACCESSORS
-    // Null for a --vpi-lazy computed signal, which has no storage
+    /// Null for a --vpi-lazy computed signal, which has no storage
     void* datap() const { return VL_UNLIKELY(isLazyRemat()) ? nullptr : m_datap; }
-    // Reconstruct a --vpi-lazy row; nothing for a plain one
+    /// Reconstruct a --vpi-lazy row; nothing for a plain one
     inline void datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE;
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
+    /// VerilatedLazyState::combMasksp index of a VLVF_LAZY_COMB row, else -1
     int32_t lazyCombMask() const { return m_lazyCombMask; }
     const VerilatedForceControlSignals* forceControlSignals() const {
         return m_forceControlSignals.get();

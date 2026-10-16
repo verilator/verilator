@@ -35,9 +35,9 @@ class V3VpiLazy final {
 public:
     // Combinationally driven bits of one flat unpacked element; see VVpiLazyComb::PARTIAL.
     struct CombRun final {
-        uint32_t elem;
-        uint32_t lsb;
-        uint32_t width;
+        uint32_t elem;  // Flat unpacked element index
+        uint32_t lsb;  // First driven bit within the element
+        uint32_t width;  // Driven bits from lsb
         bool operator==(const CombRun& other) const {
             return elem == other.elem && lsb == other.lsb && width == other.width;
         }

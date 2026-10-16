@@ -169,7 +169,7 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_PACKED_MEMBER, an ancestor is an array of
                                           // packed structs/unions, so needs an element index
     VLVF_LAZY_REMAT = (1 << 20),  // --vpi-lazy: rematerialized row; no storage, may be read-only
-    VLVF_LAZY_RETAINED = (1 << 21),
+    VLVF_LAZY_RETAINED = (1 << 21),  // --vpi-lazy: a candidate kept as storage, so writable
     VLVF_LAZY_COPY = (1 << 22),  // --vpi-lazy: refreshed by memcpy from srcOffset, not a cone
     // --vpi-lazy: combinationally driven, so read-only, or with VLVF_PUB_RW, its masked bits
     VLVF_LAZY_COMB = (1 << 23)
@@ -177,47 +177,50 @@ enum VerilatedVarFlags : uint32_t {
 
 struct VlLazyReconEntry;
 
-// --vpi-lazy descriptor.
+/// --vpi-lazy descriptor, a reconstructed row's VerilatedVar::m_datap.
 struct VerilatedVarLazyDatap final {
-    void (*refreshp)(void* selfp);
-    void* selfp;
-    uint64_t stamp;
-    uint32_t storageOffset;
-    uint32_t srcOffset;  // Copy rows' source; unused for cones
+    void (*refreshp)(void* selfp);  ///< Rebuilds the shadow if stale; unused for a copy row
+    void* selfp;  ///< The row's module instance
+    uint64_t stamp;  ///< VerilatedLazyState::epoch when last rebuilt
+    uint32_t storageOffset;  ///< Shadow's byte offset in selfp
+    uint32_t srcOffset;  ///< Copy rows' source byte offset in selfp; unused for cones
 
+    /// Set up for 'recon''s row whose shadow is 'offset' bytes into instance 'instp'
     void init(const VlLazyReconEntry& recon, void* instp, uint32_t offset);
 };
 
 // ILP32 lays the same members out in 24 bytes, so this is a cap, not an equality
 static_assert(sizeof(VerilatedVarLazyDatap) <= 32, "VerilatedVarLazyDatap unexpectedly grew");
 
-// One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyDescSlot()
+/// One --vpi-lazy descriptor's refresh method, indexed by VlVarTableEntry::lazyDescSlot()
 struct VlLazyReconEntry final {
-    void (*refreshp)(void* selfp);
-    uint32_t srcByteOffset;  // A copy's source; with VLVF_LAZY_COMB, a cone's VlLazyCombMask index
-    uint32_t vlflags;
+    void (*refreshp)(void* selfp);  ///< See VerilatedVarLazyDatap::refreshp
+    /// A copy's source; with VLVF_LAZY_COMB, a cone's VlLazyCombMask index
+    uint32_t srcByteOffset;
+    uint32_t vlflags;  ///< VLVF_LAZY_* flags added to the row's own
 
+    /// VLVF_LAZY_COMB row's VlLazyCombMask index
     int32_t combMaskIdx() const { return static_cast<int32_t>(srcByteOffset); }
 };
 
-// Combinationally driven bits of one flat unpacked element of a --vpi-lazy row
+/// Combinationally driven bits of one flat unpacked element of a --vpi-lazy row
 struct VlLazyCombRun final {
-    uint32_t elem;
-    uint32_t lsb;
-    uint32_t width;
+    uint32_t elem;  ///< Flat unpacked element index
+    uint32_t lsb;  ///< First driven bit within the element
+    uint32_t width;  ///< Driven bits from lsb
 };
 
-// Bits a VPI put may not change, indexed by VlVarTableEntry::lazyCombMask()
+/// Bits a VPI put may not change, indexed by VlVarTableEntry::lazyCombMask()
 struct VlLazyCombMask final {
-    const VlLazyCombRun* runsp;  // Ordered by element, then bit
-    uint32_t nRuns;
+    const VlLazyCombRun* runsp;  ///< Ordered by element, then bit
+    uint32_t nRuns;  ///< Entries in runsp
 };
 
-// What a --vpi-lazy put overwrote: bytes, or for a string variable its old value
+/// What a --vpi-lazy put overwrote: bytes, or for a string variable its old value
 struct VlLazyUndo final {
-    void* datap;
-    bool isStr;
-    std::string old;
+    void* datap;  ///< Where the put wrote
+    bool isStr;  ///< datap is a std::string
+    std::string old;  ///< The bytes, or string, before the put
 };
 
 // One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
@@ -234,7 +237,7 @@ struct VlVarTableEntry final {
     VerilatedVarType vltype;
     uint8_t udims;
     uint8_t pdims;
-    bool isParam;
+    bool isParam;  // From a parameter, see byteOffset
     // Defaulted, so only --vpi-lazy and member rows spell them. Read 'aux' through the accessors
     // below: the row is 40 bytes with no padding, so a field per meaning would make it 48.
     int32_t aux = -1;

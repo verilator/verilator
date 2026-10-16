@@ -175,6 +175,7 @@ static const char* const RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_inst"
 //######################################################################
 class V3VpiLazyContext final {
 public:
+    // PARTIAL variable -> its masked bits, where every instance agrees
     std::map<const AstVar*, std::vector<V3VpiLazy::CombRun>> m_combRuns;
     // One instance of a PARTIAL variable whose instances differ.
     struct InstComb final {
@@ -230,9 +231,9 @@ bool reconstructableKind(const AstVar* varp) {
 
 // One partial write's footprint; idxs order need only be consistent between parts.
 struct PartExtent final {
-    std::vector<int32_t> idxs;
-    int lsb = 0;
-    int width = 0;
+    std::vector<int32_t> idxs;  // Constant unpacked indices, last first
+    int lsb = 0;  // First bit written within the element
+    int width = 0;  // Bits written from lsb
 };
 
 // One combinational block as LazyGatherVisitor found it, before any optimisation.
@@ -257,19 +258,19 @@ struct Group final {
     std::vector<const CombBlock*> blockps;  // Its blocks, encounter order
     std::vector<AstVarScope*> targets;  // VPI candidates this group defines, encounter order
     std::vector<AstVarScope*> temps;  // Other variables it writes, encounter order
-    std::unordered_set<AstVarScope*> members;
+    std::unordered_set<AstVarScope*> members;  // targets and temps, for lookup
     std::vector<AstVarScope*> zeroInitps;  // Partial assembly: zero these shadows first
     AstVarScope* copyFromp = nullptr;  // Converted: refresh by copying this variable instead
     // targets[0]->varp(), cross-instance group identity; targets[0] itself if anchored elsewhere
     const AstNode* keyp = nullptr;
-    AstCFunc* funcp = nullptr;
+    AstCFunc* funcp = nullptr;  // Its reconstruct func, shared by every instance of keyp
     bool live = true;  // Cleared when the group is abandoned and its targets retained
     GroupVertex* vtxp = nullptr;  // Its vertex in the dependency graph, null once dead
 };
 
 class GroupVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(GroupVertex, V3GraphVertex)
-    Group* const m_groupp;
+    Group* const m_groupp;  // The group this vertex orders
 
 public:
     GroupVertex(V3Graph* graphp, Group* groupp)
@@ -278,9 +279,10 @@ public:
     Group* groupp() const { return m_groupp; }
 };
 
+// One constant-selected partial `assign` of a variable
 struct PartWrite final {
     const CombBlock* m_blockp = nullptr;  // Its CONT_ASSIGN block
-    PartExtent m_ext;
+    PartExtent m_ext;  // The bits it writes
 };
 
 // Base and footprint of a constant-selected partial write (`base[3][c +: w] = rhs;`), else null.
@@ -340,8 +342,8 @@ bool unsafeToReexecute(AstNode* nodep) {
 
 // Some bits of one instance of a variable: flat element -> {lsb, width}
 struct CombFootprint final {
-    bool whole = false;
-    std::map<int32_t, std::vector<std::pair<int, int>>> runsOf;
+    bool whole = false;  // Every bit; runsOf is then empty
+    std::map<int32_t, std::vector<std::pair<int, int>>> runsOf;  // Else the bits, per element
 };
 
 // A mask names bits of a table row's integral elements; any other kind is all or nothing.
@@ -537,18 +539,18 @@ public:
     }
 };
 
-// Rewrites a cloned block's continuous assigns as blocking ones.
 class VpiLazyPreparer final {
     using Defined = std::unordered_set<AstVarScope*>;
 
     // STATE
-    AstScope* const m_topScopep;
-    V3VpiLazyContext& m_ctx;
-    LazyGatherVisitor m_gather;
+    AstScope* const m_topScopep;  // Scope of the top module, which anchors cross-scope groups
+    V3VpiLazyContext& m_ctx;  // Classification shared with V3EmitCSyms
+    LazyGatherVisitor m_gather;  // The one netlist walk's findings
 
     int m_combBailRetained = 0;  // Group-bail / non-sole-driver / cycle retains
 
     std::vector<std::unique_ptr<Group>> m_groups;  // Formation order (deterministic)
+    // Group::keyp -> the groups sharing it, one per instance
     std::unordered_map<const AstNode*, std::vector<Group*>> m_groupsOfKey;
     // Instances keeping their storage: RETAINED if VPI candidates, else PINNED (splitKept...)
     std::unordered_set<const AstVarScope*> m_kept;
@@ -561,8 +563,8 @@ class VpiLazyPreparer final {
     int m_helperCount = 0;  // Helper targets reconstructed, per instance
     std::vector<Group*> m_copyGroups;  // Copies of a variable that holds storage
     std::vector<Group*> m_foldedCopies;  // Copies of another cone's target, sharing its shadow
-    int m_foldedCount = 0;
-    int m_copyCount = 0;
+    int m_foldedCount = 0;  // Folded copy rows, per instance, for stats
+    int m_copyCount = 0;  // Copy descriptors, per instance, for stats
     // Converted target -> the variable its row copies, for cone operand substitution.
     std::unordered_map<AstVarScope*, AstVarScope*> m_retargetSrcOf;
 
@@ -571,7 +573,7 @@ class VpiLazyPreparer final {
     std::vector<Group*> m_ordered;  // Topological order of reconstructed survivor groups
     std::vector<AstCFunc*> m_splitFuncps;  // Entry and body funcs, emission order
 
-    FileLine* m_funcFlp = nullptr;
+    FileLine* m_funcFlp = nullptr;  // Of every node emitted, the top scope's
     int m_reconstructed = 0;  // Reconstructed signals (per instance)
     int m_fallback = 0;  // Retained with storage (incl. group bails), snapshotted pre-emission
     uint32_t m_boundaryStorage = 0;  // Pinned only to feed a reconstruct function
@@ -638,8 +640,8 @@ class VpiLazyPreparer final {
     std::unordered_map<const AstNode*, KeyInfo> m_keyInfo;
     std::unordered_map<const Group*, AstCFunc*> m_instStubOf;  // instanceCallee
     std::map<std::pair<const AstNodeModule*, const Group*>, AstCFunc*> m_rowStubOf;  // rowStub
-    int m_nextGid = 0;
-    int m_nextTempIdx = 0;
+    int m_nextGid = 0;  // Next KeyInfo::gid
+    int m_nextTempIdx = 0;  // Next temp shadow's name suffix
 
     std::map<std::string, int> m_floorReason;  // Floor residual shape -> instances, for stats
     std::unordered_map<const AstVarScope*, CombFootprint> m_combFootOf;
