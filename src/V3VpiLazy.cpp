@@ -417,7 +417,6 @@ public:
     // STATE
     std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes per var
     std::vector<AstVarScope*> m_writtenOrder;  // Vars with >=1 write, encounter order
-    std::unordered_map<const AstVarScope*, int> m_readCount;  // Reads (RW counts as read)
     std::vector<CombBlock> m_combBlocks;  // Combo blocks, encounter order
     std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Its instances
     std::unordered_map<const AstVarScope*, std::vector<AstVarRef*>> m_refsOf;  // Its refs
@@ -448,7 +447,6 @@ private:
             }
         }
         if (!nodep->access().isWriteOnly()) {
-            ++m_readCount[vscp];
             if (nodep != m_selRefp && vscp->varp()->isSigVpiLazyCandidate()) {
                 CombFootprint& fp = m_readBits[vscp];
                 fp.whole = true;
@@ -692,11 +690,6 @@ private:
     int writeCountOf(const AstVarScope* vscp) const {
         const auto it = m_gather.m_writeCount.find(vscp);
         return it == m_gather.m_writeCount.end() ? 0 : it->second;
-    }
-
-    int readCountOf(const AstVarScope* vscp) const {
-        const auto it = m_gather.m_readCount.find(vscp);
-        return it == m_gather.m_readCount.end() ? 0 : it->second;
     }
 
     // Shadow member and lazy flag are per module: a shape is taken for every instance or none.
@@ -2364,10 +2357,9 @@ private:
         if (!reconstructableKind(varp)) return "dtype";
         const int writes = writeCountOf(vscp);
         if (writes == 0) return "undriven";
-        // A comb driver means V3Inline moved the readers to the source net, not that none exist.
-        if (readCountOf(vscp) == 0 && !hasCombDriver(vscp)) return "sequential";
-        if (writes > 1) return "multidriven";
-        return hasCombDriver(vscp) ? "comb (unclaimed)" : "sequential";
+        // Several writes to a flop are its NBA branches; only a comb driver can be multidriven.
+        if (!hasCombDriver(vscp)) return "sequential";
+        return writes > 1 ? "multidriven" : "comb (unclaimed)";
     }
 
     void reportStats() {
