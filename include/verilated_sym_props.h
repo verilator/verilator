@@ -303,14 +303,14 @@ class VerilatedVar final : public VerilatedVarProps {
 
 protected:
     const bool m_isParam;  // From a parameter
-    int32_t m_lazyCombMask = -1;  // VerilatedLazyState::combMasksp index, else -1
+    const int32_t m_lazyCombMask;  // VerilatedLazyState::combMasksp index, else -1
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam, uint32_t entSize,
-                 uint32_t bitOffset = 0);
+                 uint32_t bitOffset = 0, int32_t lazyCombMask = -1);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
                  std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals);
@@ -357,14 +357,16 @@ inline VerilatedVar::VerilatedVar(const char* namep, void* datap, VerilatedVarTy
     : VerilatedVarProps{vltype, vlflags, udims, pdims}
     , m_datap{datap}
     , m_namep{namep}
-    , m_isParam{isParam} {}
+    , m_isParam{isParam}
+    , m_lazyCombMask{-1} {}
 inline VerilatedVar::VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                                   VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
-                                  uint32_t entSize, uint32_t bitOffset)
+                                  uint32_t entSize, uint32_t bitOffset, int32_t lazyCombMask)
     : VerilatedVarProps{vltype, vlflags, udims, pdims, entSize, bitOffset}
     , m_datap{datap}
     , m_namep{namep}
-    , m_isParam{isParam} {}
+    , m_isParam{isParam}
+    , m_lazyCombMask{lazyCombMask} {}
 inline VerilatedVar::VerilatedVar(
     const char* namep, void* datap, VerilatedVarType vltype, VerilatedVarFlags vlflags, int udims,
     int pdims, bool isParam,
@@ -373,7 +375,8 @@ inline VerilatedVar::VerilatedVar(
     , m_datap{datap}
     , m_namep{namep}
     , m_forceControlSignals{std::move(forceControlSignals)}
-    , m_isParam{isParam} {}
+    , m_isParam{isParam}
+    , m_lazyCombMask{-1} {}
 inline VerilatedVar::~VerilatedVar() = default;
 inline VerilatedVar::VerilatedVar(VerilatedVar&&) = default;
 // Not MT safe: runs generated reconstruction code and writes the model's shadow storage

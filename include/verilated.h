@@ -175,6 +175,8 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_LAZY_COMB = (1 << 23)
 };
 
+struct VlLazyReconEntry;
+
 // --vpi-lazy descriptor.
 struct VerilatedVarLazyDatap final {
     void (*refreshp)(void* selfp);
@@ -182,6 +184,8 @@ struct VerilatedVarLazyDatap final {
     uint64_t stamp;
     uint32_t storageOffset;
     uint32_t srcOffset;  // Copy rows' source; unused for cones
+
+    void init(const VlLazyReconEntry& recon, void* instp, uint32_t offset);
 };
 
 // ILP32 lays the same members out in 24 bytes, so this is a cap, not an equality
@@ -192,6 +196,8 @@ struct VlLazyReconEntry final {
     void (*refreshp)(void* selfp);
     uint32_t srcByteOffset;  // A copy's source; with VLVF_LAZY_COMB, a cone's VlLazyCombMask index
     uint32_t vlflags;
+
+    int32_t combMaskIdx() const { return static_cast<int32_t>(srcByteOffset); }
 };
 
 // Combinationally driven bits of one flat unpacked element of a --vpi-lazy row
