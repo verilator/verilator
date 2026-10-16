@@ -452,11 +452,12 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     void visit(AstRepeat* nodep) override {
         // So later optimizations don't need to deal with them,
-        //    REPEAT(count,body) -> loop=count,WHILE(loop>0) { body, loop-- }
+        //    REPEAT(count,body) -> BEGIN(loop=count,WHILE(loop>0) { body, loop-- })
         // Note var can be signed or unsigned based on original number.
         AstNodeExpr* const countp = nodep->countp()->unlinkFrBackWithNext();
         const string name = "__Vrepeat"s + cvtToStr(m_modRepeatNum++);
-        AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, true};
+        AstBegin* const beginp = new AstBegin{nodep->fileline(), "", nullptr, true,
+                                              /*skipInHierName=*/true};
         // Spec says value is integral, if negative is ignored
         AstVar* const varp
             = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findIntDType()};
