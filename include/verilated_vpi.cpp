@@ -218,7 +218,7 @@ static VerilatedSyms* vlLazySyms(const VerilatedScope* scopep) VL_MT_UNSAFE_ONE 
     return symsp;
 }
 
-// Swaps back an undo log a read's rebuild swapped in, even if the rebuild throws
+// Swaps back an undo log a read's rebuild swapped in, on every return path
 struct VlLazyUndoRestore final {
     VerilatedSyms* const symsp;
     ~VlLazyUndoRestore() {
