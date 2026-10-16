@@ -1835,7 +1835,8 @@ private:
         for (Group* const g : m_ordered) {
             if (!g->copyFromp) continue;
             // One instance could not fold: none may. Instances fold alike, so this is untested.
-            if (VL_UNCOVERABLE(!claimPerVar(foldable, g->targets[0]->varp()))) {  // LCOV_EXCL_START
+            // LCOV_EXCL_START
+            if (VL_UNCOVERABLE(!claimPerVar(foldable, g->targets[0]->varp()))) {
                 g->copyFromp = nullptr;
                 continue;
             }  // LCOV_EXCL_STOP
@@ -2228,8 +2229,7 @@ private:
             constp->dtypep(dtypep);
             zerop = constp;
         }
-        return new AstAssign{m_funcFlp, new AstVarRef{m_funcFlp, shadowp, VAccess::WRITE},
-                             zerop};
+        return new AstAssign{m_funcFlp, new AstVarRef{m_funcFlp, shadowp, VAccess::WRITE}, zerop};
     }
 
     // The shadows carry the original signals' VPI presence.

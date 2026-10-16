@@ -3528,8 +3528,7 @@ static std::vector<VlLazyUndo>* vl_vpi_undo_logp(VerilatedSyms* symsp, void* dat
                                                  bool isStr) {
     // Mid-eval the eval itself consumes the put; before the first eval nothing is rebuilt
     VerilatedLazyState* const lazyp = symsp->lazyp();
-    if (!lazyp || !lazyp->undoOn || (lazyp->epoch & 1) || lazyp->beforeFirstEval())
-        return nullptr;
+    if (!lazyp || !lazyp->undoOn || (lazyp->epoch & 1) || lazyp->beforeFirstEval()) return nullptr;
     std::vector<VlLazyUndo>& log = lazyp->undo;
     // A repeat of the last put needs no entry; the swap order makes other repeats harmless
     if (!log.empty() && log.back().datap == datap && (isStr || log.back().old.size() == size))
@@ -3950,10 +3949,10 @@ static vpiHandle vpi_put_value(vpiHandle object, const VerilatedVpioVar* baseSig
         // On release valuep is only written
         if (forceFlag != vpiReleaseFlag) {
             if (const char* const memberp = vl_put_value_null_member(valuep)) {
-                VL_VPI_WARNING_(
-                    __FILE__, __LINE__, "%s: Ignoring nullptr value.%s with format %s for '%s'",
-                    __func__, memberp, VerilatedVpiError::strFromVpiVal(valuep->format),
-                    baseSignalVop->fullname());
+                VL_VPI_WARNING_(__FILE__, __LINE__,
+                                "%s: Ignoring nullptr value.%s with format %s for '%s'", __func__,
+                                memberp, VerilatedVpiError::strFromVpiVal(valuep->format),
+                                baseSignalVop->fullname());
                 return nullptr;
             }
         }

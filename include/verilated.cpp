@@ -4412,8 +4412,10 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, 
         const int32_t combMask = (reconFlags & VLVF_LAZY_COMB)
                                      ? lazyReconsp[descSlot].combMaskIdx()
                                      : e.lazyCombMask();
-        VerilatedVar var{e.namep,   datap,     e.vltype,           vlflags, e.udims, e.pdims,
-                         e.isParam, e.entSize, e.memberBitOffset(), combMask};
+        VerilatedVar var{e.namep,   datap,     e.vltype,
+                         vlflags,   e.udims,   e.pdims,
+                         e.isParam, e.entSize, e.memberBitOffset(),
+                         combMask};
         for (int d = 0; d < e.udims; ++d) {
             var.m_unpacked[d].m_left = e.dimsp[2 * d];
             var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
