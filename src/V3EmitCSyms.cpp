@@ -761,20 +761,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return true;
     }
 
+    // m_scopeVars holds only public and --vpi-lazy retained variables, and shadows under
+    // their own names
     bool baseSignalIsPublic(const AstScope* const scopep,
                             const std::string& baseSignalName) const {
-        const std::string baseSignalKey = getKeyName(scopep, baseSignalName);
-        const std::map<const std::string, ScopeVarData>::const_iterator baseSignalIt
-            = m_scopeVars.find(baseSignalKey);
-        if (baseSignalIt == m_scopeVars.end()) {
-            return false;
-        } else {
-            const AstVar* const baseSignalVarp = baseSignalIt->second.m_varp;
-            // Should not actually occur if the variable is in the m_scopeVars
-            if (!baseSignalVarp->isSigPublic() && !baseSignalVarp->isSigVpiLazyRetained())
-                return false;
-        }
-        return true;
+        return m_scopeVars.count(getKeyName(scopep, baseSignalName));
     }
 
     bool forceControlSignalsAreValid(const AstScope* const scopep,
