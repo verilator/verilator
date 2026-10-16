@@ -42,6 +42,7 @@
 #include "V3Width.h"
 
 #include <deque>
+#include <set>
 #include <sstream>
 #include <stack>
 #include <string>
@@ -235,6 +236,9 @@ public:
                     if (AstConst* const valp = fetchConstNull(pinp)) {
                         stack << "\n           " << portp->prettyName() << " = "
                               << prettyNumber(&valp->num(), dtypep);
+                    } else if (AstNodeExpr* const valuep = fetchValueNull(pinp)) {
+                        stack << "\n           " << portp->prettyName() << " = "
+                              << toStringRecurse(valuep);
                     }
                 }
                 if (++n > CALL_STACK_MAX) {
@@ -269,7 +273,7 @@ public:
             UINFO(9, "     new val " << valuep->name() << " on " << nodep);
         } else if (fetchValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
+            setValue(nodep, newTrackedCloneFor(const_cast<AstNodeExpr*>(valuep), nodep));
         }
     }
     void newOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
@@ -278,7 +282,7 @@ public:
             UINFO(9, "     new oval " << valuep->name() << " on " << nodep);
         } else if (fetchOutValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setOutValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
+            setOutValue(nodep, newTrackedCloneFor(const_cast<AstNodeExpr*>(valuep), nodep));
         }
     }
 
@@ -286,6 +290,14 @@ private:
     AstNodeExpr* newTrackedClone(AstNodeExpr* nodep) {
         AstNodeExpr* const newp = nodep->cloneTree(false);
         m_reclaimValuesp.push_back(newp);
+        return newp;
+    }
+    // A clone of a value given to forp, which may be an array of the other direction
+    AstNodeExpr* newTrackedCloneFor(AstNodeExpr* valuep, const AstNode* forp) {
+        AstNodeExpr* const newp = newTrackedClone(valuep);
+        if (AstInitArray* const initp = VN_CAST(newp, InitArray)) {
+            initp->retypeOrdered(forp->dtypep());
+        }
         return newp;
     }
     AstConst* newConst(AstNode* nodep) {
@@ -418,16 +430,15 @@ private:
         }
     }
 
-    string toStringRecurse(AstNodeExpr* nodep) {
-        // Return string representation, or clearOptimizable
-        const AstNodeExpr* const valuep = fetchValue(nodep);
+    string toStringRecurse(AstNodeExpr* valuep) {
+        // Return string representation of a value, or clearOptimizable
         if (const AstConst* const avaluep = VN_CAST(valuep, Const)) {
-            return "'h"s + avaluep->num().displayed(nodep, "%0x");
+            return "'h"s + avaluep->num().displayed(valuep, "%0x");
         }
         if (const AstInitArray* const avaluep = VN_CAST(valuep, InitArray)) {
             string result = "'{";
             string comma;
-            if (VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
+            if (VN_IS(valuep->dtypep()->skipRefp(), AssocArrayDType)) {
                 if (avaluep->defaultp()) {
                     result += comma + "default:" + toStringRecurse(avaluep->defaultp());
                     comma = ", ";
@@ -439,7 +450,7 @@ private:
                     comma = ", ";
                 }
             } else if (const AstUnpackArrayDType* const dtypep
-                       = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+                       = VN_CAST(valuep->dtypep()->skipRefp(), UnpackArrayDType)) {
                 for (int n = 0; n < dtypep->elementsConst(); ++n) {
                     result += comma + toStringRecurse(avaluep->getIndexDefaultedValuep(n));
                     comma = ", ";
@@ -448,19 +459,63 @@ private:
             result += "}";
             return result;
         }
-        clearOptimizable(nodep, "Cannot convert to string");  // LCOV_EXCL_LINE
+        if (const AstConsPackUOrStruct* const avaluep = VN_CAST(valuep, ConsPackUOrStruct)) {
+            string result = "'{";
+            string comma;
+            for (const AstConsPackMember* memberp = avaluep->membersp(); memberp;
+                 memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
+                result
+                    += comma + memberp->dtypep()->name() + ":" + toStringRecurse(memberp->rhsp());
+                comma = ", ";
+            }
+            result += "}";
+            return result;
+        }
+        clearOptimizable(valuep, "Cannot convert to string");  // LCOV_EXCL_LINE
         return "";
     }
 
-    void initVar(AstVar* nodep) {
-        if (const AstBasicDType* const basicp = nodep->dtypeSkipRefp()->basicp()) {
-            AstConst cnst{nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
-            if (basicp->isZeroInit()) {
-                cnst.num() = V3Number{nodep, basicp};
-            } else {
-                cnst.num().setAllBitsX();
+    // Return a new value of the initial value of a variable of the given type, or nullptr if
+    // the type isn't supported
+    AstNodeExpr* newInitValuep(AstNode* nodep, AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        if (AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+            AstNodeExpr* const elementp = newInitValuep(nodep, arrayp->subDTypep());
+            return elementp ? new AstInitArray{nodep->fileline(), arrayp, elementp} : nullptr;
+        }
+        AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType);
+        if (structp && !structp->packed()) {
+            // Members of an unpacked union share storage, which member values do not model
+            if (VN_IS(structp, UnionDType)) return nullptr;
+            AstConsPackUOrStruct* const newp
+                = new AstConsPackUOrStruct{nodep->fileline(), structp};
+            for (AstMemberDType* memberp = structp->membersp(); memberp;
+                 memberp = VN_AS(memberp->nextp(), MemberDType)) {
+                AstNodeExpr* const memberValuep = newInitValuep(nodep, memberp->subDTypep());
+                if (!memberValuep) {
+                    VL_DO_DANGLING(newp->deleteTree(), newp);
+                    return nullptr;
+                }
+                newp->addMembersp(new AstConsPackMember{nodep->fileline(), memberp, memberValuep});
             }
-            newValue(nodep, &cnst);
+            return newp;
+        }
+        if (const AstBasicDType* const basicp = dtypep->basicp()) {
+            AstConst* const constp
+                = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
+            if (basicp->isZeroInit()) {
+                constp->num() = V3Number{nodep, basicp};
+            } else {
+                constp->num().setAllBitsX();
+            }
+            return constp;
+        }
+        return nullptr;
+    }
+    void initVar(AstVar* nodep) {
+        if (AstNodeExpr* const valuep = newInitValuep(nodep, nodep->dtypep())) {
+            newValue(nodep, valuep);
+            VL_DO_DANGLING(valuep->deleteTree(), valuep);
         }
     }
 
@@ -609,11 +664,42 @@ private:
         if (m_checkOnly || !optimizable()) return;
         newValue(nodep, nodep);
     }
+    // An aggregate value is a tree of only AstConst, AstInitArray and AstConsPackUOrStruct
+    // nodes, so the value of an element or member is its subtree
     void visit(AstInitArray* nodep) override {
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (m_checkOnly || !optimizable()) return;
-        newValue(nodep, nodep);
+        AstInitArray* const valuep = new AstInitArray{
+            nodep->fileline(), nodep->dtypep(),
+            nodep->defaultp() ? fetchValue(nodep->defaultp())->cloneTree(false) : nullptr};
+        for (const auto& itr : nodep->map()) {
+            valuep->addIndexValuep(itr.first, fetchValue(itr.second->valuep())->cloneTree(false));
+        }
+        m_reclaimValuesp.push_back(valuep);
+        setValue(nodep, valuep);
+    }
+    void visit(AstConsPackUOrStruct* nodep) override {
+        if (!m_params) {
+            badNodeType(nodep);
+            return;
+        }
+        checkNodeInfo(nodep);
+        for (AstConsPackMember* memberp = nodep->membersp(); memberp;
+             memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
+            iterateConst(memberp->rhsp());
+        }
+        if (m_checkOnly || !optimizable()) return;
+        AstConsPackUOrStruct* const valuep = new AstConsPackUOrStruct{
+            nodep->fileline(), VN_AS(nodep->dtypep()->skipRefp(), NodeUOrStructDType)};
+        for (AstConsPackMember* memberp = nodep->membersp(); memberp;
+             memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
+            valuep->addMembersp(
+                new AstConsPackMember{memberp->fileline(), VN_AS(memberp->dtypep(), MemberDType),
+                                      fetchValue(memberp->rhsp())->cloneTree(false)});
+        }
+        m_reclaimValuesp.push_back(valuep);
+        setValue(nodep, valuep);
     }
     void visit(AstInitItem* nodep) override {
         checkNodeInfo(nodep);
@@ -639,11 +725,68 @@ private:
         if (m_checkOnly || !optimizable()) return;
         nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num());
     }
+    // Set resultr to whether the aggregate values are equal, like a logical and of comparing
+    // each element or member. V3Width allows comparing only values of matching types, so the
+    // values have the same shape, and an array value is of an unpacked array, as associative
+    // and dynamic arrays and queues are not values here.
+    void aggregateEqRecurse(V3Number& resultr, AstNode* nodep, bool caseEq, AstNodeExpr* lhsp,
+                            AstNodeExpr* rhsp) {
+        if (const AstConst* const lconstp = VN_CAST(lhsp, Const)) {
+            const V3Number& lnum = lconstp->num();
+            const V3Number& rnum = VN_AS(rhsp, Const)->num();
+            V3Number eq{nodep, 1};
+            if (lnum.isDouble()) {
+                eq.opEqD(lnum, rnum);
+            } else if (lnum.isString()) {
+                eq.opEqN(lnum, rnum);
+            } else if (caseEq) {
+                eq.opCaseEq(lnum, rnum);
+            } else {
+                eq.opEq(lnum, rnum);
+            }
+            const V3Number prev = resultr;
+            resultr.opLogAnd(prev, eq);
+        } else if (const AstInitArray* const linitp = VN_CAST(lhsp, InitArray)) {
+            const AstUnpackArrayDType* const dtypep
+                = VN_AS(lhsp->dtypep()->skipRefp(), UnpackArrayDType);
+            for (int n = 0; n < dtypep->elementsConst(); ++n) {
+                aggregateEqRecurse(resultr, nodep, caseEq, linitp->getIndexDefaultedValuep(n),
+                                   VN_AS(rhsp, InitArray)->getIndexDefaultedValuep(n));
+            }
+        } else {
+            const AstConsPackMember* rmemberp = VN_AS(rhsp, ConsPackUOrStruct)->membersp();
+            for (const AstConsPackMember* lmemberp = VN_AS(lhsp, ConsPackUOrStruct)->membersp();
+                 lmemberp; lmemberp = VN_AS(lmemberp->nextp(), ConsPackMember),
+                                          rmemberp = VN_AS(rmemberp->nextp(), ConsPackMember)) {
+                aggregateEqRecurse(resultr, nodep, caseEq, lmemberp->rhsp(), rmemberp->rhsp());
+            }
+        }
+    }
+    void handleAggregateCompare(AstNodeBiop* nodep) {
+        // V3Width allows only equality operators on aggregates (IEEE 1800-2023 11.3)
+        const bool caseEq = VN_IS(nodep, EqCase) || VN_IS(nodep, NeqCase);
+        const bool neq = VN_IS(nodep, Neq) || VN_IS(nodep, NeqCase);
+        UASSERT_OBJ(caseEq || neq || VN_IS(nodep, Eq), nodep, "Unexpected operator on aggregate");
+        V3Number& resultr = newConst(nodep)->num();
+        resultr.setAllBits1();
+        aggregateEqRecurse(resultr, nodep, caseEq, fetchValue(nodep->lhsp()),
+                           fetchValue(nodep->rhsp()));
+        if (neq) {
+            const V3Number eq = resultr;
+            resultr.opLogNot(eq);
+        }
+    }
     void visit(AstNodeBiop* nodep) override {
         if (!optimizable()) return;  // Accelerate
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (m_checkOnly || !optimizable()) return;
+        // A value that is not a constant is an aggregate, and V3Width allows only
+        // equality operators on aggregates (IEEE 1800-2023 11.3)
+        if (!VN_IS(fetchValue(nodep->lhsp()), Const)) {
+            handleAggregateCompare(nodep);
+            return;
+        }
         AstConst* const valuep = newConst(nodep);
         nodep->numberOperate(newConst(nodep)->num(), fetchConst(nodep->lhsp())->num(),
                              fetchConst(nodep->rhsp())->num());
@@ -750,52 +893,72 @@ private:
         }
     }
 
-    void handleAssignArray(AstNodeAssign* nodep, AstArraySel* selp, AstNodeExpr* valueFromp) {
-        // At present we only handle single dimensional assignments
-        // To do better, we need the concept of lvalues, or similar, to know where/how to insert
-        checkNodeInfo(selp);
-        iterateAndNextConstNull(selp->bitp());  // Bit index
-        AstVarRef* const varrefp = VN_CAST(selp->fromp(), VarRef);
-        if (!varrefp) {
-            clearOptimizable(selp->fromp(), "Array select LHS isn't simple variable");
-            return;
+    static AstConsPackMember* structMemberp(AstConsPackUOrStruct* valuep, const string& name) {
+        for (AstConsPackMember* memberp = valuep->membersp();;
+             memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
+            UASSERT_OBJ(memberp, valuep, "Structure value without member '" << name << "'");
+            if (memberp->dtypep()->name() == name) return memberp;
         }
-        AstUnpackArrayDType* const arrayp
-            = VN_AS(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType);
-        UASSERT_OBJ(arrayp, nodep, "Array select of non-array dtype");
-        AstBasicDType* const basicp = VN_CAST(arrayp->subDTypep()->skipRefp(), BasicDType);
-        if (!basicp) {
-            clearOptimizable(nodep, "Array of non-basic dtype (e.g. array-of-array)");
+    }
+    void handleAssignElement(AstNodeAssign* nodep, AstNodeExpr* lhsp, AstNodeExpr* valueFromp) {
+        // Assign an element or member, maybe nested, of a variable, by editing the variable's
+        // value. Selects, from the element inwards:
+        std::vector<AstNodeExpr*> selps;
+        AstNodeExpr* fromp = lhsp;
+        while (true) {
+            if (AstArraySel* const selp = VN_CAST(fromp, ArraySel)) {
+                checkNodeInfo(selp);
+                iterateAndNextConstNull(selp->bitp());  // Bit index
+                selps.push_back(selp);
+                fromp = selp->fromp();
+            } else if (AstStructSel* const selp = VN_CAST(fromp, StructSel)) {
+                checkNodeInfo(selp);
+                selps.push_back(selp);
+                fromp = selp->fromp();
+            } else {
+                break;
+            }
+        }
+        AstVarRef* const varrefp = VN_CAST(fromp, VarRef);
+        if (!varrefp) {
+            clearOptimizable(fromp, "Array select LHS isn't simple variable");
             return;
         }
         if (m_checkOnly || !optimizable()) return;
         AstNode* const vscp = varOrScope(varrefp);
-        AstInitArray* initp = nullptr;
-        if (AstInitArray* const vscpnump = VN_CAST(fetchOutValueNull(vscp), InitArray)) {
-            initp = vscpnump;
-        } else if (AstInitArray* const vscpnump = VN_CAST(fetchValueNull(vscp), InitArray)) {
-            initp = vscpnump;
-        } else {  // Assignment to unassigned variable, all bits are X
-            // TODO generic initialization which builds X/arrays by recursion
-            AstConst* const outconstp
-                = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
-            if (basicp->isZeroInit()) {
-                outconstp->num().setAllBits0();
-            } else {
-                outconstp->num().setAllBitsX();
-            }
-
-            initp = new AstInitArray{nodep->fileline(), arrayp, outconstp};
-            m_reclaimValuesp.push_back(initp);
+        AstNodeExpr* rootp = fetchOutValueNull(vscp);
+        if (!rootp) rootp = fetchValueNull(vscp);
+        if (!rootp) {  // As initVar couldn't make an initial value of its type
+            clearOptimizable(varrefp, "Assigned variable has unsupported data type");
+            return;
         }
-        const uint32_t index = fetchConst(selp->bitp())->toUInt();
-        AstNodeExpr* const valuep = newTrackedClone(fetchValue(valueFromp));
-        UINFO(9, "     set val[" << index << "] = " << valuep);
-        // Values are in the "real" tree under the InitArray so can eventually extract it,
-        // Not in the usual setValue (via m_varAux)
-        initp->addIndexValuep(index, valuep);
-        UINFOTREE(9, initp, "", "array");
-        assignOutValue(nodep, vscp, initp);
+        // Find the value of the selected element, making a defaulted array element explicit
+        AstNodeExpr* itemp = rootp;
+        for (AstNodeExpr* const selp : vlstd::reverse_view(selps)) {
+            if (const AstArraySel* const aselp = VN_CAST(selp, ArraySel)) {
+                AstInitArray* const initp = VN_AS(itemp, InitArray);
+                const uint32_t index = fetchConst(aselp->bitp())->toUInt();
+                const int elements
+                    = VN_AS(initp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
+                if (index >= static_cast<uint32_t>(elements)) {
+                    return;  // Ignore a write out of bounds (IEEE 1800-2023 7.4.6)
+                }
+                itemp = initp->getIndexValuep(index);
+                if (!itemp) {  // Only a value with a default may omit elements
+                    itemp = initp->defaultp()->cloneTree(false);
+                    initp->addIndexValuep(index, itemp);
+                }
+            } else {
+                itemp = structMemberp(VN_AS(itemp, ConsPackUOrStruct), selp->name())->rhsp();
+            }
+        }
+        // Clone first, as the value assigned may be the old value of the element
+        AstNodeExpr* const valuep = newTrackedCloneFor(fetchValue(valueFromp), lhsp);
+        UINFO(9, "     set " << lhsp << " = " << valuep);
+        itemp->replaceWith(valuep);
+        m_reclaimValuesp.push_back(itemp);
+        UINFOTREE(9, rootp, "", "aggregate");
+        assignOutValue(nodep, vscp, rootp);
     }
     void handleAssignSel(AstNodeAssign* nodep, AstSel* selp, AstNodeExpr* valueFromp) {
         AstVarRef* varrefp = nullptr;
@@ -847,12 +1010,12 @@ private:
     }
     void handleAssignRecurse(AstNodeAssign* nodep, AstNodeExpr* lhsp, AstNodeExpr* valueFromp) {
         if (!optimizable()) return;
-        if (AstArraySel* const selp = VN_CAST(lhsp, ArraySel)) {
+        if (VN_IS(lhsp, ArraySel) || VN_IS(lhsp, StructSel)) {
             if (!m_params) {
                 clearOptimizable(lhsp, "Assign LHS has select");
                 return;
             }
-            handleAssignArray(nodep, selp, valueFromp);
+            handleAssignElement(nodep, lhsp, valueFromp);
         } else if (AstConcat* const selp = VN_CAST(lhsp, Concat)) {
             checkNodeInfo(selp);
             if (!VN_IS(selp->rhsp()->dtypep()->skipRefp(), BasicDType)) {
@@ -947,14 +1110,24 @@ private:
             if (!itemp) {
                 clearOptimizable(nodep, "Array initialization has too few elements, need element "
                                             + cvtToStr(offset));
-            } else if (AstConst* const constp = VN_CAST(itemp, Const)) {
-                setValue(nodep, constp);
             } else {
-                setValue(nodep, fetchValue(itemp));
+                setValue(nodep, itemp);
             }
         } else {
             clearOptimizable(nodep, "Array select of non-array");
         }
+    }
+    void visit(AstStructSel* nodep) override {
+        if (!m_params) {
+            badNodeType(nodep);
+            return;
+        }
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+        if (m_checkOnly || !optimizable()) return;
+        setValue(nodep,
+                 structMemberp(VN_AS(fetchValue(nodep->fromp()), ConsPackUOrStruct), nodep->name())
+                     ->rhsp());
     }
 
     // Evaluate a slice of an unpacked array.  If the base value is a constant
@@ -1354,7 +1527,7 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (m_checkOnly || !optimizable()) return;
-        const std::string result = toStringRecurse(nodep->lhsp());
+        const std::string result = toStringRecurse(fetchValue(nodep->lhsp()));
         if (!optimizable()) return;
         AstConst* const resultConstp = new AstConst{nodep->fileline(), AstConst::String{}, result};
         setValue(nodep, resultConstp);
@@ -1432,10 +1605,10 @@ public:
     }
     ~SimulateVisitor() override {
         m_constps.clear();
-        std::vector<AstNode*> unusedRootps;
-        unusedRootps.reserve(m_reclaimValuesp.size());
+        // A value replaced in an aggregate may be listed twice
+        std::set<AstNode*> unusedRootps;
         for (AstNode* const nodep : m_reclaimValuesp) {
-            if (!nodep->backp()) unusedRootps.emplace_back(nodep);
+            if (!nodep->backp()) unusedRootps.emplace(nodep);
         }
         m_reclaimValuesp.clear();
         for (AstNode* const nodep : unusedRootps) VL_DO_DANGLING(nodep->deleteTree(), nodep);
