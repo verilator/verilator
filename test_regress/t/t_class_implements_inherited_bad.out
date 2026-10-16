@@ -1,0 +1,32 @@
+%Error: t/t_class_implements_inherited_bad.v:18:1: Class 'from_abstract_cls' extends 'abstract_cls' but is missing implementation for 'get_a' (IEEE 1800-2023 8.26)
+   18 | class from_abstract_cls extends abstract_cls implements top_if;
+      | ^~~~~
+        t/t_class_implements_inherited_bad.v:15:29: ... Location of interface class's function
+   15 |   pure virtual function int get_a();
+      |                             ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_class_implements_inherited_bad.v:18:1: Class 'from_abstract_cls' implements 'top_if' but is missing implementation for 'get_a' (IEEE 1800-2023 8.26)
+   18 | class from_abstract_cls extends abstract_cls implements top_if;
+      | ^~~~~
+        t/t_class_implements_inherited_bad.v:10:29: ... Location of interface class's function
+   10 |   pure virtual function int get_a();
+      |                             ^~~~~
+%Error: t/t_class_implements_inherited_bad.v:18:1: Class 'from_abstract_cls' implements 'top_if' but missing inheritance conflict resolution for 'get_a' (IEEE 1800-2023 8.26.6.2)
+   18 | class from_abstract_cls extends abstract_cls implements top_if;
+      | ^~~~~
+        t/t_class_implements_inherited_bad.v:10:29: ... Location of interface class's function
+   10 |   pure virtual function int get_a();
+      |                             ^~~~~
+%Error: t/t_class_implements_inherited_bad.v:28:1: Class 'from_static_cls' implements 'top_if' but is missing implementation for 'get_a' (IEEE 1800-2023 8.26)
+   28 | class from_static_cls extends static_cls implements top_if;
+      | ^~~~~
+        t/t_class_implements_inherited_bad.v:10:29: ... Location of interface class's function
+   10 |   pure virtual function int get_a();
+      |                             ^~~~~
+%Error: t/t_class_implements_inherited_bad.v:38:1: Class 'from_nonvirtual_cls' implements 'top_if' but is missing implementation for 'get_a' (IEEE 1800-2023 8.26)
+   38 | class from_nonvirtual_cls extends nonvirtual_cls implements top_if;
+      | ^~~~~
+        t/t_class_implements_inherited_bad.v:10:29: ... Location of interface class's function
+   10 |   pure virtual function int get_a();
+      |                             ^~~~~
+%Error: Exiting due to
