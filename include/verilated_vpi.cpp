@@ -90,9 +90,9 @@ static const VerilatedVar* _vl_vpi_storage_varp(const VerilatedVar* varp,
         const char* lastp = nullptr;
         for (const char* posp = namep; (posp = _vl_vpi_find_unescaped_dot(posp)); ++posp)
             lastp = posp;
-        if (VL_UNLIKELY(!lastp)) break;  // LCOV_EXCL_LINE
+        if (VL_UNCOVERABLE(!lastp)) break;  // LCOV_EXCL_LINE
         const VerilatedVar* const parentp = scopep->varFind(std::string{namep, lastp}.c_str());
-        if (VL_UNLIKELY(!parentp)) break;  // LCOV_EXCL_LINE
+        if (VL_UNCOVERABLE(!parentp)) break;  // LCOV_EXCL_LINE
         varp = parentp;
     }
     return varp;
