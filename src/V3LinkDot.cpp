@@ -3575,6 +3575,20 @@ class LinkDotResolveVisitor final : public VNVisitor {
                           << " search start due to inlinedDots=" << inlinedDots);
         return dotSymp;
     }
+    string resolvedScopePath(const VSymEnt* symp) const {
+        // Use the resolved symbol's ancestry, independent of the reference's spelling.
+        // Descendants are module-relative; upward references retain their rooted path.
+        std::vector<string> scopes;
+        for (; symp && symp != m_modSymp && symp->parentp(); symp = symp->parentp()) {
+            scopes.emplace_back(AstNode::dedotName(symp->nodep()->name()));
+        }
+        string path;
+        for (auto it = scopes.crbegin(); it != scopes.crend(); ++it) {
+            if (!path.empty()) path += '.';
+            path += *it;
+        }
+        return path;
+    }
     VSymEnt* findDottedRefSymp(AstNode* nodep, VSymEnt* lookupSymp, const string& dotted,
                                string& baddot, VSymEnt*& okSymp, bool* modportp = nullptr) {
         // Return scope to search for a relinked hierarchical reference
@@ -3589,6 +3603,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 << (!baddot.empty() ? AstNode::prettyNameQ(baddot) : nodep->prettyNameQ()) << '\n'
                 << nodep->warnContextPrimary());
             return nullptr;
+        }
+        if (AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
+            xrefp->resolvedDotted(resolvedScopePath(dotSymp));
         }
         if (const AstVar* const varp = VN_CAST(dotSymp->nodep(), Var)) {
             if (const AstIfaceRefDType* const ifaceRefp
@@ -4731,6 +4748,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                             }
                         } else {
                             newp = refp;
+                            if (m_statep->forParamed()) visit(refp);
                         }
                     } else {
                         if (staticAccess && !varp->lifetime().isStatic() && !varp->isParam()) {
