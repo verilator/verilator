@@ -504,6 +504,15 @@ bool AstNode::isDisableQueuePushSelfStmt() {
     return false;
 }
 
+// Whether an array of fromp has a level of the other direction than in an array of top
+static bool initArrayReorders(const AstNodeDType* fromp, const AstNodeDType* top) {
+    const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromp->skipRefp(), UnpackArrayDType);
+    const AstUnpackArrayDType* const toArrayp = VN_CAST(top->skipRefp(), UnpackArrayDType);
+    if (!fromArrayp || !toArrayp) return false;
+    return fromArrayp->declRange().ascending() != toArrayp->declRange().ascending()
+           || initArrayReorders(fromArrayp->subDTypep(), toArrayp->subDTypep());
+}
+
 //======================================================================
 // Ast* methods (except AstNode:: tree methods which generally go in V3Ast.cpp)
 // dist-ast-style-sort
@@ -1880,23 +1889,24 @@ AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
     return it->second->valuep();
 }
 void AstInitArray::retypeOrdered(AstNodeDType* dtypep) {
-    const AstUnpackArrayDType* const fromp = VN_CAST(this->dtypep()->skipRefp(), UnpackArrayDType);
-    const AstUnpackArrayDType* const top = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
+    const AstNodeDType* const fromp = this->dtypep();
     this->dtypep(dtypep);
-    if (!fromp || !top) return;
-    if (fromp->declRange().ascending() != top->declRange().ascending()) {
-        const uint64_t lastIndex = fromp->elementsConst() - 1;
+    if (!initArrayReorders(fromp, dtypep)) return;
+    const AstUnpackArrayDType* const fromArrayp = VN_AS(fromp->skipRefp(), UnpackArrayDType);
+    const AstUnpackArrayDType* const toArrayp = VN_AS(dtypep->skipRefp(), UnpackArrayDType);
+    if (fromArrayp->declRange().ascending() != toArrayp->declRange().ascending()) {
+        const uint64_t lastIndex = fromArrayp->elementsConst() - 1;
         KeyItemMap map;
         for (const auto& itr : m_map) map.emplace(lastIndex - itr.first, itr.second);
         m_map.swap(map);
     }
     for (const auto& itr : m_map) {
         if (AstInitArray* const subp = VN_CAST(itr.second->valuep(), InitArray)) {
-            subp->retypeOrdered(top->subDTypep());
+            subp->retypeOrdered(toArrayp->subDTypep());
         }
     }
     if (AstInitArray* const subp = VN_CAST(defaultp(), InitArray)) {
-        subp->retypeOrdered(top->subDTypep());
+        subp->retypeOrdered(toArrayp->subDTypep());
     }
 }
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,

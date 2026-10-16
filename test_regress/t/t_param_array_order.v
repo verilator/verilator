@@ -60,17 +60,36 @@ module t;
   localparam le_t FRETURN = f_return();
   localparam int FARG = f_arg(BE);
   // Arrays of arrays, and a default
+  typedef int be3_t[0:2];
   typedef int be2_t[0:1][0:2];
   typedef int le2_t[1:0][2:0];
   localparam be2_t BE2 = '{'{1, 2, 3}, '{4, 5, 6}};
   localparam le2_t LE2 = BE2;
-  localparam be2_t BE2_DEFAULT = '{default: '{1, 2, 3}};
+  localparam be2_t BE2_DEFAULT = '{default: be3_t'{1, 2, 3}};
   localparam le2_t LE2_DEFAULT = BE2_DEFAULT;
   function automatic le2_t f_row();
     f_row[1] = BE2[0];
     f_row[0] = '{7, 8, 9};
   endfunction
   localparam le2_t ROW = f_row();
+  function automatic le2_t f_default();
+    be2_t x;
+    x[0][1] = 5;
+    return x;
+  endfunction
+  localparam le2_t FDEFAULT = f_default();
+  // Only the outer, or only the inner level of the other direction
+  typedef int outer_t[1:0][0:2];
+  typedef int inner_t[0:1][2:0];
+  localparam outer_t OUTER = BE2;
+  localparam inner_t INNER = BE2;
+  // An array of structures containing an array
+  typedef struct {
+    int a[0:1];
+    int b;
+  } s_t;
+  localparam s_t BES[0:1] = '{'{a: '{1, 2}, b: 3}, '{a: '{4, 5}, b: 6}};
+  localparam s_t LES[1:0] = BES;
   localparam be_t BE_DEFAULT = '{1: 7, default: 9};
   localparam le_t LE_DEFAULT = BE_DEFAULT;
 
@@ -91,6 +110,15 @@ module t;
     `checkd(LE2_DEFAULT[1][0], 3);
     `checkd(ROW[1][2], 1);
     `checkd(ROW[0][2], 7);
+    `checkd(FDEFAULT[1][1], 5);
+    `checkd(FDEFAULT[1][2], 0);
+    `checkd(OUTER[1][0], 1);
+    `checkd(OUTER[0][2], 6);
+    `checkd(INNER[0][2], 1);
+    `checkd(INNER[1][0], 6);
+    `checkd(LES[1].a[0], 1);
+    `checkd(LES[1].b, 3);
+    `checkd(LES[0].a[1], 5);
     `checkd(LE_DEFAULT[2], 7);
     `checkd(LE_DEFAULT[1], 9);
     $write("*-* All Finished *-*\n");

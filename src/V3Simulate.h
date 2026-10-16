@@ -273,7 +273,7 @@ public:
             UINFO(9, "     new val " << valuep->name() << " on " << nodep);
         } else if (fetchValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep), nodep));
+            setValue(nodep, newTrackedCloneFor(const_cast<AstNodeExpr*>(valuep), nodep));
         }
     }
     void newOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
@@ -282,7 +282,7 @@ public:
             UINFO(9, "     new oval " << valuep->name() << " on " << nodep);
         } else if (fetchOutValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setOutValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep), nodep));
+            setOutValue(nodep, newTrackedCloneFor(const_cast<AstNodeExpr*>(valuep), nodep));
         }
     }
 
@@ -293,7 +293,7 @@ private:
         return newp;
     }
     // A clone of a value given to forp, which may be an array of the other direction
-    AstNodeExpr* newTrackedClone(AstNodeExpr* valuep, const AstNode* forp) {
+    AstNodeExpr* newTrackedCloneFor(AstNodeExpr* valuep, const AstNode* forp) {
         AstNodeExpr* const newp = newTrackedClone(valuep);
         if (AstInitArray* const initp = VN_CAST(newp, InitArray)) {
             initp->retypeOrdered(forp->dtypep());
@@ -953,7 +953,7 @@ private:
             }
         }
         // Clone first, as the value assigned may be the old value of the element
-        AstNodeExpr* const valuep = newTrackedClone(fetchValue(valueFromp), lhsp);
+        AstNodeExpr* const valuep = newTrackedCloneFor(fetchValue(valueFromp), lhsp);
         UINFO(9, "     set " << lhsp << " = " << valuep);
         itemp->replaceWith(valuep);
         m_reclaimValuesp.push_back(itemp);
