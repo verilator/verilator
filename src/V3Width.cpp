@@ -3166,7 +3166,7 @@ class WidthVisitor final : public VNVisitor {
                                               nodep->fromp()->unlinkFrBack()},
                                 new AstConst{fl, AstConst::Signed32{}, 1}},
                 new AstConst{fl, AstConst::Signed32{}, 0}};
-        } else if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
+        } else if (castable.isSameish() || castable == VCastable::COMPATIBLE) {
             nodep->v3warn(CASTCONST, "$cast will always return one as "
                                          << toDtp->prettyDTypeNameQ()
                                          << " is always castable from "
@@ -3244,7 +3244,7 @@ class WidthVisitor final : public VNVisitor {
                                                  << toDtp->prettyDTypeNameQ() << " from "
                                                  << fromDtp->prettyDTypeNameQ());
                 bad = true;
-            } else if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE
+            } else if (castable.isSameish() || castable == VCastable::COMPATIBLE
                        || castable == VCastable::ENUM_IMPLICIT
                        || castable == VCastable::ENUM_EXPLICIT) {
                 ;  // Continue
@@ -6774,7 +6774,9 @@ class WidthVisitor final : public VNVisitor {
                     condp->v3error("Case(type) statement requires items that have type() items");
                 } else {
                     AstNodeDType* const condDtp = condAttrp->dtypep();
-                    if (AstNode::computeCastable(exprDtp, condDtp, casep) == VCastable::SAMEISH) {
+                    if (exprDtp && condDtp
+                        && AstNode::computeCastable(exprDtp, condDtp, casep)
+                               == VCastable::MATCHING) {
                         hit = true;
                         break;
                     }
@@ -8165,7 +8167,7 @@ class WidthVisitor final : public VNVisitor {
                                                             /* checkIfaceArgCompat */ true)
                                  : VCastable{VCastable::UNSUPPORTED};
                 const bool matchingRefDTypes = portIfacep
-                                                   ? ifaceCastable == VCastable::SAMEISH
+                                                   ? ifaceCastable.isSameish()
                                                    : similarDTypeRecurse(portDTypep, pinDTypep);
                 const bool pinIsNull = VN_IS(pinp, Const) && VN_AS(pinp, Const)->num().isNull();
                 if ((portp->isRef() || portp->isConstRef()) && !matchingRefDTypes) {
@@ -8751,6 +8753,7 @@ class WidthVisitor final : public VNVisitor {
         lhs = lhs->skipRefToEnump();
         rhs = rhs->skipRefToEnump();
         if (lhs == rhs) return true;
+        if (lhs->matchingDType(rhs)) return true;
         // If both are basic types, check if they are the same type
         if (VN_IS(lhs, BasicDType) && VN_IS(rhs, BasicDType)) {
             const auto* lb = VN_CAST(lhs, BasicDType);
@@ -8994,10 +8997,11 @@ class WidthVisitor final : public VNVisitor {
             const AstNodeDType* const lhsDtp = lhsap->dtypep();
             const AstNodeDType* const rhsDtp = rhsap->dtypep();
             UINFO(9, "==type lhsDtp " << lhsDtp);
-            UINFO(9, "==type rhsDtp " << lhsDtp);
+            UINFO(9, "==type rhsDtp " << rhsDtp);
             const bool invert = VN_IS(nodep, NeqT);
             const bool identical
-                = AstNode::computeCastable(lhsDtp, rhsDtp, nodep) == VCastable::SAMEISH;
+                = lhsDtp && rhsDtp
+                  && AstNode::computeCastable(lhsDtp, rhsDtp, nodep) == VCastable::MATCHING;
             UINFO(9, "== " << identical);
             const bool eq = invert ^ identical;
             AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitTrue{}, eq};
@@ -9972,7 +9976,7 @@ class WidthVisitor final : public VNVisitor {
             = VN_CAST(targetDTypep->skipRefToEnump(), EnumDType)) {
             const VCastable castable
                 = AstNode::computeCastable(targetEnump, sourceDTypep, sourceExprp);
-            if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
+            if (!castable.isSameish() && castable != VCastable::COMPATIBLE
                 && castable != VCastable::ENUM_IMPLICIT) {
                 nodep->v3warn(ENUMVALUE, "Implicit conversion to enum "
                                              << targetDTypep->prettyDTypeNameQ() << " from "
