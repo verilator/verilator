@@ -1608,8 +1608,9 @@ private:
             merged.members.insert(ugp->members.begin(), ugp->members.end());
             members += ugp->members.size();
         }
-        // A var two of them write has no one order the model is known to share
-        if (merged.members.size() != members) return false;
+        // A var two groups write bails MULTIDRIVEN before either is formed
+        UASSERT_OBJ(merged.members.size() == members, g->keyp,
+                    "--vpi-lazy cycle groups share a member");
         // Every CombBlock is an element of one vector, so address order is encounter order
         std::sort(merged.blockps.begin(), merged.blockps.end());
         Bail why = Bail::COMB_CYCLE;
