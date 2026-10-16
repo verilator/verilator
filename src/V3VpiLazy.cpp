@@ -1458,10 +1458,8 @@ private:
         // VISITORS
         void visit(AstNodeAssign* nodep) override {
             if (!m_ok) return;  // The first failure decides; the rest is not worth walking
-            if (m_inExpr) {
-                iterateChildrenConst(nodep);
-                return;
-            }
+            UASSERT_OBJ(!m_inExpr, nodep,
+                        "--vpi-lazy: V3LiftExpr leaves no assignment in an expression");
             // V3Active rewrote '<=' and V3Force lowered AssignForce; only blocking/cont remain.
             UASSERT_OBJ(VN_IS(nodep, Assign) || VN_IS(nodep, AssignW), nodep,
                         "--vpi-lazy: unexpected assignment kind in a combinational block");
