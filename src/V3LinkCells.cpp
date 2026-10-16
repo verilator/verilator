@@ -571,7 +571,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // and means we cannot compute module levels until later.
         UINFO(4, "Link Bind: " << nodep);
         AstNodeModule* const modp = resolveModule(nodep, nodep->name(), m_modp->libname());
-        if (modp) {
+        if (modp && !modp->verilatorLib()) {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells
             VL_RESTORER(m_modp);

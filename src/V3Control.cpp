@@ -283,11 +283,16 @@ public:
             AstNode* const nodep = new AstPragma{modp->fileline(), type};
             modp->addStmtsp(nodep);
         }
-        for (const auto& itr : m_modPragmas) {
-            // Catch hier param modules to mark their attributes before they are
-            // flagged dead in LinkDot.
-            if (itr == VPragmaType::HIER_PARAMS) modp->hierParams(true);
-            AstNode* const nodep = new AstPragma{modp->fileline(), itr};
+        for (const VPragmaType pragma : m_modPragmas) {
+            if (pragma == VPragmaType::HIER_PARAMS) {
+                modp->hierParams(true);
+                continue;
+            }
+            if (pragma == VPragmaType::VERILATOR_LIB) {
+                modp->verilatorLib(true);
+                continue;
+            }
+            AstNode* const nodep = new AstPragma{modp->fileline(), pragma};
             modp->addStmtsp(nodep);
         }
     }
