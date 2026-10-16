@@ -3244,6 +3244,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         m_restrictedNamesUsed;  // Names from current 'with (id_list)' that resolved into target
     bool m_genericIfaceModule = false;  // True if in module containing generic interface
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
+    // Inherited interface implementations needing a forward in the current class, by name
+    std::map<std::string, const VSymEnt*> m_ifForwards;
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
                                          // (except the default instances)
                                          // They are added to the set only in linkDotPrimary.
@@ -3620,6 +3622,81 @@ class LinkDotResolveVisitor final : public VNVisitor {
     bool randTargetUnresolved() const {
         return m_statep->forPrimary() && m_currentWithp && m_randMethodCallp && !m_randSymp;
     }
+    // Is 'funcp' of 'classp' virtual, directly or by overriding a virtual method of a base
+    // class (IEEE 1800-2023 8.20)
+    bool isVirtualMethod(const AstNodeFTask* funcp, const AstClass* classp) const {
+        if (funcp->isVirtual()) return true;
+        for (const AstClassExtends* cextp = classp->extendsp(); cextp;
+             cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+            AstClass* const basep = cextp->classOrNullp();
+            if (!basep) continue;
+            const VSymEnt* const foundp = m_statep->getNodeSym(basep)->findIdFlat(funcp->name());
+            const AstNodeFTask* const baseFuncp
+                = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
+            const AstClass* const baseClassp = foundp && foundp->parentp()
+                                                   ? VN_CAST(foundp->parentp()->nodep(), Class)
+                                                   : nullptr;
+            if (baseFuncp && baseClassp && isVirtualMethod(baseFuncp, baseClassp)) return true;
+        }
+        return false;
+    }
+    // Is imported 'implp' an implementation of interface method 'ifSymp' (IEEE 1800-2023
+    // 8.26.2)? If its class does not derive from the interface class, it needs a forwarding
+    // override in the derived class to be reachable through the interface.
+    bool inheritedImplements(const VSymEnt* implp, const VSymEnt* ifSymp, bool& needForwardr) {
+        needForwardr = false;
+        const AstNodeFTask* const implFuncp = VN_CAST(implp->nodep(), NodeFTask);
+        if (!implFuncp || implFuncp->pureVirtual() || implFuncp->isStatic()) return false;
+        const AstClass* const implClassp
+            = implp->parentp() ? VN_CAST(implp->parentp()->nodep(), Class) : nullptr;
+        const AstClass* const ifClassp
+            = ifSymp->parentp() ? VN_CAST(ifSymp->parentp()->nodep(), Class) : nullptr;
+        if (!implClassp || !ifClassp) return false;
+        if (extendsClass(implClassp, ifClassp)) return true;
+        if (!isVirtualMethod(implFuncp, implClassp)) return false;
+        needForwardr = true;
+        return true;
+    }
+    // Add 'implp' override to 'classp' that calls super.implp, so the C++ method of an
+    // implemented interface class is overridden
+    void addInterfaceForward(AstClass* classp, AstNodeFTask* implp, AstClass* implClassp) {
+        FileLine* const flp = implp->fileline();
+        AstVar* fvarp = nullptr;
+        AstNodeFTask* newp;
+        if (AstFunc* const implFuncp = VN_CAST(implp, Func)) {
+            fvarp = VN_AS(implFuncp->fvarp(), Var)->cloneTree(false);
+            newp = new AstFunc{flp, implp->name(), nullptr, fvarp};
+        } else {
+            newp = new AstTask{flp, implp->name(), nullptr};
+        }
+        newp->classMethod(true);
+        newp->isVirtual(true);
+        newp->lifetime(implp->lifetime());
+        AstArg* argsp = nullptr;
+        for (AstNode* stmtp = implp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            AstVar* const portp = VN_CAST(stmtp, Var);
+            if (!portp || !portp->isIO()) continue;
+            AstVar* const newPortp = portp->cloneTree(false);
+            newp->addStmtsp(newPortp);
+            argsp = AstNode::addNext(
+                argsp, new AstArg{flp, "", new AstVarRef{flp, newPortp, VAccess::READ}});
+        }
+        AstNodeFTaskRef* callp;
+        if (AstFunc* const implFuncp = VN_CAST(implp, Func)) {
+            callp = new AstFuncRef{flp, implFuncp, argsp};
+        } else {
+            callp = new AstTaskRef{flp, VN_AS(implp, Task), argsp};
+        }
+        callp->classOrPackagep(implClassp);
+        callp->superReference(true);
+        if (fvarp) {
+            newp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, fvarp, VAccess::WRITE}, callp});
+        } else {
+            newp->addStmtsp(callp->makeStmt());
+        }
+        UINFO(9, indent() << "Interface forward " << newp);
+        classp->addMembersp(newp);
+    }
     void importDerivedClass(AstClass* derivedClassp, VSymEnt* baseSymp, AstClass* baseClassp) {
         // Also used for standard 'extends' from a base class
         UINFO(8, indent() << "importDerivedClass to " << derivedClassp << " from " << baseClassp);
@@ -3632,12 +3709,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     const VSymEnt* const foundp = m_curSymp->findIdFlat(baseSubp->name());
                     const AstNodeFTask* const baseFuncp = VN_CAST(baseSubp, NodeFTask);
                     if (!baseFuncp || !baseFuncp->pureVirtual()) continue;
-                    // A concrete method inherited via 'extends' also implements it
-                    const AstNodeFTask* const foundFuncp
-                        = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
+                    bool needForward = false;
                     const bool existsInDerived
                         = foundp
-                          && (!foundp->imported() || (foundFuncp && !foundFuncp->pureVirtual()));
+                          && (!foundp->imported()
+                              || inheritedImplements(foundp, it->second, needForward));
+                    if (needForward && m_statep->forPrimary()
+                        && !derivedClassp->isInterfaceClass()) {
+                        m_ifForwards.emplace(baseSubp->name(), foundp);
+                    }
                     if (m_statep->forPrimary() && !existsInDerived
                         && !derivedClassp->isInterfaceClass() && !derivedClassp->isVirtual()) {
                         derivedClassp->v3error(
@@ -6070,8 +6150,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_modp);
         VL_RESTORER_COPY(m_ifClassImpNames);
+        VL_RESTORER_COPY(m_ifForwards);
         VL_RESTORER(m_insideClassExtParam);
         {
+            m_ifForwards.clear();
             m_ds.init(m_curSymp);
             m_insideClassExtParam = nodep->isCovergroup() && nodep->covergroupEnclosingClassp()
                                     && m_extendsParam.find(nodep->covergroupEnclosingClassp())
@@ -6143,6 +6225,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotSymp = m_curSymp;
 
             iterateChildren(nodep);
+            for (const auto& itr : m_ifForwards) {
+                const VSymEnt* const implSymp = itr.second;
+                addInterfaceForward(nodep, VN_AS(implSymp->nodep(), NodeFTask),
+                                    VN_AS(implSymp->parentp()->nodep(), Class));
+            }
         }
         // V3Width when determines types needs to find enum values and such
         // so add members pointing to appropriate enum values
