@@ -1,22 +1,10 @@
-%Error: t/t_lint_dtype_compare_bad.v:58:23: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'struct $unit::X_t' (2-state)
-                                          : ... Right-hand data type: 'bit[1:0]' (2-state)
-   58 |     automatic X_t x = {2'h2};
-      |                       ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_lint_dtype_compare_bad.v:60:23: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
-                                          : ... note: In instance 't'
-                                          : ... Left-hand data type: 'union $unit::U_t' (2-state)
-                                          : ... Right-hand data type: 'bit[1:0]' (2-state)
-   60 |     automatic U_t u = {2'h2};
-      |                       ^
 %Error: t/t_lint_dtype_compare_bad.v:91:11: Comparison requires matching data types
                                           : ... note: In instance 't'
                                           : ... Left-hand data type: 'struct $unit::X_t'
                                           : ... Right-hand data type: 'bit[31:0]'
    91 |     if (x == 2) begin
       |           ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_lint_dtype_compare_bad.v:93:11: Comparison requires matching data types
                                           : ... note: In instance 't'
                                           : ... Left-hand data type: 'bit[31:0]'

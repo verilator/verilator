@@ -19,6 +19,5 @@ endmodule
 
 module t;
   int v = 1;
-  localparam s_t G[2][2] = '{default: '{7, 8}};
   m #(.S('{'{a: 1, b: 2}, '{a: v, b: 4}})) i ();
 endmodule

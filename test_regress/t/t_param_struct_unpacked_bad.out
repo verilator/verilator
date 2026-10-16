@@ -1,16 +1,6 @@
-%Error: t/t_param_struct_unpacked_bad.v:22:41: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
-                                             : ... Left-hand data type: 'struct $unit::s_t' (2-state)
-                                             : ... Right-hand data type: 'bit[31:0]' (2-state)
-   22 |   localparam s_t G[2][2] = '{default: '{7, 8}};
-      |                                         ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_param_struct_unpacked_bad.v:22:44: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
-                                             : ... Left-hand data type: 'struct $unit::s_t' (2-state)
-                                             : ... Right-hand data type: 'bit[31:0]' (2-state)
-   22 |   localparam s_t G[2][2] = '{default: '{7, 8}};
-      |                                            ^
-%Error: t/t_param_struct_unpacked_bad.v:23:32: Expecting expression to be constant, but variable isn't const: 'v'
+%Error: t/t_param_struct_unpacked_bad.v:22:32: Expecting expression to be constant, but variable isn't const: 'v'
                                              : ... note: In instance 't'
-   23 |   m #(.S('{'{a: 1, b: 2}, '{a: v, b: 4}})) i ();
+   22 |   m #(.S('{'{a: 1, b: 2}, '{a: v, b: 4}})) i ();
       |                                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

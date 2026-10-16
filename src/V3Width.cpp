@@ -10046,18 +10046,6 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(underp), underp);
                 underp = newp;
             }
-            const AstNodeDType* const expDtp = expDTypep->skipRefp();
-            if (determ == ASSIGN && VN_IS(expDtp, NodeUOrStructDType) && expDtp->isAggregateType()
-                && !underDtp->isAggregateType()) {
-                parentp->v3error("Illegal assignment: types are not assignment compatible (IEEE "
-                                 "1800-2023 7.6)\n"
-                                 << parentp->warnMore()
-                                 << "... Left-hand data type: " << expDtp->prettyDTypeNameQ()
-                                 << " " << expDtp->stateDTypeName() << "\n"
-                                 << parentp->warnMore()
-                                 << "... Right-hand data type: " << underDtp->prettyDTypeNameQ()
-                                 << " " << underDtp->stateDTypeName());
-            }
             const AstBasicDType* const expBasicp = expDTypep->basicp();
             const AstBasicDType* const underBasicp = underp->dtypep()->basicp();
             if (expBasicp && underBasicp) {

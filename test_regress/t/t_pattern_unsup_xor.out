@@ -3,11 +3,4 @@
    11 |   status_t status_reg = '{bit_field: 1'b0} ^ 1'b0;
       |                         ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_pattern_unsup_xor.v:11:44: Illegal assignment: types are not assignment compatible (IEEE 1800-2023 7.6)
-                                     : ... note: In instance 't'
-                                     : ... Left-hand data type: 'struct t.status_t' (2-state)
-                                     : ... Right-hand data type: 'bit' (2-state)
-   11 |   status_t status_reg = '{bit_field: 1'b0} ^ 1'b0;
-      |                                            ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to
