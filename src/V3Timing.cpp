@@ -1203,22 +1203,24 @@ class TimingControlVisitor final : public VNVisitor {
             controlp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
         };
-        // NBAs with delays evaluate LHS indices immediately
+        // NBAs with delays evaluate the indices selecting the target now (IEEE 1800-2023 10.4.2),
+        // in order, each as a whole, also the selects and function calls in it. So follow the
+        // selects of the target up from the variable, not into their indices. As an example, this
+        // transforms 'x[a[i]][f(j)] <= #1 y' into 't0 = a[i]; t1 = f(j); x[t0][t1] <= #1 y'.
         if (inAssignDly) {
-            // Create the intermediate select vars. Note: because 'foreach' proceeds in pre-order,
-            // and we replace indices in selects with variables, we cannot reach another select
-            // under the index position. This is exactly what we want as only the top level selects
-            // are LValues. As an example, this transforms 'x[a[i]][b[j]] = y' into 't1 = a[i]; t0
-            // = b[j]; x[t1][t0] = y'.
-            nodep->lhsp()->foreach([&](AstSel* selp) {
-                if (VN_IS(selp->lsbp(), Const)) return;
-                replaceWithIntermediate(selp->lsbp(), m_intraLsbNames.get(nodep));
-                // widthp should be const
-            });
-            nodep->lhsp()->foreach([&](AstNodeSel* selp) {
-                if (VN_IS(selp->bitp(), Const)) return;
-                replaceWithIntermediate(selp->bitp(), m_intraIndexNames.get(nodep));
-            });
+            for (AstNode* exprp = nodep->lhsp()->baseFromp(true); exprp != nodep;
+                 exprp = exprp->firstAbovep()) {
+                if (AstSel* const selp = VN_CAST(exprp, Sel)) {
+                    // widthp should be const
+                    if (!VN_IS(selp->lsbp(), Const)) {
+                        replaceWithIntermediate(selp->lsbp(), m_intraLsbNames.get(nodep));
+                    }
+                } else if (AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+                    if (!VN_IS(selp->bitp(), Const)) {
+                        replaceWithIntermediate(selp->bitp(), m_intraIndexNames.get(nodep));
+                    }
+                }
+            }
         }
         // Replace the RHS with an intermediate value var
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));

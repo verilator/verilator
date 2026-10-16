@@ -10,6 +10,10 @@
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=\"%s\" exp=\"%s\"\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+interface tgt_if;
+  int x;
+endinterface
+
 module t;
   logic [3:0] val[3];
   wire [3:0] #5 net[2];
@@ -30,6 +34,10 @@ module t;
   string pend_log, pend_at4, pend_at6;
   int alw_src, alw_x, cls_x, cls_z[3];
   string alw_log, cls_log;
+  tgt_if tgt_ifs[2] ();
+  virtual tgt_if tgt_vifs[2];
+  int tgt_a[2], tgt_i;
+  logic [7:0] tgt_v, tgt_p = 0;
 
   function automatic int dly();
     ++dly_calls;
@@ -40,6 +48,10 @@ module t;
   function automatic logic [1:0] ones();
     ++ones_calls;
     return 2'b11;
+  endfunction
+
+  function automatic int bit_of(logic [7:0] v, int i);
+    return int'(v[i]);
   endfunction
 
   always @val
@@ -127,6 +139,19 @@ module t;
   initial Pend::run();
   always @(cls_x) if ($time != 0) cls_log = {cls_log, $sformatf("%0d@%0t ", cls_x, $time)};
 
+  // The indices selecting the target are evaluated as the NBA executes, each as a whole, also the
+  // functions they call, which select with their arguments
+  initial begin
+    tgt_vifs[0] = tgt_ifs[0];
+    tgt_vifs[1] = tgt_ifs[1];
+    tgt_v = 8'b10;
+    tgt_i = 1;
+    tgt_a[bit_of(tgt_v, tgt_i)] <= #1 42;
+    tgt_vifs[bit_of(tgt_v, tgt_i)].x <= #1 99;
+    tgt_p[bit_of(tgt_v, tgt_i)*4+:4] <= #1 4'hf;
+    tgt_i = 0;
+  end
+
   initial begin
     #20;
     `checks(cat_log, "11@3 11@5 11@7 ")
@@ -139,6 +164,8 @@ module t;
     `checks(alw_log, "1@6 2@7 3@8 ")
     `checks(cls_log, "1@5 2@6 3@7 ")
     `checks($sformatf("%0d %0d %0d", cls_z[0], cls_z[1], cls_z[2]), "1 2 3")
+    `checks($sformatf("%0d %0d %h", tgt_a[0], tgt_a[1], tgt_p), "0 42 f0")
+    `checks($sformatf("%0d %0d", tgt_ifs[0].x, tgt_ifs[1].x), "0 99")
     // Last, as VCS evaluates the delay of an NBA to a concatenation for each part
     `checkd(dly_calls, 3)
   end
