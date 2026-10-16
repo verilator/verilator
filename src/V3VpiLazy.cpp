@@ -154,7 +154,6 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
-#include <iterator>
 #include <limits>
 #include <map>
 #include <memory>
@@ -841,27 +840,8 @@ private:
             return;
         }
         for (const auto& pr : src.runsOf) {
-            std::vector<std::pair<int, int>>& runs = dst.runsOf[pr.first];
-            if (runs.empty()) {
-                runs = pr.second;
-            } else if (pr.second.size() <= 4) {
-                for (const std::pair<int, int>& run : pr.second)
-                    addBits(dst, pr.first, run.first, run.second);
-            } else {
-                std::vector<std::pair<int, int>> sorted;
-                sorted.reserve(runs.size() + pr.second.size());
-                std::merge(runs.begin(), runs.end(), pr.second.begin(), pr.second.end(),
-                           std::back_inserter(sorted));
-                runs.clear();
-                for (const std::pair<int, int>& run : sorted) {
-                    if (!runs.empty() && run.first <= runs.back().first + runs.back().second) {
-                        runs.back().second = std::max(runs.back().second,
-                                                      run.first + run.second - runs.back().first);
-                    } else {
-                        runs.push_back(run);
-                    }
-                }
-            }
+            for (const std::pair<int, int>& run : pr.second)
+                addBits(dst, pr.first, run.first, run.second);
         }
     }
 
