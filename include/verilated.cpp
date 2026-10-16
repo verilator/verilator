@@ -4643,12 +4643,26 @@ void VerilatedIfaceRef::ifaceRefDump() const VL_MT_SAFE_POSTINIT {
     VL_PRINTF_MT("\n");
 }
 
-void VerilatedHierarchy::add(const VerilatedScope* fromp, const VerilatedScope* top) {
-    VerilatedImp::hierarchyAdd(fromp, top);
+static const VerilatedScope* vl_hierScope(const VerilatedSyms* symsp, uint32_t offset) {
+    if (!offset) return nullptr;
+    return *reinterpret_cast<const VerilatedScope* const*>(reinterpret_cast<const uint8_t*>(symsp)
+                                                           + offset);
 }
 
-void VerilatedHierarchy::remove(const VerilatedScope* fromp, const VerilatedScope* top) {
-    VerilatedImp::hierarchyRemove(fromp, top);
+void VerilatedHierarchy::addFromTable(const VlHierTableEntry* entp, size_t n,
+                                      const VerilatedSyms* symsp) {
+    for (size_t i = 0; i < n; ++i) {
+        VerilatedImp::hierarchyAdd(vl_hierScope(symsp, entp[i].fromOffset),
+                                   vl_hierScope(symsp, entp[i].toOffset));
+    }
+}
+
+void VerilatedHierarchy::removeFromTable(const VlHierTableEntry* entp, size_t n,
+                                         const VerilatedSyms* symsp) {
+    for (size_t i = 0; i < n; ++i) {
+        VerilatedImp::hierarchyRemove(vl_hierScope(symsp, entp[i].fromOffset),
+                                      vl_hierScope(symsp, entp[i].toOffset));
+    }
 }
 
 void VerilatedHierarchy::clear() { VerilatedImp::hierarchyClear(); }

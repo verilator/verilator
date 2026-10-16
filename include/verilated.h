@@ -1154,10 +1154,18 @@ struct VlScopeTableEntry final {
     VerilatedScope::Type type;
 };
 
+// One VPI scope hierarchy edge, consumed by VerilatedHierarchy::addFromTable()
+struct VlHierTableEntry final {
+    // offsetof of the parent's __Vscopep_* member within the Syms object, or 0 for top level
+    uint32_t fromOffset;
+    uint32_t toOffset;  // Likewise, of the child's
+};
+
 class VerilatedHierarchy final {
 public:
-    static void add(const VerilatedScope* fromp, const VerilatedScope* top);
-    static void remove(const VerilatedScope* fromp, const VerilatedScope* top);
+    static void addFromTable(const VlHierTableEntry* entp, size_t n, const VerilatedSyms* symsp);
+    static void removeFromTable(const VlHierTableEntry* entp, size_t n,
+                                const VerilatedSyms* symsp);
     static void clear();
 };
 

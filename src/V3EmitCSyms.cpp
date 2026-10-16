@@ -146,6 +146,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::vector<std::pair<std::string, std::vector<std::string>>> m_lazyReconFnTables;
     std::string m_ifaceRefTableName;
     std::vector<std::string> m_ifaceRefTableRows;
+    std::vector<std::string> m_hierTableRows;  // VlHierTableEntry rows, built in emitScopeHier()
     // --vpi-lazy comb masks, model-wide as VerilatedSyms holds the one table lazyIdx indexes
     std::unordered_map<const std::vector<V3VpiLazy::CombRun>*, int> m_combMaskIdx;
     std::vector<std::string> m_combMaskRows;
@@ -387,6 +388,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     };
 
     std::string varDimsTableName() const { return symClassName() + "__VpiVarDims"; }
+    std::string hierTableName() const { return symClassName() + "__VpiHierTable"; }
     std::string combMaskTableName() const { return symClassName() + "__VlazyCombMasks"; }
     std::string combRunTableName() const { return symClassName() + "__VlazyCombRuns"; }
     int combMaskIdx(const AstScope* scopep, const AstVar* varp) {
@@ -1360,7 +1362,8 @@ void EmitCSyms::emitSymImpPreamble() {
 
 bool EmitCSyms::emitVarTableExterns() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
-        && m_lazyReconFnTables.empty() && m_combMaskRows.empty() && m_paramPtrTables.empty())
+        && m_lazyReconFnTables.empty() && m_combMaskRows.empty() && m_paramPtrTables.empty()
+        && m_hierTableRows.empty())
         return false;
     for (const auto& kv : m_varTables) {
         puts("extern const VlVarTableEntry " + kv.first + "[];\n");
@@ -1374,6 +1377,9 @@ bool EmitCSyms::emitVarTableExterns() {
     if (!m_ifaceRefTableRows.empty()) {
         puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[];\n");
     }
+    if (!m_hierTableRows.empty()) {
+        puts("extern const VlHierTableEntry " + hierTableName() + "[];\n");
+    }
     for (const auto& kv : m_lazyReconFnTables) {
         puts("extern const VlLazyReconEntry " + kv.first + "[];\n");
     }
@@ -1385,7 +1391,8 @@ bool EmitCSyms::emitVarTableExterns() {
 
 void EmitCSyms::emitVarTables() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
-        && m_lazyReconFnTables.empty() && m_combMaskRows.empty() && m_paramPtrTables.empty())
+        && m_lazyReconFnTables.empty() && m_combMaskRows.empty() && m_paramPtrTables.empty()
+        && m_hierTableRows.empty())
         return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
     // offsetof on the (non-standard-layout) generated module/Syms classes is well
@@ -1438,6 +1445,15 @@ void EmitCSyms::emitVarTables() {
         }
         puts("};\n");
     }
+    if (!m_hierTableRows.empty()) {
+        puts("extern const VlHierTableEntry " + hierTableName() + "[] = {\n");
+        for (const std::string& row : m_hierTableRows) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(row);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+    }
     for (const auto& kv : m_lazyReconFnTables) {
         puts("extern const VlLazyReconEntry " + kv.first + "[] = {\n");
         for (const std::string& ent : kv.second) {
@@ -1476,33 +1492,37 @@ void EmitCSyms::emitVarTables() {
 void EmitCSyms::emitScopeHier(TextStmts& stmts, bool destroy) {
     if (!v3Global.opt.vpi()) return;
 
+    if (m_hierTableRows.empty()) {
+        const std::string symClass = symClassName();
+        const auto offset = [&](const std::string& name) {
+            return "offsetof(" + symClass + ", "
+                   + protect("__Vscopep_" + m_scopeNames.at(name).m_symName) + ")";
+        };
+        for (const auto& itpair : m_scopeNames) {
+            if (itpair.first == "TOP") continue;
+            const ScopeData& sd = itpair.second;
+            if (sd.m_prettyName.find('.') != string::npos) continue;
+            if (sd.m_type != "SCOPE_MODULE" && sd.m_type != "SCOPE_PACKAGE") continue;
+            m_hierTableRows.emplace_back("{0, " + offset(itpair.first) + "}");
+        }
+        for (const auto& itpair : m_vpiScopeHierarchy) {
+            const std::string from = offset(scopeSymString(itpair.first));
+            for (const std::string& name : itpair.second) {
+                m_hierTableRows.emplace_back("{" + from + ", " + offset(scopeSymString(name))
+                                             + "}");
+            }
+        }
+    }
+
     if (destroy) {
         stmts.add("// Tear down scope hierarchy");
     } else {
         stmts.add("// Set up scope hierarchy");
     }
-
-    const std::string method = destroy ? "remove" : "add";
-    for (const auto& itpair : m_scopeNames) {
-        if (itpair.first == "TOP") continue;
-        const ScopeData& sd = itpair.second;
-        const std::string& name = sd.m_prettyName;
-        const std::string& scopeType = sd.m_type;
-        if (name.find('.') != string::npos) continue;
-        if (scopeType != "SCOPE_MODULE" && scopeType != "SCOPE_PACKAGE") continue;
-        const std::string id = "vlSymsp->" + protect("__Vscopep_" + sd.m_symName);
-        stmts.add("vlSymsp->__Vhier." + method + "(0, " + id + ");");
-    }
-    for (const auto& itpair : m_vpiScopeHierarchy) {
-        const std::string fromName = scopeSymString(itpair.first);
-        const std::string fromId
-            = "vlSymsp->" + protect("__Vscopep_" + m_scopeNames.at(fromName).m_symName);
-        for (const std::string& name : itpair.second) {
-            const std::string toName = scopeSymString(name);
-            const std::string toId
-                = "vlSymsp->" + protect("__Vscopep_" + m_scopeNames.at(toName).m_symName);
-            stmts.add("vlSymsp->__Vhier." + method + "(" + fromId + ", " + toId + ");");
-        }
+    if (!m_hierTableRows.empty()) {
+        stmts.add("vlSymsp->__Vhier."
+                  + std::string{destroy ? "removeFromTable(" : "addFromTable("} + hierTableName()
+                  + ", " + std::to_string(m_hierTableRows.size()) + ", vlSymsp);");
     }
 
     if (destroy) {
