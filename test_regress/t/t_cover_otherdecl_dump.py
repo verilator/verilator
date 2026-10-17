@@ -17,7 +17,7 @@ test.top_filename = "t/t_cover_fsm_policy_accept_multi.v"
 # Dump generic COVEROTHERDECL nodes so AstCoverOtherDecl::dump() also sees
 # coverage declarations with no FSM metadata, exercising the empty-field side
 # of the fv/ff/ft/fg formatting.
-test.lint(v_flags=["--coverage-line", "--dump-tree"])
+test.lint(v_flags=["--coverage-line", "--coverage-branch", "--dump-tree"])
 
 tree_files = [Path(filename) for filename in test.glob_some(test.obj_dir + "/*.tree")]
 tree_texts = [filename.read_text(encoding="utf8") for filename in tree_files]

@@ -13,6 +13,11 @@ contributors that suggested or implemented a given issue are shown in []. Thanks
 Verilator 5.053 devel
 ==========================
 
+**Important:**
+
+* Add `--coverage-branch` separate from `--coverage-line` (#8091). [Ryszard Rozak]
+  Previous users of `--coverage-line` may need to add `--coverage-branch`.
+
 **Other:**
 
 * Add error on scalar assigned to unpacked struct (#7460) (#8780). [Jonathan Drolet]

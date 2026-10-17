@@ -295,8 +295,13 @@ Summary:
 .. option:: --coverage
 
    Enables all forms of coverage, an alias for :vlopt:`--coverage-line`
-   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-fsm`
-   :vlopt:`--coverage-user`.
+   :vlopt:`--coverage-branch` :vlopt:`--coverage-toggle`
+   :vlopt:`--coverage-expr` :vlopt:`--coverage-fsm` :vlopt:`--coverage-user`.
+
+.. option:: --coverage-branch
+
+   Enables branch coverage analysis of ``if``/``else`` and ``?:``. See
+   :ref:`Branch Coverage`.
 
 .. option:: --coverage-expr
 
@@ -362,6 +367,8 @@ Summary:
 .. option:: --coverage-line
 
    Enables basic block line coverage analysis. See :ref:`Line Coverage`.
+   Branches of ``if``/``else`` and ``?:`` are covered separately with
+   :vlopt:`--coverage-branch`.
 
 .. option:: --coverage-max-bins <value>
 
@@ -424,8 +431,9 @@ Summary:
    ``.dat`` records per hierarchy instance. This option must be specified when
    Verilating the model, together with one or more coverage instrumentation
    options, for example :vlopt:`--coverage`, :vlopt:`--coverage-line`,
-   :vlopt:`--coverage-toggle`, :vlopt:`--coverage-expr`,
-   :vlopt:`--coverage-fsm`, or :vlopt:`--coverage-user`. It may increase
+   :vlopt:`--coverage-branch`, :vlopt:`--coverage-toggle`,
+   :vlopt:`--coverage-expr`, :vlopt:`--coverage-fsm`, or
+   :vlopt:`--coverage-user`. It may increase
    generated model size, counter memory, coverage write time, and ``.dat`` file
    size.
 
@@ -2119,8 +2127,8 @@ Summary:
 .. option:: --trace-coverage
 
    With ``--trace-*`` and ``--coverage-*``, enable tracing to include a
-   traced signal for every :vlopt:`--coverage-line` or
-   :vlopt:`--coverage-user`\ -inserted coverage point, to assist in
+   traced signal for every :vlopt:`--coverage-line`,
+   :vlopt:`--coverage-branch` or :vlopt:`--coverage-user`\ -inserted coverage point, to assist in
    debugging coverage items. Note :vlopt:`--coverage-toggle` does not get
    additional signals added, as the original signals being toggle-analyzed
    are already visible.

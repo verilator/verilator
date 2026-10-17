@@ -1370,6 +1370,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-compiler-include", CbVal, callStrSetter(&V3Options::addCompilerIncludes));
     DECL_OPTION("-converge-limit", Set, &m_convergeLimit);
     DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
+    DECL_OPTION("-coverage-branch", OnOff, &m_coverageBranch);
     DECL_OPTION("-coverage-expr", OnOff, &m_coverageExpr);
     DECL_OPTION("-coverage-expr-max", Set, &m_coverageExprMax);
     DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
