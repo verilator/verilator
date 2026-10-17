@@ -1710,9 +1710,17 @@ public:
         //an error
         bool backpIsParent = (nodep->backp()->op1p() == nodep || nodep->backp()->op2p() == nodep);
         UASSERT(backpIsParent, "can not find return type for streamR");
-        if ((VN_IS(nodep->backp()->dtypep()->skipRefp(), QueueDType))) {
-            emitOpName(nodep, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
-                       nodep->rhsp(), nullptr);
+        if (const AstQueueDType* const qdtp
+            = VN_CAST(nodep->backp()->dtypep()->skipRefp(), QueueDType)) {
+            if (nodep->lhsp()->isWide()) {
+                emitOpName(nodep,
+                           "VL_STREAMR_%nq%lq%rq(%lw," + std::to_string(qdtp->subDTypep()->width())
+                               + ", %P, %li, %ri)",
+                           nodep->lhsp(), nodep->rhsp(), nullptr);
+            } else {
+                emitOpName(nodep, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
+                           nodep->rhsp(), nullptr);
+            }
         } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
             if (!((nodep->backp()->op1p() && nodep->backp()->op1p()->isWide())
                   || (nodep->backp()->op2p() && nodep->backp()->op2p()->isWide()))) {
