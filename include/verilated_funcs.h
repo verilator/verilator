@@ -283,6 +283,28 @@ inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     return ret;
 }
 
+template <typename T>
+inline void _vl_cvt_unpack_to_unpack(T& to, const T& from) VL_MT_SAFE {
+    to = from;
+}
+template <int T_Reverse, int... T_Inner, typename T, std::size_t N_Depth>
+inline void _vl_cvt_unpack_to_unpack(VlUnpacked<T, N_Depth>& to,
+                                     const VlUnpacked<T, N_Depth>& from) VL_MT_SAFE {
+    for (std::size_t i = 0; i < N_Depth; ++i) {
+        _vl_cvt_unpack_to_unpack<T_Inner...>(to[T_Reverse ? N_Depth - 1 - i : i], from[i]);
+    }
+}
+
+// Return copy of unpacked array with elements shuffled,
+// reversing each dimension whose template argument is non-zero, outermost dimension is first
+template <int... T_Reverse, typename T, std::size_t N_Depth>
+inline VlUnpacked<T, N_Depth>
+VL_CVT_UNPACK_TO_UNPACK(const VlUnpacked<T, N_Depth>& from) VL_MT_SAFE {
+    VlUnpacked<T, N_Depth> to;
+    _vl_cvt_unpack_to_unpack<T_Reverse...>(to, from);
+    return to;
+}
+
 // Masked match functions
 inline IData VL_MATCHMASKED_I(int, IData lhs, WDataInP matchp) VL_PURE {
     size_t i = 0;

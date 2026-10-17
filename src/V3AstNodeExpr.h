@@ -1365,6 +1365,21 @@ public:
     string emitC() override { return "VL_CVT_UNPACK_TO_Q(%P, %li)"; }
     bool cleanOut() const override { return true; }
 };
+class AstCvtUnpackedToUnpacked final : public AstNodeExpr {
+    // Convert an unpacked array to one with the same shape but different ascending/descending
+    // direction in at least one dimension (IEEE 1800-2023 7.6).
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtUnpackedToUnpacked(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtUnpackedToUnpacked(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtUnpackedToUnpacked;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstDist final : public AstNodeExpr {
     // @astgen op1 := exprp : AstNodeExpr
     // @astgen op2 := itemsp : List[AstDistItem]
@@ -1866,9 +1881,6 @@ public:
     void addIndexValuep(uint64_t index, AstNodeExpr* newp);
     AstNodeExpr* getIndexValuep(uint64_t index) const;
     AstNodeExpr* getIndexDefaultedValuep(uint64_t index) const;
-    // Retype as dtypep, reindexing an array of the other direction, and recursively the arrays
-    // under it, to keep elements' left-to-right order (IEEE 1800-2023 7.6)
-    void retypeOrdered(AstNodeDType* dtypep);
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

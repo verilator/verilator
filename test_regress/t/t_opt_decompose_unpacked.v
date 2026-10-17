@@ -434,10 +434,9 @@ module t (
     `checkh(rev[1], dn[3]);
     `checkh(rev[2], dn[2]);
     `checkh(rev[3], dn[1]);
-    // Broken: whole array copy of opposite direction, not sliced, copies slot by slot
-    // `checkh(revd[3], dyn[0]);
-    // `checkh(revd[1], dyn[2]);
-    // `checkh(revd[0], dyn[3]);
+    `checkh(revd[3], dyn[0]);
+    `checkh(revd[1], dyn[2]);
+    `checkh(revd[0], dyn[3]);
     `checkh(pat[0], 8'h11);
     `checkh(pat[1], pat_lo);
     `checkh(pat[2], pat_hi);

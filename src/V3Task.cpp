@@ -506,8 +506,15 @@ class TaskVisitor final : public VNVisitor {
         // Create input assignment to go in FRONT of function call
         AstNodeExpr* inPinp = pinp;
         if (AstResizeLValue* sinPinp = VN_CAST(inPinp, ResizeLValue)) inPinp = sinPinp->lhsp();
-        AstNodeExpr* const inPinClonep
+        AstNodeExpr* inPinClonep
             = pureCheck ? inPinp->cloneTreePure(true) : inPinp->cloneTree(true);
+        // A reversed array is assigned by the left-to-right order of elements (IEEE 1800-2023 7.6)
+        const AstUnpackArrayDType* const arrayp
+            = VN_CAST(newvscp->dtypep()->skipRefp(), UnpackArrayDType);
+        if (arrayp && arrayp->isReverseOf(inPinClonep->dtypep())) {
+            inPinClonep
+                = new AstCvtUnpackedToUnpacked{pinp->fileline(), inPinClonep, newvscp->dtypep()};
+        }
         AstAssign* const assp = new AstAssign{
             pinp->fileline(), new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE},
             inPinClonep};
@@ -558,6 +565,12 @@ class TaskVisitor final : public VNVisitor {
         // Put output assignment AFTER function call
         AstNodeExpr* const outPinClonep
             = pureCheck ? outPinp->cloneTreePure(true) : outPinp->cloneTree(true);
+        // A reversed array is assigned by the left-to-right order of elements (IEEE 1800-2023 7.6)
+        const AstUnpackArrayDType* const arrayp
+            = VN_CAST(outPinp->dtypep()->skipRefp(), UnpackArrayDType);
+        if (arrayp && arrayp->isReverseOf(postRhsp->dtypep())) {
+            postRhsp = new AstCvtUnpackedToUnpacked{pinp->fileline(), postRhsp, outPinp->dtypep()};
+        }
         AstAssign* const assp = new AstAssign{pinp->fileline(), outPinClonep, postRhsp};
         assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block
         return assp;

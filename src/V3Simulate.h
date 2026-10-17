@@ -37,6 +37,7 @@
 
 #include "V3Ast.h"
 #include "V3AstUserAllocator.h"
+#include "V3Const.h"
 #include "V3Error.h"
 #include "V3Task.h"
 #include "V3Width.h"
@@ -273,7 +274,7 @@ public:
             UINFO(9, "     new val " << valuep->name() << " on " << nodep);
         } else if (fetchValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setValue(nodep, newTrackedCloneFor(const_cast<AstNodeExpr*>(valuep), nodep));
+            setValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
         }
     }
     void newOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
@@ -282,7 +283,7 @@ public:
             UINFO(9, "     new oval " << valuep->name() << " on " << nodep);
         } else if (fetchOutValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setOutValue(nodep, newTrackedCloneFor(const_cast<AstNodeExpr*>(valuep), nodep));
+            setOutValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
         }
     }
 
@@ -290,14 +291,6 @@ private:
     AstNodeExpr* newTrackedClone(AstNodeExpr* nodep) {
         AstNodeExpr* const newp = nodep->cloneTree(false);
         m_reclaimValuesp.push_back(newp);
-        return newp;
-    }
-    // A clone of a value given to forp, which may be an array of the other direction
-    AstNodeExpr* newTrackedCloneFor(AstNodeExpr* valuep, const AstNode* forp) {
-        AstNodeExpr* const newp = newTrackedClone(valuep);
-        if (AstInitArray* const initp = VN_CAST(newp, InitArray)) {
-            initp->retypeOrdered(forp->dtypep());
-        }
         return newp;
     }
     AstConst* newConst(AstNode* nodep) {
@@ -686,6 +679,17 @@ private:
         m_reclaimValuesp.push_back(valuep);
         setValue(nodep, valuep);
     }
+    void visit(AstCvtUnpackedToUnpacked* nodep) override {
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+        if (m_checkOnly || !optimizable()) return;
+        // An array value is an AstInitArray, so V3Const folds the conversion
+        AstNodeExpr* const cvtp = new AstCvtUnpackedToUnpacked{
+            nodep->fileline(), fetchValue(nodep->fromp())->cloneTree(false), nodep->dtypep()};
+        AstNodeExpr* const valuep = V3Const::constifyEdit(cvtp);
+        m_reclaimValuesp.push_back(valuep);
+        setValue(nodep, valuep);
+    }
     void visit(AstInitItem* nodep) override {
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
@@ -931,7 +935,7 @@ private:
             }
         }
         // Clone first, as the value assigned may be the old value of the element
-        AstNodeExpr* const valuep = newTrackedCloneFor(fetchValue(valueFromp), lhsp);
+        AstNodeExpr* const valuep = newTrackedClone(fetchValue(valueFromp));
         UINFO(9, "     set " << lhsp << " = " << valuep);
         itemp->replaceWith(valuep);
         m_reclaimValuesp.push_back(itemp);

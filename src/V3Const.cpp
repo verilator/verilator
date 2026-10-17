@@ -3728,6 +3728,37 @@ class ConstVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    void visit(AstCvtUnpackedToUnpacked* nodep) override {
+        iterateChildren(nodep);
+        AstInitArray* const fromp = VN_CAST(nodep->fromp(), InitArray);
+        if (!fromp) return;
+        // Fold the outermost dimension, converting the elements for any dimension under it
+        const AstUnpackArrayDType* const toArrayp
+            = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+        const AstUnpackArrayDType* const fromArrayp
+            = VN_AS(fromp->dtypep()->skipRefp(), UnpackArrayDType);
+        const bool reverse
+            = toArrayp->declRange().ascending() != fromArrayp->declRange().ascending();
+        const uint64_t lastIndex = toArrayp->elementsConst() - 1;
+        AstNodeDType* const subDTypep = toArrayp->subDTypep();
+        const AstUnpackArrayDType* const subArrayp
+            = VN_CAST(subDTypep->skipRefp(), UnpackArrayDType);
+        const auto convert = [&](AstNodeExpr* valuep) -> AstNodeExpr* {
+            valuep->unlinkFrBack();
+            if (!subArrayp || !subArrayp->isReverseOf(valuep->dtypep())) return valuep;
+            return new AstCvtUnpackedToUnpacked{valuep->fileline(), valuep, subDTypep};
+        };
+        AstInitArray* const newp
+            = new AstInitArray{fromp->fileline(), nodep->dtypep(),
+                               fromp->defaultp() ? convert(fromp->defaultp()) : nullptr};
+        for (const auto& itr : fromp->map()) {
+            newp->addIndexValuep(reverse ? lastIndex - itr.first : itr.first,
+                                 convert(itr.second->valuep()));
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterate(newp);  // Fold the conversions of the elements
+    }
     void visit(AstCvtArrayToArray* nodep) override {
         iterateChildren(nodep);
         // Handle the case where we have a stream operation inside a cast conversion
