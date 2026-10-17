@@ -23,8 +23,8 @@ module t;
   // of a dynamic array new[]
   int d[] = '{3: 10};
   int q[$] = '{3: 11};
-  int dt[] = '{int: 12};
-  int qt[$] = '{int: 13};
+  int dt[] = '{int : 12};
+  int qt[$] = '{int : 13};
   int dd[] = '{default: 23};
   int qd[$] = '{default: 24};
 
@@ -55,7 +55,7 @@ module t;
     int a;
     logic [3:0] b;
   } s_t;
-  int snonconst[s_t] = '{'{k, 1}: 30};
-  int sx[s_t] = '{'{1, 4'bx}: 31};
+  int snonconst[s_t] = '{'{k, 1} : 30};
+  int sx[s_t] = '{'{1, 4'bx} : 31};
 
 endmodule

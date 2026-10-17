@@ -55,7 +55,9 @@ module t;
       bins rest = {[2 : $]};
       ignore_bins both = {[0 : 1]};
     }
-    ff: coverpoint flag {option.weight = 0;}
+    ff: coverpoint flag {
+      option.weight = 0;
+    }
     rr: coverpoint r {
       option.weight = 0;
       bins zero = {[0.0 : 0.5]};
@@ -102,7 +104,9 @@ module t;
   covergroup cg_scope;
     offset: coverpoint a;
     // Of the module's 'offset', in the scope of the array method's 'with': 32 bits wide
-    total: coverpoint (one.sum() with (item + offset)) {bins values = {17};}
+    total: coverpoint (one.sum() with (item + offset)) {
+      bins values = {17};
+    }
     xx: cross offset, total{
       bins wide = xx with ($bits(total) == 32);  // All 4 bin tuples
       bins counted = xx with (1) matches offset - 15;  // Of the module's 'offset', 1: all 4
@@ -125,8 +129,7 @@ module t;
     // x_big: unread of 2 bins; x_sum: one of 4 automatic bins; x_product: limit of 1 bin;
     // x_sparse: ends of 1 bin; x_unsup: <all,zero> of 1 automatic bin; x_words: none of 127
     // automatic bins; x_deep: <rest,low> of 4 automatic bins
-    `checkr(inst.get_inst_coverage(),
-            (50.0 + 25.0 + 100.0 + 100.0 + 100.0 + 0.0 + 25.0) / 7.0);
+    `checkr(inst.get_inst_coverage(), (50.0 + 25.0 + 100.0 + 100.0 + 100.0 + 0.0 + 25.0) / 7.0);
     // offset: 1 of 4 bins; total: 1 of 1; xx: 'wide' and 'counted' of 2, not 1 of 4 automatic bins
     `checkr(scope_inst.get_inst_coverage(), (25.0 + 100.0 + 100.0) / 3.0);
     $write("*-* All Finished *-*\n");

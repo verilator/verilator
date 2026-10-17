@@ -4,8 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t(
-  total
+module t (
+    total
 );
 
   output total;  // Output, so doesn't get removed

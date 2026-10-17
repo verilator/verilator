@@ -7,8 +7,14 @@
 
 module t;
   covergroup cg;
-    cp_a: coverpoint 1'b0 {bins b0 = {0}; bins b1 = {1};}
-    cp_b: coverpoint 1'b0 {bins b0 = {0}; bins b1 = {1};}
+    cp_a: coverpoint 1'b0 {
+      bins b0 = {0};
+      bins b1 = {1};
+    }
+    cp_b: coverpoint 1'b0 {
+      bins b0 = {0};
+      bins b1 = {1};
+    }
     cross_ab: cross cp_a, cp_b{
       option.per_instance = 1;  // unsupported for cross; triggers COVERIGN
     }
@@ -16,9 +22,14 @@ module t;
     // Non-standard hierarchical/dotted cross item: can only be a data reference
     // (implicit coverpoint), never a coverpoint.  Accepted with a NONSTD warning;
     // implicit coverpoints are unsupported so the cross is dropped (COVERIGN).
-    cross_hier: cross cp_a, s_cfg.m_p{bins b0 = cross_hier with (cp_a == 0);}
+    cross_hier: cross cp_a, s_cfg.m_p{
+      bins b0 = cross_hier with (cp_a == 0);
+    }
   endgroup
-  typedef struct packed {logic m_p; logic h_mode;} cfg_t;
+  typedef struct packed {
+    logic m_p;
+    logic h_mode;
+  } cfg_t;
   cfg_t s_cfg = '0;
   logic var_x = 1'b0;
   cg cg_i = new;

@@ -40,9 +40,7 @@ class ClsC;
   // Nested foreach whose inner body references both loop indices.
   constraint constraint_nested {
     foreach (member_c[i]) {
-      foreach (member_c[i].inner_b[j]) {
-        member_c[i].inner_b[j].member_a == 1'b1;
-      }
+      foreach (member_c[i].inner_b[j]) {member_c[i].inner_b[j].member_a == 1'b1;}
     }
   }
 

@@ -29,11 +29,11 @@
       |                ^
 %Error: t/t_pattern_key_bad.v:26:16: Assignment pattern key cannot be used for dynamic array
                                    : ... note: In instance 't'
-   26 |   int dt[] = '{int: 12};
+   26 |   int dt[] = '{int : 12};
       |                ^~~
 %Error: t/t_pattern_key_bad.v:27:17: Assignment pattern key cannot be used for queue
                                    : ... note: In instance 't'
-   27 |   int qt[$] = '{int: 13};
+   27 |   int qt[$] = '{int : 13};
       |                 ^~~
 %Error: t/t_pattern_key_bad.v:28:16: Assignment pattern default cannot be used for dynamic array
    28 |   int dd[] = '{default: 23};
@@ -105,10 +105,10 @@
       |                               ^~~~~~~
 %Error: t/t_pattern_key_bad.v:58:26: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
                                    : ... note: In instance 't'
-   58 |   int snonconst[s_t] = '{'{k, 1}: 30};
+   58 |   int snonconst[s_t] = '{'{k, 1} : 30};
       |                          ^~
 %Error: t/t_pattern_key_bad.v:59:19: Assignment pattern key cannot contain X or Z
                                    : ... note: In instance 't'
-   59 |   int sx[s_t] = '{'{1, 4'bx}: 31};
+   59 |   int sx[s_t] = '{'{1, 4'bx} : 31};
       |                   ^~
 %Error: Exiting due to

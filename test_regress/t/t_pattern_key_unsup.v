@@ -7,9 +7,9 @@
 module t;
   // Data type keys are legal in array patterns (IEEE 1800-2023 10.9.1), but only
   // supported in structure patterns
-  int unpk[1] = '{int: 1};
-  int assoc[int] = '{int: 2};
-  int wild[*] = '{int: 3};
+  int unpk[1] = '{int : 1};
+  int assoc[int] = '{int : 2};
+  int wild[*] = '{int : 3};
   int dyn[];
-  initial dyn = new[2] ('{int: 6});
+  initial dyn = new[2] ('{int : 6});
 endmodule

@@ -11,7 +11,7 @@
 // tool discovers them by iterating the module's vpiInternalScope children.
 
 package RefPackage;
-  int marker /*verilator public_flat_rw*/;
+  int marker  /*verilator public_flat_rw*/;
 endpackage
 
 interface SomeIntf;
@@ -44,7 +44,7 @@ module t;
   SomeIntf top_plain ();
 
   Foo foo (
-      .arr  (top_arr),
+      .arr(top_arr),
       .plain(top_plain)
   );
 
