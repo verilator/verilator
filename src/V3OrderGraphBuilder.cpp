@@ -115,6 +115,8 @@ class OrderGraphBuilder final : public VNVisitor {
     const V3Sched::CovergroupRefBindings& m_cgRefBindings;
     // Bindings reachable from the covergroup sample() being walked, nullptr when not in one
     const V3Sched::CovergroupRefBindings::Bindings* m_cgRefBoundps = nullptr;
+    // The variables of each member of an interface, in all its instances
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_ifaceVscps;
 
     // METHODS
 
@@ -363,6 +365,21 @@ class OrderGraphBuilder final : public VNVisitor {
         m_cgRefBoundps = &m_cgRefBindings.forSample(instp, VN_AS(funcp->scopep()->modp(), Class));
         iterateChildren(funcp);
     }
+    // Clocked logic reading a member through a virtual interface may read it in any instance, so
+    // must read it before the NBA updates of each one. Likewise the logic committing an NBA
+    // through a virtual interface may write it in any instance.
+    void visit(AstMemberSel* nodep) override {
+        iterateChildren(nodep);
+        if (!m_inClocked) return;
+        const VAccess access = m_inPost ? VAccess::WRITE : VAccess::READ;
+        if (m_inPost ? !nodep->access().isWriteOrRW() : !nodep->access().isReadOrRW()) return;
+        const AstIfaceRefDType* const dtypep
+            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+        if (!dtypep || !dtypep->isVirtual()) return;
+        for (AstVarScope* const vscp : m_ifaceVscps[nodep->varp()]) {
+            accountVarAccess(vscp, access, nodep);
+        }
+    }
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
     void visit(AstInitial* nodep) override {  // LCOV_EXCL_START
@@ -427,6 +444,18 @@ class OrderGraphBuilder final : public VNVisitor {
         : m_graphp{new OrderGraph{trigKit, trigVscp}}
         , m_parallel{parallel}
         , m_cgRefBindings{cgRefBindings} {
+        for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
+             modp = VN_AS(modp->nextp(), NodeModule)) {
+            if (!VN_IS(modp, Iface)) continue;
+            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                const AstScope* const scopep = VN_CAST(nodep, Scope);
+                if (!scopep) continue;
+                for (AstVarScope* vscp = scopep->varsp(); vscp;
+                     vscp = VN_AS(vscp->nextp(), VarScope)) {
+                    m_ifaceVscps[vscp->varp()].push_back(vscp);
+                }
+            }
+        }
         // Build the graph
         for (const V3Sched::LogicByScope* const lbsp : coll) {
             for (const auto& entry : *lbsp) {

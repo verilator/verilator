@@ -338,6 +338,12 @@ evaluation step, this ordering restores the invariant that variables driven
 by combinational logic are consistent with that combinational logic (i.e.,
 the circuit is in a settled/steady state).
 
+A member read through a virtual interface, or written by the logic
+committing an NBA through one, may be of any instance of the interface. So
+``V3Order`` takes such a read in clocked logic, and such a write, as
+accesses to the member in all instances, to order the clocked logic before
+the NBA updates of each one.
+
 One of the most important optimizations for performance is to only evaluate
 combinational logic, if its inputs might have changed. For example, there
 is no point in evaluating the above assignment to ``d`` on a negative edge
