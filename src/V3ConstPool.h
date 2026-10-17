@@ -61,18 +61,18 @@ class V3ConstPool final {
     // Hash and equality of associative array entries in 'm_maps'
     struct MapHash final {
         size_t operator()(const AstVar* varp) const {
-            return (*this)(VN_AS(varp->valuep(), InitArray));
+            return (*this)(VN_AS(varp->valuep(), ConsAssoc));
         }
-        size_t operator()(const AstInitArray* initp) const {
+        size_t operator()(const AstConsAssoc* initp) const {
             return V3Hasher::uncachedHash(initp).value();
         }
     };
     struct MapEqual final {
         bool operator()(const AstVar* ap, const AstVar* bp) const {  // LCOV_EXCL_START
-            return (*this)(ap, VN_AS(bp->valuep(), InitArray));  // Only on collision while rebuild
+            return (*this)(ap, VN_AS(bp->valuep(), ConsAssoc));  // Only on collision while rebuild
         }  // LCOV_EXCL_STOP
-        bool operator()(const AstVar* varp, const AstInitArray* initp) const {
-            return equalMap(VN_AS(varp->valuep(), InitArray), initp);
+        bool operator()(const AstVar* varp, const AstConsAssoc* initp) const {
+            return equalMap(VN_AS(varp->valuep(), ConsAssoc), initp);
         }
     };
     // Hash and equality of unpacked array entries in 'm_tables'
@@ -107,7 +107,7 @@ class V3ConstPool final {
 
     // METHODS
     static V3ConstPool& instance() { return *v3Global.constPoolp(); }
-    static bool equalMap(const AstInitArray* ap, const AstInitArray* bp);
+    static bool equalMap(const AstConsAssoc* ap, const AstConsAssoc* bp);
     static bool equalTable(const AstInitArray* ap, const AstInitArray* bp);
     static size_t hashTable(const AstInitArray* initp);
     // Find an entry equal to the given initializer in the given set, or create one named from
@@ -132,7 +132,7 @@ public:
     // not already exist, and return a read reference to it.
     // The reference has the same dtype as initp.
     // The referenced variable *might* have a different, but compatible dtype.
-    static AstVarRef* findMap(AstInitArray* initp);
+    static AstVarRef* findMap(AstConsAssoc* initp);
     // Find a constant unpacked array (table) with the given value, or create one if one does
     // not already exist, and return a read reference to it.
     // The reference has the same dtype as initp.

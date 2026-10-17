@@ -989,54 +989,41 @@ public:
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
 };
 class AstConsAssoc final : public AstNodeExpr {
-    // Construct an assoc array and return object, '{}
+    // Construct an assoc array and return object, '{key: value, default: value}
     // @astgen op1 := defaultp : Optional[AstNodeExpr]
+    // @astgen op2 := itemsp : List[AstConsAssocItem]
 public:
-    AstConsAssoc(FileLine* fl, AstNodeExpr* defaultp)
+    explicit AstConsAssoc(FileLine* fl, AstNodeExpr* defaultp = nullptr)
         : ASTGEN_SUPER_ConsAssoc(fl) {
         this->defaultp(defaultp);
     }
     ASTGEN_MEMBERS_AstConsAssoc;
+    const char* broken() const override {
+        BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), AssocArrayDType));
+        return nullptr;
+    }
     string emitVerilog() override { return "'{}"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstConsDynArray final : public AstNodeExpr {
-    // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
-    // @astgen op1 := lhsp : Optional[AstNodeExpr]
-    // @astgen op2 := rhsp : Optional[AstNodeExpr]
-    const bool m_lhsIsValue;  // LHS constructs value inside the queue, not concat
-    const bool m_rhsIsValue;  // RHS constructs value inside the queue, not concat
+    // Construct a dynamic array and return object, '{value, ...}, {value, array, ...},
+    // or with 'sizep', new[size]('{index: value, default: value})
+    // @astgen op1 := sizep : Optional[AstNodeExpr]
+    // @astgen op2 := defaultp : Optional[AstNodeExpr] // Only with sizep
+    // @astgen op3 := itemsp : List[AstConsDynArrayItem]
 public:
     explicit AstConsDynArray(FileLine* fl)
-        : ASTGEN_SUPER_ConsDynArray(fl)
-        , m_lhsIsValue{false}
-        , m_rhsIsValue{false} {}
-    explicit AstConsDynArray(FileLine* fl, bool lhsIsValue, AstNodeExpr* lhsp, bool rhsIsValue,
-                             AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_ConsDynArray(fl)
-        , m_lhsIsValue{lhsIsValue}
-        , m_rhsIsValue{rhsIsValue} {
-        this->lhsp(lhsp);
-        this->rhsp(rhsp);
-    }
+        : ASTGEN_SUPER_ConsDynArray(fl) {}
     ASTGEN_MEMBERS_AstConsDynArray;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    string emitVerilog() override { return "'{%l, %r}"; }
+    const char* broken() const override;
+    string emitVerilog() override { return "'{}"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* samep) const override {
-        const AstConsDynArray* const sp = VN_DBG_AS(samep, ConsDynArray);
-        return m_lhsIsValue == sp->m_lhsIsValue && m_rhsIsValue == sp->m_rhsIsValue;
-    }
-    bool lhsIsValue() const { return m_lhsIsValue; }
-    bool rhsIsValue() const { return m_rhsIsValue; }
 };
 class AstConsPackMember final : public AstNodeExpr {
     // Construct a packed array single element [member1: value1]
@@ -1081,54 +1068,41 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstConsQueue final : public AstNodeExpr {
-    // Construct a queue and return object, '{}. '{lhs}, '{lhs. rhs}
-    // @astgen op1 := lhsp : Optional[AstNodeExpr]
-    // @astgen op2 := rhsp : Optional[AstNodeExpr]
-    const bool m_lhsIsValue;  // LHS constructs value inside the queue, not concat
-    const bool m_rhsIsValue;  // RHS constructs value inside the queue, not concat
+    // Construct a queue and return object, '{value, ...}, {value, array, ...}
+    // @astgen op1 := itemsp : List[AstConsQueueItem]
 public:
     explicit AstConsQueue(FileLine* fl)
-        : ASTGEN_SUPER_ConsQueue(fl)
-        , m_lhsIsValue{false}
-        , m_rhsIsValue{false} {}
-    explicit AstConsQueue(FileLine* fl, bool lhsIsValue, AstNodeExpr* lhsp, bool rhsIsValue,
-                          AstNodeExpr* rhsp)
-        : ASTGEN_SUPER_ConsQueue(fl)
-        , m_lhsIsValue{lhsIsValue}
-        , m_rhsIsValue{rhsIsValue} {
-        this->lhsp(lhsp);
-        this->rhsp(rhsp);
-    }
+        : ASTGEN_SUPER_ConsQueue(fl) {}
     ASTGEN_MEMBERS_AstConsQueue;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    string emitVerilog() override { return "'{%l, %r}"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
-    int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* samep) const override {
-        const AstConsQueue* const sp = VN_DBG_AS(samep, ConsQueue);
-        return m_lhsIsValue == sp->m_lhsIsValue && m_rhsIsValue == sp->m_rhsIsValue;
+    const char* broken() const override {
+        BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), QueueDType));
+        return nullptr;
     }
-    bool lhsIsValue() const { return m_lhsIsValue; }
-    bool rhsIsValue() const { return m_rhsIsValue; }
-};
-class AstConsWildcard final : public AstNodeExpr {
-    // Construct a wildcard assoc array and return object, '{}
-    // @astgen op1 := defaultp : Optional[AstNodeExpr]
-public:
-    AstConsWildcard(FileLine* fl, AstNodeExpr* defaultp)
-        : ASTGEN_SUPER_ConsWildcard(fl) {
-        this->defaultp(defaultp);
-    }
-    ASTGEN_MEMBERS_AstConsWildcard;
     string emitVerilog() override { return "'{}"; }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+};
+class AstConsWildcard final : public AstNodeExpr {
+    // Construct a wildcard assoc array and return object, '{key: value, default: value}
+    // @astgen op1 := defaultp : Optional[AstNodeExpr]
+    // @astgen op2 := itemsp : List[AstConsWildcardItem]
+public:
+    explicit AstConsWildcard(FileLine* fl, AstNodeExpr* defaultp = nullptr)
+        : ASTGEN_SUPER_ConsWildcard(fl) {
+        this->defaultp(defaultp);
+    }
+    ASTGEN_MEMBERS_AstConsWildcard;
+    const char* broken() const override {
+        BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), WildcardArrayDType));
+        return nullptr;
+    }
+    string emitVerilog() override { return "'{}"; }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+    int instrCount() const override { return widthInstrs(); }
 };
 class AstConst final : public AstNodeExpr {
     // A constant
@@ -2203,6 +2177,7 @@ public:
     void isConcat(bool flag) { m_isConcat = flag; }
     bool isDefault() const { return m_isDefault; }
     void isDefault(bool flag) { m_isDefault = flag; }
+    AstNodeExpr* keyExprp() const { return varrefp() ? varrefp() : VN_CAST(keyp(), NodeExpr); }
 };
 class AstPattern final : public AstNodeExpr {
     // Verilog '{a,b,c,d...}
@@ -2765,46 +2740,6 @@ public:
     string scopePrettySymName() const { return scopePrettyNameFormatter(m_scopeAttr); }
     // Name for __Vscopep variable including children
     string scopePrettyDpiName() const { return scopePrettyNameFormatter(m_scopeEntr); }
-};
-class AstSetAssoc final : public AstNodeExpr {
-    // Set an assoc array element and return object, '{}
-    // @astgen op1 := lhsp : AstNodeExpr
-    // @astgen op2 := keyp : Optional[AstNode]
-    // @astgen op3 := valuep : AstNodeExpr
-public:
-    AstSetAssoc(FileLine* fl, AstNodeExpr* lhsp, AstNode* keyp, AstNodeExpr* valuep)
-        : ASTGEN_SUPER_SetAssoc(fl) {
-        this->lhsp(lhsp);
-        this->keyp(keyp);
-        this->valuep(valuep);
-    }
-    ASTGEN_MEMBERS_AstSetAssoc;
-    string emitVerilog() override { return "'{}"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
-    int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-};
-class AstSetWildcard final : public AstNodeExpr {
-    // Set a wildcard assoc array element and return object, '{}
-    // @astgen op1 := lhsp : AstNodeExpr
-    // @astgen op2 := keyp : Optional[AstNode]
-    // @astgen op3 := valuep : AstNodeExpr
-public:
-    AstSetWildcard(FileLine* fl, AstNodeExpr* lhsp, AstNode* keyp, AstNodeExpr* valuep)
-        : ASTGEN_SUPER_SetWildcard(fl) {
-        this->lhsp(lhsp);
-        this->keyp(keyp);
-        this->valuep(valuep);
-    }
-    ASTGEN_MEMBERS_AstSetWildcard;
-    string emitVerilog() override { return "'{}"; }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
-    int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstStable final : public AstNodeExpr {
     // Verilog $stable

@@ -21,36 +21,8 @@
 //######################################################################
 // V3ConstPool
 
-bool V3ConstPool::equalMap(const AstInitArray* ap, const AstInitArray* bp) {
-    // Associative array initializers must have equivalent types, defaults, and entries.
-    // As in 'equalTable', compare by value, rather than by tree structure.
-    const AstAssocArrayDType* const aDTypep = VN_AS(ap->dtypep(), AssocArrayDType);
-    const AstAssocArrayDType* const bDTypep = VN_AS(bp->dtypep(), AssocArrayDType);
-    if (!aDTypep->subDTypep()->sameTree(bDTypep->subDTypep())) return false;
-    if (!aDTypep->keyDTypep()->sameTree(bDTypep->keyDTypep())) return false;
-    // The default is optional, but must be the same if present
-    const AstNode* const aDefaultp = ap->defaultp();
-    const AstNode* const bDefaultp = bp->defaultp();
-    UASSERT_OBJ(!aDefaultp || VN_IS(aDefaultp, Const), ap, "Const pool map default not Const");
-    UASSERT_OBJ(!bDefaultp || VN_IS(bDefaultp, Const), bp, "Const pool map default not Const");
-    if (!aDefaultp != !bDefaultp) return false;
-    if (aDefaultp && !aDefaultp->sameTree(bDefaultp)) return false;
-    // Compare the entries, which are ordered by key. Note an entry explicitly set to the
-    // default value makes maps compare different, which is safe, but misses merging them.
-    const AstInitArray::KeyItemMap& aMap = ap->map();
-    const AstInitArray::KeyItemMap& bMap = bp->map();
-    if (aMap.size() != bMap.size()) return false;
-    auto bIt = bMap.cbegin();
-    for (const auto& aItem : aMap) {
-        const AstNode* const aValuep = aItem.second->valuep();
-        const AstNode* const bValuep = bIt->second->valuep();
-        UASSERT_OBJ(VN_IS(aValuep, Const), aValuep, "Const pool map item not Const");
-        UASSERT_OBJ(VN_IS(bValuep, Const), bValuep, "Const pool map item not Const");
-        if (aItem.first != bIt->first) return false;
-        if (!aValuep->sameTree(bValuep)) return false;
-        ++bIt;
-    }
-    return true;
+bool V3ConstPool::equalMap(const AstConsAssoc* ap, const AstConsAssoc* bp) {
+    return ap->sameTree(bp);
 }
 
 bool V3ConstPool::equalTable(const AstInitArray* ap, const AstInitArray* bp) {
@@ -112,12 +84,10 @@ AstVarRef* V3ConstPool::findOrCreate(T_Set& set, uint32_t& nextr, const char* pr
             UASSERT_OBJ(varp->constPoolEntry(), varp, "Unmarked variable in constant pool");
             if (VN_IS(varp->valuep(), Const)) {
                 m_consts.insert(varp);
-            } else if (const AstInitArray* const arrayp = VN_CAST(varp->valuep(), InitArray)) {
-                if (VN_IS(arrayp->dtypep(), AssocArrayDType)) {
-                    m_maps.insert(varp);
-                } else {
-                    m_tables.insert(varp);
-                }
+            } else if (VN_IS(varp->valuep(), InitArray)) {
+                m_tables.insert(varp);
+            } else {
+                m_maps.insert(varp);
             }
         }
         if (m_scopep) {
@@ -180,7 +150,7 @@ AstVarRef* V3ConstPool::findConst(AstConst* initp) {
     return self.findOrCreate(self.m_consts, self.m_nextConst, "CONST_", initp);
 }
 
-AstVarRef* V3ConstPool::findMap(AstInitArray* initp) {
+AstVarRef* V3ConstPool::findMap(AstConsAssoc* initp) {
     UASSERT_OBJ(VN_IS(initp->dtypep(), AssocArrayDType), initp,
                 "Const pool map must have associative array dtype");
     V3ConstPool& self = instance();
@@ -196,12 +166,8 @@ AstVarRef* V3ConstPool::findTable(AstInitArray* initp) {
 
 AstVarRef* V3ConstPool::find(AstNodeExpr* initp) {
     if (AstConst* const constp = VN_CAST(initp, Const)) return findConst(constp);
-    if (AstInitArray* const arrayp = VN_CAST(initp, InitArray)) {
-        if (VN_IS(arrayp->dtypep(), AssocArrayDType)) return findMap(arrayp);
-        if (VN_IS(arrayp->dtypep(), UnpackArrayDType)) return findTable(arrayp);
-    }
-    initp->v3fatalSrc("Unhandled constant pool initializer");
-    return nullptr;  // LCOV_EXCL_LINE
+    if (AstInitArray* const arrayp = VN_CAST(initp, InitArray)) return findTable(arrayp);
+    return findMap(VN_AS(initp, ConsAssoc));
 }
 
 const char* V3ConstPool::broken() {

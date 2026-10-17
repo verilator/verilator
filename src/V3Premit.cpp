@@ -394,6 +394,11 @@ class PremitVisitor final : public VNVisitor {
         }
         checkNode(nodep);
     }
+    // Const associative array keys are emitted as initializers, so need no temporary
+    void visit(AstConsAssocItem* nodep) override {
+        if (!VN_IS(nodep->keyp(), Const)) iterate(nodep->keyp());
+        iterate(nodep->valuep());
+    }
     void visit(AstMatchMasked* nodep) override {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
