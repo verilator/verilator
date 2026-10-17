@@ -1360,6 +1360,8 @@ class ForceReplaceVisitor final : public VNVisitor {
         iterate(nodep->rhsp());
     }
     void visit(AstDeassign*) override {}
+    // The variables that the statements may access through virtual interfaces stay references
+    void visit(AstHidden* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
     void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
     void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }

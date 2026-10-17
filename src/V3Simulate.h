@@ -1522,6 +1522,7 @@ private:
         knownBadNodeType(nodep);
     }
     void visit(AstGetInitialRandomSeed* nodep) override { knownBadNodeType(nodep); }
+    void visit(AstHidden* nodep) override { knownBadNodeType(nodep); }
     void visit(AstMemberSel* nodep) override { knownBadNodeType(nodep); }
     void visit(AstSampled* nodep) override { knownBadNodeType(nodep); }
     // ====

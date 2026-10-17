@@ -214,25 +214,27 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
         for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
             SchedReplicateLogicVertex* const lvtxp
                 = new SchedReplicateLogicVertex{graphp.get(), scopep, senTreep, nodep, region};
-            const VNUser2InUse user2InUse;
-            const VNUser3InUse user3InUse;
+            const VNUser2InUse user2InUse;  // AstVarScope: written here
+            const VNUser3InUse user3InUse;  // AstVarScope: read here, before written
 
             V3Sched::util::VarScopeSet forceReadEdgeIgnores;
             V3Sched::util::collectForceReadEdgeIgnores(nodep, forceReadEdgeIgnores);
 
-            nodep->foreach([&](AstVarRef* refp) {
+            // As ordering does, take the accesses through virtual interfaces last
+            V3Sched::util::foreachVarRefHiddenLast(nodep, [&](AstVarRef* refp, bool hidden) {
                 AstVarScope* const vscp = refp->varScopep();
                 SchedReplicateVarVertex* const vvtxp = getVarVertex(vscp);
-                if (refp->access().isReadOrRW() && !vscp->user3SetOnce()
-                    && readTriggersThisLogic(vscp) && !vscp->user2()
-                    && !forceReadEdgeIgnores.count(vscp)) {  //
+                if (refp->access().isReadOrRW() && readTriggersThisLogic(vscp) && !vscp->user2()
+                    && !forceReadEdgeIgnores.count(vscp) && !vscp->user3SetOnce()) {  //
                     addEdge(vvtxp, lvtxp);
                 }
-                // If written, add logic -> var edge
+                // If written, add logic -> var edge. As ordering does, not for a write through a
+                // virtual interface of a variable read here, which may not make a loop.
                 // Note: See V3Order for why AlwaysPostponed is safe to be ignored. We ignore it
                 // as otherwise we would end up with a false cycle.
                 if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
-                    && !vscp->user2SetOnce() && !VN_IS(nodep, AlwaysPostponed)) {  //
+                    && !(hidden && vscp->user3()) && !vscp->user2SetOnce()
+                    && !VN_IS(nodep, AlwaysPostponed)) {  //
                     addEdge(lvtxp, vvtxp);
                 }
             });

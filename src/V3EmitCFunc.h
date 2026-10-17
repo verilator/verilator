@@ -1308,6 +1308,7 @@ public:
         // Emit
         putns(nodep, "goto __Vlabel" + std::to_string(n) + ";\n");
     }
+    void visit(AstHidden* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
     void visit(AstLoop* nodep) override {
         UASSERT_OBJ(!nodep->contsp(), nodep, "'contsp' only used before LinkJump");
         VL_RESTORER(m_createdScopeHash);

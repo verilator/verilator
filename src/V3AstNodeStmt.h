@@ -815,6 +815,24 @@ public:
     void dumpJson(std::ostream& str) const override;
     bool isDelayed() const { return m_delayed; }
 };
+class AstHidden final : public AstNodeStmt {
+    // Statements that may access variables they do not reference, e.g. through virtual
+    // interfaces, with references to all these variables, so analyses see the accesses. The
+    // reads are before the statements, and the writes after them, but a write may not happen,
+    // or may be of only part of the variable.
+    // @astgen op1 := rdsp : List[AstVarRef]  // Variables the statements may read
+    // @astgen op2 := stmtsp : List[AstNode]  // The statements
+    // @astgen op3 := wrsp : List[AstVarRef]  // Variables the statements may write
+public:
+    AstHidden(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_Hidden(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstHidden;
+    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    // V3Gate must not move the statements away from the references
+    bool isGateOptimizable() const override { return false; }
+};
 class AstInitialAutomaticStmt final : public AstNodeStmt {
     // Automatic variable initialization in a statement position
     // Used during early stages to record an initial initialization of a variable

@@ -62,10 +62,13 @@ module t;
 
     // Test 2: tx_vif now points to the sub-interface; write through it
     driver.tx_vif.Tx = 1'b1;
+    // The output ports drive wire_Tx as continuous assignments, so let them update
+    #1;
     `checkd(wire_Tx, 1'b1)
 
     // Test 3: chained member write through virtual interface
     driver.drive(1'b0);
+    #1;
     `checkd(wire_Tx, 1'b0)
 
     $write("*-* All Finished *-*\n");

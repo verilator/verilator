@@ -338,11 +338,25 @@ evaluation step, this ordering restores the invariant that variables driven
 by combinational logic are consistent with that combinational logic (i.e.,
 the circuit is in a settled/steady state).
 
-A member read through a virtual interface, or written by the logic
-committing an NBA through one, may be of any instance of the interface. So
-``V3Order`` takes such a read in clocked logic, and such a write, as
-accesses to the member in all instances, to order the clocked logic before
-the NBA updates of each one.
+A statement accessing a member through a virtual interface may access it in
+any instance of the interface, which the statement does not show. So,
+after scoping, ``V3Scope::hiddenAll`` wraps such statements in an
+``AstHidden``, with references to the member in each instance that the
+virtual interface may point to: the instances assigned to it, directly or
+through other virtual interfaces, or, if these are not known, every
+instance whose interface reference is used, and the sub-interfaces in
+them. The reads are taken as before the statements, and the writes as after
+them, but as writes that may not happen, or be partial. ``V3Order``,
+``V3SchedAcyclic`` and the other analyses then take these accesses as any
+other, so for example clocked logic reading a member through a virtual
+interface is ordered before the NBA updates of each instance. As the
+accesses may not happen, the analyses that ignore a read of a variable
+written before it in the same logic take them after all other accesses,
+and combinational logic does not depend on a variable it may write through
+a virtual interface and also reads. ``V3Delayed`` moves the writes of an
+NBA through a virtual interface to its commit, but in a process that
+cannot suspend, where such NBAs are not yet ordered with the others to the
+member, it deletes them.
 
 One of the most important optimizations for performance is to only evaluate
 combinational logic, if its inputs might have changed. For example, there

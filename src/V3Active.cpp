@@ -579,6 +579,11 @@ class ActiveVisitor final : public VNVisitor {
             }
         }
     }
+    // Writes through virtual interfaces may not happen, so are not writes before a read
+    void visit(AstHidden* nodep) override {
+        iterateAndNextNull(nodep->rdsp());
+        iterateAndNextNull(nodep->stmtsp());
+    }
     void visit(AstAssignDly* nodep) override {
         m_canBeComb = false;
         if (nodep->isTimingControl()) m_clockedProcess = true;

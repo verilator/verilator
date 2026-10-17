@@ -76,6 +76,30 @@ inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
         });
     });
 }
+
+// Call 'f(refp, hidden)' for each AstVarRef under 'nodep'. Those of AstHidden ('hidden') are
+// accesses that may not happen, so come after all others, first the reads, then the writes, so
+// that no read is ignored as written before by one of them.
+template <typename T_Callable>
+void foreachVarRefHiddenLast(AstNode* nodep, T_Callable&& f) {
+    std::vector<AstVarRef*> rdps;
+    std::vector<AstVarRef*> wrps;
+    nodep->foreach([&](AstHidden* hiddenp) {
+        for (AstVarRef* refp = hiddenp->rdsp(); refp; refp = VN_AS(refp->nextp(), VarRef)) {
+            rdps.push_back(refp);
+        }
+        for (AstVarRef* refp = hiddenp->wrsp(); refp; refp = VN_AS(refp->nextp(), VarRef)) {
+            wrps.push_back(refp);
+        }
+    });
+    std::unordered_set<const AstVarRef*> hiddenps{rdps.begin(), rdps.end()};
+    hiddenps.insert(wrps.begin(), wrps.end());
+    nodep->foreach([&](AstVarRef* refp) {
+        if (!hiddenps.count(refp)) f(refp, false);
+    });
+    for (AstVarRef* const refp : rdps) f(refp, true);
+    for (AstVarRef* const refp : wrps) f(refp, true);
+}
 }  // namespace util
 
 //============================================================================

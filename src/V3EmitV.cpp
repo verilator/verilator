@@ -596,6 +596,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         iterateAndNextConstNull(nodep->stmtsp());
         putfs(nodep, "end\n");
     }
+    void visit(AstHidden* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
     void visit(AstLoop* nodep) override {
         // Special case when the AstLoopTest is first for output readability
         if (AstLoopTest* const testp = VN_CAST(nodep->stmtsp(), LoopTest)) {

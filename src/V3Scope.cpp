@@ -26,7 +26,10 @@
 #include "V3Scope.h"
 
 #include "V3ConstPool.h"
+#include "V3Stats.h"
 
+#include <algorithm>
+#include <map>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -429,6 +432,264 @@ public:
 };
 
 //######################################################################
+// Show the accesses through virtual interfaces to analyses, with AstHidden
+
+class ScopeHiddenVisitor final : public VNVisitor {
+    // TYPES
+    // A virtual interface variable, or an element of an array of them (index -1: any element)
+    using Loc = std::pair<const AstVarScope*, int>;
+    // Instances a virtual interface may point to; nullptr for any whose reference is used
+    using Targets = std::vector<const AstScope*>;
+    // Variables accessed by a statement, in order
+    struct Accesses final {
+        std::vector<AstVarScope*> m_vscps;  // The variables, in order
+        std::unordered_set<const AstVarScope*> m_added;  // The variables already in m_vscps
+        void add(AstVarScope* vscp) {
+            if (m_added.insert(vscp).second) m_vscps.push_back(vscp);
+        }
+    };
+
+    // STATE
+    // The variables of each member of an interface, in all instances a reference may point to
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_ifaceVscps;
+    // The variable of a member of an interface in one of these instances
+    std::map<std::pair<const AstScope*, const AstVar*>, AstVarScope*> m_memberVscps;
+    std::map<Loc, Targets> m_targets;  // Instances assigned to virtual interfaces
+    bool m_inProcedure = false;  // Under a process or a function
+    Accesses m_reads;  // Variables the current statement may read
+    Accesses m_writes;  // Variables the current statement may write
+    VDouble0 m_statRefs;  // Statistic tracking
+
+    // METHODS
+    // The interface reference type of a type, or of the elements of unpacked arrays of it
+    static const AstIfaceRefDType* ifaceRefDTypep(const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+            dtypep = arrayp->subDTypep()->skipRefp();
+        }
+        return VN_CAST(dtypep, IfaceRefDType);
+    }
+    static bool isVirtIface(const AstNodeDType* dtypep) {
+        const AstIfaceRefDType* const refp = ifaceRefDTypep(dtypep);
+        return refp && refp->isVirtual();
+    }
+    static bool addOnce(Targets& targets, const AstScope* scopep) {
+        if (std::find(targets.begin(), targets.end(), scopep) != targets.end()) return false;
+        targets.push_back(scopep);
+        return true;
+    }
+    // Whether a reference only selects the instance whose member is accessed
+    static bool isDeref(const AstNodeExpr* exprp) {
+        if (const AstArraySel* const selp = VN_CAST(exprp->backp(), ArraySel)) {
+            if (selp->fromp() == exprp) exprp = selp;
+        }
+        const AstMemberSel* const selp = VN_CAST(exprp->backp(), MemberSel);
+        return selp && selp->fromp() == exprp;
+    }
+    // The instances assigned to a location, or to any element of its array; any instance if none
+    Targets targets(const Loc& loc) const {
+        // A class member may also be assigned through member selects
+        if (VN_IS(loc.first->scopep()->modp(), Class)) return {nullptr};
+        Targets result;
+        bool known = false;
+        for (const int index : {loc.second, -1}) {
+            const auto it = m_targets.find({loc.first, index});
+            if (it == m_targets.end()) continue;
+            known = true;
+            for (const AstScope* const scopep : it->second) addOnce(result, scopep);
+        }
+        if (!known) result.push_back(nullptr);
+        return result;
+    }
+    // The instances a virtual interface may point to
+    Targets handleTargets(const AstNodeExpr* exprp) const {
+        int index = -1;
+        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+            const AstConst* const constp = VN_CAST(selp->bitp(), Const);
+            if (!constp) return {nullptr};
+            index = constp->toSInt();
+            exprp = selp->fromp();
+        }
+        const AstVarRef* const refp = VN_CAST(exprp, VarRef);
+        if (!refp) return {nullptr};
+        return targets({refp->varScopep(), index});
+    }
+    // Record what is assigned to a location: instances, or what other locations point to
+    void addSources(const Loc& dst, const AstNodeExpr* rhsp,
+                    std::vector<std::pair<Loc, Loc>>& copies) {
+        if (VN_IS(rhsp, Const)) return;  // null
+        if (const AstInitArray* const initp = VN_CAST(rhsp, InitArray)) {
+            if (dst.second == -1) {
+                for (const auto& itr : initp->map()) {
+                    addSources({dst.first, static_cast<int>(itr.first)}, itr.second->valuep(),
+                               copies);
+                }
+                if (initp->defaultp()) addSources(dst, initp->defaultp(), copies);
+                return;
+            }
+        } else if (const AstVarRef* const refp = VN_CAST(rhsp, VarRef)) {
+            const AstIfaceRefDType* const dtypep
+                = VN_CAST(refp->varp()->dtypep()->skipRefp(), IfaceRefDType);
+            if (dtypep && dtypep->cellp()) {  // A known instance
+                addOnce(m_targets[dst], refp->varScopep()->scopep());
+                return;
+            }
+            if (dtypep && dtypep->isVirtual()) {
+                copies.emplace_back(dst, Loc{refp->varScopep(), -1});
+                return;
+            }
+        } else if (const AstArraySel* const selp = VN_CAST(rhsp, ArraySel)) {
+            const AstVarRef* const refp = VN_CAST(selp->fromp(), VarRef);
+            const AstConst* const constp = VN_CAST(selp->bitp(), Const);
+            if (refp && constp && isVirtIface(refp->varp()->dtypep())) {
+                copies.emplace_back(dst, Loc{refp->varScopep(), constp->toSInt()});
+                return;
+            }
+        }
+        addOnce(m_targets[dst], nullptr);
+    }
+
+    // VISITORS
+    void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_inProcedure);
+        m_inProcedure = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_inProcedure);
+        m_inProcedure = true;
+        iterateChildren(nodep);
+    }
+    // Sensitivities through virtual interfaces are handled by their triggers
+    void visit(AstSenTree*) override {}
+    // Made below, and skipped, as replacing a statement visits its replacement
+    void visit(AstHidden*) override {}
+    void visit(AstNodeStmt* nodep) override {
+        VL_RESTORER_CLEAR(m_reads);
+        VL_RESTORER_CLEAR(m_writes);
+        iterateChildren(nodep);
+        if (!m_inProcedure || (m_reads.m_vscps.empty() && m_writes.m_vscps.empty())) return;
+        FileLine* const flp = nodep->fileline();
+        AstHidden* const hiddenp = new AstHidden{flp, nullptr};
+        nodep->replaceWith(hiddenp);
+        hiddenp->addStmtsp(nodep);
+        for (AstVarScope* const vscp : m_reads.m_vscps) {
+            hiddenp->addRdsp(new AstVarRef{flp, vscp, VAccess::READ});
+        }
+        for (AstVarScope* const vscp : m_writes.m_vscps) {
+            hiddenp->addWrsp(new AstVarRef{flp, vscp, VAccess::WRITE});
+        }
+        m_statRefs += m_reads.m_vscps.size() + m_writes.m_vscps.size();
+    }
+    void visit(AstMemberSel* nodep) override {
+        iterateChildren(nodep);
+        if (!isVirtIface(nodep->fromp()->dtypep())) return;
+        const bool read = nodep->access().isReadOrRW();
+        const bool write = nodep->access().isWriteOrRW();
+        const auto add = [&](AstVarScope* vscp) {
+            if (read) m_reads.add(vscp);
+            if (write) m_writes.add(vscp);
+        };
+        for (const AstScope* const scopep : handleTargets(nodep->fromp())) {
+            if (scopep) {
+                const auto it = m_memberVscps.find({scopep, nodep->varp()});
+                if (it != m_memberVscps.end()) add(it->second);
+            } else {
+                const auto it = m_ifaceVscps.find(nodep->varp());
+                if (it == m_ifaceVscps.end()) continue;  // No instance can be bound
+                for (AstVarScope* const vscp : it->second) add(vscp);
+            }
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit ScopeHiddenVisitor(AstNetlist* nodep) {
+        // A virtual interface may only point to an instance whose interface reference is used.
+        // When the reference is not to a known instance, it may be to any of the interface.
+        std::unordered_set<const AstScope*> boundScopeps;
+        std::unordered_set<const AstNodeModule*> allBoundModps;
+        nodep->foreach([&](const AstNodeExpr* exprp) {
+            const AstIfaceRefDType* const ifaceRefp = ifaceRefDTypep(exprp->dtypep());
+            if (!ifaceRefp || ifaceRefp->isVirtual()) return;
+            // V3Scope puts the variable of a reference to a known instance in its scope
+            const AstVarRef* const refp = VN_CAST(exprp, VarRef);
+            const AstIfaceRefDType* const varDtypep
+                = refp ? VN_CAST(refp->varp()->dtypep(), IfaceRefDType) : nullptr;
+            if (varDtypep && varDtypep->cellp()) {
+                boundScopeps.emplace(refp->varScopep()->scopep());
+            } else {
+                UINFO(9, "Any instance may be bound by " << exprp);
+                allBoundModps.emplace(ifaceRefp->ifaceViaCellp());
+            }
+        });
+        for (AstNodeModule* modp = nodep->modulesp(); modp;
+             modp = VN_AS(modp->nextp(), NodeModule)) {
+            if (!VN_IS(modp, Iface)) continue;
+            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                const AstScope* const scopep = VN_CAST(stmtp, Scope);
+                if (!scopep) continue;
+                // A virtual interface to an instance also reaches the sub-interfaces in it
+                bool bound = false;
+                for (const AstScope* abovep = scopep; abovep && VN_IS(abovep->modp(), Iface);
+                     abovep = abovep->aboveScopep()) {
+                    bound |= allBoundModps.count(abovep->modp()) || boundScopeps.count(abovep);
+                }
+                if (!bound) continue;
+                for (AstVarScope* vscp = scopep->varsp(); vscp;
+                     vscp = VN_AS(vscp->nextp(), VarScope)) {
+                    // Constants and references to instances cannot change, so need not be shown
+                    const AstVar* const varp = vscp->varp();
+                    const AstIfaceRefDType* const refp
+                        = VN_CAST(varp->dtypep()->skipRefp(), IfaceRefDType);
+                    if (varp->isParam() || varp->isConst() || (refp && !refp->isVirtual())) {
+                        continue;
+                    }
+                    m_ifaceVscps[varp].push_back(vscp);
+                    m_memberVscps.emplace(std::make_pair(scopep, varp), vscp);
+                }
+            }
+        }
+        // The instances each virtual interface may point to, from the assignments to it
+        std::vector<std::pair<Loc, Loc>> copies;  // The first may point to what the second may
+        std::unordered_set<const AstVarRef*> assignedps;
+        nodep->foreach([&](const AstNodeAssign* assp) {
+            const AstNodeExpr* lhsp = assp->lhsp();
+            int index = -1;
+            if (const AstArraySel* const selp = VN_CAST(lhsp, ArraySel)) {
+                if (const AstConst* const constp = VN_CAST(selp->bitp(), Const)) {
+                    index = constp->toSInt();
+                }
+                lhsp = selp->fromp();
+            }
+            const AstVarRef* const refp = VN_CAST(lhsp, VarRef);
+            if (!refp || !isVirtIface(refp->varp()->dtypep())) return;
+            assignedps.emplace(refp);
+            addSources({refp->varScopep(), index}, assp->rhsp(), copies);
+        });
+        // Written otherwise, e.g. as an output argument, it may point to any instance
+        nodep->foreach([&](const AstVarRef* refp) {
+            if (refp->access().isReadOnly() || !isVirtIface(refp->varp()->dtypep())) return;
+            if (assignedps.count(refp) || isDeref(refp)) return;
+            addOnce(m_targets[{refp->varScopep(), -1}], nullptr);
+        });
+        for (bool changed = true; changed;) {
+            changed = false;
+            for (const auto& copy : copies) {
+                for (const AstScope* const scopep : targets(copy.second)) {
+                    changed |= addOnce(m_targets[copy.first], scopep);
+                }
+            }
+        }
+        iterate(nodep);
+    }
+    ~ScopeHiddenVisitor() override {
+        V3Stats::addStat("Scope, references through virtual interfaces", m_statRefs);
+    }
+};
+
+//######################################################################
 // Scope class functions
 
 void V3Scope::scopeAll(AstNetlist* nodep) {
@@ -439,4 +700,10 @@ void V3Scope::scopeAll(AstNetlist* nodep) {
     }  // Destruct before checking
     V3ConstPool::setScoped();
     V3Global::dumpCheckGlobalTree("scope", 0, dumpTreeEitherLevel() >= 3);
+}
+
+void V3Scope::hiddenAll(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ":");
+    { ScopeHiddenVisitor{nodep}; }  // Destruct before checking
+    V3Global::dumpCheckGlobalTree("hidden", 0, dumpTreeEitherLevel() >= 3);
 }
