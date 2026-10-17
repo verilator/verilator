@@ -3386,24 +3386,13 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstStructSel* nodep) override {
         iterateChildren(nodep);
 
-        if (VN_IS(nodep->fromp(), ConsPackUOrStruct)) {
-            const AstConsPackUOrStruct* const consp = VN_AS(nodep->fromp(), ConsPackUOrStruct);
-            for (AstConsPackMember* memberp = consp->membersp(); memberp;
-                 memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
-
-                if (memberp->dtypep() && memberp->dtypep()->name() == nodep->name()) {
-                    AstNode* const valuep = memberp->rhsp();
-
-                    if (VN_IS(valuep, Const)) {
-                        const V3Number& num = VN_AS(valuep, Const)->num();
-                        VL_DO_DANGLING(replaceNum(nodep, num), nodep);
-                    } else {
-                        AstNode* const newp = valuep->cloneTree(false);
-                        nodep->replaceWith(newp);
-                        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                    }
-                    break;
-                }
+        if (const AstConsStruct* const consp = VN_CAST(nodep->fromp(), ConsStruct)) {
+            AstNodeExpr* const valuep = consp->memberValuep(nodep->name());
+            if (const AstConst* const constp = VN_CAST(valuep, Const)) {
+                VL_DO_DANGLING(replaceNum(nodep, constp->num()), nodep);
+            } else {
+                nodep->replaceWith(valuep->cloneTree(false));
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
     }
@@ -3449,7 +3438,7 @@ class ConstVisitor final : public VNVisitor {
                     nodep->replaceWithKeepDType(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     did = true;
-                } else if (m_params && VN_IS(valuep, ConsPackUOrStruct)) {
+                } else if (m_params && VN_IS(valuep, ConsStruct)) {
                     AstNode* const newp = valuep->cloneTree(false);
                     nodep->replaceWithKeepDType(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -4189,8 +4178,8 @@ class ConstVisitor final : public VNVisitor {
     }
 
     void visit(AstInitArray* nodep) override { iterateChildren(nodep); }
-    void visit(AstConsPackUOrStruct* nodep) override { iterateChildren(nodep); }
-    void visit(AstConsPackMember* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsStruct* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsStructItem* nodep) override { iterateChildren(nodep); }
     void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
     void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the

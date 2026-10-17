@@ -222,12 +222,12 @@ static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep,
         }
         return result + "}";
     }
-    if (const AstConsPackUOrStruct* const consp = VN_CAST(valuep, ConsPackUOrStruct)) {
+    if (const AstConsStruct* const consp = VN_CAST(valuep, ConsStruct)) {
         string result = "'{";
         const char* sepp = "";
-        for (const AstConsPackMember* memberp = consp->membersp(); memberp;
-             memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
-            result += sepp + dtypeNameValue(memberp->rhsp(), memberp->dtypep());
+        for (const AstConsStructItem* itemp = consp->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+            result += sepp + dtypeNameValue(itemp->valuep(), itemp->memberp());
             sepp = ",";
         }
         return result + "}";
@@ -1272,6 +1272,32 @@ const char* AstConsDynArray::broken() const {
         BROKEN_RTN(!itemp->keyp() != !sizep());
     }
     return nullptr;
+}
+const char* AstConsStruct::broken() const {
+    const AstStructDType* const structp = VN_CAST(dtypep()->skipRefp(), StructDType);
+    BROKEN_RTN(!structp || structp->packed());
+    // An item for each member, in order
+    const AstMemberDType* memberp = structp->membersp();
+    for (const AstConsStructItem* itemp = itemsp(); itemp;
+         itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+        BROKEN_RTN(itemp->memberp() != memberp);
+        memberp = VN_AS(memberp->nextp(), MemberDType);
+    }
+    BROKEN_RTN(memberp);
+    return nullptr;
+}
+AstNodeExpr* AstConsStruct::memberValuep(const string& name) const {
+    for (AstConsStructItem* itemp = itemsp(); itemp;
+         itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+        if (itemp->memberp()->name() == name) return itemp->valuep();
+    }
+    v3fatalSrc("Structure value without member '" << name << "'");
+    return nullptr;
+}
+void AstConsStructItem::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " -> ";
+    memberp()->dump(str);
 }
 void AstConst::cloneRelink() {
     // Preserve parameter-origin metadata across AST clones; the side-table key must be this

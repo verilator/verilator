@@ -3778,18 +3778,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstConsWildcard* nodep) override {}  // Widthed when created
     void visit(AstConsDynArray* nodep) override {}  // Widthed when created
     void visit(AstConsQueue* nodep) override {}  // Widthed when created
-    void visit(AstConsPackUOrStruct* nodep) override {
-        // Type was computed when constructed in V3Width earlier
-        auto* const vdtypep = VN_AS(nodep->dtypep()->skipRefp(), NodeUOrStructDType);
-        UASSERT_OBJ(vdtypep, nodep, "ConsPackUOrStruct requires packed array parent data type");
-        userIterateChildren(nodep, WidthVP{vdtypep, BOTH}.p());
-    }
-    void visit(AstConsPackMember* nodep) override {
-        // Type was computed when constructed in V3Width earlier
-        auto* const vdtypep = VN_AS(nodep->dtypep(), MemberDType);
-        UASSERT_OBJ(vdtypep, nodep, "ConsPackMember requires member data type");
-        if (m_vup->prelim()) userIterateAndNext(nodep->rhsp(), WidthVP{vdtypep, BOTH}.p());
-    }
+    void visit(AstConsStruct* nodep) override {}  // Widthed when created
     void visit(AstInitItem* nodep) override {  //
         userIterateChildren(nodep, m_vup);
     }
@@ -6118,7 +6107,7 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
         } else {  // Unpacked
-            AstConsPackMember* membersp = nullptr;
+            AstConsStruct* const consp = new AstConsStruct{nodep->fileline(), vdtypep};
             for (AstMemberDType* memp = vdtypep->membersp(); memp;
                  memp = VN_AS(memp->nextp(), MemberDType)) {
                 const auto it = patmap.find(memp);
@@ -6133,11 +6122,9 @@ class WidthVisitor final : public VNVisitor {
                 }
                 patp->dtypep(memp);
                 AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-                AstConsPackMember* const cpmp
-                    = new AstConsPackMember{patp->fileline(), memp, valuep};
-                membersp = AstNode::addNextNull(membersp, cpmp);
+                consp->addItemsp(new AstConsStructItem{patp->fileline(), memp, valuep});
             }
-            newp = new AstConsPackUOrStruct{nodep->fileline(), vdtypep, membersp};
+            newp = consp;
         }
         if (newp) {
             nodep->replaceWith(newp);
@@ -6411,7 +6398,7 @@ class WidthVisitor final : public VNVisitor {
         V3Const::constifyParamsNoWarnEdit(patp->keyExprp());
         AstNodeExpr* const foldedp = patp->keyExprp();
         const bool isConst = !foldedp->exists([](const AstNode* np) {
-            return !VN_IS(np, Const) && !VN_IS(np, ConsPackUOrStruct) && !VN_IS(np, ConsPackMember)
+            return !VN_IS(np, Const) && !VN_IS(np, ConsStruct) && !VN_IS(np, ConsStructItem)
                    && !VN_IS(np, InitArray) && !VN_IS(np, InitItem);
         });
         if (!isConst) {

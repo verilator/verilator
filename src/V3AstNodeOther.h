@@ -1047,6 +1047,26 @@ public:
         return nullptr;
     }
 };
+class AstConsStructItem final : public AstNode {
+    // An element of an AstConsStruct, the value of a member
+    // Parents: CONSSTRUCT
+    // @astgen op1 := valuep : AstNodeExpr
+    // @astgen ptr := m_memberp : AstMemberDType  // The member set
+public:
+    AstConsStructItem(FileLine* fl, AstMemberDType* memberp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsStructItem(fl)
+        , m_memberp{memberp} {
+        this->valuep(valuep);
+    }
+    ASTGEN_MEMBERS_AstConsStructItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsStruct) && !VN_IS(backp(), ConsStructItem));
+        return nullptr;
+    }
+    void dump(std::ostream& str) const override;
+    AstMemberDType* memberp() const { return m_memberp; }
+};
 class AstConsWildcardItem final : public AstNode {
     // An element of an AstConsWildcard, setting the key to the value
     // Parents: CONSWILDCARD

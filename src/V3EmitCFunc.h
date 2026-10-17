@@ -1903,23 +1903,11 @@ public:
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         EmitCConstInit::visit(nodep);
     }
-    void visit(AstConsPackUOrStruct* nodep) override {
-        putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        puts("{");
-        for (AstNode* memberp = nodep->membersp(); memberp; memberp = memberp->nextp()) {
-            iterateConst(memberp);
-            if (memberp->nextp()) puts(", ");
-        }
-        puts("}");
-    }
-    void visit(AstConsPackMember* nodep) override {
-        auto* const vdtypep = VN_AS(nodep->dtypep(), MemberDType);
-        putnbs(nodep, ".");
-        puts(vdtypep->name());
-        puts(" = ");
-        iterateConst(nodep->rhsp());
-    }
     void visit(AstConsQueue* nodep) override {
+        putnbs(nodep, nodep->dtypep()->cType("", false, false));
+        EmitCConstInit::visit(nodep);
+    }
+    void visit(AstConsStruct* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         EmitCConstInit::visit(nodep);
     }

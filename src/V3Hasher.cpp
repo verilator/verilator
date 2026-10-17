@@ -401,6 +401,9 @@ class HasherVisitor final : public VNVisitorConst {
     void visit(AstConsQueueItem* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }
+    void visit(AstConsStructItem* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
+    }
     void visit(AstInitItem* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }

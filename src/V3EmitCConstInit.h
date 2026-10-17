@@ -83,6 +83,21 @@ protected:
         puts("\n}");
     }
 
+    template <typename T_Item>
+    void emitConsUnkeyedItems(T_Item* itemsp) {
+        puts("{");
+        for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
+            if (itemp != itemsp) puts(",");
+            puts("\n");
+            AstNodeExpr* const valuep = itemp->valuep();
+            // The variadic constructor can't deduce a type from a braced list, so give unpacked
+            // array values their type
+            if (VN_IS(valuep, InitArray)) puts(valuep->dtypep()->cType("", false, false));
+            iterateInit(valuep);
+        }
+        puts("\n}");
+    }
+
     template <typename T_Cons>
     void emitConsAssoc(T_Cons* nodep) {
         // '{default, {items}}', '{{items}}', or '{}' if empty
@@ -96,21 +111,6 @@ protected:
             puts(",\n");
         }
         emitConsKeyedItems(nodep->itemsp());
-        puts("\n}");
-    }
-
-    template <typename T_Item>
-    void emitConsQueueItems(T_Item* itemsp) {
-        puts("{");
-        for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
-            if (itemp != itemsp) puts(",");
-            puts("\n");
-            AstNodeExpr* const valuep = itemp->valuep();
-            // The variadic constructor can't deduce a type from a braced list, so give unpacked
-            // array values their type
-            if (VN_IS(valuep, InitArray)) puts(valuep->dtypep()->cType("", false, false));
-            iterateInit(valuep);
-        }
         puts("\n}");
     }
 
@@ -143,7 +143,7 @@ protected:
     void visit(AstConsWildcard* nodep) override { emitConsAssoc(nodep); }
     void visit(AstConsDynArray* nodep) override {
         if (!nodep->sizep()) {
-            emitConsQueueItems(nodep->itemsp());
+            emitConsUnkeyedItems(nodep->itemsp());
             return;
         }
         puts("{\n");
@@ -156,7 +156,8 @@ protected:
         emitConsKeyedItems(nodep->itemsp());
         puts("\n}");
     }
-    void visit(AstConsQueue* nodep) override { emitConsQueueItems(nodep->itemsp()); }
+    void visit(AstConsQueue* nodep) override { emitConsUnkeyedItems(nodep->itemsp()); }
+    void visit(AstConsStruct* nodep) override { emitConsUnkeyedItems(nodep->itemsp()); }
 
     void visit(AstConsAssocItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstConsAssoc");
@@ -169,6 +170,9 @@ protected:
     }  // LCOV_EXCL_STOP
     void visit(AstConsQueueItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstConsQueue");
+    }  // LCOV_EXCL_STOP
+    void visit(AstConsStructItem* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("Handled by AstConsStruct");
     }  // LCOV_EXCL_STOP
     void visit(AstInitItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstInitArray");
