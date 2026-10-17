@@ -1703,20 +1703,27 @@ class TristateVisitor final : public TristateBaseVisitor {
                 return;  // no tristates in either expression, so nothing to do
             }
             m_tgraph.didProcess(nodep);
-            AstNodeExpr* const en1p = getEnp(expr1p);
-            AstNodeExpr* const en2p = getEnp(expr2p);
+            AstNodeExpr* en1p = getEnp(expr1p);
+            AstNodeExpr* en2p = getEnp(expr2p);
             AstNodeExpr* subexpr1p = expr1p->cloneTreePure(false);
             AstNodeExpr* subexpr2p = expr2p->cloneTreePure(false);
             if (isAnd) {
                 subexpr1p = new AstNot{nodep->fileline(), subexpr1p};
                 subexpr2p = new AstNot{nodep->fileline(), subexpr2p};
             }
+            // The new output enable is en1&en2 | en1&sub1 | en2&sub2, which factors to
+            // en1&(en2|sub1) | en2&sub2. That references en1 once and en2 twice. Chained
+            // gates (e.g. a many-input primitive) nest on one side, so make the nested
+            // (non-leaf) side en1 to keep the enable linear in size.
+            if (!en1p->op1p() && en2p->op1p()) {
+                std::swap(en1p, en2p);
+                std::swap(subexpr1p, subexpr2p);
+            }
             // calc new output enable
             AstNodeExpr* const enp = new AstOr{
-                nodep->fileline(), new AstAnd{nodep->fileline(), en1p, en2p},
-                new AstOr{nodep->fileline(),
-                          new AstAnd{nodep->fileline(), en1p->cloneTree(false), subexpr1p},
-                          new AstAnd{nodep->fileline(), en2p->cloneTree(false), subexpr2p}}};
+                nodep->fileline(),
+                new AstAnd{nodep->fileline(), en1p, new AstOr{nodep->fileline(), en2p, subexpr1p}},
+                new AstAnd{nodep->fileline(), en2p->cloneTree(false), subexpr2p}};
             UINFO(9, "       neweqn " << enp);
             nodep->user1p(enp);
             expr1p->user1p(nullptr);
