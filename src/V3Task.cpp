@@ -301,10 +301,8 @@ private:
         iterateChildren(nodep);
         if (m_underPortVar) return;
         AstVar* const varp = nodep->varp();
-        // Reading a generated constant table does not depend on external runtime state.
-        if (nodep->access().isReadOnly() && varp->isTemp() && varp->isConst()
-            && VN_IS(varp->valuep(), InitArray))
-            return;
+        // Reading a constant pool entry does not depend on external runtime state.
+        if (nodep->access().isReadOnly() && varp->constPoolEntry()) return;
         if (varp->user4u().toGraphVertex() != m_curVxp) {
             if (m_curVxp->pure() && !varp->isXTemp() && !varp->isParam()) m_curVxp->impure(nodep);
         }

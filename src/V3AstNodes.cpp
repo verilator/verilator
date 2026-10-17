@@ -1262,25 +1262,16 @@ void AstConfigUse::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConfig);
     dumpJsonGen(str);
 }
-void AstConsDynArray::dump(std::ostream& str) const {
-    Super::dump(str);
-    if (lhsIsValue()) str << " [LVAL]";
-    if (rhsIsValue()) str << " [RVAL]";
-}
-void AstConsDynArray::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, lhsIsValue);
-    dumpJsonBoolFuncIf(str, rhsIsValue);
-    dumpJsonGen(str);
-}
-void AstConsQueue::dump(std::ostream& str) const {
-    Super::dump(str);
-    if (lhsIsValue()) str << " [LVAL]";
-    if (rhsIsValue()) str << " [RVAL]";
-}
-void AstConsQueue::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, lhsIsValue);
-    dumpJsonBoolFuncIf(str, rhsIsValue);
-    dumpJsonGen(str);
+const char* AstConsDynArray::broken() const {
+    BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), DynArrayDType));
+    // Default only valid if sizep is present
+    BROKEN_RTN(defaultp() && !sizep());
+    // Items are keyed exactly when sizep is present
+    for (const AstConsDynArrayItem* itemp = itemsp(); itemp;
+         itemp = VN_AS(itemp->nextp(), ConsDynArrayItem)) {
+        BROKEN_RTN(!itemp->keyp() != !sizep());
+    }
+    return nullptr;
 }
 void AstConst::cloneRelink() {
     // Preserve parameter-origin metadata across AST clones; the side-table key must be this
@@ -1843,6 +1834,7 @@ void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
     }
 }
 const char* AstInitArray::broken() const {
+    BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), UnpackArrayDType));
     for (KeyItemMap::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
         BROKEN_RTN(!it->second);
         BROKEN_RTN(!it->second->brokeExists());

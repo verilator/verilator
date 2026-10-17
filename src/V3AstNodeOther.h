@@ -990,6 +990,81 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
+class AstConsAssocItem final : public AstNode {
+    // An element of an AstConsAssoc, setting the key to the value
+    // Parents: CONSASSOC
+    // @astgen op1 := keyp : AstNodeExpr // Const, or Cons for an aggregate key type
+    // @astgen op2 := valuep : AstNodeExpr
+public:
+    AstConsAssocItem(FileLine* fl, AstNodeExpr* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsAssocItem(fl) {
+        this->keyp(keyp);
+        this->valuep(valuep);
+    }
+    ASTGEN_MEMBERS_AstConsAssocItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsAssoc) && !VN_IS(backp(), ConsAssocItem));
+        return nullptr;
+    }
+};
+class AstConsDynArrayItem final : public AstNode {
+    // An element of an AstConsDynArray: a value, an array to splice, or with sizep, the
+    // value at index 'keyp'
+    // Parents: CONSDYNARRAY
+    // @astgen op1 := keyp : Optional[AstConst]
+    // @astgen op2 := valuep : AstNodeExpr
+public:
+    AstConsDynArrayItem(FileLine* fl, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsDynArrayItem(fl) {
+        this->valuep(valuep);
+    }
+    AstConsDynArrayItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsDynArrayItem(fl) {
+        this->keyp(keyp);
+        this->valuep(valuep);
+    }
+    ASTGEN_MEMBERS_AstConsDynArrayItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsDynArray) && !VN_IS(backp(), ConsDynArrayItem));
+        return nullptr;
+    }
+};
+class AstConsQueueItem final : public AstNode {
+    // An element of an AstConsQueue, a value or an array to splice
+    // Parents: CONSQUEUE
+    // @astgen op1 := valuep : AstNodeExpr
+public:
+    AstConsQueueItem(FileLine* fl, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsQueueItem(fl) {
+        this->valuep(valuep);
+    }
+    ASTGEN_MEMBERS_AstConsQueueItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsQueue) && !VN_IS(backp(), ConsQueueItem));
+        return nullptr;
+    }
+};
+class AstConsWildcardItem final : public AstNode {
+    // An element of an AstConsWildcard, setting the key to the value
+    // Parents: CONSWILDCARD
+    // @astgen op1 := keyp : AstConst
+    // @astgen op2 := valuep : AstNodeExpr
+public:
+    AstConsWildcardItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsWildcardItem(fl) {
+        this->keyp(keyp);
+        this->valuep(valuep);
+    }
+    ASTGEN_MEMBERS_AstConsWildcardItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsWildcard) && !VN_IS(backp(), ConsWildcardItem));
+        return nullptr;
+    }
+};
 class AstConstraint final : public AstNode {
     // Constraint
     // @astgen op1 := itemsp : List[AstNode]
