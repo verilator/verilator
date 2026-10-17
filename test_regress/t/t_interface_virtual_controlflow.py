@@ -13,6 +13,9 @@ test.scenarios('simulator')
 
 test.compile(verilator_flags2=["--binary -fno-reorder -fno-split"])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
+
+# Sort so that the order of processes printing at the same time is not relevant
+test.files_identical_sorted(test.run_log_filename, test.golden_filename, is_logfile=True)
 
 test.passes()
