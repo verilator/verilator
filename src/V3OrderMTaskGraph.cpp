@@ -35,7 +35,10 @@ uint32_t LogicMTask::s_nextId = 1;  // Start at 1, for historic reasons
 LogicMTask::LogicMTask(OrderMTaskGraph& graph, OrderMoveVertex* mVtxp)
     : V3GraphVertex{&graph} {
     UASSERT(s_nextId < 0xFFFFFFFFUL, "Too many LogicMTask instances");
-    if (!mVtxp) return;
+    if (mVtxp) addVertex(mVtxp);
+}
+
+void LogicMTask::addVertex(OrderMoveVertex* mVtxp) {
     m_mVertices.linkBack(mVtxp);
     if (const OrderLogicVertex* const olvp = mVtxp->logicp()) {
         m_cost += V3InstrCount::count(olvp->nodep(), true);
@@ -394,7 +397,7 @@ void OrderMTaskGraph::validate() const {
 
 class OrderMTaskGraphBuilder final {
     // NODE STATE
-    // Used by V3InstrCount::count within the LogicMTask constructor only
+    // Used by V3InstrCount::count within LogicMTask::addVertex only
     const VNUser1InUse m_user1InUse;
 
     // MEMBERS
@@ -437,20 +440,32 @@ class OrderMTaskGraphBuilder final {
         return fanIn + fanOut == 4;
     }
 
-    // Add an edge to the graph, if there is not already an edge between the two vertices.
+    // Add an edge to the graph, if there is not already an edge between the two vertices, and
+    // they are not the same, which happens within a group.
     void addEdge(LogicMTask* srcp, LogicMTask* dstp) {
-        if (srcp->hasEdgeTo(dstp)) return;  // Don't create redundant edges.
+        if (srcp == dstp || srcp->hasEdgeTo(dstp)) return;  // Don't create redundant edges.
         m_mtaskGraph.addEdge(srcp, dstp);
     }
 
     // CONSTRUCTORS
-    explicit OrderMTaskGraphBuilder(OrderMTaskGraph& mtaskGraph)
+    OrderMTaskGraphBuilder(OrderMTaskGraph& mtaskGraph,
+                           const std::unordered_map<const OrderMoveVertex*, uint32_t>& groupOf)
         : m_mtaskGraph{mtaskGraph} {
 
-        // Create the LogicMTasks for each OrderMoveVertex
+        // Create the LogicMTasks for each OrderMoveVertex, or each group of them
+        std::unordered_map<uint32_t, LogicMTask*> groupMTasks;
         for (V3GraphVertex& vtx : mtaskGraph.moveGraph().vertices()) {
             OrderMoveVertex& mVtx = static_cast<OrderMoveVertex&>(vtx);
-            if (bypassOk(&mVtx)) {
+            const auto it = groupOf.find(&mVtx);
+            if (it != groupOf.end()) {
+                LogicMTask*& mtaskp = groupMTasks[it->second];
+                if (mtaskp) {
+                    mtaskp->addVertex(&mVtx);
+                } else {
+                    mtaskp = new LogicMTask{mtaskGraph, &mVtx};
+                }
+                mVtx.userp(mtaskp);
+            } else if (bypassOk(&mVtx)) {
                 mVtx.userp(nullptr);  // Set to nullptr to mark as bypassed
             } else {
                 mVtx.userp(new LogicMTask{mtaskGraph, &mVtx});  // Create vertex and set userp
@@ -461,25 +476,17 @@ class OrderMTaskGraphBuilder final {
         LogicMTask& exit = *mtaskGraph.exitp();
 
         // Create the MTask dependency edges based on the OrderMoveGraph dependencies
-        for (V3GraphVertex& vtx : mtaskGraph.vertices()) {
-            LogicMTask& mtask = static_cast<LogicMTask&>(vtx);
-
-            // Entry and exit vertices handled separately
-            if (VL_UNLIKELY((&mtask == &entry) || (&mtask == &exit))) continue;
-
-            OrderMoveVertex::List& vertexList = mtask.vertexList();
-            // At this point, there should only be one OrderMoveVertex per LogicMTask
-            UASSERT_OBJ(vertexList.hasSingleElement(), &mtask, "Multiple OrderMoveVertex");
-            OrderMoveVertex* const mVtxp = vertexList.frontp();
-            UASSERT_OBJ(mVtxp->userp(), &mtask, "Bypassed OrderMoveVertex should not have MTask");
+        for (V3GraphVertex& vtx : mtaskGraph.moveGraph().vertices()) {
+            LogicMTask* const mtaskp = static_cast<LogicMTask*>(vtx.userp());
+            if (!mtaskp) continue;  // Bypassed
 
             // Iterate downstream direct dependents
-            for (const V3GraphEdge& dEdge : mVtxp->outEdges()) {
+            for (const V3GraphEdge& dEdge : vtx.outEdges()) {
                 V3GraphVertex* const top = dEdge.top();
 
                 // If the opposite end of the edge is not a bypassed vertex, add direct dependency
                 if (LogicMTask* const otherp = static_cast<LogicMTask*>(top->userp())) {
-                    addEdge(&mtask, otherp);
+                    addEdge(mtaskp, otherp);
                     continue;
                 }
 
@@ -488,8 +495,8 @@ class OrderMTaskGraphBuilder final {
                     LogicMTask* const transp = static_cast<LogicMTask*>(tEdge.top()->userp());
                     // The Move graph is bipartite (logic <-> var), and logic is never
                     // bypassed, hence 'transp' must be non-nullptr.
-                    UASSERT_OBJ(transp, mVtxp, "This cannot be a bypassed vertex");
-                    addEdge(&mtask, transp);
+                    UASSERT_OBJ(transp, &vtx, "This cannot be a bypassed vertex");
+                    addEdge(mtaskp, transp);
                 }
             }
         }
@@ -509,12 +516,17 @@ class OrderMTaskGraphBuilder final {
     VL_UNMOVABLE(OrderMTaskGraphBuilder);
 
 public:
-    static void apply(OrderMTaskGraph& mtaskGraph) { OrderMTaskGraphBuilder{mtaskGraph}; }
+    static void apply(OrderMTaskGraph& mtaskGraph,
+                      const std::unordered_map<const OrderMoveVertex*, uint32_t>& groupOf) {
+        OrderMTaskGraphBuilder{mtaskGraph, groupOf};
+    }
 };
 
-std::unique_ptr<OrderMTaskGraph> OrderMTaskGraph::build(OrderMoveGraph& moveGraph) {
+std::unique_ptr<OrderMTaskGraph>
+OrderMTaskGraph::build(OrderMoveGraph& moveGraph,
+                       const std::unordered_map<const OrderMoveVertex*, uint32_t>& groupOf) {
     std::unique_ptr<OrderMTaskGraph> resp{new OrderMTaskGraph{moveGraph}};
-    OrderMTaskGraphBuilder::apply(*resp);
+    OrderMTaskGraphBuilder::apply(*resp, groupOf);
     resp->validate();
     return resp;
 }

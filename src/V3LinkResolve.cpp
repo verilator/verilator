@@ -224,6 +224,13 @@ class LinkResolveVisitor final : public VNVisitor {
             m_modp->hierBlock(v3Global.opt.hierarchical());
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->pragType() == VPragmaType::THREADS_UNIT) {
+            UASSERT_OBJ(m_modp, nodep, "THREADS_UNIT not under a module");
+            // The top module is the whole model, not a unit of it. With --hierarchical, this is
+            // the case for a hier_block in its own Verilation.
+            m_modp->threadsUnit(!m_modp->isTop());
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (nodep->pragType() == VPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);

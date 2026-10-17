@@ -261,6 +261,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_SC_BV                  "sc_bv"
 %token<fl>              yVLT_SFORMAT                "sformat"
 %token<fl>              yVLT_SPLIT_VAR              "split_var"
+%token<fl>              yVLT_THREADS_UNIT           "threads_unit"
 %token<fl>              yVLT_TIMING_OFF             "timing_off"
 %token<fl>              yVLT_TIMING_ON              "timing_on"
 %token<fl>              yVLT_TRACING_OFF            "tracing_off"
@@ -8508,6 +8509,8 @@ vltItem:
                         { V3Control::addProfileData($<fl>1, *$2, $3->toUQuad()); }
         |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
                         { V3Control::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
+        |       yVLT_THREADS_UNIT vltDModule
+                        { V3Control::addModulePragma(*$2, VPragmaType::THREADS_UNIT); }
         |       yVLT_FSM_REGISTER_WRAPPER vltDModule vltDFsmD vltDFsmQ vltDFsmClock vltDFsmResetE vltDFsmResetValueE
                         { V3Control::addFsmRegisterWrapper($<fl>1, *$2, *$3, *$4, *$5, *$6, *$7); }
         |       yVLT_VERILATOR_LIB vltDModule

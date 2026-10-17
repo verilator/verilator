@@ -331,6 +331,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_parameterizedTemplate : 1;  // True when at least one specialized clone exists;
                                        // set by V3Param::deepCloneModule. Suppresses
                                        // width/type errors on the unresolved template.
+    bool m_threadsUnit : 1;  // Partitioned as a unit with --threads, marked by THREADS_UNIT
     bool m_verilatorLib : 1;  // Module is a stub for a Verilator produced --lib-create
 protected:
     AstNodeModule(VNType t, FileLine* fl, const string& name, const string& libname)
@@ -350,6 +351,7 @@ protected:
         , m_recursive{false}
         , m_recursiveClone{false}
         , m_parameterizedTemplate{false}
+        , m_threadsUnit{false}
         , m_verilatorLib{false} {}
 
 public:
@@ -402,6 +404,8 @@ public:
     bool recursiveClone() const { return m_recursiveClone; }
     bool parameterizedTemplate() const { return m_parameterizedTemplate; }
     void parameterizedTemplate(bool flag) { m_parameterizedTemplate = flag; }
+    bool threadsUnit() const { return m_threadsUnit; }
+    void threadsUnit(bool flag) { m_threadsUnit = flag; }
     void verilatorLib(bool flag) { m_verilatorLib = flag; }
     bool verilatorLib() const { return m_verilatorLib; }
     VLifetime lifetime() const { return m_lifetime; }

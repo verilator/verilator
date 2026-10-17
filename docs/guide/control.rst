@@ -317,6 +317,18 @@ The grammar of control commands is as follows:
 
    Same as :option:`/*verilator&32;split_var*/` metacomment.
 
+.. option:: threads_unit -module "<modulename>"
+
+   With :vlopt:`--threads` above 1, partition each instance of the module
+   as a unit, keeping its logic in a few mtasks instead of spreading it
+   across many mtasks shared with other instances. This can improve
+   locality in designs with many instances of a module, each a small part
+   of the design, such as the tiles of a manycore. Marking a module that is
+   a large part of the design reduces parallelism. Logic belongs to the
+   nearest marked instance above it. The module is not inlined. Ignored for
+   the top module, including a :option:`hier_block` in its own Verilation
+   with :vlopt:`--hierarchical`.
+
 .. option:: timing_off [-file "<filename>" [-lines <line> [ - <line>]]]
 
 .. option:: timing_on  [-file "<filename>" [-lines <line> [ - <line>]]]
