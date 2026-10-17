@@ -39,6 +39,7 @@ module t;
   int tgt_a[2], tgt_c[2], tgt_d[2], tgt_keys[2], tgt_i;
   logic [7:0] tgt_v, tgt_p = 0;
   bit [7:0] tgt_sa[2], tgt_sb[2];
+  string tgt_str;
 
   function automatic int dly();
     ++dly_calls;
@@ -181,13 +182,16 @@ module t;
     `checks(alw_log, "1@6 2@7 3@8 ")
     `checks(cls_log, "1@5 2@6 3@7 ")
     `checks($sformatf("%0d %0d %0d", cls_z[0], cls_z[1], cls_z[2]), "1 2 3")
-    `checks($sformatf("%0d %0d %h", tgt_a[0], tgt_a[1], tgt_p), "0 42 f0")
-    `checks($sformatf("%0d %0d %0d %0d", tgt_c[0], tgt_c[1], tgt_d[0], tgt_d[1]), "0 3 0 4")
-    `checks($sformatf("%h %h %h %h", tgt_sa[0], tgt_sa[1], tgt_sb[0], tgt_sb[1]), "00 12 00 34")
-    `checks($sformatf("%0d %0d %0d %0d", tgt_ifs[0].x, tgt_ifs[0].y, tgt_ifs[0].z, tgt_ifs[0].w),
-            "0 0 0 0")
-    `checks($sformatf("%0d %0d %0d %0d", tgt_ifs[1].x, tgt_ifs[1].y, tgt_ifs[1].z, tgt_ifs[1].w),
-            "99 10 20 30")
+    tgt_str = $sformatf("%0d %0d %h", tgt_a[0], tgt_a[1], tgt_p);
+    `checks(tgt_str, "0 42 f0")
+    tgt_str = $sformatf("%0d %0d %0d %0d", tgt_c[0], tgt_c[1], tgt_d[0], tgt_d[1]);
+    `checks(tgt_str, "0 3 0 4")
+    tgt_str = $sformatf("%h %h %h %h", tgt_sa[0], tgt_sa[1], tgt_sb[0], tgt_sb[1]);
+    `checks(tgt_str, "00 12 00 34")
+    tgt_str = $sformatf("%0d %0d %0d %0d", tgt_ifs[0].x, tgt_ifs[0].y, tgt_ifs[0].z, tgt_ifs[0].w);
+    `checks(tgt_str, "0 0 0 0")
+    tgt_str = $sformatf("%0d %0d %0d %0d", tgt_ifs[1].x, tgt_ifs[1].y, tgt_ifs[1].z, tgt_ifs[1].w);
+    `checks(tgt_str, "99 10 20 30")
     // Last, as VCS evaluates the delay of an NBA to a concatenation for each part
     `checkd(dly_calls, 3)
   end
