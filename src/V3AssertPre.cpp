@@ -25,6 +25,8 @@
 
 #include "V3Assert.h"
 #include "V3Const.h"
+#include "V3Inst.h"
+#include "V3LinkLValue.h"
 #include "V3Task.h"
 #include "V3Timing.h"
 #include "V3UniqueNames.h"
@@ -527,8 +529,13 @@ private:
             // Initialize the clockvar
             AstVarRef* const skewedWriteRefp = new AstVarRef{flp, varp, VAccess::WRITE};
             skewedWriteRefp->user1(true);
-            AstInitialStatic* const initClockvarp = new AstInitialStatic{
-                flp, new AstAssign{flp, skewedWriteRefp, exprp->cloneTreePure(false)}};
+            // The item expression is an lvalue; reading it here must not look like a
+            // driver, or V3Tristate turns the clockvar of an inout port into a tristate.
+            // V3LinkLValue keeps the lvalues of any statements inside the expression.
+            AstNodeExpr* const initRhsp = exprp->cloneTreePure(false);
+            V3LinkLValue::linkLValueSet(initRhsp, VAccess::READ);
+            AstInitialStatic* const initClockvarp
+                = new AstInitialStatic{flp, new AstAssign{flp, skewedWriteRefp, initRhsp}};
             m_modp->addStmtsp(initClockvarp);
             // Each drive sets a flag, so the signal is also assigned when driven with the same
             // value again, e.g. after another assignment to the signal (IEEE 1800-2023 14.16.2)
@@ -1909,10 +1916,44 @@ public:
 };
 
 //######################################################################
+// Clocking driven port propagation
+
+// The drive of a clocking driven input port is copied out through its connection
+// (V3Inst), so input ports of the parent feeding that connection carry it on
+static void propagateClockingDriven(AstNetlist* const nodep) {
+    const auto isMarked = [](const AstVar* varp) {
+        return varp->isClockingDriven() || varp->isClockingDrivenThru();
+    };
+    // Pins by the port they connect, and the driven ports whose pins are still to visit
+    std::unordered_map<const AstVar*, std::vector<AstPin*>> pinsByPort;
+    std::vector<const AstVar*> worklist;
+    nodep->foreach([&](AstPin* pinp) {
+        const AstVar* const modVarp = pinp->modVarp();
+        if (!modVarp || !pinp->exprp() || modVarp->direction() != VDirection::INPUT) return;
+        std::vector<AstPin*>& pins = pinsByPort[modVarp];
+        if (pins.empty() && isMarked(modVarp)) worklist.push_back(modVarp);
+        pins.push_back(pinp);
+    });
+    while (!worklist.empty()) {
+        const AstVar* const portp = worklist.back();
+        worklist.pop_back();
+        for (AstPin* const pinp : pinsByPort[portp]) {
+            V3Inst::forEachDrivenLeaf(VN_AS(pinp->exprp(), NodeExpr), [&](AstNodeVarRef* refp) {
+                AstVar* const varp = refp->varp();
+                if (varp->direction() != VDirection::INPUT || isMarked(varp)) return;
+                varp->isClockingDrivenThru(true);
+                worklist.push_back(varp);
+            });
+        }
+    }
+}
+
+//######################################################################
 // Top Assert class
 
 void V3AssertPre::assertPreAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { AssertPreVisitor{nodep}; }  // Destruct before checking
+    propagateClockingDriven(nodep);
     V3Global::dumpCheckGlobalTree("assertpre", 0, dumpTreeEitherLevel() >= 3);
 }
