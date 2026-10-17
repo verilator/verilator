@@ -504,6 +504,15 @@ bool AstNode::isDisableQueuePushSelfStmt() {
     return false;
 }
 
+// Whether an array of fromp has a level of the other direction than in an array of top
+static bool initArrayReorders(const AstNodeDType* fromp, const AstNodeDType* top) {
+    const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromp->skipRefp(), UnpackArrayDType);
+    const AstUnpackArrayDType* const toArrayp = VN_CAST(top->skipRefp(), UnpackArrayDType);
+    if (!fromArrayp || !toArrayp) return false;
+    return fromArrayp->declRange().ascending() != toArrayp->declRange().ascending()
+           || initArrayReorders(fromArrayp->subDTypep(), toArrayp->subDTypep());
+}
+
 //======================================================================
 // Ast* methods (except AstNode:: tree methods which generally go in V3Ast.cpp)
 // dist-ast-style-sort
@@ -1878,6 +1887,27 @@ AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
     const auto it = m_map.find(index);
     if (it == m_map.end()) { return nullptr; }
     return it->second->valuep();
+}
+void AstInitArray::retypeOrdered(AstNodeDType* dtypep) {
+    const AstNodeDType* const fromp = this->dtypep();
+    this->dtypep(dtypep);
+    if (!initArrayReorders(fromp, dtypep)) return;
+    const AstUnpackArrayDType* const fromArrayp = VN_AS(fromp->skipRefp(), UnpackArrayDType);
+    const AstUnpackArrayDType* const toArrayp = VN_AS(dtypep->skipRefp(), UnpackArrayDType);
+    if (fromArrayp->declRange().ascending() != toArrayp->declRange().ascending()) {
+        const uint64_t lastIndex = fromArrayp->elementsConst() - 1;
+        KeyItemMap map;
+        for (const auto& itr : m_map) map.emplace(lastIndex - itr.first, itr.second);
+        m_map.swap(map);
+    }
+    for (const auto& itr : m_map) {
+        if (AstInitArray* const subp = VN_CAST(itr.second->valuep(), InitArray)) {
+            subp->retypeOrdered(toArrayp->subDTypep());
+        }
+    }
+    if (AstInitArray* const subp = VN_CAST(defaultp(), InitArray)) {
+        subp->retypeOrdered(toArrayp->subDTypep());
+    }
 }
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
@@ -3648,12 +3678,14 @@ void AstScopeName::dump(std::ostream& str) const {
     Super::dump(str);
     if (dpiExport()) str << " [DPIEX]";
     if (forFormat()) str << " [FMT]";
+    if (selfRelative()) str << " [SELFREL]";
     str << " scopeAttr=\"" << m_scopeAttr << "\"";
     str << " scopeEntr=\"" << m_scopeEntr << "\"";
 }
 void AstScopeName::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, dpiExport);
     dumpJsonBoolFuncIf(str, forFormat);
+    dumpJsonBoolFuncIf(str, selfRelative);
     dumpJsonStr(str, "scopeAttr", m_scopeAttr);
     dumpJsonStr(str, "scopeEntr", m_scopeEntr);
     dumpJsonGen(str);
@@ -4303,6 +4335,8 @@ string AstVar::dpiTmpVarType(const string& varName) const {
 }
 void AstVar::dump(std::ostream& str) const {
     Super::dump(str);
+    if (libInoutId()) str << " libInoutId=" << libInoutId();
+    if (libInoutEnable()) str << " [LIBINOUTEN]";
     if (isIO()) str << " " << direction().ascii();
     if (declDirection() != direction()) str << " dd=" << direction().ascii();
     if (constPoolEntry()) str << " [CONSTPOOL]";
@@ -4348,6 +4382,8 @@ void AstVar::dump(std::ostream& str) const {
     str << " " << varType();
 }
 void AstVar::dumpJson(std::ostream& str) const {
+    if (libInoutId()) dumpJsonNumFunc(str, libInoutId);
+    dumpJsonBoolFuncIf(str, libInoutEnable);
     dumpJsonStrFunc(str, origName);
     dumpJsonStrFunc(str, verilogName);
     dumpJsonBoolFuncIf(str, constPoolEntry);

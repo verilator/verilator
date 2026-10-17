@@ -4,17 +4,24 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
+test.top_filename = "t/t_tri_inout.v"
+test.pli_filename = "t/t_tri_inout.cpp"
 
-test.compile(verilator_flags2=["--protect-lib", "secret", "--protect-key", "secret-key"],
-             verilator_make_gcc=False,
+test.clean_objs()
+
+test.compile(make_top_shell=False,
              make_main=False,
-             fails=True,
-             expect_filename=test.golden_filename)
+             verilator_flags2=[
+                 "--exe", test.pli_filename, "--hierarchical", "--Wno-UNOPTFLAT",
+                 "--Wno-UNOPTTHREADS", test.vlt_filename
+             ])
+
+test.execute()
 
 test.passes()

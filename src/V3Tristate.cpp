@@ -1047,9 +1047,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         // original port gets converted to an input. Don't tristate expand
         // if this is the top level so that we can force the final
         // tristate resolution at the top.
-        // Or if this is a top-level inout, do tristate expand if requested
-        // by pinsInoutEnables(). The resolution will be done outside of
-        // verilator.
+        // Top-level inouts are also expanded for pinsInoutEnables() or library generation.
+        // Resolution is then performed by the caller or the library's SV wrapper.
         // Interface tristate vars skip port conversion (they use contribution vars instead).
         AstVar* envarp = nullptr;
         AstVar* outvarp = nullptr;  // __out
@@ -1057,7 +1056,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         const bool isTopInout = !isIfaceTri && (invarp->direction() == VDirection::INOUT)
                                 && invarp->isIO() && nodep->isTop();
         if (!isIfaceTri) {
-            if ((v3Global.opt.pinsInoutEnables() && isTopInout)
+            if (((v3Global.opt.pinsInoutEnables() || !v3Global.opt.libCreate().empty())
+                 && isTopInout)
                 || (!nodep->isTop() && invarp->isIO())) {
                 // This var becomes an input
                 invarp->varType2In();  // convert existing port to type input
@@ -1258,14 +1258,23 @@ class TristateVisitor final : public TristateBaseVisitor {
         nodep->addStmtsp(new AstAlways{assp});
 
         // If this is a top-level inout, make sure that the INOUT pins get __en and __out
-        if (v3Global.opt.pinsInoutEnables() && isTopInout) {
+        if ((v3Global.opt.pinsInoutEnables() || !v3Global.opt.libCreate().empty()) && isTopInout) {
             if (envarp) {
                 envarp->primaryIO(true);
                 envarp->direction(VDirection::OUTPUT);
+                envarp->protect(invarp->protect());
             }
             if (outvarp) {
                 outvarp->primaryIO(true);
                 outvarp->direction(VDirection::OUTPUT);
+                outvarp->protect(invarp->protect());
+            }
+            if (!v3Global.opt.libCreate().empty()) {
+                const int id = ++m_unique;
+                invarp->libInoutId(id);
+                outvarp->libInoutId(id);
+                envarp->libInoutId(id);
+                envarp->libInoutEnable(true);
             }
         }
     }

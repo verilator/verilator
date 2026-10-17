@@ -314,10 +314,16 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     if (needsScope) {
         AstScopeName* const scopenamep = fmtp ? fmtp->scopeNamep() : nullptr;
         UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
-        const string suffix = scopenamep->scopePrettySymName();
         ofp()->puts(", '"s + VFormatAttr{VFormatAttr::SCOPE}.ascii() + "'");
-        ofp()->puts(",vlSymsp->name(),");
-        ofp()->putsQuoted(suffix);
+        if (scopenamep->selfRelative()) {
+            // vlNamep is catName(name(), instance), so starts with '.' when the model is unnamed
+            const string namep = string{m_useSelfForThis ? "vlSelf" : "this"} + "->vlNamep";
+            ofp()->puts(",(vlSymsp->name()[0] ? " + namep + " : " + namep + " + 1),");
+            ofp()->putsQuoted(scopenamep->scopeAttr());
+        } else {
+            ofp()->puts(",vlSymsp->name(),");
+            ofp()->putsQuoted(scopenamep->scopePrettySymName());
+        }
     }
 
     if (needsTimescale) {

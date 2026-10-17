@@ -11,7 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(make_top_shell=False, make_main=False, verilator_flags2=["--exe", test.pli_filename])
+# The connected tristate buses may not provide enough work for both threads.
+test.compile(make_top_shell=False,
+             make_main=False,
+             verilator_flags2=["--exe", test.pli_filename, "--Wno-UNOPTTHREADS"],
+             threads=(2 if test.vltmt else 1))
 
 test.execute()
 

@@ -61,9 +61,6 @@ public:
     virtual string emitSimpleOperator() { return ""; }  // "" means not ok to use
     virtual bool emitCheckMaxWords() { return false; }  // Check VL_MULS_MAX_WORDS
     virtual bool cleanOut() const = 0;  // True if output has extra upper bits zero
-    // Someday we will generically support data types on every expr node
-    // Until then isOpaque indicates we shouldn't constant optimize this node type
-    bool isOpaque() const { return VN_IS(this, CvtPackString); }
     // True for SVA multi-cycle sequence nodes (SExpr, SConsRep, etc.)
     virtual bool isMultiCycleSva() const { return false; }
     const AstNodeExpr* getVAccessTargetRecurse() const;
@@ -1919,6 +1916,9 @@ public:
     void addIndexValuep(uint64_t index, AstNodeExpr* newp);
     AstNodeExpr* getIndexValuep(uint64_t index) const;
     AstNodeExpr* getIndexDefaultedValuep(uint64_t index) const;
+    // Retype as dtypep, reindexing an array of the other direction, and recursively the arrays
+    // under it, to keep elements' left-to-right order (IEEE 1800-2023 7.6)
+    void retypeOrdered(AstNodeDType* dtypep);
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -2717,10 +2717,11 @@ public:
 };
 class AstScopeName final : public AstNodeExpr {
     // For display %m and DPI context imports
-    // Parents:  AstSFormatF, AstNodeFTaskRef, AstNodeFTask
+    // Parents:  AstSFormatF, AstNodeFTaskRef, AstNodeFTask, AstScope
     std::string m_scopeAttr;
     std::string m_scopeEntr;  // Scope path for the DPI import/export context name
     bool m_dpiExport = false;  // Is for dpiExport
+    bool m_selfRelative = false;  // scopeAttr is the pretty path below the running instance
     const bool m_forFormat;  // Is for a format %m
     static std::string scopeNameFormatter(const std::string& text);
     static std::string scopePrettyNameFormatter(const std::string& text);
@@ -2738,6 +2739,7 @@ public:
         return m_scopeAttr == sp->m_scopeAttr  //
                && m_scopeEntr == sp->m_scopeEntr  //
                && m_dpiExport == sp->m_dpiExport  //
+               && m_selfRelative == sp->m_selfRelative  //
                && m_forFormat == sp->m_forFormat;
     }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -2752,6 +2754,8 @@ public:
     void scopeEntr(const std::string& val) { m_scopeEntr = val; }
     bool dpiExport() const { return m_dpiExport; }
     void dpiExport(bool flag) { m_dpiExport = flag; }
+    bool selfRelative() const { return m_selfRelative; }
+    void selfRelative(bool flag) { m_selfRelative = flag; }
     bool forFormat() const { return m_forFormat; }
     // Name for __Vscopep variable including children
     string scopeSymName() const { return scopeNameFormatter(m_scopeAttr); }
@@ -5726,7 +5730,7 @@ public:
         dtypeSetString();
     }
     ASTGEN_MEMBERS_AstCvtPackString;
-    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAssign(lhs); }
+    void numberOperate(V3Number& out, const V3Number& lhs) override { out.opCvtPackString(lhs); }
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

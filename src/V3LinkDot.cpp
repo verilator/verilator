@@ -4135,6 +4135,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         // Early return() above when deleted
     }
+
+    static bool isDotThisReference(const AstDot* nodep) {
+        return VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this";
+    }
+
     void visit(AstDot* nodep) override {
         // Legal under a DOT: AstDot, AstParseRef, AstPackageRef, AstNodeSel, AstPackArrayDType
         //    also a DOT can be part of an expression, but only above plus
@@ -4159,7 +4164,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_FIRST;
 
-            if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
+            if (isDotThisReference(nodep)) {
                 VSymEnt* classSymp = getThisClassSymp();
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
@@ -4530,8 +4535,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
             }
-            if (!foundp && m_ds.m_dotp && VN_IS(m_ds.m_dotp->lhsp(), ParseRef)
-                && m_ds.m_dotp->lhsp()->name() == "this") {
+            if (!foundp && m_ds.m_dotp && isDotThisReference(m_ds.m_dotp)) {
                 const AstClass* const classp = VN_CAST(m_ds.m_dotSymp->nodep(), Class);
                 if (classp && classp->isCovergroup() && classp->covergroupEnclosingClassp()) {
                     VSymEnt* const enclosingClassSymp
@@ -4659,6 +4663,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_ds = lastStates;
                 return;
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
+                // Preserve explicit 'this' references to members inherited from
+                // generic classes until after specialization.
+                if (m_statep->forPrimary() && m_ds.m_dotp && isDotThisReference(m_ds.m_dotp)
+                    && foundp->classOrPackagep() != m_modp
+                    && VN_IS(foundp->classOrPackagep(), Class)
+                    && foundp->classOrPackagep()->hasGParam()) {
+                    m_ds.m_unresolvedClass = true;
+                    return;
+                }
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (varp->isIfaceRef() && m_genericIfaceModule
@@ -5315,8 +5328,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!classDtp)
                         nodep->v3error("'randomize() with' on a non-class-instance "
                                        << fromDtp->prettyNameQ());
-                    else
+                    else if (m_statep->forPrimary() && m_extendsParam.count(classDtp->classp())) {
+                        // Inherited members are unavailable until the base class is specialized.
+                        // Defer lookup rather than incorrectly binding names in the caller.
+                        m_ds.m_unresolvedClass = true;
+                    } else {
                         m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                    }
                 }
             }
             iterateChildren(nodep);
@@ -5907,6 +5925,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
+        if (m_ds.m_unresolvedClass) return;
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_currentWithp);
         VL_RESTORER_COPY(m_restrictedNamesUsed);

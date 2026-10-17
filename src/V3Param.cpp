@@ -705,7 +705,7 @@ class ParamProcessor final {
         if (pinp->modVarp()) {
             bool supported = false;
             if (const AstConst* const constp = VN_CAST(pinp->exprp(), Const)) {
-                supported = !constp->isOpaque();
+                supported = true;
                 if (constp->num().isString()
                     && !V3HierBlock::stringParamPassable(constp->num().toString())) {
                     pinp->v3warn(E_UNSUPPORTED, "Unsupported: String value of hierarchical block"

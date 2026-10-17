@@ -3,6 +3,11 @@
 // SPDX-FileCopyrightText: 2019 Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0x exp=%0x\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 `define DRIVE(sig) \
 /* Just throw a bunch of bits at the input */ \
 /* verilator lint_off WIDTH */ \
@@ -66,6 +71,23 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
       logic [15:0]       s8x16up_3d_in[1:0][0:1][0:1];
       logic [15:0]       s8x16up_3d_out[1:0][0:1][0:1];
 
+      // Exercise every combination of internal enable, internal data, and external data.
+      wire z_oe = cyc[0];
+      wire z_drive = cyc[1];
+      wire z_external = cyc[2];
+      wire z_expected = z_oe ? z_drive : z_external;
+      // The DPI update reads this net and writes its driver in the same call.
+      /* verilator lint_off UNOPTFLAT */
+      wire z_secret;
+      /* verilator lint_on UNOPTFLAT */
+      wire z_read;
+      assign z_secret = z_oe ? 1'bz : z_external;
+
+      always @(negedge clk) begin
+        `checkh(z_secret, z_expected);
+        `checkh(z_read, z_expected);
+      end
+
       wire               clk_en = crc[0];
 
       secret
@@ -98,6 +120,10 @@ module t #(parameter GATED_CLK = 0) (/*AUTOARG*/
              .s8x16up_out,
              .s8x16up_3d_in,
              .s8x16up_3d_out,
+             .z_drive,
+             .z_oe,
+             .z_secret,
+             .z_read,
              .clk_en,
              .clk);
 
