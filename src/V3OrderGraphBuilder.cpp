@@ -78,6 +78,7 @@ class OrderGraphBuilder final : public VNVisitor {
     enum VarUsage : uint8_t { VU_CON = 0x1, VU_GEN = 0x2 };
     enum VarAccess : uint8_t { VA_READ = 0x1, VA_WRITE = 0x2 };
     using VarVertexType = OrderUser::VarVertexType;
+    using VscpsByVar = std::unordered_map<const AstVar*, std::vector<AstVarScope*>>;
 
     // NODE STATE
     //  AstVarScope::user1    -> OrderUser instance for variable (via m_orderUser)
@@ -115,8 +116,30 @@ class OrderGraphBuilder final : public VNVisitor {
     const V3Sched::CovergroupRefBindings& m_cgRefBindings;
     // Bindings reachable from the covergroup sample() being walked, nullptr when not in one
     const V3Sched::CovergroupRefBindings::Bindings* m_cgRefBoundps = nullptr;
+    VscpsByVar m_ifaceVscps;  // The variables of each member of an interface, in all instances
+    bool m_ifaceVscpsDone = false;  // m_ifaceVscps has been gathered
 
     // METHODS
+
+    // Gather m_ifaceVscps on first use only, as most designs never need it
+    const VscpsByVar& ifaceVscps() {
+        if (!m_ifaceVscpsDone) {
+            for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
+                 modp = VN_AS(modp->nextp(), NodeModule)) {
+                if (!VN_IS(modp, Iface)) continue;
+                for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                    const AstScope* const scopep = VN_CAST(nodep, Scope);
+                    if (!scopep) continue;
+                    for (AstVarScope* vscp = scopep->varsp(); vscp;
+                         vscp = VN_AS(vscp->nextp(), VarScope)) {
+                        m_ifaceVscps[vscp->varp()].push_back(vscp);
+                    }
+                }
+            }
+            m_ifaceVscpsDone = true;
+        }
+        return m_ifaceVscps;
+    }
 
     void iterateLogic(AstNode* nodep) {
         UASSERT_OBJ(!m_logicVxp, nodep, "Should not nest");
@@ -362,6 +385,24 @@ class OrderGraphBuilder final : public VNVisitor {
         }
         m_cgRefBoundps = &m_cgRefBindings.forSample(instp, VN_AS(funcp->scopep()->modp(), Class));
         iterateChildren(funcp);
+    }
+    // Clocked logic reading a member through a virtual interface may read it in any instance, so
+    // must read it before the NBA updates of each one. Likewise the logic committing an NBA
+    // through a virtual interface may write it in any instance.
+    void visit(AstMemberSel* nodep) override {
+        iterateChildren(nodep);
+        if (!m_inClocked) return;
+        const bool wanted
+            = m_inPost ? nodep->access().isWriteOrRW() : nodep->access().isReadOrRW();
+        if (!wanted) return;
+        const AstIfaceRefDType* const dtypep
+            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+        if (!dtypep || !dtypep->isVirtual()) return;
+        const VscpsByVar& vscpsByVar = ifaceVscps();
+        const auto it = vscpsByVar.find(nodep->varp());
+        if (it == vscpsByVar.end()) return;  // No instances of the interface
+        const VAccess access = m_inPost ? VAccess::WRITE : VAccess::READ;
+        for (AstVarScope* const vscp : it->second) accountVarAccess(vscp, access, nodep);
     }
 
     //--- Logic akin to SystemVerilog Processes (AstNodeProcedure)
