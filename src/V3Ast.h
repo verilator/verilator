@@ -820,6 +820,7 @@ public:
     void dtypeChgSigned(bool flag = true);
     void dtypeChgWidth(int width, int widthMin);
     void dtypeChgWidthSigned(int width, int widthMin, VSigning numeric);
+    void dtypeChgStates(const bool isFourstate) { dtypep(findStatesCounterpart(isFourstate)); }
     void dtypeSetBitUnsized(int width, int widthMin, VSigning numeric) {
         dtypep(findBitDType(width, widthMin, numeric));
     }
@@ -894,6 +895,8 @@ public:
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogic2StateDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findLogic2StateRangeDType(const VNumRange& range, int widthMin,
+                                            VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBitOrLogicDType(int width, int widthMin, VSigning numeric,
                                       bool isFourstate) const {
         return isFourstate ? findLogicDType(width, widthMin, numeric)
@@ -910,6 +913,7 @@ public:
     AstNodeDType* findBitRangeDType(const VNumRange& range, int widthMin,
                                     VSigning numeric) const VL_MT_STABLE;
     AstNodeDType* findBasicDType(VBasicDTypeKwd kwd) const;
+    AstNodeDType* findStatesCounterpart(bool isFourstate) const;
     static AstBasicDType* findInsertSameDType(AstBasicDType* nodep);
 
     static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,

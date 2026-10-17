@@ -2761,6 +2761,9 @@ bool AstNodeDType::isTriviallyConstructible() const VL_MT_STABLE {
     }
     dtypep->v3fatalSrc("Unknown data type: " << dtypep->prettyName());
 }
+bool AstNodeDType::mimicsFourstate() const VL_MT_STABLE {
+    return basicp() && basicp()->mimicsFourstate();
+}
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
     nodep = nodep->skipRefToNonRefp();
@@ -3244,6 +3247,7 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     Super::dump(str);
     if (packed()) str << " [PACKED]";
     if (isFourstate()) str << " [4STATE]";
+    if (mimicsFourstate()) str << " [MIMICS4STATE]";
     if (isConstrainedRand()) str << " [CSRAND]";
     if (emitToString()) str << " [EMITSTR]";
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
@@ -3253,6 +3257,7 @@ void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);
     dumpJsonBoolFuncIf(str, isConstrainedRand);
     dumpJsonBoolFuncIf(str, isFourstate);
+    dumpJsonBoolFuncIf(str, mimicsFourstate);
     dumpJsonBoolFuncIf(str, emitToString);
     if (!m_typedefName.empty()) dumpJsonStr(str, "typedefName", m_typedefName);
     dumpJsonGen(str);
