@@ -404,19 +404,19 @@ class HasherVisitor final : public VNVisitorConst {
     void visit(AstConsStructItem* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }
-    void visit(AstInitItem* nodep) override {
+    void visit(AstConsArrayItem* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }
-    void visit(AstInitArray* nodep) override {
-        // Hash unpacked array initializers by value, as the order of initializer nodes does
-        // not matter, and we want semantically equivalent initializers to map to the same hash.
+    void visit(AstConsArray* nodep) override {
+        // Hash unpacked array values by element, so equal values hash the same whether or not
+        // they use a default
         const AstUnpackArrayDType* const dtypep
             = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, /* hashChildren: */ false,
                                      [this, nodep, dtypep]() {
                                          const uint32_t size = dtypep->elementsConst();
                                          for (uint32_t n = 0; n < size; ++n) {  //
-                                             iterateConstNull(nodep->getIndexDefaultedValuep(n));
+                                             iterateConstNull(nodep->valuep(n));
                                          }
                                      });
     }

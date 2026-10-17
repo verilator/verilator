@@ -1371,7 +1371,7 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckSizedSelf(nodep, "Bit select", nodep->bitp(), SELF, BOTH);
             userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
             // Element of a whole array of interfaces
-            if (VN_IS(nodep->fromp(), InitArray) && isIfaceArrayDType(nodep->fromp()->dtypep())) {
+            if (VN_IS(nodep->fromp(), ConsArray) && isIfaceArrayDType(nodep->fromp()->dtypep())) {
                 V3Const::constifyParamsEdit(nodep->bitp());  // May relink pointed to node
                 if (const AstConst* const constp = VN_CAST(nodep->bitp(), Const)) {
                     const int bit = constp->toSInt();
@@ -1564,6 +1564,12 @@ class WidthVisitor final : public VNVisitor {
                     nodep->v3error("Slice selection index '" << declRange << "'"
                                                              << " outside data type's '"
                                                              << adtypep->declRange() << "'");
+                    // Replaced by a placeholder value, so no element is out of range later
+                    nodep->replaceWith(new AstConsArray{
+                        nodep->fileline(), newDtp,
+                        new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}}});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
                 } else if ((declRange.ascending() != adtypep->declRange().ascending())
                            && declRange.hi() != declRange.lo()) {
                     nodep->v3error("Slice selection '"
@@ -1573,14 +1579,12 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             // A slice of a whole array of interfaces is the array of the selected elements
-            if (VN_IS(nodep->fromp(), InitArray) && isIfaceArrayDType(nodep->fromp()->dtypep())) {
-                AstInitArray* const newp = new AstInitArray{nodep->fileline(), newDtp, nullptr};
+            if (VN_IS(nodep->fromp(), ConsArray) && isIfaceArrayDType(nodep->fromp()->dtypep())) {
+                AstConsArray* const fromp = VN_AS(nodep->fromp(), ConsArray);
+                AstConsArray* const newp = new AstConsArray{nodep->fileline(), newDtp};
                 const VNumRange range = nodep->declRange();
                 for (int n = 0; n < range.elements(); ++n) {
-                    AstNodeExpr* ep = newIfaceArrayElement(nodep->fromp(), range.lo() + n);
-                    // If out of range, reported above, so use any element to continue
-                    if (!ep) ep = newIfaceArrayElement(nodep->fromp(), 0);
-                    newp->addIndexValuep(n, ep);
+                    newp->valuep(n, fromp->valuep(range.lo() + n)->cloneTree(false));
                 }
                 nodep->replaceWith(newp);
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -3787,24 +3791,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstConsDynArray* nodep) override {}  // Widthed when created
     void visit(AstConsQueue* nodep) override {}  // Widthed when created
     void visit(AstConsStruct* nodep) override {}  // Widthed when created
-    void visit(AstInitItem* nodep) override {  //
-        userIterateChildren(nodep, m_vup);
-    }
-    void visit(AstInitArray* nodep) override {
-        // InitArray has type of the array; children are array values
-        assertAtExpr(nodep);
-        if (m_vup->prelim()) {  // First stage evaluation
-            const AstNodeDType* const arrayp = nodep->dtypep()->skipRefp();
-            if (VN_IS(arrayp, NodeArrayDType)) {
-                userIterateChildren(nodep,
-                                    WidthVP{arrayp->subDTypep(), BOTH, STREAM_USE_ASSIGN}.p());
-            } else {
-                UINFO(1, "on " << nodep);
-                UINFO(1, "dtype object " << arrayp);
-                nodep->v3fatalSrc("InitArray on non-array");
-            }
-        }
-    }
+    void visit(AstConsArray* nodep) override {}  // Widthed when created
     void visit(AstDist* nodep) override {
         //  x dist {a :/ p, b :/ q} --> (p > 0 && x == a) || (q > 0 && x == b)
         // (only outside constraints; inside constraints V3Randomize handles weighted selection)
@@ -6240,13 +6227,59 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(elemDefaultp), elemDefaultp);
         return valuep;
     }
+    // An unpacked array concatenation, with each item an element, or an array of the elements
+    // spliced in (IEEE 1800-2023 10.10)
+    void patternConcatArray(AstPattern* nodep, AstUnpackArrayDType* arrayDtp) {
+        const VNumRange range = arrayDtp->declRange();
+        const int elements = range.elements();
+        AstConsArray* const newp = new AstConsArray{nodep->fileline(), arrayDtp};
+        int entn = 0;  // Number of elements given so far, from the left
+        bool error = false;  // Reported an error, so the value is not complete
+        for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
+             patp = VN_AS(patp->nextp(), PatMember)) {
+            patp->dtypep(arrayDtp->subDTypep());
+            AstNodeExpr* const valuep = patternMemberValueIterate(patp);
+            const uint64_t index = range.ascending() ? entn : elements - 1 - entn;
+            const AstUnpackArrayDType* const spliceDtp
+                = VN_CAST(valuep->dtypep()->skipRefp(), UnpackArrayDType);
+            if (spliceDtp && spliceDtp->subDTypep()->similarDType(arrayDtp->subDTypep())) {
+                entn += spliceDtp->elementsConst();
+                newp->spliceValues(index, valuep);
+                continue;
+            }
+            const VCastable castable = AstNode::computeCastable(
+                arrayDtp->subDTypep()->skipRefp(), valuep->dtypep()->skipRefp(), valuep);
+            if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE) {
+                valuep->v3error("Unpacked array concatenation item is neither an element nor"
+                                " an array of elements of its target (IEEE 1800-2023 10.10)");
+                error = true;
+            }
+            newp->valuep(index, valuep);
+            ++entn;
+        }
+        if (!error && entn != elements) {
+            nodep->v3error("Unpacked array concatenation has "
+                           << entn << " elements, but its target has " << elements
+                           << " (IEEE 1800-2023 10.10)");
+            error = true;
+        }
+        if (error) {
+            VL_DO_DANGLING(pushDeletep(newp), newp);
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}});
+        } else {
+            nodep->replaceWith(newp);
+        }
+    }
     void patternArray(AstPattern* nodep, AstNodeArrayDType* arrayDtp, AstPatMember* defaultp) {
+        if (nodep->itemsp() && VN_AS(nodep->itemsp(), PatMember)->isConcat()) {
+            patternConcatArray(nodep, VN_AS(arrayDtp, UnpackArrayDType));
+            return;
+        }
         const VNumRange range = arrayDtp->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
         UINFO(9, "ent " << range.left() << " to " << range.right());
         AstNode* newp = nullptr;
-        bool allConstant = true;
-        const bool isConcat = nodep->itemsp() && VN_AS(nodep->itemsp(), PatMember)->isConcat();
+        bool missed = false;  // Some element missed, so not a complete value
         for (int entn = 0, ent = range.left(); entn < range.elements();
              ++entn, ent += range.leftToRightInc()) {
             AstNodeExpr* valuep = nullptr;
@@ -6254,70 +6287,33 @@ class WidthVisitor final : public VNVisitor {
             if (it == patmap.end()) {
                 if (defaultp) {
                     valuep = patternDefaultValuep(defaultp, arrayDtp->subDTypep());
-                } else if (!(VN_IS(arrayDtp, UnpackArrayDType) && !allConstant && isConcat)) {
-                    // If arrayDtp is an unpacked array and item is not constant,
-                    // the number of elements cannot be determined here as the dtype of each
-                    // element is not set yet. V3Slice checks for such cases.
+                } else {
                     nodep->v3error("Assignment pattern missed initializing elements: " << ent);
+                    missed = true;
                 }
             } else {
                 AstPatMember* const patp = it->second;
                 patmap.erase(it);
                 patp->dtypep(arrayDtp->subDTypep());
                 valuep = patternMemberValueIterate(patp);
+                // Only an unpacked array concatenation splices in arrays
+                const AstUnpackArrayDType* const memberDtp
+                    = VN_CAST(valuep->dtypep()->skipRefp(), UnpackArrayDType);
+                if (memberDtp && memberDtp->subDTypep()->similarDType(arrayDtp->subDTypep())) {
+                    valuep->v3error("Assignment pattern member is an array of the elements, not"
+                                    " an element (IEEE 1800-2023 10.9.1)\n"
+                                    << valuep->warnMore()
+                                    << "... Suggest use an unpacked array concatenation {...} to "
+                                       "splice arrays");
+                    VL_DO_DANGLING(pushDeletep(valuep), valuep);
+                    valuep = new AstConst{patp->fileline(), AstConst::BitFalseErroring{}};
+                }
             }
 
             if (valuep) {
                 if (VN_IS(arrayDtp, UnpackArrayDType)) {
-                    if (!newp) {
-                        AstInitArray* const newap
-                            = new AstInitArray{nodep->fileline(), arrayDtp, nullptr};
-                        newp = newap;
-                    }
-                    // If valuep is a reference to an array constant (or a
-                    // slice of one), flatten its elements into the target
-                    // array.  Width resolution has already run (including
-                    // early resolution in patVectorMap), so slices appear
-                    // as AstSliceSel.
-                    const AstInitArray* subInitp = nullptr;
-                    int flattenLo = 0;
-                    int flattenElements = 0;
-                    if (const AstNodeVarRef* vrp = VN_CAST(valuep, NodeVarRef)) {
-                        subInitp = VN_CAST(vrp->varp()->valuep(), InitArray);
-                        if (subInitp) {
-                            if (const AstNodeArrayDType* adtp
-                                = VN_CAST(vrp->varp()->dtypep()->skipRefp(), NodeArrayDType)) {
-                                flattenElements = adtp->declRange().elements();
-                            }
-                        }
-                    } else if (const AstSliceSel* slicep = VN_CAST(valuep, SliceSel)) {
-                        if (const AstNodeVarRef* vrp = VN_CAST(slicep->fromp(), NodeVarRef)) {
-                            subInitp = VN_CAST(vrp->varp()->valuep(), InitArray);
-                            if (subInitp) {
-                                flattenLo = slicep->declRange().lo();
-                                flattenElements = slicep->declRange().elements();
-                            }
-                        }
-                    }
-                    if (subInitp && flattenElements > 0) {
-                        // Sub-array values are always constant
-                        VL_DO_DANGLING(pushDeletep(valuep), valuep);
-                        for (int sn = 0; sn < flattenElements; ++sn) {
-                            UASSERT_OBJ(entn < range.elements(), nodep,
-                                        "Flattened sub-array overflows target array");
-                            VN_AS(newp, InitArray)
-                                ->addIndexValuep(ent - range.lo(),
-                                                 subInitp->getIndexDefaultedValuep(flattenLo + sn)
-                                                     ->cloneTree(false));
-                            if (sn < flattenElements - 1) {
-                                ++entn;
-                                ent += range.leftToRightInc();
-                            }
-                        }
-                    } else {
-                        allConstant &= VN_IS(valuep, Const);
-                        VN_AS(newp, InitArray)->addIndexValuep(ent - range.lo(), valuep);
-                    }
+                    if (!newp) newp = new AstConsArray{nodep->fileline(), arrayDtp};
+                    VN_AS(newp, ConsArray)->valuep(ent - range.lo(), valuep);
                 } else {  // Packed. Convert to concat for now.
                     if (!newp) {
                         newp = valuep;
@@ -6331,6 +6327,10 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         if (!patmap.empty()) nodep->v3error("Assignment pattern with too many elements");
+        if (missed && VN_IS(newp, ConsArray)) {
+            VL_DO_DANGLING(pushDeletep(newp), newp);
+            newp = new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}};
+        }
         if (newp) {
             nodep->replaceWith(newp);
         } else {
@@ -6399,7 +6399,7 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* const foldedp = patp->keyExprp();
         const bool isConst = !foldedp->exists([](const AstNode* np) {
             return !VN_IS(np, Const) && !VN_IS(np, ConsStruct) && !VN_IS(np, ConsStructItem)
-                   && !VN_IS(np, InitArray) && !VN_IS(np, InitItem);
+                   && !VN_IS(np, ConsArray) && !VN_IS(np, ConsArrayItem);
         });
         if (!isConst) {
             foldedp->v3error(
@@ -6604,9 +6604,9 @@ class WidthVisitor final : public VNVisitor {
         // UINFOTREE(9, newp, "", "apat-out");
     }
     AstNodeExpr* patternMemberValueIterate(AstPatMember* patp) {
-        // Determine values - might be another InitArray
+        // Determine values - might be another ConsArray
         userIterate(patp, WidthVP{patp->dtypep(), BOTH}.p());
-        // Convert to InitArray or constify immediately
+        // Convert to ConsArray or constify immediately
         AstNodeExpr* valuep = patp->lhssp()->unlinkFrBack();
         if (VN_IS(valuep, Const)) {
             // Forming a AstConcat will cause problems with
@@ -9864,7 +9864,7 @@ class WidthVisitor final : public VNVisitor {
                 = VN_CAST(lhsDTypep->skipRefp(), UnpackArrayDType)) {
                 if (AstBasicDType* basicp = VN_CAST(arrayp->subDTypep()->skipRefp(), BasicDType)) {
                     if (basicp->width() == 8 && constp->num().isFromString()) {
-                        AstInitArray* newp = new AstInitArray{
+                        AstConsArray* newp = new AstConsArray{
                             constp->fileline(), lhsDTypep,
                             new AstConst{constp->fileline(), AstConst::WidthedValue{}, 8, 0}};
                         for (const int aindex : arrayp->declRange().seqLoToHi()) {
@@ -9876,9 +9876,9 @@ class WidthVisitor final : public VNVisitor {
                                                   << "  c=" << selected);
                             if (!selected.isFourState()) {
                                 if (const uint32_t c = selected.toUInt()) {
-                                    newp->addIndexValuep(
-                                        aindex, new AstConst{constp->fileline(),
-                                                             AstConst::WidthedValue{}, 8, c});
+                                    newp->valuep(aindex,
+                                                 new AstConst{constp->fileline(),
+                                                              AstConst::WidthedValue{}, 8, c});
                                 }
                             }
                         }
@@ -10610,16 +10610,14 @@ class WidthVisitor final : public VNVisitor {
             nodep->fileline(), nodep->findIntDType(), new AstRange(nodep->fileline(), msbdim, 0)};
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
         userIterate(vardtypep, WidthVP{SELF, BOTH}.p());
-        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
-        // Element 0 is a non-index and has speced values
-        initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, 0));
-        for (unsigned i = 1; i < msbdim + 1; ++i) {
-            initp->addValuep(dimensionValue(nodep->fileline(), nodep, attrType, i));
+        AstConsArray* const consp = new AstConsArray{nodep->fileline(), vardtypep};
+        for (unsigned i = 0; i < msbdim + 1; ++i) {
+            consp->valuep(i, dimensionValue(nodep->fileline(), nodep, attrType, i));
         }
 
         // Share identical tables via the constant pool
-        cachedpr = V3ConstPool::find(initp);
-        VL_DO_DANGLING(initp->deleteTree(), initp);  // V3ConstPool::find clones it
+        cachedpr = V3ConstPool::find(consp);
+        VL_DO_DANGLING(consp->deleteTree(), consp);  // V3ConstPool::find clones it
         cachedpr->varp()->didWidth(true);
         pushDeletep(cachedpr);  // Deleted with the visitor - always cloned
         return cachedpr->cloneTree(false);
@@ -10734,11 +10732,11 @@ class WidthVisitor final : public VNVisitor {
             }
             valuep = consp;
         } else {
-            AstInitArray* const initp = new AstInitArray{flp, vardtypep, defaultp};
+            AstConsArray* const consp = new AstConsArray{flp, vardtypep, defaultp};
             for (uint64_t i = 0; i < (msbdim + 1); ++i) {
-                if (values[i]) initp->addIndexValuep(i, values[i]);
+                if (values[i]) consp->valuep(i, values[i]);
             }
-            valuep = initp;
+            valuep = consp;
         }
 
         // Share identical tables via the constant pool
@@ -10869,29 +10867,7 @@ class WidthVisitor final : public VNVisitor {
             if (!newEntry) {
                 patp->v3error("Assignment pattern key used multiple times: " << element);
             }
-            // For positional members that reference an array (or a slice
-            // of one), advance by that array/slice's element count so
-            // subsequent members are mapped correctly.  Width-resolve the
-            // value expression so its dtype is set
-            int elementAdvance = 1;
-            if (!patp->keyp()
-                && (VN_IS(patp->lhssp(), NodeVarRef) || VN_IS(patp->lhssp(), SelExtract))) {
-                userIterateAndNext(patp->lhssp(), WidthVP{CONTEXT_DET, PRELIM}.p());
-                AstNodeExpr* const exprp = patp->lhssp();
-                const AstNodeDType* const dtypep = exprp->dtypep();
-                if (const AstUnpackArrayDType* adtp
-                    = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
-                    // Only flatten constant arrays backed by InitArray
-                    const AstNodeVarRef* vrp = VN_CAST(exprp, NodeVarRef);
-                    if (!vrp) {
-                        if (const AstSliceSel* slicep = VN_CAST(exprp, SliceSel))
-                            vrp = VN_CAST(slicep->fromp(), NodeVarRef);
-                    }
-                    if (vrp && VN_IS(vrp->varp()->valuep(), InitArray))
-                        elementAdvance = adtp->declRange().elements();
-                }
-            }
-            element += range.leftToRightInc() * elementAdvance;
+            element += range.leftToRightInc();
         }
         return patmap;
     }
@@ -11075,26 +11051,26 @@ class WidthVisitor final : public VNVisitor {
         return size;
     }
 
-    // A whole array of interfaces is an AstInitArray of references to its elements, so select
+    // A whole array of interfaces is an AstConsArray of references to its elements, so select
     // its element 'bit' (counted from lo) directly. Returns nullptr if not such an array, or
     // 'bit' is out of range.
     static AstNodeExpr* newIfaceArrayElement(AstNodeExpr* fromp, int bit) {
-        AstInitArray* const initp = VN_CAST(fromp, InitArray);
-        if (!initp || !isIfaceArrayDType(initp->dtypep())) return nullptr;
+        AstConsArray* const consp = VN_CAST(fromp, ConsArray);
+        if (!consp || !isIfaceArrayDType(consp->dtypep())) return nullptr;
         const AstUnpackArrayDType* const arrp
-            = VN_AS(initp->dtypep()->skipRefp(), UnpackArrayDType);
+            = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType);
         if (bit < 0 || bit >= arrp->elementsConst()) return nullptr;
-        return initp->getIndexDefaultedValuep(bit)->cloneTree(false);
+        return consp->valuep(bit)->cloneTree(false);
     }
 
-    // References to the element variables of the whole interface array referenced by 'refp', in
-    // the dimensions of 'dtypep' inwards. 'name' is the element name so far, the element
-    // variables being named 'name' + 'suffix'. 'elemVarpr' is the element variable of the
-    // leftmost element in the dimensions of 'dtypep', and is moved to the right past them.
+    // Widthed references to the element variables of the whole interface array referenced by
+    // 'refp', in the dimensions of 'dtypep' inwards. 'name' is the element name so far, the
+    // element variables being named 'name' + 'suffix'. 'elemVarpr' is the element variable of
+    // the leftmost element in the dimensions of 'dtypep', and is moved to the right past them.
     // E.g. 'ifc' of dimensions [0:1][3:2] -> '{'{ifc[0][3], ifc[0][2]}, '{ifc[1][3], ifc[1][2]}}
-    static AstNodeExpr* newIfaceArrayInit(const AstNodeVarRef* refp, AstNodeDType* dtypep,
-                                          const std::string& name, const std::string& suffix,
-                                          AstVar*& elemVarpr) {
+    AstNodeExpr* newIfaceArrayValue(const AstNodeVarRef* refp, AstNodeDType* dtypep,
+                                    const std::string& name, const std::string& suffix,
+                                    AstVar*& elemVarpr) {
         FileLine* const flp = refp->fileline();
         AstUnpackArrayDType* const arrp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
         // Base case: reference the element variable when no dimensions left
@@ -11103,26 +11079,30 @@ class WidthVisitor final : public VNVisitor {
             UASSERT_OBJ(varp && varp->name() == name + suffix, refp,
                         "Missing element variable of interface array " << name);
             elemVarpr = VN_CAST(varp->nextp(), Var);
+            AstNodeVarRef* newp;
             if (const AstVarXRef* const xrefp = VN_CAST(refp, VarXRef)) {
-                return new AstVarXRef{flp, varp, xrefp->dotted(), refp->access()};
+                newp = new AstVarXRef{flp, varp, xrefp->dotted(), refp->access()};
+            } else {
+                newp = new AstVarRef{flp, varp, refp->access()};
             }
-            return new AstVarRef{flp, varp, refp->access()};
+            userIterate(newp, WidthVP{SELF, BOTH}.p());
+            return newp;
         }
 
         // Enumerate the current dimension given by 'arrp', from the left index to the right,
         // as the element variables are in that order, indexed from lo
-        AstInitArray* const initp = new AstInitArray{flp, arrp, nullptr};
+        AstConsArray* const consp = new AstConsArray{flp, arrp};
         const VNumRange range = arrp->declRange();
         for (const int i : range.seqLeftToRight()) {
             const std::string s = name + "__BRA__" + AstNode::encodeNumber(i) + "__KET__";
-            initp->addIndexValuep(
-                i - range.lo(), newIfaceArrayInit(refp, arrp->subDTypep(), s, suffix, elemVarpr));
+            consp->valuep(i - range.lo(),
+                          newIfaceArrayValue(refp, arrp->subDTypep(), s, suffix, elemVarpr));
         }
-        return initp;
+        return consp;
     }
 
     // Replace a reference to a whole interface array variable (a __Viftop companion, or an
-    // interface array port) split by V3Param, with the AstInitArray of references to its
+    // interface array port) split by V3Param, with the AstConsArray of references to its
     // elements, which is how whole arrays of interfaces are handled from here on
     void replaceSplitIfaceArrayRef(AstNodeVarRef* nodep) {
         AstVar* const varp = nodep->varp();
@@ -11135,10 +11115,8 @@ class WidthVisitor final : public VNVisitor {
         }
         // The element variables follow the whole array variable in order (see V3Param)
         AstVar* elemVarp = VN_CAST(varp->nextp(), Var);
-        AstNodeExpr* const newp = newIfaceArrayInit(nodep, varp->dtypep(), name, suffix, elemVarp);
-        nodep->replaceWith(newp);
+        nodep->replaceWith(newIfaceArrayValue(nodep, varp->dtypep(), name, suffix, elemVarp));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        userIterate(newp, WidthVP{SELF, BOTH}.p());
     }
 
     // Add a pin for each element port of interface array port of pin 'nodep', split by V3Param,
@@ -11179,9 +11157,8 @@ class WidthVisitor final : public VNVisitor {
                 const int elements = conArrp->elementsConst();
                 // Counted from lo
                 AstNodeExpr* const resultp
-                    = VN_AS(conp, InitArray)
-                          ->getIndexDefaultedValuep(
-                              conArrp->declRange().ascending() ? n : elements - 1 - n);
+                    = VN_AS(conp, ConsArray)
+                          ->valuep(conArrp->declRange().ascending() ? n : elements - 1 - n);
                 UASSERT_OBJ(resultp, conp, "Interface array connection of mismatched shape");
                 return resultp;
             }();

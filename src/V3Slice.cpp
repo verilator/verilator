@@ -52,9 +52,6 @@ class SliceVisitor final : public VNVisitor {
     //  AstNodeUniop::user1()       -> bool.  True if find is complete
     //  AstArraySel::user1p()       -> AstVarRef. The VarRef that the final ArraySel points to
     const VNUser1InUse m_inuser1;
-    //  AstInitArray::user2()       -> uint64_t.  Previously accessed itemIdx
-    //  AstInitItem::user2()        -> uint64_t.  Corresponding first elemIdx
-    const VNUser2InUse m_inuser2;
 
     // STATE - across all visitors
     VDouble0 m_statAssigns;  // Statistic tracking
@@ -63,7 +60,7 @@ class SliceVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     AstNode* m_assignp = nullptr;  // Assignment we are under
     bool m_assignError = false;  // True if the current assign already has an error
-    bool m_okInitArray = false;  // Allow InitArray children
+    bool m_okConsArray = false;  // Allow ConsArray children
 
     // METHODS
     AstNodeExpr* cloneAndSel(AstNodeExpr* const nodep, uint64_t elements, uint64_t elemIdx,
@@ -94,105 +91,16 @@ class SliceVisitor final : public VNVisitor {
             elemIdx = 0;
         }
         AstNodeExpr* newp;
-        if (AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
-            UINFO(9, "  cloneInitArray(" << elements << "," << elemIdx << ") " << nodep);
-
-            auto considerOrder = [](const auto* nodep, int idxFromLeft) -> int {
-                return !nodep->rangep()->ascending()
-                           ? nodep->rangep()->elementsConst() - 1 - idxFromLeft
-                           : idxFromLeft;
-            };
-            newp = nullptr;
-            uint64_t itemIdx = 0;
-            uint64_t i = 0;
-            const AstInitArray::KeyItemMap& itemMap = initp->map();
-            if (const uint64_t prevItemIdx = initp->user2()) {
-                const auto it = itemMap.find(considerOrder(arrayp, prevItemIdx));
-                if (it != itemMap.end()) {
-                    const AstInitItem* itemp = it->second;
-                    if (itemp->user2() && itemp->user2() < elemIdx) {
-                        // Let's resume traversal from the previous position
-                        itemIdx = prevItemIdx;
-                        i = itemp->user2();
-                    }
-                }
+        if (AstConsArray* const consp = VN_CAST(nodep, ConsArray)) {
+            UINFO(9, "  cloneConsArray(" << elements << "," << elemIdx << ") " << nodep);
+            const uint64_t index
+                = arrayp->rangep()->ascending() ? elemIdx : elements - 1 - elemIdx;
+            if (AstNodeExpr* const valuep = consp->valuep(index)) {
+                newp = valuep->cloneTree(false, needPure);
+            } else {
+                UASSERT_OBJ(m_assignError, consp, "Array value missing element " << elemIdx);
+                newp = new AstConst{nodep->fileline(), 0};
             }
-            const AstNodeDType* const expectedItemDTypep = arrayp->subDTypep()->skipRefp();
-            while (i <= elemIdx) {
-                const auto itemIt = itemMap.find(considerOrder(arrayp, itemIdx));
-                AstNodeExpr* const itemp
-                    = itemIt != itemMap.end() ? itemIt->second->valuep() : initp->defaultp();
-                const bool directItem = itemIt != itemMap.end();
-                if (!itemp && !m_assignError) {
-                    nodep->v3error("Array initialization has too few elements, need element "
-                                   << elemIdx);
-                    m_assignError = true;
-                    break;
-                }
-                const AstNodeDType* itemRawDTypep = itemp->dtypep()->skipRefp();
-                const VCastable castable
-                    = AstNode::computeCastable(expectedItemDTypep, itemRawDTypep, itemp);
-                if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE) {
-                    if (i == elemIdx) {
-                        newp = itemp->cloneTree(false, !directItem && needPure);
-                        break;
-                    } else {  // Check the next item
-                        ++i;
-                        ++itemIdx;
-                    }
-                } else {
-                    const AstUnpackArrayDType* const itemDTypep
-                        = VN_CAST(itemRawDTypep, UnpackArrayDType);
-                    if (!itemDTypep
-                        || !expectedItemDTypep->isSame(itemDTypep->subDTypep()->skipRefp())) {
-                        if (!m_assignError) {
-                            itemp->v3error("Item is incompatible with the array type.");
-                        }
-                        m_assignError = true;
-                        break;
-                    }
-                    if (i + itemDTypep->elementsConst()
-                        > elemIdx) {  // This item contains the element
-                        int offset = considerOrder(itemDTypep, elemIdx - i);
-                        if (AstSliceSel* const slicep = VN_CAST(itemp, SliceSel)) {
-                            offset += slicep->declRange().lo();
-                            newp = new AstArraySel{nodep->fileline(),
-                                                   slicep->fromp()->cloneTreePure(false), offset};
-                        } else {
-                            newp = new AstArraySel{nodep->fileline(), itemp->cloneTreePure(false),
-                                                   offset};
-                        }
-
-                        if (!m_assignError && elemIdx + 1 == elements
-                            && i + itemDTypep->elementsConst() > elements) {
-                            nodep->v3error("Array initialization has too many elements. "
-                                           << elements << " elements are expected, but at least "
-                                           << i + itemDTypep->elementsConst()
-                                           << " elements exist.");
-                            m_assignError = true;
-                        }
-                        break;
-                    } else {  // Check the next item
-                        i += itemDTypep->elementsConst();
-                        ++itemIdx;
-                    }
-                }
-            }
-            if (elemIdx + 1 == elements && static_cast<size_t>(itemIdx) + 1 < initp->map().size()
-                && !m_assignError) {
-                nodep->v3error("Array initialization has too many elements. "
-                               << elements << " elements are expected, but at least "
-                               << i + initp->map().size() - itemIdx << " elements exist.");
-                m_assignError = true;
-            }
-            if (newp) {
-                const auto it = itemMap.find(considerOrder(arrayp, itemIdx));
-                if (it != itemMap.end()) {  // Remember current position for the next invocation.
-                    initp->user2(itemIdx);
-                    it->second->user2(i);
-                }
-            }
-            if (!newp) newp = new AstConst{nodep->fileline(), 0};
         } else if (const AstCvtUnpackToUnpack* const cvtp = VN_CAST(nodep, CvtUnpackToUnpack)) {
             UINFO(9, "  cloneCvtUnpackToUnpack(" << elements << "," << elemIdx << ") " << nodep);
             // The element in the same left-to-right position of the source
@@ -262,7 +170,7 @@ class SliceVisitor final : public VNVisitor {
         const bool hasSc
             = nodep->exists([&](const AstVarRef* refp) -> bool { return refp->varp()->isSc(); });
         if (!hasSc && !v3Global.opt.fSlice()) {
-            m_okInitArray = true;  // VL_RESTORER in visit(AstNodeAssign)
+            m_okConsArray = true;  // VL_RESTORER in visit(AstNodeAssign)
             return false;
         }
 
@@ -271,7 +179,7 @@ class SliceVisitor final : public VNVisitor {
         const int elementLimit = v3Global.opt.fSliceElementLimit();
         if (elements > elementLimit && elementLimit > 0) {
             ++m_statSliceElementSkips;
-            m_okInitArray = true;  // VL_RESTORER in visit(AstNodeAssign)
+            m_okConsArray = true;  // VL_RESTORER in visit(AstNodeAssign)
             return false;
         }
 
@@ -279,7 +187,7 @@ class SliceVisitor final : public VNVisitor {
         if (AstVarRef* const lhsp = VN_CAST(nodep->lhsp(), VarRef)) {
             if (AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef)) {
                 if (!hasSc && lhsp->dtypep()->skipRefp()->sameTree(rhsp->dtypep()->skipRefp())) {
-                    m_okInitArray = true;  // VL_RESTORER in visit(AstNodeAssign)
+                    m_okConsArray = true;  // VL_RESTORER in visit(AstNodeAssign)
                     return false;
                 }
             }
@@ -315,7 +223,7 @@ class SliceVisitor final : public VNVisitor {
         UINFOTREE(9, nodep, "", "Deslice-In");
         VL_RESTORER(m_assignError);
         VL_RESTORER(m_assignp);
-        VL_RESTORER(m_okInitArray);  // Set in assignOptimize
+        VL_RESTORER(m_okConsArray);  // Set in assignOptimize
         m_assignError = false;
         m_assignp = nodep;
         if (assignOptimize(nodep)) return;
@@ -323,32 +231,32 @@ class SliceVisitor final : public VNVisitor {
     }
 
     void visit(AstConsAssoc* nodep) override {
-        VL_RESTORER(m_okInitArray);
-        m_okInitArray = true;
+        VL_RESTORER(m_okConsArray);
+        m_okConsArray = true;
         iterateChildren(nodep);
     }
     void visit(AstConsStruct* nodep) override {
-        VL_RESTORER(m_okInitArray);
-        m_okInitArray = true;
+        VL_RESTORER(m_okConsArray);
+        m_okConsArray = true;
         iterateChildren(nodep);
     }
     void visit(AstConsDynArray* nodep) override {
-        VL_RESTORER(m_okInitArray);
-        m_okInitArray = true;
+        VL_RESTORER(m_okConsArray);
+        m_okConsArray = true;
         iterateChildren(nodep);
     }
     void visit(AstConsQueue* nodep) override {
-        VL_RESTORER(m_okInitArray);
-        m_okInitArray = true;
+        VL_RESTORER(m_okConsArray);
+        m_okConsArray = true;
         iterateChildren(nodep);
     }
     void visit(AstConsWildcard* nodep) override {
-        VL_RESTORER(m_okInitArray);
-        m_okInitArray = true;
+        VL_RESTORER(m_okConsArray);
+        m_okConsArray = true;
         iterateChildren(nodep);
     }
-    void visit(AstInitArray* nodep) override {
-        UASSERT_OBJ(!m_assignp || m_okInitArray, nodep,
+    void visit(AstConsArray* nodep) override {
+        UASSERT_OBJ(!m_assignp || m_okConsArray, nodep,
                     "Array initialization should have been removed earlier");
     }
 

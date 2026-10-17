@@ -712,7 +712,7 @@ public:
                    // and means using '=' and bypasses using emitConstantW.
                    // Whuch we don't want to do as slows compiler down.
                    && !VN_IS(nodep->rhsp(), VarRef)  //
-                   && !VN_IS(nodep->rhsp(), InitArray)  //
+                   && !VN_IS(nodep->rhsp(), ConsArray)  //
                    && !VN_IS(nodep->rhsp(), AssocSel)  //
                    && !VN_IS(nodep->rhsp(), MemberSel)  //
                    && !VN_IS(nodep->rhsp(), StructSel)  //
@@ -743,8 +743,8 @@ public:
             decind = true;
             if (!VN_IS(nodep->rhsp(), Const)) ofp()->putBreak();
             putns(nodep, "= ");
-            if (unpackDtp && VN_IS(nodep->rhsp(), InitArray)) {
-                // Emit "VlUnpacked<type, depth>{{...InitArray...}}"
+            if (unpackDtp && VN_IS(nodep->rhsp(), ConsArray)) {
+                // Emit "VlUnpacked<type, depth>{{...ConsArray...}}"
                 puts(unpackDtp->cType("", false, false, false));
             }
         }
@@ -1849,7 +1849,7 @@ public:
         }
         puts(") != 0ULL)");
     }
-    void visit(AstInitItem* nodep) override { iterateChildrenConst(nodep); }
+    void visit(AstConsArrayItem* nodep) override { iterateChildrenConst(nodep); }
     // Terminals
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();

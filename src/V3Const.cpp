@@ -3053,20 +3053,20 @@ class ConstVisitor final : public VNVisitor {
     }
     bool matchToStringNConst(AstToStringN* nodep) {
         iterateChildren(nodep);
-        if (const AstInitArray* const initp = VN_CAST(nodep->lhsp(), InitArray)) {
+        if (const AstConsArray* const consp = VN_CAST(nodep->lhsp(), ConsArray)) {
             if (!(m_doExpensive || m_params)) return false;
             const auto isConstInit
                 = [](const AstNode* const exprp, const auto& isConstInitRecurse) -> bool {
                 if (VN_IS(exprp, Const)) return true;
-                if (const AstInitItem* const itemp = VN_CAST(exprp, InitItem)) {
+                if (const AstConsArrayItem* const itemp = VN_CAST(exprp, ConsArrayItem)) {
                     return isConstInitRecurse(itemp->valuep(), isConstInitRecurse);
                 }
-                if (const AstInitArray* const arrayp = VN_CAST(exprp, InitArray)) {
+                if (const AstConsArray* const arrayp = VN_CAST(exprp, ConsArray)) {
                     const auto itemIsConstInit
                         = [&isConstInitRecurse](const AstNode* const itemp) -> bool {
                         return isConstInitRecurse(itemp, isConstInitRecurse);
                     };
-                    if (arrayp->initsp() && !arrayp->initsp()->forall(itemIsConstInit))
+                    if (arrayp->itemsp() && !arrayp->itemsp()->forall(itemIsConstInit))
                         return false;
                     if (arrayp->defaultp()
                         && !isConstInitRecurse(arrayp->defaultp(), isConstInitRecurse)) {
@@ -3076,7 +3076,7 @@ class ConstVisitor final : public VNVisitor {
                 }
                 return false;
             };
-            if (!isConstInit(initp, isConstInit)) return false;
+            if (!isConstInit(consp, isConstInit)) return false;
         } else if (!VN_IS(nodep->lhsp(), Const)) {
             return false;
         }
@@ -3347,7 +3347,7 @@ class ConstVisitor final : public VNVisitor {
             && VN_IS(nodep->fromp(), VarRef)
             // Need to make sure it's an array object so don't mis-allow a constant (bug509.)
             && VN_AS(nodep->fromp(), VarRef)->varp()
-            && VN_IS(VN_AS(nodep->fromp(), VarRef)->varp()->valuep(), InitArray)) {
+            && VN_IS(VN_AS(nodep->fromp(), VarRef)->varp()->valuep(), ConsArray)) {
             m_selp = nodep;  // Ask visit(AstVarRef) to replace varref with const
         }
         iterateAndNextNull(nodep->fromp());
@@ -3360,11 +3360,11 @@ class ConstVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
         }
-        // Handle ARRAYSEL directly on InitArray (not through VarRef)
-        else if (VN_IS(nodep->bitp(), Const) && VN_IS(nodep->fromp(), InitArray)) {
-            const AstInitArray* const initarp = VN_AS(nodep->fromp(), InitArray);
+        // Handle ARRAYSEL directly on ConsArray (not through VarRef)
+        else if (VN_IS(nodep->bitp(), Const) && VN_IS(nodep->fromp(), ConsArray)) {
+            const AstConsArray* const consp = VN_AS(nodep->fromp(), ConsArray);
             const uint32_t bit = VN_AS(nodep->bitp(), Const)->toUInt();
-            AstNodeExpr* const itemp = initarp->getIndexDefaultedValuep(bit);
+            AstNodeExpr* const itemp = consp->valuep(bit);
             if (VN_IS(itemp, Const)) {
                 const V3Number& num = VN_AS(itemp, Const)->num();
                 VL_DO_DANGLING(replaceNum(nodep, num), nodep);
@@ -3416,10 +3416,9 @@ class ConstVisitor final : public VNVisitor {
             iterateAndNextNull(nodep->varp()->valuep());  // May change nodep->varp()->valuep()
             AstNode* const valuep = nodep->varp()->valuep();
             // The selected element, when under a constant select of an array
-            const AstInitArray* const initarp = VN_CAST(valuep, InitArray);
+            const AstConsArray* const consp = VN_CAST(valuep, ConsArray);
             const AstNode* const selItemp
-                = (m_selp && initarp) ? initarp->getIndexDefaultedValuep(m_selp->bitConst())
-                                      : nullptr;
+                = (m_selp && consp) ? consp->valuep(m_selp->bitConst()) : nullptr;
             if (nodep->access().isReadOnly() && valuep
                 && ((!m_params  // Can reduce constant wires into equations
                      && m_doNConst && v3Global.opt.fConst() && nodep->varp()->isConst())
@@ -3434,9 +3433,9 @@ class ConstVisitor final : public VNVisitor {
                 } else if (const AstConst* const itemp = VN_CAST(selItemp, Const)) {
                     VL_DO_DANGLING(replaceNum(nodep, itemp->num()), nodep);
                     did = true;
-                } else if (m_params && initarp) {
+                } else if (m_params && consp) {
                     // Allow parameters to pass arrays
-                    // Earlier recursion of InitArray made sure each array value is constant
+                    // Earlier recursion of ConsArray made sure each array value is constant
                     // This exception is fairly fragile, i.e. doesn't
                     // support arrays of arrays or other stuff
                     AstNode* const newp = valuep->cloneTree(false);
@@ -3735,7 +3734,7 @@ class ConstVisitor final : public VNVisitor {
     }
     void visit(AstCvtUnpackToUnpack* nodep) override {
         iterateChildren(nodep);
-        AstInitArray* const fromp = VN_CAST(nodep->fromp(), InitArray);
+        AstConsArray* const fromp = VN_CAST(nodep->fromp(), ConsArray);
         if (!fromp) return;
         // Fold the outermost dimension, converting the elements for any dimension under it
         const AstUnpackArrayDType* const toArrayp
@@ -3754,12 +3753,13 @@ class ConstVisitor final : public VNVisitor {
             if (!subArrayp || !subArrayp->isReverseOf(valuep->dtypep())) return valuep;
             return new AstCvtUnpackToUnpack{valuep->fileline(), valuep, subDTypep};
         };
-        AstInitArray* const newp
-            = new AstInitArray{fromp->fileline(), nodep->dtypep(),
+        AstConsArray* const newp
+            = new AstConsArray{fromp->fileline(), nodep->dtypep(),
                                fromp->defaultp() ? convert(fromp->defaultp()) : nullptr};
-        for (const auto& itr : fromp->map()) {
-            newp->addIndexValuep(reverse ? lastIndex - itr.first : itr.first,
-                                 convert(itr.second->valuep()));
+        for (const AstConsArrayItem* itemp = fromp->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+            newp->valuep(reverse ? lastIndex - itemp->index() : itemp->index(),
+                         convert(itemp->valuep()));
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -4214,10 +4214,10 @@ class ConstVisitor final : public VNVisitor {
         if (operandBoolShift(nodep->condp())) replaceBoolShift(nodep->condp());
     }
 
-    void visit(AstInitArray* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsArray* nodep) override { iterateChildren(nodep); }
     void visit(AstConsStruct* nodep) override { iterateChildren(nodep); }
     void visit(AstConsStructItem* nodep) override { iterateChildren(nodep); }
-    void visit(AstInitItem* nodep) override { iterateChildren(nodep); }
+    void visit(AstConsArrayItem* nodep) override { iterateChildren(nodep); }
     void visit(AstUnbounded* nodep) override { iterateChildren(nodep); }
     // These are converted by V3Param.  Don't constify as we don't want the
     // from() VARREF to disappear, if any.

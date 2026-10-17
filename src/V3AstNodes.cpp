@@ -188,37 +188,39 @@ static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep,
     // The enum or other type the data type stands for, or nullptr if not yet resolved
     if (dtypep) dtypep = dtypep->skipRefToEnumOrNullp();
     if (constp) return dtypeNameConst(constp->num(), dtypep, untyped);
-    if (const AstInitArray* const initp = VN_CAST(valuep, InitArray)) {
+    if (const AstConsArray* const consp = VN_CAST(valuep, ConsArray)) {
         const AstNodeDType* const elemDTypep = dtypep ? dtypep->subDTypep() : nullptr;
         // Keys count from the lowest index, while elements are listed from the left index
         const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
         const int lo = adtypep ? adtypep->declRange().lo() : 0;
         const bool descending = adtypep && !adtypep->declRange().ascending();
-        const AstInitArray::KeyItemMap& map = initp->map();
+        std::vector<const AstConsArrayItem*> itemps;
+        for (const AstConsArrayItem* itemp = consp->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+            itemps.push_back(itemp);
+        }
         // Elements are indexed, unless all are given in order
         const size_t elements
-            = adtypep ? static_cast<size_t>(adtypep->declRange().elements()) : map.size();
-        bool indexed = initp->defaultp() || map.size() != elements;
-        uint64_t nextIndex = 0;
-        for (const auto& itr : map) {
-            if (itr.first != nextIndex) indexed = true;
-            ++nextIndex;
+            = adtypep ? static_cast<size_t>(adtypep->declRange().elements()) : itemps.size();
+        bool indexed = consp->defaultp() || itemps.size() != elements;
+        for (size_t n = 0; n < itemps.size(); ++n) {
+            if (itemps[n]->index() != n) indexed = true;
         }
         string result = "'{";
         const char* sepp = "";
-        const auto addElem = [&](const AstInitArray::KeyItemMap::value_type& itr) {
+        const auto addElem = [&](const AstConsArrayItem* itemp) {
             result += sepp;
             sepp = ",";
-            if (indexed) result += cvtToStr(static_cast<int64_t>(itr.first) + lo) + ":";
-            result += dtypeNameValue(itr.second->valuep(), elemDTypep);
+            if (indexed) result += cvtToStr(static_cast<int64_t>(itemp->index()) + lo) + ":";
+            result += dtypeNameValue(itemp->valuep(), elemDTypep);
         };
         if (descending) {
-            for (auto it = map.crbegin(); it != map.crend(); ++it) addElem(*it);
+            for (auto it = itemps.crbegin(); it != itemps.crend(); ++it) addElem(*it);
         } else {
-            for (const auto& itr : map) addElem(itr);
+            for (const AstConsArrayItem* const itemp : itemps) addElem(itemp);
         }
-        if (initp->defaultp()) {
-            result += sepp + "default:"s + dtypeNameValue(initp->defaultp(), elemDTypep);
+        if (consp->defaultp()) {
+            result += sepp + "default:"s + dtypeNameValue(consp->defaultp(), elemDTypep);
         }
         return result + "}";
     }
@@ -1253,6 +1255,75 @@ void AstConfigUse::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConfig);
     dumpJsonGen(str);
 }
+const char* AstConsArray::broken() const {
+    const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep()->skipRefp(), UnpackArrayDType);
+    BROKEN_RTN(!arrayp);
+    // Each map entry is the next item, so the items are in increasing index order
+    const AstConsArrayItem* itemp = itemsp();
+    for (const auto& pair : m_itemps) {
+        BROKEN_RTN(!itemp || itemp->index() != pair.first || itemp != pair.second);
+        itemp = VN_AS(itemp->nextp(), ConsArrayItem);
+    }
+    BROKEN_RTN(itemp);
+    // Must be complete: every element given, or has a default
+    const size_t elements = arrayp->elementsConst();
+    BROKEN_RTN(!defaultp() && m_itemps.size() != elements);
+    return nullptr;
+}
+void AstConsArray::cloneRelink() {
+    cloneRelinkGen();
+    // The copied map has the indices of the cloned items, in the same order
+    AstConsArrayItem* itemp = itemsp();
+    for (auto& pair : m_itemps) {
+        UASSERT_OBJ(itemp && itemp->index() == pair.first, this, "Cloned items out of order");
+        pair.second = itemp;
+        itemp = VN_AS(itemp->nextp(), ConsArrayItem);
+    }
+}
+void AstConsArray::spliceValues(uint64_t index, AstNodeExpr* arrayp) {
+    const bool ascending = VN_AS(dtypep()->skipRefp(), UnpackArrayDType)->declRange().ascending();
+    const AstUnpackArrayDType* const srcp = VN_AS(arrayp->dtypep()->skipRefp(), UnpackArrayDType);
+    const int elements = srcp->elementsConst();
+    for (int n = 0; n < elements; ++n) {
+        // Element 'n' from the left of 'arrayp', counted from its lo
+        const int srcIndex = srcp->declRange().ascending() ? n : elements - 1 - n;
+        AstNodeExpr* elemp;
+        if (const AstConsArray* const consp = VN_CAST(arrayp, ConsArray)) {
+            elemp = consp->valuep(srcIndex)->cloneTree(false);
+        } else if (AstSliceSel* const slicep = VN_CAST(arrayp, SliceSel)) {
+            elemp = new AstArraySel{arrayp->fileline(), slicep->fromp()->cloneTreePure(false),
+                                    slicep->declRange().lo() + srcIndex};
+        } else {
+            elemp = new AstArraySel{arrayp->fileline(), arrayp->cloneTreePure(false), srcIndex};
+        }
+        valuep(ascending ? index + n : index - n, elemp);
+    }
+    VL_DO_DANGLING(arrayp->deleteTree(), arrayp);
+}
+AstNodeExpr* AstConsArray::valuep(uint64_t index) const {
+    const auto it = m_itemps.find(index);
+    return it == m_itemps.end() ? defaultp() : it->second->valuep();
+}
+void AstConsArray::valuep(uint64_t index, AstNodeExpr* newp) {
+    const auto it = m_itemps.lower_bound(index);
+    UASSERT_OBJ(it == m_itemps.end() || it->first != index, this,
+                "Array value element already given " << index);
+    AstConsArrayItem* const itemp = new AstConsArrayItem{fileline(), index, newp};
+    if (it == m_itemps.end()) {
+        addNOp2p(itemp);
+    } else {
+        it->second->addHereThisAsNext(itemp);
+    }
+    m_itemps.emplace_hint(it, index, itemp);
+}
+void AstConsArrayItem::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " [" << index() << "]";
+}
+void AstConsArrayItem::dumpJson(std::ostream& str) const {
+    dumpJsonNumFunc(str, index);
+    dumpJsonGen(str);
+}
 const char* AstConsDynArray::broken() const {
     BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), DynArrayDType));
     // Default only valid if sizep is present
@@ -1839,63 +1910,6 @@ void AstImplication::dumpJson(std::ostream& str) const {
     Super::dumpJson(str);
     dumpJsonBoolFuncIf(str, isOverlapped);
     dumpJsonBoolFuncIf(str, isFollowedBy);
-}
-void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
-    const auto pair = m_map.emplace(index, nullptr);
-    if (pair.second) {
-        AstInitItem* const itemp = new AstInitItem{fileline(), newp};
-        pair.first->second = itemp;
-        addInitsp(itemp);
-    } else {
-        pair.first->second->valuep(newp);
-    }
-}
-const char* AstInitArray::broken() const {
-    BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), UnpackArrayDType));
-    for (KeyItemMap::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
-        BROKEN_RTN(!it->second);
-        BROKEN_RTN(!it->second->brokeExists());
-    }
-    return nullptr;
-}
-void AstInitArray::cloneRelink() {
-    cloneRelinkGen();
-    for (KeyItemMap::iterator it = m_map.begin(); it != m_map.end(); ++it) {
-        if (it->second->clonep()) it->second = it->second->clonep();
-    }
-}
-void AstInitArray::dump(std::ostream& str) const {
-    Super::dump(str);
-    dumpInitList(str);
-}
-void AstInitArray::dumpInitList(std::ostream& str) const {
-    int n = 0;
-    const auto& mapr = map();
-    for (const auto& itr : mapr) {
-        if (n++ > 5) {
-            str << " ...";
-            break;
-        }
-        const string addr
-            = (v3Global.opt.jsonIds() ? v3Global.ptrToId(itr.second) : nodeAddr(itr.second));
-        str << " [" << itr.first << "]=" << addr;
-    }
-}
-void AstInitArray::dumpJson(std::ostream& str) const {
-    str << ',' << '"' << "initList" << '"' << ':' << '"';
-    dumpInitList(str);
-    str << '"';
-    dumpJsonGen(str);
-}
-AstNodeExpr* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
-    AstNodeExpr* valuep = getIndexValuep(index);
-    if (!valuep) valuep = defaultp();
-    return valuep;
-}
-AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
-    const auto it = m_map.find(index);
-    if (it == m_map.end()) { return nullptr; }
-    return it->second->valuep();
 }
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {

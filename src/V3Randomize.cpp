@@ -4515,17 +4515,18 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->fileline(), nodep->dtypep(),
             new AstRange{nodep->fileline(), static_cast<int>(nodep->itemCount()) - 1, 0}};
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
+        AstConsArray* const consp = new AstConsArray{nodep->fileline(), vardtypep};
         UASSERT_OBJ(nodep->itemsp(), nodep, "Enum without items");
+        uint64_t index = 0;
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
             AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
             UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
-            initp->addValuep(vconstp->cloneTree(false));
+            consp->valuep(index++, vconstp->cloneTree(false));
         }
         // Share identical tables via the constant pool
-        AstVarRef* const refp = V3ConstPool::findTable(initp);
-        VL_DO_DANGLING(initp->deleteTree(), initp);  // V3ConstPool::findTable clones it
+        AstVarRef* const refp = V3ConstPool::findTable(consp);
+        VL_DO_DANGLING(consp->deleteTree(), consp);  // V3ConstPool::findTable clones it
         pushDeletep(refp);  // Deleted with the visitor - always cloned
         nodep->user2p(refp);
         return refp->cloneTree(false);
