@@ -11,7 +11,7 @@
 // verilog_format: on
 
 interface tgt_if;
-  int x;
+  int x, y, z, w;
 endinterface
 
 module t;
@@ -35,9 +35,10 @@ module t;
   int alw_src, alw_x, cls_x, cls_z[3];
   string alw_log, cls_log;
   tgt_if tgt_ifs[2] ();
-  virtual tgt_if tgt_vifs[2];
-  int tgt_a[2], tgt_i;
+  virtual tgt_if tgt_vifs[2], tgt_vaa[int], tgt_vwa[*];
+  int tgt_a[2], tgt_c[2], tgt_d[2], tgt_keys[2], tgt_i;
   logic [7:0] tgt_v, tgt_p = 0;
+  bit [7:0] tgt_sa[2], tgt_sb[2];
 
   function automatic int dly();
     ++dly_calls;
@@ -140,15 +141,31 @@ module t;
   always @(cls_x) if ($time != 0) cls_log = {cls_log, $sformatf("%0d@%0t ", cls_x, $time)};
 
   // The indices selecting the target are evaluated as the NBA executes, each as a whole, also the
-  // functions they call, which select with their arguments
+  // functions they call, which select with their arguments. Also in the parts of a concatenation,
+  // and through handles in arrays and in classes.
+  class TgtHolder;
+    virtual tgt_if vifs[2];
+  endclass
+  TgtHolder tgt_h = new;
   initial begin
     tgt_vifs[0] = tgt_ifs[0];
     tgt_vifs[1] = tgt_ifs[1];
+    tgt_vaa[5] = tgt_ifs[0];
+    tgt_vaa[6] = tgt_ifs[1];
+    tgt_vwa[5] = tgt_ifs[0];
+    tgt_vwa[6] = tgt_ifs[1];
+    tgt_h.vifs = tgt_vifs;
+    tgt_keys = '{5, 6};
     tgt_v = 8'b10;
     tgt_i = 1;
     tgt_a[bit_of(tgt_v, tgt_i)] <= #1 42;
     tgt_vifs[bit_of(tgt_v, tgt_i)].x <= #1 99;
     tgt_p[bit_of(tgt_v, tgt_i)*4+:4] <= #1 4'hf;
+    {tgt_c[bit_of(tgt_v, tgt_i)], tgt_d[tgt_i]} <= #1 {32'd3, 32'd4};
+    {>>{tgt_sa[tgt_i], tgt_sb[tgt_i]}} <= #1 16'h1234;
+    tgt_vaa[tgt_keys[tgt_i]].y <= #1 10;
+    tgt_vwa[tgt_keys[tgt_i]].z <= #1 20;
+    tgt_h.vifs[bit_of(tgt_v, tgt_i)].w <= #1 30;
     tgt_i = 0;
   end
 
@@ -165,7 +182,12 @@ module t;
     `checks(cls_log, "1@5 2@6 3@7 ")
     `checks($sformatf("%0d %0d %0d", cls_z[0], cls_z[1], cls_z[2]), "1 2 3")
     `checks($sformatf("%0d %0d %h", tgt_a[0], tgt_a[1], tgt_p), "0 42 f0")
-    `checks($sformatf("%0d %0d", tgt_ifs[0].x, tgt_ifs[1].x), "0 99")
+    `checks($sformatf("%0d %0d %0d %0d", tgt_c[0], tgt_c[1], tgt_d[0], tgt_d[1]), "0 3 0 4")
+    `checks($sformatf("%h %h %h %h", tgt_sa[0], tgt_sa[1], tgt_sb[0], tgt_sb[1]), "00 12 00 34")
+    `checks($sformatf("%0d %0d %0d %0d", tgt_ifs[0].x, tgt_ifs[0].y, tgt_ifs[0].z, tgt_ifs[0].w),
+            "0 0 0 0")
+    `checks($sformatf("%0d %0d %0d %0d", tgt_ifs[1].x, tgt_ifs[1].y, tgt_ifs[1].z, tgt_ifs[1].w),
+            "99 10 20 30")
     // Last, as VCS evaluates the delay of an NBA to a concatenation for each part
     `checkd(dly_calls, 3)
   end

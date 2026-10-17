@@ -1207,6 +1207,7 @@ class TimingControlVisitor final : public VNVisitor {
         // in order, each as a whole, also the selects and function calls in it. So follow the
         // selects of the target up from the variable, not into their indices. As an example, this
         // transforms 'x[a[i]][f(j)] <= #1 y' into 't0 = a[i]; t1 = f(j); x[t0][t1] <= #1 y'.
+        // V3Const has split NBAs to concatenations, also streamed, into NBAs to each part.
         if (inAssignDly) {
             for (AstNode* exprp = nodep->lhsp()->baseFromp(true); exprp != nodep;
                  exprp = exprp->firstAbovep()) {
