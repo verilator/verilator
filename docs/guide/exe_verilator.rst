@@ -1176,10 +1176,10 @@ Summary:
 
 .. option:: --hierarchical-params-file <filename>
 
-   Rarely needed - internal use. Internal flag inserted used during
-   :vlopt:`--hierarchical`; specifies name of hierarchical parameters file
-   for deparametrized modules with :option:`/*verilator&32;hier_block*/`
-   metacomment. See :ref:`Hierarchical Verilation`.
+   Internal use only, for :vlopt:`--hierarchical`. Specifies name of
+   hierarchical parameters file for deparametrized modules with
+   :option:`/*verilator&32;hier_block*/` metacomment. See
+   :ref:`Hierarchical Verilation`.
 
 .. option:: --hierarchical-threads <threads>
 
@@ -1538,7 +1538,7 @@ Summary:
    created. A single .cpp file larger than the limit is compiled on its
    own. This bounds the compiler memory usage when grouping large designs.
 
-   Defaults to 536870912 (512 MiB). Zero disables the limit.
+   Defaults to 536870912 (512 MB). Zero disables the limit.
 
 .. option:: --output-split <statements>
 
