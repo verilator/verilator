@@ -201,6 +201,7 @@ class CoverageVisitor final : public VNVisitor {
             varp->setIgnoreSchedWrite();  // Ignore the increment output, so no UNOPTFLAT
             varp->lifetime(VLifetime::STATIC_IMPLICIT);
             varp->trace(true);
+            varp->isCoverageTrace(true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp);
             AstAssign* const assp = new AstAssign{

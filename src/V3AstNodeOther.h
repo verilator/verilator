@@ -2351,6 +2351,7 @@ class AstVar final : public AstNode {
     bool m_overriddenParam : 1;  // Overridden parameter by #(...) or defparam
     bool m_untypedParam : 1;  // Parameter without a type or range, so of its value's type
     bool m_trace : 1;  // Trace this variable
+    bool m_isCoverageTrace : 1;  // Generated counter for --trace-coverage
     bool m_isLatched : 1;  // Not assigned in all control paths of combo always
     bool m_isForceable : 1;  // May be forced/released externally from user C code
     bool m_isForcedByCode : 1;  // May be forced/released from AstAssignForce/AstRelease
@@ -2419,6 +2420,7 @@ class AstVar final : public AstNode {
         m_overriddenParam = false;
         m_untypedParam = false;
         m_trace = false;
+        m_isCoverageTrace = false;
         m_isLatched = false;
         m_isForceable = false;
         m_isForcedByCode = false;
@@ -2619,6 +2621,8 @@ public:
     bool untypedParam() const { return m_untypedParam; }
     void untypedParam(bool flag) { m_untypedParam = flag; }
     void trace(bool flag) { m_trace = flag; }
+    bool isCoverageTrace() const { return m_isCoverageTrace; }
+    void isCoverageTrace(bool flag) { m_isCoverageTrace = flag; }
     void isLatched(bool flag) { m_isLatched = flag; }
     bool isForceable() const { return m_isForceable; }
     void setForceable() { m_isForceable = true; }
