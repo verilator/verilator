@@ -993,7 +993,7 @@ class AstConsAssoc final : public AstNodeExpr {
     // @astgen op1 := defaultp : Optional[AstNodeExpr]
     // @astgen op2 := itemsp : List[AstConsAssocItem]
 public:
-    AstConsAssoc(FileLine* fl, AstNodeExpr* defaultp)
+    explicit AstConsAssoc(FileLine* fl, AstNodeExpr* defaultp = nullptr)
         : ASTGEN_SUPER_ConsAssoc(fl) {
         this->defaultp(defaultp);
     }
@@ -1007,7 +1007,6 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstConsDynArray final : public AstNodeExpr {
     // Construct a dynamic array and return object, '{value, ...}, {value, array, ...},
@@ -1025,7 +1024,6 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstConsPackMember final : public AstNodeExpr {
     // Construct a packed array single element [member1: value1]
@@ -1085,14 +1083,13 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstConsWildcard final : public AstNodeExpr {
     // Construct a wildcard assoc array and return object, '{key: value, default: value}
     // @astgen op1 := defaultp : Optional[AstNodeExpr]
     // @astgen op2 := itemsp : List[AstConsWildcardItem]
 public:
-    AstConsWildcard(FileLine* fl, AstNodeExpr* defaultp)
+    explicit AstConsWildcard(FileLine* fl, AstNodeExpr* defaultp = nullptr)
         : ASTGEN_SUPER_ConsWildcard(fl) {
         this->defaultp(defaultp);
     }
@@ -1106,7 +1103,6 @@ public:
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     int instrCount() const override { return widthInstrs(); }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
 };
 class AstConst final : public AstNodeExpr {
     // A constant
@@ -2181,6 +2177,7 @@ public:
     void isConcat(bool flag) { m_isConcat = flag; }
     bool isDefault() const { return m_isDefault; }
     void isDefault(bool flag) { m_isDefault = flag; }
+    AstNodeExpr* keyExprp() const { return varrefp() ? varrefp() : VN_CAST(keyp(), NodeExpr); }
 };
 class AstPattern final : public AstNodeExpr {
     // Verilog '{a,b,c,d...}

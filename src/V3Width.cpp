@@ -6003,11 +6003,11 @@ class WidthVisitor final : public VNVisitor {
             } else if (auto* const vdtypep = VN_CAST(dtypep, NodeArrayDType)) {
                 patternArray(nodep, vdtypep, defaultp);
             } else if (VN_IS(dtypep, AssocArrayDType)) {
-                patternKeyed<AstConsAssocItem>(nodep, new AstConsAssoc{nodep->fileline(), nullptr},
-                                               dtypep, defaultp);
+                AstConsAssoc* const consp = new AstConsAssoc{nodep->fileline()};
+                patternKeyed<AstConsAssocItem>(nodep, consp, dtypep, defaultp);
             } else if (VN_IS(dtypep, WildcardArrayDType)) {
-                patternKeyed<AstConsWildcardItem>(
-                    nodep, new AstConsWildcard{nodep->fileline(), nullptr}, dtypep, defaultp);
+                AstConsWildcard* const consp = new AstConsWildcard{nodep->fileline()};
+                patternKeyed<AstConsWildcardItem>(nodep, consp, dtypep, defaultp);
             } else if (VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType)) {
                 patternDynArrayOrQueue(nodep, dtypep, defaultp);
             } else if (VN_IS(dtypep, BasicDType) && VN_AS(dtypep, BasicDType)->isRanged()) {
@@ -6240,6 +6240,16 @@ class WidthVisitor final : public VNVisitor {
         return new AstPatMember{defaultp->fileline(), recursivePatternp, nullptr, nullptr};
     }
 
+    // Return the value of a pattern default for elements of the given type, or nullptr if no
+    // default. For aggregate elements, it applies to their elements (IEEE 1800-2023 10.9.1).
+    AstNodeExpr* patternDefaultValuep(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
+        if (!defaultp) return nullptr;
+        AstPatMember* const elemDefaultp = defaultPatp_forDType(defaultp, elemDTypep);
+        elemDefaultp->dtypep(elemDTypep);
+        AstNodeExpr* const valuep = patternMemberValueIterate(elemDefaultp);
+        VL_DO_DANGLING(pushDeletep(elemDefaultp), elemDefaultp);
+        return valuep;
+    }
     void patternArray(AstPattern* nodep, AstNodeArrayDType* arrayDtp, AstPatMember* defaultp) {
         const VNumRange range = arrayDtp->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
@@ -6338,42 +6348,6 @@ class WidthVisitor final : public VNVisitor {
         }
         // UINFOTREE(9, newp, "", "apat-out");
     }
-    // Return the value of a pattern default for elements of the given type, or nullptr if no
-    // default. For aggregate elements, it applies to their elements (IEEE 1800-2023 10.9.1).
-    AstNodeExpr* patternDefaultValuep(AstPatMember* defaultp, AstNodeDType* elemDTypep) {
-        if (!defaultp) return nullptr;
-        AstPatMember* const elemDefaultp = defaultPatp_forDType(defaultp, elemDTypep);
-        elemDefaultp->dtypep(elemDTypep);
-        AstNodeExpr* const valuep = patternMemberValueIterate(elemDefaultp);
-        VL_DO_DANGLING(pushDeletep(elemDefaultp), elemDefaultp);
-        return valuep;
-    }
-    // Convert a keyed pattern into the constructor 'newp' of an associative, wildcard or
-    // dynamic array
-    template <typename T_Item, typename T_Cons>
-    void patternKeyed(AstPattern* nodep, T_Cons* newp, AstNodeDType* arrayDtp,
-                      AstPatMember* defaultp) {
-        newp->dtypeFrom(arrayDtp);
-        newp->defaultp(patternDefaultValuep(defaultp, arrayDtp->subDTypep()));
-        for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
-             patp = VN_AS(patp->nextp(), PatMember)) {
-            const auto keyp = patternKeyp(newp, patp, arrayDtp);
-            patp->dtypep(arrayDtp->subDTypep());
-            AstNodeExpr* const valuep = patternMemberValueIterate(patp);
-            if (keyp) {
-                newp->addItemsp(new T_Item{patp->fileline(), keyp, valuep});
-            } else {
-                VL_DO_DANGLING(pushDeletep(valuep), valuep);
-            }
-        }
-        // Aggregate keys are not sorted or checked for duplicates
-        const AstAssocArrayDType* const assocDtp = VN_CAST(arrayDtp, AssocArrayDType);
-        if (!assocDtp || !assocDtp->keyDTypep()->skipRefp()->isAggregateType()) {
-            sortConsItems<T_Item>(newp);
-        }
-        nodep->replaceWith(newp);
-        // UINFOTREE(9, newp, "", "apat-out");
-    }
     // Return the key of an array pattern member, which must be a constant expression,
     // or nullptr after reporting an error
     AstConst* patternConstKeyp(AstPatMember* patp) {
@@ -6382,42 +6356,57 @@ class WidthVisitor final : public VNVisitor {
                                  "Unsupported: Data type key in array assignment pattern");
             return nullptr;
         }
-        V3Const::constifyParamsNoWarnEdit(patternKeyExprp(patp));  // Key may change
-        AstConst* const constp = VN_CAST(patternKeyExprp(patp), Const);
+        if (patp->keyExprp()) V3Const::constifyParamsNoWarnEdit(patp->keyExprp());  // May change
+        AstConst* const constp = VN_CAST(patp->keyExprp(), Const);
         if (!constp) {
             patp->keyp()->v3error(
                 "Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)");
         }
         return constp;
     }
-    // The key expression of a pattern member, or the value of an identifier key
-    static AstNode* patternKeyExprp(const AstPatMember* patp) {
-        return patp->varrefp() ? patp->varrefp() : patp->keyp();
+    // Return the key of a pattern member of a non-aggregate key type, converted to the key type,
+    // unlinked, or nullptr after reporting an error
+    AstConst* patternScalarKeyp(AstPatMember* patp, AstNodeDType* keyDTypep) {
+        if (!patp->keyp()) {
+            patp->v3error("Missing pattern key (need an expression then a ':')");
+            return nullptr;
+        }
+        // An integral key is evaluated in the context of the key type, as an index converted to
+        // it (IEEE 1800-2023 7.8.4), but not truncated before checking it for X or Z
+        if (keyDTypep->skipRefp()->isIntegralOrPacked() && patp->keyExprp()) {
+            userIterate(patp->keyExprp(), WidthVP{keyDTypep, PRELIM}.p());
+            const int width = std::max(patp->keyExprp()->width(), keyDTypep->width());
+            AstNodeDType* const contextDTypep
+                = keyDTypep->findBitOrLogicDType(width, width, keyDTypep->numeric(), true);
+            iterateCheck(patp, "key", patp->keyExprp(), CONTEXT_DET, FINAL, contextDTypep,
+                         EXTEND_EXP, false);
+        }
+        AstConst* const constp = patternConstKeyp(patp);
+        if (!constp) return nullptr;
+        if (constp->num().isFourState()) {
+            patp->keyp()->v3error("Assignment pattern key cannot contain X or Z");
+            return nullptr;
+        }
+        // Convert to the key type. The conversion is inserted above 'constp', so take the key
+        // from the member again rather than from what iterateCheck returns.
+        iterateCheck(patp, "key", constp, CONTEXT_DET, FINAL, keyDTypep, EXTEND_EXP, false);
+        AstNodeExpr* const convp = patp->keyExprp();
+        // Fold the conversion, so the key is a Const again
+        AstNodeExpr* const keyp = V3Const::constifyEdit(convp);
+        UASSERT_OBJ(VN_IS(keyp, Const), patp, "Key not constant after conversion");
+        return VN_AS(keyp->unlinkFrBack(), Const);
     }
     // Return the key of a keyed pattern member, for the kind of constructor, unlinked, or nullptr
     // after reporting an error. Only associative arrays can have aggregate keys.
     AstNodeExpr* patternKeyp(AstConsAssoc*, AstPatMember* patp, AstNodeDType* arrayDtp) {
         AstNodeDType* const keyDTypep = VN_AS(arrayDtp, AssocArrayDType)->keyDTypep();
-        if (keyDTypep->skipRefp()->isAggregateType() && VN_IS(patternKeyExprp(patp), NodeExpr)) {
-            return patternAggregateKeyp(patp, keyDTypep);
+        if (!keyDTypep->skipRefp()->isAggregateType() || !patp->keyExprp()) {
+            return patternScalarKeyp(patp, keyDTypep);
         }
-        return patternScalarKeyp(patp, keyDTypep);
-    }
-    AstConst* patternKeyp(AstConsWildcard*, AstPatMember* patp, AstNodeDType* arrayDtp) {
-        return patternScalarKeyp(patp, arrayDtp->findStringDType());
-    }
-    AstConst* patternKeyp(AstConsDynArray*, AstPatMember* patp, AstNodeDType* arrayDtp) {
-        // Converted to longint, not int, so a key wider than 32 bits is out of bounds rather than
-        // truncated to a valid index
-        return patternScalarKeyp(patp, arrayDtp->findBasicDType(VBasicDTypeKwd::LONGINT));
-    }
-    // Return the key of a pattern member of an aggregate key type, unlinked, or nullptr after
-    // reporting an error
-    AstNodeExpr* patternAggregateKeyp(AstPatMember* patp, AstNodeDType* keyDTypep) {
-        iterateCheckTyped(patp, "key", patternKeyExprp(patp), keyDTypep, BOTH);
-        V3Const::constifyParamsNoWarnEdit(patternKeyExprp(patp));
-        AstNodeExpr* const foldedp = VN_AS(patternKeyExprp(patp), NodeExpr);
-        // Constant if folded to constant values only
+        // An aggregate key is folded, and constant if made of constant values only
+        iterateCheckTyped(patp, "key", patp->keyExprp(), keyDTypep, BOTH);
+        V3Const::constifyParamsNoWarnEdit(patp->keyExprp());
+        AstNodeExpr* const foldedp = patp->keyExprp();
         const bool isConst = !foldedp->exists([](const AstNode* np) {
             return !VN_IS(np, Const) && !VN_IS(np, ConsPackUOrStruct) && !VN_IS(np, ConsPackMember)
                    && !VN_IS(np, InitArray) && !VN_IS(np, InitItem);
@@ -6433,38 +6422,13 @@ class WidthVisitor final : public VNVisitor {
         }
         return foldedp->unlinkFrBack();
     }
-    // Return the key of a pattern member of a non-aggregate key type, converted to the key type,
-    // unlinked, or nullptr after reporting an error
-    AstConst* patternScalarKeyp(AstPatMember* patp, AstNodeDType* keyDTypep) {
-        if (!patp->keyp()) {
-            patp->v3error("Missing pattern key (need an expression then a ':')");
-            return nullptr;
-        }
-        // An integral key is evaluated in the context of the key type, as an index converted to
-        // it (IEEE 1800-2023 7.8.4), but not truncated before checking it for X or Z
-        if (keyDTypep->skipRefp()->isIntegralOrPacked()
-            && VN_IS(patternKeyExprp(patp), NodeExpr)) {
-            userIterate(patternKeyExprp(patp), WidthVP{keyDTypep, PRELIM}.p());
-            const int width = std::max(patternKeyExprp(patp)->width(), keyDTypep->width());
-            AstNodeDType* const contextDTypep
-                = keyDTypep->findBitOrLogicDType(width, width, keyDTypep->numeric(), true);
-            iterateCheck(patp, "key", patternKeyExprp(patp), CONTEXT_DET, FINAL, contextDTypep,
-                         EXTEND_EXP, false);
-        }
-        AstConst* const constp = patternConstKeyp(patp);
-        if (!constp) return nullptr;
-        if (constp->num().isFourState()) {
-            patp->keyp()->v3error("Assignment pattern key cannot contain X or Z");
-            return nullptr;
-        }
-        // Convert to the key type. The conversion is inserted above 'constp', so take the key
-        // from the member again rather than from what iterateCheck returns.
-        iterateCheck(patp, "key", constp, CONTEXT_DET, FINAL, keyDTypep, EXTEND_EXP, false);
-        AstNodeExpr* const convp = VN_AS(patternKeyExprp(patp), NodeExpr);
-        // Fold the conversion, so the key is a Const again
-        AstNodeExpr* const keyp = V3Const::constifyEdit(convp);
-        UASSERT_OBJ(VN_IS(keyp, Const), patp, "Key not constant after conversion");
-        return VN_AS(keyp->unlinkFrBack(), Const);
+    AstConst* patternKeyp(AstConsWildcard*, AstPatMember* patp, AstNodeDType* arrayDtp) {
+        return patternScalarKeyp(patp, arrayDtp->findStringDType());
+    }
+    AstConst* patternKeyp(AstConsDynArray*, AstPatMember* patp, AstNodeDType* arrayDtp) {
+        // Converted to longint, not int, so a key wider than 32 bits is out of bounds rather than
+        // truncated to a valid index
+        return patternScalarKeyp(patp, arrayDtp->findBasicDType(VBasicDTypeKwd::LONGINT));
     }
     // Sort constructor items by key, so equal values have equal trees, and report duplicate
     // keys (IEEE 1800-2023 10.9.1). Keys are compared after conversion to the key type, e.g.
@@ -6503,6 +6467,32 @@ class WidthVisitor final : public VNVisitor {
             }
             nodep->addItemsp(itemp);
         }
+    }
+    // Convert a keyed pattern into the constructor 'consp' of an associative, wildcard or
+    // dynamic array
+    template <typename T_Item, typename T_Cons>
+    void patternKeyed(AstPattern* nodep, T_Cons* consp, AstNodeDType* arrayDtp,
+                      AstPatMember* defaultp) {
+        consp->dtypeFrom(arrayDtp);
+        consp->defaultp(patternDefaultValuep(defaultp, arrayDtp->subDTypep()));
+        for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
+             patp = VN_AS(patp->nextp(), PatMember)) {
+            const auto keyp = patternKeyp(consp, patp, arrayDtp);
+            patp->dtypep(arrayDtp->subDTypep());
+            AstNodeExpr* const valuep = patternMemberValueIterate(patp);
+            if (keyp) {
+                consp->addItemsp(new T_Item{patp->fileline(), keyp, valuep});
+            } else {
+                VL_DO_DANGLING(pushDeletep(valuep), valuep);
+            }
+        }
+        // Aggregate keys are not sorted or checked for duplicates
+        const AstAssocArrayDType* const assocDtp = VN_CAST(arrayDtp, AssocArrayDType);
+        if (!assocDtp || !assocDtp->keyDTypep()->skipRefp()->isAggregateType()) {
+            sortConsItems<T_Item>(consp);
+        }
+        nodep->replaceWith(consp);
+        // UINFOTREE(9, consp, "", "apat-out");
     }
     AstNodeExpr* newConsDynArrayOrQueue(FileLine* fileline, const AstNodeDType* dtypep) {
         if (VN_IS(dtypep, DynArrayDType)) return new AstConsDynArray{fileline};
@@ -10637,6 +10627,7 @@ class WidthVisitor final : public VNVisitor {
 
         UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
                                             << " max=" << msbdim << " for " << nodep);
+        FileLine* const flp = nodep->fileline();
         AstNodeDType* basep;
         if (attrType == VAttrType::ENUM_NAME) {
             basep = nodep->findStringDType();
@@ -10653,21 +10644,20 @@ class WidthVisitor final : public VNVisitor {
         if (assoc) {
             // Key by the base type of the enum, not the enum itself, so identical maps of
             // different enum types can be shared in the constant pool
-            vardtypep = new AstAssocArrayDType{nodep->fileline(), basep, nodep->subDTypep()};
+            vardtypep = new AstAssocArrayDType{flp, basep, nodep->subDTypep()};
         } else {
-            vardtypep = new AstUnpackArrayDType{nodep->fileline(), basep,
-                                                new AstRange(nodep->fileline(), msbdim, 0)};
+            vardtypep = new AstUnpackArrayDType{flp, basep, new AstRange(flp, msbdim, 0)};
         }
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
 
         // Default for all unspecified values
         AstConst* defaultp = nullptr;
         if (attrType == VAttrType::ENUM_NAME) {
-            defaultp = new AstConst{nodep->fileline(), AstConst::String{}, ""};
+            defaultp = new AstConst{flp, AstConst::String{}, ""};
         } else if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
-            defaultp = new AstConst{nodep->fileline(), V3Number{nodep, nodep->width(), 0}};
+            defaultp = new AstConst{flp, V3Number{nodep, nodep->width(), 0}};
         } else if (attrType == VAttrType::ENUM_VALID) {
-            defaultp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+            defaultp = new AstConst{flp, AstConst::BitFalse{}};
         } else {
             nodep->v3fatalSrc("Bad case");
         }
@@ -10687,7 +10677,7 @@ class WidthVisitor final : public VNVisitor {
                 if (!vconstp->num().isAnyXZ()) {  // Can 2-state runtime decode
                     const uint64_t i = nodep->isWide() ? ++ordinal : vconstp->toUQuad();
                     if (attrType == VAttrType::ENUM_NAME) {
-                        values[i] = new AstConst{nodep->fileline(), AstConst::String{},
+                        values[i] = new AstConst{flp, AstConst::String{},
                                                  V3Number::displayedEnumName(itemp)};
                     } else if (attrType == VAttrType::ENUM_NEXT) {
                         values[i]
@@ -10695,7 +10685,7 @@ class WidthVisitor final : public VNVisitor {
                     } else if (attrType == VAttrType::ENUM_PREV) {
                         values[i] = prevp->valuep()->cloneTree(false);  // A const
                     } else if (attrType == VAttrType::ENUM_VALID) {
-                        values[i] = new AstConst{nodep->fileline(), AstConst::BitTrue{}};
+                        values[i] = new AstConst{flp, AstConst::BitTrue{}};
                     } else {
                         nodep->v3fatalSrc("Bad case");
                     }
@@ -10708,17 +10698,16 @@ class WidthVisitor final : public VNVisitor {
         AstNodeExpr* valuep = nullptr;
         if (assoc) {
             // Keyed by the enum's base type
-            AstConsAssoc* const consp = new AstConsAssoc{nodep->fileline(), defaultp};
+            AstConsAssoc* const consp = new AstConsAssoc{flp, defaultp};
             consp->dtypep(vardtypep);
             for (const auto& itr : values) {
                 V3Number key{nodep, nodep->width()};
                 key.setQuad(itr.first);
-                consp->addItemsp(new AstConsAssocItem{
-                    nodep->fileline(), new AstConst{nodep->fileline(), key}, itr.second});
+                consp->addItemsp(new AstConsAssocItem{flp, new AstConst{flp, key}, itr.second});
             }
             valuep = consp;
         } else {
-            AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, defaultp};
+            AstInitArray* const initp = new AstInitArray{flp, vardtypep, defaultp};
             for (uint64_t i = 0; i < (msbdim + 1); ++i) {
                 if (values[i]) initp->addIndexValuep(i, values[i]);
             }

@@ -50,36 +50,16 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
 
 protected:
     // METHODS
-    // Emit the initializer of a definition, for direct initialization: 'type name{...}' or
-    // 'type name(...)'
+    // Emit the initializer of a definition, for direct initialization: 'type name{...}'
     void emitDirectInit(AstNode* valuep) {
         if (VN_IS(valuep, InitArray) || VN_IS(valuep, ConsAssoc) || VN_IS(valuep, ConsWildcard)
             || (VN_IS(valuep, Const) && valuep->isWide())) {
-            iterateInit(valuep);  // Already a braced initializer list or constructor arguments
+            iterateInit(valuep);  // Already a braced initializer list
         } else {
             puts("{");
             iterateInit(valuep);
             puts("}");
         }
-    }
-
-    template <typename T_Cons>
-    void emitConsAssoc(T_Cons* nodep) {
-        // '(default, {items})', '({items})', or '{}' if empty. Not braced, to avoid narrowing
-        // a non-constant default
-        if (!nodep->defaultp() && !nodep->itemsp()) {
-            puts("{}");
-            return;
-        }
-        puts("(\n");
-        if (AstNodeExpr* const defaultp = nodep->defaultp()) {
-            puts("/* default: */ ");
-            iterateInit(defaultp);
-            puts(",\n");
-        }
-        puts("/* items: */ ");
-        emitConsKeyedItems(nodep->itemsp());
-        puts("\n)");
     }
 
     template <typename T_Item>
@@ -100,6 +80,24 @@ protected:
             iterateInit(itemp->valuep());
             puts("}");
         }
+        puts("\n}");
+    }
+
+    template <typename T_Cons>
+    void emitConsAssoc(T_Cons* nodep) {
+        // '{default, {items}}', '{{items}}', or '{}' if empty
+        if (!nodep->defaultp() && !nodep->itemsp()) {
+            puts("{}");
+            return;
+        }
+        puts("{\n");
+        if (AstNodeExpr* const defaultp = nodep->defaultp()) {
+            puts("/* default: */ ");
+            iterateInit(defaultp);
+            puts(",\n");
+        }
+        puts("/* items: */ ");
+        emitConsKeyedItems(nodep->itemsp());
         puts("\n}");
     }
 
@@ -150,7 +148,7 @@ protected:
             emitConsQueueItems(nodep->itemsp());
             return;
         }
-        puts("(\n/* size: */ ");
+        puts("{\n/* size: */ ");
         iterateInit(nodep->sizep());
         puts(",\n");
         if (nodep->defaultp()) {
@@ -160,7 +158,7 @@ protected:
         }
         puts("/* items: */ ");
         emitConsKeyedItems(nodep->itemsp());
-        puts("\n)");
+        puts("\n}");
     }
     void visit(AstConsQueue* nodep) override { emitConsQueueItems(nodep->itemsp()); }
 
