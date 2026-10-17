@@ -517,3 +517,6 @@ endmodule
 package p;
   logic pkgvar;
 endpackage
+
+`verilator_config
+threads_unit -module "sub"
