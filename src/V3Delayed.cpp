@@ -309,6 +309,7 @@ class DelayedVisitor final : public VNVisitor {
     // STATE - during NBA conversion (after visit)
     std::vector<NBA> m_nbas;  // AstAssignDly instances to lower at the end
     std::vector<AstVarScope*> m_vscps;  // Target variables on LHSs of NBAs
+    std::unordered_set<const AstVar*> m_memberReadVarps;  // Members read through member selects
     AstAssignDly* m_nextDlyp = nullptr;  // The nextp of the previous AstAssignDly
     AstVarScope* m_prevVscp = nullptr;  // The target of the previous AstAssignDly
 
@@ -611,9 +612,9 @@ class DelayedVisitor final : public VNVisitor {
         const std::string name = "_" + vscp->varp()->shortName();
         AstVarScope* const shadowVscp = m_dlyTmps.make(flp, scopep, vscp->dtypep(), name);
         vscpInfo.shadowVariableKit().vscp = shadowVscp;
-        // Mark both for V3LifePost, but not an interface member, as V3LifePost does not see its
-        // reads through interface references (like V3Life)
-        if (!vscp->varp()->sensIfacep()) {
+        // Mark both for V3LifePost, but not a member read through a virtual interface, as
+        // V3LifePost does not see these reads
+        if (!m_memberReadVarps.count(vscp->varp())) {
             vscp->optimizeLifePost(true);
             shadowVscp->optimizeLifePost(true);
         }
@@ -1413,6 +1414,10 @@ class DelayedVisitor final : public VNVisitor {
         if (!nodep->access().isWriteOrRW()) return;
         // Record write reference
         recordWriteRef(nodep, false);
+    }
+    void visit(AstMemberSel* nodep) override {
+        if (nodep->access().isReadOrRW()) m_memberReadVarps.emplace(nodep->varp());
+        iterateChildren(nodep);
     }
     void visit(AstLoop* nodep) override {
         VL_RESTORER(m_inLoop);

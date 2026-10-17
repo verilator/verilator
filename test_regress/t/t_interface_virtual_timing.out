@@ -1,3 +1,4 @@
+*-* All Finished *-*
 [0] intf2.data==0000
 [0] vif1.data==dead
 [1] intf2.data==beef
@@ -8,4 +9,3 @@
 [6] vif1.data==deaf
 [7] intf2.data==fafa
 [8] vif1.data==bebe
-*-* All Finished *-*
