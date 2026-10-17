@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2014 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0x exp=%0x\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while (0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -30,6 +35,18 @@ module t (
         .ena(!en[g]),
         .data(data0[g])
     );
+  end
+
+  // Each constant-index driver should resolve only its own element, even on a large array.
+  wire [6:0] large_pad [3:129];
+  for (genvar i = 3; i <= 129; ++i) begin
+    wire enable = crc[i % 64];
+    wire [6:0] value = 7'(crc >> (i % 57)) ^ 7'(i);
+    assign large_pad[i] = enable ? value : 7'bz;
+    assign large_pad[i] = enable ? 7'bz : ~value;
+    always @(negedge clk) begin
+      if (cyc > 1) `checkh(large_pad[i], enable ? value : ~value);
+    end
   end
 
   // Test loop

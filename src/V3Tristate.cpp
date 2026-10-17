@@ -486,6 +486,7 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     // STATS
     VDouble0 m_statTriSigs;  // stat tracking
+    VDouble0 m_statArrayElementAssigns;  // Element assignments generated for array resolution
 
     // METHODS
     string dbgState() const {
@@ -530,6 +531,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         return varp;
     }
     void addArrayElementAssign(AstVar* varp, int index, AstNodeExpr* rhsp) {
+        ++m_statArrayElementAssigns;
         FileLine* const fl = varp->fileline();
         AstAssignW* const assp = new AstAssignW{
             fl, new AstArraySel{fl, new AstVarRef{fl, varp, VAccess::WRITE}, index}, rhsp};
@@ -979,6 +981,76 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    // Find the first unpacked selection above this reference, below any other selections.
+    static AstArraySel* firstArraySelect(const RefStrength& ref) {
+        if (!ref.m_assignp) return nullptr;
+        AstNodeExpr* lhsp = ref.m_assignp->lhsp();
+        while (true) {
+            if (AstArraySel* const selp = VN_CAST(lhsp, ArraySel)) {
+                if (selp->fromp() == ref.m_varrefp) return selp;
+                lhsp = selp->fromp();
+            } else if (AstSel* const selp = VN_CAST(lhsp, Sel)) {
+                lhsp = selp->fromp();
+            } else {
+                return nullptr;
+            }
+        }
+    }
+
+    // Resolve constant-index continuous drivers at their element's type and width. Combining
+    // them as whole-array drivers would allocate and resolve N elements for each of N drivers.
+    std::pair<AstNodeExpr*, AstNodeExpr*>
+    aggregateArrayDrivers(AstNodeModule* const nodep, AstVar* const varp, RefStrengthVec& refs) {
+        const AstUnpackArrayDType* const arrayp
+            = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType);
+        if (!arrayp) return {nullptr, nullptr};
+        std::map<int, RefStrengthVec> elements;
+        RefStrengthVec remaining;
+        for (const RefStrength& ref : refs) {
+            // Procedural writes must remain grouped by process to preserve their ordering.
+            AstArraySel* const selp = ref.m_procedurep ? nullptr : firstArraySelect(ref);
+            const AstConst* const indexp = selp ? VN_CAST(selp->bitp(), Const) : nullptr;
+            if (indexp && indexp->toSInt() >= 0 && indexp->toSInt() < arrayp->elementsConst()) {
+                elements[indexp->toSInt()].push_back(ref);
+            } else {
+                remaining.push_back(ref);
+            }
+        }
+        if (elements.empty()) return {nullptr, nullptr};
+        refs = std::move(remaining);
+        FileLine* const fl = varp->fileline();
+        AstVar* const datap = newArrayTemp(fl, varp->dtypep());
+        AstVar* const enablep = newArrayTemp(fl, varp->dtypep());
+        for (int i = 0; i < arrayp->elementsConst(); ++i) {
+            const auto it = elements.find(i);
+            if (it == elements.end()) {
+                addArrayElementAssign(datap, i, newAllZerosOrOnes(arrayp->subDTypep(), false));
+                addArrayElementAssign(enablep, i, newAllZerosOrOnes(arrayp->subDTypep(), false));
+                continue;
+            }
+            AstVar* const elementDatap = newArrayTemp(fl, arrayp->subDTypep());
+            AstVar* const elementEnablep = newArrayTemp(fl, arrayp->subDTypep());
+            for (RefStrength& ref : it->second) {
+                AstArraySel* const selp = firstArraySelect(ref);
+                AstNodeVarRef* const refp = ref.m_varrefp;
+                refp->varp(elementDatap);
+                AstNodeExpr* const enp = getEnp(refp);
+                refp->user1p(newElement(enp, i));
+                VL_DO_DANGLING(pushDeletep(enp), enp);
+                refp->dtypeFrom(elementDatap);
+                selp->replaceWith(refp->unlinkFrBack());
+                m_tgraph.deleteVerticesFromSubtreeRecurse(selp);
+                VL_DO_DANGLING(pushDeletep(selp), selp);
+            }
+            aggregateTriSameStrength(nodep, elementDatap, elementEnablep, it->second.begin(),
+                                     it->second.end());
+            addArrayElementAssign(datap, i, new AstVarRef{fl, elementDatap, VAccess::READ});
+            addArrayElementAssign(enablep, i, new AstVarRef{fl, elementEnablep, VAccess::READ});
+        }
+        return {new AstVarRef{fl, datap, VAccess::READ},
+                new AstVarRef{fl, enablep, VAccess::READ}};
+    }
+
     void aggregateTriSameStrength(AstNodeModule* nodep, AstVar* const varp, AstVar* const envarp,
                                   RefStrengthVec::iterator beginStrength,
                                   RefStrengthVec::iterator endStrength) {
@@ -989,9 +1061,12 @@ class TristateVisitor final : public TristateBaseVisitor {
             const AstNodeProcedure* m_procedurep;  // Process owning these assignments
             std::vector<RefStrength*> m_refsp;  // Ordered assignments in this driver
         };
+        RefStrengthVec refs{beginStrength, endStrength};
+        const std::pair<AstNodeExpr*, AstNodeExpr*> arrayDrivers
+            = aggregateArrayDrivers(nodep, varp, refs);
         std::vector<DriverGroup> drivers;
         std::map<const AstNodeProcedure*, size_t> procedureToDriver;
-        for (auto it = beginStrength; it != endStrength; ++it) {
+        for (auto it = refs.begin(); it != refs.end(); ++it) {
             if (it->m_procedurep) {
                 const auto emplaced = procedureToDriver.emplace(it->m_procedurep, drivers.size());
                 if (!emplaced.second) {
@@ -1002,8 +1077,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             drivers.push_back(DriverGroup{it->m_procedurep, {&*it}});
         }
 
-        AstNodeExpr* orp = nullptr;
-        AstNodeExpr* enp = nullptr;
+        AstNodeExpr* orp = arrayDrivers.first;
+        AstNodeExpr* enp = arrayDrivers.second;
 
         for (DriverGroup& driver : drivers) {
             // Create the new LHS data and enable variables for this driver.
@@ -1676,19 +1751,26 @@ class TristateVisitor final : public TristateBaseVisitor {
                 AstNodeDType* const dtypep = nodep->fromp()->dtypep();
                 const AstUnpackArrayDType* const arrayp
                     = VN_AS(dtypep->skipRefp(), UnpackArrayDType);
-                AstVar* const varp = newArrayTemp(nodep->fileline(), dtypep);
-                for (int i = 0; i < arrayp->elementsConst(); ++i) {
-                    addArrayElementAssign(
-                        varp, i,
-                        new AstCond{
-                            nodep->fileline(),
-                            new AstEq{nodep->fileline(), nodep->bitp()->cloneTreePure(false),
-                                      new AstConst{nodep->fileline(), AstConst::WidthedValue{},
-                                                   nodep->bitp()->width(),
-                                                   static_cast<uint32_t>(i)}},
-                            enp->cloneTreePure(false), newAllZerosOrOnes(nodep, false)});
+                if (const AstConst* const indexp = VN_CAST(nodep->bitp(), Const)) {
+                    AstConsArray* const initp = new AstConsArray{nodep->fileline(), dtypep,
+                                                                 newAllZerosOrOnes(nodep, false)};
+                    initp->valuep(indexp->toSInt(), enp->cloneTreePure(false));
+                    nodep->fromp()->user1p(initp);
+                } else {
+                    AstVar* const varp = newArrayTemp(nodep->fileline(), dtypep);
+                    for (int i = 0; i < arrayp->elementsConst(); ++i) {
+                        addArrayElementAssign(
+                            varp, i,
+                            new AstCond{
+                                nodep->fileline(),
+                                new AstEq{nodep->fileline(), nodep->bitp()->cloneTreePure(false),
+                                          new AstConst{nodep->fileline(), AstConst::WidthedValue{},
+                                                       nodep->bitp()->width(),
+                                                       static_cast<uint32_t>(i)}},
+                                enp->cloneTreePure(false), newAllZerosOrOnes(nodep, false)});
+                    }
+                    nodep->fromp()->user1p(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
                 }
-                nodep->fromp()->user1p(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
                 VL_DO_DANGLING(pushDeletep(enp), enp);
                 nodep->user1p(nullptr);
                 m_tgraph.didProcess(nodep);
@@ -2674,6 +2756,7 @@ public:
     }
     ~TristateVisitor() override {
         V3Stats::addStat("Tristate, Tristate resolved nets", m_statTriSigs);
+        V3Stats::addStat("Tristate, Array element assignments", m_statArrayElementAssigns);
     }
 };
 
