@@ -2579,6 +2579,9 @@ class TristateVisitor final : public TristateBaseVisitor {
             const std::vector<std::pair<AstVar*, AstVar*>>& contribs = kv.second;
             AstNodeModule* const ifaceModp = findParentModule(invarp);
             UASSERT_OBJ(ifaceModp, invarp, "Interface tristate var has no parent module");
+            VL_RESTORER(m_modp);
+            // Array resolution creates temporaries in the signal's owning interface.
+            m_modp = ifaceModp;
             FileLine* const fl = invarp->fileline();
 
             UINFO(8, "  IFACE COMBINE " << contribs.size() << " contribs for " << invarp);

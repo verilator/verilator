@@ -23,6 +23,20 @@ interface ifc_multi;
   tri [15:0] d;
 endinterface
 
+interface ifc_unpacked;
+  logic [2:0] we;
+  logic [6:0] data;
+  tri [6:0] d [3:1];
+endinterface
+
+module unpacked_driver (
+    ifc_unpacked io_ifc
+);
+  for (genvar i = 1; i <= 3; ++i) begin
+    assign io_ifc.d[i] = io_ifc.we[i-1] ? (io_ifc.data ^ 7'(i * 13)) : 7'bz;
+  end
+endmodule
+
 module bot (
     ifc io_ifc
 );
@@ -68,6 +82,7 @@ module t;
   ifc_multi io_ifc_mc ();
   ifc io_arr[1:0] ();
   ifc io_ifc_deep ();
+  ifc_unpacked io_ifc_unpacked ();
 
   // Test top assignment
   assign io_ifc.d = io_ifc.we0 ? 16'hd0 : 16'hzzzz;
@@ -109,6 +124,7 @@ module t;
   passthru u_passthru_arr0 (.io_ifc(io_arr[0]));
   passthru u_passthru_arr1 (.io_ifc(io_arr[1]));
   passthru_deep u_passthru_deep (.io_ifc(io_ifc_deep));
+  unpacked_driver u_unpacked_driver (.io_ifc(io_ifc_unpacked));
 
   initial begin
     #1;
@@ -250,6 +266,21 @@ module t;
     we2_deep = 1'b0;
     #1;
     `checkh(io_ifc_deep.d, 16'hzzzz);
+
+    // Resolve an unpacked array driven across the interface boundary.
+    // Each element must retain its own data and high-Z enable.
+    for (int cyc = 0; cyc < 16; ++cyc) begin
+      io_ifc_unpacked.we = 3'(cyc);
+      io_ifc_unpacked.data = 7'(cyc * 19);
+      #1;
+      for (int i = 1; i <= 3; ++i) begin
+        if (cyc[i-1]) begin
+          `checkh(io_ifc_unpacked.d[i], 7'(cyc * 19) ^ 7'(i * 13));
+        end else begin
+          `checkh(io_ifc_unpacked.d[i], 7'bz);
+        end
+      end
+    end
 
     #1;
     $write("*-* All Finished *-*\n");
