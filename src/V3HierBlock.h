@@ -20,6 +20,7 @@
 #include "verilatedos.h"
 
 #include "V3Ast.h"
+#include "V3Control.h"
 #include "V3Graph.h"
 
 #include <map>
@@ -50,6 +51,9 @@ public:
     void writeCommandArgsFiles(bool forMkJson) const VL_MT_DISABLED;
     void writeParametersFiles() const VL_MT_DISABLED;
     static string topCommandArgsFilename(bool forMkJson) VL_MT_DISABLED;
+    // Configuration file describing every promoted hierarchical reference
+    static string xmrPortsFilename() VL_MT_DISABLED;
+    void writeXmrPortsFile() const VL_MT_DISABLED;
 };
 
 class V3HierBlock final : public V3GraphVertex {
@@ -62,6 +66,7 @@ class V3HierBlock final : public V3GraphVertex {
 
     // MEMBERS
     const AstModule* const m_modp;  // Hierarchical block module
+    std::vector<VHierXmrPort> m_xmrPorts;  // Promoted outbound references
     // Value parameters that are overridden by #(.param(value)) syntax.
     const std::vector<AstVar*> m_params;
     // Types parameters that are overridden by #(.param(value)) syntax.
@@ -84,6 +89,8 @@ public:
     VL_UNMOVABLE(V3HierBlock);
 
     const AstModule* modp() const { return m_modp; }
+    const std::vector<VHierXmrPort>& xmrPorts() const { return m_xmrPorts; }
+    void addXmrPort(const VHierXmrPort& port) { m_xmrPorts.push_back(port); }
 
     // Whether a string parameter value can be passed to a hierarchical block's Verilation
     static bool stringParamPassable(const string& value) VL_PURE;
@@ -116,7 +123,15 @@ public:
 
 class V3Hierarchical final {
 public:
+    // True while building the plan, where a reference across a block boundary
+    // is a candidate for promotion rather than an error
+    static bool planning() VL_MT_DISABLED;
     static void createGraph(AstNetlist* nodep) VL_MT_DISABLED;
+    // In the child run, turn the XMRs named by the hier_xmr_port records of
+    // the generated .vlt into input ports threaded up to the block boundary.
+    static void promoteXmrPorts(AstNetlist* nodep) VL_MT_DISABLED;
+    // In the top run, bind those ports to the signals they came from.
+    static void bindXmrPorts(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // guard

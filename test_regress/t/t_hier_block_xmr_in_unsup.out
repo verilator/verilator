@@ -1,0 +1,26 @@
+%Error-UNSUPPORTED: t/t_hier_block_xmr_in_unsup.v:35:20: Unsupported: Cannot promote reference into hierarchical block: 'bk.i0.parm' does not have a width known before elaboration (parameterized, unpacked, or non-integral type)
+                                                       : ... note: In instance 't.top'
+   35 |   assign a = bk.i0.parm;
+      |                    ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_hier_block_xmr_in_unsup.v:37:21: Unsupported: Cannot promote reference into hierarchical block: 'bk.i0.anal' does not have a width known before elaboration (parameterized, unpacked, or non-integral type)
+                                                       : ... note: In instance 't.top'
+   37 |   assign b = (bk.i0.anal > 0.0);
+      |                     ^~~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_in_unsup.v:39:16: Unsupported: Writing a signal inside hierarchical block: 'bk.i0.flag'
+                                                       : ... note: In instance 't.top'
+   39 |   assign bk.i0.flag = 1'b1;
+      |                ^~~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_in_unsup.v:41:20: Unsupported: Cannot promote reference into hierarchical block: 'bk.i0.CONSTVAL' is a parameter, which a port cannot carry
+                                                       : ... note: In instance 't.top'
+   41 |   assign c = bk.i0.CONSTVAL[0];
+      |                    ^~~~~~~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_in_unsup.v:43:29: Unsupported: Cannot promote reference into hierarchical block: 'bk.gen[1].g_in.sig' indexes a scope or names a package
+                                                       : ... note: In instance 't.top'
+   43 |   assign d = bk.gen[1].g_in.sig;
+      |                             ^~~
+%Error-UNSUPPORTED: t/t_hier_block_xmr_in_unsup.v:45:20: Unsupported: Cannot promote reference into hierarchical block: generated port name 'xmrport_0' collides with an existing signal in 'inner'
+                                                       : ... note: In instance 't.top'
+   45 |   assign f = bk.i0.xmrport_0;
+      |                    ^~~~~~~~~
+%Error: Exiting due to

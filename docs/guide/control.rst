@@ -157,6 +157,17 @@ The grammar of control commands is as follows:
    smaller than :vlopt:`--threads` to fit in a thread schedule.
    See :ref:`Hierarchical Verilation`.
 
+.. option:: hier_xmr_port -module "<modulename>" -block "<block>" -port "<portname>" -width <width> [-signed] -scope "<path>" [-inner "<path>"]
+
+   Specifies a reference across a :vlopt:`--hierarchical` block boundary that
+   has been promoted to a port on the block, naming the module the reference
+   appears in, the generated port, its width and signedness, and the signal it
+   names. Without ``-inner`` the reference runs out of the block and the port
+   is an input; with it the reference runs into the block, the port is an
+   output, and ``-inner`` is the signal's path inside the block that drives it.
+   This data is inserted internally during :vlopt:`--hierarchical`. This option
+   is for internal use only. See :ref:`Hierarchical Verilation`.
+
 .. option:: inline -module "<modulename>"
 
    Specifies the module may be inlined into any modules that use this
