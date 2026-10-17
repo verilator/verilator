@@ -45,6 +45,7 @@
 #include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
+#include "V3Global.h"
 #include "V3Order.h"
 #include "V3SenExprBuilder.h"
 #include "V3Stats.h"
@@ -431,6 +432,22 @@ void createSettle(AstNetlist* netlistp, AstCFunc* const initFuncp, SenExprBuilde
 //============================================================================
 // Order the replicated combinational logic to create the 'ico' region
 
+bool isEligibleForChangeDetection(AstVarScope* vscp) {
+    // Ignore function local variables, e.g. DPI input ports.
+    if (vscp->varp()->isFuncLocal()) return false;
+    // Only for top level ports or signals possibly written to by VPI,
+    // assume outputs don't change externally.
+    if ((!vscp->varp()->isSigUserRWPublic() || !v3Global.opt.vpi())
+        && (!vscp->varp()->isPrimaryInish() || !v3Global.opt.fIcoChangeDetect()))
+        return false;
+    // Don't do if written by the design - wouldn't update the change detect 'prev' value
+    if (!vscp->varp()->isSigUserRWPublic() && vscp->varp()->icoMaybeWritten()) return false;
+    // Can't handle unpacked arrays (they have special types when primary input)
+    if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) return false;
+    // Similarly to arrays, can't handle SystemC types
+    return !vscp->varp()->isSc();
+}
+
 void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
                      SenExprBuilder& senExprBuilder, LogicByScope& logic,
                      const VirtIfaceTriggers& virtIfaceTriggers,
@@ -475,20 +492,11 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
     // using the 'first iteration' trigger, same as if this optimization was disabled.
     std::unordered_map<const AstVarScope*, AstSenTree*> inp2changedp;
     std::vector<AstSenTree*> icoChangeSenTreeps;
-    if (v3Global.opt.fIcoChangeDetect().isTrue()) {
+    if (v3Global.opt.fIcoChangeDetect().isTrue() || v3Global.opt.vpi()) {
         FileLine* const flp = netlistp->fileline();
         AstScope* const scopep = netlistp->topScopep()->scopep();
         for (AstVarScope* vscp = scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
-            // Only for top level ports, assume outputs don't change externally
-            if (!vscp->varp()->isPrimaryInish()) continue;
-            // Don't do if written by the design - wouldn't update the change detect 'prev' value
-            if (vscp->varp()->icoMaybeWritten()) continue;
-            // Don't do if forceable, as we can't see the actual value - this is belt and braces
-            if (vscp->varp()->isForced()) continue;
-            // Can't handle unpacked arrays (they have special types when primary input)
-            if (VN_IS(vscp->dtypep()->skipRefp(), UnpackArrayDType)) continue;
-            // Similarly to arrays, can't handle SystemC types
-            if (vscp->varp()->isSc()) continue;
+            if (!isEligibleForChangeDetection(vscp)) continue;
             // Create a sen tree triggered when this input changes
             AstSenTree*& senTreepr = inp2changedp[vscp];
             UASSERT_OBJ(!senTreepr, vscp, "Duplicate input change detect trigger");
@@ -888,11 +896,25 @@ void schedule(AstNetlist* netlistp) {
     }
 
     const auto& preTreeps = getSenTreesUsedBy({&logicRegions.m_pre});
-    const auto& senTreeps = getSenTreesUsedBy({&logicRegions.m_act,  //
-                                               &logicRegions.m_nba,  //
-                                               &logicRegions.m_obs,  //
-                                               &logicRegions.m_react,  //
-                                               &timingKit.m_lbs});
+    auto senTreeps = getSenTreesUsedBy({&logicRegions.m_act,  //
+                                        &logicRegions.m_nba,  //
+                                        &logicRegions.m_obs,  //
+                                        &logicRegions.m_react,  //
+                                        &timingKit.m_lbs});
+    std::unordered_map<const AstVarScope*, AstSenTree*> vpi2changedp;
+    if (v3Global.opt.vpi()) {
+        FileLine* const flp = netlistp->fileline();
+        for (AstVarScope* vscp = scopeTopp->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+            if (!isEligibleForChangeDetection(vscp) || vscp->varp()->isPrimaryIO()) continue;
+            AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::READ};
+            AstSenItem* const senItemp = new AstSenItem{flp, VEdgeType::ET_CHANGED, refp};
+            AstSenTree*& senTreepr = vpi2changedp[vscp];
+            UASSERT_OBJ(!senTreepr, vscp, "Duplicate VPI change detect trigger");
+            senTreepr = new AstSenTree{flp, senItemp};
+            senTreeps.push_back(senTreepr);
+        }
+    }
+
     const TriggerKit trigKit
         = TriggerKit::create(netlistp, staticp, senExprBuilder, preTreeps, senTreeps, "act",
                              extraTriggers, false, v3Global.usesTiming());
@@ -926,9 +948,17 @@ void schedule(AstNetlist* netlistp) {
     const auto& vifVscpToTrig = virtIfaceTriggers.makeVscpToTrigMap(trigKit, firstVifTriggerIndex);
     const V3Order::ExternalTriggersProvider externalTriggers
         = [&](const AstVarScope* vscp, std::set<uint32_t>& triggers) {
-              auto it = timingTriggers.find(vscp);
-              if (it != timingTriggers.end())
-                  triggers.insert(it->second.begin(), it->second.end());
+              // A public read/write signal might be written by a resumed process, but the resume
+              // itself does not imply the signal changed. Prefer its value-change trigger so
+              // downstream combinational logic only runs after an actual write changes the value.
+              const auto vpiIt = vpi2changedp.find(vscp);
+              if (vpiIt != vpi2changedp.end()) {
+                  triggers.insert(trigKit.senItem2TrigIdx(vpiIt->second->sensesp()));
+              } else {
+                  const auto it = timingTriggers.find(vscp);
+                  if (it != timingTriggers.end())
+                      triggers.insert(it->second.begin(), it->second.end());
+              }
               if (vscp->varp()->isWrittenByDpi()) {
                   triggers.insert(trigKit.extraTriggerIndex(dpiExportTriggerIndex));
               }
@@ -1028,6 +1058,8 @@ void schedule(AstNetlist* netlistp) {
 
     // Step 18: Clean up
     netlistp->clearStlFirstIterationp();
+    for (const auto& it : vpi2changedp) VL_DO_DANGLING(it.second->deleteTree(), it.second);
+    vpi2changedp.clear();
 
     if (v3Global.opt.stats()) {
         // A sample() call resolved to the union over its covergroup's constructions reads more
