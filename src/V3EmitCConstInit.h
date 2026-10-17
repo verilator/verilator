@@ -92,11 +92,9 @@ protected:
         }
         puts("{\n");
         if (AstNodeExpr* const defaultp = nodep->defaultp()) {
-            puts("/* default: */ ");
             iterateInit(defaultp);
             puts(",\n");
         }
-        puts("/* items: */ ");
         emitConsKeyedItems(nodep->itemsp());
         puts("\n}");
     }
@@ -148,37 +146,33 @@ protected:
             emitConsQueueItems(nodep->itemsp());
             return;
         }
-        puts("{\n/* size: */ ");
+        puts("{\n");
         iterateInit(nodep->sizep());
         puts(",\n");
         if (nodep->defaultp()) {
-            puts("/* default: */ ");
             iterateInit(nodep->defaultp());
             puts(",\n");
         }
-        puts("/* items: */ ");
         emitConsKeyedItems(nodep->itemsp());
         puts("\n}");
     }
     void visit(AstConsQueue* nodep) override { emitConsQueueItems(nodep->itemsp()); }
 
-    // LCOV_EXCL_START
-    void visit(AstConsAssocItem* nodep) override {  //
+    void visit(AstConsAssocItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstConsAssoc");
-    }
-    void visit(AstConsWildcardItem* nodep) override {  //
+    }  // LCOV_EXCL_STOP
+    void visit(AstConsWildcardItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstConsWildcard");
-    }
-    void visit(AstConsDynArrayItem* nodep) override {  //
+    }  // LCOV_EXCL_STOP
+    void visit(AstConsDynArrayItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstConsDynArray");
-    }
-    void visit(AstConsQueueItem* nodep) override {  //
+    }  // LCOV_EXCL_STOP
+    void visit(AstConsQueueItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstConsQueue");
-    }
-    void visit(AstInitItem* nodep) override {  //
+    }  // LCOV_EXCL_STOP
+    void visit(AstInitItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstInitArray");
-    }
-    // LCOV_EXCL_STOP
+    }  // LCOV_EXCL_STOP
 
     void visit(AstConst* nodep) override {
         const V3Number& num = nodep->num();

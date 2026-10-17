@@ -1285,6 +1285,8 @@ bool V3Number::isAnyZ() const VL_MT_SAFE {
 }
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering
+    if (isString()) return toString() < rhs.toString();
+    if (isDouble()) return toDouble() < rhs.toDouble();
     for (int bit = 0; bit < std::max(width(), rhs.width()); ++bit) {
         if (bitIs1(bit) && rhs.bitIs0(bit)) return true;
         if (rhs.bitIs1(bit) && bitIs0(bit)) return false;

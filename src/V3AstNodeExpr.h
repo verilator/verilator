@@ -1002,7 +1002,7 @@ public:
         BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), AssocArrayDType));
         return nullptr;
     }
-    string emitVerilog() override { return "'{}"; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -1019,7 +1019,7 @@ public:
         : ASTGEN_SUPER_ConsDynArray(fl) {}
     ASTGEN_MEMBERS_AstConsDynArray;
     const char* broken() const override;
-    string emitVerilog() override { return "'{}"; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -1078,7 +1078,7 @@ public:
         BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), QueueDType));
         return nullptr;
     }
-    string emitVerilog() override { return "'{}"; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -1098,7 +1098,7 @@ public:
         BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), WildcardArrayDType));
         return nullptr;
     }
-    string emitVerilog() override { return "'{}"; }
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     string emitSimpleOperator() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

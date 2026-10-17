@@ -6353,7 +6353,7 @@ class WidthVisitor final : public VNVisitor {
     AstConst* patternConstKeyp(AstPatMember* patp) {
         if (VN_IS(patp->keyp(), NodeDType)) {
             patp->keyp()->v3warn(E_UNSUPPORTED,
-                                 "Unsupported: Data type key in array assignment pattern");
+                                 "Unsupported: Data-type key in array assignment pattern");
             return nullptr;
         }
         if (patp->keyExprp()) V3Const::constifyParamsNoWarnEdit(patp->keyExprp());  // May change
@@ -6446,11 +6446,7 @@ class WidthVisitor final : public VNVisitor {
         };
         std::stable_sort(itemps.begin(), itemps.end(), [&](const T_Item* ap, const T_Item* bp) {
             // Any total order will do, it need not match the runtime order of the keys
-            const V3Number& a = keyOf(ap);
-            const V3Number& b = keyOf(bp);
-            if (a.isString()) return a.toString() < b.toString();
-            if (a.isDouble()) return a.toDouble() < b.toDouble();
-            return a.isLtXZ(b);
+            return keyOf(ap).isLtXZ(keyOf(bp));
         });
         const T_Item* firstp = nullptr;  // First item with the current key
         for (T_Item* const itemp : itemps) {
@@ -10716,7 +10712,7 @@ class WidthVisitor final : public VNVisitor {
 
         // Share identical tables via the constant pool
         cachedpr = V3ConstPool::find(valuep);
-        VL_DO_DANGLING(valuep->deleteTree(), valuep);  // V3ConstPool::find clones it
+        VL_DO_DANGLING(pushDeletep(valuep), valuep);  // V3ConstPool::find clones it
         cachedpr->varp()->didWidth(true);
         pushDeletep(cachedpr);  // Deleted with the visitor - always cloned
         return cachedpr->cloneTree(false);
