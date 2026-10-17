@@ -844,12 +844,14 @@ class TristateVisitor final : public TristateBaseVisitor {
             return initp;
         }
         // Create a constant with per-bit pull values.
-        // Bits without explicit pull default to pulldown (0).
+        // Bits without explicit pull retain the whole-variable pull direction.
         const auto& bitPulls = m_varAux(varp).bitPulls;
-        V3Number num{varp, dtypep->width(), 0};  // Start with all zeros
+        const AstPull* const pullp = m_varAux(varp).pullp;
+        V3Number num{varp, dtypep->width(), 0};
+        if (pullp && pullp->direction() == 1) num.setAllBits1();
         for (auto it = bitPulls.lower_bound(offset);
              it != bitPulls.end() && it->first < offset + dtypep->width(); ++it) {
-            if (it->second == 1) num.setBit(it->first - offset, 1);
+            num.setBit(it->first - offset, it->second);
         }  // LCOV_EXCL_LINE
         return new AstConst{varp->fileline(), num};
     }

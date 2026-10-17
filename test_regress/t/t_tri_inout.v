@@ -320,6 +320,24 @@ module pad_checker (
     `checkh(array_pull_pad[1], 7'(cyc + 17));
   end
 
+  // An element pull must preserve the tri1 default on all other elements and bits.
+  tri1 [6:0] array_default_pull [2];
+  array_pull_io array_default_pull_dut (.pad(array_default_pull[0]));
+  tri1 [6:0] matrix_default_pull [2:4][5:4];
+  array_pull_io #(.WIDTH(4)) matrix_default_pull_dut (.pad(matrix_default_pull[3][4][6:3]));
+  for (genvar i = 0; i < 2; ++i) begin
+    assign array_default_pull[i] = cyc[i] ? array_value : 7'bz;
+    always @(negedge clk)
+      `checkh(array_default_pull[i], cyc[i] ? array_value : 7'h7f);
+  end
+  for (genvar i = 2; i <= 4; ++i) begin
+    for (genvar j = 4; j <= 5; ++j) begin
+      assign matrix_default_pull[i][j] = cyc[i+j-6] ? array_value : 7'bz;
+      always @(negedge clk)
+        `checkh(matrix_default_pull[i][j], cyc[i+j-6] ? array_value : 7'h7f);
+    end
+  end
+
   // Preserve per-bit pulls through another hierarchy level and both array dimensions.
   wire [6:0] array_pull_matrix [2:4][5:4];
   array_pull_matrix_io array_pull_matrix_dut (.pad(array_pull_matrix));
