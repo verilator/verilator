@@ -1849,7 +1849,6 @@ public:
         }
         puts(") != 0ULL)");
     }
-    void visit(AstConsArrayItem* nodep) override { iterateChildrenConst(nodep); }
     // Terminals
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
