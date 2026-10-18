@@ -3055,7 +3055,7 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (const AstConsArray* const consp = VN_CAST(nodep->lhsp(), ConsArray)) {
             if (!(m_doExpensive || m_params)) return false;
-            if (!consp->isConstant()) return false;
+            if (!consp->isConstantTree()) return false;
         } else if (!VN_IS(nodep->lhsp(), Const)) {
             return false;
         }

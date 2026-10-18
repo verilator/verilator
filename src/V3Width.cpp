@@ -6398,7 +6398,7 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckTyped(patp, "key", patp->keyExprp(), keyDTypep, BOTH);
         V3Const::constifyParamsNoWarnEdit(patp->keyExprp());
         AstNodeExpr* const foldedp = patp->keyExprp();
-        if (!foldedp->isConstant()) {
+        if (!foldedp->isConstantTree()) {
             foldedp->v3error(
                 "Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)");
             return nullptr;

@@ -36,6 +36,9 @@ class AstNodeConsItem VL_NOT_FINAL : public AstNode {
     // An item of an AstNodeCons,
     // op1 used by some subclasses
     // @astgen op2 := valuep : AstNodeExpr
+    friend class AstNodeExpr;  // For m_knownConstantTree
+    mutable bool m_knownConstantTree = false;  // Known to be a tree of constants
+
 protected:
     AstNodeConsItem(VNType t, FileLine* fl, AstNodeExpr* valuep)
         : AstNode{t, fl} {
@@ -44,6 +47,8 @@ protected:
 
 public:
     ASTGEN_MEMBERS_AstNodeConsItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
 };
 class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
     // Coverage analysis point declaration

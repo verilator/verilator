@@ -1322,7 +1322,7 @@ void AstConsArrayItem::dump(std::ostream& str) const {
 }
 void AstConsArrayItem::dumpJson(std::ostream& str) const {
     dumpJsonNumFunc(str, index);
-    dumpJsonGen(str);
+    Super::dumpJson(str);
 }
 const char* AstConsDynArray::broken() const {
     BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), DynArrayDType));
@@ -2415,6 +2415,22 @@ void AstNodeCCall::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
+void AstNodeCons::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (m_knownConstantTree) str << " [CONSTTREE]";
+}
+void AstNodeCons::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "knownConstantTree", m_knownConstantTree);
+    dumpJsonGen(str);
+}
+void AstNodeConsItem::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (m_knownConstantTree) str << " [CONSTTREE]";
+}
+void AstNodeConsItem::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "knownConstantTree", m_knownConstantTree);
+    dumpJsonGen(str);
+}
 void AstNodeCoverDecl::dump(std::ostream& str) const {
     Super::dump(str);
     if (localBinNum()) str << " lbin=" << localBinNum();
@@ -3003,13 +3019,33 @@ const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
     }
     return nullptr;  // nothing found
 }
-bool AstNodeExpr::isConstant() const {
-    // Quick check on the node itself before checking the whole tree
-    if (!VN_IS(this, Const) && !VN_IS(this, NodeCons)) return false;
-    // Check whole tree is composed only of Const and NodeCons
-    return forall([](const AstNode* nodep) {
-        return VN_IS(nodep, Const) || VN_IS(nodep, NodeCons) || VN_IS(nodep, NodeConsItem);
-    });
+bool AstNodeExpr::isConstantTree() const {
+    // Check the tree is composed only of Const, NodeCons and NodeConsItem. Record it on each
+    // NodeCons and NodeConsItem that is, and skip those already known to be.
+    class IsConstantTreeVisitor final : public VNVisitorConst {
+        bool m_constant = true;  // Tree checked so far is constant
+
+        void iterateCached(AstNode* nodep, bool& knownr) {
+            if (!m_constant || knownr) return;
+            iterateChildrenConst(nodep);
+            knownr = m_constant;
+        }
+
+        void visit(AstConst*) override {}
+        void visit(AstNodeCons* nodep) override {
+            iterateCached(nodep, nodep->m_knownConstantTree);
+        }
+        void visit(AstNodeConsItem* nodep) override {
+            iterateCached(nodep, nodep->m_knownConstantTree);
+        }
+        void visit(AstNode*) override { m_constant = false; }
+
+        explicit IsConstantTreeVisitor(AstNode* nodep) { iterateConst(nodep); }
+
+    public:
+        static bool apply(AstNodeExpr* nodep) { return IsConstantTreeVisitor{nodep}.m_constant; }
+    };
+    return IsConstantTreeVisitor::apply(const_cast<AstNodeExpr*>(this));
 }
 const char* AstNodeFTask::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());

@@ -74,7 +74,7 @@ public:
     // TODO: this actually means it's a write or RW, not that it's an LValue
     bool isLValue() const { return getVAccessRecurse().isWriteOrRW(); }
     // A constant value known at compile time: a Const, or a NodeCons of only constants
-    bool isConstant() const;
+    bool isConstantTree() const;
     // Return base var (or const) nodep dereferences
     AstNode* baseFromp(bool overMembers);
 
@@ -261,12 +261,17 @@ public:
 };
 class AstNodeCons VL_NOT_FINAL : public AstNodeExpr {
     // Construct a value of an aggregate type
+    friend class AstNodeExpr;  // For m_knownConstantTree
+    mutable bool m_knownConstantTree = false;  // Known to be 'this->isConstantTree() == true'
+
 protected:
     AstNodeCons(VNType t, FileLine* fl)
         : AstNodeExpr{t, fl} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeCons;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     std::string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     std::string emitC() final override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const final override { return true; }
