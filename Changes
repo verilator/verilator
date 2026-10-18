@@ -332,6 +332,7 @@ Verilator 5.052 2026-09-05
 * Fix procedural tristate assignment overrides (#6785) (#8130). [Eddie Rydell]
 * Fix queue streaming operator compilation error (#7384).
 * Fix $finish continuing event loop (#7267) (#7950). [Artur Bieniek, Antmicro Ltd.]
+* Fix threading messages race (#7927).
 * Fix continuing on wait(0) (#7372) (#8231). [Szymon Gizler, Antmicro Ltd.]
 * Fix $display accepting streaming concat arguments (#7663) (#7890). [Jaeuk Lee]
 * Fix typedef clocking input sampling (#7688 partial) (#8204). [Marco Bartoli]

@@ -246,38 +246,58 @@ void vl_warn(const char* filename, int linenum, const char* hier, const char* ms
 // Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
+    // Put pointer arguments onto stack so know char* won't change before post executes
+    const std::string filenameStr{filename ? filename : ""};
+    const std::string hierStr{hier ? hier : ""};
     VerilatedContext* const contextp = Verilated::threadContextp();
     contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_finish(filename, linenum, hier);
+        vl_finish(filenameStr.empty() ? nullptr : filenameStr.c_str(), linenum,
+                  hierStr.empty() ? nullptr : hierStr.c_str());
         contextp->finishPendingDec();
     }});
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
+    // Put pointer arguments onto stack so know char* won't change before post executes
+    const std::string filenameStr{filename ? filename : ""};
+    const std::string hierStr{hier ? hier : ""};
     // Classify now, so a queued request is pending from the moment it is posted
     VerilatedContext* const contextp = Verilated::threadContextp();
     const bool stop = contextp->stopRequestReserve(maybe);
     if (stop) contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_stop_maybe(filename, linenum, hier, maybe);
+        vl_stop_maybe(filenameStr.empty() ? nullptr : filenameStr.c_str(), linenum,
+                      hierStr.empty() ? nullptr : hierStr.c_str(), maybe);
         contextp->stopRequestRelease();
         if (stop) contextp->finishPendingDec();
     }});
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+    // Put pointer arguments onto stack so know char* won't change before post executes
+    const std::string filenameStr{filename ? filename : ""};
+    const std::string hierStr{hier ? hier : ""};
+    const std::string msgStr{msg ? msg : ""};
     VerilatedContext* const contextp = Verilated::threadContextp();
     contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_fatal(filename, linenum, hier, msg);
+        vl_fatal(filenameStr.empty() ? nullptr : filenameStr.c_str(), linenum,
+                 hierStr.empty() ? nullptr : hierStr.c_str(),
+                 msgStr.empty() ? nullptr : msgStr.c_str());
         contextp->finishPendingDec();
     }});
 }
 
 void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+    // Put pointer arguments onto stack so know char* won't change before post executes
+    const std::string filenameStr{filename ? filename : ""};
+    const std::string hierStr{hier ? hier : ""};
+    const std::string msgStr{msg ? msg : ""};
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_warn(filename, linenum, hier, msg);
+        vl_warn(filenameStr.empty() ? nullptr : filenameStr.c_str(), linenum,
+                hierStr.empty() ? nullptr : hierStr.c_str(),
+                msgStr.empty() ? nullptr : msgStr.c_str());
     }});
 }
 
