@@ -2475,9 +2475,8 @@ class ConstVisitor final : public VNVisitor {
             const bool waits = VN_IS(nodep, Assign) && nodep->timingControlp();
             // Splitting copies the RHS once per part, so a large RHS would make the tree
             // grow with the product of the number of parts and the RHS size
-            const bool needTempPure
-                = !nodep->rhsp()->isPure() || waits
-                  || nodep->rhsp()->isLargerThan(CONCAT_ASSIGN_MAX_RHS_NODES);
+            const bool needTempPure = !nodep->rhsp()->isPure() || waits
+                                      || nodep->rhsp()->isLargerThan(CONCAT_ASSIGN_MAX_RHS_NODES);
             if (m_warn && !VN_IS(nodep, AssignDly)
                 && !needTempPure) {  // Is same var on LHS and RHS?
                 // If the rhs is not pure, we need a temporary variable anyway
