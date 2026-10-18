@@ -291,6 +291,12 @@ private:
 
         m_ignoreRemaining = false;
     }
+    void visit(AstNodeCons* nodep) override {
+        if (m_ignoreRemaining) return;
+        const VisitBase vb{this, nodep};
+        // A constant value is not built at run time, so its parts cost nothing
+        if (!nodep->isConstantTree()) iterateChildrenConst(nodep);
+    }
     void visit(AstNode* nodep) override {
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
