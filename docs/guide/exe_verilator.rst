@@ -213,6 +213,9 @@ Summary:
    When make is run on the generated makefile, these will be passed to the
    C++ compiler (g++/clang++/msvc++).
 
+   C++ modules (e.g. :command:`-CFLAGS -fmodules`) are not supported due to
+   precompiled header (PCH) incompatibilities in GCC.
+
 .. option:: --clk <signal-name>
 
    Deprecated and has no effect (ignored).
