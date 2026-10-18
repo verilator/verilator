@@ -3003,6 +3003,14 @@ const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
     }
     return nullptr;  // nothing found
 }
+bool AstNodeExpr::isConstant() const {
+    // Quick check on the node itself before checking the whole tree
+    if (!VN_IS(this, Const) && !VN_IS(this, NodeCons)) return false;
+    // Check whole tree is composed only of Const and NodeCons
+    return forall([](const AstNode* nodep) {
+        return VN_IS(nodep, Const) || VN_IS(nodep, NodeCons) || VN_IS(nodep, NodeConsItem);
+    });
+}
 const char* AstNodeFTask::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
     return nullptr;
