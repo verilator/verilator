@@ -318,7 +318,7 @@ class SliceVisitor final : public VNVisitor {
         m_okInitArray = true;
         iterateChildren(nodep);
     }
-    void visit(AstConsPackUOrStruct* nodep) override {
+    void visit(AstConsStruct* nodep) override {
         VL_RESTORER(m_okInitArray);
         m_okInitArray = true;
         iterateChildren(nodep);

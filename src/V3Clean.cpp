@@ -82,7 +82,6 @@ class CleanVisitor final : public VNVisitor {
     void computeCppWidth(AstNode* nodep) {
         if (!nodep->user2() && nodep->hasDType()) {
             if (VN_IS(nodep, Var)  //
-                || VN_IS(nodep, ConsPackMember)  //
                 || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
                 || VN_IS(nodep, NodeSel)  // Array selects should reflect variable widths
                 || VN_IS(nodep, SFormatArg)  // Retain the logical argument type, not storage width
@@ -231,11 +230,6 @@ class CleanVisitor final : public VNVisitor {
         iterateChildren(nodep);
         setClean(nodep, true);
     }
-    void visit(AstConsPackMember* nodep) override {
-        iterateChildren(nodep);
-        ensureClean(nodep->rhsp());
-        setClean(nodep, true);
-    }
     // Constructor values are stored, so must be clean
     void visit(AstConsAssoc* nodep) override {
         iterateChildren(nodep);
@@ -261,6 +255,10 @@ class CleanVisitor final : public VNVisitor {
         ensureClean(nodep->valuep());
     }
     void visit(AstConsQueueItem* nodep) override {
+        iterateChildren(nodep);
+        ensureClean(nodep->valuep());
+    }
+    void visit(AstConsStructItem* nodep) override {
         iterateChildren(nodep);
         ensureClean(nodep->valuep());
     }

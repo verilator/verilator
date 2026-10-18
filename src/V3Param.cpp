@@ -387,7 +387,7 @@ class ParamProcessor final {
     }
 
     static bool isAggregateParamValue(const AstNode* nodep) {
-        return VN_IS(nodep, InitArray) || VN_IS(nodep, ConsPackUOrStruct);
+        return VN_IS(nodep, InitArray) || VN_IS(nodep, ConsStruct);
     }
 
     static string paramValueString(const AstNode* nodep) {
@@ -457,11 +457,11 @@ class ParamProcessor final {
             }
             if (initp->defaultp()) key += "default:" + paramValueString(initp->defaultp()) + ",";
             key += "}";
-        } else if (const AstConsPackUOrStruct* const structp = VN_CAST(nodep, ConsPackUOrStruct)) {
+        } else if (const AstConsStruct* const consp = VN_CAST(nodep, ConsStruct)) {
             key += "{";
-            for (const AstConsPackMember* memberp = structp->membersp(); memberp;
-                 memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
-                key += paramValueString(memberp->rhsp());
+            for (const AstConsStructItem* itemp = consp->itemsp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+                key += paramValueString(itemp->valuep());
                 key += ",";
             }
             key += "}";

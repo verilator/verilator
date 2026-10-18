@@ -87,12 +87,12 @@ class CastVisitor final : public VNVisitor {
                 insertCast(nodep, castSize(nodep->backp()));
         }
     }
-    void ensureCastDefault(AstNodeExpr* consp, AstNodeExpr* defaultp) {
-        // Cast to the element type, as V3Clean widened the default to its C++ width
-        const AstNodeDType* const elemDTypep
-            = consp->dtypep()->skipRefp()->subDTypep()->skipRefp();
-        if (elemDTypep->isIntegralOrPacked() && elemDTypep->width() <= VL_QUADSIZE) {
-            insertCast(defaultp, castSize(elemDTypep->width()));
+    // Cast a constructor value to the C type of the element or member 'dtypep' it is stored in,
+    // as V3Clean widened the value to its C++ width
+    void ensureCastValue(AstNodeExpr* valuep, const AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        if (dtypep->isIntegralOrPacked() && dtypep->width() <= VL_QUADSIZE) {
+            insertCast(valuep, castSize(dtypep->width()));
         }
     }
     // cppcheck-suppress constParameterPointer // lhsp might be changed
@@ -172,24 +172,29 @@ class CastVisitor final : public VNVisitor {
         ensureLower32Cast(nodep);
         nodep->user1(1);
     }
-    void visit(AstConsPackMember* nodep) override {
-        iterateChildren(nodep);
-        if (VN_IS(nodep->rhsp()->dtypep()->skipRefp(), BasicDType)) ensureCast(nodep->rhsp());
-        nodep->user1(1);
-    }
     void visit(AstConsAssoc* nodep) override {
         iterateChildren(nodep);
-        if (nodep->defaultp()) ensureCastDefault(nodep, nodep->defaultp());
+        if (nodep->defaultp()) {
+            ensureCastValue(nodep->defaultp(), nodep->dtypep()->skipRefp()->subDTypep());
+        }
         nodep->user1(1);
     }
     void visit(AstConsDynArray* nodep) override {
         iterateChildren(nodep);
-        if (nodep->defaultp()) ensureCastDefault(nodep, nodep->defaultp());
+        if (nodep->defaultp()) {
+            ensureCastValue(nodep->defaultp(), nodep->dtypep()->skipRefp()->subDTypep());
+        }
         nodep->user1(1);
+    }
+    void visit(AstConsStructItem* nodep) override {
+        iterateChildren(nodep);
+        ensureCastValue(nodep->valuep(), nodep->memberp());
     }
     void visit(AstConsWildcard* nodep) override {
         iterateChildren(nodep);
-        if (nodep->defaultp()) ensureCastDefault(nodep, nodep->defaultp());
+        if (nodep->defaultp()) {
+            ensureCastValue(nodep->defaultp(), nodep->dtypep()->skipRefp()->subDTypep());
+        }
         nodep->user1(1);
     }
     void visit(AstExprStmt* nodep) override {
