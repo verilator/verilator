@@ -66,6 +66,7 @@
 
 #include "V3Const.h"
 #include "V3EmitV.h"
+#include "V3File.h"
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3MemberMap.h"
@@ -664,12 +665,12 @@ class TimingControlVisitor final : public VNVisitor {
     AstCExpr* createEventDescription(AstSenTree* const sentreep) const {
         if (!sentreep->user2p()) {
             std::stringstream ss;
-            ss << '"';
             V3EmitV::verilogForTree(sentreep, ss);
-            ss << '"';
             // possibly a multiline string
             std::string comment = ss.str();
             std::replace(comment.begin(), comment.end(), '\n', ' ');
+            // Escape quotes, e.g. from string-indexed event array selects
+            comment = '"' + V3OutFormatter::quoteNameControls(comment) + '"';
             AstCExpr* const commentp = new AstCExpr{sentreep->fileline(), comment};
             commentp->dtypeSetString();
             sentreep->user2p(commentp);

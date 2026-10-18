@@ -151,6 +151,7 @@ Verilator 5.053 devel
 * Fix error on non-existent interface ports (#8393). [Andrii Andrieiev, Antmicro Ltd.]
 * Fix waking --sc wrapper when DPI/delay makes work runnable (#8394) (#8534). [Nazar Zibilyuk]
 * Fix compile-time blowup forcing large unpacked arrays (#8395). [Jonathan Drolet]
+* Fix waiting on elements of associative arrays (#8396). [Nazar Zibilyuk]
 * Fix false MULTIDRIVEN for writes in tasks never executed (#8401). [Artur Bieniek, Antmicro Ltd.]
 * Fix $c() inside a DPI export (#8402). [Nazar Zibilyuk]
 * Fix covergroup constructor initialization (#8410). [Marco Bartoli]
@@ -275,7 +276,6 @@ Verilator 5.053 devel
 * Fix parameter array concatenates (#8788). [Jonathan Drolet]
 * Fix NBAs with intra-assignment delays to targets selected by function calls (#8801). [Marco Bartoli]
 * Fix NBAs at time 0 in modules with non-inlined tasks (#8802). [Marco Bartoli]
-
 
 Verilator 5.052 2026-09-05
 ==========================
