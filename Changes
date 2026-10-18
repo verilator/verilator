@@ -323,6 +323,7 @@ Verilator 5.052 2026-09-05
 * Optimize NFA delay-ring edge traversal, drop complexity to linear (#8145). [Artur Bieniek, Antmicro Ltd.]
 * Optimize associative constant patterns to fixed point (#8147) (#8209). [Geza Lore, Testorrent USA, Inc.]
 * Fix inouts on deep and/or statements consuming all memory (#5865). [Luiza de Melo]
+* Fix UDP edge races (#6056).
 * Fix procedural tristate assignment overrides (#6785) (#8130). [Eddie Rydell]
 * Fix queue streaming operator compilation error (#7384).
 * Fix $finish continuing event loop (#7267) (#7950). [Artur Bieniek, Antmicro Ltd.]
