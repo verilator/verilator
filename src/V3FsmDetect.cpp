@@ -910,7 +910,16 @@ class FsmDetectVisitor final : public VNVisitor {
 
     // Ignore existing coverage increments so FSM detection sees the user logic
     // rather than other instrumentation already attached to the block.
-    static bool isIgnorableStmt(AstNode* nodep) { return VN_IS(nodep, CoverInc); }
+    static bool isIgnorableStmt(AstNode* nodep) { 
+        if (VN_IS(nodep, CoverInc)) return true;
+        // ignore if statements that only contain ignorable statements. These
+        // can be created by optimizations in V3Const.
+        if (AstIf* const ifp = VN_CAST(nodep, If)) {
+            return !skipLeadingIgnorableStmt(ifp->thensp()) &&
+                   !skipLeadingIgnorableStmt(ifp->elsesp());
+        }
+        return false;
+    }
 
     static AstNode* skipLeadingIgnorableStmt(AstNode* nodep) {
         while (nodep && isIgnorableStmt(nodep)) nodep = nodep->nextp();
