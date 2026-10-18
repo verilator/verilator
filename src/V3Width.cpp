@@ -6251,7 +6251,9 @@ class WidthVisitor final : public VNVisitor {
                 arrayDtp->subDTypep()->skipRefp(), valuep->dtypep()->skipRefp(), valuep);
             if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE) {
                 valuep->v3error("Unpacked array concatenation item is neither an element nor"
-                                " an array of elements of its target (IEEE 1800-2023 10.10)");
+                                " an array of elements of its target (IEEE 1800-2023 10.10)"
+                                << warnDTypes(valuep, arrayDtp->subDTypep(), valuep->dtypep(),
+                                              "Element", "Item"));
                 error = true;
             }
             newp->valuep(index, valuep);
@@ -6301,7 +6303,10 @@ class WidthVisitor final : public VNVisitor {
                     = VN_CAST(valuep->dtypep()->skipRefp(), UnpackArrayDType);
                 if (memberDtp && memberDtp->subDTypep()->similarDType(arrayDtp->subDTypep())) {
                     valuep->v3error("Assignment pattern member is an array of the elements, not"
-                                    " an element (IEEE 1800-2023 10.9.1)\n"
+                                    " an element (IEEE 1800-2023 10.9.1)"
+                                    << warnDTypes(valuep, arrayDtp->subDTypep(), memberDtp,
+                                                  "Element", "Pattern member")
+                                    << "\n"
                                     << valuep->warnMore()
                                     << "... Suggest use an unpacked array concatenation {...} to "
                                        "splice arrays");

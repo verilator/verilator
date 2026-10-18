@@ -95,12 +95,7 @@ class SliceVisitor final : public VNVisitor {
             UINFO(9, "  cloneConsArray(" << elements << "," << elemIdx << ") " << nodep);
             const uint64_t index
                 = arrayp->rangep()->ascending() ? elemIdx : elements - 1 - elemIdx;
-            if (AstNodeExpr* const valuep = consp->valuep(index)) {
-                newp = valuep->cloneTree(false, needPure);
-            } else {
-                UASSERT_OBJ(m_assignError, consp, "Array value missing element " << elemIdx);
-                newp = new AstConst{nodep->fileline(), 0};
-            }
+            newp = consp->valuep(index)->cloneTree(false, needPure);
         } else if (const AstCvtUnpackToUnpack* const cvtp = VN_CAST(nodep, CvtUnpackToUnpack)) {
             UINFO(9, "  cloneCvtUnpackToUnpack(" << elements << "," << elemIdx << ") " << nodep);
             // The element in the same left-to-right position of the source

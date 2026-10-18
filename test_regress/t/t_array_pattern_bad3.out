@@ -12,14 +12,20 @@
    23 |     arr = '{'0, '1};   
       |           ^~
 %Error: t/t_array_pattern_bad3.v:26:15: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'int'
+                                      : ... Pattern member data type: 'int$[0:1]'
                                       : ... Suggest use an unpacked array concatenation {...} to splice arrays
    26 |       arr = '{a2, '0, '1};   
       |               ^~
 %Error: t/t_array_pattern_bad3.v:27:18: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'int'
+                                      : ... Pattern member data type: 'int$[0:1]'
                                       : ... Suggest use an unpacked array concatenation {...} to splice arrays
    27 |       arr = '{0: a2, 1: '0, 2: '1};   
       |                  ^~
 %Error: t/t_array_pattern_bad3.v:40:31: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:1]'
                                       : ... Suggest use an unpacked array concatenation {...} to splice arrays
    40 |       all_addrs = '{base_addrs[0:1], 32'h80003000, 32'h80004000};   
       |                               ^
@@ -28,6 +34,8 @@
    40 |       all_addrs = '{base_addrs[0:1], 32'h80003000, 32'h80004000};   
       |                   ^~
 %Error: t/t_array_pattern_bad3.v:41:33: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:1]'
                                       : ... Suggest use an unpacked array concatenation {...} to splice arrays
    41 |       mid = '{32'hFF, base_addrs[0:1], 32'hAA, 32'hBB};   
       |                                 ^
@@ -36,10 +44,14 @@
    41 |       mid = '{32'hFF, base_addrs[0:1], 32'hAA, 32'hBB};   
       |             ^~
 %Error: t/t_array_pattern_bad3.v:42:17: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:2]'
                                       : ... Suggest use an unpacked array concatenation {...} to splice arrays
    42 |       multi = '{base_addrs, extra};   
       |                 ^~~~~~~~~~
 %Error: t/t_array_pattern_bad3.v:42:29: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:1]'
                                       : ... Suggest use an unpacked array concatenation {...} to splice arrays
    42 |       multi = '{base_addrs, extra};   
       |                             ^~~~~
@@ -56,6 +68,8 @@
    42 |       multi = '{base_addrs, extra};   
       |               ^~
 %Error: t/t_array_pattern_bad3.v:43:25: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[1:0]'
                                       : ... Suggest use an unpacked array concatenation {...} to splice arrays
    43 |       with_desc = '{desc[1:0], 32'hAA, 32'hBB};   
       |                         ^
@@ -64,6 +78,8 @@
    43 |       with_desc = '{desc[1:0], 32'hAA, 32'hBB};   
       |                   ^~
 %Error: t/t_array_pattern_bad3.v:45:21: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:2]'
                                       : ... Suggest use an unpacked array concatenation {...} to splice arrays
    45 |       with_dflt = '{dflt, 32'hEE};   
       |                     ^~~~
@@ -76,6 +92,8 @@
    45 |       with_dflt = '{dflt, 32'hEE};   
       |                   ^~
 %Error: t/t_array_pattern_bad3.v:46:31: Assignment pattern member is an array of the elements, not an element (IEEE 1800-2023 10.9.1)
+                                      : ... Element data type: 'logic[31:0]'
+                                      : ... Pattern member data type: 'logic[31:0]$[0:1]'
                                       : ... Suggest use an unpacked array concatenation {...} to splice arrays
    46 |       all_addrs = '{base_addrs[0:N-1], 32'hAA, 32'hBB};   
       |                               ^

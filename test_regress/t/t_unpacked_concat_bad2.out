@@ -8,12 +8,18 @@
    21 |     s2 = {s1, s0, s0, s0};
       |                     ^
 %Error: t/t_unpacked_concat_bad2.v:23:15: Unpacked array concatenation item is neither an element nor an array of elements of its target (IEEE 1800-2023 10.10)
+                                        : ... Element data type: 'logic[7:0]'
+                                        : ... Item data type: 'logic[7:0]$[0:1][0:1]'
    23 |     s2 = {s0, s3};
       |               ^~
 %Error: t/t_unpacked_concat_bad2.v:25:17: Unpacked array concatenation item is neither an element nor an array of elements of its target (IEEE 1800-2023 10.10)
+                                        : ... Element data type: 'logic[31:0]' (4-state)
+                                        : ... Item data type: 'int$[1:3]' (2-state)
    25 |     A9_logic = {A3, 4, 5, A3, 6};
       |                 ^~
 %Error: t/t_unpacked_concat_bad2.v:25:27: Unpacked array concatenation item is neither an element nor an array of elements of its target (IEEE 1800-2023 10.10)
+                                        : ... Element data type: 'logic[31:0]' (4-state)
+                                        : ... Item data type: 'int$[1:3]' (2-state)
    25 |     A9_logic = {A3, 4, 5, A3, 6};
       |                           ^~
 %Error: Exiting due to
