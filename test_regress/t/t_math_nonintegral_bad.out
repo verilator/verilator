@@ -215,4 +215,24 @@
                                         : ... note: In instance 't'
    66 |     sink = !x_arr;
       |            ^
+%Error: t/t_math_nonintegral_bad.v:73:11: Operator LOGAND expects a numeric LHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                        : ... note: In instance 't'
+   73 |     b = s && x;
+      |           ^~
+%Error: t/t_math_nonintegral_bad.v:74:11: Operator LOGOR expects a numeric RHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                        : ... note: In instance 't'
+   74 |     b = x || s;
+      |           ^~
+%Error: t/t_math_nonintegral_bad.v:75:11: Operator LOGIF expects a numeric LHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                        : ... note: In instance 't'
+   75 |     b = s -> x;
+      |           ^~
+%Error: t/t_math_nonintegral_bad.v:76:11: Operator LOGEQ expects a numeric RHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                        : ... note: In instance 't'
+   76 |     b = x <-> s;
+      |           ^~~
+%Error: t/t_math_nonintegral_bad.v:77:9: Operator LOGNOT expects a numeric LHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                       : ... note: In instance 't'
+   77 |     b = !s;
+      |         ^
 %Error: Exiting due to
