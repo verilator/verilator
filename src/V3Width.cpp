@@ -2520,7 +2520,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
     }
-    void visit(AstCvtUnpackedToQueue* nodep) override {
+    void visit(AstCvtUnpackToQueue* nodep) override {
         if (nodep->didWidthAndSet()) return;
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
@@ -9726,7 +9726,7 @@ class WidthVisitor final : public VNVisitor {
             VNRelinker relinker;
             rhsp->unlinkFrBack(&relinker);
             relinker.relink(
-                new AstCvtUnpackedToQueue{rhsp->fileline(), VN_AS(rhsp, NodeExpr), lhsDTypep});
+                new AstCvtUnpackToQueue{rhsp->fileline(), VN_AS(rhsp, NodeExpr), lhsDTypep});
         }
     }
     static bool similarDTypeRecurse(const AstNodeDType* const node1p,
