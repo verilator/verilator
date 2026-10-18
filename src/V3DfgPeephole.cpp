@@ -2428,6 +2428,30 @@ class V3DfgPeephole final : public DfgVisitor {
                 }
             }
         }
+        if (DfgRep* const lRepp = lhsp->cast<DfgRep>()) {
+            if (DfgRep* const rRepp = rhsp->cast<DfgRep>()) {
+                if (isSame(lRepp->srcp(), rRepp->srcp())) {
+                    APPLYING(REPLACE_CONCAT_SAME_REPS) {
+                        replace(make<DfgRep>(vtxp, lRepp->srcp()));
+                        return;
+                    }
+                }
+            }
+            // The mirrored RHS match is not needed due to RIGHT_LEANING_ASSOC
+            if (DfgConcat* const rConcatp = rhsp->cast<DfgConcat>()) {
+                if (DfgRep* const rlRepp = rConcatp->lhsp()->cast<DfgRep>()) {
+                    if (!rConcatp->hasMultipleSinks() && isSame(lRepp->srcp(), rlRepp->srcp())) {
+                        APPLYING(REPLACE_NESTED_CONCAT_SAME_REPS_ON_LHS) {
+                            const uint32_t width = lRepp->width() + rlRepp->width();
+                            const DfgDataType& dtype = DfgDataType::packed(width);
+                            DfgRep* const repp = make<DfgRep>(flp, dtype, lRepp->srcp());
+                            replace(make<DfgConcat>(vtxp, repp, rConcatp->rhsp()));
+                            return;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void visit(DfgDiv* const vtxp) override {
