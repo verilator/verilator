@@ -2961,6 +2961,10 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstUnsizedArrayDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
+        if (nodep->childDTypep() && !(m_ftaskp && m_ftaskp->dpiImport())) {
+            nodep->v3error("Unsized packed dimension '[]' is only legal in a DPI import"
+                           " (IEEE 1800-2023 A.2.2.1)");
+        }
         // Iterate into subDTypep() to resolve that type and update pointer.
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
         // Cleanup array size

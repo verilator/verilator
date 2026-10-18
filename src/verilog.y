@@ -2099,6 +2099,10 @@ data_typeAny<nodeDTypep>:       // ==IEEE: data_type (accepting idAny)
 
 data_typeBasic<nodeDTypep>:             // IEEE: part of data_type
                 integer_vector_type signingE rangeListE { $1->setSignedState($2); $$ = GRAMMARP->addRange($1, $3, true); }
+        //                      // IEEE: packed_dimension: unsized_dimension, legal only in DPI import
+        |       integer_vector_type signingE '[' ']'
+                        { $1->setSignedState($2);
+                          $$ = new AstUnsizedArrayDType{$3, VFlagChildDType{}, $1}; }
         |       integer_atom_type signingE              { $1->setSignedState($2); $$ = $1; }
         |       non_integer_type                        { $$ = $1; }
         ;
