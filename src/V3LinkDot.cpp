@@ -1200,14 +1200,17 @@ class LinkDotFindVisitor final : public VNVisitor {
         // means nothing was given
         AstNodeModule* const modulesp = nodep->modulesp();
         UASSERT_OBJ(modulesp, nodep, "$unit should always be in the netlist");
-        const bool onlyBuiltins = [&]() {
-            for (AstNodeModule* modp = modulesp; modp; modp = VN_AS(modp->nextp(), NodeModule)) {
-                if (!modp->isDollarUnit() && !modp->isConstPool()) return false;
+        if (m_statep->forPrimary()) {
+            const bool onlyBuiltins = [&]() {
+                for (AstNodeModule* modp = modulesp; modp;
+                     modp = VN_AS(modp->nextp(), NodeModule)) {
+                    if (!modp->isDollarUnit() && !modp->isConstPool()) return false;
+                }
+                return true;
+            }();
+            if (onlyBuiltins && !v3Global.rootp()->dollarUnitPkgp()->stmtsp()) {
+                nodep->v3error("No top level module found");
             }
-            return true;
-        }();
-        if (onlyBuiltins && !v3Global.rootp()->dollarUnitPkgp()->stmtsp()) {
-            nodep->v3error("No top level module found");
         }
         for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
