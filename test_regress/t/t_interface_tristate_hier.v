@@ -27,6 +27,11 @@ interface ifc_unpacked;
   logic [2:0] we;
   logic [6:0] data;
   tri [6:0] d [3:1];
+  tri [6:0] local_d [3:1];
+
+  for (genvar i = 1; i <= 3; ++i) begin
+    assign local_d[i] = we[i-1] ? (data ^ 7'(i * 13)) : 7'bz;
+  end
 endinterface
 
 module unpacked_driver (
@@ -267,7 +272,7 @@ module t;
     #1;
     `checkh(io_ifc_deep.d, 16'hzzzz);
 
-    // Resolve an unpacked array driven across the interface boundary.
+    // Check unpacked arrays driven internally and externally to the interface.
     // Each element must retain its own data and high-Z enable.
     for (int cyc = 0; cyc < 16; ++cyc) begin
       io_ifc_unpacked.we = 3'(cyc);
@@ -276,8 +281,10 @@ module t;
       for (int i = 1; i <= 3; ++i) begin
         if (cyc[i-1]) begin
           `checkh(io_ifc_unpacked.d[i], 7'(cyc * 19) ^ 7'(i * 13));
+          `checkh(io_ifc_unpacked.local_d[i], 7'(cyc * 19) ^ 7'(i * 13));
         end else begin
           `checkh(io_ifc_unpacked.d[i], 7'bz);
+          `checkh(io_ifc_unpacked.local_d[i], 7'bz);
         end
       end
     end

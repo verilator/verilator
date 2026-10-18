@@ -471,6 +471,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     AssignEnableMap m_assignEnps;  // Raw enable expression for each procedural assignment
     ProceduralEnableMap m_proceduralEnables;  // Enable updates to merge into assignments
     int m_unique = 0;
+    // Retain per-module array IDs through the later interface contribution combining step.
+    std::unordered_map<AstNodeModule*, int> m_arrayUnique;
     bool m_alhs = false;  // On LHS of assignment
     bool m_inAlias = false;  // Inside alias statement
     bool m_processedIfaces = false;  // Interface modules already processed (interfaces-first pass)
@@ -524,8 +526,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         return new AstArraySel{nodep->fileline(), nodep->cloneTreePure(false), index};
     }
     AstVar* newArrayTemp(FileLine* fl, AstNodeDType* dtypep) {
-        AstVar* const varp
-            = new AstVar{fl, VVarType::MODULETEMP, "__VtriArray" + cvtToStr(m_unique++), dtypep};
+        AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP,
+                                        "__VtriArray" + cvtToStr(m_arrayUnique[m_modp]++), dtypep};
         varp->setDfgTriLowered();
         m_modp->addStmtsp(varp);
         return varp;
