@@ -419,7 +419,7 @@ private:
             newOutValue(vscp, valuep);
         } else {
             newValue(vscp, valuep);
-            newOutValue(vscp, valuep);
+            setOutValue(vscp, fetchValue(vscp));
         }
     }
 
