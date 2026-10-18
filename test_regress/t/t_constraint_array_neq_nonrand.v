@@ -161,6 +161,20 @@ class frame_rand_slice;
   endfunction
 endclass
 
+// Non-rand side as a constant-indexed slice of a larger non-rand array --
+// mirrors frame_rand_slice, but here it's the non-rand operand that's
+// sliced, so the walk for a rand-dependent index has to terminate in "none
+// found" instead of finding one.
+class frame_nonrand_slice;
+  rand bit [7:0] frame[2];
+  bit [7:0] nra[3][2];
+  constraint c { frame == nra[1]; }
+  function new();
+    nra[1][0] = 8'h31;
+    nra[1][1] = 8'h32;
+  endfunction
+endclass
+
 class frame_neq;
   rand bit [7:0] frame[4][4];
   bit [7:0] last_frame[4][4];
@@ -236,6 +250,7 @@ module t;
     frame_via_rand_handle_struct randhandlestruct_obj;
     frame_odd_count odd_obj;
     frame_rand_slice slice_obj;
+    frame_nonrand_slice nonrand_slice_obj;
     frame_neq neq_obj;
     frame_contradiction bad_obj;
     member_of_rand_array member_idx_obj;
@@ -364,6 +379,14 @@ module t;
       $write("%%Error: cube[1] never varied across 20 draws\n");
       `stop;
     end
+
+    // A constant-indexed slice of a non-rand array, with no rand index
+    // anywhere in its chain, must still force the exact value.
+    nonrand_slice_obj = new;
+    randomize_result = nonrand_slice_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(nonrand_slice_obj.frame[0], 8'h31);
+    `checkd(nonrand_slice_obj.frame[1], 8'h32);
 
     // '!=' against a non-rand array must be genuinely enforced every call
     neq_obj = new;

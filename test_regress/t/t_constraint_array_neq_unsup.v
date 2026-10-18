@@ -79,6 +79,14 @@ class C9;
   constraint c { frame == t.hier_target; }
 endclass
 
+// Same as C9, but the hierarchical reference is sliced to one element
+// instead of compared whole -- the clone-safety walk has to recurse past
+// the index and still land on the same unresolvable base.
+class C9b;
+  rand bit [7:0] frame[2];
+  constraint c { frame == t.hier_target[0]; }
+endclass
+
 // A member-select whose handle is a function call, not a plain variable:
 // unlike a hierarchical reference, this doesn't crash, but the function
 // would run once per array element instead of once if allowed through.
@@ -122,6 +130,16 @@ class C11;
   rand bit [7:0] probe[2];
   constraint ci { idx inside {[0:3]}; }
   constraint c { probe == cube[idx]; }
+endclass
+
+// Same as C11, but with the operands swapped -- the rand-indexed, non-rand
+// operand lands on the left instead of the right.
+class C11b;
+  rand int idx;
+  bit [7:0] cube[4][2];
+  rand bit [7:0] probe[2];
+  constraint ci { idx inside {[0:3]}; }
+  constraint c { cube[idx] == probe; }
 endclass
 
 // Same underlying problem reached through a member select instead of
@@ -186,9 +204,11 @@ module t;
     C7 obj7;
     C8 obj8;
     C9 obj9;
+    C9b obj9b;
     C10 obj10;
     C10b obj10b;
     C11 obj11;
+    C11b obj11b;
     C12 obj12;
     C13 obj13;
     C14 obj14;
@@ -201,9 +221,11 @@ module t;
     obj7 = new;
     obj8 = new;
     obj9 = new;
+    obj9b = new;
     obj10 = new;
     obj10b = new;
     obj11 = new;
+    obj11b = new;
     obj12 = new;
     obj13 = new;
     obj14 = new;
@@ -216,9 +238,11 @@ module t;
     if (obj7.randomize() == 0) $stop;
     if (obj8.randomize() == 0) $stop;
     if (obj9.randomize() == 0) $stop;
+    if (obj9b.randomize() == 0) $stop;
     if (obj10.randomize() == 0) $stop;
     if (obj10b.randomize() == 0) $stop;
     if (obj11.randomize() == 0) $stop;
+    if (obj11b.randomize() == 0) $stop;
     if (obj12.randomize() == 0) $stop;
     if (obj13.randomize() == 0) $stop;
     if (obj14.randomize() == 0) $stop;
