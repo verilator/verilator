@@ -1349,6 +1349,26 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
 };
+class AstCvtUnpackToUnpack final : public AstNodeExpr {
+    // Convert an unpacked array to one with the same shape but different ascending/descending
+    // direction in at least one dimension (IEEE 1800-2023 7.6).
+    // Any combination of dimensions is reversed by the one conversion, which dimensions follow
+    // from comparing the two types dimension by dimension. E.g. from 'int a[2:1][1:2]', to
+    // 'int b[2:1][2:1]' reverses only the inner dimension, and to 'int c[1:2][1:2]' only the
+    // outer one. A conversion of an inner dimension is not inserted lower down instead, which
+    // would need the arrays split into elements.
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtUnpackToUnpack(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtUnpackToUnpack(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtUnpackToUnpack;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstCvtUnpackedToQueue final : public AstNodeExpr {
     // Cast from unpacked array to dynamic/unpacked queue data type
     // @astgen op1 := fromp : AstNodeExpr
@@ -1866,9 +1886,6 @@ public:
     void addIndexValuep(uint64_t index, AstNodeExpr* newp);
     AstNodeExpr* getIndexValuep(uint64_t index) const;
     AstNodeExpr* getIndexDefaultedValuep(uint64_t index) const;
-    // Retype as dtypep, reindexing an array of the other direction, and recursively the arrays
-    // under it, to keep elements' left-to-right order (IEEE 1800-2023 7.6)
-    void retypeOrdered(AstNodeDType* dtypep);
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }

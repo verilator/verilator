@@ -557,6 +557,27 @@ public:
         AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
     }
+    void visit(AstCvtUnpackToUnpack* nodep) override {
+        // Whether each dimension is reversed, the first for the outermost, up to the last that is
+        std::vector<bool> reverses;
+        const AstUnpackArrayDType* top = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+        const AstUnpackArrayDType* fromp
+            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+        while (top) {
+            reverses.push_back(top->declRange().ascending() != fromp->declRange().ascending());
+            top = VN_CAST(top->subDTypep()->skipRefp(), UnpackArrayDType);
+            fromp = VN_CAST(fromp->subDTypep()->skipRefp(), UnpackArrayDType);
+        }
+        while (!reverses.back()) reverses.pop_back();
+        putns(nodep, "VL_CVT_UNPACK_TO_UNPACK<");
+        for (size_t i = 0; i < reverses.size(); ++i) {
+            if (i) puts(", ");
+            puts(reverses[i] ? "1" : "0");
+        }
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(")");
+    }
 
     void visit(AstNodeAssign* nodep) override {
         if (AstCReset* const resetp = VN_CAST(nodep->rhsp(), CReset)) {

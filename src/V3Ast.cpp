@@ -1789,6 +1789,23 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
             return VCastable::COMPATIBLE;
         }
         return VCastable::INCOMPATIBLE;
+    } else if (const AstUnpackArrayDType* const toArrayp = VN_CAST(toDtp, UnpackArrayDType)) {
+        // Equivalent if the same size with equivalent elements, the bounds may differ
+        // (IEEE 1800-2023 6.22.2)
+        const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromDtp, UnpackArrayDType);
+        if (!fromArrayp || toArrayp->elementsConst() != fromArrayp->elementsConst()) {
+            return castable;
+        }
+        const VCastable subCastable = computeCastableImp(
+            toArrayp->subDTypep(), fromArrayp->subDTypep(), nullptr, checkIfaceArgCompat);
+        // Elements must match, but a nested dimension is COMPATIBLE if equivalent, and a virtual
+        // interface element can refer to an interface instance
+        const AstNodeDType* const toSubp = toArrayp->subDTypep()->skipRefp();
+        if (subCastable == VCastable::SAMEISH
+            || (subCastable == VCastable::COMPATIBLE
+                && (VN_IS(toSubp, UnpackArrayDType) || VN_IS(toSubp, IfaceRefDType)))) {
+            return VCastable::COMPATIBLE;
+        }
     }
     return castable;
 }

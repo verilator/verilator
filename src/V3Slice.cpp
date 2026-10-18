@@ -193,6 +193,15 @@ class SliceVisitor final : public VNVisitor {
                 }
             }
             if (!newp) newp = new AstConst{nodep->fileline(), 0};
+        } else if (const AstCvtUnpackToUnpack* const cvtp = VN_CAST(nodep, CvtUnpackToUnpack)) {
+            UINFO(9, "  cloneCvtUnpackToUnpack(" << elements << "," << elemIdx << ") " << nodep);
+            // The element in the same left-to-right position of the source
+            AstNodeExpr* const elemp = cloneAndSel(cvtp->fromp(), elements, elemIdx, needPure);
+            AstNodeDType* const subDTypep = arrayp->subDTypep();
+            const AstUnpackArrayDType* const subArrayp
+                = VN_CAST(subDTypep->skipRefp(), UnpackArrayDType);
+            if (!subArrayp || !subArrayp->isReverseOf(elemp->dtypep())) return elemp;
+            return new AstCvtUnpackToUnpack{nodep->fileline(), elemp, subDTypep};
         } else if (AstCond* const snodep = VN_CAST(nodep, Cond)) {
             UINFO(9, "  cloneCond(" << elements << "," << elemIdx << ") " << nodep);
             return new AstCond{snodep->fileline(), snodep->condp()->cloneTree(false, needPure),
