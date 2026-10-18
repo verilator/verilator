@@ -1352,6 +1352,11 @@ public:
 class AstCvtUnpackToUnpack final : public AstNodeExpr {
     // Convert an unpacked array to one with the same shape but different ascending/descending
     // direction in at least one dimension (IEEE 1800-2023 7.6).
+    // Any combination of dimensions is reversed by the one conversion, which dimensions follow
+    // from comparing the two types dimension by dimension. E.g. from 'int a[2:1][1:2]', to
+    // 'int b[2:1][2:1]' reverses only the inner dimension, and to 'int c[1:2][1:2]' only the
+    // outer one. A conversion of an inner dimension is not inserted lower down instead, which
+    // would need the arrays split into elements.
     // @astgen op1 := fromp : AstNodeExpr
 public:
     AstCvtUnpackToUnpack(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
