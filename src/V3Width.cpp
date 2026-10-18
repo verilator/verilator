@@ -9911,6 +9911,11 @@ class WidthVisitor final : public VNVisitor {
         return newp;
     }
 
+    static bool isLogicalOperator(const AstNode* nodep) {
+        // IEEE 1800-2023 Table 11-1 logical operators, which take only integral or real operands
+        return VN_IS(nodep, LogAnd) || VN_IS(nodep, LogEq) || VN_IS(nodep, LogIf)
+               || VN_IS(nodep, LogNot) || VN_IS(nodep, LogOr);
+    }
     void iterateCheckBool(AstNode* parentp, const char* side, AstNode* underp, Stage stage) {
         UASSERT_OBJ(stage == BOTH, parentp,
                     "Bad call");  // Booleans always self-determined so do BOTH at once
@@ -9934,12 +9939,23 @@ class WidthVisitor final : public VNVisitor {
                 = new AstNeqD{parentp->fileline(), VN_AS(underp, NodeExpr),
                               new AstConst{parentp->fileline(), AstConst::RealDouble{}, 0.0}};
             linker.relink(newp);
+        } else if (underVDTypep->isString() && !isLogicalOperator(parentp)) {
+            // For STRING as a condition, likewise test against the empty string, never a
+            // warning; a string holds no NUL, so nonzero means non-empty (IEEE 1800-2023 6.16)
+            UINFO(6, "   spliceCvtCmpN0: " << underp);
+            VNRelinker linker;
+            underp->unlinkFrBack(&linker);
+            AstNode* const newp
+                = new AstNeqN{parentp->fileline(), VN_AS(underp, NodeExpr),
+                              new AstConst{parentp->fileline(), AstConst::String{}, ""}};
+            linker.relink(newp);
         } else if (VN_IS(underVDTypep, ClassRefDType) || VN_IS(underVDTypep, IfaceRefDType)
                    || (VN_IS(underVDTypep, BasicDType)
                        && VN_AS(underVDTypep, BasicDType)->isCHandle())) {
             // Allow warning-free "if (handle)"
             VL_DO_DANGLING(fixWidthReduce(VN_AS(underp, NodeExpr)), underp);  // Changed
-        } else if (!underVDTypep->basicp() || underVDTypep->isAggregateType()) {
+        } else if (!underVDTypep->basicp() || underVDTypep->isAggregateType()
+                   || underVDTypep->isString()) {
             parentp->v3error(ucfirst(parentp->prettyOperatorName())
                              << " expects a numeric " << side << " operand, but it has data type "
                              << underVDTypep->prettyDTypeNameQ() << " (IEEE 1800-2023 11.3)");
