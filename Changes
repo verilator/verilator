@@ -35,6 +35,7 @@ Verilator 5.053 devel
 * Change verilator_coverage to optimized executable (#8542). [Jared Bold]
 * Support unpacked struct and multi-dimensional array parameters (#2272) (#4285) (#8779). [Jonathan Drolet]
 * Support multi-dimensional module instance arrays (#2675) (#8476). [Geza Lore, Testorrent USA, Inc.]
+* Support different pull directions on bit-selected net (#3988). [Al Grant]
 * Support VPI interface references (#8081). [Todd Strader]
 * Support nested array and associative array element member access in constraint 1/4 - pre-cleanup (#8237). [Kamil Danecki, Antmicro Ltd.]
 * Support unique constraint inside std::randomize (#8241). [Kornel Uriasz, Antmicro Ltd.]

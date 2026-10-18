@@ -2019,15 +2019,23 @@ class TristateVisitor final : public TristateBaseVisitor {
                 associateLogic(nodep, varrefp->varp());
             } else {
                 // Replace any pullup/pulldowns with assignw logic and set the
-                // direction of the pull in the var aux data.  Given
-                // the complexity of merging tristate drivers at any level, the
-                // current limitation of this implementation is that a pullup/down
-                // gets applied to all bits of a bus and a bus cannot have drivers
-                // in opposite directions on individual pins.
+                // direction of the pull in the var aux data.  A pull on a
+                // constant part select is recorded per bit, so different bits
+                // of a bus may be pulled in opposite directions.  Otherwise
+                // the pull applies to all bits of the variable.
                 varrefp->access(VAccess::WRITE);
                 m_tgraph.didProcess(nodep);
                 m_tgraph.didProcess(varrefp->varp());
-                setPullDirection(varrefp->varp(), nodep);
+                const AstSel* const selp = VN_CAST(nodep->lhsp(), Sel);
+                const AstConst* const lsbp = selp ? VN_CAST(selp->lsbp(), Const) : nullptr;
+                if (lsbp) {
+                    const int lsb = lsbp->toSInt();
+                    for (int i = 0; i < selp->widthConst(); ++i) {
+                        setBitPullDirection(varrefp->varp(), lsb + i, nodep->direction());
+                    }
+                } else {
+                    setPullDirection(varrefp->varp(), nodep);
+                }
             }
         }
         if (!m_graphing) {
