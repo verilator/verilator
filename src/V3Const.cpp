@@ -930,6 +930,8 @@ public:
 class ConstVisitor final : public VNVisitor {
     // CONSTANTS
     static constexpr unsigned CONCAT_MERGABLE_MAX_DEPTH = 10;  // Limit alg recursion
+    // Largest right-hand side that is copied to each part of a split concatenation assignment
+    static constexpr int CONCAT_ASSIGN_MAX_RHS_NODES = 16;
 
     // NODE STATE
     // See VNIdAllocator. All per node state below is held in side tables keyed on the
@@ -2471,9 +2473,13 @@ class ConstVisitor final : public VNVisitor {
             // A blocking assignment with an intra-assignment timing control evaluates its value,
             // then waits once (IEEE 1800-2023 9.4.5), here to assign a temporary for the parts
             const bool waits = VN_IS(nodep, Assign) && nodep->timingControlp();
-            const bool need_temp_pure = !nodep->rhsp()->isPure() || waits;
+            // Splitting copies the RHS once per part, so a large RHS would make the tree
+            // grow with the product of the number of parts and the RHS size
+            const bool needTempPure
+                = !nodep->rhsp()->isPure() || waits
+                  || nodep->rhsp()->isLargerThan(CONCAT_ASSIGN_MAX_RHS_NODES);
             if (m_warn && !VN_IS(nodep, AssignDly)
-                && !need_temp_pure) {  // Is same var on LHS and RHS?
+                && !needTempPure) {  // Is same var on LHS and RHS?
                 // If the rhs is not pure, we need a temporary variable anyway
                 std::unordered_set<size_t> lhsVarIds;
                 nodep->lhsp()->foreach([&](const AstVarRef* refp) {
@@ -2485,9 +2491,9 @@ class ConstVisitor final : public VNVisitor {
                     if (lhsVarIds.count(m_ids(refp->varp()))) need_temp = true;
                 });
             }
-            if (need_temp_pure) {
-                // if the RHS is impure we need to create a temporary variable for it, because
-                // further handling involves copying of the RHS.
+            if (needTempPure) {
+                // if the RHS is impure or large we need to create a temporary variable for it,
+                // because further handling involves copying of the RHS.
                 UINFO(4, "  ASSITEMPPURE " << nodep);
                 // ASSIGN(CONCAT(lc1,lc2),rhs) -> ASSIGN(temp,rhs),
                 //                                ASSIGN(lc1,SEL(temp,{size1})),
