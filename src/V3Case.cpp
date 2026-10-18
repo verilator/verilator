@@ -825,7 +825,7 @@ class CaseVisitor final : public VNVisitor {
             m_caseDecoderEntryWidth, m_caseDecoderEntryWidth, VSigning::UNSIGNED);
         AstNodeDType* const tableDtypep = new AstUnpackArrayDType{flp, entryDtypep, rangep};
         v3Global.rootp()->typeTablep()->addTypesp(tableDtypep);
-        AstInitArray* const tablep = new AstInitArray{flp, tableDtypep, nullptr};
+        AstConsArray* const tablep = new AstConsArray{flp, tableDtypep};
 
         // Build a single value table for all LHSs: one entry per clause, packing each LHS's value
         // at its offset. The entry width is the table packing computed by 'analyzeDecoderPattern'
@@ -852,7 +852,7 @@ class CaseVisitor final : public VNVisitor {
                 }
                 entryp->num().opSelInto(valConstp->num(), lhsRecord.offset, lhsp->width());
             }
-            tablep->addIndexValuep(i, entryp);
+            tablep->valuep(i, entryp);
         }
 
         // Create the tables

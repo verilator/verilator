@@ -25,12 +25,12 @@ bool V3ConstPool::equalMap(const AstConsAssoc* ap, const AstConsAssoc* bp) {
     return ap->sameTree(bp);
 }
 
-bool V3ConstPool::equalTable(const AstInitArray* ap, const AstInitArray* bp) {
+bool V3ConstPool::equalTable(const AstConsArray* ap, const AstConsArray* bp) {
     // Unpacked array initializers must have equivalent values
     // Note, sadly we can't just call ap->sameTree(pb), because both:
     // - the dtypes might be different instances
     // - the default/inititem children might be in different order yet still yield the same table
-    // See note in AstInitArray::same about the same. This function instead compares by initializer
+    // See note in AstConsArray::same about the same. This function instead compares by initializer
     // value, rather than by tree structure.
     const AstUnpackArrayDType* const aDTypep = VN_AS(ap->dtypep(), UnpackArrayDType);
     const AstUnpackArrayDType* const bDTypep = VN_AS(bp->dtypep(), UnpackArrayDType);
@@ -40,8 +40,8 @@ bool V3ConstPool::equalTable(const AstInitArray* ap, const AstInitArray* bp) {
     // Compare initializer arrays by value. Note this is only called when they hash the same.
     const uint64_t size = aDTypep->elementsConst();
     for (uint64_t n = 0; n < size; ++n) {
-        const AstNode* const valAp = ap->getIndexDefaultedValuep(n);
-        const AstNode* const valBp = bp->getIndexDefaultedValuep(n);
+        const AstNode* const valAp = ap->valuep(n);
+        const AstNode* const valBp = bp->valuep(n);
         UASSERT_OBJ(VN_IS(valAp, Const), valAp, "Const pool table item not Const");
         UASSERT_OBJ(VN_IS(valBp, Const), valBp, "Const pool table item not Const");
         if (!valAp->sameTree(valBp)) return false;
@@ -49,16 +49,14 @@ bool V3ConstPool::equalTable(const AstInitArray* ap, const AstInitArray* bp) {
     return true;
 }
 
-size_t V3ConstPool::hashTable(const AstInitArray* initp) {
+size_t V3ConstPool::hashTable(const AstConsArray* initp) {
     // Hash what 'equalTable' compares: the element type, the range by value, and the values
     const AstUnpackArrayDType* const dtypep = VN_AS(initp->dtypep(), UnpackArrayDType);
     V3Hash hash = V3Hasher::uncachedHash(dtypep->subDTypep());
     hash += dtypep->left();
     hash += dtypep->right();
     const uint64_t size = dtypep->elementsConst();
-    for (uint64_t n = 0; n < size; ++n) {
-        hash += V3Hasher::uncachedHash(initp->getIndexDefaultedValuep(n));
-    }
+    for (uint64_t n = 0; n < size; ++n) hash += V3Hasher::uncachedHash(initp->valuep(n));
     return hash.value();
 }
 
@@ -84,7 +82,7 @@ AstVarRef* V3ConstPool::findOrCreate(T_Set& set, uint32_t& nextr, const char* pr
             UASSERT_OBJ(varp->constPoolEntry(), varp, "Unmarked variable in constant pool");
             if (VN_IS(varp->valuep(), Const)) {
                 m_consts.insert(varp);
-            } else if (VN_IS(varp->valuep(), InitArray)) {
+            } else if (VN_IS(varp->valuep(), ConsArray)) {
                 m_tables.insert(varp);
             } else {
                 m_maps.insert(varp);
@@ -157,7 +155,7 @@ AstVarRef* V3ConstPool::findMap(AstConsAssoc* initp) {
     return self.findOrCreate(self.m_maps, self.m_nextMap, "MAP_", initp);
 }
 
-AstVarRef* V3ConstPool::findTable(AstInitArray* initp) {
+AstVarRef* V3ConstPool::findTable(AstConsArray* initp) {
     UASSERT_OBJ(VN_IS(initp->dtypep(), UnpackArrayDType), initp,
                 "Const pool table must have unpacked array dtype");
     V3ConstPool& self = instance();
@@ -166,7 +164,7 @@ AstVarRef* V3ConstPool::findTable(AstInitArray* initp) {
 
 AstVarRef* V3ConstPool::find(AstNodeExpr* initp) {
     if (AstConst* const constp = VN_CAST(initp, Const)) return findConst(constp);
-    if (AstInitArray* const arrayp = VN_CAST(initp, InitArray)) return findTable(arrayp);
+    if (AstConsArray* const arrayp = VN_CAST(initp, ConsArray)) return findTable(arrayp);
     return findMap(VN_AS(initp, ConsAssoc));
 }
 

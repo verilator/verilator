@@ -990,6 +990,31 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
+class AstConsArrayItem final : public AstNode {
+    // An element of an AstConsArray, setting the element at the index to the value
+    // Parents: CONSARRAY
+    // @astgen op1 := valuep : AstNodeExpr
+    const uint64_t m_index;  // Index of the element, with the array's lo() at 0
+public:
+    AstConsArrayItem(FileLine* fl, uint64_t index, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsArrayItem(fl)
+        , m_index{index} {
+        this->valuep(valuep);
+    }
+    ASTGEN_MEMBERS_AstConsArrayItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsArray) && !VN_IS(backp(), ConsArrayItem));
+        return nullptr;
+    }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        return m_index == VN_DBG_AS(samep, ConsArrayItem)->m_index;
+    }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }  // By AstConsArray's map
+    uint64_t index() const { return m_index; }
+};
 class AstConsAssocItem final : public AstNode {
     // An element of an AstConsAssoc, setting the key to the value
     // Parents: CONSASSOC
@@ -1535,21 +1560,6 @@ public:
         addExprsp(exprsp);
     }
     ASTGEN_MEMBERS_AstImplicit;
-};
-class AstInitItem final : public AstNode {
-    // Container for a item in an init array
-    // This container is present so that the value underneath may get replaced with a new nodep
-    // and the upper AstInitArray's map will remain correct (pointing to this InitItem)
-    // @astgen op1 := valuep : AstNodeExpr
-public:
-    // Parents: INITARRAY
-    AstInitItem(FileLine* fl, AstNodeExpr* valuep)
-        : ASTGEN_SUPER_InitItem(fl) {
-        this->valuep(valuep);
-    }
-    ASTGEN_MEMBERS_AstInitItem;
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    bool hasDType() const override VL_MT_SAFE { return false; }  // See valuep()'s dtype instead
 };
 class AstIntfRef final : public AstNode {
     // An interface reference

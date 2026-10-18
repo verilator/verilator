@@ -988,6 +988,35 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { V3ERROR_NA_RETURN(true); }
 };
+class AstConsArray final : public AstNodeExpr {
+    // Construct an unpacked array value, '{value, ...}, '{index: value, default: value}
+    // If default is specified, the items may be sparse, and not provide each element.
+    // Indices are C++ array style, with lo() at index 0
+    // @astgen op1 := defaultp : Optional[AstNodeExpr] // Default, if sparse
+    // @astgen op2 := itemsp : private List[AstConsArrayItem] // In increasing index order
+    // dist-ast-dump-suppress  // Dumped by the itemsp list
+    std::map<uint64_t, AstConsArrayItem*> m_itemps;  // The item at each index given
+
+public:
+    AstConsArray(FileLine* fl, AstNodeDType* newDTypep, AstNodeExpr* defaultp = nullptr)
+        : ASTGEN_SUPER_ConsArray(fl) {
+        dtypep(newDTypep);
+        this->defaultp(defaultp);
+    }
+    ASTGEN_MEMBERS_AstConsArray;
+    const char* broken() const override;
+    void cloneRelink() override;
+    inline AstConsArrayItem* itemsp() const VL_MT_STABLE;
+    // The value at the index, or the default if not given
+    AstNodeExpr* valuep(uint64_t index) const;
+    // Add the value of the element at the index, which must not be given yet
+    void valuep(uint64_t index, AstNodeExpr* newp);
+    // Add the elements of the array 'arrayp', starting at the index
+    void spliceValues(uint64_t index, AstNodeExpr* arrayp);
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstConsAssoc final : public AstNodeExpr {
     // Construct an assoc array and return object, '{key: value, default: value}
     // @astgen op1 := defaultp : Optional[AstNodeExpr]
@@ -1844,51 +1873,6 @@ public:
     bool isMultiCycleSva() const override { return m_isFollowedBy || !m_isOverlapped; }
     bool isOverlapped() const { return m_isOverlapped; }
     bool isFollowedBy() const { return m_isFollowedBy; }
-};
-class AstInitArray final : public AstNodeExpr {
-    // This is also used as an array value in V3Simulate/const prop.
-    // Would be better called as 'AstConstArray'
-    // Set a var to a map of values
-    // The list of initsp() is not relevant
-    // If default is specified, the vector may be sparse, and not provide each value.
-    // Key values are C++ array style, with lo() at index 0
-    // Parents: ASTVAR::init()
-    // @astgen op1 := defaultp : Optional[AstNodeExpr] // Default, if sparse
-    // @astgen op2 := initsp : List[AstInitItem] // Initial value expressions
-    //
-public:
-    using KeyItemMap = std::map<uint64_t, AstInitItem*>;
-
-private:
-    // dist-ast-dump-suppress  // Dumped using dumpInitList
-    KeyItemMap m_map;  // Node value for each array index
-    // METHODS
-    void dumpInitList(std::ostream& str) const;
-
-public:
-    AstInitArray(FileLine* fl, AstNodeDType* newDTypep, AstNodeExpr* defaultp)
-        : ASTGEN_SUPER_InitArray(fl) {
-        dtypep(newDTypep);
-        this->defaultp(defaultp);
-    }
-    ASTGEN_MEMBERS_AstInitArray;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    const char* broken() const override;
-    void cloneRelink() override;
-    bool sameNode(const AstNode* samep) const override {
-        // Only works if exact same children, instead should override comparison
-        // of children list, and instead use map-vs-map key/value compare
-        return m_map == VN_DBG_AS(samep, InitArray)->m_map;
-    }
-    void addValuep(AstNodeExpr* newp) { addIndexValuep(m_map.size(), newp); }
-    const KeyItemMap& map() const { return m_map; }
-    void addIndexValuep(uint64_t index, AstNodeExpr* newp);
-    AstNodeExpr* getIndexValuep(uint64_t index) const;
-    AstNodeExpr* getIndexDefaultedValuep(uint64_t index) const;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
 };
 class AstInside final : public AstNodeExpr {
     // @astgen op1 := exprp : AstNodeExpr

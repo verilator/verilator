@@ -432,7 +432,7 @@ class TaskVisitor final : public VNVisitor {
     // Variables created by createVarScope, shared by instances
     V3SharedTmps m_funcTmps{"__Vfunc", VVarType::BLOCKTEMP};  // For function calls
     V3SharedTmps m_taskTmps{"__Vtask", VVarType::BLOCKTEMP};  // For task calls
-    V3SharedTmps m_initArrayTmps{"__VinitArrayTemp", VVarType::BLOCKTEMP};  // For InitArray args
+    V3SharedTmps m_consArrayTmps{"__VconsArrayTemp", VVarType::BLOCKTEMP};  // For ConsArray args
     V3SharedTmps m_forceTmps{"__Vforcefuncout", VVarType::VAR};  // For calls in force statements
     int m_unconVarNum = 0;  // Unique bad connection variable
 
@@ -463,7 +463,7 @@ class TaskVisitor final : public VNVisitor {
     }
     static AstVarScope* constPoolTable(AstVar* paramp) {
         // Move array params in functions into constant pool, return the VarScope of the entry
-        AstVarRef* const refp = V3ConstPool::find(VN_AS(paramp->valuep(), InitArray));
+        AstVarRef* const refp = V3ConstPool::find(VN_AS(paramp->valuep(), ConsArray));
         AstVarScope* const vscp = refp->varScopep();
         VL_DO_DANGLING(refp->deleteTree(), refp);
         return vscp;
@@ -471,7 +471,7 @@ class TaskVisitor final : public VNVisitor {
     // Create variable for 'invarp' of the call 'refp', named after the called task and 'suffix'
     AstVarScope* createVarScope(const AstNodeFTaskRef* refp, AstVar* invarp,
                                 const std::string& suffix) {
-        if (invarp->isParam() && VN_IS(invarp->valuep(), InitArray)) {
+        if (invarp->isParam() && VN_IS(invarp->valuep(), ConsArray)) {
             return constPoolTable(invarp);
         } else {
             // We could create under either the ref's scope or the ftask's scope.
@@ -1423,7 +1423,7 @@ class TaskVisitor final : public VNVisitor {
         for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
             nextp = stmtp->nextp();
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                if (portp->isParam() && VN_IS(portp->valuep(), InitArray)) {
+                if (portp->isParam() && VN_IS(portp->valuep(), ConsArray)) {
                     // Move array parameters in functions into constant pool
                     portp->unlinkFrBack();
                     pushDeletep(portp);
@@ -1564,11 +1564,11 @@ class TaskVisitor final : public VNVisitor {
     void processArgs(AstNodeFTaskRef* nodep) {
         // Create a fresh variable for each concat array present in pins list
         for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
-            AstInitArray* const arrayp = VN_CAST(argp->exprp(), InitArray);
+            AstConsArray* const arrayp = VN_CAST(argp->exprp(), ConsArray);
             if (!arrayp) continue;
 
             FileLine* const flp = arrayp->fileline();
-            AstVarScope* const substvscp = m_initArrayTmps.make(flp, m_scopep, arrayp->dtypep());
+            AstVarScope* const substvscp = m_consArrayTmps.make(flp, m_scopep, arrayp->dtypep());
             substvscp->varp()->isInternal(true);
 
             AstAssign* const assignp

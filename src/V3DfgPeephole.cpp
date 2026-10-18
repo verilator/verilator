@@ -2117,9 +2117,8 @@ class V3DfgPeephole final : public DfgVisitor {
         DfgVertex* const srcp = varp->srcp();
         if (!srcp) {
             if (vtxp->isPacked()) {
-                if (AstInitArray* const iap = VN_CAST(astVarp->valuep(), InitArray)) {
-                    if (AstConst* const valp
-                        = VN_CAST(iap->getIndexDefaultedValuep(idxp->toSizeT()), Const)) {
+                if (AstConsArray* const iap = VN_CAST(astVarp->valuep(), ConsArray)) {
+                    if (AstConst* const valp = VN_CAST(iap->valuep(idxp->toSizeT()), Const)) {
                         APPLYING(FOLD_ARRAYSEL_TABLE) {
                             replace(new DfgConst{m_dfg, valp->fileline(), valp->num()});
                             return;

@@ -52,7 +52,7 @@ protected:
     // METHODS
     // Emit the initializer of a definition, for direct initialization: 'type name{...}'
     void emitDirectInit(AstNode* valuep) {
-        if (VN_IS(valuep, InitArray) || VN_IS(valuep, ConsAssoc) || VN_IS(valuep, ConsWildcard)
+        if (VN_IS(valuep, ConsArray) || VN_IS(valuep, ConsAssoc) || VN_IS(valuep, ConsWildcard)
             || (VN_IS(valuep, Const) && valuep->isWide())) {
             iterateInit(valuep);  // Already a braced initializer list
         } else {
@@ -92,7 +92,7 @@ protected:
             AstNodeExpr* const valuep = itemp->valuep();
             // The variadic constructor can't deduce a type from a braced list, so give unpacked
             // array values their type
-            if (VN_IS(valuep, InitArray)) puts(valuep->dtypep()->cType("", false, false));
+            if (VN_IS(valuep, ConsArray)) puts(valuep->dtypep()->cType("", false, false));
             iterateInit(valuep);
         }
         puts("\n}");
@@ -115,7 +115,7 @@ protected:
     }
 
     // VISITORS
-    void visit(AstInitArray* nodep) override {
+    void visit(AstConsArray* nodep) override {
         VL_RESTORER(m_unpackedWord);
         const AstUnpackArrayDType* const dtypep
             = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
@@ -130,7 +130,7 @@ protected:
         for (uint64_t n = 0; n < size; ++n) {
             m_unpackedWord = n;
             if (n) puts((n % tabMod) ? ", " : ",\n");
-            AstNode* const itemp = nodep->getIndexDefaultedValuep(n);
+            AstNode* const itemp = nodep->valuep(n);
             UASSERT_OBJ(itemp, nodep, "Missing array init element");
             iterateInit(itemp);
         }
@@ -174,8 +174,8 @@ protected:
     void visit(AstConsStructItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstConsStruct");
     }  // LCOV_EXCL_STOP
-    void visit(AstInitItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Handled by AstInitArray");
+    void visit(AstConsArrayItem* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("Handled by AstConsArray");
     }  // LCOV_EXCL_STOP
 
     void visit(AstConst* nodep) override {
