@@ -849,6 +849,7 @@ public:
     // being constructed, so that the context can grow to the number of threads it requires.
     VerilatedVirtualBase* threadPoolp(unsigned modelThreads = 1);
     void prepareClone();
+    void threadPoolShutdown();
     VerilatedVirtualBase* threadPoolpOnClone();
     VerilatedVirtualBase*
     enableExecutionProfiler(VerilatedVirtualBase* (*construct)(VerilatedContext&));

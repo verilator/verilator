@@ -206,6 +206,9 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
     // Callbacks prior to termination
     Verilated::runExitCallbacks();
 
+    // Stop the worker threads, as std::exit's static destruction would otherwise race with them
+    Verilated::threadContextp()->threadPoolShutdown();
+
     if (Verilated::debug()) {
         std::abort();
     } else {
@@ -3501,6 +3504,7 @@ VerilatedVirtualBase* VerilatedContext::threadPoolp(unsigned modelThreads) {
 }
 
 void VerilatedContext::prepareClone() { delete m_threadPool.release(); }
+void VerilatedContext::threadPoolShutdown() { m_threadPool.reset(); }
 
 VerilatedVirtualBase* VerilatedContext::threadPoolpOnClone() {
     if (VL_UNLIKELY(m_threadPool)) (void)m_threadPool.release();
