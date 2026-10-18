@@ -1,6 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
+// SPDX-FileCopyrightText: 2023 Antmicro Ltd
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
@@ -30,7 +31,7 @@ package pkg;
       int P = 3
   );
     typedef Registry#(Cls#(T, P)) type_id;
-    localparam int Q = P + 2;
+    parameter int Q = P + 2;
     static int count;
     string name;
     function new(string name = "");
@@ -42,7 +43,7 @@ package pkg;
     endfunction
     class Inner;
       static function int p();
-        return Cls::P;
+        return Cls::P;  // Ok, within Cls
       endfunction
     endclass
     static function int innerP();
@@ -54,36 +55,55 @@ endpackage
 module t;
   import pkg::*;
 
+  class Other extends Cls #();  // Ok
+  endclass
+
+  class OtherMaybe extends Cls;  // Questionable but others do not warn
+  endclass
+
+  typedef Cls#(shortint, 4) Cls2_t;  // Ok
+  typedef Cls ClsNone_t;  // Ok
+
   class User;
     static function Cls#() make(string name);
-      // verilator lint_off NONSTD
-      return Cls::type_id::create(name);
-      // verilator lint_on NONSTD
+      return Cls::type_id::create(name);  // Bad #() required
     endfunction
   endclass
 
   initial begin
-    Cls #() obj;
-    Cls #(shortint, 4) other;
-    // verilator lint_off NONSTD
-    Cls::T value;
+    Cls obj;  // Ok
+    Cls2_t other;
+    Cls::T value;  // Bad #() required
+    int count;
+    int p;
+    int q;
+    int twice;
+    string type_id_name;
+    string t_name;
     obj = User::make("created");
-    Cls::count += 10;
-    `checkd(Cls::count, 11);
-    `checkd(pkg::Cls::count, 11);
-    `checkd(Cls::P, 3);
-    `checkd(Cls::Q, 5);
-    `checkd(Cls::twice(21), 42);
-    `checks($typename(Cls::type_id), $typename(Cls#()::type_id));
-    `checks($typename(Cls::T), $typename(Cls#()::T));
-    // verilator lint_on NONSTD
     other = new("other");
+    Cls::count += 10;  // Bad #() required
+    count = pkg::Cls::count;  // Bad #() required
+    p = Cls::P;  // Bad #() required
+    q = Cls::Q;  // Bad #() required
+    twice = Cls::twice(21);  // Bad #() required
+    type_id_name = $typename(Cls::type_id);  // Bad #() required
+    t_name = $typename(Cls::T);  // Bad #() required
+
     `checks(obj.name, "created");
+    `checkd(count, 11);
     `checkd(Cls#()::count, 11);
-    `checkd(Cls#(shortint, 4)::count, 1);
+    `checkd(Cls2_t::count, 1);
+    `checkd(p, 3);
+    `checkd(q, 5);
+    `checkd(Cls#()::Q, 5);
+    `checkd(Cls2_t::Q, 6);
+    `checkd(twice, 42);
+    `checks(type_id_name, $typename(Cls#()::type_id));
+    `checks(t_name, $typename(Cls#()::T));
     `checkd($bits(value), 32);
     `checkd(Cls#()::innerP(), 3);
-    `checkd(Cls#(shortint, 4)::innerP(), 4);
+    `checkd(Cls2_t::innerP(), 4);
     $write("*-* All Finished *-*\n");
     $finish;
   end

@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('linter')
+test.top_filename = 't/t_class_param_noparen.v'
 
 test.lint(fails=True, expect_filename=test.golden_filename)
 
