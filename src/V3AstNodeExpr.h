@@ -1349,6 +1349,21 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
 };
+class AstCvtUnpackToUnpack final : public AstNodeExpr {
+    // Convert an unpacked array to one with the same shape but different ascending/descending
+    // direction in at least one dimension (IEEE 1800-2023 7.6).
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    AstCvtUnpackToUnpack(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtUnpackToUnpack(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtUnpackToUnpack;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
 class AstCvtUnpackedToQueue final : public AstNodeExpr {
     // Cast from unpacked array to dynamic/unpacked queue data type
     // @astgen op1 := fromp : AstNodeExpr
@@ -1363,21 +1378,6 @@ public:
     ASTGEN_MEMBERS_AstCvtUnpackedToQueue;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { return "VL_CVT_UNPACK_TO_Q(%P, %li)"; }
-    bool cleanOut() const override { return true; }
-};
-class AstCvtUnpackedToUnpacked final : public AstNodeExpr {
-    // Convert an unpacked array to one with the same shape but different ascending/descending
-    // direction in at least one dimension (IEEE 1800-2023 7.6).
-    // @astgen op1 := fromp : AstNodeExpr
-public:
-    AstCvtUnpackedToUnpacked(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
-        : ASTGEN_SUPER_CvtUnpackedToUnpacked(fl) {
-        this->fromp(fromp);
-        dtypeFrom(dtp);
-    }
-    ASTGEN_MEMBERS_AstCvtUnpackedToUnpacked;
-    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
-    string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
 };
 class AstDist final : public AstNodeExpr {

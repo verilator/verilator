@@ -3728,7 +3728,7 @@ class ConstVisitor final : public VNVisitor {
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstCvtUnpackedToUnpacked* nodep) override {
+    void visit(AstCvtUnpackToUnpack* nodep) override {
         iterateChildren(nodep);
         AstInitArray* const fromp = VN_CAST(nodep->fromp(), InitArray);
         if (!fromp) return;
@@ -3737,6 +3737,7 @@ class ConstVisitor final : public VNVisitor {
             = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
         const AstUnpackArrayDType* const fromArrayp
             = VN_AS(fromp->dtypep()->skipRefp(), UnpackArrayDType);
+        // This dimension may not be reversed, only one under it
         const bool reverse
             = toArrayp->declRange().ascending() != fromArrayp->declRange().ascending();
         const uint64_t lastIndex = toArrayp->elementsConst() - 1;
@@ -3746,7 +3747,7 @@ class ConstVisitor final : public VNVisitor {
         const auto convert = [&](AstNodeExpr* valuep) -> AstNodeExpr* {
             valuep->unlinkFrBack();
             if (!subArrayp || !subArrayp->isReverseOf(valuep->dtypep())) return valuep;
-            return new AstCvtUnpackedToUnpacked{valuep->fileline(), valuep, subDTypep};
+            return new AstCvtUnpackToUnpack{valuep->fileline(), valuep, subDTypep};
         };
         AstInitArray* const newp
             = new AstInitArray{fromp->fileline(), nodep->dtypep(),

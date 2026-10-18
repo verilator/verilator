@@ -324,8 +324,8 @@ public:
                     const AstUnpackArrayDType* const arrayp
                         = VN_CAST(pinexprp->dtypep()->skipRefp(), UnpackArrayDType);
                     if (arrayp && arrayp->isReverseOf(rhsSelp->dtypep())) {
-                        rhsSelp = new AstCvtUnpackedToUnpacked{pinp->fileline(), rhsSelp,
-                                                               pinexprp->dtypep()};
+                        rhsSelp = new AstCvtUnpackToUnpack{pinp->fileline(), rhsSelp,
+                                                           pinexprp->dtypep()};
                     }
                     assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsSelp};
                 }

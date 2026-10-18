@@ -557,7 +557,7 @@ public:
         AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
     }
-    void visit(AstCvtUnpackedToUnpacked* nodep) override {
+    void visit(AstCvtUnpackToUnpack* nodep) override {
         // Whether each dimension is reversed, the first for the outermost, up to the last that is
         std::vector<bool> reverses;
         const AstUnpackArrayDType* top = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);

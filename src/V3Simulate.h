@@ -679,12 +679,12 @@ private:
         m_reclaimValuesp.push_back(valuep);
         setValue(nodep, valuep);
     }
-    void visit(AstCvtUnpackedToUnpacked* nodep) override {
+    void visit(AstCvtUnpackToUnpack* nodep) override {
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
         if (m_checkOnly || !optimizable()) return;
         // An array value is an AstInitArray, so V3Const folds the conversion
-        AstNodeExpr* const cvtp = new AstCvtUnpackedToUnpacked{
+        AstNodeExpr* const cvtp = new AstCvtUnpackToUnpack{
             nodep->fileline(), fetchValue(nodep->fromp())->cloneTree(false), nodep->dtypep()};
         AstNodeExpr* const valuep = V3Const::constifyEdit(cvtp);
         m_reclaimValuesp.push_back(valuep);

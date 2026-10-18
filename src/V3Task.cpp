@@ -513,7 +513,7 @@ class TaskVisitor final : public VNVisitor {
             = VN_CAST(newvscp->dtypep()->skipRefp(), UnpackArrayDType);
         if (arrayp && arrayp->isReverseOf(inPinClonep->dtypep())) {
             inPinClonep
-                = new AstCvtUnpackedToUnpacked{pinp->fileline(), inPinClonep, newvscp->dtypep()};
+                = new AstCvtUnpackToUnpack{pinp->fileline(), inPinClonep, newvscp->dtypep()};
         }
         AstAssign* const assp = new AstAssign{
             pinp->fileline(), new AstVarRef{newvscp->fileline(), newvscp, VAccess::WRITE},
@@ -569,7 +569,7 @@ class TaskVisitor final : public VNVisitor {
         const AstUnpackArrayDType* const arrayp
             = VN_CAST(outPinp->dtypep()->skipRefp(), UnpackArrayDType);
         if (arrayp && arrayp->isReverseOf(postRhsp->dtypep())) {
-            postRhsp = new AstCvtUnpackedToUnpacked{pinp->fileline(), postRhsp, outPinp->dtypep()};
+            postRhsp = new AstCvtUnpackToUnpack{pinp->fileline(), postRhsp, outPinp->dtypep()};
         }
         AstAssign* const assp = new AstAssign{pinp->fileline(), outPinClonep, postRhsp};
         assp->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);  // Ok if in <= block

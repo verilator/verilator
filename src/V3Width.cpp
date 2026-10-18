@@ -2526,7 +2526,7 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         // Type set in constructor
     }
-    void visit(AstCvtUnpackedToUnpacked* nodep) override {
+    void visit(AstCvtUnpackToUnpack* nodep) override {
         // Type set when created, the value converted is of its own type
         if (m_vup->final()) {
             userIterateAndNext(nodep->fromp(), WidthVP{nodep->fromp()->dtypep(), FINAL}.p());
@@ -9906,7 +9906,7 @@ class WidthVisitor final : public VNVisitor {
         if (!arrayp || !arrayp->isReverseOf(exprp->dtypep())) return exprp;
         VNRelinker relinker;
         exprp->unlinkFrBack(&relinker);
-        AstNodeExpr* const newp = new AstCvtUnpackedToUnpacked{exprp->fileline(), exprp, dtypep};
+        AstNodeExpr* const newp = new AstCvtUnpackToUnpack{exprp->fileline(), exprp, dtypep};
         relinker.relink(newp);
         return newp;
     }
@@ -10007,9 +10007,7 @@ class WidthVisitor final : public VNVisitor {
             = streamUse != STREAM_USE_NONE ? streamUse : streamUseForDeterm(determ);
         if (rhsAccess.isReadOnly()) {
             if (AstNodeExpr* const exprp = VN_CAST(underp, NodeExpr)) {
-                // A value only read is converted to a reversed expected type (IEEE
-                // 1800-2023 7.6). One also written, by an output port or an output or inout
-                // task argument, is converted where V3Inst/V3Task copy it in and out.
+                // A value only read is converted to a reversed expected type.
                 underp = convertUnpackedOrder(exprp, expDTypep);
             }
         }
