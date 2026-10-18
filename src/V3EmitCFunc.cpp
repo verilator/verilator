@@ -468,13 +468,6 @@ void EmitCFunc::emitConstantString(const AstConst* nodep) {
     puts("}");
 }
 
-void EmitCFunc::emitSetVarConstant(const string& assignString, AstConst* constp) {
-    puts(assignString);
-    puts(" = ");
-    emitConstant(constp);
-    puts(";\n");
-}
-
 void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructing) {
     // 'constructing' indicates that the object was just constructed, so if it is a string or
     // something that starts off clear already, no need to clear it again
@@ -492,47 +485,6 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
         // If a simple CONST value we initialize it using an enum
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         // puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
-    } else if (const AstInitArray* const initarp = VN_CAST(varp->valuep(), InitArray)) {
-        // TODO this code probably better handled as initp argument to emitVarResetRecurse
-        // TODO merge this functionality with V3EmitCConstInit.h visitors
-        if (VN_IS(dtypep, AssocArrayDType)) {
-            if (initarp->defaultp()) {
-                emitSetVarConstant(newPrefix + ".atDefault()", VN_AS(initarp->defaultp(), Const));
-            }
-            if (!constructing) puts(varNameProtected + ".clear();");
-            const auto& mapr = initarp->map();
-            for (const auto& itr : mapr) {
-                AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + ".atWrite(" + cvtToStr(itr.first) + ")",
-                                   VN_AS(valuep, Const));
-            }
-        } else if (VN_IS(dtypep, WildcardArrayDType)) {
-            if (initarp->defaultp()) {
-                emitSetVarConstant(newPrefix + ".atDefault()", VN_AS(initarp->defaultp(), Const));
-            }
-            if (!constructing) puts(newPrefix + ".clear();");
-            const auto& mapr = initarp->map();
-            for (const auto& itr : mapr) {
-                AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + ".atWrite(" + cvtToStr(itr.first) + ")",
-                                   VN_AS(valuep, Const));
-            }
-        } else if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            if (initarp->defaultp()) {
-                puts("for (int __Vi = 0; __Vi < " + cvtToStr(adtypep->elementsConst()));
-                puts("; ++__Vi) {\n");
-                emitSetVarConstant(newPrefix + "[__Vi]", VN_AS(initarp->defaultp(), Const));
-                puts("}\n");
-            }
-            const auto& mapr = initarp->map();
-            for (const auto& itr : mapr) {
-                AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + "[" + cvtToStr(itr.first) + "]",
-                                   VN_AS(valuep, Const));
-            }
-        } else {
-            varp->v3fatalSrc("InitArray under non-arrayed var");
-        }
     } else {
         putns(varp,
               emitVarResetRecurse(varp, constructing, newPrefix, dtypep, 0, "", varp->valuep()));

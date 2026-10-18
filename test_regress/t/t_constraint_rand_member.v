@@ -53,7 +53,7 @@ class D extends Base;
     return 2;
   endfunction
 
-  constraint c { s == super.f(); }
+  constraint c {s == super.f();}
 endclass
 
 class B;
@@ -64,7 +64,7 @@ class B;
     a = new();
     d = new();
   endfunction
-  constraint c { q == a.add(a.x); }
+  constraint c {q == a.add(a.x);}
 endclass
 
 class Outer;
@@ -79,7 +79,7 @@ class E;
   function int sum();
     return x + y;
   endfunction
-  constraint c { w == sum(); }
+  constraint c {w == sum();}
 endclass
 
 class F;
@@ -88,7 +88,7 @@ class F;
   function new();
     e = new();
   endfunction
-  constraint c { v == e.sum(); }
+  constraint c {v == e.sum();}
 endclass
 
 module t;

@@ -259,7 +259,6 @@ public:
     void emitCvtPackStr(AstNode* nodep);
     void emitConstant(AstConst* nodep);
     void emitConstantString(const AstConst* nodep);
-    void emitSetVarConstant(const string& assignString, AstConst* constp);
     void emitVarReset(const string& prefix, AstVar* varp, bool constructing);
     string emitVarResetRecurse(const AstVar* varp, bool constructing,
                                const string& varNameProtected, AstNodeDType* dtypep, int depth,
@@ -1711,9 +1710,17 @@ public:
         //an error
         bool backpIsParent = (nodep->backp()->op1p() == nodep || nodep->backp()->op2p() == nodep);
         UASSERT(backpIsParent, "can not find return type for streamR");
-        if ((VN_IS(nodep->backp()->dtypep()->skipRefp(), QueueDType))) {
-            emitOpName(nodep, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
-                       nodep->rhsp(), nullptr);
+        if (const AstQueueDType* const qdtp
+            = VN_CAST(nodep->backp()->dtypep()->skipRefp(), QueueDType)) {
+            if (nodep->lhsp()->isWide()) {
+                emitOpName(nodep,
+                           "VL_STREAMR_%nq%lq%rq(%lw," + std::to_string(qdtp->subDTypep()->width())
+                               + ", %P, %li, %ri)",
+                           nodep->lhsp(), nodep->rhsp(), nullptr);
+            } else {
+                emitOpName(nodep, "VL_STREAMR_%nq%lq%rq(%lw, %P, %li, %ri)", nodep->lhsp(),
+                           nodep->rhsp(), nullptr);
+            }
         } else if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), QueueDType)) {
             if (!((nodep->backp()->op1p() && nodep->backp()->op1p()->isWide())
                   || (nodep->backp()->op2p() && nodep->backp()->op2p()->isWide()))) {
@@ -1886,57 +1893,15 @@ public:
     //
     void visit(AstConsAssoc* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        puts("()");
-        if (nodep->defaultp()) {
-            putbs(".setDefault(");
-            iterateAndNextConstNull(nodep->defaultp());
-            puts(")");
-        }
-    }
-    void visit(AstSetAssoc* nodep) override {
-        iterateAndNextConstNull(nodep->lhsp());
-        putnbs(nodep, ".set(");
-        iterateAndNextConstNull(nodep->keyp());
-        puts(", ");
-        putbs("");
-        iterateAndNextConstNull(nodep->valuep());
-        puts(")");
+        EmitCConstInit::visit(nodep);
     }
     void visit(AstConsWildcard* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        puts("()");
-        if (nodep->defaultp()) {
-            putbs(".setDefault(");
-            iterateAndNextConstNull(nodep->defaultp());
-            puts(")");
-        }
-    }
-    void visit(AstSetWildcard* nodep) override {
-        iterateAndNextConstNull(nodep->lhsp());
-        putnbs(nodep, ".set(");
-        iterateAndNextConstNull(nodep->keyp());
-        puts(", ");
-        putbs("");
-        iterateAndNextConstNull(nodep->valuep());
-        puts(")");
+        EmitCConstInit::visit(nodep);
     }
     void visit(AstConsDynArray* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        if (!nodep->lhsp()) {
-            putns(nodep, "{}");
-        } else {
-            puts("::cons");
-            puts(nodep->lhsIsValue() ? "V" : "C");
-            if (nodep->rhsp()) puts(nodep->rhsIsValue() ? "V" : "C");
-            puts("(");
-            iterateAndNextConstNull(nodep->lhsp());
-            if (nodep->rhsp()) {
-                puts(", ");
-                putbs("");
-            }
-            iterateAndNextConstNull(nodep->rhsp());
-            puts(")");
-        }
+        EmitCConstInit::visit(nodep);
     }
     void visit(AstConsPackUOrStruct* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
@@ -1956,21 +1921,7 @@ public:
     }
     void visit(AstConsQueue* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        if (!nodep->lhsp()) {
-            puts("{}");
-        } else {
-            puts("::cons");
-            puts(nodep->lhsIsValue() ? "V" : "C");
-            if (nodep->rhsp()) puts(nodep->rhsIsValue() ? "V" : "C");
-            puts("(");
-            iterateAndNextConstNull(nodep->lhsp());
-            if (nodep->rhsp()) {
-                puts(", ");
-                putbs("");
-            }
-            iterateAndNextConstNull(nodep->rhsp());
-            puts(")");
-        }
+        EmitCConstInit::visit(nodep);
     }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to

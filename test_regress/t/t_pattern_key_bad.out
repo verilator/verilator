@@ -1,0 +1,114 @@
+%Error: t/t_pattern_key_bad.v:13:33: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
+                                   : ... note: In instance 't'
+   13 |     automatic int dict[int] = '{k: 5};
+      |                                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_pattern_key_bad.v:14:36: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
+                                   : ... note: In instance 't'
+   14 |     automatic int dict2[int] = '{k + 1: 6};
+      |                                    ^
+%Error: t/t_pattern_key_bad.v:15:31: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
+                                   : ... note: In instance 't'
+   15 |     automatic int wild[*] = '{k: 7};
+      |                               ^
+%Error: t/t_pattern_key_bad.v:16:34: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
+                                   : ... note: In instance 't'
+   16 |     automatic int wild2[*] = '{k + 1: 8};
+      |                                  ^
+%Error: t/t_pattern_key_bad.v:17:32: Missing pattern key (need an expression then a ':')
+                                   : ... note: In instance 't'
+   17 |     automatic int wild3[*] = '{9};
+      |                                ^
+%Error: t/t_pattern_key_bad.v:24:15: Assignment pattern key cannot be used for dynamic array
+                                   : ... note: In instance 't'
+   24 |   int d[] = '{3: 10};
+      |               ^
+%Error: t/t_pattern_key_bad.v:25:16: Assignment pattern key cannot be used for queue
+                                   : ... note: In instance 't'
+   25 |   int q[$] = '{3: 11};
+      |                ^
+%Error: t/t_pattern_key_bad.v:26:16: Assignment pattern key cannot be used for dynamic array
+                                   : ... note: In instance 't'
+   26 |   int dt[] = '{int : 12};
+      |                ^~~
+%Error: t/t_pattern_key_bad.v:27:17: Assignment pattern key cannot be used for queue
+                                   : ... note: In instance 't'
+   27 |   int qt[$] = '{int : 13};
+      |                 ^~~
+%Error: t/t_pattern_key_bad.v:28:16: Assignment pattern default cannot be used for dynamic array
+   28 |   int dd[] = '{default: 23};
+      |                ^~~~~~~
+%Error: t/t_pattern_key_bad.v:29:17: Assignment pattern default cannot be used for queue
+   29 |   int qd[$] = '{default: 24};
+      |                 ^~~~~~~
+%Error: t/t_pattern_key_bad.v:34:22: Assignment pattern key cannot be used for queue
+                                   : ... note: In instance 't'
+   34 |     d = new[4] (T_Q'{0: 33});
+      |                      ^
+%Error: t/t_pattern_key_bad.v:35:19: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
+                                   : ... note: In instance 't'
+   35 |     d = new[4] ('{k: 28});
+      |                   ^
+%Error: t/t_pattern_key_bad.v:36:33: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   36 |     d = new[4] ('{1: 29, 2: 30, 1: 31});
+      |                                 ^
+        t/t_pattern_key_bad.v:36:19: ... Location of first use
+   36 |     d = new[4] ('{1: 29, 2: 30, 1: 31});
+      |                   ^
+%Error: t/t_pattern_key_bad.v:37:19: Assignment pattern key cannot contain X or Z
+                                   : ... note: In instance 't'
+   37 |     d = new[4] ('{2'bx1: 32, default: 0});
+      |                   ^~~~~
+%Error: t/t_pattern_key_bad.v:41:34: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   41 |   int dup[int] = '{1: 14, 2: 15, 1: 16};
+      |                                  ^
+        t/t_pattern_key_bad.v:41:20: ... Location of first use
+   41 |   int dup[int] = '{1: 14, 2: 15, 1: 16};
+      |                    ^
+%Error: t/t_pattern_key_bad.v:42:35: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   42 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
+      |                                   ^
+        t/t_pattern_key_bad.v:42:21: ... Location of first use
+   42 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
+      |                     ^
+%Error: t/t_pattern_key_bad.v:42:42: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   42 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
+      |                                          ^
+        t/t_pattern_key_bad.v:42:21: ... Location of first use
+   42 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
+      |                     ^
+%Error: t/t_pattern_key_bad.v:43:30: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   43 |   int wdup[*] = '{"CCC": 21, 23'h434343: 22};
+      |                              ^~~~~~~~~~
+        t/t_pattern_key_bad.v:43:19: ... Location of first use
+   43 |   int wdup[*] = '{"CCC": 21, 23'h434343: 22};
+      |                   ^~~~~
+%Error: t/t_pattern_key_bad.v:47:18: Assignment pattern key cannot contain X or Z
+                                   : ... note: In instance 't'
+   47 |   int xun[2] = '{2'bx1: 25, default: 0};
+      |                  ^~~~~
+%Error: t/t_pattern_key_bad.v:48:20: Assignment pattern key cannot contain X or Z
+                                   : ... note: In instance 't'
+   48 |   int xwild[*] = '{4'b10x1: 26};
+      |                    ^~~~~~~
+%Error: t/t_pattern_key_bad.v:49:31: Assignment pattern key cannot contain X or Z
+                                   : ... note: In instance 't'
+   49 |   int xlogic[logic [3:0]] = '{4'bx: 27};
+      |                               ^~~~
+%Error: t/t_pattern_key_bad.v:50:21: Assignment pattern key cannot contain X or Z
+                                   : ... note: In instance 't'
+   50 |   int xint[int] = '{4'bx: 28};
+      |                     ^~~~
+%Error: t/t_pattern_key_bad.v:51:31: Assignment pattern key cannot contain X or Z
+                                   : ... note: In instance 't'
+   51 |   int xtrunc[logic [1:0]] = '{4'bx001: 29};
+      |                               ^~~~~~~
+%Error: t/t_pattern_key_bad.v:58:26: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
+                                   : ... note: In instance 't'
+   58 |   int snonconst[s_t] = '{'{k, 1} : 30};
+      |                          ^~
+%Error: t/t_pattern_key_bad.v:59:19: Assignment pattern key cannot contain X or Z
+                                   : ... note: In instance 't'
+   59 |   int sx[s_t] = '{'{1, 4'bx} : 31};
+      |                   ^~
+%Error: Exiting due to

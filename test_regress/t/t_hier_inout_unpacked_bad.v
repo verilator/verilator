@@ -5,11 +5,13 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-  wire x [3];
+  wire x[3];
   sub dut (.x(x));
 endmodule
 
-module sub (inout wire x [3]);
+module sub (
+    inout wire x[3]
+);
   /* verilator hier_block */
   // Lowering this receive-only inout creates assignments that V3Slice rejects.
 endmodule

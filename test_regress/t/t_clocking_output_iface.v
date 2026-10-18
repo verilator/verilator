@@ -121,11 +121,7 @@ interface pattern_harness_if (
       .clk(clk),
       .enable(enable),
       .strobe(strobe),
-      .bus(packet_t'{
-          flag: flag,
-          id: id,
-          value: value
-      })
+      .bus(packet_t'{flag: flag, id: id, value: value})
   );
 endinterface
 
@@ -135,7 +131,7 @@ interface select_harness_if (
     input wire clk,
     input wire enable,
     input wire strobe,
-    input wire [3:0] words [0:1],
+    input wire [3:0] words[0:1],
     input wire idx,
     input wire [7:0] vec
 );
@@ -173,7 +169,7 @@ module dut_select (
     input wire clk,
     output logic enable,
     input wire strobe,
-    input wire [3:0] words [0:1],
+    input wire [3:0] words[0:1],
     input wire idx,
     input wire [7:0] vec
 );
@@ -185,7 +181,7 @@ module t;
   logic clk = 0;
   packet_t expected;
   packet_t got_direct;
-  logic [3:0] exp_words [0:1];
+  logic [3:0] exp_words[0:1];
 
   // DUT inputs are driven through the bound harnesses; the top-level
   // connections below are dummies that only satisfy pin connectivity.
@@ -195,24 +191,38 @@ module t;
   logic unused_flag;
   logic [5:0] unused_id;
   logic [7:0] unused_value;
-  logic [3:0] unused_words [0:1];
+  logic [3:0] unused_words[0:1];
   logic unused_idx;
   logic [7:0] unused_vec;
 
-  dut_direct direct_i (.clk(clk), .enable(unused_enable1), .strobe(unused_strobe1),
-                       .bus(unused_bus1));
-  dut_pattern pattern_i (.clk(clk), .enable(unused_enable2), .strobe(unused_strobe2),
-                          .flag(unused_flag), .id(unused_id), .value(unused_value));
-  dut_select select_i (.clk(clk), .enable(unused_enable3), .strobe(unused_strobe3),
-                        .words(unused_words), .idx(unused_idx), .vec(unused_vec));
+  dut_direct direct_i (
+      .clk(clk),
+      .enable(unused_enable1),
+      .strobe(unused_strobe1),
+      .bus(unused_bus1)
+  );
+  dut_pattern pattern_i (
+      .clk(clk),
+      .enable(unused_enable2),
+      .strobe(unused_strobe2),
+      .flag(unused_flag),
+      .id(unused_id),
+      .value(unused_value)
+  );
+  dut_select select_i (
+      .clk(clk),
+      .enable(unused_enable3),
+      .strobe(unused_strobe3),
+      .words(unused_words),
+      .idx(unused_idx),
+      .vec(unused_vec)
+  );
 
   always #5 clk = ~clk;
 
   initial begin
     for (int i = 0; i < 8; i++) begin
-      expected = '{flag: (i & 1) != 0,
-                   id: 6'((i * 7 + 3) & 63),
-                   value: 8'((i * 13 + 5) & 255)};
+      expected = '{flag: (i & 1) != 0, id: 6'((i * 7 + 3) & 63), value: 8'((i * 13 + 5) & 255)};
 
       @(posedge clk);
       #1;
@@ -249,7 +259,8 @@ module t;
       if (select_i.idx == 1'b0) begin
         exp_words[1] = expected[7:4];
         `checkd(select_i.words[1], exp_words[1]);
-      end else begin
+      end
+      else begin
         exp_words[1] = expected[3:0];
         `checkd(select_i.words[1], exp_words[1]);
       end

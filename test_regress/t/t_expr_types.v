@@ -56,14 +56,16 @@
 `endif
 // verilog_format: on
 
-typedef enum bit [2:0] {E2_A, E2_B} enum2_t;
-typedef enum logic [2:0] {E4_A, E4_B} enum4_t;
-typedef struct {
-  bit [6:0] member;
-} struct_t;
-typedef struct packed {
-  bit [6:0] member;
-} packed_struct_t;
+typedef enum bit [2:0] {
+  E2_A,
+  E2_B
+} enum2_t;
+typedef enum logic [2:0] {
+  E4_A,
+  E4_B
+} enum4_t;
+typedef struct {bit [6:0] member;} struct_t;
+typedef struct packed {bit [6:0] member;} packed_struct_t;
 
 class Base;
 endclass
@@ -329,10 +331,10 @@ module t;
     `checkt(logic15[0], l);
     `checkt(bit15[6:0], bit7);
     `checkt(logic15[6:0], logic7);
-    `checkt(bit15[0 +: 7], bit7);
-    `checkt(logic15[0 +: 7], logic7);
-    `checkt(bit15[14 -: 7], bit7);
-    `checkt(logic15[14 -: 7], logic7);
+    `checkt(bit15[0+:7], bit7);
+    `checkt(logic15[0+:7], logic7);
+    `checkt(bit15[14-:7], bit7);
+    `checkt(logic15[14-:7], logic7);
 
     `checks($typename($time), "time");
     `checks($typename($timeprecision), "integer");

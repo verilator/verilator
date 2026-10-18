@@ -17,7 +17,7 @@ test.compile(make_top_shell=False,
              make_main=False,
              v_flags2=['+define+T_COND'],
              make_flags=['CPPFLAGS_ADD=-DT_COND'],
-             verilator_flags2=["--exe", test.pli_filename, "--coverage-line"])
+             verilator_flags2=["--exe", test.pli_filename, "--coverage-line", "--coverage-branch"])
 
 test.execute()
 

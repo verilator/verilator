@@ -52,7 +52,8 @@ protected:
     // METHODS
     // Emit the initializer of a definition, for direct initialization: 'type name{...}'
     void emitDirectInit(AstNode* valuep) {
-        if (VN_IS(valuep, InitArray) || (VN_IS(valuep, Const) && valuep->isWide())) {
+        if (VN_IS(valuep, InitArray) || VN_IS(valuep, ConsAssoc) || VN_IS(valuep, ConsWildcard)
+            || (VN_IS(valuep, Const) && valuep->isWide())) {
             iterateInit(valuep);  // Already a braced initializer list
         } else {
             puts("{");
@@ -61,60 +62,114 @@ protected:
         }
     }
 
+    template <typename T_Item>
+    void emitConsKeyedItems(T_Item* itemsp) {
+        // Braced list of '{key, value}' pairs
+        puts("{");
+        for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
+            if (itemp != itemsp) puts(",");
+            puts("\n{");
+            // std::pair's constructor can't deduce a type from a braced list, so give wide keys
+            // their type, otherwise converting a non-constant value would be narrowing
+            AstNodeExpr* const keyp = itemp->keyp();
+            if (VN_IS(keyp, Const) && keyp->isWide()) {
+                puts(keyp->dtypep()->cType("", false, false));
+            }
+            iterateInit(keyp);
+            puts(", ");
+            iterateInit(itemp->valuep());
+            puts("}");
+        }
+        puts("\n}");
+    }
+
+    template <typename T_Cons>
+    void emitConsAssoc(T_Cons* nodep) {
+        // '{default, {items}}', '{{items}}', or '{}' if empty
+        if (!nodep->defaultp() && !nodep->itemsp()) {
+            puts("{}");
+            return;
+        }
+        puts("{\n");
+        if (AstNodeExpr* const defaultp = nodep->defaultp()) {
+            iterateInit(defaultp);
+            puts(",\n");
+        }
+        emitConsKeyedItems(nodep->itemsp());
+        puts("\n}");
+    }
+
+    template <typename T_Item>
+    void emitConsQueueItems(T_Item* itemsp) {
+        puts("{");
+        for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
+            if (itemp != itemsp) puts(",");
+            puts("\n");
+            AstNodeExpr* const valuep = itemp->valuep();
+            // The variadic constructor can't deduce a type from a braced list, so give unpacked
+            // array values their type
+            if (VN_IS(valuep, InitArray)) puts(valuep->dtypep()->cType("", false, false));
+            iterateInit(valuep);
+        }
+        puts("\n}");
+    }
+
     // VISITORS
     void visit(AstInitArray* nodep) override {
         VL_RESTORER(m_unpackedWord);
-        if (VN_IS(nodep->dtypep()->skipRefp(), AssocArrayDType)) {
-            // Braced list for the constructors of VlAssocArray: '{default, {items...}}' with a
-            // default value, or '{{items...}}' without.
-            AstNode* const defaultp = nodep->defaultp();
-            const AstInitArray::KeyItemMap& mapr = nodep->map();
-            // '{{}}' would be ambiguous, but the constant pool always has a default
-            UASSERT_OBJ(defaultp || !mapr.empty(), nodep,
-                        "Empty associative array initializer without default");
-            puts("{\n");
-            if (defaultp) {
-                puts("/* default: */ ");
-                iterateInit(defaultp);
-                puts(",\n");
-            }
-            puts("/* items: */ {");
-            bool first = true;
-            for (const auto& itr : mapr) {
-                if (!first) puts(",");
-                first = false;
-                puts("\n{");
-                ofp()->printf("0x%" PRIx64 "ULL", itr.first);
-                puts(", ");
-                iterateInit(nodep->getIndexValuep(itr.first));
-                puts("}");
-            }
-            puts("\n}\n}");
-        } else if (const AstUnpackArrayDType* const dtypep
-                   = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
-            const uint64_t size = dtypep->elementsConst();
-            const uint32_t tabMod = tabModulus(dtypep->subDTypep());
-            // Note the double {{ initializer. The first { starts the initializer of the
-            // VlUnpacked, and the second starts the initializer of m_storage within the
-            // VlUnpacked.
-            puts("{");
-            ofp()->putsNoTracking("{");
-            puts("\n");
-            for (uint64_t n = 0; n < size; ++n) {
-                m_unpackedWord = n;
-                if (n) puts((n % tabMod) ? ", " : ",\n");
-                AstNode* const itemp = nodep->getIndexDefaultedValuep(n);
-                UASSERT_OBJ(itemp, nodep, "Missing array init element");
-                iterateInit(itemp);
-            }
-            puts("\n");
-            puts("}");
-            ofp()->putsNoTracking("}");
-        } else {
-            nodep->v3fatalSrc("Array initializer has non-array dtype");
+        const AstUnpackArrayDType* const dtypep
+            = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+        const uint64_t size = dtypep->elementsConst();
+        const uint32_t tabMod = tabModulus(dtypep->subDTypep());
+        // Note the double {{ initializer. The first { starts the initializer of the
+        // VlUnpacked, and the second starts the initializer of m_storage within the
+        // VlUnpacked.
+        puts("{");
+        ofp()->putsNoTracking("{");
+        puts("\n");
+        for (uint64_t n = 0; n < size; ++n) {
+            m_unpackedWord = n;
+            if (n) puts((n % tabMod) ? ", " : ",\n");
+            AstNode* const itemp = nodep->getIndexDefaultedValuep(n);
+            UASSERT_OBJ(itemp, nodep, "Missing array init element");
+            iterateInit(itemp);
         }
+        puts("\n");
+        puts("}");
+        ofp()->putsNoTracking("}");
     }
 
+    void visit(AstConsAssoc* nodep) override { emitConsAssoc(nodep); }
+    void visit(AstConsWildcard* nodep) override { emitConsAssoc(nodep); }
+    void visit(AstConsDynArray* nodep) override {
+        if (!nodep->sizep()) {
+            emitConsQueueItems(nodep->itemsp());
+            return;
+        }
+        puts("{\n");
+        iterateInit(nodep->sizep());
+        puts(",\n");
+        if (nodep->defaultp()) {
+            iterateInit(nodep->defaultp());
+            puts(",\n");
+        }
+        emitConsKeyedItems(nodep->itemsp());
+        puts("\n}");
+    }
+    void visit(AstConsQueue* nodep) override { emitConsQueueItems(nodep->itemsp()); }
+
+    void visit(AstConsAssocItem* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("Handled by AstConsAssoc");
+    }  // LCOV_EXCL_STOP
+    void visit(AstConsWildcardItem* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("Handled by AstConsWildcard");
+    }  // LCOV_EXCL_STOP
+    void visit(AstConsDynArrayItem* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("Handled by AstConsDynArray");
+    }  // LCOV_EXCL_STOP
+    void visit(AstConsQueueItem* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("Handled by AstConsQueue");
+    }  // LCOV_EXCL_STOP
     void visit(AstInitItem* nodep) override {  // LCOV_EXCL_START
         nodep->v3fatalSrc("Handled by AstInitArray");
     }  // LCOV_EXCL_STOP

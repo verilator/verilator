@@ -1819,7 +1819,7 @@ class ConstVisitor final : public VNVisitor {
             // return node1p->sameGateTree(node2p);
             return node1p->isSame(node2p);
         }
-        // Pattern created by coverage-line; avoid compiler tautological-compare warning
+        // Pattern created by coverage-line/branch; avoid compiler tautological-compare warning
         if (const AstAnd* const and1p = VN_CAST(node1p, And)) {
             if (const AstAnd* const and2p = VN_CAST(node2p, And)) {
                 if (VN_IS(and1p->lhsp(), Const) && VN_IS(and1p->rhsp(), NodeVarRef)

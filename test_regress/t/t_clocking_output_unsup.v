@@ -27,14 +27,21 @@ module dut (
     input wire [7:0] a,
     input wire [7:0] b
 );
-  sender_if sender (.clk(clk), .bus(a + b));
+  sender_if sender (
+      .clk(clk),
+      .bus(a + b)
+  );
 endmodule
 
 module t;
   logic clk = 0;
   logic [7:0] a = 8'h11;
   logic [7:0] b = 8'h22;
-  dut d (.clk(clk), .a(a), .b(b));
+  dut d (
+      .clk(clk),
+      .a(a),
+      .b(b)
+  );
 
   always #5 clk = ~clk;
 endmodule
