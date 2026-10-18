@@ -161,7 +161,7 @@ Verilator 5.053 devel
 * Fix FSM coverage hierarchy being emitted as an absolute path (#8421). [Geza Lore, Testorrent USA, Inc.]
 * Fix MSYS header include search to be after toolchain headers (#8422). [Kaleb Barrett]
 * Fix losing coverage declarations if first in a module body (#8425). [Geza Lore, Testorrent USA, Inc.]
-* Fix false thread race on lastContextp (#8428). [Michael Bedford Taylor]
+* Fix false thread race on lastContextp (#8428) (#8818). [Michael Bedford Taylor]
 * Fix force read update sensitivity performance (#8431) (#8433). [Jonathan Drolet]
 * Fix streaming dynamic arrays with different element types failing to compile (#8434) (#8435). [Kristof Marien]
 * Fix internal error when task without C function is left in the tree (#8437). [Artur Bieniek, Antmicro Ltd.]

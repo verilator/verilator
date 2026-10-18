@@ -1116,26 +1116,18 @@ public:
     /// Enable debug of internal verilated code
     static void debug(int level) VL_MT_SAFE;
 
-    /// Set the last VerilatedContext accessed
-    /// Generally threadContextp(value) should be called instead
-    static void lastContextp(VerilatedContext* contextp) VL_MT_SAFE { s_lastContextp = contextp; }
-    /// Return the last VerilatedContext accessed
-    /// Generally threadContextp() should be called instead
-    static VerilatedContext* lastContextp() VL_MT_SAFE {
-        if (!s_lastContextp) lastContextp(defaultContextp());
-        return s_lastContextp;
-    }
     /// Set the VerilatedContext used by the current thread
-
     /// If using multiple contexts, and threads are created by the user's
     /// wrapper (not Verilator itself) then this must be called to set the
     /// context that applies to each thread
     static void threadContextp(VerilatedContext* contextp) VL_MT_SAFE {
         t_s.t_contextp = contextp;
-        lastContextp(contextp);
+        lastContextp(contextp);  // Safe as only read by DPI's single thread
     }
     /// Return the VerilatedContext for the current thread
-    static VerilatedContext* threadContextp() VL_MT_SAFE {
+    static VerilatedContext* threadContextp() VL_MT_SAFE_PRETEND {
+        // Generally VL_MT_SAFE if called after a threadContextp(setter).
+        // If called from DPI may be unsafe, as uses lastContextp()
         if (VL_UNLIKELY(!t_s.t_contextp)) t_s.t_contextp = lastContextp();
         return t_s.t_contextp;
     }
@@ -1317,7 +1309,25 @@ public:
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 
 private:
+    friend class VerilatedContext;
+
     static void endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
+
+    // Set the last VerilatedContext accessed
+    VL_ATTR_NO_SANITIZE_THREAD static void
+    lastContextp(VerilatedContext* contextp) VL_MT_SAFE_PRETEND {
+        // Record last access, only for DPI and initial non-threaded contexts
+        // Marked VL_MT_SAFE_PRETEND due to writes always being safe, reading is the problem
+        s_lastContextp = contextp;
+    }
+    // Return the last VerilatedContext accessed
+    // Only for when no threaded context due to DPI and initial non-threaded contexts
+    // Generally threadContextp() should be called instead
+    static VerilatedContext* lastContextp() VL_MT_SAFE_PRETEND {
+        // Marked VL_MT_SAFE_PRETEND due to call tree, and use only when non-threaded
+        if (VL_UNLIKELY(!s_lastContextp)) lastContextp(defaultContextp());
+        return s_lastContextp;
+    }
 };
 
 void VerilatedContext::debug(int val) VL_MT_SAFE { Verilated::debug(val); }
