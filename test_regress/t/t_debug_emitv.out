@@ -1409,11 +1409,11 @@ package Vt_debug_emitv_std;
                     end
                 end
                 m_queue.push_back(
-                    ???? // CONSPACKUORSTRUCT
+                    ???? // CONSSTRUCT
 
-                    ???? // CONSPACKMEMBER
+                    ???? // CONSSTRUCTITEM
                     self()
-                    ???? // CONSPACKMEMBER
+                    ???? // CONSSTRUCTITEM
                     keyCount);
                 while ((m_queue.at('sh0).proc != self())) begin
                     begin

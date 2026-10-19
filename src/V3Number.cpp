@@ -1187,16 +1187,6 @@ string V3Number::toString() const {
     return str;
 }
 
-V3Hash V3Number::toHash() const {
-    V3Hash hash{width()};
-    if (isString()) {
-        hash += V3Hash{m_data.str()};
-    } else {
-        for (int i = 0; i < words(); ++i) hash += m_data.num()[i].m_value;
-    }
-    return hash;
-}
-
 uint32_t V3Number::edataWord(int eword) const {
     UASSERT(!isFourState(), "edataWord with 4-state " << *this);
     return m_data.num()[eword].m_value;
@@ -1295,6 +1285,8 @@ bool V3Number::isAnyZ() const VL_MT_SAFE {
 }
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering
+    if (isString()) return toString() < rhs.toString();
+    if (isDouble()) return toDouble() < rhs.toDouble();
     for (int bit = 0; bit < std::max(width(), rhs.width()); ++bit) {
         if (bitIs1(bit) && rhs.bitIs0(bit)) return true;
         if (rhs.bitIs1(bit) && bitIs0(bit)) return false;
@@ -1937,7 +1929,17 @@ last:
     return setSingleBits(outc);
 }
 
+V3Hash V3Number::toHash() const {
+    // Shouldmatch isCaseEq
+    if (isString()) return V3Hash{toString()};
+    if (isDouble()) return V3Hash{toDouble()};
+    V3Hash hash{width()};
+    for (int i = 0; i < words(); ++i) hash += m_data.num()[i].m_value;
+    return hash;
+}
+
 bool V3Number::isCaseEq(const V3Number& rhs) const {
+    // Should match toHash
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     if (isString()) return toString() == rhs.toString();
     if (isDouble()) return toDouble() == rhs.toDouble();
@@ -2800,6 +2802,10 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
     out.reserve(lhs.toString().length() * rhsval);
     for (unsigned times = 0; times < rhsval; ++times) out += lhs.toString();
     return setString(out);
+}
+V3Number& V3Number::opCvtPackString(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    return setString(lhs.toString());
 }
 V3Number& V3Number::opToLowerN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);

@@ -622,6 +622,43 @@ private:
     Deque m_deque;  // State of the assoc array
     T_Value m_defaultValue{};  // Default value
 
+    // METHODS
+    // Helpers for the variadic constructor
+    void append(const T_Value& value) { push_back(value); }
+    template <size_t N_RhsMaxSize>
+    void append(const VlQueue<T_Value, N_RhsMaxSize>& rhs) {
+        for (const T_Value& value : rhs.m_deque) push_back(value);
+    }
+    template <std::size_t N_Depth>
+    void append(const VlUnpacked<T_Value, N_Depth>& rhs) {
+        for (std::size_t i = 0; i < N_Depth; ++i) push_back(rhs[i]);
+    }
+    template <typename T_Subclass, size_t N_RhsMaxSize,
+              typename = typename std::enable_if<
+                  std::is_convertible<VlClassRef<T_Subclass>, T_Value>::value>::type>
+    void append(const VlQueue<VlClassRef<T_Subclass>, N_RhsMaxSize>& rhs) {
+        for (const VlClassRef<T_Subclass>& value : rhs.m_deque) push_back(value);
+    }
+    template <typename T_Subclass, std::size_t N_Depth,
+              typename = typename std::enable_if<
+                  std::is_convertible<VlClassRef<T_Subclass>, T_Value>::value>::type>
+    void append(const VlUnpacked<VlClassRef<T_Subclass>, N_Depth>& rhs) {
+        for (std::size_t i = 0; i < N_Depth; ++i) push_back(rhs[i]);
+    }
+    // An element given as another kind of array, e.g. a fixed-size array in a queue of queues
+    template <typename T_Arg,
+              typename
+              = typename std::enable_if<!std::is_convertible<T_Arg, T_Value>::value>::type>
+    void append(const T_Arg& value) {
+        push_back(T_Value{value});
+    }
+    void appendAll() {}
+    template <typename T_Arg, typename... T_Args>
+    void appendAll(const T_Arg& arg, const T_Args&... args) {
+        append(arg);
+        appendAll(args...);
+    }
+
 public:
     // CONSTRUCTORS
     // cppcheck-suppress uninitMemberVar // m_defaultValue isn't defaulted, caller must
@@ -637,6 +674,23 @@ public:
     inline VlQueue(const VlQueue<VlClassRef<T_Subclass>>&);
     template <typename T_Subclass>
     inline VlQueue(VlQueue<VlClassRef<T_Subclass>>&&);
+
+    // Verilog: '{a, b} or {a, q}
+    template <typename... T_Args>
+    explicit VlQueue(const T_Args&... args) {
+        appendAll(args...);
+    }
+    // Verilog: new[size]('{index: value, default: value})
+    explicit VlQueue(size_t size, const T_Value& defaultValue,
+                     std::initializer_list<std::pair<QData, T_Value>> items) {
+        m_deque.resize(size, defaultValue);
+        for (const auto& item : items) {
+            if (item.first < size) m_deque[item.first] = item.second;
+        }
+    }
+    // Verilog: new[size]('{index: value})
+    explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items)
+        : VlQueue{size, T_Value{}, items} {}
 
     bool operator==(const VlQueue& rhs) const { return m_deque == rhs.m_deque; }
     bool operator!=(const VlQueue& rhs) const { return m_deque != rhs.m_deque; }
@@ -654,34 +708,6 @@ public:
         m_deque = rhs.privateDeque();
         if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) m_deque.resize(N_MaxSize - 1);
         return *this;
-    }
-
-    // Construct new object from _V_alue and/or _C_ontainer child objects
-    static VlQueue consV(const T_Value& lhs) {
-        VlQueue out;
-        out.push_back(lhs);
-        return out;
-    }
-    static VlQueue consVV(const T_Value& lhs, const T_Value& rhs) {
-        VlQueue out;
-        out.push_back(rhs);
-        out.push_back(lhs);
-        return out;
-    }
-    static VlQueue consCV(const VlQueue& lhs, const T_Value& rhs) {
-        VlQueue out = lhs;
-        out.push_front(rhs);
-        return out;
-    }
-    static VlQueue consVC(const T_Value& lhs, const VlQueue& rhs) {
-        VlQueue out = rhs;
-        out.push_back(lhs);
-        return out;
-    }
-    static VlQueue consCC(const VlQueue& lhs, const VlQueue& rhs) {
-        VlQueue out = rhs;
-        for (const auto& i : lhs.m_deque) out.push_back(i);
-        return out;
     }
 
     // METHODS
@@ -926,7 +952,7 @@ public:
         // Can't use std::find_if as need index number
         IData index = 0;
         for (const auto& i : m_deque) {
-            if (with_func(index, i)) return VlQueue::consV(i);
+            if (with_func(index, i)) return VlQueue{i};
             ++index;
         }
         return VlQueue{};
@@ -935,7 +961,7 @@ public:
     VlQueue<IData> find_first_index(T_Func with_func) const {
         IData index = 0;
         for (const auto& i : m_deque) {
-            if (with_func(index, i)) return VlQueue<IData>::consV(index);
+            if (with_func(index, i)) return VlQueue<IData>{index};
             ++index;
         }
         return VlQueue<IData>{};
@@ -944,7 +970,7 @@ public:
     VlQueue find_last(T_Func with_func) const {
         IData index = m_deque.size() - 1;
         for (auto& item : vlstd::reverse_view(m_deque)) {
-            if (with_func(index, item)) return VlQueue::consV(item);
+            if (with_func(index, item)) return VlQueue{item};
             --index;
         }
         return VlQueue{};
@@ -953,7 +979,7 @@ public:
     VlQueue<IData> find_last_index(T_Func with_func) const {
         IData index = m_deque.size() - 1;
         for (auto& item : vlstd::reverse_view(m_deque)) {
-            if (with_func(index, item)) return VlQueue<IData>::consV(index);
+            if (with_func(index, item)) return VlQueue<IData>{index};
             --index;
         }
         return VlQueue<IData>{};
@@ -974,7 +1000,7 @@ public:
     VlQueue min() const {
         if (m_deque.empty()) return VlQueue{};
         const auto it = std::min_element(m_deque.cbegin(), m_deque.cend());
-        return VlQueue::consV(*it);
+        return VlQueue{*it};
     }
     template <typename T_Func>
     VlQueue min(T_Func with_func) const {
@@ -983,12 +1009,12 @@ public:
                                          [&with_func](const T_Value& a, const T_Value& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
-        return VlQueue::consV(*it);
+        return VlQueue{*it};
     }
     VlQueue max() const {
         if (m_deque.empty()) return VlQueue{};
         const auto it = std::max_element(m_deque.cbegin(), m_deque.cend());
-        return VlQueue::consV(*it);
+        return VlQueue{*it};
     }
     template <typename T_Func>
     VlQueue max(T_Func with_func) const {
@@ -997,7 +1023,7 @@ public:
                                          [&with_func](const T_Value& a, const T_Value& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
-        return VlQueue::consV(*it);
+        return VlQueue{*it};
     }
 
     T_Value r_sum() const {
@@ -1113,8 +1139,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    // m_defaultValue isn't defaulted. Caller's constructor must do it.
-    VlAssocArray() = default;
+    VlAssocArray()
+        : m_map{}
+        , m_defaultValue{} {}
     // Construct with the given entries
     explicit VlAssocArray(std::initializer_list<std::pair<const T_Key, T_Value>> init)
         : m_map{init}
@@ -1190,15 +1217,6 @@ public:
         const auto it = m_map.find(index);
         if (it == m_map.end()) return m_defaultValue;
         return it->second;
-    }
-    // Setting as a chained operation
-    VlAssocArray& set(const T_Key& index, const T_Value& value) {
-        atWrite(index) = value;
-        return *this;
-    }
-    VlAssocArray& setDefault(const T_Value& value) {
-        atDefault() = value;
-        return *this;
     }
 
     // For save/restore
@@ -1282,7 +1300,7 @@ public:
                   return with_func(i.first, i.second);
               });
         if (it == m_map.end()) return VlQueue<T_Value>{};
-        return VlQueue<T_Value>::consV(it->second);
+        return VlQueue<T_Value>{it->second};
     }
     template <typename T_Func>
     VlQueue<T_Key> find_first_index(T_Func with_func) const {
@@ -1291,7 +1309,7 @@ public:
                   return with_func(i.first, i.second);
               });
         if (it == m_map.end()) return VlQueue<T_Key>{};
-        return VlQueue<T_Key>::consV(it->first);
+        return VlQueue<T_Key>{it->first};
     }
     template <typename T_Func>
     VlQueue<T_Value> find_last(T_Func with_func) const {
@@ -1299,7 +1317,7 @@ public:
             m_map.crbegin(), m_map.crend(),
             [=](const std::pair<T_Key, T_Value>& i) { return with_func(i.first, i.second); });
         if (it == m_map.rend()) return VlQueue<T_Value>{};
-        return VlQueue<T_Value>::consV(it->second);
+        return VlQueue<T_Value>{it->second};
     }
     template <typename T_Func>
     VlQueue<T_Key> find_last_index(T_Func with_func) const {
@@ -1307,7 +1325,7 @@ public:
             m_map.crbegin(), m_map.crend(),
             [=](const std::pair<T_Key, T_Value>& i) { return with_func(i.first, i.second); });
         if (it == m_map.rend()) return VlQueue<T_Key>{};
-        return VlQueue<T_Key>::consV(it->first);
+        return VlQueue<T_Key>{it->first};
     }
     // Map method (IEEE 1800-2023 7.12.5)
     template <typename T_Func>
@@ -1325,7 +1343,7 @@ public:
             [](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
                 return a.second < b.second;
             });
-        return VlQueue<T_Value>::consV(it->second);
+        return VlQueue<T_Value>{it->second};
     }
     template <typename T_Func>
     VlQueue<T_Value> min(T_Func with_func) const {
@@ -1335,7 +1353,7 @@ public:
             [&with_func](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
                 return with_func(a.first, a.second) < with_func(b.first, b.second);
             });
-        return VlQueue<T_Value>::consV(it->second);
+        return VlQueue<T_Value>{it->second};
     }
     VlQueue<T_Value> max() const {
         if (m_map.empty()) return VlQueue<T_Value>();
@@ -1344,7 +1362,7 @@ public:
             [](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
                 return a.second < b.second;
             });
-        return VlQueue<T_Value>::consV(it->second);
+        return VlQueue<T_Value>{it->second};
     }
     template <typename T_Func>
     VlQueue<T_Value> max(T_Func with_func) const {
@@ -1354,7 +1372,7 @@ public:
             [&with_func](const std::pair<T_Key, T_Value>& a, const std::pair<T_Key, T_Value>& b) {
                 return with_func(a.first, a.second) < with_func(b.first, b.second);
             });
-        return VlQueue<T_Value>::consV(it->second);
+        return VlQueue<T_Value>{it->second};
     }
 
     T_Value r_sum() const {
@@ -1694,7 +1712,7 @@ public:
         // Can't use std::find_if as need index number
         IData index = 0;
         for (const auto& i : m_storage) {
-            if (with_func(index, i)) return VlQueue<T_Value>::consV(i);
+            if (with_func(index, i)) return VlQueue<T_Value>{i};
             ++index;
         }
         return VlQueue<T_Value>{};
@@ -1703,7 +1721,7 @@ public:
     VlQueue<T_Key> find_first_index(T_Func with_func) const {
         IData index = 0;
         for (const auto& i : m_storage) {
-            if (with_func(index, i)) return VlQueue<IData>::consV(index);
+            if (with_func(index, i)) return VlQueue<IData>{index};
             ++index;
         }
         return VlQueue<T_Key>{};
@@ -1711,14 +1729,14 @@ public:
     template <typename T_Func>
     VlQueue<T_Value> find_last(T_Func with_func) const {
         for (int i = N_Depth - 1; i >= 0; i--) {
-            if (with_func(i, m_storage[i])) return VlQueue<T_Value>::consV(m_storage[i]);
+            if (with_func(i, m_storage[i])) return VlQueue<T_Value>{m_storage[i]};
         }
         return VlQueue<T_Value>{};
     }
     template <typename T_Func>
     VlQueue<T_Key> find_last_index(T_Func with_func) const {
         for (int i = N_Depth - 1; i >= 0; i--) {
-            if (with_func(i, m_storage[i])) return VlQueue<IData>::consV(i);
+            if (with_func(i, m_storage[i])) return VlQueue<IData>{i};
         }
         return VlQueue<T_Key>{};
     }
@@ -1733,7 +1751,7 @@ public:
     // Reduction operators
     VlQueue<T_Value> min() const {
         const auto it = std::min_element(std::begin(m_storage), std::end(m_storage));
-        return VlQueue<T_Value>::consV(*it);
+        return VlQueue<T_Value>{*it};
     }
     template <typename T_Func>
     VlQueue<T_Value> min(T_Func with_func) const {
@@ -1741,11 +1759,11 @@ public:
                                          [&with_func](const IData& a, const IData& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
-        return VlQueue<T_Value>::consV(*it);
+        return VlQueue<T_Value>{*it};
     }
     VlQueue<T_Value> max() const {
         const auto it = std::max_element(std::begin(m_storage), std::end(m_storage));
-        return VlQueue<T_Value>::consV(*it);
+        return VlQueue<T_Value>{*it};
     }
     template <typename T_Func>
     VlQueue<T_Value> max(T_Func with_func) const {
@@ -1753,7 +1771,7 @@ public:
                                          [&with_func](const IData& a, const IData& b) {
                                              return with_func(0, a) < with_func(0, b);
                                          });
-        return VlQueue<T_Value>::consV(*it);
+        return VlQueue<T_Value>{*it};
     }
 
     T_Value r_sum() const {

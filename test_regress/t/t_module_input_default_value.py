@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 # Coverage for Issue #5920
-test.compile(verilator_flags2=['--coverage-line'])
+test.compile(verilator_flags2=['--coverage-line', '--coverage-branch'])
 
 test.execute()
 

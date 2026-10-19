@@ -1338,6 +1338,10 @@ method is generated that appends new nodes (or lists of nodes) to the child
 list, and a ``prepend<Identifier>`` method that prepends them to the front
 of the child list.
 
+The ``<type>`` can be prefixed with ``private`` to generate no accessors,
+for a child that only the node's own methods may change, e.g. to keep it
+consistent with other members of the node.
+
 
 ``alias op<N>`` operand alias directives
 ++++++++++++++++++++++++++++++++++++++++

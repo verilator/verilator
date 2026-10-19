@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2008 Lane Brooks
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkb(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='b%0b exp='b%0b (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -70,6 +75,12 @@ module t (
       .Z11(Z11),
       // Inputs
       .state(state[2:0])
+  );
+
+  Test8 test8 (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .state(state[31:0])
   );
 
   always @(posedge clk) begin
@@ -241,6 +252,35 @@ module Test7 (
       3'b0?1: Z11 = 1'b1;
       default: Z11 = 1'bx;
     endcase
+  end
+endmodule
+
+module Test8 (
+    input clk,
+    input [31:0] state
+);
+  wire [2:0] bothdir;
+  pulldown (bothdir[0]);
+  pullup (bothdir[1]);
+  // No pull(bothdir[2]);
+  bit drive;
+  assign bothdir[0] = drive ? 1'b1 : 1'bz;
+  assign bothdir[1] = drive ? 1'b1 : 1'bz;
+  assign bothdir[2] = drive ? 1'b1 : 1'bz;
+
+  always_ff @(posedge clk) begin
+    if (state == 1) begin
+      drive = 0;
+    end
+    else if (state == 2) begin
+      `checkb(bothdir[1:0], 2'b10);  // Bit 2 floats (z), which reads as 0
+    end
+    else if (state == 3) begin
+      drive = 1;
+    end
+    else if (state == 4) begin
+      `checkb(bothdir, 3'b111);
+    end
   end
 endmodule
 

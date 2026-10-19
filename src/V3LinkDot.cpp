@@ -968,7 +968,7 @@ public:
     static string removeLastInlineScope(const string& name) {
         string out = name;
         const string dot = "__DOT__";
-        const size_t dotPos = out.rfind(dot, out.size() - dot.length() - 2);
+        const size_t dotPos = out.rfind(dot, out.size() - dot.length() - 1);
         if (dotPos == string::npos) {
             return "";
         } else {
@@ -1200,14 +1200,17 @@ class LinkDotFindVisitor final : public VNVisitor {
         // means nothing was given
         AstNodeModule* const modulesp = nodep->modulesp();
         UASSERT_OBJ(modulesp, nodep, "$unit should always be in the netlist");
-        const bool onlyBuiltins = [&]() {
-            for (AstNodeModule* modp = modulesp; modp; modp = VN_AS(modp->nextp(), NodeModule)) {
-                if (!modp->isDollarUnit() && !modp->isConstPool()) return false;
+        if (m_statep->forPrimary()) {
+            const bool onlyBuiltins = [&]() {
+                for (AstNodeModule* modp = modulesp; modp;
+                     modp = VN_AS(modp->nextp(), NodeModule)) {
+                    if (!modp->isDollarUnit() && !modp->isConstPool()) return false;
+                }
+                return true;
+            }();
+            if (onlyBuiltins && !v3Global.rootp()->dollarUnitPkgp()->stmtsp()) {
+                nodep->v3error("No top level module found");
             }
-            return true;
-        }();
-        if (onlyBuiltins && !v3Global.rootp()->dollarUnitPkgp()->stmtsp()) {
-            nodep->v3error("No top level module found");
         }
         for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
@@ -3630,6 +3633,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return classSymp;
     }
+    // Is the current scope within the given class, including within its nested classes
+    bool insideClass(const AstClass* classp) const {
+        for (const VSymEnt* symp = m_curSymp; symp; symp = symp->parentp()) {
+            if (symp->nodep() == classp) return true;
+        }
+        return false;
+    }
     // 'randomize() with' target class not yet specialized; defer to post-V3Param pass
     bool randTargetUnresolved() const {
         return m_statep->forPrimary() && m_currentWithp && m_randMethodCallp && !m_randSymp;
@@ -4135,6 +4145,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         // Early return() above when deleted
     }
+
+    static bool isDotThisReference(const AstDot* nodep) {
+        return VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this";
+    }
+
     void visit(AstDot* nodep) override {
         // Legal under a DOT: AstDot, AstParseRef, AstPackageRef, AstNodeSel, AstPackArrayDType
         //    also a DOT can be part of an expression, but only above plus
@@ -4159,7 +4174,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_FIRST;
 
-            if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
+            if (isDotThisReference(nodep)) {
                 VSymEnt* classSymp = getThisClassSymp();
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
@@ -4530,8 +4545,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
             }
-            if (!foundp && m_ds.m_dotp && VN_IS(m_ds.m_dotp->lhsp(), ParseRef)
-                && m_ds.m_dotp->lhsp()->name() == "this") {
+            if (!foundp && m_ds.m_dotp && isDotThisReference(m_ds.m_dotp)) {
                 const AstClass* const classp = VN_CAST(m_ds.m_dotSymp->nodep(), Class);
                 if (classp && classp->isCovergroup() && classp->covergroupEnclosingClassp()) {
                     VSymEnt* const enclosingClassSymp
@@ -4659,6 +4673,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_ds = lastStates;
                 return;
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
+                // Preserve explicit 'this' references to members inherited from
+                // generic classes until after specialization.
+                if (m_statep->forPrimary() && m_ds.m_dotp && isDotThisReference(m_ds.m_dotp)
+                    && foundp->classOrPackagep() != m_modp
+                    && VN_IS(foundp->classOrPackagep(), Class)
+                    && foundp->classOrPackagep()->hasGParam()) {
+                    m_ds.m_unresolvedClass = true;
+                    return;
+                }
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (varp->isIfaceRef() && m_genericIfaceModule
@@ -5023,23 +5046,29 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Make sure any extends() are properly imported within referenced class
             if (refClassp && !m_statep->forPrimary()) classExtendImport(refClassp);
 
-            m_ds.init(m_curSymp);
-            UINFO(4, indent() << "(Backto) Link ClassOrPackageRef: " << nodep);
-            iterateChildren(nodep);
-
-            AstClass* const modClassp = VN_CAST(m_modp, Class);
             if (m_statep->forPrimary() && refClassp && !nodep->paramsp()
                 && nodep->classOrPackageSkipp()->hasGParam()
                 // Don't warn on typedefs, which are hard to know if there's a param somewhere
                 // buried
                 && VN_IS(nodep->classOrPackageNodep(), Class)
-                // References to class:: within class itself are OK per IEEE (UVM does this)
-                && modClassp != refClassp) {
-                nodep->v3error(
+                // References to class:: within class itself, including from its nested
+                // classes, are OK per IEEE (UVM does this)
+                && !insideClass(refClassp)) {
+                nodep->v3warn(
+                    NONSTD,
                     "Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)\n"
-                    << nodep->warnMore() << "... Suggest use '"
-                    << nodep->classOrPackageNodep()->prettyName() << "#()'");
+                        << nodep->warnMore() << "... Suggest use '"
+                        << nodep->classOrPackageNodep()->prettyName() << "#()'");
+                // As other simulators do, use the default specialization. Add the same
+                // placeholder pin V3LinkCells makes for '#()' so it is linked below.
+                AstPin* const pinp = new AstPin{nodep->fileline(), 1, "__paramNumber1", nullptr};
+                pinp->param(true);
+                nodep->addParamsp(pinp);
             }
+
+            m_ds.init(m_curSymp);
+            UINFO(4, indent() << "(Backto) Link ClassOrPackageRef: " << nodep);
+            iterateChildren(nodep);
         }
 
         if (nodep->name() == "local::") {
@@ -5315,8 +5344,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!classDtp)
                         nodep->v3error("'randomize() with' on a non-class-instance "
                                        << fromDtp->prettyNameQ());
-                    else
+                    else if (m_statep->forPrimary() && m_extendsParam.count(classDtp->classp())) {
+                        // Inherited members are unavailable until the base class is specialized.
+                        // Defer lookup rather than incorrectly binding names in the caller.
+                        m_ds.m_unresolvedClass = true;
+                    } else {
                         m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                    }
                 }
             }
             iterateChildren(nodep);
@@ -5907,6 +5941,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
+        if (m_ds.m_unresolvedClass) return;
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_currentWithp);
         VL_RESTORER_COPY(m_restrictedNamesUsed);

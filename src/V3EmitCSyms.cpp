@@ -954,6 +954,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         iterateChildrenConst(nodep);
     }
     void visit(AstScopeName* nodep) override {
+        if (nodep->selfRelative()) return;  // Its absolute copy is under the scope
         const std::string name = nodep->scopeSymName();
         // UINFO(9, "scnameins sp " << nodep->name() << " sp " << nodep->scopePrettySymName()
         // << " ss" << name);

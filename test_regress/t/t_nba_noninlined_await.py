@@ -15,6 +15,6 @@ test.compile(verilator_flags2=['--binary', '--stats'])
 
 test.execute()
 
-test.file_grep(test.stats, r'Non-inlined co_awaits with SenTree\s+(\d+)', 2)
+test.file_grep(test.stats, r'Non-inlined co_awaits with SenTree\s+(\d+)', 3)
 
 test.passes()

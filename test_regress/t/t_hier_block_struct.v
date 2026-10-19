@@ -177,7 +177,9 @@ module inout_types_drive (
   assign struct_array_q = struct_array_pad;
 endmodule
 
-module inout_types_check (input clk);
+module inout_types_check (
+    input clk
+);
   logic [6:0] en = '0;
   logic [6:0] data = 7'h53;
   wire [6:0] external_data = ~data;

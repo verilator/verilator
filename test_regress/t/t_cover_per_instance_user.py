@@ -15,6 +15,7 @@ test.compile(verilator_flags2=[
     '--binary',
     '--assert',
     '--coverage-line',
+    '--coverage-branch',
     '--coverage-toggle',
     '--coverage-user',
     '--coverage-per-instance',

@@ -451,6 +451,8 @@ module t (
   `signal(REPLACE_CONCAT_SAME, {rand_a, rand_a});
   `signal(REPLACE_CONCAT_REP_ON_LHS, {{2{rand_a}}, rand_a});
   `signal(REPLACE_CONCAT_REP_ON_RHS, {rand_a, {2{rand_a}}});
+  `signal(REPLACE_CONCAT_SAME_REPS, {{2{rand_a[1:0]}}, {3{rand_a[1:0]}}});
+  `signal(REPLACE_NESTED_CONCAT_SAME_REPS_ON_LHS, {{2{rand_b[5:4]}}, {{3{rand_b[5:4]}}, rand_a[3:0]}});
   `signal(REPLACE_AND_REP_COND_ELSE_ZERO, {4{rand_a[0]}} & (rand_a[1] ? rand_b[3:0] : 4'd0));
   `signal(REPLACE_EQ_BIT_0, 1'b0 == rand_a[0]);
   `signal(REMOVE_EQ_BIT_1, 1'b1 == rand_a[0]);

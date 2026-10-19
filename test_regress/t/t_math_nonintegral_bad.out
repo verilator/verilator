@@ -19,6 +19,12 @@
                                         : ... note: In instance 't'
    21 |     sink = x_arr / x;
       |                  ^
+%Error: t/t_math_nonintegral_bad.v:22:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                        : ... note: In instance 't'
+                                        : ... Left-hand data type: 'logic'
+                                        : ... Right-hand data type: 'logic$[0:2]'
+   22 |     sink = x_arr ** x;
+      |          ^
 %Error: t/t_math_nonintegral_bad.v:22:18: Operator POW expects a numeric LHS operand, but it has data type 'logic$[0:2]' (IEEE 1800-2023 11.3)
                                         : ... note: In instance 't'
    22 |     sink = x_arr ** x;
@@ -47,18 +53,42 @@
                                         : ... note: In instance 't'
    28 |     sink = x_arr ~^ x;
       |                  ^~
+%Error: t/t_math_nonintegral_bad.v:29:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                        : ... note: In instance 't'
+                                        : ... Left-hand data type: 'logic'
+                                        : ... Right-hand data type: 'logic$[0:2]'
+   29 |     sink = x_arr >> x;
+      |          ^
 %Error: t/t_math_nonintegral_bad.v:29:18: Operator SHIFTR expects a numeric LHS operand, but it has data type 'logic$[0:2]' (IEEE 1800-2023 11.3)
                                         : ... note: In instance 't'
    29 |     sink = x_arr >> x;
       |                  ^~
+%Error: t/t_math_nonintegral_bad.v:30:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                        : ... note: In instance 't'
+                                        : ... Left-hand data type: 'logic'
+                                        : ... Right-hand data type: 'logic$[0:2]'
+   30 |     sink = x_arr << x;
+      |          ^
 %Error: t/t_math_nonintegral_bad.v:30:18: Operator SHIFTL expects a numeric LHS operand, but it has data type 'logic$[0:2]' (IEEE 1800-2023 11.3)
                                         : ... note: In instance 't'
    30 |     sink = x_arr << x;
       |                  ^~
+%Error: t/t_math_nonintegral_bad.v:31:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                        : ... note: In instance 't'
+                                        : ... Left-hand data type: 'logic'
+                                        : ... Right-hand data type: 'logic$[0:2]'
+   31 |     sink = x_arr >>> x;
+      |          ^
 %Error: t/t_math_nonintegral_bad.v:31:18: Operator SHIFTR expects a numeric LHS operand, but it has data type 'logic$[0:2]' (IEEE 1800-2023 11.3)
                                         : ... note: In instance 't'
    31 |     sink = x_arr >>> x;
       |                  ^~~
+%Error: t/t_math_nonintegral_bad.v:32:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                        : ... note: In instance 't'
+                                        : ... Left-hand data type: 'logic'
+                                        : ... Right-hand data type: 'logic$[0:2]'
+   32 |     sink = x_arr <<< x;
+      |          ^
 %Error: t/t_math_nonintegral_bad.v:32:18: Operator SHIFTL expects a numeric LHS operand, but it has data type 'logic$[0:2]' (IEEE 1800-2023 11.3)
                                         : ... note: In instance 't'
    32 |     sink = x_arr <<< x;
@@ -203,10 +233,22 @@
                                         : ... note: In instance 't'
    62 |     sink = x <-> x_arr;
       |              ^~~
+%Error: t/t_math_nonintegral_bad.v:64:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                        : ... note: In instance 't'
+                                        : ... Left-hand data type: 'logic'
+                                        : ... Right-hand data type: 'logic$[0:2]'
+   64 |     sink = -x_arr;
+      |          ^
 %Error: t/t_math_nonintegral_bad.v:64:12: Operator NEGATE expects a numeric LHS operand, but it has data type 'logic$[0:2]' (IEEE 1800-2023 11.3)
                                         : ... note: In instance 't'
    64 |     sink = -x_arr;
       |            ^
+%Error: t/t_math_nonintegral_bad.v:65:10: Illegal assignment betwen unpacked aggregate and integral type (IEEE 1800-2023 7.6)
+                                        : ... note: In instance 't'
+                                        : ... Left-hand data type: 'logic'
+                                        : ... Right-hand data type: 'logic$[0:2]'
+   65 |     sink = ~x_arr;
+      |          ^
 %Error: t/t_math_nonintegral_bad.v:65:12: Operator NOT expects a numeric LHS operand, but it has data type 'logic$[0:2]' (IEEE 1800-2023 11.3)
                                         : ... note: In instance 't'
    65 |     sink = ~x_arr;
@@ -215,4 +257,24 @@
                                         : ... note: In instance 't'
    66 |     sink = !x_arr;
       |            ^
+%Error: t/t_math_nonintegral_bad.v:73:11: Operator LOGAND expects a numeric LHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                        : ... note: In instance 't'
+   73 |     b = s && x;
+      |           ^~
+%Error: t/t_math_nonintegral_bad.v:74:11: Operator LOGOR expects a numeric RHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                        : ... note: In instance 't'
+   74 |     b = x || s;
+      |           ^~
+%Error: t/t_math_nonintegral_bad.v:75:11: Operator LOGIF expects a numeric LHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                        : ... note: In instance 't'
+   75 |     b = s -> x;
+      |           ^~
+%Error: t/t_math_nonintegral_bad.v:76:11: Operator LOGEQ expects a numeric RHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                        : ... note: In instance 't'
+   76 |     b = x <-> s;
+      |           ^~~
+%Error: t/t_math_nonintegral_bad.v:77:9: Operator LOGNOT expects a numeric LHS operand, but it has data type 'string' (IEEE 1800-2023 11.3)
+                                       : ... note: In instance 't'
+   77 |     b = !s;
+      |         ^
 %Error: Exiting due to
