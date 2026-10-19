@@ -818,7 +818,7 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // If this is a non static method we need to check the scope of the VarRefs
-        if (!outvscp && cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample()
+        if (cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample()
             && !refp->taskp()->dpiImport() && cfuncp->scopep()->aboveScopep() && cfuncp
         ) {
             std::vector<AstNode*> unsetUser3p;
@@ -829,6 +829,7 @@ class TaskVisitor final : public VNVisitor {
             else if(AstVarRef* varRefp1 = VN_CAST(ccallp->op1p(), VarRef)){ // If the function is a virtual function. Get the final function not the parent.
                 if(AstVarRef* varRefp2 = VN_CAST(varRefp1->varp()->user3p(), VarRef)){
                     if(AstVarRef* varRefp3 = VN_CAST(varRefp2->varp()->user3p(), VarRef)){
+                        varRefp1->varp()->dtypeFrom(varRefp1->varp()->user3p());
                         AstClassRefDType* classDtypep = VN_CAST(varRefp2->varp()->dtypep()->skipRefp(), ClassRefDType);
                         AstNodeFTask* finalTaskp = m_statep->findClassFunc(classDtypep->classp(), refp->name()); // TODO wont find the func here on intf2
                         AstScope* scopep = varRefp3->varScopep()->scopep();
@@ -1921,14 +1922,13 @@ class TaskVisitor final : public VNVisitor {
     }
 
     void visit(AstAssign* nodep) override {
-        // If assigning class ref dtypes make sure types match
-        // Is important for dealing with classes with parents
+        // Keep track of ClassRefDTypes. 
+        // If a vitual class is given a child class and a task is called we keep need the child's ClassRefDTypes.
         if(VN_IS(nodep->lhsp()->dtypep()->skipRefp(), ClassRefDType)){
-            if(AstClassRefDType* classDtypep = VN_CAST(nodep->rhsp()->dtypep()->skipRefp(), ClassRefDType)){
+            if(VN_IS(nodep->rhsp()->dtypep()->skipRefp(), ClassRefDType)){
                 if(AstVarRef* varRef = VN_CAST(nodep->lhsp(), VarRef)){
                     AstNode* rhsp = nodep->rhsp();
                     varRef->varp()->user3p(rhsp);
-                    varRef->varp()->dtypeFrom(rhsp);
                 }
             }
         }
