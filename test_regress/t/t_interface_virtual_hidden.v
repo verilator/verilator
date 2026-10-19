@@ -98,29 +98,6 @@ module t;
   always_comb ri.y = vro.y + 8'(cyc);
   always @(posedge clk) ro.y <= ri.y;
 
-  // A possible write through a virtual interface does not make the read after it of the block
-  // itself: the block still depends on the member, and is not constant
-  bus wa (), wb ();
-  virtual bus vw = wa;
-  initial #1 vw = wb;
-  logic [7:0] data_w = 8'd123;
-  logic [7:0] out_w;
-  always @* begin
-    vw.y = data_w;
-    out_w = wa.y;
-  end
-  always @(posedge clk) wa.y <= 8'(cyc);
-  // Nor turns an explicit sensitivity list into a combinational one, sensitive to the member
-  bus xa (), xb ();
-  virtual bus vx = xa;
-  initial #1 vx = xb;
-  logic [7:0] data_x, out_x, exp_x;
-  always @(data_x) begin
-    vx.y = data_x;
-    out_x = xa.y;
-  end
-  always @(posedge clk) xa.y <= 8'(cyc);
-
   // Event controls through a virtual interface that is null until an initial process sets it
   ebus ec (.clk);
   virtual ebus vc;
@@ -288,7 +265,6 @@ module t;
       `checkd(bind_d.seen, 8'(cyc - 1));
       `checkd(seen_a, 8'(cyc - 1));
       `checkd(ri.y, ro.y + 8'(cyc));
-      `checkd(out_w, 8'(cyc - 1));
       `checkd(seen_la, 8'(cyc - 1));
       `checkd(seen_lb, 8'd7);
       `checkd(lb.y, 8'(cyc - 1));
@@ -310,12 +286,6 @@ module t;
       `checkd(seen_fo, 8'd3);
     end
     if (cyc >= 2) `checkd(seen_k, 8'(cyc - 2));
-    // Changed once, so the block runs once
-    if (cyc == 2) begin
-      data_x = 8'd5;
-      exp_x = xa.y;
-    end
-    if (cyc > 2) `checkd(out_x, exp_x);
     if (cyc == 10) begin
       `checkd(cnt_kb, 7);
       $write("*-* All Finished *-*\n");

@@ -349,14 +349,10 @@ them. The reads are taken as before the statements, and the writes as after
 them, but as writes that may not happen, or be partial. ``V3Order``,
 ``V3SchedAcyclic`` and the other analyses then take these accesses as any
 other, so for example clocked logic reading a member through a virtual
-interface is ordered before the NBA updates of each instance. As the
-accesses may not happen, the analyses that ignore a read of a variable
-written before it in the same logic take them after all other accesses,
-and combinational logic does not depend on a variable it may write through
-a virtual interface and also reads. ``V3Delayed`` moves the writes of an
-NBA through a virtual interface to its commit, but in a process that
-cannot suspend, where such NBAs are not yet ordered with the others to the
-member, it deletes them.
+interface is ordered before the NBA updates of each instance. ``V3Delayed``
+moves the writes of an NBA through a virtual interface to its commit, but
+in a process that cannot suspend, where such NBAs are not yet ordered with
+the others to the member, it deletes them.
 
 One of the most important optimizations for performance is to only evaluate
 combinational logic, if its inputs might have changed. For example, there

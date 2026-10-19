@@ -94,7 +94,6 @@ class OrderGraphBuilder final : public VNVisitor {
     OrderGraph* const m_graphp;  // The ordering graph built by this visitor
     OrderLogicVertex* m_logicVxp = nullptr;  // Current logic block being analyzed
     std::vector<AstVarScope*> m_accessedVscps;  // Variables accessed by the current logic block
-    std::vector<const AstHidden*> m_hiddenps;  // AstHiddens in the current logic block
 
     // Current AstScope being processed
     AstScope* m_scopep = nullptr;
@@ -131,26 +130,6 @@ class OrderGraphBuilder final : public VNVisitor {
         m_logicVxp = new OrderLogicVertex{m_graphp, m_scopep, m_domainp, m_hybridp, nodep};
         // Gather variable dependencies based on usage
         iterateChildren(nodep);
-        // Accesses through virtual interfaces may not happen, so take them last (as
-        // V3Sched::util::foreachVarRefHiddenLast), so no read is ignored as written before by
-        // one. In combinational logic, skip a write of a variable read here, as the loop it
-        // would make may not exist.
-        for (const AstHidden* const hiddenp : m_hiddenps) {
-            for (AstVarRef* refp = hiddenp->rdsp(); refp; refp = VN_AS(refp->nextp(), VarRef)) {
-                accountVarAccess(refp->varScopep(), refp->access(), refp);
-            }
-        }
-        for (const AstHidden* const hiddenp : m_hiddenps) {
-            for (AstVarRef* refp = hiddenp->wrsp(); refp; refp = VN_AS(refp->nextp(), VarRef)) {
-                AstVarScope* const vscp = refp->varScopep();
-                if (!m_inClocked && (vscp->user2() & VU_CON)) {
-                    recordRawAccess(vscp, refp->access(), refp);
-                } else {
-                    accountVarAccess(vscp, refp->access(), refp);
-                }
-            }
-        }
-        m_hiddenps.clear();
         if (m_parallel) {
             // Emit one access record for each variable this logic block accessed
             for (AstVarScope* const vscp : m_accessedVscps) {
@@ -363,11 +342,6 @@ class OrderGraphBuilder final : public VNVisitor {
                 m_graphp->addHardEdge(m_logicVxp, postVxp, WEIGHT_POST);
             }
         }
-    }
-    // Accesses through virtual interfaces, taken at the end of the logic block
-    void visit(AstHidden* nodep) override {
-        iterateAndNextNull(nodep->stmtsp());
-        m_hiddenps.push_back(nodep);
     }
     // A covergroup sample() is not inlined and may read design signals through cross-scope
     // references held by the covergroup. This attributes those references to the calling block.

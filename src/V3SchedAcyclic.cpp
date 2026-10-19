@@ -148,28 +148,26 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
 
             SchedAcyclicLogicVertex* const lvtxp
                 = new SchedAcyclicLogicVertex{graphp.get(), nodep, scopep};
-            const VNUser2InUse user2InUse;  // AstVarScope: written here
-            const VNUser3InUse user3InUse;  // AstVarScope: read here, before written
+            const VNUser2InUse user2InUse;
+            const VNUser3InUse user3InUse;
 
             V3Sched::util::VarScopeSet forceReadEdgeIgnores;
             V3Sched::util::collectForceReadEdgeIgnores(nodep, forceReadEdgeIgnores);
 
-            // As ordering does, take the accesses through virtual interfaces last
-            V3Sched::util::foreachVarRefHiddenLast(nodep, [&](AstVarRef* refp, bool hidden) {
+            nodep->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
                 SchedAcyclicVarVertex* const vvtxp = getVarVertex(vscp);
                 // We want to cut the narrowest signals
                 const int weight = vscp->width() / 8 + 1;
-                // If written, add logic -> var edge. As ordering does, not for a write through a
-                // virtual interface of a variable read here, which may not make a loop.
+                // If written, add logic -> var edge
                 if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
-                    && !(hidden && vscp->user3()) && !vscp->user2SetOnce())
+                    && !vscp->user2SetOnce())
                     addEdge(lvtxp, vvtxp, weight, true);
                 // If read, add var -> logic edge
                 // Note: Use same heuristic as ordering does to ignore written variables
                 // TODO: Use live variable analysis.
-                if (refp->access().isReadOrRW() && !vscp->user2()
-                    && !forceReadEdgeIgnores.count(vscp) && !vscp->user3SetOnce())
+                if (refp->access().isReadOrRW() && !vscp->user3SetOnce() && !vscp->user2()
+                    && !forceReadEdgeIgnores.count(vscp))
                     addEdge(vvtxp, lvtxp, weight, true);
             });
         }
