@@ -70,8 +70,9 @@ static bool isClockingDrivenPort(const AstVar* const varp) {
 // monitor), so connect them both ways. A single process in the Re-NBA region, with
 // the clocking drives (IEEE 1800-2023 14.16), copies whichever side changed since it
 // last ran: a continuous assignment from the connection may be re-evaluated after a
-// drive, and separate processes per direction may run in either order. The first
-// run takes the connection, as the initial values of the copies are arbitrary.
+// drive, and separate processes per direction may run in either order. An initial
+// block first takes the connection and records both sides, so the process never
+// depends on whether it also runs at time 0.
 static void addClockingConnection(AstCell* const cellp, const string& name,
                                   AstNodeVarRef* const portp, AstNodeExpr* const connp,
                                   AstNodeExpr* const outRhsp, AstNodeExpr* const drivenp) {
@@ -80,11 +81,8 @@ static void addClockingConnection(AstCell* const cellp, const string& name,
         = new AstVar{flp, VVarType::MODULETEMP, name + "__VlastPort", portp->dtypep()};
     AstVar* const lastConnVarp
         = new AstVar{flp, VVarType::MODULETEMP, name + "__VlastConn", connp->dtypep()};
-    AstVar* const didInitVarp
-        = new AstVar{flp, VVarType::MODULETEMP, name + "__VdidInit", VFlagBitPacked{}, 1};
     cellp->addNextHere(lastPortVarp);
     cellp->addNextHere(lastConnVarp);
-    cellp->addNextHere(didInitVarp);
     const auto newPortp = [&](VAccess access) {
         AstNodeVarRef* const refp = portp->cloneTree(false);
         refp->access(access);
@@ -92,6 +90,18 @@ static void addClockingConnection(AstCell* const cellp, const string& name,
     };
     const auto newRefp
         = [&](AstVar* varp, VAccess access) { return new AstVarRef{flp, varp, access}; };
+    // lastPort = port; lastConn = conn;
+    const auto newRecordp = [&]() {
+        AstNode* const stmtsp
+            = new AstAssign{flp, newRefp(lastPortVarp, VAccess::WRITE), newPortp(VAccess::READ)};
+        stmtsp->addNext(
+            new AstAssign{flp, newRefp(lastConnVarp, VAccess::WRITE), connp->cloneTree(false)});
+        return stmtsp;
+    };
+    AstNode* const initStmtsp
+        = new AstAssign{flp, newPortp(VAccess::WRITE), connp->cloneTree(false)};
+    initStmtsp->addNext(newRecordp());
+    cellp->addNextHere(new AstInitial{flp, initStmtsp});
     portp->access(VAccess::READ);
     AstSenTree* const sentreep
         = new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_CHANGED, portp}};
@@ -99,28 +109,15 @@ static void addClockingConnection(AstCell* const cellp, const string& name,
     AstNodeExpr* const connChangedp
         = new AstNeq{flp, connp->cloneTree(false), newRefp(lastConnVarp, VAccess::READ)};
     connChangedp->dtypeSetBit();
-    AstNodeExpr* const firstOrConnChangedp
-        = new AstLogOr{flp, new AstLogNot{flp, newRefp(didInitVarp, VAccess::READ)}, connChangedp};
-    AstIf* const inIfp
-        = new AstIf{flp, firstOrConnChangedp, new AstAssign{flp, newPortp(VAccess::WRITE), connp}};
     AstNodeExpr* const portChangedp
         = new AstNeq{flp, newPortp(VAccess::READ), newRefp(lastPortVarp, VAccess::READ)};
     portChangedp->dtypeSetBit();
-    AstNodeExpr* const drivenSinceLastp
-        = new AstLogAnd{flp, newRefp(didInitVarp, VAccess::READ), portChangedp};
-    AstIf* const outIfp = new AstIf{flp, drivenSinceLastp, new AstAssign{flp, drivenp, outRhsp}};
-    outIfp->addElsesp(inIfp);
+    AstIf* const outIfp = new AstIf{flp, portChangedp, new AstAssign{flp, drivenp, outRhsp}};
+    outIfp->addElsesp(
+        new AstIf{flp, connChangedp, new AstAssign{flp, newPortp(VAccess::WRITE), connp}});
     AstNode* const stmtsp = outIfp;
-    stmtsp->addNext(
-        new AstAssign{flp, newRefp(lastPortVarp, VAccess::WRITE), newPortp(VAccess::READ)});
-    stmtsp->addNext(
-        new AstAssign{flp, newRefp(lastConnVarp, VAccess::WRITE), connp->cloneTree(false)});
-    stmtsp->addNext(new AstAssign{flp, newRefp(didInitVarp, VAccess::WRITE),
-                                  new AstConst{flp, AstConst::BitTrue{}}});
+    stmtsp->addNext(newRecordp());
     cellp->addNextHere(new AstAlwaysReactive{flp, sentreep, stmtsp});
-    cellp->addNextHere(
-        new AstInitialStatic{flp, new AstAssign{flp, newRefp(didInitVarp, VAccess::WRITE),
-                                                new AstConst{flp, AstConst::BitFalse{}}}});
 }
 
 //######################################################################
