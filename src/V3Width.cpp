@@ -7023,6 +7023,13 @@ class WidthVisitor final : public VNVisitor {
                 }
                 checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(
                     nodep, VN_CAST(nodep->lhsp(), NodeVarRef), VN_CAST(nodep->rhsp(), NodeVarRef));
+                // Variable references were checked above, this catches e.g. method call results
+                if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType()
+                    && !VN_IS(nodep->rhsp(), NodeVarRef)) {
+                    nodep->v3error("Illegal assignment betwen unpacked aggregate and "
+                                   "integral type (IEEE 1800-2023 7.6)"
+                                   << warnDTypes(nodep, lhsDtp, rhsDtp));
+                }
             }
 
             iterateCheckAssign(nodep, "Assign RHS", nodep->rhsp(), FINAL, lhsDTypep);
