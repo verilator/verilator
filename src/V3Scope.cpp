@@ -518,13 +518,14 @@ class ScopeHiddenVisitor final : public VNVisitor {
     void addSources(const Loc& dst, const AstNodeExpr* rhsp,
                     std::vector<std::pair<Loc, Loc>>& copies) {
         if (VN_IS(rhsp, Const)) return;  // null
-        if (const AstInitArray* const initp = VN_CAST(rhsp, InitArray)) {
+        if (const AstConsArray* const consp = VN_CAST(rhsp, ConsArray)) {
             if (dst.second == -1) {
-                for (const auto& itr : initp->map()) {
-                    addSources({dst.first, static_cast<int>(itr.first)}, itr.second->valuep(),
+                for (const AstConsArrayItem* itemp = consp->itemsp(); itemp;
+                     itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+                    addSources({dst.first, static_cast<int>(itemp->index())}, itemp->valuep(),
                                copies);
                 }
-                if (initp->defaultp()) addSources(dst, initp->defaultp(), copies);
+                if (consp->defaultp()) addSources(dst, consp->defaultp(), copies);
                 return;
             }
         } else if (const AstVarRef* const refp = VN_CAST(rhsp, VarRef)) {
