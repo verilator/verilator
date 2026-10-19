@@ -132,6 +132,11 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     // - Call decl* for each signal (these eventually call ::declCode)
     // - Call the initialize callbacks of library instances underneath
     // - Store the base code
+    // Library instances are created by their parents, so register before them, but are only
+    // roots if not under a traced instance, so call the callbacks of the others first.
+    for (size_t i = 0; i < m_initCbs.size(); ++i) {
+        if (!m_initCbs[i].m_isLibInstance) runInitCallback(i, true);
+    }
     for (size_t i = 0; i < m_initCbs.size(); ++i) runInitCallback(i, true);
 
     if (expectedCodes && nextCode() != expectedCodes) {

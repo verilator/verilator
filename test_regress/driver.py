@@ -2262,7 +2262,6 @@ class VlTest:
                     fh.write("    topp->clk(clk);\n")
                 setp = ""
             else:
-                fh.write("    topp->eval();\n")
                 setp = "topp->"
 
             if self.trace:
@@ -2285,10 +2284,14 @@ class VlTest:
                              "  // Finish elaboration before trace and open\n")
                 fh.write("    topp->trace(tfp.get(), 99);\n")
                 fh.write("    tfp->open(\"" + self.trace_filename + "\");\n")
-
-                if self.trace and not self.sc:
-                    fh.write("    if (tfp) tfp->dump(contextp->time());\n")
                 fh.write("#endif\n")
+
+            if not self.sc:
+                fh.write("    topp->eval();\n")
+                if self.trace:
+                    fh.write("#if VM_TRACE\n")
+                    fh.write("    if (tfp) tfp->dump(contextp->time());\n")
+                    fh.write("#endif\n")
 
             if self.savable:
                 fh.write("    const char* save_time_strp"
