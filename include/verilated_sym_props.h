@@ -386,12 +386,12 @@ void VerilatedVar::datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE {
     VerilatedLazyState* const lazyp = symsp->lazyp();
     // Until the first eval() a shadow holds the reset value its --public-flat-rw signal would
     if (lazyp->beforeFirstEval()) return;
-    auto* const lazyDatap = static_cast<VerilatedVarLazyDatap*>(m_datap);
-    uint8_t* const basep = static_cast<uint8_t*>(lazyDatap->selfp);
+    VerilatedVarLazyDatap* const descp = lazyDatap();
+    uint8_t* const basep = static_cast<uint8_t*>(descp->selfp);
     if (!isLazyCopy()) {
-        (lazyDatap->refreshp)(lazyDatap->selfp);
-    } else if (lazyp->stale(lazyDatap->stamp)) {
-        std::memcpy(basep + lazyDatap->storageOffset, basep + lazyDatap->srcOffset, totalSize());
+        (descp->refreshp)(descp->selfp);
+    } else if (lazyp->stale(descp->stamp)) {
+        std::memcpy(basep + descp->storageOffset, basep + descp->srcOffset, totalSize());
     }
 }
 

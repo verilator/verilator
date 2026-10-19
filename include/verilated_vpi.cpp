@@ -3513,8 +3513,8 @@ static void vl_vpi_note_write(const VerilatedVpioVar* vop) {
 // does under --public-flat-rw, and its memo stays valid until that eval moves the epoch and
 // clears the log.
 // The log, if a put of 'size' bytes (or a string) at 'datap' needs an entry, else nullptr
-static std::vector<VlLazyUndo>* vl_vpi_undo_logp(VerilatedSyms* symsp, void* datap, size_t size,
-                                                 bool isStr) {
+static std::vector<VlLazyUndo>* vl_vpi_undo_logp(VerilatedSyms* symsp, const void* datap,
+                                                 size_t size, bool isStr) {
     // Mid-eval the eval itself consumes the put; before the first eval nothing is rebuilt
     VerilatedLazyState* const lazyp = symsp->lazyp();
     if (!lazyp || !lazyp->undoOn || (lazyp->epoch & 1) || lazyp->beforeFirstEval()) return nullptr;

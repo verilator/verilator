@@ -310,7 +310,7 @@ AstVarRef* partialLhsRef(AstNodeExpr* lhsp, PartExtent& extr) {
 }
 
 AstVarScope* partialLhs(AstNodeExpr* lhsp, PartExtent& extr) {
-    AstVarRef* const refp = partialLhsRef(lhsp, extr);
+    const AstVarRef* const refp = partialLhsRef(lhsp, extr);
     return refp ? refp->varScopep() : nullptr;
 }
 
@@ -319,10 +319,10 @@ AstVarRef* lhsBaseRef(AstNodeExpr* lhsp, bool& partialr) {
     partialr = false;
     for (AstNodeExpr* nodep = lhsp;;) {
         if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) return refp;
-        if (AstSel* const selp = VN_CAST(nodep, Sel)) {
+        if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
             partialr = true;
             nodep = selp->fromp();
-        } else if (AstArraySel* const aselp = VN_CAST(nodep, ArraySel)) {
+        } else if (const AstArraySel* const aselp = VN_CAST(nodep, ArraySel)) {
             partialr = true;
             nodep = aselp->fromp();
         } else {
@@ -714,7 +714,7 @@ private:
         return it == m_retargetSrcOf.end() ? nullptr : it->second;
     }
 
-    bool hasCombDriver(AstVarScope* vscp) {
+    bool hasCombDriver(const AstVarScope* vscp) {
         if (!m_combTargetsBuilt) {
             for (const CombBlock& b : m_gather.m_combBlocks)
                 for (AstVarScope* const t : b.m_targets) m_combTargets.insert(t);
@@ -791,7 +791,8 @@ private:
             return;
         }
         for (const auto& pr : bits.runsOf)
-            for (const std::pair<int, int>& run : pr.second) fp.runsOf[pr.first].push_back(run);
+            for (const std::pair<int, int>& bitRun : pr.second)
+                fp.runsOf[pr.first].push_back(bitRun);
     }
 
     // 1 or 0 if 'condp' is constant, else -1: what V3Const folds before prepare() unless
@@ -908,13 +909,13 @@ private:
         // VISITORS
         void visit(AstNodeAssign* nodep) override {
             PartExtent ext;
-            int32_t elem = 0;
             if (AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
                 m_modelled.insert(refp);
                 CombFootprint& fp = m_defined[refp->varScopep()];
                 fp.whole = true;
                 fp.runsOf.clear();
             } else if (AstVarRef* const prefp = partialLhsRef(nodep->lhsp(), ext)) {
+                int32_t elem = 0;
                 if (combElement(prefp->varp(), ext, elem)) {
                     m_modelled.insert(prefp);
                     addBits(m_defined[prefp->varScopep()], elem, ext.lsb, ext.width);
@@ -991,7 +992,7 @@ private:
         }
         // V3Const made 'assign v = CONST' an initial plus a decl value, but it still drives v
         for (const AstVarScope* const vscp : m_gather.m_vscOrder) {
-            AstVar* const varp = vscp->varp();
+            const AstVar* const varp = vscp->varp();
             if (combCandidate(varp) && varp->isContinuously() && varp->isConst() && varp->valuep()
                 && !varp->isParam())
                 addCombWrite(vscp, nullptr);
@@ -1098,7 +1099,7 @@ private:
         // group there: its one func reads the writer's variables absolute. Any other write outside
         // the writer, or a read outside one with several instances, anchors it in the top scope,
         // which addresses them all absolute, and a row elsewhere refreshes through a rowStub().
-        AstScope* const writerp = scopep;
+        const AstScope* const writerp = scopep;
         const auto foreign = [&](const AstVarScope* vscp) { return vscp->scopep() != writerp; };
         const auto it = std::find_if(written.begin(), written.end(), foreign);
         if (it == written.end()) {
@@ -1126,7 +1127,7 @@ private:
         std::vector<AstVarScope*> temps;
         std::vector<AstVarScope*> soleTemps;
         for (AstVarScope* const w : written) {
-            AstVar* const varp = w->varp();
+            const AstVar* const varp = w->varp();
             const auto wit = groupWrites.find(w);
             UASSERT_OBJ(wit != groupWrites.end(), w,
                         "--vpi-lazy group writes a variable it did not count");
@@ -1273,12 +1274,12 @@ private:
                 continue;
             }
             CombFootprint driven;
-            for (const V3VpiLazy::CombRun& run : cit->second)
-                addBits(driven, static_cast<int32_t>(run.elem), static_cast<int>(run.lsb),
-                        static_cast<int>(run.width));
+            for (const V3VpiLazy::CombRun& combRun : cit->second)
+                addBits(driven, static_cast<int32_t>(combRun.elem), static_cast<int>(combRun.lsb),
+                        static_cast<int>(combRun.width));
             for (const auto& epr : pr.second.runsOf) {
-                for (const std::pair<int, int>& run : epr.second)
-                    if (!bitsDefined(driven, epr.first, run.first, run.second))
+                for (const std::pair<int, int>& bitRun : epr.second)
+                    if (!bitsDefined(driven, epr.first, bitRun.first, bitRun.second))
                         readVars.insert(varp);
             }
         }
@@ -1975,7 +1976,7 @@ private:
     }
 
     AstVarScope* newTargetShadow(AstVarScope* origp, const std::string& name) {
-        AstVar* const origVarp = origp->varp();
+        const AstVar* const origVarp = origp->varp();
         AstVar* const shadowVarp
             = new AstVar{origVarp->fileline(), VVarType::MODULETEMP, name, origVarp->dtypep()};
         shadowVarp->origName(origVarp->name());  // VPI-facing name
@@ -1993,7 +1994,7 @@ private:
     // Shadow of a non-target group variable: plain cold storage, no origName, so no VPI row.
     AstVarScope* shadowForTemp(AstVarScope* origp) {
         if (AstVarScope* const vscp = reuseShadow(origp)) return vscp;
-        AstVar* const origVarp = origp->varp();
+        const AstVar* const origVarp = origp->varp();
         AstVar* const shadowVarp
             = new AstVar{origVarp->fileline(), VVarType::MODULETEMP,
                          std::string{SHADOW_PREFIX} + "t" + std::to_string(m_nextTempIdx++),
@@ -2068,7 +2069,7 @@ private:
         std::vector<Group*> m_coneOps;  // Reconstructed operand groups, first-read order
 
     private:
-        void redirect(AstVarRef* refp, AstVarScope* vscp) {
+        static void redirect(AstVarRef* refp, AstVarScope* vscp) {
             refp->varScopep(vscp);
             refp->varp(vscp->varp());
         }
@@ -2146,7 +2147,7 @@ private:
             }
         };
         // Refresh the operand cone; topo order guarantees each operand's func exists.
-        for (Group* const ugp : rewire.m_coneOps) {
+        for (const Group* const ugp : rewire.m_coneOps) {
             AstCCall* const callp = new AstCCall{m_funcFlp, instanceCallee(ugp)};
             callp->dtypeSetVoid();
             addBodyStmt(callp->makeStmt());
@@ -2157,7 +2158,7 @@ private:
     }
 
     // What V3EmitCSyms routes a row's refreshp to, here and on any fold of this shadow
-    void bindRowRefresh(Group* g, AstCFunc* funcp) {
+    void bindRowRefresh(const Group* g, AstCFunc* funcp) {
         for (AstVarScope* const t : g->targets) {
             const auto tit = m_shadowOf.find(t);
             UASSERT_OBJ(tit != m_shadowOf.end(), t->varp(),
@@ -2212,7 +2213,7 @@ private:
     }
 
     // The shadows carry the original signals' VPI presence.
-    void moveRowsToShadows(Group* g) {
+    void moveRowsToShadows(const Group* g) {
         for (AstVarScope* const t : g->targets) {
             if (m_helperTargets.count(t)) {
                 ++m_helperCount;  // Never lazy-flagged; read only by the copies of it
@@ -2225,7 +2226,7 @@ private:
 
     // The undriven bits a put may write are now the shadow's.
     void moveMaskToShadow(AstVarScope* t) {
-        AstVar* const varp = t->varp();
+        const AstVar* const varp = t->varp();
         AstVar* const shadowVarp = m_shadowOf.at(t)->varp();
         if (shadowVarp->isVpiLazyCombPartial()) return;  // Another instance moved it
         shadowVarp->vpiLazyComb(VVpiLazyComb::PARTIAL);
@@ -2285,7 +2286,7 @@ private:
             }
         }
         splitKeptInstances();
-        for (AstVarScope* const vscp : m_gather.m_vscOrder) {
+        for (const AstVarScope* const vscp : m_gather.m_vscOrder) {
             // A VPI write into a writable retained signal is propagated by re-running 'settle'
             // on the next eval.
             if (vscp->varp()->isSigVpiLazyRetained() && !vscp->varp()->isVpiLazyCombWhole())
@@ -2330,7 +2331,7 @@ private:
             }
             const auto sit = m_shadowVarOfOrig.find(varp);
             if (sit != m_shadowVarOfOrig.end()) {
-                for (AstVarScope* const instp : vscps)
+                for (const AstVarScope* const instp : vscps)
                     if (kept(instp)) m_ctx.m_noRow.emplace(instp->scopep()->name(), sit->second);
             }
         }

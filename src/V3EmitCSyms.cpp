@@ -387,10 +387,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         PLAIN_RESIDUAL,  // Residual, via insertVarStatement() (+ struct/array expansion)
     };
 
-    std::string varDimsTableName() const { return symClassName() + "__VpiVarDims"; }
-    std::string hierTableName() const { return symClassName() + "__VpiHierTable"; }
-    std::string combMaskTableName() const { return symClassName() + "__VlazyCombMasks"; }
-    std::string combRunTableName() const { return symClassName() + "__VlazyCombRuns"; }
+    static std::string varDimsTableName() { return symClassName() + "__VpiVarDims"; }
+    static std::string hierTableName() { return symClassName() + "__VpiHierTable"; }
+    static std::string combMaskTableName() { return symClassName() + "__VlazyCombMasks"; }
+    static std::string combRunTableName() { return symClassName() + "__VlazyCombRuns"; }
     int combMaskIdx(const AstScope* scopep, const AstVar* varp) {
         const std::vector<V3VpiLazy::CombRun>& runs
             = V3VpiLazy::combRuns(m_netlistp, scopep, varp);
@@ -1511,9 +1511,9 @@ void EmitCSyms::emitScopeHier(TextStmts& stmts, bool destroy) {
         stmts.add("// Set up scope hierarchy");
     }
     if (!m_hierTableRows.empty()) {
-        stmts.add("vlSymsp->__Vhier."
-                  + std::string{destroy ? "removeFromTable(" : "addFromTable("} + hierTableName()
-                  + ", " + std::to_string(m_hierTableRows.size()) + ", vlSymsp);");
+        stmts.add("vlSymsp->__Vhier." + std::string{destroy ? "removeFromTable(" : "addFromTable("}
+                  + hierTableName() + ", " + std::to_string(m_hierTableRows.size())
+                  + ", vlSymsp);");
     }
 
     if (destroy) {
@@ -1860,8 +1860,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                 stmts.add("vlSymsp->" + protect("__Vscopep_" + scopeName)
                           + "->varsInsertFromTable("
                           + varTableName(modClassName, std::move(paramRows)) + ", "
-                          + std::to_string(rowCount) + ", const_cast<void**>(" + ptrsName
-                          + "));");
+                          + std::to_string(rowCount) + ", const_cast<void**>(" + ptrsName + "));");
             }
             for (const std::string& r : residual) stmts.add(r);
             lazyBaseRunning += lazyRel;

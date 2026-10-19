@@ -17,7 +17,7 @@ test.golden_filename = "t/t_vpi_lazy.out"
 # What is readable and writable must not depend on optimisation
 test.compile(verilator_flags2=[
     "--exe --build --vpi-lazy --no-l2name -O0 -fno-const-before-dfg",
-    "-CFLAGS -DVM_PREFIX=" + test.vm_prefix, test.pli_filename, "t/TestVpiMain.cpp"
+    f"-CFLAGS -DVM_PREFIX={test.vm_prefix}", test.pli_filename, "t/TestVpiMain.cpp"
 ])
 
 test.execute(all_run_flags=["+verilator+rand+reset+1"], expect_filename=test.golden_filename)
