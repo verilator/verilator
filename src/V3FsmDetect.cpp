@@ -1039,7 +1039,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                                       std::vector<FsmResetArcDesc>& resetArcs) {
         AstNode* nodep = skipLeadingIgnorableStmt(stmtp);
         if (!nodep) return ResetAssignStatus::EMPTY;
-        for (;; nodep = nodep->nextp()) {
+        for (; nodep; nodep = skipLeadingIgnorableStmt(nodep->nextp())) {
             AstVarScope* assignStateVscp = nullptr;
             FsmStateValue value;
             AstNodeAssign* const assp = directConstStateAssignNode(nodep, assignStateVscp, value);
@@ -1053,8 +1053,8 @@ class FsmDetectVisitor final : public VNVisitor {
                 return ResetAssignStatus::MULTI_SAME_STATE;
             }
             resetArcs.emplace_back(value, assp);
-            if (!nodep->nextp()) return ResetAssignStatus::SINGLE;
         }
+        return ResetAssignStatus::SINGLE;
     }
 
     static bool hasCanonicalNextStateDefaultBeforeCase(AstNode* stmtsp, AstNode* targetp,
