@@ -3410,9 +3410,8 @@ class AssertNfaVisitor final : public VNVisitor {
         AstNodeExpr* bodyp = VN_AS(propp->propp(), NodeExpr);
         bool outermost = true;
         while (AstImplication* const implp = VN_CAST(bodyp, Implication)) {
-            const bool multiCycleAnt = implp->lhsp()->exists([](const AstNodeExpr* np) {
-                return np->isMultiCycleSva() || VN_IS(np, SConsRep);
-            });
+            const bool multiCycleAnt = implp->lhsp()->exists(
+                [](const AstNodeExpr* np) { return np->isMultiCycleSva(); });
             // The NFA builder reports a sequence antecedent of followed-by itself
             if (implp->isFollowedBy())
                 return multiCycleAnt ? propp : unsupportedEventually(propp, implp);
