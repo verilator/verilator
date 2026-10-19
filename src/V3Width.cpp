@@ -10643,6 +10643,8 @@ class WidthVisitor final : public VNVisitor {
         cachedpr = V3ConstPool::find(consp);
         VL_DO_DANGLING(consp->deleteTree(), consp);  // V3ConstPool::find clones it
         cachedpr->varp()->didWidth(true);
+        // Keep the dtype of the value, as the entry might have a different, compatible one
+        cachedpr->didWidth(true);
         pushDeletep(cachedpr);  // Deleted with the visitor - always cloned
         return cachedpr->cloneTree(false);
     }
@@ -10767,6 +10769,8 @@ class WidthVisitor final : public VNVisitor {
         cachedpr = V3ConstPool::find(valuep);
         VL_DO_DANGLING(pushDeletep(valuep), valuep);  // V3ConstPool::find clones it
         cachedpr->varp()->didWidth(true);
+        // Keep the dtype of the value, as the entry might have a different, compatible one
+        cachedpr->didWidth(true);
         pushDeletep(cachedpr);  // Deleted with the visitor - always cloned
         return cachedpr->cloneTree(false);
     }

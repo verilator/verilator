@@ -499,9 +499,9 @@ conservative extractor.
 
 .. option:: /*verilator&32;public*/ (on parameter)
 
-   Used after a parameter declaration to indicate the emitted C code should
-   have the parameter values visible. Due to C++ language restrictions,
-   this may only be used on 64-bit or narrower integral enumerations.
+   Used after a parameter declaration to indicate the emitted C++ code should
+   have the parameter value visible, as a ``static const`` member of the class
+   generated for the module.
 
    .. code-block:: sv
 

@@ -378,7 +378,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string vlEnumType = varp->vlEnumType();
         if (needsEmittedEntSize(vlEnumType))
             return TableEntryKind::PLAIN_RESIDUAL;  // struct/union whole
-        // Params are often 'static constexpr' (offsetof is invalid on those);
+        // Params are static members (offsetof is invalid on those);
         // string params also need a runtime .c_str().
         if (varp->isParam()) return TableEntryKind::PLAIN_RESIDUAL;
 

@@ -59,23 +59,19 @@ class EmitCImp final : public EmitCFunc {
     }
 
     void emitParamDefns(const AstNodeModule* modp) {
-        const string modName = EmitCUtil::prefixNameProtect(modp);
         bool first = true;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     if (first) {
                         puts("\n");
+                        const string modName = EmitCUtil::prefixNameProtect(modp);
                         putsDecoration(modp, "// Parameter definitions for " + modName + "\n");
                         first = false;
                     }
-                    UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                    // Only C++ LiteralTypes can be constexpr
-                    const bool canBeConstexpr = varp->dtypep()->isLiteralType();
-                    putns(varp, canBeConstexpr ? "constexpr " : "const ");
-                    const string scopedName = modName + "::" + varp->nameProtect();
-                    putns(varp, varp->dtypep()->cType(scopedName, false, false));
-                    if (!canBeConstexpr) emitDirectInit(varp->valuep());
+                    if (varp->dtypep()->isLiteralType()) putns(varp, "VL_CONSTINIT_CXX20 ");
+                    putns(varp, "const ");
+                    emitVarDefn(varp);
                     puts(";\n");
                 }
             }
