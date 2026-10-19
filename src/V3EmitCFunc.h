@@ -63,8 +63,7 @@ class EmitCLazyDecls final : public VNVisitorConst {
 
     void lazyDeclareConstPoolVar(AstVar* varp) {
         if (!declaredOnce(varp)) return;  // Already declared
-        const string nameProtect
-            = EmitCUtil::topClassName() + "__ConstPool__" + varp->nameProtect();
+        const string nameProtect = EmitCUtil::constPoolName(varp);
         m_emitter.putns(varp, "extern const ");
         m_emitter.puts(varp->dtypep()->cType(nameProtect, false, false));
         m_emitter.puts(";\n");
@@ -743,10 +742,6 @@ public:
             decind = true;
             if (!VN_IS(nodep->rhsp(), Const)) ofp()->putBreak();
             putns(nodep, "= ");
-            if (unpackDtp && VN_IS(nodep->rhsp(), ConsArray)) {
-                // Emit "VlUnpacked<type, depth>{{...ConsArray...}}"
-                puts(unpackDtp->cType("", false, false, false));
-            }
         }
         if (rhs) iterateAndNextConstNull(nodep->rhsp());
         if (paren) puts(")");
@@ -1852,14 +1847,18 @@ public:
     // Terminals
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
+
+        // Reference to constant pool variable is special
+        if (varp->constPoolEntry()) {
+            putns(nodep, EmitCUtil::constPoolName(varp));
+            return;
+        }
+
         const AstNodeModule* const varModp = EmitCParentModule::get(varp);
         const bool dereferenceCovergroupRef
             = varp->covergroupRefMember() && nodep->access().isReadOrRW();
         if (dereferenceCovergroupRef) putns(nodep, "(*");
-        if (varModp->isConstPool()) {
-            // Reference to constant pool variable
-            putns(nodep, EmitCUtil::topClassName() + "__ConstPool__");
-        } else if (VN_IS(varModp, Class) && varModp != m_modp) {
+        if (VN_IS(varModp, Class) && varModp != m_modp) {
             // Superclass member reference
             putns(nodep, EmitCUtil::prefixNameProtect(varModp) + "::");
         } else if (varp->isIfaceRef()) {
@@ -1887,6 +1886,7 @@ public:
             emitConstant(nodep);
         }
     }
+    void visit(AstNodeCons* nodep) override { emitValCons(nodep); }
     void visit(AstThisRef* nodep) override {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));
         puts("{");
@@ -1911,26 +1911,6 @@ public:
     }
 
     //
-    void visit(AstConsAssoc* nodep) override {
-        putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        EmitCConstInit::visit(nodep);
-    }
-    void visit(AstConsWildcard* nodep) override {
-        putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        EmitCConstInit::visit(nodep);
-    }
-    void visit(AstConsDynArray* nodep) override {
-        putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        EmitCConstInit::visit(nodep);
-    }
-    void visit(AstConsQueue* nodep) override {
-        putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        EmitCConstInit::visit(nodep);
-    }
-    void visit(AstConsStruct* nodep) override {
-        putnbs(nodep, nodep->dtypep()->cType("", false, false));
-        EmitCConstInit::visit(nodep);
-    }
     void visit(AstExecGraph* nodep) override {
         // The location of the AstExecGraph within the containing AstCFunc is where we want to
         // invoke the graph and wait for it to complete. The run-time library does just that.

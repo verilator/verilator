@@ -16,6 +16,6 @@ test.compile(verilator_flags2=['--binary', '--stats'])
 test.execute()
 
 test.file_grep(test.stats, r'Optimizations, Cases table normal\s+(\d+)', 1)
-test.file_grep(test.stats, r'ConstPool, Constants emitted\s+(\d+)', 1)
+test.file_grep(test.stats, r'ConstPool, CONST emitted\s+(\d+)', 1)
 
 test.passes()

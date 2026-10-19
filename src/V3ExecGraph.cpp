@@ -1209,7 +1209,7 @@ void addTriggerMasks(AstExecGraph* const execGraphp) {
             consp->valuep(wordMask.first,
                           new AstConst{flp, AstConst::Unsized64{}, wordMask.second});
         }
-        execGraphp->addMaskps(V3ConstPool::findTable(consp));
+        execGraphp->addMaskps(V3ConstPool::find(consp));
         VL_DO_DANGLING(consp->deleteTree(), consp);
     }
 }
@@ -1239,7 +1239,7 @@ void addTriggerCosts(AstExecGraph* const execGraphp) {
     for (uint32_t index = 0; index < nTriggers; ++index) {
         if (costs[index]) consp->valuep(index, new AstConst{flp, costs[index]});
     }
-    execGraphp->triggerCostsp(V3ConstPool::findTable(consp));
+    execGraphp->triggerCostsp(V3ConstPool::find(consp));
     VL_DO_DANGLING(consp->deleteTree(), consp);
 }
 

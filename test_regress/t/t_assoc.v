@@ -265,6 +265,34 @@ module t (
       `checkh(aa[k], 8);
     end
 
+    begin  // Keys with a queue or dynamic array in them
+      typedef struct {
+        int a;
+        int q[$];
+      } sq_t;
+      typedef struct {
+        int a;
+        int d[];
+      } sd_t;
+      typedef int q_t[$];
+      typedef q_t qa_t[2];
+      int msq[sq_t];
+      int msd[sd_t];
+      int mqa[qa_t];
+      sq_t ksq;
+      sd_t ksd;
+      qa_t kqa;
+      msq = '{'{a: 1, q: '{2, 3}} : 10};
+      ksq = '{1, '{2, 3}};
+      `checkh(msq[ksq], 10);
+      msd = '{'{a: 1, d: '{2, 3}} : 20};
+      ksd = '{1, '{2, 3}};
+      `checkh(msd[ksd], 20);
+      mqa = '{'{'{1}, '{2, 3}} : 30};
+      kqa = '{'{1}, '{2, 3}};
+      `checkh(mqa[kqa], 30);
+    end
+
     begin  // Enum identifier keys of an integral key type
       typedef enum {
         E0,

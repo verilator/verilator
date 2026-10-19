@@ -71,6 +71,11 @@ public:
     static string execGraphName(const AstExecGraph* nodep) {
         return topClassName() + "__ExecGraph__" + nodep->nameProtect();
     }
+    // Name of a constant pool variable
+    static std::string constPoolName(const AstVar* varp) {
+        UASSERT_OBJ(varp->constPoolEntry(), varp, "Not a constant pool variable");
+        return topClassName() + "__ConstPool__" + varp->nameProtect();
+    }
     // Return C++ class name for a module/class object
     static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
 };
