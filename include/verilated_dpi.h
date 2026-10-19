@@ -180,12 +180,22 @@ VlCoroutine awaitImportTask(Callable&& call, Args&&... args) {
 
 #endif
 
+static inline bool exportAborted() {
+#if VM_TIMING == 1
+    VlDpiCall* const callp = VlDpiCall::current();
+    return callp && callp->exportAborted();
+#else
+    return false;
+#endif
+}
+
 template <typename Callable, typename... Args>
 void callExportTask(Callable&& call, Args&&... args) {
     if (t_fileline.inFunctionContext()) {
         VL_FATAL_MT(t_fileline.m_filename, t_fileline.m_lineno, "",
                     "DPI exported task called from function context");
     }
+    if (VL_UNLIKELY(exportAborted())) return;
 #if VM_TIMING == 1
     // An exported task with timing is a coroutine. Suspend the DPI call until it completes.
     if constexpr (std::is_same<decltype(call(std::forward<Args>(args)...)), VlCoroutine>::value) {
@@ -194,6 +204,7 @@ void callExportTask(Callable&& call, Args&&... args) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
                         "DPI export with timing invoked outside of a DPI import thread");
         }
+
         // Call returns on the first delay or event control
         VlCoroutine coro{call(std::forward<Args>(args)...)};
         if (!coro.await_ready()) {

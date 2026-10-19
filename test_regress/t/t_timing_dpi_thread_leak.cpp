@@ -21,6 +21,8 @@ static int completed = 0;
 
 int dpi_import() {
     dpi_export();
+    // Second call tests whether the killed process alters the state after being killed.
+    dpi_export();
     ++completed;
     return 0;
 }

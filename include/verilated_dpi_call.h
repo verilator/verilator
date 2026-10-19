@@ -71,6 +71,7 @@ public:
     static VlDpiCall* current() noexcept { return t_currentp; }
     // Mark this VlDpiCalll as aborted due to process::kill()
     void markAborted();
+    bool exportAborted() const noexcept { return m_exportAborted; }
 
     bool await_ready() const noexcept { return m_done; }
     void await_suspend(std::coroutine_handle<> waiter) noexcept { m_waiter = waiter; }
