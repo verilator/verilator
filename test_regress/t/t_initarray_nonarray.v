@@ -1,7 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // The code here is used to trigger Verilator internal error
-// "InitArray on non-array"
+// "ConsArray on non-array"
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2017 Jie Xu

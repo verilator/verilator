@@ -27,6 +27,8 @@
 //          Create a temporary __VIncrementX variable, assign the value of
 //          of the current variable (after the operation) to it. Substitute
 //          The original variable with the temporary one in the statement.
+//        In a covergroup expression, under no statement, the assignments and
+//        the temporary, a class member, form an expression statement instead.
 //
 //      prepost_stmt_visit
 //        PREINC/PREDEC/POSTINC/POSTDEC
@@ -63,24 +65,20 @@ class LinkIncVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Module we're inside
     int m_modCompoundAssignmentsNum = 0;  // Var name counter
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
+    bool m_inCovergroup = false;  // Under a covergroup's coverpoint, cross, or option
     bool m_condEvalContext = false;  // ++/-- is in a conditionally-evaluated position
     AstNodeExpr* m_incCondp = nullptr;  // Gating condition for ++/-- in short-circuit context
 
     // METHODS
     void insertOnTop(AstNode* newp) {
-        // Add the thing directly under the current TFunc/Module
-        AstNode* stmtsp = nullptr;
+        // Add the thing directly under the current TFunc/Module, or class, as a member
+        // Must not unlink the statements, as one of them is being iterated
         if (m_ftaskp) {
-            stmtsp = m_ftaskp->stmtsp();
-        } else if (m_modp) {
-            stmtsp = m_modp->stmtsp();
-        }
-        UASSERT_OBJ(stmtsp, newp, "Variable not under FTASK/MODULE");
-        newp->addNext(stmtsp->unlinkFrBackWithNext());
-        if (m_ftaskp) {
-            m_ftaskp->addStmtsp(newp);
-        } else if (m_modp) {
-            m_modp->addStmtsp(newp);
+            m_ftaskp->prependStmtsp(newp);
+        } else {
+            UASSERT_OBJ(m_modp, newp, "Variable not under FTASK/MODULE");
+            if (VN_IS(m_modp, Class)) VN_AS(newp, Var)->varType(VVarType::MEMBER);
+            m_modp->prependStmtsp(newp);
         }
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
@@ -104,6 +102,17 @@ class LinkIncVisitor final : public VNVisitor {
         m_ftaskp = nodep;
         iterateChildren(nodep);
     }
+    // A covergroup's expressions are under no statement, and V3Covergroup moves them to its
+    // constructor or sample(), so their variables are members of its class
+    void visitCovergroup(AstNode* nodep) {
+        VL_RESTORER(m_ftaskp);
+        VL_RESTORER(m_inCovergroup);
+        m_ftaskp = nullptr;
+        m_inCovergroup = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeFuncCovItem* nodep) override { visitCovergroup(nodep); }
+    void visit(AstCgOptionAssign* nodep) override { visitCovergroup(nodep); }
     void visit(AstNodeCoverOrAssert* nodep) override {
         VL_RESTORER(m_insStmtp);
         m_insStmtp = nodep;
@@ -263,13 +272,15 @@ class LinkIncVisitor final : public VNVisitor {
     void visit(AstCond* nodep) override { unsupported_visit(nodep); }
     void visit(AstPropSpec* nodep) override { unsupported_visit(nodep); }
     void prepost_visit(AstNodeUniop* const nodep) {
-        // Check if we are underneath a statement
+        // Not underneath a statement, the increment is one, unless in a covergroup expression,
+        // which is under none
+        const bool isStandaloneStmt = !m_insStmtp && !m_inCovergroup;
         AstSelBit* const selbitp = VN_CAST(nodep->lhsp(), SelBit);
-        if (!m_insStmtp && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
+        if (isStandaloneStmt && selbitp && VN_IS(selbitp->fromp(), NodeVarRef)
             && !selbitp->bitp()->isPure()) {
             prepost_stmt_sel_visit(nodep);
         } else {
-            if (!m_insStmtp) {
+            if (isStandaloneStmt) {
                 prepost_stmt_visit(nodep);
             } else {
                 prepost_expr_visit(nodep);
@@ -395,12 +406,15 @@ class LinkIncVisitor final : public VNVisitor {
     }
     void prepost_expr_visit(AstNodeUniop* const nodep) {
         iterateChildren(nodep);
-        if (m_condEvalContext && !m_incCondp) {
+        // In a covergroup, whose expressions are under no statement, the increment forms an
+        // expression statement in place, as the parser makes '(x += 1)', so it is evaluated only
+        // where and when its expression is
+        if (m_condEvalContext && !m_incCondp && !m_inCovergroup) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Pre/post increment/decrement operator"
                                          " within a logical expression (&&, ||, ?:, etc.)");
             return;
         }
-        const bool needGating = m_condEvalContext && m_incCondp;
+        const bool needGating = m_condEvalContext && m_incCondp && !m_inCovergroup;
         AstNodeExpr* const readp = nodep->lhsp();
         AstNodeExpr* const writep = nodep->lhsp()->cloneTreePure(true);
         V3LinkLValue::linkLValueSet(readp, VAccess::READ);
@@ -423,6 +437,7 @@ class LinkIncVisitor final : public VNVisitor {
         // Define what operation will we be doing
         AstNodeExpr* const operp = getOperationp(nodep, readp->cloneTreePure(true), newconstp);
 
+        AstNode* stmtsp = nullptr;
         if (needGating) {
             // Short-circuit context: mutate the variable only when the gate is true.
             // The temp holds the old value, plus the new value for pre-inc/dec.
@@ -434,7 +449,7 @@ class LinkIncVisitor final : public VNVisitor {
                                             readp->cloneTreePure(true)});
             }
             assignp->addNextHere(new AstIf{fl, m_incCondp->cloneTreePure(true), incp, nullptr});
-            insertBeforeStmt(nodep, assignp);
+            stmtsp = assignp;
         } else if (VN_IS(nodep, PreInc) || VN_IS(nodep, PreDec)) {
             // PreInc/PreDec operations
             // Immediately after declaration - increment it by one
@@ -442,7 +457,7 @@ class LinkIncVisitor final : public VNVisitor {
                 = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, operp};
             // Immediately after incrementing - assign it to the original variable
             assignp->addNext(new AstAssign{fl, writep, new AstVarRef{fl, varp, VAccess::READ}});
-            insertBeforeStmt(nodep, assignp);
+            stmtsp = assignp;
         } else {
             // PostInc/PostDec operations
             // Assign the original variable to the temporary one
@@ -450,11 +465,17 @@ class LinkIncVisitor final : public VNVisitor {
                                                      readp->cloneTreePure(true)};
             // Increment the original variable by one
             assignp->addNext(new AstAssign{fl, writep, operp});
-            insertBeforeStmt(nodep, assignp);
+            stmtsp = assignp;
         }
 
-        // Replace the node with the temporary
-        nodep->replaceWith(new AstVarRef{readp->fileline(), varp, VAccess::READ});
+        // Replace the node with the temporary, after the statements
+        AstNodeExpr* newp = new AstVarRef{readp->fileline(), varp, VAccess::READ};
+        if (m_inCovergroup) {
+            newp = new AstExprStmt{fl, stmtsp, newp};
+        } else {
+            insertBeforeStmt(nodep, stmtsp);
+        }
+        nodep->replaceWith(newp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstPreInc* nodep) override { prepost_visit(nodep); }

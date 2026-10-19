@@ -40,7 +40,6 @@
 #include "V3Graph.h"
 #include "V3Sched.h"
 #include "V3SenTree.h"
-#include "V3SplitVar.h"
 #include "V3Stats.h"
 
 #include <map>
@@ -139,9 +138,9 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
         new V3GraphEdge{graphp.get(), fromp, top, weight, cuttable};
     };
 
-    for (const auto& pair : lbs) {
-        AstScope* const scopep = pair.first;
-        AstActive* const activep = pair.second;
+    for (const auto& entry : lbs) {
+        AstScope* const scopep = entry.m_scopep;
+        AstActive* const activep = entry.m_activep;
         UASSERT_OBJ(activep->hasCombo(), activep, "Not combinational logic");
         for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
             // Can safely ignore Postponed as we generate them all
@@ -328,7 +327,7 @@ std::string reportLoopVars(FileLine* /*warnFl*/, Graph* graphp, SchedAcyclicVarV
             ss2 << V3Error::warnMore() << "    " << varp->fileline() << ' ' << varp->prettyName()
                 << ", width " << std::dec << varp->width() << ", circular fanout "
                 << candidate.second;
-            if (V3SplitVar::canSplitVar(varp)) {
+            if (!varp->cannotSplitKindReason()) {
                 ss2 << ", can split_var";
                 ++splittable;
             }

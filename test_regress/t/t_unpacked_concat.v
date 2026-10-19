@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2023 Yutetsu TAKATSUKASA
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t;
 
   typedef int ai3_t[1:3];
@@ -16,7 +21,43 @@ module t;
   logic [2:0] s3[2:8];
   logic [2:0] s3b[8:2];
 
+  // Arrays spliced into concatenations evaluated as constants
+  function automatic int f_spliced(int k);
+    int a[2];
+    int b[4];
+    a = '{1, 2};
+    b = {a, 5, 6};
+    return b[k];
+  endfunction
+  typedef int a2_t[2];
+  function automatic a2_t f_pair();
+    return '{1, 2};
+  endfunction
+
   initial begin
+    begin
+      localparam int L0 = f_spliced(0);
+      localparam int L1 = f_spliced(1);
+      localparam int L2 = f_spliced(2);
+      localparam int L3 = f_spliced(3);
+      localparam int P[4] = {f_pair(), 7, 8};
+      `checkd(L0, 1);
+      `checkd(L1, 2);
+      `checkd(L2, 5);
+      `checkd(L3, 6);
+      `checkd(P[0], 1);
+      `checkd(P[1], 2);
+      `checkd(P[2], 7);
+      `checkd(P[3], 8);
+    end
+    begin  // A constant array value spliced in
+      int x3[3];
+      x3 = {a2_t'{1, 2}, 3};
+      `checkd(x3[0], 1);
+      `checkd(x3[1], 2);
+      `checkd(x3[2], 3);
+    end
+
     s0 = 3'd1;
     s1[1] = 3'd2;
     s1[2] = 3'd3;

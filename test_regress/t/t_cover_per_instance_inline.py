@@ -18,6 +18,7 @@ test.compile(top_filename="t/t_cover_per_instance.v",
              verilator_flags2=[
                  '--binary',
                  '--coverage-line',
+                 '--coverage-branch',
                  '--coverage-per-instance',
                  '--top-module',
                  'tb',

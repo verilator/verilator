@@ -195,6 +195,7 @@ public:
         WAITCONST,      // Wait condition is constant
         WIDTH,          // Width mismatch
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
+        WIDTHDIGITS,    // Mismatch between literal size and its value width in bits
         WIDTHEXPAND,    // Width mismatch- lhs > rhs
         WIDTHTRUNC,     // Width mismatch- lhs < rhs
         WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
@@ -247,8 +248,8 @@ public:
             "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR",
             "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
-            "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
-            " MAX"};
+            "WIDTHCONCAT", "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY",
+            "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
@@ -294,7 +295,8 @@ public:
                 || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC || m_e == LATCH
                 || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO || m_e == PINMISSING
                 || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH
-                || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
+                || m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -346,6 +348,7 @@ public:
             action(V3ErrorCode{UNUSEDSIGNAL});
             return;
         case V3ErrorCode::WIDTH:
+            action(V3ErrorCode{WIDTHDIGITS});
             action(V3ErrorCode{WIDTHEXPAND});
             action(V3ErrorCode{WIDTHTRUNC});
             action(V3ErrorCode{WIDTHXZEXPAND});
@@ -365,7 +368,8 @@ public:
             return m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
                    || m_e == UNUSEDSIGNAL;
         case V3ErrorCode::WIDTH:
-            return m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND;
+            return m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                   || m_e == WIDTHXZEXPAND;
         default: return false;
         }
     }

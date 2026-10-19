@@ -36,6 +36,7 @@
 class VFlagBitPacked {};
 class VFlagChildDType {};  // Used by parser.y to select constructor that sets childDType
 class VFlagLogicPacked {};
+class VFlagLogic2StatePacked {};
 
 // ######################################################################
 
@@ -363,8 +364,13 @@ public:
         VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
         VAR_FSM_ARC_INCLUDE_COND,       // V3LinkParse moves to AstVar::attrFsmArcInclCond
-        VAR_FSM_RESET_ARC,              // V3LinkParse moves to AstVar::attrFsmResetArc
+        VAR_FSM_ARC_INCLUDE_COND_AUTO,  // Flavors of above option - setting expand mode per FSM
+        VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND,
+        VAR_FSM_ARC_INCLUDE_COND_FULL,
         VAR_FSM_STATE,                  // V3LinkParse moves to AstVar::attrFsmState
+        VAR_FSM_STATE_AUTO,             // Flavors of above option - setting expand mode per FSM
+        VAR_FSM_STATE_AUTO_EXPAND,
+        VAR_FSM_STATE_FULL,
         VAR_PORT_DTYPE,                 // V3LinkDot for V3Width to check port dtype
         VAR_PUBLIC,                     // V3LinkParse moves to AstVar::sigPublic
         VAR_PUBLIC_FLAT,                // V3LinkParse moves to AstVar::sigPublic
@@ -389,8 +395,13 @@ public:
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
-            "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND", "VAR_FSM_RESET_ARC",
-            "VAR_FSM_STATE", "VAR_PORT_DTYPE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
+            "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND",
+            "VAR_FSM_ARC_INCLUDE_COND_AUTO",
+            "VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND",
+            "VAR_FSM_ARC_INCLUDE_COND_FULL",
+            "VAR_FSM_STATE", "VAR_FSM_STATE_AUTO",
+            "VAR_FSM_STATE_AUTO_EXPAND", "VAR_FSM_STATE_FULL",
+            "VAR_PORT_DTYPE", "VAR_PUBLIC", "VAR_PUBLIC_FLAT",
             "VAR_PUBLIC_FLAT_RD", "VAR_PUBLIC_FLAT_RW",
             "VAR_SC_BIGUINT", "VAR_SC_BV", "VAR_SFORMAT", "VAR_SPLIT_VAR"
         };
@@ -486,14 +497,18 @@ public:
         CHANDLE,
         // Void type for tagged union members (CVOID to avoid Windows VOID macro)
         CVOID,
+        NULLTYPE,  // type of SystemVerilog 'null' literal, which is self-determined
         EVENT,
         INT,
         INTEGER,
+        INTEGER2STATE,  // Integer but two-state domain (to save info about original DType)
         LOGIC,
+        LOGIC2STATE,  // Logic but two-state domain (to save info about original DType)
         LONGINT,
         DOUBLE,
         SHORTINT,
         TIME,
+        TIME2STATE,  // Time but two-state domain (to save info about original DType)
         // Closer to a class type, but limited usage
         STRING,
         // Property / Sequence argument type
@@ -525,14 +540,18 @@ public:
                                                       "byte",
                                                       "chandle",
                                                       "void",
+                                                      "null",
                                                       "event",
                                                       "int",
                                                       "integer",
+                                                      "integer2state",
                                                       "logic",
+                                                      "logic2state",
                                                       "longint",
                                                       "real",
                                                       "shortint",
                                                       "time",
+                                                      "time2state",
                                                       "string",
                                                       "untyped",
                                                       "VerilatedScope*",
@@ -552,19 +571,31 @@ public:
                                                       " MAX"};
         return names[m_e];
     }
+    const char* typeName() const VL_MT_SAFE {
+        switch (m_e) {
+        case LOGIC2STATE: return VBasicDTypeKwd{LOGIC}.ascii();
+        case INTEGER2STATE: return VBasicDTypeKwd{INTEGER}.ascii();
+        case TIME2STATE: return VBasicDTypeKwd{TIME}.ascii();
+        default: return ascii();
+        }
+    }
     const char* dpiType() const {
         static constexpr const char* const names[] = {"%E-unk",
                                                       "svBit",
                                                       "char",
                                                       "void*",
                                                       "void",
+                                                      "null",
                                                       "char",
                                                       "int",
                                                       "%E-integer",
+                                                      "%E-integer",
+                                                      "svLogic",
                                                       "svLogic",
                                                       "long long",
                                                       "double",
                                                       "short",
+                                                      "%E-time",
                                                       "%E-time",
                                                       "const char*",
                                                       "%E-untyped",
@@ -591,12 +622,10 @@ public:
         UASSERT(0 == std::strcmp(VBasicDTypeKwd{_ENUM_MAX}.dpiType(), " MAX"),
                 "SelfTest: Enum mismatch");
     }
-    VBasicDTypeKwd()
-        : m_e{UNKNOWN} {}
+    VBasicDTypeKwd() VL_MT_SAFE : m_e{UNKNOWN} {}
     // cppcheck-suppress noExplicitConstructor
-    constexpr VBasicDTypeKwd(en _e)
-        : m_e{_e} {}
-    explicit VBasicDTypeKwd(int _e)
+    constexpr VBasicDTypeKwd(en _e) VL_MT_SAFE : m_e{_e} {}
+    explicit VBasicDTypeKwd(int _e) VL_MT_SAFE  //
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     int width() const {
@@ -604,14 +633,18 @@ public:
         case BIT: return 1;  // scalar, can't bit extract unless ranged
         case BYTE: return 8;
         case CHANDLE: return 64;
+        case NULLTYPE: return 1;  // Historical - bit was used instead of NULLTYPE
         case EVENT: return 1;
         case INT: return 32;
         case INTEGER: return 32;
+        case INTEGER2STATE: return 32;
         case LOGIC: return 1;  // scalar, can't bit extract unless ranged
+        case LOGIC2STATE: return 1;  // scalar, can't bit extract unless ranged
         case LONGINT: return 64;
         case DOUBLE: return 64;  // opaque
         case SHORTINT: return 16;
         case TIME: return 64;
+        case TIME2STATE: return 64;
         case STRING: return 64;  // opaque  // Just the pointer, for today
         case SCOPEPTR: return 0;  // opaque
         case CHARPTR: return 0;  // opaque
@@ -631,30 +664,33 @@ public:
     }
     bool isSigned() const {
         return m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
-               || m_e == DOUBLE;
+               || m_e == INTEGER2STATE || m_e == DOUBLE;
     }
     bool isUnsigned() const {
         return m_e == CHANDLE || m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
-               || m_e == UINT32 || m_e == UINT64 || m_e == BIT || m_e == LOGIC || m_e == TIME;
+               || m_e == UINT32 || m_e == UINT64 || m_e == BIT || m_e == LOGIC
+               || m_e == LOGIC2STATE || m_e == TIME || m_e == TIME2STATE;
     }
     bool isFourstate() const {
         return m_e == INTEGER || m_e == LOGIC || m_e == LOGIC_IMPLICIT || m_e == TIME;
     }
     bool isZeroInit() const {  // Otherwise initializes to X
-        return (m_e == BIT || m_e == BYTE || m_e == CHANDLE || m_e == EVENT || m_e == INT
-                || m_e == LONGINT || m_e == SHORTINT || m_e == STRING || m_e == DOUBLE);
+        return (m_e == BIT || m_e == BYTE || m_e == CHANDLE || m_e == NULLTYPE || m_e == EVENT
+                || m_e == INT || m_e == LONGINT || m_e == SHORTINT || m_e == STRING
+                || m_e == DOUBLE);
     }
     bool isIntNumeric() const {  // Enum increment supported
-        return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == LOGIC
-                || m_e == LONGINT || m_e == SHORTINT || m_e == UINT32 || m_e == UINT64
-                || m_e == TIME);
+        return (m_e == BIT || m_e == BYTE || m_e == INT || m_e == INTEGER || m_e == INTEGER2STATE
+                || m_e == LOGIC || m_e == LOGIC2STATE || m_e == LONGINT || m_e == SHORTINT
+                || m_e == UINT32 || m_e == UINT64 || m_e == TIME || m_e == TIME2STATE);
     }
     bool isBit() const { return m_e == BIT; }
     bool isBitLogic() const {  // Bit/logic vector types; can form a packed array
-        return (m_e == LOGIC || m_e == BIT);
+        return (m_e == LOGIC || m_e == LOGIC2STATE || m_e == BIT);
     }
     bool isDpiUnsignable() const {  // Can add "unsigned" to DPI
-        return (m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER);
+        return (m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
+                || m_e == INTEGER2STATE);
     }
     bool isDpiCLayout() const {  // Uses standard C layout, for DPI runtime access
         return (m_e == BIT || m_e == BYTE || m_e == CHANDLE || m_e == INT || m_e == LONGINT
@@ -672,6 +708,18 @@ public:
     bool isEvent() const { return m_e == EVENT; }
     bool isString() const VL_MT_SAFE { return m_e == STRING; }
     bool isMTaskState() const VL_MT_SAFE { return m_e == MTASKSTATE; }
+    bool isSameish(const VBasicDTypeKwd& other) const VL_MT_SAFE {
+        switch (other.m_e) {
+        case LOGIC:
+        case LOGIC2STATE:
+        case LOGIC_IMPLICIT: return m_e == LOGIC || m_e == LOGIC2STATE || m_e == LOGIC_IMPLICIT;
+        case INTEGER:
+        case INTEGER2STATE: return m_e == INTEGER || m_e == INTEGER2STATE;
+        case TIME:
+        case TIME2STATE: return m_e == TIME || m_e == TIME2STATE;
+        default: return m_e == other.m_e;
+        }
+    }
     // Does this represent a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_SAFE {
         switch (m_e) {
@@ -680,7 +728,9 @@ public:
         case CHANDLE:
         case INT:
         case INTEGER:
+        case INTEGER2STATE:
         case LOGIC:
+        case LOGIC2STATE:
         case LONGINT:
         case DOUBLE:
         case SHORTINT:
@@ -700,14 +750,18 @@ public:
             /* BYTE:                      */ "BYTE",
             /* CHANDLE:                   */ "LONGINT",
             /* CVOID:                     */ "",  // Should not be traced
+            /* NULLTYPE:                  */ "",  // Should not be traced
             /* EVENT:                     */ "EVENT",
             /* INT:                       */ "INT",
             /* INTEGER:                   */ "INTEGER",
+            /* INTEGER2STATE              */ "INTEGER",
             /* LOGIC:                     */ "LOGIC",
+            /* LOGIC2STATE:               */ "LOGIC",
             /* LONGINT:                   */ "LONGINT",
             /* DOUBLE:                    */ "DOUBLE",
             /* SHORTINT:                  */ "SHORTINT",
             /* TIME:                      */ "TIME",
+            /* TIME2STATE                 */ "TIME",
             /* STRING:                    */ "",
             /* UNTYPED:                   */ "",  // Should not be traced
             /* SCOPEPTR:                  */ "",  // Should not be traced
@@ -725,6 +779,7 @@ public:
             /* UINT64:                    */ "BIT",
             /* LOGIC_IMPLICIT:            */ "",  // Should not be traced
         };
+        static_assert(sizeof(lut) / sizeof(lut[0]) == _ENUM_MAX, "Missing trace signal type");
         return lut[m_e];
     }
 };
@@ -817,6 +872,25 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
 
 // ######################################################################
 
+namespace {
+// Validate the arguments descriptor
+// LCOV_EXCL_START
+static constexpr bool validateArgsDescriptor(const char* descrp) {
+    // Is "TODO"
+    if (descrp[0] == 'T' && descrp[1] == 'O' && descrp[2] == 'D' && descrp[3] == 'O'
+        && !descrp[4]) {
+        return true;
+    }
+    // Is a sequence of 'r'/'w'/'m' with an optional trailing '+'
+    for (const char* cp = descrp; *cp; ++cp) {
+        if (*cp == '+') return cp != descrp && !cp[1];
+        if (*cp != 'r' && *cp != 'w' && *cp != 'm') return false;
+    }
+    return true;
+}
+// LCOV_EXCL_STOP
+};  //namespace
+
 // C++ methods invoked on runtime library data types via AstCMethodHard.
 // The argument descriptor gives the access direction of each argument:
 // - 'r' read by the call
@@ -880,6 +954,11 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_ATTACH,                  "attach",                 false,  "r") \
     macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  "") \
     macro(COVERGROUP_COVERAGE,                "coverage",               false,  "") \
+    macro(COVERGROUP_CROSS_WITH_BEGIN,        "withBegin",              false,  "r+") \
+    macro(COVERGROUP_CROSS_WITH_END,          "withEnd",                false,  "") \
+    macro(COVERGROUP_CROSS_WITH_TEST,         "withTest",               false,  "r") \
+    macro(COVERGROUP_CROSS_WITH_VALUE,        "withValue",              false,  "r") \
+    macro(COVERGROUP_CROSS_WITH_VALUE_W,      "withValueW",             false,  "rw") \
     macro(COVERGROUP_FINALIZE_BINS,           "finalizeBins",           false,  "") \
     macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  "r") \
     macro(COVERGROUP_INIT,                    "init",                   false,  "r+") \
@@ -904,7 +983,8 @@ inline std::ostream& operator<<(std::ostream& os, const VBranchPred& rhs) {
     macro(COVERGROUP_SIZED_RANGE_W,           "sizedRangeW",            false,  "rr") \
     macro(COVERGROUP_SIZED_SAMPLE,            "sizedSample",            false,  "rrr") \
     macro(COVERGROUP_SIZED_SAMPLE_W,          "sizedSampleW",           false,  "rrr") \
-    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrr") \
+    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  "rrrr") \
+    macro(COVERGROUP_TYPE_WEIGHT,             "typeWeight",             false,  "r") \
     macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   "r") \
     macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   "r") \
     macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  "") \
@@ -1046,21 +1126,6 @@ public:
     }
     // Return array method for given name
     static VCMethod arrayMethod(const string& name);
-
-    // Validate the arguments descriptor
-    static constexpr bool validateArgsDescriptor(const char* descrp) {
-        // Is "TODO"
-        if (descrp[0] == 'T' && descrp[1] == 'O' && descrp[2] == 'D' && descrp[3] == 'O'
-            && !descrp[4]) {
-            return true;
-        }
-        // Is a sequence of 'r'/'w'/'m' with an optional trailing '+'
-        for (const char* cp = descrp; *cp; ++cp) {
-            if (*cp == '+') return cp != descrp && !cp[1];
-            if (*cp != 'r' && *cp != 'w' && *cp != 'm') return false;
-        }
-        return true;
-    }
 };
 constexpr bool operator==(const VCMethod& lhs, const VCMethod& rhs) { return lhs.m_e == rhs.m_e; }
 constexpr bool operator==(const VCMethod& lhs, VCMethod::en rhs) { return lhs.m_e == rhs; }
@@ -1071,12 +1136,69 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 
 // Static assert all argument descriptors are well formed
 #define VL_CMETHOD_ARGS_CHECK(id, method, pure, args) \
-    static_assert(VCMethod::validateArgsDescriptor(args), \
-                  "Malformed argument descriptor for " #id);
+    static_assert(validateArgsDescriptor(args), "Malformed argument descriptor for " #id);
 FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 #undef VL_CMETHOD_ARGS_CHECK
 
 #undef FOR_EACH_CMETHOD
+
+// clang-format off
+#define FOR_EACH_CFUNCTION(macro) \
+    /*    id,                                 function,                 pure,   args */ \
+    macro(_NONE,                              "_none",                  false,  "") \
+    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r")
+// clang-format on
+
+class VCFunction final {
+    static constexpr bool PURE = true;  // For macro expansion of 'pure' field only
+
+public:
+    enum en : uint8_t {
+#define VL_CFUNCTION_ID(id, method, pure, args) id,
+        FOR_EACH_CFUNCTION(VL_CFUNCTION_ID)
+#undef VL_CFUNCTION_ID
+            _ENUM_MAX  // Leave last
+    };
+    enum en m_e;
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VCFunction(en _e)
+        : m_e{_e} {}
+    const char* ascii() const VL_PURE {
+        static const char* const values[] = {
+#define VL_CFUNCTION_NAME(id, function, pure, args) function,
+            FOR_EACH_CFUNCTION(VL_CFUNCTION_NAME)
+#undef VL_CFUNCTION_NAME
+                "_ENUM_MAX"  //
+        };
+        return values[m_e];
+    }
+    bool isPure() const VL_PURE {
+        static const bool values[] = {
+#define VL_CFUNCTION_PURE(id, method, pure, args) pure,
+            FOR_EACH_CFUNCTION(VL_CFUNCTION_PURE)
+#undef VL_CFUNCTION_PURE
+                false  //
+        };
+        return values[m_e];
+    }
+    const char* args() const VL_PURE {
+        static const char* const values[] = {
+#define VL_CFUNCTION_ARGS(id, method, pure, args) args,
+            FOR_EACH_CFUNCTION(VL_CFUNCTION_ARGS)
+#undef VL_CFUNCTION_ARGS
+                ""  //
+        };
+        return values[m_e];
+    }
+};
+
+// Static assert all argument descriptors are well formed
+#define VL_CFUNCTION_ARGS_CHECK(id, method, pure, args) \
+    static_assert(validateArgsDescriptor(args), "Malformed argument descriptor for " #id);
+FOR_EACH_CFUNCTION(VL_CFUNCTION_ARGS_CHECK)
+#undef VL_CFUNCTION_ARGS_CHECK
+
+#undef FOR_EACH_CFUNCTION
 
 // ######################################################################
 
@@ -1161,8 +1283,8 @@ public:
         UNSUPPORTED,
         SAMEISH,
         COMPATIBLE,
-        ENUM_EXPLICIT,
         ENUM_IMPLICIT,
+        ENUM_EXPLICIT,
         DYNAMIC_CLASS,
         INCOMPATIBLE,
         _ENUM_MAX  // Leave last
@@ -1170,8 +1292,8 @@ public:
     enum en m_e;
     const char* ascii() const {
         static constexpr const char* const names[]
-            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_EXPLICIT",
-               "ENUM_IMPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
+            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_IMPLICIT",
+               "ENUM_EXPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
         return names[m_e];
     }
     bool isAssignable() const { return m_e != UNSUPPORTED && m_e != INCOMPATIBLE; }
@@ -2025,7 +2147,7 @@ public:
         : m_strp{std::make_shared<const string>("this->" + field)} {}
     class VlSyms {};  // for creator type-overload selection
     VSelfPointerText(VlSyms, const string& field)
-        : m_strp{std::make_shared<const string>("(&vlSymsp->" + field + ')')} {}
+        : m_strp{std::make_shared<const string>("(&vlSymsp->vlInst." + field + ')')} {}
 
     // METHODS
     bool isEmpty() const { return m_strp == s_emptyp; }

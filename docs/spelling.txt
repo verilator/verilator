@@ -1,3 +1,4 @@
+AArch
 ABCp
 Aadi
 Accellera
@@ -637,6 +638,7 @@ bitOpTree
 bitaggregat
 bitop
 bitstoreal
+bitwise
 blackbox
 bokke
 bool
@@ -743,6 +745,7 @@ difftree
 dir
 disambiguates
 discoverability
+disjunction
 displayb
 distcc
 doxygen
@@ -1118,6 +1121,7 @@ rodata
 rolloverSize
 rr
 rst
+runnable
 runtime
 runtimes
 rw
@@ -1225,6 +1229,7 @@ typedef'ed
 typedefed
 typedefs
 typename
+typenames
 uint
 un
 unbased

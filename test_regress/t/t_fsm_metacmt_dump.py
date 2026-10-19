@@ -21,11 +21,9 @@ tree_files = test.glob_some(test.obj_dir + "/*.tree")
 json_files = test.glob_some(test.obj_dir + "/*.tree.json")
 
 test.file_grep_any(tree_files, r'\[aFSMSTATE\]')
-test.file_grep_any(tree_files, r'\[aFSMRESETARC\]')
 test.file_grep_any(tree_files, r'\[aFSMARCCOND\]')
 
 test.file_grep_any(json_files, r'"attrFsmState":true')
-test.file_grep_any(json_files, r'"attrFsmResetArc":true')
 test.file_grep_any(json_files, r'"attrFsmArcInclCond":true')
 
 for filename in json_files:

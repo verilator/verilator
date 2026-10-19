@@ -97,7 +97,7 @@ module unknown_reset (
 
   logic rst;
   integer cyc;
-  state_t state_q  /*verilator fsm_reset_arc*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   initial begin
@@ -140,7 +140,7 @@ module unknown_source (
     S1 = 2'd1
   } state_t;
 
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
@@ -166,7 +166,7 @@ module unknown_if_source (
     S1 = 2'd1
   } state_t;
 
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
@@ -190,7 +190,7 @@ module unknown_if_direct_target (
     S1 = 2'd1
   } state_t;
 
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
@@ -215,7 +215,7 @@ module unknown_if_then_target (
   } state_t;
 
   logic sel;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
@@ -240,7 +240,7 @@ module unknown_if_else_target (
   } state_t;
 
   logic sel;
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin
@@ -264,7 +264,7 @@ module unknown_wide_direct (
     S1 = 40'h8000_0000_02
   } state_t;
 
-  state_t state_q /*verilator fsm_state*/;
+  state_t state_q  /*verilator fsm_state*/;
   state_t state_d;
 
   always_comb begin

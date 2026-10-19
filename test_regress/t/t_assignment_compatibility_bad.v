@@ -11,6 +11,16 @@ typedef struct packed {
   int b;
 } struct_t;
 
+typedef struct {
+  int a;
+  int b;
+} ustruct_t;
+
+typedef union {
+  int a;
+  int b;
+} uunion_t;
+
 module t;
 
   logic unpackedA[2];
@@ -32,6 +42,20 @@ module t;
   assign nonAggregate = unpackedA;
   assign unpackedA = assocArrayA;
   assign queueA = queueB;
+
+  ustruct_t ustructA = 7;
+  ustruct_t ustructB[2] = '{7, 8};
+  ustruct_t ustructC;
+  ustruct_t ustructD[2][2] = '{default: '{7, 8}};
+  assign ustructC = '0;
+  ustruct_t ustructE = '0;  // Issue #7460
+  uunion_t uunionA = 7;
+
+  typedef logic row3_t[3];
+  typedef logic row2_t[2];
+  row3_t rows3[2];
+  row2_t rows2[2];
+  assign rows3 = rows2;
 
   typedef bit [8191:0] wide_t;
   typedef string string_t;

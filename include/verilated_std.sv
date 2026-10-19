@@ -114,9 +114,16 @@ package std;
     protected chandle m_process;
 
     static function process self();
-      process p = new;
+      process p;
 `ifdef VERILATOR_TIMING
-      $c(p.m_process, " = vlProcess;");
+      $c("vlProcess->initFromSelf(", p, ");");
+      if (p == null) begin
+        p = new;
+        $c(p.m_process, " = vlProcess;");
+        $c("vlProcess->setSelf(&*", p, ");");
+      end
+`else
+      p = new;
 `endif
       return p;
     endfunction
@@ -136,7 +143,10 @@ package std;
     endfunction
 
     function void kill();
-      set_status(KILLED);
+`ifdef VERILATOR_TIMING
+      // IEEE 1800-2023 9.7: kill() terminates the process and all its descendants
+      $c(m_process, "->disable();");
+`endif
     endfunction
 
     function void suspend();
@@ -162,30 +172,10 @@ package std;
 `endif
     endtask
 
-    // Two process references are equal if the different classes' containing
-    // m_process are equal. Can't yet use <=> as the base class template
-    // comparisons doesn't define <=> as they don't yet require --timing and C++20.
     // verilog_format: off
 `ifdef VERILATOR_TIMING
-`systemc_header_post
-template<> template<>
-inline bool VlClassRef<`systemc_class_name>::operator==(const VlClassRef<`systemc_class_name>& rhs) const {
-    if (!m_objp && !rhs.m_objp) return true;
-    if (!m_objp || !rhs.m_objp) return false;
-    return m_objp->m_process == rhs.m_objp->m_process;
-};
-template<> template<>
-inline bool VlClassRef<`systemc_class_name>::operator!=(const VlClassRef<`systemc_class_name>& rhs) const {
-    if (!m_objp && !rhs.m_objp) return false;
-    if (!m_objp || !rhs.m_objp) return true;
-    return m_objp->m_process != rhs.m_objp->m_process;
-};
-template<> template<>
-inline bool VlClassRef<`systemc_class_name>::operator<(const VlClassRef<`systemc_class_name>& rhs) const {
-    if (!m_objp && !rhs.m_objp) return false;
-    if (!m_objp || !rhs.m_objp) return false;
-    return m_objp->m_process < rhs.m_objp->m_process;
-};
+`systemc_dtor
+    if (m_process) m_process->clearSelf(this);
 `verilog
 `endif
     // verilog_format: on

@@ -121,9 +121,6 @@ constVariablePointer:src/V3SenExprBuilder.h
 constVariablePointer:src/V3Slice.cpp
 constParameterPointer:src/V3Split.cpp
 constVariablePointer:src/V3Split.cpp
-constParameterPointer:src/V3SplitVar.cpp
-constParameterReference:src/V3SplitVar.cpp
-constVariablePointer:src/V3SplitVar.cpp
 constParameterPointer:src/V3Subst.cpp
 constParameterPointer:src/V3Task.cpp
 constParameterReference:src/V3Task.cpp

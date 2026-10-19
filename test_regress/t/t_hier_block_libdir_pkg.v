@@ -13,15 +13,15 @@ module t (
     input clk
 );
   logic [7:0] c;
-  logic [6:0] c_param;
+  logic [7:0] c_param;
   int cycles = 0;
 
   blk u (
       .clk(clk),
       .cnt_o(c)
   );
+  // Type parameter T keeps its default from my_pkg; setting it is unsupported
   blk_param #(
-      .T(logic [6:0]),
       .STEP(3)
   ) u_param (
       .clk(clk),
@@ -31,10 +31,10 @@ module t (
   always @(negedge clk) begin
     cycles = cycles + 1;
     `checkd(c, 8'(cycles));
-    `checkd(c_param, 7'(cycles * 3));
+    `checkd(c_param, 8'(cycles * 3));
     if (cycles == 10) begin
       `checkd(c, 8'd10);
-      `checkd(c_param, 7'd30);
+      `checkd(c_param, 8'd30);
       $write("*-* All Finished *-*\n");
       $finish;
     end

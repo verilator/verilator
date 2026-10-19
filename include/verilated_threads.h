@@ -256,4 +256,71 @@ private:
     std::string numaAssign(VerilatedContext* contextp);
 };
 
+//=============================================================================
+// VlExecGraph
+
+#ifndef VL_THREADS_SERIAL_COST
+// Evaluations with at most this estimated cost run on the calling thread, without waking others
+#define VL_THREADS_SERIAL_COST 80000
+#endif
+
+// Static description of a multithreaded exec graph, emitted by Verilator
+class VlExecGraph final {
+public:
+    // TYPES
+    using Fnp = void (*)(VlSelfP);  // Function taking the model's root instance
+    struct Vertex final {
+        Fnp m_fnp;  // MTask body
+        uint64_t m_staticCost;  // Static cost estimate
+        const QData* m_maskp;  // Trigger bits the MTask tests, one word per trigger word
+    };
+    struct Edge final {
+        uint32_t m_from;  // Index of the MTask that runs first
+        uint32_t m_to;  // Index of the MTask that depends on it
+    };
+
+private:
+    // MEMBERS
+    const Vertex* const m_verticesp;  // MTasks, in a topological order
+    const uint32_t m_nVertices;  // Number of MTasks
+    const Edge* const m_edgesp;  // Dependencies between MTasks
+    const uint32_t m_nEdges;  // Number of dependencies
+    const size_t m_nTriggerWords;  // Number of trigger words for MTasks
+    const IData* const m_triggerCostsp;  // Static cost of the logic each trigger guards
+    const Fnp m_dispatchp;  // Runs the graph on the thread pool, as scheduled by Verilator
+    const uint64_t m_serialCost;  // Total cost of set triggers' logic run on the caller
+
+    VL_UNCOPYABLE(VlExecGraph);
+
+public:
+    // CONSTRUCTORS
+    // constexpr, so the global graphs need no dynamic initialization, and can be used from
+    // static constructors
+    constexpr VlExecGraph(const Vertex* verticesp, uint32_t nVertices, const Edge* edgesp,
+                          uint32_t nEdges, size_t nTriggerWords, const IData* triggerCostsp,
+                          Fnp dispatchp, uint64_t serialCost)
+        : m_verticesp{verticesp}
+        , m_nVertices{nVertices}
+        , m_edgesp{edgesp}
+        , m_nEdges{nEdges}
+        , m_nTriggerWords{nTriggerWords}
+        , m_triggerCostsp{triggerCostsp}
+        , m_dispatchp{dispatchp}
+        , m_serialCost{serialCost} {}
+
+    // ACCESSORS
+    const Vertex* verticesp() const { return m_verticesp; }
+    uint32_t nVertices() const { return m_nVertices; }
+    const Edge* edgesp() const { return m_edgesp; }
+    uint32_t nEdges() const { return m_nEdges; }
+    size_t nTriggerWords() const { return m_nTriggerWords; }
+    const IData* triggerCostsp() const { return m_triggerCostsp; }
+    Fnp dispatchp() const { return m_dispatchp; }
+    uint64_t serialCost() const { return m_serialCost; }
+};
+
+// Run 'graph' for the model's root instance 'selfp', when the trigger vector holds the
+// words 'triggersp'. Only the thread evaluating the model may call this.
+void vl_invokeExecGraph(VlExecGraph& graph, VlSelfP selfp, const QData* triggersp) VL_MT_UNSAFE;
+
 #endif

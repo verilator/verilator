@@ -35,7 +35,7 @@ class V3EmitMkJsonEmitter final {
     // STATIC FUNCTIONS
     static void emitManifest() {
         const std::string makeDir
-            = V3Os::filenameSlashPath(V3Os::filenameRealPath(v3Global.opt.makeDir()));
+            = V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(v3Global.opt.makeDir()));
 
         V3OutJsonFile of{makeDir + "/" + v3Global.opt.prefix() + ".json"};
 
@@ -52,7 +52,7 @@ class V3EmitMkJsonEmitter final {
             const AstCFile* const cfilep = VN_CAST(nodep, CFile);
             if (cfilep && cfilep->source()) {
                 const std::string filename
-                    = V3Os::filenameSlashPath(V3Os::filenameRealPath(cfilep->name()));
+                    = V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(cfilep->name()));
                 if (cfilep->support()) {
                     if (cfilep->slow()) {
                         supportSlow.emplace_back(filename);
@@ -69,8 +69,8 @@ class V3EmitMkJsonEmitter final {
             }
         }
 
-        const std::string verilatorRoot
-            = V3Os::filenameSlashPath(V3Os::filenameRealPath(V3Options::getenvVERILATOR_ROOT()));
+        const std::string verilatorRoot = V3Os::filenameSlashPath(
+            V3Os::filenameAbsolutePath(V3Options::getenvVERILATOR_ROOT()));
         for (const string& cpp : v3Global.verilatedCppFiles())
             global.emplace_back(verilatorRoot + "/include/" + cpp);
         if (!v3Global.opt.libCreate().empty()) {
@@ -78,9 +78,9 @@ class V3EmitMkJsonEmitter final {
         }
 
         for (const auto& dep : V3File::getAllDeps())
-            deps.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(dep)));
+            deps.emplace_back(V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(dep)));
         for (const auto& cppFile : v3Global.opt.cppFiles())
-            cppFiles.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(cppFile)));
+            cppFiles.emplace_back(V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(cppFile)));
 
         of.put("version", 1)
             .begin("system")
@@ -128,7 +128,8 @@ class V3EmitMkJsonEmitter final {
                 }
 
                 for (const string& fname : V3HierGraph::sourceFiles(hblockp->vFileIfNecessary())) {
-                    sources.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(fname)));
+                    sources.emplace_back(
+                        V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(fname)));
                 }
 
                 of.begin()
@@ -138,7 +139,7 @@ class V3EmitMkJsonEmitter final {
                     .put("directory", makeDir + "/" + hblockp->hierPrefix())
                     .putList("sources", sources)
                     .putList("cflags", {"-fPIC"})
-                    .put("verilator_args", V3Os::filenameSlashPath(V3Os::filenameRealPath(
+                    .put("verilator_args", V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(
                                                hblockp->commandArgsFilename(true))))
                     .end();
             }
@@ -156,7 +157,8 @@ class V3EmitMkJsonEmitter final {
                 }
 
                 for (const string& fname : V3HierGraph::sourceFiles()) {
-                    sources.emplace_back(V3Os::filenameSlashPath(V3Os::filenameRealPath(fname)));
+                    sources.emplace_back(
+                        V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(fname)));
                 }
 
                 of.begin()
@@ -164,7 +166,7 @@ class V3EmitMkJsonEmitter final {
                     .put("top", v3Global.rootp()->topModulep()->name())
                     .put("directory", makeDir)
                     .putList("sources", sources)
-                    .put("verilator_args", V3Os::filenameSlashPath(V3Os::filenameRealPath(
+                    .put("verilator_args", V3Os::filenameSlashPath(V3Os::filenameAbsolutePath(
                                                graphp->topCommandArgsFilename(true))))
                     .end();
             }

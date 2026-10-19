@@ -41,6 +41,7 @@ public:
     explicit V3Hash(uint64_t val)
         : m_value{combine(static_cast<uint32_t>(val), static_cast<uint32_t>(val >> 32))} {}
     explicit V3Hash(const std::string& val);
+    explicit V3Hash(double val);
 
     explicit V3Hash(int32_t val)
         : V3Hash{static_cast<uint32_t>(val)} {}

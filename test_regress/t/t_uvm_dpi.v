@@ -113,7 +113,7 @@ module t;
 
     begin : t_hier
 `ifdef VERILATOR
-      $c("Verilated::lastContextp()->fatalOnVpiError(false);");
+      $c("Verilated::threadContextp()->fatalOnVpiError(false);");
 `ifdef TEST_VERBOSE
       $c("Verilated::scopesDump();");
 `endif

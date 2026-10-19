@@ -30,6 +30,7 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
+#include "V3SharedTmps.h"
 #include "V3Stats.h"
 
 class V3DfgContext;
@@ -422,9 +423,15 @@ public:
         m_removeUnobservableContext;  // Stats context for V3DfgRemoveUnobservable
     V3DfgSynthesisContext m_synthContext;  // Statistics context for V3DfgSynthesize
 
+    // Temporary variables created by all algorithms, shared by instances
+    V3SharedTmps m_sharedTmps{"__Vdfg", VVarType::MODULETEMP};
+
     // CONSTRUCTOR
     V3DfgContext() = default;
-    ~V3DfgContext() = default;
+    ~V3DfgContext() {
+        V3Stats::addStat("Optimizations, DFG, temporary declarations reused",
+                         m_sharedTmps.nReused());
+    }
 };
 
 #endif  //VERILATOR_V3DFGCONTEXT_H_

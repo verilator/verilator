@@ -14,7 +14,7 @@ test.scenarios('vlt')
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
-test.compile(verilator_flags2=["--prof-cfuncs"])
+test.compile()
 
 test.execute(fails=True, expect_filename=test.golden_filename)
 

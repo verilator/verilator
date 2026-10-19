@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 ViraSemi Inc.
 // SPDX-License-Identifier: CC0-1.0
 
-`timescale 1ns/1ps
+`timescale 1ns / 1ps
 
 module t;
 
