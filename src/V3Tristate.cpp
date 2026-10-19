@@ -508,7 +508,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     void associateLogic(AstNode* fromp, AstNode* top) {
         if (m_logicp) m_tgraph.associate(fromp, top);
     }
-    AstNodeExpr* newAllZerosOrOnes(AstNode* nodep, bool ones) {
+    static AstNodeExpr* newAllZerosOrOnes(AstNode* nodep, bool ones) {
         if (const AstUnpackArrayDType* const arrayp
             = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
             return new AstConsArray{nodep->fileline(), nodep->dtypep(),
@@ -519,7 +519,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstConst* const newp = new AstConst{nodep->fileline(), num};
         return newp;
     }
-    AstNodeExpr* newElement(AstNodeExpr* const nodep, int index) {
+    static AstNodeExpr* newElement(AstNodeExpr* const nodep, int index) {
         if (const AstConsArray* const initp = VN_CAST(nodep, ConsArray)) {
             return initp->valuep(index)->cloneTreePure(false);
         }
