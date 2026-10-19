@@ -182,10 +182,23 @@ std::string getStr(vpiHandle handle, PLI_INT32 format) {
     return value.value.str;
 }
 
+// The combinational refusal's text is printed in full once, then only the name it reports
 void reject(const std::string& name, uint32_t v, PLI_INT32 flags = vpiNoDelay) {
+    static const std::string s_combMsg
+        = "vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a "
+          "public_flat_rw attribute to write ";
+    static bool s_combPrinted = false;
     const uint32_t before = get(name);
     put(name, v, flags);
-    TEST_CHECK_ERROR(true);
+    s_vpi_error_info info{};
+    TEST_CHECK_NZ_LABEL(name.c_str(), vpi_chk_error(&info));
+    const std::string msg = info.message ? info.message : "";
+    if (msg.rfind(s_combMsg, 0) == 0 && s_combPrinted) {
+        std::printf("reject %s\n", msg.substr(s_combMsg.size()).c_str());
+    } else {
+        s_combPrinted |= msg.rfind(s_combMsg, 0) == 0;
+        std::printf("vpi_chk_error: %s\n", msg.c_str());
+    }
     check(name, get(name), before);
 }
 
