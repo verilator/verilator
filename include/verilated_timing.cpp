@@ -156,8 +156,7 @@ void VlTriggerScheduler::moveToResumeQueue(const char* eventDescription) {
     if (!m_fired.empty()) {
         VL_DEBUG_IF(VL_DBG_MSGF("         Moving to resume queue processes waiting for %s:\n",
                                 eventDescription);
-                    for (const auto& susp
-                         : m_fired) {
+                    for (const auto& susp : m_fired) {
                         VL_DBG_MSGF("           - ");
                         susp.dump();
                     });
@@ -176,8 +175,7 @@ void VlTriggerScheduler::ready(const char* eventDescription) {
     if (!m_awaiting.empty()) {
         VL_DEBUG_IF(
             VL_DBG_MSGF("         Committing processes waiting for %s:\n", eventDescription);
-            for (const auto& susp
-                 : m_awaiting) {
+            for (const auto& susp : m_awaiting) {
                 VL_DBG_MSGF("           - ");
                 susp.dump();
             });
@@ -246,8 +244,7 @@ bool VlDynamicTriggerScheduler::evaluate() {
 void VlDynamicTriggerScheduler::doPostUpdates() {
     VL_DEBUG_IF(if (!m_post.empty())
                     VL_DBG_MSGF("         Doing post updates for processes:\n");  //
-                for (const auto& susp
-                     : m_post) {
+                for (const auto& susp : m_post) {
                     VL_DBG_MSGF("           - ");
                     susp.dump();
                 });
@@ -261,8 +258,7 @@ void VlDynamicTriggerScheduler::doPostUpdates() {
 
 void VlDynamicTriggerScheduler::resume() {
     VL_DEBUG_IF(if (!m_triggered.empty()) VL_DBG_MSGF("         Resuming processes:\n");  //
-                for (const auto& susp
-                     : m_triggered) {
+                for (const auto& susp : m_triggered) {
                     VL_DBG_MSGF("           - ");
                     susp.dump();
                 });
