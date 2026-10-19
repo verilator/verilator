@@ -35,9 +35,7 @@ class EmitCConstPool final : public EmitCConstInit {
     using OutCFilePair = std::pair<V3OutCFile*, AstCFile*>;
 
     // MEMBERS
-    VDouble0 m_constsEmitted;
-    VDouble0 m_mapsEmitted;
-    VDouble0 m_tablesEmitted;
+    std::array<VDouble0, VNType::NUM_TYPES()> m_emitted;  // Entries emitted, by value type
     V3UniqueNames m_uniqueNames;  // Generates unique file names
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "__ConstPool";
 
@@ -71,16 +69,12 @@ class EmitCConstPool final : public EmitCConstInit {
                 puts("#include \"verilated.h\"\n");
             }
 
-            const std::string nameProtect
-                = EmitCUtil::topClassName() + "__ConstPool__" + varp->nameProtect();
             puts("\n");
             putns(varp, "extern ");
             // Literal types should be constinit (no code generation needed)
             if (varp->dtypep()->isLiteralType()) putns(varp, "VL_CONSTINIT_CXX20 ");
             putns(varp, "const ");
-            putns(varp, varp->dtypep()->cType(nameProtect, false, false));
-            UASSERT_OBJ(varp, varp->valuep(), "Var without value");
-            emitDirectInit(varp->valuep());
+            emitVarDefn(varp);
             // Account for file splitting
             varp->valuep()->foreach([this](const AstConst* constp) {
                 if (constp->num().isString()) {
@@ -93,24 +87,27 @@ class EmitCConstPool final : public EmitCConstInit {
             });
             putns(varp, ";\n");
             // Keep track of stats
-            if (VN_IS(varp->dtypep(), AssocArrayDType)) {
-                ++m_mapsEmitted;
-            } else if (VN_IS(varp->dtypep(), UnpackArrayDType)) {
-                ++m_tablesEmitted;
-            } else {
-                ++m_constsEmitted;
-            }
+            ++m_emitted[varp->valuep()->type()];
         }
 
         if (ofp()) closeOutputFile();
     }
 
+    // VISITORS
+    void visit(AstNode* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("Unknown node type reached EmitCConstPool: " << nodep->prettyTypeName());
+    }  // LCOV_EXCL_STOP
+
 public:
     explicit EmitCConstPool(const AstPackage* poolp) {
         emitVars(poolp);
-        V3Stats::addStatSum("ConstPool, Constants emitted", m_constsEmitted);
-        V3Stats::addStatSum("ConstPool, Maps emitted", m_mapsEmitted);
-        V3Stats::addStatSum("ConstPool, Tables emitted", m_tablesEmitted);
+        const auto addStat = [this](VNType type) {
+            V3Stats::addStat("ConstPool, "s + type.ascii() + " emitted", m_emitted[type]);
+        };
+        addStat(VNType::Const);
+        for (int t = VNType::firstNodeCons; t <= VNType::lastNodeCons; ++t) {
+            addStat(static_cast<VNType::en>(t));
+        }
     }
 };
 

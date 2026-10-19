@@ -1274,7 +1274,7 @@ package Vt_debug_emitv___024unit;
     endfunction
 endpackage
 package Vt_debug_emitv___Vconstpool;
-    string TABLE_0[1:0];
+    string CONSARRAY_0[1:0];
 endpackage
 package Vt_debug_emitv_std;
     class Vt_debug_emitv_process;

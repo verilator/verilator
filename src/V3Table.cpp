@@ -114,7 +114,7 @@ public:
 
     AstVarScope* varScopep() {
         if (!m_varScopep) {
-            AstVarRef* const refp = V3ConstPool::findTable(m_consp);
+            AstVarRef* const refp = V3ConstPool::find(m_consp);
             m_varScopep = refp->varScopep();
             VL_DO_DANGLING(refp->deleteTree(), refp);
         }
