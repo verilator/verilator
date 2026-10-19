@@ -178,6 +178,8 @@ public:
     uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
     // Fixed aggregate streaming properties
     bool isStreamableFixedAggregate() const;
+    // Whether is a string, or an unpacked array or structure containing one
+    bool containsString() const;
     bool containsUnpackedStruct() const;
     int widthStream() const;
     string vlEnumType() const;  // Return VerilatedVarType: VLVT_UINT32, etc
@@ -304,6 +306,10 @@ public:
     void name(const string& flag) override { m_name = flag; }
     // Keep the name the typedef declaring it gives, as it moves off it to the type table
     void typedefName(const string& name) { m_typedefName = name; }
+    // Name of the C structure for DPI, empty if no typedef names it, so declared where used
+    string dpiName() const;
+    // C typedef of the unpacked structure for DPI (IEEE 1800-2023 H.7.3)
+    string dpiTypedef() const;
     bool packed() const VL_MT_SAFE { return m_packed; }
     void packed(bool flag) { m_packed = flag; }
     // packed() but as don't support unpacked, presently all structs

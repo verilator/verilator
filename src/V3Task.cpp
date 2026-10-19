@@ -32,6 +32,7 @@
 #include "V3Control.h"
 #include "V3EmitCBase.h"
 #include "V3Graph.h"
+#include "V3LanguageWords.h"
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
 
@@ -382,8 +383,8 @@ struct TaskDpiUtils final {
     // if type uses svBitVecVal/svLogicVecVal and ther result is returned via
     // an output parameter, o false if uses C primitive type and result is the
     // return value.
-    static std::pair<std::string, bool> dpiToInternalCvtStmt(AstVar* varp) {
-        AstBasicDType* const basicp = varp->basicp();
+    static std::pair<std::string, bool> dpiToInternalCvtStmt(const AstNodeDType* dtypep) {
+        const AstBasicDType* const basicp = dtypep->basicp();
 
         // DPI types using Primitive C types
         if (basicp->keyword() == VBasicDTypeKwd::CHANDLE) return {"VL_CVT_VP_Q(", false};
@@ -391,11 +392,11 @@ struct TaskDpiUtils final {
         if (basicp->isDpiPrimitive()) return {"(", false};
 
         // DPI types using svBitVecVal/svLogicVecVal
-        UASSERT_OBJ(basicp->isDpiBitVec() || basicp->isDpiLogicVec(), varp,
+        UASSERT_OBJ(basicp->isDpiBitVec() || basicp->isDpiLogicVec(), dtypep,
                     "Should use svBitVecVal/svLogicVecVal");
 
         const std::string vecType = basicp->isDpiBitVec() ? "SVBV" : "SVLV";
-        const AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
+        dtypep = dtypep->skipRefp();
         const char sizeChar = dtypep->width() <= 8    ? 'C'
                               : dtypep->width() <= 16 ? 'S'
                                                       : *dtypep->charIQWN();
@@ -438,6 +439,7 @@ class TaskVisitor final : public VNVisitor {
 
     // STATE - across all visitors
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
+    std::map<std::string, const AstStructDType*> m_dpiStructs;  // C names of DPI structures
     VDouble0 m_statInlines;  // Statistic tracking
     VDouble0 m_statHierDpisWithCosts;  // Statistic tracking
 
@@ -851,10 +853,14 @@ class TaskVisitor final : public VNVisitor {
                         dpiproto += ", ";
                     }
                     // Include both the Verilator and C type names, as if either
-                    // differ we may get C compilation problems later
+                    // differ we may get C compilation problems later. An unpacked structure
+                    // has one layout per C name (checkDpiStructArgs), so its C name and
+                    // elements suffice, as e.g. specializations differ only in Verilator names.
                     const std::string dpiType = portp->dpiArgType(false, false);
                     dpiproto += dpiType;
-                    const std::string vType = portp->dtypep()->prettyDTypeName(false);
+                    const std::string vType = portp->dtypep()->containsUnpackedStruct()
+                                                  ? portp->dpiTmpVarType("")
+                                                  : portp->dtypep()->prettyDTypeName(false);
                     if (!portp->isDpiOpenArray() && dpiType != vType) {
                         dpiproto += " /* " + vType + " */ ";
                     }
@@ -910,45 +916,109 @@ class TaskVisitor final : public VNVisitor {
         return new AstCStmt{portp->fileline(), stmt};
     }
 
-    AstNodeStmt* createAssignDpiToInternal(AstVarScope* vscp, const std::string& rhsName) {
-        // Create assignment from DPI temporary into internal format
-        // DPI temporary is scalar or 1D array (if unpacked array)
-        // Internal representation is scalar, 1D, or multi-dimensional array (similar to SV)
-        AstVar* const varp = vscp->varp();
-        FileLine* const flp = vscp->fileline();
+    // Create statement converting between 'internalp' and the DPI C expression 'dpi' of type
+    // 'dtypep', neither an unpacked array nor an unpacked structure, to DPI if 'toDpi', else from
+    // DPI. If the DPI type is svBitVecVal/svLogicVecVal, 'dpi' is a pointer to the value.
+    static AstNodeStmt* createDpiScalarCvt(AstNodeExpr* internalp, const std::string& dpi,
+                                           const AstNodeDType* dtypep, bool toDpi) {
+        FileLine* const flp = internalp->fileline();
+        const AstBasicDType* const basicp = dtypep->basicp();
+        if (toDpi) {
+            AstCStmt* const cstmtp = new AstCStmt{flp};
+            if (basicp->isDpiPrimitive()) {
+                cstmtp->add(dpi + (basicp->isCHandle() ? " = VL_CVT_Q_VP(" : " = "));
+                cstmtp->add(internalp);
+                cstmtp->add(basicp->isCHandle() ? ");" : basicp->isString() ? ".c_str();" : ";");
+            } else {
+                cstmtp->add((basicp->isDpiBitVec() ? "VL_SET_SVBV_"s : "VL_SET_SVLV_"s)
+                            + dtypep->skipRefp()->charIQWN() + "("
+                            + std::to_string(dtypep->width()) + ", " + dpi + ", ");
+                cstmtp->add(internalp);
+                cstmtp->add(");");
+            }
+            return cstmtp;
+        }
         std::string cvt;
         bool useSvVec;
-        std::tie(cvt, useSvVec) = TaskDpiUtils::dpiToInternalCvtStmt(varp);
+        std::tie(cvt, useSvVec) = TaskDpiUtils::dpiToInternalCvtStmt(dtypep);
+        if (useSvVec) {
+            AstCStmt* const cstmtp = new AstCStmt{flp};
+            cstmtp->add(cvt);
+            cstmtp->add(internalp);
+            cstmtp->add(", " + dpi + ");");
+            return cstmtp;
+        }
+        // Number of bits in the C expression result, for masking.
+        const int cwidth = basicp->widthWords() * VL_EDATASIZE;
+        AstNodeExpr* const rhsp = new AstCExpr{flp, cvt + dpi + ")", cwidth};
+        return new AstAssign{flp, internalp, new AstSel{flp, rhsp, 0, dtypep->width()}};
+    }
+
+    // Create statements converting between 'internalp' and the DPI C expression 'dpi' of type
+    // 'dtypep'. Unpacked arrays and unpacked structures are converted by their elements and
+    // members, as DPI passes them as C arrays and C structures (IEEE 1800-2023 H.7.3).
+    static AstNodeStmt* createDpiCvt(AstNodeExpr* internalp, const std::string& dpi,
+                                     const AstNodeDType* dtypep, bool toDpi) {
+        FileLine* const flp = internalp->fileline();
+        dtypep = dtypep->skipRefp();
+        AstNodeStmt* stmtsp = nullptr;
+        if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+            // Internal index 0 is of the lowest SystemVerilog index, as C index 0 is
+            for (int i = 0; i < arrayp->elementsConst(); ++i) {
+                AstNodeExpr* const elemp = new AstArraySel{flp, internalp->cloneTree(false), i};
+                stmtsp = AstNode::addNext(stmtsp,
+                                          createDpiCvt(elemp, dpi + "[" + std::to_string(i) + "]",
+                                                       arrayp->subDTypep(), toDpi));
+            }
+        } else if (dtypep->containsUnpackedStruct()) {
+            for (const AstMemberDType* itemp = VN_AS(dtypep, StructDType)->membersp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                AstStructSel* const selp
+                    = new AstStructSel{flp, internalp->cloneTree(false), itemp->name()};
+                selp->dtypeFrom(itemp->dtypep());
+                stmtsp
+                    = AstNode::addNext(stmtsp, createDpiCvt(selp, dpi + "." + itemp->prettyName(),
+                                                            itemp->subDTypep(), toDpi));
+            }
+        } else {
+            return createDpiScalarCvt(internalp, dpi, dtypep, toDpi);
+        }
+        VL_DO_DANGLING(internalp->deleteTree(), internalp);
+        return stmtsp;
+    }
+
+    // Create statements converting between the internal variable 'vscp' and the DPI temporary or
+    // argument 'dpiName'. Converts to DPI if 'toDpi', else from DPI. Internal representation is
+    // scalar, 1D, or multi-dimensional array (similar to SV). DPI value is scalar or 1D array (if
+    // unpacked array), always an array if of unpacked structures, as passed by reference.
+    static AstNodeStmt* createDpiArgCvt(AstVarScope* vscp, const std::string& dpiName,
+                                        bool toDpi) {
+        AstVar* const varp = vscp->varp();
+        FileLine* const flp = vscp->fileline();
         const std::vector<std::pair<int, int>> strides = TaskDpiUtils::unpackDimsAndStrides(varp);
         // Total number of elements in unpacked array
         const int total = strides.empty() ? 1 : strides[0].first * strides[0].second;
-        // Number of words per element/primitive type
-        const int widthWords = varp->basicp()->widthWords();
-        // Number of bits in the C expression result, for masking.
-        const int cwidth = widthWords * VL_EDATASIZE;
+        const bool isStruct = varp->dtypep()->containsUnpackedStruct();
+        const AstNodeDType* const elemDTypep = varp->dtypep()->elemDTypep();
         // The resulting list of statements
         AstNodeStmt* stmtsp = nullptr;
         for (int i = 0; i < total; ++i) {
-            AstNodeExpr* lhsp = new AstVarRef{flp, vscp, VAccess::WRITE};
+            AstNodeExpr* internalp
+                = new AstVarRef{flp, vscp, toDpi ? VAccess::READ : VAccess::WRITE};
 
             // Extract a scalar from multi-dimensional array (internal format)
             for (const auto& stride : strides) {
-                lhsp = new AstArraySel(flp, lhsp, (i / stride.second) % stride.first);
+                internalp = new AstArraySel(flp, internalp, (i / stride.second) % stride.first);
             }
 
             // Extract a scalar from DPI temporary var that is scalar or 1D array
-            if (useSvVec) {
-                AstCStmt* const cstmtp = new AstCStmt{flp};
-                cstmtp->add(cvt);
-                cstmtp->add(lhsp);
-                cstmtp->add(", " + rhsName + " + " + std::to_string(i * widthWords) + ");");
-                stmtsp = AstNode::addNext(stmtsp, cstmtp);
-            } else {
-                const std::string elem = strides.empty() ? "" : "[" + std::to_string(i) + "]";
-                AstNodeExpr* rhsp = new AstCExpr{flp, cvt + rhsName + elem + ")", cwidth};
-                rhsp = new AstSel{flp, rhsp, 0, varp->width()};
-                stmtsp = AstNode::addNext(stmtsp, new AstAssign{flp, lhsp, rhsp});
+            std::string dpi = dpiName;
+            if (!isStruct && !varp->basicp()->isDpiPrimitive()) {
+                dpi += " + " + std::to_string(i * varp->basicp()->widthWords());
+            } else if (isStruct || !strides.empty()) {
+                dpi += "[" + std::to_string(i) + "]";
             }
+            stmtsp = AstNode::addNext(stmtsp, createDpiCvt(internalp, dpi, elemDTypep, toDpi));
         }
         return stmtsp;
     }
@@ -972,6 +1042,8 @@ class TaskVisitor final : public VNVisitor {
         funcp->cname(cname);
         // Add DPI Export to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
+        // Check the arguments before converting them
+        if (!makePortList(nodep, funcp)) return nullptr;
 
         // Note this function may dispatch on a different class.
         // Thus we need to be careful not to assume a particular function layout.
@@ -1020,6 +1092,7 @@ class TaskVisitor final : public VNVisitor {
         // First argument is the Syms
         callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
         // Add function arguments
+        AstNode* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
             AstVar* const portp = VN_CAST(stmtp, Var);
             if (!portp) continue;
@@ -1028,15 +1101,21 @@ class TaskVisitor final : public VNVisitor {
             if (portp == rtnvarp) continue;  // Handled below
             // Add argument to call
             AstVarScope* const outvscp = addFuncArg(portp);
+            const bool isStruct = portp->dtypep()->containsUnpackedStruct();
+            if (portp->isWritable()) {
+                outCvtsp = AstNode::addNext(
+                    outCvtsp, isStruct ? createDpiArgCvt(outvscp, portp->name(), true)
+                                       : createAssignInternalToDpi(portp, true, tmpSuffixp, ""));
+            }
             if (!portp->isNonOutput()) continue;
             // Convert input/inout arguments to dpi type
             const std::string deref
-                = portp->isInout()  //
+                = portp->isInout() && !isStruct  //
                           && portp->basicp()->isDpiPrimitive()  //
                           && portp->dtypep()->skipRefp()->dimensions(false).second == 0
                       ? "*"
                       : "";
-            funcp->addStmtsp(createAssignDpiToInternal(outvscp, deref + portp->name()));
+            funcp->addStmtsp(createDpiArgCvt(outvscp, deref + portp->name(), false));
         }
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
@@ -1045,13 +1124,7 @@ class TaskVisitor final : public VNVisitor {
         // Call the user function
         funcp->addStmtsp(callp);
         // Convert output/inout arguments back to internal type
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                if (portp->isIO() && portp->isWritable() && !portp->isFuncReturn()) {
-                    funcp->addStmtsp(createAssignInternalToDpi(portp, true, tmpSuffixp, ""));
-                }
-            }
-        }
+        if (outCvtsp) funcp->addStmtsp(outCvtsp);
         // Convert return value
         if (rtnvarp) {
             funcp->addStmtsp(createDpiTemp(rtnvarp, ""));
@@ -1059,7 +1132,6 @@ class TaskVisitor final : public VNVisitor {
             const std::string index = rtnvarp->basicp()->isDpiPrimitive() ? "" : "[0]";
             funcp->addStmtsp(new AstCStmt{flp, "return " + rtnvarp->name() + index + ";"});
         }
-        if (!makePortList(nodep, funcp)) return nullptr;
         return funcp;
     }
 
@@ -1141,7 +1213,8 @@ class TaskVisitor final : public VNVisitor {
                     AstVar* const newPortp = portp->cloneTree(false);
                     newPortp->funcLocal(true);
                     dpip->addArgsp(newPortp);
-                    if (!portp->basicp()) {
+                    // Unpacked structures were checked by checkDpiStruct
+                    if (!portp->basicp() && !portp->dtypep()->containsUnpackedStruct()) {
                         allOk = false;
                         portp->v3warn(
                             E_UNSUPPORTED,
@@ -1153,6 +1226,86 @@ class TaskVisitor final : public VNVisitor {
                         // That's what other simulators do.
                     }
                 }
+            }
+        }
+        return allOk;
+    }
+
+    // Whether C code, and the C++ Verilator generates, can use 'name' as an identifier
+    static bool isDpiCIdentifier(const string& name) {
+        return !name.empty() && VString::isIdentifier(name)
+               && !std::isdigit(name[0])
+               // C reserves names beginning with '__', or '_' and an uppercase letter
+               && !(name[0] == '_' && (name[1] == '_' || std::isupper(name[1])))
+               && V3LanguageWords::isKeyword(name).empty();
+    }
+
+    // Check DPI can pass the unpacked structure 'sdtypep' of argument 'portp', else report.
+    // If 'nested' in another structure, it may be anonymous, as declared where used.
+    bool checkDpiStruct(const AstVar* portp, const AstStructDType* sdtypep, bool nested) {
+        const std::string name = sdtypep->dpiName();
+        if (!(nested && name.empty()) && !isDpiCIdentifier(name)) {
+            portp->v3warn(E_UNSUPPORTED,
+                          "Unsupported: DPI argument of unpacked structure type "
+                          "without a typedef name usable in C: '"
+                              << sdtypep->prettyDTypeName(true) << "'\n"
+                              << portp->warnMore()
+                              << "... Suggest use a typedef with a C identifier name");
+            return false;
+        }
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (!isDpiCIdentifier(itemp->prettyName())) {
+                portp->v3warn(E_UNSUPPORTED, "Unsupported: DPI argument of unpacked structure "
+                                             "type with member name not usable in C: "
+                                                 << itemp->prettyNameQ());
+                return false;
+            }
+            // Of the types of arguments, or unpacked arrays of them (IEEE 1800-2023 35.5.6)
+            const AstNodeDType* dtypep = itemp->subDTypep()->skipRefp();
+            while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+                dtypep = arrayp->subDTypep()->skipRefp();
+            }
+            const AstNodeUOrStructDType* const subp = VN_CAST(dtypep, NodeUOrStructDType);
+            const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType);
+            // Neither an unpacked array nor an unpacked structure, as createDpiScalarCvt converts
+            const bool isScalar = (subp && subp->packed()) || VN_IS(dtypep, PackArrayDType)
+                                  || (basicp && !basicp->isEvent());
+            if (dtypep->containsUnpackedStruct()) {
+                if (!checkDpiStruct(portp, VN_AS(dtypep, StructDType), true)) return false;
+            } else if (!isScalar) {
+                portp->v3error("DPI argument " << portp->prettyNameQ()
+                                               << " has unpacked structure member "
+                                               << itemp->prettyNameQ() << " of type '"
+                                               << itemp->subDTypep()->prettyDTypeName(true)
+                                               << "', which DPI does not allow"
+                                               << " (IEEE 1800-2023 35.5.6)");
+                return false;
+            }
+        }
+        // C has no scopes, so cannot have different structures of the same name
+        if (name.empty()) return true;
+        const AstStructDType* const firstp = m_dpiStructs.emplace(name, sdtypep).first->second;
+        if (firstp->dpiTypedef() == sdtypep->dpiTypedef()) return true;
+        portp->v3warn(E_UNSUPPORTED, "Unsupported: DPI arguments of different unpacked "
+                                     "structure types with the same name '"
+                                         << name << "'\n"
+                                         << portp->warnContextPrimary() << '\n'
+                                         << firstp->warnOther()
+                                         << "... Location of the other structure type\n"
+                                         << firstp->warnContextSecondary());
+        return false;
+    }
+
+    // Check DPI can pass the unpacked structure arguments of 'nodep', else report
+    bool checkDpiStructArgs(const AstNodeFTask* nodep) {
+        bool allOk = true;
+        for (const AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            const AstVar* const portp = VN_CAST(stmtp, Var);
+            if (portp && portp->isIO() && portp->dtypep()->containsUnpackedStruct()) {
+                allOk = checkDpiStruct(portp, VN_AS(portp->dtypep()->elemDTypep(), StructDType),
+                                       false)
+                        && allOk;
             }
         }
         return allOk;
@@ -1202,7 +1355,10 @@ class TaskVisitor final : public VNVisitor {
                         cfuncp->addStmtsp(new AstCStmt{portp->fileline(), varCode});
                         args += "&" + name;
                     } else {
-                        if (portp->isWritable() && portp->basicp()->isDpiPrimitive()) {
+                        // Unpacked structures are passed by reference from a C array
+                        const bool isStruct = portp->dtypep()->containsUnpackedStruct();
+                        if (portp->isWritable() && !isStruct
+                            && portp->basicp()->isDpiPrimitive()) {
                             if (!VN_IS(portp->dtypep()->skipRefp(), UnpackArrayDType)) args += "&";
                         }
 
@@ -1211,7 +1367,9 @@ class TaskVisitor final : public VNVisitor {
                         cfuncp->addStmtsp(createDpiTemp(portp, tmpSuffixp));
                         if (portp->isNonOutput()) {
                             cfuncp->addStmtsp(
-                                createAssignInternalToDpi(portp, false, "", tmpSuffixp));
+                                isStruct
+                                    ? createDpiArgCvt(portvscp, portp->name() + tmpSuffixp, true)
+                                    : createAssignInternalToDpi(portp, false, "", tmpSuffixp));
                         }
                     }
                 }
@@ -1253,7 +1411,7 @@ class TaskVisitor final : public VNVisitor {
                     AstVarScope* const portvscp = VN_AS(
                         portp->user2p(), VarScope);  // Remembered when we created it earlier
                     cfuncp->addStmtsp(
-                        createAssignDpiToInternal(portvscp, portp->name() + tmpSuffixp));
+                        createDpiArgCvt(portvscp, portp->name() + tmpSuffixp, false));
                 }
             }
         }
@@ -1287,6 +1445,13 @@ class TaskVisitor final : public VNVisitor {
             UASSERT_OBJ(portp->isFuncReturn(), nodep, "Not marked as function return var");
             if (nodep->dpiImport() || nodep->dpiExport()) {
                 AstBasicDType* const bdtypep = portp->dtypep()->basicp();
+                if (!bdtypep) {
+                    portp->v3error("DPI function may not return type '"
+                                   << portp->dtypep()->prettyDTypeName(true)
+                                   << "' (IEEE 1800-2023 35.5.5)");
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return nullptr;
+                }
                 if (!bdtypep->isDpiPrimitive()) {
                     if (bdtypep->isDpiBitVec() && portp->width() > 32) {
                         portp->v3error("DPI function may not return a > 32 bits wide type "
@@ -1325,7 +1490,7 @@ class TaskVisitor final : public VNVisitor {
         if (nodep->dpiImport() || nodep->dpiExport()) {
             UASSERT_OBJ(!(nodep->dpiOpenParent() && nodep->dpiOpenChild()), nodep,
                         "DPI task should not be both parent and child");
-            dpiFuncp = getDpiFunc(nodep, rtnvarp);
+            dpiFuncp = checkDpiStructArgs(nodep) ? getDpiFunc(nodep, rtnvarp) : nullptr;
             if (!dpiFuncp || (nodep->dpiImport() && nodep->dpiOpenParent())) {
                 // No need to make more than just the DPI Import prototype, the children will
                 // create the wrapper implementations.
@@ -2336,7 +2501,7 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
 std::string V3Task::assignDpiToInternal(const std::string& lhsName, AstVar* varp) {
     std::string cvt;
     bool useSvVec;
-    std::tie(cvt, useSvVec) = TaskDpiUtils::dpiToInternalCvtStmt(varp);
+    std::tie(cvt, useSvVec) = TaskDpiUtils::dpiToInternalCvtStmt(varp->dtypep());
     const std::vector<std::pair<int, int>> strides = TaskDpiUtils::unpackDimsAndStrides(varp);
     const int total = strides.empty() ? 1 : strides[0].first * strides[0].second;
     const int widthWords = varp->basicp()->widthWords();

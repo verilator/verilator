@@ -47,6 +47,16 @@ class EmitCModel final : public EmitCFunc {
         return funcps;
     }
 
+    // Whether 'funcp' is a DPI function with arguments of unpacked structures
+    static bool isDpiPassingStructs(const AstCFunc* funcp) {
+        if (!funcp->dpiImportPrototype() && !funcp->dpiExportDispatcher()) return false;
+        for (const AstNode* argp = funcp->argsp(); argp; argp = argp->nextp()) {
+            const AstVar* const varp = VN_CAST(argp, Var);
+            if (varp && varp->dtypep()->containsUnpackedStruct()) return true;
+        }
+        return false;
+    }
+
     void putSectionDelimiter(const string& name) {
         puts("\n");
         puts("//============================================================\n");
@@ -73,7 +83,12 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.opt.coverage() || v3Global.useCovergroup())
             puts("#include \"verilated_covergroup.h\"\n");
-        if (v3Global.dpi()) puts("#include \"svdpi.h\"\n");
+        if (v3Global.dpi()) {
+            // The model needs the C structures DPI functions pass, which the DPI header declares
+            const bool dpiStructs = !findFuncps(isDpiPassingStructs).empty();
+            puts("#include \"" + (dpiStructs ? EmitCUtil::topClassName() + "__Dpi.h" : "svdpi.h"s)
+                 + "\"\n");
+        }
 
         // Declare foreign instances up front to make C++ happy
         puts("\n");

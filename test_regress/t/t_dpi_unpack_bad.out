@@ -36,4 +36,12 @@
                                   : ... note: In instance 't'
    29 |     import_func0(sig0[1]);
       |                      ^
+%Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:40:18: Shape of the argument does not match the shape of the parameter ('struct t.u_t' v.s. 'struct t.s_t')
+                                              : ... note: In instance 't'
+   40 |     import_func3(sig3);
+      |                  ^~~~
+%Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:42:18: Shape of the argument does not match the shape of the parameter ('logic[2:0]' v.s. 'struct t.s_t')
+                                              : ... note: In instance 't'
+   42 |     import_func3(sig0);
+      |                  ^~~~
 %Error: Exiting due to
