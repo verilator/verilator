@@ -819,7 +819,7 @@ class TaskVisitor final : public VNVisitor {
 
         // If this is a non static method we need to check the scope of the VarRefs
         if (!outvscp && cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample()
-            && !refp->taskp()->dpiImport() && cfuncp->scopep()->aboveScopep() && cfuncp // && !cfuncp->isVirtual()
+            && !refp->taskp()->dpiImport() && cfuncp->scopep()->aboveScopep() && cfuncp
         ) {
             std::vector<AstNode*> unsetUser3p;
             if(VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
@@ -1746,8 +1746,8 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
-        if (nodep->classMethod() && !nodep->isStatic() && !nodep->isCovergroupSample() && !nodep->dpiImport() // && !nodep->isVirtual() // We are dealing with a pure system verilog class method, where we aren't already doing pass by ref.
-            && cfuncp->op1p() && cfuncp && cfuncp->scopep()->aboveScopep()
+        if (nodep->classMethod() && !nodep->isStatic() && !nodep->isCovergroupSample() && !nodep->dpiImport() // We are dealing with a pure system verilog class method, where we aren't already doing pass by ref.
+            && cfuncp && cfuncp->scopep()->aboveScopep()
             && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))) {
             std::vector<AstNode*> unsetUser3p;
