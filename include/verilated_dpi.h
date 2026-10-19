@@ -156,7 +156,17 @@ decltype(auto) callExportFunction(Callable&& call, Args&&... args) {
 
 // Resume the DPI call once the exported task completes
 inline VlCoroutine resumeDpiCallAfter(VlCoroutine coro, VlDpiCall* callp) {
+    // Notify the worker thread through callp in case the process was killed.
+    struct VlAbortNotify final {
+        VlDpiCall* callp;
+
+        ~VlAbortNotify() {
+            if (callp) callp->markAborted();
+        }
+    } notify{callp};
     co_await coro;
+
+    notify.callp = nullptr;
     callp->resume();
 }
 

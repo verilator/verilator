@@ -104,8 +104,9 @@ private:
 // VlDpiThreadPool keeps idle VlDpiThreads for reuse
 
 class VlDpiThreadPool final {
-    std::mutex m_mutex;  // Protects m_idle
+    std::mutex m_mutex;  // Protects m_idle and m_aborted
     std::vector<VlDpiThread*> m_idle;  // Idle threads
+    std::vector<VlDpiCall*> m_aborted;  // Aborted DPI calls
 
 public:
     VlDpiThreadPool() = default;
@@ -131,12 +132,34 @@ public:
         const std::lock_guard<std::mutex> lock{m_mutex};
         m_idle.push_back(threadp);
     }
+    void addAborted(VlDpiCall* callp) {
+        const std::lock_guard<std::mutex> lock{m_mutex};
+        m_aborted.push_back(callp);
+    }
+    void resumeAborted() {
+        while (true) {
+            VlDpiCall* callp;
+            {
+                const std::lock_guard<std::mutex> lock{m_mutex};
+                if (m_aborted.empty()) return;
+                callp = m_aborted.back();
+                m_aborted.pop_back();
+            }
+
+            // Thread that executes this call is stuck in yield()
+            callp->resume();
+        }
+    }
 };
 
 static VlDpiThreadPool& threadPool() {
     static VlDpiThreadPool s_pool;
     return s_pool;
 }
+
+namespace VerilatedDpiCall {
+void resumeAborted() { threadPool().resumeAborted(); }
+};  //namespace VerilatedDpiCall
 
 //======================================================================
 // VlDpiCall:: Methods
@@ -155,6 +178,11 @@ void VlDpiCall::resume() {
     threadPool().release(m_threadp);
     // Resuming the waiter can destroy this object
     if (const std::coroutine_handle<> waiter = m_waiter) waiter.resume();
+}
+
+void VlDpiCall::markAborted() {
+    m_exportAborted = true;
+    threadPool().addAborted(this);
 }
 
 void VlDpiCall::yield() { t_currentp->m_threadp->handoff(false); }
