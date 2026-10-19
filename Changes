@@ -20,6 +20,7 @@ Verilator 5.053 devel
 
 **Other:**
 
+* Add type check on queue assignments (#5370). [Alex Solomatnikov]
 * Add error on scalar assigned to unpacked struct (#7460) (#8780). [Jonathan Drolet]
 * Add covergroup runtime registry (#8134). [Matthew Ballance]
 * Add initial support for solo `binsof` (#8298). [Marco Bartoli]
@@ -111,7 +112,6 @@ Verilator 5.053 devel
 * Fix missing error on virtual interface access outside the modport (#5152) (#8741). [Muhammad Saad]
 * Fix huge assign concats hanging (#5276). [Luiza de Melo]
 * Fix function reference into generate case block (#5312) (#8532). [Hongseok Choi]
-* Add type check on queue assignments (#5370). [Alex Solomatnikov]
 * Fix pattern type matching against nested aggregates (#7304).
 * Fix covergroup-internal references multi-threaded ordering (#7779) (#8255). [Matthew Ballance]
 * Fix threading instability in streaming queue operations (#7780).
@@ -421,6 +421,7 @@ Verilator 5.052 2026-09-05
 * Fix undefined symbol solver error (#8080). [Igor Zaworski, Antmicro Ltd.]
 * Fix unpacked array element force with procedural assign (#8084) (#8085). [Nikolai Kumar]
 * Fix reading another parameter resolves to 0 in cloned modules (#8086)  (#8069). [em2machine]
+* Fix comments after define being part of define (#8093). [Chris Sheehan]
 * Fix hierarchical class scope resolution (#8094). [Artur Bieniek, Antmicro Ltd.]
 * Fix segmentation fault on parameters (#8102) (#8149). [Sumanth Kadiyala]
 * Fix the clang compilation using precompiled headers (#8105). [Demin Han]

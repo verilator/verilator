@@ -368,6 +368,11 @@ Not a \`define
 3 `CMT3 (nodef)
 4 `CMT4 (nodef)
 5 `CMT5 (nodef)
+`define CMT6 4 // not in define
+`define CMT7 2
+6 (`CMT6 + `CMT7)
+`define CMT8 8 // verilator public
+7 `CMT8
 `define NL HAS a NEW \
 LINE
 `NL
