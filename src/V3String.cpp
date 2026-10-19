@@ -897,6 +897,7 @@ VSpellCheck::Candidate VSpellCheck::bestCandidateInfo(const string& goal,
     }
 
     // If goal matches candidate avoid suggesting replacing with self
+    if (distancer == 0) return Candidate{ .str = best.str, .msg = "" };
     return best;
 }
 

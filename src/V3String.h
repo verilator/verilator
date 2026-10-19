@@ -261,9 +261,7 @@ public:
     // Push a symbol table value to be considered as a candidate
     // The first item pushed has highest priority, all else being equal
     void pushCandidate(const string& str) { pushCandidate(str, str); }
-    // Push a symbol table value to be considered as a candidate
     // First argument is string to be matched, the second one is message to print on success
-    // The first item pushed has highest priority, all else being equal
     void pushCandidate(const string& str, const string& msg) {
         if (m_candidates.size() < NUM_CANDIDATE_LIMIT) m_candidates.push_back({str, msg});
     }
