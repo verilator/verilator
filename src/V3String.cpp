@@ -888,7 +888,8 @@ VSpellCheck::Candidate VSpellCheck::bestCandidateInfo(const string& goal,
 
         const EditDistance dist = editDistance(goal, candidate.str);
         UINFO(9, "EditDistance dist=" << dist << " cutoff=" << cutoff << " goal=" << goal
-                                      << " candidate=" << candidate.str << ":'" << candidate.msg << "'");
+                                      << " candidate=" << candidate.str << ":'" << candidate.msg
+                                      << "'");
         if (dist < distancer && dist <= cutoff) {
             distancer = dist;
             best = candidate;

@@ -4092,10 +4092,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     return;
                 } else {
                     const std::string suggest
-                        = (nodep->param() ? m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
-                                                                     LinkNodeMatcherVarParam{}, false)
-                                          : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
-                                                                     LinkNodeMatcherVarIO{}, false));
+                        = (nodep->param()
+                               ? m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
+                                                          LinkNodeMatcherVarParam{}, false)
+                               : m_statep->suggestSymFlat(m_pinSymp, nodep->name(),
+                                                          LinkNodeMatcherVarIO{}, false));
                     const std::string decl
                         = ((m_cellp && m_cellp->modp())
                                ? "\n"s + nodep->warnMore() + "... Location of instance's "
