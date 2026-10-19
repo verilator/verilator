@@ -146,7 +146,8 @@ public:
                 m_aborted.pop_back();
             }
 
-            // Thread that executes this call is stuck in yield()
+            // Thread that is currently executing this VlDpiCall is stuck in yield().
+            // Here we resume it.
             callp->resume();
         }
     }

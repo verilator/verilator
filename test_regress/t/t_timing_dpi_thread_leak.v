@@ -32,7 +32,7 @@ module t ();
 
     // There should be one simulation thread and one worker thread
     `checkd(live_threads(), 2);
-    `checkd(export_completed, 3);
+    `checkd(export_completed, 6);
     `checkd(c_completed(), 3);
 
     c_completed_expected = 3;
@@ -49,7 +49,7 @@ module t ();
       // Thread count should be at 2
       `checkd(live_threads(), 2);
       // Killed processes should not reach the end of dpi_export()
-      `checkd(export_completed, 3);
+      `checkd(export_completed, 6);
       `checkd(c_completed(), ++c_completed_expected);
     end
     $finish;
