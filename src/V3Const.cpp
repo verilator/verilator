@@ -3055,28 +3055,7 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (const AstConsArray* const consp = VN_CAST(nodep->lhsp(), ConsArray)) {
             if (!(m_doExpensive || m_params)) return false;
-            const auto isConstInit
-                = [](const AstNode* const exprp, const auto& isConstInitRecurse) -> bool {
-                if (VN_IS(exprp, Const)) return true;
-                if (const AstConsArrayItem* const itemp = VN_CAST(exprp, ConsArrayItem)) {
-                    return isConstInitRecurse(itemp->valuep(), isConstInitRecurse);
-                }
-                if (const AstConsArray* const arrayp = VN_CAST(exprp, ConsArray)) {
-                    const auto itemIsConstInit
-                        = [&isConstInitRecurse](const AstNode* const itemp) -> bool {
-                        return isConstInitRecurse(itemp, isConstInitRecurse);
-                    };
-                    if (arrayp->itemsp() && !arrayp->itemsp()->forall(itemIsConstInit))
-                        return false;
-                    if (arrayp->defaultp()
-                        && !isConstInitRecurse(arrayp->defaultp(), isConstInitRecurse)) {
-                        return false;
-                    }
-                    return true;
-                }
-                return false;
-            };
-            if (!isConstInit(consp, isConstInit)) return false;
+            if (!consp->isConstantTree()) return false;
         } else if (!VN_IS(nodep->lhsp(), Const)) {
             return false;
         }

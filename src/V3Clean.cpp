@@ -246,23 +246,7 @@ class CleanVisitor final : public VNVisitor {
         if (nodep->defaultp()) ensureClean(nodep->defaultp());
         setClean(nodep, true);
     }
-    void visit(AstConsAssocItem* nodep) override {
-        iterateChildren(nodep);
-        ensureClean(nodep->valuep());
-    }
-    void visit(AstConsDynArrayItem* nodep) override {
-        iterateChildren(nodep);
-        ensureClean(nodep->valuep());
-    }
-    void visit(AstConsQueueItem* nodep) override {
-        iterateChildren(nodep);
-        ensureClean(nodep->valuep());
-    }
-    void visit(AstConsStructItem* nodep) override {
-        iterateChildren(nodep);
-        ensureClean(nodep->valuep());
-    }
-    void visit(AstConsWildcardItem* nodep) override {
+    void visit(AstNodeConsItem* nodep) override {
         iterateChildren(nodep);
         ensureClean(nodep->valuep());
     }

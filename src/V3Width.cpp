@@ -3790,12 +3790,8 @@ class WidthVisitor final : public VNVisitor {
         }
         nodep->dtypeFrom(nodep->itemp());
     }
-    void visit(AstConsAssoc* nodep) override {}  // Widthed when created
-    void visit(AstConsWildcard* nodep) override {}  // Widthed when created
-    void visit(AstConsDynArray* nodep) override {}  // Widthed when created
-    void visit(AstConsQueue* nodep) override {}  // Widthed when created
-    void visit(AstConsStruct* nodep) override {}  // Widthed when created
-    void visit(AstConsArray* nodep) override {}  // Widthed when created
+    void visit(AstNodeCons* nodep) override {}  // Widthed when created
+    void visit(AstNodeConsItem* nodep) override {}  // Widthed when created
     void visit(AstDist* nodep) override {
         //  x dist {a :/ p, b :/ q} --> (p > 0 && x == a) || (q > 0 && x == b)
         // (only outside constraints; inside constraints V3Randomize handles weighted selection)
@@ -6406,11 +6402,7 @@ class WidthVisitor final : public VNVisitor {
         iterateCheckTyped(patp, "key", patp->keyExprp(), keyDTypep, BOTH);
         V3Const::constifyParamsNoWarnEdit(patp->keyExprp());
         AstNodeExpr* const foldedp = patp->keyExprp();
-        const bool isConst = !foldedp->exists([](const AstNode* np) {
-            return !VN_IS(np, Const) && !VN_IS(np, ConsStruct) && !VN_IS(np, ConsStructItem)
-                   && !VN_IS(np, ConsArray) && !VN_IS(np, ConsArrayItem);
-        });
-        if (!isConst) {
+        if (!foldedp->isConstantTree()) {
             foldedp->v3error(
                 "Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)");
             return nullptr;

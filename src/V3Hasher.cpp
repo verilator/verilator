@@ -389,19 +389,7 @@ class HasherVisitor final : public VNVisitorConst {
             m_hash += nodep->displayType();
         });
     }
-    void visit(AstConsAssocItem* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
-    }
-    void visit(AstConsWildcardItem* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
-    }
-    void visit(AstConsDynArrayItem* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
-    }
-    void visit(AstConsQueueItem* nodep) override {
-        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
-    }
-    void visit(AstConsStructItem* nodep) override {
+    void visit(AstNodeConsItem* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, []() {});
     }
     void visit(AstConsArray* nodep) override {

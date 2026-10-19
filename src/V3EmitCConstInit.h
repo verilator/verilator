@@ -159,23 +159,8 @@ protected:
     void visit(AstConsQueue* nodep) override { emitConsUnkeyedItems(nodep->itemsp()); }
     void visit(AstConsStruct* nodep) override { emitConsUnkeyedItems(nodep->itemsp()); }
 
-    void visit(AstConsAssocItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Handled by AstConsAssoc");
-    }  // LCOV_EXCL_STOP
-    void visit(AstConsWildcardItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Handled by AstConsWildcard");
-    }  // LCOV_EXCL_STOP
-    void visit(AstConsDynArrayItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Handled by AstConsDynArray");
-    }  // LCOV_EXCL_STOP
-    void visit(AstConsQueueItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Handled by AstConsQueue");
-    }  // LCOV_EXCL_STOP
-    void visit(AstConsStructItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Handled by AstConsStruct");
-    }  // LCOV_EXCL_STOP
-    void visit(AstConsArrayItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Handled by AstConsArray");
+    void visit(AstNodeConsItem* nodep) override {  // LCOV_EXCL_START
+        nodep->v3fatalSrc("Handled by its AstNodeCons");
     }  // LCOV_EXCL_STOP
 
     void visit(AstConst* nodep) override {
