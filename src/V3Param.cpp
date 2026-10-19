@@ -387,7 +387,7 @@ class ParamProcessor final {
     }
 
     static bool isAggregateParamValue(const AstNode* nodep) {
-        return VN_IS(nodep, InitArray) || VN_IS(nodep, ConsPackUOrStruct);
+        return VN_IS(nodep, ConsArray) || VN_IS(nodep, ConsStruct);
     }
 
     static string paramValueString(const AstNode* nodep) {
@@ -449,19 +449,22 @@ class ParamProcessor final {
                 key += ",";
             }
             key += "}";
-        } else if (const AstInitArray* const initp = VN_CAST(nodep, InitArray)) {
-            // Include the indices and the default, as with a default the map may be sparse
+        } else if (const AstConsArray* const consArrayp = VN_CAST(nodep, ConsArray)) {
+            // Include the indices and the default, as with a default the items may be sparse
             key += "{";
-            for (const auto& it : initp->map()) {
-                key += cvtToStr(it.first) + ":" + paramValueString(it.second->valuep()) + ",";
+            for (const AstConsArrayItem* itemp = consArrayp->itemsp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+                key += cvtToStr(itemp->index()) + ":" + paramValueString(itemp->valuep()) + ",";
             }
-            if (initp->defaultp()) key += "default:" + paramValueString(initp->defaultp()) + ",";
+            if (consArrayp->defaultp()) {
+                key += "default:" + paramValueString(consArrayp->defaultp()) + ",";
+            }
             key += "}";
-        } else if (const AstConsPackUOrStruct* const structp = VN_CAST(nodep, ConsPackUOrStruct)) {
+        } else if (const AstConsStruct* const consp = VN_CAST(nodep, ConsStruct)) {
             key += "{";
-            for (const AstConsPackMember* memberp = structp->membersp(); memberp;
-                 memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
-                key += paramValueString(memberp->rhsp());
+            for (const AstConsStructItem* itemp = consp->itemsp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+                key += paramValueString(itemp->valuep());
                 key += ",";
             }
             key += "}";
@@ -700,12 +703,12 @@ class ParamProcessor final {
     }
     // Check if parameter setting during instantiation is simple enough for hierarchical Verilation
     void checkSupportedParam(AstNodeModule* modp, AstPin* pinp) const {
-        // InitArray is not supported because that can not be set via -G
+        // ConsArray is not supported because that can not be set via -G
         // option.
         if (pinp->modVarp()) {
             bool supported = false;
             if (const AstConst* const constp = VN_CAST(pinp->exprp(), Const)) {
-                supported = !constp->isOpaque();
+                supported = true;
                 if (constp->num().isString()
                     && !V3HierBlock::stringParamPassable(constp->num().toString())) {
                     pinp->v3warn(E_UNSUPPORTED, "Unsupported: String value of hierarchical block"
@@ -1124,7 +1127,7 @@ class ParamProcessor final {
         for (AstPin* pinp = paramsp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             if (pinp->exprp()) {
                 if (AstVar* const modvarp = pinp->modVarp()) {
-                    AstNode* const newp = pinp->exprp();  // Const or InitArray
+                    AstNode* const newp = pinp->exprp();  // Const or ConsArray
                     AstConst* const exprp = VN_CAST(newp, Const);
                     AstConst* const origp = VN_CAST(modvarp->valuep(), Const);
                     const bool overridden
@@ -1515,7 +1518,7 @@ class ParamProcessor final {
                 pinp->v3fatalSrc("Attempted parameter setting of non-parameter: Param "
                                  << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
             } else if (VN_IS(pinp->exprp(), Pattern)
-                       || (VN_IS(pinp->exprp(), InitArray)
+                       || (VN_IS(pinp->exprp(), ConsArray)
                            && arraySubDTypep(modvarp->subDTypep()))) {
                 // A pattern or array value is named by its contents
                 nameByPinValue(pinp, srcModp, modvarp, longnamer, any_overridesr);
@@ -1582,7 +1585,7 @@ class ParamProcessor final {
                                         // A pattern or array override names the value too
                                         if (VN_IS(pp->exprp(), Const)
                                             || VN_IS(pp->exprp(), Pattern)
-                                            || VN_IS(pp->exprp(), InitArray)) {
+                                            || VN_IS(pp->exprp(), ConsArray)) {
                                             replacep = pp->exprp()->cloneTree(false);
                                         }
                                         break;

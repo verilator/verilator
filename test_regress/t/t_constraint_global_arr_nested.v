@@ -63,9 +63,17 @@ class Outer;
   rand Middle m_mid2;
   rand Middle m_mid_arr[3];
   rand Middle m_mid_arr2[3];
+  rand Middle m_mid_arr3[3][2];
+  rand Middle m_mid_arr4[3][2];
+  rand Middle m_mid_arr5[3][2];
   rand Inner m_assoc[int];
+  rand Middle m_assoc_foreach[int];
   string m_key;
   rand Inner m_assoc_nested[int][bit];
+  rand Middle m_queue[$];
+  rand Middle m_dynamic[];
+  rand int m_rand_idx;
+  rand int m_index_values[3];
   rand Holder m_holder;
 
   function new();
@@ -86,10 +94,45 @@ class Outer;
       m_mid_arr2[i].m_obj = new;
       foreach (m_mid_arr2[i].m_arr[j]) m_mid_arr2[i].m_arr[j] = new;
     end
+    foreach (m_mid_arr3[i])
+      foreach (m_mid_arr3[i][j]) begin
+        m_mid_arr3[i][j] = new;
+        m_mid_arr3[i][j].m_obj = new;
+        foreach (m_mid_arr3[i][j].m_arr[k]) m_mid_arr3[i][j].m_arr[k] = new;
+      end
+    foreach (m_mid_arr4[i])
+      foreach (m_mid_arr4[i][j]) begin
+        m_mid_arr4[i][j] = new;
+        m_mid_arr4[i][j].m_obj = new;
+        foreach (m_mid_arr4[i][j].m_arr[k]) m_mid_arr4[i][j].m_arr[k] = new;
+      end
+    foreach (m_mid_arr5[i])
+      foreach (m_mid_arr5[i][j]) begin
+        m_mid_arr5[i][j] = new;
+        m_mid_arr5[i][j].m_obj = new;
+        foreach (m_mid_arr5[i][j].m_arr[k]) m_mid_arr5[i][j].m_arr[k] = new;
+      end
 
     m_assoc[0] = new;
     m_assoc[1] = new;
+    m_assoc_foreach[3] = new;
+    m_assoc_foreach[3].m_obj = new;
+    m_assoc_foreach[7] = new;
+    m_assoc_foreach[7].m_obj = new;
     m_assoc_nested[123][1] = new;
+    m_assoc_nested[123][0] = new;
+    m_assoc_nested[7][0] = new;
+    m_assoc_nested[7][1] = new;
+    repeat (2) begin
+      Middle item = new;
+      foreach (item.m_arr[j]) item.m_arr[j] = new;
+      m_queue.push_back(item);
+    end
+    m_dynamic = new[3];
+    foreach (m_dynamic[i]) begin
+      m_dynamic[i] = new;
+      foreach (m_dynamic[i].m_arr[j]) m_dynamic[i].m_arr[j] = new;
+    end
     m_holder = new;
   endfunction
 
@@ -157,6 +200,68 @@ class Outer;
 
   // Case 7: randc
   constraint c_randc {m_holder.cyclic[0].cycle inside {[0 : 3]};}
+
+  constraint c_foreach0 {
+    foreach (m_mid_arr3[i])
+      foreach (m_mid_arr3[i][j])
+        m_mid_arr3[i][j].m_obj.m_x == i - j;
+  }
+
+  constraint c_foreach1 {
+    foreach (m_mid_arr4[i])
+        m_mid_arr4[i][m_idx].m_obj.m_x == i;
+  }
+
+  constraint c_foreach2 {
+    foreach (m_mid_arr5[i, j])
+      m_mid_arr5[i][j].m_obj.m_x == i + j;
+  }
+
+  constraint c_foreach3 {
+    foreach (m_mid_arr5[i]) {
+      m_mid_arr5[i][0].m_obj.m_y == i;
+      foreach (m_mid_arr5[i][j]) m_mid_arr5[i][j].m_obj.m_x == i + j;
+      m_mid_arr5[i][1].m_obj.m_y == i + 10;
+    }
+  }
+
+  constraint c_foreach_multiple {
+    foreach(m_holder.items[i]) {
+      m_holder.items[i].x == i;
+      m_holder.items[i].y == i + 10;
+    }
+  }
+
+  constraint c_foreach_assoc {
+    foreach (m_assoc_foreach[i]) m_assoc_foreach[i].m_obj.m_x == i + 100;
+  }
+
+  constraint c_foreach_assoc_nested {
+    foreach (m_assoc_nested[i])
+      foreach (m_assoc_nested[i][j])
+        m_assoc_nested[i][j].m_y == i + int'(j);
+  }
+
+  constraint c_foreach_queue {
+    foreach (m_queue[i])
+      foreach (m_queue[i].m_arr[j])
+        m_queue[i].m_arr[j].m_x == 10 * i + j;
+  }
+
+  constraint c_foreach_dynamic {
+    foreach (m_dynamic[i])
+      foreach (m_dynamic[i].m_arr[j])
+        m_dynamic[i].m_arr[j].m_x == 10 * i - j;
+  }
+
+  constraint c_foreach_rand_index {
+    m_rand_idx inside {[0:2]};
+    foreach (m_index_values[i]) m_index_values[i] == 100 + i;
+    foreach (m_mid_arr3[i])
+      foreach (m_mid_arr3[i][j])
+        m_mid_arr3[i][j].m_obj.m_y == m_index_values[(i + j + m_rand_idx) % 3];
+  }
+
 endclass
 
 
@@ -178,6 +283,21 @@ module t_constraint_global_arr_nested;
     rand_res = o.randomize();
     `checkd(rand_res, 1);
 
+    foreach (o.m_mid_arr3[i])
+      foreach (o.m_mid_arr3[i][j])
+        `checkd(o.m_mid_arr3[i][j].m_obj.m_x, i - j);
+    foreach (o.m_mid_arr4[i])
+      `checkd(o.m_mid_arr4[i][1].m_obj.m_x, i);
+    foreach (o.m_mid_arr5[i])
+      foreach (o.m_mid_arr5[i][j])
+        `checkd(o.m_mid_arr5[i][j].m_obj.m_x, i + j);
+    foreach (o.m_mid_arr5[i]) begin
+      `checkd(o.m_mid_arr5[i][0].m_obj.m_y, i);
+      foreach (o.m_mid_arr5[i][j]) `checkd(o.m_mid_arr5[i][j].m_obj.m_x, i + j);
+      `checkd(o.m_mid_arr5[i][1].m_obj.m_y, i + 10);
+    end
+    `checkd(o.m_assoc_foreach[3].m_obj.m_x, 103);
+    `checkd(o.m_assoc_foreach[7].m_obj.m_x, 107);
     `checkd(o.m_mid.m_obj.m_x, 100);
     `checkd(o.m_mid.m_obj.m_y, 101);
 
@@ -201,6 +321,10 @@ module t_constraint_global_arr_nested;
     `checkd(o.m_mid_arr2[2].m_obj.m_x, 500);
     `checkd(o.m_mid_arr2[2].m_obj.m_y, 501);
 
+    foreach (o.m_holder.items[i]) begin
+      `checkd(o.m_holder.items[i].x, i);
+      `checkd(o.m_holder.items[i].y, i + 10);
+    end
     `check_rand(o, o.m_mid2.m_arr[0].m_x, o.m_mid2.m_arr[0].m_x < 200);
     `check_rand(o, o.m_mid2.m_arr[0].m_y, o.m_mid2.m_arr[0].m_y < 201);
 
@@ -212,6 +336,27 @@ module t_constraint_global_arr_nested;
     `check_rand(o, o.m_holder.m_string_assoc["abc"].m_y, o.m_holder.m_string_assoc["abc"].m_y < 43);
     `check_rand(o, o.m_holder.m_string_assoc["cba"].m_y,
                 o.m_holder.m_string_assoc["cba"].m_y < 103);
+
+    rand_res = o.randomize();
+    `checkd(rand_res, 1);
+    `checkd(o.m_assoc_nested.num(), 2);
+    foreach (o.m_assoc_nested[i]) begin
+      `checkd(o.m_assoc_nested[i].num(), 2);
+      foreach (o.m_assoc_nested[i][j])
+        `checkd(o.m_assoc_nested[i][j].m_y, i + int'(j));
+    end
+    `checkd(o.m_queue.size(), 2);
+    foreach (o.m_queue[i])
+      foreach (o.m_queue[i].m_arr[j])
+        `checkd(o.m_queue[i].m_arr[j].m_x, 10 * i + j);
+    `checkd(o.m_dynamic.size(), 3);
+    foreach (o.m_dynamic[i])
+      foreach (o.m_dynamic[i].m_arr[j])
+        `checkd(o.m_dynamic[i].m_arr[j].m_x, 10 * i - j);
+    `checkd(o.m_rand_idx inside {[0:2]}, 1);
+    foreach (o.m_mid_arr3[i])
+      foreach (o.m_mid_arr3[i][j])
+        `checkd(o.m_mid_arr3[i][j].m_obj.m_y, 100 + (i + j + o.m_rand_idx) % 3);
 
     repeat (4) begin
       rand_res = randc_o.randomize();

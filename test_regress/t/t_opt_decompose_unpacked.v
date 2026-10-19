@@ -52,6 +52,11 @@ typedef struct packed {
   logic [3:0] y;
 } pst_t;
 
+typedef struct {
+  logic [3:0] lo = 4'h5;
+  logic [3:0] hi;
+} sd_t;
+
 class Cls;
   int val;
 endclass
@@ -140,6 +145,9 @@ module t (
   logic ui;
   // Struct with an unpacked union member, which is not split
   su_t su;  // Split 1
+  // Struct with a member default value, only the other member assigned
+  sd_t sd;  // No split: member default value
+  sd_t sda[2];  // Split 1
   // Packed struct
   pst_t pk;
   // Function result
@@ -190,6 +198,12 @@ module t (
   always_ff @(posedge clk) pat_hi <= crc[15:8];
   always_comb pat = '{8'h11, pat_lo, pat_hi, 8'h44};
   always_comb def = '{default: crc[40:8]};
+
+  always_comb begin
+    sd.hi = crc[3:0];
+    sda[0].hi = crc[7:4];
+    sda[1].hi = crc[11:8];
+  end
 
   assign chain[0] = crc[6:0];
   for (genvar g = 1; g < 4; g++) begin : gen_chain
@@ -434,16 +448,20 @@ module t (
     `checkh(rev[1], dn[3]);
     `checkh(rev[2], dn[2]);
     `checkh(rev[3], dn[1]);
-    // Broken: whole array copy of opposite direction, not sliced, copies slot by slot
-    // `checkh(revd[3], dyn[0]);
-    // `checkh(revd[1], dyn[2]);
-    // `checkh(revd[0], dyn[3]);
+    `checkh(revd[3], dyn[0]);
+    `checkh(revd[1], dyn[2]);
+    `checkh(revd[0], dyn[3]);
     `checkh(pat[0], 8'h11);
     `checkh(pat[1], pat_lo);
     `checkh(pat[2], pat_hi);
     `checkh(pat[3], 8'h44);
     `checkh(def[0], crc[40:8]);
     `checkh(def[2], crc[40:8]);
+    `checkh(sd.lo, 4'h5);
+    `checkh(sd.hi, crc[3:0]);
+    `checkh(sda[0].lo, 4'h5);
+    `checkh(sda[1].lo, 4'h5);
+    `checkh(sda[1].hi, crc[11:8]);
     `checkh(chain[3], crc[6:0] + 7'd3);
     `checkh(st.a, crc[6:0]);
     `checkh(st.b, crc[40:8]);

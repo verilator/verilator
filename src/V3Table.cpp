@@ -73,7 +73,7 @@ public:
 
 class TableBuilder final {
     FileLine* const m_fl;  // FileLine used during construction
-    AstInitArray* m_initp = nullptr;  // The lookup table initializer values
+    AstConsArray* m_consp = nullptr;  // The lookup table initializer values
     AstVarScope* m_varScopep = nullptr;  // The scoped variable holding the table
 
 public:
@@ -81,11 +81,11 @@ public:
         : m_fl{fl} {}
 
     ~TableBuilder() {
-        if (m_initp) VL_DO_DANGLING(m_initp->deleteTree(), m_initp);
+        if (m_consp) VL_DO_DANGLING(m_consp->deleteTree(), m_consp);
     }
 
     void setTableSize(AstNodeDType* elemDType, unsigned size) {
-        UASSERT_OBJ(!m_initp, m_fl, "Table size already set");
+        UASSERT_OBJ(!m_consp, m_fl, "Table size already set");
         UASSERT_OBJ(size > 0, m_fl, "Size zero");
         // TODO: Assert elemDType is a packed type
         // Create data type
@@ -102,19 +102,19 @@ public:
             = elemDType->isString()   ? new AstConst{m_fl, AstConst::String{}, ""}
               : elemDType->isDouble() ? new AstConst{m_fl, AstConst::RealDouble{}, 0.0}
                                       : new AstConst{m_fl, AstConst::WidthedValue{}, width, 0};
-        m_initp = new AstInitArray{m_fl, tableDTypep, defaultp};
+        m_consp = new AstConsArray{m_fl, tableDTypep, defaultp};
     }
 
     void addValue(unsigned index, const V3Number& value) {
         UASSERT_OBJ(!m_varScopep, m_fl, "Table variable already created");
         // Default value is zero/empty string so don't add it
         if (value.isString() ? value.toString().empty() : value.isEqZero()) return;
-        m_initp->addIndexValuep(index, new AstConst{m_fl, value});
+        m_consp->valuep(index, new AstConst{m_fl, value});
     }
 
     AstVarScope* varScopep() {
         if (!m_varScopep) {
-            AstVarRef* const refp = V3ConstPool::findTable(m_initp);
+            AstVarRef* const refp = V3ConstPool::findTable(m_consp);
             m_varScopep = refp->varScopep();
             VL_DO_DANGLING(refp->deleteTree(), refp);
         }

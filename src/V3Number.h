@@ -782,6 +782,7 @@ public:
     V3Number& opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval);
     V3Number& opSelInto(const V3Number& lhs, const V3Number& lsb, int width);
     V3Number& opSelInto(const V3Number& lhs, int lsbval, int width);
+    V3Number& opCvtPackString(const V3Number& lhs);
     V3Number& opToLowerN(const V3Number& lhs);
     V3Number& opToUpperN(const V3Number& lhs);
     V3Number& opCaseEq(const V3Number& lhs, const V3Number& rhs);

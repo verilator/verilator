@@ -188,46 +188,48 @@ static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep,
     // The enum or other type the data type stands for, or nullptr if not yet resolved
     if (dtypep) dtypep = dtypep->skipRefToEnumOrNullp();
     if (constp) return dtypeNameConst(constp->num(), dtypep, untyped);
-    if (const AstInitArray* const initp = VN_CAST(valuep, InitArray)) {
+    if (const AstConsArray* const consp = VN_CAST(valuep, ConsArray)) {
         const AstNodeDType* const elemDTypep = dtypep ? dtypep->subDTypep() : nullptr;
         // Keys count from the lowest index, while elements are listed from the left index
         const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType);
         const int lo = adtypep ? adtypep->declRange().lo() : 0;
         const bool descending = adtypep && !adtypep->declRange().ascending();
-        const AstInitArray::KeyItemMap& map = initp->map();
+        std::vector<const AstConsArrayItem*> itemps;
+        for (const AstConsArrayItem* itemp = consp->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+            itemps.push_back(itemp);
+        }
         // Elements are indexed, unless all are given in order
         const size_t elements
-            = adtypep ? static_cast<size_t>(adtypep->declRange().elements()) : map.size();
-        bool indexed = initp->defaultp() || map.size() != elements;
-        uint64_t nextIndex = 0;
-        for (const auto& itr : map) {
-            if (itr.first != nextIndex) indexed = true;
-            ++nextIndex;
+            = adtypep ? static_cast<size_t>(adtypep->declRange().elements()) : itemps.size();
+        bool indexed = consp->defaultp() || itemps.size() != elements;
+        for (size_t n = 0; n < itemps.size(); ++n) {
+            if (itemps[n]->index() != n) indexed = true;
         }
         string result = "'{";
         const char* sepp = "";
-        const auto addElem = [&](const AstInitArray::KeyItemMap::value_type& itr) {
+        const auto addElem = [&](const AstConsArrayItem* itemp) {
             result += sepp;
             sepp = ",";
-            if (indexed) result += cvtToStr(static_cast<int64_t>(itr.first) + lo) + ":";
-            result += dtypeNameValue(itr.second->valuep(), elemDTypep);
+            if (indexed) result += cvtToStr(static_cast<int64_t>(itemp->index()) + lo) + ":";
+            result += dtypeNameValue(itemp->valuep(), elemDTypep);
         };
         if (descending) {
-            for (auto it = map.crbegin(); it != map.crend(); ++it) addElem(*it);
+            for (auto it = itemps.crbegin(); it != itemps.crend(); ++it) addElem(*it);
         } else {
-            for (const auto& itr : map) addElem(itr);
+            for (const AstConsArrayItem* const itemp : itemps) addElem(itemp);
         }
-        if (initp->defaultp()) {
-            result += sepp + "default:"s + dtypeNameValue(initp->defaultp(), elemDTypep);
+        if (consp->defaultp()) {
+            result += sepp + "default:"s + dtypeNameValue(consp->defaultp(), elemDTypep);
         }
         return result + "}";
     }
-    if (const AstConsPackUOrStruct* const consp = VN_CAST(valuep, ConsPackUOrStruct)) {
+    if (const AstConsStruct* const consp = VN_CAST(valuep, ConsStruct)) {
         string result = "'{";
         const char* sepp = "";
-        for (const AstConsPackMember* memberp = consp->membersp(); memberp;
-             memberp = VN_AS(memberp->nextp(), ConsPackMember)) {
-            result += sepp + dtypeNameValue(memberp->rhsp(), memberp->dtypep());
+        for (const AstConsStructItem* itemp = consp->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+            result += sepp + dtypeNameValue(itemp->valuep(), itemp->memberp());
             sepp = ",";
         }
         return result + "}";
@@ -1253,25 +1255,111 @@ void AstConfigUse::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isConfig);
     dumpJsonGen(str);
 }
-void AstConsDynArray::dump(std::ostream& str) const {
+const char* AstConsArray::broken() const {
+    const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep()->skipRefp(), UnpackArrayDType);
+    BROKEN_RTN(!arrayp);
+    // Each map entry is the next item, so the items are in increasing index order
+    const AstConsArrayItem* itemp = itemsp();
+    for (const auto& pair : m_itemps) {
+        BROKEN_RTN(!itemp || itemp->index() != pair.first || itemp != pair.second);
+        itemp = VN_AS(itemp->nextp(), ConsArrayItem);
+    }
+    BROKEN_RTN(itemp);
+    // Must be complete: every element given, or has a default
+    const size_t elements = arrayp->elementsConst();
+    BROKEN_RTN(!defaultp() && m_itemps.size() != elements);
+    return nullptr;
+}
+void AstConsArray::cloneRelink() {
+    cloneRelinkGen();
+    // The copied map has the indices of the cloned items, in the same order
+    AstConsArrayItem* itemp = itemsp();
+    for (auto& pair : m_itemps) {
+        UASSERT_OBJ(itemp && itemp->index() == pair.first, this, "Cloned items out of order");
+        pair.second = itemp;
+        itemp = VN_AS(itemp->nextp(), ConsArrayItem);
+    }
+}
+void AstConsArray::spliceValues(uint64_t index, AstNodeExpr* arrayp) {
+    const bool ascending = VN_AS(dtypep()->skipRefp(), UnpackArrayDType)->declRange().ascending();
+    const AstUnpackArrayDType* const srcp = VN_AS(arrayp->dtypep()->skipRefp(), UnpackArrayDType);
+    const int elements = srcp->elementsConst();
+    for (int n = 0; n < elements; ++n) {
+        // Element 'n' from the left of 'arrayp', counted from its lo
+        const int srcIndex = srcp->declRange().ascending() ? n : elements - 1 - n;
+        AstNodeExpr* elemp;
+        if (const AstConsArray* const consp = VN_CAST(arrayp, ConsArray)) {
+            elemp = consp->valuep(srcIndex)->cloneTree(false);
+        } else if (AstSliceSel* const slicep = VN_CAST(arrayp, SliceSel)) {
+            elemp = new AstArraySel{arrayp->fileline(), slicep->fromp()->cloneTreePure(false),
+                                    slicep->declRange().lo() + srcIndex};
+        } else {
+            elemp = new AstArraySel{arrayp->fileline(), arrayp->cloneTreePure(false), srcIndex};
+        }
+        valuep(ascending ? index + n : index - n, elemp);
+    }
+    VL_DO_DANGLING(arrayp->deleteTree(), arrayp);
+}
+AstNodeExpr* AstConsArray::valuep(uint64_t index) const {
+    const auto it = m_itemps.find(index);
+    return it == m_itemps.end() ? defaultp() : it->second->valuep();
+}
+void AstConsArray::valuep(uint64_t index, AstNodeExpr* newp) {
+    const auto it = m_itemps.lower_bound(index);
+    UASSERT_OBJ(it == m_itemps.end() || it->first != index, this,
+                "Array value element already given " << index);
+    AstConsArrayItem* const itemp = new AstConsArrayItem{fileline(), index, newp};
+    if (it == m_itemps.end()) {
+        addNOp2p(itemp);
+    } else {
+        it->second->addHereThisAsNext(itemp);
+    }
+    m_itemps.emplace_hint(it, index, itemp);
+}
+void AstConsArrayItem::dump(std::ostream& str) const {
     Super::dump(str);
-    if (lhsIsValue()) str << " [LVAL]";
-    if (rhsIsValue()) str << " [RVAL]";
+    str << " [" << index() << "]";
 }
-void AstConsDynArray::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, lhsIsValue);
-    dumpJsonBoolFuncIf(str, rhsIsValue);
-    dumpJsonGen(str);
+void AstConsArrayItem::dumpJson(std::ostream& str) const {
+    dumpJsonNumFunc(str, index);
+    Super::dumpJson(str);
 }
-void AstConsQueue::dump(std::ostream& str) const {
+const char* AstConsDynArray::broken() const {
+    BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), DynArrayDType));
+    // Default only valid if sizep is present
+    BROKEN_RTN(defaultp() && !sizep());
+    // Items are keyed exactly when sizep is present
+    for (const AstConsDynArrayItem* itemp = itemsp(); itemp;
+         itemp = VN_AS(itemp->nextp(), ConsDynArrayItem)) {
+        BROKEN_RTN(!itemp->keyp() != !sizep());
+    }
+    return nullptr;
+}
+const char* AstConsStruct::broken() const {
+    const AstStructDType* const structp = VN_CAST(dtypep()->skipRefp(), StructDType);
+    BROKEN_RTN(!structp || structp->packed());
+    // An item for each member, in order
+    const AstMemberDType* memberp = structp->membersp();
+    for (const AstConsStructItem* itemp = itemsp(); itemp;
+         itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+        BROKEN_RTN(itemp->memberp() != memberp);
+        memberp = VN_AS(memberp->nextp(), MemberDType);
+    }
+    BROKEN_RTN(memberp);
+    return nullptr;
+}
+AstNodeExpr* AstConsStruct::memberValuep(const string& name) const {
+    for (AstConsStructItem* itemp = itemsp(); itemp;
+         itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+        if (itemp->memberp()->name() == name) return itemp->valuep();
+    }
+    v3fatalSrc("Structure value without member '" << name << "'");
+    return nullptr;
+}
+void AstConsStructItem::dump(std::ostream& str) const {
     Super::dump(str);
-    if (lhsIsValue()) str << " [LVAL]";
-    if (rhsIsValue()) str << " [RVAL]";
-}
-void AstConsQueue::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, lhsIsValue);
-    dumpJsonBoolFuncIf(str, rhsIsValue);
-    dumpJsonGen(str);
+    str << " -> ";
+    memberp()->dump(str);
 }
 void AstConst::cloneRelink() {
     // Preserve parameter-origin metadata across AST clones; the side-table key must be this
@@ -1823,62 +1911,6 @@ void AstImplication::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isOverlapped);
     dumpJsonBoolFuncIf(str, isFollowedBy);
 }
-void AstInitArray::addIndexValuep(uint64_t index, AstNodeExpr* newp) {
-    const auto pair = m_map.emplace(index, nullptr);
-    if (pair.second) {
-        AstInitItem* const itemp = new AstInitItem{fileline(), newp};
-        pair.first->second = itemp;
-        addInitsp(itemp);
-    } else {
-        pair.first->second->valuep(newp);
-    }
-}
-const char* AstInitArray::broken() const {
-    for (KeyItemMap::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
-        BROKEN_RTN(!it->second);
-        BROKEN_RTN(!it->second->brokeExists());
-    }
-    return nullptr;
-}
-void AstInitArray::cloneRelink() {
-    cloneRelinkGen();
-    for (KeyItemMap::iterator it = m_map.begin(); it != m_map.end(); ++it) {
-        if (it->second->clonep()) it->second = it->second->clonep();
-    }
-}
-void AstInitArray::dump(std::ostream& str) const {
-    Super::dump(str);
-    dumpInitList(str);
-}
-void AstInitArray::dumpInitList(std::ostream& str) const {
-    int n = 0;
-    const auto& mapr = map();
-    for (const auto& itr : mapr) {
-        if (n++ > 5) {
-            str << " ...";
-            break;
-        }
-        const string addr
-            = (v3Global.opt.jsonIds() ? v3Global.ptrToId(itr.second) : nodeAddr(itr.second));
-        str << " [" << itr.first << "]=" << addr;
-    }
-}
-void AstInitArray::dumpJson(std::ostream& str) const {
-    str << ',' << '"' << "initList" << '"' << ':' << '"';
-    dumpInitList(str);
-    str << '"';
-    dumpJsonGen(str);
-}
-AstNodeExpr* AstInitArray::getIndexDefaultedValuep(uint64_t index) const {
-    AstNodeExpr* valuep = getIndexValuep(index);
-    if (!valuep) valuep = defaultp();
-    return valuep;
-}
-AstNodeExpr* AstInitArray::getIndexValuep(uint64_t index) const {
-    const auto it = m_map.find(index);
-    if (it == m_map.end()) { return nullptr; }
-    return it->second->valuep();
-}
 AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* lhsp,
                                               AstNodeExpr* rhsp) {
     const bool lhsUnbounded = VN_IS(lhsp, Unbounded);
@@ -2383,6 +2415,22 @@ void AstNodeCCall::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 bool AstNodeCCall::isPure() { return funcp()->dpiPure(); }
+void AstNodeCons::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (m_knownConstantTree) str << " [CONSTTREE]";
+}
+void AstNodeCons::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "knownConstantTree", m_knownConstantTree);
+    dumpJsonGen(str);
+}
+void AstNodeConsItem::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (m_knownConstantTree) str << " [CONSTTREE]";
+}
+void AstNodeConsItem::dumpJson(std::ostream& str) const {
+    dumpJsonBoolIf(str, "knownConstantTree", m_knownConstantTree);
+    dumpJsonGen(str);
+}
 void AstNodeCoverDecl::dump(std::ostream& str) const {
     Super::dump(str);
     if (localBinNum()) str << " lbin=" << localBinNum();
@@ -2970,6 +3018,34 @@ const AstNodeExpr* AstNodeExpr::getVAccessTargetRecurse() const {
         }
     }
     return nullptr;  // nothing found
+}
+bool AstNodeExpr::isConstantTree() const {
+    // Check the tree is composed only of Const, NodeCons and NodeConsItem. Record it on each
+    // NodeCons and NodeConsItem that is, and skip those already known to be.
+    class IsConstantTreeVisitor final : public VNVisitorConst {
+        bool m_constant = true;  // Tree checked so far is constant
+
+        void iterateCached(AstNode* nodep, bool& knownr) {
+            if (!m_constant || knownr) return;
+            iterateChildrenConst(nodep);
+            knownr = m_constant;
+        }
+
+        void visit(AstConst*) override {}
+        void visit(AstNodeCons* nodep) override {
+            iterateCached(nodep, nodep->m_knownConstantTree);
+        }
+        void visit(AstNodeConsItem* nodep) override {
+            iterateCached(nodep, nodep->m_knownConstantTree);
+        }
+        void visit(AstNode*) override { m_constant = false; }
+
+        explicit IsConstantTreeVisitor(AstNode* nodep) { iterateConst(nodep); }
+
+    public:
+        static bool apply(AstNodeExpr* nodep) { return IsConstantTreeVisitor{nodep}.m_constant; }
+    };
+    return IsConstantTreeVisitor::apply(const_cast<AstNodeExpr*>(this));
 }
 const char* AstNodeFTask::broken() const {
     BROKEN_RTN(m_purity.isCached() && m_purity.get() != getPurityRecurse());
@@ -3648,12 +3724,14 @@ void AstScopeName::dump(std::ostream& str) const {
     Super::dump(str);
     if (dpiExport()) str << " [DPIEX]";
     if (forFormat()) str << " [FMT]";
+    if (selfRelative()) str << " [SELFREL]";
     str << " scopeAttr=\"" << m_scopeAttr << "\"";
     str << " scopeEntr=\"" << m_scopeEntr << "\"";
 }
 void AstScopeName::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, dpiExport);
     dumpJsonBoolFuncIf(str, forFormat);
+    dumpJsonBoolFuncIf(str, selfRelative);
     dumpJsonStr(str, "scopeAttr", m_scopeAttr);
     dumpJsonStr(str, "scopeEntr", m_scopeEntr);
     dumpJsonGen(str);
@@ -4107,6 +4185,19 @@ void AstUnpackArrayDType::dump(std::ostream& str) const {
 void AstUnpackArrayDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isCompound);
     dumpJsonGen(str);
+}
+bool AstUnpackArrayDType::isReverseOf(const AstNodeDType* otherp) const {
+    bool reversed = false;
+    const AstUnpackArrayDType* thisp = this;
+    const AstUnpackArrayDType* thatp = VN_CAST(otherp->skipRefp(), UnpackArrayDType);
+    while (thisp && thatp) {
+        if (thisp->elementsConst() != thatp->elementsConst()) return false;
+        if (thisp->declRange().ascending() != thatp->declRange().ascending()) reversed = true;
+        thisp = VN_CAST(thisp->subDTypep()->skipRefp(), UnpackArrayDType);
+        thatp = VN_CAST(thatp->subDTypep()->skipRefp(), UnpackArrayDType);
+    }
+    // Same shape only with the same number of dimensions
+    return reversed && !thisp && !thatp;
 }
 string AstUnpackArrayDType::prettyDTypeName(bool full) const {
     std::ostringstream os;

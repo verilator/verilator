@@ -879,16 +879,14 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(")");
     }
-    void visit(AstInitArray* nodep) override {
+    void visit(AstConsArray* nodep) override {
         putfs(nodep, "'{");
-        int comma = 0;
-        const auto& mapr = nodep->map();
-        for (const auto& itr : mapr) {
-            if (comma++) putbs(", ");
-            puts(cvtToStr(itr.first));
+        for (const AstConsArrayItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+            if (itemp != nodep->itemsp()) putbs(", ");
+            puts(cvtToStr(itemp->index()));
             puts(":");
-            AstNode* const valuep = itr.second->valuep();
-            iterateConst(valuep);
+            iterateConst(itemp->valuep());
         }
         puts("}");
     }

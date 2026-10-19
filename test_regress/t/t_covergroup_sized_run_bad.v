@@ -47,8 +47,12 @@ module t;
 
   // Likewise the count of a cross bin's 'matches'
   covergroup cg_matches(int count);
-    cp: coverpoint value {option.weight = 0;}
-    dp: coverpoint data[0] {option.weight = 0;}
+    cp: coverpoint value {
+      option.weight = 0;
+    }
+    dp: coverpoint data[0] {
+      option.weight = 0;
+    }
     xx: cross cp, dp{
       bins counted = xx with (cp != 0) matches count;  // <--- Bad: count
     }

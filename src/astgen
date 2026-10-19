@@ -31,6 +31,7 @@ class Node:
         self._ordIdx = None  # Ordering index of this class
         self._arity = -1  # Arity of node
         self._ops = {}  # Operands of node
+        self._privateOps = set()  # Numbers of operands without generated accessors
         self._ptrs = []  # Pointer members of node (name, types)
         self._makeDfgVertex = False  # Create a corresponding DfgVertex sub-class
 
@@ -79,10 +80,12 @@ class Node:
         assert not self.isCompleted
         self._subClasses.append(subClass)
 
-    def addOp(self, n, name, monad, kind, legals):
+    def addOp(self, n, name, monad, kind, legals, private=False):
         assert 1 <= n <= 4
         self._ops[n] = (name, monad, kind, legals)
         self._arity = max(self._arity, n)
+        if private:
+            self._privateOps.add(n)
 
     def getOp(self, n):
         assert 1 <= n <= 4
@@ -92,6 +95,13 @@ class Node:
         if not self.isRoot:
             return self.superClass.getOp(n)
         return None
+
+    def isPrivateOp(self, n):
+        if n in self._privateOps:
+            return True
+        if not self.isRoot:
+            return self.superClass.isPrivateOp(n)
+        return False
 
     def addPtr(self, name, monad, kind, legals):
         name = re.sub(r'^m_', '', name)
@@ -635,6 +645,9 @@ def read_types(filename, Nodes, prefix):
                     n = int(what[-1])
                     ident, sep, kind = partitionAndStrip(rest, ":")
                     ident = ident.strip()
+                    private = re.match(r'^private\s+', kind)
+                    if private:
+                        kind = kind[private.end():]
                     if not sep or not re.match(r'^\w+$', ident):
                         error(
                             lineno, "Malformed '@astgen " + what + "' directive (expecting '" +
@@ -648,7 +661,7 @@ def read_types(filename, Nodes, prefix):
                         elif node.getOp(n) is not None:
                             error(lineno, "Already defined " + what + " for " + node.name)
                         else:
-                            node.addOp(n, ident, *kind)
+                            node.addOp(n, ident, *kind, private=bool(private))
                 elif what in ("alias op1", "alias op2", "alias op3", "alias op4"):
                     n = int(what[-1])
                     ident = rest.strip()
@@ -1156,7 +1169,9 @@ def write_ast_macros(filename):
                 if superOp:
                     superName = superOp[0]
                     hiddenMethods.append(superName)
-                if monad == "List":
+                if node.isPrivateOp(n):
+                    pass  # The node provides its own accessors
+                elif monad == "List":
                     emitBlock('''\
                     Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
                     void add{Name}(Ast{kind}* nodep) {{ addNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
@@ -1167,7 +1182,7 @@ def write_ast_macros(filename):
                               Name=name[0].upper() + name[1:],
                               n=n,
                               retrieve=retrieve)
-                    if superOp:
+                    if superOp and not node.superClass.isPrivateOp(n):
                         hiddenMethods.append("add" + superName[0].upper() + superName[1:])
                         hiddenMethods.append("prepend" + superName[0].upper() + superName[1:])
                 elif monad == "Optional":

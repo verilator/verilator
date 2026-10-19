@@ -94,6 +94,8 @@ class InstVisitor final : public VNVisitor {
         AstVarRef* const refp = VN_CAST(exprp, VarRef);
         if (!refp) return false;
         AstVar* const exprVarp = refp->varp();
+        // A virtual interface port connected to a real interface can't be an alias
+        if (exprVarp->isIfaceRef()) return false;
         // A ref port must become an alias
         if (!modVarp->direction().isRef()) {
             // V3FsmDetect recognizes the registers of an fsm_register_wrapper instance via
@@ -318,7 +320,15 @@ public:
                     assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsp};
                     V3Width::streamAssignLowerEdit(assignp);
                 } else {
-                    AstNodeExpr* const rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                    AstNodeExpr* rhsSelp = extendOrSel(pinp->fileline(), rhsp, pinexprp);
+                    // A reversed array is assigned by the left-to-right order of elements
+                    // (IEEE 1800-2023 7.6)
+                    const AstUnpackArrayDType* const arrayp
+                        = VN_CAST(pinexprp->dtypep()->skipRefp(), UnpackArrayDType);
+                    if (arrayp && arrayp->isReverseOf(rhsSelp->dtypep())) {
+                        rhsSelp = new AstCvtUnpackToUnpack{pinp->fileline(), rhsSelp,
+                                                           pinexprp->dtypep()};
+                    }
                     assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsSelp};
                 }
             } else {

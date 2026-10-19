@@ -2487,13 +2487,13 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(origp), origp);
         }
     }
-    void addStringNamePart(AstNodeSel* const nodep, const std::string& fmt = "%32x") {
+    void addStringNamePart(AstNodeExpr* const indexp, const std::string& fmt = "%32x") {
         if (m_nestedAccess) {
-            AstNodeExpr* const bitp = nodep->bitp()->cloneTreePure(false);
+            AstNodeExpr* const bitp = indexp->cloneTreePure(false);
             AstNodeExpr* const bitFormatp = new AstSFormatF{bitp->fileline(), fmt, false, bitp};
             AstSFormatF* const herep
-                = new AstSFormatF{nodep->fileline(), "%s.%s", false, bitFormatp};
-            m_nestedAccess->addVarNamePart(herep, nodep->bitp()->name());
+                = new AstSFormatF{indexp->fileline(), "%s.%s", false, bitFormatp};
+            m_nestedAccess->addVarNamePart(herep, indexp->name());
         }
     }
     void visit(AstAssocSel* nodep) override {
@@ -2503,7 +2503,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* const origp = nodep->cloneTree(false);
         AstSFormatF* newp = nullptr;
         if (VN_IS(nodep->bitp(), VarRef) && VN_AS(nodep->bitp(), VarRef)->isString()) {
-            addStringNamePart(nodep);
+            addStringNamePart(nodep->bitp());
             VNRelinker handle;
             AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
                                                       nodep->bitp()->unlinkFrBack(&handle)};
@@ -2519,7 +2519,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                     "Unsupported: Constrained randomization of associative array keys of "
                         << stringSize << "bits, limit is 128 bits");
             }
-            addStringNamePart(nodep);
+            addStringNamePart(nodep->bitp());
             VNRelinker handle;
             AstNodeExpr* const idxp = new AstSFormatF{fl, (m_structSel ? "%32x" : "#x%32x"), false,
                                                       stringp->lhsp()->unlinkFrBack(&handle)};
@@ -2542,7 +2542,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                     fmt = (m_structSel ? "%" : "#x%")
                           + std::to_string(VL_WORDS_I(actual_width) * 8) + "x";
                 }
-                if (m_nestedAccess) addStringNamePart(nodep, fmt);
+                if (m_nestedAccess) addStringNamePart(nodep->bitp(), fmt);
                 VNRelinker handle;
                 AstNodeExpr* const idxp
                     = new AstSFormatF{fl, fmt, false, nodep->bitp()->unlinkFrBack(&handle)};
@@ -3127,6 +3127,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
 
         if (nodep->method() == VCMethod::ARRAY_AT) {
+            addStringNamePart(nodep->pinsp(), "%x");
             const bool indexIsRand = nodep->pinsp()->exists([](const AstNodeVarRef* const vrefp) {
                 return vrefp->varp()->rand().isRandomizable();
             });
@@ -4514,17 +4515,18 @@ class RandomizeVisitor final : public VNVisitor {
             nodep->fileline(), nodep->dtypep(),
             new AstRange{nodep->fileline(), static_cast<int>(nodep->itemCount()) - 1, 0}};
         v3Global.rootp()->typeTablep()->addTypesp(vardtypep);
-        AstInitArray* const initp = new AstInitArray{nodep->fileline(), vardtypep, nullptr};
+        AstConsArray* const consp = new AstConsArray{nodep->fileline(), vardtypep};
         UASSERT_OBJ(nodep->itemsp(), nodep, "Enum without items");
+        uint64_t index = 0;
         for (AstEnumItem* itemp = nodep->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
             AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
             UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
-            initp->addValuep(vconstp->cloneTree(false));
+            consp->valuep(index++, vconstp->cloneTree(false));
         }
         // Share identical tables via the constant pool
-        AstVarRef* const refp = V3ConstPool::findTable(initp);
-        VL_DO_DANGLING(initp->deleteTree(), initp);  // V3ConstPool::findTable clones it
+        AstVarRef* const refp = V3ConstPool::findTable(consp);
+        VL_DO_DANGLING(consp->deleteTree(), consp);  // V3ConstPool::findTable clones it
         pushDeletep(refp);  // Deleted with the visitor - always cloned
         nodep->user2p(refp);
         return refp->cloneTree(false);
