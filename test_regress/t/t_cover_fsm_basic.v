@@ -18,7 +18,7 @@ module t (
   logic rst;
   logic start;
   integer cyc;
-  state_t state  /*verilator fsm_reset_arc*/;
+  state_t state  /*verilator fsm_state*/;
 
   initial begin
     rst = 1'b1;

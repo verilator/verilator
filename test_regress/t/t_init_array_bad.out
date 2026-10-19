@@ -1,4 +1,5 @@
-%Error: t/t_init_array_bad.v:8:33: Array initialization has too few elements, need element 2
+%Error: t/t_init_array_bad.v:8:33: Unpacked array concatenation has 2 elements, but its target has 3 (IEEE 1800-2023 10.10)
+                                 : ... note: In instance 't'
     8 |   bit [7:0] r[3] = {{8'h1, 8'h2}, 8'h5};
       |                                 ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

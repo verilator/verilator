@@ -480,8 +480,6 @@ if test "$CFG_WITH_DEV_GCOV" = "yes"; then
   #_MY_CXX_CHECK_OPT(CXX,-fkeep-inline-functions)
   # Make sure profiling is thread-safe
   _MY_CXX_CHECK_OPT(CXX,-fprofile-update=atomic)
-  # Ensure data files can be written from parallel runs
-  _MY_CXX_CHECK_OPT(CXX,-fprofile-reproducible=parallel-runs)
   # Save source files as absolute paths in gcno files
   _MY_CXX_CHECK_OPT(CXX,-fprofile-abs-path)
   # Define so compiled code can know

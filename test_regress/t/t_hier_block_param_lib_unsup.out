@@ -1,0 +1,53 @@
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:10:12: Unsupported: Setting type parameter 'T' of hierarchical block 'typed'
+                                                          : ... note: In instance 't'
+   10 |   typed #(.T(logic signed [6:0])) t0 ();
+      |            ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:11:12: Unsupported: Setting type parameter 'T' of hierarchical block 'typed'
+                                                          : ... note: In instance 't'
+   11 |   typed #(.T(word_t)) t1 ();
+      |            ^
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:13:8: Unsupported: Setting type parameter 'TIN' of hierarchical block 'typed2'
+                                                         : ... note: In instance 't'
+   13 |       .TIN(logic [3:0]),
+      |        ^~~
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:14:8: Unsupported: Setting type parameter 'TOUT' of hierarchical block 'typed2'
+                                                         : ... note: In instance 't'
+   14 |       .TOUT(logic [7:0])
+      |        ^~~~
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:16:14: Unsupported: Setting type parameter 'T' of hierarchical block 'nonansi'
+                                                          : ... note: In instance 't'
+   16 |   nonansi #(.T(logic [1:0])) t3 ();
+      |              ^
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:23:14: Unsupported: String value of hierarchical block parameter with newline, double quote, '/*', or whitespace before '//'
+                                                          : ... note: In instance 't'
+   23 |   str_blk #(.S(S0)) s0 ();
+      |              ^
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:24:14: Unsupported: String value of hierarchical block parameter with newline, double quote, '/*', or whitespace before '//'
+                                                          : ... note: In instance 't'
+   24 |   str_blk #(.S(S1)) s1 ();
+      |              ^
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:25:14: Unsupported: String value of hierarchical block parameter with newline, double quote, '/*', or whitespace before '//'
+                                                          : ... note: In instance 't'
+   25 |   str_blk #(.S(S2)) s2 ();
+      |              ^
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:26:14: Unsupported: String value of hierarchical block parameter with newline, double quote, '/*', or whitespace before '//'
+                                                          : ... note: In instance 't'
+   26 |   str_blk #(.S(S3)) s3 ();
+      |              ^
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:29:23: Unsupported: defparam inside hierarchical block 'fixed'
+                                                          : ... note: In instance 't.f0'
+   29 |   defparam f0.child.N = 2;
+      |                       ^
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:83:20: Unsupported: defparam inside hierarchical block 'nested'
+   83 |   defparam child.N = 3;
+      |                    ^
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:91:22: Unsupported: defparam inside hierarchical block 'generated'
+                                                          : ... note: In instance 't.g0'
+   91 |     defparam child.N = 4;
+      |                      ^
+%Error-UNSUPPORTED: t/t_hier_block_param_lib_unsup.v:61:12: Unsupported: Setting type parameter 'T' of hierarchical block 'typed'
+                                                          : ... note: In instance 't.o0'
+   61 |   typed #(.T(T)) inner ();
+      |            ^
+%Error: Exiting due to

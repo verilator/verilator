@@ -36,12 +36,19 @@ module secret #(
     output logic [15:0] s8x16up_out[1:0][0:3],
     input [15:0] s8x16up_3d_in[1:0][0:1][0:1],
     output logic [15:0] s8x16up_3d_out[1:0][0:1][0:1],
+    input z_drive,
+    input z_oe,
+    inout wire z_secret,
+    output z_read,
     input clk_en,
     input clk
 );
 
   logic [31:0] secret_accum_q = 0;
   logic [31:0] secret_value = 7;
+
+  assign z_secret = z_oe ? z_drive : 1'bz;
+  assign z_read = z_secret;
 
   initial $display("created %m");
 

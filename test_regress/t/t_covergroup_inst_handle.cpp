@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
     {
         // ---- Case 1: attach count above 1 ----
         VlCovInstHandle first;
-        first.attach(registryp->newCovergroupInst("cg_handle"));
+        first.attach(registryp->newCovergroupInst("cg_handle", false));
         checkEq("one handle, one node", registryp->liveInstanceCount("cg_handle"), 1);
         checkEq("nothing retired yet", registryp->retiredInstanceCount("cg_handle"), 0);
 

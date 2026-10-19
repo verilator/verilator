@@ -457,33 +457,22 @@ class UndrivenVisitor final : public VNVisitorConst {
         return !m_clockingp && !m_alwaysCombp && !m_alwaysFFp && !m_inInitialStatic
                && entryp->isDrivenClockingWhole();
     }
-    // A continuous assignment or a second clocking block contending with a
-    // clocking block 'output' is an unambiguous driver conflict.
+    // A continuous assignment contending with a clocking block 'output' is an
+    // unambiguous driver conflict. Multiple clocking blocks may drive the same
+    // signal, the last drive wins (IEEE 1800-2023 14.16.2).
     void warnClockingDriven(AstNodeVarRef* nodep, const UndrivenVarEntry* entryp,
                             const AstNode* otherWritep, bool otherWriteIsStaticInit) {
-        const AstClocking* const otherClockingp = entryp->getClockingp();
-        if (clockingDrivesOther(entryp, otherWriteIsStaticInit)) {
-            if (otherClockingp) {
-                nodep->v3warn(MULTIDRIVEN,
-                              "Variable written to in clocking block also written by another "
-                              "clocking block"
-                                  << " (IEEE 1800-2023 14.3): " << nodep->prettyNameQ() << '\n'
-                                  << nodep->warnOther() << '\n'
-                                  << nodep->warnContextPrimary() << '\n'
-                                  << otherWritep->warnOther()
-                                  << "... Location of other clocking block output\n"
-                                  << otherWritep->warnContextSecondary());
-            } else if (otherWritep == entryp->contAssignp()) {
-                nodep->v3warn(MULTIDRIVEN,
-                              "Variable written to in clocking block also driven by continuous "
-                              "assignment"
-                                  << " (IEEE 1800-2023 14.3): " << nodep->prettyNameQ() << '\n'
-                                  << nodep->warnOther() << '\n'
-                                  << nodep->warnContextPrimary() << '\n'
-                                  << otherWritep->warnOther()
-                                  << "... Location of continuous assignment\n"
-                                  << otherWritep->warnContextSecondary());
-            }
+        if (clockingDrivesOther(entryp, otherWriteIsStaticInit)
+            && otherWritep == entryp->contAssignp()) {
+            nodep->v3warn(MULTIDRIVEN,
+                          "Variable written to in clocking block also driven by continuous "
+                          "assignment"
+                              << " (IEEE 1800-2023 14.3): " << nodep->prettyNameQ() << '\n'
+                              << nodep->warnOther() << '\n'
+                              << nodep->warnContextPrimary() << '\n'
+                              << otherWritep->warnOther()
+                              << "... Location of continuous assignment\n"
+                              << otherWritep->warnContextSecondary());
         }
         if (otherDrivesClocking(entryp) && m_inContAssign) {
             nodep->v3warn(MULTIDRIVEN,

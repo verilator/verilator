@@ -213,6 +213,17 @@ string VString::unquoteSVString(const string& text, string& errOut) {
     return newtext;
 }
 
+size_t VString::quotedEnd(const string& str, size_t pos) VL_PURE {
+    for (size_t i = pos + 1; i < str.size(); ++i) {
+        if (str[i] == '\\') {
+            ++i;  // Past the escaped character, as of '\"'
+        } else if (str[i] == '"') {
+            return i + 1;
+        }
+    }
+    return string::npos;
+}
+
 string VString::spaceUnprintable(const string& str) VL_PURE {
     string result;
     for (const char c : str) {
@@ -749,7 +760,7 @@ string VName::dehash(const string& in) {
         const auto begin_vhsh
             = std::search(search_begin, search_end, std::begin(VHSH), std::end(VHSH) - 1);
         if (begin_vhsh != search_end) {
-            // V3SplitVar appends a bit range to a name hashedName already hashed, so the
+            // V3Decompose and V3BitBlast append suffixes to names already hashed, so the
             // hash does not always reach the end of the component.
             const auto end_vhsh
                 = begin_vhsh + std::min<size_t>(std::distance(begin_vhsh, search_end), VHSH_LEN);

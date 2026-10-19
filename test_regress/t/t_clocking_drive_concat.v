@@ -35,12 +35,18 @@ module t;
     b = 0;
     @(pe);
     {pe.a, pe.b} <= 2'b11;
+    #2;
+    a = 0;
+    b = 0;
+    // '##0' has no effect, so is accepted, unlike other cycle delays (see t_clocking_bad4)
+    @(pe);
+    {pe.a, pe.b} <= ##0 2'b11;
   end
 
   initial begin
-    #30;
-    `checks(a_log, "1@5 0@7 1@15 ")
-    `checks(b_log, "1@5 0@7 1@15 ")
+    #40;
+    `checks(a_log, "1@5 0@7 1@15 0@17 1@25 ")
+    `checks(b_log, "1@5 0@7 1@15 0@17 1@25 ")
     $write("*-* All Finished *-*\n");
     $finish;
   end

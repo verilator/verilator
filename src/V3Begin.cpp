@@ -66,6 +66,7 @@ class BeginVisitor final : public VNVisitor {
 
     // STATE - for current visit position (use VL_RESTORER)
     AstNodeModule* m_modp = nullptr;  // Current module
+    AstCellInline* m_inlinesp = nullptr;  // AstCellInlines to add to m_modp
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
     AstNode* m_liftedp = nullptr;  // Local nodes we are lifting into m_ftaskp
@@ -98,7 +99,7 @@ class BeginVisitor final : public VNVisitor {
             // Create CellInline for dotted var resolution
             if (!m_ftaskp) {
                 AstCellInline* const inlinep = new AstCellInline{flp, m_unnamedScope, blockName};
-                m_modp->addInlinesp(inlinep);  // Must be parsed before any AstCells
+                m_inlinesp = AstNode::addNextNull(m_inlinesp, inlinep);
             }
         }
     }
@@ -140,7 +141,11 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER_CLEAR(m_displayScope);
         VL_RESTORER_CLEAR(m_namedScope);
         VL_RESTORER_CLEAR(m_unnamedScope);
+        VL_RESTORER(m_inlinesp);
+        m_inlinesp = nullptr;
         iterateChildren(nodep);
+        // Must be parsed before any AstCells, so put them first
+        nodep->prependStmtsp(m_inlinesp);
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procedurep);
@@ -174,15 +179,8 @@ class BeginVisitor final : public VNVisitor {
             initp->unlinkFrBack();
             m_ftaskp->addHereThisAsNext(initp);
         });
-        if (m_liftedp) {
-            // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
-            if (AstNode* const stmtsp = nodep->stmtsp()) {
-                stmtsp->unlinkFrBackWithNext();
-                m_liftedp->addNext(stmtsp);
-            }
-            nodep->addStmtsp(m_liftedp);
-            m_liftedp = nullptr;
-        }
+        // Place lifted nodes at beginning of stmtsp, so Var nodes appear before referenced
+        nodep->prependStmtsp(m_liftedp);
     }
     void visit(AstGenBlock* nodep) override {
         // GenBlocks were only useful in variable creation, change names and delete
@@ -579,11 +577,11 @@ static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr* subf
     AstNodeExpr* const firstp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_FIRST,
                              new AstVarRef{fl, next_varp, VAccess::READWRITE}};
-    firstp->dtypeSetInteger();
+    firstp->dtypeSetInt();
     AstNodeExpr* const nextp
         = new AstCMethodHard{fl, subfromp->cloneTreePure(false), VCMethod::ASSOC_NEXT,
                              new AstVarRef{fl, next_varp, VAccess::READWRITE}};
-    nextp->dtypeSetInteger();
+    nextp->dtypeSetInt();
 
     // _Vmore = array.first(__Vnext)
     loopp->addNext(new AstAssign{fl, new AstVarRef{fl, more_varp, VAccess::WRITE},

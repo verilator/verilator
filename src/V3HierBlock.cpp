@@ -95,6 +95,7 @@
 #include "V3Stats.h"
 #include "V3String.h"
 
+#include <cctype>
 #include <memory>
 #include <sstream>
 #include <utility>
@@ -125,6 +126,19 @@ static void V3HierWriteCommonInputs(const V3HierBlock* hblockp, std::ostream* of
 
 //######################################################################
 
+bool V3HierBlock::stringParamPassable(const string& value) {
+    // stringifyParams writes string values in double quotes into the arguments file, which
+    // V3Options::parseOptsFile reads by lines, removing '/*' comments, and '//' comments after
+    // whitespace, before splitting the quoted arguments. AstConst::parseParamLiteral for -G,
+    // and V3HierarchicalBlockOption, then end each value at the next double quote.
+    if (value.find_first_of("\n\"") != string::npos) return false;
+    if (value.find("/*") != string::npos) return false;
+    for (size_t pos = value.find("//"); pos != string::npos; pos = value.find("//", pos + 1)) {
+        if (pos > 0 && std::isspace(static_cast<unsigned char>(value[pos - 1]))) return false;
+    }
+    return true;
+}
+
 V3HierBlock::StrGParams V3HierBlock::stringifyParams(const std::vector<AstVar*>& gparams,
                                                      bool forGOption) {
     StrGParams strParams;
@@ -148,7 +162,10 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const std::vector<AstVar*>&
                 if (!forGOption) s = VString::quoteBackslash(s);
                 s = VString::quoteStringLiteralForShell(s);
             } else {  // Either signed or unsigned integer.
-                s = constp->num().ascii(true, true);
+                // Constant folding can leave the signedness on the dtype, not the V3Number.
+                V3Number num{constp->num()};
+                num.isSigned(constp->isSigned());
+                s = num.ascii(true, true);
                 s = VString::quoteAny(s, '\'', '\\');
             }
             strParams.emplace_back(gparam->name(), s);

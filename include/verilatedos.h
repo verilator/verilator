@@ -69,6 +69,15 @@
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p), 1)
 #endif
 
+#if defined(__clang__) && defined(__has_feature)
+# if __has_feature(thread_sanitizer)  // Cannot be part of above &&; upsets gcc
+#  define VL_ATTR_NO_SANITIZE_THREAD __attribute__((no_sanitize("thread")))
+# endif
+#endif
+#ifndef VL_ATTR_NO_SANITIZE_THREAD
+# define VL_ATTR_NO_SANITIZE_THREAD
+#endif
+
 #ifdef __cpp_lib_unreachable
 /// Statement that may never be reached (for coverage etc)
 # define VL_UNREACHABLE std::unreachable()  // C++23
@@ -217,6 +226,8 @@
     VL_EXCLUDES(VlOs::MtScopeMutex::s_haveThreadScope)
 // Comment tag that function is threadsafe
 #define VL_MT_SAFE VL_CLANG_ATTR(annotate("MT_SAFE"))
+// Comment tag that function is pretending to be threadsafe due to very special usage
+#define VL_MT_SAFE_PRETEND VL_CLANG_ATTR(annotate("MT_SAFE"))
 // Comment tag that function is threadsafe, only if
 // other threads doesn't change tree topology
 #define VL_MT_STABLE VL_CLANG_ATTR(annotate("MT_STABLE"))
@@ -615,7 +626,12 @@ inline double VL_ROUND(double n) {
 # define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
 #elif defined(__armel__) || defined(__ARMEL__)  // Arm, but broken, must be before __arm__
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory");
-#elif defined(__aarch64__) || defined(__arm__)
+#elif defined(__aarch64__)
+// YIELD does nothing on most AArch64 cores, so spin loops would end far sooner than on x86.
+// ISB drains the spinning core's own pipeline so it stalls briefly like x86 PUASE.
+// It does not flush caches, TLBs or branch predictors, and the spinning core has nothing else in flight.
+# define VL_CPU_RELAX() asm volatile("isb" ::: "memory")
+#elif defined(__arm__)
 # define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
 #elif defined(__hppa__)  // HPPA does not currently have yield/pause
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")

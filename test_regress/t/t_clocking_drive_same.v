@@ -19,6 +19,20 @@ interface bus_if (
   modport tb(clocking cb);
 endinterface
 
+interface hs_if (
+    input bit clk
+);
+  bit v;
+  clocking cbo @(posedge clk);
+    default output #1;
+    output v;
+  endclocking
+  clocking cbi @(posedge clk);
+    default input #1;
+    input v;
+  endclocking
+endinterface
+
 class Driver;
   virtual bus_if vif;
   virtual bus_if.tb mvif;
@@ -50,6 +64,7 @@ module t;
   bit kd;  // Driven with a cycle delay
   bit ki;  // Driven conditionally
   bit ks;  // Driven with an output skew
+  bit go;  // Set by a process woken by the input clocking block
   string k_log;
   string kd_log;
   string ki_log;
@@ -61,6 +76,7 @@ module t;
   string wm_log;
   string w0_log;
   string w1_log;
+  string v_log;
   Driver drv = new;
 
   always #5 clk = ~clk;
@@ -75,6 +91,7 @@ module t;
   bus_if buses[2] (.clk);
   sub sub (.clk);
   sub subs[2] (.clk);
+  hs_if hs (.clk);
 
   function automatic void log(inout string s, input bit v);
     if ($time != 0) s = {s, $sformatf("%0d@%0d ", v, $time)};
@@ -91,6 +108,7 @@ module t;
   always @(mbus.w) log(wm_log, mbus.w);
   always @(buses[0].w) log(w0_log, buses[0].w);
   always @(buses[1].w) log(w1_log, buses[1].w);
+  always @(hs.v) log(v_log, hs.v);
 
   // A drive of the value last driven by the clocking block also assigns the signal, after it
   // was changed by a procedural assignment (IEEE 1800-2023 14.16.2)
@@ -141,6 +159,22 @@ module t;
     if (en) pe.ki <= 1;
   end
 
+  // A drive in the time step of the clocking event, after a wait released by a process that
+  // another clocking block woke, is applied at the skew of this event (IEEE 1800-2023 14.16)
+  initial begin
+    hs.cbo.v <= 1;
+    for (int i = 0; i < 3; ++i) begin
+      @(hs.cbo iff hs.v);
+      hs.cbo.v <= 0;
+      if (i < 2) begin
+        wait (go);
+        go = 0;
+        hs.cbo.v <= 1;
+      end
+    end
+  end
+  initial forever @(hs.cbi iff hs.cbi.v) go = 1;
+
   initial begin
     drv.vif = bus;
     drv.mvif = mbus;
@@ -163,6 +197,7 @@ module t;
     `checks(wm_log, "1@5 0@7 1@15 ")
     `checks(w0_log, "1@5 0@7 1@15 ")
     `checks(w1_log, "1@5 0@7 1@15 ")
+    `checks(v_log, "1@6 0@36 ")
     $write("*-* All Finished *-*\n");
     $finish;
   end

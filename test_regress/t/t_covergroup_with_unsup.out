@@ -31,4 +31,12 @@
                                                     : ... note: In instance 't'
    53 |       bins fixed[2] = {[0 : 33'h0_ffff_ffff], [0 : 33'h0_ffff_ffff]} with (item < 5);   
       |            ^~~~~
+%Warning-COVERIGN: t/t_covergroup_with_unsup.v:64:34: Unsupported: cross bin 'with' filter reading the value of non-integral coverpoint 'rr'
+                                                    : ... note: In instance 't'
+   64 |       bins real_value = (x with (rr < 0.5 || rr > 0.9)) || x;   
+      |                                  ^~
+%Warning-COVERIGN: t/t_covergroup_with_unsup.v:66:52: Unsupported: cross bin 'matches' count of value tuples of non-integral coverpoint 'rr'
+                                                    : ... note: In instance 't'
+   66 |       bins real_counted = x with (tt == 1) matches 2;   
+      |                                                    ^
 %Error: Exiting due to

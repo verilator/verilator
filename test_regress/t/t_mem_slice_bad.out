@@ -1,8 +1,24 @@
+%Error: t/t_mem_slice_bad.v:32:30: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                 : ... note: In instance 't'
+                                 : ... Left-hand data type: 'logic[1:0]$[3:0]'
+                                 : ... Right-hand data type: 'logic[1:0]$[7:0]'
+   32 |   assign active_command[3:0] = (use_AnB) ? command_A[7:0] : command_B[7:0];
+      |                              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_mem_slice_bad.v:34:38: Neither 'logic[1:0]$[7:0]' or 'logic[1:0]$[8:0]' is castable to the other one
+                                 : ... note: In instance 't'
+   34 |   assign active_command2 = (use_AnB) ? command_A2 : command_B2;
+      |                                      ^
+%Error: t/t_mem_slice_bad.v:34:26: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                 : ... note: In instance 't'
+                                 : ... Left-hand data type: 'logic[1:0]$[8:0]'
+                                 : ... Right-hand data type: 'logic[1:0]$[7:0]'
+   34 |   assign active_command2 = (use_AnB) ? command_A2 : command_B2;
+      |                          ^
 %Error: t/t_mem_slice_bad.v:36:30: Slice selection index '[2:0]' outside data type's '[1:0]'
                                  : ... note: In instance 't'
    36 |   assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
       |                              ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_mem_slice_bad.v:36:35: Slice selection index '[3:0]' outside data type's '[2:0]'
                                  : ... note: In instance 't'
    36 |   assign active_command3[1:0][2:0][3:0] = (use_AnB) ?  command_A3[1:0][2:0][3:0] : command_B3[1:0][1:0][3:0];
@@ -23,8 +39,16 @@
                                  : ... note: In instance 't'
    48 |     active_command4[7:0] <= command_A4[8:0];
       |                                       ^
-%Error: t/t_mem_slice_bad.v:53:26: Illegal assignment: Unmatched array sizes in dimension 0 (9 vs 8)
+%Error: t/t_mem_slice_bad.v:48:26: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
                                  : ... note: In instance 't'
+                                 : ... Left-hand data type: 'logic[1:0]$[7:0]'
+                                 : ... Right-hand data type: 'logic[1:0]$[8:0]'
+   48 |     active_command4[7:0] <= command_A4[8:0];
+      |                          ^~
+%Error: t/t_mem_slice_bad.v:53:26: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                 : ... note: In instance 't'
+                                 : ... Left-hand data type: 'logic[1:0]$[8:0]'
+                                 : ... Right-hand data type: 'logic[1:0]$[7:0]'
    53 |     active_command5[8:0] = command_A5[7:0];
       |                          ^
 %Error: Exiting due to

@@ -181,6 +181,16 @@ private:
             }
         }
     }
+    // Like varLifetimeCheck, for a member or element, which can be a dynamically-sized array too,
+    // named by the given node
+    void selLifetimeCheck(AstNodeExpr* nodep, const AstNode* namep) {
+        if (m_underSel || !m_contNbap || !m_dynsizedelem) return;
+        if (!nodep->isLValue() && !m_contReads) return;
+        if (!nodep->dtypep()->skipRefp()->isDynamicallySized()) return;
+        nodep->v3error("Dynamically-sized variable not allowed in "
+                       << m_contNbap
+                       << " assignment (IEEE 1800-2023 6.21): " << namep->prettyNameQ());
+    }
 
     void deadCheckTasks() {
         for (AstNodeFTask* taskp : m_tasksp) {
@@ -567,6 +577,22 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
     }
+    void visit(AstWildcardSel* nodep) override {
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstStructSel* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        selLifetimeCheck(nodep, nodep);
+    }
+    void visit(AstArraySel* nodep) override {
+        iterateChildren(nodep);
+        editDType(nodep);
+        selLifetimeCheck(nodep, nodep->baseFromp(/* overMembers: */ false));
+    }
     void visit(AstSel* nodep) override {
         {
             VL_RESTORER(m_underSel);
@@ -587,15 +613,19 @@ private:
 public:
     // CONSTRUCTORS
     explicit WidthCommitVisitor(AstNetlist* nodep) {
-        // Name classes and interfaces while they have their parameter types, as this visit
-        // moves those to the type table, maybe from another module's types before their own
-        nodep->foreach([](AstNodeModule* modp) {
-            if (AstClass* const classp = VN_CAST(modp, Class)) {
-                classp->dtypeNameFreeze();
-            } else if (AstIface* const ifacep = VN_CAST(modp, Iface)) {
-                ifacep->dtypeNameFreeze();
-            }
-        });
+        {
+            // Name classes and interfaces while they have their parameter types, as this visit
+            // moves those to the type table, maybe from another module's types before their own,
+            // with the scopes declaring them indexed, as a class may be named with others
+            const VDTypeNameScopes scopes{nodep};
+            nodep->foreach([](AstNodeModule* modp) {
+                if (AstClass* const classp = VN_CAST(modp, Class)) {
+                    classp->dtypeNameFreeze();
+                } else if (AstIface* const ifacep = VN_CAST(modp, Iface)) {
+                    ifacep->dtypeNameFreeze();
+                }
+            });
+        }
         // Were changing widthMin's, so the table is now somewhat trashed
         nodep->typeTablep()->clearCache();
         iterate(nodep);
