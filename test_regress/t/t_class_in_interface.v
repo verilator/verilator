@@ -1,7 +1,7 @@
-// DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
+// DESCRIPTION: Verilator: Verilog Test module
 // SPDX-License-Identifier: CC0-1.0
 
 `define stop $stop
