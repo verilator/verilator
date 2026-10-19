@@ -9,9 +9,9 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-test.compile()
+test.compile(verilator_flags2=[test.vlt_filename])
 
 test.execute()
 

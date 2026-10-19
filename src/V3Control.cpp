@@ -284,16 +284,14 @@ public:
             modp->addStmtsp(nodep);
         }
         for (const VPragmaType pragma : m_modPragmas) {
-            if (pragma == VPragmaType::HIER_PARAMS) {
-                modp->hierParams(true);
-                continue;
+            // Handle internal pragmas here, user-facing ones are handled with validation later
+            switch (pragma) {
+            case VPragmaType::HIER_PARAMS: modp->hierParams(true); continue;
+            case VPragmaType::VERILATOR_LIB: modp->verilatorLib(true); continue;
+            default:
+                AstNode* const nodep = new AstPragma{modp->fileline(), pragma};
+                modp->addStmtsp(nodep);
             }
-            if (pragma == VPragmaType::VERILATOR_LIB) {
-                modp->verilatorLib(true);
-                continue;
-            }
-            AstNode* const nodep = new AstPragma{modp->fileline(), pragma};
-            modp->addStmtsp(nodep);
         }
     }
 

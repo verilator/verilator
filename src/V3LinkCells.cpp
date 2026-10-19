@@ -27,6 +27,7 @@
 
 #include "V3LinkCells.h"
 
+#include "V3Control.h"
 #include "V3Graph.h"
 #include "V3Parse.h"
 #include "V3SymTable.h"
@@ -928,5 +929,7 @@ void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     // Configs must be parsed first because they determine the library search order for linking
     LinkCellsState state;
     { LinkConfigsVisitor{nodep, state}; }
+    // Bind processing depends on module controls, including controls for later modules.
+    nodep->modulesp()->foreachAndNext([](AstNodeModule* modp) { V3Control::applyModule(modp); });
     { LinkCellsVisitor{nodep, filterp, state}; }
 }
