@@ -113,6 +113,7 @@ Verilator 5.053 devel
 * Fix function reference into generate case block (#5312) (#8532). [Hongseok Choi]
 * Fix pattern type matching against nested aggregates (#7304).
 * Fix covergroup-internal references multi-threaded ordering (#7779) (#8255). [Matthew Ballance]
+* Fix threading instability in streaming queue operations (#7780).
 * Fix race in aborting exit when multithreaded (#7805).
 * Fix typedef through a parameterized sub-interface (#7943 repair) (#8124) (#8128). [em2machine]
 * Fix detecting non-inlined awaits in V3Delayed.cpp (#7982). [Igor Zaworski, Antmicro Ltd.]

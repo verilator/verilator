@@ -2125,6 +2125,7 @@ inline void VL_STREAML_RII(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q
     q.clear();
     VlWide<N_Words> value;
     value[0] = ret;
+    VL_MEMSET_ZERO_W(value + 1, N_Words - 1);
     q.push_back(value);
 }
 
@@ -2166,6 +2167,8 @@ inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<T>& q, WDataInP con
     VL_CONSTEXPR_CXX17 int numBitsInT = 8 * sizeof(T);
     VL_CONSTEXPR_CXX17 int mask = VL_MASK_I(numBitsInT * needsMask);
     q.renew(lbits / numBitsInT);
+    // Bits are OR-ed in below, but renew() fills with the possibly randomized default
+    for (int i = 0; i < lbits / numBitsInT; ++i) q.atWrite(i) = 0;
     const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
     for (int istart = 0; istart < lbits; istart += rd) {
         int ostart = lbits - rd - istart;
@@ -2196,6 +2199,10 @@ inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q
     if (lbits < queueBits) lbits = queueBits;  // If queue is larger than the rhs
     const int leftOver = (lbits % numBitsInT) > 0;
     q.renew(lbits / numBitsInT + leftOver);
+    // Bits are OR-ed in below, but renew() fills with the possibly randomized default
+    for (int i = 0; i < lbits / numBitsInT + leftOver; ++i) {
+        for (int w = 0; w < N_Words; ++w) q.atWrite(i).at(w) = 0;
+    }
     const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
     for (int istart = 0; istart < lbits; istart += rd) {
         int ostart = lbits - rd - istart;
