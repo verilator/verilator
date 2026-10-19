@@ -3633,6 +3633,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return classSymp;
     }
+    // Is the current scope within the given class, including within its nested classes
+    bool insideClass(const AstClass* classp) const {
+        for (const VSymEnt* symp = m_curSymp; symp; symp = symp->parentp()) {
+            if (symp->nodep() == classp) return true;
+        }
+        return false;
+    }
     // 'randomize() with' target class not yet specialized; defer to post-V3Param pass
     bool randTargetUnresolved() const {
         return m_statep->forPrimary() && m_currentWithp && m_randMethodCallp && !m_randSymp;
@@ -5039,23 +5046,29 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Make sure any extends() are properly imported within referenced class
             if (refClassp && !m_statep->forPrimary()) classExtendImport(refClassp);
 
-            m_ds.init(m_curSymp);
-            UINFO(4, indent() << "(Backto) Link ClassOrPackageRef: " << nodep);
-            iterateChildren(nodep);
-
-            AstClass* const modClassp = VN_CAST(m_modp, Class);
             if (m_statep->forPrimary() && refClassp && !nodep->paramsp()
                 && nodep->classOrPackageSkipp()->hasGParam()
                 // Don't warn on typedefs, which are hard to know if there's a param somewhere
                 // buried
                 && VN_IS(nodep->classOrPackageNodep(), Class)
-                // References to class:: within class itself are OK per IEEE (UVM does this)
-                && modClassp != refClassp) {
-                nodep->v3error(
+                // References to class:: within class itself, including from its nested
+                // classes, are OK per IEEE (UVM does this)
+                && !insideClass(refClassp)) {
+                nodep->v3warn(
+                    NONSTD,
                     "Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)\n"
-                    << nodep->warnMore() << "... Suggest use '"
-                    << nodep->classOrPackageNodep()->prettyName() << "#()'");
+                        << nodep->warnMore() << "... Suggest use '"
+                        << nodep->classOrPackageNodep()->prettyName() << "#()'");
+                // As other simulators do, use the default specialization. Add the same
+                // placeholder pin V3LinkCells makes for '#()' so it is linked below.
+                AstPin* const pinp = new AstPin{nodep->fileline(), 1, "__paramNumber1", nullptr};
+                pinp->param(true);
+                nodep->addParamsp(pinp);
             }
+
+            m_ds.init(m_curSymp);
+            UINFO(4, indent() << "(Backto) Link ClassOrPackageRef: " << nodep);
+            iterateChildren(nodep);
         }
 
         if (nodep->name() == "local::") {
