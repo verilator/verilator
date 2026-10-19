@@ -1048,7 +1048,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                      it->second.end());
             addArrayElementAssign(datap, i, new AstVarRef{fl, elementDatap, VAccess::READ});
             addArrayElementAssign(enablep, i, new AstVarRef{fl, elementEnablep, VAccess::READ});
-        }
+        }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
         return {new AstVarRef{fl, datap, VAccess::READ},
                 new AstVarRef{fl, enablep, VAccess::READ}};
     }
