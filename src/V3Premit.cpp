@@ -118,7 +118,7 @@ class PremitVisitor final : public VNVisitor {
 
         if (useConstPool) {
             // Extract into constant pool.
-            AstVarRef* const refp = V3ConstPool::findConst(constp);
+            AstVarRef* const refp = V3ConstPool::find(constp);
             varp = refp->varp();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             ++m_extractedToConstPool;

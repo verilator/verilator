@@ -108,9 +108,9 @@ class EmitCConstPool final : public EmitCConstInit {
 public:
     explicit EmitCConstPool(const AstPackage* poolp) {
         emitVars(poolp);
-        V3Stats::addStatSum("ConstPool, Constants emitted", m_constsEmitted);
-        V3Stats::addStatSum("ConstPool, Maps emitted", m_mapsEmitted);
-        V3Stats::addStatSum("ConstPool, Tables emitted", m_tablesEmitted);
+        V3Stats::addStatSum("ConstPool, CONST emitted", m_constsEmitted);
+        V3Stats::addStatSum("ConstPool, CONSASSOC emitted", m_mapsEmitted);
+        V3Stats::addStatSum("ConstPool, CONSARRAY emitted", m_tablesEmitted);
     }
 };
 
