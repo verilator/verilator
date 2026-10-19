@@ -45,6 +45,19 @@ module t;
     xx: cross c1, c2, c3, c4;  // <--- Bad: bins
   endgroup
 
+  // Likewise the count of a cross bin's 'matches'
+  covergroup cg_matches(int count);
+    cp: coverpoint value {
+      option.weight = 0;
+    }
+    dp: coverpoint data[0] {
+      option.weight = 0;
+    }
+    xx: cross cp, dp{
+      bins counted = xx with (cp != 0) matches count;  // <--- Bad: count
+    }
+  endgroup
+
   // All 2^64 values, whose positions need more than 64 bits
   covergroup cg_full;
     cp: coverpoint data64 {
@@ -58,6 +71,8 @@ module t;
   cg_limit over_limit;
   cg_cross oversized;
   cg_full full;
+  cg_matches zero_matches;
+  cg_matches negative_matches;
 
   initial begin
     // Not a positive size (IEEE 1800-2023 19.5.1), so an error, and the array has no bins
@@ -67,6 +82,14 @@ module t;
     `checkr(zero.get_inst_coverage(), 0.0);
     zero = null;
     negative = null;
+    // Likewise not a positive count (IEEE 1800-2023 19.6.1.2), so an error, and the bin is
+    // ignored: 1 of 32 automatic bins
+    zero_matches = new(0);
+    negative_matches = new(-1);
+    zero_matches.sample();
+    `checkr(zero_matches.get_inst_coverage(), 100.0 / 32);
+    zero_matches = null;
+    negative_matches = null;
 
     // More bins than --coverage-max-bins hold values, so the array is ignored
     over_limit = new(2000);

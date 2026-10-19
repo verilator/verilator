@@ -417,10 +417,17 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(")");
     }
     void visit(AstCoverCrossWith* nodep) override {
+        // A selection with a count is filtered further only in parentheses
+        if (nodep->countp()) putfs(nodep, "(");
         iterateConstNull(nodep->selectp());
         putfs(nodep, " with (");
         iterateConst(nodep->filterp());
         puts(")");
+        if (nodep->countp()) {
+            puts(" matches ");
+            iterateConst(nodep->countp());
+            puts(")");
+        }
     }
     void visit(AstCoverpointRef* nodep) override {
         putfs(nodep, nodep->name());
@@ -872,16 +879,14 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         puts(")");
     }
-    void visit(AstInitArray* nodep) override {
+    void visit(AstConsArray* nodep) override {
         putfs(nodep, "'{");
-        int comma = 0;
-        const auto& mapr = nodep->map();
-        for (const auto& itr : mapr) {
-            if (comma++) putbs(", ");
-            puts(cvtToStr(itr.first));
+        for (const AstConsArrayItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+            if (itemp != nodep->itemsp()) putbs(", ");
+            puts(cvtToStr(itemp->index()));
             puts(":");
-            AstNode* const valuep = itr.second->valuep();
-            iterateConst(valuep);
+            iterateConst(itemp->valuep());
         }
         puts("}");
     }

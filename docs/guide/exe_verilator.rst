@@ -213,6 +213,9 @@ Summary:
    When make is run on the generated makefile, these will be passed to the
    C++ compiler (g++/clang++/msvc++).
 
+   C++ modules (e.g. :command:`-CFLAGS -fmodules`) are not supported due to
+   precompiled header (PCH) incompatibilities in GCC.
+
 .. option:: --clk <signal-name>
 
    Deprecated and has no effect (ignored).
@@ -295,8 +298,13 @@ Summary:
 .. option:: --coverage
 
    Enables all forms of coverage, an alias for :vlopt:`--coverage-line`
-   :vlopt:`--coverage-toggle` :vlopt:`--coverage-expr` :vlopt:`--coverage-fsm`
-   :vlopt:`--coverage-user`.
+   :vlopt:`--coverage-branch` :vlopt:`--coverage-toggle`
+   :vlopt:`--coverage-expr` :vlopt:`--coverage-fsm` :vlopt:`--coverage-user`.
+
+.. option:: --coverage-branch
+
+   Enables branch coverage analysis of ``if``/``else`` and ``?:``. See
+   :ref:`Branch Coverage`.
 
 .. option:: --coverage-expr
 
@@ -362,6 +370,8 @@ Summary:
 .. option:: --coverage-line
 
    Enables basic block line coverage analysis. See :ref:`Line Coverage`.
+   Branches of ``if``/``else`` and ``?:`` are covered separately with
+   :vlopt:`--coverage-branch`.
 
 .. option:: --coverage-max-bins <value>
 
@@ -424,8 +434,9 @@ Summary:
    ``.dat`` records per hierarchy instance. This option must be specified when
    Verilating the model, together with one or more coverage instrumentation
    options, for example :vlopt:`--coverage`, :vlopt:`--coverage-line`,
-   :vlopt:`--coverage-toggle`, :vlopt:`--coverage-expr`,
-   :vlopt:`--coverage-fsm`, or :vlopt:`--coverage-user`. It may increase
+   :vlopt:`--coverage-branch`, :vlopt:`--coverage-toggle`,
+   :vlopt:`--coverage-expr`, :vlopt:`--coverage-fsm`, or
+   :vlopt:`--coverage-user`. It may increase
    generated model size, counter memory, coverage write time, and ``.dat`` file
    size.
 
@@ -1176,10 +1187,10 @@ Summary:
 
 .. option:: --hierarchical-params-file <filename>
 
-   Rarely needed - internal use. Internal flag inserted used during
-   :vlopt:`--hierarchical`; specifies name of hierarchical parameters file
-   for deparametrized modules with :option:`/*verilator&32;hier_block*/`
-   metacomment. See :ref:`Hierarchical Verilation`.
+   Internal use only, for :vlopt:`--hierarchical`. Specifies name of
+   hierarchical parameters file for deparametrized modules with
+   :option:`/*verilator&32;hier_block*/` metacomment. See
+   :ref:`Hierarchical Verilation`.
 
 .. option:: --hierarchical-threads <threads>
 
@@ -1529,6 +1540,17 @@ Summary:
    to the value from :vlopt:`--build-jobs`, or from :vlopt:`-j`, or zero in
    that priority.
 
+.. option:: --output-groups-size <bytes>
+
+   With :vlopt:`--output-groups`, limits the size of each concatenated .cpp
+   file, including the generated headers it includes, to the given number
+   of bytes. Groups that would exceed the limit are split into more groups,
+   so more files than requested by :vlopt:`--output-groups` may be
+   created. A single .cpp file larger than the limit is compiled on its
+   own. This bounds the compiler memory usage when grouping large designs.
+
+   Defaults to 536870912 (512 MB). Zero disables the limit.
+
 .. option:: --output-split <statements>
 
    Enables splitting the output .cpp files into multiple outputs. When a
@@ -1587,6 +1609,11 @@ Summary:
    inouts in the top-level module. The __en variable has a one in a bit
    position to indicate the corresponding bit of the __out variable has
    a value being driven from within the Verilated model.
+
+   With :vlopt:`--lib-create` or :vlopt:`--protect-lib`, this option exposes
+   the input, ``__out``, and ``__en`` ports in the generated SystemVerilog
+   wrapper. Without this option, the wrapper retains the ``inout`` port
+   and drives it using the library's output value and enable for each bit.
 
 .. option:: --pins-sc-biguint
 
@@ -2103,8 +2130,8 @@ Summary:
 .. option:: --trace-coverage
 
    With ``--trace-*`` and ``--coverage-*``, enable tracing to include a
-   traced signal for every :vlopt:`--coverage-line` or
-   :vlopt:`--coverage-user`\ -inserted coverage point, to assist in
+   traced signal for every :vlopt:`--coverage-line`,
+   :vlopt:`--coverage-branch` or :vlopt:`--coverage-user`\ -inserted coverage point, to assist in
    debugging coverage items. Note :vlopt:`--coverage-toggle` does not get
    additional signals added, as the original signals being toggle-analyzed
    are already visible.

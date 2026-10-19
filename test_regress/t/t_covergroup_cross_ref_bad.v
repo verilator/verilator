@@ -41,7 +41,9 @@ module t;
       bins wrong_with = missing with (cp_a == cp_b);
     }
     // A filter has one candidate of a repeated cross item
-    repeated: cross cp_a, cp_a{bins high = repeated with (cp_a > 0);}
+    repeated: cross cp_a, cp_a{
+      bins high = repeated with (cp_a > 0);
+    }
   endgroup
 
   cg cov = new;

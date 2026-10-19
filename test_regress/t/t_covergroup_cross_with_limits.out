@@ -1,5 +1,6 @@
 %Warning: t/t_covergroup_cross_with_limits.v:54: Coverage bin exclusions exceed the decision-graph depth limit; bin retained
-%Warning: t/t_covergroup_cross_with_limits.v:65: Coverage cross bin 'with' filter has more than 2**32 candidate value tuples; bin 'over' ignored
-%Warning: t/t_covergroup_cross_with_limits.v:69: Coverage cross bin 'with' filter has more than 2**32 candidate value tuples; bin 'over' ignored
-%Warning: t/t_covergroup_cross_with_limits.v:91: Coverage cross bin 'with' filter has more than 2**32 candidate value tuples; bin 'over' ignored
+%Warning: t/t_covergroup_cross_with_limits.v:67: Coverage cross bin 'with' filter has more than 2**32 candidate value tuples; bin 'over' ignored
+%Warning: t/t_covergroup_cross_with_limits.v:69: Coverage cross bin 'with' filter has more than 2**32 candidate value tuples; bin 'counted' ignored
+%Warning: t/t_covergroup_cross_with_limits.v:72: Coverage cross bin 'with' filter has more than 2**32 candidate value tuples; bin 'over' ignored
+%Warning: t/t_covergroup_cross_with_limits.v:94: Coverage cross bin 'with' filter has more than 2**32 candidate value tuples; bin 'over' ignored
 *-* All Finished *-*

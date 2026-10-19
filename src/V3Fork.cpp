@@ -683,7 +683,7 @@ class ForkVisitor final : public VNVisitor {
                     fl,
                     new AstConst{fl, AstConst::Unsized64{}, std::numeric_limits<uint64_t>::max()},
                     false};
-                itemp->stmtsp()->addHereThisAsNext(delayp);
+                itemp->prependStmtsp(delayp);
                 moveForkSentinelAfterDisableQueuePushes(itemp);
             }
         }

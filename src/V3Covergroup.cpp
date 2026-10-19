@@ -168,6 +168,7 @@ class CovergroupExprValidVisitor final : public VNVisitor {
     void visit(AstCoverCrossWith* nodep) override {
         iterateAndNextNull(nodep->selectp());
         scanCoverageExpression(nodep->filterp());
+        scanCoverageExpression(nodep->countp());
     }
     void visit(AstCoverBinsof* nodep) override { scanCoverageExpression(nodep->rangesp()); }
     void visit(AstCoverBin* nodep) override {
@@ -570,19 +571,36 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     static constexpr size_t VALUE_LIST_ENTRIES = 256;  // Metadata entries per constructor call
 
-    // The number of bins a constant array size requests: -1 if it is negative, and saturated
-    // above the largest limit
-    static int64_t binsCount(const AstConst* constp) {
+    // The value of a constant count, of bins or value tuples: -1 if it is negative, and
+    // saturated above the largest limit
+    static int64_t constCount(const AstConst* constp) {
         const V3Number& num = constp->num();
         if (constp->isSigned() && num.isNegative()) return -1;
         return num.mostSetBitP1() > 32 ? INT64_MAX : static_cast<int64_t>(num.toUQuad());
+    }
+
+    // Whether a count, 'whatp', is integral and, if constant, positive, as the standard's clause
+    // 'clausep' requires; else errors
+    static bool checkCount(const AstNodeExpr* countp, const char* whatp, const char* clausep) {
+        const AstConst* const constp = VN_CAST(countp, Const);
+        if (!countp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+            countp->v3error(whatp << " must be integral (IEEE 1800-2023 " << clausep << ")");
+            return false;
+        } else if (constp && (constp->num().isFourState() || constCount(constp) < 1)) {
+            countp->v3error(whatp << " must be >= 1, got "
+                                  << (constp->num().isFourState() ? constp->num().ascii(false)
+                                                                  : constp->num().toDecimalS())
+                                  << " (IEEE 1800-2023 " << clausep << ")");
+            return false;
+        }
+        return true;
     }
 
     // The number of bins requested by a valid 'bins auto[N]', or 0
     static uint32_t autoBinsRequested(const AstCoverBin* binp) {
         const AstConst* const constp = VN_CAST(binp->arraySizep(), Const);
         if (!constp) return 0;
-        const int64_t count = binsCount(constp);
+        const int64_t count = constCount(constp);
         return count < 1 || count > v3Global.opt.coverageMaxBins() ? 0
                                                                    : static_cast<uint32_t>(count);
     }
@@ -642,23 +660,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // are unsupported, and treated as arrays of a bin per value.  False unless it stays sized.
     bool checkBinsArraySize(const AstCoverpoint* coverpointp, AstCoverBin* binp, bool integral) {
         AstNodeExpr* const sizep = binp->arraySizep();
-        const AstConst* const constp = VN_CAST(sizep, Const);
         if (VN_IS(sizep, Unbounded)) {  // A parameter of '$'; see bins_orBraE
             binp->v3error("Bins array size must be integral, not '$' (IEEE 1800-2023 19.5.1)");
-        } else if (!sizep->dtypep()->skipRefp()->isIntegralOrPacked()) {
-            sizep->v3error("Bins array size must be integral (IEEE 1800-2023 19.5.1)");
-        } else if (constp && (constp->num().isFourState() || binsCount(constp) < 1)) {
-            sizep->v3error("Bins array size must be >= 1, got "
-                           << (constp->num().isFourState() ? constp->num().ascii(false)
-                                                           : constp->num().toDecimalS())
-                           << " (IEEE 1800-2023 19.5.1)");
-        } else if (!integral) {
+        } else if (checkCount(sizep, "Bins array size", "19.5.1")) {
+            if (integral) return true;
             binp->v3warn(COVERIGN, "Unsupported: 'bins' explicit array size of a real "
                                    "coverpoint (treated as '[]')");
             VL_DO_DANGLING(pushDeletep(sizep->unlinkFrBack()), sizep);
             return false;
-        } else {
-            return true;
         }
         dropBins(coverpointp, binp);
         return false;
@@ -787,10 +796,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             const AstConst* const constp = VN_CAST(cbinp->arraySizep(), Const);
             if (!constp) {
                 cbinp->v3error("Automatic bins array size must be a constant");
-            } else if (binsCount(constp) < 1) {
+            } else if (constCount(constp) < 1) {
                 cbinp->v3error("Automatic bins array size must be >= 1, got "
                                << constp->num().toDecimalS());
-            } else if (binsCount(constp) > v3Global.opt.coverageMaxBins()) {
+            } else if (constCount(constp) > v3Global.opt.coverageMaxBins()) {
                 cbinp->v3error("Automatic bins array size of "
                                << constp->num().toDecimalU() << " exceeds limit of "
                                << v3Global.opt.coverageMaxBins() << '\n'
@@ -1849,6 +1858,36 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return valuep;
     }
 
+    // The runtime arguments of a count, which the constructor evaluates once into a temporary:
+    // its value, a count wider than 64 bits saturated over any limit, and whether it is positive
+    std::pair<AstNodeExpr*, AstNodeExpr*> newCountArgs(FileLine* fl, const string& name,
+                                                       AstNodeExpr* exprp) {
+        AstVar* const countp = constructorTemp(fl, name, exprp->dtypep());
+        m_constructorp->addStmtsp(
+            new AstAssign{fl, new AstVarRef{fl, countp, VAccess::WRITE}, exprp->cloneTree(false)});
+        const auto countRef = [&]() { return new AstVarRef{fl, countp, VAccess::READ}; };
+        AstConst* const zerop = new AstConst{fl, AstConst::DTyped{}, countp->dtypep()};
+        AstNodeExpr* const positivep
+            = countp->isSigned() ? static_cast<AstNodeExpr*>(new AstGtS{fl, countRef(), zerop})
+                                 : new AstNeq{fl, countRef(), zerop};
+        AstNodeExpr* valuep = resizeValue(countRef(), countp->findUInt64DType());
+        if (countp->width() > VL_QUADSIZE) {
+            valuep = new AstCond{
+                fl,
+                new AstRedOr{
+                    fl, new AstSel{fl, countRef(), VL_QUADSIZE, countp->width() - VL_QUADSIZE}},
+                new AstConst{fl, AstConst::Unsized64{}, std::numeric_limits<uint64_t>::max()},
+                valuep};
+            valuep->dtypeSetUInt64();
+        }
+        return {valuep, positivep};
+    }
+    // The runtime arguments of a constant count
+    static std::pair<AstNodeExpr*, AstNodeExpr*> newCountArgs(FileLine* fl, uint64_t count) {
+        return {new AstConst{fl, AstConst::Unsized64{}, count},
+                new AstConst{fl, AstConst::BitTrue{}}};
+    }
+
     // The values of a coverpoint, which its name denotes (IEEE 1800-2023 19.5.1.1), as runs in
     // value order: an enumerated type's values (6.19), else all values of its type.  Bounds
     // are at runWidth(), sign-extended like a CrossValueRange's.
@@ -1896,12 +1935,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = binp->fileline();
         const string prefix
             = m_sizedNames.get(sanitizeGeneratedName(coverpointp->name() + "__" + binp->name()));
-        AstVar* countp = nullptr;
-        if (AstNodeExpr* const sizep = binp->arraySizep()) {
-            countp = constructorTemp(fl, prefix + "_count", sizep->dtypep());
-            m_constructorp->addStmtsp(new AstAssign{fl, new AstVarRef{fl, countp, VAccess::WRITE},
-                                                    sizep->cloneTree(false)});
-        }
+        // The count, and whether it is positive; one of a filter's scalar bin, or bin per value
+        const std::pair<AstNodeExpr*, AstNodeExpr*> count
+            = binp->arraySizep() ? newCountArgs(fl, prefix + "_count", binp->arraySizep())
+                                 : newCountArgs(fl, 1);
         AstCoverWith* const withp = binWith(binp);
         if (withp && !binRangesp(binp)) {  // The coverpoint's name: all of its values
             for (const std::pair<V3Number, V3Number>& run : coverpointValues(binp, exprp)) {
@@ -1924,31 +1961,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             generateSizedElement(cpVarp, binp, rangep, exprp, prefix + "_" + cvtToStr(element++));
         }
         if (withp) generateWithFilter(binp, withp, cpVarp, exprp, prefix);
-        AstNodeExpr* countValuep;
-        AstNodeExpr* positivep;
-        if (countp) {
-            const auto countRef = [&]() { return new AstVarRef{fl, countp, VAccess::READ}; };
-            AstConst* const zerop = new AstConst{fl, AstConst::DTyped{}, countp->dtypep()};
-            positivep = countp->isSigned()
-                            ? static_cast<AstNodeExpr*>(new AstGtS{fl, countRef(), zerop})
-                            : new AstNeq{fl, countRef(), zerop};
-            // Saturate a count wider than 64 bits: min(N, T) is unchanged, or over any limit
-            countValuep = resizeValue(countRef(), countp->findUInt64DType());
-            if (countp->width() > VL_QUADSIZE) {
-                countValuep = new AstCond{
-                    fl,
-                    new AstRedOr{fl, new AstSel{fl, countRef(), VL_QUADSIZE,
-                                                countp->width() - VL_QUADSIZE}},
-                    new AstConst{fl, AstConst::Unsized64{}, std::numeric_limits<uint64_t>::max()},
-                    countValuep};
-                countValuep->dtypeSetUInt64();
-            }
-        } else {  // Of a filter's scalar bin, or bin per value
-            countValuep = new AstConst{fl, AstConst::Unsized64{}, 1};
-            positivep = new AstConst{fl, AstConst::BitTrue{}};
-        }
-        std::vector<AstNodeExpr*> args{ctext(fl, binp->binsType().binSetEnum()), countValuep,
-                                       positivep};
+        std::vector<AstNodeExpr*> args{ctext(fl, binp->binsType().binSetEnum()), count.first,
+                                       count.second};
         // A filter's bins have the limit it began with
         if (!withp) args.push_back(cnum(fl, v3Global.opt.coverageMaxBins()));
         const bool prot = v3Global.opt.protectIds();
@@ -1992,9 +2006,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                       ->makeStmt());
         // The candidates count in the coverpoint's width, and the filter reads each as 'item',
         // of the coverpoint's type, so that a filter changing 'item' cannot change the loop
-        AstNodeDType* const valueDTypep
-            = exprp->findLogicDType(exprp->width(), exprp->width(),
-                                    exprp->isSigned() ? VSigning::SIGNED : VSigning::UNSIGNED);
+        AstNodeDType* const valueDTypep = exprp->dtypep();
         AstVar* const valuep = constructorTemp(fl, prefix + "_value", valueDTypep);
         AstVar* const lastp = constructorTemp(fl, prefix + "_last", valueDTypep);
         AstVar* const firstp = constructorTemp(fl, prefix + "_first", valueDTypep);
@@ -2121,7 +2133,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const CrossValueRange domain
             = crossValueDomain(rangep, exprp->width(), exprp->isSigned(), width);
         AstVar* const lop = constructorTemp(fl, prefix + "_lo", exprp->dtypep());
-        lop->dtypeSetLogicSized(width, VSigning::SIGNED);
+        lop->dtypeSetBitSized(width, VSigning::SIGNED);
         AstVar* const hip = constructorTemp(fl, prefix + "_hi", lop->dtypep());
         const auto bound = [&](AstNodeExpr* boundp, const V3Number& limit) -> AstNodeExpr* {
             if (unbounded(boundp)) {
@@ -2170,7 +2182,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // A run spans at most 2^width values, so offsets in it are unsigned width-bit numbers
         AstNodeExpr* indexp
             = new AstSub{fl, exprp->cloneTree(false), newValueConst(fl, run.m_lo, exprp)};
-        indexp->dtypeSetLogicSized(width, VSigning::UNSIGNED);
+        indexp->dtypeSetBitSized(width, VSigning::UNSIGNED);
         V3Number stride{fl, width, 0};
         stride.opAssign(run.m_stride);
         if (stride.countOnes() != 1) {
@@ -3426,41 +3438,66 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // The variables a 'with' filter reads, each by its first reference
     using CrossFilterReads = std::map<const AstVar*, AstVarRef*>;
 
-    // Whether the runtime knows the values of the cross items a 'with' filter reads, of
-    // integral coverpoints; else warns
+    // Whether a 'with' filter has a count of value tuples, of 'matches' other than '$'
+    static bool countsValueTuples(const AstCoverCrossWith* withp) {
+        return withp->countp() && !VN_IS(withp->countp(), Unbounded);
+    }
+
+    // Whether the runtime knows the values of the cross items a 'with' filter reads, or to count
+    // value tuples, of all items, of integral coverpoints; else warns
     static bool crossFilterSupported(const AstCoverCrossWith* withp,
                                      const CrossFilterReads& reads) {
         for (const AstVar* varp = withp->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+            if (varp->dtypep()->skipRefp()->isIntegralOrPacked()) continue;
             const auto it = reads.find(varp);
-            if (it == reads.end() || varp->dtypep()->skipRefp()->isIntegralOrPacked()) continue;
-            it->second->v3warn(COVERIGN, "Unsupported: cross bin 'with' filter reading the value "
-                                         "of non-integral coverpoint "
-                                             << it->second->prettyNameQ());
-            return false;
+            if (it != reads.end()) {
+                it->second->v3warn(COVERIGN, "Unsupported: cross bin 'with' filter reading the "
+                                             "value of non-integral coverpoint "
+                                                 << it->second->prettyNameQ());
+                return false;
+            }
+            if (countsValueTuples(withp)) {
+                withp->countp()->v3warn(COVERIGN, "Unsupported: cross bin 'matches' count of "
+                                                  "value tuples of non-integral coverpoint "
+                                                      << varp->prettyNameQ());
+                return false;
+            }
         }
         return true;
     }
 
-    // Emit the constructor code selecting, of the bin tuples of the selection, those with a value
-    // tuple for which the 'with' filter is true (IEEE 1800-2023 19.6.1.2).  The runtime gives
-    // the values of the cross items the filter reads, of each value tuple it may evaluate:
-    //   withBegin({dimensions read}, bin, file, line);
+    // Emit the constructor code selecting, of the bin tuples of the selection, those with enough
+    // value tuples for which the 'with' filter is true: one, all for 'matches $', or a count
+    // (IEEE 1800-2023 19.6.1.2).  The runtime gives the values of the cross items the filter
+    // reads, of each value tuple it may evaluate:
+    //   withBegin({dimensions}, count, positive, bin, file, line);
     //   while (withNext()) {
     //       item = withValue(dimension);  // Of each cross item read
     //       withTest(filter);
     //   }
     //   withEnd();
+    // The dimensions are those of the items read, or to count value tuples, of all items: the
+    // filter's result for a value tuple of the items it reads repeats for each of the others'.
     void generateCrossFilter(const AstCoverCrossWith* withp, const CrossFilterReads& reads,
                              const AstCoverCrossBin* binp, const AstCoverCross* crossp,
-                             AstVar* cxp, const std::map<string, uint32_t>& dimensions) {
+                             AstVar* cxp, const std::map<string, uint32_t>& dimensions,
+                             uint32_t items) {
         FileLine* const fl = withp->fileline();
         const string prefix
             = m_sizedNames.get(sanitizeGeneratedName(crossp->name() + "__" + binp->name()));
+        const bool counting = countsValueTuples(withp);
+        // The count, 0 for all
+        const std::pair<AstNodeExpr*, AstNodeExpr*> count
+            = counting ? newCountArgs(fl, prefix + "_count", withp->countp())
+                       : newCountArgs(fl, withp->countp() ? 0 : 1);
         AstLoop* const loopp = new AstLoop{fl};
         AstCMethodHard* const nextp = itemCall(fl, cxp, VCMethod::COVERGROUP_WITH_NEXT);
         nextp->dtypeSetBit();
         loopp->addStmtsp(new AstLoopTest{fl, loopp, nextp});
         string dims;
+        for (uint32_t dim = 0; counting && dim < items; ++dim) {
+            dims += (dims.empty() ? "" : ", ") + cvtToStr(dim) + "U";
+        }
         while (AstVar* const varp = withp->varsp()) {
             varp->unlinkFrBack();
             if (!reads.count(varp)) {
@@ -3470,7 +3507,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             const auto dimIt = dimensions.find(varp->name());
             UASSERT_OBJ(dimIt != dimensions.end(), varp, "Cross 'with' candidate not of an item");
             const uint32_t dim = dimIt->second;
-            dims += (dims.empty() ? "" : ", ") + cvtToStr(dim) + "U";
+            if (!counting) dims += (dims.empty() ? "" : ", ") + cvtToStr(dim) + "U";
             varp->name(prefix + "_" + sanitizeGeneratedName(varp->name()));
             m_constructorp->addStmtsp(varp);
             if (varp->isWide()) {
@@ -3494,7 +3531,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const bool prot = v3Global.opt.protectIds();
         m_constructorp->addStmtsp(
             itemCall(fl, cxp, VCMethod::COVERGROUP_CROSS_WITH_BEGIN,
-                     {ctext(fl, "{" + dims + "}"),
+                     {ctext(fl, "{" + dims + "}"), count.first, count.second,
                       ctext(fl, quoted(VIdProtect::protectWordsIf(binp->name(), prot))),
                       ctext(fl, quoted(VIdProtect::protectIf(fl->filename(), prot))),
                       cnum(fl, static_cast<uint32_t>(fl->lineno()))})
@@ -3529,12 +3566,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (const AstCoverCrossWith* const withp = VN_CAST(nodep, CoverCrossWith)) {
             CrossFilterReads reads;
             withp->filterp()->foreach([&](AstVarRef* refp) { reads.emplace(refp->varp(), refp); });
-            if (!crossFilterSupported(withp, reads)
+            // The count of 'matches' is a positive integer, or '$' (IEEE 1800-2023 19.6.1.2)
+            if ((countsValueTuples(withp)
+                 && !checkCount(withp->countp(), "Cross bin 'matches' count", "19.6.1.2"))
+                || !crossFilterSupported(withp, reads)
                 || !generateRuntimeSelection(withp->selectp(), binp, crossp, cxp, cpVars,
                                              dimensions)) {
                 return false;
             }
-            generateCrossFilter(withp, reads, binp, crossp, cxp, dimensions);
+            generateCrossFilter(withp, reads, binp, crossp, cxp, dimensions,
+                                static_cast<uint32_t>(cpVars.size()));
             return true;
         }
         AstCoverBinsof* const selectp = VN_AS(nodep, CoverBinsof);
@@ -4148,8 +4189,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     void rewriteVarRef(AstVarRef* refp, AstVar* handleVarp) {
         FileLine* const fl = refp->fileline();
+        // As V3LinkLValue does, the handle of a written member select is marked written
         AstMemberSel* const selp
-            = new AstMemberSel{fl, new AstVarRef{fl, handleVarp, VAccess::READ}, refp->varp()};
+            = new AstMemberSel{fl, new AstVarRef{fl, handleVarp, refp->access()}, refp->varp()};
         selp->access(refp->access());
         refp->replaceWith(selp);
         VL_DO_DANGLING(pushDeletep(refp), refp);
@@ -4535,9 +4577,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         argumentp->noReset(true);
         argumentp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         m_constructorp->addStmtsp(argumentp);
-        m_constructorp->stmtsp()->addHereThisAsNext(
-            new AstAssign{fl, memberRef(fl, handleVarp, VAccess::WRITE),
-                          new AstVarRef{fl, argumentp, VAccess::READ}});
+        m_constructorp->prependStmtsp(new AstAssign{fl, memberRef(fl, handleVarp, VAccess::WRITE),
+                                                    new AstVarRef{fl, argumentp, VAccess::READ}});
 
         // Route each enclosing-member reference through the back-pointer: 'm' -> 'h.m'.
         for (AstVarRef* const refp : refsToRewrite) { rewriteVarRef(refp, handleVarp); }

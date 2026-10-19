@@ -1,0 +1,19 @@
+%Warning-VARHIDDEN: t/t_covergroup_with_sample_warn.v:13:48: Declaration of signal hides declaration in upper scope: 'sampled_value'
+   13 |   covergroup value_cg with function sample(bit sampled_value);
+      |                                                ^~~~~~~~~~~~~
+                    t/t_covergroup_with_sample_warn.v:12:7: ... Location of original declaration
+   12 |   bit sampled_value;
+      |       ^~~~~~~~~~~~~
+                    ... For warning description see https://verilator.org/warn/VARHIDDEN?v=latest
+                    ... Use "/* verilator lint_off VARHIDDEN */" and lint_on around source to disable this message.
+%Warning-UNUSEDSIGNAL: t/t_covergroup_with_sample_warn.v:17:27: Signal is not used: 'no_input_param'
+                                                              : ... note: In instance 't'
+   17 |   covergroup no_cg (input no_input_param) with function sample(bit no_sampled_param);
+      |                           ^~~~~~~~~~~~~~
+                       ... For warning description see https://verilator.org/warn/UNUSEDSIGNAL?v=latest
+                       ... Use "/* verilator lint_off UNUSEDSIGNAL */" and lint_on around source to disable this message.
+%Warning-UNUSEDSIGNAL: t/t_covergroup_with_sample_warn.v:17:68: Signal is not used: 'no_sampled_param'
+                                                              : ... note: In instance 't'
+   17 |   covergroup no_cg (input no_input_param) with function sample(bit no_sampled_param);
+      |                                                                    ^~~~~~~~~~~~~~~~
+%Error: Exiting due to

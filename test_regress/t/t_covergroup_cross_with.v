@@ -5,7 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Cross bins with 'with' filters (IEEE 1800-2023 19.6.1.2): when the covergroup is constructed,
-// a filter selects the bin tuples with a value tuple for which it is true
+// a filter selects the bin tuples with a value tuple for which it is true, or as many as
+// 'matches' requires
 
 // verilog_format: off
 `define stop $stop
@@ -225,11 +226,75 @@ module t;
     }
   endgroup
 
-  // A filter of an embedded covergroup reads the enclosing object's members
+  // A 'matches' clause selects the bin tuples with as many value tuples for which the filter is
+  // true, or all for '$'.  Of 'aa' and 'nn', <lo,over> and <hi,over> have 24 value tuples, and
+  // <lo,rest> and <hi,rest> 8.
+  covergroup cg_matches;
+    aa: coverpoint a {
+      bins lo = {[0 : 1]};
+      bins hi = {[2 : 3]};
+    }
+    nn: coverpoint nibble {
+      // 12 values, each once, of an interval or an earlier pattern too: 1, 3, 5, 7, 8 to 15
+      wildcard bins over = {4'b???1, 4'b1???, 4'b?1?1};
+      bins rest = {0, 2, 4, 6};
+    }
+    xx: cross aa, nn{
+      bins exact = xx with (aa[0] == nn[0]) matches 12;  // <lo,over>, <hi,over>
+      bins short = xx with (aa[0] == nn[0]) matches 13;  // No bin tuple, so no bin
+      bins distinct = xx with (nn != 0) matches 25;  // No bin tuple
+      // Value tuples of all items, though the filter reads one
+      bins unread = xx with (aa[0] == 0) matches 12;  // <lo,over>, <hi,over>
+      bins all_lo = xx with (aa < 2) matches $;  // <lo,over>, <lo,rest>
+      bins all_nonzero = xx with (nn != 0) matches $;  // <lo,over>, <hi,over>
+      // 'matches' has higher precedence than '&&' and '||'
+      bins conjunction = binsof (aa.lo) with (nn != 0) matches 24 && binsof (nn.over);  // <lo,over>
+      bins disjunction = binsof (aa.hi) || xx with (nn != 0) matches 24;  // All but <lo,rest>
+      bins nested = (xx with (nn != 0) matches 24) with (aa == 0);  // <lo,over>
+      bins over_64_bits = xx with (nn != 0) matches 65'h1_0000_0000_0000_0018;  // No bin tuple
+    }
+  endgroup
+
+  // Counts of an instance's arguments, when it is constructed
+  covergroup cg_count(input int count, input bit [64:0] wide_count);
+    aa: coverpoint a {
+      option.weight = 0;
+      bins lo = {[0 : 1]};
+      bins hi = {[2 : 3]};
+    }
+    nn: coverpoint nibble {
+      option.weight = 0;
+      bins over = {[8 : 15], 1, 3, 5, 7};
+      bins rest = {0, 2, 4, 6};
+    }
+    xx: cross aa, nn{
+      bins counted = xx with (aa[0] == nn[0]) matches count;  // Of 12: <lo,over>, <hi,over>
+      bins wide = xx with (aa[0] == nn[0]) matches wide_count;  // As 'counted'
+      bins all = xx;
+      bins high = binsof (aa.hi);
+    }
+  endgroup
+
+  // An excluded interval skips values of several intervals and patterns of a bin at once
+  covergroup cg_skip;
+    aa: coverpoint a {bins lo = {[0 : 1]};}
+    nn: coverpoint nibble {
+      wildcard bins mixed = {0, 2, 4, 12, 4'b?001, 4'b01?0};  // 9, 12
+      ignore_bins skipped = {[0 : 6]};
+    }
+    xx: cross aa, nn{
+      bins all = xx with (nn > 6) matches 4;  // <lo,mixed>
+      bins over = xx with (nn > 6) matches 5;  // No bin tuple
+    }
+  endgroup
+
+  // A filter of an embedded covergroup reads the enclosing object's members, and a count its
+  // instance constants (IEEE 1800-2023 19.5)
   class Holder;
     bit [1:0] x;
     bit [1:0] y;
     int bound;
+    const int half;
     covergroup cg;
       xp: coverpoint x {
         option.weight = 0;
@@ -244,10 +309,14 @@ module t;
       xy: cross xp, yp{
         bins under = xy with (int'(xp) + int'(yp) < bound);
         bins rest = xy;
+        // Of 3 of 4 value tuples for a bound of 5, not <hi,hi>, of 1
+        bins counted = xy with (int'(xp) + int'(yp) < bound) matches half;
+        bins high = binsof (xp.hi);
       }
     endgroup
     function new(int limit);
       bound = limit;
+      half = (limit + 1) / 2;
       cg = new;
     endfunction
   endclass
@@ -262,6 +331,10 @@ module t;
   cg_transition transition_inst = new;
   cg_empty empty_inst = new;
   cg_alias alias_inst = new;
+  cg_matches matches_inst = new;
+  cg_skip skip_inst = new;
+  cg_count count_inst = new(12, 12);
+  cg_count over_count_inst = new(13, 65'h1_0000_0000_0000_000c);
   cg_runtime low_inst;
   cg_runtime high_inst;
   Holder low_holder;
@@ -298,8 +371,8 @@ module t;
     high_holder.y = 3;
     low_holder.cg.sample();
     high_holder.cg.sample();
-    `checkr(low_holder.cg.get_inst_coverage(), 50.0);  // rest
-    `checkr(high_holder.cg.get_inst_coverage(), 100.0);
+    `checkr(low_holder.cg.get_inst_coverage(), 50.0);  // rest, high
+    `checkr(high_holder.cg.get_inst_coverage(), 75.0);  // Not counted
 
     enabled = 0;
     for (int i = 0; i < 4; ++i) begin
@@ -318,6 +391,21 @@ module t;
       nibble = 4'(i);
       b = 2'(i);
       wildcard_inst.sample();
+    end
+    // <lo,rest>, of 'all' only
+    a = 0;
+    nibble = 0;
+    count_inst.sample();
+    over_count_inst.sample();
+    `checkr(count_inst.get_inst_coverage(), 25.0);
+    `checkr(over_count_inst.get_inst_coverage(), 50.0);
+    for (int i = 0; i < 4; ++i) begin
+      for (int j = 0; j < 16; ++j) begin
+        a = 2'(i);
+        nibble = 4'(j);
+        matches_inst.sample();
+        skip_inst.sample();
+      end
     end
     for (int i = -8; i < 8; ++i) begin
       for (int j = 0; j < 4; ++j) begin
@@ -349,6 +437,8 @@ module t;
     `checkr(transition_inst.get_inst_coverage(), 100.0);
     `checkr(empty_inst.get_inst_coverage(), 100.0);
     `checkr(alias_inst.get_inst_coverage(), 100.0);
+    `checkr(matches_inst.get_inst_coverage(), 100.0);
+    `checkr(skip_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

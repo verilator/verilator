@@ -924,7 +924,9 @@ The generated code also describes each macro-task graph as static data: the
 function of each macro-task, its estimated cost, the trigger bits its code
 tests, and the dependencies between macro-tasks. Where the graph executes,
 the generated code passes this description and the trigger vector to the
-run-time library, which executes the graph.
+run-time library, which executes the graph. If the macro-tasks whose
+triggers are set are cheap in total, it runs only those, in a topological
+order on the calling thread, without waking the other threads.
 
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major
@@ -1331,9 +1333,14 @@ AstNodeExpr``.
 ``astnode`` generates accessors for the child nodes based on these
 directives. For non-list children, the names of the getter and setter both
 are that of the given ``<identifier>``. For list-type children, the getter
-is ``<identifier>``, and instead of the setter, there an
-``add<Identifier>`` method is generated that appends new nodes (or lists of
-nodes) to the child list.
+is ``<identifier>``, and instead of the setter, an ``add<Identifier>``
+method is generated that appends new nodes (or lists of nodes) to the child
+list, and a ``prepend<Identifier>`` method that prepends them to the front
+of the child list.
+
+The ``<type>`` can be prefixed with ``private`` to generate no accessors,
+for a child that only the node's own methods may change, e.g. to keep it
+consistent with other members of the node.
 
 
 ``alias op<N>`` operand alias directives
@@ -1662,6 +1669,18 @@ provides the *test-snap* and *test-diff* targets:
 - Run the test suite again with ``make test``
 - See the changes in the output with ``make test-diff``
 
+``make test-snap`` copies the ``obj_*``, test output directories into
+``test_regress/snapshot``. Set ``TEST_SNAP_DIR`` to use a different
+location, e.g. to keep multiple snapshots. Files matching the patterns in
+``test_regress/test_diff_ignore.txt`` are not copied: build products, logs,
+debug dumps, and outputs that depend on host timing.
+
+``make test-diff`` shows in a pager the files that exist only in the
+snapshot or only in the current output, and the differences in files
+present in both. In C++ sources, hashed names (``_hHASH_``) and AstNode
+addresses from ``--decorations node`` are masked, as they change without
+the generated code changing.
+
 Continuous Integration
 ----------------------
 
@@ -1910,14 +1929,14 @@ Tree Hierarchy
    The dump lines begin with numbers and colons to indicate the child node
    hierarchy. As noted above, ``AstNode`` has lists of items at the same
    level in the AST, connected by the ``nextp()`` and ``prevp()`` pointers.
-   These appear as nodes at the same level. For example, after inlining:
+   These appear as nodes at the same level. For example:
 
    ::
 
        NETLIST 0x929c1c8 <e1> {a0} w0
-      1: MODULE 0x92bac80 <e3144> {e14} w0  TOP_t  L1 [P]
-      1:1: CELLINLINE 0x92bab18 <e3686#> {e14} w0  v -> t
-      1:1: CELLINLINE 0x92bc1d8 <e3688#> {e24} w0  v__DOT__i_test_gen -> test_gen
+      1: MODULE 0x92bac80 <e3144> {e14} w0  t  L2
+      1:1: VAR 0x92a2e90 <e79> {e18} w0  clk [I] INPUT
+      1:1: CELL 0x92bc1d8 <e3688#> {e24} w0  i_test_gen -> MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
       1: MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
@@ -1984,8 +2003,8 @@ referred to. For example:
 In general, examine the ``dump()`` method in ``V3AstNodes.cpp`` of the node
 type in question to determine additional fields that may be printed.
 
-The ``MODULE`` has a list of ``CELLINLINE`` nodes referred to by its
-``op1p()`` pointer, connected by ``nextp()`` and ``prevp()`` pointers.
+The ``MODULE`` has a list of statements referred to by its ``op1p()``
+pointer, connected by ``nextp()`` and ``prevp()`` pointers.
 
 Similarly, the ``NETLIST`` has a list of modules referred to by its
 ``op1p()`` pointer.
@@ -2369,6 +2388,11 @@ driver.py Non-Scenario Arguments
    requirements, but may result in longer runtime if the tests are run
    again.
 
+.. option:: --driver-prune
+
+   Similar to ``--driver-clean``, but keeps output required by
+   ``make test-snap`` / ``make test-diff``.
+
 .. option:: --dump-tree
 
    Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug
@@ -2560,6 +2584,14 @@ VERILATOR_ROOT
 VERILATOR_SOLVER
    SMT solver command for constrained randomization; see primary Verilator
    documentation.
+
+VERILATOR_TESTS_OBJ_ROOT
+   If set, each output ``obj_*`` directory the driver creates is instead a
+   symlink to the same absolute path mirrored under this directory, e.g.
+   ``test_regress/obj_vlt`` links to ``$VERILATOR_TESTS_OBJ_ROOT/<path
+   to>/test_regress/obj_vlt``. Use to put test outputs on a different (e.g.
+   faster, not backed up) disk. Consider using with ``--driver-clean`` or
+   ``--driver-prue`` to save disk space.
 
 VERILATOR_TESTS_SITE
    Used with ``--site``, a colon-separated list of directories with tests

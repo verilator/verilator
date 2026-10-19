@@ -2099,6 +2099,10 @@ data_typeAny<nodeDTypep>:       // ==IEEE: data_type (accepting idAny)
 
 data_typeBasic<nodeDTypep>:             // IEEE: part of data_type
                 integer_vector_type signingE rangeListE { $1->setSignedState($2); $$ = GRAMMARP->addRange($1, $3, true); }
+        //                      // IEEE: packed_dimension: unsized_dimension, legal only in DPI import
+        |       integer_vector_type signingE '[' ']'
+                        { $1->setSignedState($2);
+                          $$ = new AstUnsizedArrayDType{$3, VFlagChildDType{}, $1}; }
         |       integer_atom_type signingE              { $1->setSignedState($2); $$ = $1; }
         |       non_integer_type                        { $$ = $1; }
         ;
@@ -6313,15 +6317,15 @@ endLabelE<strp>:
 
 clocking_declaration<nodep>:            // IEEE: clocking_declaration
                 yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, *$2, $3, $5, false, false}; }
+                        { $$ = new AstClocking{$<fl>2, *$2, new AstSenTree{$<fl>2, $3}, $5, false, false}; }
         |       yDEFAULT yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, true, false}; }
+                        { $$ = new AstClocking{$<fl>2, "", new AstSenTree{$<fl>2, $3}, $5, true, false}; }
         |       yDEFAULT yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, true, false}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, new AstSenTree{$<fl>3, $4}, $6, true, false}; }
         |       yGLOBAL__CLOCKING yCLOCKING clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>2, "", $3, $5, false, true}; }
+                        { $$ = new AstClocking{$<fl>2, "", new AstSenTree{$<fl>2, $3}, $5, false, true}; }
         |       yGLOBAL__CLOCKING yCLOCKING idAny clocking_event ';' clocking_itemListE yENDCLOCKING endLabelE
-                        { $$ = new AstClocking{$<fl>3, *$3, $4, $6, false, true}; }
+                        { $$ = new AstClocking{$<fl>3, *$3, new AstSenTree{$<fl>3, $4}, $6, false, true}; }
         ;
 
 clocking_eventE<senItemp>:      // IEEE: optional clocking_event
@@ -7418,6 +7422,16 @@ cross_body_item<nodep>:  // ==IEEE: cross_body_item
 select_expression<nodep>:  // ==IEEE: select_expression
                 select_expression_r
                         { $$ = $1; }
+        //                      // IEEE: integer_covergroup_expression ::= covergroup_expression | '$'
+        //                      // '$' is part of our expr.  'matches' has higher precedence than
+        //                      // '&&' and '||', which end the count (IEEE 1800-2023 footnote 30).
+        //                      // A count could end in a function call followed by its 'with', so
+        //                      // a selection with a count is filtered further only in parentheses.
+        |       select_expression_r yWITH__PAREN '(' cgexpr ')' yMATCHES expr %prec yP_ANDAND
+                        { $$ = new AstCoverCrossWith{$2, $1, $4, $7}; }
+        //                      // IEEE: cross_set_expression yMATCHES integer_covergroup_expression
+        |       idAny '(' list_of_argumentsE ')' yMATCHES expr %prec yP_ANDAND
+                        { $$ = nullptr; BBCOVERIGN($<fl>1, "Unsupported: function call in coverage select expression"); DEL($3, $6); }
         |       select_expression yP_ANDAND select_expression
                         { $$ = new AstCoverCrossSelect{$2, $1, $3, false}; }
         |       select_expression yP_OROR   select_expression
@@ -7441,7 +7455,7 @@ select_expression_r<nodep>:
         |       '!' yWITH__PAREN '(' cgexpr ')'
                         { $$ = nullptr; BBCOVERIGN($1, "Unsupported: 'with' in coverage select expression"); DEL($4); }
         |       select_expression_r yWITH__PAREN '(' cgexpr ')'
-                        { $$ = new AstCoverCrossWith{$2, $1, $4}; }
+                        { $$ = new AstCoverCrossWith{$2, $1, $4, nullptr}; }
         //                      // IEEE-2012: Need clarification as to precedence
         //UNSUP yWITH__PAREN '(' cgexpr ')' yMATCHES cgexpr    { }
         //                      // IEEE-2012: Need clarification as to precedence
@@ -7453,9 +7467,7 @@ select_expression_r<nodep>:
         //UNSUP  cgexpr  { $$ = nullptr; BBCOVERIGN($1, "Ignoring unsupported: coverage select expression"); }
         //
         //                      // IEEE: cross_set_expression [ yMATCHES integer_covergroup_expression ]
-        //                      // covergroup_expression [ yMATCHES ( integer_covergroup_expression | '$' ) ]
-        //                      // Need precedence fix
-        //UNSUP  cgexpr yMATCHES cgexpr    {..}
+        //UNSUP  cgexpr    {..}
         //UNSUP                 // Below are all removed
         |       idAny '(' list_of_argumentsE ')'
                         { $$ = nullptr; BBCOVERIGN($<fl>1, "Unsupported: function call in coverage select expression"); DEL($3); }

@@ -1370,6 +1370,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-compiler-include", CbVal, callStrSetter(&V3Options::addCompilerIncludes));
     DECL_OPTION("-converge-limit", Set, &m_convergeLimit);
     DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
+    DECL_OPTION("-coverage-branch", OnOff, &m_coverageBranch);
     DECL_OPTION("-coverage-expr", OnOff, &m_coverageExpr);
     DECL_OPTION("-coverage-expr-max", Set, &m_coverageExprMax);
     DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
@@ -1696,6 +1697,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-output-groups", CbVal, [this, fl](const char* valp) {
         m_outputGroups = std::atoi(valp);
         if (m_outputGroups < -1) fl->v3error("--output-groups must be >= -1: " << valp);
+    });
+    DECL_OPTION("-output-groups-size", CbVal, [this, fl](const char* valp) {
+        m_outputGroupsSize = std::atoll(valp);
+        if (m_outputGroupsSize < 0) fl->v3error("--output-groups-size must be >= 0: " << valp);
     });
     DECL_OPTION("-output-split", Set, &m_outputSplit);
     DECL_OPTION("-output-split-cfuncs", CbVal, [this, fl](const char* valp) {

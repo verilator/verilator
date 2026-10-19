@@ -721,6 +721,8 @@ class AstExecGraph final : public AstNodeStmt {
     // Trigger masks zipped with callsp, populated by V3ExecGraph::implement
     // @astgen op2 := maskps : List[AstVarRef]
     // @astgen op3 := triggerp : AstVarRef  // Trigger vector this graph is sensitive to
+    // Static cost of the logic each trigger guards, populated by V3ExecGraph::implement
+    // @astgen op4 := triggerCostsp : Optional[AstVarRef]
     // @astgen ptr := m_runfuncp : Optional[AstCFunc]  // Statically scheduled dispatch function
     V3Graph* const m_depGraphp;  // contains ExecMTask vertices
     const string m_name;  // Name of this AstExecGraph (for uniqueness at code generation)

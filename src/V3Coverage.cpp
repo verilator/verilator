@@ -121,13 +121,17 @@ class CoverageVisitor final : public VNVisitor {
         int m_handle = 0;  // Opaque handle for index into line tracking
         const AstNode* m_nodep = nullptr;  // Node establishing this state
         CheckState() = default;
+        bool coverageOn(const AstNode* nodep) const {
+            return m_on && !m_inModOff && nodep->fileline()->coverageOn();
+        }
         bool lineCoverageOn(const AstNode* nodep) const {
-            return m_on && !m_inModOff && nodep->fileline()->coverageOn()
-                   && v3Global.opt.coverageLine();
+            return coverageOn(nodep) && v3Global.opt.coverageLine();
+        }
+        bool branchCoverageOn(const AstNode* nodep) const {
+            return coverageOn(nodep) && v3Global.opt.coverageBranch();
         }
         bool exprCoverageOn(const AstNode* nodep) const {
-            return m_on && !m_inModOff && nodep->fileline()->coverageOn()
-                   && v3Global.opt.coverageExpr();
+            return coverageOn(nodep) && v3Global.opt.coverageExpr();
         }
     };
 
@@ -231,7 +235,8 @@ class CoverageVisitor final : public VNVisitor {
         UINFO(9, "line create h" << m_state.m_handle << " " << nodep);
     }
     void lineTrack(const AstNode* nodep) {
-        if (m_state.lineCoverageOn(nodep) && !m_ifCond
+        // Branch points report the lines they cover too, so track for either kind
+        if ((m_state.lineCoverageOn(nodep) || m_state.branchCoverageOn(nodep)) && !m_ifCond
             && m_state.m_nodep->fileline()->filenameno() == nodep->fileline()->filenameno()) {
             for (int lineno = nodep->fileline()->firstLineno();
                  lineno <= nodep->fileline()->lastLineno(); ++lineno) {
@@ -562,7 +567,7 @@ class CoverageVisitor final : public VNVisitor {
 
         if (m_seeking == NONE) coverExprs(nodep->condp());
 
-        if (m_state.lineCoverageOn(nodep) && VN_IS(m_modp, Module)
+        if (m_state.branchCoverageOn(nodep) && VN_IS(m_modp, Module)
             && includeCondToBranchRecursive(nodep)) {
             VL_RESTORER(m_seeking);
             // Disable expression coverage in sub-expressions, since they were already visited
@@ -644,8 +649,8 @@ class CoverageVisitor final : public VNVisitor {
             //
             // If both if and else are "on", and we're not in an if/else, then
             // we do branch coverage
-            if (!(first_elsif || cont_elsif || final_elsif) && ifState.lineCoverageOn(nodep)
-                && elseState.lineCoverageOn(nodep)) {
+            if (!(first_elsif || cont_elsif || final_elsif) && ifState.branchCoverageOn(nodep)
+                && elseState.branchCoverageOn(nodep)) {
                 // Normal if. Linecov shows what's inside the if (not condition that is
                 // always executed)
                 UINFO(4, "   COVER-branch: " << nodep);
@@ -833,9 +838,9 @@ class CoverageVisitor final : public VNVisitor {
                         pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
-                            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+                            m_ftaskp->prependStmtsp(varp);
                         } else {
-                            m_modp->stmtsp()->addHereThisAsNext(varp);
+                            m_modp->prependStmtsp(varp);
                         }
                         VNRelinker relinkHandle;
                         frefp->unlinkFrBack(&relinkHandle);
@@ -1117,12 +1122,16 @@ class CoverageVisitor final : public VNVisitor {
     // VISITORS - BOTH
     void visit(AstProperty* nodep) override {
         VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
         m_state.m_on = false;
+        m_inToggleOff = true;
         iterateChildren(nodep);
     }
     void visit(AstSequence* nodep) override {
         VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
         m_state.m_on = false;
+        m_inToggleOff = true;
         iterateChildren(nodep);
     }
     void visit(AstNode* nodep) override {

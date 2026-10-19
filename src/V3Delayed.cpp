@@ -1431,6 +1431,8 @@ class DelayedVisitor final : public VNVisitor {
         // Check whether it was already visited by visitCalledCFunc()
         if (value.m_state != CFuncCache::UNINITIALIZED) return;
         VL_RESTORER(m_cfuncp);
+        // Its timing domains are those of the processes calling it, see visitCalledCFunc()
+        VL_RESTORER_CLEAR(m_timingDomains);
         m_cfuncp = nodep;
         iterateChildren(nodep);
     }

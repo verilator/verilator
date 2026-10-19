@@ -81,7 +81,7 @@ class EmitCExecGraph final : public EmitCFunc {
              callp = VN_AS(callp->nextp(), CCall)) {
             for (const V3GraphEdge& edge : mtaskps.at(callp->funcp())->outEdges()) {
                 if (!nEdges) {
-                    puts("static VL_CONSTINIT_CXX20 const VlExecGraph::Edge " + name
+                    puts("\nstatic VL_CONSTINIT_CXX20 const VlExecGraph::Edge " + name
                          + "__edges[] = {\n");
                 }
                 puts("{" + std::to_string(indices.at(callp->funcp())) + ", "
@@ -93,11 +93,17 @@ class EmitCExecGraph final : public EmitCFunc {
 
         // The graph
         const std::string edgesName = nEdges ? name + "__edges" : "nullptr";
-        putns(nodep, "VL_CONSTINIT_CXX20 VlExecGraph " + name + "{");
-        puts(name + "__vertices, " + std::to_string(indices.size()) + ", ");
-        puts(edgesName + ", " + std::to_string(nEdges) + ", ");
-        puts(std::to_string(trigDtypep->elementsConst()) + ", ");
-        puts("&" + funcNameProtect(nodep->runfuncp()) + "};\n");
+        putns(nodep, "\nVL_CONSTINIT_CXX20 VlExecGraph " + name + "{\n");
+        puts(name + "__vertices, " + std::to_string(indices.size()) + ",\n");
+        puts(edgesName + ", " + std::to_string(nEdges) + ",\n");
+        puts(std::to_string(trigDtypep->elementsConst()) + ",\n");
+        iterateConst(nodep->triggerCostsp());
+        puts(".data(),\n");
+        puts("&" + funcNameProtect(nodep->runfuncp()) + ",\n");
+        // Profiling measures the parallel execution, so never run serially
+        const bool profiling = v3Global.opt.profExec() || v3Global.opt.profPgo();
+        puts(profiling ? "0" : "VL_THREADS_SERIAL_COST");
+        puts("\n};\n");
     }
 
 public:

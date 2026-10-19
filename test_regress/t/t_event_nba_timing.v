@@ -132,7 +132,8 @@ module t;
     `checkd(init_time, 0)
     `checkd(dly_time, 1)
     `checkd(clk_times, 2)
-    `checks(log, "c1.e@1 se@2 c1.ea[1]@3 e_arr[1]@4 i.e@5 i.e@6 c2.ea[0]@7 c2.e@8 c2.e@9 c2.ea[1]@10 ")
+    `checks(log,
+            "c1.e@1 se@2 c1.ea[1]@3 e_arr[1]@4 i.e@5 i.e@6 c2.ea[0]@7 c2.e@8 c2.e@9 c2.ea[1]@10 ")
     $write("*-* All Finished *-*\n");
     $finish;
   end

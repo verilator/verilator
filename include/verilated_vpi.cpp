@@ -793,40 +793,6 @@ public:
     }
 };
 
-class VerilatedVpioScopeIter final : public VerilatedVpio {
-    const std::vector<const VerilatedScope*>* m_vec;
-    std::vector<const VerilatedScope*>::const_iterator m_it;
-
-public:
-    explicit VerilatedVpioScopeIter(const std::vector<const VerilatedScope*>& vec)
-        : m_vec{&vec} {
-        m_it = m_vec->begin();
-    }
-    ~VerilatedVpioScopeIter() override = default;
-    // cppcheck-suppress duplInheritedMember
-    static VerilatedVpioScopeIter* castp(vpiHandle h) {
-        return dynamic_cast<VerilatedVpioScopeIter*>(reinterpret_cast<VerilatedVpio*>(h));
-    }
-    uint32_t type() const override { return vpiIterator; }
-    vpiHandle dovpi_scan() override {
-        while (true) {
-            if (m_it == m_vec->end()) {
-                delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
-                return nullptr;
-            }
-            const VerilatedScope* const modp = *m_it++;
-            const VerilatedScope::Type itype = modp->type();
-            if (itype == VerilatedScope::SCOPE_OTHER) {
-                return (new VerilatedVpioScope{modp})->castVpiHandle();
-            } else if (itype == VerilatedScope::SCOPE_MODULE) {
-                return (new VerilatedVpioModule{modp})->castVpiHandle();
-            } else if (itype == VerilatedScope::SCOPE_INTERFACE) {
-                return (new VerilatedVpioInterface{modp})->castVpiHandle();
-            }
-        }
-    }
-};
-
 static const char* d_unit = "$unit";
 class VerilatedVpioPackage final : public VerilatedVpioScope {
     std::string m_fullname_string;
@@ -899,6 +865,50 @@ public:
                 ->castVpiHandle();
         }
         return (new VerilatedVpioInterface{m_ifaceRef.scopep()})->castVpiHandle();
+    }
+};
+
+// Child scopes of a scope, followed by the interface references it declares.
+// References are not scopes, but are yielded here so a tool walking the
+// hierarchy by vpiInternalScope alone can discover them
+class VerilatedVpioScopeIter final : public VerilatedVpio {
+    const std::vector<const VerilatedScope*>* const m_vecp;  // Child scopes, or nullptr
+    std::vector<const VerilatedScope*>::const_iterator m_it;  // Next child scope
+    const std::vector<const VerilatedIfaceRef*>* const
+        m_refsp;  // Interface references, or nullptr
+    std::vector<const VerilatedIfaceRef*>::const_iterator m_refIt;  // Next interface reference
+
+public:
+    VerilatedVpioScopeIter(const std::vector<const VerilatedScope*>* vecp,
+                           const std::vector<const VerilatedIfaceRef*>* refsp)
+        : m_vecp{vecp}
+        , m_refsp{refsp} {
+        if (m_vecp) m_it = m_vecp->begin();
+        if (m_refsp) m_refIt = m_refsp->begin();
+    }
+    ~VerilatedVpioScopeIter() override = default;
+    // cppcheck-suppress duplInheritedMember
+    static VerilatedVpioScopeIter* castp(vpiHandle h) {
+        return dynamic_cast<VerilatedVpioScopeIter*>(reinterpret_cast<VerilatedVpio*>(h));
+    }
+    uint32_t type() const override { return vpiIterator; }
+    vpiHandle dovpi_scan() override {
+        while (m_vecp && m_it != m_vecp->end()) {
+            const VerilatedScope* const modp = *m_it++;
+            const VerilatedScope::Type itype = modp->type();
+            if (itype == VerilatedScope::SCOPE_OTHER) {
+                return (new VerilatedVpioScope{modp})->castVpiHandle();
+            } else if (itype == VerilatedScope::SCOPE_MODULE) {
+                return (new VerilatedVpioModule{modp})->castVpiHandle();
+            } else if (itype == VerilatedScope::SCOPE_INTERFACE) {
+                return (new VerilatedVpioInterface{modp})->castVpiHandle();
+            }
+        }
+        if (m_refsp && m_refIt != m_refsp->end()) {
+            return (new VerilatedVpioIfaceRef{**m_refIt++})->castVpiHandle();
+        }
+        delete this;  // IEEE 1800-2023 37.2.2 vpi_scan at end does a vpi_release_handle
+        return nullptr;
     }
 };
 
@@ -1728,9 +1738,9 @@ VerilatedVpiImp::getForceControlSignals(const VerilatedVpioVar* const baseSignal
 #endif  // VL_DEBUG
 
     return VerilatedVpiImp::ForceControlSignalVops{
-        .forceEnable{std::unique_ptr<VerilatedVpioVar>{forceEnableSignalVop}},
-        .forceValue{std::unique_ptr<VerilatedVpioVar>{forceValueSignalVop}},
-        .forceRead{std::unique_ptr<VerilatedVpioVar>{forceReadSignalVop}}};
+        std::unique_ptr<VerilatedVpioVar>{forceEnableSignalVop},
+        std::unique_ptr<VerilatedVpioVar>{forceValueSignalVop},
+        std::unique_ptr<VerilatedVpioVar>{forceReadSignalVop}};
 }
 
 QData vl_vpi_get_word(const VerilatedVpioVarBase* vop, size_t bitCount, size_t addOffset);
@@ -3185,8 +3195,13 @@ vpiHandle vpi_iterate(PLI_INT32 type, vpiHandle object) {
         const VerilatedHierarchyMap* const map = VerilatedImp::hierarchyMap();
         const VerilatedScope* const modp = vop ? vop->scopep() : nullptr;
         const auto it = vlstd::as_const(map)->find(const_cast<VerilatedScope*>(modp));
-        if (it == map->end()) return nullptr;
-        return ((new VerilatedVpioScopeIter{it->second})->castVpiHandle());
+        const std::vector<const VerilatedScope*>* const scopesp
+            = (it == map->end()) ? nullptr : &it->second;
+        // A leaf module with interface ports has no child scopes, yet must iterate
+        const std::vector<const VerilatedIfaceRef*>* const refsp
+            = modp ? modp->ifaceRefsp() : nullptr;
+        if (!scopesp && !refsp) return nullptr;
+        return ((new VerilatedVpioScopeIter{scopesp, refsp})->castVpiHandle());
     }
     case vpiInstance: {
         if (object) return nullptr;
@@ -3263,14 +3278,13 @@ PLI_INT32 vpi_get(PLI_INT32 property, vpiHandle object) {
         const VerilatedVpioVarBase* const vop = VerilatedVpioVarBase::castp(object);
         if (VL_LIKELY(vop && vop->isStructOrUnion())) return 0;
         if (VL_LIKELY(vop && vop->isPackedAgg())) return 1;
-        [[fallthrough]];
+        break;
     }
-    default:
-        VL_VPI_ERROR_(__FILE__, __LINE__,
-                      "%s: Unsupported property '%s', nothing will be returned", __func__,
-                      VerilatedVpiError::strFromVpiProp(property));
-        return vpiUndefined;
+    default: break;
     }
+    VL_VPI_ERROR_(__FILE__, __LINE__, "%s: Unsupported property '%s', nothing will be returned",
+                  __func__, VerilatedVpiError::strFromVpiProp(property));
+    return vpiUndefined;
 }
 
 PLI_INT64 vpi_get64(PLI_INT32 /*property*/, vpiHandle /*object*/) {
@@ -3913,9 +3927,8 @@ vpiHandle vpi_put_value(vpiHandle object, p_vpi_value valuep, p_vpi_time /*time_
                 = baseSignalVop->varp()->isContinuously()
                       ? s_vpi_value{}
                       : [&forceReadSignalVop]() {
-                            s_vpi_value val{.format = vl_get_vltype_format(
-                                                forceReadSignalVop->varp()->vltype()),
-                                            .value{}};
+                            s_vpi_value val{
+                                vl_get_vltype_format(forceReadSignalVop->varp()->vltype()), {}};
                             vl_vpi_get_value(forceReadSignalVop, &val);
                             return val;
                         }();

@@ -100,7 +100,7 @@ module t (
   covergroup cg_cross4;
     cross a, b {
       function void crossfunc; endfunction
-      bins one = crossfunc();
+      bins one = crossfunc(); bins two = crossfunc() matches 2;
     }
   endgroup
   covergroup cg_binsoroptions_bk1;

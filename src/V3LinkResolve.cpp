@@ -142,11 +142,7 @@ class LinkResolveVisitor final : public VNVisitor {
                 fvarp->fileline(), new AstVarRef{fvarp->fileline(), fvarp, VAccess::WRITE},
                 new AstCReset{fvarp->fileline(), fvarp, false}};
             fvarp->noCReset(true);
-            if (nodep->stmtsp()) {
-                nodep->stmtsp()->addHereThisAsNext(crstp);
-            } else {
-                nodep->addStmtsp(crstp);
-            }
+            nodep->prependStmtsp(crstp);
         }
         iterateChildren(nodep);
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
@@ -209,7 +205,7 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstStmtPragma* nodep) override {
         if (nodep->pragp()->pragType() == VPragmaType::COVERAGE_BLOCK_OFF) {
             // Strip pragma if not needed, may optimize better without
-            if (!v3Global.opt.coverageLine()) {
+            if (!v3Global.opt.coverageLine() && !v3Global.opt.coverageBranch()) {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
                 return;
             }

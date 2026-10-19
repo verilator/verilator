@@ -267,6 +267,7 @@ private:
     bool m_binary = false;          // main switch: --binary
     bool m_build = false;           // main switch: --build
     bool m_context = true;          // main switch: --Wcontext
+    bool m_coverageBranch = false;  // main switch: --coverage-branch
     bool m_coverageExpr = false;    // main switch: --coverage-expr
     bool m_coverageFsm = false;     // main switch: --coverage-fsm
     bool m_coverageLine = false;    // main switch: --coverage-block
@@ -380,6 +381,7 @@ private:
     int         m_funcRecursion = 1000;  // main switch: --func-recursion-depth
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
     int         m_outputGroups = -1;  // main switch: --output-groups
+    int64_t     m_outputGroupsSize = 512 * 1024 * 1024;  // main switch: --output-groups-size
     int         m_outputSplit = 20000;  // main switch: --output-split
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
@@ -501,7 +503,8 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) {
-        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageFsm = m_coverageUser = flag;
+        m_coverageLine = m_coverageBranch = m_coverageToggle = m_coverageExpr = m_coverageFsm
+            = m_coverageUser = flag;
     }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
@@ -563,15 +566,17 @@ public:
     bool coverage() const VL_MT_SAFE {
         // Any enabled coverage kind, including FSM coverage. Code generation
         // and runtime support should generally query this accessor.
-        return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser
-               || m_coverageFsm;
+        return m_coverageLine || m_coverageBranch || m_coverageToggle || m_coverageExpr
+               || m_coverageUser || m_coverageFsm;
     }
     bool coverageNonFsm() const VL_MT_SAFE {
         // The broad line/toggle/expr/user coverage transforms use this
         // accessor. FSM coverage shares the overall coverage umbrella, but its
         // extraction still happens through a separate early-recognition path.
-        return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser;
+        return m_coverageLine || m_coverageBranch || m_coverageToggle || m_coverageExpr
+               || m_coverageUser;
     }
+    bool coverageBranch() const { return m_coverageBranch; }
     bool coverageExpr() const { return m_coverageExpr; }
     bool coverageFsm() const { return m_coverageFsm; }
     VFsmExpandType coverageFsmExpand() const { return m_coverageFsmExpand; }
@@ -691,6 +696,7 @@ public:
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
     int outputGroups() const { return m_outputGroups; }
+    int64_t outputGroupsSize() const { return m_outputGroupsSize; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
     int reloopLimit() const { return m_reloopLimit; }
     int replicationLimit() const { return m_replicationLimit; }

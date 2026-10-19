@@ -992,11 +992,11 @@ std::vector<std::string> VlRandomizer::buildUniqueExprs() const {
     std::vector<std::string> exprs;
     if (m_uniqueArrays.empty()) return exprs;
     const auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-    for (const auto& [key, arrNameVec] : m_uniqueArrays) {
+    for (const auto& keyArrNames : m_uniqueArrays) {
         uint32_t matchingElementsCount = 0;
         std::ostringstream varsString;
 
-        for (const auto& baseName : arrNameVec) {
+        for (const auto& baseName : keyArrNames.second) {
             const auto it = m_vars.find(baseName);
             if (it == m_vars.end()) continue;
             const VlRandomVar& var = *it->second;

@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--coverage-line'])
+test.compile(verilator_flags2=['--coverage-line', '--coverage-branch'])
 
 test.execute()
 

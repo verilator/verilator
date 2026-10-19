@@ -11,7 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile()
+# Without --timing, the run-time library must build as C++14
+test.compile(verilator_flags2=['-CFLAGS -std=c++14'])
 
 test.execute()
 
