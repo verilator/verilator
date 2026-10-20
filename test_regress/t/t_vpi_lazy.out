@@ -246,6 +246,8 @@ t.u_po.s 22 W
 t.u_po.s_comb 78 r
 t.u_po.str "longer_than_any_short_string_buffer" r
 t.u_po.str_comb "longer_than_any_short_string_buffer!" r
+t.u_po.xq 22 W
+t.u_po.xq_c 23 r
 t.u_pull0.pi 00 r
 t.u_pull0.pi_cast 00 r
 t.u_pull0.pi_cp 00 r

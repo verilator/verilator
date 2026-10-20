@@ -11,6 +11,7 @@
 
 #include "TestCheck.h"
 #include "TestVpi.h"
+#include "svdpi.h"
 #include "vpi_user.h"
 
 #ifdef T_VPI_LAZY_SAVABLE
@@ -28,6 +29,7 @@ extern VM_PREFIX* testVpiTopp;
 #include <vector>
 
 int errors = 0;
+extern "C" int t_xq();
 
 namespace {
 
@@ -571,6 +573,8 @@ void script() {
         accept("t.u_mi.p0.uc.cflop", 0x3c);
         accept("t.fy0.r", 0x10);
         accept("t.orphan", 0x2a);
+        check("t.u_po.xq_c", get("t.u_po.xq_c"), (get("t.u_po.xq") + 1) & 0xff);
+        accept("t.u_po.xq", 0x33);
         putStr("t.u_po.str", vpiStringVal, "longer_than_any_short_string_buffer");
         TEST_CHECK_ERROR(false);
         putStr("t.u_po.str", vpiStringVal, "longer_than_any_short_string_buffer");
@@ -599,6 +603,9 @@ void script() {
         check("t.u_mi.p1.uc.cflop", get("t.u_mi.p1.uc.cflop"), s_held[2]);
         check("t.fyx0_c", get("t.fyx0_c"), (0x11 ^ 0x55));
         check("t.orphan_c", get("t.orphan_c"), 0x2a ^ 0x0f);
+        check("t.u_po.xq_c", get("t.u_po.xq_c"), 0x34);
+        svSetScope(svGetScopeFromName("t.u_po"));
+        check("t_xq", static_cast<uint32_t>(t_xq()), 0x33);
         check("t.u_po.f_comb", get("t.u_po.f_comb"), 0x55 ^ 0x0f);
         TEST_CHECK_EQ(getStr(find("t.u_po.str_comb"), vpiStringVal),
                       std::string{"longer_than_any_short_string_buffer!"});

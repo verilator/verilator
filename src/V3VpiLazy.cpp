@@ -2273,9 +2273,14 @@ private:
         for (AstVarScope* const vscp : m_gather.m_vscOrder) {
             AstVar* const varp = vscp->varp();
             if (!candidate(vscp) || m_shadowOf.count(vscp)) continue;  // Retained, or has a row
-            // Its row keeps --public-flat-rw semantics, so give it that flag: V3Force pins a
-            // forceable net's force vars, not the net itself, and DFG may alias it away.
-            if (storagePinnedElsewhere(varp)) {
+            const bool pinned = storagePinnedElsewhere(varp);
+            if (pinned && !varp->isPrimaryIO() && !varp->isForceable() && !hasCombDriver(vscp)) {
+                // Only DPI pins this flop; public-rw would replicate its readers into 'ico'
+                m_kept.insert(vscp);
+                ++m_floorReason["sequential"];
+            } else if (pinned) {
+                // Its row keeps --public-flat-rw semantics, so give it that flag: V3Force pins a
+                // forceable net's force vars, not the net itself, and DFG may alias it away.
                 varp->sigUserRWPublic(true);
                 varp->vpiLazyRole(VVpiLazyRole::NONE);
                 const bool dpi = varp->isReadByDpi() || varp->isWrittenByDpi();

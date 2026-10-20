@@ -810,6 +810,14 @@ module lz_order (
   function int t_mc_b();
     return int'(mc_b);
   endfunction
+  // A flop only a DPI export reads, and its comb reader
+  logic [7:0] xq;
+  always_ff @(posedge clk) xq <= s;
+  wire [7:0] xq_c = xq + 8'h1;
+  export "DPI-C" function t_xq;
+  function int t_xq();
+    return int'(xq);
+  endfunction
 endmodule
 
 `ifdef T_VPI_LAZY_SAVABLE
