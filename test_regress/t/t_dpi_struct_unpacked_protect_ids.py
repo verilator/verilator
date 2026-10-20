@@ -11,8 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.top_filename = "t/t_dpi_struct_unpacked.v"
+test.pli_filename = "t/t_dpi_struct_unpacked.cpp"
 
-test.compile(v_flags2=["t/t_dpi_struct_unpacked.cpp"],
+test.compile(v_flags2=[test.pli_filename],
              verilator_flags2=["--protect-ids", "--protect-key SECRET_KEY"])
 
 test.execute()

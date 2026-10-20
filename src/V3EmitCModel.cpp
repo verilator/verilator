@@ -83,11 +83,10 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.coverage()) puts("#include \"verilated_cov.h\"\n");
         if (v3Global.opt.coverage() || v3Global.useCovergroup())
             puts("#include \"verilated_covergroup.h\"\n");
-        if (v3Global.dpi()) {
-            // The model needs the C structures DPI functions pass, which the DPI header declares
-            const bool dpiStructs = !findFuncps(isDpiPassingStructs).empty();
-            puts("#include \"" + (dpiStructs ? EmitCUtil::topClassName() + "__Dpi.h" : "svdpi.h"s)
-                 + "\"\n");
+        if (v3Global.dpi()) puts("#include \"svdpi.h\"\n");
+        // The model needs the C structures DPI functions pass, which the DPI header declares
+        if (!findFuncps(isDpiPassingStructs).empty()) {
+            puts("#include \"" + EmitCUtil::topClassName() + "__Dpi.h\"\n");
         }
 
         // Declare foreign instances up front to make C++ happy

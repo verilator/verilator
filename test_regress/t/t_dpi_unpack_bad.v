@@ -40,5 +40,7 @@ module t;
     import_func3(sig3);
     // unpacked structure v.s. packed
     import_func3(sig0);
+    // packed v.s. unpacked structure
+    import_func0(sig3);
   end
 endmodule

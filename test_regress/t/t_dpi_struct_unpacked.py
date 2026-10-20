@@ -11,19 +11,14 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-# --no-decoration so .out file doesn't comment on source lines
-test.compile(v_flags2=["t/" + test.name + ".cpp"], verilator_flags2=["--no-decoration"])
+test.compile(v_flags2=[test.pli_filename])
 
 test.files_identical(test.obj_dir + "/" + test.vm_prefix + "__Dpi.h",
                      "t/" + test.name + "__Dpi.out")
 
-test.extract(in_filename=test.top_filename,
-             out_filename=test.root + "/docs/gen/ex_DPISTRUCT_sv.rst",
-             lines="54-61,77-81")
-
 test.extract(in_filename="t/" + test.name + "__Dpi.out",
              out_filename=test.root + "/docs/gen/ex_DPISTRUCT_hdr.rst",
-             lines="45-55,81")
+             lines="45-55")
 
 test.execute()
 

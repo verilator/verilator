@@ -9,8 +9,10 @@
 #include "svdpi.h"
 
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
+
+// These require the above. Comment prevents clang-format moving them
+#include "TestCheck.h"
 
 // A structure may be declared by the user, instead of by the DPI header
 #define VL_DPITYPE_inner_t_
@@ -25,14 +27,8 @@ typedef struct {
 
 #include VM_PREFIX_INCLUDE_DPI
 
-#define CHECK(cond) \
-    do { \
-        if (!(cond)) { \
-            printf("%%Error: %s:%d: CHECK(%s)\n", __FILE__, __LINE__, #cond); \
-            abort(); \
-        } \
-    } while (0)
-#define CHECK_SAME(a, b) CHECK(std::memcmp(&(a), &(b), sizeof(a)) == 0)
+int errors = 0;
+int dpii_failure() { return errors; }
 
 // String for 'n', kept until SystemVerilog copies it after the call
 static const char* str(int n) {
@@ -76,26 +72,26 @@ static void fillBasic(basic_t* p, int n) {
 static void checkBasic(const basic_t* p, int n) {
     basic_t e;
     fillBasic(&e, n);
-    CHECK(p->b == e.b);
-    CHECK(p->bu == e.bu);
-    CHECK(p->si == e.si);
-    CHECK(p->i == e.i);
-    CHECK(p->iu == e.iu);
-    CHECK(p->li == e.li);
-    CHECK(p->liu == e.liu);
-    CHECK(p->r == e.r);
-    CHECK(!p->ch);
-    CHECK(!std::strcmp(p->s, e.s));
-    CHECK(p->bt == e.bt);
-    CHECK(p->lg == e.lg);
-    CHECK_SAME(p->bv7, e.bv7);
-    CHECK_SAME(p->lv65, e.lv65);
-    CHECK_SAME(p->bv96, e.bv96);
-    CHECK_SAME(p->ig, e.ig);
-    CHECK_SAME(p->tm, e.tm);
-    CHECK_SAME(p->en, e.en);
-    CHECK_SAME(p->pk, e.pk);
-    CHECK_SAME(p->pa, e.pa);
+    TEST_CHECK_EQ(p->b, e.b);
+    TEST_CHECK_EQ(p->bu, e.bu);
+    TEST_CHECK_EQ(p->si, e.si);
+    TEST_CHECK_EQ(p->i, e.i);
+    TEST_CHECK_EQ(p->iu, e.iu);
+    TEST_CHECK_EQ(p->li, e.li);
+    TEST_CHECK_EQ(p->liu, e.liu);
+    TEST_CHECK_EQ(p->r, e.r);
+    TEST_CHECK_Z(p->ch);
+    TEST_CHECK_CSTR(p->s, e.s);
+    TEST_CHECK_EQ(p->bt, e.bt);
+    TEST_CHECK_EQ(p->lg, e.lg);
+    TEST_CHECK_EQ(std::memcmp(p->bv7, e.bv7, sizeof(e.bv7)), 0);
+    TEST_CHECK_EQ(std::memcmp(p->lv65, e.lv65, sizeof(e.lv65)), 0);
+    TEST_CHECK_EQ(std::memcmp(p->bv96, e.bv96, sizeof(e.bv96)), 0);
+    TEST_CHECK_EQ(std::memcmp(p->ig, e.ig, sizeof(e.ig)), 0);
+    TEST_CHECK_EQ(std::memcmp(p->tm, e.tm, sizeof(e.tm)), 0);
+    TEST_CHECK_EQ(std::memcmp(p->en, e.en, sizeof(e.en)), 0);
+    TEST_CHECK_EQ(std::memcmp(p->pk, e.pk, sizeof(e.pk)), 0);
+    TEST_CHECK_EQ(std::memcmp(p->pa, e.pa, sizeof(e.pa)), 0);
 }
 
 static void fillInner(inner_t* p, int n) {
@@ -113,10 +109,10 @@ static void fillInner(inner_t* p, int n) {
 static void checkInner(const inner_t* p, int n) {
     inner_t e;
     fillInner(&e, n);
-    CHECK(p->x == e.x);
-    CHECK_SAME(p->v, e.v);
-    CHECK(p->anon.a == e.anon.a);
-    CHECK_SAME(p->anon.m, e.anon.m);
+    TEST_CHECK_EQ(p->x, e.x);
+    TEST_CHECK_EQ(std::memcmp(p->v, e.v, sizeof(e.v)), 0);
+    TEST_CHECK_EQ(p->anon.a, e.anon.a);
+    TEST_CHECK_EQ(std::memcmp(p->anon.m, e.anon.m, sizeof(e.anon.m)), 0);
 }
 
 static void fillOuter(outer_t* p, int n) {
@@ -170,7 +166,7 @@ void check_export(int n) {
     const eval ai[2] = {{n}, {n + 1}};
     eval ao[2];
     e_array(ai, ao);
-    for (int k = 0; k < 2; ++k) CHECK(ao[k].x == n + k + 1);
+    for (int k = 0; k < 2; ++k) TEST_CHECK_EQ(ao[k].x, n + k + 1);
 }
 
 int i_sub(const sub_t* i) { return i->w + 1; }

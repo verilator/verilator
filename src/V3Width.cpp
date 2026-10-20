@@ -8015,31 +8015,30 @@ class WidthVisitor final : public VNVisitor {
         return true;
     }
     // Makes sure that port and pin have same size and same datatype
-    static void warnShapeMismatch(AstNode* pinp, const AstNodeDType* pinDtypep,
-                                  const AstNodeDType* portDtypep) {
-        pinp->v3warn(E_UNSUPPORTED, "Shape of the argument does not match the shape of the "
-                                    "parameter ("
-                                        << pinDtypep->prettyDTypeNameQ() << " v.s. "
-                                        << portDtypep->prettyDTypeNameQ() << ")");
-    }
     void checkUnpackedArrayArgs(AstVar* portp, AstNode* pinp) {
         if (AstUnpackArrayDType* const portDtypep
             = VN_CAST(portp->dtypep()->skipRefp(), UnpackArrayDType)) {
             if (AstUnpackArrayDType* const pinDtypep
                 = VN_CAST(pinp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 if (!areSameSize(portDtypep, pinDtypep)) {
-                    warnShapeMismatch(pinp, pinDtypep, portDtypep);
+                    pinp->v3warn(E_UNSUPPORTED,
+                                 "Shape of the argument does not match the shape of the parameter "
+                                     << "(" << pinDtypep->prettyDTypeNameQ() << " v.s. "
+                                     << portDtypep->prettyDTypeNameQ() << ")");
                 }
                 const AstBasicDType* const portBasicp = portDtypep->basicp();
                 const AstBasicDType* const pinBasicp = pinDtypep->basicp();
-                if (portBasicp && pinBasicp) {
-                    if (portBasicp->width() != pinBasicp->width()
-                        || !portBasicp->keyword().isSameish(pinBasicp->keyword())) {
-                        warnShapeMismatch(pinp, pinBasicp, portBasicp);
-                    }
-                } else if (!pinDtypep->elemDTypep()->similarDType(portDtypep->elemDTypep())) {
-                    // Arrays of unpacked structures, which have no basic type
-                    warnShapeMismatch(pinp, pinDtypep->elemDTypep(), portDtypep->elemDTypep());
+                // Arrays of unpacked structures have no basic type
+                const bool sameElemDType
+                    = portBasicp && pinBasicp
+                          ? portBasicp->width() == pinBasicp->width()
+                                && portBasicp->keyword().isSameish(pinBasicp->keyword())
+                          : pinDtypep->elemDTypep()->similarDType(portDtypep->elemDTypep());
+                if (!sameElemDType) {
+                    pinp->v3warn(
+                        E_UNSUPPORTED,
+                        "Data type of the argument is incompatible with the parameter"
+                            << warnDTypes(pinp, pinDtypep, portDtypep, "Argument", "Parameter"));
                 }
             } else {
                 pinp->v3warn(E_UNSUPPORTED, "Argument is not an unpacked array while parameter "

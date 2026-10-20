@@ -238,27 +238,17 @@ be used instead; see :ref:`Model Header Include Macros`.
 DPI Unpacked Structures
 -----------------------
 
-Unpacked structures, and unpacked arrays of them, may be passed to DPI
-imports and exports, with members of the types DPI arguments may have,
-including unpacked structures and unpacked arrays (IEEE 1800-2023 35.5.6
-and Annex H.7.8). Each structure needs a typedef, unless declared only as
-the type of a member, and the names of the typedefs and members must be
-identifiers valid in both C and C++. For example:
-
-.. include:: ../../docs/gen/ex_DPISTRUCT_sv.rst
-
-Vour__Dpi.h then declares the C structures, named as the typedefs declaring
-them, without their scopes, and the functions taking them by reference:
+Vour__Dpi.h also declares the unpacked structures passed by DPI imports
+and exports as C structures, each named as the SystemVerilog typedef
+declaring it, without its package or other scope. For example:
 
 .. include:: ../../docs/gen/ex_DPISTRUCT_hdr.rst
 
-Vour__Dpi.h declares each C structure only if the ``VL_DPITYPE_{name}_``
-macro is undefined, so the user, after defining the macro, or the DPI
-header of another model may declare it first. As C has no scopes,
-structures of the same name must have the same members, which Verilator
-checks only within a model. As the model needs the C structures, the model
-header Vour.h also includes Vour__Dpi.h when DPI passes unpacked
-structures.
+To instead use an equivalent declaration from other C code, define
+``VL_DPITYPE_{name}_`` before including Vour__Dpi.h, or the model header
+Vour.h, which includes Vour__Dpi.h when DPI passes unpacked structures. As
+C has no scopes, different structures passed by DPI, even from different
+models, need different names.
 
 
 DPI System Task/Functions

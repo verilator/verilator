@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(v_flags2=["t/" + test.name + ".cpp"])
+test.compile(v_flags2=[test.pli_filename])
 
 test.execute()
 

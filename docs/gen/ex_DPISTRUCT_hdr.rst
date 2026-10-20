@@ -4,12 +4,11 @@
    #ifndef VL_DPITYPE_inner_t_
    #define VL_DPITYPE_inner_t_
    typedef struct {
-   int x;
-   svBitVecVal v[3][SV_PACKED_DATA_NELEMS(33)];
-   struct {
-   char a;
-   short m[2][3];
-   } anon;
+       int x;
+       svBitVecVal v[3][SV_PACKED_DATA_NELEMS(33)];
+       struct {
+           char a;
+           short m[2][3];
+       } anon;
    } inner_t;
    #endif
-   extern void i_array(const inner_t* i, inner_t* o, inner_t* io);

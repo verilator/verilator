@@ -14,56 +14,56 @@
 #ifndef VL_DPITYPE_eval_
 #define VL_DPITYPE_eval_
 typedef struct {
-int x;
+    int x;
 } eval;
 #endif
 #ifndef VL_DPITYPE_basic_t_
 #define VL_DPITYPE_basic_t_
 typedef struct {
-char b;
-unsigned char bu;
-short si;
-int i;
-unsigned int iu;
-long long li;
-unsigned long long liu;
-double r;
-void* ch;
-const char* s;
-svBit bt;
-svLogic lg;
-svBitVecVal bv7[SV_PACKED_DATA_NELEMS(7)];
-svLogicVecVal lv65[SV_PACKED_DATA_NELEMS(65)];
-svBitVecVal bv96[SV_PACKED_DATA_NELEMS(96)];
-svLogicVecVal ig[SV_PACKED_DATA_NELEMS(32)];
-svLogicVecVal tm[SV_PACKED_DATA_NELEMS(64)];
-svBitVecVal en[SV_PACKED_DATA_NELEMS(3)];
-svLogicVecVal pk[SV_PACKED_DATA_NELEMS(7)];
-svBitVecVal pa[SV_PACKED_DATA_NELEMS(16)];
+    char b;
+    unsigned char bu;
+    short si;
+    int i;
+    unsigned int iu;
+    long long li;
+    unsigned long long liu;
+    double r;
+    void* ch;
+    const char* s;
+    svBit bt;
+    svLogic lg;
+    svBitVecVal bv7[SV_PACKED_DATA_NELEMS(7)];
+    svLogicVecVal lv65[SV_PACKED_DATA_NELEMS(65)];
+    svBitVecVal bv96[SV_PACKED_DATA_NELEMS(96)];
+    svLogicVecVal ig[SV_PACKED_DATA_NELEMS(32)];
+    svLogicVecVal tm[SV_PACKED_DATA_NELEMS(64)];
+    svBitVecVal en[SV_PACKED_DATA_NELEMS(3)];
+    svLogicVecVal pk[SV_PACKED_DATA_NELEMS(7)];
+    svBitVecVal pa[SV_PACKED_DATA_NELEMS(16)];
 } basic_t;
 #endif
 #ifndef VL_DPITYPE_inner_t_
 #define VL_DPITYPE_inner_t_
 typedef struct {
-int x;
-svBitVecVal v[3][SV_PACKED_DATA_NELEMS(33)];
-struct {
-char a;
-short m[2][3];
-} anon;
+    int x;
+    svBitVecVal v[3][SV_PACKED_DATA_NELEMS(33)];
+    struct {
+        char a;
+        short m[2][3];
+    } anon;
 } inner_t;
 #endif
 #ifndef VL_DPITYPE_outer_t_
 #define VL_DPITYPE_outer_t_
 typedef struct {
-basic_t basic;
-inner_t inner[2];
+    basic_t basic;
+    inner_t inner[2];
 } outer_t;
 #endif
 #ifndef VL_DPITYPE_sub_t_
 #define VL_DPITYPE_sub_t_
 typedef struct {
-int w;
+    int w;
 } sub_t;
 #endif
 
@@ -72,16 +72,25 @@ extern "C" {
 #endif
 
 
-// DPI EXPORTS
-extern void e_array(const eval* i, eval* o);
-extern void e_outer(const outer_t* i, outer_t* o, outer_t* io);
+    // DPI EXPORTS
+    // DPI export at t/t_dpi_struct_unpacked.v:179:17
+    extern void e_array(const eval* i, eval* o);
+    // DPI export at t/t_dpi_struct_unpacked.v:171:17
+    extern void e_outer(const outer_t* i, outer_t* o, outer_t* io);
 
-// DPI IMPORTS
-extern void check_export(int n);
-extern void i_array(const inner_t* i, inner_t* o, inner_t* io);
-extern int i_basic(const basic_t* i, basic_t* o, basic_t* io);
-extern void i_outer(const outer_t* i, outer_t* o, outer_t* io);
-extern int i_sub(const sub_t* i);
+    // DPI IMPORTS
+    // DPI import at t/t_dpi_struct_unpacked.v:82:40
+    extern void check_export(int n);
+    // DPI import at t/t_dpi_struct_unpacked.v:83:31
+    extern int dpii_failure();
+    // DPI import at t/t_dpi_struct_unpacked.v:77:32
+    extern void i_array(const inner_t* i, inner_t* o, inner_t* io);
+    // DPI import at t/t_dpi_struct_unpacked.v:67:23
+    extern int i_basic(const basic_t* i, basic_t* o, basic_t* io);
+    // DPI import at t/t_dpi_struct_unpacked.v:72:32
+    extern void i_outer(const outer_t* i, outer_t* o, outer_t* io);
+    // DPI import at t/t_dpi_struct_unpacked.v:232:31
+    extern int i_sub(const sub_t* i);
 
 #ifdef __cplusplus
 }

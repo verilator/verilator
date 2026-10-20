@@ -80,6 +80,7 @@ module t;
     inout inner_t io[0:1]
   );
   import "DPI-C" context function void check_export(int n);
+  import "DPI-C" function int dpii_failure();
   export "DPI-C" function e_outer;
   export "DPI-C" function e_array;
 
@@ -217,6 +218,7 @@ module t;
     `checkd(n_e_outer, 30);
     `checkd(u_sub1.f(), 2);
     `checkd(u_sub2.f(), 3);
+    `checkd(dpii_failure(), 0);
     $write("*-* All Finished *-*\n");
     $finish;
   end
