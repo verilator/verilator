@@ -377,6 +377,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return 1;
     }
 
+    // An option's constant value, or nullptr after a warning, as non-constant is unsupported
+    static const AstConst* constOption(const AstNode* valuep, VCoverOptionType optType) {
+        if (const AstConst* const constp = VN_CAST(valuep, Const)) return constp;
+        valuep->v3warn(COVERIGN, "Ignoring unsupported: non-constant 'option."
+                                     << optType.ascii() << "'; using default value");
+        return nullptr;
+    }
+
     // Store the covergroup-level options (IEEE 1800-2023 19.7) where SystemVerilog and the
     // runtime read them.  The instance options, option.weight and option.get_inst_coverage,
     // are evaluated by the constructor, as are the other instance options; the type options,
@@ -389,11 +397,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_cgAtLeast = 1;
         for (AstCgOptionAssign* const optp : m_cgOptions) {
             if (optp->optType() == VCoverOptionType::AT_LEAST) {
-                if (const AstConst* const constp = VN_CAST(optp->valuep(), Const)) {
+                if (const AstConst* const constp = constOption(optp->valuep(), optp->optType())) {
                     m_cgAtLeast = constAtLeast(constp);
-                } else {
-                    optp->valuep()->v3warn(COVERIGN, "Ignoring unsupported: non-constant"
-                                                     " 'option.at_least'; using default value");
                 }
                 VL_DO_DANGLING(pushDeletep(optp->unlinkFrBack()), optp);
                 continue;
@@ -846,13 +851,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                   || optp->optType() == VCoverOptionType::AUTO_BIN_MAX)) {
                 continue;
             }
-            AstConst* const constp = VN_CAST(optp->valuep(), Const);
-            if (!constp) {
-                optp->valuep()->v3warn(COVERIGN, "Ignoring unsupported: non-constant 'option."
-                                                     << optp->optType().ascii()
-                                                     << "'; using default value");
-                continue;
-            }
+            const AstConst* const constp = constOption(optp->valuep(), optp->optType());
+            if (!constp) continue;
             if (optp->optType() == VCoverOptionType::AT_LEAST) {
                 atLeastOut = constAtLeast(constp);
             } else {
