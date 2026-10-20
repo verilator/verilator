@@ -108,11 +108,21 @@ ______________________________________________________________________
 
 ## Verilog test design
 
-- Extend existing test files with related cases instead of creating new
-  files. If adding a test file try to combine and avoid adding many
+- Extend existing test files with related cases instead of creating new files.
+  When fixing a bug in existing code, find the test that already covers that
+  feature (search `t/` for the construct) and add the case there. Create a new
+  test only when the case does not fit cleanly, e.g. it needs different flags, a
+  different top-level structure, or is an error case that would stop an existing
+  passing test; then combine related cases into it rather than adding many
   single-purpose files.
 - Include the issue's own reproducer as a committed test, and verify it fails
   without the fix.
+- Keep each case self-contained: declare its variables next to the stimulus and
+  checks that use them (e.g. in its own `initial begin ... end` block, preceded
+  by any function, task or instance it needs), not in a list at the top of the
+  module far from their use. Share only what several cases genuinely use. Where
+  the language forces a declaration elsewhere (ports, module-level items), keep
+  it as close as it can be rather than contorting the test.
 - Use the `checkh`/`checkd`/`checks` assertion macros, not manual
   `if`/`$display`/`$stop` sequences. Note `checkh` prints with `%p`, which renders
   integers as hex -- use `checkd` for integer comparisons.

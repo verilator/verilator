@@ -1194,6 +1194,9 @@ class LinkParseVisitor final : public VNVisitor {
         for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             AstVar* const paramp = origVarp->cloneTree(false);
+            FileLine* const fl = new FileLine{paramp->fileline()};
+            fl->warnOff(V3ErrorCode::VARHIDDEN, true);
+            paramp->fileline(fl);
             paramp->funcLocal(true);
             paramp->direction(origVarp->direction());
             if (readOnlyRefs && origVarp->isRef()) paramp->direction(VDirection::CONSTREF);
@@ -1344,6 +1347,8 @@ class LinkParseVisitor final : public VNVisitor {
 
         const string libname = m_modp->libname();
         AstClass* const cgClassp = new AstClass{nodep->fileline(), nodep->name(), libname};
+        cgClassp->fileline()->warnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+        cgClassp->fileline()->warnOff(V3ErrorCode::UNDRIVEN, true);
         cgClassp->isCovergroup(true);
         cgClassp->covergroupEnclosingClassp(VN_CAST(m_modp, Class));
         v3Global.useCovergroup(true);

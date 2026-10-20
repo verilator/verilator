@@ -13,7 +13,9 @@ class item;
   rand int unsigned driver_delay;
 endclass
 
-class generic_sequence #(type T = item);
+class generic_sequence #(
+    type T = item
+);
   rand T cmd;
   function new();
     cmd = new;
@@ -21,14 +23,12 @@ class generic_sequence #(type T = item);
 endclass
 
 module t;
-  generic_sequence#(item) seq;
+  generic_sequence #(item) seq;
   int result;
   initial begin
     seq = new;
     // Deferred lookup must still report unknown member
-    result = seq.randomize() with {
-      bogus_member == 1;
-    };
+    result = seq.randomize() with {bogus_member == 1;};
     `checkd(result, 1);
     $finish;
   end

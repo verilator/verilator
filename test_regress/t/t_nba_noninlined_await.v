@@ -9,6 +9,22 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+// An NBA at time 0 is committed at time 0, also in a process that later calls a task not inlined,
+// with a timing control
+module sub;
+  /*verilator no_inline_module*/
+  bit y;
+  task automatic pause();
+    /*verilator no_inline_task*/
+    #2;
+  endtask
+  initial begin
+    y <= 1'b1;
+    #1 `checkh(y, 1);
+    pause();
+  end
+endmodule
+
 module t;
   bit a;
   bit clk;
@@ -21,6 +37,7 @@ module t;
   endclass
 
   Bar bar;
+  sub sub_i ();
 
   task static foo();
     bar.wait_posedge();

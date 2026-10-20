@@ -281,8 +281,14 @@ private:
             UASSERT_OBJ(v3Global.hasEvents(), senItemp, "Inconsistent");
 
             // Clear 'fired' state when done (guarded if class member access)
+            // The event is modified, so the select (e.g. assoc array) must be an lvalue
+            AstNodeExpr* const clearFromp = currp();
+            if (AstNodeVarRef* const refp
+                = VN_CAST(clearFromp->getVAccessTargetRecurse(), NodeVarRef)) {
+                refp->access(VAccess::WRITE);
+            }
             AstCMethodHard* const clearp
-                = new AstCMethodHard{flp, currp(), VCMethod::EVENT_CLEAR_FIRED};
+                = new AstCMethodHard{flp, clearFromp, VCMethod::EVENT_CLEAR_FIRED};
             clearp->dtypeSetVoid();
             AstNodeStmt* const clearStmtp
                 = wrapStmtWithNullCheck(flp, clearp->makeStmt(), baseClassRefp);

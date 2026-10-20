@@ -17,7 +17,7 @@
 #include "V3PchAstMT.h"
 
 #include "V3EmitC.h"
-#include "V3EmitCConstInit.h"
+#include "V3EmitCBase.h"
 #include "V3File.h"
 #include "V3MemberMap.h"
 #include "V3UniqueNames.h"
@@ -33,7 +33,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Internal EmitC implementation
 
-class EmitCHeader final : public EmitCConstInit {
+class EmitCHeader final : public EmitCBaseVisitorConst {
     V3UniqueNames m_names;
     VMemberMap m_memberMap;
     // METHODS
@@ -206,13 +206,8 @@ class EmitCHeader final : public EmitCConstInit {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     decorateFirst(first, "\n// PARAMETERS\n");
-                    UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                    // Only C++ LiteralTypes can be constexpr
-                    const bool canBeConstexpr = varp->dtypep()->isLiteralType();
-                    putns(varp, "static ");
-                    puts(canBeConstexpr ? "constexpr " : "const ");
+                    putns(varp, "static const ");
                     puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
-                    if (canBeConstexpr) emitDirectInit(varp->valuep());
                     puts(";\n");
                 }
             }
@@ -344,7 +339,7 @@ class EmitCHeader final : public EmitCConstInit {
                     }
                     putns(itemp, itemp->nameProtect());
                     puts(" = ");
-                    iterateConst(itemp->valuep());
+                    putns(itemp, VN_AS(itemp->valuep(), Const)->num().emitC());
                     if (VN_IS(itemp->nextp(), EnumItem)) puts(",");
                     puts("\n");
                 }
@@ -734,6 +729,9 @@ class EmitCHeader final : public EmitCConstInit {
         emitFuncDecls(modp, /* inClassBody: */ false);
         emitSystemCSection(modp, VSystemCSectionType::HDR_POST);
     }
+
+    // VISITORS
+    void visit(AstNode* nodep) override { nodep->v3fatalSrc("Unused"); }  // LCOV_EXCL_LINE
 
     explicit EmitCHeader(const AstNodeModule* modp) {
         UINFO(5, "  Emitting header for " << EmitCUtil::prefixNameProtect(modp));

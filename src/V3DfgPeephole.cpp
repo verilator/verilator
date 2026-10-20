@@ -2117,9 +2117,8 @@ class V3DfgPeephole final : public DfgVisitor {
         DfgVertex* const srcp = varp->srcp();
         if (!srcp) {
             if (vtxp->isPacked()) {
-                if (AstInitArray* const iap = VN_CAST(astVarp->valuep(), InitArray)) {
-                    if (AstConst* const valp
-                        = VN_CAST(iap->getIndexDefaultedValuep(idxp->toSizeT()), Const)) {
+                if (AstConsArray* const iap = VN_CAST(astVarp->valuep(), ConsArray)) {
+                    if (AstConst* const valp = VN_CAST(iap->valuep(idxp->toSizeT()), Const)) {
                         APPLYING(FOLD_ARRAYSEL_TABLE) {
                             replace(new DfgConst{m_dfg, valp->fileline(), valp->num()});
                             return;
@@ -2425,6 +2424,30 @@ class V3DfgPeephole final : public DfgVisitor {
                 APPLYING(REPLACE_CONCAT_SAME_REP_ON_RHS) {
                     replace(make<DfgRep>(vtxp, lhsp));
                     return;
+                }
+            }
+        }
+        if (DfgRep* const lRepp = lhsp->cast<DfgRep>()) {
+            if (DfgRep* const rRepp = rhsp->cast<DfgRep>()) {
+                if (isSame(lRepp->srcp(), rRepp->srcp())) {
+                    APPLYING(REPLACE_CONCAT_SAME_REPS) {
+                        replace(make<DfgRep>(vtxp, lRepp->srcp()));
+                        return;
+                    }
+                }
+            }
+            // The mirrored RHS match is not needed due to RIGHT_LEANING_ASSOC
+            if (DfgConcat* const rConcatp = rhsp->cast<DfgConcat>()) {
+                if (DfgRep* const rlRepp = rConcatp->lhsp()->cast<DfgRep>()) {
+                    if (!rConcatp->hasMultipleSinks() && isSame(lRepp->srcp(), rlRepp->srcp())) {
+                        APPLYING(REPLACE_NESTED_CONCAT_SAME_REPS_ON_LHS) {
+                            const uint32_t width = lRepp->width() + rlRepp->width();
+                            const DfgDataType& dtype = DfgDataType::packed(width);
+                            DfgRep* const repp = make<DfgRep>(flp, dtype, lRepp->srcp());
+                            replace(make<DfgConcat>(vtxp, repp, rConcatp->rhsp()));
+                            return;
+                        }
+                    }
                 }
             }
         }

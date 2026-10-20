@@ -1589,6 +1589,9 @@ public:
     }
     bool similarDTypeNode(const AstNodeDType* samep) const override;
     bool isAggregateType() const override { return true; }
+    // True iff 'otherp' is an array of the same shape, with
+    // at least one dimension reversed ascending/descending.
+    bool isReverseOf(const AstNodeDType* otherp) const;
     // Outer dimension comes first. The first element is this node.
     std::vector<AstUnpackArrayDType*> unpackDimensions();
     void isCompound(bool flag) { m_isCompound = flag; }

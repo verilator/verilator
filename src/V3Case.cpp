@@ -745,8 +745,8 @@ class CaseVisitor final : public VNVisitor {
         // Create the lookup table reference, in the constant pool unless using an inline table
         AstNodeExpr* const tableRefp = [&]() -> AstNodeExpr* {
             if (isTinyTable) return tablep;
-            AstVarRef* const refp = V3ConstPool::findConst(tablep);
-            VL_DO_DANGLING(tablep->deleteTree(), tablep);  // findConst clones
+            AstVarRef* const refp = V3ConstPool::find(tablep);
+            VL_DO_DANGLING(tablep->deleteTree(), tablep);  // V3ConstPool::find clones
             return refp;
         }();
 
@@ -825,7 +825,7 @@ class CaseVisitor final : public VNVisitor {
             m_caseDecoderEntryWidth, m_caseDecoderEntryWidth, VSigning::UNSIGNED);
         AstNodeDType* const tableDtypep = new AstUnpackArrayDType{flp, entryDtypep, rangep};
         v3Global.rootp()->typeTablep()->addTypesp(tableDtypep);
-        AstInitArray* const tablep = new AstInitArray{flp, tableDtypep, nullptr};
+        AstConsArray* const tablep = new AstConsArray{flp, tableDtypep};
 
         // Build a single value table for all LHSs: one entry per clause, packing each LHS's value
         // at its offset. The entry width is the table packing computed by 'analyzeDecoderPattern'
@@ -852,12 +852,12 @@ class CaseVisitor final : public VNVisitor {
                 }
                 entryp->num().opSelInto(valConstp->num(), lhsRecord.offset, lhsp->width());
             }
-            tablep->addIndexValuep(i, entryp);
+            tablep->valuep(i, entryp);
         }
 
         // Create the tables
-        AstVarRef* const matchRefp = V3ConstPool::findConst(matchp);
-        AstVarRef* const tableRefp = V3ConstPool::findTable(tablep);
+        AstVarRef* const matchRefp = V3ConstPool::find(matchp);
+        AstVarRef* const tableRefp = V3ConstPool::find(tablep);
         VL_DO_DANGLING(matchp->deleteTree(), matchp);
         VL_DO_DANGLING(tablep->deleteTree(), tablep);
 

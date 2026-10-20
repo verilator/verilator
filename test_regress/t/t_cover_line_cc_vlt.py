@@ -14,7 +14,7 @@ test.top_filename = "t/t_cover_line.v"
 test.golden_filename = "t/t_cover_line.out"
 test.vlt_filename = "t/t_cover_line.vlt"
 
-test.compile(verilator_flags2=['--cc', '--coverage-line', test.vlt_filename])
+test.compile(verilator_flags2=['--cc', '--coverage-line', '--coverage-branch', test.vlt_filename])
 
 test.execute()
 

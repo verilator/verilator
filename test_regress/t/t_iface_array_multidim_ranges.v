@@ -5,9 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Multi-dim iface arrays with ascending (left<right) ranges and negative
-// indices.  The descending/zero-based case is covered by t_iface_array_multidim*;
-// this test exercises the ascending() branch in V3Inst and negative lo() in
-// name mangling.
+// indices. The descending/zero-based case is covered by
+// t_iface_array_multidim*
 
 // verilog_format: off
 `define stop $stop
@@ -18,6 +17,18 @@ interface simple_if;
   logic [7:0] data;
 endinterface
 
+// Both dims descending, connected to an array of both dims ascending
+module sub_rev (
+    simple_if p[1:0][2:0]
+);
+  final begin
+    `checkd(p[1][2].data, 8'd10);
+    `checkd(p[1][0].data, 8'd12);
+    `checkd(p[0][2].data, 8'd13);
+    `checkd(p[0][0].data, 8'd15);
+  end
+endmodule
+
 module t;
   // Both dims ascending, zero-based.
   simple_if asc[0:1][0:2] ();
@@ -27,6 +38,8 @@ module t;
 
   // Negative indices: outer descending (1..-1), inner ascending (-2..0).
   simple_if neg[1:-1][-2:0] ();
+
+  sub_rev u_rev (.p(asc));
 
   initial begin
     asc[0][0].data = 8'd10;

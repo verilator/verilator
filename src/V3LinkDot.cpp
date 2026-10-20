@@ -968,7 +968,7 @@ public:
     static string removeLastInlineScope(const string& name) {
         string out = name;
         const string dot = "__DOT__";
-        const size_t dotPos = out.rfind(dot, out.size() - dot.length() - 2);
+        const size_t dotPos = out.rfind(dot, out.size() - dot.length() - 1);
         if (dotPos == string::npos) {
             return "";
         } else {
@@ -1200,14 +1200,17 @@ class LinkDotFindVisitor final : public VNVisitor {
         // means nothing was given
         AstNodeModule* const modulesp = nodep->modulesp();
         UASSERT_OBJ(modulesp, nodep, "$unit should always be in the netlist");
-        const bool onlyBuiltins = [&]() {
-            for (AstNodeModule* modp = modulesp; modp; modp = VN_AS(modp->nextp(), NodeModule)) {
-                if (!modp->isDollarUnit() && !modp->isConstPool()) return false;
+        if (m_statep->forPrimary()) {
+            const bool onlyBuiltins = [&]() {
+                for (AstNodeModule* modp = modulesp; modp;
+                     modp = VN_AS(modp->nextp(), NodeModule)) {
+                    if (!modp->isDollarUnit() && !modp->isConstPool()) return false;
+                }
+                return true;
+            }();
+            if (onlyBuiltins && !v3Global.rootp()->dollarUnitPkgp()->stmtsp()) {
+                nodep->v3error("No top level module found");
             }
-            return true;
-        }();
-        if (onlyBuiltins && !v3Global.rootp()->dollarUnitPkgp()->stmtsp()) {
-            nodep->v3error("No top level module found");
         }
         for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
@@ -3258,6 +3261,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         m_restrictedNamesUsed;  // Names from current 'with (id_list)' that resolved into target
     bool m_genericIfaceModule = false;  // True if in module containing generic interface
     std::map<std::string, AstNode*> m_ifClassImpNames;  // Names imported from interface class
+    // Inherited interface implementations needing a forward in the current class, by name
+    std::map<std::string, const VSymEnt*> m_ifForwards;
     std::set<AstClass*> m_extendsParam;  // Classes that have a parameterized super class
                                          // (except the default instances)
                                          // They are added to the set only in linkDotPrimary.
@@ -3630,9 +3635,91 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         return classSymp;
     }
+    // Is the current scope within the given class, including within its nested classes
+    bool insideClass(const AstClass* classp) const {
+        for (const VSymEnt* symp = m_curSymp; symp; symp = symp->parentp()) {
+            if (symp->nodep() == classp) return true;
+        }
+        return false;
+    }
     // 'randomize() with' target class not yet specialized; defer to post-V3Param pass
     bool randTargetUnresolved() const {
         return m_statep->forPrimary() && m_currentWithp && m_randMethodCallp && !m_randSymp;
+    }
+    // Is 'funcp' of 'classp' virtual, directly or by overriding a virtual method of a base
+    // class (IEEE 1800-2023 8.20)
+    bool isVirtualMethod(const AstNodeFTask* funcp, const AstClass* classp) const {
+        if (funcp->isVirtual()) return true;
+        for (const AstClassExtends* cextp = classp->extendsp(); cextp;
+             cextp = VN_AS(cextp->nextp(), ClassExtends)) {
+            AstClass* const basep = cextp->classOrNullp();
+            if (!basep) continue;
+            const VSymEnt* const foundp = m_statep->getNodeSym(basep)->findIdFlat(funcp->name());
+            const AstNodeFTask* const baseFuncp
+                = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
+            const AstClass* const baseClassp = foundp && foundp->parentp()
+                                                   ? VN_CAST(foundp->parentp()->nodep(), Class)
+                                                   : nullptr;
+            if (baseFuncp && baseClassp && isVirtualMethod(baseFuncp, baseClassp)) return true;
+        }
+        return false;
+    }
+    // Is imported 'implp' an implementation of interface method 'ifSymp' (IEEE 1800-2023
+    // 8.26.2)? If its class does not derive from the interface class, it needs a forwarding
+    // override in the derived class to be reachable through the interface.
+    bool inheritedImplements(const VSymEnt* implp, const VSymEnt* ifSymp, bool& needForwardr) {
+        needForwardr = false;
+        const AstNodeFTask* const implFuncp = VN_CAST(implp->nodep(), NodeFTask);
+        if (!implFuncp || implFuncp->pureVirtual() || implFuncp->isStatic()) return false;
+        const AstClass* const implClassp
+            = implp->parentp() ? VN_CAST(implp->parentp()->nodep(), Class) : nullptr;
+        const AstClass* const ifClassp
+            = ifSymp->parentp() ? VN_CAST(ifSymp->parentp()->nodep(), Class) : nullptr;
+        if (!implClassp || !ifClassp) return false;
+        if (extendsClass(implClassp, ifClassp)) return true;
+        if (!isVirtualMethod(implFuncp, implClassp)) return false;
+        needForwardr = true;
+        return true;
+    }
+    // Add 'implp' override to 'classp' that calls super.implp, so the C++ method of an
+    // implemented interface class is overridden
+    void addInterfaceForward(AstClass* classp, AstNodeFTask* implp, AstClass* implClassp) {
+        FileLine* const flp = implp->fileline();
+        AstVar* fvarp = nullptr;
+        AstNodeFTask* newp;
+        if (AstFunc* const implFuncp = VN_CAST(implp, Func)) {
+            fvarp = VN_AS(implFuncp->fvarp(), Var)->cloneTree(false);
+            newp = new AstFunc{flp, implp->name(), nullptr, fvarp};
+        } else {
+            newp = new AstTask{flp, implp->name(), nullptr};
+        }
+        newp->classMethod(true);
+        newp->isVirtual(true);
+        newp->lifetime(implp->lifetime());
+        AstArg* argsp = nullptr;
+        for (AstNode* stmtp = implp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            AstVar* const portp = VN_CAST(stmtp, Var);
+            if (!portp || !portp->isIO()) continue;
+            AstVar* const newPortp = portp->cloneTree(false);
+            newp->addStmtsp(newPortp);
+            argsp = AstNode::addNext(
+                argsp, new AstArg{flp, "", new AstVarRef{flp, newPortp, VAccess::READ}});
+        }
+        AstNodeFTaskRef* callp;
+        if (AstFunc* const implFuncp = VN_CAST(implp, Func)) {
+            callp = new AstFuncRef{flp, implFuncp, argsp};
+        } else {
+            callp = new AstTaskRef{flp, VN_AS(implp, Task), argsp};
+        }
+        callp->classOrPackagep(implClassp);
+        callp->superReference(true);
+        if (fvarp) {
+            newp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, fvarp, VAccess::WRITE}, callp});
+        } else {
+            newp->addStmtsp(callp->makeStmt());
+        }
+        UINFO(9, indent() << "Interface forward " << newp);
+        classp->addMembersp(newp);
     }
     void importDerivedClass(AstClass* derivedClassp, VSymEnt* baseSymp, AstClass* baseClassp) {
         // Also used for standard 'extends' from a base class
@@ -3646,7 +3733,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     const VSymEnt* const foundp = m_curSymp->findIdFlat(baseSubp->name());
                     const AstNodeFTask* const baseFuncp = VN_CAST(baseSubp, NodeFTask);
                     if (!baseFuncp || !baseFuncp->pureVirtual()) continue;
-                    const bool existsInDerived = foundp && !foundp->imported();
+                    bool needForward = false;
+                    const bool existsInDerived
+                        = foundp
+                          && (!foundp->imported()
+                              || inheritedImplements(foundp, it->second, needForward));
+                    if (needForward && m_statep->forPrimary()
+                        && !derivedClassp->isInterfaceClass()) {
+                        m_ifForwards.emplace(baseSubp->name(), foundp);
+                    }
                     if (m_statep->forPrimary() && !existsInDerived
                         && !derivedClassp->isInterfaceClass() && !derivedClassp->isVirtual()) {
                         derivedClassp->v3error(
@@ -4135,6 +4230,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
         // Early return() above when deleted
     }
+
+    static bool isDotThisReference(const AstDot* nodep) {
+        return VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this";
+    }
+
     void visit(AstDot* nodep) override {
         // Legal under a DOT: AstDot, AstParseRef, AstPackageRef, AstNodeSel, AstPackArrayDType
         //    also a DOT can be part of an expression, but only above plus
@@ -4159,7 +4259,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotp = nodep;  // Always, not just at start
             m_ds.m_dotPos = DP_FIRST;
 
-            if (VN_IS(nodep->lhsp(), ParseRef) && nodep->lhsp()->name() == "this") {
+            if (isDotThisReference(nodep)) {
                 VSymEnt* classSymp = getThisClassSymp();
                 // In 'randomize() with { this.member }', 'this' refers to randomized
                 // object, not the calling class (IEEE 1800-2023 18.7)
@@ -4530,8 +4630,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 foundp = m_ds.m_dotSymp->findIdFlat(nodep->name());
             }
-            if (!foundp && m_ds.m_dotp && VN_IS(m_ds.m_dotp->lhsp(), ParseRef)
-                && m_ds.m_dotp->lhsp()->name() == "this") {
+            if (!foundp && m_ds.m_dotp && isDotThisReference(m_ds.m_dotp)) {
                 const AstClass* const classp = VN_CAST(m_ds.m_dotSymp->nodep(), Class);
                 if (classp && classp->isCovergroup() && classp->covergroupEnclosingClassp()) {
                     VSymEnt* const enclosingClassSymp
@@ -4659,6 +4758,15 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 m_ds = lastStates;
                 return;
             } else if (AstVar* const varp = foundToVarp(foundp, nodep, VAccess::READ)) {
+                // Preserve explicit 'this' references to members inherited from
+                // generic classes until after specialization.
+                if (m_statep->forPrimary() && m_ds.m_dotp && isDotThisReference(m_ds.m_dotp)
+                    && foundp->classOrPackagep() != m_modp
+                    && VN_IS(foundp->classOrPackagep(), Class)
+                    && foundp->classOrPackagep()->hasGParam()) {
+                    m_ds.m_unresolvedClass = true;
+                    return;
+                }
                 AstIfaceRefDType* const ifacerefp
                     = LinkDotState::ifaceRefFromArray(varp->subDTypep());
                 if (varp->isIfaceRef() && m_genericIfaceModule
@@ -5023,23 +5131,29 @@ class LinkDotResolveVisitor final : public VNVisitor {
             // Make sure any extends() are properly imported within referenced class
             if (refClassp && !m_statep->forPrimary()) classExtendImport(refClassp);
 
-            m_ds.init(m_curSymp);
-            UINFO(4, indent() << "(Backto) Link ClassOrPackageRef: " << nodep);
-            iterateChildren(nodep);
-
-            AstClass* const modClassp = VN_CAST(m_modp, Class);
             if (m_statep->forPrimary() && refClassp && !nodep->paramsp()
                 && nodep->classOrPackageSkipp()->hasGParam()
                 // Don't warn on typedefs, which are hard to know if there's a param somewhere
                 // buried
                 && VN_IS(nodep->classOrPackageNodep(), Class)
-                // References to class:: within class itself are OK per IEEE (UVM does this)
-                && modClassp != refClassp) {
-                nodep->v3error(
+                // References to class:: within class itself, including from its nested
+                // classes, are OK per IEEE (UVM does this)
+                && !insideClass(refClassp)) {
+                nodep->v3warn(
+                    NONSTD,
                     "Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)\n"
-                    << nodep->warnMore() << "... Suggest use '"
-                    << nodep->classOrPackageNodep()->prettyName() << "#()'");
+                        << nodep->warnMore() << "... Suggest use '"
+                        << nodep->classOrPackageNodep()->prettyName() << "#()'");
+                // As other simulators do, use the default specialization. Add the same
+                // placeholder pin V3LinkCells makes for '#()' so it is linked below.
+                AstPin* const pinp = new AstPin{nodep->fileline(), 1, "__paramNumber1", nullptr};
+                pinp->param(true);
+                nodep->addParamsp(pinp);
             }
+
+            m_ds.init(m_curSymp);
+            UINFO(4, indent() << "(Backto) Link ClassOrPackageRef: " << nodep);
+            iterateChildren(nodep);
         }
 
         if (nodep->name() == "local::") {
@@ -5315,8 +5429,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (!classDtp)
                         nodep->v3error("'randomize() with' on a non-class-instance "
                                        << fromDtp->prettyNameQ());
-                    else
+                    else if (m_statep->forPrimary() && m_extendsParam.count(classDtp->classp())) {
+                        // Inherited members are unavailable until the base class is specialized.
+                        // Defer lookup rather than incorrectly binding names in the caller.
+                        m_ds.m_unresolvedClass = true;
+                    } else {
                         m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                    }
                 }
             }
             iterateChildren(nodep);
@@ -5907,6 +6026,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         LINKDOT_VISIT_START();
         UINFO(5, indent() << "visit " << nodep);
         checkNoDot(nodep);
+        if (m_ds.m_unresolvedClass) return;
         VL_RESTORER(m_curSymp);
         VL_RESTORER(m_currentWithp);
         VL_RESTORER_COPY(m_restrictedNamesUsed);
@@ -6080,8 +6200,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         VL_RESTORER(m_modSymp);
         VL_RESTORER(m_modp);
         VL_RESTORER_COPY(m_ifClassImpNames);
+        VL_RESTORER_COPY(m_ifForwards);
         VL_RESTORER(m_insideClassExtParam);
         {
+            m_ifForwards.clear();
             m_ds.init(m_curSymp);
             m_insideClassExtParam = nodep->isCovergroup() && nodep->covergroupEnclosingClassp()
                                     && m_extendsParam.find(nodep->covergroupEnclosingClassp())
@@ -6153,6 +6275,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             m_ds.m_dotSymp = m_curSymp;
 
             iterateChildren(nodep);
+            for (const auto& itr : m_ifForwards) {
+                const VSymEnt* const implSymp = itr.second;
+                addInterfaceForward(nodep, VN_AS(implSymp->nodep(), NodeFTask),
+                                    VN_AS(implSymp->parentp()->nodep(), Class));
+            }
         }
         // V3Width when determines types needs to find enum values and such
         // so add members pointing to appropriate enum values

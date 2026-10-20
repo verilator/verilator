@@ -1203,14 +1203,14 @@ void addTriggerMasks(AstExecGraph* const execGraphp) {
                 wordMasks[VL_BITWORD_Q(index)] |= VL_BIT_Q(index);
             }
         });
-        AstInitArray* const initp = new AstInitArray{flp, triggersp->dtypep(),
+        AstConsArray* const consp = new AstConsArray{flp, triggersp->dtypep(),
                                                      new AstConst{flp, AstConst::Unsized64{}, 0}};
         for (const auto& wordMask : wordMasks) {
-            initp->addIndexValuep(wordMask.first,
-                                  new AstConst{flp, AstConst::Unsized64{}, wordMask.second});
+            consp->valuep(wordMask.first,
+                          new AstConst{flp, AstConst::Unsized64{}, wordMask.second});
         }
-        execGraphp->addMaskps(V3ConstPool::findTable(initp));
-        VL_DO_DANGLING(initp->deleteTree(), initp);
+        execGraphp->addMaskps(V3ConstPool::find(consp));
+        VL_DO_DANGLING(consp->deleteTree(), consp);
     }
 }
 
@@ -1235,12 +1235,12 @@ void addTriggerCosts(AstExecGraph* const execGraphp) {
         = new AstUnpackArrayDType{flp, netlistp->findBitDType(32, 32, VSigning::UNSIGNED),
                                   new AstRange{flp, static_cast<int>(nTriggers - 1), 0}};
     netlistp->typeTablep()->addTypesp(dtypep);
-    AstInitArray* const initp = new AstInitArray{flp, dtypep, new AstConst{flp, 0}};
+    AstConsArray* const consp = new AstConsArray{flp, dtypep, new AstConst{flp, 0}};
     for (uint32_t index = 0; index < nTriggers; ++index) {
-        if (costs[index]) initp->addIndexValuep(index, new AstConst{flp, costs[index]});
+        if (costs[index]) consp->valuep(index, new AstConst{flp, costs[index]});
     }
-    execGraphp->triggerCostsp(V3ConstPool::findTable(initp));
-    VL_DO_DANGLING(initp->deleteTree(), initp);
+    execGraphp->triggerCostsp(V3ConstPool::find(consp));
+    VL_DO_DANGLING(consp->deleteTree(), consp);
 }
 
 // Called by Verilator top stage

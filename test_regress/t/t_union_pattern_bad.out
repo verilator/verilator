@@ -1,0 +1,50 @@
+%Error: t/t_union_pattern_bad.v:25:9: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                    : ... note: In instance 't'
+   25 |     u = '{i: 32'h12345678};
+      |         ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_union_pattern_bad.v:26:9: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                    : ... note: In instance 't'
+   26 |     u = '{default: 5};
+      |         ^~
+%Error: t/t_union_pattern_bad.v:27:9: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                    : ... note: In instance 't'
+   27 |     u = '{32'h12345678};
+      |         ^~
+%Error: t/t_union_pattern_bad.v:28:9: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                    : ... note: In instance 't'
+   28 |     u = '{int: 7};
+      |         ^~
+%Error: t/t_union_pattern_bad.v:29:12: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                     : ... note: In instance 't'
+   29 |     u = u_t'{i: 1};
+      |            ^~
+%Error: t/t_union_pattern_bad.v:30:9: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                    : ... note: In instance 't'
+   30 |     p = '{a: 8'h12};
+      |         ^~
+%Error: t/t_union_pattern_bad.v:31:9: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                    : ... note: In instance 't'
+   31 |     p = '{default: 8'h34};
+      |         ^~
+%Error: t/t_union_pattern_bad.v:32:9: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                    : ... note: In instance 't'
+   32 |     p = '{8'h56};
+      |         ^~
+%Error: t/t_union_pattern_bad.v:45:12: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                     : ... note: In instance 't'
+   45 |     ua = '{'{i: 1}, '{i: 2}};
+      |            ^~
+%Error: t/t_union_pattern_bad.v:45:21: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                     : ... note: In instance 't'
+   45 |     ua = '{'{i: 1}, '{i: 2}};
+      |                     ^~
+%Error: t/t_union_pattern_bad.v:46:12: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                     : ... note: In instance 't'
+   46 |     uq = '{'{i: 3}};
+      |            ^~
+%Error: t/t_union_pattern_bad.v:47:14: Assignment pattern cannot be used for union (IEEE 1800-2023 10.9)
+                                     : ... note: In instance 't'
+   47 |     s = '{m: '{i: 4}, x: 5};
+      |              ^~
+%Error: Exiting due to
