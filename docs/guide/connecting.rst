@@ -238,9 +238,9 @@ be used instead; see :ref:`Model Header Include Macros`.
 DPI Unpacked Structures
 -----------------------
 
-Vour__Dpi.h also declares the unpacked structures passed by DPI imports
-and exports as C structures, each named as the SystemVerilog typedef
-declaring it, without its package or other scope. For example:
+Vour__Dpi.h also declares the unpacked structures passed by DPI imports and
+exports as C structures, each named as the SystemVerilog typedef declaring
+it, without its package or other scope. For example:
 
 .. include:: ../../docs/gen/ex_DPISTRUCT_hdr.rst
 
