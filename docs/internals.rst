@@ -938,23 +938,23 @@ fragmentation.
 Synchronizing Macro-Tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Each thread function of a schedule (a "slot") owns one progress word
-(``VlSlotProgress``), on its own cache line: the position, counted from 1, of
-its last finished macro-task. The words of a model are held together in
+Each thread of a schedule owns one progress word (``VlThreadProgress``), on its
+own cache line: the position, counted from 1, of its last finished macro-task.
+The words of each macro-task graph are held together in
 ``VlScheduleProgress``.
 
 After a macro-task that a macro-task on another thread depends on, its thread
 publishes its position with a release store, however many threads depend on
 it. Before a macro-task, its thread waits, with acquire loads, for each
-producing slot to reach the latest position it needs, unless an earlier wait in
-the same thread already covered it. Each dependency therefore costs one cache
-line transfer from producer to consumer, and no read-modify-write.
+producing thread to reach the latest position it needs, unless an earlier wait
+in the same thread already covered it. Each dependency therefore costs one
+cache line transfer from producer to consumer, and no read-modify-write.
 
-At the end of a schedule, each slot publishes that it is done, and the
-dispatching thread waits for the slots run by the thread pool. Before starting
-a schedule, while no thread is running one, the dispatching thread sets the
-words back to zero; handing the slots to the thread pool orders this before
-they start.
+At the end of a schedule, each thread publishes that it is done, and the
+dispatching thread waits for the threads run by the thread pool. Before
+starting a schedule, while no thread is running one, the dispatching thread
+sets the words back to zero; handing the threads' functions to the thread pool
+orders this before they start.
 
 
 Locating Variables for Best Spatial Locality

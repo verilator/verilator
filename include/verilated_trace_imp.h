@@ -300,7 +300,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<Callback
             }
         }
         // Execute main thread jobs
-        for (ParallelWorkerData* const itemp : mainThreadWorkerData) { parallelWorkerTask(itemp); }
+        for (ParallelWorkerData* const itemp : mainThreadWorkerData) parallelWorkerTask(itemp);
         // Commit all trace buffers in order
         for (ParallelWorkerData& item : workerData) {
             // Wait until ready

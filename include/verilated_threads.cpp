@@ -40,7 +40,7 @@
 
 // Internal note: Globals may multi-construct, see verilated.cpp top.
 
-std::atomic<uint64_t> VlSlotProgress::s_yields;
+std::atomic<uint64_t> VlThreadProgress::s_yields;
 
 //=============================================================================
 // VlWorkerThread

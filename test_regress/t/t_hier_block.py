@@ -43,5 +43,9 @@ test.file_grep(test.stats, r'HierBlock,\s+Hierarchical blocks\s+(\d+)', 15)
 test.file_grep(test.run_log_filename, r'MACRO:(\S+) is defined', "cplusplus")
 # Check netlist was released before forking the sub verilation
 test.file_grep(test.stats, r"Stage, Elapsed time \(sec\), \d+_released")
+if test.vltmt:
+    # Threads of the top model synchronize through progress words
+    test.file_grep(test.obj_dir + "/V" + test.name + "__hier.dir/V" + test.name + "__stats.txt",
+                   r'Optimizations, Thread progress waits\s+[1-9]')
 
 test.passes()

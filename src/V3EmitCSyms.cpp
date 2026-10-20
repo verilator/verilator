@@ -1101,9 +1101,11 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
         puts("VlThreadPool* __Vm_threadPoolp;\n");
-        // Progress of each thread function of the running schedule (see V3ExecGraph)
-        puts("VlScheduleProgress<" + std::to_string(v3Global.opt.threads())
-             + "> __Vm_progress;\n");
+        // Progress of the threads running each exec graph's schedule (see V3ExecGraph)
+        for (const char* const tag : {"ico", "act", "nba"}) {
+            puts("VlScheduleProgress<" + std::to_string(v3Global.opt.threads())
+                 + "> __Vm_schedule_progress_" + tag + ";\n");
+        }
     }
 
     if (v3Global.opt.profExec()) {

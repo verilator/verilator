@@ -53,18 +53,18 @@ using VlSelfP = void*;
 
 using VlExecFnp = void (*)(VlSelfP);
 
-// Progress of one thread function ('slot') of a static mtask schedule: the position, counted
-// from 1, of its last finished mtask. Written only by the thread running the slot, with a plain
-// release store; other threads wait for it with acquire loads. No read-modify-write, and one
-// cache line per slot, so a dependency costs one line transfer from producer to consumer,
-// however many consumers there are.
-class alignas(VL_CACHE_LINE_BYTES) VlSlotProgress final {
+// Progress of one thread through its part of a static mtask schedule: the position, counted
+// from 1, of its last finished mtask. Written only by that thread, with a plain release store;
+// other threads wait for it with acquire loads. No read-modify-write, and one cache line per
+// thread, so a dependency costs one line transfer from producer to consumer, however many
+// consumers there are.
+class alignas(VL_CACHE_LINE_BYTES) VlThreadProgress final {
     // MEMBERS
     static std::atomic<uint64_t> s_yields;  // Statistics
-    std::atomic<uint32_t> m_pos{0};
+    std::atomic<uint32_t> m_pos{0};  // Position of the last finished mtask, or DONE
 
 public:
-    static constexpr uint32_t DONE = ~0U;  // Slot finished
+    static constexpr uint32_t DONE = ~0U;  // Thread finished its part of the schedule
 
     static uint64_t yields() { return s_yields; }
     static void yieldThread() {
@@ -74,9 +74,9 @@ public:
 
     // Dispatching thread, while no thread runs the schedule
     void reset() { m_pos.store(0, std::memory_order_relaxed); }
-    // Thread running the slot: everything up to and including 'pos' is done
+    // Thread running its part: everything up to and including 'pos' is done
     void publish(uint32_t pos) { m_pos.store(pos, std::memory_order_release); }
-    // Other threads: wait until the slot has published at least 'pos'
+    // Other threads: wait until the thread has published at least 'pos'
     void waitFor(uint32_t pos) const {
         unsigned ct = 0;
         while (VL_UNLIKELY(m_pos.load(std::memory_order_acquire) < pos)) {
@@ -90,25 +90,24 @@ public:
     }
 };
 
-// Progress of the slots of the schedule a model is running; a model runs one schedule at a time.
-// Slot N_Slots - 1 is the dispatching thread's.
-template <size_t N_Slots>
+// Progress of the threads running the schedule of one exec graph; a graph runs one schedule at
+// a time.
+template <size_t N_Threads>
 class VlScheduleProgress final {
-    VlSlotProgress m_slots[N_Slots];
+    // MEMBERS
+    VlThreadProgress m_threads[N_Threads];  // Progress of each thread of the schedule
 
 public:
-    // Dispatching thread, before starting a schedule with 'nSlots' slots. Handing the slots'
-    // functions to the thread pool orders this before they start.
-    void start(uint32_t nSlots) {
-        for (uint32_t i = 0; i < nSlots; ++i) m_slots[i].reset();
+    // Dispatching thread, before starting a schedule. Handing the threads' functions to the
+    // thread pool orders this before they start.
+    void start() {
+        for (VlThreadProgress& thread : m_threads) thread.reset();
     }
-    void publish(uint32_t slot, uint32_t pos) { m_slots[slot].publish(pos); }
-    void waitFor(uint32_t slot, uint32_t pos) const { m_slots[slot].waitFor(pos); }
-    void done(uint32_t slot) { m_slots[slot].publish(VlSlotProgress::DONE); }
-    // Dispatching thread: wait for slots 0 to 'nPoolSlots' - 1, run by the pool, to be done
-    void waitDone(uint32_t nPoolSlots) const {
-        for (uint32_t i = 0; i < nPoolSlots; ++i) m_slots[i].waitFor(VlSlotProgress::DONE);
-    }
+    void publish(uint32_t thread, uint32_t pos) { m_threads[thread].publish(pos); }
+    void waitFor(uint32_t thread, uint32_t pos) const { m_threads[thread].waitFor(pos); }
+    void done(uint32_t thread) { m_threads[thread].publish(VlThreadProgress::DONE); }
+    // Dispatching thread: wait for a thread run by the pool to be done
+    void waitDone(uint32_t thread) const { m_threads[thread].waitFor(VlThreadProgress::DONE); }
 };
 
 class VlWorkerThread final {
