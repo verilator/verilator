@@ -4511,28 +4511,22 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstSub    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstXor    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstEq     {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
-    TREEOP ("AstEqD    {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
     TREEOP ("AstEqN    {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");  // We let X==X -> 1, although in a true 4-state sim it's X.
     TREEOP ("AstEqCase {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstEqWild {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstGt     {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
-    TREEOP ("AstGtD    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstGtN    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstGtS    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstGte    {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
-    TREEOP ("AstGteD   {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstGteN   {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstGteS   {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstLt     {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
-    TREEOP ("AstLtD    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstLtN    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstLtS    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstLte    {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
-    TREEOP ("AstLteD   {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstLteN   {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstLteS   {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstNeq    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
-    TREEOP ("AstNeqD   {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstNeqN   {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstNeqCase{operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstNeqWild{operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");

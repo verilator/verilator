@@ -245,6 +245,14 @@ module t (
       //
       if ((!(r - 50.0)) != (!((cyc - 50) != 0))) $stop;
       //
+      r2 = $sqrt(-r);  // NaN, unordered even with itself
+      if (r2 == r2) $stop;
+      if (!(r2 != r2)) $stop;
+      if (r2 > r2) $stop;
+      if (r2 >= r2) $stop;
+      if (r2 < r2) $stop;
+      if (r2 <= r2) $stop;
+      //
       r = real'(ci48);
       `checkr(r, 280375465082880.0);
       r = real'(cis48);
