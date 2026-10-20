@@ -1759,17 +1759,18 @@ class TristateVisitor final : public TristateBaseVisitor {
                     initp->valuep(indexp->toSInt(), enp->cloneTreePure(false));
                     nodep->fromp()->user1p(initp);
                 } else {
-                    AstVar* const varp = newArrayTemp(nodep->fileline(), dtypep);
+                    FileLine* const fl = nodep->fileline();
+                    AstVar* const varp = newArrayTemp(fl, dtypep);
                     for (int i = 0; i < arrayp->elementsConst(); ++i) {
-                        addArrayElementAssign(
-                            varp, i,
-                            new AstCond{
-                                nodep->fileline(),
-                                new AstEq{nodep->fileline(), nodep->bitp()->cloneTreePure(false),
-                                          new AstConst{nodep->fileline(), AstConst::WidthedValue{},
-                                                       nodep->bitp()->width(),
-                                                       static_cast<uint32_t>(i)}},
-                                enp->cloneTreePure(false), newAllZerosOrOnes(nodep, false)});
+                        AstConst* const elementIndexp
+                            = new AstConst{fl, AstConst::WidthedValue{}, nodep->bitp()->width(),
+                                           static_cast<uint32_t>(i)};
+                        AstEq* const selectedp
+                            = new AstEq{fl, nodep->bitp()->cloneTreePure(false), elementIndexp};
+                        AstCond* const elementEnp
+                            = new AstCond{fl, selectedp, enp->cloneTreePure(false),
+                                          newAllZerosOrOnes(nodep, false)};
+                        addArrayElementAssign(varp, i, elementEnp);
                     }
                     nodep->fromp()->user1p(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
                 }
