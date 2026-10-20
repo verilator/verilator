@@ -25,6 +25,9 @@ module t;
   assert property (@(posedge clk) a |-> (s_eventually b) and c);
   assert property (@(posedge clk) a #=# s_eventually b);
   assert property (@(posedge clk) disable iff (c) a |=> s_eventually b);
+  // An if/case property with a pass action keeps its own message
+  assert property (@(posedge clk) case (c) 1'b1: s_eventually b; default: a |=> b; endcase)
+    $display("pass");
   sub u_sub (.clk(clk), .rst(c), .a(a), .b(b));
 
   always @(posedge clk) begin

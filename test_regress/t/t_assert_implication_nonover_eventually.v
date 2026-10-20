@@ -14,9 +14,11 @@ module t (
 );
 
   int cyc = 0;
-  logic a1 = 0, b1 = 0, c1 = 0, a2 = 0, b2 = 0;
+  logic a1 = 0, b1 = 0, c1 = 0, a2 = 0, b2 = 0, a3 = 0, b3 = 0;
+  logic [2:0] h = 3'd0;
 
-  // a1 in cycle 3, c1 in cycle 4, b1 in cycle 6; a2 and b2 both only in cycle 9
+  // a1 in cycle 3, c1 in cycle 4, b1 in cycle 6; a2 and b2 both only in cycle 9;
+  // a3 in cycles 11 and 12, b3 in cycle 13; h is 3 from cycle 1
   always @(posedge clk) begin
     cyc <= cyc + 1;
     a1 <= (cyc == 2);
@@ -24,6 +26,9 @@ module t (
     b1 <= (cyc == 5);
     a2 <= (cyc == 8);
     b2 <= (cyc == 8);
+    a3 <= (cyc == 10 || cyc == 11);
+    b3 <= (cyc == 12);
+    h <= 3'd3;
     if (cyc == 16) begin
       $write("*-* All Finished *-*\n");
       $finish;
@@ -34,7 +39,6 @@ module t (
   // non-vacuous success) and nothing fails
   int pass_non = 0, pass_over = 0, pass_func = 0, pass_rose = 0;
   int fail_non = 0, fail_over = 0, fail_func = 0, fail_rose = 0;
-  logic [2:0] h = 3'd3;
   function automatic int burst_len(logic [2:0] hb);
     return (hb == 3'd3) ? 4 : 1;
   endfunction
@@ -76,6 +80,16 @@ module t (
       `checkd(pass2_over, 1);
       `checkd(fail2_non, 0);
       `checkd(fail2_over, 0);
+    end
+
+  // Two attempts wait at the same time (from a3 in cycles 11 and 12) and both pass on b3
+  int pass3_non = 0, fail3_non = 0;
+  assert property (@(posedge clk) a3 |=> s_eventually b3) pass3_non = pass3_non + 1;
+  else fail3_non = fail3_non + 1;
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkd(pass3_non, 2);
+      `checkd(fail3_non, 0);
     end
 
   // |=> then |->: c1 is true one cycle after a1, so the chain passes once; with the
@@ -126,7 +140,8 @@ module t (
     end
 endmodule
 
-// A procedural assertion under a default disable iff stays on V3AssertPre
+// A procedural assertion under a default disable iff stays on V3AssertPre. rst stays low:
+// V3AssertPre applies disable iff only when an attempt starts, not while s_eventually waits
 module sub_default_disable (
     input clk,
     input int cyc,
