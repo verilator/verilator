@@ -54,6 +54,7 @@ class PremitVisitor final : public VNVisitor {
     size_t m_tmpVarCnt = 0;  // Number of temporary variables created inside a function
     AstNode* m_stmtp = nullptr;  // Current statement
     bool m_assignLhs = false;  // Inside assignment lhs, don't breakup extracts
+    bool m_inCons = false;  // Inside a NodeCons, so not the root of a value
 
     // METHODS
     bool needsTemp(AstNodeExpr* nodep) {
@@ -68,6 +69,29 @@ class PremitVisitor final : public VNVisitor {
 
     void checkNode(AstNodeExpr* nodep) {
         if (needsTemp(nodep)) createTemp(nodep);
+    }
+
+    // True if the value should be in the constant pool, rather than built where it is used
+    static bool useConstPool(const AstNodeExpr* nodep) {
+        uint64_t width = 0;
+        bool hasData = false;
+        bool hasDynamic = false;
+        // Must be a tree of constants (see AstNodeExpr::isConstantTree), which can be emitted
+        const bool emittable = nodep->forall([&](const AstNodeExpr* exprp) {
+            if (VN_IS(exprp, NodeCons)) {
+                hasDynamic |= exprp->dtypep()->skipRefp()->isDynamicallySized();
+                return true;
+            }
+            const AstConst* const constp = VN_CAST(exprp, Const);
+            if (!constp) return false;
+            width += static_cast<uint64_t>(constp->widthWords()) * VL_EDATASIZE;
+            hasData = true;
+            return !constp->num().isFourState();
+        });
+        if (!emittable) return false;
+        // Dynamically sized values allocate when built with data, so use the pool for them
+        if (hasDynamic) return hasData;
+        return width >= static_cast<uint64_t>(STATIC_CONST_MIN_WIDTH);
     }
 
     AstVarRef* isRhsOfAssignToVar(AstNodeExpr* nodep) {
@@ -108,17 +132,11 @@ class PremitVisitor final : public VNVisitor {
         nodep->unlinkFrBack(&relinker);
 
         FileLine* const flp = nodep->fileline();
-        AstConst* const constp = VN_CAST(nodep, Const);
-        const bool useConstPool = constp  // Is a constant
-                                  && (constp->width() >= STATIC_CONST_MIN_WIDTH)  // Large enough
-                                  && !constp->num().isFourState()  // Not four state
-                                  && !constp->num().isString();  // Not a string
-
         AstVar* varp = nullptr;
 
-        if (useConstPool) {
+        if (useConstPool(nodep)) {
             // Extract into constant pool.
-            AstVarRef* const refp = V3ConstPool::findConst(constp);
+            AstVarRef* const refp = V3ConstPool::find(nodep);
             varp = refp->varp();
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             ++m_extractedToConstPool;
@@ -258,7 +276,7 @@ class PremitVisitor final : public VNVisitor {
             } else if (!VN_IS(rhsp, Const)) {
                 // Don't replace the rhs, it's already a simple assignment
                 rhsp->user1(true);
-            } else if (rhsp->width() < STATIC_CONST_MIN_WIDTH) {
+            } else if (rhsp->widthWords() * VL_EDATASIZE < STATIC_CONST_MIN_WIDTH) {
                 // It's a small constant, so nothing to do, otherwise will be put to const pool
                 return;
             }
@@ -393,6 +411,20 @@ class PremitVisitor final : public VNVisitor {
             iterateAndNextNull(nodep->bitp());
         }
         checkNode(nodep);
+    }
+    void visit(AstNodeCons* nodep) override {
+        // Only lift whole values, as editing the parts of a constant would make it non-constant
+        if (!m_inCons && nodep->isConstantTree()) {
+            if (m_stmtp && useConstPool(nodep)) {
+                nodep->replaceWith(V3ConstPool::find(nodep));
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                ++m_extractedToConstPool;
+            }
+            return;
+        }
+        VL_RESTORER(m_inCons);
+        m_inCons = true;
+        iterateChildren(nodep);
     }
     // Const associative array keys are emitted as initializers, so need no temporary
     void visit(AstConsAssocItem* nodep) override {

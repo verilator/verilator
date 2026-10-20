@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cstring>
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -378,7 +379,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string vlEnumType = varp->vlEnumType();
         if (needsEmittedEntSize(vlEnumType))
             return TableEntryKind::PLAIN_RESIDUAL;  // struct/union whole
-        // Params are often 'static constexpr' (offsetof is invalid on those);
+        // Params are static members (offsetof is invalid on those);
         // string params also need a runtime .c_str().
         if (varp->isParam()) return TableEntryKind::PLAIN_RESIDUAL;
 
@@ -1212,6 +1213,16 @@ void EmitCSyms::emitSymImpPreamble() {
         needsNewLine = true;
     }
     if (needsNewLine) puts("\n");
+    // Declarations of the Verilator library functions called at construction
+    std::set<std::string> libNames;
+    for (const ScopeModPair& itpair : m_scopes) {
+        if (itpair.second->verilatorLib()) libNames.emplace(itpair.second->origName());
+    }
+    for (const std::string& libName : libNames) {
+        puts("extern \"C\" void " + libName + "_protectlib_check_hash(int protectlib_hash__V);\n");
+        puts("extern \"C\" void* " + libName + "_protectlib_create(const char* scopep__V);\n");
+    }
+    if (!libNames.empty()) puts("\n");
 
     // So split ctor sub-functions in other translation units can reference
     // the VPI variable tables defined below.
@@ -1394,6 +1405,39 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
             stmts.add("vlSymsp->" + instName(scopep) + "." + protect("__Vconfigure") + "("
                       + (first ? "true" : "false") + ");");
         }
+    }
+
+    // Check the hash and create the library model of each Verilator library wrapper, as its
+    // initial process would, but already at construction, so the library model exists before
+    // the first evaluation
+    for (const ScopeModPair& i : m_scopes) {
+        const AstScope* const scopep = i.first;
+        const AstNodeModule* const modp = i.second;
+        if (!modp->verilatorLib()) continue;
+        const AstVar* hashp = nullptr;
+        const AstVar* handlep = nullptr;
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            const AstVar* const varp = VN_CAST(nodep, Var);
+            if (!varp) continue;
+            if (varp->prettyName() == "protectlib_hash__V") hashp = varp;
+            if (varp->prettyName() == "handle__V") handlep = varp;
+        }
+        UASSERT_OBJ(hashp, modp, "Verilator library wrapper without 'protectlib_hash__V'");
+        UASSERT_OBJ(handlep, modp, "Verilator library wrapper without 'handle__V'");
+        const uint32_t hash = VN_AS(hashp->valuep(), Const)->toUInt();
+        stmts.add(modp->origName() + "_protectlib_check_hash(static_cast<int>("
+                  + std::to_string(hash) + "U));");
+        // The library model is named after the %m of the instance, which in a --lib-create
+        // library omits the top module (see V3Scope)
+        std::string path = scopep->prettyName();
+        if (!v3Global.opt.libCreate().empty()) {
+            path.erase(0, v3Global.rootp()->traceLibTopName().size() + 1);
+        }
+        stmts.add("vlSymsp->" + instName(scopep) + "." + varName(handlep) + " = VL_CVT_VP_Q("
+                  + modp->origName()
+                  + "_protectlib_create((std::string{vlSymsp->name()} + (vlSymsp->name()[0] ? "
+                    "\".\" : \"\") + \""
+                  + V3OutFormatter::quoteNameControls(path) + "\").c_str()));");
     }
 
     // Every scope has the same construction shape, so all fold into one table with no

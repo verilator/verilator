@@ -15,6 +15,6 @@ test.compile(verilator_flags2=['--binary', '--stats'])
 
 test.file_grep(test.stats, r'Optimizations, Cases table normal\s+(\d+)', 1)
 test.file_grep(test.stats, r'Optimizations, DFG, Peephole, remove var\s+(\d+)', 2)
-test.file_grep_not(test.stats, r'ConstPool, Constants emitted')  # Removed by V3Dead later
+test.file_grep(test.stats, r'ConstPool, CONST emitted\s+(\d+)', 0)  # Removed by V3Dead later
 
 test.passes()
