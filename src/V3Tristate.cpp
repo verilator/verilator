@@ -807,20 +807,20 @@ class TristateVisitor final : public TristateBaseVisitor {
                 if (!indexp) return;
                 offset += indexp->toSInt();
                 basep = selp->fromp();
+                continue;
             } else if (const AstArraySel* const selp = VN_CAST(basep, ArraySel)) {
                 const AstConst* const indexp = VN_CAST(selp->bitp(), Const);
                 if (!indexp) return;
                 offset
                     += indexp->toSInt() * selp->width() * selp->dtypep()->arrayUnpackedElements();
                 basep = selp->fromp();
-            } else {
-                break;
+                continue;
             }
+            break;
         }
         AstVarRef* const refp = VN_CAST(basep, VarRef);
         if (!refp) return;
-        AstPull* const pullp = m_varAux(sourcep).pullp;
-        if (pullp) {
+        if (AstPull* const pullp = m_varAux(sourcep).pullp) {
             if (basep == targetp) {
                 setPullDirection(refp->varp(), pullp);
             } else {
