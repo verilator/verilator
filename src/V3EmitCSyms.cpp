@@ -1353,8 +1353,7 @@ void EmitCSyms::emitSymImpPreamble() {
 
 bool EmitCSyms::emitVarTableExterns() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
-        && m_lazyReconFnTables.empty() && m_combMaskRows.empty() && m_paramPtrTables.empty()
-        && m_hierTableRows.empty())
+        && m_lazyReconFnTables.empty() && m_combMaskRows.empty())
         return false;
     for (const auto& kv : m_varTables) {
         puts("extern const VlVarTableEntry " + kv.first + "[];\n");
@@ -1382,8 +1381,7 @@ bool EmitCSyms::emitVarTableExterns() {
 
 void EmitCSyms::emitVarTables() {
     if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
-        && m_lazyReconFnTables.empty() && m_combMaskRows.empty() && m_paramPtrTables.empty()
-        && m_hierTableRows.empty())
+        && m_lazyReconFnTables.empty() && m_combMaskRows.empty())
         return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
     // offsetof on the (non-standard-layout) generated module/Syms classes is well
