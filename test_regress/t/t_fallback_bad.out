@@ -1,31 +1,24 @@
 %Error: t/t_fallback_bad.v:28:13: Can't find definition of task/function: 'tsk'
-                                : ... Suggested alternative: 'tsk'
    28 |       super.tsk;
       |             ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: t/t_fallback_bad.v:29:12: Can't find definition of task/function: 'tsk'
-                                : ... Suggested alternative: 'tsk'
    29 |       this.tsk;
       |            ^~~
 %Error: t/t_fallback_bad.v:30:13: Can't find definition of variable/method: 'f'
-                                : ... Suggested alternative: 'f'
    30 |       super.f = 8;
       |             ^
 %Error: t/t_fallback_bad.v:31:12: Can't find definition of variable/method: 'f'
-                                : ... Suggested alternative: 'f'
    31 |       this.f = 8;
       |            ^
 %Error: t/t_fallback_bad.v:32:17: Can't find definition of 'tsk' in dotted task/function: 'sub1.sub2.tsk'
-                                : ... Suggested alternative: 'tsk'
    32 |       sub1.sub2.tsk;
       |                 ^~~
         ... Known scopes under 'tsk': sub2
 %Error: t/t_fallback_bad.v:33:12: Can't find definition of scope/variable/func: 'f'
-                                : ... Suggested alternative: 'f'
    33 |       pkg::f = 8;
       |            ^
 %Error: t/t_fallback_bad.v:34:12: Can't find definition of task/function: 'tsk'
-                                : ... Suggested alternative: 'tsk'
    34 |       pkg::tsk();
       |            ^~~
 %Error: t/t_fallback_bad.v:35:17: Can't find definition of 'f' in dotted variable/method: 'sub1.sub2.f'

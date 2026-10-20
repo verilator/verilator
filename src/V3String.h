@@ -273,7 +273,7 @@ public:
     // Return friendly message
     string bestCandidateMsg(const string& goal) const {
         const auto candidate = bestCandidate(goal);
-        if (candidate.str.empty()) return "";
+        if (candidate.msg.empty()) return "";
         return "... Suggested alternative: '"s + candidate.msg + "'";
     }
     static void selfTest();
