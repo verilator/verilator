@@ -33,6 +33,9 @@ option(
 
 find_package(Python3 COMPONENTS Interpreter)
 set(PYTHON3 ${Python3_EXECUTABLE})
+# verilated.mk needs the path quoted (it may contain spaces on Windows),
+# while build rules consume PYTHON3 raw, so substitute a separate variable
+set(PYTHON3_MK "\"${Python3_EXECUTABLE}\"")
 # See also CMake built-in; CMAKE_INSTALL_PREFIX is applied by the install command.
 set(CMAKE_INSTALL_DATADIR .)
 include(GNUInstallDirs)
