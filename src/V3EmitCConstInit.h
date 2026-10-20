@@ -24,14 +24,11 @@
 #include <cinttypes>
 
 //######################################################################
-// Emitter that can emit constant initializer expressions
+// Emitter that can emit NodeCons expressions
 
 class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
-    // MEMBERS
-    uint32_t m_unpackedWord = 0;
-
     // METHODS
-    uint32_t tabModulus(const AstNodeDType* dtypep) {
+    static uint32_t tabModulus(const AstNodeDType* dtypep) {
         const uint32_t elemBytes = dtypep->widthTotalBytes();
         return dtypep->isString() ? 1  // String
                : elemBytes <= 2   ? 8  // CData, SData
@@ -39,160 +36,175 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
                : elemBytes <= 8   ? 2  // QData
                                   : 1;
     }
-    // Constants in initializers use our form, not the expression form of EmitCFunc
-    void iterateInit(AstNode* nodep) {
-        if (AstConst* const constp = VN_CAST(nodep, Const)) {
-            EmitCConstInit::visit(constp);
-        } else {
-            iterateConst(nodep);
+
+    void emitConsArray(AstConsArray* nodep) {
+        const AstUnpackArrayDType* const dtypep
+            = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
+        const uint64_t size = dtypep->elementsConst();
+        uint32_t tabMod = tabModulus(dtypep->subDTypep());
+        if (nodep->defaultp() && !VN_IS(nodep->defaultp(), Const)) tabMod = 1;
+        for (const AstConsArrayItem* itemp = nodep->itemsp(); itemp;
+             itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+            if (!VN_IS(itemp->valuep(), Const)) tabMod = 1;
         }
+        ofp()->putsNoTracking("{");
+        puts("\n");
+        for (uint64_t n = 0; n < size; ++n) {
+            if (n) puts((n % tabMod) ? ", " : ",\n");
+            emitValue(nodep->valuep(n));
+        }
+        puts("\n");
+        ofp()->putsNoTracking("}");
     }
 
-protected:
-    // METHODS
-    // Emit the initializer of a definition, for direct initialization: 'type name{...}'
-    void emitDirectInit(AstNode* valuep) {
-        if (VN_IS(valuep, ConsArray) || VN_IS(valuep, ConsAssoc) || VN_IS(valuep, ConsWildcard)
-            || (VN_IS(valuep, Const) && valuep->isWide())) {
-            iterateInit(valuep);  // Already a braced initializer list
-        } else {
-            puts("{");
-            iterateInit(valuep);
-            puts("}");
-        }
-    }
-
+    // 'size, default, {{key, value}, ...}', where the size and default are optional, or nothing
+    // if empty
     template <typename T_Item>
-    void emitConsKeyedItems(T_Item* itemsp) {
-        // Braced list of '{key, value}' pairs
+    void emitKeyedConsItems(AstNodeExpr* sizep, AstNodeExpr* defaultp, T_Item* itemsp) {
+        if (!sizep && !defaultp && !itemsp) return;
+        puts("\n");
+        for (AstNodeExpr* const valuep : {sizep, defaultp}) {
+            if (!valuep) continue;
+            emitValue(valuep);
+            puts(",\n");
+        }
         puts("{");
         for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
             if (itemp != itemsp) puts(",");
             puts("\n{");
-            // std::pair's constructor can't deduce a type from a braced list, so give wide keys
-            // their type, otherwise converting a non-constant value would be narrowing
-            AstNodeExpr* const keyp = itemp->keyp();
-            if (VN_IS(keyp, Const) && keyp->isWide()) {
-                puts(keyp->dtypep()->cType("", false, false));
-            }
-            iterateInit(keyp);
+            emitValue(itemp->keyp());
             puts(", ");
-            iterateInit(itemp->valuep());
+            emitValue(itemp->valuep());
             puts("}");
         }
         puts("\n}");
+        puts("\n");
     }
 
+    // The items, 'tabMod' per line if all are constants, otherwise one per line
     template <typename T_Item>
-    void emitConsUnkeyedItems(T_Item* itemsp) {
-        puts("{");
+    void emitUnkeyedConsItems(T_Item* itemsp, uint32_t tabMod) {
+        if (!itemsp) return;
         for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
-            if (itemp != itemsp) puts(",");
-            puts("\n");
-            AstNodeExpr* const valuep = itemp->valuep();
-            // The variadic constructor can't deduce a type from a braced list, so give unpacked
-            // array values their type
-            if (VN_IS(valuep, ConsArray)) puts(valuep->dtypep()->cType("", false, false));
-            iterateInit(valuep);
+            if (!VN_IS(itemp->valuep(), Const)) tabMod = 1;
         }
-        puts("\n}");
-    }
-
-    template <typename T_Cons>
-    void emitConsAssoc(T_Cons* nodep) {
-        // '{default, {items}}', '{{items}}', or '{}' if empty
-        if (!nodep->defaultp() && !nodep->itemsp()) {
-            puts("{}");
-            return;
-        }
-        puts("{\n");
-        if (AstNodeExpr* const defaultp = nodep->defaultp()) {
-            iterateInit(defaultp);
-            puts(",\n");
-        }
-        emitConsKeyedItems(nodep->itemsp());
-        puts("\n}");
-    }
-
-    // VISITORS
-    void visit(AstConsArray* nodep) override {
-        VL_RESTORER(m_unpackedWord);
-        const AstUnpackArrayDType* const dtypep
-            = VN_AS(nodep->dtypep()->skipRefp(), UnpackArrayDType);
-        const uint64_t size = dtypep->elementsConst();
-        const uint32_t tabMod = tabModulus(dtypep->subDTypep());
-        // Note the double {{ initializer. The first { starts the initializer of the
-        // VlUnpacked, and the second starts the initializer of m_storage within the
-        // VlUnpacked.
-        puts("{");
-        ofp()->putsNoTracking("{");
         puts("\n");
-        for (uint64_t n = 0; n < size; ++n) {
-            m_unpackedWord = n;
+        uint64_t n = 0;
+        for (T_Item* itemp = itemsp; itemp; itemp = AstNode::as<T_Item>(itemp->nextp())) {
             if (n) puts((n % tabMod) ? ", " : ",\n");
-            AstNode* const itemp = nodep->valuep(n);
-            UASSERT_OBJ(itemp, nodep, "Missing array init element");
-            iterateInit(itemp);
+            emitValue(itemp->valuep());
+            ++n;
         }
         puts("\n");
-        puts("}");
-        ofp()->putsNoTracking("}");
     }
 
-    void visit(AstConsAssoc* nodep) override { emitConsAssoc(nodep); }
-    void visit(AstConsWildcard* nodep) override { emitConsAssoc(nodep); }
-    void visit(AstConsDynArray* nodep) override {
-        if (!nodep->sizep()) {
-            emitConsUnkeyedItems(nodep->itemsp());
+    // Emit a value
+    void emitValue(AstNodeExpr* nodep) {
+        // Either a value constructor
+        if (AstNodeCons* const consp = VN_CAST(nodep, NodeCons)) {
+            emitValCons(consp);
             return;
         }
-        puts("{\n");
-        iterateInit(nodep->sizep());
-        puts(",\n");
-        if (nodep->defaultp()) {
-            iterateInit(nodep->defaultp());
-            puts(",\n");
+        // Or a constant
+        if (const AstConst* const constp = VN_CAST(nodep, Const)) {
+            const V3Number& num = constp->num();
+            UASSERT_OBJ(!num.isFourState(), constp, "4-state value in emitted constant");
+            // A narrow constant is a literal, which converts implicitly wherever a value is used
+            // (This also covers string, double and null, which don't need type prefix)
+            if (!constp->isWide()) {
+                putns(constp, num.emitC());
+                return;
+            }
+            // Otherwise need the type prefix (naked braced lists cannot be deduced by templates)
+            putnbs(constp, constp->dtypep()->cType("", false, false));
+            emitInitializer(nodep);
+            return;
         }
-        emitConsKeyedItems(nodep->itemsp());
-        puts("\n}");
+        // Or an arbitrary expression, emitted via the derived visitor
+        iterateConst(nodep);
     }
-    void visit(AstConsQueue* nodep) override { emitConsUnkeyedItems(nodep->itemsp()); }
-    void visit(AstConsStruct* nodep) override { emitConsUnkeyedItems(nodep->itemsp()); }
 
-    void visit(AstNodeConsItem* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Handled by its AstNodeCons");
-    }  // LCOV_EXCL_STOP
-
-    void visit(AstConst* nodep) override {
-        const V3Number& num = nodep->num();
-        UASSERT_OBJ(!num.isFourState(), nodep, "4-state value in constant pool");
-        if (!nodep->isWide()) {
-            putns(nodep, num.emitC());
+    void emitInitializerBody(AstNodeExpr* nodep) {
+        if (AstConsArray* const arrayp = VN_CAST(nodep, ConsArray)) {
+            emitConsArray(arrayp);
             return;
         }
-        // Wide values are emitted as a braced initializer list of the words, without the
-        // VlWide type. Note the double {{ initializer. The first { starts the initializer of
-        // the VlWide, and the second starts the initializer of m_storage within the VlWide.
-        const int words = nodep->widthWords();
+        if (AstConsAssoc* const assocp = VN_CAST(nodep, ConsAssoc)) {
+            emitKeyedConsItems(nullptr, assocp->defaultp(), assocp->itemsp());
+            return;
+        }
+        if (AstConsWildcard* const wildp = VN_CAST(nodep, ConsWildcard)) {
+            emitKeyedConsItems(nullptr, wildp->defaultp(), wildp->itemsp());
+            return;
+        }
+        AstConsDynArray* const dynp = VN_CAST(nodep, ConsDynArray);
+        if (dynp && dynp->sizep()) {
+            emitKeyedConsItems(dynp->sizep(), dynp->defaultp(), dynp->itemsp());
+            return;
+        }
+        if (dynp) {
+            emitUnkeyedConsItems(dynp->itemsp(),
+                                 tabModulus(dynp->dtypep()->skipRefp()->subDTypep()));
+            return;
+        }
+        if (AstConsQueue* const queuep = VN_CAST(nodep, ConsQueue)) {
+            emitUnkeyedConsItems(queuep->itemsp(),
+                                 tabModulus(queuep->dtypep()->skipRefp()->subDTypep()));
+            return;
+        }
+        if (AstConsStruct* const structp = VN_CAST(nodep, ConsStruct)) {
+            emitUnkeyedConsItems(structp->itemsp(), 1);  // Members of mixed types
+            return;
+        }
+        if (VN_IS(nodep, Unbounded)) {
+            // A public parameter's '$', which is only special during elaboration, so use zero
+            puts("0");
+            return;
+        }
+        if (const AstConst* const constp = VN_CAST(nodep, Const)) {
+            const V3Number& num = constp->num();
+            UASSERT_OBJ(!num.isFourState(), constp, "4-state value in emitted constant");
+            if (!constp->isWide()) {
+                puts(num.emitC());
+                return;
+            }
+
+            ofp()->putsNoTracking("{");  // The initializer of m_storage within the VlWide
+            const int words = constp->widthWords();
+            const int tabMod = 4;
+            if (words > tabMod) puts("\n");
+            for (int n = 0; n < words; ++n) {
+                if (n) puts((n % tabMod) ? ", " : ",\n");
+                ofp()->printf("0x%08" PRIx32, num.edataWord(n));
+            }
+            if (words > tabMod) puts("\n");
+            ofp()->putsNoTracking("}");
+            return;
+        }
+        nodep->v3fatalSrc("Unknown node type in emitInitializerBody: " << nodep->prettyTypeName());
+    }
+
+    // Emit the braced initializer for the given value '{...}'
+    void emitInitializer(AstNodeExpr* nodep) {
         putns(nodep, "{");
-        ofp()->putsNoTracking("{");
-        if (words > 4) puts("\n");
-        for (int n = 0; n < words; ++n) {
-            if (n) puts((n % 4) ? ", " : ",\n");
-            ofp()->printf("0x%08" PRIx32, num.edataWord(n));
-        }
-        if (words > 4) puts("\n");
+        emitInitializerBody(nodep);
         puts("}");
-        ofp()->putsNoTracking("}");
-    }
-    void visit(AstUnbounded* nodep) override {
-        // e.g. when emitting a public parameter's "$" value
-        // But Unbounded is only special during elaboration, so just use zero
-        putns(nodep, "0");
     }
 
-    // Default
-    void visit(AstNode* nodep) override {  // LCOV_EXCL_START
-        nodep->v3fatalSrc("Unknown node type reached EmitCConstInit: " << nodep->prettyTypeName());
-    }  // LCOV_EXCL_STOP
+protected:
+    // Emit a C++ value constructor: 'Type{...}'
+    void emitValCons(AstNodeCons* nodep) {
+        putnbs(nodep, nodep->dtypep()->cType("", false, false));
+        emitInitializer(nodep);
+    }
+
+    // Emit the C++ variable definition 'Type name{...}'
+    void emitVarDefn(const AstVar* varp) {
+        const std::string name = varp->constPoolEntry()
+                                     ? EmitCUtil::constPoolName(varp)
+                                     : EmitCUtil::prefixNameProtect(EmitCParentModule::get(varp))
+                                           + "::" + varp->nameProtect();
+        putnbs(varp, varp->dtypep()->cType(name, false, false));
+        emitInitializer(VN_AS(varp->valuep(), NodeExpr));
+    }
 };

@@ -745,8 +745,8 @@ class CaseVisitor final : public VNVisitor {
         // Create the lookup table reference, in the constant pool unless using an inline table
         AstNodeExpr* const tableRefp = [&]() -> AstNodeExpr* {
             if (isTinyTable) return tablep;
-            AstVarRef* const refp = V3ConstPool::findConst(tablep);
-            VL_DO_DANGLING(tablep->deleteTree(), tablep);  // findConst clones
+            AstVarRef* const refp = V3ConstPool::find(tablep);
+            VL_DO_DANGLING(tablep->deleteTree(), tablep);  // V3ConstPool::find clones
             return refp;
         }();
 
@@ -856,8 +856,8 @@ class CaseVisitor final : public VNVisitor {
         }
 
         // Create the tables
-        AstVarRef* const matchRefp = V3ConstPool::findConst(matchp);
-        AstVarRef* const tableRefp = V3ConstPool::findTable(tablep);
+        AstVarRef* const matchRefp = V3ConstPool::find(matchp);
+        AstVarRef* const tableRefp = V3ConstPool::find(tablep);
         VL_DO_DANGLING(matchp->deleteTree(), matchp);
         VL_DO_DANGLING(tablep->deleteTree(), tablep);
 

@@ -4525,8 +4525,8 @@ class RandomizeVisitor final : public VNVisitor {
             consp->valuep(index++, vconstp->cloneTree(false));
         }
         // Share identical tables via the constant pool
-        AstVarRef* const refp = V3ConstPool::findTable(consp);
-        VL_DO_DANGLING(consp->deleteTree(), consp);  // V3ConstPool::findTable clones it
+        AstVarRef* const refp = V3ConstPool::find(consp);
+        VL_DO_DANGLING(consp->deleteTree(), consp);  // V3ConstPool::find clones it
         pushDeletep(refp);  // Deleted with the visitor - always cloned
         nodep->user2p(refp);
         return refp->cloneTree(false);
