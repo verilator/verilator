@@ -140,9 +140,10 @@ module t;
     `checkd(vif.get_out_data().flag, exp_out.flag);
     `checkd(vif.get_out_data().value, exp_out.value);
 
-    // Sender: clocking outputs of in_ch reach the DUT inputs
+    // Sender: clocking outputs of in_ch reach the DUT inputs. The #1step output
+    // skew applies the drive just after the clock edge, so check half a cycle later
     dut_i.harness.in_ch.drv.drive(exp_in);
-    #1;
+    @(negedge clk);
     `checkd(vif.get_in_valid(), 1'b1);
     `checkd(seen_valid, 1'b1);
     `checkd(seen_data.flag, exp_in.flag);
