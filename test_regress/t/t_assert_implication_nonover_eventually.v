@@ -60,10 +60,14 @@ module t (
     end
 
   // b2 only in a2's own cycle: |-> passes, |=> starts one cycle later and never passes
-  // (it stays unresolved until the end of simulation, after the checks)
+  // (it stays unresolved until the end of simulation, after the checks, and then fails
+  // once: the .py checks the message)
   int pass2_non = 0, pass2_over = 0, fail2_non = 0, fail2_over = 0;
   assert property (@(posedge clk) a2 |=> s_eventually b2) pass2_non = pass2_non + 1;
-  else fail2_non = fail2_non + 1;
+  else begin
+    fail2_non = fail2_non + 1;
+    $write("fail2_non=%0d at the end of simulation\n", fail2_non);
+  end
   assert property (@(posedge clk) a2 |-> s_eventually b2) pass2_over = pass2_over + 1;
   else fail2_over = fail2_over + 1;
   always @(posedge clk)
@@ -89,6 +93,29 @@ module t (
       `checkd(fail_chain0, 0);
     end
 
+  // Procedural assertions, clocked by their always block, stay on V3AssertPre
+  int pass_proc = 0, pass_proc_rep = 0, fail_proc = 0, fail_proc_rep = 0;
+  always @(posedge clk) begin
+    assert property (a1 |=> s_eventually b1) pass_proc = pass_proc + 1;
+    else fail_proc = fail_proc + 1;
+    assert property (a1 [* 1] |=> s_eventually b1) pass_proc_rep = pass_proc_rep + 1;
+    else fail_proc_rep = fail_proc_rep + 1;
+  end
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkd(pass_proc, 1);
+      `checkd(pass_proc_rep, 1);
+      `checkd(fail_proc, 0);
+      `checkd(fail_proc_rep, 0);
+    end
+
+  sub_default_disable sub (
+      .clk(clk),
+      .cyc(cyc),
+      .a1(a1),
+      .b1(b1)
+  );
+
   int cov_non = 0, cov_over = 0;
   cover property (@(posedge clk) a1 |=> s_eventually b1) cov_non = cov_non + 1;
   cover property (@(posedge clk) a1 |-> s_eventually b1) cov_over = cov_over + 1;
@@ -96,5 +123,26 @@ module t (
     if (cyc == 15) begin
       `checkd(cov_non, 1);
       `checkd(cov_over, 1);
+    end
+endmodule
+
+// A procedural assertion under a default disable iff stays on V3AssertPre
+module sub_default_disable (
+    input clk,
+    input int cyc,
+    input logic a1,
+    input logic b1
+);
+  logic rst = 0;
+  default disable iff (rst);
+  int pass_proc = 0, fail_proc = 0;
+  always @(posedge clk) begin
+    assert property (a1 |=> s_eventually b1) pass_proc = pass_proc + 1;
+    else fail_proc = fail_proc + 1;
+  end
+  always @(posedge clk)
+    if (cyc == 15) begin
+      `checkd(pass_proc, 1);
+      `checkd(fail_proc, 0);
     end
 endmodule

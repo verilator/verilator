@@ -31,11 +31,11 @@
                                                            : ... Supported: s_eventually as the consequent of |-> or |=>
    26 |   assert property (@(posedge clk) a #=# s_eventually b);
       |                                     ^~~
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:27:20: Unsupported: disable iff with s_eventually after a non-overlapped implication
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:27:20: Unsupported: s_eventually with disable iff in a multi-cycle property
                                                            : ... note: In instance 't'
    27 |   assert property (@(posedge clk) disable iff (c) a |=> s_eventually b);
       |                    ^
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:47:20: Unsupported: disable iff with s_eventually after a non-overlapped implication
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:47:20: Unsupported: s_eventually with disable iff in a multi-cycle property
                                                            : ... note: In instance 't.u_sub'
    47 |   assert property (@(posedge clk) a |=> s_eventually b);
       |                    ^
