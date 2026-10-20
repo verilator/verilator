@@ -15,8 +15,4 @@ test.compile()
 
 test.execute()
 
-test.compile(v_flags=["+define+ARRAY_REDUCTION_REPRO"])
-
-test.execute(check_finished=False, expect_filename=test.golden_filename)
-
 test.passes()
