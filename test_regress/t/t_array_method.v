@@ -208,6 +208,25 @@ module t;
     qv = q.map(x) with (x + x.index);
     `checkp(qv, "'{'h1, 'h3, 'h5, 'h7, 'h9}");
 
+    // Original reproducer for #8827.
+    begin
+      bit [3:0] q[$];
+      bit [3:0] v;
+      bit [3:0] p;
+      q = '{4'hF, 4'hF, 4'h1};
+      v = q.sum();
+      p = q.product();
+      `checkh(v, 4'd15);
+      `checkh(p, 4'd1);
+      `checkh(q.sum() == 4'd15, 1'b1);
+      `checkh(q.product() == 4'd1, 1'b1);
+      `checkh($bits(q.sum()), 32'd4);
+      `checkh($bits(q.product()), 32'd4);
+      `checkh($sformatf("sum=%0d v=%0d eq15=%0d bits=%0d", q.sum(), v,
+                       q.sum() == 4'd15, $bits(q.sum())) == "sum=15 v=15 eq15=1 bits=4", 1'b1);
+      `checkh($sformatf("product=%0d p=%0d", q.product(), p) == "product=1 p=1", 1'b1);
+    end
+
     g_reduction[0].run();
     g_reduction[1].run();
     g_reduction[2].run();
