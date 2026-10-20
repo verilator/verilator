@@ -725,21 +725,24 @@ PLI_INT32 startOfSimulation(p_cb_data) {
 
 }  // namespace
 
+// An impure 1, which a cone can't be rebuilt over
+extern "C" int dpiOne() { return 1; }
+
 // Called from an initial block: each read is from the same eval, after its input moved
-void midEvalRead(int src) {
+extern "C" void midEvalRead(int src) {
     const uint32_t got = get("t.mid_c");
     std::printf("mid-eval t.mid_c 0x%02x\n", got);
     check("t.mid_c mid-eval", got, (static_cast<uint32_t>(src) + 1) & 0xff);
 }
 
 // Called at each rising edge: the cone reads its source as the eval sees it
-void midEvalProbe() {
+extern "C" void midEvalProbe() {
     ++s_probes;
     check("t.prb_c mid-eval", get("t.prb_c"), get("t.prb_s") ^ 0x3c);
 }
 
 // Called from an initial block: the eval itself consumes the put
-void midEvalPut(const char* name, int v) { put(name, static_cast<uint32_t>(v)); }
+extern "C" void midEvalPut(const char* name, int v) { put(name, static_cast<uint32_t>(v)); }
 
 #endif
 

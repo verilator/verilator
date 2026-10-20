@@ -107,8 +107,9 @@ module sub_fy (
   /* verilator lint_on UNOPTFLAT */
   assign cyc_p = cyc_q ^ r;
   assign cyc_q = {cyc_p[3:0], 4'h0};
+  import "DPI-C" function int dpiOne();
   logic [7:0] imp_c;
-  assign imp_c = r ^ 8'($c(1));
+  assign imp_c = r ^ 8'(dpiOne());
 endmodule
 
 // 'o' is a port, but only a temporary of the block computing 'mix'
@@ -722,8 +723,9 @@ module t (
 
   // A comb signal kept in storage, as its impure driver can't be rebuilt, read from a flop and
   // sampled by one
+  import "DPI-C" function int dpiOne();
   logic [7:0] ret_c, ret_q;
-  always_comb ret_c = k_q ^ 8'(8'h5a * $c(1));
+  always_comb ret_c = k_q ^ 8'(8'h5a * dpiOne());
   always_ff @(posedge clk) ret_q <= ret_c;
 
   // A cone read twice from one eval, its input moved between the reads
@@ -732,12 +734,14 @@ module t (
   // A cone read mid-eval, its source put between evals
   logic [7:0] prb_s, prb_c;
   assign prb_c = prb_s ^ 8'h3c;
-  always @(posedge clk) $c("extern void midEvalProbe(); midEvalProbe();");
+  import "DPI-C" context function void midEvalProbe();
+  import "DPI-C" context function void midEvalRead(int src);
+  always @(posedge clk) midEvalProbe();
   initial begin
     mid_s = 8'h10;
-    $c("extern void midEvalRead(int); midEvalRead(", mid_s, ");");
+    midEvalRead(int'(mid_s));
     mid_s = 8'h20;
-    $c("extern void midEvalRead(int); midEvalRead(", mid_s, ");");
+    midEvalRead(int'(mid_s));
   end
 
   // A cone nested past _complimit's --comp-limit-blocks, over a function's temporaries
@@ -1282,19 +1286,20 @@ module lz_order (
   // A top output's copy, which must not make f continuously assigned
   assign fo = f;
   // Put mid-eval by the initial block, which reads it back
+  import "DPI-C" context function void midEvalPut(string name, int v);
   logic [7:0] mid, mid_seen;
   initial begin
     mid = 8'h00;
-    $c("extern void midEvalPut(const char*, int); midEvalPut(\"t.u_po.mid\", 0x5b);");
+    midEvalPut("t.u_po.mid", 'h5b);
     mid_seen = mid;
   end
   // A put between two reads of the same condition reaches the second
   logic mcnd;
   logic [7:0] mc_a, mc_b;
   initial begin
-    $c("extern void midEvalPut(const char*, int); midEvalPut(\"t.u_po.mcnd\", 1);");
+    midEvalPut("t.u_po.mcnd", 1);
     mc_a = mcnd ? 8'h01 : 8'h02;
-    $c("extern void midEvalPut(const char*, int); midEvalPut(\"t.u_po.mcnd\", 0);");
+    midEvalPut("t.u_po.mcnd", 0);
     mc_b = mcnd ? 8'h03 : 8'h04;
   end
   // Read by a DPI export, which pins its storage
