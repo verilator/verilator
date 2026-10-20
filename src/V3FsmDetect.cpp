@@ -917,12 +917,6 @@ class FsmDetectVisitor final : public VNVisitor {
             const AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
             return lhsp && lhsp->varp()->isCoverageTrace();
         }
-        // Ignore if statements containing only instrumentation after V3Const
-        // optimizations.
-        if (AstIf* const ifp = VN_CAST(nodep, If)) {
-            return !skipLeadingIgnorableStmt(ifp->thensp())
-                   && !skipLeadingIgnorableStmt(ifp->elsesp());
-        }
         return false;
     }
 
