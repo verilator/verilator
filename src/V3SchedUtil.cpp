@@ -105,24 +105,16 @@ static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     return subFuncp;
 };
 
-// Pass the arguments of 'ofuncp' through to the sub-function called by 'callp'
-static void splitCheckPassArgs(AstCFunc* ofuncp, AstCCall* callp,
-                               const std::unordered_map<const AstVar*, AstVarScope*>& argVscps) {
-    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
-        UASSERT_OBJ(argp->direction() == VDirection::CONSTREF
-                        || argp->direction() == VDirection::REF,
-                    argp, "Unexpected direction");
-        const VAccess access = argp->isRef() ? VAccess::READWRITE : VAccess::READ;
-        callp->addArgsp(new AstVarRef{callp->fileline(), argVscps.at(argp), access});
-    }
-}
-
 void splitCheckFinishSubFunc(AstCFunc* ofuncp, AstCFunc* subFuncp,
                              const std::unordered_map<const AstVar*, AstVarScope*>& argVscps) {
     FileLine* const flp = subFuncp->fileline();
     AstCCall* const callp = new AstCCall{subFuncp->fileline(), subFuncp};
     callp->dtypeSetVoid();
-    splitCheckPassArgs(ofuncp, callp, argVscps);
+    // Pass arguments through to subfunction
+    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+        UASSERT_OBJ(argp->direction() == VDirection::CONSTREF, argp, "Unexpected direction");
+        callp->addArgsp(new AstVarRef{flp, argVscps.at(argp), VAccess::READ});
+    }
 
     bool containsAwait = false;
     subFuncp->foreach([&](AstNode* nodep) {
@@ -179,178 +171,33 @@ static std::vector<bool> splitCheckBreakable(const AstCFunc* ofuncp) {
     return breakable;
 }
 
-// Whether statement 'stmtp' can be moved into another function: it is not a declaration, and
-// it does not jump out of itself, or test the condition of a loop around it
-static bool splitCheckMovable(AstNode* stmtp) {
-    if (VN_IS(stmtp, Var)) return false;
-    std::unordered_set<const AstNode*> innerps;  // Jump blocks and loops inside 'stmtp'
-    stmtp->foreach([&](AstNode* nodep) {
-        if (VN_IS(nodep, JumpBlock) || VN_IS(nodep, Loop)) innerps.emplace(nodep);
-    });
-    return !stmtp->exists([&](AstNode* nodep) {
-        if (const AstJumpGo* const gop = VN_CAST(nodep, JumpGo)) {
-            return !innerps.count(gop->blockp());
-        }
-        if (const AstLoopTest* const testp = VN_CAST(nodep, LoopTest)) {
-            return !innerps.count(testp->loopp());
-        }
-        return VN_IS(nodep, CReturn);
-    });
-}
-
-// Move the statements 'firstp' to 'lastp' of a statement list in 'ofuncp' into a new
-// sub-function, and call it in their place. Local variables of 'ofuncp' that the statements
-// reference are passed by reference, as they may be live around them. Needs user3 (see
-// splitCheck).
-static AstCFunc*
-splitCheckOutlineStmts(AstCFunc* ofuncp, AstNode* firstp, AstNode* lastp,
-                       const std::unordered_map<const AstVar*, AstVarScope*>& argVscps) {
-    FileLine* const flp = firstp->fileline();
-    VNRelinker relinker;
-    firstp->unlinkFrBackWithNext(&relinker);
-    AstNode* const restp = lastp->nextp();
-    if (restp) restp->unlinkFrBackWithNext();
-
-    AstCFunc* const subFuncp = splitCheckCreateNewSubFunc(ofuncp);
-    subFuncp->addStmtsp(firstp);
-    AstCCall* const callp = new AstCCall{flp, subFuncp};
-    callp->dtypeSetVoid();
-    splitCheckPassArgs(ofuncp, callp, argVscps);
-    std::unordered_map<const AstVar*, AstVarScope*> localVscps;  // Local -> argument passing it
-    bool containsAwait = false;
-    subFuncp->foreach([&](AstNode* nodep) {
-        if (VN_IS(nodep, CAwait)) containsAwait = true;
-        AstVarRef* const refp = VN_CAST(nodep, VarRef);
-        if (!refp) return;
-        AstVar* const varp = refp->varp();
-        // Arguments of 'ofuncp' are passed through, see splitCheckCreateNewSubFunc
-        AstVarScope* vscp = VN_AS(varp->user3p(), VarScope);
-        if (!vscp && varp->isFuncLocal()) {
-            const auto pair = localVscps.emplace(varp, nullptr);
-            if (pair.second) {
-                pair.first->second
-                    = newArgument(subFuncp, varp->dtypep(), varp->name(), VDirection::REF);
-                callp->addArgsp(new AstVarRef{flp, refp->varScopep(), VAccess::READWRITE});
-            }
-            vscp = pair.first->second;
-        }
-        if (vscp) {
-            refp->varp(vscp->varp());
-            refp->varScopep(vscp);
-        }
-    });
-
-    AstNode* stmtp;
-    if (containsAwait) {
-        subFuncp->rtnType("VlCoroutine");
-        stmtp = new AstCAwait{flp, callp};
-    } else {
-        stmtp = callp->makeStmt();
-    }
-    if (restp) stmtp->addNext(restp);
-    relinker.relink(stmtp);
-    V3Stats::addStatSum("Scheduling, outlined coroutine statements", 1);
-    return subFuncp;
-}
-
-// Outline parts of 'stmtp', a statement of 'ofuncp' of 'size' nodes, into sub-functions until
-// it is no larger than --output-split-cfuncs, moving the largest runs of movable statements in
-// the statement lists directly under it first, then the inside of statements that could not
-// move. Needs user3 (see splitCheck).
-static void splitCheckOutline(AstCFunc* ofuncp, AstNode* stmtp, size_t size,
-                              const std::unordered_map<const AstVar*, AstVarScope*>& argVscps,
-                              std::vector<AstCFunc*>& newFuncpsr) {
-    const size_t limit = static_cast<size_t>(v3Global.opt.outputSplitCFuncs());
-    std::vector<AstNode*> listps;  // Statement lists directly under 'stmtp'
-    if (AstNodeIf* const ifp = VN_CAST(stmtp, NodeIf)) {
-        listps = {ifp->thensp(), ifp->elsesp()};
-    } else if (AstLoop* const loopp = VN_CAST(stmtp, Loop)) {
-        listps = {loopp->stmtsp()};
-    } else if (AstNodeBlock* const blockp = VN_CAST(stmtp, NodeBlock)) {
-        listps = {blockp->stmtsp()};
-    } else if (AstJumpBlock* const jblockp = VN_CAST(stmtp, JumpBlock)) {
-        listps = {jblockp->stmtsp()};
-    }
-
-    struct Run final {
-        AstNode* m_firstp;  // First statement of the run
-        AstNode* m_lastp;  // Last statement of the run
-        size_t m_size;  // Node count of the statements
-    };
-    std::vector<Run> runs;
-    std::vector<std::pair<AstNode*, size_t>> unmovedps;  // Statements that cannot move, sizes
-    for (AstNode* const listp : listps) {
-        Run run{nullptr, nullptr, 0};
-        for (AstNode* nodep = listp; nodep; nodep = nodep->nextp()) {
-            const size_t nodeSize = static_cast<size_t>(nodep->nodeCount());
-            if (splitCheckMovable(nodep)) {
-                if (!run.m_firstp) run.m_firstp = nodep;
-                run.m_lastp = nodep;
-                run.m_size += nodeSize;
-                continue;
-            }
-            unmovedps.emplace_back(nodep, nodeSize);
-            if (run.m_firstp) runs.push_back(run);
-            run = Run{nullptr, nullptr, 0};
-        }
-        if (run.m_firstp) runs.push_back(run);
-    }
-    std::stable_sort(runs.begin(), runs.end(),
-                     [](const Run& a, const Run& b) { return a.m_size > b.m_size; });
-    for (const Run& run : runs) {
-        if (size <= limit) break;
-        newFuncpsr.push_back(splitCheckOutlineStmts(ofuncp, run.m_firstp, run.m_lastp, argVscps));
-        size -= run.m_size;
-    }
-    for (const auto& pair : unmovedps) {
-        if (size <= limit) break;
-        if (pair.second <= limit) continue;
-        splitCheckOutline(ofuncp, pair.first, pair.second, argVscps, newFuncpsr);
-        size -= pair.second - static_cast<size_t>(pair.first->nodeCount());
-    }
-}
-
-// Split large function according to --output-split-cfuncs, adding to 'newFuncpsr' the
-// sub-functions of outlined statements, which may still need splitting
-static void splitCheckOne(AstCFunc* const ofuncp, std::vector<AstCFunc*>& newFuncpsr) {
+// Split large function according to --output-split-cfuncs
+void splitCheck(AstCFunc* const ofuncp) {
     if (!ofuncp) return;
     UASSERT_OBJ(!ofuncp->varsp(), ofuncp, "Can't split function with local variables");
     if (!v3Global.opt.outputSplitCFuncs() || !ofuncp->stmtsp()) return;
     if (ofuncp->nodeCount() < v3Global.opt.outputSplitCFuncs()) return;
 
+    // Statement boundaries that would separate a local declaration from a reference to it
+    const std::vector<bool> breakable = splitCheckBreakable(ofuncp);
+
     // Need to find the AstVarScopes for the function arguments. They should be in the same Scope.
     std::unordered_map<const AstVar*, AstVarScope*> argVscps;
     for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
-        argVscps.emplace(argp, nullptr);
-    }
-    if (!argVscps.empty()) {
+        UASSERT_OBJ(argVscps.size() < 2, argp, "There should be at most 2 arguments, or O(n^2)");
+        bool found = false;
         for (AstVarScope *vscp = ofuncp->scopep()->varsp(), *nextp; vscp; vscp = nextp) {
             nextp = VN_AS(vscp->nextp(), VarScope);
-            const auto it = argVscps.find(vscp->varp());
-            if (it != argVscps.end()) it->second = vscp;
+            if (vscp->varp() != argp) continue;
+            argVscps[argp] = vscp;
+            found = true;
+            break;
         }
-    }
-    for (const auto& pair : argVscps) {
-        UASSERT_OBJ(pair.second, pair.first, "Can't find VarScope for function argument");
+        UASSERT_OBJ(found, argp, "Can't find VarScope for function argument");
     }
 
     // AstVar::user3p(): AstVarScope for function argument in clone
     const VNUser3InUse user3InUse;
-
-    // A statement larger than the limit cannot be split at the top level. A C++ compiler's
-    // time and memory grow much faster than the size of a coroutine, so outline parts of
-    // such statements into sub-functions, which are split in turn.
-    if (ofuncp->isCoroutine()) {
-        for (AstNode* nodep = ofuncp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            const size_t nodeSize = static_cast<size_t>(nodep->nodeCount());
-            if (nodeSize > static_cast<size_t>(v3Global.opt.outputSplitCFuncs())) {
-                splitCheckOutline(ofuncp, nodep, nodeSize, argVscps, newFuncpsr);
-            }
-        }
-    }
-
-    // Statement boundaries that would separate a local declaration from a reference to it
-    const std::vector<bool> breakable = splitCheckBreakable(ofuncp);
 
     size_t size = 0;
     AstCFunc* subFuncp = nullptr;
@@ -373,13 +220,6 @@ static void splitCheckOne(AstCFunc* const ofuncp, std::vector<AstCFunc*>& newFun
         subFuncp->addStmtsp(itemp);
     }
     if (subFuncp) splitCheckFinishSubFunc(ofuncp, subFuncp, argVscps);
-}
-
-// Split large function according to --output-split-cfuncs
-void splitCheck(AstCFunc* const ofuncp) {
-    std::vector<AstCFunc*> newFuncps;
-    splitCheckOne(ofuncp, newFuncps);
-    for (AstCFunc* const newFuncp : newFuncps) splitCheck(newFuncp);
 }
 
 }  // namespace util

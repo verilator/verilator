@@ -29,6 +29,39 @@ module t;
     end
   endtask
 
+  // A task that is not inlined is a coroutine of its own: the moved statements
+  // use its arguments and local variables, which are passed by reference
+  class Cls;
+    int total;
+    task run(input int n, const ref int lim, inout int acc);
+      automatic int loc = 0;
+      for (int i = 0; i < n; i++) begin
+        automatic int inner = i * 2;
+        if (i == 1) begin
+          @(posedge clk);
+          loc += inner;
+          acc += loc + lim;
+          if (acc > 1000) acc = 1000;
+          loc = loc * 3 + 1;
+          acc += loc % 7;
+          @(posedge clk);
+          acc += inner * lim;
+        end
+        else begin
+          #1;
+          acc += inner + n;
+          loc += lim;
+          if (loc > 50) loc -= 50;
+          if (loc > 3) @(posedge clk);  // Declares a variable in a moved statement
+          acc += loc * 2;
+          #1;
+          acc ^= i;
+        end
+      end
+      total = acc;
+    endtask
+  endclass
+
   initial begin
     automatic int acc = 0;  // Live across the case items and loop iterations
     automatic int last = 0;
@@ -114,6 +147,14 @@ module t;
     end
     `checkd(c, 2);
     `checkd(acc, 541);
+    begin
+      automatic Cls cls = new;
+      automatic int lim = 5;
+      acc = 0;
+      cls.run(4, lim, acc);
+      `checkd(acc, 168);
+      `checkd(cls.total, 168);
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end
