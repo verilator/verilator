@@ -1247,8 +1247,8 @@ class TaskVisitor final : public VNVisitor {
         if (!(nested && name.empty()) && !isDpiCIdentifier(name)) {
             portp->v3warn(E_UNSUPPORTED,
                           "Unsupported: DPI argument of unpacked structure type "
-                          "without a typedef name usable in C: '"
-                              << sdtypep->prettyDTypeName(true) << "'\n"
+                          "without a typedef name usable in C: "
+                              << sdtypep->prettyDTypeNameQ(true) << "\n"
                               << portp->warnMore()
                               << "... Suggest use a typedef with a C identifier name");
             return false;
@@ -1276,9 +1276,9 @@ class TaskVisitor final : public VNVisitor {
             } else if (!isScalar) {
                 portp->v3error("DPI argument " << portp->prettyNameQ()
                                                << " has unpacked structure member "
-                                               << itemp->prettyNameQ() << " of type '"
-                                               << itemp->subDTypep()->prettyDTypeName(true)
-                                               << "', which DPI does not allow"
+                                               << itemp->prettyNameQ() << " of type "
+                                               << itemp->subDTypep()->prettyDTypeNameQ(true)
+                                               << ", which DPI does not allow"
                                                << " (IEEE 1800-2023 35.5.6)");
                 return false;
             }
@@ -1446,9 +1446,9 @@ class TaskVisitor final : public VNVisitor {
             if (nodep->dpiImport() || nodep->dpiExport()) {
                 AstBasicDType* const bdtypep = portp->dtypep()->basicp();
                 if (!bdtypep) {
-                    portp->v3error("DPI function may not return type '"
-                                   << portp->dtypep()->prettyDTypeName(true)
-                                   << "' (IEEE 1800-2023 35.5.5)");
+                    portp->v3error("DPI function may not return type "
+                                   << portp->dtypep()->prettyDTypeNameQ(true)
+                                   << " (IEEE 1800-2023 35.5.5)");
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return nullptr;
                 }

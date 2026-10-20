@@ -15,7 +15,7 @@ typedef struct {
   int a;
   int b[2];
 } unit_t;
-import "DPI-C" function int i_unit(
+import "DPI-C" function int dpii_unit(
   input unit_t i,
   output unit_t o
 );
@@ -25,7 +25,7 @@ module t;
     unit_t i;
     unit_t o;
     i = '{a: 1, b: '{2, 3}};
-    `checkd(i_unit(i, o), 6);
+    `checkd(dpii_unit(i, o), 6);
     `checkd(o.a, 2);
     `checkd(o.b[0], 3);
     `checkd(o.b[1], 4);

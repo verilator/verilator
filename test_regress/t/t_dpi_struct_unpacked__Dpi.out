@@ -74,23 +74,23 @@ extern "C" {
 
     // DPI EXPORTS
     // DPI export at t/t_dpi_struct_unpacked.v:179:17
-    extern void e_array(const eval* i, eval* o);
+    extern void dpix_array(const eval* i, eval* o);
     // DPI export at t/t_dpi_struct_unpacked.v:171:17
-    extern void e_outer(const outer_t* i, outer_t* o, outer_t* io);
+    extern void dpix_outer(const outer_t* i, outer_t* o, outer_t* io);
 
     // DPI IMPORTS
+    // DPI import at t/t_dpi_struct_unpacked.v:77:32
+    extern void dpii_array(const inner_t* i, inner_t* o, inner_t* io);
+    // DPI import at t/t_dpi_struct_unpacked.v:67:23
+    extern int dpii_basic(const basic_t* i, basic_t* o, basic_t* io);
     // DPI import at t/t_dpi_struct_unpacked.v:82:40
-    extern void check_export(int n);
+    extern void dpii_check_export(int n);
     // DPI import at t/t_dpi_struct_unpacked.v:83:31
     extern int dpii_failure();
-    // DPI import at t/t_dpi_struct_unpacked.v:77:32
-    extern void i_array(const inner_t* i, inner_t* o, inner_t* io);
-    // DPI import at t/t_dpi_struct_unpacked.v:67:23
-    extern int i_basic(const basic_t* i, basic_t* o, basic_t* io);
     // DPI import at t/t_dpi_struct_unpacked.v:72:32
-    extern void i_outer(const outer_t* i, outer_t* o, outer_t* io);
+    extern void dpii_outer(const outer_t* i, outer_t* o, outer_t* io);
     // DPI import at t/t_dpi_struct_unpacked.v:232:31
-    extern int i_sub(const sub_t* i);
+    extern int dpii_sub(const sub_t* i);
 
 #ifdef __cplusplus
 }

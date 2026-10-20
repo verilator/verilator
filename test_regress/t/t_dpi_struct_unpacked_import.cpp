@@ -10,7 +10,7 @@
 
 #include VM_PREFIX_INCLUDE_DPI
 
-int i_unit(const unit_t* i, unit_t* o) {
+int dpii_unit(const unit_t* i, unit_t* o) {
     o->a = i->a + 1;
     for (int k = 0; k < 2; ++k) o->b[k] = i->b[k] + 1;
     return i->a + i->b[0] + i->b[1];

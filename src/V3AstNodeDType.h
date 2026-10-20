@@ -143,7 +143,7 @@ public:
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
-    string prettyDTypeNameQ() const { return "'" + prettyDTypeName(false) + "'"; }
+    string prettyDTypeNameQ(bool full = false) const { return "'" + prettyDTypeName(full) + "'"; }
     string stateDTypeName() const { return this->isFourstate() ? "(4-state)" : "(2-state)"; }
     //
     // Changing the width may confuse the data type resolution, so must clear

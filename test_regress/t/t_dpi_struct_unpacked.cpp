@@ -124,7 +124,7 @@ static void checkOuter(const outer_t* p, int n) {
     for (int k = 0; k < 2; ++k) checkInner(&p->inner[k], n + k);
 }
 
-int i_basic(const basic_t* i, basic_t* o, basic_t* io) {
+int dpii_basic(const basic_t* i, basic_t* o, basic_t* io) {
     static int n = 0;
     checkBasic(i, n);
     checkBasic(io, n + 1);
@@ -134,7 +134,7 @@ int i_basic(const basic_t* i, basic_t* o, basic_t* io) {
     return 0;
 }
 
-void i_outer(const outer_t* i, outer_t* o, outer_t* io) {
+void dpii_outer(const outer_t* i, outer_t* o, outer_t* io) {
     static int n = 0;
     checkOuter(i, n);
     checkOuter(io, n + 1);
@@ -144,7 +144,7 @@ void i_outer(const outer_t* i, outer_t* o, outer_t* io) {
 }
 
 // Unpacked arrays are C arrays of the elements, the lowest index first
-void i_array(const inner_t* i, inner_t* o, inner_t* io) {
+void dpii_array(const inner_t* i, inner_t* o, inner_t* io) {
     static int n = 0;
     for (int k = 0; k < 6; ++k) checkInner(&i[k], n + k);
     for (int k = 0; k < 2; ++k) checkInner(&io[k], n + 6 + k);
@@ -153,20 +153,20 @@ void i_array(const inner_t* i, inner_t* o, inner_t* io) {
     n += 10;
 }
 
-void check_export(int n) {
+void dpii_check_export(int n) {
     outer_t i;
     outer_t o;
     outer_t io;
     fillOuter(&i, n);
     fillOuter(&io, n + 1);
-    e_outer(&i, &o, &io);
+    dpix_outer(&i, &o, &io);
     checkOuter(&o, n + 2);
     checkOuter(&io, n + 3);
 
     const eval ai[2] = {{n}, {n + 1}};
     eval ao[2];
-    e_array(ai, ao);
+    dpix_array(ai, ao);
     for (int k = 0; k < 2; ++k) TEST_CHECK_EQ(ao[k].x, n + k + 1);
 }
 
-int i_sub(const sub_t* i) { return i->w + 1; }
+int dpii_sub(const sub_t* i) { return i->w + 1; }

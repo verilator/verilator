@@ -64,25 +64,25 @@ module t;
     inner_t inner[2];
   } outer_t;
 
-  import "DPI-C" task i_basic(
+  import "DPI-C" task dpii_basic(
     input basic_t i,
     output basic_t o,
     inout basic_t io
   );
-  import "DPI-C" function void i_outer(
+  import "DPI-C" function void dpii_outer(
     input outer_t i,
     output outer_t o,
     inout outer_t io
   );
-  import "DPI-C" function void i_array(
+  import "DPI-C" function void dpii_array(
     input inner_t i[2][1:3],
     output inner_t o[3:1],
     inout inner_t io[0:1]
   );
-  import "DPI-C" context function void check_export(int n);
+  import "DPI-C" context function void dpii_check_export(int n);
   import "DPI-C" function int dpii_failure();
-  export "DPI-C" function e_outer;
-  export "DPI-C" function e_array;
+  export "DPI-C" function dpix_outer;
+  export "DPI-C" function dpix_array;
 
   // Named as a member of the model class, which declares the exports
   typedef struct {int x;} eval;
@@ -167,16 +167,16 @@ module t;
     for (int k = 0; k < 2; ++k) checkInner(p.inner[k], n + k);
   endfunction
 
-  int n_e_outer = 0;
-  function void e_outer(input outer_t i, output outer_t o, inout outer_t io);
-    checkOuter(i, n_e_outer);
-    checkOuter(io, n_e_outer + 1);
-    o = fillOuter(n_e_outer + 2);
-    io = fillOuter(n_e_outer + 3);
-    n_e_outer += 10;
+  int n_dpix_outer = 0;
+  function void dpix_outer(input outer_t i, output outer_t o, inout outer_t io);
+    checkOuter(i, n_dpix_outer);
+    checkOuter(io, n_dpix_outer + 1);
+    o = fillOuter(n_dpix_outer + 2);
+    io = fillOuter(n_dpix_outer + 3);
+    n_dpix_outer += 10;
   endfunction
 
-  function void e_array(input eval i[2], output eval o[2]);
+  function void dpix_array(input eval i[2], output eval o[2]);
     foreach (i[k]) o[k].x = i[k].x + 1;
   endfunction
 
@@ -189,7 +189,7 @@ module t;
         basic_t o;
         basic_t io;
         io = fillBasic(n + 1);
-        i_basic(fillBasic(n), o, io);
+        dpii_basic(fillBasic(n), o, io);
         checkBasic(o, n + 2);
         checkBasic(io, n + 3);
       end
@@ -197,7 +197,7 @@ module t;
         outer_t o;
         outer_t io;
         io = fillOuter(n + 1);
-        i_outer(fillOuter(n), o, io);
+        dpii_outer(fillOuter(n), o, io);
         checkOuter(o, n + 2);
         checkOuter(io, n + 3);
       end
@@ -209,13 +209,13 @@ module t;
           for (int b = 1; b <= 3; ++b) i[a][b] = fillInner(n + 3 * a + b - 1);
         end
         for (int k = 0; k < 2; ++k) io[k] = fillInner(n + 6 + k);
-        i_array(i, o, io);
+        dpii_array(i, o, io);
         for (int k = 1; k <= 3; ++k) checkInner(o[k], n + 7 + k);
         for (int k = 0; k < 2; ++k) checkInner(io[k], n + 11 + k);
       end
-      check_export(n);
+      dpii_check_export(n);
     end
-    `checkd(n_e_outer, 30);
+    `checkd(n_dpix_outer, 30);
     `checkd(u_sub1.f(), 2);
     `checkd(u_sub2.f(), 3);
     `checkd(dpii_failure(), 0);
@@ -229,9 +229,9 @@ module sub #(
     parameter int W = 0
 );
   typedef struct {int w;} sub_t;
-  import "DPI-C" function int i_sub(input sub_t i);
+  import "DPI-C" function int dpii_sub(input sub_t i);
   function automatic int f();
     sub_t s = '{w: W};
-    return i_sub(s);
+    return dpii_sub(s);
   endfunction
 endmodule

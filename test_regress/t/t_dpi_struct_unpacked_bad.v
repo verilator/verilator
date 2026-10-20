@@ -17,16 +17,16 @@ module t;
   typedef struct {event e;} event_t;
 
   // Members of types DPI does not allow
-  import "DPI-C" function void i_queue(input queue_t s);
-  import "DPI-C" function void i_union(input with_union_t s);
-  import "DPI-C" function void i_event(input event_t s);
+  import "DPI-C" function void dpii_queue(input queue_t s);
+  import "DPI-C" function void dpii_union(input with_union_t s);
+  import "DPI-C" function void dpii_event(input event_t s);
 
   initial begin
     queue_t q;
     with_union_t u;
     event_t e;
-    i_queue(q);
-    i_union(u);
-    i_event(e);
+    dpii_queue(q);
+    dpii_union(u);
+    dpii_event(e);
   end
 endmodule
