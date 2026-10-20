@@ -4514,6 +4514,7 @@ void AstVar::dump(std::ostream& str) const {
     if (vpiLazyComb() != VVpiLazyComb::NONE) str << " [VPICOMB=" << vpiLazyComb() << "]";
     if (isLazyShadowNet()) str << " [VPISHADOWNET]";
     if (lazyCopySrc()) str << " [VPICOPY=" << lazyCopySrc()->name() << "]";
+    if (lazyReconFuncp()) str << " [VPIRECON=" << lazyReconFuncp()->name() << "]";
     if (isReadByDpi()) str << " [DPIRD]";
     if (isWrittenByDpi()) str << " [DPIWR]";
     if (isInternal()) str << " [INTERNAL]";
