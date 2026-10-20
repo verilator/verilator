@@ -18,7 +18,8 @@ test.golden_filename = "t/t_vpi_drivers_lazy.out"
 test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
-                 "--binary --vpi-lazy --no-l2name -O0 -fno-const-before-dfg", test.pli_filename
+                 "--binary --vpi-lazy --no-l2name -O0 -fno-const-before-dfg",
+                 "-DT_VPI_DRIVERS_LAZY -CFLAGS -DT_VPI_DRIVERS_LAZY", test.pli_filename
              ])
 
 test.execute(all_run_flags=["+verilator+rand+reset+1"], expect_filename=test.golden_filename)

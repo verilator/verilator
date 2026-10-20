@@ -15,11 +15,12 @@
 #endif
 
 #include "TestCheck.h"
+#include "TestSimulator.h"
 #include "TestVpi.h"
 #include "svdpi.h"
 #include "vpi_user.h"
 
-#ifdef T_VPI_LAZY_SAVABLE
+#if defined(VERILATOR) && defined(T_VPI_LAZY_SAVABLE)
 #include "verilated_save.h"
 #include VM_PREFIX_INCLUDE
 extern VM_PREFIX* testVpiTopp;
@@ -56,14 +57,19 @@ void put(vpiHandle handle, uint32_t v, PLI_INT32 flags = vpiNoDelay) {
     s_vpi_value value{};
     value.format = vpiIntVal;
     value.value.integer = static_cast<PLI_INT32>(v);
-    vpi_put_value(handle, &value, nullptr, flags);
+    // Others reject a null time even for a zero-delay inertial put
+    s_vpi_time time{vpiSimTime, 0, 0, 0};
+    vpi_put_value(handle, &value, &time, flags);
 }
 void put(const std::string& name, uint32_t v, PLI_INT32 flags = vpiNoDelay) {
     put(find(name), v, flags);
 }
 
-// A top-level input
-void in(const char* port, uint32_t v) { put(std::string{"TOP."} + port, v); }
+// A top-level port, which Verilator alone roots at TOP
+std::string port(const char* name) {
+    return std::string{TestSimulator::is_verilator() ? "TOP." : "t."} + name;
+}
+void in(const char* name, uint32_t v) { put(port(name), v); }
 
 void check(const std::string& label, uint32_t got, uint32_t exp) {
     TEST_CHECK_EQ_LABEL(label, got, exp);
@@ -101,7 +107,7 @@ PLI_INT32 runStep(p_cb_data) {
     return 0;
 }
 
-#ifdef T_VPI_LAZY_SAVABLE
+#if defined(VERILATOR) && defined(T_VPI_LAZY_SAVABLE)
 const char* const s_savePath = VL_STRINGIFY(TEST_OBJ_DIR) "/saved.vltsv";
 
 void saveModel() {
@@ -192,6 +198,7 @@ std::string getStr(vpiHandle handle, PLI_INT32 format) {
 
 // The combinational refusal's text is printed in full once, then only the name it reports
 void reject(const std::string& name, uint32_t v, PLI_INT32 flags = vpiNoDelay) {
+#ifdef T_VPI_DRIVERS_LAZY
     static const std::string s_combMsg
         = "vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a "
           "public_flat_rw attribute to write ";
@@ -208,14 +215,17 @@ void reject(const std::string& name, uint32_t v, PLI_INT32 flags = vpiNoDelay) {
         std::printf("vpi_chk_error: %s\n", msg.c_str());
     }
     check(name, get(name), before);
+#endif
 }
 
 // A put into a masked signal writes the other bits and keeps the masked ones, silently
 void merge(const std::string& name, uint32_t v, uint32_t combMask) {
+#ifdef T_VPI_DRIVERS_LAZY
     const uint32_t before = get(name);
     put(name, v);
     TEST_CHECK_ERROR(false);
     check(name, get(name), (v & ~combMask) | (before & combMask));
+#endif
 }
 
 void putArray(const std::string& name, int index, const PLI_INT32* valsp, int num,
@@ -228,6 +238,7 @@ void putArray(const std::string& name, int index, const PLI_INT32* valsp, int nu
     TEST_CHECK_ERROR(expectError);
 }
 
+#ifdef T_VPI_DRIVERS_LAZY
 // Flip each bit in turn, restoring any taken put: 'W' where a put changes it, 'r' where not
 std::string writableBits(vpiHandle handle) {
     const int size = vpi_get(vpiSize, handle);
@@ -245,6 +256,7 @@ std::string writableBits(vpiHandle handle) {
     if (bits.find('W') == std::string::npos) return "r";
     return bits;
 }
+#endif
 
 std::string valueStr(vpiHandle handle) {
     switch (vpi_get(vpiType, handle)) {
@@ -272,6 +284,7 @@ void walk(vpiHandle scopep, const std::function<void(vpiHandle)>& fn) {
 
 std::string fullName(vpiHandle handle) { return vpi_get_str(vpiFullName, handle); }
 
+#ifdef T_VPI_DRIVERS_LAZY
 // Before the first eval a variable reads its reset value, all ones under
 // +verilator+rand+reset+1, whether stored or rebuilt on read; the golden lists the others
 void printResetValues() {
@@ -285,8 +298,9 @@ void printResetValues() {
             std::printf("reset %s %s\n", fullName(handle).c_str(), bin.c_str());
     });
 }
+#endif
 
-// The whole VPI-visible set, each row's value and writability
+// The whole VPI-visible set, each row's value and, under --vpi-lazy, writability
 void dumpRows() {
     std::vector<std::string> lines;
     walk(nullptr, [&lines](vpiHandle handle) {
@@ -298,7 +312,10 @@ void dumpRows() {
             std::printf("%%Error: compiler temporary is VPI-visible: %s\n", name.c_str());
             ++errors;
         }
-        lines.push_back(name + " " + valueStr(handle) + " " + writableBits(handle));
+        lines.push_back(name + " " + valueStr(handle));
+#ifdef T_VPI_DRIVERS_LAZY
+        lines.back() += " " + writableBits(handle);
+#endif
     });
     std::sort(lines.begin(), lines.end());
     for (const std::string& line : lines) std::printf("%s\n", line.c_str());
@@ -426,6 +443,7 @@ void script() {
         // The golden's writability map covers every row; these print the refusal
         for (const char* name : {"t.out_c", "t.cst_w", "t.w_ff", "t.u_px.i", "t.ib.q", "t.rbw_c"})
             reject(name, get(name) ^ 0x5b);
+#ifdef T_VPI_DRIVERS_LAZY
         {
             vpiHandle const mdp = vpi_handle_by_index(vpi_handle_by_index(find("t.mdp_c"), 0), 0);
             TEST_CHECK_NZ_LABEL("t.mdp_c[0][0]", mdp);
@@ -434,6 +452,7 @@ void script() {
             TEST_CHECK_ERROR(true);
             check("t.mdp_c[0][0]", get(mdp), before);
         }
+#endif
         // Each alias row reports its own metadata, not its canonical's, and reads the canonical
         for (const char* name : {"t.al_sw", "t.sib_bt", "t.ch1"}) {
             TEST_CHECK_EQ_LABEL(name, vpi_get(vpiSize, find(name)), 8);
@@ -446,7 +465,7 @@ void script() {
         check("t.al_sw", get("t.al_sw"), get("t.k_q"));
         check("t.sib_bt", get("t.sib_bt"), get("t.ch1"));
         // Undriven bits no read reaches hold a put; the driven ones stay the encoder's
-        s_dWas = get("TOP.d");
+        s_dWas = get(port("d"));
         check("t.oh.v", get("t.oh.v") & ohMask, ohDriven(s_dWas));
         merge("t.oh.v", get("t.oh.v") ^ 0x1, ohMask);
         merge("t.oh.v", get("t.oh.v") ^ 0xfff, ohMask);
@@ -463,7 +482,9 @@ void script() {
         reject("t.ch1", 0, vpiInertialDelay);
         reject("t.ch1", 0, vpiForceFlag);
         // public_flat_rw takes a put on a comb-driven net until the next eval
-        for (const char* name : {"t.u_na.z", "t.u_na.w"}) accept(name, 0x5a);
+        accept("t.u_na.z", 0x5a);
+        // Questa reads a put into a driven net back as its driver at once
+        if (TestSimulator::is_verilator()) accept("t.u_na.w", 0x5a);
         reject("t.u_na.q", get("t.u_na.q") ^ 0x5b);
         // A put may change only the bits no comb driver writes
         const uint32_t st = get("t.st");
@@ -481,7 +502,10 @@ void script() {
     step([] {
         landInertial();
         check("t.st.cnt inertial", get("t.st.cnt"), 0x09);
+#ifdef T_VPI_DRIVERS_LAZY
+        // Rebuilt from the landed put before the eval
         check("t.st.busy", get("t.st.busy"), 1);
+#endif
         // A packed member takes its parent's mask
         accept("t.st.cnt", get("t.st.cnt") ^ 0x55);
         merge("t.st.busy", get("t.st.busy") ^ 1, 0x1);
@@ -515,6 +539,8 @@ void script() {
             merge(pr.first, get(pr.first) ^ pr.second, pr.second);
             merge(pr.first, get(pr.first) ^ 0xff, pr.second);
         }
+        // Questa has no vpi_put_value_array
+        if (!TestSimulator::is_verilator()) return;
         const PLI_INT32 one[1] = {0x6c};
         putArray("t.pmem", 0, one, 1, false);
         check("t.pmem[0] array", get("t.pmem[0]"), 0x6c);
@@ -523,6 +549,7 @@ void script() {
         const PLI_INT32 wrap[2] = {static_cast<PLI_INT32>(pmem3 ^ 0xff), 0x4e};
         putArray("t.pmem", 3, wrap, 2, false);
         check("t.pmem[0] array wrapped", get("t.pmem[0]"), 0x4e);
+#ifdef T_VPI_DRIVERS_LAZY
         check("t.pmem[3] array wrapped", get("t.pmem[3]"), pmem3);
         const uint32_t pmem1 = get("t.pmem[1]");
         const PLI_INT32 two[2] = {0x7d, static_cast<PLI_INT32>(pmem1 ^ 0xff)};
@@ -533,6 +560,7 @@ void script() {
         putArray("t.pmem", 1, masked, 1, false);
         check("t.pmem[1] array kept", get("t.pmem[1]"), pmem1);
         putArray("t.vidx", 0, one, 1, true);
+#endif
         // A retained memory's array put reaches a cone reading it only at the next eval
         s_g0 = get("t.gmem[0]");
         const PLI_INT32 flipped[1] = {static_cast<PLI_INT32>(s_g0 ^ 0xff)};
@@ -540,8 +568,9 @@ void script() {
         check("t.gmem_r before eval", get("t.gmem_r"), s_g0);
     });
     step([] {
-        check("t.gmem_r after eval", get("t.gmem_r"), s_g0 ^ 0xff);
-        const uint32_t d = get("TOP.d");
+        if (TestSimulator::is_verilator())
+            check("t.gmem_r after eval", get("t.gmem_r"), s_g0 ^ 0xff);
+        const uint32_t d = get(port("d"));
         check("t.ct_c", get("t.ct_c"), d);
         check("t.mc_x", get("t.mc_x"), (((d + 3) & 0xf) << 4) | (d & 0xf));
         // A refused put into a retained comb signal leaves the flop sampling it its driven value
@@ -588,7 +617,9 @@ void script() {
         accept("t.u_mi.p0.uc.cflop", 0x3c);
         accept("t.fy0.r", 0x10);
         accept("t.orphan", 0x2a);
-        check("t.u_po.xq_c", get("t.u_po.xq_c"), (get("t.u_po.xq") + 1) & 0xff);
+        // Elsewhere still X, as t.u_po.s was never put before
+        if (TestSimulator::is_verilator())
+            check("t.u_po.xq_c", get("t.u_po.xq_c"), (get("t.u_po.xq") + 1) & 0xff);
         accept("t.u_po.xq", 0x33);
         putStr("t.u_po.str", vpiStringVal, "longer_than_any_short_string_buffer");
         TEST_CHECK_ERROR(false);
@@ -632,15 +663,17 @@ void script() {
     });
     step([] {
         check("t.u_po.f_comb", get("t.u_po.f_comb"), ((0x22 + 1) ^ 0x0f));
-        check("t.u_mi.observe2", get("t.u_mi.observe2"), s_held[0] ^ s_held[1] ^ 0x2a);
+        // Questa reads it as if the put into t.u_mi.if1.s were not made
+        if (TestSimulator::is_verilator())
+            check("t.u_mi.observe2", get("t.u_mi.observe2"), s_held[0] ^ s_held[1] ^ 0x2a);
         // Set mid-eval by an initial block, which reads it back
         check("t.u_po.mc_a", get("t.u_po.mc_a"), 0x01);
         check("t.u_po.mc_b", get("t.u_po.mc_b"), 0x04);
         // A parameter is read-only
         reject("t.INTF_QTY", 5);
         // An element of a rebuilt memory
-        const uint32_t d = get("TOP.d");
-        const uint32_t m1 = ((d >> 4) | ((((d >> 4) ^ get("TOP.in_a")) & 0xf) << 4)) & 0xff;
+        const uint32_t d = get(port("d"));
+        const uint32_t m1 = ((d >> 4) | ((((d >> 4) ^ get(port("in_a"))) & 0xf) << 4)) & 0xff;
         check("t.mem_chain[2]", get(vpi_handle_by_index(find("t.mem_chain"), 2)), (m1 + 1) & 0xff);
         // A member of a rebuilt memory's element
         check("t.hla_c[1].lo", get("t.hla_c[1].lo"), ~d & 0xf);
@@ -651,7 +684,9 @@ void script() {
 }
 
 PLI_INT32 startOfSimulation(p_cb_data) {
+#ifdef T_VPI_DRIVERS_LAZY
     printResetValues();
+#endif
     in("clk", 0);
     in("rst", 1);
     in("rst_n", 0);
@@ -674,15 +709,19 @@ extern "C" int dpiOne() { return 1; }
 
 // Called from an initial block: each read is from the same eval, after its input moved
 extern "C" void midEvalRead(int src) {
+#ifdef T_VPI_DRIVERS_LAZY
     const uint32_t got = get("t.mid_c");
     std::printf("mid-eval t.mid_c 0x%02x\n", got);
     check("t.mid_c mid-eval", got, (static_cast<uint32_t>(src) + 1) & 0xff);
+#endif
 }
 
 // Called at each rising edge: the cone reads its source as the eval sees it
 extern "C" void midEvalProbe() {
     ++s_probes;
+#ifdef T_VPI_DRIVERS_LAZY
     check("t.prb_c mid-eval", get("t.prb_c"), get("t.prb_s") ^ 0x3c);
+#endif
 }
 
 // Called from an initial block: the eval itself consumes the put

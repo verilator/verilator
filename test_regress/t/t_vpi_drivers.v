@@ -7,8 +7,9 @@
 `define stop $stop
 `define STRINGIFY(x) `"x`"
 
-// --vpi-lazy: every signal reads as the RTL implies, before the first eval and mid-eval, and a
-// put writes exactly those holding their value without a driver.
+// Each signal a driver shape, read and written through VPI. Under --vpi-lazy (T_VPI_DRIVERS_LAZY)
+// every signal also reads as the RTL implies before the first eval and mid-eval, and a put writes
+// exactly those holding their value without a driver.
 
 module sub (
     input logic [7:0] i,
@@ -486,7 +487,14 @@ module t #(
   end
   // Written whole by one block and in part by another
   logic [3:0] vbx;
+`ifdef VERILATOR
+  // A non-constant select on a continuous assign's lhs is illegal, but Verilator accepts it
   assign vbx[sel] = en;
+`else
+  always @*
+    if (sel == 2'd0) vbx[0] = en;
+    else if (sel == 2'd1) vbx[1] = en;
+`endif
   always_comb vbx[3:2] = d[1:0];
 
   // A cycle between groups, not bits, merged with a function's temporaries (under -O0, as
