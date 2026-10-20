@@ -326,12 +326,9 @@ The grammar of control commands is as follows:
    of the design, such as the tiles of a manycore. Marking a module that is
    a large part of the design reduces parallelism. Several modules may be
    marked, and logic belongs to the nearest marked instance above it. The
-   module is not inlined. Ignored for the top module, including a
-   :option:`hier_block` in its own Verilation with :vlopt:`--hierarchical`.
+   module is not inlined. Ignored for the top module.
 
-   Same as :option:`/*verilator&32;threads_unit*/` metacomment, except
-   that only the control file form also marks a :option:`hier_block`'s
-   wrapper in the parent Verilation.
+   Same as :option:`/*verilator&32;threads_unit*/` metacomment.
 
 .. option:: timing_off [-file "<filename>" [-lines <line> [ - <line>]]]
 

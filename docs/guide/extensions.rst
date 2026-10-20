@@ -714,9 +714,7 @@ conservative extractor.
    :vlopt:`--threads`. This metacomment must be between
    ``module module_name(...);`` and ``endmodule``.
 
-   Same as :option:`threads_unit` control file option, except that with
-   :vlopt:`--hierarchical` it does not mark a :option:`hier_block`'s wrapper
-   in the parent Verilation.
+   Same as :option:`threads_unit` control file option.
 
 .. option:: /*verilator&32;timing_off*/
 
