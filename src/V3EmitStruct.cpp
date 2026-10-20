@@ -2736,7 +2736,9 @@ private:
         }
         const std::string name = varName(varp);
         const auto cit = env.cur.find(name);
-        if (cit != env.cur.end()) return cit->second;
+        // a whole value with slice writes after it (word = x; word[8*k +: 8] = b;):
+        // the slices go on top -- setKey erases older slices on a whole write
+        if (cit != env.cur.end()) return assembleFromMap(name, cit->second, env.cur);
         SExpr e = identExpr(name, varp->width());
         e.isSigned = varp->isSigned();
         return assembleSlices(name, e, env);
