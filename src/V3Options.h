@@ -302,6 +302,10 @@ private:
     bool m_hierarchical = false;    // main switch: --hierarchical
     bool m_ignc = false;            // main switch: --ignc
     bool m_jsonOnly = false;        // main switch: --json-only
+    bool m_structOnlyXilinxRtl = false;  // main switch: --struct-only-xilinx-rtl
+    bool m_structOnlyWidePackedMem = false;  // main switch: --struct-only-wide-packed-mem
+    bool m_structOnlyReport = false;  // main switch: --struct-only-report
+    bool m_mapOnlyKeepTemps = false;  // main switch: --map-only-keep-temps
     bool m_lintOnly = false;        // main switch: --lint-only
     bool m_gmake = false;           // main switch: --make gmake
     bool m_makeJson = false;        // main switch: --make json
@@ -417,6 +421,13 @@ private:
     VFileLibList m_hierParamsFile; // main switch: --hierarchical-params-file
     string      m_jsonOnlyOutput;    // main switch: --json-only-output
     string      m_jsonOnlyMetaOutput;    // main switch: --json-only-meta-output
+    string      m_structOnlyOutput;  // main switch: --struct-only-output
+    string      m_birOnlyOutput;  // main switch: --bir-only-output
+    string      m_mapOnlyOutput;  // main switch: --map-only-output
+    string      m_mapOnlyEdif;  // main switch: --map-only-edif
+    bool        m_mapOnlyEdifFlat = false;  // main switch: --map-only-edif-flat
+    string      m_mapOnlyAbcScript;  // main switch: --map-only-abc-script
+    std::set<string> m_structOnlyBlackbox;  // main switch: --struct-only-blackbox
     string      m_l2Name;       // main switch: --l2name; "" for top-module's name
     string      m_libCreate;    // main switch: --lib-create {lib_name}
     string      m_mainTopName;  // main switch: --main-top-name
@@ -735,6 +746,24 @@ public:
     VFileLibList hierParamFile() const { return m_hierParamsFile; }
     string jsonOnlyOutput() const { return m_jsonOnlyOutput; }
     string jsonOnlyMetaOutput() const { return m_jsonOnlyMetaOutput; }
+    string structOnlyOutput() const { return m_structOnlyOutput; }
+    string birOnlyOutput() const { return m_birOnlyOutput; }
+    string mapOnlyOutput() const { return m_mapOnlyOutput; }
+    string mapOnlyEdif() const { return m_mapOnlyEdif; }
+    bool mapOnlyEdifFlat() const { return m_mapOnlyEdifFlat; }
+    string mapOnlyAbcScript() const { return m_mapOnlyAbcScript; }
+    bool mapOnlyKeepTemps() const { return m_mapOnlyKeepTemps; }
+    const std::set<string>& structOnlyBlackbox() const { return m_structOnlyBlackbox; }
+    bool structOnlyXilinxRtl() const { return m_structOnlyXilinxRtl; }
+    bool structOnlyWidePackedMem() const { return m_structOnlyWidePackedMem; }
+    bool structOnlyReport() const { return m_structOnlyReport; }
+    // True if the --json-only tree file itself should be written: always
+    // unless the structural backend is the only requested serialization
+    bool jsonTreeWanted() const {
+        return (m_structOnlyOutput.empty() && m_birOnlyOutput.empty() && m_mapOnlyOutput.empty()
+                && m_mapOnlyEdif.empty())
+               || !m_jsonOnlyOutput.empty();
+    }
     string l2Name() const { return m_l2Name; }
     string libCreate() const { return m_libCreate; }
     string libCreateName(bool shared) const {

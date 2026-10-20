@@ -1633,6 +1633,31 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_jsonOnlyOutput = valp;
         m_jsonOnly = true;
     });
+    DECL_OPTION("-struct-only-output", CbVal, [this](const char* valp) {
+        m_structOnlyOutput = valp;
+        m_jsonOnly = true;  // Same pipeline cut-point as --json-only
+    });
+    DECL_OPTION("-bir-only-output", CbVal, [this](const char* valp) {
+        m_birOnlyOutput = valp;
+        m_jsonOnly = true;  // same pipeline cut-point as --json-only
+    });
+    DECL_OPTION("-map-only-output", CbVal, [this](const char* valp) {
+        m_mapOnlyOutput = valp;
+        m_jsonOnly = true;  // same pipeline cut-point as --json-only
+    });
+    DECL_OPTION("-map-only-edif", CbVal, [this](const char* valp) {
+        m_mapOnlyEdif = valp;
+        m_jsonOnly = true;  // same pipeline cut-point as --json-only
+    });
+    DECL_OPTION("-map-only-edif-flat", OnOff, &m_mapOnlyEdifFlat);
+    DECL_OPTION("-map-only-abc-script", Set, &m_mapOnlyAbcScript);
+    DECL_OPTION("-map-only-keep-temps", OnOff, &m_mapOnlyKeepTemps);
+    DECL_OPTION("-struct-only-blackbox", CbVal, [this](const char* valp) {
+        m_structOnlyBlackbox.insert(valp);
+    });
+    DECL_OPTION("-struct-only-xilinx-rtl", OnOff, &m_structOnlyXilinxRtl);
+    DECL_OPTION("-struct-only-wide-packed-mem", OnOff, &m_structOnlyWidePackedMem);
+    DECL_OPTION("-struct-only-report", OnOff, &m_structOnlyReport);
 
     DECL_OPTION("-LDFLAGS", CbVal, callStrSetter(&V3Options::addLdLibs));
     DECL_OPTION("-l2-name", Set, &m_l2Name);

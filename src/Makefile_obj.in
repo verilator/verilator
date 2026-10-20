@@ -98,6 +98,12 @@ endif
 
 # -lfl not needed as Flex invoked with %nowrap option
 LIBS = $(CFG_LIBS) -lm
+# libabc (third_party/abc, berkeley-abc/abc, built by ../Makefile with
+# ABC_USE_NAMESPACE=abc) for --map-only-output / --map-only-edif.
+# ABC_DIR=<dir> on the make command line uses another ABC build instead.
+ABC_DIR ?= $(srcdir)/../third_party/abc
+CPPFLAGS += -I$(ABC_DIR)/src -DABC_NAMESPACE=abc -DABC_USE_STDINT_H
+LIBS += $(ABC_DIR)/libabc.a -lpthread -ldl
 
 CPPFLAGS += -DVERILATOR_INTERNAL_
 CPPFLAGS += -MMD
@@ -285,6 +291,9 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3EmitCSyms.o \
   V3EmitMk.o \
   V3EmitMkJson.o \
+  V3EmitBir.o \
+  V3EmitMap.o \
+  V3EmitStruct.o \
   V3ExecGraph.o \
   V3Expand.o \
   V3Force.o \

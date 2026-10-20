@@ -54,6 +54,9 @@
 #include "V3EmitCMain.h"
 #include "V3EmitMk.h"
 #include "V3EmitMkJson.h"
+#include "V3EmitStruct.h"
+#include "V3EmitBir.h"
+#include "V3EmitMap.h"
 #include "V3EmitV.h"
 #include "V3ExecGraph.h"
 #include "V3Expand.h"
@@ -143,7 +146,14 @@ static void emitJson() VL_MT_DISABLED {
 }
 
 static void emitSerialized() VL_MT_DISABLED {
-    if (v3Global.opt.jsonOnly()) emitJson();
+    if (!v3Global.opt.structOnlyOutput().empty()) {
+        V3EmitStruct::emit(v3Global.opt.structOnlyOutput());
+    }
+    if (!v3Global.opt.birOnlyOutput().empty()) V3EmitBir::emit(v3Global.opt.birOnlyOutput());
+    if (!v3Global.opt.mapOnlyOutput().empty() || !v3Global.opt.mapOnlyEdif().empty()) {
+        V3EmitMap::emit(v3Global.opt.mapOnlyOutput());
+    }
+    if (v3Global.opt.jsonOnly() && v3Global.opt.jsonTreeWanted()) emitJson();
 }
 
 static void process() {
@@ -756,7 +766,7 @@ static bool verilate(const string& argString) {
 
     // Final steps
     V3Global::dumpCheckGlobalTree("final", 990, dumpTreeEitherLevel() >= 3);
-    if (v3Global.opt.jsonOnly() || dumpTreeJsonLevel()) {
+    if ((v3Global.opt.jsonOnly() && v3Global.opt.jsonTreeWanted()) || dumpTreeJsonLevel()) {
         const string filename
             = (v3Global.opt.jsonOnlyMetaOutput().empty()
                    ? v3Global.opt.makeDir() + "/" + v3Global.opt.prefix() + ".tree.meta.json"

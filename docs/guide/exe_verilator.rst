@@ -1300,6 +1300,35 @@ Summary:
    :vlopt:`--json-only`. Using this option automatically sets
    :vlopt:`--json-only`.
 
+.. option:: --struct-only-output <filename>
+
+   Emit the elaborated design as structural Verilog: every module becomes a
+   netlist of primitive cells (adder, bitwise_and, mux2, comparator_eq,
+   dff_en, memory_sp, ...) and user-module instances, with always blocks
+   lowered to mux trees and registers, loops unrolled and functions/tasks
+   inlined.  The cell library is ``structural_primitives.sv`` from the
+   System-Verilog-suite.  Runs at the same pipeline point as
+   :vlopt:`--json-only` (which it implies) but streams the result from the
+   in-memory AST, so no JSON tree is written unless :vlopt:`--json-only-output`
+   is also given.
+
+.. option:: --struct-only-xilinx-rtl
+
+   With :vlopt:`--struct-only-output`, relabel the primitive cells to the
+   Vivado RTL elaboration vocabulary (RTL_INV, RTL_AND, RTL_MUX, RTL_ADD,
+   RTL_REG_SYNC__BREG_<W>, ...).
+
+.. option:: --struct-only-wide-packed-mem
+
+   With :vlopt:`--struct-only-output`, also treat packed vectors wider than
+   512 bits as flattened memories (depth inferred from a DATA_WIDTH
+   parameter, else 64/32/16/8).  Off by default.
+
+.. option:: --struct-only-report
+
+   With :vlopt:`--struct-only-output`, print a Design-Compiler-style
+   inferred-register table for every clocked block to stderr.
+
 .. option:: --l2-name <value>
 
    Instead of using the module name when showing Verilog scope, use the

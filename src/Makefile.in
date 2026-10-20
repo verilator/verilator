@@ -55,6 +55,16 @@ obj_shared:
 
 .PHONY: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_bin_dbg$(EXEEXT) ../bin/verilator_coverage_bin$(EXEEXT) ../bin/verilator_coverage_bin_dbg$(EXEEXT)
 
+# libabc for the synthesis backend (V3EmitMap), built once for both the
+# optimised and the debug binary: in C++ inside namespace abc, no readline
+ABC_DIR ?= $(srcdir)/../third_party/abc
+LIBABC := $(ABC_DIR)/libabc.a
+$(LIBABC):
+	@test -f $(ABC_DIR)/Makefile || { echo "%Error: $(ABC_DIR) is empty: git submodule update --init third_party/abc"; exit 1; }
+	$(MAKE) -C $(ABC_DIR) libabc.a ABC_USE_NAMESPACE=abc ABC_USE_LIBSTDCXX=1 ABC_USE_NO_READLINE=1 \
+	  CC="@CXX@" CXX="@CXX@" LD="@CXX@" ARCHFLAGS=-DABC_USE_STDINT_H
+prefiles:: $(LIBABC)
+
 opt: ../bin/verilator_bin$(EXEEXT) ../bin/verilator_coverage_bin$(EXEEXT)
 ifeq ($(VERILATOR_NO_OPT_BUILD),1)  # Faster laptop development... One build
   ../bin/verilator_bin$(EXEEXT): ../bin/verilator_bin_dbg$(EXEEXT)

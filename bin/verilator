@@ -500,6 +500,14 @@ detailed descriptions of these arguments.
     --json-only                 Create JSON parser output (.tree.json and .meta.json)
     --json-only-meta-output <filename>  Set .tree.meta.json output filename
     --json-only-output <filename>       Set .tree.json output filename
+    --bir-only-output <filename>        Emit the System-Verilog-suite Behavioral IR as JSON
+    --map-only-output <filename>        Emit an abc-mapped LUT/FF/BRAM yosys-JSON netlist
+    --map-only-edif <filename>          Emit the same mapped netlist as hierarchical EDIF (Vivado read_edif)
+    --map-only-edif-flat        --map-only-edif writes one flat cell instead
+    --struct-only-output <filename>     Emit structural (primitive netlist) Verilog
+    --struct-only-xilinx-rtl    Structural output uses Vivado RTL_* cell names
+    --struct-only-wide-packed-mem  Infer memories from wide packed vectors
+    --struct-only-report        Print inferred-register report to stderr
     --l2-name <value>           Verilog scope name of the top module
     --language <lang>           Default language standard to parse
      -LDFLAGS <flags>           Linker pre-object arguments for makefile
