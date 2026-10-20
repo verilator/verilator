@@ -75,14 +75,22 @@ t.cg_arr_vals.cp_addr.av[0]: 2
 t.cg_arr_vals.cp_addr.av[1]: 2
 t.cg_arr_vals.cp_cmd.read: 2
 t.cg_arr_vals.cp_cmd.write: 2
-t.cg_at_least.addr_cmd_al.<addr0,read> [cross]: 1
+t.cg_at_least.addr_cmd_al.<addr0,read> [cross]: 3
 t.cg_at_least.addr_cmd_al.<addr0,write> [cross]: 0
 t.cg_at_least.addr_cmd_al.<addr1,read> [cross]: 0
 t.cg_at_least.addr_cmd_al.<addr1,write> [cross]: 1
-t.cg_at_least.cp_addr.addr0: 1
+t.cg_at_least.cp_addr.addr0: 3
 t.cg_at_least.cp_addr.addr1: 1
-t.cg_at_least.cp_cmd.read: 1
+t.cg_at_least.cp_cmd.read: 3
 t.cg_at_least.cp_cmd.write: 1
+t.cg_at_least_0.addr_cmd.<addr0,read> [cross]: 0
+t.cg_at_least_0.addr_cmd.<addr0,write> [cross]: 0
+t.cg_at_least_0.addr_cmd.<addr1,read> [cross]: 0
+t.cg_at_least_0.addr_cmd.<addr1,write> [cross]: 0
+t.cg_at_least_0.cp_addr.addr0: 0
+t.cg_at_least_0.cp_addr.addr1: 0
+t.cg_at_least_0.cp_cmd.read: 0
+t.cg_at_least_0.cp_cmd.write: 0
 t.cg_be.cp_addr.hi: 2
 t.cg_be.cp_addr.lo: 2
 t.cg_be.cp_cmd.read: 2
