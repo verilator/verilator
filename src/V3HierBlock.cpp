@@ -566,6 +566,64 @@ struct XRefScan final {
 };
 
 // Record one reference out of the block as a port to promote, or refuse it.
+// The tail both directions share: name a port for the path, refuse a name the
+// block's subtree already declares, and record it once per spelling of the
+// module. `inner` is empty for a reference out of the block and names the part
+// inside it for one coming in, which is also what tells the two apart later.
+static void recordXmrPort(XRefScan& scan, const AstNodeModule* modp, AstVarXRef* xrefp,
+                          const std::string& inner) {
+    const char* const dir = inner.empty() ? "out of" : "into";
+    ++scan.m_count;
+    const std::string path = xrefp->dotted() + "." + xrefp->name();
+    // Before naming a port for it: refusing afterwards reports the generated
+    // name clashing rather than the reason the reference cannot be carried.
+    // V3Width has not run in this pass - createGraph returns before it - so
+    // varp()->width() is 0 and dtypep() is null. The width has to come from the
+    // variable's declared type, and any type whose width cannot be established
+    // exactly here is refused rather than guessed: a silently wrong width would
+    // mean silently wrong hardware.
+    bool isSigned = false;
+    const int width = promotableWidth(xrefp->varp(), isSigned);
+    if (width < 0) {
+        xrefp->v3warn(E_UNSUPPORTED, "Unsupported: Cannot promote reference "
+                                         << dir << " hierarchical block: '" << path
+                                         << "' does not have a width known before "
+                                            "elaboration (parameterized, unpacked, or "
+                                            "non-integral type)");
+        return;
+    }
+    // Modules sharing a path share its port, but each still needs its own
+    // entry, because the rewrite matches per module
+    auto pit = scan.m_pathToPort.find(path);
+    const bool newPort = pit == scan.m_pathToPort.cend();
+    // Named by index because flattening a path to an identifier is not
+    // injective: "a.b_c" and "a_b.c" would collide
+    const std::string portName
+        = newPort ? "xmrport_" + cvtToStr(scan.m_pathToPort.size()) : pit->second;
+    // The generated name must not shadow anything the block's subtree declares
+    const auto dit = scan.m_declared.find(portName);
+    if (dit != scan.m_declared.cend()) {
+        xrefp->v3warn(E_UNSUPPORTED, "Unsupported: Cannot promote reference "
+                                         << dir << " hierarchical block: generated port name '"
+                                         << portName << "' collides with an existing signal in "
+                                         << dit->second->prettyNameQ());
+        return;
+    }
+    if (newPort) scan.m_pathToPort.emplace(path, portName);
+    if (scan.m_seen.insert(std::make_pair(modp->name(), path)).second) {
+        // origName, not name: a de-parameterized module is mangled
+        // differently between runs
+        scan.m_blockVtxp->addXmrPort(
+            VHierXmrPort{modp->name(), portName, path, inner, width, isSigned});
+        if (modp->origName() != modp->name()) {
+            scan.m_blockVtxp->addXmrPort(
+                VHierXmrPort{modp->origName(), portName, path, inner, width, isSigned});
+        }
+    }
+    UINFO(4, "HIER-XMR: " << scan.m_blockp->prettyNameQ() << (inner.empty() ? " -> '" : " <- '")
+                          << path << "' in " << modp->prettyNameQ() << " => port " << portName);
+}
+
 static void collectOutboundXRef(XRefScan& scan, const AstNodeModule* modp, AstVarXRef* xrefp) {
     if (!xrefp->varp()) return;
     const auto vit = scan.m_varToMod.find(xrefp->varp());
@@ -605,57 +663,7 @@ static void collectOutboundXRef(XRefScan& scan, const AstNodeModule* modp, AstVa
                               << "' is a parameter, which a port cannot carry");
             return;
         }
-        ++scan.m_count;
-        const std::string path = xrefp->dotted() + "." + xrefp->name();
-        V3HierBlock* const blockVtxp = scan.m_blockVtxp;
-        // Modules sharing a path share its port, but each still needs its own
-        // entry, because the rewrite matches per module
-        auto pit = scan.m_pathToPort.find(path);
-        const bool newPort = pit == scan.m_pathToPort.cend();
-        // Named by index because flattening a path to an identifier is not
-        // injective: "a.b_c" and "a_b.c" would collide
-        const std::string portName
-            = newPort ? "xmrport_" + cvtToStr(scan.m_pathToPort.size()) : pit->second;
-        // The generated name must not shadow anything the block's subtree declares
-        const auto dit = scan.m_declared.find(portName);
-        if (dit != scan.m_declared.cend()) {
-            xrefp->v3warn(E_UNSUPPORTED,
-                          "Unsupported: Cannot promote reference out of hierarchical "
-                          "block: generated port name '"
-                              << portName << "' collides with an existing signal in "
-                              << dit->second->prettyNameQ());
-            return;
-        }
-        if (newPort) scan.m_pathToPort.emplace(path, portName);
-        if (scan.m_seen.insert(std::make_pair(modp->name(), path)).second) {
-            // V3Width has not run in this pass - createGraph returns
-            // before it - so varp()->width() is 0 and dtypep() is null.
-            // The width has to come from the variable's declared type, and any
-            // type whose width cannot be established exactly here is
-            // refused rather than guessed: a silently wrong width
-            // would mean silently wrong hardware.
-            bool isSigned = false;
-            const int width = promotableWidth(xrefp->varp(), isSigned);
-            if (width < 0) {
-                xrefp->v3warn(E_UNSUPPORTED,
-                              "Unsupported: Cannot promote reference out of hierarchical block: '"
-                                  << path
-                                  << "' does not have a width known before "
-                                     "elaboration (parameterized, unpacked, or "
-                                     "non-integral type)");
-                return;
-            }
-            // origName, not name: a de-parameterized module is
-            // mangled differently between runs
-            blockVtxp->addXmrPort(VHierXmrPort{modp->name(), portName, path, "", width, isSigned});
-            if (modp->origName() != modp->name()) {
-                blockVtxp->addXmrPort(
-                    VHierXmrPort{modp->origName(), portName, path, "", width, isSigned});
-            }
-        }
-        UINFO(4, "HIER-XMR: " << scan.m_blockp->prettyNameQ() << " -> '" << xrefp->dotted() << "."
-                              << xrefp->name() << "' in " << targetp->prettyNameQ() << " => port "
-                              << portName);
+        recordXmrPort(scan, modp, xrefp, "");
     }
 }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
 
@@ -718,41 +726,7 @@ static void collectInboundXRef(XRefScan& scan, const AstNodeModule* modp, AstVar
     }
     const std::string inner = innerPathOf(scan, modp, xrefp->dotted(), xrefp->name());
     if (inner.empty()) return;  // Path does not pass through this block
-    bool isSigned = false;
-    const int width = promotableWidth(xrefp->varp(), isSigned);
-    if (width < 0) {
-        xrefp->v3warn(E_UNSUPPORTED,
-                      "Unsupported: Cannot promote reference into hierarchical block: '"
-                          << xrefp->dotted() << "." << xrefp->prettyName()
-                          << "' does not have a width known before elaboration "
-                             "(parameterized, unpacked, or non-integral type)");
-        return;
-    }
-    ++scan.m_count;
-    const std::string path = xrefp->dotted() + "." + xrefp->name();
-    auto pit = scan.m_pathToPort.find(path);
-    const bool newPort = pit == scan.m_pathToPort.cend();
-    const std::string portName
-        = newPort ? "xmrport_" + cvtToStr(scan.m_pathToPort.size()) : pit->second;
-    const auto dit = scan.m_declared.find(portName);
-    if (dit != scan.m_declared.cend()) {
-        xrefp->v3warn(E_UNSUPPORTED, "Unsupported: Cannot promote reference into hierarchical "
-                                     "block: generated port name '"
-                                         << portName << "' collides with an existing signal in "
-                                         << dit->second->prettyNameQ());
-        return;
-    }
-    if (newPort) scan.m_pathToPort.emplace(path, portName);
-    if (scan.m_seen.insert(std::make_pair(modp->name(), path)).second) {
-        scan.m_blockVtxp->addXmrPort(
-            VHierXmrPort{modp->name(), portName, path, inner, width, isSigned});
-        if (modp->origName() != modp->name()) {
-            scan.m_blockVtxp->addXmrPort(
-                VHierXmrPort{modp->origName(), portName, path, inner, width, isSigned});
-        }
-    }
-    UINFO(4, "HIER-XMR: " << scan.m_blockp->prettyNameQ() << " <- '" << path << "' from "
-                          << modp->prettyNameQ() << " => port " << portName);
+    recordXmrPort(scan, modp, xrefp, inner);
 }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
 
 // A dotted call out of the block cannot become a port: a port carries a value,
@@ -833,6 +807,16 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
     // References per module, likewise
     std::unordered_map<const AstNodeModule*, std::vector<AstVarXRef*>> xrefsIn;
     for (const auto& pair : collected.m_xrefs) xrefsIn[pair.first].push_back(pair.second);
+    // The mirror of xrefsIn for the other direction: references indexed by the
+    // module owning the variable they read. Without it a block would scan every
+    // reference in the design, making the cost blocks x references.
+    std::unordered_map<const AstNodeModule*, std::vector<std::pair<AstNodeModule*, AstVarXRef*>>>
+        xrefsTo;
+    for (const auto& pair : collected.m_xrefs) {
+        if (!pair.second->varp()) continue;
+        const auto vit = collected.m_varToMod.find(pair.second->varp());
+        if (vit != collected.m_varToMod.cend()) xrefsTo[vit->second].push_back(pair);
+    }
     std::unordered_map<const AstNodeModule*, std::vector<AstNodeFTaskRef*>> ftaskRefsIn;
     for (const auto& pair : collected.m_ftaskRefs) ftaskRefsIn[pair.first].push_back(pair.second);
     // Variable names per module, likewise: gathering them per block instead
@@ -893,19 +877,17 @@ static void detectOutboundXRefs(AstNetlist* netlistp, V3HierGraph* graphp) {
                     refuseOutboundFTaskRef(scan, refp);
                 }
             }
+            // References the other way: a module outside the block reading a
+            // signal this one owns. The block already has the signal, so
+            // nothing inside it is rewritten, only a port driven from it.
+            const auto tit = xrefsTo.find(modp);
+            if (tit != xrefsTo.cend()) {
+                for (const auto& pair : tit->second) {
+                    if (inBlock.exists(pair.first)) continue;  // Handled above, if at all
+                    collectInboundXRef(scan, pair.first, pair.second);
+                }
+            }
         }
-        // References the other way: a module outside the block reading a
-        // signal inside it. The block already has the signal, so this needs no
-        // rewrite within the block, only a port driven from it.
-        for (const auto& pair : collected.m_xrefs) {
-            const AstNodeModule* const refModp = pair.first;
-            if (inBlock.exists(refModp)) continue;  // Handled above, if at all
-            AstVarXRef* const xrefp = pair.second;
-            if (!xrefp->varp()) continue;
-            const auto vit = varToMod.find(xrefp->varp());
-            if (vit == varToMod.cend() || !inBlock.exists(vit->second)) continue;
-            collectInboundXRef(scan, refModp, xrefp);
-        }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
 
         if (scan.m_count) {
             UINFO(4, "HIER-XMR: block " << blockp->prettyNameQ() << " has " << scan.m_count
@@ -944,10 +926,6 @@ void V3Hierarchical::createGraph(AstNetlist* netlistp) {
 //######################################################################
 // Promote outbound XMRs to ports in the child run
 
-// Flatten a DOT chain of PARSEREFs into "a.b.c". A trailing bit or part select
-// is permitted and reported through selp: "a.b.c[2]" parses as the select
-// hanging off the last identifier, inside the chain, and the select must be
-// kept and re-applied to the promoted port.
 // Cells hang off modules, never off expressions, so pruning expressions keeps
 // this off the bulk of the design. Collected in module order, which
 // V3LinkLevel::modSortByLevel makes root first.
@@ -969,6 +947,10 @@ public:
     }
 };
 
+// Flatten a DOT chain of PARSEREFs into "a.b.c". A trailing bit or part select
+// is permitted and reported through selp: "a.b.c[2]" parses as the select
+// hanging off the last identifier, inside the chain, and the select must be
+// kept and re-applied to the promoted port.
 static bool flattenDot(AstNode* nodep, std::vector<std::string>& names,
                        AstNodePreSel** selpp = nullptr) {
     if (AstDot* const dotp = VN_CAST(nodep, Dot)) {
@@ -1006,6 +988,53 @@ static AstNodeExpr* dottedExpr(FileLine* flp, const std::string& dotted) {
         pos = dot + 1;
     }
     return exprp;
+}
+
+// What a DOT chain resolves to: the path as written, the module holding it,
+// and any trailing select, which has to be re-applied to whatever replaces the
+// reference. False when this is not the head of a chain that can be spelled
+// back, which is how unrelated expressions are skipped.
+struct DottedRef final {
+    AstNodeModule* m_modp = nullptr;  // Module the reference sits in
+    AstNodePreSel* m_selp = nullptr;  // Trailing select, or null
+    std::string m_path;  // "a.b.c"
+};
+
+static bool resolveDottedRef(AstDot* dotp, DottedRef& refr) {
+    if (VN_IS(dotp->backp(), Dot)) return false;  // only the outermost of a chain
+    std::vector<std::string> names;
+    refr.m_selp = nullptr;
+    if (!flattenDot(dotp, names, &refr.m_selp) || names.size() < 2) return false;
+    refr.m_path.clear();
+    for (size_t i = 0; i < names.size(); ++i) {
+        if (i) refr.m_path += '.';
+        refr.m_path += names[i];
+    }
+    refr.m_modp = nullptr;
+    for (AstNode* upp = dotp; upp; upp = upp->backp()) {
+        if ((refr.m_modp = VN_CAST(upp, NodeModule))) break;
+    }
+    return refr.m_modp;
+}
+
+// A module may be de-parameterized differently between runs, so accept either
+// spelling. Both are still scoped to this module, which is what stops an
+// unrelated module's identical path from matching.
+template <typename T>
+static const T* findByEitherName(const std::map<std::pair<std::string, std::string>, T>& map,
+                                 const AstNodeModule* modp, const std::string& path) {
+    auto it = map.find(std::make_pair(modp->name(), path));
+    if (it == map.cend()) it = map.find(std::make_pair(modp->origName(), path));
+    return it == map.cend() ? nullptr : &it->second;
+}
+
+// Keep a trailing select, re-based on whatever now stands for the reference.
+static AstNodeExpr* reapplySelect(AstNodePreSel* selp, AstNodeExpr* newp) {
+    if (!selp) return newp;
+    AstNodePreSel* const keepSelp = selp->unlinkFrBack();
+    keepSelp->fromp()->unlinkFrBack()->deleteTree();
+    keepSelp->fromp(newp);
+    return keepSelp;
 }
 
 // Width and signedness of a port to create
@@ -1077,28 +1106,12 @@ static std::vector<XmrHit> findXmrHits(AstNetlist* netlistp, const XmrWants& wan
                                        std::map<std::string, PortSpec>& needsr) {
     std::vector<XmrHit> hits;
     netlistp->foreach([&](AstDot* dotp) {
-        if (VN_IS(dotp->backp(), Dot)) return;  // only the outermost of a chain
-        std::vector<std::string> names;
-        AstNodePreSel* selp = nullptr;
-        if (!flattenDot(dotp, names, &selp) || names.size() < 2) return;
-        std::string path;
-        for (size_t i = 0; i < names.size(); ++i) {
-            if (i) path += '.';
-            path += names[i];
-        }
-        AstNodeModule* modp = nullptr;
-        for (AstNode* upp = dotp; upp; upp = upp->backp()) {
-            if ((modp = VN_CAST(upp, NodeModule))) break;
-        }
-        if (!modp) return;
-        // The module may be de-parameterized differently between runs, so accept
-        // either spelling; both are still scoped to this module, which is what
-        // stops an unrelated module's identical path from matching.
-        auto wit = wanted.find(std::make_pair(modp->name(), path));
-        if (wit == wanted.cend()) wit = wanted.find(std::make_pair(modp->origName(), path));
-        if (wit == wanted.cend()) return;
-        needsr.emplace(wit->second.m_port, PortSpec{wit->second.m_width, wit->second.m_signed});
-        hits.push_back(XmrHit{dotp, modp, selp, wit->second.m_port});
+        DottedRef ref;
+        if (!resolveDottedRef(dotp, ref)) return;
+        const auto* const wantp = findByEitherName(wanted, ref.m_modp, ref.m_path);
+        if (!wantp) return;
+        needsr.emplace(wantp->m_port, PortSpec{wantp->m_width, wantp->m_signed});
+        hits.push_back(XmrHit{dotp, ref.m_modp, ref.m_selp, wantp->m_port});
     });
     return hits;
 }
@@ -1116,13 +1129,7 @@ static void rewriteXmrHits(const std::vector<XmrHit>& hits, const AstNodeModule*
             // names no scope.
             newp = new AstDot{flp, false, new AstParseRef{flp, blockp->origName()}, newp};
         }
-        if (hit.m_selp) {
-            // Keep the select, re-based on the promoted port
-            AstNodePreSel* const keepSelp = hit.m_selp->unlinkFrBack();
-            keepSelp->fromp()->unlinkFrBack()->deleteTree();
-            keepSelp->fromp(newp);
-            newp = keepSelp;
-        }
+        newp = reapplySelect(hit.m_selp, newp);
         dotp->replaceWith(newp);
         VL_DO_DANGLING(dotp->deleteTree(), dotp);
         UINFO(4, "HIER-XMR: rewrote reference to " << hit.m_portName << " in "
@@ -1173,8 +1180,6 @@ void V3Hierarchical::promoteXmrPorts(AstNetlist* netlistp) {
     }
 }
 
-// In the top run, connect each promoted port to the signal it came from. The
-// full hierarchy is present here, so the rebuilt dotted reference resolves.
 // In the top run, a reference into a block becomes a read of the port the
 // block now exposes: 'b.l0.sig' is 'b.xmrport_0', keeping whatever named the
 // instance and dropping the part that reached inside it.
@@ -1200,43 +1205,24 @@ static void rewriteInboundXRefs(AstNetlist* netlistp) {
     }
     if (wanted.empty()) return;
 
-    std::vector<std::pair<AstDot*, std::string>> hits;
+    // Collect first: replacing during the traversal mutates the tree walked.
+    std::vector<std::tuple<AstDot*, AstNodePreSel*, std::string>> hits;
     netlistp->foreach([&](AstDot* dotp) {
-        if (VN_IS(dotp->backp(), Dot)) return;  // only the outermost of a chain
-        std::vector<std::string> names;
-        AstNodePreSel* selp = nullptr;
-        if (!flattenDot(dotp, names, &selp) || names.size() < 2) return;
-        std::string path;
-        for (size_t i = 0; i < names.size(); ++i) {
-            if (i) path += '.';
-            path += names[i];
-        }
-        AstNodeModule* modp = nullptr;
-        for (AstNode* upp = dotp; upp; upp = upp->backp()) {
-            if ((modp = VN_CAST(upp, NodeModule))) break;
-        }
-        if (!modp) return;
-        auto wit = wanted.find(std::make_pair(modp->name(), path));
-        if (wit == wanted.cend()) wit = wanted.find(std::make_pair(modp->origName(), path));
-        if (wit == wanted.cend()) return;
-        hits.emplace_back(dotp, wit->second);
+        DottedRef ref;
+        if (!resolveDottedRef(dotp, ref)) return;
+        const std::string* const wantp = findByEitherName(wanted, ref.m_modp, ref.m_path);
+        if (!wantp) return;
+        hits.emplace_back(dotp, ref.m_selp, *wantp);
     });
 
     for (const auto& hit : hits) {
-        AstDot* const dotp = hit.first;
-        std::vector<std::string> names;
-        AstNodePreSel* selp = nullptr;
-        flattenDot(dotp, names, &selp);
-        AstNodeExpr* newp = dottedExpr(dotp->fileline(), hit.second);
-        if (selp) {
-            AstNodePreSel* const keepSelp = selp->unlinkFrBack();
-            keepSelp->fromp()->unlinkFrBack()->deleteTree();
-            keepSelp->fromp(newp);
-            newp = keepSelp;
-        }
+        AstDot* const dotp = std::get<0>(hit);
+        const std::string& path = std::get<2>(hit);
+        AstNodeExpr* const newp
+            = reapplySelect(std::get<1>(hit), dottedExpr(dotp->fileline(), path));
         dotp->replaceWith(newp);
         VL_DO_DANGLING(dotp->deleteTree(), dotp);
-        UINFO(4, "HIER-XMR: rewrote inbound reference to '" << hit.second << "'");
+        UINFO(4, "HIER-XMR: rewrote inbound reference to '" << path << "'");
     }
 }
 
@@ -1263,17 +1249,7 @@ void V3Hierarchical::bindXmrPorts(AstNetlist* netlistp) {
             const auto pit = pinByName.find(pr.port());
             AstPin* const existingp = pit == pinByName.cend() ? nullptr : pit->second;
             if (existingp && existingp->exprp()) continue;  // already connected
-            AstNodeExpr* exprp = nullptr;
-            std::string rest = pr.path();
-            while (!rest.empty()) {
-                const size_t dot = rest.find('.');
-                const std::string part = (dot == std::string::npos) ? rest : rest.substr(0, dot);
-                rest = (dot == std::string::npos) ? "" : rest.substr(dot + 1);
-                AstParseRef* const refp = new AstParseRef{cellp->fileline(), part};
-                exprp = exprp ? static_cast<AstNodeExpr*>(
-                                    new AstDot{cellp->fileline(), false, exprp, refp})
-                              : static_cast<AstNodeExpr*>(refp);
-            }
+            AstNodeExpr* const exprp = dottedExpr(cellp->fileline(), pr.path());
             // V3LinkCells has already created a pin for every port of the
             // instantiated module, so there is always one to fill here.
             UASSERT_OBJ(existingp, cellp, "No pin for promoted port " + pr.port());

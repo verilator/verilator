@@ -47,10 +47,10 @@ public:
         , m_inner{inner}
         , m_width{width}
         , m_signed{isSigned} {}
-    string refModule() const { return m_refModule; }
-    string port() const { return m_port; }
-    string path() const { return m_path; }
-    string inner() const { return m_inner; }
+    const string& refModule() const { return m_refModule; }
+    const string& port() const { return m_port; }
+    const string& path() const { return m_path; }
+    const string& inner() const { return m_inner; }
     int width() const { return m_width; }
     bool isSigned() const { return m_signed; }
     // A reference into the block reads a signal the block already has, so it
