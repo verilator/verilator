@@ -3330,6 +3330,41 @@ private:
                 }
                 continue;
             }
+            // One write port and one synchronous read port on different clocks (an
+            // asynchronous FIFO or packet buffer: eth_pkt_buf256 writes on clk and
+            // reads on rd_clk): the single-clock primitives would move one side into
+            // the other's domain, so it becomes a true dual port, port 1 writing on
+            // the write clock, port 2 reading on the read clock
+            if (allSync && nw == 1 && nr == 1 && !m.writes[0].clk.text.empty() && !m.sync[0].clk.text.empty()
+                && m.writes[0].clk.text != m.sync[0].clk.text) {
+                SItem& it = addCell("memory_tdp_sync", m.name + "_inst");
+                it.keep = true;
+                it.params = params;
+                const SMem::SyncRead& sr = m.sync[0];
+                pinIn(it, "clk1", m.writes[0].clk);
+                pinIn(it, "en1", m.writes[0].en);
+                pinIn(it, "we1", m.writes[0].en);
+                pinIn(it, "addr1", addr(m.writes[0].idx));
+                pinIn(it, "wdata1", m.writes[0].data);
+                it.pins.push_back({"rdata1", ""});
+                pinIn(it, "clk2", sr.clk);
+                pinIn(it, "en2", sr.en);
+                pinIn(it, "we2", constExpr(0, 1));
+                pinIn(it, "addr2", addr(m.readIdx[0]));
+                pinIn(it, "wdata2", zeroD);
+                pinOut(it, "rdata2", sr.q, sr.qRefs);
+                m_regsInBlock.emplace_back(sr.q, m.dataWidth);
+                continue;
+            }
+            if (allSync && nw >= 1) {
+                for (size_t i = 0; i < nr && i < m.sync.size(); ++i) {
+                    if (!m.sync[i].clk.text.empty() && !m.writes[0].clk.text.empty()
+                        && m.sync[i].clk.text != m.writes[0].clk.text)
+                        warn("memory " + m.name + ": read port " + std::to_string(i + 1) + " clocked by "
+                             + m.sync[i].clk.text + ", writes by " + m.writes[0].clk.text
+                             + "; the primitive has one clock");
+                }
+            }
             if (allSync) {
                 // Synchronous-read primitives, up to two read ports per bank
                 for (size_t bank = 0; bank * 2 < nr; ++bank) {
