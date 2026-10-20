@@ -10,8 +10,8 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
-test.top_filename = "t/t_vpi_lazy.v"
-test.pli_filename = "t/t_vpi_lazy.cpp"
+test.top_filename = "t/t_vpi_drivers.v"
+test.pli_filename = "t/t_vpi_drivers.cpp"
 
 test.compile(make_top_shell=False,
              make_main=False,

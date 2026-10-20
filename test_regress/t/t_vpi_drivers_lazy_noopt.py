@@ -10,9 +10,9 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_vpi_lazy.v"
-test.pli_filename = "t/t_vpi_lazy.cpp"
-test.golden_filename = "t/t_vpi_lazy.out"
+test.top_filename = "t/t_vpi_drivers.v"
+test.pli_filename = "t/t_vpi_drivers.cpp"
+test.golden_filename = "t/t_vpi_drivers_lazy.out"
 
 # What is readable and writable must not depend on optimization
 test.compile(verilator_flags2=[

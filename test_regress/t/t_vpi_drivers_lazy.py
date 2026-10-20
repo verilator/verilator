@@ -11,6 +11,8 @@ import vltest_bootstrap
 
 # Not vltmt: the design calls VPI from an always block, which --threads may run off the main thread
 test.scenarios('vlt')
+test.top_filename = "t/t_vpi_drivers.v"
+test.pli_filename = "t/t_vpi_drivers.cpp"
 
 # --vpi-lazy implies --vpi. TestVpiMain, unlike --binary's main, lands inertial puts. The split
 # options spread the rebuilds over many functions and files; --stats only emits its counts.
