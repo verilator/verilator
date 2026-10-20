@@ -56,7 +56,7 @@ public:
                        const AstVar* varp) VL_MT_DISABLED;
     // Mark candidates' combinationally driven bits ahead of prepare(), which re-marks them.
     static void classifyComb(AstNetlist* nodep) VL_MT_DISABLED;
-    // Preserve reconstructable lazy signals before optimisation.
+    // Preserve reconstructable lazy signals before optimization.
     static void prepare(AstNetlist* nodep) VL_MT_DISABLED;
     // AstNetlist owns this opaque context.
     static V3VpiLazyContext* newContext() VL_MT_DISABLED;

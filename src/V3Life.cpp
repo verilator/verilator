@@ -256,7 +256,7 @@ public:
     }
     void externalCall() {
         // User code may get or put a --vpi-lazy signal, which --public-flat-rw would never
-        // have optimised: no known value or removable store survives the call
+        // have optimized: no known value or removable store survives the call
         if (!v3Global.opt.vpiLazy()) return;
         for (LifeBlock* blockp = this; blockp; blockp = blockp->m_aboveLifep) {
             for (auto& itr : blockp->m_map) {

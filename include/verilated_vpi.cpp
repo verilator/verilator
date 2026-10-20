@@ -621,7 +621,7 @@ public:
         return m_fullname.c_str();
     }
     uint8_t* prevDatap() const { return m_prevDatap; }
-    // The value as last materialised or stored, without re-resolving a --vpi-lazy row
+    // The value as last materialized or stored, without re-resolving a --vpi-lazy row
     void* shadowDatap() const { return m_varDatap; }
     void* readDatap() const override {
         // Refresh, but return m_varDatap rather than the refreshed base: an element handle

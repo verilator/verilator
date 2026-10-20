@@ -307,7 +307,7 @@ module t (
     end
   end
 
-  // Writability must not depend on optimisation flags: V3Split parts the latch from the
+  // Writability must not depend on optimization flags: V3Split parts the latch from the
   // impure statement, V3Case lowers a full case as a tree or as an if/else chain, and
   // V3Const folds a parameter condition unless -fno-const-before-dfg
   logic [7:0] spl_l;

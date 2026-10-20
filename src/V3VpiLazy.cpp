@@ -44,7 +44,7 @@
 //
 // A group is claimed only if one ordered walk over its statements proves that
 // every read of a group variable's bits follows a write of them on every path,
-// that every statement is pure and of a modelled kind, and that every target
+// that every statement is pure and of a modeled kind, and that every target
 // is written on all paths. Groups in a dependency cycle merge into one, its
 // blocks in encounter order, and are claimed if that walk proves the merged
 // group. Otherwise its targets are retained, and Bail records why for --stats.
@@ -53,7 +53,7 @@
 //
 //   classifyCombDriven                       the bits a VPI put may not change
 //   findHelperCandidates                     vars a copy needs promoted to a target
-//   formGroups, analyseGroups                form, then prove or bail
+//   formGroups, analyzeGroups                form, then prove or bail
 //   anchorConsumersOfAnchored                anchor shared cones reading an anchored one
 //   buildDependencyGraph, splitCyclesRetainCores, topoOrderSurvivors
 //                                            retain cycle cores, order the rest
@@ -134,7 +134,7 @@
 // instance's. An anchored group's instance may thus be claimed while another of
 // its variable is retained: the variable keeps its role and storage for the
 // retained instances, and the claimed ones move to an unflagged twin the
-// optimiser is free to eliminate, so storage is kept per instance.
+// optimizer is free to eliminate, so storage is kept per instance.
 //
 // Determinism: pointer-keyed maps are never iterated where order reaches
 // output; iteration always walks a companion vector in tree-encounter order.
@@ -234,7 +234,7 @@ struct PartExtent final {
     int width = 0;  // Bits written from lsb
 };
 
-// One combinational block as LazyGatherVisitor found it, before any optimisation.
+// One combinational block as LazyGatherVisitor found it, before any optimization.
 struct CombBlock final {
     AstAlways* m_alwaysp = nullptr;  // The combo block
     AstScope* m_scopep = nullptr;  // Scope that authored the block
@@ -657,7 +657,7 @@ public:
         classifyCombDriven();
         findHelperCandidates();
         formGroups();
-        analyseGroups();
+        analyzeGroups();
         anchorConsumersOfAnchored();
         buildDependencyGraph();
         splitCyclesRetainCores();
@@ -1519,7 +1519,7 @@ private:
     }
 
     // A var first defined in part is assembled into a zeroed shadow, but for its undriven bits.
-    bool analyseGroup(Group* g, Bail& whyr) const {
+    bool analyzeGroup(Group* g, Bail& whyr) const {
         for (const CombBlock* const bp : g->blockps)
             if (bailIf(whyr, Bail::IMPURE, bp->m_impure)) return false;
         DefinedBits defined;
@@ -1534,12 +1534,12 @@ private:
         return true;
     }
 
-    void analyseGroups() {
+    void analyzeGroups() {
         for (const auto& ownp : m_groups) {
             Group* const g = ownp.get();
             if (!g->live) continue;
             Bail why = Bail::UNSUPPORTED_STMT;
-            if (!analyseGroup(g, why)) killGroupsOfKey(g->keyp, why);
+            if (!analyzeGroup(g, why)) killGroupsOfKey(g->keyp, why);
         }
     }
 
@@ -1596,7 +1596,7 @@ private:
     }
 
     // A cycle between groups need not be one between bits. Merged into the first, its blocks run
-    // in encounter order, and analyseGroup proves every read follows its write.
+    // in encounter order, and analyzeGroup proves every read follows its write.
     bool mergeCycle(const std::vector<Group*>& sccps) {
         Group* const g = sccps[0];
         Group merged;
@@ -1615,7 +1615,7 @@ private:
         // Every CombBlock is an element of one vector, so address order is encounter order
         std::sort(merged.blockps.begin(), merged.blockps.end());
         Bail why = Bail::COMB_CYCLE;
-        if (!analyseGroup(&merged, why)) return false;
+        if (!analyzeGroup(&merged, why)) return false;
         g->blockps = std::move(merged.blockps);
         g->members = std::move(merged.members);
         g->zeroInitps = std::move(merged.zeroInitps);
@@ -1765,7 +1765,7 @@ private:
         dropFromOrdered();
     }
 
-    // Reads pre-optimisation statements, so a width change appears as a Cast/Extend and is
+    // Reads pre-optimization statements, so a width change appears as a Cast/Extend and is
     // refused: memcpy cannot convert.
     AstVarScope* soleCopySource(const Group* g) const {
         if (g->targets.size() != 1 || !g->temps.empty() || g->blockps.size() != 1) return nullptr;
@@ -2295,7 +2295,7 @@ private:
     }
 
     // The lazy role is per variable, but storage is kept per instance: instances not kept move
-    // to a twin with no role, which the optimiser is free to eliminate.
+    // to a twin with no role, which the optimizer is free to eliminate.
     void splitKeptInstances() {
         for (AstVarScope* const vscp : m_gather.m_vscOrder) {
             AstVar* const varp = vscp->varp();

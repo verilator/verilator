@@ -1832,7 +1832,7 @@ class ConstVisitor final : public VNVisitor {
         return false;
     }
     // Also any identical pure trees, keeping 'e || e' and 'e == e' out of the C++, which
-    // -Wlogical-op and -Wtautological-compare reject. Not for reassociation: cancelling
+    // -Wlogical-op and -Wtautological-compare reject. Not for reassociation: canceling
     // there can fold a legal comb loop into 'wire x=x'.
     static bool operandsSameTree(const AstNode* node1p, const AstNode* node2p) {
         return operandsSame(node1p, node2p)
