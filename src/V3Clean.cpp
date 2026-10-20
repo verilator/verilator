@@ -322,9 +322,7 @@ class CleanVisitor final : public VNVisitor {
     void visit(AstCMethodHard* nodep) override {
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->pinsp());
-        // Arithmetic reductions may overflow the element/with type in C++ storage.
-        setClean(nodep, nodep->method() != VCMethod::ARRAY_R_SUM
-                            && nodep->method() != VCMethod::ARRAY_R_PRODUCT);
+        setClean(nodep, nodep->cleanOut());
     }
     void visit(AstWith* nodep) override {
         iterateChildren(nodep);

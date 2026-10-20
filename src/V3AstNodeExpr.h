@@ -846,7 +846,7 @@ public:
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
+    bool cleanOut() const override { return m_method.isClean(); }
     bool usePtr() const { return m_usePtr; }
     void usePtr(bool flag) { m_usePtr = flag; }
     VCMethod method() const VL_MT_STABLE { return m_method; }
