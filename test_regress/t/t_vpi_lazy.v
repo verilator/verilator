@@ -818,6 +818,11 @@ module lz_order (
   function int t_xq();
     return int'(xq);
   endfunction
+  // A comb signal a DPI export reads
+  export "DPI-C" function t_xq_c;
+  function int t_xq_c();
+    return int'(xq_c);
+  endfunction
 endmodule
 
 `ifdef T_VPI_LAZY_SAVABLE
