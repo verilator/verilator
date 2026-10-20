@@ -7419,11 +7419,14 @@ class WidthVisitor final : public VNVisitor {
         } else if (const AstUnpackArrayDType* const adtypep
                    = VN_CAST(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
             subp = adtypep->subDTypep();
+        } else if (const AstDynArrayDType* const adtypep
+                   = VN_CAST(nodep->memp()->dtypep()->skipRefp(), DynArrayDType)) {
+            subp = adtypep->subDTypep();
         } else {
-            nodep->memp()->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: "
-                                      << nodep->verilogKwd()
-                                      << " into other than unpacked or associative array");
+            nodep->memp()->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: " << nodep->verilogKwd()
+                                << " into other than unpacked, dynamic, or associative array");
         }
         if (subp
             && (!subp->skipRefp()->basicp()

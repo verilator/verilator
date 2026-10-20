@@ -63,6 +63,7 @@ Verilator 5.053 devel
 * Support covergroup fixed-size bin arrays (#8514). [Marco Bartoli]
 * Support wildcard bins (#8516). [Marco Bartoli]
 * Support coverpoint bin `with` filters (#8518). [Marco Bartoli]
+* Support `$readmemh` to associative and dynamic arrays (#8590). [Martin Velay]
 * Support inout ports at the hierarchical boundary (#8646). [Yutetsu TAKATSUKASA]
 * Support parameter overrides that use ?: to pick a pattern (#8671). [Michael Bedford Taylor]
 * Support cross cover `with` filters (#8729). [Marco Bartoli]
