@@ -9,6 +9,11 @@
 //
 //*************************************************************************
 
+#ifdef VERILATOR
+#include "verilated.h"
+#include "verilated_vpi.h"
+#endif
+
 #include "TestCheck.h"
 #include "TestVpi.h"
 #include "svdpi.h"
@@ -89,9 +94,10 @@ PLI_INT32 runStep(p_cb_data) {
     s_steps[s_stepNo++]();
     if (s_stepNo < s_steps.size()) {
         scheduleStep();
-    } else if (!errors) {
-        std::printf("*-* All Finished *-*\n");
+        return 0;
     }
+    if (!errors) std::printf("*-* All Finished *-*\n");
+    vpi_control(vpiFinish, 0);
     return 0;
 }
 
@@ -351,6 +357,13 @@ uint32_t ohDriven(uint32_t d) {
     return i | (i & 3 ? 1U : 0U) << 4 | (i & 0xc ? 1U : 0U) << 6 | (i ? 1U : 0U) << 8;
 }
 
+// --binary's main, unlike other simulators, lands an inertial put only when asked
+void landInertial() {
+#ifdef VERILATOR
+    VerilatedVpi::doInertialPuts();
+#endif
+}
+
 void script() {
     // After the first eval, which fired each callback once for its settle
     step([] {
@@ -461,10 +474,12 @@ void script() {
         accept("t.st", s_st ^ 0xff, vpiInertialDelay);
     });
     step([] {
+        landInertial();
         check("t.st.cnt inertial", get("t.st.cnt"), (s_st >> 1) ^ 0x7f);
         accept("t.st.cnt", 0x09, vpiInertialDelay);
     });
     step([] {
+        landInertial();
         check("t.st.cnt inertial", get("t.st.cnt"), 0x09);
         check("t.st.busy", get("t.st.busy"), 1);
         // A packed member takes its parent's mask
@@ -676,6 +691,9 @@ extern "C" void midEvalPut(const char* name, int v) { put(name, static_cast<uint
 #endif
 
 void startup() {
+#ifdef VERILATOR
+    Verilated::fatalOnVpiError(false);
+#endif
     s_cb_data cb{};
     cb.reason = cbStartOfSimulation;
     cb.cb_rtn = startOfSimulation;

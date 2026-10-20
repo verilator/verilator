@@ -14,14 +14,14 @@ test.scenarios('vlt')
 test.top_filename = "t/t_vpi_drivers.v"
 test.pli_filename = "t/t_vpi_drivers.cpp"
 
-# --vpi-lazy implies --vpi. TestVpiMain, unlike --binary's main, lands inertial puts. The split
-# options spread the rebuilds over many functions and files; --stats only emits its counts.
+# --vpi-lazy implies --vpi. The split options spread the rebuilds over many functions and files;
+# --stats only emits its counts.
 test.compile(make_top_shell=False,
              make_main=False,
              verilator_flags2=[
-                 "--exe --vpi-lazy --no-l2name --stats --output-split 200 --output-split-cfuncs 20"
-                 " --comp-limit-blocks 3 -fno-inline-cfuncs", test.pli_filename,
-                 "t/TestVpiMain.cpp"
+                 "--binary --vpi-lazy --no-l2name --stats --output-split 200"
+                 " --output-split-cfuncs 20 --comp-limit-blocks 3 -fno-inline-cfuncs",
+                 test.pli_filename
              ])
 
 test.execute(all_run_flags=["+verilator+rand+reset+1"], expect_filename=test.golden_filename)

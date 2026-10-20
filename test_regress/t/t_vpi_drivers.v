@@ -4,6 +4,7 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+`define stop $stop
 `define STRINGIFY(x) `"x`"
 
 // --vpi-lazy: every signal reads as the RTL implies, before the first eval and mid-eval, and a
@@ -636,6 +637,13 @@ module t #(
       .clk,
       .fo(out_f)
   );
+
+  // The driver finishes; a pending event keeps --binary's main running until it does
+  initial begin
+    #1000;
+    $write("%%Error: timeout\n");
+    `stop;
+  end
 endmodule
 
 module sub_xc (

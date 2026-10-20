@@ -15,10 +15,11 @@ test.pli_filename = "t/t_vpi_drivers.cpp"
 test.golden_filename = "t/t_vpi_drivers_lazy.out"
 
 # What is readable and writable must not depend on optimization
-test.compile(verilator_flags2=[
-    "--exe --build --vpi-lazy --no-l2name -O0 -fno-const-before-dfg",
-    f"-CFLAGS -DVM_PREFIX={test.vm_prefix}", test.pli_filename, "t/TestVpiMain.cpp"
-])
+test.compile(make_top_shell=False,
+             make_main=False,
+             verilator_flags2=[
+                 "--binary --vpi-lazy --no-l2name -O0 -fno-const-before-dfg", test.pli_filename
+             ])
 
 test.execute(all_run_flags=["+verilator+rand+reset+1"], expect_filename=test.golden_filename)
 
