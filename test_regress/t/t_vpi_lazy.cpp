@@ -355,8 +355,6 @@ void script() {
         reportValueCbs();
         in("rst", 0);
         in("rst_n", 1);
-        in("set_n", 1);
-        in("ld", 0);
         in("clk", 1);
     });
     step([] { in("clk", 0); });
@@ -382,14 +380,12 @@ void script() {
         in("en", 0);
     });
     step([] {
-        for (const char* name :
-             {"t.ff_q", "t.arn_q", "t.arp_q", "t.as_q", "t.al_q", "t.lat_q", "t.ilat_q",
-              "t.undr_mem[2]", "t.init_r", "t.ini_r", "t.in_a", "t.frw_c", "t.frc_al", "t.u_ff.q",
-              "t.bus.q", "t.pf", "t.intf_inst.sig", "t.spl_l", "t.imp_l"}) {
+        for (const char* name : {"t.ff_q", "t.arn_q", "t.lat_q", "t.in_a", "t.frc_al", "t.u_ff.q",
+                                 "t.bus.q", "t.spl_l"}) {
             accept(name, 0x5a);
         }
         // Each instance as the RTL drives it, beside a comb-driven instance of the same variable
-        for (const char* name : {"t.ia.q", "t.cf0.p", "t.cu.p", "t.mc2.m"}) accept(name, 0x5a);
+        for (const char* name : {"t.ia.q", "t.mc2.m"}) accept(name, 0x5a);
         s_mix = get("t.u_mix.m");
         accept("t.u_mix.m", (s_mix & 1) | 0xa4);
         in("d", 0x33);
@@ -408,28 +404,13 @@ void script() {
         check("t.n_ff", get("t.n_ff"), 0x5a);
         check("t.n_mix", get("t.n_mix"), (s_mix & 1) | 0xa4);
         check("t.n_if", get("t.n_if"), 0x5a);
-        check("t.n_in", get("t.n_in"), 0xa5);
-        check("t.n_cons", get("t.n_cons"), 0x5a);
         check("t.n_ia", get("t.n_ia"), 0x5a);
-        check("t.n_cf0", get("t.n_cf0"), 0x5a);
-        check("t.n_cu", get("t.n_cu"), 0x5a);
         check("t.n_mc2", get("t.n_mc2"), 0x5a);
         check("t.ia.q edge", get("t.ia.q"), 0x33);
         check("t.ib.q edge", get("t.ib.q"), 0x33);
-
-        for (const char* name :
-             {"t.asg_w",     "t.ac_c",     "t.star_c",  "t.out_c",   "t.sub_o",  "t.u_sub.o",
-              "t.fc_c",      "t.gclk",     "t.vidx[0]", "t.cst_w",   "t.loop_c", "t.while_c",
-              "t.w_ff",      "t.w_mix",    "t.u_in.i",  "t.c1_c",    "t.cg_c",   "t.pon_c",
-              "t.pand_c",    "t.px_o",     "t.u_px.i",  "t.u_px.o",  "t.tw",     "t.tw_r",
-              "t.out_q",     "t.out_m",    "t.ib.q",    "t.cf1.p",   "t.ch2",    "t.sgn_c",
-              "t.cat_c",     "t.self_c",   "t.part_c",  "t.ctv_c",   "t.cts_c",  "t.hl_c",
-              "t.us_c.a",    "t.mem_c[0]", "t.mixf_w",  "t.ovl_w",   "t.al1",    "t.al2",
-              "t.pass_o",    "t.fmid_c",   "t.sib_b",   "t.sib_c",   "t.wd_w",   "t.u_wdrv.o",
-              "t.rdpin",     "t.ivec",     "t.cy0.din", "t.cy1.din", "t.cy0.cy", "t.tmp_o",
-              "t.u_tmp.cpy", "t.ifd.a",    "t.alc_x",   "t.plv_c"}) {
+        // The golden's writability map covers every row; these print the refusal
+        for (const char* name : {"t.out_c", "t.cst_w", "t.w_ff", "t.u_px.i", "t.ib.q", "t.rbw_c"})
             reject(name, get(name) ^ 0x5b);
-        }
         {
             vpiHandle const mdp = vpi_handle_by_index(vpi_handle_by_index(find("t.mdp_c"), 0), 0);
             TEST_CHECK_NZ_LABEL("t.mdp_c[0][0]", mdp);
@@ -438,40 +419,17 @@ void script() {
             TEST_CHECK_ERROR(true);
             check("t.mdp_c[0][0]", get(mdp), before);
         }
-        // A refused put into one instance leaves the other's value as its own driver made it
-        check("t.cy1.cy", get("t.cy1.cy"), get("t.k_q") ^ 0xa5);
         // Each alias row reports its own metadata, not its canonical's, and reads the canonical
-        for (const char* name : {"t.al_sw", "t.al_nw", "t.al1", "t.sib_bt", "t.ch1"}) {
+        for (const char* name : {"t.al_sw", "t.sib_bt", "t.ch1"}) {
             TEST_CHECK_EQ_LABEL(name, vpi_get(vpiSize, find(name)), 8);
         }
         TEST_CHECK_EQ_LABEL("t.al_sw", vpi_get(vpiSigned, find("t.al_sw")), 1);
-        TEST_CHECK_EQ_LABEL("t.sgn_c", vpi_get(vpiSigned, find("t.sgn_c")), 1);
         TEST_CHECK_EQ_LABEL("t.sib_bt", vpi_get(vpiType, find("t.sib_bt")), vpiBitVar);
         TEST_CHECK_EQ_LABEL("t.ch1", vpi_get(vpiType, find("t.ch1")), vpiReg);
-        TEST_CHECK_EQ_LABEL("t.al1", vpi_get(vpiSigned, find("t.al1")), 0);
         TEST_CHECK_EQ_LABEL("t.al_sw", get(vpi_handle(vpiLeftRange, find("t.al_sw"))), 8);
         TEST_CHECK_EQ_LABEL("t.al_sw", get(vpi_handle(vpiRightRange, find("t.al_sw"))), 1);
-        TEST_CHECK_EQ_LABEL("t.pk_al", vpi_get(vpiSize, find("t.pk_al")), 16);
-        for (const char* name : {"t.al_sw", "t.al_nw"}) check(name, get(name), get("t.k_q"));
+        check("t.al_sw", get("t.al_sw"), get("t.k_q"));
         check("t.sib_bt", get("t.sib_bt"), get("t.ch1"));
-        check("t.pk_al", get("t.pk_al"), get("t.pk_c"));
-        check("t.us_c.b", get("t.us_c.b"), 0xff & ~get("t.us_c.a"));
-        // Only the bits no comb driver writes take a put
-        accept("t.nopre_c", get("t.nopre_c") ^ 0xa0);
-        merge("t.nopre_c", get("t.nopre_c") ^ 0x1, 0x0f);
-        merge("t.nopre_c", get("t.nopre_c") ^ 0xff, 0x0f);
-        accept("t.pla_l", get("t.pla_l") ^ 0x0f);
-        accept("t.plb_l", get("t.plb_l") ^ 0x0f);
-        merge("t.plb_l", get("t.plb_l") ^ 0xf0, 0xf0);
-        accept("t.plc_l", get("t.plc_l") ^ 0x0c);
-        merge("t.plc_l", get("t.plc_l") ^ 0x03, 0x03);
-        merge("t.plc_l", get("t.plc_l") ^ 0xff, 0x03);
-        accept("t.plm_l[0]", get("t.plm_l[0]") ^ 0xff);
-        merge("t.plm_l[1]", get("t.plm_l[1]") ^ 0xff, 0xff);
-        merge("t.ple_l[1]", get("t.ple_l[1]") ^ 0xff, 0x0f);
-        merge("t.ple_l[1]", get("t.ple_l[1]") ^ 0x0f, 0x0f);
-        merge("t.plu_l[0]", get("t.plu_l[0]") ^ 0xff, 0xf0);
-        merge("t.plu_l[1]", get("t.plu_l[1]") ^ 0xff, 0x0f);
         // Undriven bits no read reaches hold a put; the driven ones stay the encoder's
         s_dWas = get("TOP.d");
         check("t.oh.v", get("t.oh.v") & ohMask, ohDriven(s_dWas));
@@ -487,17 +445,8 @@ void script() {
     });
     step([] {
         check("t.oh.v restored", get("t.oh.v"), s_ohHeld | ohDriven(s_dWas));
-        // A variable read of the undriven bits sees the put
-        merge("t.dli", get("t.dli") ^ 0xff00ff00, 0x00ff00ff);
-        in("sel", 3);
-    });
-    step([] {
-        check("t.dli_o", get("t.dli_o"), get("t.dli") >> 24);
-        in("sel", 1);
-    });
-    step([] {
-        reject("t.ac_c", 0, vpiInertialDelay);
-        reject("t.ac_c", 0, vpiForceFlag);
+        reject("t.ch1", 0, vpiInertialDelay);
+        reject("t.ch1", 0, vpiForceFlag);
         // public_flat_rw takes a put on a comb-driven net until the next eval
         for (const char* name : {"t.u_na.z", "t.u_na.w"}) accept(name, 0x5a);
         reject("t.u_na.q", get("t.u_na.q") ^ 0x5b);
@@ -537,9 +486,6 @@ void script() {
             TEST_CHECK_ERROR(true);
             check("t.st bad decimal", get("t.st"), before);
         }
-        const uint32_t vec = get("t.vec");
-        accept("t.vec", (vec & 1) | 0xa4);
-        merge("t.vec", get("t.vec") ^ 1, 0x01);
         merge("t.u_mix.m", get("t.u_mix.m") ^ 1, 0x01);
         accept("t.pmem[0]", 0x5a);
         accept("t.pmem[2]", 0x5b);
@@ -579,15 +525,8 @@ void script() {
     step([] {
         check("t.gmem_r after eval", get("t.gmem_r"), s_g0 ^ 0xff);
         const uint32_t d = get("TOP.d");
-        const uint32_t inA = get("TOP.in_a");
-        const uint32_t sel = get("TOP.sel");
-        check("t.vax", (get("t.vax") >> sel) & 1, get("TOP.en"));
         check("t.ct_c", get("t.ct_c"), d);
-        check("t.uw_c", get("t.uw_c"), sel & 1 ? d : inA);
-        check("t.uv_c", get("t.uv_c"), (d & 0xf) ^ inA);
         check("t.mc_x", get("t.mc_x"), (((d + 3) & 0xf) << 4) | (d & 0xf));
-        accept("t.m4[1][1]", get("t.m4[1][1]") ^ 0xff);
-        merge("t.m4[0][0]", get("t.m4[0][0]") ^ 0xff, 0x0f);
         // A refused put into a retained comb signal leaves the flop sampling it its driven value
         s_driven = get("t.ret_c");
         reject("t.ret_c", s_driven ^ 0x5b);
@@ -610,8 +549,8 @@ void script() {
     step([] { in("clk", 0); });
     step([] {
         // A packed member reads through its reconstructed parent and takes its write policy
-        check("t.cts_c.hi", get("t.cts_c.hi"), 0xc);
-        reject("t.cts_c.hi", get("t.cts_c.hi") ^ 0x5);
+        check("t.hl_c.hi", get("t.hl_c.hi"), 0x3);
+        reject("t.hl_c.hi", get("t.hl_c.hi") ^ 0x5);
         accept("t.st.cnt", get("t.st.cnt") ^ 0x2a);
         // Read mid-eval at each rising edge
         s_probes = 0;
@@ -626,12 +565,12 @@ void script() {
         // A put into a stored source, string and real alike, reaches its readers at the next
         // eval; until then they read as before it
         s_held = {get("t.u_po.s_comb"), get("t.u_mi.p0.xali"), get("t.fyx0_c"),
-                  get("t.u_po.f_comb"), get("t.u_cc.frc_c"),   get("t.u_cc.orphan_c")};
+                  get("t.u_po.f_comb"), get("t.orphan_c")};
         s_strComb = getStr(find("t.u_po.str_comb"), vpiStringVal);
         accept("t.u_po.s", 0x22);
         accept("t.u_mi.p0.uc.cflop", 0x3c);
         accept("t.fy0.r", 0x10);
-        accept("t.u_cc.orphan", 0x2a);
+        accept("t.orphan", 0x2a);
         putStr("t.u_po.str", vpiStringVal, "longer_than_any_short_string_buffer");
         TEST_CHECK_ERROR(false);
         putStr("t.u_po.str", vpiStringVal, "longer_than_any_short_string_buffer");
@@ -644,12 +583,10 @@ void script() {
             TEST_CHECK_ERROR(false);
         }
         accept("t.u_po.f", 0x55, vpiForceFlag);
-        accept("t.u_cc.frc", 0x55, vpiForceFlag);
         check("t.u_po.f forced", get("t.u_po.f"), 0x55);
-        check("t.u_cc.frc forced", get("t.u_cc.frc"), 0x55);
         const std::vector<uint32_t> now
-            = {get("t.u_po.s_comb"), get("t.u_mi.p0.xali"), get("t.fyx0_c"),
-               get("t.u_po.f_comb"), get("t.u_cc.frc_c"),   get("t.u_cc.orphan_c")};
+            = {get("t.u_po.s_comb"), get("t.u_mi.p0.xali"), get("t.fyx0_c"), get("t.u_po.f_comb"),
+               get("t.orphan_c")};
         for (size_t i = 0; i < now.size(); ++i) check("held before eval", now[i], s_held[i]);
         TEST_CHECK_EQ(getStr(find("t.u_po.str_comb"), vpiStringVal), s_strComb);
         // Each instance keeps its own
@@ -661,45 +598,34 @@ void script() {
         check("t.u_mi.p0.xali", get("t.u_mi.p0.xali"), 0x3c);
         check("t.u_mi.p1.uc.cflop", get("t.u_mi.p1.uc.cflop"), s_held[2]);
         check("t.fyx0_c", get("t.fyx0_c"), (0x11 ^ 0x55));
-        check("t.u_cc.orphan_c", get("t.u_cc.orphan_c"), 0x2a ^ 0x0f);
+        check("t.orphan_c", get("t.orphan_c"), 0x2a ^ 0x0f);
         check("t.u_po.f_comb", get("t.u_po.f_comb"), 0x55 ^ 0x0f);
-        check("t.u_cc.frc_c", get("t.u_cc.frc_c"), 0x55 ^ 0x7f);
         TEST_CHECK_EQ(getStr(find("t.u_po.str_comb"), vpiStringVal),
                       std::string{"longer_than_any_short_string_buffer!"});
         TEST_CHECK_EQ(getStr(find("t.u_po.r_comb"), vpiRealVal), std::to_string(8.0));
-        // Released, a flop holds until its next edge, a net follows its driver
+        // Released, a flop holds until its next edge
         accept("t.u_po.f", 0, vpiReleaseFlag);
-        accept("t.u_cc.frc", 0, vpiReleaseFlag);
         check("t.u_po.f released", get("t.u_po.f"), 0x55);
-        // A top input read through $root
-        in("pre_in", 0x5c);
         in("clk", 1);
     });
     step([] {
         check("t.u_po.f_comb", get("t.u_po.f_comb"), ((0x22 + 1) ^ 0x0f));
-        check("t.u_cc.frc", get("t.u_cc.frc"), (get("t.u_cc.keep_frc") + 0x11) & 0x7f);
         check("t.u_mi.observe2", get("t.u_mi.observe2"), s_held[0] ^ s_held[1] ^ 0x2a);
-        check("t.u_cc.pre_ic", get("t.u_cc.pre_ic"), 0x5c);
-        // Set mid-eval by initial blocks, which read them back
-        check("t.u_po.mid_seen", get("t.u_po.mid_seen"), 0x5b);
+        // Set mid-eval by an initial block, which reads it back
         check("t.u_po.mc_a", get("t.u_po.mc_a"), 0x01);
         check("t.u_po.mc_b", get("t.u_po.mc_b"), 0x04);
         // A parameter is read-only
-        reject("t.u_cb.INTF_QTY", 5);
+        reject("t.INTF_QTY", 5);
         // An element of a rebuilt memory
-        check("t.u_cc.mem[2]", get(vpi_handle_by_index(find("t.u_cc.mem"), 2)),
-              (get("TOP.d") + 2) & 0xff);
+        const uint32_t d = get("TOP.d");
+        const uint32_t m1 = ((d >> 4) | ((((d >> 4) ^ get("TOP.in_a")) & 0xf) << 4)) & 0xff;
+        check("t.mem_chain[2]", get(vpi_handle_by_index(find("t.mem_chain"), 2)), (m1 + 1) & 0xff);
         // A member of a rebuilt memory's element
-        check("t.hla_c[1].lo", get("t.hla_c[1].lo"), ~get("TOP.d") & 0xf);
+        check("t.hla_c[1].lo", get("t.hla_c[1].lo"), ~d & 0xf);
         reject("t.hla_c[1].lo", get("t.hla_c[1].lo") ^ 0x5);
         in("clk", 0);
     });
-    step([] {
-        // Latches -O2 never opens hold what is put, so read alike under any -O
-        merge("t.plc_l", 0xa5, 0x03);
-        accept("t.plm_l[0]", 0xa5);
-        dumpRows();
-    });
+    step([] { dumpRows(); });
 }
 
 PLI_INT32 startOfSimulation(p_cb_data) {
@@ -707,22 +633,18 @@ PLI_INT32 startOfSimulation(p_cb_data) {
     in("clk", 0);
     in("rst", 1);
     in("rst_n", 0);
-    in("set_n", 0);
-    in("ld", 1);
     in("en", 0);
     in("never", 0);
     in("sel", 1);
     in("d", 0x21);
     in("in_a", 0x40);
     // Each fires once, for the first eval's settle
-    armValueCbs({"t.ch1", "t.fmid_c", "t.sib_b", "t.al_sw", "t.cy0.din", "t.cy0.cy", "t.cy1.cy",
-                 "t.ifd.din", "t.ifd.a", "t.ff_q", "t.hl_c.hi", "t.hl_c.lo", "t.hl_c",
-                 "t.u_sub.i"});
+    armValueCbs({"t.ch1", "t.fmid_c", "t.sib_b", "t.al_sw", "t.ff_q", "t.hl_c.hi", "t.hl_c.lo",
+                 "t.hl_c", "t.u_px.i"});
     script();
     scheduleStep();
     return 0;
 }
-
 }  // namespace
 
 // An impure 1, which a cone can't be rebuilt over

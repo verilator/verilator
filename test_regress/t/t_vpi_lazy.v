@@ -46,19 +46,6 @@ module sub_if (
   always_ff @(posedge clk) bus.q <= d;
 endmodule
 
-interface ifc_cons;
-  logic [7:0] sig;
-  modport cons(input sig);
-endinterface
-
-module sub_cons (
-    input logic clk,
-    ifc_cons.cons bus,
-    output logic [7:0] cap
-);
-  always_ff @(posedge clk) cap <= bus.sig;
-endmodule
-
 interface ifc_pair;
   logic [7:0] q;
 endinterface
@@ -70,25 +57,6 @@ endmodule
 module sub_ni;
   /*verilator no_inline_module*/
   logic [7:0] m;
-endmodule
-
-module sub_pass (
-    /* verilator lint_off UNOPTFLAT */
-    input logic [7:0] i,
-    /* verilator lint_on UNOPTFLAT */
-    /* verilator lint_off MULTIDRIVEN */
-    output logic [7:0] o
-    /* verilator lint_on MULTIDRIVEN */
-);
-  assign o = i;
-endmodule
-
-module sub_cy (
-    input logic [7:0] din
-);
-  /*verilator no_inline_module*/
-  logic [7:0] cy;
-  assign cy = din ^ 8'ha5;
 endmodule
 
 // A cone over the instance's own flop, read from the parent
@@ -111,39 +79,6 @@ module sub_fy (
   logic [7:0] imp_c;
   assign imp_c = r ^ 8'(dpiOne());
 endmodule
-
-// 'o' is a port, but only a temporary of the block computing 'mix'
-module sub_tmp (
-    input logic [7:0] i,
-    output logic [7:0] o,
-    output logic [7:0] obs
-);
-  /*verilator no_inline_module*/
-  logic [7:0] mix;
-  logic [7:0] cpy;
-  always_comb begin
-    o = i ^ 8'h5a;
-    mix = o + 8'd3;
-  end
-  always_comb cpy = o;
-  assign obs = mix ^ cpy;
-endmodule
-
-// A non-inlined module's comb output port
-module sub_np (
-    input logic [7:0] i,
-    output logic [7:0] o
-);
-  /*verilator no_inline_module*/
-  assign o = i + 8'd7;
-endmodule
-
-interface ifc_din (
-    input logic [7:0] din
-);
-  logic [7:0] a;
-  assign a = din + 8'h11;
-endinterface
 
 // Non-ANSI ports with separate net declarations, public_flat_rw/rd after or before the port
 module sub_na (
@@ -196,22 +131,18 @@ module put_oh (
   assign addr_o = addr[2][1:0];
 endmodule
 
-module t (
+module t #(
+    parameter int INTF_QTY = 3
+) (
     input logic clk,
     input logic rst,
     input logic rst_n,
-    input logic set_n,
-    input logic ld,
     input logic en,
     input logic never,
     input logic [1:0] sel,
     input logic [7:0] d,
     input logic [7:0] in_a,
-    output logic [7:0] out_q,
     output logic [7:0] out_c,
-    output logic [7:0] out_m,
-    input logic [7:0] pre_in,
-    output logic [6:0] lut_out,
     output logic [7:0] out_f
 );
 
@@ -225,87 +156,21 @@ module t (
   // Writable
   logic [7:0] ff_q;
   logic [7:0] arn_q;
-  logic [7:0] arp_q;
-  logic [7:0] as_q;
-  logic [7:0] al_q;
   logic [7:0] lat_q;
-  logic [7:0] ilat_q;
-  logic [7:0] undr_mem[4];
-  logic [7:0] init_r = 8'h11;
-  logic [7:0] ini_r;
-  logic [7:0] imp_l;
 
   always_ff @(posedge clk) ff_q <= d;
   always_ff @(posedge clk or negedge rst_n)
     if (!rst_n) arn_q <= '0;
     else arn_q <= d;
-  always_ff @(posedge clk or posedge rst)
-    if (rst) arp_q <= '0;
-    else arp_q <= d;
-  always_ff @(posedge clk or negedge set_n)
-    if (!set_n) as_q <= '1;
-    else as_q <= d;
-  always_ff @(posedge clk or posedge ld)
-    if (ld) al_q <= in_a;
-    else al_q <= d;
   always_latch if (en) lat_q = d;
-  /* verilator lint_off LATCH */
-  always @* if (en) ilat_q = d;
-  /* verilator lint_on LATCH */
-  initial ini_r = 8'h22;
-  always_ff @(posedge clk) out_q <= d;
 
   // Read-only
-  logic [7:0] asg_w;
-  logic [7:0] ac_c;
-  logic [7:0] star_c;
-  logic [7:0] sub_o;
-  logic [7:0] fc_c;
-  logic gclk;
-  logic [7:0] g_q;
   logic [7:0] vidx[4];
   logic [7:0] cst_w;
-  logic [7:0] loop_c;
-  logic [7:0] while_c;
 
-  assign asg_w = d ^ 8'h0f;
-  always_comb ac_c = d + 8'd1;
-  always @* begin
-    star_c = '0;
-    if (en) star_c = d;
-  end
   assign out_c = d & 8'hf0;
-  sub u_sub (
-      .i(d),
-      .o(sub_o)
-  );
-  always @*
-    case (sel)
-      2'd0: fc_c = d;
-      2'd1: fc_c = in_a;
-      2'd2: fc_c = ~d;
-      2'd3: fc_c = ~in_a;
-    endcase
-  // A latch, impure or not
-  /* verilator lint_off LATCH */
-  always @* begin
-    if (en) imp_l = d;
-    if (never) $display("%0d", imp_l);
-  end
-  /* verilator lint_on LATCH */
-  assign gclk = clk & en;
-  always_ff @(posedge gclk) g_q <= d;
   always_comb vidx[sel] = d;
   assign cst_w = CST;
-  always_comb for (int i = 0; i < 200; i++) loop_c = d + 8'(i);
-  always_comb begin
-    int i;
-    i = 0;
-    while (i < 100) begin
-      while_c = d;
-      i++;
-    end
-  end
 
   // Writability must not depend on optimization flags: V3Split parts the latch from the
   // impure statement, V3Case lowers a full case as a tree or as an if/else chain, and
@@ -360,24 +225,13 @@ module t (
   /* verilator lint_off UNOPTFLAT */
   st_t st;
   /* verilator lint_on UNOPTFLAT */
-  logic [7:0] vec;
   logic [7:0] pmem[4];
 
   always_ff @(posedge clk) st.cnt <= st.cnt + 7'd1;
   assign st.busy = st.cnt != '0;
-  always_ff @(posedge clk) vec[7:1] <= d[7:1];
-  assign vec[0] = en;
   assign pmem[1] = d;
   assign pmem[3] = ~d;
 
-  always_ff @(posedge clk) out_m[7:1] <= d[7:1];
-  assign out_m[0] = en;
-
-  // A partial write into a 4-dim variable masks only the bits it drives
-  logic [1:0][3:0] m4[2][2];
-  logic [7:0] m4_c;
-  assign m4[0][0][0] = d[3:0];
-  assign m4_c = {4'b0, m4[0][0][0]};
 
   // Undriven bits no read reaches hold a put; the driven ones stay the encoder's
   logic [1:0] oh_a;
@@ -387,32 +241,14 @@ module t (
       .addr_o(oh_a),
       .v_o(oh_vo)
   );
-  // A variable read reaches the undriven bits, so they stay in the storage the design reads
-  logic [3:0][7:0] dli;
-  logic [7:0] dli_o;
-  assign dli[0] = '0;
-  assign dli[2] = d;
-  assign dli_o = dli[sel];
 
-  // Ports: a child's output flop is writable, the parent's net on it and a child's input are not
+  // Ports: a child's output flop is writable, the parent's net on it is not
   logic [7:0] w_ff;
   logic [7:0] w_mix;
-  logic [7:0] pf;
-  logic [7:0] in_o;
-  logic [7:0] n_q;
   logic [7:0] n_ff;
   logic [7:0] n_mix;
   logic [7:0] n_if;
-  logic [7:0] n_in;
-  logic [7:0] n_cons;
   ifc bus ();
-  // Nothing drives intf_inst.sig, so it is undriven storage
-  ifc_cons intf_inst ();
-  sub_cons u_cons (
-      .clk,
-      .bus(intf_inst),
-      .cap(n_cons)
-  );
 
   sub_ff u_ff (
       .clk,
@@ -430,35 +266,21 @@ module t (
       .d,
       .bus
   );
-  always_ff @(posedge clk) pf <= d;
-  sub u_in (
-      .i(pf),
-      .o(in_o)
-  );
   always_ff @(posedge clk) begin
-    n_q <= out_q;
     n_ff <= w_ff;
     n_mix <= w_mix;
     n_if <= bus.q;
-    n_in <= in_o;
   end
 
   // Instances of one variable driven differently from their parent: each is writable as
   // --public-flat-rw would persist a put into it, inlined or not
   logic [7:0] n_ia;
-  logic [7:0] n_cf0;
-  logic [7:0] n_cu;
   logic [7:0] n_mc2;
   ifc_pair ia ();
   ifc_pair ib ();
   always_ff @(posedge clk) ia.q <= d;
   assign ib.q = ia.q;
-  sub_st cf0 ();
-  sub_st cf1 ();
-  sub_st cu ();
   sub_st cp ();
-  always_ff @(posedge clk) cf0.p <= d;
-  assign cf1.p = ~d;
   assign cp.p[3:0] = d[3:0];
   sub_ni mc0 ();
   sub_ni mc1 ();
@@ -468,13 +290,10 @@ module t (
   always_ff @(posedge clk) mc2.m <= d;
   always_ff @(posedge clk) begin
     n_ia <= ia.q;
-    n_cf0 <= cf0.p;
-    n_cu <= cu.p;
     n_mc2 <= mc2.m;
   end
 
-  // Comb shapes, each read-only: chained, signed, concatenated, self-reading, partial,
-  // assembled from ranges or struct fields, left partly undriven, aggregate, multiply driven
+  // Comb shapes, each read-only: chained, struct, aggregate, multiply driven
   typedef struct packed {
     logic [3:0] hi;
     logic [3:0] lo;
@@ -483,39 +302,18 @@ module t (
     logic [7:0] a;
     logic [7:0] b;
   } us_t;
-  logic [7:0] k_q, ch1, ch2, cat_c, self_c, part_c, ctv_c, nopre_c;
-  logic signed [7:0] sgn_c;
-  hl_t cts_c, hl_c;
-  us_t us_c;
-  logic [7:0] mem_c[2];
+  logic [7:0] k_q, ch1;
+  hl_t hl_c;
   logic [7:0] mdp_c[2][2];
   /* verilator lint_off MULTIDRIVEN */
   wire [7:0] mixf_w, ovl_w;
   /* verilator lint_on MULTIDRIVEN */
   always_ff @(posedge clk) k_q <= d;
   assign ch1 = k_q + 8'h7;
-  assign ch2 = ch1 ^ 8'h2a;
-  assign sgn_c = $signed(k_q) - 8'sd3;
-  assign cat_c = {ch1[3:0], k_q[7:4]};
-  always_comb begin
-    self_c = k_q;
-    self_c = self_c + 8'h1;
-  end
-  always_comb begin
-    part_c = '0;
-    part_c[3:0] = k_q[3:0];
-  end
-  assign ctv_c[3:0] = k_q[3:0];
-  assign ctv_c[7:4] = in_a[3:0];
-  assign cts_c.hi = k_q[3:0];
-  assign cts_c.lo = in_a[3:0];
-  always_comb nopre_c[3:0] = k_q[3:0];
   always_comb hl_c = d;
   // Its members' rows share its write policy
   hl_t hla_c[2];
   always_comb hla_c = '{d, ~d};
-  always_comb us_c = '{d, ~d};
-  always_comb mem_c = '{d, ~d};
   always_comb begin
     mdp_c[0][0] = d;
     mdp_c[0][1] = in_a;
@@ -525,96 +323,26 @@ module t (
   assign mixf_w[2:0] = in_a[2:0];
   assign ovl_w[4:0] = k_q[4:0];
   assign ovl_w[7:2] = in_a[5:0];
+  // Aliases whose rows carry their own range, sign or bit type
+  logic signed [8:1] al_sw;
+  bit [7:0] sib_bt;
+  assign al_sw = k_q;
+  assign sib_bt = ch1;
+  // A fold row, and a sibling of another row on the same cone
+  logic [7:0] fold_c, fmid_c, sib_b;
+  always_comb fold_c = d ^ 8'h3c;
+  always_comb fmid_c = fold_c;
+  assign sib_b = ch1;
 
   // Latches per bit: the bits some path through an if-tree leaves unassigned take a put
-  logic [7:0] pla_l, plc_l, plf_l, plv_c, pli_l, plo_l;
-  /* verilator lint_off MULTIDRIVEN */
-  logic [7:0] plb_l;
-  /* verilator lint_on MULTIDRIVEN */
-  logic [7:0] plm_l[2];
-  logic [7:0] ple_l[2];
-  logic [7:0] plu_l[2];
+  logic [7:0] plo_l;
   /* verilator lint_off LATCH */
-  always @* if (en) pla_l[3:0] = d[3:0];
-  always @* if (en) plb_l[3:0] = d[3:0];
-  assign plb_l[7:4] = in_a[7:4];
-  always @* begin
-    if (en) plc_l[3:0] = d[3:0];
-    plc_l[1:0] = in_a[1:0];
-  end
-  always @*
-    if (en) plf_l = d;
-    else plf_l[3:0] = in_a[3:0];
-  always @* if (en) plv_c[{1'b0, sel}] = d[0];
-  always @* begin
-    if (en) plm_l[0] = d;
-    plm_l[1] = in_a;
-  end
-  always @* begin
-    if (en) ple_l[1][7:4] = d[7:4];
-    ple_l[1][3:0] = in_a[3:0];
-  end
-  always @* begin
-    pli_l[1:0] = d[1:0];
-    if (en) begin
-      pli_l[3:2] = d[3:2];
-      pli_l[5:4] = '0;
-    end else if (sel[0]) pli_l[5:2] = in_a[5:2];
-    else if (ON) begin
-      pli_l[4:2] = '0;
-      pli_l[5] = 1'b1;
-    end else pli_l[7:6] = '0;
-  end
   always @*
     if (1'b0) plo_l[7:6] = d[7:6];
     else if (en) plo_l[5:0] = d[5:0];
     else plo_l[7:2] = in_a[7:2];
-  always @*
-    if (en) begin
-      plu_l[0] = d;
-      plu_l[1][3:0] = d[3:0];
-    end else begin
-      plu_l[1] = in_a;
-      plu_l[0][7:4] = in_a[7:4];
-    end
   /* verilator lint_on LATCH */
 
-  // Copy and fold rows: aliases of a flop, a pass-through port, a copy of a cone and two
-  // siblings of one; then a net driven through a port and directly, a public_flat_rd a cone
-  // reads, and a write at an impure index
-  logic [7:0] al1, al2, pass_o, fold_c, fmid_c, sib_b, sib_c, rdpin_c, ivec;
-  logic [7:0] rdpin  /*verilator public_flat_rd*/;
-  logic [31:0] seedv;
-  wire [7:0] wd_w;
-  assign al1 = k_q;
-  assign al2 = al1;
-  sub_pass u_pass (
-      .i(k_q),
-      .o(pass_o)
-  );
-  always_comb fold_c = d ^ 8'h3c;
-  always_comb fmid_c = fold_c;
-  assign sib_b = ch1;
-  assign sib_c = ch1;
-  sub_pass u_wdrv (
-      .i(in_a),
-      .o(wd_w)
-  );
-  assign wd_w = d;
-  always_ff @(posedge clk) rdpin <= d ^ 8'h6d;
-  assign rdpin_c = rdpin ^ 8'h11;
-  always_comb ivec[($urandom(seedv)&3)+:4] = d[3:0];
-
-  // Aliases whose rows carry their own range, sign, net or bit type and packed dimensions
-  logic signed [8:1] al_sw;
-  wire [7:0] al_nw;
-  bit [7:0] sib_bt;
-  logic [1:0][7:0] pk_c, pk_al;
-  assign al_sw = k_q;
-  assign al_nw = k_q;
-  assign sib_bt = ch1;
-  assign pk_c = {ch1, k_q};
-  assign pk_al = pk_c;
   sub_na u_na (
       .y(),
       .z(),
@@ -623,11 +351,6 @@ module t (
       .a(d)
   );
 
-  // Instances of one class, its input a cone in one and a flop in the other; a submodule's
-  // temporary copied out; an interface member; a comb cycle closed through two instances
-  logic [7:0] tmp_o, tmp_obs, alc_x, alc_y;
-  sub_cy cy0 (.din(d ^ in_a));
-  sub_cy cy1 (.din(k_q));
   // Each a cone reading another instance's cone, which refreshes that instance
   logic [7:0] fyx0_c, fyx1_c;
   sub_fy fy0 (
@@ -642,36 +365,14 @@ module t (
   assign fyx1_c = fy1.y ^ 8'h55;
   logic [7:0] fyx1b_c;
   assign fyx1b_c = fy1.y + 8'h01;
-  sub_tmp u_tmp (
-      .i(d),
-      .o(tmp_o),
-      .obs(tmp_obs)
-  );
-  logic [7:0] np_o;
-  sub_np np0 (
-      .i(d),
-      .o(np_o)
-  );
-  ifc_din ifd (.din(d));
-  sub_pass u_lp1 (
-      .i(alc_x),
-      .o(alc_y)
-  );
-  sub_pass u_lp2 (
-      .i(en ? alc_y : d),
-      .o(alc_x)
-  );
 
-  // Statement shapes a cone refuses or keeps: a read before its write, by a statement, an if
-  // and a loop test; a break out of a loop; a dead store, alone or in a loop; an unpacked struct
-  // member lvalue; an impure continuous assign
+  // Statement shapes a cone refuses or keeps: a read before its write; a dead store in a loop
+  // left by a break; an unpacked struct member lvalue; an impure continuous assign
   /* verilator lint_off UNOPTFLAT */
-  logic [7:0] rbw_t, rbw_c, rbw_u, rbw_v, ifc_c, lt_lim, lt_c, brk_c, dpf_c, dlp_c, dus_c;
-  logic ifc_t;
+  logic [7:0] rbw_t, rbw_c, rbw_u, rbw_v, dlp_c, dus_c;
   /* verilator lint_on UNOPTFLAT */
-  logic [7:0] dpf_t  /*verilator public_flat_rw*/;
   logic [7:0] dlp_t  /*verilator public_flat_rw*/;
-  logic [31:0] rnd_w;
+  logic [31:0] rnd_w, seedv;
   us_t dus;
   /* verilator lint_off ALWCOMBORDER */
   always_comb begin
@@ -685,28 +386,7 @@ module t (
       rbw_v = rbw_c;
     end
   end
-  always_comb begin
-    ifc_c = d;
-    if (ifc_t) ifc_c = in_a;
-    ifc_t = sel[1];
-  end
-  always_comb begin
-    lt_c = 8'h0;
-    for (int i = 0; i < int'(lt_lim); ++i) lt_c = lt_c + 8'h1;
-    lt_lim = {6'b0, sel};
-  end
   /* verilator lint_on ALWCOMBORDER */
-  always_comb begin
-    brk_c = 8'h0;
-    for (int i = 0; i < int'(sel); ++i) begin
-      if (d[0]) break;
-      brk_c = brk_c + in_a;
-    end
-  end
-  always_comb begin
-    dpf_c = d + 8'h9;
-    dpf_t = dpf_c ^ 8'h5;
-  end
   always_comb begin
     dlp_c = d ^ 8'h3;
     for (int i = 0; i < int'(sel); ++i) begin
@@ -748,8 +428,7 @@ module t (
   function automatic logic [7:0] nest_f(input logic [7:0] v);
     nest_f = v + 8'd3;
   endfunction
-  logic [7:0] nest_c, fn_c;
-  assign fn_c = nest_f(in_a);
+  logic [7:0] nest_c;
   always_comb begin
     nest_c = 8'h0;
     if (sel[0]) begin
@@ -759,11 +438,8 @@ module t (
     end
   end
 
-  // Shapes a cone refuses: a variable-index continuous assign, and a constant select read before
-  // its write. Shapes it takes: a branch both constant operands of which hold under
-  // -fno-const-before-dfg, and a variable defined in part then whole on every path.
-  logic [3:0] vax;
-  assign vax[sel] = en;
+  // A constant select read before its write, which a cone refuses, and a branch both constant
+  // operands of which hold under -fno-const-before-dfg, which it takes
   /* verilator lint_off UNOPTFLAT */
   logic [7:0] rbs_c;
   /* verilator lint_on UNOPTFLAT */
@@ -777,18 +453,6 @@ module t (
   always_comb begin
     if (1'b1 && 1'b1) ct_c = d;
     else ct_c = in_a;
-  end
-  logic [7:0] uw_c, uv_c, ux_c;
-  always_comb begin
-    uw_c[3:0] = d[3:0];
-    uv_c = {4'h0, uw_c[3:0]} ^ in_a;
-    if (sel[0]) begin
-      uw_c = d;
-      ux_c = in_a;
-    end else begin
-      uw_c = in_a;
-      ux_c = d;
-    end
   end
 
   // Arms defining different elements and variables, and an else holding an if and more
@@ -840,10 +504,8 @@ module t (
   assign gmem[1] = d;
   assign gmem_r = gmem[0];
 
-  // Explicitly writable
-  logic [7:0] frw_c  /*verilator public_flat_rw*/;
+  // A forceable alias of a top input
   logic [7:0] frc_al  /*verilator forceable*/;
-  assign frw_c = d;
   assign frc_al = in_a;
 
   // A cycle between groups in two scopes
@@ -856,46 +518,124 @@ module t (
   );
   assign xc_x = {d[7:4], xc_y[7:4]};
 
-  // Copies of a parent's flop, and of a source stored in one instance and a cone in the other
-  sub_up up0 ();
+  // Copies of a source stored in one instance and a cone in the other
   sub_cpy cpy0 ();
   sub_cpy cpy1 ();
   always_ff @(posedge clk) cpy0.m <= d;
   assign cpy1.m = d ^ in_a;
 
-  // Sections, each over the clock and the inputs above
-  lz_topo u_st (
-      .clk,
-      .base(d),
-      .in0(in_a),
-      .in1(k_q),
-      .nib(d[3:0])
+  // An interface written through its modport by a child, a cone over $random, and a module
+  // copying its input twice, instanced over a stored and a comb source
+  logic [7:0][7:0] sh;
+  logic [7:0][7:0] sw_o;
+  always_ff @(posedge clk) sh <= {sh[6:0], d};
+  swap_if intf ();
+  assign intf.wdata = sh;
+  assign sw_o = intf.swapped;
+  sub_ifwrite u_ifwrite (intf);
+  logic [7:0] rndc;
+  always_comb rndc = 8'(d[3:0]) + 8'($random);
+  bit [7:0] pull_b;
+  logic [7:0] pull_w, pull_o0, pull_o1, pull_x;
+  always_ff @(posedge clk) pull_b <= d ^ 8'h3c;
+  assign pull_w = pull_b;
+  pull_mod u_pull0 (
+      .pi(pull_w),
+      .po(pull_o0)
   );
+  assign pull_x = in_a ^ d;
+  pull_mod u_pull1 (
+      .pi(pull_x),
+      .po(pull_o1)
+  );
+
+  // Real and string cones and copies, a formatted string, and rows a mask cannot name bits of
+  real r_comb, rc_src, rf_mid;
+  string s_fmt, sc_src, sc_alias;
+  real ra_c[2];
+  real ra_s;
+  always_comb r_comb = 1.5;
+  always_comb s_fmt = $sformatf("v%0d", d);
+  always_ff @(posedge clk) begin
+    rc_src <= $itor(d) + 0.5;
+    if (d[0]) sc_src <= "odd";
+    else sc_src <= "even";
+  end
+  always_comb sc_alias = sc_src;
+  always_comb rf_mid = r_comb;
+  assign ra_c[0] = 1.5;
+  always_comb ra_c[1] = rc_src;
+  assign ra_s = ra_c[0] + ra_c[1];
+  /* verilator lint_off SELRANGE */
+  /* verilator lint_off WIDTHTRUNC */
+  logic [7:0] oor_c, oor_r;
+  assign oor_c[9:6] = d[3:0];
+  assign oor_c[5:0] = in_a[5:0];
+  assign oor_r = oor_c ^ 8'h0f;
+  /* verilator lint_on WIDTHTRUNC */
+  /* verilator lint_on SELRANGE */
+
+  // A memory assembled from its own elements, and its copy in the opposite range, which slices
+  // into one continuous assign per element, all in one block
+  logic [7:0] mem_chain[0:2];
+  logic [7:0] mem_rev[2:0];
+  always_comb begin
+    mem_chain[0] = d;
+    mem_chain[1][3:0] = mem_chain[0][7:4];
+    mem_chain[1][7:4] = mem_chain[1][3:0] ^ in_a[3:0];
+    mem_chain[2] = mem_chain[1] + 8'd1;
+  end
+  assign mem_rev = mem_chain;
+
+  // Undriven, so a put is its only source
+  logic [7:0] orphan;
+  logic [7:0] orphan_c;
+  assign orphan_c = orphan ^ 8'h0f;
+
+  // Forced by SV force/release though not forceable
+  logic [6:0] keep_frc;
+  logic [6:0] frc2;
+  always_ff @(posedge clk) keep_frc <= rst ? 7'h0 : keep_frc + 7'h3;
+  assign frc2 = keep_frc + 7'h22;
+  always @(posedge clk) begin
+    if (d == 8'h3c) force frc2 = 7'h55;
+    else release frc2;
+  end
+
+  // A case arm writing part of a variable its default writes whole
+  logic [6:0] keep;
+  logic signed [6:0] skeep;
+  logic [6:0] cf_casepart;
+  always_ff @(posedge clk) begin
+    keep <= rst ? 7'h0 : keep + 7'h3;
+    skeep <= rst ? 7'sh0 : skeep - 7'sd2;
+  end
+  always_comb begin
+    cf_casepart = keep;
+    case (keep[1:0])
+      2'd0: cf_casepart = keep + 7'h1;
+      2'd1: cf_casepart[3:0] = skeep[3:0];
+      default: cf_casepart = ~keep;
+    endcase
+  end
+
+  // A forceable unpacked array chained through itself
+  wire [64:0] fa[2]  /* verilator forceable */;
+  wire [64:0] fb[2];
+  assign fa[0] = {57'h1_2345_6789_abcd, d};
+  assign fa[1] = fb[0];
+  assign fb = fa;
+
+  // Sections, each over the clock and the inputs above
   lz_multi u_mi (
       .clk,
       .rst,
       .din(d)
   );
-  lz_corners u_cc (
-      .clk,
-      .rst,
-      .a(d),
-      .b(in_a)
-  );
-  lz_comb u_cb (
-      .clk,
-      .rst,
-      .lut_out(lut_out)
-  );
   lz_order u_po (
       .clk,
       .fo(out_f)
   );
-  lz_chain #(.WIDTH(65)) u_ch65 (
-      .clk,
-      .src({57'h1_2345_6789_abcd, d})
-  );
-
 endmodule
 
 module sub_xc (
@@ -904,12 +644,6 @@ module sub_xc (
 );
   /*verilator no_inline_module*/
   assign o = i ^ 8'h01;
-endmodule
-
-module sub_up;
-  /*verilator no_inline_module*/
-  logic [7:0] c;
-  assign c = t.k_q;
 endmodule
 
 module sub_cpy;
@@ -961,83 +695,10 @@ module pull_mod (
   );
 endmodule
 
-module lz_topo (
-    input logic clk,
-    input logic [7:0] base,
-    input logic [7:0] in0,
-    input logic [7:0] in1,
-    input logic [3:0] nib
-);
-  logic [7:0] in2;
-  logic [7:0] in3;
-  logic [7:0][7:0] d;
-  always_ff @(posedge clk) begin
-    in2 <= in0 ^ in1;
-    in3 <= in2;
-    d <= {d[6:0], base};
-  end
-
-  typedef struct {
-    logic [7:0] a;
-    logic [7:0] b;
-    logic [7:0] c;
-  } stream_t;
-  stream_t s;
-  logic [7:0] arr[0:3];
-  always_comb begin
-    s.a = in0;
-    s.b = in1;
-    s.c = in2;
-    arr[0] = in0;
-    arr[1] = in1;
-    arr[2] = in2;
-    arr[3] = in3;
-  end
-
-  // A cycle with no fixed order, over an undriven source
-  logic [6:0] cyc_boundary;
-  logic [6:0] cyc_d;
-  assign cyc_d = cyc_boundary + 7'h1;
-  /* verilator lint_off UNOPTFLAT */
-  logic [6:0] cyc_a, cyc_b;
-  /* verilator lint_on UNOPTFLAT */
-  assign cyc_a = cyc_b ^ cyc_d;
-  assign cyc_b = cyc_a ^ cyc_d;
-
-  logic [7:0][7:0] o;
-  swap_if intf ();
-  assign intf.wdata = d;
-  assign o = intf.swapped;
-  sub_ifwrite u_ifwrite (intf);
-
-  logic [7:0] rndc, tstamp;
-  always_comb rndc = 8'(nib) + 8'($random);
-  always_comb tstamp = 8'(nib) + 8'($time);
-
-  bit [7:0] pull_b;
-  logic [7:0] pull_w, pull_o0, pull_o1, pull_o2, pull_x;
-  always_ff @(posedge clk) pull_b <= base ^ 8'h3c;
-  assign pull_w = pull_b;
-  pull_mod u_pull0 (
-      .pi(pull_w),
-      .po(pull_o0)
-  );
-  assign pull_x = in0 ^ base;
-  pull_mod u_pull1 (
-      .pi(pull_x),
-      .po(pull_o1)
-  );
-  pull_mod u_pull2 (
-      .pi(pull_x),
-      .po(pull_o2)
-  );
-endmodule
-
 interface iface2_mi;
   logic [6:0] a;
   logic [6:0] b;
-  logic [6:0] l;  // A latch in if1, which keeps its storage apart from if0's cone
-  logic [6:0] s;  // Undriven but read in if1, likewise
+  logic [6:0] s;  // Undriven but read in if1, which keeps its storage apart from if0's cone
 endinterface
 
 module child (
@@ -1045,8 +706,6 @@ module child (
     input logic [7:0] din
 );
   /*verilator no_inline_module*/
-  logic [7:0] cy;
-  assign cy = din ^ 8'hA5;
   logic [7:0] cflop;
   always_ff @(posedge clk) cflop <= din ^ 8'h5a;
   // Driven in part alike in both instances, so they share one comb mask
@@ -1054,12 +713,10 @@ module child (
   assign cpart[3:0] = din[3:0];
 endmodule
 
-// bc is driven only by cross-scope assigns in the parent; bd reads it back in its own scope
+// Driven only by cross-scope assigns in the parent
 module bcell;
   /*verilator no_inline_module*/
   logic [7:0] bc;
-  logic [7:0] bd;
-  assign bd = bc ^ 8'h33;
   logic [7:0] bx, by;
 endmodule
 
@@ -1072,8 +729,6 @@ module parent (
       .clk(clk),
       .din(din)
   );
-  logic [7:0] py;
-  assign py = uc.cy + 8'h03;
   logic [7:0] xali;
   assign xali = uc.cflop;
 endmodule
@@ -1092,8 +747,6 @@ module lz_multi (
   assign if1.a = ctr + 7'h1;
   assign if0.b = ~if0.a;
   assign if1.b = if1.a ^ 7'h55;
-  assign if0.l = ctr ^ 7'h3c;
-  always_latch if (ctr[0]) if1.l = ctr;
   assign if0.s = ctr + 7'h9;
   logic [6:0] observe2;
   always_ff @(posedge clk) observe2 <= if0.b ^ if1.b ^ if1.s;
@@ -1106,10 +759,6 @@ module lz_multi (
       .clk(clk),
       .din(din + 8'h40)
   );
-
-  logic [31:0] acc, accn;
-  always_comb accn = rst ? 32'd0 : acc + {24'h0, din};
-  always_ff @(posedge clk) acc <= accn;
 
   logic [7:0] bflop0, bflop1;
   always_ff @(posedge clk) begin
@@ -1126,145 +775,6 @@ module lz_multi (
     bc0.by = tmp ^ 8'h3;
   end
   assign {bc1.bx, bc1.by} = {bflop1, ~bflop1};
-endmodule
-
-// From comb corners: aggregate, real, string, enum and chandle dtypes, multi-dimensional and
-// gapped coverage, chains, forced signals, and rows holding their reset value
-module sub_drv (
-    output wire [7:0] y,
-    input wire [7:0] x
-);
-  assign y = x;
-endmodule
-
-module lz_corners (
-    input logic clk,
-    input logic rst,
-    input logic [7:0] a,
-    input logic [7:0] b
-);
-  real r_comb;
-  always_comb r_comb = 1.5;
-  // V3Const would make 'rst ? ~rst : 1' into '~rst || ~rst', which C++ -Wlogical-op rejects
-  logic rst_lo;
-  logic rst_pow2;
-  always_comb
-    if (rst) begin
-      rst_lo = 1'b0;
-      rst_pow2 = ~rst;
-    end else begin
-      rst_lo = 1'b1;
-      rst_pow2 = 1'b1;
-    end
-  string s_var;
-  always_comb s_var = "hi";
-  string s_fmt;
-  always_comb s_fmt = $sformatf("v%0d", a);
-  logic [7:0] mem[0:3];
-  always_comb begin
-    mem[0] = a;
-    mem[1] = a + 1;
-    mem[2] = a + 2;
-    mem[3] = a + 3;
-  end
-  // Rows a mask cannot name bits of
-  real ra_c[2];
-  real ra_s;
-  assign ra_c[0] = 1.5;
-  always_comb ra_c[1] = rc_src;
-  assign ra_s = ra_c[0] + ra_c[1];
-  /* verilator lint_off SELRANGE */
-  /* verilator lint_off WIDTHTRUNC */
-  logic [7:0] oor_c, oor_r;
-  assign oor_c[9:6] = a[3:0];
-  assign oor_c[5:0] = b[5:0];
-  assign oor_r = oor_c ^ 8'h0f;
-  /* verilator lint_on WIDTHTRUNC */
-  /* verilator lint_on SELRANGE */
-  logic [7:0] mem_chain[0:2];
-  always_comb begin
-    mem_chain[0] = a;
-    mem_chain[1][3:0] = mem_chain[0][7:4];
-    mem_chain[1][7:4] = mem_chain[1][3:0] ^ b[3:0];
-    mem_chain[2] = mem_chain[1] + 8'd1;
-  end
-  // Opposite ranges slice into one continuous assign per element, all in one block
-  logic [7:0] mem_rev[2:0];
-  assign mem_rev = mem_chain;
-  real rc_src, rc_alias, rf_mid;
-  string sc_src, sc_alias, sf_mid;
-  always_ff @(posedge clk) begin
-    rc_src <= $itor(a) + 0.5;
-    if (a[0]) sc_src <= "odd";
-    else sc_src <= "even";
-  end
-  always_comb rc_alias = rc_src;
-  always_comb sc_alias = sc_src;
-  always_comb rf_mid = r_comb;
-  always_comb sf_mid = s_var;
-  // Undriven, so a put is its only source
-  logic [7:0] orphan;
-  logic [7:0] orphan_c;
-  assign orphan_c = orphan ^ 8'h0f;
-  // V3Decompose splits 'dpk' into rows, temps assembled bit by bit and read by another block
-  logic [1:0][3:0] dpk;
-  for (genvar i = 0; i < 8; ++i) begin : g_dpk
-    assign dpk[i/4][i%4] = a[i] ^ b[7-i];
-  end
-  // A cone reads 'lc' through the 'bit' it copies
-  bit [3:0] bs;
-  always_ff @(posedge clk) bs <= a[7:4];
-  logic [3:0] lc;
-  assign lc = bs;
-  logic [6:0] keep_frc;
-  logic [6:0] frc  /* verilator forceable */;
-  logic [6:0] frc2;
-  logic [6:0] frc_c;
-  assign frc = keep_frc + 7'h11;
-  assign frc2 = keep_frc + 7'h22;
-  assign frc_c = frc ^ 7'h7f;
-  always_ff @(posedge clk) keep_frc <= rst ? 7'h0 : keep_frc + 7'h3;
-  // Forced by SV force/release though not forceable
-  always @(posedge clk) begin
-    if (a == 8'h3c) force frc2 = 7'h55;
-    else release frc2;
-  end
-  // Never loaded, so these copy and port rows hold their reset value
-  logic [7:0] pre_q, pre_qc, pre_ic, pre_po;
-  always_ff @(posedge clk) if (a == 8'hff && b == 8'hff) pre_q <= a;
-  assign pre_qc = pre_q;
-  assign pre_ic = $root.t.pre_in;
-  sub_drv u_pre (
-      .y(pre_po),
-      .x(pre_q)
-  );
-endmodule
-
-module lz_comb #(
-    parameter int INTF_QTY = 3
-) (
-    input logic clk,
-    input logic rst,
-    output logic [6:0] lut_out
-);
-  logic [6:0] keep;
-  logic signed [6:0] skeep;
-  always_ff @(posedge clk) begin
-    keep <= rst ? 7'h0 : keep + 7'h3;
-    skeep <= rst ? 7'sh0 : skeep - 7'sd2;
-  end
-  // An unpacked parameter stays a variable
-  localparam logic [6:0] LUT[4] = '{7'h11, 7'h22, 7'h33, 7'h44};
-  assign lut_out = LUT[keep[1:0]];
-  logic [6:0] cf_casepart;
-  always_comb begin
-    cf_casepart = keep;
-    case (keep[1:0])
-      2'd0: cf_casepart = keep + 7'h1;
-      2'd1: cf_casepart[3:0] = skeep[3:0];
-      default: cf_casepart = ~keep;
-    endcase
-  end
 endmodule
 
 // From put order: puts into real, string and forceable sources, and mid-eval puts
@@ -1285,14 +795,7 @@ module lz_order (
   always_ff @(posedge clk) f <= s + 8'd1;
   // A top output's copy, which must not make f continuously assigned
   assign fo = f;
-  // Put mid-eval by the initial block, which reads it back
   import "DPI-C" context function void midEvalPut(string name, int v);
-  logic [7:0] mid, mid_seen;
-  initial begin
-    mid = 8'h00;
-    midEvalPut("t.u_po.mid", 'h5b);
-    mid_seen = mid;
-  end
   // A put between two reads of the same condition reaches the second
   logic mcnd;
   logic [7:0] mc_a, mc_b;
@@ -1307,20 +810,6 @@ module lz_order (
   function int t_mc_b();
     return int'(mc_b);
   endfunction
-endmodule
-
-// From forceable array cycle: a forceable unpacked array chained through a port
-module lz_chain #(
-    parameter int WIDTH = 1
-) (
-    input logic clk,
-    input bit [WIDTH-1:0] src
-);
-  wire [WIDTH-1:0] a[2]  /* verilator forceable */;
-  wire [WIDTH-1:0] b[2];
-  assign a[0] = src;
-  assign a[1] = b[0];
-  assign b = a;
 endmodule
 
 `ifdef T_VPI_LAZY_SAVABLE

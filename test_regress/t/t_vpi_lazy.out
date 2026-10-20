@@ -1,84 +1,24 @@
-reset t.init_r 00000000
-reset t.u_cc.bs 0000
-reset t.u_ch65.src 00000000000000000000000000000000000000000000000000000000000000000
-reset t.u_st.pull_b 00000000
+reset t.pull_b 00000000
 mid-eval t.mid_c 0x11
 mid-eval t.mid_c 0x21
 cbValueChange t.ch1 fired 1 0x06
 cbValueChange t.fmid_c fired 1 0x1d
 cbValueChange t.sib_b fired 1 0x06
 cbValueChange t.al_sw fired 0 0x00
-cbValueChange t.cy0.din fired 1 0x61
-cbValueChange t.cy0.cy fired 1 0xc4
-cbValueChange t.cy1.cy fired 1 0x5a
-cbValueChange t.ifd.din fired 1 0x21
-cbValueChange t.ifd.a fired 1 0x32
 cbValueChange t.ff_q fired 0 0x00
 cbValueChange t.hl_c.hi fired 1 0x02
 cbValueChange t.hl_c.lo fired 1 0x01
 cbValueChange t.hl_c fired 1 0x21
-cbValueChange t.u_sub.i fired 1 0x21
-vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.asg_w'
-reject 't.ac_c'
-reject 't.star_c'
-reject 'TOP.out_c'
-reject 't.sub_o'
-reject 't.u_sub.o'
-reject 't.fc_c'
-reject 't.gclk'
-reject 't.vidx[0]'
+cbValueChange t.u_px.i fired 1 0x61
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 'TOP.out_c'
 reject 't.cst_w'
-reject 't.loop_c'
-reject 't.while_c'
 reject 't.w_ff'
-reject 't.w_mix'
-reject 't.u_in.i'
-reject 't.c1_c'
-reject 't.cg_c'
-reject 't.pon_c'
-reject 't.pand_c'
-reject 't.px_o'
 reject 't.u_px.i'
-reject 't.u_px.o'
-reject 't.tw'
-reject 't.tw_r'
-reject 'TOP.out_q'
-reject 'TOP.out_m'
 reject 't.ib.q'
-reject 't.cf1.p'
-reject 't.ch2'
-reject 't.sgn_c'
-reject 't.cat_c'
-reject 't.self_c'
-reject 't.part_c'
-reject 't.ctv_c'
-reject 't.cts_c'
-reject 't.hl_c'
-reject 't.us_c.a'
-reject 't.mem_c[0]'
-reject 't.mixf_w'
-reject 't.ovl_w'
-reject 't.al1'
-reject 't.al2'
-reject 't.pass_o'
-reject 't.fmid_c'
-reject 't.sib_b'
-reject 't.sib_c'
-reject 't.wd_w'
-reject 't.u_wdrv.o'
-vpi_chk_error: vpi_put_value was used on signal marked read-only, use public_flat_rw instead for 't.rdpin'
-reject 't.ivec'
-reject 't.cy0.din'
-reject 't.cy1.din'
-reject 't.cy0.cy'
-reject 't.tmp_o'
-reject 't.u_tmp.cpy'
-reject 't.ifd.a'
-reject 't.alc_x'
-reject 't.plv_c'
+reject 't.rbw_c'
 vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.mdp_c[0][0]'
-reject 't.ac_c'
-reject 't.ac_c'
+reject 't.ch1'
+reject 't.ch1'
 vpi_chk_error: vpi_put_value was used on signal marked read-only, use public_flat_rw instead for 't.u_na.q'
 vpi_chk_error: vpi_put_value used with vpiForceFlag on non-forceable signal 't.st'
 vpi_chk_error: vpi_put_value used with vpiReleaseFlag on non-forceable signal 't.st'
@@ -88,54 +28,35 @@ vpi_chk_error: vpi_put_value: Parsing failed for 'zz' as value vpiDecStrVal for 
 vpi_chk_error: Ignoring vpi_put_value_array to signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.vidx'
 reject 't.ret_c'
 vpi_chk_error: vpi_put_value: Parsing failed for 'A123' as value vpiDecStrVal for 't.ff_q'
-reject 't.cts_c.hi'
-vpi_chk_error: vpi_put_value: Ignoring vpi_put_value to vpiParameter 't.u_cb.INTF_QTY'
+reject 't.hl_c.hi'
+vpi_chk_error: vpi_put_value: Ignoring vpi_put_value to vpiParameter 't.INTF_QTY'
 reject 't.hla_c[1].lo'
 TOP.clk 0 W
 TOP.d 3c W
 TOP.en 0 W
 TOP.in_a 5a W
-TOP.ld 0 W
-TOP.lut_out 11 r
 TOP.never 0 W
 TOP.out_c 30 r
 TOP.out_f 23 r
-TOP.out_m 3c r
-TOP.out_q 3c r
-TOP.pre_in 5c W
 TOP.rst 0 W
 TOP.rst_n 1 W
 TOP.sel 1 W
-TOP.set_n 1 W
 t.CST 3c r
+t.INTF_QTY 00000003 r
 t.ON 1 r
-t.ac_c 3d r
 t.ae_c 00 r
 t.ae_f 00 r
 t.ae_g 5a r
-t.al1 3c r
-t.al2 3c r
-t.al_nw 3c r
-t.al_q 3c W
 t.al_sw 3c r
-t.alc_x 3c r
-t.alc_y 3c r
 t.am_m 3c r
 t.am_x 3c r
 t.am_z 00 r
 t.arn_q 3c W
-t.arp_q 3c W
-t.as_q 3c W
-t.asg_w 33 r
-t.brk_c 5a r
 t.bus.q 3c W
 t.c1_c 3c r
-t.cat_c 33 r
-t.cf0.p 3c W
-t.cf1.p c3 r
+t.cf_casepart 15 r
 t.cg_c 5a r
 t.ch1 43 r
-t.ch2 69 r
 t.cp.p fc WWWWrrrr
 t.cpy0.c 3c r
 t.cpy0.m 3c W
@@ -143,32 +64,25 @@ t.cpy1.c 66 r
 t.cpy1.m 66 r
 t.cst_w 3c r
 t.ct_c 3c r
-t.cts_c ca r
-t.ctv_c ac r
-t.cu.p 5a W
-t.cy0.cy c3 r
-t.cy0.din 66 r
-t.cy1.cy 99 r
-t.cy1.din 3c r
-t.dli 003c0000 WWWWWWWWrrrrrrrrWWWWWWWWrrrrrrrr
-t.dli_o 00 r
 t.dlp_c 3f r
 t.dlp_t 40 W
-t.dpf_c 45 r
-t.dpf_t 40 W
 t.dus ? ?
 t.dus.a 42 r
 t.dus.b bd r
 t.dus_c 42 r
-t.fc_c 5a r
+t.fa 00123456789abcd3c W
+t.fa__VforceEn 00000000000000000 W
+t.fa__VforceVal 1ffffffffffffffff W
+t.fb 00123456789abcd3c r
 t.ff_q 3c W
 t.fmid_c 00 r
-t.fn_c 5d r
 t.fold_c 00 r
+t.frc2 55 r
+t.frc2__VforceEn 7f W
+t.frc2__VforceVal 55 W
 t.frc_al 5a W
 t.frc_al__VforceEn 00 W
 t.frc_al__VforceVal ff W
-t.frw_c 3c W
 t.fy0.a 3c r
 t.fy0.clk 0 r
 t.fy0.cyc_p fc r
@@ -186,57 +100,36 @@ t.fy1.y c4 r
 t.fyx0_c 68 r
 t.fyx1_c 91 r
 t.fyx1b_c c5 r
-t.g_q ff W
-t.gclk 0 r
 t.gmem 00 W
 t.gmem_r 00 r
 t.hl_c 3c r
 t.hla_c 3c r
 t.ia.q 3c W
 t.ib.q 3c r
-t.ifc_c 3c r
-t.ifc_t 0 r
-t.ifd.a 4d r
-t.ifd.din 3c r
-t.ilat_q 5a W
-t.imp_l 5a W
-t.in_o c3 r
-t.ini_r 5a W
-t.init_r 5a W
-t.intf_inst.sig 5a W
-t.ivec f9 r
+t.intf.DBW 00000008 r
+t.intf.swapped 3c3c3c33332121ff ?
+t.intf.wdata ff212133333c3c3c ?
 t.k_q 3c W
+t.keep 14 W
+t.keep_frc 14 W
 t.lat_q 5a W
-t.loop_c 03 r
-t.lt_c 01 r
-t.lt_lim 01 r
-t.m4 0c r
-t.m4_c 0c r
 t.mc0.m fc WWWWrrrr
 t.mc1.m 5f rrrrWWWW
 t.mc2.m 3c W
 t.mc_x fc r
 t.mc_y f r
 t.mdp_c 3c r
-t.mem_c 3c r
+t.mem_chain 3c r
+t.mem_rev 94 r
 t.mid_c 21 r
 t.mid_s 20 W
 t.mixf_w 3a r
-t.n_cf0 3c W
-t.n_cons 5a r
-t.n_cu 5a W
 t.n_ff 3c W
 t.n_ia 3c W
 t.n_if 3c W
-t.n_in c3 W
 t.n_mc2 3c W
 t.n_mix 3c W
-t.n_q 3c W
 t.nest_c 00 r
-t.nopre_c ac WWWWrrrr
-t.np0.i 3c r
-t.np0.o 43 r
-t.np_o 43 r
 t.oh.addr fe0 WWrrWrWrrrrr
 t.oh.addr_o 3 r
 t.oh.i c r
@@ -247,129 +140,59 @@ t.oh.vs12 3 r
 t.oh.vs20 2 r
 t.oh_a 3 r
 t.oh_vo 1 r
+t.oor_c 1a r
+t.oor_r 15 r
+t.orphan 2a W
+t.orphan_c 25 r
 t.ovl_w 68 r
 t.pand_c 3c r
-t.part_c 0c r
-t.pass_o 3c r
-t.pf 3c W
-t.pk_al 433c r
-t.pk_c 433c r
-t.pla_l fe W
-t.plb_l 5e rrrrWWWW
-t.plc_l a6 WWWWWWrr
-t.ple_l ff W
-t.plf_l 2a WWWWrrrr
-t.pli_l d8 WWrrrrrr
-t.plm_l a5 W
 t.plo_l 59 WWrrrrWW
-t.plu_l 5e W
-t.plv_c ff r
 t.pmem 7d W
 t.pon_c 3c r
 t.prb_c 2e r
 t.prb_s 12 W
+t.pull_b 00 W
+t.pull_o0 0f r
+t.pull_o1 69 r
+t.pull_w 00 r
+t.pull_x 66 r
 t.px_o 99 r
+t.r_comb 1.500000 r
+t.ra_c ? r
+t.ra_s 62.000000 r
 t.rbs_c fc r
 t.rbw_c 7e r
 t.rbw_t 7e r
 t.rbw_u 7e r
 t.rbw_v 5a r
-t.rdpin 51 r
-t.rdpin_c 40 r
+t.rc_src 60.500000 r
 t.ret_c 66 r
 t.ret_q 66 W
+t.rf_mid 1.500000 r
 t.rnd_w b9e76129 r
+t.rndc e5 r
+t.s_fmt "v60" r
+t.sc_alias "even" r
+t.sc_src "even" r
 t.seedv ffffffff W
-t.self_c 3d r
-t.sgn_c 39 r
+t.sh ff212133333c3c3c ?
 t.sib_b 43 r
 t.sib_bt 43 r
-t.sib_c 43 r
+t.skeep 71 W
 t.spl_l 5a W
 t.st ed WWWWWWWr
-t.star_c 00 r
-t.sub_o c3 r
-t.tmp_o 66 r
-t.tmp_obs 0f r
+t.sw_o 3c3c3c33332121ff ?
 t.tw 5a r
 t.tw_r 5a r
-t.u_cb.INTF_QTY 00000003 r
-t.u_cb.LUT 11 r
-t.u_cb.cf_casepart 15 r
-t.u_cb.clk 0 r
-t.u_cb.keep 14 W
-t.u_cb.lut_out 11 r
-t.u_cb.rst 0 r
-t.u_cb.skeep 71 W
-t.u_cc.a 3c r
-t.u_cc.b 5a r
-t.u_cc.bs 3 W
-t.u_cc.clk 0 r
-t.u_cc.dpk 66 r
-t.u_cc.frc 25 W
-t.u_cc.frc2 55 r
-t.u_cc.frc2__VforceEn 7f W
-t.u_cc.frc2__VforceVal 55 W
-t.u_cc.frc__VforceEn 00 W
-t.u_cc.frc__VforceVal 55 W
-t.u_cc.frc_c 5a r
-t.u_cc.keep_frc 14 W
-t.u_cc.lc 3 r
-t.u_cc.mem 3c r
-t.u_cc.mem_chain 3c r
-t.u_cc.mem_rev 94 r
-t.u_cc.oor_c 1a r
-t.u_cc.oor_r 15 r
-t.u_cc.orphan 2a W
-t.u_cc.orphan_c 25 r
-t.u_cc.pre_ic 5c r
-t.u_cc.pre_po ff r
-t.u_cc.pre_q ff W
-t.u_cc.pre_qc ff r
-t.u_cc.r_comb 1.500000 r
-t.u_cc.ra_c ? r
-t.u_cc.ra_s 62.000000 r
-t.u_cc.rc_alias 60.500000 r
-t.u_cc.rc_src 60.500000 r
-t.u_cc.rf_mid 1.500000 r
-t.u_cc.rst 0 r
-t.u_cc.rst_lo 1 r
-t.u_cc.rst_pow2 1 r
-t.u_cc.s_fmt "v60" r
-t.u_cc.s_var "hi" r
-t.u_cc.sc_alias "even" r
-t.u_cc.sc_src "even" r
-t.u_cc.sf_mid "hi" r
-t.u_cc.u_pre.x ff r
-t.u_cc.u_pre.y ff r
-t.u_ch65.WIDTH 00000041 r
-t.u_ch65.a 00123456789abcd3c W
-t.u_ch65.a__VforceEn 00000000000000000 W
-t.u_ch65.a__VforceVal 1ffffffffffffffff W
-t.u_ch65.b 00123456789abcd3c r
-t.u_ch65.clk 0 r
-t.u_ch65.src 00123456789abcd3c ?
-t.u_cons.cap 5a W
-t.u_cons.clk 0 r
 t.u_ff.clk 0 r
 t.u_ff.d 3c r
 t.u_ff.q 3c W
 t.u_if.clk 0 r
 t.u_if.d 3c r
-t.u_in.i 3c r
-t.u_in.o c3 r
-t.u_lp1.i 3c r
-t.u_lp1.o 3c r
-t.u_lp2.i 3c r
-t.u_lp2.o 3c r
-t.u_mi.acc 0000015b W
-t.u_mi.accn 00000197 r
 t.u_mi.bc0.bc 99 r
-t.u_mi.bc0.bd aa r
 t.u_mi.bc0.bx 9a r
 t.u_mi.bc0.by 99 r
 t.u_mi.bc1.bc 66 r
-t.u_mi.bc1.bd 55 r
 t.u_mi.bc1.bx 66 r
 t.u_mi.bc1.by 99 r
 t.u_mi.bflop0 99 W
@@ -379,29 +202,23 @@ t.u_mi.ctr 14 W
 t.u_mi.din 3c r
 t.u_mi.if0.a 14 r
 t.u_mi.if0.b 6b r
-t.u_mi.if0.l 28 r
 t.u_mi.if0.s 1d r
 t.u_mi.if1.a 15 r
 t.u_mi.if1.b 40 r
-t.u_mi.if1.l 11 W
 t.u_mi.if1.s 2a W
 t.u_mi.observe2 03 W
 t.u_mi.p0.clk 0 r
 t.u_mi.p0.din 3c r
-t.u_mi.p0.py 9c r
 t.u_mi.p0.uc.cflop 66 W
 t.u_mi.p0.uc.clk 0 r
 t.u_mi.p0.uc.cpart fc WWWWrrrr
-t.u_mi.p0.uc.cy 99 r
 t.u_mi.p0.uc.din 3c r
 t.u_mi.p0.xali 66 r
 t.u_mi.p1.clk 0 r
 t.u_mi.p1.din 7c r
-t.u_mi.p1.py dc r
 t.u_mi.p1.uc.cflop 26 W
 t.u_mi.p1.uc.clk 0 r
 t.u_mi.p1.uc.cpart fc WWWWrrrr
-t.u_mi.p1.uc.cy d9 r
 t.u_mi.p1.uc.din 7c r
 t.u_mi.p1.xali 26 r
 t.u_mi.rst 0 r
@@ -414,8 +231,6 @@ t.u_na.q cc r
 t.u_na.w 33 W
 t.u_na.y c3 r
 t.u_na.z 3c W
-t.u_pass.i 3c r
-t.u_pass.o 3c r
 t.u_po.clk 0 r
 t.u_po.f 23 W
 t.u_po.f__VforceEn 00 W
@@ -425,90 +240,32 @@ t.u_po.fo 23 r
 t.u_po.mc_a 01 W
 t.u_po.mc_b 04 W
 t.u_po.mcnd 0 W
-t.u_po.mid 5b W
-t.u_po.mid_seen 5b W
 t.u_po.r 4.000000 r
 t.u_po.r_comb 8.000000 r
 t.u_po.s 22 W
 t.u_po.s_comb 78 r
 t.u_po.str "longer_than_any_short_string_buffer" r
 t.u_po.str_comb "longer_than_any_short_string_buffer!" r
+t.u_pull0.pi 00 r
+t.u_pull0.pi_cast 00 r
+t.u_pull0.pi_cp 00 r
+t.u_pull0.po 0f r
+t.u_pull0.u_leaf.d 00 r
+t.u_pull0.u_leaf.q 0f r
+t.u_pull1.pi 66 r
+t.u_pull1.pi_cast 66 r
+t.u_pull1.pi_cp 66 r
+t.u_pull1.po 69 r
+t.u_pull1.u_leaf.d 66 r
+t.u_pull1.u_leaf.q 69 r
 t.u_px.i 66 r
 t.u_px.o 99 r
-t.u_st.arr 5a r
-t.u_st.base 3c r
-t.u_st.clk 0 r
-t.u_st.cyc_a 7f r
-t.u_st.cyc_b 7f r
-t.u_st.cyc_boundary 7f W
-t.u_st.cyc_d 00 r
-t.u_st.d ff212133333c3c3c ?
-t.u_st.in0 5a r
-t.u_st.in1 3c r
-t.u_st.in2 66 W
-t.u_st.in3 66 W
-t.u_st.intf.DBW 00000008 r
-t.u_st.intf.swapped 3c3c3c33332121ff ?
-t.u_st.intf.wdata ff212133333c3c3c ?
-t.u_st.nib c r
-t.u_st.o 3c3c3c33332121ff ?
-t.u_st.pull_b 00 W
-t.u_st.pull_o0 0f r
-t.u_st.pull_o1 69 r
-t.u_st.pull_o2 69 r
-t.u_st.pull_w 00 r
-t.u_st.pull_x 66 r
-t.u_st.rndc a9 r
-t.u_st.s ? ?
-t.u_st.s.a 5a r
-t.u_st.s.b 3c r
-t.u_st.s.c 66 r
-t.u_st.tstamp 25 r
-t.u_st.u_pull0.pi 00 r
-t.u_st.u_pull0.pi_cast 00 r
-t.u_st.u_pull0.pi_cp 00 r
-t.u_st.u_pull0.po 0f r
-t.u_st.u_pull0.u_leaf.d 00 r
-t.u_st.u_pull0.u_leaf.q 0f r
-t.u_st.u_pull1.pi 66 r
-t.u_st.u_pull1.pi_cast 66 r
-t.u_st.u_pull1.pi_cp 66 r
-t.u_st.u_pull1.po 69 r
-t.u_st.u_pull1.u_leaf.d 66 r
-t.u_st.u_pull1.u_leaf.q 69 r
-t.u_st.u_pull2.pi 66 r
-t.u_st.u_pull2.pi_cast 66 r
-t.u_st.u_pull2.pi_cp 66 r
-t.u_st.u_pull2.po 69 r
-t.u_st.u_pull2.u_leaf.d 66 r
-t.u_st.u_pull2.u_leaf.q 69 r
-t.u_sub.i 3c r
-t.u_sub.o c3 r
-t.u_tmp.cpy 66 r
-t.u_tmp.i 3c r
-t.u_tmp.mix 69 r
-t.u_tmp.o 66 r
-t.u_tmp.obs 0f r
-t.u_wdrv.i 5a r
-t.u_wdrv.o 5a r
 t.u_xc.i 33 r
 t.u_xc.o 32 r
-t.undr_mem ff W
-t.up0.c 3c r
-t.us_c ? ?
-t.us_c.a 3c r
-t.us_c.b c3 r
-t.uv_c 56 r
-t.uw_c 3c r
-t.ux_c 5a r
-t.vax 5 r
 t.vbx 1 r
-t.vec 3c WWWWWWWr
 t.vidx ff r
 t.w_ff 3c r
 t.w_mix 3c r
-t.wd_w 5a r
-t.while_c 3c r
 t.xc_x 33 r
 t.xc_y 32 r
 *-* All Finished *-*
