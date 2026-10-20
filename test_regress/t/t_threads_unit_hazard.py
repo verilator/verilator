@@ -11,12 +11,11 @@ import vltest_bootstrap
 
 test.scenarios('vltmt')
 test.top_filename = "t/t_threads_unit.v"
-test.golden_filename = "t/t_threads_unit.out"
 
 # Keep the two accesses as separate logic blocks for the hazard-fixer control.
 test.compile(
-    verilator_flags2=["-fno-dfg", "+define+HAZARD_TEST", "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0"],
+    verilator_flags2=["-fno-dfg", "+define+TEST_HAZARD", "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0"],
     threads=2)
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 test.passes()

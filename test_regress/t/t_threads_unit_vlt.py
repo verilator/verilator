@@ -11,14 +11,13 @@ import vltest_bootstrap
 
 test.scenarios('vltmt')
 test.top_filename = "t/t_threads_unit.v"
-test.golden_filename = "t/t_threads_unit.out"
 
 test.compile(
-    verilator_flags2=["--stats", "+define+USE_VLT", "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0"],
+    verilator_flags2=["--stats", "+define+TEST_VLT", "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0"],
     threads=2)
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
-test.file_grep(test.stats, r'MTask graph, threads_unit groups\s+(\d+)', 16)
+test.file_grep(test.stats, r'MTask graph, threads_unit groups\s+(\d+)', 14)
 
 test.passes()

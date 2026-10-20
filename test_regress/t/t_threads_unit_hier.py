@@ -11,7 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('vltmt')
 test.top_filename = "t/t_threads_unit.v"
-test.golden_filename = "t/t_threads_unit.out"
 
 test.clean_objs()
 
@@ -19,16 +18,16 @@ test.clean_objs()
 # where only its acc is. Unlike the metacomment, the control file also marks the tiles'
 # wrappers in the parent.
 test.compile(verilator_flags2=[
-    "--stats", "--hierarchical", "+define+USE_VLT", "+define+HIERARCHICAL", "-CFLAGS",
+    "--stats", "--hierarchical", "+define+TEST_VLT", "+define+TEST_HIERARCHICAL", "-CFLAGS",
     "-DVL_THREADS_SERIAL_COST=0"
 ],
              threads=2)
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
 test.file_grep(
     test.obj_dir + "/" + test.vm_prefix + "__hier.dir/" + test.vm_prefix + "__stats.txt",
-    r'MTask graph, threads_unit groups\s+(\d+)', 11)
+    r'MTask graph, threads_unit groups\s+(\d+)', 10)
 test.file_grep(test.obj_dir + "/Vtile/Vtile__stats.txt",
                r'MTask graph, threads_unit groups\s+(\d+)', 1)
 

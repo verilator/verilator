@@ -4,18 +4,19 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-`ifdef USE_VLT
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
+`ifdef TEST_VLT
 `define THREADS_UNIT
 `else
 `define THREADS_UNIT /*verilator threads_unit*/
 `endif
 
-`ifdef HAZARD_TEST
-// verilog_format: off
-`define stop $stop
-`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-// verilog_format: on
-
+`ifdef TEST_HAZARD
 // Both accesses must be combined before deciding whether a unit writes hazard_q.
 module hazard_unit #(parameter int ID = 0);
   `THREADS_UNIT
@@ -77,7 +78,7 @@ module t (
   // Ignored, as the top module is the whole model
   `THREADS_UNIT
   integer cyc = 0;
-`ifdef HAZARD_TEST
+`ifdef TEST_HAZARD
   // The feedback reads become hybrid sensitivities, so dependency edges omit them.
   // verilator lint_off UNOPTFLAT
   logic [1:0] hazard_q = 0;
@@ -106,24 +107,28 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 20) begin
-`ifdef HAZARD_TEST
+`ifdef TEST_HAZARD
       `checkh(hazard_q, 2'b11)
 `endif
-      $display("%0d %0d %0d %0d %0d", st[0], st[1], st[2], st[3], sum);
+      `checkd(st[0], 37)
+      `checkd(st[1], 249)
+      `checkd(st[2], 1)
+      `checkd(st[3], 53)
+      `checkd(sum, 184)
       $write("*-* All Finished *-*\n");
       $finish;
     end
   end
 endmodule
 
-`ifdef USE_VLT
+`ifdef TEST_VLT
 `verilator_config
 threads_unit -module "acc"
 threads_unit -module "chk"
 threads_unit -module "tile"
 // Ignored, as the top module is the whole model
 threads_unit -module "t"
-`ifdef HIERARCHICAL
+`ifdef TEST_HIERARCHICAL
 hier_block -module "tile"
 hier_workers -module "tile" -workers 2
 // The ring of tiles is a combinational loop through the hierarchical block stubs
