@@ -555,6 +555,12 @@ void script() {
         const PLI_INT32 one[1] = {0x6c};
         putArray("t.pmem", 0, one, 1, false);
         check("t.pmem[0] array", get("t.pmem[0]"), 0x6c);
+        // Wraps from [3] to [0]
+        const uint32_t pmem3 = get("t.pmem[3]");
+        const PLI_INT32 wrap[2] = {static_cast<PLI_INT32>(pmem3 ^ 0xff), 0x4e};
+        putArray("t.pmem", 3, wrap, 2, false);
+        check("t.pmem[0] array wrapped", get("t.pmem[0]"), 0x4e);
+        check("t.pmem[3] array wrapped", get("t.pmem[3]"), pmem3);
         const uint32_t pmem1 = get("t.pmem[1]");
         const PLI_INT32 two[2] = {0x7d, static_cast<PLI_INT32>(pmem1 ^ 0xff)};
         putArray("t.pmem", 0, two, 2, false);
