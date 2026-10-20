@@ -15,7 +15,6 @@ test.scenarios('vlt', 'ms', 'nc', 'vcs', 'xrun')
 
 # Every signal public, as t_vpi_drivers_lazy makes visible on demand
 test.compile(make_top_shell=False,
-             make_main=False,
              make_pli=True,
              verilator_flags2=["--binary --vpi --public-flat-rw --no-l2name", test.pli_filename])
 

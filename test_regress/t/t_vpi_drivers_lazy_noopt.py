@@ -16,7 +16,6 @@ test.golden_filename = "t/t_vpi_drivers_lazy.out"
 
 # What is readable and writable must not depend on optimization
 test.compile(make_top_shell=False,
-             make_main=False,
              verilator_flags2=[
                  "--binary --vpi-lazy --no-l2name -O0 -fno-const-before-dfg",
                  "-DT_VPI_DRIVERS_LAZY -CFLAGS -DT_VPI_DRIVERS_LAZY", test.pli_filename
