@@ -16,7 +16,7 @@ test.compile(verilator_flags2=["--binary", "--stats"])
 test.execute()
 
 test.file_grep(test.stats, r'ConstPool, CONST emitted\s+(\d+)', 2)
-test.file_grep(test.stats, r'ConstPool, CONSARRAY emitted\s+(\d+)', 2)
+test.file_grep(test.stats, r'ConstPool, CONSARRAY emitted\s+(\d+)', 3)
 test.file_grep(test.stats, r'ConstPool, CONSASSOC emitted\s+(\d+)', 3)
 test.file_grep(test.stats, r'ConstPool, CONSDYNARRAY emitted\s+(\d+)', 1)
 test.file_grep(test.stats, r'ConstPool, CONSQUEUE emitted\s+(\d+)', 4)
