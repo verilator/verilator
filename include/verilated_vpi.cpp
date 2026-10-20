@@ -1233,9 +1233,6 @@ template <typename T>
 VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
                                         size_t addOffset);
 template <typename T>
-static VarAccessInfo<T> vl_vpi_var_access_info_gen(const VerilatedVpioVarBase* vop, T* datap,
-                                                   size_t bitCount, size_t addOffset);
-template <typename T>
 T vl_vpi_get_word_gen(VarAccessInfo<T> info);
 
 template <typename T>
@@ -3584,16 +3581,8 @@ static void vl_strprintf(std::string& buffer, char const* fmt, ...) {
 template <typename T>
 VarAccessInfo<T> vl_vpi_var_access_info(const VerilatedVpioVarBase* vop, size_t bitCount,
                                         size_t addOffset) {
-    return vl_vpi_var_access_info_gen<T>(vop, static_cast<T*>(vop->readDatap()), bitCount,
-                                         addOffset);
-}
-
-template <typename T>
-static VarAccessInfo<T> vl_vpi_var_access_info_gen(const VerilatedVpioVarBase* vop, T* datap,
-                                                   size_t bitCount, size_t addOffset) {
     // VarAccessInfo generation
     // vop - variable to access (already indexed)
-    // datap - storage base address
     // bitCount - how many bits to write/read
     // addOffset - additional offset to apply (within the packed array element)
 
@@ -3608,7 +3597,7 @@ static VarAccessInfo<T> vl_vpi_var_access_info_gen(const VerilatedVpioVarBase* v
                          bitCount, varBits - addOffset});
 
     VarAccessInfo<T> info;
-    info.m_datap = datap;
+    info.m_datap = static_cast<T*>(vop->readDatap());
     if (vop->varp()->vltype() == VLVT_WDATA) {
         assert(sizeof(T) == sizeof(EData));
         assert(bitCount <= wordBits);
