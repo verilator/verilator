@@ -89,6 +89,14 @@ module t;
   // The NBA keeps the process clocked, rather than combinational.
   int vif_sig_count = 0;
   always @(vif.sig) if ($time > 0) vif_sig_count <= vif_sig_count + 1;
+  // Two changes, at times 40 and 50, by the task called below
+  initial begin
+    #60;
+    if (vif_sig_count != 2) begin
+      $display("%%Error: vif_sig_count = %0d, expected 2", vif_sig_count);
+      $stop;
+    end
+  end
 
   // Construct the class at time 0
   initial begin
@@ -112,8 +120,6 @@ module t;
 
     #20;
     my_pkg::my_task(drv, event_count, posedge_count, negedge_count);
-    // Let the nonblocking assignments of the last change take effect
-    #1;
 
     // Verify all triggers occurred
     if (event_count != 1) begin
@@ -136,13 +142,10 @@ module t;
       $display("%%Error: Instant fall-through failed - events at time 0 were missed!");
       $stop;
     end
+  end
 
-    // Two changes, at times 40 and 50
-    if (vif_sig_count != 2) begin
-      $display("%%Error: vif_sig_count = %0d, expected 2", vif_sig_count);
-      $stop;
-    end
-
+  initial begin
+    #100;
     $write("*-* All Finished *-*\n");
     $finish;
   end
