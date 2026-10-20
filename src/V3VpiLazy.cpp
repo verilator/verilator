@@ -98,7 +98,9 @@
 // driven from their parents: the variable is then PARTIAL, keeping its
 // storage, and each instance's row takes its own class, so writability follows
 // the RTL and not inlining. Explicit public_flat_rw and forceable signals keep
-// --public-flat-rw semantics.
+// --public-flat-rw semantics. V3Active feeds the blocks it forms to the same
+// classification ahead of V3Decompose and V3BitBlast, which split a candidate
+// only if it is driven whole.
 //
 // RUNTIME
 //
@@ -173,6 +175,10 @@ static const char* const RECONSTRUCT_BODY_FUNC_NAME = "__Vlazy_reconstruct_body"
 static const char* const RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_inst";
 
 //######################################################################
+namespace {
+class CombClassifier;
+}
+
 class V3VpiLazyContext final {
 public:
     // PARTIAL variable -> its masked bits, where every instance agrees
@@ -187,6 +193,7 @@ public:
     std::map<std::pair<std::string, const AstVar*>, const AstCFunc*> m_rowRefresh;
     // A split variable's or its shadow's instances held by the other; see splitKeptInstances()
     std::set<std::pair<std::string, const AstVar*>> m_noRow;
+    std::unique_ptr<CombClassifier> m_combp;  // Classifies the blocks fed to it until finished
 
     VVpiLazyComb combOf(const std::string& scopeName, const AstVar* varp) const {
         if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
@@ -202,9 +209,6 @@ public:
         return rit->second;
     }
 };
-
-V3VpiLazyContext* V3VpiLazy::newContext() { return new V3VpiLazyContext; }
-void V3VpiLazy::deleteContext(V3VpiLazyContext* ctxp) { delete ctxp; }
 
 //######################################################################
 
@@ -241,9 +245,6 @@ struct CombBlock final {
     AstAssignW* m_assignwp = nullptr;  // Lone AstAssignW of a CONT_ASSIGN block
     std::vector<AstVarScope*> m_targets;  // Written vars, encounter order
     std::unordered_map<const AstVarScope*, int> m_writeCount;  // Writes within this block
-    std::vector<AstVarRef*> m_writeRefs;  // Its writing refs, encounter order
-    // Constant-select footprint of each assign's LHS base ref, where partialLhsRef finds one
-    std::unordered_map<const AstVarRef*, PartExtent> m_partialExts;
     std::vector<AstVarScope*> m_reads;  // Vars it reads, first-occurrence pre-order
     bool m_impure = false;  // Some node in it is unsafeToReexecute
 };
@@ -439,10 +440,8 @@ private:
         m_refsOf[vscp].push_back(nodep);
         if (!nodep->access().isReadOnly()) {
             if (m_writeCount[vscp]++ == 0) m_writtenOrder.push_back(vscp);
-            if (m_blockp) {
-                if (m_blockp->m_writeCount[vscp]++ == 0) m_blockp->m_targets.push_back(vscp);
-                m_blockp->m_writeRefs.push_back(nodep);
-            }
+            if (m_blockp && m_blockp->m_writeCount[vscp]++ == 0)
+                m_blockp->m_targets.push_back(vscp);
         }
         if (!nodep->access().isWriteOnly()) {
             if (nodep != m_selRefp && vscp->varp()->isSigVpiLazyCandidate()) {
@@ -451,15 +450,6 @@ private:
                 fp.runsOf.clear();
             }
             if (m_blockp && !vscp->user1SetOnce()) m_blockp->m_reads.push_back(vscp);
-        }
-        iterateChildren(nodep);
-    }
-    void visit(AstNodeAssign* nodep) override {
-        checkPure(nodep);
-        if (m_blockp) {
-            PartExtent ext;
-            if (const AstVarRef* const refp = partialLhsRef(nodep->lhsp(), ext))
-                m_blockp->m_partialExts.emplace(refp, std::move(ext));
         }
         iterateChildren(nodep);
     }
@@ -532,6 +522,331 @@ public:
     explicit LazyGatherVisitor(AstNetlist* nodep) {
         const VNUser1InUse user1InUse;
         iterate(nodep);
+    }
+};
+
+// 1 or 0 if 'condp' is constant, else -1: what V3Const folds before prepare() unless
+// -fno-const-before-dfg, and V3Case's grouped `if (a | ... | 1'b1)`.
+int constTruth(const AstNodeExpr* condp) {
+    if (const AstVarRef* const refp = VN_CAST(condp, VarRef)) {
+        const AstConst* const valuep = VN_CAST(refp->varp()->valuep(), Const);
+        if (refp->varp()->isParam() && valuep) condp = valuep;
+    }
+    if (const AstConst* const constp = VN_CAST(condp, Const)) return constp->isZero() ? 0 : 1;
+    if (condp->width() != 1) return -1;
+    if (VN_IS(condp, Not) || VN_IS(condp, LogNot)) {
+        const int truth = constTruth(VN_AS(condp, NodeUniop)->lhsp());
+        return truth < 0 ? -1 : !truth;
+    }
+    const AstNodeBiop* const biopp = VN_CAST(condp, NodeBiop);
+    if (!biopp) return -1;
+    const int lhs = constTruth(biopp->lhsp());
+    const int rhs = constTruth(biopp->rhsp());
+    if (VN_IS(condp, Or) || VN_IS(condp, LogOr)) {
+        if (lhs == 1 || rhs == 1) return 1;
+        return lhs == 0 && rhs == 0 ? 0 : -1;
+    }
+    if (VN_IS(condp, And) || VN_IS(condp, LogAnd)) {
+        if (lhs == 0 || rhs == 0) return 0;
+        return lhs == 1 && rhs == 1 ? 1 : -1;
+    }
+    return -1;
+}
+
+void unionBits(CombFootprint& dst, const CombFootprint& src) {
+    if (dst.whole) return;
+    if (src.whole) {
+        dst.whole = true;
+        dst.runsOf.clear();
+        return;
+    }
+    for (const auto& pr : src.runsOf) {
+        for (const std::pair<int, int>& run : pr.second)
+            addBits(dst, pr.first, run.first, run.second);
+    }
+}
+
+CombFootprint intersectBits(const CombFootprint& a, const CombFootprint& b) {
+    if (a.whole) return b;
+    if (b.whole) return a;
+    CombFootprint both;
+    for (const auto& pr : a.runsOf) {
+        const auto it = b.runsOf.find(pr.first);
+        if (it == b.runsOf.end()) continue;
+        std::vector<std::pair<int, int>> runs;
+        auto xIt = pr.second.begin();
+        auto yIt = it->second.begin();
+        while (xIt != pr.second.end() && yIt != it->second.end()) {
+            const int xEnd = xIt->first + xIt->second;
+            const int yEnd = yIt->first + yIt->second;
+            const int lo = std::max(xIt->first, yIt->first);
+            const int hi = std::min(xEnd, yEnd);
+            if (lo < hi) runs.emplace_back(lo, hi - lo);
+            if (xEnd < yEnd) {
+                ++xIt;
+            } else {
+                ++yIt;
+            }
+        }
+        if (!runs.empty()) both.runsOf.emplace(pr.first, std::move(runs));
+    }
+    return both;
+}
+
+using DefinedBits = std::unordered_map<AstVarScope*, CombFootprint>;
+
+DefinedBits intersectDefined(const DefinedBits& a, const DefinedBits& b) {
+    const bool aSmaller = a.size() <= b.size();
+    const DefinedBits& smallr = aSmaller ? a : b;
+    const DefinedBits& larger = aSmaller ? b : a;
+    DefinedBits both;
+    for (const auto& pr : smallr) {
+        const auto it = larger.find(pr.first);
+        if (it == larger.end()) continue;
+        CombFootprint bits = intersectBits(pr.second, it->second);
+        if (bits.whole || !bits.runsOf.empty()) both.emplace(pr.first, std::move(bits));
+    }
+    return both;
+}
+
+void unionDefined(DefinedBits& dst, DefinedBits&& src) {
+    if (dst.empty()) {
+        dst = std::move(src);
+        return;
+    }
+    for (const auto& pr : src) unionBits(dst[pr.first], pr.second);
+}
+
+// Finds the bits every path through a block assigns. Arms only add, so
+// (D | then) & (D | else) == D | (then & else): each arm is walked from empty.
+// Both arms of a constant 'if' are walked, so a V3Const-folded branch reads the same.
+class LazyLatchVisitor final : public VNVisitorConst {
+public:
+    DefinedBits m_defined;  // Bits assigned on every path so far
+    // Full-width and constant-select assigns reached through ifs alone, the only writes
+    // it decides
+    std::unordered_set<const AstVarRef*> m_modeled;
+
+private:
+    DefinedBits walkArm(AstNode* stmtsp) {
+        VL_RESTORER_CLEAR(m_defined);
+        iterateAndNextConstNull(stmtsp);
+        DefinedBits armDefined;
+        armDefined.swap(m_defined);
+        return armDefined;
+    }
+
+    // VISITORS
+    void visit(AstNodeAssign* nodep) override {
+        PartExtent ext;
+        if (AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
+            m_modeled.insert(refp);
+            CombFootprint& fp = m_defined[refp->varScopep()];
+            fp.whole = true;
+            fp.runsOf.clear();
+        } else if (AstVarRef* const prefp = partialLhsRef(nodep->lhsp(), ext)) {
+            int32_t elem = 0;
+            if (combElement(prefp->varp(), ext, elem)) {
+                m_modeled.insert(prefp);
+                addBits(m_defined[prefp->varScopep()], elem, ext.lsb, ext.width);
+            }
+        }
+    }
+    void visit(AstNodeIf* nodep) override {
+        // An else-if chain is folded from its last 'else' up, iteratively
+        std::vector<AstNodeIf*> chain{nodep};
+        while (AstNodeIf* const nextp = VN_CAST(chain.back()->elsesp(), NodeIf)) {
+            if (nextp->nextp()) break;
+            chain.push_back(nextp);
+        }
+        DefinedBits delta = walkArm(chain.back()->elsesp());
+        for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
+            DefinedBits thenDelta = walkArm((*it)->thensp());
+            const int truth = constTruth((*it)->condp());
+            if (truth == 1) {
+                delta = std::move(thenDelta);
+            } else if (truth < 0) {
+                delta = intersectDefined(thenDelta, delta);
+            }
+        }
+        unionDefined(m_defined, std::move(delta));
+    }
+    void visit(AstNode*) override {}  // Writes under any other statement stay unmodeled
+
+public:
+    explicit LazyLatchVisitor(AstNode* stmtsp) { iterateAndNextConstNull(stmtsp); }
+};
+
+// See WRITABILITY above. Fed every combinational block and variable instance, then finished.
+class CombClassifier final {
+    // STATE
+    V3VpiLazyContext& m_ctx;  // Takes the PARTIAL variables' runs
+    std::unordered_map<const AstVarScope*, CombFootprint> m_combFootOf;
+    std::unordered_set<const AstVar*> m_combFootVars;  // Variables of m_combFootOf keys
+    std::vector<AstVar*> m_combFootOrder;  // m_combFootVars, encounter order
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Candidates'
+
+    // Explicit public_flat_rw, forceable and top-level input signals keep flat-rw semantics.
+    static bool combCandidate(const AstVar* varp) {
+        return varp->isSigVpiLazyCandidate() && !varp->isForceable() && !varp->isPrimaryInish();
+    }
+
+    CombFootprint& combFootprint(const AstVarScope* vscp) {
+        AstVar* const varp = vscp->varp();
+        const auto pr = m_combFootOf.emplace(vscp, CombFootprint{});
+        if (pr.second && m_combFootVars.insert(varp).second) m_combFootOrder.push_back(varp);
+        return pr.first->second;
+    }
+
+    // Null 'extp': a write the footprint cannot narrow, so the whole variable.
+    void addCombWrite(const AstVarScope* vscp, const PartExtent* extp) {
+        CombFootprint& fp = combFootprint(vscp);
+        if (fp.whole) return;
+        int32_t elem = 0;
+        if (!extp || !combElement(vscp->varp(), *extp, elem)) {
+            fp.whole = true;
+            fp.runsOf.clear();
+            return;
+        }
+        fp.runsOf[elem].emplace_back(extp->lsb, extp->width);
+    }
+
+    void addCombBits(const AstVarScope* vscp, const CombFootprint& bits) {
+        CombFootprint& fp = combFootprint(vscp);
+        if (fp.whole) return;
+        if (bits.whole) {
+            fp.whole = true;
+            fp.runsOf.clear();
+            return;
+        }
+        for (const auto& pr : bits.runsOf)
+            for (const std::pair<int, int>& bitRun : pr.second)
+                fp.runsOf[pr.first].push_back(bitRun);
+    }
+
+    // Merged runs covering every bit of every element are the whole variable, and have none.
+    static InstComb mergedFootprint(const AstVar* varp, CombFootprint& fp) {
+        std::vector<V3VpiLazy::CombRun> runs;
+        if (!fp.whole) {
+            std::vector<int32_t> dims;
+            int elemWidth = 0;
+            combMaskable(varp, dims, elemWidth);
+            uint64_t elements = 1;
+            for (const int32_t d : dims) {
+                elements *= static_cast<uint64_t>(d);
+                if (elements > fp.runsOf.size()) break;
+            }
+            bool full = elements == fp.runsOf.size();
+            for (auto& pr : fp.runsOf) {
+                std::vector<std::pair<int, int>>& parts = pr.second;
+                std::sort(parts.begin(), parts.end());
+                const size_t first = runs.size();
+                for (const std::pair<int, int>& part : parts) {
+                    const uint32_t lsb = static_cast<uint32_t>(part.first);
+                    const uint32_t width = static_cast<uint32_t>(part.second);
+                    V3VpiLazy::CombRun* const lastp = runs.size() > first ? &runs.back() : nullptr;
+                    if (lastp && lsb <= lastp->lsb + lastp->width) {
+                        lastp->width = std::max(lastp->width, lsb + width - lastp->lsb);
+                    } else {
+                        runs.push_back({static_cast<uint32_t>(pr.first), lsb, width});
+                    }
+                }
+                if (runs.size() != first + 1 || runs.back().lsb != 0
+                    || runs.back().width != static_cast<uint32_t>(elemWidth))
+                    full = false;
+            }
+            fp.whole = full;
+        }
+        if (fp.whole) return InstComb{VVpiLazyComb::WHOLE, {}};
+        return InstComb{VVpiLazyComb::PARTIAL, std::move(runs)};
+    }
+
+    void countComb(VVpiLazyComb comb, int instances) {
+        if (comb == VVpiLazyComb::WHOLE) m_combWhole += instances;
+        if (comb == VVpiLazyComb::PARTIAL) m_combPartial += instances;
+    }
+
+    // Instances alike share the variable's class. Otherwise each keeps its own, as each has its
+    // own row, and PARTIAL keeps the storage the writable ones need.
+    void finishCombFootprint(AstVar* varp, const std::vector<AstVarScope*>& vscps) {
+        std::vector<InstComb> insts;
+        for (const AstVarScope* const vscp : vscps) {
+            const auto it = m_combFootOf.find(vscp);
+            insts.push_back(it == m_combFootOf.end() ? InstComb{VVpiLazyComb::NONE, {}}
+                                                     : mergedFootprint(varp, it->second));
+        }
+        const InstComb& firstr = insts.front();
+        if (std::all_of(insts.begin(), insts.end(), [&](const InstComb& ic) {
+                return ic.m_comb == firstr.m_comb && ic.m_runs == firstr.m_runs;
+            })) {
+            varp->vpiLazyComb(firstr.m_comb);
+            countComb(firstr.m_comb, static_cast<int>(vscps.size()));
+            if (firstr.m_comb == VVpiLazyComb::PARTIAL)
+                m_ctx.m_combRuns.emplace(varp, std::move(insts.front().m_runs));
+            return;
+        }
+        varp->vpiLazyComb(VVpiLazyComb::PARTIAL);
+        for (size_t i = 0; i < vscps.size(); ++i) {
+            countComb(insts[i].m_comb, 1);
+            m_ctx.m_instComb.emplace(std::make_pair(vscps[i]->scopep()->name(), varp),
+                                     std::move(insts[i]));
+        }
+    }
+
+public:
+    int m_combWhole = 0;  // Read-only variables, per instance
+    int m_combPartial = 0;  // Masked variables, per instance
+
+    explicit CombClassifier(V3VpiLazyContext& ctx)
+        : m_ctx{ctx} {}
+
+    void addVarScope(AstVarScope* vscp) {
+        AstVar* const varp = vscp->varp();
+        varp->vpiLazyComb(VVpiLazyComb::NONE);
+        if (!combCandidate(varp)) return;
+        m_vscpsOf[varp].push_back(vscp);
+        // V3Const made 'assign v = CONST' an initial plus a decl value, but it still drives v
+        if (varp->isContinuously() && varp->isConst() && varp->valuep() && !varp->isParam())
+            addCombWrite(vscp, nullptr);
+    }
+
+    // Purity and read order do not matter here, so the answer does not depend on how V3Split
+    // partitioned the block. A target written any other way, as under a loop or jump, is not
+    // proven: the safe direction.
+    void addBlock(AstAlways* alwaysp) {
+        const VAlwaysKwd kwd = alwaysp->keyword();
+        if (kwd == VAlwaysKwd::ALWAYS_LATCH) return;
+        const LazyLatchVisitor latch{kwd == VAlwaysKwd::CONT_ASSIGN ? nullptr : alwaysp->stmtsp()};
+        std::vector<AstVarRef*> writeRefs;
+        std::unordered_set<const AstVarScope*> unprovable;
+        alwaysp->foreach([&](AstVarRef* refp) {
+            if (refp->access().isReadOnly() || !combCandidate(refp->varp())) return;
+            writeRefs.push_back(refp);
+            if (!latch.m_modeled.count(refp)) unprovable.insert(refp->varScopep());
+        });
+        std::unordered_map<const AstVarRef*, PartExtent> exts;
+        alwaysp->foreach([&](AstNodeAssign* assignp) {
+            PartExtent ext;
+            if (const AstVarRef* const refp = partialLhsRef(assignp->lhsp(), ext))
+                exts.emplace(refp, std::move(ext));
+        });
+        std::unordered_set<const AstVarScope*> proven;
+        for (AstVarRef* const refp : writeRefs) {
+            AstVarScope* const vscp = refp->varScopep();
+            if (unprovable.count(vscp)) {
+                const auto it = exts.find(refp);
+                addCombWrite(vscp, it == exts.end() ? nullptr : &it->second);
+                continue;
+            }
+            // Every bit defined on every path has a write, so the union of writes is these
+            const auto it = latch.m_defined.find(vscp);
+            if (it != latch.m_defined.end() && proven.insert(vscp).second)
+                addCombBits(vscp, it->second);
+        }
+    }
+
+    void finish() {
+        for (AstVar* const varp : m_combFootOrder) finishCombFootprint(varp, m_vscpsOf.at(varp));
     }
 };
 
@@ -636,11 +951,6 @@ class VpiLazyPreparer final {
     int m_nextTempIdx = 0;  // Next temp shadow's name suffix
 
     std::map<std::string, int> m_floorReason;  // Floor residual shape -> instances, for stats
-    std::unordered_map<const AstVarScope*, CombFootprint> m_combFootOf;
-    std::unordered_set<const AstVar*> m_combFootVars;  // Variables of m_combFootOf keys
-    std::vector<AstVar*> m_combFootOrder;  // m_combFootVars, encounter order
-    int m_combWhole = 0;  // Read-only variables, per instance
-    int m_combPartial = 0;  // Masked variables, per instance
     // Assembled from constant-select assigns, whose undriven bits only a VPI read reaches
     std::unordered_set<const AstVar*> m_gapVars;
 
@@ -651,7 +961,6 @@ public:
         , m_gather{nodep} {}
 
     const std::vector<AstCFunc*>& splitFuncps() const { return m_splitFuncps; }
-    void classifyOnly() { classifyCombDriven(); }
 
     void run() {
         classifyCombDriven();
@@ -671,6 +980,14 @@ public:
 
 private:
     // METHODS
+    // See WRITABILITY above.
+    void classifyCombDriven() {
+        CombClassifier& comb = *m_ctx.m_combp;
+        for (AstVarScope* const vscp : m_gather.m_vscOrder) comb.addVarScope(vscp);
+        for (const CombBlock& b : m_gather.m_combBlocks) comb.addBlock(b.m_alwaysp);
+        comb.finish();
+    }
+
     int instancesOf(const AstVar* varp) const {
         const auto it = m_gather.m_vscpsOf.find(varp);
         return it != m_gather.m_vscpsOf.end() ? static_cast<int>(it->second.size()) : 1;
@@ -752,321 +1069,6 @@ private:
             if (!g->live) continue;
             g->live = false;
             for (AstVarScope* const t : g->targets) retainTarget(t, why);
-        }
-    }
-
-    // METHODS - Writability
-
-    // Explicit public_flat_rw, forceable and top-level input signals keep flat-rw semantics.
-    static bool combCandidate(const AstVar* varp) {
-        return varp->isSigVpiLazyCandidate() && !varp->isForceable() && !varp->isPrimaryInish();
-    }
-
-    CombFootprint& combFootprint(const AstVarScope* vscp) {
-        AstVar* const varp = vscp->varp();
-        const auto pr = m_combFootOf.emplace(vscp, CombFootprint{});
-        if (pr.second && m_combFootVars.insert(varp).second) m_combFootOrder.push_back(varp);
-        return pr.first->second;
-    }
-
-    // Null 'extp': a write the footprint cannot narrow, so the whole variable.
-    void addCombWrite(const AstVarScope* vscp, const PartExtent* extp) {
-        CombFootprint& fp = combFootprint(vscp);
-        if (fp.whole) return;
-        int32_t elem = 0;
-        if (!extp || !combElement(vscp->varp(), *extp, elem)) {
-            fp.whole = true;
-            fp.runsOf.clear();
-            return;
-        }
-        fp.runsOf[elem].emplace_back(extp->lsb, extp->width);
-    }
-
-    void addCombBits(const AstVarScope* vscp, const CombFootprint& bits) {
-        CombFootprint& fp = combFootprint(vscp);
-        if (fp.whole) return;
-        if (bits.whole) {
-            fp.whole = true;
-            fp.runsOf.clear();
-            return;
-        }
-        for (const auto& pr : bits.runsOf)
-            for (const std::pair<int, int>& bitRun : pr.second)
-                fp.runsOf[pr.first].push_back(bitRun);
-    }
-
-    // 1 or 0 if 'condp' is constant, else -1: what V3Const folds before prepare() unless
-    // -fno-const-before-dfg, and V3Case's grouped `if (a | ... | 1'b1)`.
-    static int constTruth(const AstNodeExpr* condp) {
-        if (const AstVarRef* const refp = VN_CAST(condp, VarRef)) {
-            const AstConst* const valuep = VN_CAST(refp->varp()->valuep(), Const);
-            if (refp->varp()->isParam() && valuep) condp = valuep;
-        }
-        if (const AstConst* const constp = VN_CAST(condp, Const)) return constp->isZero() ? 0 : 1;
-        if (condp->width() != 1) return -1;
-        if (VN_IS(condp, Not) || VN_IS(condp, LogNot)) {
-            const int truth = constTruth(VN_AS(condp, NodeUniop)->lhsp());
-            return truth < 0 ? -1 : !truth;
-        }
-        const AstNodeBiop* const biopp = VN_CAST(condp, NodeBiop);
-        if (!biopp) return -1;
-        const int lhs = constTruth(biopp->lhsp());
-        const int rhs = constTruth(biopp->rhsp());
-        if (VN_IS(condp, Or) || VN_IS(condp, LogOr)) {
-            if (lhs == 1 || rhs == 1) return 1;
-            return lhs == 0 && rhs == 0 ? 0 : -1;
-        }
-        if (VN_IS(condp, And) || VN_IS(condp, LogAnd)) {
-            if (lhs == 0 || rhs == 0) return 0;
-            return lhs == 1 && rhs == 1 ? 1 : -1;
-        }
-        return -1;
-    }
-
-    static void unionBits(CombFootprint& dst, const CombFootprint& src) {
-        if (dst.whole) return;
-        if (src.whole) {
-            dst.whole = true;
-            dst.runsOf.clear();
-            return;
-        }
-        for (const auto& pr : src.runsOf) {
-            for (const std::pair<int, int>& run : pr.second)
-                addBits(dst, pr.first, run.first, run.second);
-        }
-    }
-
-    static CombFootprint intersectBits(const CombFootprint& a, const CombFootprint& b) {
-        if (a.whole) return b;
-        if (b.whole) return a;
-        CombFootprint both;
-        for (const auto& pr : a.runsOf) {
-            const auto it = b.runsOf.find(pr.first);
-            if (it == b.runsOf.end()) continue;
-            std::vector<std::pair<int, int>> runs;
-            auto xIt = pr.second.begin();
-            auto yIt = it->second.begin();
-            while (xIt != pr.second.end() && yIt != it->second.end()) {
-                const int xEnd = xIt->first + xIt->second;
-                const int yEnd = yIt->first + yIt->second;
-                const int lo = std::max(xIt->first, yIt->first);
-                const int hi = std::min(xEnd, yEnd);
-                if (lo < hi) runs.emplace_back(lo, hi - lo);
-                if (xEnd < yEnd) {
-                    ++xIt;
-                } else {
-                    ++yIt;
-                }
-            }
-            if (!runs.empty()) both.runsOf.emplace(pr.first, std::move(runs));
-        }
-        return both;
-    }
-
-    using DefinedBits = std::unordered_map<AstVarScope*, CombFootprint>;
-
-    static DefinedBits intersectDefined(const DefinedBits& a, const DefinedBits& b) {
-        const bool aSmaller = a.size() <= b.size();
-        const DefinedBits& smallr = aSmaller ? a : b;
-        const DefinedBits& larger = aSmaller ? b : a;
-        DefinedBits both;
-        for (const auto& pr : smallr) {
-            const auto it = larger.find(pr.first);
-            if (it == larger.end()) continue;
-            CombFootprint bits = intersectBits(pr.second, it->second);
-            if (bits.whole || !bits.runsOf.empty()) both.emplace(pr.first, std::move(bits));
-        }
-        return both;
-    }
-
-    static void unionDefined(DefinedBits& dst, DefinedBits&& src) {
-        if (dst.empty()) {
-            dst = std::move(src);
-            return;
-        }
-        for (const auto& pr : src) unionBits(dst[pr.first], pr.second);
-    }
-
-    // Finds the bits every path through a block assigns. Arms only add, so
-    // (D | then) & (D | else) == D | (then & else): each arm is walked from empty.
-    // Both arms of a constant 'if' are walked, so a V3Const-folded branch reads the same.
-    class LazyLatchVisitor final : public VNVisitorConst {
-    public:
-        DefinedBits m_defined;  // Bits assigned on every path so far
-        // Full-width and constant-select assigns reached through ifs alone, the only writes
-        // it decides
-        std::unordered_set<const AstVarRef*> m_modelled;
-
-    private:
-        DefinedBits walkArm(AstNode* stmtsp) {
-            VL_RESTORER_CLEAR(m_defined);
-            iterateAndNextConstNull(stmtsp);
-            DefinedBits armDefined;
-            armDefined.swap(m_defined);
-            return armDefined;
-        }
-
-        // VISITORS
-        void visit(AstNodeAssign* nodep) override {
-            PartExtent ext;
-            if (AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
-                m_modelled.insert(refp);
-                CombFootprint& fp = m_defined[refp->varScopep()];
-                fp.whole = true;
-                fp.runsOf.clear();
-            } else if (AstVarRef* const prefp = partialLhsRef(nodep->lhsp(), ext)) {
-                int32_t elem = 0;
-                if (combElement(prefp->varp(), ext, elem)) {
-                    m_modelled.insert(prefp);
-                    addBits(m_defined[prefp->varScopep()], elem, ext.lsb, ext.width);
-                }
-            }
-        }
-        void visit(AstNodeIf* nodep) override {
-            // An else-if chain is folded from its last 'else' up, iteratively
-            std::vector<AstNodeIf*> chain{nodep};
-            while (AstNodeIf* const nextp = VN_CAST(chain.back()->elsesp(), NodeIf)) {
-                if (nextp->nextp()) break;
-                chain.push_back(nextp);
-            }
-            DefinedBits delta = walkArm(chain.back()->elsesp());
-            for (auto it = chain.rbegin(); it != chain.rend(); ++it) {
-                DefinedBits thenDelta = walkArm((*it)->thensp());
-                const int truth = constTruth((*it)->condp());
-                if (truth == 1) {
-                    delta = std::move(thenDelta);
-                } else if (truth < 0) {
-                    delta = intersectDefined(thenDelta, delta);
-                }
-            }
-            unionDefined(m_defined, std::move(delta));
-        }
-        void visit(AstNode*) override {}  // Writes under any other statement stay unmodelled
-
-    public:
-        explicit LazyLatchVisitor(AstNode* stmtsp) { iterateAndNextConstNull(stmtsp); }
-    };
-
-    struct LatchProof final {
-        DefinedBits defined;  // Bits assigned on every path; a target's others are a latch's
-        Defined unprovable;  // Targets whose every write is combinational
-    };
-
-    // Purity and read order do not matter here, so the answer does not depend on how V3Split
-    // partitioned the block. A target written any other way, as under a loop or jump, is not
-    // proven: the safe direction.
-    static LatchProof proveLatches(const CombBlock& b) {
-        LatchProof proof;
-        const VAlwaysKwd kwd = b.m_alwaysp->keyword();
-        if (kwd == VAlwaysKwd::ALWAYS_LATCH) return proof;
-        LazyLatchVisitor latch{kwd == VAlwaysKwd::CONT_ASSIGN ? nullptr : b.m_alwaysp->stmtsp()};
-        proof.defined = std::move(latch.m_defined);
-        for (const AstVarRef* const refp : b.m_writeRefs)
-            if (!latch.m_modelled.count(refp)) proof.unprovable.insert(refp->varScopep());
-        return proof;
-    }
-
-    // See WRITABILITY above.
-    void classifyCombDriven() {
-        for (const AstVarScope* const vscp : m_gather.m_vscOrder)
-            vscp->varp()->vpiLazyComb(VVpiLazyComb::NONE);
-        for (const CombBlock& b : m_gather.m_combBlocks) {
-            if (std::none_of(b.m_targets.begin(), b.m_targets.end(),
-                             [](const AstVarScope* t) { return combCandidate(t->varp()); }))
-                continue;
-            const LatchProof proof = proveLatches(b);
-            Defined proven;
-            for (AstVarRef* const refp : b.m_writeRefs) {
-                AstVarScope* const vscp = refp->varScopep();
-                if (!combCandidate(vscp->varp())) continue;
-                if (proof.unprovable.count(vscp)) {
-                    const auto it = b.m_partialExts.find(refp);
-                    addCombWrite(vscp, it == b.m_partialExts.end() ? nullptr : &it->second);
-                    continue;
-                }
-                // Every bit defined on every path has a write, so the union of writes is these
-                const auto it = proof.defined.find(vscp);
-                if (it != proof.defined.end() && proven.insert(vscp).second)
-                    addCombBits(vscp, it->second);
-            }
-        }
-        // V3Const made 'assign v = CONST' an initial plus a decl value, but it still drives v
-        for (const AstVarScope* const vscp : m_gather.m_vscOrder) {
-            const AstVar* const varp = vscp->varp();
-            if (combCandidate(varp) && varp->isContinuously() && varp->isConst() && varp->valuep()
-                && !varp->isParam())
-                addCombWrite(vscp, nullptr);
-        }
-        for (AstVar* const varp : m_combFootOrder)
-            finishCombFootprint(varp, m_gather.m_vscpsOf.at(varp));
-    }
-
-    // Merged runs covering every bit of every element are the whole variable, and have none.
-    static InstComb mergedFootprint(const AstVar* varp, CombFootprint& fp) {
-        std::vector<V3VpiLazy::CombRun> runs;
-        if (!fp.whole) {
-            std::vector<int32_t> dims;
-            int elemWidth = 0;
-            combMaskable(varp, dims, elemWidth);
-            uint64_t elements = 1;
-            for (const int32_t d : dims) {
-                elements *= static_cast<uint64_t>(d);
-                if (elements > fp.runsOf.size()) break;
-            }
-            bool full = elements == fp.runsOf.size();
-            for (auto& pr : fp.runsOf) {
-                std::vector<std::pair<int, int>>& parts = pr.second;
-                std::sort(parts.begin(), parts.end());
-                const size_t first = runs.size();
-                for (const std::pair<int, int>& part : parts) {
-                    const uint32_t lsb = static_cast<uint32_t>(part.first);
-                    const uint32_t width = static_cast<uint32_t>(part.second);
-                    V3VpiLazy::CombRun* const lastp = runs.size() > first ? &runs.back() : nullptr;
-                    if (lastp && lsb <= lastp->lsb + lastp->width) {
-                        lastp->width = std::max(lastp->width, lsb + width - lastp->lsb);
-                    } else {
-                        runs.push_back({static_cast<uint32_t>(pr.first), lsb, width});
-                    }
-                }
-                if (runs.size() != first + 1 || runs.back().lsb != 0
-                    || runs.back().width != static_cast<uint32_t>(elemWidth))
-                    full = false;
-            }
-            fp.whole = full;
-        }
-        if (fp.whole) return InstComb{VVpiLazyComb::WHOLE, {}};
-        return InstComb{VVpiLazyComb::PARTIAL, std::move(runs)};
-    }
-
-    void countComb(VVpiLazyComb comb, int instances) {
-        if (comb == VVpiLazyComb::WHOLE) m_combWhole += instances;
-        if (comb == VVpiLazyComb::PARTIAL) m_combPartial += instances;
-    }
-
-    // Instances alike share the variable's class. Otherwise each keeps its own, as each has its
-    // own row, and PARTIAL keeps the storage the writable ones need.
-    void finishCombFootprint(AstVar* varp, const std::vector<AstVarScope*>& vscps) {
-        std::vector<InstComb> insts;
-        for (const AstVarScope* const vscp : vscps) {
-            const auto it = m_combFootOf.find(vscp);
-            insts.push_back(it == m_combFootOf.end() ? InstComb{VVpiLazyComb::NONE, {}}
-                                                     : mergedFootprint(varp, it->second));
-        }
-        const InstComb& firstr = insts.front();
-        if (std::all_of(insts.begin(), insts.end(), [&](const InstComb& ic) {
-                return ic.m_comb == firstr.m_comb && ic.m_runs == firstr.m_runs;
-            })) {
-            varp->vpiLazyComb(firstr.m_comb);
-            countComb(firstr.m_comb, instancesOf(varp));
-            if (firstr.m_comb == VVpiLazyComb::PARTIAL)
-                m_ctx.m_combRuns.emplace(varp, std::move(insts.front().m_runs));
-            return;
-        }
-        varp->vpiLazyComb(VVpiLazyComb::PARTIAL);
-        for (size_t i = 0; i < vscps.size(); ++i) {
-            countComb(insts[i].m_comb, 1);
-            m_ctx.m_instComb.emplace(std::make_pair(vscps[i]->scopep()->name(), varp),
-                                     std::move(insts[i]));
         }
     }
 
@@ -2367,8 +2369,8 @@ private:
             V3Stats::addStat("VPI, lazy folded copy cones", m_foldedCount);
             V3Stats::addStat("VPI, lazy helper targets", m_helperCount);
             V3Stats::addStat("VPI, lazy floor retained", floorRetained);
-            V3Stats::addStat("VPI, lazy comb read-only", m_combWhole);
-            V3Stats::addStat("VPI, lazy comb masked", m_combPartial);
+            V3Stats::addStat("VPI, lazy comb read-only", m_ctx.m_combp->m_combWhole);
+            V3Stats::addStat("VPI, lazy comb masked", m_ctx.m_combp->m_combPartial);
             for (const auto& pr : m_floorReason)
                 V3Stats::addStat(std::string{"VPI, lazy floor residual, "} + pr.first, pr.second);
             for (size_t i = 0; i < static_cast<size_t>(Bail::_COUNT); ++i) {
@@ -2403,9 +2405,23 @@ void V3VpiLazy::prepare(AstNetlist* nodep) {
     V3Global::dumpCheckGlobalTree("vpi-lazy-prepare", 0, dumpTreeEitherLevel() >= 3);
 }
 
+V3VpiLazyContext* V3VpiLazy::newContext() {
+    V3VpiLazyContext* const ctxp = new V3VpiLazyContext;
+    ctxp->m_combp.reset(new CombClassifier{*ctxp});
+    return ctxp;
+}
+void V3VpiLazy::deleteContext(V3VpiLazyContext* ctxp) { delete ctxp; }
+
+void V3VpiLazy::combVarScope(AstVarScope* vscp) {
+    v3Global.rootp()->vpiLazyContextp()->m_combp->addVarScope(vscp);
+}
+void V3VpiLazy::combBlock(AstAlways* alwaysp) {
+    v3Global.rootp()->vpiLazyContextp()->m_combp->addBlock(alwaysp);
+}
 void V3VpiLazy::classifyComb(AstNetlist* nodep) {
-    V3VpiLazyContext ctx;
-    VpiLazyPreparer{nodep, nodep->topScopep()->scopep(), ctx}.classifyOnly();
+    std::unique_ptr<CombClassifier>& combp = nodep->vpiLazyContextp()->m_combp;
+    combp->finish();
+    combp.reset();  // Its footprints, until prepare() makes its own
 }
 
 VVpiLazyComb V3VpiLazy::combOf(const AstNetlist* nodep, const AstScope* scopep,

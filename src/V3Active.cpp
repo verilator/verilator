@@ -32,6 +32,7 @@
 
 #include "V3Const.h"
 #include "V3Graph.h"
+#include "V3VpiLazy.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -407,6 +408,7 @@ class ActiveVisitor final : public VNVisitor {
     bool m_allChanged = false;  // Whether all SenItem in the SenTree are ET_CHANGED
     bool m_walkingBody = false;  // Walking body of a process
     bool m_canBeComb = false;  // Whether current clocked process can be turned into a comb process
+    const bool m_vpiLazy = v3Global.opt.vpiLazy();  // Classify for V3VpiLazy::classifyComb
 
     // METHODS
     template <typename T>
@@ -469,6 +471,7 @@ class ActiveVisitor final : public VNVisitor {
         if (!m_clockedProcess || kwd == VAlwaysKwd::ALWAYS_LATCH) {
             const ActiveLatchCheckVisitor latchvisitor{nodep, kwd == VAlwaysKwd::ALWAYS_LATCH};
         }
+        if (!m_clockedProcess && m_vpiLazy) V3VpiLazy::combBlock(VN_AS(nodep, Always));
     }
 
     void visitSenItems(AstNode* nodep) {
@@ -515,6 +518,7 @@ class ActiveVisitor final : public VNVisitor {
         }
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             moveUnderSpecial<AstSenItem::Combo>(nodep);
+            if (m_vpiLazy) V3VpiLazy::combBlock(nodep);
             return;
         }
         visitSenItems(nodep);
@@ -606,7 +610,9 @@ class ActiveVisitor final : public VNVisitor {
 
     //--------------------
     void visit(AstVar*) override {}  // Accelerate
-    void visit(AstVarScope*) override {}  // Accelerate
+    void visit(AstVarScope* nodep) override {
+        if (m_vpiLazy) V3VpiLazy::combVarScope(nodep);
+    }
     void visit(AstNode* nodep) override {
         if (!v3Global.opt.timing().isSetTrue() && m_walkingBody && !m_canBeComb) {
             return;  // Accelerate
@@ -789,7 +795,9 @@ public:
 
 void V3Active::activeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    if (v3Global.opt.vpiLazy()) nodep->createVpiLazyContext();
     { ActiveVisitor{nodep}; }  // Destruct before checking
+    if (v3Global.opt.vpiLazy()) V3VpiLazy::classifyComb(nodep);
     if (v3Global.useCovergroup()) {
         // Add automatic covergroup sampling in two focused passes.
         // user1p/user2p on AstClass span both passes; guards must outlive both visitors.

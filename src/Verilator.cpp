@@ -395,10 +395,6 @@ static void process() {
             // (May convert some ALWAYS to combo blocks, so should be before V3Gate step.)
             V3Active::activeAll(v3Global.rootp());
 
-            // Read-only --vpi-lazy candidates may be decomposed and bit-blasted
-            if (v3Global.opt.vpiLazy() && (v3Global.opt.fDecompose() || v3Global.opt.fBitblast()))
-                V3VpiLazy::classifyComb(v3Global.rootp());
-
             // Decompose arrays and structs into their elements and members
             if (v3Global.opt.fDecompose()) V3Decompose::decomposeAll(v3Global.rootp());
 
