@@ -33,6 +33,7 @@ module t (
     if (!a_finished) $stop;
     if (!b_finished) $stop;
 `ifdef VERILATOR
+    // The bind should not apply to the module marked 'verilator_lib'
     if (lib_bound) $stop;
 `endif
     $write("*-* All Finished *-*\n");
@@ -50,11 +51,16 @@ endmodule
 
 module LibraryModule;
 endmodule
+`ifdef VERILATOR
+`verilator_config
+verilator_lib -module "LibraryModule"
+`verilog
+`endif
 
 module LibraryBound #(
     parameter bit ENABLE = 1'b0
 );
-  initial if (ENABLE) lib_bound = 1'b1;
+  initial lib_bound = ENABLE;
 endmodule
 
 bind LibraryModule LibraryBound #(.ENABLE(1'b1)) bound_instance ();

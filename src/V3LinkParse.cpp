@@ -26,6 +26,7 @@
 #include "V3Stats.h"
 
 #include <set>
+#include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
