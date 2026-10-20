@@ -2523,7 +2523,8 @@ public:
     string scType() const;  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
     // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string cPubArgType(bool named, bool forReturn) const;
-    string dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
+    // Return DPI-C type for argument; if 'cpp', C structures are qualified for C++ class scopes
+    string dpiArgType(bool named, bool forReturn, bool cpp = false) const;
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, bool asRef = false,

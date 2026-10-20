@@ -8026,13 +8026,19 @@ class WidthVisitor final : public VNVisitor {
                                      << "(" << pinDtypep->prettyDTypeNameQ() << " v.s. "
                                      << portDtypep->prettyDTypeNameQ() << ")");
                 }
-                if (portDtypep->basicp()->width() != pinDtypep->basicp()->width()
-                    || !portDtypep->basicp()->keyword().isSameish(
-                        pinDtypep->basicp()->keyword())) {
-                    pinp->v3warn(E_UNSUPPORTED,
-                                 "Shape of the argument does not match the shape of the parameter "
-                                     << "(" << pinDtypep->basicp()->prettyDTypeNameQ() << " v.s. "
-                                     << portDtypep->basicp()->prettyDTypeNameQ() << ")");
+                const AstBasicDType* const portBasicp = portDtypep->basicp();
+                const AstBasicDType* const pinBasicp = pinDtypep->basicp();
+                // Arrays of unpacked structures have no basic type
+                const bool sameElemDType
+                    = portBasicp && pinBasicp
+                          ? portBasicp->width() == pinBasicp->width()
+                                && portBasicp->keyword().isSameish(pinBasicp->keyword())
+                          : pinDtypep->elemDTypep()->similarDType(portDtypep->elemDTypep());
+                if (!sameElemDType) {
+                    pinp->v3warn(
+                        E_UNSUPPORTED,
+                        "Data type of the argument is incompatible with the parameter"
+                            << warnDTypes(pinp, pinDtypep, portDtypep, "Argument", "Parameter"));
                 }
             } else {
                 pinp->v3warn(E_UNSUPPORTED, "Argument is not an unpacked array while parameter "
