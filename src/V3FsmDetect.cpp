@@ -908,15 +908,17 @@ class FsmDetectVisitor final : public VNVisitor {
         return senses;
     }
 
-    // Coverage tracing adds an assignment alongside each coverage increment.
-    // Ignore both so instrumentation does not obscure the FSM structure.
+    // Ignore existing coverage and coverageTrace increments so FSM detection
+    // sees the user logic rather than other instrumentation already attached to
+    // the block.
     static bool isIgnorableStmt(AstNode* nodep) {
         if (VN_IS(nodep, CoverInc)) return true;
         if (const AstAssign* const assp = VN_CAST(nodep, Assign)) {
             const AstVarRef* const lhsp = VN_CAST(assp->lhsp(), VarRef);
             return lhsp && lhsp->varp()->isCoverageTrace();
         }
-        // Ignore if statements containing only instrumentation after V3Const optimizations.
+        // Ignore if statements containing only instrumentation after V3Const
+        // optimizations.
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
             return !skipLeadingIgnorableStmt(ifp->thensp())
                    && !skipLeadingIgnorableStmt(ifp->elsesp());
