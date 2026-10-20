@@ -15,9 +15,12 @@ test.golden_filename = "t/t_threads_unit.out"
 
 test.clean_objs()
 
-# Each tile is both a hierarchical block and a unit, but is not a unit in its own Verilation
+# Each tile is both a hierarchical block and a unit, but is not a unit in its own Verilation,
+# where only its acc is. Unlike the metacomment, the control file also marks the tiles'
+# wrappers in the parent.
 test.compile(verilator_flags2=[
-    "--stats", "--hierarchical", test.vlt_filename, "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0"
+    "--stats", "--hierarchical", "+define+USE_VLT", "+define+HIERARCHICAL", "-CFLAGS",
+    "-DVL_THREADS_SERIAL_COST=0"
 ],
              threads=2)
 
@@ -25,7 +28,8 @@ test.execute(expect_filename=test.golden_filename)
 
 test.file_grep(
     test.obj_dir + "/" + test.vm_prefix + "__hier.dir/" + test.vm_prefix + "__stats.txt",
-    r'MTask graph, threads_unit groups\s+(\d+)', 12)
-test.file_grep_not(test.obj_dir + "/Vtile/Vtile__stats.txt", r'threads_unit groups')
+    r'MTask graph, threads_unit groups\s+(\d+)', 11)
+test.file_grep(test.obj_dir + "/Vtile/Vtile__stats.txt",
+               r'MTask graph, threads_unit groups\s+(\d+)', 1)
 
 test.passes()

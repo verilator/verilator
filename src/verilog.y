@@ -806,6 +806,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVL_SC_BV                 "/*verilator sc_bv*/"
 %token<fl>              yVL_SFORMAT               "/*verilator sformat*/"
 %token<fl>              yVL_SPLIT_VAR             "/*verilator split_var*/"
+%token<fl>              yVL_THREADS_UNIT          "/*verilator threads_unit*/"
 %token<fl>              yVL_FSM_ARC_INCL_COND     "/*verilator fsm_arc_include_cond*/"
 %token<fl>              yVL_FSM_ARC_INCL_COND_AUTO        "/*verilator fsm_arc_include_cond_auto*/"
 %token<fl>              yVL_FSM_ARC_INCL_COND_AUTO_EXPAND "/*verilator fsm_arc_include_cond_auto_expand*/"
@@ -2691,6 +2692,7 @@ non_port_module_item<nodep>:    // ==IEEE: non_port_module_item
         |       yVL_INLINE_MODULE                       { $$ = new AstPragma{$1, VPragmaType::INLINE_MODULE}; }
         |       yVL_NO_INLINE_MODULE                    { $$ = new AstPragma{$1, VPragmaType::NO_INLINE_MODULE}; }
         |       yVL_PUBLIC_MODULE                       { $$ = new AstPragma{$1, VPragmaType::PUBLIC_MODULE}; v3Global.dpi(true); }
+        |       yVL_THREADS_UNIT                        { $$ = new AstPragma{$1, VPragmaType::THREADS_UNIT}; }
         ;
 
 vlScBlock<nodep>:  // Verilator-specific `systemc_* blocks

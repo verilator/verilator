@@ -708,6 +708,16 @@ conservative extractor.
    Verilator) text that should be passed through to the XML output as a tag,
    for use by downstream applications.
 
+.. option:: /*verilator&32;threads_unit*/
+
+   Specifies that each instance of the module is partitioned as a unit with
+   :vlopt:`--threads`. This metacomment must be between
+   ``module module_name(...);`` and ``endmodule``.
+
+   Same as :option:`threads_unit` control file option, except that with
+   :vlopt:`--hierarchical` it does not mark a :option:`hier_block`'s wrapper
+   in the parent Verilation.
+
 .. option:: /*verilator&32;timing_off*/
 
    Ignore all timing constructs after this metacomment. All timing controls

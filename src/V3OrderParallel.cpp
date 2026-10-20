@@ -127,6 +127,7 @@ static void checkDataHazards(OrderMTaskGraph& mTaskGraph) {
 static std::unordered_map<const OrderMoveVertex*, uint32_t>
 threadsUnitGroups(OrderMoveGraph& moveGraph) {
     std::unordered_map<const OrderMoveVertex*, uint32_t> groupOf;
+    // Nothing to do unless some module is marked
     const AstNodeModule* modp = v3Global.rootp()->modulesp();
     while (modp && !modp->threadsUnit()) modp = VN_AS(modp->nextp(), NodeModule);
     if (!modp) return groupOf;
