@@ -10,6 +10,22 @@
 `define checkp(gotv,expv_s) do begin string gotv_s; gotv_s = $sformatf("%p", gotv); if ((gotv_s) != (expv_s)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv_s), (expv_s)); `stop; end end while(0);
 // verilog_format: on
 
+// Original reproducer from #8827, unchanged.
+`ifdef ARRAY_REDUCTION_REPRO
+module t;
+  bit [3:0] q[$];
+  bit [3:0] v;
+  bit [3:0] p;
+  initial begin
+    q = '{4'hF, 4'hF, 4'h1};
+    v = q.sum();
+    p = q.product();
+    $display("sum=%0d v=%0d eq15=%0d bits=%0d", q.sum(), v, q.sum() == 4'd15, $bits(q.sum()));
+    $display("product=%0d p=%0d", q.product(), p);
+    $finish;
+  end
+endmodule
+`else
 module t;
   // IEEE 1800-2023 7.12.3: reductions return the element or with-expression type.
   localparam int REDUCTION_WIDTHS[15] = '{4, 1, 3, 5, 7, 8, 11, 15, 16, 17, 31, 32, 33, 63, 64};
@@ -208,25 +224,6 @@ module t;
     qv = q.map(x) with (x + x.index);
     `checkp(qv, "'{'h1, 'h3, 'h5, 'h7, 'h9}");
 
-    // Original reproducer for #8827.
-    begin
-      bit [3:0] q[$];
-      bit [3:0] v;
-      bit [3:0] p;
-      q = '{4'hF, 4'hF, 4'h1};
-      v = q.sum();
-      p = q.product();
-      `checkh(v, 4'd15);
-      `checkh(p, 4'd1);
-      `checkh(q.sum() == 4'd15, 1'b1);
-      `checkh(q.product() == 4'd1, 1'b1);
-      `checkh($bits(q.sum()), 32'd4);
-      `checkh($bits(q.product()), 32'd4);
-      `checkh($sformatf("sum=%0d v=%0d eq15=%0d bits=%0d", q.sum(), v,
-                       q.sum() == 4'd15, $bits(q.sum())) == "sum=15 v=15 eq15=1 bits=4", 1'b1);
-      `checkh($sformatf("product=%0d p=%0d", q.product(), p) == "product=1 p=1", 1'b1);
-    end
-
     g_reduction[0].run();
     g_reduction[1].run();
     g_reduction[2].run();
@@ -246,3 +243,4 @@ module t;
     $finish;
   end
 endmodule
+`endif
