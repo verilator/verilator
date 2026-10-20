@@ -199,7 +199,7 @@ public:
     bool isPackedUnion() const { return ((m_vlflags & VLVF_PACKED_UNION) != 0); }
     bool isPackedMember() const { return ((m_vlflags & VLVF_PACKED_MEMBER) != 0); }
     bool isPackedNeedsIndex() const { return ((m_vlflags & VLVF_PACKED_NEEDS_INDEX) != 0); }
-    /// Bit offset of a packed struct/union member within its (element 0) parent storage
+    // Bit offset of a packed struct/union member within its (element 0) parent storage
     uint32_t bitOffset() const VL_MT_SAFE { return m_bitOffset; }
     int udims() const VL_MT_SAFE { return m_unpacked.size(); }
     int pdims() const VL_MT_SAFE { return m_packed.size(); }
@@ -293,7 +293,6 @@ public:
 // Thread safety: Assume is constructed only with model, then any number of readers
 
 struct VerilatedForceControlSignals;
-
 class VerilatedVar final : public VerilatedVarProps {
     // MEMBERS
     void* const m_datap;  // Location of data
