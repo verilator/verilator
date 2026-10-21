@@ -598,8 +598,8 @@ class LinkParseVisitor final : public VNVisitor {
         // 32'hFFFF_FFFF reads there as -1, indistinguishable from a legitimate negative bound
         const AstConst* const leftp = VN_CAST(nodep->leftp(), Const);
         const AstConst* const rightp = VN_CAST(nodep->rightp(), Const);
-        if (leftp && rightp && leftp->width() <= 64 && rightp->width() <= 64
-            && !isNegative(leftp) && !isNegative(rightp)) {
+        if (leftp && rightp && leftp->width() <= 64 && rightp->width() <= 64 && !isNegative(leftp)
+            && !isNegative(rightp)) {
             const uint64_t left = leftp->toUQuad();
             const uint64_t right = rightp->toUQuad();
             const uint64_t span = std::max(left, right) - std::min(left, right);
