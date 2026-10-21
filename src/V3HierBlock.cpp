@@ -1256,6 +1256,6 @@ void V3Hierarchical::bindXmrPorts(AstNetlist* netlistp) {
             existingp->exprp(exprp);
             UINFO(4, "HIER-XMR: bound " << pr.port() << " to " << pr.path() << " on "
                                         << cellp->prettyNameQ());
-        }
+        }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
     }
 }
