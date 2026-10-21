@@ -475,7 +475,7 @@ class EmitCModel final : public EmitCFunc {
 
         if (v3Global.opt.vpiLazy()) {
             putsDecoration(nullptr, "// Lazy epoch odd until evalEnd(): reads re-resolve\n");
-            puts("++vlSymsp->__Vm_lazy.epoch;\n");
+            puts("vlSymsp->__Vm_lazy.evalBegin();\n");
         }
         if (v3Global.hasVpiLazyRetained()) {
             // Consumed before time 0 too, as the time 0 settle already propagates the write

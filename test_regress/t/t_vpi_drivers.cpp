@@ -109,16 +109,19 @@ PLI_INT32 runStep(p_cb_data) {
 
 #if defined(VERILATOR) && defined(T_VPI_DRIVERS_SAVABLE)
 const char* const s_savePath = VL_STRINGIFY(TEST_OBJ_DIR) "/saved.vltsv";
+const char* const s_prePath = VL_STRINGIFY(TEST_OBJ_DIR) "/saved_pre.vltsv";
+const char* const s_midPath = VL_STRINGIFY(TEST_OBJ_DIR) "/saved_mid.vltsv";
+uint32_t s_ch1Reset = 0;  // lz_save.ch1 before the first eval
 
-void saveModel() {
+void saveModel(const char* path = s_savePath) {
     VerilatedSave os;
-    os.open(s_savePath);
+    os.open(path);
     os << *testVpiTopp;
 }
 
-void restoreModel() {
+void restoreModel(const char* path = s_savePath) {
     VerilatedRestore os;
-    os.open(s_savePath);
+    os.open(path);
     os >> *testVpiTopp;
 }
 
@@ -147,6 +150,9 @@ void checkSettled() {
 void script() {
     if (plusArg("+restore")) {
         step([] {
+            // Saved before the first eval: reads its reset values, as a fresh model does
+            restoreModel(s_prePath);
+            check("lz_save.ch1 restored unsettled", get("lz_save.ch1"), s_ch1Reset);
             restoreModel();
             checkRestored();
         });
@@ -176,6 +182,17 @@ PLI_INT32 startOfSimulation(p_cb_data) {
     // For the design's $dumpvars
     Verilated::traceEverOn(true);
     in("clk", 0);
+    s_ch1Reset = get("lz_save.ch1");
+    if (plusArg("+restore")) {
+        // Saved mid-eval, so at an epoch ahead of this model's: restored between evals, a
+        // put's readers read as before it
+        restoreModel(s_midPath);
+        const uint32_t kq = get("lz_save.k_q");
+        put("lz_save.k_q", kq ^ 0x80);
+        check("lz_save.ch1 restored from mid-eval", get("lz_save.ch1"), (kq + 7) & 0xff);
+    } else {
+        saveModel(s_prePath);
+    }
     put("lz_save.d", 0x21);
     script();
     scheduleStep();
@@ -183,6 +200,11 @@ PLI_INT32 startOfSimulation(p_cb_data) {
 }
 
 }  // namespace
+
+// Called at each rising edge
+extern "C" void midEvalSave() {
+    if (!plusArg("+restore")) saveModel(s_midPath);
+}
 
 #else
 void putStr(const std::string& name, PLI_INT32 format, const char* str) {

@@ -872,6 +872,8 @@ module lz_save (
   assign ch1 = k_q + 8'h7;
   assign al1 = k_q;
   assign so = k_q ^ 8'h5a;
+  import "DPI-C" context function void midEvalSave();
+  always @(posedge clk) midEvalSave();
   lz_trace u_tr ();
   initial begin
     $dumpfile(`STRINGIFY(`TEST_DUMPFILE));

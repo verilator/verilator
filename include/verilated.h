@@ -997,9 +997,15 @@ struct VerilatedLazyState final {
     uint64_t epoch = 2;
     const VlLazyCombMask* combMasksp = nullptr;  ///< Comb masks, if any
     bool written = false;  ///< Write to a retained signal awaiting a settle
+    bool evalBegun = false;  ///< An eval() has begun, in this model or the one saved
     bool undoOn = false;  ///< Has a reconstructed row, so puts log
     bool undoIn = false;  ///< The undo log is swapped in
     std::vector<VlLazyUndo> undo;  ///< See vl_vpi_undo_log() in verilated_vpi.cpp
+    /// Called from the generated evalBegin()
+    void evalBegin() VL_MT_UNSAFE_ONE {
+        ++epoch;
+        evalBegun = true;
+    }
     /// Retire every memo and the undo log. Called from the generated evalEnd().
     void evalEnd() VL_MT_UNSAFE_ONE {
         ++epoch;
@@ -1008,14 +1014,15 @@ struct VerilatedLazyState final {
     /// Bump the epoch, keeping its in-eval parity
     void epochBump() VL_MT_UNSAFE_ONE { epoch += 2; }
     /// Retire every memo and logged put a restore overwrote. Restored stamps are at most the
-    /// saved epoch, which may be ahead of this model's.
+    /// saved epoch, which may be ahead of this model's, and odd if saved mid-eval; a restore
+    /// is between evals, so the result is the next even epoch past both.
     void restore(uint64_t savedEpoch) VL_MT_UNSAFE_ONE {
-        epoch = (savedEpoch > epoch ? savedEpoch : epoch) + 2;
+        epoch = ((savedEpoch > epoch ? savedEpoch : epoch) | 1) + 1;
         undo.clear();
         undoIn = false;
     }
-    /// No eval() has begun and no restore happened, so nothing has settled
-    bool beforeFirstEval() const { return epoch == 2; }
+    /// Nothing has settled, so storage holds reset values
+    bool beforeFirstEval() const { return !evalBegun; }
     /// Whether a memo stamped 'stamp' is stale; if so, restamps it
     bool stale(uint64_t& stamp) VL_MT_UNSAFE_ONE {
         if (stamp == epoch) return false;

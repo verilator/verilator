@@ -2018,9 +2018,11 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
                     puts("uint64_t __Vm_lazyEpochSaved;\n");
                     puts("os >> __Vm_lazyEpochSaved;\n");
                     puts("os >> __Vm_lazy.written;\n");
+                    puts("os >> __Vm_lazy.evalBegun;\n");
                 } else {
                     puts("os << __Vm_lazy.epoch;\n");
                     puts("os << __Vm_lazy.written;\n");
+                    puts("os << __Vm_lazy.evalBegun;\n");
                     // A save from within a read's rebuild must see the puts in place
                     puts("const bool __Vm_lazyUndoWasIn = __Vm_lazy.undoIn;\n");
                     puts("if (VL_UNLIKELY(__Vm_lazyUndoWasIn)) __Vm_lazy.undoSwap(false);\n");
