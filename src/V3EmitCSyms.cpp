@@ -142,7 +142,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // Single VlScopeTableEntry[] table for all scopes, built in getSymCtorStmts()
     std::string m_scopeTableName;
     std::vector<std::string> m_scopeTableRows;
-    size_t m_nLazyReconVars = 0;
+    size_t m_nLazyReconVars = 0;  // __Vm_lazyReconstructDatap entries, one per --vpi-lazy row
+    // VlLazyReconEntry[] tables, one per distinct row run; shared likewise
     NamedTables m_lazyReconFnTables;
     std::string m_ifaceRefTableName;
     std::vector<std::string> m_ifaceRefTableRows;
@@ -440,8 +441,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
 
         const std::string name = V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty));
-        // nameProtect() (not protect(name())) so the offsetof member matches the
-        // emitted struct field: a primary I/O port keeps its unprotected name
+        // rowStorageName() takes nameProtect(), not protect(name()), so the offsetof member
+        // matches the emitted struct field: a primary I/O port keeps its unprotected name
         // under --protect-ids, whereas protect() would always hash it.
         const std::string member = rowStorageName(varp);
         const std::string dir = vlEnumDirOf(scopep, varp);
@@ -872,7 +873,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 if (modp != smodp) continue;
 
                 if (varp->isLazyReconstructHelper()) continue;
-                if (!V3VpiLazy::hasRow(v3Global.rootp(), scopep, varp)) continue;
+                if (!V3VpiLazy::hasRow(m_netlistp, scopep, varp)) continue;
                 const std::string vpiVarName
                     = varp->isLazyReconstructShadow() ? varp->origName() : varp->name();
                 addScopeVarEntry(scopep, modp, vpiVarName, varp->name(), varp);
@@ -1777,7 +1778,8 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                                    + ", VLVF_PUB_RW|VLVF_LAZY_COMB";
                         reconFns.emplace_back("{" + fn + ", " + tail + "}");
                     }
-                    // A member takes its lazy and write policy from this row, see storageVarp()
+                    // A member takes its lazy and write policy from this row, see
+                    // VerilatedVpioVar::storageVarp()
                     addPackedAggMemberVars(residual, svd, scopep, svd.m_varBasePretty,
                                            rowStorageName(varp), varp->dtypep());
                     break;

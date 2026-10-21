@@ -170,9 +170,9 @@ public:
                 vVtxp->clearReducibleAndDedupable("SigPublic");
                 vVtxp->setConsumed("SigPublic");
             } else if (vscp->varp()->isVpiLazyStorageKept()) {
-                // Dedup would sever VPI from the driver.
-                vVtxp->clearDedupable("SigVpiLazyRetained");
-                vVtxp->setConsumed("SigVpiLazyRetained");
+                // Dedup would sever VPI or a reconstruct cone from the driver.
+                vVtxp->clearDedupable("SigVpiLazyKept");
+                vVtxp->setConsumed("SigVpiLazyKept");
                 // Substituting a writable signal's driver into its readers would hide a put
                 if (vscp->varp()->isSigVpiLazyRetained()
                     && V3VpiLazy::combOf(v3Global.rootp(), vscp->scopep(), vscp->varp())
@@ -807,7 +807,7 @@ class GateInline final {
                 ++m_statRefs;
             }
 
-            // Retained variables keep their drivers for VPI.
+            // Retained and pinned variables keep their drivers, for VPI or a reconstruct cone.
             if (vVtxp->outEmpty() && !vscp->varp()->isVpiLazyStorageKept()) {
                 // Remove Variable vertex
                 VL_DO_DANGLING(vVtxp->unlinkDelete(&m_graph), vVtxp);

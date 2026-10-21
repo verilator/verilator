@@ -408,7 +408,7 @@ class ActiveVisitor final : public VNVisitor {
     bool m_allChanged = false;  // Whether all SenItem in the SenTree are ET_CHANGED
     bool m_walkingBody = false;  // Walking body of a process
     bool m_canBeComb = false;  // Whether current clocked process can be turned into a comb process
-    const bool m_vpiLazy = v3Global.opt.vpiLazy();  // Classify for V3VpiLazy::classifyComb
+    const bool m_vpiLazy = v3Global.opt.vpiLazy();  // Feed V3VpiLazy's comb classification
 
     // METHODS
     template <typename T>

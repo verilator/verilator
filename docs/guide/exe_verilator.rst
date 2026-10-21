@@ -2334,8 +2334,8 @@ Summary:
 
 .. option:: --vpi-lazy
 
-   Declares all variables, ports, and wires VPI accessible by their flat
-   name, as :vlopt:`--public-flat-rw` does, but rematerializes
+   Declares all variables, ports, wires, and parameters VPI accessible by
+   their flat name, as :vlopt:`--public-flat-rw` does, but rematerializes
    combinationally driven signals when VPI reads them rather than storing
    them in the model. Those signals are read-only unless marked
    ``public_flat_rw`` or ``forceable``. Implies :vlopt:`--vpi`. See

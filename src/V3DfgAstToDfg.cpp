@@ -37,7 +37,7 @@ class AstToDfgAddAstRefs final : public VNVisitorConst {
     const std::function<DfgVertexVar*(AstVarScope*)> m_getVarVertex;
     bool m_inSenItem = false;  // Inside an AstSenItem
     bool m_inLoop = false;  // Inside an AstLoop
-    bool m_inVpiLazyRecon = false;
+    bool m_inVpiLazyRecon = false;  // Inside a --vpi-lazy reconstruct func
 
     // VISITORS
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
@@ -73,7 +73,8 @@ class AstToDfgAddAstRefs final : public VNVisitorConst {
         if (!varp) return;
         // Create Ast reference vertices
         if (nodep->access().isReadOnly()) {
-            // One function serves every instance.
+            // One reconstruct func serves every instance, so its reads must stay of the variable
+            // and not take one instance's driver.
             if (m_inVpiLazyRecon) {
                 DfgVertexVar::setHasExtRdRefs(vscp);
                 return;

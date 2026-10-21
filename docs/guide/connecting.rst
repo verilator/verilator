@@ -469,9 +469,9 @@ deferred for later. These delayed values can be flushed to the model with
 Lazy VPI Signal Access
 ----------------------
 
-:vlopt:`--vpi-lazy` makes all variables, ports, and wires VPI accessible by
-their flat name. All are readable, and those that hold state are also
-writable, as described below. Unlike :vlopt:`--public-flat-rw`, it does not
+:vlopt:`--vpi-lazy` makes all variables, ports, wires, and parameters VPI
+accessible by their flat name. All are readable, and those that hold state
+are also writable, as described below. Unlike :vlopt:`--public-flat-rw`, it does not
 keep combinationally driven signals in the model, so Verilator can optimize
 the evaluation path as it would without VPI. When VPI reads such a signal,
 it is rematerialized, giving the value it had at the end of the last
@@ -479,7 +479,7 @@ it is rematerialized, giving the value it had at the end of the last
 
 :vlopt:`--public-flat-rw` remains preferable where signals are read
 directly as members of the generated C++ model rather than through VPI, or
-where a client reads many signals on every time step, since a reconstructed
+where a client reads many signals on every time step, since a rematerialized
 read costs more than a load from storage. Marking only the signals that
 need public access is typically better performing than either option.
 

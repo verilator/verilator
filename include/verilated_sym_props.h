@@ -182,11 +182,14 @@ public:
         return bits;
     }
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
+    /// --vpi-lazy: rematerialized on read, with no storage, see datap()
     bool isLazyRemat() const { return ((m_vlflags & VLVF_LAZY_REMAT) != 0); }
+    /// --vpi-lazy: kept as storage, so writable, less any isLazyComb() bits
     bool isLazyRetained() const { return ((m_vlflags & VLVF_LAZY_RETAINED) != 0); }
     /// --vpi-lazy: reconstructed or combinationally driven, so a put may not change it, or with
     /// isPublicRW(), its masked bits
     bool isLazyComb() const { return ((m_vlflags & (VLVF_LAZY_COMB | VLVF_LAZY_REMAT)) != 0); }
+    /// --vpi-lazy: rematerialized by a copy from another variable's storage
     bool isLazyCopy() const { return ((m_vlflags & VLVF_LAZY_COPY) != 0); }
     bool isForceable() const { return ((m_vlflags & VLVF_FORCEABLE) != 0); }
     bool isContinuously() const { return ((m_vlflags & VLVF_CONTINUOUSLY) != 0); }
@@ -318,7 +321,7 @@ public:
     ~VerilatedVar();
     VerilatedVar(VerilatedVar&&);
     // ACCESSORS
-    /// Null for a --vpi-lazy computed signal, which has no storage
+    /// Null for a --vpi-lazy rematerialized signal, which has no storage
     void* datap() const { return VL_UNLIKELY(isLazyRemat()) ? nullptr : m_datap; }
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
@@ -331,8 +334,8 @@ public:
 private:
     // Unchecked datap(), for VPI paths that handle lazy rows themselves
     void* rawDatap() const { return m_datap; }
-    // The --vpi-lazy descriptor; only meaningful when isLazyRemat(). Private, so
-    // VerilatedVpioVar::storagep() is the single place that computes a shadow's address.
+    // The --vpi-lazy descriptor; only meaningful when isLazyRemat(). Private, as only VPI
+    // reads a rematerialized row.
     VerilatedVarLazyDatap* lazyDatap() const {
         VL_DEBUG_IFDEF(assert(isLazyRemat()););
         return static_cast<VerilatedVarLazyDatap*>(m_datap);

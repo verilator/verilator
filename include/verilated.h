@@ -169,7 +169,8 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_PACKED_MEMBER, an ancestor is an array of
                                           // packed structs/unions, so needs an element index
     VLVF_LAZY_REMAT = (1 << 20),  // --vpi-lazy: rematerialized row; no storage, may be read-only
-    VLVF_LAZY_RETAINED = (1 << 21),  // --vpi-lazy: a candidate kept as storage, so writable
+    // --vpi-lazy: a candidate kept as storage, so writable, less any VLVF_LAZY_COMB-masked bits
+    VLVF_LAZY_RETAINED = (1 << 21),
     VLVF_LAZY_COPY = (1 << 22),  // --vpi-lazy: refreshed by memcpy from srcOffset, not a cone
     // --vpi-lazy: combinationally driven, so read-only, or with VLVF_PUB_RW, its masked bits
     VLVF_LAZY_COMB = (1 << 23)
@@ -181,7 +182,9 @@ struct VlLazyReconEntry;
 struct VerilatedVarLazyDatap final {
     void (*refreshp)(void* selfp);  ///< Rebuilds the shadow if stale; unused for a copy row
     void* selfp;  ///< The row's module instance
-    uint64_t stamp;  ///< VerilatedLazyState::epoch when last rebuilt
+    /// Copy rows only: VerilatedLazyState::epoch when last copied; cones keep theirs in the
+    /// module's stamp array
+    uint64_t stamp;
     uint32_t storageOffset;  ///< Shadow's byte offset in selfp
     uint32_t srcOffset;  ///< Copy rows' source byte offset in selfp; unused for cones
 
@@ -223,33 +226,35 @@ struct VlLazyUndo final {
     std::string old;  ///< The bytes, or string, before the put
 };
 
-// One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
-// replaces per-variable varInsert() calls, which compiles faster at scale.
+/// One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
+/// replaces per-variable varInsert() calls, which compiles faster at scale.
 struct VlVarTableEntry final {
-    const char* namep;  // VPI-facing (protected) variable name, string literal
-    // offsetof of storage member from module instance base; for a parameter, being static, the
-    // index of its address in the array basep points to; 0 for a packed member
+    const char* namep;  ///< VPI-facing (protected) variable name, string literal
+    /// offsetof of storage member from module instance base; for a parameter, being static, the
+    /// index of its address in the array basep points to; 0 for a packed member
     size_t byteOffset;
-    // (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
-    // nullptr if none. int32_t since large unpacked memories exceed int16 range.
+    /// (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
+    /// nullptr if none. int32_t since large unpacked memories exceed int16 range.
     const int32_t* dimsp;
-    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*), incl VLVF_LAZY_REMAT
-    VerilatedVarType vltype;
-    uint8_t udims;
-    uint8_t pdims;
-    bool isParam;  // From a parameter, see byteOffset
-    // Defaulted, so only --vpi-lazy and member rows spell them. Read 'aux' through the accessors
-    // below: the row is 40 bytes with no padding, so a field per meaning would make it 48.
+    uint32_t vlflags;  ///< Direction + flags (VLVD_*/VLVF_*), incl VLVF_LAZY_REMAT
+    VerilatedVarType vltype;  ///< Element type
+    uint8_t udims;  ///< Unpacked dimensions, leading dimsp
+    uint8_t pdims;  ///< Packed dimensions, following the unpacked in dimsp
+    bool isParam;  ///< From a parameter, see byteOffset
+    /// Defaulted, so only --vpi-lazy and member rows spell them. Read 'aux' through the accessors
+    /// below: the row is 40 bytes with no padding, so a field per meaning would make it 48.
     int32_t aux = -1;
-    uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
+    uint32_t entSize = 0;  ///< Element size in bytes, or 0 to derive from vltype
 
+    /// A packed struct/union member, see VLVF_PACKED_MEMBER
     bool isPackedMember() const { return vlflags & VLVF_PACKED_MEMBER; }
+    /// See VLVF_LAZY_COMB
     bool isLazyComb() const { return vlflags & VLVF_LAZY_COMB; }
-    // Bit offset of a packed member within its parent's element 0
+    /// Bit offset of a packed member within its parent's element 0
     uint32_t memberBitOffset() const { return isPackedMember() ? static_cast<uint32_t>(aux) : 0; }
-    // Model-wide VlLazyCombMask index of a VLVF_LAZY_COMB row, else -1
+    /// Model-wide VlLazyCombMask index of a VLVF_LAZY_COMB row, else -1
     int32_t lazyCombMask() const { return isLazyComb() ? aux : -1; }
-    // Module-relative --vpi-lazy descriptor slot, else -1
+    /// Module-relative --vpi-lazy descriptor slot, else -1
     int32_t lazyDescSlot() const { return isPackedMember() || isLazyComb() ? -1 : aux; }
 };
 static_assert(sizeof(VlVarTableEntry) <= 40, "VlVarTableEntry unexpectedly grew");
@@ -505,7 +510,8 @@ public:
         m_profilerp = profilerp;
         m_profTopLevel = topLevel;
     }
-    // Re-settle a --vpi-lazy write into a retained signal; called from the generated evalBegin()
+    /// Re-settle a --vpi-lazy write into a retained signal; called from the generated
+    /// evalBegin()
     void lazySettle();
 
 private:
@@ -982,35 +988,35 @@ public:
     void selfTestClearMagic() { m_magic = 0x2; }
 };
 
-// --vpi-lazy runtime state, a member of a --vpi-lazy model's generated symbol table
+/// --vpi-lazy runtime state, a member of a --vpi-lazy model's generated symbol table
 struct VerilatedLazyState final {
-    // Reconstruction generation. Memos equal to it are fresh; starts at 2 so zero stamps are
-    // stale. It is odd from the generated evalBegin() to evalEnd(), and a read while it is odd
-    // moves it first, so a read made mid-eval (from DPI or a callback) never trusts a memo.
-    // Moves other than those two are by 2, preserving the parity.
+    /// Reconstruction generation. Memos equal to it are fresh; starts at 2 so zero stamps are
+    /// stale. It is odd from the generated evalBegin() to evalEnd(), and a read while it is odd
+    /// moves it first, so a read made mid-eval (from DPI or a callback) never trusts a memo.
+    /// Moves other than those two are by 2, preserving the parity.
     uint64_t epoch = 2;
-    const VlLazyCombMask* combMasksp = nullptr;  // Comb masks, if any
-    bool written = false;  // Write to a retained signal awaiting a settle
-    bool undoOn = false;  // Has a reconstructed row, so puts log
-    bool undoIn = false;  // The undo log is swapped in
-    std::vector<VlLazyUndo> undo;  // See vl_vpi_undo_log()
-    // Retire every memo and the undo log. Called from the generated evalEnd().
+    const VlLazyCombMask* combMasksp = nullptr;  ///< Comb masks, if any
+    bool written = false;  ///< Write to a retained signal awaiting a settle
+    bool undoOn = false;  ///< Has a reconstructed row, so puts log
+    bool undoIn = false;  ///< The undo log is swapped in
+    std::vector<VlLazyUndo> undo;  ///< See vl_vpi_undo_log() in verilated_vpi.cpp
+    /// Retire every memo and the undo log. Called from the generated evalEnd().
     void evalEnd() VL_MT_UNSAFE_ONE {
         ++epoch;
         undo.clear();
     }
-    // Bump the epoch, keeping its in-eval parity
+    /// Bump the epoch, keeping its in-eval parity
     void epochBump() VL_MT_UNSAFE_ONE { epoch += 2; }
-    // Retire every memo and logged put a restore overwrote. Restored stamps are at most the
-    // saved epoch, which may be ahead of this model's
+    /// Retire every memo and logged put a restore overwrote. Restored stamps are at most the
+    /// saved epoch, which may be ahead of this model's.
     void restore(uint64_t savedEpoch) VL_MT_UNSAFE_ONE {
         epoch = (savedEpoch > epoch ? savedEpoch : epoch) + 2;
         undo.clear();
         undoIn = false;
     }
-    // No eval() has begun and no restore happened, so nothing has settled
+    /// No eval() has begun and no restore happened, so nothing has settled
     bool beforeFirstEval() const { return epoch == 2; }
-    // Whether a memo stamped 'stamp' is stale; if so, restamps it
+    /// Whether a memo stamped 'stamp' is stale; if so, restamps it
     bool stale(uint64_t& stamp) VL_MT_UNSAFE_ONE {
         if (stamp == epoch) return false;
         stamp = epoch;
@@ -1018,8 +1024,9 @@ struct VerilatedLazyState final {
         if (VL_UNLIKELY(!undo.empty() && !undoIn && !(epoch & 1))) undoSwap(true);
         return true;
     }
+    /// Swap the logged pre-put bytes in ('in'), or the puts back
     void undoSwap(bool in) VL_MT_UNSAFE_ONE;
-    // --savable: the undo log, relative to 'symsp', the derived symbol table
+    /// --savable: the undo log, relative to 'symsp', the derived symbol table
     void undoSave(VerilatedSerialize& os, const void* symsp) const VL_MT_UNSAFE_ONE;
     void undoRestore(VerilatedDeserialize& os, void* symsp) VL_MT_UNSAFE_ONE;
 };
@@ -1039,7 +1046,7 @@ public:  // But for internal use only
     VL_UNCOPYABLE(VerilatedSyms);
 
     virtual const char* name() const = 0;
-    // Null unless --vpi-lazy. Virtual rather than a member so other models keep their size.
+    /// Null unless --vpi-lazy. Virtual rather than a member so other models keep their size.
     virtual VerilatedLazyState* lazyp() { return nullptr; }
 };
 
@@ -1172,16 +1179,18 @@ struct VlScopeTableEntry final {
     VerilatedScope::Type type;
 };
 
-// One VPI scope hierarchy edge, consumed by VerilatedHierarchy::addFromTable()
+/// One VPI scope hierarchy edge, consumed by VerilatedHierarchy::addFromTable()
 struct VlHierTableEntry final {
-    // offsetof of the parent's __Vscopep_* member within the Syms object, or 0 for top level
+    /// offsetof of the parent's __Vscopep_* member within the Syms object, or 0 for top level
     uint32_t fromOffset;
-    uint32_t toOffset;  // Likewise, of the child's
+    uint32_t toOffset;  ///< Likewise, of the child's
 };
 
 class VerilatedHierarchy final {
 public:
+    /// Add the 'n' edges at 'entp', their offsets relative to 'symsp'
     static void addFromTable(const VlHierTableEntry* entp, size_t n, const VerilatedSyms* symsp);
+    /// Remove edges added by addFromTable()
     static void removeFromTable(const VlHierTableEntry* entp, size_t n,
                                 const VerilatedSyms* symsp);
     static void clear();

@@ -220,7 +220,7 @@ static VerilatedSyms* vl_vpi_lazy_syms(const VerilatedScope* scopep) VL_MT_UNSAF
 
 // Swaps back an undo log a read's rebuild swapped in, on every return path
 struct VlLazyUndoRestore final {
-    VerilatedSyms* const symsp;
+    VerilatedSyms* const symsp;  // Model whose undo log the read may have swapped in
     ~VlLazyUndoRestore() {
         VerilatedLazyState* const lazyp = symsp->lazyp();
         if (VL_UNLIKELY(lazyp->undoIn)) lazyp->undoSwap(false);
@@ -3509,6 +3509,7 @@ static void vl_vpi_note_write(const VerilatedVpioVar* vop) {
 // in around a rebuild: a rebuilt dependant then reads as the last eval left it, as a stored one
 // does under --public-flat-rw, and its memo stays valid until that eval moves the epoch and
 // clears the log.
+
 // The log, if a put of 'size' bytes (or a string) at 'datap' needs an entry, else nullptr
 static std::vector<VlLazyUndo>* vl_vpi_undo_logp(VerilatedSyms* symsp, const void* datap,
                                                  size_t size, bool isStr) {
@@ -4266,10 +4267,10 @@ public:
 // A trial put writes only a scratch buffer: leaves the put state as it found it, and keeps the
 // buffer out of the undo log
 class VlLazyTrialPut final {
-    VerilatedLazyState* const m_lazyp;
-    const bool m_evalWas = VerilatedVpiImp::evalNeeded();
-    const bool m_writtenWas = m_lazyp->written;
-    const bool m_undoWas = m_lazyp->undoOn;
+    VerilatedLazyState* const m_lazyp;  // Model state the trial put must leave unchanged
+    const bool m_evalWas = VerilatedVpiImp::evalNeeded();  // Restored on destruction
+    const bool m_writtenWas = m_lazyp->written;  // Likewise
+    const bool m_undoWas = m_lazyp->undoOn;  // Likewise
 
 public:
     explicit VlLazyTrialPut(VerilatedLazyState* lazyp)

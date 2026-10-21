@@ -1376,6 +1376,7 @@ class DecomposeRewrite final : public VNDeleter, public DecomposeBase {
         for (Place* const placep : m_state.rootps) {
             if (!placep->split) continue;
             const AstVarScope* const vscp = placep->vscp;
+            // Traced ones, and --vpi-lazy read-only ones, whose VPI row reads the whole variable
             if (!(vscp->varp()->isTrace() && vscp->isTrace())
                 && !vscp->varp()->isVpiLazyCombWhole())
                 continue;

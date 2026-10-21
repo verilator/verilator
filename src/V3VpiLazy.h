@@ -56,7 +56,8 @@ public:
     // False where 'varp' has no instance in 'scopep': it is kept apart from its other instances.
     static bool hasRow(const AstNetlist* nodep, const AstScope* scopep,
                        const AstVar* varp) VL_MT_DISABLED;
-    // V3Active feeds each variable instance and combinational block it forms to classifyComb.
+    // V3Active feeds each variable instance and combinational block it forms to combVarScope()
+    // and combBlock(); classifyComb() then classifies them.
     static void combVarScope(AstVarScope* vscp) VL_MT_DISABLED;
     static void combBlock(AstAlways* alwaysp) VL_MT_DISABLED;
     // Mark candidates' combinationally driven bits ahead of prepare(), which re-marks them.

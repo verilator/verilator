@@ -16,12 +16,12 @@
 //
 // V3VpiLazy implements --vpi-lazy: VPI access to combinational signals the
 // optimizer eliminates, at no cost to the hot eval path. LinkParse marks every
-// VPI-accessible variable isSigVpiLazyCandidate(), which unlike --public-flat-rw
-// does not block optimization; this pass then gives each signal one of three
-// outcomes:
+// VPI-accessible non-parameter variable isSigVpiLazyCandidate(), which unlike
+// --public-flat-rw does not block optimization (parameters become read-only
+// public); this pass then gives each signal one of three outcomes:
 //
 //   reconstructed - no storage, recomputed on demand by a cold function
-//   copied        - no storage, its own shadow refreshed by a memcpy on read
+//   copied        - no eval-path storage; its own cold shadow refreshed by memcpy on read
 //   retained      - ordinary storage, as --public-flat-rw would give it
 //
 // Anything the first two cannot claim is retained, so the VPI-visible set is
@@ -105,20 +105,21 @@
 // RUNTIME
 //
 // A reconstructed row's datap is a VerilatedVarLazyDatap {refreshp, selfp,
-// offsets}. A read calls refreshp, which compares the group's stamp in its
-// module's epoch array against vlSymsp->__Vm_lazy.epoch, recomputes the cone
-// if stale, and restamps; eval() bumps the epoch, so a cone is recomputed at most
-// once per eval step however many of its signals are read. The epoch is odd
-// during eval(), and a read then moves it first, so a read from DPI or a
-// callback mid-eval never trusts a memo.
+// stamp, offsets}. A read of a cone row calls refreshp, which compares the
+// group's stamp in its module's epoch array against vlSymsp->__Vm_lazy.epoch,
+// recomputes the cone if stale, and restamps; a copy row compares the
+// descriptor's own stamp instead, and memcpys if stale. eval() bumps the epoch,
+// so a cone is recomputed at most once per eval step however many of its
+// signals are read. The epoch is odd during eval(), and a read then moves it
+// first, so a read from DPI or a callback mid-eval never trusts a memo.
 //
 // Reconstructed, copied and wholly combinational rows are read-only, and a put
 // into a masked row keeps the masked bits, changing nothing if it changes no
 // other bit. A put logs the bytes it overwrites, which a read swaps back in
 // around a reconstruction until the next eval, so a put reaches a rebuilt
-// dependant when it would reach a --public-flat-rw one. A put into a retained
-// signal also sets vlSymsp->__Vm_lazy.written, so the next eval re-runs the
-// settle region once to propagate it.
+// dependant when it would reach a --public-flat-rw one. A put into a writable
+// retained signal also sets vlSymsp->__Vm_lazy.written, so the next eval runs
+// lazySettle(), the stl region to convergence, to propagate it.
 //
 // A lazy read is thus model code that writes model state - the shadow and the
 // memo stamps - from whatever thread called VPI, and those stamps are plain
@@ -238,7 +239,7 @@ struct PartExtent final {
     int width = 0;  // Bits written from lsb
 };
 
-// One combinational block as LazyGatherVisitor found it, before any optimization.
+// One combinational block as LazyGatherVisitor found it, before DFG and V3Gate.
 struct CombBlock final {
     AstAlways* m_alwaysp = nullptr;  // The combo block
     AstScope* m_scopep = nullptr;  // Scope that authored the block
@@ -407,7 +408,8 @@ bool bitsDefined(const CombFootprint& fp, int32_t elem, int lsb, int width) {
     });
 }
 
-// Pre-optimization walk: write/read counts per VarScope, and per-block write info.
+// Walk before DFG and V3Gate: write counts, refs and read bits per VarScope, and per-block
+// write info.
 class LazyGatherVisitor final : public VNVisitor {
     // NODE STATE
     //  AstVarScope::user1()  -> bool. Already in the current block's m_reads
@@ -418,7 +420,7 @@ public:
     std::vector<CombBlock> m_combBlocks;  // Combo blocks, encounter order
     std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Its instances
     std::unordered_map<const AstVarScope*, std::vector<AstVarRef*>> m_refsOf;  // Its refs
-    // Every VarScope in tree-encounter order; iterated by the completeness floor.
+    // Every VarScope in tree-encounter order, for deterministic iteration
     std::vector<AstVarScope*> m_vscOrder;
     // Bits of VPI candidates any read may reach
     std::unordered_map<const AstVarScope*, CombFootprint> m_readBits;
@@ -680,10 +682,11 @@ public:
 class CombClassifier final {
     // STATE
     V3VpiLazyContext& m_ctx;  // Takes the PARTIAL variables' runs
-    std::unordered_map<const AstVarScope*, CombFootprint> m_combFootOf;
+    std::unordered_map<const AstVarScope*, CombFootprint> m_combFootOf;  // Comb-written bits
     std::unordered_set<const AstVar*> m_combFootVars;  // Variables of m_combFootOf keys
     std::vector<AstVar*> m_combFootOrder;  // m_combFootVars, encounter order
-    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Candidates'
+    // Each candidate variable's instances
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;
 
     // A block's writes of candidates, and the extent of each partial assign's lhs
     class LazyCombWriteVisitor final : public VNVisitorConst {
@@ -897,7 +900,8 @@ class VpiLazyPreparer final {
 
     FileLine* m_funcFlp = nullptr;  // Of every node emitted, the top scope's
     int m_reconstructed = 0;  // Reconstructed signals (per instance)
-    int m_fallback = 0;  // Retained with storage (incl. group bails), snapshotted pre-emission
+    // Retained with storage (incl. group bails), seeded from the bail count pre-emission
+    int m_fallback = 0;
     uint32_t m_boundaryStorage = 0;  // Pinned only to feed a reconstruct function
     // Why each retained signal missed reconstruction.
     enum class Bail : uint8_t {
@@ -905,13 +909,15 @@ class VpiLazyPreparer final {
         DTYPE,  // Kind reconstruction cannot express (unpacked aggregate)
         PARTIAL_MIXED_WRITE,  // Partial-write target also has a full/comb/impure/var-lsb write
         PARTIAL_OVERLAP,  // Partial writes overlap, so no unambiguous assembly
-        PARTIAL_GAP,  // Partial writes leave bits undriven, which a VPI put may write
-        READ_BEFORE_WRITE,  // A group var is read before an unconditional full-width write
+        // Partial writes leave undriven bits that a read other than VPI's may reach
+        PARTIAL_GAP,
+        // Some bits of a group var are read before a write of them on every path
+        READ_BEFORE_WRITE,
         LATCH,  // A target is not written on every path through the block
         IMPURE,  // The block has a side effect reconstruction must not repeat
         UNSUPPORTED_STMT,  // A statement kind the ordered walk does not model
         UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
-        COMB_CYCLE,  // Genuine combinational cycle (SCC member)
+        COMB_CYCLE,  // Member of a group cycle that does not merge into one provable group
         COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
         BOUNDARY_COMB_DTYPE,  // Comb boundary operand of a kind reconstruction cannot express
         _COUNT
@@ -951,11 +957,11 @@ class VpiLazyPreparer final {
     std::unordered_map<const AstScope*, AstVarScope*> m_epochOfScope;  // stampFor
     // Per group key, so shared by every instance of its module.
     struct KeyInfo final {
-        int gid = -1;  // Design-global id naming the emitted artefacts (gidOf)
+        int gid = -1;  // Design-global id naming the emitted artifacts (gidOf)
         AstCFunc* funcp = nullptr;  // Reconstruct func shared by every instance
         int epochSlot = -1;  // Index into the module's stamp array (assignEpochSlots)
     };
-    std::unordered_map<const AstNode*, KeyInfo> m_keyInfo;
+    std::unordered_map<const AstNode*, KeyInfo> m_keyInfo;  // Group::keyp -> its KeyInfo
     std::unordered_map<const Group*, AstCFunc*> m_instStubOf;  // instanceCallee
     std::map<std::pair<const AstNodeModule*, const Group*>, AstCFunc*> m_rowStubOf;  // rowStub
     int m_nextGid = 0;  // Next KeyInfo::gid
@@ -1778,8 +1784,8 @@ private:
         dropFromOrdered();
     }
 
-    // Reads pre-optimization statements, so a width change appears as a Cast/Extend and is
-    // refused: memcpy cannot convert.
+    // Reads statements from before DFG and V3Gate, so a width change appears as a Cast/Extend
+    // and is refused: memcpy cannot convert.
     AstVarScope* soleCopySource(const Group* g) const {
         if (g->targets.size() != 1 || !g->temps.empty() || g->blockps.size() != 1) return nullptr;
         // Another scope's write may differ per instance
@@ -1864,7 +1870,8 @@ private:
         funcp->isLoose(true);
         if (tableFacing) funcp->voidSelf(true);
         funcp->slow(true);
-        // A table-facing func's only caller is the syms recon-fn array, which no pass can see.
+        // Every recon func is reached only from the syms VlLazyReconEntry tables or another recon
+        // func, which no pass sees as eval-reachable.
         funcp->entryPoint(true);
         // One func serves every instance: V3Gate/V3Dfg must not substitute instance expressions.
         funcp->vpiLazyReconstruct(true);
@@ -2278,7 +2285,7 @@ private:
 
     // A still-flagged VarScope is a residual: retain it, keeping the VPI set a superset of
     // --public-flat-rw's. Kind exclusions govern what may be reconstructed, not what may be
-    // retained: else V3Gate substitutes the driver away and the row reads zero for ever.
+    // retained: else V3Gate substitutes the driver away and the row reads zero forever.
     void retainCompletenessFloor() {
         for (AstVarScope* const vscp : m_gather.m_vscOrder) {
             AstVar* const varp = vscp->varp();
@@ -2290,8 +2297,9 @@ private:
                 ++m_bailCount[static_cast<size_t>(Bail::COMPLETENESS_FLOOR)];
                 ++m_floorReason["sequential"];
             } else if (pinned) {
-                // Its row keeps --public-flat-rw semantics, so give it that flag: V3Force pins a
-                // forceable net's force vars, not the net itself, and DFG may alias it away.
+                // Primary IO, forceable, or comb-driven with storage pinned: its row keeps
+                // --public-flat-rw semantics, so give it that flag, as V3Force pins a forceable
+                // net's force vars, not the net itself, and DFG may alias it away.
                 varp->sigUserRWPublic(true);
                 varp->vpiLazyRole(VVpiLazyRole::NONE);
                 const bool dpi = varp->isReadByDpi() || varp->isWrittenByDpi();
@@ -2437,7 +2445,7 @@ void V3VpiLazy::combBlock(AstAlways* alwaysp) {
 void V3VpiLazy::classifyComb(AstNetlist* nodep) {
     std::unique_ptr<CombClassifier>& combp = nodep->vpiLazyContextp()->m_combp;
     combp->finish();
-    combp.reset();  // Its footprints, until prepare() makes its own
+    combp.reset();  // Frees its footprints; prepare() gathers its own
 }
 
 VVpiLazyComb V3VpiLazy::combOf(const AstNetlist* nodep, const AstScope* scopep,

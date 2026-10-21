@@ -1599,7 +1599,8 @@ List Of Warnings
 
    Also warns that a command-line option is ignored, e.g.
    :vlopt:`--public-flat-rw`, :vlopt:`--public-depth` or
-   :vlopt:`--public-params` together with :vlopt:`--vpi-lazy`.
+   :vlopt:`--public-params` together with :vlopt:`--vpi-lazy`, or
+   :vlopt:`--vpi-lazy` together with :vlopt:`--no-vpi <--vpi>`.
 
    Faulty example:
 

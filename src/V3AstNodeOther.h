@@ -2334,7 +2334,7 @@ class AstVar final : public AstNode {
     // @astgen ptr := m_lazyCopySrcp : Optional[AstVar]
     // Reconstruct function for a shadow
     // @astgen ptr := m_lazyReconFuncp : Optional[AstCFunc]
-    bool m_lazyShadowNet : 1;  // Net shadow is a MODULETEMP
+    bool m_lazyShadowNet : 1;  // Shadow of a net; as a MODULETEMP it is not isNet()
     bool m_usedParam : 1;  // Parameter is referenced (on link; later signals not setup)
     bool m_usedLoopIdx : 1;  // Variable subject of for unrolling
     bool m_funcLocal : 1;  // Local variable for a function
