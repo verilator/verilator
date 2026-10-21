@@ -237,6 +237,22 @@ class ClsDerived extends ClsBase;
   constraint c {x dist {0 := k, 1 := 1};}
 endclass
 
+// The dist is inherited: the base class is randomized too, so its constraint is
+// lowered before the derived class is processed
+class ClsDistBase;
+  rand bit [1:0] k;
+  rand bit x;
+  constraint c_base {
+    k != 0;
+    x dist {0 := k, 1 := 1};
+  }
+endclass
+
+class ClsDistDerived extends ClsDistBase;
+  rand bit [3:0] other;
+  constraint c_derived {other != 0;}
+endclass
+
 // Weights reading vars that cannot be pinned (wider than 64 bits, or through a
 // rand object handle) keep their old handling; only check they still solve
 class ClsInner;
@@ -418,6 +434,8 @@ module t;
     `CHECK_TOTAL(ClsStatic, obj.k, 1)
     `CHECK_TOTAL(ClsStruct, obj.s.w, 1)
     `CHECK_TOTAL(ClsDerived, obj.k, 1)
+    `CHECK_TOTAL(ClsDistBase, obj.k, 1)
+    `CHECK_TOTAL(ClsDistDerived, obj.k, 1)
 
     begin
       static ClsNotPinned obj = new;
