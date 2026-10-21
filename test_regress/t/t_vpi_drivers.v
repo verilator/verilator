@@ -859,12 +859,14 @@ endmodule
 // The top t_vpi_drivers_savable saves and restores, as --savable takes no forceable or unpacked
 // struct signal
 module lz_save (
-    input logic clk
+    input logic clk,
+    output logic [7:0] so
 );
   logic [7:0] d, k_q, ch1, al1;
   always_ff @(posedge clk) k_q <= d;
   assign ch1 = k_q + 8'h7;
   assign al1 = k_q;
+  assign so = k_q ^ 8'h5a;
   lz_trace u_tr ();
   initial begin
     $dumpfile(`STRINGIFY(`TEST_DUMPFILE));

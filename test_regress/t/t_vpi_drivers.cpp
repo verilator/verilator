@@ -131,11 +131,17 @@ bool plusArg(const std::string& arg) {
 }
 
 // Saved between a put and the eval consuming it: restored, into this model or a fresh one, the
-// put's readers read as before it until that eval
+// put's readers read as before it until that eval, which settles the stored ones
 void checkRestored() {
     check("lz_save.k_q restored", get("lz_save.k_q"), 0x40);
     check("lz_save.ch1 restored", get("lz_save.ch1"), 0x28);
     check("lz_save.al1 restored", get("lz_save.al1"), 0x21);
+    check("lz_save.so restored", get("lz_save.so"), 0x7b);
+}
+
+void checkSettled() {
+    check("lz_save.ch1", get("lz_save.ch1"), 0x47);
+    check("lz_save.so", get("lz_save.so"), 0x1a);
 }
 
 void script() {
@@ -144,7 +150,7 @@ void script() {
             restoreModel();
             checkRestored();
         });
-        step([] { check("lz_save.ch1", get("lz_save.ch1"), 0x47); });
+        step(checkSettled);
         return;
     }
     step([] { in("clk", 1); });
@@ -158,12 +164,12 @@ void script() {
         saveModel();
     });
     step([] {
-        check("lz_save.ch1", get("lz_save.ch1"), 0x47);
+        checkSettled();
         check("lz_save.al1", get("lz_save.al1"), 0x40);
         restoreModel();
         checkRestored();
     });
-    step([] { check("lz_save.ch1", get("lz_save.ch1"), 0x47); });
+    step(checkSettled);
 }
 
 PLI_INT32 startOfSimulation(p_cb_data) {
