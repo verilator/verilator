@@ -24,10 +24,12 @@ extern "C" int mon_check();
   logic [11:10][25:11] arr_idata [9:8][10:9]; // 2x15 (30) bit words
   logic [15:14][44:15] arr_qdata [13:12][14:13]; // 2x30 (60) bit words
   logic [19:18][81:19] arr_wdata [17:16][18:17]; // 2x63 (126) bit words
+  logic [3:2][2:1][1:0] arr_6d [1:0][2:1][3:2]; // 3 unpacked, 3 packed dims
 
   int status;
 
   initial begin
+    arr_6d[1][2][3] = 8'ha5;
 `ifdef VERILATOR
     status = $c32("mon_check()");
 `else
