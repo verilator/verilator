@@ -161,7 +161,7 @@ public:
     }
     AstNodeFTask* findClassFunc(AstClass* classp, std::string funcName) {
         const auto iter = m_classToFuncMap.find(std::make_pair(classp, funcName));
-        if(iter == m_classToFuncMap.end())
+        if(iter != m_classToFuncMap.end())
             return iter->second;
         else
             return nullptr;
