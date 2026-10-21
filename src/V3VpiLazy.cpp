@@ -262,7 +262,6 @@ struct Group final {
     AstVarScope* copyFromp = nullptr;  // Converted: refresh by copying this variable instead
     // targets[0]->varp(), cross-instance group identity; targets[0] itself if anchored elsewhere
     const AstNode* keyp = nullptr;
-    AstCFunc* funcp = nullptr;  // Its reconstruct func, shared by every instance of keyp
     bool live = true;  // Cleared when the group is abandoned and its targets retained
     GroupVertex* vtxp = nullptr;  // Its vertex in the dependency graph, null once dead
 };
@@ -1874,11 +1873,14 @@ private:
         return funcp;
     }
 
+    // Null until its key's first instance is emitted
+    AstCFunc* funcOf(const Group* g) { return m_keyInfo[g->keyp].funcp; }
+
     AstCFunc* newCallStub(AstScope* scopep, const Group* g) {
         AstCFunc* const stubp = newReconFunc(
             scopep, std::string{RECONSTRUCT_INST_FUNC_NAME} + "__" + std::to_string(gidOf(g)),
             true);
-        AstCCall* const callp = new AstCCall{m_funcFlp, g->funcp};
+        AstCCall* const callp = new AstCCall{m_funcFlp, funcOf(g)};
         callp->dtypeSetVoid();
         stubp->addStmtsp(callp->makeStmt());
         return stubp;
@@ -1888,7 +1890,8 @@ private:
     // the representative's. A stub in the operand's own scope gets the call that instance's
     // self pointer; V3Descope then points the call at the shared func and deletes the stub.
     AstCFunc* instanceCallee(const Group* ugp) {
-        if (ugp->funcp->scopep() == ugp->scopep) return ugp->funcp;
+        AstCFunc* const funcp = funcOf(ugp);
+        if (funcp->scopep() == ugp->scopep) return funcp;
         AstCFunc*& stubp = m_instStubOf[ugp];
         if (!stubp) {
             stubp = newCallStub(ugp->scopep, ugp);
@@ -2102,7 +2105,7 @@ private:
             Group* const ugp = m_prep.liveGroupOf(u);
             if (ugp && ugp != m_groupp) {
                 // Operand is reconstructed too: read its shadow, calling its func to freshen.
-                UASSERT_OBJ(ugp->funcp, m_groupp->keyp,
+                UASSERT_OBJ(m_prep.funcOf(ugp), m_groupp->keyp,
                             "--vpi-lazy cone operand ordered after its consumer");
                 redirect(nodep, m_prep.shadowForMember(u));
                 if (m_seenOps.insert(ugp).second) m_coneOps.push_back(ugp);
@@ -2132,11 +2135,7 @@ private:
         }
         for (Group* const g : m_ordered) {
             KeyInfo& key = m_keyInfo[g->keyp];
-            if (key.funcp) {
-                g->funcp = key.funcp;
-                continue;  // non-representative instance: share the func
-            }
-            emitReconFunc(g, key);
+            if (!key.funcp) emitReconFunc(g, key);  // Later instances share it
         }
         emitCopyRows(m_copyGroups, false);
         emitCopyRows(m_foldedCopies, true);
@@ -2144,7 +2143,6 @@ private:
 
     void emitReconFunc(Group* g, KeyInfo& key) {
         AstCFunc* const funcp = newReconFunc(g->scopep, reconFuncName(g), true);
-        g->funcp = funcp;
         key.funcp = funcp;
         m_splitFuncps.push_back(funcp);
         bindRowRefresh(g, funcp);

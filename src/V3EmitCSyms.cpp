@@ -143,7 +143,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::string m_scopeTableName;
     std::vector<std::string> m_scopeTableRows;
     size_t m_nLazyReconVars = 0;
-    std::vector<std::pair<std::string, std::vector<std::string>>> m_lazyReconFnTables;
+    NamedTables m_lazyReconFnTables;
     std::string m_ifaceRefTableName;
     std::vector<std::string> m_ifaceRefTableRows;
     std::vector<std::string> m_hierTableRows;  // VlHierTableEntry rows, built in emitScopeHier()
@@ -1709,7 +1709,6 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
     // still share a table when their rows are identical.
     if (!m_scopeVars.empty()) {
         stmts.add("// Setup public variables");
-        int reconArrCounter = 0;
         std::unordered_map<std::string, std::string> reconTableByRows;
         size_t lazyBaseRunning = 0;
 
@@ -1750,11 +1749,10 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                     && V3VpiLazy::combOf(m_netlistp, scopep, varp) == VVpiLazyComb::PARTIAL) {
                     maskIdx = combMaskIdx(scopep, varp);
                 }
-                const int descSlot = isLazy ? lazyRel : -1;
                 std::string row;
                 const TableEntryKind kind
                     = tryBuildTableEntry(svd, varp, scopep, modClassName,
-                                         isLazy ? descSlot : maskIdx, dims, paramPtrs, row);
+                                         isLazy ? lazyRel : maskIdx, dims, paramPtrs, row);
                 UASSERT_OBJ(kind == TableEntryKind::TABLE_ROW || (!isLazy && maskIdx < 0), varp,
                             "lazy shadow or masked row must be table-eligible");
                 switch (kind) {
@@ -1829,21 +1827,9 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                                    + std::to_string(rowCount) + ", &(vlSymsp->"
                                    + instName(instScopep) + ")";
                 if (lazyRel > 0) {
-                    std::string reconKey;
-                    for (const std::string& r : reconFns) {
-                        reconKey += r;
-                        reconKey += '\0';
-                    }
-                    const auto rit = reconTableByRows.find(reconKey);
-                    std::string fnsName;
-                    if (rit != reconTableByRows.end()) {
-                        fnsName = rit->second;
-                    } else {
-                        fnsName
-                            = modClassName + "__VlazyReconFns" + std::to_string(reconArrCounter++);
-                        reconTableByRows.emplace(std::move(reconKey), fnsName);
-                        m_lazyReconFnTables.emplace_back(fnsName, std::move(reconFns));
-                    }
+                    const std::string fnsName
+                        = sharedTableName(m_lazyReconFnTables, reconTableByRows,
+                                          modClassName + "__VlazyReconFns", std::move(reconFns));
                     call += ", &vlSymsp->__Vm_lazyReconstructDatap["
                             + std::to_string(lazyBaseRunning) + "], " + fnsName;
                 }
