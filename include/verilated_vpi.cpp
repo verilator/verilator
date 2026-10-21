@@ -210,7 +210,7 @@ public:
 };
 
 // Not MT safe: eval() writes the epoch
-static VerilatedSyms* vlLazySyms(const VerilatedScope* scopep) VL_MT_UNSAFE_ONE {
+static VerilatedSyms* vl_vpi_lazy_syms(const VerilatedScope* scopep) VL_MT_UNSAFE_ONE {
     VerilatedSyms* const symsp = scopep->symsp();
     VerilatedLazyState* const lazyp = symsp->lazyp();
     // Mid-eval the model may have moved since any memo was taken
@@ -627,7 +627,7 @@ public:
         // Refresh, but return m_varDatap rather than the refreshed base: an element handle
         // (vpiMemoryWord) carries its offset into the shadow here
         if (VL_UNLIKELY(m_storageVarp->isLazyRemat())) {
-            const VlLazyUndoRestore restore{vlLazySyms(m_scopep)};
+            const VlLazyUndoRestore restore{vl_vpi_lazy_syms(m_scopep)};
             m_storageVarp->datapRefresh(restore.symsp);
         }
         return m_varDatap;

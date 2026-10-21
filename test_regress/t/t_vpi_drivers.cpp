@@ -452,6 +452,11 @@ void script() {
             TEST_CHECK_ERROR(true);
             check("t.mdp_c[0][0]", get(mdp), before);
         }
+        {
+            const VerilatedVar* const varp = Verilated::scopeFind("t")->varFind("px_o");
+            check("t.px_o rematerialized", varp->isLazyRemat(), 1);
+            check("t.px_o datap null", varp->datap() == nullptr, 1);
+        }
 #endif
         // Each alias row reports its own metadata, not its canonical's, and reads the canonical
         for (const char* name : {"t.al_sw", "t.sib_bt", "t.ch1"}) {

@@ -319,7 +319,7 @@ public:
     VerilatedVar(VerilatedVar&&);
     // ACCESSORS
     /// Null for a --vpi-lazy computed signal, which has no storage
-    void* datap() const { return VL_UNCOVERABLE(isLazyRemat()) ? nullptr : m_datap; }
+    void* datap() const { return VL_UNLIKELY(isLazyRemat()) ? nullptr : m_datap; }
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
     /// VerilatedLazyState::combMasksp index of a VLVF_LAZY_COMB row, else -1
