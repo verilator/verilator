@@ -49,6 +49,14 @@
 // to an input and the __out port carries the output driver signal and
 // the __en port carried the output enable for that driver.
 //
+// Unpacked arrays preserve their dimensions in the driver and enable signals.
+// Resolution operations recursively traverse unpacked dimensions until reaching
+// the packed data, then apply bitwise operations to whole packed vectors.
+// Array reads select the matching enable element; array writes enable only the
+// selected element, using index comparisons for dynamic selections.
+// Constant-index continuous drivers are
+// grouped by element to avoid resolving a whole array for each driver.
+//
 // Note 1800-2012 adds user defined resolution functions. This suggests
 // long term this code should be scoped-based and resolve all nodes at once
 // rather than hierarchically. If/when that is done, make sure to avoid
