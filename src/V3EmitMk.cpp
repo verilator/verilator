@@ -804,7 +804,7 @@ public:
             // '{prefix}__ALL.a', contains all hierarchical libraries
             of.puts(v3Global.opt.exeName()
                     + ": $(VK_USER_OBJS) $(VK_GLOBAL_OBJS) $(VM_PREFIX)__ALL.a"
-                    " $(VM_USER_LDLIBS_FILES)\n");
+                      " $(VM_USER_LDLIBS_FILES)\n");
             // User library files are in LDLIBS, so do not also link them from $^
             of.puts("\t$(LINK) $(LDFLAGS) $(filter-out $(VM_USER_LDLIBS_FILES),$^) $(LOADLIBES) "
                     "$(LDLIBS) $(LIBS) $(SC_LIBS) -o $@\n");
