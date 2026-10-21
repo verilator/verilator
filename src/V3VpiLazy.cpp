@@ -2289,6 +2289,7 @@ private:
             if (pinned && !varp->isPrimaryIO() && !varp->isForceable() && !hasCombDriver(vscp)) {
                 // Only DPI pins this flop; public-rw would replicate its readers into 'ico'
                 m_kept.insert(vscp);
+                ++m_bailCount[static_cast<size_t>(Bail::COMPLETENESS_FLOOR)];
                 ++m_floorReason["sequential"];
             } else if (pinned) {
                 // Its row keeps --public-flat-rw semantics, so give it that flag: V3Force pins a
