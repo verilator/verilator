@@ -120,6 +120,7 @@ static AstNode* takeDeferredAssertFlush(AstNode* nodep) {
 
 class TimingSuspendableVisitor final : public VNVisitor {
     // TYPES
+    unsigned int m_suspendableExports;
     // Vertex of a dependency graph of suspendable nodes, e.g. if a node (process or task) is
     // suspendable, all its dependents should also be suspendable
     class DepVtx VL_NOT_FINAL : public V3GraphVertex {
@@ -420,7 +421,8 @@ class TimingSuspendableVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit TimingSuspendableVisitor(AstNetlist* nodep) {
+    explicit TimingSuspendableVisitor(AstNetlist* nodep)
+        : m_suspendableExports{0} {
         iterate(nodep);
         m_suspGraph.removeTransitiveEdges();
         m_procGraph.removeTransitiveEdges();
@@ -431,7 +433,8 @@ public:
         }
 
         for (AstCFunc* dpiExportp : m_dpiExports) {
-            if (hasFlags(dpiExportp, T_SUSPENDEE) or hasFlags(dpiExportp, T_SUSPENDER)) {
+            if (hasFlags(dpiExportp, T_SUSPENDEE) || hasFlags(dpiExportp, T_SUSPENDER)) {
+                ++m_suspendableExports;
                 v3Global.setUsesSuspendableExports();
                 for (AstNode* procp : m_delayedProc) {
                     addFlags(procp, T_SUSPENDEE | T_SUSPENDER);
@@ -478,7 +481,9 @@ public:
         }
         if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps");
     }
-    ~TimingSuspendableVisitor() override = default;
+    ~TimingSuspendableVisitor() override {
+        V3Stats::addStat("Timing, suspendable DPI exports", m_suspendableExports);
+    }
 };
 
 // ######################################################################
