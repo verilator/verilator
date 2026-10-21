@@ -1085,7 +1085,11 @@ public:
             = suggestSymFallback(lookSymp, nodep->name(), LinkNodeMatcherClassOrPackage{});
         if (suggest.empty() && !classOnly) {
             suggest
-                = suggestSymFlat(packageEntp(), nodep->name(), LinkNodeMatcherClassOrPackage{});
+                = suggestSymFlat(packageEntp(), nodep->name(), LinkNodeMatcherClassOrPackage{}, true);
+        }
+        if (suggest.empty()) {
+            // If nothing was found, maybe there is a package with the same name as the class
+            suggest = suggestPossiblyPackage(nodep->name());
         }
         nodep->v3error((classOnly ? "Class" : "Package/class")
                        << " for '" << forWhat  // extends/implements
@@ -1094,7 +1098,7 @@ public:
         return nullptr;
     }
     string suggestSymFallback(VSymEnt* lookupSymp, const string& name,
-                              const VNodeMatcher& matcher) {
+                              const VNodeMatcher& matcher) const {
         // Suggest alternative symbol in given point in hierarchy
         // Does not support inline, as we find user-level errors before inlining
         // For simplicity lookupSymp may be passed nullptr result from findDotted
@@ -1104,11 +1108,20 @@ public:
         return speller.bestCandidateMsg(name);
     }
     string suggestSymFlat(VSymEnt* lookupSymp, const string& name, const VNodeMatcher& matcher,
-                          bool includeType) {
+                          bool includeType) const {
         if (!lookupSymp) return "";
         VSpellCheck speller;
         lookupSymp->candidateIdFlat(&speller, &matcher, includeType);
         return speller.bestCandidateMsg(name);
+    }
+    string suggestPossiblyPackage(const string& name) const {
+        VSpellCheck speller;
+        LinkNodeMatcherClassOrPackage matcher{};
+        packageEntp()->candidateIdFlat(&speller, &matcher, true);
+        for (const auto& candidate : speller.candidates()) {
+            if (candidate.str == name) return "... Suggested alternative: "s + candidate.msg;
+        }
+        return "";
     }
 };
 
