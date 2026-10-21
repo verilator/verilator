@@ -1288,7 +1288,8 @@ private:
             const AstVar* const varp = pr.first->varp();
             if (!varp->isVpiLazyCombPartial() || readVars.count(varp)) continue;
             const auto cit = m_ctx.m_combRuns.find(varp);
-            if (pr.second.whole || cit == m_ctx.m_combRuns.end()) {  // Or instances differ
+            if (cit == m_ctx.m_combRuns.end()) continue;  // Instances differ; formPartialGroup
+            if (pr.second.whole) {
                 readVars.insert(varp);
                 continue;
             }
@@ -1339,7 +1340,10 @@ private:
             }
         }
         if (combOf(basep) == VVpiLazyComb::PARTIAL) {
-            if (retainIf(basep, Bail::PARTIAL_GAP, gapRead.count(varp))) return;
+            // The shadow's mask is per module, so cannot hold instances' differing gaps
+            if (retainIf(basep, Bail::PARTIAL_GAP,
+                         !m_ctx.m_combRuns.count(varp) || gapRead.count(varp)))
+                return;
             m_gapVars.insert(varp);
         }
         const std::unordered_map<const AstVarScope*, int> groupWrites{

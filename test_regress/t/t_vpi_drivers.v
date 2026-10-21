@@ -52,6 +52,13 @@ interface ifc_pair;
   logic [7:0] q;
 endinterface
 
+interface ifc_mask (
+    input logic [3:0] x
+);
+  logic [7:0] h;
+  assign h[3:0] = x;
+endinterface
+
 module sub_st;
   logic [7:0] p;
 endmodule
@@ -293,6 +300,10 @@ module t #(
     n_ia <= ia.q;
     n_mc2 <= mc2.m;
   end
+  // Instances of one unread variable whose undriven bits differ
+  ifc_mask ma (.x(d[3:0]));
+  ifc_mask mb (.x(d[7:4]));
+  assign ma.h[7:4] = in_a[3:0];
 
   // Comb shapes, each read-only: chained, struct, aggregate, multiply driven
   typedef struct packed {

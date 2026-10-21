@@ -113,6 +113,10 @@ t.k_q 3c W
 t.keep 14 W
 t.keep_frc 14 W
 t.lat_q 5a W
+t.ma.h ac r
+t.ma.x c r
+t.mb.h f3 WWWWrrrr
+t.mb.x 3 r
 t.mc0.m fc WWWWrrrr
 t.mc1.m 5f rrrrWWWW
 t.mc2.m 3c W
