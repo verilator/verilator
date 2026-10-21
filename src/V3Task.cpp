@@ -151,8 +151,10 @@ public:
     }
     AstNodeFTask* findClassFunc(AstClass* classp, std::string funcName) {
         const auto iter = m_classToFuncMap.find(std::make_pair(classp, funcName));
-        UASSERT_OBJ(iter != m_classToFuncMap.end(), classp, "could not find Function" + funcName);
-        return iter->second;
+        if(iter == m_classToFuncMap.end())
+            return iter->second;
+        else
+            return nullptr;
     }
     AstClass* getClassp(AstNodeFTask* nodep) {
         AstClass* const classp = m_funcToClassMap[nodep];
@@ -832,8 +834,10 @@ class TaskVisitor final : public VNVisitor {
                         varRefp1->varp()->dtypeFrom(varRefp1->varp()->user3p());
                         AstClassRefDType* classDtypep = VN_CAST(varRefp2->varp()->dtypep()->skipRefp(), ClassRefDType);
                         AstNodeFTask* finalTaskp = m_statep->findClassFunc(classDtypep->classp(), refp->name()); // TODO wont find the func here on intf2
-                        AstScope* scopep = varRefp3->varScopep()->scopep();
-                        methodCallArgsRefs(finalTaskp, scopep, ccallp, refp, unsetUser3p);
+                        if(finalTaskp) {
+                            AstScope* scopep = varRefp3->varScopep()->scopep();
+                            methodCallArgsRefs(finalTaskp, scopep, ccallp, refp, unsetUser3p);
+                        }
                     }
                 }
             }
@@ -1480,7 +1484,8 @@ class TaskVisitor final : public VNVisitor {
                 if (!varRefp->varp()->user3SetOnce()) {
                     unsetUser3p.push_back(varRefp->varp());
                     AstVarRef* newVarRef
-                        = new AstVarRef{varRefp->fileline(), varRefp->varp(), varRefp->access()};
+                        = new AstVarRef{varRefp->fileline(), varRefp->varp(), VAccess::READWRITE};
+                    newVarRef->dtypeFrom(varRefp->varp());
                     varRefp->varp()->sigPublic(true);  // make sure this doesn't get optimized away
                     AstNodeVarRef* callFromp = VN_CAST(methodCallp->op1p(), NodeVarRef);
                     AstVarRef* subVref = VN_CAST(methodCallp->op1p(), VarRef);
@@ -1523,30 +1528,34 @@ class TaskVisitor final : public VNVisitor {
         if (VN_IS(nodep, VarRef) && varRefp->varScopep()) {
             if (varRefp->varScopep()->scopep()->name()
                 == methodp->scopep()->aboveScopep()->name()) {
+                AstVarScope* newvscp;
                 AstVar* newVarp;
                 // If we haven't emum over this node yet
                 if (!varRefp->varp()->user3p()) {
-                    newVarp = new AstVar{varRefp->fileline(), VVarType::PORT,
+                    newVarp = new AstVar{varRefp->fileline(), VVarType::BLOCKTEMP,
                                          varRefp->name() + "_REF", varRefp->dtypep()};
                     newVarp->funcLocal(true);
                     newVarp->funcReturn(false);
                     newVarp->direction(VDirection::REF);
 
                     methodp->addArgsp(newVarp);
-                    varRefp->varp()->user3p(newVarp);
+                    newvscp
+                    = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
+                        m_scopep->addVarsp(newvscp);
+                    varRefp->varp()->user3p(newvscp);
 
                 } else {
-                    newVarp = VN_AS(varRefp->varp()->user3p(), Var);
+                    newvscp = VN_CAST(varRefp->varp()->user3p(), VarScope);
+                    newVarp = newvscp->varp();
                 }
                 unsetUser3p.push_back(varRefp->varp());
-                AstVarScope* const newvscp
-                    = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
-                m_scopep->addVarsp(newvscp);
                 // Replace all lhsp of this AssignNode with the varible that is passed by reference
                 AstVarRef* oldVarRefp = varRefp;
                 AstVarRef* newArgRefp
                     = new AstVarRef{oldVarRefp->fileline(), newVarp, VAccess::WRITE};
                 newArgRefp->varScopep(newvscp);
+                // varRefp->varScopep(newvscp);
+                // varRefp->varp(newVarp);
                 oldVarRefp->replaceWithKeepDType(newArgRefp);
                 VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
             }
