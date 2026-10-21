@@ -4512,12 +4512,14 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstEqCase {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstEqWild {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstGt     {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
+    TREEOP ("AstGtD    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstGtN    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstGtS    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstGte    {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstGteN   {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstGteS   {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");
     TREEOP ("AstLt     {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
+    TREEOP ("AstLtD    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstLtN    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstLtS    {operandsSameTree($lhsp,,$rhsp)}",   "replaceZero(nodep)");
     TREEOP ("AstLte    {operandsSameTree($lhsp,,$rhsp)}",   "replaceNum(nodep,1)");

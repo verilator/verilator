@@ -121,6 +121,7 @@ Verilator 5.053 devel
 * Fix finding default clocking in interface above class (#5212). [Alex Solomatnikov]
 * Fix huge assign concats hanging (#5276). [Luiza de Melo]
 * Fix function reference into generate case block (#5312) (#8532). [Hongseok Choi]
+* Fix make rebuild on link library file change (#6794).  [Domenic Wüthrich]
 * Fix pattern type matching against nested aggregates (#7304).
 * Fix covergroup-internal references multi-threaded ordering (#7779) (#8255). [Matthew Ballance]
 * Fix threading instability in streaming queue operations (#7780).
