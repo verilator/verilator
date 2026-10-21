@@ -711,7 +711,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         ss << "@(";
         V3EmitV::verilogForTree(senItemp, ss);
         ss << ")";
-        std::string desc = VString::quoteBackslash(ss.str());
+        // Names were hashed by V3Name, show the user the original text
+        std::string desc = VString::quoteBackslash(VName::dehash(ss.str()));
         desc = VString::replaceSubstr(desc, "\n", "\\n");
         addDebug(i, desc);
     }
