@@ -63,6 +63,7 @@ Verilator 5.053 devel
 * Support covergroup fixed-size bin arrays (#8514). [Marco Bartoli]
 * Support wildcard bins (#8516). [Marco Bartoli]
 * Support coverpoint bin `with` filters (#8518). [Marco Bartoli]
+* Support `$readmemh` to associative and dynamic arrays (#8590). [Martin Velay]
 * Support inout ports at the hierarchical boundary (#8646). [Yutetsu TAKATSUKASA]
 * Support parameter overrides that use ?: to pick a pattern (#8671). [Michael Bedford Taylor]
 * Support cross cover `with` filters (#8729). [Marco Bartoli]
@@ -117,6 +118,7 @@ Verilator 5.053 devel
 * Improve parameterized hierarchical block substitution (#7009) (#8605). [Michael Bedford Taylor]
 * Fix array slice crash when used as a bare value (#5132) (#8262). [Marco Frank]
 * Fix missing error on virtual interface access outside the modport (#5152) (#8741). [Muhammad Saad]
+* Fix finding default clocking in interface above class (#5212). [Alex Solomatnikov]
 * Fix huge assign concats hanging (#5276). [Luiza de Melo]
 * Fix function reference into generate case block (#5312) (#8532). [Hongseok Choi]
 * Fix pattern type matching against nested aggregates (#7304).
@@ -268,6 +270,7 @@ Verilator 5.053 devel
 * Fix disable iff not aborting pending SVA attempts between clock ticks (#8733). [Artur Bieniek, Antmicro Ltd.]
 * Fix inappropriate warnings in covergroups (#8744). [Andrii Andrieiev, Antmicro Ltd.]
 * Fix --hierarchical and --lib-create wrapper with long port names (#8746). [Artur Bieniek, Antmicro Ltd.]
+* Fix trigger debug messages to show long identifiers (#8747). [Artur Bieniek, Antmicro Ltd.]
 * Fix crash on toggle coverage of property and sequence ports (#8745) (#8760). [Ashvin Vaidyanathan]
 * Fix internal error on increment/decrement in covergroup expressions (#8753). [Marco Bartoli]
 * Fix ++/-- not lowered after the first statement needing a temporary. [Geza Lore, Testorrent USA, Inc.]
