@@ -38,6 +38,13 @@ module t (
 
   localparam int TWENTY = 20;
   localparam real TWENDIV = $ceil((real'(TWENTY) - 14.0) / 2.0);
+  localparam real NAN = $sqrt(-1.0);
+  localparam bit NAN_EQ = NAN == NAN;
+  localparam bit NAN_NEQ = NAN != NAN;
+  localparam bit NAN_GT = NAN > NAN;
+  localparam bit NAN_GTE = NAN >= NAN;
+  localparam bit NAN_LT = NAN < NAN;
+  localparam bit NAN_LTE = NAN <= NAN;
 
   sub_cast_bug374 sub (
       .cyc5(cyc[4:0]),
@@ -46,6 +53,12 @@ module t (
 
   initial begin
     if (1_00_0.0_1 != 1000.01) $stop;
+    if (NAN_EQ) $stop;
+    if (!NAN_NEQ) $stop;
+    if (NAN_GT) $stop;
+    if (NAN_GTE) $stop;
+    if (NAN_LT) $stop;
+    if (NAN_LTE) $stop;
     // rtoi truncates
     if ($rtoi(36.7) != 36) $stop;
     if ($rtoi(36.5) != 36) $stop;
@@ -244,6 +257,14 @@ module t (
       if ($rtoi((r - 50.0) ? 10.0 : 20.0) != (((cyc - 50) != 0) ? 10 : 20)) $stop;
       //
       if ((!(r - 50.0)) != (!((cyc - 50) != 0))) $stop;
+      //
+      r2 = $sqrt(-r);  // NaN
+      if (r2 == r2) $stop;
+      if (!(r2 != r2)) $stop;
+      if (r2 > r2) $stop;
+      if (r2 >= r2) $stop;
+      if (r2 < r2) $stop;
+      if (r2 <= r2) $stop;
       //
       r = real'(ci48);
       `checkr(r, 280375465082880.0);
