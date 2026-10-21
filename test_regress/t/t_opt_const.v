@@ -627,7 +627,7 @@ module bug6016(input wire clk, input wire in);
   end
 endmodule
 
-// 'in ? ~in : 1' became '~in || ~in', which C++ -Wlogical-op rejects; and a quotient of
+// 'in ? ~in : 1' becomes '~in || ~in', which folds to '~in'; and a quotient of
 // identical trees is not 1 when they are zero
 module same_tree(input wire clk, input wire in);
   logic lo;
