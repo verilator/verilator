@@ -966,7 +966,7 @@ class TimingControlVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         if (!(hasFlags(nodep, T_SUSPENDEE))) {
-            if (!(nodep->dpiImportWrapper() and v3Global.usesSuspendableExports())) return;
+            if (!(nodep->dpiImportWrapper() && v3Global.usesSuspendableExports())) return;
         }
 
         nodep->rtnType("VlCoroutine");
