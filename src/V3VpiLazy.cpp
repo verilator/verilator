@@ -232,11 +232,11 @@ bool reconstructableKind(const AstVar* varp) {
     return VN_IS(leafp, BasicDType) || leafp->isIntegralOrPacked();
 }
 
-// One partial write's footprint; idxs order need only be consistent between parts.
+// One partial write's footprint; m_idxs order need only be consistent between parts.
 struct PartExtent final {
-    std::vector<int32_t> idxs;  // Constant unpacked indices, last first
-    int lsb = 0;  // First bit written within the element
-    int width = 0;  // Bits written from lsb
+    std::vector<int32_t> m_idxs;  // Constant unpacked indices, last first
+    int m_lsb = 0;  // First bit written within the element
+    int m_width = 0;  // Bits written from m_lsb
 };
 
 // One combinational block as LazyGatherVisitor found it, before DFG and V3Gate.
@@ -254,17 +254,18 @@ class GroupVertex;
 
 // See UNIT OF RECONSTRUCTION above.
 struct Group final {
-    AstScope* scopep = nullptr;  // Scope that authored the statements, unless anchored elsewhere
-    std::vector<const CombBlock*> blockps;  // Its blocks, encounter order
-    std::vector<AstVarScope*> targets;  // VPI candidates this group defines, encounter order
-    std::vector<AstVarScope*> temps;  // Other variables it writes, encounter order
-    std::unordered_set<AstVarScope*> members;  // targets and temps, for lookup
-    std::vector<AstVarScope*> zeroInitps;  // Partial assembly: zero these shadows first
-    AstVarScope* copyFromp = nullptr;  // Converted: refresh by copying this variable instead
-    // targets[0]->varp(), cross-instance group identity; targets[0] itself if anchored elsewhere
-    const AstNode* keyp = nullptr;
-    bool live = true;  // Cleared when the group is abandoned and its targets retained
-    GroupVertex* vtxp = nullptr;  // Its vertex in the dependency graph, null once dead
+    AstScope* m_scopep = nullptr;  // Scope that authored the statements, unless anchored elsewhere
+    std::vector<const CombBlock*> m_blockps;  // Its blocks, encounter order
+    std::vector<AstVarScope*> m_targets;  // VPI candidates this group defines, encounter order
+    std::vector<AstVarScope*> m_temps;  // Other variables it writes, encounter order
+    std::unordered_set<AstVarScope*> m_members;  // targets and temps, for lookup
+    std::vector<AstVarScope*> m_zeroInitps;  // Partial assembly: zero these shadows first
+    AstVarScope* m_copyFromp = nullptr;  // Converted: refresh by copying this variable instead
+    // m_targets[0]->varp(), cross-instance group identity; m_targets[0] itself if anchored
+    // elsewhere
+    const AstNode* m_keyp = nullptr;
+    bool m_live = true;  // Cleared when the group is abandoned and its targets retained
+    GroupVertex* m_vtxp = nullptr;  // Its vertex in the dependency graph, null once dead
 };
 
 class GroupVertex final : public V3GraphVertex {
@@ -291,22 +292,22 @@ AstVarRef* partialLhsRef(AstNodeExpr* lhsp, PartExtent& extr) {
     // Nested, as V3Const has not flattened them under -fno-const-before-dfg
     while (AstSel* const selp = VN_CAST(nodep, Sel)) {
         if (!VN_IS(selp->lsbp(), Const)) return nullptr;
-        extr.lsb += selp->lsbConst();
-        if (!anySel) extr.width = selp->widthConst();
+        extr.m_lsb += selp->lsbConst();
+        if (!anySel) extr.m_width = selp->widthConst();
         nodep = selp->fromp();
         anySel = true;
     }
     while (AstArraySel* const aselp = VN_CAST(nodep, ArraySel)) {
         const AstConst* const idxp = VN_CAST(aselp->bitp(), Const);
         if (!idxp) return nullptr;
-        extr.idxs.push_back(static_cast<int32_t>(idxp->toSInt()));
+        extr.m_idxs.push_back(static_cast<int32_t>(idxp->toSInt()));
         nodep = aselp->fromp();
         anySel = true;
     }
     if (!anySel) return nullptr;
     AstVarRef* const refp = VN_CAST(nodep, VarRef);
     if (!refp) return nullptr;
-    if (!extr.width) extr.width = lhsp->dtypep()->skipRefp()->width();
+    if (!extr.m_width) extr.m_width = lhsp->dtypep()->skipRefp()->width();
     return refp;
 }
 
@@ -341,8 +342,8 @@ bool unsafeToReexecute(AstNode* nodep) {
 
 // Some bits of one instance of a variable: flat element -> {lsb, width}
 struct CombFootprint final {
-    bool whole = false;  // Every bit; runsOf is then empty
-    std::map<int32_t, std::vector<std::pair<int, int>>> runsOf;  // Else the bits, per element
+    bool m_whole = false;  // Every bit; m_runsOf is then empty
+    std::map<int32_t, std::vector<std::pair<int, int>>> m_runsOf;  // Else the bits, per element
 };
 
 // A mask names bits of a table row's integral elements; any other kind is all or nothing.
@@ -362,11 +363,11 @@ bool combElement(const AstVar* varp, const PartExtent& ext, int32_t& elemr) {
     std::vector<int32_t> dims;
     int elemWidth = 0;
     if (!combMaskable(varp, dims, elemWidth)) return false;
-    if (ext.idxs.size() != dims.size()) return false;
-    if (ext.lsb < 0 || ext.width <= 0 || ext.lsb + ext.width > elemWidth) return false;
+    if (ext.m_idxs.size() != dims.size()) return false;
+    if (ext.m_lsb < 0 || ext.m_width <= 0 || ext.m_lsb + ext.m_width > elemWidth) return false;
     int64_t flat = 0;
     for (size_t k = 0; k < dims.size(); ++k) {
-        const int32_t idx = ext.idxs[dims.size() - 1 - k];
+        const int32_t idx = ext.m_idxs[dims.size() - 1 - k];
         if (idx < 0 || idx >= dims[k]) return false;
         flat = flat * dims[k] + idx;
         if (flat > std::numeric_limits<int32_t>::max()) return false;
@@ -377,8 +378,8 @@ bool combElement(const AstVar* varp, const PartExtent& ext, int32_t& elemr) {
 
 // Keeps an element's runs sorted, disjoint and non-adjacent, as intersectBits needs.
 void addBits(CombFootprint& fp, int32_t elem, int lsb, int width) {
-    if (fp.whole) return;
-    std::vector<std::pair<int, int>>& runs = fp.runsOf[elem];
+    if (fp.m_whole) return;
+    std::vector<std::pair<int, int>>& runs = fp.m_runsOf[elem];
     int lo = lsb;
     int hi = lsb + width;
     // Disjoint runs have ascending ends too
@@ -400,9 +401,9 @@ void addBits(CombFootprint& fp, int32_t elem, int lsb, int width) {
 
 // addBits keeps runs disjoint and non-adjacent, so a defined range lies within one run.
 bool bitsDefined(const CombFootprint& fp, int32_t elem, int lsb, int width) {
-    if (fp.whole) return true;
-    const auto it = fp.runsOf.find(elem);
-    if (it == fp.runsOf.end()) return false;
+    if (fp.m_whole) return true;
+    const auto it = fp.m_runsOf.find(elem);
+    if (it == fp.m_runsOf.end()) return false;
     return std::any_of(it->second.begin(), it->second.end(), [&](const std::pair<int, int>& run) {
         return run.first <= lsb && lsb + width <= run.first + run.second;
     });
@@ -447,8 +448,8 @@ private:
         if (!nodep->access().isWriteOnly()) {
             if (nodep != m_selRefp && vscp->varp()->isSigVpiLazyCandidate()) {
                 CombFootprint& fp = m_readBits[vscp];
-                fp.whole = true;
-                fp.runsOf.clear();
+                fp.m_whole = true;
+                fp.m_runsOf.clear();
             }
             if (m_blockp && !vscp->user1SetOnce()) m_blockp->m_reads.push_back(vscp);
         }
@@ -465,7 +466,7 @@ private:
             int32_t elem = 0;
             if (combElement(refp->varp(), ext, elem)) {
                 m_selRefp = refp;
-                addBits(m_readBits[refp->varScopep()], elem, ext.lsb, ext.width);
+                addBits(m_readBits[refp->varScopep()], elem, ext.m_lsb, ext.m_width);
             }
         }
         iterateChildren(nodep);
@@ -555,25 +556,25 @@ int constTruth(const AstNodeExpr* condp) {
 }
 
 void unionBits(CombFootprint& dst, const CombFootprint& src) {
-    if (dst.whole) return;
-    if (src.whole) {
-        dst.whole = true;
-        dst.runsOf.clear();
+    if (dst.m_whole) return;
+    if (src.m_whole) {
+        dst.m_whole = true;
+        dst.m_runsOf.clear();
         return;
     }
-    for (const auto& pr : src.runsOf) {
+    for (const auto& pr : src.m_runsOf) {
         for (const std::pair<int, int>& run : pr.second)
             addBits(dst, pr.first, run.first, run.second);
     }
 }
 
 CombFootprint intersectBits(const CombFootprint& a, const CombFootprint& b) {
-    if (a.whole) return b;
-    if (b.whole) return a;
+    if (a.m_whole) return b;
+    if (b.m_whole) return a;
     CombFootprint both;
-    for (const auto& pr : a.runsOf) {
-        const auto it = b.runsOf.find(pr.first);
-        if (it == b.runsOf.end()) continue;
+    for (const auto& pr : a.m_runsOf) {
+        const auto it = b.m_runsOf.find(pr.first);
+        if (it == b.m_runsOf.end()) continue;
         std::vector<std::pair<int, int>> runs;
         auto xIt = pr.second.begin();
         auto yIt = it->second.begin();
@@ -589,7 +590,7 @@ CombFootprint intersectBits(const CombFootprint& a, const CombFootprint& b) {
                 ++yIt;
             }
         }
-        if (!runs.empty()) both.runsOf.emplace(pr.first, std::move(runs));
+        if (!runs.empty()) both.m_runsOf.emplace(pr.first, std::move(runs));
     }
     return both;
 }
@@ -605,7 +606,7 @@ DefinedBits intersectDefined(const DefinedBits& a, const DefinedBits& b) {
         const auto it = larger.find(pr.first);
         if (it == larger.end()) continue;
         CombFootprint bits = intersectBits(pr.second, it->second);
-        if (bits.whole || !bits.runsOf.empty()) both.emplace(pr.first, std::move(bits));
+        if (bits.m_whole || !bits.m_runsOf.empty()) both.emplace(pr.first, std::move(bits));
     }
     return both;
 }
@@ -643,13 +644,13 @@ private:
         if (AstVarRef* const refp = VN_CAST(nodep->lhsp(), VarRef)) {
             m_modeled.insert(refp);
             CombFootprint& fp = m_defined[refp->varScopep()];
-            fp.whole = true;
-            fp.runsOf.clear();
+            fp.m_whole = true;
+            fp.m_runsOf.clear();
         } else if (AstVarRef* const prefp = partialLhsRef(nodep->lhsp(), ext)) {
             int32_t elem = 0;
             if (combElement(prefp->varp(), ext, elem)) {
                 m_modeled.insert(prefp);
-                addBits(m_defined[prefp->varScopep()], elem, ext.lsb, ext.width);
+                addBits(m_defined[prefp->varScopep()], elem, ext.m_lsb, ext.m_width);
             }
         }
     }
@@ -726,43 +727,43 @@ class CombClassifier final {
     // Null 'extp': a write the footprint cannot narrow, so the whole variable.
     void addCombWrite(const AstVarScope* vscp, const PartExtent* extp) {
         CombFootprint& fp = combFootprint(vscp);
-        if (fp.whole) return;
+        if (fp.m_whole) return;
         int32_t elem = 0;
         if (!extp || !combElement(vscp->varp(), *extp, elem)) {
-            fp.whole = true;
-            fp.runsOf.clear();
+            fp.m_whole = true;
+            fp.m_runsOf.clear();
             return;
         }
-        fp.runsOf[elem].emplace_back(extp->lsb, extp->width);
+        fp.m_runsOf[elem].emplace_back(extp->m_lsb, extp->m_width);
     }
 
     void addCombBits(const AstVarScope* vscp, const CombFootprint& bits) {
         CombFootprint& fp = combFootprint(vscp);
-        if (fp.whole) return;
-        if (bits.whole) {
-            fp.whole = true;
-            fp.runsOf.clear();
+        if (fp.m_whole) return;
+        if (bits.m_whole) {
+            fp.m_whole = true;
+            fp.m_runsOf.clear();
             return;
         }
-        for (const auto& pr : bits.runsOf)
+        for (const auto& pr : bits.m_runsOf)
             for (const std::pair<int, int>& bitRun : pr.second)
-                fp.runsOf[pr.first].push_back(bitRun);
+                fp.m_runsOf[pr.first].push_back(bitRun);
     }
 
     // Merged runs covering every bit of every element are the whole variable, and have none.
     static InstComb mergedFootprint(const AstVar* varp, CombFootprint& fp) {
         std::vector<V3VpiLazy::CombRun> runs;
-        if (!fp.whole) {
+        if (!fp.m_whole) {
             std::vector<int32_t> dims;
             int elemWidth = 0;
             combMaskable(varp, dims, elemWidth);
             uint64_t elements = 1;
             for (const int32_t d : dims) {
                 elements *= static_cast<uint64_t>(d);
-                if (elements > fp.runsOf.size()) break;
+                if (elements > fp.m_runsOf.size()) break;
             }
-            bool full = elements == fp.runsOf.size();
-            for (auto& pr : fp.runsOf) {
+            bool full = elements == fp.m_runsOf.size();
+            for (auto& pr : fp.m_runsOf) {
                 std::vector<std::pair<int, int>>& parts = pr.second;
                 std::sort(parts.begin(), parts.end());
                 const size_t first = runs.size();
@@ -780,9 +781,9 @@ class CombClassifier final {
                     || runs.back().width != static_cast<uint32_t>(elemWidth))
                     full = false;
             }
-            fp.whole = full;
+            fp.m_whole = full;
         }
-        if (fp.whole) return InstComb{VVpiLazyComb::WHOLE, {}};
+        if (fp.m_whole) return InstComb{VVpiLazyComb::WHOLE, {}};
         return InstComb{VVpiLazyComb::PARTIAL, std::move(runs)};
     }
 
@@ -875,7 +876,7 @@ class VpiLazyPreparer final {
     int m_combBailRetained = 0;  // Group-bail / non-sole-driver / cycle retains
 
     std::vector<std::unique_ptr<Group>> m_groups;  // Formation order (deterministic)
-    // Group::keyp -> the groups sharing it, one per instance
+    // Group::m_keyp -> the groups sharing it, one per instance
     std::unordered_map<const AstNode*, std::vector<Group*>> m_groupsOfKey;
     // Instances keeping their storage: RETAINED if VPI candidates, else PINNED (splitKept...)
     std::unordered_set<const AstVarScope*> m_kept;
@@ -957,14 +958,14 @@ class VpiLazyPreparer final {
     std::unordered_map<const AstScope*, AstVarScope*> m_epochOfScope;  // stampFor
     // Per group key, so shared by every instance of its module.
     struct KeyInfo final {
-        int gid = -1;  // Design-global id naming the emitted artifacts (gidOf)
-        AstCFunc* funcp = nullptr;  // Reconstruct func shared by every instance
-        int epochSlot = -1;  // Index into the module's stamp array (assignEpochSlots)
+        int m_gid = -1;  // Design-global id naming the emitted artifacts (gidOf)
+        AstCFunc* m_funcp = nullptr;  // Reconstruct func shared by every instance
+        int m_epochSlot = -1;  // Index into the module's stamp array (assignEpochSlots)
     };
-    std::unordered_map<const AstNode*, KeyInfo> m_keyInfo;  // Group::keyp -> its KeyInfo
+    std::unordered_map<const AstNode*, KeyInfo> m_keyInfo;  // Group::m_keyp -> its KeyInfo
     std::unordered_map<const Group*, AstCFunc*> m_instStubOf;  // instanceCallee
     std::map<std::pair<const AstNodeModule*, const Group*>, AstCFunc*> m_rowStubOf;  // rowStub
-    int m_nextGid = 0;  // Next KeyInfo::gid
+    int m_nextGid = 0;  // Next KeyInfo::m_gid
     int m_nextTempIdx = 0;  // Next temp shadow's name suffix
 
     std::map<std::string, int> m_floorReason;  // Floor residual shape -> instances, for stats
@@ -1011,7 +1012,7 @@ private:
     }
 
     int keyInstances(const Group* g) const {
-        const AstVar* const varp = VN_CAST(g->keyp, Var);
+        const AstVar* const varp = VN_CAST(g->m_keyp, Var);
         return varp ? instancesOf(varp) : 1;
     }
 
@@ -1027,17 +1028,17 @@ private:
         return it != tally.end() && it->second == instancesOf(varp);
     }
 
-    // After topoOrderSurvivors, only a copy or a fold clears 'live'.
+    // After topoOrderSurvivors, only a copy or a fold clears 'm_live'.
     void dropFromOrdered() {
-        m_ordered.erase(
-            std::remove_if(m_ordered.begin(), m_ordered.end(), [](Group* g) { return !g->live; }),
-            m_ordered.end());
+        m_ordered.erase(std::remove_if(m_ordered.begin(), m_ordered.end(),
+                                       [](Group* g) { return !g->m_live; }),
+                        m_ordered.end());
     }
 
     Group* liveGroupOf(AstVarScope* u) const {
         const auto it = m_groupOf.find(u);
         if (it == m_groupOf.end()) return nullptr;
-        return it->second->live ? it->second : nullptr;
+        return it->second->m_live ? it->second : nullptr;
     }
 
     // A converted target has no storage, so a cone reading it reads what its row copies. Both
@@ -1083,9 +1084,9 @@ private:
         const auto git = m_groupsOfKey.find(keyp);
         UASSERT_OBJ(git != m_groupsOfKey.end(), keyp, "--vpi-lazy group key has no groups");
         for (Group* const g : git->second) {
-            if (!g->live) continue;
-            g->live = false;
-            for (AstVarScope* const t : g->targets) retainTarget(t, why);
+            if (!g->m_live) continue;
+            g->m_live = false;
+            for (AstVarScope* const t : g->m_targets) retainTarget(t, why);
         }
     }
 
@@ -1173,16 +1174,16 @@ private:
         if (targets.empty()) return nullptr;
         auto ownp = std::make_unique<Group>();
         Group* const g = ownp.get();
-        g->scopep = scopep;
-        g->blockps = std::move(blockps);
-        g->targets = targets;
-        g->temps = temps;
-        g->members.insert(targets.begin(), targets.end());
-        g->members.insert(temps.begin(), temps.end());
-        g->keyp = targets[0]->varp();
+        g->m_scopep = scopep;
+        g->m_blockps = std::move(blockps);
+        g->m_targets = targets;
+        g->m_temps = temps;
+        g->m_members.insert(targets.begin(), targets.end());
+        g->m_members.insert(temps.begin(), temps.end());
+        g->m_keyp = targets[0]->varp();
         if (std::any_of(targets.begin(), targets.end(),
                         [&](const AstVarScope* t) { return t->scopep() != scopep; }))
-            g->keyp = targets[0];
+            g->m_keyp = targets[0];
         for (size_t i = 0; i < targets.size(); ++i) {
             m_groupOf[targets[i]] = g;
             m_targetOf[targets[i]] = {g, i};
@@ -1190,7 +1191,7 @@ private:
         // Only a solely-written temp may be read through another group's shadow copy.
         for (AstVarScope* const t : soleTemps) m_groupOf.emplace(t, g);
         m_groups.push_back(std::move(ownp));
-        m_groupsOfKey[g->keyp].push_back(g);
+        m_groupsOfKey[g->m_keyp].push_back(g);
         return g;
     }
 
@@ -1289,7 +1290,7 @@ private:
             if (!varp->isVpiLazyCombPartial() || readVars.count(varp)) continue;
             const auto cit = m_ctx.m_combRuns.find(varp);
             if (cit == m_ctx.m_combRuns.end()) continue;  // Instances differ; formPartialGroup
-            if (pr.second.whole) {
+            if (pr.second.m_whole) {
                 readVars.insert(varp);
                 continue;
             }
@@ -1297,7 +1298,7 @@ private:
             for (const V3VpiLazy::CombRun& combRun : cit->second)
                 addBits(driven, static_cast<int32_t>(combRun.elem), static_cast<int>(combRun.lsb),
                         static_cast<int>(combRun.width));
-            for (const auto& epr : pr.second.runsOf) {
+            for (const auto& epr : pr.second.m_runsOf) {
                 for (const std::pair<int, int>& bitRun : epr.second)
                     if (!bitsDefined(driven, epr.first, bitRun.first, bitRun.second))
                         readVars.insert(varp);
@@ -1321,21 +1322,21 @@ private:
             return;
         // Overlapping writes are multidriven: assembly would depend on encounter order. Bucketed
         // by element index, then LSB-sorted so only adjacent pairs need testing.
-        const size_t depth = parts[0].m_ext.idxs.size();
+        const size_t depth = parts[0].m_ext.m_idxs.size();
         std::map<std::vector<int32_t>, std::vector<const PartExtent*>> byElem;
         for (const PartWrite& pw : parts) {
-            UASSERT_OBJ(pw.m_ext.idxs.size() == depth, basep,
+            UASSERT_OBJ(pw.m_ext.m_idxs.size() == depth, basep,
                         "--vpi-lazy: V3Slice leaves partial writes at one depth");
-            byElem[pw.m_ext.idxs].push_back(&pw.m_ext);
+            byElem[pw.m_ext.m_idxs].push_back(&pw.m_ext);
         }
         for (auto& pr : byElem) {
             std::vector<const PartExtent*>& bucket = pr.second;
             std::sort(
                 bucket.begin(), bucket.end(),
-                [](const PartExtent* ap, const PartExtent* bp) { return ap->lsb < bp->lsb; });
+                [](const PartExtent* ap, const PartExtent* bp) { return ap->m_lsb < bp->m_lsb; });
             for (size_t i = 1; i < bucket.size(); ++i) {
                 if (retainIf(basep, Bail::PARTIAL_OVERLAP,
-                             bucket[i]->lsb < bucket[i - 1]->lsb + bucket[i - 1]->width))
+                             bucket[i]->m_lsb < bucket[i - 1]->m_lsb + bucket[i - 1]->m_width))
                     return;
             }
         }
@@ -1358,20 +1359,20 @@ private:
 
     // True if 'fp' names every bit of 'varp'; then remembered as whole, so decided once.
     static bool fullyDefined(CombFootprint& fp, const AstVar* varp) {
-        if (fp.whole) return true;
+        if (fp.m_whole) return true;
         std::vector<int32_t> dims;
         int elemWidth = 0;
         if (!combMaskable(varp, dims, elemWidth)) return false;
         uint64_t elements = 1;
         for (const int32_t d : dims) elements *= static_cast<uint64_t>(d);
-        if (fp.runsOf.size() != elements) return false;
-        for (const auto& pr : fp.runsOf) {
+        if (fp.m_runsOf.size() != elements) return false;
+        for (const auto& pr : fp.m_runsOf) {
             if (pr.second.size() != 1 || pr.second[0].first != 0
                 || pr.second[0].second != elemWidth)
                 return false;
         }
-        fp.whole = true;
-        fp.runsOf.clear();
+        fp.m_whole = true;
+        fp.m_runsOf.clear();
         return true;
     }
 
@@ -1409,19 +1410,19 @@ private:
         }
         void defineWhole(AstVarScope* vscp) {
             CombFootprint& fp = changing(vscp);
-            fp.whole = true;
-            fp.runsOf.clear();
+            fp.m_whole = true;
+            fp.m_runsOf.clear();
         }
         void defineBits(AstVarScope* vscp, int32_t elem, int lsb, int width) {
             CombFootprint& fp = changing(vscp);
-            if (!fp.whole && fp.runsOf.empty()
+            if (!fp.m_whole && fp.m_runsOf.empty()
                 && std::find(m_assembledps.begin(), m_assembledps.end(), vscp)
                        == m_assembledps.end())
                 m_assembledps.push_back(vscp);
             addBits(fp, elem, lsb, width);
         }
         bool member(const AstVarRef* refp) const {
-            return m_groupp->members.count(refp->varScopep()) != 0;
+            return m_groupp->m_members.count(refp->varScopep()) != 0;
         }
         void scanReads(AstNode* nodep) {
             VL_RESTORER(m_inExpr);
@@ -1450,7 +1451,7 @@ private:
             if (refp && refp != m_skipp && !refp->access().isWriteOnly() && member(refp)
                 && combElement(refp->varp(), ext, elem)) {
                 bailIf(Bail::READ_BEFORE_WRITE,
-                       !bitsDefined(m_definedr[refp->varScopep()], elem, ext.lsb, ext.width));
+                       !bitsDefined(m_definedr[refp->varScopep()], elem, ext.m_lsb, ext.m_width));
                 return;
             }
             iterateChildrenConst(nodep);
@@ -1472,7 +1473,7 @@ private:
             if (bailIf(Bail::UNSUPPORTED_STMT, !baserefp)) return;
             AstVarScope* const basep = baserefp->varScopep();
             // The gather counted every write under this block, so its write set is members
-            UASSERT_OBJ(m_groupp->members.count(basep), nodep,
+            UASSERT_OBJ(m_groupp->m_members.count(basep), nodep,
                         "--vpi-lazy: group members miss a write of their own block");
             {
                 VL_RESTORER(m_skipp);
@@ -1486,7 +1487,7 @@ private:
                 defineWhole(basep);
             } else if (partialLhsRef(nodep->lhsp(), ext)
                        && combElement(basep->varp(), ext, elem)) {
-                defineBits(basep, elem, ext.lsb, ext.width);
+                defineBits(basep, elem, ext.m_lsb, ext.m_width);
             }  // Else no bit is provably defined; the untouched ones keep what they had
         }
         void visit(AstVarRef* nodep) override {
@@ -1527,7 +1528,7 @@ private:
             : m_groupp{groupp}
             , m_definedr{definedr}
             , m_whyr{whyr} {
-            for (const CombBlock* const bp : groupp->blockps)
+            for (const CombBlock* const bp : groupp->m_blockps)
                 iterateAndNextConstNull(bp->m_alwaysp->stmtsp());
         }
     };
@@ -1543,26 +1544,26 @@ private:
 
     // A var first defined in part is assembled into a zeroed shadow, but for its undriven bits.
     bool analyzeGroup(Group* g, Bail& whyr) const {
-        for (const CombBlock* const bp : g->blockps)
+        for (const CombBlock* const bp : g->m_blockps)
             if (bailIf(whyr, Bail::IMPURE, bp->m_impure)) return false;
         DefinedBits defined;
         LazyReadOrderVisitor walk{g, defined, whyr};
         if (!walk.m_ok) return false;
-        for (AstVarScope* const t : g->targets) {
+        for (AstVarScope* const t : g->m_targets) {
             // Not written on every path
             if (bailIf(whyr, Bail::LATCH, !definesDriven(defined[t], t->varp()))) return false;
         }
         for (AstVarScope* const u : walk.m_assembledps)
-            if (!m_gapVars.count(u->varp())) g->zeroInitps.push_back(u);
+            if (!m_gapVars.count(u->varp())) g->m_zeroInitps.push_back(u);
         return true;
     }
 
     void analyzeGroups() {
         for (const auto& ownp : m_groups) {
             Group* const g = ownp.get();
-            if (!g->live) continue;
+            if (!g->m_live) continue;
             Bail why = Bail::UNSUPPORTED_STMT;
-            if (!analyzeGroup(g, why)) killGroupsOfKey(g->keyp, why);
+            if (!analyzeGroup(g, why)) killGroupsOfKey(g->m_keyp, why);
         }
     }
 
@@ -1575,22 +1576,22 @@ private:
             changed = false;
             for (const auto& ownp : m_groups) {
                 const Group* const g = ownp.get();
-                if (!g->live || keyInstances(g) <= 1) continue;
+                if (!g->m_live || keyInstances(g) <= 1) continue;
                 const auto elsewhere = [&](AstVarScope* vscp) {
                     const Group* const ugp = liveGroupOf(vscp);
-                    return ugp && ugp->scopep != g->scopep;
+                    return ugp && ugp->m_scopep != g->m_scopep;
                 };
                 bool bad = false;
-                for (const CombBlock* const bp : g->blockps)
+                for (const CombBlock* const bp : g->m_blockps)
                     bad = bad || std::any_of(bp->m_reads.begin(), bp->m_reads.end(), elsewhere);
                 if (!bad) continue;
-                const auto kit = m_groupsOfKey.find(g->keyp);
+                const auto kit = m_groupsOfKey.find(g->m_keyp);
                 const std::vector<Group*> groups = std::move(kit->second);
                 m_groupsOfKey.erase(kit);
                 for (Group* const instp : groups) {
-                    instp->scopep = m_topScopep;
-                    instp->keyp = instp->targets[0];
-                    m_groupsOfKey[instp->keyp].push_back(instp);
+                    instp->m_scopep = m_topScopep;
+                    instp->m_keyp = instp->m_targets[0];
+                    m_groupsOfKey[instp->m_keyp].push_back(instp);
                 }
                 changed = true;
             }
@@ -1601,17 +1602,17 @@ private:
     void buildDependencyGraph() {
         for (const auto& ownp : m_groups) {
             Group* const g = ownp.get();
-            g->vtxp = g->live ? new GroupVertex{&m_depGraph, g} : nullptr;
+            g->m_vtxp = g->m_live ? new GroupVertex{&m_depGraph, g} : nullptr;
         }
         for (const auto& ownp : m_groups) {
             Group* const g = ownp.get();
-            if (!g->live) continue;
-            for (const CombBlock* const bp : g->blockps) {
+            if (!g->m_live) continue;
+            for (const CombBlock* const bp : g->m_blockps) {
                 for (AstVarScope* const u : bp->m_reads) {
-                    if (g->members.count(u)) continue;
+                    if (g->m_members.count(u)) continue;
                     Group* const ugp = liveGroupOf(u);
                     if (!ugp || ugp == g) continue;
-                    new V3GraphEdge{&m_depGraph, ugp->vtxp, g->vtxp, 1};
+                    new V3GraphEdge{&m_depGraph, ugp->m_vtxp, g->m_vtxp, 1};
                 }
             }
         }
@@ -1623,38 +1624,40 @@ private:
     bool mergeCycle(const std::vector<Group*>& sccps) {
         Group* const g = sccps[0];
         Group merged;
-        merged.scopep = g->scopep;
+        merged.m_scopep = g->m_scopep;
         size_t members = 0;
         for (const Group* const ugp : sccps) {
-            if (ugp->scopep != g->scopep) return false;  // One func addresses one scope
-            merged.blockps.insert(merged.blockps.end(), ugp->blockps.begin(), ugp->blockps.end());
-            merged.targets.insert(merged.targets.end(), ugp->targets.begin(), ugp->targets.end());
-            merged.members.insert(ugp->members.begin(), ugp->members.end());
-            members += ugp->members.size();
+            if (ugp->m_scopep != g->m_scopep) return false;  // One func addresses one scope
+            merged.m_blockps.insert(merged.m_blockps.end(), ugp->m_blockps.begin(),
+                                    ugp->m_blockps.end());
+            merged.m_targets.insert(merged.m_targets.end(), ugp->m_targets.begin(),
+                                    ugp->m_targets.end());
+            merged.m_members.insert(ugp->m_members.begin(), ugp->m_members.end());
+            members += ugp->m_members.size();
         }
         // A var two groups write bails MULTIDRIVEN before either is formed
-        UASSERT_OBJ(merged.members.size() == members, g->keyp,
+        UASSERT_OBJ(merged.m_members.size() == members, g->m_keyp,
                     "--vpi-lazy cycle groups share a member");
         // Every CombBlock is an element of one vector, so address order is encounter order
-        std::sort(merged.blockps.begin(), merged.blockps.end());
+        std::sort(merged.m_blockps.begin(), merged.m_blockps.end());
         Bail why = Bail::COMB_CYCLE;
         if (!analyzeGroup(&merged, why)) return false;
-        g->blockps = std::move(merged.blockps);
-        g->members = std::move(merged.members);
-        g->zeroInitps = std::move(merged.zeroInitps);
+        g->m_blockps = std::move(merged.m_blockps);
+        g->m_members = std::move(merged.m_members);
+        g->m_zeroInitps = std::move(merged.m_zeroInitps);
         for (size_t i = 1; i < sccps.size(); ++i) {
             Group* const ugp = sccps[i];
-            for (AstVarScope* const t : ugp->targets) {
-                m_targetOf[t] = {g, g->targets.size()};
+            for (AstVarScope* const t : ugp->m_targets) {
+                m_targetOf[t] = {g, g->m_targets.size()};
                 m_groupOf[t] = g;
-                g->targets.push_back(t);
+                g->m_targets.push_back(t);
             }
-            for (AstVarScope* const t : ugp->temps) {
+            for (AstVarScope* const t : ugp->m_temps) {
                 const auto it = m_groupOf.find(t);
                 if (it != m_groupOf.end() && it->second == ugp) it->second = g;
-                g->temps.push_back(t);
+                g->m_temps.push_back(t);
             }
-            ugp->live = false;
+            ugp->m_live = false;
         }
         return true;
     }
@@ -1664,12 +1667,12 @@ private:
         Group* cutp = nullptr;
         size_t best = 0;
         for (Group* const g : sccps) {
-            const uint32_t color = g->vtxp->color();
+            const uint32_t color = g->m_vtxp->color();
             size_t in = 0;
             size_t out = 0;
-            for (const V3GraphEdge& edge : g->vtxp->inEdges())
+            for (const V3GraphEdge& edge : g->m_vtxp->inEdges())
                 in += edge.fromp()->color() == color;
-            for (const V3GraphEdge& edge : g->vtxp->outEdges())
+            for (const V3GraphEdge& edge : g->m_vtxp->outEdges())
                 out += edge.top()->color() == color;
             if (!cutp || in * out > best) {
                 cutp = g;
@@ -1687,7 +1690,7 @@ private:
             std::map<uint32_t, std::vector<Group*>> sccOf;  // Non-zero color: a multi-group SCC
             for (const auto& ownp : m_groups) {
                 Group* const g = ownp.get();
-                if (g->live && g->vtxp->color() != 0) sccOf[g->vtxp->color()].push_back(g);
+                if (g->m_live && g->m_vtxp->color() != 0) sccOf[g->m_vtxp->color()].push_back(g);
             }
             if (sccOf.empty()) return;
             for (const auto& pr : sccOf) {
@@ -1695,9 +1698,9 @@ private:
                 // A kill above reaches the key's groups in every instance; the next round
                 // recomputes what remains of this SCC
                 if (std::any_of(sccps.begin(), sccps.end(),
-                                [](const Group* g) { return !g->live; }))
+                                [](const Group* g) { return !g->m_live; }))
                     continue;
-                if (!mergeCycle(sccps)) killGroupsOfKey(cycleCut(sccps)->keyp, Bail::COMB_CYCLE);
+                if (!mergeCycle(sccps)) killGroupsOfKey(cycleCut(sccps)->m_keyp, Bail::COMB_CYCLE);
             }
             // Merged and killed groups leave the graph
             m_depGraph.clear();
@@ -1710,14 +1713,14 @@ private:
     void topoOrderSurvivors() {
         std::vector<Group*> live;
         for (const auto& ownp : m_groups)
-            if (ownp->live) live.push_back(ownp.get());
+            if (ownp->m_live) live.push_back(ownp.get());
         std::unordered_map<Group*, size_t> inDegree;
-        for (Group* const g : live) inDegree[g] = g->vtxp->inEdges().size();
+        for (Group* const g : live) inDegree[g] = g->m_vtxp->inEdges().size();
         std::unordered_map<const AstScope*, std::vector<Group*>> readyOf;  // lookup only
         std::vector<AstScope*> scopeQueue;  // Scopes that (re)gained ready groups, encounter order
         const auto pushReady = [&](Group* g) {
-            std::vector<Group*>& stack = readyOf[g->scopep];
-            if (stack.empty()) scopeQueue.push_back(g->scopep);
+            std::vector<Group*>& stack = readyOf[g->m_scopep];
+            if (stack.empty()) scopeQueue.push_back(g->m_scopep);
             stack.push_back(g);
         };
         for (Group* const g : live)
@@ -1743,14 +1746,14 @@ private:
                 stack.pop_back();
             }
             m_ordered.push_back(up);
-            for (const V3GraphEdge& edge : up->vtxp->outEdges()) {
+            for (const V3GraphEdge& edge : up->m_vtxp->outEdges()) {
                 Group* const v = static_cast<const GroupVertex*>(edge.top())->groupp();
                 if (--inDegree[v] == 0) pushReady(v);
             }
         }
         // splitCyclesRetainCores() left a DAG of live vertices only
         for (Group* const g : live) {
-            UASSERT_OBJ(!inDegree[g], g->keyp, "--vpi-lazy group left unordered");
+            UASSERT_OBJ(!inDegree[g], g->m_keyp, "--vpi-lazy group left unordered");
         }
     }
 
@@ -1764,7 +1767,7 @@ private:
         for (Group* const g : m_ordered) {
             AstVarScope* u = soleCopySource(g);
             if (!u) continue;
-            AstVarScope* const targetp = g->targets[0];
+            AstVarScope* const targetp = g->m_targets[0];
             // A helper target's cone exists only to be copied; converting it leaves it unread.
             if (m_helperTargets.count(targetp)) continue;
             const auto tit = m_targetOf.find(u);
@@ -1780,14 +1783,14 @@ private:
             ++candInstances[targetp->varp()];
         }
         for (Group* const g : cand) {
-            AstVarScope* const targetp = g->targets[0];
+            AstVarScope* const targetp = g->m_targets[0];
             if (!claimPerVar(candInstances, targetp->varp())) continue;
             const auto cit = chainEnd.find(g);
             UASSERT_OBJ(cit != chainEnd.end(), targetp->varp(),
                         "--vpi-lazy copy candidate has no resolved source");
-            g->copyFromp = cit->second;
-            g->live = false;
-            m_retargetSrcOf.emplace(targetp, g->copyFromp);
+            g->m_copyFromp = cit->second;
+            g->m_live = false;
+            m_retargetSrcOf.emplace(targetp, g->m_copyFromp);
             m_copyGroups.push_back(g);
         }
         dropFromOrdered();
@@ -1796,14 +1799,16 @@ private:
     // Reads statements from before DFG and V3Gate, so a width change appears as a Cast/Extend
     // and is refused: memcpy cannot convert.
     AstVarScope* soleCopySource(const Group* g) const {
-        if (g->targets.size() != 1 || !g->temps.empty() || g->blockps.size() != 1) return nullptr;
+        if (g->m_targets.size() != 1 || !g->m_temps.empty() || g->m_blockps.size() != 1)
+            return nullptr;
         // Another scope's write may differ per instance
-        if (g->blockps[0]->m_scopep != g->targets[0]->scopep()) return nullptr;
-        const AstNodeAssign* const asgnp = VN_CAST(g->blockps[0]->m_alwaysp->stmtsp(), NodeAssign);
+        if (g->m_blockps[0]->m_scopep != g->m_targets[0]->scopep()) return nullptr;
+        const AstNodeAssign* const asgnp
+            = VN_CAST(g->m_blockps[0]->m_alwaysp->stmtsp(), NodeAssign);
         if (!asgnp || asgnp->nextp()) return nullptr;
         const AstVarRef* const lhsp = VN_CAST(asgnp->lhsp(), VarRef);
         const AstVarRef* const rhsp = VN_CAST(asgnp->rhsp(), VarRef);
-        if (!lhsp || !rhsp || lhsp->varScopep() != g->targets[0]) return nullptr;
+        if (!lhsp || !rhsp || lhsp->varScopep() != g->m_targets[0]) return nullptr;
         return rhsp->varScopep();
     }
 
@@ -1831,24 +1836,25 @@ private:
             const Group* const ugp = liveGroupOf(u);
             // m_groupOf covers temps too, and only a target has a shadow with a func to call
             if (!ugp || ugp == g || !m_targetOf.count(u)) continue;
-            if (ugp->copyFromp) u = ugp->copyFromp;  // Source folded too; chase it
+            if (ugp->m_copyFromp) u = ugp->m_copyFromp;  // Source folded too; chase it
             // srcOffset is from the target's own selfp, so the source must be the same instance.
-            if (!sameLayout(g->targets[0], u) || u->scopep() != g->targets[0]->scopep()) continue;
-            ++foldable[g->targets[0]->varp()];
-            g->copyFromp = u;
+            if (!sameLayout(g->m_targets[0], u) || u->scopep() != g->m_targets[0]->scopep())
+                continue;
+            ++foldable[g->m_targets[0]->varp()];
+            g->m_copyFromp = u;
         }
         // m_ordered order, not foldable's, so what is emitted does not depend on pointer hashing
         for (Group* const g : m_ordered) {
-            if (!g->copyFromp) continue;
+            if (!g->m_copyFromp) continue;
             // One instance could not fold: none may
-            if (!claimPerVar(foldable, g->targets[0]->varp())) {
-                g->copyFromp = nullptr;
+            if (!claimPerVar(foldable, g->m_targets[0]->varp())) {
+                g->m_copyFromp = nullptr;
                 continue;
             }
             // Killing it makes the retarget safe: a consumer that cannot substitute pins instead.
-            m_retargetSrcOf.emplace(g->targets[0], g->copyFromp);
+            m_retargetSrcOf.emplace(g->m_targets[0], g->m_copyFromp);
             m_foldedCopies.push_back(g);
-            g->live = false;
+            g->m_live = false;
         }
         dropFromOrdered();
     }
@@ -1857,7 +1863,7 @@ private:
 
     // Design-global group id, shared by every instance of the group's module.
     int gidOf(const Group* g) {
-        int& gid = m_keyInfo[g->keyp].gid;
+        int& gid = m_keyInfo[g->m_keyp].m_gid;
         if (gid < 0) gid = m_nextGid++;
         return gid;
     }
@@ -1890,7 +1896,7 @@ private:
     }
 
     // Null until its key's first instance is emitted
-    AstCFunc* funcOf(const Group* g) { return m_keyInfo[g->keyp].funcp; }
+    AstCFunc* funcOf(const Group* g) { return m_keyInfo[g->m_keyp].m_funcp; }
 
     AstCFunc* newCallStub(AstScope* scopep, const Group* g) {
         AstCFunc* const stubp = newReconFunc(
@@ -1907,10 +1913,10 @@ private:
     // self pointer; V3Descope then points the call at the shared func and deletes the stub.
     AstCFunc* instanceCallee(const Group* ugp) {
         AstCFunc* const funcp = funcOf(ugp);
-        if (funcp->scopep() == ugp->scopep) return funcp;
+        if (funcp->scopep() == ugp->m_scopep) return funcp;
         AstCFunc*& stubp = m_instStubOf[ugp];
         if (!stubp) {
-            stubp = newCallStub(ugp->scopep, ugp);
+            stubp = newCallStub(ugp->m_scopep, ugp);
             stubp->vpiLazyInstStub(true);
         }
         return stubp;
@@ -1929,10 +1935,10 @@ private:
         std::unordered_map<const AstNodeModule*, size_t> idxOfMod;
         std::vector<std::pair<AstNodeModule*, int>> slotsOfMod;
         for (Group* const g : m_ordered) {
-            AstNodeModule* const modp = g->scopep->modp();
+            AstNodeModule* const modp = g->m_scopep->modp();
             const auto pair = idxOfMod.emplace(modp, slotsOfMod.size());
             if (pair.second) slotsOfMod.emplace_back(modp, 0);
-            int& slot = m_keyInfo[g->keyp].epochSlot;
+            int& slot = m_keyInfo[g->m_keyp].m_epochSlot;
             if (slot < 0) slot = slotsOfMod[pair.first->second].second++;
         }
         for (const auto& pr : slotsOfMod) pr.first->addStmtsp(makeStampVar(pr.first, pr.second));
@@ -1955,7 +1961,7 @@ private:
 
     // Per-instance VarScope for the stamp array, so the guard can reference it as an AstVarRef.
     AstVarScope* stampFor(Group* g) {
-        AstScope* const scopep = g->scopep;
+        AstScope* const scopep = g->m_scopep;
         const auto it = m_epochOfScope.find(scopep);
         if (it != m_epochOfScope.end()) return it->second;
         const auto mit = m_epochVarOfMod.find(scopep->modp());
@@ -2002,7 +2008,7 @@ private:
 
     AstVarScope* shadowForTarget(Group* g, size_t slot) {
         const int gid = gidOf(g);
-        AstVarScope* const origp = g->targets[slot];
+        AstVarScope* const origp = g->m_targets[slot];
         if (AstVarScope* const vscp = reuseShadow(origp)) return vscp;
         return newTargetShadow(origp,
                                SHADOW_PREFIX + std::to_string(gid) + "_" + std::to_string(slot));
@@ -2046,7 +2052,7 @@ private:
     // An AstAssignW must never sit under a CFunc, so continuous assigns are cloned as blocking.
     static AstNode* cloneBody(const Group* g) {
         AstNode* bodyp = nullptr;
-        for (const CombBlock* const bp : g->blockps) {
+        for (const CombBlock* const bp : g->m_blockps) {
             for (AstNode* stmtp = bp->m_alwaysp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
                 AstNode* clonep;
                 if (const AstAssignW* const awp = VN_CAST(stmtp, AssignW)) {
@@ -2110,7 +2116,7 @@ private:
         // VISITORS
         void visit(AstVarRef* nodep) override {
             AstVarScope* u = nodep->varScopep();
-            if (m_groupp->members.count(u)) {  // Read or written by this group
+            if (m_groupp->m_members.count(u)) {  // Read or written by this group
                 redirect(nodep, m_prep.shadowForMember(u));
                 return;
             }
@@ -2121,7 +2127,7 @@ private:
             Group* const ugp = m_prep.liveGroupOf(u);
             if (ugp && ugp != m_groupp) {
                 // Operand is reconstructed too: read its shadow, calling its func to freshen.
-                UASSERT_OBJ(m_prep.funcOf(ugp), m_groupp->keyp,
+                UASSERT_OBJ(m_prep.funcOf(ugp), m_groupp->m_keyp,
                             "--vpi-lazy cone operand ordered after its consumer");
                 redirect(nodep, m_prep.shadowForMember(u));
                 if (m_seenOps.insert(ugp).second) m_coneOps.push_back(ugp);
@@ -2147,24 +2153,24 @@ private:
         assignEpochSlots();
         // Every instance needs its own shadow VarScope for its descriptor.
         for (Group* const g : m_ordered) {
-            for (size_t slot = 0; slot < g->targets.size(); ++slot) shadowForTarget(g, slot);
+            for (size_t slot = 0; slot < g->m_targets.size(); ++slot) shadowForTarget(g, slot);
         }
         for (Group* const g : m_ordered) {
-            KeyInfo& key = m_keyInfo[g->keyp];
-            if (!key.funcp) emitReconFunc(g, key);  // Later instances share it
+            KeyInfo& key = m_keyInfo[g->m_keyp];
+            if (!key.m_funcp) emitReconFunc(g, key);  // Later instances share it
         }
         emitCopyRows(m_copyGroups, false);
         emitCopyRows(m_foldedCopies, true);
     }
 
     void emitReconFunc(Group* g, KeyInfo& key) {
-        AstCFunc* const funcp = newReconFunc(g->scopep, reconFuncName(g), true);
-        key.funcp = funcp;
+        AstCFunc* const funcp = newReconFunc(g->m_scopep, reconFuncName(g), true);
+        key.m_funcp = funcp;
         m_splitFuncps.push_back(funcp);
         bindRowRefresh(g, funcp);
         AstNode* const bodyp = cloneBody(g);
         const LazyConeRewireVisitor rewire{*this, g, bodyp};
-        AstIf* const guardp = newEpochGuard(g, key.epochSlot);
+        AstIf* const guardp = newEpochGuard(g, key.m_epochSlot);
         funcp->addStmtsp(guardp);
         AstCFunc* const bodyFuncp = splitBodyFunc(g, guardp, bodyp);
         const auto addBodyStmt = [&](AstNode* stmtp) {
@@ -2180,19 +2186,19 @@ private:
             callp->dtypeSetVoid();
             addBodyStmt(callp->makeStmt());
         }
-        for (AstVarScope* const u : g->zeroInitps) addBodyStmt(newZeroShadow(u));
+        for (AstVarScope* const u : g->m_zeroInitps) addBodyStmt(newZeroShadow(u));
         addBodyStmt(bodyp);
         moveRowsToShadows(g);
     }
 
     // What V3EmitCSyms routes a row's refreshp to, here and on any fold of this shadow
     void bindRowRefresh(const Group* g, AstCFunc* funcp) {
-        for (AstVarScope* const t : g->targets) {
+        for (AstVarScope* const t : g->m_targets) {
             const auto tit = m_shadowOf.find(t);
             UASSERT_OBJ(tit != m_shadowOf.end(), t->varp(),
                         "--vpi-lazy reconstruct target has no shadow");
             AstVar* const shadowVarp = tit->second->varp();
-            if (t->scopep() == g->scopep) {
+            if (t->scopep() == g->m_scopep) {
                 shadowVarp->lazyReconFuncp(funcp);
             } else {
                 m_ctx.m_rowRefresh.emplace(std::make_pair(t->scopep()->name(), shadowVarp),
@@ -2214,7 +2220,7 @@ private:
         int nodes = 0;
         for (const AstNode* sp = bodyp; sp; sp = sp->nextp()) nodes += sp->nodeCount();
         if (nodes < splitAt / 4) return nullptr;
-        AstCFunc* const bodyFuncp = newReconFunc(g->scopep, reconBodyFuncName(g), false);
+        AstCFunc* const bodyFuncp = newReconFunc(g->m_scopep, reconBodyFuncName(g), false);
         m_splitFuncps.push_back(bodyFuncp);
         AstCCall* const bodyCallp = new AstCCall{m_funcFlp, bodyFuncp};
         bodyCallp->dtypeSetVoid();
@@ -2242,7 +2248,7 @@ private:
 
     // The shadows carry the original signals' VPI presence.
     void moveRowsToShadows(const Group* g) {
-        for (AstVarScope* const t : g->targets) {
+        for (AstVarScope* const t : g->m_targets) {
             if (m_helperTargets.count(t)) {
                 ++m_helperCount;  // Never lazy-flagged; read only by the copies of it
                 continue;
@@ -2265,22 +2271,22 @@ private:
     // stored source; a fold's shadow aliases the source cone's, whose func its row calls.
     void emitCopyRows(const std::vector<Group*>& groups, bool folded) {
         for (Group* const g : groups) {
-            UASSERT_OBJ(!kept(g->targets[0]), g->targets[0],
+            UASSERT_OBJ(!kept(g->m_targets[0]), g->m_targets[0],
                         "--vpi-lazy converted target pinned, not substituted");
             AstVar* srcVarp;
             if (folded) {
-                const auto sit = m_shadowOf.find(g->copyFromp);
-                UASSERT_OBJ(sit != m_shadowOf.end(), g->copyFromp->varp(),
+                const auto sit = m_shadowOf.find(g->m_copyFromp);
+                UASSERT_OBJ(sit != m_shadowOf.end(), g->m_copyFromp->varp(),
                             "--vpi-lazy folded copy source has no shadow");
                 srcVarp = sit->second->varp();
                 UASSERT_OBJ(
                     srcVarp->lazyReconFuncp()
-                        || m_ctx.m_rowRefresh.count({g->copyFromp->scopep()->name(), srcVarp}),
+                        || m_ctx.m_rowRefresh.count({g->m_copyFromp->scopep()->name(), srcVarp}),
                     srcVarp, "--vpi-lazy folded copy source has no reconstruct func");
                 ++m_foldedCount;
             } else {
-                pinBoundary(g->copyFromp, false);  // As the cone this row replaced would have
-                srcVarp = g->copyFromp->varp();
+                pinBoundary(g->m_copyFromp, false);  // As the cone this row replaced would have
+                srcVarp = g->m_copyFromp->varp();
                 ++m_copyCount;
             }
             AstVar* const shadowVarp = shadowForTarget(g, 0)->varp();
