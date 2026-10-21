@@ -127,18 +127,14 @@ class TaskStateVisitor final : public VNVisitor {
     bool m_underPortVar = false;  // Visiting under a port AstVar; any expression there
                                   // is a default value, evaluated at call sites only
     // Virtual-interface method call refs seen during traversal
-    std::vector<AstNodeFTaskRef*>
-        m_virtIfaceRefs;
+    std::vector<AstNodeFTaskRef*> m_virtIfaceRefs;
     // Iface scope -> VarScope of its __Viftop handle var
     ScopeToVarScopeMap m_ifaceHandleVscpMap;
     // Call ref -> {handle vscp, per-scope ftask} runtime dispatch
     // targets. A virtual-interface method call is an exception to the
     // "one ftask per scope" rule: one AstNodeFTaskRef may dispatch to
     // ftask clones under several interface-instance scopes.
-    RefToVarScopeFtaskPairsMap
-        m_virtIfaceTargetsMap;
-
-
+    RefToVarScopeFtaskPairsMap m_virtIfaceTargetsMap;
 
 public:
     // METHODS
