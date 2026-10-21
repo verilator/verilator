@@ -1084,8 +1084,8 @@ public:
         string suggest
             = suggestSymFallback(lookSymp, nodep->name(), LinkNodeMatcherClassOrPackage{});
         if (suggest.empty() && !classOnly) {
-            suggest
-                = suggestSymFlat(packageEntp(), nodep->name(), LinkNodeMatcherClassOrPackage{}, true);
+            suggest = suggestSymFlat(packageEntp(), nodep->name(), LinkNodeMatcherClassOrPackage{},
+                                     true);
         }
         if (suggest.empty()) {
             // If nothing was found, maybe there is a package with the same name as the class
