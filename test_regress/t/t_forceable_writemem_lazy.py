@@ -15,7 +15,7 @@ test.top_filename = "t/t_forceable_writemem.v"
 test.compile(verilator_flags2=['--binary', '--vpi', '--vpi-lazy'])
 
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp",
-               r'forceableVarInsert\("wide_mem", &\(TOP\.t__DOT__wide_mem\)')
+               r'forceableVarInsert\("wide_mem", &\(vlSymsp->vlInst\.TOP\.t__DOT__wide_mem\)')
 
 test.execute()
 

@@ -47,6 +47,16 @@ class EmitCModel final : public EmitCFunc {
         return funcps;
     }
 
+    // Whether 'funcp' is a DPI function with arguments of unpacked structures
+    static bool isDpiPassingStructs(const AstCFunc* funcp) {
+        if (!funcp->dpiImportPrototype() && !funcp->dpiExportDispatcher()) return false;
+        for (const AstNode* argp = funcp->argsp(); argp; argp = argp->nextp()) {
+            const AstVar* const varp = VN_CAST(argp, Var);
+            if (varp && varp->dtypep()->containsUnpackedStruct()) return true;
+        }
+        return false;
+    }
+
     void putSectionDelimiter(const string& name) {
         puts("\n");
         puts("//============================================================\n");
@@ -74,6 +84,10 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.coverage() || v3Global.useCovergroup())
             puts("#include \"verilated_covergroup.h\"\n");
         if (v3Global.dpi()) puts("#include \"svdpi.h\"\n");
+        // The model needs the C structures DPI functions pass, which the DPI header declares
+        if (!findFuncps(isDpiPassingStructs).empty()) {
+            puts("#include \"" + EmitCUtil::topClassName() + "__Dpi.h\"\n");
+        }
 
         // Declare foreign instances up front to make C++ happy
         puts("\n");
@@ -316,7 +330,7 @@ class EmitCModel final : public EmitCFunc {
                 if (varp->isPrimaryIO()) {
                     const string protName = varp->nameProtect();
                     puts("    , ");
-                    putns(varp, protName + "{vlSymsp->TOP." + protName + "}\n");
+                    putns(varp, protName + "{vlSymsp->vlInst.TOP." + varName(varp) + "}\n");
                 }
             }
         }
@@ -327,12 +341,12 @@ class EmitCModel final : public EmitCFunc {
                 if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 const string protName = cellp->nameProtect();
                 puts("    , ");
-                putns(cellp, protName + "{vlSymsp->TOP." + protName + "}\n");
+                putns(cellp, protName + "{vlSymsp->vlInst.TOP." + protName + "}\n");
             }
         }
 
         // Setup rootp root instance pointer,
-        puts("    , rootp{&(vlSymsp->TOP)}\n");
+        puts("    , rootp{&(vlSymsp->vlInst.TOP)}\n");
 
         puts("{\n");
         puts("// Register model with the context\n");
@@ -418,13 +432,13 @@ class EmitCModel final : public EmitCFunc {
         puts("void " + topModNameProtected + "__" + protect("_eval_debug_assertions") + selfDecl
              + ";\n");
         puts("#endif  // VL_DEBUG\n");
-        const AstNetlist* const netlistp = v3Global.rootp();
+        AstNetlist* const netlistp = v3Global.rootp();
         for (int i = 0; i < VEval::_ENUM_END; ++i) {
             emitCFuncDecl(netlistp->evalFuncp(VEval{i}), modp);
         }
         for (int i = 0; i < VEval::_ENUM_END; ++i) {
-            const AstCFunc* const funcp = netlistp->dumpTriggersFuncp(VEval{i});
-            if (funcp) emitCFuncDecl(funcp, modp);
+            const VEval eval{i};
+            if (eval.hasTriggers()) emitCFuncDecl(netlistp->dumpTriggersFuncp(eval), modp);
         }
 
         if (optSystemC() && v3Global.usesTiming()) {
@@ -451,7 +465,7 @@ class EmitCModel final : public EmitCFunc {
         puts("#ifdef VL_DEBUG\n");
         putsDecoration(nullptr, "// Debug assertions\n");
         puts(topModNameProtected + "__" + protect("_eval_debug_assertions")
-             + "(&(vlSymsp->TOP));\n");
+             + "(&(vlSymsp->vlInst.TOP));\n");
         puts("#endif  // VL_DEBUG\n");
 
         if (v3Global.opt.trace()) puts("vlSymsp->__Vm_activity = true;\n");
@@ -478,8 +492,8 @@ class EmitCModel final : public EmitCFunc {
         putsDecoration(nullptr, "// Evaluate cleanup\n");
         puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
         if (AstVar* const delaySchedp = v3Global.rootp()->delaySchedulerp()) {
-            puts("vlSymsp->TOP.");
-            puts(delaySchedp->nameProtect());
+            puts("vlSymsp->vlInst.TOP.");
+            puts(varName(delaySchedp));
             puts(".cleanupForevered();\n");
         }
         if (v3Global.opt.vpiLazy()) puts("vlSymsp->__Vm_lazy.evalEnd();\n");
@@ -495,7 +509,7 @@ class EmitCModel final : public EmitCFunc {
             if (eval.firstIteration()) puts("bool firstIteration");
             puts(") {\n");
             if (eval.isIterated()) puts("return ");
-            puts(funcNameProtect(funcp, m_modp) + "(&(vlSymsp->TOP)");
+            puts(funcNameProtect(funcp, m_modp) + "(&(vlSymsp->vlInst.TOP)");
             if (eval.firstIteration()) puts(", firstIteration");
             puts(");\n");
             puts("}\n");
@@ -508,7 +522,7 @@ class EmitCModel final : public EmitCFunc {
             puts("\nVL_ATTR_COLD void " + EmitCUtil::topClassName()
                  + "::" + eval.dumpTriggersMethod() + "() {\n");
             puts(funcNameProtect(v3Global.rootp()->dumpTriggersFuncp(eval), m_modp)
-                 + "(&(vlSymsp->TOP));\n");
+                 + "(&(vlSymsp->vlInst.TOP));\n");
             puts("}\n");
         }
     }
@@ -531,13 +545,13 @@ class EmitCModel final : public EmitCFunc {
         putSectionDelimiter("Events and timing");
         if (auto* const delaySchedp = v3Global.rootp()->delaySchedulerp()) {
             putns(modp, "bool " + EmitCUtil::topClassName()
-                            + "::eventsPending() { return !vlSymsp->TOP.");
-            puts(delaySchedp->nameProtect());
+                            + "::eventsPending() { return !vlSymsp->vlInst.TOP.");
+            puts(varName(delaySchedp));
             puts(".empty() && !contextp()->gotFinish(); }\n\n");
 
             putns(modp, "uint64_t " + EmitCUtil::topClassName()
-                            + "::nextTimeSlot() { return vlSymsp->TOP.");
-            puts(delaySchedp->nameProtect());
+                            + "::nextTimeSlot() { return vlSymsp->vlInst.TOP.");
+            puts(varName(delaySchedp));
             puts(".nextTimeSlot(); }\n");
         } else {
             putns(modp,
@@ -679,13 +693,13 @@ class EmitCModel final : public EmitCFunc {
         puts(/**/ "stfp->spTrace()->addModel(this);\n");
         puts(/**/ "stfp->spTrace()->addInitCb("s  //
              + "&" + protect("trace_init")  //
-             + ", &(vlSymsp->TOP)"  //
+             + ", &(vlSymsp->vlInst.TOP)"  //
              + ", name()"  //
              + ", " + (v3Global.opt.libCreate().empty() ? "false" : "true")  //
              + ", " + std::to_string(v3Global.rootp()->nTraceCodes())  //
              + ");\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
-             + "(&(vlSymsp->TOP), stfp->spTrace());\n");
+             + "(&(vlSymsp->vlInst.TOP), stfp->spTrace());\n");
         puts("}\n");
     }
 

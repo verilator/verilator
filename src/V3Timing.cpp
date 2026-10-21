@@ -66,11 +66,13 @@
 
 #include "V3Const.h"
 #include "V3EmitV.h"
+#include "V3File.h"
 #include "V3Global.h"
 #include "V3Graph.h"
 #include "V3MemberMap.h"
 #include "V3SenExprBuilder.h"
 #include "V3SenTree.h"
+#include "V3SharedTmps.h"
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
@@ -479,7 +481,8 @@ class TimingControlVisitor final : public VNVisitor {
     // STATE
     // Current context
     AstNetlist* const m_netlistp;  // Root node
-    AstScope* const m_scopeTopp = m_netlistp->topScopep()->scopep();  // Scope at the top
+    AstTopScope* const m_topScopep = m_netlistp->topScopep();  // The AstTopScope
+    AstScope* const m_scopeTopp = m_topScopep->scopep();  // Scope at the top
     AstClass* m_classp = nullptr;  // Current class
     AstScope* m_scopep = nullptr;  // Current scope
     AstActive* m_activep = nullptr;  // Current active
@@ -494,14 +497,14 @@ class TimingControlVisitor final : public VNVisitor {
 
     // Unique names
     V3UniqueNames m_dlyforkNames{"__Vdlyfork"};  // Names for temp AssignW vars
-    V3UniqueNames m_contAsgnTmpNames{"__VassignWtmp"};  // Names for temp AssignW vars
-    V3UniqueNames m_contAsgnGenNames{"__VassignWgen"};  // Continuous assign generation name
-                                                        // generator
     V3UniqueNames m_intraValueNames{"__Vintraval"};  // Intra assign delay value var names
     V3UniqueNames m_intraIndexNames{"__Vintraidx"};  // Intra assign delay index var names
     V3UniqueNames m_intraLsbNames{"__Vintralsb"};  // Intra assign delay LSB var names
     V3UniqueNames m_trigSchedNames{"__VtrigSched"};  // Trigger scheduler name generator
     V3UniqueNames m_dynTrigNames{"__VdynTrigger"};  // Dynamic trigger name generator
+    // Module level temporary variables, shared by instances
+    V3SharedTmps m_assignWTmps{"__VassignWtmp", VVarType::MODULETEMP};  // Delayed AssignW values
+    V3SharedTmps m_assignWGens{"__VassignWgen", VVarType::MODULETEMP};  // AssignW generations
 
     // DTypes
     AstBasicDType* m_forkDtp = nullptr;  // Fork variable type
@@ -546,13 +549,6 @@ class TimingControlVisitor final : public VNVisitor {
         }
         return stmtp == nodep ? nullptr : stmtp;
     }
-    // Calculate the factor to scale delays by
-    double calculateTimescaleFactor(AstNode* nodep, VTimescale timeunit) const {
-        UASSERT_OBJ(!timeunit.isNone(), nodep, "timenunit must be set");
-        const int scalePowerOfTen
-            = timeunit.powerOfTen() - m_netlistp->timeprecision().powerOfTen();
-        return std::pow(10.0, scalePowerOfTen);
-    }
     static bool staticallyNonZeroDelay(const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) return !constp->isZero();
         if (const AstCond* const condp = VN_CAST(valuep, Cond)) {
@@ -573,7 +569,7 @@ class TimingControlVisitor final : public VNVisitor {
         auto* const dlySchedDtp = new AstBasicDType{
             m_scopeTopp->fileline(), VBasicDTypeKwd::DELAY_SCHEDULER, VSigning::UNSIGNED};
         m_netlistp->typeTablep()->addTypesp(dlySchedDtp);
-        m_delaySchedp = m_scopeTopp->createTemp("__VdlySched", dlySchedDtp);
+        m_delaySchedp = m_topScopep->createTemp("__VdlySched", dlySchedDtp);
         // Delay scheduler has to be accessible from top
         m_delaySchedp->varp()->sigPublic(true);
         m_netlistp->delaySchedulerp(m_delaySchedp->varp());
@@ -599,7 +595,7 @@ class TimingControlVisitor final : public VNVisitor {
             = new AstBasicDType{m_scopeTopp->fileline(), VBasicDTypeKwd::DYNAMIC_TRIGGER_SCHEDULER,
                                 VSigning::UNSIGNED};
         m_netlistp->typeTablep()->addTypesp(dynSchedDtp);
-        m_dynamicSchedp = m_scopeTopp->createTemp("__VdynSched", dynSchedDtp);
+        m_dynamicSchedp = m_topScopep->createTemp("__VdynSched", dynSchedDtp);
         return m_dynamicSchedp;
     }
     // Creates the dynamic trigger sentree
@@ -621,7 +617,7 @@ class TimingControlVisitor final : public VNVisitor {
             auto* const nbaEventDtp = new AstBasicDType{m_scopeTopp->fileline(),
                                                         VBasicDTypeKwd::EVENT, VSigning::UNSIGNED};
             m_netlistp->typeTablep()->addTypesp(nbaEventDtp);
-            m_netlistp->nbaEventp(m_scopeTopp->createTemp("__VnbaEvent", nbaEventDtp));
+            m_netlistp->nbaEventp(m_topScopep->createTemp("__VnbaEvent", nbaEventDtp));
             v3Global.setHasEvents();
         }
         return new AstEventControl{
@@ -634,7 +630,7 @@ class TimingControlVisitor final : public VNVisitor {
     // Creates the variable that, if set, causes the NBA event to be triggered
     AstAssign* createNbaEventTriggerAssignment(FileLine* flp) {
         if (!m_netlistp->nbaEventTriggerp()) {
-            m_netlistp->nbaEventTriggerp(m_scopeTopp->createTemp("__VnbaEventTrigger", 1));
+            m_netlistp->nbaEventTriggerp(m_topScopep->createTemp("__VnbaEventTrigger", 1));
         }
         return new AstAssign{flp,
                              new AstVarRef{flp, m_netlistp->nbaEventTriggerp(), VAccess::WRITE},
@@ -660,7 +656,7 @@ class TimingControlVisitor final : public VNVisitor {
                 m_netlistp->typeTablep()->addTypesp(m_trigSchedDtp);
             }
             AstVarScope* const trigSchedp
-                = m_scopeTopp->createTemp(m_trigSchedNames.get(sentreep), m_trigSchedDtp);
+                = m_topScopep->createTemp(m_trigSchedNames.get(sentreep), m_trigSchedDtp);
             sentreep->user1p(trigSchedp);
         }
         return VN_AS(sentreep->user1p(), VarScope);
@@ -669,12 +665,13 @@ class TimingControlVisitor final : public VNVisitor {
     AstCExpr* createEventDescription(AstSenTree* const sentreep) const {
         if (!sentreep->user2p()) {
             std::stringstream ss;
-            ss << '"';
             V3EmitV::verilogForTree(sentreep, ss);
-            ss << '"';
             // possibly a multiline string
-            std::string comment = ss.str();
+            // Names were hashed by V3Name, show the user the original text
+            std::string comment = VName::dehash(ss.str());
             std::replace(comment.begin(), comment.end(), '\n', ' ');
+            // Escape quotes, e.g. from string-indexed event array selects
+            comment = '"' + V3OutFormatter::quoteNameControls(comment) + '"';
             AstCExpr* const commentp = new AstCExpr{sentreep->fileline(), comment};
             commentp->dtypeSetString();
             sentreep->user2p(commentp);
@@ -743,7 +740,7 @@ class TimingControlVisitor final : public VNVisitor {
             varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
             m_scopep->modp()->addStmtsp(varp);
         }
-        AstVarScope* vscp = new AstVarScope{flp, m_scopep, varp};
+        AstVarScope* const vscp = new AstVarScope{flp, m_scopep, varp};
         m_scopep->addVarsp(vscp);
         return vscp;
     }
@@ -784,11 +781,7 @@ class TimingControlVisitor final : public VNVisitor {
             ->dtypeSetVoid();  // Opaque process reference; type is irrelevant for hardcoded emit
         onKillp->addPinsp(processp);
         AstNodeStmt* const stmtp = onKillp->makeStmt();
-        if (beginp->stmtsp()) {
-            beginp->stmtsp()->addHereThisAsNext(stmtp);
-        } else {
-            beginp->addStmtsp(stmtp);
-        }
+        beginp->prependStmtsp(stmtp);
     }
     // Handle the 'join' part of a fork..join
     void makeForkJoin(AstFork* const forkp) {
@@ -828,57 +821,30 @@ class TimingControlVisitor final : public VNVisitor {
     // `varsp` vector of vars which shall be localized.
     static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
         UASSERT(procp, "procp is nullptr");
-        AstNode* firstStmtp;
+        AstVar* newVarsp = nullptr;
+        for (AstVar* const varp : varsp) {
+            varp->funcLocal(true);
+            newVarsp = AstNode::addNextNull(newVarsp, varp->unlinkFrBack());
+        }
         if (AstNodeProcedure* const nodeProcp = VN_CAST(procp, NodeProcedure)) {
-            firstStmtp = nodeProcp->stmtsp();
+            nodeProcp->prependStmtsp(newVarsp);
         } else if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {
-            if (!cfuncp->varsp()) {
-                for (AstVar* const varp : varsp) {
-                    varp->funcLocal(true);
-                    cfuncp->addVarsp(varp->unlinkFrBack());
-                }
-                return;
-            }
-            firstStmtp = cfuncp->varsp();
+            cfuncp->prependVarsp(newVarsp);
         } else if (AstBegin* const beginp = VN_CAST(procp, Begin)) {
-            firstStmtp = beginp->stmtsp();
+            beginp->prependStmtsp(newVarsp);
         } else {
             procp->v3fatalSrc(
                 procp->prettyNameQ()
                 << " is not of an expected type NodeProcedure/CFunc/Begin instead it is: "
                 << procp->prettyTypeName());
         }
-        UASSERT_OBJ(firstStmtp, procp,
-                    procp->prettyNameQ() << " has no non-var statement. 'localizeVars()' is ment "
-                                            "to be called on non-empty NodeProcedure/CFunc/Begin");
-        for (AstVar* const varp : varsp) {
-            varp->funcLocal(true);
-            firstStmtp->addHereThisAsNext(varp->unlinkFrBack());
-        }
     }
 
     AstNodeExpr* delayToIntegral(AstDelay* nodep, AstNodeExpr* valuep) {
-        FileLine* const flp = nodep->fileline();
-        AstConst* const constp = VN_CAST(valuep, Const);
-        const bool isForkSentinel
-            = constp && (constp->toUQuad() == std::numeric_limits<uint64_t>::max());
-        if (!isForkSentinel && (!constp || !constp->isZero())) {
-            // Scale the delay
-            const double timescaleFactorD = calculateTimescaleFactor(nodep, nodep->timeunit());
-            if (valuep->dtypep()->skipRefp()->isDouble()) {
-                AstConst* const tsfp = new AstConst{flp, AstConst::RealDouble{}, timescaleFactorD};
-                valuep = new AstMulD{flp, valuep, tsfp};
-                valuep = new AstRToIRoundS{flp, valuep};
-                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-            } else {
-                valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-                const uint64_t timescaleFactorU = static_cast<uint64_t>(timescaleFactorD);
-                AstConst* const tsfp = new AstConst{flp, AstConst::Unsized64{}, timescaleFactorU};
-                valuep = new AstMul{flp, valuep, tsfp};
-            }
-            valuep = V3Const::constifyEdit(valuep);  // Simplify
-        }
-        return valuep;
+        const AstConst* const constp = VN_CAST(valuep, Const);
+        // The fork start sentinel is already in ticks
+        if (constp && constp->toUQuad() == std::numeric_limits<uint64_t>::max()) return valuep;
+        return V3Timing::delayToTicks(valuep, nodep->timeunit());
     }
 
     // VISITORS
@@ -978,11 +944,7 @@ class TimingControlVisitor final : public VNVisitor {
         // If in a class, create a shared pointer to 'this'
         if (m_classp) {
             AstCStmt* const cstmtp = new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"};
-            if (AstNode* const stmtsp = nodep->stmtsp()) {
-                stmtsp->addHereThisAsNext(cstmtp);
-            } else {
-                nodep->addStmtsp(cstmtp);
-            }
+            nodep->prependStmtsp(cstmtp);
         }
         if (nodep->dpiExportImpl()) {
             nodep->exists([](AstCAwait* const awaitp) -> bool {
@@ -1017,15 +979,7 @@ class TimingControlVisitor final : public VNVisitor {
                     "Cycle delays should have been handled in V3AssertPre");
         FileLine* const flp = nodep->fileline();
 
-        AstNodeExpr* valuep = nodep->lhsp()->unlinkFrBack();
-        if (VN_IS(valuep, Const) && VN_AS(valuep, Const)->num().is1Step()) {
-            // #1step special case
-            VL_DO_DANGLING(valuep->deleteTree(), valuep);
-            valuep = new AstConst{flp, AstConst::Unsized64{}, 1};
-            valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
-        } else {
-            valuep = delayToIntegral(nodep, valuep);
-        }
+        AstNodeExpr* valuep = delayToIntegral(nodep, nodep->lhsp()->unlinkFrBack());
 
         // Statistics
         if (valuep->isZero()) {
@@ -1206,8 +1160,11 @@ class TimingControlVisitor final : public VNVisitor {
             iterateChildren(nodep);
             return;
         }
+        // The timing control, if any, which is put in a fork for an NBA
+        AstNode* const timingp = controlp;
         // Insert new vars before the timing control if we're in a function; in a process we can't
-        // do that. These intra-assignment vars will later be passed to forked processes by value.
+        // do that, as after V3Begin only modules and functions declare variables. These
+        // intra-assignment vars will later be passed to forked processes by value.
         AstNode* insertBeforep = m_underProcedure ? nullptr : controlp;
         // Special case for NBA
         if (inAssignDly) {
@@ -1242,29 +1199,43 @@ class TimingControlVisitor final : public VNVisitor {
         const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
                                                  const std::string& name) {
             AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep(), insertBeforep);
+            // A pending update keeps its own value, even if its process schedules more
+            if (inAssignDly && !insertBeforep) newvscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
             controlp->addHereThisAsNext(
                 new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
         };
-        // NBAs with delays evaluate LHS indices immediately
+        // NBAs with delays evaluate the indices selecting the target now (IEEE 1800-2023 10.4.2),
+        // in order, each as a whole, also the selects and function calls in it. So follow the
+        // selects of the target up from the variable, not into their indices. As an example, this
+        // transforms 'x[a[i]][f(j)] <= #1 y' into 't0 = a[i]; t1 = f(j); x[t0][t1] <= #1 y'.
+        // V3Const has split NBAs to concatenations, also streamed, into NBAs to each part.
         if (inAssignDly) {
-            // Create the intermediate select vars. Note: because 'foreach' proceeds in pre-order,
-            // and we replace indices in selects with variables, we cannot reach another select
-            // under the index position. This is exactly what we want as only the top level selects
-            // are LValues. As an example, this transforms 'x[a[i]][b[j]] = y' into 't1 = a[i]; t0
-            // = b[j]; x[t1][t0] = y'.
-            nodep->lhsp()->foreach([&](AstSel* selp) {
-                if (VN_IS(selp->lsbp(), Const)) return;
-                replaceWithIntermediate(selp->lsbp(), m_intraLsbNames.get(nodep));
-                // widthp should be const
-            });
-            nodep->lhsp()->foreach([&](AstNodeSel* selp) {
-                if (VN_IS(selp->bitp(), Const)) return;
-                replaceWithIntermediate(selp->bitp(), m_intraIndexNames.get(nodep));
-            });
+            for (AstNode* exprp = nodep->lhsp()->baseFromp(true); exprp != nodep;
+                 exprp = exprp->firstAbovep()) {
+                if (AstSel* const selp = VN_CAST(exprp, Sel)) {
+                    // widthp should be const
+                    if (!VN_IS(selp->lsbp(), Const)) {
+                        replaceWithIntermediate(selp->lsbp(), m_intraLsbNames.get(nodep));
+                    }
+                } else if (AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+                    if (!VN_IS(selp->bitp(), Const)) {
+                        replaceWithIntermediate(selp->bitp(), m_intraIndexNames.get(nodep));
+                    }
+                }
+            }
         }
         // Replace the RHS with an intermediate value var
         replaceWithIntermediate(nodep->rhsp(), m_intraValueNames.get(nodep));
+        if (!inAssignDly) return;
+        // The process executing the NBA evaluates its delay (IEEE 1800-2023 4.9.4), not the forked
+        // process, if it has side effects, e.g. calling a function that checks its process. A pure
+        // one is evaluated as the forked process starts, at once.
+        if (AstDelay* const delayp = VN_CAST(timingp, Delay)) {
+            if (!delayp->lhsp()->isPure()) {
+                replaceWithIntermediate(delayp->lhsp(), m_intraValueNames.get(nodep));
+            }
+        }
     }
     void visit(AstFireEvent* nodep) override {
         // V3Delayed handles '->>' of a variable in a process. Like NBAs in non-inlined functions,
@@ -1282,7 +1253,10 @@ class TimingControlVisitor final : public VNVisitor {
         // The triggered event is the one referenced now, so evaluate handles and indices now
         AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
         const auto evalNow = [&](AstNodeExpr* const valuep, V3UniqueNames& names) {
-            AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(), forkp);
+            // Like for an NBA, a process uses a module variable, passed to the fork by value
+            AstVarScope* const vscp = createTemp(flp, names.get(nodep), valuep->dtypep(),
+                                                 m_underProcedure ? nullptr : forkp);
+            if (m_underProcedure) vscp->forkByValue(true);
             valuep->replaceWith(new AstVarRef{flp, vscp, VAccess::READ});
             // Unlike an event, a handle selecting one is only read
             valuep->foreach([](AstNode* const np) {
@@ -1318,8 +1292,7 @@ class TimingControlVisitor final : public VNVisitor {
         if (netDelayp) {
             if (nodep->timingControlp()) {
                 // If this assignment has a delay, create another one to handle the net delay
-                AstVarScope* const newvscp
-                    = createTemp(flp, m_contAsgnTmpNames.get(nodep), nodep->dtypep());
+                AstVarScope* const newvscp = m_assignWTmps.make(flp, m_scopep, nodep->dtypep());
                 AstAssignW* assignp = new AstAssignW{
                     nodep->fileline(), nodep->lhsp()->unlinkFrBack(),
                     new AstVarRef{flp, newvscp, VAccess::READ}, netDelayp->cloneTree(false)};
@@ -1379,7 +1352,7 @@ class TimingControlVisitor final : public VNVisitor {
         UASSERT_OBJ(postAssignp, alwaysp, "Post-assign should be there from visit(AstFork)");
         // Increment generation and copy it to a local
         AstVarScope* const generationVarp
-            = createTemp(flp, m_contAsgnGenNames.get(alwaysp), alwaysp->findUInt64DType());
+            = m_assignWGens.make(flp, m_scopep, alwaysp->findUInt64DType());
         AstVarScope* const genLocalVarp
             = createTemp(flp, generationVarp->varp()->name() + "__local",
                          alwaysp->findUInt64DType(), preAssignp);
@@ -1398,7 +1371,7 @@ class TimingControlVisitor final : public VNVisitor {
                       postAssignp->unlinkFrBack()});
         // Save scheduled RHS value before delay
         AstVarScope* const tmpVarp
-            = createTemp(flp, m_contAsgnTmpNames.get(alwaysp), preAssignp->rhsp()->dtypep());
+            = m_assignWTmps.make(flp, m_scopep, preAssignp->rhsp()->dtypep());
         AstVarRef* const tmpAssignRhsp = VN_AS(preAssignp->lhsp(), VarRef)->cloneTree(false);
         tmpAssignRhsp->access(VAccess::WRITE);
         preAssignp->addNextHere(
@@ -1563,6 +1536,35 @@ public:
 
 //######################################################################
 // Timing class functions
+
+AstNodeExpr* V3Timing::delayToTicks(AstNodeExpr* valuep, VTimescale timeunit) {
+    FileLine* const flp = valuep->fileline();
+    if (const AstConst* const constp = VN_CAST(valuep, Const)) {
+        if (constp->num().is1Step()) {
+            // A step is one tick of the global time precision (IEEE 1800-2023 3.14.3)
+            VL_DO_DANGLING(valuep->deleteTree(), valuep);
+            AstConst* const tickp = new AstConst{flp, AstConst::Unsized64{}, 1};
+            tickp->dtypeSetBitSized(64, VSigning::UNSIGNED);
+            return tickp;
+        }
+        if (constp->isZero()) return valuep;
+    }
+    UASSERT_OBJ(!timeunit.isNone(), valuep, "timeunit must be set");
+    const double timescaleFactorD
+        = std::pow(10.0, timeunit.powerOfTen() - v3Global.rootp()->timeprecision().powerOfTen());
+    if (valuep->dtypep()->skipRefp()->isDouble()) {
+        AstConst* const tsfp = new AstConst{flp, AstConst::RealDouble{}, timescaleFactorD};
+        valuep = new AstMulD{flp, valuep, tsfp};
+        valuep = new AstRToIRoundS{flp, valuep};
+        valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+    } else {
+        valuep->dtypeSetBitSized(64, VSigning::UNSIGNED);
+        const uint64_t timescaleFactorU = static_cast<uint64_t>(timescaleFactorD);
+        AstConst* const tsfp = new AstConst{flp, AstConst::Unsized64{}, timescaleFactorU};
+        valuep = new AstMul{flp, valuep, tsfp};
+    }
+    return V3Const::constifyEdit(valuep);  // Simplify
+}
 
 void V3Timing::timingAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");

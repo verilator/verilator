@@ -31,6 +31,30 @@ module t (
 
   initial begin
     begin
+      // Wide source streamed into queues of elements narrower than their storage
+      bit_q_t wbit_q;
+      logic [127:0] wvec;
+      logic [127:0] wback;
+      logic [5:0] six_q[$];
+      logic [95:0] w96;
+
+      wvec = 128'ha0a1aaf03aa1ae4aaa5aa397a2acabaa ^ {128{clk}};
+      w96 = {{47{2'b10}}, 1'b1, clk};
+      wbit_q = {>>{wvec}};
+      `checkh(wbit_q.size(), 128);
+      `checkh(wbit_q[0], 1'b1);
+      `checkh(wbit_q[1], 1'b0);
+      `checkh(wbit_q[127], 1'b0);
+      wback = {>>{wbit_q}};
+      `checkh(wback, wvec);
+      `checkh(clk, 1'b0);
+
+      six_q = {>>{w96}};
+      `checkh(six_q.size(), 16);
+      `checkh(six_q[0], 6'h2a);
+            `checkh(six_q[15], 6'h2a);
+    end
+    begin
       bit_q_t bit_q, bit_qq;
 
       bit_q.push_back(1'b0);

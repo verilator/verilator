@@ -166,6 +166,7 @@ bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return m_name == asamep->m_name && varType() == asamep->varType()
            && covergroupRefMember() == asamep->covergroupRefMember()
+           && libInoutId() == asamep->libInoutId() && libInoutEnable() == asamep->libInoutEnable()
            && vpiLazyRole() == asamep->vpiLazyRole() && vpiLazyComb() == asamep->vpiLazyComb()
            && isLazyShadowNet() == asamep->isLazyShadowNet();
 }
@@ -219,6 +220,10 @@ AstVarXRef::AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const V
 }
 
 AstStmtExpr* AstNodeExpr::makeStmt() { return new AstStmtExpr{fileline(), this}; }
+
+AstConsArrayItem* AstConsArray::itemsp() const VL_MT_STABLE {
+    return VN_DBG_AS(op2p(), ConsArrayItem);
+}
 
 // Walk up the AST via backp() to find the containing AstNodeModule.
 // Returns nullptr if not found.

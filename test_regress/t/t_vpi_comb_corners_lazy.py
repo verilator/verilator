@@ -33,7 +33,7 @@ test.file_grep(test.stats, r'VPI, lazy reconstructed\s+(\d+)', 25)
 test.file_grep(test.stats, r'VPI, lazy fallback retained\s+(\d+)', 13)
 
 # __Vlazyepoch is sized to the module's cone count; copy and folded rows take no slot.
-test.file_grep(root, r'VlUnpacked<QData/\*63:0\*/,\s*22>\s*__Vlazyepoch;')
+test.file_grep(root, r'::VlUnpacked<::QData/\*63:0\*/,\s*22>\s*__Vlazyepoch;')
 
 # 'wide' is over the VPI table cap so keeps its storage, read-only as it is comb-driven;
 # 'narrow' is a table row.
@@ -43,9 +43,9 @@ test.file_grep(syms, r'\{"narrow", offsetof\(\S+ __Vlazyrecon__\d+_\d+\).*VLVF_L
 # A real or string row has no memcpy width, so it stays a cone whatever its source - neither
 # the copy of a stored flop nor the fold of another cone may take a descriptor.
 test.file_grep(syms, r'\{"rc_alias", offsetof\(\S+ __Vlazyrecon__\d+_\d+\).*VLVF_LAZY_REMAT')
-test.file_grep(syms, r'\{"sc_alias", offsetof\(\S+ __Vlazyrecon__\d+_\d+\).*VLVF_LAZY_REMAT')
+test.file_grep(syms, r'\{"sc_alias", offsetof\(\S+ __Vnontrivs\.__Vlazyrecon__\d+_\d+\).*VLVF_LAZY_REMAT')
 test.file_grep(syms, r'\{"rf_mid", offsetof\(\S+ __Vlazyrecon__\d+_\d+\).*VLVF_LAZY_REMAT')
-test.file_grep(syms, r'\{"sf_mid", offsetof\(\S+ __Vlazyrecon__\d+_\d+\).*VLVF_LAZY_REMAT')
+test.file_grep(syms, r'\{"sf_mid", offsetof\(\S+ __Vnontrivs\.__Vlazyrecon__\d+_\d+\).*VLVF_LAZY_REMAT')
 test.file_grep_not(syms, r'\{nullptr, offsetof\(\S+ \S*[rs]c_src\), VLVF_LAZY_COPY\}')
 
 # Element 0 alone leaves the rest of 'mem_part' unproven, so the array keeps its own storage

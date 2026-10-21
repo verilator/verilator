@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
     std::vector<ValueCb> valueCbs;
     for (const char* name :
          {"t.ch1", "t.fmid_c", "t.sib_b", "t.al_sw", "t.cy0.din", "t.cy0.cy", "t.cy1.cy",
-          "t.ifd.din", "t.ifd.a", "t.ff_q", "t.hl_c", "t.u_sub.i"}) {
+          "t.ifd.din", "t.ifd.a", "t.ff_q", "t.hl_c.hi", "t.hl_c.lo", "t.hl_c", "t.u_sub.i"}) {
         valueCbs.push_back({name, nullptr, nullptr, 0, 0, 0});
     }
     for (ValueCb& vc : valueCbs) armValueCb(vc);
@@ -381,6 +381,9 @@ int main(int argc, char** argv) {
     accept("t.st", (st & 1) | (0x09 << 1), vpiInertialDelay);
     VerilatedVpi::doInertialPuts();
     check("t.st inertial", get(find("t.st")), (st & 1) | (0x09 << 1));
+    // A packed member takes its parent's mask
+    accept("t.st.cnt", get(find("t.st.cnt")) ^ 0x55);
+    merge("t.st.busy", get(find("t.st.busy")) ^ 1, 0x1);
     // A mixed-mask signal is not forceable, so force/release are refused as-is
     reject("t.st", get(find("t.st")) ^ (1 << 1), vpiForceFlag);
     reject("t.st", get(find("t.st")) ^ (1 << 1), vpiReleaseFlag);
@@ -458,6 +461,20 @@ int main(int argc, char** argv) {
         TEST_CHECK_ERROR(false);
         topp->eval();
         TEST_CHECK_EQ_LABEL("t.ff_q decimal settles", settleRuns, runs + 3);
+    }
+
+    // A packed member reads through its reconstructed parent's refresh, takes its parent's
+    // write policy, and a put into a retained parent's member re-settles
+    topp->d = 0x3c;
+    cycle();
+    check("t.cts_c.hi", get(find("t.cts_c.hi")), 0xc);
+    reject("t.cts_c.hi", get(find("t.cts_c.hi")) ^ 0x5);
+    {
+        topp->eval();
+        const int runs = settleRuns;
+        accept("t.st.cnt", get(find("t.st.cnt")) ^ 0x2a);
+        topp->eval();
+        TEST_CHECK_EQ_LABEL("t.st.cnt settles", settleRuns, runs + 2);
     }
 
     // The whole VPI-visible set and its writability, which no optimisation flag may change

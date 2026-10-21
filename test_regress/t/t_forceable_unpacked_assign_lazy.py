@@ -15,7 +15,7 @@ test.top_filename = "t/t_forceable_unpacked_assign.v"
 test.compile(verilator_flags2=['--binary', '--vpi', '--vpi-lazy'])
 
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp",
-               r'forceableVarInsert\("matrix", &\(TOP\.t__DOT__matrix\)')
+               r'forceableVarInsert\("matrix", &\(vlSymsp->vlInst\.TOP\.t__DOT__matrix\)')
 
 test.execute()
 

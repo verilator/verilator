@@ -100,7 +100,7 @@ module t (
   covergroup cg_cross4;
     cross a, b {
       function void crossfunc; endfunction
-      bins one = crossfunc();
+      bins one = crossfunc(); bins two = crossfunc() matches 2;
     }
   endgroup
   covergroup cg_binsoroptions_bk1;
@@ -163,12 +163,9 @@ module t (
       bins bin_e = with (a);
       bins bin_not_e = ! with (a);
 
-      bins bin_with = binsof(a) with (a);
-      bins bin_or_with = binsof(a) || binsof(a) with (a);
-      bins bin_and_with = binsof(a) && binsof(a) with (a);
       bins bin_multiple_fields = binsof(a) && binsof(p.inner_packet.field);
-      ignore_bins ib_cross = binsof(a) with (a);
-      illegal_bins lib_cross = binsof(a) with (a);
+      bins bin_with_unsup = binsof(p.inner_packet.field) with (a);
+      bins bin_e_with = with (a) with (a);
     }
   endgroup
 

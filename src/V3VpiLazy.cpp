@@ -1835,10 +1835,7 @@ private:
         AstCFunc* const funcp = new AstCFunc{m_funcFlp, name, scopep, ""};
         funcp->isStatic(false);
         funcp->isLoose(true);
-        if (tableFacing) {
-            funcp->voidSelfArg(true);
-            funcp->argTypes("void* voidSelf");
-        }
+        if (tableFacing) funcp->voidSelf(true);
         funcp->slow(true);
         // A table-facing func's only caller is the syms recon-fn array, which no pass can see.
         funcp->entryPoint(true);

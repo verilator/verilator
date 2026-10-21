@@ -1,3 +1,4 @@
+AArch
 ABCp
 Aadi
 Accellera
@@ -443,6 +444,7 @@ Shankar
 Shanshan
 Sharad
 Shareef
+Sheehan
 Shen
 Sheng
 Shi
@@ -548,6 +550,7 @@ VlRNG
 VlWide
 Vlip
 Vm
+Vour
 Vukobratovic
 Wai
 Wajahat
@@ -637,6 +640,7 @@ bitOpTree
 bitaggregat
 bitop
 bitstoreal
+bitwise
 blackbox
 bokke
 bool
@@ -743,6 +747,7 @@ difftree
 dir
 disambiguates
 discoverability
+disjunction
 displayb
 distcc
 doxygen
@@ -1120,6 +1125,7 @@ rodata
 rolloverSize
 rr
 rst
+runnable
 runtime
 runtimes
 rw
@@ -1227,6 +1233,7 @@ typedef'ed
 typedefed
 typedefs
 typename
+typenames
 uint
 un
 unbased

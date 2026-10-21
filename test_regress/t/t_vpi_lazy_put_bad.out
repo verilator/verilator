@@ -10,6 +10,8 @@ cbValueChange t.cy1.cy pre 0x00 fired 1 0xa5
 cbValueChange t.ifd.din pre 0x00 fired 1 0x21
 cbValueChange t.ifd.a pre 0x00 fired 1 0x32
 cbValueChange t.ff_q pre 0x00 fired 0 0x00
+cbValueChange t.hl_c.hi pre 0x00 fired 1 0x02
+cbValueChange t.hl_c.lo pre 0x00 fired 1 0x01
 cbValueChange t.hl_c pre 0x00 fired 1 0x21
 cbValueChange t.u_sub.i pre 0x00 fired 1 0x21
 vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.asg_w'
@@ -82,6 +84,7 @@ vpi_chk_error: vpi_put_value was used on signal combinationally driven under --v
 vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.m4[1][1]'
 vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.ret_c'
 vpi_chk_error: vpi_put_value: Parsing failed for 'A123' as value vpiDecStrVal for 't.ff_q'
+vpi_chk_error: vpi_put_value was used on signal combinationally driven under --vpi-lazy, use a public_flat_rw attribute to write 't.cts_c.hi'
 TOP.clk W
 TOP.d W
 TOP.en W

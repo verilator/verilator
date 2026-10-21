@@ -16,7 +16,7 @@ typedef struct {
 
 class C;
   rand pair_t s;
-  constraint c1 { s.a == 5; }
+  constraint c1 {s.a == 5;}
 endclass
 
 module t;

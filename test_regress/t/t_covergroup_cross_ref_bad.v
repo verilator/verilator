@@ -38,6 +38,11 @@ module t;
       bins duplicate = cx;
       bins duplicate = binsof (cp_b);
       bins nonconstant = binsof (cp_a) intersect {limit_value};
+      bins wrong_with = missing with (cp_a == cp_b);
+    }
+    // A filter has one candidate of a repeated cross item
+    repeated: cross cp_a, cp_a{
+      bins high = repeated with (cp_a > 0);
     }
   endgroup
 

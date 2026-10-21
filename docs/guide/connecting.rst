@@ -235,6 +235,22 @@ Rather than hard-coding the prefix, ``#include VM_PREFIX_INCLUDE_DPI`` may
 be used instead; see :ref:`Model Header Include Macros`.
 
 
+DPI Unpacked Structures
+-----------------------
+
+Vour__Dpi.h also declares the unpacked structures passed by DPI imports and
+exports as C structures, each named as the SystemVerilog typedef declaring
+it, without its package or other scope. For example:
+
+.. include:: ../../docs/gen/ex_DPISTRUCT_hdr.rst
+
+To instead use an equivalent declaration from other C code, define
+``VL_DPITYPE_{name}_`` before including Vour__Dpi.h, or the model header
+Vour.h, which includes Vour__Dpi.h when DPI passes unpacked structures. As
+C has no scopes, different structures passed by DPI, even from different
+models, need different names.
+
+
 DPI System Task/Functions
 -------------------------
 

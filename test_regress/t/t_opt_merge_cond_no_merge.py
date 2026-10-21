@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = "t/t_opt_merge_cond.v"
 
-test.compile(verilator_flags2=["-unroll-count 64", "--stats", "-fno-merge-cond"])
+test.compile(verilator_flags2=["-unroll-count 64", "--stats", "-fno-merge-cond", "-fno-decompose"])
 
 test.execute()
 

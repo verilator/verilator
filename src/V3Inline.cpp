@@ -270,11 +270,9 @@ class InlineModGraphBuilder final : public VNVisitor {
         if (nodep->isConstPool()) vtxp->setNoInlineHard("Constant pool");
         // Never inline packages - TODO: conceptually fine, but why not?
         if (VN_IS(nodep, Package)) vtxp->setNoInlineHard("Package");
-        // A --lib-create library stub instance that needs tracing must not be
-        // inlined, so we still know it is a lib stub in V3TraceDecl (see #7001)
-        if (nodep->verilatorLib() && v3Global.opt.trace()) {
-            vtxp->setNoInlineHard("verilatorLib with --trace");
-        }
+        // Never inline the wrapper of a --lib-create library, its instances
+        // create the library models at construction (see V3EmitCSyms)
+        if (nodep->verilatorLib()) vtxp->setNoInlineHard("verilatorLib");
 
         // Don't inline public modules by default
         if (nodep->modPublic()) vtxp->setNoInlineSoft("Public module");
@@ -412,7 +410,7 @@ void renameScopes(AstScope* scopep, const std::string& oldPrefix, const std::str
 
 // Merge the given scope (instance) of the inlined cell into the scope above it
 void inlineScope(AstScope* scopep, AstCell* cellp, const std::string& prefix,
-                 AstCellInline* newCellInlinep, ScopeChildren& children) {
+                 ScopeChildren& children) {
     AstScope* const parentScopep = scopep->aboveScopep();
     UASSERT_OBJ(parentScopep, scopep, "Inlined scope should have a scope above");
     UINFO(6, "  Inline Scope " << scopep);
@@ -446,7 +444,9 @@ void inlineScope(AstScope* scopep, AstCell* cellp, const std::string& prefix,
                 AstNodeCoverDecl* const declp = incp->declp();
                 if (declp->perInstance()) {
                     // Not cloned, fix up the path here, as only this scope refers to it
-                    declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+                    if (!incp->isDuplicate()) {
+                        declp->hier(VString::dot(cellp->prettyName(), ".", declp->hier()));
+                    }
                     return;
                 }
                 if (AstNodeCoverDecl* const newDeclp = VN_CAST(declp->user3p(), NodeCoverDecl)) {
@@ -461,17 +461,13 @@ void inlineScope(AstScope* scopep, AstCell* cellp, const std::string& prefix,
     for (AstNode *nodep = scopep->inlinesp(), *nextp; nodep; nodep = nextp) {
         nextp = nodep->nextp();
         AstCellInlineScope* const cisp = VN_AS(nodep->unlinkFrBack(), CellInlineScope);
-        cisp->scopep(parentScopep);
-        // If the module was cloned, point to the cloned inline record
-        if (AstCellInline* const newCinlp = VN_CAST(cisp->cellp()->user3p(), CellInline)) {
-            cisp->cellp(newCinlp);
-        }
+        cisp->name(prefix + cisp->name());
         parentScopep->addInlinesp(cisp);
     }
     // ... and add one for the instance we are inlining now
     if (v3Global.opt.vpi()) {
         parentScopep->addInlinesp(
-            new AstCellInlineScope{cellp->fileline(), parentScopep, newCellInlinep});
+            new AstCellInlineScope{cellp->fileline(), cellp->name(), cellp->modp()->origName()});
     }
 
     // Reparent and rename the scopes instantiated under the inlined scope
@@ -558,11 +554,6 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
     } else {
         inlinedp = subModp->cloneTree(false);
         // Compute map from the original module items to their clones
-        for (AstNode *ap = subModp->inlinesp(), *bp = inlinedp->inlinesp(); ap || bp;
-             ap = ap->nextp(), bp = bp->nextp()) {
-            UASSERT_OBJ(ap && bp, ap ? ap : bp, "Clone has different number of children");
-            ap->user3p(bp);
-        }
         for (AstNode *ap = subModp->stmtsp(), *bp = inlinedp->stmtsp(); ap || bp;
              ap = ap->nextp(), bp = bp->nextp()) {
             UASSERT_OBJ(ap && bp, ap ? ap : bp, "Clone has different number of children");
@@ -586,17 +577,10 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
     // Prefix for renaming inlined declarations
     const std::string prefix = cellp->name() + "__DOT__";
 
-    // Move the inline records of the inlined module, renaming to avoid conflicts
-    for (AstNode *nodep = inlinedp->inlinesp(), *nextp; nodep; nodep = nextp) {
-        nextp = nodep->nextp();
-        AstCellInline* const cinlp = VN_AS(nodep->unlinkFrBack(), CellInline);
-        cinlp->name(prefix + cinlp->name());
-        modp->addInlinesp(cinlp);
+    // Move the `systemc_* blocks of the inlined module into 'modp'
+    if (AstSystemCSection* const sectionsp = inlinedp->scSectionsp()) {
+        modp->addScSectionsp(sectionsp->unlinkFrBackWithNext());
     }
-    // Create inline record for resolving hierarchical references later
-    AstCellInline* const newCellInlinep
-        = new AstCellInline{cellp->fileline(), cellp->name(), subModp->origName()};
-    modp->addInlinesp(newCellInlinep);
 
     // Move the module level declarations of the inlined module into 'modp'
     InlineModModuleVertex* const mVtxp = graph.getInlineModModuleVertexp(modp);
@@ -633,9 +617,7 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
     }
 
     // Merge each scope (instance) of the inlined cell into the scope above it
-    for (AstScope* const scopep : inlineScopeps) {
-        inlineScope(scopep, cellp, prefix, newCellInlinep, children);
-    }
+    for (AstScope* const scopep : inlineScopeps) inlineScope(scopep, cellp, prefix, children);
 }
 
 // Apply all inlining decisions

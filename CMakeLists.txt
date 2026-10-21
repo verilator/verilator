@@ -151,6 +151,22 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 set(CXX ${CMAKE_CXX_COMPILER})
 set(AR ${CMAKE_AR})
 
+# Compiler precompiled header options, same detection as configure.ac
+execute_process(
+    COMMAND ${CMAKE_CXX_COMPILER} --help
+    OUTPUT_VARIABLE cxx_help
+    ERROR_QUIET
+)
+if(cxx_help MATCHES "include-pch")
+    # clang
+    set(CFG_CXXFLAGS_PCH_I -include-pch)
+    set(CFG_GCH_IF_CLANG .gch)
+else()
+    # GCC
+    set(CFG_CXXFLAGS_PCH_I -include)
+    set(CFG_GCH_IF_CLANG "")
+endif()
+
 configure_file(include/verilated_config.h.in include/verilated_config.h @ONLY)
 configure_file(include/verilated.mk.in include/verilated.mk @ONLY)
 

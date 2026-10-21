@@ -36,7 +36,7 @@ for name in [
         "tri3", "watched", "s_comb", "s_copy", "s_dup", "s_mix", "in_comb", "mem_comb", "r_comb",
         "str_comb", "f_comb", "init_comb", "und_comb", "once_comb", "part_comb"
 ]:
-    test.file_grep(syms, r'\{"' + name + r'", offsetof\(\S+ __Vlazyrecon__\d+_\d+\)')
+    test.file_grep(syms, r'\{"' + name + r'", offsetof\(\S+ (__Vnontrivs\.)?__Vlazyrecon__\d+_\d+\)')
 test.file_grep(syms, r'offsetof\(\S+ t__DOT__s\), VLVF_LAZY_COPY\}')
 # The fold shares its source cone's shadow; the copy of a flop may not share the flop's storage
 shadow = r'", offsetof\(\S+ (__Vlazyrecon__\d+_\d+)\)'

@@ -143,7 +143,7 @@ public:
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
-    string prettyDTypeNameQ() const { return "'" + prettyDTypeName(false) + "'"; }
+    string prettyDTypeNameQ(bool full = false) const { return "'" + prettyDTypeName(full) + "'"; }
     string stateDTypeName() const { return this->isFourstate() ? "(4-state)" : "(2-state)"; }
     //
     // Changing the width may confuse the data type resolution, so must clear
@@ -178,9 +178,12 @@ public:
     uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
     // Fixed aggregate streaming properties
     bool isStreamableFixedAggregate() const;
+    // Whether is a string, or an unpacked array or structure containing one
+    bool containsString() const;
     bool containsUnpackedStruct() const;
     int widthStream() const;
     string vlEnumType() const;  // Return VerilatedVarType: VLVT_UINT32, etc
+    string vlEnumPackedAgg() const;  // Return VLVF_PACKED_AGG etc flags, or empty
     static int uniqueNumInc() { return ++s_uniqueNum; }
     const char* charIQWN() const {
         return (isString() ? "N" : isWide() ? "W" : isDouble() ? "D" : isQuad() ? "Q" : "I");
@@ -188,6 +191,8 @@ public:
     string cType(const string& name, bool forFunc, bool isRef, bool packed = false) const;
     // Represents a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_STABLE;
+    // C++ type (as emitted by cType) is trivially default constructible and destructible?
+    bool isTriviallyConstructible() const VL_MT_STABLE;
     virtual bool isDynamicallySized() const { return false; }
 
 private:
@@ -301,6 +306,10 @@ public:
     void name(const string& flag) override { m_name = flag; }
     // Keep the name the typedef declaring it gives, as it moves off it to the type table
     void typedefName(const string& name) { m_typedefName = name; }
+    // Name of the C structure for DPI, empty if no typedef names it, so declared where used
+    string dpiName() const;
+    // C typedef of the unpacked structure for DPI (IEEE 1800-2023 H.7.3)
+    string dpiTypedef() const;
     bool packed() const VL_MT_SAFE { return m_packed; }
     void packed(bool flag) { m_packed = flag; }
     // packed() but as don't support unpacked, presently all structs
@@ -433,6 +442,10 @@ public:
         : ASTGEN_SUPER_BasicDType(fl) {
         init(VBasicDTypeKwd::LOGIC, VSigning::NOSIGN, wantwidth, -1, nullptr);
     }
+    AstBasicDType(FileLine* fl, VFlagLogic2StatePacked, int wantwidth)
+        : ASTGEN_SUPER_BasicDType(fl) {
+        init(VBasicDTypeKwd::LOGIC2STATE, VSigning::NOSIGN, wantwidth, -1, nullptr);
+    }
     AstBasicDType(FileLine* fl, VFlagBitPacked, int wantwidth)
         : ASTGEN_SUPER_BasicDType(fl) {
         init(VBasicDTypeKwd::BIT, VSigning::NOSIGN, wantwidth, -1, nullptr);
@@ -458,7 +471,7 @@ public:
     // width/widthMin/numeric compared elsewhere
     bool sameNode(const AstNode* samep) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override;
-    string name() const override VL_MT_STABLE { return m.m_keyword.ascii(); }
+    string name() const override VL_MT_STABLE { return m.m_keyword.typeName(); }
     string prettyDTypeName(bool full) const override;
     const char* broken() const override {
         BROKEN_RTN(dtypep() != this);
@@ -518,6 +531,10 @@ public:
     }
     bool isDpiLogicVec() const {  // DPI uses svLogicVecVal
         return keyword().isFourstate() && !(keyword() == VBasicDTypeKwd::LOGIC && !isRanged());
+    }
+    bool isDpiCLayout() const {
+        return keyword().isDpiCLayout()
+               || (keyword().isSameish(VBasicDTypeKwd::LOGIC) && !isRanged());
     }
     bool isDpiPrimitive() const {  // DPI uses a primitive type
         return !isDpiBitVec() && !isDpiLogicVec();
@@ -584,13 +601,14 @@ public:
     int widthAlignBytes() const override { return 8; }  // Assume
     int widthTotalBytes() const override { return 8; }  // Assume
     bool isCompound() const override { return true; }
+    // Return the global runtime type storing the requested number of bits.
     static string typeToHold(int width) {
-        if (width <= 8) return "CData";
-        if (width <= 16) return "SData";
-        if (width <= VL_IDATASIZE) return "IData";
-        if (width <= VL_QUADSIZE) return "QData";
+        if (width <= 8) return "::CData";
+        if (width <= 16) return "::SData";
+        if (width <= VL_IDATASIZE) return "::IData";
+        if (width <= VL_QUADSIZE) return "::QData";
 
-        return "VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
+        return "::VlWide<" + std::to_string(VL_WORDS_I(width)) + ">";
     }
 };
 class AstClassRefDType final : public AstNodeDType {
@@ -1531,6 +1549,7 @@ public:
     int widthAlignBytes() const override { return sizeof(std::map<std::string, std::string>); }
     int widthTotalBytes() const override { return sizeof(std::map<std::string, std::string>); }
     bool isCompound() const override { return true; }
+    bool isDynamicallySized() const override { return true; }
 };
 
 // === AstNodeArrayDType ===
@@ -1576,6 +1595,9 @@ public:
     }
     bool similarDTypeNode(const AstNodeDType* samep) const override;
     bool isAggregateType() const override { return true; }
+    // True iff 'otherp' is an array of the same shape, with
+    // at least one dimension reversed ascending/descending.
+    bool isReverseOf(const AstNodeDType* otherp) const;
     // Outer dimension comes first. The first element is this node.
     std::vector<AstUnpackArrayDType*> unpackDimensions();
     void isCompound(bool flag) { m_isCompound = flag; }

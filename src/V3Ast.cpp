@@ -575,6 +575,46 @@ void AstNode::addOp4p(AstNode* newp) {
     }
 }
 
+void AstNode::prependOp1p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp1p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op1p) {
+        op1p(newp);
+    } else {
+        m_op1p->addHereThisAsNext(newp);
+    }
+}
+
+void AstNode::prependOp2p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp2p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op2p) {
+        op2p(newp);
+    } else {
+        m_op2p->addHereThisAsNext(newp);
+    }
+}
+
+void AstNode::prependOp3p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp3p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op3p) {
+        op3p(newp);
+    } else {
+        m_op3p->addHereThisAsNext(newp);
+    }
+}
+
+void AstNode::prependOp4p(AstNode* newp) {
+    UASSERT(newp, "Null item passed to prependOp4p");
+    UDEBUGONLY(UASSERT_OBJ(!newp->m_backp, newp, "Adding already linked node"););
+    if (!m_op4p) {
+        op4p(newp);
+    } else {
+        m_op4p->addHereThisAsNext(newp);
+    }
+}
+
 void AstNode::replaceWith(AstNode* newp) {
     // Replace oldp with this
     // Unlike a unlink/relink, children are changed to point to the new node.
@@ -1216,19 +1256,27 @@ bool AstNode::gateTreeIter() const {
 bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
                            bool gateOnly) {
     // private: Return true if the two trees are identical
-    if (!node1p && !node2p) return true;
-    if (!node1p || !node2p) return false;
-    if (node1p->type() != node2p->type()) return false;
-    UASSERT_OBJ(
-        (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()), node1p,
-        "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
-    if (node1p->dtypep() && !node1p->dtypep()->similarDType(node2p->dtypep())) return false;
-    if (!node1p->sameNode(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
-    return (sameTreeIter(node1p->m_op1p, node2p->m_op1p, false, gateOnly)
-            && sameTreeIter(node1p->m_op2p, node2p->m_op2p, false, gateOnly)
-            && sameTreeIter(node1p->m_op3p, node2p->m_op3p, false, gateOnly)
-            && sameTreeIter(node1p->m_op4p, node2p->m_op4p, false, gateOnly)
-            && (ignNext || sameTreeIter(node1p->m_nextp, node2p->m_nextp, false, gateOnly)));
+    // Iterate over the list, rather than recurse, as lists might be long
+    while (true) {
+        if (!node1p && !node2p) return true;
+        if (!node1p || !node2p) return false;
+        if (node1p->type() != node2p->type()) return false;
+        UASSERT_OBJ(
+            (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()),
+            node1p,
+            "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
+        if (node1p->dtypep() && !node1p->dtypep()->similarDType(node2p->dtypep())) return false;
+        if (!node1p->sameNode(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
+        if (!sameTreeIter(node1p->m_op1p, node2p->m_op1p, false, gateOnly)
+            || !sameTreeIter(node1p->m_op2p, node2p->m_op2p, false, gateOnly)
+            || !sameTreeIter(node1p->m_op3p, node2p->m_op3p, false, gateOnly)
+            || !sameTreeIter(node1p->m_op4p, node2p->m_op4p, false, gateOnly)) {
+            return false;
+        }
+        if (ignNext) return true;
+        node1p = node1p->m_nextp;
+        node2p = node2p->m_nextp;
+    }
 }
 
 //======================================================================
@@ -1590,29 +1638,23 @@ void AstNode::dtypeChgSigned(bool flag) {
     dtypeChgWidthSigned(dtypep()->width(), dtypep()->widthMin(), VSigning::fromBool(flag));
 }
 void AstNode::dtypeChgWidth(int width, int widthMin) {
-    UASSERT_OBJ(dtypep(), this,
-                "No dtype when changing width");  // Use ChgWidthSigned(...UNSIGNED) otherwise
+    UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
     dtypeChgWidthSigned(width, widthMin, dtypep()->numeric());
 }
 
 void AstNode::dtypeChgWidthSigned(int width, int widthMin, VSigning numeric) {
-    if (!dtypep()) {
-        // We allow dtypep() to be null, as before/during widthing dtypes are not resolved
-        dtypeSetLogicUnsized(width, widthMin, numeric);
-    } else {
-        if (width == dtypep()->width() && widthMin == dtypep()->widthMin()
-            && numeric == dtypep()->numeric()
-            // Enums need to become direct sizes to avoid later ENUMVALUE errors
-            && !VN_IS(dtypep()->skipRefToEnump(), EnumDType))
-            return;  // Correct already
-        if (AstBasicDType* const basicp = VN_CAST(dtypep(), BasicDType)) {
-            if (!basicp->keyword().isFourstate()) {
-                dtypeSetBitUnsized(width, widthMin, numeric);
-                return;
-            }
-        }
-        dtypeSetLogicUnsized(width, widthMin, numeric);
+    UASSERT_OBJ(dtypep(), this, "No dtype when changing width");
+    const AstNodeDType* const enumDTypep = dtypep()->skipRefToEnump();
+    if (width == dtypep()->width() && widthMin == dtypep()->widthMin()
+        && numeric == dtypep()->numeric()
+        // Enums need to become direct sizes to avoid later ENUMVALUE errors
+        && !VN_IS(enumDTypep, EnumDType)) {
+        return;  // Correct already
     }
+    const AstNodeDType* const dtypep = enumDTypep->skipRefp();
+    // This cannot be asserted yet, because V3Clean tends to change width of everything
+    // UASSERT_OBJ(!dtypep->isCompound(), this, "Cannot change width of compound dtype.");
+    dtypeSetBitOrLogicUnsized(width, widthMin, numeric, dtypep->isFourstate());
 }
 
 AstNodeDType* AstNode::findBasicDType(VBasicDTypeKwd kwd) const {
@@ -1627,6 +1669,10 @@ AstNodeDType* AstNode::findBitDType(int width, int widthMin, VSigning numeric) c
 AstNodeDType* AstNode::findLogicDType(int width, int widthMin, VSigning numeric) const {
     return v3Global.rootp()->typeTablep()->findLogicBitDType(fileline(), VBasicDTypeKwd::LOGIC,
                                                              width, widthMin, numeric);
+}
+AstNodeDType* AstNode::findLogic2StateDType(int width, int widthMin, VSigning numeric) const {
+    return v3Global.rootp()->typeTablep()->findLogicBitDType(
+        fileline(), VBasicDTypeKwd::LOGIC2STATE, width, widthMin, numeric);
 }
 AstNodeDType* AstNode::findLogicRangeDType(const VNumRange& range, int widthMin,
                                            VSigning numeric) const {
@@ -1751,6 +1797,23 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
             return VCastable::COMPATIBLE;
         }
         return VCastable::INCOMPATIBLE;
+    } else if (const AstUnpackArrayDType* const toArrayp = VN_CAST(toDtp, UnpackArrayDType)) {
+        // Equivalent if the same size with equivalent elements, the bounds may differ
+        // (IEEE 1800-2023 6.22.2)
+        const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromDtp, UnpackArrayDType);
+        if (!fromArrayp || toArrayp->elementsConst() != fromArrayp->elementsConst()) {
+            return castable;
+        }
+        const VCastable subCastable = computeCastableImp(
+            toArrayp->subDTypep(), fromArrayp->subDTypep(), nullptr, checkIfaceArgCompat);
+        // Elements must match, but a nested dimension is COMPATIBLE if equivalent, and a virtual
+        // interface element can refer to an interface instance
+        const AstNodeDType* const toSubp = toArrayp->subDTypep()->skipRefp();
+        if (subCastable == VCastable::SAMEISH
+            || (subCastable == VCastable::COMPATIBLE
+                && (VN_IS(toSubp, UnpackArrayDType) || VN_IS(toSubp, IfaceRefDType)))) {
+            return VCastable::COMPATIBLE;
+        }
     }
     return castable;
 }

@@ -580,14 +580,14 @@ format-bash:
 	$(BEAUTYSH) --version
 	$(BEAUTYSH) $(BEAUTYSH_FLAGS) $(BASH_FILES)
 
-CLANGFORMAT = clang-format-18
+CLANGFORMAT = clang-format-21
 CLANGFORMAT_FLAGS = -i
 CLANGFORMAT_FILES = $(CHECK_CPP) $(CHECK_H) $(CHECK_YL) test_regress/t/*.c* test_regress/t/*.h
 
 format-c clang-format:
 	$(CLANGFORMAT) --version
-	@$(CLANGFORMAT) --version | fgrep 'version 18' > /dev/null \
-	|| echo "*** You are not using clang-format-18, indents may differ from master's ***"
+	@$(CLANGFORMAT) --version | fgrep 'version 21' > /dev/null \
+	|| echo "*** You are not using clang-format-21, indents may differ from master's ***"
 	$(CLANGFORMAT) $(CLANGFORMAT_FLAGS) $(CLANGFORMAT_FILES)
 
 GERSEMI = gersemi

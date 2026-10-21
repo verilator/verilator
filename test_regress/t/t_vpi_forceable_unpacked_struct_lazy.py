@@ -19,7 +19,7 @@ test.compile(
     verilator_flags2=["--binary", "--vpi", "--vpi-lazy", "--no-l2name", test.pli_filename])
 
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp",
-               r'forceableVarInsert\("forceable_response", &\(TOP\.t__DOT__forceable_response\)')
+               r'forceableVarInsert\("forceable_response", &\(vlSymsp->vlInst\.TOP\.t__DOT__forceable_response\)')
 
 test.execute(use_libvpi=True)
 

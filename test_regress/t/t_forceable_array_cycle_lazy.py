@@ -15,7 +15,7 @@ test.top_filename = "t/t_forceable_array_cycle.v"
 test.compile(verilator_flags2=['--binary', '--vpi', '--vpi-lazy'])
 
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp",
-               r'forceableVarInsert\("a", &\(TOP\.t__DOT__wide_chain__DOT__a\)')
+               r'forceableVarInsert\("a", &\(vlSymsp->vlInst\.TOP\.t__DOT__wide_chain__DOT__a\)')
 
 test.execute()
 

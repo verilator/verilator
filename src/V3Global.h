@@ -179,6 +179,7 @@ class V3Global final {
     std::atomic_int m_debugFileNumber{0};  // Number to append to debug files created
     bool m_assertDTypesResolved = false;  // Tree should have dtypep()'s
     bool m_assertScoped = false;  // Tree is scoped
+    bool m_staticsLifted = false;  // Static variables have been lifted to module scope
     bool m_assignsEvents = false;  // Design uses assignments on SystemVerilog Events
     bool m_constRemoveXs = false;  // Const needs to strip any Xs
     // Experimenting with always requiring heavy, see issue #2701
@@ -197,7 +198,6 @@ class V3Global final {
     bool m_usesZeroDelay = false;  // Design uses #0 delay (or non-constant delay)
     bool m_hasForceableSignals = false;  // Need to apply V3Force pass
     bool m_hasAssignDeassign = false;  // Need to apply V3Force pass for assign/deassign statements
-    bool m_hasSystemCSections = false;  // Has AstSystemCSection that need to be emitted
     bool m_useParallelBuild = false;  // Use parallel build for model
     bool m_useRandSequence = false;  // Has `randsequence`
     bool m_useCovergroup = false;  // Has covergroup declarations
@@ -239,6 +239,7 @@ public:
     VWidthMinUsage widthMinUsage() const VL_PURE { return m_widthMinUsage; }
     bool assertDTypesResolved() const { return m_assertDTypesResolved; }
     bool assertScoped() const { return m_assertScoped; }
+    bool staticsLifted() const { return m_staticsLifted; }
 
     // METHODS
     void readFiles() VL_MT_DISABLED;
@@ -248,6 +249,7 @@ public:
                                     bool doCheck = true);
     void assertDTypesResolved(bool flag) { m_assertDTypesResolved = flag; }
     void assertScoped(bool flag) { m_assertScoped = flag; }
+    void staticsLifted(bool flag) { m_staticsLifted = flag; }
     void widthMinUsage(const VWidthMinUsage& flag) { m_widthMinUsage = flag; }
     bool constRemoveXs() const { return m_constRemoveXs; }
     void constRemoveXs(bool flag) { m_constRemoveXs = flag; }
@@ -285,8 +287,6 @@ public:
     void setHasAssignDeassign() { m_hasAssignDeassign = true; }
     bool usesForce() const { return m_usesForce; }
     void setUsesForce() { m_usesForce = true; }
-    bool hasSystemCSections() const VL_MT_SAFE { return m_hasSystemCSections; }
-    void setHasSystemCSections() { m_hasSystemCSections = true; }
     V3HierGraph* hierGraphp() const { return m_hierGraphp; }
     void hierGraphp(V3HierGraph* graphp) { m_hierGraphp = graphp; }
     bool useParallelBuild() const { return m_useParallelBuild; }

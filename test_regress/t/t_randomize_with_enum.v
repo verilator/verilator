@@ -10,7 +10,7 @@
 `define checkinrange(gotv,minv,maxv) do if (((minv) > (gotv)) || ((maxv) < (gotv))) begin $write("%%Error: %s:%0d: got=%0d min=%0d max=%0d\n", `__FILE__,`__LINE__, (gotv), (minv), (maxv)); `stop; end while(0);
 // verilog_format: on
 
-typedef enum bit[3:0] {
+typedef enum bit [3:0] {
   ONE,
   TWO,
   THREE,
@@ -21,9 +21,7 @@ typedef enum bit[3:0] {
 class withConstraint;
   rand enum_t e;
 
-  constraint c{
-    e != ONE;
-  };
+  constraint c {e != ONE;}
 endclass
 
 class withoutConstraint;
@@ -49,15 +47,11 @@ module t;
       `checkd(rand_result, 1);
       `checkinrange(int'(woc.e), int'(ONE), int'(FIVE));
 
-      rand_result = (wc.randomize() with {
-        e != TWO;
-      });
+      rand_result = (wc.randomize() with {e != TWO;});
       `checkd(rand_result, 1);
       `checkinrange(int'(wc.e), int'(THREE), int'(FIVE));
 
-      rand_result = (woc.randomize() with {
-        e != ONE;
-      });
+      rand_result = (woc.randomize() with {e != ONE;});
       `checkd(rand_result, 1);
       `checkinrange(int'(woc.e), int'(TWO), int'(FIVE));
       `checkinrange(int'(woc.f), int'(ONE), int'(FIVE));

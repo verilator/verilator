@@ -64,6 +64,8 @@ class LinkParseVisitor final : public VNVisitor {
     AstNodeExpr* m_defaultInSkewp = nullptr;  // Current default input skew
     AstNodeExpr* m_defaultOutSkewp = nullptr;  // Current default output skew
     AstCoverpoint* m_coverpointp = nullptr;  // Current coverpoint
+    AstCoverCross* m_crossp = nullptr;  // Current cross
+    std::map<string, const AstCoverpoint*> m_coverpoints;  // Current covergroup's, by name
     int m_anonUdpId = 0;  // Counter for anonymous UDP instances
     int m_coverpointNum = 0;  // Counter for unnamed coverpoints within current covergroup
     int m_genblkAbove = 0;  // Begin block number of if/case/for above
@@ -291,13 +293,7 @@ class LinkParseVisitor final : public VNVisitor {
         stmtsp = AstNode::addNextNull(stmtsp, getVarsAndUnlink(nodep->stmtsp()));
         // Follow vars by m_blockAddp's (if any)
         stmtsp = AstNode::addNextNull(stmtsp, getBlockAdds());
-        if (stmtsp) {
-            if (nodep->stmtsp()) {
-                nodep->stmtsp()->addHereThisAsNext(stmtsp);
-            } else {
-                nodep->addStmtsp(stmtsp);
-            }
-        }
+        nodep->prependStmtsp(stmtsp);
     }
     void visit(AstNodeDType* nodep) override { visitIterateNodeDType(nodep); }
     void visit(AstConstraint* nodep) override {
@@ -659,13 +655,39 @@ class LinkParseVisitor final : public VNVisitor {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrFsmArcInclCond(true);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-        } else if (nodep->attrType() == VAttrType::VAR_FSM_RESET_ARC) {
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
-            m_varp->attrFsmResetArc(true);
+            m_varp->attrFsmArcInclCond(true);
+            m_varp->attrFsmStateExpand(VFsmExpandType::AUTO);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrFsmArcInclCond(true);
+            m_varp->attrFsmStateExpand(VFsmExpandType::AUTO_EXPAND);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_ARC_INCLUDE_COND_FULL) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrFsmArcInclCond(true);
+            m_varp->attrFsmStateExpand(VFsmExpandType::FULL);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
             m_varp->attrFsmState(true);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE_AUTO) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrFsmState(true);
+            m_varp->attrFsmStateExpand(VFsmExpandType::AUTO);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE_AUTO_EXPAND) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrFsmState(true);
+            m_varp->attrFsmStateExpand(VFsmExpandType::AUTO_EXPAND);
+            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+        } else if (nodep->attrType() == VAttrType::VAR_FSM_STATE_FULL) {
+            UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
+            m_varp->attrFsmState(true);
+            m_varp->attrFsmStateExpand(VFsmExpandType::FULL);
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
         } else if (nodep->attrType() == VAttrType::VAR_SC_BIGUINT) {
             UASSERT_OBJ(m_varp, nodep, "Attribute not attached to variable");
@@ -961,13 +983,7 @@ class LinkParseVisitor final : public VNVisitor {
         stmtsp = AstNode::addNextNull(stmtsp, getVarsAndUnlink(nodep->stmtsp()));
         // Follow vars by m_blockAddp's (if any)
         stmtsp = AstNode::addNextNull(stmtsp, getBlockAdds());
-        if (stmtsp) {
-            if (nodep->stmtsp()) {
-                nodep->stmtsp()->addHereThisAsNext(stmtsp);
-            } else {
-                nodep->addStmtsp(stmtsp);
-            }
-        }
+        nodep->prependStmtsp(stmtsp);
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);
@@ -1178,25 +1194,30 @@ class LinkParseVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
-    // Append, for each arg in argsp, a parameter plus a "this.<member> = <param>"
-    // assignment to funcp.  The parameter is a clone of the covergroup member and so shares its
+    // Return, for each arg in argsp, a parameter plus a "this.<member> = <param>"
+    // assignment.  The parameter is a clone of the covergroup member and so shares its
     // name; 'this.' on the LHS targets the member, otherwise the same-named local parameter
     // shadows it and the assignment self-assigns the parameter, leaving the member unwritten.
-    // argsp may be null (no args appended).
-    static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp, bool readOnlyRefs) {
+    // argsp may be null (returns nullptr).
+    static AstNode* makeArgMemberCopies(AstNode* argsp, bool readOnlyRefs) {
+        AstNode* resultp = nullptr;
         for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             AstVar* const paramp = origVarp->cloneTree(false);
+            FileLine* const fl = new FileLine{paramp->fileline()};
+            fl->warnOff(V3ErrorCode::VARHIDDEN, true);
+            paramp->fileline(fl);
             paramp->funcLocal(true);
             paramp->direction(origVarp->direction());
             if (readOnlyRefs && origVarp->isRef()) paramp->direction(VDirection::CONSTREF);
-            funcp->addStmtsp(paramp);
+            resultp = AstNode::addNextNull(resultp, paramp);
             AstNodeExpr* const lhsp = new AstDot{
                 origVarp->fileline(), false, new AstParseRef{origVarp->fileline(), "this"},
                 new AstParseRef{origVarp->fileline(), origVarp->name()}};
             AstNodeExpr* const rhsp = new AstParseRef{paramp->fileline(), paramp->name()};
-            funcp->addStmtsp(new AstAssign{origVarp->fileline(), lhsp, rhsp});
+            resultp->addNext(new AstAssign{origVarp->fileline(), lhsp, rhsp});
         }
+        return resultp;
     }
 
     // Create boilerplate covergroup methods on the given AstClass.
@@ -1214,12 +1235,8 @@ class LinkParseVisitor final : public VNVisitor {
         if (argsp) {
             UASSERT_OBJ(newFuncp, nodep,
                         "Covergroup class must have a 'new' constructor function");
-            // Save the existing body statements and unlink them, so the arg assignments run
-            // before the coverage body, then re-append the body.
-            AstNode* const existingBodyp = newFuncp->stmtsp();
-            if (existingBodyp) existingBodyp->unlinkFrBackWithNext();
-            addArgMemberCopies(newFuncp, argsp, true);
-            if (existingBodyp) newFuncp->addStmtsp(existingBodyp);
+            // The arg assignments run before the coverage body
+            newFuncp->prependStmtsp(makeArgMemberCopies(argsp, true));
         }
 
         // IEEE: option / type_option members allow external access (cg_inst.option.X)
@@ -1249,7 +1266,7 @@ class LinkParseVisitor final : public VNVisitor {
         // IEEE: function void sample([arguments])
         {
             AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
-            addArgMemberCopies(funcp, sampleArgsp, false);
+            funcp->addStmtsp(makeArgMemberCopies(sampleArgsp, false));
             funcp->classMethod(true);
             funcp->dtypep(funcp->findVoidDType());
             funcp->keepAlive(true);  // TODO create AstFuncRef and hold until findMethod("sample")
@@ -1340,6 +1357,8 @@ class LinkParseVisitor final : public VNVisitor {
 
         const string libname = m_modp->libname();
         AstClass* const cgClassp = new AstClass{nodep->fileline(), nodep->name(), libname};
+        cgClassp->fileline()->warnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+        cgClassp->fileline()->warnOff(V3ErrorCode::UNDRIVEN, true);
         cgClassp->isCovergroup(true);
         cgClassp->covergroupEnclosingClassp(VN_CAST(m_modp, Class));
         v3Global.useCovergroup(true);
@@ -1408,10 +1427,35 @@ class LinkParseVisitor final : public VNVisitor {
         // Reset the unnamed-coverpoint counter so synthesized names are stable and
         // independent of unrelated covergroups elsewhere in the file.
         VL_RESTORER(m_coverpointNum);
+        VL_RESTORER_CLEAR(m_coverpoints);
         m_coverpointNum = 0;
+        for (const AstNode* stmtp = newFuncp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (const AstCoverpoint* const pointp = VN_CAST(stmtp, Coverpoint)) {
+                m_coverpoints.emplace(coverpointName(pointp), pointp);
+            }
+        }
         nodep->replaceWith(cgClassp);
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
         iterate(cgClassp);
+    }
+
+    // The name of a coverpoint, before visit(AstCoverpoint) names an unlabeled one: its label,
+    // else that of its single variable (IEEE 1800-2023 19.5), else empty
+    static string coverpointName(const AstCoverpoint* nodep) {
+        if (!nodep->name().empty()) return nodep->name();
+        // A single-identifier coverpoint expression is the only form that parses to an
+        // AstParseRef with a usable name here; a dotted/scoped/select/concatenation/call
+        // expression is either a different node (so the cast yields null) or a name-less
+        // AstParseRef (e.g. a member-select).
+        const AstParseRef* const refp = VN_CAST(nodep->exprp(), ParseRef);
+        return refp ? refp->name() : "";
+    }
+
+    // The coverpoint of the current covergroup a cross item names, or null
+    const AstCoverpoint* findCoverpoint(const AstCoverpointRef* refp) const {
+        if (refp->exprp()) return nullptr;  // A hierarchical reference, unsupported
+        const auto it = m_coverpoints.find(refp->name());
+        return it == m_coverpoints.end() ? nullptr : it->second;
     }
 
     void visit(AstCoverpoint* nodep) override {
@@ -1422,20 +1466,10 @@ class LinkParseVisitor final : public VNVisitor {
         // grammar with an empty name; left empty, two of them in one covergroup collide on
         // the generated "__Vcov__<bin>" variable name (e.g. duplicate "__Vcov__auto_0").
         if (nodep->name().empty()) {
-            // A single-identifier coverpoint expression is the only form that parses to an
-            // AstParseRef with a usable name here; a dotted/scoped/select/concatenation/call
-            // expression is either a different node (so the cast yields null) or a name-less
-            // AstParseRef (e.g. a member-select).  Either of those gets a synthesized name.
-            const AstParseRef* const refp = VN_CAST(nodep->exprp(), ParseRef);
-            if (refp && !refp->name().empty()) {
-                // Single-identifier coverpoint: take the variable's name (IEEE 1800-2023
-                // 19.5 - an unlabeled coverpoint of a single variable is named for it).
-                nodep->name(refp->name());
-            } else {
-                // Compound expression (member/part select, concatenation, ...): synthesize
-                // a unique name.  Leading "__V" keeps it out of the user namespace.
-                nodep->name("__Vcoverpoint" + cvtToStr(m_coverpointNum++));
-            }
+            // Compound expression (member/part select, concatenation, ...): synthesize
+            // a unique name.  Leading "__V" keeps it out of the user namespace.
+            const string name = coverpointName(nodep);
+            nodep->name(name.empty() ? "__Vcoverpoint" + cvtToStr(m_coverpointNum++) : name);
         }
         // Re-sort the parse-time mixed bins list (AstCoverBin + AstCgOptionAssign)
         // into the typed binsp and optionsp slots.  The grammar attaches both node types
@@ -1554,7 +1588,7 @@ class LinkParseVisitor final : public VNVisitor {
             if (dropDeprecatedCoverageOption(optp)) continue;
             itemp->unlinkFrBack();
             const VCoverOptionType optType = optp->optType();
-            if (!(optType == VCoverOptionType::WEIGHT)) {
+            if (!(optType == VCoverOptionType::AT_LEAST || optType == VCoverOptionType::WEIGHT)) {
                 optp->v3warn(COVERIGN,
                              "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             }
@@ -1564,7 +1598,46 @@ class LinkParseVisitor final : public VNVisitor {
                                                   optp->valuep()->cloneTree(false)});
             VL_DO_DANGLING(optp->deleteTree(), optp);
         }
+        VL_RESTORER(m_crossp);
+        m_crossp = nodep;
         iterateChildren(nodep);
+    }
+
+    void visit(AstCoverCrossWith* nodep) override {
+        cleanFileline(nodep);
+        UASSERT_OBJ(m_crossp, nodep, "Cross bin 'with' filter outside a cross");
+        if (nodep->selectp()) {
+            // The candidate value of each cross item, of its coverpoint's type (IEEE 1800-2023
+            // 19.6.1.3).  The standard names them, so they hide others in the filter without a
+            // warning.  A cross of an item that is not a coverpoint is unsupported (V3Covergroup).
+            FileLine* const fl = nodep->fileline();
+            FileLine* const flNoWarn = new FileLine{fl};
+            flNoWarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
+            flNoWarn->modifyWarnOff(V3ErrorCode::VARHIDDEN, true);
+            std::set<string> names;
+            for (const AstNode* itemp = m_crossp->itemsp(); itemp; itemp = itemp->nextp()) {
+                const AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
+                const AstCoverpoint* const pointp = findCoverpoint(refp);
+                if (!pointp || !names.insert(refp->name()).second) continue;
+                AstVar* const varp
+                    = new AstVar{flNoWarn, VVarType::VAR, refp->name(), VFlagChildDType{},
+                                 new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{},
+                                                 pointp->exprp()->cloneTree(false)}};
+                varp->funcLocal(true);
+                varp->noReset(true);
+                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                nodep->addVarsp(varp);
+            }
+        }
+        iterateChildren(nodep);
+        // A filter of an unsupported selection, which was dropped, is dropped in turn
+        if (!nodep->selectp()) VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+
+    void visit(AstSystemCSection* nodep) override {
+        if (nodep->user1SetOnce()) return;  // Process only once.
+        cleanFileline(nodep);
+        m_modp->addScSectionsp(nodep->unlinkFrBack());
     }
 
     void visit(AstNode* nodep) override {

@@ -84,6 +84,8 @@ class NameVisitor final : public VNVisitorConst {
         m_modp = nodep;
         iterateChildrenConst(nodep);
         rename(nodep, false);
+        // Avoid clashing with the classes of the library model itself
+        if (nodep->verilatorLib()) nodep->name(nodep->name() + "__Vlibstub");
     }
     // Add __PVT__ to names of local signals
     void visit(AstVar* nodep) override {

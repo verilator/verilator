@@ -373,7 +373,8 @@ private:
     // index computed here provably fits.  That bound is far beyond anything
     // storable anyway: m_flatCountsp alone would need 16GB.
     uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
-    uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
+    uint32_t m_atLeast = 1;  // option.at_least
+    uint32_t m_numCovered = 0;  // Distinct bins hit >= m_atLeast (maintained incrementally)
     Dimension* m_dimensionsp = nullptr;  // [m_dims], owned by the concrete cross runtime
     uint32_t* m_flatCountsp = nullptr;  // [m_numAutoBins] Per-bin hit counts
     Explicit* m_explicitp = nullptr;  // Absent for automatic-only crosses
@@ -383,7 +384,7 @@ private:
     template <bool T_Explicit, bool T_RecordHits = true>
     void iterateProduct(uint32_t dim, uint32_t baseIdx);
     void incrementAuto(uint32_t idx) {
-        if (m_flatCountsp[idx]++ == 0) ++m_numCovered;
+        if (++m_flatCountsp[idx] == m_atLeast) ++m_numCovered;
     }
     void incrementBin(Bin& bin);
     template <bool T_RecordHits>
@@ -434,8 +435,8 @@ public:
 
     // METHODS
     // ---- configuration (from generated constructor, after coverpoints init'd) ----
-    virtual void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
-                      int line, int col);
+    virtual void init(const char* hier, uint32_t atLeast, uint32_t dims, VlCoverpoint* const* cps,
+                      const char* file, int line, int col);
     /// Add a cross bin using a verilation-time bitmap of selected Normal-bin tuples.
     void addBin(VlCovBinKind kind, std::initializer_list<uint64_t> selection, const char* namep,
                 const char* filep, int line, int col);
@@ -459,9 +460,10 @@ public:
     }
     std::string binName(uint32_t i) const override;
     void coverageParts(double& covered, double& total) const override {
-        covered = m_numCovered;
         total = hasExplicitBins() ? m_explicitp->normalBins + m_explicitp->autoBins.size()
                                   : m_numAutoBins;
+        // With option.at_least 0, every bin is covered before any sample
+        covered = m_atLeast ? m_numCovered : total;
     }
     void mergeInto(VlCovMergedItems& items) const override;
 };
@@ -523,8 +525,8 @@ public:
 
     // METHODS
     /// Initialize after all feeding coverpoints have finalized their live bins.
-    void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
-              int line, int col) override;
+    void init(const char* hier, uint32_t atLeast, uint32_t dims, VlCoverpoint* const* cps,
+              const char* file, int line, int col) override;
     /// Build cross-bin selections in postfix order.
     void selectAll();
     /// Start a binsof term over the live bins declared in [first, end) of dimension 'dim'.
@@ -534,6 +536,22 @@ public:
     void selectDimEnd();
     void selectAnd();
     void selectOr();
+    /// Select, of the bin tuples of the selection, those with enough value tuples for which a
+    /// 'with' filter is true (IEEE 1800-2023 19.6.1.2): 'matches' of them, or all for 0 ('$');
+    /// 'positive' is false for a count below one, which is invalid.  The filter is evaluated for
+    /// the value tuples of each distinct choice of bins of the dimensions 'dims', until decided;
+    /// with more value tuples than a filter may evaluate, the bin 'namep' is ignored.
+    void withBegin(std::initializer_list<uint32_t> dims, QData matches, bool positive,
+                   const char* namep, const char* filep, int line);
+    /// Advance to the next value tuple to evaluate the filter for; false after the last
+    bool withNext();
+    /// The value of the dimension 'dim', one the filter reads, of the value tuple
+    QData withValue(uint32_t dim) const;
+    void withValueW(uint32_t dim, WDataOutP valuep) const;
+    /// Whether the filter is true for the value tuple
+    void withTest(bool keep);
+    /// Replace the selection with the bin tuples the filter selected
+    void withEnd();
     // Save a selection without renumbering guards when empty bins are removed.
     void selectBin(VlCovBinKind kind, const char* namep, const char* filep, int line, int col,
                    uint32_t iffIndex);

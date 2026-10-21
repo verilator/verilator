@@ -44,7 +44,7 @@ module t;
     `checkd(C#(0)::m[3][4], 5);
     C#(0)::v = 16'h1234;
     `checkd(C#(0)::v[C#(0)::b[1]+:4], 4'h3);  // Indexed part select
-    `checkd(C#(0)::a[C#(5)::f(C#(0)::b[0]) - 5], 1);  // Call argument within an index
+    `checkd(C#(0)::a[C#(5)::f(C#(0)::b[0])-5], 1);  // Call argument within an index
     $write("*-* All Finished *-*\n");
     $finish;
   end

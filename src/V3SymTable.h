@@ -207,20 +207,25 @@ public:
         if (m_fallbackp) return m_fallbackp->findIdFallback(name);
         return nullptr;
     }
-    void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
+    void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp,
+                         bool includeType) const {
         // Suggest alternative symbol candidates without looking upward through symbol
         // hierarchy
         for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
             const AstNode* const itemp = it->second->nodep();
             if (itemp && (!matcherp || matcherp->nodeMatch(itemp))) {
-                spellerp->pushCandidate(itemp->prettyName());
+                if (includeType) {
+                    spellerp->pushCandidate(itemp->prettyName(), itemp->prettyTypeName());
+                } else {
+                    spellerp->pushCandidate(itemp->prettyName());
+                }
             }
         }
     }
     void candidateIdFallback(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
         // Suggest alternative symbol candidates with looking upward through symbol hierarchy
         // Note VSpellCheck wants the most important (closest) items pushed first
-        candidateIdFlat(spellerp, matcherp);
+        candidateIdFlat(spellerp, matcherp, false);
         // Then suggest the upper begin/end block or module
         if (m_fallbackp) m_fallbackp->candidateIdFallback(spellerp, matcherp);
     }

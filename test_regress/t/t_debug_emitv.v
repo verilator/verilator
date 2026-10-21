@@ -26,6 +26,11 @@ class Cls;
   int member = 1;
   rand int rmember1;
   rand int rmember2;
+  rand int rarray[3];
+  constraint array_values {
+    solve rarray[0] before rmember1;
+    foreach (rarray[i]) rarray[i] == rmember1 + i;
+  }
   covergroup cg_in_class @(posedge cg_clk);
     cp_m: coverpoint member {
       bins one = {1};
@@ -458,6 +463,9 @@ module t (/*AUTOARG*/
       bins either = binsof (cp_x.x0) || binsof (cp_y.y0);
       bins both = binsof (cp_x.x1) && binsof (cp_y.y1) iff (cg_sig[1]);
       bins grouped = (binsof (cp_x.x0) || binsof (cp_y.y0)) && !binsof (cp_x.x1);
+      bins paired = binsof (cp_x) with (cp_x != 0 && cp_y == 0);  // 'with' filter of bin tuples
+      bins counted = binsof (cp_x) with (cp_x != 0) matches 2;  // Of 2 value tuples
+      bins every = cx_select with (cp_y == 0) matches $;  // Of all value tuples
       ignore_bins ignored = binsof (cp_x.x0) iff (cg_sig[0]);
       illegal_bins forbidden = binsof (cp_y.y1);
     }

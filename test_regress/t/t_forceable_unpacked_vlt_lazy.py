@@ -21,7 +21,7 @@ test.compile(make_top_shell=False,
              ])
 
 test.file_grep(test.obj_dir + "/" + test.vm_prefix + "__Syms__Slow.cpp",
-               r'forceableVarInsert\("var_arr", &\(TOP\.t__DOT__var_arr\)')
+               r'forceableVarInsert\("var_arr", &\(vlSymsp->vlInst\.TOP\.t__DOT__var_arr\)')
 
 test.execute()
 

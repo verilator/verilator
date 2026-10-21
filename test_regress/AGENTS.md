@@ -38,16 +38,17 @@ ______________________________________________________________________
 
 - Name tests `t_{category}_{description}` in snake_case; the first word groups the
   category (`t_lint_unused_func_bad`, not `t_unused_func_lint_bad`) so related
-  tests are findable and runnable together.
+  tests are findable and runnable together. Try to use an existing category.
 - Use `_bad` when the code is illegal SystemVerilog, `_unsup` when it is legal but
   unsupported, `_off` for disabled-behavior tests -- never `_fail`.
 - Keep filenames under roughly 30-35 characters.
 
-## Files and drivers
+## Files and `.py` drivers
 
 - Every `.v` needs a matching `.py` driver that actually calls `test.compile()`
   and `test.execute()` (or `test.lint()` for static-analysis-only tests) -- a
   driver that sets up but never runs hides coverage gaps silently.
+- Keep `.py` driver files minimal -- test logic belongs in the `.v`.
 - Copy the license header from an existing file: `.v` tests carry the CC0 notice,
   `.py` drivers carry the standard driver header -- distribution tests check
   headers on every committed file.
@@ -62,10 +63,9 @@ ______________________________________________________________________
   not just aggregate percentages.
 - Assert optimization stats with exact expected counts:
   `test.file_grep(test.stats, r'Optimizations, ...\s+(\d+)', N)`.
-- Add a `_protect_ids` variant when a feature emits user identifiers or filenames;
-  use conservative thread counts (2 or fewer) in multithreaded tests.
-- Extend existing test files with related cases instead of creating many
-  single-purpose files; keep drivers minimal -- test logic belongs in the `.v`.
+- Add a `_protect_ids` variant when a feature emits user identifiers or filenames.
+- Use conservative thread counts (2 or fewer) in multithreaded tests.
+- Avoid `-Wno-` warning disables, instead disable using `verilator lint_off`/`verilator lint_on` around the appropriate lines in the `.v`.
 
 ## Golden .out files
 
@@ -106,8 +106,23 @@ ______________________________________________________________________
 
 - Omit optional end labels on `endmodule`/`endclass`/`endtask`/`endfunction`.
 
-## Self-checking
+## Verilog test design
 
+- Extend existing test files with related cases instead of creating new files.
+  When fixing a bug in existing code, find the test that already covers that
+  feature (search `t/` for the construct) and add the case there. Create a new
+  test only when the case does not fit cleanly, e.g. it needs different flags, a
+  different top-level structure, or is an error case that would stop an existing
+  passing test; then combine related cases into it rather than adding many
+  single-purpose files.
+- Include the issue's own reproducer as a committed test, and verify it fails
+  without the fix.
+- Keep each case self-contained: declare its variables next to the stimulus and
+  checks that use them (e.g. in its own `initial begin ... end` block, preceded
+  by any function, task or instance it needs), not in a list at the top of the
+  module far from their use. Share only what several cases genuinely use. Where
+  the language forces a declaration elsewhere (ports, module-level items), keep
+  it as close as it can be rather than contorting the test.
 - Use the `checkh`/`checkd`/`checks` assertion macros, not manual
   `if`/`$display`/`$stop` sequences. Note `checkh` prints with `%p`, which renders
   integers as hex -- use `checkd` for integer comparisons.
@@ -119,16 +134,11 @@ ______________________________________________________________________
   iterations that the values demonstrably differ and size the value space so a
   failure is probable per run, then confirm the test fails on an un-fixed tree
   before submitting.
-
-## Test design
-
 - Use non-power-of-2, non-word-aligned widths (7, 15, 31, 33, 63, 65, 95) --
   exposes masking and word-boundary bugs that 32/64/128 hide.
 - Test both `[high:low]` and `[low:high]` orderings plus non-zero bounds like
   `[3:1]`; use different ranges for each axis of multidimensional arrays.
 - When adding type support, test all basic types (chandle, string, real) and
   typedef-wrapped variants.
-- Include the issue's own reproducer as a committed test, and verify it fails
-  without the fix.
 - Assert non-blocking-assignment results in the cycle immediately after they take
   effect, before later overwrites, using indices that change post-NBA.
