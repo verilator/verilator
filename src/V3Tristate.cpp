@@ -368,8 +368,8 @@ class TristatePinVisitor final : public TristateBaseVisitor {
         }
     }
     void visit(AstArraySel* nodep) override {
-        // The index is always an rvalue, even when the selected element is an output.
-        iterateAndNextNull(nodep->fromp());
+        UASSERT_OBJ(!m_lvalue, nodep, "ArraySel conversion to output, under tristate node");
+        iterateChildren(nodep);
     }
     void visit(AstSliceSel* nodep) override {
         // Doesn't work because we'd set lvalue on the array index's var
