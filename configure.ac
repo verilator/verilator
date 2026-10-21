@@ -263,10 +263,9 @@ if test "x$PYTHON3" = "x" ; then
 fi
 python3_version=$($PYTHON3 --version | head -1)
 AC_MSG_RESULT([$PYTHON3 --version = $python3_version])
-# verilated.mk needs the path quoted (it may contain spaces on Windows),
-# while build rules consume $PYTHON3 raw, so substitute a separate variable
-PYTHON3_MK="\"$PYTHON3\""
-AC_SUBST([PYTHON3_MK])
+# Windows often installs python under "Program Files", which GNU make cannot
+# use unquoted in verilated.mk; use the space-free 8.3 short name instead.
+PYTHON3=`echo "$PYTHON3" | sed 's/Program Files/PROGRA~1/g'`
 
 AC_ARG_VAR([LEX], [Flex executable])
 AC_CHECK_PROG(LEX,flex,flex)
