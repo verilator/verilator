@@ -155,6 +155,7 @@ module Test(/*AUTOARG*/
   bug5186 i_bug5186(.clk(clk), .in(d), .out(bug5186_out));
   bug5993 i_bug5993(.clk(clk), .in(d[10]));
   bug6016 i_bug6016(.clk(clk), .in(d[10]));
+  same_tree i_same_tree(.clk(clk), .in(d[11]));
 
 endmodule
 
@@ -623,5 +624,35 @@ module bug6016(input wire clk, input wire in);
     if (in_s1) begin
       if (out20 != 1'b0) $stop;
     end
+  end
+endmodule
+
+// 'in ? ~in : 1' became '~in || ~in', which C++ -Wlogical-op rejects; and a quotient of
+// identical trees is not 1 when they are zero
+module same_tree(input wire clk, input wire in);
+  logic lo;
+  logic pow2;
+  logic [1:0] quot;
+  assign quot = {1'b0, in} / {1'b0, in};
+  always_comb
+    if (in) begin
+      lo = 1'b0;
+      pow2 = ~in;
+    end else begin
+      lo = 1'b1;
+      pow2 = 1'b1;
+    end
+  logic in_q = 1'b0;
+  logic lo_q = 1'b1;
+  logic pow2_q = 1'b1;
+  logic [1:0] quot_q = 2'd0;
+  always @(posedge clk) begin
+    in_q <= in;
+    lo_q <= lo;
+    pow2_q <= pow2;
+    quot_q <= quot;
+    if (lo_q != ~in_q) $stop;
+    if (pow2_q != ~in_q) $stop;
+    if (quot_q != {1'b0, in_q}) $stop;
   end
 endmodule
