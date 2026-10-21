@@ -2068,7 +2068,7 @@ private:
         }
         const bool cand = uVarp->isSigVpiLazyCandidate();
         // Holds storage regardless, so the completeness floor retains it.
-        if (cand && !hasCombDriver(u)) return;
+        if (cand && (storagePinnedElsewhere(uVarp) || !hasCombDriver(u))) return;
         for (AstVarScope* const vscp :
              shared ? m_gather.m_vscpsOf.at(uVarp) : std::vector<AstVarScope*>{u}) {
             if (!m_kept.insert(vscp).second) continue;

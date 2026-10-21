@@ -83,6 +83,10 @@ t.frc2__VforceVal 55 W
 t.frc_al 5a W
 t.frc_al__VforceEn 00 W
 t.frc_al__VforceVal ff W
+t.frc_cb 18 W
+t.frc_cb__VforceEn 00 W
+t.frc_cb__VforceVal ff W
+t.frc_cn 19 r
 t.fy0.a 3c r
 t.fy0.clk 0 r
 t.fy0.cyc_p fc r

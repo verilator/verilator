@@ -527,6 +527,11 @@ module t #(
   // A forceable alias of a top input
   logic [7:0] frc_al  /*verilator forceable*/;
   assign frc_al = in_a;
+  // A forceable comb signal a cone reads
+  logic [7:0] frc_cb  /*verilator forceable*/;
+  logic [7:0] frc_cn;
+  assign frc_cb = d & in_a;
+  assign frc_cn = frc_cb ^ 8'h01;
 
   // A cycle between groups in two scopes
   /* verilator lint_off UNOPTFLAT */
