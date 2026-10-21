@@ -172,8 +172,9 @@ enum VerilatedVarFlags : uint32_t {
 // replaces per-variable varInsert() calls, which compiles faster at scale.
 struct VlVarTableEntry final {
     const char* namep;  // VPI-facing (protected) variable name, string literal
-    // offsetof of storage member from module instance base; for a parameter, being static, the
-    // index of its address in the array basep points to; 0 for a packed member
+    // offsetof of storage member from module instance base, 0 for a packed member; for a
+    // parameter, being static, the index of its address (a packed member's: its parent
+    // element's) in the array basep points to
     size_t byteOffset;
     // (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
     // nullptr if none. int32_t since large unpacked memories exceed int16 range.

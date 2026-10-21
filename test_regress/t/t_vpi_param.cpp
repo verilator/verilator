@@ -133,6 +133,20 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     return errors;
 }
 
+#ifdef T_VPI_PARAM
+int check_param_handle(const char* name, int exp_int, bool readValue) {
+    TestVpiHandle param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
+    CHECK_RESULT_NZ(param_h);
+    if (!readValue) return errors;
+    s_vpi_value value;
+    value.format = vpiIntVal;
+    vpi_get_value(param_h, &value);
+    TEST_CHECK_ERROR(false);
+    CHECK_RESULT(value.value.integer, exp_int);
+    return errors;
+}
+#endif
+
 int _mon_check_param() {
     int status = 0;
 #ifdef TEST_VERBOSE
@@ -145,6 +159,13 @@ int _mon_check_param() {
     status += check_param_int("DEPTH", vpiIntVal, 16, verbose);
     status += check_param_str("PARAM_LONG", vpiHexStrVal, "fedcba9876543210", verbose);
     status += check_param_str("PARAM_STR", vpiStringVal, "'some string value'", verbose);
+#ifdef T_VPI_PARAM
+    status += check_param_handle("PARAM_STR_ARR", 0, false);
+    status += check_param_handle("PARAM_STR_ARR_TD", 0, false);
+    status += check_param_handle("PARAM_PAIR.a", 1, true);
+    status += check_param_handle("PARAM_PAIR.b", 2, true);
+    status += check_param_handle("PARAM_PAIR_ARR[1].a", 5, true);
+#endif
     return status;
 }
 
