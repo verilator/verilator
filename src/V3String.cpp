@@ -871,12 +871,13 @@ VSpellCheck::EditDistance VSpellCheck::cutoffDistance(size_t goal_len, size_t ca
     return (max_length + 2) / 3;
 }
 
-string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distancer) const {
-    string best;
+VSpellCheck::Candidate VSpellCheck::bestCandidateInfo(const string& goal,
+                                                      EditDistance& distancer) const {
+    Candidate best;
     const size_t gLen = goal.length();
     distancer = LENGTH_LIMIT * 10;
-    for (const string& candidate : m_candidates) {
-        const size_t cLen = candidate.length();
+    for (const Candidate& candidate : m_candidates) {
+        const size_t cLen = candidate.str.length();
 
         // Min distance must be inserting/deleting to make lengths match
         const EditDistance min_distance = (cLen > gLen ? (cLen - gLen) : (gLen - cLen));
@@ -885,9 +886,10 @@ string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distance
         const EditDistance cutoff = cutoffDistance(gLen, cLen);
         if (min_distance > cutoff) continue;  // Short-circuit if already too bad
 
-        const EditDistance dist = editDistance(goal, candidate);
+        const EditDistance dist = editDistance(goal, candidate.str);
         UINFO(9, "EditDistance dist=" << dist << " cutoff=" << cutoff << " goal=" << goal
-                                      << " candidate=" << candidate);
+                                      << " candidate=" << candidate.str << ":'" << candidate.msg
+                                      << "'");
         if (dist < distancer && dist <= cutoff) {
             distancer = dist;
             best = candidate;
@@ -895,7 +897,7 @@ string VSpellCheck::bestCandidateInfo(const string& goal, EditDistance& distance
     }
 
     // If goal matches candidate avoid suggesting replacing with self
-    if (distancer == 0) return "";
+    if (distancer == 0) return Candidate{.str = best.str, .msg = ""};
     return best;
 }
 
@@ -909,7 +911,7 @@ void VSpellCheck::selfTestSuggestOne(bool matches, const string& c, const string
     EditDistance gdist;
     VSpellCheck speller;
     speller.pushCandidate(c);
-    const string got = speller.bestCandidateInfo(goal, gdist /*ref*/);
+    const string got = speller.bestCandidateInfo(goal, gdist /*ref*/).str;
     if (matches) {
         UASSERT_SELFTEST(got, c);
         UASSERT_SELFTEST(gdist, dist);
@@ -935,16 +937,25 @@ void VSpellCheck::selfTest() {
     }
     {
         const VSpellCheck speller;
-        UASSERT_SELFTEST(speller.bestCandidate(""), "");
+        UASSERT_SELFTEST(speller.bestCandidate("").str, "");
     }
     {
         VSpellCheck speller;
         speller.pushCandidate("fred");
         speller.pushCandidate("wilma");
         speller.pushCandidate("barney");
-        UASSERT_SELFTEST(speller.bestCandidate("fre"), "fred");
-        UASSERT_SELFTEST(speller.bestCandidate("whilma"), "wilma");
-        UASSERT_SELFTEST(speller.bestCandidate("Barney"), "barney");
-        UASSERT_SELFTEST(speller.bestCandidate("nothing close"), "");
+        UASSERT_SELFTEST(speller.bestCandidate("fre").str, "fred");
+        UASSERT_SELFTEST(speller.bestCandidate("whilma").str, "wilma");
+        UASSERT_SELFTEST(speller.bestCandidate("Barney").str, "barney");
+        UASSERT_SELFTEST(speller.bestCandidate("nothing close").str, "");
+    }
+    {
+        VSpellCheck speller;
+        for (unsigned i = 0; i < NUM_CANDIDATE_LIMIT; ++i) speller.pushCandidate("fred");
+        UASSERT_SELFTEST(speller.m_candidates.size(), NUM_CANDIDATE_LIMIT);
+        speller.pushCandidate("wilma");
+        UASSERT_SELFTEST(speller.m_candidates.size(), NUM_CANDIDATE_LIMIT);
+        UASSERT_SELFTEST(speller.bestCandidate("fre").str, "fred");
+        UASSERT_SELFTEST(speller.bestCandidate("wilma").str, "");
     }
 }

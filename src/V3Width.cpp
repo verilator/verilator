@@ -2220,6 +2220,12 @@ class WidthVisitor final : public VNVisitor {
         valuep->replaceWith(new AstConst{valuep->fileline(), AstConst::Signed32{}, 1});
         VL_DO_DANGLING(pushDeletep(valuep), valuep);
     }
+    // Width an integral coverage option V3Covergroup reads, folding a constant expression
+    template <typename T_Option>
+    void widthCoverInt(T_Option* nodep) {
+        userIterateAndNext(nodep->valuep(), WidthVP{SELF, BOTH}.p());
+        V3Const::constifyEdit(nodep->valuep());
+    }
     void visit(AstCgOptionAssign* nodep) override {
         // Recursive function widthing can reach a covergroup constructor without first visiting
         // its class, so find the owning covergroup structurally instead of using visit context.
@@ -2230,6 +2236,11 @@ class WidthVisitor final : public VNVisitor {
         // V3Covergroup stores the weight into the covergroup's option or type_option
         if (nodep->optType() == VCoverOptionType::WEIGHT) {
             widthCoverWeight(nodep);
+            return;
+        }
+        // V3Covergroup takes a constant option.at_least as the default for coverpoints/crosses
+        if (nodep->optType() == VCoverOptionType::AT_LEAST) {
+            widthCoverInt(nodep);
             return;
         }
 
@@ -2272,7 +2283,7 @@ class WidthVisitor final : public VNVisitor {
                                         " to bins");
             }
         }
-        // Add more options here as needed (goal, at_least, per_instance, comment)
+        // Add more options here as needed (goal, per_instance, comment)
 
         // Delete the assignment node (we've extracted the value)
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -2282,7 +2293,12 @@ class WidthVisitor final : public VNVisitor {
             widthCoverWeight(nodep);
             return;
         }
-        userIterateChildren(nodep, nullptr);
+        if (nodep->optType() == VCoverOptionType::AT_LEAST
+            || nodep->optType() == VCoverOptionType::AUTO_BIN_MAX) {
+            widthCoverInt(nodep);
+            return;
+        }
+        userIterateAndNext(nodep->valuep(), WidthVP{SELF, BOTH}.p());
     }
     void visit(AstCoverCross* nodep) override {
         userIterateAndNext(nodep->itemsp(), nullptr);
@@ -5134,7 +5150,7 @@ class WidthVisitor final : public VNVisitor {
             newp = new AstCMethodHard{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                       VCMethod::arrayMethod("r_" + nodep->name())};
             newp->withp(withp);
-            newp->dtypeFrom(adtypep->subDTypep());
+            newp->dtypeFrom(withp ? withp->dtypep() : adtypep->subDTypep());
             if (!nodep->firstAbovep()) newp->dtypeSetVoid();
         } else if ((newp = methodCallArray(nodep, adtypep))) {
         } else {
@@ -7403,11 +7419,14 @@ class WidthVisitor final : public VNVisitor {
         } else if (const AstUnpackArrayDType* const adtypep
                    = VN_CAST(nodep->memp()->dtypep()->skipRefp(), UnpackArrayDType)) {
             subp = adtypep->subDTypep();
+        } else if (const AstDynArrayDType* const adtypep
+                   = VN_CAST(nodep->memp()->dtypep()->skipRefp(), DynArrayDType)) {
+            subp = adtypep->subDTypep();
         } else {
-            nodep->memp()->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: "
-                                      << nodep->verilogKwd()
-                                      << " into other than unpacked or associative array");
+            nodep->memp()->v3warn(
+                E_UNSUPPORTED,
+                "Unsupported: " << nodep->verilogKwd()
+                                << " into other than unpacked, dynamic, or associative array");
         }
         if (subp
             && (!subp->skipRefp()->basicp()
@@ -8026,13 +8045,19 @@ class WidthVisitor final : public VNVisitor {
                                      << "(" << pinDtypep->prettyDTypeNameQ() << " v.s. "
                                      << portDtypep->prettyDTypeNameQ() << ")");
                 }
-                if (portDtypep->basicp()->width() != pinDtypep->basicp()->width()
-                    || !portDtypep->basicp()->keyword().isSameish(
-                        pinDtypep->basicp()->keyword())) {
-                    pinp->v3warn(E_UNSUPPORTED,
-                                 "Shape of the argument does not match the shape of the parameter "
-                                     << "(" << pinDtypep->basicp()->prettyDTypeNameQ() << " v.s. "
-                                     << portDtypep->basicp()->prettyDTypeNameQ() << ")");
+                const AstBasicDType* const portBasicp = portDtypep->basicp();
+                const AstBasicDType* const pinBasicp = pinDtypep->basicp();
+                // Arrays of unpacked structures have no basic type
+                const bool sameElemDType
+                    = portBasicp && pinBasicp
+                          ? portBasicp->width() == pinBasicp->width()
+                                && portBasicp->keyword().isSameish(pinBasicp->keyword())
+                          : pinDtypep->elemDTypep()->similarDType(portDtypep->elemDTypep());
+                if (!sameElemDType) {
+                    pinp->v3warn(
+                        E_UNSUPPORTED,
+                        "Data type of the argument is incompatible with the parameter"
+                            << warnDTypes(pinp, pinDtypep, portDtypep, "Argument", "Parameter"));
                 }
             } else {
                 pinp->v3warn(E_UNSUPPORTED, "Argument is not an unpacked array while parameter "

@@ -667,7 +667,8 @@ class TimingControlVisitor final : public VNVisitor {
             std::stringstream ss;
             V3EmitV::verilogForTree(sentreep, ss);
             // possibly a multiline string
-            std::string comment = ss.str();
+            // Names were hashed by V3Name, show the user the original text
+            std::string comment = VName::dehash(ss.str());
             std::replace(comment.begin(), comment.end(), '\n', ' ');
             // Escape quotes, e.g. from string-indexed event array selects
             comment = '"' + V3OutFormatter::quoteNameControls(comment) + '"';

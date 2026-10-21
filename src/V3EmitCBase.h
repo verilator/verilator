@@ -251,7 +251,8 @@ public:
         // Otherwise they should be available in the local scope where emitted
         return name;
     }
-    string cFuncArgs(const AstCFunc* nodep);
+    // Argument list; if 'cpp', C++ rather than a C header
+    string cFuncArgs(const AstCFunc* nodep, bool cpp = true);
     void emitCDefaultConstructor(const AstNodeModule* modp);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);

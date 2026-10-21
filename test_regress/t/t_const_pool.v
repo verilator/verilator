@@ -55,6 +55,20 @@ function automatic string getName(logic [1:0] c);
   return NAMES[c];
 endfunction
 
+typedef int offsets_t[3:15];
+
+function automatic offsets_t getOffsets(int base);
+  offsets_t offsets;
+  for (int i = 3; i <= 15; ++i) offsets[i] = base + i;
+  return offsets;
+endfunction
+
+function automatic int getOffset(logic [3:0] i);
+  // Value computed by a function, so it has the typedef'd type
+  localparam offsets_t OFFSETS = getOffsets(100);
+  return OFFSETS[i];
+endfunction
+
 typedef struct {
   logic [255:0] wide;
   int narrow;
@@ -150,6 +164,7 @@ module t;
     `checks(color.name(), names[cyc%3]);
     `checks(getName(2'(cyc % 3)), names[cyc%3]);
     `checkh(getDigit(4'(cyc % 10)), 8'h30 + 8'(cyc % 10));
+    `checkh(getOffset(4'(cyc % 13 + 3)), 100 + cyc % 13 + 3);
     sparse = cyc[0] ? HIGH : LOW;
     `checks(sparse.name(), cyc[0] ? "HIGH" : "LOW");
     pkgSparse = cyc[1] ? pkg::HIGH : pkg::LOW;
