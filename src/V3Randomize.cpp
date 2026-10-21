@@ -6179,6 +6179,7 @@ class RandomizeVisitor final : public VNVisitor {
             // Phase 1: Process all constraints (create tasks, run ConstraintExprVisitor)
             // Setup task refs are NOT added to setupAllTaskp here -- done in phase 2
             AstTask* const prepareArraysTaskp = createPrepareConstrainedArraysTask(nodep);
+            VInsertionSet<AstVar*> distWeightVars;
             nodep->foreachMember([&](AstClass* const classp, AstConstraint* const constrp) {
                 AstTask* taskp = VN_AS(constrp->user2p(), Task);
                 if (!taskp) {
@@ -6197,12 +6198,11 @@ class RandomizeVisitor final : public VNVisitor {
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
                 if (constrp->itemsp()) {
                     VInsertionSet<AstVar*>& weightVars = m_distWeightVars[classp];
-                    const size_t oldWeightVars = weightVars.size();
+                    const size_t oldSize = weightVars.size();
                     lowerDistConstraints(taskp, constrp->itemsp(), randModeVarp, weightVars);
                     // Weights are constants to the solver, so a var read only by weights
                     // needs a symbolic reference for the solver to declare it
-                    for (auto it = weightVars.begin() + oldWeightVars; it != weightVars.end();
-                         ++it) {
+                    for (auto it = weightVars.begin() + oldSize; it != weightVars.end(); ++it) {
                         FileLine* const flp = constrp->fileline();
                         AstVarRef* const lhsp = new AstVarRef{flp, *it, VAccess::READ};
                         lhsp->user1(true);
@@ -6213,6 +6213,9 @@ class RandomizeVisitor final : public VNVisitor {
                         constrp->addItemsp(new AstConstraintExpr{flp, eqp});
                     }
                 }
+                // Base-class constraints may have been lowered while processing the base
+                const VInsertionSet<AstVar*>& classWeightVars = m_distWeightVars[classp];
+                distWeightVars.insert(classWeightVars.begin(), classWeightVars.end());
                 VInsertionSet<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
                 ConstraintExprVisitor{
                     classp,        m_memberMap,  constrp->itemsp(), nullptr,
@@ -6255,12 +6258,6 @@ class RandomizeVisitor final : public VNVisitor {
                         });
                 }
             }
-            VInsertionSet<AstVar*> distWeightVars;
-            nodep->foreachMember([&](AstClass* const classp, AstConstraint* const) {
-                const auto it = m_distWeightVars.find(classp);
-                if (it == m_distWeightVars.end()) return;
-                for (AstVar* const varp : it->second) distWeightVars.insert(varp);
-            });
             // For derived classes: clone write_var calls from parent's randomize()
             // and save every array that has is size-constrained array to generate
             // array element refresh later
