@@ -1,4 +1,4 @@
-%Warning-INSECURE: Using --protect-ids with --vpi may expose private design details
+%Warning-INSECURE: Using --protect-ids with --vpi-lazy may expose private design details
                    ... Suggest remove --vpi-lazy.
                    ... For warning description see https://verilator.org/warn/INSECURE?v=latest
                    ... Use "/* verilator lint_off INSECURE */" and lint_on around source to disable this message.

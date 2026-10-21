@@ -30,9 +30,15 @@ novpi_golden = "t/t_flag_vpi_lazy_novpi_bad.out"
 test.lint(fails=True, verilator_flags2=["--vpi-lazy --no-vpi"], expect_filename=novpi_golden)
 test.lint(fails=True, verilator_flags2=["--no-vpi --vpi-lazy"], expect_filename=novpi_golden)
 
-# The INSECURE hint must name --vpi-lazy when that, not --vpi, turned VPI on
+# The INSECURE hint names --vpi-lazy, as removing only --vpi would leave VPI on
 test.lint(fails=True,
-          verilator_flags2=["--vpi-lazy --protect-ids"],
+          verilator_flags2=["--vpi --vpi-lazy --protect-ids"],
           expect_filename="t/t_flag_vpi_lazy_protect_bad.out")
+
+# split_var on a variable only --vpi-lazy keeps must not blame 'public'
+test.top_filename = "t/t_opt_bitblast_attr_bad.v"
+test.compile(fails=True,
+             verilator_flags2=["--vpi-lazy"],
+             expect_filename="t/t_flag_vpi_lazy_splitvar_bad.out")
 
 test.passes()

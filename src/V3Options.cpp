@@ -988,7 +988,6 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_exe && !v3Global.opt.libCreate().empty()) {
         cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
     }
-    const bool vpiUserSet = m_vpi.isSetTrue();
     if (m_vpiLazy) {
         if (m_vpi.isSetFalse()) {
             cmdfl->v3warn(NOEFFECT,
@@ -1055,11 +1054,10 @@ void V3Options::notify() VL_MT_DISABLED {
                               + cmdfl->warnMore() + "... Suggest remove --trace.");
         }
         if (vpi()) {
-            cmdfl->v3warn(INSECURE,
-                          "Using --protect-ids with --vpi may expose private design details\n"
-                              + cmdfl->warnMore()
-                              + (vpiUserSet ? "... Suggest remove --vpi."
-                                            : "... Suggest remove --vpi-lazy."));
+            const std::string flag = m_vpiLazy ? "--vpi-lazy" : "--vpi";
+            cmdfl->v3warn(INSECURE, "Using --protect-ids with " + flag
+                                        + " may expose private design details\n"
+                                        + cmdfl->warnMore() + "... Suggest remove " + flag + ".");
         }
     }
 
