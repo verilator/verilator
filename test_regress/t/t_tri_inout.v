@@ -310,6 +310,29 @@ module pad_checker (
   always @(negedge clk)
     `checkh(array_relay, array_enable[array_index] ? (array_value ^ 7'(int'(array_index) * 13)) : 7'h7f);
 
+  // A tristate index must remain a read when an inout array element is split into pins.
+  tri1 [1:0] pin_index;
+  assign pin_index = cyc[0] ? cyc[2:1] : 2'bz;
+  wire [1:0] expected_pin_index = cyc[0] ? cyc[2:1] : 2'b11;
+  wire [31:0] expected_pin_element = 1 + int'(expected_pin_index) % 3;
+  wire pin_pad [3:1];
+  wire pin_sample;
+  io indexed_io (
+      .A(cyc[3]),
+      .OE(cyc[4]),
+      .Z(pin_pad[1 + int'(pin_index) % 3]),
+      .Y(pin_sample)
+  );
+  for (genvar i = 1; i <= 3; ++i) begin
+    assign pin_pad[i] = i == expected_pin_element && cyc[4] ? 1'bz : cyc[i];
+    always @(negedge clk)
+      `checkh(pin_pad[i], i == expected_pin_element && cyc[4] ? cyc[3] : cyc[i]);
+  end
+  always @(negedge clk) begin
+    `checkh(pin_index, expected_pin_index);
+    `checkh(pin_sample, cyc[4] ? cyc[3] : cyc[expected_pin_element]);
+  end
+
   // A child port's pullup must propagate to the connected array element.
   wire [6:0] array_pull_pad [2];
   array_pull_io array_pull_dut (.pad(array_pull_pad[0]));
