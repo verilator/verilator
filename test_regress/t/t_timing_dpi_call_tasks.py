@@ -10,6 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios("simulator")
+test.enable_tsan()
 test.top_filename = "t/t_timing_dpi_call_tasks.v"
 
 test.compile(
