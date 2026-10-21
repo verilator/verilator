@@ -6703,6 +6703,19 @@ class LinkDotResolveVisitor final : public VNVisitor {
     }
 
     void visit(AstAttrOf* nodep) override { iterateChildren(nodep); }
+    void visit(AstCastParse* nodep) override {
+        if (nodep->user3SetOnce()) return;
+        LINKDOT_VISIT_START();
+        // A cast may start a dotted expression: HERE type'(expr) . member_or_method
+        const bool dotLhs = m_ds.m_dotPos == DP_FIRST;
+        if (!dotLhs) checkNoDot(nodep);
+        {
+            VL_RESTORER_COPY(m_ds);
+            m_ds.init(m_curSymp);
+            iterateChildren(nodep);
+        }
+        if (dotLhs) m_ds.m_dotPos = DP_MEMBER;
+    }
 
     void visit(AstAssignW* nodep) override {
         LINKDOT_VISIT_START();
