@@ -7,7 +7,7 @@
 `define stop $stop
 `define STRINGIFY(x) `"x`"
 
-// Each signal a driver shape, read and written through VPI. Under --vpi-lazy (T_VPI_DRIVERS_LAZY)
+// Each signal a driver shape, read and written through VPI. Under t_vpi_drivers_lazy's --vpi-lazy
 // every signal also reads as the RTL implies before the first eval and mid-eval, and a put writes
 // exactly those holding their value without a driver.
 
@@ -82,7 +82,8 @@ module sub_fy (
   assign imp_c = r ^ 8'(dpiOne());
 endmodule
 
-// Non-ANSI ports with separate net declarations, public_flat_rw/rd after or before the port
+// Non-ANSI ports with separate net declarations, public_flat_rw/rd after or before the port.
+// Writability follows the RTL name, whether or not the port is inlined.
 module sub_na (
     y,
     z,
@@ -105,7 +106,6 @@ module sub_na (
   assign q = a ^ 8'hf0;
 endmodule
 
-// Writability follows the RTL name, whether or not the port is inlined.
 // One-hot encoder as bsg_encode_one_hot: each level drives only some bits, reading only those.
 // Literal selects, as -fno-const-before-dfg leaves a generate loop's index arithmetic unfolded.
 module put_oh (
@@ -233,7 +233,6 @@ module t #(
   assign st.busy = st.cnt != '0;
   assign pmem[1] = d;
   assign pmem[3] = ~d;
-
 
   // Undriven bits no read reaches hold a put; the driven ones stay the encoder's
   logic [1:0] oh_a;
@@ -426,7 +425,7 @@ module t #(
     midEvalRead(int'(mid_s));
   end
 
-  // A cone nested past _complimit's --comp-limit-blocks, over a function's temporaries
+  // A cone nested past t_vpi_drivers_lazy's --comp-limit-blocks, over a function's temporaries
   function automatic logic [7:0] nest_f(input logic [7:0] v);
     nest_f = v + 8'd3;
   endfunction
@@ -488,7 +487,8 @@ module t #(
   // Written whole by one block and in part by another
   logic [3:0] vbx;
 `ifdef VERILATOR
-  // A non-constant select on a continuous assign's lhs is illegal, but Verilator accepts it
+  // A non-constant select on a continuous assign's lhs is illegal (IEEE 1800-2023 Table 10-1),
+  // but Verilator accepts it
   assign vbx[sel] = en;
 `else
   always @*
@@ -575,6 +575,8 @@ module t #(
   assign ra_c[0] = 1.5;
   always_comb ra_c[1] = rc_src;
   assign ra_s = ra_c[0] + ra_c[1];
+`ifdef VERILATOR
+  // Legal per IEEE 1800-2023 11.5.1, but other tools may reject it
   /* verilator lint_off SELRANGE */
   /* verilator lint_off WIDTHTRUNC */
   logic [7:0] oor_c, oor_r;
@@ -583,6 +585,7 @@ module t #(
   assign oor_r = oor_c ^ 8'h0f;
   /* verilator lint_on WIDTHTRUNC */
   /* verilator lint_on SELRANGE */
+`endif
 
   // A memory assembled from its own elements, and its copy in the opposite range, which slices
   // into one continuous assign per element, all in one block
@@ -635,7 +638,7 @@ module t #(
   assign fa[1] = fb[0];
   assign fb = fa;
 
-  // Sections, each over the clock and the inputs above
+  // Submodules over the clock and inputs above
   lz_multi u_mi (
       .clk,
       .rst,
@@ -729,7 +732,7 @@ module child (
   assign cpart[3:0] = din[3:0];
 endmodule
 
-// Driven only by cross-scope assigns in the parent
+// Driven only by cross-scope assigns in lz_multi
 module bcell;
   /*verilator no_inline_module*/
   logic [7:0] bc;
@@ -793,7 +796,7 @@ module lz_multi (
   assign {bc1.bx, bc1.by} = {bflop1, ~bflop1};
 endmodule
 
-// From put order: puts into real, string and forceable sources, and mid-eval puts
+// Puts into real, string and forceable sources, and mid-eval puts
 module lz_order (
     input logic clk,
     output logic [7:0] fo
@@ -841,8 +844,8 @@ module lz_order (
   endfunction
 endmodule
 
-`ifdef T_VPI_LAZY_SAVABLE
-// The top t_vpi_lazy_savable saves and restores, as --savable takes no forceable or unpacked
+`ifdef T_VPI_DRIVERS_SAVABLE
+// The top t_vpi_drivers_savable saves and restores, as --savable takes no forceable or unpacked
 // struct signal
 module lz_save (
     input logic clk
@@ -858,7 +861,7 @@ module lz_save (
   end
 endmodule
 
-// From comb trace: an initial-only variable, its copy, a cone, and the cone's own copy and reader
+// An initial-only variable, its copy, a cone, and the cone's own copy and reader
 module lz_trace;
   logic [6:0] keep;
   logic [6:0] cmb;

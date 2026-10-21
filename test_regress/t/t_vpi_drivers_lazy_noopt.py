@@ -9,6 +9,7 @@
 
 import vltest_bootstrap
 
+# Not vltmt: the design calls VPI from an always block, which --threads may run off the main thread
 test.scenarios('vlt')
 test.top_filename = "t/t_vpi_drivers.v"
 test.pli_filename = "t/t_vpi_drivers.cpp"
@@ -18,7 +19,7 @@ test.golden_filename = "t/t_vpi_drivers_lazy.out"
 test.compile(make_top_shell=False,
              verilator_flags2=[
                  "--binary --vpi-lazy --no-l2name -O0 -fno-const-before-dfg",
-                 "-DT_VPI_DRIVERS_LAZY -CFLAGS -DT_VPI_DRIVERS_LAZY", test.pli_filename
+                 "-CFLAGS -DT_VPI_DRIVERS_LAZY -CFLAGS -DVL_DEBUG=1", test.pli_filename
              ])
 
 test.execute(all_run_flags=["+verilator+rand+reset+1"], expect_filename=test.golden_filename)

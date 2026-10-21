@@ -20,7 +20,7 @@
 #include "svdpi.h"
 #include "vpi_user.h"
 
-#if defined(VERILATOR) && defined(T_VPI_LAZY_SAVABLE)
+#if defined(VERILATOR) && defined(T_VPI_DRIVERS_SAVABLE)
 #include "verilated_save.h"
 #include VM_PREFIX_INCLUDE
 extern VM_PREFIX* testVpiTopp;
@@ -107,7 +107,7 @@ PLI_INT32 runStep(p_cb_data) {
     return 0;
 }
 
-#if defined(VERILATOR) && defined(T_VPI_LAZY_SAVABLE)
+#if defined(VERILATOR) && defined(T_VPI_DRIVERS_SAVABLE)
 const char* const s_savePath = VL_STRINGIFY(TEST_OBJ_DIR) "/saved.vltsv";
 
 void saveModel() {
@@ -196,6 +196,7 @@ std::string getStr(vpiHandle handle, PLI_INT32 format) {
     return value.value.str;
 }
 
+// Without --vpi-lazy every row is writable, so reject() and merge() check nothing.
 // The combinational refusal's text is printed in full once, then only the name it reports
 void reject(const std::string& name, uint32_t v, PLI_INT32 flags = vpiNoDelay) {
 #ifdef T_VPI_DRIVERS_LAZY
@@ -382,7 +383,7 @@ void landInertial() {
 }
 
 void script() {
-    // After the first eval, which fired each callback once for its settle
+    // After the first eval, which fired each callback at most once for its settle
     step([] {
         reportValueCbs();
         in("rst", 0);
@@ -440,7 +441,8 @@ void script() {
         check("t.n_mc2", get("t.n_mc2"), 0x5a);
         check("t.ia.q edge", get("t.ia.q"), 0x33);
         check("t.ib.q edge", get("t.ib.q"), 0x33);
-        // The golden's writability map covers every row; these print the refusal
+        // Under --vpi-lazy, the golden's writability map covers every row; these print the
+        // refusal
         for (const char* name : {"t.out_c", "t.cst_w", "t.w_ff", "t.u_px.i", "t.ib.q", "t.rbw_c"})
             reject(name, get(name) ^ 0x5b);
 #ifdef T_VPI_DRIVERS_LAZY
@@ -458,7 +460,7 @@ void script() {
             check("t.px_o datap null", varp->datap() == nullptr, 1);
         }
 #endif
-        // Each alias row reports its own metadata, not its canonical's, and reads the canonical
+        // Each alias reports its own metadata, not its source's, and reads its source
         for (const char* name : {"t.al_sw", "t.sib_bt", "t.ch1"}) {
             TEST_CHECK_EQ_LABEL(name, vpi_get(vpiSize, find(name)), 8);
         }
@@ -491,7 +493,7 @@ void script() {
         // Questa reads a put into a driven net back as its driver at once
         if (TestSimulator::is_verilator()) accept("t.u_na.w", 0x5a);
         reject("t.u_na.q", get("t.u_na.q") ^ 0x5b);
-        // A put may change only the bits no comb driver writes
+        // Under --vpi-lazy, a put may change only the bits no comb driver writes
         const uint32_t st = get("t.st");
         accept("t.st", (st & 1) | (0x05 << 1));
         merge("t.st", get("t.st") ^ 1, 0x01);
@@ -511,20 +513,21 @@ void script() {
         // Rebuilt from the landed put before the eval
         check("t.st.busy", get("t.st.busy"), 1);
 #endif
-        // A packed member takes its parent's mask
+        // Under --vpi-lazy, a packed member takes its parent's mask
         accept("t.st.cnt", get("t.st.cnt") ^ 0x55);
         merge("t.st.busy", get("t.st.busy") ^ 1, 0x1);
         // A mixed-mask signal is not forceable, so force/release are refused as-is
         reject("t.st", get("t.st") ^ (1 << 1), vpiForceFlag);
         reject("t.st", get("t.st") ^ (1 << 1), vpiReleaseFlag);
         {
-            // A non-canonical inertial-delay format falls through to the ordinary put
+            // An inertial put in a format that cannot be delayed falls through to the
+            // ordinary put
             const uint32_t before = get("t.st");
             s_vpi_value value{};
             value.format = vpiTimeVal;
             vpi_put_value(find("t.st"), &value, nullptr, vpiInertialDelay);
             TEST_CHECK_ERROR(true);
-            // Nor can a masked put be made in a format no signal takes
+            // Nor can a put be made in a format no signal takes
             vpi_put_value(find("t.st"), &value, nullptr, vpiNoDelay);
             TEST_CHECK_ERROR(true);
             check("t.st bad format", get("t.st"), before);
@@ -544,7 +547,7 @@ void script() {
             merge(pr.first, get(pr.first) ^ pr.second, pr.second);
             merge(pr.first, get(pr.first) ^ 0xff, pr.second);
         }
-        // Questa has no vpi_put_value_array
+        // Not every simulator implements vpi_put_value_array; Questa 2025.1 does not
         if (!TestSimulator::is_verilator()) return;
         const PLI_INT32 one[1] = {0x6c};
         putArray("t.pmem", 0, one, 1, false);
@@ -700,7 +703,7 @@ PLI_INT32 startOfSimulation(p_cb_data) {
     in("sel", 1);
     in("d", 0x21);
     in("in_a", 0x40);
-    // Each fires once, for the first eval's settle
+    // Each fires at most once, for the first eval's settle
     armValueCbs({"t.ch1", "t.fmid_c", "t.sib_b", "t.al_sw", "t.ff_q", "t.hl_c.hi", "t.hl_c.lo",
                  "t.hl_c", "t.u_px.i"});
     script();

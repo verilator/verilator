@@ -15,9 +15,9 @@ test.pli_filename = "t/t_vpi_drivers.cpp"
 
 test.compile(make_top_shell=False,
              make_main=False,
-             v_flags2=["+define+T_VPI_LAZY_SAVABLE"],
              verilator_flags2=[
                  "--exe --vpi-lazy --savable --trace --no-l2name --top-module lz_save",
+                 "-DT_VPI_DRIVERS_SAVABLE -CFLAGS -DT_VPI_DRIVERS_SAVABLE",
                  test.pli_filename, "t/TestVpiMain.cpp"
              ])
 
