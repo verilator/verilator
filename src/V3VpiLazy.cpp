@@ -686,6 +686,29 @@ class CombClassifier final {
     std::vector<AstVar*> m_combFootOrder;  // m_combFootVars, encounter order
     std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_vscpsOf;  // Candidates'
 
+    // A block's writes of candidates, and the extent of each partial assign's lhs
+    class LazyCombWriteVisitor final : public VNVisitorConst {
+    public:
+        std::vector<const AstVarRef*> m_refs;  // Candidate write refs, tree order
+        std::unordered_map<const AstVarRef*, PartExtent> m_exts;  // Partial lhs ref -> extent
+
+    private:
+        void visit(AstNodeAssign* nodep) override {
+            PartExtent ext;
+            if (const AstVarRef* const refp = partialLhsRef(nodep->lhsp(), ext))
+                m_exts.emplace(refp, std::move(ext));
+            iterateChildrenConst(nodep);
+        }
+        void visit(AstVarRef* nodep) override {
+            if (!nodep->access().isReadOnly() && combCandidate(nodep->varp()))
+                m_refs.push_back(nodep);
+        }
+        void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    public:
+        explicit LazyCombWriteVisitor(AstAlways* alwaysp) { iterateConst(alwaysp); }
+    };
+
     // Explicit public_flat_rw, forceable and top-level input signals keep flat-rw semantics.
     static bool combCandidate(const AstVar* varp) {
         return varp->isSigVpiLazyCandidate() && !varp->isForceable() && !varp->isPrimaryInish();
@@ -817,25 +840,16 @@ public:
         const VAlwaysKwd kwd = alwaysp->keyword();
         if (kwd == VAlwaysKwd::ALWAYS_LATCH) return;
         const LazyLatchVisitor latch{kwd == VAlwaysKwd::CONT_ASSIGN ? nullptr : alwaysp->stmtsp()};
-        std::vector<AstVarRef*> writeRefs;
+        const LazyCombWriteVisitor writes{alwaysp};
         std::unordered_set<const AstVarScope*> unprovable;
-        alwaysp->foreach([&](AstVarRef* refp) {
-            if (refp->access().isReadOnly() || !combCandidate(refp->varp())) return;
-            writeRefs.push_back(refp);
+        for (const AstVarRef* const refp : writes.m_refs)
             if (!latch.m_modeled.count(refp)) unprovable.insert(refp->varScopep());
-        });
-        std::unordered_map<const AstVarRef*, PartExtent> exts;
-        alwaysp->foreach([&](AstNodeAssign* assignp) {
-            PartExtent ext;
-            if (const AstVarRef* const refp = partialLhsRef(assignp->lhsp(), ext))
-                exts.emplace(refp, std::move(ext));
-        });
         std::unordered_set<const AstVarScope*> proven;
-        for (AstVarRef* const refp : writeRefs) {
+        for (const AstVarRef* const refp : writes.m_refs) {
             AstVarScope* const vscp = refp->varScopep();
             if (unprovable.count(vscp)) {
-                const auto it = exts.find(refp);
-                addCombWrite(vscp, it == exts.end() ? nullptr : &it->second);
+                const auto it = writes.m_exts.find(refp);
+                addCombWrite(vscp, it == writes.m_exts.end() ? nullptr : &it->second);
                 continue;
             }
             // Every bit defined on every path has a write, so the union of writes is these
@@ -851,8 +865,6 @@ public:
 };
 
 class VpiLazyPreparer final {
-    using Defined = std::unordered_set<AstVarScope*>;
-
     // STATE
     AstScope* const m_topScopep;  // Scope of the top module, which anchors cross-scope groups
     V3VpiLazyContext& m_ctx;  // Classification shared with V3EmitCSyms
