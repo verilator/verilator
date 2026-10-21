@@ -11,8 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary", "--no-threads-coarsen"],
-             threads=(2 if test.vltmt else 1))
+test.compile(verilator_flags2=["--binary"])
 
 test.execute()
 

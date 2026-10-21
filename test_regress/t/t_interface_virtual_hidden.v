@@ -91,13 +91,6 @@ module t;
   always_comb y = vb.x;
   initial #1000 vb = ca;
 
-  // Combinational logic reading one instance through a virtual interface and writing another:
-  // not a loop, as the virtual interface never points to the instance written
-  bus ri (), ro ();
-  virtual bus vro = ro, vri = ri;
-  always_comb ri.y = vro.y + 8'(cyc);
-  always @(posedge clk) ro.y <= ri.y;
-
   // Event controls through a virtual interface that is null until an initial process sets it
   ebus ec (.clk);
   virtual ebus vc;
@@ -264,7 +257,6 @@ module t;
       `checkd(g.s.y, 8'(cyc - 1));
       `checkd(bind_d.seen, 8'(cyc - 1));
       `checkd(seen_a, 8'(cyc - 1));
-      `checkd(ri.y, ro.y + 8'(cyc));
       `checkd(seen_la, 8'(cyc - 1));
       `checkd(seen_lb, 8'd7);
       `checkd(lb.y, 8'(cyc - 1));

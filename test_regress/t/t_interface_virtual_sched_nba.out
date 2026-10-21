@@ -1,4 +1,3 @@
-*-* All Finished *-*
 [0] intf1.data==0000
 [0] intf2.data==0000
 [0] vif3.data==0000
@@ -8,3 +7,4 @@
 [50000] intf2.data==beef
 [55000] vif3.data==face
 [65000] vif3.data==cafe
+*-* All Finished *-*

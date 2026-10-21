@@ -816,10 +816,12 @@ public:
     bool isDelayed() const { return m_delayed; }
 };
 class AstHidden final : public AstNodeStmt {
-    // Statements that may access variables they do not reference, e.g. through virtual
-    // interfaces, with references to all these variables, so analyses see the accesses. The
-    // reads are before the statements, and the writes after them, but a write may not happen,
-    // or may be of only part of the variable.
+    // Some code might perform accesses to variables through mechanisms not
+    // explicitly represented in the Ast. This node makes those implicit
+    // accesses explicit by annotating the child statements as optionally
+    // reading or writing the additional listed references. Usually a
+    // conservative approximation so the accesses may happen, but are not
+    // guaranteed to happen.
     // @astgen op1 := rdsp : List[AstVarRef]  // Variables the statements may read
     // @astgen op2 := stmtsp : List[AstNode]  // The statements
     // @astgen op3 := wrsp : List[AstVarRef]  // Variables the statements may write

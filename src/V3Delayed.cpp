@@ -247,7 +247,6 @@ class DelayedVisitor final : public VNVisitor {
     struct NBA final {
         AstAssignDly* nodep = nullptr;  // The NBA this record refers to
         AstVarScope* vscp = nullptr;  // The target variable the NBA is updating
-        const AstHidden* hiddenp = nullptr;  // The AstHidden of an NBA through a virtual interface
     };
 
     // NODE STATE
@@ -289,6 +288,8 @@ class DelayedVisitor final : public VNVisitor {
     // Commit queue data types, by element type and partial flag. Shared by all instances,
     // as m_dlyTmps only shares variables with the same data type.
     std::map<std::pair<const AstNodeDType*, bool>, AstNBACommitQueueDType*> m_cqDTypeps;
+    // The variables of each member of an interface, in all instances
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_ifaceVscps;
 
     const std::unique_ptr<V3ClassGraph>
         m_classGraphp;  // class graph to get possibly called functions from a virtual call
@@ -306,7 +307,6 @@ class DelayedVisitor final : public VNVisitor {
     bool m_needsInitialTrigger = false;  // Whether a NodeProcedure needs a initial trigger
     std::vector<AstSenTree*> m_nbaEventSenTreeps;  // Sensitivities of '->>' in the process
     AstVarRef* m_currNbaLhsRefp = nullptr;  // Current NBA LHS variable reference
-    const AstHidden* m_hiddenp = nullptr;  // Innermost AstHidden
 
     // STATE - during NBA conversion (after visit)
     std::vector<NBA> m_nbas;  // AstAssignDly instances to lower at the end
@@ -571,12 +571,6 @@ class DelayedVisitor final : public VNVisitor {
         return lhsp;
     }
 
-    // Unlink and return the variables that an NBA through a virtual interface may write
-    static AstVarRef* unlinkHiddenWrsp(const AstHidden* hiddenp) {
-        if (!hiddenp || !hiddenp->wrsp()) return nullptr;
-        return hiddenp->wrsp()->unlinkFrBackWithNext();
-    }
-
     void addCFuncCachedValues(const AstCFunc* const cfuncp,
                               std::unordered_set<const AstCFunc*>& visited) {
         if (!visited.insert(cfuncp).second) return;
@@ -637,17 +631,9 @@ class DelayedVisitor final : public VNVisitor {
         postp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
                                        new AstVarRef{flp, shadowVscp, VAccess::READ}});
     }
-    void convertSchemeShadowVar(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo,
-                                const AstHidden* hiddenp) {
+    void convertSchemeShadowVar(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::ShadowVar, vscp, "Inconsistent NBA scheme");
         AstVarScope* const shadowVscp = vscpInfo.shadowVariableKit().vscp;
-
-        // An NBA through a virtual interface, whose shadow variable is the handle, writes the
-        // member at once. TODO: delay it. Until then, hiding this write keeps it after the other
-        // NBAs to the member before it, as V3LifePost then removes their shadow variables.
-        if (AstVarRef* const wrsp = unlinkHiddenWrsp(hiddenp)) {
-            VL_DO_DANGLING(pushDeletep(wrsp), wrsp);
-        }
 
         // Replace the write ref on the LHS with the shadow variable
         nodep->lhsp()->foreach([&](AstVarRef* const refp) {
@@ -834,8 +820,7 @@ class DelayedVisitor final : public VNVisitor {
         activep->addStmtsp(postp);
         vscpInfo.flagUniqueKit().postp = postp;
     }
-    void convertSchemeFlagUnique(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo,
-                                 const AstHidden* hiddenp) {
+    void convertSchemeFlagUnique(AstAssignDly* nodep, AstVarScope* vscp, VarScopeInfo& vscpInfo) {
         UASSERT_OBJ(vscpInfo.m_scheme == Scheme::FlagUnique, vscp, "Inconsistent NBA scheme");
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
@@ -864,17 +849,21 @@ class DelayedVisitor final : public VNVisitor {
         // Immediately clear the flag
         ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
                                      new AstConst{flp, AstConst::BitFalse{}}});
-        // Commit the value, where an NBA through a virtual interface writes the member. In a
-        // process that cannot suspend, its writes are hidden, as for Scheme::ShadowVar.
+        // Commit the value. Through a virtual interface, it may write the member in any instance.
+        // Not shown in a process that cannot suspend: V3LifePost would then keep the shadow
+        // variables of the NBAs to the member before it, whose commits are not ordered with it.
         AstNode* commitp = new AstAssign{flp, capturedLhsp, capturedRhsp};
-        if (AstVarRef* const wrsp = unlinkHiddenWrsp(hiddenp)) {
-            if (vscpInfo.m_inSuspOrFork) {
-                AstHidden* const newp = new AstHidden{flp, commitp};
-                newp->addWrsp(wrsp);
-                commitp = newp;
-            } else {
-                VL_DO_DANGLING(pushDeletep(wrsp), wrsp);
-            }
+        if (vscpInfo.m_inSuspOrFork) {
+            capturedLhsp->foreach([&](const AstMemberSel* selp) {
+                const AstIfaceRefDType* const dtypep
+                    = VN_CAST(selp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+                if (!dtypep || !dtypep->isVirtual()) return;
+                AstHidden* const hiddenp = new AstHidden{flp, commitp};
+                for (AstVarScope* const memberVscp : m_ifaceVscps[selp->varp()]) {
+                    hiddenp->addWrsp(new AstVarRef{flp, memberVscp, VAccess::WRITE});
+                }
+                commitp = hiddenp;
+            });
         }
         ifp->addThensp(commitp);
 
@@ -1159,7 +1148,7 @@ class DelayedVisitor final : public VNVisitor {
                 break;
             }
             case Scheme::ShadowVar: {
-                convertSchemeShadowVar(nbap, vscp, vscpInfo, nba.hiddenp);
+                convertSchemeShadowVar(nbap, vscp, vscpInfo);
                 break;
             }
             case Scheme::ShadowVarMasked: {
@@ -1171,7 +1160,7 @@ class DelayedVisitor final : public VNVisitor {
                 break;
             }
             case Scheme::FlagUnique: {
-                convertSchemeFlagUnique(nbap, vscp, vscpInfo, nba.hiddenp);
+                convertSchemeFlagUnique(nbap, vscp, vscpInfo);
                 break;
             }
             case Scheme::ValueQueueWhole: {
@@ -1185,6 +1174,11 @@ class DelayedVisitor final : public VNVisitor {
         }
     }
     void visit(AstScope* nodep) override {
+        if (VN_IS(nodep->modp(), Iface)) {
+            for (AstVarScope* vscp = nodep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+                m_ifaceVscps[vscp->varp()].push_back(vscp);
+            }
+        }
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
         iterateChildren(nodep);
@@ -1361,7 +1355,6 @@ class DelayedVisitor final : public VNVisitor {
         // Grab the reference to the target of the NBA, also lift ExprStmt statements on the LHS
         VL_RESTORER(m_currNbaLhsRefp);
         UASSERT_OBJ(!m_currNbaLhsRefp, nodep, "NBAs should not nest");
-        const AstHidden* hiddenp = nullptr;  // Its AstHidden, if through a virtual interface
         nodep->lhsp()->foreach([&](AstNode* currp) {
             // cppcheck-suppress constVariablePointer
             if (AstExprStmt* const exprp = VN_CAST(currp, ExprStmt)) {
@@ -1384,10 +1377,6 @@ class DelayedVisitor final : public VNVisitor {
                 UASSERT_OBJ(!m_currNbaLhsRefp, refp, "Multiple Write refs on LHS of NBA");
                 // Hold on to it
                 m_currNbaLhsRefp = refp;
-            } else if (const AstMemberSel* const selp = VN_CAST(currp, MemberSel)) {
-                const AstIfaceRefDType* const dtypep
-                    = VN_CAST(selp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
-                if (dtypep && dtypep->isVirtual()) hiddenp = m_hiddenp;
             }
         });
         // The target variable of the NBA (there can only be one per NBA at this point)
@@ -1430,7 +1419,6 @@ class DelayedVisitor final : public VNVisitor {
         NBA& nba = m_nbas.back();
         nba.nodep = nodep;
         nba.vscp = vscp;
-        nba.hiddenp = hiddenp;
 
         // Record write reference
         recordWriteRef(m_currNbaLhsRefp, true);
@@ -1445,12 +1433,8 @@ class DelayedVisitor final : public VNVisitor {
         // Record write reference
         recordWriteRef(nodep, false);
     }
-    // Writes that may happen through a virtual interface are not assignments of the variables
-    void visit(AstHidden* nodep) override {
-        VL_RESTORER(m_hiddenp);
-        m_hiddenp = nodep;
-        iterateAndNextNull(nodep->stmtsp());
-    }
+    // Writes that the statements may do are not assignments of the variables
+    void visit(AstHidden* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
     void visit(AstLoop* nodep) override {
         VL_RESTORER(m_inLoop);
         m_inLoop = true;
