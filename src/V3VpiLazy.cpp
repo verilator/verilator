@@ -1692,6 +1692,10 @@ private:
             if (sccOf.empty()) return;
             for (const auto& pr : sccOf) {
                 const std::vector<Group*>& sccps = pr.second;
+                // A kill above reaches the key's groups in every instance; the next round
+                // recomputes what remains of this SCC
+                if (std::any_of(sccps.begin(), sccps.end(), [](const Group* g) { return !g->live; }))
+                    continue;
                 if (!mergeCycle(sccps)) killGroupsOfKey(cycleCut(sccps)->keyp, Bail::COMB_CYCLE);
             }
             // Merged and killed groups leave the graph
