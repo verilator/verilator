@@ -7022,8 +7022,18 @@ class WidthVisitor final : public VNVisitor {
                 // assignments
                 const bool lhsIsUnpackArray = lhsDtp->isNonPackedArray();
                 const bool rhsIsUnpackArray = rhsDtp->isNonPackedArray();
-                if (lhsIsUnpackArray && rhsIsUnpackArray) {
-                    if (lhsDtp->isFourstate() != rhsDtp->isFourstate()) {
+                // Only where a fixed-size array is involved: a queue, dynamic or
+                // associative array has no basicp(), so its own isFourstate() is false
+                // even with 4-state elements, and comparing that against a fixed 4-state
+                // array reported a mismatch that isn't there. Compare element types
+                // instead. Container-to-container assignments are left unchecked, as
+                // before (e.g. an int queue from a map() typed as logic[31:0]).
+                const bool fixedInvolved
+                    = VN_IS(lhsDtp, UnpackArrayDType) || VN_IS(rhsDtp, UnpackArrayDType);
+                if (lhsIsUnpackArray && rhsIsUnpackArray && fixedInvolved) {
+                    const AstNodeDType* const lhsElemDtp = unpackedElemDTypep(lhsDtp);
+                    const AstNodeDType* const rhsElemDtp = unpackedElemDTypep(rhsDtp);
+                    if (lhsElemDtp->isFourstate() != rhsElemDtp->isFourstate()) {
                         nodep->v3error("Assignment between 2-state and 4-state types requires "
                                        "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)"
                                        << warnDTypes(nodep, lhsDtp, rhsDtp));
@@ -9755,12 +9765,21 @@ class WidthVisitor final : public VNVisitor {
                                 << " cannot be assigned to non-class "
                                 << lhsDTypep->prettyDTypeNameQ());
         }
-        if (VN_IS(lhsRawDTypep, DynArrayDType) && VN_IS(rhsRawDTypep, UnpackArrayDType)) {
+        // A queue is a VlQueue like a dynamic array, so it needs the same
+        // conversion from an unpacked array
+        if ((VN_IS(lhsRawDTypep, DynArrayDType) || VN_IS(lhsRawDTypep, QueueDType))
+            && VN_IS(rhsRawDTypep, UnpackArrayDType)) {
             VNRelinker relinker;
             rhsp->unlinkFrBack(&relinker);
             relinker.relink(
                 new AstCvtUnpackToQueue{rhsp->fileline(), VN_AS(rhsp, NodeExpr), lhsDTypep});
         }
+    }
+    // Innermost element type below any unpacked (fixed, dynamic, queue, associative)
+    // dimensions
+    static const AstNodeDType* unpackedElemDTypep(const AstNodeDType* dtp) {
+        while (dtp->isNonPackedArray() && dtp->subDTypep()) dtp = dtp->subDTypep()->skipRefp();
+        return dtp;
     }
     static bool similarDTypeRecurse(const AstNodeDType* const node1p,
                                     const AstNodeDType* const node2p) {
