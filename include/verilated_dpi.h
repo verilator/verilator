@@ -198,7 +198,8 @@ void callExportTask(Callable&& call, Args&&... args) {
     if (VL_UNLIKELY(exportAborted())) return;
 #if VM_TIMING == 1
     // An exported task with timing is a coroutine. Suspend the DPI call until it completes.
-    if constexpr (std::is_same<decltype(call(std::forward<Args>(args)...)), VlCoroutine>::value) {
+    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
+                                        VlCoroutine>::value) {
         VlDpiCall* const callp = VlDpiCall::current();
         if (VL_UNLIKELY(!callp)) {
             VL_FATAL_MT(__FILE__, __LINE__, "",
