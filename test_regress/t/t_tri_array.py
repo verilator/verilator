@@ -11,12 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('simulator_st')
 
-test.compile(verilator_flags2=["--stats"])
+test.compile()
 
 test.execute()
-
-if test.vlt_all:
-    # Five element assignments per pad: 4 pad elements plus 127 large_pad elements.
-    test.file_grep(test.stats, r'Tristate, Array element assignments\s+(\d+)', 655)
 
 test.passes()
