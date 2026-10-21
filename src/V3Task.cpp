@@ -154,7 +154,7 @@ public:
     }
     AstNodeFTask* findClassFunc(AstClass* classp, std::string funcName) {
         const auto iter = m_classToFuncMap.find(std::make_pair(classp, funcName));
-        if(iter != m_classToFuncMap.end())
+        if (iter != m_classToFuncMap.end())
             return iter->second;
         else
             return nullptr;
@@ -445,7 +445,6 @@ class TaskVisitor final : public VNVisitor {
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
     AstNodeModule* m_modp = nullptr;  // Current module
-
 
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
@@ -840,32 +839,45 @@ class TaskVisitor final : public VNVisitor {
         //     fromClassp = ccallFrompDtypeClass->classp();
         //     extendp = fromClassp->extendsp();
         // }
-        if (!refp->taskp()->isFunction() && cfuncp->isMethod() && !refp->taskp()->isStatic() && !refp->taskp()->isCovergroupSample()
-            && !refp->taskp()->dpiImport() && cfuncp->scopep()->aboveScopep() && cfuncp
-            // && !(fromClassp && fromClassp->isInterfaceClass()) // Make sure it is not from a interface class
+        if (!refp->taskp()->isFunction() && cfuncp->isMethod() && !refp->taskp()->isStatic()
+            && !refp->taskp()->isCovergroupSample() && !refp->taskp()->dpiImport()
+            && cfuncp->scopep()->aboveScopep() && cfuncp
+            // && !(fromClassp && fromClassp->isInterfaceClass()) // Make sure it is not from a
+            // interface class
         ) {
             std::vector<AstNode*> unsetUser3p;
-            if(VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
-                || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface)){
-                    methodCallArgsRefs(refp->taskp()->op3p(), cfuncp->scopep()->aboveScopep(), ccallp, refp, unsetUser3p);
-                }
-            else if(ccallFromp){ // If the function is a virtual function. Get the final function not the parent.
-                if(AstVarRef* varRefp2 = VN_CAST(ccallFromp->varp()->user3p(), VarRef)){
-                    if(AstVarRef* varRefp3 = VN_CAST(varRefp2->varp()->user3p(), VarRef)){ // The base class pointer is set by a function
+            if (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
+                || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface)) {
+                methodCallArgsRefs(refp->taskp()->op3p(), cfuncp->scopep()->aboveScopep(), ccallp,
+                                   refp, unsetUser3p);
+            } else if (ccallFromp) {  // If the function is a virtual function. Get the final
+                                      // function not the parent.
+                if (AstVarRef* varRefp2 = VN_CAST(ccallFromp->varp()->user3p(), VarRef)) {
+                    if (AstVarRef* varRefp3
+                        = VN_CAST(varRefp2->varp()->user3p(),
+                                  VarRef)) {  // The base class pointer is set by a function
                         ccallFromp->varp()->dtypeFrom(ccallFromp->varp()->user3p());
-                        AstClassRefDType* classDtypep = VN_CAST(varRefp2->varp()->dtypep()->skipRefp(), ClassRefDType);
-                        AstNodeFTask* finalTaskp = m_statep->findClassFunc(classDtypep->classp(), refp->name());
-                        if(finalTaskp) {
+                        AstClassRefDType* classDtypep
+                            = VN_CAST(varRefp2->varp()->dtypep()->skipRefp(), ClassRefDType);
+                        AstNodeFTask* finalTaskp
+                            = m_statep->findClassFunc(classDtypep->classp(), refp->name());
+                        if (finalTaskp) {
                             AstScope* scopep = varRefp3->varScopep()->scopep();
-                            methodCallArgsRefs(finalTaskp->op3p(), scopep, ccallp, refp, unsetUser3p);
+                            methodCallArgsRefs(finalTaskp->op3p(), scopep, ccallp, refp,
+                                               unsetUser3p);
                         }
-                    }else if(AstNodeCCall* assignedCCallp = VN_CAST(varRefp2->varp()->user3p(), NodeCCall)){ // The base class pointer is set by a variable
+                    } else if (AstNodeCCall* assignedCCallp = VN_CAST(
+                                   varRefp2->varp()->user3p(),
+                                   NodeCCall)) {  // The base class pointer is set by a variable
                         ccallFromp->varp()->dtypeFrom(ccallFromp->varp()->user3p());
-                        AstClassRefDType* classDtypep = VN_CAST(varRefp2->varp()->dtypep()->skipRefp(), ClassRefDType);
-                        AstNodeFTask* finalTaskp = m_statep->findClassFunc(classDtypep->classp(), refp->name());
-                        if(finalTaskp) {
+                        AstClassRefDType* classDtypep
+                            = VN_CAST(varRefp2->varp()->dtypep()->skipRefp(), ClassRefDType);
+                        AstNodeFTask* finalTaskp
+                            = m_statep->findClassFunc(classDtypep->classp(), refp->name());
+                        if (finalTaskp) {
                             AstScope* scopep = assignedCCallp->funcp()->scopep()->aboveScopep();
-                            methodCallArgsRefs(finalTaskp->op3p(), scopep, ccallp, refp, unsetUser3p);
+                            methodCallArgsRefs(finalTaskp->op3p(), scopep, ccallp, refp,
+                                               unsetUser3p);
                         }
                     }
                 }
@@ -1506,10 +1518,11 @@ class TaskVisitor final : public VNVisitor {
         if (!nodep) return;
         AstVarRef* varRefp = VN_CAST(nodep, VarRef);
         // Find all assignment nodes in this method task
-        // If an Assign in the method refences a variable one scope above itself then pass it by reference
-        if (VN_IS(nodep, VarRef) && varRefp->varScopep() ) {
-            if (varRefp->varScopep()->scopep()->name()
-                == scopep->name() || varRefp->varp()->user1p()) {
+        // If an Assign in the method refences a variable one scope above itself then pass it by
+        // reference
+        if (VN_IS(nodep, VarRef) && varRefp->varScopep()) {
+            if (varRefp->varScopep()->scopep()->name() == scopep->name()
+                || varRefp->varp()->user1p()) {
                 if (!varRefp->varp()->user3SetOnce()) {
                     unsetUser3p.push_back(varRefp->varp());
                     AstVarRef* newVarRef
@@ -1519,20 +1532,21 @@ class TaskVisitor final : public VNVisitor {
                     AstNodeVarRef* callFromp = VN_CAST(methodCallp->op1p(), NodeVarRef);
                     AstVarRef* subVref = VN_CAST(methodCallp->op1p(), VarRef);
                     // If the scope is the same keep it.
-                    if (!callFromp || callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
+                    if (!callFromp
+                        || callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
                         newVarRef->varScopep(varRefp->varScopep());
-                    } else if(subVref && subVref->varp()->user3p()){ // This is used for the edge case when using a child class
+                    } else if (subVref
+                               && subVref->varp()->user3p()) {  // This is used for the edge case
+                                                                // when using a child class
                         AstVarScope* const newvscp
                             = new AstVarScope{varRefp->fileline(), scopep, varRefp->varp()};
                         scopep->addVarsp(newvscp);
-                        if(subVref->varp()->user3p()){
-                            newVarRef->varScopep(newvscp);
-                        }
+                        if (subVref->varp()->user3p()) { newVarRef->varScopep(newvscp); }
                         varRefp->varp()->user1SetOnce();
-                    }else {
+                    } else {
                         newVarRef->varScopep(callFromp->varScopep());
                         UASSERT_OBJ(callFromp, methodCallp,
-                                "Can not find where this call is coming from");
+                                    "Can not find where this call is coming from");
                     }
                     AstArg* argp = new AstArg{varRefp->fileline(), "", newVarRef};
                     refp->addArgsp(argp);
@@ -1568,9 +1582,8 @@ class TaskVisitor final : public VNVisitor {
                     newVarp->direction(VDirection::REF);
 
                     methodp->addArgsp(newVarp);
-                    newvscp
-                    = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
-                        m_scopep->addVarsp(newvscp);
+                    newvscp = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
+                    m_scopep->addVarsp(newvscp);
                     varRefp->varp()->user3p(newvscp);
 
                 } else {
@@ -1785,11 +1798,14 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
-        if (!VN_IS(nodep, Func) && nodep->classMethod() && !nodep->isStatic() && !nodep->isCovergroupSample() && !nodep->dpiImport() // We are dealing with a pure system verilog class method, where we aren't already doing pass by ref.
+        if (!VN_IS(nodep, Func) && nodep->classMethod() && !nodep->isStatic()
+            && !nodep->isCovergroupSample()
+            && !nodep->dpiImport()  // We are dealing with a pure system verilog class method,
+                                    // where we aren't already doing pass by ref.
             && cfuncp && cfuncp->scopep()->aboveScopep()
             // && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
             //     || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))
-            ) {
+        ) {
             std::vector<AstNode*> unsetUser3p;
             methodBodyRefs(nodep, cfuncp, unsetUser3p);
 
@@ -1962,11 +1978,12 @@ class TaskVisitor final : public VNVisitor {
     }
 
     void visit(AstAssign* nodep) override {
-        // Keep track of ClassRefDTypes. 
-        // If a vitual class is given a child class and a task is called we keep need the child's ClassRefDTypes.
-        if(VN_IS(nodep->lhsp()->dtypep()->skipRefp(), ClassRefDType)){
-            if(VN_IS(nodep->rhsp()->dtypep()->skipRefp(), ClassRefDType)){
-                if(AstVarRef* varRef = VN_CAST(nodep->lhsp(), VarRef)){
+        // Keep track of ClassRefDTypes.
+        // If a vitual class is given a child class and a task is called we keep need the child's
+        // ClassRefDTypes.
+        if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), ClassRefDType)) {
+            if (VN_IS(nodep->rhsp()->dtypep()->skipRefp(), ClassRefDType)) {
+                if (AstVarRef* varRef = VN_CAST(nodep->lhsp(), VarRef)) {
                     AstNode* rhsp = nodep->rhsp();
                     varRef->varp()->user3p(rhsp);
                 }
@@ -1975,10 +1992,9 @@ class TaskVisitor final : public VNVisitor {
         VL_RESTORER(m_insStmtp);
         m_insStmtp = nodep;
         iterateChildren(nodep);
-
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        if ( m_inSensesp && !nodep->isPure()) {
+        if (m_inSensesp && !nodep->isPure()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Impure function calls in sensitivity lists");
             nodep->taskp(nullptr);  // So V3Broken doesn't complain
