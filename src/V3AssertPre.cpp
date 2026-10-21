@@ -1861,8 +1861,11 @@ private:
         VL_RESTORER(m_defaultClkEvtVarp);
         VL_RESTORER(m_defaultDisablep);
         VL_RESTORER(m_modp);
-        m_defaultClockingp = nullptr;
-        m_defaultClkEvtVarp = nullptr;
+        if (!VN_IS(nodep, Class)) {
+            // A class nested in a module is in the scope of the module's default clocking
+            m_defaultClockingp = nullptr;
+            m_defaultClkEvtVarp = nullptr;
+        }
         m_defaultDisablep = nodep->defaultDisablep();
         m_modp = nodep;
         iterateChildren(nodep);

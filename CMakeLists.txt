@@ -32,7 +32,9 @@ option(
 )
 
 find_package(Python3 COMPONENTS Interpreter)
-set(PYTHON3 ${Python3_EXECUTABLE})
+# Windows often installs python under "Program Files", which GNU make cannot
+# use unquoted in verilated.mk; use the space-free 8.3 short name instead.
+string(REPLACE "Program Files" "PROGRA~1" PYTHON3 "${Python3_EXECUTABLE}")
 # See also CMake built-in; CMAKE_INSTALL_PREFIX is applied by the install command.
 set(CMAKE_INSTALL_DATADIR .)
 include(GNUInstallDirs)

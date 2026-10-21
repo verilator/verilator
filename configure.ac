@@ -263,6 +263,9 @@ if test "x$PYTHON3" = "x" ; then
 fi
 python3_version=$($PYTHON3 --version | head -1)
 AC_MSG_RESULT([$PYTHON3 --version = $python3_version])
+# Windows often installs python under "Program Files", which GNU make cannot
+# use unquoted in verilated.mk; use the space-free 8.3 short name instead.
+PYTHON3=`echo "$PYTHON3" | sed 's/Program Files/PROGRA~1/g'`
 
 AC_ARG_VAR([LEX], [Flex executable])
 AC_CHECK_PROG(LEX,flex,flex)
