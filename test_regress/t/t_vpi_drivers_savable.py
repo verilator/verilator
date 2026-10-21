@@ -22,8 +22,8 @@ test.compile(make_top_shell=False,
              ])
 
 # Saves the model, then restores it into itself; then a fresh process restores it
-test.execute(all_run_flags=["+verilator+rand+reset+1"])
+test.execute(all_run_flags=["+verilator+rand+reset+1"], check_finished=True)
 test.vcd_identical(test.trace_filename, test.golden_filename)
-test.execute(all_run_flags=["+verilator+rand+reset+1", "+restore"])
+test.execute(all_run_flags=["+verilator+rand+reset+1", "+restore"], check_finished=True)
 
 test.passes()
