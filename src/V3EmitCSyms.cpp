@@ -326,6 +326,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                    bool forMember = false) {
         return varp->vlEnumDir(V3VpiLazy::combOf(v3Global.rootp(), scopep, varp), forMember);
     }
+    // A --vpi-lazy shadow's row and its packed members' rows hold no current value of their own
+    static std::string lazyRematFlags(const AstVar* varp) {
+        return varp->isLazyReconstructShadow() ? "|VLVF_PUB_RD|VLVF_LAZY_REMAT" : "";
+    }
     static std::string memberVlEnumDir(const AstScope* const scopep, const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
         std::string out = '(' + vlEnumDirOf(scopep, varp, /*forMember=*/true);
@@ -445,8 +449,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // matches the emitted struct field: a primary I/O port keeps its unprotected name
         // under --protect-ids, whereas protect() would always hash it.
         const std::string member = rowStorageName(varp);
-        const std::string dir = vlEnumDirOf(scopep, varp);
-        const std::string flags = isLazy ? "(" + dir + ")|VLVF_PUB_RD|VLVF_LAZY_REMAT" : dir;
+        const std::string flags = vlEnumDirOf(scopep, varp) + lazyRematFlags(varp);
         std::string row = "{\"" + name + "\", ";
         if (varp->isParam()) {
             // Emitted 'static', so indexes the scope's array of parameter addresses
@@ -599,7 +602,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const int bitOffset = parentBitOffset + itemp->lsb();
             const VarDims dims = getVarDims(itemDTypep);
             UASSERT_OBJ(dims.udim == 0, itemp, "Unpacked dimension in packed struct/union");
-            std::string flags = memberVlEnumDir(scopep, svd.m_varp, itemDTypep);
+            std::string flags
+                = memberVlEnumDir(scopep, svd.m_varp, itemDTypep) + lazyRematFlags(svd.m_varp);
             flags += "|VLVF_PACKED_MEMBER";
             if (needsIndex) flags += "|VLVF_PACKED_NEEDS_INDEX";
             rows.emplace_back(

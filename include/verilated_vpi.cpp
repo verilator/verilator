@@ -439,7 +439,8 @@ public:
     // Storage address without reconstructing: a handle's value is rebuilt when it is read, not
     // when the handle is made, so a handle taken before the first eval() is harmless
     static void* storagep(const VerilatedVar* varp) {
-        if (VL_LIKELY(!varp->isLazyRemat())) return varp->rawDatap();
+        // A packed member's row points into its parent's storage; only the parent has a descriptor
+        if (VL_LIKELY(!varp->isLazyRemat()) || varp->isPackedMember()) return varp->rawDatap();
         const VerilatedVarLazyDatap* const lazyDatap = varp->lazyDatap();
         return static_cast<uint8_t*>(lazyDatap->selfp) + lazyDatap->storageOffset;
     }
