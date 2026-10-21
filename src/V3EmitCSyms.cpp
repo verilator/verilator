@@ -125,7 +125,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // on each module object so no-inline instances keep independent counters
     // when forcePerInstance is used.
     int m_modCoverBins = 0;  // Per-module coverage bin number
-    AstNetlist* const m_netlistp;
     const bool m_dpiHdrOnly;  // Only emit the DPI header
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
     // name -> initializer rows, built in getSymCtorStmts()
@@ -324,7 +323,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // --vpi-lazy writability is per instance
     static std::string vlEnumDirOf(const AstScope* scopep, const AstVar* varp,
                                    bool forMember = false) {
-        return varp->vlEnumDir(V3VpiLazy::combOf(v3Global.rootp(), scopep, varp), forMember);
+        return varp->vlEnumDir(V3VpiLazy::combOf(scopep, varp), forMember);
     }
     // A --vpi-lazy shadow's row and its packed members' rows hold no current value of their own
     static std::string lazyRematFlags(const AstVar* varp) {
@@ -397,8 +396,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     static std::string combMaskTableName() { return symClassName() + "__VlazyCombMasks"; }
     static std::string combRunTableName() { return symClassName() + "__VlazyCombRuns"; }
     int combMaskIdx(const AstScope* scopep, const AstVar* varp) {
-        const std::vector<V3VpiLazy::CombRun>& runs
-            = V3VpiLazy::combRuns(m_netlistp, scopep, varp);
+        const std::vector<V3VpiLazy::CombRun>& runs = V3VpiLazy::combRuns(scopep, varp);
         const auto pr = m_combMaskIdx.emplace(&runs, static_cast<int>(m_combMaskRows.size()));
         if (pr.second) {
             m_combMaskRows.emplace_back("{&" + combRunTableName() + "["
@@ -414,13 +412,13 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     const AstCFunc* lazyRefreshFuncp(const AstScope* scopep, const AstVar* varp) const {
-        if (const AstVar* const srcp = varp->lazyCopySrc()) varp = srcp;
-        return V3VpiLazy::refreshFuncp(m_netlistp, scopep, varp);
+        if (const AstVar* const srcp = varp->lazyCopySrcp()) varp = srcp;
+        return V3VpiLazy::refreshFuncp(scopep, varp);
     }
 
     // An alias shadow's row is its source cone's storage
     static std::string rowStorageName(const AstVar* varp) {
-        return varName(varp->isLazyShadowAlias() ? varp->lazyCopySrc() : varp);
+        return varName(varp->isLazyShadowAlias() ? varp->lazyCopySrcp() : varp);
     }
 
     // Builds one VlVarTableEntry row for 'varp', or reports which residual
@@ -877,7 +875,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 if (modp != smodp) continue;
 
                 if (varp->isLazyReconstructHelper()) continue;
-                if (!V3VpiLazy::hasRow(m_netlistp, scopep, varp)) continue;
+                if (!V3VpiLazy::hasRow(scopep, varp)) continue;
                 const std::string vpiVarName
                     = varp->isLazyReconstructShadow() ? varp->origName() : varp->name();
                 addScopeVarEntry(scopep, modp, vpiVarName, varp->name(), varp);
@@ -1111,8 +1109,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
 
 public:
     explicit EmitCSyms(AstNetlist* nodep, bool dpiHdrOnly)
-        : m_netlistp{nodep}
-        , m_dpiHdrOnly{dpiHdrOnly} {
+        : m_dpiHdrOnly{dpiHdrOnly} {
         iterateConst(nodep);
     }
 };
@@ -1750,8 +1747,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                 }
 
                 int maskIdx = -1;
-                if (!isLazy
-                    && V3VpiLazy::combOf(m_netlistp, scopep, varp) == VVpiLazyComb::PARTIAL) {
+                if (!isLazy && V3VpiLazy::combOf(scopep, varp) == VVpiLazyComb::PARTIAL) {
                     maskIdx = combMaskIdx(scopep, varp);
                 }
                 std::string row;
@@ -1771,13 +1767,13 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                         std::string src;  // Empty for a cone
                         if (varp->isLazyShadowAlias()) {
                             // Its row is the source cone's shadow, so it reads as that cone
-                        } else if (const AstVar* const srcp = varp->lazyCopySrc()) {
+                        } else if (const AstVar* const srcp = varp->lazyCopySrcp()) {
                             // Must match the emitted member under --protect-ids.
                             src = "offsetof(" + modClassName + ", " + varName(srcp) + ")";
                         }
                         std::string tail = src.empty() ? "0, 0" : src + ", VLVF_LAZY_COPY";
                         // A cone has no copy source, so the offset names its mask instead
-                        if (V3VpiLazy::combOf(m_netlistp, scopep, varp) == VVpiLazyComb::PARTIAL)
+                        if (V3VpiLazy::combOf(scopep, varp) == VVpiLazyComb::PARTIAL)
                             tail = std::to_string(combMaskIdx(scopep, varp))
                                    + ", VLVF_PUB_RW|VLVF_LAZY_COMB";
                         reconFns.emplace_back("{" + fn + ", " + tail + "}");

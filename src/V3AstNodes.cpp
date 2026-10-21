@@ -4404,8 +4404,7 @@ void AstVar::combineType(const AstVar* otherp) {
                         || otherp->m_vpiLazyRole == m_vpiLazyRole,
                     this, "Combining variables with conflicting --vpi-lazy roles");
     }
-    if (isSigVpiLazyCandidate() && (isSigUserRWPublic() || isSigUserRdPublic()))
-        m_vpiLazyRole = VVpiLazyRole::NONE;
+    vpiLazyYieldToUserPublic();
     if (otherp->varType() == VVarType::PORT) {
         varType(otherp->varType());
         direction(otherp->direction());
@@ -4513,7 +4512,7 @@ void AstVar::dump(std::ostream& str) const {
     if (vpiLazyRole() != VVpiLazyRole::NONE) str << " [VPILAZY=" << vpiLazyRole() << "]";
     if (vpiLazyComb() != VVpiLazyComb::NONE) str << " [VPICOMB=" << vpiLazyComb() << "]";
     if (isLazyShadowNet()) str << " [VPISHADOWNET]";
-    if (lazyCopySrc()) str << " [VPICOPY=" << lazyCopySrc()->name() << "]";
+    if (lazyCopySrcp()) str << " [VPICOPY=" << lazyCopySrcp()->name() << "]";
     if (lazyReconFuncp()) str << " [VPIRECON=" << lazyReconFuncp()->name() << "]";
     if (isReadByDpi()) str << " [DPIRD]";
     if (isWrittenByDpi()) str << " [DPIWR]";

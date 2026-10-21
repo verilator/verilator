@@ -2601,11 +2601,15 @@ public:
         m_sigUserRWPublic = flag;
         if (flag) sigUserRdPublic(true);
     }
-    void lazyCopySrc(AstVar* varp) { m_lazyCopySrcp = varp; }
+    void lazyCopySrcp(AstVar* varp) { m_lazyCopySrcp = varp; }
     void lazyReconFuncp(AstCFunc* funcp) { m_lazyReconFuncp = funcp; }
     void lazyShadowNet(bool flag) { m_lazyShadowNet = flag; }
     void vpiLazyRole(VVpiLazyRole role) { m_vpiLazyRole = role; }
     void vpiLazyComb(VVpiLazyComb comb) { m_vpiLazyComb = comb; }
+    void vpiLazyYieldToUserPublic() {
+        if (isSigVpiLazyCandidate() && (isSigUserRWPublic() || isSigUserRdPublic()))
+            m_vpiLazyRole = VVpiLazyRole::NONE;
+    }
     void sc(bool flag) { m_sc = flag; }
     void scSensitive(bool flag) { m_scSensitive = flag; }
     void primaryIO(bool flag) { m_primaryIO = flag; }
@@ -2769,7 +2773,7 @@ public:
     bool isSigExternallyRWPublic() const {
         return isSigUserRWPublic() || isSigVpiLazyCandidate() || isSigVpiLazyRetained();
     }
-    AstVar* lazyCopySrc() const { return m_lazyCopySrcp; }
+    AstVar* lazyCopySrcp() const { return m_lazyCopySrcp; }
     AstCFunc* lazyReconFuncp() const { return m_lazyReconFuncp; }
     bool isLazyReconstructShadow() const {
         return m_vpiLazyRole == VVpiLazyRole::SHADOW

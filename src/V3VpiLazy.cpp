@@ -169,11 +169,11 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-static const char* const RECONSTRUCT_FUNC_NAME = "__Vlazy_reconstruct";
-static const char* const SHADOW_PREFIX = "__Vlazyrecon__";
-static const char* const EPOCH_NAME = "__Vlazyepoch";
-static const char* const RECONSTRUCT_BODY_FUNC_NAME = "__Vlazy_reconstruct_body";
-static const char* const RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_inst";
+static constexpr const char* RECONSTRUCT_FUNC_NAME = "__Vlazy_reconstruct";
+static constexpr const char* SHADOW_PREFIX = "__Vlazyrecon__";
+static constexpr const char* EPOCH_NAME = "__Vlazyepoch";
+static constexpr const char* RECONSTRUCT_BODY_FUNC_NAME = "__Vlazy_reconstruct_body";
+static constexpr const char* RECONSTRUCT_INST_FUNC_NAME = "__Vlazy_reconstruct_inst";
 
 //######################################################################
 namespace {
@@ -1694,7 +1694,8 @@ private:
                 const std::vector<Group*>& sccps = pr.second;
                 // A kill above reaches the key's groups in every instance; the next round
                 // recomputes what remains of this SCC
-                if (std::any_of(sccps.begin(), sccps.end(), [](const Group* g) { return !g->live; }))
+                if (std::any_of(sccps.begin(), sccps.end(),
+                                [](const Group* g) { return !g->live; }))
                     continue;
                 if (!mergeCycle(sccps)) killGroupsOfKey(cycleCut(sccps)->keyp, Bail::COMB_CYCLE);
             }
@@ -2283,9 +2284,9 @@ private:
                 ++m_copyCount;
             }
             AstVar* const shadowVarp = shadowForTarget(g, 0)->varp();
-            UASSERT_OBJ(!shadowVarp->lazyCopySrc() || shadowVarp->lazyCopySrc() == srcVarp,
+            UASSERT_OBJ(!shadowVarp->lazyCopySrcp() || shadowVarp->lazyCopySrcp() == srcVarp,
                         shadowVarp, "--vpi-lazy copy instances disagree on their source");
-            shadowVarp->lazyCopySrc(srcVarp);
+            shadowVarp->lazyCopySrcp(srcVarp);
             if (shadowVarp->isLazyShadowAlias()) shadowVarp->noReset(true);  // No member to reset
             ++m_reconstructed;  // Each instance is its own group
         }
@@ -2320,12 +2321,6 @@ private:
             }
         }
         splitKeptInstances();
-        for (const AstVarScope* const vscp : m_gather.m_vscOrder) {
-            // A VPI write into a writable retained signal is propagated by re-running 'settle'
-            // on the next eval.
-            if (vscp->varp()->isSigVpiLazyRetained() && !vscp->varp()->isVpiLazyCombWhole())
-                v3Global.setHasVpiLazyRetained();
-        }
     }
 
     // The lazy role is per variable, but storage is kept per instance: instances not kept move
@@ -2351,6 +2346,10 @@ private:
                 continue;
             }
             varp->vpiLazyRole(cand ? VVpiLazyRole::RETAINED : VVpiLazyRole::PINNED);
+            // A VPI write into a writable retained signal is propagated by re-running 'settle'
+            // on the next eval.
+            if (varp->isSigVpiLazyRetained() && !varp->isVpiLazyCombWhole())
+                v3Global.setHasVpiLazyRetained();
             if (freed.empty()) continue;
             AstVar* const twinp = varp->cloneTree(false);
             twinp->name(varp->name() + "__Vlazyfreed");
@@ -2456,29 +2455,27 @@ void V3VpiLazy::classifyComb(AstNetlist* nodep) {
     combp.reset();  // Frees its footprints; prepare() gathers its own
 }
 
-VVpiLazyComb V3VpiLazy::combOf(const AstNetlist* nodep, const AstScope* scopep,
-                               const AstVar* varp) {
+VVpiLazyComb V3VpiLazy::combOf(const AstScope* scopep, const AstVar* varp) {
     if (!varp->isVpiLazyCombPartial()) return varp->vpiLazyComb();
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+    const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
     UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
     return ctxp->combOf(scopep->name(), varp);
 }
 
-const std::vector<V3VpiLazy::CombRun>&
-V3VpiLazy::combRuns(const AstNetlist* nodep, const AstScope* scopep, const AstVar* varp) {
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+const std::vector<V3VpiLazy::CombRun>& V3VpiLazy::combRuns(const AstScope* scopep,
+                                                           const AstVar* varp) {
+    const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
     UASSERT_OBJ(ctxp, varp, "--vpi-lazy comb mask without a context");
     return ctxp->combRunsOf(scopep->name(), varp);
 }
 
-bool V3VpiLazy::hasRow(const AstNetlist* nodep, const AstScope* scopep, const AstVar* varp) {
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+bool V3VpiLazy::hasRow(const AstScope* scopep, const AstVar* varp) {
+    const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
     return !ctxp || !ctxp->m_noRow.count({scopep->name(), varp});
 }
 
-const AstCFunc* V3VpiLazy::refreshFuncp(const AstNetlist* nodep, const AstScope* scopep,
-                                        const AstVar* shadowVarp) {
-    const V3VpiLazyContext* const ctxp = nodep->vpiLazyContextp();
+const AstCFunc* V3VpiLazy::refreshFuncp(const AstScope* scopep, const AstVar* shadowVarp) {
+    const V3VpiLazyContext* const ctxp = v3Global.rootp()->vpiLazyContextp();
     UASSERT_OBJ(ctxp, shadowVarp, "--vpi-lazy row without a context");
     const auto it = ctxp->m_rowRefresh.find({scopep->name(), shadowVarp});
     return it != ctxp->m_rowRefresh.end() ? it->second : shadowVarp->lazyReconFuncp();

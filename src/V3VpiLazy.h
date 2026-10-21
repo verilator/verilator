@@ -45,17 +45,15 @@ public:
         }
     };
     // One instance's class: a PARTIAL variable's instances may differ.
-    static VVpiLazyComb combOf(const AstNetlist* nodep, const AstScope* scopep,
-                               const AstVar* varp) VL_MT_DISABLED;
+    static VVpiLazyComb combOf(const AstScope* scopep, const AstVar* varp) VL_MT_DISABLED;
     // A PARTIAL combOf() instance's runs, ordered by element then bit.
-    static const std::vector<CombRun>& combRuns(const AstNetlist* nodep, const AstScope* scopep,
+    static const std::vector<CombRun>& combRuns(const AstScope* scopep,
                                                 const AstVar* varp) VL_MT_DISABLED;
     // Func a reconstructed row in 'scopep' calls to refresh 'shadowVarp', null for a stored copy.
-    static const AstCFunc* refreshFuncp(const AstNetlist* nodep, const AstScope* scopep,
+    static const AstCFunc* refreshFuncp(const AstScope* scopep,
                                         const AstVar* shadowVarp) VL_MT_DISABLED;
     // False where 'varp' has no instance in 'scopep': it is kept apart from its other instances.
-    static bool hasRow(const AstNetlist* nodep, const AstScope* scopep,
-                       const AstVar* varp) VL_MT_DISABLED;
+    static bool hasRow(const AstScope* scopep, const AstVar* varp) VL_MT_DISABLED;
     // V3Active feeds each variable instance and combinational block it forms to combVarScope()
     // and combBlock(); classifyComb() then classifies them.
     static void combVarScope(AstVarScope* vscp) VL_MT_DISABLED;

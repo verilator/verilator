@@ -175,8 +175,7 @@ public:
                 vVtxp->setConsumed("SigVpiLazyKept");
                 // Substituting a writable signal's driver into its readers would hide a put
                 if (vscp->varp()->isSigVpiLazyRetained()
-                    && V3VpiLazy::combOf(v3Global.rootp(), vscp->scopep(), vscp->varp())
-                           != VVpiLazyComb::WHOLE) {
+                    && V3VpiLazy::combOf(vscp->scopep(), vscp->varp()) != VVpiLazyComb::WHOLE) {
                     vVtxp->clearReducible("SigVpiLazyWritable");
                 }
             }
@@ -747,10 +746,8 @@ class GateInline final {
                 GateLogicVertex* const dstVtxp = edgep->top()->as<GateLogicVertex>();
 
                 // One reconstruct function serves every instance.
-                if (v3Global.opt.vpiLazy()) {
-                    if (const AstCFunc* const cfuncp = VN_CAST(dstVtxp->nodep(), CFunc)) {
-                        if (cfuncp->vpiLazyReconstruct()) continue;
-                    }
+                if (const AstCFunc* const cfuncp = VN_CAST(dstVtxp->nodep(), CFunc)) {
+                    if (cfuncp->vpiLazyReconstruct()) continue;
                 }
 
                 // Do not inline anything other than buffers and inverters into

@@ -519,9 +519,7 @@ class LinkParseVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
         m_varp = nullptr;
-        if (nodep->isSigVpiLazyCandidate()
-            && (nodep->isSigUserRWPublic() || nodep->isSigUserRdPublic()))
-            nodep->vpiLazyRole(VVpiLazyRole::NONE);
+        nodep->vpiLazyYieldToUserPublic();
         // temporaries under an always aren't expected to be blocking
         if (m_procedurep && VN_IS(m_procedurep, Always))
             nodep->fileline()->modifyWarnOff(V3ErrorCode::BLKSEQ, true);
