@@ -5555,7 +5555,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         } else if (m_ds.m_dotp && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)) {
-            // HERE function() . method_called_on_function_return_value()
+            // {scope}.HERE function() . method_called_on_function_return_value()
+            nodep->dotted(m_ds.m_dotText);  // Maybe ""
             m_ds.m_dotPos = DP_MEMBER;
             m_ds.m_dotText = "";
         } else if (!m_ds.m_disablep) {
