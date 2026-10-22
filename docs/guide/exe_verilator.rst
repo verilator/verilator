@@ -1809,6 +1809,7 @@ Summary:
    Enables public as with :vlopt:`--public-flat-rw`, but only to the specified depth of modules.
    It operates at the module maximum level, so if a module's cells are A.B.X and A.X, the
    a --public-depth 3 must be used to make module X public, and both A.B.X and A.X will be public.
+   Ignored with :vlopt:`--vpi-lazy`.
 
 .. option:: --public-flat-rw
 
@@ -1818,7 +1819,8 @@ Summary:
    particularly useful in combination with :vlopt:`--vpi`. This may also in
    some rare cases result in mis-simulation of generated clocks. Instead of
    this global option, marking only those signals that need public_flat_rw
-   is typically significantly better performing.
+   is typically significantly better performing. Ignored with
+   :vlopt:`--vpi-lazy`.
 
 .. option:: --public-ignore
 
@@ -1831,7 +1833,7 @@ Summary:
 
    Declares all parameters public as if they had
    ``/*verilator public_flat_rd*/``
-   metacomments.
+   metacomments. Ignored with :vlopt:`--vpi-lazy`.
 
 
 .. option:: -pvalue+<name>=<value>

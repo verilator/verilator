@@ -471,10 +471,10 @@ Lazy VPI Signal Access
 
 :vlopt:`--vpi-lazy` makes all variables, ports, wires, and parameters VPI
 accessible by their flat name. All are readable, and those that hold state
-are also writable, as described below. Unlike :vlopt:`--public-flat-rw`, it does not
-keep combinationally driven signals in the model, so Verilator can optimize
-the evaluation path as it would without VPI. When VPI reads such a signal,
-it is rematerialized, giving the value it had at the end of the last
+are also writable, as described below. Unlike :vlopt:`--public-flat-rw`, it
+does not keep combinationally driven signals in the model, so Verilator can
+optimize the evaluation path as it would without VPI. When VPI reads such a
+signal, it is rematerialized, giving the value it had at the end of the last
 ``eval()``. Simulation is faster, at the cost of a slower read.
 
 :vlopt:`--public-flat-rw` remains preferable where signals are read
@@ -501,11 +501,10 @@ A put into a read-only signal fails with an error through
 ``vpi_chk_error``. Where only some bits are read-only, the put writes the
 rest and leaves those unchanged.
 
-Rematerialized signals have no storage and are produced by running model
-code, so read them through VPI rather than ``VerilatedVar::datap()``, which
-will return null, and from the thread that evaluates the model. If model
-state is changed other than through VPI, for example by setting a top-level
-input from C++, call ``eval()`` before reading.
+Read rematerialized signals through VPI, from the thread that evaluates the
+model; they have no storage, so ``VerilatedVar::datap()`` returns null. If
+model state is changed other than through VPI, for example by setting a
+top-level input from C++, call ``eval()`` before reading.
 
 .. _vpi example:
 
