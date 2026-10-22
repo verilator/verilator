@@ -15,10 +15,11 @@ test.top_filename = "t/t_timing_dpi_func_bad.v"
 
 test.compile(
     v_flags2=["t/t_timing_dpi_func_bad.cpp"],
-    verilator_flags2=["--binary", "--protect-ids", "--protect-key", "SECRET_KEY"],
+    verilator_flags2=["--binary", "--stats", "--protect-ids", "--protect-key", "SECRET_KEY"],
 )
 
 if test.vlt_all:
+    test.file_grep(test.stats, r'Timing, suspendable DPI exports\s+(\d+)', 1)
     test.execute(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

@@ -439,15 +439,12 @@ public:
             if (hasFlags(dpiExportp, T_SUSPENDEE) || hasFlags(dpiExportp, T_SUSPENDER)) {
                 ++m_suspendableExports;
                 v3Global.setUsesSuspendableExports();
-                for (AstNode* procp : m_delayedProc) {
-                    addFlags(procp, T_SUSPENDEE | T_SUSPENDER);
-                }
-                break;
             }
         }
 
         // Propagate suspendability again after DPI exports have been resolved
         if (v3Global.usesSuspendableExports()) {
+            for (AstNode* procp : m_delayedProc) { addFlags(procp, T_SUSPENDEE | T_SUSPENDER); }
             for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
                 DepVtx& depVtx = static_cast<DepVtx&>(vtx);
                 if (hasFlags(depVtx.nodep(), T_SUSPENDEE)) propagateFlags(&depVtx, T_SUSPENDEE);
