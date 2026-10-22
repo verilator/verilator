@@ -909,7 +909,7 @@ class TaskVisitor final : public VNVisitor {
             FileLine* const flp = refp->fileline();
             for (size_t i = 0; i + 1 < vtargetsp->size(); ++i) {
                 AstVarScope* const handleVscp = (*vtargetsp)[i].first;
-                AstCFunc* const icfuncp = m_statep->ftaskCFuncp((*vtargetsp)[i].second);
+                AstCFunc* const icfuncp = ensureFTaskCFunc((*vtargetsp)[i].second );
                 UASSERT_OBJ(icfuncp, (*vtargetsp)[i].second, "no per-scope cfunc");
                 AstCMethodCall* const callp = mcallp->cloneTree(false);
                 callp->funcp(icfuncp);
@@ -927,7 +927,7 @@ class TaskVisitor final : public VNVisitor {
                 lastp = newIfp;
             }
             // Last target becomes the final 'else' branch using the original call
-            AstCFunc* const lastCFuncp = m_statep->ftaskCFuncp(vtargetsp->back().second);
+            AstCFunc* const lastCFuncp = ensureFTaskCFunc(vtargetsp->back().second);
             UASSERT_OBJ(lastCFuncp, vtargetsp->back().second, "no per-scope cfunc");
             mcallp->funcp(lastCFuncp);
             // Swap in the dispatch chain, then reuse the original AstExprStmt
@@ -1813,6 +1813,12 @@ class TaskVisitor final : public VNVisitor {
         return cfuncp;
     }
 
+    AstCFunc* ensureFTaskCFunc(AstNodeFTask* taskp) {
+        // Ensure the callee's per-scope cfunc has been created.
+        if (!m_statep->ftaskCFuncp(taskp)) iterateIntoFTask(taskp);
+        return m_statep->ftaskCFuncp(taskp);
+    }
+
     void iterateIntoFTask(AstNodeFTask* nodep) {
         // Iterate into the FTask we are calling.  Note it may be under a different
         // scope then the caller, so we need to restore state.
@@ -1895,8 +1901,8 @@ class TaskVisitor final : public VNVisitor {
         }
         // Includes handling AstMethodCall, AstNew
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
-        iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
-        if (m_statep->ftaskNoInline(nodep->taskp()) && !m_statep->ftaskCFuncp(nodep->taskp())) {
+        AstCFunc* cfuncp = ensureFTaskCFunc(nodep->taskp()); // First, do hierarchical funcs
+        if (m_statep->ftaskNoInline(nodep->taskp()) && !cfuncp) {
             // An earlier error (e.g. a DPI import declared twice with conflicting
             // signatures) prevented creating the function, so remove the call
             UASSERT_OBJ(V3Error::errorCount(), nodep, "No non-inline task, but no error issued");
