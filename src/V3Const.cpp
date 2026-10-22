@@ -932,6 +932,8 @@ class ConstVisitor final : public VNVisitor {
     static constexpr unsigned CONCAT_MERGABLE_MAX_DEPTH = 10;  // Limit alg recursion
     // Largest right-hand side that is copied to each part of a split concatenation assignment
     static constexpr int CONCAT_ASSIGN_MAX_RHS_NODES = 16;
+    // Largest operand compared as a tree, so a failed compare is O(1) per node
+    static constexpr int SAME_TREE_MAX_NODES = 16;
 
     // NODE STATE
     // See VNIdAllocator. All per node state below is held in side tables keyed on the
@@ -1833,7 +1835,9 @@ class ConstVisitor final : public VNVisitor {
     }
     // Not for reassociation, where cancelling can fold a legal comb loop into 'x = x'
     static bool operandsSameTree(AstNode* node1p, const AstNode* node2p) {
-        return operandsSame(node1p, node2p) || (node1p->sameGateTree(node2p) && node1p->isPure());
+        return operandsSame(node1p, node2p)
+               || (!node1p->isLargerThan(SAME_TREE_MAX_NODES) && node1p->sameGateTree(node2p)
+                   && node1p->isPure());
     }
     bool ifSameAssign(const AstNodeIf* nodep) {
         const AstNodeAssign* const thensp = VN_CAST(nodep->thensp(), NodeAssign);
