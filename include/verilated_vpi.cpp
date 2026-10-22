@@ -221,7 +221,7 @@ static VerilatedSyms* vl_vpi_lazy_syms(const VerilatedScope* scopep) VL_MT_UNSAF
 // Swaps back an undo log a read's rebuild swapped in, on every return path
 struct VlLazyUndoRestore final {
     VerilatedSyms* const symsp;  // Model whose undo log the read may have swapped in
-    ~VlLazyUndoRestore() {
+    ~VlLazyUndoRestore() VL_MT_UNSAFE_ONE {
         VerilatedLazyState* const lazyp = symsp->lazyp();
         if (VL_UNLIKELY(lazyp->undoIn)) lazyp->undoSwap(false);
     }
@@ -293,7 +293,7 @@ public:
         if (m_fullname.empty()) m_fullname = std::string{m_scopep->name()} + '.' + m_varp->name();
         return m_fullname.c_str();
     }
-    virtual void* readDatap() const { return m_varp->rawDatap(); }
+    virtual void* readDatap() const VL_MT_UNSAFE_ONE { return m_varp->rawDatap(); }
     CData* readCDatap() const {
         VL_DEBUG_IFDEF(assert(varp()->vltype() == VLVT_UINT8););
         return static_cast<CData*>(readDatap());
@@ -624,7 +624,7 @@ public:
     uint8_t* prevDatap() const { return m_prevDatap; }
     // The value as last materialized or stored, without re-resolving a --vpi-lazy row
     void* shadowDatap() const { return m_varDatap; }
-    void* readDatap() const override {
+    void* readDatap() const override VL_MT_UNSAFE_ONE {
         // Refresh, but return m_varDatap rather than the refreshed base: an element handle
         // (vpiMemoryWord) carries its offset into the shadow here
         if (VL_UNLIKELY(m_storageVarp->isLazyRemat())) {

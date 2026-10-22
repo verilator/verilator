@@ -448,6 +448,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         // under --protect-ids, whereas protect() would always hash it.
         const std::string member = rowStorageName(varp);
         const std::string flags = vlEnumDirOf(scopep, varp) + lazyRematFlags(varp);
+        // Rebuilt rows are read-only, and VLVF_LAZY_COMB makes lazyDescSlot() ignore lazyIdx
+        UASSERT_OBJ(!isLazy
+                        || (flags.find("VLVF_PUB_RW") == std::string::npos
+                            && flags.find("VLVF_LAZY_COMB") == std::string::npos),
+                    varp, "--vpi-lazy rebuilt row is writable or comb-masked");
         std::string row = "{\"" + name + "\", ";
         if (varp->isParam()) {
             // Emitted 'static', so indexes the scope's array of parameter addresses
@@ -1473,10 +1478,11 @@ void EmitCSyms::emitVarTables() {
     puts("#if defined(__GNUC__)\n");
     puts("# pragma GCC diagnostic pop\n");
     puts("#endif\n");
-    if (v3Global.opt.vpiLazy()) {
-        // Every module is a Syms member, so this bounds all 32 bit lazy descriptor offsets.
+    if (v3Global.opt.vpi() || !m_ifaceRefTableRows.empty()) {
+        // Every module is a Syms member, so this bounds all 32 bit Syms offsets: hierarchy,
+        // interface reference and --vpi-lazy descriptor.
         puts("static_assert(sizeof(" + symClassName() + ") <= 0x7fffffffULL,\n");
-        puts("              \"Symbol table too large for 32 bit --vpi-lazy offsets\");\n");
+        puts("              \"Symbol table too large for 32 bit VPI offsets\");\n");
     }
 }
 

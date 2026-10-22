@@ -4714,12 +4714,14 @@ string AstVar::vlEnumDir(VVpiLazyComb comb, bool forMember) const {
     }
     //
     if (isSigExternallyRWPublic() && comb == VVpiLazyComb::WHOLE) {
-        out += "|VLVF_PUB_RD|VLVF_LAZY_COMB";
+        out += "|VLVF_PUB_RD";
+        // A member row's aux is its bit offset; puts check the parent's row
+        if (!forMember) out += "|VLVF_LAZY_COMB";
     } else if (isSigExternallyRWPublic()) {
         out += "|VLVF_PUB_RW";
         // All emission paths use this write gate.
         if (isSigVpiLazyRetained()) out += "|VLVF_LAZY_RETAINED";
-        if (comb == VVpiLazyComb::PARTIAL) out += "|VLVF_LAZY_COMB";
+        if (comb == VVpiLazyComb::PARTIAL && !forMember) out += "|VLVF_LAZY_COMB";
     } else if (isSigUserRdPublic()) {
         out += "|VLVF_PUB_RD";
     }
