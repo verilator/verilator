@@ -5966,20 +5966,15 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstNewCopy* nodep) override {
         if (nodep->didWidthAndSet()) return;
-        AstClassRefDType* const refp = VN_CAST(m_vup->dtypeNullSkipRefp(), ClassRefDType);
-        if (!refp) {  // e.g. int a = new;
+        if (!VN_IS(m_vup->dtypeNullSkipRefp(), ClassRefDType)) {  // e.g. int a = new b;
             nodep->v3error("new() cannot copy from non-class data type "
                            + (m_vup->dtypeNullp() ? m_vup->dtypep()->prettyDTypeNameQ() : ""));
             nodep->dtypep(m_vup->dtypep());
             return;
         }
-        nodep->dtypep(refp);
         userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
-        if (!similarDTypeRecurse(nodep->dtypep(), nodep->rhsp()->dtypep())) {
-            nodep->rhsp()->v3error("New-as-copier passed different data type '"
-                                   << nodep->dtypep()->prettyTypeName() << "' than expected '"
-                                   << nodep->rhsp()->dtypep()->prettyTypeName() << "'");
-        }
+        // IEEE 1800-2023 8.12: The copy has the type of the source; the assignment checks it
+        nodep->dtypeFrom(nodep->rhsp());
     }
     void visit(AstNewDynamic* nodep) override {
         if (nodep->didWidthAndSet()) return;
