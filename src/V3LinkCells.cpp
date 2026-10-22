@@ -406,9 +406,15 @@ class LinkCellsVisitor final : public VNVisitor {
     }
 
     void assignParamNumbers(AstPin* const firstPinp) {
+        const bool firstOrdered = firstPinp && firstPinp->name() == "";
         for (AstPin* pinp = firstPinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
             pinp->param(true);
-            if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
+            const bool ordered = pinp->name() == "";
+            if (ordered != firstOrdered) {
+                pinp->v3error("Mixing ordered and named parameter value assignments"
+                              " (IEEE 1800-2023 23.10.2)");
+            }
+            if (ordered) pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
     }
 

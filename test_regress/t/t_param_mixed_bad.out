@@ -1,0 +1,14 @@
+%Error: t/t_param_mixed_bad.v:26:14: Mixing ordered and named parameter value assignments (IEEE 1800-2023 23.10.2)
+   26 |   sub #(10, .B(15)) u_ordered_named ();   
+      |              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_param_mixed_bad.v:27:17: Mixing ordered and named parameter value assignments (IEEE 1800-2023 23.10.2)
+   27 |   sub #(.A(10), 15) u_named_ordered ();   
+      |                 ^~
+%Error: t/t_param_mixed_bad.v:30:14: Mixing ordered and named parameter value assignments (IEEE 1800-2023 23.10.2)
+   30 |   ifc #(10, .B(15)) i_ordered_named ();   
+      |              ^
+%Error: t/t_param_mixed_bad.v:31:14: Mixing ordered and named parameter value assignments (IEEE 1800-2023 23.10.2)
+   31 |   Cls #(10, .B(15)) c_ordered_named;   
+      |              ^
+%Error: Exiting due to

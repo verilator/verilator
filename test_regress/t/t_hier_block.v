@@ -83,8 +83,8 @@ module t #(
   sub3 #(.P0(1)) i_sub3(.clk(clk), .in(out2), .out(out3));
   // Must not use the same wrapper
   sub3 #(.STR("abc"), .P0(1)) i_sub3_2(.clk(clk), .in(out2), .out(out3_2));
-  delay #(.N(2), 8) i_delay0(clk, out3, out5);
-  delay #(.N(3), 8) i_delay1(clk, out5, out6);
+  delay #(.N(2), .WIDTH(8)) i_delay0(clk, out3, out5);
+  delay #(.N(3), .WIDTH(8)) i_delay1(clk, out5, out6);
 
   sub7 sub7_i (.*);
   sub7_chk sub7_chk_i ();
@@ -408,7 +408,7 @@ module delay #(
   reg [WIDTH-1:0] tmp;
   always_ff @(posedge clk) tmp <= in;
   if (N > 1) begin
-    delay #(.N(N - 1), WIDTH) i_delay(clk, tmp, out);
+    delay #(.N(N - 1), .WIDTH(WIDTH)) i_delay(clk, tmp, out);
   end else begin
     assign out = tmp;
   end
