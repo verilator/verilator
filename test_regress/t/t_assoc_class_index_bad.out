@@ -1,0 +1,22 @@
+%Error: t/t_assoc_class_index_bad.v:26:6: Associative array index (IEEE 1800-2023 7.8.5) expects a CLASSREFDTYPE 'Base', got CLASSREFDTYPE 'Other'
+                                        : ... note: In instance 't'
+   26 |     m[o] = 3;
+      |      ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assoc_class_index_bad.v:27:11: Associative array index (IEEE 1800-2023 7.8.5) expects a CLASSREFDTYPE 'Base', got CLASSREFDTYPE 'Other'
+                                         : ... note: In instance 't'
+   27 |     if (m.exists(o)) $stop;
+      |           ^~~~~~
+%Error: t/t_assoc_class_index_bad.v:28:7: Associative array index (IEEE 1800-2023 7.8.5) expects a CLASSREFDTYPE 'Base', got CLASSREFDTYPE 'Other'
+                                        : ... note: In instance 't'
+   28 |     m.delete(o);
+      |       ^~~~~~
+%Error: t/t_assoc_class_index_bad.v:29:13: Associative array index (IEEE 1800-2023 7.8.5) expects a CLASSREFDTYPE 'Base', got CLASSREFDTYPE 'Other'
+                                         : ... note: In instance 't'
+   29 |     void'(m.first(o));
+      |             ^~~~~
+%Error: t/t_assoc_class_index_bad.v:30:6: Associative array index (IEEE 1800-2023 7.8.5) 'class Other' cannot be assigned to non-class 'int'
+                                        : ... note: In instance 't'
+   30 |     n[o] = 4;
+      |      ^
+%Error: Exiting due to
