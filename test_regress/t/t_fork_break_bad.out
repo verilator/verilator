@@ -1,0 +1,11 @@
+%Error: t/t_fork_break_bad.v:13:9: break cannot be used inside fork to control a loop outside the fork (IEEE 1800-2023 12.8)
+   13 |         break;   
+      |         ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_fork_break_bad.v:19:11: continue cannot be used inside fork to control a loop outside the fork (IEEE 1800-2023 12.8)
+   19 |           continue;   
+      |           ^~~~~~~~
+%Error: t/t_fork_break_bad.v:28:13: continue cannot be used inside fork to control a loop outside the fork (IEEE 1800-2023 12.8)
+   28 |             continue;   
+      |             ^~~~~~~~
+%Error: Exiting due to
