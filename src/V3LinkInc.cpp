@@ -61,8 +61,8 @@ class LinkIncVisitor final : public VNVisitor {
     const VNUser1InUse m_inuser1;
 
     // STATE
-    AstNodeFTask* m_ftaskp = nullptr;  // Function or task we're inside
     AstNodeModule* m_modp = nullptr;  // Module we're inside
+    AstNode* m_containerp = nullptr;  // Module, generate block or function/task to add vars to
     int m_modCompoundAssignmentsNum = 0;  // Var name counter
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_inCovergroup = false;  // Under a covergroup's coverpoint, cross, or option
@@ -71,14 +71,19 @@ class LinkIncVisitor final : public VNVisitor {
 
     // METHODS
     void insertOnTop(AstNode* newp) {
-        // Add the thing directly under the current TFunc/Module, or class, as a member
+        // Add the thing directly under the current container, or class, as a member
         // Must not unlink the statements, as one of them is being iterated
-        if (m_ftaskp) {
-            m_ftaskp->prependStmtsp(newp);
+        if (AstNodeFTask* const ftaskp = VN_CAST(m_containerp, NodeFTask)) {
+            ftaskp->prependStmtsp(newp);
+        } else if (AstGenBlock* const genBlockp = VN_CAST(m_containerp, GenBlock)) {
+            genBlockp->itemsp()->addHereThisAsNext(newp);
+        } else if (AstGenFor* const genForp = VN_CAST(m_containerp, GenFor)) {
+            genForp->itemsp()->addHereThisAsNext(newp);
         } else {
-            UASSERT_OBJ(m_modp, newp, "Variable not under FTASK/MODULE");
-            if (VN_IS(m_modp, Class)) VN_AS(newp, Var)->varType(VVarType::MEMBER);
-            m_modp->prependStmtsp(newp);
+            AstNodeModule* const modp = VN_AS(m_containerp, NodeModule);
+            UASSERT_OBJ(modp, newp, "Variable not under FTASK/MODULE");
+            if (VN_IS(modp, Class)) VN_AS(newp, Var)->varType(VVarType::MEMBER);
+            modp->prependStmtsp(newp);
         }
     }
     void insertBeforeStmt(AstNode* nodep, AstNode* newp) {
@@ -92,22 +97,24 @@ class LinkIncVisitor final : public VNVisitor {
     void visit(AstNodeModule* nodep) override {
         if (nodep->dead()) return;
         VL_RESTORER(m_modp);
+        VL_RESTORER(m_containerp);
         VL_RESTORER(m_modCompoundAssignmentsNum);
         m_modp = nodep;
+        m_containerp = nodep;
         m_modCompoundAssignmentsNum = 0;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTask* nodep) override {
-        VL_RESTORER(m_ftaskp);
-        m_ftaskp = nodep;
+        VL_RESTORER(m_containerp);
+        m_containerp = nodep;
         iterateChildren(nodep);
     }
     // A covergroup's expressions are under no statement, and V3Covergroup moves them to its
     // constructor or sample(), so their variables are members of its class
     void visitCovergroup(AstNode* nodep) {
-        VL_RESTORER(m_ftaskp);
+        VL_RESTORER(m_containerp);
         VL_RESTORER(m_inCovergroup);
-        m_ftaskp = nullptr;
+        m_containerp = m_modp;
         m_inCovergroup = true;
         iterateChildren(nodep);
     }
@@ -227,7 +234,7 @@ class LinkIncVisitor final : public VNVisitor {
             fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
             new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, lhsp->cloneTree(true)}};
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        if (m_ftaskp) varp->funcLocal(true);
+        if (VN_IS(m_containerp, NodeFTask)) varp->funcLocal(true);
         insertOnTop(varp);
         AstNode* tempInitp = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, lhsp};
         // Gate by the enclosing condition so a side-effecting LHS isn't run on short-circuit
@@ -356,7 +363,7 @@ class LinkIncVisitor final : public VNVisitor {
         AstVar* const varp = new AstVar{
             fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
             new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, rdBitp->cloneTree(true)}};
-        if (m_ftaskp) varp->funcLocal(true);
+        if (VN_IS(m_containerp, NodeFTask)) varp->funcLocal(true);
 
         // Declare the variable
         insertOnTop(varp);
@@ -429,7 +436,7 @@ class LinkIncVisitor final : public VNVisitor {
             fl, VVarType::BLOCKTEMP, name, VFlagChildDType{},
             new AstRefDType{fl, AstRefDType::FlagTypeOfExpr{}, readp->cloneTreePure(true)}};
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        if (m_ftaskp) varp->funcLocal(true);
+        if (VN_IS(m_containerp, NodeFTask)) varp->funcLocal(true);
 
         // Declare the variable
         insertOnTop(varp);
@@ -492,7 +499,16 @@ class LinkIncVisitor final : public VNVisitor {
             prepost_stmt_visit(nodep);
         }
     }
-    void visit(AstGenFor* nodep) override { iterateChildren(nodep); }
+    void visit(AstGenBlock* nodep) override {
+        VL_RESTORER(m_containerp);
+        m_containerp = nodep;
+        iterateChildren(nodep);
+    }
+    void visit(AstGenFor* nodep) override {
+        VL_RESTORER(m_containerp);
+        m_containerp = nodep;
+        iterateChildren(nodep);
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
