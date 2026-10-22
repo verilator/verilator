@@ -4038,7 +4038,9 @@ class RandomizeVisitor final : public VNVisitor {
     AstConstraint* m_constraintp = nullptr;  // Current constraint
     std::set<std::string> m_writtenVars;  // Track write_var calls per class to avoid duplicates
     std::map<AstClass*, VInsertionSet<AstVar*>> m_sizeConstrainedArrays;  // Per-class arrays
-    // Per-class rand vars read by dist weights; solved first so weights see final values
+    // Per-class rand vars read by dist weights. They are solved before the dist's own
+    // variable, as VCS does (IEEE 1800 leaves this open; it orders rand function arguments
+    // the same way, 1800-2017 18.5.12).
     std::map<AstClass*, VInsertionSet<AstVar*>> m_distWeightVars;
     std::map<AstClass*, AstVar*>
         m_staticConstraintModeVars;  // Static constraint mode vars per class
@@ -5926,8 +5928,8 @@ class RandomizeVisitor final : public VNVisitor {
 
             FileLine* const fl = distp->fileline();
 
-            // Weights are evaluated in C++ before the solve, so the rand vars they read
-            // are pinned to values from an earlier solve pass.
+            // Weights are evaluated in C++ before the solve. The rand vars they read are
+            // solved first, then pinned while the dist is drawn with the weights they give.
             for (AstDistItem* ditemp = distp->itemsp(); ditemp;
                  ditemp = VN_AS(ditemp->nextp(), DistItem)) {
                 ditemp->weightp()->foreach([&](const AstVarRef* vrefp) {
@@ -6024,10 +6026,9 @@ class RandomizeVisitor final : public VNVisitor {
         }
     }
 
-    // A rand var that pin_var can hold between the two solve passes
+    // A rand var whose value the solver can be pinned to between the two solve passes
     static bool isPinnableWeightVar(const AstVar* varp) {
-        return varp->rand().isRandomizable() && varp->dtypep()->skipRefp()->isIntegralOrPacked()
-               && varp->width() <= 64;
+        return varp->rand().isRandomizable() && varp->dtypep()->skipRefp()->isIntegralOrPacked();
     }
 
     static bool isDynArrOfClassTypeRecurse(const AstNodeDType* const dtypep) {
@@ -6083,25 +6084,34 @@ class RandomizeVisitor final : public VNVisitor {
 
     AstNodeStmt* newPinSizeVariable(FileLine* const fl, AstVar* const arrVarp,
                                     AstVar* const genp) {
-        return newPinVariable(fl, VN_AS(arrVarp->user4p(), Var), genp);
-    }
-    // Pin a solver variable to its current value for the following solve
-    AstNodeStmt* newPinVariable(FileLine* const fl, AstVar* const varp, AstVar* const genp) {
         AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
+        AstVar* const sizeVarp = VN_AS(arrVarp->user4p(), Var);
         AstCMethodHard* const pinp
             = new AstCMethodHard{fl, new AstVarRef{fl, genModp, genp, VAccess::READWRITE},
                                  VCMethod::RANDOMIZER_PIN_VAR};
         pinp->dtypeSetVoid();
-        AstCExpr* const namep = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + varp->name() + "\""};
+        AstCExpr* const namep = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + sizeVarp->name() + "\""};
         namep->dtypeSetUInt32();
         pinp->addPinsp(namep);
         pinp->addPinsp(
-            new AstConst{fl, AstConst::Unsized64{}, static_cast<uint64_t>(varp->width())});
-        // varp may live in a base class; route the reference through its declaring class
-        // so V3Scope can resolve it.
-        AstVarRef* const refp = new AstVarRef{fl, varp, VAccess::READ};
-        refp->classOrPackagep(VN_AS(varp->user2p(), NodeModule));
-        pinp->addPinsp(refp);
+            new AstConst{fl, AstConst::Unsized64{}, static_cast<uint64_t>(sizeVarp->width())});
+        // sizeVarp may live in a base class when the constrained array is inherited; route the
+        // reference through its declaring class so V3Scope can resolve it.
+        AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
+        sizeVarRefp->classOrPackagep(VN_AS(sizeVarp->user2p(), NodeModule));
+        pinp->addPinsp(sizeVarRefp);
+        return pinp->makeStmt();
+    }
+    // Pin a solver variable to the value the previous solve gave it
+    AstNodeStmt* newPinCurrentValue(FileLine* const fl, AstVar* const varp, AstVar* const genp) {
+        AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
+        AstCMethodHard* const pinp
+            = new AstCMethodHard{fl, new AstVarRef{fl, genModp, genp, VAccess::READWRITE},
+                                 VCMethod::RANDOMIZER_PIN_CURRENT};
+        pinp->dtypeSetVoid();
+        AstCExpr* const namep = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + varp->name() + "\""};
+        namep->dtypeSetUInt32();
+        pinp->addPinsp(namep);
         return pinp->makeStmt();
     }
 
@@ -6367,7 +6377,7 @@ class RandomizeVisitor final : public VNVisitor {
                     randomizep->addStmtsp(newPinSizeVariable(fl, arrVarp, genp));
                 }
                 for (AstVar* const varp : distWeightVars) {
-                    randomizep->addStmtsp(newPinVariable(fl, varp, genp));
+                    randomizep->addStmtsp(newPinCurrentValue(fl, varp, genp));
                 }
 
                 // Final pass: solve full constraints with sizes and dist weight inputs pinned
