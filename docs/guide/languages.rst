@@ -407,8 +407,8 @@ This section describes specific limitations for each language keyword.
    Generally supported.
 
 ++, -- operators
-   Generally supported. Increment/decrement of a concatenation, e.g.
-   ``{a, b}++``, is not supported.
+   Generally supported. Increment/decrement of a concatenation, e.g. ``{a,
+   b}++``, is not supported.
 
 '{} operator
    Assignment patterns with an order based, default, constant integer
