@@ -597,6 +597,7 @@ IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
     return VL_RANDOM_I();
 }
 
+// Bulk array initialization relies on scoped resets having no element index or mutable RNG state.
 IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
     const int randReset = Verilated::threadContextp()->randReset();
     if (randReset == 0) return 0;
@@ -669,6 +670,24 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     // Not inlined to speed up compilation of slowpath code
     return VL_ZERO_W(obits, outwp);
+}
+
+void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE {
+    char* const bytesp = static_cast<char*>(arrayp);
+    const size_t totalBytes = elementBytes * count;
+    // Zero is the usual reset, and memset stays fast in -Os code.
+    bool zero = true;
+    for (size_t i = 0; i < elementBytes; ++i) zero = zero && !bytesp[i];
+    if (zero) {
+        std::memset(bytesp + elementBytes, 0, totalBytes - elementBytes);
+        return;
+    }
+    // Otherwise grow the initialized prefix, which memcpy fills quickly at any optimization.
+    for (size_t filled = elementBytes; filled < totalBytes;) {
+        const size_t bytes = std::min(filled, totalBytes - filled);
+        std::memcpy(bytesp + filled, bytesp, bytes);
+        filled += bytes;
+    }
 }
 
 //===========================================================================
