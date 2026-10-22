@@ -24,12 +24,15 @@ extern "C" int mon_check();
   logic [11:10][25:11] arr_idata [9:8][10:9]; // 2x15 (30) bit words
   logic [15:14][44:15] arr_qdata [13:12][14:13]; // 2x30 (60) bit words
   logic [19:18][81:19] arr_wdata [17:16][18:17]; // 2x63 (126) bit words
-  logic [3:2][2:1][1:0] arr_6d [1:0][2:1][3:2]; // 3 unpacked, 3 packed dims
+  // verilator lint_off ASCRANGE
+  logic [3:2][1:2][1:0] arr_6d [1:0][1:2][3:2]; // 3 unpacked, 3 packed dims, some ascending
+  // verilator lint_on ASCRANGE
 
   int status;
 
   initial begin
-    arr_6d[1][2][3] = 8'ha5;
+    arr_6d = '{default: '0};
+    arr_6d[1][2][3] = 8'hb4;
 `ifdef VERILATOR
     status = $c32("mon_check()");
 `else
@@ -37,6 +40,11 @@ extern "C" int mon_check();
 `endif
     if (status!=0) begin
       $write("%%Error: t_vpi_multidim.cpp:%0d: C Test failed\n", status);
+      $stop;
+    end
+    // Written by mon_check()
+    if (arr_6d[0][1][2] !== 8'h3c || arr_6d[0][1][3] !== 8'h00 || arr_6d[0][2][2] !== 8'h00) begin
+      $write("%%Error: arr_6d[0][1][2] = %h\n", arr_6d[0][1][2]);
       $stop;
     end
     $write("*-* All Finished *-*\n");

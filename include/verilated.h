@@ -168,13 +168,12 @@ enum VerilatedVarFlags : uint32_t {
                                          // packed structs/unions, so needs an element index
 };
 
-// One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
-// replaces per-variable varInsert() calls, which compiles faster at scale.
+// One VPI-visible variable, a row for VerilatedScope::varsInsertFromTable() or
+// paramsInsertFromTable(); replaces per-variable varInsert() calls, which compiles faster.
 struct VlVarTableEntry final {
     const char* namep;  // VPI-facing (protected) variable name, string literal
-    // offsetof of storage member from module instance base, 0 for a packed member; for a
-    // parameter, being static, the index of its address (a packed member's: its parent
-    // element's) in the array basep points to
+    // offsetof from the instance base, 0 for a packed member; for a parameter, being static,
+    // an index into paramPtrsp
     size_t byteOffset;
     // (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
     // nullptr if none. int32_t since large unpacked memories exceed int16 range.
@@ -183,8 +182,7 @@ struct VlVarTableEntry final {
     VerilatedVarType vltype;
     uint8_t udims;
     uint8_t pdims;
-    // Defaulted, so only parameter and packed member rows spell them
-    bool isParam = false;
+    // Only packed member rows set these
     uint32_t bitOffset = 0;  // VLVF_PACKED_MEMBER: bit offset within the parent's element 0
     uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
 };
@@ -987,6 +985,8 @@ private:
     const int8_t m_timeunit;  // Timeunit in negative power-of-10
     const Type m_type;  // Type of the scope
 
+    void varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam) VL_MT_UNSAFE;
+
 public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
                    const char* defnamep, int8_t timeunit, Type type);
@@ -1004,6 +1004,8 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    void paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
+                               const void* const* paramPtrsp) VL_MT_UNSAFE;
     void ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
                                          VerilatedSyms* symsp) VL_MT_UNSAFE;

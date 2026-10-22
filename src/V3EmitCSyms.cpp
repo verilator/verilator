@@ -412,7 +412,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             row += "offsetof(" + modClassName + ", " + member + "), ";
         }
         row += tableRowProps(varp, vlEnumType, varp->vlEnumDir(), dims);
-        row += varp->isParam() ? ", true}" : "}";
+        row += "}";
         rowOut = row;
         return varp->isParam() ? TableEntryKind::PARAM_ROW : TableEntryKind::TABLE_ROW;
     }
@@ -559,8 +559,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             if (needsIndex) flags += "|VLVF_PACKED_NEEDS_INDEX";
             rows.emplace_back("{\"" + V3OutFormatter::quoteNameControls(prettyName) + "\", "
                               + byteOffset + ", " + tableRowProps(itemp, vlEnumType, flags, dims)
-                              + ", " + (svd.m_varp->isParam() ? "true" : "false") + ", "
-                              + std::to_string(bitOffset) + ", " + std::to_string(entSize) + "}");
+                              + ", " + std::to_string(bitOffset) + ", " + std::to_string(entSize)
+                              + "}");
             // Nested packed struct/union, or packed array of them: register the members of
             // the element at index offset 0
             const AstNodeDType* subDTypep = itemDTypep->skipRefp();
@@ -601,8 +601,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string modClassName = EmitCUtil::prefixNameProtect(svd.m_modp);
         if (svd.m_varp->isParam()) {
             // Static, so the rows join the scope's parameter table, indexing the element's address
-            const std::string addr = "&" + modClassName + "::" + elemCName;
-            if (m_paramPtrs.empty() || m_paramPtrs.back() != addr) m_paramPtrs.emplace_back(addr);
+            m_paramPtrs.emplace_back("&" + modClassName + "::" + elemCName);
             addPackedMemberRows(m_paramRows, svd, std::to_string(m_paramPtrs.size() - 1),
                                 prettyPrefix, vlEnumType, entSize, sdtypep, 0, isArray);
             return;
@@ -1682,9 +1681,9 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                     = sharedTableName(m_paramPtrTables, m_paramPtrTableByRows,
                                       modClassName + "__VpiParamPtrs", std::move(m_paramPtrs));
                 stmts.add("vlSymsp->" + protect("__Vscopep_" + scopeName)
-                          + "->varsInsertFromTable("
+                          + "->paramsInsertFromTable("
                           + varTableName(modClassName, std::move(m_paramRows)) + ", "
-                          + std::to_string(rowCount) + ", const_cast<void**>(" + ptrsName + "));");
+                          + std::to_string(rowCount) + ", " + ptrsName + ");");
             }
             for (const std::string& r : residual) stmts.add(r);
         }

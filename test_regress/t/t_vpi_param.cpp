@@ -134,15 +134,21 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
 }
 
 #ifdef T_VPI_PARAM
-int check_param_handle(const char* name, int exp_int, bool readValue) {
+// String array elements are unreachable: vpi_handle_by_index needs a packed dimension
+int check_param_exists(const char* name) {
     TestVpiHandle param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
     CHECK_RESULT_NZ(param_h);
-    if (!readValue) return errors;
+    return errors;
+}
+
+int check_param_value(const char* name, PLI_INT32 format, const char* exp_value) {
+    TestVpiHandle param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
+    CHECK_RESULT_NZ(param_h);
     s_vpi_value value;
-    value.format = vpiIntVal;
+    value.format = format;
     vpi_get_value(param_h, &value);
     TEST_CHECK_ERROR(false);
-    CHECK_RESULT(value.value.integer, exp_int);
+    CHECK_RESULT_CSTR(value.value.str, exp_value);
     return errors;
 }
 #endif
@@ -160,11 +166,11 @@ int _mon_check_param() {
     status += check_param_str("PARAM_LONG", vpiHexStrVal, "fedcba9876543210", verbose);
     status += check_param_str("PARAM_STR", vpiStringVal, "'some string value'", verbose);
 #ifdef T_VPI_PARAM
-    status += check_param_handle("PARAM_STR_ARR", 0, false);
-    status += check_param_handle("PARAM_STR_ARR_TD", 0, false);
-    status += check_param_handle("PARAM_PAIR.a", 1, true);
-    status += check_param_handle("PARAM_PAIR.b", 2, true);
-    status += check_param_handle("PARAM_PAIR_ARR[1].a", 5, true);
+    status += check_param_exists("PARAM_STR_ARR");
+    status += check_param_exists("PARAM_STR_ARR_TD");
+    status += check_param_value("PARAM_PAIR.a", vpiDecStrVal, "1");
+    status += check_param_value("PARAM_PAIR.b", vpiDecStrVal, "2");
+    status += check_param_value("PARAM_PAIR_ARR[1].a", vpiDecStrVal, "5");
 #endif
     return status;
 }
@@ -191,7 +197,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 // cver entry

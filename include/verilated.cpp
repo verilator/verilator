@@ -4345,39 +4345,46 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
+void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap,
+                                      bool isParam) VL_MT_UNSAFE {
+    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
+    VerilatedVar var{e.namep, datap,   e.vltype,  vlflags,    e.udims,
+                     e.pdims, isParam, e.entSize, e.bitOffset};
+    for (int d = 0; d < e.udims; ++d) {
+        var.m_unpacked[d].m_left = e.dimsp[2 * d];
+        var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
+    }
+    for (int d = 0; d < e.pdims; ++d) {
+        var.m_packed[d].m_left = e.dimsp[2 * (e.udims + d)];
+        var.m_packed[d].m_right = e.dimsp[2 * (e.udims + d) + 1];
+    }
+    // Recompute the flattened DPI packed range now dims are known (see
+    // VerilatedVarProps::initPacked)
+    if (e.pdims == 1) {
+        var.m_packedDpi = var.m_packed.front();
+    } else if (e.pdims > 1) {
+        int packedSize = 1;
+        for (int d = 0; d < e.pdims; ++d) packedSize *= var.m_packed[d].elements();
+        var.m_packedDpi = VerilatedRange{packedSize - 1, 0};
+    }
+    m_varsp->emplace(e.namep, std::move(var));
+}
+
 void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
                                          void* basep) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
-    // For variables' packed member rows, basep is the parent's storage; for parameter rows,
-    // including their packed members, an array of addresses.
+    // A packed member row's basep is its parent's storage
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
+    for (size_t i = 0; i < n; ++i) varInsertFromRow(entp[i], base + entp[i].byteOffset, false);
+}
+
+void VerilatedScope::paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
+                                           const void* const* paramPtrsp) VL_MT_UNSAFE {
+    // VerilatedVar's data is non-const, but VPI refuses parameter writes
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     for (size_t i = 0; i < n; ++i) {
-        const VlVarTableEntry& e = entp[i];
-        void* const datap
-            = e.isParam ? const_cast<void*>(static_cast<const void* const*>(basep)[e.byteOffset])
-                        : base + e.byteOffset;
-        const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
-        VerilatedVar var{e.namep, datap,     e.vltype,  vlflags,    e.udims,
-                         e.pdims, e.isParam, e.entSize, e.bitOffset};
-        for (int d = 0; d < e.udims; ++d) {
-            var.m_unpacked[d].m_left = e.dimsp[2 * d];
-            var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
-        }
-        for (int d = 0; d < e.pdims; ++d) {
-            var.m_packed[d].m_left = e.dimsp[2 * (e.udims + d)];
-            var.m_packed[d].m_right = e.dimsp[2 * (e.udims + d) + 1];
-        }
-        // Recompute the flattened DPI packed range now dims are known (see
-        // VerilatedVarProps::initPacked)
-        if (e.pdims == 1) {
-            var.m_packedDpi = var.m_packed.front();
-        } else if (e.pdims > 1) {
-            int packedSize = 1;
-            for (int d = 0; d < e.pdims; ++d) packedSize *= var.m_packed[d].elements();
-            var.m_packedDpi = VerilatedRange{packedSize - 1, 0};
-        }
-        m_varsp->emplace(e.namep, std::move(var));
+        varInsertFromRow(entp[i], const_cast<void*>(paramPtrsp[entp[i].byteOffset]), true);
     }
 }
 
