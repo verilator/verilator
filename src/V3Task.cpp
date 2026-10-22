@@ -1492,7 +1492,7 @@ class TaskVisitor final : public VNVisitor {
                                                     : VCFunction::CALL_IMPORT_FUNCTION};
         callImportp->dtypeSetVoid();
         // Add arguments
-        addDebugInfo(callImportp);
+        if (!nodep->verilogTask()) addDebugInfo(callImportp);
         // Pass name of the DPI imported function to call
         callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});
         if (!args.empty()) callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});
