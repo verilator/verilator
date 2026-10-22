@@ -1087,7 +1087,7 @@ public:
             suggest = suggestSymFlat(packageEntp(), nodep->name(), LinkNodeMatcherClassOrPackage{},
                                      true);
         }
-        if (suggest.empty()) {
+        if (suggest.empty() && classOnly) {
             // If nothing was found, maybe there is a package with the same name as the class
             suggest = suggestPossiblyPackage(nodep->name());
         }
