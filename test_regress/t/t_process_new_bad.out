@@ -1,0 +1,10 @@
+%Error: t/t_process_new_bad.v:26:10: Cannot create objects of class 'process' with new, use process::self() (IEEE 1800-2023 9.7)
+                                   : ... note: In instance 't'
+   26 |     sp = new;   
+      |          ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_process_new_bad.v:32:9: Cannot create objects of class 'process' with new, use process::self() (IEEE 1800-2023 9.7)
+                                  : ... note: In instance 't'
+   32 |     p = new;   
+      |         ^~~
+%Error: Exiting due to

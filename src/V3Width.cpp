@@ -5877,6 +5877,15 @@ class WidthVisitor final : public VNVisitor {
 
             classp = refp->classp();
             UASSERT_OBJ(classp, nodep, "Unlinked");
+            if (classp->name() == "process") {
+                // Only process::self() may create std::process objects
+                const AstPackage* const packagep = getItemPackage(classp);
+                if (packagep && packagep->name() == "std"
+                    && (!m_ftaskp || m_containingClassFinder.find(m_ftaskp) != classp)) {
+                    nodep->v3error("Cannot create objects of class 'process' with new,"
+                                   " use process::self() (IEEE 1800-2023 9.7)");
+                }
+            }
             if (AstNodeFTask* const ftaskp
                 = VN_CAST(m_memberMap.findMember(classp, "new"), Func)) {
                 nodep->taskp(ftaskp);
