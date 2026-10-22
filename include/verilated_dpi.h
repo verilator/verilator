@@ -167,14 +167,14 @@ inline VlCoroutine resumeDpiCallAfter(VlCoroutine coro, VlDpiCall* callp) {
     co_await coro;
 
     notify.callp = nullptr;
-    callp->resume();
+    callp->handoffWorker();
 }
 
 template <typename Callable, typename... Args>
 VlCoroutine awaitImportTask(Callable&& call, Args&&... args) {
     VlDpiCall dpiCall{
         [&]() { callImportTask(std::forward<Callable>(call), std::forward<Args>(args)...); }};
-    dpiCall.resume();
+    dpiCall.handoffWorker();
     co_await dpiCall;
 }
 
@@ -210,7 +210,7 @@ void callExportTask(Callable&& call, Args&&... args) {
         VlCoroutine coro{call(std::forward<Args>(args)...)};
         if (!coro.await_ready()) {
             resumeDpiCallAfter(std::move(coro), callp);
-            VlDpiCall::yield();
+            VlDpiCall::stopWorker();
         }
         return;
     }
