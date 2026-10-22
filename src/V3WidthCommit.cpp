@@ -219,8 +219,7 @@ private:
         //
         if (nodep->isVirtual()) isVirtualr = true;
         // Propagate value from extends/implements
-        for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
-             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+        for (AstClassExtends* const extendsp : classp->extendspList()) {
             const AstClass* const eclassp = extendsp->classp();
             if (AstNodeFTask* const fbasep
                 = VN_CAST(m_memberMap.findMember(eclassp, nodep->name()), NodeFTask)) {

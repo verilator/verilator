@@ -229,7 +229,7 @@ private:
         // pointers to what scope the FTask is to be invoked under.
         // However, to create variables, we need to track the scopes involved.
         // Find all var->varscope mappings, for later cleanup
-        for (AstNode* stmtp = nodep->varsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->varspList()) {
             if (AstVarScope* const vscp = VN_CAST(stmtp, VarScope)) {
                 AstVar* const varp = vscp->varp();
                 if (varp->isFuncLocal() || varp->isUsedLoopIdx()
@@ -240,7 +240,7 @@ private:
             }
         }
         // Likewise, all FTask->scope mappings
-        for (AstNode* stmtp = nodep->blocksp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->blockspList()) {
             if (AstNodeFTask* const taskp = VN_CAST(stmtp, NodeFTask)) taskp->user3p(nodep);
         }
         iterateChildren(nodep);
@@ -696,7 +696,7 @@ class TaskVisitor final : public VNVisitor {
     }
 
     bool hasRefArgument(AstNodeFTask* nodep) {
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->isRef() || varp->isConstRef()) return true;
             }
@@ -825,8 +825,7 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // Move artument expression to the CCall, without AstArg
-        for (AstArg *argp = refp->argsp(), *nextp; argp; argp = nextp) {
-            nextp = VN_AS(argp->nextp(), Arg);
+        for (AstArg* const argp : refp->argspList()) {
             ccallp->addArgsp(argp->exprp()->unlinkFrBack());
         }
 
@@ -845,7 +844,7 @@ class TaskVisitor final : public VNVisitor {
         dpiproto += rtnvarp ? rtnvarp->dpiArgType(true, true) : "void";
         dpiproto += " " + nodep->cname() + " (";
         string args;
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->stmtspList()) {
             if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO() && !portp->isFuncReturn() && portp != rtnvarp) {
                     if (args != "") {
@@ -971,8 +970,7 @@ class TaskVisitor final : public VNVisitor {
                                                        arrayp->subDTypep(), toDpi));
             }
         } else if (dtypep->containsUnpackedStruct()) {
-            for (const AstMemberDType* itemp = VN_AS(dtypep, StructDType)->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            for (const AstMemberDType* const itemp : VN_AS(dtypep, StructDType)->memberspList()) {
                 AstStructSel* const selp
                     = new AstStructSel{flp, internalp->cloneTree(false), itemp->name()};
                 selp->dtypeFrom(itemp->dtypep());
@@ -1093,7 +1091,7 @@ class TaskVisitor final : public VNVisitor {
         callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
         // Add function arguments
         AstNode* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->stmtspList()) {
             AstVar* const portp = VN_CAST(stmtp, Var);
             if (!portp) continue;
             if (!portp->isIO()) continue;
@@ -1206,7 +1204,7 @@ class TaskVisitor final : public VNVisitor {
     static bool makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
         bool allOk = true;
         // Copy nodep's list of function I/O to the new dpip c function
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO()) {
                     // Move it to new function
@@ -1253,8 +1251,7 @@ class TaskVisitor final : public VNVisitor {
                               << "... Suggest use a typedef with a C identifier name");
             return false;
         }
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             if (!isDpiCIdentifier(itemp->prettyName())) {
                 portp->v3warn(E_UNSUPPORTED, "Unsupported: DPI argument of unpacked structure "
                                              "type with member name not usable in C: "
@@ -1300,7 +1297,7 @@ class TaskVisitor final : public VNVisitor {
     // Check DPI can pass the unpacked structure arguments of 'nodep', else report
     bool checkDpiStructArgs(const AstNodeFTask* nodep) {
         bool allOk = true;
-        for (const AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : nodep->stmtspList()) {
             const AstVar* const portp = VN_CAST(stmtp, Var);
             if (portp && portp->isIO() && portp->dtypep()->containsUnpackedStruct()) {
                 allOk = checkDpiStruct(portp, VN_AS(portp->dtypep()->elemDTypep(), StructDType),
@@ -1321,7 +1318,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Convert input/inout arguments to DPI types
         string args;
-        for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : cfuncp->argspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 AstVarScope* const portvscp
                     = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
@@ -1403,7 +1400,7 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // Convert output/inout arguments back to internal type
-        for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : cfuncp->argspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 portp->protect(false);  // No additional exposure - already part of shown proto
                 if (portp->isIO() && (portp->isWritable() || portp->isFuncReturn())
@@ -1585,8 +1582,7 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // Create list of arguments and move to function
-        for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
-            nextp = stmtp->nextp();
+        for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isParam() && VN_IS(portp->valuep(), ConsArray)) {
                     // Move array parameters in functions into constant pool
@@ -1634,8 +1630,7 @@ class TaskVisitor final : public VNVisitor {
             VL_DANGLING(bodysp);
             // If we cloned due to recursion, now need to rip out the ports
             // (that remained in place) then got cloned
-            for (AstNode *nextp, *stmtp = tempp->stmtsp(); stmtp; stmtp = nextp) {
-                nextp = stmtp->nextp();
+            for (AstNode* const stmtp : tempp->stmtspList()) {
                 if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                     if (portp->isIO()) VL_DO_DANGLING(pushDeletep(portp->unlinkFrBack()), portp);
                 }
@@ -1728,7 +1723,7 @@ class TaskVisitor final : public VNVisitor {
     }
     void processArgs(AstNodeFTaskRef* nodep) {
         // Create a fresh variable for each concat array present in pins list
-        for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+        for (AstArg* const argp : nodep->argspList()) {
             AstConsArray* const arrayp = VN_CAST(argp->exprp(), ConsArray);
             if (!arrayp) continue;
 
@@ -1982,8 +1977,7 @@ class TaskVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
                 }
             }
-            for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
-                nextp = stmtp->nextp();
+            for (AstNode* const stmtp : nodep->stmtspList()) {
                 if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                     AstVarScope* const vscp = m_statep->findVarScope(m_scopep, portp);
                     UINFO(9, "   funcremovevsc " << vscp);
@@ -2149,8 +2143,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
     // Find pins
     int ppinnum = 0;
     bool reorganize = false;
-    for (AstArg *argp = nodep->argsp(), *nextp; argp; argp = nextp) {
-        nextp = VN_AS(argp->nextp(), Arg);
+    for (AstArg* const argp : nodep->argspList()) {
         if (!argp->name().empty()) {
             // By name
             const auto it = nameToIndex.find(argp->name());

@@ -958,7 +958,7 @@ public:
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     size_t itemCount() const {
         size_t count = 0;
-        for (AstNode* itemp = itemsp(); itemp; itemp = itemp->nextp()) ++count;
+        for (AstNode* const itemp : itemspList()) ++count;
         return count;
     }
     bool isCompound() const override { return false; }

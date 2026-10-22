@@ -216,8 +216,7 @@ class LiftExprVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCaseItem* nodep) override {
-        for (AstNode *condp = nodep->condsp(), *nextp; condp; condp = nextp) {
-            nextp = condp->nextp();
+        for (AstNode* const condp : nodep->condspList()) {
             // Lift under the AstExprStmt that will hold the lifted statements, as lifting
             // may replace the condition
             VNRelinker relinker;

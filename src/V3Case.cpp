@@ -258,7 +258,7 @@ class CaseVisitor final : public VNVisitor {
     bool analyzeDecoderCaseItem(AstCaseItem* cip) {
         // AstVarScope::user1() -> bool: true if written to
         const VNUser1InUse user1InUse;
-        for (AstNode* stmtp = cip->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : cip->stmtspList()) {
             // Must be an assignment that fits the decoder pattern
             AstNodeAssign* const assp = checkDecoderAssign(stmtp);
             if (!assp) return false;
@@ -294,7 +294,7 @@ class CaseVisitor final : public VNVisitor {
         const uint32_t numCases = 1UL << nodep->exprp()->width();
         bool fullyCovered = true;
         string missingItems;
-        for (AstEnumItem* eip = enump->itemsp(); eip; eip = VN_AS(eip->nextp(), EnumItem)) {
+        for (AstEnumItem* const eip : enump->itemspList()) {
             const auto& match = matchPattern(nodep, VN_AS(eip->valuep(), Const));
             const uint32_t mask = match.first.toUInt();
             const uint32_t bits = match.second.toUInt();
@@ -600,9 +600,9 @@ class CaseVisitor final : public VNVisitor {
 
         // Check each case item
         bool canBeDecoder = true;
-        for (AstCaseItem* cip = nodep->itemsp(); cip; cip = VN_AS(cip->nextp(), CaseItem)) {
+        for (AstCaseItem* const cip : nodep->itemspList()) {
             // Check conditions
-            for (AstNode* condp = cip->condsp(); condp; condp = condp->nextp()) {
+            for (AstNode* const condp : cip->condspList()) {
                 // Count conditions that can actually match.
                 if (!neverItem(nodep, VN_AS(condp, NodeExpr))) ++m_caseNConditions;
                 // Mark opaque if non-constant condition
@@ -707,7 +707,7 @@ class CaseVisitor final : public VNVisitor {
                  cip = VN_AS(cip->prevp(), CaseItem)) {
                 // Find the RHS in this case
                 AstConst* const rhsp = [&]() -> AstConst* {
-                    for (AstNode* stmtp = cip->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    for (AstNode* const stmtp : cip->stmtspList()) {
                         AstNodeAssign* const ap = VN_AS(stmtp, NodeAssign);
                         if (lhsRecord.lhsp->sameTree(ap->lhsp())) return VN_AS(ap->rhsp(), Const);
                     }
@@ -773,12 +773,12 @@ class CaseVisitor final : public VNVisitor {
         // matches anything (the default case, or the catch-all added below).
         std::vector<std::pair<AstConst*, AstNode*>> clauses;  // (condition, item statements)
         clauses.reserve(m_caseNConditions + 1);
-        for (AstCaseItem* cip = nodep->itemsp(); cip; cip = VN_AS(cip->nextp(), CaseItem)) {
+        for (AstCaseItem* const cip : nodep->itemspList()) {
             if (cip->isDefault()) {
                 clauses.emplace_back(nullptr, cip->stmtsp());
                 continue;
             }
-            for (AstNode* condp = cip->condsp(); condp; condp = condp->nextp()) {
+            for (AstNode* const condp : cip->condspList()) {
                 AstConst* const iconstp = VN_AS(condp, Const);
                 // Skip items that can never match in 2-state simulation (e.g. X in casez)
                 if (neverItem(nodep, iconstp)) continue;
@@ -1003,8 +1003,7 @@ class CaseVisitor final : public VNVisitor {
         // First stage, convert the conditions to the appropriate IF AND terms.
         bool hasDefault = false;
         bool hasExprStmt = false;  // Some item condition is an AstExprStmt
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstCaseItem* const itemp : nodep->itemspList()) {
 
             FileLine* const flp = itemp->fileline();
 
@@ -1018,8 +1017,7 @@ class CaseVisitor final : public VNVisitor {
             // Regular clause. Construct the condition expression.
             std::vector<AstNodeExpr*> termps;
             bool itemHasExprStmt = false;
-            for (AstNodeExpr *itemExprp = itemp->condsp(), *nextp; itemExprp; itemExprp = nextp) {
-                nextp = VN_AS(itemExprp->nextp(), NodeExpr);
+            for (AstNodeExpr* const itemExprp : itemp->condspList()) {
                 itemExprp->unlinkFrBack();
 
                 // If case never matches, ignore it
@@ -1078,8 +1076,8 @@ class CaseVisitor final : public VNVisitor {
 
         // Impure conditions must be evaluated in order, each at most once, so no grouping
         bool dontGroup = hasExprStmt;
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp && !dontGroup;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstCaseItem* const itemp : nodep->itemspList()) {
+            if (dontGroup) break;
             dontGroup = !itemp->condsp()->isPure();
         }
 
@@ -1093,8 +1091,7 @@ class CaseVisitor final : public VNVisitor {
         AstNode* grouprootp = nullptr;
         AstIf* groupnextp = nullptr;
         AstIf* itemnextp = nullptr;
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstCaseItem* const itemp : nodep->itemspList()) {
 
             // Grab the statements from this item. May be empty.
             AstNode* const istmtsp = itemp->stmtsp();

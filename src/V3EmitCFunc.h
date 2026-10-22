@@ -374,8 +374,7 @@ public:
 
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
         // Direct non-virtual bases in declaration order
-        for (const AstClassExtends* extp = classp->extendsp(); extp;
-             extp = VN_AS(extp->nextp(), ClassExtends)) {
+        for (const AstClassExtends* const extp : classp->extendspList()) {
             if (extp->classp()->isInterfaceClass()) continue;
             if (extp->classp()->useVirtualPublic()) continue;
             puts(EmitCUtil::prefixNameProtect(extp->classp()));
@@ -469,7 +468,7 @@ public:
             nodep->prependStmtsp(setProcessp);
         }
 
-        for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
+        for (AstNode* const subnodep : nodep->argspList()) {
             if (AstVar* const varp = VN_CAST(subnodep, Var)) {
                 if (varp->isFuncReturn()) emitVarDecl(varp);
             }
@@ -855,7 +854,7 @@ public:
         puts("(");
         bool comma = false;
         int argNum = 0;
-        for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
+        for (AstNode* const subnodep : nodep->pinspList()) {
             if (comma) puts(", ");
             if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
                 // For RANDOMIZER_HARD's filename argument (2nd arg after constraint),
@@ -863,8 +862,7 @@ public:
                 if (const AstCExpr* const cexprp = VN_CAST(subnodep, CExpr)) {
                     // Extract filename from the CExpr (which contains "filename")
                     std::string filename;
-                    for (const AstNode* textnodep = cexprp->nodesp(); textnodep;
-                         textnodep = textnodep->nextp()) {
+                    for (const AstNode* const textnodep : cexprp->nodespList()) {
                         if (const AstText* const textp = VN_CAST(textnodep, Text)) {
                             filename = textp->text();
                             break;

@@ -224,8 +224,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstNodeVarRef* const queueRefp
             = newQueueRefp(fl, processQueuep, VAccess::READWRITE, dotted);
         AstTaskRef* killQueueCall = nullptr;
-        for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->membersp(); itemp;
-             itemp = itemp->nextp()) {
+        for (AstNode* const itemp : v3Global.rootp()->stdPackageProcessp()->memberspList()) {
             if (itemp->name() == "killQueue") {
                 killQueueCall
                     = new AstTaskRef{fl, VN_AS(itemp, Task), new AstArg{fl, "", queueRefp}};
@@ -246,11 +245,9 @@ class LinkJumpVisitor final : public VNVisitor {
         taskBodyp->setNeedProcess();
         v3Global.setUsesTiming();
         // Ports stay in the task so calls see them
-        for (AstNode* stmtp = taskp->stmtsp(); stmtp;) {
-            AstNode* const nextp = stmtp->nextp();
+        for (AstNode* const stmtp : taskp->stmtspList()) {
             const AstVar* const varp = VN_CAST(stmtp, Var);
             if (!varp || !varp->isIO()) taskBodyp->addStmtsp(stmtp->unlinkFrBack());
-            stmtp = nextp;
         }
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};
@@ -318,8 +315,7 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     void prependForkBranchQueuePushes(AstFork* const forkp, AstVar* const processQueuep,
                                       FileLine* const fl, bool needProcess) {
-        for (AstBegin* branchp = forkp->forksp(); branchp;
-             branchp = VN_AS(branchp->nextp(), Begin)) {
+        for (AstBegin* const branchp : forkp->forkspList()) {
             if (needProcess) branchp->setNeedProcess();
             branchp->prependStmtsp(getQueuePushProcessSelfp(fl, processQueuep));
         }
@@ -353,8 +349,7 @@ class LinkJumpVisitor final : public VNVisitor {
         prependForkBranchQueuePushes(forkp, processQueuep, fl, true);
         // Disabling a fork must also terminate detached descendants created by nested forks
         // under each branch, so track nested fork branch processes in the same queue.
-        for (AstBegin* branchp = forkp->forksp(); branchp;
-             branchp = VN_AS(branchp->nextp(), Begin)) {
+        for (AstBegin* const branchp : forkp->forkspList()) {
             prependNestedForkBranchQueuePushes(branchp, processQueuep, fl, true);
         }
         m_forkDisableQueues.emplace(forkp, processQueuep);

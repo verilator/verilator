@@ -260,7 +260,7 @@ public:
     void emitVarAccessors(const AstVar* nodep);
     template <typename T_Callable>
     static void forModCUse(const AstNodeModule* modp, VUseType useType, T_Callable action) {
-        for (const AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
+        for (const AstNode* const itemp : modp->stmtspList()) {
             if (const AstCUse* const usep = VN_CAST(itemp, CUse)) {
                 if (usep->useType().containsAny(useType)) {
                     if (usep->useType().containsAny(VUseType::INT_INCLUDE)) {

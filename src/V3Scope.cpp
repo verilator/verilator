@@ -72,7 +72,7 @@ class ScopeVisitor final : public VNVisitor {
     // Count module instantiations, visiting cells the same way the traversal below does
     static void countInstantiations(AstNodeModule* modp) {
         modp->user3Inc();
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : modp->stmtspList()) {
             if (const AstCell* const cellp = VN_CAST(stmtp, Cell)) {
                 countInstantiations(cellp->modp());
             }
@@ -167,7 +167,7 @@ class ScopeVisitor final : public VNVisitor {
 
         // Get list of cells before we edit, to avoid excess visits (issue #6059)
         std::deque<AstCell*> cells;
-        for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
+        for (AstNode* const cellnextp : nodep->stmtspList()) {
             if (AstCell* const cellp = VN_CAST(cellnextp, Cell)) cells.push_back(cellp);
         }
 

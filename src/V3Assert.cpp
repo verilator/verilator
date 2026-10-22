@@ -885,7 +885,7 @@ class AssertVisitor final : public VNVisitor {
         if (!nodep) return true;
         if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
             if (beginp->declsp()) return false;
-            for (AstNode* stmtp = beginp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            for (AstNode* const stmtp : beginp->stmtspList()) {
                 if (!isEmptyStmt(stmtp)) return false;
             }
             return true;
@@ -1040,8 +1040,7 @@ class AssertVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             bool has_default = false;
-            for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
+            for (AstCaseItem* const itemp : nodep->itemspList()) {
                 if (itemp->isDefault()) has_default = true;
             }
             const AstNodeDType* exprDtypep = nodep->exprp()->dtypep()->skipRefp();
@@ -1078,11 +1077,9 @@ class AssertVisitor final : public VNVisitor {
                     // Not parallel, but harmlessly so.
                 } else {
                     AstNodeExpr* propp = nullptr;
-                    for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                         itemp = VN_AS(itemp->nextp(), CaseItem)) {
+                    for (AstCaseItem* const itemp : nodep->itemspList()) {
                         AstNodeExpr* itembitp = nullptr;
-                        for (AstNodeExpr* icondp = itemp->condsp(); icondp;
-                             icondp = VN_AS(icondp->nextp(), NodeExpr)) {
+                        for (AstNodeExpr* const icondp : itemp->condspList()) {
                             AstNodeExpr* onep;
                             if (AstInsideRange* const rcondp = VN_CAST(icondp, InsideRange)) {
                                 onep = rcondp->newAndFromInside(
