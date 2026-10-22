@@ -47,7 +47,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class LatchDetectGraphVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(LatchDetectGraphVertex, V3GraphVertex)
 public:
-    enum VertexType : uint8_t { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
+    enum VertexType : uint8_t { VT_BLOCK, VT_BRANCH, VT_OUTPUT, VT_UNREACHABLE };
 
 private:
     const string m_name;  // Only used for .dot file generation
@@ -58,6 +58,7 @@ private:
         case VT_BLOCK: return "(||)";  // basic block node
         case VT_BRANCH: return "(&&)";  // if/else branch mode
         case VT_OUTPUT: return "(out)";  // var assignment
+        case VT_UNREACHABLE: return "(unreachable)";  // infeasible path
         default: return "??";  // unknown
         }
     }
@@ -96,6 +97,9 @@ protected:
         switch (vertexp->type()) {
         case LatchDetectGraphVertex::VT_OUTPUT:  // Base case
             result = vertexp->user();
+            break;
+        case LatchDetectGraphVertex::VT_UNREACHABLE:  // Infeasible control path
+            result = true;
             break;
         case LatchDetectGraphVertex::VT_BLOCK:  // (OR of potentially many siblings)
             // cppcheck-suppress constVariableReference
@@ -145,6 +149,13 @@ public:
                                                          : LatchDetectGraphVertex::VT_BLOCK};
         new V3GraphEdge{this, parent, m_curVertexp, 1};
         return m_curVertexp;
+    }
+    // Add an infeasible control path (e.g. the absent else of a 'unique if' chain)
+    LatchDetectGraphVertex* addUnreachableVertex(LatchDetectGraphVertex* parent) {
+        LatchDetectGraphVertex* const vertexp = new LatchDetectGraphVertex{
+            this, "UNREACHABLE", LatchDetectGraphVertex::VT_UNREACHABLE};
+        new V3GraphEdge{this, parent, vertexp, 1};
+        return vertexp;
     }
     // Add a new output variable vertex and store a pointer to it in the user1 field of the
     // variables AstNode
@@ -313,6 +324,7 @@ class ActiveLatchCheckVisitor final : public VNVisitorConst {
     const VNUser1InUse m_inuser1;
     // STATE
     LatchDetectGraph m_graph;  // Graph used to detect latches in combo always
+    bool m_uniqueIfChain = false;  // Traversing the else-if chain of a 'unique if'
     // VISITORS
     void visit(AstVarRef* nodep) override {
         const AstVar* const varp = nodep->varp();
@@ -322,17 +334,38 @@ class ActiveLatchCheckVisitor final : public VNVisitorConst {
         }
     }
     void visit(AstNodeIf* nodep) override {
-        if (!nodep->isBoundsCheck()) {
-            LatchDetectGraphVertex* const parentp = m_graph.currentp();
-            LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
-            m_graph.addPathVertex(branchp, "IF");
-            iterateAndNextConstNull(nodep->thensp());
-            m_graph.addPathVertex(branchp, "ELSE");
-            iterateAndNextConstNull(nodep->elsesp());
-            m_graph.currentp(parentp);
-        } else {
+        if (nodep->isBoundsCheck()) {
             iterateChildrenConst(nodep);
+            return;
         }
+
+        // A 'unique if' asserts that exactly one branch is taken, so its
+        // implicit final 'else' is infeasible.  'unique0 if' permits no branch
+        // to be taken and therefore still has a potentially latching path.
+        const AstIf* const ifp = VN_CAST(nodep, If);
+        const bool exhaustive = m_uniqueIfChain || (ifp && ifp->uniquePragma());
+
+        LatchDetectGraphVertex* const parentp = m_graph.currentp();
+        LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
+
+        m_graph.addPathVertex(branchp, "IF");
+        {
+            VL_RESTORER(m_uniqueIfChain);
+            m_uniqueIfChain = false;
+            iterateAndNextConstNull(nodep->thensp());
+        }
+
+        if (nodep->elsesp()) {
+            m_graph.addPathVertex(branchp, "ELSE");
+            VL_RESTORER(m_uniqueIfChain);
+            m_uniqueIfChain = exhaustive && VN_IS(nodep->elsesp(), If);
+            iterateAndNextConstNull(nodep->elsesp());
+        } else if (exhaustive) {
+            m_graph.addUnreachableVertex(branchp);
+        } else {
+            m_graph.addPathVertex(branchp, "ELSE");
+        }
+        m_graph.currentp(parentp);
     }
     //--------------------
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
