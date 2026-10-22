@@ -17,10 +17,11 @@ test.golden_filename = "t/t_timing_dpi_func_bad.out"
 # Compile each file separately, so DPI calls and exports are in different translation units
 test.compile(
     v_flags2=["t/t_timing_dpi_func_bad.cpp"],
-    verilator_flags2=["--binary", "-MAKEFLAGS", "VM_PARALLEL_BUILDS=1"],
+    verilator_flags2=["--binary", "--stats", "-MAKEFLAGS", "VM_PARALLEL_BUILDS=1"],
 )
 
 if test.vlt_all:
+    test.file_grep(test.stats, r'Timing, suspendable DPI exports\s+(\d+)', 1)
     test.execute(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

@@ -18,8 +18,11 @@ test.top_filename = "t/t_timing_dpi_thread_leak.v"
 
 test.compile(
     v_flags2=["t/t_timing_dpi_thread_leak.cpp"],
-    verilator_flags2=["--binary"],
+    verilator_flags2=["--binary", "--stats"],
 )
+
+if test.vlt_all:
+    test.file_grep(test.stats, r'Timing, suspendable DPI exports\s+(\d+)', 1)
 
 test.execute()
 
