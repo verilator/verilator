@@ -815,7 +815,6 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeModule* nodep) override {
-        V3Control::applyModule(nodep);
         ++m_statModules;
         if (VN_IS(nodep, Class) && VN_CAST(nodep, Class)->isInterfaceClass()
             && VN_IS(m_modp, Class) && VN_CAST(m_modp, Class)->isInterfaceClass()) {
