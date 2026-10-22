@@ -49,6 +49,43 @@ module t (
     end
   end
 
+  // GPIO array ports must preserve each element through the IOBUF hierarchy.
+  for (genvar cfg = 0; cfg < 2; ++cfg) begin : gpio_config
+    localparam NumGPIOs = cfg == 0 ? 4 : 7;
+    wire p_gpio [NumGPIOs];
+    wire do_gpio [NumGPIOs];
+    wire di_gpio [NumGPIOs];
+    wire do_gpio_hiz [NumGPIOs];
+    wire p_gpio_array [NumGPIOs];
+    wire di_gpio_array [NumGPIOs];
+    GPIO_iop #(.NumGPIOs(NumGPIOs)) gpio (
+        .p_gpio(p_gpio),
+        .do_gpio(do_gpio),
+        .di_gpio(di_gpio),
+        .do_gpio_hiz(do_gpio_hiz)
+    );
+    GPIONGeneralPurposeIOs_216_iop #(.USERPARAM_NumGPIOs(NumGPIOs)) gpio_array (
+        .p_gpio(p_gpio_array),
+        .do_gpio(do_gpio),
+        .di_gpio(di_gpio_array),
+        .do_gpio_hiz(do_gpio_hiz)
+    );
+    for (genvar i = 0; i < NumGPIOs; ++i) begin : gpio_pin
+      assign do_gpio[i] = crc[i];
+      assign do_gpio_hiz[i] = crc[i + 16];
+      assign p_gpio[i] = do_gpio_hiz[i] ? ~crc[i] : 1'bz;
+      assign p_gpio_array[i] = do_gpio_hiz[i] ? ~crc[i] : 1'bz;
+      always @(negedge clk) begin
+        if (cyc > 0) begin
+          `checkh(p_gpio[i], crc[i + 16] ? ~crc[i] : crc[i]);
+          `checkh(di_gpio[i], crc[i + 16] ? ~crc[i] : crc[i]);
+          `checkh(p_gpio_array[i], crc[i + 16] ? ~crc[i] : crc[i]);
+          `checkh(di_gpio_array[i], crc[i + 16] ? ~crc[i] : crc[i]);
+        end
+      end
+    end
+  end
+
   // Test loop
   always @(posedge clk) begin
 `ifdef TEST_VERBOSE
@@ -86,4 +123,38 @@ module Pad (
     input data
 );
   assign pad = ena ? data : 1'bz;
+endmodule
+
+module GPIO_iop #(
+    parameter NumGPIOs = 4
+) (
+    inout p_gpio [NumGPIOs],
+    input do_gpio [NumGPIOs],
+    output di_gpio [NumGPIOs],
+    input do_gpio_hiz [NumGPIOs]
+);
+  for (genvar i = 0; i < NumGPIOs; ++i) begin : Gen_gpio_0
+    IOBUF gpio (.T(do_gpio_hiz[i]), .I(do_gpio[i]), .O(di_gpio[i]), .IO(p_gpio[i]));
+  end
+endmodule
+
+module GPIONGeneralPurposeIOs_216_iop #(
+    parameter USERPARAM_NumGPIOs = 4
+) (
+    inout p_gpio [USERPARAM_NumGPIOs],
+    input do_gpio [USERPARAM_NumGPIOs],
+    output di_gpio [USERPARAM_NumGPIOs],
+    input do_gpio_hiz [USERPARAM_NumGPIOs]
+);
+  IOBUF gpio [USERPARAM_NumGPIOs] (.T(do_gpio_hiz), .I(do_gpio), .O(di_gpio), .IO(p_gpio));
+endmodule
+
+module IOBUF (
+    input T,
+    input I,
+    output O,
+    inout IO
+);
+  assign IO = T ? 1'bz : I;
+  assign O = IO;
 endmodule
