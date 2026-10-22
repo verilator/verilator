@@ -46,6 +46,7 @@
 
 #include "V3AstNodeExpr.h"
 #include "V3MemberMap.h"
+#include "V3Task.h"
 
 #include <limits>
 #include <set>
@@ -419,6 +420,17 @@ class DynScopeVisitor final : public VNVisitor {
         if (nodep->isTimingControl()) m_afterTimingControl = true;
     }
     void visit(AstNodeFTaskRef* nodep) override {
+        if (nodep->taskp()) {
+            const V3TaskConnects tconnects
+                = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp(), nullptr, false);
+            for (const auto& tconnect : tconnects) {
+                AstVar* const portp = tconnect.first;
+                AstArg* const argp = tconnect.second;
+                if (!portp->isWritable() || !argp) continue;
+                AstVarRef* const refp = VN_CAST(argp->exprp(), VarRef);
+                if (refp && refp->isClassHandleValue()) refp->user2(true);
+            }
+        }
         visit(static_cast<AstNodeExpr*>(nodep));
         // We are before V3Timing, so unfortunately we need to treat any calls as suspending,
         // just to be safe. This might be improved if we could propagate suspendability
