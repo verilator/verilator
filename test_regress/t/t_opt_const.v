@@ -155,7 +155,7 @@ module Test(/*AUTOARG*/
   bug5186 i_bug5186(.clk(clk), .in(d), .out(bug5186_out));
   bug5993 i_bug5993(.clk(clk), .in(d[10]));
   bug6016 i_bug6016(.clk(clk), .in(d[10]));
-  same_tree i_same_tree(.clk(clk), .in(d[11]));
+  same_tree i_same_tree(.clk(clk), .in(d[11]), .w(d[19:12]));
 
 endmodule
 
@@ -627,13 +627,17 @@ module bug6016(input wire clk, input wire in);
   end
 endmodule
 
-// 'in ? ~in : 1' becomes '~in || ~in', which folds to '~in'; and a quotient of
-// identical trees is not 1 when they are zero
-module same_tree(input wire clk, input wire in);
+// 'in ? ~in : 1' becomes '~in || ~in', which folds to '~in'; a quotient of
+// identical trees is not 1 when they are zero; and identical trees over the
+// compare budget are left unfolded
+module same_tree(input wire clk, input wire in, input wire [7:0] w);
+`define SAME_TREE_BIG (((w + 8'd1) * (w - 8'd3)) ^ ((w << 1) + (w >> 2)) ^ (w & 8'h5a) ^ ((w | 8'h0f) - (w ^ 8'hf0)))
   logic lo;
   logic pow2;
   logic [1:0] quot;
+  logic [7:0] big;
   assign quot = {1'b0, in} / {1'b0, in};
+  assign big = `SAME_TREE_BIG ^ `SAME_TREE_BIG;
   always_comb
     if (in) begin
       lo = 1'b0;
@@ -646,13 +650,16 @@ module same_tree(input wire clk, input wire in);
   logic lo_q = 1'b1;
   logic pow2_q = 1'b1;
   logic [1:0] quot_q = 2'd0;
+  logic [7:0] big_q = 8'd0;
   always @(posedge clk) begin
     in_q <= in;
     lo_q <= lo;
     pow2_q <= pow2;
     quot_q <= quot;
+    big_q <= big;
     if (lo_q != ~in_q) $stop;
     if (pow2_q != ~in_q) $stop;
     if (quot_q != {1'b0, in_q}) $stop;
+    if (big_q != 8'd0) $stop;
   end
 endmodule
