@@ -3594,9 +3594,7 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstCellArrayRef* nodep) override {
         // Multi-dim iface arrays chain multiple selps via nextp(); constify each in place.
-        for (AstNode* const s : nodep->selpList()) {
-            V3Const::constifyParamsEdit(s);
-        }
+        for (AstNode* const s : nodep->selpList()) { V3Const::constifyParamsEdit(s); }
         std::vector<int> indices;
         for (AstNode* const s : nodep->selpList()) {
             const AstConst* const constp = VN_CAST(s, Const);

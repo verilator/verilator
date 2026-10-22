@@ -89,13 +89,9 @@ private:
             }
         } else if (const AstNodeUOrStructDType* const anodep
                    = VN_CAST(nodep, NodeUOrStructDType)) {
-            for (AstNode* const itemp : anodep->memberspList()) {
-                memberInsert(mmapr, itemp);
-            }
+            for (AstNode* const itemp : anodep->memberspList()) { memberInsert(mmapr, itemp); }
         } else if (const AstPackage* const anodep = VN_CAST(nodep, Package)) {
-            for (AstNode* const itemp : anodep->stmtspList()) {
-                memberInsert(mmapr, itemp);
-            }
+            for (AstNode* const itemp : anodep->stmtspList()) { memberInsert(mmapr, itemp); }
         } else {
             nodep->v3fatalSrc("Unsupported node type");
         }

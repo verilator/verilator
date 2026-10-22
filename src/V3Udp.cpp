@@ -148,8 +148,7 @@ class UdpVisitor final : public VNVisitor {
         }
 
         uint32_t inputvars = 0;
-        for (const AstNode* const icountp : nodep->iFieldspList())
-            ++inputvars;
+        for (const AstNode* const icountp : nodep->iFieldspList()) ++inputvars;
         if (inputvars != m_inputVars.size()) {
             nodep->v3error("Incorrect number of input values, expected " << m_inputVars.size()
                                                                          << ", got " << inputvars);

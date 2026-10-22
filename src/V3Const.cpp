@@ -3620,9 +3620,7 @@ class ConstVisitor final : public VNVisitor {
                     // Something's out of order, sort it
                     senp = nullptr;
                     std::vector<AstSenItem*> vec;
-                    for (AstSenItem* const senp : nodep->sensespList()) {
-                        vec.push_back(senp);
-                    }
+                    for (AstSenItem* const senp : nodep->sensespList()) { vec.push_back(senp); }
                     stable_sort(vec.begin(), vec.end(), SenItemCmp());
                     for (const auto& ip : vec) ip->unlinkFrBack();
                     for (const auto& ip : vec) nodep->addSensesp(ip);

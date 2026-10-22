@@ -924,8 +924,6 @@ void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     LinkCellsState state;
     { LinkConfigsVisitor{nodep, state}; }
     // Bind processing depends on module controls, including controls for later modules.
-    for (AstNodeModule* const modulep : nodep->modulespList()) {
-        V3Control::applyModule(modulep);
-    }
+    for (AstNodeModule* const modulep : nodep->modulespList()) { V3Control::applyModule(modulep); }
     { LinkCellsVisitor{nodep, filterp, state}; }
 }

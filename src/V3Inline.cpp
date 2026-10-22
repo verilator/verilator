@@ -621,9 +621,7 @@ void process(AstNetlist* netlistp, InlineModGraph& graph) {
 
     // Record the scope hierarchy - we need the downward links
     ScopeChildren children;
-    for (AstNodeModule* const modp : netlistp->modulespList()) {
-        gatherScopes(modp, children);
-    }
+    for (AstNodeModule* const modp : netlistp->modulespList()) { gatherScopes(modp, children); }
 
     // Gather all cells that need to be inlined (this is in topological order)
     std::vector<InlineModCellVertex*> cVtxps;

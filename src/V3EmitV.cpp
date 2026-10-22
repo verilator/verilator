@@ -1139,9 +1139,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         {
             puts("{\n");
             VL_RESTORER_CLEAR(m_packedps);
-            for (AstMemberDType* const itemp : nodep->memberspList()) {
-                iterateConst(itemp);
-            }
+            for (AstMemberDType* const itemp : nodep->memberspList()) { iterateConst(itemp); }
             puts("}");
         }
         emitPacked();

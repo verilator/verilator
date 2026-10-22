@@ -2894,14 +2894,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             for (AstNode* const setp : bin.binp->transpList()) {
                 AstCoverTransItem* lastp = VN_AS(setp, CoverTransSet)->itemsp();
                 while (lastp->nextp()) lastp = VN_AS(lastp->nextp(), CoverTransItem);
-                for (AstNode* const valuep : lastp->valuespList()) {
-                    values.push_back(valuep);
-                }
+                for (AstNode* const valuep : lastp->valuespList()) { values.push_back(valuep); }
             }
         } else {
-            for (AstNode* const valuep : bin.binp->rangespList()) {
-                values.push_back(valuep);
-            }
+            for (AstNode* const valuep : bin.binp->rangespList()) { values.push_back(valuep); }
         }
         return values;
     }

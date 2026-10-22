@@ -2216,9 +2216,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // Mark formal ports as port-checked so the primary resolve pass does not
         // flag them with "does not appear in port list" -- V3RandSequence will
         // later move them onto the generated task as real input ports.
-        for (AstNode* const itp : nodep->portspList()) {
-            VN_AS(itp, Var)->user4(true);
-        }
+        for (AstNode* const itp : nodep->portspList()) { VN_AS(itp, Var)->user4(true); }
         iterateChildren(nodep);
     }
 
@@ -2319,9 +2317,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         // items, generated and unique, are inserted directly.
         iterateAndNextNull(nodep->selectp());
         iterateAndNextNull(nodep->countp());
-        for (AstVar* const varp : nodep->varspList()) {
-            iterateAndNextNull(varp->childDTypep());
-        }
+        for (AstVar* const varp : nodep->varspList()) { iterateAndNextNull(varp->childDTypep()); }
         VL_RESTORER(m_curSymp);
         ++m_modWithNum;
         m_curSymp = m_statep->insertBlock(m_curSymp, "__VcoverWith" + cvtToStr(m_modWithNum),
