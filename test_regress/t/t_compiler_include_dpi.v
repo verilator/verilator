@@ -14,7 +14,7 @@ module t;
   import "DPI-C" function void dpii_add(
     int a,
     int b,
-    ref int out
+    output int out
   );
   import "DPI-C" function int dpii_add_check(
     int actual,

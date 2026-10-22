@@ -361,6 +361,10 @@ class LinkParseVisitor final : public VNVisitor {
             refp->name(AstClass::embeddedCovergroupTypeName(refp->name()));
         }
         if (nodep->valuep()) nodep->hasUserInit(true);
+        if (m_ftaskp && m_ftaskp->dpiImport() && (nodep->isRef() || nodep->isConstRef())) {
+            nodep->v3error("DPI import argument cannot be 'ref' (IEEE 1800-2023 35.5.4): "
+                           << nodep->prettyNameQ());
+        }
         // IEEE 1800-2023 6.21: for loop variables are automatic. verilog.y is
         // responsible for marking those.
         if (nodep->valuep() && nodep->lifetime().isNone() && m_lifetime.isStatic()

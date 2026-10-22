@@ -1,0 +1,8 @@
+%Error: t/t_dpi_import_ref_bad.v:8:49: DPI import argument cannot be 'ref' (IEEE 1800-2023 35.5.4): 'a'
+    8 |   import "DPI-C" function void dpii_ref(ref int a);
+      |                                                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_dpi_import_ref_bad.v:9:65: DPI import argument cannot be 'ref' (IEEE 1800-2023 35.5.4): 'c'
+    9 |   import "DPI-C" task dpii_const_ref(input int b, const ref int c);
+      |                                                                 ^
+%Error: Exiting due to
