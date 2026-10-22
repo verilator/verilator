@@ -10,10 +10,6 @@
 # ThreadSanitizer (--tsan option, or test.enable_tsan()). Suppress known
 # races in the runtime library. TODO: most of these should likely be fixed.
 
-# Model teardown may destroy mtask state while a worker thread is still
-# returning from signaling completion of the final mtask
-race:*VlMTaskVertex::signalUpstreamDone*
-
 # The parallel trace buffer handoff between worker threads and the commit
 # on the dumping thread is not visible to ThreadSanitizer; this includes
 # the trace worker unlocking a mutex locked by the dumping thread

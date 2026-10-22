@@ -307,7 +307,7 @@ public:
 
         // Add the MTask to the schedule
         bestThread.push_back(mtaskp);
-        s_mtaskState[mtaskp].threadPos = bestThread.size();
+        s_mtaskState[mtaskp].threadPos = static_cast<uint32_t>(bestThread.size());
         return bestEndTime;
     }
     bool contains(const ExecMTask* mtaskp) const { return mtasks.count(mtaskp); }
@@ -983,12 +983,12 @@ void addMTaskToFunction(const ThreadSchedule& schedule, const uint32_t threadId,
     }
 }
 
-const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedule,
-                                                   const string& tag) {
+const std::vector<std::pair<AstCFunc*, uint32_t>>
+createThreadFunctions(const ThreadSchedule& schedule, const string& tag) {
     AstNodeModule* const modp = v3Global.rootp()->topModulep();
     FileLine* const fl = modp->fileline();
 
-    std::vector<AstCFunc*> funcps;
+    std::vector<std::pair<AstCFunc*, uint32_t>> funcps;
 
     // For each thread, create a function representing its entry point
     for (const std::vector<const ExecMTask*>& thread : schedule.m_threads) {
@@ -998,7 +998,7 @@ const std::vector<AstCFunc*> createThreadFunctions(const ThreadSchedule& schedul
                           + cvtToStr(threadId)};
         AstCFunc* const funcp = new AstCFunc{fl, name, nullptr, "void"};
         modp->addStmtsp(funcp);
-        funcps.push_back(funcp);
+        funcps.emplace_back(funcp, threadId);
         funcp->isStatic(true);  // Uses void self pointer, so static and hand rolled
         funcp->isLoose(true);
         funcp->entryPoint(true);
@@ -1048,8 +1048,8 @@ void addThreadEndWrapper(AstExecGraph* const execGraphp) {
     addCStmt("Verilated::mtaskId(0);");
     if (v3Global.opt.profExec()) { addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).execGraphEnd();"); }
 }
-void addThreadStartToExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& schedule,
-                               const std::vector<AstCFunc*>& funcps) {
+void addThreadStartToExecGraph(AstExecGraph* const execGraphp,
+                               const std::vector<std::pair<AstCFunc*, uint32_t>>& funcps) {
     // FileLine used for constructing nodes below
     FileLine* const fl = v3Global.rootp()->fileline();
     const string progress = "vlSymsp->__Vm_schedule_progress_" + execGraphp->name();
@@ -1070,7 +1070,8 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp, const ThreadSched
                  + "}");
     }
     uint32_t i = 0;
-    for (AstCFunc* const funcp : funcps) {
+    for (const auto& pair : funcps) {
+        AstCFunc* const funcp = pair.first;
         if (i != last) {
             // The first N-1 will run on the thread pool.
             AstCStmt* const cstmtp = new AstCStmt{fl};
@@ -1100,11 +1101,8 @@ void addThreadStartToExecGraph(AstExecGraph* const execGraphp, const ThreadSched
     }
     // Wait for each pool thread to publish that it is done. The last thread function ran on
     // this thread, so it is already finished.
-    uint32_t pool = 0;
-    for (const std::vector<const ExecMTask*>& thread : schedule.m_threads) {
-        if (thread.empty() || pool++ == last) continue;
-        addCStmt(progress + ".waitDone(" + std::to_string(schedule.threadId(thread.front()))
-                 + ");");
+    for (uint32_t i = 0; i < last; ++i) {
+        addCStmt(progress + ".waitDone(" + std::to_string(funcps[i].second) + ");");
     }
     if (v3Global.opt.profExec()) {
         addCStmt("VL_EXEC_TRACE_ADD_RECORD(vlSymsp).threadScheduleWaitEnd();");
@@ -1155,11 +1153,12 @@ void implementExecGraph(AstExecGraph* const execGraphp, const ThreadSchedule& sc
     if (execGraphp->depGraphp()->empty()) return;
 
     // Create a function to be run by each thread.
-    const std::vector<AstCFunc*>& funcps = createThreadFunctions(schedule, execGraphp->name());
+    const std::vector<std::pair<AstCFunc*, uint32_t>> funcps
+        = createThreadFunctions(schedule, execGraphp->name());
     UASSERT(!funcps.empty(), "Non-empty ExecGraph yields no threads?");
 
     // Start the thread functions from the function that dispatches the graph.
-    addThreadStartToExecGraph(execGraphp, schedule, funcps);
+    addThreadStartToExecGraph(execGraphp, funcps);
 }
 
 void createRunFunction(AstExecGraph* const execGraphp) {
