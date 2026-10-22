@@ -70,7 +70,7 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
         m_classp = nodep;
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = nodep->membersp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (!varp->isParam()) varp->varType(VVarType::MEMBER);
             }
@@ -233,11 +233,6 @@ class LinkResolveVisitor final : public VNVisitor {
             UASSERT_OBJ(m_ftaskp, nodep, "PUBLIC_TASK not under a task");
             m_ftaskp->taskPublic(true);
             m_modp->modPublic(true);  // Need to get to the task...
-            nodep->unlinkFrBack();
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == VPragmaType::VERILATOR_LIB) {
-            UASSERT_OBJ(m_modp, nodep, "VERILATOR_LIB not under a module");
-            m_modp->verilatorLib(true);
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {

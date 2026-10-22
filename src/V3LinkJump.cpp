@@ -224,7 +224,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstNodeVarRef* const queueRefp
             = newQueueRefp(fl, processQueuep, VAccess::READWRITE, dotted);
         AstTaskRef* killQueueCall = nullptr;
-        for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
+        for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->membersp(); itemp;
              itemp = itemp->nextp()) {
             if (itemp->name() == "killQueue") {
                 killQueueCall

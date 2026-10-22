@@ -3145,16 +3145,10 @@ class ConstVisitor final : public VNVisitor {
     void visit(AstPin* nodep) override { iterateChildren(nodep); }
 
     void replaceLogEq(AstLogEq* nodep) {
-        // LOGEQ(a,b) => AstLogAnd{AstLogOr{AstLogNot{a},b},AstLogOr{AstLogNot{b},a}}
+        // LOGEQ(a,b) => AstEq{a,b}, as V3Width made both 1 bit
         AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
         AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
-        // Do exactly as IEEE says, might result in extra terms, so in future may do differently
-        AstLogAnd* const newp = new AstLogAnd{
-            nodep->fileline(),
-            new AstLogOr{nodep->fileline(), new AstLogNot{nodep->fileline(), lhsp}, rhsp},
-            new AstLogOr{nodep->fileline(),
-                         new AstLogNot{nodep->fileline(), rhsp->cloneTreePure(false)},
-                         lhsp->cloneTreePure(false)}};
+        AstEq* const newp = new AstEq{nodep->fileline(), lhsp, rhsp};
         nodep->replaceWithKeepDType(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }

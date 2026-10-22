@@ -2365,7 +2365,7 @@ AstCFunc* AstNetlist::evalFuncp(VEval eval) {
 AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
     UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
     AstFunc* selfp = nullptr;
-    for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
+    for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->membersp(); itemp;
          itemp = itemp->nextp()) {
         if (itemp->name() == "self") selfp = VN_AS(itemp, Func);
     }

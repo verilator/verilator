@@ -186,7 +186,7 @@ class CCtorsVisitor final : public VNVisitor {
             funcp->isVirtual(classp->isExtended());
             funcp->slow(false);
             insertSc(funcp, classp, VSystemCSectionType::DTOR);
-            classp->addStmtsp(funcp);
+            classp->addMembersp(funcp);
         }
     }
 

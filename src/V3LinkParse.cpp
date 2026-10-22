@@ -815,7 +815,6 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeModule* nodep) override {
-        V3Control::applyModule(nodep);
         ++m_statModules;
         if (VN_IS(nodep, Class) && VN_CAST(nodep, Class)->isInterfaceClass()
             && VN_IS(m_modp, Class) && VN_CAST(m_modp, Class)->isInterfaceClass()) {
@@ -1240,7 +1239,7 @@ class LinkParseVisitor final : public VNVisitor {
         AstVar* const defaultVarp
             = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
         defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        nodep->addStmtsp(defaultVarp);
+        nodep->addMembersp(defaultVarp);
 
         // Handle constructor arguments - add function parameters and assignments
         if (argsp) {

@@ -103,7 +103,7 @@ class ClassVisitor final : public VNVisitor {
         // Find class's scope
         // Alternative would be to move this and related to V3Scope
         const AstScope* classScopep = nullptr;
-        for (AstNode* itp = nodep->stmtsp(); itp; itp = itp->nextp()) {
+        for (AstNode* itp = nodep->membersp(); itp; itp = itp->nextp()) {
             if ((classScopep = VN_CAST(itp, Scope))) break;
         }
         UASSERT_OBJ(classScopep, nodep, "No scope under class");

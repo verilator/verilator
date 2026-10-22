@@ -72,6 +72,7 @@ class BeginVisitor final : public VNVisitor {
     AstNode* m_liftedp = nullptr;  // Local nodes we are lifting into m_ftaskp
     string m_displayScope;  // Name of %m in $display/AstScopeName
     string m_namedScope;  // Name of begin blocks above us
+    string m_ftaskNamedScope;  // m_namedScope outside of current function/task
     string m_unnamedScope;  // Name of begin blocks, including unnamed blocks
     int m_ifDepth = 0;  // Current if depth
     bool m_keepBegins = false;  // True if begins should not be inlined
@@ -168,6 +169,8 @@ class BeginVisitor final : public VNVisitor {
         VL_RESTORER_COPY(m_displayScope);
         VL_RESTORER(m_ftaskp);
         VL_RESTORER(m_liftedp);
+        VL_RESTORER_CLEAR(m_ftaskNamedScope);
+        m_ftaskNamedScope = m_namedScope;
         VL_RESTORER_CLEAR(m_namedScope);
         VL_RESTORER_CLEAR(m_unnamedScope);
         m_displayScope = dot(m_displayScope, nodep->name());
@@ -377,15 +380,17 @@ class BeginVisitor final : public VNVisitor {
     }
     void visit(AstVarXRef* nodep) override {
         UINFO(9, "   VARXREF " << nodep);
-        if (m_namedScope != "" && nodep->inlinedDots() == "" && !m_ftaskp) {
-            nodep->inlinedDots(m_namedScope);
+        const std::string& scope = m_ftaskp ? m_ftaskNamedScope : m_namedScope;
+        if (scope != "" && nodep->inlinedDots() == "") {
+            nodep->inlinedDots(scope);
             UINFO(9, "    rescope to " << nodep);
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
         UINFO(9, "   FTASKREF " << nodep);
-        if (m_namedScope != "" && nodep->inlinedDots() == "" && !m_ftaskp) {
-            nodep->inlinedDots(m_namedScope);
+        const std::string& scope = m_ftaskp ? m_ftaskNamedScope : m_namedScope;
+        if (scope != "" && nodep->inlinedDots() == "") {
+            nodep->inlinedDots(scope);
             UINFO(9, "    rescope to " << nodep);
         }
         iterateChildren(nodep);
