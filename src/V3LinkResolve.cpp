@@ -70,7 +70,7 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
         m_classp = nodep;
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = nodep->membersp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (!varp->isParam()) varp->varType(VVarType::MEMBER);
             }

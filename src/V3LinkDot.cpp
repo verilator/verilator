@@ -1152,7 +1152,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         if (nodep->isExternDef()) return;
         // Move it to proper spot under the target class
         nodep->unlinkFrBack();
-        classp->addStmtsp(nodep);
+        classp->addMembersp(nodep);
         nodep->isExternDef(true);  // So we check there's a matching extern
         nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
         // Any "Type::" reference in the function's IO are really "MovedToClass::" references
@@ -1859,7 +1859,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     upSymp = m_curSymp;
                     // Move it to proper spot under the target class
                     nodep->unlinkFrBack();
-                    classp->addStmtsp(nodep);
+                    classp->addMembersp(nodep);
                     nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
                 }
             }

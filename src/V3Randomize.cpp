@@ -293,7 +293,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void markGlobalConstrainedVars(AstClass* classp) {
         for (const AstClass* cp = classp; cp;
              cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
-            for (AstNode* memberp = cp->stmtsp(); memberp; memberp = memberp->nextp()) {
+            for (AstNode* memberp = cp->membersp(); memberp; memberp = memberp->nextp()) {
                 AstVar* const varp = VN_CAST(memberp, Var);
                 if (!varp) continue;
                 if (varp->rand().isRandomizable()) varp->globalConstrained(true);
@@ -331,7 +331,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void markMembers(const AstClass* nodep) {
         for (const AstClass* classp = nodep; classp;
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
-            for (AstNode* memberp = classp->stmtsp(); memberp; memberp = memberp->nextp()) {
+            for (AstNode* memberp = classp->membersp(); memberp; memberp = memberp->nextp()) {
                 AstVar* const varp = VN_CAST(memberp, Var);
                 if (!varp) continue;
                 // If member is randomizable and of class type, mark its class
@@ -470,7 +470,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
         funcRefps.clear();
 
         // Add constraint directly to the target class
-        targetClassp->addStmtsp(cloneConstrp);
+        targetClassp->addMembersp(cloneConstrp);
         // Immediately iterate to set user1 marks
         iterateConst(cloneConstrp);
     }
@@ -1633,7 +1633,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         for (const AstClass* cp = elemClassp; cp;
              cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
-            for (AstNode* mnodep = cp->stmtsp(); mnodep; mnodep = mnodep->nextp()) {
+            for (AstNode* mnodep = cp->membersp(); mnodep; mnodep = mnodep->nextp()) {
                 AstVar* const memberVarp = VN_CAST(mnodep, Var);
                 if (!memberVarp || !memberVarp->rand().isRandomizable()) continue;
                 AstNodeDType* const memberDtp = memberVarp->dtypep()->skipRefp();
@@ -4217,7 +4217,7 @@ class RandomizeVisitor final : public VNVisitor {
         // MEMBER, not MODULETEMP, so V3Localize does not localize it into new().
         AstVar* const modeVarp = new AstVar{fl, VVarType::MEMBER, name, m_dynarrayDtp};
         modeVarp->user2p(classp);
-        classp->addStmtsp(modeVarp);
+        classp->addMembersp(modeVarp);
         return modeVarp;
     }
     AstVar* createStaticModeVar(AstClass* const classp, const char* const name) {
@@ -4235,7 +4235,7 @@ class RandomizeVisitor final : public VNVisitor {
         // Note: user2p is set to classp here. V3Scope will later update varScopep
         // to point to the package scope when the variable is moved by V3Class.
         modeVarp->user2p(classp);
-        classp->addStmtsp(modeVarp);
+        classp->addMembersp(modeVarp);
         // Register so findStaticRandModeVarMember sees it through the already
         // scanned member cache
         m_memberMap.insert(classp, modeVarp);
@@ -4586,7 +4586,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstVar* const newp
             = new AstVar{varp->fileline(), VVarType::MEMBER, varp->name() + "__Vrandc", newdtp};
         newp->isInternal(true);
-        classp->addStmtsp(newp);
+        classp->addMembersp(newp);
         UINFO(9, "created " << varp);
         return newp;
     }
