@@ -6605,6 +6605,10 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (!taskp) {
             nodep->v3error(
                 "Can't find definition of exported task/function: " << nodep->prettyNameQ());
+        } else if (foundp->imported() || foundp != m_curSymp->findIdFlat(nodep->name())) {
+            nodep->v3error("DPI export must be declared in the scope that defines the "
+                           "exported task/function (IEEE 1800-2023 35.7): "
+                           << nodep->prettyNameQ());
         } else if (taskp->dpiExport()) {
             nodep->v3error("Function was already DPI Exported, duplicate not allowed: "
                            << nodep->prettyNameQ());

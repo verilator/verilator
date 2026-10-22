@@ -1,0 +1,11 @@
+%Error: t/t_dpi_export_def_bad.v:18:27: DPI export must be declared in the scope that defines the exported task/function (IEEE 1800-2023 35.7): 'f'
+   18 |   export "DPI-C" function f;
+      |                           ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_dpi_export_def_bad.v:20:27: DPI export must be declared in the scope that defines the exported task/function (IEEE 1800-2023 35.7): 'g'
+   20 |   export "DPI-C" function g;
+      |                           ^
+%Error: t/t_dpi_export_def_bad.v:26:29: DPI export must be declared in the scope that defines the exported task/function (IEEE 1800-2023 35.7): 'h'
+   26 |     export "DPI-C" function h;
+      |                             ^
+%Error: Exiting due to
