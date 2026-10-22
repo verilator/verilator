@@ -289,6 +289,7 @@ class WidthVisitor final : public VNVisitor {
     AstNodeModule* m_modep = nullptr;  // Current module
     const AstConstraint* m_constraintp = nullptr;  // Current constraint
     AstNodeProcedure* m_procedurep = nullptr;  // Current final/always
+    const AstNode* m_writerp = nullptr;  // Assignment, release or pin whose lvalue is iterated
     const AstWith* m_withp = nullptr;  // Current 'with' statement
     const AstFunc* m_funcp = nullptr;  // Current function
     const AstAttrOf* m_attrp = nullptr;  // Current attribute
@@ -3639,7 +3640,7 @@ class WidthVisitor final : public VNVisitor {
                    && !nodep->varp()->isFuncLocal() && nodep->varp()->isReadOnly()
                    && (!m_ftaskp || !m_ftaskp->isConstructor())
                    && !VN_IS(m_procedurep, InitialAutomatic) && !VN_IS(m_procedurep, InitialStatic)
-                   && !VN_IS(nodep->abovep(), AssignForce) && !VN_IS(nodep->abovep(), Release)) {
+                   && !VN_IS(m_writerp, AssignForce) && !VN_IS(m_writerp, Release)) {
             // Skip ASSIGNIN for continuous assignments to net-type input ports
             // via hierarchical reference. Net ports allow multiple continuous
             // drivers (IEEE 1800-2023 23.3.3.3). Input ports default to net
@@ -3647,8 +3648,8 @@ class WidthVisitor final : public VNVisitor {
             const bool hierRef = !m_curModVars.count(nodep->varp());
             const bool netPort
                 = nodep->varp()->isNet() || nodep->varp()->varType() == VVarType::PORT;
-            const bool contAssign = VN_IS(nodep->abovep(), AssignW);
-            const bool pinConn = VN_IS(nodep->abovep(), Pin);
+            const bool contAssign = VN_IS(m_writerp, AssignW);
+            const bool pinConn = VN_IS(m_writerp, Pin);
             if (!(hierRef && netPort && (contAssign || pinConn))) {
                 nodep->v3warn(ASSIGNIN,
                               "Assigning to input/const variable: " << nodep->prettyNameQ());
@@ -6982,7 +6983,11 @@ class WidthVisitor final : public VNVisitor {
         assertAtStatement(nodep);
         {
             // UINFOTREE(1, nodep, "", "assin:");
-            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+            {
+                VL_RESTORER(m_writerp);
+                m_writerp = nodep;
+                userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+            }
             UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LHS be untyped?");
             UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LHS be unsized?");
             // An interface instance, or an array or slice of them, is not a variable
@@ -7144,7 +7149,11 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstRelease* nodep) override {
-        userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+        {
+            VL_RESTORER(m_writerp);
+            m_writerp = nodep;
+            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH}.p());
+        }
         UASSERT_OBJ(nodep->lhsp()->dtypep(), nodep, "How can LValue be untyped?");
         UASSERT_OBJ(nodep->lhsp()->dtypep()->widthSized(), nodep, "How can LValue be unsized?");
         checkForceReleaseLhs(nodep, nodep->lhsp());
@@ -7584,6 +7593,8 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstPin* nodep) override {
+        VL_RESTORER(m_writerp);
+        m_writerp = nodep;
         // UINFOTREE(1, nodep, "", "PinPre");
         // TOP LEVEL NODE
         if (nodep->modVarp() && nodep->modVarp()->isGParam()) {
