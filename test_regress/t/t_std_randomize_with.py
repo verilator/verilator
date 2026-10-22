@@ -16,6 +16,7 @@ if not test.have_solver:
 
 test.compile()
 
-test.execute()
+# Tests 7 and 8 are deliberately unsatisfiable; their warnings are not of interest here
+test.execute(all_run_flags=['+verilator+wno+unsatconstr+1'])
 
 test.passes()
