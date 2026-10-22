@@ -181,9 +181,9 @@ module t #(
   always_comb vidx[sel] = d;
   assign cst_w = CST;
 
-  // Writability must not depend on optimization flags: V3Split parts the latch from the
-  // impure statement, V3Case lowers a full case as a tree or as an if/else chain, and
-  // V3Const folds a parameter condition unless -fno-const-before-dfg
+  // Writability must not depend on optimization flags: a latch beside an impure statement, a
+  // full case lowered as a tree or as an if/else chain, and a parameter condition folded or
+  // not before DFG
   logic [7:0] spl_l;
   logic [7:0] c1_c;
   logic [7:0] cg_c;
@@ -497,19 +497,11 @@ module t #(
   end
   // Written whole by one block and in part by another
   logic [3:0] vbx;
-`ifdef VERILATOR
-  // A non-constant select on a continuous assign's lhs is illegal (IEEE 1800-2023 Table 10-1),
-  // but Verilator accepts it
-  assign vbx[sel] = en;
-`else
-  always @*
-    if (sel == 2'd0) vbx[0] = en;
-    else if (sel == 2'd1) vbx[1] = en;
-`endif
+  always @* vbx[sel] = en;
   always_comb vbx[3:2] = d[1:0];
 
   // A cycle between groups, not bits, merged with a function's temporaries (under -O0, as
-  // V3BitBlast otherwise splits it)
+  // otherwise the vector is split into bits)
   /* verilator lint_off UNOPTFLAT */
   logic [1:0][3:0] mc_x;
   logic [3:0] mc_y;

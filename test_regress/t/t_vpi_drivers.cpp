@@ -334,14 +334,16 @@ void dumpRows() {
     std::vector<std::string> lines;
     walk(nullptr, [&lines](vpiHandle handle) {
         const std::string name = fullName(handle);
-        // A compiler temporary has no RTL name; force controls are public by V3Force
-        const bool forceCtl = name.find("__VforceEn") != std::string::npos
-                              || name.find("__VforceVal") != std::string::npos;
-        if (!forceCtl && name.find("__") != std::string::npos) {
+        // A forced signal's force controls are public, but are not RTL signals
+        if (name.find("__Vforce") != std::string::npos) return;
+        // A compiler temporary has no RTL name
+        if (name.find("__") != std::string::npos) {
             std::printf("%%Error: compiler temporary is VPI-visible: %s\n", name.c_str());
             ++errors;
         }
-        lines.push_back(name + " " + valueStr(handle));
+        // $random-driven, so only their writability is checked
+        const bool random = name == "t.rnd_w" || name == "t.rndc";
+        lines.push_back(name + " " + (random ? "-" : valueStr(handle)));
 #ifdef T_VPI_DRIVERS_LAZY
         lines.back() += " " + writableBits(handle);
 #endif

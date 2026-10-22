@@ -15,7 +15,7 @@ test.top_filename = "t/t_vpi_drivers.v"
 test.pli_filename = "t/t_vpi_drivers.cpp"
 
 # --vpi-lazy implies --vpi. The split options spread the rebuilds over many functions and files;
-# --stats only emits its counts. VL_DEBUG, as Makefile_obj sets for non---binary tests, runs the
+# --stats covers the --vpi-lazy statistics. VL_DEBUG, as Makefile_obj sets for non---binary tests, runs the
 # runtime's debug assertions.
 test.compile(make_top_shell=False,
              verilator_flags2=[
