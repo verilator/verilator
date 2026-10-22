@@ -1960,18 +1960,40 @@ class ConstVisitor final : public VNVisitor {
         const V3Number num{nodep, nodep->width(), val};
         VL_DO_DANGLING(replaceNum(nodep, num), nodep);
     }
+    // Replace 'nodep' with constant 'val', keeping the side effects of impure operands as
+    // statements of an AstExprStmt
+    void replaceValChkPure(AstNodeBiop* nodep, uint32_t val) {
+        if (nodep->lhsp()->isPure() && nodep->rhsp()->isPure()) {
+            VL_DO_DANGLING(replaceNum(nodep, val), nodep);
+            return;
+        }
+        FileLine* const flp = nodep->fileline();
+        // The operand values are intentionally discarded
+        FileLine* const stmtFlp = new FileLine{flp};
+        stmtFlp->warnOff(V3ErrorCode::IGNOREDRETURN, true);
+        AstNode* stmtsp = nullptr;
+        for (AstNodeExpr* const opp : {nodep->lhsp(), nodep->rhsp()}) {
+            if (!opp->isPure()) {
+                stmtsp = AstNode::addNext(stmtsp, new AstStmtExpr{stmtFlp, opp->unlinkFrBack()});
+            }
+        }
+        AstConst* const constp = new AstConst{flp, V3Number{nodep, nodep->width(), val}};
+        constp->dtypeFrom(nodep);
+        nodep->replaceWithKeepDType(new AstExprStmt{flp, stmtsp, constp});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void replaceNumSigned(AstNodeBiop* nodep, uint32_t val) {
         // We allow both sides to be constant, as one may have come from
         // parameter propagation, etc.
         if (m_warn && !(VN_IS(nodep->lhsp(), Const) && VN_IS(nodep->rhsp(), Const))) {
             nodep->v3warn(UNSIGNED, "Comparison is constant due to unsigned arithmetic");
         }
-        VL_DO_DANGLING(replaceNum(nodep, val), nodep);
+        VL_DO_DANGLING(replaceValChkPure(nodep, val), nodep);
     }
     void replaceNumLimited(AstNodeBiop* nodep, uint32_t val) {
         // Avoids gcc warning about same
         if (m_warn) nodep->v3warn(CMPCONST, "Comparison is constant due to limited range");
-        VL_DO_DANGLING(replaceNum(nodep, val), nodep);
+        VL_DO_DANGLING(replaceValChkPure(nodep, val), nodep);
     }
     void replaceZero(AstNode* nodep) { VL_DO_DANGLING(replaceNum(nodep, 0), nodep); }
     void replaceZeroChkPure(AstNode* nodep, AstNodeExpr* checkp) {
