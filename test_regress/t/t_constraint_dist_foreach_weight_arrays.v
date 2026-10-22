@@ -253,22 +253,27 @@ class ClsDistDerived extends ClsDistBase;
   constraint c_derived {other != 0;}
 endclass
 
-// Weights reading vars that cannot be pinned (wider than 64 bits, or through a
-// rand object handle) keep their old handling; only check they still solve
+// A weight read from a variable wider than 64 bits
+class ClsWide;
+  rand bit [64:0] k;
+  rand bit x;
+  constraint c {
+    k[1:0] != 0;
+    k[64:2] == 0;
+    x dist {0 := k[1:0], 1 := 1};
+  }
+endclass
+
+// A weight read through a rand object handle is not pinned; only check it still solves
 class ClsInner;
   rand bit [1:0] w;
   constraint c_inner {w != 0;}
 endclass
 
 class ClsNotPinned;
-  rand bit [64:0] big;
   rand ClsInner inner;
-  rand bit x, y;
-  constraint c {
-    big[1:0] != 0;
-    x dist {0 := big[1:0], 1 := 1};
-    y dist {0 := inner.w, 1 := 1};
-  }
+  rand bit y;
+  constraint c {y dist {0 := inner.w, 1 := 1};}
   function new();
     inner = new;
   endfunction
@@ -436,13 +441,13 @@ module t;
     `CHECK_TOTAL(ClsDerived, obj.k, 1)
     `CHECK_TOTAL(ClsDistBase, obj.k, 1)
     `CHECK_TOTAL(ClsDistDerived, obj.k, 1)
+    `CHECK_TOTAL(ClsWide, obj.k[1:0], 1)
 
     begin
       static ClsNotPinned obj = new;
       repeat (ITERS) begin
         randomize_result = obj.randomize();
         `checkd(randomize_result, 1);
-        `check_range(obj.big[1:0], 1, 3);
         `check_range(obj.inner.w, 1, 3);
       end
     end
