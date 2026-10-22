@@ -47,7 +47,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class LatchDetectGraphVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(LatchDetectGraphVertex, V3GraphVertex)
 public:
-    enum VertexType : uint8_t { VT_BLOCK, VT_BRANCH, VT_OUTPUT, VT_UNREACHABLE };
+    enum VertexType : uint8_t { VT_BLOCK, VT_BRANCH, VT_OUTPUT };
 
 private:
     const string m_name;  // Only used for .dot file generation
@@ -58,7 +58,6 @@ private:
         case VT_BLOCK: return "(||)";  // basic block node
         case VT_BRANCH: return "(&&)";  // if/else branch mode
         case VT_OUTPUT: return "(out)";  // var assignment
-        case VT_UNREACHABLE: return "(unreachable)";  // infeasible path
         default: return "??";  // unknown
         }
     }
@@ -97,9 +96,6 @@ protected:
         switch (vertexp->type()) {
         case LatchDetectGraphVertex::VT_OUTPUT:  // Base case
             result = vertexp->user();
-            break;
-        case LatchDetectGraphVertex::VT_UNREACHABLE:  // Infeasible control path
-            result = true;
             break;
         case LatchDetectGraphVertex::VT_BLOCK:  // (OR of potentially many siblings)
             // cppcheck-suppress constVariableReference
@@ -150,12 +146,14 @@ public:
         new V3GraphEdge{this, parent, m_curVertexp, 1};
         return m_curVertexp;
     }
-    // Add an infeasible control path (e.g. the absent else of a 'unique if' chain)
-    LatchDetectGraphVertex* addUnreachableVertex(LatchDetectGraphVertex* parent) {
-        LatchDetectGraphVertex* const vertexp = new LatchDetectGraphVertex{
-            this, "UNREACHABLE", LatchDetectGraphVertex::VT_UNREACHABLE};
+    // Add an infeasible control path (e.g. the absent else of a 'unique if' chain).  An output
+    // vertex with user() set represents a path that assigns every output, which is what an
+    // unreachable path must do.
+    void addUnreachableVertex(LatchDetectGraphVertex* parent) {
+        LatchDetectGraphVertex* const vertexp
+            = new LatchDetectGraphVertex{this, "UNREACHABLE", LatchDetectGraphVertex::VT_OUTPUT};
+        vertexp->user(true);
         new V3GraphEdge{this, parent, vertexp, 1};
-        return vertexp;
     }
     // Add a new output variable vertex and store a pointer to it in the user1 field of the
     // variables AstNode
@@ -333,17 +331,20 @@ class ActiveLatchCheckVisitor final : public VNVisitorConst {
             m_graph.addAssignment(nodep);
         }
     }
-    void visit(AstNodeIf* nodep) override {
+    // This visitor only walks procedural always blocks, so AstNodeIf nodes here are always AstIf.
+    void visit(AstIf* nodep) override {
         if (nodep->isBoundsCheck()) {
             iterateChildrenConst(nodep);
             return;
         }
 
-        // A 'unique if' asserts that exactly one branch is taken, so its
-        // implicit final 'else' is infeasible.  'unique0 if' permits no branch
-        // to be taken and therefore still has a potentially latching path.
-        const AstIf* const ifp = VN_CAST(nodep, If);
-        const bool exhaustive = m_uniqueIfChain || (ifp && ifp->uniquePragma());
+        // IEEE 1800-2023 12.4.2 requires a violation report if a 'unique if' has no matching
+        // condition and no explicit else.  Treat that missing else as unreachable for latch
+        // detection, consistent with the V3Assert check; 'unique0 if' permits no match and
+        // therefore still has a potentially latching path.
+        // Note: 'priority if' is omitted because V3Assert does not currently lower it to a
+        // runtime check, so suppressing LATCH would hide a latch without a diagnostic.
+        const bool exhaustive = m_uniqueIfChain || nodep->uniquePragma();
 
         LatchDetectGraphVertex* const parentp = m_graph.currentp();
         LatchDetectGraphVertex* const branchp = m_graph.addPathVertex(parentp, "BRANCH", true);
@@ -355,15 +356,13 @@ class ActiveLatchCheckVisitor final : public VNVisitorConst {
             iterateAndNextConstNull(nodep->thensp());
         }
 
-        if (nodep->elsesp()) {
+        if (exhaustive && !nodep->elsesp()) {
+            m_graph.addUnreachableVertex(branchp);
+        } else {
             m_graph.addPathVertex(branchp, "ELSE");
             VL_RESTORER(m_uniqueIfChain);
             m_uniqueIfChain = exhaustive && VN_IS(nodep->elsesp(), If);
             iterateAndNextConstNull(nodep->elsesp());
-        } else if (exhaustive) {
-            m_graph.addUnreachableVertex(branchp);
-        } else {
-            m_graph.addPathVertex(branchp, "ELSE");
         }
         m_graph.currentp(parentp);
     }
