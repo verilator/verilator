@@ -144,6 +144,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void emitScopeHier(TextStmts& stmts, bool destroy);
     void emitSymImp(const AstNetlist* netlistp);
     void emitDpiHdr();
+    void emitDpiStruct(const AstNodeDType* dtypep, std::set<std::string>& namesr);
     void emitDpiImp();
 
     TextStmts getSymCtorStmts();
@@ -1786,6 +1787,18 @@ void EmitCSyms::emitDpiHdr() {
     puts("\n");
     puts("#include \"svdpi.h\"\n");
     puts("\n");
+
+    // Unpacked structures passed as C structures (IEEE 1800-2023 H.7.8)
+    std::set<std::string> structNames;
+    for (const AstCFunc* const nodep : m_dpis) {
+        for (const AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
+            if (const AstVar* const portp = VN_CAST(argp, Var)) {
+                emitDpiStruct(portp->dtypep(), structNames);
+            }
+        }
+    }
+    if (!structNames.empty()) puts("\n");
+
     puts("#ifdef __cplusplus\n");
     puts("extern \"C\" {\n");
     puts("#endif\n");
@@ -1808,7 +1821,7 @@ void EmitCSyms::emitDpiHdr() {
             putns(nodep, "extern " + nodep->dpiCDecl() + ";\n");
         } else {
             putns(nodep, "extern " + nodep->rtnTypeVoid() + " " + nodep->nameProtect() + "("
-                             + cFuncArgs(nodep) + ");\n");
+                             + cFuncArgs(nodep, false) + ");\n");
         }
     }
 
@@ -1820,6 +1833,27 @@ void EmitCSyms::emitDpiHdr() {
     ofp()->putsEndGuard();
 
     closeOutputFile();
+}
+
+void EmitCSyms::emitDpiStruct(const AstNodeDType* dtypep, std::set<std::string>& namesr) {
+    if (!dtypep->containsUnpackedStruct()) return;
+    const AstStructDType* const sdtypep = VN_AS(dtypep->elemDTypep(), StructDType);
+    const std::string name = sdtypep->dpiName();
+    // Once per name, as V3Task checked structures of the same name are the same
+    if (namesr.count(name)) return;
+    // After the structures it contains
+    for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+         itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        emitDpiStruct(itemp->subDTypep(), namesr);
+    }
+    if (name.empty()) return;  // Declared where used
+    if (namesr.empty()) puts("// DPI TYPES\n");
+    namesr.insert(name);
+    // Guarded, so the user, or another model, may declare it instead
+    puts("#ifndef VL_DPITYPE_" + name + "_\n");
+    puts("#define VL_DPITYPE_" + name + "_\n");
+    putns(sdtypep, sdtypep->dpiTypedef());
+    puts("#endif\n");
 }
 
 //######################################################################

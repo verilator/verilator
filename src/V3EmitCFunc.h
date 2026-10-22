@@ -1135,14 +1135,17 @@ public:
         puts(nodep->isHex() ? "true" : "false");
         putbs(", ");
         // Need real storage width
-        puts(cvtToStr(nodep->memp()->dtypep()->subDTypep()->widthMin()));
+        puts(cvtToStr(nodep->memp()->dtypep()->skipRefp()->subDTypep()->widthMin()));
         uint32_t array_lo = 0;
+        bool memUsePtr = true;
         {
             const AstVarRef* const varrefp = VN_CAST(nodep->memp(), VarRef);
             if (!varrefp) {
                 nodep->v3error(nodep->verilogKwd() << " loading non-variable");
-            } else if (VN_IS(varrefp->varp()->dtypeSkipRefp(), AssocArrayDType)) {
+            } else if (VN_IS(varrefp->varp()->dtypeSkipRefp(), AssocArrayDType)
+                       || VN_IS(varrefp->varp()->dtypeSkipRefp(), DynArrayDType)) {
                 // nodep->memp() below will when verilated code is compiled create a C++ template
+                memUsePtr = false;
             } else if (const AstUnpackArrayDType* const adtypep
                        = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
                 putbs(", ");
@@ -1151,18 +1154,18 @@ public:
                 putbs(", ");
                 puts(cvtToStr(array_lo));
             } else {
-                nodep->v3error(nodep->verilogKwd()
-                               << " loading other than unpacked/associative-array variable");
+                nodep->v3error(
+                    nodep->verilogKwd()
+                    << " loading other than unpacked/dynamic/associative-array variable");
             }
         }
         putbs(", ");
         iterateConst(nodep->filenamep());
         putbs(", ");
         {
-            const bool need_ptr = !VN_IS(nodep->memp()->dtypep(), AssocArrayDType);
-            if (need_ptr) puts(" &(");
+            if (memUsePtr) puts(" &(");
             iterateAndNextConstNull(nodep->memp());
-            if (need_ptr) puts(")");
+            if (memUsePtr) puts(")");
         }
         putbs(", ");
         if (nodep->lsbp()) {

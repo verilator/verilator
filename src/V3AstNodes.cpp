@@ -44,18 +44,58 @@
 //======================================================================
 // CLASSES
 
+// C type of a DPI basic type passed as a primitive C type (IEEE 1800-2023 H.7.4)
+static string dpiPrimitiveType(const AstBasicDType* basicp) {
+    const VBasicDTypeKwd keyword = basicp->keyword();
+    return (keyword.isDpiUnsignable() && !basicp->isSigned() ? "unsigned " : "")
+           + string{keyword.dpiType()};
+}
+
+static string dpiMemberDecl(const AstNodeDType* dtypep, const string& name);
+
+// C structure declaration of an unpacked structure for DPI
+static string dpiStructDecl(const AstNodeUOrStructDType* sdtypep) {
+    string decl = "struct {\n";
+    for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+         itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        decl += dpiMemberDecl(itemp->subDTypep(), itemp->prettyName()) + ";\n";
+    }
+    return decl + "}";
+}
+
+// C declaration of member 'name' of type 'dtypep' of a DPI structure
+static string dpiMemberDecl(const AstNodeDType* dtypep, const string& name) {
+    // Unpacked arrays are C arrays (IEEE 1800-2023 H.7.3)
+    string dims;
+    dtypep = dtypep->skipRefp();
+    while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+        dims += "[" + cvtToStr(arrayp->elementsConst()) + "]";
+        dtypep = arrayp->subDTypep()->skipRefp();
+    }
+    const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType);
+    if (sdtypep && !sdtypep->packed()) {
+        // Declared here if no typedef names it
+        const string type
+            = sdtypep->dpiName().empty() ? dpiStructDecl(sdtypep) : sdtypep->dpiName();
+        return type + " " + name + dims;
+    }
+    const AstBasicDType* const basicp = dtypep->basicp();
+    if (basicp->isDpiPrimitive()) return dpiPrimitiveType(basicp) + " " + name + dims;
+    // Canonical representation of packed arrays (IEEE 1800-2023 H.7.7)
+    return (basicp->isDpiBitVec() ? "svBitVecVal " : "svLogicVecVal ") + name + dims
+           + "[SV_PACKED_DATA_NELEMS(" + cvtToStr(dtypep->width()) + ")]";
+}
+
 class DpiTypesToStringConverter VL_NOT_FINAL{public : virtual string openArray(const AstVar*)
                                                  const {return "const svOpenArrayHandle";
 }
 virtual string bitLogicVector(const AstVar* /*varp*/, bool isBit) const {
     return isBit ? "svBitVecVal" : "svLogicVecVal";
 }
-virtual string primitive(const AstVar* varp) const {
-    string type;
-    const VBasicDTypeKwd keyword = varp->basicp()->keyword();
-    if (keyword.isDpiUnsignable() && !varp->basicp()->isSigned()) type = "unsigned ";
-    type += keyword.dpiType();
-    return type;
+virtual string primitive(const AstVar* varp) const { return dpiPrimitiveType(varp->basicp()); }
+// Unpacked structure, or unpacked array of
+virtual string unpackedStruct(const AstVar* varp) const {
+    return VN_AS(varp->dtypep()->elemDTypep(), NodeUOrStructDType)->dpiName();
 }
 string convert(const AstVar* varp) const {
     if (varp->isDpiOpenArray()) {
@@ -66,6 +106,8 @@ string convert(const AstVar* varp) const {
         } else {
             return primitive(varp);
         }
+    } else if (varp->dtypep()->containsUnpackedStruct()) {
+        return unpackedStruct(varp);
     } else {
         return "UNKNOWN";
     }
@@ -2323,7 +2365,7 @@ AstCFunc* AstNetlist::evalFuncp(VEval eval) {
 AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
     UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
     AstFunc* selfp = nullptr;
-    for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
+    for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->membersp(); itemp;
          itemp = itemp->nextp()) {
         if (itemp->name() == "self") selfp = VN_AS(itemp, Func);
     }
@@ -2632,6 +2674,20 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
     UASSERT_OBJ(!compound || info.m_dims.empty(), this, "Declaring C array inside compound type");
 
     return info;
+}
+bool AstNodeDType::containsString() const {
+    const AstNodeDType* const dtypep = skipRefp();
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        return adtypep->subDTypep()->containsString();
+    }
+    if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            if (itemp->subDTypep()->containsString()) return true;
+        }
+        return false;
+    }
+    return dtypep->isString();
 }
 bool AstNodeDType::containsUnpackedStruct() const {
     const AstNodeDType* const dtypep = skipRefp();
@@ -2950,18 +3006,8 @@ AstNode* AstNodeExpr::baseFromp(bool overMembers) {
         } else if (overMembers && VN_IS(nodep, StructSel)) {
             nodep = VN_AS(nodep, StructSel)->fromp();
             continue;
-        }
-        // AstNodePreSel stashes the associated variable under an ATTROF
-        // of VAttrType::VAR_BASE so it isn't constified
-        else if (VN_IS(nodep, AttrOf)) {
-            nodep = VN_AS(nodep, AttrOf)->fromp();
-            continue;
         } else if (VN_IS(nodep, NodePreSel)) {
-            if (VN_AS(nodep, NodePreSel)->attrp()) {
-                nodep = VN_AS(nodep, NodePreSel)->attrp();
-            } else {
-                nodep = VN_AS(nodep, NodePreSel)->fromp();
-            }
+            nodep = VN_AS(nodep, NodePreSel)->fromp();
             continue;
         } else {
             break;
@@ -3285,6 +3331,13 @@ void AstNodeTriop::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 bool AstNodeTriop::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
     return m_purity.get();
+}
+string AstNodeUOrStructDType::dpiName() const {
+    // C has no scopes, so the name the typedef declaring it gives, without the scope
+    return m_typedefName.substr(m_typedefName.find_last_of(".:") + 1);
+}
+string AstNodeUOrStructDType::dpiTypedef() const {
+    return "typedef " + dpiStructDecl(this) + " " + dpiName() + ";\n";
 }
 void AstNodeUOrStructDType::dump(std::ostream& str) const {
     Super::dump(str);
@@ -4328,11 +4381,12 @@ void AstVar::combineType(const AstVar* otherp) {
     }
     if (otherp->icoMaybeWritten()) icoMaybeWritten(true);
 }
-string AstVar::dpiArgType(bool named, bool forReturn) const {
+string AstVar::dpiArgType(bool named, bool forReturn, bool cpp) const {
     if (forReturn) {
         return DpiTypesToStringConverter{}.convert(this);
     } else {
         class converter final : public DpiTypesToStringConverter {
+            const bool m_cpp;  // Qualify C structures, as class members may hide them in C++
             string bitLogicVector(const AstVar* varp, bool isBit) const override {
                 return string{varp->isReadOnly() ? "const " : ""}
                        + DpiTypesToStringConverter::bitLogicVector(varp, isBit) + '*';
@@ -4346,8 +4400,17 @@ string AstVar::dpiArgType(bool named, bool forReturn) const {
                 }
                 return type;
             }
+            string unpackedStruct(const AstVar* varp) const override {
+                // Passed by reference (IEEE 1800-2023 H.8.4)
+                return string{varp->isReadOnly() ? "const " : ""} + (m_cpp ? "::" : "")
+                       + DpiTypesToStringConverter::unpackedStruct(varp) + '*';
+            }
+
+        public:
+            explicit converter(bool cpp)
+                : m_cpp{cpp} {}
         };
-        string arg = converter{}.convert(this);
+        string arg = converter{cpp}.convert(this);
         if (named) arg += " " + name();
         return arg;
     }
@@ -4384,6 +4447,11 @@ string AstVar::dpiTmpVarType(const string& varName) const {
             }
             type += ' ' + m_name + arraySuffix(varp, 0);
             return type;
+        }
+        string unpackedStruct(const AstVar* varp) const override {
+            // An array even if not an unpacked array, as passed by reference
+            return DpiTypesToStringConverter::unpackedStruct(varp) + ' ' + m_name
+                   + arraySuffix(varp, 1);
         }
 
     public:

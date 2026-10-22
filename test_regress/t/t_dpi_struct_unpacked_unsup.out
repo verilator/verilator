@@ -1,0 +1,27 @@
+%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:34:64: Unsupported: DPI argument of unpacked structure type without a typedef name usable in C: 'struct t.__typeimpmod1'
+                                                         : ... Suggest use a typedef with a C identifier name
+   34 |   import "DPI-C" function void dpii_anon(input struct {int a;} s);
+      |                                                                ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:35:62: Unsupported: DPI argument of unpacked structure type without a typedef name usable in C: 'struct t.\escaped-t '
+                                                         : ... Suggest use a typedef with a C identifier name
+   35 |   import "DPI-C" function void dpii_escaped(input \escaped-t s);
+      |                                                              ^
+%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:37:61: Unsupported: DPI argument of unpacked structure type with member name not usable in C: 'template'
+   37 |   import "DPI-C" function void dpii_keyword(input keyword_t s);
+      |                                                             ^
+%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:40:60: Unsupported: DPI arguments of different unpacked structure types with the same name 'same_t'
+   40 |   import "DPI-C" function void dpii_same_b(input b::same_t s);
+      |                                                            ^
+                    t/t_dpi_struct_unpacked_unsup.v:8:11: ... Location of the other structure type
+    8 |   typedef struct {int x;} same_t;
+      |           ^~~~~~
+%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:43:42: Unsupported: DPI argument of type REFDTYPE 'union_t'
+                                                         : ... For best portability, use bit, byte, int, or longint
+   43 |   function void dpix_union(input union_t u);
+      |                                          ^
+%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:18:51: Unsupported: DPI argument of unpacked structure type without a typedef name usable in C: 'struct'
+                                                         : ... Suggest use a typedef with a C identifier name
+   18 |   import "DPI-C" function void dpii_param(input T s);
+      |                                                   ^
+%Error: Exiting due to

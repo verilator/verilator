@@ -1494,6 +1494,37 @@ void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename,
     }
 }
 
+template <typename T_Value>
+void VL_READMEM_N(bool hex, int bits, const std::string& filename, VlQueue<T_Value>& obj,
+                  QData start, QData end) VL_MT_SAFE {
+    VlReadMem rmem{hex, bits, filename, start, end};
+    if (VL_UNLIKELY(!rmem.isOpen())) return;
+    while (true) {
+        QData addr;
+        std::string data;
+        if (!rmem.get(addr /*ref*/, data /*ref*/)) break;
+        // Addresses beyond the array are ignored, as for any out-of-bounds write
+        rmem.setData(&obj.atWrite(addr), data);
+    }
+}
+
+template <typename T_Value>
+void VL_WRITEMEM_N(bool hex, int bits, const std::string& filename, const VlQueue<T_Value>& obj,
+                   QData start, QData end) VL_MT_SAFE {
+    const QData depth = obj.size();
+    const bool descending = start > end;  // IEEE 1800-2023 21.4
+    start = std::min(start, depth - 1);
+    end = std::min(end, depth - 1);
+    VlWriteMem wmem{hex, bits, filename, start, end};
+    if (VL_UNLIKELY(!wmem.isOpen())) return;
+    if (VL_UNLIKELY(!depth)) return;
+    const QData count = (descending ? start - end : end - start) + 1;
+    for (QData i = 0; i < count; ++i) {
+        const QData addr = descending ? start - i : start + i;
+        wmem.print(addr, false, &obj.at(addr));
+    }
+}
+
 //===================================================================
 /// Verilog unpacked array container
 /// For when a standard C++[] array is not sufficient, e.g. an

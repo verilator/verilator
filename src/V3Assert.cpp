@@ -365,6 +365,13 @@ class DefaultSampledValueVisitor final : public VNVisitor {
         nodep->replaceWith(newTypeDefault(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    void visit(AstArraySel* nodep) override {
+        iterateChildren(nodep);
+        // The default of an element of an array replaced by its default above
+        if (!VN_IS(nodep->fromp(), Const)) return;
+        nodep->replaceWith(newTypeDefault(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:

@@ -349,7 +349,6 @@ class AstNodePreSel VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : Optional[AstNodeExpr]
-    // @astgen op4 := attrp : Optional[AstAttrOf]
     VIsCached m_purity;  // Pure state
 
 protected:
@@ -846,7 +845,7 @@ public:
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
+    bool cleanOut() const override { return m_method.isClean(); }
     bool usePtr() const { return m_usePtr; }
     void usePtr(bool flag) { m_usePtr = flag; }
     VCMethod method() const VL_MT_STABLE { return m_method; }

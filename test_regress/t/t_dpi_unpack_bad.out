@@ -1,5 +1,7 @@
-%Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:21:18: Shape of the argument does not match the shape of the parameter ('logic[2:0]' v.s. 'logic[3:0]')
+%Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:21:18: Data type of the argument is incompatible with the parameter
                                               : ... note: In instance 't'
+                                              : ... Argument data type: 'logic[2:0]$[0:2]'
+                                              : ... Parameter data type: 'logic[3:0]$[0:2]'
    21 |     import_func0(sig0);
       |                  ^~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
@@ -24,8 +26,10 @@
    25 |     import_func2(sig1);
       |     ^~~~~~~~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:27:18: Shape of the argument does not match the shape of the parameter ('bit[2:0]' v.s. 'logic[2:0]')
+%Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:27:18: Data type of the argument is incompatible with the parameter
                                               : ... note: In instance 't'
+                                              : ... Argument data type: 'bit[2:0]$[0:2][0:2]' (2-state)
+                                              : ... Parameter data type: 'logic[2:0]$[0:2][0:2]' (4-state)
    27 |     import_func2(sig2);
       |                  ^~~~
 %Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:29:22: Argument is not an unpacked array while parameter 'in' is
@@ -36,4 +40,22 @@
                                   : ... note: In instance 't'
    29 |     import_func0(sig0[1]);
       |                      ^
+%Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:40:18: Data type of the argument is incompatible with the parameter
+                                              : ... note: In instance 't'
+                                              : ... Argument data type: 'struct t.u_t$[0:2]'
+                                              : ... Parameter data type: 'struct t.s_t$[0:2]'
+   40 |     import_func3(sig3);
+      |                  ^~~~
+%Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:42:18: Data type of the argument is incompatible with the parameter
+                                              : ... note: In instance 't'
+                                              : ... Argument data type: 'logic[2:0]$[0:2]' (4-state)
+                                              : ... Parameter data type: 'struct t.s_t$[0:2]' (2-state)
+   42 |     import_func3(sig0);
+      |                  ^~~~
+%Error-UNSUPPORTED: t/t_dpi_unpack_bad.v:44:18: Data type of the argument is incompatible with the parameter
+                                              : ... note: In instance 't'
+                                              : ... Argument data type: 'struct t.u_t$[0:2]' (2-state)
+                                              : ... Parameter data type: 'logic[3:0]$[0:2]' (4-state)
+   44 |     import_func0(sig3);
+      |                  ^~~~
 %Error: Exiting due to

@@ -94,7 +94,7 @@ string EmitCBaseVisitorConst::funcNameProtect(const AstCFunc* nodep, const AstNo
     return name;
 }
 
-string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
+string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
     // Return argument list for given C function
     string args;
     if (nodep->isLoose() && !nodep->isStatic()) {
@@ -120,7 +120,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep) {
             if (portp->isIO() && !portp->isFuncReturn()) {
                 if (!args.empty()) args += ", ";
                 if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
-                    args += portp->dpiArgType(true, false);
+                    args += portp->dpiArgType(true, false, cpp);
                 } else if (nodep->funcPublic()) {
                     args += portp->cPubArgType(true, false);
                 } else {
@@ -343,12 +343,12 @@ void EmitCBaseVisitorConst::emitVarDecl(const AstVar* nodep, bool asRef) {
         puts(");\n");
     } else {
         // Strings and other fundamental C types
-        if (nodep->isFuncLocal() && nodep->isString()) {
+        if (nodep->isFuncLocal() && nodep->dtypep()->containsString()) {
             const string name = nodep->name();
             const string suffix = V3Task::dpiTemporaryVarSuffix();
-            // String temporary variable for DPI-C needs to be static because c_str() will be
-            // passed to C code and the lifetime of the variable must be long enough. See also
-            // Issue 2622.
+            // Temporary variable for DPI-C containing strings needs to be static because c_str()
+            // will be passed to C code and the lifetime of the variable must be long enough. See
+            // also Issue 2622.
             const bool beStatic = name.size() >= suffix.size()
                                   && name.substr(name.size() - suffix.size()) == suffix;
             if (beStatic) puts("static thread_local ");

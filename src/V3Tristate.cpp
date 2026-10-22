@@ -1736,9 +1736,13 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void visit(AstExprStmt* nodep) override {
-        iterateChildren(nodep);
+        {
+            // Not an lvalue, so on an LHS only as an index, which is read
+            VL_RESTORER(m_alhs);
+            m_alhs = false;
+            iterateChildren(nodep);
+        }
         if (m_graphing) {
-            UASSERT_OBJ(!m_alhs, nodep, "AstExprStmt node on the LHS of assignment");
             associateLogic(nodep->resultp(), nodep);
         } else if (nodep->resultp()->user1p()) {
             nodep->user1p(getEnp(nodep->resultp()));

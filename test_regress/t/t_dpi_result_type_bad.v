@@ -320,4 +320,10 @@ module t_dpi_result_type_bad;
   function union_4_state_64  e_union_4_state_64();  return 0; endfunction
   function union_4_state_65  e_union_4_state_65();  return 0; endfunction
   function union_4_state_128 e_union_4_state_128(); return 0; endfunction
+
+  // Unpacked structures
+  typedef struct { int x; } struct_unpacked;
+  import "DPI-C" function struct_unpacked i_struct_unpacked();
+  export "DPI-C" function e_struct_unpacked;
+  function struct_unpacked e_struct_unpacked(); return '{x: 0}; endfunction
 endmodule

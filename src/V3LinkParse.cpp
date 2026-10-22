@@ -589,6 +589,27 @@ class LinkParseVisitor final : public VNVisitor {
             }
         }
     }
+    static bool isNegative(const AstConst* constp) {
+        return constp->isSigned() && constp->num().bitIs1(constp->width() - 1);
+    }
+    void visit(AstRange* nodep) override {
+        static constexpr uint64_t MAX_RANGE_ELEMENTS = 1 << 28;  // Same limit as V3Width
+        // Literal bounds are checked here as V3Width sees only int-wrapped values; a literal
+        // 32'hFFFF_FFFF reads there as -1, indistinguishable from a legitimate negative bound
+        const AstConst* const leftp = VN_CAST(nodep->leftp(), Const);
+        const AstConst* const rightp = VN_CAST(nodep->rightp(), Const);
+        if (leftp && rightp && leftp->width() <= 64 && rightp->width() <= 64 && !isNegative(leftp)
+            && !isNegative(rightp)) {
+            const uint64_t left = leftp->toUQuad();
+            const uint64_t right = rightp->toUQuad();
+            const uint64_t span = std::max(left, right) - std::min(left, right);
+            if (span >= MAX_RANGE_ELEMENTS) {
+                nodep->v3error("Width of bit range is huge; vector of over 1 billion bits: 0x"
+                               << std::hex << span + 1 << std::dec);
+            }
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstConst* nodep) override {
         if (nodep->num().autoExtend() && nodep->fileline()->language() < V3LangCode::L1800_2005) {
             nodep->v3warn(NEWERSTD, "Unbased unsized literals require IEEE 1800-2005 or later.");
@@ -794,7 +815,6 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeModule* nodep) override {
-        V3Control::applyModule(nodep);
         ++m_statModules;
         if (VN_IS(nodep, Class) && VN_CAST(nodep, Class)->isInterfaceClass()
             && VN_IS(m_modp, Class) && VN_CAST(m_modp, Class)->isInterfaceClass()) {
@@ -1219,7 +1239,7 @@ class LinkParseVisitor final : public VNVisitor {
         AstVar* const defaultVarp
             = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
         defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        nodep->addStmtsp(defaultVarp);
+        nodep->addMembersp(defaultVarp);
 
         // Handle constructor arguments - add function parameters and assignments
         if (argsp) {
@@ -1578,7 +1598,7 @@ class LinkParseVisitor final : public VNVisitor {
             if (dropDeprecatedCoverageOption(optp)) continue;
             itemp->unlinkFrBack();
             const VCoverOptionType optType = optp->optType();
-            if (!(optType == VCoverOptionType::WEIGHT)) {
+            if (!(optType == VCoverOptionType::AT_LEAST || optType == VCoverOptionType::WEIGHT)) {
                 optp->v3warn(COVERIGN,
                              "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             }

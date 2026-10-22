@@ -9,8 +9,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.lint(fails=test.vlt_all, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['-Wno-fatal'], expect_filename=test.golden_filename)
+
+test.execute()
 
 test.passes()
