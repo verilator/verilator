@@ -10180,7 +10180,9 @@ class WidthVisitor final : public VNVisitor {
                                     << " is a different interface ("
                                     << underIfaceRefp->ifaceViaCellp()->prettyNameQ() << ").");
                 } else if (underIfaceRefp->modportp()
-                           && expIfaceRefp->modportp() != underIfaceRefp->modportp()) {
+                           && expIfaceRefp->modportp() != underIfaceRefp->modportp()
+                           // Port without modport may connect to a modport (IEEE 1800-2023 25.5)
+                           && (expIfaceRefp->modportp() || !VN_IS(parentp, Pin))) {
                     underp->v3error(ucfirst(parentp->prettyOperatorName())
                                     << " expected "
                                     << (expIfaceRefp->modportp()
