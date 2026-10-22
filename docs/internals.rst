@@ -827,8 +827,8 @@ the following key functions:
 - ``handoffWorker()`` - Runs the function, or continues it after the last
   ``stopWorker()``. The calling thread blocks until the function yields or
   returns.
-- ``stopWorker()`` - Called on the DPI thread. Blocks the DPI thread and returns
-  control to the thread blocked in ``handoffWorker()``.
+- ``stopWorker()`` - Called on the DPI thread. Blocks the DPI thread and
+  returns control to the thread blocked in ``handoffWorker()``.
 
 ``co_await`` on a ``VlDpiCall`` suspends the awaiting coroutine until the
 function returns.
@@ -855,10 +855,11 @@ called through ``callExportTask()``, as without ``--timing``.
 ``awaitImportTask()`` creates a ``VlDpiCall`` that calls the imported task,
 resumes it, and awaits it. If the imported task calls an exported task that
 returns a ``VlCoroutine`` and the coroutine suspends, ``callExportTask()``
-makes ``resumeDpiCallAfter()`` await it and calls ``VlDpiCall::stopWorker()``.
-``handoffWorker()`` in ``awaitImportTask()`` then returns, ``awaitImportTask()``
-suspends, and the event loop continues. When the exported task completes,
-``resumeDpiCallAfter()`` resumes the DPI call.
+makes ``resumeDpiCallAfter()`` await it and calls
+``VlDpiCall::stopWorker()``. ``handoffWorker()`` in ``awaitImportTask()``
+then returns, ``awaitImportTask()`` suspends, and the event loop continues.
+When the exported task completes, ``resumeDpiCallAfter()`` resumes the DPI
+call.
 
 Multithreaded Mode
 ------------------
