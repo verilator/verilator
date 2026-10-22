@@ -17,8 +17,10 @@ module t;
   logic unpacked_array_with_a_name_long_enough_that_verilator_replaces_it_with_a_hash_because_it_is_over_the_one_hundred_twenty_eight_char_limit [1:0] /*verilator split_var*/;
   class_with_a_name_long_enough_that_verilator_replaces_it_with_a_hash_because_it_is_over_the_one_hundred_twenty_eight_character_limit obj;
 
-  always_comb packed_signal_with_a_name_long_enough_that_verilator_replaces_it_with_a_hash_because_it_is_over_the_one_hundred_twenty_eight_char_limit[0] = 1'b1;
-  always_comb unpacked_array_with_a_name_long_enough_that_verilator_replaces_it_with_a_hash_because_it_is_over_the_one_hundred_twenty_eight_char_limit[0] = 1'b1;
+  always_comb
+    packed_signal_with_a_name_long_enough_that_verilator_replaces_it_with_a_hash_because_it_is_over_the_one_hundred_twenty_eight_char_limit[0] = 1'b1;
+  always_comb
+    unpacked_array_with_a_name_long_enough_that_verilator_replaces_it_with_a_hash_because_it_is_over_the_one_hundred_twenty_eight_char_limit[0] = 1'b1;
 
   initial begin
     obj = new;

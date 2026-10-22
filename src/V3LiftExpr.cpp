@@ -109,6 +109,7 @@ class LiftExprVisitor final : public VNVisitor {
     VDouble0 m_statLiftedLogOrs;
     VDouble0 m_statLiftedLogIfs;
     VDouble0 m_statLiftedExprStmts;
+    VDouble0 m_statLiftedCaseConds;
     VDouble0 m_statTemporariesCreated;
     VDouble0 m_statTemporariesReused;
 
@@ -138,10 +139,10 @@ class LiftExprVisitor final : public VNVisitor {
 
         if (m_ftaskp) {
             varp->funcLocal(true);
-            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+            m_ftaskp->prependStmtsp(varp);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         } else {
-            m_modp->stmtsp()->addHereThisAsNext(varp);
+            m_modp->prependStmtsp(varp);
             // 'automatic' on a variable inside a class actually means 'member'
             varp->lifetime(VN_IS(m_modp, Class) ? VLifetime::STATIC_EXPLICIT
                                                 : VLifetime::AUTOMATIC_EXPLICIT);
@@ -215,7 +216,23 @@ class LiftExprVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCaseItem* nodep) override {
-        // Do not lift from the case expressions, there is nowhere to put them
+        for (AstNode *condp = nodep->condsp(), *nextp; condp; condp = nextp) {
+            nextp = condp->nextp();
+            // Lift under the AstExprStmt that will hold the lifted statements, as lifting
+            // may replace the condition
+            VNRelinker relinker;
+            condp->unlinkFrBack(&relinker);
+            AstExprStmt* const exprStmtp
+                = new AstExprStmt{condp->fileline(), nullptr, VN_AS(condp, NodeExpr)};
+            if (AstNode* const newStmtps = lift(exprStmtp->resultp())) {
+                ++m_statLiftedCaseConds;
+                exprStmtp->addStmtsp(newStmtps);
+                relinker.relink(exprStmtp);
+            } else {
+                relinker.relink(exprStmtp->resultp()->unlinkFrBack());
+                VL_DO_DANGLING(exprStmtp->deleteTree(), exprStmtp);
+            }
+        }
         iterateAndNextNull(nodep->stmtsp());
     }
     void visit(AstCell* nodep) override {
@@ -509,6 +526,7 @@ public:
         V3Stats::addStat("LiftExpr, lifted LogOr", m_statLiftedLogOrs);
         V3Stats::addStat("LiftExpr, lifted LogIf", m_statLiftedLogIfs);
         V3Stats::addStat("LiftExpr, lifted ExprStmt", m_statLiftedExprStmts);
+        V3Stats::addStat("LiftExpr, lifted case conditions", m_statLiftedCaseConds);
         V3Stats::addStat("LiftExpr, temporaries created", m_statTemporariesCreated);
         V3Stats::addStat("LiftExpr, temporaries reused", m_statTemporariesReused);
     }

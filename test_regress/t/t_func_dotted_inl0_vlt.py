@@ -11,25 +11,27 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 test.top_filename = "t/t_func_dotted.v"
+test.vlt_filename = "t/t_func_dotted_inl0.vlt"
 
 out_filename = test.obj_dir + "/V" + test.name + ".tree.json"
 
-test.compile(v_flags2=["--no-json-edit-nums", test.t_dir + "/t_func_dotted_inl0.vlt"])
+test.compile(v_flags2=["--no-json-edit-nums", test.vlt_filename])
 
 if test.vlt_all:
     test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"ma",.*"loc":"\w,84:[^"]*",.*"origName":"ma",.*"modPublic":true')
+        r'{"type":"MODULE","name":"ma",.*"loc":"\w,90:[^"]*",.*"origName":"ma",.*"modPublic":true')
     test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"mb",.*"loc":"\w,99:[^"]*",.*"origName":"mb",.*"modPublic":true')
-    test.file_grep(
-        out_filename,
-        r'{"type":"MODULE","name":"mc",.*"loc":"\w,127:[^"]*",.*"origName":"mc",.*"modPublic":true'
+        r'{"type":"MODULE","name":"mb",.*"loc":"\w,105:[^"]*",.*"origName":"mb",.*"modPublic":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"MODULE","name":"mc__PB1",.*"loc":"\w,127:[^"]*",.*"origName":"mc",.*"modPublic":true'
+        r'{"type":"MODULE","name":"mc",.*"loc":"\w,134:[^"]*",.*"origName":"mc",.*"modPublic":true'
+    )
+    test.file_grep(
+        out_filename,
+        r'{"type":"MODULE","name":"mc__PB1",.*"loc":"\w,134:[^"]*",.*"origName":"mc",.*"modPublic":true'
     )
 
 test.execute()

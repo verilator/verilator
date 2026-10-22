@@ -1,0 +1,22 @@
+%Error: t/t_interface_virtual_modport_bad.v:45:9: Member 'not_listed' found in interface 'Ifc' but not in modport 'mp' (IEEE 1800-2023 25.5)
+                                                : ... note: In instance 't'
+   45 |     vif.not_listed();   
+      |         ^~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_interface_virtual_modport_bad.v:46:9: Member 'exp_unlisted' found in interface 'Ifc' but not in modport 'mp' (IEEE 1800-2023 25.5)
+                                                : ... note: In instance 't'
+   46 |     vif.exp_unlisted();   
+      |         ^~~~~~~~~~~~
+%Error: t/t_interface_virtual_modport_bad.v:47:9: Member 'b' found in interface 'Ifc' but not in modport 'mp' (IEEE 1800-2023 25.5)
+                                                : ... note: In instance 't'
+   47 |     vif.b = 1;   
+      |         ^
+%Error: t/t_interface_virtual_modport_bad.v:48:13: Member 'not_listed_func' found in interface 'Ifc' but not in modport 'mp' (IEEE 1800-2023 25.5)
+                                                 : ... note: In instance 't'
+   48 |     x = vif.not_listed_func();   
+      |             ^~~~~~~~~~~~~~~
+%Error: t/t_interface_virtual_modport_bad.v:49:11: Member 'cb_not_listed' found in interface 'Ifc' but not in modport 'mp' (IEEE 1800-2023 25.5)
+                                                 : ... note: In instance 't'
+   49 |     @(vif.cb_not_listed);   
+      |           ^~~~~~~~~~~~~
+%Error: Exiting due to

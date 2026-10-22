@@ -22,7 +22,23 @@ module t;
     cp: coverpoint cp_32bit;
   endgroup
 
+  // Warning (COVERIGN): non-constant option.at_least
+  covergroup cg_at_least;
+    option.at_least = size_var;
+    cp: coverpoint cp_expr;
+  endgroup
+
+  // Warning (COVERIGN): negative option.at_least, at each level
+  covergroup cg_at_least_neg;
+    option.at_least = -1;
+    cp_a: coverpoint cp_expr {option.at_least = -2;}
+    cp_b: coverpoint cp_expr;
+    cx: cross cp_a, cp_b{option.at_least = -3;}
+  endgroup
+
   cg cg_i = new;
   cg_limit cg_limit_i = new;
+  cg_at_least cg_at_least_i = new;
+  cg_at_least_neg cg_at_least_neg_i = new;
   initial $finish;
 endmodule

@@ -96,6 +96,10 @@ public:
     // Convert SV quoted string input from source code to normal form.
     // Reverse is V3OutFormatter::quoteNameControls(...)
     static string unquoteSVString(const string& text, string& errOut);
+    // Position just past the string literal 'pos' opens with '"', as written by
+    // V3OutFormatter::quoteNameControls(...), whose escapes each begin with '\', or npos if the
+    // literal does not end
+    static size_t quotedEnd(const string& str, size_t pos) VL_PURE;
     // Escape path in Windows
     // e.g. input `C:\Program Files\My Program\My Program.exe` becomes
     // `C:\\Program\ Files\\My\ Program\\My\ Program.exe`
@@ -243,8 +247,12 @@ class VSpellCheck final {
     static constexpr unsigned LENGTH_LIMIT = 100;  // Maximum string length to search
     // TYPES
     using EditDistance = unsigned int;
+    struct Candidate final {
+        std::string str;  // String to be matched
+        std::string msg;  // Message to print on a match
+    };
     // MEMBERS
-    std::vector<std::string> m_candidates;  // Strings we try to match
+    std::vector<Candidate> m_candidates;  // Strings we try to match
 public:
     // CONSTRUCTORS
     VSpellCheck() = default;
@@ -252,27 +260,34 @@ public:
     // METHODS
     // Push a symbol table value to be considered as a candidate
     // The first item pushed has highest priority, all else being equal
-    void pushCandidate(const string& s) {
-        if (m_candidates.size() < NUM_CANDIDATE_LIMIT) m_candidates.push_back(s);
+    void pushCandidate(const string& str) { pushCandidate(str, str); }
+    // First argument is string to be matched, the second one is message to print on success
+    void pushCandidate(const string& str, const string& msg) {
+        if (m_candidates.size() < NUM_CANDIDATE_LIMIT) m_candidates.push_back({str, msg});
     }
     // Return candidate is closest to provided string, or "" for none
-    string bestCandidate(const string& goal) const {
+    VSpellCheck::Candidate bestCandidate(const string& goal) const {
         EditDistance dist;
         return bestCandidateInfo(goal, dist /*ref*/);
     }
     // Return friendly message
     string bestCandidateMsg(const string& goal) const {
-        const string candidate = bestCandidate(goal);
-        if (candidate.empty()) return "";
-        return "... Suggested alternative: '"s + candidate + "'";
+        const auto candidate = bestCandidate(goal);
+        if (candidate.msg.empty()) return "";
+        return "... Suggested alternative: '"s + candidate.msg + "'";
     }
     static void selfTest();
-    const std::vector<std::string> candidates() const { return m_candidates; }
+    std::vector<std::string> candidates() const {
+        std::vector<std::string> result;
+        result.reserve(m_candidates.size());
+        for (const auto& candidate : m_candidates) { result.push_back(candidate.msg); }
+        return result;
+    }
 
 private:
     static EditDistance editDistance(const string& s, const string& t);
     static EditDistance cutoffDistance(size_t goal_len, size_t candidate_len);
-    string bestCandidateInfo(const string& goal, EditDistance& distancer) const;
+    VSpellCheck::Candidate bestCandidateInfo(const string& goal, EditDistance& distancer) const;
     static void selfTestDistanceOne(const string& a, const string& b, EditDistance expected);
     static void selfTestSuggestOne(bool matches, const string& c, const string& goal,
                                    EditDistance dist);

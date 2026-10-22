@@ -11,8 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 test.top_filename = "t/t_unopt_combo.v"
+test.vlt_filename = "t/t_unopt_combo.vlt"
 
-test.compile(v_flags2=['+define+ATTRIBUTES', "t/t_unopt_combo.vlt", "-fno-dfg"],
+test.compile(v_flags2=['+define+ATTRIBUTES', test.vlt_filename, "-fno-dfg"],
              # Passes, as we waived
              )
 

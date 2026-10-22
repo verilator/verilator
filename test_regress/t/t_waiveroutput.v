@@ -10,6 +10,9 @@ module t_waiveroutput;
   // verilator lint_off UNUSEDSIGNAL
   // verilator lint_off WIDTHTRUNC
   reg width_warn2 = 2'b11;
-  // verilator lint_on UNUSEDSIGNAL
   // verilator lint_on WIDTHTRUNC
+  reg [3:0] width_digits = 4'hDF;
+  reg [3:0] width_expand = 1'b1;
+  reg [63:0] width_xz = 'hx;
+  // verilator lint_on UNUSEDSIGNAL
 endmodule

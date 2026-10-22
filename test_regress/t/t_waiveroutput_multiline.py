@@ -11,12 +11,12 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 test.top_filename = "t/t_waiveroutput.v"
+test.vlt_filename = "t/t_waiveroutput.vlt"
 
 out_filename = test.obj_dir + "/" + test.name + ".waiver_gen.out"
-waiver_filename = "t/t_waiveroutput.vlt"
 
 test.lint(v_flags2=[
-    waiver_filename, '-Wall', '-Wno-fatal', '--waiver-multiline', '--waiver-output', out_filename
+    test.vlt_filename, '-Wall', '-Wno-fatal', '--waiver-multiline', '--waiver-output', out_filename
 ])
 
 test.files_identical(out_filename, test.golden_filename)

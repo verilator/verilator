@@ -861,8 +861,15 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
    * term compatibility/aliasing.
    */
   "/*verilator fsm_arc_include_cond*/"  { FL; return yVL_FSM_ARC_INCL_COND; }
-  "/*verilator fsm_reset_arc*/"         { FL; return yVL_FSM_RESET_ARC; }
+  "/*verilator fsm_arc_include_cond_auto*/"         { FL; return yVL_FSM_ARC_INCL_COND_AUTO; }
+  "/*verilator fsm_arc_include_cond_auto_expand*/"  { FL; return yVL_FSM_ARC_INCL_COND_AUTO_EXPAND; }
+  "/*verilator fsm_arc_include_cond_full*/"         { FL; return yVL_FSM_ARC_INCL_COND_FULL; }
+  "/*verilator fsm_reset_arc*/"         { FL; yylval.fl->v3warn(DEPRECATED, "/*verilator fsm_reset_arc*/ is deprecated and aliases /*verilator fsm_state*/");
+                                          return yVL_FSM_STATE; }
   "/*verilator fsm_state*/"             { FL; return yVL_FSM_STATE; }
+  "/*verilator fsm_state_auto*/"        { FL; return yVL_FSM_STATE_AUTO; }
+  "/*verilator fsm_state_auto_expand*/" { FL; return yVL_FSM_STATE_AUTO_EXPAND; }
+  "/*verilator fsm_state_full*/"        { FL; return yVL_FSM_STATE_FULL; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }
   "/*verilator timing_off*/"            { FL_FWD; PARSEP->lexFileline()->timingOn(false); FL_BRK; }

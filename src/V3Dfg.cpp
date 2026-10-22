@@ -19,21 +19,20 @@
 #include "V3Dfg.h"
 
 #include "V3Ast.h"
+#include "V3DfgContext.h"
 #include "V3EmitV.h"
 #include "V3File.h"
-#include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //------------------------------------------------------------------------------
 // DfgGraph
 
-DfgGraph::DfgGraph(const string& name)
-    : m_name{name} {}
+DfgGraph::DfgGraph(V3DfgContext& ctx, const string& name)
+    : m_ctx{ctx}
+    , m_name{name} {}
 
 DfgGraph::~DfgGraph() {
-    V3Stats::addStatSum("Optimizations, DFG, temporary declarations reused",
-                        static_cast<double>(m_tempDeclarationsReused));
     forEachVertex([&](DfgVertex& vtx) { vtx.unlinkDelete(*this); });
 }
 
@@ -103,33 +102,7 @@ void DfgGraph::mergeGraphs(std::vector<std::unique_ptr<DfgGraph>>&& otherps) {
 
 DfgVertexVar* DfgGraph::makeNewVar(FileLine* flp, const std::string& prefix,
                                    const DfgDataType& dtype, AstScope* scopep) {
-    // AstVar declarations outlive all DFG graphs. Splitting or merging graphs
-    // does not transfer slots: each graph creates globally unique declarations.
-    TempDeclarations& temps = m_temporaries[scopep->modp()][{prefix, dtype.astDtypep()}];
-    const size_t slot = temps.m_scopeCounts[scopep]++;
-    AstVar* varp;
-    if (slot == temps.m_declps.size()) {
-        // Construct the name stub on the first new declaration in this graph
-        if (m_tmpNameStub.empty()) {
-            // Use the hash of the graph name (avoid long names and non-identifiers)
-            const std::string hash = V3Hash{m_name}.toString();
-            // Graph hashes may collide, so track multiplicity to keep names globally unique
-            static std::unordered_map<std::string, uint32_t> s_multiplicity;
-            m_tmpNameStub += '_' + hash + '_' + std::to_string(s_multiplicity[hash]++) + '_';
-        }
-        const std::string varName
-            = "__Vdfg" + prefix + m_tmpNameStub + std::to_string(m_tmpNameCount++);
-        varp = new AstVar{flp, VVarType::MODULETEMP, varName, dtype.astDtypep()};
-        scopep->modp()->addStmtsp(varp);
-        temps.m_declps.emplace_back(varp);
-    } else {
-        varp = temps.m_declps[slot];
-        ++m_tempDeclarationsReused;
-    }
-    // Create AstVarScope
-    AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
-    // Add to scope
-    scopep->addVarsp(vscp);
+    AstVarScope* const vscp = m_ctx.m_sharedTmps.make(flp, scopep, dtype.astDtypep(), prefix);
     // Create and return the corresponding variable vertex
     if (dtype.isArray()) return new DfgVarArray{*this, vscp};
     return new DfgVarPacked{*this, vscp};

@@ -63,14 +63,19 @@ module t #(
 `ifdef PROTLIB_TOP
   secret i_secred(.clk(clk));
 `else
+  // Outputs of hierarchical blocks depend on all their inputs, so this registered ring
+  // through the blocks appears combinational
+  /* verilator lint_off UNOPTFLAT */
   wire [7:0] out0;
   wire [7:0] out1;
   wire [7:0] out2;
   wire [7:0] out3;
+  /* verilator lint_on UNOPTFLAT */
   wire [7:0] out3_2;
   wire [7:0] out5;
   wire [7:0] out6;
   int count = 0;
+  logic [31:0] status;
 
   non_hier_sub0 i_sub0(.clk(clk), .in(out3), .out(out0));
   sub1 i_sub1(.clk(clk), .in(out0), .out(out1));
@@ -80,6 +85,9 @@ module t #(
   sub3 #(.STR("abc"), .P0(1)) i_sub3_2(.clk(clk), .in(out2), .out(out3_2));
   delay #(.N(2), 8) i_delay0(clk, out3, out5);
   delay #(.N(3), 8) i_delay1(clk, out5, out6);
+
+  sub7 sub7_i (.*);
+  sub7_chk sub7_chk_i ();
 
   always_ff @(posedge clk) begin
     if (out3 != out3_2) $stop;
@@ -426,3 +434,26 @@ module sub4_bound #(
 endmodule
 
 bind sub4 sub4_bound #(.P1(P1)) i_sub4_bound (.*);
+
+interface with_port (
+    input logic [31:0] status[1]
+);
+endinterface
+
+interface with_signal;
+  logic x;
+endinterface
+
+module sub7_chk;
+  with_signal i ();
+endmodule
+
+module sub7 (
+    input logic clk,
+    output logic [31:0] status
+);  `HIER_BLOCK
+  always_ff @(posedge clk) status <= status + 1'b1;
+endmodule
+
+bind sub7 with_port with_port ('{status});
+bind sub7 sub7_chk m_blk ();

@@ -18,7 +18,7 @@
             S1 = 1'b1
           } state_t;
         
-          state_t state_incl  /*verilator fsm_reset_arc*/;
+          state_t state_incl  /*verilator fsm_state*/;
           state_t state_excl;
         
           always_ff @(posedge clk) begin
@@ -26,9 +26,9 @@
             else
 %000001       case (state_incl)
         // [FSM coverage]
-%000001        // [fsm_arc t.reset_policy_u.state_incl::ANY->S0[reset_include]] [reset arc, excluded from %]
 %000001        // [fsm_arc t.reset_policy_u.state_incl::S0->S1]
-%000000        // [fsm_state t.reset_policy_u.state_incl::S0] *** UNCOVERED ***
+%000000        // [fsm_arc t.reset_policy_u.state_incl::S1->S0]
+%000001        // [fsm_state t.reset_policy_u.state_incl::S0]
 %000001        // [fsm_state t.reset_policy_u.state_incl::S1]
                 S0: state_incl <= S1;
                 default: state_incl <= S1;
@@ -40,9 +40,9 @@
             else
 %000001       case (state_excl)
         // [FSM coverage]
-%000001        // [fsm_arc t.reset_policy_u.state_excl::ANY->S0[reset]] [reset arc, excluded from %]
 %000001        // [fsm_arc t.reset_policy_u.state_excl::S0->S1]
-%000000        // [fsm_state t.reset_policy_u.state_excl::S0] *** UNCOVERED ***
+%000000        // [fsm_arc t.reset_policy_u.state_excl::S1->S0]
+%000001        // [fsm_state t.reset_policy_u.state_excl::S0]
 %000001        // [fsm_state t.reset_policy_u.state_excl::S1]
                 S0: state_excl <= S1;
                 default: state_excl <= S1;
@@ -107,7 +107,7 @@
 %000001       case (state_q)
         // [FSM coverage]
 %000001        // [fsm_arc t.oneblock_reset_mismatch_ok_u.state_q::S0->S1]
-%000000        // [fsm_state t.oneblock_reset_mismatch_ok_u.state_q::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.oneblock_reset_mismatch_ok_u.state_q::S0]
 %000001        // [fsm_state t.oneblock_reset_mismatch_ok_u.state_q::S1]
 %000001        // [fsm_state t.oneblock_reset_mismatch_ok_u.state_q::S2]
                 S0: state_q <= S1;
@@ -140,7 +140,7 @@
 %000001       case (state_q)
         // [FSM coverage]
 %000000        // [fsm_arc t.oneblock_reset_nonconst_ok_u.state_q::S0->S1]
-%000000        // [fsm_state t.oneblock_reset_nonconst_ok_u.state_q::S0] *** UNCOVERED ***
+%000001        // [fsm_state t.oneblock_reset_nonconst_ok_u.state_q::S0]
 %000000        // [fsm_state t.oneblock_reset_nonconst_ok_u.state_q::S1] *** UNCOVERED ***
 %000001        // [fsm_state t.oneblock_reset_nonconst_ok_u.state_q::S2]
                 S0: state_q <= S1;

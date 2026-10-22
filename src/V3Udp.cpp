@@ -180,10 +180,11 @@ class UdpVisitor final : public VNVisitor {
         }
 
         fl->warnOff(V3ErrorCode::LATCH, true);
-        AstIf* const ifp
-            = new AstIf{fl, logandp,
-                        new AstAssign{fl, new AstVarRef{fl, m_oFieldVarp, VAccess::WRITE},
-                                      new AstConst{fl, getOutputNum(nodep, oValName)}}};
+        // Edge-triggered lines are clocked logic, so update like a flop:
+        // other clocked logic reading the output sees the pre-edge value, regardless of ordering
+        AstNodeStmt* const assignp
+            = newOutputAssign(fl, getOutputNum(nodep, oValName), edgetrigp != nullptr);
+        AstIf* const ifp = new AstIf{fl, logandp, assignp};
         if (nodep->udpIsCombo()) {
             if (!isCombOutputSig(oValName)) {
                 oNodep->v3error("Illegal value for combinational UDP line output");
@@ -232,6 +233,12 @@ class UdpVisitor final : public VNVisitor {
     static bool isSequentOutputSig(const std::string& valName) {
         return (valName == "0" || valName == "1" || valName == "x" || valName == "X"
                 || valName == "-");
+    }
+    AstNodeStmt* newOutputAssign(FileLine* fl, const V3Number& outNum, bool isDelayed) const {
+        AstVarRef* const lhsp = new AstVarRef{fl, m_oFieldVarp, VAccess::WRITE};
+        AstConst* const rhsp = new AstConst{fl, outNum};
+        if (isDelayed) return new AstAssignDly{fl, lhsp, rhsp};
+        return new AstAssign{fl, lhsp, rhsp};
     }
     static V3Number getOutputNum(AstNode* nodep, const std::string& fieldNames) {
         V3Number outputNum{nodep, 1};

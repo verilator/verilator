@@ -311,8 +311,8 @@
 +000010  point: type=branch comment=if hier=top.t
 -000000  point: type=branch comment=else hier=top.t
 ~000010     if (($sformatf("abc") != "abc") && foo) bump <= bump + 1;
-+000010  point: type=expr comment=(($sformatf(%22abc%22);%0A != %22abc%22)==0) => 0 hier=top.t
--000000  point: type=expr comment=(($sformatf(%22abc%22);%0A != %22abc%22)==1 && foo==1) => 1 hier=top.t
++000010  point: type=expr comment=(($sformatf("abc");%0A != "abc")==0) => 0 hier=top.t
+-000000  point: type=expr comment=(($sformatf("abc");%0A != "abc")==1 && foo==1) => 1 hier=top.t
 -000000  point: type=expr comment=(foo==0) => 0 hier=top.t
 -000000  point: type=branch comment=if hier=top.t
 +000010  point: type=branch comment=else hier=top.t

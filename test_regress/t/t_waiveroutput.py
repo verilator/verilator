@@ -13,9 +13,8 @@ test.scenarios('vlt')
 test.top_filename = "t/t_waiveroutput.v"
 
 out_filename = test.obj_dir + "/" + test.name + ".waiver_gen.out"
-waiver_filename = "t/" + test.name + ".vlt"
 
-test.lint(v_flags2=[waiver_filename, '-Wall', '-Wno-fatal', '--waiver-output', out_filename])
+test.lint(v_flags2=[test.vlt_filename, '-Wall', '-Wno-fatal', '--waiver-output', out_filename])
 
 test.files_identical(out_filename, test.golden_filename)
 

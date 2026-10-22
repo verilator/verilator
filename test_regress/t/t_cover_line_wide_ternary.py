@@ -12,7 +12,7 @@ from pathlib import Path
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--cc', '--coverage-line'])
+test.compile(verilator_flags2=['--cc', '--coverage-line', '--coverage-branch'])
 
 test.execute()
 

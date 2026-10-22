@@ -239,11 +239,13 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
         }
     };
 
-    for (const auto& pair : logicRegions.m_pre) addLogic(ACTIVE, pair.first, pair.second);
-    for (const auto& pair : logicRegions.m_act) addLogic(ACTIVE, pair.first, pair.second);
-    for (const auto& pair : logicRegions.m_nba) addLogic(NBA, pair.first, pair.second);
-    for (const auto& pair : logicRegions.m_obs) addLogic(OBSERVED, pair.first, pair.second);
-    for (const auto& pair : logicRegions.m_react) addLogic(REACTIVE, pair.first, pair.second);
+    for (const auto& entry : logicRegions.m_pre) addLogic(ACTIVE, entry.m_scopep, entry.m_activep);
+    for (const auto& entry : logicRegions.m_act) addLogic(ACTIVE, entry.m_scopep, entry.m_activep);
+    for (const auto& entry : logicRegions.m_nba) addLogic(NBA, entry.m_scopep, entry.m_activep);
+    for (const auto& entry : logicRegions.m_obs)
+        addLogic(OBSERVED, entry.m_scopep, entry.m_activep);
+    for (const auto& entry : logicRegions.m_react)
+        addLogic(REACTIVE, entry.m_scopep, entry.m_activep);
 
     return graphp;
 }

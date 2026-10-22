@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(verilator_flags2=["--coverage-line"])
+test.lint(verilator_flags2=["--coverage-line", "--coverage-branch"])
 test.file_grep_not(test.compile_log_filename, r"FSMMULTI")
 
 test.passes()

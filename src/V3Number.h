@@ -728,6 +728,8 @@ public:
     string toString() const VL_MT_SAFE;
     string toDecimalS() const VL_MT_STABLE;  // return ASCII signed decimal number
     string toDecimalU() const VL_MT_STABLE;  // return ASCII unsigned decimal number
+    // return ASCII real number, with the fewest of 15 or 17 digits that is exact
+    string toRealString() const VL_MT_STABLE;
     double toDouble() const VL_MT_SAFE;
     V3Hash toHash() const;
     uint32_t edataWord(int eword) const;
@@ -780,6 +782,7 @@ public:
     V3Number& opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval);
     V3Number& opSelInto(const V3Number& lhs, const V3Number& lsb, int width);
     V3Number& opSelInto(const V3Number& lhs, int lsbval, int width);
+    V3Number& opCvtPackString(const V3Number& lhs);
     V3Number& opToLowerN(const V3Number& lhs);
     V3Number& opToUpperN(const V3Number& lhs);
     V3Number& opCaseEq(const V3Number& lhs, const V3Number& rhs);

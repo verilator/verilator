@@ -391,13 +391,21 @@ class TraceDeclVisitor final : public VNVisitor {
     void fixupLibStub(const std::string& path, AstNodeStmt* placeholderp) {
         FileLine* const flp = placeholderp->fileline();
 
+        // The library instance's model is named after its %m within the parent model,
+        // which does not include the "l2-name" (top module) of the library
+        std::string name = AstNode::prettyName(path);
+        if (!v3Global.opt.libCreate().empty()) {
+            const std::string topPrefix = v3Global.rootp()->traceLibTopName() + ".";
+            if (VString::startsWith(name, topPrefix)) name = name.substr(topPrefix.size());
+        }
+
         // Call the initialization function for the library instance
         AstCStmt* const initp = new AstCStmt{flp};
         initp->add("{\n");
         initp->add("std::string __VlibName = vlSymsp->name();\n");
         initp->add("if (!__VlibName.empty()) __VlibName += '.';\n");
         initp->add("__VlibName += ");
-        initp->add(new AstConst{flp, AstConst::String{}, AstNode::prettyName(path)});
+        initp->add(new AstConst{flp, AstConst::String{}, name});
         initp->add(";\n");
         initp->add("tracep->initLib(__VlibName);\n");
         initp->add("}\n");
@@ -550,8 +558,7 @@ class TraceDeclVisitor final : public VNVisitor {
         } else {
             AstNodeDType* const subtypep = nodep->subDTypep()->skipRefToEnump();
             // Always iterate left index to right index
-            const int inc = nodep->rangep()->ascending() ? 1 : -1;
-            for (int i = nodep->left(); i != nodep->right() + inc; i += inc) {
+            for (const int i : nodep->declRange().seqLeftToRight()) {
                 VL_RESTORER(m_traValuep);
                 m_traName = '[' + std::to_string(i) + ']';
                 m_traValuep = m_traValuep->cloneTree(false);
@@ -575,8 +582,7 @@ class TraceDeclVisitor final : public VNVisitor {
                                             nodep->left(), nodep->right(), !newFunc});
 
         // Always iterate left index to right index
-        const int inc = nodep->rangep()->ascending() ? 1 : -1;
-        for (int i = nodep->left(); i != nodep->right() + inc; i += inc) {
+        for (const int i : nodep->declRange().seqLeftToRight()) {
             VL_RESTORER(m_traValuep);
             m_traName = '[' + std::to_string(i) + ']';
             const int lsb = (i - nodep->lo()) * subtypep->width();

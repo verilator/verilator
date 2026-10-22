@@ -206,6 +206,9 @@ void vl_fatal(const char* filename, int linenum, const char* hier, const char* m
     // Callbacks prior to termination
     Verilated::runExitCallbacks();
 
+    // Stop the worker threads, as std::exit's static destruction would otherwise race with them
+    Verilated::threadContextp()->threadPoolShutdown();
+
     if (Verilated::debug()) {
         std::abort();
     } else {
@@ -243,38 +246,58 @@ void vl_warn(const char* filename, int linenum, const char* hier, const char* ms
 // Wrapper to call certain functions via messages when multithreaded
 
 void VL_FINISH_MT(const char* filename, int linenum, const char* hier) VL_MT_SAFE {
+    // Put pointer arguments onto stack so know char* won't change before post executes
+    const std::string filenameStr{filename ? filename : ""};
+    const std::string hierStr{hier ? hier : ""};
     VerilatedContext* const contextp = Verilated::threadContextp();
     contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_finish(filename, linenum, hier);
+        vl_finish(filenameStr.empty() ? nullptr : filenameStr.c_str(), linenum,
+                  hierStr.empty() ? nullptr : hierStr.c_str());
         contextp->finishPendingDec();
     }});
 }
 
 void VL_STOP_MT(const char* filename, int linenum, const char* hier, bool maybe) VL_MT_SAFE {
+    // Put pointer arguments onto stack so know char* won't change before post executes
+    const std::string filenameStr{filename ? filename : ""};
+    const std::string hierStr{hier ? hier : ""};
     // Classify now, so a queued request is pending from the moment it is posted
     VerilatedContext* const contextp = Verilated::threadContextp();
     const bool stop = contextp->stopRequestReserve(maybe);
     if (stop) contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_stop_maybe(filename, linenum, hier, maybe);
+        vl_stop_maybe(filenameStr.empty() ? nullptr : filenameStr.c_str(), linenum,
+                      hierStr.empty() ? nullptr : hierStr.c_str(), maybe);
         contextp->stopRequestRelease();
         if (stop) contextp->finishPendingDec();
     }});
 }
 
 void VL_FATAL_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+    // Put pointer arguments onto stack so know char* won't change before post executes
+    const std::string filenameStr{filename ? filename : ""};
+    const std::string hierStr{hier ? hier : ""};
+    const std::string msgStr{msg ? msg : ""};
     VerilatedContext* const contextp = Verilated::threadContextp();
     contextp->finishPendingInc();
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_fatal(filename, linenum, hier, msg);
+        vl_fatal(filenameStr.empty() ? nullptr : filenameStr.c_str(), linenum,
+                 hierStr.empty() ? nullptr : hierStr.c_str(),
+                 msgStr.empty() ? nullptr : msgStr.c_str());
         contextp->finishPendingDec();
     }});
 }
 
 void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char* msg) VL_MT_SAFE {
+    // Put pointer arguments onto stack so know char* won't change before post executes
+    const std::string filenameStr{filename ? filename : ""};
+    const std::string hierStr{hier ? hier : ""};
+    const std::string msgStr{msg ? msg : ""};
     VerilatedThreadMsgQueue::post(VerilatedMsg{[=]() {  //
-        vl_warn(filename, linenum, hier, msg);
+        vl_warn(filenameStr.empty() ? nullptr : filenameStr.c_str(), linenum,
+                hierStr.empty() ? nullptr : hierStr.c_str(),
+                msgStr.empty() ? nullptr : msgStr.c_str());
     }});
 }
 
@@ -574,6 +597,7 @@ IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
     return VL_RANDOM_I();
 }
 
+// Bulk array initialization relies on scoped resets having no element index or mutable RNG state.
 IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
     const int randReset = Verilated::threadContextp()->randReset();
     if (randReset == 0) return 0;
@@ -646,6 +670,24 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     // Not inlined to speed up compilation of slowpath code
     return VL_ZERO_W(obits, outwp);
+}
+
+void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE {
+    char* const bytesp = static_cast<char*>(arrayp);
+    const size_t totalBytes = elementBytes * count;
+    // Zero is the usual reset, and memset stays fast in -Os code.
+    bool zero = true;
+    for (size_t i = 0; i < elementBytes; ++i) zero = zero && !bytesp[i];
+    if (zero) {
+        std::memset(bytesp + elementBytes, 0, totalBytes - elementBytes);
+        return;
+    }
+    // Otherwise grow the initialized prefix, which memcpy fills quickly at any optimization.
+    for (size_t filled = elementBytes; filled < totalBytes;) {
+        const size_t bytes = std::min(filled, totalBytes - filled);
+        std::memcpy(bytesp + filled, bytesp, bytes);
+        filled += bytes;
+    }
 }
 
 //===========================================================================
@@ -1509,11 +1551,11 @@ static void _vl_vsss_skipspace(FILE* fp, int& floc, const WDataInP fromp,
     }
 }
 static void _vl_vsss_read_str(FILE* fp, int& floc, const WDataInP fromp, const std::string& fstr,
-                              std::back_insert_iterator<std::string> tmpp,
-                              const char* acceptp) VL_MT_SAFE {
-    // Read into tmp, consisting of characters from acceptp list
+                              std::back_insert_iterator<std::string> tmpp, const char* acceptp,
+                              unsigned maxWidth) VL_MT_SAFE {
+    // Read into tmp, consisting of characters from acceptp list, at most maxWidth (0 = no limit)
     auto cp = tmpp;
-    while (true) {
+    for (unsigned count = 0; !maxWidth || count < maxWidth; ++count) {
         int c = _vl_vsss_peek(fp, floc, fromp, fstr);
         if (c == EOF || std::isspace(c)) break;
         if (acceptp && nullptr == std::strchr(acceptp, c)) break;  // String - allow anything
@@ -1571,6 +1613,8 @@ void _vl_vsss_based(WDataOutP owp, int obits, int baseLog2, const char* strp, si
     }
 }
 
+static constexpr unsigned MAX_SCAN_WIDTH = 100000000;  // Larger field widths are not limited
+
 IData _vl_vsscanf(FILE* fp,  // If a fscanf
                   int fbits, const WDataInP fromp,  // Else if a sscanf
                   const std::string& fstr,  // if a sscanf to string
@@ -1583,6 +1627,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
     IData got = 0;
     bool inPct = false;
     bool inIgnore = false;
+    unsigned width = 0;  // Maximum field width of the current conversion, 0 = no limit
     int argn = 0;
 
     char formatAttr = '\0';  // Fetched format for _next_ argument
@@ -1610,6 +1655,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
         if (!inPct && pos[0] == '%') {
             inPct = true;
             inIgnore = false;
+            width = 0;
         } else if (!inPct && std::isspace(pos[0])) {  // Format spaces
             while (std::isspace(pos[1])) ++pos;
             _vl_vsss_skipspace(fp, floc, fromp, fstr);
@@ -1639,6 +1685,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
             case '7':  // FALLTHRU
             case '8':  // FALLTHRU
             case '9': {
+                // Maximum field width, saturating as a very large width means no limit
+                if (width < MAX_SCAN_WIDTH) width = width * 10 + (fmt - '0');
                 inPct = true;
                 break;
             }
@@ -1680,7 +1728,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 case 's': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
-                                      std::back_insert_iterator<std::string>{t_tmp}, nullptr);
+                                      std::back_insert_iterator<std::string>{t_tmp}, nullptr,
+                                      width);
                     if (!t_tmp[0]) goto done;
                     int lpos = (static_cast<int>(t_tmp.size())) - 1;
                     int lsb = 0;
@@ -1694,8 +1743,9 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "0123456789+-xXzZ?_");
-                    if (!t_tmp[0]) goto done;
+                                      "0123456789+-xXzZ?_", width);
+                    t_tmp.erase(std::remove(t_tmp.begin(), t_tmp.end(), '_'), t_tmp.end());
+                    if (t_tmp.empty()) goto done;
                     if (formatAttr == VL_VFORMATATTR_SIGNED) {
                         QData ld = 0;
                         std::sscanf(t_tmp.c_str(), "%30" PRIu64, &ld);
@@ -1713,7 +1763,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "+-.0123456789eE");
+                                      "+-.0123456789eE", width);
                     if (!t_tmp[0]) goto done;
                     union {
                         double r;
@@ -1728,7 +1778,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "+-.0123456789eE");
+                                      "+-.0123456789eE", width);
                     if (!t_tmp[0]) goto done;
                     // Timeunit was read earlier from up-front arguments
                     const int userUnits = Verilated::threadContextp()->impp()->timeFormatUnits();
@@ -1741,7 +1791,8 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                 case 'b': {
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
-                                      std::back_insert_iterator<std::string>{t_tmp}, "01xXzZ?_");
+                                      std::back_insert_iterator<std::string>{t_tmp}, "01xXzZ?_",
+                                      width);
                     if (!t_tmp[0]) goto done;
                     _vl_vsss_based(owp, obits, 1, t_tmp.c_str(), 0, t_tmp.size());
                     break;
@@ -1750,7 +1801,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "01234567xXzZ?_");
+                                      "01234567xXzZ?_", width);
                     if (!t_tmp[0]) goto done;
                     _vl_vsss_based(owp, obits, 3, t_tmp.c_str(), 0, t_tmp.size());
                     break;
@@ -1760,7 +1811,7 @@ IData _vl_vsscanf(FILE* fp,  // If a fscanf
                     _vl_vsss_skipspace(fp, floc, fromp, fstr);
                     _vl_vsss_read_str(fp, floc, fromp, fstr,
                                       std::back_insert_iterator<std::string>{t_tmp},
-                                      "0123456789abcdefABCDEFxXzZ?_");
+                                      "0123456789abcdefABCDEFxXzZ?_", width);
                     if (!t_tmp[0]) goto done;
                     _vl_vsss_based(owp, obits, 4, t_tmp.c_str(), 0, t_tmp.size());
                     break;
@@ -2401,8 +2452,10 @@ IData VL_VALUEPLUSARGS_INW(int rbits, const std::string& ld, WDataOutP rwp) VL_M
     VL_ZERO_W(rbits, rwp);
     switch (std::tolower(fmt)) {
     case 'd': {
+        std::string digits{dp};
+        digits.erase(std::remove(digits.begin(), digits.end(), '_'), digits.end());
         int64_t lld = 0;
-        std::sscanf(dp, "%30" PRId64, &lld);
+        std::sscanf(digits.c_str(), "%30" PRId64, &lld);
         VL_SET_WQ(rwp, lld);
         break;
     }
@@ -2592,6 +2645,14 @@ IData VL_ATOI_N(const std::string& str, int base) VL_PURE {
     if (errno != 0) v = 0;
     return static_cast<IData>(v);
 }
+
+double VL_ATOREAL_N(const std::string& str) VL_PURE {
+    std::string str_mod = str;
+    // IEEE 1800-2023 6.16.9 says '_' may exist.
+    str_mod.erase(std::remove(str_mod.begin(), str_mod.end(), '_'), str_mod.end());
+    return std::atof(str_mod.c_str());
+}
+
 IData VL_NTOI_I(int obits, const std::string& str) VL_PURE { return VL_NTOI_Q(obits, str); }
 QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE {
     QData out = 0;
@@ -2658,6 +2719,7 @@ VlReadMem::VlReadMem(bool hex, int bits, const std::string& filename, QData star
     , m_bits{bits}
     , m_filename(filename)  // Need () or GCC 4.8 false warning
     , m_end{end}
+    , m_descending{start > end}
     , m_addr{start} {
     m_fp = std::fopen(filename.c_str(), "r");
     if (VL_UNLIKELY(!m_fp)) {
@@ -2699,7 +2761,11 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
             // printf("Got data @%lx = %s\n", m_addr, valuer.c_str());
             ungetc(c, m_fp);
             addrr = m_addr;
-            ++m_addr;
+            if (m_descending) {
+                --m_addr;
+            } else {
+                ++m_addr;
+            }
             return true;
         }
         // Parse line
@@ -2747,7 +2813,8 @@ bool VlReadMem::get(QData& addrr, std::string& valuer) {
         lastCh = c;
     }
 
-    if (VL_UNLIKELY(m_end != ~0ULL && m_addr <= m_end && !m_anyAddr)) {
+    const bool beforeEnd = m_descending ? m_addr >= m_end : m_addr <= m_end;
+    if (VL_UNLIKELY(m_end != ~0ULL && beforeEnd && !m_anyAddr)) {
         VL_WARN_MT(m_filename.c_str(), m_linenum, "",
                    "$readmem file ended before specified final address (IEEE 1800-2023 21.4)");
     }
@@ -2793,12 +2860,8 @@ void VlReadMem::setData(void* valuep, const std::string& rhs) {
 
 VlWriteMem::VlWriteMem(bool hex, int bits, const std::string& filename, QData start, QData end)
     : m_hex{hex}
-    , m_bits{bits} {
-    if (VL_UNLIKELY(start > end)) {
-        VL_FATAL_MT(filename.c_str(), 0, "", "$writemem invalid address range");
-        return;
-    }
-
+    , m_bits{bits}
+    , m_descending{start > end} {  // IEEE 1800-2023 21.4
     m_fp = std::fopen(filename.c_str(), "w");
     if (VL_UNLIKELY(!m_fp)) {
         VL_FATAL_MT(filename.c_str(), 0, "", "$writemem file not found");
@@ -2816,7 +2879,7 @@ void VlWriteMem::print(QData addr, bool addrstamp, const void* valuep) {
     if (addr != m_addr && addrstamp) {  // Only assoc has time stamps
         fprintf(m_fp, "@%" PRIx64 "\n", addr);
     }
-    m_addr = addr + 1;
+    m_addr = m_descending ? addr - 1 : addr + 1;
     if (m_bits <= 8) {
         const CData* const datap = reinterpret_cast<const CData*>(valuep);
         if (m_hex) {
@@ -2944,13 +3007,20 @@ void VL_WRITEMEM_N(bool hex,  // Hex format, else binary
                    QData end  // Last address to write, or ~0 when not specified
                    ) VL_MT_SAFE {
     const QData addr_max = array_lsb + depth - 1;
-    if (start < static_cast<QData>(array_lsb)) start = array_lsb;
-    if (end > addr_max) end = addr_max;
+    const bool descending = start > end;  // IEEE 1800-2023 21.4
+    start = std::min(std::max(start, static_cast<QData>(array_lsb)), addr_max);
+    end = std::min(std::max(end, static_cast<QData>(array_lsb)), addr_max);
+    if (VL_UNLIKELY(descending ? start < end : start > end)) {
+        VL_FATAL_MT(filename.c_str(), 0, "", "$writemem invalid address range");
+        return;
+    }
 
     VlWriteMem wmem{hex, bits, filename, start, end};
     if (VL_UNLIKELY(!wmem.isOpen())) return;
 
-    for (QData addr = start; addr <= end; ++addr) {
+    const QData count = (descending ? start - end : end - start) + 1;
+    for (QData i = 0; i < count; ++i) {
+        const QData addr = descending ? start - i : start + i;
         const QData row_offset = addr - array_lsb;
         if (bits <= 8) {
             const CData* const datap = &(reinterpret_cast<const CData*>(memp))[row_offset];
@@ -3473,6 +3543,7 @@ VerilatedVirtualBase* VerilatedContext::threadPoolp(unsigned modelThreads) {
 }
 
 void VerilatedContext::prepareClone() { delete m_threadPool.release(); }
+void VerilatedContext::threadPoolShutdown() { m_threadPool.reset(); }
 
 VerilatedVirtualBase* VerilatedContext::threadPoolpOnClone() {
     if (VL_UNLIKELY(m_threadPool)) (void)m_threadPool.release();
@@ -3787,28 +3858,33 @@ const VerilatedScopeNameMap* VerilatedContext::scopeNameMap() VL_MT_SAFE {
     return &(impp()->m_impdatap->m_nameMap);
 }
 
-void VerilatedContextImp::ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE {
+const VerilatedIfaceRef*
+VerilatedContextImp::ifaceRefInsert(const VerilatedIfaceRef& ifaceRef) VL_MT_SAFE {
     // Slow ok - called once/interface-reference at construction
     const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
-    m_impdatap->m_ifaceRefMap.emplace(ifaceRef.fullname(), ifaceRef);
+    const auto it = m_impdatap->m_ifaceRefMap.emplace(ifaceRef.fullname(), ifaceRef);
+    return &it->second;
 }
 void VerilatedContextImp::ifaceRefErase(const std::string& fullname,
                                         const VerilatedScope* scopep) VL_MT_SAFE {
     // Slow ok - called once/interface-reference at destruction
     const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
-    const auto it = m_impdatap->m_ifaceRefMap.find(fullname);
-    // Models sharing an instance name collide on the key; only erase our own,
-    // so tearing one down leaves another's live reference registered
-    if (it != m_impdatap->m_ifaceRefMap.end() && it->second.scopep() == scopep) {
-        m_impdatap->m_ifaceRefMap.erase(it);
+    const auto range = m_impdatap->m_ifaceRefMap.equal_range(fullname);
+    // Each model owns its entries, even when instance names collide.
+    for (auto it = range.first; it != range.second; ++it) {
+        if (it->second.scopep() == scopep) {
+            m_impdatap->m_ifaceRefMap.erase(it);
+            break;
+        }
     }
 }
 const VerilatedIfaceRef*
 VerilatedContext::ifaceRefFind(const char* namep) const VL_MT_SAFE_POSTINIT {
     // Thread safe only assuming this is called only after model construction completed
     const VerilatedLockGuard lock{m_impdatap->m_ifaceRefMutex};
-    const auto& it = m_impdatap->m_ifaceRefMap.find(namep);
-    if (VL_UNLIKELY(it == m_impdatap->m_ifaceRefMap.end())) return nullptr;
+    // Keep name lookup deterministic when live models share an instance name.
+    const auto it = m_impdatap->m_ifaceRefMap.lower_bound(namep);
+    if (VL_UNLIKELY(it == m_impdatap->m_ifaceRefMap.end() || it->first != namep)) return nullptr;
     return &it->second;
 }
 
@@ -4224,7 +4300,16 @@ VerilatedScope::~VerilatedScope() {
     VL_DO_DANGLING(delete[] m_namep, m_namep);
     VL_DO_DANGLING(delete[] m_callbacksp, m_callbacksp);
     VL_DO_DANGLING(delete m_varsp, m_varsp);
+    VL_DO_DANGLING(delete m_ifaceRefsp, m_ifaceRefsp);
     VL_DEBUG_IFDEF(m_funcnumMax = 0;);
+}
+
+void VerilatedScope::ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE {
+    // Slowpath - called once/scope*reference at construction
+    // Appended in table order; the emitter sorts the table by path, so VPI
+    // iteration is deterministic and sorted
+    if (VL_UNLIKELY(!m_ifaceRefsp)) m_ifaceRefsp = new std::vector<const VerilatedIfaceRef*>;
+    m_ifaceRefsp->emplace_back(ifaceRefp);
 }
 
 void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
@@ -4332,6 +4417,11 @@ static std::string vl_ifaceRefFullname(const VerilatedSyms* symsp, const char* s
     return out;
 }
 
+static VerilatedScope* vl_ifaceRefParentp(uint8_t* basep, const VlIfaceRefTableEntry& e) {
+    if (e.parentPtrOffset == VL_IFACEREF_NO_PARENT) return nullptr;
+    return *reinterpret_cast<VerilatedScope**>(basep + e.parentPtrOffset);
+}
+
 void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
                                               VerilatedSyms* symsp) VL_MT_UNSAFE {
     // Use the model's own context; at destruction threadContextp() may be another's
@@ -4341,8 +4431,14 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        impp->ifaceRefInsert(
-            VerilatedIfaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp), e.modportp});
+        const VerilatedIfaceRef ifaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp),
+                                         e.modportp};
+        const VerilatedIfaceRef* const refp = impp->ifaceRefInsert(ifaceRef);
+        // Map nodes remain stable until this model's teardown. The scope only owns
+        // the pointer vector; destroying it does not dereference the erased entries.
+        if (VerilatedScope* const parentp = vl_ifaceRefParentp(base, e)) {
+            parentp->ifaceRefInsert(refp);
+        }
     }
 }
 
@@ -4372,6 +4468,31 @@ VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, boo
         const int lsb = va_arg(ap, int);
         var.m_unpacked[i].m_left = msb;
         var.m_unpacked[i].m_right = lsb;
+    }
+    va_end(ap);
+
+    m_varsp->emplace(namep, std::move(var));
+    return &(m_varsp->find(namep)->second);
+}
+
+VerilatedVar* VerilatedScope::varInsertMember(const char* namep, void* datap, bool isParam,
+                                              VerilatedVarType vltype, int vlflags,
+                                              uint32_t bitOffset, uint32_t entSize, int pdims,
+                                              ...) VL_MT_UNSAFE {
+    // Member is a bit slice of the parent: datap/vltype/entSize are the parent's.
+    // The parent was inserted into this scope first, so m_varsp already exists.
+    // LCOV_EXCL_START - gcov attributes the never-run exception cleanup of 'var' here
+    VerilatedVar var(namep, datap, vltype,
+                     static_cast<VerilatedVarFlags>(vlflags | VLVF_PACKED_MEMBER), 0, pdims,
+                     isParam, entSize, bitOffset);
+    va_list ap;
+    // LCOV_EXCL_STOP
+    va_start(ap, pdims);
+    for (int i = 0; i < pdims; ++i) {
+        const int msb = va_arg(ap, int);
+        const int lsb = va_arg(ap, int);
+        var.m_packed[i].m_left = msb;
+        var.m_packed[i].m_right = lsb;
     }
     va_end(ap);
 

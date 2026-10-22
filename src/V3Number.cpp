@@ -233,6 +233,7 @@ void V3Number::create(const char* sourcep) {
         int got_x = 0;
         int got_z = 0;
         int got_01 = 0;
+        bool warnedTooMany = false;
         for (const char* cp = value_startp; *cp; ++cp) {
             switch (std::tolower(*cp)) {
             case '0':  // FALLTHRU
@@ -257,9 +258,9 @@ void V3Number::create(const char* sourcep) {
                     const V3Number addend(this, width(), (*cp - '0'));
                     product.opMul(*this, ten);
                     opAdd(product, addend);
-                    if (product.bitsValue(width(), 4)) {  // Overflowed
+                    if (!warnedTooMany && product.bitsValue(width(), 4)) {  // Overflowed
                         warnTooMany(sourcep);
-                        while (*(cp + 1)) ++cp;  // Skip ahead so don't get multiple warnings
+                        warnedTooMany = true;
                     }
                 }
                 ++olen;
@@ -394,7 +395,7 @@ void V3Number::create(const char* sourcep) {
 }
 
 void V3Number::warnTooMany(const string& value) {
-    v3error("Too many digits for " << width() << " bit number: '" << value << "'\n");
+    v3warn(WIDTHDIGITS, "Too many digits for " << width() << " bit number: '" << value << "'");
 }
 
 void V3Number::nodep(AstNode* nodep) VL_MT_STABLE {
@@ -1003,7 +1004,7 @@ string V3Number::emitC() const VL_MT_STABLE {
         // Note the double {{ initializer. The first { starts the initializer of the VlWide,
         // and the second starts the initializer of m_storage within the VlWide.
         // Alternative is to have constructor with std::initializer_list
-        result = "VlWide<" + std::to_string(words()) + ">{{";
+        result = "::VlWide<" + std::to_string(words()) + ">{{";
         if (words() > 4) result += '\n';
         for (int n = 0; n < words(); ++n) {
             if (n) result += ((n % 4) ? ", " : ",\n");
@@ -1083,6 +1084,24 @@ string V3Number::toDecimalU() const VL_MT_STABLE {
         output += static_cast<char>('0' + bcd.bitsValue(lsb, 4));  // 0..9
     }
     return output;
+}
+
+string V3Number::toRealString() const VL_MT_STABLE {
+    const double value = toDouble();
+    // 15 digits suffice for most values, 17 digits for every value
+    std::ostringstream out;
+    out.precision(15);
+    out << value;
+    string result = out.str();
+    if (std::strtod(result.c_str(), nullptr) != value) {
+        out.str("");
+        out.precision(17);
+        out << value;
+        result = out.str();
+    }
+    // A real, as in Verilog, unless has an exponent, or is infinite or not-a-number
+    if (result.find_first_of(".en") == string::npos) result += ".0";
+    return result;
 }
 
 //======================================================================
@@ -1166,16 +1185,6 @@ string V3Number::toString() const {
         if (v) str += static_cast<char>(v);
     }
     return str;
-}
-
-V3Hash V3Number::toHash() const {
-    V3Hash hash{width()};
-    if (isString()) {
-        hash += V3Hash{m_data.str()};
-    } else {
-        for (int i = 0; i < words(); ++i) hash += m_data.num()[i].m_value;
-    }
-    return hash;
 }
 
 uint32_t V3Number::edataWord(int eword) const {
@@ -1276,6 +1285,8 @@ bool V3Number::isAnyZ() const VL_MT_SAFE {
 }
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering
+    if (isString()) return toString() < rhs.toString();
+    if (isDouble()) return toDouble() < rhs.toDouble();
     for (int bit = 0; bit < std::max(width(), rhs.width()); ++bit) {
         if (bitIs1(bit) && rhs.bitIs0(bit)) return true;
         if (rhs.bitIs1(bit) && bitIs0(bit)) return false;
@@ -1808,10 +1819,11 @@ V3Number& V3Number::opAtoN(const V3Number& lhs, int base) {
             "base must be one of AstAtoN::ATOREAL, 2, 8, 10, or 16.");
 
     std::string str = lhs.toString();  // new instance to edit later
-    if (base == AstAtoN::ATOREAL) return setDouble(std::atof(str.c_str()));
 
     // IEEE 1800-2023 6.16.9 says '_' may exist.
     str.erase(std::remove(str.begin(), str.end(), '_'), str.end());
+
+    if (base == AstAtoN::ATOREAL) return setDouble(std::atof(str.c_str()));
 
     errno = 0;
     auto v = std::strtol(str.c_str(), nullptr, base);
@@ -1917,7 +1929,17 @@ last:
     return setSingleBits(outc);
 }
 
+V3Hash V3Number::toHash() const {
+    // Shouldmatch isCaseEq
+    if (isString()) return V3Hash{toString()};
+    if (isDouble()) return V3Hash{toDouble()};
+    V3Hash hash{width()};
+    for (int i = 0; i < words(); ++i) hash += m_data.num()[i].m_value;
+    return hash;
+}
+
 bool V3Number::isCaseEq(const V3Number& rhs) const {
+    // Should match toHash
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to X/Z extend.
     if (isString()) return toString() == rhs.toString();
     if (isDouble()) return toDouble() == rhs.toDouble();
@@ -2780,6 +2802,10 @@ V3Number& V3Number::opReplN(const V3Number& lhs, uint32_t rhsval) {
     out.reserve(lhs.toString().length() * rhsval);
     for (unsigned times = 0; times < rhsval; ++times) out += lhs.toString();
     return setString(out);
+}
+V3Number& V3Number::opCvtPackString(const V3Number& lhs) {
+    NUM_ASSERT_OP_ARGS1(lhs);
+    return setString(lhs.toString());
 }
 V3Number& V3Number::opToLowerN(const V3Number& lhs) {
     NUM_ASSERT_OP_ARGS1(lhs);

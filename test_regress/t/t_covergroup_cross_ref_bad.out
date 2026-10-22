@@ -49,4 +49,8 @@
       |                          ^~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error: t/t_covergroup_cross_ref_bad.v:41:25: Cross selection 'missing' may only name its enclosing cross 'cx' (IEEE 1800-2023 19.6.1.2).
+                                            : ... note: In instance 't'
+   41 |       bins wrong_with = missing with (cp_a == cp_b);
+      |                         ^~~~~~~
 %Error: Exiting due to

@@ -28,7 +28,9 @@
 #error "verilated_funcs.h should only be included by verilated.h"
 #endif
 
+#include <new>
 #include <string>
+#include <type_traits>
 
 //=========================================================================
 // Extern functions -- User may override -- See verilated.cpp
@@ -128,6 +130,9 @@ extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
 /// Zero reset a signal (slow - else use VL_ZERO_W)
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 
+/// Fill a nonempty integral or packed unpacked array from its already initialized first element.
+extern void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE;
+
 extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
                               const VerilatedContext* contextp) VL_MT_SAFE;
 
@@ -196,6 +201,22 @@ extern const char* vl_mc_scan_plusargs(const char* prefixp) VL_MT_SAFE;  // PLIi
 //=========================================================================
 // Base macros
 
+// Construct object 'obj' in place with placement new, passing the remaining arguments
+// Type alias needed as a destructor call requires an unqualified type name.
+// std::remove_reference is needed to construct array elements individually.
+#define VL_INPLACE_CONSTRUCT(obj, ...) \
+    do { \
+        using __VlType = std::remove_reference<decltype(obj)>::type; \
+        ::new (&(obj)) __VlType{__VA_ARGS__}; \
+    } while (false)
+
+// Destroy object 'obj' in place
+#define VL_INPLACE_DESTRUCT(obj) \
+    do { \
+        using __VlType = std::remove_reference<decltype(obj)>::type; \
+        (obj).~__VlType(); \
+    } while (false)
+
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 // Arguments must not have side effects
 #define VL_BITISSETLIMIT_W(data, width, bit) (((bit) < (width)) && VL_BITISSET_W(data, bit))
@@ -263,6 +284,28 @@ inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     VlQueue<T> ret;
     for (size_t i = 0; i < N_Depth; ++i) ret.push_back(q[i]);
     return ret;
+}
+
+template <typename T>
+inline void _vl_cvt_unpack_to_unpack(T& to, const T& from) VL_MT_SAFE {
+    to = from;
+}
+template <int T_Reverse, int... T_Inner, typename T, std::size_t N_Depth>
+inline void _vl_cvt_unpack_to_unpack(VlUnpacked<T, N_Depth>& to,
+                                     const VlUnpacked<T, N_Depth>& from) VL_MT_SAFE {
+    for (std::size_t i = 0; i < N_Depth; ++i) {
+        _vl_cvt_unpack_to_unpack<T_Inner...>(to[T_Reverse ? N_Depth - 1 - i : i], from[i]);
+    }
+}
+
+// Return copy of unpacked array with elements shuffled,
+// reversing each dimension whose template argument is non-zero, outermost dimension is first
+template <int... T_Reverse, typename T, std::size_t N_Depth>
+inline VlUnpacked<T, N_Depth>
+VL_CVT_UNPACK_TO_UNPACK(const VlUnpacked<T, N_Depth>& from) VL_MT_SAFE {
+    VlUnpacked<T, N_Depth> to;
+    _vl_cvt_unpack_to_unpack<T_Reverse...>(to, from);
+    return to;
 }
 
 // Masked match functions
@@ -785,15 +828,22 @@ inline IData VL_REDXOR_W(int words, WDataInP const lwp) VL_PURE {
 
 // EMIT_RULE: VL_COUNTONES_II:  oclean = false; lhs clean
 inline IData VL_COUNTONES_I(IData lhs) VL_PURE {
-    // This is faster than __builtin_popcountl
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return static_cast<IData>(__builtin_popcount(lhs));
+#else
     IData r = lhs - ((lhs >> 1) & 033333333333) - ((lhs >> 2) & 011111111111);
     r = (r + (r >> 3)) & 030707070707;
     r = (r + (r >> 6));
     r = (r + (r >> 12) + (r >> 24)) & 077;
     return r;
+#endif
 }
 inline IData VL_COUNTONES_Q(QData lhs) VL_PURE {
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(VL_NO_BUILTINS)
+    return static_cast<IData>(__builtin_popcountll(lhs));
+#else
     return VL_COUNTONES_I(static_cast<IData>(lhs)) + VL_COUNTONES_I(static_cast<IData>(lhs >> 32));
+#endif
 }
 #define VL_COUNTONES_E VL_COUNTONES_I
 inline IData VL_COUNTONES_W(int words, WDataInP const lwp) VL_PURE {
@@ -1791,8 +1841,19 @@ inline void VL_STREAMR_RQI(int lbits, VlQueue<VlWide<N_Words>>& q, QData ld,
 }
 
 template <typename T>
-inline void VL_STREAMR_RWI(int lbits, VlQueue<T>& q, WDataInP const lwp, IData rd_log2) VL_PURE {
+inline void VL_STREAMR_RWI(int lbits, int queueBits, VlQueue<T>& q, WDataInP const lwp,
+                           IData rd_log2) VL_PURE {
     q.clear();  // Empty the queue first
+    if (queueBits != 8 * static_cast<int>(sizeof(T))) {
+        // Elements narrower than their storage type, push MSB first
+        for (int msb = lbits - 1; msb - queueBits + 1 >= 0; msb -= queueBits) {
+            QData value = 0;
+            for (int bit = msb; bit > msb - queueBits; --bit)
+                value = (value << 1) | ((lwp[VL_BITWORD_E(bit)] >> VL_BITBIT_E(bit)) & 1);
+            q.push_back(static_cast<T>(value));
+        }
+        return;
+    }
     const int numWords = VL_BITWORD_E(lbits);
     QData qdataValue = 0;
     for (int word = numWords - 1; word >= 0; word--) {
@@ -1819,12 +1880,12 @@ inline void VL_STREAMR_RWI(int lbits, VlQueue<T>& q, WDataInP const lwp, IData r
 }
 
 template <std::size_t N_Words>
-inline void VL_STREAMR_RWI(int lbits, VlQueue<VlWide<N_Words>>& q, WDataInP const lwp,
-                           IData rd_log2) VL_PURE {
+inline void VL_STREAMR_RWI(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q,
+                           WDataInP const lwp, IData rd_log2) VL_PURE {
     q.clear();  // Empty the queue first
     const int numWords = VL_BITWORD_E(lbits);
     VlWide<N_Words> value;
-    for (int ii = 0; ii < N_Words; ii++) { value.at(ii) = 0; }
+    for (int ii = 0; ii < N_Words; ii++) value.at(ii) = 0;
     for (int word = numWords - 1; word >= 0; word--) {
         value.at(word) = lwp[word];
         if ((word % N_Words) == 0) { q.push_back(value); }
@@ -2029,7 +2090,7 @@ inline void VL_STREAML_RII(int lbits, int queueBits, VlQueue<T>& q, IData ld,
                            IData rd) VL_MT_SAFE {
 
     IData ret = 0;
-    if (lbits < queueBits) { lbits = queueBits; }
+    if (lbits < queueBits) lbits = queueBits;
     // Slice size should never exceed the lhs width
     const IData mask = VL_MASK_I(rd);
     for (int istart = 0; istart < lbits; istart += rd) {
@@ -2055,7 +2116,7 @@ inline void VL_STREAML_RII(int lbits, int queueBits, VlQueue<T>& q, IData ld,
 template <std::size_t N_Words>
 inline void VL_STREAML_RII(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q, IData ld,
                            IData rd) VL_MT_SAFE {
-    if (lbits < queueBits) { lbits = queueBits; }
+    if (lbits < queueBits) lbits = queueBits;
     IData ret = 0;
     // Slice size should never exceed the lhs width
     const IData mask = VL_MASK_I(rd);
@@ -2067,6 +2128,7 @@ inline void VL_STREAML_RII(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q
     q.clear();
     VlWide<N_Words> value;
     value[0] = ret;
+    VL_MEMSET_ZERO_W(value + 1, N_Words - 1);
     q.push_back(value);
 }
 
@@ -2108,6 +2170,8 @@ inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<T>& q, WDataInP con
     VL_CONSTEXPR_CXX17 int numBitsInT = 8 * sizeof(T);
     VL_CONSTEXPR_CXX17 int mask = VL_MASK_I(numBitsInT * needsMask);
     q.renew(lbits / numBitsInT);
+    // Bits are OR-ed in below, but renew() fills with the possibly randomized default
+    for (int i = 0; i < lbits / numBitsInT; ++i) q.atWrite(i) = 0;
     const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
     for (int istart = 0; istart < lbits; istart += rd) {
         int ostart = lbits - rd - istart;
@@ -2135,16 +2199,19 @@ template <std::size_t N_Words>
 inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q,
                            WDataInP const lwp, IData rd) VL_MT_SAFE {
     VL_CONSTEXPR_CXX17 int numBitsInT = 4 * N_Words * 8;
-    if (lbits < queueBits) {  // this handles the case where the queue is larger than the rhs
-        lbits = queueBits;
-    }
+    const int ibits = lbits;  // Padding the destination must not extend source reads
+    if (lbits < queueBits) lbits = queueBits;  // If queue is larger than the rhs
     const int leftOver = (lbits % numBitsInT) > 0;
     q.renew(lbits / numBitsInT + leftOver);
+    // Bits are OR-ed in below, but renew() fills with the possibly randomized default
+    for (int i = 0; i < lbits / numBitsInT + leftOver; ++i) {
+        for (int w = 0; w < N_Words; ++w) q.atWrite(i).at(w) = 0;
+    }
     const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
-    for (int istart = 0; istart < lbits; istart += rd) {
+    for (int istart = 0; istart < ibits; istart += rd) {
         int ostart = lbits - rd - istart;
         ostart = ostart > 0 ? ostart : 0;
-        for (int sbit = 0; sbit < ssize && sbit < lbits - istart; ++sbit) {
+        for (int sbit = 0; sbit < ssize && sbit < ibits - istart; ++sbit) {
             const EData bit = (VL_BITRSHIFT_W(lwp, (istart + sbit)) & 1)
                               << VL_BITBIT_E(ostart + sbit);
             int qIndex = istart / numBitsInT;
@@ -2837,8 +2904,8 @@ inline WDataOutP VL_SEL_WWII(int obits, int lbits, WDataOutP owp, WDataInP const
         for (int i = 0; i < VL_WORDS_I(obits) - 1; ++i) owp[i] = ~0;
         owp[VL_WORDS_I(obits) - 1] = VL_MASK_E(obits);
     } else if (VL_BITBIT_E(lsb) == 0) {
-        // Just a word extract
-        for (int i = 0; i < VL_WORDS_I(obits); ++i) owp[i] = lwp[i + word_shift];
+        // Just a word extract use a memmove (should never overlap, but same speed as memcpy)
+        std::memmove(owp.datap(), lwp.datap() + word_shift, VL_WORDS_I(obits) * sizeof(EData));
     } else {
         // Not a _vl_insert because the bits come from any bit number and goto bit 0
         const int loffset = lsb & VL_SIZEBITS_E;
@@ -3629,6 +3696,7 @@ inline IData VL_CMP_NN(const std::string& lhs, const std::string& rhs, bool igno
 }
 
 extern IData VL_ATOI_N(const std::string& str, int base) VL_PURE;
+extern double VL_ATOREAL_N(const std::string& str) VL_PURE;
 extern IData VL_NTOI_I(int obits, const std::string& str) VL_PURE;
 extern QData VL_NTOI_Q(int obits, const std::string& str) VL_PURE;
 extern void VL_NTOI_W(int obits, WDataOutP owp, const std::string& str,

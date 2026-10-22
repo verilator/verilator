@@ -144,9 +144,16 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
 
             // iterating through packed ranges
             TestVpiHandle range_iter_h = vpi_iterate(vpiRange, arr_elem_h);
+            TestVpiHandle ranges_h[2];
             for (int idx2 = 0; idx2 < 2; idx2++) {
-                TestVpiHandle range_h = vpi_scan(range_iter_h);
-                TEST_CHECK_NZ(range_h);
+                ranges_h[idx2] = vpi_scan(range_iter_h);
+                TEST_CHECK_NZ(ranges_h[idx2]);
+            }
+            TEST_CHECK_Z(vpi_scan(range_iter_h));
+            range_iter_h.freed();
+            // Range handles must survive iterator exhaustion.
+            for (int idx2 = 0; idx2 < 2; idx2++) {
+                const TestVpiHandle& range_h = ranges_h[idx2];
                 {
                     s_vpi_value value;
                     value.format = vpiIntVal;
@@ -168,8 +175,6 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
                     }
                 }
             }
-            TEST_CHECK_Z(vpi_scan(range_iter_h));
-            range_iter_h.freed();
         }
         TEST_CHECK_Z(vpi_scan(arr_iter_h));
         arr_iter_h.freed();
@@ -178,9 +183,15 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
     {
         // iterating through unpacked ranges
         TestVpiHandle range_iter_h = vpi_iterate(vpiRange, arr_h);
+        TestVpiHandle ranges_h[2];
         for (int idx = 0; idx < 2; idx++) {
-            TestVpiHandle range_h = vpi_scan(range_iter_h);
-            TEST_CHECK_NZ(range_h);
+            ranges_h[idx] = vpi_scan(range_iter_h);
+            TEST_CHECK_NZ(ranges_h[idx]);
+        }
+        range_iter_h.release();
+        // Range handles must also survive explicit iterator release.
+        for (int idx = 0; idx < 2; idx++) {
+            const TestVpiHandle& range_h = ranges_h[idx];
             {
                 s_vpi_value value;
                 value.format = vpiIntVal;
@@ -202,8 +213,6 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
                 }
             }
         }
-        TEST_CHECK_Z(vpi_scan(range_iter_h));
-        range_iter_h.freed();
     }
 }
 
@@ -390,7 +399,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 void vpi_compat_bootstrap(void) {

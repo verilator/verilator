@@ -237,7 +237,12 @@ class InlineCFuncsVisitor final : public VNVisitor {
         // Reset vertex pointers on calls
         bodyp->foreachAndNext([&](AstNode* nodep) {
             if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-                if (AstVar* const varp = VN_AS(refp->varp()->user2p(), Var)) refp->varp(varp);
+                if (AstVar* const varp = VN_AS(refp->varp()->user2p(), Var)) {
+                    // Keep dtype; V3Expand may have widened the reference beyond the variable
+                    AstNodeDType* const dtypep = refp->dtypep();
+                    refp->varp(varp);
+                    refp->dtypep(dtypep);
+                }
             } else if (AstVar* const varp = VN_CAST(nodep, Var)) {
                 varp->name(varPrefix + varp->name());
             } else if (AstCCall* const callp = VN_CAST(nodep, CCall)) {

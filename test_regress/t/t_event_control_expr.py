@@ -19,12 +19,15 @@ test.execute()
 
 for filename in test.glob_some(test.obj_dir + "/" + test.vm_prefix + "*.cpp"):
     # Check that these simple expressions are not stored in temp variables
-    test.file_grep_not(filename, r'__Vtrigcurr__expression_.* = vlSelf->clk;')
-    test.file_grep_not(filename, r'__Vtrigcurr__expression_.* = vlSelf->t__DOT__q.at\(0U\);')
+    test.file_grep_not(filename, r'__Vtrigcurr__expression_.* = vlSelf->__VprimaryPorts\.clk;')
+    test.file_grep_not(filename,
+                       r'__Vtrigcurr__expression_.* = vlSelf->__Vnontrivs\.t__DOT__q.at\(0U\);')
     test.file_grep_not(filename,
                        r'__Vtrigcurr__expression_.* = .*vlSelf->t__DOT____Vcellinp__u_array__t')
-    test.file_grep_not(filename,
-                       r'__Vtrigcurr__expression_.* = .*vlSymsp->TOP__t__DOT__u_class.__PVT__obj')
+    test.file_grep_not(
+        filename,
+        r'__Vtrigcurr__expression_.* = .*vlSymsp->vlInst\.TOP__t__DOT__u_class\.__Vnontrivs\.__PVT__obj'
+    )
     # The line below should only be generated if concats/replicates aren't converted to separate senitems
     test.file_grep_not(filename, r'__Vtrigcurr__expression_.* = .*vlSelf->t__DOT__a')
 

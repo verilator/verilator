@@ -86,17 +86,17 @@ endmodule
 //
 module t_cstmt;
    logic last = 0;
-   always @($c("vlSymsp->TOP.clk")) begin
-       if ($time > 0 && logic'($c("vlSymsp->TOP.clk")) == last) $stop;
-       last <= logic'($c("vlSymsp->TOP.clk"));
+   always @($c("vlSymsp->vlInst.TOP.__VprimaryPorts.clk")) begin
+       if ($time > 0 && logic'($c("vlSymsp->vlInst.TOP.__VprimaryPorts.clk")) == last) $stop;
+       last <= logic'($c("vlSymsp->vlInst.TOP.__VprimaryPorts.clk"));
    end
-   always @(posedge $c("vlSymsp->TOP.clk")) begin
-       `WRITE_VERBOSE(("[%0t] cstmt [posedge] $c(\"vlSymsp->TOP.clk\")=%0b, last=%b\n", $time, $c("vlSymsp->TOP.clk"), last));
-       if ($time > 0 && (~logic'($c("vlSymsp->TOP.clk")) || last)) $stop;
+   always @(posedge $c("vlSymsp->vlInst.TOP.__VprimaryPorts.clk")) begin
+       `WRITE_VERBOSE(("[%0t] cstmt [posedge] $c(\"vlSymsp->vlInst.TOP.__VprimaryPorts.clk\")=%0b, last=%b\n", $time, $c("vlSymsp->vlInst.TOP.__VprimaryPorts.clk"), last));
+       if ($time > 0 && (~logic'($c("vlSymsp->vlInst.TOP.__VprimaryPorts.clk")) || last)) $stop;
    end
-   always @(negedge $c("vlSymsp->TOP.clk")) begin
-       `WRITE_VERBOSE(("[%0t] cstmt [negedge] $c(\"vlSymsp->TOP.clk\")=%0b, last=%b\n", $time, $c("vlSymsp->TOP.clk"), last));
-       if ($time > 0 && (logic'($c("vlSymsp->TOP.clk")) || !last)) $stop;
+   always @(negedge $c("vlSymsp->vlInst.TOP.__VprimaryPorts.clk")) begin
+       `WRITE_VERBOSE(("[%0t] cstmt [negedge] $c(\"vlSymsp->vlInst.TOP.__VprimaryPorts.clk\")=%0b, last=%b\n", $time, $c("vlSymsp->vlInst.TOP.__VprimaryPorts.clk"), last));
+       if ($time > 0 && (logic'($c("vlSymsp->vlInst.TOP.__VprimaryPorts.clk")) || !last)) $stop;
    end
 endmodule
 

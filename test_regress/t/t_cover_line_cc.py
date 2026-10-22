@@ -13,7 +13,7 @@ test.scenarios('simulator')
 test.top_filename = "t/t_cover_line.v"
 test.golden_filename = "t/t_cover_line.out"
 
-test.compile(verilator_flags2=['--cc --coverage-line +define+ATTRIBUTE'])
+test.compile(verilator_flags2=['--cc --coverage-line --coverage-branch +define+ATTRIBUTE'])
 
 test.execute()
 

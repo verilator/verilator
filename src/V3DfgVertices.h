@@ -374,6 +374,10 @@ protected:
 
 public:
     ASTGEN_MEMBERS_DfgVertexBinary;
+    DfgVertex* lhsp() const { return inputp(0); }
+    void lhsp(DfgVertex* vtxp) { inputp(0, vtxp); }
+    DfgVertex* rhsp() const { return inputp(1); }
+    void rhsp(DfgVertex* vtxp) { inputp(1, vtxp); }
 };
 
 class DfgMatchMasked final : public DfgVertexBinary {

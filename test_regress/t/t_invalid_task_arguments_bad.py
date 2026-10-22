@@ -9,7 +9,7 @@
 
 import vltest_bootstrap
 
-test.scenarios("vlt")
+test.scenarios('vlt')
 
 test.lint(fails=True, expect_filename=test.golden_filename)
 

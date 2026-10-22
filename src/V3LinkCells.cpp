@@ -27,6 +27,7 @@
 
 #include "V3LinkCells.h"
 
+#include "V3Control.h"
 #include "V3Graph.h"
 #include "V3Parse.h"
 #include "V3SymTable.h"
@@ -571,7 +572,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // and means we cannot compute module levels until later.
         UINFO(4, "Link Bind: " << nodep);
         AstNodeModule* const modp = resolveModule(nodep, nodep->name(), m_modp->libname());
-        if (modp) {
+        if (modp && !modp->verilatorLib()) {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells
             VL_RESTORER(m_modp);
@@ -928,5 +929,10 @@ void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     // Configs must be parsed first because they determine the library search order for linking
     LinkCellsState state;
     { LinkConfigsVisitor{nodep, state}; }
+    // Bind processing depends on module controls, including controls for later modules.
+    for (AstNodeModule* modulep = nodep->modulesp(); modulep;
+         modulep = VN_AS(modulep->nextp(), NodeModule)) {
+        V3Control::applyModule(modulep);
+    }
     { LinkCellsVisitor{nodep, filterp, state}; }
 }

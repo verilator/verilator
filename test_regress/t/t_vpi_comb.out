@@ -6,7 +6,11 @@ t (vpiModule) t  vpiDefName=t
     bsel (vpiReg) t.bsel 
     cf_case (vpiReg) t.cf_case 
     cf_casepart (vpiReg) t.cf_casepart 
-    cf_cts (vpiReg) t.cf_cts 
+    cf_cts (vpiStructVar) t.cf_cts 
+        vpiReg:
+        *undefined*:
+        hi (vpiReg) t.cf_cts.hi 
+        lo (vpiReg) t.cf_cts.lo 
     cf_ctv (vpiReg) t.cf_ctv 
     cf_ifdef (vpiReg) t.cf_ifdef 
     cf_ifelse (vpiReg) t.cf_ifelse 
@@ -80,6 +84,8 @@ t.bsel = 0 vpiSize=1
 t.cf_case = 00 vpiSize=7
 t.cf_casepart = 01 vpiSize=7
 t.cf_cts = 00 vpiSize=8
+t.cf_cts.hi = 0 vpiSize=4
+t.cf_cts.lo = 0 vpiSize=4
 t.cf_ctv = 00 vpiSize=8
 t.cf_ifdef = 04 vpiSize=7
 t.cf_ifelse = 7f vpiSize=7
@@ -141,6 +147,8 @@ t.alias2 = 03
 t.cf_case = 06
 t.cf_casepart = 7c
 t.cf_cts = 3e
+t.cf_cts.hi = 3
+t.cf_cts.lo = e
 t.cf_ctv = e3
 t.cf_ifdef = 7c
 t.cf_ifelse = 04
@@ -195,6 +203,8 @@ t.bsel = 1
 t.cf_case = 08
 t.cf_casepart = 79
 t.cf_cts = 6c
+t.cf_cts.hi = 6
+t.cf_cts.lo = c
 t.cf_ctv = c6
 t.cf_ifdef = 79
 t.cf_ifelse = 05
@@ -249,6 +259,8 @@ t.bsel = 0
 t.cf_case = 0a
 t.cf_casepart = 0a
 t.cf_cts = 9a
+t.cf_cts.hi = 9
+t.cf_cts.lo = a
 t.cf_ctv = a9
 t.cf_ifdef = 0d
 t.cf_ifelse = 0a
@@ -303,6 +315,8 @@ t.bsel = 1
 t.cf_case = 0c
 t.cf_casepart = 0d
 t.cf_cts = c8
+t.cf_cts.hi = c
+t.cf_cts.lo = 8
 t.cf_ctv = 8c
 t.cf_ifdef = 10
 t.cf_ifelse = 0b
@@ -356,6 +370,8 @@ t.alias2 = 0f
 t.cf_case = 12
 t.cf_casepart = 70
 t.cf_cts = f6
+t.cf_cts.hi = f
+t.cf_cts.lo = 6
 t.cf_ctv = 6f
 t.cf_ifdef = 70
 t.cf_ifelse = 10
@@ -413,6 +429,8 @@ t.bsel = 0
 t.cf_case = 14
 t.cf_casepart = 6d
 t.cf_cts = 24
+t.cf_cts.hi = 2
+t.cf_cts.lo = 4
 t.cf_ctv = 42
 t.cf_ifdef = 6d
 t.cf_ifelse = 11
@@ -470,6 +488,8 @@ t.bsel = 1
 t.cf_case = 16
 t.cf_casepart = 12
 t.cf_cts = 52
+t.cf_cts.hi = 5
+t.cf_cts.lo = 2
 t.cf_ctv = 25
 t.cf_ifdef = 19
 t.cf_ifelse = 16
@@ -529,6 +549,8 @@ t.bsel = 0
 t.cf_case = 18
 t.cf_casepart = 19
 t.cf_cts = 80
+t.cf_cts.hi = 8
+t.cf_cts.lo = 0
 t.cf_ctv = 08
 t.cf_ifdef = 1c
 t.cf_ifelse = 17
@@ -579,6 +601,7 @@ t.alias2 = 20
 t.cf_case = 20
 t.cf_casepart = 21
 t.cf_cts = 00
+t.cf_cts.hi = 0
 t.cf_ctv = 00
 t.cf_ifdef = 24
 t.cf_ifelse = 1f
@@ -619,6 +642,8 @@ t.alias2 = 23
 t.cf_case = 26
 t.cf_casepart = 5c
 t.cf_cts = 3e
+t.cf_cts.hi = 3
+t.cf_cts.lo = e
 t.cf_ctv = e3
 t.cf_ifdef = 5c
 t.cf_ifelse = 24
@@ -677,6 +702,8 @@ t.bsel = 1
 t.cf_case = 28
 t.cf_casepart = 59
 t.cf_cts = 6c
+t.cf_cts.hi = 6
+t.cf_cts.lo = c
 t.cf_ctv = c6
 t.cf_ifdef = 59
 t.cf_ifelse = 25
@@ -731,6 +758,8 @@ t.bsel = 0
 t.cf_case = 2a
 t.cf_casepart = 2a
 t.cf_cts = 9a
+t.cf_cts.hi = 9
+t.cf_cts.lo = a
 t.cf_ctv = a9
 t.cf_ifdef = 2d
 t.cf_ifelse = 2a
@@ -786,6 +815,8 @@ t.bsel = 1
 t.cf_case = 2c
 t.cf_casepart = 2d
 t.cf_cts = c8
+t.cf_cts.hi = c
+t.cf_cts.lo = 8
 t.cf_ctv = 8c
 t.cf_ifdef = 30
 t.cf_ifelse = 2b

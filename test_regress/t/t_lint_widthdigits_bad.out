@@ -1,0 +1,12 @@
+%Warning-WIDTHDIGITS: t/t_lint_widthdigits.v:13:30: Too many digits for 4 bit number: '4'hDF'
+   13 |   localparam logic [3:0] a = 4'hDF;
+      |                              ^~~~~
+                      ... For warning description see https://verilator.org/warn/WIDTHDIGITS?v=latest
+                      ... Use "/* verilator lint_off WIDTHDIGITS */" and lint_on around source to disable this message.
+%Warning-WIDTHDIGITS: t/t_lint_widthdigits.v:14:30: Too many digits for 4 bit number: '4'b10101111'
+   14 |   localparam logic [3:0] b = 4'b10101111;
+      |                              ^~~~~~~~~~~
+%Warning-WIDTHDIGITS: t/t_lint_widthdigits.v:15:30: Too many digits for 8 bit number: '8'd1234567890'
+   15 |   localparam logic [7:0] c = 8'd1234567890;
+      |                              ^~~~~~~~~~~~~
+%Error: Exiting due to

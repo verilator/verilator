@@ -31,7 +31,7 @@ module t (
   logic late_always;
   always @(posedge clk) late_always <= 1'b1;
 
-  // Driven by two clocking blocks, reported by MULTIDRIVEN.
+  // Driven by two clocking blocks: legal (IEEE 1800-2023 14.16.2), must not warn.
   logic dual_clocking;
 
   // Driven only by a clocking block: legal, must not warn.

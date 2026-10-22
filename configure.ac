@@ -263,6 +263,9 @@ if test "x$PYTHON3" = "x" ; then
 fi
 python3_version=$($PYTHON3 --version | head -1)
 AC_MSG_RESULT([$PYTHON3 --version = $python3_version])
+# Windows often installs python under "Program Files", which GNU make cannot
+# use unquoted in verilated.mk; use the space-free 8.3 short name instead.
+PYTHON3=`echo "$PYTHON3" | sed 's/Program Files/PROGRA~1/g'`
 
 AC_ARG_VAR([LEX], [Flex executable])
 AC_CHECK_PROG(LEX,flex,flex)
@@ -480,8 +483,6 @@ if test "$CFG_WITH_DEV_GCOV" = "yes"; then
   #_MY_CXX_CHECK_OPT(CXX,-fkeep-inline-functions)
   # Make sure profiling is thread-safe
   _MY_CXX_CHECK_OPT(CXX,-fprofile-update=atomic)
-  # Ensure data files can be written from parallel runs
-  _MY_CXX_CHECK_OPT(CXX,-fprofile-reproducible=parallel-runs)
   # Save source files as absolute paths in gcno files
   _MY_CXX_CHECK_OPT(CXX,-fprofile-abs-path)
   # Define so compiled code can know

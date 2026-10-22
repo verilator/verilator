@@ -14,7 +14,7 @@ test.scenarios('vlt')
 test.lint(
     # See also t/t_lint_warn_incfile1_bad
     # See also t/t_lint_warn_incfile2_bad
-    verilator_flags2=["--no-std t/t_vlt_warn_file_bad.vlt"],
+    verilator_flags2=["--no-std", test.vlt_filename],
     fails=True,
     expect_filename=test.golden_filename)
 
