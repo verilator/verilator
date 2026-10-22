@@ -3443,6 +3443,10 @@ class ConstVisitor final : public VNVisitor {
         }
     }
     void visit(AstExprStmt* nodep) override {
+        if (m_required) {
+            nodep->v3error("Expecting constant expression, but it has side effects");
+            return;
+        }
         iterateChildren(nodep);
         if (!AstNode::afterCommentp(nodep->stmtsp())) {
             deleteVarScopesUnder(nodep->stmtsp());
