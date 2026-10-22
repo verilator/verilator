@@ -6,6 +6,11 @@
 // SPDX-FileCopyrightText: 2024 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (/*AUTOARG*/
    // Inputs
   clk
@@ -42,11 +47,12 @@ extern "C" int mon_check();
       $write("%%Error: t_vpi_multidim.cpp:%0d: C Test failed\n", status);
       $stop;
     end
+`ifndef MS
     // Written by mon_check()
-    if (arr_6d[0][1][2] !== 8'h3c || arr_6d[0][1][3] !== 8'h00 || arr_6d[0][2][2] !== 8'h00) begin
-      $write("%%Error: arr_6d[0][1][2] = %h\n", arr_6d[0][1][2]);
-      $stop;
-    end
+    `checkh(arr_6d[0][1][2], 8'h3c);
+    `checkh(arr_6d[0][1][3], 8'h00);
+    `checkh(arr_6d[0][2][2], 8'h00);
+`endif
     $write("*-* All Finished *-*\n");
     $finish;
   end

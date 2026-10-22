@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <limits>
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -145,12 +146,13 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::vector<std::string> m_scopeTableRows;
     std::string m_ifaceRefTableName;
     std::vector<std::string> m_ifaceRefTableRows;
-    std::vector<std::string> m_hierTableRows;  // VlHierTableEntry rows, built in emitScopeHier()
+    std::vector<std::string> m_hierTableRows;  // VlHierTableEntry rows, see buildHierTableRows()
 
     // METHODS
     void emitSymHdr();
     void emitSymImpPreamble();
     void emitVarTables();
+    void buildHierTableRows();
     void emitScopeHier(TextStmts& stmts, bool destroy);
     void emitSymImp(const AstNetlist* netlistp);
     void emitDpiHdr();
@@ -405,9 +407,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string member = varName(varp);
         std::string row = "{\"" + name + "\", ";
         if (varp->isParam()) {
-            // Emitted 'static', so indexes the scope's array of parameter addresses
-            row += std::to_string(m_paramPtrs.size()) + ", ";
-            m_paramPtrs.emplace_back("&" + modClassName + "::" + member);
+            row += paramPtrIndex("&" + modClassName + "::" + member) + ", ";
         } else {
             row += "offsetof(" + modClassName + ", " + member + "), ";
         }
@@ -417,10 +417,18 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return varp->isParam() ? TableEntryKind::PARAM_ROW : TableEntryKind::TABLE_ROW;
     }
 
+    // Parameters are emitted 'static', so their rows index the scope's array of addresses
+    std::string paramPtrIndex(const std::string& addr) {
+        const size_t index = m_paramPtrs.size();
+        m_paramPtrs.emplace_back(addr);
+        return std::to_string(index);
+    }
+
     // The VlVarTableEntry fields from dimsp to pdims
     std::string tableRowProps(const AstNode* nodep, const std::string& vlEnumType,
                               const std::string& flags, const VarDims& dims) {
-        UASSERT_OBJ(dims.udim <= 255 && dims.pdim <= 255, nodep,
+        constexpr int maxDims = std::numeric_limits<uint8_t>::max();
+        UASSERT_OBJ(dims.udim <= maxDims && dims.pdim <= maxDims, nodep,
                     "VlVarTableEntry dim counts are uint8_t");
         // Flat dim (left,right) ints in varInsert() order: unpacked then packed.
         std::vector<int32_t> dv;
@@ -600,10 +608,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         if (!sdtypep || !sdtypep->packed()) return;
         const std::string modClassName = EmitCUtil::prefixNameProtect(svd.m_modp);
         if (svd.m_varp->isParam()) {
-            // Static, so the rows join the scope's parameter table, indexing the element's address
-            m_paramPtrs.emplace_back("&" + modClassName + "::" + elemCName);
-            addPackedMemberRows(m_paramRows, svd, std::to_string(m_paramPtrs.size() - 1),
-                                prettyPrefix, vlEnumType, entSize, sdtypep, 0, isArray);
+            addPackedMemberRows(m_paramRows, svd,
+                                paramPtrIndex("&" + modClassName + "::" + elemCName), prettyPrefix,
+                                vlEnumType, entSize, sdtypep, 0, isArray);
             return;
         }
         std::vector<std::string> rows;
@@ -1363,30 +1370,29 @@ void EmitCSyms::emitVarTables() {
     puts("#endif\n");
 }
 
-void EmitCSyms::emitScopeHier(TextStmts& stmts, bool destroy) {
-    if (!v3Global.opt.vpi()) return;
-
-    if (m_hierTableRows.empty()) {
-        const std::string symClass = symClassName();
-        const auto offset = [&](const std::string& name) {
-            return "offsetof(" + symClass + ", "
-                   + protect("__Vscopep_" + m_scopeNames.at(name).m_symName) + ")";
-        };
-        for (const auto& itpair : m_scopeNames) {
-            if (itpair.first == "TOP") continue;
-            const ScopeData& sd = itpair.second;
-            if (sd.m_prettyName.find('.') != string::npos) continue;
-            if (sd.m_type != "SCOPE_MODULE" && sd.m_type != "SCOPE_PACKAGE") continue;
-            m_hierTableRows.emplace_back("{0, " + offset(itpair.first) + "}");
-        }
-        for (const auto& itpair : m_vpiScopeHierarchy) {
-            const std::string from = offset(scopeSymString(itpair.first));
-            for (const std::string& name : itpair.second) {
-                m_hierTableRows.emplace_back("{" + from + ", " + offset(scopeSymString(name))
-                                             + "}");
-            }
+void EmitCSyms::buildHierTableRows() {
+    const std::string symClass = symClassName();
+    const auto offset = [&](const std::string& name) {
+        return "offsetof(" + symClass + ", "
+               + protect("__Vscopep_" + m_scopeNames.at(name).m_symName) + ")";
+    };
+    for (const auto& itpair : m_scopeNames) {
+        if (itpair.first == "TOP") continue;
+        const ScopeData& sd = itpair.second;
+        if (sd.m_prettyName.find('.') != string::npos) continue;
+        if (sd.m_type != "SCOPE_MODULE" && sd.m_type != "SCOPE_PACKAGE") continue;
+        m_hierTableRows.emplace_back("{0, " + offset(itpair.first) + "}");
+    }
+    for (const auto& itpair : m_vpiScopeHierarchy) {
+        const std::string from = offset(scopeSymString(itpair.first));
+        for (const std::string& name : itpair.second) {
+            m_hierTableRows.emplace_back("{" + from + ", " + offset(scopeSymString(name)) + "}");
         }
     }
+}
+
+void EmitCSyms::emitScopeHier(TextStmts& stmts, bool destroy) {
+    if (!v3Global.opt.vpi()) return;
 
     if (destroy) {
         stmts.add("// Tear down scope hierarchy");
@@ -1730,6 +1736,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymDtorStmts() {
 void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
     UINFO(6, __FUNCTION__ << ": ");
 
+    if (v3Global.opt.vpi()) buildHierTableRows();
     // Get the body of the constructor and destructor
     TextStmts ctorStmts = getSymCtorStmts();
     TextStmts dtorStmts = getSymDtorStmts();

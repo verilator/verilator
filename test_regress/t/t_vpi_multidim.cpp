@@ -380,6 +380,9 @@ void _arr_6d_check() {
         = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted("arr_6d")), NULL);
     TEST_CHECK_NZ(arr_h);
     _arr_type_check(arr_h, vpiRegArray, 8, 1, 0);
+    // IEEE 1800-2023 38.19 requires a handle for any legal index select, Questa returns null for
+    // a subarray of a multidimensional array
+    if (TestSimulator::is_questa()) return;
     TestVpiHandle elem1_h = vpi_handle_by_index(arr_h, 1);
     TEST_CHECK_NZ(elem1_h);
     _arr_type_check(elem1_h, vpiRegArray, 4, 1, 2);
