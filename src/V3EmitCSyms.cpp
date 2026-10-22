@@ -448,8 +448,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                        const AstScope* const scopep,
                                        const std::string& prettyPrefix, const std::string& cPrefix,
                                        const AstNodeUOrStructDType* const sdtypep) {
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             const AstNodeDType* const itemDTypep = itemp->dtypep();
             if (itemDTypep->vlEnumType().empty()) continue;
             const std::string prettyName
@@ -499,8 +498,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                     const AstNodeUOrStructDType* const sdtypep,
                                     const int parentBitOffset, const bool needsIndex) {
         const std::string varExpr = "vlSymsp->" + instName(scopep) + "." + cName;
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             const AstNodeDType* const itemDTypep = itemp->dtypep();
             const std::string prettyName
                 = prettyPrefix + "." + AstNode::vpiName(itemp->shortName());
@@ -806,8 +804,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                             << instName);
         const std::string parentPath = path.substr(0, path.length() - instName.length());
 
-        for (AstIntfRef* intfRefp = cellp->intfRefsp(); intfRefp;
-             intfRefp = VN_AS(intfRefp->nextp(), IntfRef)) {
+        for (AstIntfRef* const intfRefp : cellp->intfRefspList()) {
             const std::string refName = AstNode::vpiName(intfRefp->name());
             // Assume only references under the same parent scope reference the
             // same interface. Same limitation as the trace path in V3TraceDecl.
@@ -1043,8 +1040,7 @@ void EmitCSyms::emitSymHdr() {
     puts("\n#include \"" + topClassName() + ".h\"\n");
 
     puts("\n// INCLUDE MODULE CLASSES\n");
-    for (AstNodeModule *nodep = v3Global.rootp()->modulesp(), *nextp; nodep; nodep = nextp) {
-        nextp = VN_AS(nodep->nextp(), NodeModule);
+    for (AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
         if (VN_IS(nodep, Class)) continue;  // Class included earlier
         if (nodep->isConstPool()) continue;  // Special emit rules
         putns(nodep, "#include \"" + EmitCUtil::prefixNameProtect(nodep) + ".h\"\n");
@@ -1417,7 +1413,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
         if (!modp->verilatorLib()) continue;
         const AstVar* hashp = nullptr;
         const AstVar* handlep = nullptr;
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             const AstVar* const varp = VN_CAST(nodep, Var);
             if (!varp) continue;
             if (varp->prettyName() == "protectlib_hash__V") hashp = varp;
@@ -1791,7 +1787,7 @@ void EmitCSyms::emitDpiHdr() {
     // Unpacked structures passed as C structures (IEEE 1800-2023 H.7.8)
     std::set<std::string> structNames;
     for (const AstCFunc* const nodep : m_dpis) {
-        for (const AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
+        for (const AstNode* const argp : nodep->argspList()) {
             if (const AstVar* const portp = VN_CAST(argp, Var)) {
                 emitDpiStruct(portp->dtypep(), structNames);
             }
@@ -1842,8 +1838,7 @@ void EmitCSyms::emitDpiStruct(const AstNodeDType* dtypep, std::set<std::string>&
     // Once per name, as V3Task checked structures of the same name are the same
     if (namesr.count(name)) return;
     // After the structures it contains
-    for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-         itemp = VN_AS(itemp->nextp(), MemberDType)) {
+    for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
         emitDpiStruct(itemp->subDTypep(), namesr);
     }
     if (name.empty()) return;  // Declared where used
@@ -1891,7 +1886,7 @@ void EmitCSyms::emitDpiImp() {
         puts("// DPI export" + sourceLoc + "\n");
         putns(nodep, "return " + topClassName() + "::" + name + "(");
         std::string comma;
-        for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : nodep->argspList()) {
             if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO() && !portp->isFuncReturn()) {
                     puts(comma);

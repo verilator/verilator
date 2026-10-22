@@ -70,7 +70,7 @@ class LinkResolveVisitor final : public VNVisitor {
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
         m_classp = nodep;
-        for (AstNode* stmtp = nodep->membersp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->memberspList()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (!varp->isParam()) varp->varType(VVarType::MEMBER);
             }
@@ -388,7 +388,7 @@ class LinkResolveVisitor final : public VNVisitor {
         } else {
             // Massive hack, just tie off all outputs so our analysis can proceed
             const AstVar* varoutp = nullptr;
-            for (AstNode* stmtp = m_modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            for (AstNode* const stmtp : m_modp->stmtspList()) {
                 if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                     if (varp->isReadOnly()) {
                     } else if (varp->isWritable()) {

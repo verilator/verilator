@@ -543,7 +543,7 @@ class FsmDetectVisitor final : public VNVisitor {
         // default preserves that equivalence while keeping the cell detector's
         // contract narrow: only static, known reset encodings become reset arcs.
         valuepr = nullptr;
-        for (AstNode* stmtp = cellp->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : cellp->modp()->stmtspList()) {
             AstVar* const varp = VN_CAST(stmtp, Var);
             if (!varp || !varp->isParam() || varp->name() != name) continue;
             valuepr = VN_AS(varp->valuep(), NodeExpr);
@@ -895,8 +895,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // active block with the same edge semantics.
     static std::vector<FsmSenDesc> describeSenTree(AstSenTree* sentreep) {
         std::vector<FsmSenDesc> senses;
-        for (AstSenItem* itemp = sentreep->sensesp(); itemp;
-             itemp = VN_AS(itemp->nextp(), SenItem)) {
+        for (AstSenItem* const itemp : sentreep->sensespList()) {
             AstNodeVarRef* const vrefp = itemp->varrefp();
             if (!vrefp) continue;
             FsmSenDesc desc;
@@ -943,8 +942,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // event-driven forms remain out of scope.
     static bool isPlainComboSentree(const AstSenTree* sentreep) {
         UASSERT(sentreep, "plain combo sensitivity check requires a sensitivity tree");
-        for (const AstSenItem* senp = sentreep->sensesp(); senp;
-             senp = VN_AS(senp->nextp(), SenItem)) {
+        for (const AstSenItem* const senp : sentreep->sensespList()) {
             if (senp->edgeType() == VEdgeType::ET_CHANGED) continue;
             return false;
         }
@@ -1143,8 +1141,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // items that assign to the recorded next-state variable.
     static AstNode* caseSupportedTransitionNode(AstCase* casep, AstVarScope* stateVscp,
                                                 bool inclCond) {
-        for (AstCaseItem* itemp = casep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstCaseItem* const itemp : casep->itemspList()) {
             if (AstNode* const nodep = caseItemSupportedArcNode(itemp, stateVscp, inclCond))
                 return nodep;
         }
@@ -1525,8 +1522,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
         if (enump) {
             stateSpace.enumBacked = true;
-            for (AstEnumItem* itemp = enump->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            for (AstEnumItem* const itemp : enump->itemspList()) {
                 const AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 const FsmStateValue value{constp->num()};
                 const size_t stateIndex = stateSpace.states.size();
@@ -1572,11 +1568,9 @@ class FsmDetectVisitor final : public VNVisitor {
         return collectStateSpaceFromValues(
             casep, stateVscp, resetArcs, stateSpace,
             [casep, assignVscp, &stateSpace](const auto& visitValuep) {
-                for (AstCaseItem* itemp = casep->itemsp(); itemp;
-                     itemp = VN_AS(itemp->nextp(), CaseItem)) {
+                for (AstCaseItem* const itemp : casep->itemspList()) {
                     if (!itemp->isDefault()) {
-                        for (AstNodeExpr* condp = itemp->condsp(); condp;
-                             condp = VN_AS(condp->nextp(), NodeExpr)) {
+                        for (AstNodeExpr* const condp : itemp->condspList()) {
                             if (!visitValuep(condp)) return false;
                         }
                     }
@@ -1642,8 +1636,7 @@ class FsmDetectVisitor final : public VNVisitor {
             if (!inclCond) return false;
             froms.emplace_back("default", FsmStateValue{});
         } else {
-            for (AstNodeExpr* condp = itemp->condsp(); condp;
-                 condp = VN_AS(condp->nextp(), NodeExpr)) {
+            for (AstNodeExpr* const condp : itemp->condspList()) {
                 FsmStateValue value;
                 if (constValueStatus(condp, value) != ConstValueStatus::OK) continue;
                 if (!validateKnownStateValue(condp, stateSpace, value, "source")) return true;
@@ -1766,8 +1759,7 @@ class FsmDetectVisitor final : public VNVisitor {
             }
             addResetArcs(*entry.graphp, reg.resetArcs(), stateSpace);
         }
-        for (AstCaseItem* itemp = casep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstCaseItem* const itemp : casep->itemspList()) {
             emitCaseItemArcs(*entry.graphp, itemp, assignVscp, stateSpace,
                              entry.graphp->inclCond());
         }

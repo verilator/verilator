@@ -221,7 +221,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
         const VNUser2InUse user2InUse;
 
         // Clone local variables, add them to the local scope
-        for (AstVar* varp = calleep->varsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+        for (AstVar* const varp : calleep->varspList()) {
             AstVar* const newVarp = varp->cloneTree(false);
             newVarp->name(varPrefix + varp->name());
             lscopep->addStmtsp(newVarp);

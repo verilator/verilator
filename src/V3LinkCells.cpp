@@ -332,12 +332,10 @@ class LinkCellsVisitor final : public VNVisitor {
         // If the only NodeModules are in libraries, then presumably user
         // wants to check the library, so clear library flag
         if (!v3Global.opt.topModule().empty()) return;
-        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+        for (AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
             if (!nodep->inLibrary()) return;
         }
-        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+        for (AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
             nodep->inLibrary(false);
         }
     }
@@ -661,8 +659,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // Convert .* to list of pins
         bool pinStar = false;
         bool pinDotName = false;
-        for (AstPin *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
-            nextp = VN_AS(pinp->nextp(), Pin);
+        for (AstPin* const pinp : nodep->pinspList()) {
             if (pinp->svDotName()) pinDotName = true;
             if (pinp->dotStar()) {
                 if (pinStar) pinp->v3error("Duplicate .* in an instance (IEEE 1800-2023 23.3.2)");
@@ -672,7 +669,7 @@ class LinkCellsVisitor final : public VNVisitor {
             }
         }
         // Convert unnamed pins to pin number based assignments
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+        for (AstPin* const pinp : nodep->pinspList()) {
             if (pinp->name() == "") pinp->name("__pinNumber" + cvtToStr(pinp->pinNum()));
         }
         assignParamNumbers(nodep->paramsp());
@@ -680,7 +677,7 @@ class LinkCellsVisitor final : public VNVisitor {
             nodep->modName(nodep->modp()->name());
             // Note what pins exist
             std::unordered_set<string> ports;  // Symbol table of all connected port names
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            for (AstPin* const pinp : nodep->pinspList()) {
                 if ((pinStar || pinDotName) && pinp->name().substr(0, 11) == "__pinNumber") {
                     pinp->v3error("Mixing positional and .*/named instantiation connection"
                                   " (IEEE 1800-2023 23.3.2)");
@@ -699,8 +696,7 @@ class LinkCellsVisitor final : public VNVisitor {
             }
             // We search ports, rather than in/out declarations as they aren't resolved yet,
             // and it's easier to do it now than in V3LinkDot when we'd need to repeat steps.
-            for (AstNode* portnodep = nodep->modp()->stmtsp(); portnodep;
-                 portnodep = portnodep->nextp()) {
+            for (AstNode* const portnodep : nodep->modp()->stmtspList()) {
                 if (const AstPort* const portp = VN_CAST(portnodep, Port)) {
 
                     if (ports.find(portp->name()) == ports.end()
@@ -727,8 +723,7 @@ class LinkCellsVisitor final : public VNVisitor {
                             // Get the AstVar for this AstPort, if it exists, using this
                             // inefficient O(n) lookup to match the port name.
                             const AstVar* portp_varp = nullptr;
-                            for (AstNode* module_stmtsp = nodep->modp()->stmtsp(); module_stmtsp;
-                                 module_stmtsp = module_stmtsp->nextp()) {
+                            for (AstNode* const module_stmtsp : nodep->modp()->stmtspList()) {
                                 if (const AstVar* const varp = VN_CAST(module_stmtsp, Var)) {
                                     if (!varp->isParam() && varp->name() == portp->name()) {
                                         // not a parameter, same name, break, this is our varp
@@ -851,8 +846,7 @@ class LinkCellsVisitor final : public VNVisitor {
         UASSERT((hierIt != hierBlocks.end()) == !!v3Global.opt.hierChild(),
                 "information of the top module must exist if --hierarchical-child is set");
         // Look at all modules, and store pointers to all module names
-        for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
-            nextp = VN_AS(nodep->nextp(), NodeModule);
+        for (AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
             if (v3Global.opt.hierChild() && nodep->origName() == hierIt->second.origName()) {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
@@ -930,8 +924,7 @@ void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     LinkCellsState state;
     { LinkConfigsVisitor{nodep, state}; }
     // Bind processing depends on module controls, including controls for later modules.
-    for (AstNodeModule* modulep = nodep->modulesp(); modulep;
-         modulep = VN_AS(modulep->nextp(), NodeModule)) {
+    for (AstNodeModule* const modulep : nodep->modulespList()) {
         V3Control::applyModule(modulep);
     }
     { LinkCellsVisitor{nodep, filterp, state}; }

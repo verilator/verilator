@@ -105,7 +105,7 @@ class DfgToAstVisitor final : DfgVisitor {
     static AstActive* getCombActive(AstScope* scopep) {
         if (!scopep->user2p()) {
             // Try to find the existing combinational AstActive
-            for (AstNode* nodep = scopep->blocksp(); nodep; nodep = nodep->nextp()) {
+            for (AstNode* const nodep : scopep->blockspList()) {
                 AstActive* const activep = VN_CAST(nodep, Active);
                 if (!activep) continue;
                 if (activep->hasCombo()) {

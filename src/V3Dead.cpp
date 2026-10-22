@@ -361,7 +361,7 @@ class DeadVisitor final : public VNVisitor {
         checkAll(nodep);
         if (nodep->scopep()) nodep->scopep()->user1Inc();
         // Keep formal arguments
-        for (AstVar* varp = nodep->argsp(); varp; varp = VN_AS(varp->nextp(), Var)) {
+        for (AstVar* const varp : nodep->argspList()) {
             varp->user1Inc();
             varp->user2(1);
         }
@@ -788,8 +788,7 @@ class DeadVisitor final : public VNVisitor {
                 if (const AstNodeUOrStructDType* const classp
                     = VN_CAST((*it), NodeUOrStructDType)) {
                     bool cont = true;
-                    for (AstMemberDType* memberp = classp->membersp(); memberp;
-                         memberp = VN_AS(memberp->nextp(), MemberDType)) {
+                    for (AstMemberDType* const memberp : classp->memberspList()) {
                         if (memberp->user1() != 0) {
                             cont = false;
                             break;

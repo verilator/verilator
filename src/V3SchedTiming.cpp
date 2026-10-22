@@ -47,8 +47,7 @@ TimingKit::externalTriggerIndices(const TriggerKit& trigKit) const {
     for (const auto& vscpDomains : m_externalDomains) {
         std::vector<uint32_t>& indices = result[vscpDomains.first];
         for (const AstSenTree* const domainp : vscpDomains.second) {
-            for (const AstSenItem* itemp = domainp->sensesp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), SenItem)) {
+            for (const AstSenItem* const itemp : domainp->sensespList()) {
                 indices.push_back(trigKit.senItem2TrigIdx(itemp));
             }
         }

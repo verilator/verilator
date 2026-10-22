@@ -60,7 +60,7 @@ class EmitCImp final : public EmitCFunc {
 
     void emitParamDefns(const AstNodeModule* modp) {
         bool first = true;
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     if (first) {
@@ -127,7 +127,7 @@ class EmitCImp final : public EmitCFunc {
     // them into sub-functions if needed. As this emits files, no output file can be open.
     void createCtorDtorStmts(const AstNodeModule* modp) {
         // Construct member variables
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             const AstVar* const varp = VN_CAST(nodep, Var);
             if (varp && isExplicitlyConstructed(varp)) {
                 addVarCtorDtorStmts(m_ctorStmts, varp, false);
@@ -321,7 +321,7 @@ class EmitCImp final : public EmitCFunc {
                 // OK if this hash includes some things we won't dump, since
                 // just looking for loading the wrong model
                 VHashSha512 hash;
-                for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                for (AstNode* const nodep : modp->stmtspList()) {
                     if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                         hash.insert(varp->name());
                         hash.insert(varp->dtypep()->width());
@@ -342,7 +342,7 @@ class EmitCImp final : public EmitCFunc {
                 puts("os " + op + " vlSymsp->_vm_contextp__;\n");
 
                 // Save all members
-                for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                for (AstNode* const nodep : modp->stmtspList()) {
                     if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                         if (varp->isIO() && modp->isTop() && optSystemC()) {
                             // System C top I/O doesn't need loading, as the
@@ -396,8 +396,7 @@ class EmitCImp final : public EmitCFunc {
         // We always need the slow file
         if (m_slow) return true;
         // The fast file is only required when we have `systemc_implementation nodes
-        for (const AstSystemCSection* scSectionp = modp->scSectionsp(); scSectionp;
-             scSectionp = VN_AS(scSectionp->nextp(), SystemCSection)) {
+        for (const AstSystemCSection* const scSectionp : modp->scSectionspList()) {
             if (scSectionp->sectionType() == VSystemCSectionType::IMP) return true;
         }
         return false;
@@ -443,7 +442,7 @@ class EmitCImp final : public EmitCFunc {
         std::vector<AstCFunc*> funcps;
 
         const auto gather = [this, &funcps](const AstNodeModule* modp) {
-            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            for (AstNode* const nodep : modp->stmtspList()) {
                 AstCFunc* const funcp = VN_CAST(nodep, CFunc);
                 if (!funcp) continue;
                 // TRACE_* and DPI handled elsewhere
@@ -569,8 +568,7 @@ public:
             puts("{\n");
             putns(nodep, "const char* " + protect("__VenumItemNames") + "[]\n");
             puts("= {");
-            for (AstEnumItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            for (AstEnumItem* const itemp : nodep->itemspList()) {
                 if (++nvals > 1) puts(", ");
                 putbs("\"" + itemp->prettyName() + "\"");
             }
@@ -578,8 +576,7 @@ public:
             nvals = 0;
             puts("const char* " + protect("__VenumItemValues") + "[]\n");
             puts("= {");
-            for (AstEnumItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), EnumItem)) {
+            for (AstEnumItem* const itemp : nodep->itemspList()) {
                 AstConst* const constp = VN_AS(itemp->valuep(), Const);
                 if (++nvals > 1) puts(", ");
                 putbs("\"" + constp->num().displayed(nodep, "%0b") + "\"");
@@ -915,7 +912,7 @@ class EmitCTrace final : public EmitCFunc {
         // Open output file
         openNextOutputFile();
         // Emit functions
-        for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : m_modp->stmtspList()) {
             if (AstCFunc* const funcp = VN_CAST(nodep, CFunc)) iterateConst(funcp);
         }
         // Close output file
@@ -967,7 +964,7 @@ void V3EmitC::emitcImp() {
         V3ThreadScope threadScope;
 
         // Process each module in turn
-        for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : v3Global.rootp()->modulespList()) {
             if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
             const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
             if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
@@ -997,8 +994,7 @@ void V3EmitC::emitcImp() {
 
 void V3EmitC::emitcFiles() {
     UINFO(2, __FUNCTION__ << ":");
-    for (AstNodeFile *filep = v3Global.rootp()->filesp(), *nextp; filep; filep = nextp) {
-        nextp = VN_AS(filep->nextp(), NodeFile);
+    for (AstNodeFile* const filep : v3Global.rootp()->filespList()) {
         if (AstCFile* const cfilep = VN_CAST(filep, CFile)) EmitCFile::main(cfilep);
     }
 }

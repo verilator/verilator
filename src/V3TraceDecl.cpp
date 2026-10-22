@@ -599,13 +599,12 @@ class TraceDeclVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         string prefixName(newFunc ? "name" : m_traName);
         int nMembers = 0;
-        for (AstNode* mp = nodep->membersp(); mp; mp = mp->nextp()) ++nMembers;
+        for (AstNode* const mp : nodep->memberspList()) ++nMembers;
         if (!nodep->packed()) {
             addToSubFunc(new AstTracePushPrefix{flp, prefixName,  //
                                                 VTracePrefixType::STRUCT_UNPACKED, nMembers, 0,
                                                 !newFunc});
-            for (const AstMemberDType *itemp = nodep->membersp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), MemberDType);
+            for (const AstMemberDType* const itemp : nodep->memberspList()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                 m_traName = itemp->prettyName();
                 VL_RESTORER(m_traValuep);
@@ -620,8 +619,7 @@ class TraceDeclVisitor final : public VNVisitor {
             addToSubFunc(new AstTracePushPrefix{flp, prefixName,  //
                                                 VTracePrefixType::STRUCT_PACKED, nMembers, 0,
                                                 !newFunc});
-            for (const AstMemberDType *itemp = nodep->membersp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), MemberDType);
+            for (const AstMemberDType* const itemp : nodep->memberspList()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                 m_traName = itemp->prettyName();
                 VL_RESTORER(m_traValuep);
@@ -655,7 +653,7 @@ class TraceDeclVisitor final : public VNVisitor {
         iterateChildrenConst(nodep);
 
         // Gather cells under this scope
-        for (AstNode* stmtp = nodep->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->modp()->stmtspList()) {
             if (AstCell* const cellp = VN_CAST(stmtp, Cell)) m_entries.emplace_back(nodep, cellp);
         }
 
@@ -764,9 +762,7 @@ class TraceDeclVisitor final : public VNVisitor {
                         "Expected an interface scope name to have at least one dot: " << path);
             const std::string parentPath = path.substr(0, lastDot + 1);
 
-            for (AstIntfRef *intfRefp = cellp->intfRefsp(), *nextp; intfRefp; intfRefp = nextp) {
-                nextp = VN_AS(intfRefp->nextp(), IntfRef);
-
+            for (AstIntfRef* const intfRefp : cellp->intfRefspList()) {
                 const std::string refName = intfRefp->prettyName();
 
                 // Assume only references under the same parent scope reference
@@ -929,15 +925,14 @@ class TraceDeclVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
 
         int nMembers = 0;
-        for (AstNode* mp = nodep->membersp(); mp; mp = mp->nextp()) ++nMembers;
+        for (AstNode* const mp : nodep->memberspList()) ++nMembers;
 
         if (!nodep->packed()) {
             addIgnore("Unsupported: Unpacked union");
         } else {
             addToSubFunc(new AstTracePushPrefix{flp, m_traName,  //
                                                 VTracePrefixType::UNION_PACKED, nMembers});
-            for (const AstMemberDType *itemp = nodep->membersp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), MemberDType);
+            for (const AstMemberDType* const itemp : nodep->memberspList()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                 m_traName = itemp->prettyName();
                 iterate(subtypep);
