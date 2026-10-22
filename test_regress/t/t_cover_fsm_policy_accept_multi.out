@@ -207,6 +207,30 @@
           end
         endmodule
         
+        module fsm_one_bit_hold (
+            input logic clk,
+            input logic rst
+        );
+          typedef enum logic {
+            S0,
+            S1
+          } state_t;
+          state_t state  /*verilator fsm_arc_include_cond*/;
+        
+          always_ff @(posedge clk) begin
+            if (rst) state <= S0;
+            else
+%000001       case (state)
+        // [FSM coverage]
+%000000        // [fsm_arc t.one_bit_hold_u.state::S1->S0]
+%000001        // [fsm_state t.one_bit_hold_u.state::S0]
+%000000        // [fsm_state t.one_bit_hold_u.state::S1] *** UNCOVERED ***
+                S0: state <= state;
+                S1: state <= S0;
+              endcase
+          end
+        endmodule
+        
         module t (
             input logic clk
         );
@@ -237,6 +261,10 @@
               .clk(clk),
               .rst(rst),
               .start(start)
+          );
+          fsm_one_bit_hold one_bit_hold_u (
+              .clk(clk),
+              .rst(rst)
           );
         
           initial begin

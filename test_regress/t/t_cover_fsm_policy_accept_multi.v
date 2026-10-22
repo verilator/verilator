@@ -163,6 +163,26 @@ module fsm_if_chain_case_default_ok (
   end
 endmodule
 
+module fsm_one_bit_hold (
+    input logic clk,
+    input logic rst
+);
+  typedef enum logic {
+    S0,
+    S1
+  } state_t;
+  state_t state  /*verilator fsm_arc_include_cond*/;
+
+  always_ff @(posedge clk) begin
+    if (rst) state <= S0;
+    else
+      case (state)
+        S0: state <= state;
+        S1: state <= S0;
+      endcase
+  end
+endmodule
+
 module t (
     input logic clk
 );
@@ -193,6 +213,10 @@ module t (
       .clk(clk),
       .rst(rst),
       .start(start)
+  );
+  fsm_one_bit_hold one_bit_hold_u (
+      .clk(clk),
+      .rst(rst)
   );
 
   initial begin

@@ -169,9 +169,9 @@ DA:330,10
 DA:333,11
 BRDA:333,0,cond_then,0
 BRDA:333,0,cond_else,11
-DA:334,28
-BRDA:334,0,cond_then,2
-BRDA:334,0,cond_else,28
+DA:334,10
+BRDA:334,0,cond_then,1
+BRDA:334,0,cond_else,10
 DA:335,1
 BRDA:335,0,cond_then,1
 BRDA:335,0,cond_else,0

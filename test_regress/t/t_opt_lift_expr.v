@@ -36,6 +36,14 @@ module t;
     static int j = two() + 1;
   endclass
 
+  int nba_idx = 0;
+  logic [7:0] nba_arr[0:3] = '{default: 0};
+
+  function automatic int next_nba_idx();
+    ++nba_idx;
+    return nba_idx;
+  endfunction
+
   initial begin
     `checkh(C::i, 2);
     `checkh(C::j, 3);
@@ -140,6 +148,13 @@ module t;
       default: hit = 3;
     endcase
     `checkh(hit, 2);
+
+    nba_arr[next_nba_idx()] <= #2 8'h5;
+    `checkh(nba_idx, 1);
+    nba_idx = 2;
+    #3;
+    `checkh(nba_arr[1], 8'h5);
+    `checkh(nba_arr[2], 8'h0);
     // End test
     $write("*-* All Finished *-*\n");
     $finish;

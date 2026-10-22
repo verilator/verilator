@@ -301,6 +301,9 @@ static void process() {
                 V3Fork::makeTasks(v3Global.rootp());
             }
 
+            // Lift expressions out of statements.
+            if (!v3Global.opt.serializeOnly()) V3LiftExpr::liftExprAll(v3Global.rootp());
+
             // Task inlining & pushing BEGINs names to variables/cells
             // Begin processing must be after Param, before module inlining
             // No more AstGenBlocks after this
@@ -313,9 +316,6 @@ static void process() {
         }
 
         if (!v3Global.opt.serializeOnly()) {
-            // Lift expressions out of statements.
-            V3LiftExpr::liftExprAll(v3Global.rootp());
-
             // Move assignments from X into MODULE temps.
             // (Before flattening, so each new X variable is shared between all scopes of that
             // module.)

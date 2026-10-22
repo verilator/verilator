@@ -1,0 +1,55 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: Verilog Test module
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain
+        // SPDX-FileCopyrightText: 2026 Antmicro
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module t (
+            input clk
+        );
+        
+          typedef enum logic [1:0] {
+            S0,
+            S1,
+            S2,
+            S3
+          } state_t;
+        
+          state_t state_q;
+          state_t state_d;
+          logic [3:0] seen;
+          logic rst;
+          int cyc;
+        
+          always_comb begin
+            seen = '0;
+            seen[state_q] = 1'b1;
+%000008     state_d = (state_q == S0) ? S1 : (state_q == S1) ? S2 : (state_q == S2) ? S3 : S0;
+        // [FSM coverage]
+%000004        // [fsm_arc t.state_q::S0->S1]
+%000002        // [fsm_arc t.state_q::S1->S0]
+%000002        // [fsm_arc t.state_q::S1->S2]
+%000000        // [fsm_arc t.state_q::S2->S0]
+%000002        // [fsm_arc t.state_q::S2->S3]
+%000001        // [fsm_arc t.state_q::S3->S0]
+%000004        // [fsm_state t.state_q::S0]
+%000004        // [fsm_state t.state_q::S1]
+%000002        // [fsm_state t.state_q::S2]
+%000002        // [fsm_state t.state_q::S3]
+          end
+        
+%000009   always_ff @(posedge clk) state_q <= rst ? S0 : state_d;
+        
+          initial cyc = 0;
+        
+          always @(posedge clk) begin
+            cyc <= cyc + 1;
+            rst <= (cyc == 0) || (cyc == 6);
+~000010     if (cyc == 10) begin
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        endmodule
+        
