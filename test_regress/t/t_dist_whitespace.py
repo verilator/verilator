@@ -12,9 +12,7 @@ import collections
 
 test.scenarios('dist')
 
-# TODO
-# Remove t_trace_hier_block when https://github.com/verilator/verilator/issues/8837 closed
-Binary_Exempt_Re = r'(docs/.*\.png|test_regress/t/t_lint_bsspace_bad.v|test_regress/t/t_sys_file_basic_uz.dat|test_regress/t/t_trace_hier_block.*fst\.out)'
+Binary_Exempt_Re = r'(docs/.*\.png|test_regress/t/t_lint_bsspace_bad.v|test_regress/t/t_sys_file_basic_uz.dat)'
 
 Tabs_Exempt_Re = r'(\.out$)|(/fstcpp)|(Makefile)|(\.mk$)|(\.mk\.in$)|test_regress/t/t_preproc\.v|install-sh'
 
