@@ -64,12 +64,12 @@ public:
 
     // METHODS
     // Run m_fn until it yields or returns; the calling thread blocks meanwhile
-    void resume();
-    // Called on the DPI thread: hand control back to the last resume() caller
-    static void yield();
+    void handoffWorker();
+    // Called on the DPI thread: hand control back to the last handoffWorker() caller
+    static void stopWorker();
     // VlDpiCall running on this thread (nullptr if not a DPI thread)
     static VlDpiCall* current() noexcept { return t_currentp; }
-    // Mark this VlDpiCalll as aborted due to process::kill()
+    // Mark this VlDpiCall as aborted due to process::kill()
     void markAborted();
     bool exportAborted() const noexcept { return m_exportAborted; }
 

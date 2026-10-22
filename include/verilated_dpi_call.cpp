@@ -28,7 +28,7 @@
 //======================================================================
 // VlDpiThread is a pool thread that runs one VlDpiCall at a time.
 // m_threadTurn selects which side runs: this thread (true) or the
-// thread that called VlDpiCall::resume() (false).
+// thread that called VlDpiCall::handoffWorker() (false).
 
 class VlDpiThread final {
     // MEMBERS
@@ -146,9 +146,9 @@ public:
                 m_aborted.pop_back();
             }
 
-            // Thread that is currently executing this VlDpiCall is stuck in yield().
+            // Thread that is currently executing this VlDpiCall is stuck in stopWorker().
             // Here we resume it.
-            callp->resume();
+            callp->handoffWorker();
         }
     }
 };
@@ -173,7 +173,7 @@ VlDpiCall::VlDpiCall(std::function<void()> fn)
     m_threadp->assign(this);
 }
 
-void VlDpiCall::resume() {
+void VlDpiCall::handoffWorker() {
     m_threadp->handoff(true);
     if (!m_done) return;
     threadPool().release(m_threadp);
@@ -186,4 +186,4 @@ void VlDpiCall::markAborted() {
     threadPool().addAborted(this);
 }
 
-void VlDpiCall::yield() { t_currentp->m_threadp->handoff(false); }
+void VlDpiCall::stopWorker() { t_currentp->m_threadp->handoff(false); }
