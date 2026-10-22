@@ -211,7 +211,7 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
             });
         }
 
-        for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : activep->stmtspList()) {
             SchedReplicateLogicVertex* const lvtxp
                 = new SchedReplicateLogicVertex{graphp.get(), scopep, senTreep, nodep, region};
             const VNUser2InUse user2InUse;

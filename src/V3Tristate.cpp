@@ -525,7 +525,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstModport* findModportForDotted(AstNodeModule* modp, const string& dottedPath) {
         if (dottedPath.empty()) return nullptr;
         const string firstComp = dottedPath.substr(0, dottedPath.find('.'));
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : modp->stmtspList()) {
             AstVar* const ivarp = VN_CAST(stmtp, Var);
             if (!ivarp || ivarp->name() != firstComp) continue;
             const AstIfaceRefDType* const ifaceDtp
@@ -554,7 +554,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     // Add a ModportVarRef for varp to modportp if not already present
     void addModportVarRefIfMissing(AstModport* modportp, AstVar* varp, VDirection dir) {
-        for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+        for (AstNode* const mrp : modportp->varspList()) {
             AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
             if (mvrp && mvrp->varp() == varp) return;  // Already present
         }
@@ -577,10 +577,10 @@ class TristateVisitor final : public TristateBaseVisitor {
                 ownerModp->addStmtsp(newp);
                 // Add __en to any modports that reference the original var,
                 // so VarXRefs through modport paths can resolve it.
-                for (AstNode* stmtp = ownerModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                for (AstNode* const stmtp : ownerModp->stmtspList()) {
                     AstModport* const modportp = VN_CAST(stmtp, Modport);
                     if (!modportp) continue;
-                    for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+                    for (AstNode* const mrp : modportp->varspList()) {
                         AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
                         if (mvrp && mvrp->varp() == invarp) {
                             addModportVarRefIfMissing(modportp, newp, VDirection::INPUT);
@@ -1867,7 +1867,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (nodep->user2() & U2_GRAPHING) return;
             m_alhs = true;  // In AstAlias all operands should be considered as lhs
             iterateChildren(nodep);
-            for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+            for (AstNode* const itemp : nodep->itemspList()) {
                 associateLogic(itemp, nodep);
                 associateLogic(nodep, itemp);
             }
@@ -2553,7 +2553,7 @@ public:
         // own graph to mark the net tristate, so without this its driver would be dropped.
         // Collect only the interfaces (reverse declaration order to match the pass below).
         std::vector<AstNodeModule*> ifacesp;
-        for (AstNode* modp = netlistp->modulesp(); modp; modp = modp->nextp()) {
+        for (AstNode* const modp : netlistp->modulespList()) {
             if (VN_IS(modp, Iface)) ifacesp.push_back(VN_AS(modp, NodeModule));
         }
         for (auto it = ifacesp.rbegin(); it != ifacesp.rend(); ++it) iterate(*it);

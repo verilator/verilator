@@ -353,8 +353,7 @@ public:
         FileLine* const flp = senTreep->fileline();
         AstNodeExpr* resultp = nullptr;
         bool firedAtInitialization = false;
-        for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
-             senItemp = VN_AS(senItemp->nextp(), SenItem)) {
+        for (AstSenItem* const senItemp : senTreep->sensespList()) {
             const auto& pair = build(senItemp);
             if (AstNodeExpr* termp = pair.first) {
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;

@@ -538,8 +538,7 @@ public:
             // Generated headers are part of every translation unit through the precompiled header
             uint64_t headerBytes = 0;
 
-            for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
-                 nodep = VN_AS(nodep->nextp(), NodeFile)) {
+            for (AstNodeFile* const nodep : v3Global.rootp()->filespList()) {
                 const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                 if (cfilep && VString::endsWith(cfilep->name(), ".h")) {
                     headerBytes += fileSize(cfilep);
@@ -634,8 +633,7 @@ public:
                         putMakeClassEntry(of, entry.m_filename);
                     }
                 } else {
-                    for (AstNodeFile* nodep = v3Global.rootp()->filesp(); nodep;
-                         nodep = VN_AS(nodep->nextp(), NodeFile)) {
+                    for (AstNodeFile* const nodep : v3Global.rootp()->filespList()) {
                         const AstCFile* const cfilep = VN_CAST(nodep, CFile);
                         if (cfilep && cfilep->source() && cfilep->slow() == (slow != 0)
                             && cfilep->support() == (support != 0)) {

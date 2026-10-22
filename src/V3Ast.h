@@ -1667,6 +1667,45 @@ struct std::equal_to<VNRef<T_Node>> final {
 };
 
 //######################################################################
+// VNList - Proxy for a list of nodes chained via 'nextp()'
+
+template <typename T_Node>
+class VNList final {
+    T_Node* const m_headp;  // First node in the list, or nullptr if empty
+
+public:
+    class Iterator final {
+        AstNode* m_currp;  // Current node, or nullptr at end
+        AstNode* m_nextp;  // Successor of current node
+
+    public:
+        explicit Iterator(AstNode* nodep)
+            : m_currp{nodep}
+            , m_nextp{nodep ? nodep->nextp() : nullptr} {}
+        T_Node* operator*() const { return static_cast<T_Node*>(m_currp); }
+        Iterator& operator++() {
+            m_currp = m_nextp;
+            m_nextp = m_currp ? m_currp->nextp() : nullptr;
+            return *this;
+        }
+        bool operator!=(const Iterator& other) const { return m_currp != other.m_currp; }
+    };
+
+    explicit VNList(T_Node* headp)
+        : m_headp{headp} {}
+
+    // Iterates node list via nextp() in a ranged 'for' loop. Current node is editable
+    Iterator begin() const { return Iterator{m_headp}; }
+    Iterator end() const { return Iterator{nullptr}; }
+    // Number of nodes in the list - O(n)
+    size_t size() const {
+        size_t count = 0;
+        for (const AstNode* nodep = m_headp; nodep; nodep = nodep->nextp()) ++count;
+        return count;
+    }
+};
+
+//######################################################################
 // VDTypeNameScopes -- Index of the scopes declaring types, for naming them
 
 // While alive, indexes the scopes declaring the types that dtypeName() names, as $typename names

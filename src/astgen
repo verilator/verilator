@@ -1174,6 +1174,7 @@ def write_ast_macros(filename):
                 elif monad == "List":
                     emitBlock('''\
                     Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}
+                    VNList<Ast{kind}> {name}List() const VL_MT_STABLE {{ return VNList<Ast{kind}>{{{name}()}}; }}
                     void add{Name}(Ast{kind}* nodep) {{ addNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     void prepend{Name}(Ast{kind}* nodep) {{ prependNOp{n}p(reinterpret_cast<AstNode*>(nodep)); }}
                     ''',
@@ -1185,6 +1186,7 @@ def write_ast_macros(filename):
                     if superOp and not node.superClass.isPrivateOp(n):
                         hiddenMethods.append("add" + superName[0].upper() + superName[1:])
                         hiddenMethods.append("prepend" + superName[0].upper() + superName[1:])
+                        hiddenMethods.append(superName + "List")
                 elif monad == "Optional":
                     emitBlock('''\
                     Ast{kind}* {name}() const VL_MT_STABLE {{ return {retrieve}; }}

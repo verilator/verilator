@@ -44,7 +44,7 @@ class EmitCConstPool final : public EmitCConstInit {
         UASSERT(!ofp(), "Output file should not be open");
 
         std::vector<const AstVar*> varps;
-        for (AstNode* nodep = poolp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : poolp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) varps.push_back(varp);
         }
 
