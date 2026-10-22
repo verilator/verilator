@@ -5778,7 +5778,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         "Object of unresolved class on scope position in dotted reference");
             // The index does not depend on the class, and V3Param must see its class references
             symIterateNull(nodep->bitp(), m_curSymp);
-            symIterateNull(nodep->attrp(), m_curSymp);
             return;
         }
         if (m_ds.m_dotPos == DP_SCOPE
@@ -5792,7 +5791,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Pass dot state down to only fromp()
         iterateAndNextNull(nodep->fromp());
         symIterateNull(nodep->bitp(), m_curSymp);
-        symIterateNull(nodep->attrp(), m_curSymp);
         if (m_ds.m_unresolvedCell && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)) {
             AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
             if (AstCellArrayRef* const fromArrRefp = VN_CAST(nodep->fromp(), CellArrayRef)) {
@@ -5841,19 +5839,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 } else {
                     replaceWithCheckBreak(nodep, newArrayTypep);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                }
-            } else {
-                if (nodep->attrp()) {
-                    AstNode* const attrp = nodep->attrp()->unlinkFrBack();
-                    VL_DO_DANGLING(attrp->deleteTree(), attrp);
-                }
-                AstNode* const basefromp = nodep->baseFromp(false);
-                if (VN_IS(basefromp, Replicate)) {
-                    // From {...}[...] syntax in IEEE 2017
-                    if (basefromp) UINFO(9, indent() << " Related node: " << basefromp);
-                } else {
-                    nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
-                                               basefromp->cloneTree(false)});
                 }
             }
         }

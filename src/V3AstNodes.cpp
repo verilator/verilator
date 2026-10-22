@@ -3006,18 +3006,8 @@ AstNode* AstNodeExpr::baseFromp(bool overMembers) {
         } else if (overMembers && VN_IS(nodep, StructSel)) {
             nodep = VN_AS(nodep, StructSel)->fromp();
             continue;
-        }
-        // AstNodePreSel stashes the associated variable under an ATTROF
-        // of VAttrType::VAR_BASE so it isn't constified
-        else if (VN_IS(nodep, AttrOf)) {
-            nodep = VN_AS(nodep, AttrOf)->fromp();
-            continue;
         } else if (VN_IS(nodep, NodePreSel)) {
-            if (VN_AS(nodep, NodePreSel)->attrp()) {
-                nodep = VN_AS(nodep, NodePreSel)->attrp();
-            } else {
-                nodep = VN_AS(nodep, NodePreSel)->fromp();
-            }
+            nodep = VN_AS(nodep, NodePreSel)->fromp();
             continue;
         } else {
             break;
