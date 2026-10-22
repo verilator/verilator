@@ -1996,19 +1996,6 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(replaceValChkPure(nodep, val), nodep);
     }
     void replaceZero(AstNode* nodep) { VL_DO_DANGLING(replaceNum(nodep, 0), nodep); }
-    void replaceZeroChkPure(AstNode* nodep, AstNodeExpr* checkp) {
-        // For example, "0 * n" -> 0 if n has no side effects
-        // Else strength reduce it to 0 & n.
-        // If ever change the operation note AstAnd rule specially ignores this created pattern
-        if (checkp->isPure()) {
-            VL_DO_DANGLING(replaceNum(nodep, 0), nodep);
-        } else {
-            AstNode* const newp = new AstAnd{nodep->fileline(), new AstConst{nodep->fileline(), 0},
-                                             checkp->unlinkFrBack()};
-            nodep->replaceWithKeepDType(newp);
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        }
-    }
     void replaceAllOnes(AstNode* nodep) {
         V3Number ones{nodep, nodep->width(), 0};
         ones.setMask(nodep->width());
@@ -4353,38 +4340,38 @@ class ConstVisitor final : public VNVisitor {
     TREEOPA("AstNodeQuadop{$lhsp.castConst, $rhsp.castConst, $thsp.castConst, $fhsp.castConst}",  "replaceConst(nodep)");
     // Zero on one side or the other
     TREEOP ("AstAdd   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
-    TREEOP ("AstAnd   {$lhsp.isZero, $rhsp, $rhsp.isPure}",   "replaceZero(nodep)");  // Can't use replaceZeroChkPure as we make this pattern in ChkPure
+    TREEOP ("AstAnd   {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
     // Masking that always yields zero
-    TREEOP ("AstAnd   {$lhsp.castConst, matchMaskedZero(nodep)}", "replaceZeroChkPure(nodep, $rhsp)");
+    TREEOP ("AstAnd   {$lhsp.castConst, matchMaskedZero(nodep)}", "replaceValChkPure(nodep, 0)");
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstLogAnd   {$lhsp.isZero}",       "replaceZero(nodep)");
     TREEOP ("AstLogAnd{$lhsp.isZero, $rhsp}",   "replaceZero(nodep)");
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstLogOr   {$lhsp.isOne}",         "replaceNum(nodep, 1)");
     TREEOP ("AstLogOr {$lhsp.isZero, $rhsp}",   "replaceWRhsBool(nodep)");
-    TREEOP ("AstDiv   {$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstMul   {$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstMulS  {$lhsp.isZero, $rhsp}",   "replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstDiv   {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstDivS  {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstMul   {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstMulS  {$lhsp.isZero, $rhsp}",   "replaceValChkPure(nodep, 0)");
     TREEOP ("AstPow   {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
     TREEOP ("AstPowSS {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
     TREEOP ("AstPowSU {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
     TREEOP ("AstPowUS {$rhsp.isZero}",          "replaceNum(nodep, 1)");  // Overrides lhs zero rule
     TREEOP ("AstOr    {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
-    TREEOP ("AstShiftL    {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstShiftLOvr {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstShiftR    {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstShiftROvr {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstShiftRS   {$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
-    TREEOP ("AstShiftRSOvr{$lhsp.isZero, $rhsp}",  "replaceZeroChkPure(nodep,$rhsp)");
+    TREEOP ("AstShiftL    {$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstShiftLOvr {$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstShiftR    {$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstShiftROvr {$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstShiftRS   {$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstShiftRSOvr{$lhsp.isZero, $rhsp}",  "replaceValChkPure(nodep, 0)");
     TREEOP ("AstXor   {$lhsp.isZero, $rhsp}",   "replaceWRhs(nodep)");
     TREEOP ("AstSub   {$lhsp.isZero, $rhsp}",   "AstNegate{$rhsp}");
     TREEOP ("AstAdd   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
-    TREEOP ("AstAnd   {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
-    TREEOP ("AstLogAnd{$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
+    TREEOP ("AstAnd   {$lhsp, $rhsp.isZero}",   "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstLogAnd{$lhsp, $rhsp.isZero}",   "replaceValChkPure(nodep, 0)");
     TREEOP ("AstLogOr {$lhsp, $rhsp.isZero}",   "replaceWLhsBool(nodep)");
-    TREEOP ("AstMul   {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
-    TREEOP ("AstMulS  {$lhsp, $rhsp.isZero}",   "replaceZeroChkPure(nodep,$lhsp)");
+    TREEOP ("AstMul   {$lhsp, $rhsp.isZero}",   "replaceValChkPure(nodep, 0)");
+    TREEOP ("AstMulS  {$lhsp, $rhsp.isZero}",   "replaceValChkPure(nodep, 0)");
     TREEOP ("AstOr    {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     TREEOP ("AstShiftL    {$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
     TREEOP ("AstShiftLOvr {$lhsp, $rhsp.isZero}",  "replaceWLhs(nodep)");
