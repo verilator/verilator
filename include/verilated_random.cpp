@@ -955,8 +955,11 @@ bool VlRandomizer::next_check_only(VlRNGReseeds& rngr) { return nextRandomize(rn
 bool VlRandomizer::next(VlRNGReseeds& rngr) { return nextRandomize(rngr, false); }
 
 bool VlRandomizer::nextRandomize(VlRNGReseeds& rngr, bool checkOnly) {
-    if (!checkOnly && m_vars.empty() && m_uniqueArrays.empty()) return true;
-    if (checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
+    // No rand variables: randomize() still checks the constraints (IEEE 1800-2023 18.11.1)
+    if (!checkOnly && m_vars.empty() && m_uniqueArrays.empty() && m_constraints.empty()) {
+        return true;
+    }
+    if (checkOnly && m_vars.empty() && m_constraints.empty()) return true;
     VlSolverSession& sess = s_solverSession;
     const VerilatedLockGuard lock{sess.m_mutex};
     m_checkOnly = checkOnly;
