@@ -11,6 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
+# Fixed-seed fault-injection test: the tamper positions and the pass/fail counts follow
+# the permutation each srandom() seed produces, and are re-derived if Verilator's RNG
+# usage changes. Seed-independent randc coverage is in t_constraint_randc_solve_first.
+
 if not test.have_solver:
     test.skip("No constraint solver installed")
 
@@ -42,8 +46,8 @@ run_case('draw_short', 4, 2, 'TAMPER=short_model TAMPER_AT=1')  # reply names an
 run_case('tail_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=15')  # flat tail check-sat
 
 # Same through the solve...before layers
-run_case('phased_plain', 10, 2, mode='phased')
-run_case('phased_tail_unknown', 9, 3, 'TAMPER=unknown_once TAMPER_AT=34', mode='phased')
+run_case('phased_plain', 9, 3, mode='phased')
+run_case('phased_tail_unknown', 10, 2, 'TAMPER=unknown_once TAMPER_AT=32', mode='phased')
 
 # Two cycling variables keep the joint solve, so no call fails
 run_case('two_randc', 12, 0, mode='two')
