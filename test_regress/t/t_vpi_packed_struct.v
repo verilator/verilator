@@ -79,6 +79,14 @@ module t;
   logic [3:0][1:0] pvec  /*verilator public_flat_rw*/;
   us_t us  /*verilator public_flat_rw*/;
   localparam s_t PS  /*verilator public_flat_rd*/ = '{hi: 4'h3, e: E_C, lo: -6'sd5};
+  localparam n_t PN  /*verilator public_flat_rd*/ = '{
+      tag: 4'h5, inner: '{hi: 4'h7, e: E_D, lo: 6'sd3}, pa: 8'hc6};
+  localparam w_t PW[2]  /*verilator public_flat_rd*/ = '{
+      '{top: 12'h0, wide: 40'h0, mid: 20'h0, b8: 8'h11, low: 20'h0},
+      '{top: 12'habc, wide: 40'h0, mid: 20'h0, b8: 8'h5a, low: 20'h12345}};
+  localparam s_t [1:0] P4D[2][2]  /*verilator public_flat_rd*/ = '{
+      '{24'h111222, 24'h333444}, '{24'h9c0555, 24'h666777}};
+  w_t uw[2]  /*verilator public_flat_rw*/;
   wire s_t sn  /*verilator public_flat_rd*/;
   wire u_t un  /*verilator public_flat_rd*/;
 
@@ -101,6 +109,8 @@ module t;
     arr = '0;
     uarr[0] = '0;
     uarr[1] = '0;
+    uw[0] = '0;
+    uw[1] = '0;
     arr2 = '0;
     narr = '0;
     fs = '0;
