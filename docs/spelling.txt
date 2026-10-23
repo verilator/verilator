@@ -1309,8 +1309,10 @@ vpm
 vpp
 warmup
 wavealloca
+wavecat
 wavediff
 waveforms
+wavetools
 whitespace
 widthed
 wor

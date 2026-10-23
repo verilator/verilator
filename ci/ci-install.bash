@@ -60,7 +60,7 @@ brew-retry() {
   fatal "'brew $*' failed on all attempts"
 }
 
-install-wavediff() {
+install-wavetools() {
   source ci/docker/buildenv/wavetools.conf
   local _base_url="https://github.com/hudson-trading/wavetools/releases/download/${WAVETOOLS_VERSION}"
   local _platform
@@ -77,7 +77,7 @@ install-wavediff() {
   local _archive="wavetools-${WAVETOOLS_VERSION}-${_platform}"
   wget -q -O "${_tmpdir}/${_archive}.tar.gz" "${_base_url}/${_archive}.tar.gz"
   tar -xzf "${_tmpdir}/${_archive}.tar.gz" -C "${_tmpdir}"
-  sudo cp "${_tmpdir}/${_archive}/wavediff" /usr/local/bin/wavediff
+  sudo cp "${_tmpdir}/${_archive}/"* /usr/local/bin/
   rm -rf "${_tmpdir}"
 }
 
@@ -152,7 +152,7 @@ elif [ "$STAGE" = "test" ]; then
     fatal "Unknown HOST_OS: '$HOST_OS'"
   fi
   # Common installs
-  install-wavediff
+  install-wavetools
   # Workaround -fsanitize=address crash
   sudo sysctl -w vm.mmap_rnd_bits=28
 elif [ "$STAGE" = "lint-py" ]; then
