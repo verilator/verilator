@@ -13,6 +13,8 @@ test.scenarios('vlt')
 test.top_filename = 't/t_cover_return_line.v'
 
 test.compile(verilator_flags2=['--coverage-line'])
+
 test.execute()
 test.inline_checks()
+
 test.passes()
