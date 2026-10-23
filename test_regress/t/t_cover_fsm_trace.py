@@ -14,30 +14,22 @@ import vltest_bootstrap
 test.scenarios('vlt')
 test.top_filename = 't/t_vlcov_fsm_report.v'
 
-test.compile(
-    verilator_flags2=[
-        '--coverage',
-        '--trace-vcd',
-        '--trace-coverage',
-        '--dump-tree',
-        '--dump-tree-json'
-    ],
-)
+test.compile(verilator_flags2=[
+    '--coverage', '--trace-vcd', '--trace-coverage', '--dump-tree', '--dump-tree-json'
+], )
 
 # Generated trace counters must be identifiable in both AST dump formats.
 test.file_grep(test.glob_one(test.obj_dir + '/*_coverage.tree'), r'\[COVERTRACE\]')
 test.file_grep(test.glob_one(test.obj_dir + '/*_coverage.tree.json'), r'"isCoverageTrace":true')
 test.execute()
 
-test.run(
-    cmd=[
-        os.environ['VERILATOR_ROOT'] + '/bin/verilator_coverage',
-        '--annotate',
-        test.obj_dir + '/annotated',
-        test.obj_dir + '/coverage.dat',
-    ],
-    verilator_run=True
-)
+test.run(cmd=[
+    os.environ['VERILATOR_ROOT'] + '/bin/verilator_coverage',
+    '--annotate',
+    test.obj_dir + '/annotated',
+    test.obj_dir + '/coverage.dat',
+],
+         verilator_run=True)
 
 # Tracing must preserve the state and arc counts from the untraced test.
 test.files_identical(test.obj_dir + '/annotated/t_vlcov_fsm_report.v', 't/t_vlcov_fsm_report.out')

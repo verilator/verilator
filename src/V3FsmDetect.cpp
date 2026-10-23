@@ -639,7 +639,8 @@ class FsmDetectVisitor final : public VNVisitor {
             std::vector<std::pair<AstCase*, AstNodeExpr*>> candidates;
             AstNode* const stmtsp = skipLeadingIgnorableStmt(alwaysp->stmtsp());
             if (AstIf* const firstIfp = VN_CAST(stmtsp, If)) {
-                AstNode* const elsesp = FsmDetectVisitor::skipLeadingIgnorableStmt(firstIfp->elsesp());
+                AstNode* const elsesp
+                    = FsmDetectVisitor::skipLeadingIgnorableStmt(firstIfp->elsesp());
                 if (AstCase* const casep = VN_CAST(elsesp, Case)) {
                     candidates.emplace_back(casep,
                                             FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
@@ -661,8 +662,8 @@ class FsmDetectVisitor final : public VNVisitor {
             // Reset-else FSMs should behave like the existing case path: reset
             // information is metadata, not part of steady-state dispatch.
             if (AstIf* const firstIfp = VN_CAST(stmtsp, If)) {
-                if (AstIf* const chainp
-                    = VN_CAST(FsmDetectVisitor::skipLeadingIgnorableStmt(firstIfp->elsesp()), If)) {
+                if (AstIf* const chainp = VN_CAST(
+                        FsmDetectVisitor::skipLeadingIgnorableStmt(firstIfp->elsesp()), If)) {
                     candidates.emplace_back(chainp,
                                             FsmDetectVisitor::isSimpleResetCond(firstIfp->condp())
                                                 ? firstIfp->condp()
@@ -1331,8 +1332,7 @@ class FsmDetectVisitor final : public VNVisitor {
             chain.branches.push_back(
                 FsmIfBranch{curp, curp->thensp(), cmp.valuep, cmp.value, hasGuard});
 
-            AstNode* const elseNodep
-                = skipLeadingIgnorableStmt(curp->elsesp());
+            AstNode* const elseNodep = skipLeadingIgnorableStmt(curp->elsesp());
             if (!elseNodep) break;
             if (AstIf* const elseIfp = VN_CAST(elseNodep, If)) {
                 curp = elseIfp;
