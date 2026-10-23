@@ -212,7 +212,7 @@ module t #(
 
   localparam bit ON = 1'b1;
   logic [7:0] pon_c;
-  logic [7:0] pand_c, pnot_c, por0_c, pand0_c, pand1_c;
+  logic [7:0] pand_c, pnot_c, por0_c, pand0_c, pand1_c, pand2_c;
   /* verilator lint_off LATCH */
   always @* if (ON || en) pon_c = d;
   always @* if (!(!ON && en)) pand_c = d;
@@ -220,6 +220,7 @@ module t #(
   always @* if (!ON || !ON) por0_c = ~d; else por0_c = d;
   always @* if (en && !ON) pand0_c = ~d; else pand0_c = d;
   always @* if (ON && ~(!ON)) pand1_c = d;
+  always @* if (ON & en) pand2_c = d;
   /* verilator lint_on LATCH */
 
   // Compiler temporaries keep the storage a cone reads, but no VPI name
@@ -383,13 +384,14 @@ module t #(
   assign fyx1b_c = fy1.y + 8'h01;
 
   // Statement shapes a cone refuses or keeps: a read before its write; a dead store in a loop
-  // left by a break; an unpacked struct member lvalue; an impure continuous assign
+  // left by a break; an unpacked struct member lvalue, and one a flop holds; an impure continuous
+  // assign
   /* verilator lint_off UNOPTFLAT */
   logic [7:0] rbw_t, rbw_c, rbw_u, rbw_v, dlp_c, dus_c;
   /* verilator lint_on UNOPTFLAT */
   logic [7:0] dlp_t  /*verilator public_flat_rw*/;
   logic [31:0] rnd_w, seedv;
-  us_t dus;
+  us_t dus, fus;
   /* verilator lint_off ALWCOMBORDER */
   always_comb begin
     rbw_c = rbw_t;
@@ -415,6 +417,7 @@ module t #(
     dus.a = dus_c;
     dus.b = ~dus_c;
   end
+  always_ff @(posedge clk) fus.a <= d;
   assign rnd_w = $urandom(seedv);
 
   // A comb signal kept in storage, as its impure driver can't be rebuilt, read from a flop and
@@ -513,6 +516,21 @@ module t #(
   assign mc_x[0] = d[3:0];
   always_comb mc_y = 4'(nest_f({4'h0, mc_x[0]}));
   assign mc_x[1] = mc_y;
+
+  // A cycle between groups calling one static function, so sharing its local
+  function logic [7:0] sfc_f(input logic [7:0] v);
+    logic [7:0] tmp;
+    tmp = v ^ 8'h5;
+    return tmp;
+  endfunction
+  /* verilator lint_off UNOPTFLAT */
+  logic [7:0] sfc_src, sfc_o1, sfc_o2;
+  logic sfc_rdy;
+  /* verilator lint_on UNOPTFLAT */
+  assign sfc_src = {d[7:1], sfc_rdy & en};
+  assign sfc_o1 = sfc_f(sfc_src);
+  assign sfc_o2 = sfc_f(sfc_src);
+  assign sfc_rdy = sfc_o1[7] & sfc_o2[7];
 
   // Its undriven element read by the design, so retained with storage
   logic [7:0] gmem[2];

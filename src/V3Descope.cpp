@@ -254,8 +254,8 @@ class DescopeVisitor final : public VNVisitor {
         nodep->selfPointer(descopedSelfPointer(funcp->scopep()));
         // A --vpi-lazy stub only lends its instance's self pointer to a call of a shared func
         if (funcp->vpiLazyInstStub()) {
-            const AstStmtExpr* const stmtp = VN_CAST(funcp->stmtsp(), StmtExpr);
-            const AstCCall* const sharedp = stmtp ? VN_CAST(stmtp->exprp(), CCall) : nullptr;
+            const AstStmtExpr* const stmtp = VN_AS(funcp->stmtsp(), StmtExpr);
+            const AstCCall* const sharedp = VN_CAST(stmtp->exprp(), CCall);
             UASSERT_OBJ(sharedp && !stmtp->nextp(), funcp,
                         "--vpi-lazy instance stub is not one call");
             nodep->funcp(sharedp->funcp());

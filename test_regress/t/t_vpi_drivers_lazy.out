@@ -1,4 +1,5 @@
 reset t.pull_b 00000000
+reset t.sfc_f__Vstatic__tmp 00000000
 mid-eval t.mid_c 0x11
 mid-eval t.mid_c 0x21
 cbValueChange t.ch1 fired 1 0x06
@@ -79,6 +80,9 @@ t.frc2 55 r
 t.frc_al 5a W
 t.frc_cb 18 W
 t.frc_cn 19 r
+t.fus ? ?
+t.fus.a 3c W
+t.fus.b ff W
 t.fy0.a 3c r
 t.fy0.clk 0 r
 t.fy0.cyc_p fc r
@@ -148,6 +152,7 @@ t.orphan_c 25 r
 t.ovl_w 68 r
 t.pand0_c 3c r
 t.pand1_c 3c r
+t.pand2_c 21 W
 t.pand_c 3c r
 t.plo_l 59 WWrrrrWW
 t.pmem 7d W
@@ -180,6 +185,10 @@ t.s_fmt "v60" r
 t.sc_alias "even" r
 t.sc_src "even" r
 t.seedv ffffffff W
+t.sfc_o1 39 r
+t.sfc_o2 39 r
+t.sfc_rdy 0 r
+t.sfc_src 3c r
 t.sh ff212133333c3c3c ?
 t.sib_b 43 r
 t.sib_bt 43 r

@@ -336,6 +336,8 @@ void dumpRows() {
         const std::string name = fullName(handle);
         // A forced signal's force controls are public, but are not RTL signals
         if (name.find("__Vforce") != std::string::npos) return;
+        // --public-flat-rw also makes a static function's local public, under its mangled name
+        if (name.find("__Vstatic__") != std::string::npos) return;
         // A compiler temporary has no RTL name
         if (name.find("__") != std::string::npos) {
             std::printf("%%Error: compiler temporary is VPI-visible: %s\n", name.c_str());

@@ -85,7 +85,7 @@ static const char* _vl_vpi_find_unescaped_dot(const char* posp) {
 // packed member
 static const VerilatedVar* _vl_vpi_storage_varp(const VerilatedVar* varp,
                                                 const VerilatedScope* scopep) {
-    while (varp && varp->isPackedMember()) {
+    while (varp->isPackedMember()) {
         const char* const namep = varp->name();
         const char* lastp = nullptr;
         for (const char* posp = namep; (posp = _vl_vpi_find_unescaped_dot(posp)); ++posp)

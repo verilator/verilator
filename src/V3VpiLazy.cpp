@@ -372,7 +372,9 @@ bool combElement(const AstVar* varp, const PartExtent& ext, int32_t& elemr) {
         const int32_t idx = ext.m_idxs[dims.size() - 1 - k];
         UASSERT_OBJ(idx >= 0 && idx < dims[k], varp, "--vpi-lazy constant index out of range");
         flat = flat * dims[k] + idx;
-        if (flat > std::numeric_limits<int32_t>::max()) return false;
+        // Over 2^31 elements: the comb-mask index is an int32
+        if (VL_UNCOVERABLE(flat > std::numeric_limits<int32_t>::max()))
+            return false;  // LCOV_EXCL_LINE
     }
     elemr = static_cast<int32_t>(flat);
     return true;
@@ -1083,7 +1085,8 @@ private:
         const auto git = m_groupsOfKey.find(keyp);
         UASSERT_OBJ(git != m_groupsOfKey.end(), keyp, "--vpi-lazy group key has no groups");
         for (Group* const g : git->second) {
-            if (!g->m_live) continue;  // Merged into another by mergeCycle()
+            // A key's instances are alike, so a key with a group merged away never fails a merge
+            UASSERT_OBJ(g->m_live, keyp, "--vpi-lazy kills a group merged by mergeCycle()");
             g->m_live = false;
             for (AstVarScope* const t : g->m_targets) retainTarget(t, why);
         }
@@ -1617,24 +1620,27 @@ private:
         Group* const g = sccps[0];
         Group merged;
         merged.m_scopep = g->m_scopep;
-        size_t members = 0;
         for (const Group* const ugp : sccps) {
             if (ugp->m_scopep != g->m_scopep) return false;  // One func addresses one scope
             merged.m_blockps.insert(merged.m_blockps.end(), ugp->m_blockps.begin(),
                                     ugp->m_blockps.end());
             merged.m_targets.insert(merged.m_targets.end(), ugp->m_targets.begin(),
                                     ugp->m_targets.end());
-            merged.m_members.insert(ugp->m_members.begin(), ugp->m_members.end());
-            members += ugp->m_members.size();
+            merged.m_members.insert(ugp->m_targets.begin(), ugp->m_targets.end());
+            // Shared by groups calling one static function
+            for (AstVarScope* const t : ugp->m_temps) {
+                if (merged.m_members.insert(t).second) merged.m_temps.push_back(t);
+            }
         }
-        // A var two groups write bails MULTIDRIVEN before either is formed
-        UASSERT_OBJ(merged.m_members.size() == members, g->m_keyp,
-                    "--vpi-lazy cycle groups share a member");
+        // A var two groups write bails MULTIDRIVEN before either is formed, unless a temp
+        UASSERT_OBJ(merged.m_members.size() == merged.m_targets.size() + merged.m_temps.size(),
+                    g->m_keyp, "--vpi-lazy cycle groups share a target");
         // Every CombBlock is an element of one vector, so address order is encounter order
         std::sort(merged.m_blockps.begin(), merged.m_blockps.end());
         Bail why = Bail::COMB_CYCLE;
         if (!analyzeGroup(&merged, why)) return false;
         g->m_blockps = std::move(merged.m_blockps);
+        g->m_temps = std::move(merged.m_temps);
         g->m_members = std::move(merged.m_members);
         g->m_zeroInitps = std::move(merged.m_zeroInitps);
         for (size_t i = 1; i < sccps.size(); ++i) {
@@ -1647,7 +1653,6 @@ private:
             for (AstVarScope* const t : ugp->m_temps) {
                 const auto it = m_groupOf.find(t);
                 if (it != m_groupOf.end() && it->second == ugp) it->second = g;
-                g->m_temps.push_back(t);
             }
             ugp->m_live = false;
         }
@@ -1770,7 +1775,8 @@ private:
             // The source must hold storage, and nothing in a live group does.
             if (liveGroupOf(u)) continue;
             chainEnd.emplace(g, u);
-            if (u == targetp || !canCopyFrom(targetp, u)) continue;
+            UASSERT_OBJ(u != targetp, targetp, "--vpi-lazy copy source is its own target");
+            if (!canCopyFrom(targetp, u)) continue;
             cand.push_back(g);
             ++candInstances[targetp->varp()];
         }
@@ -1807,15 +1813,15 @@ private:
     // Layouts must match exactly: the descriptor refreshes by memcpy of totalSize() bytes.
     // entSize() has no width for VLVT_REAL or VLVT_STRING, so such a row would copy nothing,
     // and a std::string could not be raw-copied even if it did; those stay cones. 'b'
-    // reaches 'a' only through cast-free assignments, so is no real or string either.
+    // reaches 'a' only through cast-free assignments, so is no real or string either, and is as
+    // wide.
     static bool sameLayout(const AstVarScope* a, const AstVarScope* b) {
         const AstNodeDType* const adtp = a->varp()->dtypep()->skipRefp();
         const AstNodeDType* const bdtp = b->varp()->dtypep()->skipRefp();
-        return !a->varp()->isDouble() && !a->varp()->isString()
-               && (adtp->similarDType(bdtp)
-                   // `bit` and `logic` of one width are stored alike
-                   || (VN_IS(adtp, BasicDType) && VN_IS(bdtp, BasicDType)
-                       && adtp->width() == bdtp->width()));
+        if (a->varp()->isDouble() || a->varp()->isString()) return false;
+        UASSERT_OBJ(adtp->width() == bdtp->width(), a->varp(), "--vpi-lazy copy across widths");
+        // `bit` and `logic` of one width are stored alike
+        return adtp->similarDType(bdtp) || (VN_IS(adtp, BasicDType) && VN_IS(bdtp, BasicDType));
     }
 
     void foldTrivialCopyGroups() {
@@ -2074,7 +2080,8 @@ private:
         if (cand && (storagePinnedElsewhere(uVarp) || !hasCombDriver(u))) return;
         for (AstVarScope* const vscp :
              shared ? m_gather.m_vscpsOf.at(uVarp) : std::vector<AstVarScope*>{u}) {
-            if (!m_kept.insert(vscp).second) continue;
+            const bool inserted = m_kept.insert(vscp).second;
+            UASSERT_OBJ(inserted, vscp, "--vpi-lazy boundary pinned twice");
             // formGroups() groups or retains every comb-written candidate, and a converted one
             // is substituted
             UASSERT_OBJ(!cand, u, "--vpi-lazy comb boundary operand no skip path explains");
@@ -2354,11 +2361,9 @@ private:
                 instp->varp(twinp);
                 for (AstVarRef* const refp : m_gather.m_refsOf[instp]) refp->varp(twinp);
             }
-            const auto sit = m_shadowVarOfOrig.find(varp);
-            if (sit != m_shadowVarOfOrig.end()) {
-                for (const AstVarScope* const instp : vscps)
-                    if (kept(instp)) m_ctx.m_noRow.emplace(instp->scopep()->name(), sit->second);
-            }
+            AstVar* const shadowVarp = m_shadowVarOfOrig.at(varp);
+            for (const AstVarScope* const instp : vscps)
+                if (kept(instp)) m_ctx.m_noRow.emplace(instp->scopep()->name(), shadowVarp);
         }
     }
 
@@ -2369,9 +2374,8 @@ private:
         if (!reconstructableKind(varp)) return "dtype";
         const int writes = writeCountOf(vscp);
         if (writes == 0) return "undriven";
-        // Several writes to a flop are its NBA branches; only a comb driver can be multidriven.
-        if (!hasCombDriver(vscp)) return "sequential";
-        return writes > 1 ? "multidriven" : "comb (unclaimed)";
+        UASSERT_OBJ(!hasCombDriver(vscp), vscp, "--vpi-lazy comb residual no classifier claimed");
+        return "sequential";
     }
 
     void reportStats() {
