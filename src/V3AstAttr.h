@@ -1176,14 +1176,9 @@ public:
             _ENUM_MAX  // Leave last
     };
     enum en m_e;
-    VCFunction()
-        : m_e{_NONE} {}
     // cppcheck-suppress noExplicitConstructor
     constexpr VCFunction(en _e)
         : m_e{_e} {}
-    explicit VCFunction(int _e)
-        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
-    constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
         static const char* const values[] = {
 #define VL_CFUNCTION_NAME(id, function, pure, args) function,
@@ -1216,10 +1211,6 @@ constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
     return lhs.m_e == rhs.m_e;
 }
 constexpr bool operator==(const VCFunction& lhs, VCFunction::en rhs) { return lhs.m_e == rhs; }
-constexpr bool operator==(VCFunction::en lhs, const VCFunction& rhs) { return lhs == rhs.m_e; }
-inline std::ostream& operator<<(std::ostream& os, const VCFunction& rhs) {
-    return os << rhs.ascii();
-}
 
 // Static assert all argument descriptors are well formed
 #define VL_CFUNCTION_ARGS_CHECK(id, method, pure, args) \
@@ -2178,10 +2169,6 @@ public:
     VSelfPointerText(VlSyms, const string& field)
         : m_strp{std::make_shared<const string>("(&vlSymsp->vlInst." + field + ')')} {}
     class VlSymsDpi {};
-    VSelfPointerText(VlSymsDpi, const string& symClassName, const string& field)
-        : m_strp{std::make_shared<const string>("(&((" + symClassName + "*)"
-                                                + "(Verilated::dpiScope()->symsp()))" + "->"
-                                                + field + ")")} {}
 
     // METHODS
     bool isEmpty() const { return m_strp == s_emptyp; }
