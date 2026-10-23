@@ -183,7 +183,7 @@
         
 %000001   task call_task;
 -000001  point: type=line comment=block hier=top.t
-            /* verilator public */
+            /* verilator lint_off UNOPTPUBLIC */ /* verilator public */
 %000001     t1.center_task(1'b1);
 -000001  point: type=line comment=block hier=top.t
           endtask

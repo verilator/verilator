@@ -6,6 +6,8 @@
 // SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// verilator lint_off UNOPTPUBLIC
+
 // Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
 `define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
 

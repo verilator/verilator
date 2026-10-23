@@ -1766,7 +1766,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_libCreate = valp;
         m_protectIds = true;
     });
-    DECL_OPTION("-public", OnOff, &m_public);
+    DECL_OPTION("-public", CbOnOff, [this, fl](bool flag) {
+        m_public = flag;
+        if (flag) {
+            fl->v3warn(UNOPTPUBLIC, "Option '--public' prevents optimization; consider using"
+                                    " 'public_flat_rw' on only the needed signals instead");
+        }
+    });
     DECL_OPTION("-public-depth", Set, &m_publicDepth);
     DECL_OPTION("-public-flat-rw", CbOnOff, [this](bool flag) {
         m_publicFlatRW = flag;

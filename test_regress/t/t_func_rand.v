@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2006 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off UNOPTPUBLIC
+
 module t (clk, Rand);
   input clk;
   output reg [31:0] Rand;

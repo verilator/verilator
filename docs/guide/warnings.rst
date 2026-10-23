@@ -2481,6 +2481,19 @@ List Of Warnings
    correctly.
 
 
+.. option:: UNOPTPUBLIC
+
+   Warns that a signal or task/function marked
+   :option:`/*verilator&32;public*/`, a module marked
+   :option:`/*verilator&32;public_module*/`, or :vlopt:`--public` prevents
+   optimization, which can significantly slow down the model. Consider
+   :option:`/*verilator&32;public_flat_rw*/` on only the needed signals, or
+   DPI exports for tasks and functions, instead.
+
+   Ignoring this warning will only slow simulations; it will simulate
+   correctly.
+
+
 .. option:: UNOPTTHREADS
 
    .. TODO better example

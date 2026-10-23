@@ -125,7 +125,7 @@ module t (/*AUTOARG*/
   end
 
   task call_task;
-    /* verilator public */
+    /* verilator lint_off UNOPTPUBLIC */ /* verilator public */
     t1.center_task(1'b1);
   endtask
 

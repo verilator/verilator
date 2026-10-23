@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2006 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off UNOPTPUBLIC
+
 typedef struct packed { logic [1:0] dp; logic x; } s_t;
 
 module t (/*AUTOARG*/

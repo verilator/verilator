@@ -178,6 +178,7 @@ public:
         UNDRIVEN,       // No drivers
         UNOPT,          // Unoptimizable block. Historical, never issued.
         UNOPTFLAT,      // Unoptimizable block after flattening
+        UNOPTPUBLIC,    // Public signal, task or module prevents optimization
         UNOPTTHREADS,   // Thread partitioner unable to fill all requested threads
         UNPACKED,       // Unsupported unpacked
         UNSATCONSTR,    // Unsatisfied constraint
@@ -245,7 +246,7 @@ public:
             "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
             "SHORTREAL", "SIDEEFFECT", "SIMILARNAME", "SPECIFYIGN", "SPLITVAR", "STATICVAR",
             "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR",
+            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTPUBLIC", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR",
             "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL",
             "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
             "WIDTHCONCAT", "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY",
