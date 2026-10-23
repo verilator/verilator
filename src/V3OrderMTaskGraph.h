@@ -40,7 +40,6 @@
 #include <array>
 #include <memory>
 #include <sstream>
-#include <unordered_map>
 #include <unordered_set>
 
 class LogicMTask;
@@ -132,6 +131,7 @@ class LogicMTask final : public V3GraphVertex {
 
     friend class MTaskEdge;
     friend class OrderMTaskGraph;
+    friend class OrderMTaskGraphBuilder;
 
     // MEMBERS
 
@@ -167,6 +167,10 @@ class LogicMTask final : public V3GraphVertex {
     // node in the pending heap, or nullptr if this MTask is not pending.
     PropagatePendingHeap::Node* m_propagateHeapNodep = nullptr;
 
+    // METHODS
+    // Add 'mVtxp' to this MTask, used while building the graph
+    void addVertex(OrderMoveVertex* mVtxp) VL_MT_DISABLED;
+
 public:
     // CONSTRUCTORS
     LogicMTask(OrderMTaskGraph& graph, OrderMoveVertex* mVtxp) VL_MT_DISABLED;
@@ -174,8 +178,6 @@ public:
     VL_UNMOVABLE(LogicMTask);
 
     // METHODS
-    // Add 'mVtxp' to this MTask, used while building the graph
-    void addVertex(OrderMoveVertex* mVtxp) VL_MT_DISABLED;
     OrderMoveVertex::List& vertexList() { return m_mVertices; }
     uint32_t id() const { return m_id; }
     bool operator<(const LogicMTask& rhs) const { return id() < rhs.id(); }
@@ -367,11 +369,8 @@ public:
     void validate() const;
 
     // STATIC METHODS
-    // Build an MTask graph from 'moveGraph'. The OrderMoveVertex's that 'groupOf' maps to the same
-    // number start in the same MTask.
-    static std::unique_ptr<OrderMTaskGraph>
-    build(OrderMoveGraph& moveGraph,
-          const std::unordered_map<const OrderMoveVertex*, uint32_t>& groupOf) VL_MT_DISABLED;
+    // Build an MTask graph from 'moveGraph'
+    static std::unique_ptr<OrderMTaskGraph> build(OrderMoveGraph& moveGraph) VL_MT_DISABLED;
     // Fix data hazards in the MTask graph
     static void fixDataHazards(OrderMTaskGraph& mtaskGraph) VL_MT_DISABLED;
     // Coarsen the MTask graph by merging MTasks until the given critical-path limit is reached

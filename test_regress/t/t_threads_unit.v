@@ -16,7 +16,6 @@
 `define THREADS_UNIT /*verilator threads_unit*/
 `endif
 
-`ifdef TEST_HAZARD
 // Both accesses must be combined before deciding whether a unit writes hazard_q.
 module hazard_unit #(parameter int ID = 0);
   `THREADS_UNIT
@@ -24,7 +23,6 @@ module hazard_unit #(parameter int ID = 0);
   always_comb x = t.hazard_q[1-ID] ^ t.cyc[ID];
   always_comb t.hazard_q[ID] = x | t.cyc[ID];
 endmodule
-`endif
 
 // A unit inside a unit; its logic belongs to its own instance, not the tile's
 module acc (
@@ -78,14 +76,12 @@ module t (
   // Ignored, as the top module is the whole model
   `THREADS_UNIT
   integer cyc = 0;
-`ifdef TEST_HAZARD
   // The feedback reads become hybrid sensitivities, so dependency edges omit them.
   // verilator lint_off UNOPTFLAT
   logic [1:0] hazard_q = 0;
   // verilator lint_on UNOPTFLAT
   hazard_unit #(0) h0();
   hazard_unit #(1) h1();
-`endif
   wire [7:0] out[4];
   wire [7:0] st[4];
   for (genvar i = 0; i < 4; ++i) begin : g
@@ -107,9 +103,7 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 20) begin
-`ifdef TEST_HAZARD
       `checkh(hazard_q, 2'b11)
-`endif
       `checkd(st[0], 37)
       `checkd(st[1], 249)
       `checkd(st[2], 1)
@@ -125,6 +119,7 @@ endmodule
 `verilator_config
 threads_unit -module "acc"
 threads_unit -module "chk"
+threads_unit -module "hazard_unit"
 threads_unit -module "tile"
 // Ignored, as the top module is the whole model
 threads_unit -module "t"
