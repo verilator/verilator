@@ -178,6 +178,10 @@ private:
                     nodep, "Width != WidthMin");
     }
 
+    static bool isFourstateish(const AstNodeDType* const dtypep) {
+        return dtypep->isFourstate() || dtypep->mimicsFourstate();
+    }
+
     void processEnter(AstNode* nodep) {
         nodep->brokenState(m_brokenCntCurrentUnder);
         const char* const whyp = nodep->brokenGen();
@@ -197,6 +201,22 @@ private:
                                 nodep,
                                 "After resolving four-state values in V3Tristate and V3Unknown no "
                                 "four-state dtype should be present");
+                    if (const AstEnumDType* const edtypep = VN_CAST(ndtypep, EnumDType)) {
+                        UASSERT_OBJ(
+                            !edtypep->baseDTypep()
+                                || (isFourstateish(edtypep)
+                                    && !isFourstateish(edtypep->baseDTypep())),
+                            nodep,
+                            "Only two-state dtypes may have a derived four-state counterpart");
+                    } else if (const AstNodeUOrStructDType* const sdtypep
+                               = VN_CAST(ndtypep, NodeUOrStructDType)) {
+                        UASSERT_OBJ(
+                            !sdtypep->baseDTypep()
+                                || (isFourstateish(sdtypep)
+                                    && !isFourstateish(sdtypep->baseDTypep())),
+                            nodep,
+                            "Only two-state dtypes may have a derived four-state counterpart");
+                    }
                 } else {
                     UASSERT_OBJ(!dtypep->isFourstate(), nodep,
                                 "After resolving four-state values in V3Tristate and V3Unknown no "

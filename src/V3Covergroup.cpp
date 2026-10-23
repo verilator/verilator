@@ -938,7 +938,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
         if (const AstEnumDType* const enump
             = VN_CAST(exprp->dtypep()->skipRefToEnump(), EnumDType)) {
-            createEnumAutoBins(coverpointp, exprp, enump);
+            createEnumAutoBins(coverpointp, exprp,
+                               enump->baseDTypep() ? enump->baseDTypep() : enump);
             return;
         }
         const int width = exprp->width();

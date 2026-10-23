@@ -98,6 +98,7 @@ module t;
     automatic logic [127:0] logic128;
     automatic enum2_t e2a = E2_A;
     automatic enum2_t e2b = E2_B;
+    automatic enum2_t e2c = E2_B;
     automatic enum4_t e4a = E4_A;
     automatic enum4_t e4b = E4_B;
     automatic real r;
@@ -341,6 +342,13 @@ module t;
     // even though `time` is four-state, `$time` always returns a value from a two-state domain,
     // therefore it should be treated as a two-state value
     `checkopt($time, ==, 1, b);
+
+    e2c = l ? e2a : e2b;
+    `checkh(e2c, e2a);
+    e2c = l ? e2a : (b ? e2a : e2b);
+    `checkh(e2c, e2a);
+    e2c = l ? e2a : l ? (b ? e2a : e2b) : b ? (l ? e2a : e2b) : e2b;
+    `checkh(e2c, e2a);
 
     $write("*-* All Finished *-*\n");
     $finish;

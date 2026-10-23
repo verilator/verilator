@@ -410,6 +410,8 @@ class WidthVisitor final : public VNVisitor {
     ContainingClassFinder m_containingClassFinder;  // Finds the class containing a node
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
+    std::unordered_map<const AstNodeDType*, AstNodeDType*>
+        m_derivedDTypeps;  // Maps from a two-state dtype to a four-state counterpart
 
     static constexpr int ENUM_LOOKUP_BITS = 16;  // Maximum # bits to make enum lookup table
 
@@ -706,6 +708,36 @@ class WidthVisitor final : public VNVisitor {
         const AstCond* const condp = VN_CAST(nodep, Cond);
         return condp && isOverridePattern(condp->thenp()) && isOverridePattern(condp->elsep());
     }
+    AstNodeDType* getCounterpart(AstNodeDType* const dtypep) {
+        const auto it = m_derivedDTypeps.find(dtypep);
+        if (it != m_derivedDTypeps.end()) return it->second;
+        AstNodeDType* const skipToEnumDTypep = dtypep->skipRefToEnump();
+        AstNodeDType* resultp = nullptr;
+        if (AstEnumDType* const enumDTypep = VN_CAST(skipToEnumDTypep, EnumDType)) {
+            AstEnumItem* const itemsp = enumDTypep->itemsp()->unlinkFrBackWithNext();
+            AstEnumDType* const newp = enumDTypep->cloneTreePure(false);
+            enumDTypep->addItemsp(itemsp);
+            newp->refDTypep(newp->subDTypep()->findStatesCounterpart(true));
+            newp->dtypep(newp);
+            for (AstEnumItem* const itemp : newp->itemspList()) itemp->dtypep(newp);
+            newp->baseDTypep(enumDTypep);
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            resultp = newp;
+        } else if (AstNodeUOrStructDType* const uOrStructDTypep
+                   = VN_CAST(skipToEnumDTypep, NodeUOrStructDType)) {
+            AstNodeUOrStructDType* const newp = uOrStructDTypep->cloneTreePure(false);
+            newp->isFourstate(true);
+            newp->dtypep(newp);
+            newp->baseDTypep(uOrStructDTypep);
+            v3Global.rootp()->typeTablep()->addTypesp(newp);
+            resultp = newp;
+        } else {
+            dtypep->v3fatalSrc(
+                "getCounterpart can be called only on AstEnumDType and AstNodeUOrStructDType");
+        }
+        m_derivedDTypeps.insert({dtypep, resultp});
+        return resultp;
+    }
     void visit(AstCond* nodep) override {
         // op = cond ? expr1 : expr2
         // See IEEE-2012 11.4.11 and Table 11-21.
@@ -794,30 +826,39 @@ class WidthVisitor final : public VNVisitor {
                 nodep->dtypeSetDouble();
             } else if (thenDTypep->isString() || elseDTypep->isString()) {
                 // There is a specific case:
-                // strings and how they should be handled when condp() is 'x
+                // strings literals and how they should be handled when condp() is 'x
                 // ('x ? "Option1" : "Option2") === "Option0"
                 // ('x ? "Option1" : "Option2") ===
                 // 56'b010011110111000001110100011010010110111101101110001100xx
                 // Issue is that the type of this is still string but the value contains 'x - types
                 // and domains are not the same thing in SystemVerilog but in Verilator they are
+                //
+                // However in case of a string (not literals):
+                // string a = "Option1"
+                // string b = "Option2"
+                // ('x ? a : b) === ""
                 nodep->dtypeSetString();
             } else {
                 const bool isAnyResultFourstate
                     = thenDTypeSkippedp->isFourstate() || elseDTypeSkippedp->isFourstate();
-                bool handled = false;
                 const bool isCondpFourstate = nodep->condp()->isFourstateOrNoDtype();
                 AstNodeDType* const thenEnumDTypep = thenDTypep->skipRefToEnump();
                 if (VN_IS(thenDTypeSkippedp, NodeUOrStructDType)
-                    && thenDTypeSkippedp->sameTree(elseDTypeSkippedp)) {
-                    nodep->dtypep(thenDTypep);
-                    handled = true;
+                    && AstNode::computeCastable(thenDTypeSkippedp, elseDTypeSkippedp, nullptr)
+                           .isMatching()) {
+                    nodep->dtypep((isAnyResultFourstate || !isCondpFourstate)
+                                      ? thenDTypep
+                                      : getCounterpart(thenEnumDTypep));
                 } else if (VN_IS(thenEnumDTypep, EnumDType)
-                           && thenEnumDTypep->sameTree(elseDTypep->skipRefToEnump())) {
-                    // Preserve enum identity even when the condition can contain X or Z.
-                    nodep->dtypep(thenEnumDTypep);
-                    handled = true;
-                }
-                if (!handled) {
+                           && AstNode::computeCastable(thenEnumDTypep,
+                                                       elseDTypep->skipRefToEnump(), nullptr)
+                                  .isMatching()) {
+                    // if enum is two-state we have to check condp() - because if it is
+                    // four-state the result must be four-state as well
+                    nodep->dtypep((isAnyResultFourstate || !isCondpFourstate)
+                                      ? thenEnumDTypep
+                                      : getCounterpart(thenEnumDTypep));
+                } else {
                     const int width = std::max(thenDTypep->width(), elseDTypep->width());
                     const int widthMin = std::max(thenDTypep->widthMin(), elseDTypep->widthMin());
                     const VSigning numeric

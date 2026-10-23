@@ -1776,6 +1776,18 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     const VCastable castable = VCastable::UNSUPPORTED;
     toDtp = toDtp->skipRefToEnump();
     fromDtp = fromDtp->skipRefToEnump();
+    if (const AstEnumDType* const enumDTypep = VN_CAST(toDtp, EnumDType)) {
+        if (AstEnumDType* const basep = enumDTypep->baseDTypep()) toDtp = basep;
+    } else if (const AstNodeUOrStructDType* const uOrStructDTypep
+               = VN_CAST(toDtp, NodeUOrStructDType)) {
+        if (AstNodeUOrStructDType* const basep = uOrStructDTypep->baseDTypep()) toDtp = basep;
+    }
+    if (const AstEnumDType* const enumDTypep = VN_CAST(fromDtp, EnumDType)) {
+        if (AstEnumDType* const basep = enumDTypep->baseDTypep()) fromDtp = basep;
+    } else if (const AstNodeUOrStructDType* const uOrStructDTypep
+               = VN_CAST(fromDtp, NodeUOrStructDType)) {
+        if (AstNodeUOrStructDType* const basep = uOrStructDTypep->baseDTypep()) fromDtp = basep;
+    }
     if (toDtp->matchingDType(fromDtp)) return VCastable::MATCHING;
     if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
     // UNSUP unpacked struct/unions (treated like BasicDType)
