@@ -360,6 +360,15 @@ class LinkParseVisitor final : public VNVisitor {
             AstRefDType* const refp = VN_AS(nodep->childDTypep(), RefDType);
             refp->name(AstClass::embeddedCovergroupTypeName(refp->name()));
         }
+        if (nodep->valuep() && nodep->direction() == VDirection::OUTPUT
+            && nodep->varType().isNet()) {
+            nodep->valuep()->v3warn(NONSTD, "Initializer on output port "
+                                                << nodep->prettyNameQ()
+                                                << " that is a net (IEEE 1800-2023 23.2.2.2)\n"
+                                                << nodep->valuep()->warnMore()
+                                                << "... Suggest use a continuous assignment, or"
+                                                   " declare the port as a variable");
+        }
         if (nodep->valuep()) nodep->hasUserInit(true);
         if (m_ftaskp && m_ftaskp->dpiImport() && (nodep->isRef() || nodep->isConstRef())) {
             nodep->v3error("DPI import argument cannot be 'ref' (IEEE 1800-2023 35.5.4): "

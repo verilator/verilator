@@ -1,0 +1,19 @@
+%Warning-NONSTD: t/t_var_port_init_net_bad.v:8:21: Initializer on output port 'y' that is a net (IEEE 1800-2023 23.2.2.2)
+                                                 : ... Suggest use a continuous assignment, or declare the port as a variable
+    8 |     output wire y = 1'b1,   
+      |                     ^~~~
+                 ... For warning description see https://verilator.org/warn/NONSTD?v=latest
+                 ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
+%Warning-NONSTD: t/t_var_port_init_net_bad.v:9:26: Initializer on output port 't' that is a net (IEEE 1800-2023 23.2.2.2)
+                                                 : ... Suggest use a continuous assignment, or declare the port as a variable
+    9 |     output tri [1:0] t = 2'b10,   
+      |                          ^~~~~
+%Warning-NONSTD: t/t_var_port_init_net_bad.v:10:28: Initializer on output port 'wl' that is a net (IEEE 1800-2023 23.2.2.2)
+                                                  : ... Suggest use a continuous assignment, or declare the port as a variable
+   10 |     output wire logic wl = 1'b1,   
+      |                            ^~~~
+%Warning-NONSTD: t/t_var_port_init_net_bad.v:20:19: Initializer on output port 'y' that is a net (IEEE 1800-2023 23.2.2.2)
+                                                  : ... Suggest use a continuous assignment, or declare the port as a variable
+   20 |   output wire y = 1'b1;   
+      |                   ^~~~
+%Error: Exiting due to

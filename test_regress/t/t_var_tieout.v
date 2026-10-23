@@ -37,7 +37,9 @@ module t (
 endmodule
 
 module Test (
+    // verilator lint_off NONSTD
     output wire out1 = 1'b1,
+    // verilator lint_on NONSTD
     output integer out18 = 32'h18,
     output var out1b = 1'b1,
     output var logic out19 = 1'b1
