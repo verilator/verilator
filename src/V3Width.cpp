@@ -702,35 +702,18 @@ class WidthVisitor final : public VNVisitor {
             } else {
                 const bool isAnyResultFourstate
                     = thenDTypeSkippedp->isFourstate() || elseDTypeSkippedp->isFourstate();
-                bool handled = false;
                 const bool isCondpFourstate = nodep->condp()->isFourstateOrNoDtype();
                 AstNodeDType* const thenEnumDTypep = thenDTypep->skipRefToEnump();
                 if (VN_IS(thenDTypeSkippedp, NodeUOrStructDType)
                     && thenDTypeSkippedp->sameTree(elseDTypeSkippedp)) {
                     nodep->dtypep(thenDTypep);
-                    handled = true;
                 } else if (VN_IS(thenEnumDTypep, EnumDType)
-                           && thenEnumDTypep->sameTree(elseDTypep->skipRefToEnump())) {
+                           && thenEnumDTypep->sameTree(elseDTypep->skipRefToEnump())
+                           && (isAnyResultFourstate || !isCondpFourstate)) {
                     // if enum is two-state we have to check condp() - because if it is
                     // four-state the result must be four-state as well
-                    if (isAnyResultFourstate || !isCondpFourstate) {
-                        nodep->dtypep(thenEnumDTypep);
-                        handled = true;
-                    } else {
-                        // This is similar case to what happens with strings
-                        // So, to avoid cases where:
-                        // enum int {A, B} type_t;
-                        // logic'(foo) ? A : B
-                        // throws an ENUMVALUE error for this error is disabled for this expression
-                        // This is a result of how Verilator's type system works - to avoid such
-                        // situations Verilator would need to either treat everything as four-state
-                        // or separate idea of type and values domain - since four-state values are
-                        // casted to two-state only with explicit casts or with assignments
-                        nodep->fileline(new FileLine{nodep->fileline()});
-                        nodep->fileline()->warnOff(V3ErrorCode::ENUMVALUE, true);
-                    }
-                }
-                if (!handled) {
+                    nodep->dtypep(thenEnumDTypep);
+                } else {
                     const int width = std::max(thenDTypep->width(), elseDTypep->width());
                     const int widthMin = std::max(thenDTypep->widthMin(), elseDTypep->widthMin());
                     const VSigning numeric
@@ -10092,20 +10075,55 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    // Returns enum DType of a Cond - useful when there is such cond: (logic ? two_state_enum :
+    // two_state_enum) - in this case returned DType is the enum but with the four-state domain so,
+    // the DType of the cond is logic and in order to get the EnumDType use this function.
+    //
+    // Issue is that the type of a cond may be an enum (with two-state domain) but the
+    // value may contain an 'x (needs four-state domain) - types and domains are not the same thing
+    // in SystemVerilog but in Verilator they are. So, in order to have proper value domains
+    // logics are used as dtypes with proper widths and to avoid cases where:
+    // enum int {A, B} type_t;
+    // type_t x = logic'(foo) ? A : B  // throws an ENUMVALUE error (false positive)
+    // this error in such cases must be explicitly omitted and this function helps with that
+    static AstEnumDType* enumishCondDTypep(const AstNodeExpr* const exprp) {
+        if (exprp && exprp->dtypep()) {
+            if (AstEnumDType* const resultp
+                = VN_CAST(exprp->dtypep()->skipRefToEnump(), EnumDType)) {
+                return resultp;
+            }
+        }
+        if (const AstCond* const condp = VN_CAST(exprp, Cond)) {
+            AstEnumDType* const thenDTypep = enumishCondDTypep(condp->thenp());
+            AstEnumDType* const elseDTypep = enumishCondDTypep(condp->elsep());
+            if (thenDTypep && elseDTypep) {
+                const VCastable castable
+                    = AstNode::computeCastable(thenDTypep, elseDTypep, nullptr);
+                if (castable.isSameish() || castable.isCompatible()
+                    || castable == VCastable::ENUM_IMPLICIT) {
+                    return thenDTypep;
+                }
+            }
+        }
+        return nullptr;
+    }
     static void checkEnum(AstNode* nodep, AstNode* parentp, const AstNodeDType* targetDTypep,
                           const AstNodeDType* sourceDTypep, const AstNodeExpr* sourceExprp) {
         if (const AstEnumDType* const targetEnump
             = VN_CAST(targetDTypep->skipRefToEnump(), EnumDType)) {
-            const VCastable castable
-                = AstNode::computeCastable(targetEnump, sourceDTypep, sourceExprp);
+            const AstNodeDType* enumishDType = enumishCondDTypep(sourceExprp);
+            const VCastable castable = AstNode::computeCastable(
+                targetEnump, enumishDType ? enumishDType : sourceDTypep, sourceExprp);
             if (!castable.isSameish() && !castable.isCompatible()
                 && castable != VCastable::ENUM_IMPLICIT) {
-                nodep->v3warn(ENUMVALUE, "Implicit conversion to enum "
-                                             << targetDTypep->prettyDTypeNameQ() << " from "
-                                             << sourceDTypep->prettyDTypeNameQ()
-                                             << " (IEEE 1800-2023 6.19.3)\n"
-                                             << parentp->warnMore()
-                                             << "... Suggest use enum's mnemonic, or static cast");
+                nodep->v3warn(
+                    ENUMVALUE,
+                    "Implicit conversion to enum "
+                        << targetDTypep->prettyDTypeNameQ() << " from "
+                        << (enumishDType ? enumishDType : sourceDTypep)->prettyDTypeNameQ()
+                        << " (IEEE 1800-2023 6.19.3)\n"
+                        << parentp->warnMore()
+                        << "... Suggest use enum's mnemonic, or static cast");
             }
         }
     }
