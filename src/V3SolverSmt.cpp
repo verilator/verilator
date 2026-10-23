@@ -1181,7 +1181,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Recorded so the runtime can tell constraints naming only randc variables apart
         // (#8058). A name matching no registered variable, as a nested access path formatted
         // at runtime does, must be taken as a non-randc variable, so its constraint is never
-        // randc-only.
+        // randc-only. That keeps the constraint out of the randc draw.
         UASSERT_OBJ(m_constraintVarsp, nodep,
                     "Variable reference outside a constraint expression");
         if (nodep->user1()) m_constraintVarsp->insert(smtName);

@@ -299,8 +299,26 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<int> readUnsatAssumptions(VlSolverSession& sess);
     void reportUnsatSetup(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
     void reportUnsatCore(VlSolverSession& sess);
-    void emitRandcExclusions(std::ostream& os) const;  // Emit randc exclusion constraints
-    void recordRandcValues();  // Record solved randc values for future exclusion
+    // Used-value exclusions for the randc variables this call may write,
+    // skipping any whose value is already drawn and pinned
+    void emitRandcExclusions(std::ostream& os,
+                             const std::map<std::string, std::string>& drawn = {}) const;
+    // Record the solved value of every randc variable that was not drawn
+    void recordUndrawnValues(const std::map<std::string, std::string>& drawn);
+    // Registered randc variables this randomize() may write
+    void activeRandcVars(std::vector<std::string>& namesr) const;
+    // True if every solver variable the n'th hard constraint names is randc or frozen
+    bool constraintIsRandcOnly(size_t n) const;
+    // Draw the next cyclic value per randc variable, blind to rand feasibility
+    // (IEEE 1800-2023 18.4.2: randc variables are solved before rand ones)
+    bool drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
+                         const std::vector<std::string>& uniqueExprs,
+                         std::map<std::string, std::string>& drawnr);
+    // True if a randc value left in the cycle still admits a solution;
+    // unsatr distinguishes a proven-empty tail from a solver that gave up
+    bool tailFeasible(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs,
+                      const std::map<std::string, std::string>& drawn, bool& unsatr);
+    void recordDrawnValues(const std::map<std::string, std::string>& drawn);
     size_t hashConstraints(const std::vector<std::string>& extras) const;
     bool nextRandomize(VlRNGReseeds& rngr, bool checkOnly);
     // "(distinct ...)" expression per unique-constrained array
@@ -350,9 +368,16 @@ class VlRandomizer VL_NOT_FINAL {
     };
     Unigen2State m_ug2;
 
-    void solveDiversity(VlRNG& rngr, VlSolverSession& sess);
-    void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess);
+    void solveDiversity(VlRNG& rngr, VlSolverSession& sess,
+                        const std::map<std::string, std::string>& pinned);
+    void solveDiversityPins(VlRNG& rngr, VlSolverSession& sess,
+                            const std::map<std::string, std::string>& pinned);
     void solveDiversityXor(VlRNG& rngr, VlSolverSession& sess);
+    // One random per-bit assumption literal per bit of the variable, numbered from npinsr
+    void emitDiversityPins(std::ostream& os, VlRNG& rngr, const VlRandomVar& var,
+                           int& npinsr) const;
+    // Drop one conflicting assumption per round until compatible
+    void solveAssumingPins(VlSolverSession& sess, int npins, bool applyToVars);
     // Layers of solve...before variables in dependency order
     bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
     const char* phasedLogic() const;
@@ -360,7 +385,8 @@ class VlRandomizer VL_NOT_FINAL {
                     const std::vector<std::string>& uniqueExprs);
     bool solvePhases(VlRNG& rngr, VlSolverSession& sess,
                      const std::vector<std::vector<std::string>>& layers,
-                     const std::vector<std::string>& uniqueExprs, bool& exhaustedr);
+                     const std::vector<std::string>& uniqueExprs,
+                     const std::map<std::string, std::string>& drawn, bool& unsatr);
     bool solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
                           const std::vector<std::string>& layerVars,
                           std::map<std::string, std::string>& solvedValuesr);
