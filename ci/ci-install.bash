@@ -118,6 +118,7 @@ if [ "$STAGE" = "build" ]; then
   else
     fatal "Unknown HOST_OS: '$HOST_OS'"
   fi
+  install-wavetools
 elif [ "$STAGE" = "test" ]; then
   ##############################################################################
   # Dependencies of jobs in the 'test' stage, i.e.: packages required to
