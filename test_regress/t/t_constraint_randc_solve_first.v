@@ -153,6 +153,11 @@ class ArrayRel;
   endfunction
 endclass
 
+// An inline with clause is the only constraint on the randc variable
+class InlineOnly;
+  randc bit [1:0] c;
+endclass
+
 module t;
   Flat f;
   OneBit ob;
@@ -170,6 +175,7 @@ module t;
   ModeOffRand mr;
   StateBound sb;
   ArrayRel ar;
+  InlineOnly io;
   int ok;
   int good;
   int fails;
@@ -446,6 +452,15 @@ module t;
     `checkd(good, 9);
     for (int v = 0; v < 3; ++v) `checkd(acount[v], 3);
     `checkd(acount[3], 0);  // zero-ok: c == 3 satisfies no element value
+
+    // InlineOnly: the with clause reaches the randc draw, so every call succeeds
+    io = new;
+    io.srandom(188);
+    for (int i = 0; i < 4; ++i) begin
+      ok = io.randomize() with {c == 0;};
+      `checkd(ok, 1);
+      `checkd(io.c, 0);  // zero-ok: sole value the with clause admits
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;
