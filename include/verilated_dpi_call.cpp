@@ -186,4 +186,10 @@ void VlDpiCall::markAborted() {
     threadPool().addAborted(this);
 }
 
-void VlDpiCall::stopWorker() { t_currentp->m_threadp->handoff(false); }
+void VlDpiCall::stopWorker() {
+    const VerilatedScope* const scopep = Verilated::dpiScope();
+    const char* const filenamep = Verilated::dpiFilenamep();
+    const int lineno = Verilated::dpiLineno();
+    t_currentp->m_threadp->handoff(false);
+    Verilated::dpiContext(scopep, filenamep, lineno);
+}
