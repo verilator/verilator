@@ -1995,7 +1995,7 @@ port_declaration<nodep>:        // ==IEEE: port_declaration
                           AstIfaceRefDType* const dtp = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3};
                           VARDTYPE(dtp); }
         /*cont*/    mpInstnameList
-                        { $$ = VARDONEP($5, nullptr, nullptr); DEL($5); }
+                        { $$ = $5; }
         //UNSUP: strengthSpecE for udp_instantiations
         ;
 

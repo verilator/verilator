@@ -2644,8 +2644,6 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "double";
         } else if (bdtypep->keyword().isString()) {
             info.m_type = "::std::string";
-        } else if (bdtypep->keyword().isMTaskState()) {
-            info.m_type = "::VlMTaskVertex";
         } else if (bdtypep->isDelayScheduler()) {
             info.m_type = "::VlDelayScheduler";
         } else if (bdtypep->isTriggerScheduler()) {

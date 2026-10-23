@@ -6,16 +6,12 @@
 
 // verilog_format: off
 `define stop $stop
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
 // verilog_format: on
 
 module t;
 
-`ifdef VERILATOR
-`systemc_header
-  extern "C" int mon_check();
-  extern "C" int mon_check_cbs();
-`verilog
-`endif
 
   typedef enum logic [1:0] {
     E_A,
@@ -119,7 +115,7 @@ module t;
     cyc = 0;
     // Static checks, then register the value change callbacks
 `ifdef VERILATOR
-    status = $c32("mon_check()");
+    status = `CPP_CALL(mon_check);
 `else
     status = $mon_check;
 `endif
@@ -146,7 +142,7 @@ module t;
       12: pvec[3] <= 2'd2;
       13: begin
 `ifdef VERILATOR
-        status = $c32("mon_check_cbs()");
+        status = `CPP_CALL(mon_check_cbs);
 `else
         status = $mon_check_cbs;
 `endif

@@ -591,6 +591,10 @@ extern "C" int mon_check_cbs() {
     return errors;
 }
 
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
+int mon_check_cbs_cpp() { return mon_check_cbs(); }
+
 #ifdef IS_VPI
 static int mon_check_vpi(PLI_BYTE8*) {
     TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);

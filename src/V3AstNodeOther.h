@@ -2298,8 +2298,7 @@ class AstVar final : public AstNode {
     //
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := delayp : Optional[AstDelay] // Net delay
-    // Initial value that never changes (static const), or constructor argument for
-    // MTASKSTATE variables
+    // Initial value that never changes (static const)
     // @astgen op3 := valuep : Optional[AstNode<AstNodeExpr|AstNodeDType>]
     //     Value is a DType for type parameter defaults
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse

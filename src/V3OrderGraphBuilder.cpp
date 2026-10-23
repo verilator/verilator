@@ -241,7 +241,7 @@ class OrderGraphBuilder final : public VNVisitor {
         bool con = false;
         if (!prevCon && access.isReadOrRW()) {
             con = true;
-            if (prevGen && !m_inClocked) {
+            if ((prevGen || gen) && !m_inClocked) {
                 // Dangerous assumption:
                 // If a variable is consumed in the same combinational process that produced it
                 // earlier, consider it something like:
