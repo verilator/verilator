@@ -79,6 +79,7 @@ public:
     // Required condition of an unbounded repetition whose endpoint is
     // continued by a following boolean expression.
     AstNodeExpr* m_liveRepCondp = nullptr;
+    // Vertex used to check whether the live repetition can continue.
     SvaStateVertex* m_liveRepCheckVtxp = nullptr;
     // A valid endpoint match clears the live repetition state.
     AstNodeExpr* m_liveRepClearCondp = nullptr;
