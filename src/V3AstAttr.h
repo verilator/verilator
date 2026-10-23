@@ -515,7 +515,6 @@ public:
         // Internal types for mid-steps
         SCOPEPTR,
         CHARPTR,
-        MTASKSTATE,
         DELAY_SCHEDULER,
         TRIGGER_SCHEDULER,
         DYNAMIC_TRIGGER_SCHEDULER,
@@ -555,7 +554,6 @@ public:
                                                       "untyped",
                                                       "VerilatedScope*",
                                                       "char*",
-                                                      "VlMTaskState",
                                                       "VlDelayScheduler",
                                                       "VlTriggerScheduler",
                                                       "VlDynamicTriggerScheduler",
@@ -600,7 +598,6 @@ public:
                                                       "%E-untyped",
                                                       "dpiScope",
                                                       "const char*",
-                                                      "%E-mtaskstate",
                                                       "%E-dly-sched",
                                                       "%E-trig-sched",
                                                       "%E-dyn-sched",
@@ -647,7 +644,6 @@ public:
         case STRING: return 64;  // opaque  // Just the pointer, for today
         case SCOPEPTR: return 0;  // opaque
         case CHARPTR: return 0;  // opaque
-        case MTASKSTATE: return 0;  // opaque
         case DELAY_SCHEDULER: return 0;  // opaque
         case TRIGGER_SCHEDULER: return 0;  // opaque
         case DYNAMIC_TRIGGER_SCHEDULER: return 0;  // opaque
@@ -697,7 +693,7 @@ public:
     }
     bool isOpaque() const VL_MT_SAFE {  // IE not a simple number we can bit optimize
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
-                || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
+                || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
                 || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
                 || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR
                 || m_e == COVERGROUP_INSTHANDLE || m_e == DOUBLE || m_e == UNTYPED);
@@ -706,7 +702,6 @@ public:
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
     bool isString() const VL_MT_SAFE { return m_e == STRING; }
-    bool isMTaskState() const VL_MT_SAFE { return m_e == MTASKSTATE; }
     bool isSameish(const VBasicDTypeKwd& other) const VL_MT_SAFE {
         switch (other.m_e) {
         case LOGIC:
@@ -765,7 +760,6 @@ public:
             /* UNTYPED:                   */ "",  // Should not be traced
             /* SCOPEPTR:                  */ "",  // Should not be traced
             /* CHARPTR:                   */ "",  // Should not be traced
-            /* MTASKSTATE:                */ "",  // Should not be traced
             /* DELAY_SCHEDULER:           */ "",  // Should not be traced
             /* TRIGGER_SCHEDULER:         */ "",  // Should not be traced
             /* DYNAMIC_TRIGGER_SCHEDULER: */ "",  // Should not be traced

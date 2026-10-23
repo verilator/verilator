@@ -114,9 +114,6 @@ class EmitCImp final : public EmitCFunc {
         if (varp->isSc()) {
             // SystemC ports need their name
             args = ", \"" + V3OutFormatter::quoteNameControls(varp->nameProtect()) + "\"";
-        } else if (basicp && basicp->keyword().isMTaskState()) {
-            // MTask state needs the number of upstream dependencies to wait for
-            args = ", " + VN_AS(varp->valuep(), Const)->num().emitC();
         } else if (basicp && basicp->isDelayScheduler()) {
             // Delay scheduler needs the context pointer
             args = ", *vlSelf->vlSymsp->_vm_contextp__";
@@ -364,8 +361,6 @@ class EmitCImp final : public EmitCFunc {
                                 elementp = arrayp->subDTypep()->skipRefp();
                             }
                             const AstBasicDType* const basicp = elementp->basicp();
-                            // Do not save MTask state, only matters within an evaluation
-                            if (basicp && basicp->keyword().isMTaskState()) continue;
                             // Want to detect types that are represented as arrays
                             // (i.e. packed types of more than 64 bits).
                             if (elementp->isWide()

@@ -1157,9 +1157,8 @@ void EmitCSyms::emitSymHdr() {
     if (v3Global.opt.mtasks()) {
         puts("\n// MULTI-THREADING\n");
         puts("VlThreadPool* __Vm_threadPoolp;\n");
-        puts("bool __Vm_even_cycle__ico = false;\n");
-        puts("bool __Vm_even_cycle__act = false;\n");
-        puts("bool __Vm_even_cycle__nba = false;\n");
+        puts("VlScheduleProgress<" + std::to_string(v3Global.opt.threads())
+             + "> __Vm_schedule_progress_nba;\n");
     }
 
     if (v3Global.opt.profExec()) {
