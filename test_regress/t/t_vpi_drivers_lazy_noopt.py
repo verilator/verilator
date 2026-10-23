@@ -16,11 +16,12 @@ test.pli_filename = "t/t_vpi_drivers.cpp"
 test.golden_filename = "t/t_vpi_drivers_lazy.out"
 
 # What is readable and writable must not depend on optimization. Toggle coverage adds
-# non-always statements to scopes; --dump-tree covers the --vpi-lazy node annotations.
+# non-always statements to scopes; --dump-tree covers the --vpi-lazy node annotations;
+# --output-split-cfuncs 0 leaves every rebuild body unsplit.
 test.compile(make_top_shell=False,
              verilator_flags2=[
                  "--binary --vpi-lazy --no-l2name -O0 -fno-const-before-dfg --coverage-toggle"
-                 " --dump-tree",
+                 " --dump-tree --output-split-cfuncs 0",
                  "-CFLAGS -DT_VPI_DRIVERS_LAZY -CFLAGS -DVL_DEBUG=1", test.pli_filename
              ])
 

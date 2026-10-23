@@ -364,11 +364,13 @@ bool combElement(const AstVar* varp, const PartExtent& ext, int32_t& elemr) {
     int elemWidth = 0;
     if (!combMaskable(varp, dims, elemWidth)) return false;
     if (ext.m_idxs.size() != dims.size()) return false;
-    if (ext.m_lsb < 0 || ext.m_width <= 0 || ext.m_lsb + ext.m_width > elemWidth) return false;
+    if (ext.m_lsb + ext.m_width > elemWidth) return false;
+    // V3Width and V3Unknown leave no other out-of-range constant select
+    UASSERT_OBJ(ext.m_lsb >= 0, varp, "--vpi-lazy negative constant select");
     int64_t flat = 0;
     for (size_t k = 0; k < dims.size(); ++k) {
         const int32_t idx = ext.m_idxs[dims.size() - 1 - k];
-        if (idx < 0 || idx >= dims[k]) return false;
+        UASSERT_OBJ(idx >= 0 && idx < dims[k], varp, "--vpi-lazy constant index out of range");
         flat = flat * dims[k] + idx;
         if (flat > std::numeric_limits<int32_t>::max()) return false;
     }
@@ -1005,8 +1007,7 @@ private:
     }
 
     int instancesOf(const AstVar* varp) const {
-        const auto it = m_gather.m_vscpsOf.find(varp);
-        return it != m_gather.m_vscpsOf.end() ? static_cast<int>(it->second.size()) : 1;
+        return static_cast<int>(m_gather.m_vscpsOf.at(varp).size());
     }
 
     int keyInstances(const Group* g) const {
@@ -1082,7 +1083,7 @@ private:
         const auto git = m_groupsOfKey.find(keyp);
         UASSERT_OBJ(git != m_groupsOfKey.end(), keyp, "--vpi-lazy group key has no groups");
         for (Group* const g : git->second) {
-            if (!g->m_live) continue;
+            if (!g->m_live) continue;  // Merged into another by mergeCycle()
             g->m_live = false;
             for (AstVarScope* const t : g->m_targets) retainTarget(t, why);
         }

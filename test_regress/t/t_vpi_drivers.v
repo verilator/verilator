@@ -212,10 +212,14 @@ module t #(
 
   localparam bit ON = 1'b1;
   logic [7:0] pon_c;
-  logic [7:0] pand_c;
+  logic [7:0] pand_c, pnot_c, por0_c, pand0_c, pand1_c;
   /* verilator lint_off LATCH */
   always @* if (ON || en) pon_c = d;
   always @* if (!(!ON && en)) pand_c = d;
+  always @* if (!en) pnot_c = d;
+  always @* if (!ON || !ON) por0_c = ~d; else por0_c = d;
+  always @* if (en && !ON) pand0_c = ~d; else pand0_c = d;
+  always @* if (ON && ~(!ON)) pand1_c = d;
   /* verilator lint_on LATCH */
 
   // Compiler temporaries keep the storage a cone reads, but no VPI name

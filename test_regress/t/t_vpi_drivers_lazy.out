@@ -146,10 +146,14 @@ t.oor_r 15 r
 t.orphan 2a W
 t.orphan_c 25 r
 t.ovl_w 68 r
+t.pand0_c 3c r
+t.pand1_c 3c r
 t.pand_c 3c r
 t.plo_l 59 WWrrrrWW
 t.pmem 7d W
+t.pnot_c 3c W
 t.pon_c 3c r
+t.por0_c 3c r
 t.prb_c 2e r
 t.prb_s 12 W
 t.pull_b 00 W
