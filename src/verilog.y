@@ -5842,7 +5842,8 @@ gateUnsup<nodep>:
 
 gateFront<nodep>:
                 id/*gate*/ gateRangeE '('               { $$ = $2; $<fl>$ = $<fl>1; }
-        |       gateRangeE '('                          { $$ = $1; $<fl>$ = $<fl>2; }
+        //                      // IEEE: no name_of_instance, so no unpacked dimension
+        |       '('                                     { $$ = nullptr; $<fl>$ = $<fl>1; GATERANGE(nullptr); }
         ;
 
 gateAndPinList<nodeExprp>:

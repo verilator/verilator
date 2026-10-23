@@ -1,0 +1,5 @@
+%Error: t/t_gate_array_noname_bad.v:11:7: syntax error, unexpected '[', expecting IDENTIFIER or IDENTIFIER-for-pathpulse or '(' or randomize
+   11 |   and [3:0] (o, a, b);   
+      |       ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
