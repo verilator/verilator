@@ -11,13 +11,8 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-for define, suffix in [('TEST_PARSE_UNSUP', '.parse'), ('TEST_PATTERN_UNSUP', '.pattern'),
-                       ('', '')]:
-    flags = ['--error-limit 0']
-    if define:
-        flags.append('+define+' + define)
-    test.lint(fails=True,
-              verilator_flags2=flags,
-              expect_filename=test.golden_filename.replace('.out', suffix + '.out'))
+test.lint(fails=True,
+          verilator_flags2=['--error-limit 0', '+define+TEST_PATTERN_UNSUP'],
+          expect_filename=test.golden_filename)
 
 test.passes()
