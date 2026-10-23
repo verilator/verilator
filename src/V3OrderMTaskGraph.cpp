@@ -19,10 +19,14 @@
 #include "V3OrderMTaskGraph.h"
 
 #include "V3Global.h"
+#include "V3GraphStream.h"
 #include "V3InstrCount.h"
+#include "V3Stats.h"
 
 #include <algorithm>
+#include <map>
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -399,11 +403,69 @@ class OrderMTaskGraphBuilder final {
     // NODE STATE
     // Used by V3InstrCount::count within LogicMTask::addVertex only
     const VNUser1InUse m_user1InUse;
+    //  AstScope::user3p()  -> AstScope*: The unit the scope is in, if any
+    const VNUser3InUse m_user3InUse;
+
+    // TYPES
+    using Place = std::pair<const AstScope*, uint32_t>;  // The unit and level of a vertex
 
     // MEMBERS
     OrderMTaskGraph& m_mtaskGraph;  // Output OrderMTaskGraph
 
     // METHODS
+
+    // With threads_unit, a unit is an instance of a marked module. A logic vertex belongs to the
+    // nearest unit above it, and a variable vertex to the unit of its writers, if they all agree.
+    // An edge enters a unit when its head belongs to the unit and its tail doesn't. The level of a
+    // vertex is the largest number of unit entries on any dependency path to it. A group is the
+    // vertices of one unit at one level, and each group starts as one MTask, so the partitioner
+    // keeps the unit together instead of slicing it across MTasks. Groups can't form a cycle:
+    // along any path the level never decreases, and it increases each time the path enters a
+    // unit, so a path that leaves a group can only come back to its unit at a higher level, which
+    // is a different group. Returns the unit and level of each vertex, or nothing if no module is
+    // marked.
+    std::unordered_map<const V3GraphVertex*, Place> threadsUnitPlaces() {
+        std::unordered_map<const V3GraphVertex*, Place> placeOf;
+        // Nothing to do unless some module is marked
+        AstNodeModule* modp = v3Global.rootp()->modulesp();
+        while (modp && !modp->threadsUnit()) modp = VN_AS(modp->nextp(), NodeModule);
+        if (!modp) return placeOf;
+        // Set the unit of each scope. Scopes are statements of their modules.
+        for (modp = v3Global.rootp()->modulesp(); modp; modp = VN_AS(modp->nextp(), NodeModule)) {
+            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+                AstScope* const scopep = VN_CAST(nodep, Scope);
+                if (!scopep) continue;
+                for (AstScope* sp = scopep; sp; sp = sp->aboveScopep()) {
+                    if (sp->modp()->threadsUnit()) {
+                        scopep->user3p(sp);
+                        break;
+                    }
+                }
+            }
+        }
+        // Find the unit and level of each vertex, in dependency order
+        GraphStreamUnordered stream{&m_mtaskGraph.moveGraph()};
+        while (const V3GraphVertex* const vtxp = stream.nextp()) {
+            const OrderMoveVertex* const mVtxp = vtxp->as<OrderMoveVertex>();
+            const AstScope* unitp = nullptr;
+            if (mVtxp->logicp()) {
+                unitp = VN_AS(mVtxp->logicp()->scopep()->user3p(), Scope);
+            } else {
+                // OrderMoveGraph only creates a variable vertex for logic writing it
+                unitp = placeOf.at(vtxp->inEdges().frontp()->fromp()).first;
+                for (const V3GraphEdge& edge : vtxp->inEdges()) {
+                    if (placeOf.at(edge.fromp()).first != unitp) unitp = nullptr;
+                }
+            }
+            uint32_t level = 0;
+            for (const V3GraphEdge& edge : vtxp->inEdges()) {
+                const Place& from = placeOf.at(edge.fromp());
+                level = std::max(level, from.second + (unitp && from.first != unitp));
+            }
+            placeOf.emplace(vtxp, Place{unitp, level});
+        }
+        return placeOf;
+    }
 
     // Predicate function to determine what OrderMoveVertex to bypass when constructing the MTask
     // graph. The OrderMoveGraph is a bipartite graph of:
@@ -448,28 +510,30 @@ class OrderMTaskGraphBuilder final {
     }
 
     // CONSTRUCTORS
-    OrderMTaskGraphBuilder(OrderMTaskGraph& mtaskGraph,
-                           const std::unordered_map<const OrderMoveVertex*, uint32_t>& groupOf)
+    explicit OrderMTaskGraphBuilder(OrderMTaskGraph& mtaskGraph)
         : m_mtaskGraph{mtaskGraph} {
 
-        // Create the LogicMTasks for each OrderMoveVertex, or each group of them
-        std::unordered_map<uint32_t, LogicMTask*> groupMTasks;
+        // Create the LogicMTasks for each OrderMoveVertex, or each threads_unit group of them
+        const std::unordered_map<const V3GraphVertex*, Place> placeOf = threadsUnitPlaces();
+        std::map<Place, LogicMTask*> groupMTasks;
         for (V3GraphVertex& vtx : mtaskGraph.moveGraph().vertices()) {
             OrderMoveVertex& mVtx = static_cast<OrderMoveVertex&>(vtx);
-            const auto it = groupOf.find(&mVtx);
-            if (it != groupOf.end()) {
+            const auto it = placeOf.find(&mVtx);
+            if (it != placeOf.end() && it->second.first) {
+                // If the OrderMoveVertex is in a unit, add it to the single LogicMTask of its
+                // group
                 LogicMTask*& mtaskp = groupMTasks[it->second];
-                if (mtaskp) {
-                    mtaskp->addVertex(&mVtx);
-                } else {
-                    mtaskp = new LogicMTask{mtaskGraph, &mVtx};
-                }
+                if (!mtaskp) mtaskp = new LogicMTask{mtaskGraph, nullptr};
+                mtaskp->addVertex(&mVtx);
                 mVtx.userp(mtaskp);
             } else if (bypassOk(&mVtx)) {
                 mVtx.userp(nullptr);  // Set to nullptr to mark as bypassed
             } else {
                 mVtx.userp(new LogicMTask{mtaskGraph, &mVtx});  // Create vertex and set userp
             }
+        }
+        if (!placeOf.empty()) {
+            V3Stats::addStatSum("MTask graph, threads_unit groups", groupMTasks.size());
         }
 
         LogicMTask& entry = *mtaskGraph.entryp();
@@ -516,17 +580,12 @@ class OrderMTaskGraphBuilder final {
     VL_UNMOVABLE(OrderMTaskGraphBuilder);
 
 public:
-    static void apply(OrderMTaskGraph& mtaskGraph,
-                      const std::unordered_map<const OrderMoveVertex*, uint32_t>& groupOf) {
-        OrderMTaskGraphBuilder{mtaskGraph, groupOf};
-    }
+    static void apply(OrderMTaskGraph& mtaskGraph) { OrderMTaskGraphBuilder{mtaskGraph}; }
 };
 
-std::unique_ptr<OrderMTaskGraph>
-OrderMTaskGraph::build(OrderMoveGraph& moveGraph,
-                       const std::unordered_map<const OrderMoveVertex*, uint32_t>& groupOf) {
+std::unique_ptr<OrderMTaskGraph> OrderMTaskGraph::build(OrderMoveGraph& moveGraph) {
     std::unique_ptr<OrderMTaskGraph> resp{new OrderMTaskGraph{moveGraph}};
-    OrderMTaskGraphBuilder::apply(*resp, groupOf);
+    OrderMTaskGraphBuilder::apply(*resp);
     resp->validate();
     return resp;
 }

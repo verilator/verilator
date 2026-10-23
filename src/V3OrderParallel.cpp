@@ -30,7 +30,6 @@
 #include "V3OrderCFuncEmitter.h"
 #include "V3OrderInternal.h"
 #include "V3OrderMTaskGraph.h"
-#include "V3Stats.h"
 
 #include <map>
 #include <memory>
@@ -119,70 +118,11 @@ static void checkDataHazards(OrderMTaskGraph& mTaskGraph) {
 // it into a coarse-grained graph of LogicMTask's, each of which contains of set
 // of the logic nodes from the fine-grained graph.
 
-// With threads_unit, the logic of each instance of a marked module at each level starts in one
-// MTask, so the partitioner keeps the instance together instead of slicing it across MTasks. A
-// variable is in the instance all its writers are in, if any. The level of a vertex is the largest
-// number of entries into an instance on any dependency path to it, so a path leaving a group never
-// comes back to it, and the groups create no cycle.
-static std::unordered_map<const OrderMoveVertex*, uint32_t>
-threadsUnitGroups(OrderMoveGraph& moveGraph) {
-    std::unordered_map<const OrderMoveVertex*, uint32_t> groupOf;
-    // Nothing to do unless some module is marked
-    const AstNodeModule* modp = v3Global.rootp()->modulesp();
-    while (modp && !modp->threadsUnit()) modp = VN_AS(modp->nextp(), NodeModule);
-    if (!modp) return groupOf;
-    // The instance of a marked module each scope is in, if any
-    std::unordered_map<const AstScope*, const AstScope*> unitOfScope;
-    const auto unitOf = [&](const AstScope* scopep) {
-        const auto pair = unitOfScope.emplace(scopep, nullptr);
-        if (pair.second) {
-            for (const AstScope* sp = scopep; sp; sp = sp->aboveScopep()) {
-                if (sp->modp()->threadsUnit()) {
-                    pair.first->second = sp;
-                    break;
-                }
-            }
-        }
-        return pair.first->second;
-    };
-    // Find the instance and level of each vertex, in dependency order
-    std::unordered_map<const V3GraphVertex*, std::pair<const AstScope*, int>> placeOf;
-    std::map<std::pair<const AstScope*, int>, uint32_t> groupNumbers;
-    GraphStreamUnordered stream{&moveGraph};
-    while (const V3GraphVertex* const vtxp = stream.nextp()) {
-        const OrderMoveVertex* const mVtxp = vtxp->as<OrderMoveVertex>();
-        const AstScope* unitp = nullptr;
-        if (mVtxp->logicp()) {
-            unitp = unitOf(mVtxp->logicp()->scopep());
-        } else {
-            // OrderMoveGraph only creates a variable vertex for logic writing it
-            unitp = placeOf.at(vtxp->inEdges().frontp()->fromp()).first;
-            for (const V3GraphEdge& edge : vtxp->inEdges()) {
-                if (placeOf.at(edge.fromp()).first != unitp) unitp = nullptr;
-            }
-        }
-        int level = 0;
-        for (const V3GraphEdge& edge : vtxp->inEdges()) {
-            const std::pair<const AstScope*, int>& from = placeOf.at(edge.fromp());
-            level = std::max(level, from.second + (unitp && from.first != unitp));
-        }
-        placeOf.emplace(vtxp, std::make_pair(unitp, level));
-        if (unitp) {
-            const auto pair
-                = groupNumbers.emplace(std::make_pair(unitp, level), groupNumbers.size());
-            groupOf.emplace(mVtxp, pair.first->second);
-        }
-    }
-    V3Stats::addStatSum("MTask graph, threads_unit groups", groupNumbers.size());
-    return groupOf;
-}
-
 static std::unique_ptr<OrderMTaskGraph> partition(OrderMoveGraph& moveGraph) {
     // Build the initial MTask graph. Initially, each MTask just wraps one OrderMoveVertex, or a
     // threads_unit group of them. We will merge MTasks together and eventually each MTask will
     // wrap a large number of OrderMoveVertex (and the logic nodes therein).
-    std::unique_ptr<OrderMTaskGraph> mTaskGraphp
-        = OrderMTaskGraph::build(moveGraph, threadsUnitGroups(moveGraph));
+    std::unique_ptr<OrderMTaskGraph> mTaskGraphp = OrderMTaskGraph::build(moveGraph);
     mTaskGraphp->hashGraphDebug("initial MTask graph");
 
     // Add edges to eliminate data hazards
