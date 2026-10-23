@@ -277,12 +277,7 @@ public:
         return "... Suggested alternative: '"s + candidate.msg + "'";
     }
     static void selfTest();
-    std::vector<std::string> candidates() const {
-        std::vector<std::string> result;
-        result.reserve(m_candidates.size());
-        for (const auto& candidate : m_candidates) { result.push_back(candidate.msg); }
-        return result;
-    }
+    const std::vector<Candidate>& candidates() const { return m_candidates; }
 
 private:
     static EditDistance editDistance(const string& s, const string& t);

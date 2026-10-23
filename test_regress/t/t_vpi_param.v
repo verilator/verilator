@@ -32,6 +32,17 @@ extern "C" int mon_check();
   localparam longint PARAM_LONG /* verilator public_flat_rd */ = 64'hFEDCBA9876543210;
   localparam string PARAM_STR /* verilator public_flat_rd */ = "'some string value'";
 
+  typedef string str_arr_t[1:2];
+  typedef struct packed {
+    logic [2:0] a;
+    logic [3:0] b;
+  } pair_t;
+  localparam string PARAM_STR_ARR[1:2] /* verilator public_flat_rd */ = '{"c", "d"};
+  localparam str_arr_t PARAM_STR_ARR_TD /* verilator public_flat_rd */ = '{"e", "f"};
+  localparam pair_t PARAM_PAIR /* verilator public_flat_rd */ = '{a: 3'h1, b: 4'h2};
+  localparam pair_t PARAM_PAIR_ARR[2:1] /* verilator public_flat_rd */ = '{
+    '{a: 3'h3, b: 4'h4}, '{a: 3'h5, b: 4'h6}};
+
   reg [WIDTH-1:0] mem0 [DEPTH:1] /*verilator public_flat_rw @(posedge clk) */;
   integer    i, status;
 

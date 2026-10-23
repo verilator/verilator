@@ -349,7 +349,6 @@ class AstNodePreSel VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : Optional[AstNodeExpr]
-    // @astgen op4 := attrp : Optional[AstAttrOf]
     VIsCached m_purity;  // Pure state
 
 protected:

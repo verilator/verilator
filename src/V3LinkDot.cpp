@@ -203,6 +203,7 @@ private:
     VSymGraph m_syms;  // Symbol table by hierarchy
     VSymGraph m_mods;  // Symbol table of all module names
     VSymEnt* m_dunitEntp = nullptr;  // $unit entry
+    VSymEnt* m_packageEntp = nullptr;  // Root of global package names
     std::multimap<std::string, VSymEnt*>
         m_nameScopeSymMap;  // Map of scope referenced by non-pretty textual name
     std::set<std::pair<AstNodeModule*, std::string>>
@@ -324,12 +325,14 @@ public:
         // Look at all modules, and store pointers to all module names
         for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
             nextp = VN_AS(nodep->nextp(), NodeModule);
+            if (VN_IS(nodep, Package)) continue;
             m_mods.rootp()->insert(nodep->name(), new VSymEnt{&m_mods, nodep});
         }
     }
 
     VSymEnt* rootEntp() const { return m_syms.rootp(); }
     VSymEnt* dunitEntp() const { return m_dunitEntp; }
+    VSymEnt* packageEntp() const { return m_packageEntp; }
     void checkDuplicate(VSymEnt* lookupSymp, AstNode* nodep, const string& name) {
         // Lookup the given name under current symbol table
         // Insert if not found
@@ -397,6 +400,10 @@ public:
         //
         UASSERT_OBJ(!m_dunitEntp, nodep, "Call insertDUnit only once");
         m_dunitEntp = symp;
+        m_packageEntp = new VSymEnt{&m_syms, nodep};
+        m_packageEntp->parentp(rootEntp());
+        m_packageEntp->fallbackp(dunitEntp());
+        rootEntp()->insert("$packages ", m_packageEntp);
     }
     VSymEnt* insertTopCell(AstNodeModule* nodep, const string& scopename) {
         // Only called on the module at the very top of the hierarchy
@@ -1058,6 +1065,10 @@ public:
                 if (foundp && !checkIfClassOrPackage(foundp)) foundp = nullptr;
                 if (!foundp) currentLookSymp = currentLookSymp->fallbackp();
             } while (!foundp && currentLookSymp);
+
+            if (!foundp && !classOnly) {  // Look through package namespace
+                foundp = packageEntp()->findIdFlat(nodep->name());
+            }
         } else {
             foundp = searchSymp->findIdFlat(nodep->name());
             if (foundp && !checkIfClassOrPackage(foundp)) foundp = nullptr;
@@ -1070,8 +1081,16 @@ public:
             return foundp;
         }
         if (deferIfUnresolved) return nullptr;
-        const string suggest
+        string suggest
             = suggestSymFallback(lookSymp, nodep->name(), LinkNodeMatcherClassOrPackage{});
+        if (suggest.empty() && !classOnly) {
+            suggest = suggestSymFlat(packageEntp(), nodep->name(), LinkNodeMatcherClassOrPackage{},
+                                     true);
+        }
+        if (suggest.empty() && classOnly) {
+            // If nothing was found, maybe there is a package with the same name as the class
+            suggest = suggestPossiblyPackage(nodep->name());
+        }
         nodep->v3error((classOnly ? "Class" : "Package/class")
                        << " for '" << forWhat  // extends/implements
                        << "' not found: " << nodep->prettyNameQ() << '\n'
@@ -1079,7 +1098,7 @@ public:
         return nullptr;
     }
     string suggestSymFallback(VSymEnt* lookupSymp, const string& name,
-                              const VNodeMatcher& matcher) {
+                              const VNodeMatcher& matcher) const {
         // Suggest alternative symbol in given point in hierarchy
         // Does not support inline, as we find user-level errors before inlining
         // For simplicity lookupSymp may be passed nullptr result from findDotted
@@ -1089,11 +1108,20 @@ public:
         return speller.bestCandidateMsg(name);
     }
     string suggestSymFlat(VSymEnt* lookupSymp, const string& name, const VNodeMatcher& matcher,
-                          bool includeType) {
+                          bool includeType) const {
         if (!lookupSymp) return "";
         VSpellCheck speller;
         lookupSymp->candidateIdFlat(&speller, &matcher, includeType);
         return speller.bestCandidateMsg(name);
+    }
+    string suggestPossiblyPackage(const string& name) const {
+        VSpellCheck speller;
+        LinkNodeMatcherClassOrPackage matcher{};
+        packageEntp()->candidateIdFlat(&speller, &matcher, true);
+        for (const auto& candidate : speller.candidates()) {
+            if (candidate.str == name) return "... Suggested alternative: "s + candidate.msg;
+        }
+        return "";
     }
 };
 
@@ -1313,10 +1341,10 @@ class LinkDotFindVisitor final : public VNVisitor {
                     m_curSymp = m_modSymp = m_statep->dunitEntp();
                     nodep->user1p(m_curSymp);
                 } else {
-                    VSymEnt* const upperSymp = m_statep->dunitEntp();
+                    VSymEnt* const upperSymp = m_statep->packageEntp();
                     m_scope = nodep->name();
-                    m_curSymp = m_modSymp = m_statep->insertBlock(upperSymp, nodep->name(), nodep,
-                                                                  m_classOrPackagep);
+                    m_curSymp = m_modSymp = m_statep->insertBlock(upperSymp, nodep->origName(),
+                                                                  nodep, m_classOrPackagep);
                     UINFO(9, "New module scope " << m_curSymp);
                 }
             }
@@ -5555,7 +5583,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         } else if (m_ds.m_dotp && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)) {
-            // HERE function() . method_called_on_function_return_value()
+            // {scope}.HERE function() . method_called_on_function_return_value()
+            nodep->dotted(m_ds.m_dotText);  // Maybe ""
             m_ds.m_dotPos = DP_MEMBER;
             m_ds.m_dotText = "";
         } else if (!m_ds.m_disablep) {
@@ -5777,7 +5806,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         "Object of unresolved class on scope position in dotted reference");
             // The index does not depend on the class, and V3Param must see its class references
             symIterateNull(nodep->bitp(), m_curSymp);
-            symIterateNull(nodep->attrp(), m_curSymp);
             return;
         }
         if (m_ds.m_dotPos == DP_SCOPE
@@ -5791,7 +5819,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         // Pass dot state down to only fromp()
         iterateAndNextNull(nodep->fromp());
         symIterateNull(nodep->bitp(), m_curSymp);
-        symIterateNull(nodep->attrp(), m_curSymp);
         if (m_ds.m_unresolvedCell && (m_ds.m_dotPos == DP_SCOPE || m_ds.m_dotPos == DP_FIRST)) {
             AstNodeExpr* const exprp = nodep->bitp()->unlinkFrBack();
             if (AstCellArrayRef* const fromArrRefp = VN_CAST(nodep->fromp(), CellArrayRef)) {
@@ -5840,19 +5867,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 } else {
                     replaceWithCheckBreak(nodep, newArrayTypep);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                }
-            } else {
-                if (nodep->attrp()) {
-                    AstNode* const attrp = nodep->attrp()->unlinkFrBack();
-                    VL_DO_DANGLING(attrp->deleteTree(), attrp);
-                }
-                AstNode* const basefromp = nodep->baseFromp(false);
-                if (VN_IS(basefromp, Replicate)) {
-                    // From {...}[...] syntax in IEEE 2017
-                    if (basefromp) UINFO(9, indent() << " Related node: " << basefromp);
-                } else {
-                    nodep->attrp(new AstAttrOf{nodep->fileline(), VAttrType::VAR_BASE,
-                                               basefromp->cloneTree(false)});
                 }
             }
         }

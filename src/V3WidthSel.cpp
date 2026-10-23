@@ -71,13 +71,6 @@ class WidthSelVisitor final : public VNVisitor {
         // What is the data type and information for this SEL-ish's from()?
         UINFO(9, "  fromData start ddtypep = " << basefromp);
         VNumRange fromRange;  // constructs to isRanged(false)
-        while (basefromp) {
-            if (VN_IS(basefromp, AttrOf)) {
-                basefromp = VN_AS(basefromp, AttrOf)->fromp();
-                continue;
-            }
-            break;
-        }
         UASSERT_OBJ(basefromp && basefromp->dtypep(), nodep, "Select with no from dtype");
         AstNodeDType* const ddtypep = basefromp->dtypep()->skipRefp();
         AstNodeDType* const errp = ddtypep;

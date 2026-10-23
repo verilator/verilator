@@ -1227,13 +1227,6 @@ class ParamProcessor final {
         if (memberRefp == dotp->rhsp()) {
             dotp->replaceWith(valuep);
         } else {
-            AstNodePreSel* const selp = VN_AS(dotp->rhsp(), NodePreSel);
-            if (AstAttrOf* const attrp = selp->attrp()) {
-                if (AstNode* const oldFromp = attrp->fromp()) {
-                    oldFromp->replaceWith(valuep->cloneTree(false));
-                    VL_DO_DANGLING(oldFromp->deleteTree(), oldFromp);
-                }
-            }
             memberRefp->replaceWith(valuep);
             VL_DO_DANGLING(memberRefp->deleteTree(), memberRefp);
             dotp->replaceWith(dotp->rhsp()->unlinkFrBack());
