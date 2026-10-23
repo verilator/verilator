@@ -52,6 +52,13 @@ class LinkResolveVisitor final : public VNVisitor {
     std::deque<AstGenFor*> m_underGenFors;  // Stack of GenFor underneath
     bool m_underGenerate = false;  // Under GenFor/GenIf
 
+    // METHODS
+    void warnUnoptPublic(AstNode* nodep, const std::string& what, const std::string& instead) {
+        nodep->v3warn(UNOPTPUBLIC, what << " prevents optimization\n"
+                                        << nodep->warnMore() << "... Suggest use " << instead
+                                        << " instead");
+    }
+
     // VISITORS
     // TODO: Most of these visitors are here for historical reasons.
     // TODO: ExpectDescriptor can move to data type resolution, and the rest
@@ -93,6 +100,7 @@ class LinkResolveVisitor final : public VNVisitor {
         if (nodep->isSigModPublic()) {
             nodep->sigModPublic(false);  // We're done with this attribute
             m_modp->modPublic(true);  // Avoid flattening if signals are exposed
+            warnUnoptPublic(nodep, "Public signal " + nodep->prettyNameQ(), "'public_flat_rw'");
         }
     }
 
@@ -227,12 +235,16 @@ class LinkResolveVisitor final : public VNVisitor {
         } else if (nodep->pragType() == VPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);
+            warnUnoptPublic(nodep, "Public module " + m_modp->prettyNameQ(),
+                            "'public_flat_rw' on only the needed signals");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (nodep->pragType() == VPragmaType::PUBLIC_TASK) {
             UASSERT_OBJ(m_ftaskp, nodep, "PUBLIC_TASK not under a task");
             m_ftaskp->taskPublic(true);
             m_modp->modPublic(true);  // Need to get to the task...
+            warnUnoptPublic(nodep, "Public task/function " + m_ftaskp->prettyNameQ(),
+                            "DPI export");
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else {
