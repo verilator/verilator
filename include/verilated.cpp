@@ -4364,34 +4364,46 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
+void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap,
+                                      bool isParam) VL_MT_UNSAFE {
+    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
+    VerilatedVar var{e.namep, datap,   e.vltype,  vlflags,    e.udims,
+                     e.pdims, isParam, e.entSize, e.bitOffset};
+    for (int d = 0; d < e.udims; ++d) {
+        var.m_unpacked[d].m_left = e.dimsp[2 * d];
+        var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
+    }
+    for (int d = 0; d < e.pdims; ++d) {
+        var.m_packed[d].m_left = e.dimsp[2 * (e.udims + d)];
+        var.m_packed[d].m_right = e.dimsp[2 * (e.udims + d) + 1];
+    }
+    // Recompute the flattened DPI packed range now dims are known (see
+    // VerilatedVarProps::initPacked)
+    if (e.pdims == 1) {
+        var.m_packedDpi = var.m_packed.front();
+    } else if (e.pdims > 1) {
+        int packedSize = 1;
+        for (int d = 0; d < e.pdims; ++d) packedSize *= var.m_packed[d].elements();
+        var.m_packedDpi = VerilatedRange{packedSize - 1, 0};
+    }
+    m_varsp->emplace(e.namep, std::move(var));
+}
+
 void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
                                          void* basep) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
+    // A packed member row's basep is its parent's storage
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
+    for (size_t i = 0; i < n; ++i) varInsertFromRow(entp[i], base + entp[i].byteOffset, false);
+}
+
+void VerilatedScope::paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
+                                           const void* const* paramPtrsp) VL_MT_UNSAFE {
+    // VerilatedVar's data is non-const, but VPI refuses parameter writes
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     for (size_t i = 0; i < n; ++i) {
-        const VlVarTableEntry& e = entp[i];
-        void* const datap = base + e.byteOffset;
-        const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
-        VerilatedVar var{e.namep, datap, e.vltype, vlflags, e.udims, e.pdims, /*isParam=*/false};
-        for (int d = 0; d < e.udims; ++d) {
-            var.m_unpacked[d].m_left = e.dims[2 * d];
-            var.m_unpacked[d].m_right = e.dims[2 * d + 1];
-        }
-        for (int d = 0; d < e.pdims; ++d) {
-            var.m_packed[d].m_left = e.dims[2 * (e.udims + d)];
-            var.m_packed[d].m_right = e.dims[2 * (e.udims + d) + 1];
-        }
-        // Recompute the flattened DPI packed range now dims are known (see
-        // VerilatedVarProps::initPacked)
-        if (e.pdims == 1) {
-            var.m_packedDpi = var.m_packed.front();
-        } else if (e.pdims > 1) {
-            int packedSize = 1;
-            for (int d = 0; d < e.pdims; ++d) packedSize *= var.m_packed[d].elements();
-            var.m_packedDpi = VerilatedRange{packedSize - 1, 0};
-        }
-        m_varsp->emplace(e.namep, std::move(var));
+        varInsertFromRow(entp[i], const_cast<void*>(paramPtrsp[entp[i].byteOffset]), true);
     }
 }
 
@@ -4468,31 +4480,6 @@ VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, boo
         const int lsb = va_arg(ap, int);
         var.m_unpacked[i].m_left = msb;
         var.m_unpacked[i].m_right = lsb;
-    }
-    va_end(ap);
-
-    m_varsp->emplace(namep, std::move(var));
-    return &(m_varsp->find(namep)->second);
-}
-
-VerilatedVar* VerilatedScope::varInsertMember(const char* namep, void* datap, bool isParam,
-                                              VerilatedVarType vltype, int vlflags,
-                                              uint32_t bitOffset, uint32_t entSize, int pdims,
-                                              ...) VL_MT_UNSAFE {
-    // Member is a bit slice of the parent: datap/vltype/entSize are the parent's.
-    // The parent was inserted into this scope first, so m_varsp already exists.
-    // LCOV_EXCL_START - gcov attributes the never-run exception cleanup of 'var' here
-    VerilatedVar var(namep, datap, vltype,
-                     static_cast<VerilatedVarFlags>(vlflags | VLVF_PACKED_MEMBER), 0, pdims,
-                     isParam, entSize, bitOffset);
-    va_list ap;
-    // LCOV_EXCL_STOP
-    va_start(ap, pdims);
-    for (int i = 0; i < pdims; ++i) {
-        const int msb = va_arg(ap, int);
-        const int lsb = va_arg(ap, int);
-        var.m_packed[i].m_left = msb;
-        var.m_packed[i].m_right = lsb;
     }
     va_end(ap);
 
@@ -4630,12 +4617,26 @@ void VerilatedIfaceRef::ifaceRefDump() const VL_MT_SAFE_POSTINIT {
     VL_PRINTF_MT("\n");
 }
 
-void VerilatedHierarchy::add(const VerilatedScope* fromp, const VerilatedScope* top) {
-    VerilatedImp::hierarchyAdd(fromp, top);
+static const VerilatedScope* vl_hierScope(const VerilatedSyms* symsp, uint32_t offset) {
+    if (!offset) return nullptr;
+    return *reinterpret_cast<const VerilatedScope* const*>(reinterpret_cast<const uint8_t*>(symsp)
+                                                           + offset);
 }
 
-void VerilatedHierarchy::remove(const VerilatedScope* fromp, const VerilatedScope* top) {
-    VerilatedImp::hierarchyRemove(fromp, top);
+void VerilatedHierarchy::addFromTable(const VlHierTableEntry* entp, size_t n,
+                                      const VerilatedSyms* symsp) {
+    for (size_t i = 0; i < n; ++i) {
+        VerilatedImp::hierarchyAdd(vl_hierScope(symsp, entp[i].fromOffset),
+                                   vl_hierScope(symsp, entp[i].toOffset));
+    }
+}
+
+void VerilatedHierarchy::removeFromTable(const VlHierTableEntry* entp, size_t n,
+                                         const VerilatedSyms* symsp) {
+    for (size_t i = 0; i < n; ++i) {
+        VerilatedImp::hierarchyRemove(vl_hierScope(symsp, entp[i].fromOffset),
+                                      vl_hierScope(symsp, entp[i].toOffset));
+    }
 }
 
 void VerilatedHierarchy::clear() { VerilatedImp::hierarchyClear(); }
