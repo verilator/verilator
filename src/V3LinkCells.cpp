@@ -701,6 +701,10 @@ class LinkCellsVisitor final : public VNVisitor {
         assignParamNumbers(nodep->paramsp());
         if (nodep->modp()) {
             nodep->modName(nodep->modp()->name());
+            if (VN_IS(nodep->modp(), Primitive) && (pinStar || pinDotName)) {
+                nodep->v3error("UDP instance ports must be connected by position, not by name"
+                               " (IEEE 1800-2023 29.8)");
+            }
             // Note what pins exist
             std::unordered_set<string> ports;  // Symbol table of all connected port names
             for (AstPin* const pinp : nodep->pinspList()) {

@@ -1,0 +1,8 @@
+%Error: t/t_udp_named_bad.v:26:9: UDP instance ports must be connected by position, not by name (IEEE 1800-2023 29.8)
+   26 |   p_and u_name (.o(o_name), .a(a), .b(b));   
+      |         ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_udp_named_bad.v:27:9: UDP instance ports must be connected by position, not by name (IEEE 1800-2023 29.8)
+   27 |   p_and u_star (.*);   
+      |         ^~~~~~
+%Error: Exiting due to
