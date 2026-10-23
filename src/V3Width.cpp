@@ -8207,6 +8207,14 @@ class WidthVisitor final : public VNVisitor {
                 if (portp->isWritable()) {
                     V3LinkLValue::linkLValueSet(pinp, portp->direction().pinAccess());
                 }
+                // Before width, as calls may then become other expressions. Other non-variables
+                // are found in V3Task, after which calls are already lifted into temporaries.
+                if ((portp->isRef() || portp->isConstRef()) && VN_IS(pinp, NodeFTaskRef)) {
+                    pinp->v3error("Ref argument " << portp->prettyNameQ()
+                                                  << " requires a variable, but connection is a"
+                                                     " function call result (IEEE 1800-2023"
+                                                     " 13.5.2)");
+                }
                 // AstPattern requires assignments to pass datatype on PRELIM
                 VL_DO_DANGLING(userIterate(pinp, WidthVP{portp->dtypep(), PRELIM}.p()), pinp);
             }
