@@ -67,6 +67,11 @@ class UdpVisitor final : public VNVisitor {
         // Push the input and output vars for primitive.
         if (m_primp) {
             if (nodep->isIO()) {
+                const AstBasicDType* const basicp = VN_CAST(nodep->subDTypep(), BasicDType);
+                if (!basicp || basicp->isRanged() || basicp->keyword().width() > 1) {
+                    nodep->v3error("UDP port " << nodep->prettyNameQ()
+                                               << " must be scalar (IEEE 1800-2023 29.3.1)");
+                }
                 if (nodep->isInput()) {
                     m_inputVars.push_back(nodep);
                 } else {

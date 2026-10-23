@@ -1,0 +1,22 @@
+%Error: t/t_udp_vector_bad.v:11:15: UDP port 'a' must be scalar (IEEE 1800-2023 29.3.1)
+                                  : ... note: In instance 't'
+   11 |   input [0:0] a;   
+      |               ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_udp_vector_bad.v:12:17: UDP port 'b' must be scalar (IEEE 1800-2023 29.3.1)
+                                  : ... note: In instance 't'
+   12 |   input integer b;   
+      |                 ^
+%Error: t/t_udp_vector_bad.v:13:20: UDP port 'c' must be scalar (IEEE 1800-2023 29.3.1)
+                                  : ... note: In instance 't'
+   13 |   input [0:0][0:0] c;   
+      |                    ^
+%Error: t/t_udp_vector_bad.v:21:10: UDP port 'q' must be scalar (IEEE 1800-2023 29.3.1)
+                                  : ... note: In instance 't'
+   21 |   output q;
+      |          ^
+%Error: t/t_udp_vector_bad.v:29:36: UDP port 'q' must be scalar (IEEE 1800-2023 29.3.1)
+                                  : ... note: In instance 't'
+   29 | primitive p_ansi (output reg [0:0] q, input d);   
+      |                                    ^
+%Error: Exiting due to
