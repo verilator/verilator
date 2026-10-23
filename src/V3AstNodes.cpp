@@ -2401,7 +2401,10 @@ void AstNetlist::timeprecisionMerge(FileLine*, const VTimescale& value) {
         m_timeprecision = prec;
     }
 }
-AstNetlist::~AstNetlist() { V3VpiLazy::deleteContext(m_vpiLazyContextp); }
+AstNetlist::~AstNetlist() {
+    // Only VL_LEAK_CHECKS deletes the netlist without deleteContents()
+    V3VpiLazy::deleteContext(m_vpiLazyContextp);  // LCOV_EXCL_LINE
+}
 void AstNew::dump(std::ostream& str) const {
     Super::dump(str);
     if (isImplicit()) str << " [IMPLICIT]";

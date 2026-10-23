@@ -593,6 +593,9 @@ module t #(
   assign oor_r = oor_c ^ 8'h0f;
   /* verilator lint_on WIDTHTRUNC */
   /* verilator lint_on SELRANGE */
+  // Accepted, though IEEE 1800-2023 Table 10-1 allows only a constant select here
+  logic [3:0] ncs_c;
+  assign ncs_c[sel] = en;
 `endif
 
   // A memory assembled from its own elements, and its copy in the opposite range, which slices

@@ -129,6 +129,7 @@ t.n_ia 3c W
 t.n_if 3c W
 t.n_mc2 3c W
 t.n_mix 3c W
+t.ncs_c d r
 t.nest_c 00 r
 t.oh.addr fe0 WWrrWrWrrrrr
 t.oh.addr_o 3 r

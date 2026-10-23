@@ -920,7 +920,6 @@ class VpiLazyPreparer final {
         UNSUPPORTED_LVALUE,  // A continuous write whose shape a shadow cannot mirror
         COMB_CYCLE,  // Member of a group cycle that does not merge into one provable group
         COMPLETENESS_FLOOR,  // No classification path claimed it; retained so VPI still sees it
-        BOUNDARY_COMB_DTYPE,  // Comb boundary operand of a kind reconstruction cannot express
         _COUNT
     };
     // METHODS
@@ -941,8 +940,7 @@ class VpiLazyPreparer final {
                                             "unsupported statement",
                                             "unsupported lvalue",
                                             "comb cycle",
-                                            "completeness floor",
-                                            "boundary comb (dtype)"};
+                                            "completeness floor"};
         static_assert(sizeof(names) / sizeof(names[0]) == static_cast<size_t>(Bail::_COUNT),
                       "Bail name table out of sync with enum");
         return names[static_cast<size_t>(b)];
@@ -1265,16 +1263,9 @@ private:
                 formPartialGroup(basep, pit->second, b.m_scopep, notSole, gapRead);
                 continue;
             }
-            if (AstAssignW* const awp = b.m_assignwp) {
-                AstNodeExpr* const lhsp = awp->lhsp();
-                if (VN_IS(lhsp, VarRef)) {
-                    makeGroup(b.m_scopep, {&b}, b.m_targets, b.m_writeCount, notSole);
-                    continue;
-                }
+            if (b.m_assignwp && !VN_IS(b.m_assignwp->lhsp(), VarRef)) {
                 // A write shape the shadow cannot mirror: retain rather than let it be dropped.
-                bool partial = false;
-                if (const AstVarRef* const basep2 = lhsBaseRef(lhsp, partial))
-                    retainTarget(basep2->varScopep(), Bail::UNSUPPORTED_LVALUE);
+                for (AstVarScope* const t : b.m_targets) retainTarget(t, Bail::UNSUPPORTED_LVALUE);
                 continue;
             }
             makeGroup(b.m_scopep, {&b}, b.m_targets, b.m_writeCount, notSole);
@@ -2083,17 +2074,11 @@ private:
         for (AstVarScope* const vscp :
              shared ? m_gather.m_vscpsOf.at(uVarp) : std::vector<AstVarScope*>{u}) {
             if (!m_kept.insert(vscp).second) continue;
-            if (!cand) {  // No RTL name, so no row: --public-flat-rw would not have one either.
-                ++m_boundaryStorage;
-                continue;
-            }
-            // A bailed group's targets are retained and a converted one is substituted
-            UASSERT_OBJ(!reconstructableKind(uVarp), u,
-                        "--vpi-lazy comb boundary operand no skip path explains");
-            const Bail why = Bail::BOUNDARY_COMB_DTYPE;
-            UINFO(9, "vpi-lazy retained: " << bailName(why) << " " << vscp->name());
-            ++m_fallback;
-            ++m_bailCount[static_cast<size_t>(why)];
+            // formGroups() groups or retains every comb-written candidate, and a converted one
+            // is substituted
+            UASSERT_OBJ(!cand, u, "--vpi-lazy comb boundary operand no skip path explains");
+            // No RTL name, so no row: --public-flat-rw would not have one either.
+            ++m_boundaryStorage;
         }
     }
 

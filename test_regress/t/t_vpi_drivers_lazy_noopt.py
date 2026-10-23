@@ -15,13 +15,18 @@ test.top_filename = "t/t_vpi_drivers.v"
 test.pli_filename = "t/t_vpi_drivers.cpp"
 test.golden_filename = "t/t_vpi_drivers_lazy.out"
 
-# What is readable and writable must not depend on optimization
+# What is readable and writable must not depend on optimization. Toggle coverage adds
+# non-always statements to scopes; --dump-tree covers the --vpi-lazy node annotations.
 test.compile(make_top_shell=False,
              verilator_flags2=[
-                 "--binary --vpi-lazy --no-l2name -O0 -fno-const-before-dfg",
+                 "--binary --vpi-lazy --no-l2name -O0 -fno-const-before-dfg --coverage-toggle"
+                 " --dump-tree",
                  "-CFLAGS -DT_VPI_DRIVERS_LAZY -CFLAGS -DVL_DEBUG=1", test.pli_filename
              ])
 
-test.execute(all_run_flags=["+verilator+rand+reset+1"], expect_filename=test.golden_filename)
+test.execute(all_run_flags=[
+    "+verilator+rand+reset+1", "+verilator+coverage+file+" + test.coverage_filename
+],
+             expect_filename=test.golden_filename)
 
 test.passes()
