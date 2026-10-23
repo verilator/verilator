@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <limits>
 #include <map>
 #include <set>
 #include <unordered_map>
@@ -135,6 +136,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // Parameter address arrays, which parameter rows index; shared likewise
     NamedTables m_paramPtrTables;
     std::unordered_map<std::string, std::string> m_paramPtrTableByRows;
+    // Current scope's parameter rows and the addresses they index, built in getSymCtorStmts()
+    std::vector<std::string> m_paramRows;
+    std::vector<std::string> m_paramPtrs;
     // VlVarTableEntry::dimsp array; identical dim lists share an offset
     std::vector<int32_t> m_varDims;
     std::map<std::vector<int32_t>, size_t> m_varDimsOffset;
@@ -146,7 +150,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     NamedTables m_lazyReconFnTables;
     std::string m_ifaceRefTableName;
     std::vector<std::string> m_ifaceRefTableRows;
-    std::vector<std::string> m_hierTableRows;  // VlHierTableEntry rows, built in emitScopeHier()
+    std::vector<std::string> m_hierTableRows;  // VlHierTableEntry rows, see buildHierTableRows()
     // --vpi-lazy comb masks; model-wide, as VerilatedSyms holds the one table they index
     std::unordered_map<const std::vector<V3VpiLazy::CombRun>*, int> m_combMaskIdx;
     std::vector<std::string> m_combMaskRows;
@@ -157,6 +161,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void emitSymImpPreamble();
     bool emitVarTableExterns();
     void emitVarTables();
+    void buildHierTableRows();
     void emitScopeHier(TextStmts& stmts, bool destroy);
     void emitSymImp(const AstNetlist* netlistp);
     void emitDpiHdr();
@@ -346,6 +351,12 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return "vlInst." + VIdProtect::protectIf(scopep->nameDotless(), scopep->protect());
     }
 
+    // A string parameter's VPI data is its runtime .c_str()
+    static bool isScalarStringParam(const AstVar* const varp) {
+        const AstBasicDType* const bdtypep = VN_CAST(varp->dtypeSkipRefp(), BasicDType);
+        return varp->isParam() && bdtypep && bdtypep->isString();
+    }
+
     static std::string insertVarStatement(const ScopeVarData& svd, const AstScope* const scopep,
                                           const AstVar* const varp, const int udim, const int pdim,
                                           const std::string& bounds) {
@@ -362,8 +373,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             stmt += ", &(";
             stmt += varExpr;
             stmt += "), false, ";
-        } else if (varp->vlEnumType() == "VLVT_STRING"
-                   && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
+        } else if (isScalarStringParam(varp)) {
             stmt += ", const_cast<void*>(static_cast<const void*>(";
             stmt += varExpr;
             stmt += ".c_str())), true, ";
@@ -382,6 +392,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return stmt;
     }
 
+    std::string hierTableName() const { return symClassName() + "__VpiHierTable"; }
+    std::string varDimsTableName() const { return symClassName() + "__VpiVarDims"; }
+    std::string combMaskTableName() const { return symClassName() + "__VlazyCombMasks"; }
+    std::string combRunTableName() const { return symClassName() + "__VlazyCombRuns"; }
+
     // tryBuildTableEntry() classifies each public var once, so the caller does
     // not re-derive (and risk desyncing) the forceable-eligibility test.
     enum class TableEntryKind : uint8_t {
@@ -391,10 +406,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         PLAIN_RESIDUAL,  // Residual, via insertVarStatement() (+ struct/array expansion)
     };
 
-    static std::string varDimsTableName() { return symClassName() + "__VpiVarDims"; }
-    static std::string hierTableName() { return symClassName() + "__VpiHierTable"; }
-    static std::string combMaskTableName() { return symClassName() + "__VlazyCombMasks"; }
-    static std::string combRunTableName() { return symClassName() + "__VlazyCombRuns"; }
     int combMaskIdx(const AstScope* scopep, const AstVar* varp) {
         const std::vector<V3VpiLazy::CombRun>& runs = V3VpiLazy::combRuns(scopep, varp);
         const auto pr = m_combMaskIdx.emplace(&runs, static_cast<int>(m_combMaskRows.size()));
@@ -426,8 +437,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     TableEntryKind tryBuildTableEntry(const ScopeVarData& svd, const AstVar* const varp,
                                       const AstScope* const scopep,
                                       const std::string& modClassName, int lazyIdx,
-                                      const VarDims& dims, std::vector<std::string>& paramPtrs,
-                                      std::string& rowOut) {
+                                      const VarDims& dims, std::string& rowOut) {
         const bool isLazy = varp->isLazyReconstructShadow();
         if (!isLazy && varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
             return TableEntryKind::FORCEABLE_RESIDUAL;
@@ -436,11 +446,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         const std::string vlEnumType = varp->vlEnumType();
         if (!isLazy && needsEmittedEntSize(vlEnumType))
             return TableEntryKind::PLAIN_RESIDUAL;  // struct/union whole
-        // A string parameter's VPI data is its runtime .c_str()
-        if (varp->isParam() && vlEnumType == "VLVT_STRING"
-            && !VN_IS(varp->subDTypep(), UnpackArrayDType)) {
-            return TableEntryKind::PLAIN_RESIDUAL;
-        }
+        if (isScalarStringParam(varp)) return TableEntryKind::PLAIN_RESIDUAL;
 
         const std::string name = V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty));
         // rowStorageName() takes nameProtect(), not protect(name()), so the offsetof member
@@ -455,23 +461,29 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                     varp, "--vpi-lazy rebuilt row is writable or comb-masked");
         std::string row = "{\"" + name + "\", ";
         if (varp->isParam()) {
-            // Emitted 'static', so indexes the scope's array of parameter addresses
-            row += std::to_string(paramPtrs.size()) + ", ";
-            paramPtrs.emplace_back("&" + modClassName + "::" + member);
+            row += paramPtrIndex("&" + modClassName + "::" + member) + ", ";
         } else {
             row += "offsetof(" + modClassName + ", " + member + "), ";
         }
-        row += tableRowProps(varp, vlEnumType, flags, dims, varp->isParam());
+        row += tableRowProps(varp, vlEnumType, flags, dims);
         if (lazyIdx >= 0) row += ", " + std::to_string(lazyIdx);
         row += "}";
         rowOut = row;
         return varp->isParam() ? TableEntryKind::PARAM_ROW : TableEntryKind::TABLE_ROW;
     }
 
-    // The VlVarTableEntry fields from dimsp to isParam
+    // Parameters are emitted 'static', so their rows index the scope's array of addresses
+    std::string paramPtrIndex(const std::string& addr) {
+        const size_t index = m_paramPtrs.size();
+        m_paramPtrs.emplace_back(addr);
+        return std::to_string(index);
+    }
+
+    // The VlVarTableEntry fields from dimsp to pdims
     std::string tableRowProps(const AstNode* nodep, const std::string& vlEnumType,
-                              const std::string& flags, const VarDims& dims, bool isParam) {
-        UASSERT_OBJ(dims.udim <= 255 && dims.pdim <= 255, nodep,
+                              const std::string& flags, const VarDims& dims) {
+        constexpr int maxDims = std::numeric_limits<uint8_t>::max();
+        UASSERT_OBJ(dims.udim <= maxDims && dims.pdim <= maxDims, nodep,
                     "VlVarTableEntry dim counts are uint8_t");
         // Flat dim (left,right) ints in varInsert() order: unpacked then packed.
         std::vector<int32_t> dv;
@@ -479,14 +491,14 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             dv.push_back(lr.first);
             dv.push_back(lr.second);
         }
-        std::string dimsp = "nullptr";
+        std::string dimsExpr = "nullptr";
         if (!dv.empty()) {
             const auto pr = m_varDimsOffset.emplace(dv, m_varDims.size());
             if (pr.second) m_varDims.insert(m_varDims.end(), dv.begin(), dv.end());
-            dimsp = "&" + varDimsTableName() + "[" + std::to_string(pr.first->second) + "]";
+            dimsExpr = "&" + varDimsTableName() + "[" + std::to_string(pr.first->second) + "]";
         }
-        return dimsp + ", (" + flags + "), " + vlEnumType + ", " + std::to_string(dims.udim) + ", "
-               + std::to_string(dims.pdim) + ", " + (isParam ? "true" : "false");
+        return dimsExpr + ", (" + flags + "), " + vlEnumType + ", " + std::to_string(dims.udim)
+               + ", " + std::to_string(dims.pdim);
     }
 
     // Name of a table in 'tables' of 'rows'; identical tables are shared
@@ -592,10 +604,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // offset within the parent's element 0. VPI adds any packed/unpacked index offset.
     // 'needsIndex' if an ancestor is an array, so the members are only valid after an index.
     void addPackedMemberRows(std::vector<std::string>& rows, const ScopeVarData& svd,
-                             const AstScope* const scopep, const std::string& prettyPrefix,
-                             const std::string& vlEnumType, uint32_t entSize,
-                             const AstNodeUOrStructDType* const sdtypep, const int parentBitOffset,
-                             const bool needsIndex) {
+                             const AstScope* const scopep, const std::string& byteOffset,
+                             const std::string& prettyPrefix, const std::string& vlEnumType,
+                             uint32_t entSize, const AstNodeUOrStructDType* const sdtypep,
+                             const int parentBitOffset, const bool needsIndex) {
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             const AstNodeDType* const itemDTypep = itemp->dtypep();
@@ -609,10 +621,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 = memberVlEnumDir(scopep, svd.m_varp, itemDTypep) + lazyRematFlags(svd.m_varp);
             flags += "|VLVF_PACKED_MEMBER";
             if (needsIndex) flags += "|VLVF_PACKED_NEEDS_INDEX";
-            rows.emplace_back(
-                "{\"" + V3OutFormatter::quoteNameControls(prettyName) + "\", 0, "
-                + tableRowProps(itemp, vlEnumType, flags, dims, svd.m_varp->isParam()) + ", "
-                + std::to_string(bitOffset) + ", " + std::to_string(entSize) + "}");
+            rows.emplace_back("{\"" + V3OutFormatter::quoteNameControls(prettyName) + "\", "
+                              + byteOffset + ", " + tableRowProps(itemp, vlEnumType, flags, dims)
+                              + ", " + std::to_string(bitOffset) + ", " + std::to_string(entSize)
+                              + "}");
             // Nested packed struct/union, or packed array of them: register the members of
             // the element at index offset 0
             const AstNodeDType* subDTypep = itemDTypep->skipRefp();
@@ -622,8 +634,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 isArray = true;
             }
             if (const AstNodeUOrStructDType* const subp = VN_CAST(subDTypep, NodeUOrStructDType)) {
-                addPackedMemberRows(rows, svd, scopep, prettyName, vlEnumType, entSize, subp,
-                                    bitOffset, needsIndex || isArray);
+                addPackedMemberRows(rows, svd, scopep, byteOffset, prettyName, vlEnumType, entSize,
+                                    subp, bitOffset, needsIndex || isArray);
             }
         }
     }
@@ -650,20 +662,21 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         }
         const AstNodeUOrStructDType* const sdtypep = VN_CAST(elemDTypep, NodeUOrStructDType);
         if (!sdtypep || !sdtypep->packed()) return;
+        const std::string modClassName = EmitCUtil::prefixNameProtect(svd.m_modp);
+        if (svd.m_varp->isParam()) {
+            addPackedMemberRows(m_paramRows, svd, scopep,
+                                paramPtrIndex("&" + modClassName + "::" + elemCName), prettyPrefix,
+                                vlEnumType, entSize, sdtypep, 0, isArray);
+            return;
+        }
         std::vector<std::string> rows;
-        addPackedMemberRows(rows, svd, scopep, prettyPrefix, vlEnumType, entSize, sdtypep, 0,
+        addPackedMemberRows(rows, svd, scopep, "0", prettyPrefix, vlEnumType, entSize, sdtypep, 0,
                             isArray);
-        const std::string varExpr = "vlSymsp->" + instName(scopep) + "." + elemCName;
-        // A parameter is emitted 'static const', see insertDTypeVarStatement
-        const std::string datap
-            = svd.m_varp->isParam()
-                  ? "const_cast<void*>(static_cast<const void*>(&(" + varExpr + ")))"
-                  : "&(" + varExpr + ")";
         const size_t nRows = rows.size();
-        stmts.emplace_back(
-            "vlSymsp->" + protect("__Vscopep_" + svd.m_scopeName) + "->varsInsertFromTable("
-            + varTableName(EmitCUtil::prefixNameProtect(svd.m_modp), std::move(rows)) + ", "
-            + std::to_string(nRows) + ", " + datap + ");");
+        stmts.emplace_back("vlSymsp->" + protect("__Vscopep_" + svd.m_scopeName)
+                           + "->varsInsertFromTable(" + varTableName(modClassName, std::move(rows))
+                           + ", " + std::to_string(nRows) + ", &(vlSymsp->" + instName(scopep)
+                           + "." + elemCName + "));");
     }
 
     std::string insertForceableVarStatement(const ScopeVarData& svd, const AstScope* const scopep,
@@ -1486,30 +1499,29 @@ void EmitCSyms::emitVarTables() {
     }
 }
 
-void EmitCSyms::emitScopeHier(TextStmts& stmts, bool destroy) {
-    if (!v3Global.opt.vpi()) return;
-
-    if (m_hierTableRows.empty()) {
-        const std::string symClass = symClassName();
-        const auto offset = [&](const std::string& name) {
-            return "offsetof(" + symClass + ", "
-                   + protect("__Vscopep_" + m_scopeNames.at(name).m_symName) + ")";
-        };
-        for (const auto& itpair : m_scopeNames) {
-            if (itpair.first == "TOP") continue;
-            const ScopeData& sd = itpair.second;
-            if (sd.m_prettyName.find('.') != string::npos) continue;
-            if (sd.m_type != "SCOPE_MODULE" && sd.m_type != "SCOPE_PACKAGE") continue;
-            m_hierTableRows.emplace_back("{0, " + offset(itpair.first) + "}");
-        }
-        for (const auto& itpair : m_vpiScopeHierarchy) {
-            const std::string from = offset(scopeSymString(itpair.first));
-            for (const std::string& name : itpair.second) {
-                m_hierTableRows.emplace_back("{" + from + ", " + offset(scopeSymString(name))
-                                             + "}");
-            }
+void EmitCSyms::buildHierTableRows() {
+    const std::string symClass = symClassName();
+    const auto offset = [&](const std::string& name) {
+        return "offsetof(" + symClass + ", "
+               + protect("__Vscopep_" + m_scopeNames.at(name).m_symName) + ")";
+    };
+    for (const auto& itpair : m_scopeNames) {
+        if (itpair.first == "TOP") continue;
+        const ScopeData& sd = itpair.second;
+        if (sd.m_prettyName.find('.') != string::npos) continue;
+        if (sd.m_type != "SCOPE_MODULE" && sd.m_type != "SCOPE_PACKAGE") continue;
+        m_hierTableRows.emplace_back("{0, " + offset(itpair.first) + "}");
+    }
+    for (const auto& itpair : m_vpiScopeHierarchy) {
+        const std::string from = offset(scopeSymString(itpair.first));
+        for (const std::string& name : itpair.second) {
+            m_hierTableRows.emplace_back("{" + from + ", " + offset(scopeSymString(name)) + "}");
         }
     }
+}
+
+void EmitCSyms::emitScopeHier(TextStmts& stmts, bool destroy) {
+    if (!v3Global.opt.vpi()) return;
 
     if (destroy) {
         stmts.add("// Tear down scope hierarchy");
@@ -1728,11 +1740,11 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
             const std::string modClassName = EmitCUtil::prefixNameProtect(modp);
 
             std::vector<std::string> rows;
-            std::vector<std::string> paramRows;
-            std::vector<std::string> paramPtrs;
             std::vector<std::string> residual;
             std::vector<std::string> reconFns;
             int lazyRel = 0;
+            m_paramRows.clear();
+            m_paramPtrs.clear();
 
             for (; it != m_scopeVars.cend() && it->second.m_scopeName == scopeName; ++it) {
                 const ScopeVarData& svd = it->second;
@@ -1757,9 +1769,8 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                     maskIdx = combMaskIdx(scopep, varp);
                 }
                 std::string row;
-                const TableEntryKind kind
-                    = tryBuildTableEntry(svd, varp, scopep, modClassName,
-                                         isLazy ? lazyRel : maskIdx, dims, paramPtrs, row);
+                const TableEntryKind kind = tryBuildTableEntry(
+                    svd, varp, scopep, modClassName, isLazy ? lazyRel : maskIdx, dims, row);
                 UASSERT_OBJ(kind == TableEntryKind::TABLE_ROW || (!isLazy && maskIdx < 0), varp,
                             "lazy shadow or masked row must be table-eligible");
                 switch (kind) {
@@ -1790,9 +1801,9 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                                            rowStorageName(varp), varp->dtypep());
                     break;
                 case TableEntryKind::PARAM_ROW:
-                    paramRows.emplace_back(row);
+                    m_paramRows.emplace_back(row);
                     addPackedAggMemberVars(residual, svd, scopep, svd.m_varBasePretty,
-                                           varp->nameProtect(), varp->dtypep());
+                                           varName(varp), varp->dtypep());
                     break;
                 case TableEntryKind::FORCEABLE_RESIDUAL: {
                     const std::string bounds = boundsString(dims);
@@ -1844,15 +1855,15 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                 call += ");";
                 stmts.add(call);
             }
-            if (!paramRows.empty()) {
-                const size_t rowCount = paramRows.size();
+            if (!m_paramRows.empty()) {
+                const size_t rowCount = m_paramRows.size();
                 const std::string ptrsName
                     = sharedTableName(m_paramPtrTables, m_paramPtrTableByRows,
-                                      modClassName + "__VpiParamPtrs", std::move(paramPtrs));
+                                      modClassName + "__VpiParamPtrs", std::move(m_paramPtrs));
                 stmts.add("vlSymsp->" + protect("__Vscopep_" + scopeName)
-                          + "->varsInsertFromTable("
-                          + varTableName(modClassName, std::move(paramRows)) + ", "
-                          + std::to_string(rowCount) + ", const_cast<void**>(" + ptrsName + "));");
+                          + "->paramsInsertFromTable("
+                          + varTableName(modClassName, std::move(m_paramRows)) + ", "
+                          + std::to_string(rowCount) + ", " + ptrsName + ");");
             }
             for (const std::string& r : residual) stmts.add(r);
             lazyBaseRunning += lazyRel;
@@ -1904,6 +1915,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymDtorStmts() {
 void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
     UINFO(6, __FUNCTION__ << ": ");
 
+    if (v3Global.opt.vpi()) buildHierTableRows();
     // Get the body of the constructor and destructor
     TextStmts ctorStmts = getSymCtorStmts();
     TextStmts dtorStmts = getSymDtorStmts();

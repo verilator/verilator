@@ -537,6 +537,17 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");
+        const AstNodeDType* const elementp = adtypep->subDTypep()->skipRefp();
+        if (!varp->isFuncLocal() && elementp->isIntegralOrPacked()) {
+            // Scoped reset has no array-index input or mutable RNG state. Initialize one
+            // element, then fill in the optimized runtime even when this code is cold.
+            const string first
+                = emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
+                                      depth + 1, suffix + "[0]", nullptr);
+            const string array = varNameProtected + suffix;
+            return first + "VL_UNPACKED_FILL(" + array + ".data(), sizeof(" + array + "[0]), "
+                   + cvtToStr(adtypep->elementsConst()) + ");\n";
+        }
         const string ivar = "__Vi"s + cvtToStr(depth);
         const string pre = ("for (int " + ivar + " = " + cvtToStr(0) + "; " + ivar + " < "
                             + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");

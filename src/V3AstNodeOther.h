@@ -3285,6 +3285,7 @@ public:
 
 // === AstNodeModule ===
 class AstClass final : public AstNodeModule {
+    // @astgen alias op1 := membersp
     // @astgen op4 := extendsp : List[AstClassExtends]
     // MEMBERS
     // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
@@ -3328,8 +3329,6 @@ public:
         return m_covergroupEnclosingClassp;
     }
     void covergroupEnclosingClassp(AstClass* classp) { m_covergroupEnclosingClassp = classp; }
-    AstNode* membersp() const VL_MT_STABLE { return stmtsp(); }
-    void addMembersp(AstNode* nodep) { addStmtsp(nodep); }
     bool hasRandVarsUpdate() const { return m_hasRandVarsUpdate; }
     void hasRandVarsUpdate(bool flag) { m_hasRandVarsUpdate = flag; }
     bool isCovergroup() const { return m_covergroup; }
@@ -3393,7 +3392,7 @@ public:
         if (const AstClassExtends* const cextendsp = this->extendsp()) {
             cextendsp->classp()->foreachMember(f);
         }
-        for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = membersp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstNode::privateTypeTest<T_Node>(stmtp)) f(this, static_cast<T_Node*>(stmtp));
         }
     }
@@ -3409,7 +3408,7 @@ public:
         if (const AstClassExtends* const cextendsp = this->extendsp()) {
             if (cextendsp->classp()->existsMember(p)) return true;
         }
-        for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = membersp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstNode::privateTypeTest<T_Node>(stmtp)) {
                 if (p(this, static_cast<T_Node*>(stmtp))) return true;
             }

@@ -226,35 +226,33 @@ struct VlLazyUndo final {
     std::string old;  ///< The bytes, or string, before the put
 };
 
-/// One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
-/// replaces per-variable varInsert() calls, which compiles faster at scale.
+// One VPI-visible variable, a row for VerilatedScope::varsInsertFromTable() or
+// paramsInsertFromTable(); replaces per-variable varInsert() calls, which compiles faster.
 struct VlVarTableEntry final {
-    const char* namep;  ///< VPI-facing (protected) variable name, string literal
-    /// offsetof of storage member from module instance base; for a parameter, being static, the
-    /// index of its address in the array basep points to; 0 for a packed member
+    const char* namep;  // VPI-facing (protected) variable name, string literal
+    // offsetof from the instance base, 0 for a packed member; for a parameter, being static,
+    // an index into paramPtrsp
     size_t byteOffset;
-    /// (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
-    /// nullptr if none. int32_t since large unpacked memories exceed int16 range.
+    // (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
+    // nullptr if none. int32_t since large unpacked memories exceed int16 range.
     const int32_t* dimsp;
-    uint32_t vlflags;  ///< Direction + flags (VLVD_*/VLVF_*), incl VLVF_LAZY_REMAT
-    VerilatedVarType vltype;  ///< Element type
-    uint8_t udims;  ///< Unpacked dimensions, leading dimsp
-    uint8_t pdims;  ///< Packed dimensions, following the unpacked in dimsp
-    bool isParam;  ///< From a parameter, see byteOffset
-    /// Defaulted, so only --vpi-lazy and member rows spell them. Read 'aux' through the accessors
-    /// below: the row is 40 bytes with no padding, so a field per meaning would make it 48.
+    uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
+    VerilatedVarType vltype;
+    uint8_t udims;
+    uint8_t pdims;
+    // Only --vpi-lazy and packed member rows set these. Read 'aux' through the accessors
+    // below: the row is 40 bytes, so a field per meaning would make it 48.
     int32_t aux = -1;
-    uint32_t entSize = 0;  ///< Element size in bytes, or 0 to derive from vltype
+    uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
 
-    /// A packed struct/union member, see VLVF_PACKED_MEMBER
+    // A packed struct/union member, see VLVF_PACKED_MEMBER
     bool isPackedMember() const { return vlflags & VLVF_PACKED_MEMBER; }
-    /// See VLVF_LAZY_COMB
     bool isLazyComb() const { return vlflags & VLVF_LAZY_COMB; }
-    /// Bit offset of a packed member within its parent's element 0
+    // Bit offset of a packed member within its parent's element 0
     uint32_t memberBitOffset() const { return isPackedMember() ? static_cast<uint32_t>(aux) : 0; }
-    /// Model-wide VlLazyCombMask index of a VLVF_LAZY_COMB row, else -1
+    // Model-wide VlLazyCombMask index of a VLVF_LAZY_COMB row, else -1
     int32_t lazyCombMask() const { return isLazyComb() ? aux : -1; }
-    /// Module-relative --vpi-lazy descriptor slot, else -1
+    // Module-relative --vpi-lazy descriptor slot, else -1
     int32_t lazyDescSlot() const { return isPackedMember() || isLazyComb() ? -1 : aux; }
 };
 static_assert(sizeof(VlVarTableEntry) <= 40, "VlVarTableEntry unexpectedly grew");
@@ -1112,6 +1110,9 @@ private:
     const int8_t m_timeunit;  // Timeunit in negative power-of-10
     const Type m_type;  // Type of the scope
 
+    void varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam,
+                          const VlLazyReconEntry* reconp = nullptr) VL_MT_UNSAFE;
+
 public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
                    const char* defnamep, int8_t timeunit, Type type);
@@ -1133,6 +1134,8 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
                              VerilatedVarLazyDatap* lazyBasep = nullptr,
                              const VlLazyReconEntry* lazyReconsp = nullptr) VL_MT_UNSAFE;
+    void paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
+                               const void* const* paramPtrsp) VL_MT_UNSAFE;
     void ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
                                          VerilatedSyms* symsp) VL_MT_UNSAFE;
@@ -1186,18 +1189,16 @@ struct VlScopeTableEntry final {
     VerilatedScope::Type type;
 };
 
-/// One VPI scope hierarchy edge, consumed by VerilatedHierarchy::addFromTable()
+// One VPI scope hierarchy edge, consumed by VerilatedHierarchy::addFromTable()
 struct VlHierTableEntry final {
-    /// offsetof of the parent's __Vscopep_* member within the Syms object, or 0 for top level
+    // offsetof of the parent's __Vscopep_* member within the Syms object, or 0 for top level
     uint32_t fromOffset;
-    uint32_t toOffset;  ///< Likewise, of the child's
+    uint32_t toOffset;  // Likewise, of the child's
 };
 
 class VerilatedHierarchy final {
 public:
-    /// Add the 'n' edges at 'entp', their offsets relative to 'symsp'
     static void addFromTable(const VlHierTableEntry* entp, size_t n, const VerilatedSyms* symsp);
-    /// Remove edges added by addFromTable()
     static void removeFromTable(const VlHierTableEntry* entp, size_t n,
                                 const VerilatedSyms* symsp);
     static void clear();

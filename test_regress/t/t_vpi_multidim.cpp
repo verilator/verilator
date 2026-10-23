@@ -380,9 +380,12 @@ void _arr_6d_check() {
         = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted("arr_6d")), NULL);
     TEST_CHECK_NZ(arr_h);
     _arr_type_check(arr_h, vpiRegArray, 8, 1, 0);
+    // IEEE 1800-2023 38.19 requires a handle for any legal index select, Questa returns null for
+    // a subarray of a multidimensional array
+    if (TestSimulator::is_questa()) return;
     TestVpiHandle elem1_h = vpi_handle_by_index(arr_h, 1);
     TEST_CHECK_NZ(elem1_h);
-    _arr_type_check(elem1_h, vpiRegArray, 4, 2, 1);
+    _arr_type_check(elem1_h, vpiRegArray, 4, 1, 2);
     TestVpiHandle elem2_h = vpi_handle_by_index(elem1_h, 2);
     TEST_CHECK_NZ(elem2_h);
     _arr_type_check(elem2_h, vpiRegArray, 2, 3, 2);
@@ -392,7 +395,25 @@ void _arr_6d_check() {
     s_vpi_value value;
     value.format = vpiIntVal;
     vpi_get_value(reg_h, &value);
-    TEST_CHECK_EQ(value.value.integer, 0xa5);
+    TEST_CHECK_EQ(value.value.integer, 0xb4);
+    // [1:2] ascends, so index 1 is the upper pair
+    TestVpiHandle nib_h = vpi_handle_by_index(reg_h, 3);
+    TEST_CHECK_NZ(nib_h);
+    TestVpiHandle pair1_h = vpi_handle_by_index(nib_h, 1);
+    TEST_CHECK_NZ(pair1_h);
+    vpi_get_value(pair1_h, &value);
+    TEST_CHECK_EQ(value.value.integer, 2);
+    TestVpiHandle pair2_h = vpi_handle_by_index(nib_h, 2);
+    TEST_CHECK_NZ(pair2_h);
+    vpi_get_value(pair2_h, &value);
+    TEST_CHECK_EQ(value.value.integer, 3);
+
+    // Checked by t_vpi_multidim.v
+    TestVpiHandle put_h = vpi_handle_by_name(
+        const_cast<PLI_BYTE8*>(TestSimulator::rooted("arr_6d[0][1][2]")), NULL);
+    TEST_CHECK_NZ(put_h);
+    value.value.integer = 0x3c;
+    vpi_put_value(put_h, &value, NULL, vpiNoDelay);
 }
 
 // TEST END

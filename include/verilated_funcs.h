@@ -130,6 +130,9 @@ extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
 /// Zero reset a signal (slow - else use VL_ZERO_W)
 extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
 
+/// Fill a nonempty integral or packed unpacked array from its already initialized first element.
+extern void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE;
+
 extern void VL_PRINTTIMESCALE(const char* namep, const char* timeunitp,
                               const VerilatedContext* contextp) VL_MT_SAFE;
 
@@ -2196,6 +2199,7 @@ template <std::size_t N_Words>
 inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q,
                            WDataInP const lwp, IData rd) VL_MT_SAFE {
     VL_CONSTEXPR_CXX17 int numBitsInT = 4 * N_Words * 8;
+    const int ibits = lbits;  // Padding the destination must not extend source reads
     if (lbits < queueBits) lbits = queueBits;  // If queue is larger than the rhs
     const int leftOver = (lbits % numBitsInT) > 0;
     q.renew(lbits / numBitsInT + leftOver);
@@ -2204,10 +2208,10 @@ inline void VL_STREAML_RWI(int lbits, int queueBits, VlQueue<VlWide<N_Words>>& q
         for (int w = 0; w < N_Words; ++w) q.atWrite(i).at(w) = 0;
     }
     const int ssize = (rd < static_cast<IData>(lbits)) ? rd : (static_cast<IData>(lbits));
-    for (int istart = 0; istart < lbits; istart += rd) {
+    for (int istart = 0; istart < ibits; istart += rd) {
         int ostart = lbits - rd - istart;
         ostart = ostart > 0 ? ostart : 0;
-        for (int sbit = 0; sbit < ssize && sbit < lbits - istart; ++sbit) {
+        for (int sbit = 0; sbit < ssize && sbit < ibits - istart; ++sbit) {
             const EData bit = (VL_BITRSHIFT_W(lwp, (istart + sbit)) & 1)
                               << VL_BITBIT_E(ostart + sbit);
             int qIndex = istart / numBitsInT;

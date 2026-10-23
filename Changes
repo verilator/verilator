@@ -118,8 +118,10 @@ Verilator 5.053 devel
 * Improve parameterized hierarchical block substitution (#7009) (#8605). [Michael Bedford Taylor]
 * Fix array slice crash when used as a bare value (#5132) (#8262). [Marco Frank]
 * Fix missing error on virtual interface access outside the modport (#5152) (#8741). [Muhammad Saad]
+* Fix finding default clocking in interface above class (#5212). [Alex Solomatnikov]
 * Fix huge assign concats hanging (#5276). [Luiza de Melo]
 * Fix function reference into generate case block (#5312) (#8532). [Hongseok Choi]
+* Fix make rebuild on link library file change (#6794).  [Domenic Wüthrich]
 * Fix pattern type matching against nested aggregates (#7304).
 * Fix covergroup-internal references multi-threaded ordering (#7779) (#8255). [Matthew Ballance]
 * Fix threading instability in streaming queue operations (#7780).

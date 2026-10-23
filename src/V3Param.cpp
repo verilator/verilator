@@ -1227,13 +1227,6 @@ class ParamProcessor final {
         if (memberRefp == dotp->rhsp()) {
             dotp->replaceWith(valuep);
         } else {
-            AstNodePreSel* const selp = VN_AS(dotp->rhsp(), NodePreSel);
-            if (AstAttrOf* const attrp = selp->attrp()) {
-                if (AstNode* const oldFromp = attrp->fromp()) {
-                    oldFromp->replaceWith(valuep->cloneTree(false));
-                    VL_DO_DANGLING(oldFromp->deleteTree(), oldFromp);
-                }
-            }
             memberRefp->replaceWith(valuep);
             VL_DO_DANGLING(memberRefp->deleteTree(), memberRefp);
             dotp->replaceWith(dotp->rhsp()->unlinkFrBack());
@@ -1950,7 +1943,7 @@ class ParamProcessor final {
         // Get the parameter list for this class
         m_classTypeParams.clear();
         m_paramIndex.clear();
-        for (AstNode* stmtp = classp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = classp->membersp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* paramTypep = VN_CAST(stmtp, ParamTypeDType)) {
                 // Only consider formal class type parameters (generic parameters),
                 // not localparam type declarations inside the class body.
@@ -2695,7 +2688,7 @@ public:
         VL_RESTORER(m_ownerModp);
         m_classp = nodep;
         m_ownerModp = nodep;
-        for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = nodep->membersp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
                 m_paramTypeClassMap[ptp] = nodep;
             }
@@ -2716,7 +2709,7 @@ public:
                         = VN_CAST(origClassp->user4p(), Class)) {
                         const string paramName = paramtypep->name();
                         AstParamTypeDType* newParamTypep = nullptr;
-                        for (AstNode* stmtp = parametrizedClassp->stmtsp(); stmtp;
+                        for (AstNode* stmtp = parametrizedClassp->membersp(); stmtp;
                              stmtp = stmtp->nextp()) {
                             if (AstParamTypeDType* const ptp = VN_CAST(stmtp, ParamTypeDType)) {
                                 if (ptp->name() == paramName) {

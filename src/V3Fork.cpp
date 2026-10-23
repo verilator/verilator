@@ -122,7 +122,7 @@ public:
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             varp->usedLoopIdx(false);  // No longer unrollable
             UINFO(9, "insert DynScope member " << varp);
-            m_instance.m_classp->addStmtsp(varp);
+            m_instance.m_classp->addMembersp(varp);
         }
 
         // Create class's constructor
@@ -131,7 +131,7 @@ public:
         newp->isConstructor(true);
         newp->classMethod(true);
         newp->dtypep(newp->findVoidDType());
-        m_instance.m_classp->addStmtsp(newp);
+        m_instance.m_classp->addMembersp(newp);
     }
 
     void linkNodes(VMemberMap& memberMap) {

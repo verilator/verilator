@@ -597,6 +597,7 @@ IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
     return VL_RANDOM_I();
 }
 
+// Bulk array initialization relies on scoped resets having no element index or mutable RNG state.
 IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
     const int randReset = Verilated::threadContextp()->randReset();
     if (randReset == 0) return 0;
@@ -669,6 +670,24 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     // Not inlined to speed up compilation of slowpath code
     return VL_ZERO_W(obits, outwp);
+}
+
+void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE {
+    char* const bytesp = static_cast<char*>(arrayp);
+    const size_t totalBytes = elementBytes * count;
+    // Zero is the usual reset, and memset stays fast in -Os code.
+    bool zero = true;
+    for (size_t i = 0; i < elementBytes; ++i) zero = zero && !bytesp[i];
+    if (zero) {
+        std::memset(bytesp + elementBytes, 0, totalBytes - elementBytes);
+        return;
+    }
+    // Otherwise grow the initialized prefix, which memcpy fills quickly at any optimization.
+    for (size_t filled = elementBytes; filled < totalBytes;) {
+        const size_t bytes = std::min(filled, totalBytes - filled);
+        std::memcpy(bytesp + filled, bytesp, bytes);
+        filled += bytes;
+    }
 }
 
 //===========================================================================
@@ -4375,65 +4394,71 @@ void VerilatedVarLazyDatap::init(const VlLazyReconEntry& recon, void* instp, uin
     srcOffset = recon.srcByteOffset;
 }
 
+void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam,
+                                      const VlLazyReconEntry* reconp) VL_MT_UNSAFE {
+    const uint32_t reconFlags = reconp ? reconp->vlflags : 0;
+    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | reconFlags);
+    const int32_t combMask
+        = (reconFlags & VLVF_LAZY_COMB) ? reconp->combMaskIdx() : e.lazyCombMask();
+    VerilatedVar var{e.namep, datap,     e.vltype,
+                     vlflags, e.udims,   e.pdims,
+                     isParam, e.entSize, e.memberBitOffset(),
+                     combMask};
+    for (int d = 0; d < e.udims; ++d) {
+        var.m_unpacked[d].m_left = e.dimsp[2 * d];
+        var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
+    }
+    for (int d = 0; d < e.pdims; ++d) {
+        var.m_packed[d].m_left = e.dimsp[2 * (e.udims + d)];
+        var.m_packed[d].m_right = e.dimsp[2 * (e.udims + d) + 1];
+    }
+    // Recompute the flattened DPI packed range now dims are known (see
+    // VerilatedVarProps::initPacked)
+    if (e.pdims == 1) {
+        var.m_packedDpi = var.m_packed.front();
+    } else if (e.pdims > 1) {
+        int packedSize = 1;
+        for (int d = 0; d < e.pdims; ++d) packedSize *= var.m_packed[d].elements();
+        var.m_packedDpi = VerilatedRange{packedSize - 1, 0};
+    }
+    m_varsp->emplace(e.namep, std::move(var));
+}
+
 void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
                                          VerilatedVarLazyDatap* lazyBasep,
                                          const VlLazyReconEntry* lazyReconsp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
-    // For packed member rows, basep is the parent's storage; for parameter rows, an array of
-    // their addresses.
+    // A packed member row's basep is its parent's storage
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
     for (size_t i = 0; i < n; ++i) {
         const VlVarTableEntry& e = entp[i];
-        void* datap;
         const int32_t descSlot = e.lazyDescSlot();
-        const bool lazyDesc = descSlot >= 0;
-        if (lazyDesc) {
-            const uint32_t storageOffset = static_cast<uint32_t>(e.byteOffset);
-            // Narrowed from size_t, and a silent wrap would point the row at another signal.
-            // V3EmitCSyms emits a static_assert capping sizeof(Syms), which contains every
-            // instance, at 0x7fffffff, so this can only fire on a mismatched emitter's table.
-            if (VL_UNCOVERABLE(storageOffset != e.byteOffset)) {
-                VL_FATAL_MT(__FILE__, __LINE__, e.namep,  // LCOV_EXCL_LINE
-                            "Internal: --vpi-lazy storage offset exceeds 32 bits");
-            }
-            VerilatedVarLazyDatap& desc = lazyBasep[descSlot];
-            desc.init(lazyReconsp[descSlot], base, storageOffset);
-            datap = &desc;
-            m_symsp->lazyp()->undoOn = true;
-        } else if (e.isParam && !e.isPackedMember()) {
-            datap = const_cast<void*>(static_cast<const void* const*>(basep)[e.byteOffset]);
-        } else {
-            datap = base + e.byteOffset;
+        if (descSlot < 0) {
+            varInsertFromRow(e, base + e.byteOffset, false);
+            continue;
         }
-        // Per-scope table: the VlVarTableEntry rows are module-relative and shared.
-        const uint32_t reconFlags = lazyDesc ? lazyReconsp[descSlot].vlflags : 0;
-        const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | reconFlags);
-        const int32_t combMask = (reconFlags & VLVF_LAZY_COMB)
-                                     ? lazyReconsp[descSlot].combMaskIdx()
-                                     : e.lazyCombMask();
-        VerilatedVar var{e.namep,   datap,     e.vltype,
-                         vlflags,   e.udims,   e.pdims,
-                         e.isParam, e.entSize, e.memberBitOffset(),
-                         combMask};
-        for (int d = 0; d < e.udims; ++d) {
-            var.m_unpacked[d].m_left = e.dimsp[2 * d];
-            var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
+        const uint32_t storageOffset = static_cast<uint32_t>(e.byteOffset);
+        // Narrowed from size_t, and a silent wrap would point the row at another signal.
+        // V3EmitCSyms emits a static_assert capping sizeof(Syms), which contains every
+        // instance, at 0x7fffffff, so this can only fire on a mismatched emitter's table.
+        if (VL_UNCOVERABLE(storageOffset != e.byteOffset)) {
+            VL_FATAL_MT(__FILE__, __LINE__, e.namep,  // LCOV_EXCL_LINE
+                        "Internal: --vpi-lazy storage offset exceeds 32 bits");
         }
-        for (int d = 0; d < e.pdims; ++d) {
-            var.m_packed[d].m_left = e.dimsp[2 * (e.udims + d)];
-            var.m_packed[d].m_right = e.dimsp[2 * (e.udims + d) + 1];
-        }
-        // Recompute the flattened DPI packed range now dims are known (see
-        // VerilatedVarProps::initPacked)
-        if (e.pdims == 1) {
-            var.m_packedDpi = var.m_packed.front();
-        } else if (e.pdims > 1) {
-            int packedSize = 1;
-            for (int d = 0; d < e.pdims; ++d) packedSize *= var.m_packed[d].elements();
-            var.m_packedDpi = VerilatedRange{packedSize - 1, 0};
-        }
-        m_varsp->emplace(e.namep, std::move(var));
+        VerilatedVarLazyDatap& desc = lazyBasep[descSlot];
+        desc.init(lazyReconsp[descSlot], base, storageOffset);
+        m_symsp->lazyp()->undoOn = true;
+        varInsertFromRow(e, &desc, false, &lazyReconsp[descSlot]);
+    }
+}
+
+void VerilatedScope::paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
+                                           const void* const* paramPtrsp) VL_MT_UNSAFE {
+    // VerilatedVar's data is non-const, but VPI refuses parameter writes
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap;
+    for (size_t i = 0; i < n; ++i) {
+        varInsertFromRow(entp[i], const_cast<void*>(paramPtrsp[entp[i].byteOffset]), true);
     }
 }
 

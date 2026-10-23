@@ -362,6 +362,10 @@ void V3Options::addLibMapFile(const string& filename) { m_libmapFiles.insert(fil
 void V3Options::addCompilerIncludes(const string& filename) {
     m_compilerIncludes.insert(filename);
 }
+void V3Options::addLdLibFile(const string& filename) {
+    m_ldLibFiles.push_back(filename);
+    addLdLibs(filename);
+}
 void V3Options::addLdLibs(const string& filename) { m_ldLibs.push_back(filename); }
 void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(filename); }
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
@@ -2126,7 +2130,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         } else if (suffixed(filename, ".a")  //
                    || suffixed(filename, ".o")  //
                    || suffixed(filename, ".so")) {
-            V3Options::addLdLibs(filename);
+            V3Options::addLdLibFile(filename);
         } else if (suffixed(filename, ".vlt")) {
             V3Options::addVltFile(filename, work());
             isForRerun = false;

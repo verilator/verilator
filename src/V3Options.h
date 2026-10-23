@@ -239,6 +239,7 @@ private:
     VStringSet m_cppFiles;     // argument: C++ files to link against
     VStringList m_cFlags;      // argument: user CFLAGS
     VStringList m_ldLibs;      // argument: user LDFLAGS
+    VStringList m_ldLibFiles;  // argument: library files, subset of m_ldLibs
     VStringList m_makeFlags;   // argument: user MAKEFLAGS
     VStringSet m_compilerIncludes; // argument: user --compiler-include
     VStringSet m_futures;      // argument: -Wfuture- list
@@ -529,6 +530,7 @@ public:
     void addCppFile(const string& filename);
     void addCFlags(const string& filename);
     void addCompilerIncludes(const string& filename);
+    void addLdLibFile(const string& filename);
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
     void addLibMapFile(const string& filename);
@@ -768,6 +770,7 @@ public:
     const VStringSet& cppFiles() const { return m_cppFiles; }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
+    const VStringList& ldLibFiles() const { return m_ldLibFiles; }
     const VStringList& ldLibs() const { return m_ldLibs; }
     const VStringList& makeFlags() const { return m_makeFlags; }
     const VFileLibSet& libraryFiles() const { return m_libraryFiles; }
