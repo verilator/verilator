@@ -167,6 +167,7 @@ elif [ "$STAGE" = "lint-py" ]; then
     apt-get-retry update
     apt-get-retry install --yes "${PACKAGES[@]}"
   fi
+  install-wavetools
 elif [ "$STAGE" = "format" ]; then
   ##############################################################################
   # Dependencies of 'make format'
