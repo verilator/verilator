@@ -1744,6 +1744,16 @@ void VlRandomizer::hard(std::string&& constraint, const char* filename, uint32_t
     }
 }
 
+void VlRandomizer::pin_current(const char* name) {
+    const auto it = m_vars.find(name);
+    assert(it != m_vars.end());
+    std::ostringstream os;
+    os << "(__Vbv (= " << name << ' ';
+    it->second->emitConcreteValue(os);
+    os << "))";
+    hard(os.str());
+}
+
 void VlRandomizer::soft(std::string&& constraint, const char* /*filename*/, uint32_t /*linenum*/,
                         const char* /*source*/) {
     m_softConstraints.emplace_back(std::move(constraint));

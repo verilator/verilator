@@ -949,6 +949,7 @@ public:
                                  + std::to_string(width) + ")))";
         hard(std::move(constraint));
     }
+    void pin_current(const char* name);  // Pin a registered scalar var to its current value
     void disable_soft(const std::string& varName);
     void clearConstraints();
     void clearAll();  // Clear both constraints and variables

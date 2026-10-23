@@ -4038,6 +4038,10 @@ class RandomizeVisitor final : public VNVisitor {
     AstConstraint* m_constraintp = nullptr;  // Current constraint
     std::set<std::string> m_writtenVars;  // Track write_var calls per class to avoid duplicates
     std::map<AstClass*, VInsertionSet<AstVar*>> m_sizeConstrainedArrays;  // Per-class arrays
+    // Per-class rand vars read by dist weights. They are solved before the dist's own
+    // variable, as VCS does (IEEE 1800 leaves this open; it orders rand function arguments
+    // the same way, 1800-2017 18.5.12).
+    std::map<AstClass*, VInsertionSet<AstVar*>> m_distWeightVars;
     std::map<AstClass*, AstVar*>
         m_staticConstraintModeVars;  // Static constraint mode vars per class
     std::map<AstClass*, AstVar*> m_staticRandModeVars;  // Static rand mode vars per class
@@ -5858,6 +5862,7 @@ class RandomizeVisitor final : public VNVisitor {
     // Replace AstDist with weighted bucket selection via AstConstraintIf chain.
     // Supports both constant and variable weight expressions.
     void lowerDistConstraints(AstTask* taskp, AstNode* constrItemsp, AstVar* randModeVarp,
+                              VInsertionSet<AstVar*>& weightVars,
                               AstConstraintForeach* foreachp = nullptr) {
         // When inside a foreach, bucket preamble stmts are stored in foreachp->user3p()
         // (as a linked list) so visit(AstConstraintForeach*) can inject them into the
@@ -5883,15 +5888,16 @@ class RandomizeVisitor final : public VNVisitor {
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
                 UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");
-                lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, foreachp);
+                lowerDistConstraints(taskp, cifp->thensp(), randModeVarp, weightVars, foreachp);
                 if (cifp->elsesp()) {
-                    lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, foreachp);
+                    lowerDistConstraints(taskp, cifp->elsesp(), randModeVarp, weightVars,
+                                         foreachp);
                 }
                 continue;
             }
             if (AstConstraintForeach* const cfep = VN_CAST(itemp, ConstraintForeach)) {
                 UASSERT_OBJ(cfep->bodyp(), cfep, "constraint foreach without a body");
-                lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, cfep);
+                lowerDistConstraints(taskp, cfep->bodyp(), randModeVarp, weightVars, cfep);
                 continue;
             }
 
@@ -5911,7 +5917,8 @@ class RandomizeVisitor final : public VNVisitor {
                     AstConstraintIf* const liftedp = liftLogIfChainToConstraintIf(topLogIfp);
                     constrExprp->replaceWith(liftedp);
                     VL_DO_DANGLING(pushDeletep(constrExprp), constrExprp);
-                    lowerDistConstraints(taskp, liftedp->thensp(), randModeVarp, foreachp);
+                    lowerDistConstraints(taskp, liftedp->thensp(), randModeVarp, weightVars,
+                                         foreachp);
                     continue;
                 }
             }
@@ -5920,6 +5927,15 @@ class RandomizeVisitor final : public VNVisitor {
             if (!distp) continue;
 
             FileLine* const fl = distp->fileline();
+
+            // Weights are evaluated in C++ before the solve. The rand vars they read are
+            // solved first, then pinned while the dist is drawn with the weights they give.
+            for (AstDistItem* ditemp = distp->itemsp(); ditemp;
+                 ditemp = VN_AS(ditemp->nextp(), DistItem)) {
+                ditemp->weightp()->foreach([&](const AstVarRef* vrefp) {
+                    if (isPinnableWeightVar(vrefp->varp())) weightVars.insert(vrefp->varp());
+                });
+            }
 
             std::vector<DistBucket> buckets = collectDistBuckets(distp);
 
@@ -6010,6 +6026,11 @@ class RandomizeVisitor final : public VNVisitor {
         }
     }
 
+    // A rand var whose value the solver can be pinned to between the two solve passes
+    static bool isPinnableWeightVar(const AstVar* varp) {
+        return varp->rand().isRandomizable() && varp->dtypep()->skipRefp()->isIntegralOrPacked();
+    }
+
     static bool isDynArrOfClassTypeRecurse(const AstNodeDType* const dtypep) {
         const AstNodeDType* const refp = dtypep->skipRefp();
         if (VN_IS(refp, DynArrayDType) || VN_IS(refp, QueueDType)) {
@@ -6079,6 +6100,18 @@ class RandomizeVisitor final : public VNVisitor {
         AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
         sizeVarRefp->classOrPackagep(VN_AS(sizeVarp->user2p(), NodeModule));
         pinp->addPinsp(sizeVarRefp);
+        return pinp->makeStmt();
+    }
+    // Pin a solver variable to the value the previous solve gave it
+    AstNodeStmt* newPinCurrentValue(FileLine* const fl, AstVar* const varp, AstVar* const genp) {
+        AstNodeModule* const genModp = VN_AS(genp->user2p(), NodeModule);
+        AstCMethodHard* const pinp
+            = new AstCMethodHard{fl, new AstVarRef{fl, genModp, genp, VAccess::READWRITE},
+                                 VCMethod::RANDOMIZER_PIN_CURRENT};
+        pinp->dtypeSetVoid();
+        AstCExpr* const namep = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + varp->name() + "\""};
+        namep->dtypeSetUInt32();
+        pinp->addPinsp(namep);
         return pinp->makeStmt();
     }
 
@@ -6156,6 +6189,7 @@ class RandomizeVisitor final : public VNVisitor {
             // Phase 1: Process all constraints (create tasks, run ConstraintExprVisitor)
             // Setup task refs are NOT added to setupAllTaskp here -- done in phase 2
             AstTask* const prepareArraysTaskp = createPrepareConstrainedArraysTask(nodep);
+            VInsertionSet<AstVar*> distWeightVars;
             nodep->foreachMember([&](AstClass* const classp, AstConstraint* const constrp) {
                 AstTask* taskp = VN_AS(constrp->user2p(), Task);
                 if (!taskp) {
@@ -6173,8 +6207,25 @@ class RandomizeVisitor final : public VNVisitor {
 
                 if (constrp->itemsp()) expandUniqueElementList(constrp->itemsp());
                 if (constrp->itemsp()) {
-                    lowerDistConstraints(taskp, constrp->itemsp(), randModeVarp);
+                    VInsertionSet<AstVar*>& weightVars = m_distWeightVars[classp];
+                    const size_t oldSize = weightVars.size();
+                    lowerDistConstraints(taskp, constrp->itemsp(), randModeVarp, weightVars);
+                    // Weights are constants to the solver, so a var read only by weights
+                    // needs a symbolic reference for the solver to declare it
+                    for (auto it = weightVars.begin() + oldSize; it != weightVars.end(); ++it) {
+                        FileLine* const flp = constrp->fileline();
+                        AstVarRef* const lhsp = new AstVarRef{flp, *it, VAccess::READ};
+                        lhsp->user1(true);
+                        AstVarRef* const rhsp = new AstVarRef{flp, *it, VAccess::READ};
+                        rhsp->user1(true);
+                        AstEq* const eqp = new AstEq{flp, lhsp, rhsp};
+                        eqp->user1(true);
+                        constrp->addItemsp(new AstConstraintExpr{flp, eqp});
+                    }
                 }
+                // Base-class constraints may have been lowered while processing the base
+                const VInsertionSet<AstVar*>& classWeightVars = m_distWeightVars[classp];
+                distWeightVars.insert(classWeightVars.begin(), classWeightVars.end());
                 VInsertionSet<AstVar*>& sizeArrays = m_sizeConstrainedArrays[classp];
                 ConstraintExprVisitor{
                     classp,        m_memberMap,  constrp->itemsp(), nullptr,
@@ -6283,7 +6334,7 @@ class RandomizeVisitor final : public VNVisitor {
             solverCallp->dtypeSetBit();
             solverCallp->add(new AstVarRef{fl, genModp, genp, VAccess::READWRITE});
             solverCallp->add(".next(__Vm_rng)");
-            if (!sizeArrayVars.empty()) {
+            if (!sizeArrayVars.empty() || !distWeightVars.empty()) {
                 AstVar* const sizeOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vsize_ok",
                                                       nodep->findBasicDType(VBasicDTypeKwd::BIT)};
                 sizeOkVarp->funcLocal(true);
@@ -6325,8 +6376,11 @@ class RandomizeVisitor final : public VNVisitor {
                 for (AstVar* const arrVarp : sizeArrayVars) {
                     randomizep->addStmtsp(newPinSizeVariable(fl, arrVarp, genp));
                 }
+                for (AstVar* const varp : distWeightVars) {
+                    randomizep->addStmtsp(newPinCurrentValue(fl, varp, genp));
+                }
 
-                // Final pass: solve full constraints with sizes pinned
+                // Final pass: solve full constraints with sizes and dist weight inputs pinned
                 AstCExpr* const solverCallp2 = new AstCExpr{fl};
                 solverCallp2->dtypeSetBit();
                 solverCallp2->add(new AstVarRef{fl, genModp, genp, VAccess::READWRITE});
