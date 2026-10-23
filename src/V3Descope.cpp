@@ -236,9 +236,6 @@ class DescopeVisitor final : public VNVisitor {
         if (varp->isFuncLocal()) {
             // Reference to function locals need no self pointer
             nodep->selfPointer(VSelfPointerText{VSelfPointerText::Empty()});
-        } else if (m_funcp && (m_funcp->dpiExportDispatcher() || m_funcp->dpiImportWrapper())) {
-            nodep->selfPointer(VSelfPointerText{VSelfPointerText::VlSymsDpi(),
-                                                EmitCUtil::symClassName(), scopep->nameDotless()});
         } else if (scopep->modp()->isConstPool()) {
             // Reference to constant pool value need no self pointer
             nodep->selfPointer(VSelfPointerText{VSelfPointerText::Empty()});
