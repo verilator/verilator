@@ -47,24 +47,24 @@ module t;
   chandle h;
 
   // To cover testing cases, this has non-zero LSB/LO
-  logic [31+8:8] exposed  /*verilator public*/  /*verilator forceable*/;
+  logic [31+8:8] exposed  /*verilator public_flat_rw*/  /*verilator forceable*/;
   logic not_exposed;
-  logic exposed_not_forceable  /*verilator public*/;
-  logic [31+8:8] exposedContinuously  /*verilator public*/  /*verilator forceable*/;
+  logic exposed_not_forceable  /*verilator public_flat_rw*/;
+  logic [31+8:8] exposedContinuously  /*verilator public_flat_rw*/  /*verilator forceable*/;
   assign exposedContinuously = 32'h0;
 
-  real realSignal  /*verilator public*/  /*verilator forceable*/;
-  string stringSignal  /*verilator public*/;
+  real realSignal  /*verilator public_flat_rw*/  /*verilator forceable*/;
+  string stringSignal  /*verilator public_flat_rw*/;
 
-  logic [83:4] wide_dec  /* verilator public*/;
+  logic [83:4] wide_dec  /* verilator public_flat_rw*/;
   // verilator lint_off ASCRANGE
-  logic [4:83] wide_asc  /* verilator public*/;
+  logic [4:83] wide_asc  /* verilator public_flat_rw*/;
   // verilator lint_on ASCRANGE
 
-  logic [31:0] mem1d[1:2]  /* verilator public*/;
-  logic [31:0] mem2d[1:2][3:4]  /* verilator public*/;
+  logic [31:0] mem1d[1:2]  /* verilator public_flat_rw*/;
+  logic [31:0] mem2d[1:2][3:4]  /* verilator public_flat_rw*/;
 
-  logic [2047:0] tooWide  /* verilator public*/  /* verilator forceable*/ = 2048'h0;
+  logic [2047:0] tooWide  /* verilator public_flat_rw*/  /* verilator forceable*/ = 2048'h0;
 
   uvm_hdl_data_t lval;
 

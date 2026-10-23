@@ -177,9 +177,7 @@ module t (/*AUTOARG*/
   longint        long1          /*verilator public_flat_rw */;
   real           real1          /*verilator public_flat_rw */;
   string         str1           /*verilator public_flat_rw */;
-  // specifically public and not public_flat_rw here so as to induce the C++
-  // keyword collision
-  localparam int nullptr        /*verilator public */ = 123;
+  localparam int nullptr        /*verilator public_flat */ = 123;
 
   logic [31:0] some_mem [4] /* verilator public_flat_rd */ = {0, 0, 0, 432};
 

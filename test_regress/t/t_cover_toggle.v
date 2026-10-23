@@ -199,7 +199,7 @@ module beta (/*AUTOARG*/
   // CHECK_COVER(-1,"top.t.b1","toggle_up:0->1",1)
   // CHECK_COVER(-2,"top.t.b1","toggle_up:1->0",1)
 
-  /* verilator public_module */
+  /* verilator no_inline_module */
 
   always @ (posedge clk) begin
     if (0 && toggle_up) begin end

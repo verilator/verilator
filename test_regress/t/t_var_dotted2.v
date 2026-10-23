@@ -7,7 +7,7 @@
 `ifdef USE_INLINE
  `define INLINE_MODULE /*verilator inline_module*/
 `else
- `define INLINE_MODULE /*verilator public_module*/
+ `define INLINE_MODULE /*verilator no_inline_module*/
 `endif
 
 module t;
