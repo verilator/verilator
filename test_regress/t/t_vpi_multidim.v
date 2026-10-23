@@ -16,7 +16,7 @@
 module t (/*AUTOARG*/
    // Inputs
   clk
-  ); /*verilator public_module*/
+  ); /*verilator no_inline_module*/
 
   input clk;
 
