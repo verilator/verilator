@@ -1,0 +1,6 @@
+%Error-MODMISSING: t/t_bind_missing_bad.v:22:8: Cannot find bind target module or interface: 'no_such_module' (IEEE 1800-2023 23.11)
+                                              : ... Note: Binding to an instance name, instead of a module or interface name, is not supported
+   22 |   bind no_such_module chk u_chk1 (.clk);
+      |        ^~~~~~~~~~~~~~
+                   ... For error description see https://verilator.org/warn/MODMISSING?v=latest
+%Error: Exiting due to

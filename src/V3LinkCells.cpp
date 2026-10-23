@@ -602,6 +602,14 @@ class LinkCellsVisitor final : public VNVisitor {
         // and means we cannot compute module levels until later.
         UINFO(4, "Link Bind: " << nodep);
         AstNodeModule* const modp = resolveModule(nodep, nodep->name(), m_modp->libname());
+        if (VN_IS(modp, NotFoundModule)) {
+            nodep->v3warn(MODMISSING,
+                          "Cannot find bind target module or interface: "
+                              << nodep->prettyNameQ() << " (IEEE 1800-2023 23.11)\n"
+                              << nodep->warnMore()
+                              << "... Note: Binding to an instance name, instead of a module or"
+                                 " interface name, is not supported");
+        }
         if (modp && !modp->verilatorLib()) {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells

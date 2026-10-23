@@ -1424,7 +1424,8 @@ List Of Warnings
 
    .. TODO better example
 
-   Error that a module, typically referenced by a cell, was not found.
+   Error that a module, typically referenced by a cell or used as a bind
+   target, was not found.
    This is typically fatal, but may be suppressed in some linting
    situations with missing libraries.
 

@@ -19,7 +19,9 @@ module t;
 endmodule
 
 module sub_ext;
+  // verilator lint_off MODMISSING
   bind sub_inst bound_if i_bound ();
+  // verilator lint_on MODMISSING
 endmodule
 
 module sub;
