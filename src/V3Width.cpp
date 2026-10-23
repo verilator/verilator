@@ -74,6 +74,7 @@
 #include "V3ConstPool.h"
 #include "V3Error.h"
 #include "V3Global.h"
+#include "V3LinkDotIfaceCapture.h"
 #include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3Number.h"
@@ -348,6 +349,15 @@ class WidthVisitor final : public VNVisitor {
             return dtypep->skipRefOrNullp();
         return fromp ? fromp->dtypep() : nullptr;
     }
+    // True if modp instantiates targetp without parameter overrides, so uses the template itself
+    static bool instantiatesAsIs(const AstNodeModule* modp, const AstNodeModule* targetp) {
+        bool found = false;
+        modp->foreach([&](const AstCell* cellp) {
+            if (cellp->modp() == targetp && !cellp->paramsp()) found = true;
+        });
+        return found;
+    }
+
     // VISITORS
     //   Naming:  width_O{outputtype}_L{lhstype}_R{rhstype}_W{widthing}_S{signing}
     //          Where type:
@@ -2645,14 +2655,15 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const dtypep = fromDTypep(nodep->fromp());
             UASSERT_OBJ(dtypep, nodep, "Unsized expression");
             // Only worth asking while parameters are still being worked out.
-            if (m_paramsOnly) {
+            if (m_paramsOnly && m_modep) {
                 // A type reached from another module, on a template still being copied, is
-                // sized once the reference is retargeted to the specialization.  A type in
-                // the query's own module is never retargeted: that module is either used
-                // as is, so final, or dead.
-                const AstNodeModule* const ownModp = v3Global.rootp()->containingModule(dtypep);
-                if (ownModp && ownModp != v3Global.rootp()->containingModule(nodep)
-                    && ownModp->parameterizedTemplate() && !ownModp->dead()) {
+                // sized once the reference is retargeted to the specialization.  The query's
+                // own module is never a template it waits on, and a template the query's
+                // module instantiates as is is never replaced: its sizes are final, so
+                // deferring would leave the value unfolded.
+                AstNodeModule* const ownModp = V3LinkDotIfaceCapture::findOwnerModule(dtypep);
+                if (ownModp && ownModp != m_modep && ownModp->parameterizedTemplate()
+                    && !ownModp->dead() && !instantiatesAsIs(m_modep, ownModp)) {
                     UINFO(9, "size deferred, type still on template " << ownModp->name());
                     // These queries always give an int, so set that now and let the
                     // value be worked out once the copy exists.
