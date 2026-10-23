@@ -113,4 +113,17 @@ module t (
     bad_arr_s[1].da[0] <= 2;  // Error: nonblocking dynarray element in struct in array
   end
 
+  // Ports of automatic subroutines, including class methods, are automatic variables
+  task automatic tbad(int bad_a, output int bad_o, ref int bad_r);
+    bad_a <= 1;  // Error: nonblocking automatic task input
+    bad_o <= 1;  // Error: nonblocking automatic task output
+    bad_r <= 1;  // Error: nonblocking automatic task ref
+    mt.o <= 1;  // OK: nonblocking static task output, by hierarchical reference
+  endtask
+  class ClsM;
+    function void fbad(int bad_m);
+      bad_m <= 1;  // Error: nonblocking class method argument
+    endfunction
+  endclass
+
 endmodule

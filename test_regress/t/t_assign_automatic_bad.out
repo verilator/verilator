@@ -79,4 +79,20 @@
                                          : ... note: In instance 't'
   113 |     bad_arr_s[1].da[0] <= 2;   
       |                  ^~
+%Error: t/t_assign_automatic_bad.v:118:5: Automatic lifetime variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'bad_a'
+                                        : ... note: In instance 't'
+  118 |     bad_a <= 1;   
+      |     ^~~~~
+%Error: t/t_assign_automatic_bad.v:119:5: Automatic lifetime variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'bad_o'
+                                        : ... note: In instance 't'
+  119 |     bad_o <= 1;   
+      |     ^~~~~
+%Error: t/t_assign_automatic_bad.v:120:5: Automatic lifetime variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'bad_r'
+                                        : ... note: In instance 't'
+  120 |     bad_r <= 1;   
+      |     ^~~~~
+%Error: t/t_assign_automatic_bad.v:125:7: Automatic lifetime variable not allowed in nonblocking assignment (IEEE 1800-2023 6.21): 'bad_m'
+                                        : ... note: In instance 't'
+  125 |       bad_m <= 1;   
+      |       ^~~~~
 %Error: Exiting due to
