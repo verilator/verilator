@@ -6,6 +6,10 @@
     9 |   typedef struct {int a;} s_t;
       |           ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_enum_base_bad.v:16:14: Integer type with predefined width 'int' in packed array (IEEE 1800-2023 7.4.1)
+                                 : ... note: In instance 't'
+   16 |   enum int_t [1:0] {   
+      |              ^
 %Error: t/t_enum_base_bad.v:16:3: Enum data type must be an integer atom or vector type (IEEE 1800-2023 6.19)
                                 : ... note: In instance 't'
    16 |   enum int_t [1:0] {   

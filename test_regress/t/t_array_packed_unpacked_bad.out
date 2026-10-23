@@ -11,4 +11,32 @@
                                              : ... note: In instance 't'
    21 |   typedef struct {logic a;} [0:0][0:0] direct_unpacked_struct_array_t;
       |                                  ^
+%Error: t/t_array_packed_unpacked_bad.v:30:10: Integer type with predefined width 'byte' in packed array (IEEE 1800-2023 7.4.1)
+                                             : ... note: In instance 't'
+   30 |   byte_t [1:0] byte_array;
+      |          ^
+%Error: t/t_array_packed_unpacked_bad.v:31:14: Integer type with predefined width 'shortint' in packed array (IEEE 1800-2023 7.4.1)
+                                             : ... note: In instance 't'
+   31 |   shortint_t [1:0] shortint_array;
+      |              ^
+%Error: t/t_array_packed_unpacked_bad.v:32:9: Integer type with predefined width 'int' in packed array (IEEE 1800-2023 7.4.1)
+                                            : ... note: In instance 't'
+   32 |   int_t [1:0] int_array;
+      |         ^
+%Error: t/t_array_packed_unpacked_bad.v:33:13: Integer type with predefined width 'longint' in packed array (IEEE 1800-2023 7.4.1)
+                                             : ... note: In instance 't'
+   33 |   longint_t [1:0] longint_array;
+      |             ^
+%Error: t/t_array_packed_unpacked_bad.v:34:13: Integer type with predefined width 'integer' in packed array (IEEE 1800-2023 7.4.1)
+                                             : ... note: In instance 't'
+   34 |   integer_t [1:0] integer_array;
+      |             ^
+%Error: t/t_array_packed_unpacked_bad.v:35:10: Integer type with predefined width 'time' in packed array (IEEE 1800-2023 7.4.1)
+                                             : ... note: In instance 't'
+   35 |   time_t [1:0] time_array;
+      |          ^
+%Error: t/t_array_packed_unpacked_bad.v:36:15: Integer type with predefined width 'int' in packed array (IEEE 1800-2023 7.4.1)
+                                             : ... note: In instance 't'
+   36 |   int2_t [1:0][2:0] int2_array;
+      |               ^
 %Error: Exiting due to

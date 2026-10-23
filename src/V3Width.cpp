@@ -2895,6 +2895,14 @@ class WidthVisitor final : public VNVisitor {
             if (!elemDTypep->isIntegralOrPacked()) {
                 nodep->v3error("Unpacked data type " << elemDTypep->prettyDTypeNameQ()
                                                      << " in packed array (IEEE 1800-2023 7.4.1)");
+            } else if (const AstBasicDType* const basicp
+                       = VN_CAST(nodep->subDTypep()->skipRefToEnump(), BasicDType)) {
+                // Stop at enums, as packed arrays of enums are legal whatever their base type
+                if (!basicp->keyword().isBitLogic()) {
+                    nodep->v3error("Integer type with predefined width "
+                                   << basicp->prettyDTypeNameQ()
+                                   << " in packed array (IEEE 1800-2023 7.4.1)");
+                }
             }
             const int width = nodep->subDTypep()->width() * nodep->rangep()->elementsConst();
             nodep->widthForce(width, width);
