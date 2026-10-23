@@ -56,7 +56,8 @@
 `endif
 // verilog_format: on
 
-typedef enum bit [2:0] {
+typedef bit bit_t;
+typedef enum bit_t [2:0] {
   E2_A,
   E2_B
 } enum2_t;
@@ -65,7 +66,8 @@ typedef enum logic [2:0] {
   E4_B
 } enum4_t;
 typedef struct {bit [6:0] member;} struct_t;
-typedef struct packed {bit [6:0] member;} packed_struct_t;
+typedef struct packed {bit_t [6:0] member;} packed_struct_t;
+typedef struct packed {bit [6:0] member;} packed_struct2_t;
 
 class Base;
 endclass
@@ -98,6 +100,7 @@ module t;
     automatic logic [127:0] logic128;
     automatic enum2_t e2a = E2_A;
     automatic enum2_t e2b = E2_B;
+    automatic enum2_t e2c = E2_B;
     automatic enum4_t e4a = E4_A;
     automatic enum4_t e4b = E4_B;
     automatic real r;
@@ -108,6 +111,7 @@ module t;
     automatic packed_struct_t packed_st1;
     automatic packed_struct_t packed_st2;
     automatic packed_struct_t packed_st3;
+    automatic packed_struct2_t packed_st2_1;
     automatic bit queue1[$];
     automatic bit queue2[$];
     automatic Base base_h;
@@ -287,6 +291,9 @@ module t;
     b = ~b;
     st3 = b ? st1 : st2;
     packed_st3 = b ? packed_st1 : packed_st2;
+    packed_st3 = b
+                  ? (l ? packed_st1 : packed_st2)
+                  : (l ? (b ? packed_st1 : packed_st2) : packed_st2);
     `checkh(st3.member, 7'h65);
     `checkh(packed_st3.member, 7'h56);
     `checkh(b ? e2a : e2b, E2_B);
@@ -341,6 +348,17 @@ module t;
     // even though `time` is four-state, `$time` always returns a value from a two-state domain,
     // therefore it should be treated as a two-state value
     `checkopt($time, ==, 1, b);
+
+    e2c = l ? e2a : e2b;
+    `checkh(e2c, e2a);
+    e2c = l ? e2a : (b ? e2a : e2b);
+    `checkh(e2c, e2a);
+    e2c = l ? e2a : l ? (b ? e2a : e2b) : b ? (l ? e2a : e2b) : e2b;
+    `checkh(e2c, e2a);
+
+    `checkt(l ? packed_st2_1 : packed_st1, logic7);
+    `checkt(b ? packed_st2_1 : packed_st2_1, packed_st2_1);
+    `checkt(l ? packed_st2_1 : packed_st2_1, packed_st2_1);
 
     $write("*-* All Finished *-*\n");
     $finish;

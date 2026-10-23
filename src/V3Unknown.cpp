@@ -577,29 +577,37 @@ const std::string UnknownVisitor::s_xrandPrefix = "__Vxrand";
 // Known visitor
 
 class KnownVisitor final : public VNVisitor {
-    static AstNodeDType* basicToTwostate(AstNodeDType* const dtypep) {
-        if (AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
+    static AstNodeDType* dtypepToTwostate(AstNodeDType* const dtypep) {
+        if (AstEnumDType* const edtypep = VN_CAST(dtypep, EnumDType)) {
+            if (AstEnumDType* const resultp = edtypep->originalDTypep()) return resultp;
+        } else if (AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
+            if (AstNodeUOrStructDType* const resultp = sdtypep->originalDTypep()) return resultp;
+        } else if (AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
             if (basicp->isIntegralOrPacked()) return basicp->findStatesCounterpart(false);
         }
         return nullptr;
     }
-    static void setTwostateIfBasic(AstNode* const nodep) {
-        if (AstNodeDType* const dtypep = basicToTwostate(nodep->dtypep())) nodep->dtypep(dtypep);
+    static void setTwostateIfAble(AstNode* const nodep) {
+        if (AstNodeDType* const dtypep = dtypepToTwostate(nodep->dtypep())) {
+            nodep->dtypep(dtypep);
+        }
     }
     template <typename T>
     static void subDTypeUpdate(T* const nodep) {
-        if (AstNodeDType* const dtypep = basicToTwostate(nodep->subDTypep())) {
+        if (AstNodeDType* const dtypep = dtypepToTwostate(nodep->subDTypep())) {
             nodep->refDTypep(dtypep);
         }
     }
 
+    // VISITORS
+    // DTypes visitors
     void visit(AstNodeArrayDType* const nodep) override {
         subDTypeUpdate(nodep);
         iterateChildren(nodep);
     }
     void visit(AstAssocArrayDType* const nodep) override {
         subDTypeUpdate(nodep);
-        if (AstNodeDType* const dtypep = basicToTwostate(nodep->keyDTypep())) {
+        if (AstNodeDType* const dtypep = dtypepToTwostate(nodep->keyDTypep())) {
             nodep->keyDTypep(dtypep);
         }
     }
@@ -612,7 +620,7 @@ class KnownVisitor final : public VNVisitor {
     void visit(AstDynArrayDType* const nodep) override { subDTypeUpdate(nodep); }
     void visit(AstUnsizedArrayDType* const nodep) override { subDTypeUpdate(nodep); }
     void visit(AstSampleQueueDType* const nodep) override {
-        if (AstNodeDType* const dtypep = basicToTwostate(nodep->subDTypep())) {
+        if (AstNodeDType* const dtypep = dtypepToTwostate(nodep->subDTypep())) {
             nodep->refDTypep(dtypep);
             nodep->dtypep(dtypep);
         }
@@ -631,28 +639,30 @@ class KnownVisitor final : public VNVisitor {
     }
     void visit(AstMemberDType* const nodep) override {
         iterateChildren(nodep);
-        if (AstNodeDType* const dtypep = basicToTwostate(nodep->subDTypep())) {
+        if (AstNodeDType* const dtypep = dtypepToTwostate(nodep->subDTypep())) {
             nodep->refDTypep(dtypep);
             nodep->dtypep(dtypep);
         } else {
-            setTwostateIfBasic(nodep);
+            setTwostateIfAble(nodep);
         }
     }
     void visit(AstRefDType* const nodep) override {
         if (AstNodeDType* const dtypep = nodep->refDTypep()) {
-            if (AstNodeDType* const newp = basicToTwostate(dtypep)) nodep->refDTypep(newp);
+            if (AstNodeDType* const newp = dtypepToTwostate(dtypep)) nodep->refDTypep(newp);
         }
         nodep->dtypep(nodep->subDTypep());
     }
-    void visit(AstParamTypeDType* const nodep) override { setTwostateIfBasic(nodep); }
-    void visit(AstTypedef* const nodep) override { setTwostateIfBasic(nodep); }
+    void visit(AstParamTypeDType* const nodep) override { setTwostateIfAble(nodep); }
+    void visit(AstTypedef* const nodep) override { setTwostateIfAble(nodep); }
+
+    // Other visitors
     void visit(AstVar* const nodep) override {
         iterateChildren(nodep);
-        setTwostateIfBasic(nodep);
+        setTwostateIfAble(nodep);
     }
     void visit(AstNodeExpr* const nodep) override {
         iterateChildren(nodep);
-        setTwostateIfBasic(nodep);
+        setTwostateIfAble(nodep);
     }
     void visit(AstNodeAssign* const nodep) override {
         iterateChildren(nodep);
