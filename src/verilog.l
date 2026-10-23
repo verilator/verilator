@@ -48,6 +48,10 @@
         yylval.fl = CRELINE(); \
     } while (false)
 
+// yytext may start with whitespace kept by yymore() in a preceding `systemc_* section
+#define SYSC_DEPRECATED() \
+    yylval.fl->v3warn(DEPRECATED, "'" << std::strrchr(yytext, '`') << "' is deprecated, use DPI instead")
+
 #define STR \
     do { \
         const string str(yytext, yyleng); \
@@ -1202,13 +1206,13 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
 
   /* Verilator */
   /* See also V3ParseImp::preprocDumps() */
-  "`systemc_ctor"                       { FL_FWD; BEGIN SYSCCTOR; FL_BRK; }
-  "`systemc_dtor"                       { FL_FWD; BEGIN SYSCDTOR; FL_BRK; }
-  "`systemc_header"                     { FL_FWD; BEGIN SYSCHDR; FL_BRK; }
-  "`systemc_header_post"                { FL_FWD; BEGIN SYSCHDRP; FL_BRK; }
-  "`systemc_imp_header"                 { FL_FWD; BEGIN SYSCIMPH; FL_BRK; }
-  "`systemc_implementation"             { FL_FWD; BEGIN SYSCIMP; FL_BRK; }
-  "`systemc_interface"                  { FL_FWD; BEGIN SYSCINT; FL_BRK; }
+  "`systemc_ctor"                       { FL; SYSC_DEPRECATED(); BEGIN SYSCCTOR; FL_BRK; }
+  "`systemc_dtor"                       { FL; SYSC_DEPRECATED(); BEGIN SYSCDTOR; FL_BRK; }
+  "`systemc_header"                     { FL; SYSC_DEPRECATED(); BEGIN SYSCHDR; FL_BRK; }
+  "`systemc_header_post"                { FL; SYSC_DEPRECATED(); BEGIN SYSCHDRP; FL_BRK; }
+  "`systemc_imp_header"                 { FL; SYSC_DEPRECATED(); BEGIN SYSCIMPH; FL_BRK; }
+  "`systemc_implementation"             { FL; SYSC_DEPRECATED(); BEGIN SYSCIMP; FL_BRK; }
+  "`systemc_interface"                  { FL; SYSC_DEPRECATED(); BEGIN SYSCINT; FL_BRK; }
   "`verilator_config"                   { FL_FWD; BEGIN VLT; FL_BRK; }
   "`verilog"                            { FL_FWD; BEGIN PARSEP->lexKwdLastState(); FL_BRK; }
 
