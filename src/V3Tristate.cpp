@@ -1643,6 +1643,17 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    void visit(AstNodeConsItem* nodep) override {
+        iterateChildren(nodep);
+        // Unpacked aggregates have no enables, so Z bits of an item read as 0,
+        // as they do for a Z assigned to a non-tristate variable
+        if (m_graphing) return;
+        if (AstNode* const enp = nodep->valuep()->user1p()) {
+            nodep->valuep()->user1p(nullptr);
+            VL_DO_DANGLING(pushDeletep(enp), enp);
+        }
+    }
+
     void visit(AstBufIf1* nodep) override {
         // For BufIf1, the enable is the LHS expression
         iterateChildren(nodep);
