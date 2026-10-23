@@ -1769,8 +1769,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-public", CbOnOff, [this, fl](bool flag) {
         m_public = flag;
         if (flag) {
-            fl->v3warn(UNOPTPUBLIC, "Option '--public' prevents optimization; consider using"
-                                    " 'public_flat_rw' on only the needed signals instead");
+            fl->v3warn(UNOPTPUBLIC, "Option '--public' prevents optimization\n"
+                                        << fl->warnMore()
+                                        << "... Suggest use 'public_flat_rw' on only the needed"
+                                           " signals instead");
         }
     });
     DECL_OPTION("-public-depth", Set, &m_publicDepth);

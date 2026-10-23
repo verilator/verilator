@@ -54,8 +54,9 @@ class LinkResolveVisitor final : public VNVisitor {
 
     // METHODS
     void warnUnoptPublic(AstNode* nodep, const std::string& what, const std::string& instead) {
-        nodep->v3warn(UNOPTPUBLIC,
-                      what << " prevents optimization; consider using " << instead << " instead");
+        nodep->v3warn(UNOPTPUBLIC, what << " prevents optimization\n"
+                                        << nodep->warnMore() << "... Suggest use " << instead
+                                        << " instead");
     }
 
     // VISITORS
