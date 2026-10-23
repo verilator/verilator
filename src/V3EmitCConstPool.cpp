@@ -74,7 +74,7 @@ class EmitCConstPool final : public EmitCConstInit {
             // Literal types should be constinit (no code generation needed)
             if (varp->dtypep()->isLiteralType()) putns(varp, "VL_CONSTINIT_CXX20 ");
             putns(varp, "const ");
-            emitVarDefn(varp);
+            emitVarDefn(varp, EmitCUtil::constPoolName(varp));
             // Account for file splitting
             varp->valuep()->foreach([this](const AstConst* constp) {
                 if (constp->num().isString()) {

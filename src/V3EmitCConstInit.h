@@ -203,10 +203,4 @@ protected:
         putnbs(varp, varp->dtypep()->cType(name, false, false));
         emitInitializer(VN_AS(varp->valuep(), NodeExpr));
     }
-    void emitVarDefn(const AstVar* varp) {
-        emitVarDefn(varp, varp->constPoolEntry()
-                              ? EmitCUtil::constPoolName(varp)
-                              : EmitCUtil::prefixNameProtect(EmitCParentModule::get(varp))
-                                    + "::" + varp->nameProtect());
-    }
 };
