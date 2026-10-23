@@ -898,7 +898,9 @@ class LinkCellsVisitor final : public VNVisitor {
             if (AstPackage* const pkgp = VN_CAST(nodep, Package)) {
                 // Packages have their own global name space (IEEE 1800-2023 3.13)
                 const auto result = m_packages.emplace(pkgp->origName(), pkgp);
-                if (!result.second && result.first->second != pkgp) {
+                if (result.second) {
+                    V3Control::applyModule(pkgp);
+                } else if (result.first->second != pkgp) {
                     warnModDup(pkgp, result.first->second);
                     pkgp->unlinkFrBack();
                     VL_DO_DANGLING(pushDeletep(pkgp), pkgp);
@@ -931,9 +933,11 @@ class LinkCellsVisitor final : public VNVisitor {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);  // Original name
                 nodep->name(newName);
                 insertModInGlobalLib(nodep->name(), nodep);
+                V3Control::applyModule(nodep);
             } else {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);
                 insertModInGlobalLib(nodep->name(), nodep);
+                V3Control::applyModule(nodep);
             }
         }
         // Resolve package/module name collisions after collecting all declarations.
@@ -978,10 +982,5 @@ void V3LinkCells::link(AstNetlist* nodep, VInFilter* filterp) {
     // Configs must be parsed first because they determine the library search order for linking
     LinkCellsState state;
     { LinkConfigsVisitor{nodep, state}; }
-    // Bind processing depends on module controls, including controls for later modules.
-    for (AstNodeModule* modulep = nodep->modulesp(); modulep;
-         modulep = VN_AS(modulep->nextp(), NodeModule)) {
-        V3Control::applyModule(modulep);
-    }
     { LinkCellsVisitor{nodep, filterp, state}; }
 }
