@@ -50,7 +50,8 @@
 
 // yytext may start with whitespace kept by yymore() in a preceding `systemc_* section
 #define SYSC_DEPRECATED() \
-    yylval.fl->v3warn(DEPRECATED, "'" << std::strrchr(yytext, '`') << "' is deprecated, use DPI instead")
+    yylval.fl->v3warn(DEPRECATED, \
+                      "'" << std::strrchr(yytext, '`') << "' is deprecated, use DPI instead")
 
 #define STR \
     do { \
