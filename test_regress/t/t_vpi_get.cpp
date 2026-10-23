@@ -173,6 +173,9 @@ extern "C" int mon_check() {
     return 0;  // Ok
 }
 
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
+
 void dpi_print(const char* somestring) { printf("SOMESTRING = %s\n", somestring); }
 
 //======================================================================

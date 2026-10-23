@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
+
 `ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
 `else
@@ -19,12 +22,6 @@ module t #(
   // Inputs
   clk
   );
-
-`ifdef VERILATOR
-`systemc_header
-extern "C" int mon_check();
-`verilog
-`endif
 
   input clk;
 
@@ -49,7 +46,7 @@ extern "C" int mon_check();
   // Test loop
   initial begin
 `ifdef VERILATOR
-    status = $c32("mon_check()");
+    status = `CPP_CALL(mon_check);
 `endif
 `ifdef IVERILOG
     status = $mon_check();
