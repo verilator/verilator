@@ -303,6 +303,7 @@ Verilator 5.053 devel
 * Fix base-class method as implementation of interface class pure virtual method  (#8781) (#8782). [Kristof Marien]
 * Fix Z constants in unpacked aggregate patterns (#8820). [Geza Lore, Testorrent USA, Inc.]
 * Fix tracing of hierarchical blocks when opened before first eval (#8790) (#8826). [Geza Lore, Testorrent USA, Inc.]
+* Fix --hierarchical block builds with -work (#8791). [Will Keen]
 * Fix module controls on modules found by library search (#8793 fallout). [Geza Lore, Testorrent USA, Inc.]
 * Fix and check assoc/wild/dynamic/queue assignment pattern keys (#8797). [Geza Lore, Testorrent USA, Inc.]
 * Fix VL_DANGLING no-op on MSVC (#8786). [Simon Zhang]
