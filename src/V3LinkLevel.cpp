@@ -55,7 +55,10 @@ void V3LinkLevel::modSortByLevel() {
     }
     if (tops.size() >= 2) {
         const AstNode* const secp = tops[1];  // Complain about second one, as first often intended
-        if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
+        if (!v3Global.opt.libCreate().empty()) {
+            secp->v3error("--lib-create cannot be used with multiple top level modules\n"
+                          << secp->warnMore() << "... Suggest use --top-module to select top.");
+        } else if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
             auto warnTopModules = [](const AstNode* const secp, ModVec tops)
                                       VL_REQUIRES(V3Error::s().m_mutex) -> std::string {
                 std::stringstream ss;
