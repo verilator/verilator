@@ -28,6 +28,18 @@
 //======================================================================
 // VlCoroutineHandle:: Methods
 
+VlCoroutineHandle::~VlCoroutineHandle() {
+    // Usually these coroutines should get resumed; we only need to clean up if we destroy a
+    // model with some coroutines suspended
+    if (VL_UNLIKELY(m_coro)) {
+        if (m_process && m_process->state() != VlProcess::KILLED && !m_coro.promise().m_forever) {
+            m_process->state(VlProcess::FINISHED);
+        }
+        m_coro.destroy();
+        VerilatedDpiCall::resumeAborted();
+    }
+}
+
 void VlCoroutineHandle::resume() {
     // Only null if we have a fork..join_any and one of the other child processes resumed the
     // main process
