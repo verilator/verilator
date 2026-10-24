@@ -1728,7 +1728,8 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     const VCastable castable = VCastable::UNSUPPORTED;
     toDtp = toDtp->skipRefToEnump();
     fromDtp = fromDtp->skipRefToEnump();
-    if (toDtp == fromDtp) return VCastable::SAMEISH;
+    if (toDtp == fromDtp) return VCastable::MATCHING;
+    if (toDtp->matchingDType(fromDtp)) return VCastable::MATCHING;
     if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
     // UNSUP unpacked struct/unions (treated like BasicDType)
     const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
@@ -1793,7 +1794,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
             return castable;
         }
         if (toIfp->isVirtual() == fromIfp->isVirtual() && sameModport) {
-            return VCastable::SAMEISH;
+            return VCastable::MATCHING;
         }
         // An unqualified interface or virtual interface may bind to a modport-qualified
         // virtual interface.
@@ -1813,7 +1814,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         // Elements must match, but a nested dimension is COMPATIBLE if equivalent, and a virtual
         // interface element can refer to an interface instance
         const AstNodeDType* const toSubp = toArrayp->subDTypep()->skipRefp();
-        if (subCastable == VCastable::SAMEISH
+        if (subCastable.isSameish()
             || (subCastable == VCastable::COMPATIBLE
                 && (VN_IS(toSubp, UnpackArrayDType) || VN_IS(toSubp, IfaceRefDType)))) {
             return VCastable::COMPATIBLE;
@@ -1841,8 +1842,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     if (VN_IS(node1p, Const)) std::swap(node1p, node2p);
     {
         const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
-        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE)
-            return node1p->dtypep();
+        if (castable.isSameish() || castable == VCastable::COMPATIBLE) return node1p->dtypep();
         if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
     }
 
