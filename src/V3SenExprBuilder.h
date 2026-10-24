@@ -287,6 +287,21 @@ private:
                 = VN_CAST(clearFromp->getVAccessTargetRecurse(), NodeVarRef)) {
                 refp->access(VAccess::WRITE);
             }
+            // Dynamic array and queue selects were already made as read-only 'at'
+            for (AstNodeExpr* selp = clearFromp;;) {
+                if (AstCMethodHard* const cmethodp = VN_CAST(selp, CMethodHard)) {
+                    if (cmethodp->method() == VCMethod::ARRAY_AT) {
+                        cmethodp->method(VCMethod::ARRAY_AT_WRITE);
+                    } else if (cmethodp->method() == VCMethod::ARRAY_AT_BACK) {
+                        cmethodp->method(VCMethod::DYN_AT_WRITE_APPEND_BACK);
+                    }
+                    selp = cmethodp->fromp();
+                } else if (const AstNodeSel* const nodeSelp = VN_CAST(selp, NodeSel)) {
+                    selp = nodeSelp->fromp();
+                } else {
+                    break;
+                }
+            }
             AstCMethodHard* const clearp
                 = new AstCMethodHard{flp, clearFromp, VCMethod::EVENT_CLEAR_FIRED};
             clearp->dtypeSetVoid();
