@@ -185,6 +185,13 @@ class EmitCModel final : public EmitCFunc {
         }
         ofp()->putsPrivate(true);
         puts("VL_UNCOPYABLE(" + EmitCUtil::topClassName() + ");  ///< Copying not allowed\n");
+        if (!optSystemC()) {
+            puts("\n");
+            puts("protected:\n");
+            ofp()->resetPrivate();
+            puts(EmitCUtil::topClassName()
+                 + "(VerilatedContext* contextp, const char* name, bool isRoot);\n");
+        }
 
         puts("\n");
         ofp()->putsPrivate(false);  // public:
@@ -309,17 +316,23 @@ class EmitCModel final : public EmitCFunc {
         putSectionDelimiter("Constructors");
 
         puts("\n");
-        putns(modp, EmitCUtil::topClassName() + "::" + EmitCUtil::topClassName());
+        const std::string ctorName = EmitCUtil::topClassName() + "::" + EmitCUtil::topClassName();
         if (optSystemC()) {
+            putns(modp, ctorName);
             puts("(sc_core::sc_module_name /* unused */)\n");
             puts("    : VerilatedModel{*Verilated::threadContextp()}\n");
             puts("    , vlSymsp{new " + EmitCUtil::symClassName()
-                 + "(contextp(), name(), this)}\n");
+                 + "(contextp(), this, name(), true)}\n");
         } else {
-            puts("(VerilatedContext* _vcontextp__, const char* _vcname__)\n");
+            putns(modp, ctorName + "(VerilatedContext* _vcontextp__, const char* _vcname__)\n");
+            puts("    : " + EmitCUtil::topClassName() + "{_vcontextp__, _vcname__, true} {}\n\n");
+
+            putns(modp, ctorName);
+            puts("(VerilatedContext* _vcontextp__, const char* _vcname__, "
+                 "bool _vcisRoot__)\n");
             puts("    : VerilatedModel{*_vcontextp__}\n");
             puts("    , vlSymsp{new " + EmitCUtil::symClassName()
-                 + "(contextp(), _vcname__, this)}\n");
+                 + "(contextp(), this, _vcname__, _vcisRoot__)}\n");
         }
         puts("    , m_evalLoop{*this, /*convergeLimit:*/ "s
              + cvtToStr(v3Global.opt.convergeLimit()) + "}\n");
@@ -598,8 +611,6 @@ class EmitCModel final : public EmitCFunc {
 
     void emitTraceMethods(AstNodeModule* modp) {
         const string topModNameProtected = EmitCUtil::prefixNameProtect(modp);
-        const string topTraceName
-            = V3OutFormatter::quoteNameControls(v3Global.rootp()->libTopName());
 
         putSectionDelimiter("Trace configuration");
 
@@ -634,7 +645,8 @@ class EmitCModel final : public EmitCFunc {
             puts("if (tracep->rootInit()) {\n");
             puts("tracep->pushPrefix(vlSymsp->name(), VerilatedTracePrefixType::SCOPE_MODULE);\n");
             puts(topModNameProtected + "__" + protect("trace_init_root") + "(vlSelf, tracep);\n");
-            puts("tracep->pushPrefix(\"" + topTraceName
+            puts("tracep->pushPrefix(\""
+                 + V3OutFormatter::quoteNameControls(v3Global.rootp()->l2Names().front())
                  + "\", VerilatedTracePrefixType::SCOPE_MODULE);\n");
             puts("}\n");
         }

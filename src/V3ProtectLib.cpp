@@ -355,7 +355,7 @@ class ProtectVisitor final : public VNVisitor {
         txtp->add("public:\n");
         txtp->add("long long m_seqnum;\n");
         txtp->add(m_topName + "_container(const char* scopep__V):\n");
-        txtp->add(m_topName + "(scopep__V) {}\n");
+        txtp->add(m_topName + "(Verilated::threadContextp(), scopep__V, false) {}\n");
         txtp->add("};\n\n");
 
         // Extern C

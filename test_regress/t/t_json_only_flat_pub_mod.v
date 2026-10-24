@@ -6,10 +6,14 @@
 
 // verilator lint_off UNOPTPUBLIC
 
-module foo(input logic i_clk); /* verilator public_module */
+module foo (
+    input logic i_clk
+);  /* verilator public_module */
 endmodule
 
 // --flatten forces inlining of public module foo.
-module top(input logic i_clk);
-  foo f(.*);
+module top (
+    input logic i_clk
+);
+  foo f (.*);
 endmodule

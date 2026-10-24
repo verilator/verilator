@@ -159,11 +159,7 @@ class EmitCImp final : public EmitCFunc {
         puts("\nvoid " + modName + "__ctor(" + modName + "* vlSelf, " + EmitCUtil::symClassName()
              + "* symsp, const char* namep) {\n");
         puts("vlSelf->vlSymsp = symsp;\n");
-        if (modp->isTop()) {
-            puts("vlSelf->vlNamep = strdup(namep);\n");
-        } else {
-            puts("vlSelf->vlNamep = strdup(Verilated::catName(symsp->name(), namep));\n");
-        }
+        puts("vlSelf->vlNamep = strdup(namep);\n");
         putsDecoration(modp, "// Construct members\n");
         for (const TextStmts::Stmt& stmt : m_ctorStmts) puts(stmt.m_text + "\n");
 

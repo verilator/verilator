@@ -30,7 +30,7 @@ endclass
 
 class Bar;
   rand Elem foo_arr[];
-  constraint c_size { foo_arr.size() == 3; }
+  constraint c_size {foo_arr.size() == 3;}
   function new();
     foo_arr = new[3];
     foreach (foo_arr[i]) foo_arr[i] = new;

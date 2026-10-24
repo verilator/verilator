@@ -27,27 +27,57 @@ module mid #(
 ) ();
   typedef logic [2*P:P] data_t;
   localparam int BITS = $bits(data_t);
-  sub #(.W(BITS), .E(P + 1)) i_bits ();
+  sub #(
+      .W(BITS),
+      .E(P + 1)
+  ) i_bits ();
   localparam int HIGH = $high(data_t);
-  sub #(.W(HIGH), .E(2 * P)) i_high ();
+  sub #(
+      .W(HIGH),
+      .E(2 * P)
+  ) i_high ();
   localparam int LOW = $low(data_t);
-  sub #(.W(LOW), .E(P)) i_low ();
+  sub #(
+      .W(LOW),
+      .E(P)
+  ) i_low ();
   localparam int SIZE = $size(data_t);
-  sub #(.W(SIZE), .E(P + 1)) i_size ();
+  sub #(
+      .W(SIZE),
+      .E(P + 1)
+  ) i_size ();
   localparam int INCREMENT = $increment(data_t);
-  sub #(.W(INCREMENT), .E(1)) i_increment ();
+  sub #(
+      .W(INCREMENT),
+      .E(1)
+  ) i_increment ();
   localparam int LEFT = $left(data_t);
-  sub #(.W(LEFT), .E(2 * P)) i_left ();
+  sub #(
+      .W(LEFT),
+      .E(2 * P)
+  ) i_left ();
   localparam int RIGHT = $right(data_t);
-  sub #(.W(RIGHT), .E(P)) i_right ();
+  sub #(
+      .W(RIGHT),
+      .E(P)
+  ) i_right ();
 
   typedef logic [P:2*P] asc_t;
   localparam int INCREMENT_ASC = $increment(asc_t);
-  sub #(.W(INCREMENT_ASC), .E(-1)) i_increment_asc ();
+  sub #(
+      .W(INCREMENT_ASC),
+      .E(-1)
+  ) i_increment_asc ();
   localparam int LEFT_ASC = $left(asc_t);
-  sub #(.W(LEFT_ASC), .E(P)) i_left_asc ();
+  sub #(
+      .W(LEFT_ASC),
+      .E(P)
+  ) i_left_asc ();
   localparam int RIGHT_ASC = $right(asc_t);
-  sub #(.W(RIGHT_ASC), .E(2 * P)) i_right_asc ();
+  sub #(
+      .W(RIGHT_ASC),
+      .E(2 * P)
+  ) i_right_asc ();
 endmodule
 
 module t ();

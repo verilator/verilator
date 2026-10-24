@@ -15,5 +15,8 @@ endmodule
 module t #(
     parameter int W = 1
 );
-  sub #(.W(W), .P('1)) u ();
+  sub #(
+      .W(W),
+      .P('1)
+  ) u ();
 endmodule

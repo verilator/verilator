@@ -4,18 +4,20 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2024 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
-test.scenarios('simulator_st')
-test.top_filename = "t/t_reloop_cam.v"
+test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["--stats", "-fno-reloop"])
+test.compile(verilator_flags2=["--protect-ids", "--protect-key", "TEST_KEY"])
+
+test.execute()
 
 if test.vlt_all:
-    test.file_grep_not(test.stats, r'Optimizations, Reloop iterations\s+(\d+)')
-    test.file_grep_not(test.stats, r'Optimizations, Reloops\s+(\d+)')
+    # Check for the name of the top module in any outputs
+    for filename in test.glob_some(test.obj_dir + "/*.[ch]*"):
+        test.file_grep_not(filename, r'secret')
 
 test.passes()

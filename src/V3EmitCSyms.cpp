@@ -126,6 +126,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // when forcePerInstance is used.
     int m_modCoverBins = 0;  // Per-module coverage bin number
     const bool m_dpiHdrOnly;  // Only emit the DPI header
+    // Emit the original names of the top module instances, which --protect-ids hides unless used
+    bool m_origTopNames = !v3Global.opt.protectIds();
     VDouble0 m_statVarScopeBytes;  // Statistic tracking
     // name -> initializer rows, built in getSymCtorStmts()
     using NamedTables = std::vector<std::pair<std::string, std::vector<std::string>>>;
@@ -841,7 +843,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             for (const ModVarPair& mvPair : m_modVars) {
                 const AstNodeModule* const modp = mvPair.first;
                 const AstVar* const varp = mvPair.second;
-                if (modp != smodp) continue;
+                if (modp != smodp || modp->verilatorLib()) continue;
                 addScopeVarEntry(scopep, modp, varp);
             }
         }
@@ -898,12 +900,12 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             row += parentOffset + ", \"";
             row += V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(ird.m_name, true));
             row += "\", \"";
-            row += V3OutFormatter::quoteNameControls(
-                VIdProtect::protectWordsIf(ird.m_suffix, true));
+            const std::pair<size_t, std::string> top = EmitCUtil::splitTopPath(ird.m_suffix);
+            row += V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(top.second, true));
             row += "\", \"";
             row += V3OutFormatter::quoteNameControls(
                 VIdProtect::protectWordsIf(ird.m_modportName, true));
-            row += "\"}";
+            row += "\", " + std::to_string(top.first) + "}";
             m_ifaceRefTableRows.emplace_back(std::move(row));
         }
         if (!m_ifaceRefTableRows.empty()) m_ifaceRefTableName = symClass + "__VpiIfaceRefTable";
@@ -991,10 +993,13 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     void visit(AstScope* nodep) override {
         if (VN_IS(m_modp, Class)) return;  // The ClassPackage is what is visible
         nameCheck(nodep);
+        // Named with the original names, as are the models of libraries
+        if (!nodep->protect() || nodep->modp()->verilatorLib()) m_origTopNames = true;
 
         m_scopes.emplace_back(nodep, m_modp);
 
-        if (v3Global.opt.vpi() && !nodep->isTop()) {
+        // The scopes of the instance of a library are its own, so register none for its stub
+        if (v3Global.opt.vpi() && !nodep->isTop() && !nodep->modp()->verilatorLib()) {
             const std::string type = VN_IS(nodep->modp(), Package) ? "SCOPE_PACKAGE"  //
                                      : VN_IS(nodep->modp(), Iface) ? "SCOPE_INTERFACE"  //
                                                                    : "SCOPE_MODULE";
@@ -1013,6 +1018,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
     void visit(AstScopeName* nodep) override {
         if (nodep->selfRelative()) return;  // Its absolute copy is under the scope
+        if (nodep->forFormat()) m_origTopNames = true;  // %m prints the original names
+        if (m_modp && m_modp->verilatorLib()) return;  // As for AstScope
         const std::string name = nodep->scopeSymName();
         // UINFO(9, "scnameins sp " << nodep->name() << " sp " << nodep->scopePrettySymName()
         // << " ss" << name);
@@ -1127,6 +1134,14 @@ void EmitCSyms::emitSymHdr() {
 
     puts("// INTERNAL STATE\n");
     puts(topClassName() + "* const __Vm_modelp;\n");
+    puts("const bool __Vm_isRoot;\n");
+    const std::string nNames = std::to_string(v3Global.rootp()->l2Names().size() + 1);
+    if (m_origTopNames) {
+        puts("std::string " + EmitCUtil::topNamesVar(false) + "[" + nNames + "];\n");
+    }
+    if (v3Global.opt.protectIds()) {
+        puts("std::string " + EmitCUtil::topNamesVar(true) + "[" + nNames + "];\n");
+    }
 
     if (v3Global.needTraceDumper()) {
         // __Vm_dumperp is local, otherwise we wouldn't know what design's eval()
@@ -1206,8 +1221,8 @@ void EmitCSyms::emitSymHdr() {
     }
 
     puts("\n// CONSTRUCTORS\n");
-    puts(symClassName() + "(VerilatedContext* contextp, const char* namep, " + topClassName()
-         + "* modelp);\n");
+    puts(symClassName() + "(VerilatedContext* contextp, " + topClassName()
+         + "* modelp, const char* namep, bool isRoot);\n");
     puts("~" + symClassName() + "();\n");
 
     puts("\n// METHODS\n");
@@ -1425,15 +1440,29 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
         stmts.add("Verilated::stackCheck(" + std::to_string(stackSize) + ");");
     }
 
+    stmts.add("// Setup names of the model and of its top module instances");
+    // The top module instances of the instance of a library are named after the model
+    for (const bool protect : {false, true}) {
+        if (protect ? !v3Global.opt.protectIds() : !m_origTopNames) continue;
+        const std::string names = "vlSymsp->" + EmitCUtil::topNamesVar(protect);
+        stmts.add(names + "[0] = vlSymsp->name();");
+        const std::vector<std::string>& tops = v3Global.rootp()->l2Names();
+        for (size_t i = 0; i < tops.size(); ++i) {
+            const std::string name
+                = V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(tops[i], protect));
+            stmts.add(names + "[" + std::to_string(i + 1)
+                      + "] = vlSymsp->__Vm_isRoot ? Verilated::catName(vlSymsp->name(), \"" + name
+                      + "\") : vlSymsp->name();");
+        }
+    }
+
     stmts.add("// Setup sub module instances");
     for (const ScopeModPair& itpair : m_scopes) {
         const AstScope* const scopep = itpair.first;
         const AstNodeModule* const modp = itpair.second;
         if (modp->isTop()) continue;
-        const std::string name = V3OutFormatter::quoteNameControls(
-            VIdProtect::protectWordsIf(scopep->prettyName(), scopep->protect()));
-        stmts.add("VL_INPLACE_CONSTRUCT(vlSymsp->" + instName(scopep) + ", vlSymsp, \"" + name
-                  + "\");");
+        stmts.add("VL_INPLACE_CONSTRUCT(vlSymsp->" + instName(scopep) + ", vlSymsp, "
+                  + EmitCUtil::instNameExpr(scopep->prettyName(), scopep->protect()) + ");");
     }
 
     if (v3Global.opt.profPgo()) {
@@ -1518,17 +1547,10 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
         const uint32_t hash = VN_AS(hashp->valuep(), Const)->toUInt();
         stmts.add(modp->origName() + "_protectlib_check_hash(static_cast<int>("
                   + std::to_string(hash) + "U));");
-        // The library model is named after the %m of the instance, which in a --lib-create
-        // library omits the top module (see V3Scope)
-        std::string path = scopep->prettyName();
-        if (!v3Global.opt.libCreate().empty()) {
-            path.erase(0, v3Global.rootp()->libTopName().size() + 1);
-        }
+        // The library model is named after the %m of the instance
         stmts.add("vlSymsp->" + instName(scopep) + "." + varName(handlep) + " = VL_CVT_VP_Q("
-                  + modp->origName()
-                  + "_protectlib_create((std::string{vlSymsp->name()} + (vlSymsp->name()[0] ? "
-                    "\".\" : \"\") + \""
-                  + V3OutFormatter::quoteNameControls(path) + "\").c_str()));");
+                  + modp->origName() + "_protectlib_create(std::string{"
+                  + EmitCUtil::instNameExpr(scopep->prettyName(), false) + "}.c_str()));");
     }
 
     // Every scope has the same construction shape, so all fold into one table with no
@@ -1540,21 +1562,24 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
             const ScopeData& sd = itpair.second;
             std::string row
                 = "{offsetof(" + symClass + ", " + protect("__Vscopep_" + sd.m_symName) + "), \"";
-            row += V3OutFormatter::quoteNameControls(
-                VIdProtect::protectWordsIf(sd.m_prettyName, true));
+            const std::pair<size_t, std::string> top = EmitCUtil::splitTopPath(sd.m_prettyName);
+            row += V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(top.second, true));
             row += "\", \"";
             row += V3OutFormatter::quoteNameControls(
                 protect(scopeDecodeIdentifier(sd.m_prettyName)));
             row += "\", \"";
             row += V3OutFormatter::quoteNameControls(sd.m_defName);
             row += "\", ";
+            row += std::to_string(top.first);
+            row += ", ";
             row += std::to_string(sd.m_timeunit);
             row += ", VerilatedScope::" + sd.m_type + "}";
             m_scopeTableRows.emplace_back(std::move(row));
         }
         m_scopeTableName = symClass + "__VpiScopeTable";
         stmts.add("VerilatedScope::scopesConstructFromTable(" + m_scopeTableName + ", "
-                  + std::to_string(m_scopeNames.size()) + ", vlSymsp);");
+                  + std::to_string(m_scopeNames.size()) + ", vlSymsp, vlSymsp->"
+                  + EmitCUtil::topNamesVar(true) + ");");
     }
 
     // After the scopes above, as each row points at an already-built VerilatedScope
@@ -1562,7 +1587,8 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
     if (!m_ifaceRefTableRows.empty()) {
         stmts.add("// Setup interface references");
         stmts.add("VerilatedScope::ifaceRefsInsertFromTable(" + m_ifaceRefTableName + ", "
-                  + std::to_string(m_ifaceRefTableRows.size()) + ", vlSymsp);");
+                  + std::to_string(m_ifaceRefTableRows.size()) + ", vlSymsp, vlSymsp->"
+                  + EmitCUtil::topNamesVar(true) + ");");
     }
 
     emitScopeHier(stmts, false);
@@ -1712,7 +1738,8 @@ EmitCSyms::TextStmts EmitCSyms::getSymDtorStmts() {
     if (!m_ifaceRefTableRows.empty()) {
         stmts.add("// Tear down interface references");
         stmts.add("VerilatedScope::ifaceRefsEraseFromTable(" + m_ifaceRefTableName + ", "
-                  + std::to_string(m_ifaceRefTableRows.size()) + ", vlSymsp);");
+                  + std::to_string(m_ifaceRefTableRows.size()) + ", vlSymsp, vlSymsp->"
+                  + EmitCUtil::topNamesVar(true) + ");");
     }
 
     stmts.add("// Tear down scopes");
@@ -1771,11 +1798,12 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
 
     // Constructor
     puts("\n");
-    puts(symClassName() + "::" + symClassName()
-         + "(VerilatedContext* contextp, const char* namep, " + topClassName() + "* modelp)\n");
+    puts(symClassName() + "::" + symClassName() + "(VerilatedContext* contextp, " + topClassName()
+         + "* modelp, const char* namep, bool isRoot)\n");
     puts("    : VerilatedSyms{contextp}\n");
     puts("    // Setup internal state of the Syms class\n");
     puts("    , __Vm_modelp{modelp}\n");
+    puts("    , __Vm_isRoot{isRoot}\n");
     puts("    , __Vm_didInit{modelp->m_didInit}\n");
     if (v3Global.opt.mtasks()) {
         puts("    , __Vm_threadPoolp{static_cast<VlThreadPool*>(contextp->threadPoolp("

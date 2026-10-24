@@ -988,8 +988,8 @@ private:
     void varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam) VL_MT_UNSAFE;
 
 public:  // But internals only - called from verilated modules, VerilatedSyms
-    VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
-                   const char* defnamep, int8_t timeunit, Type type);
+    VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
+                   const char* identifier, const char* defnamep, int8_t timeunit, Type type);
     ~VerilatedScope();
 
     void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
@@ -1008,11 +1008,14 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                const void* const* paramPtrsp) VL_MT_UNSAFE;
     void ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
-                                         VerilatedSyms* symsp) VL_MT_UNSAFE;
+                                         VerilatedSyms* symsp,
+                                         const std::string* topNamesp) VL_MT_UNSAFE;
     static void ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                         VerilatedSyms* symsp) VL_MT_UNSAFE;
+                                         VerilatedSyms* symsp,
+                                         const std::string* topNamesp) VL_MT_UNSAFE;
     static void ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                        const VerilatedSyms* symsp) VL_MT_UNSAFE;
+                                        const VerilatedSyms* symsp,
+                                        const std::string* topNamesp) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -1043,9 +1046,10 @@ struct VlIfaceRefTableEntry final {
     // offsetof of the enclosing scope's __Vscopep_* member, or VL_IFACEREF_NO_PARENT
     uint32_t parentPtrOffset;
     const char* namep;  // Name of the reference port
-    // Path within the model; as VlScopeTableEntry::namep, instance name prepended at construction
+    // Path below the name selected by topIndex, which is prepended at construction
     const char* suffixp;
     const char* modportp;  // Modport name, or "" if none
+    uint32_t topIndex;  // As VlScopeTableEntry::topIndex
 };
 
 // One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces
@@ -1055,6 +1059,8 @@ struct VlScopeTableEntry final {
     const char* namep;  // Scope suffix name (protected), string literal
     const char* identp;  // Identifier with escapes removed (protected)
     const char* defnamep;  // Definition name (SCOPE_MODULE only), else "<null>"
+    // Run-time name namep is below: 0 for the model, else 1 + index of a top module instance
+    uint32_t topIndex;
     int8_t timeunit;  // Timeunit in negative power-of-10
     VerilatedScope::Type type;
 };
@@ -1276,7 +1282,8 @@ public:
 #endif
 
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
-    // Internal: Create a new module name by concatenating two strings
+    // Internal: Create a new module name by concatenating two strings, with the delimiter
+    // between them if neither is empty
     // Returns pointer to thread-local static data (overwritten on next call)
     static const char* catName(const char* n1, const char* n2,
                                const char* delimiter = ".") VL_MT_SAFE;

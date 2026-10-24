@@ -23,7 +23,7 @@ module t (clk, Rand);
   endfunction
 
   always @(posedge clk) begin
-    Rand <= #1 QxRand32 (8'h0, 8'h7);
+    Rand <= #1 QxRand32(8'h0, 8'h7);
     $display(Rand);
   end
 endmodule

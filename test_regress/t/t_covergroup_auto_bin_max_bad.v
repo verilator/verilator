@@ -31,7 +31,9 @@ module t;
   // Warning (COVERIGN): negative option.at_least, at each level
   covergroup cg_at_least_neg;
     option.at_least = -1;
-    cp_a: coverpoint cp_expr {option.at_least = -2;}
+    cp_a: coverpoint cp_expr {
+      option.at_least = -2;
+    }
     cp_b: coverpoint cp_expr;
     cx: cross cp_a, cp_b{option.at_least = -3;}
   endgroup

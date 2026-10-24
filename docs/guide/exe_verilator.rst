@@ -1346,7 +1346,9 @@ Summary:
    model has a time resolution that is always compatible with the time
    precision of the upper instantiating module.
 
-   Designs compiled using this option cannot use :vlopt:`--timing` with delays.
+   Designs compiled using this option cannot use :vlopt:`--timing` with delays,
+   and cannot use :vlopt:`--sc`. The design must have a single top level module,
+   see :vlopt:`--top-module`.
 
    See also :vlopt:`--protect-lib`.
 

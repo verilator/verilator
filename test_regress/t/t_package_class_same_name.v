@@ -7,7 +7,9 @@
 // IEEE 1800-2023 3.13: Package and compilation-unit scope name spaces are distinct.
 
 package mem_agent;
-  class mem_agent #(type CONFIG = int);
+  class mem_agent #(
+      type CONFIG = int
+  );
     CONFIG cfg;
   endclass
 endpackage

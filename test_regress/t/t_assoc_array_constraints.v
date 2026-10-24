@@ -40,63 +40,69 @@ typedef union packed {
   bit [7:0] k8b;
 } PackedUnionKey;
 
-typedef enum { EnumA, EnumB } EnumKey;
+typedef enum {
+  EnumA,
+  EnumB
+} EnumKey;
 
 class ClsNe;
   rand Empty empties[string];
-  constraint c { empties["abc"] != empties["xyz"]; }
+  constraint c {empties["abc"] != empties["xyz"];}
 endclass
 
 class ClsEq;
   rand Empty empties[string];
-  constraint c { empties["abc"] == empties["xyz"]; }
+  constraint c {empties["abc"] == empties["xyz"];}
 endclass
 
 class ClsNeK;
   rand Empty empties[string];
-  constraint c { empties["abc"] != empties["abc"]; }
+  constraint c {empties["abc"] != empties["abc"];}
 endclass
 
 class ClsEqK;
   rand Empty empties[string];
-  constraint c { empties["abc"] == empties["abc"]; }
+  constraint c {empties["abc"] == empties["abc"];}
 endclass
 
 class ClsMixed;
   rand int y;
   rand Empty empties[string];
-  constraint c { y > 5; empties["abc"] != empties["xyz"]; }
+  constraint c {
+    y > 5;
+    empties["abc"] != empties["xyz"];
+  }
 endclass
 
 class ClsStructKey;
   rand Empty empties[PackedStructKey];
   PackedStructKey k1;
   PackedStructKey k2;
-  constraint c { empties[k1] != empties[k2]; }
+  constraint c {empties[k1] != empties[k2];}
 endclass
 
 class ClsUnionKey;
   rand Empty empties[PackedUnionKey];
   PackedUnionKey k1;
   PackedUnionKey k2;
-  constraint c { empties[k1] != empties[k2]; }
+  constraint c {empties[k1] != empties[k2];}
 endclass
 
 class ClsIntKey;
   rand Empty empties[int];
-  constraint c { empties[1] != empties[2]; }
+  constraint c {empties[1] != empties[2];}
 endclass
 
 class ClsEnumKey;
   rand Empty empties[EnumKey];
-  constraint c { empties[EnumA] != empties[EnumB]; }
+  constraint c {empties[EnumA] != empties[EnumB];}
 endclass
 
 class ClsStringKey;
   rand Empty empties[string];
   string k1;
   string k2;
-  constraint c { empties[k1] != empties[k2]; }
+  constraint c {empties[k1] != empties[k2];}
 endclass
 
 class ClsIntMember;
@@ -104,7 +110,7 @@ class ClsIntMember;
   function new();
     empties[5] = new;
   endfunction
-  constraint c { empties[5].x > 0; }
+  constraint c {empties[5].x > 0;}
 endclass
 
 class ClsByteMember;
@@ -112,7 +118,7 @@ class ClsByteMember;
   function new();
     empties[8'h12] = new;
   endfunction
-  constraint c { empties[8'h12].x > 0; }
+  constraint c {empties[8'h12].x > 0;}
 endclass
 
 class ClsStringMember;
@@ -120,7 +126,7 @@ class ClsStringMember;
   function new();
     empties["abc"] = new;
   endfunction
-  constraint c { empties["abc"].x > 0; }
+  constraint c {empties["abc"].x > 0;}
 endclass
 
 class ClsStringExprKey;
@@ -166,7 +172,7 @@ class ClsNestedMember;
   function new();
     holder = new;
   endfunction
-  constraint c { holder.empties["abc"].x > 0; }
+  constraint c {holder.empties["abc"].x > 0;}
 endclass
 
 class ClsIntArr;
@@ -174,12 +180,12 @@ class ClsIntArr;
   function new();
     vals["abc"] = 0;
   endfunction
-  constraint c { vals["abc"] > 0; }
+  constraint c {vals["abc"] > 0;}
 endclass
 
 class ClsState;
   Empty empties[string];
-  constraint c { empties["abc"] != empties["xyz"]; }
+  constraint c {empties["abc"] != empties["xyz"];}
 endclass
 
 class NoState;

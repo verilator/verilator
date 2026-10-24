@@ -27,7 +27,10 @@ module reset_child;
     logic [6:0] flags;
     logic [57:0] payload;
   } packet_t;
-  typedef enum logic [6:0] {IDLE = 7'd0, READY = 7'd127} state_t;
+  typedef enum logic [6:0] {
+    IDLE = 7'd0,
+    READY = 7'd127
+  } state_t;
   logic [6:0] bytes[3:1];
   logic [14:0] shorts[2:6];
   logic [30:0] words[0:16];
@@ -72,8 +75,8 @@ endmodule
 module t (
     input clk
 );
-  reset_child a();
-  reset_child b();
+  reset_child a ();
+  reset_child b ();
   always @(posedge clk) begin
     $write("*-* All Finished *-*\n");
     $finish;
