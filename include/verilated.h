@@ -1276,7 +1276,8 @@ public:
 #endif
 
     // METHODS - INTERNAL USE ONLY (but public due to what uses it)
-    // Internal: Create a new module name by concatenating two strings
+    // Internal: Create a new module name by concatenating two strings, with the delimiter
+    // between them if neither is empty
     // Returns pointer to thread-local static data (overwritten on next call)
     static const char* catName(const char* n1, const char* n2,
                                const char* delimiter = ".") VL_MT_SAFE;

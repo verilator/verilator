@@ -316,9 +316,7 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
         ofp()->puts(", '"s + VFormatAttr{VFormatAttr::SCOPE}.ascii() + "'");
         if (scopenamep->selfRelative()) {
-            // vlNamep is catName(name(), instance), so starts with '.' when the model is unnamed
-            const string namep = string{m_useSelfForThis ? "vlSelf" : "this"} + "->vlNamep";
-            ofp()->puts(",(vlSymsp->name()[0] ? " + namep + " : " + namep + " + 1),");
+            ofp()->puts(","s + (m_useSelfForThis ? "vlSelf" : "this") + "->vlNamep,");
             ofp()->putsQuoted(scopenamep->scopeAttr());
         } else {
             ofp()->puts(",vlSymsp->name(),");

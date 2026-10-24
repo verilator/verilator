@@ -3962,7 +3962,9 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
     }
     char* dp = t_strp;
     for (const char* sp = n1; *sp;) *dp++ = *sp++;
-    for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
+    if (*n1 && *n2) {
+        for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
+    }
     for (const char* sp = n2; *sp;) *dp++ = *sp++;
     *dp++ = '\0';
     return t_strp;
