@@ -1759,6 +1759,7 @@ public:
         , m_isFollowedBy{isFollowedBy} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
+        dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstImplication;
     void dump(std::ostream& str) const override;
@@ -2138,12 +2139,17 @@ public:
         : ASTGEN_SUPER_Rand(fl)
         , m_urandom{urandom} {
         this->seedp(seedp);
+        if (urandom) {
+            dtypeSetUInt32();  // Says the spec
+        } else {
+            dtypeSetInt();  // Says the spec
+        }
     }
     class SRandomU32 {};
     AstRand(FileLine* fl, SRandomU32)
         : ASTGEN_SUPER_Rand(fl)
         , m_urandom{true} {
-        dtypeSetUInt32();
+        dtypeSetUInt32();  // Says the spec
     }
     ASTGEN_MEMBERS_AstRand;
     void dump(std::ostream& str) const override;
@@ -2240,6 +2246,7 @@ public:
         : ASTGEN_SUPER_SClocked(fl) {
         this->sensesp(sensesp);
         this->exprp(exprp);
+        dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstSClocked;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -2303,6 +2310,7 @@ public:
     explicit AstSEventually(FileLine* fl, AstNodeExpr* exprp)
         : ASTGEN_SUPER_SEventually(fl) {
         this->exprp(exprp);
+        dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstSEventually;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -2320,12 +2328,14 @@ public:
         this->preExprp(preExprp);
         this->delayp(delayp);
         this->exprp(exprp);
+        dtypeSetBit();
     }
     explicit AstSExpr(FileLine* fl, AstNodeStmt* delayp, AstNodeExpr* exprp)
         : ASTGEN_SUPER_SExpr(fl) {
         this->preExprp(nullptr);
         this->delayp(delayp);
         this->exprp(exprp);
+        dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstSExpr;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -2346,8 +2356,8 @@ public:
     AstSFormatArg(FileLine* fl, VFormatAttr formatAttr, AstNodeExpr* exprp)
         : ASTGEN_SUPER_SFormatArg(fl)
         , m_formatAttr{formatAttr} {
-        dtypeFrom(exprp);
         this->exprp(exprp);
+        dtypeFrom(exprp);
     }
     ASTGEN_MEMBERS_AstSFormatArg;
     void dump(std::ostream& str = std::cout) const override;
@@ -2464,6 +2474,7 @@ public:
         : ASTGEN_SUPER_SGotoRep(fl) {
         this->exprp(exprp);
         this->countp(countp);
+        dtypeSetBit();
     }
     // Range [->M:N]
     AstSGotoRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp, AstNodeExpr* maxCountp)
@@ -2471,6 +2482,7 @@ public:
         this->exprp(exprp);
         this->countp(countp);
         this->maxCountp(maxCountp);
+        dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstSGotoRep;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -2493,6 +2505,7 @@ public:
         : ASTGEN_SUPER_SNonConsRep(fl) {
         this->exprp(exprp);
         this->countp(countp);
+        dtypeSetBit();
     }
     // Range [=M:N]
     AstSNonConsRep(FileLine* fl, AstNodeExpr* exprp, AstNodeExpr* countp, AstNodeExpr* maxCountp)
@@ -2500,6 +2513,7 @@ public:
         this->exprp(exprp);
         this->countp(countp);
         this->maxCountp(maxCountp);
+        dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstSNonConsRep;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -2918,6 +2932,7 @@ public:
         , m_overlapping{overlapping} {
         this->lhsp(lhsp);
         this->rhsp(rhsp);
+        dtypeSetBit();
     }
     ASTGEN_MEMBERS_AstUntil;
     void dump(std::ostream& str) const override;

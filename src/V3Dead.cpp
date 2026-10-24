@@ -324,6 +324,7 @@ class DeadVisitor final : public VNVisitor {
             if (sdtypep->classOrPackagep() && sdtypep->classOrPackagep() != m_modp) {
                 m_dtypePkgsp.emplace(nodep, sdtypep->classOrPackagep());
             }
+            if (AstBasicDType* const basicp = nodep->basicp()) basicp->user1Inc();
         }
         if (AstNode* const subnodep = nodep->virtRefDTypep()) subnodep->user1Inc();
         if (AstNode* const subnodep = nodep->virtRefDType2p()) subnodep->user1Inc();

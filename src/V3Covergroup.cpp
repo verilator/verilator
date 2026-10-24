@@ -982,7 +982,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         const string varName = "__Vseqpos_" + coverpointp->name() + "_" + binp->name();
         // Use 8-bit integer for state position (sequences rarely > 255 items)
         AstVar* stateVarp
-            = new AstVar{binp->fileline(), VVarType::MEMBER, varName, VFlagLogicPacked{}, 8};
+            = new AstVar{binp->fileline(), VVarType::MEMBER, varName, VFlagBitPacked{}, 8};
         m_covergroupp->addMembersp(stateVarp);
 
         UINFO(4, "    Created sequence state variable: " << varName);
