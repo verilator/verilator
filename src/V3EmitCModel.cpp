@@ -599,7 +599,7 @@ class EmitCModel final : public EmitCFunc {
     void emitTraceMethods(AstNodeModule* modp) {
         const string topModNameProtected = EmitCUtil::prefixNameProtect(modp);
         const string topTraceName
-            = V3OutFormatter::quoteNameControls(v3Global.rootp()->traceLibTopName());
+            = V3OutFormatter::quoteNameControls(v3Global.rootp()->libTopName());
 
         putSectionDelimiter("Trace configuration");
 

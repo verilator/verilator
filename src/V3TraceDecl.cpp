@@ -204,7 +204,7 @@ class TraceDeclVisitor final : public VNVisitor {
                 // them under the runtime C++ instance name without affecting embedded use.
                 if (prefix == "$rootio") return;
                 m_path = m_path.substr(start + 1);
-                if (v3Global.rootp()->traceLibTopName() != prefix) m_path = "$libroot " + m_path;
+                if (v3Global.rootp()->libTopName() != prefix) m_path = "$libroot " + m_path;
             }
         }
 
@@ -395,7 +395,7 @@ class TraceDeclVisitor final : public VNVisitor {
         // which does not include the "l2-name" (top module) of the library
         std::string name = AstNode::prettyName(path);
         if (!v3Global.opt.libCreate().empty()) {
-            const std::string topPrefix = v3Global.rootp()->traceLibTopName() + ".";
+            const std::string topPrefix = v3Global.rootp()->libTopName() + ".";
             if (VString::startsWith(name, topPrefix)) name = name.substr(topPrefix.size());
         }
 

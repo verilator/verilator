@@ -1522,7 +1522,7 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
         // library omits the top module (see V3Scope)
         std::string path = scopep->prettyName();
         if (!v3Global.opt.libCreate().empty()) {
-            path.erase(0, v3Global.rootp()->traceLibTopName().size() + 1);
+            path.erase(0, v3Global.rootp()->libTopName().size() + 1);
         }
         stmts.add("vlSymsp->" + instName(scopep) + "." + varName(handlep) + " = VL_CVT_VP_Q("
                   + modp->origName()

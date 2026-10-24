@@ -1682,7 +1682,7 @@ public:
     void nTraceCodes(uint32_t value) { m_nTraceCodes = value; }
     AstVarScope* stlFirstIterationp();
     void clearStlFirstIterationp() { m_stlFirstIterationp = nullptr; }
-    const std::string traceLibTopName() const {
+    const std::string libTopName() const {
         const std::string& name = resolvedTopModuleName();
         return prettyName(name.empty() ? v3Global.rootp()->topModulep()->name() : name);
     }
