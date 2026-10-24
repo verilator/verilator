@@ -113,9 +113,14 @@ class TaskStateVisitor final : public VNVisitor {
     // TYPES
     using VarToScopeMap = std::map<std::pair<AstScope*, AstVar*>, AstVarScope*>;
     using FuncToClassMap = std::unordered_map<const AstNodeFTask*, AstClass*>;
+    using ClassToFuncMap = std::map<std::pair<AstClass*, std::string>, AstNodeFTask*>;
+    using ScopeFuncToFunc = std::map<std::pair<AstScope*, std::string>, AstNodeFTask*>;
+
     // MEMBERS
     VarToScopeMap m_varToScopeMap;  // Map for Var -> VarScope mappings
     FuncToClassMap m_funcToClassMap;  // Map for ctor func -> class
+    ClassToFuncMap m_classToFuncMap;  // Map for class -> func
+    // ScopeFuncToFunc m_scopeFuncToFunc;
     AstNodeFTask* m_ctorp = nullptr;  // Class constructor
     AstClass* m_classp = nullptr;  // Current class
     V3Graph m_callGraph;  // Task call graph
@@ -147,6 +152,20 @@ public:
         UASSERT_OBJ(iter != m_varToScopeMap.end(), nodep, "No scope for var");
         return iter->second;
     }
+    AstNodeFTask* findClassFunc(AstClass* classp, std::string funcName) {
+        const auto iter = m_classToFuncMap.find(std::make_pair(classp, funcName));
+        if (iter != m_classToFuncMap.end())
+            return iter->second;
+        else
+            return nullptr;
+    }
+    // AstNodeFTask* findScopeFunc(AstScope* classp, std::string funcName) {
+    //     const auto iter = m_classToFuncMap.find(std::make_pair(classp, funcName));
+    //     if(iter != m_classToFuncMap.end())
+    //         return iter->second;
+    //     else
+    //         return nullptr;
+    // }
     AstClass* getClassp(AstNodeFTask* nodep) {
         AstClass* const classp = m_funcToClassMap[nodep];
         UASSERT_OBJ(classp, nodep, "No class for ctor func");
@@ -281,6 +300,7 @@ private:
             UASSERT_OBJ(m_classp, nodep, "Ctor not under class");
             m_funcToClassMap[nodep] = m_classp;
         }
+        m_classToFuncMap.emplace(std::make_pair(m_classp, nodep->name()), nodep);
         iterateChildren(nodep);
     }
     void visit(AstPragma* nodep) override {
@@ -425,6 +445,7 @@ class TaskVisitor final : public VNVisitor {
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
     AstNodeModule* m_modp = nullptr;  // Current module
+
     AstTopScope* const m_topScopep = v3Global.rootp()->topScopep();  // The AstTopScope
     AstScope* m_scopep = nullptr;  // Current scope
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
@@ -806,6 +827,65 @@ class TaskVisitor final : public VNVisitor {
                 connectPort(refp, portp, argp, beginp, false);
             }
         }
+
+        // If this is a non static method we need to check the scope of the VarRefs
+        AstVarRef* ccallFromp = VN_CAST(ccallp->op1p(), VarRef);
+        // AstClassRefDType* ccallFrompDtypeClass = nullptr;
+        // if(ccallFromp)
+        //    ccallFrompDtypeClass = VN_CAST(ccallFromp->dtypep()->skipRefp(), ClassRefDType);
+        // AstClass* fromClassp = nullptr;
+        // AstNode* extendp = nullptr;
+        // if(ccallFrompDtypeClass){
+        //     fromClassp = ccallFrompDtypeClass->classp();
+        //     extendp = fromClassp->extendsp();
+        // }
+        if (!refp->taskp()->isFunction() && cfuncp->isMethod() && !refp->taskp()->isStatic()
+            && !refp->taskp()->isCovergroupSample() && !refp->taskp()->dpiImport()
+            && cfuncp->scopep()->aboveScopep() && cfuncp
+            // && !(fromClassp && fromClassp->isInterfaceClass()) // Make sure it is not from a
+            // interface class
+        ) {
+            std::vector<AstNode*> unsetUser3p;
+            if (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
+                || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface)) {
+                methodCallArgsRefs(refp->taskp()->op3p(), cfuncp->scopep()->aboveScopep(), ccallp,
+                                   refp, unsetUser3p);
+            } else if (ccallFromp) {  // If the function is a virtual function. Get the final
+                                      // function not the parent.
+                if (AstVarRef* varRefp2 = VN_CAST(ccallFromp->varp()->user3p(), VarRef)) {
+                    if (AstVarRef* varRefp3
+                        = VN_CAST(varRefp2->varp()->user3p(),
+                                  VarRef)) {  // The base class pointer is set by a function
+                        ccallFromp->varp()->dtypeFrom(ccallFromp->varp()->user3p());
+                        AstClassRefDType* classDtypep
+                            = VN_CAST(varRefp2->varp()->dtypep()->skipRefp(), ClassRefDType);
+                        AstNodeFTask* finalTaskp
+                            = m_statep->findClassFunc(classDtypep->classp(), refp->name());
+                        if (finalTaskp) {
+                            AstScope* scopep = varRefp3->varScopep()->scopep();
+                            methodCallArgsRefs(finalTaskp->op3p(), scopep, ccallp, refp,
+                                               unsetUser3p);
+                        }
+                    } else if (AstNodeCCall* assignedCCallp = VN_CAST(
+                                   varRefp2->varp()->user3p(),
+                                   NodeCCall)) {  // The base class pointer is set by a variable
+                        ccallFromp->varp()->dtypeFrom(ccallFromp->varp()->user3p());
+                        AstClassRefDType* classDtypep
+                            = VN_CAST(varRefp2->varp()->dtypep()->skipRefp(), ClassRefDType);
+                        AstNodeFTask* finalTaskp
+                            = m_statep->findClassFunc(classDtypep->classp(), refp->name());
+                        if (finalTaskp) {
+                            AstScope* scopep = assignedCCallp->funcp()->scopep()->aboveScopep();
+                            methodCallArgsRefs(finalTaskp->op3p(), scopep, ccallp, refp,
+                                               unsetUser3p);
+                        }
+                    }
+                }
+            }
+            // Reset the user3p
+            for (auto unset : unsetUser3p) { unset->user3p(nullptr); }
+        }
+
         // First argument is symbol table, then output if a function
         const bool needSyms = !refp->taskp()->dpiImport() || v3Global.opt.profExec();
         if (needSyms) ccallp->argTypes("vlSymsp");
@@ -1433,6 +1513,105 @@ class TaskVisitor final : public VNVisitor {
         return dpiExportTriggerp;
     }
 
+    void methodCallArgsRefs(AstNode* nodep, AstScope* scopep, AstNodeCCall* methodCallp,
+                            AstNodeFTaskRef* refp, std::vector<AstNode*>& unsetUser3p) {
+        if (!nodep) return;
+        AstVarRef* varRefp = VN_CAST(nodep, VarRef);
+        // Find all assignment nodes in this method task
+        // If an Assign in the method refences a variable one scope above itself then pass it by
+        // reference
+        if (VN_IS(nodep, VarRef) && varRefp->varScopep()) {
+            if (varRefp->varScopep()->scopep()->name() == scopep->name()
+                || varRefp->varp()->user1p()) {
+                if (!varRefp->varp()->user3SetOnce()) {
+                    unsetUser3p.push_back(varRefp->varp());
+                    AstVarRef* newVarRef
+                        = new AstVarRef{varRefp->fileline(), varRefp->varp(), VAccess::READWRITE};
+                    newVarRef->dtypeFrom(varRefp->varp());
+                    varRefp->varp()->sigPublic(true);  // make sure this doesn't get optimized away
+                    AstNodeVarRef* callFromp = VN_CAST(methodCallp->op1p(), NodeVarRef);
+                    AstVarRef* subVref = VN_CAST(methodCallp->op1p(), VarRef);
+                    // If the scope is the same keep it.
+                    if (!callFromp
+                        || callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
+                        newVarRef->varScopep(varRefp->varScopep());
+                    } else if (subVref
+                               && subVref->varp()->user3p()) {  // This is used for the edge case
+                                                                // when using a child class
+                        AstVarScope* const newvscp
+                            = new AstVarScope{varRefp->fileline(), scopep, varRefp->varp()};
+                        scopep->addVarsp(newvscp);
+                        if (subVref->varp()->user3p()) { newVarRef->varScopep(newvscp); }
+                        varRefp->varp()->user1SetOnce();
+                    } else {
+                        newVarRef->varScopep(callFromp->varScopep());
+                        UASSERT_OBJ(callFromp, methodCallp,
+                                    "Can not find where this call is coming from");
+                    }
+                    AstArg* argp = new AstArg{varRefp->fileline(), "", newVarRef};
+                    refp->addArgsp(argp);
+                }
+            }
+        }
+
+        for (AstNode* p = nodep; p; p = p->nextp()) {
+            if (p->op1p()) methodCallArgsRefs(p->op1p(), scopep, methodCallp, refp, unsetUser3p);
+            if (p->op2p()) methodCallArgsRefs(p->op2p(), scopep, methodCallp, refp, unsetUser3p);
+            if (p->op3p()) methodCallArgsRefs(p->op3p(), scopep, methodCallp, refp, unsetUser3p);
+            if (p->op4p()) methodCallArgsRefs(p->op4p(), scopep, methodCallp, refp, unsetUser3p);
+        }
+    }
+
+    void methodBodyRefs(AstNode* nodep, AstCFunc* methodp, std::vector<AstNode*>& unsetUser3p) {
+        if (!nodep) return;
+        AstVarRef* varRefp = VN_CAST(nodep, VarRef);
+        // Find all assignment nodes in this task if it is a method.
+        // If an Assign in the method refences a variable one scope above itself then pass it by
+        // refence
+        if (VN_IS(nodep, VarRef) && varRefp->varScopep()) {
+            if (varRefp->varScopep()->scopep()->name()
+                == methodp->scopep()->aboveScopep()->name()) {
+                AstVarScope* newvscp;
+                AstVar* newVarp;
+                // If we haven't emum over this node yet
+                if (!varRefp->varp()->user3p()) {
+                    newVarp = new AstVar{varRefp->fileline(), VVarType::BLOCKTEMP,
+                                         varRefp->name() + "_REF", varRefp->dtypep()};
+                    newVarp->funcLocal(true);
+                    newVarp->funcReturn(false);
+                    newVarp->direction(VDirection::REF);
+
+                    methodp->addArgsp(newVarp);
+                    newvscp = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
+                    m_scopep->addVarsp(newvscp);
+                    varRefp->varp()->user3p(newvscp);
+
+                } else {
+                    newvscp = VN_CAST(varRefp->varp()->user3p(), VarScope);
+                    newVarp = newvscp->varp();
+                }
+                unsetUser3p.push_back(varRefp->varp());
+                // Replace all lhsp of this AssignNode with the varible that is passed by reference
+                AstVarRef* oldVarRefp = varRefp;
+                AstVarRef* newArgRefp
+                    = new AstVarRef{oldVarRefp->fileline(), newVarp, VAccess::WRITE};
+                newArgRefp->varScopep(newvscp);
+                // varRefp->varScopep(newvscp);
+                // varRefp->varp(newVarp);
+                oldVarRefp->replaceWithKeepDType(newArgRefp);
+                VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
+            }
+        }
+
+        // Loop horizontally through all siblings in this list
+        for (AstNode* p = nodep; p; p = p->nextp()) {
+            if (p->op1p()) methodBodyRefs(p->op1p(), methodp, unsetUser3p);
+            if (p->op2p()) methodBodyRefs(p->op2p(), methodp, unsetUser3p);
+            if (p->op3p()) methodBodyRefs(p->op3p(), methodp, unsetUser3p);
+            if (p->op4p()) methodBodyRefs(p->op4p(), methodp, unsetUser3p);
+        }
+    }
+
     AstCFunc* makeUserFunc(AstNodeFTask* nodep, bool ftaskNoInline) {
         // Given a already cloned node, make a public C function, or a non-inline C function
         // Probably some of this work should be done later, but...
@@ -1619,6 +1798,20 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
+        if (!VN_IS(nodep, Func) && nodep->classMethod() && !nodep->isStatic()
+            && !nodep->isCovergroupSample()
+            && !nodep->dpiImport()  // We are dealing with a pure system verilog class method,
+                                    // where we aren't already doing pass by ref.
+            && cfuncp && cfuncp->scopep()->aboveScopep()
+            // && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
+            //     || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))
+        ) {
+            std::vector<AstNode*> unsetUser3p;
+            methodBodyRefs(nodep, cfuncp, unsetUser3p);
+
+            for (auto unset : unsetUser3p) { unset->user3p(nullptr); }
+        }
+
         // Fake output variable if was a function.  It's more efficient to
         // have it last, rather than first, as the C compiler can sometimes
         // avoid copying variables when calling shells if argument 1
@@ -1781,6 +1974,23 @@ class TaskVisitor final : public VNVisitor {
     void visit(AstCNew* nodep) override {
         VL_RESTORER(m_inNew);
         m_inNew = true;
+        iterateChildren(nodep);
+    }
+
+    void visit(AstAssign* nodep) override {
+        // Keep track of ClassRefDTypes.
+        // If a vitual class is given a child class and a task is called we keep need the child's
+        // ClassRefDTypes.
+        if (VN_IS(nodep->lhsp()->dtypep()->skipRefp(), ClassRefDType)) {
+            if (VN_IS(nodep->rhsp()->dtypep()->skipRefp(), ClassRefDType)) {
+                if (AstVarRef* varRef = VN_CAST(nodep->lhsp(), VarRef)) {
+                    AstNode* rhsp = nodep->rhsp();
+                    varRef->varp()->user3p(rhsp);
+                }
+            }
+        }
+        VL_RESTORER(m_insStmtp);
+        m_insStmtp = nodep;
         iterateChildren(nodep);
     }
     void visit(AstNodeFTaskRef* nodep) override {
