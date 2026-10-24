@@ -2484,18 +2484,16 @@ class ConstraintExprVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
         FileLine* const fl = nodep->fileline();
-        // fromp() may not have lowered to an SFormatF if it already warned
-        // as unsupported -- leave nodep alone rather than crash on it.
+        // fromp() may already be unsupported-warned instead of lowered here.
         AstSFormatF* const fromFmtp = VN_CAST(nodep->fromp(), SFormatF);
         if (!fromFmtp) return;
         AstSFormatF* newp = nullptr;
-        // Reachable only via a struct field on a rand-indexed rand array,
-        // which hits a separate, pre-existing crash before ever getting here.
+        // Reachable only via a rand-indexed rand array, a separate crash.
         if (fromFmtp->name() == "%s.%s") {  // LCOV_EXCL_BR_LINE
             newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
                                    fromFmtp->exprsp()->cloneTreePure(true)};  // LCOV_EXCL_LINE
-            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)
-                newp->exprsp()->nextp()->name("%x");  //  for #x%x to %x
+            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)  // LCOV_EXCL_BR_LINE
+                newp->exprsp()->nextp()->name("%x");  // LCOV_EXCL_LINE
         } else {
             newp = new AstSFormatF{fl, fromFmtp->name() + "." + nodep->name(), false, nullptr};
         }
@@ -2594,9 +2592,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(origp->deleteTree(), origp);
         }
     }
-    // Walks nested ArraySel links (e.g. used[id1][id2]) down to the root
-    // variable. Diagnoses E_UNSUPPORTED and returns false itself when the
-    // chain doesn't bottom out in a plain variable or member (a function call).
+    // Diagnoses E_UNSUPPORTED itself and returns false on an unresolvable chain.
     static bool resolveArraySelRootVarp(AstArraySel* nodep, AstNodeExpr* fromp,
                                         AstVar*& rootVarpr) {
         while (const AstArraySel* const selp = VN_CAST(fromp, ArraySel)) fromp = selp->fromp();
@@ -2608,34 +2604,23 @@ class ConstraintExprVisitor final : public VNVisitor {
             rootVarpr = mselp->varp();
             return true;
         }
-        // Root unresolvable (e.g. a function call): an SMT symbol here
-        // already selects from the call, not the array -- confirmed
-        // silently broken regardless of the root's rand-ness.
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: rand-dependent index into an array reached "
                                      "through an operand that isn't a variable or member");
         return false;
     }
-    // Only called once the caller has already confirmed arrVarp is a
-    // genuinely non-rand root of a rand-dependent array index. Always
-    // handles it one way or another (expansion or E_UNSUPPORTED).
     void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl, const AstVar* arrVarp) {
-        // V3WidthSel lowers queue/dynamic/associative-array indexing straight
-        // to AstCMethodHard at every level of a chain, so an ArraySel can
-        // never bottom out over anything but a genuine UnpackArrayDType.
+        // Queue/dynamic/associative-array indexing never reaches here as an
+        // ArraySel, so this cast always succeeds.
         const AstUnpackArrayDType* const arrDtp
             = VN_AS(arrVarp->dtypep()->skipRefp(), UnpackArrayDType);
-
-        // 1-D only; element must be a scalar, not another array, a
-        // struct/union, or a class handle -- editSMT()'s hex formatting
-        // assumes a bit vector.
+        // 1-D only, scalar element -- editSMT()'s hex formatting needs a bit vector.
         const AstNodeDType* const subp = arrDtp->subDTypep()->skipRefp();
-        // WildcardArrayDType hits an unrelated V3Width error first and
-        // can't be tested; NodeUOrStructDType/ClassRefDType are tested,
-        // but the coverage tool misreports one branch of each as untaken.
+        // WildcardArrayDType: untestable, hits an unrelated V3Width error first.
         const bool arrIsSupported1D = !VN_IS(subp, NodeArrayDType) && !VN_IS(subp, QueueDType)
                                       && !VN_IS(subp, DynArrayDType)
                                       && !VN_IS(subp, AssocArrayDType)
                                       && !VN_IS(subp, WildcardArrayDType)  // LCOV_EXCL_BR_LINE
+                                      // Tested (C6, C8); gcov misattributes one branch of each.
                                       && !VN_IS(subp, NodeUOrStructDType)  // LCOV_EXCL_BR_LINE
                                       && !VN_IS(subp, ClassRefDType);  // LCOV_EXCL_BR_LINE
         if (!arrIsSupported1D) {
@@ -2649,9 +2634,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeExpr* const idxp = nodep->bitp()->unlinkFrBack();
         const int elements = arrDtp->elementsConst();
         AstNodeExpr* chainp = nullptr;
-        // Use 0-based k, not arrDtp->lo()+k: idxp is already bias-
-        // adjusted for a non-zero-based array (e.g. 'id - 1' for
-        // [1:16]), and a freshly built AstArraySel needs that too.
+        // 0-based k, not arrDtp->lo()+k: idxp is already bias-adjusted.
         for (int k = elements - 1; k >= 0; --k) {
             AstArraySel* const elemp = new AstArraySel{
                 fl, nodep->fromp()->cloneTreePure(false),
@@ -2663,10 +2646,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                     = new AstEq{fl, idxp->cloneTreePure(false),
                                 new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
                                              static_cast<uint32_t>(k)}};
-                // Mark symbolic, else editFormat() would fold this
-                // using idxp's stale pre-solve value (same as
-                // AstExtend above).
-                eqp->user1(true);
+                eqp->user1(true);  // else editFormat() folds this to idxp's stale value
                 chainp = new AstCond{fl, eqp, elemp, chainp};
                 chainp->user1(true);
             }
@@ -2719,7 +2699,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (indexIsRand) {
             AstVar* rootVarp;
             if (!resolveArraySelRootVarp(nodep, nodep->fromp(), rootVarp)) return;
-            if (!rootVarp->rand().isRandomizable()) {
+            if (!rootVarp->rand().isRandomizable() && !rootVarp->isStdRandomizeArg()) {
                 handleRandIndexIntoNonrandArray(nodep, fl, rootVarp);
                 return;
             }
