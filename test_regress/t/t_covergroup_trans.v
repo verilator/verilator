@@ -5,8 +5,9 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // Test transition bins: simple 2-value, 3-value sequences, array bins,
-// multi-value items in transition steps, the first sample, and sequences
-// completing together.
+// multi-value items in transition steps, the first sample, sequences
+// completing together, overlapping matches, long sequences, and values
+// resolved to the coverpoint's type.
 
 // verilog_format: off
 `define stop $stop
@@ -94,13 +95,45 @@ module t;
   endgroup
   cg_alt cg_alt_inst = new;
 
-  // The longest sequence supported, of 256 values
-  covergroup cg_long with function sample (bit v);
-    cp_long: coverpoint v {
-      bins seq = (`SEQ256);
+  // Sequences of more than 64 values, which the runtime matches from tables of their values
+  covergroup cg_long with function sample (bit [1:0] v, bit en);
+    cp_long: coverpoint v iff (en) {
+      bins gen64 = (`SEQ64);  // The longest sequence of generated matching
+      bins seq = (`SEQ256 => 0);  // 257 values
+      bins overlap = (`SEQ128);  // Its matches overlap
+      bins alt = (`SEQ64 => 0, 1), (1 => 0);  // Complete together, counting once
+      bins never = (`SEQ64 => 5);  // 5 is no 2-bit value: the bin leaves the report
     }
   endgroup
   cg_long cg_long_inst = new;
+
+  // Transition values resolve to the coverpoint's type, as bin values do, and one that it
+  // cannot hold does not participate (IEEE 1800-2023 19.5.7): a sequence with an item of only
+  // such values never matches, and a bin without a sequence that can leaves the report.
+  covergroup cg_signed with function sample (bit signed [3:0] v, longint l);
+    cp_signed: coverpoint v {
+      bins neg = (-1 => -2);
+      bins neg_long = (`SEQ64 => -1);  // 65 values
+      bins real_value = (1.0 => 2.0);
+      bins part = (15 => 0), (0 => 1);  // 15 is no 4-bit signed value
+      bins none = (15 => 0);
+      bins four_state = (4'b1x01 => 0);
+    }
+    cp_longint: coverpoint l {
+      bins neg = (-1 => 0);
+    }
+  endgroup
+  cg_signed cg_signed_inst = new;
+
+  // A coverpoint of more than 64 bits
+  covergroup cg_wide with function sample (bit [64:0] w);
+    cp_wide: coverpoint w {
+      bins rise = (0 => 1);
+      bins top = (65'h1_0000_0000_0000_0000 => 1 => 0);
+      bins long = (`SEQ64 => 0);  // 65 values
+    }
+  endgroup
+  cg_wide cg_wide_inst = new;
 
   // Overlapping matches of a sequence each count (IEEE 1800-2023 19.5.2)
   covergroup cg_overlap with function sample (bit [1:0] v);
@@ -142,8 +175,31 @@ module t;
     // cg_alt: samples 0, 1, 2, 3
     for (int i = 0; i < 4; ++i) cg_alt_inst.sample(3'(i), 1'b0);
 
-    // cg_long: samples 0, 1, 0, ..., completing its sequence once
-    for (int i = 0; i < 256; ++i) cg_long_inst.sample(1'(i));
+    // cg_long: samples 0, 1, 0, ..., each followed by a disabled sample, which neither breaks
+    // nor advances a sequence
+    for (int i = 0; i < 257; ++i) begin
+      cg_long_inst.sample(2'(i % 2), 1'b1);
+      cg_long_inst.sample(2'd3, 1'b0);
+    end
+
+    // cg_signed
+    cg_signed_inst.sample(-4'sd1, -1);
+    cg_signed_inst.sample(-4'sd2, 0);  // neg, in both coverpoints
+    cg_signed_inst.sample(4'sd1, 0);
+    cg_signed_inst.sample(4'sd2, 0);  // real_value
+    for (int i = 0; i < 64; ++i) cg_signed_inst.sample(4'(i % 2), 0);  // 32 parts
+    cg_signed_inst.sample(-4'sd1, 0);  // neg_long
+    cg_signed_inst.sample(4'sd0, 0);  // Not 15 => 0, though -1 has 15's low bits
+
+    // cg_wide: 65'h1_0000_0000_0000_0001 is not 1, though its low bits are
+    cg_wide_inst.sample(0);
+    cg_wide_inst.sample(1);  // rise
+    cg_wide_inst.sample(0);
+    cg_wide_inst.sample(65'h1_0000_0000_0000_0001);
+    cg_wide_inst.sample(65'h1_0000_0000_0000_0000);
+    cg_wide_inst.sample(1);
+    cg_wide_inst.sample(0);  // top
+    for (int i = 0; i < 65; ++i) cg_wide_inst.sample(65'(i % 2));  // 32 rises, then long
 
     // cg_overlap: samples 1, 2, 1, 2, 1, 1, 1, 2
     begin
