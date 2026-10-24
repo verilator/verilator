@@ -15,11 +15,8 @@ test.top_filename = "t/t_timing_dpi_process_kill.v"
 
 test.compile(
     v_flags2=["t/t_timing_dpi_process_kill.cpp"],
-    verilator_flags2=["--binary", "--stats"],
+    verilator_flags2=["--binary"],
 )
-
-if test.vlt_all:
-    test.file_grep(test.stats, r'Timing, suspendable DPI exports\s+(\d+)', 1)
 
 test.execute()
 

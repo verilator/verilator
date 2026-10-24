@@ -124,18 +124,7 @@ public:
         : m_coro{std::exchange(moved.m_coro, nullptr)}
         , m_process{std::exchange(moved.m_process, nullptr)}
         , m_fileline{moved.m_fileline} {}
-    // Destroy if the handle isn't null
-    ~VlCoroutineHandle() {
-        // Usually these coroutines should get resumed; we only need to clean up if we destroy a
-        // model with some coroutines suspended
-        if (VL_UNLIKELY(m_coro)) {
-            if (m_process && m_process->state() != VlProcess::KILLED
-                && !m_coro.promise().m_forever) {
-                m_process->state(VlProcess::FINISHED);
-            }
-            m_coro.destroy();
-        }
-    }
+    ~VlCoroutineHandle();
     // METHODS
     // Move the handle, leaving a null handle
     auto& operator=(VlCoroutineHandle&& moved) {
