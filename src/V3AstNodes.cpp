@@ -3145,7 +3145,8 @@ bool AstNodeFTask::getPurityRecurse() const {
     // or any write reference to a variable that isn't an automatic function local.
     for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-            if (varp->isInoutOrRef()) return false;
+            // Output arguments are copied out to the caller's variables
+            if (varp->isInoutOrRef() || varp->direction().isOutput()) return false;
         }
         if (!stmtp->isPure()) return false;
         if (stmtp->exists([](AstNode* const nodep) {
