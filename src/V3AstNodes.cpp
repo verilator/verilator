@@ -196,6 +196,34 @@ static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep, bo
     } else {
         value.opAssign(num);
     }
+    // Packed arrays as concatenations of their elements
+    if (const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType)) {
+        const AstNodeDType* const elemDTypep = adtypep->subDTypep()->skipRefToEnumOrNullp();
+        const int elemWidth = adtypep->subDTypep()->width();
+        std::string result = "{";
+        for (int lsb = width - elemWidth; lsb >= 0; lsb -= elemWidth) {
+            V3Number elem{&num, elemWidth};
+            elem.opSel(value, lsb + elemWidth - 1, lsb);
+            if (lsb != width - elemWidth) result += ",";
+            result += dtypeNameConst(elem, elemDTypep, false);
+        }
+        result += "}";
+        return result;
+    }
+    // Packed structures as patterns of their members
+    if (const AstStructDType* const sdtypep = VN_CAST(dtypep, StructDType)) {
+        std::string result = "'{";
+        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
+             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            V3Number member{&num, itemp->width()};
+            member.opSel(value, itemp->lsb() + itemp->width() - 1, itemp->lsb());
+            if (itemp != sdtypep->membersp()) result += ",";
+            result += dtypeNameConst(member, itemp->subDTypep()->skipRefToEnumOrNullp(), false);
+        }
+        result += "}";
+        return result;
+    }
+    // Enumerations as the name of the item with the value
     if (const AstEnumDType* const enump = VN_CAST(dtypep, EnumDType)) {
         for (const AstEnumItem* itemp = enump->itemsp(); itemp;
              itemp = VN_AS(itemp->nextp(), EnumItem)) {
@@ -205,17 +233,17 @@ static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep, bo
             }
         }
     }
+    // Values containing X or Z as binary
     if (value.isAnyXZ()) return value.ascii(true, true);
     const bool isSigned = dtypep ? dtypep->isSigned() : num.isSigned();
-    // Sized as $typename names values (IEEE 1800-2023 20.6.1), so that the specializations of
-    // values of other types are named apart, unless of the type of an unsized decimal literal
-    if (sized && (width != 32 || !isSigned)) {
-        const string prefix = cvtToStr(width) + (isSigned ? "'sd" : "'d");
-        if (!isSigned || !value.isNegative()) return prefix + value.toDecimalU();
-        V3Number magnitude{&num, width};
-        magnitude.opNegate(value);
-        return "-" + prefix + magnitude.toDecimalU();
+    // Bit and logic vectors in hex, with their width and signing, as is an untyped parameter of an
+    // integral value, which is a logic vector of the size of the value (IEEE 1800-2023 6.20.2),
+    // and a value of a type not yet resolved, which may be wide
+    if (sized || !basicp || basicp->isBitLogic()) {
+        return std::to_string(width) + (isSigned ? "'sh" : "'h")
+               + value.displayed(value.fileline(), "%0h");
     }
+    // Other basic types, at most 64 bits wide, in decimal
     return isSigned ? value.toDecimalS() : value.toDecimalU();
 }
 
