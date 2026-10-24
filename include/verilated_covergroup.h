@@ -113,6 +113,15 @@ public:
 class VlCoverpoint VL_NOT_FINAL : public VlCoverpointIf {
     struct ValueData;
     std::unique_ptr<ValueData> m_valuesp;  // Optional value metadata and exclusion state
+    // A transition sequence matched from a table of its values (see transitionAdd())
+    struct Transition final {
+        std::vector<QData> m_values;  // The items' values, item after item
+        std::vector<uint32_t> m_ends;  // Index in m_values after each item's values
+        std::vector<uint32_t> m_active;  // Lengths of the partial matches the samples end with
+        std::vector<uint32_t> m_next;  // m_active for the next sample, being computed
+        bool matches(uint32_t item, QData value) const;  // Whether item 'item' holds 'value'
+    };
+    std::vector<Transition> m_transitions;  // In transitionAdd() order
     friend class VlCoverCrossDyn;
 
 protected:
@@ -225,6 +234,13 @@ public:
     /// sizedFinish())
     void withFinish(VlCovBinKind kind, QData count, bool positive, const char* name,
                     const char* file, int line, int col);
+    /// Add a transition sequence too long for generated matching, numbered from 0 in the order
+    /// added, which transitionSample() matches from a table of its values that
+    /// transitionTable() gives.
+    void transitionAdd() { m_transitions.emplace_back(); }
+    /// Append items to the transition sequence added last: each is its number of values, then
+    /// the values.
+    void transitionTable(std::initializer_list<QData> items);
 
     // ---- hot path (from generated sample()) ----
     // Clear the hit list at the start of each sample() for a cross-fed coverpoint.
@@ -235,6 +251,9 @@ public:
     /// if 'enabled'.  True if a bin holds the value, enabled or not.
     bool sizedSample(uint32_t sized, QData value, bool enabled);
     bool sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled);
+    /// Sample a value into transition sequence 'seq'; true if it completes a match.  Matches
+    /// may overlap, and each counts (IEEE 1800-2023 19.5.2).
+    bool transitionSample(uint32_t seq, QData value);
     // incrementBin (Normal bin: count + hit-list append) lives in VlCoverpointT<MaxHits>,
     // where MaxHits is the gen-time max per-sample bin overlap.
 
