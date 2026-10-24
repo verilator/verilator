@@ -31,12 +31,12 @@ void VlCoroutineHandle::resume() {
     // main process
     if (VL_LIKELY(m_coro)) {
         VL_DEBUG_IF(VL_DBG_MSGF("             Resuming: "); dump(););
-        if (m_process) {  // If process state is managed with std::process
-            if (m_process->state() == VlProcess::KILLED) {
+        if (m_processp) {  // If process state is managed with std::process
+            if (m_processp->state() == VlProcess::KILLED) {
                 m_coro.destroy();
             } else {
-                m_process->state(VlProcess::RUNNING);
-                VlProcess::currentp(m_process.get());
+                m_processp->state(VlProcess::RUNNING);
+                VlProcess::currentp(m_processp);
                 m_coro();
                 VlProcess::currentp(nullptr);
             }
@@ -44,7 +44,9 @@ void VlCoroutineHandle::resume() {
             VlProcess::currentp(nullptr);
             m_coro();
         }
+        // Drop process with coro: after resume a new handle owns any re-suspend.
         m_coro = nullptr;
+        m_processp = nullptr;
     }
 }
 
@@ -69,10 +71,8 @@ void VlDelayScheduler::resume() {
     }
     bool resumed = false;
 
-    while (!m_queue.empty() && (m_queue.cbegin()->first == m_context.time())) {
-        VlCoroutineHandle handle = std::move(m_queue.begin()->second);
-        m_queue.erase(m_queue.begin());
-        handle.resume();
+    while (!m_queue.empty() && (m_queue.topTime() == m_context.time())) {
+        m_queue.drainTop([](VlCoroutineHandle& handle) { handle.resume(); });
         resumed = true;
     }
 
@@ -100,7 +100,7 @@ void VlDelayScheduler::resumeZeroDelay() {
 }
 
 uint64_t VlDelayScheduler::nextTimeSlot() const {
-    if (!m_queue.empty()) return m_queue.cbegin()->first;
+    if (!m_queue.empty()) return m_queue.topTime();
     if (m_zeroDelayed.empty())
         VL_FATAL_MT(__FILE__, __LINE__, "", "There is no next time slot scheduled");
     return m_context.time();
@@ -118,10 +118,10 @@ void VlDelayScheduler::dump() const {
                         m_context.time());
             susp.dump();
         }
-        for (const auto& susp : m_queue) {
-            VL_DBG_MSGF("             Awaiting time %" PRIu64 ": ", susp.first);
-            susp.second.dump();
-        }
+        m_queue.foreachInOrder([](uint64_t time, const VlCoroutineHandle& handle) {
+            VL_DBG_MSGF("             Awaiting time %" PRIu64 ": ", time);
+            handle.dump();
+        });
     }
 }
 #endif
