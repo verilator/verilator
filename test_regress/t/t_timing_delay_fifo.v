@@ -48,8 +48,8 @@ module t;
       $stop;
     end
 
-    // Drained bucket's rest is spare. Another same-time group, then a lone
-    // waiter, must resume cleanly (recycle / inline paths).
+    // Drained bucket's vector is spare. Another same-time group, then a lone
+    // waiter, must resume cleanly (recycle path).
     for (int i = 0; i < 8; i++) begin
       automatic int k = i;
       fork

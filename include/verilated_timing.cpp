@@ -63,12 +63,12 @@ void VlDelayScheduler::resume() {
 #ifdef VL_DEBUG
     VL_DEBUG_IF(dump(); VL_DBG_MSGF("         Resuming delayed processes\n"););
 #endif
-    if (VL_UNLIKELY(m_context.gotFinish())) {
+    if (VL_UNLIKELY(m_context.gotFinish())) {  // LCOV_EXCL_START
         m_queue.clear();
         m_zeroDelayed.clear();
         m_zeroDelayesSwap.clear();
         return;
-    }
+    }  // LCOV_EXCL_STOP
     bool resumed = false;
 
     while (!m_queue.empty() && (m_queue.topTime() == m_context.time())) {

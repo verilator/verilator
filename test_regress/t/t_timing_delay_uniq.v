@@ -4,8 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Each delay is a different time (inline-only buckets). Spawn longest first;
-// resume order must follow time.
+// Each delay is a different time. Spawn longest first; resume order must
+// follow time.
 
 module t;
   int wake[0:7];
