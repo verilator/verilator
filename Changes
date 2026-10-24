@@ -338,6 +338,7 @@ Verilator 5.053 devel
 * Fix non-cutable scheduling loop on RW references in comb logic. [Geza Lore, Testorrent USA, Inc.]
 * Fix non-ANSI modport port declarations dropping dimensions and names. [Geza Lore, Testorrent USA, Inc.]
 * Fix slow elaboration with wide parameters in type names (#8887). [Geza Lore, Testorrent USA, Inc.]
+* Fix foreach using wrong bound after two or more fixed dimensions (#8891). [Chen Ben-Haroosh]
 
 
 Verilator 5.052 2026-09-05
