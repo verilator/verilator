@@ -321,6 +321,12 @@ class OrderMTaskGraph final : public V3Graph {
     template <GraphWay::en N_Way>
     void validateWay() const;
 
+    // Empty the edge heaps, so that MTasks can be merged with 'mergeMTasks' deferring the
+    // critical paths
+    void clearEdgeHeaps();
+    // Recompute all critical paths and edge heaps from the edges of the graph
+    void rebuildCriticalPaths();
+
 public:
     // ACCESSORS
     OrderMoveGraph& moveGraph() const { return m_moveGraph; }
@@ -346,8 +352,10 @@ public:
     // 'recipientp', update impacted critical paths, then delete 'donorp'. The edge connecting the
     // two (if any) becomes internal to the merged MTask and is deleted, as is one of each pair of
     // edges the two have to a common relative. Note this deletes edges, so the caller must have
-    // released any auxiliary data it attached to them via their user pointer.
-    void mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp);
+    // released any auxiliary data it attached to them via their user pointer. If 'deferred', the
+    // critical paths and edge heaps are left to 'rebuildCriticalPaths', which must be called
+    // after the last merge, and the edge heaps must have been emptied with 'clearEdgeHeaps'.
+    void mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp, bool deferred = false);
 
     // Remove all transitive edges. (This deliberately hides V3Graph::removeTransitiveEdges,
     // which would leave the auxiliary data structures stale.)
@@ -368,6 +376,8 @@ public:
     static std::unique_ptr<OrderMTaskGraph> build(OrderMoveGraph& moveGraph) VL_MT_DISABLED;
     // Fix data hazards in the MTask graph
     static void fixDataHazards(OrderMTaskGraph& mtaskGraph) VL_MT_DISABLED;
+    // Merge the MTasks of each threads_unit instance, where that creates no cycle
+    static void mergeThreadsUnits(OrderMTaskGraph& mtaskGraph) VL_MT_DISABLED;
     // Coarsen the MTask graph by merging MTasks until the given critical-path limit is reached
     static void contract(OrderMTaskGraph& mtaskGraph, uint64_t scoreLimit) VL_MT_DISABLED;
 };

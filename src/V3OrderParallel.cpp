@@ -129,6 +129,10 @@ static std::unique_ptr<OrderMTaskGraph> partition(OrderMoveGraph& moveGraph) {
     OrderMTaskGraph::fixDataHazards(*mTaskGraphp);
     mTaskGraphp->hashGraphDebug("MTask graph after fixDataHazards()");
 
+    // Keep the logic of each threads_unit instance together
+    OrderMTaskGraph::mergeThreadsUnits(*mTaskGraphp);
+    mTaskGraphp->hashGraphDebug("MTask graph after mergeThreadsUnits()");
+
     // Merge MTask nodes together, repeatedly, until the critical path budget is reached. Coarsens
     // the graph, usually by several orders of magnitude. Some tests disable this for stability,
     // it should always be enabled in production.
