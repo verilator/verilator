@@ -1114,6 +1114,8 @@ redeclaring
 reentrant
 regs
 reloop
+rematerialized
+rematerializes
 replaceShiftOp
 reproducibility
 resetall

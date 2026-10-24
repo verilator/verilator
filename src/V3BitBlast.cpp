@@ -465,7 +465,9 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
         for (AstVarScope* const vscp : m_vscps) {
             const VscpInfo& info = m_vscpInfos(vscp);
             if (info.fragments.empty()) continue;
-            if (!(vscp->varp()->isTrace() && vscp->isTrace())) continue;
+            if (!(vscp->varp()->isTrace() && vscp->isTrace())
+                && !vscp->varp()->isVpiLazyCombWhole())
+                continue;
             AstActive* const activep = comboActive(vscp->scopep());
             FileLine* const flp = vscp->fileline();
             for (const Fragment& fragment : info.fragments) {

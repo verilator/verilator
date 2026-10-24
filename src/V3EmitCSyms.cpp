@@ -22,6 +22,7 @@
 #include "V3LanguageWords.h"
 #include "V3StackCount.h"
 #include "V3Stats.h"
+#include "V3VpiLazy.h"
 
 #include <algorithm>
 #include <cstring>
@@ -144,13 +145,21 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // Single VlScopeTableEntry[] table for all scopes, built in getSymCtorStmts()
     std::string m_scopeTableName;
     std::vector<std::string> m_scopeTableRows;
+    size_t m_nLazyReconVars = 0;  // __Vm_lazyReconstructDatap entries, one per --vpi-lazy row
+    // VlLazyReconEntry[] tables, one per distinct row run; shared likewise
+    NamedTables m_lazyReconFnTables;
     std::string m_ifaceRefTableName;
     std::vector<std::string> m_ifaceRefTableRows;
     std::vector<std::string> m_hierTableRows;  // VlHierTableEntry rows, see buildHierTableRows()
+    // --vpi-lazy comb masks; model-wide, as VerilatedSyms holds the one table they index
+    std::unordered_map<const std::vector<V3VpiLazy::CombRun>*, int> m_combMaskIdx;
+    std::vector<std::string> m_combMaskRows;
+    std::vector<std::string> m_combRunRows;
 
     // METHODS
     void emitSymHdr();
     void emitSymImpPreamble();
+    bool emitVarTableExterns();
     void emitVarTables();
     void buildHierTableRows();
     void emitScopeHier(TextStmts& stmts, bool destroy);
@@ -316,9 +325,18 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += bounds;
         stmt += ")";
     }
-    static std::string memberVlEnumDir(const AstVar* const varp,
+    // --vpi-lazy writability is per instance
+    static std::string vlEnumDirOf(const AstScope* scopep, const AstVar* varp,
+                                   bool forMember = false) {
+        return varp->vlEnumDir(V3VpiLazy::combOf(scopep, varp), forMember);
+    }
+    // A --vpi-lazy shadow's row and its packed members' rows hold no current value of their own
+    static std::string lazyRematFlags(const AstVar* varp) {
+        return varp->isLazyReconstructShadow() ? "|VLVF_PUB_RD|VLVF_LAZY_REMAT" : "";
+    }
+    static std::string memberVlEnumDir(const AstScope* const scopep, const AstVar* const varp,
                                        const AstNodeDType* const dtypep) {
-        std::string out = '(' + varp->vlEnumDir(/*forMember=*/true);
+        std::string out = '(' + vlEnumDirOf(scopep, varp, /*forMember=*/true);
         const AstNodeDType* const skipDTypep = dtypep->skipRefp();
         if (skipDTypep->isSigned()) out += "|VLVF_SIGNED";
         if (const AstBasicDType* const basicp = skipDTypep->basicp()) {
@@ -369,12 +387,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                                         ? "sizeof(" + varExpr + ") / "
                                               + std::to_string(getUnpackedElements(varp->dtypep()))
                                         : "";
-        appendVarProperties(stmt, vlEnumType, varp->vlEnumDir(), udim, pdim, bounds, entSize);
+        appendVarProperties(stmt, vlEnumType, vlEnumDirOf(scopep, varp), udim, pdim, bounds,
+                            entSize);
         return stmt;
     }
 
     std::string hierTableName() const { return symClassName() + "__VpiHierTable"; }
     std::string varDimsTableName() const { return symClassName() + "__VpiVarDims"; }
+    std::string combMaskTableName() const { return symClassName() + "__VlazyCombMasks"; }
+    std::string combRunTableName() const { return symClassName() + "__VlazyCombRuns"; }
 
     // tryBuildTableEntry() classifies each public var once, so the caller does
     // not re-derive (and risk desyncing) the forceable-eligibility test.
@@ -385,33 +406,67 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         PLAIN_RESIDUAL,  // Residual, via insertVarStatement() (+ struct/array expansion)
     };
 
+    int combMaskIdx(const AstScope* scopep, const AstVar* varp) {
+        const std::vector<V3VpiLazy::CombRun>& runs = V3VpiLazy::combRuns(scopep, varp);
+        const auto pr = m_combMaskIdx.emplace(&runs, static_cast<int>(m_combMaskRows.size()));
+        if (pr.second) {
+            m_combMaskRows.emplace_back("{&" + combRunTableName() + "["
+                                        + std::to_string(m_combRunRows.size()) + "], "
+                                        + std::to_string(runs.size()) + "}");
+            for (const V3VpiLazy::CombRun& run : runs) {
+                m_combRunRows.emplace_back("{" + std::to_string(run.elem) + ", "
+                                           + std::to_string(run.lsb) + ", "
+                                           + std::to_string(run.width) + "}");
+            }
+        }
+        return pr.first->second;
+    }
+
+    const AstCFunc* lazyRefreshFuncp(const AstScope* scopep, const AstVar* varp) const {
+        if (const AstVar* const srcp = varp->lazyCopySrcp()) varp = srcp;
+        return V3VpiLazy::refreshFuncp(scopep, varp);
+    }
+
+    // An alias shadow's row is its source cone's storage
+    static std::string rowStorageName(const AstVar* varp) {
+        return varName(varp->isLazyShadowAlias() ? varp->lazyCopySrcp() : varp);
+    }
+
     // Builds one VlVarTableEntry row for 'varp', or reports which residual
-    // path it must take instead.
+    // path it must take instead. 'lazyIdx' is VlVarTableEntry::aux.
     TableEntryKind tryBuildTableEntry(const ScopeVarData& svd, const AstVar* const varp,
                                       const AstScope* const scopep,
-                                      const std::string& modClassName, const VarDims& dims,
-                                      std::string& rowOut) {
-        if (varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
+                                      const std::string& modClassName, int lazyIdx,
+                                      const VarDims& dims, std::string& rowOut) {
+        const bool isLazy = varp->isLazyReconstructShadow();
+        if (!isLazy && varp->isForceable() && forceControlSignalsAreValid(scopep, varp)) {
             return TableEntryKind::FORCEABLE_RESIDUAL;
         }
 
         const std::string vlEnumType = varp->vlEnumType();
-        if (needsEmittedEntSize(vlEnumType))
+        if (!isLazy && needsEmittedEntSize(vlEnumType))
             return TableEntryKind::PLAIN_RESIDUAL;  // struct/union whole
         if (isScalarStringParam(varp)) return TableEntryKind::PLAIN_RESIDUAL;
 
         const std::string name = V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty));
-        // nameProtect() (not protect(name())) so the offsetof member matches the
-        // emitted struct field: a primary I/O port keeps its unprotected name
+        // rowStorageName() takes nameProtect(), not protect(name()), so the offsetof member
+        // matches the emitted struct field: a primary I/O port keeps its unprotected name
         // under --protect-ids, whereas protect() would always hash it.
-        const std::string member = varName(varp);
+        const std::string member = rowStorageName(varp);
+        const std::string flags = vlEnumDirOf(scopep, varp) + lazyRematFlags(varp);
+        // Rebuilt rows are read-only, and VLVF_LAZY_COMB makes lazyDescSlot() ignore lazyIdx
+        UASSERT_OBJ(!isLazy
+                        || (flags.find("VLVF_PUB_RW") == std::string::npos
+                            && flags.find("VLVF_LAZY_COMB") == std::string::npos),
+                    varp, "--vpi-lazy rebuilt row is writable or comb-masked");
         std::string row = "{\"" + name + "\", ";
         if (varp->isParam()) {
             row += paramPtrIndex("&" + modClassName + "::" + member) + ", ";
         } else {
             row += "offsetof(" + modClassName + ", " + member + "), ";
         }
-        row += tableRowProps(varp, vlEnumType, varp->vlEnumDir(), dims);
+        row += tableRowProps(varp, vlEnumType, flags, dims);
+        if (lazyIdx >= 0) row += ", " + std::to_string(lazyIdx);
         row += "}";
         rowOut = row;
         return varp->isParam() ? TableEntryKind::PARAM_ROW : TableEntryKind::TABLE_ROW;
@@ -496,8 +551,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             = needsEntSize
                   ? "sizeof(" + varExpr + ") / " + std::to_string(getUnpackedElements(dtypep))
                   : "";
-        appendVarProperties(stmt, vlEnumType, memberVlEnumDir(svd.m_varp, dtypep), udim, pdim,
-                            bounds, entSize);
+        appendVarProperties(stmt, vlEnumType, memberVlEnumDir(scopep, svd.m_varp, dtypep), udim,
+                            pdim, bounds, entSize);
         return stmt;
     }
 
@@ -549,10 +604,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     // offset within the parent's element 0. VPI adds any packed/unpacked index offset.
     // 'needsIndex' if an ancestor is an array, so the members are only valid after an index.
     void addPackedMemberRows(std::vector<std::string>& rows, const ScopeVarData& svd,
-                             const std::string& byteOffset, const std::string& prettyPrefix,
-                             const std::string& vlEnumType, uint32_t entSize,
-                             const AstNodeUOrStructDType* const sdtypep, const int parentBitOffset,
-                             const bool needsIndex) {
+                             const AstScope* const scopep, const std::string& byteOffset,
+                             const std::string& prettyPrefix, const std::string& vlEnumType,
+                             uint32_t entSize, const AstNodeUOrStructDType* const sdtypep,
+                             const int parentBitOffset, const bool needsIndex) {
         for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
              itemp = VN_AS(itemp->nextp(), MemberDType)) {
             const AstNodeDType* const itemDTypep = itemp->dtypep();
@@ -562,7 +617,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             const int bitOffset = parentBitOffset + itemp->lsb();
             const VarDims dims = getVarDims(itemDTypep);
             UASSERT_OBJ(dims.udim == 0, itemp, "Unpacked dimension in packed struct/union");
-            std::string flags = memberVlEnumDir(svd.m_varp, itemDTypep);
+            std::string flags
+                = memberVlEnumDir(scopep, svd.m_varp, itemDTypep) + lazyRematFlags(svd.m_varp);
             flags += "|VLVF_PACKED_MEMBER";
             if (needsIndex) flags += "|VLVF_PACKED_NEEDS_INDEX";
             rows.emplace_back("{\"" + V3OutFormatter::quoteNameControls(prettyName) + "\", "
@@ -578,8 +634,8 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 isArray = true;
             }
             if (const AstNodeUOrStructDType* const subp = VN_CAST(subDTypep, NodeUOrStructDType)) {
-                addPackedMemberRows(rows, svd, byteOffset, prettyName, vlEnumType, entSize, subp,
-                                    bitOffset, needsIndex || isArray);
+                addPackedMemberRows(rows, svd, scopep, byteOffset, prettyName, vlEnumType, entSize,
+                                    subp, bitOffset, needsIndex || isArray);
             }
         }
     }
@@ -608,13 +664,13 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         if (!sdtypep || !sdtypep->packed()) return;
         const std::string modClassName = EmitCUtil::prefixNameProtect(svd.m_modp);
         if (svd.m_varp->isParam()) {
-            addPackedMemberRows(m_paramRows, svd,
+            addPackedMemberRows(m_paramRows, svd, scopep,
                                 paramPtrIndex("&" + modClassName + "::" + elemCName), prettyPrefix,
                                 vlEnumType, entSize, sdtypep, 0, isArray);
             return;
         }
         std::vector<std::string> rows;
-        addPackedMemberRows(rows, svd, "0", prettyPrefix, vlEnumType, entSize, sdtypep, 0,
+        addPackedMemberRows(rows, svd, scopep, "0", prettyPrefix, vlEnumType, entSize, sdtypep, 0,
                             isArray);
         const size_t nRows = rows.size();
         stmts.emplace_back("vlSymsp->" + protect("__Vscopep_" + svd.m_scopeName)
@@ -726,19 +782,11 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         return true;
     }
 
+    // m_scopeVars holds only public and --vpi-lazy retained variables, and shadows under
+    // their own names
     bool baseSignalIsPublic(const AstScope* const scopep,
                             const std::string& baseSignalName) const {
-        const std::string baseSignalKey = getKeyName(scopep, baseSignalName);
-        const std::map<const std::string, ScopeVarData>::const_iterator baseSignalIt
-            = m_scopeVars.find(baseSignalKey);
-        if (baseSignalIt == m_scopeVars.end()) {
-            return false;
-        } else {
-            const AstVar* const baseSignalVarp = baseSignalIt->second.m_varp;
-            // Should not actually occur if the variable is in the m_scopeVars
-            if (!baseSignalVarp->isSigPublic()) return false;
-        }
-        return true;
+        return m_scopeVars.count(getKeyName(scopep, baseSignalName));
     }
 
     bool forceControlSignalsAreValid(const AstScope* const scopep,
@@ -800,14 +848,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     void addScopeVarEntry(const AstScope* const scopep, const AstNodeModule* const modp,
-                          const AstVar* const varp) {
+                          const std::string& vpiVarName, const std::string& keyVarName,
+                          const AstVar* const storageVarp) {
         // Need to split the module + var name into the original-ish full scope
         // and variable name under that scope. The module instance name is
         // included later, when we know the scopes this module is under.
-        std::string whole = scopep->name() + "__DOT__" + varp->name();
+        std::string whole = scopep->name() + "__DOT__" + vpiVarName;
         if (VString::startsWith(whole, "__DOT__TOP")) whole.replace(0, 10, "");
         const std::string::size_type dpos = whole.rfind("__DOT__");
-        UASSERT_OBJ(dpos != std::string::npos, varp,
+        UASSERT_OBJ(dpos != std::string::npos, storageVarp,
                     "Scope/variable name lost its appended __DOT__ separator");
         const std::string scpName = whole.substr(0, dpos);
         const std::string varBase = whole.substr(dpos + std::strlen("__DOT__"));
@@ -823,12 +872,12 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         m_scopeNames.emplace(  //
             std::piecewise_construct,  //
             std::forward_as_tuple(scpSym),  //
-            std::forward_as_tuple(varp, scpSym, scpPretty, "<null>", 0, "SCOPE_OTHER"));
+            std::forward_as_tuple(storageVarp, scpSym, scpPretty, "<null>", 0, "SCOPE_OTHER"));
 
         m_scopeVars.emplace(  //
             std::piecewise_construct,  //
-            std::forward_as_tuple(scpSym + " " + varp->name()),  //
-            std::forward_as_tuple(scpSym, varBasePretty, varp, modp, scopep));
+            std::forward_as_tuple(scpSym + " " + keyVarName),  //
+            std::forward_as_tuple(scpSym, varBasePretty, storageVarp, modp, scopep));
     }
 
     void varsExpand() {
@@ -842,7 +891,12 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 const AstNodeModule* const modp = mvPair.first;
                 const AstVar* const varp = mvPair.second;
                 if (modp != smodp) continue;
-                addScopeVarEntry(scopep, modp, varp);
+
+                if (varp->isLazyReconstructHelper()) continue;
+                if (!V3VpiLazy::hasRow(scopep, varp)) continue;
+                const std::string vpiVarName
+                    = varp->isLazyReconstructShadow() ? varp->origName() : varp->name();
+                addScopeVarEntry(scopep, modp, vpiVarName, varp->name(), varp);
             }
         }
     }
@@ -1042,8 +1096,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         nameCheck(nodep);
         iterateChildrenConst(nodep);
         // Record if public, ignoring locals and types VPI cannot represent
-        if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp
-            && !nodep->vlEnumType().empty()) {
+        if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()
+             || nodep->isSigVpiLazyRetained() || nodep->isLazyReconstructShadow())
+            && !m_cfuncp && !nodep->vlEnumType().empty()) {
             m_modVars.emplace_back(m_modp, nodep);
         }
     }
@@ -1127,6 +1182,7 @@ void EmitCSyms::emitSymHdr() {
 
     puts("// INTERNAL STATE\n");
     puts(topClassName() + "* const __Vm_modelp;\n");
+    if (v3Global.opt.vpiLazy()) puts("VerilatedLazyState __Vm_lazy;\n");
 
     if (v3Global.needTraceDumper()) {
         // __Vm_dumperp is local, otherwise we wouldn't know what design's eval()
@@ -1205,6 +1261,12 @@ void EmitCSyms::emitSymHdr() {
         puts("VerilatedHierarchy __Vhier;\n");
     }
 
+    if (m_nLazyReconVars) {
+        puts("\n");
+        puts("VerilatedVarLazyDatap __Vm_lazyReconstructDatap[" + std::to_string(m_nLazyReconVars)
+             + "];\n");
+    }
+
     puts("\n// CONSTRUCTORS\n");
     puts(symClassName() + "(VerilatedContext* contextp, const char* namep, " + topClassName()
          + "* modelp);\n");
@@ -1212,6 +1274,9 @@ void EmitCSyms::emitSymHdr() {
 
     puts("\n// METHODS\n");
     puts("const char* name() const { return vlInst.TOP.vlNamep; }\n");
+    if (v3Global.opt.vpiLazy()) {
+        puts("VerilatedLazyState* lazyp() override { return &__Vm_lazy; }\n");
+    }
 
     if (v3Global.hasEvents()) {
         if (v3Global.assignsEvents()) {
@@ -1250,6 +1315,26 @@ void EmitCSyms::emitSymHdr() {
     }
     puts("};\n");
 
+    // Address-taken reconstruct functions need split-TU declarations.
+    if (m_nLazyReconVars) {
+        std::set<std::string> emitted;
+        for (const auto& itpair : m_scopeVars) {
+            const ScopeVarData& svd = itpair.second;
+            const AstVar* const varp = svd.m_varp;
+            if (!varp->isLazyReconstructShadow()) continue;
+            const AstCFunc* const funcp = lazyRefreshFuncp(svd.m_scopep, varp);
+            if (!funcp) continue;
+            const std::string modClassName = EmitCUtil::prefixNameProtect(svd.m_modp);
+            const std::string sym = modClassName + "__" + funcp->nameProtect();
+            if (emitted.insert(sym).second) puts("void " + sym + "(void*);\n");
+        }
+    }
+
+    if (v3Global.opt.vpiLazy()) {
+        puts("\n");
+        emitVarTableExterns();
+    }
+
     ofp()->putsEndGuard();
     closeOutputFile();
 }
@@ -1282,28 +1367,41 @@ void EmitCSyms::emitSymImpPreamble() {
 
     // So split ctor sub-functions in other translation units can reference
     // the VPI variable tables defined below.
-    if (!m_varTables.empty() || !m_scopeTableRows.empty() || !m_ifaceRefTableRows.empty()) {
-        for (const auto& kv : m_varTables) {
-            puts("extern const VlVarTableEntry " + kv.first + "[];\n");
-        }
-        for (const auto& kv : m_paramPtrTables) {
-            puts("extern const void* const " + kv.first + "[];\n");
-        }
-        if (!m_scopeTableRows.empty()) {
-            puts("extern const VlScopeTableEntry " + m_scopeTableName + "[];\n");
-        }
-        if (!m_ifaceRefTableRows.empty()) {
-            puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[];\n");
-        }
-        if (!m_hierTableRows.empty()) {
-            puts("extern const VlHierTableEntry " + hierTableName() + "[];\n");
-        }
-        puts("\n");
+    if (!v3Global.opt.vpiLazy() && emitVarTableExterns()) puts("\n");
+}
+
+bool EmitCSyms::emitVarTableExterns() {
+    if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
+        && m_lazyReconFnTables.empty() && m_combMaskRows.empty())
+        return false;
+    for (const auto& kv : m_varTables) {
+        puts("extern const VlVarTableEntry " + kv.first + "[];\n");
     }
+    for (const auto& kv : m_paramPtrTables) {
+        puts("extern const void* const " + kv.first + "[];\n");
+    }
+    if (!m_scopeTableRows.empty()) {
+        puts("extern const VlScopeTableEntry " + m_scopeTableName + "[];\n");
+    }
+    if (!m_ifaceRefTableRows.empty()) {
+        puts("extern const VlIfaceRefTableEntry " + m_ifaceRefTableName + "[];\n");
+    }
+    if (!m_hierTableRows.empty()) {
+        puts("extern const VlHierTableEntry " + hierTableName() + "[];\n");
+    }
+    for (const auto& kv : m_lazyReconFnTables) {
+        puts("extern const VlLazyReconEntry " + kv.first + "[];\n");
+    }
+    if (!m_combMaskRows.empty()) {
+        puts("extern const VlLazyCombMask " + combMaskTableName() + "[];\n");
+    }
+    return true;
 }
 
 void EmitCSyms::emitVarTables() {
-    if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()) return;
+    if (m_varTables.empty() && m_scopeTableRows.empty() && m_ifaceRefTableRows.empty()
+        && m_lazyReconFnTables.empty() && m_combMaskRows.empty())
+        return;
     puts("\n// VPI VARIABLE/SCOPE TABLES\n");
     // offsetof on the (non-standard-layout) generated module/Syms classes is well
     // defined on all supported compilers but warns; suppress just here.
@@ -1364,9 +1462,40 @@ void EmitCSyms::emitVarTables() {
         }
         puts("};\n");
     }
+    for (const auto& kv : m_lazyReconFnTables) {
+        puts("extern const VlLazyReconEntry " + kv.first + "[] = {\n");
+        for (const std::string& ent : kv.second) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(ent);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+    }
+    if (!m_combMaskRows.empty()) {
+        puts("static const VlLazyCombRun " + combRunTableName() + "[] = {\n");
+        for (const std::string& row : m_combRunRows) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(row);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+        puts("extern const VlLazyCombMask " + combMaskTableName() + "[] = {\n");
+        for (const std::string& row : m_combMaskRows) {
+            ofp()->putsNoTracking("    ");
+            ofp()->putsNoTracking(row);
+            ofp()->putsNoTracking(",\n");
+        }
+        puts("};\n");
+    }
     puts("#if defined(__GNUC__)\n");
     puts("# pragma GCC diagnostic pop\n");
     puts("#endif\n");
+    if (v3Global.opt.vpi() || !m_ifaceRefTableRows.empty()) {
+        // Every module is a Syms member, so this bounds all 32 bit Syms offsets: hierarchy,
+        // interface reference and --vpi-lazy descriptor.
+        puts("static_assert(sizeof(" + symClassName() + ") <= 0x7fffffffULL,\n");
+        puts("              \"Symbol table too large for 32 bit VPI offsets\");\n");
+    }
 }
 
 void EmitCSyms::buildHierTableRows() {
@@ -1599,6 +1728,9 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
     // still share a table when their rows are identical.
     if (!m_scopeVars.empty()) {
         stmts.add("// Setup public variables");
+        std::unordered_map<std::string, std::string> reconTableByRows;
+        size_t lazyBaseRunning = 0;
+
         auto it = m_scopeVars.cbegin();
         while (it != m_scopeVars.cend()) {
             const std::string scopeName = it->second.m_scopeName;
@@ -1608,6 +1740,8 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
 
             std::vector<std::string> rows;
             std::vector<std::string> residual;
+            std::vector<std::string> reconFns;
+            int lazyRel = 0;
             m_paramRows.clear();
             m_paramPtrs.clear();
 
@@ -1618,22 +1752,52 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                         "VPI scope '" << scopeName << "' spans multiple C++ instances");
                 const AstVar* const varp = svd.m_varp;
                 const VarDims dims = dimsFor(svd);
+                const bool isLazy = varp->isLazyReconstructShadow();
 
                 // Force-control signals fold into the base signal's forceable insert.
-                const std::pair<bool, std::string> fc = isForceControlSignal(varp);
-                if (fc.first && baseSignalIsPublic(scopep, fc.second)
-                    && baseSignalIsValid(scopep, varp, fc.second)) {
-                    continue;
+                if (!isLazy) {
+                    const std::pair<bool, std::string> fc = isForceControlSignal(varp);
+                    if (fc.first && baseSignalIsPublic(scopep, fc.second)
+                        && baseSignalIsValid(scopep, varp, fc.second)) {
+                        continue;
+                    }
                 }
 
+                int maskIdx = -1;
+                if (!isLazy && V3VpiLazy::combOf(scopep, varp) == VVpiLazyComb::PARTIAL) {
+                    maskIdx = combMaskIdx(scopep, varp);
+                }
                 std::string row;
-                const TableEntryKind kind
-                    = tryBuildTableEntry(svd, varp, scopep, modClassName, dims, row);
+                const TableEntryKind kind = tryBuildTableEntry(
+                    svd, varp, scopep, modClassName, isLazy ? lazyRel : maskIdx, dims, row);
+                UASSERT_OBJ(kind == TableEntryKind::TABLE_ROW || (!isLazy && maskIdx < 0), varp,
+                            "lazy shadow or masked row must be table-eligible");
                 switch (kind) {
                 case TableEntryKind::TABLE_ROW:
                     rows.emplace_back(row);
+                    if (isLazy) {
+                        ++lazyRel;
+                        const AstCFunc* const funcp = lazyRefreshFuncp(scopep, varp);
+                        const std::string fn
+                            = funcp ? "&" + modClassName + "__" + funcp->nameProtect() : "nullptr";
+                        std::string src;  // Empty for a cone
+                        if (varp->isLazyShadowAlias()) {
+                            // Its row is the source cone's shadow, so it reads as that cone
+                        } else if (const AstVar* const srcp = varp->lazyCopySrcp()) {
+                            // Must match the emitted member under --protect-ids.
+                            src = "offsetof(" + modClassName + ", " + varName(srcp) + ")";
+                        }
+                        std::string tail = src.empty() ? "0, 0" : src + ", VLVF_LAZY_COPY";
+                        // A cone has no copy source, so the offset names its mask instead
+                        if (V3VpiLazy::combOf(scopep, varp) == VVpiLazyComb::PARTIAL)
+                            tail = std::to_string(combMaskIdx(scopep, varp))
+                                   + ", VLVF_PUB_RW|VLVF_LAZY_COMB";
+                        reconFns.emplace_back("{" + fn + ", " + tail + "}");
+                    }
+                    // A member takes its lazy and write policy from this row, see
+                    // VerilatedVpioVar::storageVarp()
                     addPackedAggMemberVars(residual, svd, scopep, svd.m_varBasePretty,
-                                           varName(varp), varp->dtypep());
+                                           rowStorageName(varp), varp->dtypep());
                     break;
                 case TableEntryKind::PARAM_ROW:
                     m_paramRows.emplace_back(row);
@@ -1676,9 +1840,19 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
             if (!rows.empty()) {
                 const size_t rowCount = rows.size();
                 const std::string tableName = varTableName(modClassName, std::move(rows));
-                stmts.add("vlSymsp->" + protect("__Vscopep_" + scopeName)
-                          + "->varsInsertFromTable(" + tableName + ", " + std::to_string(rowCount)
-                          + ", &(vlSymsp->" + instName(instScopep) + "));");
+                std::string call = "vlSymsp->" + protect("__Vscopep_" + scopeName)
+                                   + "->varsInsertFromTable(" + tableName + ", "
+                                   + std::to_string(rowCount) + ", &(vlSymsp->"
+                                   + instName(instScopep) + ")";
+                if (lazyRel > 0) {
+                    const std::string fnsName
+                        = sharedTableName(m_lazyReconFnTables, reconTableByRows,
+                                          modClassName + "__VlazyReconFns", std::move(reconFns));
+                    call += ", &vlSymsp->__Vm_lazyReconstructDatap["
+                            + std::to_string(lazyBaseRunning) + "], " + fnsName;
+                }
+                call += ");";
+                stmts.add(call);
             }
             if (!m_paramRows.empty()) {
                 const size_t rowCount = m_paramRows.size();
@@ -1691,6 +1865,11 @@ EmitCSyms::TextStmts EmitCSyms::getSymCtorStmts() {
                           + std::to_string(rowCount) + ", " + ptrsName + ");");
             }
             for (const std::string& r : residual) stmts.add(r);
+            lazyBaseRunning += lazyRel;
+        }
+        m_nLazyReconVars = lazyBaseRunning;
+        if (!m_combMaskRows.empty()) {
+            stmts.add("vlSymsp->__Vm_lazy.combMasksp = " + combMaskTableName() + ";");
         }
     }
 
@@ -1847,10 +2026,35 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
             puts("// Internal state\n");
             if (v3Global.opt.trace()) puts("os" + op + "__Vm_activity;\n");
             puts("os " + op + " __Vm_didInit;\n");
+            if (v3Global.opt.vpiLazy()) {
+                if (de) {
+                    puts("uint64_t __Vm_lazyEpochSaved;\n");
+                    puts("os >> __Vm_lazyEpochSaved;\n");
+                    puts("os >> __Vm_lazy.written;\n");
+                    puts("os >> __Vm_lazy.evalBegun;\n");
+                } else {
+                    puts("os << __Vm_lazy.epoch;\n");
+                    puts("os << __Vm_lazy.written;\n");
+                    puts("os << __Vm_lazy.evalBegun;\n");
+                    // A save from within a read's rebuild must see the puts in place
+                    puts("const bool __Vm_lazyUndoWasIn = __Vm_lazy.undoIn;\n");
+                    puts("if (VL_UNLIKELY(__Vm_lazyUndoWasIn)) __Vm_lazy.undoSwap(false);\n");
+                }
+            }
             puts("// Module instance state\n");
             for (const ScopeModPair& itpair : m_scopes) {
                 const AstScope* const scopep = itpair.first;
                 puts(instName(scopep) + "." + funcname + "(os);\n");
+            }
+            if (v3Global.opt.vpiLazy()) {
+                // The undo log, so a restored model reads as the saved one did until its eval
+                if (de) {
+                    puts("__Vm_lazy.restore(__Vm_lazyEpochSaved);\n");
+                    puts("__Vm_lazy.undoRestore(os, this);\n");
+                } else {
+                    puts("__Vm_lazy.undoSave(os, this);\n");
+                    puts("if (VL_UNLIKELY(__Vm_lazyUndoWasIn)) __Vm_lazy.undoSwap(true);\n");
+                }
             }
             puts("}\n");
         }

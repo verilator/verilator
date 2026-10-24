@@ -1,0 +1,70 @@
+// -*- mode: C++; c-file-style: "cc-mode" -*-
+//*************************************************************************
+// DESCRIPTION: Verilator: Reconstruct optimizer-eliminated VPI signals
+//
+// Code available from: https://verilator.org
+//
+//*************************************************************************
+//
+// This program is free software; you can redistribute it and/or modify it
+// under the terms of either the GNU Lesser General Public License Version 3
+// or the Perl Artistic License Version 2.0.
+// SPDX-FileCopyrightText: 2003-2026 Wilson Snyder
+// SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+//
+//*************************************************************************
+
+#ifndef VERILATOR_V3VPILAZY_H_
+#define VERILATOR_V3VPILAZY_H_
+
+#include "config_build.h"
+#include "verilatedos.h"
+
+#include <vector>
+
+class AstAlways;
+class AstCFunc;
+class AstNetlist;
+class AstScope;
+class AstVar;
+class AstVarScope;
+class V3VpiLazyContext;
+class VVpiLazyComb;
+
+//============================================================================
+
+class V3VpiLazy final {
+public:
+    // Combinationally driven bits of one flat unpacked element; see VVpiLazyComb::PARTIAL.
+    struct CombRun final {
+        uint32_t elem;  // Flat unpacked element index
+        uint32_t lsb;  // First driven bit within the element
+        uint32_t width;  // Driven bits from lsb
+        bool operator==(const CombRun& other) const {
+            return elem == other.elem && lsb == other.lsb && width == other.width;
+        }
+    };
+    // One instance's class: a PARTIAL variable's instances may differ.
+    static VVpiLazyComb combOf(const AstScope* scopep, const AstVar* varp) VL_MT_DISABLED;
+    // A PARTIAL combOf() instance's runs, ordered by element then bit.
+    static const std::vector<CombRun>& combRuns(const AstScope* scopep,
+                                                const AstVar* varp) VL_MT_DISABLED;
+    // Func a reconstructed row in 'scopep' calls to refresh 'shadowVarp', null for a stored copy.
+    static const AstCFunc* refreshFuncp(const AstScope* scopep,
+                                        const AstVar* shadowVarp) VL_MT_DISABLED;
+    // False where 'varp' has no instance in 'scopep': it is kept apart from its other instances.
+    static bool hasRow(const AstScope* scopep, const AstVar* varp) VL_MT_DISABLED;
+    // V3Active feeds each variable instance and combinational block it forms to combVarScope()
+    // and combBlock(); classifyComb() then classifies them.
+    static void combVarScope(AstVarScope* vscp) VL_MT_DISABLED;
+    static void combBlock(AstAlways* alwaysp) VL_MT_DISABLED;
+    // Mark candidates' combinationally driven bits ahead of prepare(), which re-marks them.
+    static void classifyComb(AstNetlist* nodep) VL_MT_DISABLED;
+    // Preserve reconstructable lazy signals before optimization.
+    static void prepare(AstNetlist* nodep) VL_MT_DISABLED;
+    // AstNetlist owns this opaque context.
+    static V3VpiLazyContext* newContext() VL_MT_DISABLED;
+    static void deleteContext(V3VpiLazyContext* ctxp) VL_MT_DISABLED;
+};
+
+#endif  // Guard

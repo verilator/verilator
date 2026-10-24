@@ -3933,6 +3933,20 @@ VerilatedSyms::~VerilatedSyms() {
     delete __Vm_evalMsgQp;
 }
 
+void VerilatedLazyState::undoSwap(bool in) VL_MT_UNSAFE_ONE {
+    undoIn = in;
+    // Newest first going in, so where puts overlap the oldest value lands last
+    const size_t n = undo.size();
+    for (size_t i = 0; i < n; ++i) {
+        VlLazyUndo& entry = undo[in ? n - 1 - i : i];
+        if (entry.isStr) {
+            std::swap(*static_cast<std::string*>(entry.datap), entry.old);
+        } else {
+            std::swap_ranges(entry.old.begin(), entry.old.end(), static_cast<char*>(entry.datap));
+        }
+    }
+}
+
 //===========================================================================
 // Verilated:: Methods
 
@@ -4160,6 +4174,14 @@ void VerilatedEvalLoop::didNotConverge(const char* namep,
     VL_UNREACHABLE;  // VL_FATAL_MT does not return
 }
 
+void VerilatedEvalLoop::lazySettle() {
+    VL_DEBUG_IF(VL_DBG_MSGF("+ Settle (--vpi-lazy write)\n"););
+    uint32_t stlIterCount = 0;
+    do {
+        checkConvergence(++stlIterCount, "Settle", &VerilatedModel::dumpTriggersStl);
+    } while (m_model.evalStl(stlIterCount == 1));
+}
+
 template <bool Profiling>
 void VerilatedEvalLoop::evalImpl() {
     VL_DEBUG_IF(VL_DBG_MSGF("+ Eval\n"););
@@ -4364,11 +4386,24 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
-void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap,
-                                      bool isParam) VL_MT_UNSAFE {
-    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
-    VerilatedVar var{e.namep, datap,   e.vltype,  vlflags,    e.udims,
-                     e.pdims, isParam, e.entSize, e.bitOffset};
+void VerilatedVarLazyDatap::init(const VlLazyReconEntry& recon, void* instp, uint32_t offset) {
+    refreshp = recon.refreshp;
+    selfp = instp;
+    stamp = 0;  // The epoch starts at 2, so the row reads as stale
+    storageOffset = offset;
+    srcOffset = recon.srcByteOffset;
+}
+
+void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam,
+                                      const VlLazyReconEntry* reconp) VL_MT_UNSAFE {
+    const uint32_t reconFlags = reconp ? reconp->vlflags : 0;
+    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags | reconFlags);
+    const int32_t combMask
+        = (reconFlags & VLVF_LAZY_COMB) ? reconp->combMaskIdx() : e.lazyCombMask();
+    VerilatedVar var{e.namep, datap,     e.vltype,
+                     vlflags, e.udims,   e.pdims,
+                     isParam, e.entSize, e.memberBitOffset(),
+                     combMask};
     for (int d = 0; d < e.udims; ++d) {
         var.m_unpacked[d].m_left = e.dimsp[2 * d];
         var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
@@ -4389,13 +4424,33 @@ void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap,
     m_varsp->emplace(e.namep, std::move(var));
 }
 
-void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
-                                         void* basep) VL_MT_UNSAFE {
+void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep,
+                                         VerilatedVarLazyDatap* lazyBasep,
+                                         const VlLazyReconEntry* lazyReconsp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
     // A packed member row's basep is its parent's storage
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
-    for (size_t i = 0; i < n; ++i) varInsertFromRow(entp[i], base + entp[i].byteOffset, false);
+    for (size_t i = 0; i < n; ++i) {
+        const VlVarTableEntry& e = entp[i];
+        const int32_t descSlot = e.lazyDescSlot();
+        if (descSlot < 0) {
+            varInsertFromRow(e, base + e.byteOffset, false);
+            continue;
+        }
+        const uint32_t storageOffset = static_cast<uint32_t>(e.byteOffset);
+        // Narrowed from size_t, and a silent wrap would point the row at another signal.
+        // V3EmitCSyms emits a static_assert capping sizeof(Syms), which contains every
+        // instance, at 0x7fffffff, so this can only fire on a mismatched emitter's table.
+        if (VL_UNCOVERABLE(storageOffset != e.byteOffset)) {
+            VL_FATAL_MT(__FILE__, __LINE__, e.namep,  // LCOV_EXCL_LINE
+                        "Internal: --vpi-lazy storage offset exceeds 32 bits");
+        }
+        VerilatedVarLazyDatap& desc = lazyBasep[descSlot];
+        desc.init(lazyReconsp[descSlot], base, storageOffset);
+        m_symsp->lazyp()->undoOn = true;
+        varInsertFromRow(e, &desc, false, &lazyReconsp[descSlot]);
+    }
 }
 
 void VerilatedScope::paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,

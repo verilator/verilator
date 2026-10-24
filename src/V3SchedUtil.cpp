@@ -93,6 +93,7 @@ static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     subFuncp->isStatic(ofuncp->isStatic());
     subFuncp->isLoose(true);
     subFuncp->slow(ofuncp->slow());
+    subFuncp->vpiLazyReconstruct(ofuncp->vpiLazyReconstruct());
     subFuncp->declPrivate(ofuncp->declPrivate());
     if (ofuncp->needProcess()) subFuncp->setNeedProcess();
     for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
