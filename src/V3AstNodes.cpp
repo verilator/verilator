@@ -4819,6 +4819,7 @@ void AstVarXRef::dump(std::ostream& str) const {
     if (readOnlyModport()) str << " [ROMODPORT]";
     str << ".=" << dotted() << " ";
     if (inlinedDots() != "") str << " inline.=" << inlinedDots() << " - ";
+    if (!resolvedDotted().empty()) str << " resolved.=" << resolvedDotted() << " - ";
     if (varScopep()) {
         varScopep()->dump(str);
     } else if (varp()) {
@@ -4832,6 +4833,7 @@ void AstVarXRef::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, readOnlyModport);
     dumpJsonStrFunc(str, dotted);
     dumpJsonStrFunc(str, inlinedDots);
+    dumpJsonStrFunc(str, resolvedDotted);
     dumpJsonGen(str);
 }
 void AstVoidDType::dumpSmall(std::ostream& str) const {

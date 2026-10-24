@@ -829,26 +829,23 @@ class TristateVisitor final : public TristateBaseVisitor {
                     // still captures a plain cross-hierarchy driver processed later.
                     m_varAux(invarp).ifaceTristate = true;
                     // Interface tristate vars: drivers from different interface instances
-                    // (different VarXRef dotted paths) must be processed separately.
-                    // E.g. io_ifc.d and io_ifc_local.d both target the same AstVar d in
-                    // the ifc interface, but each instance needs its own contribution slot.
-                    struct PartitionInfo final {
-                        RefStrengthVec refs;
-                        string inlinedDots;
-                    };
-                    std::map<string, PartitionInfo> partitions;
+                    // must be processed separately. E.g. io_ifc.d and io_ifc_local.d both
+                    // target the same AstVar d in the ifc interface, but each instance needs
+                    // its own contribution slot. Drivers of one instance share a slot, so
+                    // writes from named scopes of one process resolve as one driver.
+                    std::map<string, RefStrengthVec> partitions;
                     for (const RefStrength& rs : *refsp) {
-                        if (AstVarXRef* const xrefp = VN_CAST(rs.m_varrefp, VarXRef)) {
-                            PartitionInfo& pi = partitions[xrefp->dotted()];
-                            pi.refs.push_back(rs);
-                            if (pi.inlinedDots.empty()) { pi.inlinedDots = xrefp->inlinedDots(); }
-                        } else {
-                            partitions[""].refs.push_back(rs);
-                        }
+                        // Before V3Inline, a driver in another module is a hierarchical reference
+                        const AstVarXRef* const xrefp = VN_CAST(rs.m_varrefp, VarXRef);
+                        UASSERT_OBJ(
+                            xrefp, rs.m_varrefp,
+                            "Cross-module interface driver must be a hierarchical reference");
+                        UASSERT_OBJ(!xrefp->resolvedDotted().empty(), xrefp,
+                                    "Interface driver without a resolved scope path");
+                        partitions[xrefp->resolvedDotted()].push_back(rs);
                     }
                     for (auto& kv : partitions) {
-                        insertTristatesSignal(nodep, invarp, &kv.second.refs, true, kv.first,
-                                              kv.second.inlinedDots,
+                        insertTristatesSignal(nodep, invarp, &kv.second, true, kv.first,
                                               findModportForDotted(nodep, kv.first));
                     }
                 } else if (VN_IS(nodep, Iface) && !invarp->isIO()) {
@@ -858,9 +855,9 @@ class TristateVisitor final : public TristateBaseVisitor {
                     // hierarchy with a plain (non-Z) assign is also routed through the
                     // contribution mechanism (its own graph has no Z to mark it tristate).
                     m_varAux(invarp).ifaceTristate = true;
-                    insertTristatesSignal(nodep, invarp, refsp, true, "", "", nullptr);
+                    insertTristatesSignal(nodep, invarp, refsp, true, "", nullptr);
                 } else {
-                    insertTristatesSignal(nodep, invarp, refsp, false, "", "", nullptr);
+                    insertTristatesSignal(nodep, invarp, refsp, false, "", nullptr);
                 }
             } else {
                 UINFO(8, "  NO TRISTATE ON:" << invarp);
@@ -1033,11 +1030,12 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     // isIfaceTri: true when the var is a tristate in an interface module (local or external).
-    // ifaceDottedPath/ifaceInlinedDots/ifaceModportp are non-empty only for external
-    // (cross-module) drivers; empty for local drivers within the interface itself.
+    // ifaceDottedPath/ifaceModportp are non-empty only for external (cross-module) drivers;
+    // empty for local drivers within the interface itself. ifaceDottedPath is the interface
+    // instance path relative to nodep, recorded by V3LinkDot.
     void insertTristatesSignal(AstNodeModule* nodep, AstVar* const invarp, RefStrengthVec* refsp,
                                bool isIfaceTri, const string& ifaceDottedPath,
-                               const string& ifaceInlinedDots, AstModport* ifaceModportp) {
+                               AstModport* ifaceModportp) {
         UINFO(8, "  TRISTATE EXPANDING:" << invarp);
         ++m_statTriSigs;
         m_tgraph.didProcess(invarp);
@@ -1102,9 +1100,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             // create d__strong in the driving module)
             string strengthPrefix;
             if (isIfaceTri && !ifaceDottedPath.empty()) {
-                strengthPrefix = ifaceDottedPath;
-                std::replace(strengthPrefix.begin(), strengthPrefix.end(), '.', '_');
-                strengthPrefix += "__";
+                // __DOT__ cannot appear in an encoded user name, so g.u_if and g_u_if differ
+                strengthPrefix = VString::replaceSubstr(ifaceDottedPath, ".", "__DOT__") + "__";
             }
             const string strengthVarName
                 = strengthPrefix + lhsp->name() + "__" + beginStrength->m_strength.ascii();
@@ -1183,22 +1180,22 @@ class TristateVisitor final : public TristateBaseVisitor {
             // External drivers use VarXRef; local drivers use VarRef.
             {
                 AstNodeVarRef* const lhsp
-                    = ifaceDottedPath.empty() ? static_cast<AstNodeVarRef*>(
-                                                    new AstVarRef{fl, contribOutp, VAccess::WRITE})
-                                              : static_cast<AstNodeVarRef*>(
-                                                    newVarXRef(fl, contribOutp, ifaceDottedPath,
-                                                               VAccess::WRITE, ifaceInlinedDots));
+                    = ifaceDottedPath.empty()
+                          ? static_cast<AstNodeVarRef*>(
+                                new AstVarRef{fl, contribOutp, VAccess::WRITE})
+                          : static_cast<AstNodeVarRef*>(
+                                new AstVarXRef{fl, contribOutp, ifaceDottedPath, VAccess::WRITE});
                 AstAssignW* const assp = new AstAssignW{fl, lhsp, orp};
                 assp->user2Or(U2_BOTH);
                 nodep->addStmtsp(new AstAlways{assp});
             }
             {
                 AstNodeVarRef* const lhsp
-                    = ifaceDottedPath.empty() ? static_cast<AstNodeVarRef*>(
-                                                    new AstVarRef{fl, contribEnp, VAccess::WRITE})
-                                              : static_cast<AstNodeVarRef*>(
-                                                    newVarXRef(fl, contribEnp, ifaceDottedPath,
-                                                               VAccess::WRITE, ifaceInlinedDots));
+                    = ifaceDottedPath.empty()
+                          ? static_cast<AstNodeVarRef*>(
+                                new AstVarRef{fl, contribEnp, VAccess::WRITE})
+                          : static_cast<AstNodeVarRef*>(
+                                new AstVarXRef{fl, contribEnp, ifaceDottedPath, VAccess::WRITE});
                 AstAssignW* const assp = new AstAssignW{fl, lhsp, enp};
                 assp->user2Or(U2_BOTH);
                 nodep->addStmtsp(new AstAlways{assp});

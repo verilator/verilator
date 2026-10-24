@@ -6510,6 +6510,7 @@ class AstVarXRef final : public AstNodeVarRef {
     string m_name;
     string m_dotted;  // Dotted part of scope the name()'ed reference is under or ""
     string m_inlinedDots;  // Dotted hierarchy flattened out
+    string m_resolvedDotted;  // Resolved scope path relative to the module, from V3LinkDot
     bool m_containsGenBlock = false;  // Contains gen block reference
     bool m_readOnlyModport = false;  // Linked via an input-only modport, until V3LinkLValue
 public:
@@ -6527,6 +6528,8 @@ public:
     void dotted(const string& dotted) { m_dotted = dotted; }
     string inlinedDots() const { return m_inlinedDots; }
     void inlinedDots(const string& flag) { m_inlinedDots = flag; }
+    const string& resolvedDotted() const { return m_resolvedDotted; }
+    void resolvedDotted(const string& path) { m_resolvedDotted = path; }
     bool containsGenBlock() const { return m_containsGenBlock; }
     void containsGenBlock(const bool flag) { m_containsGenBlock = flag; }
     bool readOnlyModport() const { return m_readOnlyModport; }
@@ -6538,7 +6541,8 @@ public:
     bool sameNode(const AstNode* samep) const override {
         const AstVarXRef* asamep = VN_DBG_AS(samep, VarXRef);
         return (selfPointer() == asamep->selfPointer() && varp() == asamep->varp()
-                && name() == asamep->name() && dotted() == asamep->dotted());
+                && name() == asamep->name() && dotted() == asamep->dotted()
+                && resolvedDotted() == asamep->resolvedDotted());
     }
 };
 

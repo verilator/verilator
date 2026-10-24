@@ -99,6 +99,11 @@ module t (/*AUTOARG*/
 
   Iface the_ifaces [3:0] (.*);
 
+  if (1) begin : iface_scope
+    Iface nested_iface (.*);
+    initial if (nested_iface.ifsig) $write("");
+  end
+
   initial begin
     if ($test$plusargs("HELLO")) $display("Hello argument found.");
     if (Pkg::FOO == 0) $write("");
