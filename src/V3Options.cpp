@@ -992,6 +992,9 @@ void V3Options::notify() VL_MT_DISABLED {
     if (m_exe && !v3Global.opt.libCreate().empty()) {
         cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
     }
+    if (m_systemC && !v3Global.opt.libCreate().empty()) {
+        cmdfl->v3error("--sc cannot be used together with --lib-create. Suggest see manual");
+    }
 
     // Make sure at least one make system is enabled
     if (!m_gmake && !m_makeJson) m_gmake = true;
