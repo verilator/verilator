@@ -23,8 +23,22 @@
 
 #include "verilated_timing.h"
 
+#include "verilated_dpi_call.h"
+
 //======================================================================
 // VlCoroutineHandle:: Methods
+
+VlCoroutineHandle::~VlCoroutineHandle() {
+    // Usually these coroutines should get resumed; we only need to clean up if we destroy a
+    // model with some coroutines suspended
+    if (VL_UNLIKELY(m_coro)) {
+        if (m_process && m_process->state() != VlProcess::KILLED && !m_coro.promise().m_forever) {
+            m_process->state(VlProcess::FINISHED);
+        }
+        m_coro.destroy();
+        VerilatedDpiCall::resumeAborted();
+    }
+}
 
 void VlCoroutineHandle::resume() {
     // Only null if we have a fork..join_any and one of the other child processes resumed the
@@ -34,6 +48,11 @@ void VlCoroutineHandle::resume() {
         if (m_process) {  // If process state is managed with std::process
             if (m_process->state() == VlProcess::KILLED) {
                 m_coro.destroy();
+                m_coro = nullptr;
+                // Killing a process might leak a thread if
+                // it was in the middle of executing a DPI import.
+                // This function resumes those threads.
+                VerilatedDpiCall::resumeAborted();
             } else {
                 m_process->state(VlProcess::RUNNING);
                 VlProcess::currentp(m_process.get());

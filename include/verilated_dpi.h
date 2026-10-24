@@ -29,6 +29,17 @@
 #include "verilatedos.h"
 
 #include "verilated.h"  // Also presumably included by caller
+#include "verilated_util.h"
+
+#if VM_TIMING == 1
+#include "verilated_dpi_call.h"
+#else
+
+// Placeholder for compiling with --protect-ids
+#define VL_UNKNOWN "<unknown>"
+
+#endif
+
 #include "verilated_sym_props.h"
 
 #include "svdpi.h"
@@ -106,6 +117,108 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
     owp[1].aval = lwp[1];
     owp[1].bval = 0;
 }
+
+namespace VerilatedDpi {
+
+struct VlFunctionContext final {
+    const char* m_filename;
+    int m_lineno;
+
+    bool inFunctionContext() const { return m_filename != nullptr; }
+};
+
+// DPI imported function being executed on this thread, defined in verilated_dpi.cpp
+extern thread_local VlFunctionContext t_fileline;
+
+template <typename Callable, typename... Args>
+decltype(auto) callImportFunction(const char* const filename, int lineno, Callable&& call,
+                                  Args&&... args) {
+    VL_RESTORER(t_fileline);
+    t_fileline.m_filename = filename;
+    t_fileline.m_lineno = lineno;
+    return call(std::forward<Args>(args)...);
+}
+
+template <typename Callable, typename... Args>
+void callImportTask(Callable&& call, Args&&... args) {
+    static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), int>::value,
+                  "DPI imported tasks should have 'int' return type (IEEE 1800-2023 35.5.4 Import "
+                  "declarations)");
+    (void)call(std::forward<Args>(args)...);
+}
+
+template <typename Callable, typename... Args>
+decltype(auto) callExportFunction(Callable&& call, Args&&... args) {
+    return call(std::forward<Args>(args)...);
+}
+
+#if VM_TIMING == 1
+
+// Resume the DPI call once the exported task completes
+inline VlCoroutine resumeDpiCallAfter(VlCoroutine coro, VlDpiCall* callp) {
+    // Notify the worker thread through callp in case the process was killed.
+    struct VlAbortNotify final {
+        VlDpiCall* callp;
+
+        ~VlAbortNotify() {
+            if (callp) callp->markAborted();
+        }
+    } notify{callp};
+    co_await coro;
+
+    notify.callp = nullptr;
+    callp->handoffWorker();
+}
+
+template <typename Callable, typename... Args>
+VlCoroutine awaitImportTask(Callable&& call, Args&&... args) {
+    VlDpiCall dpiCall{
+        [&]() { callImportTask(std::forward<Callable>(call), std::forward<Args>(args)...); }};
+    dpiCall.handoffWorker();
+    co_await dpiCall;
+}
+
+#endif
+
+static inline bool exportAborted() {
+#if VM_TIMING == 1
+    VlDpiCall* const callp = VlDpiCall::current();
+    return callp && callp->exportAborted();
+#else
+    return false;
+#endif
+}
+
+template <typename Callable, typename... Args>
+void callExportTask(Callable&& call, Args&&... args) {
+    if (t_fileline.inFunctionContext()) {
+        VL_FATAL_MT(t_fileline.m_filename, t_fileline.m_lineno, "",
+                    "DPI exported task called from function context");
+    }
+    if (VL_UNLIKELY(exportAborted())) return;
+#if VM_TIMING == 1
+    // An exported task with timing is a coroutine. Suspend the DPI call until it completes.
+    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
+                                        VlCoroutine>::value) {
+        VlDpiCall* const callp = VlDpiCall::current();
+        if (VL_UNLIKELY(!callp)) {
+            VL_FATAL_MT(__FILE__, __LINE__, "",
+                        "DPI export with timing invoked outside of a DPI import thread");
+        }
+
+        // Call returns on the first delay or event control
+        VlCoroutine coro{call(std::forward<Args>(args)...)};
+        if (!coro.await_ready()) {
+            resumeDpiCallAfter(std::move(coro), callp);
+            VlDpiCall::stopWorker();
+        }
+        return;
+    }
+#endif
+    call(std::forward<Args>(args)...);
+}
+
+};  //namespace VerilatedDpi
 
 //======================================================================
 

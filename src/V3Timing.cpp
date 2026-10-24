@@ -115,6 +115,7 @@ static bool hasFlags(AstNode* const nodep, uint8_t flags) { return !(~nodep->use
 
 class TimingSuspendableVisitor final : public VNVisitor {
     // TYPES
+    unsigned int m_suspendableExports;
     // Vertex of a dependency graph of suspendable nodes, e.g. if a node (process or task) is
     // suspendable, all its dependents should also be suspendable
     class DepVtx VL_NOT_FINAL : public V3GraphVertex {
@@ -195,6 +196,8 @@ class TimingSuspendableVisitor final : public VNVisitor {
                           // suspendable makes the other node suspendable
     V3Graph m_procGraph;  // Dependency graph where a node is a dependency of another if it being
                           // suspendable makes the other node suspendable
+    std::vector<AstNode*> m_delayedProc;
+    std::vector<AstCFunc*> m_dpiExports;
 
     // METHODS
     // Get or create the dependency vertex for the given node
@@ -307,6 +310,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
+        if (nodep->dpiExportImpl()) { m_dpiExports.push_back(nodep); }
         if (nodep->needProcess()) addFlags(nodep, T_FORCES_PROC | T_NEEDS_PROC);
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
@@ -402,6 +406,11 @@ class TimingSuspendableVisitor final : public VNVisitor {
         if (nodep->timingControlp()) v3Global.setUsesTiming();
         // Containing process will not suspend, don't mark it
     }
+    void visit(AstCFuncHard* nodep) override {
+        if (nodep->function() == VCFunction::CALL_IMPORT_TASK) {
+            m_delayedProc.push_back(m_procp);
+        }
+    }
     void visit(AstNode* nodep) override {
         if (nodep->isTimingControl()) {
             v3Global.setUsesTiming();
@@ -415,7 +424,8 @@ class TimingSuspendableVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit TimingSuspendableVisitor(AstNetlist* nodep) {
+    explicit TimingSuspendableVisitor(AstNetlist* nodep)
+        : m_suspendableExports{0} {
         iterate(nodep);
         m_suspGraph.removeTransitiveEdges();
         m_procGraph.removeTransitiveEdges();
@@ -424,6 +434,23 @@ public:
             DepVtx& depVtx = static_cast<DepVtx&>(vtx);
             if (hasFlags(depVtx.nodep(), T_SUSPENDEE)) propagateFlags(&depVtx, T_SUSPENDEE);
         }
+
+        for (AstCFunc* dpiExportp : m_dpiExports) {
+            if (hasFlags(dpiExportp, T_SUSPENDEE) || hasFlags(dpiExportp, T_SUSPENDER)) {
+                ++m_suspendableExports;
+                v3Global.setUsesSuspendableExports();
+            }
+        }
+
+        // Propagate suspendability again after DPI exports have been resolved
+        if (v3Global.usesSuspendableExports()) {
+            for (AstNode* procp : m_delayedProc) { addFlags(procp, T_SUSPENDEE | T_SUSPENDER); }
+            for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
+                DepVtx& depVtx = static_cast<DepVtx&>(vtx);
+                if (hasFlags(depVtx.nodep(), T_SUSPENDEE)) propagateFlags(&depVtx, T_SUSPENDEE);
+            }
+        }
+
         if (dumpGraphLevel() >= 6) m_suspGraph.dumpDotFilePrefixed("timing_deps");
 
         // Propagate T_HAS_PROCESS
@@ -454,7 +481,9 @@ public:
         }
         if (dumpGraphLevel() >= 6) m_procGraph.dumpDotFilePrefixed("proc_deps");
     }
-    ~TimingSuspendableVisitor() override = default;
+    ~TimingSuspendableVisitor() override {
+        V3Stats::addStat("Timing, suspendable DPI exports", m_suspendableExports);
+    }
 };
 
 // ######################################################################
@@ -938,7 +967,9 @@ class TimingControlVisitor final : public VNVisitor {
         m_underIfaceCFunc = VN_IS(m_scopep->modp(), Iface);
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
-        if (!(hasFlags(nodep, T_SUSPENDEE))) return;
+        if (!(hasFlags(nodep, T_SUSPENDEE))) {
+            if (!(nodep->dpiImportWrapper() && v3Global.usesSuspendableExports())) return;
+        }
 
         nodep->rtnType("VlCoroutine");
         // If in a class, create a shared pointer to 'this'
@@ -946,14 +977,16 @@ class TimingControlVisitor final : public VNVisitor {
             AstCStmt* const cstmtp = new AstCStmt{nodep->fileline(), "VL_KEEP_THIS;"};
             nodep->prependStmtsp(cstmtp);
         }
-        if (nodep->dpiExportImpl()) {
-            nodep->exists([](AstCAwait* const awaitp) -> bool {
-                // A DPI-exported coroutine won't be able to block the calling code
-                // Error on the await node; fall back to the function node
-                awaitp->v3warn(E_UNSUPPORTED,
-                               "Unsupported: Timing controls inside DPI-exported tasks");
-                return true;
-            });
+    }
+    void visit(AstCFuncHard* nodep) override {
+        if (nodep->function() == VCFunction::CALL_IMPORT_TASK) {
+            // Do not use awaitable DPI dispatcher, if there are no suspendable DPI exports
+            if (!v3Global.usesSuspendableExports()) return;
+            AstStmtExpr* const stmtExprp = VN_AS(nodep->backp(), StmtExpr);
+            nodep->function(VCFunction::AWAIT_IMPORT_TASK);
+            AstCFuncHard* const cFuncp = nodep->unlinkFrBack();
+            stmtExprp->replaceWith(new AstCAwait{nodep->fileline(), cFuncp});
+            VL_DO_DANGLING(pushDeletep(stmtExprp), stmtExprp);
         }
     }
     void visit(AstNodeCCall* nodep) override {
