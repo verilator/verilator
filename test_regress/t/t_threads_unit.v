@@ -22,6 +22,7 @@ module hazard_unit #(parameter int ID = 0);
   logic x;
   always_comb x = t.hazard_q[1-ID] ^ t.cyc[ID];
   always_comb t.hazard_q[ID] = x | t.cyc[ID];
+  always_comb t.split[ID*4+:4] = t.cyc[3:0] + 4'(ID);
 endmodule
 
 // A unit inside a unit; its logic belongs to its own instance, not the tile's
@@ -92,6 +93,15 @@ module t (
   // verilator lint_on UNOPTFLAT
   hazard_unit #(0) h0();
   hazard_unit #(1) h1();
+  // Written by both hazard units, so its MTask is in neither
+  logic [7:0] split;
+  // Public, so that their logic is not substituted into the check
+  // verilator lint_off UNOPTPUBLIC
+  logic [7:0] sp0 /*verilator public*/, sp1 /*verilator public*/, sp2 /*verilator public*/;
+  // verilator lint_on UNOPTPUBLIC
+  always_comb sp0 = split + 8'd1;
+  always_comb sp1 = split ^ 8'h5a;
+  always_comb sp2 = split - 8'd3;
   wire [7:0] out[4];
   wire [7:0] st[4];
   for (genvar i = 0; i < 4; ++i) begin : g
@@ -122,6 +132,7 @@ module t (
       `checkd(st[3], 53)
       `checkd(sum, 184)
       `checkd(mix, 81)
+      `checkd(sp0 ^ sp1 ^ sp2, 10)
       $write("*-* All Finished *-*\n");
       $finish;
     end

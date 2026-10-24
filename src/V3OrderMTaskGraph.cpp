@@ -579,7 +579,8 @@ void OrderMTaskGraph::mergeThreadsUnits(OrderMTaskGraph& mtaskGraph) {
             // Not in a unit
         } else if (const OrderLogicVertex* const lVtxp = mtaskp->vertexList().frontp()->logicp()) {
             unitp = VN_AS(lVtxp->scopep()->user3p(), Scope);
-        } else if (!mtaskp->inEmpty()) {
+        } else {
+            // A variable MTask follows the logic writing it
             unitp = placeOf.at(mtaskp->inEdges().frontp()->fromp()).first;
             for (const V3GraphEdge& edge : mtaskp->inEdges()) {
                 if (placeOf.at(edge.fromp()).first != unitp) unitp = nullptr;
@@ -638,8 +639,8 @@ void OrderMTaskGraph::rebuildCriticalPaths() {
             LogicMTask* const mtaskp = const_cast<LogicMTask*>(vtxp->as<LogicMTask>());
             uint64_t cp = 0;
             for (const V3GraphEdge& edge : vtxp->inEdges()) {
-                cp = std::max(cp,
-                              edge.fromp()->as<LogicMTask>()->cpInclusive<GraphWay::FORWARD>());
+                const LogicMTask* const fromp = static_cast<const LogicMTask*>(edge.fromp());
+                cp = std::max(cp, fromp->cpInclusive<GraphWay::FORWARD>());
             }
             mtaskp->cpExclusive<GraphWay::FORWARD>(cp);
         }
@@ -650,7 +651,8 @@ void OrderMTaskGraph::rebuildCriticalPaths() {
             LogicMTask* const mtaskp = const_cast<LogicMTask*>(vtxp->as<LogicMTask>());
             uint64_t cp = 0;
             for (const V3GraphEdge& edge : vtxp->outEdges()) {
-                cp = std::max(cp, edge.top()->as<LogicMTask>()->cpInclusive<GraphWay::REVERSE>());
+                const LogicMTask* const top = static_cast<const LogicMTask*>(edge.top());
+                cp = std::max(cp, top->cpInclusive<GraphWay::REVERSE>());
             }
             mtaskp->cpExclusive<GraphWay::REVERSE>(cp);
         }
