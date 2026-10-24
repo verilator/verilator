@@ -1,0 +1,4 @@
+%Error-UNSUPPORTED: t/t_covergroup_trans_unsup.v:26:19: Unsupported: transition sequence of more than 256 values.
+                                                      : ... note: In instance 't'
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to
