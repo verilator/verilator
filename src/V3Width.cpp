@@ -10031,20 +10031,47 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    // Returns enum DType of a Cond - useful when there is such cond: (logic ? two_state_enum :
+    // two_state_enum) - in this case returned DType is the enum but with the four-state domain so,
+    // the DType of the cond is logic and in order to get the EnumDType use this function
+    static AstEnumDType* enumishCondDTypep(const AstNodeExpr* const exprp) {
+        if (exprp && exprp->dtypep()) {
+            if (AstEnumDType* const resultp
+                = VN_CAST(exprp->dtypep()->skipRefToEnump(), EnumDType)) {
+                return resultp;
+            }
+        }
+        if (const AstCond* const condp = VN_CAST(exprp, Cond)) {
+            AstEnumDType* const thenDTypep = enumishCondDTypep(condp->thenp());
+            AstEnumDType* const elseDTypep = enumishCondDTypep(condp->elsep());
+            if (thenDTypep && elseDTypep) {
+                const VCastable castable
+                    = AstNode::computeCastable(thenDTypep, elseDTypep, nullptr);
+                if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE
+                    || castable == VCastable::ENUM_IMPLICIT) {
+                    return thenDTypep;
+                }
+            }
+        }
+        return nullptr;
+    }
     static void checkEnum(AstNode* nodep, AstNode* parentp, const AstNodeDType* targetDTypep,
                           const AstNodeDType* sourceDTypep, const AstNodeExpr* sourceExprp) {
         if (const AstEnumDType* const targetEnump
             = VN_CAST(targetDTypep->skipRefToEnump(), EnumDType)) {
-            const VCastable castable
-                = AstNode::computeCastable(targetEnump, sourceDTypep, sourceExprp);
+            const AstNodeDType* enumishDType = enumishCondDTypep(sourceExprp);
+            const VCastable castable = AstNode::computeCastable(
+                targetEnump, enumishDType ? enumishDType : sourceDTypep, sourceExprp);
             if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
                 && castable != VCastable::ENUM_IMPLICIT) {
-                nodep->v3warn(ENUMVALUE, "Implicit conversion to enum "
-                                             << targetDTypep->prettyDTypeNameQ() << " from "
-                                             << sourceDTypep->prettyDTypeNameQ()
-                                             << " (IEEE 1800-2023 6.19.3)\n"
-                                             << parentp->warnMore()
-                                             << "... Suggest use enum's mnemonic, or static cast");
+                nodep->v3warn(
+                    ENUMVALUE,
+                    "Implicit conversion to enum "
+                        << targetDTypep->prettyDTypeNameQ() << " from "
+                        << (enumishDType ? enumishDType : sourceDTypep)->prettyDTypeNameQ()
+                        << " (IEEE 1800-2023 6.19.3)\n"
+                        << parentp->warnMore()
+                        << "... Suggest use enum's mnemonic, or static cast");
             }
         }
     }
