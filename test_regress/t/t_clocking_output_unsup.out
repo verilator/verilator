@@ -3,4 +3,16 @@
    32 |       .bus(a + b)
       |        ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_clocking_output_unsup.v:36:8: Unsupported: Clocking block output driving input port through non-decomposable connection 'bus'
+                                        : ... note: In instance 't.d'
+   36 |       .bus({a[3:0] + b[3:0], b[3:0]})
+      |        ^~~
+%Error: t/t_clocking_output_unsup.v:40:8: Unsupported: Clocking block output driving input port through non-decomposable connection 'bus'
+                                        : ... note: In instance 't.d'
+   40 |       .bus({b[3:0], a[3:0] & b[3:0]})
+      |        ^~~
+%Error: t/t_clocking_output_unsup.v:44:8: Unsupported: Clocking block output driving input port through non-decomposable connection 'bus'
+                                        : ... note: In instance 't.d'
+   44 |       .bus({2{a[3:0]}})
+      |        ^~~
 %Error: Exiting due to

@@ -38,27 +38,14 @@ static void markContinuousLhs(AstNode* const nodep) {
 }
 
 // Flip the access of the driven leaves of a pin connection expression so it
-// can be used on the LHS of an assignment. Only variables and bit/part
-// selects over variables are flipped; index and select operands stay
+// can be used on the LHS of an assignment; index and select operands stay
 // read-only. Struct-member selects cannot appear here: V3Width lowers them to
-// selects before V3Inst. Returns false if the connection cannot be driven
-// (e.g. arithmetic), in which case the expression is left unmodified.
+// selects before V3Inst.
 static bool markConnectionLhs(AstNodeExpr* const nodep) {
-    if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
-        if (!refp->access().isReadOnly()) return false;
+    return V3Inst::forEachDrivenLeaf(nodep, [](AstNodeVarRef* refp) {
+        UASSERT_OBJ(refp->access().isReadOnly(), refp, "Input connection should be read-only");
         refp->access(VAccess::WRITE);
-        return true;
-    }
-    // Note AstSel (bit/part select) is not an AstNodeSel (array select);
-    // both expose fromp() for the selected value.
-    if (AstSel* const selp = VN_CAST(nodep, Sel)) return markConnectionLhs(selp->fromp());
-    if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
-        return markConnectionLhs(selp->fromp());
-    }
-    if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
-        return markConnectionLhs(concatp->lhsp()) && markConnectionLhs(concatp->rhsp());
-    }
-    return false;
+    });
 }
 
 // Prepare a pin connection expression as the LHS of the reverse (inside-out)
@@ -69,6 +56,68 @@ static AstNodeExpr* tryConnectionLhs(AstNodeExpr* const nodep) {
     if (markConnectionLhs(clonep)) return clonep;
     VL_DO_DANGLING(clonep->deleteTree(), clonep);
     return nullptr;
+}
+
+// Input port that a clocking block output drives, directly or through a sub-instance.
+// A port only reached through a sub-instance is still connected one-way when its
+// connection cannot be driven, as it was before clocking drives flowed out.
+static bool isClockingDrivenPort(const AstVar* const varp) {
+    return varp->isClockingDriven() || varp->isClockingDrivenThru();
+}
+
+// A clocking block output inside the cell may drive an input port, while the
+// connection keeps feeding the port otherwise (e.g. the same interface used as a
+// monitor), so connect them both ways. A single process in the Re-NBA region, with
+// the clocking drives (IEEE 1800-2023 14.16), copies whichever side changed since it
+// last ran: a continuous assignment from the connection may be re-evaluated after a
+// drive, and separate processes per direction may run in either order. An initial
+// block first takes the connection and records both sides, so the process never
+// depends on whether it also runs at time 0.
+static void addClockingConnection(AstCell* const cellp, const string& name,
+                                  AstNodeVarRef* const portp, AstNodeExpr* const connp,
+                                  AstNodeExpr* const outRhsp, AstNodeExpr* const drivenp) {
+    FileLine* const flp = portp->fileline();
+    AstVar* const lastPortVarp
+        = new AstVar{flp, VVarType::MODULETEMP, name + "__VlastPort", portp->dtypep()};
+    AstVar* const lastConnVarp
+        = new AstVar{flp, VVarType::MODULETEMP, name + "__VlastConn", connp->dtypep()};
+    cellp->addNextHere(lastPortVarp);
+    cellp->addNextHere(lastConnVarp);
+    const auto newPortp = [&](VAccess access) {
+        AstNodeVarRef* const refp = portp->cloneTree(false);
+        refp->access(access);
+        return refp;
+    };
+    const auto newRefp
+        = [&](AstVar* varp, VAccess access) { return new AstVarRef{flp, varp, access}; };
+    // lastPort = port; lastConn = conn;
+    const auto newRecordp = [&]() {
+        AstNode* const stmtsp
+            = new AstAssign{flp, newRefp(lastPortVarp, VAccess::WRITE), newPortp(VAccess::READ)};
+        stmtsp->addNext(
+            new AstAssign{flp, newRefp(lastConnVarp, VAccess::WRITE), connp->cloneTree(false)});
+        return stmtsp;
+    };
+    AstNode* const initStmtsp
+        = new AstAssign{flp, newPortp(VAccess::WRITE), connp->cloneTree(false)};
+    initStmtsp->addNext(newRecordp());
+    cellp->addNextHere(new AstInitial{flp, initStmtsp});
+    portp->access(VAccess::READ);
+    AstSenTree* const sentreep
+        = new AstSenTree{flp, new AstSenItem{flp, VEdgeType::ET_CHANGED, portp}};
+    sentreep->addSensesp(new AstSenItem{flp, VEdgeType::ET_CHANGED, connp->cloneTree(false)});
+    AstNodeExpr* const connChangedp
+        = new AstNeq{flp, connp->cloneTree(false), newRefp(lastConnVarp, VAccess::READ)};
+    connChangedp->dtypeSetBit();
+    AstNodeExpr* const portChangedp
+        = new AstNeq{flp, newPortp(VAccess::READ), newRefp(lastPortVarp, VAccess::READ)};
+    portChangedp->dtypeSetBit();
+    AstIf* const outIfp = new AstIf{flp, portChangedp, new AstAssign{flp, drivenp, outRhsp}};
+    outIfp->addElsesp(
+        new AstIf{flp, connChangedp, new AstAssign{flp, newPortp(VAccess::WRITE), connp}});
+    AstNode* const stmtsp = outIfp;
+    stmtsp->addNext(newRecordp());
+    cellp->addNextHere(new AstAlwaysReactive{flp, sentreep, stmtsp});
 }
 
 //######################################################################
@@ -174,6 +223,21 @@ class InstVisitor final : public VNVisitor {
                 }
             } else if (nodep->modVarp()->isNonOutput()) {
                 if (!tryAliasPin(nodep, exprp)) {
+                    AstNodeExpr* const drivenp = isClockingDrivenPort(nodep->modVarp())
+                                                     ? tryConnectionLhs(exprp)
+                                                     : nullptr;
+                    if (drivenp) {
+                        FileLine* const flp = exprp->fileline();
+                        const auto newPortRefp = [&]() {
+                            return new AstVarXRef{flp, nodep->modVarp(), m_cellp->name(),
+                                                  VAccess::READ};
+                        };
+                        addClockingConnection(
+                            m_cellp, "__Vclkpin__" + m_cellp->name() + "__" + nodep->name(),
+                            newPortRefp(), exprp, newPortRefp(), drivenp);
+                        VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
+                        return;
+                    }
                     // Don't bother moving constants now,
                     // we'll be pushing the const down to the cell soon enough.
                     AstVarXRef* const lhsp = new AstVarXRef{exprp->fileline(), nodep->modVarp(),
@@ -332,35 +396,35 @@ public:
                     assignp = new AstAssignW{pinp->fileline(), pinexprp, rhsSelp};
                 }
             } else {
-                // V3 width should have range/extended to make the widths correct
-                newvarp->isContinuously(true);
-                // An input port driven from inside the cell by a clocking block
-                // output flows out through the connection; V3Tristate split
-                // pins resolve separately.
-                AstNodeExpr* lhsp = nullptr;  // LHS of the interconnect assign
-                AstNodeExpr* rhsp = nullptr;  // RHS of the interconnect assign
-                if (forTristate || !pinVarp->isClockingDriven()) {
-                    // Input-side wiring: temp fed from the connection
-                    lhsp = new AstVarRef{pinp->fileline(), newvarp, VAccess::WRITE};
-                    rhsp = pinexprp;
-                } else if (AstNodeExpr* const drivenp = tryConnectionLhs(pinexprp)) {
-                    // Reverse wiring: connection leaves fed from the temp.
-                    // The original connection is consumed by the clone above.
-                    VL_DO_DANGLING(pinexprp->deleteTree(), pinexprp);
-                    markContinuousLhs(drivenp);
-                    lhsp = drivenp;
-                    rhsp = extendOrSel(pinp->fileline(),
-                                       new AstVarRef{pinp->fileline(), newvarp, VAccess::READ},
-                                       drivenp);
-                } else {
+                // V3Tristate split pins resolve the drive separately
+                AstNodeExpr* const drivenp = !forTristate && isClockingDrivenPort(pinVarp)
+                                                 ? tryConnectionLhs(pinexprp)
+                                                 : nullptr;
+                // A port the clocking block drives itself would silently lose the drive.
+                // A port only reached through a sub-instance keeps the plain input
+                // connection, so connections that compiled before still do.
+                if (!drivenp && !forTristate && pinVarp->isClockingDriven()) {
                     pinp->v3error("Unsupported: Clocking block output driving input port "
                                   "through non-decomposable connection "
                                   << pinp->prettyNameQ());
                     VL_DO_DANGLING(pinexprp->deleteTree(), pinexprp);
                     return nullptr;
                 }
+                if (drivenp) {
+                    FileLine* const flp = pinp->fileline();
+                    addClockingConnection(
+                        cellp, newvarname, new AstVarRef{flp, newvarp, VAccess::READ}, pinexprp,
+                        extendOrSel(flp, new AstVarRef{flp, newvarp, VAccess::READ}, drivenp),
+                        drivenp);
+                    pinp->exprp(new AstVarRef{flp, newvarp, VAccess::READ});
+                    return nullptr;
+                }
+                // V3 width should have range/extended to make the widths correct
+                newvarp->isContinuously(true);
                 pinp->exprp(new AstVarRef{pinp->fileline(), newvarp, VAccess::READ});
-                assignp = new AstAssignW{pinp->fileline(), lhsp, rhsp};
+                assignp = new AstAssignW{pinp->fileline(),
+                                         new AstVarRef{pinp->fileline(), newvarp, VAccess::WRITE},
+                                         pinexprp};
             }
             if (assignp) cellp->addNextHere(new AstAlways{assignp});
             // UINFOTREE(1, pinp, "", "out");
@@ -372,6 +436,32 @@ public:
 
 //######################################################################
 // Inst class functions
+
+bool V3Inst::forEachDrivenLeaf(AstNodeExpr* nodep,
+                               const std::function<void(AstNodeVarRef*)>& leaff) {
+    if (AstNodeVarRef* const refp = VN_CAST(nodep, NodeVarRef)) {
+        leaff(refp);
+        return true;
+    }
+    // Note AstSel (bit/part select) is not an AstNodeSel (array select);
+    // both expose fromp() for the selected value.
+    if (AstSel* const selp = VN_CAST(nodep, Sel)) return forEachDrivenLeaf(selp->fromp(), leaff);
+    if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+        return forEachDrivenLeaf(selp->fromp(), leaff);
+    }
+    if (AstConcat* const concatp = VN_CAST(nodep, Concat)) {
+        const bool lhsOk = forEachDrivenLeaf(concatp->lhsp(), leaff);
+        return forEachDrivenLeaf(concatp->rhsp(), leaff) && lhsOk;
+    }
+    // V3Width wraps a concatenated port connection in a single replication; V3Const
+    // removes it before V3Inst, but V3AssertPre still sees it
+    if (AstReplicate* const repp = VN_CAST(nodep, Replicate)) {
+        if (VN_AS(repp->countp(), Const)->toUInt() == 1) {
+            return forEachDrivenLeaf(repp->srcp(), leaff);
+        }
+    }
+    return false;
+}
 
 AstAssignW* V3Inst::pinReconnectSimple(AstPin* pinp, AstCell* cellp, bool forTristate,
                                        bool alwaysCvt) {
