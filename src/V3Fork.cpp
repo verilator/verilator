@@ -460,6 +460,13 @@ class DynScopeVisitor final : public VNVisitor {
         }
         visit(static_cast<AstNodeStmt*>(nodep));
     }
+    void visit(AstArg* nodep) override {
+        // Writable arguments replace the handle itself, just like assignments.
+        if (AstVarRef* const refp = VN_CAST(nodep->exprp(), VarRef)) {
+            if (refp->isClassHandleValue() && refp->access().isWriteOrRW()) refp->user2(true);
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstAssignDly* nodep) override {
         if (m_procp && !nodep->user2()  // Unhandled AssignDly in function/task
             && nodep->lhsp()->exists(  // And writes to a local variable
@@ -553,8 +560,10 @@ class ForkVisitor final : public VNVisitor {
         varp->funcLocal(true);
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         m_capturedVarsp = AstNode::addNext(m_capturedVarsp, varp);
-        // Pass variable as argument
-        AstArg* const argp = new AstArg{flp, refp->name(), refp->cloneTree(false)};
+        // Pass variable as argument, which is a read as the port is an input
+        AstVarRef* const argRefp = refp->cloneTree(false);
+        argRefp->access(VAccess::READ);
+        AstArg* const argp = new AstArg{flp, refp->name(), argRefp};
         m_capturedArgsp = AstNode::addNext(m_capturedArgsp, argp);
         return varp;
     }
@@ -751,6 +760,13 @@ class ForkVisitor final : public VNVisitor {
     void visit(AstAssign* nodep) override {
         if (VN_IS(nodep->lhsp(), VarRef) && nodep->lhsp()->isClassHandleValue()) {
             nodep->lhsp()->user2(true);
+        }
+        iterateChildren(nodep);
+    }
+    void visit(AstArg* nodep) override {
+        // Writable arguments replace the handle itself, just like assignments.
+        if (AstVarRef* const refp = VN_CAST(nodep->exprp(), VarRef)) {
+            if (refp->isClassHandleValue() && refp->access().isWriteOrRW()) refp->user2(true);
         }
         iterateChildren(nodep);
     }
