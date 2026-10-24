@@ -1195,6 +1195,9 @@ public:
         return values[m_e];
     }
 };
+constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
 
 // Static assert all argument descriptors are well formed
 #define VL_CFUNCTION_ARGS_CHECK(id, method, pure, args) \
