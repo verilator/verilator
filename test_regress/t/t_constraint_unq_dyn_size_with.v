@@ -25,12 +25,15 @@ class Frame;
   rand int m_slots[];
   rand int m_vals[];
 
-  constraint c_count { m_count inside {[2 : 5]}; }
+  constraint c_count {m_count inside {[2 : 5]};}
   constraint c_size {
     m_slots.size() == m_count;
     m_vals.size() == m_count;
   }
-  constraint c_vals {foreach (m_vals[i]) m_vals[i] inside {[0 : 9]};}
+  constraint c_vals {
+    foreach (m_vals[i])
+    m_vals[i] inside {[0 : 9]};
+  }
 endclass
 
 module t;

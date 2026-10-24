@@ -18,12 +18,9 @@ import "DPI-C" context function int mon_check();
 
 module t #(
   parameter int WIDTH /* verilator public_flat_rd */ = 32
-  ) (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-
-  input clk;
+  ) (
+    input clk
+);
 
   localparam int DEPTH /* verilator public_flat_rd */ = 16;
   localparam longint PARAM_LONG /* verilator public_flat_rd */ = 64'hFEDCBA9876543210;
@@ -55,7 +52,7 @@ module t #(
     status = mon_check();
 `endif
 
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_param.cpp:%0d: C Test failed\n", status);
       $stop;
     end

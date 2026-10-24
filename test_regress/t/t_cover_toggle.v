@@ -39,15 +39,15 @@ module t (/*AUTOARG*/
 
   const reg aconst = '0;
 
-  reg [1:0][1:0] ptoggle; initial ptoggle=0;
+  reg [1:0][1:0] ptoggle;
+  initial ptoggle = 0;
 
-  integer cyc; initial cyc=1;
+  integer cyc;
+  initial cyc = 1;
   wire [7:0] cyc_copy = cyc[7:0];
-  wire       toggle_up;
+  wire toggle_up;
 
-  typedef struct {
-    int q[$];
-  } str_queue_t;
+  typedef struct {int q[$];} str_queue_t;
   str_queue_t str_queue;
 
   typedef struct packed {
@@ -234,12 +234,12 @@ module param #(parameter P = 2) (/*AUTOARG*/
 
   for (genvar i = 0; i < P; i++) begin
     logic x;
-    always @ (posedge clk) begin
+    always @(posedge clk) begin
       x <= toggle;
     end
     for (genvar j = 0; j < 3; j++) begin
       logic [2:0] y;
-      always @ (negedge clk) begin
+      always @(negedge clk) begin
         y <= {toggle, ~toggle, 1'b1};
       end
     end

@@ -15,12 +15,9 @@
 import "DPI-C" context function int mon_check();
 `endif
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-
-  input clk;
+module t (
+    input clk
+);
 
   typedef logic [31:0] word_t;
   reg [31:0] mem0 [16:1] /*verilator public_flat_rw @(posedge clk) */;
@@ -47,7 +44,7 @@ module t (/*AUTOARG*/
 `ifndef USE_VPI_NOT_DPI
     status = mon_check();
 `endif
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_memory.cpp: C Test failed (rc=%0d)\n", status);
       $stop;
     end
@@ -56,7 +53,7 @@ module t (/*AUTOARG*/
     `CHECK_MEM(memp31, 16)
     `CHECK_MEM(memp33, 15)
     `CHECK_MEM(memw, 16)
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: Verilog memory checks failed\n");
       $stop;
     end

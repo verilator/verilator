@@ -17,16 +17,13 @@ package somepackage;
   int someint;
 endpackage
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (
+    input clk
+);
 
-  input clk;
+  integer status;
 
-  integer        status;
-
-  wire           a, b, x;
+  wire a, b, x;
 
   A \mod.a (/*AUTOINST*/
         // Outputs
@@ -45,7 +42,7 @@ module t (/*AUTOARG*/
 `else
     status = mon_check();
 `endif
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_module.cpp:%0d: C Test failed\n", status);
       $stop;
     end

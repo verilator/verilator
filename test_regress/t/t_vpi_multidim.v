@@ -13,12 +13,9 @@
 `define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
 // verilog_format: on
 
-module t (/*AUTOARG*/
-   // Inputs
-  clk
-  ); /*verilator no_inline_module*/
-
-  input clk;
+module t (
+    input clk
+); /*verilator no_inline_module*/
 
   logic [3:2][5:3] arr_cdata [1:0][2:1]; // 2x3 (6) bit words
   logic [7:6][12:7] arr_sdata [5:4][6:5]; // 2x6 (12) bit words
@@ -39,7 +36,7 @@ module t (/*AUTOARG*/
 `else
     status = $mon_check();
 `endif
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_multidim.cpp:%0d: C Test failed\n", status);
       $stop;
     end

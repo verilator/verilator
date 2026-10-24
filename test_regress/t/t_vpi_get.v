@@ -70,7 +70,7 @@ module t (/*AUTOARG*/
 `ifndef USE_VPI_NOT_DPI
     status = mon_check();
 `endif
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_get.cpp:%0d: C Test failed\n", status);
       $stop;
     end

@@ -63,7 +63,11 @@ module t;
   initial forever #5 clk = ~clk;
   logic rst = 1;
   ifc i (clk);
-  dut u (.clk, .rst, .i);
+  dut u (
+      .clk,
+      .rst,
+      .i
+  );
   driver drv = new(i);
 
   initial begin

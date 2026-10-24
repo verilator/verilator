@@ -17,20 +17,17 @@ import "DPI-C" context function int mon_check();
 
 // Copy of t_vpi_public_params.v but with the inline public taken out
 module t #(
-  parameter int WIDTH = 32
-  ) (/*AUTOARG*/
-  // Inputs
-  clk
-  );
-
-  input clk;
+    parameter int WIDTH = 32
+) (
+    input clk
+);
 
   localparam int DEPTH = 16;
   localparam longint PARAM_LONG = 64'hFEDCBA9876543210;
-  localparam string PARAM_STR  = "'some string value'";
+  localparam string PARAM_STR = "'some string value'";
 
-  reg [WIDTH-1:0] mem0 [DEPTH:1];
-  integer    i, status;
+  reg [WIDTH-1:0] mem0[DEPTH:1];
+  integer i, status;
 
   // Test loop
   initial begin
@@ -44,7 +41,7 @@ module t #(
     status = mon_check();
 `endif
 
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_param.cpp:%0d: C Test failed\n", status);
       $stop;
     end
