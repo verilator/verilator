@@ -3644,8 +3644,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
     static bool isParamedClassRefDType(const AstNode* classp) {
         while (const AstRefDType* const refp = VN_CAST(classp, RefDType))
             classp = refp->subDTypep();
-        return (VN_IS(classp, ClassRefDType) && VN_AS(classp, ClassRefDType)->paramsp())
-               || VN_IS(classp, ParamTypeDType);
+        if (const AstClassRefDType* const classRefp = VN_CAST(classp, ClassRefDType)) {
+            // Without #(), e.g. 'T' after 'typedef C T;', it is the default specialization
+            // (IEEE 1800-2023 8.25.1), which V3Param has yet to create
+            return classRefp->paramsp() || classRefp->classp()->hasGParam();
+        }
+        return VN_IS(classp, ParamTypeDType);
     }
     bool isParamedClassRef(const AstNode* nodep) {
         // Is this a parameterized reference to a class, or a reference to class parameter
