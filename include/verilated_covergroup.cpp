@@ -1164,6 +1164,38 @@ bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled) {
     return last != UINT32_MAX;
 }
 
+void VlCoverpoint::transitionTable(std::initializer_list<QData> items) {
+    Transition& sequence = m_transitions.back();
+    for (const QData* itemp = items.begin(); itemp != items.end(); itemp += 1 + *itemp) {
+        sequence.m_values.insert(sequence.m_values.end(), itemp + 1, itemp + 1 + *itemp);
+        sequence.m_ends.push_back(static_cast<uint32_t>(sequence.m_values.size()));
+    }
+}
+
+bool VlCoverpoint::Transition::matches(uint32_t item, QData value) const {
+    const QData* const endp = m_values.data() + m_ends[item];
+    return std::find(m_values.data() + (item ? m_ends[item - 1] : 0), endp, value) != endp;
+}
+
+bool VlCoverpoint::transitionSample(uint32_t seq, QData value) {
+    Transition& sequence = m_transitions[seq];
+    // A partial match grows by a value its next item holds, and completes once every item has
+    // held one; a value the first item holds also starts a partial match
+    bool complete = false;
+    sequence.m_next.clear();
+    for (const uint32_t length : sequence.m_active) {
+        if (!sequence.matches(length, value)) continue;
+        if (length + 1 == sequence.m_ends.size()) {
+            complete = true;
+        } else {
+            sequence.m_next.push_back(length + 1);
+        }
+    }
+    if (sequence.matches(0, value)) sequence.m_next.push_back(1);
+    sequence.m_active.swap(sequence.m_next);
+    return complete;
+}
+
 void VlCoverpoint::sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint32_t& last) {
     // The elements hold consecutive positions, so the bins holding a value come in order, and
     // one that two elements share repeats only in a row: count it once (IEEE 1800-2023 19.5)
