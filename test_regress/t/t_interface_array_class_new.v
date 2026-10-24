@@ -1,8 +1,7 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // Passing a real interface array as a class new() argument bound to a
-// virtual interface array formal parameter. Exercises the cell dearrayer's
-// orphan-VarRef fixup in V3Inst.
+// virtual interface array formal parameter.
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder

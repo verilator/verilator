@@ -23,5 +23,5 @@ module t (
 endmodule
 
 module sub;
-  /* verilator public_module */
+  /* verilator no_inline_module */
 endmodule

@@ -100,7 +100,7 @@ module t (
   covergroup cg_cross4;
     cross a, b {
       function void crossfunc; endfunction
-      bins one = crossfunc();
+      bins one = crossfunc(); bins two = crossfunc() matches 2;
     }
   endgroup
   covergroup cg_binsoroptions_bk1;
@@ -154,38 +154,18 @@ module t (
     // ignore/illegal bins = default sequence
     { ignore_bins ib_def_seq = default sequence; }
     { illegal_bins lib_def_seq = default sequence; }
-  endgroup
-
-  covergroup cg_coverpoint_ref;
-    coverpoint a {
-     bins div_by_2 = a with (item % 2 == 0);
-     bins div_by_2_paren[] = a with (item % 2 == 0);
-    }
+    // Explicit array size of transition bins
+    { bins trans_sized[2] = ( 1 => 2 ); }
   endgroup
 
   covergroup cg_cross_bins;
     cross a, b {
-      bins bin_a = binsof(a);
-      bins bin_ai = binsof(a) iff (!rst);
-      bins bin_c = binsof(cp.x);
-      bins bin_na = ! binsof(a);
-
-      bins bin_d = binsof(a) intersect { b };
-      bins bin_nd = ! binsof(a) intersect { b };
-
       bins bin_e = with (a);
       bins bin_not_e = ! with (a);
 
-      bins bin_par = (binsof(a));
-      bins bin_and = binsof(a) && binsof(b);
-      bins bin_or = binsof(a) || binsof(b);
-      bins bin_with = binsof(a) with (a);
-      bins bin_or_with = binsof(a) || binsof(a) with (a);
-      bins bin_and_with = binsof(a) && binsof(a) with (a);
-      bins bin_multiple_fields = binsof(p.inner_packet.field);
-      // explicit cross ignore/illegal bins (unsupported)
-      ignore_bins ib_cross = binsof(a);
-      illegal_bins lib_cross = binsof(a);
+      bins bin_multiple_fields = binsof(a) && binsof(p.inner_packet.field);
+      bins bin_with_unsup = binsof(p.inner_packet.field) with (a);
+      bins bin_e_with = with (a) with (a);
     }
   endgroup
 

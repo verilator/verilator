@@ -121,13 +121,17 @@ class CoverageVisitor final : public VNVisitor {
         int m_handle = 0;  // Opaque handle for index into line tracking
         const AstNode* m_nodep = nullptr;  // Node establishing this state
         CheckState() = default;
+        bool coverageOn(const AstNode* nodep) const {
+            return m_on && !m_inModOff && nodep->fileline()->coverageOn();
+        }
         bool lineCoverageOn(const AstNode* nodep) const {
-            return m_on && !m_inModOff && nodep->fileline()->coverageOn()
-                   && v3Global.opt.coverageLine();
+            return coverageOn(nodep) && v3Global.opt.coverageLine();
+        }
+        bool branchCoverageOn(const AstNode* nodep) const {
+            return coverageOn(nodep) && v3Global.opt.coverageBranch();
         }
         bool exprCoverageOn(const AstNode* nodep) const {
-            return m_on && !m_inModOff && nodep->fileline()->coverageOn()
-                   && v3Global.opt.coverageExpr();
+            return coverageOn(nodep) && v3Global.opt.coverageExpr();
         }
     };
 
@@ -199,6 +203,7 @@ class CoverageVisitor final : public VNVisitor {
             AstVar* const varp = new AstVar{fl_nowarn, VVarType::MODULETEMP, trace_var_name,
                                             incp->findUInt32DType()};
             varp->setIgnoreSchedWrite();  // Ignore the increment output, so no UNOPTFLAT
+            varp->lifetime(VLifetime::STATIC_IMPLICIT);
             varp->trace(true);
             m_modp->addStmtsp(varp);
             UINFO(5, "New coverage trace: " << varp);
@@ -230,7 +235,8 @@ class CoverageVisitor final : public VNVisitor {
         UINFO(9, "line create h" << m_state.m_handle << " " << nodep);
     }
     void lineTrack(const AstNode* nodep) {
-        if (m_state.lineCoverageOn(nodep) && !m_ifCond
+        // Branch points report the lines they cover too, so track for either kind
+        if ((m_state.lineCoverageOn(nodep) || m_state.branchCoverageOn(nodep)) && !m_ifCond
             && m_state.m_nodep->fileline()->filenameno() == nodep->fileline()->filenameno()) {
             for (int lineno = nodep->fileline()->firstLineno();
                  lineno <= nodep->fileline()->lastLineno(); ++lineno) {
@@ -283,7 +289,7 @@ class CoverageVisitor final : public VNVisitor {
         VL_RESTORER_COPY(m_funcTemps);
         createHandle(nodep);
         m_modp = nodep;
-        m_state.m_inModOff = false;  // Haven't made top shell, so tops are real tops
+        m_state.m_inModOff = nodep->isTop();  // Already made top shell, no coverage for it
         if (!origModp) {
             // No blocks cross (non-nested) modules, so save some memory
             m_varnames.clear();
@@ -460,7 +466,7 @@ class CoverageVisitor final : public VNVisitor {
         if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
             toggleVarBottom(above, varp, basicp->nrange());
         } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
+            for (const int index_docs : adtypep->declRange().seqLoToHi()) {
                 const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
                                  new AstArraySel{varp->fileline(),
@@ -471,7 +477,7 @@ class CoverageVisitor final : public VNVisitor {
                 newent.cleanup();
             }
         } else if (const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType)) {
-            for (int index_docs = adtypep->lo(); index_docs <= adtypep->hi(); ++index_docs) {
+            for (const int index_docs : adtypep->declRange().seqLoToHi()) {
                 const AstNodeDType* const subtypep = adtypep->subDTypep()->skipRefp();
                 const int index_code = index_docs - adtypep->lo();
                 ToggleEnt newent{above.m_comment + "["s + cvtToStr(index_docs) + "]",
@@ -561,7 +567,7 @@ class CoverageVisitor final : public VNVisitor {
 
         if (m_seeking == NONE) coverExprs(nodep->condp());
 
-        if (m_state.lineCoverageOn(nodep) && VN_IS(m_modp, Module)
+        if (m_state.branchCoverageOn(nodep) && VN_IS(m_modp, Module)
             && includeCondToBranchRecursive(nodep)) {
             VL_RESTORER(m_seeking);
             // Disable expression coverage in sub-expressions, since they were already visited
@@ -643,8 +649,8 @@ class CoverageVisitor final : public VNVisitor {
             //
             // If both if and else are "on", and we're not in an if/else, then
             // we do branch coverage
-            if (!(first_elsif || cont_elsif || final_elsif) && ifState.lineCoverageOn(nodep)
-                && elseState.lineCoverageOn(nodep)) {
+            if (!(first_elsif || cont_elsif || final_elsif) && ifState.branchCoverageOn(nodep)
+                && elseState.branchCoverageOn(nodep)) {
                 // Normal if. Linecov shows what's inside the if (not condition that is
                 // always executed)
                 UINFO(4, "   COVER-branch: " << nodep);
@@ -832,9 +838,9 @@ class CoverageVisitor final : public VNVisitor {
                         pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
-                            m_ftaskp->stmtsp()->addHereThisAsNext(varp);
+                            m_ftaskp->prependStmtsp(varp);
                         } else {
-                            m_modp->stmtsp()->addHereThisAsNext(varp);
+                            m_modp->prependStmtsp(varp);
                         }
                         VNRelinker relinkHandle;
                         frefp->unlinkFrBack(&relinkHandle);
@@ -1053,7 +1059,7 @@ class CoverageVisitor final : public VNVisitor {
                 unrolledp = new T_Oper{fl, selp, unrolledp};
             }
             iterate(unrolledp);
-            pushDeletep(unrolledp);
+            VL_DO_DANGLING(pushDeletep(unrolledp), unrolledp);
         } else {
             iterateChildren(nodep);
             lineTrack(nodep);
@@ -1114,6 +1120,20 @@ class CoverageVisitor final : public VNVisitor {
     }
 
     // VISITORS - BOTH
+    void visit(AstProperty* nodep) override {
+        VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
+        m_state.m_on = false;
+        m_inToggleOff = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstSequence* nodep) override {
+        VL_RESTORER(m_state);
+        VL_RESTORER(m_inToggleOff);
+        m_state.m_on = false;
+        m_inToggleOff = true;
+        iterateChildren(nodep);
+    }
     void visit(AstNode* nodep) override {
         iterateChildren(nodep);
         lineTrack(nodep);

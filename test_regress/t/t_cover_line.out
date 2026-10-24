@@ -183,7 +183,7 @@
         
 %000001   task call_task;
 -000001  point: type=line comment=block hier=top.t
-            /* verilator public */
+            /* verilator lint_off UNOPTPUBLIC */ /* verilator public */
 %000001     t1.center_task(1'b1);
 -000001  point: type=line comment=block hier=top.t
           endtask
@@ -223,7 +223,7 @@
           input clk;
           input toggle;
         
-          /* verilator public_module */
+          /* verilator no_inline_module */
         
  000020   always @ (posedge clk) begin
 +000020  point: type=line comment=block hier=top.t.b*
@@ -296,7 +296,7 @@
           input clk;
           input toggle;
         
-          /* verilator public_module */
+          /* verilator no_inline_module */
         
  000010   always @ (posedge clk) begin
 +000010  point: type=line comment=block hier=top.t.t1

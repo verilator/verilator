@@ -40,8 +40,8 @@ module t;
   // Deeply nested variable offset selects from a wide value.
 
   logic [15:0][31:0] lut = '0;
-  logic [31:0]       arr[16] = '{default: 32'h0}; // Same as 'lut', but unpacked
-  logic [3:0]        start = 4'h0;
+  logic [31:0] arr[16] = '{default: 32'h0};  // Same as 'lut', but unpacked
+  logic [3:0] start = 4'h0;
 
   // Explicitly nested so test doesn't depend on unrolling/dfg, or other opts
   wire [3:0] chainLut
@@ -64,18 +64,18 @@ module t;
   // Check access boundaries
 
   logic [511:0] data = 512'h0;
-  logic [8:0]   lsb = 9'h0;
+  logic [8:0] lsb = 9'h0;
 
-  wire [0:0]  sel01 = data[lsb+:01];
-  wire [3:0]  sel04 = data[lsb+:04];
+  wire [0:0] sel01 = data[lsb+:01];
+  wire [3:0] sel04 = data[lsb+:04];
   wire [30:0] sel31 = data[lsb+:31];
   wire [31:0] sel32 = data[lsb+:32];
   wire [32:0] sel33 = data[lsb+:33];
   wire [63:0] sel64 = data[lsb+:64];
 
   always @(posedge clk) begin
-    `checkh(sel01,  1'(data >> lsb));
-    `checkh(sel04,  4'(data >> lsb));
+    `checkh(sel01, 1'(data >> lsb));
+    `checkh(sel04, 4'(data >> lsb));
     `checkh(sel31, 31'(data >> lsb));
     `checkh(sel32, 32'(data >> lsb));
     `checkh(sel33, 33'(data >> lsb));

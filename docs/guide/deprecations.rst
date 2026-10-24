@@ -18,15 +18,12 @@ C++14 compiler support
    the Ubuntu LTS versions of GCC and clang use C++20 by default, estimated
    May 2028.)
 
-`--structs-packed` option
-   The :vlopt:`--structs-packed` option was introduced when Verilator was
-   first implementing unpacked structs. That feature has been stable now
-   for multiple years, so :vlopt:`--structs-packed` should no longer be
-   used. Thus :vlopt:`--structs-packed` will change to a no-operation flag
-   and the related :option:`UNPACKED` warning will never be issued no
-   sooner than September 2026.
-
 tcmalloc support
    Verilator currently supports the default malloc, tcmalloc, or jemalloc.
    As jemalloc has better performance, support for tcmalloc may be removed
    no sooner than January 2027.
+
+Pragma :option:`/*verilator&32;fsm_reset_arc*/`
+   Verilator currently supports :option:`/*verilator&32;fsm_reset_arc*/`
+   which aliases :option:`/*verilator&32;fsm_state*/`. This alias may be
+   removed no sooner than February 2027.

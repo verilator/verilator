@@ -27,6 +27,7 @@
 #include "V3Stats.h"
 
 #include <algorithm>
+#include <limits>
 #include <list>
 #include <map>
 #include <numeric>
@@ -135,21 +136,24 @@ void V3Graph::removeTransitiveEdges() { GraphAlgRemoveTransitiveEdges{this}.go()
 // Changes color()
 
 class GraphAlgWeakly final : GraphAlg<> {
+    // Sentinel color, meaning not colored yet. Colors themselves are 0 .. m_numColors-1.
+    static constexpr uint32_t UNCOLORED = std::numeric_limits<uint32_t>::max();
+
+    uint32_t m_numColors = 0;  // Number of colors assigned
+
     void main() {
         // Initialize state
-        m_graphp->clearColors();
-        // Color graph
-        uint32_t currentColor = 0;
+        for (V3GraphVertex& vertex : m_graphp->vertices()) vertex.color(UNCOLORED);
+        // Color graph, without gaps
         for (V3GraphVertex& vertex : m_graphp->vertices()) {
-            currentColor++;
-            vertexIterate(&vertex, currentColor);
+            if (vertex.color() == UNCOLORED) vertexIterate(&vertex, m_numColors++);
         }
     }
 
     void vertexIterate(V3GraphVertex* vertexp, uint32_t currentColor) {
         // Assign new color to each unvisited node
         // then visit each of its edges, giving them the same color
-        if (vertexp->color()) return;  // Already colored it
+        if (vertexp->color() != UNCOLORED) return;  // Already colored it
         vertexp->color(currentColor);
         for (V3GraphEdge& edge : vertexp->outEdges()) {
             if (followEdge(&edge)) vertexIterate(edge.top(), currentColor);
@@ -165,9 +169,13 @@ public:
         main();
     }
     ~GraphAlgWeakly() = default;
+
+    uint32_t numColors() const { return m_numColors; }
 };
 
-void V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) { GraphAlgWeakly{this, edgeFuncp}; }
+uint32_t V3Graph::weaklyConnected(V3EdgeFuncP edgeFuncp) {
+    return GraphAlgWeakly{this, edgeFuncp}.numColors();
+}
 
 //######################################################################
 //######################################################################

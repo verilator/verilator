@@ -98,7 +98,7 @@ module i
   clk
   );
 
-  // verilator public_module
+  // verilator no_inline_module
 
   input       clk;
 

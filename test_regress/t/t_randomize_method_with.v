@@ -97,9 +97,9 @@ class Cls2 extends Cls;
   rand int c;
 endclass
 
-module mwith();
-  submodule sub1();
-  submodule sub2();
+module mwith ();
+  submodule sub1 ();
+  submodule sub2 ();
 
   function automatic int return_3();
     return 3;
@@ -131,28 +131,28 @@ module mwith();
         if (foo.a <= 1) $stop;
 
         sub1.sub_var = foo.a;
-      end else
-        $display("Failed to randomize foo with inline constraints");
+      end
+      else $display("Failed to randomize foo with inline constraints");
     end
 
-    if (cls.randomize() with { b == 1;} != 1) $stop;
+    if (cls.randomize() with {b == 1;} != 1) $stop;
     if (cls.b != 1) $stop;
     `check_rand(cls2, cls2.a);
     `check_rand(cls2, cls2.c);
 
     // Check randomize as a task
     // verilator lint_off IGNOREDRETURN
-    cls.randomize() with { b == 2;};
+    cls.randomize() with {b == 2;};
     // verilator lint_on IGNOREDRETURN
     if (cls.b != 2) $stop;
 
     // Check capture of a static variable
-    if (foo.randomize() with { a > sub1.sub_var; } != 1) $stop;
+    if (foo.randomize() with {a > sub1.sub_var;} != 1) $stop;
     // Check reference to a function
-    if (foo.randomize() with { a > return_2(); } != 1) $stop;
+    if (foo.randomize() with {a > return_2();} != 1) $stop;
     // Check randomization of class with no constraints
-    if (baz.randomize() with { v inside {[2:10]}; } != 1) $stop;
-    if (baz1.randomize() with { v inside {[2:10]}; } != 1) $stop;
+    if (baz.randomize() with {v inside {[2 : 10]};} != 1) $stop;
+    if (baz1.randomize() with {v inside {[2 : 10]};} != 1) $stop;
     // Check randomization with captured non-static variable from different AstNodeModule
     if (!bar.test_capture_of_callers_derived_var(foo)) $stop;
     // Check randomization with non-captured non-static variable from different AstNodeModule

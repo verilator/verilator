@@ -5,6 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 //*************************************************************************
 
-#include "Vt_opt_dead__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 
 void dpii_Keep() {}

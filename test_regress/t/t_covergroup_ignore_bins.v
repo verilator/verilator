@@ -22,12 +22,13 @@ module t;
       ignore_bins reserved = {[12 : 15]};
       ignore_bins catch_all = default;  // default ignore-bin: all values not in other bins are ignored
       ignore_bins arr[] = {4, 5};  // array form: one ignore-bin per value
+      ignore_bins arr_rng[] = {[14 : 15]};  // array form of a range: one ignore-bin per value
       wildcard ignore_bins wib = {4'b1?00};  // wildcard ignore-bin with don't-care bits
       illegal_bins bad[] = {6, 7};  // illegal array form: one illegal-bin per value
     }
   endgroup
 
-  // cg2: ignore_bins using a range - auto-bins are created only for values not in the range.
+  // cg2: ignore_bins using a range - empty auto-bins are omitted after partitioning.
   // Also tests range-boundary conditions: when lo==0 or hi==maxVal, the range check simplifies.
   // Also tests ignore_bins with a transition list.
   covergroup cg2;
@@ -66,6 +67,9 @@ module t;
     data = 13;
     cg_inst.sample();  // reserved - ignored
     `checkr(cg_inst.get_inst_coverage(), 0.0);
+    data = 15;
+    cg_inst.sample();  // reserved and arr_rng[1] - ignored
+    `checkr(cg_inst.get_inst_coverage(), 0.0);
     data = 1;
     cg_inst.sample();  // low
     `checkr(cg_inst.get_inst_coverage(), 50.0);
@@ -87,10 +91,10 @@ module t;
     data2 = 0;
     cg3_inst.sample();  // lb (ignored)
     data2 = 2;
-    cg3_inst.sample();  // auto_0
+    cg3_inst.sample();  // auto_2
     `checkr(cg3_inst.get_inst_coverage(), 50.0);
     data2 = 3;
-    cg3_inst.sample();  // auto_1
+    cg3_inst.sample();  // auto_3
     `checkr(cg3_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");

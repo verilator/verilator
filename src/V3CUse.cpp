@@ -86,6 +86,7 @@ class CUseVisitor final : public VNVisitorConst {
     }
     void visit(AstCell* nodep) override {
         if (nodep->user1SetOnce()) return;  // Process once
+        if (nodep->modp()->isConstPool()) return;  // Special emit rules
         // Currently no IMP_INCLUDE because we include __Syms which has them all
         addNewUse(nodep, VUseType::INT_FWD_CLASS, nodep->modp()->name());
         iterateChildrenConst(nodep);
@@ -115,6 +116,7 @@ void V3CUse::cUseAll() {
     // Call visitor separately for each module, so visitor state is cleared
     for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
          modp = VN_AS(modp->nextp(), NodeModule)) {
+        if (modp->isConstPool()) continue;  // Special emit rules
         // Insert under this module; someday we should e.g. make Ast
         // for each output file and put under that
         CUseVisitor{modp};

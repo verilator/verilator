@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2008 Lane Brooks
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkb(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='b%0b exp='b%0b (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -70,6 +75,18 @@ module t (
       .Z11(Z11),
       // Inputs
       .state(state[2:0])
+  );
+
+  Test8 test8 (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .state(state[31:0])
+  );
+
+  Test9 test9 (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .state(state[31:0])
   );
 
   always @(posedge clk) begin
@@ -241,6 +258,70 @@ module Test7 (
       3'b0?1: Z11 = 1'b1;
       default: Z11 = 1'bx;
     endcase
+  end
+endmodule
+
+module Test8 (
+    input clk,
+    input [31:0] state
+);
+  wire [2:0] bothdir;
+  pulldown (bothdir[0]);
+  pullup (bothdir[1]);
+  // No pull(bothdir[2]);
+  bit drive;
+  assign bothdir[0] = drive ? 1'b1 : 1'bz;
+  assign bothdir[1] = drive ? 1'b1 : 1'bz;
+  assign bothdir[2] = drive ? 1'b1 : 1'bz;
+
+  always_ff @(posedge clk) begin
+    if (state == 1) begin
+      drive = 0;
+    end
+    else if (state == 2) begin
+      `checkb(bothdir[1:0], 2'b10);  // Bit 2 floats (z), which reads as 0
+    end
+    else if (state == 3) begin
+      drive = 1;
+    end
+    else if (state == 4) begin
+      `checkb(bothdir, 3'b111);
+    end
+  end
+endmodule
+
+module Test9 (
+    input clk,
+    input [31:0] state
+);
+  // Z constants in unpacked aggregate patterns
+  typedef struct packed {
+    bit [1:0] x;
+    bit s;
+    logic [1:0] q;
+  } entry_t;
+  entry_t arr[4] = '{
+      '{0, 0, 2'b0Z},
+      '{1, 1, 2'bZ1},
+      '{2, 0, 2'b1Z},
+      '{3, 1, 2'bZ0}
+  };
+  struct {
+    logic [1:0] q;
+    int i;
+  } ustr = '{2'bZ1, 5};
+
+  always_ff @(posedge clk) begin
+    if (state == 1) begin
+      `checkb(arr[0].q[1], 1'b0);
+      `checkb(arr[1].x, 2'd1);
+      `checkb(arr[1].q[0], 1'b1);
+      `checkb(arr[2].q[1], 1'b1);
+      `checkb(arr[3].s, 1'b1);
+      `checkb(arr[3].q[0], 1'b0);
+      `checkb(ustr.q[0], 1'b1);
+      `checkb(ustr.i, 5);
+    end
   end
 endmodule
 

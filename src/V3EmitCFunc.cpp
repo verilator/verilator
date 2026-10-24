@@ -118,7 +118,7 @@ void EmitCFunc::emitOpName(AstNode* nodep, const string& format, AstNode* lhsp, 
                         emitDereference(m_wideTempRefp,
                                         m_wideTempRefp->selfPointerProtect(m_useSelfForThis));
                     }
-                    out += m_wideTempRefp->varp()->nameProtect();
+                    out += varName(m_wideTempRefp->varp());
                     m_wideTempRefp = nullptr;
                     needComma = true;
                 } else if (usesQueue) {
@@ -304,16 +304,26 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
     int argc = 0;
     if (needsScope) ++argc;
     if (needsTimescale) ++argc;
-    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) ++argc;
+    for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+        ++argc;
+        const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
+        if (fargp && fargp->formatAttr().isEnum()) ++argc;  // Additional name argument
+    }
     ofp()->puts("," + std::to_string(argc));
 
     if (needsScope) {
         AstScopeName* const scopenamep = fmtp ? fmtp->scopeNamep() : nullptr;
         UASSERT_OBJ(scopenamep, nodep, "Display with %m but no AstScopeName");
-        const string suffix = scopenamep->scopePrettySymName();
         ofp()->puts(", '"s + VFormatAttr{VFormatAttr::SCOPE}.ascii() + "'");
-        ofp()->puts(",vlSymsp->name(),");
-        ofp()->putsQuoted(suffix);
+        if (scopenamep->selfRelative()) {
+            // vlNamep is catName(name(), instance), so starts with '.' when the model is unnamed
+            const string namep = string{m_useSelfForThis ? "vlSelf" : "this"} + "->vlNamep";
+            ofp()->puts(",(vlSymsp->name()[0] ? " + namep + " : " + namep + " + 1),");
+            ofp()->putsQuoted(scopenamep->scopeAttr());
+        } else {
+            ofp()->puts(",vlSymsp->name(),");
+            ofp()->putsQuoted(scopenamep->scopePrettySymName());
+        }
     }
 
     if (needsTimescale) {
@@ -345,7 +355,9 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         if (formatAttr.isSigned() || formatAttr.isUnsigned() || formatAttr.isEnum())
             puts("," + cvtToStr(subargp->widthMin()));
         const bool addrof = isScan || formatAttr.isString() || formatAttr.isComplex();
+        const bool wideEnum = formatAttr.isEnum() && subargp->isWide();
         puts(",");
+        if (wideEnum) puts("static_cast<const EData*>(");
         if (addrof) puts("&(");
         if (VN_IS(subargp, StreamR))
             emitStreamR(
@@ -354,6 +366,12 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
         else { iterateConst(subargp); }
         if (addrof) puts(")");
         if (!addrof) emitDatap(argp);
+        if (wideEnum) puts(")");
+        if (formatAttr.isEnum()) {
+            puts(", '"s + VFormatAttr{VFormatAttr::STRING}.ascii() + "', &(");
+            iterateConst(fargp->namep());
+            puts(")");
+        }
         ofp()->indentDec();
     }
 
@@ -450,13 +468,6 @@ void EmitCFunc::emitConstantString(const AstConst* nodep) {
     puts("}");
 }
 
-void EmitCFunc::emitSetVarConstant(const string& assignString, AstConst* constp) {
-    puts(assignString);
-    puts(" = ");
-    emitConstant(constp);
-    puts(";\n");
-}
-
 void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructing) {
     // 'constructing' indicates that the object was just constructed, so if it is a string or
     // something that starts off clear already, no need to clear it again
@@ -464,8 +475,8 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
     const string vlSelf = VSelfPointerText::replaceThis(m_useSelfForThis, "this->");
     const string varNameProtected
         = ((VN_IS(m_modp, Class) || varp->isFuncLocal()) || !prefix.empty())
-              ? varp->nameProtect()
-              : vlSelf + varp->nameProtect();
+              ? varName(varp)
+              : vlSelf + varName(varp);
     const string newPrefix = prefix + varNameProtected;
     if (varp->isIO() && m_modp->isTop() && optSystemC()) {
         // System C top I/O doesn't need loading, as the lower level subinst code does it.}
@@ -474,47 +485,6 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
         // If a simple CONST value we initialize it using an enum
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         // puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
-    } else if (const AstInitArray* const initarp = VN_CAST(varp->valuep(), InitArray)) {
-        // TODO this code probably better handled as initp argument to emitVarResetRecurse
-        // TODO merge this functionality with V3EmitCConstInit.h visitors
-        if (VN_IS(dtypep, AssocArrayDType)) {
-            if (initarp->defaultp()) {
-                emitSetVarConstant(newPrefix + ".atDefault()", VN_AS(initarp->defaultp(), Const));
-            }
-            if (!constructing) puts(varNameProtected + ".clear();");
-            const auto& mapr = initarp->map();
-            for (const auto& itr : mapr) {
-                AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + ".atWrite(" + cvtToStr(itr.first) + ")",
-                                   VN_AS(valuep, Const));
-            }
-        } else if (VN_IS(dtypep, WildcardArrayDType)) {
-            if (initarp->defaultp()) {
-                emitSetVarConstant(newPrefix + ".atDefault()", VN_AS(initarp->defaultp(), Const));
-            }
-            if (!constructing) puts(newPrefix + ".clear();");
-            const auto& mapr = initarp->map();
-            for (const auto& itr : mapr) {
-                AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + ".atWrite(" + cvtToStr(itr.first) + ")",
-                                   VN_AS(valuep, Const));
-            }
-        } else if (AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            if (initarp->defaultp()) {
-                puts("for (int __Vi = 0; __Vi < " + cvtToStr(adtypep->elementsConst()));
-                puts("; ++__Vi) {\n");
-                emitSetVarConstant(newPrefix + "[__Vi]", VN_AS(initarp->defaultp(), Const));
-                puts("}\n");
-            }
-            const auto& mapr = initarp->map();
-            for (const auto& itr : mapr) {
-                AstNode* const valuep = itr.second->valuep();
-                emitSetVarConstant(newPrefix + "[" + cvtToStr(itr.first) + "]",
-                                   VN_AS(valuep, Const));
-            }
-        } else {
-            varp->v3fatalSrc("InitArray under non-arrayed var");
-        }
     } else {
         putns(varp,
               emitVarResetRecurse(varp, constructing, newPrefix, dtypep, 0, "", varp->valuep()));
@@ -541,6 +511,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                                      depth + 1, suffix + ".atDefault()", nullptr);
     } else if (VN_IS(dtypep, CDType)) {
         return "";  // Constructor does it
+    } else if (VN_IS(dtypep, CoverCrossDType) || VN_IS(dtypep, CoverpointDType)) {
+        return "";  // Covergroup constructor creates the runtime and assigns the pointer
     } else if (const AstClassRefDType* const adtypep = VN_CAST(dtypep, ClassRefDType)) {
         return adtypep->rawPointer() ? varNameProtected + suffix + " = nullptr;\n" : "";
     } else if (VN_IS(dtypep, IfaceRefDType)) {
@@ -560,6 +532,17 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
     } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
         UASSERT_OBJ(adtypep->hi() >= adtypep->lo(), varp,
                     "Should have swapped msb & lsb earlier.");
+        const AstNodeDType* const elementp = adtypep->subDTypep()->skipRefp();
+        if (!varp->isFuncLocal() && elementp->isIntegralOrPacked()) {
+            // Scoped reset has no array-index input or mutable RNG state. Initialize one
+            // element, then fill in the optimized runtime even when this code is cold.
+            const string first
+                = emitVarResetRecurse(varp, constructing, varNameProtected, adtypep->subDTypep(),
+                                      depth + 1, suffix + "[0]", nullptr);
+            const string array = varNameProtected + suffix;
+            return first + "VL_UNPACKED_FILL(" + array + ".data(), sizeof(" + array + "[0]), "
+                   + cvtToStr(adtypep->elementsConst()) + ");\n";
+        }
         const string ivar = "__Vi"s + cvtToStr(depth);
         const string pre = ("for (int " + ivar + " = " + cvtToStr(0) + "; " + ivar + " < "
                             + cvtToStr(adtypep->elementsConst()) + "; ++" + ivar + ") {\n");
@@ -593,6 +576,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
     } else if (basicp && basicp->isDynamicTriggerScheduler()) {
         return "";
     } else if (basicp && (basicp->isRandomGenerator() || basicp->isStdRandomGenerator())) {
+        return "";
+    } else if (basicp && basicp->isCovergroupInstHandle()) {
+        // The handle's own constructor deals with it.
         return "";
     } else if (basicp && (basicp->isEvent())) {
         return "VlAssignableEvent{};\n";

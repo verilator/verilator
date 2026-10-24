@@ -592,6 +592,10 @@ List Of Warnings
    ``covergroup``, ``coverpoint``, and coverage options, and the
    construct was ignored.
 
+   This includes crosses whose normal-bin Cartesian product exceeds
+   ``2**32 - 1`` tuples.  The limit is checked during Verilation for both
+   automatic and explicit cross bins.
+
    Disabling the :option:`UNSUPPORTED` error also disables this warning.
 
    Ignoring this warning may make Verilator ignore lint checking on the
@@ -1470,11 +1474,10 @@ List Of Warnings
       end
 
    A further case is when a signal named as a clocking block ``output`` is
-   also driven by a continuous assignment, or is named as an ``output`` of a
-   second clocking block. The clocking block drives the signal, so the design
-   and the testbench contend for it and the synchronous drive may be silently
-   lost. Declare the clocking block ``input`` if the intent is only to
-   observe the signal.
+   also driven by a continuous assignment. The clocking block drives the
+   signal, so the design and the testbench contend for it and the
+   synchronous drive may be silently lost. Declare the clocking block
+   ``input`` if the intent is only to observe the signal.
 
    Ignoring this warning may hide clock domain crossing, timing, or
    portability bugs. It may also cause longer simulation runtimes due to
@@ -2478,6 +2481,20 @@ List Of Warnings
    correctly.
 
 
+.. option:: UNOPTPUBLIC
+
+   Warns that a signal or task/function marked
+   :option:`/*verilator&32;public*/`, a module marked
+   :option:`/*verilator&32;public_module*/`, or :vlopt:`--public` prevents
+   optimization, which can significantly slow down the model.
+
+   For signals consider using :option:`/*verilator&32;public_flat_rw*/`
+   instead. For functions and tasks, use DPI exports instead.
+
+   Ignoring this warning will only slow simulations; it will simulate
+   correctly.
+
+
 .. option:: UNOPTTHREADS
 
    .. TODO better example
@@ -2499,14 +2516,10 @@ List Of Warnings
 
 .. option:: UNPACKED
 
-   Warns that unpacked structs and unions are not supported because
-   :vlopt:`--structs-packed` was used, or by up through version 5.004.
+   Historical, never issued since version 5.004.
 
-   Ignoring this warning will make Verilator treat the structure as packed,
-   which may make Verilator simulations differ from other simulators. This
-   downgrading may also result in what would typically be a legal unpacked
-   struct/array inside an unpacked struct/array becoming an illegal
-   unpacked struct/array inside a packed struct/array.
+   Warned that unpacked structs and unions were not supported, or disabled
+   by the since-removed `--structs-packed` option.
 
 
 .. option:: UNSATCONSTR
@@ -2736,8 +2749,8 @@ List Of Warnings
    fit the required size.
 
    Disabling/enabling WIDTH is equivalent to disabling/enabling the
-   :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`, and :option:`WIDTHXZEXPAND`
-   warnings.
+   :option:`WIDTHDIGITS`, :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`,
+   and :option:`WIDTHXZEXPAND` warnings.
 
    Ignoring these warnings will only suppress the lint check; it will
    simulate correctly.
@@ -2792,6 +2805,18 @@ List Of Warnings
    The correct fix is to either size the 1 (``32'h1``), add the
    width to the parameter definition (``parameter [31:0]``), or add the
    width to the parameter usage (``{PAR[31:0], PAR[31:0]}``).
+
+.. option:: WIDTHDIGITS
+
+   Warns when a literal contains more digits than its declared width.
+   The excess high-order digits are truncated, which can change the
+   value of the literal. For example:
+
+   .. include:: ../../docs/gen/ex_WIDTHDIGITS_faulty.rst
+
+   Results in a :option:`WIDTHDIGITS` warning:
+
+   .. include:: ../../docs/gen/ex_WIDTHDIGITS_msg.rst
 
 
 .. option:: WIDTHEXPAND

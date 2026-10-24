@@ -4,20 +4,20 @@
 // SPDX-FileCopyrightText: 2005 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (  /*AUTOARG*/
+    // Inputs
+    clk
+);
 
   input clk;
   integer cyc;
   initial cyc = 1;
 
-  reg  [127:0] i;
+  reg [127:0] i;
   wire [127:0] q1;
   wire [127:0] q32;
   wire [127:0] q64;
-  wire [ 63:0] q64_low;
+  wire [63:0] q64_low;
 
   // verilog_format: off
   assign q1 = {

@@ -69,7 +69,9 @@ module t;
   Packet p;
 
   initial begin
+    p = new;
     // Not testing use of constraints
+    if ($c(0)) p.randomize();
     $write("*-* All Finished *-*\n");
     $finish;
   end

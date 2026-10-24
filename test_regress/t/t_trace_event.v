@@ -30,7 +30,7 @@ module t;
     for (i = 0; i < 10; i++) begin
       @(posedge clk);
 
-      if (i == 5)->ev_test;
+      if (i == 5) ->ev_test;
     end
 
     @(posedge clk);

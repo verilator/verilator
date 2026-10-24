@@ -65,36 +65,6 @@
 #define VL_UNKNOWN "<unknown>"
 
 //=============================================================================
-// VlFileLineDebug stores a SystemVerilog source code location. Used in VlCoroutineHandle for
-// debugging purposes.
-
-class VlFileLineDebug final {
-    // MEMBERS
-#ifdef VL_DEBUG
-    const char* m_filename = nullptr;
-    int m_lineno = 0;
-#endif
-
-public:
-    // CONSTRUCTORS
-    // Construct
-    VlFileLineDebug() = default;
-    VlFileLineDebug(const char* filename, int lineno)
-#ifdef VL_DEBUG
-        : m_filename{filename}
-        , m_lineno{lineno}
-#endif
-    {
-    }
-
-    // METHODS
-#ifdef VL_DEBUG
-    const char* filename() const { return m_filename; }
-    int lineno() const { return m_lineno; }
-#endif
-};
-
-//=============================================================================
 // VlCoroutineHandle is a non-copyable (but movable) coroutine handle. On resume, the handle is
 // cleared, as we assume that either the coroutine has finished and deleted itself, or, if it got
 // suspended, another VlCoroutineHandle was created to manage it.
@@ -431,7 +401,7 @@ class VlForkSyncState final {
 public:
     size_t m_counter = 0;  // When reaches 0, resume suspended coroutine
     VlCoroutineHandle m_susp;  // Coroutine to resume
-    bool m_inited = false;
+    bool m_inited = false;  // Initialization complete
     size_t m_pendingDones = 0;  // done() calls seen before init() (e.g. early killed branch)
     bool m_inDone = false;  // Guard against re-entrant resume recursion from nested kills
     bool m_resumePending = false;  // Join reached zero again while inside done()

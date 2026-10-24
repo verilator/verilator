@@ -125,7 +125,7 @@ module t (/*AUTOARG*/
   end
 
   task call_task;
-    /* verilator public */
+    /* verilator lint_off UNOPTPUBLIC */ /* verilator public */
     t1.center_task(1'b1);
   endtask
 
@@ -159,7 +159,7 @@ module beta (/*AUTOARG*/
   input clk;
   input toggle;
 
-  /* verilator public_module */
+  /* verilator no_inline_module */
 
   always @ (posedge clk) begin
     $write("");  // Always covered
@@ -210,7 +210,7 @@ module tsk (/*AUTOARG*/
   input clk;
   input toggle;
 
-  /* verilator public_module */
+  /* verilator no_inline_module */
 
   always @ (posedge clk) begin
     center_task(1'b0);

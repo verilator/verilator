@@ -7,7 +7,7 @@
 //
 //*************************************************************************
 
-#include "Vt_flag_lib_dpi__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
 #include <iostream>

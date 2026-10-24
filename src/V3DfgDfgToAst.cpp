@@ -54,7 +54,6 @@ template <>
 AstCountOnes* makeNode<AstCountOnes, DfgCountOnes, AstNodeExpr*>(  //
     const DfgCountOnes* vtxp, AstNodeExpr* op1) {
     AstCountOnes* const nodep = new AstCountOnes{vtxp->fileline(), op1};
-    nodep->dtypeSetLogicSized(vtxp->width(), VSigning::UNSIGNED);
     return nodep;
 }
 
@@ -242,7 +241,7 @@ class DfgToAstVisitor final : DfgVisitor {
         FileLine* const flp = vtxp->fileline();
         AstNodeExpr* const lhsp = convertDfgVertexToAstNodeExpr(vtxp->lhsp());
         AstVarScope* const matchp = vtxp->matchp()->as<DfgVertexVar>()->vscp();
-        m_resultp = new AstMatchMasked{flp, lhsp, matchp};
+        m_resultp = new AstMatchMasked{flp, lhsp, new AstVarRef{flp, matchp, VAccess::READ}};
     }
 
     void visit(DfgRep* vtxp) override {
@@ -316,13 +315,14 @@ class DfgToAstVisitor final : DfgVisitor {
             if (DfgAstRd* const rVtxp = vtx.cast<DfgAstRd>()) {
                 // Render the driver
                 AstNodeExpr* const exprp = convertDfgVertexToAstNodeExpr(rVtxp->srcp());
-                // If it's the same as the reference, do not repalce it so FileLines are preserved
+                // If it's the same as the reference, do not replace it so FileLines are preserved
                 if (exprp->sameTree(rVtxp->exprp())) {
                     VL_DO_DANGLING(exprp->deleteTree(), exprp);
                     continue;
                 }
                 // Replace the reference with the expression
                 if (VN_IS(exprp, VarRef)) {
+                    exprp->fileline(rVtxp->exprp()->fileline());
                     ++m_ctx.m_varRefsSubstituted;
                 } else {
                     ++m_ctx.m_expressionsInlined;

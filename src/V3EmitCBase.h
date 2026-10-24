@@ -67,26 +67,51 @@ public:
     static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
+    // Return name of the VlExecGraph describing an AstExecGraph
+    static string execGraphName(const AstExecGraph* nodep) {
+        return topClassName() + "__ExecGraph__" + nodep->nameProtect();
+    }
+    // Name of a constant pool variable
+    static std::string constPoolName(const AstVar* varp) {
+        UASSERT_OBJ(varp->constPoolEntry(), varp, "Not a constant pool variable");
+        return topClassName() + "__ConstPool__" + varp->nameProtect();
+    }
     // Return C++ class name for a module/class object
     static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
-    static bool isAnonOk(const AstVar* varp) VL_MT_STABLE {
-        AstNodeDType* const dtp = varp->dtypep()->skipRefp();
-        return v3Global.opt.compLimitMembers() != 0  // Enabled
-               && !varp->isStatic()  // Not a static variable
-               && !varp->isSc()  // Aggregates can't be anon
-               && !VN_IS(dtp, SampleQueueDType)  // Aggregates can't be anon
-               && !(VN_IS(dtp, NodeUOrStructDType) && !VN_CAST(dtp, NodeUOrStructDType)->packed())
-               && (varp->basicp() && !varp->basicp()->isOpaque());  // Aggregates can't be anon
-    }
-    static bool isConstPoolMod(const AstNode* modp) {
-        return modp == v3Global.rootp()->constPoolp()->modp();
-    }
 };
 
 //######################################################################
 // Base Visitor class -- holds output file pointer
 
 class EmitCBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
+public:
+    // TYPES
+    // Rendered text statements, each with its cost, for splitting them into sub-functions
+    class TextStmts final {
+    public:
+        struct Stmt final {
+            std::string m_text;  // Statement text
+            size_t m_cost;  // Cost of statement, for splitting
+        };
+
+    private:
+        std::vector<Stmt> m_stmts;  // Statements
+
+    public:
+        // Add a statement
+        void add(const std::string& stmt) {
+            const size_t cost = stmt.empty() || VString::startsWith(stmt, "//")
+                                    ? 0  // Blanks and comments are free
+                                    : AstNode::INSTR_COUNT_CTOR_DTOR;
+            m_stmts.push_back({stmt, cost});
+        }
+        size_t size() const { return m_stmts.size(); }
+        const Stmt& operator[](size_t i) const { return m_stmts[i]; }
+        std::vector<Stmt>::const_iterator begin() const { return m_stmts.begin(); }
+        std::vector<Stmt>::const_iterator end() const { return m_stmts.end(); }
+    };
+
+private:
     // STATE
     V3OutCFile* m_ofp = nullptr;  // File handle to emit to
     AstCFile* m_cfilep = nullptr;  // Current AstCFile being emitted
@@ -115,6 +140,14 @@ class EmitCBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         m_newCfileps.emplace_back(cfilep);
         openOutputFile(cfilep, descriptionp);
     }
+
+    // Reduce 'stmts' to a single statement, via a balanced tree of loose sub-functions
+    // 'void <prefix>__<n>(<params>)' of at most 'maxCost' each (see emitSplitCtorDtor).
+    // Returns the declaration of the root sub-function, or empty if nothing was split.
+    std::string emitSplitTextStmts(TextStmts& stmts, const std::string& prefix,
+                                   const std::string& params, const std::string& args,
+                                   size_t maxCost, bool support, const char* descriptionp,
+                                   const std::function<void()>& emitHeader);
 
 public:
     // Create new source AstCFile and open it for writing
@@ -168,6 +201,18 @@ public:
     bool splitNeeded(size_t splitLimit) const { return m_splitSize >= splitLimit; }
     bool splitNeeded() const { return splitNeeded(m_splitLimit); }
 
+    // If the given constructor/destructor statements, plus 'baseCost', exceed the
+    // --output-split-cfuncs limit, split them into loose sub-functions
+    // 'void <prefix>__ctor__<n>(<params>)' and 'void <prefix>__dtor__<n>(<params>)', called
+    // with '<args>'. Each is emitted into its own file, starting with 'emitHeader'. The
+    // statements are then each replaced with a single call to the root sub-function. Returns
+    // the declarations of the root ctor/dtor sub-functions, or empty strings if not split.
+    std::pair<std::string, std::string>
+    emitSplitCtorDtor(TextStmts& ctorStmts, TextStmts& dtorStmts, size_t baseCost,
+                      const std::string& prefix, const std::string& params,
+                      const std::string& args, bool support, const char* descriptionp,
+                      const std::function<void()>& emitHeader);
+
     // Returns pointer to current output file object.
     V3OutCFile* ofp() const VL_MT_SAFE { return m_ofp; }
 
@@ -184,7 +229,30 @@ public:
     bool optSystemC() { return v3Global.opt.systemC(); }
     static string protect(const string& name) VL_MT_SAFE { return VIdProtect::protect(name); }
     static string funcNameProtect(const AstCFunc* nodep, const AstNodeModule* modp = nullptr);
-    string cFuncArgs(const AstCFunc* nodep);
+    static bool isExplicitlyConstructed(const AstVar* varp) VL_MT_STABLE {
+        // Only model member variables may be handled explicitly
+        const AstNodeModule* const modp = EmitCParentModule::get(varp);
+        if (!modp || !varp->isModelState()) return false;
+        // Classes use real constructors
+        if (VN_IS(modp, Class)) return false;
+        // Constant pool has special handling
+        if (modp->isConstPool()) return false;
+        // Otherwise explicitly handled if not trivially constructible,
+        // meaning a runtime C++ constructor/destructor invocation is needed
+        return !varp->isTriviallyConstructible();
+    }
+    // Name to access a module member as
+    static std::string varName(const AstVar* varp) VL_MT_STABLE {
+        const std::string name = varp->nameProtect();
+        // Primary IOs live 'union { struct { HERE } __VprimaryPorts; }'
+        if (varp->isPrimaryIO()) return "__VprimaryPorts." + name;
+        // Explicitly constructed variables live 'union { struct { HERE } __Vnontrivs; }'
+        if (isExplicitlyConstructed(varp)) return "__Vnontrivs." + name;
+        // Otherwise they should be available in the local scope where emitted
+        return name;
+    }
+    // Argument list; if 'cpp', C++ rather than a C header
+    string cFuncArgs(const AstCFunc* nodep, bool cpp = true);
     void emitCDefaultConstructor(const AstNodeModule* modp);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);

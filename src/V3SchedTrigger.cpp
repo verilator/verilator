@@ -27,6 +27,7 @@
 #include "V3Sched.h"
 #include "V3SenExprBuilder.h"
 #include "V3Stats.h"
+#include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -360,41 +361,29 @@ AstNodeStmt* TriggerKit::newDumpCall(AstVarScope* const vscp, const std::string&
 
 AstVarScope* TriggerKit::newTrigVec(const std::string& name) const {
     if (!m_nVecWords) return nullptr;
-    AstScope* const scopep = v3Global.rootp()->topScopep()->scopep();
-    return scopep->createTemp("__V" + name + "Triggered", m_trigVecDTypep);
+    return v3Global.rootp()->topScopep()->createTemp("__V" + name + "Triggered", m_trigVecDTypep);
 }
 
-AstSenTree* TriggerKit::newTriggerSenTree(AstVarScope* const vscp,
-                                          const std::vector<uint32_t>& indices) const {
-    AstNetlist* const netlistp = v3Global.rootp();
-    AstTopScope* const topScopep = netlistp->topScopep();
-    FileLine* const flp = topScopep->fileline();
-
-    AstSenTree* const senTreep = new AstSenTree{flp, nullptr};
-    topScopep->addSenTreesp(senTreep);
-    for (const uint32_t index : indices) {
-        UASSERT(index <= (m_nVecWords + m_nPreWords) * WORD_SIZE, "Invalid trigger index");
-        const uint32_t wordIndex = index / WORD_SIZE;
-        const uint32_t bitIndex = index % WORD_SIZE;
-        AstVarRef* const refp = new AstVarRef{flp, vscp, VAccess::READ};
-        AstNodeExpr* const aselp = new AstArraySel{flp, refp, static_cast<int>(wordIndex)};
-        // Use a mask & _ to extract the bit, V3Const can optimize this to combine terms
-        AstConst* const maskp
-            = new AstConst{flp, AstConst::WidthedValue{}, static_cast<int>(WORD_SIZE), 0};
-        maskp->num().setBit(bitIndex, '1');
-        AstNodeExpr* const termp = new AstAnd{flp, maskp, aselp};
-        senTreep->addSensesp(new AstSenItem{flp, VEdgeType::ET_TRUE, termp});
-    }
-    return senTreep;
-}
-
-AstSenTree* TriggerKit::newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index) const {
+uint32_t TriggerKit::extraTriggerIndex(uint32_t index) const {
     UASSERT(index <= m_nExtraWords * WORD_SIZE, "Invalid external trigger index");
-    return newTriggerSenTree(vscp, {index + m_nSenseWords * WORD_SIZE});
+    return index + m_nSenseWords * WORD_SIZE;
+}
+
+std::set<uint32_t> TriggerKit::triggerIndices(const AstSenTree* senTreep, bool pre) const {
+    std::set<uint32_t> indices;
+    for (const AstSenItem* sip = senTreep->sensesp(); sip; sip = VN_AS(sip->nextp(), SenItem)) {
+        uint32_t index = m_senItem2TrigIdx.at(*sip);
+        if (pre) {
+            UASSERT_OBJ(index < m_nPreWords * WORD_SIZE, sip, "Not a 'pre' trigger");
+            index += m_nVecWords * WORD_SIZE;
+        }
+        indices.insert(index);
+    }
+    return indices;
 }
 
 AstNodeStmt* TriggerKit::newExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const {
-    index += m_nSenseWords * WORD_SIZE;
+    index = extraTriggerIndex(index);
     const uint32_t wordIndex = index / WORD_SIZE;
     const uint32_t bitIndex = index % WORD_SIZE;
     FileLine* const flp = vscp->fileline();
@@ -411,10 +400,7 @@ void TriggerKit::addExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) co
     AstNode* const setp = newExtraTriggerAssignment(vscp, index);
     setp->addNext(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
                                 new AstConst{flp, AstConst::BitFalse{}}});
-    if (AstNode* const nodep = m_compVecp->stmtsp()) {
-        setp->addNext(setp, nodep->unlinkFrBackWithNext());
-    }
-    m_compVecp->addStmtsp(setp);
+    m_compVecp->prependStmtsp(setp);
 }
 
 // Value-change detection for a single interface member VarScope written through a VIF.
@@ -425,7 +411,7 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     const uint32_t wordIndex = index / WORD_SIZE;
     const uint32_t bitIndex = index % WORD_SIZE;
 
-    AstScope* const scopeTopp = netlistp->topScopep()->scopep();
+    AstTopScope* const topScopep = netlistp->topScopep();
     FileLine* const flp = netlistp->fileline();
     AstNodeDType* const dtypep = instVscp->dtypep()->skipRefp();
 
@@ -452,7 +438,7 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     const std::string prevName = "__Vtrigprevvif_" + m_name + "_"
                                  + instVscp->scopep()->nameDotless() + "__"
                                  + instVscp->varp()->name();
-    AstVarScope* const prevVscp = scopeTopp->createTemp(prevName, instVscp->dtypep());
+    AstVarScope* const prevVscp = topScopep->createTemp(prevName, instVscp->dtypep());
 
     // Initialize prev = inst
     if (VN_IS(dtypep, UnpackArrayDType)) {
@@ -495,26 +481,27 @@ void TriggerKit::addValueChangeTriggerAssignment(AstNetlist* netlistp, AstCFunc*
     // Chain: set trigger bit -> update prev
     setp->addNext(updp);
 
-    // Prepend before existing statements
-    if (AstNode* const nodep = m_compVecp->stmtsp()) {
-        setp->addNext(setp, nodep->unlinkFrBackWithNext());
-    }
-    m_compVecp->addStmtsp(setp);
+    m_compVecp->prependStmtsp(setp);
 }
 
 TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
                        uint32_t nExtraWords, uint32_t nPreWords,
                        std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx,
-                       bool useAcc)
+                       const std::vector<const AstSenItem*>& senItemps, bool useAcc)
     : m_name{name}
     , m_slow{slow}
     , m_nSenseWords{nSenseWords}
     , m_nExtraWords{nExtraWords}
     , m_nPreWords{nPreWords}
-    , m_senItem2TrigIdx{std::move(senItem2TrigIdx)} {
+    , m_senItem2TrigIdx{std::move(senItem2TrigIdx)}
+    , m_trigIdx2SenItem{senItemps} {
     // If no triggers, we don't need to generate anything
     if (!m_nVecWords) return;
-    // Othewise construc the parts of the kit
+    // Otherwise construct the parts of the kit
+    // Map from bit index to SenItem, including the 'pre' copies in the extended vector
+    m_trigIdx2SenItem.resize((m_nVecWords + m_nPreWords) * WORD_SIZE);
+    std::copy(senItemps.begin(), senItemps.begin() + m_nPreWords * WORD_SIZE,
+              m_trigIdx2SenItem.begin() + m_nVecWords * WORD_SIZE);
     AstNetlist* const netlistp = v3Global.rootp();
     AstScope* const scopep = netlistp->topScopep()->scopep();
     FileLine* const flp = scopep->fileline();
@@ -534,7 +521,7 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
         m_trigExtDTypep = m_trigVecDTypep;
     }
     // The AstVarScope representing the extended trigger vector
-    m_vscp = scopep->createTemp("__V" + m_name + "Triggered", m_trigExtDTypep);
+    m_vscp = netlistp->topScopep()->createTemp("__V" + m_name + "Triggered", m_trigExtDTypep);
     m_vscp->varp()->isInternal(true);
     // The trigger computation function
     m_compVecp = util::makeSubFunction(netlistp, "_eval_triggers_vec__" + m_name, m_slow);
@@ -543,7 +530,8 @@ TriggerKit::TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords,
     m_dumpp->isStatic(true);
     m_dumpp->ifdef("VL_DEBUG");
     if (useAcc) {
-        m_vscAccp = scopep->createTemp("__V" + m_name + "TriggeredAcc", m_trigVecDTypep);
+        m_vscAccp
+            = netlistp->topScopep()->createTemp("__V" + m_name + "TriggeredAcc", m_trigVecDTypep);
         m_vscAccp->varp()->isInternal(true);
     }
 }
@@ -635,7 +623,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     const uint32_t nExtraWords = nExtraTriggers / WORD_SIZE;
 
     // We can now construct the trigger kit - this constructs all items that will be kept
-    TriggerKit kit{name, slow, nSenseWords, nExtraWords, nPreWords, senItem2TrigIdx, useAcc};
+    TriggerKit kit{name,      slow,  nSenseWords, nExtraWords, nPreWords, senItem2TrigIdx,
+                   senItemps, useAcc};
 
     // If there are no triggers we are done
     if (!kit.m_nVecWords) return kit;
@@ -722,7 +711,8 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         ss << "@(";
         V3EmitV::verilogForTree(senItemp, ss);
         ss << ")";
-        std::string desc = VString::quoteBackslash(ss.str());
+        // Names were hashed by V3Name, show the user the original text
+        std::string desc = VString::quoteBackslash(VName::dehash(ss.str()));
         desc = VString::replaceSubstr(desc, "\n", "\\n");
         addDebug(i, desc);
     }
@@ -736,30 +726,6 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
                  "Internal '" + name + "' trigger - " + extraTriggers.m_descriptions.at(i));
     }
 
-    // Construct the maps from old SenTrees to new SenTrees
-    {
-        std::vector<uint32_t> indices;
-        indices.reserve(32);
-        // Map regular SenTrees to the Sense triggers
-        for (const AstSenTree* const senTreep : senTreeps) {
-            indices.clear();
-            for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), SenItem);
-                indices.push_back(senItem2TrigIdx.at(*itemp));
-            }
-            kit.m_mapVec[senTreep] = kit.newTriggerSenTree(kit.m_vscp, indices);
-        }
-        // Map Pre SenTrees to the Pre triggers
-        for (const AstSenTree* const senTreep : preTreeps) {
-            indices.clear();
-            for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), SenItem);
-                indices.push_back(senItem2TrigIdx.at(*itemp) + kit.m_nVecWords * WORD_SIZE);
-            }
-            kit.m_mapPre[senTreep] = kit.newTriggerSenTree(kit.m_vscp, indices);
-        }
-    }
-
     // Get the SenExprBuilder results
     const SenExprBuilder::Results senResults = senExprBuilder.getResultsAndClearUpdates();
 
@@ -767,7 +733,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
     for (AstNodeStmt* const nodep : senResults.m_inits) initFuncp->addStmtsp(nodep);
 
     // Assemble the base trigger computation function
-    AstScope* const scopep = netlistp->topScopep()->scopep();
+    AstTopScope* const topScopep = netlistp->topScopep();
     {
         AstCFunc* const fp = kit.m_compVecp;
         // Trigger computation
@@ -776,7 +742,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         for (AstNodeStmt* const nodep : senResults.m_postUpdates) fp->addStmtsp(nodep);
         // Add the initialization time triggers
         if (initialTrigsp) {
-            AstVarScope* const initVscp = scopep->createTemp("__V" + name + "DidInit", 1);
+            AstVarScope* const initVscp = topScopep->createTemp("__V" + name + "DidInit", 1);
             AstIf* const ifp = new AstIf{flp, new AstNot{flp, rd(initVscp)}};
             fp->addStmtsp(ifp);
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
@@ -792,7 +758,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
         AstVarScope* const latchedp
             = newArgument(fp, kit.m_trigVecDTypep, "latched", VDirection::CONSTREF);
         // Add loop counter variable - this can't be local because we call util::splitCheck
-        AstVarScope* const nVscp = scopep->createTemp("__V" + name + "TrigPreLoopCounter", 32);
+        AstVarScope* const nVscp = topScopep->createTemp("__V" + name + "TrigPreLoopCounter", 32);
         nVscp->varp()->noReset(true);
         // Add a loop to compute the pre words
         AstLoop* const loopp = new AstLoop{flp};
@@ -931,16 +897,11 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
             senTreep->user1p(funcp);
 
             // Create a local temporary extended vector
-            AstVarScope* const vscAccp = m_trigKit.vscAccp();
-            AstVarScope* const tmpp = vscAccp->scopep()->createTempLike("__VTmp", vscAccp);
-            AstVar* const tmpVarp = tmpp->varp()->unlinkFrBack();
+            AstVarScope* const tmpp = newLocal(funcp, m_trigKit.vscAccp()->dtypep(), "__VTmp");
             funcp->user1p(tmpp);
-            funcp->addVarsp(tmpVarp);
             // This function can be called multiple times, and accesses model state, which
             // violates the assumption made in V3Life that there is no such function.
             funcp->noLife(true);
-            tmpVarp->funcLocal(true);
-            tmpVarp->noReset(true);
 
             AstVar* const argp = new AstVar{flp, VVarType::BLOCKTEMP, "__VeventDescription",
                                             senTreep->findBasicDType(VBasicDTypeKwd::CHARPTR)};

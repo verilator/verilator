@@ -100,6 +100,8 @@ class VerilatedFstC;
 class VerilatedFstSc;
 class VerilatedScope;
 class VerilatedScopeNameMap;
+class VerilatedIfaceRef;
+struct VlIfaceRefTableEntry;
 template <typename, typename>
 class VerilatedTrace;
 class VerilatedTraceBaseC;
@@ -109,6 +111,7 @@ class VerilatedVarNameMap;
 class VerilatedVcd;
 class VerilatedVcdC;
 class VerilatedVcdSc;
+class VlCovRegistry;
 
 //=========================================================================
 // Basic types
@@ -157,22 +160,31 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_FORCEABLE = (1 << 12),  // Forceable
     VLVF_SIGNED = (1 << 13),  // Signed integer
     VLVF_BITVAR = (1 << 14),  // Four state bit (vs two state logic)
-    VLVF_NET = (1 << 15)  // Net object
+    VLVF_NET = (1 << 15),  // Net object
+    VLVF_PACKED_AGG = (1 << 16),  // Element type is a packed struct or union
+    VLVF_PACKED_UNION = (1 << 17),  // With VLVF_PACKED_AGG, element type is a packed union
+    VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see VlVarTableEntry
+    VLVF_PACKED_NEEDS_INDEX = (1 << 19)  // With VLVF_PACKED_MEMBER, an ancestor is an array of
+                                         // packed structs/unions, so needs an element index
 };
 
-// One VPI-visible variable, consumed by VerilatedScope::varsInsertFromTable();
-// replaces per-variable varInsert() calls, which compiles faster at scale.
+// One VPI-visible variable, a row for VerilatedScope::varsInsertFromTable() or
+// paramsInsertFromTable(); replaces per-variable varInsert() calls, which compiles faster.
 struct VlVarTableEntry final {
-    static constexpr int kMaxDims = 3;  // Max packed+unpacked dims a table row holds
     const char* namep;  // VPI-facing (protected) variable name, string literal
-    size_t byteOffset;  // offsetof of storage member from module instance base
-    VerilatedVarType vltype;
+    // offsetof from the instance base, 0 for a packed member; for a parameter, being static,
+    // an index into paramPtrsp
+    size_t byteOffset;
+    // (left,right) pairs in a shared per-model array, unpacked dims first, then packed;
+    // nullptr if none. int32_t since large unpacked memories exceed int16 range.
+    const int32_t* dimsp;
     uint32_t vlflags;  // Direction + flags (VLVD_*/VLVF_*)
-    uint8_t udims;  // udims + pdims <= kMaxDims
+    VerilatedVarType vltype;
+    uint8_t udims;
     uint8_t pdims;
-    // (left,right) pairs: unpacked dims first, then packed; int32_t since large
-    // unpacked memories exceed int16 range
-    int32_t dims[kMaxDims * 2];
+    // Only packed member rows set these
+    uint32_t bitOffset = 0;  // VLVF_PACKED_MEMBER: bit offset within the parent's element 0
+    uint32_t entSize = 0;  // Element size in bytes, or 0 to derive from vltype
 };
 
 // IEEE 1800-2023 Table 20-6
@@ -257,7 +269,7 @@ class VL_SCOPED_CAPABILITY VerilatedLockGuard final {
     VL_UNCOPYABLE(VerilatedLockGuard);
 
 private:
-    VerilatedMutex& m_mutexr;
+    VerilatedMutex& m_mutexr;  // Mutex protecting the guard
 
 public:
     /// Construct and hold given mutex lock until destruction or unlock()
@@ -298,6 +310,34 @@ public:
 #else  // !VL_DEBUG
 public:
     void check() {}
+#endif
+};
+
+// Internals: VlFileLineDebug stores a SystemVerilog source code location. Used in
+// VlCoroutineHandle for debugging purposes, and to locate covergroup weight errors.
+
+class VlFileLineDebug final {
+    // MEMBERS
+#ifdef VL_DEBUG
+    const char* m_filename = nullptr;  // Filename from sources, nullptr for unlnown
+    int m_lineno = 0;  // Line number from sources
+#endif
+
+public:
+    // CONSTRUCTORS
+    VlFileLineDebug() = default;
+    VlFileLineDebug(const char* filename, int lineno)
+#ifdef VL_DEBUG
+        : m_filename{filename}
+        , m_lineno{lineno}
+#endif
+    {
+    }
+
+    // METHODS
+#ifdef VL_DEBUG
+    const char* filename() const { return m_filename; }
+    int lineno() const { return m_lineno; }
 #endif
 };
 
@@ -376,8 +416,7 @@ class VerilatedEvalLoop final {
     const uint32_t m_convergeLimit;  // --converge-limit from compiler command line
     // Where to record --prof-exec sections, or null if not profiling
     VlExecutionProfilerBase* m_profilerp = nullptr;
-    // Whether this is the top level model during profiling
-    bool m_profTopLevel = false;
+    bool m_profTopLevel = false;  // Top level model during profiling
 
 public:
     // CONSTRUCTORS
@@ -479,8 +518,8 @@ private:
         = ASSERT_DIRECTIVE_TYPE_MASK_WIDTH * std::numeric_limits<VerilatedAssertType_t>::digits
           + 1;
     // Build the assertion-control bit mask for the given assertion x directive types.
-    static uint32_t assertOnMask(VerilatedAssertType_t types,
-                                 VerilatedAssertDirectiveType_t directives) VL_PURE;
+    static constexpr uint32_t assertOnMask(VerilatedAssertType_t types,
+                                           VerilatedAssertDirectiveType_t directives) VL_PURE;
     static constexpr size_t ASSERT_CONTROL_SLOT_COUNT = ASSERT_ON_WIDTH - 1;
     // No termination request has stamped m_finishPendingTime yet
     static constexpr uint64_t TIME_UNSET = ~0ULL;
@@ -498,20 +537,18 @@ protected:
         // No std::strings or pointers or will serialize badly!
         // Fast path
         uint64_t m_time = 0;  // Current $time (unscaled), 0=at zero, or legacy
-        std::atomic<uint32_t> m_assertOn{
-            std::numeric_limits<uint32_t>::max()};  // Enabled assertions,
-                                                    // for each VerilatedAssertType we store
-                                                    // 3-bits, one for each directive type. Last
-                                                    // bit guards internal directive types.
+        // Enabled assertions, for each VerilatedAssertType we store 3-bits, one for each directive
+        // type. Last bit guards internal directive types.
+        std::atomic<uint32_t> m_assertOn{std::numeric_limits<uint32_t>::max()};
         std::atomic<uint32_t> m_assertLock{0};  // Locked assertion bits (IEEE 1800-2023 20.11
                                                 // Lock/Unlock); same layout as m_assertOn. While
                                                 // a bit is locked, On/Off/Kill leave it unchanged.
-        std::atomic<uint32_t> m_assertPassOnVacuous{
-            std::numeric_limits<uint32_t>::max()};  // Enabled vacuous pass actions
-        std::atomic<uint32_t> m_assertPassOnNonvacuous{
-            std::numeric_limits<uint32_t>::max()};  // Enabled nonvacuous pass actions
-        std::atomic<uint32_t> m_assertFailOn{
-            std::numeric_limits<uint32_t>::max()};  // Enabled fail actions
+        // Enabled vacuous pass actions
+        std::atomic<uint32_t> m_assertPassOnVacuous{std::numeric_limits<uint32_t>::max()};
+        // Enabled nonvacuous pass actions
+        std::atomic<uint32_t> m_assertPassOnNonvacuous{std::numeric_limits<uint32_t>::max()};
+        // Enabled fail actions
+        std::atomic<uint32_t> m_assertFailOn{std::numeric_limits<uint32_t>::max()};
         std::array<std::atomic<uint32_t>, ASSERT_CONTROL_SLOT_COUNT> m_assertKill{};
         bool m_calcUnusedSigs = false;  // Waves file on, need all signals calculated
         bool m_fatalOnError = true;  // Fatal on $stop/non-fatal error
@@ -545,8 +582,7 @@ protected:
         // A worker queues $finish before the main thread callback can set m_gotFinish.
         std::atomic<uint32_t> m_finishPending{0};  // Number of queued $finish callbacks
         std::atomic<uint64_t> m_finishPendingTime{TIME_UNSET};  // Time of the first callback
-        std::atomic<bool> m_assertCtlsLocked{
-            false};  // When true, all assertion-control updates are ignored
+        std::atomic<bool> m_assertCtlsLocked{false};  // All assertion-control updates are ignored
         int m_stopReserved = 0;  // Posted $stop requests not yet executed
         bool m_executingFinal = false;  // Running generated final() code
         uint64_t m_profExecStart = 1;  // +prof+exec+start time
@@ -580,6 +616,8 @@ protected:
     const std::unique_ptr<VerilatedContextImpData> m_impdatap;
     // Number of threads to use for simulation (size of m_threadPool + 1 for main thread)
     unsigned m_threads = VlOs::getProcessDefaultParallelism();
+    // True if m_threads was set by the user, rather than being the default
+    bool m_threadsSet = false;
     // Use numa automatic CPU-to-thread assignment
     bool m_useNumaAssign = false;
     // Number of threads in added models
@@ -590,6 +628,9 @@ protected:
     std::unique_ptr<VerilatedVirtualBase> m_executionProfiler;
     // Coverage access
     std::unique_ptr<VerilatedVirtualBase> m_coveragep;  // Pointer for coveragep()
+    // Covergroup type/instance nodes. Covergroup data is always collected,
+    // independent of whether coverage data is recorded (--coverage).
+    std::unique_ptr<VerilatedVirtualBase> m_covergroupsp;  // Pointer for covergroupRegistryp()
 
     // File I/O
     // Not serialized
@@ -600,9 +641,8 @@ protected:
     // List of free descriptors in the MCT region [4, 32)
     std::vector<IData> m_fdFreeMct VL_GUARDED_BY(m_fdMutex);
 
-    // Magic to check for bad construction
     static constexpr uint64_t MAGIC = 0xC35F9A6E5298EE6EULL;  // SHA256 "VerilatedContext"
-    uint64_t m_magic = MAGIC;
+    uint64_t m_magic = MAGIC;  // Magic to check for bad construction
 
 private:
     // CONSTRUCTORS
@@ -619,28 +659,9 @@ public:
     bool assertOn() const VL_MT_SAFE;
     /// Enable all assertion types
     void assertOn(bool flag) VL_MT_SAFE;
-    /// Get enabled status for given assertion types
-    bool assertOnGet(VerilatedAssertType_t type,
-                     VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
-    /// Set enabled status for given assertion types
-    void assertOnSet(VerilatedAssertType_t types,
-                     VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Clear enabled status for given assertion types
-    void assertOnClear(VerilatedAssertType_t types,
-                       VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Return if assertion-control updates are locked. When locked, RTL assert
-    // control statements ($asserton/$assertoff/$assertcontrol) are ignored, as
-    // are updates from the C++ API.
-    bool assertCtlsLocked() const VL_MT_SAFE;
-    /// Lock/unlock assertion-control updates.
-    void assertCtlsLocked(bool flag) VL_MT_SAFE;
     /// Apply assertion control for given control, assertion, and directive types
     void assertCtl(uint32_t controlType, VerilatedAssertType_t types,
                    VerilatedAssertDirectiveType_t directives) VL_MT_SAFE;
-    /// Get assertion-control runtime state. Boolean queries return 0/1, Kill returns
-    /// the generation count.
-    uint32_t assertCtlGet(VerilatedAssertCtlQuery query, VerilatedAssertType_t type,
-                          VerilatedAssertDirectiveType_t directive) const VL_MT_SAFE;
     /// Return if calculating of unused signals (for traces)
     bool calcUnusedSigs() const VL_MT_SAFE { return m_s.m_calcUnusedSigs; }
     /// Enable calculation of unused signals (for traces)
@@ -659,6 +680,8 @@ public:
     /// Return VerilatedCovContext, allocate if needed
     /// Note if get unresolved reference then likely forgot to link verilated_cov.cpp
     VerilatedCovContext* coveragep() VL_MT_SAFE;
+    /// Returns VlCovRegistry. Allocated on-demand
+    VlCovRegistry* covergroupRegistryp() VL_MT_SAFE;
     /// Return debug level
     static inline int debug() VL_MT_SAFE;  /// Set debug level
     /// Debug is currently global, but for forward compatibility have a per-context method
@@ -814,6 +837,10 @@ public:
     bool stopRequestReserve(bool maybe) VL_MT_SAFE;
     void stopRequestRelease() VL_MT_SAFE;
 
+    // Internal: assertCtlGet() for generated code, with constant type and directive
+    template <VerilatedAssertType_t T_Type, VerilatedAssertDirectiveType_t T_Directive>
+    VL_ATTR_ALWINLINE uint32_t assertCtlGet(VerilatedAssertCtlQuery query) const VL_MT_SAFE;
+
     // Internal: access to implementation class
     VerilatedContextImp* impp() VL_MT_SAFE { return reinterpret_cast<VerilatedContextImp*>(this); }
     const VerilatedContextImp* impp() const VL_MT_SAFE {
@@ -822,8 +849,11 @@ public:
 
     // Internal: Model and thread setup
     void addModel(const VerilatedModel* modelp);
-    VerilatedVirtualBase* threadPoolp();
+    // Get the thread pool, creating it if needed. 'modelThreads' is the parallelism of the model
+    // being constructed, so that the context can grow to the number of threads it requires.
+    VerilatedVirtualBase* threadPoolp(unsigned modelThreads = 1);
     void prepareClone();
+    void threadPoolShutdown();
     VerilatedVirtualBase* threadPoolpOnClone();
     VerilatedVirtualBase*
     enableExecutionProfiler(VerilatedVirtualBase* (*construct)(VerilatedContext&));
@@ -868,6 +898,9 @@ public:
     const VerilatedScope* scopeFind(const char* namep) const VL_MT_SAFE;
     const VerilatedScopeNameMap* scopeNameMap() VL_MT_SAFE;
 
+    // Internal: Find interface reference by fully qualified path
+    const VerilatedIfaceRef* ifaceRefFind(const char* namep) const VL_MT_SAFE_POSTINIT;
+
     // Internal: Serialization setup
     static constexpr size_t serialized1Size() VL_PURE { return sizeof(m_s); }
     void* serialized1Ptr() VL_MT_UNSAFE { return &m_s; }
@@ -897,6 +930,32 @@ public:  // But for internal use only
     virtual const char* name() const = 0;
 };
 
+// An interface reference port, and the concrete interface it is connected to.
+// Used for VPI; references are not scopes, so are not in VerilatedScopeNameMap.
+class VerilatedIfaceRef final {
+    const VerilatedScope* m_scopep = nullptr;  // Concrete interface referred to
+    const char* m_namep = "";  // Name of the reference port
+    // Fully qualified path; owned, as the instance name prefix is set at construction
+    std::string m_fullname;
+    const char* m_modportp = "";  // Modport name, or "" if none
+public:
+    VerilatedIfaceRef() = default;
+    VerilatedIfaceRef(const VerilatedScope* scopep, const char* namep, const std::string& fullname,
+                      const char* modportp)
+        : m_scopep{scopep}
+        , m_namep{namep}
+        , m_fullname{fullname}
+        , m_modportp{modportp} {}
+    ~VerilatedIfaceRef() = default;
+    // ACCESSORS
+    const VerilatedScope* scopep() const VL_MT_SAFE_POSTINIT { return m_scopep; }
+    const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
+    const char* fullname() const VL_MT_SAFE_POSTINIT { return m_fullname.c_str(); }
+    const char* modport() const VL_MT_SAFE_POSTINIT { return m_modportp; }
+    bool hasModport() const VL_MT_SAFE_POSTINIT { return m_modportp[0] != '\0'; }
+    void ifaceRefDump() const VL_MT_SAFE_POSTINIT;
+};
+
 //===========================================================================
 // Verilator scope information class
 // Used for internal VPI implementation, and introspection into scopes
@@ -908,8 +967,9 @@ public:
     enum Type : uint8_t {
         SCOPE_MODULE,
         SCOPE_OTHER,
-        SCOPE_PACKAGE
-    };  // Type of a scope, currently only module and package are interesting
+        SCOPE_PACKAGE,
+        SCOPE_INTERFACE
+    };  // Type of a scope, currently only module, package and interface are interesting
 private:
     // Fastpath:
     VerilatedSyms* const m_symsp;  // Symbol table
@@ -917,11 +977,15 @@ private:
     int m_funcnumMax = 0;  // Maximum function number stored (Fastpath)
     // 4 bytes padding (on -m64), for rent.
     VerilatedVarNameMap* m_varsp = nullptr;  // Variable map
+    // Non-owning pointers into the context map, for VPI iteration (Slowpath)
+    std::vector<const VerilatedIfaceRef*>* m_ifaceRefsp = nullptr;
     const char* const m_namep;  // Scope name (Slowpath)
     const char* const m_identifierp;  // Identifier of scope (with escapes removed)
     const char* const m_defnamep;  // Definition name (SCOPE_MODULE only)
     const int8_t m_timeunit;  // Timeunit in negative power-of-10
     const Type m_type;  // Type of the scope
+
+    void varInsertFromRow(const VlVarTableEntry& e, void* datap, bool isParam) VL_MT_UNSAFE;
 
 public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
@@ -940,8 +1004,15 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;
+    void paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
+                               const void* const* paramPtrsp) VL_MT_UNSAFE;
+    void ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UNSAFE;
     static void scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
                                          VerilatedSyms* symsp) VL_MT_UNSAFE;
+    static void ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
+                                         VerilatedSyms* symsp) VL_MT_UNSAFE;
+    static void ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, size_t n,
+                                        const VerilatedSyms* symsp) VL_MT_UNSAFE;
     // ACCESSORS
     const char* name() const VL_MT_SAFE_POSTINIT { return m_namep; }
     const char* identifier() const VL_MT_SAFE_POSTINIT { return m_identifierp; }
@@ -950,11 +1021,31 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
     VerilatedSyms* symsp() const VL_MT_SAFE_POSTINIT { return m_symsp; }
     VerilatedVar* varFind(const char* namep) const VL_MT_SAFE_POSTINIT;
     VerilatedVarNameMap* varsp() const VL_MT_SAFE_POSTINIT { return m_varsp; }
+    // Interface references declared in this scope, in table order; nullptr if none
+    const std::vector<const VerilatedIfaceRef*>* ifaceRefsp() const VL_MT_SAFE_POSTINIT {
+        return m_ifaceRefsp;
+    }
     void scopeDump() const;
     void* exportFindError(int funcnum) const VL_MT_SAFE;
     static void* exportFindNullError(int funcnum) VL_MT_SAFE;
     static void* exportFind(const VerilatedScope* scopep, int funcnum) VL_MT_SAFE;
     Type type() const { return m_type; }
+    VerilatedContext* contextp() const { return m_symsp->_vm_contextp__; }
+};
+
+/// Sentinel parent offset for an interface reference whose declaring scope is not in the scope
+/// table
+constexpr uint32_t VL_IFACEREF_NO_PARENT = ~0U;
+
+// One interface reference, consumed by VerilatedScope::ifaceRefsInsertFromTable()
+struct VlIfaceRefTableEntry final {
+    uint32_t ptrOffset;  // offsetof of the referred-to __Vscopep_* member within the Syms object
+    // offsetof of the enclosing scope's __Vscopep_* member, or VL_IFACEREF_NO_PARENT
+    uint32_t parentPtrOffset;
+    const char* namep;  // Name of the reference port
+    // Path within the model; as VlScopeTableEntry::namep, instance name prepended at construction
+    const char* suffixp;
+    const char* modportp;  // Modport name, or "" if none
 };
 
 // One scope, consumed by VerilatedScope::scopesConstructFromTable(); replaces
@@ -968,10 +1059,18 @@ struct VlScopeTableEntry final {
     VerilatedScope::Type type;
 };
 
+// One VPI scope hierarchy edge, consumed by VerilatedHierarchy::addFromTable()
+struct VlHierTableEntry final {
+    // offsetof of the parent's __Vscopep_* member within the Syms object, or 0 for top level
+    uint32_t fromOffset;
+    uint32_t toOffset;  // Likewise, of the child's
+};
+
 class VerilatedHierarchy final {
 public:
-    static void add(const VerilatedScope* fromp, const VerilatedScope* top);
-    static void remove(const VerilatedScope* fromp, const VerilatedScope* top);
+    static void addFromTable(const VlHierTableEntry* entp, size_t n, const VerilatedSyms* symsp);
+    static void removeFromTable(const VlHierTableEntry* entp, size_t n,
+                                const VerilatedSyms* symsp);
     static void clear();
 };
 
@@ -1030,26 +1129,18 @@ public:
     /// Enable debug of internal verilated code
     static void debug(int level) VL_MT_SAFE;
 
-    /// Set the last VerilatedContext accessed
-    /// Generally threadContextp(value) should be called instead
-    static void lastContextp(VerilatedContext* contextp) VL_MT_SAFE { s_lastContextp = contextp; }
-    /// Return the last VerilatedContext accessed
-    /// Generally threadContextp() should be called instead
-    static VerilatedContext* lastContextp() VL_MT_SAFE {
-        if (!s_lastContextp) lastContextp(defaultContextp());
-        return s_lastContextp;
-    }
     /// Set the VerilatedContext used by the current thread
-
     /// If using multiple contexts, and threads are created by the user's
     /// wrapper (not Verilator itself) then this must be called to set the
     /// context that applies to each thread
     static void threadContextp(VerilatedContext* contextp) VL_MT_SAFE {
         t_s.t_contextp = contextp;
-        lastContextp(contextp);
+        lastContextp(contextp);  // Safe as only read by DPI's single thread
     }
     /// Return the VerilatedContext for the current thread
-    static VerilatedContext* threadContextp() VL_MT_SAFE {
+    static VerilatedContext* threadContextp() VL_MT_SAFE_PRETEND {
+        // Generally VL_MT_SAFE if called after a threadContextp(setter).
+        // If called from DPI may be unsafe, as uses lastContextp()
         if (VL_UNLIKELY(!t_s.t_contextp)) t_s.t_contextp = lastContextp();
         return t_s.t_contextp;
     }
@@ -1231,7 +1322,25 @@ public:
     static void endOfEval(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
 
 private:
+    friend class VerilatedContext;
+
     static void endOfThreadMTaskGuts(VerilatedEvalMsgQueue* evalMsgQp) VL_MT_SAFE;
+
+    // Set the last VerilatedContext accessed
+    VL_ATTR_NO_SANITIZE_THREAD static void
+    lastContextp(VerilatedContext* contextp) VL_MT_SAFE_PRETEND {
+        // Record last access, only for DPI and initial non-threaded contexts
+        // Marked VL_MT_SAFE_PRETEND due to writes always being safe, reading is the problem
+        s_lastContextp = contextp;
+    }
+    // Return the last VerilatedContext accessed
+    // Only for when no threaded context due to DPI and initial non-threaded contexts
+    // Generally threadContextp() should be called instead
+    static VerilatedContext* lastContextp() VL_MT_SAFE_PRETEND {
+        // Marked VL_MT_SAFE_PRETEND due to call tree, and use only when non-threaded
+        if (VL_UNLIKELY(!s_lastContextp)) lastContextp(defaultContextp());
+        return s_lastContextp;
+    }
 };
 
 void VerilatedContext::debug(int val) VL_MT_SAFE { Verilated::debug(val); }
@@ -1273,6 +1382,41 @@ void VerilatedContext::timeprecision(int value) VL_MT_SAFE {
 #if VM_SC
     if (VL_UNLIKELY(value != sc_prec)) Verilated::scTimePrecisionError(sc_prec, value);
 #endif
+}
+
+// Defined here, not in-class: VL_CLOG2_I / VL_FATAL_MT (verilated_funcs.h) are not yet in scope
+constexpr uint32_t
+VerilatedContext::assertOnMask(VerilatedAssertType_t types,
+                               VerilatedAssertDirectiveType_t directives) VL_PURE {
+    // Place the directive bits at each selected assertion type's 3-bit group.
+    uint32_t mask = 0;
+    for (int i = 0; i < std::numeric_limits<VerilatedAssertType_t>::digits; ++i) {
+        if (VL_BITISSET_I(types, i)) mask |= directives << (i * ASSERT_DIRECTIVE_TYPE_MASK_WIDTH);
+    }
+    return mask;
+}
+template <VerilatedAssertType_t T_Type, VerilatedAssertDirectiveType_t T_Directive>
+uint32_t VerilatedContext::assertCtlGet(VerilatedAssertCtlQuery query) const VL_MT_SAFE {
+    // A constexpr local forces compile-time evaluation of the mask, which a plain
+    // assertOnMask() call does not get from GCC at -Os
+    constexpr uint32_t mask = assertOnMask(T_Type, T_Directive);
+    if (!mask) return 0;
+    // Explicit load(): G++ -Os inlines it but not the implicit conversion.
+    switch (query) {  // LCOV_EXCL_BR_LINE
+    case VerilatedAssertCtlQuery::ASSERT_CTL_ON: return (m_s.m_assertOn.load() & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_KILL:
+        assert(mask && (mask & (mask - 1)) == 0);
+        return m_s.m_assertKill[VL_CLOG2_I(mask)].load();
+    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_VACUOUS:
+        return (m_s.m_assertPassOnVacuous.load() & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_PASS_ON_NONVACUOUS:
+        return (m_s.m_assertPassOnNonvacuous.load() & mask) != 0;
+    case VerilatedAssertCtlQuery::ASSERT_CTL_FAIL_ON:
+        return (m_s.m_assertFailOn.load() & mask) != 0;
+    default:  // LCOV_EXCL_START
+        VL_FATAL_MT("", 0, "", "Internal: Bad assertCtlGet query");
+        VL_UNREACHABLE;
+    }  // LCOV_EXCL_STOP
 }
 
 #undef VERILATOR_VERILATED_H_INTERNAL_

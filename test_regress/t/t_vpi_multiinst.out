@@ -1,0 +1,949 @@
+t (vpiModule) t  vpiDefName=t
+    vpiReg:
+    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
+    acc (vpiReg) t.acc 
+    acc_xscope (vpiReg) t.acc_xscope 
+    accn (vpiReg) t.accn 
+    bflop0 (vpiReg) t.bflop0 
+    bflop1 (vpiReg) t.bflop1 
+    canon (vpiReg) t.canon 
+    canonr (vpiReg) t.canonr 
+    clk (vpiReg) t.clk 
+    ctr (vpiReg) t.ctr 
+    ctr2 (vpiReg) t.ctr2 
+    cyc (vpiReg) t.cyc 
+    d0 (vpiReg) t.d0 
+    d1 (vpiReg) t.d1 
+    din0 (vpiReg) t.din0 
+    din1 (vpiReg) t.din1 
+    in2 (vpiReg) t.in2 
+    obs_canon (vpiReg) t.obs_canon 
+    obs_xscope (vpiReg) t.obs_xscope 
+    observe (vpiReg) t.observe 
+    observe2 (vpiReg) t.observe2 
+    qa (vpiReg) t.qa 
+    qb (vpiReg) t.qb 
+    qc (vpiReg) t.qc 
+    qd (vpiReg) t.qd 
+    qe (vpiReg) t.qe 
+    qf (vpiReg) t.qf 
+    qg (vpiReg) t.qg 
+    qh (vpiReg) t.qh 
+    rcanonr (vpiRealVar) t.rcanonr 
+    rst (vpiReg) t.rst 
+    scanonr (vpiStringVar) t.scanonr 
+    vpiParameter:
+    NumCycles (vpiParameter) t.NumCycles  vpiConstType=vpiDecConst
+    vpiInternalScope:
+    bc0 (vpiModule) t.bc0  vpiDefName=bcell
+        vpiReg:
+        bc (vpiReg) t.bc0.bc 
+        bd (vpiReg) t.bc0.bd 
+        vpiParameter:
+    bc1 (vpiModule) t.bc1  vpiDefName=bcell
+        vpiReg:
+        bc (vpiReg) t.bc1.bc 
+        bd (vpiReg) t.bc1.bd 
+        vpiParameter:
+    if0 (vpiInterface) t.if0 
+        vpiReg:
+        a (vpiReg) t.if0.a 
+        b (vpiReg) t.if0.b 
+    if1 (vpiInterface) t.if1 
+        vpiReg:
+        a (vpiReg) t.if1.a 
+        b (vpiReg) t.if1.b 
+    if_a (vpiInterface) t.if_a 
+        vpiReg:
+        derived (vpiReg) t.if_a.derived 
+        val (vpiReg) t.if_a.val 
+    if_b (vpiInterface) t.if_b 
+        vpiReg:
+        derived (vpiReg) t.if_b.derived 
+        val (vpiReg) t.if_b.val 
+    if_c (vpiInterface) t.if_c 
+        vpiReg:
+        derived (vpiReg) t.if_c.derived 
+        val (vpiReg) t.if_c.val 
+    p0 (vpiModule) t.p0  vpiDefName=parent
+        vpiReg:
+        clk (vpiReg) t.p0.clk 
+        din (vpiReg) t.p0.din 
+        py (vpiReg) t.p0.py 
+        xali (vpiReg) t.p0.xali 
+        vpiParameter:
+        vpiInternalScope:
+        uc (vpiModule) t.p0.uc  vpiDefName=child
+            vpiReg:
+            cflop (vpiReg) t.p0.uc.cflop 
+            clk (vpiReg) t.p0.uc.clk 
+            cy (vpiReg) t.p0.uc.cy 
+            din (vpiReg) t.p0.uc.din 
+            vpiParameter:
+    p1 (vpiModule) t.p1  vpiDefName=parent
+        vpiReg:
+        clk (vpiReg) t.p1.clk 
+        din (vpiReg) t.p1.din 
+        py (vpiReg) t.p1.py 
+        xali (vpiReg) t.p1.xali 
+        vpiParameter:
+        vpiInternalScope:
+        uc (vpiModule) t.p1.uc  vpiDefName=child
+            vpiReg:
+            cflop (vpiReg) t.p1.uc.cflop 
+            clk (vpiReg) t.p1.uc.clk 
+            cy (vpiReg) t.p1.uc.cy 
+            din (vpiReg) t.p1.uc.din 
+            vpiParameter:
+    u0 (vpiModule) t.u0  vpiDefName=sub
+        vpiReg:
+        din (vpiReg) t.u0.din 
+        din_copy (vpiReg) t.u0.din_copy 
+        dout (vpiReg) t.u0.dout 
+        vpiParameter:
+    u1 (vpiModule) t.u1  vpiDefName=sub
+        vpiReg:
+        din (vpiReg) t.u1.din 
+        din_copy (vpiReg) t.u1.din_copy 
+        dout (vpiReg) t.u1.dout 
+        vpiParameter:
+    u_a (vpiModule) t.u_a  vpiDefName=xsub
+        vpiReg:
+        p (vpiReg) t.u_a.p 
+        q (vpiReg) t.u_a.q 
+        vpiParameter:
+    u_b (vpiModule) t.u_b  vpiDefName=xsub
+        vpiReg:
+        p (vpiReg) t.u_b.p 
+        q (vpiReg) t.u_b.q 
+        vpiParameter:
+    u_c (vpiModule) t.u_c  vpiDefName=xsubr
+        vpiReg:
+        p (vpiReg) t.u_c.p 
+        q (vpiReg) t.u_c.q 
+        vpiParameter:
+    u_d (vpiModule) t.u_d  vpiDefName=xsubr
+        vpiReg:
+        p (vpiReg) t.u_d.p 
+        q (vpiReg) t.u_d.q 
+        vpiParameter:
+    u_e (vpiModule) t.u_e  vpiDefName=xsubre
+        vpiReg:
+        p (vpiRealVar) t.u_e.p 
+        q (vpiReg) t.u_e.q 
+        vpiParameter:
+    u_f (vpiModule) t.u_f  vpiDefName=xsubre
+        vpiReg:
+        p (vpiRealVar) t.u_f.p 
+        q (vpiReg) t.u_f.q 
+        vpiParameter:
+    u_g (vpiModule) t.u_g  vpiDefName=xsubse
+        vpiReg:
+        p (vpiStringVar) t.u_g.p 
+        q (vpiReg) t.u_g.q 
+        vpiParameter:
+    u_h (vpiModule) t.u_h  vpiDefName=xsubse
+        vpiReg:
+        p (vpiStringVar) t.u_h.p 
+        q (vpiReg) t.u_h.q 
+        vpiParameter:
+-- @0 readonly
+t.NumCycles = 10 vpiSize=8
+t.acc = 00000000 vpiSize=32
+t.acc_xscope = 00 vpiSize=8
+t.accn = 00000000 vpiSize=32
+t.bflop0 = 00 vpiSize=8
+t.bflop1 = 00 vpiSize=8
+t.canon = 5a5a5a5a vpiSize=32
+t.canonr = 00000000 vpiSize=32
+t.clk = 0 vpiSize=1
+t.ctr = 00 vpiSize=7
+t.ctr2 = 00 vpiSize=7
+t.cyc = 00 vpiSize=8
+t.d0 = 0f vpiSize=7
+t.d1 = 0c vpiSize=7
+t.din0 = 00 vpiSize=8
+t.din1 = 40 vpiSize=8
+t.in2 = 00000000 vpiSize=32
+t.obs_canon = 00000000 vpiSize=32
+t.obs_xscope = 00 vpiSize=8
+t.observe = 00 vpiSize=7
+t.observe2 = 00 vpiSize=7
+t.qa = 5a5a5a61 vpiSize=32
+t.qb = 5a5a5a61 vpiSize=32
+t.qc = 00000007 vpiSize=32
+t.qd = 00000007 vpiSize=32
+t.qe = 00000007 vpiSize=32
+t.qf = 00000007 vpiSize=32
+t.qg = 00000000 vpiSize=32
+t.qh = 00000000 vpiSize=32
+t.rcanonr = 0 vpiSize=1
+t.rst = 1 vpiSize=1
+t.scanonr = "" vpiSize=1
+t.bc0.bc = 00 vpiSize=8
+t.bc0.bd = 33 vpiSize=8
+t.bc1.bc = 00 vpiSize=8
+t.bc1.bd = 33 vpiSize=8
+t.if0.a = 00 vpiSize=7
+t.if0.b = 7f vpiSize=7
+t.if1.a = 01 vpiSize=7
+t.if1.b = 54 vpiSize=7
+t.if_a.derived = 02 vpiSize=7
+t.if_a.val = 01 vpiSize=7
+t.if_b.derived = 2b vpiSize=7
+t.if_b.val = 2a vpiSize=7
+t.if_c.derived = 56 vpiSize=7
+t.if_c.val = 55 vpiSize=7
+t.p0.clk = 0 vpiSize=1
+t.p0.din = 00 vpiSize=8
+t.p0.py = a8 vpiSize=8
+t.p0.xali = 00 vpiSize=8
+t.p0.uc.cflop = 00 vpiSize=8
+t.p0.uc.clk = 0 vpiSize=1
+t.p0.uc.cy = a5 vpiSize=8
+t.p0.uc.din = 00 vpiSize=8
+t.p1.clk = 0 vpiSize=1
+t.p1.din = 40 vpiSize=8
+t.p1.py = e8 vpiSize=8
+t.p1.xali = 00 vpiSize=8
+t.p1.uc.cflop = 00 vpiSize=8
+t.p1.uc.clk = 0 vpiSize=1
+t.p1.uc.cy = e5 vpiSize=8
+t.p1.uc.din = 40 vpiSize=8
+t.u0.din = 00 vpiSize=7
+t.u0.din_copy = 00 vpiSize=7
+t.u0.dout = 0f vpiSize=7
+t.u1.din = 03 vpiSize=7
+t.u1.din_copy = 03 vpiSize=7
+t.u1.dout = 0c vpiSize=7
+t.u_a.p = 5a5a5a5a vpiSize=32
+t.u_a.q = 5a5a5a61 vpiSize=32
+t.u_b.p = 5a5a5a5a vpiSize=32
+t.u_b.q = 5a5a5a61 vpiSize=32
+t.u_c.p = 00000000 vpiSize=32
+t.u_c.q = 00000007 vpiSize=32
+t.u_d.p = 00000000 vpiSize=32
+t.u_d.q = 00000007 vpiSize=32
+t.u_e.p = 0 vpiSize=1
+t.u_e.q = 00000007 vpiSize=32
+t.u_f.p = 0 vpiSize=1
+t.u_f.q = 00000007 vpiSize=32
+t.u_g.p = "" vpiSize=1
+t.u_g.q = 00000000 vpiSize=32
+t.u_h.p = "" vpiSize=1
+t.u_h.q = 00000000 vpiSize=32
+-- @10 readonly
+t.acc_xscope = 90
+t.bflop0 = a5
+t.bflop1 = e5
+t.canonr = a5a5a5a5
+t.obs_xscope = 90
+t.qc = a5a5a5ac
+t.qd = a5a5a5ac
+t.qg = 00000004
+t.qh = 00000004
+t.rcanonr = 0.25
+t.rst = 0
+t.scanonr = "even"
+t.bc0.bc = a5
+t.bc0.bd = 96
+t.bc1.bc = e5
+t.bc1.bd = d6
+t.p0.xali = 5a
+t.p0.uc.cflop = 5a
+t.p1.xali = 1a
+t.p1.uc.cflop = 1a
+t.u_c.p = a5a5a5a5
+t.u_c.q = a5a5a5ac
+t.u_d.p = a5a5a5a5
+t.u_d.q = a5a5a5ac
+t.u_e.p = 0.25
+t.u_f.p = 0.25
+t.u_g.p = "even"
+t.u_g.q = 00000004
+t.u_h.p = "even"
+t.u_h.q = 00000004
+-- @15 cb t.cyc = 01
+-- @20 readonly
+t.acc_xscope = 20
+t.ctr = 03
+t.ctr2 = 03
+t.cyc = 01
+t.obs_xscope = 20
+t.observe = 7c
+t.observe2 = 2b
+t.if0.a = 03
+t.if0.b = 7c
+t.if1.a = 04
+t.if1.b = 51
+t.if_a.derived = 05
+t.if_a.val = 04
+t.if_b.derived = 2a
+t.if_b.val = 29
+-- @25 cb t.cyc = 02
+-- @30 readonly
+t.acc_xscope = b0
+t.ctr = 06
+t.ctr2 = 06
+t.cyc = 02
+t.d0 = 0b
+t.d1 = 08
+t.obs_xscope = b0
+t.observe = 7a
+t.observe2 = 2d
+t.if0.a = 06
+t.if0.b = 79
+t.if1.a = 07
+t.if1.b = 52
+t.if_a.derived = 08
+t.if_a.val = 07
+t.if_b.derived = 2d
+t.if_b.val = 2c
+t.u0.din = 04
+t.u0.din_copy = 04
+t.u0.dout = 0b
+t.u1.din = 07
+t.u1.din_copy = 07
+t.u1.dout = 08
+-- @35 cb t.cyc = 03
+-- @40 readonly
+t.acc_xscope = 40
+t.ctr = 09
+t.ctr2 = 09
+t.cyc = 03
+t.d0 = 07
+t.d1 = 04
+t.obs_xscope = 40
+t.observe = 70
+t.observe2 = 2b
+t.if0.a = 09
+t.if0.b = 76
+t.if1.a = 0a
+t.if1.b = 5f
+t.if_a.derived = 0b
+t.if_a.val = 0a
+t.if_b.derived = 24
+t.if_b.val = 23
+t.u0.din = 08
+t.u0.din_copy = 08
+t.u0.dout = 07
+t.u1.din = 0b
+t.u1.din_copy = 0b
+t.u1.dout = 04
+-- @45 cb t.cyc = 04
+-- @50 readonly
+t.acc_xscope = d0
+t.ctr = 0c
+t.ctr2 = 0c
+t.cyc = 04
+t.d0 = 03
+t.d1 = 00
+t.obs_xscope = d0
+t.observe = 7a
+t.observe2 = 29
+t.if0.a = 0c
+t.if0.b = 73
+t.if1.a = 0d
+t.if1.b = 58
+t.if_a.derived = 0e
+t.if_a.val = 0d
+t.if_b.derived = 27
+t.if_b.val = 26
+t.u0.din = 0c
+t.u0.din_copy = 0c
+t.u0.dout = 03
+t.u1.din = 0f
+t.u1.din_copy = 0f
+t.u1.dout = 00
+-- @55 cb t.cyc = 05
+-- @60 readonly
+t.acc_xscope = 60
+t.ctr = 0f
+t.ctr2 = 0f
+t.cyc = 05
+t.din0 = 13
+t.din1 = 53
+t.obs_xscope = 60
+t.observe = 7c
+t.observe2 = 2b
+t.if0.a = 0f
+t.if0.b = 70
+t.if1.a = 10
+t.if1.b = 45
+t.if_a.derived = 11
+t.if_a.val = 10
+t.if_b.derived = 26
+t.if_b.val = 25
+t.p0.din = 13
+t.p0.py = b9
+t.p0.uc.cy = b6
+t.p0.uc.din = 13
+t.p1.din = 53
+t.p1.py = f9
+t.p1.uc.cy = f6
+t.p1.uc.din = 53
+-- @65 cb t.cyc = 06
+-- @70 readonly
+t.acc_xscope = 12
+t.bflop0 = b6
+t.bflop1 = f6
+t.ctr = 12
+t.ctr2 = 12
+t.cyc = 06
+t.d0 = 1f
+t.d1 = 1c
+t.din0 = 2c
+t.din1 = 6c
+t.obs_xscope = 12
+t.observe = 62
+t.observe2 = 35
+t.bc0.bc = b6
+t.bc0.bd = 85
+t.bc1.bc = f6
+t.bc1.bd = c5
+t.if0.a = 12
+t.if0.b = 6d
+t.if1.a = 13
+t.if1.b = 46
+t.if_a.derived = 14
+t.if_a.val = 13
+t.if_b.derived = 39
+t.if_b.val = 38
+t.p0.din = 2c
+t.p0.py = 8c
+t.p0.xali = 49
+t.p0.uc.cflop = 49
+t.p0.uc.cy = 89
+t.p0.uc.din = 2c
+t.p1.din = 6c
+t.p1.py = cc
+t.p1.xali = 09
+t.p1.uc.cflop = 09
+t.p1.uc.cy = c9
+t.p1.uc.din = 6c
+t.u0.din = 10
+t.u0.din_copy = 10
+t.u0.dout = 1f
+t.u1.din = 13
+t.u1.din_copy = 13
+t.u1.dout = 1c
+-- @75 cb t.cyc = 07
+-- put t.p0.uc.cflop = 3c flag=1 ok
+-- @75 after put
+t.acc_xscope = 6a
+t.bflop0 = 89
+t.bflop1 = c9
+t.clk = 1
+t.ctr = 15
+t.ctr2 = 15
+t.cyc = 07
+t.d0 = 1b
+t.d1 = 18
+t.din0 = 40
+t.din1 = 80
+t.obs_xscope = 6a
+t.observe = 78
+t.observe2 = 2b
+t.bc0.bc = 89
+t.bc0.bd = ba
+t.bc1.bc = c9
+t.bc1.bd = fa
+t.if0.a = 15
+t.if0.b = 6a
+t.if1.a = 16
+t.if1.b = 43
+t.if_a.derived = 17
+t.if_a.val = 16
+t.if_b.derived = 40
+t.if_b.val = 3f
+t.p0.clk = 1
+t.p0.din = 40
+t.p0.py = e8
+t.p0.xali = 76
+t.p0.uc.cflop = 3c
+t.p0.uc.clk = 1
+t.p0.uc.cy = e5
+t.p0.uc.din = 40
+t.p1.clk = 1
+t.p1.din = 80
+t.p1.py = 28
+t.p1.xali = 36
+t.p1.uc.cflop = 36
+t.p1.uc.clk = 1
+t.p1.uc.cy = 25
+t.p1.uc.din = 80
+t.u0.din = 14
+t.u0.din_copy = 14
+t.u0.dout = 1b
+t.u1.din = 17
+t.u1.din_copy = 17
+t.u1.dout = 18
+-- @80 readonly
+t.clk = 0
+t.p0.clk = 0
+t.p0.xali = 3c
+t.p0.uc.clk = 0
+t.p1.clk = 0
+t.p1.uc.clk = 0
+-- @85 cb t.cyc = 08
+-- @90 readonly
+t.acc_xscope = 7a
+t.bflop0 = e5
+t.bflop1 = 25
+t.ctr = 18
+t.ctr2 = 18
+t.cyc = 08
+t.d0 = 17
+t.d1 = 14
+t.din0 = 91
+t.din1 = d1
+t.obs_xscope = 7a
+t.observe = 02
+t.observe2 = 29
+t.bc0.bc = e5
+t.bc0.bd = d6
+t.bc1.bc = 25
+t.bc1.bd = 16
+t.if0.a = 18
+t.if0.b = 67
+t.if1.a = 19
+t.if1.b = 4c
+t.if_a.derived = 1a
+t.if_a.val = 19
+t.if_b.derived = 33
+t.if_b.val = 32
+t.p0.din = 91
+t.p0.py = 37
+t.p0.xali = 1a
+t.p0.uc.cflop = 1a
+t.p0.uc.cy = 34
+t.p0.uc.din = 91
+t.p1.din = d1
+t.p1.py = 77
+t.p1.xali = da
+t.p1.uc.cflop = da
+t.p1.uc.cy = 74
+t.p1.uc.din = d1
+t.u0.din = 18
+t.u0.din_copy = 18
+t.u0.dout = 17
+t.u1.din = 1b
+t.u1.din_copy = 1b
+t.u1.dout = 14
+-- @95 cb t.cyc = 09
+-- @100 readonly
+t.acc_xscope = 28
+t.bflop0 = 34
+t.bflop1 = 74
+t.ctr = 1b
+t.ctr2 = 1b
+t.cyc = 09
+t.din0 = a5
+t.din1 = e5
+t.obs_xscope = 28
+t.observe = 7c
+t.observe2 = 2b
+t.bc0.bc = 34
+t.bc0.bd = 07
+t.bc1.bc = 74
+t.bc1.bd = 47
+t.if0.a = 1b
+t.if0.b = 64
+t.if1.a = 1c
+t.if1.b = 49
+t.if_a.derived = 1d
+t.if_a.val = 1c
+t.if_b.derived = 32
+t.if_b.val = 31
+t.p0.din = a5
+t.p0.py = 03
+t.p0.xali = cb
+t.p0.uc.cflop = cb
+t.p0.uc.cy = 00
+t.p0.uc.din = a5
+t.p1.din = e5
+t.p1.py = 43
+t.p1.xali = 8b
+t.p1.uc.cflop = 8b
+t.p1.uc.cy = 40
+t.p1.uc.din = e5
+-- @105 cb t.cyc = 0a
+-- @110 readonly
+t.acc_xscope = 6e
+t.bflop0 = 00
+t.bflop1 = 40
+t.ctr = 1e
+t.ctr2 = 1e
+t.cyc = 0a
+t.d0 = 13
+t.d1 = 10
+t.din0 = ff
+t.din1 = 3f
+t.obs_xscope = 6e
+t.observe = 7a
+t.observe2 = 2d
+t.bc0.bc = 00
+t.bc0.bd = 33
+t.bc1.bc = 40
+t.bc1.bd = 73
+t.if0.a = 1e
+t.if0.b = 61
+t.if1.a = 1f
+t.if1.b = 4a
+t.if_a.derived = 20
+t.if_a.val = 1f
+t.if_b.derived = 35
+t.if_b.val = 34
+t.p0.din = ff
+t.p0.py = 5d
+t.p0.xali = ff
+t.p0.uc.cflop = ff
+t.p0.uc.cy = 5a
+t.p0.uc.din = ff
+t.p1.din = 3f
+t.p1.py = 9d
+t.p1.xali = bf
+t.p1.uc.cflop = bf
+t.p1.uc.cy = 9a
+t.p1.uc.din = 3f
+t.u0.din = 1c
+t.u0.din_copy = 1c
+t.u0.dout = 13
+t.u1.din = 1f
+t.u1.din_copy = 1f
+t.u1.dout = 10
+-- @115 cb t.cyc = 0b
+-- @120 readonly
+t.acc_xscope = 68
+t.accn = 00000001
+t.bflop0 = 5a
+t.bflop1 = 9a
+t.ctr = 21
+t.ctr2 = 21
+t.cyc = 0b
+t.d0 = 2f
+t.d1 = 2c
+t.din0 = 00
+t.din1 = 40
+t.in2 = 00000001
+t.obs_xscope = 68
+t.observe = 40
+t.observe2 = 2b
+t.bc0.bc = 5a
+t.bc0.bd = 69
+t.bc1.bc = 9a
+t.bc1.bd = a9
+t.if0.a = 21
+t.if0.b = 5e
+t.if1.a = 22
+t.if1.b = 77
+t.if_a.derived = 23
+t.if_a.val = 22
+t.if_b.derived = 0c
+t.if_b.val = 0b
+t.p0.din = 00
+t.p0.py = a8
+t.p0.xali = a5
+t.p0.uc.cflop = a5
+t.p0.uc.cy = a5
+t.p0.uc.din = 00
+t.p1.din = 40
+t.p1.py = e8
+t.p1.xali = 65
+t.p1.uc.cflop = 65
+t.p1.uc.cy = e5
+t.p1.uc.din = 40
+t.u0.din = 20
+t.u0.din_copy = 20
+t.u0.dout = 2f
+t.u1.din = 23
+t.u1.din_copy = 23
+t.u1.dout = 2c
+-- @125 cb t.cyc = 0c
+-- @130 readonly
+t.acc = 00000001
+t.acc_xscope = f8
+t.accn = 00000011
+t.bflop0 = a5
+t.bflop1 = e5
+t.canon = 5a5a5a5b
+t.canonr = a5a5a5a4
+t.ctr = 24
+t.ctr2 = 24
+t.cyc = 0c
+t.d0 = 2b
+t.d1 = 28
+t.in2 = 00000010
+t.obs_xscope = f8
+t.observe = 7a
+t.observe2 = 29
+t.qa = 5a5a5a62
+t.qb = 5a5a5a62
+t.qc = a5a5a5ab
+t.qd = a5a5a5ab
+t.qe = 00000008
+t.qf = 00000008
+t.qg = 00000003
+t.qh = 00000003
+t.rcanonr = 1.25
+t.scanonr = "odd"
+t.bc0.bc = a5
+t.bc0.bd = 96
+t.bc1.bc = e5
+t.bc1.bd = d6
+t.if0.a = 24
+t.if0.b = 5b
+t.if1.a = 25
+t.if1.b = 70
+t.if_a.derived = 26
+t.if_a.val = 25
+t.if_b.derived = 0f
+t.if_b.val = 0e
+t.p0.xali = 5a
+t.p0.uc.cflop = 5a
+t.p1.xali = 1a
+t.p1.uc.cflop = 1a
+t.u0.din = 24
+t.u0.din_copy = 24
+t.u0.dout = 2b
+t.u1.din = 27
+t.u1.din_copy = 27
+t.u1.dout = 28
+t.u_a.p = 5a5a5a5b
+t.u_a.q = 5a5a5a62
+t.u_b.p = 5a5a5a5b
+t.u_b.q = 5a5a5a62
+t.u_c.p = a5a5a5a4
+t.u_c.q = a5a5a5ab
+t.u_d.p = a5a5a5a4
+t.u_d.q = a5a5a5ab
+t.u_e.p = 1.25
+t.u_e.q = 00000008
+t.u_f.p = 1.25
+t.u_f.q = 00000008
+t.u_g.p = "odd"
+t.u_g.q = 00000003
+t.u_h.p = "odd"
+t.u_h.q = 00000003
+-- @135 cb t.cyc = 0d
+-- @140 readonly
+t.acc = 00000011
+t.acc_xscope = 88
+t.accn = 00001245
+t.canon = 5a5a5a4b
+t.canonr = a5a5a5b4
+t.ctr = 27
+t.ctr2 = 27
+t.cyc = 0d
+t.in2 = 00001234
+t.obs_xscope = 88
+t.observe = 7c
+t.observe2 = 2b
+t.qa = 5a5a5a52
+t.qb = 5a5a5a52
+t.qc = a5a5a5bb
+t.qd = a5a5a5bb
+t.qe = 00000018
+t.qf = 00000018
+t.rcanonr = 17.25
+t.if0.a = 27
+t.if0.b = 58
+t.if1.a = 28
+t.if1.b = 7d
+t.if_a.derived = 29
+t.if_a.val = 28
+t.if_b.derived = 0e
+t.if_b.val = 0d
+t.u_a.p = 5a5a5a4b
+t.u_a.q = 5a5a5a52
+t.u_b.p = 5a5a5a4b
+t.u_b.q = 5a5a5a52
+t.u_c.p = a5a5a5b4
+t.u_c.q = a5a5a5bb
+t.u_d.p = a5a5a5b4
+t.u_d.q = a5a5a5bb
+t.u_e.p = 17.25
+t.u_e.q = 00000018
+t.u_f.p = 17.25
+t.u_f.q = 00000018
+-- @145 cb t.cyc = 0e
+-- @150 readonly
+t.acc = 00001245
+t.acc_xscope = 18
+t.accn = 000012c4
+t.canon = 5a5a481f
+t.canonr = a5a5b7e0
+t.ctr = 2a
+t.ctr2 = 2a
+t.cyc = 0e
+t.d0 = 27
+t.d1 = 24
+t.in2 = 0000007f
+t.obs_xscope = 18
+t.observe = 72
+t.observe2 = 25
+t.qa = 5a5a4826
+t.qb = 5a5a4826
+t.qc = a5a5b7e7
+t.qd = a5a5b7e7
+t.qe = 0000124c
+t.qf = 0000124c
+t.rcanonr = 4677.25
+t.if0.a = 2a
+t.if0.b = 55
+t.if1.a = 2b
+t.if1.b = 7e
+t.if_a.derived = 2c
+t.if_a.val = 2b
+t.if_b.derived = 01
+t.if_b.val = 00
+t.u0.din = 28
+t.u0.din_copy = 28
+t.u0.dout = 27
+t.u1.din = 2b
+t.u1.din_copy = 2b
+t.u1.dout = 24
+t.u_a.p = 5a5a481f
+t.u_a.q = 5a5a4826
+t.u_b.p = 5a5a481f
+t.u_b.q = 5a5a4826
+t.u_c.p = a5a5b7e0
+t.u_c.q = a5a5b7e7
+t.u_d.p = a5a5b7e0
+t.u_d.q = a5a5b7e7
+t.u_e.p = 4677.25
+t.u_e.q = 0000124c
+t.u_f.p = 4677.25
+t.u_f.q = 0000124c
+-- @155 cb t.cyc = 0f
+-- @160 readonly
+t.acc = 000012c4
+t.acc_xscope = a8
+t.accn = 000012c7
+t.canon = 5a5a489e
+t.canonr = a5a5b761
+t.ctr = 2d
+t.ctr2 = 2d
+t.cyc = 0f
+t.d0 = 23
+t.d1 = 20
+t.in2 = 00000003
+t.obs_xscope = a8
+t.observe = 78
+t.observe2 = 2b
+t.qa = 5a5a48a5
+t.qb = 5a5a48a5
+t.qc = a5a5b768
+t.qd = a5a5b768
+t.qe = 000012cb
+t.qf = 000012cb
+t.qg = 00000004
+t.qh = 00000004
+t.rcanonr = 4804.25
+t.scanonr = "even"
+t.if0.a = 2d
+t.if0.b = 52
+t.if1.a = 2e
+t.if1.b = 7b
+t.if_a.derived = 2f
+t.if_a.val = 2e
+t.if_b.derived = 08
+t.if_b.val = 07
+t.u0.din = 2c
+t.u0.din_copy = 2c
+t.u0.dout = 23
+t.u1.din = 2f
+t.u1.din_copy = 2f
+t.u1.dout = 20
+t.u_a.p = 5a5a489e
+t.u_a.q = 5a5a48a5
+t.u_b.p = 5a5a489e
+t.u_b.q = 5a5a48a5
+t.u_c.p = a5a5b761
+t.u_c.q = a5a5b768
+t.u_d.p = a5a5b761
+t.u_d.q = a5a5b768
+t.u_e.p = 4804.25
+t.u_e.q = 000012cb
+t.u_f.p = 4804.25
+t.u_f.q = 000012cb
+t.u_g.p = "even"
+t.u_g.q = 00000004
+t.u_h.p = "even"
+t.u_h.q = 00000004
+-- @165 cb t.cyc = 10
+-- @170 readonly
+t.acc = 000012c7
+t.acc_xscope = 38
+t.canon = 5a5a489d
+t.canonr = a5a5b762
+t.ctr = 30
+t.ctr2 = 30
+t.cyc = 10
+t.d0 = 3f
+t.d1 = 3c
+t.in2 = 00000000
+t.obs_xscope = 38
+t.observe = 72
+t.observe2 = 29
+t.qa = 5a5a48a4
+t.qb = 5a5a48a4
+t.qc = a5a5b769
+t.qd = a5a5b769
+t.qe = 000012ce
+t.qf = 000012ce
+t.qg = 00000003
+t.qh = 00000003
+t.rcanonr = 4807.25
+t.scanonr = "odd"
+t.if0.a = 30
+t.if0.b = 4f
+t.if1.a = 31
+t.if1.b = 64
+t.if_a.derived = 32
+t.if_a.val = 31
+t.if_b.derived = 1b
+t.if_b.val = 1a
+t.u0.din = 30
+t.u0.din_copy = 30
+t.u0.dout = 3f
+t.u1.din = 33
+t.u1.din_copy = 33
+t.u1.dout = 3c
+t.u_a.p = 5a5a489d
+t.u_a.q = 5a5a48a4
+t.u_b.p = 5a5a489d
+t.u_b.q = 5a5a48a4
+t.u_c.p = a5a5b762
+t.u_c.q = a5a5b769
+t.u_d.p = a5a5b762
+t.u_d.q = a5a5b769
+t.u_e.p = 4807.25
+t.u_e.q = 000012ce
+t.u_f.p = 4807.25
+t.u_f.q = 000012ce
+t.u_g.p = "odd"
+t.u_g.q = 00000003
+t.u_h.p = "odd"
+t.u_h.q = 00000003
+*-* All Finished *-*
+-- @175 readonly
+t.acc_xscope = c8
+t.clk = 1
+t.ctr = 33
+t.ctr2 = 33
+t.obs_xscope = c8
+t.observe = 7c
+t.observe2 = 2b
+t.if0.a = 33
+t.if0.b = 4c
+t.if1.a = 34
+t.if1.b = 61
+t.if_a.derived = 35
+t.if_a.val = 34
+t.if_b.derived = 1a
+t.if_b.val = 19
+t.p0.clk = 1
+t.p0.uc.clk = 1
+t.p1.clk = 1
+t.p1.uc.clk = 1

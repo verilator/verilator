@@ -27,7 +27,7 @@ module t;
 
     fork
       begin
-        #10->h.ev;
+        #10 ->h.ev;
       end
       begin
         h.wait_once;

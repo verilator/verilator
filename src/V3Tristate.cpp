@@ -420,13 +420,13 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     // TYPES
     struct RefStrength final {
-        AstNodeVarRef* m_varrefp;
+        AstNodeVarRef* m_varrefp;  // Variable reference this strength/enable info was found on
         AstNodeAssign* m_assignp;  // Assignment containing m_varrefp
         const AstNodeProcedure* m_procedurep;  // Process containing m_assignp, if procedural
         AstNodeExpr* m_enLhsp;  // Procedural enable LHS with same footprint as m_varrefp
         AstNodeVarRef* m_enVarrefp;  // Variable reference within m_enLhsp to retarget
         AstNodeExpr* m_enRhsp;  // Procedural enable value matching m_enLhsp
-        VStrength m_strength;
+        VStrength m_strength;  // Drive strength of the assignment/procedural write
         AstDelay* m_delayp;  // Explicit delay on the continuous assignment
         RefStrength(AstNodeVarRef* varrefp, AstNodeAssign* assignp,
                     const AstNodeProcedure* procedurep, AstNodeExpr* enLhsp,
@@ -442,13 +442,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             , m_delayp{delayp} {}
     };
     struct LhsProjection final {
-        AstNodeExpr* m_lhsp;
-        AstNodeVarRef* m_varrefp;
-        AstNodeExpr* m_enp;
+        AstNodeExpr* m_lhsp;  // LHS giving the enable assign
+        AstNodeVarRef* m_varrefp;  // Variable reference within m_lhsp to retarget to enable var
+        AstNodeExpr* m_enp;  // Procedural enable value to assign through m_lhsp
     };
     struct ProceduralEnable final {
-        AstNodeExpr* m_lhsp;
-        AstNodeExpr* m_rhsp;
+        AstNodeExpr* m_lhsp;  // Enable LHS piece to concat onto the combined assignment LHS
+        AstNodeExpr* m_rhsp;  // Enable value piece to concat onto the combined assignment RHS
     };
     using RefStrengthVec = std::vector<RefStrength>;
     using VarMap = std::map<AstVar*, RefStrengthVec*>;
@@ -1047,9 +1047,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         // original port gets converted to an input. Don't tristate expand
         // if this is the top level so that we can force the final
         // tristate resolution at the top.
-        // Or if this is a top-level inout, do tristate expand if requested
-        // by pinsInoutEnables(). The resolution will be done outside of
-        // verilator.
+        // Top-level inouts are also expanded for pinsInoutEnables() or library generation.
+        // Resolution is then performed by the caller or the library's SV wrapper.
         // Interface tristate vars skip port conversion (they use contribution vars instead).
         AstVar* envarp = nullptr;
         AstVar* outvarp = nullptr;  // __out
@@ -1057,7 +1056,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         const bool isTopInout = !isIfaceTri && (invarp->direction() == VDirection::INOUT)
                                 && invarp->isIO() && nodep->isTop();
         if (!isIfaceTri) {
-            if ((v3Global.opt.pinsInoutEnables() && isTopInout)
+            if (((v3Global.opt.pinsInoutEnables() || !v3Global.opt.libCreate().empty())
+                 && isTopInout)
                 || (!nodep->isTop() && invarp->isIO())) {
                 // This var becomes an input
                 invarp->varType2In();  // convert existing port to type input
@@ -1258,14 +1258,23 @@ class TristateVisitor final : public TristateBaseVisitor {
         nodep->addStmtsp(new AstAlways{assp});
 
         // If this is a top-level inout, make sure that the INOUT pins get __en and __out
-        if (v3Global.opt.pinsInoutEnables() && isTopInout) {
+        if ((v3Global.opt.pinsInoutEnables() || !v3Global.opt.libCreate().empty()) && isTopInout) {
             if (envarp) {
                 envarp->primaryIO(true);
                 envarp->direction(VDirection::OUTPUT);
+                envarp->protect(invarp->protect());
             }
             if (outvarp) {
                 outvarp->primaryIO(true);
                 outvarp->direction(VDirection::OUTPUT);
+                outvarp->protect(invarp->protect());
+            }
+            if (!v3Global.opt.libCreate().empty()) {
+                const int id = ++m_unique;
+                invarp->libInoutId(id);
+                outvarp->libInoutId(id);
+                envarp->libInoutId(id);
+                envarp->libInoutEnable(true);
             }
         }
     }
@@ -1533,9 +1542,13 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void visit(AstExprStmt* nodep) override {
-        iterateChildren(nodep);
+        {
+            // Not an lvalue, so on an LHS only as an index, which is read
+            VL_RESTORER(m_alhs);
+            m_alhs = false;
+            iterateChildren(nodep);
+        }
         if (m_graphing) {
-            UASSERT_OBJ(!m_alhs, nodep, "AstExprStmt node on the LHS of assignment");
             associateLogic(nodep->resultp(), nodep);
         } else if (nodep->resultp()->user1p()) {
             nodep->user1p(getEnp(nodep->resultp()));
@@ -1630,6 +1643,17 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    void visit(AstNodeConsItem* nodep) override {
+        iterateChildren(nodep);
+        // Unpacked aggregates have no enables, so Z bits of an item read as 0,
+        // as they do for a Z assigned to a non-tristate variable
+        if (m_graphing) return;
+        if (AstNode* const enp = nodep->valuep()->user1p()) {
+            nodep->valuep()->user1p(nullptr);
+            VL_DO_DANGLING(pushDeletep(enp), enp);
+        }
+    }
+
     void visit(AstBufIf1* nodep) override {
         // For BufIf1, the enable is the LHS expression
         iterateChildren(nodep);
@@ -1694,20 +1718,27 @@ class TristateVisitor final : public TristateBaseVisitor {
                 return;  // no tristates in either expression, so nothing to do
             }
             m_tgraph.didProcess(nodep);
-            AstNodeExpr* const en1p = getEnp(expr1p);
-            AstNodeExpr* const en2p = getEnp(expr2p);
+            AstNodeExpr* en1p = getEnp(expr1p);
+            AstNodeExpr* en2p = getEnp(expr2p);
             AstNodeExpr* subexpr1p = expr1p->cloneTreePure(false);
             AstNodeExpr* subexpr2p = expr2p->cloneTreePure(false);
             if (isAnd) {
                 subexpr1p = new AstNot{nodep->fileline(), subexpr1p};
                 subexpr2p = new AstNot{nodep->fileline(), subexpr2p};
             }
+            // The new output enable is en1&en2 | en1&sub1 | en2&sub2, which factors to
+            // en1&(en2|sub1) | en2&sub2. That references en1 once and en2 twice. Chained
+            // gates (e.g. a many-input primitive) nest on one side, so make the nested
+            // (non-leaf) side en1 to keep the enable linear in size.
+            if (!en1p->op1p() && en2p->op1p()) {
+                std::swap(en1p, en2p);
+                std::swap(subexpr1p, subexpr2p);
+            }
             // calc new output enable
             AstNodeExpr* const enp = new AstOr{
-                nodep->fileline(), new AstAnd{nodep->fileline(), en1p, en2p},
-                new AstOr{nodep->fileline(),
-                          new AstAnd{nodep->fileline(), en1p->cloneTree(false), subexpr1p},
-                          new AstAnd{nodep->fileline(), en2p->cloneTree(false), subexpr2p}}};
+                nodep->fileline(),
+                new AstAnd{nodep->fileline(), en1p, new AstOr{nodep->fileline(), en2p, subexpr1p}},
+                new AstAnd{nodep->fileline(), en2p->cloneTree(false), subexpr2p}};
             UINFO(9, "       neweqn " << enp);
             nodep->user1p(enp);
             expr1p->user1p(nullptr);
@@ -1974,8 +2005,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     }
                     newp = new AstAdd{nodep->fileline(), nodep, newp};
                 } else {
-                    // TODO: looks dubious that we still iterate this below...
-                    pushDeletep(nodep);
+                    pushDeletep(nodep);  // TODO: looks dubious that we still iterate this below...
                 }
                 UINFOTREE(9, newp, "", "countout");
                 relinkHandle.relink(newp);
@@ -2004,15 +2034,23 @@ class TristateVisitor final : public TristateBaseVisitor {
                 associateLogic(nodep, varrefp->varp());
             } else {
                 // Replace any pullup/pulldowns with assignw logic and set the
-                // direction of the pull in the var aux data.  Given
-                // the complexity of merging tristate drivers at any level, the
-                // current limitation of this implementation is that a pullup/down
-                // gets applied to all bits of a bus and a bus cannot have drivers
-                // in opposite directions on individual pins.
+                // direction of the pull in the var aux data.  A pull on a
+                // constant part select is recorded per bit, so different bits
+                // of a bus may be pulled in opposite directions.  Otherwise
+                // the pull applies to all bits of the variable.
                 varrefp->access(VAccess::WRITE);
                 m_tgraph.didProcess(nodep);
                 m_tgraph.didProcess(varrefp->varp());
-                setPullDirection(varrefp->varp(), nodep);
+                const AstSel* const selp = VN_CAST(nodep->lhsp(), Sel);
+                const AstConst* const lsbp = selp ? VN_CAST(selp->lsbp(), Const) : nullptr;
+                if (lsbp) {
+                    const int lsb = lsbp->toSInt();
+                    for (int i = 0; i < selp->widthConst(); ++i) {
+                        setBitPullDirection(varrefp->varp(), lsb + i, nodep->direction());
+                    }
+                } else {
+                    setPullDirection(varrefp->varp(), nodep);
+                }
             }
         }
         if (!m_graphing) {

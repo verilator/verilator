@@ -140,21 +140,6 @@ private:
         m_indexValues.emplace(m_nextIndex, value);
         return m_nextIndex;
     }
-    static std::string dequote(const std::string& text) VL_PURE {
-        // Quote any special characters
-        std::string rtn;
-        for (const char* pos = text.c_str(); *pos; ++pos) {
-            if (!std::isprint(*pos) || *pos == '%' || *pos == '"') {
-                constexpr size_t LEN_MAX_HEX = 20;
-                char hex[LEN_MAX_HEX];
-                (void)VL_SNPRINTF(hex, LEN_MAX_HEX, "%%%02X", pos[0]);
-                rtn += hex;
-            } else {
-                rtn += *pos;
-            }
-        }
-        return rtn;
-    }
     static bool legalKey(const std::string& key) VL_PURE {
         // Because we compress long keys to a single letter, and
         // don't want applications to either get confused if they use
@@ -170,9 +155,9 @@ private:
         if (key.length() == 1 && std::isalpha(key[0])) {
             name += "\001"s + key;
         } else {
-            name += "\001"s + dequote(key);
+            name += "\001"s + VerilatedCovKey::escape(key);
         }
-        name += "\002"s + dequote(value);
+        name += "\002"s + VerilatedCovKey::escape(value);
         return name;
     }
     static std::string combineHier(const std::string& old, const std::string& add) VL_PURE {

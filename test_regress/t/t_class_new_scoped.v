@@ -28,7 +28,9 @@ class ClsArg extends Base;
   endfunction
 endclass
 
-class ClsParam #(int ADD = 100) extends Base;
+class ClsParam #(
+    int ADD = 100
+) extends Base;
   function new(int def = 42);
     super.new(def + ADD);
   endfunction
@@ -39,8 +41,8 @@ module t;
     Base b;
     ClsNoArg c1;
     ClsArg c2;
-    ClsParam#(100) c3;
-    ClsParam#(200) c4;
+    ClsParam #(100) c3;
+    ClsParam #(200) c4;
 
     c1 = new;
     `checkd(c1.m_ia, 5);

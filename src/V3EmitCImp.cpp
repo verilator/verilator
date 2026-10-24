@@ -21,8 +21,10 @@
 #include "V3ThreadPool.h"
 #include "V3UniqueNames.h"
 
+#include <algorithm>
 #include <map>
 #include <set>
+#include <tuple>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -37,10 +39,17 @@ class EmitCImp final : public EmitCFunc {
     const bool m_slow;  // Creating __Slow file
     V3UniqueNames m_uniqueNames;  // Generates unique file names
     const std::string m_fileBaseName = EmitCUtil::prefixNameProtect(m_fileModp);
+    TextStmts m_ctorStmts;  // Statements constructing members in 'ctor'
+    TextStmts m_dtorStmts;  // Statements destroying members in 'dtor'
+    std::string m_ctorSplitDecl;  // Declaration of sub-function 'ctor' was split into, if any
+    std::string m_dtorSplitDecl;  // Declaration of sub-function 'dtor' was split into, if any
 
     // METHODS
     void openNextOutputFile(const std::string& fileName) {
         openNewOutputSourceFile(fileName, m_slow, false, "Design implementation internals");
+        emitFileHeader();
+    }
+    void emitFileHeader() {
         puts("// See " + EmitCUtil::topClassName() + ".h for the primary calling header\n");
         puts("\n");
         puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
@@ -49,111 +58,144 @@ class EmitCImp final : public EmitCFunc {
         m_lazyDecls.reset();
     }
 
-    void emitStaticVarDefns(const AstNodeModule* modp) {
-        // Emit static variable definitions
-        const string modName = EmitCUtil::prefixNameProtect(modp);
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-            if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isStatic()) {
-                    putns(varp, varp->vlArgType(true, false, false, modName));
-                    puts(";\n");
-                }
-            }
-        }
-    }
     void emitParamDefns(const AstNodeModule* modp) {
-        const string modName = EmitCUtil::prefixNameProtect(modp);
         bool first = true;
         for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     if (first) {
                         puts("\n");
+                        const string modName = EmitCUtil::prefixNameProtect(modp);
                         putsDecoration(modp, "// Parameter definitions for " + modName + "\n");
                         first = false;
                     }
-                    UASSERT_OBJ(varp->valuep(), nodep, "No init for a param?");
-                    // Only C++ LiteralTypes can be constexpr
-                    const bool canBeConstexpr = varp->dtypep()->isLiteralType();
-                    putns(varp, canBeConstexpr ? "constexpr " : "const ");
-                    const string scopedName = modName + "::" + varp->nameProtect();
-                    putns(varp, varp->dtypep()->cType(scopedName, false, false));
-                    if (!canBeConstexpr) {
-                        puts(" = ");
-                        emitConstInit(varp->valuep());
-                    }
+                    if (varp->dtypep()->isLiteralType()) putns(varp, "VL_CONSTINIT_CXX20 ");
+                    putns(varp, "const ");
+                    emitVarDefn(varp);
                     puts(";\n");
                 }
             }
         }
         if (!first) puts("\n");
     }
-    void emitCtorImp(const AstNodeModule* modp) {
-        const std::string modName = EmitCUtil::prefixNameProtect(modp);
+    // Add statements explicitly constructing, or destroying, a member AstVar
+    static void addVarCtorDtorStmts(TextStmts& stmts, const AstVar* varp, bool destroy) {
+        const std::string name = "vlSelf->" + varName(varp);
 
-        puts("\n");
-        if (modp->ctorVarReset())
-            m_lazyDecls.emit("void " + modName + "__", protect("_ctor_var_reset"),
-                             "(" + modName + "* vlSelf);");
-        puts("\n");
-
-        const std::string ctorArgs = EmitCUtil::symClassName() + "* symsp, const char* namep";
-
-        // The root module needs a proper constuctor, everything else uses a
-        // 'ctor' function in order to be able to split up constructors
-        if (modp->isTop()) {
-            putns(modp, modName + "::" + modName + "(" + ctorArgs + ")\n");
-
-            ofp()->indentInc();
-            const char* sepp = "  : ";
-            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (const AstVar* const varp = VN_CAST(nodep, Var)) {
-                    if (const AstBasicDType* const dtypep
-                        = VN_CAST(varp->dtypeSkipRefp(), BasicDType)) {
-                        if (dtypep->keyword().isMTaskState()) {
-                            puts(sepp);
-                            putns(varp, varp->nameProtect());
-                            puts("(");
-                            iterateConst(varp->valuep());
-                            puts(")\n");
-                        } else if (varp->isIO() && varp->isSc()) {
-                            puts(sepp);
-                            putns(varp, varp->nameProtect());
-                            puts("(");
-                            putsQuoted(varp->nameProtect());
-                            puts(")\n");
-                        } else if (dtypep->isDelayScheduler()) {
-                            puts(sepp);
-                            putns(varp, varp->nameProtect());
-                            puts("{*symsp->_vm_contextp__}\n");
-                        } else {
-                            continue;
-                        }
-                        sepp = ", ";
+        // SystemC port arrays are C arrays, so construct them element by element. They are
+        // default constructed (unnamed), as the elements of an array member would be.
+        if (varp->isSc() && VN_IS(varp->dtypeSkipRefp(), UnpackArrayDType)) {
+            std::vector<std::string> elems{name};
+            for (const AstUnpackArrayDType* adtypep
+                 = VN_CAST(varp->dtypeSkipRefp(), UnpackArrayDType);
+                 adtypep; adtypep = VN_CAST(adtypep->subDTypep()->skipRefp(), UnpackArrayDType)) {
+                std::vector<std::string> subElems;
+                for (const std::string& elem : elems) {
+                    for (int i = 0; i < adtypep->elementsConst(); ++i) {
+                        subElems.push_back(elem + "[" + std::to_string(i) + "]");
                     }
                 }
+                elems = std::move(subElems);
             }
-            ofp()->indentDec();
-            puts(" {\n");
-        } else {
-            putns(modp, modName + "::" + modName + "() = default;\n");
-            putns(modp, modName + "::~" + modName + "() = default;\n\n");
-            putns(modp, "void " + modName + "::ctor(" + ctorArgs + ") {\n");
+            if (destroy) std::reverse(elems.begin(), elems.end());
+            for (const std::string& e : elems) {
+                stmts.add((destroy ? "VL_INPLACE_DESTRUCT(" : "VL_INPLACE_CONSTRUCT(") + e + ");");
+            }
+            return;
         }
 
-        puts("vlSymsp = symsp;\n");
-        if (modp->isTop()) {
-            puts("vlNamep = strdup(namep);\n");
-        } else {
-            puts("vlNamep = strdup(Verilated::catName(vlSymsp->name(), namep));\n");
+        // Other variables are constructed whole, even if aggregates
+        if (destroy) {
+            stmts.add("VL_INPLACE_DESTRUCT(" + name + ");");
+            return;
         }
+        const AstBasicDType* const basicp = VN_CAST(varp->dtypeSkipRefp(), BasicDType);
+        std::string args;
+        if (varp->isSc()) {
+            // SystemC ports need their name
+            args = ", \"" + V3OutFormatter::quoteNameControls(varp->nameProtect()) + "\"";
+        } else if (basicp && basicp->isDelayScheduler()) {
+            // Delay scheduler needs the context pointer
+            args = ", *vlSelf->vlSymsp->_vm_contextp__";
+        }
+        stmts.add("VL_INPLACE_CONSTRUCT(" + name + args + ");");
+    }
+    // Gather the statements constructing/destroying members in anonymous unions, and split
+    // them into sub-functions if needed. As this emits files, no output file can be open.
+    void createCtorDtorStmts(const AstNodeModule* modp) {
+        // Construct member variables
+        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            const AstVar* const varp = VN_CAST(nodep, Var);
+            if (varp && isExplicitlyConstructed(varp)) {
+                addVarCtorDtorStmts(m_ctorStmts, varp, false);
+            }
+        }
+
+        // Destroy in reverse order
+        const AstNode* const lastp = modp->stmtsp() ? modp->stmtsp()->lastp() : nullptr;
+        for (const AstNode* nodep = lastp; nodep; nodep = nodep->prevp()) {
+            const AstVar* const varp = VN_CAST(nodep, Var);
+            if (varp && isExplicitlyConstructed(varp)) {
+                addVarCtorDtorStmts(m_dtorStmts, varp, true);
+            }
+        }
+
+        // Split into sub-functions if needed
+        const std::string modName = EmitCUtil::prefixNameProtect(modp);
+        std::tie(m_ctorSplitDecl, m_dtorSplitDecl) = emitSplitCtorDtor(
+            m_ctorStmts, m_dtorStmts, 0, modName, modName + "* vlSelf", "vlSelf", false,
+            "Design implementation internals", [this]() { emitFileHeader(); });
+    }
+    void emitCtorDtorImp(const AstNodeModule* modp) {
+        const std::string modName = EmitCUtil::prefixNameProtect(modp);
+
+        // ctor
+        if (modp->ctorVarReset()) {
+            m_lazyDecls.emit("\nvoid " + modName + "__", protect("_ctor_var_reset"),
+                             "(" + modName + "* vlSelf);\n");
+        }
+
+        if (!m_ctorSplitDecl.empty()) puts("\n" + m_ctorSplitDecl + "\n");
+        puts("\nvoid " + modName + "__ctor(" + modName + "* vlSelf, " + EmitCUtil::symClassName()
+             + "* symsp, const char* namep) {\n");
+        puts("vlSelf->vlSymsp = symsp;\n");
+        if (modp->isTop()) {
+            puts("vlSelf->vlNamep = strdup(namep);\n");
+        } else {
+            puts("vlSelf->vlNamep = strdup(Verilated::catName(symsp->name(), namep));\n");
+        }
+        putsDecoration(modp, "// Construct members\n");
+        for (const TextStmts::Stmt& stmt : m_ctorStmts) puts(stmt.m_text + "\n");
 
         putsDecoration(modp, "// Reset structure values\n");
-        if (modp->ctorVarReset()) puts(modName + "__" + protect("_ctor_var_reset") + "(this);\n");
-        emitSystemCSection(modp, VSystemCSectionType::CTOR);
+        if (modp->ctorVarReset()) {
+            puts(modName + "__" + protect("_ctor_var_reset") + "(vlSelf);\n");
+        }
+        puts("}\n");
 
+        // C++ constructor
+        puts("\n" + modName + "::" + modName + "(" + EmitCUtil::symClassName()
+             + "* symsp, const char* namep) {\n");
+        puts(modName + "__ctor(this, symsp, namep);\n");
+        emitSystemCSection(modp, VSystemCSectionType::CTOR);
+        puts("}\n");
+
+        // dtor
+        if (!m_dtorSplitDecl.empty()) puts("\n" + m_dtorSplitDecl + "\n");
+        puts("\nvoid " + modName + "__dtor(" + modName + "* vlSelf) {\n");
+        putsDecoration(modp, "// Destroy members\n");
+        for (const TextStmts::Stmt& stmt : m_dtorStmts) puts(stmt.m_text + "\n");
+        puts("VL_DO_DANGLING(std::free(const_cast<char*>(vlSelf->vlNamep)), "
+             "vlSelf->vlNamep);\n");
+        puts("}\n");
+
+        // C++ destructor
+        puts("\n" + modName + "::~" + modName + "() {\n");
+        emitSystemCSection(modp, VSystemCSectionType::DTOR);
+        puts(modName + "__dtor(this);\n");
         puts("}\n");
     }
+
     void emitConfigureImp(const AstNodeModule* modp) {
         const string modName = EmitCUtil::prefixNameProtect(modp);
 
@@ -163,12 +205,12 @@ class EmitCImp final : public EmitCFunc {
                              "(" + modName + "* vlSelf, bool first);");
         }
 
-        puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(bool first) {\n");
-        puts("(void)first;  // Prevent unused variable warning\n");
         if (v3Global.opt.coverage()) {
+            puts("\nvoid " + modName + "::" + protect("__Vconfigure") + "(bool first) {\n");
+            puts("(void)first;  // Prevent unused variable warning\n");
             puts(modName + "__" + protect("_configure_coverage") + "(this, first);\n");
+            puts("}\n");
         }
-        puts("}\n");
     }
     void emitCoverageImp() {
         // Rather than putting out VL_COVER_INSERT calls directly, we do it via this
@@ -262,18 +304,6 @@ class EmitCImp final : public EmitCFunc {
             puts("}\n");
         }
     }
-    void emitDestructorImp(const AstNodeModule* modp) {
-        const std::string modName = EmitCUtil::prefixNameProtect(modp);
-        puts("\n");
-        if (modp->isTop()) {
-            putns(modp, modName + "::~" + modName + "() {\n");
-        } else {
-            putns(modp, "void " + modName + "::dtor() {\n");
-        }
-        putns(modp, "VL_DO_DANGLING(std::free(const_cast<char*>(vlNamep)), vlNamep);\n");
-        emitSystemCSection(modp, VSystemCSectionType::DTOR);
-        puts("}\n");
-    }
     void emitSavableImp(const AstNodeModule* modp) {
         if (v3Global.opt.savable()) {
             puts("\n// Savable\n");
@@ -287,7 +317,7 @@ class EmitCImp final : public EmitCFunc {
                 // Place a computed checksum to ensure proper structure save/restore formatting
                 // OK if this hash includes some things we won't dump, since
                 // just looking for loading the wrong model
-                VHashSha256 hash;
+                VHashSha512 hash;
                 for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
                     if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                         hash.insert(varp->name());
@@ -315,7 +345,6 @@ class EmitCImp final : public EmitCFunc {
                             // System C top I/O doesn't need loading, as the
                             // lower level subinst code does it.
                         } else if (varp->isParam()) {
-                        } else if (varp->isStatic() && varp->isConst()) {
                         } else if (VN_IS(varp->dtypep(), NBACommitQueueDType)) {
                         } else {
                             int vects = 0;
@@ -332,8 +361,6 @@ class EmitCImp final : public EmitCFunc {
                                 elementp = arrayp->subDTypep()->skipRefp();
                             }
                             const AstBasicDType* const basicp = elementp->basicp();
-                            // Do not save MTask state, only matters within an evaluation
-                            if (basicp && basicp->keyword().isMTaskState()) continue;
                             // Want to detect types that are represented as arrays
                             // (i.e. packed types of more than 64 bits).
                             if (elementp->isWide()
@@ -344,7 +371,7 @@ class EmitCImp final : public EmitCFunc {
                                 puts("; " + ivar + " < " + cvtToStr(elementp->widthWords()));
                                 puts("; ++" + ivar + ") {\n");
                             }
-                            putns(varp, "os" + op + varp->nameProtect());
+                            putns(varp, "os" + op + varName(varp));
                             for (int v = 0; v < vects; ++v) puts("[__Vi" + cvtToStr(v) + "]");
                             puts(";\n");
                             for (int v = 0; v < vects; ++v) puts("}\n");
@@ -364,24 +391,19 @@ class EmitCImp final : public EmitCFunc {
         // We always need the slow file
         if (m_slow) return true;
         // The fast file is only required when we have `systemc_implementation nodes
-        if (v3Global.hasSystemCSections()) {
-            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
-                if (const AstSystemCSection* const ssp = VN_CAST(nodep, SystemCSection)) {
-                    if (ssp->sectionType() == VSystemCSectionType::IMP) return true;
-                }
-            }
+        for (const AstSystemCSection* scSectionp = modp->scSectionsp(); scSectionp;
+             scSectionp = VN_AS(scSectionp->nextp(), SystemCSection)) {
+            if (scSectionp->sectionType() == VSystemCSectionType::IMP) return true;
         }
         return false;
     }
     // Actually emit common implementation contents for given AstNodeModule
     void doCommonImp(const AstNodeModule* modp) {
         if (m_slow) {
-            emitStaticVarDefns(modp);
             if (!VN_IS(modp, Class)) {
                 emitParamDefns(modp);
-                emitCtorImp(modp);
+                emitCtorDtorImp(modp);
                 emitConfigureImp(modp);
-                emitDestructorImp(modp);
                 emitCoverageImp();
             }
             emitSavableImp(modp);
@@ -395,6 +417,10 @@ class EmitCImp final : public EmitCFunc {
             = VN_IS(modp, ClassPackage) ? VN_AS(modp, ClassPackage)->classp() : nullptr;
 
         if (hasCommonImp(modp) || hasCommonImp(classp)) {
+            // Create ctor/dtor statements. If these need splitting, they will be emitted
+            // during construction so do this before opening the output file.
+            if (m_slow && !VN_IS(modp, Class)) createCtorDtorStmts(modp);
+
             openNextOutputFile(m_fileBaseName);
 
             doCommonImp(modp);
@@ -939,6 +965,7 @@ void V3EmitC::emitcImp() {
         for (const AstNode* nodep = v3Global.rootp()->modulesp(); nodep; nodep = nodep->nextp()) {
             if (VN_IS(nodep, Class)) continue;  // Imped with ClassPackage
             const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
+            if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
             cfiles.emplace_back();
             std::vector<AstCFile*>& slow = cfiles.back();
             threadScope.enqueue([modp, &slow] { slow = EmitCImp::main(modp, /* slow: */ true); });

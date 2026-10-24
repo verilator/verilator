@@ -362,6 +362,10 @@ void V3Options::addLibMapFile(const string& filename) { m_libmapFiles.insert(fil
 void V3Options::addCompilerIncludes(const string& filename) {
     m_compilerIncludes.insert(filename);
 }
+void V3Options::addLdLibFile(const string& filename) {
+    m_ldLibFiles.push_back(filename);
+    addLdLibs(filename);
+}
 void V3Options::addLdLibs(const string& filename) { m_ldLibs.push_back(filename); }
 void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(filename); }
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
@@ -1088,7 +1092,7 @@ void V3Options::notify() VL_MT_DISABLED {
     if (timing().isSetTrue()) V3PreShell::defineCmdLine("VERILATOR_TIMING", "1");
 
     // If VPI is used, and no explicit ico change detect option was passed, disable it by default
-    if (m_vpi && m_fIcoChangeDetect.isDefault()) m_fIcoChangeDetect.setTrueOrFalse(false);
+    if (m_vpi.isTrue() && m_fIcoChangeDetect.isDefault()) m_fIcoChangeDetect.setTrueOrFalse(false);
 
     // === Leave last
     // Mark options as available
@@ -1110,8 +1114,8 @@ string V3Options::protectKeyDefaulted() VL_MT_SAFE {
     if (m_protectKey.empty()) {
         // Create a key with a human-readable symbol-like name.
         // This conversion drops ~2 bits of entropy out of 256, shouldn't matter.
-        VHashSha256 digest{V3Os::trueRandom(32)};
-        m_protectKey = "VL-KEY-" + digest.digestSymbol();
+        VHashSha512 digest{V3Os::trueRandom(64)};
+        m_protectKey = "VL-KEY-" + digest.digestBase64();
     }
     return m_protectKey;
 }
@@ -1176,7 +1180,7 @@ void V3Options::parseOpts(FileLine* fl, int argc, char** argv) VL_MT_DISABLED {
     }
 
     // Default prefix to the filename
-    if (prefix() == "" && topModule() != "") m_prefix = "V"s + AstNode::encodeName(topModule());
+    if (prefix() == "" && topModule() != "") m_prefix = "V"s + topModule();  // Already encoded
     if (prefix() == "" && vFiles().size() >= 1)
         m_prefix
             = "V"s + AstNode::encodeName(V3Os::filenameNonDirExt(vFiles().begin()->filename()));
@@ -1370,11 +1374,45 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-compiler-include", CbVal, callStrSetter(&V3Options::addCompilerIncludes));
     DECL_OPTION("-converge-limit", Set, &m_convergeLimit);
     DECL_OPTION("-coverage", CbOnOff, [this](bool flag) { coverage(flag); });
+    DECL_OPTION("-coverage-branch", OnOff, &m_coverageBranch);
     DECL_OPTION("-coverage-expr", OnOff, &m_coverageExpr);
     DECL_OPTION("-coverage-expr-max", Set, &m_coverageExprMax);
     DECL_OPTION("-coverage-fsm", OnOff, &m_coverageFsm);
+    DECL_OPTION("-coverage-fsm-expand", CbVal, [this, fl](const char* const valp) {
+        if (!std::strcmp(valp, "auto")) {
+            m_coverageFsmExpand = VFsmExpandType::AUTO;
+        } else if (!std::strcmp(valp, "auto-expand")) {
+            m_coverageFsmExpand = VFsmExpandType::AUTO_EXPAND;
+        } else if (!std::strcmp(valp, "full")) {
+            m_coverageFsmExpand = VFsmExpandType::FULL;
+        } else {
+            fl->v3error("Unknown setting for --coverage-fsm-expand: '"
+                        << valp << "'\n"
+                        << fl->warnMore() << "... Suggest 'auto', 'auto-expand', or 'full'");
+        }
+    });
+    DECL_OPTION("-coverage-fsm-max-arcs", Set, &m_coverageFsmMaxArcs);
     DECL_OPTION("-coverage-line", OnOff, &m_coverageLine);
+    // Covergroup bins limits; the runtime indexes bins with 32 bits
+    const auto parseBinsLimit = [fl](const char* optp, const char* valp, uint32_t& limitr) {
+        char* endp = nullptr;
+        const unsigned long long value = std::strtoull(valp, &endp, 10);
+        if (*endp || value < 1 || value > std::numeric_limits<uint32_t>::max()) {
+            fl->v3error(optp << " requires an integer from 1 to "
+                             << std::numeric_limits<uint32_t>::max() << ", but '" << valp
+                             << "' was passed");
+            return;
+        }
+        limitr = static_cast<uint32_t>(value);
+    };
+    DECL_OPTION("-coverage-max-bins", CbVal, [this, parseBinsLimit](const char* valp) {
+        parseBinsLimit("--coverage-max-bins", valp, m_coverageMaxBins);
+    });
+    DECL_OPTION("-coverage-max-real-bins", CbVal, [this, parseBinsLimit](const char* valp) {
+        parseBinsLimit("--coverage-max-real-bins", valp, m_coverageMaxRealBins);
+    });
     DECL_OPTION("-coverage-max-width", Set, &m_coverageMaxWidth);
+    DECL_OPTION("-coverage-merge-instances", OnOff, &m_coverageMergeInstances);
     DECL_OPTION("-coverage-per-instance", OnOff, &m_coveragePerInstance);
     DECL_OPTION("-coverage-toggle", OnOff, &m_coverageToggle);
     DECL_OPTION("-coverage-underscore", OnOff, &m_coverageUnderscore);
@@ -1461,6 +1499,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
     DECL_OPTION("-fbit-scan-loops", FOnOff, &m_fBitScanLoops);
+    DECL_OPTION("-fbitblast", FOnOff, &m_fBitblast);
     DECL_OPTION("-fcase", CbFOnOff, [this](bool flag) {
         m_fCaseDecoder = flag;
         m_fCaseTable = flag;
@@ -1476,6 +1515,13 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fconst-eager", FOnOff, &m_fConstEager);
     DECL_OPTION("-fdead-assigns", FOnOff, &m_fDeadAssigns);
     DECL_OPTION("-fdead-cells", FOnOff, &m_fDeadCells);
+    DECL_OPTION("-fdead-methods", FOnOff, &m_fDeadMethods);
+    DECL_OPTION("-fdecompose", CbFOnOff, [this](bool flag) {
+        m_fDecomposePacked = flag;
+        m_fDecomposeUnpacked = flag;
+    });
+    DECL_OPTION("-fdecompose-packed", FOnOff, &m_fDecomposePacked);
+    DECL_OPTION("-fdecompose-unpacked", FOnOff, &m_fDecomposeUnpacked);
     DECL_OPTION("-fdedup", FOnOff, &m_fDedupe);
     DECL_OPTION("-fdfg", CbFOnOff, [this](bool flag) { m_fDfg = flag; });
     DECL_OPTION("-fdfg-break-cycles", CbFOnOff, [fl](bool) {
@@ -1517,11 +1563,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
     DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
-    DECL_OPTION("-flift-expr", FOnOff, &m_fLiftExpr);
+    DECL_OPTION("-flift-expr", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-lift-expr' is deprecated and has no effect");
+    });
     DECL_OPTION("-flocalize", FOnOff, &m_fLocalize);
     DECL_OPTION("-fmerge-cond", FOnOff, &m_fMergeCond);
     DECL_OPTION("-fmerge-cond-motion", FOnOff, &m_fMergeCondMotion);
-    DECL_OPTION("-fmerge-const-pool", FOnOff, &m_fMergeConstPool);
+    DECL_OPTION("-fmerge-const-pool", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-merge-const-pool' is deprecated and has no effect");
+    });
     DECL_OPTION("-freloop", FOnOff, &m_fReloop);
     DECL_OPTION("-freorder", FOnOff, &m_fReorder);
     DECL_OPTION("-fslice", FOnOff, &m_fSlice);
@@ -1534,7 +1584,9 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-fsubst-const", FOnOff, &m_fSubstConst);
     DECL_OPTION("-ftable", FOnOff, &m_fTable);
     DECL_OPTION("-ftaskify-all-forked", FOnOff, &m_fTaskifyAll).undocumented();  // Debug
-    DECL_OPTION("-fvar-split", FOnOff, &m_fVarSplit);
+    DECL_OPTION("-fvar-split", CbFOnOff, [fl](bool) {
+        fl->v3warn(DEPRECATED, "Option '-fno-var-split' is deprecated and has no effect");
+    });
     DECL_OPTION("-G", CbPartialMatch, [this](const char* optp) { addParameter(optp, false); });
     DECL_OPTION("-gate-stmts", Set, &m_gateStmts);
     DECL_OPTION("-gdb", CbCall, []() {});  // Processed only in bin/verilator shell
@@ -1650,6 +1702,10 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_outputGroups = std::atoi(valp);
         if (m_outputGroups < -1) fl->v3error("--output-groups must be >= -1: " << valp);
     });
+    DECL_OPTION("-output-groups-size", CbVal, [this, fl](const char* valp) {
+        m_outputGroupsSize = std::atoll(valp);
+        if (m_outputGroupsSize < 0) fl->v3error("--output-groups-size must be >= 0: " << valp);
+    });
     DECL_OPTION("-output-split", Set, &m_outputSplit);
     DECL_OPTION("-output-split-cfuncs", CbVal, [this, fl](const char* valp) {
         m_outputSplitCFuncs = std::atoi(valp);
@@ -1710,7 +1766,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_libCreate = valp;
         m_protectIds = true;
     });
-    DECL_OPTION("-public", OnOff, &m_public);
+    DECL_OPTION("-public", CbOnOff, [this, fl](bool flag) {
+        m_public = flag;
+        if (flag) {
+            fl->v3warn(UNOPTPUBLIC, "Option '--public' prevents optimization\n"
+                                        << fl->warnMore()
+                                        << "... Suggest use 'public_flat_rw' on only the needed"
+                                           " signals instead");
+        }
+    });
     DECL_OPTION("-public-depth", Set, &m_publicDepth);
     DECL_OPTION("-public-flat-rw", CbOnOff, [this](bool flag) {
         m_publicFlatRW = flag;
@@ -1773,10 +1837,6 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-std-package", OnOff, &m_stdPackage);
     DECL_OPTION("-std-waiver", OnOff, &m_stdWaiver);
     DECL_OPTION("-stop-fail", OnOff, &m_stopFail);
-    DECL_OPTION("-structs-packed", CbOnOff, [this, fl](bool flag) {
-        m_structsPacked = flag;
-        fl->v3warn(DEPRECATED, "Option --structs-packed is deprecated, avoid use");
-    }).undocumented();
     DECL_OPTION("-sv", CbCall, [this]() { m_defaultLanguage = V3LangCode::L1800_2023; });
 
     DECL_OPTION("-no-threads", CbCall, [this, fl]() {
@@ -2046,7 +2106,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         } else if (suffixed(filename, ".a")  //
                    || suffixed(filename, ".o")  //
                    || suffixed(filename, ".so")) {
-            V3Options::addLdLibs(filename);
+            V3Options::addLdLibFile(filename);
         } else if (suffixed(filename, ".vlt")) {
             V3Options::addVltFile(filename, work());
             isForRerun = false;
@@ -2307,6 +2367,7 @@ void V3Options::showVersion(bool verbose) {
 V3Options::V3Options() {
     m_impp = new V3OptionsImp;
 
+    m_coverageFsmExpand = VFsmExpandType::AUTO;  // Auto is a default global default
     m_makeDir = "obj_dir";
     m_unusedRegexp = "*unused*";
     m_xAssign = "fast";
@@ -2376,6 +2437,7 @@ void V3Options::optimize(int level) {
     m_fAcycSimp = flag;
     m_fAssemble = flag;
     m_fBitScanLoops = flag;
+    m_fBitblast = flag;
     m_fCaseDecoder = flag;
     m_fCaseTable = flag;
     m_fCaseTree = flag;
@@ -2386,6 +2448,9 @@ void V3Options::optimize(int level) {
     m_fDfg = flag;
     m_fDeadAssigns = flag;
     m_fDeadCells = flag;
+    m_fDeadMethods = flag;
+    m_fDecomposePacked = flag;
+    m_fDecomposeUnpacked = flag;
     m_fExpand = flag;
     m_fGate = flag;
     m_fInline = flag;
@@ -2400,7 +2465,6 @@ void V3Options::optimize(int level) {
     m_fSubst = flag;
     m_fSubstConst = flag;
     m_fTable = flag;
-    m_fVarSplit = flag;
     // And set specific optimization levels
     if (level >= 3) {
         m_inlineMult = -1;  // Maximum inlining

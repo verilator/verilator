@@ -46,6 +46,7 @@ module sub ();
   localparam elementf = get_element(IDX, array);
   initial begin
     `checkh(element1, CHK);
-    `checkh(elementf, CHK);
+    // array_arg[7:0] = array[0:7] assigns elements left to right (IEEE 1800-2023 7.6)
+    `checkh(elementf, array[7-IDX]);
   end
 endmodule

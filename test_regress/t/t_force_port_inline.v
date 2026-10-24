@@ -73,6 +73,26 @@ module top;
       `checkh(sub_c.o, 8'h40);
       `checkh(o_c, 8'h40);
     end
+    else if (cyc == 4) begin
+      release sub_v.i;
+      release sub_v.m;
+      release sub_v.o;
+      // Force selects of an input port
+      force sub_v.i[7] = 1'b1;
+      force sub_v.i[3:2] = 2'b11;
+    end
+    else if (cyc == 5) begin
+      `checkh(sub_v.i, 8'h8d);
+      `checkh(sub_v.m, 8'h8d);
+      `checkh(sub_v.o, 8'h8d);
+      `checkh(o_v, 8'h8d);
+      release sub_v.i[7];
+      release sub_v.i[3:2];
+    end
+    else if (cyc == 6) begin
+      `checkh(sub_v.i, 8'h01);
+      `checkh(o_v, 8'h01);
+    end
     //
     else if (cyc == 99) begin
       $write("*-* All Finished *-*\n");

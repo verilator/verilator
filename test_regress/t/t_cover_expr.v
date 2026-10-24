@@ -88,7 +88,7 @@ module t (
       end
     end
     for (int loop_var_2 = 0; loop_var_2 < 32; loop_var_2 += 2) begin
-      if (cyc[loop_var_2] | cyc[loop_var_2 + 1]) $write("");
+      if (cyc[loop_var_2] | cyc[loop_var_2+1]) $write("");
     end
     // stop at the first layer even if there's more to find
     if ((cyc[3+32'(t1&&t2)+:2] == cyc[5+32'(t3||t4)+:2]) || cyc[31]) $write("");

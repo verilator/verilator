@@ -8,12 +8,9 @@ interface simple_bad_if;
   logic [7:0] value;
 endinterface
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-
-  input clk;
 
   localparam N = 4;
 

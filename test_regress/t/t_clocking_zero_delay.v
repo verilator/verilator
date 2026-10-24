@@ -7,6 +7,11 @@
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`ifdef verilator
+ `define no_optimize(v) $c(v)
+`else
+ `define no_optimize(v) (v)
+`endif
 // verilog_format: on
 
 module t;
@@ -15,10 +20,14 @@ module t;
 
   logic [7:0] data_ref;
   logic [7:0] data_test;
+  logic [7:0] data_last;
+  logic [7:0] data_last_cb;
 
   default clocking cb @(posedge clk);
     output #0 data_ref;
     output #0 data_test;
+    output #0 data_last;
+    output #0 data_last_cb;
   endclocking
 
   // =========================================================
@@ -56,6 +65,22 @@ module t;
     `checkd(int'($time), 15)
   end
 
+  // 1e: A count that is not constant: zero waits like ##0, others count cycles
+  int n0;
+  int n2;
+  initial begin
+    n0 = `no_optimize(0);
+    n2 = `no_optimize(2);
+    ##n0;
+    `checkd(int'($time), 5)
+    ##n0;
+    `checkd(int'($time), 5)
+    ##(n2 - 1);
+    `checkd(int'($time), 15)
+    ##n2;
+    `checkd(int'($time), 35)
+  end
+
   // =========================================================
   // Branch 2: ##0 in synchronous drive (IEEE 1800-2023 14.11)
   // "shall have no effect, as if it were not present"
@@ -71,6 +96,25 @@ module t;
     @(posedge clk);
     `checkd(data_test, data_ref)
     `checkd(data_test, 8'hAB)
+    wait (0);
+  end
+
+  // As ##0 has no effect, a later drive in the same cycle overrides the drive with ##0
+  // (IEEE 1800-2023 14.11, 14.16.2), also before the clocking block event occurs
+  always begin
+    @(posedge clk);
+    cb.data_last <= ##0 8'h12;
+    cb.data_last <= 8'h34;
+    @(posedge clk);
+    `checkd(data_last, 8'h34)
+    wait (0);
+  end
+  always begin
+    @(cb);
+    cb.data_last_cb <= ##0 8'h56;
+    cb.data_last_cb <= 8'h78;
+    @(cb);
+    `checkd(data_last_cb, 8'h78)
     wait (0);
   end
 

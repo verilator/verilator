@@ -12,9 +12,9 @@ import os
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_cover_fsm_empty_reset.sv"
+test.top_filename = "t/t_cover_fsm_empty_reset.v"
 
-test.compile(verilator_flags2=["--cc --coverage-line --coverage-fsm"])
+test.compile(verilator_flags2=["--cc --coverage-line --coverage-branch --coverage-fsm"])
 
 test.execute()
 
@@ -27,6 +27,6 @@ test.run(cmd=[
 ],
          verilator_run=True)
 
-test.files_identical(test.obj_dir + "/annotated/" + test.name + ".sv", test.golden_filename)
+test.files_identical(test.obj_dir + "/annotated/" + test.name + ".v", test.golden_filename)
 
 test.passes()

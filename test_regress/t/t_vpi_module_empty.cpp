@@ -22,7 +22,7 @@
 #include "verilated_vpi.h"
 
 #include "Vt_vpi_module_empty.h"
-#include "Vt_vpi_module_empty__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
 #endif
@@ -62,7 +62,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 // cver entry

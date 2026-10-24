@@ -22,15 +22,7 @@
 #include "verilated_vpi.h"
 
 #include VM_PREFIX_INCLUDE
-#ifdef T_VPI_PUBLIC_DEPTH
-#include "Vt_vpi_public_depth__Dpi.h"
-#elif defined(T_VPI_PUBLIC_DEPTH_OFF)
-#include "Vt_vpi_public_depth_off__Dpi.h"
-#elif defined(T_VPI_PUBLIC_OFF)
-#include "Vt_vpi_public_off__Dpi.h"
-#else
-#error "Bad test"
-#endif
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
 #endif
@@ -130,6 +122,10 @@ int mon_check() {
     return 0;  // Ok
 }
 }
+
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
+
 //======================================================================
 
 #ifdef IS_VPI
@@ -146,7 +142,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 // cver entry

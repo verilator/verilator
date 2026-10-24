@@ -124,7 +124,7 @@ public:
 class LifeBlock final {
     // NODE STATE
     // Cleared each AstIf:
-    //   AstVarScope::user1()   -> int.       Used in combining to detect duplicates
+    //   AstVarScope::user1()   -> uint64_t.  Used in combining to detect duplicates
 
     // LIFE MAP
     // For each basic block, we'll make a new map of what variables that if/else is changing

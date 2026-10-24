@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2008 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off UNOPTPUBLIC
+
 module foo(input logic i_clk); /* verilator public_module */
 endmodule
 

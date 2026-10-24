@@ -31,4 +31,18 @@ test.run(cmd=[
 test.files_identical(test.obj_dir + "/annotated/t_covergroup_cross.v",
                      "t/" + test.name + ".annotate.out")
 
+# Ranking counts a test as covering a bin once its hits reach the bin's option.at_least
+test.run(cmd=[
+    os.environ["VERILATOR_ROOT"] + "/bin/verilator_coverage",
+    "--rank",
+    "--filter-type",
+    "covergroup",
+    test.obj_dir + "/coverage.dat",
+],
+         logfile=test.obj_dir + "/rank.log",
+         tee=False,
+         verilator_run=True)
+
+test.files_identical(test.obj_dir + "/rank.log", "t/" + test.name + ".rank.out")
+
 test.passes()

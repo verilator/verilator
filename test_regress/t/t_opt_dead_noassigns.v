@@ -4,11 +4,9 @@
 // SPDX-FileCopyrightText: 2020 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (/*AUTOARG*/
-  // Inputs
-  in
-  );
-  input int in;
+module t (
+    input int in
+);
 
   int ass_keptdead;
 

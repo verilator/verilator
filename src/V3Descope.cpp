@@ -26,6 +26,7 @@
 
 #include "V3Descope.h"
 
+#include "V3ConstPool.h"
 #include "V3EmitCBase.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -47,7 +48,7 @@ class DescopeVisitor final : public VNVisitor {
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
-    const AstScope* m_scopep = nullptr;  // Current scope
+    AstScope* m_scopep = nullptr;  // Current scope
     const AstCFunc* m_funcp = nullptr;  // Current function
     bool m_modSingleton = false;  // m_modp is only instantiated once
     FuncMmap m_modFuncs;  // Name of public functions added
@@ -159,8 +160,7 @@ class DescopeVisitor final : public VNVisitor {
                         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                             if (portp->isIO() && !portp->isFuncReturn()) {
                                 AstVarRef* const newp = new AstVarRef{
-                                    portp->fileline(), portp,
-                                    portp->isWritable() ? VAccess::WRITE : VAccess::READ};
+                                    portp->fileline(), portp, portp->direction().pinAccess()};
                                 argsp = AstNode::addNext(argsp, newp);
                             }
                         }
@@ -236,7 +236,7 @@ class DescopeVisitor final : public VNVisitor {
         if (varp->isFuncLocal()) {
             // Reference to function locals need no self pointer
             nodep->selfPointer(VSelfPointerText{VSelfPointerText::Empty()});
-        } else if (scopep->modp() == v3Global.rootp()->constPoolp()->modp()) {
+        } else if (scopep->modp()->isConstPool()) {
             // Reference to constant pool value need no self pointer
             nodep->selfPointer(VSelfPointerText{VSelfPointerText::Empty()});
         } else {
@@ -254,6 +254,24 @@ class DescopeVisitor final : public VNVisitor {
         nodep->selfPointer(descopedSelfPointer(scopep));
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
+    }
+    void visit(AstScopeName* nodep) override {
+        // Print a %m under this instance as its vlNamep, which holds its pretty name, plus the
+        // rest of the path, so the instances' code can be V3Combined. Not with --protect-ids, as
+        // vlNamep then holds the protected name, while %m prints the original.
+        if (!m_funcp || !nodep->forFormat() || m_modSingleton || m_funcp->isStatic()
+            || v3Global.opt.protectIds()) {
+            return;
+        }
+        std::string path = nodep->scopePrettySymName();
+        const std::string inst = m_scopep->prettyName();
+        if (path != inst && !VString::startsWith(path, inst + ".")) return;
+        path.erase(0, inst.size() + 1);
+        // The DPI scope table keeps the absolute name, via a copy outside any function
+        m_scopep->addBlocksp(nodep->cloneTree(false));
+        nodep->scopeAttr(path);
+        nodep->scopeEntr("");  // Only used by the DPI scope table
+        nodep->selfRelative(true);
     }
     void visit(AstCMethodCall* nodep) override { iterateChildren(nodep); }
     void visit(AstCNew* nodep) override { iterateChildren(nodep); }
@@ -295,5 +313,6 @@ public:
 void V3Descope::descopeAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     { DescopeVisitor{nodep}; }  // Destruct before checking
+    V3ConstPool::setDescoped();
     V3Global::dumpCheckGlobalTree("descope", 0, dumpTreeEitherLevel() >= 3);
 }

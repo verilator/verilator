@@ -1,0 +1,54 @@
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:15:20: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                           : ... note: In instance 't'
+   15 |       bins text = {TEXT};
+      |                    ^~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:16:28: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                           : ... note: In instance 't'
+   16 |       bins text_array[] = {TEXT};
+      |                            ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:18:36: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                           : ... note: In instance 't'
+   18 |       wildcard bins text_wild[] = {TEXT};
+      |                                    ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:17:29: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                           : ... note: In instance 't'
+   17 |       bins text_sized[2] = {TEXT};
+      |                             ^~~~
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:30:12: Unsupported: 'bins' explicit array size of a real coverpoint (treated as '[]')
+                                                          : ... note: In instance 't'
+   30 |       bins sized[2] = {1.0, 2.0};
+      |            ^~~~~
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:27:29: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                           : ... note: In instance 't'
+   27 |       bins real_bound[2] = {[lo : 5]};
+      |                             ^
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:37:21: Unsupported: sized wildcard array 'bins' of more than --coverage-max-bins of 1024 ranges of values; bin 'runs' ignored
+                                                          : ... note: In instance 't'
+                                                          : ... Suggest a larger --coverage-max-bins
+   37 |       wildcard bins runs[2] = {16'b????_????_????_???1};
+      |                     ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:43:29: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                           : ... note: In instance 't'
+   43 |       wildcard bins text = {TEXT};
+      |                             ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:49:25: Unsupported: non-integral value in a transition bin of a coverpoint with exclusions.
+                                                           : ... note: In instance 't'
+   49 |       bins text = (1 => TEXT);
+      |                         ^~~~
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:62:59: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+                                                          : ... note: In instance 't'
+   62 |     static_cross: cross cp_real, cp_plain{bins selected = binsof (cp_real) intersect {1};}
+      |                                                           ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:63:62: Unsupported: non-constant or non-integral 'intersect' value, or four-state range bound.
+                                                          : ... note: In instance 't'
+   63 |     dynamic_cross: cross cp_real, cp_dynamic{bins selected = binsof (cp_real) intersect {1};}
+      |                                                              ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:69:29: Unsupported: sized wildcard array 'illegal_bins' of more than --coverage-max-bins of 1024 ranges of values; bin 'runs' treated as one bin
+                                                          : ... note: In instance 't'
+                                                          : ... Suggest a larger --coverage-max-bins
+   69 |       wildcard illegal_bins runs[2] = {16'b????_????_????_???1};
+      |                             ^~~~
+%Error: Exiting due to

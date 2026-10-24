@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
+
 // Dependent value-param + type-param + value-param-of-type-param must be
 // re-evaluated per specialization, not baked from the template default.
 // Regression test for template poisoning in V3Param::cellPinCleanup: the
@@ -27,68 +32,41 @@ module test #(
 endmodule
 
 module t;
-  test #(.width(24), .data(32'h0)) inst_a ();
-  test #(.width(16), .data(24'h0)) inst_b ();
-  test #(.width( 8), .data(16'h0)) inst_c ();
+  test #(
+      .width(24),
+      .data(32'h0)
+  ) inst_a ();
+  test #(
+      .width(16),
+      .data(24'h0)
+  ) inst_b ();
+  test #(
+      .width(8),
+      .data(16'h0)
+  ) inst_c ();
 
   initial begin
     #1;
     // inst_a: width=24 -> width2=32 -> data_t is 32 bits
-    if (inst_a.width2 !== 32) begin
-      $write("%%Error inst_a.width2=%0d expected 32\n", inst_a.width2); $stop;
-    end
-    if ($bits(inst_a.data) !== 32) begin
-      $write("%%Error $bits(inst_a.data)=%0d expected 32\n", $bits(inst_a.data)); $stop;
-    end
-    if (inst_a.data !== 32'h0) begin
-      $write("%%Error inst_a.data=%h expected 0\n", inst_a.data); $stop;
-    end
-    if ($bits(inst_a.data_t_sig) !== 32) begin
-      $write("%%Error $bits(inst_a.data_t_sig)=%0d expected 32\n",
-             $bits(inst_a.data_t_sig)); $stop;
-    end
-    if (inst_a.data_t_sig !== 32'hFFFFFFFF) begin
-      $write("%%Error inst_a.data_t_sig=%h expected FFFFFFFF\n",
-             inst_a.data_t_sig); $stop;
-    end
+    `checkh(inst_a.width2, 32);
+    `checkh($bits(inst_a.data), 32);
+    `checkh(inst_a.data, 32'h0);
+    `checkh($bits(inst_a.data_t_sig), 32);
+    `checkh(inst_a.data_t_sig, 32'hFFFFFFFF);
 
     // inst_b: width=16 -> width2=24 -> data_t is 24 bits
-    if (inst_b.width2 !== 24) begin
-      $write("%%Error inst_b.width2=%0d expected 24\n", inst_b.width2); $stop;
-    end
-    if ($bits(inst_b.data) !== 24) begin
-      $write("%%Error $bits(inst_b.data)=%0d expected 24\n", $bits(inst_b.data)); $stop;
-    end
-    if (inst_b.data !== 24'h0) begin
-      $write("%%Error inst_b.data=%h expected 0\n", inst_b.data); $stop;
-    end
-    if ($bits(inst_b.data_t_sig) !== 24) begin
-      $write("%%Error $bits(inst_b.data_t_sig)=%0d expected 24\n",
-             $bits(inst_b.data_t_sig)); $stop;
-    end
-    if (inst_b.data_t_sig !== 24'hFFFFFF) begin
-      $write("%%Error inst_b.data_t_sig=%h expected FFFFFF\n",
-             inst_b.data_t_sig); $stop;
-    end
+    `checkh(inst_b.width2, 24);
+    `checkh($bits(inst_b.data), 24);
+    `checkh(inst_b.data, 24'h0);
+    `checkh($bits(inst_b.data_t_sig), 24);
+    `checkh(inst_b.data_t_sig, 24'hFFFFFF);
 
     // inst_c: width=8 -> width2=16 -> data_t is 16 bits
-    if (inst_c.width2 !== 16) begin
-      $write("%%Error inst_c.width2=%0d expected 16\n", inst_c.width2); $stop;
-    end
-    if ($bits(inst_c.data) !== 16) begin
-      $write("%%Error $bits(inst_c.data)=%0d expected 16\n", $bits(inst_c.data)); $stop;
-    end
-    if (inst_c.data !== 16'h0) begin
-      $write("%%Error inst_c.data=%h expected 0\n", inst_c.data); $stop;
-    end
-    if ($bits(inst_c.data_t_sig) !== 16) begin
-      $write("%%Error $bits(inst_c.data_t_sig)=%0d expected 16\n",
-             $bits(inst_c.data_t_sig)); $stop;
-    end
-    if (inst_c.data_t_sig !== 16'hFFFF) begin
-      $write("%%Error inst_c.data_t_sig=%h expected FFFF\n",
-             inst_c.data_t_sig); $stop;
-    end
+    `checkh(inst_c.width2, 16);
+    `checkh($bits(inst_c.data), 16);
+    `checkh(inst_c.data, 16'h0);
+    `checkh($bits(inst_c.data_t_sig), 16);
+    `checkh(inst_c.data_t_sig, 16'hFFFF);
 
     $write("*-* All Finished *-*\n");
     $finish;

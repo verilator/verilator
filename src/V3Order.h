@@ -21,35 +21,33 @@
 #include "verilatedos.h"
 
 #include <functional>
-#include <unordered_map>
+#include <set>
 #include <vector>
 
 class AstCFunc;
-class AstNetlist;
-class AstSenItem;
-class AstSenTree;
 class AstVarScope;
 
 namespace V3Sched {
-struct LogicByScope;
+class LogicByScope;
+class CovergroupRefBindings;
+class TriggerKit;
 };  // namespace V3Sched
 
 //============================================================================
 
 namespace V3Order {
 
-// Callable to add extra external Triggers to a variable
-using ExternalDomainsProvider = std::function<void(const AstVarScope*, std::vector<AstSenTree*>&)>;
-// Map from Trigger Sensitivity tree to original Sensitivity tree
-using TrigToSenMap = std::unordered_map<const AstSenTree*, const AstSenTree*>;
+// Callable to add the indices of extra external triggers of a variable to the given set
+using ExternalTriggersProvider = std::function<void(const AstVarScope*, std::set<uint32_t>&)>;
 
-AstCFunc* order(AstNetlist* netlistp,  //
-                const std::vector<V3Sched::LogicByScope*>& logic,  //
-                const TrigToSenMap& trigToSen,  //
+AstCFunc* order(const std::vector<V3Sched::LogicByScope*>& logic,  //
+                const V3Sched::TriggerKit& trigKit,  //
+                AstVarScope* trigVscp,  //
+                const V3Sched::CovergroupRefBindings& cgRefBindings,  //
                 const string& tag,  //
                 bool parallel,  //
                 bool slow,  //
-                const ExternalDomainsProvider& externalDomains) VL_MT_DISABLED;
+                const ExternalTriggersProvider& externalTriggers) VL_MT_DISABLED;
 
 };  // namespace V3Order
 

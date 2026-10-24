@@ -139,8 +139,8 @@ class UdpVisitor final : public VNVisitor {
                 } else if (valName == "x" || valName == "X") {
                     // No x inputs supported yet, so this whole table line
                     // can never match. Drop the whole thing.
-                    if (edgetrigp) pushDeletep(edgetrigp);
-                    if (logandp) pushDeletep(logandp);
+                    if (edgetrigp) VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
+                    if (logandp) VL_DO_DANGLING(pushDeletep(logandp), logandp);
                     return;
                 }
             }
@@ -157,8 +157,8 @@ class UdpVisitor final : public VNVisitor {
 
         string const oValName = nodep->udpIsCombo() ? oNodep->name() : oNodep->nextp()->name();
         if (oValName == "-") {
-            if (edgetrigp) pushDeletep(edgetrigp);
-            if (logandp) pushDeletep(logandp);
+            if (edgetrigp) VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
+            if (logandp) VL_DO_DANGLING(pushDeletep(logandp), logandp);
             return;
         }
 
@@ -173,23 +173,24 @@ class UdpVisitor final : public VNVisitor {
             } else if (oNodep->name() == "x" || oNodep->name() == "X") {
                 // No x inputs supported yet, so this whole table line
                 // can never match. Drop the whole thing.
-                if (edgetrigp) pushDeletep(edgetrigp);
-                if (logandp) pushDeletep(logandp);
+                if (edgetrigp) VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
+                if (logandp) VL_DO_DANGLING(pushDeletep(logandp), logandp);
                 return;
             }
         }
 
         fl->warnOff(V3ErrorCode::LATCH, true);
-        AstIf* const ifp
-            = new AstIf{fl, logandp,
-                        new AstAssign{fl, new AstVarRef{fl, m_oFieldVarp, VAccess::WRITE},
-                                      new AstConst{fl, getOutputNum(nodep, oValName)}}};
+        // Edge-triggered lines are clocked logic, so update like a flop:
+        // other clocked logic reading the output sees the pre-edge value, regardless of ordering
+        AstNodeStmt* const assignp
+            = newOutputAssign(fl, getOutputNum(nodep, oValName), edgetrigp != nullptr);
+        AstIf* const ifp = new AstIf{fl, logandp, assignp};
         if (nodep->udpIsCombo()) {
             if (!isCombOutputSig(oValName)) {
                 oNodep->v3error("Illegal value for combinational UDP line output");
             }
             m_alwaysBlockp->addStmtsp(ifp);
-            if (edgetrigp) pushDeletep(edgetrigp);
+            if (edgetrigp) VL_DO_DANGLING(pushDeletep(edgetrigp), edgetrigp);
             return;
         }
         if (!isSequentOutputSig(oValName)) {
@@ -232,6 +233,12 @@ class UdpVisitor final : public VNVisitor {
     static bool isSequentOutputSig(const std::string& valName) {
         return (valName == "0" || valName == "1" || valName == "x" || valName == "X"
                 || valName == "-");
+    }
+    AstNodeStmt* newOutputAssign(FileLine* fl, const V3Number& outNum, bool isDelayed) const {
+        AstVarRef* const lhsp = new AstVarRef{fl, m_oFieldVarp, VAccess::WRITE};
+        AstConst* const rhsp = new AstConst{fl, outNum};
+        if (isDelayed) return new AstAssignDly{fl, lhsp, rhsp};
+        return new AstAssign{fl, lhsp, rhsp};
     }
     static V3Number getOutputNum(AstNode* nodep, const std::string& fieldNames) {
         V3Number outputNum{nodep, 1};

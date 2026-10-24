@@ -69,6 +69,15 @@
 # define VL_PREFETCH_RW(p) __builtin_prefetch((p), 1)
 #endif
 
+#if defined(__clang__) && defined(__has_feature)
+# if __has_feature(thread_sanitizer)  // Cannot be part of above &&; upsets gcc
+#  define VL_ATTR_NO_SANITIZE_THREAD __attribute__((no_sanitize("thread")))
+# endif
+#endif
+#ifndef VL_ATTR_NO_SANITIZE_THREAD
+# define VL_ATTR_NO_SANITIZE_THREAD
+#endif
+
 #ifdef __cpp_lib_unreachable
 /// Statement that may never be reached (for coverage etc)
 # define VL_UNREACHABLE std::unreachable()  // C++23
@@ -217,6 +226,8 @@
     VL_EXCLUDES(VlOs::MtScopeMutex::s_haveThreadScope)
 // Comment tag that function is threadsafe
 #define VL_MT_SAFE VL_CLANG_ATTR(annotate("MT_SAFE"))
+// Comment tag that function is pretending to be threadsafe due to very special usage
+#define VL_MT_SAFE_PRETEND VL_CLANG_ATTR(annotate("MT_SAFE"))
 // Comment tag that function is threadsafe, only if
 // other threads doesn't change tree topology
 #define VL_MT_STABLE VL_CLANG_ATTR(annotate("MT_STABLE"))
@@ -241,7 +252,8 @@
 // This is not necessarily the same as "#UL", depending on what the IData typedef is.
 #define VL_UL(c) (static_cast<IData>(c##UL))
 
-#if defined(VL_CPPCHECK) || defined(__clang_analyzer__) || __cplusplus < 201103L
+#if defined(VL_CPPCHECK) || defined(__clang_analyzer__) \
+    || (__cplusplus < 201103L && (!defined(_MSVC_LANG) || _MSVC_LANG < 201103L))
 # define VL_DANGLING(var)
 #else
 /// After e.g. delete, set variable to nullptr to indicate must not use later
@@ -316,6 +328,17 @@
 # define VL_CONSTEXPR_CXX17 constexpr
 #else
 # define VL_CONSTEXPR_CXX17
+#endif
+
+//=========================================================================
+// C++-2020
+
+#if __cplusplus >= 202002L
+# define VL_CONSTINIT_CXX20 constinit
+# define VL_NO_UNIQUE_ADDRESS_CXX20 [[no_unique_address]]
+#else
+# define VL_CONSTINIT_CXX20
+# define VL_NO_UNIQUE_ADDRESS_CXX20
 #endif
 
 //=========================================================================
@@ -452,7 +475,8 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_VFORMATATTR_SIGNED '~'  // (int widthMin, IData/VlWide/etc) Signed number; for %d showing sign
 #define VL_VFORMATATTR_COMPLEX '!'  // (std::string*); for non-POD; e.g. struct, requires %p typically
 #define VL_VFORMATATTR_DOUBLE 'D'  // (double); promote %p to %f
-#define VL_VFORMATATTR_ENUM 'E'  // (width, IData/QData, std::string* name); <= 64 bit enum with runtime %p/%s
+#define VL_VFORMATATTR_ENUM 'E'  // (width, IData/QData/const EData*, STRING, std::string* name)
+#define VL_VFORMATATTR_ENUM_SIGNED 'F'  // Same arguments as ENUM, with a signed numeric value
 #define VL_VFORMATATTR_SCOPE 'M'  // (char* name, char* scope); for scopes
 #define VL_VFORMATATTR_STRING 'S'  // (char* name, char* scope); for scopes  // (std::string*); for %p/%s
 #define VL_VFORMATATTR_TIMEUNIT 'T'  // (int timeunit); timeunits passed from V3Emit to runtime
@@ -531,10 +555,12 @@ using ssize_t = uint32_t;  ///< signed size_t; returned from read()
 #define VL_EUL(n) VL_UL(n)  // Make constant number EData sized
 
 #define VL_BITWORD_I(bit) ((bit) / VL_IDATASIZE)  ///< Word number for sv DPI vectors
+#define VL_BITWORD_Q(bit) ((bit) / VL_QUADSIZE)  ///< Quadword number for a bit
 #define VL_BITWORD_E(bit) ((bit) >> VL_EDATASIZE_LOG2)  ///< Word number for a wide quantity
 #define VL_BITBIT_I(bit) ((bit) & VL_SIZEBITS_I)  ///< Bit number for a bit in a long
 #define VL_BITBIT_Q(bit) ((bit) & VL_SIZEBITS_Q)  ///< Bit number for a bit in a quad
 #define VL_BITBIT_E(bit) ((bit) & VL_SIZEBITS_E)  ///< Bit number for a bit in an EData
+#define VL_BIT_Q(bit) (1ULL << VL_BITBIT_Q(bit))  ///< Quad with only the given bit set
 
 // Return true if data[bit] set; not 0/1 return, but 0/non-zero return.
 #define VL_BITISSET_I(data, bit) ((data) & (VL_UL(1) << VL_BITBIT_I(bit)))
@@ -601,7 +627,12 @@ inline double VL_ROUND(double n) {
 # define VL_CPU_RELAX() asm volatile("hint @pause" ::: "memory")
 #elif defined(__armel__) || defined(__ARMEL__)  // Arm, but broken, must be before __arm__
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory");
-#elif defined(__aarch64__) || defined(__arm__)
+#elif defined(__aarch64__)
+// YIELD does nothing on most AArch64 cores, so spin loops would end far sooner than on x86.
+// ISB drains the spinning core's own pipeline so it stalls briefly like x86 PUASE.
+// It does not flush caches, TLBs or branch predictors, and the spinning core has nothing else in flight.
+# define VL_CPU_RELAX() asm volatile("isb" ::: "memory")
+#elif defined(__arm__)
 # define VL_CPU_RELAX() asm volatile("yield" ::: "memory")
 #elif defined(__hppa__)  // HPPA does not currently have yield/pause
 # define VL_CPU_RELAX() asm volatile("nop" ::: "memory")
@@ -736,7 +767,7 @@ namespace vlstd {
 
 template <typename T>
 struct reverse_wrapper final {
-    const T& m_v;
+    const T& m_v;  // Pre-wrapped iterator
 
     explicit reverse_wrapper(const T& a_v)
         : m_v(a_v) {}  // Need () constructor

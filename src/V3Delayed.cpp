@@ -61,15 +61,15 @@
 //   LHS[idxa][idxb] <= RHS
 // is converted to:
 //  - Add new "Pre-scheduled" logic:
-//      __VdlySet__LHS = 0;
+//      __Vdly_Set__LHS = 0;
 //  - In the original logic, replace the AstAssignDelay with:
-//      __VdlySet__LHS = 1;
-//      __VdlyDim0__LHS = idxa;
-//      __VdlyDim1__LHS = idxb;
-//      __VdlyVal__LHS = RHS;
+//      __Vdly_Set__LHS = 1;
+//      __Vdly_Dim0__LHS = idxa;
+//      __Vdly_Dim1__LHS = idxb;
+//      __Vdly_Val__LHS = RHS;
 //  - Add new "Post-scheduled" logic:
-//      if (__VdlySet__LHS) a[__VdlyDim0__LHS][__VdlyDim1__LHS] = __VdlyVal__LHS;
-// Multiple consecutive NBAs of compatible form can share the same  __VdlySet* flag
+//      if (__Vdly_Set__LHS) a[__Vdly_Dim0__LHS][__Vdly_Dim1__LHS] = __Vdly_Val__LHS;
+// Multiple consecutive NBAs of compatible form can share the same  __Vdly_Set* flag
 //
 // "Shadow variable masked" scheme. Used for packed target variables that
 // have both blocking and non-blocking updates. E.g.:
@@ -78,22 +78,22 @@
 // is converted to:
 //  - In the original logic, replace the AstAssignDelay with:
 //      __Vdly__LHS[Index] = RHS;
-//      __VdlyMask__LHS[Index] = '1;
+//      __Vdly_Mask__LHS[Index] = '1;
 //  - Add new "Post-scheduled" logic:
-//      LHS = (__Vdly__LHS & __VdlyMask__LHS) | (LHS & ~__VdlyMask__LHS);
-//      __VdlyMask__LHS = '0;
+//      LHS = (__Vdly__LHS & __Vdly_Mask__LHS) | (LHS & ~__Vdly_Mask__LHS);
+//      __Vdly_Mask__LHS = '0;
 //
 // "Unique flag" scheme. Used for all variables updated by NBAs
 // in suspendable processees or forks. E.g.:
 //   #1 LHS <= RHS;
 // is converted to:
 //  - In the original logic, replace the AstAssignDelay with:
-//      __VdlySet__LHS = 1;
-//      __VdlyVal__LHS = RHS;
+//      __Vdly_SetUnique__LHS = 1;
+//      __Vdly_Val__LHS = RHS;
 //  - Add new "Post-scheduled" logic:
-//      if (__VdlySet__LHS) {
-//         __VdlySet__LHS = 0;
-//         LHS = __VdlyVal__LHS;
+//      if (__Vdly_SetUnique__LHS) {
+//         __Vdly_SetUnique__LHS = 0;
+//         LHS = __Vdly_Val__LHS;
 //      }
 //
 // The "Value Queue Whole/Partial" schemes are used for cases where the
@@ -102,12 +102,12 @@
 //   LHS[idxa][idxb] <= RHS
 // is converted to:
 //  - In the original logic, replace the AstAssignDelay with:
-//      __VdlyDim0__LHS = idxa;
-//      __VdlyDim1__LHS = idxb;
-//      __VdlyVal__LHS = RHS;
-//      __VdlyCommitQueue__LHS.enqueue(__VdlyVal__LHS, __VdlyDim0__LHS, __VdlyDim1__LHS);
+//      __Vdly_Dim0__LHS = idxa;
+//      __Vdly_Dim1__LHS = idxb;
+//      __Vdly_Val__LHS = RHS;
+//      __Vdly_CommitQueue__LHS.enqueue(__Vdly_Val__LHS, __Vdly_Dim0__LHS, __Vdly_Dim1__LHS);
 //  - Add new "Post-scheduled" logic:
-//      __VdlyCommitQueue.commit(LHS);
+//      __Vdly_CommitQueue__LHS.commit(LHS);
 //
 // TODO: generic LHS scheme as discussed in #5092
 //
@@ -118,10 +118,14 @@
 #include "V3Delayed.h"
 
 #include "V3AstUserAllocator.h"
+#include "V3ClassGraph.h"
 #include "V3Const.h"
+#include "V3LinkLValue.h"
+#include "V3SharedTmps.h"
 #include "V3Stats.h"
 
 #include <deque>
+#include <map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -155,7 +159,6 @@ class DelayedVisitor final : public VNVisitor {
         bool m_inLoop = false;  // Used on LHS of NBA in a loop
         bool m_inSuspOrFork = false;  // Used on LHS of NBA in suspendable process or fork
         Scheme m_scheme = Scheme::Undecided;  // Conversion scheme to use for this variable
-        uint32_t m_nTmp = 0;  // Temporary number for unique names
 
     private:
         // Combined sensitivities of all NBAs targeting this variable
@@ -250,21 +253,45 @@ class DelayedVisitor final : public VNVisitor {
     //  AstVar::user1()         -> bool.  Set true if already issued MULTIDRIVEN warning
     //  AstVarRef::user1()      -> bool.  Set true if target of NBA
     //  AstAssignDly::user1()   -> bool.  Set true if already visited
+    //  AstCFunc::user1()       -> AstUser1Allocator.  See `m_cfuncsCache` below
     //  AstAssignDly::user2p()  -> AstVarScope*: Scope this AstAssignDelay is under
-    //  AstNodeModule::user1p() -> std::unorded_map<std::string, AstVar*> temp map via m_varMap
-    //  AstScope::user1()       -> int: Temporary counter for this scope
     //  AstVarScope::user1p()   -> VarScopeInfo via m_vscpInfo
     //  AstVarScope::user2p()   -> AstVarRef*: First write reference to the Variable
     //  AstVarScope::user3p()   -> std::vector<WriteReference> via m_writeRefs;
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
-    AstUser1Allocator<AstNodeModule, std::unordered_map<std::string, AstVar*>> m_varMap;
+
+    struct CFuncCache final {
+        VInsertionSet<AstSenTree*> m_timingDomains;  // What shall be added to m_timingDomains
+        std::set<AstCFunc*>
+            m_includes;  // CFuncs whose CFuncCache shall be included into this - this is used to
+                         // break cycles: A->B->A (instead of visiting A while it is still begin
+                         // visited B just marks that it includes A)
+        enum State : uint8_t {
+            UNINITIALIZED = 0,  // Not initialized members are empty
+            VISITING,  // Visiting - needed for breaking recursion
+            INITIALIZED,  // Members contains correct values
+        } m_state  // Current state of Cache
+        = UNINITIALIZED;
+    };
+
+    // Caches what should be added to m_timingDomains because of calls to the AstCFunc (with
+    // recursive check of other AstCFuncs called from inside)
+    AstUser1Allocator<AstCFunc, CFuncCache> m_cfuncsCache;
     AstUser1Allocator<AstVarScope, VarScopeInfo> m_vscpInfo;
     AstUser3Allocator<AstVarScope, std::vector<WriteReference>> m_writeRefs;
 
     // STATE - across all visitors
     VInsertionSet<AstSenTree*> m_timingDomains;  // Timing resume domains
+    V3SharedTmps m_dlyTmps{"__Vdly", VVarType::BLOCKTEMP};  // Temporary variables
+    // Commit queue data types, by element type and partial flag. Shared by all instances,
+    // as m_dlyTmps only shares variables with the same data type.
+    std::map<std::pair<const AstNodeDType*, bool>, AstNBACommitQueueDType*> m_cqDTypeps;
+
+    const std::unique_ptr<V3ClassGraph>
+        m_classGraphp;  // class graph to get possibly called functions from a virtual call
+    std::vector<const AstCFunc*> m_callStack;  // Current callstack of AstCFuncs
 
     // STATE - for current visit position (use VL_RESTORER)
     AstActive* m_activep = nullptr;  // Current activate
@@ -276,6 +303,7 @@ class DelayedVisitor final : public VNVisitor {
     bool m_ignoreBlkAndNBlk = false;  // Suppress delayed assignment BLKANDNBLK
     bool m_inNonCombLogic = false;  // We are in non-combinational logic
     bool m_needsInitialTrigger = false;  // Whether a NodeProcedure needs a initial trigger
+    std::vector<AstSenTree*> m_nbaEventSenTreeps;  // Sensitivities of '->>' in the process
     AstVarRef* m_currNbaLhsRefp = nullptr;  // Current NBA LHS variable reference
 
     // STATE - during NBA conversion (after visit)
@@ -293,6 +321,7 @@ class DelayedVisitor final : public VNVisitor {
     VDouble0 m_nSchemeValueQueuesPartial;  //  Number of variables using Scheme::ValueQueuePartial
     VDouble0 m_nSharedSetFlags;  // "Set" flags actually shared by Scheme::FlagShared variables
     VDouble0 m_nInitialNBA;  // Number of procedural blocks with initial NBA
+    VDouble0 m_nonInlinedCAwaitsWithSenTree;  // Count uses of not inlined co_awaits
 
     // METHODS
 
@@ -417,8 +446,12 @@ class DelayedVisitor final : public VNVisitor {
         const AstNodeDType* const dtypep = vscp->dtypep()->skipRefp();
         // Unpacked arrays
         if (const AstUnpackArrayDType* const uaDTypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            // If whole array is target of NBA, use ShadowVar
-            if (vscpInfo.m_whole) return Scheme::ShadowVar;
+            // If whole array is target of NBA, use ShadowVar, but not in a suspendable process or
+            // fork, which resume outside the 'nba' region, so its 'pre' logic would overwrite the
+            // value they write in the shadow variable
+            if (vscpInfo.m_whole) {
+                return vscpInfo.m_inSuspOrFork ? Scheme::FlagUnique : Scheme::ShadowVar;
+            }
             // Basic underlying type of elements, if any.
             const AstBasicDType* const basicp = uaDTypep->basicp();
             // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
@@ -433,7 +466,8 @@ class DelayedVisitor final : public VNVisitor {
                 if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
                 return Scheme::ValueQueueWhole;
             }
-            // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+            // A suspendable process or fork can resume outside the 'nba' region, so the 'pre'
+            // logic of the other schemes would undo its updates. The unique flag scheme has none.
             if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
             // Otherwise if an array of packed/basic elements, use the shared flag scheme
             if (basicp) return Scheme::FlagShared;
@@ -443,7 +477,8 @@ class DelayedVisitor final : public VNVisitor {
             return Scheme::ShadowVar;
         }
 
-        // In a suspendable of fork, we must use the unique flag scheme, TODO: why?
+        // Likewise, the 'pre' logic of the shadow variable scheme would undo the updates of a
+        // suspendable process or fork, so use the unique flag scheme
         if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
 
         const bool isIntegralOrPacked = dtypep->isIntegralOrPacked();
@@ -468,33 +503,6 @@ class DelayedVisitor final : public VNVisitor {
         return Scheme::ShadowVar;
     }
 
-    // Create new AstVarScope in the given 'scopep', with the given 'name' and 'dtypep'
-    AstVarScope* createTemp(FileLine* flp, AstScope* scopep, const std::string& name,
-                            AstNodeDType* dtypep) {
-        AstNodeModule* const modp = scopep->modp();
-        // Get/create the corresponding AstVar
-        AstVar*& varp = m_varMap(modp)[name];
-        if (!varp) {
-            varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
-            modp->addStmtsp(varp);
-        }
-
-        // We should be able to assert this here, but unfortuantely
-        // 'isAssignmentCompatible' does not exist as of right now.
-        // UASSERT_OBJ(isAssignmentCompatible(varp->dtypep(), dtypep), flp, "Invalid temporary");
-
-        // Create the AstVarScope
-        AstVarScope* const varscp = new AstVarScope{flp, scopep, varp};
-        scopep->addVarsp(varscp);
-        return varscp;
-    }
-
-    // Same as above but create a 2-state scalar of the given 'width'
-    AstVarScope* createTemp(FileLine* flp, AstScope* scopep, const std::string& name, int width) {
-        AstNodeDType* const dtypep = scopep->findBitDType(width, width, VSigning::UNSIGNED);
-        return createTemp(flp, scopep, name, dtypep);
-    }
-
     // Given an expression 'exprp', return a new expression that always evaluates to the
     // value of the given expression at this point in the program. That is:
     // - If given a non-constant expression, create a new temporary AstVarScope under the given
@@ -508,7 +516,7 @@ class DelayedVisitor final : public VNVisitor {
         FileLine* const flp = exprp->fileline();
         if (VN_IS(exprp, Const)) return exprp;
         // TODO: there are some const variables that could be simply referenced here
-        AstVarScope* const tmpVscp = createTemp(flp, scopep, name, exprp->dtypep());
+        AstVarScope* const tmpVscp = m_dlyTmps.make(flp, scopep, exprp->dtypep(), name);
         insertp->addHereThisAsNext(
             new AstAssign{flp, new AstVarRef{flp, tmpVscp, VAccess::WRITE}, exprp});
         return new AstVarRef{flp, tmpVscp, VAccess::READ};
@@ -521,46 +529,55 @@ class DelayedVisitor final : public VNVisitor {
                             AstNodeExpr* const lhsp, const std::string& baseName) {
         UASSERT_OBJ(!lhsp->backp(), lhsp, "Should have been unlinked");
         // Running node pointer
-        AstNode* nodep = lhsp;
+        AstNodeExpr* nodep = lhsp;
         // Capture AstSel indices - there should be only one
         if (AstSel* const selp = VN_CAST(nodep, Sel)) {
-            const std::string tmpName{"__VdlyLsb" + baseName};
+            const std::string tmpName{"Lsb" + baseName};
             selp->lsbp(captureVal(scopep, insertp, selp->lsbp()->unlinkFrBack(), tmpName));
             // Continue with target
             nodep = selp->fromp();
         }
         UASSERT_OBJ(!VN_IS(nodep, Sel), lhsp, "Multiple 'AstSel' applied to LHS reference");
-        // Capture AstArraySel indices - might be many
+        // Capture the indices of selects - might be many, also below struct members. If a handle
+        // selects the instance the target is a member of, capture the handle instead, as it is
+        // only read, to select the target when the NBA is executed (IEEE 1800-2023 10.4.2).
         size_t nArraySels = 0;
-        while (AstArraySel* const arrSelp = VN_CAST(nodep, ArraySel)) {
-            const std::string tmpName{"__VdlyDim" + std::to_string(nArraySels++) + baseName};
-            arrSelp->bitp(captureVal(scopep, insertp, arrSelp->bitp()->unlinkFrBack(), tmpName));
-            nodep = arrSelp->fromp();
+        while (true) {
+            if (AstNodeSel* const selp = VN_CAST(nodep, NodeSel)) {
+                const std::string tmpName{"Dim" + std::to_string(nArraySels++) + baseName};
+                selp->bitp(captureVal(scopep, insertp, selp->bitp()->unlinkFrBack(), tmpName));
+                nodep = selp->fromp();
+            } else if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
+                nodep = selp->fromp();
+            } else if (AstMemberSel* const selp = VN_CAST(nodep, MemberSel)) {
+                AstNodeExpr* const handlep = selp->fromp()->unlinkFrBack();
+                V3LinkLValue::linkLValueSet(handlep, VAccess::READ);
+                AstVarRef* const refp
+                    = VN_AS(captureVal(scopep, insertp, handlep, "Handle" + baseName), VarRef);
+                refp->varp()->setIgnorePostWrite();
+                // Like the handle it replaces, mark it written, as is the member it selects
+                refp->access(selp->access());
+                selp->fromp(refp);
+                return lhsp;
+            } else {
+                break;
+            }
         }
-        // What remains must be an AstVarRef, or some sort of select, we assume can reuse it.
-        if (const AstAssocSel* const aselp = VN_CAST(nodep, AssocSel)) {
-            UASSERT_OBJ(aselp->fromp()->isPure() && aselp->bitp()->isPure(), lhsp,
-                        "Malformed LHS in NBA");
-        } else {
-            UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
-        }
+        // What remains must be the variable, or some sort of select, we assume can reuse it
+        UASSERT_OBJ(nodep->isPure(), lhsp, "Malformed LHS in NBA");
         // Now have been converted to use the captured values
         return lhsp;
     }
 
-    // Create a unique temporary variable name
-    std::string uniqueTmpName(AstScope* scopep, const AstVarScope* vscp, VarScopeInfo& vscpInfo) {
-        std::stringstream ss;
-        ss << "__" << vscp->varp()->shortName() + "__v";
-        // If the assignment is in the same scope as the variable, just
-        // use the temporary counter of the variable.
-        if (scopep == vscp->scopep()) {
-            ss << vscpInfo.m_nTmp++;
-        } else {
-            // Otherwise use the temporary counter of the scope of the assignment.
-            ss << scopep->user1Inc() << "_hierarchical";
+    void addCFuncCachedValues(const AstCFunc* const cfuncp,
+                              std::unordered_set<const AstCFunc*>& visited) {
+        if (!visited.insert(cfuncp).second) return;
+        CFuncCache& value = m_cfuncsCache(cfuncp);
+        m_timingDomains.insert(value.m_timingDomains.begin(), value.m_timingDomains.end());
+        m_nonInlinedCAwaitsWithSenTree += value.m_timingDomains.size();
+        for (const AstCFunc* const includedp : value.m_includes) {
+            addCFuncCachedValues(includedp, visited);
         }
-        return ss.str();
     }
 
     // Create a temporary variable in the given 'scopep', with the given 'name', and with 'dtypep'
@@ -571,7 +588,7 @@ class DelayedVisitor final : public VNVisitor {
                              AstNodeExpr* sLsbp, int sWidth, const std::string& name,
                              AstNodeExpr* valuep, AstNode* insertp) {
         // Create temporary variable.
-        AstVarScope* const tp = createTemp(flp, scopep, name, dtypep);
+        AstVarScope* const tp = m_dlyTmps.make(flp, scopep, dtypep, name);
         // Zero it
         AstConst* const zerop = new AstConst{flp, AstConst::DTyped{}, dtypep};
         zerop->num().setAllBits0();
@@ -591,8 +608,8 @@ class DelayedVisitor final : public VNVisitor {
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = vscp->scopep();
         // Create the shadow variable
-        const std::string name = "__Vdly__" + vscp->varp()->shortName();
-        AstVarScope* const shadowVscp = createTemp(flp, scopep, name, vscp->dtypep());
+        const std::string name = "_" + vscp->varp()->shortName();
+        AstVarScope* const shadowVscp = m_dlyTmps.make(flp, scopep, vscp->dtypep(), name);
         vscpInfo.shadowVariableKit().vscp = shadowVscp;
         // Mark both for V3LifePsot
         vscp->optimizeLifePost(true);
@@ -631,12 +648,12 @@ class DelayedVisitor final : public VNVisitor {
         FileLine* const flp = vscp->fileline();
         AstScope* const scopep = vscp->scopep();
         // Create the shadow variable
-        const std::string shadowName = "__Vdly__" + vscp->varp()->shortName();
-        AstVarScope* const shadowVscp = createTemp(flp, scopep, shadowName, vscp->dtypep());
+        const std::string shadowName = "_" + vscp->varp()->shortName();
+        AstVarScope* const shadowVscp = m_dlyTmps.make(flp, scopep, vscp->dtypep(), shadowName);
         vscpInfo.shadowVarMaskedKit().vscp = shadowVscp;
         // Create the makk variable
-        const std::string maskName = "__VdlyMask__" + vscp->varp()->shortName();
-        AstVarScope* const maskVscp = createTemp(flp, scopep, maskName, vscp->dtypep());
+        const std::string maskName = "Mask__" + vscp->varp()->shortName();
+        AstVarScope* const maskVscp = m_dlyTmps.make(flp, scopep, vscp->dtypep(), maskName);
         maskVscp->varp()->setIgnorePostWrite();
         vscpInfo.shadowVarMaskedKit().maskp = maskVscp;
         // Create the AstActive for the Post logic
@@ -713,11 +730,11 @@ class DelayedVisitor final : public VNVisitor {
         AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
 
         // Base name suffix for signals constructed below
-        const std::string baseName = uniqueTmpName(scopep, vscp, vscpInfo);
+        const std::string baseName = "__" + vscp->varp()->shortName();
 
         // Unlink and capture the RHS value
         AstNodeExpr* const capturedRhsp
-            = captureVal(scopep, nodep, nodep->rhsp()->unlinkFrBack(), "__VdlyVal" + baseName);
+            = captureVal(scopep, nodep, nodep->rhsp()->unlinkFrBack(), "Val" + baseName);
 
         // Unlink and capture the LHS reference
         AstNodeExpr* const capturedLhsp
@@ -742,7 +759,7 @@ class DelayedVisitor final : public VNVisitor {
 
         if (!reuseTheFlag) {
             // Create new flag
-            AstVarScope* const flagVscp = createTemp(flp, scopep, "__VdlySet" + baseName, 1);
+            AstVarScope* const flagVscp = m_dlyTmps.make(flp, scopep, 1, "Set" + baseName);
             // Set the flag at the original NBA
             nodep->addHereThisAsNext(  //
                 new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
@@ -784,7 +801,7 @@ class DelayedVisitor final : public VNVisitor {
         m_prevVscp = vscp;
 
         // Delete original NBA
-        pushDeletep(nodep->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     // Scheme::FlagUnique
@@ -807,18 +824,18 @@ class DelayedVisitor final : public VNVisitor {
         AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
 
         // Base name suffix for signals constructed below
-        const std::string baseName = uniqueTmpName(scopep, vscp, vscpInfo);
+        const std::string baseName = "__" + vscp->varp()->shortName();
 
         // Unlink and capture the RHS value
         AstNodeExpr* const capturedRhsp
-            = captureVal(scopep, nodep, nodep->rhsp()->unlinkFrBack(), "__VdlyVal" + baseName);
+            = captureVal(scopep, nodep, nodep->rhsp()->unlinkFrBack(), "Val" + baseName);
 
         // Unlink and capture the LHS reference
         AstNodeExpr* const capturedLhsp
             = captureLhs(scopep, nodep, nodep->lhsp()->unlinkFrBack(), baseName);
 
         // Create new flag
-        AstVarScope* const flagVscp = createTemp(flp, scopep, "__VdlySet" + baseName, 1);
+        AstVarScope* const flagVscp = m_dlyTmps.make(flp, scopep, 1, "Set" + baseName);
         flagVscp->varp()->setIgnorePostWrite();
         // Set the flag at the original NBA
         nodep->addHereThisAsNext(  //
@@ -834,7 +851,7 @@ class DelayedVisitor final : public VNVisitor {
         ifp->addThensp(new AstAssign{flp, capturedLhsp, capturedRhsp});
 
         // Delete original NBA
-        pushDeletep(nodep->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     // Scheme::ValueQueuePartial/Scheme::ValueQueueWhole
@@ -847,11 +864,14 @@ class DelayedVisitor final : public VNVisitor {
         AstScope* const scopep = vscp->scopep();
 
         // Create the commit queue variable
-        auto* const cqDTypep
-            = new AstNBACommitQueueDType{flp, vscp->dtypep()->skipRefp(), N_Partial};
-        v3Global.rootp()->typeTablep()->addTypesp(cqDTypep);
-        const std::string name = "__VdlyCommitQueue" + vscp->varp()->shortName();
-        AstVarScope* const queueVscp = createTemp(flp, scopep, name, cqDTypep);
+        AstNodeDType* const elemDTypep = vscp->dtypep()->skipRefp();
+        AstNBACommitQueueDType*& cqDTypep = m_cqDTypeps[{elemDTypep, N_Partial}];
+        if (!cqDTypep) {
+            cqDTypep = new AstNBACommitQueueDType{flp, elemDTypep, N_Partial};
+            v3Global.rootp()->typeTablep()->addTypesp(cqDTypep);
+        }
+        const std::string name = "CommitQueue__" + vscp->varp()->shortName();
+        AstVarScope* const queueVscp = m_dlyTmps.make(flp, scopep, cqDTypep, name);
         queueVscp->varp()->noReset(true);
         queueVscp->varp()->setIgnorePostWrite();
         vscpInfo.valueQueueKit().vscp = queueVscp;
@@ -865,8 +885,9 @@ class DelayedVisitor final : public VNVisitor {
         activep->addStmtsp(postp);
         // Add the commit
         AstCMethodHard* const callp = new AstCMethodHard{
-            flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, VCMethod::SCHED_COMMIT};
+            flp, new AstVarRef{flp, queueVscp, VAccess::READWRITE}, VCMethod::NBA_COMMIT};
         callp->dtypeSetVoid();
+        // TODO: this is a partial update, so must be READWRITE, but that breaks scheduling
         callp->addPinsp(new AstVarRef{flp, vscp, VAccess::WRITE});
         postp->addStmtsp(callp->makeStmt());
     }
@@ -880,11 +901,11 @@ class DelayedVisitor final : public VNVisitor {
         AstScope* const scopep = VN_AS(nodep->user2p(), Scope);
 
         // Base name suffix for signals constructed below
-        const std::string baseName = uniqueTmpName(scopep, vscp, vscpInfo);
+        const std::string baseName = "__" + vscp->varp()->shortName();
 
         // Unlink and capture the RHS value
         AstNodeExpr* const capturedRhsp
-            = captureVal(scopep, nodep, nodep->rhsp()->unlinkFrBack(), "__VdlyVal" + baseName);
+            = captureVal(scopep, nodep, nodep->rhsp()->unlinkFrBack(), "Val" + baseName);
 
         // Unlink and capture the LHS reference
         AstNodeExpr* const capturedLhsp
@@ -928,8 +949,8 @@ class DelayedVisitor final : public VNVisitor {
                     // A non-constant mask we must compute at run-time.
                     AstConst* const onesp = new AstConst{flp, AstConst::WidthedValue{}, sWidth, 0};
                     onesp->num().setAllBits1();
-                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidth,
-                                         "__VdlyMask" + baseName, onesp, nodep);
+                    return createWidened(flp, scopep, eDTypep, sLsbp, sWidth, "Mask" + baseName,
+                                         onesp, nodep);
                 }();
 
                 // Adjust value to element size
@@ -947,7 +968,7 @@ class DelayedVisitor final : public VNVisitor {
 
                     // A non-constant value we must adjust.
                     return createWidened(flp, scopep, eDTypep, sLsbp, sWidth,  //
-                                         "__VdlyElem" + baseName, valuep, nodep);
+                                         "Elem" + baseName, valuep, nodep);
                 }();
             } else {
                 // If this assignment is not partial, set mask to ones and we are done
@@ -975,7 +996,7 @@ class DelayedVisitor final : public VNVisitor {
         // Enqueue the update at the site of the original NBA
         AstCMethodHard* const callp = new AstCMethodHard{
             flp, new AstVarRef{flp, vscpInfo.valueQueueKit().vscp, VAccess::READWRITE},
-            VCMethod::SCHED_ENQUEUE};
+            VCMethod::NBA_ENQUEUE};
         callp->dtypeSetVoid();
         callp->addPinsp(valuep);
         if (partial) callp->addPinsp(maskp);
@@ -983,7 +1004,7 @@ class DelayedVisitor final : public VNVisitor {
         nodep->addHereThisAsNext(callp->makeStmt());
 
         // Delete original NBA
-        pushDeletep(nodep->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
 
     // Record where a variable is assigned
@@ -1005,6 +1026,43 @@ class DelayedVisitor final : public VNVisitor {
     static bool isProcedureWithSentreep(const AstNodeProcedure* const nodep) {
         const Procedure_T* const procedurep = AstNode::cast<Procedure_T>(nodep);
         return procedurep && procedurep->sentreep();
+    }
+
+    // Visit AstCFunc from a AstNodeCCall - this is made into a separate quasi-visitor because
+    // AstCFunc that is not called from the code (e.g.: DPI exports) does not need to be visited
+    // this way. Also, not visiting such AstCFuncs allows to avoid caching results for them which
+    // this function does - which could lead to excessive memory usage
+    void visitCalledCFunc(AstCFunc* const nodep) {
+        CFuncCache& value = m_cfuncsCache(nodep);
+        switch (value.m_state) {
+        case CFuncCache::UNINITIALIZED: {
+            // Save current state
+            VL_RESTORER_CLEAR(m_timingDomains);
+
+            // Visit
+            value.m_state = CFuncCache::VISITING;
+            m_callStack.push_back(nodep);
+            {
+                VL_RESTORER(m_cfuncp);
+                m_cfuncp = nodep;
+                iterateChildren(nodep);
+            }
+            m_callStack.pop_back();
+            value.m_state = CFuncCache::INITIALIZED;
+
+            // Save a cache
+            std::swap(m_timingDomains, value.m_timingDomains);
+        } break;
+        case CFuncCache::VISITING: {
+            for (size_t i = m_callStack.size() - 1; m_callStack.at(i) != nodep; --i) {
+                m_cfuncsCache(m_callStack[i]).m_includes.insert(nodep);
+            }
+            return;  // Break recursion
+        }
+        case CFuncCache::INITIALIZED: break;
+        }
+        std::unordered_set<const AstCFunc*> visited;
+        addCFuncCachedValues(nodep, visited);
     }
 
     // VISITORS
@@ -1103,11 +1161,6 @@ class DelayedVisitor final : public VNVisitor {
         m_scopep = nodep;
         iterateChildren(nodep);
     }
-    void visit(AstCFunc* nodep) override {
-        VL_RESTORER(m_cfuncp);
-        m_cfuncp = nodep;
-        iterateChildren(nodep);
-    }
     void visit(AstActive* nodep) override {
         UASSERT_OBJ(!m_activep, nodep, "Should not nest");
         VL_RESTORER(m_activep);
@@ -1121,6 +1174,7 @@ class DelayedVisitor final : public VNVisitor {
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_needsInitialTrigger);
+        VL_RESTORER_CLEAR(m_nbaEventSenTreeps);
         const size_t firstNBAAddedIndex = m_nbas.size();
         {
             VL_RESTORER(m_inSuspendableOrFork);
@@ -1172,16 +1226,23 @@ class DelayedVisitor final : public VNVisitor {
         for (size_t i = firstNBAAddedIndex; i < m_nbas.size(); ++i) {
             m_vscpInfo(m_nbas[i].vscp).addSensitivity(senItemp);
         }
+        for (AstSenTree* const senTreep : m_nbaEventSenTreeps)
+            senTreep->addSensesp(senItemp->cloneTree(true));
         // Done with these
         VL_DO_DANGLING(senItemp->deleteTree(), senItemp);
     }
     void visit(AstFork* nodep) override {
         VL_RESTORER(m_inSuspendableOrFork);
+        VL_RESTORER(m_inNonCombLogic);
         m_inSuspendableOrFork = true;
+        // Each branch runs as a process of its own (V3SchedTiming transformForks), so its
+        // blocking assignments are not combinational logic, like a suspendable process
+        m_inNonCombLogic = true;
         iterateChildren(nodep);
     }
     void visit(AstCAwait* nodep) override {
         if (nodep->sentreep()) m_timingDomains.insert(nodep->sentreep());
+        iterateChildren(nodep);
     }
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
@@ -1196,30 +1257,52 @@ class DelayedVisitor final : public VNVisitor {
         cstmtp->add(");");
 
         AstNode* newp = cstmtp;
-        if (nodep->isDelayed()) {
-            const AstVarRef* const vrefp = VN_AS(eventp, VarRef);
-            const std::string newvarname = "__Vdly__" + vrefp->varp()->shortName();
+        const AstVarRef* const vrefp = VN_CAST(eventp, VarRef);
+        if (nodep->isDelayed() && (m_cfuncp || !vrefp)) {
+            // V3Timing converts these with --timing
+            nodep->v3warn(E_NOTIMING, "Nonblocking event trigger "
+                                          << (m_cfuncp ? "in a non-inlined function/task"
+                                                       : "of a class or interface member or "
+                                                         "array element")
+                                          << " requires --timing");
+        } else if (nodep->isDelayed()) {
+            const std::string newvarname = "_" + vrefp->varp()->shortName();
             AstVarScope* const dlyvscp
-                = createTemp(flp, vrefp->varScopep()->scopep(), newvarname, 1);
+                = m_dlyTmps.make(flp, vrefp->varScopep()->scopep(), 1, newvarname);
 
             const auto dlyRef = [=](VAccess access) {  //
                 return new AstVarRef{flp, dlyvscp, access};
             };
 
-            AstAlwaysPre* const prep = new AstAlwaysPre{flp};
-            prep->addStmtsp(new AstAssign{flp, dlyRef(VAccess::WRITE),
-                                          new AstConst{flp, AstConst::BitFalse{}}});
             AstAlwaysPost* const postp = new AstAlwaysPost{flp};
-            {
-                AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
-                postp->addStmtsp(ifp);
-                ifp->addThensp(newp);
-            }
+            AstIf* const ifp = new AstIf{flp, dlyRef(VAccess::READ)};
+            postp->addStmtsp(ifp);
 
             UASSERT_OBJ(m_activep, nodep, "No active to handle FireEvent");
-            AstActive* const activep = new AstActive{flp, "nba-event", m_activep->sentreep()};
+            AstSenTree* senTreep = m_activep->sentreep();
+            AstActive* activep = nullptr;
+            if (m_inSuspendableOrFork && (senTreep->hasInitial() || senTreep->hasClocked())) {
+                // Suspendable code can trigger whenever it resumes, so fire when its NBAs are
+                // committed (see visit(AstNodeProcedure*)), clearing the flag like
+                // Scheme::FlagUnique
+                senTreep = new AstSenTree{
+                    flp, senTreep->hasClocked() ? senTreep->sensesp()->cloneTree(true) : nullptr};
+                m_nbaEventSenTreeps.push_back(senTreep);
+                m_needsInitialTrigger |= m_timingDomains.empty();
+                dlyvscp->varp()->setIgnorePostWrite();
+                ifp->addThensp(new AstAssign{flp, dlyRef(VAccess::WRITE),
+                                             new AstConst{flp, AstConst::BitFalse{}}});
+                activep = new AstActive{flp, "nba-event", senTreep};
+                activep->senTreeStorep(senTreep);
+            } else {
+                activep = new AstActive{flp, "nba-event", senTreep};
+                AstAlwaysPre* const prep = new AstAlwaysPre{flp};
+                prep->addStmtsp(new AstAssign{flp, dlyRef(VAccess::WRITE),
+                                              new AstConst{flp, AstConst::BitFalse{}}});
+                activep->addStmtsp(prep);
+            }
+            ifp->addThensp(newp);
             m_activep->addNextHere(activep);
-            activep->addStmtsp(prep);
             activep->addStmtsp(postp);
 
             newp = new AstAssign{flp, dlyRef(VAccess::WRITE),
@@ -1337,6 +1420,26 @@ class DelayedVisitor final : public VNVisitor {
         m_inLoop = true;
         iterateChildren(nodep);
     }
+    void visit(AstNodeCCall* const nodep) override {
+        iterateChildren(nodep);
+        // We need to visit bodies of non-inlined functions
+        const auto& cfuncps = m_classGraphp->getCallPossibleCFuncs(nodep);
+        if (cfuncps.empty()) {
+            visitCalledCFunc(nodep->funcp());
+        } else {
+            for (AstCFunc* const cfuncp : cfuncps) visitCalledCFunc(cfuncp);
+        }
+    }
+    void visit(AstCFunc* const nodep) override {
+        const auto& value = m_cfuncsCache(nodep);
+        // Check whether it was already visited by visitCalledCFunc()
+        if (value.m_state != CFuncCache::UNINITIALIZED) return;
+        VL_RESTORER(m_cfuncp);
+        // Its timing domains are those of the processes calling it, see visitCalledCFunc()
+        VL_RESTORER_CLEAR(m_timingDomains);
+        m_cfuncp = nodep;
+        iterateChildren(nodep);
+    }
 
     // Pre/Post logic are created here and their content need no further changes, so ignore.
     void visit(AstAlwaysPre*) override {}
@@ -1347,7 +1450,10 @@ class DelayedVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit DelayedVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit DelayedVisitor(AstNetlist* nodep)
+        : m_classGraphp{V3ClassGraph::build(nodep)} {
+        iterate(nodep);
+    }
     ~DelayedVisitor() override {
         V3Stats::addStat("NBA, variables using ShadowVar scheme", m_nSchemeShadowVar);
         V3Stats::addStat("NBA, variables using ShadowVarMasked scheme", m_nSchemeShadowVarMasked);
@@ -1358,6 +1464,7 @@ public:
                          m_nSchemeValueQueuesPartial);
         V3Stats::addStat("Optimizations, NBA flags shared", m_nSharedSetFlags);
         V3Stats::addStat("Procedures needing initial NBA trigger", m_nInitialNBA);
+        V3Stats::addStat("Non-inlined co_awaits with SenTree", m_nonInlinedCAwaitsWithSenTree);
     }
 };
 

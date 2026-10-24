@@ -30,6 +30,7 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3Global.h"
+#include "V3SharedTmps.h"
 #include "V3Stats.h"
 
 class V3DfgContext;
@@ -241,17 +242,15 @@ class V3DfgRemoveSelectsContext final : public V3DfgSubContext {
 public:
     // STATE
     VDouble0 m_removedFullWidth;  // Number of full width selects removed
-    VDouble0 m_replacedWithSelFromFull;  // Number of selects replaced with sel from full driver
-    VDouble0 m_replacedWithSelFromPart;  // Number of selects replaced with sel from partial driver
-    VDouble0 m_replacedWithPart;  // Number of selects replaced with part of driver
+    VDouble0 m_replacedWithSelFromDriver;  // Number of selects replaced with sel from a driver
+    VDouble0 m_replacedWithWholeDriver;  // Number of selects replaced with a whole driver
 private:
     V3DfgRemoveSelectsContext()
         : V3DfgSubContext{"RemoveSelects"} {}
     ~V3DfgRemoveSelectsContext() {
         addStat("full width selects removed", m_removedFullWidth);
-        addStat("replaced with sel from full driver", m_replacedWithSelFromFull);
-        addStat("replaced with sel from partial driver", m_replacedWithSelFromPart);
-        addStat("replaced with partial driver", m_replacedWithPart);
+        addStat("replaced with sel from driver", m_replacedWithSelFromDriver);
+        addStat("replaced with whole driver", m_replacedWithWholeDriver);
     }
 };
 class V3DfgRemoveUnobservableContext final : public V3DfgSubContext {
@@ -411,21 +410,28 @@ public:
 
     // Sub contexts - keep sorted by type
     V3DfgAstToDfgContext m_ast2DfgContext;
-    V3DfgBinToOneHotContext m_binToOneHotContext;
-    V3DfgBreakCyclesContext m_breakCyclesContext;
-    V3DfgCseContext m_cseContext0{"1st"};
-    V3DfgCseContext m_cseContext1{"2nd"};
-    V3DfgDfgToAstContext m_dfg2AstContext;
-    V3DfgPeepholeContext m_peepholeContext;
-    V3DfgPushDownSelsContext m_pushDownSelsContext;
-    V3DfgRegularizeContext m_regularizeContext;
-    V3DfgRemoveSelectsContext m_removeSelectsContext;
-    V3DfgRemoveUnobservableContext m_removeUnobservableContext;
-    V3DfgSynthesisContext m_synthContext;
+    V3DfgBinToOneHotContext m_binToOneHotContext;  // Statistics context for V3DfgBinToOneHot
+    V3DfgBreakCyclesContext m_breakCyclesContext;  // Statistics context for V3DfgBreakCycles
+    V3DfgCseContext m_cseContext0{"1st"};  // Statistics context for CSE stage 1
+    V3DfgCseContext m_cseContext1{"2nd"};  // Statistics context for CSE stage 2
+    V3DfgDfgToAstContext m_dfg2AstContext;  // Statistics context for V3DfgDfgToAst
+    V3DfgPeepholeContext m_peepholeContext;  // Statistics context for V3DfgPeephole
+    V3DfgPushDownSelsContext m_pushDownSelsContext;  // Statistics context for V3DfgPushDownSels
+    V3DfgRegularizeContext m_regularizeContext;  // Statistics context for V3DfgRegularize
+    V3DfgRemoveSelectsContext m_removeSelectsContext;  // Stats context for V3DfgRemoveSelects
+    V3DfgRemoveUnobservableContext
+        m_removeUnobservableContext;  // Stats context for V3DfgRemoveUnobservable
+    V3DfgSynthesisContext m_synthContext;  // Statistics context for V3DfgSynthesize
+
+    // Temporary variables created by all algorithms, shared by instances
+    V3SharedTmps m_sharedTmps{"__Vdfg", VVarType::MODULETEMP};
 
     // CONSTRUCTOR
     V3DfgContext() = default;
-    ~V3DfgContext() = default;
+    ~V3DfgContext() {
+        V3Stats::addStat("Optimizations, DFG, temporary declarations reused",
+                         m_sharedTmps.nReused());
+    }
 };
 
 #endif  //VERILATOR_V3DFGCONTEXT_H_

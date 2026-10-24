@@ -50,7 +50,7 @@ test.run(cmd=[
     "/profile_exec.dat", "--vcd " + test.obj_dir + "/profile_exec.vcd", "| tee " + gantt_log
 ])
 
-# Check both lib and sim are present
-test.file_grep_count(gantt_log, r'\|\s+[1-9][0-9]*\s+\|\s+[0-9.]+\s+\|\s+eval', 2)
+# Check the simulator and library evaluations from the NBA and active loops.
+test.file_grep_count(gantt_log, r'\|\s+[1-9][0-9]*\s+\|\s+[0-9.]+\s+\|\s+eval', 3)
 
 test.passes()

@@ -37,6 +37,7 @@
 #include <map>
 #include <set>
 #include <type_traits>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -56,6 +57,7 @@
 // Forward declarations
 class V3Graph;
 class ExecMTask;
+class VIfaceCaptureTag;
 
 //######################################################################
 
@@ -151,11 +153,11 @@ class VNUser final {
 #ifdef VL_USER_TYPE_CHECKS
     // monostate is an unwritten / cleared slot. It can be read as either form
     // and yields nullptr/0.
-    std::variant<std::monostate, int, void*> m_u;
+    std::variant<std::monostate, uint64_t, void*> m_u;
 #else
     union {
         void* up;
-        int ui;
+        uint64_t uq;
     } m_u;
 #endif
 
@@ -164,7 +166,7 @@ public:
     VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(int i) {
+    VNUser(uint64_t i) {
         // VNUser{0} represents the monostate
         if (i) m_u = i;
     }
@@ -178,22 +180,22 @@ public:
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         if (std::holds_alternative<std::monostate>(m_u)) return nullptr;
         void* const* const upp = std::get_if<void*>(&m_u);
-        UASSERT_STATIC(upp, "AstNode user() slot written as int, read as pointer");
+        UASSERT_STATIC(upp, "AstNode user() slot written as uint64_t, read as pointer");
         return reinterpret_cast<T>(*upp);
     }
-    int toInt() const {
+    uint64_t toUQuad() const {
         if (std::holds_alternative<std::monostate>(m_u)) return 0;
-        const int* const uip = std::get_if<int>(&m_u);
-        UASSERT_STATIC(uip, "AstNode user() slot written as pointer, read as int");
+        const uint64_t* const uip = std::get_if<uint64_t>(&m_u);
+        UASSERT_STATIC(uip, "AstNode user() slot written as pointer, read as uint64_t");
         return *uip;
     }
 #else
     VNUser() = default;
     // non-explicit:
     // cppcheck-suppress noExplicitConstructor
-    VNUser(int i) {
+    VNUser(uint64_t i) {
         m_u.up = nullptr;
-        m_u.ui = i;
+        m_u.uq = i;
     }
     explicit VNUser(void* p) { m_u.up = p; }
     ~VNUser() = default;
@@ -202,7 +204,7 @@ public:
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         return reinterpret_cast<T>(m_u.up);
     }
-    int toInt() const { return m_u.ui; }
+    uint64_t toUQuad() const { return m_u.uq; }
 #endif
     VSymEnt* toSymEnt() const { return to<VSymEnt*>(); }
     AstNode* toNodep() const VL_MT_SAFE { return to<AstNode*>(); }
@@ -223,32 +225,32 @@ public:
 //  user2.  When the member goes out of scope it will be automagically
 //  freed up.
 
-class VNUserInUseBase VL_NOT_FINAL {
-protected:
-    static void allocate(int id, uint32_t& cntGblRef, bool& userBusyRef) {
-        // Perhaps there's still a AstUserInUse in scope for this?
-        UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser" + cvtToStr(id)
-                                         + "InUse request when under another AstUserInUse");
-        userBusyRef = true;
-        clearcnt(id, cntGblRef, userBusyRef);
-    }
-    static void free(int id, uint32_t& cntGblRef, bool& userBusyRef) {
-        UASSERT_STATIC(userBusyRef, "Free of User" + cvtToStr(id) + "() not under AstUserInUse");
-        clearcnt(id, cntGblRef, userBusyRef);  // Includes a checkUse for us
-        userBusyRef = false;
-    }
-    static void clearcnt(int id, uint32_t& cntGblRef, const bool& userBusyRef) {
-        UASSERT_STATIC(userBusyRef, "Clear of User" + cvtToStr(id) + "() not under AstUserInUse");
-        // If this really fires and is real (after 2^32 edits???)
-        // we could just walk the tree and clear manually
-        ++cntGblRef;
-        UASSERT_STATIC(cntGblRef, "User*() overflowed!");
-    }
-    static void checkcnt(int id, uint32_t&, const bool& userBusyRef) {
-        UASSERT_STATIC(userBusyRef,
-                       "Check of User" + cvtToStr(id) + "() failed, not under AstUserInUse");
-    }
-};
+class VNUserInUseBase
+VL_NOT_FINAL{protected : static void allocate(int id, uint32_t& cntGblRef, bool& userBusyRef){
+    // Perhaps there's still a AstUserInUse in scope for this?
+    UASSERT_STATIC(!userBusyRef, "Conflicting user use; AstUser" + cvtToStr(id)
+                                     + "InUse request when under another AstUserInUse");
+userBusyRef = true;
+clearcnt(id, cntGblRef, userBusyRef);
+}
+static void free(int id, uint32_t& cntGblRef, bool& userBusyRef) {
+    UASSERT_STATIC(userBusyRef, "Free of User" + cvtToStr(id) + "() not under AstUserInUse");
+    clearcnt(id, cntGblRef, userBusyRef);  // Includes a checkUse for us
+    userBusyRef = false;
+}
+static void clearcnt(int id, uint32_t& cntGblRef, const bool& userBusyRef) {
+    UASSERT_STATIC(userBusyRef, "Clear of User" + cvtToStr(id) + "() not under AstUserInUse");
+    // If this really fires and is real (after 2^32 edits???)
+    // we could just walk the tree and clear manually
+    ++cntGblRef;
+    UASSERT_STATIC(cntGblRef, "User*() overflowed!");
+}
+static void checkcnt(int id, uint32_t&, const bool& userBusyRef) {
+    UASSERT_STATIC(userBusyRef,
+                   "Check of User" + cvtToStr(id) + "() failed, not under AstUserInUse");
+}
+}
+;
 
 // For each user() declare the in use structure
 // We let AstNode peek into here, because when under low optimization even
@@ -391,7 +393,7 @@ protected:
         RELINK_OP4
     };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
-    AstNode* m_backp = nullptr;
+    AstNode* m_backp = nullptr;  // Saved AstNode::m_backp of the unlinked node, to relink
     AstNode** m_iterpp = nullptr;
     RelinkWhatEn m_chg = RELINK_BAD;
 
@@ -415,10 +417,11 @@ inline std::ostream& operator<<(std::ostream& os, const VNRelinker& rhs) {
 // ######################################################################
 //  Callback base class to determine if node matches some formula
 
-class VNodeMatcher VL_NOT_FINAL {
-public:
-    virtual bool nodeMatch(const AstNode* nodep) const { return true; }
-};
+class VNodeMatcher
+VL_NOT_FINAL{public : virtual bool nodeMatch(const AstNode* nodep) const {return true;
+}
+}
+;
 
 // ######################################################################
 //   AstNode -- Base type of all Ast types
@@ -492,14 +495,14 @@ class AstNode VL_NOT_FINAL {
     // This member ordering both allows 64 bit alignment and puts associated data together
     // (under VL_USER_TYPE_CHECKS a VNUser is larger than 64 bits, so this packing no
     // longer holds; that build trades node size for catching int/pointer confusion)
-    VNUser m_user1u{0};  // Contains any information the user iteration routine wants
+    VNUser m_user1u{nullptr};  // Contains any information the user iteration routine wants
     uint32_t m_user1Cnt = 0;  // Mark of when userp was set
     uint32_t m_user2Cnt = 0;  // Mark of when userp was set
-    VNUser m_user2u{0};  // Contains any information the user iteration routine wants
-    VNUser m_user3u{0};  // Contains any information the user iteration routine wants
+    VNUser m_user2u{nullptr};  // Contains any information the user iteration routine wants
+    VNUser m_user3u{nullptr};  // Contains any information the user iteration routine wants
     uint32_t m_user3Cnt = 0;  // Mark of when userp was set
     uint32_t m_user4Cnt = 0;  // Mark of when userp was set
-    VNUser m_user4u{0};  // Contains any information the user iteration routine wants
+    VNUser m_user4u{nullptr};  // Contains any information the user iteration routine wants
 
     // METHODS
     void op1p(AstNode* nodep) {
@@ -556,6 +559,11 @@ protected:
     void addOp3p(AstNode* newp);  // Append newp to end of op3
     void addOp4p(AstNode* newp);  // Append newp to end of op4
 
+    void prependOp1p(AstNode* newp);  // Prepend newp to front of op1
+    void prependOp2p(AstNode* newp);  // Prepend newp to front of op2
+    void prependOp3p(AstNode* newp);  // Prepend newp to front of op3
+    void prependOp4p(AstNode* newp);  // Prepend newp to front of op4
+
     // clang-format off
     void setNOp1p(AstNode* newp) { if (newp) setOp1p(newp); }
     void setNOp2p(AstNode* newp) { if (newp) setOp2p(newp); }
@@ -566,6 +574,11 @@ protected:
     void addNOp2p(AstNode* newp) { if (newp) addOp2p(newp); }
     void addNOp3p(AstNode* newp) { if (newp) addOp3p(newp); }
     void addNOp4p(AstNode* newp) { if (newp) addOp4p(newp); }
+
+    void prependNOp1p(AstNode* newp) { if (newp) prependOp1p(newp); }
+    void prependNOp2p(AstNode* newp) { if (newp) prependOp2p(newp); }
+    void prependNOp3p(AstNode* newp) { if (newp) prependOp3p(newp); }
+    void prependNOp4p(AstNode* newp) { if (newp) prependOp4p(newp); }
     // clang-format on
 
     void clonep(AstNode* nodep) {
@@ -638,7 +651,7 @@ public:
     static constexpr int INSTR_COUNT_STR = 100;  // String ops
     static constexpr int INSTR_COUNT_TIME = INSTR_COUNT_CALL + 5;  // Determine simulation time
     static constexpr int INSTR_COUNT_PLI = 20;  // PLI routines
-    static constexpr int INSTR_COUNT_SYM = 5;  // Syms ctor/dtor statements
+    static constexpr int INSTR_COUNT_CTOR_DTOR = 5;  // Syms and Module ctor/dtor statements
 
     // ACCESSORS
     virtual string name() const VL_MT_STABLE { return ""; }
@@ -658,6 +671,7 @@ public:
     string origNameProtect() const;  // origName with --protect-id applied
     string shortName() const;  // Name with __PVT__ removed for concatenating scopes
     static string dedotName(const string& namein);  // Name with dots removed
+    static string nameNoArray(const string& namein);  // Name with any array index removed
     static string prettyName(const string& namein) VL_PURE;  // Name for printing out to the user
     static string vpiName(const string& namein);  // Name for vpi access
     static string prettyNameQ(const string& namein) {  // Quoted pretty name (for errors)
@@ -668,7 +682,10 @@ public:
     static string encodeNumber(int64_t num);  // Encode number into internal C representation
     static string vcdName(const string& namein);  // Name for printing out to vcd files
     string prettyName() const { return prettyName(name()); }
-    string prettyNameQ() const { return prettyNameQ(name()); }
+    // Name for messages to the user, by default prettyName(), but friendlier for some nodes,
+    // such as a specialized class, whose name() is internal
+    virtual string prettyNameMsg() const { return prettyName(); }
+    string prettyNameQ() const { return "'"s + prettyNameMsg() + "'"; }  // Quoted, for messages
     string verilogName() const { return vpiName(origName()); }  // Decoded original Verilog name
     // "VARREF" for error messages (NOT dtype's pretty name)
     string prettyTypeName() const;
@@ -708,61 +725,61 @@ public:
     VNUser user1u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser1InUse::s_userBusy, "user1p used without AstUserInUse");
-        return ((m_user1Cnt == VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser{0});
+        return ((m_user1Cnt == VNUser1InUse::s_userCntGbl) ? m_user1u : VNUser{nullptr});
     }
     AstNode* user1p() const VL_MT_STABLE { return user1u().toNodep(); }
     void user1u(const VNUser& user) { m_user1u = user; m_user1Cnt = VNUser1InUse::s_userCntGbl; }
     void user1p(void* userp) { user1u(VNUser{userp}); }
-    void user1(int val) { user1u(VNUser{val}); }
-    int user1() const { return user1u().toInt(); }
-    int user1Inc(int val = 1) { const int v = user1(); user1(v + val); return v; }
-    int user1Or(int val) { const int v = user1(); user1(v | val); return v; }
-    int user1SetOnce() { const int v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
+    void user1(uint64_t val) { user1u(VNUser{val}); }
+    uint64_t user1() const { return user1u().toUQuad(); }
+    uint64_t user1Inc(uint64_t val = 1) { const uint64_t v = user1(); user1(v + val); return v; }
+    uint64_t user1Or(uint64_t val) { const uint64_t v = user1(); user1(v | val); return v; }
+    uint64_t user1SetOnce() { const uint64_t v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
     static void user1ClearTree() { VNUser1InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user2u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser2InUse::s_userBusy, "user2p used without AstUserInUse");
-        return ((m_user2Cnt == VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser{0});
+        return ((m_user2Cnt == VNUser2InUse::s_userCntGbl) ? m_user2u : VNUser{nullptr});
     }
     AstNode* user2p() const VL_MT_STABLE { return user2u().toNodep(); }
     void user2u(const VNUser& user) { m_user2u = user; m_user2Cnt = VNUser2InUse::s_userCntGbl; }
     void user2p(void* userp) { user2u(VNUser{userp}); }
-    void user2(int val) { user2u(VNUser{val}); }
-    int user2() const { return user2u().toInt(); }
-    int user2Inc(int val = 1) { const int v = user2(); user2(v + val); return v; }
-    int user2Or(int val) { const int v = user2(); user2(v | val); return v; }
-    int user2SetOnce() { const int v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
+    void user2(uint64_t val) { user2u(VNUser{val}); }
+    uint64_t user2() const { return user2u().toUQuad(); }
+    uint64_t user2Inc(uint64_t val = 1) { const uint64_t v = user2(); user2(v + val); return v; }
+    uint64_t user2Or(uint64_t val) { const uint64_t v = user2(); user2(v | val); return v; }
+    uint64_t user2SetOnce() { const uint64_t v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
     static void user2ClearTree() { VNUser2InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user3u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser3InUse::s_userBusy, "user3p used without AstUserInUse");
-        return ((m_user3Cnt == VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser{0});
+        return ((m_user3Cnt == VNUser3InUse::s_userCntGbl) ? m_user3u : VNUser{nullptr});
     }
     AstNode* user3p() const VL_MT_STABLE { return user3u().toNodep(); }
     void user3u(const VNUser& user) { m_user3u = user; m_user3Cnt = VNUser3InUse::s_userCntGbl; }
     void user3p(void* userp) { user3u(VNUser{userp}); }
-    void user3(int val) { user3u(VNUser{val}); }
-    int user3() const { return user3u().toInt(); }
-    int user3Inc(int val = 1) { const int v = user3(); user3(v + val); return v; }
-    int user3Or(int val) { const int v = user3(); user3(v | val); return v; }
-    int user3SetOnce() { const int v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
+    void user3(uint64_t val) { user3u(VNUser{val}); }
+    uint64_t user3() const { return user3u().toUQuad(); }
+    uint64_t user3Inc(uint64_t val = 1) { const uint64_t v = user3(); user3(v + val); return v; }
+    uint64_t user3Or(uint64_t val) { const uint64_t v = user3(); user3(v | val); return v; }
+    uint64_t user3SetOnce() { const uint64_t v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
     static void user3ClearTree() { VNUser3InUse::clear(); }  // Clear userp()'s across the entire tree
 
     VNUser user4u() const VL_MT_STABLE {
         // Slows things down measurably, so disabled by default
         //UASSERT_STATIC(VNUser4InUse::s_userBusy, "user4p used without AstUserInUse");
-        return ((m_user4Cnt == VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser{0});
+        return ((m_user4Cnt == VNUser4InUse::s_userCntGbl) ? m_user4u : VNUser{nullptr});
     }
     AstNode* user4p() const VL_MT_STABLE { return user4u().toNodep(); }
     void user4u(const VNUser& user) { m_user4u = user; m_user4Cnt = VNUser4InUse::s_userCntGbl; }
     void user4p(void* userp) { user4u(VNUser{userp}); }
-    void user4(int val) { user4u(VNUser{val}); }
-    int user4() const { return user4u().toInt(); }
-    int user4Or(int val) { const int v = user4(); user4(v | val); return v; }
-    int user4Inc(int val = 1) { const int v = user4(); user4(v + val); return v; }
-    int user4SetOnce() { const int v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
+    void user4(uint64_t val) { user4u(VNUser{val}); }
+    uint64_t user4() const { return user4u().toUQuad(); }
+    uint64_t user4Or(uint64_t val) { const uint64_t v = user4(); user4(v | val); return v; }
+    uint64_t user4Inc(uint64_t val = 1) { const uint64_t v = user4(); user4(v + val); return v; }
+    uint64_t user4SetOnce() { const uint64_t v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()
     static void user4ClearTree() { VNUser4InUse::clear(); }  // Clear userp()'s across the entire tree
     // clang-format on
 
@@ -815,30 +832,59 @@ public:
     void dtypeSetLogicSized(int width, VSigning numeric) {
         dtypep(findLogicDType(width, width, numeric));  // Since sized, widthMin is width
     }
+    void dtypeSetLogic2StateUnsized(int width, int widthMin, VSigning numeric) {
+        dtypep(findLogic2StateDType(width, widthMin, numeric));
+    }
+    void dtypeSetLogic2StateSized(int width, VSigning numeric) {
+        dtypep(findLogic2StateDType(width, width, numeric));  // Since sized, widthMin is width
+    }
+    void dtypeSetBitOrLogicUnsized(int width, int widthMin, VSigning numeric, bool isFourstate) {
+        dtypep(findBitOrLogicDType(width, widthMin, numeric, isFourstate));
+    }
+    void dtypeSetBitOrLogicSized(int width, VSigning numeric, bool isFourstate) {
+        dtypep(findBitOrLogicDType(width, width, numeric,
+                                   isFourstate));  // Since sized, widthMin is width
+    }
     void dtypeSetBit() { dtypep(findBitDType()); }
     void dtypeSetLogic() { dtypep(findLogicDType()); }
+    void dtypeSetLogic2State() { dtypep(findLogic2StateDType()); }
     void dtypeSetDouble() { dtypep(findDoubleDType()); }
     void dtypeSetInt() { dtypep(findIntDType()); }
     void dtypeSetInteger() { dtypep(findIntegerDType()); }
-    // TODO: add a type to handle 4-state integers with 2-state domain
-    void dtypeSetInteger2State() { dtypep(findIntegerDType()); }
+    void dtypeSetInteger2State() { dtypep(findInteger2StateDType()); }
     void dtypeSetString() { dtypep(findStringDType()); }
     void dtypeSetUInt32() { dtypep(findUInt32DType()); }  // Twostate
     void dtypeSetUInt64() { dtypep(findUInt64DType()); }  // Twostate
+    void dtypeSetTime() { dtypep(findTimeDType()); }
+    void dtypeSetTime2State() { dtypep(findTime2StateDType()); }
     void dtypeSetEmptyQueue() { dtypep(findEmptyQueueDType()); }
     void dtypeSetStream() { dtypep(findStreamDType()); }
     void dtypeSetVoid() { dtypep(findVoidDType()); }
+    void dtypeSetBitOrLogic(bool isFourstate) {
+        dtypep(isFourstate ? findLogicDType() : findBitDType());
+    }
 
     // Data type locators
     AstNodeDType* findBitDType() const { return findBasicDType(VBasicDTypeKwd::BIT); }
     AstNodeDType* findLogicDType() const { return findBasicDType(VBasicDTypeKwd::LOGIC); }
+    AstNodeDType* findNullDType() const { return findBasicDType(VBasicDTypeKwd::NULLTYPE); }
+    AstNodeDType* findLogic2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::LOGIC2STATE);
+    }
     AstNodeDType* findDoubleDType() const { return findBasicDType(VBasicDTypeKwd::DOUBLE); }
     AstNodeDType* findIntDType() const { return findBasicDType(VBasicDTypeKwd::INT); }
     AstNodeDType* findIntegerDType() const { return findBasicDType(VBasicDTypeKwd::INTEGER); }
+    AstNodeDType* findInteger2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::INTEGER2STATE);
+    }
     AstNodeDType* findStringDType() const { return findBasicDType(VBasicDTypeKwd::STRING); }
     AstNodeDType* findSigned8DType() const { return findBasicDType(VBasicDTypeKwd::BYTE); }
     AstNodeDType* findUInt32DType() const { return findBasicDType(VBasicDTypeKwd::UINT32); }
     AstNodeDType* findUInt64DType() const { return findBasicDType(VBasicDTypeKwd::UINT64); }
+    AstNodeDType* findTimeDType() const { return findBasicDType(VBasicDTypeKwd::TIME); }
+    AstNodeDType* findTime2StateDType() const {
+        return findBasicDType(VBasicDTypeKwd::TIME2STATE);
+    }
     AstNodeDType* findCHandleDType() const { return findBasicDType(VBasicDTypeKwd::CHANDLE); }
     AstNodeDType* findConstraintRefDType() const;
     AstNodeDType* findEmptyQueueDType() const;
@@ -847,10 +893,17 @@ public:
     AstNodeDType* findVoidDType() const;
     AstNodeDType* findBitDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findLogicDType(int width, int widthMin, VSigning numeric) const;
+    AstNodeDType* findLogic2StateDType(int width, int widthMin, VSigning numeric) const;
     AstNodeDType* findBitOrLogicDType(int width, int widthMin, VSigning numeric,
                                       bool isFourstate) const {
         return isFourstate ? findLogicDType(width, widthMin, numeric)
                            : findBitDType(width, widthMin, numeric);
+    }
+    AstNodeDType* findBitOrLogicRangeDType(const VNumRange& range, const int widthMin,
+                                           const VSigning numeric,
+                                           const bool isFourstate) const VL_MT_STABLE {
+        return isFourstate ? findLogicRangeDType(range, widthMin, numeric)
+                           : findBitRangeDType(range, widthMin, numeric);
     }
     AstNodeDType* findLogicRangeDType(const VNumRange& range, int widthMin,
                                       VSigning numeric) const VL_MT_STABLE;
@@ -1035,7 +1088,6 @@ protected:
     AstNode* iterateSubtreeReturnEdits(VNVisitor& v);
 
     static void dumpJsonNum(std::ostream& os, const std::string& name, int64_t val);
-    static void dumpJsonBool(std::ostream& os, const std::string& name, bool val);
     static void dumpJsonBoolIf(std::ostream& os, const std::string& name, bool val);
     static void dumpJsonStr(std::ostream& os, const std::string& name, const std::string& val);
     static void dumpJsonPtr(std::ostream& os, const std::string& name, const AstNode* const valp);
@@ -1612,6 +1664,53 @@ struct std::equal_to<VNRef<T_Node>> final {
     size_t operator()(VNRef<T_Node> ra, VNRef<T_Node> rb) const {
         return ra.get().sameTree(&(rb.get()));
     }
+};
+
+//######################################################################
+// VDTypeNameScopes -- Index of the scopes declaring types, for naming them
+
+// While alive, indexes the scopes declaring the types that dtypeName() names, as $typename names
+// them: maps each class, typedef, generate block, and design unit to the generate block or design
+// unit declaring it, and each design unit to the parameters its name holds; and keeps the
+// prefixes of the names of the types each scope declares, once final.  So naming the types of a
+// scope costs no search up the tree for it, as AstNode::aboveLoopp() is linear in the number of
+// previous statements.  For passes that name many types but neither add, move, nor delete such
+// declarations, V3Width and V3WidthCommit; others, as V3Param, search the tree.
+class VDTypeNameScopes final {
+    // STATE
+    // Each class, typedef, generate block, and design unit to the generate block or design unit
+    // declaring it, or nullptr if none, as at the top
+    std::unordered_map<const AstNode*, AstNode*> m_outerps;
+    // The parameters of each design unit that its name holds
+    std::unordered_map<const AstNode*, std::vector<AstNode*>> m_paramps;
+    // Prefix of the names of the types each scope declares, once final
+    mutable std::unordered_map<const AstNode*, std::string> m_prefixes;
+    const VDTypeNameScopes* const m_prevp;  // Index in use before this one
+    static const VDTypeNameScopes* s_currentp;  // Index in use, or nullptr if none
+
+    // METHODS
+    void index(AstNode* nodep, AstNode* scopep);
+    VL_UNCOPYABLE(VDTypeNameScopes);
+    VL_UNMOVABLE(VDTypeNameScopes);
+
+public:
+    // CONSTRUCTORS
+    // Index the netlist, in use until destroyed
+    explicit VDTypeNameScopes(AstNetlist* nodep);
+    ~VDTypeNameScopes();
+
+    // METHODS
+    // The index in use, or nullptr if none
+    static const VDTypeNameScopes* currentp() { return s_currentp; }
+    // Whether 'nodep' is indexed, and if so 'outerpr', the generate block or design unit
+    // declaring it, or nullptr if none
+    bool outerp(const AstNode* nodep, AstNode*& outerpr) const;
+    // The parameters of design unit 'modp' that its name holds, or nullptr if not indexed
+    const std::vector<AstNode*>* paramsp(const AstNode* modp) const;
+    // The prefix kept for scope 'scopep', or nullptr if none
+    const std::string* prefixp(const AstNode* scopep) const;
+    // Keep 'prefix', final, for scope 'scopep'
+    void prefix(const AstNode* scopep, const std::string& prefix) const;
 };
 
 //######################################################################

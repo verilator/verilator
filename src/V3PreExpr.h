@@ -75,7 +75,7 @@ class V3PreExpr final {
         EE  // Error
     };
     static const char* actionAscii(action_t en) {
-        static const char* names[] = {"VV", "AA", "RR", "SS", "EE"};
+        static constexpr const char* names[] = {"VV", "AA", "RR", "SS", "EE"};
         return names[en];
     }
 
@@ -159,7 +159,7 @@ class V3PreExpr final {
             }
         }
         const bool got = parser.result();
-        UASSERT_SELFTEST(const bool, got, expect);
+        UASSERT_SELFTEST(got, expect);
     }
 
     // METHODS

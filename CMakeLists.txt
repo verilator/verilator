@@ -16,7 +16,7 @@ cmake_minimum_required(VERSION 3.15)
 cmake_policy(SET CMP0091 NEW) # Use MSVC_RUNTIME_LIBRARY to select the runtime
 project(
     Verilator
-    VERSION 5.051
+    VERSION 5.053
     HOMEPAGE_URL https://verilator.org
     LANGUAGES CXX
 )
@@ -28,11 +28,13 @@ endif()
 
 option(
     DEBUG_AND_RELEASE_AND_COVERAGE
-    "Builds both the debug and release binaries, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild."
+    "Builds debug and release binaries for Verilator and coverage, overriding CMAKE_BUILD_TYPE. Not supported under MSBuild."
 )
 
 find_package(Python3 COMPONENTS Interpreter)
-set(PYTHON3 ${Python3_EXECUTABLE})
+# Windows often installs python under "Program Files", which GNU make cannot
+# use unquoted in verilated.mk; use the space-free 8.3 short name instead.
+string(REPLACE "Program Files" "PROGRA~1" PYTHON3 "${Python3_EXECUTABLE}")
 # See also CMake built-in; CMAKE_INSTALL_PREFIX is applied by the install command.
 set(CMAKE_INSTALL_DATADIR .)
 include(GNUInstallDirs)
@@ -49,18 +51,17 @@ if(WIN32)
     if(DEFINED ENV{WIN_FLEX_BISON})
         set(WIN_FLEX_BISON "$ENV{WIN_FLEX_BISON}")
     endif()
-    if(IS_DIRECTORY ${WIN_FLEX_BISON})
-        list(APPEND CMAKE_PREFIX_PATH ${WIN_FLEX_BISON})
-    else()
-        message(
-            FATAL_ERROR
-            "The path specified by WIN_FLEX_BISON environment variable is not an existing folder: ${WIN_FLEX_BISON}"
-        )
-    endif()
     if(NOT WIN_FLEX_BISON)
         message(
             FATAL_ERROR
             "Please install https://github.com/lexxmark/winflexbison and set WIN_FLEX_BISON environment variable. Please use install cmake target after a successful build."
+        )
+    elseif(IS_DIRECTORY "${WIN_FLEX_BISON}")
+        list(APPEND CMAKE_PREFIX_PATH "${WIN_FLEX_BISON}")
+    else()
+        message(
+            FATAL_ERROR
+            "The path specified by WIN_FLEX_BISON environment variable is not an existing folder: ${WIN_FLEX_BISON}"
         )
     endif()
     set(CMAKE_CXX_STANDARD 20)
@@ -93,7 +94,36 @@ if(OBJCACHE_ENABLED)
 endif()
 
 find_package(BISON)
-find_package(FLEX)
+# Prefer the header installed with the selected generator, including through
+# symlinks such as Homebrew's bin/flex. Explicit cache entries take precedence.
+find_program(
+    FLEX_EXECUTABLE
+    NAMES flex win-flex win_flex
+    DOC "Path to the flex executable"
+)
+if(NOT FLEX_EXECUTABLE)
+    message(
+        FATAL_ERROR
+        "Cannot find Flex; set FLEX_EXECUTABLE to its executable path"
+    )
+endif()
+get_filename_component(flex_real_executable "${FLEX_EXECUTABLE}" REALPATH)
+get_filename_component(flex_bin_dir "${flex_real_executable}" DIRECTORY)
+find_path(
+    FLEX_INCLUDE_DIR
+    FlexLexer.h
+    PATHS "${flex_bin_dir}/../include" "${flex_bin_dir}"
+    NO_DEFAULT_PATH
+    DOC "Path to the flex headers"
+)
+find_path(FLEX_INCLUDE_DIR FlexLexer.h)
+if(NOT FLEX_INCLUDE_DIR)
+    message(
+        FATAL_ERROR
+        "Cannot find FlexLexer.h; set FLEX_INCLUDE_DIR to its directory"
+    )
+endif()
+mark_as_advanced(FLEX_EXECUTABLE FLEX_INCLUDE_DIR)
 
 # Build
 #set_property(GLOBAL PROPERTY JOB_POOLS one_job=1)
@@ -109,6 +139,8 @@ if(DEBUG_AND_RELEASE_AND_COVERAGE)
     add_subdirectory(src build-Release)
     set(CMAKE_BUILD_TYPE Coverage)
     add_subdirectory(src build-Coverage)
+    set(CMAKE_BUILD_TYPE CoverageRelease)
+    add_subdirectory(src build-CoverageRelease)
     set(CMAKE_BUILD_TYPE ${saved_build_type})
 else()
     add_subdirectory(src)
@@ -120,6 +152,22 @@ set(PACKAGE_NAME ${PROJECT_NAME})
 set(PACKAGE_VERSION ${PROJECT_VERSION})
 set(CXX ${CMAKE_CXX_COMPILER})
 set(AR ${CMAKE_AR})
+
+# Compiler precompiled header options, same detection as configure.ac
+execute_process(
+    COMMAND ${CMAKE_CXX_COMPILER} --help
+    OUTPUT_VARIABLE cxx_help
+    ERROR_QUIET
+)
+if(cxx_help MATCHES "include-pch")
+    # clang
+    set(CFG_CXXFLAGS_PCH_I -include-pch)
+    set(CFG_GCH_IF_CLANG .gch)
+else()
+    # GCC
+    set(CFG_CXXFLAGS_PCH_I -include)
+    set(CFG_GCH_IF_CLANG "")
+endif()
 
 configure_file(include/verilated_config.h.in include/verilated_config.h @ONLY)
 configure_file(include/verilated.mk.in include/verilated.mk @ONLY)

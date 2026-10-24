@@ -9,7 +9,7 @@
 //
 //*************************************************************************
 
-#include <Vt_order_dpi_export_8__Dpi.h>
+#include VM_PREFIX_INCLUDE_DPI
 #include <svdpi.h>
 
 void call_set_x(svBit val) { set_x(val); }

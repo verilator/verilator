@@ -20,19 +20,8 @@
 #include "verilated_vcd_c.h"
 #include "verilated_vpi.h"
 
-#ifdef T_VPI_VAR2
-#include "Vt_vpi_var2.h"
-#include "Vt_vpi_var2__Dpi.h"
-#elif defined(T_VPI_VAR3)
-#include "Vt_vpi_var3.h"
-#include "Vt_vpi_var3__Dpi.h"
-#elif defined(T_VPI_FORCEABLE_VAR)
-#include "Vt_vpi_forceable_var.h"
-#include "Vt_vpi_forceable_var__Dpi.h"
-#else
-#include "Vt_vpi_var.h"
-#include "Vt_vpi_var__Dpi.h"
-#endif
+#include VM_PREFIX_INCLUDE
+#include VM_PREFIX_INCLUDE_DPI
 
 #include "svdpi.h"
 
@@ -908,7 +897,7 @@ int _mon_check_unpacked_struct_members() {
         CHECK_RESULT(tmpValue.value.integer, 0xace0);
     }
 
-    // unpacked array of a packed struct (element is a plain vector, not vpiStructVar)
+    // unpacked array of a packed struct (element is a packed vpiStructVar)
     {
         TestVpiHandle vh210 = VPI_HANDLE("packed_struct_array_signal");
         CHECK_RESULT_NZ(vh210);
@@ -917,7 +906,7 @@ int _mon_check_unpacked_struct_members() {
 
         TestVpiHandle vh211 = vpi_handle_by_index(vh210, 0);
         CHECK_RESULT_NZ(vh211);
-        CHECK_RESULT(vpi_get(vpiType, vh211), vpiReg);
+        CHECK_RESULT(vpi_get(vpiType, vh211), vpiStructVar);
         CHECK_RESULT(vpi_get(vpiSize, vh211), 8);
 
         s_vpi_value putValue;
@@ -929,7 +918,7 @@ int _mon_check_unpacked_struct_members() {
 
         TestVpiHandle vh212 = vpi_handle_by_index(vh210, 1);
         CHECK_RESULT_NZ(vh212);
-        CHECK_RESULT(vpi_get(vpiType, vh212), vpiReg);
+        CHECK_RESULT(vpi_get(vpiType, vh212), vpiStructVar);
         putValue.value.integer = 0x33;
         vpi_put_value(vh212, &putValue, NULL, vpiNoDelay);
         vpi_get_value(vh212, &tmpValue);
@@ -1721,8 +1710,7 @@ int _mon_check_delayed() {
     vpi_put_value(vhMemWord, &v, &t, vpiInertialDelay);
     TEST_CHECK_ERROR(false);
 
-    // test unsupported vpiInertialDelay cases
-    // - should these also throw vpi errors?
+    // Null value pointer members
     v.format = vpiStringVal;
     v.value.str = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
@@ -1731,6 +1719,25 @@ int _mon_check_delayed() {
     v.format = vpiVectorVal;
     v.value.vector = nullptr;
     vpi_put_value(vh, &v, &t, vpiInertialDelay);
+    TEST_CHECK_ERROR(true);
+
+    for (const PLI_INT32 format :
+         {vpiBinStrVal, vpiOctStrVal, vpiDecStrVal, vpiHexStrVal, vpiStringVal, vpiVectorVal}) {
+        v.format = format;
+        v.value.str = nullptr;
+        v.value.vector = nullptr;
+        vpi_put_value(vh, &v, &t, vpiNoDelay);
+        TEST_CHECK_ERROR(true);
+    }
+
+    v.format = vpiStringVal;
+    v.value.str = nullptr;
+    vpi_put_value(vhMemWord, &v, &t, vpiNoDelay);
+    TEST_CHECK_ERROR(true);
+
+    v.format = vpiVectorVal;
+    v.value.vector = nullptr;
+    vpi_put_value(vhMemWord, &v, &t, vpiNoDelay);
     TEST_CHECK_ERROR(true);
 
     // Test null value in put
@@ -2475,6 +2482,9 @@ extern "C" int mon_check() {
     return 0;  // Ok
 }
 
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
+
 //======================================================================
 
 #ifdef IS_VPI
@@ -2491,7 +2501,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 // cver entry

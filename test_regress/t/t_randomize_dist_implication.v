@@ -73,8 +73,7 @@ module t;
       `checkd(p, 1);
       `checkd(fa.enb, 1'b1);
       foreach (fa.arr[i]) begin
-        `checkd((fa.arr[i] == 8'd10) || (fa.arr[i] == 8'd20)
-                || (fa.arr[i] == 8'd30), 1'b1);
+        `checkd((fa.arr[i] == 8'd10) || (fa.arr[i] == 8'd20) || (fa.arr[i] == 8'd30), 1'b1);
       end
     end
 

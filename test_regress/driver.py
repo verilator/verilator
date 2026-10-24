@@ -5,6 +5,7 @@
 import argparse
 import collections
 import ctypes
+import fnmatch
 import glob
 import hashlib
 import logging
@@ -12,9 +13,15 @@ import multiprocessing
 import os
 import pickle
 import platform
-import pty
+try:
+    import pty
+except ImportError:
+    pty = None
 import re
-import resource
+try:
+    import resource
+except ImportError:
+    resource = None
 import runpy
 import shutil
 import signal
@@ -113,12 +120,27 @@ class VtOs:
             pass
 
     @staticmethod
+    def symlink_ok(target: str, path: str) -> None:
+        """Make symlink, no error if exists"""
+        try:
+            os.symlink(target, path)
+        except FileExistsError:
+            pass
+
+    @staticmethod
     def run_capture(command: str, check=True) -> str:
         """Run a command and return results"""
         proc = subprocess.run([command], capture_output=True, text=True, shell=True, check=False)
         if check and proc.returncode:
             sys.exit("%Error: command failed '" + command + "':\n" + proc.stderr + proc.stdout)
         return str(proc.stdout)
+
+    @staticmethod
+    def system(command: str, debug=None) -> None:
+        """Run os.system, optionally showing command printed"""
+        if Args.verbose or debug:
+            print("\t" + command)
+        os.system(command)
 
     @staticmethod
     def unlink_ok(filename: str) -> None:
@@ -508,6 +530,8 @@ class Runner:
             self.pass_tests.append(test)
             if Args.driver_clean:
                 test.clean()
+            elif Args.driver_prune:
+                test.prune()
         elif test._quit:
             pass
         elif test._scenario_off and not test.errors:
@@ -611,7 +635,7 @@ class Runner:
             print("==SUMMARY: " + self.sprint_summary(), file=sys.stderr)
 
             if (self._last_proc_finish_time != 0
-                    and ((time.time() - self._last_proc_finish_time) > 15)):
+                    and ((time.time() - self._last_proc_finish_time) >= 25)):
                 self._last_proc_finish_time = time.time()
                 other = ""
                 for proc in forker.running():
@@ -763,8 +787,6 @@ class VlTest:
         scen_dir = os.path.relpath(self.t_dir + "/../obj_" + self.scenario)
         # Simplify filenames on local runs
         scen_dir = re.sub(r'^t/\.\./', '', scen_dir)
-        # Not mkpath so error if try to build somewhere odd
-        VtOs.mkdir_ok(scen_dir)
         self.obj_dir = scen_dir + "/" + self.name + Args.obj_suffix
 
         define_opt = self._define_opt_calc()
@@ -904,6 +926,7 @@ class VlTest:
             self.top_filename = re.sub(r'\.py$', '', self.py_filename) + '.' + self.v_suffix
         self.pli_filename = re.sub(r'\.py$', '', self.py_filename) + '.cpp'
         self.top_shell_filename = self.obj_dir + "/" + self.vm_prefix + "__top.v"
+        self.vlt_filename = re.sub(r'\.py$', '', self.py_filename) + '.vlt'
 
     def _define_opt_calc(self) -> str:
         return "--define " if self.xsim else "+define+"
@@ -1085,17 +1108,39 @@ class VlTest:
     def clean(self, for_rerun=False) -> None:
         """Called on a --driver-clean or rerun to cleanup files."""
         if self.clean_command:
-            os.system(self.clean_command)
-        os.system('/bin/rm -rf ' + self.obj_dir + '__fail1')
+            VtOs.system(self.clean_command)
+        VtOs.system('/bin/rm -rf ' + self.obj_dir + '__fail1')
         if for_rerun:
             # Prevents false-failures when switching compilers
             # Remove old results to force hard rebuild
-            os.system('/bin/mv ' + self.obj_dir + ' ' + self.obj_dir + '__fail1')
+            VtOs.system('/bin/mv ' + self.obj_dir + ' ' + self.obj_dir + '__fail1')
         else:
-            os.system('/bin/rm -rf ' + self.obj_dir)
+            VtOs.system('/bin/rm -rf ' + self.obj_dir)
+
+    def prune(self) -> None:
+        """Called on a --driver-prune to clean up files,
+        but keep the ones used by test-snap/test-diff."""
+        with open(os.path.dirname(os.path.abspath(__file__)) + "/test_diff_ignore.txt",
+                  encoding="utf8") as fh:
+            patterns = [line for line in fh.read().splitlines() if line and line[0] != '#']
+
+        def ignored(name: str) -> bool:
+            return any(fnmatch.fnmatchcase(name, pat) for pat in patterns)
+
+        if ignored(os.path.basename(self.obj_dir)):
+            shutil.rmtree(self.obj_dir)
+            return
+        for dirpath, dirnames, filenames in os.walk(self.obj_dir):
+            for name in [d for d in dirnames if ignored(d)]:
+                shutil.rmtree(os.path.join(dirpath, name))
+                dirnames.remove(name)
+            for name in filenames:
+                path = os.path.join(dirpath, name)
+                if ignored(name) or os.access(path, os.X_OK):
+                    os.remove(path)
 
     def clean_objs(self) -> None:
-        os.system("/bin/rm -rf " + ' '.join(glob.glob(self.obj_dir + "/*")))
+        VtOs.system("/bin/rm -rf " + ' '.join(glob.glob(self.obj_dir + "/*")))
 
     def _checkflags(self, param):
         checkflags = (
@@ -1496,6 +1541,8 @@ class VlTest:
         by all of the spawned child processess"""
         #  An  unprivileged  process may set only its soft limit
         #  to a value in the range from 0 up to the hard limit
+        if not resource:
+            return
         _, hardlimit = resource.getrlimit(resource.RLIMIT_CPU)
         softlimit = ctypes.c_long(min(seconds, ctypes.c_ulong(hardlimit).value)).value
         # Casting is required due to a quirk in Python,
@@ -1938,7 +1985,7 @@ class VlTest:
         if logfile:
             logfh = open(logfile, 'wb')  # pylint: disable=consider-using-with
 
-        if not Args.interactive_debugger:
+        if not Args.interactive_debugger and pty:
             # Some parallel job's run() may attempt to capture driver.py's
             # terminal, e.g. gdb does this. So, unless known we want to run GDB
             # (where we want it to control the terminal), become a controlling
@@ -2215,7 +2262,6 @@ class VlTest:
                     fh.write("    topp->clk(clk);\n")
                 setp = ""
             else:
-                fh.write("    topp->eval();\n")
                 setp = "topp->"
 
             if self.trace:
@@ -2238,10 +2284,14 @@ class VlTest:
                              "  // Finish elaboration before trace and open\n")
                 fh.write("    topp->trace(tfp.get(), 99);\n")
                 fh.write("    tfp->open(\"" + self.trace_filename + "\");\n")
-
-                if self.trace and not self.sc:
-                    fh.write("    if (tfp) tfp->dump(contextp->time());\n")
                 fh.write("#endif\n")
+
+            if not self.sc:
+                fh.write("    topp->eval();\n")
+                if self.trace:
+                    fh.write("#if VM_TRACE\n")
+                    fh.write("    if (tfp) tfp->dump(contextp->time());\n")
+                    fh.write("#endif\n")
 
             if self.savable:
                 fh.write("    const char* save_time_strp"
@@ -2500,9 +2550,24 @@ class VlTest:
         l1s = f1.readlines()
         l2s = f2.readlines() if f2 else []
         # print(" rawGOT="+pformat(l1s)+"\n rawEXP="+pformat(l2s))
+        # With VERILATOR_TESTS_OBJ_ROOT, obj_dir is a symlink, and Verilator resolves
+        # symlinks when making paths relative to obj_dir. Map those paths back to what
+        # they are without VERILATOR_TESTS_OBJ_ROOT.
+        if 'VERILATOR_TESTS_OBJ_ROOT' in os.environ:
+            real_rel = os.path.relpath(os.path.realpath(self.t_dir),
+                                       os.path.realpath(self.obj_dir))
+            link_rel = os.path.relpath(self.t_dir, self.obj_dir)
+            l1s = [line.replace(real_rel + "/", link_rel + "/") for line in l1s]
         if is_logfile:
             l1o = []
             for line in l1s:
+                # Build progress and echoed Verilator commands contain unstable paths.
+                if (re.match(r'^g?make(?:\[\d+\])?: (?:Entering|Leaving) directory ', line)
+                        or re.match(
+                            r'''^(?:"(?:[^"\n]*[/\\])?verilator(?:_bin(?:_dbg)?)?"'''
+                            r"|'(?:[^'\n]*[/\\])?verilator(?:_bin(?:_dbg)?)?'"
+                            r'''|(?:[^\s"']*[/\\])?verilator(?:_bin(?:_dbg)?)?)[ \t]+-''', line)):
+                    continue
                 if (re.match(r'^- [^\n]+\n', line)  #
                         or re.match(r'^- [a-z.0-9]+:\d+:[^\n]+\n', line)
                         or re.match(r'^-node:', line)  #
@@ -2594,8 +2659,18 @@ class VlTest:
     def copy_if_golden(self, fn1: str, fn2: str) -> None:
         """Copy a file if updating golden .out files"""
         if 'HARNESS_UPDATE_GOLDEN' in os.environ:  # Update golden files with current
-            print("%Warning: HARNESS_UPDATE_GOLDEN set: cp " + fn1 + " " + fn2, file=sys.stderr)
-            shutil.copy(fn1, fn2)
+            if fn1.endswith('.fst'):
+                # Keep golden traces as text.
+                cmd = [
+                    VtOs.getenv_def('WAVECAT', 'wavecat'), fn1, '--out', fn2, '--out-format',
+                    'vcd', '--no-date'
+                ]
+                print("%Warning: HARNESS_UPDATE_GOLDEN set: " + ' '.join(cmd), file=sys.stderr)
+                self.run(cmd=cmd)
+            else:
+                print("%Warning: HARNESS_UPDATE_GOLDEN set: cp " + fn1 + " " + fn2,
+                      file=sys.stderr)
+                shutil.copy(fn1, fn2)
 
     def vcd_identical(self, fn1: str, fn2: str) -> None:
         """Test if two VCD/FST files have logically-identical contents"""
@@ -2776,7 +2851,9 @@ class VlTest:
             del self._file_contents_cache[filename]
 
     def file_sed(self, in_filename: str, out_filename, edit_lambda) -> None:
-        contents = self.file_contents(in_filename)
+        # Read without newline translation, so binary files are preserved exactly
+        with open(in_filename, 'r', encoding='latin-1', newline='') as fh:
+            contents = fh.read()
         contents = edit_lambda(contents)
         self.write_wholefile(out_filename, contents)
 
@@ -2904,7 +2981,40 @@ def _parameter(param: str) -> None:
 
 
 def run_them() -> None:
-    VtOs.mkdir_ok("obj_dist")
+    # Make obj_* directories, once here rather than in each test, which run in parallel.
+    # With VERILATOR_TESTS_OBJ_ROOT, make each a symlink to the directory at the same
+    # absolute path under VERILATOR_TESTS_OBJ_ROOT (an existing obj_* directory is kept)
+    obj_dirs = {
+        os.path.relpath(tdir + "/../obj_" + scenario)
+        for tdir in Args.test_dirs
+        for scenario in (set(Args.scenarios) | {"dist"})
+    }
+    for obj_dir in sorted(obj_dirs):
+        obj_root = os.environ.get('VERILATOR_TESTS_OBJ_ROOT')
+        if not obj_root:
+            # Not mkpath so error if try to build somewhere odd
+            VtOs.mkdir_ok(obj_dir)
+            continue
+        src_parent = os.path.dirname(os.path.abspath(obj_dir))
+        dst_parent = os.path.join(obj_root, src_parent.lstrip(os.sep))
+        dst = os.path.join(dst_parent, os.path.basename(obj_dir))
+        os.makedirs(dst, exist_ok=True)
+        # The OS resolves '..' through a symlink physically, so e.g. Makefile_obj's
+        # VPATH of obj_vlt/t_foo/../.. would miss t/. Mirror the siblings as symlinks.
+        for entry in os.listdir(src_parent):
+            src = os.path.join(src_parent, entry)
+            dst_entry = os.path.join(dst_parent, entry)
+            # Already the same, e.g. obj_* links into here, which would make a symlink loop
+            if os.path.realpath(src) != os.path.realpath(dst_entry):
+                VtOs.symlink_ok(src, dst_entry)
+        for entry in os.listdir(dst_parent):
+            link = os.path.join(dst_parent, entry)
+            if os.path.islink(link) and not os.path.lexists(os.path.join(src_parent, entry)):
+                try:
+                    os.remove(link)
+                except FileNotFoundError:  # Removed by another concurrent driver.py
+                    pass
+        VtOs.symlink_ok(dst, obj_dir)
     timestart = time.strftime("%Y%m%d_%H%M%S")
 
     runner = Runner(driver_log_filename="obj_dist/driver_" + timestart + ".log", quiet=Args.quiet)
@@ -3006,6 +3116,9 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
     # --debugi: see _parameter()
     parser.add_argument('--driver-clean', action='store_true', help='clean after test passes')
+    parser.add_argument('--driver-prune',
+                        action='store_true',
+                        help='clean after test passes, but keep files for test-snap/test-diff')
     parser.add_argument('--fail-max',
                         action='store',
                         default=None,

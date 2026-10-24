@@ -39,30 +39,31 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 namespace V3Sched {
 
 //============================================================================
-// Remaps external domains using the specified trigger map
+// Trigger indices of the external domains of each variable
 
-std::map<const AstVarScope*, std::vector<AstSenTree*>>
-TimingKit::remapDomains(const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const {
-    std::map<const AstVarScope*, std::vector<AstSenTree*>> remappedDomainMap;
+std::map<const AstVarScope*, std::vector<uint32_t>>
+TimingKit::externalTriggerIndices(const TriggerKit& trigKit) const {
+    std::map<const AstVarScope*, std::vector<uint32_t>> result;
     for (const auto& vscpDomains : m_externalDomains) {
-        const AstVarScope* const vscp = vscpDomains.first;
-        const auto& domains = vscpDomains.second;
-        auto& remappedDomains = remappedDomainMap[vscp];
-        remappedDomains.reserve(domains.size());
-        for (AstSenTree* const domainp : domains) {
-            remappedDomains.push_back(trigMap.at(domainp));
+        std::vector<uint32_t>& indices = result[vscpDomains.first];
+        for (const AstSenTree* const domainp : vscpDomains.second) {
+            for (const AstSenItem* itemp = domainp->sensesp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), SenItem)) {
+                indices.push_back(trigKit.senItem2TrigIdx(itemp));
+            }
         }
     }
-    return remappedDomainMap;
+    return result;
 }
 
 //============================================================================
 // Creates a timing resume call (if needed, else returns null)
 
-AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
+AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
     if (!m_resumeFuncp) {
         if (m_lbs.empty()) return nullptr;
         // Create global resume function
+        AstNetlist* const netlistp = v3Global.rootp();
         AstScope* const scopeTopp = netlistp->topScopep()->scopep();
         m_resumeFuncp = new AstCFunc{netlistp->fileline(), "_timing_resume", scopeTopp, ""};
         m_resumeFuncp->dontCombine(true);
@@ -71,8 +72,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
         m_resumeFuncp->declPrivate(true);
         scopeTopp->addBlocksp(m_resumeFuncp);
 
-        for (const auto& p : m_lbs) {
-            AstActive* const activep = p.second;
+        for (const auto& entry : m_lbs) {
+            AstActive* const activep = entry.m_activep;
             activep->foreach([this](AstCMethodHard* const exprp) {
                 if (exprp->method() != VCMethod::SCHED_RESUME) return;
                 AstNodeExpr* const fromp = exprp->fromp();
@@ -91,8 +92,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 
         // Put all the timing actives in the resume function
         AstIf* dlyShedIfp = nullptr;
-        for (auto& p : m_lbs) {
-            AstActive* const activep = p.second;
+        for (const auto& entry : m_lbs) {
+            AstActive* const activep = entry.m_activep;
             // Resume time delays last. For no particular reason other than
             // that's what we used to do prior to proper #0 support.
             AstVarRef* const schedrefp = VN_AS(
@@ -100,7 +101,11 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 
             AstNode* const actionp = activep->stmtsp()->unlinkFrBackWithNext();
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
-                dlyShedIfp = V3Sched::util::createIfFromSenTree(activep->sentreep());
+                FileLine* const flp = trigVscp->fileline();
+                const std::set<uint32_t>& triggers = entry.m_triggers;
+                AstTriggered* const condp
+                    = new AstTriggered{flp, trigVscp, {triggers.begin(), triggers.end()}};
+                dlyShedIfp = new AstIf{flp, condp};
                 dlyShedIfp->addThensp(actionp);
             } else {
                 m_resumeFuncp->addStmtsp(actionp);
@@ -117,8 +122,8 @@ AstCCall* TimingKit::createResume(AstNetlist* const netlistp) {
 }
 
 AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
-    for (auto& p : m_lbs) {
-        AstActive* const ap = p.second;
+    for (const auto& entry : m_lbs) {
+        AstActive* const ap = entry.m_activep;
         // TODO: this triple VN_AS expression is ridiculous
         AstVarRef* const schedrefp
             = VN_AS(VN_AS(VN_AS(ap->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
@@ -132,10 +137,10 @@ AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
 //============================================================================
 // Creates a timing ready call (if needed, else returns null)
 
-AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
+AstCCall* TimingKit::createReady(AstVarScope* trigVscp) {
     if (!m_readyFuncp) {
-        for (auto& p : m_lbs) {
-            AstActive* const activep = p.second;
+        for (const auto& entry : m_lbs) {
+            AstActive* const activep = entry.m_activep;
             auto* const resumep = VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard);
             UASSERT_OBJ(!resumep->nextp(), resumep, "Should be the only statement here");
             AstVarScope* const schedulerp = VN_AS(resumep->fromp(), VarRef)->varScopep();
@@ -146,6 +151,7 @@ AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
             if (!schedulerp->dtypep()->basicp()->isTriggerScheduler()) continue;
             // Create the global ready function only if we have trigger schedulers
             if (!m_readyFuncp) {
+                AstNetlist* const netlistp = v3Global.rootp();
                 AstScope* const scopeTopp = netlistp->topScopep()->scopep();
                 m_readyFuncp = new AstCFunc{netlistp->fileline(), "_timing_ready", scopeTopp, ""};
                 m_readyFuncp->dontCombine(true);
@@ -155,11 +161,13 @@ AstCCall* TimingKit::createReady(AstNetlist* const netlistp) {
                 scopeTopp->addBlocksp(m_readyFuncp);
             }
 
-            AstSenTree* const senTreep = activep->sentreep();
-            FileLine* const flp = senTreep->fileline();
+            FileLine* const flp = activep->sentreep()->fileline();
 
             // Create an 'AstIf' sensitive to the suspending triggers
-            AstIf* const ifp = V3Sched::util::createIfFromSenTree(senTreep);
+            const std::set<uint32_t>& triggers = entry.m_triggers;
+            AstTriggered* const condp
+                = new AstTriggered{flp, trigVscp, {triggers.begin(), triggers.end()}};
+            AstIf* const ifp = new AstIf{flp, condp};
             m_readyFuncp->addStmtsp(ifp);
 
             // Mark as ready the processes resumed on this sensitivity expression
@@ -280,7 +288,7 @@ class AwaitVisitor final : public VNVisitor {
         // Put it in an active
         AstActive* const activep = new AstActive{flp, "_timing", sentreep};
         activep->addStmtsp(resumep->makeStmt());
-        m_lbs.emplace_back(m_scopeTopp, activep);
+        m_lbs.add(m_scopeTopp, activep);
     }
     // Visit AstCFunc from a AstNodeCCall - this function is rather expensive to call therefore, it
     // only shall be called when necessary
@@ -426,10 +434,14 @@ class TransformForksVisitor final : public VNVisitor {
         const VNUser2InUse user2InUse;  // AstVarScope -> AstVarScope: var to remap to
         funcp->foreach([&](AstNodeVarRef* refp) {
             AstVar* const varp = refp->varp();
+            AstVarScope* const vscp = refp->varScopep();
             AstBasicDType* const dtypep = varp->dtypep()->basicp();
             // If not a fork..join, copy. All write refs should've been handled by V3Fork
             bool passByValue = !m_forkp->joinType().join();
-            if (!varp->isFuncLocal()) {
+            if (vscp->forkByValue()) {
+                // Set just before the fork, for its processes to get by value
+                passByValue = true;
+            } else if (!varp->isFuncLocal()) {
                 // Not func local. Its lifetime is longer than the forked process. Skip
                 return;
             } else if (!varp->user1()) {
@@ -440,7 +452,6 @@ class TransformForksVisitor final : public VNVisitor {
                 passByValue = true;
             }
             // Remap the reference
-            AstVarScope* const vscp = refp->varScopep();
             if (!vscp->user2p()) {
                 // Clone the var to the new function
                 AstVar* const newvarp
@@ -545,10 +556,7 @@ class TransformForksVisitor final : public VNVisitor {
         // Replace the body of the begin with a call to the newly created function
         nodep->addStmtsp(callp->makeStmt());
         // Propagate if needs process
-        if (nodep->needProcess()) {
-            newfuncp->setNeedProcess();
-            newfuncp->addStmtsp(new AstCStmt{flp, "vlProcess->state(VlProcess::FINISHED);"});
-        }
+        if (nodep->needProcess()) newfuncp->setNeedProcess();
         remapLocals(newfuncp, callp);
     }
     void visit(AstCAwait* nodep) override {

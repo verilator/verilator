@@ -96,6 +96,10 @@ public:
     // Convert SV quoted string input from source code to normal form.
     // Reverse is V3OutFormatter::quoteNameControls(...)
     static string unquoteSVString(const string& text, string& errOut);
+    // Position just past the string literal 'pos' opens with '"', as written by
+    // V3OutFormatter::quoteNameControls(...), whose escapes each begin with '\', or npos if the
+    // literal does not end
+    static size_t quotedEnd(const string& str, size_t pos) VL_PURE;
     // Escape path in Windows
     // e.g. input `C:\Program Files\My Program\My Program.exe` becomes
     // `C:\\Program\ Files\\My\ Program\\My\ Program.exe`
@@ -140,45 +144,53 @@ public:
     // Hash the string
     static uint64_t hashMurmur(const string& str) VL_PURE;
 
+    // Base 64 encode
+    static string base64Enc(const string& str) VL_PURE;
+
     static void selfTest();  // Test this class
 };
 
 //######################################################################
-// VHashSha256 - Compute Sha256 hashes
+// VHashSha512 - Compute Sha512 hashes
 
-class VHashSha256 final {
-    // As blocks must be processed in 64 byte chunks, this does not at present
-    // support calling input() on multiple non-64B chunks and getting the correct
+class VHashSha512 final {
+    // As blocks must be processed in 128 byte chunks, this does not at present
+    // support calling input() on multiple non-128B chunks and getting the correct
     // hash. To do that first combine the string before calling here.
-    // Or improve to store 0-63 bytes of data between calls to input().
+    // Or improve to store 0-127 bytes of data between calls to input().
 
     // MEMBERS
-    uint32_t m_inthash[8];  // Intermediate hash, in host order
+    uint64_t m_inthash[8];  // Intermediate hash, in host order
     string m_remainder;  // Unhashed data
     size_t m_totLength = 0;  // Total all-chunk length as needed by output digest
     bool m_final = false;  // Finalized
 public:
     // CONSTRUCTORS
-    VHashSha256() {
-        m_inthash[0] = 0x6a09e667;
-        m_inthash[1] = 0xbb67ae85;
-        m_inthash[2] = 0x3c6ef372;
-        m_inthash[3] = 0xa54ff53a;
-        m_inthash[4] = 0x510e527f;
-        m_inthash[5] = 0x9b05688c;
-        m_inthash[6] = 0x1f83d9ab;
-        m_inthash[7] = 0x5be0cd19;
+    VHashSha512() {
+        m_inthash[0] = 0x6a09e667f3bcc908ULL;
+        m_inthash[1] = 0xbb67ae8584caa73bULL;
+        m_inthash[2] = 0x3c6ef372fe94f82bULL;
+        m_inthash[3] = 0xa54ff53a5f1d36f1ULL;
+        m_inthash[4] = 0x510e527fade682d1ULL;
+        m_inthash[5] = 0x9b05688c2b3e6c1fULL;
+        m_inthash[6] = 0x1f83d9abfb41bd6bULL;
+        m_inthash[7] = 0x5be0cd19137e2179ULL;
     }
-    explicit VHashSha256(const string& data)
-        : VHashSha256{} {
+    explicit VHashSha512(const string& data)
+        : VHashSha512{} {
         insert(data);
     }
-    ~VHashSha256() = default;
+    ~VHashSha512() = default;
+
+    // CONSTANTS
+    // Characters digestSymbol24 keeps, 6 bits each, so 144 bits and no collisions in practice
+    static constexpr size_t DIGEST_SYMBOL24_LENGTH = 24;
 
     // METHODS
-    string digestBinary();  // Return digest as 32 character binary
+    string digestBase64();  // Return digest formatted in Base64 (non-URL flavor)
+    string digestBinary();  // Return digest as 64 character binary
     string digestHex();  // Return digest formatted as a hex string
-    string digestSymbol();  // Return digest formatted as C symbol/base64ish
+    string digestSymbol24();  // Return non-reversable short-formatted as C symbol/base64ish
     uint64_t digestUInt64();  // Return 64-bits of digest
     static void selfTest();  // Test this class
 
@@ -192,7 +204,7 @@ public:
 
 private:
     static void selfTestOne(const string& data, const string& data2, const string& exp,
-                            const string& exp64);
+                            const string& exp64, const string& exp24);
     void finalize();  // Process remaining data
 };
 
@@ -201,8 +213,8 @@ private:
 // TODO use this wherever there is currently a "string m_name"
 
 class VName final {
-    string m_name;
-    string m_hashed;
+    string m_name;  // Pre-hashed symbol name
+    string m_hashed;  // Hashed version of symbol name
     static std::map<string, string> s_dehashMap;  // hashed -> original decoder
 
     static size_t s_maxLength;  // Length at which to start hashing
@@ -235,8 +247,12 @@ class VSpellCheck final {
     static constexpr unsigned LENGTH_LIMIT = 100;  // Maximum string length to search
     // TYPES
     using EditDistance = unsigned int;
+    struct Candidate final {
+        std::string str;  // String to be matched
+        std::string msg;  // Message to print on a match
+    };
     // MEMBERS
-    std::vector<std::string> m_candidates;  // Strings we try to match
+    std::vector<Candidate> m_candidates;  // Strings we try to match
 public:
     // CONSTRUCTORS
     VSpellCheck() = default;
@@ -244,27 +260,29 @@ public:
     // METHODS
     // Push a symbol table value to be considered as a candidate
     // The first item pushed has highest priority, all else being equal
-    void pushCandidate(const string& s) {
-        if (m_candidates.size() < NUM_CANDIDATE_LIMIT) m_candidates.push_back(s);
+    void pushCandidate(const string& str) { pushCandidate(str, str); }
+    // First argument is string to be matched, the second one is message to print on success
+    void pushCandidate(const string& str, const string& msg) {
+        if (m_candidates.size() < NUM_CANDIDATE_LIMIT) m_candidates.push_back({str, msg});
     }
     // Return candidate is closest to provided string, or "" for none
-    string bestCandidate(const string& goal) const {
+    VSpellCheck::Candidate bestCandidate(const string& goal) const {
         EditDistance dist;
         return bestCandidateInfo(goal, dist /*ref*/);
     }
     // Return friendly message
     string bestCandidateMsg(const string& goal) const {
-        const string candidate = bestCandidate(goal);
-        if (candidate.empty()) return "";
-        return "... Suggested alternative: '"s + candidate + "'";
+        const auto candidate = bestCandidate(goal);
+        if (candidate.msg.empty()) return "";
+        return "... Suggested alternative: '"s + candidate.msg + "'";
     }
     static void selfTest();
-    const std::vector<std::string> candidates() const { return m_candidates; }
+    const std::vector<Candidate>& candidates() const { return m_candidates; }
 
 private:
     static EditDistance editDistance(const string& s, const string& t);
     static EditDistance cutoffDistance(size_t goal_len, size_t candidate_len);
-    string bestCandidateInfo(const string& goal, EditDistance& distancer) const;
+    VSpellCheck::Candidate bestCandidateInfo(const string& goal, EditDistance& distancer) const;
     static void selfTestDistanceOne(const string& a, const string& b, EditDistance expected);
     static void selfTestSuggestOne(bool matches, const string& c, const string& goal,
                                    EditDistance dist);

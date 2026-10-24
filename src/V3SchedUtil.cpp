@@ -20,7 +20,6 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
 #include "V3Order.h"
@@ -57,13 +56,6 @@ AstVarScope* newArgument(AstCFunc* funcp, AstNodeDType* dtypep, const string& na
     AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
     scopep->addVarsp(vscp);
     return vscp;
-}
-
-AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow) {
-    AstCFunc* const funcp = makeSubFunction(netlistp, name, slow);
-    funcp->entryPoint(true);
-    funcp->keepIfEmpty(true);
-    return funcp;
 }
 
 AstNodeStmt* setVar(AstVarScope* vscp, uint32_t val) {
@@ -228,23 +220,6 @@ void splitCheck(AstCFunc* const ofuncp) {
         subFuncp->addStmtsp(itemp);
     }
     if (subFuncp) splitCheckFinishSubFunc(ofuncp, subFuncp, argVscps);
-}
-
-// Build an AstIf conditional on the given SenTree being triggered
-AstIf* createIfFromSenTree(AstSenTree* senTreep) {
-    senTreep = VN_AS(V3Const::constifyExpensiveEdit(senTreep), SenTree);
-    UASSERT_OBJ(senTreep->sensesp(), senTreep, "No sensitivity list during scheduling");
-    // Convert the SenTree to a boolean expression that is true when triggered
-    AstNodeExpr* senEqnp = nullptr;
-    for (AstSenItem *senp = senTreep->sensesp(), *nextp; senp; senp = nextp) {
-        nextp = VN_AS(senp->nextp(), SenItem);
-        // They should all be ET_TRUE, as set up by V3Sched
-        UASSERT_OBJ(senp->edgeType() == VEdgeType::ET_TRUE, senp, "Bad scheduling trigger type");
-        AstNodeExpr* const senOnep = senp->sensp()->cloneTree(false);
-        senEqnp = senEqnp ? new AstOr{senp->fileline(), senEqnp, senOnep} : senOnep;
-    }
-    // Create the if statement conditional on the triggers
-    return new AstIf{senTreep->fileline(), senEqnp};
 }
 
 }  // namespace util

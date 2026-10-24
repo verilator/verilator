@@ -108,7 +108,7 @@ static void makeToString(AstClass* nodep) {
     AstCExpr* const exprp = new AstCExpr{nodep->fileline(), R"("'{"s + to_string_middle() + "}")"};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-    nodep->addStmtsp(funcp);
+    nodep->addMembersp(funcp);
 }
 static void makeToStringMiddle(AstClass* nodep) {
     AstCFunc* const funcp
@@ -156,7 +156,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     }
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
 
-    nodep->addStmtsp(funcp);
+    nodep->addMembersp(funcp);
 }
 
 class ToStringVisitor final : public VNVisitorConst {
@@ -184,7 +184,7 @@ class ToStringVisitor final : public VNVisitorConst {
         if (classp->user1SetOnce()) return;
         VL_RESTORER(m_emitForMembers);
         ++m_emitForMembers;
-        for (AstNode* stmtp = classp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* stmtp = classp->membersp(); stmtp; stmtp = stmtp->nextp()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 AstNodeDType* nodeDtypep = varp->dtypep();
                 if (AstIfaceRefDType* const ifaceRedDTypep = VN_CAST(nodeDtypep, IfaceRefDType)) {
@@ -318,7 +318,6 @@ class ToStringVisitor final : public VNVisitorConst {
             }
         }
     }
-    void visit(AstConstPool*) override {}  // Accelerate
     void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
 
 public:

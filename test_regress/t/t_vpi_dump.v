@@ -6,6 +6,8 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// verilator lint_off UNOPTPUBLIC
+
 /* verilator public_on */
 
 typedef struct packed {

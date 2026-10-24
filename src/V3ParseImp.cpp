@@ -102,7 +102,7 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
 
     if (!itemsp) {
         flp->v3error("Property case statement with no items");
-        exprp->deleteTree();
+        VL_DO_DANGLING(exprp->deleteTree(), exprp);
         return new AstConst{flp, AstConst::BitTrue{}};
     }
 
@@ -113,7 +113,7 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         if (itemp->isDefault()) {
             if (defaultPropp) {
                 itemp->v3error("Multiple default statements in property case statement");
-                defaultPropp->deleteTree();
+                VL_DO_DANGLING(defaultPropp->deleteTree(), defaultPropp);
                 exprp->deleteTree();
                 return new AstConst{flp, AstConst::BitTrue{}};
             }
@@ -140,11 +140,11 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         resultp = resultp ? new AstSAnd{flp, resultp, branchp, /*propertyControl=*/true} : branchp;
         matchedp = matchedp ? new AstLogOr{itemp->fileline(), matchedp, itemMatchp} : itemMatchp;
     }
-    itemsp->deleteTree();
+    VL_DO_DANGLING(itemsp->deleteTree(), itemsp);
 
     if (defaultPropp) {
         if (!matchedp) {
-            exprp->deleteTree();
+            VL_DO_DANGLING(exprp->deleteTree(), exprp);
             return defaultPropp;
         }
         AstNodeExpr* const noMatchp
@@ -152,8 +152,8 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         AstNodeExpr* const branchp = new AstImplication{defaultFlp, noMatchp, defaultPropp, true};
         resultp = new AstSAnd{flp, resultp, branchp, /*propertyControl=*/true};
     }
-    matchedp->deleteTree();
-    exprp->deleteTree();
+    VL_DO_DANGLING(matchedp->deleteTree(), matchedp);
+    VL_DO_DANGLING(exprp->deleteTree(), exprp);
     return resultp;
 }
 

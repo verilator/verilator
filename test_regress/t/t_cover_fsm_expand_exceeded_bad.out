@@ -1,0 +1,6 @@
+%Error: t/t_cover_fsm_expand_exceeded_bad.v:26:11: Exceeded size of --coverage-fsm-max-arcs 100000 with: 18446744073709551615
+                                                 : ... note: In instance 't'
+   26 |   state_t state  /*verilator fsm_arc_include_cond_full*/;
+      |           ^~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

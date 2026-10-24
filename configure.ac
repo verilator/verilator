@@ -12,7 +12,7 @@
 # Then 'make maintainer-dist'
 #AC_INIT([Verilator],[#.### YYYY-MM-DD])
 #AC_INIT([Verilator],[#.### devel])
-AC_INIT([Verilator],[5.051 devel],
+AC_INIT([Verilator],[5.053 devel],
         [https://verilator.org],
         [verilator],[https://verilator.org])
 
@@ -263,13 +263,33 @@ if test "x$PYTHON3" = "x" ; then
 fi
 python3_version=$($PYTHON3 --version | head -1)
 AC_MSG_RESULT([$PYTHON3 --version = $python3_version])
+# Windows often installs python under "Program Files", which GNU make cannot
+# use unquoted in verilated.mk; use the space-free 8.3 short name instead.
+PYTHON3=`echo "$PYTHON3" | sed 's/Program Files/PROGRA~1/g'`
 
+AC_ARG_VAR([LEX], [Flex executable])
 AC_CHECK_PROG(LEX,flex,flex)
 if test "x$LEX" = "x" ; then
    AC_MSG_ERROR([Cannot find "flex" in your PATH, please install it])
 fi
 flex_version=$($LEX --version | head -1)
 AC_MSG_RESULT([$LEX --version = $flex_version])
+
+# Use the header installed with the selected generator.
+flex_include=$($PYTHON3 -c '
+import pathlib
+import shutil
+import sys
+print(pathlib.Path(shutil.which(sys.argv@<:@1@:>@) or sys.argv@<:@1@:>@).resolve().parent.parent / "include")
+' "$LEX")
+if test -f "$flex_include/FlexLexer.h"; then
+   if test -n "$MSYSTEM"; then
+      # Search MSYS Flex headers after the active toolchain's system headers.
+      CPPFLAGS="$CPPFLAGS -idirafter $flex_include"
+   else
+      CPPFLAGS="$CPPFLAGS -I$flex_include"
+   fi
+fi
 
 AC_CHECK_PROG(YACC,bison,bison)
 if test "x$YACC" = "x" ; then
@@ -282,6 +302,31 @@ AC_CHECK_PROG(OBJCACHE,ccache,ccache)
 if test "x$OBJCACHE" != "x" ; then
   objcache_version=$($OBJCACHE --version | head -1)
   AC_MSG_RESULT([objcache is $OBJCACHE --version = $objcache_version])
+fi
+
+# Wavetools is required for waveform tests, but not for building Verilator.
+AC_ARG_VAR([WAVECAT], [wavecat executable from wavetools])
+AC_ARG_VAR([WAVEDIFF], [wavediff executable from wavetools])
+if test "x$CFG_WITH_LONGTESTS" = "xyes" ; then
+  . "$srcdir/ci/docker/buildenv/wavetools.conf"
+  REQUIRED_WAVETOOLS_VERSION=${WAVETOOLS_VERSION#v}
+  AC_CHECK_PROG(WAVECAT,wavecat,wavecat)
+  AC_CHECK_PROG(WAVEDIFF,wavediff,wavediff)
+  for wavetools_tool in WAVECAT WAVEDIFF; do
+    case "$wavetools_tool" in
+      WAVECAT) wavetools_command=$WAVECAT; wavetools_name=wavecat ;;
+      WAVEDIFF) wavetools_command=$WAVEDIFF; wavetools_name=wavediff ;;
+    esac
+    AC_MSG_CHECKING([for $wavetools_name >= $REQUIRED_WAVETOOLS_VERSION])
+    wavetools_version=
+    if test "x$wavetools_command" != "x" ; then
+      wavetools_version=$($wavetools_command --version 2>/dev/null | sed -n 's/^wave[[a-z]]* \([[0-9]][[0-9]]*\.[[0-9]][[0-9]]*\.[[0-9]][[0-9]]*\).*$/\1/p')
+    fi
+    AS_VERSION_COMPARE([$wavetools_version], [$REQUIRED_WAVETOOLS_VERSION], [
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([$wavetools_name >= $REQUIRED_WAVETOOLS_VERSION is required for waveform tests and golden updates; install wavetools from https://github.com/hudson-trading/wavetools or set $wavetools_tool])
+    ], [AC_MSG_RESULT([$wavetools_version])], [AC_MSG_RESULT([$wavetools_version])])
+  done
 fi
 
 # Checks for libraries.
@@ -463,8 +508,6 @@ if test "$CFG_WITH_DEV_GCOV" = "yes"; then
   #_MY_CXX_CHECK_OPT(CXX,-fkeep-inline-functions)
   # Make sure profiling is thread-safe
   _MY_CXX_CHECK_OPT(CXX,-fprofile-update=atomic)
-  # Ensure data files can be written from parallel runs
-  _MY_CXX_CHECK_OPT(CXX,-fprofile-reproducible=parallel-runs)
   # Save source files as absolute paths in gcno files
   _MY_CXX_CHECK_OPT(CXX,-fprofile-abs-path)
   # Define so compiled code can know

@@ -16,6 +16,14 @@ package Pack_Dead;
   typedef bit typedef_Dead;
 endpackage
 
+package Pack_Struct_Dead;
+  // The nested struct type refers to the package, which must be kept as long as the type is
+  typedef struct {
+    int x_Dead;
+    struct {bit a_Dead;} nested_Dead;
+  } struct_Dead_t;
+endpackage
+
 module Mod_Dead;
   typedef class ModClass_Co_Dead;
   class ModClass_Dead;
@@ -70,10 +78,22 @@ package Pkg_Keep;
   endfunction
 endpackage
 
-module t (  /*AUTOARG*/);
+class Cls_Keep;
+  task cls_task_Dead;
+  endtask
+  function void cls_func_Dead;
+  endfunction
+  static task cls_stask_Dead;
+  endtask
+  static function void cls_sfunc_Dead;
+  endfunction
+endclass
+
+module t;
 
   typedef struct {int struct_member_Dead;} struct_Dead_t;
   struct_Dead_t var_struct_Dead;
+  Pack_Struct_Dead::struct_Dead_t var_pkg_struct_Dead;
 
   typedef int typedef_Dead1_t;
   typedef typedef_Dead1_t typedef_Dead2_t;
@@ -106,6 +126,8 @@ module t (  /*AUTOARG*/);
   always_comb assigned_to_Dead2 = assigned_to_Dead1;
 
   initial begin
+    Cls_Keep c;
+    c = new;
     assigned_to_Dead1 = 1;
     assigned_to_Dead1 = 2;
     $write("*-* All Finished *-*\n");

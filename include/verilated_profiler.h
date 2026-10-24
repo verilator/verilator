@@ -169,7 +169,7 @@ class VlExecutionProfiler final : public VlExecutionProfilerBase {
     // STATE
     VerilatedContext& m_context;  // The context this profiler is under
     static thread_local ExecutionTrace t_trace;  // thread-local trace buffers
-    mutable VerilatedMutex m_mutex;
+    mutable VerilatedMutex m_mutex;  // Mutex protecting traces
     // Map from thread id to &t_trace of given thread
     std::map<uint32_t, ExecutionTrace*> m_traceps VL_GUARDED_BY(m_mutex);
 

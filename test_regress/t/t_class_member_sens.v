@@ -19,7 +19,7 @@ module t (
 
   always @(posedge clk) begin
     cyc <= cyc + 1;
-    if (cyc == 1)->ec.e;
+    if (cyc == 1) ->ec.e;
     else if (cyc == 2) begin
       $write("*-* All Finished *-*\n");
       $finish;

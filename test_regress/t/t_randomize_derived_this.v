@@ -15,22 +15,16 @@
 
 class sub_cfg_c;
   rand bit enabled;
-  constraint defaults {
-    soft enabled == 1'b0;
-  }
+  constraint defaults {soft enabled == 1'b0;}
 endclass
 
 class base_c;
   rand sub_cfg_c cfg;
   rand int unsigned watchdog;
 
-  constraint override_cons {
-    cfg.enabled == 1'b1;
-  }
+  constraint override_cons {cfg.enabled == 1'b1;}
 
-  constraint watchdog_range {
-    watchdog inside {[32'd50:32'd200]};
-  }
+  constraint watchdog_range {watchdog inside {[32'd50 : 32'd200]};}
 
   function new();
     cfg = new();

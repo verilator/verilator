@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios("simulator")
 
-test.compile(verilator_flags2=["--dump-tree"])
+test.compile(verilator_flags2=["--dump-tree", "-fno-decompose"])
 
 if test.vlt_all:
     # Test for correct array select width, see: #7012

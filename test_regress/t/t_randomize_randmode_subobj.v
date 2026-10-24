@@ -34,7 +34,7 @@ endclass
 class OuterClass;
   rand InnerClass nested;
   rand bit [7:0] outer_val;
-  constraint outer_c { outer_val inside {[8'd1 : 8'd20]}; }
+  constraint outer_c {outer_val inside {[8'd1 : 8'd20]};}
   function new();
     nested = new();
     outer_val = 0;

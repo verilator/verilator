@@ -28,7 +28,7 @@ Quick Install
    and install.
 #. For build on Windows using MSVC set environment variable WIN_FLEX_BISON
    to install directory. For build on Windows/Linux/OS-X using ninja set
-   the environment variable FLEX_INCLUDE to the directory containing
+   the CMake variable FLEX_INCLUDE_DIR to the directory containing
    FlexLexer.h and ensure that flex/bison is available within the PATH.
 
 To obtain Verilator sources download
@@ -57,6 +57,11 @@ To build using ninja:
    cmake -G Ninja .. -DCMAKE_BUILD_TYPE=Release --install-prefix $PWD/../install -DCMAKE_MAKE_PROGRAM=<path to ninja binary> -DBISON_EXECUTABLE=<path to bison> -DFLEX_EXECUTABLE=<path to flex>
    <path to ninja binary> #execute ninja
    cmake --install . --prefix $PWD/../install
+
+
+For coverage tools, use ``CMAKE_BUILD_TYPE=CoverageRelease`` to build
+``verilator_coverage_bin`` or ``CMAKE_BUILD_TYPE=Coverage`` to build
+``verilator_coverage_bin_dbg``.
 
 
 .. _cmake usage:
