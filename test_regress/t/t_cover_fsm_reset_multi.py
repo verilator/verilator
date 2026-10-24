@@ -17,4 +17,9 @@ test.scenarios('vlt')
 # coverage edges.
 test.lint(verilator_flags2=["--coverage-fsm"], fails=True, expect_filename=test.golden_filename)
 
+# Coverage counters between reset assignments must not hide the second write.
+test.lint(verilator_flags2=["--coverage-fsm", "--coverage-line"],
+          fails=True,
+          expect_filename=test.golden_filename)
+
 test.passes()
