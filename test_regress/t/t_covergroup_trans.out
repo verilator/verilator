@@ -31,3 +31,5 @@ t.cg_first.cp_first.stay: 2
 t.cg_first.cp_gated.rise: 1
 t.cg_first.cp_gated.to2: 0
 t.cg_long.cp_long.seq: 1
+t.cg_overlap.cp_overlap.aab: 1
+t.cg_overlap.cp_overlap.aba: 2

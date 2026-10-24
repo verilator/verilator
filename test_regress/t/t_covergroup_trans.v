@@ -102,6 +102,15 @@ module t;
   endgroup
   cg_long cg_long_inst = new;
 
+  // Overlapping matches of a sequence each count (IEEE 1800-2023 19.5.2)
+  covergroup cg_overlap with function sample (bit [1:0] v);
+    cp_overlap: coverpoint v {
+      bins aba = (1 => 2 => 1);  // Samples 1 to 3, and 3 to 5
+      bins aab = (1 => 1 => 2);  // Samples 6 to 8, after a partial match of 5 to 7
+    }
+  endgroup
+  cg_overlap cg_overlap_inst = new;
+
   initial begin
     // Drive sequence 0->1->2->3->4 which hits all bins
     state = 0;
@@ -135,6 +144,12 @@ module t;
 
     // cg_long: samples 0, 1, 0, ..., completing its sequence once
     for (int i = 0; i < 256; ++i) cg_long_inst.sample(1'(i));
+
+    // cg_overlap: samples 1, 2, 1, 2, 1, 1, 1, 2
+    begin
+      automatic bit [1:0] samples[8] = '{1, 2, 1, 2, 1, 1, 1, 2};
+      foreach (samples[i]) cg_overlap_inst.sample(samples[i]);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;
