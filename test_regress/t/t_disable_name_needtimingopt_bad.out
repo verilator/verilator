@@ -1,0 +1,8 @@
+%Error-NOTIMING: t/t_disable_name.v:12:5: Support for disable by name of task or block requires --timing
+   12 |     disable tsk;
+      |     ^~~~~~~
+                 ... For error description see https://verilator.org/warn/NOTIMING?v=latest
+%Error-NOTIMING: t/t_disable_name.v:22:5: Support for disable by name of task or block requires --timing
+   22 |     disable blk;
+      |     ^~~~~~~
+%Error: Exiting due to

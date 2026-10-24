@@ -236,6 +236,15 @@ class LinkJumpVisitor final : public VNVisitor {
         killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         return new AstStmtExpr{fl, killQueueCall};
     }
+    static void requireTiming(FileLine* const fl) {
+        // The detached process the disable kills needs the timing runtime (VlProcess)
+        if (v3Global.opt.timing().isSetTrue()) {
+            v3Global.setUsesTiming();
+        } else {
+            fl->v3warn(E_NOTIMING,
+                       "Support for disable by name of task or block requires --timing");
+        }
+    }
     AstBegin* getOrCreateTaskDisableBeginp(AstTask* const taskp, FileLine* const fl) {
         const auto it = m_taskDisableBegins.find(taskp);
         if (it != m_taskDisableBegins.end()) return it->second;
@@ -244,7 +253,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Disable-by-name rewrites kill this detached task-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
         taskBodyp->setNeedProcess();
-        v3Global.setUsesTiming();
+        requireTiming(fl);
         // Ports stay in the task so calls see them
         for (AstNode* stmtp = taskp->stmtsp(); stmtp;) {
             AstNode* const nextp = stmtp->nextp();
@@ -306,7 +315,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Disable-by-name rewrites kill this detached block-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
         beginBodyp->setNeedProcess();
-        v3Global.setUsesTiming();
+        requireTiming(fl);
         if (beginp->stmtsp()) beginBodyp->addStmtsp(beginp->stmtsp()->unlinkFrBackWithNext());
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};
