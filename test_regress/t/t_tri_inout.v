@@ -9,6 +9,10 @@
 `define checkh(gotv, expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0x exp=%0x\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
+typedef logic [67:3] unpacked_word_t;
+typedef unpacked_word_t unpacked_words_t [3:1];
+typedef logic [6:0] unpacked_matrix_t [2:4][5:4];
+
 module top (
     input A,
     input B,
@@ -182,6 +186,23 @@ module pad_checker (
   wire [67:3] sampled;
   logic [67:3] expected_sampled;
 
+  wire unused_array_pad [3];
+
+  unpacked_words_t array_en;
+  unpacked_words_t array_data;
+  wire unpacked_word_t array_pad [3:1];
+  unpacked_words_t array_q;
+  unpacked_words_t array_sampled;
+  unpacked_words_t array_expected_sampled;
+  wire [6:0] unpacked_matrix_pad [2:4][5:4];
+  unpacked_matrix_t unpacked_matrix_q;
+  wire array_receive_pad [3];
+  wire array_receive_q [3];
+  wire [6:0] array_fixed_pad [2:4];
+  wire [6:0] array_fixed_q [2:4];
+  wire [6:0] array_selected_pad [1:3];
+  wire [6:0] array_selected_q [1:3];
+
   wide_io dut (
       .clk(clk),
       .en(en),
@@ -193,7 +214,22 @@ module pad_checker (
       .q(q),
       .reverse_q(reverse_q),
       .receive_q(receive_q),
-      .sampled(sampled)
+      .sampled(sampled),
+      .cyc(cyc),
+      .array_en(array_en),
+      .array_data(array_data),
+      .array_pad(array_pad),
+      .array_q(array_q),
+      .array_sampled(array_sampled),
+      .unpacked_matrix_pad(unpacked_matrix_pad),
+      .unpacked_matrix_q(unpacked_matrix_q),
+      .array_receive_pad(array_receive_pad),
+      .array_receive_q(array_receive_q),
+      .array_fixed_pad(array_fixed_pad),
+      .array_fixed_q(array_fixed_q),
+      .array_selected_pad(array_selected_pad),
+      .array_selected_q(array_selected_q),
+      .unused_array_pad(unused_array_pad)
   );
 
   for (genvar i = 3; i <= 67; ++i) begin
@@ -219,6 +255,143 @@ module pad_checker (
     `checkh(sampled, expected_sampled);
   end
 
+  // Unpacked array ports use independent element and bit enables.
+  for (genvar i = 1; i <= 3; ++i) begin
+    assign array_en[i] = 65'h15555555555555555 ^ (65'(cyc) << (i * 7)) ^ {65{cyc[i]}};
+    assign array_data[i] = 65'h123456789abcdef01 ^ (65'(cyc) << (i * 13)) ^ 65'(cyc + i);
+    wire [67:3] external_data = ~array_data[i];
+    wire [67:3] expected = (array_en[i] & array_data[i]) | (~array_en[i] & external_data);
+    for (genvar b = 3; b <= 67; ++b) begin
+      assign array_pad[i][b] = array_en[i][b] ? 1'bz : external_data[b];
+    end
+    always @(posedge clk) array_expected_sampled[i] <= expected;
+    always @(negedge clk) begin
+      `checkh(array_q[i], expected);
+      `checkh(array_sampled[i], array_expected_sampled[i]);
+    end
+  end
+
+  for (genvar i = 2; i <= 4; ++i) begin
+    for (genvar j = 4; j <= 5; ++j) begin
+      wire enable = cyc[i + j - 6];
+      wire [6:0] value = 7'(cyc * (i + j));
+      assign unpacked_matrix_pad[i][j] = enable ? 7'bz : ~value;
+      always @(negedge clk) `checkh(unpacked_matrix_q[i][j], enable ? value : ~value);
+    end
+  end
+  for (genvar i = 0; i < 3; ++i) begin
+    assign array_receive_pad[i] = cyc[i];
+    always @(negedge clk) begin
+      `checkh(array_receive_q[i], cyc[i]);
+      `checkh(array_receive_pad[i] === 1'bz, 1'b0);
+    end
+  end
+
+  for (genvar i = 2; i <= 4; ++i) begin
+    assign array_fixed_pad[i][6:3] = 4'(cyc + i);
+    always @(negedge clk) `checkh(array_fixed_q[i], {4'(cyc + i), 3'(cyc ^ i)});
+  end
+  for (genvar i = 1; i <= 3; ++i) begin
+    assign array_selected_pad[i] = i == 1 + cyc % 3 ? 7'bz : 7'(int'(cyc) + i + 17);
+    always @(negedge clk)
+      `checkh(array_selected_q[i], i == 1 + cyc % 3 ? 7'(cyc) : 7'(int'(cyc) + i + 17));
+  end
+
+  // Propagate the selected element's drive enable to a pulled-up destination.
+  tri [6:0] array_source [3];
+  tri1 [6:0] array_relay;
+  wire [1:0] array_index = 2'(cyc % 3);
+  wire [2:0] array_enable = cyc[2:0];
+  wire [6:0] array_value = 7'(cyc * 19);
+  for (genvar i = 0; i < 3; ++i) begin
+    assign array_source[i] = array_enable[i] ? (array_value ^ 7'(i * 13)) : 7'bz;
+  end
+  assign array_relay = array_source[array_index];
+  always @(negedge clk)
+    `checkh(array_relay, array_enable[array_index] ? (array_value ^ 7'(int'(array_index) * 13)) : 7'h7f);
+
+  // A tristate index must remain a read when an inout array element is split into pins.
+  tri1 [1:0] pin_index;
+  assign pin_index = cyc[0] ? cyc[2:1] : 2'bz;
+  wire [1:0] expected_pin_index = cyc[0] ? cyc[2:1] : 2'b11;
+  wire [31:0] expected_pin_element = 1 + int'(expected_pin_index) % 3;
+  wire pin_pad [3:1];
+  wire pin_sample;
+  io indexed_io (
+      .A(cyc[3]),
+      .OE(cyc[4]),
+      .Z(pin_pad[1 + int'(pin_index) % 3]),
+      .Y(pin_sample)
+  );
+  for (genvar i = 1; i <= 3; ++i) begin
+    assign pin_pad[i] = i == expected_pin_element && cyc[4] ? 1'bz : cyc[i];
+    always @(negedge clk)
+      `checkh(pin_pad[i], i == expected_pin_element && cyc[4] ? cyc[3] : cyc[i]);
+  end
+  always @(negedge clk) begin
+    `checkh(pin_index, expected_pin_index);
+    `checkh(pin_sample, cyc[4] ? cyc[3] : cyc[expected_pin_element]);
+  end
+
+  // A child port's pullup must propagate to the connected array element.
+  wire [6:0] array_pull_pad [2];
+  array_pull_io array_pull_dut (.pad(array_pull_pad[0]));
+  assign array_pull_pad[0] = cyc[0] ? array_value : 7'bz;
+  assign array_pull_pad[1] = 7'(cyc + 17);
+  always @(negedge clk) begin
+    `checkh(array_pull_pad[0], cyc[0] ? array_value : 7'h7f);
+    `checkh(array_pull_pad[1], 7'(cyc + 17));
+  end
+
+  // An element pull must preserve the tri1 default on all other elements and bits.
+  tri1 [6:0] array_default_pull [2];
+  array_pull_io array_default_pull_dut (.pad(array_default_pull[0]));
+  tri1 [6:0] matrix_default_pull [2:4][5:4];
+  array_pull_io #(.WIDTH(4)) matrix_default_pull_dut (.pad(matrix_default_pull[3][4][6:3]));
+  for (genvar i = 0; i < 2; ++i) begin
+    assign array_default_pull[i] = cyc[i] ? array_value : 7'bz;
+    always @(negedge clk)
+      `checkh(array_default_pull[i], cyc[i] ? array_value : 7'h7f);
+  end
+  for (genvar i = 2; i <= 4; ++i) begin
+    for (genvar j = 4; j <= 5; ++j) begin
+      assign matrix_default_pull[i][j] = cyc[i+j-6] ? array_value : 7'bz;
+      always @(negedge clk)
+        `checkh(matrix_default_pull[i][j], cyc[i+j-6] ? array_value : 7'h7f);
+    end
+  end
+
+  // Preserve per-bit pulls through another hierarchy level and both array dimensions.
+  wire [6:0] array_pull_matrix [2:4][5:4];
+  array_pull_matrix_io array_pull_matrix_dut (.pad(array_pull_matrix));
+  for (genvar i = 2; i <= 4; ++i) begin
+    for (genvar j = 4; j <= 5; ++j) begin
+      if ((i == 3 && j == 4) || i == 4) begin
+        assign array_pull_matrix[i][j] = cyc[0] ? array_value : 7'bz;
+        always @(negedge clk)
+          `checkh(array_pull_matrix[i][j], cyc[0] ? array_value : (i == 3 ? 7'h78 : 7'h7f));
+      end else begin
+        assign array_pull_matrix[i][j] = ~array_value;
+        always @(negedge clk) `checkh(array_pull_matrix[i][j], ~array_value);
+      end
+    end
+  end
+
+endmodule
+
+module array_pull_io #(parameter WIDTH = 7) (inout tri1 [WIDTH-1:0] pad);
+endmodule
+
+module array_pull_down_io(inout tri0 [2:0] pad);
+endmodule
+
+module array_pull_pair_io(inout tri1 [6:0] pad [5:4]);
+endmodule
+
+module array_pull_matrix_io(inout wire [6:0] pad [2:4][5:4]);
+  array_pull_io #(.WIDTH(4)) high_bits (.pad(pad[3][4][6:3]));
+  array_pull_down_io low_bits (.pad(pad[3][4][2:0]));
+  array_pull_pair_io whole_row (.pad(pad[4]));
 endmodule
 
 module tri_pad (
@@ -266,7 +439,22 @@ module wide_io (
     output wire [2:8] reverse_q,
     /* verilator lint_on ASCRANGE */
     output wire [6:0] receive_q,
-    output logic [67:3] sampled
+    output logic [67:3] sampled,
+    input [5:0] cyc,
+    input unpacked_words_t array_en,
+    input unpacked_words_t array_data,
+    inout wire unpacked_words_t array_pad,
+    inout wire [6:0] unpacked_matrix_pad [2:4][5:4],
+    inout wire array_receive_pad [3],
+    inout wire [6:0] array_fixed_pad [2:4],
+    inout wire [6:0] array_selected_pad [1:3],
+    output unpacked_words_t array_q,
+    output unpacked_words_t array_sampled,
+    output unpacked_matrix_t unpacked_matrix_q,
+    output wire array_receive_q [3],
+    output wire [6:0] array_fixed_q [2:4],
+    output wire [6:0] array_selected_q [1:3],
+    inout wire unused_array_pad [3]
 );
   for (genvar i = 3; i <= 67; ++i) begin
     assign pad[i] = en[i] ? data[i] : 1'bz;
@@ -283,4 +471,31 @@ module wide_io (
   assign reverse_q = reverse_pad;
   assign receive_q = receive_pad;
   always @(posedge clk) sampled <= pad;
+  for (genvar i = 1; i <= 3; ++i) begin
+    for (genvar b = 3; b <= 67; ++b) begin
+      assign array_pad[i][b] = array_en[i][b] ? array_data[i][b] : 1'bz;
+    end
+  end
+  for (genvar i = 2; i <= 4; ++i) begin
+    for (genvar j = 4; j <= 5; ++j) begin
+      if (i == 2 && j == 4) begin
+        wire [6:0] element_data = 7'(cyc * (i + j));
+        for (genvar b = 0; b < 7; ++b) begin
+          io elem (.A(element_data[b]), .OE(cyc[0]), .Z(unpacked_matrix_pad[i][j][b]), .Y());
+        end
+      end else begin
+        assign unpacked_matrix_pad[i][j] = cyc[i + j - 6] ? 7'(cyc * (i + j)) : 7'bz;
+      end
+    end
+  end
+  for (genvar i = 2; i <= 4; ++i) begin
+    assign array_fixed_pad[i][2:0] = 3'(cyc ^ i);
+  end
+  assign array_selected_pad[1 + cyc % 3] = 7'(cyc);
+  assign array_fixed_q = array_fixed_pad;
+  assign array_selected_q = array_selected_pad;
+  assign array_q = array_pad;
+  assign unpacked_matrix_q = unpacked_matrix_pad;
+  assign array_receive_q = array_receive_pad;
+  always @(posedge clk) array_sampled <= array_pad;
 endmodule

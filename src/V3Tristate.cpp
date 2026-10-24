@@ -49,6 +49,14 @@
 // to an input and the __out port carries the output driver signal and
 // the __en port carried the output enable for that driver.
 //
+// Unpacked arrays preserve their dimensions in the driver and enable signals.
+// Resolution operations recursively traverse unpacked dimensions until reaching
+// the packed data, then apply bitwise operations to whole packed vectors.
+// Array reads select the matching enable element; array writes enable only the
+// selected element, using index comparisons for dynamic selections.
+// Constant-index continuous drivers are
+// grouped by element to avoid resolving a whole array for each driver.
+//
 // Note 1800-2012 adds user defined resolution functions. This suggests
 // long term this code should be scoped-based and resolve all nodes at once
 // rather than hierarchically. If/when that is done, make sure to avoid
@@ -368,7 +376,6 @@ class TristatePinVisitor final : public TristateBaseVisitor {
         }
     }
     void visit(AstArraySel* nodep) override {
-        // Doesn't work because we'd set lvalue on the array index's var
         UASSERT_OBJ(!m_lvalue, nodep, "ArraySel conversion to output, under tristate node");
         iterateChildren(nodep);
     }
@@ -412,8 +419,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                                      // drives this var across hierarchy with a plain (non-Z)
                                      // assign be recognised as a tristate contributor even
                                      // though that module's own graph has no Z on the net.
-        std::unordered_map<int, int>
-            bitPulls;  // Per-bit pull: bit_index -> direction (1=up, 0=down)
+        // Flatten unpacked elements in normalized index order, then packed bits.
+        std::map<int, int> bitPulls;  // Bit index -> direction (1=up, 0=down)
     };
 
     AstUser3Allocator<AstVar, AuxAstVar> m_varAux;
@@ -472,6 +479,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     AssignEnableMap m_assignEnps;  // Raw enable expression for each procedural assignment
     ProceduralEnableMap m_proceduralEnables;  // Enable updates to merge into assignments
     int m_unique = 0;
+    // Retain per-module array IDs through the later interface contribution combining step.
+    std::unordered_map<AstNodeModule*, int> m_arrayUnique;
     bool m_alhs = false;  // On LHS of assignment
     bool m_inAlias = false;  // Inside alias statement
     bool m_processedIfaces = false;  // Interface modules already processed (interfaces-first pass)
@@ -487,6 +496,7 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     // STATS
     VDouble0 m_statTriSigs;  // stat tracking
+    VDouble0 m_statArrayElementAssigns;  // Element assignments generated for array resolution
 
     // METHODS
     string dbgState() const {
@@ -506,11 +516,68 @@ class TristateVisitor final : public TristateBaseVisitor {
     void associateLogic(AstNode* fromp, AstNode* top) {
         if (m_logicp) m_tgraph.associate(fromp, top);
     }
-    AstConst* newAllZerosOrOnes(AstNode* nodep, bool ones) {
+    static AstNodeExpr* newAllZerosOrOnes(AstNode* nodep, bool ones) {
+        if (const AstUnpackArrayDType* const arrayp
+            = VN_CAST(nodep->dtypep()->skipRefp(), UnpackArrayDType)) {
+            return new AstConsArray{nodep->fileline(), nodep->dtypep(),
+                                    newAllZerosOrOnes(arrayp->subDTypep(), ones)};
+        }
         V3Number num{nodep, nodep->width()};
         if (ones) num.setAllBits1();
         AstConst* const newp = new AstConst{nodep->fileline(), num};
         return newp;
+    }
+    static AstNodeExpr* newElement(AstNodeExpr* const nodep, int index) {
+        if (const AstConsArray* const initp = VN_CAST(nodep, ConsArray)) {
+            return initp->valuep(index)->cloneTreePure(false);
+        }
+        return new AstArraySel{nodep->fileline(), nodep->cloneTreePure(false), index};
+    }
+    AstVar* newArrayTemp(FileLine* fl, AstNodeDType* dtypep) {
+        AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP,
+                                        "__VtriArray" + cvtToStr(m_arrayUnique[m_modp]++), dtypep};
+        varp->setDfgTriLowered();
+        m_modp->addStmtsp(varp);
+        return varp;
+    }
+    void addArrayElementAssign(AstVar* varp, int index, AstNodeExpr* rhsp) {
+        ++m_statArrayElementAssigns;
+        FileLine* const fl = varp->fileline();
+        AstAssignW* const assp = new AstAssignW{
+            fl, new AstArraySel{fl, new AstVarRef{fl, varp, VAccess::WRITE}, index}, rhsp};
+        // These assignments are already lowered and must not become additional drivers.
+        assp->user2Or(U2_BOTH);
+        m_modp->addStmtsp(new AstAlways{assp});
+    }
+    // Resolve each unpacked element independently, even with --fno-slice. Materialized
+    // array expressions would otherwise require later array assignment expansion.
+    template <typename T_Node>
+    AstNodeExpr* newTristateOp(FileLine* fl, AstNodeExpr* op1p, AstNodeExpr* op2p) {
+        if (const AstUnpackArrayDType* const arrayp
+            = VN_CAST(op1p->dtypep()->skipRefp(), UnpackArrayDType)) {
+            AstVar* const varp = newArrayTemp(fl, op1p->dtypep());
+            for (int i = 0; i < arrayp->elementsConst(); ++i) {
+                addArrayElementAssign(
+                    varp, i, newTristateOp<T_Node>(fl, newElement(op1p, i), newElement(op2p, i)));
+            }
+            VL_DO_DANGLING(op1p->deleteTree(), op1p);
+            VL_DO_DANGLING(op2p->deleteTree(), op2p);
+            return new AstVarRef{fl, varp, VAccess::READ};
+        }
+        return new T_Node{fl, op1p, op2p};
+    }
+    template <typename T_Node>
+    AstNodeExpr* newTristateOp(FileLine* fl, AstNodeExpr* operandp) {
+        if (const AstUnpackArrayDType* const arrayp
+            = VN_CAST(operandp->dtypep()->skipRefp(), UnpackArrayDType)) {
+            AstVar* const varp = newArrayTemp(fl, operandp->dtypep());
+            for (int i = 0; i < arrayp->elementsConst(); ++i) {
+                addArrayElementAssign(varp, i, newTristateOp<T_Node>(fl, newElement(operandp, i)));
+            }
+            VL_DO_DANGLING(operandp->deleteTree(), operandp);
+            return new AstVarRef{fl, varp, VAccess::READ};
+        }
+        return new T_Node{fl, operandp};
     }
     // Create AstVarXRef with inlinedDots copied from a source xref
     AstVarXRef* newVarXRef(FileLine* fl, AstVar* varp, const string& dotted, VAccess access,
@@ -626,6 +693,9 @@ class TristateVisitor final : public TristateBaseVisitor {
             AstNodeExpr* const enLhsp = getEnExprBasedOnOriginalp(lhsp);
             enExtendp->lhsp(new AstNot{enLhsp->fileline(), enLhsp});
             return new AstNot{enExtendp->fileline(), enExtendp};
+        } else if (AstArraySel* const selp = VN_CAST(nodep, ArraySel)) {
+            return new AstArraySel{selp->fileline(), getEnExprBasedOnOriginalp(selp->fromp()),
+                                   selp->bitp()->cloneTreePure(false)};
         } else if (AstSel* const selp = VN_CAST(nodep, Sel)) {
             AstNodeExpr* const fromp = selp->fromp()->unlinkFrBack();
             AstSel* const enSelp = selp->cloneTree(false);
@@ -736,14 +806,64 @@ class TristateVisitor final : public TristateBaseVisitor {
         bitPulls[bitIndex] = direction;
     }
 
-    AstConst* createPerBitPullConst(AstVar* varp) {
+    void propagatePulls(AstNodeExpr* const targetp, AstVar* const sourcep) {
+        AstNodeExpr* basep = targetp;
+        int offset = 0;
+        while (true) {
+            if (const AstSel* const selp = VN_CAST(basep, Sel)) {
+                const AstConst* const indexp = VN_CAST(selp->lsbp(), Const);
+                if (!indexp) return;
+                offset += indexp->toSInt();
+                basep = selp->fromp();
+                continue;
+            } else if (const AstArraySel* const selp = VN_CAST(basep, ArraySel)) {
+                const AstConst* const indexp = VN_CAST(selp->bitp(), Const);
+                if (!indexp) return;
+                offset
+                    += indexp->toSInt() * selp->width() * selp->dtypep()->arrayUnpackedElements();
+                basep = selp->fromp();
+                continue;
+            }
+            break;
+        }
+        AstVarRef* const refp = VN_CAST(basep, VarRef);
+        if (!refp) return;
+        if (AstPull* const pullp = m_varAux(sourcep).pullp) {
+            if (basep == targetp) {
+                setPullDirection(refp->varp(), pullp);
+            } else {
+                const int bits = targetp->width() * targetp->dtypep()->arrayUnpackedElements();
+                for (int i = 0; i < bits; ++i) {
+                    setBitPullDirection(refp->varp(), offset + i, pullp->direction());
+                }
+            }
+        }
+        for (const auto& pair : m_varAux(sourcep).bitPulls) {
+            setBitPullDirection(refp->varp(), offset + pair.first, pair.second);
+        }
+    }
+
+    AstNodeExpr* createPerBitPullConst(AstVar* const varp, AstNodeDType* const dtypep,
+                                       const int offset = 0) {
+        if (const AstUnpackArrayDType* const arrayp
+            = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
+            AstConsArray* const initp = new AstConsArray{varp->fileline(), dtypep, nullptr};
+            AstNodeDType* const subDTypep = arrayp->subDTypep();
+            const int stride = subDTypep->width() * subDTypep->arrayUnpackedElements();
+            for (int i = 0; i < arrayp->elementsConst(); ++i) {
+                initp->valuep(i, createPerBitPullConst(varp, subDTypep, offset + i * stride));
+            }
+            return initp;
+        }
         // Create a constant with per-bit pull values.
-        // Bits without explicit pull default to pulldown (0).
-        // V3Number::setBit silently no-ops if bitIndex exceeds the variable width.
+        // Bits without explicit pull retain the whole-variable pull direction.
         const auto& bitPulls = m_varAux(varp).bitPulls;
-        V3Number num{varp, varp->width(), 0};  // Start with all zeros
-        for (const auto& pair : bitPulls) {
-            if (pair.second == 1) num.setBit(pair.first, 1);
+        const AstPull* const pullp = m_varAux(varp).pullp;
+        V3Number num{varp, dtypep->width(), 0};
+        if (pullp && pullp->direction() == 1) num.setAllBits1();
+        for (auto it = bitPulls.lower_bound(offset);
+             it != bitPulls.end() && it->first < offset + dtypep->width(); ++it) {
+            num.setBit(it->first - offset, it->second);
         }  // LCOV_EXCL_LINE
         return new AstConst{varp->fileline(), num};
     }
@@ -786,7 +906,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             UINFO(8, "  Adding driver to var " << varp);
             const AstPull* const pullp = m_varAux(varp).pullp;
             const bool pullValue = pullp && pullp->direction() == 1;
-            AstConst* const constp = newAllZerosOrOnes(varp, pullValue);
+            AstNodeExpr* const constp = newAllZerosOrOnes(varp, pullValue);
             AstVarRef* const varrefp = new AstVarRef{varp->fileline(), varp, VAccess::WRITE};
             AstAssignW* const newp = new AstAssignW{varp->fileline(), varrefp, constp};
             UINFO(9, "       newoev " << newp);
@@ -871,6 +991,76 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    // Find the first unpacked selection above this reference, below any other selections.
+    static AstArraySel* firstArraySelect(const RefStrength& ref) {
+        if (!ref.m_assignp) return nullptr;
+        AstNodeExpr* lhsp = ref.m_assignp->lhsp();
+        while (true) {
+            if (AstArraySel* const selp = VN_CAST(lhsp, ArraySel)) {
+                if (selp->fromp() == ref.m_varrefp) return selp;
+                lhsp = selp->fromp();
+            } else if (AstSel* const selp = VN_CAST(lhsp, Sel)) {
+                lhsp = selp->fromp();
+            } else {
+                return nullptr;
+            }
+        }
+    }
+
+    // Resolve constant-index continuous drivers at their element's type and width. Combining
+    // them as whole-array drivers would allocate and resolve N elements for each of N drivers.
+    std::pair<AstNodeExpr*, AstNodeExpr*>
+    aggregateArrayDrivers(AstNodeModule* const nodep, AstVar* const varp, RefStrengthVec& refs) {
+        const AstUnpackArrayDType* const arrayp
+            = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType);
+        if (!arrayp) return {nullptr, nullptr};
+        std::map<int, RefStrengthVec> elements;
+        RefStrengthVec remaining;
+        for (const RefStrength& ref : refs) {
+            // Procedural writes must remain grouped by process to preserve their ordering.
+            AstArraySel* const selp = ref.m_procedurep ? nullptr : firstArraySelect(ref);
+            const AstConst* const indexp = selp ? VN_CAST(selp->bitp(), Const) : nullptr;
+            if (indexp && indexp->toSInt() >= 0 && indexp->toSInt() < arrayp->elementsConst()) {
+                elements[indexp->toSInt()].push_back(ref);
+            } else {
+                remaining.push_back(ref);
+            }
+        }
+        if (elements.empty()) return {nullptr, nullptr};
+        refs = std::move(remaining);
+        FileLine* const fl = varp->fileline();
+        AstVar* const datap = newArrayTemp(fl, varp->dtypep());
+        AstVar* const enablep = newArrayTemp(fl, varp->dtypep());
+        for (int i = 0; i < arrayp->elementsConst(); ++i) {
+            const auto it = elements.find(i);
+            if (it == elements.end()) {
+                addArrayElementAssign(datap, i, newAllZerosOrOnes(arrayp->subDTypep(), false));
+                addArrayElementAssign(enablep, i, newAllZerosOrOnes(arrayp->subDTypep(), false));
+                continue;
+            }
+            AstVar* const elementDatap = newArrayTemp(fl, arrayp->subDTypep());
+            AstVar* const elementEnablep = newArrayTemp(fl, arrayp->subDTypep());
+            for (RefStrength& ref : it->second) {
+                AstArraySel* const selp = firstArraySelect(ref);
+                AstNodeVarRef* const refp = ref.m_varrefp;
+                refp->varp(elementDatap);
+                AstNodeExpr* const enp = getEnp(refp);
+                refp->user1p(newElement(enp, i));
+                VL_DO_DANGLING(pushDeletep(enp), enp);
+                refp->dtypeFrom(elementDatap);
+                selp->replaceWith(refp->unlinkFrBack());
+                m_tgraph.deleteVerticesFromSubtreeRecurse(selp);
+                VL_DO_DANGLING(pushDeletep(selp), selp);
+            }
+            aggregateTriSameStrength(nodep, elementDatap, elementEnablep, it->second.begin(),
+                                     it->second.end());
+            addArrayElementAssign(datap, i, new AstVarRef{fl, elementDatap, VAccess::READ});
+            addArrayElementAssign(enablep, i, new AstVarRef{fl, elementEnablep, VAccess::READ});
+        }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
+        return {new AstVarRef{fl, datap, VAccess::READ},
+                new AstVarRef{fl, enablep, VAccess::READ}};
+    }
+
     void aggregateTriSameStrength(AstNodeModule* nodep, AstVar* const varp, AstVar* const envarp,
                                   RefStrengthVec::iterator beginStrength,
                                   RefStrengthVec::iterator endStrength) {
@@ -881,9 +1071,12 @@ class TristateVisitor final : public TristateBaseVisitor {
             const AstNodeProcedure* m_procedurep;  // Process owning these assignments
             std::vector<RefStrength*> m_refsp;  // Ordered assignments in this driver
         };
+        RefStrengthVec refs{beginStrength, endStrength};
+        const std::pair<AstNodeExpr*, AstNodeExpr*> arrayDrivers
+            = aggregateArrayDrivers(nodep, varp, refs);
         std::vector<DriverGroup> drivers;
         std::map<const AstNodeProcedure*, size_t> procedureToDriver;
-        for (auto it = beginStrength; it != endStrength; ++it) {
+        for (auto it = refs.begin(); it != refs.end(); ++it) {
             if (it->m_procedurep) {
                 const auto emplaced = procedureToDriver.emplace(it->m_procedurep, drivers.size());
                 if (!emplaced.second) {
@@ -894,8 +1087,8 @@ class TristateVisitor final : public TristateBaseVisitor {
             drivers.push_back(DriverGroup{it->m_procedurep, {&*it}});
         }
 
-        AstNodeExpr* orp = nullptr;
-        AstNodeExpr* enp = nullptr;
+        AstNodeExpr* orp = arrayDrivers.first;
+        AstNodeExpr* enp = arrayDrivers.second;
 
         for (DriverGroup& driver : drivers) {
             // Create the new LHS data and enable variables for this driver.
@@ -976,13 +1169,13 @@ class TristateVisitor final : public TristateBaseVisitor {
             FileLine* const fl = driver.m_refsp.front()->m_varrefp->fileline();
             AstNodeExpr* const ref1p = new AstVarRef{fl, newLhsp, VAccess::READ};
             AstNodeExpr* const ref2p = new AstVarRef{fl, newEnLhsp, VAccess::READ};
-            AstNodeExpr* const andp = new AstAnd{fl, ref1p, ref2p};
+            AstNodeExpr* const andp = newTristateOp<AstAnd>(fl, ref1p, ref2p);
 
             // or this to the others
-            orp = (!orp) ? andp : new AstOr{fl, orp, andp};
+            orp = (!orp) ? andp : newTristateOp<AstOr>(fl, orp, andp);
 
             AstNodeExpr* const ref3p = new AstVarRef{fl, newEnLhsp, VAccess::READ};
-            enp = (!enp) ? ref3p : new AstOr{ref3p->fileline(), enp, ref3p};
+            enp = (!enp) ? ref3p : newTristateOp<AstOr>(ref3p->fileline(), enp, ref3p);
         }
         AstAssignW* const assp = new AstAssignW{
             varp->fileline(), new AstVarRef{varp->fileline(), varp, VAccess::WRITE}, orp};
@@ -1130,17 +1323,18 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (enp) {
                 // If weaker driver should be overwritten by a stronger, replace its value with z
                 exprCurrentStrengthp
-                    = new AstAnd{fl, new AstVarRef{fl, varStrengthp, VAccess::READ},
-                                 new AstNot{fl, enp->cloneTreePure(false)}};
+                    = newTristateOp<AstAnd>(fl, new AstVarRef{fl, varStrengthp, VAccess::READ},
+                                            newTristateOp<AstNot>(fl, enp->cloneTreePure(false)));
             } else {
                 exprCurrentStrengthp = new AstVarRef{fl, varStrengthp, VAccess::READ};
             }
-            orp = (!orp) ? exprCurrentStrengthp : new AstOr{fl, orp, exprCurrentStrengthp};
+            orp = (!orp) ? exprCurrentStrengthp
+                         : newTristateOp<AstOr>(fl, orp, exprCurrentStrengthp);
 
             AstNodeExpr* const enVarStrengthRefp
                 = new AstVarRef{fl, enVarStrengthp, VAccess::READ};
 
-            enp = (!enp) ? enVarStrengthRefp : new AstOr{fl, enp, enVarStrengthRefp};
+            enp = (!enp) ? enVarStrengthRefp : newTristateOp<AstOr>(fl, enp, enVarStrengthRefp);
 
             beginStrength = endStrength;
         }
@@ -1218,26 +1412,26 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (!outvarp || hasPull) {
             AstNodeExpr* undrivenp;
             if (envarp) {
-                undrivenp = new AstNot{envarp->fileline(),
-                                       new AstVarRef{envarp->fileline(), envarp, VAccess::READ}};
+                undrivenp = newTristateOp<AstNot>(
+                    envarp->fileline(), new AstVarRef{envarp->fileline(), envarp, VAccess::READ});
             } else if (enp) {
-                undrivenp = new AstNot{enp->fileline(), enp};
+                undrivenp = newTristateOp<AstNot>(enp->fileline(), enp);
                 enp = nullptr;  // moved into undrivenp
             } else {
                 undrivenp = newAllZerosOrOnes(invarp, true);  // LCOV_EXCL_LINE
             }
 
-            AstConst* pullConstp;
+            AstNodeExpr* pullConstp;
             if (hasPerBitPulls(lhsp)) {
-                pullConstp = createPerBitPullConst(lhsp);
+                pullConstp = createPerBitPullConst(lhsp, lhsp->dtypep());
             } else {
                 const AstPull* const pullp = m_varAux(lhsp).pullp;
                 const bool pull1 = pullp && pullp->direction() == 1;
                 pullConstp = newAllZerosOrOnes(invarp, pull1);
             }
 
-            undrivenp = new AstAnd{invarp->fileline(), undrivenp, pullConstp};
-            orp = orp ? new AstOr{invarp->fileline(), orp, undrivenp} : undrivenp;
+            undrivenp = newTristateOp<AstAnd>(invarp->fileline(), undrivenp, pullConstp);
+            orp = orp ? newTristateOp<AstOr>(invarp->fileline(), orp, undrivenp) : undrivenp;
         }
 
         // Ensure enp is valid when envarp exists (pullup/pulldown only = no active driver)
@@ -1557,6 +1751,61 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    void visit(AstArraySel* nodep) override {
+        if (m_graphing) {
+            iterateChildren(nodep);
+            if (m_alhs) {
+                associateLogic(nodep, nodep->fromp());
+            } else {
+                associateLogic(nodep->fromp(), nodep);
+            }
+        } else if (m_alhs) {
+            if (nodep->user1p()) {
+                AstNodeExpr* const enp = VN_AS(nodep->user1p(), NodeExpr);
+                AstNodeDType* const dtypep = nodep->fromp()->dtypep();
+                const AstUnpackArrayDType* const arrayp
+                    = VN_AS(dtypep->skipRefp(), UnpackArrayDType);
+                if (const AstConst* const indexp = VN_CAST(nodep->bitp(), Const)) {
+                    AstConsArray* const initp = new AstConsArray{nodep->fileline(), dtypep,
+                                                                 newAllZerosOrOnes(nodep, false)};
+                    initp->valuep(indexp->toSInt(), enp->cloneTreePure(false));
+                    nodep->fromp()->user1p(initp);
+                } else {
+                    FileLine* const fl = nodep->fileline();
+                    AstVar* const varp = newArrayTemp(fl, dtypep);
+                    for (int i = 0; i < arrayp->elementsConst(); ++i) {
+                        AstConst* const elementIndexp
+                            = new AstConst{fl, AstConst::WidthedValue{}, nodep->bitp()->width(),
+                                           static_cast<uint32_t>(i)};
+                        AstEq* const selectedp
+                            = new AstEq{fl, nodep->bitp()->cloneTreePure(false), elementIndexp};
+                        AstCond* const elementEnp
+                            = new AstCond{fl, selectedp, enp->cloneTreePure(false),
+                                          newAllZerosOrOnes(nodep, false)};
+                        addArrayElementAssign(varp, i, elementEnp);
+                    }
+                    nodep->fromp()->user1p(new AstVarRef{nodep->fileline(), varp, VAccess::READ});
+                }
+                VL_DO_DANGLING(pushDeletep(enp), enp);
+                nodep->user1p(nullptr);
+                m_tgraph.didProcess(nodep);
+            }
+            iterateAndNextNull(nodep->fromp());
+            {
+                VL_RESTORER(m_alhs);
+                m_alhs = false;
+                iterateAndNextNull(nodep->bitp());
+            }
+        } else {
+            iterateChildren(nodep);
+            if (nodep->fromp()->user1p()) {
+                nodep->user1p(new AstArraySel{nodep->fileline(), getEnp(nodep->fromp()),
+                                              nodep->bitp()->cloneTreePure(false)});
+                m_tgraph.didProcess(nodep);
+            }
+        }
+    }
+
     void visit(AstSel* nodep) override {
         if (m_graphing) {
             iterateChildren(nodep);
@@ -1805,25 +2054,22 @@ class TristateVisitor final : public TristateBaseVisitor {
                 UINFO(9, "   enp<-rhs " << nodep->lhsp()->user1p());
                 m_tgraph.didProcess(nodep);
             } else {
-                // Non-tristate RHS. For SEL assigns to tristate variables, we still
-                // need to track which bits are driven by creating a proper enable.
-                if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
-                    if (AstNodeVarRef* const varrefp = VN_CAST(selp->fromp(), NodeVarRef)) {
-                        if (m_tgraph.isTristate(varrefp->varp())) {
-                            // Create an all-1s enable for the SEL width - this will be
-                            // deposited into the correct bit positions by newEnableDeposit
-                            nodep->lhsp()->user1p(newAllZerosOrOnes(nodep->lhsp(), true));
-                            UINFO(9, "   enp<-nonTri SEL " << nodep->lhsp()->user1p());
-                            m_tgraph.didProcess(nodep);
-                        } else {
-                            m_tgraph.didProcess(nodep, true);
-                        }
+                // Non-tristate partial writes still drive only their selected footprint.
+                AstNodeExpr* basep = nodep->lhsp();
+                while (true) {
+                    if (const AstSel* const selp = VN_CAST(basep, Sel)) {
+                        basep = selp->fromp();
+                    } else if (const AstArraySel* const selp = VN_CAST(basep, ArraySel)) {
+                        basep = selp->fromp();
                     } else {
-                        m_tgraph.didProcess(nodep, true);  // LCOV_EXCL_LINE
+                        break;
                     }
+                }
+                const AstNodeVarRef* const refp = VN_CAST(basep, NodeVarRef);
+                if (basep != nodep->lhsp() && refp && m_tgraph.isTristate(refp->varp())) {
+                    nodep->lhsp()->user1p(newAllZerosOrOnes(nodep->lhsp(), true));
+                    m_tgraph.didProcess(nodep);
                 } else {
-                    // Don't set user1p here as there are no handlers for many LHS node types
-                    // (ArraySel, MemberSel, StructSel, etc.) and checkUnhandled() would error.
                     m_tgraph.didProcess(nodep, true);
                 }
             }
@@ -2144,9 +2390,9 @@ class TristateVisitor final : public TristateBaseVisitor {
             // Therefore, create the enable, output and separate input pin,
             // then pinReconnectSimple all
             // Create the output enable pin, connect to new signal
-            AstVar* const enVarp = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
-                                              nodep->name() + "__en" + cvtToStr(m_unique++),
-                                              VFlagBitPacked{}, enModVarp->width()};
+            AstVar* const enVarp
+                = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
+                             nodep->name() + "__en" + cvtToStr(m_unique++), enModVarp->dtypep()};
             if (inDeclProcessing) {  // __en(from-resolver-const) or __en(from-resolver-wire)
                 enModVarp->varType2In();
             } else {
@@ -2243,54 +2489,8 @@ class TristateVisitor final : public TristateBaseVisitor {
 
             // Propagate any pullups/pulldowns upwards if necessary
             if (exprrefp) {
-                AstPull* const pullp = m_varAux(nodep->modVarp()).pullp;
-                const auto& srcBitPulls = m_varAux(nodep->modVarp()).bitPulls;
-
-                // For part-select port connections (e.g. .out(bus[23:16])) extract
-                // the parent var, LSB, and width once; reused by both propagations.
-                AstVar* selVarp = nullptr;
-                int selLsb = 0;
-                int selWidth = 0;
-                if (outAssignp) {
-                    if (AstSel* const selp = VN_CAST(outAssignp->lhsp(), Sel)) {
-                        AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
-                        AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
-                        if (vrefp && lsbp) {  // LCOV_EXCL_BR_LINE
-                            selVarp = vrefp->varp();
-                            selLsb = lsbp->toSInt();
-                            selWidth = selp->widthConst();
-                        }
-                    }
-                }
-
-                if (pullp) {
-                    UINFO(9, "propagate pull on " << exprrefp);
-                    setPullDirection(exprrefp->varp(), pullp);
-                    // For a part-select target, record per-bit pull direction across
-                    // the SEL range instead of setting pull on the whole variable.
-                    if (selVarp) {
-                        const int direction = pullp->direction();
-                        for (int i = 0; i < selWidth; ++i) {
-                            setBitPullDirection(selVarp, selLsb + i, direction);
-                        }
-                    }
-                }
-
-                // Per-bit pulls: the source bit indices must be offset by the SEL's
-                // LSB so they land on the correct bits of the parent variable.
-                if (!srcBitPulls.empty()) {
-                    UINFO(9, "propagate per-bit pulls from " << nodep->modVarp());
-                    for (const auto& pair : srcBitPulls) {
-                        setBitPullDirection(exprrefp->varp(), pair.first, pair.second);
-                    }  // LCOV_EXCL_LINE
-                    if (selVarp) {
-                        UINFO(9, "propagate per-bit pulls to SEL target " << selVarp
-                                                                          << " offset=" << selLsb);
-                        for (const auto& pair : srcBitPulls) {
-                            setBitPullDirection(selVarp, selLsb + pair.first, pair.second);
-                        }  // LCOV_EXCL_LINE
-                    }
-                }
+                propagatePulls(exprrefp, nodep->modVarp());
+                if (outAssignp) propagatePulls(outAssignp->lhsp(), nodep->modVarp());
             }
             // Don't need to visit the created assigns, as it was added at
             // the end of the next links and normal iterateChild recursion
@@ -2489,6 +2689,9 @@ class TristateVisitor final : public TristateBaseVisitor {
             const std::vector<std::pair<AstVar*, AstVar*>>& contribs = kv.second;
             AstNodeModule* const ifaceModp = findParentModule(invarp);
             UASSERT_OBJ(ifaceModp, invarp, "Interface tristate var has no parent module");
+            VL_RESTORER(m_modp);
+            // Array resolution creates temporaries in the signal's owning interface.
+            m_modp = ifaceModp;
             FileLine* const fl = invarp->fileline();
 
             UINFO(8, "  IFACE COMBINE " << contribs.size() << " contribs for " << invarp);
@@ -2503,12 +2706,12 @@ class TristateVisitor final : public TristateBaseVisitor {
 
                 AstNodeExpr* const outRefp = new AstVarRef{fl, contribOutp, VAccess::READ};
                 AstNodeExpr* const enRefp = new AstVarRef{fl, contribEnp, VAccess::READ};
-                AstNodeExpr* const andp = new AstAnd{fl, outRefp, enRefp};
+                AstNodeExpr* const andp = newTristateOp<AstAnd>(fl, outRefp, enRefp);
 
-                orp = (!orp) ? andp : new AstOr{fl, orp, andp};
+                orp = (!orp) ? andp : newTristateOp<AstOr>(fl, orp, andp);
 
                 AstNodeExpr* const enRef2p = new AstVarRef{fl, contribEnp, VAccess::READ};
-                enp = (!enp) ? enRef2p : new AstOr{fl, enp, enRef2p};
+                enp = (!enp) ? enRef2p : newTristateOp<AstOr>(fl, enp, enRef2p);
             }
 
             // Create or get __en var for this interface signal
@@ -2530,9 +2733,10 @@ class TristateVisitor final : public TristateBaseVisitor {
             const AstPull* const pullp = m_varAux(invarp).pullp;
             const bool pull1 = pullp && pullp->direction() == 1;  // Else default is down
 
-            AstNodeExpr* undrivenp = new AstNot{fl, new AstVarRef{fl, envarp, VAccess::READ}};
-            undrivenp = new AstAnd{fl, undrivenp, newAllZerosOrOnes(invarp, pull1)};
-            orp = new AstOr{fl, orp, undrivenp};
+            AstNodeExpr* undrivenp
+                = newTristateOp<AstNot>(fl, new AstVarRef{fl, envarp, VAccess::READ});
+            undrivenp = newTristateOp<AstAnd>(fl, undrivenp, newAllZerosOrOnes(invarp, pull1));
+            orp = newTristateOp<AstOr>(fl, orp, undrivenp);
 
             // Assign final value to invarp
             AstAssignW* const assp
@@ -2578,6 +2782,7 @@ public:
     }
     ~TristateVisitor() override {
         V3Stats::addStat("Tristate, Tristate resolved nets", m_statTriSigs);
+        V3Stats::addStat("Tristate, Array element assignments", m_statArrayElementAssigns);
     }
 };
 
