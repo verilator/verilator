@@ -19,10 +19,14 @@
 #include "V3OrderMTaskGraph.h"
 
 #include "V3Global.h"
+#include "V3GraphStream.h"
 #include "V3InstrCount.h"
+#include "V3Stats.h"
 
 #include <algorithm>
+#include <map>
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -189,7 +193,7 @@ void OrderMTaskGraph::addEdge(LogicMTask* fromp, LogicMTask* top) {
     }
 }
 
-void OrderMTaskGraph::mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp) {
+void OrderMTaskGraph::mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp, bool deferred) {
     UASSERT_OBJ(recipientp != donorp, recipientp, "Should not merge an MTask with itself");
 
     // Note we redirect the edges before updating the cost and critical paths of the recipient,
@@ -203,7 +207,7 @@ void OrderMTaskGraph::mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp) {
     while (MTaskEdge* const edgep = static_cast<MTaskEdge*>(donorp->outEdges().frontp())) {
         LogicMTask* const relativep = edgep->toMTaskp();
 
-        relativep->removeRelativeEdge<GraphWay::REVERSE>(edgep);
+        if (!deferred) relativep->removeRelativeEdge<GraphWay::REVERSE>(edgep);
 
         if (relativep == recipientp || recipientp->hasEdgeTo(relativep)) {
             // This is either the edge connecting the two MTasks, which becomes internal to the
@@ -214,8 +218,10 @@ void OrderMTaskGraph::mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp) {
             // Redirect the edge from donor -> relative to recipient -> relative.
             edgep->relinkFromp(recipientp);
             recipientp->addDependent(relativep);
-            recipientp->stealRelativeEdge<GraphWay::FORWARD>(edgep);
-            relativep->addRelativeEdge<GraphWay::REVERSE>(edgep);
+            if (!deferred) {
+                recipientp->stealRelativeEdge<GraphWay::FORWARD>(edgep);
+                relativep->addRelativeEdge<GraphWay::REVERSE>(edgep);
+            }
         }
     }
 
@@ -224,7 +230,7 @@ void OrderMTaskGraph::mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp) {
         LogicMTask* const relativep = edgep->fromMTaskp();
 
         relativep->removeDependent(donorp);
-        relativep->removeRelativeEdge<GraphWay::FORWARD>(edgep);
+        if (!deferred) relativep->removeRelativeEdge<GraphWay::FORWARD>(edgep);
 
         if (relativep == recipientp || relativep->hasEdgeTo(recipientp)) {
             // This is either the edge connecting the two MTasks, which becomes internal to the
@@ -235,14 +241,21 @@ void OrderMTaskGraph::mergeMTasks(LogicMTask* recipientp, LogicMTask* donorp) {
             // Redirect the edge from relative -> donor to relative -> recipient.
             edgep->relinkTop(recipientp);
             relativep->addDependent(recipientp);
-            relativep->addRelativeEdge<GraphWay::FORWARD>(edgep);
-            recipientp->stealRelativeEdge<GraphWay::REVERSE>(edgep);
+            if (!deferred) {
+                relativep->addRelativeEdge<GraphWay::FORWARD>(edgep);
+                recipientp->stealRelativeEdge<GraphWay::REVERSE>(edgep);
+            }
         }
     }
 
     // Move the contents of the donor into the recipient, update its cost
     recipientp->m_mVertices.splice(recipientp->m_mVertices.end(), donorp->m_mVertices);
     recipientp->m_cost += donorp->m_cost;
+
+    if (deferred) {
+        VL_DO_DANGLING(donorp->unlinkDelete(this), donorp);
+        return;
+    }
 
     // The recipient now holds all edges of the merged MTask, and the critical paths of all its
     // relatives are still up to date, so the critical paths implied by its edges are the critical
@@ -517,4 +530,139 @@ std::unique_ptr<OrderMTaskGraph> OrderMTaskGraph::build(OrderMoveGraph& moveGrap
     OrderMTaskGraphBuilder::apply(*resp);
     resp->validate();
     return resp;
+}
+
+//######################################################################
+// threads_unit merging
+
+void OrderMTaskGraph::mergeThreadsUnits(OrderMTaskGraph& mtaskGraph) {
+    // Nothing to do unless some module is marked
+    AstNodeModule* modp = v3Global.rootp()->modulesp();
+    while (modp && !modp->threadsUnit()) modp = VN_AS(modp->nextp(), NodeModule);
+    if (!modp) return;
+
+    // NODE STATE
+    //  AstScope::user3p()  -> AstScope*: The unit (instance of a marked module) the scope is in
+    const VNUser3InUse user3InUse;
+    for (modp = v3Global.rootp()->modulesp(); modp; modp = VN_AS(modp->nextp(), NodeModule)) {
+        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            AstScope* const scopep = VN_CAST(nodep, Scope);
+            if (!scopep) continue;
+            for (AstScope* sp = scopep; sp; sp = sp->aboveScopep()) {
+                if (sp->modp()->threadsUnit()) {
+                    scopep->user3p(sp);
+                    break;
+                }
+            }
+        }
+    }
+
+    // Find the unit and level of each MTask, in dependency order. Each still holds one
+    // OrderMoveVertex. A logic MTask is in the unit its scope is in, and a variable MTask in the
+    // unit of its writers, if they all agree. The level of an MTask is the largest number of unit
+    // entries on any path to it, where an edge enters a unit when its head is in the unit and its
+    // tail isn't. A group is the MTasks of one unit at one level. Groups can't form a cycle: along
+    // any path the level never decreases, and it increases each time the path enters a unit, so
+    // a path that leaves a group can only come back to its unit at a higher level. This includes
+    // the edges added by fixDataHazards. Edges from the entry MTask are not unit entries:
+    // counting them would raise a unit's MTasks with no other predecessors to level 1, merging
+    // them with the unit's logic that depends on other units.
+    using Place = std::pair<const AstScope*, uint32_t>;  // The unit and level of an MTask
+    std::unordered_map<const V3GraphVertex*, Place> placeOf;
+    std::map<Place, size_t> groupIndex;  // Index of each group in 'groups'
+    std::vector<std::vector<LogicMTask*>> groups;  // Members of each group, in first-seen order
+    GraphStreamUnordered stream{&mtaskGraph};
+    while (const V3GraphVertex* const vtxp = stream.nextp()) {
+        LogicMTask* const mtaskp = const_cast<LogicMTask*>(vtxp->as<LogicMTask>());
+        const AstScope* unitp = nullptr;
+        if (mtaskp == mtaskGraph.entryp() || mtaskp == mtaskGraph.exitp()) {
+            // Not in a unit
+        } else if (const OrderLogicVertex* const lVtxp = mtaskp->vertexList().frontp()->logicp()) {
+            unitp = VN_AS(lVtxp->scopep()->user3p(), Scope);
+        } else {
+            // A variable MTask follows the logic writing it
+            unitp = placeOf.at(mtaskp->inEdges().frontp()->fromp()).first;
+            for (const V3GraphEdge& edge : mtaskp->inEdges()) {
+                if (placeOf.at(edge.fromp()).first != unitp) unitp = nullptr;
+            }
+        }
+        uint32_t level = 0;
+        for (const V3GraphEdge& edge : mtaskp->inEdges()) {
+            if (edge.fromp() == mtaskGraph.entryp()) continue;
+            const Place& from = placeOf.at(edge.fromp());
+            level = std::max(level, from.second + (unitp && from.first != unitp));
+        }
+        placeOf.emplace(mtaskp, Place{unitp, level});
+        if (unitp) {
+            const auto pair = groupIndex.emplace(Place{unitp, level}, groups.size());
+            if (pair.second) groups.emplace_back();
+            groups[pair.first->second].push_back(mtaskp);
+        }
+    }
+
+    // Merge each group into its first MTask, then bring the critical paths up to date once.
+    // Merging with 'mergeMTasks' instead updates the critical paths after every merge, which
+    // takes minutes on large designs.
+    mtaskGraph.clearEdgeHeaps();
+    for (const std::vector<LogicMTask*>& members : groups) {
+        for (size_t i = 1; i < members.size(); ++i) {
+            mtaskGraph.mergeMTasks(members[0], members[i], true);
+        }
+    }
+    mtaskGraph.rebuildCriticalPaths();
+    mtaskGraph.validate();
+    V3Stats::addStatSum("MTask graph, threads_unit groups", groups.size());
+}
+
+void OrderMTaskGraph::clearEdgeHeaps() {
+    // Clear all heaps before yanking any node, as an edge's nodes are in the heaps of both its
+    // endpoints, and clearing a heap checks the back link of its root
+    for (V3GraphVertex& vtx : vertices()) {
+        LogicMTask& mtask = static_cast<LogicMTask&>(vtx);
+        mtask.m_edgeHeap[GraphWay::FORWARD].clear();
+        mtask.m_edgeHeap[GraphWay::REVERSE].clear();
+    }
+    for (V3GraphVertex& vtx : vertices()) {
+        for (V3GraphEdge& edge : vtx.outEdges()) {
+            MTaskEdge& mEdge = static_cast<MTaskEdge&>(edge);
+            mEdge.m_edgeHeapNode[GraphWay::FORWARD].yank();
+            mEdge.m_edgeHeapNode[GraphWay::REVERSE].yank();
+        }
+    }
+}
+
+void OrderMTaskGraph::rebuildCriticalPaths() {
+    // Critical paths, in dependency order each way
+    {
+        GraphStreamUnordered stream{this, GraphWay::FORWARD};
+        while (const V3GraphVertex* const vtxp = stream.nextp()) {
+            LogicMTask* const mtaskp = const_cast<LogicMTask*>(vtxp->as<LogicMTask>());
+            uint64_t cp = 0;
+            for (const V3GraphEdge& edge : vtxp->inEdges()) {
+                const LogicMTask* const fromp = static_cast<const LogicMTask*>(edge.fromp());
+                cp = std::max(cp, fromp->cpInclusive<GraphWay::FORWARD>());
+            }
+            mtaskp->cpExclusive<GraphWay::FORWARD>(cp);
+        }
+    }
+    {
+        GraphStreamUnordered stream{this, GraphWay::REVERSE};
+        while (const V3GraphVertex* const vtxp = stream.nextp()) {
+            LogicMTask* const mtaskp = const_cast<LogicMTask*>(vtxp->as<LogicMTask>());
+            uint64_t cp = 0;
+            for (const V3GraphEdge& edge : vtxp->outEdges()) {
+                const LogicMTask* const top = static_cast<const LogicMTask*>(edge.top());
+                cp = std::max(cp, top->cpInclusive<GraphWay::REVERSE>());
+            }
+            mtaskp->cpExclusive<GraphWay::REVERSE>(cp);
+        }
+    }
+    // Edge heaps, keyed by the critical paths above
+    for (V3GraphVertex& vtx : vertices()) {
+        for (V3GraphEdge& edge : vtx.outEdges()) {
+            MTaskEdge* const edgep = static_cast<MTaskEdge*>(&edge);
+            edgep->fromMTaskp()->addRelativeEdge<GraphWay::FORWARD>(edgep);
+            edgep->toMTaskp()->addRelativeEdge<GraphWay::REVERSE>(edgep);
+        }
+    }
 }

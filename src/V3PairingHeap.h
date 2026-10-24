@@ -146,6 +146,9 @@ public:
     // METHODS
     bool empty() const { return !m_root; }
 
+    // Forget all nodes. Each node must be yanked before it is inserted again.
+    void clear() { m_root.unlink(); }
+
     // Insert given node into this heap with given key.
     void insert(Node* nodep, T_Key key) {
         // Update key of node

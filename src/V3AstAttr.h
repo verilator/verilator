@@ -2050,6 +2050,7 @@ public:
         NO_INLINE_TASK,
         PUBLIC_MODULE,
         PUBLIC_TASK,
+        THREADS_UNIT,
         TIMEUNIT_SET,
         UNROLL_DISABLE,
         UNROLL_FULL,
@@ -2069,6 +2070,7 @@ public:
             "NO_INLINE_TASK",  //
             "PUBLIC_MODULE",  //
             "PUBLIC_TASK",  //
+            "THREADS_UNIT",  //
             "TIMEUNIT_SET",  //
             "UNROLL_DISABLE",  //
             "UNROLL_FULL",  //
