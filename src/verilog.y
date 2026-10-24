@@ -3961,7 +3961,11 @@ range_list<nodeExprp>:     // ==IEEE: range_list/open_range_list + value_range/o
 
 value_range<nodeExprp>:         // ==IEEE: value_range/open_value_range
                 expr                                    { $$ = $1; }
-        |       '[' expr ':' expr ']'                   { $$ = new AstInsideRange{$1, $2, $4}; }
+        |       value_rangeNonExpr                      { $$ = $1; }
+        ;
+
+value_rangeNonExpr<nodeExprp>:
+                '[' expr ':' expr ']'                   { $$ = new AstInsideRange{$1, $2, $4}; }
         //                      // IEEE-2023: added all four:
         //                      // Skipped as '$' is part of our expr
         //                      // IEEE-2023: '[' '$' ':' expr ']'
@@ -3975,7 +3979,11 @@ value_range<nodeExprp>:         // ==IEEE: value_range/open_value_range
 
 covergroup_value_range<nodeExprp>:  // ==IEEE-2012: covergroup_value_range
                 cgexpr                                  { $$ = $1; }
-        |       '[' cgexpr ':' cgexpr ']'
+        |       covergroup_value_rangeNonExpr           { $$ = $1; }
+        ;
+
+covergroup_value_rangeNonExpr<nodeExprp>:
+                '[' cgexpr ':' cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($1, "Unsupported: covergroup value range '[...]'"); DEL($2, $4); }
         //                      // IEEE-2023: added all four:
         //                      // Skipped as '$' is part of our expr
@@ -4203,11 +4211,14 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         ;
 
 function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
+                function_subroutine_callNoMethodNoWith { $$ = $1; }
+        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, $4}; }
+        ;
+
+function_subroutine_callNoMethodNoWith<nodeExprp>:
         //                      // IEEE: tf_call
                 funcRef                                 { $$ = $1; }
         |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse{$2, $1, $4}; }
-        //                      // can call as method and yWITH without parenthesis
-        |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, $4}; }
         |       system_f_only_expr_call                 { $$ = $1; }
         |       system_f_or_t_expr_call                 { $$ = $1; }
         //                      // IEEE: method_call requires a "." so is in expr
@@ -5181,9 +5192,9 @@ expr<nodeExprp>:                // IEEE: part of expression/constant_expression/
         //
         //                      // IEEE grammar error: function_subroutine_call [ range_expression ]
         //                      // should be instead:  function_subroutine_call [ part_select_range ]
-        |       function_subroutine_callNoMethod
+        |       function_subroutine_callNoMethod~cover~
                         { $$ = $1; }
-        |       function_subroutine_callNoMethod part_select_rangeList
+        |       function_subroutine_callNoMethod~cover~ part_select_rangeList
                         { $$ = GRAMMARP->scrubSel($1, $2); }
         //                      // method_call
         |       ~l~expr '.' function_subroutine_callNoMethod
@@ -5310,13 +5321,16 @@ exprOkLvalue<nodeExprp>:            // expression that's also OK to use as a var
                                                         { $$ = new AstSelPlus{$4, new AstReplicate{$1, $2, 1}, $5, $7}; }
         |       '{' cateList '}' '[' expr yP_MINUSCOLON constExpr ']'
                                                         { $$ = new AstSelMinus{$4, new AstReplicate{$1, $2, 1}, $5, $7}; }
+        |       exprPatternOrStream                     { $$ = $1; }
+        ;
+
+exprPatternOrStream<nodeExprp>:     // Primaries shared with coverage set expressions
         //                      // IEEE: assignment_pattern_expression
         //                      // IEEE: [ assignment_pattern_expression_type ] == [ ps_type_id /ps_paremeter_id/data_type]
         //                      // We allow more here than the spec requires
         //UNSUP ~l~exprScope assignment_pattern         { UNSUP }
-        |       data_type assignment_pattern            { $$ = $2; if ($2) $2->childDTypep($1); }
+                data_type assignment_pattern            { $$ = $2; if ($2) $2->childDTypep($1); }
         |       assignment_pattern                      { $$ = $1; }
-        //
         |       streaming_concatenation                 { $$ = $1; }
         ;
 
@@ -7182,8 +7196,8 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         //                      // Superset of IEEE - we allow []'s in more places
                 coverage_option                         { $$ = $1; }
         //                      // Can't use wildcardE as results in conflicts
-        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, $6, false, false, false, $8}, $3); }
+        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, $5, false, false, false, $6}, $3); }
         |       yBINS idAny/*bin_identifier*/ '[' cgexpr ']' iffE
                         { // Check for automatic bins: bins auto[N]
                           if (*$2 == "auto") {
@@ -7195,42 +7209,66 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
                               DEL($4, $6);
                           }
                         }
-        |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, $6, true, false, false, $8}, $3); }
-        |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, $6, false, true, false, $8}, $3); }
-        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, new AstCoverWith{$8, $6, $10}, false, false, false, $12}, $3); }
-        |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, new AstCoverWith{$8, $6, $10}, true, false, false, $12}, $3); }
-        |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, new AstCoverWith{$8, $6, $10}, false, true, false, $12}, $3); }
+        |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, $5, true, false, false, $6}, $3); }
+        |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, $5, false, true, false, $6}, $3); }
+        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, new AstCoverWith{$6, $5, $8}, false, false, false, $10}, $3); }
+        |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, new AstCoverWith{$6, $5, $8}, true, false, false, $10}, $3); }
+        |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, new AstCoverWith{$6, $5, $8}, false, true, false, $10}, $3); }
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, new AstCoverWith{$6, new AstCoverpointRef{$<fl>5, *$5}, $8}, false, false, false, $10}, $3); }
         |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, new AstCoverWith{$6, new AstCoverpointRef{$<fl>5, *$5}, $8}, true, false, false, $10}, $3); }
         |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>2, *$2, new AstCoverWith{$6, new AstCoverpointRef{$<fl>5, *$5}, $8}, false, true, false, $10}, $3); }
-        |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, $7, false, false, true, $9}, $4); }
-        |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, $7, true, false, true, $9}, $4); }
-        |       yWILDCARD yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, $7, false, true, true, $9}, $4); }
-        |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, new AstCoverWith{$9, $7, $11}, false, false, true, $13}, $4); }
-        |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, new AstCoverWith{$9, $7, $11}, true, false, true, $13}, $4); }
-        |       yWILDCARD yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' '{' range_list '}' yWITH__PAREN '(' cgexpr ')' iffE
-                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, new AstCoverWith{$9, $7, $11}, false, true, true, $13}, $4); }
+        |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, $6, false, false, true, $7}, $4); }
+        |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, $6, true, false, true, $7}, $4); }
+        |       yWILDCARD yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, $6, false, true, true, $7}, $4); }
+        |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, new AstCoverWith{$7, $6, $9}, false, false, true, $11}, $4); }
+        |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, new AstCoverWith{$7, $6, $9}, true, false, true, $11}, $4); }
+        |       yWILDCARD yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' coverBracedList yWITH__PAREN '(' cgexpr ')' iffE
+                        { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, new AstCoverWith{$7, $6, $9}, false, true, true, $11}, $4); }
         |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, new AstCoverWith{$7, new AstCoverpointRef{$<fl>6, *$6}, $9}, false, false, true, $11}, $4); }
         |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, new AstCoverWith{$7, new AstCoverpointRef{$<fl>6, *$6}, $9}, true, false, true, $11}, $4); }
         |       yWILDCARD yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' id/*cover_point_id*/ yWITH__PAREN '(' cgexpr ')' iffE
                         { $$ = GRAMMARP->coverBinArray(new AstCoverBin{$<fl>3, *$3, new AstCoverWith{$7, new AstCoverpointRef{$<fl>6, *$6}, $9}, false, true, true, $11}, $4); }
+        //                      // IEEE: set_covergroup_expression
+        |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $5, false, false, false, $6};
+                          binp->isSetExpr(true);
+                          $$ = GRAMMARP->coverBinArray(binp, $3); }
+        |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $5, true, false, false, $6};
+                          binp->isSetExpr(true);
+                          $$ = GRAMMARP->coverBinArray(binp, $3); }
+        |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $5, false, true, false, $6};
+                          binp->isSetExpr(true);
+                          $$ = GRAMMARP->coverBinArray(binp, $3); }
+        |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $6, false, false, true, $7};
+                          binp->isSetExpr(true);
+                          $$ = GRAMMARP->coverBinArray(binp, $4); }
+        |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $6, true, false, true, $7};
+                          binp->isSetExpr(true);
+                          $$ = GRAMMARP->coverBinArray(binp, $4); }
+        |       yWILDCARD yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
+                        { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $6, false, true, true, $7};
+                          binp->isSetExpr(true);
+                          $$ = GRAMMARP->coverBinArray(binp, $4); }
         //
-        //                      // cgexpr part of trans_list
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
                         { const bool isArray = GRAMMARP->coverBinArrayUnsized($3);
                           $$ = new AstCoverBin{$<fl>2, *$2, static_cast<AstCoverTransSet*>($5), VCoverBinsType{VCoverBinsType::BINS_TRANSITION}, isArray};
@@ -7284,16 +7322,66 @@ bins_orBraE<nodeExprp>:  // IEEE: part of bins_or_options: AstUnbounded for '[]'
                           if (VN_IS($2, Unbounded)) $2->v3error("Bins array size must be integral, not '$' (IEEE 1800-2023 19.5.1)"); }
         ;
 
+set_covergroup_expression<nodeExprp>:  // ==IEEE: set_covergroup_expression
+        // Bare braces are value lists; as an operand they are concatenations.
+        // Bare id-with is a coverpoint filter, not a function call.
+                BISONPRE_COPY(expr,{s/~l~expr\b/coverExprLhs/g; s/~l~/cover/g; s/~cover~/NoWith/g;})
+        ;
+
+coverExprLhs<nodeExprp>:
+                set_covergroup_expression               { $$ = $1; }
+        |       coverConcat                             { $$ = $1; }
+        ;
+
+coverexprScope<nodeExprp>:
+                BISONPRE_COPY(exprScope,{s/~l~expr/coverExprLhs/g;})
+        ;
+
+coverinc_or_dec_expression<nodeExprp>:
+                BISONPRE_COPY(inc_or_dec_expression,{s/~l~/cover/g;})
+        ;
+
+coverexprOkLvalue<nodeExprp>:
+                coverexprScope                          { $$ = $1; }
+        |       coverConcat part_select_rangeList       { $$ = GRAMMARP->scrubSel($1, $2); }
+        |       exprPatternOrStream                     { $$ = $1; }
+        ;
+
+coverConcat<nodeExprp>:
+                '{' coverValueList '}'                  { $$ = $2; }
+        ;
+
+coverValueList<nodeExprp>:
+                stream_expression                       { $$ = $1; }
+        |       coverValueList ',' stream_expression    { $$ = $1->addNext($3); }
+        ;
+
+coverBracedList<nodeExprp>:
+                coverConcat                             { $$ = $1; }
+        |       '{' coverRangeList '}'                  { $$ = $2; }
+        ;
+
+coverRangeList<nodeExprp>:
+                value_rangeNonExpr                      { $$ = $1; }
+        |       coverValueList ',' value_rangeNonExpr   { $$ = addNextNull($1, $3); }
+        |       coverRangeList ',' value_range          { $$ = addNextNull($1, $3); }
+        ;
+
 trans_list<nodep>:  // ==IEEE: trans_list
                 '(' trans_set ')'                       { $$ = $2; }
         |       trans_list ',' '(' trans_set ')'        { $$ = addNextNull($1, $4); }
         ;
 
 trans_set<nodep>:  // ==IEEE: trans_set (returns AstCoverTransSet)
-                trans_range_list                        {
-                        AstCoverTransItem* const itemp = static_cast<AstCoverTransItem*>($1);
-                        $$ = new AstCoverTransSet{$<fl>1, itemp};
-                }
+        // A single parenthesized expression belongs to set_covergroup_expression.
+        // A transition starts with =>, a range/list, or a repetition operator.
+                cgexpr yP_EQGT trans_range_list
+                        { AstCoverTransSet* const setp = new AstCoverTransSet{$<fl>1,
+                              new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONE}};
+                          setp->addItemsp(VN_AS($3, CoverTransItem));
+                          $$ = setp; }
+        |       trans_range_listNonExpr
+                        { $$ = new AstCoverTransSet{$<fl>1, VN_AS($1, CoverTransItem)}; }
         |       trans_set yP_EQGT trans_range_list
                 {
                         AstCoverTransSet* const setp = static_cast<AstCoverTransSet*>($1);
@@ -7304,10 +7392,12 @@ trans_set<nodep>:  // ==IEEE: trans_set (returns AstCoverTransSet)
         ;
 
 trans_range_list<nodep>:  // ==IEEE: trans_range_list (returns AstCoverTransItem)
-                trans_item                              {
-                        // Simple transition item without repetition
-                        $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONE};
-                }
+                cgexpr                                  { $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONE}; }
+        |       trans_range_listNonExpr                  { $$ = $1; }
+        ;
+
+trans_range_listNonExpr<nodep>:
+                covergroup_range_listNonExpr            { $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONE}; }
         |       trans_item yP_BRASTAR cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[*]' in cover transition"); DEL($1, $3); }
         |       trans_item yP_BRASTAR cgexpr ':' cgexpr ']'
@@ -7329,8 +7419,13 @@ trans_item<nodep>:  // ==IEEE: range_list (returns range list node)
         ;
 
 covergroup_range_list<nodep>:  // ==IEEE: covergroup_range_list
-                covergroup_value_range                  { $$ = $1; }
-        |       covergroup_range_list ',' covergroup_value_range        { $$ = addNextNull($1, $3); }
+                cgexpr                                  { $$ = $1; }
+        |       covergroup_range_listNonExpr             { $$ = $1; }
+        ;
+
+covergroup_range_listNonExpr<nodep>:
+                covergroup_value_rangeNonExpr           { $$ = $1; }
+        |       covergroup_range_list ',' covergroup_value_range { $$ = addNextNull($1, $3); }
         ;
 
 

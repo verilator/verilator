@@ -1,0 +1,304 @@
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:241:22: Unsupported: 'bins' explicit array size (treated as '[]')
+  241 |       bins remaining[2] = default;
+      |                      ^
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:38:35: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   38 |         bins this_member[] = this.values;
+      |                                   ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:39:35: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   39 |         bins inherited_member[] = inherited_values;
+      |                                   ^~~~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:70:23: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   70 |       bins normal[] = values;
+      |                       ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:71:27: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   71 |       bins normal_iff[] = values iff (gate);
+      |                           ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:72:31: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   72 |       ignore_bins ignored[] = values;
+      |                               ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:73:35: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   73 |       ignore_bins ignored_iff[] = values iff (gate);
+      |                                   ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:74:32: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   74 |       illegal_bins illegal[] = values;
+      |                                ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:75:36: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   75 |       illegal_bins illegal_iff[] = values iff (gate);
+      |                                    ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:76:37: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   76 |       wildcard bins wild_normal[] = values;
+      |                                     ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:77:41: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   77 |       wildcard bins wild_normal_iff[] = values iff (gate);
+      |                                         ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:78:45: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   78 |       wildcard ignore_bins wild_ignored[] = values;
+      |                                             ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:79:49: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   79 |       wildcard ignore_bins wild_ignored_iff[] = values iff (gate);
+      |                                                 ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:80:46: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   80 |       wildcard illegal_bins wild_illegal[] = values;
+      |                                              ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:81:50: Unsupported: Non-constant expression in array bins value list.
+                                                            : ... note: In instance 't'
+   81 |       wildcard illegal_bins wild_illegal_iff[] = values iff (gate);
+      |                                                  ^~~~~~
+%Error: t/t_covergroup_bins_unpack_unsup.v:82:21: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
+                                                : ... note: In instance 't'
+   82 |       bins single = values;
+      |                     ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_bins_unpack_unsup.v:83:36: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
+                                                : ... note: In instance 't'
+   83 |       ignore_bins ignored_single = values iff (gate);
+      |                                    ^~~~~~
+%Error: t/t_covergroup_bins_unpack_unsup.v:84:37: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
+                                                : ... note: In instance 't'
+   84 |       illegal_bins illegal_single = values;
+      |                                     ^~~~~~
+%Error: t/t_covergroup_bins_unpack_unsup.v:85:35: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
+                                                : ... note: In instance 't'
+   85 |       wildcard bins wild_single = values iff (gate);
+      |                                   ^~~~~~
+%Error: t/t_covergroup_bins_unpack_unsup.v:86:50: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
+                                                : ... note: In instance 't'
+   86 |       wildcard ignore_bins wild_ignored_single = values;
+      |                                                  ^~~~~~
+%Error: t/t_covergroup_bins_unpack_unsup.v:87:51: Non-constant expression in bin range; values must be constants (IEEE 1800-2023 19.5)
+                                                : ... note: In instance 't'
+   87 |       wildcard illegal_bins wild_illegal_single = values iff (gate);
+      |                                                   ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:94:28: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                            : ... note: In instance 't'
+   94 |       bins fixed_size[2] = values;
+      |                            ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:95:36: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                            : ... note: In instance 't'
+   95 |       bins parameter_size[count] = values;
+      |                                    ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:96:41: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                            : ... note: In instance 't'
+   96 |       bins expression_size[count + 1] = values iff (enabled);
+      |                                         ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:97:37: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                            : ... note: In instance 't'
+   97 |       ignore_bins ignored_size[2] = values;
+      |                                     ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:98:38: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                            : ... note: In instance 't'
+   98 |       illegal_bins illegal_size[2] = values;
+      |                                      ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:99:36: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                            : ... note: In instance 't'
+   99 |       wildcard bins wild_size[2] = values;
+      |                                    ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:100:51: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                             : ... note: In instance 't'
+  100 |       wildcard ignore_bins wild_ignored_size[2] = values;
+      |                                                   ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:101:52: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                             : ... note: In instance 't'
+  101 |       wildcard illegal_bins wild_illegal_size[2] = values;
+      |                                                    ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:112:28: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  112 |       bins queue_input[] = queue_arg;
+      |                            ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:113:30: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  113 |       bins dynamic_input[] = dynamic_arg;
+      |                              ^~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:114:28: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  114 |       bins fixed_input[] = fixed_arg;
+      |                            ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:121:30: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  121 |       bins dynamic_array[] = dynamic_values;
+      |                              ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:122:28: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  122 |       bins fixed_array[] = fixed_values;
+      |                            ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:123:41: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  123 |       bins package_scope[] = queue_pkg::values;
+      |                                         ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:124:38: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  124 |       bins class_scope[] = source_t::static_values;
+      |                                      ^~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:125:31: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  125 |       bins hierarchical[] = t.values;
+      |                               ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:126:36: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  126 |       bins class_member[] = source.values;
+      |                                    ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:127:31: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  127 |       bins parenthesized[] = (values);
+      |                               ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:128:37: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  128 |       bins nested_parentheses[] = ((values));
+      |                                     ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:131:38: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  131 |       bins indexed[] = indexed_values[index];
+      |                                      ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:132:52: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  132 |       bins associative_index[] = associative_values[index];
+      |                                                    ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:133:28: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  133 |       bins slice[] = values[0:1];
+      |                            ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:134:35: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  134 |       bins slice_to_end[] = values[1:$];
+      |                                   ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:135:47: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  135 |       bins prefix_increment[] = indexed_values[++index];
+      |                                               ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:136:48: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  136 |       bins postfix_increment[] = indexed_values[index++];
+      |                                                ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:137:47: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  137 |       bins prefix_decrement[] = indexed_values[--index];
+      |                                               ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:138:48: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  138 |       bins postfix_decrement[] = indexed_values[index--];
+      |                                                ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:141:30: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  141 |       bins function_call[] = get_values();
+      |                              ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:142:35: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  142 |       bins function_arguments[] = get_values(index + 1);
+      |                                   ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:143:32: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  143 |       bins named_arguments[] = get_values(.offset(index));
+      |                                ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:144:44: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  144 |       bins package_function[] = queue_pkg::get_values(index);
+      |                                            ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:145:35: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  145 |       bins method_call[] = source.get_values(index);
+      |                                   ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:146:42: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  146 |       bins chained_call[] = get_source().get_values(index);
+      |                                          ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:147:31: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  147 |       bins locator[] = values.find with (item > 3);
+      |                               ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:148:43: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  148 |       bins locator_parentheses[] = values.find() with (item > 3);
+      |                                           ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:149:40: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  149 |       bins locator_iterator[] = values.find(element) with (element > 3);
+      |                                        ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:150:39: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  150 |       bins locator_indices[] = values.find_index with (item > 3);
+      |                                       ^~~~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:151:37: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  151 |       bins unique_values[] = values.unique();
+      |                                     ^~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:152:38: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  152 |       bins minimum_values[] = values.min();
+      |                                      ^~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:153:38: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  153 |       bins maximum_values[] = values.max();
+      |                                      ^~~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:156:33: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  156 |       bins type_cast[] = queue_t'(values);
+      |                                 ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:157:37: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  157 |       bins typed_pattern[] = queue_t'{index, index + 1, index + 2};
+      |                                     ^~
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:161:39: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  161 |       bins unpacked_concat[] = queue_t'({values, other_values});
+      |                                       ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:164:36: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  164 |       bins conditional[] = enabled ? values : other_values;
+      |                                    ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:165:51: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  165 |       bins parenthesized_conditional[] = (enabled ? values : other_values);
+      |                                                   ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:166:43: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  166 |       bins nested_conditional[] = enabled ? (index != 0 ? values : other_values) : values;
+      |                                           ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:169:59: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  169 |       bins arithmetic_condition[] = index + 2 * 3 - 1 > 0 ? values : other_values;
+      |                                                           ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:170:51: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  170 |       bins shift_condition[] = mask << index != 0 ? values : other_values;
+      |                                                   ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:171:69: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  171 |       bins logical_condition[] = enabled && index != 0 || mask == 0 ? values : other_values;
+      |                                                                     ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:172:42: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  172 |       bins reduction_condition[] = ^mask ? values : other_values;
+      |                                          ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:173:59: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  173 |       bins inside_condition[] = index inside {0, [2 : 3]} ? values : other_values;
+      |                                                           ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:174:51: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  174 |       bins signed_condition[] = $signed(mask) < 0 ? values : other_values;
+      |                                                   ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:175:52: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  175 |       bins sized_cast_condition[] = 3'(index) != 0 ? values : other_values;
+      |                                                    ^
+%Error-UNSUPPORTED: t/t_covergroup_bins_unpack_unsup.v:176:58: Unsupported: Non-constant expression in array bins value list.
+                                                             : ... note: In instance 't'
+  176 |       bins streaming_condition[] = int'({<<{mask}}) != 0 ? values : other_values;
+      |                                                          ^
+%Error: Exiting due to

@@ -16,14 +16,15 @@
                                            : ... Suggest a larger --coverage-max-bins
    36 |       bins auto[1025];
       |            ^~~~
-%Error: t/t_covergroup_autobins_bad.v:43:12: Non-constant expression in array bins range; range bounds must be constants (IEEE 1800-2023 19.5)
-                                           : ... note: In instance 't'
+%Error-UNSUPPORTED: t/t_covergroup_autobins_bad.v:43:19: Unsupported: Non-constant expression in array bins range.
+                                                       : ... note: In instance 't'
    43 |       bins b[] = {[size_var:size_var]};   
-      |            ^
-%Error: t/t_covergroup_autobins_bad.v:44:12: Non-constant expression in array bins range; range bounds must be constants (IEEE 1800-2023 19.5)
-                                           : ... note: In instance 't'
+      |                   ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_covergroup_autobins_bad.v:44:25: Unsupported: Non-constant expression in array bins range.
+                                                       : ... note: In instance 't'
    44 |       bins b_mixed[] = {[0:size_var]};   
-      |            ^~~~~~~
+      |                         ^
 %Error: t/t_covergroup_autobins_bad.v:45:23: Non-constant expression in bin range; range bounds must be constants (IEEE 1800-2023 19.5)
                                            : ... note: In instance 't'
    45 |       bins b_range = {[size_var:4]};   
@@ -74,14 +75,14 @@
                                            : ... note: In instance 't'
    68 |       bins b_xz_ub = {[4'bxxxx:$]};   
       |                       ^
-%Error: t/t_covergroup_autobins_bad.v:69:12: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+%Error: t/t_covergroup_autobins_bad.v:69:26: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
                                            : ... note: In instance 't'
    69 |       bins b_xz_arr[] = {[4'bxxxx:4'hF]};   
-      |            ^~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:70:12: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+      |                          ^
+%Error: t/t_covergroup_autobins_bad.v:70:29: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
                                            : ... note: In instance 't'
    70 |       bins b_xz_arr_hi[] = {[4'h0:4'bzzzz]};   
-      |            ^~~~~~~~~~~
+      |                             ^
 %Warning-COVERIGN: t/t_covergroup_autobins_bad.v:77:12: Unsupported: array 'bins' covering more than 1024 values (e.g. an open '[lo:$]' range over a wide coverpoint); bin 'b_huge' ignored
                                                       : ... note: In instance 't'
                                                       : ... Suggest a larger --coverage-max-bins
@@ -119,18 +120,18 @@
                                             : ... note: In instance 't'
   107 |     cp_a: coverpoint cp_expr {bins x = {[0 : size_var]};}
       |                                         ^
-%Error: t/t_covergroup_autobins_bad.v:112:36: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+%Error: t/t_covergroup_autobins_bad.v:112:43: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
                                             : ... note: In instance 't'
   112 |     cp_a: coverpoint cp_expr {bins x[] = {[4'b000x : 4'hF]};}
-      |                                    ^
-%Error: t/t_covergroup_autobins_bad.v:117:36: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
+      |                                           ^
+%Error: t/t_covergroup_autobins_bad.v:117:43: Four-state (x/z) value in array bins range bound; range bounds must be two-state constants
                                             : ... note: In instance 't'
   117 |     cp_a: coverpoint cp_expr {bins x[] = {[4'h0 : 4'b000x]};}
-      |                                    ^
-%Error: t/t_covergroup_autobins_bad.v:122:36: Non-constant expression in array bins value list; values must be constants (IEEE 1800-2023 19.5)
-                                            : ... note: In instance 't'
+      |                                           ^
+%Error-UNSUPPORTED: t/t_covergroup_autobins_bad.v:122:43: Unsupported: Non-constant expression in array bins value list.
+                                                        : ... note: In instance 't'
   122 |     cp_a: coverpoint cp_expr {bins x[] = {size_var};}
-      |                                    ^
+      |                                           ^~~~~~~~
 %Error: t/t_covergroup_autobins_bad.v:137:28: binsof coverpoint 'missing' is not an item of cross 'xc' (IEEE 1800-2023 19.6.1).
                                             : ... note: In instance 't'
   137 |       bins missing_point = binsof(missing);
@@ -238,12 +239,12 @@
                                                        : ... Suggest a larger --coverage-max-real-bins
   257 |       bins over_limit[] = {[0 : 1024]};   
       |            ^~~~~~~~~~
-%Error: t/t_covergroup_autobins_bad.v:264:21: Non-constant expression in array bins value list; values must be constants (IEEE 1800-2023 19.5)
-                                            : ... note: In instance 't'
+%Error-UNSUPPORTED: t/t_covergroup_autobins_bad.v:264:32: Unsupported: Non-constant expression in array bins value list.
+                                                        : ... note: In instance 't'
   264 |       wildcard bins value[] = {size_var};
-      |                     ^~~~~
-%Error: t/t_covergroup_autobins_bad.v:265:21: Non-constant expression in array bins range; range bounds must be constants (IEEE 1800-2023 19.5)
-                                            : ... note: In instance 't'
+      |                                ^~~~~~~~
+%Error-UNSUPPORTED: t/t_covergroup_autobins_bad.v:265:32: Unsupported: Non-constant expression in array bins range.
+                                                        : ... note: In instance 't'
   265 |       wildcard bins range[] = {[0 : size_var]};
-      |                     ^~~~~
+      |                                ^
 %Error: Exiting due to

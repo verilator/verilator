@@ -359,7 +359,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
                 if (setp != nodep->transp()) puts(", ");
                 iterateConst(setp);
             }
-        } else if (VN_IS(nodep->rangesp(), CoverWith)) {
+        } else if (nodep->isSetExpr() || VN_IS(nodep->rangesp(), CoverWith)) {
             puts(" = ");
             iterateConst(nodep->rangesp());
         } else if (nodep->rangesp()) {  // LCOV_EXCL_BR_LINE - false: CoverBin always has
