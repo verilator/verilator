@@ -30,6 +30,7 @@
 #include "V3Control.h"
 #include "V3Graph.h"
 #include "V3Parse.h"
+#include "V3Stats.h"
 #include "V3SymTable.h"
 
 #include <unordered_map>
@@ -241,6 +242,7 @@ class LinkCellsVisitor final : public VNVisitor {
     std::unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
     string m_origTopModuleName;  // original name of the top module
     int m_modDepth = 0;  // Depth of the current module
+    uint64_t m_statModsScanned = 0;  // Modules examined by readModNames
 
     // METHODS
     V3GraphVertex* vertex(AstNodeModule* nodep) {
@@ -317,6 +319,8 @@ class LinkCellsVisitor final : public VNVisitor {
         // Read <name> from the library search path, at most once per name. Modules and
         // packages are separate name spaces, so a miss in one does not mean it was not read.
         if (!m_autoLoaded.emplace(name).second) return;
+        // The parser appends, so only modules after the current last one are new
+        AstNodeModule* const lastModp = VN_AS(v3Global.rootp()->modulesp()->lastp(), NodeModule);
         // If file not found, make AstNotFoundModule, rather than error out.
         // We'll throw the error when we know the module will really be needed.
         V3Parse parser{v3Global.rootp(), m_filterp};
@@ -325,7 +329,7 @@ class LinkCellsVisitor final : public VNVisitor {
                          m_modp->libname(), "", name);
         V3Error::abortIfErrors();
         // We've read new modules, grab new pointers to their names
-        readModNames();
+        readModNames(VN_AS(lastModp->nextp(), NodeModule));
     }
 
     AstNodeModule* resolveModule(AstNode* nodep, const string& modName, const string& libname) {
@@ -412,7 +416,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstNetlist* nodep) override {
-        readModNames();
+        readModNames(nodep->modulesp());
         iterateChildren(nodep);
 
         // Replace instance module pointers based on config
@@ -886,20 +890,22 @@ class LinkCellsVisitor final : public VNVisitor {
         pkgp->name(pkgp->origName() + "__Vpkg");
         UINFO(9, "Package rename as module has same name " << pkgp);
     }
-    void readModNames() {
+    void readModNames(AstNodeModule* firstp) {
         // mangled_name, BlockOptions
         const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
         const auto hierIt = vlstd::as_const(hierBlocks).find(v3Global.opt.topModule());
         UASSERT((hierIt != hierBlocks.end()) == !!v3Global.opt.hierChild(),
                 "information of the top module must exist if --hierarchical-child is set");
-        // Look at all modules, and store pointers to all module names
-        for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
+        // Look at the new modules, and store pointers to their names
+        for (AstNodeModule *nextp, *nodep = firstp; nodep; nodep = nextp) {
             nextp = VN_AS(nodep->nextp(), NodeModule);
+            ++m_statModsScanned;
             if (AstPackage* const pkgp = VN_CAST(nodep, Package)) {
                 // Packages have their own global name space (IEEE 1800-2023 3.13)
                 const auto result = m_packages.emplace(pkgp->origName(), pkgp);
                 if (result.second) {
                     V3Control::applyModule(pkgp);
+                    if (findModuleGlobalSym(pkgp->origName())) renamePackageFromModule(pkgp);
                 } else if (result.first->second != pkgp) {
                     warnModDup(pkgp, result.first->second);
                     pkgp->unlinkFrBack();
@@ -938,12 +944,10 @@ class LinkCellsVisitor final : public VNVisitor {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);
                 insertModInGlobalLib(nodep->name(), nodep);
                 V3Control::applyModule(nodep);
+                // Resolve package/module name collisions, whichever was declared first
+                const auto pkgIt = m_packages.find(nodep->name());
+                if (pkgIt != m_packages.end()) renamePackageFromModule(pkgIt->second);
             }
-        }
-        // Resolve package/module name collisions after collecting all declarations.
-        for (const auto& entry : m_packages) {
-            AstPackage* const pkgp = entry.second;
-            if (findModuleGlobalSym(pkgp->origName())) renamePackageFromModule(pkgp);
         }
         // if (debug() >= 9) m_mods.dump(cout, "-syms: ");
     }
@@ -970,6 +974,7 @@ public:
         iterate(nodep);
     }
     ~LinkCellsVisitor() override {
+        V3Stats::addStat("LinkCells, Modules scanned", m_statModsScanned);
         if (debug() >= 5 || dumpGraphLevel() >= 5) { m_mods.dumpFilePrefixed("linkcells"); }
     }
 };
