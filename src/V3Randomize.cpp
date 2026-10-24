@@ -6581,6 +6581,10 @@ class RandomizeVisitor final : public VNVisitor {
             std::unique_ptr<CaptureVisitor> withCapturep;
             int argn = 0;
             AstWith* const withp = nodep->withp();
+            // IEEE 1800-2023 18.6.3: "If randomize() fails, the constraints are infeasible, and
+            // the random variables retain their previous values." Save each argument before
+            // its basic randomization, and restore it if the solver fails.
+            AstNode* restoreStmtsp = nullptr;
             for (const AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
                 AstNodeExpr* const exprp = argp->exprp();
                 AstCMethodHard* const basicMethodp = new AstCMethodHard{
@@ -6608,6 +6612,24 @@ class RandomizeVisitor final : public VNVisitor {
                 refvarp->funcLocal(true);
                 refvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
                 randomizeFuncp->addStmtsp(refvarp);
+                if (withp) {
+                    FileLine* const fl = exprp->fileline();
+                    AstVar* const prevVarp
+                        = new AstVar{fl, VVarType::BLOCKTEMP, "__Vprev"s + std::to_string(argn),
+                                     exprp->dtypep()};
+                    prevVarp->funcLocal(true);
+                    prevVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                    randomizeFuncp->addStmtsp(prevVarp);
+                    randomizeFuncp->addStmtsp(
+                        new AstAssign{fl, new AstVarRef{fl, prevVarp, VAccess::WRITE},
+                                      new AstVarRef{fl, refvarp, VAccess::READ}});
+                    // Restore in reverse order, so an argument that repeats or overlaps an
+                    // earlier one ends with the value saved before any basic randomization
+                    restoreStmtsp = AstNode::addNextNull<AstNode, AstNode>(
+                        new AstAssign{fl, new AstVarRef{fl, refvarp, VAccess::WRITE},
+                                      new AstVarRef{fl, prevVarp, VAccess::READ}},
+                        restoreStmtsp);
+                }
 
                 const size_t width = exprp->width();
                 basicMethodp->addPinsp(
@@ -6655,6 +6677,9 @@ class RandomizeVisitor final : public VNVisitor {
                     = new AstAnd{fl, new AstVarRef{fl, fvarp, VAccess::READ}, solverCallp};
                 randomizeFuncp->addStmtsp(
                     new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE}, andExprp});
+                randomizeFuncp->addStmtsp(
+                    new AstIf{fl, new AstLogNot{fl, new AstVarRef{fl, fvarp, VAccess::READ}},
+                              restoreStmtsp});
                 // Remove With nodes as processed
                 VL_DO_DANGLING(withp->unlinkFrBack()->deleteTree(), withp);
             }

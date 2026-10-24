@@ -4,6 +4,12 @@
 // SPDX-FileCopyrightText: 2025 PlanV GmbH
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 class external_cl;
   int x;
   int y;
@@ -91,6 +97,50 @@ module t;
     assert (std::randomize(obj.dyn[2][0]) with {obj.dyn[2][0] inside {[1 : 10]};} == 1);
     if (!(obj.dyn[2][0] inside {[1 : 10]})) $stop;
     $display("Test 6 passed: obj.dyn[2][0]=%0d", obj.dyn[2][0]);
+
+    // Test 7: Unsatisfiable constraints leave every argument unchanged
+    // (IEEE 1800-2023 18.6.3 and 18.12)
+    begin
+      bit [7:0] x;
+      bit [7:0] y;
+      bit [64:0] wide;
+      bit [30:0] q[$];
+      bit [14:0] arr[3:1];
+      int randomize_result;
+      x = 41;
+      y = 42;
+      wide = 65'h1_2345_6789_abcd_ef01;
+      q = '{1, 2, 3};
+      foreach (arr[i]) arr[i] = 15'(i * 3);
+      randomize_result = std::randomize(x, y, wide, q, arr) with {
+        x + y == 8'd10;
+        x + y == 8'd11;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(x, 41);
+      `checkd(y, 42);
+      `checkh(wide, 65'h1_2345_6789_abcd_ef01);
+      foreach (q[i]) `checkd(q[i], 31'(i + 1));
+      foreach (arr[i]) `checkd(arr[i], 15'(i * 3));
+      $display("Test 7 passed: x=%0d, y=%0d", x, y);
+    end
+
+    // Test 8: Arguments that repeat or overlap also keep their previous values
+    begin
+      bit [14:0] x;
+      bit [14:0] arr[3];
+      int randomize_result;
+      x = 7;
+      arr = '{1, 2, 3};
+      randomize_result = std::randomize(x, x, arr, arr[1]) with {
+        x > 10;
+        x < 5;
+      };
+      `checkd(randomize_result, 0);
+      `checkd(x, 7);
+      foreach (arr[i]) `checkd(arr[i], 15'(i + 1));
+      $display("Test 8 passed: x=%0d", x);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;
