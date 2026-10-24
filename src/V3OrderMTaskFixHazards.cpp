@@ -248,20 +248,21 @@ class FixDataHazards final {
     // Add the edges required to make the accesses of one variable race free. 'beginp'/'endp'
     // delimit the accesses of a single variable, in sequence number order.
     void serializeVariable(const Access* beginp, const Access* endp) {
-        // Nothing to order if at most one MTask accesses this variable. Each MTask appears at
-        // most once in the range, see the assertion below, so this is just the range size.
+        // Nothing to order if there is only one access
         if (endp - beginp < 2) return;
 
         std::vector<LogicMTask*>& pendingReaders = m_scratch;
         pendingReaders.clear();
         LogicMTask* prevWriterp = nullptr;
-        for (const Access* accp = beginp; accp != endp; ++accp) {
-            // The OrderLogicVertices record one access per variable, and at this point each MTask
-            // holds exactly one logic block, so an MTask cannot appear twice here.
-            UASSERT_OBJ(accp == beginp || accp[-1].m_mtaskp != accp->m_mtaskp, accp->m_mtaskp,
-                        "Multiple accesses of a variable in an MTask");
+        for (const Access* accp = beginp; accp != endp;) {
+            // An MTask holding a threads_unit group can access the variable from several logic
+            // blocks. They run in order within the MTask, so it is a writer if any of them writes.
             LogicMTask* const mtaskp = accp->m_mtaskp;
-            if (accp->m_access.isWriteOrRW()) {
+            bool isWrite = false;
+            for (; accp != endp && accp->m_mtaskp == mtaskp; ++accp) {
+                if (accp->m_access.isWriteOrRW()) isWrite = true;
+            }
+            if (isWrite) {
                 // Reads since the previous write must complete before this write
                 for (LogicMTask* const readerp : pendingReaders) addEdgeIfNeeded(readerp, mtaskp);
                 // Consecutive writes must be ordered. If a read came between them, the edges to

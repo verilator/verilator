@@ -119,9 +119,9 @@ static void checkDataHazards(OrderMTaskGraph& mTaskGraph) {
 // of the logic nodes from the fine-grained graph.
 
 static std::unique_ptr<OrderMTaskGraph> partition(OrderMoveGraph& moveGraph) {
-    // Build the initial MTask graph. Initially, each MTask just wraps one OrderMoveVertex. We will
-    // merge MTasks together and eventually each MTask will wrap a large number of OrderMoveVertex
-    // (and the logic nodes therein).
+    // Build the initial MTask graph. Initially, each MTask just wraps one OrderMoveVertex, or a
+    // threads_unit group of them. We will merge MTasks together and eventually each MTask will
+    // wrap a large number of OrderMoveVertex (and the logic nodes therein).
     std::unique_ptr<OrderMTaskGraph> mTaskGraphp = OrderMTaskGraph::build(moveGraph);
     mTaskGraphp->hashGraphDebug("initial MTask graph");
 
