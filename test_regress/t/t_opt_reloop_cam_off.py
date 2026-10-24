@@ -10,7 +10,7 @@
 import vltest_bootstrap
 
 test.scenarios('simulator_st')
-test.top_filename = "t/t_reloop_cam.v"
+test.top_filename = "t/t_opt_reloop_cam.v"
 
 test.compile(verilator_flags2=["--stats", "-fno-reloop"])
 
