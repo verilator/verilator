@@ -1606,6 +1606,7 @@ class AstNetlist final : public AstNode {
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     std::string m_resolvedTopModuleName;  // Selected design top before wrapping under $root
+    std::vector<std::string> m_l2Names;  // Pretty names of top module instances (l2 names)
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
     // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
@@ -1678,14 +1679,12 @@ public:
     bool timescaleSpecified() const { return m_timescaleSpecified; }
     const std::string& resolvedTopModuleName() const { return m_resolvedTopModuleName; }
     void resolvedTopModuleName(const std::string& value) { m_resolvedTopModuleName = value; }
+    const std::vector<std::string>& l2Names() const { return m_l2Names; }
+    void addL2Name(const std::string& name) { m_l2Names.push_back(name); }
     uint32_t nTraceCodes() const { return m_nTraceCodes; }
     void nTraceCodes(uint32_t value) { m_nTraceCodes = value; }
     AstVarScope* stlFirstIterationp();
     void clearStlFirstIterationp() { m_stlFirstIterationp = nullptr; }
-    const std::string libTopName() const {
-        const std::string& name = resolvedTopModuleName();
-        return prettyName(name.empty() ? v3Global.rootp()->topModulep()->name() : name);
-    }
 
     // Record statistics for eval functions
     void addEvalStats(const std::string& phase);

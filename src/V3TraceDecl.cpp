@@ -34,6 +34,7 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -204,7 +205,10 @@ class TraceDeclVisitor final : public VNVisitor {
                 // them under the runtime C++ instance name without affecting embedded use.
                 if (prefix == "$rootio") return;
                 m_path = m_path.substr(start + 1);
-                if (v3Global.rootp()->libTopName() != prefix) m_path = "$libroot " + m_path;
+                const std::vector<std::string>& tops = v3Global.rootp()->l2Names();
+                if (std::find(tops.begin(), tops.end(), prefix) == tops.end()) {
+                    m_path = "$libroot " + m_path;
+                }
             }
         }
 
@@ -391,24 +395,11 @@ class TraceDeclVisitor final : public VNVisitor {
     void fixupLibStub(const std::string& path, AstNodeStmt* placeholderp) {
         FileLine* const flp = placeholderp->fileline();
 
-        // The library instance's model is named after its %m within the parent model,
-        // which does not include the "l2-name" (top module) of the library
-        std::string name = AstNode::prettyName(path);
-        if (!v3Global.opt.libCreate().empty()) {
-            const std::string topPrefix = v3Global.rootp()->libTopName() + ".";
-            if (VString::startsWith(name, topPrefix)) name = name.substr(topPrefix.size());
-        }
-
-        // Call the initialization function for the library instance
+        // Call the initialization function for the library instance, whose model is named after
+        // its %m within the parent model
         AstCStmt* const initp = new AstCStmt{flp};
-        initp->add("{\n");
-        initp->add("std::string __VlibName = vlSymsp->name();\n");
-        initp->add("if (!__VlibName.empty()) __VlibName += '.';\n");
-        initp->add("__VlibName += ");
-        initp->add(new AstConst{flp, AstConst::String{}, name});
-        initp->add(";\n");
-        initp->add("tracep->initLib(__VlibName);\n");
-        initp->add("}\n");
+        initp->add("tracep->initLib(" + EmitCUtil::instNameExpr(AstNode::prettyName(path), false)
+                   + ");\n");
 
         placeholderp->addNextHere(initp);
         // Delete the placeholder

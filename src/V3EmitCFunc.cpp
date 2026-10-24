@@ -319,8 +319,10 @@ void EmitCFunc::displayNode(AstNode* nodep, AstSFormatF* fmtp,  // fmtp is nullp
             ofp()->puts(","s + (m_useSelfForThis ? "vlSelf" : "this") + "->vlNamep,");
             ofp()->putsQuoted(scopenamep->scopeAttr());
         } else {
-            ofp()->puts(",vlSymsp->name(),");
-            ofp()->putsQuoted(scopenamep->scopePrettySymName());
+            const std::pair<size_t, std::string> top
+                = EmitCUtil::splitTopPath(scopenamep->scopePrettySymName());
+            ofp()->puts("," + EmitCUtil::topNameExpr(top.first, false) + ",");
+            ofp()->putsQuoted(top.second);
         }
     }
 

@@ -11,7 +11,7 @@ import platform
 import sys
 
 
-def run(test, *, verilator_flags2=()):
+def run(test, *, verilator_flags2=(), golden_filename=None):
     fmt, = test.parse_name(r"t_trace_lib_as_top_([a-z]+)")
 
     if platform.system() == "Windows":
@@ -23,8 +23,8 @@ def run(test, *, verilator_flags2=()):
     # All test use the same SV file
     test.top_filename = "t/t_trace_lib_as_top.v"
     test.pli_filename = os.path.abspath("t/t_trace_lib_as_top.cpp")
-    # Any variations after the format name must yield the exact same trace
-    test.golden_filename = test.py_filename.rpartition(fmt)[0] + fmt + ".out"
+    # Any variations after the format name must yield the exact same trace, unless given
+    test.golden_filename = golden_filename or test.py_filename.rpartition(fmt)[0] + fmt + ".out"
 
     flags = [
         f"--trace-{fmt}",

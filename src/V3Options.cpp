@@ -612,7 +612,6 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
         {"f", 2},
         {"F", 2},
         {"v", 2},
-        {"l2-name", 2},
         {"mod-prefix", 2},
         {"prefix", 2},
         {"protect-lib", 2},
@@ -628,10 +627,7 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
     // Options to strip only for hier blocks
     if (!forTop) {
         static const std::unordered_map<std::string, int> subOpts{
-            {"cc", 1},
-            {"exe", 1},
-            {"sc", 1},
-            {"binary", 1},
+            {"cc", 1}, {"exe", 1}, {"sc", 1}, {"binary", 1}, {"l2-name", 2},
         };
         if (subOpts.count(opt)) return subOpts.at(opt);
         if (VString::startsWith(opt, "G")) return 1;

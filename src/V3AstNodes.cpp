@@ -2347,12 +2347,16 @@ void AstNetlist::dump(std::ostream& str) const {
     if (timescaleSpecified()) str << " [TIMESCALES]";
     str << " [" << timeunit() << "/" << timeprecision() << "]";
     if (resolvedTopModuleName() != "") str << " top=" << resolvedTopModuleName();
+    for (const std::string& name : l2Names()) str << " l2Name=" << name;
 }
 void AstNetlist::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "timescaleSpecified", timescaleSpecified());
     dumpJsonStr(str, "timeunit", timeunit().ascii());
     dumpJsonStr(str, "timeprecision", timeprecision().ascii());
     dumpJsonStr(str, "resolvedTopModuleName", resolvedTopModuleName());
+    std::string names;
+    for (const std::string& name : l2Names()) names += (names.empty() ? "" : " ") + name;
+    if (!names.empty()) dumpJsonStr(str, "l2Names", names);
     dumpJsonGen(str);
 }
 AstCFunc* AstNetlist::dumpTriggersFuncp(VEval eval) {
