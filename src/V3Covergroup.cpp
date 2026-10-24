@@ -251,9 +251,7 @@ public:
 class FunctionalCoverageVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
-    //  AstCoverpoint::user1p()  -> AstVar*.  Previous-value variable for transition bins
     //  AstCoverpoint::user2()   -> bool.  Had a bins declaration ignored, so no automatic bins
-    const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
     // STATE
@@ -335,6 +333,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // Prefixes of the constructor temporaries of constructed bins, as coverpoint and bin names
     // alone may repeat: coverpoint 'a_' bins 'b', and coverpoint 'a' bins '_b'
     V3UniqueNames m_sizedNames{"__Vsized"};
+    // Names of the transition sequence states, as a bin may hold several sequences
+    V3UniqueNames m_seqposNames{"__Vseqpos"};
     std::vector<AstNodeExpr*> m_detachedValues;  // Array-bin values m_cpBins refers to
     std::set<AstCoverCross*>
         m_droppedCrosses;  // Crosses with a bare-variable item: drop (COVERIGN)
@@ -494,6 +494,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_cpBins.clear();
         m_droppedBins.clear();
         m_sizedNames.reset();
+        m_seqposNames.reset();
         m_runtimePoints.clear();
         m_runtimeCrosses.clear();
         m_excludedVars.clear();
@@ -950,49 +951,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
     }
 
-    // Create previous value variable for transition tracking
-    AstVar* createPrevValueVar(AstCoverpoint* coverpointp, AstNodeExpr* exprp) {
-        // Check if already created
-        if (AstVar* const prevVarp = VN_CAST(coverpointp->user1p(), Var)) return prevVarp;
-
-        // Create variable to store previous sampled value
-        const string varName = "__Vprev_" + coverpointp->name();
-        AstVar* prevVarp
-            = new AstVar{coverpointp->fileline(), VVarType::MEMBER, varName, exprp->dtypep()};
-        m_covergroupp->addMembersp(prevVarp);
-
-        UINFO(4, "    Created previous value variable: " << varName);
-
-        // Initialize to zero in constructor
-        AstNodeExpr* const initExprp
-            = new AstConst{prevVarp->fileline(), AstConst::WidthedValue{}, prevVarp->width(), 0};
-        AstNodeStmt* const initStmtp = new AstAssign{
-            prevVarp->fileline(), new AstVarRef{prevVarp->fileline(), prevVarp, VAccess::WRITE},
-            initExprp};
-        m_constructorp->addStmtsp(initStmtp);
-
-        coverpointp->user1p(prevVarp);
-        return prevVarp;
-    }
-
-    // Create state position variable for multi-value transition bins
-    // Tracks position in sequence: 0=not started, 1=seen first item, etc.
-    AstVar* createSequenceStateVar(AstCoverpoint* coverpointp, AstCoverBin* binp) {
-        // Create variable to track sequence position
-        const string varName = "__Vseqpos_" + coverpointp->name() + "_" + binp->name();
-        // Use 8-bit integer for state position (sequences rarely > 255 items)
-        AstVar* stateVarp
-            = new AstVar{binp->fileline(), VVarType::MEMBER, varName, VFlagLogicPacked{}, 8};
+    // Create a member holding the partial matches of a transition sequence of 'binp' (see
+    // generateSingleTransitionCode), initially none
+    AstVar* createSequenceStateVar(AstCoverpoint* coverpointp, AstCoverBin* binp, int width) {
+        FileLine* const fl = binp->fileline();
+        AstVar* const stateVarp = new AstVar{
+            fl, VVarType::MEMBER,
+            m_seqposNames.get(sanitizeGeneratedName(coverpointp->name() + "__" + binp->name())),
+            VFlagLogicPacked{}, width};
         m_covergroupp->addMembersp(stateVarp);
-
-        UINFO(4, "    Created sequence state variable: " << varName);
-
-        // Initialize to 0 (not started) in constructor
-        AstNodeStmt* const initStmtp = new AstAssign{
-            stateVarp->fileline(), new AstVarRef{stateVarp->fileline(), stateVarp, VAccess::WRITE},
-            new AstConst{stateVarp->fileline(), AstConst::WidthedValue{}, 8, 0}};
-        m_constructorp->addStmtsp(initStmtp);
-
+        m_constructorp->addStmtsp(
+            new AstAssign{fl, new AstVarRef{fl, stateVarp, VAccess::WRITE},
+                          new AstConst{fl, AstConst::WidthedValue{}, width, 0}});
         return stateVarp;
     }
 
@@ -1110,15 +1080,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 empty &= none;
             }
             if (empty && !binp->isArray()) return true;
-        }
-        return false;
-    }
-
-    // True if a coverpoint has any transition bin.  Used to decide whether sample() emits the
-    // end-of-sample previous-value update that transition matching needs.
-    static bool coverpointHasTransition(AstCoverpoint* coverpointp) {
-        for (AstNode* binp = coverpointp->binsp(); binp; binp = binp->nextp()) {
-            if (VN_AS(binp, CoverBin)->transp()) return true;
         }
         return false;
     }
@@ -2251,20 +2212,35 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         emitConvHitIf(coverpointp, binp, cpVarp, runBinIndex(fl, exprp, run), condp);
     }
 
-    // Emit a transition bin's hit action into sample():
-    //   if (cond) { m_cp.incrementBin/recordHit(idx); [illegal: $error; $stop] }
-    // Used by the transition generators so a completed sequence records into the runtime bin.
-    void addConvTransHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, const ConvBinTarget& tgt,
-                           AstNodeExpr* condp) {
+    // Emit a transition bin's sample() code.  Its sequences each note in a flag whether this
+    // sample completes them, so the bin counts the sample once however many do (IEEE 1800-2023
+    // 19.5.2):
+    //   hit = 0; <sequences>
+    //   if (hit) { m_cp.incrementBin/recordHit(idx); [illegal: $error; $stop] }
+    void generateTransitionBin(AstCoverpoint* coverpointp, AstCoverBin* binp, AstNodeExpr* exprp,
+                               const ConvBinTarget& tgt) {
         FileLine* const fl = binp->fileline();
-        AstNode* actionp = makeRuntimeBinHit(fl, tgt);
+        UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for transition bin");
+        AstVar* const hitVarp
+            = new AstVar{fl, VVarType::BLOCKTEMP,
+                         "__VcpTransHit_" + sanitizeGeneratedName(coverpointp->name()) + "_"
+                             + cvtToStr(tgt.idx),
+                         binp->findBitDType()};
+        hitVarp->funcLocal(true);
+        m_sampleFuncp->addStmtsp(hitVarp);
+        addSampleStmt(new AstAssign{fl, new AstVarRef{fl, hitVarp, VAccess::WRITE},
+                                    new AstConst{fl, AstConst::BitFalse{}}});
+        for (AstNode* setp = binp->transp(); setp; setp = setp->nextp()) {
+            generateSingleTransitionCode(coverpointp, binp, exprp, hitVarp,
+                                         VN_AS(setp, CoverTransSet));
+        }
+        AstNode* const actionp = makeRuntimeBinHit(fl, tgt);
         if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
             actionp->addNext(makeIllegalBinAction(
                 fl, "Illegal transition bin " + binp->prettyNameQ() + " hit in coverpoint "
                         + coverpointp->prettyNameQ()));
         }
-        UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for transition bin");
-        addSampleStmt(new AstIf{fl, condp, actionp, nullptr});
+        addSampleStmt(new AstIf{fl, new AstVarRef{fl, hitVarp, VAccess::READ}, actionp, nullptr});
     }
 
     // Route a coverpoint through a VlCoverpoint member: emit the member, its sample()
@@ -2344,14 +2320,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 // illegal_bins/ignore_bins transitions).  All sequences of one transition bin
                 // share a bin name and merge in the coverage DB to a single point, so model
                 // them as one runtime bin incremented by any matching sequence.  The sequence
-                // matching is generated as a state machine, with the hit routed to this bin's
-                // runtime slot.
+                // matching is generated as state machines, with the hit routed to this bin's
+                // runtime slot (see generateTransitionBin).
                 namerStmts.push_back(makeNamer(cpVarp, cbinp, -1, static_cast<uint32_t>(idx)));
-                const ConvBinTarget tgt{cpVarp, static_cast<uint32_t>(idx),
-                                        cbinp->binsType().binIsNormal()};
-                for (AstNode* sp = cbinp->transp(); sp; sp = sp->nextp())
-                    generateSingleTransitionCode(coverpointp, cbinp, exprp, tgt,
-                                                 VN_AS(sp, CoverTransSet));
+                generateTransitionBin(
+                    coverpointp, cbinp, exprp,
+                    {cpVarp, static_cast<uint32_t>(idx), cbinp->binsType().binIsNormal()});
                 if (dynamic && V3Error::errorCount() == errorsBefore) {
                     metadata.emplace_back(cbinp, static_cast<uint32_t>(idx), nullptr);
                 }
@@ -2464,17 +2438,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                                    << " bins");
         }
 
-        // Transition coverpoints track the previous sampled value; update it once at the end of
-        // this coverpoint's sample() contribution (the prev var was created on demand by the
-        // transition matching above).
-        if (coverpointHasTransition(coverpointp)) {
-            AstVar* const prevVarp = VN_AS(coverpointp->user1p(), Var);
-            addSampleStmt(
-                new AstAssign{coverpointp->fileline(),
-                              new AstVarRef{prevVarp->fileline(), prevVarp, VAccess::WRITE},
-                              exprp->cloneTree(false)});
-        }
-
         // Constructor: init (allocates), namers, then registration (under --coverage).
         // Under --protect-ids the hierarchy and page string reach the coverage database
         // verbatim, so obfuscate them like line/toggle points (per-word hierarchy, whole-
@@ -2520,116 +2483,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                           cnum(fl, m_cgTypeWeight)})
                     ->makeStmt());
         }
-    }
-
-    // Generate state machine code for multi-value transition sequences
-    // Handles transitions like (1 => 2 => 3 => 4)
-    void generateMultiValueTransitionCode(AstCoverpoint* coverpointp, AstCoverBin* binp,
-                                          AstNodeExpr* exprp, const ConvBinTarget& tgt,
-                                          const std::vector<AstCoverTransItem*>& items) {
-        UINFO(4, "    Generating multi-value transition state machine for: " << binp->name());
-        UINFO(4, "      Sequence length: " << items.size() << " items");
-
-        // Create state position variable
-        AstVar* const stateVarp = createSequenceStateVar(coverpointp, binp);
-
-        // Build case statement with N cases (one for each state 0 to N-1)
-        // State 0: Not started, looking for first item
-        // State 1 to N-1: In progress, looking for next item
-
-        AstCase* const casep
-            = new AstCase{binp->fileline(), VCaseType::CT_CASE,
-                          new AstVarRef{stateVarp->fileline(), stateVarp, VAccess::READ}, nullptr};
-
-        // Generate each case item in the switch statement
-        for (size_t state = 0; state < items.size(); ++state) {
-            AstCaseItem* caseItemp = generateTransitionStateCase(coverpointp, binp, exprp, tgt,
-                                                                 stateVarp, items, state);
-            casep->addItemsp(caseItemp);
-        }
-
-        // Add default case (reset to state 0) to prevent CASEINCOMPLETE warnings,
-        // since the state variable is wider than the number of valid states.
-        AstCaseItem* const defaultItemp = new AstCaseItem{
-            binp->fileline(), nullptr,
-            new AstAssign{binp->fileline(),
-                          new AstVarRef{binp->fileline(), stateVarp, VAccess::WRITE},
-                          new AstConst{binp->fileline(), AstConst::WidthedValue{}, 8, 0}}};
-        casep->addItemsp(defaultItemp);
-
-        addSampleStmt(casep);
-        UINFO(4, "      Successfully added multi-value transition state machine");
-    }
-
-    // Generate code for a single state in the transition state machine
-    // Returns the case item for this state
-    AstCaseItem* generateTransitionStateCase(AstCoverpoint* coverpointp, AstCoverBin* binp,
-                                             AstNodeExpr* exprp, const ConvBinTarget& tgt,
-                                             AstVar* stateVarp,
-                                             const std::vector<AstCoverTransItem*>& items,
-                                             size_t state) {
-        FileLine* const fl = binp->fileline();
-
-        // Build condition for current value matching expected item at this state
-        AstNodeExpr* const matchCondp = buildTransitionItemCondition(items[state], exprp);
-
-        AstNodeStmt* matchActionp = nullptr;
-
-        if (state == items.size() - 1) {
-            // Last state: sequence complete!  Record the hit in the runtime VlCoverpoint.
-            matchActionp = makeRuntimeBinHit(fl, tgt);
-
-            // For illegal_bins, add error message
-            if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
-                const string errMsg = "Illegal transition bin " + binp->prettyNameQ()
-                                      + " hit in coverpoint " + coverpointp->prettyNameQ();
-                matchActionp = matchActionp->addNext(makeIllegalBinAction(fl, errMsg));
-            }
-
-            // Reset state to 0
-            matchActionp = matchActionp->addNext(
-                new AstAssign{fl, new AstVarRef{fl, stateVarp, VAccess::WRITE},
-                              new AstConst{fl, AstConst::WidthedValue{}, 8, 0}});
-        } else {
-            // Intermediate state: advance to next state
-            matchActionp = new AstAssign{
-                fl, new AstVarRef{fl, stateVarp, VAccess::WRITE},
-                new AstConst{fl, AstConst::WidthedValue{}, 8, static_cast<uint32_t>(state + 1)}};
-        }
-
-        // Build restart logic: check if current value matches first item
-        // If so, restart sequence from state 1 (even if we're in middle of sequence)
-        AstNodeStmt* noMatchActionp = nullptr;
-        if (state > 0) {
-            // Check if current value matches first item (restart condition)
-            AstNodeExpr* const restartCondp = buildTransitionItemCondition(items[0], exprp);
-
-            UASSERT_OBJ(restartCondp, items[0],
-                        "buildTransitionItemCondition returned nullptr for restart");
-
-            // Restart to state 1
-            AstNodeStmt* restartActionp
-                = new AstAssign{fl, new AstVarRef{fl, stateVarp, VAccess::WRITE},
-                                new AstConst{fl, AstConst::WidthedValue{}, 8, 1}};
-
-            // Reset to state 0 (else branch)
-            AstNodeStmt* resetActionp
-                = new AstAssign{fl, new AstVarRef{fl, stateVarp, VAccess::WRITE},
-                                new AstConst{fl, AstConst::WidthedValue{}, 8, 0}};
-
-            noMatchActionp = new AstIf{fl, restartCondp, restartActionp, resetActionp};
-        }
-        // For state 0, no action needed if no match (stay in state 0)
-
-        // Combine into if-else
-        AstNodeStmt* const stmtp = new AstIf{fl, matchCondp, matchActionp, noMatchActionp};
-
-        // Create case item for this state value
-        AstCaseItem* const caseItemp = new AstCaseItem{
-            fl, new AstConst{fl, AstConst::WidthedValue{}, 8, static_cast<uint32_t>(state)},
-            stmtp};
-
-        return caseItemp;
     }
 
     // Create: $error(msg); $stop;  Used when an illegal bin is hit.
@@ -2729,18 +2582,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return new AstLte{fl, exprp->cloneTree(false), widep};
     }
 
-    // Build condition for a single transition item.
-    // Returns expression that checks if exprp matches the item's value/range list.
-    // Overload for when the expression is a variable read -- creates and manages the VarRef
-    // internally, so callers don't need to construct a temporary node.
-    AstNodeExpr* buildTransitionItemCondition(AstCoverTransItem* itemp, AstVar* varp) {
-        AstNodeExpr* varRefp = new AstVarRef{varp->fileline(), varp, VAccess::READ};
-        AstNodeExpr* const condp = buildTransitionItemCondition(itemp, varRefp);
-        VL_DO_DANGLING(pushDeletep(varRefp), varRefp);
-        return condp;
-    }
-
-    // Non-owning: exprp is cloned internally; caller retains ownership of exprp.
+    // Build the condition that exprp matches one of a transition item's values.  Non-owning:
+    // exprp is cloned, and the caller keeps it.
     AstNodeExpr* buildTransitionItemCondition(AstCoverTransItem* itemp, AstNodeExpr* exprp) {
         AstNodeExpr* condp = nullptr;
 
@@ -2765,14 +2608,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return condp;
     }
 
-    // Generate code for a single transition sequence (used by both regular and array bins)
+    // Generate the matching of one sequence of a transition bin (see generateTransitionBin),
+    // setting hitVarp when the sample completes it.  Matches may overlap, and each counts
+    // (IEEE 1800-2023 19.5.2), so the state holds every partial match: bit k is set when the
+    // samples so far end with a match of the first k + 1 items.  No sample precedes the first,
+    // so initially none is.
     void generateSingleTransitionCode(AstCoverpoint* coverpointp, AstCoverBin* binp,
-                                      AstNodeExpr* exprp, const ConvBinTarget& tgt,
+                                      AstNodeExpr* exprp, AstVar* hitVarp,
                                       AstCoverTransSet* transSetp) {
         UINFO(4, "      Generating code for transition sequence");
-
-        // Get or create previous value variable
-        AstVar* const prevVarp = createPrevValueVar(coverpointp, exprp);
 
         UASSERT_OBJ(
             transSetp, binp,
@@ -2792,23 +2636,40 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             // Single item transition not valid (need at least 2 values for =>)
             binp->v3error("Transition requires at least two values");
             return;
-        } else if (items.size() == 2) {
-            // Simple two-value transition: (val1 => val2)
-            // Use optimized direct comparison (no state machine needed)
-            AstNodeExpr* const cond1p = buildTransitionItemCondition(items[0], prevVarp);
-            AstNodeExpr* const cond2p = buildTransitionItemCondition(items[1], exprp);
-
-            // Combine: prev matches val1 AND current matches val2
-            AstNodeExpr* fullCondp = new AstAnd{binp->fileline(), cond1p, cond2p};
-
-            addConvTransHitIf(coverpointp, binp, tgt, fullCondp);
-
-            UINFO(4, "        Successfully added 2-value transition if statement");
-        } else {
-            // Multi-value sequence (a => b => c => ...)
-            // Use state machine to track position in sequence
-            generateMultiValueTransitionCode(coverpointp, binp, exprp, tgt, items);
         }
+        // Each value costs a state bit and a comparison per sample
+        static constexpr size_t MAX_VALUES = 256;
+        if (items.size() > MAX_VALUES) {
+            items[0]->v3warn(E_UNSUPPORTED, "Unsupported: transition sequence of more than "
+                                                << MAX_VALUES << " values.");
+            return;
+        }
+        FileLine* const fl = binp->fileline();
+        const int width = static_cast<int>(items.size()) - 1;
+        AstVar* const stateVarp = createSequenceStateVar(coverpointp, binp, width);
+        // Whether the sample matches each item but the last, the first in the LSB
+        AstNodeExpr* matchp = nullptr;
+        for (int k = 0; k < width; ++k) {
+            AstNodeExpr* const condp = buildTransitionItemCondition(items[k], exprp);
+            matchp = matchp ? new AstConcat{fl, condp, matchp} : condp;
+        }
+        AstNodeExpr* const lastCondp = buildTransitionItemCondition(items.back(), exprp);
+        // A partial match of all but the last item completes
+        addSampleStmt(new AstIf{
+            fl,
+            new AstLogAnd{
+                fl, new AstSel{fl, new AstVarRef{fl, stateVarp, VAccess::READ}, width - 1, 1},
+                lastCondp},
+            new AstAssign{fl, new AstVarRef{fl, hitVarp, VAccess::WRITE},
+                          new AstConst{fl, AstConst::BitTrue{}}}});
+        // Each partial match extends one an item shorter, and the first item starts one
+        AstNodeExpr* const shiftedp
+            = new AstSel{fl,
+                         new AstConcat{fl, new AstVarRef{fl, stateVarp, VAccess::READ},
+                                       new AstConst{fl, AstConst::BitTrue{}}},
+                         0, width};
+        addSampleStmt(new AstAssign{fl, new AstVarRef{fl, stateVarp, VAccess::WRITE},
+                                    new AstAnd{fl, shiftedp, matchp}});
     }
 
     // Append a "{ VlCoverpoint* __Vcx_cps[] = {cp0, cp1, ...}; <call> }" statement.  The brace
