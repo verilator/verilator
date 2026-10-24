@@ -445,13 +445,16 @@ class TaskVisitor final : public VNVisitor {
 
     // METHODS
 
-    AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstVar* examplep) {
-        AstVar* const newvarp = new AstVar{funcp->fileline(), VVarType::BLOCKTEMP, name, examplep};
+    AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstNodeDType* dtypep) {
+        AstVar* const newvarp = new AstVar{funcp->fileline(), VVarType::BLOCKTEMP, name, dtypep};
         newvarp->funcLocal(true);
         funcp->addVarsp(newvarp);
         AstVarScope* const newvscp = new AstVarScope{funcp->fileline(), m_scopep, newvarp};
         m_scopep->addVarsp(newvscp);
         return newvscp;
+    }
+    AstVarScope* createFuncVar(AstCFunc* funcp, const string& name, AstVar* examplep) {
+        return createFuncVar(funcp, name, examplep->dtypep());
     }
     AstVarScope* createInputVar(AstCFunc* funcp, const string& name, VBasicDTypeKwd kwd) {
         AstVar* const newvarp
@@ -916,23 +919,26 @@ class TaskVisitor final : public VNVisitor {
         return new AstCStmt{portp->fileline(), stmt};
     }
 
-    // Create statement converting between 'internalp' and the DPI C expression 'dpi' of type
+    // Create statement converting between 'internalp' and the DPI C expression 'dpip' of type
     // 'dtypep', neither an unpacked array nor an unpacked structure, to DPI if 'toDpi', else from
-    // DPI. If the DPI type is svBitVecVal/svLogicVecVal, 'dpi' is a pointer to the value.
-    static AstNodeStmt* createDpiScalarCvt(AstNodeExpr* internalp, const std::string& dpi,
+    // DPI. If the DPI type is svBitVecVal/svLogicVecVal, 'dpip' is a pointer to the value.
+    static AstNodeStmt* createDpiScalarCvt(AstNodeExpr* internalp, AstCExpr* dpip,
                                            const AstNodeDType* dtypep, bool toDpi) {
         FileLine* const flp = internalp->fileline();
         const AstBasicDType* const basicp = dtypep->basicp();
         if (toDpi) {
             AstCStmt* const cstmtp = new AstCStmt{flp};
             if (basicp->isDpiPrimitive()) {
-                cstmtp->add(dpi + (basicp->isCHandle() ? " = VL_CVT_Q_VP(" : " = "));
+                cstmtp->add(dpip);
+                cstmtp->add(basicp->isCHandle() ? " = VL_CVT_Q_VP(" : " = ");
                 cstmtp->add(internalp);
                 cstmtp->add(basicp->isCHandle() ? ");" : basicp->isString() ? ".c_str();" : ";");
             } else {
                 cstmtp->add((basicp->isDpiBitVec() ? "VL_SET_SVBV_"s : "VL_SET_SVLV_"s)
                             + dtypep->skipRefp()->charIQWN() + "("
-                            + std::to_string(dtypep->width()) + ", " + dpi + ", ");
+                            + std::to_string(dtypep->width()) + ", ");
+                cstmtp->add(dpip);
+                cstmtp->add(", ");
                 cstmtp->add(internalp);
                 cstmtp->add(");");
             }
@@ -945,30 +951,41 @@ class TaskVisitor final : public VNVisitor {
             AstCStmt* const cstmtp = new AstCStmt{flp};
             cstmtp->add(cvt);
             cstmtp->add(internalp);
-            cstmtp->add(", " + dpi + ");");
+            cstmtp->add(", ");
+            cstmtp->add(dpip);
+            cstmtp->add(");");
             return cstmtp;
         }
         // Number of bits in the C expression result, for masking.
         const int cwidth = basicp->widthWords() * VL_EDATASIZE;
-        AstNodeExpr* const rhsp = new AstCExpr{flp, cvt + dpi + ")", cwidth};
+        AstCExpr* const rhsp = new AstCExpr{flp, cvt, cwidth};
+        rhsp->add(dpip);
+        rhsp->add(")");
         return new AstAssign{flp, internalp, new AstSel{flp, rhsp, 0, dtypep->width()}};
     }
 
-    // Create statements converting between 'internalp' and the DPI C expression 'dpi' of type
+    // Create statements converting between 'internalp' and the DPI C expression 'dpip' of type
     // 'dtypep'. Unpacked arrays and unpacked structures are converted by their elements and
     // members, as DPI passes them as C arrays and C structures (IEEE 1800-2023 H.7.3).
-    static AstNodeStmt* createDpiCvt(AstNodeExpr* internalp, const std::string& dpi,
+    static AstNodeStmt* createDpiCvt(AstNodeExpr* internalp, AstCExpr* dpip,
                                      const AstNodeDType* dtypep, bool toDpi) {
         FileLine* const flp = internalp->fileline();
         dtypep = dtypep->skipRefp();
+        // The DPI C expression with 'suffix' appended
+        const auto suffixed = [&](const std::string& suffix) {
+            AstCExpr* const newp = new AstCExpr{flp};
+            newp->add(dpip->cloneTree(false));
+            newp->add(suffix);
+            return newp;
+        };
         AstNodeStmt* stmtsp = nullptr;
         if (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
             // Internal index 0 is of the lowest SystemVerilog index, as C index 0 is
             for (int i = 0; i < arrayp->elementsConst(); ++i) {
                 AstNodeExpr* const elemp = new AstArraySel{flp, internalp->cloneTree(false), i};
-                stmtsp = AstNode::addNext(stmtsp,
-                                          createDpiCvt(elemp, dpi + "[" + std::to_string(i) + "]",
-                                                       arrayp->subDTypep(), toDpi));
+                stmtsp = AstNode::addNext(
+                    stmtsp, createDpiCvt(elemp, suffixed("[" + std::to_string(i) + "]"),
+                                         arrayp->subDTypep(), toDpi));
             }
         } else if (dtypep->containsUnpackedStruct()) {
             for (const AstMemberDType* itemp = VN_AS(dtypep, StructDType)->membersp(); itemp;
@@ -976,14 +993,15 @@ class TaskVisitor final : public VNVisitor {
                 AstStructSel* const selp
                     = new AstStructSel{flp, internalp->cloneTree(false), itemp->name()};
                 selp->dtypeFrom(itemp->dtypep());
-                stmtsp
-                    = AstNode::addNext(stmtsp, createDpiCvt(selp, dpi + "." + itemp->prettyName(),
-                                                            itemp->subDTypep(), toDpi));
+                stmtsp = AstNode::addNext(stmtsp,
+                                          createDpiCvt(selp, suffixed("." + itemp->prettyName()),
+                                                       itemp->subDTypep(), toDpi));
             }
         } else {
-            return createDpiScalarCvt(internalp, dpi, dtypep, toDpi);
+            return createDpiScalarCvt(internalp, dpip, dtypep, toDpi);
         }
         VL_DO_DANGLING(internalp->deleteTree(), internalp);
+        VL_DO_DANGLING(dpip->deleteTree(), dpip);
         return stmtsp;
     }
 
@@ -991,34 +1009,61 @@ class TaskVisitor final : public VNVisitor {
     // argument 'dpiName'. Converts to DPI if 'toDpi', else from DPI. Internal representation is
     // scalar, 1D, or multi-dimensional array (similar to SV). DPI value is scalar or 1D array (if
     // unpacked array), always an array if of unpacked structures, as passed by reference.
-    static AstNodeStmt* createDpiArgCvt(AstVarScope* vscp, const std::string& dpiName,
-                                        bool toDpi) {
+    AstNodeStmt* createDpiArgCvt(AstCFunc* funcp, AstVarScope* vscp, const std::string& dpiName,
+                                 bool toDpi) {
         AstVar* const varp = vscp->varp();
         FileLine* const flp = vscp->fileline();
-        const std::vector<std::pair<int, int>> strides = TaskDpiUtils::unpackDimsAndStrides(varp);
-        // Total number of elements in unpacked array
-        const int total = strides.empty() ? 1 : strides[0].first * strides[0].second;
+        const VAccess access = toDpi ? VAccess::READ : VAccess::WRITE;
         const bool isStruct = varp->dtypep()->containsUnpackedStruct();
-        const AstNodeDType* const elemDTypep = varp->dtypep()->elemDTypep();
-        // The resulting list of statements
-        AstNodeStmt* stmtsp = nullptr;
-        for (int i = 0; i < total; ++i) {
-            AstNodeExpr* internalp
-                = new AstVarRef{flp, vscp, toDpi ? VAccess::READ : VAccess::WRITE};
+        AstCExpr* const dpip = new AstCExpr{flp, dpiName};
+        AstUnpackArrayDType* const arrayp = VN_CAST(varp->dtypep()->skipRefp(), UnpackArrayDType);
+        if (!arrayp) {
+            if (isStruct) dpip->add("[0]");
+            return createDpiCvt(new AstVarRef{flp, vscp, access}, dpip, varp->dtypep(), toDpi);
+        }
 
-            // Extract a scalar from multi-dimensional array (internal format)
-            for (const auto& stride : strides) {
-                internalp = new AstArraySel(flp, internalp, (i / stride.second) % stride.first);
-            }
+        // One loop per dimension. Index names include the direction, as inout converts both ways.
+        const std::string idxName = varp->name() + (toDpi ? "__VidxToDpi" : "__VidxFromDpi");
+        const auto readp
+            = [&](AstVarScope* idxp) { return new AstVarRef{flp, idxp, VAccess::READ}; };
+        const std::vector<AstUnpackArrayDType*> dims = arrayp->unpackDimensions();
+        std::vector<AstVarScope*> idxps;
+        AstNodeExpr* internalp = new AstVarRef{flp, vscp, access};
+        AstNodeExpr* linearp = new AstConst{flp, 0U};  // Index of the element in the 1D DPI value
+        for (const AstUnpackArrayDType* const dimp : dims) {
+            AstVarScope* const idxp = createFuncVar(funcp, idxName + std::to_string(idxps.size()),
+                                                    funcp->findUInt32DType());
+            idxps.push_back(idxp);
+            internalp = new AstArraySel{flp, internalp, readp(idxp)};
+            const uint32_t elements = dimp->elementsConst();
+            linearp = new AstAdd{flp, new AstMul{flp, new AstConst{flp, elements}, linearp},
+                                 readp(idxp)};
+        }
+        if (isStruct || varp->basicp()->isDpiPrimitive()) {
+            dpip->add("[");
+            dpip->add(linearp);
+            dpip->add("]");
+        } else {  // svBitVecVal/svLogicVecVal
+            const uint32_t widthWords = varp->basicp()->widthWords();
+            dpip->add(" + ");
+            dpip->add(new AstMul{flp, linearp, new AstConst{flp, widthWords}});
+        }
+        AstNodeStmt* stmtsp = createDpiCvt(internalp, dpip, varp->dtypep()->elemDTypep(), toDpi);
 
-            // Extract a scalar from DPI temporary var that is scalar or 1D array
-            std::string dpi = dpiName;
-            if (!isStruct && !varp->basicp()->isDpiPrimitive()) {
-                dpi += " + " + std::to_string(i * varp->basicp()->widthWords());
-            } else if (isStruct || !strides.empty()) {
-                dpi += "[" + std::to_string(i) + "]";
-            }
-            stmtsp = AstNode::addNext(stmtsp, createDpiCvt(internalp, dpi, elemDTypep, toDpi));
+        // Wrap in the loops, innermost first
+        for (size_t dim = dims.size(); dim-- > 0;) {
+            AstVarScope* const idxp = idxps[dim];
+            AstLoop* const loopp = new AstLoop{flp};
+            loopp->unroll(VOptionBool::OPT_FALSE);
+            const uint32_t elements = dims[dim]->elementsConst();
+            loopp->addStmtsp(new AstLoopTest{
+                flp, loopp, new AstGt{flp, new AstConst{flp, elements}, readp(idxp)}});
+            loopp->addStmtsp(stmtsp);
+            loopp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, idxp, VAccess::WRITE},
+                                           new AstAdd{flp, readp(idxp), new AstConst{flp, 1U}}});
+            stmtsp = new AstAssign{flp, new AstVarRef{flp, idxp, VAccess::WRITE},
+                                   new AstConst{flp, 0U}};
+            stmtsp->addNext(loopp);
         }
         return stmtsp;
     }
@@ -1104,7 +1149,7 @@ class TaskVisitor final : public VNVisitor {
             const bool isStruct = portp->dtypep()->containsUnpackedStruct();
             if (portp->isWritable()) {
                 outCvtsp = AstNode::addNext(
-                    outCvtsp, isStruct ? createDpiArgCvt(outvscp, portp->name(), true)
+                    outCvtsp, isStruct ? createDpiArgCvt(funcp, outvscp, portp->name(), true)
                                        : createAssignInternalToDpi(portp, true, tmpSuffixp, ""));
             }
             if (!portp->isNonOutput()) continue;
@@ -1115,7 +1160,7 @@ class TaskVisitor final : public VNVisitor {
                           && portp->dtypep()->skipRefp()->dimensions(false).second == 0
                       ? "*"
                       : "";
-            funcp->addStmtsp(createDpiArgCvt(outvscp, deref + portp->name(), false));
+            funcp->addStmtsp(createDpiArgCvt(funcp, outvscp, deref + portp->name(), false));
         }
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
@@ -1368,7 +1413,8 @@ class TaskVisitor final : public VNVisitor {
                         if (portp->isNonOutput()) {
                             cfuncp->addStmtsp(
                                 isStruct
-                                    ? createDpiArgCvt(portvscp, portp->name() + tmpSuffixp, true)
+                                    ? createDpiArgCvt(cfuncp, portvscp, portp->name() + tmpSuffixp,
+                                                      true)
                                     : createAssignInternalToDpi(portp, false, "", tmpSuffixp));
                         }
                     }
@@ -1411,7 +1457,7 @@ class TaskVisitor final : public VNVisitor {
                     AstVarScope* const portvscp = VN_AS(
                         portp->user2p(), VarScope);  // Remembered when we created it earlier
                     cfuncp->addStmtsp(
-                        createDpiArgCvt(portvscp, portp->name() + tmpSuffixp, false));
+                        createDpiArgCvt(cfuncp, portvscp, portp->name() + tmpSuffixp, false));
                 }
             }
         }
