@@ -13,6 +13,9 @@ module t;
   initial begin
     packed_data_32 = {<<$random{byte_in}};
     packed_data_32 = {<<x{byte_in}};
+    packed_data_32 = {<<0{byte_in}};
+    packed_data_32 = {<<-1{byte_in}};
+    packed_data_32 = {<<33'h1_0000_0000{byte_in}};
   end
 
   // An inout port connection is not an assignment, so a stream is not valid

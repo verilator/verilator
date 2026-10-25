@@ -413,8 +413,13 @@ This section describes specific limitations for each language keyword.
    with anything following it until the end of that line.
 
 cast operator
-   Casting is supported only between simple scalar types, signed and
-   unsigned, not arrays nor structs.
+   Casting is supported between simple scalar types, signed and unsigned.
+   Bit-stream casts (IEEE 1800-2023 6.24.3) to and from unpacked arrays and
+   structs, and of streaming concatenations of them, are supported when
+   they have a fixed size. Bit-stream casts between unpacked arrays or
+   structs and class objects, strings, or dynamically sized arrays are not
+   supported, nor casts of streaming concatenations of dynamically sized
+   arrays with other values or in other streaming concatenations.
 
 chandle
    Treated as a "longint"; does not yet warn about operations specified as
