@@ -526,10 +526,6 @@ class ProtectVisitor final : public VNVisitor {
             std::vector<std::pair<int, int>> dimensions;
             const AstNodeDType* dtypep = ports.inp->dtypep()->skipRefp();
             while (const AstNodeArrayDType* const arrayp = VN_CAST(dtypep, NodeArrayDType)) {
-                // V3Slice currently rejects lowered unpacked inouts before this pass.
-                // TODO: Support unpacked inouts once V3Slice supports their lowered form.
-                UASSERT_OBJ(!VN_IS(arrayp, UnpackArrayDType), ports.inp,
-                            "Unpacked library inout should have been rejected by V3Slice");
                 dimensions.emplace_back(arrayp->lo(), arrayp->hi());
                 dtypep = arrayp->subDTypep()->skipRefp();
             }

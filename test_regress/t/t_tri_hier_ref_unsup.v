@@ -34,6 +34,8 @@ module t;
   assign u_sub.bus = hier_we ? 8'hBB : 8'hzz;
 
   initial begin
+    // Counting high-Z bits through a hierarchical reference is also unsupported.
+    $display("Undriven bits: %0d", $countbits(u_sub.bus, 1'bz));
     // All drivers off -> high-Z
     #1;
     hier_we = 1'b0;
