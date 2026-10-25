@@ -1,0 +1,74 @@
+%Error: t/t_cast_unpacked_struct_bad.v:50:14: Bit-stream cast to 'struct t.s15_t' of 15 bits from 'int' of 32 bits, but sizes must match (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   50 |     s = s15_t'(i);   
+      |              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_cast_unpacked_struct_bad.v:51:12: Bit-stream cast to 'int' of 32 bits from 'struct t.s15_t' of 15 bits, but sizes must match (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   51 |     i = int'(s);   
+      |            ^
+%Error: t/t_cast_unpacked_struct_bad.v:52:17: Bit-stream cast to 'byte$[0:3]' of 32 bits from 'struct t.s15_t' of 15 bits, but sizes must match (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   52 |     b4 = bytes_t'(s);   
+      |                 ^
+%Error: t/t_cast_unpacked_struct_bad.v:53:12: Bit-stream cast to 'int' of 32 bits from 'struct t.s15_t' of 15 bits, but sizes must match (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   53 |     i = int'(s15_t'{8'h12, 7'h34});   
+      |            ^
+%Error: t/t_cast_unpacked_struct_bad.v:54:12: Bit-stream cast to 'int' of 32 bits from 'struct t.s15_t' of 15 bits, but sizes must match (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   54 |     i = int'(s15_t'(15'h1234));   
+      |            ^
+%Error: t/t_cast_unpacked_struct_bad.v:55:19: Expecting expression to be constant, but variable isn't const: 'i'
+                                            : ... note: In instance 't'
+   55 |     s = s15_t'({<<i{v15}});   
+      |                   ^
+%Error: t/t_cast_unpacked_struct_bad.v:55:17: Slice size isn't a constant or basic data type.
+                                            : ... note: In instance 't'
+   55 |     s = s15_t'({<<i{v15}});   
+      |                 ^~
+%Error: t/t_cast_unpacked_struct_bad.v:56:17: Slice size cannot be zero or negative (IEEE 1800-2023 11.4.14.2)
+                                            : ... note: In instance 't'
+   56 |     s = s15_t'({<<-1{v15}});   
+      |                 ^~
+%Error: t/t_cast_unpacked_struct_bad.v:57:14: Bit-stream cast to 'union t.u15_t' from 'struct t.s15_t', but 'union t.u15_t' is not a bit-stream type (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   57 |     u = u15_t'(s);   
+      |              ^
+%Error: t/t_cast_unpacked_struct_bad.v:58:14: Bit-stream cast to 'struct t.s15_t' from 'union t.u15_t', but 'union t.u15_t' is not a bit-stream type (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   58 |     s = s15_t'(u);   
+      |              ^
+%Error: t/t_cast_unpacked_struct_bad.v:59:16: Bit-stream cast to 'struct t.real_t' from 'logic[70:0]', but 'struct t.real_t' is not a bit-stream type (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   59 |     rs = real_t'(v71);   
+      |                ^
+%Error: t/t_cast_unpacked_struct_bad.v:60:14: Bit-stream cast to 'class Cls' from 'struct t.s15_t', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   60 |     obj = Cls'(s);   
+      |              ^
+%Error: t/t_cast_unpacked_struct_bad.v:61:17: Bit-stream cast to 'byte$[int]' from 'struct t.s15_t', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   61 |     aa = assoc_t'(s);   
+      |                 ^
+%Error: t/t_cast_unpacked_struct_bad.v:62:14: Bit-stream cast to 'struct t.sa_t' from 'struct t.s15_t', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   62 |     sa = sa_t'(s);   
+      |              ^
+%Error: t/t_cast_unpacked_struct_bad.v:63:14: Bit-stream cast to 'struct t.sc_t' from 'struct t.s15_t', but an associative array or class is illegal in the destination type (IEEE 1800-2023 6.24.3)
+                                            : ... note: In instance 't'
+   63 |     sc = sc_t'(s);   
+      |              ^
+%Error: t/t_cast_unpacked_struct_bad.v:64:17: Bit-stream cast to 'byte$[0:3]' is assigned, but a cast is not a variable (IEEE 1800-2023 11.4.14.3, A.8.5)
+                                            : ... note: In instance 't'
+   64 |     {<<8{bytes_t'(i)}} = i;   
+      |                 ^
+%Error: t/t_cast_unpacked_struct_bad.v:65:17: Bit-stream cast to 'byte$[0:3]' is assigned, but a cast is not a variable (IEEE 1800-2023 11.4.14.3, A.8.5)
+                                            : ... note: In instance 't'
+   65 |     {<<8{bytes_t'({i[15:0], i[31:16]})}} = i;   
+      |                 ^
+%Error: t/t_cast_unpacked_struct_bad.v:66:17: Bit-stream cast to 'byte$[0:3]' is assigned, but a cast is not a variable (IEEE 1800-2023 11.4.14.3, A.8.5)
+                                            : ... note: In instance 't'
+   66 |     {<<8{bytes_t'({>>{i}})}} = i;   
+      |                 ^
+%Error: Exiting due to

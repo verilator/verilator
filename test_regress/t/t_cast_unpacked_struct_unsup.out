@@ -1,0 +1,46 @@
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:39:16: Unsupported: bit-stream cast to 'struct t.s16_t' from a streaming concatenation of a value of type 'byte$[]'
+                                                          : ... note: In instance 't'
+   39 |     s16 = s16_t'({<<8{dyn}});   
+      |                ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:40:16: Unsupported: bit-stream cast to 'struct t.s16_t' from a streaming concatenation of a value of type 'byte$[$]'
+                                                          : ... note: In instance 't'
+   40 |     s16 = s16_t'({<<8{que}});   
+      |                ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:41:16: Unsupported: bit-stream cast to 'struct t.s16_t' from a streaming concatenation of a value of type 'byte$[]'
+                                                          : ... note: In instance 't'
+   41 |     s16 = s16_t'({<<8{dyn, s16}});   
+      |                ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:42:15: Unsupported: bit-stream cast to 'int' from a streaming concatenation of a value of type 'byte$[]'
+                                                          : ... note: In instance 't'
+   42 |     word = int'({<<8{dyn, s16}});   
+      |               ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:43:15: Unsupported: bit-stream cast to 'int' from a streaming concatenation of a value of type 'byte$[]'
+                                                          : ... note: In instance 't'
+   43 |     word = int'({<<8{{>>{dyn}}}});   
+      |               ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:44:15: Unsupported: bit-stream cast to 'int' from a streaming concatenation of a value of type 'union t.uni_t'
+                                                          : ... note: In instance 't'
+   44 |     word = int'({>>{uni, s16}});   
+      |               ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:45:19: Unsupported: Stream operation on a variable of a type 'union t.uni_t'
+                                                          : ... note: In instance 't'
+   45 |     s16 = s16_t'({>>{uni}});   
+      |                   ^~
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:46:16: Unsupported: static cast to 'struct t.s16_t' from 'string'
+                                                          : ... note: In instance 't'
+   46 |     s16 = s16_t'(str);   
+      |                ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:47:16: Unsupported: static cast to 'struct t.str_t' from 'struct t.s16_t'
+                                                          : ... note: In instance 't'
+   47 |     sts = str_t'(s16);   
+      |                ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:48:16: Unsupported: static cast to 'struct t.s16_t' from 'struct t.wild_t'
+                                                          : ... note: In instance 't'
+   48 |     s16 = s16_t'(wild);   
+      |                ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:49:16: Unsupported: static cast to 'struct t.s16_t' from 'class Cls'
+                                                          : ... note: In instance 't'
+   49 |     s16 = s16_t'(obj);   
+      |                ^
+%Error: Exiting due to

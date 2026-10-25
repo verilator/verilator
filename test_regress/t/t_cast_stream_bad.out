@@ -1,0 +1,10 @@
+%Error: t/t_cast_stream_bad.v:16:16: Bit-stream cast to 'byte$[$]' of 8-bit elements from 'logic[14:0]' of 15 bits, but sizes must match (IEEE 1800-2023 6.24.3)
+                                   : ... note: In instance 't'
+   16 |     q = bytes_t'(v15);   
+      |                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_cast_stream_bad.v:17:16: Bit-stream cast to 'byte$[$]' of 8-bit elements from 'logic[14:0]' of 15 bits, but sizes must match (IEEE 1800-2023 6.24.3)
+                                   : ... note: In instance 't'
+   17 |     q = bytes_t'({>>{arr}});   
+      |                ^
+%Error: Exiting due to

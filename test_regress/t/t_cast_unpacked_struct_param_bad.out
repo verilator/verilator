@@ -1,0 +1,8 @@
+%Error: t/t_cast_unpacked_struct_param_bad.v:21:31: Expecting expression to be constant, but can't determine constant for FUNCREF 'next'
+                                                  : ... note: In instance 't'
+        t/t_cast_unpacked_struct_param_bad.v:17:5: ... Location of non-constant VARREF 'calls': Language violation: reference to non-function-local variable
+        t/t_cast_unpacked_struct_param_bad.v:21:31: ... Called from 'next()' with parameters:
+   21 |   localparam s16_t P = s16_t'(next());   
+      |                               ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

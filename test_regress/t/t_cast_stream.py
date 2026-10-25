@@ -13,4 +13,6 @@ test.scenarios('simulator')
 
 test.compile()
 
+test.execute()
+
 test.passes()
