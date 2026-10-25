@@ -74,6 +74,7 @@ Verilator 5.053 devel
 * Support parameterized class reference without `#()` as NONSTD warning (#8813). [Marco Bartoli]
 * Support `option.at_least` at covergroup and cross level (#8566). [Matthew Ballance]
 * Support pre/post increment/decrement in all expressions. [Geza Lore, Testorrent USA, Inc.]
+* Optimize leading zeros in VCD dumps (#6104).
 * Optimize NBA shadow copies for partial writes (#8266). [Artur Bieniek, Antmicro Ltd.]
 * Optimize recursion depth in DFG circular driver tracing (#8272). [Drew Risinger]
 * Optimize DFG synthesis symbol table ordering (#8282). [Geza Lore, Testorrent USA, Inc.]
