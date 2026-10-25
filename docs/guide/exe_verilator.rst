@@ -1015,8 +1015,8 @@ Summary:
 
 .. option:: -fno-reloop
 
-   Rarely needed. Disable converting sequences of similar array assignments
-   into loops.
+   Rarely needed. Disable converting sequences of statements that differ
+   only in constants into loops.
 
 .. option:: -fno-reorder
 

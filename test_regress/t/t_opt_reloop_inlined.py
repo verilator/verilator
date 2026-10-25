@@ -13,9 +13,12 @@ test.scenarios('vlt')
 
 test.compile(verilator_flags2=[
     "--binary", "--unroll-count", "1024", "--inline-cfuncs", "100000000", "--output-split-cfuncs",
-    "50", "--reloop-limit", "2"
+    "50", "--reloop-limit", "2", "--trace-vcd", "-fno-decompose", "-fno-expand", "--stats"
 ])
 
 test.execute()
+
+test.file_grep(test.stats, r'Optimizations, Reloops\s+(\d+)', 77)
+test.file_grep(test.stats, r'Optimizations, Reloop iterations\s+(\d+)', 365)
 
 test.passes()
