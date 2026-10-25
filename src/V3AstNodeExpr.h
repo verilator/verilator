@@ -1919,6 +1919,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool isPure() override { return fromp()->isPure(); }
     bool sameNode(const AstNode* samep) const override;
     int instrCount() const override { return widthInstrs(); }
     AstVar* varp() const { return m_varp; }
@@ -2730,6 +2731,7 @@ public:
         // Not a union
         return VN_IS(fromp()->dtypep()->skipRefp(), StructDType);
     }
+    bool isPure() override { return fromp()->isPure(); }
     bool sameNode(const AstNode* samep) const override {
         const AstStructSel* const sp = VN_DBG_AS(samep, StructSel);
         return m_name == sp->m_name;
