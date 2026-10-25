@@ -125,20 +125,20 @@ Options:
 
 .. option:: +verilator+rand+sampler+<name>
 
-   Choose which component implements sampling for the values that 
+   Choose which component implements sampling for the values that
    ``randomize()`` returns.
 
-   With ``default`` (the default unless changed as below), Verilator 
+   With ``default`` (the default unless changed as below), Verilator
    uses an internal algorithm to sample results provided by the solver
    to achieve well-distributed results.
 
    With ``solver``, the solver is responsible for providing well-distributed
-   results according to the supplied seed. 
+   results according to the supplied seed. Verilator passes the seed with
+   the SMT-LIB ``:random-seed`` option, so results only vary if the solver
+   uses that seed to randomize its solutions. A solver that does not may
+   return the same solution for every ``randomize()`` call.
 
-   The sampler can also be specified using the C++ API:
-   ``Verilated::threadContextp()->randSampler(VerilatedRandSampler::SAMPLER_SOLVER)``.
-
-   The default sampler can also be specified using the 
+   The default sampler can also be specified using the
    :option:`VERILATOR_RAND_SAMPLER` environment variable.
 
 .. option:: +verilator+seed+<value>

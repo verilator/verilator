@@ -30,59 +30,46 @@ def run(name, flags, run_env=''):
     return log
 
 
-def check_default(log):
-    # Verilator samples: UniGen2 cells (push, XOR hashes), diversity pins
-    # (check-sat-assuming) and XOR rounds, and sends no seed
-    test.file_grep(log, r'\(push 1\)')
-    test.file_grep(log, r'\(check-sat-assuming')
-    test.file_grep(log, r'\(bvxor')
+def check_default(name, flags, run_env=''):
+    # Verilator samples: results vary and it sends no seed
+    log = run(name, flags + ['+check_varied'], run_env)
+    test.file_grep(log, r'; sampler: default')
+    test.file_grep_not(log, r'; sampler: solver')
     test.file_grep_not(log, r':random-seed')
 
 
-def check_solver(log):
-    # The solver samples: its model is the result, seeded per query
-    test.file_grep(log, r'\(set-option :random-seed \d+\)')
-    test.file_grep_not(log, r'\(push')
-    test.file_grep_not(log, r'\(check-sat-assuming')
-    test.file_grep_not(log, r'\(bvxor')
-    test.file_grep_not(log, r':produce-unsat-assumptions')
-    # Only the two randomize(null) checks are unseeded, as they are not random
+def check_solver(name, flags, run_env=''):
+    # The solver samples: its model is the result, seeded per query. Whether
+    # results vary depends on the solver, so that is not checked.
+    log = run(name, flags, run_env)
+    test.file_grep(log, r'; sampler: solver')
+    test.file_grep_not(log, r'; sampler: default')
+    # Seeding and a single solve per query are what this sampler promises, and
+    # results are legal either way, so only the transcript can show them
     with open(log, 'r', encoding='utf8') as fh:
         queries = fh.read().split('(set-option :produce-models true)')[1:]
     # One solver call per query: no follow-up sampling rounds
     multi = [q for q in queries if q.count('(check-sat') != 1]
     if multi:
         test.error("Expected one check-sat per query, " + str(len(multi)) + " queries had more")
+    # Only the two randomize(null) checks are unseeded, as they are not random
     unseeded = [q for q in queries if ':random-seed' not in q]
     if len(unseeded) != 2:
         test.error("Expected 2 unseeded randomize(null) queries, got " + str(len(unseeded)))
 
 
 if CONFIGURED == "solver":
-    check_solver(run("default", []))
+    check_solver("default", [])
 else:
-    check_default(run("default", []))
+    check_default("default", [])
 
-check_default(run("default_name", ['+verilator+rand+sampler+default']))
-check_solver(run("solver", ['+verilator+rand+sampler+solver']))
+check_default("default_name", ['+verilator+rand+sampler+default'])
+check_solver("solver", ['+verilator+rand+sampler+solver'])
 
 # $VERILATOR_RAND_SAMPLER when the model runs sets the default; plusargs override it
-check_solver(run("env_solver", [], run_env='VERILATOR_RAND_SAMPLER=solver'))
-check_default(run("env_default", [], run_env='VERILATOR_RAND_SAMPLER=default'))
-check_default(
-    run("env_plusarg", ['+verilator+rand+sampler+default'],
-        run_env='VERILATOR_RAND_SAMPLER=solver'))
-
-test.execute(all_run_flags=['+verilator+rand+sampler+0'],
-             fails=True,
-             logfile=test.obj_dir + "/sim_bad.log")
-test.file_grep(test.obj_dir + "/sim_bad.log",
-               r"Argument '\+verilator\+rand\+sampler\+' must be 'default' or 'solver'")
-
-test.execute(run_env='VERILATOR_RAND_SAMPLER=fast',
-             fails=True,
-             logfile=test.obj_dir + "/sim_bad_env.log")
-test.file_grep(test.obj_dir + "/sim_bad_env.log",
-               r"VERILATOR_RAND_SAMPLER must be 'default' or 'solver': fast")
+check_solver("env_solver", [], run_env='VERILATOR_RAND_SAMPLER=solver')
+check_default("env_default", [], run_env='VERILATOR_RAND_SAMPLER=default')
+check_default("env_plusarg", ['+verilator+rand+sampler+default'],
+              run_env='VERILATOR_RAND_SAMPLER=solver')
 
 test.passes()

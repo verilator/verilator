@@ -1031,6 +1031,11 @@ static void emitSolverSeed(std::ostream& os, VlRNG& rngr) {
     os << "(set-option :random-seed " << (VL_RANDOM_RNG_I(rngr) & 0x7fffffffU) << ")\n";
 }
 
+// Name the sampler in use, for the +verilator+solver+file log
+static void emitSamplerComment(std::ostream& os, bool solverSampler) {
+    os << "; sampler: " << (solverSampler ? "solver" : "default") << "\n";
+}
+
 void VlRandomizer::emitDefines(std::ostream& os) const {
     os << "(define-fun __Vbv ((b Bool)) (_ BitVec 1) (ite b #b1 #b0))\n";
     os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
@@ -1089,6 +1094,7 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
     const bool hasRandc = !m_randcVarNames.empty();
     for (int attempt = 0; attempt < (hasRandc ? 2 : 1); ++attempt) {
         os << "(set-option :produce-models true)\n";
+        emitSamplerComment(os, solverSampler);
         if (!solverSampler) {
             // Lets the scalar pin path learn which free-bit assumptions conflict.
             os << "(set-option :produce-unsat-assumptions true)\n";
@@ -1885,6 +1891,7 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
         const bool isFinalPhase = (phase == layers.size() - 1);
 
         os << "(set-option :produce-models true)\n";
+        emitSamplerComment(os, solverSampler);
         if (solverSampler) emitSolverSeed(os, rngr);
         os << "(set-logic " << logicp << ")\n";
         emitDefines(os);
@@ -1916,7 +1923,9 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
             // Record solved randc values for future exclusion
             recordRandcValues();
         } else {
-            if (!solvePhaseValues(sess, rngr, layers[phase], solvedValues)) return false;
+            if (!solvePhaseValues(sess, rngr, layers[phase], !solverSampler, solvedValues)) {
+                return false;
+            }
             os << "(reset)\n";
         }
     }
@@ -1924,9 +1933,9 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
     return true;
 }
 
-// Intermediate phase: extract this layer's values, then try one diversity round
+// Intermediate phase: extract this layer's values, then optionally try one diversity round
 bool VlRandomizer::solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
-                                    const std::vector<std::string>& layerVars,
+                                    const std::vector<std::string>& layerVars, bool diversity,
                                     std::map<std::string, std::string>& solvedValuesr)
     VL_REQUIRES(sess.m_mutex) {
     std::iostream& os = sess.os();
@@ -1950,7 +1959,7 @@ bool VlRandomizer::solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
     // Get baseline values (deterministic, always valid)
     emitGetValueCmd();
     if (!readPhaseValues(sess, solvedValuesr)) return false;
-    if (solverSamples()) return true;
+    if (!diversity) return true;
 
     // Try diversity: add random constraint, re-check. If sat, get
     // updated (more diverse) values. If unsat, keep baseline values.

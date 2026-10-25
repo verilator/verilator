@@ -11,8 +11,8 @@
 
 // Repeated randomize() of each kind of constraint set: scalars (UniGen2 and
 // diversity pins by default), an array (XOR diversity rounds) and
-// solve...before (phased, with a diversity round per layer). The driver checks
-// which solver queries each run sends.
+// solve...before (phased, with a diversity round per layer), and a randc
+// cycle. The driver checks which solver queries each run sends.
 
 module t;
 
@@ -40,26 +40,57 @@ module t;
     }
   endclass
 
+  class Cyclic;
+    randc bit [2:0] r;
+  endclass
+
   initial begin
     Scalars s;
     Elems e;
     Ordered o;
+    Cyclic c;
     int randomize_result;
+    bit [14:0] first_b;
+    bit [30:0] first_q0;
+    bit b_varied;
+    bit q0_varied;
+    bit [7:0] seen;
     s = new;
     e = new;
     o = new;
-    repeat (20) begin
+    c = new;
+    for (int i = 0; i < 20; ++i) begin
       randomize_result = s.randomize();
       `checkd(randomize_result, 1);
       `checkd(s.a < 7'd100, 1'b1);
       `checkd(s.b > 15'(s.a), 1'b1);
+      if (i == 0) first_b = s.b;
+      else if (s.b != first_b) b_varied = 1'b1;
       randomize_result = e.randomize();
       `checkd(randomize_result, 1);
-      foreach (e.q[i]) `checkd(e.q[i] < 31'd1000, 1'b1);
+      foreach (e.q[j]) `checkd(e.q[j] < 31'd1000, 1'b1);
+      if (i == 0) first_q0 = e.q[0];
+      else if (e.q[0] != first_q0) q0_varied = 1'b1;
       randomize_result = o.randomize();
       `checkd(randomize_result, 1);
       `checkd(o.x < 5'd20, 1'b1);
       `checkd(o.y <= 33'(o.x), 1'b1);
+    end
+    // Only Verilator's sampler promises varied results; the solver's depend on the solver
+    if ($test$plusargs("check_varied")) begin
+      `checkd(b_varied, 1'b1);
+      `checkd(q0_varied, 1'b1);
+    end
+
+    // Two full randc cycles: the second exhausts the first's history and retries
+    repeat (2) begin
+      seen = '0;
+      repeat (8) begin
+        randomize_result = c.randomize();
+        `checkd(randomize_result, 1);
+        `checkd(seen[c.r], 1'b0);
+        seen[c.r] = 1'b1;
+      end
     end
 
     // randomize(null) only checks the current values: no sampling, values unchanged

@@ -356,7 +356,7 @@ class VlRandomizer VL_NOT_FINAL {
                      const std::vector<std::vector<std::string>>& layers,
                      const std::vector<std::string>& uniqueExprs, bool& exhaustedr);
     bool solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
-                          const std::vector<std::string>& layerVars,
+                          const std::vector<std::string>& layerVars, bool diversity,
                           std::map<std::string, std::string>& solvedValuesr);
     bool readPhaseValues(VlSolverSession& sess, std::map<std::string, std::string>& solvedValuesr);
     bool parsePhaseValues(std::istream& is, std::map<std::string, std::string>& solvedValuesr);

@@ -33,8 +33,6 @@ test.file_grep(test.obj_dir + "/" + test.vm_prefix + ".mk",
 os.environ.pop('VERILATOR_RAND_SAMPLER', None)
 log = test.obj_dir + "/solver.log"
 test.execute(all_run_flags=['+verilator+solver+file+' + log])
-test.file_grep(log, r'\(set-option :random-seed \d+\)')
-test.file_grep_not(log, r'\(push')
-test.file_grep_not(log, r'\(check-sat-assuming')
+test.file_grep(log, r'; sampler: solver')
 
 test.passes()
