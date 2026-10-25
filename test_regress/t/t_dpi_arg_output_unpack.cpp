@@ -483,6 +483,14 @@ void i_bit121_1d1(svBitVecVal* v) { set_1d1(v, 121); }
 void i_bit121_2d1(svBitVecVal* v) { set_2d1(v, 121); }
 void i_bit121_3d1(svBitVecVal* v) { set_3d1(v, 121); }
 
+void i_bit_t121_0d(svBitVecVal* v) { set_0d(v, 121); }
+void i_bit_t121_1d(svBitVecVal* v) { set_1d(v, 121); }
+void i_bit_t121_2d(svBitVecVal* v) { set_2d(v, 121); }
+void i_bit_t121_3d(svBitVecVal* v) { set_3d(v, 121); }
+void i_bit_t121_1d1(svBitVecVal* v) { set_1d1(v, 121); }
+void i_bit_t121_2d1(svBitVecVal* v) { set_2d1(v, 121); }
+void i_bit_t121_3d1(svBitVecVal* v) { set_3d1(v, 121); }
+
 void i_logic1_0d(svLogic* v) { set_0d_scalar(v); }
 void i_logic1_1d(svLogic* v) { set_1d_scalar(v); }
 void i_logic1_2d(svLogic* v) { set_2d_scalar(v); }
@@ -506,6 +514,14 @@ void i_logic121_3d(svLogicVecVal* v) { set_3d(v, 121); }
 void i_logic121_1d1(svLogicVecVal* v) { set_1d1(v, 121); }
 void i_logic121_2d1(svLogicVecVal* v) { set_2d1(v, 121); }
 void i_logic121_3d1(svLogicVecVal* v) { set_3d1(v, 121); }
+
+void i_logic_t121_0d(svLogicVecVal* v) { set_0d(v, 121); }
+void i_logic_t121_1d(svLogicVecVal* v) { set_1d(v, 121); }
+void i_logic_t121_2d(svLogicVecVal* v) { set_2d(v, 121); }
+void i_logic_t121_3d(svLogicVecVal* v) { set_3d(v, 121); }
+void i_logic_t121_1d1(svLogicVecVal* v) { set_1d1(v, 121); }
+void i_logic_t121_2d1(svLogicVecVal* v) { set_2d1(v, 121); }
+void i_logic_t121_3d1(svLogicVecVal* v) { set_3d1(v, 121); }
 
 void i_pack_struct_0d(svLogicVecVal* v) { set_0d(v, 7); }
 void i_pack_struct_1d(svLogicVecVal* v) { set_1d(v, 7); }
@@ -874,6 +890,17 @@ void check_exports() {
         if (!check_3d(bit121_array, 121)) stop();
     }
     {
+        svBitVecVal bit_t121_array[4][3][2][4];
+        e_bit_t121_0d(bit_t121_array[3][2][1]);
+        if (!check_0d(bit_t121_array[3][2][1], 121)) stop();
+        e_bit_t121_1d(bit_t121_array[2][1][0]);
+        if (!check_1d(bit_t121_array[2][1], 121)) stop();
+        e_bit_t121_2d(bit_t121_array[1][0][0]);
+        if (!check_2d(bit_t121_array[1], 121)) stop();
+        e_bit_t121_3d(bit_t121_array[0][0][0]);
+        if (!check_3d(bit_t121_array, 121)) stop();
+    }
+    {
         svLogicVecVal logic7_array[4][3][2][1];
         e_logic7_0d(logic7_array[3][2][1]);
         if (!check_0d(logic7_array[3][2][1], 7)) stop();
@@ -912,6 +939,27 @@ void check_exports() {
         e_logic121_2d1(array[0][0][0]);
         if (!check_2d1(array[0], 121)) stop();
         e_logic121_3d1(array[0][0][0]);
+        if (!check_3d1(array, 121)) stop();
+    }
+
+    {
+        svLogicVecVal logic_t121_array[4][3][2][4];
+        e_logic_t121_0d(logic_t121_array[3][2][1]);
+        if (!check_0d(logic_t121_array[3][2][1], 121)) stop();
+        e_logic_t121_1d(logic_t121_array[2][1][0]);
+        if (!check_1d(logic_t121_array[2][1], 121)) stop();
+        e_logic_t121_2d(logic_t121_array[1][0][0]);
+        if (!check_2d(logic_t121_array[1], 121)) stop();
+        e_logic_t121_3d(logic_t121_array[0][0][0]);
+        if (!check_3d(logic_t121_array, 121)) stop();
+    }
+    {
+        svLogicVecVal array[1][1][1][4];
+        e_logic_t121_1d1(array[0][0][0]);
+        if (!check_1d1(array[0][0], 121)) stop();
+        e_logic_t121_2d1(array[0][0][0]);
+        if (!check_2d1(array[0], 121)) stop();
+        e_logic_t121_3d1(array[0][0][0]);
         if (!check_3d1(array, 121)) stop();
     }
 

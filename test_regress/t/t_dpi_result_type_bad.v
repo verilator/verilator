@@ -326,4 +326,10 @@ module t_dpi_result_type_bad;
   import "DPI-C" function struct_unpacked i_struct_unpacked();
   export "DPI-C" function e_struct_unpacked;
   function struct_unpacked e_struct_unpacked(); return '{x: 0}; endfunction
+
+  // Packed arrays of 1-bit typedefs
+  typedef bit   bit_t;
+  typedef logic logic_t;
+  import "DPI-C" function bit_t   [32:0] i_array_bit_t_33();
+  import "DPI-C" function logic_t [3:0]  i_array_logic_t_4();
 endmodule

@@ -78,10 +78,9 @@ static string dpiMemberDecl(const AstNodeDType* dtypep, const string& name) {
             = sdtypep->dpiName().empty() ? dpiStructDecl(sdtypep) : sdtypep->dpiName();
         return type + " " + name + dims;
     }
-    const AstBasicDType* const basicp = dtypep->basicp();
-    if (basicp->isDpiPrimitive()) return dpiPrimitiveType(basicp) + " " + name + dims;
+    if (dtypep->isDpiPrimitive()) return dpiPrimitiveType(dtypep->basicp()) + " " + name + dims;
     // Canonical representation of packed arrays (IEEE 1800-2023 H.7.7)
-    return (basicp->isDpiBitVec() ? "svBitVecVal " : "svLogicVecVal ") + name + dims
+    return (dtypep->isDpiBitVec() ? "svBitVecVal " : "svLogicVecVal ") + name + dims
            + "[SV_PACKED_DATA_NELEMS(" + cvtToStr(dtypep->width()) + ")]";
 }
 
@@ -99,9 +98,10 @@ virtual string unpackedStruct(const AstVar* varp) const {
 string convert(const AstVar* varp) const {
     if (varp->isDpiOpenArray()) {
         return openArray(varp);
-    } else if (const AstBasicDType* const basicp = varp->basicp()) {
-        if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
-            return bitLogicVector(varp, basicp->isDpiBitVec());
+    } else if (varp->basicp()) {
+        const AstNodeDType* const dtypep = varp->dtypep();
+        if (!dtypep->isDpiPrimitive()) {
+            return bitLogicVector(varp, dtypep->isDpiBitVec());
         } else {
             return primitive(varp);
         }
@@ -2783,6 +2783,19 @@ const AstNodeDType* AstNodeDType::elemDTypep(bool skipRef) const {
         }
     }
     return dtypep;
+}
+bool AstNodeDType::isDpiBitVec() const {
+    const AstNodeDType* const dtypep = elemDTypep();
+    if (VN_IS(dtypep, PackArrayDType)) return !dtypep->isFourstate();
+    const AstBasicDType* const basicp = dtypep->basicp();
+    return basicp->keyword() == VBasicDTypeKwd::BIT && basicp->isRanged();
+}
+bool AstNodeDType::isDpiLogicVec() const {
+    const AstNodeDType* const dtypep = elemDTypep();
+    if (VN_IS(dtypep, PackArrayDType)) return dtypep->isFourstate();
+    const AstBasicDType* const basicp = dtypep->basicp();
+    return basicp->keyword().isFourstate()
+           && !(basicp->keyword() == VBasicDTypeKwd::LOGIC && !basicp->isRanged());
 }
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 bool AstNodeDType::isLiteralType() const VL_MT_STABLE {

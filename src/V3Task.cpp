@@ -389,13 +389,10 @@ struct TaskDpiUtils final {
         // DPI types using Primitive C types
         if (basicp->keyword() == VBasicDTypeKwd::CHANDLE) return {"VL_CVT_VP_Q(", false};
         if (basicp->keyword() == VBasicDTypeKwd::STRING) return {"VL_CVT_N_CSTR(", false};
-        if (basicp->isDpiPrimitive()) return {"(", false};
+        if (dtypep->isDpiPrimitive()) return {"(", false};
 
         // DPI types using svBitVecVal/svLogicVecVal
-        UASSERT_OBJ(basicp->isDpiBitVec() || basicp->isDpiLogicVec(), dtypep,
-                    "Should use svBitVecVal/svLogicVecVal");
-
-        const std::string vecType = basicp->isDpiBitVec() ? "SVBV" : "SVLV";
+        const std::string vecType = dtypep->isDpiBitVec() ? "SVBV" : "SVLV";
         dtypep = dtypep->skipRefp();
         const char sizeChar = dtypep->width() <= 8    ? 'C'
                               : dtypep->width() <= 16 ? 'S'
@@ -927,13 +924,13 @@ class TaskVisitor final : public VNVisitor {
         const AstBasicDType* const basicp = dtypep->basicp();
         if (toDpi) {
             AstCStmt* const cstmtp = new AstCStmt{flp};
-            if (basicp->isDpiPrimitive()) {
+            if (dtypep->isDpiPrimitive()) {
                 cstmtp->add(dpip);
                 cstmtp->add(basicp->isCHandle() ? " = VL_CVT_Q_VP(" : " = ");
                 cstmtp->add(internalp);
                 cstmtp->add(basicp->isCHandle() ? ");" : basicp->isString() ? ".c_str();" : ";");
             } else {
-                cstmtp->add((basicp->isDpiBitVec() ? "VL_SET_SVBV_"s : "VL_SET_SVLV_"s)
+                cstmtp->add((dtypep->isDpiBitVec() ? "VL_SET_SVBV_"s : "VL_SET_SVLV_"s)
                             + dtypep->skipRefp()->charIQWN() + "("
                             + std::to_string(dtypep->width()) + ", ");
                 cstmtp->add(dpip);
@@ -1037,16 +1034,17 @@ class TaskVisitor final : public VNVisitor {
             linearp = new AstAdd{flp, new AstMul{flp, new AstConst{flp, elements}, linearp},
                                  readp(idxp)};
         }
-        if (isStruct || varp->basicp()->isDpiPrimitive()) {
+        const AstNodeDType* const elemDTypep = varp->dtypep()->elemDTypep();
+        if (isStruct || elemDTypep->isDpiPrimitive()) {
             dpip->add("[");
             dpip->add(linearp);
             dpip->add("]");
         } else {  // svBitVecVal/svLogicVecVal
-            const uint32_t widthWords = varp->basicp()->widthWords();
+            const uint32_t widthWords = elemDTypep->widthWords();
             dpip->add(" + ");
             dpip->add(new AstMul{flp, linearp, new AstConst{flp, widthWords}});
         }
-        AstNodeStmt* stmtsp = createDpiCvt(internalp, dpip, varp->dtypep()->elemDTypep(), toDpi);
+        AstNodeStmt* stmtsp = createDpiCvt(internalp, dpip, elemDTypep, toDpi);
 
         // Wrap in the loops, innermost first
         for (size_t dim = dims.size(); dim-- > 0;) {
@@ -1154,7 +1152,7 @@ class TaskVisitor final : public VNVisitor {
             // Convert input/inout arguments to dpi type
             const std::string deref
                 = portp->isInout() && !isStruct  //
-                          && portp->basicp()->isDpiPrimitive()  //
+                          && portp->dtypep()->isDpiPrimitive()  //
                           && portp->dtypep()->skipRefp()->dimensions(false).second == 0
                       ? "*"
                       : "";
@@ -1172,7 +1170,7 @@ class TaskVisitor final : public VNVisitor {
         if (rtnvarp) {
             funcp->addStmtsp(createDpiTemp(rtnvarp, ""));
             funcp->addStmtsp(createAssignInternalToDpi(rtnvarp, false, tmpSuffixp, ""));
-            const std::string index = rtnvarp->basicp()->isDpiPrimitive() ? "" : "[0]";
+            const std::string index = rtnvarp->dtypep()->isDpiPrimitive() ? "" : "[0]";
             funcp->addStmtsp(new AstCStmt{flp, "return " + rtnvarp->name() + index + ";"});
         }
         return funcp;
@@ -1400,7 +1398,7 @@ class TaskVisitor final : public VNVisitor {
                         // Unpacked structures are passed by reference from a C array
                         const bool isStruct = portp->dtypep()->containsUnpackedStruct();
                         if (portp->isWritable() && !isStruct
-                            && portp->basicp()->isDpiPrimitive()) {
+                            && portp->dtypep()->isDpiPrimitive()) {
                             if (!VN_IS(portp->dtypep()->skipRefp(), UnpackArrayDType)) args += "&";
                         }
 
@@ -1432,7 +1430,7 @@ class TaskVisitor final : public VNVisitor {
             if (rtnvscp) {
                 // If it has a return value, capture it
                 cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
-                const std::string sel = rtnvscp->varp()->basicp()->isDpiPrimitive() ? "" : "[0]";
+                const std::string sel = rtnvscp->varp()->dtypep()->isDpiPrimitive() ? "" : "[0]";
                 AstCStmt* const cstmtp = new AstCStmt{nodep->fileline()};
                 cstmtp->add(rtnvscp->varp()->name() + tmpSuffixp + sel);  // LHS
                 cstmtp->add(" = ");
@@ -1495,14 +1493,14 @@ class TaskVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return nullptr;
                 }
-                if (!bdtypep->isDpiPrimitive()) {
-                    if (bdtypep->isDpiBitVec() && portp->width() > 32) {
+                if (!portp->dtypep()->isDpiPrimitive()) {
+                    if (portp->dtypep()->isDpiBitVec() && portp->width() > 32) {
                         portp->v3error("DPI function may not return a > 32 bits wide type "
                                        "other than basic types.\n"
                                        + portp->warnMore()
                                        + "... Suggest make it an output argument instead?");
                     }
-                    if (bdtypep->isDpiLogicVec()) {
+                    if (portp->dtypep()->isDpiLogicVec()) {
                         portp->v3error("DPI function may not return a 4-state type "
                                        "other than a single 'logic' (IEEE 1800-2023 35.5.5)");
                     }
@@ -2478,8 +2476,8 @@ string V3Task::assignInternalToDpi(AstVar* portp, bool isPtr, const string& frSu
         unpackDim = unpackp->dimensions(false).second;
         if (unpackDim > 0) UASSERT_OBJ(unpackSize > 0, portp, "size must be greater than 0");
     }
-    if (portp->basicp()->isDpiBitVec() || portp->basicp()->isDpiLogicVec()) {
-        const bool isBit = portp->basicp()->isDpiBitVec();
+    if (!portp->dtypep()->isDpiPrimitive()) {
+        const bool isBit = portp->dtypep()->isDpiBitVec();
         const bool needsFor = unpackSize > 1;
         if (needsFor) {
             stmt = "for (size_t " + idx + " = 0; " + idx + " < " + cvtToStr(unpackSize) + "; ++"
@@ -2543,7 +2541,7 @@ std::string V3Task::assignDpiToInternal(const std::string& lhsName, AstVar* varp
     std::tie(cvt, useSvVec) = TaskDpiUtils::dpiToInternalCvtStmt(varp->dtypep());
     const std::vector<std::pair<int, int>> strides = TaskDpiUtils::unpackDimsAndStrides(varp);
     const int total = strides.empty() ? 1 : strides[0].first * strides[0].second;
-    const int widthWords = varp->basicp()->widthWords();
+    const int widthWords = varp->dtypep()->elemDTypep()->widthWords();
     string statements;
     for (int i = 0; i < total; ++i) {
         std::string lhs = lhsName;
