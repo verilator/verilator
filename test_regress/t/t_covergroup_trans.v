@@ -165,6 +165,37 @@ module t;
   cg_pair cg_pair_a = new;
   cg_pair cg_pair_b = new;
 
+  // Sequences matched from tables in crossed coverpoints, of which cp_dynamic, excluding a
+  // value, gives its bins' values to the runtime.  binsof (IEEE 1800-2023 19.6.1) reads the last
+  // value of each sequence that can match, and an ignored or illegal sequence excludes no value.
+  covergroup cg_long_cross with function sample (bit [2:0] v, bit b);
+    cp_static: coverpoint v {
+      bins long = (`SEQ64 => 2);  // 65 values
+      bins part = (`SEQ64 => 3), (9 => `SEQ64);  // 9 is no 3-bit value: only the first can match
+      bins one = {1};
+    }
+    cp_dynamic: coverpoint v {
+      bins long = (`SEQ64 => 2);
+      bins part = (`SEQ64 => 3), (9 => `SEQ64);
+      bins one = {1};
+      bins five = {5};
+      bins six = {6};
+      ignore_bins ignored = {7};
+      illegal_bins illegal_long = (`SEQ64 => 5);
+      ignore_bins ignored_long = (`SEQ64 => 6);
+    }
+    cp_b: coverpoint b;
+    x_static: cross cp_static, cp_b{
+      bins twos = binsof (cp_static) intersect {2};
+      bins ones = binsof (cp_static) intersect {1};
+    }
+    x_dynamic: cross cp_dynamic, cp_b{
+      bins twos = binsof (cp_dynamic) intersect {2};
+      bins ones = binsof (cp_dynamic) intersect {1};
+    }
+  endgroup
+  cg_long_cross cg_long_cross_inst = new;
+
   // Sequences matched from tables on coverpoints of an enum, a packed struct, and a signed type
   // of 33 to 64 bits, of a last item of several values
   typedef enum bit [2:0] {
@@ -286,6 +317,14 @@ module t;
     cg_pair_b.sample(2'd2);
     `checkr(cg_pair_a.get_inst_coverage(), 100.0);
     `checkr(cg_pair_b.get_inst_coverage(), 0.0);
+
+    // cg_long_cross: 0, 1, ... completing long, then part, all with b 0, then 5 and 6 with b 1
+    for (int i = 0; i < 64; ++i) cg_long_cross_inst.sample(3'(i % 2), 1'b0);
+    cg_long_cross_inst.sample(3'd2, 1'b0);
+    for (int i = 0; i < 64; ++i) cg_long_cross_inst.sample(3'(i % 2), 1'b0);
+    cg_long_cross_inst.sample(3'd3, 1'b0);
+    cg_long_cross_inst.sample(3'd5, 1'b1);
+    cg_long_cross_inst.sample(3'd6, 1'b1);
 
     // cg_types: three tries, each completing a sequence but with ZERO, a 1 without the tag, and
     // the largest value

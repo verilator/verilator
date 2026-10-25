@@ -1181,6 +1181,10 @@ bool VlCoverpoint::Transition::matches(uint32_t item, WDataInP valuep) const {
     // The item's values ascend: binary search them, comparing each from its top word
     uint32_t lo = item ? m_ends[item - 1] : 0;
     uint32_t hi = m_ends[item];
+    // A value of one word, of a coverpoint of up to 32 bits, compares directly
+    if (m_words == 1) {
+        return std::binary_search(m_values.data() + lo, m_values.data() + hi, valuep[0]);
+    }
     while (lo < hi) {
         const uint32_t mid = lo + (hi - lo) / 2;
         const EData* const midp = m_values.data() + mid * m_words;
@@ -1197,6 +1201,7 @@ bool VlCoverpoint::Transition::matches(uint32_t item, WDataInP valuep) const {
 }
 
 bool VlCoverpoint::transitionSample(uint32_t seq, QData value) {
+    // As words, for two stores per sample; matches() compares a value of one word directly
     VlWide<VL_WQ_WORDS_E> words;
     VL_SET_WQ(words, value);
     return transitionSampleW(seq, words);

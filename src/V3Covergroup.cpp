@@ -252,7 +252,10 @@ public:
 class FunctionalCoverageVisitor final : public VNVisitor {
     // NODE STATE
     // Entire netlist:
+    //  AstCoverTransSet::user1() -> int.  Whether the sequence can match, once known: 1 if so, 2
+    //                                     if not (see transitionPossible)
     //  AstCoverpoint::user2()   -> bool.  Had a bins declaration ignored, so no automatic bins
+    const VNUser1InUse m_inuser1;
     const VNUser2InUse m_inuser2;
 
     // STATE
@@ -1070,7 +1073,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (!binp->binsType().binIsNormal()) continue;
             if (binp->transp()) {
                 bool possible = false;
-                for (const AstCoverTransSet* const setp : binp->transpList()) {
+                for (AstCoverTransSet* const setp : binp->transpList()) {
                     possible |= transitionPossible(setp, exprp);
                 }
                 if (!possible) return true;
@@ -2626,10 +2629,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // False for a value not a resolved constant, which the generated matching reports.
     static bool transitionTable(AstNodeExpr* exprp, const std::vector<AstCoverTransItem*>& items,
                                 std::vector<std::string>& entries) {
-        const auto less = [](const V3Number& lhs, const V3Number& rhs) {
-            V3Number result{&lhs};
-            return !result.opLt(lhs, rhs).isEqZero();
-        };
+        const auto less = [](const V3Number& lhs, const V3Number& rhs) { return lhs.isLt(rhs); };
         const auto equal
             = [](const V3Number& lhs, const V3Number& rhs) { return lhs.isCaseEq(rhs); };
         for (const AstCoverTransItem* const itemp : items) {
@@ -2818,9 +2818,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // True if a transition sequence has items, the parser dropping unsupported ones, and each
     // holds a value of the coverpoint (IEEE 1800-2023 19.5.7), not as a wildcard (see
     // transitionTable), so the sequence can match.  A value not resolved, which generating the
-    // matching reports, counts as one.
-    static bool transitionPossible(const AstCoverTransSet* setp, AstNodeExpr* exprp) {
-        if (!setp->itemsp()) return false;
+    // matching reports, counts as one.  Resolves the values once, keeping the answer in user1.
+    static bool transitionPossible(AstCoverTransSet* setp, AstNodeExpr* exprp) {
+        if (setp->user1()) return setp->user1() == 1;
+        bool possible = setp->itemsp() != nullptr;
         for (const AstCoverTransItem* const itemp : setp->itemspList()) {
             bool holds = false;
             for (AstNode* const valuep : itemp->valuespList()) {
@@ -2829,9 +2830,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     = !resolveValue(valuep, exprp, true, false, range) || !crossRangeEmpty(range);
                 if (holds) break;
             }
-            if (!holds) return false;
+            if (!holds) {
+                possible = false;
+                break;
+            }
         }
-        return true;
+        setp->user1(possible ? 1 : 2);
+        return possible;
     }
 
     static std::vector<AstNode*> crossBinValues(const CrossBinValues& bin, AstNodeExpr* exprp) {
@@ -4034,14 +4039,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return fullCondp;
     }
 
-    // Wildcard bits (IEEE 1800-2023 19.5.4) and transitions (19.5.2) have no meaning for a
-    // non-integral coverpoint.
+    // Wildcard bits and transitions have no meaning for a non-integral coverpoint.
     static void binTypeError(AstCoverBin* binp, AstNodeExpr* exprp) {
         const std::string kind = binp->transp() ? "transition" : "wildcard";
         const AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
         exprp->v3error("Cannot use a "
                        << kind << " bin on a coverpoint of type " << dtypep->prettyDTypeNameQ()
-                       << " (IEEE 1800-2023 " << (binp->transp() ? "19.5.2" : "19.5.4") << ").\n"
+                       << (binp->transp() ? " (IEEE 1800-2023 19.5.2)"
+                                          : " (IEEE 1800-2023 19.5.4)")
+                       << ".\n"
                        << exprp->warnContextPrimary() << '\n'
                        << binp->warnOther() << "... Location of " << kind << " bin\n"
                        << binp->warnContextSecondary());
