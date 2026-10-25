@@ -2688,6 +2688,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = binp->fileline();
         std::vector<std::string> table;
         if (items.size() > GENERATED_MAX_VALUES && transitionTable(exprp, items, table)) {
+            // Every value resolved, nothing is left to report of a sequence that never completes
+            if (!transitionPossible(transSetp, exprp)) return;
             ++m_statTransitionTables;
             AstVar* const cpVarp = m_cpVarMap.at(coverpointp->name());
             const uint32_t seq = m_cpBins.at(cpVarp).transitions++;
@@ -2813,10 +2815,12 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
     };
 
-    // True if each item of a transition sequence holds a value of the coverpoint (IEEE 1800-2023
-    // 19.5.7), not as a wildcard (see transitionTable), so the sequence can match.  A value not
-    // resolved, which generating the matching reports, counts as one.
+    // True if a transition sequence has items, the parser dropping unsupported ones, and each
+    // holds a value of the coverpoint (IEEE 1800-2023 19.5.7), not as a wildcard (see
+    // transitionTable), so the sequence can match.  A value not resolved, which generating the
+    // matching reports, counts as one.
     static bool transitionPossible(const AstCoverTransSet* setp, AstNodeExpr* exprp) {
+        if (!setp->itemsp()) return false;
         for (const AstCoverTransItem* const itemp : setp->itemspList()) {
             bool holds = false;
             for (AstNode* const valuep : itemp->valuespList()) {

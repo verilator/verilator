@@ -103,7 +103,12 @@ module t;
       bins overlap = (`SEQ128);  // Its matches overlap
       bins alt = (`SEQ64 => 0, 1), (1 => 0);  // Complete together, counting once
       bins never = (`SEQ64 => 5);  // 5 is no 2-bit value: the bin leaves the report
+      // Nor do bins with an item of only a range, which is ignored as unsupported
+      // verilator lint_off COVERIGN
+      bins range_short = (1 => [2 : 3]);
+      bins range_long = (`SEQ64 => [2 : 3]);  // 65 values
     }
+    // verilator lint_on COVERIGN
     // An ignored sequence, apart from the transition bins, from which other simulators remove the
     // transitions holding it (IEEE 1800-2023 19.5.5)
     cp_ignore: coverpoint v iff (en) {

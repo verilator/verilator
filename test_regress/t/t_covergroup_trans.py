@@ -14,5 +14,5 @@ test.scenarios('vlt_all')
 
 coverage_covergroup_common.run(test, verilator_flags2=['--Wno-COVERIGN', '--stats'])
 
-# Each sequence of more than 64 values is matched from a table
-test.file_grep(test.stats, r'Covergroup, transition sequences matched from tables\s+(\d+)', 14)
+# Each sequence of more than 64 values is matched from a table, but those that never complete
+test.file_grep(test.stats, r'Covergroup, transition sequences matched from tables\s+(\d+)', 13)

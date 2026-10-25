@@ -80,16 +80,6 @@ module t;
                    => TEXT);
     }
   endgroup
-
-  // A transition item of only a range, which the parser ignores as unsupported, leaving the item
-  // no value: its sequence never matches, whether generated or matched from a table
-  covergroup cg_range_transition;
-    cp: coverpoint value {
-      bins range_short = (1 => [2 : 3]);
-      bins range_long = (`SEQ64
-                         => [2 : 3]);  // 65 values
-    }
-  endgroup
   // verilog_format: on
 
   cg_values values_cov = new;
@@ -100,7 +90,6 @@ module t;
   cg_cross cross_cov = new;
   cg_wild_runs_illegal wild_runs_illegal_cov = new;
   cg_long_transition long_transition_cov = new;
-  cg_range_transition range_transition_cov = new;
 
   // A covergroup elaborated twice (two parameterizations).  Each of its values is reported once,
   // for the elaboration processed first; the other's identical reports are suppressed as
