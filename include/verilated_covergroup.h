@@ -237,12 +237,12 @@ public:
     /// sizedFinish())
     void withFinish(VlCovBinKind kind, QData count, bool positive, const char* name,
                     const char* file, int line, int col);
-    /// Add a transition sequence too long for generated matching, of values of 'words' words,
-    /// numbered from 0 in the order added, which transitionSample() matches from a table of
-    /// its values that transitionTable() gives.
+    // Add a transition sequence too long for generated matching, of values of 'words' words,
+    // numbered from 0 in the order added, which transitionSample() matches from a table of
+    // its values that transitionTable() gives.
     void transitionAdd(uint32_t words) { m_transitions.emplace_back(words); }
-    /// Append items to the transition sequence added last: each is its number of values, then
-    /// the values, ascending.
+    // Append items to the transition sequence added last: each is its number of values, then
+    // the values, ascending.
     void transitionTable(std::initializer_list<EData> items);
 
     // ---- hot path (from generated sample()) ----
@@ -254,11 +254,11 @@ public:
     /// if 'enabled'.  True if a bin holds the value, enabled or not.
     bool sizedSample(uint32_t sized, QData value, bool enabled);
     bool sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled);
-    /// Sample a value into transition sequence 'seq'; true if it completes a match.  Matches
-    /// may overlap, and each counts (IEEE 1800-2023 19.5.2).  Costs, per partial match the
-    /// samples end with, a binary search of the values of its next item.  Partial matches
-    /// number at most one per item, and more than a few only for a sequence whose beginning
-    /// recurs in it, as in a periodic one.
+    // Sample a value into transition sequence 'seq'; true if it completes a match.  Matches
+    // may overlap, and each counts (IEEE 1800-2023 19.5.2).  Costs, per partial match the
+    // samples end with, a binary search of the values of its next item.  Partial matches
+    // number at most one per item, and more than a few only for a sequence whose beginning
+    // recurs in it, as in a periodic one.
     bool transitionSample(uint32_t seq, QData value);
     bool transitionSampleW(uint32_t seq, WDataInP valuep);
     // incrementBin (Normal bin: count + hit-list append) lives in VlCoverpointT<MaxHits>,
