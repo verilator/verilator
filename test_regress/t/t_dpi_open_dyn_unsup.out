@@ -1,0 +1,22 @@
+%Error-UNSUPPORTED: t/t_dpi_open_dyn_unsup.v:18:15: Unsupported: DPI open array argument 'h' passed 'byte$[]$[0:2]', with a dynamic array or queue other than as its first dimension
+                                                  : ... note: In instance 't'
+   18 |     dpii_open(fixed_dyn);
+      |               ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_dpi_open_dyn_unsup.v:19:15: Unsupported: DPI open array argument 'h' passed 'byte$[$]$[]', with a dynamic array or queue other than as its first dimension
+                                                  : ... note: In instance 't'
+   19 |     dpii_open(dyn_queue);
+      |               ^~~~~~~~~
+%Error-UNSUPPORTED: t/t_dpi_open_dyn_unsup.v:20:22: Unsupported: DPI open array argument 'h' passed 'bit[7:0]$[]$[0:2]', with a dynamic array or queue other than as its first dimension
+                                                  : ... note: In instance 't'
+   20 |     dpii_open_packed(bits_fixed_dyn);
+      |                      ^~~~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_dpi_open_dyn_unsup.v:22:15: Unsupported/Illegal: empty queue ('{}') in this context
+                                                  : ... note: In instance 't'
+   22 |     dpii_open({});
+      |               ^
+%Error-UNSUPPORTED: t/t_dpi_open_dyn_unsup.v:24:20: Unsupported: DPI open array argument 'h' passed a streaming concatenation
+                                                  : ... note: In instance 't'
+   24 |     dpii_open_int({>>{ints}});
+      |                    ^~
+%Error: Exiting due to

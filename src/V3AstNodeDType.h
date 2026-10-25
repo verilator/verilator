@@ -1475,10 +1475,12 @@ public:
     bool isCompound() const override { return false; }
 };
 class AstUnsizedArrayDType final : public AstNodeDType {
-    // Unsized/open-range Array data type, ie "some_dtype var_name []"
+    // Unsized/open-range Array data type, ie "some_dtype var_name []", or if packed, as only in a
+    // DPI import, "bit [] var_name"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
+    bool m_packed = false;  // Packed dimension, not unpacked
 public:
     AstUnsizedArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER_UnsizedArrayDType(fl) {
@@ -1498,6 +1500,8 @@ public:
     }
     bool sameNode(const AstNode* samep) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     void dumpSmall(std::ostream& str) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
@@ -1507,6 +1511,8 @@ public:
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
+    bool packed() const { return m_packed; }
+    void packed(bool flag) { m_packed = flag; }
     AstBasicDType* basicp() const override VL_MT_STABLE { return subDTypep()->basicp(); }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }

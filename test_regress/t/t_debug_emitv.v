@@ -152,6 +152,7 @@ module t (/*AUTOARG*/
     $display("stmt");
     return v == 0 ? 99 : ~v + 1;
   endfunction
+  import "DPI-C" function void dpii_open(input bit [] h[]);
 
   sub sub(.*);
   seq_event seq_event(.*);

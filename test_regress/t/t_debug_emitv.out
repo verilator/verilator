@@ -133,6 +133,13 @@ module Vt_debug_emitv_t;
             disable label1;
         end
     endfunction
+    task dpii_open;
+        input 
+        ???? // UNSIZEDARRAYDTYPE
+         h
+        ???? // UNSIZEDARRAYDTYPE
+        ;
+    endtask
     initial begin
         begin : unnamedblk1
             int signed other;
@@ -312,7 +319,7 @@ module Vt_debug_emitv_t;
                     begin
                         $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", 
                                136'h742f745f64656275675f656d6974762e76, 
-                               'sh10a, SUB_B, 2'h1);
+                               'sh10b, SUB_B, 2'h1);
                         $stop;
                     end
                 end

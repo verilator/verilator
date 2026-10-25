@@ -751,6 +751,12 @@ public:
     void renew_copy(size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs);
 
     void resize(size_t size) { m_deque.resize(size, atDefault()); }
+    // Assign the elements of a range, as DPI does from a C layout copy
+    template <typename T_Iterator>
+    void assign(T_Iterator first, T_Iterator last) {
+        m_deque.assign(first, last);
+        applyBound();
+    }
 
     // function void q.push_front(value)
     void push_front(const T_Value& value) {
