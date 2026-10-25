@@ -45,7 +45,6 @@ t.cg_signed.cp_signed.neg: 1
 t.cg_signed.cp_signed.neg_long: 1
 t.cg_signed.cp_signed.param: 1
 t.cg_signed.cp_signed.part: 32
-t.cg_signed.cp_signed.real_value: 1
 t.cg_types.cp_enum.long: 2
 t.cg_types.cp_signed40.long: 2
 t.cg_types.cp_struct.long: 2

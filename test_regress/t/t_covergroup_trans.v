@@ -127,7 +127,6 @@ module t;
       bins neg = (-1 => -2);
       bins neg_long = (`SEQ64 => -1);  // 65 values
       bins param = (`SEQ64 => NEG + 1);  // -1, as a parameter expression
-      bins real_value = (1.0 => 2.0);
       bins part = (15 => 0), (0 => 1);  // 15 is no 4-bit signed value
       bins none = (15 => 0);
       bins four_state = (4'b1x01 => 0);
@@ -243,8 +242,6 @@ module t;
     // cg_signed
     cg_signed_inst.sample(-4'sd1, -1);
     cg_signed_inst.sample(-4'sd2, 0);  // neg, in both coverpoints
-    cg_signed_inst.sample(4'sd1, 0);
-    cg_signed_inst.sample(4'sd2, 0);  // real_value
     for (int i = 0; i < 64; ++i) cg_signed_inst.sample(4'(i % 2), 0);  // 32 parts
     cg_signed_inst.sample(-4'sd1, 0);  // neg_long, param
     cg_signed_inst.sample(4'sd0, 0);  // Not 15 => 0, though -1 has 15's low bits

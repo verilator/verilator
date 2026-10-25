@@ -3288,10 +3288,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstNode* const sourcep : crossBinValues({binp, valuep}, exprp)) {
             CrossValueRange range{sourcep, resolveWidth(sourcep, exprp)};
             if (!resolveValue(sourcep, exprp, true, binp->isWildcard(), range)) {
-                // Generating the bin reported the value, though when the report repeated that of
-                // another elaboration of the covergroup, V3Error did not count it, and this bin's
-                // metadata is collected regardless
-                UASSERT_OBJ(V3Error::errorCount() > 0, sourcep,
+                // Generating the bin reported the value, though uncounted, so this bin's metadata
+                // is collected regardless, when the report repeated that of another elaboration
+                // of the covergroup, or --bbox-unsup suppressed it
+                UASSERT_OBJ(V3Error::errorCount() > 0 || v3Global.opt.bboxUnsup(), sourcep,
                             "Bin value neither resolved nor reported");
                 continue;
             }
