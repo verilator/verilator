@@ -168,6 +168,7 @@ Verilator 5.053 devel
 * Fix access types of refs and inouts (#8380). [Igor Zaworski, Antmicro Ltd.]
 * Fix copy constructor of classes with constraints (#8381). [Ryszard Rozak, Antmicro Ltd.]
 * Fix C++ clang 18 compiler with -fno-slp-vectorize (#8383). [Geza Lore, Testorrent USA, Inc.]
+* Fix hierarchical enum reference error (#8389). [Xie Jiacheng]
 * Fix reevaluation of method calls in wait conditions (#8391). [Jesús Alberto López Soto]
 * Fix weighted dist constraints in presence of other constraints (#8392). [Kornel Uriasz, Antmicro Ltd.]
 * Fix error on non-existent interface ports (#8393). [Andrii Andrieiev, Antmicro Ltd.]

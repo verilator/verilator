@@ -922,7 +922,8 @@ public:
         : AstNodeDType{other}
         , m_name{other.m_name}
         , m_typedefName{other.m_typedefName}
-        , m_uniqueNum{uniqueNumInc()} {}
+        , m_uniqueNum{uniqueNumInc()}
+        , m_refDTypep{other.m_refDTypep} {}
     ASTGEN_MEMBERS_AstEnumDType;
 
     const char* broken() const override;
