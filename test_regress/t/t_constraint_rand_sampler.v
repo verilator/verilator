@@ -44,16 +44,20 @@ module t;
     Scalars s;
     Elems e;
     Ordered o;
+    int randomize_result;
     s = new;
     e = new;
     o = new;
     repeat (20) begin
-      `checkd(s.randomize(), 1);
+      randomize_result = s.randomize();
+      `checkd(randomize_result, 1);
       `checkd(s.a < 7'd100, 1'b1);
       `checkd(s.b > 15'(s.a), 1'b1);
-      `checkd(e.randomize(), 1);
+      randomize_result = e.randomize();
+      `checkd(randomize_result, 1);
       foreach (e.q[i]) `checkd(e.q[i] < 31'd1000, 1'b1);
-      `checkd(o.randomize(), 1);
+      randomize_result = o.randomize();
+      `checkd(randomize_result, 1);
       `checkd(o.x < 5'd20, 1'b1);
       `checkd(o.y <= 33'(o.x), 1'b1);
     end
@@ -61,11 +65,13 @@ module t;
     // randomize(null) only checks the current values: no sampling, values unchanged
     s.a = 7'd5;
     s.b = 15'd6;
-    `checkd(s.randomize(null), 1);
+    randomize_result = s.randomize(null);
+    `checkd(randomize_result, 1);
     `checkd(s.a, 5);
     `checkd(s.b, 6);
     s.b = 15'd5;
-    `checkd(s.randomize(null), 0);
+    randomize_result = s.randomize(null);
+    `checkd(randomize_result, 0);
     `checkd(s.a, 5);
     `checkd(s.b, 5);
 

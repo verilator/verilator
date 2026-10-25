@@ -49,6 +49,10 @@ def check_solver(log):
     # Only the two randomize(null) checks are unseeded, as they are not random
     with open(log, 'r', encoding='utf8') as fh:
         queries = fh.read().split('(set-option :produce-models true)')[1:]
+    # One solver call per query: no follow-up sampling rounds
+    multi = [q for q in queries if q.count('(check-sat') != 1]
+    if multi:
+        test.error("Expected one check-sat per query, " + str(len(multi)) + " queries had more")
     unseeded = [q for q in queries if ':random-seed' not in q]
     if len(unseeded) != 2:
         test.error("Expected 2 unseeded randomize(null) queries, got " + str(len(unseeded)))
