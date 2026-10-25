@@ -1282,6 +1282,10 @@ bool V3Number::isAnyZ() const VL_MT_SAFE {
     }
     return false;
 }
+bool V3Number::isLt(const V3Number& rhs) const {
+    V3Number result{this};
+    return result.opLt(*this, rhs).isNeqZero();
+}
 bool V3Number::isLtXZ(const V3Number& rhs) const {
     // Include X/Z in comparisons for sort ordering
     if (isString()) return toString() < rhs.toString();

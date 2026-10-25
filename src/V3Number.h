@@ -712,6 +712,7 @@ public:
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth = 0) const;
     bool isCaseEq(const V3Number& rhs) const;  // operator==
+    bool isLt(const V3Number& rhs) const;  // Unsigned operator<, false if unknown
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
     bool isAnyX() const VL_MT_SAFE;
     bool isAnyXZ() const;

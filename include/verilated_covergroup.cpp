@@ -1164,6 +1164,68 @@ bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled) {
     return last != UINT32_MAX;
 }
 
+void VlCoverpoint::transitionTable(std::initializer_list<EData> items) {
+    assert(!m_transitions.empty());  // transitionAdd() added the sequence
+    Transition& sequence = m_transitions.back();
+    for (const EData* itemp = items.begin(); itemp != items.end();) {
+        const EData* const valuesp = itemp + 1;
+        itemp = valuesp + *itemp * sequence.m_words;
+        sequence.m_values.insert(sequence.m_values.end(), valuesp, itemp);
+        sequence.m_ends.push_back(
+            static_cast<uint32_t>(sequence.m_values.size() / sequence.m_words));
+    }
+}
+
+VL_ATTR_ALWINLINE
+bool VlCoverpoint::Transition::matches(uint32_t item, WDataInP valuep) const {
+    // The item's values ascend: binary search them, comparing each from its top word
+    uint32_t lo = item ? m_ends[item - 1] : 0;
+    uint32_t hi = m_ends[item];
+    // A value of one word, of a coverpoint of up to 32 bits, compares directly
+    if (m_words == 1) {
+        return std::binary_search(m_values.data() + lo, m_values.data() + hi, valuep[0]);
+    }
+    while (lo < hi) {
+        const uint32_t mid = lo + (hi - lo) / 2;
+        const EData* const midp = m_values.data() + mid * m_words;
+        uint32_t word = m_words - 1;
+        while (word && midp[word] == valuep[word]) --word;
+        if (midp[word] == valuep[word]) return true;
+        if (midp[word] < valuep[word]) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    return false;
+}
+
+bool VlCoverpoint::transitionSample(uint32_t seq, QData value) {
+    // As words, for two stores per sample; matches() compares a value of one word directly
+    VlWide<VL_WQ_WORDS_E> words;
+    VL_SET_WQ(words, value);
+    return transitionSampleW(seq, words);
+}
+
+bool VlCoverpoint::transitionSampleW(uint32_t seq, WDataInP valuep) {
+    Transition& sequence = m_transitions[seq];
+    // A partial match grows by a value its next item holds, and completes once every item has
+    // held one; a value the first item holds also starts a partial match
+    bool complete = false;
+    sequence.m_next.clear();
+    for (const uint32_t length : sequence.m_active) {
+        if (!sequence.matches(length, valuep)) continue;
+        if (length + 1 == sequence.m_ends.size()) {
+            complete = true;
+        } else {
+            sequence.m_next.push_back(length + 1);
+        }
+    }
+    if (sequence.matches(0, valuep)) sequence.m_next.push_back(1);
+    sequence.m_active.swap(sequence.m_next);
+    return complete;
+}
+
 void VlCoverpoint::sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint32_t& last) {
     // The elements hold consecutive positions, so the bins holding a value come in order, and
     // one that two elements share repeats only in a row: count it once (IEEE 1800-2023 19.5)

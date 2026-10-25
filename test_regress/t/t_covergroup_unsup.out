@@ -63,17 +63,20 @@
 %Warning-COVERIGN: t/t_covergroup_unsup.v:158:24: Unsupported: 'bins' explicit array size (treated as '[]')
   158 |     { bins trans_sized[2] = ( 1 => 2 ); }
       |                        ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:163:20: Unsupported: 'with' in coverage select expression
-  163 |       bins bin_e = with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:161:7: Unsupported: 'wildcard' transition list in cover bin
+  161 |     { wildcard bins wb_long_trans = (
+      |       ^~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_unsup.v:172:20: Unsupported: 'with' in coverage select expression
+  172 |       bins bin_e = with (a);
       |                    ^~~~
-%Warning-COVERIGN: t/t_covergroup_unsup.v:164:24: Unsupported: 'with' in coverage select expression
-  164 |       bins bin_not_e = ! with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:173:24: Unsupported: 'with' in coverage select expression
+  173 |       bins bin_not_e = ! with (a);
       |                        ^
-%Warning-COVERIGN: t/t_covergroup_unsup.v:168:25: Unsupported: 'with' in coverage select expression
-  168 |       bins bin_e_with = with (a) with (a);
+%Warning-COVERIGN: t/t_covergroup_unsup.v:177:25: Unsupported: 'with' in coverage select expression
+  177 |       bins bin_e_with = with (a) with (a);
       |                         ^~~~
-%Error-UNSUPPORTED: t/t_covergroup_unsup.v:193:5: Unsupported: covergroup inheritance (extends)
-  193 |     covergroup extends cg_empty;
+%Error-UNSUPPORTED: t/t_covergroup_unsup.v:202:5: Unsupported: covergroup inheritance (extends)
+  202 |     covergroup extends cg_empty;
       |     ^~~~~~~~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error: Exiting due to

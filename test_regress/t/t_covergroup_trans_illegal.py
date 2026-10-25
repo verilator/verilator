@@ -11,6 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.lint(expect_filename=test.golden_filename, fails=True)
+test.compile(verilator_flags2=['--coverage', '--stats'])
+
+test.file_grep(test.stats, r'Covergroup, transition sequences matched from tables\s+(\d+)', 1)
+
+test.execute(fails=True, check_finished=False, expect_filename=test.golden_filename)
 
 test.passes()
