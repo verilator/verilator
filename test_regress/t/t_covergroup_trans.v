@@ -103,6 +103,11 @@ module t;
       bins overlap = (`SEQ128);  // Its matches overlap
       bins alt = (`SEQ64 => 0, 1), (1 => 0);  // Complete together, counting once
       bins never = (`SEQ64 => 5);  // 5 is no 2-bit value: the bin leaves the report
+    }
+    // An ignored sequence, apart from the transition bins, from which other simulators remove the
+    // transitions holding it (IEEE 1800-2023 19.5.5)
+    cp_ignore: coverpoint v iff (en) {
+      bins one = {1};
       ignore_bins ignore_long = (`SEQ128 => 0);  // 129 values
     }
   endgroup
@@ -146,6 +151,39 @@ module t;
     }
   endgroup
   cg_multi cg_multi_inst = new;
+
+  // Each instance matches a sequence from a table from its own samples
+  covergroup cg_pair with function sample (bit [1:0] v);
+    cp_pair: coverpoint v {
+      bins long = (`SEQ64 => 2);  // 65 values
+    }
+  endgroup
+  cg_pair cg_pair_a = new;
+  cg_pair cg_pair_b = new;
+
+  // Sequences matched from tables on coverpoints of an enum, a packed struct, and a signed type
+  // of 33 to 64 bits, of a last item of several values
+  typedef enum bit [2:0] {
+    ZERO,
+    ONE,
+    SIX = 6
+  } digit_t;
+  typedef struct packed {
+    bit [3:0] tag;
+    bit [35:0] data;
+  } packet_t;
+  covergroup cg_types with function sample (digit_t d, packet_t p, bit signed [39:0] s);
+    cp_enum: coverpoint d {
+      bins long = (`SEQ64 => SIX, ONE);  // 65 values
+    }
+    cp_struct: coverpoint p {
+      bins long = (`SEQ64 => 40'h50_0000_0001);
+    }
+    cp_signed40: coverpoint s {
+      bins long = (`SEQ64 => -1, 40'sh80_0000_0000);
+    }
+  endgroup
+  cg_types cg_types_inst = new;
 
   // Overlapping matches of a sequence each count (IEEE 1800-2023 19.5.2)
   covergroup cg_overlap with function sample (bit [1:0] v);
@@ -193,7 +231,8 @@ module t;
       cg_long_inst.sample(2'(i % 2), 1'b1);
       cg_long_inst.sample(2'd3, 1'b0);
     end
-    // Every bin is hit but never, which counts toward coverage no more than the report
+    // Every bin is hit but those without a sequence that can match, which count toward coverage
+    // no more than the report
     `checkr(cg_long_inst.get_inst_coverage(), 100.0);
 
     // cg_signed
@@ -233,6 +272,30 @@ module t;
         cg_multi_inst.sample(seconds[k]);
         for (int i = 0; i < 64; ++i) cg_multi_inst.sample(7'(i % 2));
         cg_multi_inst.sample(lasts[k]);
+      end
+    end
+
+    // cg_pair: samples 0, 1, ... of a, between samples 3 of b, which break b's sequence alone
+    for (int i = 0; i < 64; ++i) begin
+      cg_pair_a.sample(2'(i % 2));
+      cg_pair_b.sample(2'd3);
+    end
+    cg_pair_a.sample(2'd2);  // long
+    cg_pair_b.sample(2'd2);
+    `checkr(cg_pair_a.get_inst_coverage(), 100.0);
+    `checkr(cg_pair_b.get_inst_coverage(), 0.0);
+
+    // cg_types: three tries, each completing a sequence but with ZERO, a 1 without the tag, and
+    // the largest value
+    begin
+      automatic digit_t digits[3] = '{SIX, ONE, ZERO};
+      automatic packet_t packets[3] = '{40'h50_0000_0001, 40'h00_0000_0001, 40'h50_0000_0001};
+      automatic bit signed [39:0] signeds[3] = '{-1, 40'sh80_0000_0000, 40'sh7f_ffff_ffff};
+      foreach (digits[k]) begin
+        for (int i = 0; i < 64; ++i) begin
+          cg_types_inst.sample(digit_t'(i % 2), packet_t'(40'(i % 2)), 40'(i % 2));
+        end
+        cg_types_inst.sample(digits[k], packets[k], signeds[k]);
       end
     end
 

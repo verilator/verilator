@@ -1,3 +1,11 @@
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:88:32: Unsupported: covergroup value range '[...]'
+   88 |       bins range_short = (1 => [2 : 3]);
+      |                                ^
+                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
+                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
+%Warning-COVERIGN: t/t_covergroup_exclusions_unsup.v:90:29: Unsupported: covergroup value range '[...]'
+   90 |                          => [2 : 3]);   
+      |                             ^
 %Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:15:20: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
                                                            : ... note: In instance 't'
    15 |       bins text = {TEXT};
@@ -19,8 +27,6 @@
                                                           : ... note: In instance 't'
    30 |       bins sized[2] = {1.0, 2.0};
       |            ^~~~~
-                   ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
-                   ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
 %Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:27:29: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
                                                            : ... note: In instance 't'
    27 |       bins real_bound[2] = {[lo : 5]};
@@ -55,8 +61,13 @@
                                                            : ... note: In instance 't'
    80 |                    => TEXT);
       |                       ^~~~
-%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:111:25: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:123:25: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
                                                             : ... note: In instance 't.sub1'
-  111 |       bins text = (1 => TEXT);
+  123 |       bins text = (1 => TEXT);
       |                         ^~~~
+%Error: t/t_covergroup_exclusions_unsup.v:124:29: Non-constant expression in transition bin; values must be constants (IEEE 1800-2023 19.5)
+                                                : ... note: In instance 't.sub1'
+  124 |       bins nonconst = (1 => variable);
+      |                             ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

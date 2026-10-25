@@ -30,20 +30,25 @@ t.cg_first.cp_first.rise: 1
 t.cg_first.cp_first.stay: 2
 t.cg_first.cp_gated.rise: 1
 t.cg_first.cp_gated.to2: 0
+t.cg_long.cp_ignore.ignore_long [ignore]: 65
+t.cg_long.cp_ignore.one: 128
 t.cg_long.cp_long.alt: 128
 t.cg_long.cp_long.gen64: 97
-t.cg_long.cp_long.ignore_long [ignore]: 65
 t.cg_long.cp_long.overlap: 65
 t.cg_long.cp_long.seq: 1
 t.cg_multi.cp_multi.multi: 4
 t.cg_overlap.cp_overlap.aab: 1
 t.cg_overlap.cp_overlap.aba: 2
+t.cg_pair.cp_pair.long: 1
 t.cg_signed.cp_longint.neg: 1
 t.cg_signed.cp_signed.neg: 1
 t.cg_signed.cp_signed.neg_long: 1
 t.cg_signed.cp_signed.param: 1
 t.cg_signed.cp_signed.part: 32
 t.cg_signed.cp_signed.real_value: 1
+t.cg_types.cp_enum.long: 2
+t.cg_types.cp_signed40.long: 2
+t.cg_types.cp_struct.long: 2
 t.cg_wide.cp_wide.long: 1
 t.cg_wide.cp_wide.long_top: 1
 t.cg_wide.cp_wide.rise: 97

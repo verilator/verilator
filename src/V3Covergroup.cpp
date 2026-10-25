@@ -2615,8 +2615,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 condp = singleCondp;
             }
         }
-
-        return condp;
+        // An item without values, the parser having ignored its unsupported ranges, holds none
+        return condp ? condp : new AstConst{itemp->fileline(), AstConst::BitFalse{}};
     }
 
     // Describe a transition sequence for the runtime to match from a table of its values,
@@ -3284,11 +3284,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstNode* const sourcep : crossBinValues({binp, valuep}, exprp)) {
             CrossValueRange range{sourcep, resolveWidth(sourcep, exprp)};
             if (!resolveValue(sourcep, exprp, true, binp->isWildcard(), range)) {
-                // Generating the bin reported the value, but V3Error neither prints nor counts a
-                // repeated report, as of another elaboration of the covergroup.  Report it as
-                // that did, so that no route leaves the value unreported.
-                sourcep->v3warn(E_UNSUPPORTED, "Unsupported: non-integral value in a coverage "
-                                               "bin of an integral coverpoint.");
+                // Generating the bin reported the value, though when the report repeated that of
+                // another elaboration of the covergroup, V3Error did not count it, and this bin's
+                // metadata is collected regardless
+                UASSERT_OBJ(V3Error::errorCount() > 0, sourcep,
+                            "Bin value neither resolved nor reported");
                 continue;
             }
             if (crossRangeEmpty(range)) continue;
