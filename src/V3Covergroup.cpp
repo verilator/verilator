@@ -1070,8 +1070,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (!binp->binsType().binIsNormal()) continue;
             if (binp->transp()) {
                 bool possible = false;
-                for (const AstNode* setp = binp->transp(); setp; setp = setp->nextp()) {
-                    possible |= transitionPossible(VN_AS(setp, CoverTransSet), exprp);
+                for (const AstCoverTransSet* const setp : binp->transpList()) {
+                    possible |= transitionPossible(setp, exprp);
                 }
                 if (!possible) return true;
                 continue;
@@ -2602,7 +2602,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                                               AstNodeExpr* exprp) {
         AstNodeExpr* condp = nullptr;
 
-        for (AstNode* valp = itemp->valuesp(); valp; valp = valp->nextp()) {
+        for (AstNode* const valp : itemp->valuespList()) {
             if (!VN_IS(valp, Const)) {
                 valp->v3error("Non-constant expression in transition bin; "
                               "values must be constants (IEEE 1800-2023 19.5)");
@@ -2634,7 +2634,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             = [](const V3Number& lhs, const V3Number& rhs) { return lhs.isCaseEq(rhs); };
         for (const AstCoverTransItem* const itemp : items) {
             std::vector<V3Number> values;
-            for (AstNode* valp = itemp->valuesp(); valp; valp = valp->nextp()) {
+            for (AstNode* const valp : itemp->valuespList()) {
                 CrossValueRange range{valp, resolveWidth(valp, exprp)};
                 if (!VN_IS(valp, Const) || !resolveValue(valp, exprp, true, false, range)) {
                     return false;
@@ -2817,13 +2817,13 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // 19.5.7), not as a wildcard (see transitionTable), so the sequence can match.  A value not
     // resolved, which generating the matching reports, counts as one.
     static bool transitionPossible(const AstCoverTransSet* setp, AstNodeExpr* exprp) {
-        for (const AstNode* itemp = setp->itemsp(); itemp; itemp = itemp->nextp()) {
+        for (const AstCoverTransItem* const itemp : setp->itemspList()) {
             bool holds = false;
-            for (AstNode* valuep = VN_AS(itemp, CoverTransItem)->valuesp(); valuep && !holds;
-                 valuep = valuep->nextp()) {
+            for (AstNode* const valuep : itemp->valuespList()) {
                 CrossValueRange range{valuep, resolveWidth(valuep, exprp)};
                 holds
                     = !resolveValue(valuep, exprp, true, false, range) || !crossRangeEmpty(range);
+                if (holds) break;
             }
             if (!holds) return false;
         }
