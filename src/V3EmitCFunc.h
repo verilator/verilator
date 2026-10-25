@@ -555,6 +555,27 @@ public:
         AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
     }
+    void visit(AstCvtQueueToUnpack* nodep) override {
+        // Whether each unpacked dimension is reversed, the first for the outermost
+        std::vector<bool> reverses;
+        const AstNodeDType* toDtp = nodep->dtypep()->skipRefp();
+        const AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
+        while (const AstUnpackArrayDType* const toArrayp = VN_CAST(toDtp, UnpackArrayDType)) {
+            // A dynamic array or queue is indexed from the left, as is a source unpacked array
+            const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromDtp, UnpackArrayDType);
+            reverses.push_back(!fromArrayp ? !toArrayp->declRange().ascending()
+                                           : toArrayp->declRange().ascending()
+                                                 != fromArrayp->declRange().ascending());
+            toDtp = toArrayp->subDTypep()->skipRefp();
+            fromDtp = fromDtp->subDTypep()->skipRefp();
+        }
+        putns(nodep, "VL_CVT_Q_TO_UNPACK<");
+        puts(nodep->dtypep()->cType("", false, false));
+        for (const bool reverse : reverses) puts(reverse ? ", 1" : ", 0");
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(")");
+    }
     void visit(AstCvtUnpackToUnpack* nodep) override {
         // Whether each dimension is reversed, the first for the outermost, up to the last that is
         std::vector<bool> reverses;

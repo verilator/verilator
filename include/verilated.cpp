@@ -4079,6 +4079,13 @@ void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
     VL_UNREACHABLE;
 }
 
+void Verilated::sizeMismatchError() VL_MT_SAFE {
+    VL_FATAL_MT("unknown", 0, "",
+                "Dynamic array or queue size does not match unpacked array size"
+                " (IEEE 1800-2023 7.6)");
+    VL_UNREACHABLE;
+}
+
 void Verilated::stackCheck(QData needSize) VL_MT_UNSAFE {
     // Slowpath - Called only when constructing
 #ifdef _VL_HAVE_GETRLIMIT

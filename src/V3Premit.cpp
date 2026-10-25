@@ -380,6 +380,10 @@ class PremitVisitor final : public VNVisitor {
         checkNode(nodep);
         if (!VN_IS(nodep->backp(), NodeAssign)) createTemp(nodep);
     }
+    void visit(AstCvtQueueToUnpack* nodep) override {
+        iterateChildren(nodep);
+        checkNode(nodep);
+    }
     void visit(AstCvtUnpackToQueue* nodep) override {
         iterateChildren(nodep);
         checkNode(nodep);
