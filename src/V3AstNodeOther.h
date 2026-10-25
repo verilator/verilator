@@ -297,6 +297,7 @@ public:
 };
 class AstNodeFuncCovItem VL_NOT_FINAL : public AstNode {
     // Base class for functional coverage items (coverpoints, crosses)
+    // @astgen ptr := m_instCoveragep : Optional[AstFunc]  // [V3Width] Its get_inst_coverage()
 protected:
     string m_name;  // Item name
 
@@ -305,14 +306,13 @@ public:
         : AstNode{t, fl}
         , m_name{name} {}
     ASTGEN_MEMBERS_AstNodeFuncCovItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     bool maybePointedTo() const override { return true; }
-    // Name of the covergroup method that is method 'method' of the item named 'name', pretty
-    // 'name.method', which is no SystemVerilog identifier
-    static string methodName(const string& name, const string& method) {
-        return name + "__DOT__" + method;
-    }
+    AstFunc* instCoveragep() const { return m_instCoveragep; }
+    void instCoveragep(AstFunc* funcp) { m_instCoveragep = funcp; }
 };
 class AstNodeGen VL_NOT_FINAL : public AstNode {
     // Generate construct

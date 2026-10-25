@@ -4164,10 +4164,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // 1800-2023 19.8): the coverage of the item's runtime 'varp' (19.11.1, 19.11.2), or without
     // one, of a cross that is ignored, 0, as with no bins
     void generateItemCoverage(const AstNodeFuncCovItem* itemp, AstVar* varp) {
-        AstFunc* const funcp = VN_CAST(
-            m_memberMap.findMember(
-                m_covergroupp, AstNodeFuncCovItem::methodName(itemp->name(), "get_inst_coverage")),
-            Func);
+        AstFunc* const funcp = itemp->instCoveragep();
         if (!funcp) return;
         FileLine* const fl = funcp->fileline();
         if (!varp) {

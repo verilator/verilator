@@ -3253,6 +3253,11 @@ bool AstNodeFTaskRef::isPure() {
 }
 void AstNodeFile::dump(std::ostream& str) const { Super::dump(str); }
 void AstNodeFile::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstNodeFuncCovItem::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (instCoveragep()) str << " instCoverage=" << nodeAddr(instCoveragep());
+}
+void AstNodeFuncCovItem::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstNodeIf::dump(std::ostream& str) const {
     Super::dump(str);
     if (isBoundsCheck()) str << " [BOUNDS]";

@@ -615,7 +615,7 @@ class VlCovergroupInst final {
     VlFileLineDebug m_fileline;  // Covergroup declaration, where a negative weight is reported
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
-    // Reads m_items to fold the residue; owns m_slot and m_retained.
+    // Reads m_items to fold the residue and merge an item; owns m_slot and m_retained.
     friend class VlCovergroupType;
 
 public:

@@ -56,9 +56,7 @@ class VlCoverpointIf VL_NOT_FINAL {
     // MEMBERS
     int32_t m_weight = 1;  // option.weight; never negative
     int32_t m_typeWeight = 1;  // type_option.weight; never negative
-
-protected:
-    std::string m_hier;  // "covergroup.item", set by the implementor's init()
+    std::string m_hier;  // "covergroup.item"
 
 public:
     // CONSTRUCTORS
@@ -67,6 +65,8 @@ public:
     // METHODS
     /// Name of the item, "covergroup.item", which its covergroup's instances share
     const std::string& hier() const { return m_hier; }
+    /// Set the name of the item, as the implementor's init() does
+    void hier(const char* value) { m_hier = value; }
     // All bins, across every set; index range [0, binCount()).
     virtual uint32_t binCount() const = 0;
     // Bin name in declaration order (e.g. "myBin" or "b[3]"); for an auto
