@@ -37,7 +37,7 @@ class EmitCModel final : public EmitCFunc {
 
     CFuncVector findFuncps(std::function<bool(const AstCFunc*)> cb) {
         CFuncVector funcps;
-        for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : m_modp->stmtspList()) {
             if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
                 if (cb(funcp)) funcps.push_back(funcp);
             }
@@ -50,7 +50,7 @@ class EmitCModel final : public EmitCFunc {
     // Whether 'funcp' is a DPI function with arguments of unpacked structures
     static bool isDpiPassingStructs(const AstCFunc* funcp) {
         if (!funcp->dpiImportPrototype() && !funcp->dpiExportDispatcher()) return false;
-        for (const AstNode* argp = funcp->argsp(); argp; argp = argp->nextp()) {
+        for (const AstNode* const argp : funcp->argspList()) {
             const AstVar* const varp = VN_CAST(argp, Var);
             if (varp && varp->dtypep()->containsUnpackedStruct()) return true;
         }
@@ -129,7 +129,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n// PORTS\n"
              "// The application code writes and reads these signals to\n"
              "// propagate new values into/out from the Verilated model.\n");
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {  //
                     emitVarDecl(varp, /* asRef: */ true);
@@ -141,7 +141,7 @@ class EmitCModel final : public EmitCFunc {
                  "// The application code should use these methods to\n"
                  "// propagate new values into/out from the Verilated model\n"
                  "// instead of using signal variables directly.\n");
-            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            for (const AstNode* const nodep : modp->stmtspList()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                     if (varp->isPrimaryIO()) emitVarAccessors(varp);
                 }
@@ -152,7 +152,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n// CELLS\n"
              "// Public to allow access to /* verilator public */ items.\n"
              "// Otherwise the application code can consider these internals.\n");
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 putns(cellp, EmitCUtil::prefixNameProtect(cellp->modp()) + "* const "
@@ -338,7 +338,7 @@ class EmitCModel final : public EmitCFunc {
              + cvtToStr(v3Global.opt.convergeLimit()) + "}\n");
 
         // Set up IO references
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {
                     const string protName = varp->nameProtect();
@@ -349,7 +349,7 @@ class EmitCModel final : public EmitCFunc {
         }
 
         // Setup cell pointers
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 const string protName = cellp->nameProtect();
@@ -383,7 +383,7 @@ class EmitCModel final : public EmitCFunc {
                 putsDecoration(nullptr, "// Notified by pending time delays/DPI exports\n");
                 puts("sensitive << vlSymsp->__Vm_wakeEvent;\n");
             }
-            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            for (AstNode* const nodep : modp->stmtspList()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                     if (varp->isNonOutput() && (varp->isScSensitive() || varp->isPrimaryClock())) {
                         int vects = 0;
@@ -746,7 +746,7 @@ class EmitCModel final : public EmitCFunc {
         const std::string fileBaseName = EmitCUtil::topClassName() + "__Dpi_Export";
 
         // Emit DPI Export dispatchers
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             AstCFunc* const funcp = VN_CAST(nodep, CFunc);
             if (!funcp || !funcp->dpiExportDispatcher()) continue;
 

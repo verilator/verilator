@@ -68,9 +68,9 @@ private:
         const auto nitPair = m_map.emplace(nodep, MemberMap{});
         MemberMap& mmapr = nitPair.first->second;
         if (const AstClass* const anodep = VN_CAST(nodep, Class)) {
-            for (AstNode* itemp = anodep->membersp(); itemp; itemp = itemp->nextp()) {
+            for (AstNode* const itemp : anodep->memberspList()) {
                 if (const AstScope* const scopep = VN_CAST(itemp, Scope)) {
-                    for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                    for (AstNode* const blockp : scopep->blockspList()) {
                         if (AstClass::isCacheableChild(blockp)) memberInsert(mmapr, blockp);
                     }
                 } else {
@@ -78,9 +78,9 @@ private:
                 }
             }
         } else if (const AstIface* const anodep = VN_CAST(nodep, Iface)) {
-            for (AstNode* itemp = anodep->stmtsp(); itemp; itemp = itemp->nextp()) {
+            for (AstNode* const itemp : anodep->stmtspList()) {
                 if (const AstScope* const scopep = VN_CAST(itemp, Scope)) {
-                    for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
+                    for (AstNode* const blockp : scopep->blockspList()) {
                         memberInsert(mmapr, blockp);
                     }
                 } else if (!VN_IS(itemp, Always)) {
@@ -89,13 +89,9 @@ private:
             }
         } else if (const AstNodeUOrStructDType* const anodep
                    = VN_CAST(nodep, NodeUOrStructDType)) {
-            for (AstNode* itemp = anodep->membersp(); itemp; itemp = itemp->nextp()) {
-                memberInsert(mmapr, itemp);
-            }
+            for (AstNode* const itemp : anodep->memberspList()) { memberInsert(mmapr, itemp); }
         } else if (const AstPackage* const anodep = VN_CAST(nodep, Package)) {
-            for (AstNode* itemp = anodep->stmtsp(); itemp; itemp = itemp->nextp()) {
-                memberInsert(mmapr, itemp);
-            }
+            for (AstNode* const itemp : anodep->stmtspList()) { memberInsert(mmapr, itemp); }
         } else {
             nodep->v3fatalSrc("Unsupported node type");
         }

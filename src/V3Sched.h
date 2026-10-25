@@ -138,7 +138,7 @@ public:
         for (const Entry& entry : m_entries) {
             AstActive* const activep = entry.m_activep;
             if (v3Global.opt.debugCheck()) {
-                for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+                for (AstNode* const nodep : activep->stmtspList()) {
                     AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
                     UASSERT_OBJ(procp && !procp->stmtsp(), activep, "Leftover logic");
                 }
@@ -152,7 +152,7 @@ public:
     void foreachLogic(const std::function<void(AstNode*)>& f) const {
         for (const Entry& entry : m_entries) {
             const AstActive* const activep = entry.m_activep;
-            for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) f(nodep);
+            for (AstNode* const nodep : activep->stmtspList()) f(nodep);
         }
     }
 };

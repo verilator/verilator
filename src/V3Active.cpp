@@ -510,8 +510,7 @@ class ActiveVisitor final : public VNVisitor {
     }
 
     static void markEventEdges(AstSenTree* sentreep) {
-        for (AstSenItem* senip = sentreep->sensesp(); senip;
-             senip = VN_AS(senip->nextp(), SenItem)) {
+        for (AstSenItem* const senip : sentreep->sensespList()) {
             if (!senip->sensp()) continue;
             if (const AstNodeDType* const dtypep = senip->sensp()->dtypep()) {
                 if (const AstBasicDType* const basicp = dtypep->basicp()) {

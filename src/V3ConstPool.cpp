@@ -66,7 +66,7 @@ void V3ConstPool::rebuildCache() {
     m_entries.clear();
     m_varScopes.clear();
     AstPackage* const pkgp = v3Global.rootp()->constPoolPkgp();
-    for (AstNode* nodep = pkgp->stmtsp(); nodep; nodep = nodep->nextp()) {
+    for (AstNode* const nodep : pkgp->stmtspList()) {
         if (AstScope* const scopep = VN_CAST(nodep, Scope)) {
             if (m_stage == Stage::SCOPED) m_scopep = scopep;
             continue;
@@ -77,7 +77,7 @@ void V3ConstPool::rebuildCache() {
         m_entries.insert(varp);
     }
     if (m_scopep) {
-        for (AstVarScope* vscp = m_scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+        for (AstVarScope* const vscp : m_scopep->varspList()) {
             m_varScopes.insert({vscp->varp(), vscp});
         }
     }

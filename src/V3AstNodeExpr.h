@@ -2442,7 +2442,7 @@ public:
     bool formatScopeTracking() const {  // Track scopeNamep();  Ok if false positive
         if (exprFormat() || name().find("%m") != string::npos || name().find("%M") != string::npos)
             return true;
-        for (const AstNode* exprp = this->exprsp(); exprp; exprp = exprp->nextp()) {
+        for (const AstNode* const exprp : this->exprspList()) {
             if (const AstConst* const fmtp = VN_CAST(exprp, Const)) {
                 if (fmtp->num().isFromString()) {
                     const string str = fmtp->num().toString();

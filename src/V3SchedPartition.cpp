@@ -396,8 +396,7 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
         for (const auto& entry : clockedLogic) {
             AstScope* const scopep = entry.m_scopep;
             AstActive* const activep = entry.m_activep;
-            for (AstNode *nodep = activep->stmtsp(), *nextp; nodep; nodep = nextp) {
-                nextp = nodep->nextp();
+            for (AstNode* const nodep : activep->stmtspList()) {
                 if (AstAlwaysPre* const logicp = VN_CAST(nodep, AlwaysPre)) {
                     bool toActiveRegion = false;
                     logicp->foreach([&](const AstNodeVarRef* vrefp) {

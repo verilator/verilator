@@ -95,7 +95,7 @@ static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     subFuncp->slow(ofuncp->slow());
     subFuncp->declPrivate(ofuncp->declPrivate());
     if (ofuncp->needProcess()) subFuncp->setNeedProcess();
-    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+    for (AstVar* const argp : ofuncp->argspList()) {
         AstVar* const clonep = argp->cloneTree(false);
         subFuncp->addArgsp(clonep);
         AstVarScope* const vscp = new AstVarScope{clonep->fileline(), scopep, clonep};
@@ -111,7 +111,7 @@ void splitCheckFinishSubFunc(AstCFunc* ofuncp, AstCFunc* subFuncp,
     AstCCall* const callp = new AstCCall{subFuncp->fileline(), subFuncp};
     callp->dtypeSetVoid();
     // Pass arguments through to subfunction
-    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+    for (AstVar* const argp : ofuncp->argspList()) {
         UASSERT_OBJ(argp->direction() == VDirection::CONSTREF, argp, "Unexpected direction");
         callp->addArgsp(new AstVarRef{flp, argVscps.at(argp), VAccess::READ});
     }
@@ -146,7 +146,7 @@ static std::vector<bool> splitCheckBreakable(const AstCFunc* ofuncp) {
     // Gather the top level statements, and where each locally declared variable is declared
     std::vector<const AstNode*> stmtps;
     std::unordered_map<const AstVar*, size_t> declIdx;  // Local var -> index it is declared at
-    for (const AstNode* nodep = ofuncp->stmtsp(); nodep; nodep = nodep->nextp()) {
+    for (const AstNode* const nodep : ofuncp->stmtspList()) {
         if (const AstVar* const varp = VN_CAST(nodep, Var)) declIdx.emplace(varp, stmtps.size());
         stmtps.push_back(nodep);
     }
@@ -183,11 +183,10 @@ void splitCheck(AstCFunc* const ofuncp) {
 
     // Need to find the AstVarScopes for the function arguments. They should be in the same Scope.
     std::unordered_map<const AstVar*, AstVarScope*> argVscps;
-    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+    for (AstVar* const argp : ofuncp->argspList()) {
         UASSERT_OBJ(argVscps.size() < 2, argp, "There should be at most 2 arguments, or O(n^2)");
         bool found = false;
-        for (AstVarScope *vscp = ofuncp->scopep()->varsp(), *nextp; vscp; vscp = nextp) {
-            nextp = VN_AS(vscp->nextp(), VarScope);
+        for (AstVarScope* const vscp : ofuncp->scopep()->varspList()) {
             if (vscp->varp() != argp) continue;
             argVscps[argp] = vscp;
             found = true;

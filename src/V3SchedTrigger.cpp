@@ -371,7 +371,7 @@ uint32_t TriggerKit::extraTriggerIndex(uint32_t index) const {
 
 std::set<uint32_t> TriggerKit::triggerIndices(const AstSenTree* senTreep, bool pre) const {
     std::set<uint32_t> indices;
-    for (const AstSenItem* sip = senTreep->sensesp(); sip; sip = VN_AS(sip->nextp(), SenItem)) {
+    for (const AstSenItem* const sip : senTreep->sensespList()) {
         uint32_t index = m_senItem2TrigIdx.at(*sip);
         if (pre) {
             UASSERT_OBJ(index < m_nPreWords * WORD_SIZE, sip, "Not a 'pre' trigger");
@@ -580,8 +580,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
 
     // Process the 'pre' trees first, so they are at the begining of the vector
     for (const AstSenTree* const senTreep : preTreeps) {
-        for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
-            nextp = VN_AS(itemp->nextp(), SenItem);
+        for (const AstSenItem* const itemp : senTreep->sensespList()) {
             UASSERT_OBJ(itemp->isClocked() || itemp->isHybrid(), itemp,
                         "Cannot create trigger expression for non-clocked sensitivity");
             const auto pair = senItem2TrigIdx.emplace(*itemp, senItemps.size());
@@ -599,8 +598,7 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
 
     // Process the rest of the trees
     for (const AstSenTree* const senTreep : senTreeps) {
-        for (const AstSenItem *itemp = senTreep->sensesp(), *nextp; itemp; itemp = nextp) {
-            nextp = VN_AS(itemp->nextp(), SenItem);
+        for (const AstSenItem* const itemp : senTreep->sensespList()) {
             UASSERT_OBJ(itemp->isClocked() || itemp->isHybrid(), itemp,
                         "Cannot create trigger expression for non-clocked sensitivity");
             const auto pair = senItem2TrigIdx.emplace(*itemp, senItemps.size());
@@ -829,8 +827,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
         for (auto senTreeSched : m_senTreeToSched) {
             AstSenTree* const senTreep = senTreeSched.first;
 
-            for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
-                 senItemp = VN_AS(senItemp->nextp(), SenItem)) {
+            for (AstSenItem* const senItemp : senTreep->sensespList()) {
                 const VEdgeType edge = senItemp->edgeType();
                 if (edge.anEdge() || edge == VEdgeType::ET_CHANGED
                     || edge == VEdgeType::ET_HYBRID) {
@@ -864,8 +861,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
             AstNodeExpr* const shedp = senTreeSched.second;
 
             // Find all common SenItem indexes for `senTreep` and `usedTriggers`
-            for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
-                 senItemp = VN_AS(senItemp->nextp(), SenItem)) {
+            for (AstSenItem* const senItemp : senTreep->sensespList()) {
                 const size_t idx = m_trigKit.senItem2TrigIdx(senItemp);
                 if (usedTriggers.find(idx) != usedTriggers.end()) {
                     usedTrigsToUsingTrees[idx / TriggerKit::WORD_SIZE]
@@ -981,8 +977,7 @@ public:
 
                 // Find all trigger indexes of SenItems inside `senTreep`
                 // and add them to `trigps` and `usedTriggers`
-                for (const AstSenItem* itemp = senTreep->sensesp(); itemp;
-                     itemp = VN_AS(itemp->nextp(), SenItem)) {
+                for (const AstSenItem* const itemp : senTreep->sensespList()) {
                     const size_t idx = m_trigKit.senItem2TrigIdx(itemp);
                     emplaceAt(m_senExprBuilder.build(itemp).first, idx);
                     auto iter = m_senExprToSenItem.find(*getSenHashNode(itemp));

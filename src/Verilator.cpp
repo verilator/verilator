@@ -678,7 +678,7 @@ static void process() {
         // V3EmitMk/V3EmitMkJson must be after all other emitters,
         // as they and below code visits AstCFiles added earlier
         size_t src_f_cnt = 0;
-        for (AstNode* nodep = v3Global.rootp()->filesp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : v3Global.rootp()->filespList()) {
             if (const AstCFile* cfilep = VN_CAST(nodep, CFile))
                 src_f_cnt += cfilep->source() ? 1 : 0;
         }
