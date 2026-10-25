@@ -859,7 +859,7 @@ public:
 //######################################################################
 
 class EmitMkHierVerilation final {
-    const V3HierGraph* const m_graphp;
+    const V3HierGraph* const m_graphp;  // Hierarchical blocks graph
     const string m_makefile;  // path of this makefile
     void emitCommonOpts(V3OutMkFile& of) const {
         of.puts("# Verilation of hierarchical blocks are executed in this directory\n");

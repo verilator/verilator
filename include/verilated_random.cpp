@@ -671,7 +671,7 @@ static VlSolverSession s_solverSession;
 // One solver transaction; the caller holds the session mutex
 class VlSolverTxn final {
     VlSolverSession& m_sess;
-    const bool m_ok;
+    const bool m_ok;  // Session transaction began successfully
 
 public:
     explicit VlSolverTxn(VlSolverSession& sess) VL_REQUIRES(sess.m_mutex)

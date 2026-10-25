@@ -119,7 +119,7 @@ public:
 //  Emit statements and expressions
 
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
-    VMemberMap m_memberMap;
+    VMemberMap m_memberMap;  // Map to find members of classes
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for AstJumpBlocks
     bool m_createdScopeHash = false;  // Already created a scope hash
@@ -132,7 +132,7 @@ protected:
     bool m_usevlSelfRef = false;  // Use vlSelfRef reference instead of vlSelf pointer
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
-    bool m_instantiatesOwnProcess = false;
+    bool m_instantiatesOwnProcess = false;  // Statement that instantiates its own process
     const AstClassPackage* m_classOrPackage = nullptr;  // Pointer to current class or package
     string m_classOrPackageHash;  // Hash of class or package name
 

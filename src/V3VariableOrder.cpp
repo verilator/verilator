@@ -108,7 +108,7 @@ class VariableOrder final {
     //                                   requirement, to avoid padding
     const VNUser1InUse m_user1InUse;
 
-    const MTaskWritersMap& m_mTaskWriters;
+    const MTaskWritersMap& m_mTaskWriters;  // Writer mtasks of each variable
 
     VariableOrder(AstNodeModule* modp, const MTaskWritersMap& mTaskWriters)
         : m_mTaskWriters{mTaskWriters} {

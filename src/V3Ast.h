@@ -105,7 +105,7 @@ class VIfaceCaptureTag;
 //######################################################################
 
 struct VNTypeInfo final {
-    const char* m_namep;
+    const char* m_namep;  // Name of the node type
     enum OpEn : uint8_t {
         OP_UNUSED,
         OP_USED,
@@ -113,7 +113,7 @@ struct VNTypeInfo final {
         OP_OPTIONAL,
     } m_opType[4];
     const char* m_opNamep[4];
-    size_t m_sizeof;
+    size_t m_sizeof;  // Size of the node type
 };
 
 class VNType final {
@@ -121,7 +121,7 @@ class VNType final {
 
 public:
 #include "V3Ast__gen_type_enum.h"  // From ./astgen
-    const en m_e;
+    const en m_e;  // Enumeration value
     VNType() = delete;
 
     // VNType is interconvetible with VNType::en
@@ -394,8 +394,8 @@ protected:
     };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
     AstNode* m_backp = nullptr;  // Saved AstNode::m_backp of the unlinked node, to relink
-    AstNode** m_iterpp = nullptr;
-    RelinkWhatEn m_chg = RELINK_BAD;
+    AstNode** m_iterpp = nullptr;  // Iterator pointer of the unlinked node, to restore
+    RelinkWhatEn m_chg = RELINK_BAD;  // Kind of link the node previously had, to restore
 
 public:
     VNRelinker() = default;

@@ -62,7 +62,7 @@ class TaskFTaskVertex final : public TaskBaseVertex {
     VL_RTTI_IMPL(TaskFTaskVertex, TaskBaseVertex);
     // Every task gets a vertex, and we link tasks together based on funcrefs.
     AstNodeFTask* const m_nodep;
-    AstCFunc* m_cFuncp = nullptr;
+    AstCFunc* m_cFuncp = nullptr;  // Function created for this task
     bool m_needsNonInlineCFunc = false;  // Needs CFunc for selected non-inlined call sites
 
 public:

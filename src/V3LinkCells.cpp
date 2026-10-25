@@ -51,7 +51,7 @@ public:
 
 class LinkCellsVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(LinkCellsVertex, V3GraphVertex)
-    AstNodeModule* const m_modp;
+    AstNodeModule* const m_modp;  // Module this vertex represents
 
 public:
     LinkCellsVertex(V3Graph* graphp, AstNodeModule* modp)
@@ -78,7 +78,7 @@ public:
 
 class CellEdge final : public V3GraphEdge {
     VL_RTTI_IMPL(CellEdge, V3GraphEdge)
-    AstCell* const m_cellp;
+    AstCell* const m_cellp;  // Cell this edge represents
 
 public:
     CellEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cutable,

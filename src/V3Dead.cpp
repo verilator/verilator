@@ -267,11 +267,11 @@ class DeadVisitor final : public VNVisitor {
     std::vector<AstVar*> m_varsp;
     std::vector<AstNode*> m_dtypeElimsp;  // Data types might eliminate
     std::map<AstNodeDType*, AstNodeModule*> m_dtypePkgsp;  // Data type's containing package
-    std::vector<AstVarScope*> m_vscsp;
-    std::vector<AstScope*> m_scopesp;
-    std::vector<AstCell*> m_cellsp;
-    std::vector<AstClass*> m_classesp;
-    std::vector<AstTypedef*> m_typedefsp;
+    std::vector<AstVarScope*> m_vscsp;  // All variable scopes
+    std::vector<AstScope*> m_scopesp;  // All scopes
+    std::vector<AstCell*> m_cellsp;  // All cells
+    std::vector<AstClass*> m_classesp;  // All classes
+    std::vector<AstTypedef*> m_typedefsp;  // All typedefs
     AssignMap m_assignMap;  // List of all simple assignments for each variable
     bool m_sideEffect = false;  // Side effects discovered in assign RHS
 
@@ -285,9 +285,9 @@ class DeadVisitor final : public VNVisitor {
 
     // STATE - Statistic tracking
     VDouble0 m_statFTasksDemoted;
-    VDouble0 m_statFTasksMDeadified;
-    VDouble0 m_statFTasksNMDeadified;
-    VDouble0 m_statFTasksVirtDeadified;
+    VDouble0 m_statFTasksMDeadified;  // Statistic, module function/tasks removed as dead
+    VDouble0 m_statFTasksNMDeadified;  // Statistic, non-module function/tasks removed as dead
+    VDouble0 m_statFTasksVirtDeadified;  // Statistic, virtual function/tasks removed as dead
 
     // METHODS
 

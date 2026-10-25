@@ -2511,7 +2511,7 @@ public:
 
 class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
 
-    AstClass* m_classp = nullptr;
+    AstClass* m_classp = nullptr;  // Current class
     std::unordered_map<const AstParamTypeDType*, AstClass*> m_paramTypeClassMap;
 
     // Owner-tracking state for the post-clone REFDTYPE typedef retargeting
@@ -2521,9 +2521,9 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
     // m_ownerMapForp cache key avoids rebuilding when the owner is unchanged
     // (e.g. across siblings under the same parent).
     AstNodeModule* m_ownerModp = nullptr;
-    AstNodeModule* m_ownerMapForp = nullptr;
+    AstNodeModule* m_ownerMapForp = nullptr;  // Owner for which m_origNameToClone was last built
     std::unordered_map<std::string, AstClass*> m_origNameToClone;
-    std::unordered_set<std::string> m_ambiguous;
+    std::unordered_set<std::string> m_ambiguous;  // Original names that map to more than one clone
 
     void ensureOwnerMap() {
         if (m_ownerMapForp == m_ownerModp) return;

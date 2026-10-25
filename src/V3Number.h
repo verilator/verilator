@@ -388,7 +388,7 @@ class V3Number final {
     using V3NumberDataType = V3NumberData::V3NumberDataType;
 
     // MEMBERS
-    V3NumberData m_data;
+    V3NumberData m_data;  // Value and flags
     AstNode* m_nodep = nullptr;  // Parent node - for error reporting only
     FileLine* m_fileline = nullptr;  // Source location - if no parent node is reasonable
 

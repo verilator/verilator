@@ -1781,7 +1781,7 @@ public:
 class SvaNfaLowering final {
     AstNodeModule* const m_modp;  // Module to add state vars and always blocks to
     AstNodeDType* const m_u32DTypep;  // Shared unsigned counter dtype
-    V3UniqueNames m_names{"__Vnfa"};
+    V3UniqueNames m_names{"__Vnfa"};  // Unique names for generated variables
     size_t m_statDelayRingEdgeVisits = 0;  // Delay-ring incoming edges visited
 
     // Per-lowering shared context (passed to phase sub-functions)

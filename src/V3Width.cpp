@@ -302,7 +302,7 @@ class WidthVisitor final : public VNVisitor {
     std::map<std::pair<const AstNodeDType*, VAttrType>, AstVarRef*> m_tableMap;
     // Queues with given index type
     std::map<const AstNodeDType*, AstQueueDType*> m_queueDTypeIndexed;
-    ContainingClassFinder m_containingClassFinder;
+    ContainingClassFinder m_containingClassFinder;  // Finds the class containing a node
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
 

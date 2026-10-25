@@ -38,6 +38,7 @@ class EmitCImp final : public EmitCFunc {
     const AstNodeModule* const m_fileModp;
     const bool m_slow;  // Creating __Slow file
     V3UniqueNames m_uniqueNames;  // Generates unique file names
+    // Base name of the output files
     const std::string m_fileBaseName = EmitCUtil::prefixNameProtect(m_fileModp);
     TextStmts m_ctorStmts;  // Statements constructing members in 'ctor'
     TextStmts m_dtorStmts;  // Statements destroying members in 'dtor'
@@ -522,6 +523,7 @@ class EmitCTraceTypes final : public EmitCFunc {
     std::unordered_map<AstNode*, int> m_enumNumMap;  // EnumDType to enumeration number
     int m_traceTypeSubs = 0;  // Number of trace type declaration sub-functions
     V3UniqueNames m_uniqueNames;  // Generates unique file names
+    // Base name of the output files
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "_" + protect("_TraceDecls");
     // This one uses CSplitTrace for file splitting, which is incorrect but historically accurates
     const size_t m_splitLimit = v3Global.opt.outputSplitCTrace()
@@ -620,8 +622,10 @@ class EmitCTrace final : public EmitCFunc {
 
     // MEMBERS
     const bool m_slow;  // Making slow file
+    // Emits trace types, only when making slow file
     const std::unique_ptr<EmitCTraceTypes> m_emitTypesp{m_slow ? new EmitCTraceTypes{} : nullptr};
     V3UniqueNames m_uniqueNames;  // Generates unique file names
+    // Base name of the output files
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "_" + protect("_Trace");
 
     // METHODS

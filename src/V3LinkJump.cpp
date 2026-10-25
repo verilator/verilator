@@ -64,8 +64,8 @@ class LinkJumpVisitor final : public VNVisitor {
     int m_modRepeatNum = 0;  // Repeat counter
     VOptionBool m_unrollFull;  // Pragma full, disable, or default unrolling
     std::vector<AstNodeBlock*> m_blockStack;  // All begin blocks above current node
-    V3UniqueNames m_queueNames{
-        "__VprocessQueue"};  // Names for queues needed for 'disable' handling
+    // Names for queues needed for 'disable' handling
+    V3UniqueNames m_queueNames{"__VprocessQueue"};
     std::unordered_map<const AstTask*, AstVar*> m_taskDisableQueues;  // Per-task process queues
     std::unordered_map<const AstBegin*, AstVar*> m_beginDisableQueues;  // Per-begin process queues
     std::unordered_map<const AstFork*, AstVar*> m_forkDisableQueues;  // Per-fork process queues

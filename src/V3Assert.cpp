@@ -420,7 +420,7 @@ class AssertVisitor final : public VNVisitor {
     AstFinal* m_finalp = nullptr;  // Current final block
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    V3UniqueNames m_caseTempNames{"__VCase"};
+    V3UniqueNames m_caseTempNames{"__VCase"};  // Unique names for case temporaries
     V3UniqueNames m_matchCountNames{"__VnfaRemainingMatchCount"};  // Match replay counter names
     // Maps from (expression, senTree) to the AstAlways that computes its delayed values.
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>

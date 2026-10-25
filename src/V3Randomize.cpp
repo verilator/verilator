@@ -912,7 +912,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // AstMemberSel::user2p()  -> AstNodeModule*. Pointer to containing module
     // VNuser3InUse m_inuser3; (Allocated for use in RandomizeVisitor)
 
-    AstClass* const m_classp;
+    AstClass* const m_classp;  // Class being processed
     AstBegin* const m_inlineInitBlockp;  // Block to add write_var calls to
                                          // (may be null, then new() is used)
     AstNodeFTask* const m_memberselInitTaskp;  // Fallback for membersel write_var when
@@ -934,6 +934,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     uint32_t* m_uniqueConstraintId = nullptr;  // Current ID of unique call
     V3UniqueNames& m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
     std::vector<AstVar*> m_rangeConstrainedEnums;  // Enums that are already range-constrained
+    // First expression found under an inside index
     AstNode* m_firstExpressionInsideIndexp = nullptr;
     AstConstraintForeach* m_foreachp = nullptr;  // Innermost constraint-foreach being processed
     std::set<const AstVar*> m_foreachIdxVars;  // Index vars of all enclosing constraint-foreaches

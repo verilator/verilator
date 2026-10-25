@@ -612,7 +612,7 @@ private:
     bool m_restricted = false;
     // dist-ast-dump-suppress  // V3LinkDot temporary use only
     bool m_validated = false;  // identifier_list typo / unused checks already run
-    std::set<std::string> m_restrictedNames;
+    std::set<std::string> m_restrictedNames;  // Names reference is restricted to
 
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,

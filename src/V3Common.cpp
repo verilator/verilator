@@ -175,9 +175,9 @@ class ToStringVisitor final : public VNVisitorConst {
         NO_PRINTED_FROM_PARENT
     };
 
-    VDouble0 m_statClassToString;
-    VDouble0 m_statInterfaceToString;
-    VDouble0 m_statStructUnionToString;
+    VDouble0 m_statClassToString;  // Statistic, number of class to_string() created
+    VDouble0 m_statInterfaceToString;  // Statistic, number of interface to_string() created
+    VDouble0 m_statStructUnionToString;  // Statistic, number of struct/union to_string() created
 
     void markClassIterate(AstClass* classp) {
         if (classp->user1SetOnce()) return;

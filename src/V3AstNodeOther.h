@@ -1862,7 +1862,7 @@ public:
 class AstPull final : public AstNode {
     // @astgen op1 := lhsp : AstNodeExpr
 
-    const bool m_direction;
+    const bool m_direction;  // Direction of the pull
 
 public:
     AstPull(FileLine* fl, AstNodeExpr* lhsp, bool direction)

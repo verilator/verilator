@@ -486,7 +486,7 @@ class VlCoverCrossT final : public VlCoverCross {
     std::array<uint32_t, AutoBins> m_autoBins;
     std::array<uint32_t, BinWords> m_binWords;
     std::array<uint64_t, static_cast<uint64_t>(Bins) * WORDS> m_selections;
-    Explicit m_explicit;
+    Explicit m_explicit;  // Explicit bins, referencing the bins array
 
 public:
     VlCoverCrossT()

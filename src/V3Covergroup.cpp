@@ -47,13 +47,13 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // type_option variables through which SystemVerilog may set type_option.merge_instances
 
 class CovergroupAssignValidVisitor final : public VNVisitorConst {
-    VMemberMap m_memberMap;
+    VMemberMap m_memberMap;  // Finds members of classes
     std::map<const AstVar*, const AstNodeFTask*>
         m_constructors;  // Implicit instance -> constructor
     std::set<const AstVar*> m_mergeableTypeOptions;  // See mergeableTypeOptions()
-    const AstNodeFTask* m_ftaskp = nullptr;
-    bool m_collecting = true;
-    bool m_valid = true;
+    const AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
+    bool m_collecting = true;  // Still collecting constructors, rather than validating
+    bool m_valid = true;  // All assignments seen so far are valid
 
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_ftaskp);
@@ -132,8 +132,8 @@ public:
 class CovergroupExprValidVisitor final : public VNVisitor {
     const std::set<const AstVar*>& m_sampleMembers;
     const std::set<const AstVar*>& m_constructorRefMembers;
-    bool m_inCoverageExpression = false;
-    bool m_sampleFormalAllowed = false;
+    bool m_inCoverageExpression = false;  // Under a coverage expression
+    bool m_sampleFormalAllowed = false;  // References to sample formal arguments are allowed
 
     void scanSampleExpression(AstNode* nodep) {
         if (!nodep) return;

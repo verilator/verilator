@@ -140,7 +140,7 @@ public:
 
 class TristateVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TristateVertex, V3GraphVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Node this vertex represents
     bool m_isTristate = false;  // Logic indicates a tristate
     bool m_feedsTri = false;  // Propagates to a tristate node (on RHS)
     bool m_processed = false;  // Tristating was cleaned up
@@ -349,7 +349,7 @@ public:
 // See also V3LinkLValue::linkLValueSet
 
 class TristatePinVisitor final : public TristateBaseVisitor {
-    TristateGraph& m_tgraph;
+    TristateGraph& m_tgraph;  // Tristate graph being updated
     const bool m_lvalue;  // Flip to be an LVALUE
     // VISITORS
     // AstNodeVarRef, not just AstVarRef: a cross-hierarchy pin expression into an

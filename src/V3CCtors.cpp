@@ -51,7 +51,7 @@ public:
 
 class V3CCtorsBuilder final {
     AstNodeModule* const m_modp;  // Current module/class
-    const string m_basename;
+    const string m_basename;  // Prefix for generated function names
     const VCtorType m_type;  // What kind of constructor are we creating
     std::list<AstCFunc*> m_newFunctions;  // Created functions, latest is at back
     int m_numStmts = 0;  // Number of statements output

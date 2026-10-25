@@ -492,13 +492,14 @@ public:
 class FsmDetectVisitor final : public VNVisitor {
     // STATE - for current visit position (use VL_RESTORER)
     FsmState& m_state;
-    AstScope* m_scopep = nullptr;
+    AstScope* m_scopep = nullptr;  // Current scope
+    // Candidate state registers found so far
     std::vector<FsmRegisterCandidate> m_registerCandidates;
     // Deferring one-block detection avoids making continuous alias support
     // depend on whether the assign appears before or after the always block.
     std::vector<FsmComboAlways> m_oneBlockAlwayss;
-    std::vector<FsmComboAlways> m_comboAlwayss;
-    std::vector<FsmComboAlways> m_nonComboAlwayss;
+    std::vector<FsmComboAlways> m_comboAlwayss;  // Combinational always blocks found
+    std::vector<FsmComboAlways> m_nonComboAlwayss;  // Non-combinational always blocks found
     // Wrapper FSM detection has a second path for designs compiled without
     // inlining. In that shape the state register stays behind an AstCell, so we
     // remember candidate cells and resolve them only after the surrounding
@@ -514,7 +515,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // between those scopes: only transparent port aliases are recorded, so the
     // detector does not become a general cross-module dataflow engine.
     FsmCellPortAliasMap m_cellPortAliases;
-    FsmCellPortAliasMap m_cellPortChildAliases;
+    FsmCellPortAliasMap m_cellPortChildAliases;  // Port aliases of child cells, by cell
 
     // METHODS
     // Enum-backed FSMs may be wrapped in refs/typedefs; normalize to the

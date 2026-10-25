@@ -302,7 +302,7 @@ private:
     mutable AstCFunc* m_dumpExtp = nullptr;
     // The AstCFunc testing if a trigger vector has any bits set - create lazily
     mutable AstCFunc* m_anySetVecp = nullptr;
-    mutable AstCFunc* m_anySetExtp = nullptr;
+    mutable AstCFunc* m_anySetExtp = nullptr;  // Function testing if extra trigger bits are set
     // The AstCFunc setting bits in a trigger vector that are set in another - create lazily
     mutable std::array<AstCFunc*, 4> m_orIntoVecps = {nullptr};
     // The AstCFunc setting a trigger vector to all zeroes - create lazily
@@ -481,7 +481,7 @@ private:
     // How the sample() calls seen so far resolved. Statistics only, hence mutable: ordering
     // runs once per scheduling region and must hold this by const reference.
     mutable uint32_t m_numExactCalls = 0;
-    mutable uint32_t m_numUnionCalls = 0;
+    mutable uint32_t m_numUnionCalls = 0;  // Statistic, sample() calls that resolved to a union
     // Returned for a covergroup with no reference formal at all.
     static const Bindings s_none;
 

@@ -34,8 +34,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 // Internal EmitC implementation
 
 class EmitCHeader final : public EmitCBaseVisitorConst {
-    V3UniqueNames m_names;
-    VMemberMap m_memberMap;
+    V3UniqueNames m_names;  // Generates unique names
+    VMemberMap m_memberMap;  // Finds members of classes
     // METHODS
 
     class CoverCountVisitor final : public VNVisitorConst {

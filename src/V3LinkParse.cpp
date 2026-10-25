@@ -51,7 +51,7 @@ class LinkParseVisitor final : public VNVisitor {
     // If set, move AstVar->valuep() initial values to this module
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     AstVar* m_varp = nullptr;  // Variable we're under
-    AstNodeModule* m_valueModp = nullptr;
+    AstNodeModule* m_valueModp = nullptr;  // Module to move initial values into
     AstNodeModule* m_modp = nullptr;  // Current module
     bool m_inInterface = false;  // True when inside interface declaration
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure

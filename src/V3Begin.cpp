@@ -43,7 +43,7 @@ class BeginState final {
     // Entire netlist:
     // AstNodeFTask::user1      -> bool, 1=processed
     const VNUser1InUse m_inuser1;
-    bool m_anyFuncInBegin = false;
+    bool m_anyFuncInBegin = false;  // Any function found inside a begin block
 
 public:
     BeginState() = default;

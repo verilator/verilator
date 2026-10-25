@@ -115,7 +115,7 @@ class EmitCModel final : public EmitCFunc {
         puts("// Symbol table holding complete model state (owned by this class)\n");
         puts(EmitCUtil::symClassName() + "* const vlSymsp;\n");
         puts("// Evaluation loop\n");
-        puts("VerilatedEvalLoop m_evalLoop;\n");
+        puts("VerilatedEvalLoop m_evalLoop;\n");  // Evaluation loop
 
         puts("\n");
         ofp()->putsPrivate(false);  // public:

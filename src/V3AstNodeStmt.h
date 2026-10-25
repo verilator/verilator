@@ -1510,7 +1510,7 @@ public:
     };
 
 private:
-    operation m_operation;
+    operation m_operation;  // Operation statement performs
 
 public:
     AstAssignCompound(AstAssignCompound::operation operation, FileLine* fl, AstNodeExpr* lhsp,

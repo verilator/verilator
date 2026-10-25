@@ -58,8 +58,8 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class TraceActivityVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TraceActivityVertex, V3GraphVertex)
-    AstNode* const m_insertp;
-    int32_t m_activityCode;
+    AstNode* const m_insertp;  // Node to insert activity code setting before
+    int32_t m_activityCode;  // Activity code, 0 if always active
     bool m_slow;  // If always slow, we can use the same code
 public:
     enum { ACTIVITY_NEVER = ((1UL << 31) - 1) };
@@ -103,7 +103,7 @@ public:
 
 class TraceCFuncVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TraceCFuncVertex, V3GraphVertex)
-    AstCFunc* const m_nodep;
+    AstCFunc* const m_nodep;  // Function this vertex represents
 
 public:
     TraceCFuncVertex(V3Graph* graphp, AstCFunc* nodep)
@@ -147,7 +147,7 @@ public:
 
 class TraceVarVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TraceVarVertex, V3GraphVertex)
-    AstVarScope* const m_nodep;
+    AstVarScope* const m_nodep;  // Variable scope this vertex represents
 
 public:
     TraceVarVertex(V3Graph* graphp, AstVarScope* nodep)
