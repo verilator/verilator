@@ -73,7 +73,7 @@ NOTIFICATION_DIR=notification
 mkdir -p ${NOTIFICATION_DIR}
 
 cat > ${NOTIFICATION_DIR}/body.txt <<NOTIFICATION_TEMPLATE
-Patch coverage from PR workflow [#${RUN_NUM}](${RUN_URL}) (code coverage of lines changed relative to ${COVERAGE_BASE}):
+Patch coverage report [${RUN_ID}](${REPORT_URL}) from PR workflow [#${RUN_NUM}](${RUN_URL}) (code coverage of lines changed relative to ${COVERAGE_BASE}):
 NOTIFICATION_TEMPLATE
 
 if [ -f ${COVERAGE_DIR}/empty-patch ]; then
@@ -91,8 +91,6 @@ else
 <pre>
 $(grep -E "(lines|branches)\.*:" ${MAKE_LOG} | sed "s/\.*:/:/" || true)
 </pre>
-Report: [${RUN_ID}](${REPORT_URL})
-
 Please get to 100% line coverage, and understand all branches; see the [developer docs](https://github.com/verilator/verilator/blob/master/docs/internals.rst#code-coverage-results)
 SUMMARY_TEMPLATE
 
