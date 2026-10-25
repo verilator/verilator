@@ -596,6 +596,9 @@ public:
 template <typename T_Class>
 class VlClassRef;
 
+// Warn that a queue with the given maximum size() discarded elements beyond it
+extern void VL_WARN_QUEUE_BOUND(size_t maxSize, size_t attemptedSize) VL_MT_SAFE;
+
 //===================================================================
 // Verilog queue and dynamic array container
 // There are no multithreaded locks on this; the base variable must
@@ -706,7 +709,10 @@ public:
     template <size_t N_RhsMaxSize = 0>
     VlQueue operator=(const VlQueue<T_Value, N_RhsMaxSize>& rhs) {
         m_deque = rhs.privateDeque();
-        if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) m_deque.resize(N_MaxSize - 1);
+        if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) {
+            VL_WARN_QUEUE_BOUND(N_MaxSize, m_deque.size());
+            m_deque.resize(N_MaxSize);
+        }
         return *this;
     }
 
@@ -747,11 +753,18 @@ public:
     // function void q.push_front(value)
     void push_front(const T_Value& value) {
         m_deque.push_front(value);
-        if (VL_UNLIKELY(N_MaxSize != 0 && m_deque.size() > N_MaxSize)) m_deque.pop_back();
+        if (VL_UNLIKELY(N_MaxSize != 0 && m_deque.size() > N_MaxSize)) {
+            VL_WARN_QUEUE_BOUND(N_MaxSize, m_deque.size());
+            m_deque.pop_back();
+        }
     }
     // function void q.push_back(value)
     void push_back(const T_Value& value) {
-        if (VL_LIKELY(N_MaxSize == 0 || m_deque.size() < N_MaxSize)) m_deque.push_back(value);
+        if (VL_LIKELY(N_MaxSize == 0 || m_deque.size() < N_MaxSize)) {
+            m_deque.push_back(value);
+        } else {
+            VL_WARN_QUEUE_BOUND(N_MaxSize, m_deque.size() + 1);
+        }
     }
     // function value_t q.pop_front();
     T_Value pop_front() {
@@ -803,7 +816,10 @@ public:
     // function void q.insert(index, value);
     void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index > m_deque.size())) return;
-        if (VL_UNLIKELY(N_MaxSize != 0 && m_deque.size() >= N_MaxSize)) return;
+        if (VL_UNLIKELY(N_MaxSize != 0 && m_deque.size() >= N_MaxSize)) {
+            VL_WARN_QUEUE_BOUND(N_MaxSize, m_deque.size() + 1);
+            return;
+        }
         m_deque.insert(m_deque.begin() + index, value);
     }
 

@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t;
 
   localparam TWO = 2;
@@ -52,6 +57,24 @@ module t;
     if (q[0] != 10) $stop;
     if (q[1] != 20) $stop;
     if (q[2] != 30) $stop;
+
+    // Assigning a longer queue discards only the elements beyond the bound
+    begin
+      int src[$];
+      int big[$:3];
+      src = '{1, 2, 3, 4, 5};
+      q = src;
+      `checkd(q.size(), 3);
+      `checkd(q[0], 1);
+      `checkd(q[1], 2);
+      `checkd(q[2], 3);
+      big = '{6, 7, 8, 9};
+      q = big;
+      `checkd(q.size(), 3);
+      `checkd(q[0], 6);
+      `checkd(q[1], 7);
+      `checkd(q[2], 8);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;
