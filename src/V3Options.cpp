@@ -1560,6 +1560,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-finline-cfuncs", FOnOff, &m_fInlineCFuncs);
     DECL_OPTION("-finline-funcs", FOnOff, &m_fInlineFuncs);
     DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
+    DECL_OPTION("-finline-getters", FOnOff, &m_fInlineGetters);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
     DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
     DECL_OPTION("-flift-expr", CbFOnOff, [fl](bool) {
