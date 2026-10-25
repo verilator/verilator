@@ -4389,14 +4389,14 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return true;
                 }
-                if (AstNodeFTask* ftaskp = VN_CAST(foundp, NodeFTask)) {
-                    AstMethodCall* newp = new AstMethodCall{
+                if (VN_IS(foundp, NodeFTask)) {
+                    // A method call without parentheses (IEEE 1800-2023 13.5.5), resolved here,
+                    // as a caller such as iterateCheckBool does not iterate the replacement
+                    AstMethodCall* const newp = new AstMethodCall{
                         nodep->fileline(), nodep->fromp()->unlinkFrBack(), nodep->name()};
-                    newp->taskp(ftaskp);
-                    newp->dtypep(ftaskp->dtypep());
-                    newp->classOrPackagep(classp);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    userIterate(newp, m_vup);
                     return true;
                 }
                 if (VN_IS(foundp, Constraint)) {
@@ -4714,9 +4714,10 @@ class WidthVisitor final : public VNVisitor {
                         new AstMethodCall{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
                                           "next"},
                         "prev"};
-                    // No dtype assigned, we will recurse the new method and replace
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    // Resolved here, as a caller may not iterate the replacement
+                    userIterate(newp, m_vup);
                     return;
                 } else if (stepWidth != 1) {
                     // Unroll of enumVar.next(k) to enumVar.next(1).next(k - 1)
@@ -4727,9 +4728,10 @@ class WidthVisitor final : public VNVisitor {
                     AstArg* const argp = new AstArg{nodep->fileline(), "", constp};
                     AstMethodCall* const newp
                         = new AstMethodCall{nodep->fileline(), clonep, nodep->name(), argp};
-                    // No dtype assigned, we will recurse the new method and replace
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    // Resolved here, as a caller may not iterate the replacement
+                    userIterate(newp, m_vup);
                     return;
                 }
             }
@@ -5438,6 +5440,8 @@ class WidthVisitor final : public VNVisitor {
                     newp->classOrPackagep(classp);
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                    // Resolved here, as a caller may not iterate the replacement
+                    userIterate(newp, m_vup);
                 } else {
                     nodep->taskp(ftaskp);
                     nodep->dtypeFrom(ftaskp);
