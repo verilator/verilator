@@ -115,11 +115,14 @@ class VlCoverpoint VL_NOT_FINAL : public VlCoverpointIf {
     std::unique_ptr<ValueData> m_valuesp;  // Optional value metadata and exclusion state
     // A transition sequence matched from a table of its values (see transitionAdd())
     struct Transition final {
-        std::vector<QData> m_values;  // The items' values, item after item
-        std::vector<uint32_t> m_ends;  // Index in m_values after each item's values
+        uint32_t m_words;  // Words of each value
+        std::vector<EData> m_values;  // Each item's values, ascending, item after item
+        std::vector<uint32_t> m_ends;  // Number of values to each item's end
         std::vector<uint32_t> m_active;  // Lengths of the partial matches the samples end with
         std::vector<uint32_t> m_next;  // m_active for the next sample, being computed
-        bool matches(uint32_t item, QData value) const;  // Whether item 'item' holds 'value'
+        explicit Transition(uint32_t words)
+            : m_words{words} {}
+        bool matches(uint32_t item, WDataInP valuep) const;  // Whether item 'item' holds it
     };
     std::vector<Transition> m_transitions;  // In transitionAdd() order
     friend class VlCoverCrossDyn;
@@ -234,13 +237,13 @@ public:
     /// sizedFinish())
     void withFinish(VlCovBinKind kind, QData count, bool positive, const char* name,
                     const char* file, int line, int col);
-    /// Add a transition sequence too long for generated matching, numbered from 0 in the order
-    /// added, which transitionSample() matches from a table of its values that
-    /// transitionTable() gives.
-    void transitionAdd() { m_transitions.emplace_back(); }
+    /// Add a transition sequence too long for generated matching, of values of 'words' words,
+    /// numbered from 0 in the order added, which transitionSample() matches from a table of
+    /// its values that transitionTable() gives.
+    void transitionAdd(uint32_t words) { m_transitions.emplace_back(words); }
     /// Append items to the transition sequence added last: each is its number of values, then
-    /// the values.
-    void transitionTable(std::initializer_list<QData> items);
+    /// the values, ascending.
+    void transitionTable(std::initializer_list<EData> items);
 
     // ---- hot path (from generated sample()) ----
     // Clear the hit list at the start of each sample() for a cross-fed coverpoint.
@@ -252,8 +255,12 @@ public:
     bool sizedSample(uint32_t sized, QData value, bool enabled);
     bool sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled);
     /// Sample a value into transition sequence 'seq'; true if it completes a match.  Matches
-    /// may overlap, and each counts (IEEE 1800-2023 19.5.2).
+    /// may overlap, and each counts (IEEE 1800-2023 19.5.2).  Costs, per partial match the
+    /// samples end with, a binary search of the values of its next item.  Partial matches
+    /// number at most one per item, and more than a few only for a sequence whose beginning
+    /// recurs in it, as in a periodic one.
     bool transitionSample(uint32_t seq, QData value);
+    bool transitionSampleW(uint32_t seq, WDataInP valuep);
     // incrementBin (Normal bin: count + hit-list append) lives in VlCoverpointT<MaxHits>,
     // where MaxHits is the gen-time max per-sample bin overlap.
 

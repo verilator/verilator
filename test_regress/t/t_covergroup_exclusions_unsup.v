@@ -91,7 +91,9 @@ module t;
   cg_wild_runs_illegal wild_runs_illegal_cov = new;
   cg_long_transition long_transition_cov = new;
 
-  // A covergroup elaborated twice, whose repeated messages V3Error counts once
+  // A covergroup elaborated twice (two parameterizations).  Its value is reported once, for the
+  // elaboration processed first; the other's identical report is suppressed as a repeat, and
+  // must be handled without an internal error.
   sub #(.P(0)) sub0 ();
   sub #(.P(1)) sub1 ();
 

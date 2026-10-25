@@ -55,8 +55,8 @@
                                                            : ... note: In instance 't'
    80 |                    => TEXT);
       |                       ^~~~
-%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:109:25: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:111:25: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
                                                             : ... note: In instance 't.sub1'
-  109 |       bins text = (1 => TEXT);
+  111 |       bins text = (1 => TEXT);
       |                         ^~~~
 %Error: Exiting due to

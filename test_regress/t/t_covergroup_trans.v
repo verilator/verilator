@@ -103,6 +103,7 @@ module t;
       bins overlap = (`SEQ128);  // Its matches overlap
       bins alt = (`SEQ64 => 0, 1), (1 => 0);  // Complete together, counting once
       bins never = (`SEQ64 => 5);  // 5 is no 2-bit value: the bin leaves the report
+      ignore_bins ignore_long = (`SEQ128 => 0);  // 129 values
     }
   endgroup
   cg_long cg_long_inst = new;
@@ -110,10 +111,12 @@ module t;
   // Transition values resolve to the coverpoint's type, as bin values do, and one that it
   // cannot hold does not participate (IEEE 1800-2023 19.5.7): a sequence with an item of only
   // such values never matches, and a bin without a sequence that can leaves the report.
+  localparam int NEG = -2;
   covergroup cg_signed with function sample (bit signed [3:0] v, longint l);
     cp_signed: coverpoint v {
       bins neg = (-1 => -2);
       bins neg_long = (`SEQ64 => -1);  // 65 values
+      bins param = (`SEQ64 => NEG + 1);  // -1, as a parameter expression
       bins real_value = (1.0 => 2.0);
       bins part = (15 => 0), (0 => 1);  // 15 is no 4-bit signed value
       bins none = (15 => 0);
@@ -130,10 +133,19 @@ module t;
     cp_wide: coverpoint w {
       bins rise = (0 => 1);
       bins top = (65'h1_0000_0000_0000_0000 => 1 => 0);
-      bins long = (`SEQ64 => 0);  // 65 values
+      bins long = (`SEQ64 => 0);  // 65 values, matched from a table
+      bins long_top = (`SEQ64 => 65'h1_0000_0000_0000_0000, 2);
     }
   endgroup
   cg_wide cg_wide_inst = new;
+
+  // Items of several values, out of order and repeated, on a signed four-state coverpoint
+  covergroup cg_multi with function sample (logic signed [6:0] v);
+    cp_multi: coverpoint v {
+      bins multi = (-5, 9, -5 => -3, 3 => `SEQ64 => 7, -2, 63, -64, 7);  // 67 values
+    }
+  endgroup
+  cg_multi cg_multi_inst = new;
 
   // Overlapping matches of a sequence each count (IEEE 1800-2023 19.5.2)
   covergroup cg_overlap with function sample (bit [1:0] v);
@@ -181,6 +193,8 @@ module t;
       cg_long_inst.sample(2'(i % 2), 1'b1);
       cg_long_inst.sample(2'd3, 1'b0);
     end
+    // Every bin is hit but never, which counts toward coverage no more than the report
+    `checkr(cg_long_inst.get_inst_coverage(), 100.0);
 
     // cg_signed
     cg_signed_inst.sample(-4'sd1, -1);
@@ -188,8 +202,11 @@ module t;
     cg_signed_inst.sample(4'sd1, 0);
     cg_signed_inst.sample(4'sd2, 0);  // real_value
     for (int i = 0; i < 64; ++i) cg_signed_inst.sample(4'(i % 2), 0);  // 32 parts
-    cg_signed_inst.sample(-4'sd1, 0);  // neg_long
+    cg_signed_inst.sample(-4'sd1, 0);  // neg_long, param
     cg_signed_inst.sample(4'sd0, 0);  // Not 15 => 0, though -1 has 15's low bits
+    // Every bin is hit but none and four_state, which count toward coverage no more than the
+    // report
+    `checkr(cg_signed_inst.get_inst_coverage(), 100.0);
 
     // cg_wide: 65'h1_0000_0000_0000_0001 is not 1, though its low bits are
     cg_wide_inst.sample(0);
@@ -200,6 +217,24 @@ module t;
     cg_wide_inst.sample(1);
     cg_wide_inst.sample(0);  // top
     for (int i = 0; i < 65; ++i) cg_wide_inst.sample(65'(i % 2));  // 32 rises, then long
+    for (int i = 0; i < 64; ++i) cg_wide_inst.sample(65'(i % 2));  // 32 rises
+    cg_wide_inst.sample(65'h1_0000_0000_0000_0002);  // Not 2, though its low bits are
+    for (int i = 0; i < 64; ++i) cg_wide_inst.sample(65'(i % 2));  // 32 rises
+    cg_wide_inst.sample(65'h1_0000_0000_0000_0000);  // long_top
+
+    // cg_multi: six tries, of which the last two fail, as 4 is no value of the second item, nor
+    // 8 of the last
+    begin
+      automatic logic signed [6:0] firsts[6] = '{9, -5, -5, 9, 9, -5};
+      automatic logic signed [6:0] seconds[6] = '{-3, 3, 3, -3, 4, 3};
+      automatic logic signed [6:0] lasts[6] = '{-64, 63, -2, 7, 7, 8};
+      foreach (firsts[k]) begin
+        cg_multi_inst.sample(firsts[k]);
+        cg_multi_inst.sample(seconds[k]);
+        for (int i = 0; i < 64; ++i) cg_multi_inst.sample(7'(i % 2));
+        cg_multi_inst.sample(lasts[k]);
+      end
+    end
 
     // cg_overlap: samples 1, 2, 1, 2, 1, 1, 1, 2
     begin

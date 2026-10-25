@@ -1164,34 +1164,59 @@ bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled) {
     return last != UINT32_MAX;
 }
 
-void VlCoverpoint::transitionTable(std::initializer_list<QData> items) {
+void VlCoverpoint::transitionTable(std::initializer_list<EData> items) {
+    assert(!m_transitions.empty());  // transitionAdd() added the sequence
     Transition& sequence = m_transitions.back();
-    for (const QData* itemp = items.begin(); itemp != items.end(); itemp += 1 + *itemp) {
-        sequence.m_values.insert(sequence.m_values.end(), itemp + 1, itemp + 1 + *itemp);
-        sequence.m_ends.push_back(static_cast<uint32_t>(sequence.m_values.size()));
+    for (const EData* itemp = items.begin(); itemp != items.end();) {
+        const EData* const valuesp = itemp + 1;
+        itemp = valuesp + *itemp * sequence.m_words;
+        sequence.m_values.insert(sequence.m_values.end(), valuesp, itemp);
+        sequence.m_ends.push_back(
+            static_cast<uint32_t>(sequence.m_values.size() / sequence.m_words));
     }
 }
 
-bool VlCoverpoint::Transition::matches(uint32_t item, QData value) const {
-    const QData* const endp = m_values.data() + m_ends[item];
-    return std::find(m_values.data() + (item ? m_ends[item - 1] : 0), endp, value) != endp;
+VL_ATTR_ALWINLINE
+bool VlCoverpoint::Transition::matches(uint32_t item, WDataInP valuep) const {
+    // The item's values ascend: binary search them, comparing each from its top word
+    uint32_t lo = item ? m_ends[item - 1] : 0;
+    uint32_t hi = m_ends[item];
+    while (lo < hi) {
+        const uint32_t mid = lo + (hi - lo) / 2;
+        const EData* const midp = m_values.data() + mid * m_words;
+        uint32_t word = m_words - 1;
+        while (word && midp[word] == valuep[word]) --word;
+        if (midp[word] == valuep[word]) return true;
+        if (midp[word] < valuep[word]) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    return false;
 }
 
 bool VlCoverpoint::transitionSample(uint32_t seq, QData value) {
+    VlWide<VL_WQ_WORDS_E> words;
+    VL_SET_WQ(words, value);
+    return transitionSampleW(seq, words);
+}
+
+bool VlCoverpoint::transitionSampleW(uint32_t seq, WDataInP valuep) {
     Transition& sequence = m_transitions[seq];
     // A partial match grows by a value its next item holds, and completes once every item has
     // held one; a value the first item holds also starts a partial match
     bool complete = false;
     sequence.m_next.clear();
     for (const uint32_t length : sequence.m_active) {
-        if (!sequence.matches(length, value)) continue;
+        if (!sequence.matches(length, valuep)) continue;
         if (length + 1 == sequence.m_ends.size()) {
             complete = true;
         } else {
             sequence.m_next.push_back(length + 1);
         }
     }
-    if (sequence.matches(0, value)) sequence.m_next.push_back(1);
+    if (sequence.matches(0, valuep)) sequence.m_next.push_back(1);
     sequence.m_active.swap(sequence.m_next);
     return complete;
 }

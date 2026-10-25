@@ -30,6 +30,7 @@
 #include "V3Error.h"
 #include "V3File.h"
 #include "V3MemberMap.h"
+#include "V3Stats.h"
 #include "V3UniqueNames.h"
 
 #include <bitset>
@@ -336,6 +337,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     V3UniqueNames m_sizedNames{"__Vsized"};
     // Names of the transition sequence states, as a bin may hold several sequences
     V3UniqueNames m_seqposNames{"__Vseqpos"};
+    VDouble0 m_statTransitionTables;  // Statistic tracking
     std::vector<AstNodeExpr*> m_detachedValues;  // Array-bin values m_cpBins refers to
     std::set<AstCoverCross*>
         m_droppedCrosses;  // Crosses with a bare-variable item: drop (COVERIGN)
@@ -1656,8 +1658,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         }
         if (binp->isArray() && binp->isWildcard()) {
             if (!exprp->dtypep()->skipRefp()->isIntegralOrPacked()) {
-                AstNodeExpr* const falsep = wildcardTypeError(binp, exprp);
-                VL_DO_DANGLING(pushDeletep(falsep), falsep);
+                binTypeError(binp, exprp);
                 out.unsupported = true;
             } else {
                 out = wildcardBinRuns(binp, exprp, true);
@@ -2226,6 +2227,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     //   if (hit) { m_cp.incrementBin/recordHit(idx); [illegal: $error; $stop] }
     void generateTransitionBin(AstCoverpoint* coverpointp, AstCoverBin* binp, AstNodeExpr* exprp,
                                const ConvBinTarget& tgt) {
+        if (!exprp->dtypep()->skipRefp()->isIntegralOrPacked()) {
+            binTypeError(binp, exprp);
+            return;
+        }
         FileLine* const fl = binp->fileline();
         UASSERT_OBJ(m_sampleFuncp, binp, "sample() CFunc not set for transition bin");
         AstVar* const hitVarp
@@ -2590,14 +2595,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // Build the condition that exprp matches one of a transition item's values, resolved to the
-    // coverpoint's type as bin values are (IEEE 1800-2023 19.5.7).  Non-owning: exprp is cloned,
-    // and the caller keeps it.
+    // coverpoint's type as bin values are (IEEE 1800-2023 19.5.7).  V3Width folded each constant
+    // value (widthCovergroupRanges), so a value not an AstConst is not constant.  Non-owning:
+    // exprp is cloned, and the caller keeps it.
     AstNodeExpr* buildTransitionItemCondition(AstCoverBin* binp, AstCoverTransItem* itemp,
                                               AstNodeExpr* exprp) {
         AstNodeExpr* condp = nullptr;
 
         for (AstNode* valp = itemp->valuesp(); valp; valp = valp->nextp()) {
-            valp = V3Const::constifyEdit(valp);
             if (!VN_IS(valp, Const)) {
                 valp->v3error("Non-constant expression in transition bin; "
                               "values must be constants (IEEE 1800-2023 19.5)");
@@ -2615,16 +2620,20 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // Describe a transition sequence for the runtime to match from a table of its values,
-    // resolved as buildTransitionItemCondition resolves them: per item, its number of values,
-    // then the values.  False if the runtime can't hold a value: that of a coverpoint of over
-    // 64 bits or not integral, or one not a resolved constant, which the generated matching
-    // reports.
+    // resolved as buildTransitionItemCondition resolves them, and so not as wildcards: the
+    // parser drops a wildcard transition list as unsupported.  Per item, its number of values,
+    // then the values, ascending once each for a binary search, as the coverpoint's words.
+    // False for a value not a resolved constant, which the generated matching reports.
     static bool transitionTable(AstNodeExpr* exprp, const std::vector<AstCoverTransItem*>& items,
                                 std::vector<std::string>& entries) {
-        if (exprp->isWide() || !exprp->dtypep()->skipRefp()->isIntegralOrPacked()) return false;
+        const auto less = [](const V3Number& lhs, const V3Number& rhs) {
+            V3Number result{&lhs};
+            return !result.opLt(lhs, rhs).isEqZero();
+        };
+        const auto equal
+            = [](const V3Number& lhs, const V3Number& rhs) { return lhs.isCaseEq(rhs); };
         for (const AstCoverTransItem* const itemp : items) {
-            std::string values;
-            uint32_t count = 0;
+            std::vector<V3Number> values;
             for (AstNode* valp = itemp->valuesp(); valp; valp = valp->nextp()) {
                 CrossValueRange range{valp, resolveWidth(valp, exprp)};
                 if (!VN_IS(valp, Const) || !resolveValue(valp, exprp, true, false, range)) {
@@ -2632,12 +2641,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 }
                 if (crossRangeEmpty(range)) continue;  // No coverpoint value
                 UASSERT_OBJ(range.lo.isCaseEq(range.hi), valp, "Transition value not single");
-                V3Number value{valp, exprp->width()};
-                value.opAssign(range.lo);
-                values += ", " + cvtToStr(value.toUQuad()) + "ULL";
-                ++count;
+                values.emplace_back(valp, exprp->width());
+                values.back().opAssign(range.lo);
             }
-            entries.push_back(cvtToStr(count) + "ULL" + values);
+            std::sort(values.begin(), values.end(), less);
+            values.erase(std::unique(values.begin(), values.end(), equal), values.end());
+            std::string entry = cvtToStr(values.size()) + "U";
+            for (const V3Number& value : values) appendWords(entry, value, exprp);
+            entries.push_back(entry);
         }
         return true;
     }
@@ -2677,13 +2688,18 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         FileLine* const fl = binp->fileline();
         std::vector<std::string> table;
         if (items.size() > GENERATED_MAX_VALUES && transitionTable(exprp, items, table)) {
+            ++m_statTransitionTables;
             AstVar* const cpVarp = m_cpVarMap.at(coverpointp->name());
             const uint32_t seq = m_cpBins.at(cpVarp).transitions++;
             m_constructorp->addStmtsp(
-                itemCall(fl, cpVarp, VCMethod::COVERGROUP_TRANSITION_ADD)->makeStmt());
+                itemCall(fl, cpVarp, VCMethod::COVERGROUP_TRANSITION_ADD,
+                         {cnum(fl, static_cast<uint32_t>(exprp->widthWords()))})
+                    ->makeStmt());
             emitValueList(fl, cpVarp, VCMethod::COVERGROUP_TRANSITION_TABLE, table);
             AstCMethodHard* const callp
-                = itemCall(fl, cpVarp, VCMethod::COVERGROUP_TRANSITION_SAMPLE,
+                = itemCall(fl, cpVarp,
+                           exprp->isWide() ? VCMethod::COVERGROUP_TRANSITION_SAMPLE_W
+                                           : VCMethod::COVERGROUP_TRANSITION_SAMPLE,
                            {cnum(fl, seq), exprp->cloneTree(false)});
             callp->dtypeSetBit();
             addSampleStmt(
@@ -2798,8 +2814,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     };
 
     // True if each item of a transition sequence holds a value of the coverpoint (IEEE 1800-2023
-    // 19.5.7), so the sequence can match.  A value not resolved, which generating the matching
-    // reports, counts as one.
+    // 19.5.7), not as a wildcard (see transitionTable), so the sequence can match.  A value not
+    // resolved, which generating the matching reports, counts as one.
     static bool transitionPossible(const AstCoverTransSet* setp, AstNodeExpr* exprp) {
         for (const AstNode* itemp = setp->itemsp(); itemp; itemp = itemp->nextp()) {
             bool holds = false;
@@ -3267,9 +3283,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (binp->transp()) lists.m_transitions.push_back(bin);
         for (AstNode* const sourcep : crossBinValues({binp, valuep}, exprp)) {
             CrossValueRange range{sourcep, resolveWidth(sourcep, exprp)};
-            // Sampling reported a value it could not resolve, if maybe only as a repeated
-            // message, which V3Error counts once, of another elaboration of the covergroup
-            if (!resolveValue(sourcep, exprp, true, binp->isWildcard(), range)) continue;
+            if (!resolveValue(sourcep, exprp, true, binp->isWildcard(), range)) {
+                // Generating the bin reported the value, but V3Error neither prints nor counts a
+                // repeated report, as of another elaboration of the covergroup.  Report it as
+                // that did, so that no route leaves the value unreported.
+                sourcep->v3warn(E_UNSUPPORTED, "Unsupported: non-integral value in a coverage "
+                                               "bin of an integral coverpoint.");
+                continue;
+            }
             if (crossRangeEmpty(range)) continue;
             std::string entry = bin;
             if (range.wildcard) {
@@ -3936,7 +3957,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // Integral values resolve to the coverpoint's type, as its runtime metadata does
         const bool integral = exprp->dtypep()->skipRefp()->isIntegralOrPacked();
         // No value form of a wildcard bin is allowed on a real coverpoint (IEEE 1800-2023 19.5.4)
-        if (binp->isWildcard() && !integral) return wildcardTypeError(binp, exprp);
+        if (binp->isWildcard() && !integral) {
+            binTypeError(binp, exprp);
+            return new AstConst{binp->fileline(), AstConst::BitFalse{}};
+        }
 
         // Build condition by OR-ing all ranges together
         AstNodeExpr* fullCondp = nullptr;
@@ -4006,15 +4030,17 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return fullCondp;
     }
 
-    // Wildcard bits have no meaning for a non-integral coverpoint.
-    static AstNodeExpr* wildcardTypeError(AstCoverBin* binp, AstNodeExpr* exprp) {
+    // Wildcard bits (IEEE 1800-2023 19.5.4) and transitions (19.5.2) have no meaning for a
+    // non-integral coverpoint.
+    static void binTypeError(AstCoverBin* binp, AstNodeExpr* exprp) {
+        const std::string kind = binp->transp() ? "transition" : "wildcard";
         const AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
-        exprp->v3error("Cannot use a wildcard bin on a coverpoint of type "
-                       << dtypep->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.4).\n"
+        exprp->v3error("Cannot use a "
+                       << kind << " bin on a coverpoint of type " << dtypep->prettyDTypeNameQ()
+                       << " (IEEE 1800-2023 " << (binp->transp() ? "19.5.2" : "19.5.4") << ").\n"
                        << exprp->warnContextPrimary() << '\n'
-                       << binp->warnOther() << "... Location of wildcard bin\n"
+                       << binp->warnOther() << "... Location of " << kind << " bin\n"
                        << binp->warnContextSecondary());
-        return new AstConst{binp->fileline(), AstConst::BitFalse{}};
     }
 
     // Match one bin value, range, or wildcard pattern.  Integral coverpoints first resolve the
@@ -4674,7 +4700,10 @@ public:
         : m_mergeableTypeOptions{mergeableTypeOptions} {
         iterate(nodep);
     }
-    ~FunctionalCoverageVisitor() override = default;
+    ~FunctionalCoverageVisitor() override {
+        V3Stats::addStat("Covergroup, transition sequences matched from tables",
+                         m_statTransitionTables);
+    }
 };
 
 //######################################################################

@@ -977,8 +977,9 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(COVERGROUP_SIZED_RANGE_W,           "sizedRangeW",            false,  CLEAN,  "rr") \
     macro(COVERGROUP_SIZED_SAMPLE,            "sizedSample",            false,  CLEAN,  "rrr") \
     macro(COVERGROUP_SIZED_SAMPLE_W,          "sizedSampleW",           false,  CLEAN,  "rrr") \
-    macro(COVERGROUP_TRANSITION_ADD,          "transitionAdd",          false,  CLEAN,  "") \
+    macro(COVERGROUP_TRANSITION_ADD,          "transitionAdd",          false,  CLEAN,  "r") \
     macro(COVERGROUP_TRANSITION_SAMPLE,       "transitionSample",       false,  CLEAN,  "rr") \
+    macro(COVERGROUP_TRANSITION_SAMPLE_W,     "transitionSampleW",      false,  CLEAN,  "rr") \
     macro(COVERGROUP_TRANSITION_TABLE,        "transitionTable",        false,  CLEAN,  "r") \
     macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  CLEAN,  "rrrr") \
     macro(COVERGROUP_TYPE_WEIGHT,             "typeWeight",             false,  CLEAN,  "r") \
