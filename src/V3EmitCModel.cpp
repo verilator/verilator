@@ -148,9 +148,10 @@ class EmitCModel final : public EmitCFunc {
             }
         }
 
-        // Cells instantiated by the top level (for access to /* verilator public */)
+        // Cells instantiated by the top level (for access to /* verilator public */
+        // and interface ports)
         puts("\n// CELLS\n"
-             "// Public to allow access to /* verilator public */ items.\n"
+             "// Public to allow access to /* verilator public */ items and interface ports.\n"
              "// Otherwise the application code can consider these internals.\n");
         for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
