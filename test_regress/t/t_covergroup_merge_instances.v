@@ -52,7 +52,8 @@ module t (
     }
     checked: coverpoint b;
   endgroup
-  // As the example of 19.11.3: bins b[0], b[1] and b[1], b[2] merge by name, 2 of 3 covered
+  // As the example of 19.11.3: bins b[0], b[1] and b[1], b[2] merge by name, 2 of 3 covered;
+  // with option.get_inst_coverage, coverpoint a's get_inst_coverage() is its instance's, too
   covergroup cg_union(int l, h) with function sample (int a);
     type_option.merge_instances = 1;
     option.get_inst_coverage = 1;
@@ -66,7 +67,8 @@ module t (
       bins b[] = {[0 : 3]} with (item >= l && item <= h);
     }
   endgroup
-  // The counts of a merged bin sum: at_least 2, and each instance hits auto[0] once: 50
+  // The counts of a merged bin sum: at_least 2, and each instance hits auto[0] once: 50, and of
+  // coverpoint cp, as get_inst_coverage() returns get_coverage() of an item too (Table 19-1)
   covergroup cg_sum with function sample (bit a);
     type_option.merge_instances = 1;
     cp: coverpoint a {
@@ -87,7 +89,7 @@ module t (
     cp_b: coverpoint b;
     x: cross cp_a, cp_b{option.weight = 3;}
   endgroup
-  // Cross bins merge by name: (100 + 100 + 50) / 3
+  // Cross bins merge by name: (100 + 100 + 50) / 3, and cross x alone: 50
   covergroup cg_cross_union with function sample (bit a, bit b);
     type_option.merge_instances = 1;
     cp_a: coverpoint a;
@@ -221,6 +223,8 @@ module t (
     `checkp(union_1.get_coverage(), "66.67");
     `checkp(union_1.get_inst_coverage(), "100.00");
     `checkp(union_2.get_inst_coverage(), "50.00");
+    `checkp(union_1.a.get_inst_coverage(), "100.00");
+    `checkp(union_2.a.get_inst_coverage(), "50.00");
 
     union_avg_1.sample(0);
     union_avg_1.sample(1);
@@ -231,6 +235,7 @@ module t (
     sum_2.sample(0);
     `checkp(sum_1.get_coverage(), "50.00");
     `checkp(sum_1.get_inst_coverage(), "50.00");
+    `checkp(sum_1.cp.get_inst_coverage(), "50.00");
 
     cross_w.sample(0, 0);
     `checkp(cross_w.get_coverage(), "22.50");
@@ -241,6 +246,7 @@ module t (
     cross_union_1.sample(0, 0);
     cross_union_2.sample(1, 1);
     `checkp(cross_union_1.get_coverage(), "83.33");
+    `checkp(cross_union_1.x.get_inst_coverage(), "50.00");
 
     cross_named.sample(0, 0);
     `checkp(cross_named.get_coverage(), "25.00");
@@ -286,15 +292,19 @@ module t (
       `checkd(retired_dead(), 1);
       `checkp(dead_1.get_coverage(), "100.00");
       `checkp(dead_union_1.get_coverage(), "75.00");
+      `checkp(dead_union_1.a.get_inst_coverage(), "75.00");
 
       `checkd(retired_proc(), 1);
       `checkp(proc_1.get_coverage(), "50.00");
       `checkp(proc_1.get_inst_coverage(), "50.00");
+      `checkp(proc_1.cp.get_inst_coverage(), "50.00");
       cg_proc::type_option.merge_instances = 1;
       `checkp(proc_1.get_coverage(), "100.00");
       `checkp(proc_1.get_inst_coverage(), "100.00");
+      `checkp(proc_1.cp.get_inst_coverage(), "100.00");
       proc_1.type_option.merge_instances = 0;
       `checkp(proc_1.get_coverage(), "50.00");
+      `checkp(proc_1.cp.get_inst_coverage(), "50.00");
 
       $write("*-* All Finished *-*\n");
       $finish;

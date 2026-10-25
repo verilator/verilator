@@ -274,12 +274,15 @@ class WidthVisitor final : public VNVisitor {
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     std::unordered_map<const AstModport*, std::unordered_set<string>>
         m_modportNames;  // Names listed by each modport
+    std::unordered_map<const AstClass*, std::unordered_map<string, AstNodeFuncCovItem*>>
+        m_coverItems;  // Coverpoints and crosses of each covergroup, by name
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
     bool m_underFork = false;  // Visiting under a fork
     bool m_underSExpr = false;  // Visiting under a sequence expression
     bool m_underPackedArray = false;  // Visiting under a AstPackArrayDType
     bool m_underMemberSel = false;  // Viting under a MemberSel
+    AstNodeExpr* m_fromParentp = nullptr;  // Method call or member select iterating its fromp()
     AstNode* m_seqUnsupp = nullptr;  // Property has unsupported node
     bool m_hasSExpr = false;  // Property has a sequence expression
     const AstCell* m_cellp = nullptr;  // Current cell for arrayed instantiations
@@ -4178,7 +4181,11 @@ class WidthVisitor final : public VNVisitor {
         VL_RESTORER(m_underMemberSel);
         m_underMemberSel = true;
         UINFOTREE(9, nodep, "", "mbs-in");
-        userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+        {
+            VL_RESTORER(m_fromParentp);
+            m_fromParentp = nodep;
+            userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
+        }
         UINFOTREE(9, nodep, "", "mbs-ic");
         // Find the fromp dtype - should be a class
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Unlinked data type");
@@ -4352,6 +4359,7 @@ class WidthVisitor final : public VNVisitor {
         // No need to width-resolve the class, as it was done when we did the child
         AstClass* const first_classp = adtypep->classp();
         UASSERT_OBJ(first_classp, nodep, "Unlinked");
+        if (first_classp->isCovergroup() && memberSelCoverItem(nodep, first_classp)) return true;
         for (AstClass* classp = first_classp; classp;) {
             if (AstNode* const foundp = m_memberMap.findMember(classp, nodep->name())) {
                 if (AstVar* const varp = VN_CAST(foundp, Var)) {
@@ -4430,6 +4438,65 @@ class WidthVisitor final : public VNVisitor {
                       << " " << first_classp->prettyNameQ() << "\n"
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return false;  // Caller handles error
+    }
+    // Return true if 'cg.item' names coverpoint or cross 'item' of covergroup instance 'cg'.  Its
+    // only use is as the prefix of a hierarchical name (IEEE 1800-2023 19.5, 19.6), which a
+    // formal argument of the same name does not hide, as formals are not visible there (19.3).
+    // 'cg.item.method' calls the covergroup's method 'item.method'.  Of the item's methods and
+    // options (19.8, 19.10), only get_inst_coverage() is such a method, made when first called
+    // as a copy of the covergroup's, and implemented by V3Covergroup.
+    bool memberSelCoverItem(AstMemberSel* nodep, AstClass* classp) {
+        AstNodeExpr* const parentp = m_fromParentp;
+        const AstMethodCall* const callp = VN_CAST(parentp, MethodCall);
+        const AstMemberSel* const selp = VN_CAST(parentp, MemberSel);
+        if (!(callp && callp->fromp() == nodep) && !(selp && selp->fromp() == nodep)) {
+            return false;
+        }
+        const auto pair
+            = m_coverItems.emplace(classp, std::unordered_map<string, AstNodeFuncCovItem*>{});
+        auto& items = pair.first->second;
+        if (pair.second) {
+            // Until V3Covergroup, the constructor holds the coverpoints and crosses
+            AstFunc* const newp = VN_AS(m_memberMap.findMember(classp, "new"), Func);
+            for (AstNode* const stmtp : newp->stmtspList()) {
+                if (AstNodeFuncCovItem* const itemp = VN_CAST(stmtp, NodeFuncCovItem)) {
+                    items.emplace(itemp->name(), itemp);
+                }
+            }
+        }
+        const auto it = items.find(nodep->name());
+        if (it == items.end()) return false;
+        AstNodeFuncCovItem* const itemp = it->second;
+        const string member = parentp->name();
+        if (member == "get_coverage" || member == "start" || member == "stop" || member == "option"
+            || member == "type_option") {
+            // Continuing as the covergroup's member of the same name avoids another error
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: " << AstNode::prettyNameQ(member)
+                                                         << " of coverpoint or cross "
+                                                         << nodep->prettyNameQ());
+        } else {
+            // Pretty 'item.member', which is no SystemVerilog identifier
+            const string methodName = nodep->name() + "__DOT__" + member;
+            if (member == "get_inst_coverage" && callp && callp->argsp()) {
+                // The covered and total bins (19.8), which the copy would never assign
+                callp->argsp()->v3warn(E_UNSUPPORTED,
+                                       "Unsupported: arguments of 'get_inst_coverage' of "
+                                       "coverpoint or cross "
+                                           << nodep->prettyNameQ());
+            }
+            if (member == "get_inst_coverage" && !itemp->instCoveragep()) {
+                AstFunc* const funcp
+                    = VN_AS(m_memberMap.findMember(classp, member), Func)->cloneTree(false);
+                funcp->name(methodName);
+                classp->addMembersp(funcp);
+                m_memberMap.insert(classp, funcp);
+                itemp->instCoveragep(funcp);
+            }
+            parentp->name(methodName);
+        }
+        nodep->replaceWith(nodep->fromp()->unlinkFrBack());
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return true;
     }
     bool modportAllowsItem(AstNode* nodep, const AstIfaceRefDType* adtypep, const AstNode* itemp) {
         // Variables, tasks/functions and clocking blocks of an interface are only visible
@@ -4546,7 +4613,11 @@ class WidthVisitor final : public VNVisitor {
         if (nodep->didWidth()) return;
         UINFOTREE(9, nodep, "", "mts-in");
         // Should check types the method requires, but at present we don't do much
-        userIterate(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        {
+            VL_RESTORER(m_fromParentp);
+            m_fromParentp = nodep;
+            userIterate(nodep->fromp(), WidthVP{SELF, BOTH}.p());
+        }
         // Args are checked within each particular method's decode
         // Any AstWith is checked later when know types, in methodWithClause
         // Find the fromp dtype - should be a class

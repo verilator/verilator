@@ -1240,7 +1240,7 @@ void VlCoverpoint::sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint3
 }
 
 void VlCoverpoint::init(const char* hier, uint32_t atLeast, uint32_t nBins) {
-    m_hier = hier;
+    this->hier(hier);
     m_atLeast = atLeast;
     m_total = nBins;
     m_counts.assign(nBins, 0);
@@ -1268,7 +1268,7 @@ std::string VlCoverpoint::normalBinName(uint32_t crossIdx) const {
 }
 
 void VlCoverpoint::mergeInto(VlCovMergedItems& items) const {
-    VlCovMergedItem& item = items.findNewItem(m_hier);
+    VlCovMergedItem& item = items.findNewItem(hier());
     item.options(m_atLeast, typeWeight());
     // The bins coverageParts() counts
     for (const uint32_t bin : m_crossToBin) item.addBin(declaredBinName(bin), m_counts[bin]);
@@ -1326,7 +1326,7 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
         const VlCovNamer& nm = namerFor(i);
         const VlCovBinKind kind = binKind(reported);
         const std::string binp = binName(reported);
-        const std::string full = m_hier + "." + binp;
+        const std::string full = hier() + "." + binp;
         const std::string lineStr = std::to_string(nm.line());
         const std::string colStr = std::to_string(nm.col());
         // An empty key leaves out the bin type of a Normal bin
@@ -1348,7 +1348,7 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
 
 void VlCoverCross::init(const char* hier, uint32_t atLeast, uint32_t dims,
                         VlCoverpoint* const* cps, const char* file, int line, int col) {
-    m_hier = hier;
+    this->hier(hier);
     m_atLeast = atLeast;
     m_file = file;
     m_line = line;
@@ -1456,7 +1456,7 @@ void VlCoverCross::incrementBin(Bin& bin) {
     if (++bin.count == m_atLeast && bin.kind == VlCovBinKind::KIND_NORMAL) ++m_numCovered;
     if (VL_UNLIKELY(bin.kind == VlCovBinKind::KIND_ILLEGAL)) {
         VL_PRINTF_MT("%%Error: %s:%d: Illegal cross bin '%s' hit in cross '%s'.\n", bin.filep,
-                     bin.line, bin.namep, m_hier.c_str());
+                     bin.line, bin.namep, hier().c_str());  // lintok-begin-on-ref
         VL_STOP_MT(bin.filep, bin.line, "");
     }
 }
@@ -1617,7 +1617,7 @@ std::string VlCoverCross::autoBinName(uint32_t flat) const {
 }
 
 void VlCoverCross::mergeInto(VlCovMergedItems& items) const {
-    VlCovMergedItem& item = items.findNewItem(m_hier);
+    VlCovMergedItem& item = items.findNewItem(hier());
     item.options(1, typeWeight());  // A cross bin is covered once hit
     // The bins coverageParts() counts, which share a bin when they share its name.  As no bin
     // name holds ',' or '<', an automatic bin's, <bin1,...,binN> (IEEE 1800-2023 19.11.3), is
@@ -1651,7 +1651,7 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
     // Use the same indexed names for registration and the runtime read interface.
     for (uint32_t i = 0; i < binCount(); ++i) {
         const std::string bin = binName(i);
-        const std::string full = m_hier + "." + bin;
+        const std::string full = hier() + "." + bin;
         if (i < explicitCount) {
             Bin& userBin = m_explicitp->bins[i];
             const std::string binLineStr = std::to_string(userBin.line);
@@ -2165,6 +2165,13 @@ void VlCoverpointIf::weight(uint32_t value, VlFileLineDebug fileline) {
     m_weight = _vl_cov_load_weight("option.weight", value, fileline);
 }
 
+double VlCoverpointIf::coverage() const {
+    double covered = 0.0;
+    double total = 0.0;
+    coverageParts(covered, total);
+    return _vl_cov_calculate(100.0 * covered, total, m_weight);
+}
+
 VlCoverCrossDyn* VlCovergroupInst::addCrossDyn() {
     VlCoverCrossDyn* const cxp = new VlCoverCrossDyn{};
     m_items.emplace_back(cxp);
@@ -2200,6 +2207,10 @@ double VlCovergroupInst::coverage() {
 
 void VlCovergroupInst::mergeInto(VlCovMergedItems& items) const {
     for (const auto& itemp : m_items) itemp->mergeInto(items);
+}
+
+double VlCovergroupInst::mergedCoverage(const VlCoverpointIf* itemp) const {
+    return m_typep->mergedCoverage(itemp->hier());
 }
 
 //=============================================================================
@@ -2267,6 +2278,21 @@ std::pair<double, double> VlCovMergedItems::coverageSums(const VlCovMergedItems&
     };
     _vl_cov_union_walk(m_items, other.m_items, sumItem);
     return {100.0 * weighted, weights};
+}
+
+double VlCovMergedItems::coverage(const std::string& name, const VlCovMergedItems& other) const {
+    const auto it = m_items.find(name);
+    assert(it != m_items.end());
+    const VlCovMergedItem& item = it->second;
+    const auto otherIt = other.m_items.find(name);
+    double covered = 0.0;
+    double total = 0.0;
+    if (otherIt == other.m_items.end()) {
+        item.coverageParts(covered, total);
+    } else {
+        item.coverageParts(otherIt->second, covered, total);
+    }
+    return _vl_cov_calculate(100.0 * covered, total, item.typeWeight());
 }
 
 //=============================================================================
@@ -2343,6 +2369,14 @@ bool VlCovergroupType::anyAttached() const {
     return false;
 }
 
+VlCovMergedItems VlCovergroupType::mergeLive() const {
+    VlCovMergedItems live;
+    for (const auto& instp : m_insts) {
+        if (!instp->retained()) instp->mergeInto(live);  // Retained: in m_mergedRetired
+    }
+    return live;
+}
+
 double VlCovergroupType::coverage(IData typeWeight, bool mergeInstances,
                                   VlFileLineDebug fileline) {
     if (typeWeight != m_loadedTypeWeight) {  // Only a new value, as in loadWeight()
@@ -2352,11 +2386,7 @@ double VlCovergroupType::coverage(IData typeWeight, bool mergeInstances,
     if (mergeInstances) {
         // The union of the bins of every instance, including those that have died, kept in
         // m_mergedRetired, so merged with the live ones' as read, not copied
-        VlCovMergedItems live;
-        for (const auto& instp : m_insts) {
-            if (!instp->retained()) instp->mergeInto(live);  // Retained: in m_mergedRetired
-        }
-        const std::pair<double, double> sums = live.coverageSums(m_mergedRetired);
+        const std::pair<double, double> sums = mergeLive().coverageSums(m_mergedRetired);
         return _vl_cov_calculate(sums.first, sums.second, m_typeWeight);
     }
     // Instances that have died still count: their contribution is the residue
@@ -2371,6 +2401,19 @@ double VlCovergroupType::coverage(IData typeWeight, bool mergeInstances,
         sumWeight += instp->weight();
     }
     return _vl_cov_calculate(sumCoverage, sumWeight, m_typeWeight);
+}
+
+double VlCovergroupType::mergedCoverage(const std::string& name) const {
+    // Only that item of each live instance, not all of them as mergeLive(); those of the
+    // instances that have died are in m_mergedRetired
+    VlCovMergedItems live;
+    for (const auto& instp : m_insts) {
+        if (instp->retained()) continue;
+        for (const auto& itemp : instp->m_items) {
+            if (itemp->hier() == name) itemp->mergeInto(live);
+        }
+    }
+    return live.coverage(name, m_mergedRetired);
 }
 
 double VlCovergroupType::retiredCoverage() const {

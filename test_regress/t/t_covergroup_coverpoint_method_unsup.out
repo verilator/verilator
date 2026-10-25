@@ -1,35 +1,26 @@
-%Error: t/t_covergroup_coverpoint_method_unsup.v:31:42: Member 'a' not found in covergroup 'cg'
-                                                      : ... note: In instance 't'
-   31 |       $display("coverage a = %f", the_cg.a.get_inst_coverage());
-      |                                          ^
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:31:44: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'bit''
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:26:14: Unsupported: 'get_coverage' of coverpoint or cross 'cp_a'
                                                                   : ... note: In instance 't'
-   31 |       $display("coverage a = %f", the_cg.a.get_inst_coverage());
-      |                                            ^~~~~~~~~~~~~~~~~
+   26 |     r = cg_i.cp_a.get_coverage();
+      |              ^~~~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error: t/t_covergroup_coverpoint_method_unsup.v:32:42: Member 'b' not found in covergroup 'cg'
-                                                      : ... note: In instance 't'
-   32 |       $display("coverage b = %f", the_cg.b.get_inst_coverage());
-      |                                          ^
-%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:32:44: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'bit''
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:27:10: Unsupported: 'start' of coverpoint or cross 'cp_a'
                                                                   : ... note: In instance 't'
-   32 |       $display("coverage b = %f", the_cg.b.get_inst_coverage());
-      |                                            ^~~~~~~~~~~~~~~~~
-%Error: t/t_covergroup_coverpoint_method_unsup.v:33:18: Member 'a' not found in covergroup 'cg'
-                                                      : ... note: In instance 't'
-   33 |       if (the_cg.a.get_inst_coverage() != 15 / 16.0) $stop();
-      |                  ^
-%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:33:20: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'bit''
+   27 |     cg_i.cp_a.start();
+      |          ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:28:10: Unsupported: 'stop' of coverpoint or cross 'x'
                                                                   : ... note: In instance 't'
-   33 |       if (the_cg.a.get_inst_coverage() != 15 / 16.0) $stop();
-      |                    ^~~~~~~~~~~~~~~~~
-%Error: t/t_covergroup_coverpoint_method_unsup.v:34:18: Member 'b' not found in covergroup 'cg'
-                                                      : ... note: In instance 't'
-   34 |       if (the_cg.b.get_inst_coverage() != 4 / 5.0) $stop();
-      |                  ^
-%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:34:20: Unsupported: Member call on object 'CONST '1'h0'' which is a 'BASICDTYPE 'bit''
+   28 |     cg_i.x.stop();
+      |          ^
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:29:10: Unsupported: 'option' of coverpoint or cross 'cp_b'
                                                                   : ... note: In instance 't'
-   34 |       if (the_cg.b.get_inst_coverage() != 4 / 5.0) $stop();
-      |                    ^~~~~~~~~~~~~~~~~
+   29 |     cg_i.cp_b.option.weight = 2;
+      |          ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:30:26: Unsupported: 'type_option' of coverpoint or cross 'x'
+                                                                  : ... note: In instance 't'
+   30 |     $display("%0d", cg_i.x.type_option.weight);
+      |                          ^
+%Error-UNSUPPORTED: t/t_covergroup_coverpoint_method_unsup.v:31:34: Unsupported: arguments of 'get_inst_coverage' of coverpoint or cross 'x'
+                                                                  : ... note: In instance 't'
+   31 |     r = cg_i.x.get_inst_coverage(covered, total);
+      |                                  ^~~~~~~
 %Error: Exiting due to

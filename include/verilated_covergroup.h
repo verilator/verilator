@@ -129,7 +129,6 @@ class VlCoverpoint VL_NOT_FINAL : public VlCoverpointIf {
 
 protected:
     // MEMBERS (protected so VlCoverpointT::incrementBin can update them)
-    std::string m_hier;  // "covergroup.coverpoint"
     uint32_t m_atLeast = 1;  // option.at_least (coverpoint-wide)
     uint32_t m_total = 0;  // bins across all sets
     uint32_t m_normal = 0;  // Normal bins (coverage denominator)
@@ -389,7 +388,6 @@ protected:
 
 private:
     // MEMBERS
-    std::string m_hier;  // "covergroup.cross"
     const char* m_file = nullptr;  // Cross declaration file (registration metadata)
     int m_line = 0;  // Cross declaration line
     int m_col = 0;  // Cross declaration column
@@ -617,7 +615,7 @@ class VlCovergroupInst final {
     VlFileLineDebug m_fileline;  // Covergroup declaration, where a negative weight is reported
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
-    // Reads m_items to fold the residue; owns m_slot and m_retained.
+    // Reads m_items to fold the residue and merge an item; owns m_slot and m_retained.
     friend class VlCovergroupType;
 
 public:
@@ -684,6 +682,9 @@ public:
     void mergeInto(VlCovMergedItems& items) const;
     /// Instance coverage, as returned by get_inst_coverage(), in 0..100.
     double coverage();
+    /// Coverage of 'itemp', an item of this instance, with the instances of the type merged;
+    /// see VlCovergroupType::mergedCoverage()
+    double mergedCoverage(const VlCoverpointIf* itemp) const;
 };
 
 //=============================================================================
@@ -741,6 +742,9 @@ public:
     /// with each item weighted by its type_option.weight (IEEE 1800-2023 19.7.1).  Without
     /// merging them into a copy, as 'other', those of the instances that have died, may be large.
     std::pair<double, double> coverageSums(const VlCovMergedItems& other) const;
+    /// Coverage of the item 'name', which these items have, merged with that of 'other', in
+    /// 0..100.  Without bins, 0, or 100 if its type_option.weight is 0 (IEEE 1800-2023 19.11.1).
+    double coverage(const std::string& name, const VlCovMergedItems& other) const;
 };
 
 //=============================================================================
@@ -766,6 +770,8 @@ class VlCovergroupType final {
     // Harvest instp's contribution into m_retired, and m_mergedRetired.  Must run before
     // instp is unlinked: it reads the instance's items.
     void foldResidue(VlCovergroupInst* instp);
+    // The items of the live instances merged; those of the dead ones are in m_mergedRetired
+    VlCovMergedItems mergeLive() const;
 
 public:
     // CONSTRUCTORS
@@ -789,6 +795,10 @@ public:
     /// typeWeight is type_option.weight, which decides the result when no instance or item
     /// contributes; like option.weight, it is checked as it is loaded.
     double coverage(IData typeWeight, bool mergeInstances, VlFileLineDebug fileline);
+    /// Coverage of the item 'name' with the instances merged, as a union of their bins, which
+    /// is the item's get_coverage() with type_option.merge_instances (IEEE 1800-2023 19.11.3),
+    /// in 0..100.  The bins of the instances that have died count if the type may merge them.
+    double mergedCoverage(const std::string& name) const;
 
     // ---- introspection ----
     // Test and debug only; generated code never calls these, and SV reaches them

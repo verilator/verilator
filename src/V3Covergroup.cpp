@@ -580,11 +580,16 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         // before any of them is created.  Emitted first, ahead of both generate loops.
         generateInstanceAttach();
 
-        // For each coverpoint, generate sampling code
-        for (AstCoverpoint* cpp : m_coverpoints) generateCoverpointCode(cpp);
+        // For each coverpoint, generate sampling code, and its get_inst_coverage()
+        for (AstCoverpoint* cpp : m_coverpoints) {
+            generateCoverpointCode(cpp);
+            generateItemCoverage(cpp, m_cpVarMap.at(cpp->name()));
+        }
 
-        // For each cross, generate sampling code
-        for (AstCoverCross* crossp : m_coverCrosses) generateCrossCode(crossp);
+        // For each cross, generate sampling code, and its get_inst_coverage()
+        for (AstCoverCross* crossp : m_coverCrosses) {
+            generateItemCoverage(crossp, generateCrossCode(crossp));
+        }
 
         // Every cross has been built, so runtime points only need their exclusions from here.
         for (AstCoverpoint* const cpp : m_coverpoints) {
@@ -3824,7 +3829,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // Route a cross through a VlCoverCross member: emit the member, its constructor init +
     // registration, and the sample() call.  The feeding coverpoints are already generated
     // (their hit lists drive the cross). Each explicit bin adds one configuration call.
-    void generateCross(AstCoverCross* crossp) {
+    // Return the member, or null if the cross is ignored.
+    AstVar* generateCross(AstCoverCross* crossp) {
         FileLine* const fl = crossp->fileline();
         const bool dynamic = m_runtimeCrosses.count(crossp);
         UINFO(4, "  Generating VlCoverCross member: " << crossp->name());
@@ -3856,7 +3862,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         } else {
             layout = resolveCrossLayout(crossp, cpVars, dimensions);
         }
-        if (!layout.valid) return;
+        if (!layout.valid) return nullptr;
 
         AstVar* const cxVarp
             = new AstVar{fl, VVarType::MEMBER, "__Vcx_" + crossp->name(),
@@ -3916,9 +3922,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         } else {
             m_sampleFuncp->addStmtsp(samplep);
         }
+        return cxVarp;
     }
 
-    void generateCrossCode(AstCoverCross* crossp) {
+    // Return the cross's VlCoverCross member, or null if the cross is ignored
+    AstVar* generateCrossCode(AstCoverCross* crossp) {
         UINFO(4, "  Generating code for cross: " << crossp->name());
 
         // Non-standard hierarchical/dotted cross item (e.g. 'cross a.b'): an implicit coverpoint
@@ -3932,7 +3940,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if (refp->exprp()) {
                 refp->v3warn(COVERIGN,
                              "Unsupported: cross of hierarchical reference (implicit coverpoint)");
-                return;
+                return nullptr;
             }
         }
 
@@ -3951,11 +3959,11 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     break;
                 }
             }
-            return;
+            return nullptr;
         }
 
         // Every cross that isn't dropped routes through a VlCoverCross member.
-        generateCross(crossp);
+        return generateCross(crossp);
     }
 
     AstNodeExpr* buildBinCondition(AstCoverBin* binp, AstNodeExpr* exprp) {
@@ -4100,25 +4108,14 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_memberMap.clear();
 
         // get_inst_coverage(): the average of the coverpoints and crosses, weighted by their
-        // option.weight (IEEE 1800-2023 19.11).  The instance node holds their runtimes.  With
-        // the instances merged, get_coverage() instead, unless option.get_inst_coverage
-        // (Table 19-1).
+        // option.weight (IEEE 1800-2023 19.11).  The instance node holds their runtimes.
         AstFunc* const getInstCoveragep
             = VN_AS(m_memberMap.findMember(m_covergroupp, "get_inst_coverage"), Func);
         FileLine* const instFl = getInstCoveragep->fileline();
         AstCMethodHard* const instCallp = instanceCall(instFl, VCMethod::COVERGROUP_COVERAGE);
         instCallp->dtypeSetDouble();
-        AstNodeExpr* instValuep = instCallp;
-        if (m_cgMayMerge) {
-            AstNodeExpr* const mergedp = new AstLogAnd{
-                instFl, newOptionSel(instFl, optionVar(true), "merge_instances", VAccess::READ),
-                new AstLogNot{instFl, newOptionSel(instFl, optionVar(false), "get_inst_coverage",
-                                                   VAccess::READ)}};
-            instValuep = new AstCond{instFl, mergedp, typeCoverageCall(instFl), instCallp};
-        }
-        getInstCoveragep->addStmtsp(new AstAssign{
-            instFl, new AstVarRef{instFl, VN_AS(getInstCoveragep->fvarp(), Var), VAccess::WRITE},
-            instValuep});
+        generateInstCoverage(getInstCoveragep, instCallp,
+                             m_cgMayMerge ? typeCoverageCall(instFl) : nullptr);
 
         // get_coverage(): the average of the covergroup's instances, weighted by their
         // option.weight, or with type_option.merge_instances, the coverage of the union of their
@@ -4144,6 +4141,45 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         callp->usePtr(true);
         callp->dtypeSetDouble();
         return callp;
+    }
+
+    // Make get_inst_coverage() 'funcp' return 'instp', the coverage of this instance; or with
+    // the instances merged, 'mergedp', get_coverage(), unless option.get_inst_coverage (IEEE
+    // 1800-2023 Table 19-1).  'mergedp' is null if the covergroup may not merge its instances.
+    void generateInstCoverage(AstFunc* funcp, AstNodeExpr* instp, AstNodeExpr* mergedp) {
+        FileLine* const fl = funcp->fileline();
+        AstNodeExpr* valuep = instp;
+        if (mergedp) {
+            AstNodeExpr* const condp = new AstLogAnd{
+                fl, newOptionSel(fl, optionVar(true), "merge_instances", VAccess::READ),
+                new AstLogNot{
+                    fl, newOptionSel(fl, optionVar(false), "get_inst_coverage", VAccess::READ)}};
+            valuep = new AstCond{fl, condp, mergedp, instp};
+        }
+        funcp->addStmtsp(new AstAssign{
+            fl, new AstVarRef{fl, VN_AS(funcp->fvarp(), Var), VAccess::WRITE}, valuep});
+    }
+
+    // The get_inst_coverage() of a coverpoint or cross, which V3Width added if called (IEEE
+    // 1800-2023 19.8): the coverage of the item's runtime 'varp' (19.11.1, 19.11.2), or without
+    // one, of a cross that is ignored, 0, as with no bins
+    void generateItemCoverage(const AstNodeFuncCovItem* itemp, AstVar* varp) {
+        AstFunc* const funcp = itemp->instCoveragep();
+        if (!funcp) return;
+        FileLine* const fl = funcp->fileline();
+        if (!varp) {
+            generateInstCoverage(funcp, new AstConst{fl, AstConst::RealDouble{}, 0.0}, nullptr);
+            return;
+        }
+        AstCMethodHard* const instp = itemCall(fl, varp, VCMethod::COVERGROUP_COVERAGE);
+        instp->dtypeSetDouble();
+        AstCMethodHard* mergedp = nullptr;
+        if (m_cgMayMerge) {
+            mergedp = instanceCall(fl, VCMethod::COVERGROUP_MERGED_COVERAGE);
+            mergedp->addPinsp(memberRef(fl, varp));
+            mergedp->dtypeSetDouble();
+        }
+        generateInstCoverage(funcp, instp, mergedp);
     }
 
     // VISITORS
