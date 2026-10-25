@@ -13,8 +13,7 @@ test.scenarios('vlt')
 
 test.compile(verilator_flags2=['--stats'])
 
-test.file_grep(test.stats,
-               r'Optimizations, Function getters replaced with reads\s+(\d+)', 33)
+test.file_grep(test.stats, r'Optimizations, Function getters replaced with reads\s+(\d+)', 33)
 
 test.execute()
 

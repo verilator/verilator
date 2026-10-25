@@ -15,8 +15,7 @@ test.top_filename = 't/t_opt_inline_getters.v'
 
 test.compile(verilator_flags2=['--stats', '-fno-inline-getters'])
 
-test.file_grep(test.stats,
-               r'Optimizations, Function getters replaced with reads\s+(\d+)', 0)
+test.file_grep(test.stats, r'Optimizations, Function getters replaced with reads\s+(\d+)', 0)
 
 test.execute()
 
