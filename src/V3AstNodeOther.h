@@ -308,6 +308,11 @@ public:
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     bool maybePointedTo() const override { return true; }
+    // Name of the covergroup method that is method 'method' of the item named 'name', pretty
+    // 'name.method', which is no SystemVerilog identifier
+    static string methodName(const string& name, const string& method) {
+        return name + "__DOT__" + method;
+    }
 };
 class AstNodeGen VL_NOT_FINAL : public AstNode {
     // Generate construct

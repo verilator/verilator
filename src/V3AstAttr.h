@@ -958,6 +958,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(COVERGROUP_INIT,                    "init",                   false,  CLEAN,  "r+") \
     macro(COVERGROUP_INST_P,                  "p",                      PURE,   CLEAN,  "") \
     macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  CLEAN,  "rr") \
+    macro(COVERGROUP_MERGED_COVERAGE,         "mergedCoverage",         false,  CLEAN,  "r") \
     macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  CLEAN,  "r") \
     macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  CLEAN,  "rrrr") \
     macro(COVERGROUP_SAMPLE,                  "sample",                 false,  CLEAN,  "") \
