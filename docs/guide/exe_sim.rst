@@ -123,6 +123,24 @@ Options:
    = Reset to zeros. 1 = Reset to all-ones. 2 = Randomize. See
    :ref:`Unknown States`.  Default is 0.
 
+.. option:: +verilator+rand+sampler+<name>
+
+   Choose which component implements sampling for the values that 
+   ``randomize()`` returns.
+
+   With ``default`` (the default unless changed as below), Verilator 
+   uses an internal algorithm to sample results provided by the solver
+   to achieve well-distributed results.
+
+   With ``solver``, the solver is responsible for providing well-distributed
+   results according to the supplied seed. 
+
+   The sampler can also be specified using the C++ API:
+   ``Verilated::threadContextp()->randSampler(VerilatedRandSampler::SAMPLER_SOLVER)``.
+
+   The default sampler can also be specified using the 
+   :option:`VERILATOR_RAND_SAMPLER` environment variable.
+
 .. option:: +verilator+seed+<value>
 
    For $random and :vlopt:`--x-initial unique <--x-initial>`, set the

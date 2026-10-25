@@ -101,6 +101,12 @@
 
 #include "verilated_trace.h"
 
+#ifdef VM_RAND_SAMPLER_DEFAULT
+#define VL_RAND_SAMPLER_DEFAULT VM_RAND_SAMPLER_DEFAULT
+#else
+#define VL_RAND_SAMPLER_DEFAULT "default"
+#endif
+
 #ifdef VM_SOLVER_DEFAULT
 #define VL_SOLVER_DEFAULT VM_SOLVER_DEFAULT
 #else
@@ -3153,6 +3159,19 @@ void VL_TIMEFORMAT_IINI(bool hasUnits, int units, bool hasPrecision, int precisi
     if (hasWidth) contextp->impp()->timeFormatWidth(width);
 }
 
+// Parse a sampler name from +verilator+rand+sampler+, $VERILATOR_RAND_SAMPLER
+// or the build-time default; false if not a sampler
+static bool vlRandSamplerParse(const std::string& str, VerilatedRandSampler& samplerr) {
+    if (str == "default") {
+        samplerr = VerilatedRandSampler::SAMPLER_DEFAULT;
+    } else if (str == "solver") {
+        samplerr = VerilatedRandSampler::SAMPLER_SOLVER;
+    } else {
+        return false;
+    }
+    return true;
+}
+
 //======================================================================
 // VerilatedContext:: Methods
 
@@ -3164,6 +3183,11 @@ VerilatedContext::VerilatedContext()
     m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
     m_ns.m_solverProgram = VlOs::getenvStr("VERILATOR_SOLVER", VL_SOLVER_DEFAULT);
+    const std::string sampler = VlOs::getenvStr("VERILATOR_RAND_SAMPLER", VL_RAND_SAMPLER_DEFAULT);
+    if (!vlRandSamplerParse(sampler, m_ns.m_randSampler)) {
+        const std::string msg = "VERILATOR_RAND_SAMPLER must be 'default' or 'solver': " + sampler;
+        VL_FATAL_MT("", 0, "", msg.c_str());
+    }
     m_ns.m_logFD = -1;
     m_ns.m_stdoutFD = -1;
     m_ns.m_stderrFD = -1;
@@ -3687,6 +3711,16 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             quiet(true);
         } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {
             randReset(static_cast<int>(u64));
+        } else if (commandArgVlString(arg, "+verilator+rand+sampler+", str)) {
+            VerilatedRandSampler sampler;
+            if (vlRandSamplerParse(str, sampler)) {
+                randSampler(sampler);
+            } else {
+                const std::string msg = "Argument '+verilator+rand+sampler+' must be "
+                                        "'default' or 'solver': "
+                                        + arg;
+                VL_FATAL_MT("COMMAND_LINE", 0, "", msg.c_str());
+            }
         } else if (commandArgVlString(arg, "+verilator+solver+file+", str)) {
             solverLogFilename(str);
         } else if (commandArgVlUint64(arg, "+verilator+wno+unsatconstr+", u64, 0, 1)) {

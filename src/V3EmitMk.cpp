@@ -720,6 +720,10 @@ public:
         if (v3Global.useRandomizeMethods() && solver != "")
             of.puts("\t-DVM_SOLVER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(solver)
                     + "\"' \\\n");
+        const std::string sampler = V3Options::getenvVERILATOR_RAND_SAMPLER();
+        if (v3Global.useRandomizeMethods() && sampler != "")
+            of.puts("\t-DVM_RAND_SAMPLER_DEFAULT='\"" + V3OutFormatter::quoteNameControls(sampler)
+                    + "\"' \\\n");
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");
         const VStringList& cFlags = v3Global.opt.cFlags();
         for (const string& i : cFlags) of.puts("  " + i + " \\\n");
