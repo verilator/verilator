@@ -2313,13 +2313,13 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (m_graphing) {
             if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
             if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
-            // Only interface tristate nets need this: a plain (non-Z) cross-hierarchy
-            // driver has no Z in its own module's graph, so mark the net tristate here to
-            // collect the driver as a contribution. The ifaceTristate flag is only set for
-            // interface nets; a non-interface cross-module tri driver does nothing here and
-            // is instead rejected (E_UNSUPPORTED) later in insertTristates.
+            // A plain (non-Z) cross-hierarchy driver has no Z in its own module's graph, so
+            // mark a net already known tristate (interface net, or a net whose module already
+            // created its __en) tristate here. Interface nets collect the driver as a
+            // contribution; a non-interface cross-module tri driver is rejected
+            // (E_UNSUPPORTED) later in insertTristates.
             if (nodep->access().isWriteOrRW() && VN_IS(nodep, VarXRef)
-                && m_varAux(nodep->varp()).ifaceTristate) {
+                && (m_varAux(nodep->varp()).ifaceTristate || nodep->varp()->user1p())) {
                 m_tgraph.setTristate(nodep->varp());
             }
         } else {
