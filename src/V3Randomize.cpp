@@ -6109,6 +6109,17 @@ class RandomizeVisitor final : public VNVisitor {
             new AstIf{fl, new AstLogNot{fl, modep}, newPinSizeVariable(fl, arrVarp, genp)});
     }
 
+    void collectSizeConstrainedArrays(AstClass* classp,
+                                      VInsertionSet<AstVar*>& sizeArrayVars) const {
+        while (classp) {
+            const auto sizeArraysIt = m_sizeConstrainedArrays.find(classp);
+            if (sizeArraysIt != m_sizeConstrainedArrays.end()) {
+                sizeArrayVars.insert(sizeArraysIt->second.begin(), sizeArraysIt->second.end());
+            }
+            classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr;
+        }
+    }
+
     static void copyVariableRegistrations(AstFunc* const sourcep, AstFunc* const targetp) {
         for (AstNode* const stmtp : sourcep->stmtspList()) {
             bool hasRegistration = false;
@@ -6292,13 +6303,8 @@ class RandomizeVisitor final : public VNVisitor {
             VInsertionSet<AstVar*> sizeArrayVars;
             if (nodep->extendsp()) {
                 AstClass* parentClassp = nodep->extendsp()->classp();
+                collectSizeConstrainedArrays(parentClassp, sizeArrayVars);
                 while (parentClassp) {
-                    const auto sizeArraysIt = m_sizeConstrainedArrays.find(parentClassp);
-                    if (sizeArraysIt != m_sizeConstrainedArrays.end()) {
-                        for (AstVar* const arrVarp : sizeArraysIt->second) {
-                            sizeArrayVars.insert(arrVarp);
-                        }
-                    }
                     AstFunc* const parentRandomizep
                         = VN_CAST(m_memberMap.findMember(parentClassp, "randomize"), Func);
                     if (parentRandomizep) copyVariableRegistrations(parentRandomizep, randomizep);
@@ -6774,8 +6780,13 @@ class RandomizeVisitor final : public VNVisitor {
         // with size variables, using shared createOrGetSizeVar helper.
         // After CaptureVisitor, fromp() of .size is AstMemberSel (not VarRef),
         // so extract the underlying variable from the MemberSel chain.
-        // Collect resize statements to add after solver call, guarded by success.
-        AstNode* inlineResizeStmtsp = nullptr;
+        // Collect the class-wide resize call and the with-block's own resize
+        // statements to run after a successful solver call.
+        AstNode* resizeStmtsp = nullptr;
+        if (AstTask* const resizeAllTaskp
+            = VN_AS(m_memberMap.findMember(classp, "__Vresize_constrained_arrays"), Task)) {
+            resizeStmtsp = (new AstTaskRef{nodep->fileline(), resizeAllTaskp})->makeStmt();
+        }
         {
             std::vector<AstCMethodHard*> sizeMethodps;
             capturedTreep->foreachAndNext([&](AstCMethodHard* methodp) {
@@ -6828,8 +6839,7 @@ class RandomizeVisitor final : public VNVisitor {
                     AstCMethodHard* const resizep
                         = new AstCMethodHard{fl, resizeVarRefp, VCMethod::DYN_RESIZE, sizeExprp};
                     resizep->dtypep(methodp->findVoidDType());
-                    inlineResizeStmtsp
-                        = AstNode::addNext(inlineResizeStmtsp, new AstStmtExpr{fl, resizep});
+                    resizeStmtsp = AstNode::addNext(resizeStmtsp, new AstStmtExpr{fl, resizep});
                 }
                 AstNodeExpr* const sizeNodeExprp = buildMemberSelExprp(rootExprp, sizeVarp);
                 methodp->replaceWith(sizeNodeExprp);
@@ -6859,10 +6869,7 @@ class RandomizeVisitor final : public VNVisitor {
         // rebuild and solve again so unique{}/element constraints see the arrays'
         // final (post-resize) length rather than their pre-solve (usually empty) one.
         FileLine* const fl = nodep->fileline();
-        const auto sizeArraysIt = m_sizeConstrainedArrays.find(classp);
-        if (sizeArraysIt != m_sizeConstrainedArrays.end()) {
-            allSizeArrays.insert(sizeArraysIt->second.begin(), sizeArraysIt->second.end());
-        }
+        collectSizeConstrainedArrays(classp, allSizeArrays);
         const bool needsSizePhase = !allSizeArrays.empty();
         AstVar* const retVarp = VN_AS(randomizeFuncp->fvarp(), Var);
 
@@ -6883,38 +6890,22 @@ class RandomizeVisitor final : public VNVisitor {
             randomizeFuncp->addStmtsp(new AstAssign{
                 fl, new AstVarRef{fl, basicOkVarp, VAccess::WRITE}, basicRandomizeFuncCallp});
 
-            AstVar* const sizeOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vsize_ok",
-                                                  classp->findBasicDType(VBasicDTypeKwd::BIT)};
-            sizeOkVarp->funcLocal(true);
-            randomizeFuncp->addStmtsp(sizeOkVarp);
             AstVar* const finalOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vfinal_ok",
                                                    classp->findBasicDType(VBasicDTypeKwd::BIT)};
             finalOkVarp->funcLocal(true);
             randomizeFuncp->addStmtsp(finalOkVarp);
 
             // First pass: solve to determine sizes
-            AstCExpr* const solverCall1p = newSolverCallp(localGenp);
-            randomizeFuncp->addStmtsp(
-                new AstAssign{fl, new AstVarRef{fl, sizeOkVarp, VAccess::WRITE}, solverCall1p});
+            AstVar* const sizeOkVarp
+                = addSizeSolvep(randomizeFuncp, localGenp, randModeVarp, allSizeArrays);
 
             // Resize constrained arrays before rebuilding constraints: both any
             // class-wide resize task (class-level size constraints) and this
             // with-block's own inline-size resize statements.
-            {
-                AstNode* resizeStmtsp = nullptr;
-                if (AstTask* const resizeAllTaskp = VN_AS(
-                        m_memberMap.findMember(classp, "__Vresize_constrained_arrays"), Task)) {
-                    AstTaskRef* const resizeTaskRefp = new AstTaskRef{fl, resizeAllTaskp};
-                    resizeStmtsp = AstNode::addNext(resizeStmtsp, resizeTaskRefp->makeStmt());
-                }
-                if (inlineResizeStmtsp) {
-                    resizeStmtsp = AstNode::addNext(resizeStmtsp, inlineResizeStmtsp);
-                }
-                if (resizeStmtsp) {
-                    AstIf* const ifp = new AstIf{fl, new AstVarRef{fl, sizeOkVarp, VAccess::READ},
-                                                 resizeStmtsp, nullptr};
-                    randomizeFuncp->addStmtsp(ifp);
-                }
+            if (resizeStmtsp) {
+                AstIf* const ifp
+                    = new AstIf{fl, new AstVarRef{fl, sizeOkVarp, VAccess::READ}, resizeStmtsp};
+                randomizeFuncp->addStmtsp(ifp);
             }
 
             // Clear this call's constraints, then rebuild them fresh against the
@@ -7028,22 +7019,7 @@ class RandomizeVisitor final : public VNVisitor {
 
             // Pin the sizes so the final solve can't move them
             for (AstVar* const arrVarp : allSizeArrays) {
-                AstVar* const sizeVarp = VN_CAST(arrVarp->user4p(), Var);
-                if (!sizeVarp) continue;
-                AstCMethodHard* const pinp
-                    = new AstCMethodHard{fl, new AstVarRef{fl, localGenp, VAccess::READWRITE},
-                                         VCMethod::RANDOMIZER_PIN_VAR};
-                pinp->dtypeSetVoid();
-                AstCExpr* const namep
-                    = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + sizeVarp->name() + "\""};
-                namep->dtypeSetUInt32();
-                pinp->addPinsp(namep);
-                pinp->addPinsp(new AstConst{fl, AstConst::Unsized64{},
-                                            static_cast<uint64_t>(sizeVarp->width())});
-                AstVarRef* const sizeVarRefp = new AstVarRef{fl, sizeVarp, VAccess::READ};
-                sizeVarRefp->classOrPackagep(VN_AS(sizeVarp->user2p(), NodeModule));
-                pinp->addPinsp(sizeVarRefp);
-                randomizeFuncp->addStmtsp(pinp->makeStmt());
+                randomizeFuncp->addStmtsp(newPinSizeVariable(fl, arrVarp, localGenp));
             }
 
             // Final solve: element values with sizes pinned
@@ -7067,9 +7043,9 @@ class RandomizeVisitor final : public VNVisitor {
                               new AstAnd{fl, basicRandomizeFuncCallp, solverCallp}});
 
             // Resize constrained arrays only when solver succeeds
-            if (inlineResizeStmtsp) {
-                AstIf* const ifp = new AstIf{fl, new AstVarRef{fl, retVarp, VAccess::READ},
-                                             inlineResizeStmtsp, nullptr};
+            if (resizeStmtsp) {
+                AstIf* const ifp
+                    = new AstIf{fl, new AstVarRef{fl, retVarp, VAccess::READ}, resizeStmtsp};
                 randomizeFuncp->addStmtsp(ifp);
             }
         }
