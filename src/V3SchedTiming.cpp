@@ -15,10 +15,10 @@
 //*************************************************************************
 //
 // Functions defined in this file are used by V3Sched.cpp to properly integrate
-// static scheduling with timing features. They create external domains for
-// variables, remap them to trigger vectors, and create timing resume/ready
-// calls for the global eval loop. There is also a function that transforms
-// forks into emittable constructs.
+// static scheduling with timing features. They remap the external domains of
+// variables (see V3SchedTimingPrep.cpp) to trigger vectors, and create timing
+// resume/ready calls for the global eval loop. There is also a function that
+// transforms forks into emittable constructs.
 //
 // See the internals documentation docs/internals.rst for more details.
 //
@@ -26,13 +26,8 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3AstUserAllocator.h"
-#include "V3ClassGraph.h"
 #include "V3EmitCBase.h"
 #include "V3Sched.h"
-
-#include <unordered_map>
-#include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -182,231 +177,6 @@ AstCCall* TimingKit::createReady(AstVarScope* trigVscp) {
     AstCCall* const callp = new AstCCall{m_readyFuncp->fileline(), m_readyFuncp};
     callp->dtypeSetVoid();
     return callp;
-}
-
-//============================================================================
-// Creates the timing kit and marks variables written by suspendables
-
-class AwaitVisitor final : public VNVisitor {
-    // NODE STATE
-    //  AstSenTree::user1()  -> bool.               Set true if the sentree has been visited.
-    //  AstCFunc::user1()    -> AstUser1Allocator.  See alocator below
-    const VNUser1InUse m_inuser1;
-
-    // STATE
-    bool m_inProcess = false;  // Are we in a process?
-    bool m_gatherVars = false;  // Should we gather vars in m_writtenBySuspendable?
-    AstScope* const m_scopeTopp;  // Scope at the top
-    LogicByScope& m_lbs;  // Timing resume actives
-    AstNodeStmt*& m_postUpdatesr;  // Post updates for the trigger eval function
-    // Additional var sensitivities
-    std::map<const AstVarScope*, std::set<AstSenTree*>>& m_externalDomains;
-    std::unique_ptr<V3ClassGraph>
-        m_classGraphp;  // class graph to get possibly called functions from a virtual call
-    std::set<AstSenTree*> m_processDomains;  // Sentrees from the current process
-    // Variables written by suspendable processes
-    std::set<AstVarScope*> m_writtenBySuspendable;
-    struct CFuncCache final {
-        std::set<AstSenTree*> m_processDomains;  // What shall be added to m_processDomains
-        std::set<AstVarScope*>
-            m_writtenBySuspendable;  // What shall be added to m_writtenBySuspendable
-        std::set<AstCFunc*> m_includes;  // CFuncs whose CFuncCache shall be included into this
-        // m_includes does not need to keep bool with m_gatherVars to know which cache shall be
-        // used since:
-        //  Only possible transition in a graph is from `!m_gatherVars` to `m_gatherVars`
-        //  (in visit(AstFork*) there is a only possible transition, visit(AstNodeProcedure*) is
-        //  not considered since it does not occur during a graph traversal)
-        //  therefore, if change of state occurs it is certain that the first node after transition
-        //  won't be in visiting state
-        //  therefore, every node in a m_includes shall take value of m_gatherVars under which
-        //  current CFuncCache is
-        enum State : uint8_t {
-            UNINITIALIZED = 0,  // Not initialized members are empty
-            VISITING,  // Visiting - needed for breaking recursion
-            INITIALIZED,  // Members contains correct values
-        } m_state  // Current state of Cache
-            = UNINITIALIZED;
-    };
-    std::vector<const AstCFunc*> m_callStack;  // Current callstack of AstCFuncs
-    // Caches how visiting the function with given value of m_gatherVars changes
-    // m_processDomains and m_writtenBySuspendable - only accessed from visit(AstCFunc* nodep)
-    AstUser1Allocator<AstCFunc, std::array<CFuncCache, 2>> m_cfuncsCache;
-    // Count uses of not inlined writes to signals in suspendables
-    VDouble0 m_notInlinedWritesInSuspendableUsage;
-
-    // METHODS
-    // Add arguments to a resume() call based on arguments in the suspending call
-    void addResumePins(AstCMethodHard* const resumep, AstNodeExpr* pinsp) {
-        AstCExpr* const exprp = VN_CAST(pinsp, CExpr);
-        AstText* const textp = VN_CAST(exprp->nodesp(), Text);
-        if (textp) {
-            // The first argument, vlProcess, isn't used by any of resume() methods, skip it
-            if ((pinsp = VN_CAST(pinsp->nextp(), NodeExpr))) {
-                resumep->addPinsp(pinsp->cloneTree(false));
-            }
-        } else {
-            resumep->addPinsp(pinsp->cloneTree(false));
-        }
-    }
-    void addCFuncCachedValues(const AstCFunc* const cfuncp,
-                              std::unordered_set<const AstCFunc*>& visited) {
-        if (!visited.insert(cfuncp).second) return;
-        CFuncCache& value = m_cfuncsCache(cfuncp)[static_cast<size_t>(m_gatherVars)];
-        const size_t initialSize = m_writtenBySuspendable.size();
-        m_writtenBySuspendable.insert(value.m_writtenBySuspendable.begin(),
-                                      value.m_writtenBySuspendable.end());
-        m_notInlinedWritesInSuspendableUsage += m_writtenBySuspendable.size() - initialSize;
-        m_processDomains.insert(value.m_processDomains.begin(), value.m_processDomains.end());
-        for (const AstCFunc* const includedp : value.m_includes) {
-            addCFuncCachedValues(includedp, visited);
-        }
-    }
-    // Create an active with a timing scheduler resume() call
-    void createResumeActive(AstCAwait* const awaitp) {
-        auto* const methodp = VN_AS(awaitp->exprp(), CMethodHard);
-        AstVarScope* const schedulerp = VN_AS(methodp->fromp(), VarRef)->varScopep();
-        AstSenTree* const sentreep = awaitp->sentreep();
-        FileLine* const flp = sentreep->fileline();
-        // Create a resume() call on the timing scheduler
-        auto* const resumep = new AstCMethodHard{
-            flp, new AstVarRef{flp, schedulerp, VAccess::READWRITE}, VCMethod::SCHED_RESUME};
-        resumep->dtypeSetVoid();
-        if (schedulerp->dtypep()->basicp()->isTriggerScheduler()) {
-            UASSERT_OBJ(methodp->pinsp(), methodp,
-                        "Trigger method should have pins from V3Timing");
-            // The first pin is the ready boolean, the rest (if any) should be debug info
-            // See V3Timing for details
-            if (AstNode* const dbginfop = methodp->pinsp()->nextp()) {
-                if (methodp->pinsp()) addResumePins(resumep, static_cast<AstNodeExpr*>(dbginfop));
-            }
-        } else if (schedulerp->dtypep()->basicp()->isDynamicTriggerScheduler()) {
-            auto* const postp = resumep->cloneTree(false);
-            postp->method(VCMethod::SCHED_DO_POST_UPDATES);
-            m_postUpdatesr = AstNode::addNext(m_postUpdatesr, postp->makeStmt());
-        }
-        // Put it in an active
-        AstActive* const activep = new AstActive{flp, "_timing", sentreep};
-        activep->addStmtsp(resumep->makeStmt());
-        m_lbs.add(m_scopeTopp, activep);
-    }
-    // Visit AstCFunc from a AstNodeCCall - this function is rather expensive to call therefore, it
-    // only shall be called when necessary
-    void visitCalledCFunc(AstCFunc* const nodep) {
-        if (!m_inProcess) return;  // Skip if not in process - nothing would be added to any set
-        const size_t cacheKey = static_cast<size_t>(m_gatherVars);
-        CFuncCache& value = m_cfuncsCache(nodep)[cacheKey];
-        switch (value.m_state) {
-        case CFuncCache::UNINITIALIZED: {
-            // Save current state
-            VL_RESTORER_CLEAR(m_processDomains);
-            VL_RESTORER_CLEAR(m_writtenBySuspendable);
-
-            // Visit
-            value.m_state = CFuncCache::VISITING;
-            m_callStack.push_back(nodep);
-            iterateChildren(nodep);
-            m_callStack.pop_back();
-            value.m_state = CFuncCache::INITIALIZED;
-
-            // Save a cache
-            std::swap(m_processDomains, value.m_processDomains);
-            std::swap(m_writtenBySuspendable, value.m_writtenBySuspendable);
-        } break;
-        case CFuncCache::VISITING: {
-            for (size_t i = m_callStack.size() - 1; m_callStack.at(i) != nodep; --i) {
-                m_cfuncsCache(m_callStack[i])[cacheKey].m_includes.insert(nodep);
-            }
-            return;  // Break recursion
-        }
-        case CFuncCache::INITIALIZED: break;
-        }
-        std::unordered_set<const AstCFunc*> visited;
-        addCFuncCachedValues(nodep, visited);
-    }
-
-    // VISITORS
-    void visit(AstNodeProcedure* const nodep) override {
-        UASSERT_OBJ(!m_inProcess && !m_gatherVars && m_processDomains.empty()
-                        && m_writtenBySuspendable.empty(),
-                    nodep, "Process in process?");
-        m_inProcess = true;
-        m_gatherVars = nodep->isSuspendable();  // Only gather vars in a suspendable
-        iterateChildren(nodep);
-        for (AstVarScope* const vscp : m_writtenBySuspendable) {
-            m_externalDomains[vscp].insert(m_processDomains.begin(), m_processDomains.end());
-            vscp->varp()->setWrittenBySuspendable();
-        }
-        m_processDomains.clear();
-        m_writtenBySuspendable.clear();
-        m_inProcess = false;
-        m_gatherVars = false;
-    }
-    void visit(AstFork* nodep) override {
-        VL_RESTORER(m_gatherVars);
-        if (m_inProcess) m_gatherVars = true;
-        // If not in a process, we don't need to gather variables or domains
-        iterateChildren(nodep);
-    }
-    void visit(AstCAwait* nodep) override {
-        if (AstSenTree* const sentreep = nodep->sentreep()) {
-            if (!sentreep->user1SetOnce()) createResumeActive(nodep);
-            if (m_inProcess) m_processDomains.insert(sentreep);
-        }
-        iterateChildren(nodep);
-    }
-    void visit(AstNodeVarRef* nodep) override {
-        if (m_gatherVars && nodep->access().isWriteOrRW() && !nodep->varp()->ignoreSchedWrite()) {
-            m_writtenBySuspendable.insert(nodep->varScopep());
-        }
-    }
-    void visit(AstNodeCCall* const nodep) override {
-        iterateChildren(nodep);
-        // We need to visit bodies of non-inlined functions
-        const auto& cfuncps = m_classGraphp->getCallPossibleCFuncs(nodep);
-        if (cfuncps.empty()) {
-            visitCalledCFunc(nodep->funcp());
-        } else {
-            for (AstCFunc* const cfuncp : cfuncps) visitCalledCFunc(cfuncp);
-        }
-    }
-    void visit(AstCFunc* const nodep) override {
-        const auto& value = m_cfuncsCache(nodep);
-        // Check whether it was already visited by visitCalledCFunc()
-        if (value[0].m_state != CFuncCache::UNINITIALIZED
-            || value[1].m_state != CFuncCache::UNINITIALIZED) {
-            return;
-        }
-        iterateChildren(nodep);
-    }
-    void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
-
-    //--------------------
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit AwaitVisitor(AstNetlist* nodep, LogicByScope& lbs, AstNodeStmt*& postUpdatesr,
-                          std::map<const AstVarScope*, std::set<AstSenTree*>>& externalDomains)
-        : m_scopeTopp{nodep->topScopep()->scopep()}
-        , m_lbs{lbs}
-        , m_postUpdatesr{postUpdatesr}
-        , m_externalDomains{externalDomains}
-        , m_classGraphp{V3ClassGraph::build(nodep)} {
-        iterate(nodep);
-    }
-    ~AwaitVisitor() override {
-        V3Stats::addStat("Scheduling, count of non-inlined signal writes in suspendables",
-                         m_notInlinedWritesInSuspendableUsage);
-    }
-};
-
-TimingKit prepareTiming(AstNetlist* const netlistp) {
-    if (!v3Global.usesTiming()) return {};
-    LogicByScope lbs;
-    AstNodeStmt* postUpdates = nullptr;
-    std::map<const AstVarScope*, std::set<AstSenTree*>> externalDomains;
-    { AwaitVisitor{netlistp, lbs, postUpdates, externalDomains}; }
-    return {std::move(lbs), postUpdates, std::move(externalDomains)};
 }
 
 //============================================================================
