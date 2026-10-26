@@ -14,7 +14,7 @@
 #         | core_junk | crlf | die_at | die_status_at | diversity_model
 #         | dup_model | err_assume | err_core | err_multiline | err_once
 #         | err_phase | err_reply | err_trunc | err_unbal | err_unbal_cont
-#         | garbage_assume | garbage_at | garbage_model | garbage_status
+#         | extra_var | garbage_assume | garbage_at | garbage_model | garbage_status
 #         | high_digit | indent | low_digit | model_trunc | multiline | mute_at
 #         | no_digits | none | octal | oor_assume | phase_model | phase_trunc
 #         | short_model | success | unknown_once | unknown_twice | unknown_var
@@ -40,6 +40,7 @@
 #   err_trunc        - answer the Nth status with an unterminated (error and close the pipe
 #   err_unbal        - answer the Nth status with an error closing an extra paren
 #   err_unbal_cont   - answer the Nth status with an error, the extra paren on a continuation line
+#   extra_var        - forward the Nth model reply with a variable never requested appended
 #   garbage_assume   - answer the unsat assumptions with a non-S-expression word
 #   garbage_at       - replace every Nth model reply with a non-S-expression line
 #   garbage_model    - replace the Nth model reply with a partly valid one
@@ -284,6 +285,11 @@ for line in proc.stdout:
     if mode == "err_unbal_cont":
         emit('(error "unbalanced"')
         emit('))')
+        continue
+    # The real reply stays usable; only the appended name was never asked for
+    if mode == "extra_var":
+        reply = " ".join(part.strip() for part in read_full(line))
+        emit(reply[:-1] + " (zzz #b0))")
         continue
     if mode == "garbage_assume":
         emit("junk")

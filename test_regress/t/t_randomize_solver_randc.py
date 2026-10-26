@@ -52,6 +52,9 @@ run_case('draw_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=2')
 run_case('draw_error', 4, 2, 'TAMPER=err_reply TAMPER_AT=1')
 # Model reply 1: the draw get-value of call 1, answered naming another variable
 run_case('draw_short', 4, 2, 'TAMPER=short_model TAMPER_AT=1')
+# Model reply 1: the draw get-value of call 1, also naming a variable never requested.
+# Only the drawn variable is pinned, so the call is unaffected.
+run_case('draw_extra_var', 5, 1, 'TAMPER=extra_var TAMPER_AT=1')
 # Status 15: the tail check-sat of call 3, which draws the c no x admits
 run_case('tail_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=15')
 
