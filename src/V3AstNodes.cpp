@@ -732,16 +732,21 @@ bool AstBasicDType::matchingDTypeNode(const AstNodeDType* samep) const {
     if (numeric().isSigned() != sp->numeric().isSigned()) return false;
     if (width() != sp->width()) return false;
 
-    // Both have explicit ranges: ranges must match exactly (IEEE 1800-2023 6.22.1(e))
-    if (rangep() && sp->rangep()) { return left() == sp->left() && right() == sp->right(); }
-    // Neither has explicit ranges: matching keywords with same width/signing match
-    if (!rangep() && !sp->rangep()) return true;
+    const bool thisPre = keyword().isPredefinedInteger();
+    const bool samePre = sp->keyword().isPredefinedInteger();
+
+    // Both are predefined integer types: same keyword/signing/width already verified
+    if (thisPre && samePre) return true;
+
+    // Both are vector/scalar types: ranges must match exactly (IEEE 1800-2023 6.22.1)
+    if (!thisPre && !samePre) {
+        if (isRanged() != sp->isRanged()) return false;
+        return !isRanged() || (left() == sp->left() && right() == sp->right());
+    }
 
     // One is predefined integer type and the other is a vector (IEEE 1800-2023 6.22.1(e)):
-    const AstBasicDType* const predp = rangep() ? sp : this;
-    if (!predp->keyword().isPredefinedInteger()) return false;
-    const AstBasicDType* const vecp = rangep() ? this : sp;
-    return !vecp->ascending() && vecp->lo() == 0;
+    const AstBasicDType* const vecp = thisPre ? sp : this;
+    return vecp->isRanged() && !vecp->ascending() && vecp->lo() == 0;
 }
 string AstBasicDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
