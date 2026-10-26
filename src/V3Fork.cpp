@@ -432,6 +432,7 @@ class DynScopeVisitor final : public VNVisitor {
         bindNodeToDynScope(nodep, framep);
     }
     void visit(AstVarRef* nodep) override {
+        if (nodep->access().isWriteOrRW() && nodep->isClassHandleValue()) nodep->user2(true);
         ForkDynScopeFrame* const framep = frameOf(nodep->varp());
         if (!framep) return;
         if (needsDynScope(nodep)) {
@@ -453,12 +454,6 @@ class DynScopeVisitor final : public VNVisitor {
             framep->captureVarInsert(nodep->varp());
         }
         bindNodeToDynScope(nodep, framep);
-    }
-    void visit(AstAssign* nodep) override {
-        if (VN_IS(nodep->lhsp(), VarRef) && nodep->lhsp()->isClassHandleValue()) {
-            nodep->lhsp()->user2(true);
-        }
-        visit(static_cast<AstNodeStmt*>(nodep));
     }
     void visit(AstAssignDly* nodep) override {
         if (m_procp && !nodep->user2()  // Unhandled AssignDly in function/task
