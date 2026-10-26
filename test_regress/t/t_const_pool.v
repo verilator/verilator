@@ -138,6 +138,8 @@ typedef struct {
 } nested_t;
 
 module t;
+  typedef struct {logic [255:0] a;} local_t;
+
   ifc i ();
   logic clk = 0;
   always #5 clk = ~clk;
@@ -311,6 +313,11 @@ module t;
       ifcs = '{256'h1: null, 256'h2: null};
       `checkh(ifcs.size(), 2);
       if (ifcs[256'h2] != null) $stop;
+    end
+    begin  // Struct type local to the module
+      local_t l;
+      l = '{default: 0};
+      `checkh(l.a, 256'h0);
     end
     if (cyc == 20) begin
       $write("*-* All Finished *-*\n");

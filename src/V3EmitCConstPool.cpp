@@ -67,7 +67,7 @@ class EmitCConstPool final : public EmitCConstInit {
                 openNewOutputSourceFile(m_uniqueNames.get(m_fileBaseName), true, false,
                                         "Constant pool");
                 puts("\n");
-                puts("#include \"verilated.h\"\n");
+                puts("#include \"" + EmitCUtil::pchClassName() + ".h\"\n");
             }
 
             puts("\n");
