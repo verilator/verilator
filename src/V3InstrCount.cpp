@@ -229,7 +229,7 @@ private:
         iterateAndNextConstNull(nodep->stmtsp());
         uint32_t totalCount = m_instrCount;
         // Sum counts in each statement until the first await
-        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->forkspList()) {
             reset();
             iterateConst(stmtp);
             totalCount += m_instrCount;

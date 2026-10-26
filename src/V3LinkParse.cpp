@@ -51,7 +51,7 @@ class LinkParseVisitor final : public VNVisitor {
     // If set, move AstVar->valuep() initial values to this module
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     AstVar* m_varp = nullptr;  // Variable we're under
-    AstNodeModule* m_valueModp = nullptr;
+    AstNodeModule* m_valueModp = nullptr;  // Module to move initial values into
     AstNodeModule* m_modp = nullptr;  // Current module
     bool m_inInterface = false;  // True when inside interface declaration
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
@@ -1112,8 +1112,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_defaultInSkewp);
         VL_RESTORER(m_defaultOutSkewp);
         // Find default input and output skews
-        for (AstNode *nextp, *itemp = nodep->itemsp(); itemp; itemp = nextp) {
-            nextp = itemp->nextp();
+        for (AstNode* const itemp : nodep->itemspList()) {
             if (AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
                 if (citemp->exprp() || citemp->assignp()) continue;
                 if (citemp->skewp()) {
@@ -1382,7 +1381,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Convert constructor args to member variables
-        for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
+        for (AstNode* const argp : nodep->argspList()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             if (origVarp->direction() == VDirection::OUTPUT
                 || origVarp->direction() == VDirection::INOUT) {
@@ -1404,7 +1403,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Convert sample args to member variables
-        for (AstNode* argp = nodep->sampleArgsp(); argp; argp = argp->nextp()) {
+        for (AstNode* const argp : nodep->sampleArgspList()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             if (!origVarp->isInput()) {
                 origVarp->v3error("Covergroup sample formal argument must have input direction "
@@ -1439,7 +1438,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_coverpointNum);
         VL_RESTORER_CLEAR(m_coverpoints);
         m_coverpointNum = 0;
-        for (const AstNode* stmtp = newFuncp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : newFuncp->stmtspList()) {
             if (const AstCoverpoint* const pointp = VN_CAST(stmtp, Coverpoint)) {
                 m_coverpoints.emplace(coverpointName(pointp), pointp);
             }
@@ -1485,8 +1484,7 @@ class LinkParseVisitor final : public VNVisitor {
         // into the typed binsp and optionsp slots.  The grammar attaches both node types
         // to binsp (op2) as a raw List[AstNode]; now that they are properly parented we
         // can iterate and split them without any temporary-parent tricks.
-        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
-            nextp = itemp->nextp();
+        for (AstNode* const itemp : nodep->binspList()) {
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
                 if (dropDeprecatedCoverageOption(optp)) continue;
                 optp->unlinkFrBack();
@@ -1591,8 +1589,7 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstCoverCross* nodep) override {
         cleanFileline(nodep);
         // Move options out of the mixed parse-time body, leaving only cross bins.
-        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
-            nextp = itemp->nextp();
+        for (AstNode* const itemp : nodep->binspList()) {
             if (VN_IS(itemp, CoverCrossBin)) continue;
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
             if (dropDeprecatedCoverageOption(optp)) continue;
@@ -1625,7 +1622,7 @@ class LinkParseVisitor final : public VNVisitor {
             flNoWarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
             flNoWarn->modifyWarnOff(V3ErrorCode::VARHIDDEN, true);
             std::set<string> names;
-            for (const AstNode* itemp = m_crossp->itemsp(); itemp; itemp = itemp->nextp()) {
+            for (const AstNode* const itemp : m_crossp->itemspList()) {
                 const AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
                 const AstCoverpoint* const pointp = findCoverpoint(refp);
                 if (!pointp || !names.insert(refp->name()).second) continue;

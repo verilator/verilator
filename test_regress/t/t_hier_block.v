@@ -125,18 +125,8 @@ module t #(
   end
 `endif
 
-`systemc_implementation
-#include <iostream>
-#define STRINGIFY_IMPL(str) #str
-#define STRINGIFY(str) STRINGIFY_IMPL(str)
-namespace {
-struct statically_initialized {
-  statically_initialized() {
-    std::cout << "MACRO:" << STRINGIFY(CPP_MACRO) << " is defined" << std::endl;
-  }
-} g_statically_initialized;
-}
-`verilog
+  // Check --CFLAGS reaches the C++ compiler in hierarchical mode
+  initial $c("VL_PRINTF(\"MACRO:%s is defined\\n\", VL_STRINGIFY(CPP_MACRO));");
 
 `endif  // PROTLIB_TOP
 

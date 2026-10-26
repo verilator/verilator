@@ -102,16 +102,16 @@ class LiftExprVisitor final : public VNVisitor {
     size_t m_nTmps = 0;  // Sequence numbers for temporary variables
     // Statistics
     VDouble0 m_statLiftedExprs;
-    VDouble0 m_statLiftedCalls;
-    VDouble0 m_statLiftedLvalCalls;
-    VDouble0 m_statLiftedConds;
-    VDouble0 m_statLiftedLogAnds;
-    VDouble0 m_statLiftedLogOrs;
-    VDouble0 m_statLiftedLogIfs;
-    VDouble0 m_statLiftedExprStmts;
-    VDouble0 m_statLiftedCaseConds;
-    VDouble0 m_statTemporariesCreated;
-    VDouble0 m_statTemporariesReused;
+    VDouble0 m_statLiftedCalls;  // Statistic, calls lifted
+    VDouble0 m_statLiftedLvalCalls;  // Statistic, lvalue calls lifted
+    VDouble0 m_statLiftedConds;  // Statistic, conditionals lifted
+    VDouble0 m_statLiftedLogAnds;  // Statistic, logical ANDs lifted
+    VDouble0 m_statLiftedLogOrs;  // Statistic, logical ORs lifted
+    VDouble0 m_statLiftedLogIfs;  // Statistic, logical implications lifted
+    VDouble0 m_statLiftedExprStmts;  // Statistic, expression statements lifted
+    VDouble0 m_statLiftedCaseConds;  // Statistic, case conditions lifted
+    VDouble0 m_statTemporariesCreated;  // Statistic, temporaries created
+    VDouble0 m_statTemporariesReused;  // Statistic, temporaries reused
 
     // METHODS
     AstVar* newVar(const char* baseName, const AstNodeExpr* exprp,
@@ -216,8 +216,7 @@ class LiftExprVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstCaseItem* nodep) override {
-        for (AstNode *condp = nodep->condsp(), *nextp; condp; condp = nextp) {
-            nextp = condp->nextp();
+        for (AstNode* const condp : nodep->condspList()) {
             // Lift under the AstExprStmt that will hold the lifted statements, as lifting
             // may replace the condition
             VNRelinker relinker;

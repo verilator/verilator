@@ -9,6 +9,10 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
+`define CPP_CALL1(f, a) $c32(`"[&] { extern int f``_cpp(int); return f``_cpp(`", a, `"); }()`")
+`define CPP_CALL2(f, a, b) $c32(`"[&] { extern int f``_cpp(int, int); return f``_cpp(`", a, ",", b, `"); }()`")
 
 // verilog_format: on
 `define STRINGIFY(x) `"x`"
@@ -62,34 +66,6 @@ typedef enum byte {
 
 `ifdef IVERILOG
 `elsif USE_VPI_NOT_DPI
-`ifdef VERILATOR
-`systemc_header
-  extern "C" int putString();
-  extern "C" int tryInvalidPutOperations();
-  extern "C" int putInertialDelay();
-  extern "C" int checkInertialDelay();
-  extern "C" int forceValues(int dimIndexingMethod);
-  extern "C" int partiallyForceValues(int direction);
-  extern "C" int forceSingleBit(int bitIndexingMethod, int dimIndexingMethod);
-  extern "C" int releaseValues(int dimIndexingMethod);
-  extern "C" int releasePartiallyForcedValues(int dimIndexingMethod);
-  extern "C" int releaseSingleBitForcedValues(int dimIndexingMethod);
-  extern "C" int partiallyReleaseValues(int direction);
-  extern "C" int releaseSingleBit(int bitIndexingMethod, int dimIndexingMethod);
-  extern "C" int checkValuesForced();
-  extern "C" int checkValuesPartiallyForced();
-  extern "C" int checkSingleBitForced();
-  extern "C" int checkValuesPartiallyReleased();
-  extern "C" int checkSingleBitReleased();
-  extern "C" int checkValuesReleased();
-  extern "C" int checkNonContinuousValuesForced();
-  extern "C" int checkContinuousValuesReleased();
-  extern "C" int checkContinuousValuesPartiallyReleased();
-  extern "C" int checkNonContinuousValuesPartiallyForced();
-  extern "C" int checkContinuousValuesSingleBitReleased();
-  extern "C" int checkNonContinuousSingleBitForced();
-`verilog
-`endif
 `else
 `ifdef VERILATOR
   import "DPI-C" context function int putString();
@@ -711,7 +687,7 @@ typedef enum byte {
                             // called also causes simulation termination
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("putString()");
+    vpiStatus = `CPP_CALL(putString);
 `else
     vpiStatus = putString();
 `endif
@@ -732,7 +708,7 @@ typedef enum byte {
                             // called also causes simulation termination
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("tryInvalidPutOperations()");
+    vpiStatus = `CPP_CALL(tryInvalidPutOperations);
 `else
     vpiStatus = tryInvalidPutOperations();
 `endif
@@ -753,7 +729,7 @@ typedef enum byte {
                             // called also causes simulation termination
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("putInertialDelay()");
+    vpiStatus = `CPP_CALL(putInertialDelay);
 `else
     vpiStatus = putInertialDelay();
 `endif
@@ -774,7 +750,7 @@ typedef enum byte {
                             // called also causes simulation termination
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkInertialDelay()");
+    vpiStatus = `CPP_CALL(checkInertialDelay);
 `else
     vpiStatus = checkInertialDelay();
 `endif
@@ -794,7 +770,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("forceValues(",dimIndexingMethod,")");
+    vpiStatus = `CPP_CALL1(forceValues, dimIndexingMethod);
 `else
     vpiStatus = forceValues(dimIndexingMethod);
 `endif
@@ -823,7 +799,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("partiallyForceValues(",direction,")");
+    vpiStatus = `CPP_CALL1(partiallyForceValues, direction);
 `else
     vpiStatus = partiallyForceValues(direction);
 `endif
@@ -853,7 +829,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("forceSingleBit(",bitIndexingMethod,",",dimIndexingMethod,")");
+    vpiStatus = `CPP_CALL2(forceSingleBit, bitIndexingMethod, dimIndexingMethod);
 `else
     vpiStatus = forceSingleBit(bitIndexingMethod, dimIndexingMethod);
 `endif
@@ -973,7 +949,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("releaseValues(",dimIndexingMethod,")");
+    vpiStatus = `CPP_CALL1(releaseValues, dimIndexingMethod);
 `else
     vpiStatus = releaseValues(dimIndexingMethod);
 `endif
@@ -1074,7 +1050,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("partiallyReleaseValues(",direction,")");
+    vpiStatus = `CPP_CALL1(partiallyReleaseValues, direction);
 `else
     vpiStatus = partiallyReleaseValues(direction);
 `endif
@@ -1104,7 +1080,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("releasePartiallyForcedValues(",dimIndexingMethod,")");
+    vpiStatus = `CPP_CALL1(releasePartiallyForcedValues, dimIndexingMethod);
 `else
     vpiStatus = releasePartiallyForcedValues(dimIndexingMethod);
 `endif
@@ -1193,7 +1169,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("releaseSingleBit(",bitIndexingMethod,",",dimIndexingMethod,")");
+    vpiStatus = `CPP_CALL2(releaseSingleBit, bitIndexingMethod, dimIndexingMethod);
 `else
     vpiStatus = releaseSingleBit(bitIndexingMethod, dimIndexingMethod);
 `endif
@@ -1233,7 +1209,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("releaseSingleBitForcedValues(",dimIndexingMethod,")");
+    vpiStatus = `CPP_CALL1(releaseSingleBitForcedValues, dimIndexingMethod);
 `else
     vpiStatus = releaseSingleBitForcedValues(dimIndexingMethod);
 `endif
@@ -1309,7 +1285,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkValuesForced()");
+    vpiStatus = `CPP_CALL(checkValuesForced);
 `else
     vpiStatus = checkValuesForced();
 `endif
@@ -1376,7 +1352,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkNonContinuousValuesForced()");
+    vpiStatus = `CPP_CALL(checkNonContinuousValuesForced);
 `else
     vpiStatus = checkNonContinuousValuesForced();
 `endif
@@ -1442,7 +1418,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkContinuousValuesReleased()");
+    vpiStatus = `CPP_CALL(checkContinuousValuesReleased);
 `else
     vpiStatus = checkContinuousValuesReleased();
 `endif
@@ -1537,7 +1513,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkValuesPartiallyForced()");
+    vpiStatus = `CPP_CALL(checkValuesPartiallyForced);
 `else
     vpiStatus = checkValuesPartiallyForced();
 `endif
@@ -1560,7 +1536,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkSingleBitForced()");
+    vpiStatus = `CPP_CALL(checkSingleBitForced);
 `else
     vpiStatus = checkSingleBitForced();
 `endif
@@ -1619,7 +1595,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkNonContinuousValuesPartiallyForced()");
+    vpiStatus = `CPP_CALL(checkNonContinuousValuesPartiallyForced);
 `else
     vpiStatus = checkNonContinuousValuesPartiallyForced();
 `endif
@@ -1675,7 +1651,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkNonContinuousSingleBitForced()");
+    vpiStatus = `CPP_CALL(checkNonContinuousSingleBitForced);
 `else
     vpiStatus = checkNonContinuousSingleBitForced();
 `endif
@@ -1743,7 +1719,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkValuesReleased()");
+    vpiStatus = `CPP_CALL(checkValuesReleased);
 `else
     vpiStatus = checkValuesReleased();
 `endif
@@ -1838,7 +1814,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkValuesPartiallyReleased()");
+    vpiStatus = `CPP_CALL(checkValuesPartiallyReleased);
 `else
     vpiStatus = checkValuesPartiallyReleased();
 `endif
@@ -1861,7 +1837,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkContinuousValuesPartiallyReleased()");
+    vpiStatus = `CPP_CALL(checkContinuousValuesPartiallyReleased);
 `else
     vpiStatus = checkContinuousValuesPartiallyReleased();
 `endif
@@ -1918,7 +1894,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkContinuousValuesSingleBitReleased()");
+    vpiStatus = `CPP_CALL(checkContinuousValuesSingleBitReleased);
 `else
     vpiStatus = checkContinuousValuesSingleBitReleased();
 `endif
@@ -1977,7 +1953,7 @@ typedef enum byte {
     integer vpiStatus = 1;
 `ifdef VERILATOR
 `ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("checkSingleBitReleased()");
+    vpiStatus = `CPP_CALL(checkSingleBitReleased);
 `else
     vpiStatus = checkSingleBitReleased();
 `endif

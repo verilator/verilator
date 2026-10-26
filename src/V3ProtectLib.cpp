@@ -355,7 +355,7 @@ class ProtectVisitor final : public VNVisitor {
         txtp->add("public:\n");
         txtp->add("long long m_seqnum;\n");
         txtp->add(m_topName + "_container(const char* scopep__V):\n");
-        txtp->add(m_topName + "(scopep__V) {}\n");
+        txtp->add(m_topName + "(Verilated::threadContextp(), scopep__V, false) {}\n");
         txtp->add("};\n\n");
 
         // Extern C
@@ -606,7 +606,7 @@ class ProtectVisitor final : public VNVisitor {
     }
 
     static bool checkIfClockExists(const AstNodeModule* modp) {
-        for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->direction() == VDirection::INPUT && varp->isPrimaryClock()) {
                     return true;

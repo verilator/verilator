@@ -26,6 +26,15 @@ module t;
     endcase
   endfunction
 
+  class Cls;
+    int m;
+    function new(int m);
+      this.m = m;
+    endfunction
+  endclass
+
+  typedef struct {int m;} s_t;
+
   initial begin
     int hit;
     cnt = 0;
@@ -49,6 +58,32 @@ module t;
     endcase
     `checkd(hit, 2);
     `checkd(cnt, 3);
+    // A member select of an impure case expression is also evaluated once
+    begin
+      Cls cq[$];
+      s_t sq[$];
+      Cls c;
+      c = new(2);
+      cq.push_back(c);
+      c = new(5);
+      cq.push_back(c);
+      case (cq.pop_front().m)
+        1: hit = 1;
+        2: hit = 2;
+        default: hit = 3;
+      endcase
+      `checkd(hit, 2);
+      `checkd(cq.size(), 1);
+      sq.push_back('{m: 2});
+      sq.push_back('{m: 5});
+      case (sq.pop_front().m)
+        1: hit = 1;
+        2: hit = 2;
+        default: hit = 3;
+      endcase
+      `checkd(hit, 2);
+      `checkd(sq.size(), 1);
+    end
     $write("*-* All Finished *-*\n");
     $finish;
   end

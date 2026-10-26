@@ -490,8 +490,7 @@ class CoverageVisitor final : public VNVisitor {
             }
         } else if (const AstStructDType* const adtypep = VN_CAST(dtypep, StructDType)) {
             if (adtypep->packed()) {
-                for (AstMemberDType* itemp = adtypep->membersp(); itemp;
-                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                for (AstMemberDType* const itemp : adtypep->memberspList()) {
                     const AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                     const int index_code = itemp->lsb();
                     ToggleEnt newent{
@@ -504,8 +503,7 @@ class CoverageVisitor final : public VNVisitor {
                     newent.cleanup();
                 }
             } else {
-                for (AstMemberDType* itemp = adtypep->membersp(); itemp;
-                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                for (AstMemberDType* const itemp : adtypep->memberspList()) {
                     AstNodeDType* const subtypep = itemp->subDTypep()->skipRefp();
                     AstNodeExpr* const varRefp = new AstStructSel{
                         varp->fileline(), above.m_varRefp->cloneTree(false), itemp->name()};

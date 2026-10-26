@@ -15,17 +15,20 @@
 //*************************************************************************
 // V3Reloop's Transformations:
 //
-// Each CFunc:
-//    Look for a series of assignments that would look better in a loop:
+// Each statement list in each CFunc:
+//    Look for a run of statements that are identical apart from packed
+//    constants of at most 32 bits, each of which advances by a constant stride
+//    from one statement to the next:
 //
-//      ASSIGN(ARRAYREF(var, #), ARRAYREF(var, #+C))
-//      ASSIGN(ARRAYREF(var, #+1), ARRAYREF(var, #+1+C))
+//      STMT(ARRAYSEL(a, 5), ARRAYSEL(b, 7), CONST(3))
+//      STMT(ARRAYSEL(a, 6), ARRAYSEL(b, 6), CONST(3))
+//      STMT(ARRAYSEL(a, 7), ARRAYSEL(b, 5), CONST(3))
 //      ->
 //      Create __Vilp local variable
-//      FOR(__Vilp = low; __Vilp <= high; ++__Vlip)
-//         ASSIGN(ARRAYREF(var, __Vilp), ARRAYREF(var, __Vilp + C))
+//      FOR(__Vilp = 0; __Vilp < 3; ++__Vilp)
+//         STMT(ARRAYSEL(a, 5 + __Vilp), ARRAYSEL(b, 7 + -1 * __Vilp), CONST(3))
 //
-//   Likewise vector assign to the same constant converted to a loop.
+//    Statements still execute in their original order.
 //
 //*************************************************************************
 
@@ -38,210 +41,282 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
+// Collects the constants of a statement that can be replaced with a
+// loop variable, and checks whether the statement can be placed in a
+// new loop. Also records the types of the nodes visited, or matches
+// them against those recorded for another statement, stopping at the
+// first difference.
 
-class ReloopVisitor final : public VNVisitor {
+class ReloopAnalysis final : public VNVisitorConst {
     // NODE STATE
-    // AstCFunc::user1p      -> Var number temp var, 0=not set yet
-    const VNUser1InUse m_inuser1;
+    // AstLoop::user1()     -> bool. Loop is inside the statement
+    const VNUser1InUse m_user1InUse;
 
     // STATE
+    std::vector<AstConst*>& m_consts;  // Packed constants of at most 32 bits, in visit order
+    std::vector<VNType>& m_types;  // Types of the nodes visited, in visit order
+    const bool m_record;  // Record 'm_types', otherwise match against it
+    size_t m_typeIdx = 0;  // Next entry of 'm_types' to match
+    bool m_ok = true;  // Statement can be placed in a new loop, and matches 'm_types'
+
+    // METHODS
+    // Record or match the type of 'nodep'. Returns false if the walk should stop.
+    bool enter(const AstNode* nodep) {
+        if (!m_ok) return false;
+        if (m_record) {
+            m_types.push_back(nodep->type());
+        } else if (m_typeIdx == m_types.size() || m_types[m_typeIdx++] != nodep->type()) {
+            m_ok = false;
+        }
+        return m_ok;
+    }
+
+    // VISITORS
+    void visit(AstConst* nodep) override {
+        if (!enter(nodep)) return;
+        if (nodep->width() > 32 || nodep->num().isOpaque()) return;
+        if (!nodep->dtypep()->skipRefp()->isIntegralOrPacked()) return;
+        if (nodep->num().isFourState()) return;
+        m_consts.push_back(nodep);
+    }
+    void visit(AstStreamL* nodep) override {
+        if (!enter(nodep)) return;
+        iterateConst(nodep->lhsp());  // Slice size 'rhsp' is emitted as a literal
+    }
+    void visit(AstReplicate* nodep) override {
+        if (!enter(nodep)) return;
+        // The count 'countp' sets widthMin, which sameNode ignores, and is emitted as a literal
+        iterateConst(nodep->srcp());
+    }
+    void visit(AstLoop* nodep) override {
+        if (!enter(nodep)) return;
+        nodep->user1(true);
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstLoopTest* nodep) override {
+        if (!enter(nodep)) return;
+        // Emitted as 'break', so a test of an enclosing loop would break out of the new loop
+        if (!nodep->loopp()->user1()) {
+            m_ok = false;
+            return;
+        }
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstTraceDecl*) override {
+        // Pointed to by AstTraceInc, and sameNode ignores what it declares
+        m_ok = false;
+    }
+    void visit(AstNode* nodep) override {
+        if (enter(nodep)) iterateChildrenConst(nodep);
+    }
+
+    // CONSTRUCTORS
+    ReloopAnalysis(AstNode* nodep, std::vector<AstConst*>& consts, std::vector<VNType>& types,
+                   bool record)
+        : m_consts{consts}
+        , m_types{types}
+        , m_record{record} {
+        m_consts.clear();
+        if (m_record) m_types.clear();
+        iterateConst(nodep);
+        if (!m_record && m_typeIdx != m_types.size()) m_ok = false;
+    }
+
+public:
+    // Fill 'consts' with the replaceable constants of 'nodep', and 'types' with the types of its
+    // nodes. Returns true if 'nodep' can be placed in a new loop.
+    static bool gather(AstNode* nodep, std::vector<AstConst*>& consts,
+                       std::vector<VNType>& types) {
+        return ReloopAnalysis{nodep, consts, types, true}.m_ok;
+    }
+    // Fill 'consts' with the replaceable constants of 'nodep'. Returns true if 'nodep' can be
+    // placed in a new loop, and the types of its nodes are 'types'.
+    static bool match(AstNode* nodep, std::vector<AstConst*>& consts, std::vector<VNType>& types) {
+        return ReloopAnalysis{nodep, consts, types, false}.m_ok;
+    }
+};
+
+//######################################################################
+
+class ReloopVisitor final : public VNVisitor {
+    // STATE
+    const uint32_t m_limit = static_cast<uint32_t>(v3Global.opt.reloopLimit());  // Min run length
+    AstCFunc* m_cfuncp = nullptr;  // Current function
+    uint32_t m_nTemps = 0;  // Number of loop variables created in current function
+    // Members to avoid reallocation
+    std::vector<AstConst*> m_firstConsts;  // Replaceable constants of the first statement
+    std::vector<VNType> m_firstTypes;  // Types of the nodes of the first statement
+    std::vector<uint32_t> m_deltas;  // Per statement advance of 'm_firstConsts'
+    std::vector<AstConst*> m_consts;  // Replaceable constants of the statement compared
     VDouble0 m_statReloops;  // Statistic tracking
     VDouble0 m_statReItems;  // Statistic tracking
-    AstCFunc* m_cfuncp = nullptr;  // Current block
-
-    std::vector<AstNodeAssign*> m_mgAssignps;  // List of assignments merging
-    AstCFunc* m_mgCfuncp = nullptr;  // Parent C function
-    const AstNode* m_mgNextp = nullptr;  // Next node
-    const AstNodeSel* m_mgSelLp = nullptr;  // Parent select, nullptr = idle
-    const AstNodeSel* m_mgSelRp = nullptr;  // Parent select, nullptr = constant
-    const AstNodeVarRef* m_mgVarrefLp = nullptr;  // Parent varref
-    const AstNodeVarRef* m_mgVarrefRp = nullptr;  // Parent varref, nullptr = constant
-    int64_t m_mgOffset = 0;  // Index offset
-    const AstConst* m_mgConstRp = nullptr;  // Parent RHS constant, nullptr = sel
-    uint32_t m_mgIndexLo = 0;  // Merge range
-    uint32_t m_mgIndexHi = 0;  // Merge range
 
     // METHODS
 
-    static AstVar* createVarTemp(FileLine* fl, AstCFunc* cfuncp) {
-        UASSERT_OBJ(cfuncp, fl, "Assignment not under a function");
-        const string newvarname{"__Vilp" + std::to_string(cfuncp->user1Inc() + 1)};
-        AstVar* const varp
-            = new AstVar{fl, VVarType::STMTTEMP, newvarname, VFlagLogicPacked{}, 32};
-        cfuncp->addVarsp(varp);
-        return varp;
+    // True if 'nodep' is 'firstp' with the constants 'm_firstConsts' advanced by 'm_deltas' * 'n'.
+    // Arithmetic is modulo 2^32, the same as in the loop body replacing them.
+    bool isStridedCopy(AstNodeStmt* firstp, AstNodeStmt* nodep, uint32_t n) {
+        if (!ReloopAnalysis::match(nodep, m_consts, m_firstTypes)) return false;
+        if (m_consts.size() != m_firstConsts.size()) return false;
+        // Check if the constants are strided as expected
+        for (size_t i = 0; i < m_consts.size(); ++i) {
+            if (m_consts[i]->toUInt() != m_firstConsts[i]->toUInt() + m_deltas[i] * n) {
+                return false;
+            }
+        }
+        // Structurally identical apart from the constants. Compare in place with the constants
+        // temporarily set to those of 'firstp', then restore them to 'first + delta * n'.
+        for (size_t i = 0; i < m_consts.size(); ++i) {
+            m_consts[i]->num().setLong(m_firstConsts[i]->toUInt());
+        }
+        const bool same = nodep->sameTree(firstp);
+        for (size_t i = 0; i < m_consts.size(); ++i) {
+            m_consts[i]->num().setLong(m_firstConsts[i]->toUInt() + m_deltas[i] * n);
+        }
+        return same;
     }
-    void mergeEnd() {
-        if (!m_mgAssignps.empty()) {
-            const uint32_t items = m_mgIndexHi - m_mgIndexLo + 1;
-            UINFO(9, "End merge iter=" << items << " " << m_mgIndexHi << ":" << m_mgIndexLo << " "
-                                       << m_mgOffset << " " << m_mgAssignps[0]);
-            if (items >= static_cast<uint32_t>(v3Global.opt.reloopLimit())) {
-                UINFO(6, "Reloop merging items=" << items << " " << m_mgIndexHi << ":"
-                                                 << m_mgIndexLo << " " << m_mgOffset << " "
-                                                 << m_mgAssignps[0]);
-                ++m_statReloops;
-                m_statReItems += items;
 
-                // Transform first assign into for loop body
-                AstNodeAssign* const bodyp = m_mgAssignps.front();
-                UASSERT_OBJ(bodyp->lhsp() == m_mgSelLp, bodyp, "Corrupt queue/state");
-                FileLine* const fl = bodyp->fileline();
-                AstVar* const itp = createVarTemp(fl, m_mgCfuncp);
+    // Next statement after 'stmtp', skipping comments, or nullptr if none
+    static AstNodeStmt* nextStmt(AstNodeStmt* stmtp) {
+        AstNode* nextp = stmtp->nextp();
+        while (VN_IS(nextp, Comment)) nextp = nextp->nextp();
+        return VN_CAST(nextp, NodeStmt);
+    }
 
-                if (m_mgOffset > 0) {
-                    UASSERT_OBJ(m_mgIndexLo >= m_mgOffset, bodyp,
-                                "Reloop iteration starts at negative index");
-                    m_mgIndexLo -= m_mgOffset;
-                    m_mgIndexHi -= m_mgOffset;
-                }
+    // Number of statements from 'firstp' that are strided copies of it, ignoring comments, and
+    // the last of them. Sets 'm_deltas' to the per statement advance of the constants
+    // 'm_firstConsts'.
+    std::pair<uint32_t, AstNodeStmt*> runLength(AstNodeStmt* firstp) {
+        AstNodeStmt* const secondp = nextStmt(firstp);
+        if (!secondp) return {1, firstp};
+        if (!ReloopAnalysis::match(secondp, m_consts, m_firstTypes)) return {1, firstp};
+        if (m_consts.size() != m_firstConsts.size()) return {1, firstp};
+        // Calculate the per statement advance of the constants
+        m_deltas.clear();
+        for (size_t i = 0; i < m_firstConsts.size(); ++i) {
+            m_deltas.push_back(m_consts[i]->toUInt() - m_firstConsts[i]->toUInt());
+        }
+        // Count the number of statements that are strided copies of 'firstp'
+        uint32_t n = 1;
+        AstNodeStmt* lastp = firstp;
+        for (AstNodeStmt* stmtp = secondp; stmtp; stmtp = nextStmt(stmtp)) {
+            if (!isStridedCopy(firstp, stmtp, n)) break;
+            ++n;
+            lastp = stmtp;
+        }
+        return {n, lastp};
+    }
 
-                AstNode* const initp = new AstAssign{fl, new AstVarRef{fl, itp, VAccess::WRITE},
-                                                     new AstConst{fl, m_mgIndexLo}};
-                AstNodeExpr* const condp = new AstLte{fl, new AstVarRef{fl, itp, VAccess::READ},
-                                                      new AstConst{fl, m_mgIndexHi}};
-                AstNode* const incp = new AstAssign{
-                    fl, new AstVarRef{fl, itp, VAccess::WRITE},
-                    new AstAdd{fl, new AstConst{fl, 1}, new AstVarRef{fl, itp, VAccess::READ}}};
-                AstLoop* const loopp = new AstLoop{fl};
-                loopp->addStmtsp(new AstLoopTest{fl, loopp, condp});
-                initp->addNext(loopp);
-                bodyp->replaceWith(initp);
-                loopp->addStmtsp(bodyp);
-                loopp->addStmtsp(incp);
+    // Replace constants 'm_firstConsts' with 'first + delta * itp'. On every iteration this
+    // equals the replaced constant, as checked by 'isStridedCopy', so needs no masking.
+    void replaceConsts(AstVar* itp) {
+        for (size_t i = 0; i < m_firstConsts.size(); ++i) {
+            const uint32_t delta = m_deltas[i];
+            if (!delta) continue;
+            AstConst* const constp = m_firstConsts[i];
+            FileLine* const flp = constp->fileline();
+            AstNodeExpr* valuep = new AstVarRef{flp, itp, VAccess::READ};
+            if (delta != 1) valuep = new AstMul{flp, new AstConst{flp, delta}, valuep};
+            if (!constp->isZero()) {
+                valuep = new AstAdd{flp, new AstConst{flp, constp->toUInt()}, valuep};
+            }
+            valuep->dtypeFrom(constp);
+            constp->replaceWith(valuep);
+            VL_DO_DANGLING(pushDeletep(constp), constp);
+        }
+    }
 
-                // Replace constant index with new loop index
-                AstNodeExpr* const offsetp
-                    = m_mgOffset == 0 ? nullptr : new AstConst(fl, std::abs(m_mgOffset));
-                AstNodeExpr* const lbitp = m_mgSelLp->bitp();
-                AstNodeExpr* const lvrefp = new AstVarRef{fl, itp, VAccess::READ};
-                lbitp->replaceWith(m_mgOffset > 0 ? new AstAdd{fl, lvrefp, offsetp} : lvrefp);
-                VL_DO_DANGLING(lbitp->deleteTree(), lbitp);
-                if (m_mgSelRp) {  // else constant and no replace
-                    AstNodeExpr* const rbitp = m_mgSelRp->bitp();
-                    AstNodeExpr* const rvrefp = new AstVarRef{fl, itp, VAccess::READ};
-                    rbitp->replaceWith(m_mgOffset < 0 ? new AstAdd{fl, rvrefp, offsetp} : rvrefp);
-                    VL_DO_DANGLING(rbitp->deleteTree(), lbitp);
-                }
-                UINFOTREE(9, initp, "", "new");
-                UINFOTREE(9, loopp, "", "new");
+    // Replace 'firstp' and the following 'n - 1' strided copies of it with a loop. Returns the
+    // replacement, which is the loop initializer followed by the loop.
+    AstNode* makeLoop(AstNodeStmt* firstp, uint32_t n) {
+        // Remove all but the first, which becomes the loop body
+        for (uint32_t i = 1; i < n;) {
+            AstNode* const deadp = firstp->nextp()->unlinkFrBack();
+            if (!VN_IS(deadp, Comment)) ++i;
+            VL_DO_DANGLING(pushDeletep(deadp), deadp);
+        }
+        FileLine* const flp = firstp->fileline();
+        // Create the loop variable
+        AstVar* const itp
+            = new AstVar{flp, VVarType::STMTTEMP, "__Vilp" + std::to_string(++m_nTemps),
+                         VFlagLogicPacked{}, 32};
+        m_cfuncp->addVarsp(itp);
+        // Replace the constants with the loop variable
+        replaceConsts(itp);
+        // Create the loop initializer
+        AstNode* const initp
+            = new AstAssign{flp, new AstVarRef{flp, itp, VAccess::WRITE}, new AstConst{flp, 0U}};
+        firstp->replaceWith(initp);
+        // Create the loop
+        AstLoop* const loopp = new AstLoop{flp};
+        initp->addNextHere(loopp);
+        // Add the loop body
+        loopp->addStmtsp(firstp);
+        AstNode* const incp = new AstAssign{
+            flp, new AstVarRef{flp, itp, VAccess::WRITE},
+            new AstAdd{flp, new AstConst{flp, 1U}, new AstVarRef{flp, itp, VAccess::READ}}};
+        loopp->addStmtsp(incp);
+        // Create the loop condition
+        AstNodeExpr* const condp
+            = new AstGt{flp, new AstConst{flp, n}, new AstVarRef{flp, itp, VAccess::READ}};
+        loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
+        UINFOTREE(9, initp, "", "new");
+        UINFOTREE(9, loopp, "", "new");
+        return initp;
+    }
 
-                // Remove remaining assigns
-                for (AstNodeAssign* assp : m_mgAssignps) {
-                    if (assp != bodyp) {
-                        VL_DO_DANGLING(assp->unlinkFrBack()->deleteTree(), assp);
-                    }
+    // If 'startp' starts a run of statements that only differ in constants, which advance
+    // by a constant per statement, reroll the run into a loop, reducing code size. Returns the
+    // node now in place of 'startp', and the next statement that can start a run.
+    std::pair<AstNode*, AstNode*> reroll(AstNode* startp) {
+        AstNodeStmt* const firstp = VN_CAST(startp, NodeStmt);
+        if (!firstp || !ReloopAnalysis::gather(firstp, m_firstConsts, m_firstTypes)) {
+            return {startp, startp->nextp()};
+        }
+        const std::pair<uint32_t, AstNodeStmt*> run = runLength(firstp);
+        const uint32_t n = run.first;
+        AstNodeStmt* const lastp = run.second;
+        if (n < m_limit) {
+            // A run starting before 'lastp' has the same strides, so ends at the same place.
+            // Skipping them makes this linear in the number of statements, not in the limit.
+            return {startp, lastp != firstp ? lastp : firstp->nextp()};
+        }
+        UINFO(6, "Reloop items=" << n << " " << firstp);
+        ++m_statReloops;
+        m_statReItems += n;
+        AstNode* const initp = makeLoop(firstp, n);
+        return {initp, initp->nextp()->nextp()};  // Next is after the initializer and the loop
+    }
+
+    void rerollList(AstNode* headp) {
+        for (AstNode* startp = headp; startp;) {
+            // Outer level first, so siblings are compared before their contents are rerolled
+            const std::pair<AstNode*, AstNode*> range = reroll(startp);
+            for (AstNode* nodep = range.first; nodep != range.second; nodep = nodep->nextp()) {
+                // Reroll children of compound statements
+                if (AstIf* const ifp = VN_CAST(nodep, If)) {
+                    rerollList(ifp->thensp());
+                    rerollList(ifp->elsesp());
+                } else if (AstLoop* const loopp = VN_CAST(nodep, Loop)) {
+                    rerollList(loopp->stmtsp());
+                } else if (AstJumpBlock* const blockp = VN_CAST(nodep, JumpBlock)) {
+                    rerollList(blockp->stmtsp());
+                } else if (AstCLocalScope* const scopep = VN_CAST(nodep, CLocalScope)) {
+                    rerollList(scopep->stmtsp());
                 }
             }
-            // Setup for next merge
-            m_mgAssignps.clear();
-            m_mgSelLp = nullptr;
-            m_mgSelRp = nullptr;
-            m_mgVarrefLp = nullptr;
-            m_mgVarrefRp = nullptr;
-            m_mgOffset = 0;
-            m_mgConstRp = nullptr;
+            startp = range.second;
         }
     }
 
     // VISITORS
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_cfuncp);
+        VL_RESTORER(m_nTemps);
         m_cfuncp = nodep;
-        iterateChildren(nodep);
-        mergeEnd();  // Finish last pending merge, if any
+        m_nTemps = 0;
+        rerollList(nodep->stmtsp());
     }
-    void visit(AstNodeAssign* nodep) override {
-        if (!m_cfuncp) return;
-
-        // Left select WordSel or ArraySel
-        AstNodeSel* const lselp = VN_CAST(nodep->lhsp(), NodeSel);
-        if (!lselp) {  // Not ever merged
-            mergeEnd();
-            return;
-        }
-        // Of a constant index
-        const AstConst* const lbitp = VN_CAST(lselp->bitp(), Const);
-        if (!lbitp) {
-            mergeEnd();
-            return;
-        }
-        if (lbitp->width() > 32) {  // Assoc arrays can do this
-            mergeEnd();
-            return;
-        }
-        const uint32_t lindex = lbitp->toUInt();
-        // Of variable
-        const AstNodeVarRef* const lvarrefp = VN_CAST(lselp->fromp(), NodeVarRef);
-        if (!lvarrefp) {
-            mergeEnd();
-            return;
-        }
-
-        // RHS is a constant or a select
-        const AstConst* const rconstp = VN_CAST(nodep->rhsp(), Const);
-        const AstNodeSel* const rselp = VN_CAST(nodep->rhsp(), NodeSel);
-        const AstNodeVarRef* rvarrefp = nullptr;
-        uint32_t rindex = lindex;
-        if (rconstp) {  // Ok
-        } else if (rselp) {
-            const AstConst* const rbitp = VN_CAST(rselp->bitp(), Const);
-            rvarrefp = VN_CAST(rselp->fromp(), NodeVarRef);
-            if (!rbitp || !rvarrefp || lvarrefp->varp() == rvarrefp->varp()) {
-                mergeEnd();
-                return;
-            }
-            rindex = rbitp->toUInt();
-        } else {
-            mergeEnd();
-            return;
-        }
-
-        if (m_mgSelLp) {  // Old merge
-            if (m_mgCfuncp == m_cfuncp  // In same function
-                && m_mgNextp == nodep  // Consecutive node
-                && m_mgVarrefLp->isSame(lvarrefp)  // Same array on left hand side
-                && (m_mgConstRp  // On the right hand side either ...
-                        ? (rconstp && m_mgConstRp->isSame(rconstp))  // ... same constant
-                        : (rselp && m_mgVarrefRp->isSame(rvarrefp)))  // ... or same array
-                && (lindex == m_mgIndexLo - 1 || lindex == m_mgIndexHi + 1)  // Left index +/- 1
-                && (m_mgConstRp || lindex == rindex + m_mgOffset)  // Same right index offset
-            ) {
-                // Sequentially next to last assign; continue merge
-                if (lindex == m_mgIndexLo - 1) {
-                    m_mgIndexLo = lindex;
-                } else if (lindex == m_mgIndexHi + 1) {
-                    m_mgIndexHi = lindex;
-                }
-                UINFO(9, "Continue merge i=" << lindex << " " << m_mgIndexHi << ":" << m_mgIndexLo
-                                             << " " << nodep);
-                m_mgAssignps.push_back(nodep);
-                m_mgNextp = nodep->nextp();
-                return;
-            } else {
-                UINFO(9, "End merge i=" << lindex << " " << m_mgIndexHi << ":" << m_mgIndexLo
-                                        << " " << nodep);
-                // This assign doesn't merge with previous assign,
-                // but should start a new merge
-                mergeEnd();
-            }
-        }
-
-        // Merge start
-        m_mgAssignps.push_back(nodep);
-        m_mgCfuncp = m_cfuncp;
-        m_mgNextp = nodep->nextp();
-        m_mgSelLp = lselp;
-        m_mgSelRp = rselp;
-        m_mgVarrefLp = lvarrefp;
-        m_mgVarrefRp = rvarrefp;
-        m_mgOffset = static_cast<int64_t>(lindex) - static_cast<int64_t>(rindex);
-        m_mgConstRp = rconstp;
-        m_mgIndexLo = lindex;
-        m_mgIndexHi = lindex;
-        UINFO(9, "Start merge i=" << lindex << " o=" << m_mgOffset << nodep);
-    }
-    void visit(AstExprStmt* nodep) override { iterateChildren(nodep); }
     //--------------------
     void visit(AstVar*) override {}  // Accelerate
     void visit(AstNodeExpr*) override {}  // Accelerate

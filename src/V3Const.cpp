@@ -989,8 +989,7 @@ class ConstVisitor final : public VNVisitor {
         std::unordered_set<AstVar*> varps;
         subtreep->foreachAndNext([&](AstVar* varp) { varps.insert(varp); });
         if (varps.empty()) return;
-        for (AstVarScope *vscp = m_scopep->varsp(), *nextp; vscp; vscp = nextp) {
-            nextp = VN_AS(vscp->nextp(), VarScope);
+        for (AstVarScope* const vscp : m_scopep->varspList()) {
             if (varps.find(vscp->varp()) != varps.end()) {
                 VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
             }
@@ -1035,8 +1034,7 @@ class ConstVisitor final : public VNVisitor {
                 termps.push_back(fromp);
                 return;
             }
-            for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
+            for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
                 collectFixedAggregateTerms(newStructSel(fromp->cloneTreePure(false), itemp),
                                            termps, packReal);
             }
@@ -3630,10 +3628,7 @@ class ConstVisitor final : public VNVisitor {
                     // Something's out of order, sort it
                     senp = nullptr;
                     std::vector<AstSenItem*> vec;
-                    for (AstSenItem* senp = nodep->sensesp(); senp;
-                         senp = VN_AS(senp->nextp(), SenItem)) {
-                        vec.push_back(senp);
-                    }
+                    for (AstSenItem* const senp : nodep->sensespList()) { vec.push_back(senp); }
                     stable_sort(vec.begin(), vec.end(), SenItemCmp());
                     for (const auto& ip : vec) ip->unlinkFrBack();
                     for (const auto& ip : vec) nodep->addSensesp(ip);
@@ -4024,7 +4019,7 @@ class ConstVisitor final : public VNVisitor {
         }
         if (nodep->exprFormat()) return;  // Runtime, unfortunately  (unless constify format later)
         bool anyconst = false;
-        for (AstNode* argp = nodep->exprsp(); argp; argp = argp->nextp()) {
+        for (AstNode* const argp : nodep->exprspList()) {
             AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
             AstNode* const subargp = fargp ? fargp->exprp() : argp;
             if (VN_IS(subargp, Const)) {

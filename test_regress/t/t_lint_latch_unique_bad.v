@@ -38,7 +38,8 @@ module t (
   always_comb begin
     unique if (a) begin
       o4b = 1'b1;
-    end else begin
+    end
+    else begin
       o4b = 1'b0;
       o4 = 1'b1;
     end

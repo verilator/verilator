@@ -25,14 +25,14 @@
 
 EmitCParentModule::EmitCParentModule() {
     const auto setAll = [](AstNodeModule* modp) -> void {
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var) || VN_IS(nodep, NodeCoverDecl)) {
                 nodep->user4p(modp);
             }
         }
         modp->foreach([&](AstNodeCoverDecl* nodep) { nodep->user4p(modp); });
     };
-    for (AstNode* modp = v3Global.rootp()->modulesp(); modp; modp = modp->nextp()) {
+    for (AstNode* const modp : v3Global.rootp()->modulespList()) {
         setAll(VN_AS(modp, NodeModule));
     }
 }
@@ -115,7 +115,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
         args += nodep->argTypes();
     }
     // Might be a user function with argument list.
-    for (const AstNode* stmtp = nodep->argsp(); stmtp; stmtp = stmtp->nextp()) {
+    for (const AstNode* const stmtp : nodep->argspList()) {
         if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
             if (portp->isIO() && !portp->isFuncReturn()) {
                 if (!args.empty()) args += ", ";
@@ -381,8 +381,7 @@ std::pair<string, FileLine*> EmitCBaseVisitorConst::scSection(const AstNodeModul
     string text;
     FileLine* fl = nullptr;
     int last_line = -999;
-    for (const AstSystemCSection* scSectionp = modp->scSectionsp(); scSectionp;
-         scSectionp = VN_AS(scSectionp->nextp(), SystemCSection)) {
+    for (const AstSystemCSection* const scSectionp : modp->scSectionspList()) {
         if (scSectionp->sectionType() != type) continue;
         if (text.empty()) {
             fl = scSectionp->fileline();

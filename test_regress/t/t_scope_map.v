@@ -34,7 +34,7 @@ module foo #(
 );
 
   logic [( ( WIDTH + 7 ) / 8 ) * 8 - 1 : 0] initial_value;
-  logic [WIDTH - 1 : 0] value_q  /* verilator public */;
+  logic [WIDTH - 1 : 0] value_q  /* verilator public_flat_rw */;
   integer i;
 
   initial begin

@@ -9,20 +9,13 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
 // verilog_format: on
 
-module t (/*AUTOARG*/
-   // Inputs
-  clk
-  ); /*verilator public_module*/
-
-`ifdef VERILATOR
-`systemc_header
-extern "C" int mon_check();
-`verilog
-`endif
-
-  input clk;
+module t (
+    input clk
+); /*verilator no_inline_module*/
 
   logic [3:2][5:3] arr_cdata [1:0][2:1]; // 2x3 (6) bit words
   logic [7:6][12:7] arr_sdata [5:4][6:5]; // 2x6 (12) bit words
@@ -39,11 +32,11 @@ extern "C" int mon_check();
     arr_6d = '{default: '0};
     arr_6d[1][2][3] = 8'hb4;
 `ifdef VERILATOR
-    status = $c32("mon_check()");
+    status = `CPP_CALL(mon_check);
 `else
     status = $mon_check();
 `endif
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_multidim.cpp:%0d: C Test failed\n", status);
       $stop;
     end

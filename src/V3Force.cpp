@@ -548,8 +548,7 @@ public:
     AstVarScope* findScopeVar(AstScope* scopep, const AstVar* varp) {
         ScopeVarCache& cache = m_scopeVarCaches[scopep];
         if (cache.empty()) {
-            for (AstVarScope* vscp = scopep->varsp(); vscp;
-                 vscp = VN_AS(vscp->nextp(), VarScope)) {
+            for (AstVarScope* const vscp : scopep->varspList()) {
                 cache.emplace(vscp->varp(), vscp);
             }
         }
@@ -900,8 +899,8 @@ static void splitDeassign(AstDeassign* nodep) {
 // ForceDiscoveryVisitor - Discover force statements
 
 class ForceDiscoveryVisitor final : public VNVisitorConst {
-    ForceState& m_state;
-    bool m_inClockedActive = false;
+    ForceState& m_state;  // Force state shared across passes
+    bool m_inClockedActive = false;  // Under a clocked always block
 
     void buildForceableUnpackedArray(AstVarScope* const nodep,
                                      AstUnpackArrayDType* const arrDtypep) {
@@ -1087,7 +1086,7 @@ public:
 // ForceConvertVisitor - Convert force/release statements
 
 class ForceConvertVisitor final : public VNVisitor {
-    ForceState& m_state;
+    ForceState& m_state;  // Force state shared across passes
 
     void visit(AstAssignForce* nodep) override {
         UINFO(2, "Converting force statement: " << nodep << "\n");
@@ -1325,10 +1324,10 @@ public:
 // ForceReplaceVisitor - Replace variable reads with force-aware reads
 
 class ForceReplaceVisitor final : public VNVisitor {
-    const ForceState& m_state;
+    const ForceState& m_state;  // Force state shared across passes
     VDouble0 m_nonOverlappingForceSels;  // Statistic tracking
-    AstNodeStmt* m_stmtp = nullptr;
-    bool m_inLogic = false;
+    AstNodeStmt* m_stmtp = nullptr;  // Current statement
+    bool m_inLogic = false;  // Under logic
 
     void iterateLogic(AstNode* nodep) {
         VL_RESTORER(m_inLogic);

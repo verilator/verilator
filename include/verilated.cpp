@@ -3962,7 +3962,9 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
     }
     char* dp = t_strp;
     for (const char* sp = n1; *sp;) *dp++ = *sp++;
-    for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
+    if (*n1 && *n2) {
+        for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
+    }
     for (const char* sp = n2; *sp;) *dp++ = *sp++;
     *dp++ = '\0';
     return t_strp;
@@ -4074,6 +4076,13 @@ void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
     VL_FATAL_MT("unknown", 0, "",
                 "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
                 "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
+    VL_UNREACHABLE;
+}
+
+void Verilated::sizeMismatchError() VL_MT_SAFE {
+    VL_FATAL_MT("unknown", 0, "",
+                "Dynamic array or queue size does not match unpacked array size"
+                " (IEEE 1800-2023 7.6)");
     VL_UNREACHABLE;
 }
 
@@ -4273,12 +4282,12 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 //======================================================================
 // VerilatedScope:: Methods
 
-VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
-                               const char* defnamep, int8_t timeunit, Type type)
+VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
+                               const char* identifier, const char* defnamep, int8_t timeunit,
+                               Type type)
     : m_symsp{symsp}
-    , m_namep{[symsp, suffixp]() {
+    , m_namep{[prefixp, suffixp]() {
         // We don't want the space and reference-count access overhead of strings.
-        const char* prefixp = symsp->name();
         char* const namep = new char[std::strlen(prefixp) + std::strlen(suffixp) + 2];
         char* dp = namep;
         for (const char* sp = prefixp; *sp;) *dp++ = *sp++;
@@ -4408,7 +4417,8 @@ void VerilatedScope::paramsInsertFromTable(const VlVarTableEntry* entp, size_t n
 }
 
 void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
-                                              VerilatedSyms* symsp) VL_MT_UNSAFE {
+                                              VerilatedSyms* symsp,
+                                              const std::string* topNamesp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of 'new VerilatedScope{...}' statements; see
     // VlScopeTableEntry. The generated Syms class derives VerilatedSyms as its sole primary
     // base at offset 0, so symsp doubles as the base for the offsetof-baked member addresses.
@@ -4416,13 +4426,21 @@ void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, siz
     for (size_t i = 0; i < n; ++i) {
         const VlScopeTableEntry& e = entp[i];
         VerilatedScope** const slotp = reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        *slotp = new VerilatedScope{symsp, e.namep, e.identp, e.defnamep, e.timeunit, e.type};
+        const std::string& prefix = topNamesp[e.topIndex];
+        const char* identp = e.identp;
+        if (e.topIndex && !*e.namep) {
+            // A top module instance is named after its instance in the parent model when
+            // the model is the instance of a library, which is only known here
+            const std::string::size_type pos = prefix.rfind('.');
+            identp = prefix.c_str() + (pos == std::string::npos ? 0 : pos + 1);
+        }
+        *slotp = new VerilatedScope{symsp,      prefix.c_str(), e.namep, identp,
+                                    e.defnamep, e.timeunit,     e.type};
     }
 }
 
-// Prefix with the model instance name, as VerilatedScope's constructor does
-static std::string vl_ifaceRefFullname(const VerilatedSyms* symsp, const char* suffixp) {
-    const char* const prefixp = symsp->name();
+// Prefix with the name it is below, as VerilatedScope's constructor does
+static std::string vl_ifaceRefFullname(const char* prefixp, const char* suffixp) {
     std::string out{prefixp};
     if (*prefixp && *suffixp) out += '.';
     out += suffixp;
@@ -4435,7 +4453,8 @@ static VerilatedScope* vl_ifaceRefParentp(uint8_t* basep, const VlIfaceRefTableE
 }
 
 void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                              VerilatedSyms* symsp) VL_MT_UNSAFE {
+                                              VerilatedSyms* symsp,
+                                              const std::string* topNamesp) VL_MT_UNSAFE {
     // Use the model's own context; at destruction threadContextp() may be another's
     VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
     uint8_t* const base = reinterpret_cast<uint8_t*>(symsp);
@@ -4443,8 +4462,9 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        const VerilatedIfaceRef ifaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp),
-                                         e.modportp};
+        const VerilatedIfaceRef ifaceRef{
+            scopep, e.namep, vl_ifaceRefFullname(topNamesp[e.topIndex].c_str(), e.suffixp),
+            e.modportp};
         const VerilatedIfaceRef* const refp = impp->ifaceRefInsert(ifaceRef);
         // Map nodes remain stable until this model's teardown. The scope only owns
         // the pointer vector; destroying it does not dereference the erased entries.
@@ -4455,14 +4475,15 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
 }
 
 void VerilatedScope::ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                             const VerilatedSyms* symsp) VL_MT_UNSAFE {
+                                             const VerilatedSyms* symsp,
+                                             const std::string* topNamesp) VL_MT_UNSAFE {
     VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
     uint8_t* const base = reinterpret_cast<uint8_t*>(const_cast<VerilatedSyms*>(symsp));
     for (size_t i = 0; i < n; ++i) {
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        impp->ifaceRefErase(vl_ifaceRefFullname(symsp, e.suffixp), scopep);
+        impp->ifaceRefErase(vl_ifaceRefFullname(topNamesp[e.topIndex].c_str(), e.suffixp), scopep);
     }
 }
 

@@ -31,7 +31,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class V3GraphTest VL_NOT_FINAL {
 protected:
     // MEMBERS
-    V3Graph m_graph;
+    V3Graph m_graph;  // Graph under test
 
     // METHODS - for children
     virtual void runTest() = 0;  // Run the test
@@ -55,7 +55,7 @@ public:
 
 class V3GraphTestVertex VL_NOT_FINAL : public V3GraphVertex {
     VL_RTTI_IMPL(V3GraphTestVertex, V3GraphVertex)
-    const string m_name;
+    const string m_name;  // Vertex name
 
 public:
     V3GraphTestVertex(V3Graph* graphp, const string& name)

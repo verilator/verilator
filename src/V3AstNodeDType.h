@@ -140,6 +140,10 @@ public:
     virtual bool isAggregateType() const { return false; }
     // True for unpacked, dynamic, queue, and associative arrays (not packed arrays)
     bool isNonPackedArray() const;
+    // DPI representation of this type, or of its elements if an unpacked array
+    bool isDpiBitVec() const;  // DPI uses svBitVecVal
+    bool isDpiLogicVec() const;  // DPI uses svLogicVecVal
+    bool isDpiPrimitive() const { return !isDpiBitVec() && !isDpiLogicVec(); }
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
@@ -526,18 +530,9 @@ public:
     bool isString() const VL_MT_STABLE { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
     bool isRanged() const { return rangep() || m.m_nrange.ranged(); }
-    bool isDpiBitVec() const {  // DPI uses svBitVecVal
-        return keyword() == VBasicDTypeKwd::BIT && isRanged();
-    }
-    bool isDpiLogicVec() const {  // DPI uses svLogicVecVal
-        return keyword().isFourstate() && !(keyword() == VBasicDTypeKwd::LOGIC && !isRanged());
-    }
     bool isDpiCLayout() const {
         return keyword().isDpiCLayout()
                || (keyword().isSameish(VBasicDTypeKwd::LOGIC) && !isRanged());
-    }
-    bool isDpiPrimitive() const {  // DPI uses a primitive type
-        return !isDpiBitVec() && !isDpiLogicVec();
     }
     // Generally the lo/hi/left/right funcs should be used instead of nrange()
     const VNumRange& nrange() const { return m.m_nrange; }
@@ -927,7 +922,8 @@ public:
         : AstNodeDType{other}
         , m_name{other.m_name}
         , m_typedefName{other.m_typedefName}
-        , m_uniqueNum{uniqueNumInc()} {}
+        , m_uniqueNum{uniqueNumInc()}
+        , m_refDTypep{other.m_refDTypep} {}
     ASTGEN_MEMBERS_AstEnumDType;
 
     const char* broken() const override;
@@ -956,11 +952,7 @@ public:
     AstBasicDType* basicp() const override VL_MT_STABLE { return subDTypep()->basicp(); }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
-    size_t itemCount() const {
-        size_t count = 0;
-        for (AstNode* itemp = itemsp(); itemp; itemp = itemp->nextp()) ++count;
-        return count;
-    }
+    size_t itemCount() const { return itemspList().size(); }
     bool isCompound() const override { return false; }
 };
 

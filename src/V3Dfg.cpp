@@ -857,7 +857,7 @@ std::pair<DfgVertex*, uint32_t> DfgVertexVar::driverOfRange(uint32_t lo, uint32_
 // Renders the canonical pattern S-expression for a single DfgVertex
 
 class DfgPatternString final {
-    std::ostream& m_os;
+    std::ostream& m_os;  // Stream to write to
 
     std::map<std::string, std::string> m_internedConsts;  // Interned constants
     std::map<uint32_t, std::string> m_internedSelLsbs;  // Interned lsb value for selects

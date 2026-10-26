@@ -205,7 +205,7 @@ class LinkIncVisitor final : public VNVisitor {
             // 'this', so use static temporaries there
             VL_RESTORER(m_staticTemps);
             m_staticTemps = true;
-            for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            for (AstNode* const stmtp : nodep->stmtspList()) {
                 AstVar* const varp = VN_CAST(stmtp, Var);
                 if (varp && varp->isIO()) iterateAndNextNull(varp->valuep());
             }

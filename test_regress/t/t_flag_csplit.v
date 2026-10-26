@@ -85,7 +85,7 @@ module sub (
     input [31:0] i,
     output [31:0] z
 );
-  logic [31:0] z_tmp  /* verilator public */;
+  logic [31:0] z_tmp  /* verilator public_flat_rw */;
 
   always @(posedge clk) z_tmp <= i + 1 + $c("0");  // $c so doesn't optimize away
 

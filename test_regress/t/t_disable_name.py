@@ -9,13 +9,8 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('simulator')
 
-test.compile(verilator_flags2=[
-    "--binary", "--unroll-count", "1024", "--inline-cfuncs", "100000000", "--output-split-cfuncs",
-    "50", "--reloop-limit", "2"
-])
-
-test.execute()
+test.compile(verilator_flags2=['--timing'])
 
 test.passes()

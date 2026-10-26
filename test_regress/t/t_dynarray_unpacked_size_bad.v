@@ -7,14 +7,13 @@
 module t;
 
   int fixed[3];
-  int queue[$];
   int dynamic[];
 
   initial begin
-    queue = '{1, 2, 3};
-    fixed = queue;  // Legal (IEEE 1800-2023 7.6), but unsupported
-    dynamic = new[3];
-    fixed = dynamic;  // Legal (IEEE 1800-2023 7.6), but unsupported
+    dynamic = new[2];
+    fixed = dynamic;  // IEEE 1800-2023 7.6 requires matching sizes
+    $display("%0d", fixed[0]);
+    $stop;
   end
 
 endmodule

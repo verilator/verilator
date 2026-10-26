@@ -68,6 +68,7 @@ static void fillBasic(basic_t* p, int n) {
     p->en[0] = (n & 1) ? 6 : 1;
     p->pk[0] = {static_cast<svBitVecVal>((((n + 3) & 0xf) << 3) | (n & 7)), 0};
     p->pa[0] = ((n & 0xff) << 8) | 0xa5;
+    p->lt[0] = {static_cast<svBitVecVal>((n + 9) & 0x7f), 0};
 }
 static void checkBasic(const basic_t* p, int n) {
     basic_t e;
@@ -92,6 +93,7 @@ static void checkBasic(const basic_t* p, int n) {
     TEST_CHECK_EQ(std::memcmp(p->en, e.en, sizeof(e.en)), 0);
     TEST_CHECK_EQ(std::memcmp(p->pk, e.pk, sizeof(e.pk)), 0);
     TEST_CHECK_EQ(std::memcmp(p->pa, e.pa, sizeof(e.pa)), 0);
+    TEST_CHECK_EQ(std::memcmp(p->lt, e.lt, sizeof(e.lt)), 0);
 }
 
 static void fillInner(inner_t* p, int n) {

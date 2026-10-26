@@ -21,12 +21,13 @@ defaults:
 
 concurrency:
   # At most 1 job per branch. Auto cancel all but scheduled jobs.
-  # Of the pull request events, only one that starts a run, or that removes the
-  # 'pr: dev-coverage' label to cancel one, shares the group. The rest are
-  # skipped (a change of another label, or a payload that does not carry the
-  # label, like an 'opened' delivered after it was added), and a skipped run
-  # must not cancel the one in progress, so they are given a unique group.
-  # This way adding the label starts a run, removing it cancels the in-progress
+  # Of the pull request events, only one that starts a run, or that removes a
+  # gating label ('pr: dev-coverage' or 'pr: dev-coverage-auto') to cancel one,
+  # shares the group. The rest are skipped (a change of another label, or a
+  # payload that does not carry the label, like an 'opened' delivered after it
+  # was added), and a skipped run must not cancel the one in progress, so they
+  # are given a unique group.
+  # This way adding a label starts a run, removing it cancels the in-progress
   # run, and anything else has no effect. Note such an event still creates a
   # run of this workflow, which is skipped, and would then hide the one in
   # progress on the pull request. 'pr-run-cleanup.yml' deletes those.
@@ -34,7 +35,7 @@ concurrency:
   # the pull request is closed, so unlabel events would cancel base runs.
   # NOTE: The last part of the group expression must be kept in sync with the
   # 'start' job condition below: it maps to 'shared' exactly those events that
-  # satisfy that condition, plus the 'unlabeled' event of the gating label.
+  # satisfy that condition, plus the 'unlabeled' event of a gating label.
   group: |-
     ${{
       github.workflow
@@ -44,10 +45,12 @@ concurrency:
     }}-${{
       (github.event_name == 'pull_request'
        && (((github.event.action == 'labeled' || github.event.action == 'unlabeled')
-            && github.event.label.name != 'pr: dev-coverage')
+            && github.event.label.name != 'pr: dev-coverage'
+            && github.event.label.name != 'pr: dev-coverage-auto')
            || (github.event.action != 'labeled'
                && github.event.action != 'unlabeled'
-               && !contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage'))))
+               && !contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')
+               && !contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage-auto'))))
       && github.run_id || 'shared'
     }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
@@ -64,10 +67,12 @@ jobs:
         && vars.ENABLE_SCHEDULED_JOBS == 'true') ||
       (github.event_name == 'pull_request'
         && ((github.event.action == 'labeled'
-             && github.event.label.name == 'pr: dev-coverage')
+             && (github.event.label.name == 'pr: dev-coverage'
+                 || github.event.label.name == 'pr: dev-coverage-auto'))
             || (github.event.action != 'labeled'
                 && github.event.action != 'unlabeled'
-                && contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')))) ||
+                && (contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage')
+                    || contains(github.event.pull_request.labels.*.name, 'pr: dev-coverage-auto'))))) ||
       (github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-slim
     steps:

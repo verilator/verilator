@@ -53,8 +53,8 @@ private:
     //   end with an explicit file name b) File path specifications that end with a wildcarded file
     //   name c) File path specifications that end with a directory name
     std::vector<LibMapping> m_explicitMappings;
-    std::vector<LibMapping> m_wildcardMappings;
-    std::vector<LibMapping> m_directoryMappings;
+    std::vector<LibMapping> m_wildcardMappings;  // Mappings with a wildcarded file name
+    std::vector<LibMapping> m_directoryMappings;  // Mappings with a directory name
 
     // METHODS
 public:

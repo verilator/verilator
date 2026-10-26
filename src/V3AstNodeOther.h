@@ -297,6 +297,7 @@ public:
 };
 class AstNodeFuncCovItem VL_NOT_FINAL : public AstNode {
     // Base class for functional coverage items (coverpoints, crosses)
+    // @astgen ptr := m_instCoveragep : Optional[AstFunc]  // [V3Width] Its get_inst_coverage()
 protected:
     string m_name;  // Item name
 
@@ -305,9 +306,13 @@ public:
         : AstNode{t, fl}
         , m_name{name} {}
     ASTGEN_MEMBERS_AstNodeFuncCovItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     bool maybePointedTo() const override { return true; }
+    AstFunc* instCoveragep() const { return m_instCoveragep; }
+    void instCoveragep(AstFunc* funcp) { m_instCoveragep = funcp; }
 };
 class AstNodeGen VL_NOT_FINAL : public AstNode {
     // Generate construct
@@ -1609,6 +1614,7 @@ class AstNetlist final : public AstNode {
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     std::string m_resolvedTopModuleName;  // Selected design top before wrapping under $root
+    std::vector<std::string> m_l2Names;  // Pretty names of top module instances (l2 names)
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
     // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
@@ -1681,14 +1687,12 @@ public:
     bool timescaleSpecified() const { return m_timescaleSpecified; }
     const std::string& resolvedTopModuleName() const { return m_resolvedTopModuleName; }
     void resolvedTopModuleName(const std::string& value) { m_resolvedTopModuleName = value; }
+    const std::vector<std::string>& l2Names() const { return m_l2Names; }
+    void addL2Name(const std::string& name) { m_l2Names.push_back(name); }
     uint32_t nTraceCodes() const { return m_nTraceCodes; }
     void nTraceCodes(uint32_t value) { m_nTraceCodes = value; }
     AstVarScope* stlFirstIterationp();
     void clearStlFirstIterationp() { m_stlFirstIterationp = nullptr; }
-    const std::string traceLibTopName() const {
-        const std::string& name = resolvedTopModuleName();
-        return prettyName(name.empty() ? v3Global.rootp()->topModulep()->name() : name);
-    }
 
     // Record statistics for eval functions
     void addEvalStats(const std::string& phase);
@@ -1866,7 +1870,7 @@ public:
 class AstPull final : public AstNode {
     // @astgen op1 := lhsp : AstNodeExpr
 
-    const bool m_direction;
+    const bool m_direction;  // Direction of the pull
 
 public:
     AstPull(FileLine* fl, AstNodeExpr* lhsp, bool direction)
@@ -3323,7 +3327,7 @@ public:
         if (const AstClassExtends* const cextendsp = this->extendsp()) {
             cextendsp->classp()->foreachMember(f);
         }
-        for (AstNode* stmtp = membersp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : memberspList()) {
             if (AstNode::privateTypeTest<T_Node>(stmtp)) f(this, static_cast<T_Node*>(stmtp));
         }
     }
@@ -3339,7 +3343,7 @@ public:
         if (const AstClassExtends* const cextendsp = this->extendsp()) {
             if (cextendsp->classp()->existsMember(p)) return true;
         }
-        for (AstNode* stmtp = membersp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : memberspList()) {
             if (AstNode::privateTypeTest<T_Node>(stmtp)) {
                 if (p(this, static_cast<T_Node*>(stmtp))) return true;
             }

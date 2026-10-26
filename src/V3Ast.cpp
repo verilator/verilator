@@ -1863,7 +1863,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
 // Renders the canonical pattern S-expression for a single AstNode
 
 class VNPatternString final {
-    std::ostream& m_os;
+    std::ostream& m_os;  // Stream to write to
 
     std::map<std::string, std::string> m_internedConsts;  // Interned constants
     std::map<int, std::string> m_internedWordWidths;  // Interned widths
