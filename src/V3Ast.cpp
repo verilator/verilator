@@ -1841,7 +1841,8 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     if (VN_IS(node1p, Const)) std::swap(node1p, node2p);
     {
         const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
-        if (castable.isSameish() || castable == VCastable::COMPATIBLE) return node1p->dtypep();
+        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE)
+            return node1p->dtypep();
         if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
     }
 

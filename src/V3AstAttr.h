@@ -722,10 +722,7 @@ public:
         case INT:
         case LONGINT: return BIT;
         case INTEGER:
-        case INTEGER2STATE:
         case TIME:
-        case TIME2STATE:
-        case LOGIC2STATE:
         case LOGIC_IMPLICIT: return LOGIC;
         default: return *this;
         }
@@ -1316,10 +1313,10 @@ public:
         MATCHING,  // IEEE 1800-2023 6.22.1 matching types
         SAMEISH,  // IEEE 1800-2023 6.22.2 equivalent types
         COMPATIBLE,  // Types are assignable/castable
-        ENUM_IMPLICIT,
-        ENUM_EXPLICIT,
-        DYNAMIC_CLASS,
-        INCOMPATIBLE,
+        ENUM_IMPLICIT,  // Implicit conversion to enum allowed
+        ENUM_EXPLICIT,  // Explicit $cast required to enum
+        DYNAMIC_CLASS,  // Dynamic class cast check required
+        INCOMPATIBLE,  // Types cannot be cast or assigned
         _ENUM_MAX  // Leave last
     };
     enum en m_e;

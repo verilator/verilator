@@ -735,8 +735,7 @@ bool AstBasicDType::matchingDTypeNode(const AstNodeDType* samep) const {
     const bool thisPre = keyword().isPredefinedInteger();
     const bool samePre = sp->keyword().isPredefinedInteger();
 
-    // Both are predefined integer types: same keyword/signing/width already verified
-    if (thisPre && samePre) return true;
+    if (thisPre && samePre) return keyword() == sp->keyword();
 
     // Both are vector/scalar types: ranges must match exactly (IEEE 1800-2023 6.22.1)
     if (!thisPre && !samePre) {
