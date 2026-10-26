@@ -1040,6 +1040,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstCMethodHard* const callp = new AstCMethodHard{
             fl, new AstVarRef{fl, genModp, genVarp, VAccess::READWRITE}, VCMethod::RANDOMIZER_HARD,
             new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
+        // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
         callp->addPinsp(new AstCExpr{fl, AstCExpr::Pure{}, "{\"" + smtName + "\"}"});
         callp->dtypeSetVoid();
         return callp;
@@ -3171,6 +3172,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             method, nodep->exprp()->unlinkFrBack()};
         callp->dtypeSetVoid();
         if (method == VCMethod::RANDOMIZER_HARD) {
+            // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
             callp->addPinsp(
                 new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, constraintVarsList()});
         }
