@@ -1413,22 +1413,27 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             if ((!minp && !VN_IS(irp->lhsp(), Unbounded))
                 || (!maxp && !VN_IS(irp->rhsp(), Unbounded))) {
                 if (report) {
-                    rangep->v3warn(E_UNSUPPORTED,
-                                   "Unsupported: Non-constant expression in array bins range.");
+                    arrayBinp->v3error("Non-constant expression in array bins range; "
+                                       "range bounds must be constants (IEEE 1800-2023 19.5)");
                 }
                 return false;
             }
             if ((minp && minp->num().isFourState()) || (maxp && maxp->num().isFourState())) {
                 if (report) {
-                    rangep->v3error("Four-state (x/z) value in array bins range bound; "
-                                    "range bounds must be two-state constants");
+                    arrayBinp->v3error("Four-state (x/z) value in array bins range bound; "
+                                       "range bounds must be two-state constants");
                 }
                 return false;
             }
         } else if (!VN_IS(rangep, Const)) {
             if (report) {
-                rangep->v3warn(E_UNSUPPORTED,
-                               "Unsupported: Non-constant expression in array bins value list.");
+                if (arrayBinp->isSetExpr()) {
+                    arrayBinp->v3warn(E_UNSUPPORTED, "Unsupported: Non-constant expression as "
+                                                     "array bins set_covergroup_expression");
+                } else {
+                    arrayBinp->v3error("Non-constant expression in array bins value list; "
+                                       "values must be constants (IEEE 1800-2023 19.5)");
+                }
             }
             return false;
         }

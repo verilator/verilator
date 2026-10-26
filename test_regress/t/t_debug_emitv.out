@@ -973,6 +973,114 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
+    covergroup Vt_debug_emitv_cg_open_default;
+    function new;
+        open_both: coverpoint cg_sig {
+            bins all[] = {[$:$]};
+        };
+      defaults: coverpoint cg_sig {
+            bins remaining = default;
+        };
+    endfunction
+    int signed __Vint;
+    struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
+    covergroup Vt_debug_emitv_cg_forms;
+    bit [3:0]  value;
+    function new;
+      cp: coverpoint value {
+            bins lists[] = ('sh1'sh2 => 'sh3'sh4);
+            ignore_bins ignored_array[] = ('sh7 => 
+                                           'sh8);
+            illegal_bins illegal_array[] = ('shb => 
+                                            'shc);
+        };
+    endfunction
+    int signed __Vint;
+    struct {
+        string name;
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+        bit detect_overlap;
+        bit per_instance;
+        bit get_inst_coverage;
+    } option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        bit strobe;
+        bit merge_instances;
+        bit distribute_first;
+        real real_interval;
+    } type_option;
+    function sample;
+        input bit [3:0]  value;
+        value = value;
+    endfunction
+    function start;
+    endfunction
+    function stop;
+    endfunction
+    function get_coverage;
+        get_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function get_inst_coverage;
+        get_inst_coverage = /*CRESET*/;
+        input string covered_bins;
+        input string total_bins;
+    endfunction
+    function set_inst_name;
+        input string name;
+    endfunction
+    endcovergroup
     covergroup Vt_debug_emitv_cg_cross;
     function new;
         cp_x: coverpoint cg_sig {

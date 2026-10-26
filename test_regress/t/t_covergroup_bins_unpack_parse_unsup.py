@@ -11,10 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('linter')
 
-test.top_filename = 't/t_covergroup_bins_unpack_unsup.v'
-
-test.lint(fails=True,
-          verilator_flags2=['--error-limit 0', '+define+TEST_PARSE_UNSUP'],
-          expect_filename=test.golden_filename)
+test.lint(fails=True, verilator_flags2=['--error-limit 0'], expect_filename=test.golden_filename)
 
 test.passes()

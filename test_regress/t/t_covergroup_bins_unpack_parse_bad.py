@@ -4,18 +4,13 @@
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
 # or the Perl Artistic License Version 2.0.
-# SPDX-FileCopyrightText: 2025 Wilson Snyder
+# SPDX-FileCopyrightText: 2026 Wilson Snyder
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('linter')
 
-test.top_filename = "t/t_covergroup_trans_bad.v"
-
-# Width errors otherwise stop before transition validation runs.
-test.lint(verilator_flags2=['+define+TEST_TRANSITIONS_ONLY'],
-          expect_filename=test.golden_filename,
-          fails=True)
+test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.passes()

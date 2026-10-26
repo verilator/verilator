@@ -7248,27 +7248,27 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $5, false, false, false, $6};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinArray(binp, $3); }
+                          $$ = GRAMMARP->coverBinSetExpr(binp, $3); }
         |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $5, true, false, false, $6};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinArray(binp, $3); }
+                          $$ = GRAMMARP->coverBinSetExpr(binp, $3); }
         |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $5, false, true, false, $6};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinArray(binp, $3); }
+                          $$ = GRAMMARP->coverBinSetExpr(binp, $3); }
         |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $6, false, false, true, $7};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinArray(binp, $4); }
+                          $$ = GRAMMARP->coverBinSetExpr(binp, $4); }
         |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $6, true, false, true, $7};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinArray(binp, $4); }
+                          $$ = GRAMMARP->coverBinSetExpr(binp, $4); }
         |       yWILDCARD yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $6, false, true, true, $7};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinArray(binp, $4); }
+                          $$ = GRAMMARP->coverBinSetExpr(binp, $4); }
         //
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
                         { const bool isArray = GRAMMARP->coverBinArrayUnsized($3);
@@ -7331,7 +7331,7 @@ set_covergroup_expression<nodeExprp>:  // ==IEEE: set_covergroup_expression
 
 coverExprLhs<nodeExprp>:
                 set_covergroup_expression               { $$ = $1; }
-        |       coverConcat                             { $$ = $1; }
+        |       coverConcat                             { $$ = GRAMMARP->createConcat($1); }
         ;
 
 coverexprScope<nodeExprp>:
@@ -7344,7 +7344,7 @@ coverinc_or_dec_expression<nodeExprp>:
 
 coverexprOkLvalue<nodeExprp>:
                 coverexprScope                          { $$ = $1; }
-        |       coverConcat part_select_rangeList       { $$ = GRAMMARP->scrubSel($1, $2); }
+        |       coverConcat part_select_rangeList       { $$ = GRAMMARP->scrubSel(GRAMMARP->createConcat($1), $2); }
         |       exprPatternOrStream                     { $$ = $1; }
         ;
 
