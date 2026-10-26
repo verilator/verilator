@@ -296,12 +296,12 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<int> readUnsatAssumptions(VlSolverSession& sess);
     void reportUnsatSetup(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
     void reportUnsatCore(VlSolverSession& sess);
-    // Used-value exclusions for the randc variables this call may write,
-    // skipping any whose value is already drawn and pinned
-    void emitRandcExclusions(std::ostream& os,
-                             const std::map<std::string, std::string>& drawn = {}) const;
-    // Record the solved value of every randc variable that was not drawn
-    void recordUndrawnValues(const std::map<std::string, std::string>& drawn);
+    // Used-value exclusions for the randc variables this call may write; a drawn
+    // value is never a used one, so its pin already satisfies them
+    void emitRandcExclusions(std::ostream& os) const;
+    // Record the solved value of every randc variable this call wrote, drawn ones
+    // included as they are pinned to their drawn value
+    void recordRandcValues();
     // Registered randc variables this randomize() may write
     void activeRandcVars(std::vector<std::string>& namesr) const;
     // True if every solver variable a constraint names is randc or frozen
@@ -318,6 +318,7 @@ class VlRandomizer VL_NOT_FINAL {
     // unsatr distinguishes a proven-empty tail from a solver that gave up
     bool tailFeasible(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs,
                       const std::map<std::string, std::string>& drawn, bool& unsatr);
+    // Consume the draw of a call that fails while values are left in the cycle
     void recordDrawnValues(const std::map<std::string, std::string>& drawn);
     size_t hashConstraints(const std::vector<std::string>& extras) const;
     bool nextRandomize(VlRNGReseeds& rngr, bool checkOnly);
