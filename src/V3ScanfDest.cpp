@@ -21,7 +21,7 @@
 //   write-back assignment of that temporary to the destination right after
 //   the statement containing the call. The generated VL_FSCANF/VL_SSCANF
 //   macros take the address of the destination, and a part-select has no
-//   address. Calls in other contexts (e.g. a continuous assignment) are
+//   address. Calls in other contexts (e.g. an event control) are
 //   rejected, as no write-back can be placed after them.
 //
 //*************************************************************************
@@ -57,7 +57,9 @@ class ScanfDestVisitor final : public VNVisitor {
             return addressable(arrayp->fromp());
         if (const AstStructSel* const structp = VN_CAST(nodep, StructSel))
             return addressable(structp->fromp());
-        return false;
+        // The grammar only accepts name-based lvalues as destinations, so
+        // nothing besides the node types above can reach here
+        return false;  // LCOV_EXCL_LINE
     }
 
     // Rewrite each non-addressable destination of a $fscanf/$sscanf call.
@@ -68,10 +70,11 @@ class ScanfDestVisitor final : public VNVisitor {
         // The call is an expression, so find the statement containing it
         AstNode* stmtp = scanfp;
         while (stmtp && !VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
-        // Only a sequential statement can be followed by the write-back;
-        // the call has usually already been lifted into its own assignment
-        if (!stmtp || VN_IS(stmtp, AssignCont)
-            || !(VN_IS(stmtp, StmtExpr) || VN_IS(stmtp, NodeAssign))) {
+        // Only a sequential statement can be followed by the write-back.
+        // The call has usually already been lifted into its own assignment;
+        // a null statement means the call sits where no statement exists,
+        // e.g. in an event control
+        if (!stmtp || !(VN_IS(stmtp, StmtExpr) || VN_IS(stmtp, NodeAssign))) {
             scanfp->v3error("Unsupported: $fscanf/$sscanf in this context; "
                             "the destination cannot be written back.");
             return;

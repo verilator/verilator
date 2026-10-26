@@ -25,6 +25,10 @@ module t;
     logic [1023:0] y;
   } wide_struct_t;
 
+  typedef struct {
+    int b;
+  } unpacked_t;
+
   myif m();
 
   initial begin
@@ -34,6 +38,7 @@ module t;
     logic [13:0] test2;
     wide_struct_t wide;
     logic [255:0] wideps;
+    unpacked_t up;
     file_handle = $fopen("t/t_sys_file_scan3.dat", "r");
     // Non-addressable destinations: a packed member and a part-select
     scan = $fscanf(file_handle, "%h", test.a);
@@ -58,6 +63,10 @@ module t;
     scan = $fscanf(file_handle, "%h", m.b);
     `checkd(scan, 1);
     `checkd(m.b, 66);  // 8'h42
+    // Unpacked struct member: addressable, so no rewrite happens
+    scan = $fscanf(file_handle, "%d", up.b);
+    `checkd(scan, 1);
+    `checkd(up.b, 42);
 
     $write("*-* All Finished *-*\n");
     $finish;
