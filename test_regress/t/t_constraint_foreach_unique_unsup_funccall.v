@@ -5,10 +5,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // A unique{} sole item that isn't a variable, member, or constant-indexed
-// slice (here, a function call). Kept separate from
-// t_constraint_foreach_unique_unsup.v (execute-mode, proves randomize()
-// still succeeds) so the exact warning text is captured for
-// t_dist_warn_coverage.
+// slice (here, a function call). Lint-only, to capture the warning text.
 
 typedef bit [4:0] row3_t[3];
 class FuncItem;

@@ -68,7 +68,6 @@ enum ClassRandom : uint8_t {
 
 static constexpr const char* GLOBAL_CONSTRAINT_SEPARATOR = "__DT__";
 static constexpr const char* BASIC_RANDOMIZE_FUNC_NAME = "__VBasicRand";
-// Above this, a unique{} group is expanded to too many pairwise != terms.
 static constexpr int UNIQUE_SLICE_MAX_ELEMENTS = 100;
 
 // Walk extends chain to find __Vrandmode variable (stored in AstClass::user2p).
@@ -904,6 +903,43 @@ public:
     ~RandomizeMarkVisitor() override = default;
 };
 
+static bool isSingleLeafIfStatic(const AstNodeDType* dtp) {
+    if (const AstUnpackArrayDType* const unpackp = VN_CAST(dtp, UnpackArrayDType)) {
+        return unpackp->elementsConst() == 1
+               && isSingleLeafIfStatic(unpackp->subDTypep()->skipRefp());
+    }
+    if (VN_IS(dtp, QueueDType) || VN_IS(dtp, DynArrayDType) || VN_IS(dtp, AssocArrayDType)
+        || VN_IS(dtp, WildcardArrayDType)) {
+        return false;
+    }
+    return true;
+}
+static const AstVar* uniqueSliceRootVarp(AstNodeExpr* exprp) {
+    if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) return refp->varp();
+    if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+        return uniqueSliceRootVarp(selp->fromp());
+    }
+    if (const AstSliceSel* const sselp = VN_CAST(exprp, SliceSel)) {
+        return uniqueSliceRootVarp(sselp->fromp());
+    }
+    if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) return mselp->varp();
+    return nullptr;
+}
+// False here means the caller already rejected (and warned about) soleItemp.
+static bool isSupportedUniqueSlice(AstNodeExpr* const soleItemp) {
+    const AstNodeDType* const dtypep = soleItemp->dtypep()->skipRefp();
+    const AstVar* const rootVarp = uniqueSliceRootVarp(soleItemp);
+    if (!rootVarp || rootVarp->isRandC() || isSingleLeafIfStatic(dtypep)) return false;
+    const AstUnpackArrayDType* const unpackp = VN_CAST(dtypep, UnpackArrayDType);
+    if (!unpackp) return false;
+    const AstNodeDType* const subp = unpackp->subDTypep()->skipRefp();
+    if (VN_IS(subp, NodeArrayDType) || VN_IS(subp, QueueDType) || VN_IS(subp, DynArrayDType)
+        || VN_IS(subp, AssocArrayDType) || VN_IS(subp, WildcardArrayDType)) {
+        return false;
+    }
+    return unpackp->elementsConst() <= UNIQUE_SLICE_MAX_ELEMENTS;
+}
+
 //######################################################################
 // Visitor that turns constraints into template strings for solvers
 
@@ -1370,6 +1406,32 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        return newp;
+    }
+    // elemAt(k) is independently re-visited here, as editSMT() does
+    // per-operand, so a foreach index in its chain still becomes SMT text.
+    AstNodeExpr* buildDistinctExprp(FileLine* const fl, int n,
+                                    const std::function<AstNodeExpr*(int)>& elemAt) {
+        std::string smtExpr = "(__Vbv (distinct";
+        for (int k = 0; k < n; ++k) smtExpr += " %s";
+        smtExpr += "))";
+        AstNodeExpr* argsp = nullptr;
+        for (int k = 0; k < n; ++k) {
+            AstNodeExpr* elemp = elemAt(k);
+            const int elemWidth = elemp->width();
+            AstNodeExpr* elemCondp;
+            {
+                VL_RESTORER(m_conditionp);
+                m_conditionp = nullptr;
+                elemp = VN_AS(iterateSubtreeReturnEdits(elemp), NodeExpr);
+                elemCondp = m_conditionp;
+            }
+            argsp = AstNode::addNext(argsp, wrapWithCond(elemp, elemCondp, elemWidth));
+        }
+        AstSFormatF* const newp = new AstSFormatF{fl, smtExpr, false, argsp};
+        // visit(AstConstraintExpr*) checks width() before translating; without
+        // this, it defaults wide and wraps the already-boolean text in != 0.
+        newp->dtypeSetBit();
         return newp;
     }
 
@@ -2894,9 +2956,9 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = nodep->bodyp() ? nodep->bodyp()->unlinkFrBackWithNext() : nullptr;
             AstNode* const bodyp = prependDistPreamble(nodep, rawBodyp);
             if (bodyp) {
-                nodep->replaceWith(
-                    new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
-                                 new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
+                nodep->replaceWith(new AstBegin{
+                    fl, m_uniqueNames.get("__VrandBlock"),
+                    new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp}, true});
             } else {
                 nodep->unlinkFrBack();
             }
@@ -3102,6 +3164,35 @@ class ConstraintExprVisitor final : public VNVisitor {
                 randUniqueCallp->dtypep(nodep->findVoidDType());
                 randUniqueCallp->addPinsp(new AstConst{fl, *m_uniqueConstraintId});
                 setupStmtsp = AstNode::addNext(setupStmtsp, new AstStmtExpr{fl, randUniqueCallp});
+            } else if (AstNodeExpr* const sliceItemp = VN_CAST(itemp, NodeExpr)) {
+                const bool soleItem = itemp == nodep->rangesp() && !itemp->nextp();
+                if (soleItem && isSupportedUniqueSlice(sliceItemp)) {
+                    const AstNodeDType* const dtypep = sliceItemp->dtypep()->skipRefp();
+                    const AstUnpackArrayDType* const unpackp = VN_AS(dtypep, UnpackArrayDType);
+                    const int sliceSize = unpackp->elementsConst();
+                    // A SliceSel (e.g. a[2:1]) indexes its base at the
+                    // absolute declared position; an ArraySel wrapped around
+                    // a cloned SliceSel isn't valid AST elsewhere in the flow.
+                    const AstSliceSel* const sliceSelp = VN_CAST(sliceItemp, SliceSel);
+                    AstNodeExpr* const basep = sliceSelp ? sliceSelp->fromp() : sliceItemp;
+                    const auto elemOffset = [&](int k) -> int {
+                        if (!sliceSelp) return k;
+                        const VNumRange& declRange = sliceSelp->declRange();
+                        return declRange.lo() + (!declRange.ascending() ? sliceSize - 1 - k : k);
+                    };
+                    AstNodeExpr* const distinctExprp
+                        = buildDistinctExprp(fl, sliceSize, [&](int k) -> AstNodeExpr* {
+                              AstNodeExpr* const clonep = basep->cloneTree(false);
+                              clonep->user1(true);
+                              AstArraySel* const elemp
+                                  = new AstArraySel{fl, clonep, elemOffset(k)};
+                              elemp->user1(true);
+                              return elemp;
+                          });
+                    nodep->replaceWith(new AstConstraintExpr{fl, distinctExprp});
+                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                    return;
+                }
             }
         }
         ++(*m_uniqueConstraintId);
@@ -4104,38 +4195,10 @@ class RandomizeVisitor final : public VNVisitor {
         }
         return false;
     }
-    // True iff dtp has exactly one leaf value: a scalar, or a fixed-size
-    // array whose every dimension is 1 -- so unique{} on it is trivially
-    // satisfied. False for a real multi-element array, or a dynamically-
-    // sized dimension (queue/dynamic/associative/wildcard array).
-    static bool isSingleLeafIfStatic(const AstNodeDType* dtp) {
-        if (const AstUnpackArrayDType* const unpackp = VN_CAST(dtp, UnpackArrayDType)) {
-            return unpackp->elementsConst() == 1
-                   && isSingleLeafIfStatic(unpackp->subDTypep()->skipRefp());
-        }
-        if (VN_IS(dtp, QueueDType) || VN_IS(dtp, DynArrayDType) || VN_IS(dtp, AssocArrayDType)
-            || VN_IS(dtp, WildcardArrayDType)) {
-            return false;
-        }
-        return true;
-    }
-    // The variable a unique{} array-slice expression selects elements from,
-    // e.g. grid behind grid[i]. Peels through ArraySel/SliceSel so a foreach
-    // index isn't mistaken for group content; MemberSel resolves via its
-    // own varp() (the member's randc-ness, not the class handle's).
-    static const AstVar* uniqueSliceRootVarp(AstNodeExpr* exprp) {
-        if (const AstVarRef* const refp = VN_CAST(exprp, VarRef)) return refp->varp();
-        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
-            return uniqueSliceRootVarp(selp->fromp());
-        }
-        if (const AstSliceSel* const sselp = VN_CAST(exprp, SliceSel)) {
-            return uniqueSliceRootVarp(sselp->fromp());
-        }
-        if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) return mselp->varp();
-        return nullptr;
-    }
     // Expand unique{a,b,c} with explicit elements into pairwise != constraints.
-    // Whole-array unique{arr} is left for ConstraintExprVisitor's rand_unique handling.
+    // Whole-array unique{arr} and a foreach-indexed array-slice sole item are
+    // both left for ConstraintExprVisitor's visit(AstConstraintUnique*),
+    // which doesn't exist yet when this pre-pass runs.
     // Recurses into conditional and foreach bodies, so that the pairwise
     // constraints stay under the guard they were written under.
     static void expandUniqueElementList(AstNode* itemsp) {
@@ -4217,10 +4280,7 @@ class RandomizeVisitor final : public VNVisitor {
                     }
                     const AstUnpackArrayDType* const unpackp = VN_CAST(dtypep, UnpackArrayDType);
                     if (!unpackp) {
-                        // The slice itself is a dynamically-sized container
-                        // (e.g. q[i] where q is an array of queues), not a
-                        // static array -- same "not a 1-D array slice"
-                        // limitation as one nested a level deeper below.
+                        // e.g. q[i] where q is itself an array of queues.
                         uniquep->v3warn(CONSTRAINTIGN,
                                         "Unsupported: Unique constraint on other than a "
                                         "1-D array slice");
@@ -4237,51 +4297,12 @@ class RandomizeVisitor final : public VNVisitor {
                                 CONSTRAINTIGN,
                                 "Unsupported: Unique constraint on array slices of size > "
                                     << UNIQUE_SLICE_MAX_ELEMENTS);
-                        } else {
-                            const int sliceSize = unpackp->elementsConst();
-                            FileLine* const fl = uniquep->fileline();
-                            // soleItemp may be a SliceSel (e.g. a[2:1]): index
-                            // its base directly at the absolute declared
-                            // position, the same formula V3Slice.cpp uses to
-                            // lower a SliceSel element access -- an ArraySel
-                            // wrapped around a cloned SliceSel isn't valid
-                            // AST elsewhere in the flow.
-                            const AstSliceSel* const sliceSelp = VN_CAST(soleItemp, SliceSel);
-                            AstNodeExpr* const basep = sliceSelp ? sliceSelp->fromp() : soleItemp;
-                            const auto elemOffset = [&](int k) -> int {
-                                if (!sliceSelp) return k;
-                                const VNumRange& declRange = sliceSelp->declRange();
-                                return declRange.lo()
-                                       + (!declRange.ascending() ? sliceSize - 1 - k : k);
-                            };
-                            for (int k1 = 0; k1 < sliceSize; ++k1) {
-                                for (int k2 = k1 + 1; k2 < sliceSize; ++k2) {
-                                    AstNodeExpr* const lhsp = basep->cloneTree(false);
-                                    AstNodeExpr* const rhsp = basep->cloneTree(false);
-                                    lhsp->user1(true);
-                                    rhsp->user1(true);
-                                    AstArraySel* const lhsElemp
-                                        = new AstArraySel{fl, lhsp, elemOffset(k1)};
-                                    AstArraySel* const rhsElemp
-                                        = new AstArraySel{fl, rhsp, elemOffset(k2)};
-                                    lhsElemp->user1(true);
-                                    rhsElemp->user1(true);
-                                    AstNeq* const neqp = new AstNeq{fl, lhsElemp, rhsElemp};
-                                    neqp->user1(true);
-                                    AstConstraintExpr* const cexprp
-                                        = new AstConstraintExpr{fl, neqp};
-                                    uniquep->addNextHere(cexprp);
-                                }
-                            }
-                            uniquep->unlinkFrBack();
-                            VL_DO_DANGLING(uniquep->deleteTree(), uniquep);
                         }
                     }
                 }
-                // Single leaf, randc, or unsupported shape: nothing to expand
-                // here. uniquep stays in the tree; ConstraintExprVisitor's
-                // own visit(AstConstraintUnique*) removes it once it walks
-                // this same node afterward.
+                // Nothing to expand here either way: uniquep stays in the
+                // tree for ConstraintExprVisitor's own visit(AstConstraintUnique*)
+                // to remove (unsupported, already warned above) or build.
             }
             itemp = nextp;
         }

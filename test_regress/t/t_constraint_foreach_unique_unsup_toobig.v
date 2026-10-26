@@ -4,9 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Aditya Shevade
 // SPDX-License-Identifier: CC0-1.0
 
-// A unique{} array slice wider than the pairwise-expansion size cap.
-// Kept separate from t_constraint_unsup_unq_arr.v: that file covers
-// unique{} on a whole array variable, this covers a foreach-indexed slice.
+// A unique{} array slice wider than the size cap. Kept separate from
+// t_constraint_unsup_unq_arr.v, which covers a whole array variable.
 
 class WideRows;
   rand bit [7:0] wide[2][101];

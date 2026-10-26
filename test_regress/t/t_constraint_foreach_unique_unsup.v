@@ -23,18 +23,12 @@ class WideRows;
   constraint c1 {foreach (wide[i]) unique {wide[i]};}
 endclass
 
-// A scalar alongside an array in the same group still needs its own
-// unsupported warning -- distinct from unique{x} alone (a sole item,
-// trivially unique, no warning at all).
 class ScalarAndArray;
   rand bit [3:0] x;
   rand bit [3:0] arr[4];
   constraint c1 {unique {x, arr};}
 endclass
 
-// A sole item that isn't a variable, member, or constant-indexed slice at
-// all (here, a function call) can't be safely cloned per element -- must
-// be diagnosed directly rather than silently accepted.
 typedef bit [4:0] row3_t[3];
 class FuncItem;
   rand bit [4:0] grid[3][3];

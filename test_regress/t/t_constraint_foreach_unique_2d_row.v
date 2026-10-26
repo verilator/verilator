@@ -10,8 +10,7 @@
 // verilog_format: on
 
 // Test unique{} applied to a row of a 2D array inside a foreach, e.g.
-// foreach (grid[i]) unique {grid[i]}. Previously crashed the compiler.
-// Repeats many times since constraint solving is randomized per call.
+// foreach (grid[i]) unique {grid[i]}, and its SliceSel/randc-index variants.
 
 class Grid;
   rand bit [4:0] grid[3][3];
@@ -30,11 +29,6 @@ class Grid;
   endfunction
 endclass
 
-// unique{} on a single slice selected by an index that is itself randc,
-// where the array being selected from is not. Only the array's own
-// randc-ness matters for the IEEE 1800-2023 18.5.4 check -- the index
-// expression choosing *which* row is a different variable entirely, and
-// its randc-ness must not be mistaken for the array's.
 class RandcSelIndex;
   randc bit [1:0] sel;
   rand bit [4:0] grid[3][3];
@@ -52,22 +46,36 @@ class RandcSelIndex;
   endfunction
 endclass
 
-// unique{} on a SliceSel (a[2:1]), alongside a whole-array unique{} on the
-// same variable. A SliceSel's own base must be indexed at its absolute
-// declared position, not wrapped in an ArraySel around the SliceSel itself.
 class SliceRange;
   rand bit [1:0] a[3:0];
   constraint all_unique {unique {a};}
   constraint uniq {unique {a[2:1]};}
 endclass
 
-// Same, but the array's own declared range is ascending ([1:4], not the
-// descending [3:0] above) -- elemOffset's absolute-position math takes a
-// different branch depending on declared direction.
 class SliceRangeAscending;
   rand bit [1:0] a[1:4];
   constraint all_unique {unique {a};}
   constraint uniq {unique {a[2:3]};}
+endclass
+
+class Inner;
+  rand bit [4:0] grid[3][3];
+endclass
+
+class MemberRow;
+  rand Inner obj = new;
+  constraint c1 {foreach (obj.grid[i, j]) obj.grid[i][j] inside {[1 : 9]};}
+  constraint c2 {foreach (obj.grid[i]) unique {obj.grid[i]};}
+
+  function void rows_are_unique();
+    for (int r = 0; r < 3; r++) begin
+      for (int x = 0; x < 3; x++) begin
+        for (int y = x + 1; y < 3; y++) begin
+          `checkd(obj.grid[r][x] == obj.grid[r][y], 0)
+        end
+      end
+    end
+  endfunction
 endclass
 
 module t;
@@ -76,11 +84,13 @@ module t;
     RandcSelIndex rsi;
     SliceRange sr;
     SliceRangeAscending sra;
+    MemberRow mr;
     int i;
     g = new();
     rsi = new();
     sr = new();
     sra = new();
+    mr = new();
     repeat (20) begin
       i = g.randomize();
       `checkd(i, 1)
@@ -97,6 +107,10 @@ module t;
       i = sra.randomize();
       `checkd(i, 1)
       `checkd(sra.a[2] == sra.a[3], 0)
+
+      i = mr.randomize();
+      `checkd(i, 1)
+      mr.rows_are_unique();
     end
 
     $write("*-* All Finished *-*\n");

@@ -9,10 +9,7 @@
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-// unique{} on a single scalar element inside a foreach (as opposed to a
-// whole row) is a vacuously-true one-element set. Previously crashed the
-// compiler the same way an unsupported array-typed slice did. A
-// foreach-indexed row of size 1 is the same case in array-slice form.
+// unique{} on a single-leaf slice, scalar or array, is vacuously true.
 
 class Grid;
   rand bit [4:0] grid[3][3];
@@ -25,27 +22,16 @@ class Row1;
   constraint c1 {foreach (grid[i]) unique {grid[i]};}
 endclass
 
-// A foreach-indexed slice with more than one dimension, all of size 1
-// (so the slice's own subtype is itself an array type, not a scalar --
-// the shape the old code mistook for "more than 1-D" before checking
-// whether it actually had more than one leaf element to compare).
 class Row1x1;
   rand bit [4:0] cube[3][1][1];
   constraint c1 {foreach (cube[i]) unique {cube[i]};}
 endclass
 
-// unique{} on a bare scalar with no array involved at all -- distinct
-// from Grid.c2 above (a scalar reached via an ArraySel) and from the
-// pre-existing unique{x, arr} case (a scalar alongside an array).
 class BareScalar;
   rand bit [4:0] x;
   constraint c1 {unique {x};}
 endclass
 
-// unique{} on a scalar reached through a class handle (AstMemberSel),
-// neither a bare VarRef (BareScalar) nor an ArraySel (Grid.c2). Not randc,
-// so this resolves to trivially-unique; the randc case is
-// RandcMemberScalar in t_constraint_foreach_unique_bad_randc.v.
 class Inner;
   rand bit [4:0] val;
 endclass

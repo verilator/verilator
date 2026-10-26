@@ -4,11 +4,8 @@
 // SPDX-FileCopyrightText: 2026 Aditya Shevade
 // SPDX-License-Identifier: CC0-1.0
 
-// A row of a 3-D array is itself a 2-D slice, not the 1-D slice this
-// unique{} path supports. A row that is itself a queue, dynamic array,
-// associative array, or wildcard array is unsupported for the same reason
-// -- whether that dynamic container is nested a level deeper (RowKinds) or
-// is what the foreach index selects directly (DirectDynRow).
+// unique{} array slices this path doesn't support: anything other than a
+// 1-D static array, whether nested a level deeper or selected directly.
 
 class Cube;
   rand bit [4:0] cube[2][3][3];
