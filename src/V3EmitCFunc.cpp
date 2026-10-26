@@ -591,7 +591,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                || (varp->isXTemp()
                        ? (v3Global.opt.xAssign() != "unique")
                        : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));
-        const bool slow = !varp->isFuncLocal() && !varp->isClassMember();
+        const bool slow = m_cfuncp->slow() && !varp->isFuncLocal() && !varp->isClassMember();
         splitSizeInc(1);
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
