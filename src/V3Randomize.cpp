@@ -40,6 +40,7 @@
 #include "V3ConstPool.h"
 #include "V3Container.h"
 #include "V3Error.h"
+#include "V3File.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
@@ -1041,7 +1042,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             fl, new AstVarRef{fl, genModp, genVarp, VAccess::READWRITE}, VCMethod::RANDOMIZER_HARD,
             new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
         // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
-        callp->addPinsp(new AstCExpr{fl, AstCExpr::Pure{}, "{\"" + smtName + "\"}"});
+        callp->addPinsp(new AstCExpr{fl, AstCExpr::Pure{},
+                                     "{\"" + V3OutFormatter::quoteNameControls(smtName) + "\"}"});
         callp->dtypeSetVoid();
         return callp;
     };
@@ -1138,7 +1140,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         std::string list = "{";
         for (const std::string& name : m_constraintVars) {
             if (list.size() > 1) list += ", ";
-            list += "\"" + name + "\"";
+            list += "\"" + V3OutFormatter::quoteNameControls(name) + "\"";
         }
         return list + "}";
     }
