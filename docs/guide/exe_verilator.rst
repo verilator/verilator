@@ -976,6 +976,11 @@ Summary:
 
    Rarely needed. Disable eager inlining of SystemVerilog functions and tasks.
 
+.. option:: -fno-inline-getters
+
+   Rarely needed. Disable replacing calls to class methods that only return
+   a single member variable, with a direct read of that variable.
+
 .. option:: -fno-life
 
    Rarely needed. Disable removing assignments whose value is overwritten before
