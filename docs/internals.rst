@@ -848,9 +848,10 @@ joins them at program exit.
 Calling and awaiting DPI tasks
 ++++++++++++++++++++++++++++++
 
-With ``--timing``, Verilator emits a call to ``awaitImportTask()`` (defined
-in ``verilated_dpi.h`` to call DPI imported tasks. Exported tasks are
-called through ``callExportTask()``, as without ``--timing``.
+Verilator emits a call to ``awaitImportTask()`` (defined in
+``verilated_dpi.h``) to call DPI imported tasks. If no suspendable exports
+are present, Verilator emits ``callImportTask()`` instead. Exported tasks
+are called through ``callExportTask()``.
 
 ``awaitImportTask()`` creates a ``VlDpiCall`` that calls the imported task,
 resumes it, and awaits it. If the imported task calls an exported task that

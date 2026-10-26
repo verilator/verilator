@@ -119,10 +119,18 @@ inline void VL_SET_SVLV_Q(int, svLogicVecVal* owp, const QData ld) VL_MT_SAFE {
 
 namespace VerilatedDpi {
 
-struct VlFunctionContext final {
-    const char* m_filename;
-    int m_lineno;
+//=============================================================================
+// VlFunctionContext remembers the currently active imported DPI
+// function callsite.
 
+struct VlFunctionContext final {
+
+    // MEMBERS
+    const char* m_filename;  // File where the function is declared
+    int m_lineno;  // Source code line of the function
+
+    // METHODS
+    // Check if we are in imported DPI function context
     bool inFunctionContext() const { return m_filename != nullptr; }
 };
 
