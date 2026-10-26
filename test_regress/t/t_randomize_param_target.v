@@ -86,6 +86,19 @@ task outer_sequence::body();
   ok = seq.randomize() with {cmd.driver_delay == local:: cmd.driver_delay + 1;};
   `checkd(ok, 1)
   `checkd(seq.cmd.driver_delay, 43)
+
+  // Target declared without #(), so the default specialization (IEEE 1800-2023 8.25).
+  begin
+    generic_sequence dseq = new;
+    cmd.driver_delay = 20;
+    ok = dseq.randomize() with {
+      cmd.driver_delay == local::cmd.driver_delay + 1;
+      mode == limit();
+    };
+    `checkd(ok, 1)
+    `checkd(dseq.cmd.driver_delay, 21)
+    `checkd(dseq.mode, 100)
+  end
 endtask
 
 module t;

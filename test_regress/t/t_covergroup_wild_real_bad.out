@@ -27,4 +27,11 @@
         t/t_covergroup_wild_real_bad.v:21:21: ... Location of wildcard bin
    21 |       wildcard bins array[] = {1};
       |                     ^~~~~
+%Error: t/t_covergroup_wild_real_bad.v:24:15: Cannot use a transition bin on a coverpoint of type 'real' (IEEE 1800-2023 19.5.2).
+                                            : ... note: In instance 't'
+   24 |     cp_trans: coverpoint value {
+      |               ^~~~~~~~~~
+        t/t_covergroup_wild_real_bad.v:25:12: ... Location of transition bin
+   25 |       bins trans = (1 => 2);
+      |            ^~~~~
 %Error: Exiting due to

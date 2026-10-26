@@ -239,6 +239,7 @@ private:
     VStringSet m_cppFiles;     // argument: C++ files to link against
     VStringList m_cFlags;      // argument: user CFLAGS
     VStringList m_ldLibs;      // argument: user LDFLAGS
+    VStringList m_ldLibFiles;  // argument: library files, subset of m_ldLibs
     VStringList m_makeFlags;   // argument: user MAKEFLAGS
     VStringSet m_compilerIncludes; // argument: user --compiler-include
     VStringSet m_futures;      // argument: -Wfuture- list
@@ -469,6 +470,7 @@ private:
     bool m_fInlineCFuncs;  // main switch: -fno-inline-cfuncs: inline small C functions
     bool m_fInlineFuncs = true;  // main switch: -fno-inline-funcs: function inlining
     bool m_fInlineFuncsEager = true;  // main switch: -fno-inline-funcs-eager: don't inline eagerly
+    bool m_fInlineGetters = true;  // main switch: -fno-inline-getters: read member directly
     bool m_fLife;        // main switch: -fno-life: variable lifetime
     bool m_fLifePost;    // main switch: -fno-life-post: delayed assignment elimination
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
@@ -528,6 +530,7 @@ public:
     void addCppFile(const string& filename);
     void addCFlags(const string& filename);
     void addCompilerIncludes(const string& filename);
+    void addLdLibFile(const string& filename);
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
     void addLibMapFile(const string& filename);
@@ -766,6 +769,7 @@ public:
     const VStringSet& cppFiles() const { return m_cppFiles; }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
+    const VStringList& ldLibFiles() const { return m_ldLibFiles; }
     const VStringList& ldLibs() const { return m_ldLibs; }
     const VStringList& makeFlags() const { return m_makeFlags; }
     const VFileLibSet& libraryFiles() const { return m_libraryFiles; }
@@ -820,6 +824,7 @@ public:
     bool fInlineCFuncs() const { return m_fInlineCFuncs; }
     bool fInlineFuncs() const { return m_fInlineFuncs; }
     bool fInlineFuncsEager() const { return m_fInlineFuncsEager; }
+    bool fInlineGetters() const { return m_fInlineGetters; }
     bool fLife() const { return m_fLife; }
     bool fLifePost() const { return m_fLifePost; }
     bool fLocalize() const { return m_fLocalize; }

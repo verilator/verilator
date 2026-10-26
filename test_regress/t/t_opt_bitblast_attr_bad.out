@@ -3,23 +3,19 @@
       |             ^~~~~~~~
                    ... For warning description see https://verilator.org/warn/SPLITVAR?v=latest
                    ... Use "/* verilator lint_off SPLITVAR */" and lint_on around source to disable this message.
-%Warning-SPLITVAR: t/t_opt_bitblast_attr_bad.v:21:15: 'pub' marked split_var but will not be split because it is public
-                                                    : ... note: In instance 't'
-   21 |   logic [7:0] pub  /*verilator public*/  /*verilator split_var*/;
+%Warning-SPLITVAR: t/t_opt_bitblast_attr_bad.v:21:15: 't.pub' marked split_var but will not be split because it is public
+   21 |   logic [7:0] pub  /*verilator public_flat_rw*/  /**/  /*verilator split_var*/;
       |               ^~~
 %Warning-SPLITVAR: t/t_opt_bitblast_attr_bad.v:15:17: 'in' marked split_var but will not be split because it is a primary input or output
    15 |     input [7:0] in  /*verilator split_var*/
       |                 ^~
-%Warning-SPLITVAR: t/t_opt_bitblast_attr_bad.v:38:38: 'vix' marked split_var but will not be split because it is referenced in an unsupported way
-                                                    : ... note: In instance 't'
+%Warning-SPLITVAR: t/t_opt_bitblast_attr_bad.v:38:38: 't.vix' marked split_var but will not be split because it is referenced in an unsupported way
    38 |     $display("%x %x %x %x", in, pub, vix[crc[2:0]], wro);
       |                                      ^~~
-%Warning-SPLITVAR: t/t_opt_bitblast_attr_bad.v:39:20: 'vix' marked split_var but will not be split because it is referenced in an unsupported way
-                                                    : ... note: In instance 't'
+%Warning-SPLITVAR: t/t_opt_bitblast_attr_bad.v:39:20: 't.vix' marked split_var but will not be split because it is referenced in an unsupported way
    39 |     $display("%x", vix[crc[5:3]]);
       |                    ^~~
-%Warning-SPLITVAR: t/t_opt_bitblast_attr_bad.v:37:31: 'wro' marked split_var but will not be split because it is written in an unsupported way
-                                                    : ... note: In instance 't'
+%Warning-SPLITVAR: t/t_opt_bitblast_attr_bad.v:37:31: 't.wro' marked split_var but will not be split because it is written in an unsupported way
    37 |     void'($sscanf("12", "%d", wro));
       |                               ^~~
 %Error: Exiting due to

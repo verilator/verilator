@@ -37,6 +37,7 @@ class EmitCConstPool final : public EmitCConstInit {
     // MEMBERS
     std::array<VDouble0, VNType::NUM_TYPES()> m_emitted;  // Entries emitted, by value type
     V3UniqueNames m_uniqueNames;  // Generates unique file names
+    // Base name of the constant pool files
     const std::string m_fileBaseName = EmitCUtil::topClassName() + "__ConstPool";
 
     // METHODS
@@ -44,7 +45,7 @@ class EmitCConstPool final : public EmitCConstInit {
         UASSERT(!ofp(), "Output file should not be open");
 
         std::vector<const AstVar*> varps;
-        for (AstNode* nodep = poolp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : poolp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) varps.push_back(varp);
         }
 

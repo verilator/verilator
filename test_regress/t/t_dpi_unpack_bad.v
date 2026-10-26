@@ -28,4 +28,19 @@ module t;
     // packed var for unpacked port
     import_func0(sig0[1]);
   end
+
+  typedef struct {int a;} s_t;
+  typedef struct {byte b;} u_t;
+  u_t sig3[3];
+
+  import "DPI-C" function void import_func3(input s_t in[0:2]);
+
+  initial begin
+    // unpacked structure type differs
+    import_func3(sig3);
+    // unpacked structure v.s. packed
+    import_func3(sig0);
+    // packed v.s. unpacked structure
+    import_func0(sig3);
+  end
 endmodule

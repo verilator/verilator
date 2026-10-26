@@ -65,8 +65,7 @@ class ClassVisitor final : public VNVisitor {
         //   to virtual inheritance to allow diamond patterns with multiple ancestors
         if (nodep->useVirtualPublic()) return;  // Short-circuit to exit diamond cycles
         if (nodep->isInterfaceClass()) { nodep->useVirtualPublic(true); }
-        for (const AstClassExtends* extp = nodep->extendsp(); extp;
-             extp = VN_AS(extp->nextp(), ClassExtends)) {
+        for (const AstClassExtends* const extp : nodep->extendspList()) {
             recurseImplements(extp->classp());
         }
     }
@@ -103,7 +102,7 @@ class ClassVisitor final : public VNVisitor {
         // Find class's scope
         // Alternative would be to move this and related to V3Scope
         const AstScope* classScopep = nullptr;
-        for (AstNode* itp = nodep->stmtsp(); itp; itp = itp->nextp()) {
+        for (AstNode* const itp : nodep->memberspList()) {
             if ((classScopep = VN_CAST(itp, Scope))) break;
         }
         UASSERT_OBJ(classScopep, nodep, "No scope under class");
@@ -199,8 +198,7 @@ class ClassVisitor final : public VNVisitor {
             m_names.get(dtypep->name() + (VN_IS(dtypep, UnionDType) ? "__union" : "__struct")));
         if (dtypep->packed()) m_strDtypeps.insert(dtypep);
 
-        for (AstMemberDType* itemp = dtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (AstMemberDType* const itemp : dtypep->memberspList()) {
             AstNodeUOrStructDType* const subp = itemp->getChildStructp();
             // Recurse only into anonymous structs inside this definition,
             // other structs will be reached from another typedefs
@@ -262,8 +260,7 @@ public:
             AstNodeUOrStructDType* const dtypep = m_pubStrDtypeps.front();
             m_pubStrDtypeps.pop();
             if (pubStrDtypeps.insert(dtypep).second) {
-                for (AstMemberDType* itemp = dtypep->membersp(); itemp;
-                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                for (AstMemberDType* const itemp : dtypep->memberspList()) {
                     if (AstNodeUOrStructDType* const subp = itemp->getChildStructp())
                         m_pubStrDtypeps.push(subp);
                 }

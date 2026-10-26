@@ -4,6 +4,8 @@
 // SPDX-FileCopyrightText: 2012 Iztok Jeras
 // SPDX-License-Identifier: CC0-1.0
 
+// verilator lint_off UNOPTPUBLIC
+
 interface intf (
     input wire clk,
     input wire rst

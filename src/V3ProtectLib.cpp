@@ -144,8 +144,7 @@ class ProtectVisitor final : public VNVisitor {
 
     void initialComment(AstTextBlock* txtp, FileLine* fl) {
         addComment(txtp, fl, "Creates an instance of the library module at initial-time");
-        addComment(txtp, fl, "(one for each instance in the user's design) also evaluates");
-        addComment(txtp, fl, "the library module's initial process");
+        addComment(txtp, fl, "(one for each instance in the user's design)");
     }
 
     void comboComment(AstTextBlock* txtp, FileLine* fl) {
@@ -257,13 +256,14 @@ class ProtectVisitor final : public VNVisitor {
         // CPP hash value
         addComment(txtp, fl, "Hash value to make sure this file and the corresponding");
         addComment(txtp, fl, "library agree");
-        m_hashValuep = new AstTextBlock{fl, "localparam int protectlib_hash__V = 32'd", "", "\n"};
+        m_hashValuep = new AstTextBlock{
+            fl, "localparam int protectlib_hash__V /*verilator public_flat_rd*/ = 32'd", "", "\n"};
         txtp->add(m_hashValuep);
 
         // Initial
         txtp->add("initial begin\n");
         txtp->add(m_libName + "_protectlib_check_hash(protectlib_hash__V);\n");
-        txtp->add("handle__V = " + m_libName
+        txtp->add("if (handle__V == null) handle__V = " + m_libName
                   + "_protectlib_create"
                     "($sformatf(\"%m\"));\n");
         txtp->add("end\n\n");
@@ -355,7 +355,7 @@ class ProtectVisitor final : public VNVisitor {
         txtp->add("public:\n");
         txtp->add("long long m_seqnum;\n");
         txtp->add(m_topName + "_container(const char* scopep__V):\n");
-        txtp->add(m_topName + "(scopep__V) {}\n");
+        txtp->add(m_topName + "(Verilated::threadContextp(), scopep__V, false) {}\n");
         txtp->add("};\n\n");
 
         // Extern C
@@ -606,7 +606,7 @@ class ProtectVisitor final : public VNVisitor {
     }
 
     static bool checkIfClockExists(const AstNodeModule* modp) {
-        for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->direction() == VDirection::INPUT && varp->isPrimaryClock()) {
                     return true;

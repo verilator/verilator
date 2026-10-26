@@ -595,7 +595,7 @@ class DfgLogic final : public DfgVertexVariadic {
     // Generic vertex representing a whole combinational process
     AstAlways* const m_nodep;  // The Ast logic represented by this vertex
     AstScope* const m_scopep;  // The AstScope m_nodep is under, iff scoped
-    const std::unique_ptr<CfgGraph> m_cfgp;
+    const std::unique_ptr<CfgGraph> m_cfgp;  // Control flow graph of the process
     std::vector<DfgVertex*> m_synth;  // Vertices this logic was synthesized into
     bool m_drivesUnusedVars = false;  // Logic drives unused variables
     bool m_selectedForSynthesis = false;  // Logic selected for synthesis

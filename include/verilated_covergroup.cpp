@@ -1164,6 +1164,68 @@ bool VlCoverpoint::sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled) {
     return last != UINT32_MAX;
 }
 
+void VlCoverpoint::transitionTable(std::initializer_list<EData> items) {
+    assert(!m_transitions.empty());  // transitionAdd() added the sequence
+    Transition& sequence = m_transitions.back();
+    for (const EData* itemp = items.begin(); itemp != items.end();) {
+        const EData* const valuesp = itemp + 1;
+        itemp = valuesp + *itemp * sequence.m_words;
+        sequence.m_values.insert(sequence.m_values.end(), valuesp, itemp);
+        sequence.m_ends.push_back(
+            static_cast<uint32_t>(sequence.m_values.size() / sequence.m_words));
+    }
+}
+
+VL_ATTR_ALWINLINE
+bool VlCoverpoint::Transition::matches(uint32_t item, WDataInP valuep) const {
+    // The item's values ascend: binary search them, comparing each from its top word
+    uint32_t lo = item ? m_ends[item - 1] : 0;
+    uint32_t hi = m_ends[item];
+    // A value of one word, of a coverpoint of up to 32 bits, compares directly
+    if (m_words == 1) {
+        return std::binary_search(m_values.data() + lo, m_values.data() + hi, valuep[0]);
+    }
+    while (lo < hi) {
+        const uint32_t mid = lo + (hi - lo) / 2;
+        const EData* const midp = m_values.data() + mid * m_words;
+        uint32_t word = m_words - 1;
+        while (word && midp[word] == valuep[word]) --word;
+        if (midp[word] == valuep[word]) return true;
+        if (midp[word] < valuep[word]) {
+            lo = mid + 1;
+        } else {
+            hi = mid;
+        }
+    }
+    return false;
+}
+
+bool VlCoverpoint::transitionSample(uint32_t seq, QData value) {
+    // As words, for two stores per sample; matches() compares a value of one word directly
+    VlWide<VL_WQ_WORDS_E> words;
+    VL_SET_WQ(words, value);
+    return transitionSampleW(seq, words);
+}
+
+bool VlCoverpoint::transitionSampleW(uint32_t seq, WDataInP valuep) {
+    Transition& sequence = m_transitions[seq];
+    // A partial match grows by a value its next item holds, and completes once every item has
+    // held one; a value the first item holds also starts a partial match
+    bool complete = false;
+    sequence.m_next.clear();
+    for (const uint32_t length : sequence.m_active) {
+        if (!sequence.matches(length, valuep)) continue;
+        if (length + 1 == sequence.m_ends.size()) {
+            complete = true;
+        } else {
+            sequence.m_next.push_back(length + 1);
+        }
+    }
+    if (sequence.matches(0, valuep)) sequence.m_next.push_back(1);
+    sequence.m_active.swap(sequence.m_next);
+    return complete;
+}
+
 void VlCoverpoint::sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint32_t& last) {
     // The elements hold consecutive positions, so the bins holding a value come in order, and
     // one that two elements share repeats only in a row: count it once (IEEE 1800-2023 19.5)
@@ -1178,7 +1240,7 @@ void VlCoverpoint::sizedHit(VlCovBinKind kind, uint32_t bin, bool enabled, uint3
 }
 
 void VlCoverpoint::init(const char* hier, uint32_t atLeast, uint32_t nBins) {
-    m_hier = hier;
+    this->hier(hier);
     m_atLeast = atLeast;
     m_total = nBins;
     m_counts.assign(nBins, 0);
@@ -1206,7 +1268,7 @@ std::string VlCoverpoint::normalBinName(uint32_t crossIdx) const {
 }
 
 void VlCoverpoint::mergeInto(VlCovMergedItems& items) const {
-    VlCovMergedItem& item = items.findNewItem(m_hier);
+    VlCovMergedItem& item = items.findNewItem(hier());
     item.options(m_atLeast, typeWeight());
     // The bins coverageParts() counts
     for (const uint32_t bin : m_crossToBin) item.addBin(declaredBinName(bin), m_counts[bin]);
@@ -1264,7 +1326,7 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
         const VlCovNamer& nm = namerFor(i);
         const VlCovBinKind kind = binKind(reported);
         const std::string binp = binName(reported);
-        const std::string full = m_hier + "." + binp;
+        const std::string full = hier() + "." + binp;
         const std::string lineStr = std::to_string(nm.line());
         const std::string colStr = std::to_string(nm.col());
         // An empty key leaves out the bin type of a Normal bin
@@ -1284,9 +1346,10 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
 //=============================================================================
 // VlCoverCross
 
-void VlCoverCross::init(const char* hier, uint32_t dims, VlCoverpoint* const* cps,
-                        const char* file, int line, int col) {
-    m_hier = hier;
+void VlCoverCross::init(const char* hier, uint32_t atLeast, uint32_t dims,
+                        VlCoverpoint* const* cps, const char* file, int line, int col) {
+    this->hier(hier);
+    m_atLeast = atLeast;
     m_file = file;
     m_line = line;
     m_col = col;
@@ -1390,10 +1453,10 @@ void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
 }
 
 void VlCoverCross::incrementBin(Bin& bin) {
-    if (bin.count++ == 0 && bin.kind == VlCovBinKind::KIND_NORMAL) ++m_numCovered;
+    if (++bin.count == m_atLeast && bin.kind == VlCovBinKind::KIND_NORMAL) ++m_numCovered;
     if (VL_UNLIKELY(bin.kind == VlCovBinKind::KIND_ILLEGAL)) {
         VL_PRINTF_MT("%%Error: %s:%d: Illegal cross bin '%s' hit in cross '%s'.\n", bin.filep,
-                     bin.line, bin.namep, m_hier.c_str());
+                     bin.line, bin.namep, hier().c_str());  // lintok-begin-on-ref
         VL_STOP_MT(bin.filep, bin.line, "");
     }
 }
@@ -1554,7 +1617,7 @@ std::string VlCoverCross::autoBinName(uint32_t flat) const {
 }
 
 void VlCoverCross::mergeInto(VlCovMergedItems& items) const {
-    VlCovMergedItem& item = items.findNewItem(m_hier);
+    VlCovMergedItem& item = items.findNewItem(hier());
     item.options(1, typeWeight());  // A cross bin is covered once hit
     // The bins coverageParts() counts, which share a bin when they share its name.  As no bin
     // name holds ',' or '<', an automatic bin's, <bin1,...,binN> (IEEE 1800-2023 19.11.3), is
@@ -1577,9 +1640,10 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
                                 uint32_t itemWeight, uint32_t groupWeight) {
     const std::string lineStr = std::to_string(m_line);
     const std::string colStr = std::to_string(m_col);
-    // A cross bin is covered once hit, which needs no option.at_least
+    const std::string threshStr = std::to_string(m_atLeast);
     const std::string weightStr = std::to_string(itemWeight);
     const std::string groupWeightStr = std::to_string(groupWeight);
+    const char* const threshKeyp = _vl_cov_score_key("thresh", m_atLeast);
     const char* const weightKeyp = _vl_cov_score_key("weight", itemWeight);
     const char* const groupWeightKeyp = _vl_cov_score_key("group_weight", groupWeight);
     const uint32_t explicitCount
@@ -1587,7 +1651,7 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
     // Use the same indexed names for registration and the runtime read interface.
     for (uint32_t i = 0; i < binCount(); ++i) {
         const std::string bin = binName(i);
-        const std::string full = m_hier + "." + bin;
+        const std::string full = hier() + "." + bin;
         if (i < explicitCount) {
             Bin& userBin = m_explicitp->bins[i];
             const std::string binLineStr = std::to_string(userBin.line);
@@ -1596,11 +1660,11 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
             const char* const binType = userBin.kind == VlCovBinKind::KIND_NORMAL   ? ""
                                         : userBin.kind == VlCovBinKind::KIND_IGNORE ? "ignore"
                                                                                     : "illegal";
-            VL_COVER_INSERT(covcontextp, full.c_str(), &userBin.count, "page", page, "filename",
-                            userBin.filep, "lineno", binLineStr.c_str(), "column",
-                            binColStr.c_str(), "bin", bin.c_str(), "cross", "1",
-                            binType[0] ? "bin_type" : "", binType, weightKeyp, weightStr.c_str(),
-                            groupWeightKeyp, groupWeightStr.c_str());
+            VL_COVER_INSERT(
+                covcontextp, full.c_str(), &userBin.count, "page", page, "filename", userBin.filep,
+                "lineno", binLineStr.c_str(), "column", binColStr.c_str(), "bin", bin.c_str(),
+                "cross", "1", binType[0] ? "bin_type" : "", binType, threshKeyp, threshStr.c_str(),
+                weightKeyp, weightStr.c_str(), groupWeightKeyp, groupWeightStr.c_str());
             continue;
         }
         const uint32_t flat = autoIndex(i - explicitCount);
@@ -1614,8 +1678,9 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
         }
         VL_COVER_INSERT(covcontextp, full.c_str(), &m_flatCountsp[flat], "page", page, "filename",
                         m_file, "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                        bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str(), weightKeyp,
-                        weightStr.c_str(), groupWeightKeyp, groupWeightStr.c_str());
+                        bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str(), threshKeyp,
+                        threshStr.c_str(), weightKeyp, weightStr.c_str(), groupWeightKeyp,
+                        groupWeightStr.c_str());
     }
 }
 #endif  // VM_COVERAGE
@@ -1771,8 +1836,8 @@ VlCoverCrossDyn::VlCoverCrossDyn()
 
 VlCoverCrossDyn::~VlCoverCrossDyn() = default;
 
-void VlCoverCrossDyn::init(const char* hier, uint32_t dims, VlCoverpoint* const* cps,
-                           const char* file, int line, int col) {
+void VlCoverCrossDyn::init(const char* hier, uint32_t atLeast, uint32_t dims,
+                           VlCoverpoint* const* cps, const char* file, int line, int col) {
     Layout& data = *m_layoutp;
     uint64_t tuples = std::any_of(cps, cps + dims,
                                   [](const VlCoverpoint* cpp) { return !cpp->normalBinCount(); })
@@ -1794,7 +1859,7 @@ void VlCoverCrossDyn::init(const char* hier, uint32_t dims, VlCoverpoint* const*
     data.m_counts.resize(data.m_tuples, 0);
     shape(dims, data.m_tuples);
     bindStorage(data.m_dimensions.data(), data.m_counts.data());
-    VlCoverCross::init(hier, dims, cps, file, line, col);
+    VlCoverCross::init(hier, atLeast, dims, cps, file, line, col);
 }
 
 void VlCoverCrossDyn::selectAll() {
@@ -2100,6 +2165,13 @@ void VlCoverpointIf::weight(uint32_t value, VlFileLineDebug fileline) {
     m_weight = _vl_cov_load_weight("option.weight", value, fileline);
 }
 
+double VlCoverpointIf::coverage() const {
+    double covered = 0.0;
+    double total = 0.0;
+    coverageParts(covered, total);
+    return _vl_cov_calculate(100.0 * covered, total, m_weight);
+}
+
 VlCoverCrossDyn* VlCovergroupInst::addCrossDyn() {
     VlCoverCrossDyn* const cxp = new VlCoverCrossDyn{};
     m_items.emplace_back(cxp);
@@ -2135,6 +2207,10 @@ double VlCovergroupInst::coverage() {
 
 void VlCovergroupInst::mergeInto(VlCovMergedItems& items) const {
     for (const auto& itemp : m_items) itemp->mergeInto(items);
+}
+
+double VlCovergroupInst::mergedCoverage(const VlCoverpointIf* itemp) const {
+    return m_typep->mergedCoverage(itemp->hier());
 }
 
 //=============================================================================
@@ -2202,6 +2278,21 @@ std::pair<double, double> VlCovMergedItems::coverageSums(const VlCovMergedItems&
     };
     _vl_cov_union_walk(m_items, other.m_items, sumItem);
     return {100.0 * weighted, weights};
+}
+
+double VlCovMergedItems::coverage(const std::string& name, const VlCovMergedItems& other) const {
+    const auto it = m_items.find(name);
+    assert(it != m_items.end());
+    const VlCovMergedItem& item = it->second;
+    const auto otherIt = other.m_items.find(name);
+    double covered = 0.0;
+    double total = 0.0;
+    if (otherIt == other.m_items.end()) {
+        item.coverageParts(covered, total);
+    } else {
+        item.coverageParts(otherIt->second, covered, total);
+    }
+    return _vl_cov_calculate(100.0 * covered, total, item.typeWeight());
 }
 
 //=============================================================================
@@ -2278,6 +2369,14 @@ bool VlCovergroupType::anyAttached() const {
     return false;
 }
 
+VlCovMergedItems VlCovergroupType::mergeLive() const {
+    VlCovMergedItems live;
+    for (const auto& instp : m_insts) {
+        if (!instp->retained()) instp->mergeInto(live);  // Retained: in m_mergedRetired
+    }
+    return live;
+}
+
 double VlCovergroupType::coverage(IData typeWeight, bool mergeInstances,
                                   VlFileLineDebug fileline) {
     if (typeWeight != m_loadedTypeWeight) {  // Only a new value, as in loadWeight()
@@ -2287,11 +2386,7 @@ double VlCovergroupType::coverage(IData typeWeight, bool mergeInstances,
     if (mergeInstances) {
         // The union of the bins of every instance, including those that have died, kept in
         // m_mergedRetired, so merged with the live ones' as read, not copied
-        VlCovMergedItems live;
-        for (const auto& instp : m_insts) {
-            if (!instp->retained()) instp->mergeInto(live);  // Retained: in m_mergedRetired
-        }
-        const std::pair<double, double> sums = live.coverageSums(m_mergedRetired);
+        const std::pair<double, double> sums = mergeLive().coverageSums(m_mergedRetired);
         return _vl_cov_calculate(sums.first, sums.second, m_typeWeight);
     }
     // Instances that have died still count: their contribution is the residue
@@ -2306,6 +2401,19 @@ double VlCovergroupType::coverage(IData typeWeight, bool mergeInstances,
         sumWeight += instp->weight();
     }
     return _vl_cov_calculate(sumCoverage, sumWeight, m_typeWeight);
+}
+
+double VlCovergroupType::mergedCoverage(const std::string& name) const {
+    // Only that item of each live instance, not all of them as mergeLive(); those of the
+    // instances that have died are in m_mergedRetired
+    VlCovMergedItems live;
+    for (const auto& instp : m_insts) {
+        if (instp->retained()) continue;
+        for (const auto& itemp : instp->m_items) {
+            if (itemp->hier() == name) itemp->mergeInto(live);
+        }
+    }
+    return live.coverage(name, m_mergedRetired);
 }
 
 double VlCovergroupType::retiredCoverage() const {

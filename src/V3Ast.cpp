@@ -265,6 +265,10 @@ string AstNode::prettyName(const string& namein) VL_PURE {
                 pos += 8;
                 continue;
             }
+            if (0 == std::strncmp(pos, "__Vpkg", 6)) {
+                pos += 6;
+                continue;
+            }
             if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && std::isxdigit(pos[3])
                 && std::isxdigit(pos[4])) {
                 char value = 0;
@@ -1256,19 +1260,27 @@ bool AstNode::gateTreeIter() const {
 bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
                            bool gateOnly) {
     // private: Return true if the two trees are identical
-    if (!node1p && !node2p) return true;
-    if (!node1p || !node2p) return false;
-    if (node1p->type() != node2p->type()) return false;
-    UASSERT_OBJ(
-        (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()), node1p,
-        "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
-    if (node1p->dtypep() && !node1p->dtypep()->similarDType(node2p->dtypep())) return false;
-    if (!node1p->sameNode(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
-    return (sameTreeIter(node1p->m_op1p, node2p->m_op1p, false, gateOnly)
-            && sameTreeIter(node1p->m_op2p, node2p->m_op2p, false, gateOnly)
-            && sameTreeIter(node1p->m_op3p, node2p->m_op3p, false, gateOnly)
-            && sameTreeIter(node1p->m_op4p, node2p->m_op4p, false, gateOnly)
-            && (ignNext || sameTreeIter(node1p->m_nextp, node2p->m_nextp, false, gateOnly)));
+    // Iterate over the list, rather than recurse, as lists might be long
+    while (true) {
+        if (!node1p && !node2p) return true;
+        if (!node1p || !node2p) return false;
+        if (node1p->type() != node2p->type()) return false;
+        UASSERT_OBJ(
+            (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()),
+            node1p,
+            "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
+        if (node1p->dtypep() && !node1p->dtypep()->similarDType(node2p->dtypep())) return false;
+        if (!node1p->sameNode(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
+        if (!sameTreeIter(node1p->m_op1p, node2p->m_op1p, false, gateOnly)
+            || !sameTreeIter(node1p->m_op2p, node2p->m_op2p, false, gateOnly)
+            || !sameTreeIter(node1p->m_op3p, node2p->m_op3p, false, gateOnly)
+            || !sameTreeIter(node1p->m_op4p, node2p->m_op4p, false, gateOnly)) {
+            return false;
+        }
+        if (ignNext) return true;
+        node1p = node1p->m_nextp;
+        node2p = node2p->m_nextp;
+    }
 }
 
 //======================================================================
@@ -1851,7 +1863,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
 // Renders the canonical pattern S-expression for a single AstNode
 
 class VNPatternString final {
-    std::ostream& m_os;
+    std::ostream& m_os;  // Stream to write to
 
     std::map<std::string, std::string> m_internedConsts;  // Interned constants
     std::map<int, std::string> m_internedWordWidths;  // Interned widths

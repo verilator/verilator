@@ -671,7 +671,7 @@ static VlSolverSession s_solverSession;
 // One solver transaction; the caller holds the session mutex
 class VlSolverTxn final {
     VlSolverSession& m_sess;
-    const bool m_ok;
+    const bool m_ok;  // Session transaction began successfully
 
 public:
     explicit VlSolverTxn(VlSolverSession& sess) VL_REQUIRES(sess.m_mutex)
@@ -955,8 +955,11 @@ bool VlRandomizer::next_check_only(VlRNGReseeds& rngr) { return nextRandomize(rn
 bool VlRandomizer::next(VlRNGReseeds& rngr) { return nextRandomize(rngr, false); }
 
 bool VlRandomizer::nextRandomize(VlRNGReseeds& rngr, bool checkOnly) {
-    if (!checkOnly && m_vars.empty() && m_uniqueArrays.empty()) return true;
-    if (checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
+    // No rand variables: randomize() still checks the constraints (IEEE 1800-2023 18.11.1)
+    if (!checkOnly && m_vars.empty() && m_uniqueArrays.empty() && m_constraints.empty()) {
+        return true;
+    }
+    if (checkOnly && m_vars.empty() && m_constraints.empty()) return true;
     VlSolverSession& sess = s_solverSession;
     const VerilatedLockGuard lock{sess.m_mutex};
     m_checkOnly = checkOnly;

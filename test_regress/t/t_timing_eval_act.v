@@ -41,4 +41,12 @@ module t;
     clk = 0;
     #2 $stop;
   end
+
+  // Trigger debug text must show a long name as written, not the hashed name (Issue #8747)
+  `define lc clock_signal_name_that_is_well_over_the_limit_where_verilator_hashes_identifiers_to_keep_generated_cpp_names_and_file_names_short
+  logic `lc = 0;
+  initial begin
+    #10 `lc = 1;
+    @(posedge `lc);
+  end
 endmodule

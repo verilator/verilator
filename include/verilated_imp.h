@@ -179,7 +179,7 @@ public:
 // FILE* list constructed from a file-descriptor
 class VerilatedFpList final {
     FILE* m_fp[31] = {};
-    std::size_t m_sz = 0;
+    std::size_t m_sz = 0;  // Number of entries used in m_fp
 
 public:
     using const_iterator = FILE* const*;

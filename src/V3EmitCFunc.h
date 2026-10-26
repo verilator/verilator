@@ -119,7 +119,7 @@ public:
 //  Emit statements and expressions
 
 class EmitCFunc VL_NOT_FINAL : public EmitCConstInit {
-    VMemberMap m_memberMap;
+    VMemberMap m_memberMap;  // Map to find members of classes
     AstVarRef* m_wideTempRefp = nullptr;  // Variable that _WW macros should be setting
     std::unordered_map<AstJumpBlock*, size_t> m_labelNumbers;  // Label numbers for AstJumpBlocks
     bool m_createdScopeHash = false;  // Already created a scope hash
@@ -132,7 +132,7 @@ protected:
     bool m_usevlSelfRef = false;  // Use vlSelfRef reference instead of vlSelf pointer
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
-    bool m_instantiatesOwnProcess = false;
+    bool m_instantiatesOwnProcess = false;  // Statement that instantiates its own process
     const AstClassPackage* m_classOrPackage = nullptr;  // Pointer to current class or package
     string m_classOrPackageHash;  // Hash of class or package name
 
@@ -374,8 +374,7 @@ public:
 
     void putConstructorSubinit(const AstClass* classp, AstCFunc* cfuncp) {
         // Direct non-virtual bases in declaration order
-        for (const AstClassExtends* extp = classp->extendsp(); extp;
-             extp = VN_AS(extp->nextp(), ClassExtends)) {
+        for (const AstClassExtends* const extp : classp->extendspList()) {
             if (extp->classp()->isInterfaceClass()) continue;
             if (extp->classp()->useVirtualPublic()) continue;
             puts(EmitCUtil::prefixNameProtect(extp->classp()));
@@ -469,7 +468,7 @@ public:
             nodep->prependStmtsp(setProcessp);
         }
 
-        for (AstNode* subnodep = nodep->argsp(); subnodep; subnodep = subnodep->nextp()) {
+        for (AstNode* const subnodep : nodep->argspList()) {
             if (AstVar* const varp = VN_CAST(subnodep, Var)) {
                 if (varp->isFuncReturn()) emitVarDecl(varp);
             }
@@ -555,6 +554,27 @@ public:
     void visit(AstCvtUnpackToQueue* nodep) override {
         AstNodeDType* const elemDTypep = nodep->fromp()->dtypep()->subDTypep();
         emitOpName(nodep, nodep->emitC(), nodep->fromp(), elemDTypep, nullptr);
+    }
+    void visit(AstCvtQueueToUnpack* nodep) override {
+        // Whether each unpacked dimension is reversed, the first for the outermost
+        std::vector<bool> reverses;
+        const AstNodeDType* toDtp = nodep->dtypep()->skipRefp();
+        const AstNodeDType* fromDtp = nodep->fromp()->dtypep()->skipRefp();
+        while (const AstUnpackArrayDType* const toArrayp = VN_CAST(toDtp, UnpackArrayDType)) {
+            // A dynamic array or queue is indexed from the left, as is a source unpacked array
+            const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromDtp, UnpackArrayDType);
+            reverses.push_back(!fromArrayp ? !toArrayp->declRange().ascending()
+                                           : toArrayp->declRange().ascending()
+                                                 != fromArrayp->declRange().ascending());
+            toDtp = toArrayp->subDTypep()->skipRefp();
+            fromDtp = fromDtp->subDTypep()->skipRefp();
+        }
+        putns(nodep, "VL_CVT_Q_TO_UNPACK<");
+        puts(nodep->dtypep()->cType("", false, false));
+        for (const bool reverse : reverses) puts(reverse ? ", 1" : ", 0");
+        puts(">(");
+        iterateAndNextConstNull(nodep->fromp());
+        puts(")");
     }
     void visit(AstCvtUnpackToUnpack* nodep) override {
         // Whether each dimension is reversed, the first for the outermost, up to the last that is
@@ -855,7 +875,7 @@ public:
         puts("(");
         bool comma = false;
         int argNum = 0;
-        for (AstNode* subnodep = nodep->pinsp(); subnodep; subnodep = subnodep->nextp()) {
+        for (AstNode* const subnodep : nodep->pinspList()) {
             if (comma) puts(", ");
             if (nodep->method() == VCMethod::RANDOMIZER_HARD && argNum == 1) {
                 // For RANDOMIZER_HARD's filename argument (2nd arg after constraint),
@@ -863,8 +883,7 @@ public:
                 if (const AstCExpr* const cexprp = VN_CAST(subnodep, CExpr)) {
                     // Extract filename from the CExpr (which contains "filename")
                     std::string filename;
-                    for (const AstNode* textnodep = cexprp->nodesp(); textnodep;
-                         textnodep = textnodep->nextp()) {
+                    for (const AstNode* const textnodep : cexprp->nodespList()) {
                         if (const AstText* const textp = VN_CAST(textnodep, Text)) {
                             filename = textp->text();
                             break;
@@ -1135,14 +1154,17 @@ public:
         puts(nodep->isHex() ? "true" : "false");
         putbs(", ");
         // Need real storage width
-        puts(cvtToStr(nodep->memp()->dtypep()->subDTypep()->widthMin()));
+        puts(cvtToStr(nodep->memp()->dtypep()->skipRefp()->subDTypep()->widthMin()));
         uint32_t array_lo = 0;
+        bool memUsePtr = true;
         {
             const AstVarRef* const varrefp = VN_CAST(nodep->memp(), VarRef);
             if (!varrefp) {
                 nodep->v3error(nodep->verilogKwd() << " loading non-variable");
-            } else if (VN_IS(varrefp->varp()->dtypeSkipRefp(), AssocArrayDType)) {
+            } else if (VN_IS(varrefp->varp()->dtypeSkipRefp(), AssocArrayDType)
+                       || VN_IS(varrefp->varp()->dtypeSkipRefp(), DynArrayDType)) {
                 // nodep->memp() below will when verilated code is compiled create a C++ template
+                memUsePtr = false;
             } else if (const AstUnpackArrayDType* const adtypep
                        = VN_CAST(varrefp->varp()->dtypeSkipRefp(), UnpackArrayDType)) {
                 putbs(", ");
@@ -1151,18 +1173,18 @@ public:
                 putbs(", ");
                 puts(cvtToStr(array_lo));
             } else {
-                nodep->v3error(nodep->verilogKwd()
-                               << " loading other than unpacked/associative-array variable");
+                nodep->v3error(
+                    nodep->verilogKwd()
+                    << " loading other than unpacked/dynamic/associative-array variable");
             }
         }
         putbs(", ");
         iterateConst(nodep->filenamep());
         putbs(", ");
         {
-            const bool need_ptr = !VN_IS(nodep->memp()->dtypep(), AssocArrayDType);
-            if (need_ptr) puts(" &(");
+            if (memUsePtr) puts(" &(");
             iterateAndNextConstNull(nodep->memp());
-            if (need_ptr) puts(")");
+            if (memUsePtr) puts(")");
         }
         putbs(", ");
         if (nodep->lsbp()) {

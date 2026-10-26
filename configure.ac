@@ -263,6 +263,9 @@ if test "x$PYTHON3" = "x" ; then
 fi
 python3_version=$($PYTHON3 --version | head -1)
 AC_MSG_RESULT([$PYTHON3 --version = $python3_version])
+# Windows often installs python under "Program Files", which GNU make cannot
+# use unquoted in verilated.mk; use the space-free 8.3 short name instead.
+PYTHON3=`echo "$PYTHON3" | sed 's/Program Files/PROGRA~1/g'`
 
 AC_ARG_VAR([LEX], [Flex executable])
 AC_CHECK_PROG(LEX,flex,flex)
@@ -299,6 +302,31 @@ AC_CHECK_PROG(OBJCACHE,ccache,ccache)
 if test "x$OBJCACHE" != "x" ; then
   objcache_version=$($OBJCACHE --version | head -1)
   AC_MSG_RESULT([objcache is $OBJCACHE --version = $objcache_version])
+fi
+
+# Wavetools is required for waveform tests, but not for building Verilator.
+AC_ARG_VAR([WAVECAT], [wavecat executable from wavetools])
+AC_ARG_VAR([WAVEDIFF], [wavediff executable from wavetools])
+if test "x$CFG_WITH_LONGTESTS" = "xyes" ; then
+  . "$srcdir/ci/docker/buildenv/wavetools.conf"
+  REQUIRED_WAVETOOLS_VERSION=${WAVETOOLS_VERSION#v}
+  AC_CHECK_PROG(WAVECAT,wavecat,wavecat)
+  AC_CHECK_PROG(WAVEDIFF,wavediff,wavediff)
+  for wavetools_tool in WAVECAT WAVEDIFF; do
+    case "$wavetools_tool" in
+      WAVECAT) wavetools_command=$WAVECAT; wavetools_name=wavecat ;;
+      WAVEDIFF) wavetools_command=$WAVEDIFF; wavetools_name=wavediff ;;
+    esac
+    AC_MSG_CHECKING([for $wavetools_name >= $REQUIRED_WAVETOOLS_VERSION])
+    wavetools_version=
+    if test "x$wavetools_command" != "x" ; then
+      wavetools_version=$($wavetools_command --version 2>/dev/null | sed -n 's/^wave[[a-z]]* \([[0-9]][[0-9]]*\.[[0-9]][[0-9]]*\.[[0-9]][[0-9]]*\).*$/\1/p')
+    fi
+    AS_VERSION_COMPARE([$wavetools_version], [$REQUIRED_WAVETOOLS_VERSION], [
+      AC_MSG_RESULT([no])
+      AC_MSG_ERROR([$wavetools_name >= $REQUIRED_WAVETOOLS_VERSION is required for waveform tests and golden updates; install wavetools from https://github.com/hudson-trading/wavetools or set $wavetools_tool])
+    ], [AC_MSG_RESULT([$wavetools_version])], [AC_MSG_RESULT([$wavetools_version])])
+  done
 fi
 
 # Checks for libraries.

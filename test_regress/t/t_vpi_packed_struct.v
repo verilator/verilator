@@ -6,16 +6,12 @@
 
 // verilog_format: off
 `define stop $stop
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
 // verilog_format: on
 
 module t;
 
-`ifdef VERILATOR
-`systemc_header
-  extern "C" int mon_check();
-  extern "C" int mon_check_cbs();
-`verilog
-`endif
 
   typedef enum logic [1:0] {
     E_A,
@@ -79,6 +75,20 @@ module t;
   logic [3:0][1:0] pvec  /*verilator public_flat_rw*/;
   us_t us  /*verilator public_flat_rw*/;
   localparam s_t PS  /*verilator public_flat_rd*/ = '{hi: 4'h3, e: E_C, lo: -6'sd5};
+  localparam n_t PN  /*verilator public_flat_rd*/ = '{
+      tag: 4'h5,
+      inner: '{hi: 4'h7, e: E_D, lo: 6'sd3},
+      pa: 8'hc6
+  };
+  localparam w_t PW[2]  /*verilator public_flat_rd*/ = '{
+      '{top: 12'h0, wide: 40'h0, mid: 20'h0, b8: 8'h11, low: 20'h0},
+      '{top: 12'habc, wide: 40'h0, mid: 20'h0, b8: 8'h5a, low: 20'h12345}
+  };
+  localparam s_t [1:0] P4D[2][2]  /*verilator public_flat_rd*/ = '{
+      '{24'h111222, 24'h333444},
+      '{24'h9c0555, 24'h666777}
+  };
+  w_t uw[2]  /*verilator public_flat_rw*/;
   wire s_t sn  /*verilator public_flat_rd*/;
   wire u_t un  /*verilator public_flat_rd*/;
 
@@ -101,6 +111,8 @@ module t;
     arr = '0;
     uarr[0] = '0;
     uarr[1] = '0;
+    uw[0] = '0;
+    uw[1] = '0;
     arr2 = '0;
     narr = '0;
     fs = '0;
@@ -109,7 +121,7 @@ module t;
     cyc = 0;
     // Static checks, then register the value change callbacks
 `ifdef VERILATOR
-    status = $c32("mon_check()");
+    status = `CPP_CALL(mon_check);
 `else
     status = $mon_check;
 `endif
@@ -136,7 +148,7 @@ module t;
       12: pvec[3] <= 2'd2;
       13: begin
 `ifdef VERILATOR
-        status = $c32("mon_check_cbs()");
+        status = `CPP_CALL(mon_check_cbs);
 `else
         status = $mon_check_cbs;
 `endif

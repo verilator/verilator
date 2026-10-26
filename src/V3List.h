@@ -71,8 +71,8 @@ class V3List final {
     using ListType = V3List<T_Base, LinksGetter, T_Element>;
 
     // MEMBERS
-    T_Base* m_headp = nullptr;
-    T_Base* m_lastp = nullptr;
+    T_Base* m_headp = nullptr;  // First element, null if empty
+    T_Base* m_lastp = nullptr;  // Last element, null if empty
 
     // Given the T_Base, return the Links. The links are always mutable, even in const elements.
     VL_ATTR_ALWINLINE

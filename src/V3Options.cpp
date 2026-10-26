@@ -362,6 +362,10 @@ void V3Options::addLibMapFile(const string& filename) { m_libmapFiles.insert(fil
 void V3Options::addCompilerIncludes(const string& filename) {
     m_compilerIncludes.insert(filename);
 }
+void V3Options::addLdLibFile(const string& filename) {
+    m_ldLibFiles.push_back(filename);
+    addLdLibs(filename);
+}
 void V3Options::addLdLibs(const string& filename) { m_ldLibs.push_back(filename); }
 void V3Options::addMakeFlags(const string& filename) { m_makeFlags.push_back(filename); }
 void V3Options::addFuture(const string& flag) { m_futures.insert(flag); }
@@ -608,7 +612,6 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
         {"f", 2},
         {"F", 2},
         {"v", 2},
-        {"l2-name", 2},
         {"mod-prefix", 2},
         {"prefix", 2},
         {"protect-lib", 2},
@@ -624,10 +627,7 @@ int V3Options::stripOptionsForChildRun(const string& opt, bool forTop) {
     // Options to strip only for hier blocks
     if (!forTop) {
         static const std::unordered_map<std::string, int> subOpts{
-            {"cc", 1},
-            {"exe", 1},
-            {"sc", 1},
-            {"binary", 1},
+            {"cc", 1}, {"exe", 1}, {"sc", 1}, {"binary", 1}, {"l2-name", 2},
         };
         if (subOpts.count(opt)) return subOpts.at(opt);
         if (VString::startsWith(opt, "G")) return 1;
@@ -987,6 +987,9 @@ void V3Options::notify() VL_MT_DISABLED {
 
     if (m_exe && !v3Global.opt.libCreate().empty()) {
         cmdfl->v3error("--exe cannot be used together with --lib-create. Suggest see manual");
+    }
+    if (m_systemC && !v3Global.opt.libCreate().empty()) {
+        cmdfl->v3error("--sc cannot be used together with --lib-create. Suggest see manual");
     }
 
     // Make sure at least one make system is enabled
@@ -1557,6 +1560,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
     DECL_OPTION("-finline-cfuncs", FOnOff, &m_fInlineCFuncs);
     DECL_OPTION("-finline-funcs", FOnOff, &m_fInlineFuncs);
     DECL_OPTION("-finline-funcs-eager", FOnOff, &m_fInlineFuncsEager);
+    DECL_OPTION("-finline-getters", FOnOff, &m_fInlineGetters);
     DECL_OPTION("-flife", FOnOff, &m_fLife);
     DECL_OPTION("-flife-post", FOnOff, &m_fLifePost);
     DECL_OPTION("-flift-expr", CbFOnOff, [fl](bool) {
@@ -1762,7 +1766,15 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         m_libCreate = valp;
         m_protectIds = true;
     });
-    DECL_OPTION("-public", OnOff, &m_public);
+    DECL_OPTION("-public", CbOnOff, [this, fl](bool flag) {
+        m_public = flag;
+        if (flag) {
+            fl->v3warn(UNOPTPUBLIC, "Option '--public' prevents optimization\n"
+                                        << fl->warnMore()
+                                        << "... Suggest use 'public_flat_rw' on only the needed"
+                                           " signals instead");
+        }
+    });
     DECL_OPTION("-public-depth", Set, &m_publicDepth);
     DECL_OPTION("-public-flat-rw", CbOnOff, [this](bool flag) {
         m_publicFlatRW = flag;
@@ -2094,7 +2106,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
         } else if (suffixed(filename, ".a")  //
                    || suffixed(filename, ".o")  //
                    || suffixed(filename, ".so")) {
-            V3Options::addLdLibs(filename);
+            V3Options::addLdLibFile(filename);
         } else if (suffixed(filename, ".vlt")) {
             V3Options::addVltFile(filename, work());
             isForRerun = false;

@@ -108,7 +108,7 @@ class VariableOrder final {
     //                                   requirement, to avoid padding
     const VNUser1InUse m_user1InUse;
 
-    const MTaskWritersMap& m_mTaskWriters;
+    const MTaskWritersMap& m_mTaskWriters;  // Writer mtasks of each variable
 
     VariableOrder(AstNodeModule* modp, const MTaskWritersMap& mTaskWriters)
         : m_mTaskWriters{mTaskWriters} {
@@ -181,8 +181,7 @@ class VariableOrder final {
         std::vector<AstVar*> restps;
 
         // Gather variables, compute stratum
-        for (AstNode *nodep = modp->stmtsp(), *nextp; nodep; nodep = nextp) {
-            nextp = nodep->nextp();
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {
                     portps.push_back(varp);
@@ -258,8 +257,7 @@ void V3VariableOrder::orderAll(AstNetlist* netlistp) {
     }
 
     // Sort variables of each module
-    for (AstNodeModule* modp = v3Global.rootp()->modulesp(); modp;
-         modp = VN_AS(modp->nextp(), NodeModule)) {
+    for (AstNodeModule* const modp : v3Global.rootp()->modulespList()) {
         if (modp->isConstPool()) continue;
         VariableOrder::apply(modp, mTaskWriters);
     }

@@ -2262,7 +2262,6 @@ class VlTest:
                     fh.write("    topp->clk(clk);\n")
                 setp = ""
             else:
-                fh.write("    topp->eval();\n")
                 setp = "topp->"
 
             if self.trace:
@@ -2285,10 +2284,14 @@ class VlTest:
                              "  // Finish elaboration before trace and open\n")
                 fh.write("    topp->trace(tfp.get(), 99);\n")
                 fh.write("    tfp->open(\"" + self.trace_filename + "\");\n")
-
-                if self.trace and not self.sc:
-                    fh.write("    if (tfp) tfp->dump(contextp->time());\n")
                 fh.write("#endif\n")
+
+            if not self.sc:
+                fh.write("    topp->eval();\n")
+                if self.trace:
+                    fh.write("#if VM_TRACE\n")
+                    fh.write("    if (tfp) tfp->dump(contextp->time());\n")
+                    fh.write("#endif\n")
 
             if self.savable:
                 fh.write("    const char* save_time_strp"
@@ -2656,8 +2659,18 @@ class VlTest:
     def copy_if_golden(self, fn1: str, fn2: str) -> None:
         """Copy a file if updating golden .out files"""
         if 'HARNESS_UPDATE_GOLDEN' in os.environ:  # Update golden files with current
-            print("%Warning: HARNESS_UPDATE_GOLDEN set: cp " + fn1 + " " + fn2, file=sys.stderr)
-            shutil.copy(fn1, fn2)
+            if fn1.endswith('.fst'):
+                # Keep golden traces as text.
+                cmd = [
+                    VtOs.getenv_def('WAVECAT', 'wavecat'), fn1, '--out', fn2, '--out-format',
+                    'vcd', '--no-date'
+                ]
+                print("%Warning: HARNESS_UPDATE_GOLDEN set: " + ' '.join(cmd), file=sys.stderr)
+                self.run(cmd=cmd)
+            else:
+                print("%Warning: HARNESS_UPDATE_GOLDEN set: cp " + fn1 + " " + fn2,
+                      file=sys.stderr)
+                shutil.copy(fn1, fn2)
 
     def vcd_identical(self, fn1: str, fn2: str) -> None:
         """Test if two VCD/FST files have logically-identical contents"""

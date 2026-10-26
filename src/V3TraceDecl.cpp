@@ -34,6 +34,7 @@
 #include "V3Stats.h"
 #include "V3UniqueNames.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -204,7 +205,10 @@ class TraceDeclVisitor final : public VNVisitor {
                 // them under the runtime C++ instance name without affecting embedded use.
                 if (prefix == "$rootio") return;
                 m_path = m_path.substr(start + 1);
-                if (v3Global.rootp()->traceLibTopName() != prefix) m_path = "$libroot " + m_path;
+                const std::vector<std::string>& tops = v3Global.rootp()->l2Names();
+                if (std::find(tops.begin(), tops.end(), prefix) == tops.end()) {
+                    m_path = "$libroot " + m_path;
+                }
             }
         }
 
@@ -391,24 +395,11 @@ class TraceDeclVisitor final : public VNVisitor {
     void fixupLibStub(const std::string& path, AstNodeStmt* placeholderp) {
         FileLine* const flp = placeholderp->fileline();
 
-        // The library instance's model is named after its %m within the parent model,
-        // which does not include the "l2-name" (top module) of the library
-        std::string name = AstNode::prettyName(path);
-        if (!v3Global.opt.libCreate().empty()) {
-            const std::string topPrefix = v3Global.rootp()->traceLibTopName() + ".";
-            if (VString::startsWith(name, topPrefix)) name = name.substr(topPrefix.size());
-        }
-
-        // Call the initialization function for the library instance
+        // Call the initialization function for the library instance, whose model is named after
+        // its %m within the parent model
         AstCStmt* const initp = new AstCStmt{flp};
-        initp->add("{\n");
-        initp->add("std::string __VlibName = vlSymsp->name();\n");
-        initp->add("if (!__VlibName.empty()) __VlibName += '.';\n");
-        initp->add("__VlibName += ");
-        initp->add(new AstConst{flp, AstConst::String{}, name});
-        initp->add(";\n");
-        initp->add("tracep->initLib(__VlibName);\n");
-        initp->add("}\n");
+        initp->add("tracep->initLib(" + EmitCUtil::instNameExpr(AstNode::prettyName(path), false)
+                   + ");\n");
 
         placeholderp->addNextHere(initp);
         // Delete the placeholder
@@ -598,14 +589,12 @@ class TraceDeclVisitor final : public VNVisitor {
     void declStruct(AstStructDType* const nodep, bool newFunc) {
         FileLine* const flp = nodep->fileline();
         string prefixName(newFunc ? "name" : m_traName);
-        int nMembers = 0;
-        for (AstNode* mp = nodep->membersp(); mp; mp = mp->nextp()) ++nMembers;
+        const int nMembers = static_cast<int>(nodep->memberspList().size());
         if (!nodep->packed()) {
             addToSubFunc(new AstTracePushPrefix{flp, prefixName,  //
                                                 VTracePrefixType::STRUCT_UNPACKED, nMembers, 0,
                                                 !newFunc});
-            for (const AstMemberDType *itemp = nodep->membersp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), MemberDType);
+            for (const AstMemberDType* const itemp : nodep->memberspList()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                 m_traName = itemp->prettyName();
                 VL_RESTORER(m_traValuep);
@@ -620,8 +609,7 @@ class TraceDeclVisitor final : public VNVisitor {
             addToSubFunc(new AstTracePushPrefix{flp, prefixName,  //
                                                 VTracePrefixType::STRUCT_PACKED, nMembers, 0,
                                                 !newFunc});
-            for (const AstMemberDType *itemp = nodep->membersp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), MemberDType);
+            for (const AstMemberDType* const itemp : nodep->memberspList()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                 m_traName = itemp->prettyName();
                 VL_RESTORER(m_traValuep);
@@ -655,7 +643,7 @@ class TraceDeclVisitor final : public VNVisitor {
         iterateChildrenConst(nodep);
 
         // Gather cells under this scope
-        for (AstNode* stmtp = nodep->modp()->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->modp()->stmtspList()) {
             if (AstCell* const cellp = VN_CAST(stmtp, Cell)) m_entries.emplace_back(nodep, cellp);
         }
 
@@ -764,9 +752,7 @@ class TraceDeclVisitor final : public VNVisitor {
                         "Expected an interface scope name to have at least one dot: " << path);
             const std::string parentPath = path.substr(0, lastDot + 1);
 
-            for (AstIntfRef *intfRefp = cellp->intfRefsp(), *nextp; intfRefp; intfRefp = nextp) {
-                nextp = VN_AS(intfRefp->nextp(), IntfRef);
-
+            for (AstIntfRef* const intfRefp : cellp->intfRefspList()) {
                 const std::string refName = intfRefp->prettyName();
 
                 // Assume only references under the same parent scope reference
@@ -928,16 +914,14 @@ class TraceDeclVisitor final : public VNVisitor {
         VL_RESTORER_COPY(m_traName);
         FileLine* const flp = nodep->fileline();
 
-        int nMembers = 0;
-        for (AstNode* mp = nodep->membersp(); mp; mp = mp->nextp()) ++nMembers;
+        const int nMembers = static_cast<int>(nodep->memberspList().size());
 
         if (!nodep->packed()) {
             addIgnore("Unsupported: Unpacked union");
         } else {
             addToSubFunc(new AstTracePushPrefix{flp, m_traName,  //
                                                 VTracePrefixType::UNION_PACKED, nMembers});
-            for (const AstMemberDType *itemp = nodep->membersp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), MemberDType);
+            for (const AstMemberDType* const itemp : nodep->memberspList()) {
                 AstNodeDType* const subtypep = itemp->subDTypep()->skipRefToEnump();
                 m_traName = itemp->prettyName();
                 iterate(subtypep);

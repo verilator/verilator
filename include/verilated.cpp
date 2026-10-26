@@ -597,6 +597,7 @@ IData VL_URANDOM_SEEDED_II(IData seed) VL_MT_SAFE {
     return VL_RANDOM_I();
 }
 
+// Bulk array initialization relies on scoped resets having no element index or mutable RNG state.
 IData VL_SCOPED_RAND_RESET_I(int obits, uint64_t scopeHash, uint64_t salt) VL_MT_UNSAFE {
     const int randReset = Verilated::threadContextp()->randReset();
     if (randReset == 0) return 0;
@@ -669,6 +670,24 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
 WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
     // Not inlined to speed up compilation of slowpath code
     return VL_ZERO_W(obits, outwp);
+}
+
+void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE {
+    char* const bytesp = static_cast<char*>(arrayp);
+    const size_t totalBytes = elementBytes * count;
+    // Zero is the usual reset, and memset stays fast in -Os code.
+    bool zero = true;
+    for (size_t i = 0; i < elementBytes; ++i) zero = zero && !bytesp[i];
+    if (zero) {
+        std::memset(bytesp + elementBytes, 0, totalBytes - elementBytes);
+        return;
+    }
+    // Otherwise grow the initialized prefix, which memcpy fills quickly at any optimization.
+    for (size_t filled = elementBytes; filled < totalBytes;) {
+        const size_t bytes = std::min(filled, totalBytes - filled);
+        std::memcpy(bytesp + filled, bytesp, bytes);
+        filled += bytes;
+    }
 }
 
 //===========================================================================
@@ -3943,7 +3962,9 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
     }
     char* dp = t_strp;
     for (const char* sp = n1; *sp;) *dp++ = *sp++;
-    for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
+    if (*n1 && *n2) {
+        for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
+    }
     for (const char* sp = n2; *sp;) *dp++ = *sp++;
     *dp++ = '\0';
     return t_strp;
@@ -4055,6 +4076,13 @@ void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
     VL_FATAL_MT("unknown", 0, "",
                 "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
                 "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
+    VL_UNREACHABLE;
+}
+
+void Verilated::sizeMismatchError() VL_MT_SAFE {
+    VL_FATAL_MT("unknown", 0, "",
+                "Dynamic array or queue size does not match unpacked array size"
+                " (IEEE 1800-2023 7.6)");
     VL_UNREACHABLE;
 }
 
@@ -4254,12 +4282,12 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 //======================================================================
 // VerilatedScope:: Methods
 
-VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
-                               const char* defnamep, int8_t timeunit, Type type)
+VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
+                               const char* identifier, const char* defnamep, int8_t timeunit,
+                               Type type)
     : m_symsp{symsp}
-    , m_namep{[symsp, suffixp]() {
+    , m_namep{[prefixp, suffixp]() {
         // We don't want the space and reference-count access overhead of strings.
-        const char* prefixp = symsp->name();
         char* const namep = new char[std::strlen(prefixp) + std::strlen(suffixp) + 2];
         char* dp = namep;
         for (const char* sp = prefixp; *sp;) *dp++ = *sp++;
@@ -4345,39 +4373,52 @@ VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isP
     return &(m_varsp->find(namep)->second);
 }
 
+void VerilatedScope::varInsertFromRow(const VlVarTableEntry& e, void* datap,
+                                      bool isParam) VL_MT_UNSAFE {
+    const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
+    VerilatedVar var{e.namep, datap,   e.vltype,  vlflags,    e.udims,
+                     e.pdims, isParam, e.entSize, e.bitOffset};
+    for (int d = 0; d < e.udims; ++d) {
+        var.m_unpacked[d].m_left = e.dimsp[2 * d];
+        var.m_unpacked[d].m_right = e.dimsp[2 * d + 1];
+    }
+    for (int d = 0; d < e.pdims; ++d) {
+        var.m_packed[d].m_left = e.dimsp[2 * (e.udims + d)];
+        var.m_packed[d].m_right = e.dimsp[2 * (e.udims + d) + 1];
+    }
+    // Recompute the flattened DPI packed range now dims are known (see
+    // VerilatedVarProps::initPacked)
+    if (e.pdims == 1) {
+        var.m_packedDpi = var.m_packed.front();
+    } else if (e.pdims > 1) {
+        int packedSize = 1;
+        for (int d = 0; d < e.pdims; ++d) packedSize *= var.m_packed[d].elements();
+        var.m_packedDpi = VerilatedRange{packedSize - 1, 0};
+    }
+    m_varsp->emplace(e.namep, std::move(var));
+}
+
 void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
                                          void* basep) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
+    // A packed member row's basep is its parent's storage
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     uint8_t* const base = static_cast<uint8_t*>(basep);
+    for (size_t i = 0; i < n; ++i) varInsertFromRow(entp[i], base + entp[i].byteOffset, false);
+}
+
+void VerilatedScope::paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
+                                           const void* const* paramPtrsp) VL_MT_UNSAFE {
+    // VerilatedVar's data is non-const, but VPI refuses parameter writes
+    if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     for (size_t i = 0; i < n; ++i) {
-        const VlVarTableEntry& e = entp[i];
-        void* const datap = base + e.byteOffset;
-        const VerilatedVarFlags vlflags = static_cast<VerilatedVarFlags>(e.vlflags);
-        VerilatedVar var{e.namep, datap, e.vltype, vlflags, e.udims, e.pdims, /*isParam=*/false};
-        for (int d = 0; d < e.udims; ++d) {
-            var.m_unpacked[d].m_left = e.dims[2 * d];
-            var.m_unpacked[d].m_right = e.dims[2 * d + 1];
-        }
-        for (int d = 0; d < e.pdims; ++d) {
-            var.m_packed[d].m_left = e.dims[2 * (e.udims + d)];
-            var.m_packed[d].m_right = e.dims[2 * (e.udims + d) + 1];
-        }
-        // Recompute the flattened DPI packed range now dims are known (see
-        // VerilatedVarProps::initPacked)
-        if (e.pdims == 1) {
-            var.m_packedDpi = var.m_packed.front();
-        } else if (e.pdims > 1) {
-            int packedSize = 1;
-            for (int d = 0; d < e.pdims; ++d) packedSize *= var.m_packed[d].elements();
-            var.m_packedDpi = VerilatedRange{packedSize - 1, 0};
-        }
-        m_varsp->emplace(e.namep, std::move(var));
+        varInsertFromRow(entp[i], const_cast<void*>(paramPtrsp[entp[i].byteOffset]), true);
     }
 }
 
 void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
-                                              VerilatedSyms* symsp) VL_MT_UNSAFE {
+                                              VerilatedSyms* symsp,
+                                              const std::string* topNamesp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of 'new VerilatedScope{...}' statements; see
     // VlScopeTableEntry. The generated Syms class derives VerilatedSyms as its sole primary
     // base at offset 0, so symsp doubles as the base for the offsetof-baked member addresses.
@@ -4385,13 +4426,21 @@ void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, siz
     for (size_t i = 0; i < n; ++i) {
         const VlScopeTableEntry& e = entp[i];
         VerilatedScope** const slotp = reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        *slotp = new VerilatedScope{symsp, e.namep, e.identp, e.defnamep, e.timeunit, e.type};
+        const std::string& prefix = topNamesp[e.topIndex];
+        const char* identp = e.identp;
+        if (e.topIndex && !*e.namep) {
+            // A top module instance is named after its instance in the parent model when
+            // the model is the instance of a library, which is only known here
+            const std::string::size_type pos = prefix.rfind('.');
+            identp = prefix.c_str() + (pos == std::string::npos ? 0 : pos + 1);
+        }
+        *slotp = new VerilatedScope{symsp,      prefix.c_str(), e.namep, identp,
+                                    e.defnamep, e.timeunit,     e.type};
     }
 }
 
-// Prefix with the model instance name, as VerilatedScope's constructor does
-static std::string vl_ifaceRefFullname(const VerilatedSyms* symsp, const char* suffixp) {
-    const char* const prefixp = symsp->name();
+// Prefix with the name it is below, as VerilatedScope's constructor does
+static std::string vl_ifaceRefFullname(const char* prefixp, const char* suffixp) {
     std::string out{prefixp};
     if (*prefixp && *suffixp) out += '.';
     out += suffixp;
@@ -4404,7 +4453,8 @@ static VerilatedScope* vl_ifaceRefParentp(uint8_t* basep, const VlIfaceRefTableE
 }
 
 void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                              VerilatedSyms* symsp) VL_MT_UNSAFE {
+                                              VerilatedSyms* symsp,
+                                              const std::string* topNamesp) VL_MT_UNSAFE {
     // Use the model's own context; at destruction threadContextp() may be another's
     VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
     uint8_t* const base = reinterpret_cast<uint8_t*>(symsp);
@@ -4412,8 +4462,9 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        const VerilatedIfaceRef ifaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp),
-                                         e.modportp};
+        const VerilatedIfaceRef ifaceRef{
+            scopep, e.namep, vl_ifaceRefFullname(topNamesp[e.topIndex].c_str(), e.suffixp),
+            e.modportp};
         const VerilatedIfaceRef* const refp = impp->ifaceRefInsert(ifaceRef);
         // Map nodes remain stable until this model's teardown. The scope only owns
         // the pointer vector; destroying it does not dereference the erased entries.
@@ -4424,14 +4475,15 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
 }
 
 void VerilatedScope::ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                             const VerilatedSyms* symsp) VL_MT_UNSAFE {
+                                             const VerilatedSyms* symsp,
+                                             const std::string* topNamesp) VL_MT_UNSAFE {
     VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
     uint8_t* const base = reinterpret_cast<uint8_t*>(const_cast<VerilatedSyms*>(symsp));
     for (size_t i = 0; i < n; ++i) {
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        impp->ifaceRefErase(vl_ifaceRefFullname(symsp, e.suffixp), scopep);
+        impp->ifaceRefErase(vl_ifaceRefFullname(topNamesp[e.topIndex].c_str(), e.suffixp), scopep);
     }
 }
 
@@ -4449,31 +4501,6 @@ VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, boo
         const int lsb = va_arg(ap, int);
         var.m_unpacked[i].m_left = msb;
         var.m_unpacked[i].m_right = lsb;
-    }
-    va_end(ap);
-
-    m_varsp->emplace(namep, std::move(var));
-    return &(m_varsp->find(namep)->second);
-}
-
-VerilatedVar* VerilatedScope::varInsertMember(const char* namep, void* datap, bool isParam,
-                                              VerilatedVarType vltype, int vlflags,
-                                              uint32_t bitOffset, uint32_t entSize, int pdims,
-                                              ...) VL_MT_UNSAFE {
-    // Member is a bit slice of the parent: datap/vltype/entSize are the parent's.
-    // The parent was inserted into this scope first, so m_varsp already exists.
-    // LCOV_EXCL_START - gcov attributes the never-run exception cleanup of 'var' here
-    VerilatedVar var(namep, datap, vltype,
-                     static_cast<VerilatedVarFlags>(vlflags | VLVF_PACKED_MEMBER), 0, pdims,
-                     isParam, entSize, bitOffset);
-    va_list ap;
-    // LCOV_EXCL_STOP
-    va_start(ap, pdims);
-    for (int i = 0; i < pdims; ++i) {
-        const int msb = va_arg(ap, int);
-        const int lsb = va_arg(ap, int);
-        var.m_packed[i].m_left = msb;
-        var.m_packed[i].m_right = lsb;
     }
     va_end(ap);
 
@@ -4611,12 +4638,26 @@ void VerilatedIfaceRef::ifaceRefDump() const VL_MT_SAFE_POSTINIT {
     VL_PRINTF_MT("\n");
 }
 
-void VerilatedHierarchy::add(const VerilatedScope* fromp, const VerilatedScope* top) {
-    VerilatedImp::hierarchyAdd(fromp, top);
+static const VerilatedScope* vl_hierScope(const VerilatedSyms* symsp, uint32_t offset) {
+    if (!offset) return nullptr;
+    return *reinterpret_cast<const VerilatedScope* const*>(reinterpret_cast<const uint8_t*>(symsp)
+                                                           + offset);
 }
 
-void VerilatedHierarchy::remove(const VerilatedScope* fromp, const VerilatedScope* top) {
-    VerilatedImp::hierarchyRemove(fromp, top);
+void VerilatedHierarchy::addFromTable(const VlHierTableEntry* entp, size_t n,
+                                      const VerilatedSyms* symsp) {
+    for (size_t i = 0; i < n; ++i) {
+        VerilatedImp::hierarchyAdd(vl_hierScope(symsp, entp[i].fromOffset),
+                                   vl_hierScope(symsp, entp[i].toOffset));
+    }
+}
+
+void VerilatedHierarchy::removeFromTable(const VlHierTableEntry* entp, size_t n,
+                                         const VerilatedSyms* symsp) {
+    for (size_t i = 0; i < n; ++i) {
+        VerilatedImp::hierarchyRemove(vl_hierScope(symsp, entp[i].fromOffset),
+                                      vl_hierScope(symsp, entp[i].toOffset));
+    }
 }
 
 void VerilatedHierarchy::clear() { VerilatedImp::hierarchyClear(); }

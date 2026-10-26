@@ -242,7 +242,8 @@ public:
     int instrCount() const override { return INSTR_COUNT_CALL; }
     bool sameNode(const AstNode* samep) const override {
         const AstNodeCCall* const asamep = VN_DBG_AS(samep, NodeCCall);
-        return (funcp() == asamep->funcp() && argTypes() == asamep->argTypes());
+        return funcp() == asamep->funcp() && argTypes() == asamep->argTypes()
+               && superReference() == asamep->superReference();
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
@@ -349,7 +350,6 @@ class AstNodePreSel VL_NOT_FINAL : public AstNodeExpr {
     // @astgen op1 := fromp : AstNodeExpr
     // @astgen op2 := rhsp : AstNodeExpr
     // @astgen op3 := thsp : Optional[AstNodeExpr]
-    // @astgen op4 := attrp : Optional[AstAttrOf]
     VIsCached m_purity;  // Pure state
 
 protected:
@@ -612,7 +612,7 @@ private:
     bool m_restricted = false;
     // dist-ast-dump-suppress  // V3LinkDot temporary use only
     bool m_validated = false;  // identifier_list typo / unused checks already run
-    std::set<std::string> m_restrictedNames;
+    std::set<std::string> m_restrictedNames;  // Names reference is restricted to
 
 public:
     AstWith(FileLine* fl, AstLambdaArgRef* indexArgRefp, AstLambdaArgRef* valueArgRefp,
@@ -683,6 +683,9 @@ public:
     }
 
     ASTGEN_MEMBERS_AstAddrOfCFunc;
+    bool sameNode(const AstNode* samep) const override {
+        return funcp() == VN_DBG_AS(samep, AddrOfCFunc)->funcp();
+    }
     void dump(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -800,6 +803,9 @@ public:
         addPinsp(pinsp);
     }
     ASTGEN_MEMBERS_AstCFuncHard;
+    bool sameNode(const AstNode* samep) const override {
+        return function() == VN_DBG_AS(samep, CFuncHard)->function();
+    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return function().ascii(); }
@@ -837,7 +843,7 @@ public:
     string name() const override VL_MT_STABLE { return method().ascii(); }
     bool sameNode(const AstNode* samep) const override {
         const AstCMethodHard* const asamep = VN_DBG_AS(samep, CMethodHard);
-        return (m_method == asamep->m_method);
+        return m_method == asamep->m_method && m_usePtr == asamep->m_usePtr;
     }
     bool isPure() override {
         if (!m_purity.isCached()) m_purity.set(getPurity());
@@ -846,7 +852,7 @@ public:
     int instrCount() const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
-    bool cleanOut() const override { return true; }
+    bool cleanOut() const override { return m_method.isClean(); }
     bool usePtr() const { return m_usePtr; }
     void usePtr(bool flag) { m_usePtr = flag; }
     VCMethod method() const VL_MT_STABLE { return m_method; }
@@ -1235,6 +1241,12 @@ public:
         dtypeFrom(dtp);
     }
     ASTGEN_MEMBERS_AstCvtArrayToArray;
+    bool sameNode(const AstNode* samep) const override {
+        const AstCvtArrayToArray* const sp = VN_DBG_AS(samep, CvtArrayToArray);
+        return reverse() == sp->reverse() && blockSize() == sp->blockSize()
+               && dstElementBits() == sp->dstElementBits()
+               && srcElementBits() == sp->srcElementBits();
+    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
@@ -1273,6 +1285,24 @@ public:
         dtypeFrom(dtp);
     }
     ASTGEN_MEMBERS_AstCvtPackedToArray;
+    string emitVerilog() override { V3ERROR_NA_RETURN(""); }
+    string emitC() override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const override { return true; }
+};
+class AstCvtQueueToUnpack final : public AstNodeExpr {
+    // Copy a dynamic array or queue to a fixed-size unpacked array.
+    // The sizes must match at runtime. Elements keep their left-to-right order,
+    // so the dimensions to reverse follow from comparing the two types.
+    // @astgen op1 := fromp : AstNodeExpr
+public:
+    // cppcheck-suppress constParameterPointer
+    // cppcheck-suppress constParameterCallback
+    AstCvtQueueToUnpack(FileLine* fl, AstNodeExpr* fromp, AstNodeDType* dtp)
+        : ASTGEN_SUPER_CvtQueueToUnpack(fl) {
+        this->fromp(fromp);
+        dtypeFrom(dtp);
+    }
+    ASTGEN_MEMBERS_AstCvtQueueToUnpack;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -1819,7 +1849,10 @@ public:
     ASTGEN_MEMBERS_AstLambdaArgRef;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        const AstLambdaArgRef* const sp = VN_DBG_AS(samep, LambdaArgRef);
+        return name() == sp->name() && index() == sp->index();
+    }
     string emitVerilog() override { return name(); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
@@ -1886,6 +1919,7 @@ public:
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool isPure() override { return fromp()->isPure(); }
     bool sameNode(const AstNode* samep) const override;
     int instrCount() const override { return widthInstrs(); }
     AstVar* varp() const { return m_varp; }
@@ -2412,7 +2446,10 @@ public:
     void name(const string& name) override { m_text = name; }
     int instrCount() const override { return INSTR_COUNT_PLI; }
     bool sameNode(const AstNode* samep) const override {
-        return text() == VN_DBG_AS(samep, SFormatF)->text();
+        const AstSFormatF* const sp = VN_DBG_AS(samep, SFormatF);
+        return text() == sp->text() && hidden() == sp->hidden() && exprFormat() == sp->exprFormat()
+               && optionalFormat() == sp->optionalFormat()
+               && missingArgChar() == sp->missingArgChar() && timeunit() == sp->timeunit();
     }
     string verilogKwd() const override { return "$sformatf"; }
     string text() const { return m_text; }  // * = Text to display
@@ -2424,7 +2461,7 @@ public:
     bool formatScopeTracking() const {  // Track scopeNamep();  Ok if false positive
         if (exprFormat() || name().find("%m") != string::npos || name().find("%M") != string::npos)
             return true;
-        for (const AstNode* exprp = this->exprsp(); exprp; exprp = exprp->nextp()) {
+        for (const AstNode* const exprp : this->exprspList()) {
             if (const AstConst* const fmtp = VN_CAST(exprp, Const)) {
                 if (fmtp->num().isFromString()) {
                     const string str = fmtp->num().toString();
@@ -2694,6 +2731,7 @@ public:
         // Not a union
         return VN_IS(fromp()->dtypep()->skipRefp(), StructDType);
     }
+    bool isPure() override { return fromp()->isPure(); }
     bool sameNode(const AstNode* samep) const override {
         const AstStructSel* const sp = VN_DBG_AS(samep, StructSel);
         return m_name == sp->m_name;
@@ -3054,6 +3092,9 @@ public:
         dtypeSetInt();
     }
     ASTGEN_MEMBERS_AstCompareNN;
+    bool sameNode(const AstNode* samep) const override {
+        return ignoreCase() == VN_DBG_AS(samep, CompareNN)->ignoreCase();
+    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     void numberOperate(V3Number& out, const V3Number& lhs, const V3Number& rhs) override {
@@ -5027,6 +5068,10 @@ public:
         UASSERT_OBJ(funcp, this, "CCall created calling null function");
     }
     ASTGEN_MEMBERS_AstCCall;
+    bool sameNode(const AstNode* samep) const override {
+        return AstNodeCCall::sameNode(samep)
+               && selfPointer() == VN_DBG_AS(samep, CCall)->selfPointer();
+    }
 
     const VSelfPointerText& selfPointer() const { return m_selfPointer; }
     void selfPointer(const VSelfPointerText& selfPointer) { m_selfPointer = selfPointer; }
@@ -5323,7 +5368,9 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_TIME; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return timeunit() == VN_DBG_AS(samep, Time)->timeunit();
+    }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     VTimescale timeunit() const { return m_timeunit; }
@@ -5345,7 +5392,9 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isSystemFunc() const override { return true; }
     int instrCount() const override { return INSTR_COUNT_TIME; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return timeunit() == VN_DBG_AS(samep, TimeD)->timeunit();
+    }
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     VTimescale timeunit() const { return m_timeunit; }
@@ -5501,6 +5550,9 @@ public:
         fmtType == ATOREAL ? dtypeSetDouble() : dtypeSetInteger();
     }
     ASTGEN_MEMBERS_AstAtoN;
+    bool sameNode(const AstNode* samep) const override {
+        return fmtType() == VN_DBG_AS(samep, AtoN)->fmtType();
+    }
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opAtoN(lhs, m_fmtType); }
     string name() const override VL_MT_STABLE {
         switch (m_fmtType) {

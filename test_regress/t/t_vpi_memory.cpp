@@ -219,6 +219,9 @@ extern "C" int mon_check() {
     return errors;
 }
 
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
+
 //======================================================================
 
 #ifdef IS_VPI

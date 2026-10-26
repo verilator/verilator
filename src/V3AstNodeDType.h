@@ -140,10 +140,14 @@ public:
     virtual bool isAggregateType() const { return false; }
     // True for unpacked, dynamic, queue, and associative arrays (not packed arrays)
     bool isNonPackedArray() const;
+    // DPI representation of this type, or of its elements if an unpacked array
+    bool isDpiBitVec() const;  // DPI uses svBitVecVal
+    bool isDpiLogicVec() const;  // DPI uses svLogicVecVal
+    bool isDpiPrimitive() const { return !isDpiBitVec() && !isDpiLogicVec(); }
     virtual bool isFourstate() const;
     // Ideally an IEEE $typename
     virtual string prettyDTypeName(bool) const { return prettyTypeName(); }
-    string prettyDTypeNameQ() const { return "'" + prettyDTypeName(false) + "'"; }
+    string prettyDTypeNameQ(bool full = false) const { return "'" + prettyDTypeName(full) + "'"; }
     string stateDTypeName() const { return this->isFourstate() ? "(4-state)" : "(2-state)"; }
     //
     // Changing the width may confuse the data type resolution, so must clear
@@ -178,6 +182,8 @@ public:
     uint32_t arrayUnpackedElements() const;  // 1, or total multiplication of all dimensions
     // Fixed aggregate streaming properties
     bool isStreamableFixedAggregate() const;
+    // Whether is a string, or an unpacked array or structure containing one
+    bool containsString() const;
     bool containsUnpackedStruct() const;
     int widthStream() const;
     string vlEnumType() const;  // Return VerilatedVarType: VLVT_UINT32, etc
@@ -304,6 +310,10 @@ public:
     void name(const string& flag) override { m_name = flag; }
     // Keep the name the typedef declaring it gives, as it moves off it to the type table
     void typedefName(const string& name) { m_typedefName = name; }
+    // Name of the C structure for DPI, empty if no typedef names it, so declared where used
+    string dpiName() const;
+    // C typedef of the unpacked structure for DPI (IEEE 1800-2023 H.7.3)
+    string dpiTypedef() const;
     bool packed() const VL_MT_SAFE { return m_packed; }
     void packed(bool flag) { m_packed = flag; }
     // packed() but as don't support unpacked, presently all structs
@@ -520,18 +530,9 @@ public:
     bool isString() const VL_MT_STABLE { return keyword().isString(); }
     bool isZeroInit() const { return keyword().isZeroInit(); }
     bool isRanged() const { return rangep() || m.m_nrange.ranged(); }
-    bool isDpiBitVec() const {  // DPI uses svBitVecVal
-        return keyword() == VBasicDTypeKwd::BIT && isRanged();
-    }
-    bool isDpiLogicVec() const {  // DPI uses svLogicVecVal
-        return keyword().isFourstate() && !(keyword() == VBasicDTypeKwd::LOGIC && !isRanged());
-    }
     bool isDpiCLayout() const {
         return keyword().isDpiCLayout()
                || (keyword().isSameish(VBasicDTypeKwd::LOGIC) && !isRanged());
-    }
-    bool isDpiPrimitive() const {  // DPI uses a primitive type
-        return !isDpiBitVec() && !isDpiLogicVec();
     }
     // Generally the lo/hi/left/right funcs should be used instead of nrange()
     const VNumRange& nrange() const { return m.m_nrange; }
@@ -921,7 +922,8 @@ public:
         : AstNodeDType{other}
         , m_name{other.m_name}
         , m_typedefName{other.m_typedefName}
-        , m_uniqueNum{uniqueNumInc()} {}
+        , m_uniqueNum{uniqueNumInc()}
+        , m_refDTypep{other.m_refDTypep} {}
     ASTGEN_MEMBERS_AstEnumDType;
 
     const char* broken() const override;
@@ -950,11 +952,7 @@ public:
     AstBasicDType* basicp() const override VL_MT_STABLE { return subDTypep()->basicp(); }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
-    size_t itemCount() const {
-        size_t count = 0;
-        for (AstNode* itemp = itemsp(); itemp; itemp = itemp->nextp()) ++count;
-        return count;
-    }
+    size_t itemCount() const { return itemspList().size(); }
     bool isCompound() const override { return false; }
 };
 

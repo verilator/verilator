@@ -82,9 +82,9 @@ public:
 
 class GateVarVertex final : public GateEitherVertex {
     VL_RTTI_IMPL(GateVarVertex, GateEitherVertex)
-    AstVarScope* const m_varScp;
-    bool m_isTop = false;
-    bool m_isClock = false;
+    AstVarScope* const m_varScp;  // Variable scope this vertex represents
+    bool m_isTop = false;  // Variable is a top-level signal
+    bool m_isClock = false;  // Variable is used as a clock
     AstNode* m_rstSyncNodep = nullptr;  // Used as reset and not in SenItem, in clocked always
     AstNode* m_rstAsyncNodep = nullptr;  // Used as reset and in SenItem, in clocked always
 public:
@@ -117,7 +117,7 @@ public:
 
 class GateLogicVertex final : public GateEitherVertex {
     VL_RTTI_IMPL(GateLogicVertex, GateEitherVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Logic node this vertex represents
     AstActive* const m_activep;  // Under what active; nullptr is ok (under cfunc or such)
     const bool m_slow;  // In slow block
 public:
@@ -1127,7 +1127,7 @@ public:
 // Recurse through the graph, try to merge assigns
 
 class GateMergeAssignments final {
-    GateGraph& m_graph;
+    GateGraph& m_graph;  // Graph being processed
     size_t m_statAssignMerged = 0;  // Statistic tracking
     std::vector<GateLogicVertex*> m_toRemove;  // Logic vertices to delete
 

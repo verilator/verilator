@@ -27,10 +27,13 @@
 
 #include "V3LinkCells.h"
 
+#include "V3Control.h"
 #include "V3Graph.h"
 #include "V3Parse.h"
+#include "V3Stats.h"
 #include "V3SymTable.h"
 
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -48,7 +51,7 @@ public:
 
 class LinkCellsVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(LinkCellsVertex, V3GraphVertex)
-    AstNodeModule* const m_modp;
+    AstNodeModule* const m_modp;  // Module this vertex represents
 
 public:
     LinkCellsVertex(V3Graph* graphp, AstNodeModule* modp)
@@ -75,7 +78,7 @@ public:
 
 class CellEdge final : public V3GraphEdge {
     VL_RTTI_IMPL(CellEdge, V3GraphEdge)
-    AstCell* const m_cellp;
+    AstCell* const m_cellp;  // Cell this edge represents
 
 public:
     CellEdge(V3Graph* graphp, V3GraphVertex* fromp, V3GraphVertex* top, int weight, bool cutable,
@@ -231,12 +234,15 @@ class LinkCellsVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Current module
     AstVar* m_varp = nullptr;  // Current variable
     VSymGraph m_mods;  // Symbol table of all module names
+    std::unordered_map<string, AstPackage*> m_packages;  // Packages table
+    std::unordered_set<string> m_autoLoaded;  // Names already searched for on disk
     LinkCellsGraph m_graph;  // Linked graph of all cell interconnects
     LibraryVertex* m_libVertexp = nullptr;  // Vertex at root of all libraries
     const V3GraphVertex* m_topVertexp = nullptr;  // Vertex of top module
     std::unordered_set<string> m_declfnWarned;  // Files we issued DECLFILENAME on
     string m_origTopModuleName;  // original name of the top module
     int m_modDepth = 0;  // Depth of the current module
+    uint64_t m_statModsScanned = 0;  // Modules examined by readModNames
 
     // METHODS
     V3GraphVertex* vertex(AstNodeModule* nodep) {
@@ -261,6 +267,9 @@ class LinkCellsVisitor final : public VNVisitor {
             libSymp = m_mods.rootp()->insert(libname, new VSymEnt{&m_mods, v3Global.rootp()});
         libSymp->insert(name, new VSymEnt{&m_mods, nodep});
     }
+    void insertModInGlobalLib(const string& name, AstNodeModule* nodep) {
+        insertModInLib(name, "__GLOBAL", nodep);
+    }
 
     AstNodeModule* findModuleLibSym(const string& modName, const string& libname) {
         // Given module name and library name, find within that exact library
@@ -269,6 +278,10 @@ class LinkCellsVisitor final : public VNVisitor {
         const VSymEnt* const foundp = libSymp->findIdFallback(modName);
         return foundp ? VN_AS(foundp->nodep(), NodeModule) : nullptr;
     }
+    AstNodeModule* findModuleGlobalSym(const string& modName) {
+        return findModuleLibSym(modName, "__GLOBAL");
+    }
+
     AstNodeModule* findModuleSym(const string& modName, const string& libname) {
         // Given module and library to start search in, resolve using config library choices
         AstNodeModule* foundp;
@@ -298,45 +311,59 @@ class LinkCellsVisitor final : public VNVisitor {
         foundp = findModuleLibSym(modName, libname);
         if (foundp) return foundp;
         // Then search global
-        foundp = findModuleLibSym(modName, "__GLOBAL");
+        foundp = findModuleGlobalSym(modName);
         return foundp;
+    }
+
+    void autoLoad(AstNode* nodep, const string& name) {
+        // Read <name> from the library search path, at most once per name. Modules and
+        // packages are separate name spaces, so a miss in one does not mean it was not read.
+        if (!m_autoLoaded.emplace(name).second) return;
+        // The parser appends, so only modules after the current last one are new
+        AstNodeModule* const lastModp = VN_AS(v3Global.rootp()->modulesp()->lastp(), NodeModule);
+        // If file not found, make AstNotFoundModule, rather than error out.
+        // We'll throw the error when we know the module will really be needed.
+        V3Parse parser{v3Global.rootp(), m_filterp};
+        // true below -> other simulators treat modules in link-found files as library cells
+        parser.parseFile(nodep->fileline(), AstNode::prettyName(name), true, false,
+                         m_modp->libname(), "", name);
+        V3Error::abortIfErrors();
+        // We've read new modules, grab new pointers to their names
+        readModNames(VN_AS(lastModp->nextp(), NodeModule));
     }
 
     AstNodeModule* resolveModule(AstNode* nodep, const string& modName, const string& libname) {
         AstNodeModule* modp = findModuleSym(modName, libname);
         if (!modp) {
-            // Read-subfile
-            // If file not found, make AstNotFoundModule, rather than error out.
-            // We'll throw the error when we know the module will really be needed.
-            const string prettyName = AstNode::prettyName(modName);
-            V3Parse parser{v3Global.rootp(), m_filterp};
-            // true below -> other simulators treat modules in link-found files as library cells
-            parser.parseFile(nodep->fileline(), prettyName, true, false, m_modp->libname(), "",
-                             modName);
-            V3Error::abortIfErrors();
-            // We've read new modules, grab new pointers to their names
-            readModNames();
+            autoLoad(nodep, modName);
             // Check again
             modp = findModuleSym(modName, libname);
             if (!modp) {
-                // This shouldn't throw a message as parseFile will create
-                // a AstNotFoundModule for us
-                nodep->v3error("Can't resolve module reference: '" << prettyName << "'");
+                // Only reached when the file was found but declared no such module,
+                // otherwise parseFile created an AstNotFoundModule for us
+                nodep->v3error("Can't resolve module reference: '" << AstNode::prettyName(modName)
+                                                                   << "'");
             }
         }
         return modp;
+    }
+
+    AstPackage* resolvePackage(AstNode* nodep, const string& name) {
+        auto it = m_packages.find(name);
+        if (it != m_packages.end()) return it->second;
+        autoLoad(nodep, name);
+        it = m_packages.find(name);
+        return it != m_packages.end() ? it->second : nullptr;
     }
 
     static void removeLibFlag() {
         // If the only NodeModules are in libraries, then presumably user
         // wants to check the library, so clear library flag
         if (!v3Global.opt.topModule().empty()) return;
-        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+        for (AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
             if (!nodep->inLibrary()) return;
         }
-        for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-             nodep = VN_AS(nodep->nextp(), NodeModule)) {
+        for (AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
             nodep->inLibrary(false);
         }
     }
@@ -387,7 +414,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     // VISITORS
     void visit(AstNetlist* nodep) override {
-        readModNames();
+        readModNames(nodep->modulesp());
         iterateChildren(nodep);
 
         // Replace instance module pointers based on config
@@ -540,8 +567,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
         if (!nodep->packagep()) {
-            AstNodeModule* const modp = resolveModule(nodep, nodep->pkgName(), m_modp->libname());
-            if (AstPackage* const pkgp = VN_CAST(modp, Package)) nodep->packagep(pkgp);
+            nodep->packagep(resolvePackage(nodep, nodep->pkgName()));
             if (!nodep->packagep()) {
                 nodep->v3error("Export package not found: " << nodep->prettyPkgNameQ());
                 return;
@@ -552,8 +578,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // Package Import: We need to do the package before the use of a package
         iterateChildren(nodep);
         if (!nodep->packagep()) {
-            AstNodeModule* const modp = resolveModule(nodep, nodep->pkgName(), m_modp->libname());
-            if (AstPackage* const pkgp = VN_CAST(modp, Package)) nodep->packagep(pkgp);
+            nodep->packagep(resolvePackage(nodep, nodep->pkgName()));
             // If not found, V3LinkDot will report errors
             if (!nodep->packagep()) {
                 nodep->v3error("Import package not found: " << nodep->prettyPkgNameQ());
@@ -571,7 +596,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // and means we cannot compute module levels until later.
         UINFO(4, "Link Bind: " << nodep);
         AstNodeModule* const modp = resolveModule(nodep, nodep->name(), m_modp->libname());
-        if (modp) {
+        if (modp && !modp->verilatorLib()) {
             AstNode* const cellsp = nodep->cellsp()->unlinkFrBackWithNext();
             // Module may have already linked, so need to pick up these new cells
             VL_RESTORER(m_modp);
@@ -660,8 +685,7 @@ class LinkCellsVisitor final : public VNVisitor {
         // Convert .* to list of pins
         bool pinStar = false;
         bool pinDotName = false;
-        for (AstPin *nextp, *pinp = nodep->pinsp(); pinp; pinp = nextp) {
-            nextp = VN_AS(pinp->nextp(), Pin);
+        for (AstPin* const pinp : nodep->pinspList()) {
             if (pinp->svDotName()) pinDotName = true;
             if (pinp->dotStar()) {
                 if (pinStar) pinp->v3error("Duplicate .* in an instance (IEEE 1800-2023 23.3.2)");
@@ -671,7 +695,7 @@ class LinkCellsVisitor final : public VNVisitor {
             }
         }
         // Convert unnamed pins to pin number based assignments
-        for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+        for (AstPin* const pinp : nodep->pinspList()) {
             if (pinp->name() == "") pinp->name("__pinNumber" + cvtToStr(pinp->pinNum()));
         }
         assignParamNumbers(nodep->paramsp());
@@ -679,7 +703,7 @@ class LinkCellsVisitor final : public VNVisitor {
             nodep->modName(nodep->modp()->name());
             // Note what pins exist
             std::unordered_set<string> ports;  // Symbol table of all connected port names
-            for (AstPin* pinp = nodep->pinsp(); pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+            for (AstPin* const pinp : nodep->pinspList()) {
                 if ((pinStar || pinDotName) && pinp->name().substr(0, 11) == "__pinNumber") {
                     pinp->v3error("Mixing positional and .*/named instantiation connection"
                                   " (IEEE 1800-2023 23.3.2)");
@@ -698,8 +722,7 @@ class LinkCellsVisitor final : public VNVisitor {
             }
             // We search ports, rather than in/out declarations as they aren't resolved yet,
             // and it's easier to do it now than in V3LinkDot when we'd need to repeat steps.
-            for (AstNode* portnodep = nodep->modp()->stmtsp(); portnodep;
-                 portnodep = portnodep->nextp()) {
+            for (AstNode* const portnodep : nodep->modp()->stmtspList()) {
                 if (const AstPort* const portp = VN_CAST(portnodep, Port)) {
 
                     if (ports.find(portp->name()) == ports.end()
@@ -726,8 +749,7 @@ class LinkCellsVisitor final : public VNVisitor {
                             // Get the AstVar for this AstPort, if it exists, using this
                             // inefficient O(n) lookup to match the port name.
                             const AstVar* portp_varp = nullptr;
-                            for (AstNode* module_stmtsp = nodep->modp()->stmtsp(); module_stmtsp;
-                                 module_stmtsp = module_stmtsp->nextp()) {
+                            for (AstNode* const module_stmtsp : nodep->modp()->stmtspList()) {
                                 if (const AstVar* const varp = VN_CAST(module_stmtsp, Var)) {
                                     if (!varp->isParam() && varp->name() == portp->name()) {
                                         // not a parameter, same name, break, this is our varp
@@ -843,22 +865,56 @@ class LinkCellsVisitor final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
     // METHODS
-    void readModNames() {
+    static void warnModDup(AstNodeModule* nodep, const AstNodeModule* firstp) {
+        // Report nodep as a duplicate of firstp; caller deletes nodep
+        if (firstp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
+            || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)) {
+            return;
+        }
+        nodep->v3warn(MODDUP, "Duplicate declaration of "
+                                  << nodep->verilogKwd() << ": " << nodep->prettyNameQ() << '\n'
+                                  << nodep->warnContextPrimary() << '\n'
+                                  << firstp->warnOther()
+                                  << "... Location of original declaration\n"
+                                  << firstp->warnContextSecondary());
+    }
+    static void renamePackageFromModule(AstPackage* pkgp) {
+        // A module and a package may share a name (IEEE 1800-2023 3.13), but their
+        // generated C++ classes may not. ...__Vpkg is stripped by prettyName.
+        if (pkgp->name() != pkgp->origName()) return;  // Already renamed
+        pkgp->name(pkgp->origName() + "__Vpkg");
+        UINFO(9, "Package rename as module has same name " << pkgp);
+    }
+    void readModNames(AstNodeModule* firstp) {
         // mangled_name, BlockOptions
         const V3HierBlockOptSet& hierBlocks = v3Global.opt.hierBlocks();
         const auto hierIt = vlstd::as_const(hierBlocks).find(v3Global.opt.topModule());
         UASSERT((hierIt != hierBlocks.end()) == !!v3Global.opt.hierChild(),
                 "information of the top module must exist if --hierarchical-child is set");
-        // Look at all modules, and store pointers to all module names
-        for (AstNodeModule *nextp, *nodep = v3Global.rootp()->modulesp(); nodep; nodep = nextp) {
+        // Look at the new modules, and store pointers to their names
+        for (AstNodeModule *nextp, *nodep = firstp; nodep; nodep = nextp) {
             nextp = VN_AS(nodep->nextp(), NodeModule);
+            ++m_statModsScanned;
+            if (AstPackage* const pkgp = VN_CAST(nodep, Package)) {
+                // Packages have their own global name space (IEEE 1800-2023 3.13)
+                const auto result = m_packages.emplace(pkgp->origName(), pkgp);
+                if (result.second) {
+                    V3Control::applyModule(pkgp);
+                    if (findModuleGlobalSym(pkgp->origName())) renamePackageFromModule(pkgp);
+                } else if (result.first->second != pkgp) {
+                    warnModDup(pkgp, result.first->second);
+                    pkgp->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(pkgp), pkgp);
+                }
+                continue;
+            }
             if (v3Global.opt.hierChild() && nodep->origName() == hierIt->second.origName()) {
                 nodep->name(hierIt->first);  // Change name of this module to be mangled name
                                              // considering parameter
             }
             const AstNodeModule* const libFoundp
                 = findModuleLibSym(nodep->origName(), nodep->libname());
-            const AstNodeModule* const globalFoundp = findModuleLibSym(nodep->name(), "__GLOBAL");
+            const AstNodeModule* const globalFoundp = findModuleGlobalSym(nodep->name());
             if (libFoundp && libFoundp == nodep) {
                 // Ok
             } else if (libFoundp && !globalFoundp) {
@@ -866,16 +922,8 @@ class LinkCellsVisitor final : public VNVisitor {
                 UASSERT_OBJ(nodep->recursiveClone(), nodep,
                             "Module should be found globally if inserted in lib");
             } else if (libFoundp) {
-                if (!(libFoundp->fileline()->warnIsOff(V3ErrorCode::MODDUP)
-                      || nodep->fileline()->warnIsOff(V3ErrorCode::MODDUP)
-                      || hierBlocks.find(nodep->name()) != hierBlocks.end())) {
-                    nodep->v3warn(MODDUP, "Duplicate declaration of "
-                                              << nodep->verilogKwd() << ": "
-                                              << nodep->prettyNameQ() << '\n'
-                                              << nodep->warnContextPrimary() << '\n'
-                                              << libFoundp->warnOther()
-                                              << "... Location of original declaration\n"
-                                              << libFoundp->warnContextSecondary());
+                if (hierBlocks.find(nodep->name()) == hierBlocks.end()) {
+                    warnModDup(nodep, libFoundp);
                 }
                 nodep->unlinkFrBack();
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -885,10 +933,15 @@ class LinkCellsVisitor final : public VNVisitor {
                 UINFO(9, "Module rename as in multiple libraries " << newName << " <- " << nodep);
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);  // Original name
                 nodep->name(newName);
-                insertModInLib(nodep->name(), "__GLOBAL", nodep);
+                insertModInGlobalLib(nodep->name(), nodep);
+                V3Control::applyModule(nodep);
             } else {
                 insertModInLib(nodep->origName(), nodep->libname(), nodep);
-                insertModInLib(nodep->name(), "__GLOBAL", nodep);
+                insertModInGlobalLib(nodep->name(), nodep);
+                V3Control::applyModule(nodep);
+                // Resolve package/module name collisions, whichever was declared first
+                const auto pkgIt = m_packages.find(nodep->name());
+                if (pkgIt != m_packages.end()) renamePackageFromModule(pkgIt->second);
             }
         }
         // if (debug() >= 9) m_mods.dump(cout, "-syms: ");
@@ -916,6 +969,7 @@ public:
         iterate(nodep);
     }
     ~LinkCellsVisitor() override {
+        V3Stats::addStat("LinkCells, Modules scanned", m_statModsScanned);
         if (debug() >= 5 || dumpGraphLevel() >= 5) { m_mods.dumpFilePrefixed("linkcells"); }
     }
 };

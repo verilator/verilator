@@ -687,6 +687,28 @@ void i_bit121_3d1(CONSTARG svBitVecVal* v) {
     if (!check_3d1(v, 121)) stop();
 }
 
+void i_bit_t121_0d(CONSTARG svBitVecVal* v) {
+    if (!check_0d(v, 121)) stop();
+}
+void i_bit_t121_1d(CONSTARG svBitVecVal* v) {
+    if (!check_1d(v, 121)) stop();
+}
+void i_bit_t121_2d(CONSTARG svBitVecVal* v) {
+    if (!check_2d(v, 121)) stop();
+}
+void i_bit_t121_3d(CONSTARG svBitVecVal* v) {
+    if (!check_3d(v, 121)) stop();
+}
+void i_bit_t121_1d1(CONSTARG svBitVecVal* v) {
+    if (!check_1d1(v, 121)) stop();
+}
+void i_bit_t121_2d1(CONSTARG svBitVecVal* v) {
+    if (!check_2d1(v, 121)) stop();
+}
+void i_bit_t121_3d1(CONSTARG svBitVecVal* v) {
+    if (!check_3d1(v, 121)) stop();
+}
+
 void i_logic1_0d(CONSTARG svLogic v) {
     if (!compare<svScalar>(v, sv_0)) stop();
 }
@@ -756,6 +778,28 @@ void i_logic121_2d1(CONSTARG svLogicVecVal* v) {
     if (!check_2d1(v, 121)) stop();
 }
 void i_logic121_3d1(CONSTARG svLogicVecVal* v) {
+    if (!check_3d1(v, 121)) stop();
+}
+
+void i_logic_t121_0d(CONSTARG svLogicVecVal* v) {
+    if (!check_0d(v, 121)) stop();
+}
+void i_logic_t121_1d(CONSTARG svLogicVecVal* v) {
+    if (!check_1d(v, 121)) stop();
+}
+void i_logic_t121_2d(CONSTARG svLogicVecVal* v) {
+    if (!check_2d(v, 121)) stop();
+}
+void i_logic_t121_3d(CONSTARG svLogicVecVal* v) {
+    if (!check_3d(v, 121)) stop();
+}
+void i_logic_t121_1d1(CONSTARG svLogicVecVal* v) {
+    if (!check_1d1(v, 121)) stop();
+}
+void i_logic_t121_2d1(CONSTARG svLogicVecVal* v) {
+    if (!check_2d1(v, 121)) stop();
+}
+void i_logic_t121_3d1(CONSTARG svLogicVecVal* v) {
     if (!check_3d1(v, 121)) stop();
 }
 
@@ -1138,6 +1182,24 @@ void check_exports() {
     }
 
     {
+        svBitVecVal bit_t121_array[4][3][2][4];
+        set_values(bit_t121_array, 121);
+        e_bit_t121_0d(bit_t121_array[3][2][1]);
+        e_bit_t121_1d(bit_t121_array[2][1][0]);
+        e_bit_t121_2d(bit_t121_array[1][0][0]);
+        e_bit_t121_3d(bit_t121_array[0][0][0]);
+    }
+    {
+        svBitVecVal array[1][1][1][4];
+        set_uint(array[0][0][0], 52, 121);
+        e_bit_t121_1d1(array[0][0][0]);
+        set_uint(array[0][0][0], 53, 121);
+        e_bit_t121_2d1(array[0][0][0]);
+        set_uint(array[0][0][0], 54, 121);
+        e_bit_t121_3d1(array[0][0][0]);
+    }
+
+    {
         svLogicVecVal logic7_array[4][3][2][1];
         set_values(logic7_array, 7);
         e_logic7_0d(logic7_array[3][2][1]);
@@ -1171,6 +1233,24 @@ void check_exports() {
         e_logic121_2d1(array[0][0][0]);
         set_uint(array[0][0][0], 54, 121);
         e_logic121_3d1(array[0][0][0]);
+    }
+
+    {
+        svLogicVecVal logic_t121_array[4][3][2][4];
+        set_values(logic_t121_array, 121);
+        e_logic_t121_0d(logic_t121_array[3][2][1]);
+        e_logic_t121_1d(logic_t121_array[2][1][0]);
+        e_logic_t121_2d(logic_t121_array[1][0][0]);
+        e_logic_t121_3d(logic_t121_array[0][0][0]);
+    }
+    {
+        svLogicVecVal array[1][1][1][4];
+        set_uint(array[0][0][0], 52, 121);
+        e_logic_t121_1d1(array[0][0][0]);
+        set_uint(array[0][0][0], 53, 121);
+        e_logic_t121_2d1(array[0][0][0]);
+        set_uint(array[0][0][0], 54, 121);
+        e_logic_t121_3d1(array[0][0][0]);
     }
 
     {

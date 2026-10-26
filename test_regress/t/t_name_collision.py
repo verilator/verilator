@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--coverage'])
+test.compile(verilator_flags2=['--coverage', '-fno-inline'])
 
 test.execute()
 
