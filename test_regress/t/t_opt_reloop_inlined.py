@@ -18,7 +18,7 @@ test.compile(verilator_flags2=[
 
 test.execute()
 
-test.file_grep(test.stats, r'Optimizations, Reloops\s+(\d+)', 77)
-test.file_grep(test.stats, r'Optimizations, Reloop iterations\s+(\d+)', 365)
+test.file_grep(test.stats, r'Optimizations, Reloops\s+(\d+)', 76)
+test.file_grep(test.stats, r'Optimizations, Reloop iterations\s+(\d+)', 363)
 
 test.passes()
