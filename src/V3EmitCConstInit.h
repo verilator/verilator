@@ -206,5 +206,15 @@ protected:
                                            + "::" + varp->nameProtect();
         putnbs(varp, varp->dtypep()->cType(name, false, false));
         emitInitializer(VN_AS(varp->valuep(), NodeExpr));
+        // Account for file splitting
+        varp->valuep()->foreach([this](const AstConst* constp) {
+            if (constp->num().isString()) {
+                splitSizeInc(AstNode::INSTR_COUNT_STR);
+            } else if (constp->isWide()) {
+                splitSizeInc(constp->widthWords());
+            } else {
+                splitSizeInc(1);
+            }
+        });
     }
 };

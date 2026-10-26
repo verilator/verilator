@@ -19,7 +19,8 @@ if test.have_dev_gcov:
 
 test.compile(v_flags2=[
     "--binary",
-    test.build_jobs_groups,
+    test.build_jobs,
+    "--output-groups 0",
     "--vpi",
     "--CFLAGS -O0",
     "-Wall",
