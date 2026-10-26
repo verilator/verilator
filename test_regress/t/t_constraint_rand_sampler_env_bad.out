@@ -1,2 +1,2 @@
-%Error: VERILATOR_RAND_SAMPLER must be 'default' or 'solver': fast
+%Error: VERILATOR_RAND_SAMPLER must be 'default' or 'solver': 'fast'
 Aborting...

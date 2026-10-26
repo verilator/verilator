@@ -3168,7 +3168,8 @@ static void vlRandSamplerParse(const std::string& str, const char* filenamep, co
     } else if (str == "solver") {
         samplerr = VerilatedRandSampler::SAMPLER_SOLVER;
     } else {
-        const std::string msg = std::string{whatp} + " must be 'default' or 'solver': " + str;
+        const std::string msg
+            = std::string{whatp} + " must be 'default' or 'solver': '" + str + "'";
         VL_FATAL_MT(filenamep, 0, "", msg.c_str());
     }
 }

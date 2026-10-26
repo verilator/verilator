@@ -214,6 +214,7 @@ enum class VerilatedAssertCtlQuery : uint8_t {
     ASSERT_CTL_PASS_ON_NONVACUOUS,
     ASSERT_CTL_FAIL_ON,
 };
+
 /// Which component samples randomize() results (+verilator+rand+sampler+<name>)
 enum class VerilatedRandSampler : uint8_t {
     SAMPLER_DEFAULT = 0,  // Verilator samples over the solver: UniGen2 cells, diversity queries
@@ -738,7 +739,7 @@ public:
     /// Return which component samples randomize() results
     VerilatedRandSampler randSampler() const VL_MT_SAFE { return m_ns.m_randSampler; }
     /// Select which component samples randomize() results; default from
-    /// $VERILATOR_RAND_SAMPLER, else as configured at build time, else Verilator
+    /// $VERILATOR_RAND_SAMPLER, else as configured at build time, else `default`
     void randSampler(VerilatedRandSampler sampler) VL_MT_SAFE { m_ns.m_randSampler = sampler; }
     /// Return default random seed
     int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }

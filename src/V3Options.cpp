@@ -853,6 +853,18 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
     return V3Os::filenameCleanup(var);
 }
 
+string V3Options::getenvVERILATOR_RAND_SAMPLER() {
+    string var = V3Os::getenvStr("VERILATOR_RAND_SAMPLER", "");
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    const string defenv = string{DEFENV_VERILATOR_RAND_SAMPLER};
+    if (var == "" && defenv != "") {
+        var = defenv;
+        V3Os::setenvStr("VERILATOR_RAND_SAMPLER", var, "Hardcoded at build time");
+    }
+    return var;
+}
+
 string V3Options::getenvVERILATOR_ROOT() {
     string var = V3Os::getenvStr("VERILATOR_ROOT", "");
     // Treat compiled-in DEFENV string literals as C-strings to enable
@@ -864,18 +876,6 @@ string V3Options::getenvVERILATOR_ROOT() {
     }
     if (var == "") v3fatal("$VERILATOR_ROOT needs to be in environment\n");
     return V3Os::filenameCleanup(var);
-}
-
-string V3Options::getenvVERILATOR_RAND_SAMPLER() {
-    string var = V3Os::getenvStr("VERILATOR_RAND_SAMPLER", "");
-    // Treat compiled-in DEFENV string literals as C-strings to enable
-    // binary patching for relocatable installs (e.g. conda)
-    const string defenv = string{DEFENV_VERILATOR_RAND_SAMPLER};
-    if (var == "" && defenv != "") {
-        var = defenv;
-        V3Os::setenvStr("VERILATOR_RAND_SAMPLER", var, "Hardcoded at build time");
-    }
-    return var;
 }
 
 string V3Options::getenvVERILATOR_SOLVER() {

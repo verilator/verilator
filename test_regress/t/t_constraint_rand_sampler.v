@@ -12,7 +12,7 @@
 // Repeated randomize() of each kind of constraint set: scalars (UniGen2 and
 // diversity pins by default), an array (XOR diversity rounds) and
 // solve...before (phased, with a diversity round per layer), and a randc
-// cycle. The driver checks which solver queries each run sends.
+// cycle. The drivers check the sampler named in the solver log.
 
 module t;
 
