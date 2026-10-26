@@ -1502,7 +1502,7 @@ class TaskVisitor final : public VNVisitor {
                         "Only functions should have return values");
             // If it has a return value, capture it
             cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
-            const std::string sel = rtnvscp->varp()->basicp()->isDpiPrimitive() ? "" : "[0]";
+            const std::string sel = rtnvscp->varp()->dtypep()->isDpiPrimitive() ? "" : "[0]";
             AstCStmt* const funcAssignp = new AstCStmt{nodep->fileline()};
             funcAssignp->add(rtnvscp->varp()->name() + tmpSuffixp + sel);  // LHS
             funcAssignp->add(" = ");
