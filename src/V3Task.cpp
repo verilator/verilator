@@ -2092,7 +2092,7 @@ class TaskVisitor final : public VNVisitor {
                 } 
                 else //if(AstArraySel* arrSelp = VN_CAST(nodep->lhsp(), ArraySel))
                 { // array select is something idk how to handle yet. normally happens in a gen block
-                    if(AstVarRef* rhspVarRef = VN_CAST(rhsp, VarRef)){
+                    if(VN_IS(rhsp, VarRef)){
                         rhsClassRef->classp()->op1p()->user4p(nodep->lhsp()); // Set a user3p flag on this node so it get skipped in makeUserFunc TODO test this on a class with multiple functions
                     }
                     nodep->lhsp()->user4p(rhsp);
