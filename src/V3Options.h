@@ -883,6 +883,7 @@ public:
     static string getenvSYSTEMC_ARCH();
     static string getenvSYSTEMC_INCLUDE();
     static string getenvSYSTEMC_LIBDIR();
+    static string getenvVERILATOR_RAND_SAMPLER();
     static string getenvVERILATOR_ROOT();
     static string getenvVERILATOR_SOLVER();
     static string getStdPackagePath();
