@@ -27,10 +27,18 @@ class TwoRandc;
   constraint rel {x == (a ^ b);}
 endclass
 
+// The randc variable is named b, which the malformed-value tampers target
+class BadDraw;
+  randc bit [1:0] b;
+  rand bit [1:0] x;
+  constraint rel {x == b;}
+endclass
+
 module t;
   Flat f;
   Phased p;
   TwoRandc two;
+  BadDraw bad;
   string mode;
   int ok;
   int good;
@@ -53,6 +61,15 @@ module t;
       two.srandom(155);
       for (int i = 0; i < 12; ++i) begin
         ok = two.randomize();
+        if (ok == 0)++fails;
+        else ++good;
+      end
+    end
+    else if (mode == "bad_draw") begin
+      bad = new;
+      bad.srandom(7);
+      for (int i = 0; i < 6; ++i) begin
+        ok = bad.randomize();
         if (ok == 0)++fails;
         else ++good;
       end

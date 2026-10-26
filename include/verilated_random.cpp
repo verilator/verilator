@@ -24,7 +24,6 @@
 #include "verilated_random.h"
 
 #include <cassert>
-#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -948,12 +947,6 @@ bool VlRandomizer::constraintIsRandcOnly(const std::vector<std::string>& varName
     return true;
 }
 
-// Model literals are "#b<bits>" or "#x<hex>", and randc is capped at 32 bits
-static uint64_t parseSmtLiteralU64(const std::string& lit) {
-    if (VL_UNCOVERABLE(lit.size() < 3 || lit[0] != '#')) return 0;
-    return std::strtoull(lit.c_str() + 2, nullptr, lit[1] == 'b' ? 2 : 16);
-}
-
 void VlRandomizer::recordUndrawnValues(const std::map<std::string, std::string>& drawn) {
     std::vector<std::string> names;
     activeRandcVars(names);
@@ -966,7 +959,11 @@ void VlRandomizer::recordUndrawnValues(const std::map<std::string, std::string>&
 
 void VlRandomizer::recordDrawnValues(const std::map<std::string, std::string>& drawn) {
     for (const auto& entry : drawn) {
-        m_randcUsedValues[entry.first].insert(parseSmtLiteralU64(entry.second));
+        // drawRandcValues accepted only values that passed validSMTNum
+        VlWide<VL_WQ_WORDS_E> qowp;
+        VL_SET_WQ(qowp, 0ULL);
+        parseSMTNum(m_vars.at(entry.first)->width(), qowp, entry.second);
+        m_randcUsedValues[entry.first].insert(VL_SET_QW(qowp));
     }
 }
 
@@ -1017,8 +1014,10 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
         os << "(get-value (";
         for (const auto& name : names) os << name << " ";
         os << "))\n";
-        // A reply not naming the drawn variable would leave it unpinned and solved jointly
-        const bool got = readPhaseValues(sess, drawnr) && drawnr.count(names.front());
+        // A reply not naming the drawn variable would leave it unpinned and solved jointly,
+        // and a malformed value would corrupt the cycle history
+        const bool got = readPhaseValues(sess, drawnr) && drawnr.count(names.front())
+                         && validSMTNum(drawnr.at(names.front()));
         os << "(reset)\n";
         return got;
     }
