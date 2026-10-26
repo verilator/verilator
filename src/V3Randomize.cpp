@@ -939,7 +939,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNode* m_firstExpressionInsideIndexp = nullptr;
     AstConstraintForeach* m_foreachp = nullptr;  // Innermost constraint-foreach being processed
     std::set<const AstVar*> m_foreachIdxVars;  // Index vars of all enclosing constraint-foreaches
-    std::set<std::string> m_constraintVars;  // Solver variables the constraint being lowered names
+    // Solver variables named by constraints folded into a single expression (m_wantSingle),
+    // handed to the constraint that replaces the fold, which takes them over and emits them
+    std::set<std::string> m_constraintVars;
 
     class NestedAccessPath final {
         AstMemberSel* m_topNestedArrayMemberSelp
@@ -1130,15 +1132,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         return name;
     }
     // Record the solver symbols an expression names, for the runtime's randc draw
-    void collectConstraintVars(AstNode* nodep) {
-        nodep->foreach([this](const AstNodeVarRef* refp) {
-            if (refp->user1()) m_constraintVars.insert(solverName(refp));
+    static void collectConstraintVars(AstNode* nodep, std::set<std::string>& varsr) {
+        nodep->foreach([&varsr](const AstNodeVarRef* refp) {
+            if (refp->user1()) varsr.insert(solverName(refp));
         });
     }
     // C++ initializer list of the recorded symbols
-    std::string constraintVarsList() const {
+    static std::string constraintVarsList(const std::set<std::string>& vars) {
         std::string list = "{";
-        for (const std::string& name : m_constraintVars) {
+        for (const std::string& name : vars) {
             if (list.size() > 1) list += ", ";
             list += "\"" + V3OutFormatter::quoteNameControls(name) + "\"";
         }
@@ -3138,12 +3140,17 @@ class ConstraintExprVisitor final : public VNVisitor {
         // are rewritten by extractConditionalDisableSofts() before this
         // visitor runs, so anything we see here is unconditional.
         VL_RESTORER(m_firstExpressionInsideIndexp);
+        // Outside a fold this constraint is emitted here, so it takes over the names of the
+        // constraints folded into it, leaving m_constraintVars empty on every exit
+        std::set<std::string> vars;
+        if (!m_wantSingle) vars.swap(m_constraintVars);
+        std::set<std::string>& varsr = m_wantSingle ? m_constraintVars : vars;
         if (nodep->isDisableSoft()) {
             nodep->replaceWith(buildDisableSoftCallStmt(nodep));
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        collectConstraintVars(nodep->exprp());
+        collectConstraintVars(nodep->exprp(), varsr);
         // IEEE 1800-2023 18.5.1: A bare expression used as a constraint is
         // implicitly treated as "expr != 0" when wider than 1 bit.
         // Must wrap before iterateChildren, which converts to SMT format.
@@ -3176,9 +3183,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (method == VCMethod::RANDOMIZER_HARD) {
             // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
             callp->addPinsp(
-                new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, constraintVarsList()});
+                new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, constraintVarsList(vars)});
         }
-        m_constraintVars.clear();
         // Pass filename, lineno, and source as separate arguments
         // This allows EmitC to call protect() on filename, similar to VL_STOP
         // Add filename parameter
