@@ -1,0 +1,8 @@
+%Error: t/t_sys_fscanf_unsup.v:13:12: Unsupported: $fscanf/$sscanf in this context; the destination cannot be written back.
+   13 |   always @($fscanf(f, "%d", d1)) d1 = d1 + 1;   
+      |            ^~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_sys_fscanf_unsup.v:14:12: Unsupported: $fscanf/$sscanf in this context; the destination cannot be written back.
+   14 |   always @($sscanf(s, "%d", d2)) d2 = d2 + 1;   
+      |            ^~~~~~~
+%Error: Exiting due to
