@@ -683,9 +683,6 @@ public:
     }
 
     ASTGEN_MEMBERS_AstAddrOfCFunc;
-    bool sameNode(const AstNode* samep) const override {
-        return funcp() == VN_DBG_AS(samep, AddrOfCFunc)->funcp();
-    }
     void dump(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
@@ -806,9 +803,6 @@ public:
         addPinsp(pinsp);
     }
     ASTGEN_MEMBERS_AstCFuncHard;
-    bool sameNode(const AstNode* samep) const override {
-        return function() == VN_DBG_AS(samep, CFuncHard)->function();
-    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return function().ascii(); }
