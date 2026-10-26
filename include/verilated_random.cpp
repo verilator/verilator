@@ -976,7 +976,8 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
     VL_REQUIRES(sess.m_mutex) {
     std::vector<std::string> names;
     activeRandcVars(names);
-    // Only a lone cycling variable is drawn ahead of the rand variables
+    // Only a lone cycling variable is drawn ahead of the rand variables; two or
+    // more are left to the joint solve (see the declaration)
     if (names.size() != 1) return true;
     std::iostream& os = sess.os();
     // A cleared history cannot exhaust again, so this retries at most once

@@ -306,8 +306,11 @@ class VlRandomizer VL_NOT_FINAL {
     void activeRandcVars(std::vector<std::string>& namesr) const;
     // True if every solver variable a constraint names is randc or frozen
     bool constraintIsRandcOnly(const std::vector<std::string>& varNames) const;
-    // Draw the next cyclic value per randc variable, blind to rand feasibility
-    // (IEEE 1800-2023 18.4.2: randc variables are solved before rand ones)
+    // When exactly one randc variable is active, draw its next cyclic value blind
+    // to rand feasibility (IEEE 1800-2023 18.4.2: randc variables are solved
+    // before rand ones). Limitation: with two or more active randc variables
+    // nothing is drawn and they are solved jointly with the rand variables,
+    // which does not follow 18.4.2.
     bool drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
                          const std::vector<std::string>& uniqueExprs,
                          std::map<std::string, std::string>& drawnr);
