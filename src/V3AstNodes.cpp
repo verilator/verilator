@@ -730,17 +730,17 @@ bool AstBasicDType::matchingDTypeNode(const AstNodeDType* samep) const {
 
     if (keyword().matchingType() != sp->keyword().matchingType()) return false;
     if (numeric().isSigned() != sp->numeric().isSigned()) return false;
-
-    // Both are ranged: ranges must match exactly (IEEE 1800-2023 6.22.1(e))
-    if (isRanged() && sp->isRanged()) { return left() == sp->left() && right() == sp->right(); }
     if (width() != sp->width()) return false;
-    // Neither is ranged: matching keywords with same width/signing match
-    if (!isRanged() && !sp->isRanged()) return true;
+
+    // Both have explicit ranges: ranges must match exactly (IEEE 1800-2023 6.22.1(e))
+    if (rangep() && sp->rangep()) { return left() == sp->left() && right() == sp->right(); }
+    // Neither has explicit ranges: matching keywords with same width/signing match
+    if (!rangep() && !sp->rangep()) return true;
 
     // One is predefined integer type and the other is a vector (IEEE 1800-2023 6.22.1(e)):
-    const AstBasicDType* const predp = isRanged() ? sp : this;
+    const AstBasicDType* const predp = rangep() ? sp : this;
     if (!predp->keyword().isPredefinedInteger()) return false;
-    const AstBasicDType* const vecp = isRanged() ? this : sp;
+    const AstBasicDType* const vecp = rangep() ? this : sp;
     return !vecp->ascending() && vecp->lo() == 0;
 }
 string AstBasicDType::prettyDTypeName(bool full) const {
@@ -4356,10 +4356,6 @@ bool AstUnsizedArrayDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
     return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep());
 }
-bool AstUnsizedArrayDType::matchingDTypeNode(const AstNodeDType* samep) const {
-    const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
-    return subDTypep()->matchingDType(asamep->subDTypep());
-}
 void AstUntil::dump(std::ostream& str) const {
     Super::dump(str);
     if (isStrong()) str << " [strong]";
@@ -4909,6 +4905,10 @@ void AstWildcardArrayDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "[*]";
 }
+bool AstWildcardArrayDType::matchingDTypeNode(const AstNodeDType* samep) const {
+    const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
+    return subDTypep()->matchingDType(asamep->subDTypep());
+}
 string AstWildcardArrayDType::prettyDTypeName(bool full) const {
     return subDTypep()->prettyDTypeName(full) + "$[*]";
 }
@@ -4920,10 +4920,6 @@ bool AstWildcardArrayDType::sameNode(const AstNode* samep) const {
 bool AstWildcardArrayDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
     return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep());
-}
-bool AstWildcardArrayDType::matchingDTypeNode(const AstNodeDType* samep) const {
-    const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
-    return subDTypep()->matchingDType(asamep->subDTypep());
 }
 void AstWith::dump(std::ostream& str) const {
     Super::dump(str);

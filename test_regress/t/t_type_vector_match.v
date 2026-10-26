@@ -105,7 +105,6 @@ module t;
 
   int v_dyn_int[];
   bit signed [31:0] v_dyn_s32[];
-  string v_dyn_str[];
   /* verilator lint_off ASCRANGE */
   bit signed [0:31] v_dyn_s32_asc[];
   /* verilator lint_on ASCRANGE */
@@ -133,11 +132,6 @@ module t;
   typedef bit signed [31:0] my_queue_vec_t[$];
   my_queue_t v_tdef_queue_a;
   my_queue_vec_t v_tdef_queue_b;
-
-  function void check_unsized(int a[], bit signed [31:0] b[], string c[]);
-    `checkd(type(a) == type(b), 1'b1);
-    `checkd(type(a) == type(c), 1'b0);
-  endfunction
 
   byte v_byte_arr[4];
   bit signed [7:0] v_bit_s8_arr[4];
@@ -319,8 +313,6 @@ module t;
 
     `checkd(type(v_tdef_dyn_a) == type(v_tdef_dyn_b), 1'b1);
     `checkd(type(v_tdef_queue_a) == type(v_tdef_queue_b), 1'b1);
-
-    check_unsized(v_dyn_int, v_dyn_s32, v_dyn_str);
 
     case (type(v_byte))
       type(v_bit_s8_asc): case_ok = 1;
