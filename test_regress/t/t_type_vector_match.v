@@ -36,6 +36,7 @@ module t;
   time v_time;
 
   bit signed [7:0] v_bit_s8;
+  bit signed [7:0] v_bit_s8_copy;
   /* verilator lint_off ASCRANGE */
   bit signed [0:7] v_bit_s8_asc;
   /* verilator lint_on ASCRANGE */
@@ -43,6 +44,20 @@ module t;
   logic signed [7:0] v_logic_s8;
   bit signed [6:0] v_bit_s7;
   bit signed [8:1] v_bit_s8_offset;
+
+  bit v_scalar_bit;
+  bit [0:0] v_vec_bit_1;
+  logic v_scalar_logic;
+  logic [0:0] v_vec_logic_1;
+
+  wire [7:0] v_implicit_8;
+  logic [7:0] v_logic_8;
+  reg [7:0] v_reg_8;
+
+  logic [1:0][7:0] v_pack_a;
+  logic [1:0][7:0] v_pack_b;
+  logic [2:1][7:0] v_pack_off;
+  logic [1:0][6:0] v_pack_diff_sub;
 
   bit signed [15:0] v_bit_s16;
   bit unsigned [15:0] v_bit_u16;
@@ -88,28 +103,53 @@ module t;
   my_enum_a_t v_enum_a2;
   my_enum_b_t v_enum_b;
 
-  int v_dyn_int [];
-  bit signed [31:0] v_dyn_s32 [];
+  int v_dyn_int[];
+  bit signed [31:0] v_dyn_s32[];
+  string v_dyn_str[];
   /* verilator lint_off ASCRANGE */
-  bit signed [0:31] v_dyn_s32_asc [];
+  bit signed [0:31] v_dyn_s32_asc[];
   /* verilator lint_on ASCRANGE */
-  int v_queue_int [$];
-  bit signed [31:0] v_queue_s32 [$];
+  int v_queue_int[$];
+  bit signed [31:0] v_queue_s32[$];
   /* verilator lint_off ASCRANGE */
-  bit signed [0:31] v_queue_s32_asc [$];
+  bit signed [0:31] v_queue_s32_asc[$];
   /* verilator lint_on ASCRANGE */
 
-  byte v_byte_arr [4];
-  bit signed [7:0] v_bit_s8_arr [4];
-  bit signed [7:0] v_bit_s8_arr_rev [3:0];
+  int v_assoc_a[int];
+  bit signed [31:0] v_assoc_b[bit signed [31:0]];
+  int v_assoc_key_mismatch[string];
+  string v_assoc_elem_mismatch[int];
 
-  byte v_byte_c_arr [3:0];
+  int v_wild_a[*];
+  bit signed [31:0] v_wild_b[*];
+  string v_wild_c[*];
+
+  typedef int my_dyn_t[];
+  typedef bit signed [31:0] my_dyn_vec_t[];
+  my_dyn_t v_tdef_dyn_a;
+  my_dyn_vec_t v_tdef_dyn_b;
+
+  typedef int my_queue_t[$];
+  typedef bit signed [31:0] my_queue_vec_t[$];
+  my_queue_t v_tdef_queue_a;
+  my_queue_vec_t v_tdef_queue_b;
+
+  function void check_unsized(int a[], bit signed [31:0] b[], string c[]);
+    `checkd(type(a) == type(b), 1'b1);
+    `checkd(type(a) == type(c), 1'b0);
+  endfunction
+
+  byte v_byte_arr[4];
+  bit signed [7:0] v_bit_s8_arr[4];
+  bit signed [7:0] v_bit_s8_arr_rev[3:0];
+
+  byte v_byte_c_arr[3:0];
   /* verilator lint_off ASCRANGE */
-  byte v_byte_asc_arr [0:3];
-  byte v_byte_off_arr [1:4];
+  byte v_byte_asc_arr[0:3];
+  byte v_byte_off_arr[1:4];
   /* verilator lint_on ASCRANGE */
-  byte v_byte_expr_arr [4-1:0];
-  byte v_byte_c3_arr [3:0];
+  byte v_byte_expr_arr[4-1:0];
+  byte v_byte_c3_arr[3:0];
 
   localparam bit LP_BYTE_EQ = (type(v_byte) == type(v_bit_s8));
   localparam bit LP_BYTE_NE = (type(v_byte) != type(v_bit_s8));
@@ -255,6 +295,32 @@ module t;
 
     `checkd(type(v_integer) == type(v_bit_s32), 1'b0);
     `checkd(type(v_int) == type(v_logic_s32), 1'b0);
+
+    `checkd(type(v_bit_s8) == type(v_bit_s8_copy), 1'b1);
+    `checkd(type(v_bit_s8) == type(v_bit_s8_offset), 1'b0);
+    `checkd(type(v_bit_s8) == type(v_bit_s8_asc), 1'b0);
+
+    `checkd(type(v_scalar_bit) == type(v_vec_bit_1), 1'b0);
+    `checkd(type(v_scalar_logic) == type(v_vec_logic_1), 1'b0);
+
+    `checkd(type(v_implicit_8) == type(v_logic_8), 1'b1);
+    `checkd(type(v_reg_8) == type(v_logic_8), 1'b1);
+
+    `checkd(type(v_pack_a) == type(v_pack_b), 1'b1);
+    `checkd(type(v_pack_a) == type(v_pack_off), 1'b0);
+    `checkd(type(v_pack_a) == type(v_pack_diff_sub), 1'b0);
+
+    `checkd(type(v_assoc_a) == type(v_assoc_b), 1'b1);
+    `checkd(type(v_assoc_a) == type(v_assoc_key_mismatch), 1'b0);
+    `checkd(type(v_assoc_a) == type(v_assoc_elem_mismatch), 1'b0);
+
+    `checkd(type(v_wild_a) == type(v_wild_b), 1'b1);
+    `checkd(type(v_wild_a) == type(v_wild_c), 1'b0);
+
+    `checkd(type(v_tdef_dyn_a) == type(v_tdef_dyn_b), 1'b1);
+    `checkd(type(v_tdef_queue_a) == type(v_tdef_queue_b), 1'b1);
+
+    check_unsized(v_dyn_int, v_dyn_s32, v_dyn_str);
 
     case (type(v_byte))
       type(v_bit_s8_asc): case_ok = 1;

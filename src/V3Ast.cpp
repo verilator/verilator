@@ -1728,7 +1728,6 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     const VCastable castable = VCastable::UNSUPPORTED;
     toDtp = toDtp->skipRefToEnump();
     fromDtp = fromDtp->skipRefToEnump();
-    if (toDtp == fromDtp) return VCastable::MATCHING;
     if (toDtp->matchingDType(fromDtp)) return VCastable::MATCHING;
     if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
     // UNSUP unpacked struct/unions (treated like BasicDType)
