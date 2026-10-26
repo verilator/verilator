@@ -273,7 +273,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     AstNodeModule* findModuleLibSym(const string& modName, const string& libname) {
         // Given module name and library name, find within that exact library
-        const VSymEnt* const libSymp = m_mods.rootp()->findIdFallback(libname);
+        VSymEnt* const libSymp = m_mods.rootp()->findIdFallback(libname);
         if (!libSymp) return nullptr;
         const VSymEnt* const foundp = libSymp->findIdFallback(modName);
         return foundp ? VN_AS(foundp->nodep(), NodeModule) : nullptr;

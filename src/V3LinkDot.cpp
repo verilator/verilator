@@ -2170,7 +2170,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     new AstClassOrPackageRef{nodep->fileline(), classp->name(), classp, nullptr});
             }
         }
-        m_curSymp->importFromPackage(m_statep->symsp(), srcp, nodep->name());
+        m_curSymp->importFromPackage(srcp, nodep->name());
         UINFO(9, "    Link Done: " << nodep);
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
@@ -3816,7 +3816,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         AstClass* const baseClassp = cextp->classp();
         VSymEnt* const srcp = m_statep->getNodeSym(baseClassp);
         importDerivedClass(nodep, srcp, baseClassp);
-        if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
+        if (!cextp->isImplements()) m_curSymp->importFromClass(srcp);
     }
     void classExtendImport(AstClass* nodep) {
         // A class reference might be to a class that is later in Ast due to
@@ -6812,6 +6812,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     state.dumpSelf("linkdot-preresolve");
     const LinkDotResolveVisitor visitor{rootp, &state};
     state.dumpSelf("linkdot-done");
+    V3Stats::addStatSum("LinkDot, Imported symbols", state.symsp()->importedCount());
 }
 
 void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {
