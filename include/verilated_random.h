@@ -256,8 +256,11 @@ class VlSolverSession;
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
-    std::vector<std::vector<std::string>>
-        m_constraintVars;  // Solver variables each hard constraint names, same order
+    // Solver variables the hard constraints name, flattened in m_constraints order; the
+    // string literals of the generated code, so stored without copying
+    std::vector<const char*> m_constraintVarNames;
+    // Per hard constraint, the end of its names in m_constraintVarNames
+    std::vector<size_t> m_constraintVarEnds;
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::vector<std::string> m_softConstraints;  // Soft constraints
@@ -305,8 +308,8 @@ class VlRandomizer VL_NOT_FINAL {
     // Registered randc variables this randomize() may write, fixed for the call; nextFlat
     // and nextPhased compute them once and pass them as randcNames
     void activeRandcVars(std::vector<std::string>& namesr) const;
-    // True if every solver variable a constraint names is randc or frozen
-    bool constraintIsRandcOnly(const std::vector<std::string>& varNames) const;
+    // True if every solver variable the n'th hard constraint names is randc or frozen
+    bool constraintIsRandcOnly(size_t n) const;
     // When exactly one randc variable is active, draw its next cyclic value blind
     // to rand feasibility (IEEE 1800-2023 18.4.2: randc variables are solved
     // before rand ones). Limitation: with two or more active randc variables
@@ -981,6 +984,8 @@ public:
         }
     }
 
+    // varNames are the solver variables the constraint names, kept without copying until
+    // clearConstraints(), so they must live that long (the generated code passes literals)
     void hard(std::string&& constraint, std::initializer_list<const char*> varNames = {},
               const char* filename = "", uint32_t linenum = 0, const char* source = "");
     void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,

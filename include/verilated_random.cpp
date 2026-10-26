@@ -934,9 +934,12 @@ void VlRandomizer::activeRandcVars(std::vector<std::string>& namesr) const {
     }
 }
 
-bool VlRandomizer::constraintIsRandcOnly(const std::vector<std::string>& varNames) const {
-    if (varNames.empty()) return false;
-    for (const std::string& name : varNames) {
+bool VlRandomizer::constraintIsRandcOnly(size_t n) const {
+    const size_t begin = n ? m_constraintVarEnds[n - 1] : 0;
+    const size_t end = m_constraintVarEnds[n];
+    if (begin == end) return false;
+    for (size_t i = begin; i < end; ++i) {
+        const std::string name = m_constraintVarNames[i];
         if (m_randcVarNames.count(name)) continue;
         const auto it = m_vars.find(name);
         if (it == m_vars.end() || !isFrozenVar(name, *it->second)) return false;
@@ -980,7 +983,7 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
         }
         // Only constraints evaluable at randc-solve time filter the cycle domain
         for (size_t n = 0; n < m_constraints.size(); ++n) {
-            if (!constraintIsRandcOnly(m_constraintVars[n])) continue;
+            if (!constraintIsRandcOnly(n)) continue;
             os << "(assert (= #b1 " << m_constraints[n] << "))\n";
         }
         emitRandcExclusions(os, randcNames);
@@ -1882,7 +1885,8 @@ void VlRandomizer::hard(std::string&& constraint, std::initializer_list<const ch
                         const char* filename, uint32_t linenum, const char* source) {
     m_constraints.emplace_back(std::move(constraint));
     // Kept even before any randc is marked: a randomize() with clause marks it afterwards
-    m_constraintVars.emplace_back(varNames.begin(), varNames.end());
+    m_constraintVarNames.insert(m_constraintVarNames.end(), varNames.begin(), varNames.end());
+    m_constraintVarEnds.push_back(m_constraintVarNames.size());
     // Format constraint location: "filename:linenum   source"
     if (filename[0] != '\0' || source[0] != '\0') {
         std::string line;
@@ -1911,7 +1915,8 @@ void VlRandomizer::disable_soft(const std::string& varName) {
 
 void VlRandomizer::clearConstraints() {
     m_constraints.clear();
-    m_constraintVars.clear();
+    m_constraintVarNames.clear();
+    m_constraintVarEnds.clear();
     m_constraints_line.clear();
     m_solveBefore.clear();
     m_softConstraints.clear();
@@ -1921,7 +1926,8 @@ void VlRandomizer::clearConstraints() {
 
 void VlRandomizer::clearAll() {
     m_constraints.clear();
-    m_constraintVars.clear();
+    m_constraintVarNames.clear();
+    m_constraintVarEnds.clear();
     m_softConstraints.clear();
     m_vars.clear();
     m_randcVarNames.clear();
