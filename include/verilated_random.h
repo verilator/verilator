@@ -298,11 +298,12 @@ class VlRandomizer VL_NOT_FINAL {
     void reportUnsatCore(VlSolverSession& sess);
     // Used-value exclusions for the randc variables this call may write; a drawn
     // value is never a used one, so its pin already satisfies them
-    void emitRandcExclusions(std::ostream& os) const;
+    void emitRandcExclusions(std::ostream& os, const std::vector<std::string>& randcNames) const;
     // Record the solved value of every randc variable this call wrote, drawn ones
     // included as they are pinned to their drawn value
-    void recordRandcValues();
-    // Registered randc variables this randomize() may write
+    void recordRandcValues(const std::vector<std::string>& randcNames);
+    // Registered randc variables this randomize() may write, fixed for the call; nextFlat
+    // and nextPhased compute them once and pass them as randcNames
     void activeRandcVars(std::vector<std::string>& namesr) const;
     // True if every solver variable a constraint names is randc or frozen
     bool constraintIsRandcOnly(const std::vector<std::string>& varNames) const;
@@ -312,11 +313,13 @@ class VlRandomizer VL_NOT_FINAL {
     // nothing is drawn and they are solved jointly with the rand variables,
     // which does not follow 18.4.2.
     bool drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
+                         const std::vector<std::string>& randcNames,
                          const std::vector<std::string>& uniqueExprs,
                          std::map<std::string, std::string>& drawnr);
     // True if a randc value left in the cycle still admits a solution;
     // unsatr distinguishes a proven-empty tail from a solver that gave up
-    bool tailFeasible(VlSolverSession& sess, const std::vector<std::string>& uniqueExprs,
+    bool tailFeasible(VlSolverSession& sess, const std::vector<std::string>& randcNames,
+                      const std::vector<std::string>& uniqueExprs,
                       const std::map<std::string, std::string>& drawn, bool& unsatr);
     // Consume the draw of a call that fails while values are left in the cycle
     void recordDrawnValues(const std::map<std::string, std::string>& drawn);
@@ -390,6 +393,7 @@ class VlRandomizer VL_NOT_FINAL {
                     const std::vector<std::string>& uniqueExprs);
     bool solvePhases(VlRNG& rngr, VlSolverSession& sess,
                      const std::vector<std::vector<std::string>>& layers,
+                     const std::vector<std::string>& randcNames,
                      const std::vector<std::string>& uniqueExprs,
                      const std::map<std::string, std::string>& drawn, bool& unsatr);
     bool solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
