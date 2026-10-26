@@ -18,6 +18,8 @@
 // Each module:
 //      Look for TASKREF
 //          Insert task's statements into the referrer
+//          Look for getters (class methods that can be replaced
+//          with a member reference)
 //      Look for TASKs
 //          Remove them, they're inlined
 //
@@ -438,6 +440,7 @@ class TaskVisitor final : public VNVisitor {
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
     std::map<std::string, const AstStructDType*> m_dpiStructs;  // C names of DPI structures
     VDouble0 m_statInlines;  // Statistic tracking
+    VDouble0 m_statGetters;  // Statistic tracking
     VDouble0 m_statHierDpisWithCosts;  // Statistic tracking
 
     // METHODS
@@ -1822,6 +1825,64 @@ class TaskVisitor final : public VNVisitor {
         m_inNew = true;
         iterateChildren(nodep);
     }
+    // If taskp is a getter, return the reference to the member variable it returns
+    static AstVarRef* getterVarRefp(AstNodeFTask* taskp) {
+        AstNode* stmtp = taskp->stmtsp();
+        // Skip the default initialization of the function's return value
+        const AstVar* const fvarp = VN_AS(taskp->fvarp(), Var);
+        if (const AstAssign* const initp = VN_CAST(stmtp, Assign)) {
+            const AstVarRef* const lvarrefp = VN_CAST(initp->lhsp(), VarRef);
+            if (lvarrefp && lvarrefp->varp() == fvarp && VN_IS(initp->rhsp(), Const))
+                stmtp = initp->nextp();
+        }
+        // Arguments are statements too, so a function with any is rejected here
+        const AstAssign* const assignp = VN_CAST(stmtp, Assign);
+        if (!assignp || assignp->nextp()) return nullptr;
+        AstVarRef* const rhsp = VN_CAST(assignp->rhsp(), VarRef);
+        if (!rhsp || !rhsp->varp()->isClassMember()) return nullptr;
+        const AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
+        if (!lhsp || lhsp->varp() != fvarp) return nullptr;
+        if (!fvarp->dtypep()->skipRefp()->sameTree(rhsp->varp()->dtypep()->skipRefp())) {
+            return nullptr;
+        }
+        return rhsp;
+    }
+    // Replace call with a read of the member variable returned by the getter, if possible
+    bool replaceGetterCall(AstNodeFTaskRef* nodep) {
+        if (!v3Global.opt.fInlineGetters() || m_inSensesp) return false;
+        // Calls as statements keep the existing path, which handles the ignored return value
+        if (VN_IS(nodep->backp(), StmtExpr)) return false;
+        AstNodeFTask* const taskp = nodep->taskp();
+        if (!taskp->isFunction() || !taskp->classMethod() || taskp->isVirtual()
+            || taskp->taskPublic()) {
+            return false;
+        }
+        AstVarRef* const readp = getterVarRefp(taskp);
+        if (!readp) return false;
+        AstNodeExpr* newp;
+        AstMethodCall* const mcallp = VN_CAST(nodep, MethodCall);
+        if (readp->varp()->lifetime().isStatic()) {
+            // The object expression is not needed, but must not be dropped if it has side effects
+            if (mcallp && !mcallp->fromp()->isPure()) return false;
+            newp = readp->cloneTree(false);
+        } else if (mcallp) {
+            // A derived class receiver might shadow the member by name, and the emitted
+            // access is by name, so only use the exact class that owns the variable
+            const AstClassRefDType* const dtp
+                = VN_CAST(mcallp->fromp()->dtypep()->skipRefp(), ClassRefDType);
+            if (!dtp || dtp->classp() != readp->varScopep()->scopep()->modp()) return false;
+            newp = new AstMemberSel{nodep->fileline(), mcallp->fromp()->unlinkFrBack(),
+                                    readp->varp()};
+        } else {
+            // Implicit 'this' call from another method of the class
+            newp = readp->cloneTree(false);
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        ++m_statGetters;
+        // No need to iterate the object expression; V3LiftExpr already moved calls out of it
+        return true;
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_inSensesp && !nodep->isPure()) {
             nodep->v3warn(E_UNSUPPORTED,
@@ -1831,6 +1892,7 @@ class TaskVisitor final : public VNVisitor {
         }
         // Includes handling AstMethodCall, AstNew
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
+        if (replaceGetterCall(nodep)) return;
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
         if (m_statep->ftaskNoInline(nodep->taskp()) && !m_statep->ftaskCFuncp(nodep->taskp())) {
             // An earlier error (e.g. a DPI import declared twice with conflicting
@@ -2101,6 +2163,7 @@ public:
     }
     ~TaskVisitor() {
         V3Stats::addStat("Optimizations, Functions inlined", m_statInlines);
+        V3Stats::addStat("Optimizations, Function getters replaced with reads", m_statGetters);
         V3Stats::addStat("Optimizations, Hierarchical DPI wrappers with costs",
                          m_statHierDpisWithCosts);
     }

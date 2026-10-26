@@ -134,18 +134,28 @@ static void makeToStringMiddle(AstClass* nodep) {
             }
         }
     }
+
+    AstNodeExpr* exprp = nullptr;
     if (nodep->extendsp()) {
-        string stmt = "out += ";
-        if (!comma.empty()) stmt += "\", \" + ";
-        // comma = ", ";  // Nothing further so not needed
-        stmt += EmitCUtil::prefixNameProtect(nodep->extendsp()->dtypep());
-        stmt += "::to_string_middle();";
+        const string extendMiddleCall
+            = EmitCUtil::prefixNameProtect(nodep->extendsp()->dtypep()) + "::to_string_middle()";
         nodep->user1(true);  // So what we extend dumps this
-        stmtsp = AstNode::addNextNull(stmtsp, new AstCStmt{nodep->fileline(), stmt});
+        if (!stmtsp) {
+            // Single return, avoid an "out" temporary
+            exprp = new AstCExpr{nodep->fileline(), extendMiddleCall};
+            exprp->dtypeSetString();
+        } else {
+            string stmt = "out += ";
+            if (!comma.empty()) stmt += "\", \" + ";
+            // comma = ", ";  // Nothing further so not needed
+            stmt += extendMiddleCall;
+            stmt += ';';
+            stmtsp = AstNode::addNextNull(stmtsp, new AstCStmt{nodep->fileline(), stmt});
+        }
     }
 
-    AstNodeExpr* exprp;
-    if (stmtsp) {
+    if (exprp) {  // Single statement above
+    } else if (stmtsp) {
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;"});
         funcp->addStmtsp(stmtsp);
         exprp = new AstCExpr{nodep->fileline(), "out"};

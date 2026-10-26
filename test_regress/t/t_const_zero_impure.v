@@ -17,6 +17,23 @@ module t;
     return 8'd3;
   endfunction
 
+  typedef struct {logic b;} s_t;
+  function automatic s_t fs();
+    s_t s;
+    ++cnt;
+    s.b = 1'b1;
+    return s;
+  endfunction
+
+  class Cls;
+    logic b = 1'b1;
+  endclass
+  function automatic Cls fc();
+    Cls c = new;
+    ++cnt;
+    return c;
+  endfunction
+
   // Expressions with a zero operand that are constant regardless of another operand with
   // side effects, which must still be evaluated
   initial begin
@@ -63,6 +80,12 @@ module t;
     w = 70'd0 * {62'd0, f()};
     `checkd(w, 70'd0);
     `checkd(cnt, 13);
+    r = fs().b && 1'b0;
+    `checkd(r, 1'b0);
+    `checkd(cnt, 14);
+    r = fc().b && 1'b0;
+    `checkd(r, 1'b0);
+    `checkd(cnt, 15);
     $write("*-* All Finished *-*\n");
     $finish;
   end
