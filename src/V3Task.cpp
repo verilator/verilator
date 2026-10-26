@@ -1174,7 +1174,6 @@ class TaskVisitor final : public VNVisitor {
         }
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
-
         callExportp->addPinsp(args);
         funcp->addStmtsp(callExportp->makeStmt());
         // Convert output/inout arguments back to internal type
@@ -1516,7 +1515,7 @@ class TaskVisitor final : public VNVisitor {
         if (copyBacksp) cfuncp->addStmtsp(copyBacksp);
 
         // Convert output/inout arguments back to internal type
-        for (AstNode* stmtp = cfuncp->argsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : cfuncp->argspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 portp->protect(false);  // No additional exposure - already part of shown proto
                 if (portp->isIO() && (portp->isWritable() || portp->isFuncReturn())
@@ -1547,9 +1546,9 @@ class TaskVisitor final : public VNVisitor {
     }
 
     AstCFunc* makeUserFunc(AstNodeFTask* nodep, bool ftaskNoInline) {
-        // Given a already cloned node, make a public C function, or a non-inline C
-        // function Probably some of this work should be done later, but... should the type
-        // of the function be bool/uint32/64 etc (based on lookup) or IData?
+        // Given a already cloned node, make a public C function, or a non-inline C function
+        // Probably some of this work should be done later, but...
+        // should the type of the function be bool/uint32/64 etc (based on lookup) or IData?
         AstNode::user2ClearTree();
         AstVar* rtnvarp = nullptr;
         if (nodep->isFunction()) {
@@ -1565,14 +1564,14 @@ class TaskVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return nullptr;
                 }
-                if (!bdtypep->isDpiPrimitive()) {
-                    if (bdtypep->isDpiBitVec() && portp->width() > 32) {
+                if (!portp->dtypep()->isDpiPrimitive()) {
+                    if (portp->dtypep()->isDpiBitVec() && portp->width() > 32) {
                         portp->v3error("DPI function may not return a > 32 bits wide type "
                                        "other than basic types.\n"
                                        + portp->warnMore()
                                        + "... Suggest make it an output argument instead?");
                     }
-                    if (bdtypep->isDpiLogicVec()) {
+                    if (portp->dtypep()->isDpiLogicVec()) {
                         portp->v3error("DPI function may not return a 4-state type "
                                        "other than a single 'logic' (IEEE 1800-2023 35.5.5)");
                     }
@@ -1700,8 +1699,7 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // Create list of arguments and move to function
-        for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
-            nextp = stmtp->nextp();
+        for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isParam() && VN_IS(portp->valuep(), ConsArray)) {
                     // Move array parameters in functions into constant pool
@@ -1749,8 +1747,7 @@ class TaskVisitor final : public VNVisitor {
             VL_DANGLING(bodysp);
             // If we cloned due to recursion, now need to rip out the ports
             // (that remained in place) then got cloned
-            for (AstNode *nextp, *stmtp = tempp->stmtsp(); stmtp; stmtp = nextp) {
-                nextp = stmtp->nextp();
+            for (AstNode* const stmtp : tempp->stmtspList()) {
                 if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                     if (portp->isIO()) VL_DO_DANGLING(pushDeletep(portp->unlinkFrBack()), portp);
                 }
@@ -1769,8 +1766,8 @@ class TaskVisitor final : public VNVisitor {
         relink(cfuncp);
 
         if (cfuncp->dpiExportImpl()) {
-            // Mark all non-local variables written by the DPI exported function as being
-            // updated by DPI exports. This ensures correct ordering and change detection
+            // Mark all non-local variables written by the DPI exported function as being updated
+            // by DPI exports. This ensures correct ordering and change detection
             // later.
 
             // Mark non-local variables written by the exported function
@@ -1794,8 +1791,8 @@ class TaskVisitor final : public VNVisitor {
                 }
             });
 
-            // If this DPI export writes some non-local variables, set the DPI Export Trigger
-            // flag in the function.
+            // If this DPI export writes some non-local variables, set the DPI Export Trigger flag
+            // in the function.
             if (writesNonLocals) {
                 AstVarScope* const dpiExportTriggerp = getDpiExportTrigger();
                 FileLine* const flp = cfuncp->fileline();
@@ -1805,8 +1802,7 @@ class TaskVisitor final : public VNVisitor {
                     = new AstAssign{flp, new AstVarRef{flp, dpiExportTriggerp, VAccess::WRITE},
                                     new AstConst{flp, AstConst::BitTrue{}}};
 
-                // Add as first statement (to avoid issues with early returns) to exported
-                // function
+                // Add as first statement (to avoid issues with early returns) to exported function
                 cfuncp->prependStmtsp(assignp);
 
                 // With --sc, also wake the SystemC wrapper: it cannot see the flag, and may
@@ -1845,7 +1841,7 @@ class TaskVisitor final : public VNVisitor {
     }
     void processArgs(AstNodeFTaskRef* nodep) {
         // Create a fresh variable for each concat array present in pins list
-        for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+        for (AstArg* const argp : nodep->argspList()) {
             AstConsArray* const arrayp = VN_CAST(argp->exprp(), ConsArray);
             if (!arrayp) continue;
 
@@ -1900,6 +1896,64 @@ class TaskVisitor final : public VNVisitor {
         m_inNew = true;
         iterateChildren(nodep);
     }
+    // If taskp is a getter, return the reference to the member variable it returns
+    static AstVarRef* getterVarRefp(AstNodeFTask* taskp) {
+        AstNode* stmtp = taskp->stmtsp();
+        // Skip the default initialization of the function's return value
+        const AstVar* const fvarp = VN_AS(taskp->fvarp(), Var);
+        if (const AstAssign* const initp = VN_CAST(stmtp, Assign)) {
+            const AstVarRef* const lvarrefp = VN_CAST(initp->lhsp(), VarRef);
+            if (lvarrefp && lvarrefp->varp() == fvarp && VN_IS(initp->rhsp(), Const))
+                stmtp = initp->nextp();
+        }
+        // Arguments are statements too, so a function with any is rejected here
+        const AstAssign* const assignp = VN_CAST(stmtp, Assign);
+        if (!assignp || assignp->nextp()) return nullptr;
+        AstVarRef* const rhsp = VN_CAST(assignp->rhsp(), VarRef);
+        if (!rhsp || !rhsp->varp()->isClassMember()) return nullptr;
+        const AstVarRef* const lhsp = VN_CAST(assignp->lhsp(), VarRef);
+        if (!lhsp || lhsp->varp() != fvarp) return nullptr;
+        if (!fvarp->dtypep()->skipRefp()->sameTree(rhsp->varp()->dtypep()->skipRefp())) {
+            return nullptr;
+        }
+        return rhsp;
+    }
+    // Replace call with a read of the member variable returned by the getter, if possible
+    bool replaceGetterCall(AstNodeFTaskRef* nodep) {
+        if (!v3Global.opt.fInlineGetters() || m_inSensesp) return false;
+        // Calls as statements keep the existing path, which handles the ignored return value
+        if (VN_IS(nodep->backp(), StmtExpr)) return false;
+        AstNodeFTask* const taskp = nodep->taskp();
+        if (!taskp->isFunction() || !taskp->classMethod() || taskp->isVirtual()
+            || taskp->taskPublic()) {
+            return false;
+        }
+        AstVarRef* const readp = getterVarRefp(taskp);
+        if (!readp) return false;
+        AstNodeExpr* newp;
+        AstMethodCall* const mcallp = VN_CAST(nodep, MethodCall);
+        if (readp->varp()->lifetime().isStatic()) {
+            // The object expression is not needed, but must not be dropped if it has side effects
+            if (mcallp && !mcallp->fromp()->isPure()) return false;
+            newp = readp->cloneTree(false);
+        } else if (mcallp) {
+            // A derived class receiver might shadow the member by name, and the emitted
+            // access is by name, so only use the exact class that owns the variable
+            const AstClassRefDType* const dtp
+                = VN_CAST(mcallp->fromp()->dtypep()->skipRefp(), ClassRefDType);
+            if (!dtp || dtp->classp() != readp->varScopep()->scopep()->modp()) return false;
+            newp = new AstMemberSel{nodep->fileline(), mcallp->fromp()->unlinkFrBack(),
+                                    readp->varp()};
+        } else {
+            // Implicit 'this' call from another method of the class
+            newp = readp->cloneTree(false);
+        }
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        ++m_statGetters;
+        // No need to iterate the object expression; V3LiftExpr already moved calls out of it
+        return true;
+    }
     void visit(AstNodeFTaskRef* nodep) override {
         if (m_inSensesp && !nodep->isPure()) {
             nodep->v3warn(E_UNSUPPORTED,
@@ -1909,6 +1963,7 @@ class TaskVisitor final : public VNVisitor {
         }
         // Includes handling AstMethodCall, AstNew
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked?");
+        if (replaceGetterCall(nodep)) return;
         iterateIntoFTask(nodep->taskp());  // First, do hierarchical funcs
         if (m_statep->ftaskNoInline(nodep->taskp()) && !m_statep->ftaskCFuncp(nodep->taskp())) {
             // An earlier error (e.g. a DPI import declared twice with conflicting
@@ -2099,8 +2154,7 @@ class TaskVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
                 }
             }
-            for (AstNode *nextp, *stmtp = nodep->stmtsp(); stmtp; stmtp = nextp) {
-                nextp = stmtp->nextp();
+            for (AstNode* const stmtp : nodep->stmtspList()) {
                 if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                     AstVarScope* const vscp = m_statep->findVarScope(m_scopep, portp);
                     UINFO(9, "   funcremovevsc " << vscp);
@@ -2180,6 +2234,7 @@ public:
     }
     ~TaskVisitor() {
         V3Stats::addStat("Optimizations, Functions inlined", m_statInlines);
+        V3Stats::addStat("Optimizations, Function getters replaced with reads", m_statGetters);
         V3Stats::addStat("Optimizations, Hierarchical DPI wrappers with costs",
                          m_statHierDpisWithCosts);
     }
@@ -2280,8 +2335,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                         << nodep->warnMore() << "... Location of " << nodep->taskp()->verilogKwd()
                         << " " << nodep->taskp()->prettyNameQ() << " declaration\n"
                         << nodep->taskp()->warnContextSecondary());
-                    // We'll just delete it; seems less error prone than making a false
-                    // argument
+                    // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }
             } else {
@@ -2311,8 +2365,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
                                   << nodep->taskp()->verilogKwd() << " "
                                   << nodep->taskp()->prettyNameQ() << " declaration:\n"
                                   << nodep->taskp()->warnContextSecondary());
-                    // We'll just delete it; seems less error prone than making a false
-                    // argument
+                    // We'll just delete it; seems less error prone than making a false argument
                     VL_DO_DANGLING(argp->unlinkFrBack()->deleteTree(), argp);
                 }
             } else {
