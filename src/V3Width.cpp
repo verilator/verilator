@@ -7728,6 +7728,60 @@ class WidthVisitor final : public VNVisitor {
         return true;
     }
 
+    AstNodeExpr* nonConstantPortSelect(AstNodeExpr* const exprp, const bool inout) {
+        // Inspect only connection destinations, not expressions used to compute their indices.
+        if (AstConcat* const concatp = VN_CAST(exprp, Concat)) {
+            if (AstNodeExpr* const badp = nonConstantPortSelect(concatp->lhsp(), inout)) {
+                return badp;
+            }
+            return nonConstantPortSelect(concatp->rhsp(), inout);
+        }
+        if (AstNodeStream* const streamp = VN_CAST(exprp, NodeStream)) {
+            return nonConstantPortSelect(streamp->lhsp(), inout);
+        }
+        if (AstReplicate* const repp = VN_CAST(exprp, Replicate)) {
+            // Parsed concatenations retain a replication wrapper until final widthing.
+            return nonConstantPortSelect(repp->srcp(), inout);
+        }
+        AstNodeConsItem* itemsp = nullptr;
+        if (AstConsArray* const consp = VN_CAST(exprp, ConsArray)) {
+            itemsp = consp->itemsp();
+        } else if (AstConsStruct* const consp = VN_CAST(exprp, ConsStruct)) {
+            itemsp = consp->itemsp();
+        } else if (AstConsDynArray* const consp = VN_CAST(exprp, ConsDynArray)) {
+            itemsp = consp->itemsp();
+        } else if (AstConsQueue* const consp = VN_CAST(exprp, ConsQueue)) {
+            itemsp = consp->itemsp();
+        }
+        for (AstNodeConsItem* itemp = itemsp; itemp; itemp = VN_AS(itemp->nextp(), NodeConsItem)) {
+            if (AstNodeExpr* const badp = nonConstantPortSelect(itemp->valuep(), inout)) {
+                return badp;
+            }
+        }
+        if (AstSliceSel* const selp = VN_CAST(exprp, SliceSel)) {
+            return nonConstantPortSelect(selp->fromp(), inout);
+        }
+        if (AstStructSel* const selp = VN_CAST(exprp, StructSel)) {
+            return nonConstantPortSelect(selp->fromp(), inout);
+        }
+        if (AstSel* const selp = VN_CAST(exprp, Sel)) {
+            // Continuous assignment destinations require constant packed selects (10.2).
+            V3Const::constifyParamsNoWarnEdit(selp->lsbp());
+            if (!VN_IS(selp->lsbp(), Const)) return selp->lsbp();
+            return nonConstantPortSelect(selp->fromp(), inout);
+        }
+        if (AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+            const AstNodeVarRef* const refp = VN_CAST(selp->baseFromp(true), NodeVarRef);
+            // Net lvalues require constant selects, including unpacked dimensions (A.8.5).
+            if (inout || (refp && refp->varp()->isNet())) {
+                V3Const::constifyParamsNoWarnEdit(selp->bitp());
+                if (!VN_IS(selp->bitp(), Const)) return selp->bitp();
+            }
+            return nonConstantPortSelect(selp->fromp(), inout);
+        }
+        return nullptr;
+    }
+
     void visit(AstPin* nodep) override {
         VL_RESTORER(m_writerp);
         m_writerp = nodep;
@@ -7767,6 +7821,19 @@ class WidthVisitor final : public VNVisitor {
                                         << "' port (IEEE 1800-2023 11.4.14)");
             }
             userIterateAndNext(nodep->exprp(), WidthVP{nodep->modVarp()->dtypep(), PRELIM}.p());
+            // Outputs are continuous assignments; inouts are transistor connections (23.3.3).
+            if (pinDirection.isOutput() || pinDirection.isInout()) {
+                if (AstNodeExpr* const indexp = nonConstantPortSelect(
+                        VN_AS(nodep->exprp(), NodeExpr), pinDirection.isInout())) {
+                    indexp->v3error(ucfirst(pinDirection.prettyName())
+                                    << " port connection " << nodep->modVarp()->prettyNameQ()
+                                    << " requires constant selection indices"
+                                       " (IEEE 1800-2023 23.3.3, 10.2, A.8.5).");
+                    AstNode* const exprp = nodep->exprp()->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(exprp), exprp);
+                    return;
+                }
+            }
             AstNodeDType* modDTypep = nodep->modVarp()->dtypep();
             AstNodeDType* conDTypep = nodep->exprp()->dtypep();
             UASSERT_OBJ(modDTypep, nodep, "Unlinked pin data type");
