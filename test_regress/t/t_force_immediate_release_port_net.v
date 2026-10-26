@@ -12,14 +12,15 @@
 module t;
   logic [31:0] b = 0;
   logic [31:0] d = 32'h1111_2222;
-  wire [31:0] e;
+  logic [7:0] e [32];
   wire [7:0] f;
   wire [31:0] g;
   logic [4:0] idx = 0;
   sub s (b);
   sub8 s_sel (d[7:0]);
   sub8 s_const (8'h7c);
-  subout s_out (e[idx+:8]);
+  // The variable array permits a dynamic index. The index expression idx must remain an rvalue.
+  subout s_out (e[idx]);
   subout s_out_simple (f);
   subout s_out_slice (g[15:8]);
 
