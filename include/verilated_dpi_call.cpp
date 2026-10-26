@@ -34,8 +34,8 @@ class VlDpiThread final {
     // MEMBERS
     std::mutex m_mutex;  // Protects m_threadTurn, m_exit
     std::condition_variable m_cv;  // Signals m_threadTurn changes
-    bool m_threadTurn = false;  // True if this thread runs
-    bool m_exit = false;  // Thread should exit at next wake-up
+    bool m_threadTurn VL_GUARDED_BY(m_mutex) = false;  // True if this thread runs
+    bool m_exit VL_GUARDED_BY(m_mutex) = false;  // Thread should exit at next wake-up
     VlDpiCall* m_callp = nullptr;  // VlDpiCall assigned to this thread
     // Thread-local state passed from the side that hands off to the side that runs
     Verilated::ThreadLocal m_verilatedTls;
@@ -105,8 +105,8 @@ private:
 
 class VlDpiThreadPool final {
     std::mutex m_mutex;  // Protects m_idle and m_aborted
-    std::vector<VlDpiThread*> m_idle;  // Idle threads
-    std::vector<VlDpiCall*> m_aborted;  // Aborted DPI calls
+    std::vector<VlDpiThread*> m_idle VL_GUARDED_BY(m_mutex);  // Idle threads
+    std::vector<VlDpiCall*> m_aborted VL_GUARDED_BY(m_mutex);  // Aborted DPI calls
 
 public:
     VlDpiThreadPool() = default;

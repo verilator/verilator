@@ -29,6 +29,7 @@
 
 #include "V3Task.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3ConstPool.h"
 #include "V3Control.h"
@@ -1378,16 +1379,16 @@ class TaskVisitor final : public VNVisitor {
         return allOk;
     }
 
-    static void addDebugInfo(AstCFuncHard* funcp) {
+    static void addDpiFunctionLocation(AstCFuncHard* funcp) {
         FileLine* const flp = funcp->fileline();
         const bool protectIds = v3Global.opt.protectIds();
-        AstCExpr* const ap
+        AstCExpr* const filenamep
             = new AstCExpr{flp, protectIds ? "VL_UNKNOWN" : '"' + flp->filenameEsc() + '"'};
-        ap->dtypeSetString();
-        funcp->addPinsp(ap);
-        AstCExpr* const bp = new AstCExpr{flp, protectIds ? "0" : cvtToStr(flp->lineno())};
-        bp->dtypeSetString();
-        funcp->addPinsp(bp);
+        filenamep->dtypeSetString();
+        funcp->addPinsp(filenamep);
+        AstConst* const linenop
+            = new AstConst{flp, protectIds ? 0 : static_cast<uint32_t>(flp->lineno())};
+        funcp->addPinsp(linenop);
     }
 
     void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp,
@@ -1492,7 +1493,7 @@ class TaskVisitor final : public VNVisitor {
                                                     : VCFunction::CALL_IMPORT_FUNCTION};
         callImportp->dtypeSetVoid();
         // Add arguments
-        if (!nodep->verilogTask()) addDebugInfo(callImportp);
+        if (!nodep->verilogTask()) addDpiFunctionLocation(callImportp);
         // Pass name of the DPI imported function to call
         callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});
         if (!args.empty()) callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});

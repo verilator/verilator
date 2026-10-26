@@ -1173,10 +1173,10 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
     /*    id,                                 function,                             pure,   args */ \
     macro(_NONE,                              "_none",                              false,  "") \
     macro(AWAIT_IMPORT_TASK,                  "VerilatedDpi::awaitImportTask",      false,  "TODO") \
-    macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "TODO") \
-    macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "TODO") \
     macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "TODO") \
     macro(CALL_EXPORT_TASK,                   "VerilatedDpi::callExportTask",       false,  "TODO") \
+    macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "TODO") \
+    macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "TODO") \
     macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",                      PURE,   "r")
 // clang-format on
 
@@ -2187,7 +2187,6 @@ public:
     class VlSyms {};  // for creator type-overload selection
     VSelfPointerText(VlSyms, const string& field)
         : m_strp{std::make_shared<const string>("(&vlSymsp->vlInst." + field + ')')} {}
-    class VlSymsDpi {};
 
     // METHODS
     bool isEmpty() const { return m_strp == s_emptyp; }

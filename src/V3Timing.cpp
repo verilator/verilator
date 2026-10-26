@@ -115,7 +115,6 @@ static bool hasFlags(AstNode* const nodep, uint8_t flags) { return !(~nodep->use
 
 class TimingSuspendableVisitor final : public VNVisitor {
     // TYPES
-    unsigned int m_suspendableExports;
     // Vertex of a dependency graph of suspendable nodes, e.g. if a node (process or task) is
     // suspendable, all its dependents should also be suspendable
     class DepVtx VL_NOT_FINAL : public V3GraphVertex {
@@ -196,8 +195,10 @@ class TimingSuspendableVisitor final : public VNVisitor {
                           // suspendable makes the other node suspendable
     V3Graph m_procGraph;  // Dependency graph where a node is a dependency of another if it being
                           // suspendable makes the other node suspendable
-    std::vector<AstNode*> m_delayedProc;
-    std::vector<AstCFunc*> m_dpiExports;
+    std::vector<AstNode*> m_delayedProc;  // Process/functions containing DPI task calls
+    std::vector<AstCFunc*> m_dpiExports;  // Contains DPI exports
+    unsigned int m_suspendableExports
+        = 0;  // Used to count number of suspendable DPI exports for __stats.txt
 
     // METHODS
     // Get or create the dependency vertex for the given node

@@ -10,7 +10,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
-// verilog_format: off
+// verilog_format: on
 //
 `define expected_start_time 95
 `define expected_end_time   190
