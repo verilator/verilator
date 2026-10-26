@@ -18,7 +18,7 @@ extern void v_export(void);
 
 int dpi_import(void) {
     v_export();
-    return 0;
+    return svIsDisabledState();
 }
 
 #ifdef __cplusplus

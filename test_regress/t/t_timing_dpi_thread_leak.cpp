@@ -24,7 +24,7 @@ int dpi_import() {
     // Second call tests whether the killed process alters the state after being killed.
     dpi_export();
     ++completed;
-    return 0;
+    return svIsDisabledState();
 }
 
 int c_completed() { return completed; }
