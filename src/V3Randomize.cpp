@@ -939,9 +939,15 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNode* m_firstExpressionInsideIndexp = nullptr;
     AstConstraintForeach* m_foreachp = nullptr;  // Innermost constraint-foreach being processed
     std::set<const AstVar*> m_foreachIdxVars;  // Index vars of all enclosing constraint-foreaches
-    // Solver variables named by constraints folded into a single expression (m_wantSingle),
-    // handed to the constraint that replaces the fold, which takes them over and emits them
+    // Solver variables named by constraints folded into a single expression (m_wantSingle)
+    // by a top-level if; empty except between that fold and m_foldTakerp taking them over
     std::set<std::string> m_constraintVars;
+    // Constraint replacing the top-level if whose folded names m_constraintVars holds
+    const AstConstraintExpr* m_foldTakerp = nullptr;
+    // Where the variable references being lowered record their solver names. Set by
+    // visit(AstConstraintExpr*), the only visit reaching a variable reference: the other
+    // constraint items either move their expressions into one or never iterate them.
+    std::set<std::string>* m_constraintVarsp = nullptr;
 
     class NestedAccessPath final {
         AstMemberSel* m_topNestedArrayMemberSelp
@@ -1121,21 +1127,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         memberSelp->v3fatalSrc("Unexpected node type in MemberSel chain");
         return "";
-    }
-    // Solver symbol of a variable reference: its name, extended by the members selected from it
-    static std::string solverName(const AstNodeVarRef* refp) {
-        std::string name = refp->name();
-        for (const AstNode* selp = refp->backp(); VN_IS(selp, MemberSel) || VN_IS(selp, StructSel);
-             selp = selp->backp()) {
-            name += "." + selp->name();
-        }
-        return name;
-    }
-    // Record the solver symbols an expression names, for the runtime's randc draw
-    static void collectConstraintVars(AstNode* nodep, std::set<std::string>& varsr) {
-        nodep->foreach([&varsr](const AstNodeVarRef* refp) {
-            if (refp->user1()) varsr.insert(solverName(refp));
-        });
     }
     // C++ initializer list of the recorded symbols
     static std::string constraintVarsList(const std::set<std::string>& vars) {
@@ -1979,6 +1970,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             // No MemberSel, StructSel or CMethodHard:at : just variable name
             smtName = nodep->name();
         }
+        // Names the runtime's randc draw needs, to tell randc-only constraints apart. A nested
+        // access path is formatted at runtime, so its name here matches no registered
+        // variable and keeps the constraint out of the draw.
+        UASSERT_OBJ(m_constraintVarsp, nodep,
+                    "Variable reference outside a constraint expression");
+        if (nodep->user1()) m_constraintVarsp->insert(smtName);
 
         if (memberselp) varp = memberselp->varp();
         // The SMT translation assumes bit-vector operands and does not
@@ -2861,6 +2858,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         // constraint-items list by the pre-pass; already fully lowered.
     }
     void visit(AstConstraintIf* nodep) override {
+        // Outside a fold, this if's branches are folded here and m_constraintVars collects
+        // their names for the constraint replacing it; a nested if adds to its parent's fold
+        const bool foldOwner = !m_wantSingle;
+        UASSERT_OBJ(!foldOwner || m_constraintVars.empty(), nodep,
+                    "Constraint names of an earlier fold were not taken over");
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
@@ -2875,7 +2877,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (newp) {
             newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
             newp->user1(true);  // Assume result-dependent
-            nodep->replaceWith(new AstConstraintExpr{fl, newp});
+            AstConstraintExpr* const exprp = new AstConstraintExpr{fl, newp};
+            nodep->replaceWith(exprp);
+            // Iterated next (AstNode::iterateAndNext), and takes over the folded names
+            if (foldOwner) m_foldTakerp = exprp;
         } else {
             nodep->unlinkFrBack();
         }
@@ -3140,17 +3145,24 @@ class ConstraintExprVisitor final : public VNVisitor {
         // are rewritten by extractConditionalDisableSofts() before this
         // visitor runs, so anything we see here is unconditional.
         VL_RESTORER(m_firstExpressionInsideIndexp);
-        // Outside a fold this constraint is emitted here, so it takes over the names of the
-        // constraints folded into it, leaving m_constraintVars empty on every exit
+        // Outside a fold this constraint is emitted here with only its own names: those it
+        // records, plus the folded names when it replaces an if (see visit(AstConstraintIf*))
         std::set<std::string> vars;
-        if (!m_wantSingle) vars.swap(m_constraintVars);
-        std::set<std::string>& varsr = m_wantSingle ? m_constraintVars : vars;
+        if (!m_wantSingle) {
+            if (nodep == m_foldTakerp) {
+                vars.swap(m_constraintVars);
+                m_foldTakerp = nullptr;
+            }
+            UASSERT_OBJ(m_constraintVars.empty(), nodep,
+                        "Constraint names carried over from another constraint");
+        }
+        VL_RESTORER(m_constraintVarsp);
+        m_constraintVarsp = m_wantSingle ? &m_constraintVars : &vars;
         if (nodep->isDisableSoft()) {
             nodep->replaceWith(buildDisableSoftCallStmt(nodep));
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
-        collectConstraintVars(nodep->exprp(), varsr);
         // IEEE 1800-2023 18.5.1: A bare expression used as a constraint is
         // implicitly treated as "expr != 0" when wider than 1 bit.
         // Must wrap before iterateChildren, which converts to SMT format.
