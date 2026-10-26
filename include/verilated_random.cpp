@@ -1013,8 +1013,12 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
         os << "))\n";
         // A reply not naming the drawn variable would leave it unpinned and solved jointly,
         // and a malformed value would corrupt the cycle history
-        const bool got = readPhaseValues(sess, drawnr) && drawnr.count(randcNames.front())
-                         && validSMTNum(drawnr.at(randcNames.front()));
+        std::map<std::string, std::string> values;
+        const bool read = readPhaseValues(sess, values);
+        const auto it = values.find(randcNames.front());
+        const bool got = read && it != values.end() && validSMTNum(it->second);
+        // Only the drawn variable is pinned; any other name in the reply is ignored
+        if (got) drawnr.emplace(*it);
         os << "(reset)\n";
         return got;
     }
