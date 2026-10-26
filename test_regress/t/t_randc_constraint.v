@@ -235,6 +235,126 @@ class RandcDeep;
   endfunction
 endclass
 
+// Test 8: randc mixed with rand variables named only in an if condition, an
+// implication, a foreach, an inside list or a struct member. Each constraint names
+// a rand variable, so it must stay out of the randc-first draw, which declares only
+// randc variables. Every value of c stays feasible, so each cycle covers 0..3.
+virtual class RandcMixedBase;
+  randc bit [1:0] c;
+
+  pure virtual function bit holds;
+  // Each case randomizes itself, so the call is resolved in the class declaring its members
+  pure virtual function int randomize_case;
+
+  function void test_cyclic(string what);
+    automatic int count[4] = '{0, 0, 0, 0};
+    automatic int randomize_result;
+    $display("Test randc mixed with rand through %s", what);
+    // Run 3 full cycles
+    for (int trial = 0; trial < 3; ++trial) begin
+      for (int i = 0; i < 4; ++i) begin
+        randomize_result = randomize_case();
+        `checkd(randomize_result, 1);
+        `checkd(holds(), 1);
+        ++count[c];
+      end
+    end
+    for (int v = 0; v < 4; ++v) begin
+      `checkd(count[v], 3);
+    end
+  endfunction
+endclass
+
+class RandcIfCond extends RandcMixedBase;
+  rand bit [1:0] x;
+  constraint c_if {
+    if (x > 0) c < 2;
+    else c >= 2;
+  }
+  function bit holds;
+    return (x > 0) ? (c < 2) : (c >= 2);
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+class RandcImplication extends RandcMixedBase;
+  rand bit x;
+  constraint c_imp {x -> c != 3;}
+  function bit holds;
+    return !x || c != 3;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+class RandcForeach extends RandcMixedBase;
+  rand bit [1:0] arr[3];
+  constraint c_each {foreach (arr[i]) arr[i] != c;}
+  function bit holds;
+    foreach (arr[i]) if (arr[i] == c) return 0;
+    return 1;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+class RandcInside extends RandcMixedBase;
+  rand bit [1:0] x;
+  rand bit [1:0] y;
+  constraint c_in {c inside {x, y};}
+  function bit holds;
+    return c == x || c == y;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+class RandcStructMember extends RandcMixedBase;
+  typedef struct {rand bit [1:0] f;} pair_t;
+  rand pair_t s;
+  constraint c_member {c != s.f;}
+  function bit holds;
+    return c != s.f;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+// Test 9: static randc, with a randc-only constraint the draw must apply and a
+// constraint mixed with rand that it must not
+class RandcStatic;
+  static randc bit [1:0] c;
+  rand bit [1:0] x;
+  constraint c_no3 {c != 3;}
+  constraint c_rel {x > c;}
+
+  function void test_cyclic;
+    automatic int count[4] = '{0, 0, 0, 0};
+    automatic int domain_size = 3;
+    automatic int randomize_result;
+    $display("Test static randc with randc-only and mixed constraints");
+    // Run 4 full cycles
+    for (int trial = 0; trial < 4; ++trial) begin
+      for (int i = 0; i < domain_size; ++i) begin
+        randomize_result = randomize();
+        `checkd(randomize_result, 1);
+        `checkd(x > c, 1);
+        ++count[c];
+      end
+    end
+    for (int v = 0; v <= 2; ++v) begin
+      `checkd(count[v], 4);
+    end
+    `checkd(count[3], 0);
+  endfunction
+endclass
+
 module t;
   RandcRange rr;
   RandcSmall rs;
@@ -243,6 +363,12 @@ module t;
   RandcModeSwitch rms;
   RandcEnumConstrained rec;
   RandcDeep rd;
+  RandcIfCond ric;
+  RandcImplication rim;
+  RandcForeach rfe;
+  RandcInside rin;
+  RandcStructMember rsm;
+  RandcStatic rst;
 
   initial begin
     rr = new;
@@ -265,6 +391,24 @@ module t;
 
     rd = new;
     rd.test_cyclic();
+
+    ric = new;
+    ric.test_cyclic("an if condition");
+
+    rim = new;
+    rim.test_cyclic("an implication");
+
+    rfe = new;
+    rfe.test_cyclic("a foreach");
+
+    rin = new;
+    rin.test_cyclic("an inside list");
+
+    rsm = new;
+    rsm.test_cyclic("a struct member");
+
+    rst = new;
+    rst.test_cyclic();
 
     $write("*-* All Finished *-*\n");
     $finish();
