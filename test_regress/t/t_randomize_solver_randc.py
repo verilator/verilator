@@ -49,6 +49,9 @@ run_case('tail_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=15')  # flat tail 
 run_case('phased_plain', 9, 3, mode='phased')
 run_case('phased_tail_unknown', 10, 2, 'TAMPER=unknown_once TAMPER_AT=32', mode='phased')
 
+# A drawn value that is not a numeral fails the call before it is pinned or recorded
+run_case('draw_bad_value', 5, 1, 'TAMPER=bare_hash TAMPER_AT=1', mode='bad_draw')
+
 # Two cycling variables keep the joint solve, so no call fails
 run_case('two_randc', 12, 0, mode='two')
 
