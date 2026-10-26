@@ -56,6 +56,10 @@
 //
 // Constraint 3 should always hold with V3Delayed, will check assert it.
 //
+// If old-value reads prevent elimination, constant partial writes can still narrow both
+// copies to the words containing those writes. Other shadow bits are never read. The
+// assignments keep their original positions, so evaluation order and scheduling are unchanged.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -124,16 +128,51 @@ class LifePostDlyVisitor final : public VNVisitorConst {
     const AstExecGraph* m_execGraphp = nullptr;  // Current AstExecGraph being processed (or null)
     const ExecMTask* m_execMTaskp = nullptr;  // Current ExecMTask being processed (or null)
     VDouble0 m_statAssnDel;  // Statistic tracking
+    VDouble0 m_statWordsSaved;  // Words removed from NBA shadow copies
     // Maps from Varscope to all their reads and writes
     using LocMap = std::unordered_map<const AstVarScope*, std::vector<Location<AstVarRef>>>;
     LocMap m_reads;  // VarScope read locations
     LocMap m_writes;  // VarScope write locations
     std::vector<Location<AstNodeAssign>> m_assigns;  // Assignments considered for removal
     std::vector<std::unique_ptr<GraphPathChecker>> m_checkers;  // Storage for exec graph checkers
-    const AstCFunc* const m_evalNbap;  // The _eval__nba function
-    bool m_inEvalNba = false;  // Traversing under _eval__nba
+    const AstCFunc* const m_nbaFuncp;  // The 'nba' region entry point
+    bool m_inEvalNba = false;  // Traversing under the 'nba' region entry point
 
     // METHODS
+    void narrowCopies(AstNodeAssign* postp, AstVarScope* dVscp,
+                      const std::vector<Location<AstVarRef>>& writes) {
+        if (!dVscp->isWide()) return;
+        AstNodeAssign* const prep = VN_AS(writes[0].nodep()->backp(), NodeAssign);
+        UASSERT_OBJ(VN_AS(prep->lhsp(), VarRef)->varScopep()
+                            == VN_AS(postp->rhsp(), VarRef)->varScopep()
+                        && VN_AS(prep->rhsp(), VarRef)->varScopep()
+                               == VN_AS(postp->lhsp(), VarRef)->varScopep(),
+                    prep, "NBA shadow pre/post assignments are not reverse copies");
+
+        int lsb = dVscp->width();
+        int end = 0;
+        for (size_t i = 1; i < writes.size(); ++i) {
+            const AstSel* const selp = VN_CAST(writes[i].nodep()->backp(), Sel);
+            if (!selp || !VN_IS(selp->lsbp(), Const)) return;
+            const int start = selp->lsbConst();
+            if (start > dVscp->width() - selp->width()) return;
+            lsb = std::min(lsb, start);
+            end = std::max(end, start + selp->width());
+        }
+        // Copy one word-aligned range enclosing all writes, including any gaps.
+        lsb = VL_BITWORD_E(lsb) * VL_EDATASIZE;
+        end = std::min(VL_WORDS_I(end) * VL_EDATASIZE, dVscp->width());
+        const int width = end - lsb;
+        if (width == dVscp->width()) return;
+        for (AstNodeAssign* const assignp : {prep, postp}) {
+            FileLine* const flp = assignp->fileline();
+            assignp->lhsp(new AstSel{flp, assignp->lhsp()->unlinkFrBack(), lsb, width});
+            assignp->rhsp(new AstSel{flp, assignp->rhsp()->unlinkFrBack(), lsb, width});
+            assignp->dtypeFrom(assignp->lhsp());
+        }
+        m_statWordsSaved += 2 * (dVscp->widthWords() - VL_WORDS_I(width));
+    }
+
     void squashAssignposts() {
         for (const Location<AstNodeAssign>& assign : m_assigns) {
             AstVarScope* const dVscp = VN_AS(assign.nodep()->rhsp(), VarRef)->varScopep();
@@ -172,7 +211,10 @@ class LifePostDlyVisitor final : public VNVisitorConst {
                     }
                     return true;
                 }();
-                if (!qRdOK) continue;
+                if (!qRdOK) {
+                    narrowCopies(assign.nodep(), dVscp, dWrites);
+                    continue;
+                }
             }
 
             // Mark variable for replacement
@@ -187,7 +229,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
     // Trace code in the given function
     void trace(AstCFunc* nodep) {
         VL_RESTORER(m_inEvalNba);
-        if (nodep == m_evalNbap) m_inEvalNba = true;
+        if (nodep == m_nbaFuncp) m_inEvalNba = true;
         iterateChildrenConst(nodep);
     }
 
@@ -232,7 +274,7 @@ class LifePostDlyVisitor final : public VNVisitorConst {
         // We only try to optimize NBA shadow variables
         if (!nodep->varScopep()->optimizeLifePost()) return;
 
-        // Mark variables referenced outside _eval__nba
+        // Mark variables referenced outside the 'nba' region
         if (!m_inEvalNba) {
             nodep->varScopep()->user1(true);
             return;
@@ -303,11 +345,12 @@ class LifePostDlyVisitor final : public VNVisitorConst {
 public:
     // CONSTRUCTORS
     explicit LifePostDlyVisitor(AstNetlist* netlistp)
-        : m_evalNbap{netlistp->evalNbap()} {
+        : m_nbaFuncp{netlistp->evalFuncp(VEval::NBA)} {
         iterateConst(netlistp);
     }
     ~LifePostDlyVisitor() override {
         V3Stats::addStat("Optimizations, Lifetime postassign deletions", m_statAssnDel);
+        V3Stats::addStat("Optimizations, Lifetime NBA copy words removed", m_statWordsSaved);
     }
 };
 

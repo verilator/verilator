@@ -65,7 +65,7 @@ public:
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
     const char* ascii() const {
-        static const char* const names[] = {"FORWARD", "REVERSE"};
+        static constexpr const char* const names[] = {"FORWARD", "REVERSE"};
         return names[m_e];
     }
     // METHODS unique to this class
@@ -364,12 +364,10 @@ public:
 
     // METHODS - ALGORITHMS
 
-    /// Clears color
-    void clearColors() VL_MT_DISABLED;
-
     /// Assign same color to all vertices in the same weakly connected component
     /// Thus different color if there's no edges between the two subgraphs
-    void weaklyConnected(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
+    /// Colors are assigned densely, as 0 .. n-1, and 'n' is returned
+    uint32_t weaklyConnected(V3EdgeFuncP edgeFuncp) VL_MT_DISABLED;
 
     /// Assign same color to all vertices that are strongly connected
     /// Thus different color if there's no directional circuit within the subgraphs.

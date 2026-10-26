@@ -11,7 +11,7 @@ module top;
   initial begin
     repeat (5) begin
       #10;
-      $display("%02t tick", $time);
+      $display("[%0t] tick", $time);
       ++n;
       if (n > 5) begin
         #0;  // Will not execute

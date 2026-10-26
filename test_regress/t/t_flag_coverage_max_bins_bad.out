@@ -1,0 +1,4 @@
+%Error: --coverage-max-bins requires an integer from 1 to 4294967295, but '4294967296' was passed
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: --coverage-max-real-bins requires an integer from 1 to 4294967295, but '0' was passed
+%Error: Exiting due to

@@ -23,7 +23,7 @@ module testbench;
   int n = 0;
 
   always @(posedge dependent_clk) begin
-    $display("t=%t n=%d", $time, n);
+    $display("[%0t] n=%d", $time, n);
     if ($time != (2 * n + 1) * 500) $stop;
     if (n == 20) begin
       $write("*-* All Finished *-*\n");

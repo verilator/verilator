@@ -8,7 +8,7 @@
 package TEST_TYPES;
   typedef union soft packed {
     logic [64 : 0] a;
-    logic [2 : 0]  b;
+    logic [2 : 0] b;
   } sub_t;
   typedef struct packed {
     struct packed {  // Anonymous packed struct
@@ -31,11 +31,11 @@ class cls_in;
 endclass  //cls
 
 module add (
-  input  TEST_TYPES::in_t  op1,
-  //input  cls_in  op2,
-  output TEST_TYPES::out_t out
+    input TEST_TYPES::in_t op1,
+    //input  cls_in  op2,
+    output TEST_TYPES::out_t out
 );
-  cls_in::in_t op2 /*verilator public_flat*/;
+  cls_in::in_t op2  /*verilator public_flat*/;
 
   assign op2.a = op1.anon.a;
   generate

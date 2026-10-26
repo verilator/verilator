@@ -1,0 +1,8 @@
+%Error: t/t_interface_array_size_bad.v:23:11: Illegal assignment: Unmatched array sizes (IEEE 1800-2023 7.6)
+                                            : ... note: In instance 't'
+                                            : ... Left-hand data type: 'virtual interface A$[0:5]'
+                                            : ... Right-hand data type: 'interface A$[0:6]'
+   23 |     c.vif = b;
+      |           ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

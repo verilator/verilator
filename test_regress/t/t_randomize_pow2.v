@@ -8,7 +8,10 @@
 class UnsignedPow2;
   rand bit [3:0] n;
   rand bit [15:0] result;
-  constraint c { n inside {[0:7]}; result == 16'(2**n); }
+  constraint c {
+    n inside {[0 : 7]};
+    result == 16'(2 ** n);
+  }
   function void check();
     if (result !== (16'h1 << n)) begin
       $display("FAIL UnsignedPow2: result=%0d expected 2**%0d=%0d", result, n, 16'h1 << n);
@@ -21,7 +24,10 @@ endclass
 class SignedExpPow2;
   rand int signed n;
   rand bit [15:0] result;
-  constraint c { n inside {[-2:7]}; result == 16'(2**n); }
+  constraint c {
+    n inside {[-2 : 7]};
+    result == 16'(2 ** n);
+  }
   function void check();
     bit [15:0] expected;
     expected = (n >= 0) ? (16'h1 << n) : 16'h0;

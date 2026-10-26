@@ -18,6 +18,7 @@
 
 #include "V3Global.h"
 
+#include "V3ConstPool.h"
 #include "V3EmitV.h"
 #include "V3Error.h"
 #include "V3File.h"
@@ -53,6 +54,7 @@ extern "C" const char* __asan_default_options() {
 void V3Global::boot() {
     UASSERT(!m_rootp, "call once");
     m_rootp = new AstNetlist;
+    m_constPoolp = new V3ConstPool;
     m_libMapp = new V3LibMap;
 }
 
@@ -61,6 +63,7 @@ void V3Global::shutdown() {
     VL_DO_CLEAR(delete m_hierGraphp, m_hierGraphp = nullptr);  // delete nullptr is safe
     VL_DO_CLEAR(delete m_threadPoolp, m_threadPoolp = nullptr);  // delete nullptr is safe
     VL_DO_CLEAR(delete m_libMapp, m_libMapp = nullptr);  // delete nullptr is safe
+    VL_DO_CLEAR(delete m_constPoolp, m_constPoolp = nullptr);  // delete nullptr is safe
 #ifdef VL_LEAK_CHECKS
     if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
 #endif

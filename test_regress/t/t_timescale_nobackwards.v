@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2025 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkf function void f(); $printtimescale; $display("%0t", $time); endfunction
+`define checkf function void f(); $printtimescale; $display("[%0t]", $time); endfunction
 
 package pkg;
   `checkf;
@@ -27,7 +27,7 @@ module mod;
   PRG prg();
   initial begin
     $printtimescale;
-    $display("%0t", $time);
+    $display("[%0t]", $time);
 
     pkg::f();
     chk.f();

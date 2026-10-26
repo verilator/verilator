@@ -13,7 +13,7 @@
 #include "verilated_vcd_c.h"
 
 #include "Vt_vpi_unimpl.h"
-#include "Vt_vpi_unimpl__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 // No verilated_vpi.h, make sure can link without it
 
@@ -109,6 +109,9 @@ extern "C" int mon_check() {
     if (int status = _mon_check_unimpl(NULL)) return status;
     return 0;  // Ok
 }
+
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
 
 //======================================================================
 

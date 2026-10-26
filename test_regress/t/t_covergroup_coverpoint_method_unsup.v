@@ -1,39 +1,33 @@
 // DESCRIPTION: Verilator: Verilog Test module
 //
 // This file ONLY is placed under the Creative Commons Public Domain.
-// SPDX-FileCopyrightText: 2025 Wilson Snyder
+// SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-module t (
-    input clk
-);
+// Test the methods and options of coverpoints and crosses but get_inst_coverage() without
+// arguments (IEEE 1800-2023 19.8, 19.10)
 
-  logic [3:0] a;
+module t;
+  int a;
   int b;
-  int cyc = 0;
+  int covered;
+  int total;
+  real r;
 
-  always @(posedge clk) begin
-    cyc <= cyc + 1;
-  end
-
-  covergroup cg @(posedge clk);
-    coverpoint a;
-    coverpoint b {bins the_bins[5] = {[0 : 20]};}
+  covergroup cg;
+    cp_a: coverpoint a;
+    cp_b: coverpoint b;
+    x: cross cp_a, cp_b;
   endgroup
 
-  cg the_cg = new;
+  cg cg_i = new;
 
-  assign a = cyc[3:0];
-  assign b = cyc;
-
-  always @(posedge clk) begin
-    if (cyc == 14) begin
-      $display("coverage a = %f", the_cg.a.get_inst_coverage());
-      $display("coverage b = %f", the_cg.b.get_inst_coverage());
-      if (the_cg.a.get_inst_coverage() != 15 / 16.0) $stop();
-      if (the_cg.b.get_inst_coverage() != 4 / 5.0) $stop();
-      $write("*-* All Finished *-*\n");
-      $finish;
-    end
+  initial begin
+    r = cg_i.cp_a.get_coverage();
+    cg_i.cp_a.start();
+    cg_i.x.stop();
+    cg_i.cp_b.option.weight = 2;
+    $display("%0d", cg_i.x.type_option.weight);
+    r = cg_i.x.get_inst_coverage(covered, total);
   end
 endmodule

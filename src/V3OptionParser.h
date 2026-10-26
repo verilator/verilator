@@ -61,7 +61,7 @@ public:
 
 private:
     // MEMBERS
-    const std::unique_ptr<Impl> m_pimpl;
+    const std::unique_ptr<Impl> m_pimpl;  // Implementation class
 
     // METHODS
     ActionIfs* find(const char* optp) VL_MT_DISABLED;

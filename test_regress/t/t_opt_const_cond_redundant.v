@@ -10,7 +10,7 @@ module t (
     input clk
 );
 
-  reg [65:0] idx  /*verilator public*/;
+  reg [65:0] idx  /*verilator public_flat_rw*/;
   initial idx = 1;
 
   wire unlikely = idx > 200;
@@ -36,8 +36,8 @@ module t (
       $finish;
     end
 
-    if (direction == UP)++ups;
-    else if (direction == UP)++ups;
+    if (direction == UP) ++ups;
+    else if (direction == UP) ++ups;
     else ups += 1000;
 
     case (direction)

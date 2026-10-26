@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('vlt')
 
 test.lint(
-    verilator_flags2=["t/t_fsm_register_wrapper_vlt_bad.vlt"],
+    verilator_flags2=[test.vlt_filename],
     fails=True,
     expect_filename=test.golden_filename,
 )

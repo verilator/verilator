@@ -21,7 +21,7 @@
 
 // clang-format off
 #if defined(VERILATOR)
-# include "Vt_dpi_if_cond__Dpi.h"
+# include VM_PREFIX_INCLUDE_DPI
 #elif defined(VCS)
 # include "../vc_hdrs.h"
 #elif defined(NC)

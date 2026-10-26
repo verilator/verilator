@@ -20,7 +20,7 @@ module top;
   int b;
 
   always begin
-    $display("%2t Waiting for 'a'", $time);
+    $display("[%0t] Waiting for 'a'", $time);
     @a;
     b = a + 10;
   end
@@ -31,7 +31,7 @@ module top;
 
   always @(posedge clk) begin
     #0;
-    $display("%2t a=%2d b=%2d", $time, a, b);
+    $display("[%0t] a=%2d b=%2d", $time, a, b);
     `check(b, a + 10);
   end
 

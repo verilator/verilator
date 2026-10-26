@@ -25,7 +25,7 @@ expectedLines = set()
 with open(test.root + "/src/V3DfgBreakCycles.cpp", 'r', encoding="utf8") as fd:
     for lineno, line in enumerate(fd, 1):
         line = line.split("//")[0]
-        if re.match(r'^[^#]*SET_RESULT', line):
+        if re.match(r'^[^#]*RETURN_RESULT', line):
             expectedLines.add(lineno)
         if re.match(r'^[^#]*MASK', line):
             expectedLines.add(lineno)
@@ -66,6 +66,7 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
 # Compile un-optimized
 test.compile(verilator_flags2=[
     "--stats",
+    "-fno-decompose",
     "--build",
     "-fno-dfg",
     "-fno-gate",
@@ -82,8 +83,10 @@ test.file_grep(test.obj_dir + "/obj_ref/Vref__stats.txt",
 # Compile optimized - also builds executable
 test.compile(verilator_flags2=[
     "--stats",
+    "-fno-decompose",
     "--build",
     "--exe",
+    "-fdfg-synthesize-all",
     "-fno-const-before-dfg",
     "-fno-gate",
     "+incdir+" + test.obj_dir,

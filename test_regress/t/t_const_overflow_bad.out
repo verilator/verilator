@@ -1,17 +1,40 @@
-%Error: t/t_const_overflow_bad.v:9:33: Too many digits for 94 bit number: '94'd123456789012345678901234567890'
+%Warning-WIDTHDIGITS: t/t_const_overflow_bad.v:9:33: Too many digits for 94 bit number: '94'd123456789012345678901234567890'
     9 |   parameter [200:0] TOO_SMALL = 94'd123456789012345678901234567890;   
       |                                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_const_overflow_bad.v:11:30: Too many digits for 8 bit number: '8'habc'
+                      ... For warning description see https://verilator.org/warn/WIDTHDIGITS?v=latest
+                      ... Use "/* verilator lint_off WIDTHDIGITS */" and lint_on around source to disable this message.
+%Warning-WIDTHDIGITS: t/t_const_overflow_bad.v:11:30: Too many digits for 8 bit number: '8'habc'
    11 |   parameter [200:0] SMALLH = 8'habc;   
       |                              ^~~~~~
-%Error: t/t_const_overflow_bad.v:12:30: Too many digits for 6 bit number: '6'o1234'
+%Warning-WIDTHDIGITS: t/t_const_overflow_bad.v:12:30: Too many digits for 6 bit number: '6'o1234'
    12 |   parameter [200:0] SMALLO = 6'o1234;   
       |                              ^~~~~~~
-%Error: t/t_const_overflow_bad.v:13:30: Too many digits for 3 bit number: '3'b1111'
+%Warning-WIDTHDIGITS: t/t_const_overflow_bad.v:13:30: Too many digits for 3 bit number: '3'b1111'
    13 |   parameter [200:0] SMALLB = 3'b1111;   
       |                              ^~~~~~~
-%Error: t/t_const_overflow_bad.v:19:34: Too many digits for 129 bit number: '129'hdeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00d'
+%Warning-WIDTHDIGITS: t/t_const_overflow_bad.v:19:34: Too many digits for 129 bit number: '129'hdeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00d'
    19 |   parameter [128:0] ALSO_SMALL = 129'hdeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00ddeadbeefc001f00d;
       |                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Warning-WIDTHEXPAND: t/t_const_overflow_bad.v:9:21: Operator VAR 'TOO_SMALL' expects 201 bits on the Initial value, but Initial value's CONST '94'hee90ff6c373e0ee4e3f0ad2' generates 94 bits.
+                                                   : ... note: In instance 't'
+    9 |   parameter [200:0] TOO_SMALL = 94'd123456789012345678901234567890;   
+      |                     ^~~~~~~~~
+                      ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
+                      ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
+%Warning-WIDTHEXPAND: t/t_const_overflow_bad.v:11:21: Operator VAR 'SMALLH' expects 201 bits on the Initial value, but Initial value's CONST '8'hbc' generates 8 bits.
+                                                    : ... note: In instance 't'
+   11 |   parameter [200:0] SMALLH = 8'habc;   
+      |                     ^~~~~~
+%Warning-WIDTHEXPAND: t/t_const_overflow_bad.v:12:21: Operator VAR 'SMALLO' expects 201 bits on the Initial value, but Initial value's CONST '6'h1c' generates 6 bits.
+                                                    : ... note: In instance 't'
+   12 |   parameter [200:0] SMALLO = 6'o1234;   
+      |                     ^~~~~~
+%Warning-WIDTHEXPAND: t/t_const_overflow_bad.v:13:21: Operator VAR 'SMALLB' expects 201 bits on the Initial value, but Initial value's CONST '3'h7' generates 3 bits.
+                                                    : ... note: In instance 't'
+   13 |   parameter [200:0] SMALLB = 3'b1111;   
+      |                     ^~~~~~
+%Warning-WIDTHEXPAND: t/t_const_overflow_bad.v:16:21: Operator VAR 'OKH' expects 201 bits on the Initial value, but Initial value's CONST '8'h1' generates 8 bits.
+                                                    : ... note: In instance 't'
+   16 |   parameter [200:0] OKH = 8'h000000001;
+      |                     ^~~
 %Error: Exiting due to

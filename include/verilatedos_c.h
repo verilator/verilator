@@ -65,7 +65,7 @@ double DeltaCpuTime::gettime() VL_MT_SAFE {
                                    | static_cast<uint64_t>(lpUserTime.dwHighDateTime) << 32ULL)
                * 1e-7;
     }
-#else
+#elif !defined(__wasi__)  // WASI has no CLOCK_PROCESS_CPUTIME_ID
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     timespec ts;
     if (0 == clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts))  // MT-Safe  // LCOV_EXCL_BR_LINE

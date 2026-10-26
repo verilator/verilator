@@ -58,7 +58,7 @@ endmodule
 
 module t_inst (
     output reg [7:0] osizedreg,
-    output wire oonewire  /*verilator public*/,
+    output wire oonewire  /*verilator public_flat_rw*/,
     input [7:0] isizedwire,
     input wire ionewire
 );

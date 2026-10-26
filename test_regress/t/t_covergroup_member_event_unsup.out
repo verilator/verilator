@@ -3,8 +3,8 @@
       |                             ^~~~~~~
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:37:5: Unsupported: 'covergroup' clocking event on complex member expression; use --timing for full support.
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:40:5: Unsupported: 'covergroup' clocking event on complex member expression; use --timing for full support.
                                                            : ... note: In instance 't'
-   37 |     covergroup cov_cplx @(posedge a or posedge mid.lvl.ev);
+   40 |     covergroup cov_cplx @(posedge a or posedge mid.lvl.ev);
       |     ^~~~~~~~~~
 %Error: Exiting due to

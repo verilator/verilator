@@ -861,8 +861,15 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
    * term compatibility/aliasing.
    */
   "/*verilator fsm_arc_include_cond*/"  { FL; return yVL_FSM_ARC_INCL_COND; }
-  "/*verilator fsm_reset_arc*/"         { FL; return yVL_FSM_RESET_ARC; }
+  "/*verilator fsm_arc_include_cond_auto*/"         { FL; return yVL_FSM_ARC_INCL_COND_AUTO; }
+  "/*verilator fsm_arc_include_cond_auto_expand*/"  { FL; return yVL_FSM_ARC_INCL_COND_AUTO_EXPAND; }
+  "/*verilator fsm_arc_include_cond_full*/"         { FL; return yVL_FSM_ARC_INCL_COND_FULL; }
+  "/*verilator fsm_reset_arc*/"         { FL; yylval.fl->v3warn(DEPRECATED, "/*verilator fsm_reset_arc*/ is deprecated and aliases /*verilator fsm_state*/");
+                                          return yVL_FSM_STATE; }
   "/*verilator fsm_state*/"             { FL; return yVL_FSM_STATE; }
+  "/*verilator fsm_state_auto*/"        { FL; return yVL_FSM_STATE_AUTO; }
+  "/*verilator fsm_state_auto_expand*/" { FL; return yVL_FSM_STATE_AUTO_EXPAND; }
+  "/*verilator fsm_state_full*/"        { FL; return yVL_FSM_STATE_FULL; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }
   "/*verilator timing_off*/"            { FL_FWD; PARSEP->lexFileline()->timingOn(false); FL_BRK; }
@@ -1007,8 +1014,8 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   \"[^\"\\]*\"          { FL; yylval.strp = PARSEP->newString(yytext+1, yyleng-2);
                           return yaSTRING;
                         }
-  \"                    { yy_push_state(STRING); yymore(); }
-  \"\"\"                { yy_push_state(QQQ); yymore(); }
+  \"                    { yy_push_state(STRING); PARSEP->lexString().clear(); }
+  \"\"\"                { yy_push_state(QQQ); PARSEP->lexString().clear(); }
   {vnum}                {
                           /* "# 1'b0" is a delay value so must lex as "#" "1" "'b0" */
                           if (PARSEP->lexPrevToken()=='#') {
@@ -1055,26 +1062,33 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
 <STRING>{crnl}          { FL; yylval.fl->v3error("Unterminated string");
                           FL_BRK; }
-<STRING>\\{crnl}        { yymore(); }
-<STRING>\\.             { yymore(); }
+<STRING>\\{crnl}        { PARSEP->lexFileline()->linenoInc(); }  /* IEEE 1800-2023 5.9: backslash-newline continuation is ignored */
+<STRING>\\.             { PARSEP->lexString().append(yytext, yyleng); }
 <STRING>\"              { yy_pop_state();
-                          FL; yylval.strp = PARSEP->newString(yytext+1, yyleng-2);
+                          PARSEP->lexFileline()->forwardToken(PARSEP->lexString().data(),
+                                                              PARSEP->lexString().size(), true);
+                          PARSEP->lexFileline()->forwardToken("\"", 1, true);
+                          FL; yylval.strp = PARSEP->newString(PARSEP->lexString());
                           return yaSTRING; }
-<STRING>{word}          { yymore(); }
-<STRING>.               { yymore(); }
+<STRING>{word}          { PARSEP->lexString().append(yytext, yyleng); }
+<STRING>.               { PARSEP->lexString().append(yytext, yyleng); }
 
   /************************************************************************/
   /* """ */
 <QQQ><<EOF>>            { FL; yylval.fl->v3error("EOF in unterminated \"\"\" string");
                           yyleng = 0; yy_pop_state(); FL_BRK; yyterminate(); }
-<QQQ>\\.                { yymore(); }
-<QQQ>\n                 { yymore(); }
+<QQQ>\\{crnl}           { PARSEP->lexFileline()->linenoInc(); }  /* IEEE 1800-2023 5.9: backslash-newline continuation is ignored */
+<QQQ>\\.                { PARSEP->lexString().append(yytext, yyleng); }
+<QQQ>\n                 { PARSEP->lexString().append(yytext, yyleng); }
 <QQQ>\"\"\"             { yy_pop_state();
-                          FL; yylval.strp = PARSEP->newString(yytext + 3, yyleng - 6);
+                          PARSEP->lexFileline()->forwardToken(PARSEP->lexString().data(),
+                                                              PARSEP->lexString().size(), true);
+                          PARSEP->lexFileline()->forwardToken("\"\"\"", 3, true);
+                          FL; yylval.strp = PARSEP->newString(PARSEP->lexString());
                           return yaSTRING; }
-<QQQ>\"                 { yymore(); }
-<QQQ>{word}             { yymore(); }
-<QQQ>.                  { yymore(); }
+<QQQ>\"                 { PARSEP->lexString().append(yytext, yyleng); }
+<QQQ>{word}             { PARSEP->lexString().append(yytext, yyleng); }
+<QQQ>.                  { PARSEP->lexString().append(yytext, yyleng); }
 
   /************************************************************************/
   /* Attributes */

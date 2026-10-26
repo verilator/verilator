@@ -9,7 +9,7 @@ module t;
 
   // Stand-in for a task that should only be run by one thread at a time
   task automatic exclusive_task;
-    $display("%0t", $time);
+    $display("[%0t]", $time);
     #1;
   endtask
 

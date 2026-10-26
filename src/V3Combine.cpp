@@ -44,8 +44,8 @@ class CombineVisitor final : VNVisitor {
     // TYPES
     using funcit_t = std::list<AstCFunc*>::iterator;
     struct CFuncs final {
-        std::list<AstCFunc*> m_fast;
-        std::list<AstCFunc*> m_slow;
+        std::list<AstCFunc*> m_fast;  // Functions that are not slow
+        std::list<AstCFunc*> m_slow;  // Functions marked for slow files
     };
 
     // STATE
@@ -154,15 +154,13 @@ class CombineVisitor final : VNVisitor {
     void process(AstNetlist* netlistp) {
         // First, remove empty functions. We need to do this separately, because removing
         // calls can change the hashes of the callers.
-        for (AstNodeModule* modulep = netlistp->modulesp(); modulep;
-             modulep = VN_AS(modulep->nextp(), NodeModule)) {
+        for (AstNodeModule* const modulep : netlistp->modulespList()) {
             removeEmptyFunctions(m_cfuncs(modulep).m_fast);
             removeEmptyFunctions(m_cfuncs(modulep).m_slow);
         }
 
         // Combine functions within each module
-        for (AstNodeModule* modulep = netlistp->modulesp(); modulep;
-             modulep = VN_AS(modulep->nextp(), NodeModule)) {
+        for (AstNodeModule* const modulep : netlistp->modulespList()) {
             // Put fast functions first, so they are preferred over slow functions
             auto funcps = std::move(m_cfuncs(modulep).m_fast);
             funcps.splice(funcps.end(), m_cfuncs(modulep).m_slow);

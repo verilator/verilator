@@ -30,6 +30,8 @@
 #include <limits>
 #include <vector>
 
+class AstEnumDType;
+class AstEnumItem;
 class AstNode;
 class AstNodeDType;
 class AstSFormatArg;
@@ -47,6 +49,7 @@ public:
         COMPLEX = VL_VFORMATATTR_COMPLEX,
         DOUBLE = VL_VFORMATATTR_DOUBLE,
         ENUM = VL_VFORMATATTR_ENUM,
+        ENUM_SIGNED = VL_VFORMATATTR_ENUM_SIGNED,
         SCOPE = VL_VFORMATATTR_SCOPE,
         STRING = VL_VFORMATATTR_STRING,
         TIMEUNIT = VL_VFORMATATTR_TIMEUNIT
@@ -63,7 +66,7 @@ public:
     char ascii() const { return m_e; }
     bool isComplex() const { return m_e == COMPLEX; }
     bool isDouble() const { return m_e == DOUBLE; }
-    bool isEnum() const { return m_e == ENUM; }
+    bool isEnum() const { return m_e == ENUM || m_e == ENUM_SIGNED; }
     bool isSigned() const { return m_e == SIGNED; }
     bool isString() const { return m_e == STRING; }
     bool isUnsigned() const { return m_e == UNSIGNED; }
@@ -385,7 +388,7 @@ class V3Number final {
     using V3NumberDataType = V3NumberData::V3NumberDataType;
 
     // MEMBERS
-    V3NumberData m_data;
+    V3NumberData m_data;  // Value and flags
     AstNode* m_nodep = nullptr;  // Parent node - for error reporting only
     FileLine* m_fileline = nullptr;  // Source location - if no parent node is reasonable
 
@@ -396,6 +399,8 @@ class V3Number final {
         m_data.m_autoExtend = true;
     }
     V3Number& setSingleBits(char value);
+    void fillBits(int destLsb, int width, char value);
+    void copyBits(int destLsb, const V3Number& source, int sourceLsb, int width);
     V3Number& setString(const string& str) {
         m_data.setString(str);
         return *this;
@@ -649,6 +654,9 @@ public:
                      const VFormatAttr& formatAttr = VFormatAttr::UNSIGNED) const VL_MT_STABLE;
     string displayed(FileLine* fl, const string& vformat,
                      const VFormatAttr& formatAttr = VFormatAttr::UNSIGNED) const VL_MT_STABLE;
+    string displayedEnum(const AstSFormatArg* argp, const string& vformat) const VL_MT_STABLE;
+    string displayedEnumName(const AstEnumDType* dtypep) const VL_MT_STABLE;
+    static string displayedEnumName(const AstEnumItem* itemp);
     static bool displayedFmtHasArg(char format, bool isScan);
     string emitC() const VL_MT_STABLE;
     int width() const VL_MT_SAFE { return m_data.width(); }
@@ -704,6 +712,7 @@ public:
     bool isEqOne() const;
     bool isEqAllOnes(int optwidth = 0) const;
     bool isCaseEq(const V3Number& rhs) const;  // operator==
+    bool isLt(const V3Number& rhs) const;  // Unsigned operator<, false if unknown
     bool isLtXZ(const V3Number& rhs) const;  // operator< with XZ compared
     bool isAnyX() const VL_MT_SAFE;
     bool isAnyXZ() const;
@@ -720,6 +729,8 @@ public:
     string toString() const VL_MT_SAFE;
     string toDecimalS() const VL_MT_STABLE;  // return ASCII signed decimal number
     string toDecimalU() const VL_MT_STABLE;  // return ASCII unsigned decimal number
+    // return ASCII real number, with the fewest of 15 or 17 digits that is exact
+    string toRealString() const VL_MT_STABLE;
     double toDouble() const VL_MT_SAFE;
     V3Hash toHash() const;
     uint32_t edataWord(int eword) const;
@@ -772,6 +783,7 @@ public:
     V3Number& opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval);
     V3Number& opSelInto(const V3Number& lhs, const V3Number& lsb, int width);
     V3Number& opSelInto(const V3Number& lhs, int lsbval, int width);
+    V3Number& opCvtPackString(const V3Number& lhs);
     V3Number& opToLowerN(const V3Number& lhs);
     V3Number& opToUpperN(const V3Number& lhs);
     V3Number& opCaseEq(const V3Number& lhs, const V3Number& rhs);

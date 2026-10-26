@@ -17,7 +17,7 @@
 
 // clang-format off
 #if defined(VERILATOR)
-# include "Vt_flag_ldflags__Dpi.h"
+# include VM_PREFIX_INCLUDE_DPI
 #else
 # error "Unknown simulator for DPI test"
 #endif

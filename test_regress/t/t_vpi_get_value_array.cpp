@@ -651,6 +651,9 @@ int mon_check_props() {
 
 extern "C" int mon_check(void) { return mon_check_props(); }
 
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
+
 #ifdef IS_VPI
 static int mon_check_vpi() {
     TestVpiHandle href = vpi_handle(vpiSysTfCall, 0);
@@ -664,7 +667,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 // cver entry

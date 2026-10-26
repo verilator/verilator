@@ -82,9 +82,9 @@ public:
 
 class GateVarVertex final : public GateEitherVertex {
     VL_RTTI_IMPL(GateVarVertex, GateEitherVertex)
-    AstVarScope* const m_varScp;
-    bool m_isTop = false;
-    bool m_isClock = false;
+    AstVarScope* const m_varScp;  // Variable scope this vertex represents
+    bool m_isTop = false;  // Variable is a top-level signal
+    bool m_isClock = false;  // Variable is used as a clock
     AstNode* m_rstSyncNodep = nullptr;  // Used as reset and not in SenItem, in clocked always
     AstNode* m_rstAsyncNodep = nullptr;  // Used as reset and in SenItem, in clocked always
 public:
@@ -117,7 +117,7 @@ public:
 
 class GateLogicVertex final : public GateEitherVertex {
     VL_RTTI_IMPL(GateLogicVertex, GateEitherVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Logic node this vertex represents
     AstActive* const m_activep;  // Under what active; nullptr is ok (under cfunc or such)
     const bool m_slow;  // In slow block
 public:
@@ -201,6 +201,7 @@ class GateBuildVisitor final : public VNVisitorConst {
     bool m_inClockedActive = false;  // Underneath clocked active
     bool m_inEdgeActive = false;  // Underneath edge active
     bool m_inStaticActive = false;  // Underneath static active
+    bool m_inInitialActive = false;  // Underneath initial active
     bool m_inSenItem = false;  // Underneath AstSenItem; any varrefs are clocks
 
     // METHODS
@@ -224,7 +225,8 @@ class GateBuildVisitor final : public VNVisitorConst {
             m_logicVertexp->clearReducibleAndDedupable(nonReducibleReason);
         } else if (m_inClockedActive) {
             m_logicVertexp->clearReducible("Clocked logic");  // but dedupable
-        } else if (m_inStaticActive) {
+        } else if (m_inStaticActive || m_inInitialActive) {
+            // Runs only once, so its output must not be treated as live combinational logic
             m_logicVertexp->setStaticInit();
         }
         if (consumeReason) m_logicVertexp->setConsumed(consumeReason);
@@ -251,10 +253,12 @@ class GateBuildVisitor final : public VNVisitorConst {
         VL_RESTORER(m_inClockedActive);
         VL_RESTORER(m_inEdgeActive);
         VL_RESTORER(m_inStaticActive);
+        VL_RESTORER(m_inInitialActive);
         m_activep = nodep;
         m_inClockedActive = nodep->hasClocked();
         m_inEdgeActive = nodep->sentreep() && nodep->sentreep()->hasEdge();
         m_inStaticActive = nodep->hasStatic();
+        m_inInitialActive = nodep->hasInitial();
 
         // AstVarScope::user2 -> bool: Signal used in SenItem in *this* active block
         const VNUser2InUse user2InUse;
@@ -1123,7 +1127,7 @@ public:
 // Recurse through the graph, try to merge assigns
 
 class GateMergeAssignments final {
-    GateGraph& m_graph;
+    GateGraph& m_graph;  // Graph being processed
     size_t m_statAssignMerged = 0;  // Statistic tracking
     std::vector<GateLogicVertex*> m_toRemove;  // Logic vertices to delete
 

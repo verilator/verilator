@@ -78,6 +78,13 @@ module Test (
       RWL1,
       RWL2_n
   );
+  // Data inputs used only by the gate, with an identifier as the enable (#8353)
+  bufif0 I4 (n4_out, n4_in, RWL1);
+  bufif1 I5 (n5_out, n5_in, RWL1);
+  notif0 I6 (n6_out, n6_in, RWL1);
+  notif1 I7 (n7_out, n7_in, RWL1);
+  nmos I8 (n8_out, n8_in, RWL1);
+  pmos I9 (n9_out, n9_in, RWL1);
   // verilator lint_on IMPLICIT
 
 endmodule

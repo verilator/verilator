@@ -25,6 +25,8 @@ for s in [
         'Define or directive not defined: `',  # Instead V3ParseImp will warn
         'Expecting define formal arguments. Found:',  # Instead define syntax error
         'Need $SYSTEMC_INCLUDE in environment or when Verilator configured,',  # Would need ./configure
+        'Running subcommands is not supported on this platform:',  # Only hit on e.g. wasm
+        'Slices of arrays in assignments have different unpacked dimensions,',  # Instead V3Width error
         'Syntax error: Range \':\', \'+:\' etc are not allowed in the instance',  # Instead get syntax error
         'dynamic new() not expected in this context (expected under an assign)',  # Instead get syntax error
         'exited with',  # Is hit; driver.py filters out
@@ -73,12 +75,9 @@ for s in [
         'Pattern replication value of 0 is not legal.',
         'Signals inside functions/tasks cannot be marked forceable',
         'Slice size cannot be zero.',
-        'Slices of arrays in assignments have different unpacked dimensions,',
         'Symbol matching',
         'Thread scheduler is unable to provide requested',
-        'Unexpected connection to arrayed port',
         'Unsized numbers/parameters not allowed in streams.',
-        'Unsupported LHS node type in array assignment',
         'Unsupported RHS tristate construct:',
         'Unsupported or syntax error: Unsized range in instance or other declaration',
         'Unsupported pullup/down (weak driver) construct.',
@@ -95,9 +94,7 @@ for s in [
         'Unsupported: Default value on module inout/ref/constref:',
         'Unsupported: Modport empty expression',
         'Unsupported: Non-constant default value in missing argument',
-        'Unsupported: Non-constant index when passing interface to module',
         'Unsupported: Only one PSL clock allowed per assertion',
-        'Unsupported: Per-bit array instantiations',
         'Unsupported: Public functions with >64 bit outputs;',
         'Unsupported: Public functions with return > 64 bits wide.',
         'Unsupported: Replication to form',
@@ -120,7 +117,7 @@ for s in [
         'Unsupported: super',
         'Unsupported: with[] stream expression',
         'loading other than unpacked-array variable',
-        'loading other than unpacked/associative-array variable',
+        'loading other than unpacked/dynamic/associative-array variable',
         # These are safety limits requiring >1000 bins or >10000 members to trigger
 ]:
     Suppressed[s] = True

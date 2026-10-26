@@ -1,0 +1,42 @@
+---
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+# Deletes the skipped runs of the label gated workflows on pull requests.
+#
+# GitHub shows only the latest run of a workflow on a pull request, so a run
+# that was skipped hides an earlier run that is actually still in progress, and
+# the pull request then reads as though that workflow had finished and
+# everything is green. Every label change creates a run of every workflow that
+# triggers on label events, and label events cannot be filtered by label name
+# under 'on', so these runs cannot be prevented. Deleting them restores the
+# in-progress run in the UI.
+
+name: Maintenance - PR run cleanup
+
+on:
+  workflow_run:
+    workflows: ["Code coverage", "Regression", "RTLMeter"]
+    types: [completed]
+
+permissions:
+  actions: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  delete-skipped-run:
+    name: Delete skipped run
+    if: |
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'skipped'
+    runs-on: ubuntu-slim
+    steps:
+      - name: Delete run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |-
+          echo "Deleting skipped '${{ github.event.workflow_run.name }}' run #${{ github.event.workflow_run.run_number }}"
+          gh api --method DELETE "repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}"

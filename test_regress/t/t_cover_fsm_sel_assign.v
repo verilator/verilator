@@ -21,7 +21,7 @@ module t #(
   logic rst;
   logic start;
   integer cyc;
-  state_t state  /*verilator fsm_reset_arc*/;
+  state_t state  /*verilator fsm_state*/;
   logic [1:0] done_arr;
 
   logic [W-1:0] a;

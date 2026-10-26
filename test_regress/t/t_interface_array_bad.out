@@ -7,4 +7,8 @@
                                        : ... note: In instance 't'
    23 |   assign foos[bar].a = 1'b1;
       |              ^
+%Error: t/t_interface_array_bad.v:23:20: Can't find definition of 'foos[??]'
+                                       : ... note: In instance 't'
+   23 |   assign foos[bar].a = 1'b1;
+      |                    ^
 %Error: Exiting due to

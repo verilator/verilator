@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=\"%s\" exp=\"%s\"\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t;
   reg [40:0] quad; initial quad = 41'ha_bbbb_cccc;
   reg [80:0] wide; initial wide = 81'habc_1234_5678_1234_5678;
@@ -175,8 +180,26 @@ module t;
     $display("[%0t] Embedded\
 multiline", $time);
 
+    // IEEE 1800-2023 5.9: A backslash immediately before a newline in a
+    // quoted string is ignored, only the backslash and newline are removed.
+    s = "abc \
+def";
+    `checks(s, "abc def");
+    s = "abc\
+def";
+    `checks(s, "abcdef");
+    s = "a\
+b\
+c";
+    `checks(s, "abc");
+    s = "xy\
+z\nq";
+    `checks(s, "xyz\nq");
+    `checks("one \
+two", "one two");
+
     // Str check
-`ifndef NC    // NC-Verilog 5.3 chokes on this test
+`ifndef NC  // NC-Verilog 5.3 chokes on this test
     if (str !== 32'h00_bf_11_0a) $stop;
 `endif
 
@@ -243,7 +266,7 @@ module sub;
   task write_m;
     $write("[%0t] In %m (%l)\n", $time);
     begin : subblock
-      $write("[%0t] In %M (%L)\n", $time); // Uppercase %M test
+      $write("[%0t] In %M (%L)\n", $time);  // Uppercase %M test
     end
   endtask
 endmodule

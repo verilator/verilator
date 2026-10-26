@@ -48,6 +48,11 @@ public:
     explicit VOptionBool(int _e)
         : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
     constexpr operator en() const { return m_e; }
+    const char* ascii() const {
+        static const char* const names[]
+            = {"DEFAULT_FALSE", "DEFAULT_TRUE", "OPT_TRUE", "OPT_FALSE"};
+        return names[m_e];
+    }
     bool isDefault() const { return m_e == OPT_DEFAULT_FALSE || m_e == OPT_DEFAULT_TRUE; }
     bool isTrue() const { return m_e == OPT_TRUE || m_e == OPT_DEFAULT_TRUE; }
     bool isSetTrue() const { return m_e == OPT_TRUE; }
@@ -158,6 +163,43 @@ inline std::ostream& operator<<(std::ostream& os, const VTimescale& rhs) {
 
 // ######################################################################
 
+class VFsmExpandType final {
+    // Defined here since it is used in V3Options which does not include V3Ast.h
+public:
+    enum en : uint8_t {
+        DEFAULT = 0,  // Use the global default expansion type
+        AUTO,  // Expands only reset and default
+        AUTO_EXPAND,  // Expands transitions between all possible states
+        FULL,  // Cover all possible transitions
+    } m_e;
+    VFsmExpandType()
+        : m_e{DEFAULT} {}
+    // cppcheck-suppress noExplicitConstructor
+    constexpr VFsmExpandType(en _e)
+        : m_e{_e} {}
+    explicit VFsmExpandType(int _e)
+        : m_e(static_cast<en>(_e)) {}  // Need () or GCC 4.8 false warning
+    constexpr operator en() const { return m_e; }
+    constexpr const char* ascii() const {
+        constexpr const char* const names[] = {"DEFAULT", "AUTO", "AUTO_EXPAND", "FULL"};
+        return names[m_e];
+    }
+};
+constexpr bool operator==(const VFsmExpandType& lhs, const VFsmExpandType& rhs) VL_MT_SAFE {
+    return lhs.m_e == rhs.m_e;
+}
+constexpr bool operator==(const VFsmExpandType& lhs, VFsmExpandType::en rhs) VL_MT_SAFE {
+    return lhs.m_e == rhs;
+}
+constexpr bool operator==(VFsmExpandType::en lhs, const VFsmExpandType& rhs) VL_MT_SAFE {
+    return lhs == rhs.m_e;
+}
+inline std::ostream& operator<<(std::ostream& os, const VFsmExpandType& rhs) VL_MT_SAFE {
+    return os << rhs.ascii();
+}
+
+// ######################################################################
+
 // Information given by --hierarchical-block option
 class V3HierarchicalBlockOption final {
 public:
@@ -197,6 +239,7 @@ private:
     VStringSet m_cppFiles;     // argument: C++ files to link against
     VStringList m_cFlags;      // argument: user CFLAGS
     VStringList m_ldLibs;      // argument: user LDFLAGS
+    VStringList m_ldLibFiles;  // argument: library files, subset of m_ldLibs
     VStringList m_makeFlags;   // argument: user MAKEFLAGS
     VStringSet m_compilerIncludes; // argument: user --compiler-include
     VStringSet m_futures;      // argument: -Wfuture- list
@@ -225,9 +268,11 @@ private:
     bool m_binary = false;          // main switch: --binary
     bool m_build = false;           // main switch: --build
     bool m_context = true;          // main switch: --Wcontext
+    bool m_coverageBranch = false;  // main switch: --coverage-branch
     bool m_coverageExpr = false;    // main switch: --coverage-expr
     bool m_coverageFsm = false;     // main switch: --coverage-fsm
     bool m_coverageLine = false;    // main switch: --coverage-block
+    bool m_coverageMergeInstances = false;  // main switch: --coverage-merge-instances
     bool m_coveragePerInstance = false;  // main switch: --coverage-per-instance
     bool m_coverageToggle = false;  // main switch: --coverage-toggle
     bool m_coverageUnderscore = false;  // main switch: --coverage-underscore
@@ -289,7 +334,6 @@ private:
     VOptionBool m_schedZeroDelay;  // main switch: --sched-zero-delay
     bool m_stdPackage = true;       // main switch: --std-package
     bool m_stdWaiver = true;        // main switch: --std-waiver
-    bool m_structsPacked = false;   // main switch: --structs-packed
     bool m_systemC = false;         // main switch: --sc: System C instead of simple C++
     bool m_stats = false;           // main switch: --stats
     bool m_statsVars = false;       // main switch: --stats-vars
@@ -308,13 +352,17 @@ private:
     bool m_traceUnderscore = false; // main switch: --trace-underscore
     bool m_underlineZero = false;   // main switch: --underline-zero; undocumented old Verilator 2
     bool m_verilate = true;         // main switch: --verilate
-    bool m_vpi = false;             // main switch: --vpi
+    VOptionBool m_vpi;              // main switch: --vpi
     bool m_waiverMultiline = false;  // main switch: --waiver-multiline
     bool m_xInitialEdge = false;    // main switch: --x-initial-edge
 
     int         m_buildJobs = -1;    // main switch: --build-jobs, -j
     int         m_coverageExprMax = 32;    // main switch: --coverage-expr-max
+    VFsmExpandType m_coverageFsmExpand;  // main switch: --coverage-fsm-expand <mode>
+    int         m_coverageFsmMaxArcs = 4096;  // main switch: --coverage-fsm-max-arcs
     int         m_convergeLimit = 10000;  // main switch: --converge-limit
+    uint32_t    m_coverageMaxBins = 1024;  // main switch: --coverage-max-bins
+    uint32_t    m_coverageMaxRealBins = 1024;  // main switch: --coverage-max-real-bins
     int         m_coverageMaxWidth = 256; // main switch: --coverage-max-width
     int         m_debugAllocRandom = 0;  // main switch: --debug-alloc-random <seed>
     int         m_expandLimit = 256;  // main switch: --expand-limit
@@ -334,6 +382,7 @@ private:
     int         m_funcRecursion = 1000;  // main switch: --func-recursion-depth
     int         m_moduleRecursion = 100;  // main switch: --module-recursion-depth
     int         m_outputGroups = -1;  // main switch: --output-groups
+    int64_t     m_outputGroupsSize = 512 * 1024 * 1024;  // main switch: --output-groups-size
     int         m_outputSplit = 20000;  // main switch: --output-split
     int         m_outputSplitCFuncs = -1;  // main switch: --output-split-cfuncs
     int         m_outputSplitCTrace = -1;  // main switch: --output-split-ctrace
@@ -392,6 +441,7 @@ private:
     bool m_fAcycSimp;    // main switch: -fno-acyc-simp: acyclic pre-optimizations
     bool m_fAssemble;    // main switch: -fno-assemble: assign assemble
     bool m_fBitScanLoops;  // main switch: -fno-bit-scan-loops: convert bit scan loops to builtins
+    bool m_fBitblast;    // main switch: -fno-bitblast: split packed variables into bit ranges
     bool m_fCaseDecoder; // main switch: -fno-case-decoder: case decoder conversion
     bool m_fCaseTable;   // main switch: -fno-case-table: case table conversion
     bool m_fCaseTree;    // main switch: -fno-case-tree: case tree conversion
@@ -407,6 +457,9 @@ private:
     bool m_fDfgSynthesizeAll = false;  // main switch: -fdfg-synthesize-all
     bool m_fDeadAssigns;     // main switch: -fno-dead-assigns: remove dead assigns
     bool m_fDeadCells;   // main switch: -fno-dead-cells: remove dead cells
+    bool m_fDeadMethods;   // main switch: -fno-dead-methods: remove dead methods
+    bool m_fDecomposePacked;  // main switch: -fno-decompose-packed: packed decomposition
+    bool m_fDecomposeUnpacked;  // main switch: -fno-decompose-unpacked: unpacked decomposition
     bool m_fExpand;      // main switch: -fno-expand: expansion of C macros
     bool m_fFuncBalanceCat = true;  // main switch: -fno-func-balance-cat: expansion of C macros
     bool m_fFuncSplitCat = true;  // main switch: -fno-func-split-cat: expansion of C macros
@@ -419,11 +472,9 @@ private:
     bool m_fInlineFuncsEager = true;  // main switch: -fno-inline-funcs-eager: don't inline eagerly
     bool m_fLife;        // main switch: -fno-life: variable lifetime
     bool m_fLifePost;    // main switch: -fno-life-post: delayed assignment elimination
-    bool m_fLiftExpr = true;   // main switch: -fno-lift-expr: lift expressions out of statements
     bool m_fLocalize;    // main switch: -fno-localize: convert temps to local variables
     bool m_fMergeCond;   // main switch: -fno-merge-cond: merge conditionals
     bool m_fMergeCondMotion = true; // main switch: -fno-merge-cond-motion: perform code motion
-    bool m_fMergeConstPool = true;  // main switch: -fno-merge-const-pool
     bool m_fReloop;      // main switch: -fno-reloop: reform loops
     bool m_fReorder;     // main switch: -fno-reorder: reorder assignments in blocks
     bool m_fSlice = true;  // main switch: -fno-slice: array assignment slicing
@@ -433,7 +484,6 @@ private:
     bool m_fSubstConst;  // main switch: -fno-subst-const: final constant substitution
     bool m_fTable;       // main switch: -fno-table: lookup table creation
     bool m_fTaskifyAll = false;  // main switch: --ftaskify-all-forked
-    bool m_fVarSplit;    // main switch: -fno-var-split: automatic variable splitting
     // clang-format on
 
     bool m_available = false;  // Set to true at the end of option parsing
@@ -454,7 +504,8 @@ private:
     void optimize(int level);
     void showVersion(bool verbose);
     void coverage(bool flag) {
-        m_coverageLine = m_coverageToggle = m_coverageExpr = m_coverageFsm = m_coverageUser = flag;
+        m_coverageLine = m_coverageBranch = m_coverageToggle = m_coverageExpr = m_coverageFsm
+            = m_coverageUser = flag;
     }
     static bool suffixed(const string& sw, const char* arg);
     static string parseFileArg(const string& optdir, const string& relfilename);
@@ -478,6 +529,7 @@ public:
     void addCppFile(const string& filename);
     void addCFlags(const string& filename);
     void addCompilerIncludes(const string& filename);
+    void addLdLibFile(const string& filename);
     void addLdLibs(const string& filename);
     void addMakeFlags(const string& filename);
     void addLibMapFile(const string& filename);
@@ -504,7 +556,6 @@ public:
     bool statsVars() const { return m_statsVars; }
     bool stdPackage() const { return m_stdPackage; }
     bool stdWaiver() const { return m_stdWaiver; }
-    bool structsPacked() const { return m_structsPacked; }
     bool assertOn() const { return m_assert; }  // assertOn as __FILE__ may be defined
     bool assertCase() const { return m_assertCase; }
     bool autoflush() const { return m_autoflush; }
@@ -517,18 +568,23 @@ public:
     bool coverage() const VL_MT_SAFE {
         // Any enabled coverage kind, including FSM coverage. Code generation
         // and runtime support should generally query this accessor.
-        return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser
-               || m_coverageFsm;
+        return m_coverageLine || m_coverageBranch || m_coverageToggle || m_coverageExpr
+               || m_coverageUser || m_coverageFsm;
     }
     bool coverageNonFsm() const VL_MT_SAFE {
         // The broad line/toggle/expr/user coverage transforms use this
         // accessor. FSM coverage shares the overall coverage umbrella, but its
         // extraction still happens through a separate early-recognition path.
-        return m_coverageLine || m_coverageToggle || m_coverageExpr || m_coverageUser;
+        return m_coverageLine || m_coverageBranch || m_coverageToggle || m_coverageExpr
+               || m_coverageUser;
     }
+    bool coverageBranch() const { return m_coverageBranch; }
     bool coverageExpr() const { return m_coverageExpr; }
     bool coverageFsm() const { return m_coverageFsm; }
+    VFsmExpandType coverageFsmExpand() const { return m_coverageFsmExpand; }
+    int coverageFsmMaxArcs() const { return m_coverageFsmMaxArcs; }
     bool coverageLine() const { return m_coverageLine; }
+    bool coverageMergeInstances() const { return m_coverageMergeInstances; }
     bool coveragePerInstance() const { return m_coveragePerInstance; }
     bool coverageToggle() const { return m_coverageToggle; }
     bool coverageUnderscore() const { return m_coverageUnderscore; }
@@ -610,7 +666,7 @@ public:
     bool quietStats() const VL_MT_SAFE { return m_quietStats; }
     bool reportUnoptflat() const { return m_reportUnoptflat; }
     bool verilate() const { return m_verilate; }
-    bool vpi() const { return m_vpi; }
+    bool vpi() const { return m_vpi.isTrue(); }
     bool waiverMultiline() const { return m_waiverMultiline; }
     bool xInitialEdge() const { return m_xInitialEdge; }
     bool serializeOnly() const { return m_jsonOnly; }
@@ -619,6 +675,8 @@ public:
     int buildJobs() const VL_MT_SAFE { return m_buildJobs; }
     int convergeLimit() const { return m_convergeLimit; }
     int coverageExprMax() const { return m_coverageExprMax; }
+    uint32_t coverageMaxBins() const { return m_coverageMaxBins; }
+    uint32_t coverageMaxRealBins() const { return m_coverageMaxRealBins; }
     int coverageMaxWidth() const { return m_coverageMaxWidth; }
     int debugAllocRandom() const { return m_debugAllocRandom; }
     bool dumpTreeAddrids() const VL_MT_SAFE;
@@ -640,6 +698,7 @@ public:
     int outputSplitCFuncs() const { return m_outputSplitCFuncs; }
     int outputSplitCTrace() const { return m_outputSplitCTrace; }
     int outputGroups() const { return m_outputGroups; }
+    int64_t outputGroupsSize() const { return m_outputGroupsSize; }
     int pinsBv() const VL_MT_SAFE { return m_pinsBv; }
     int reloopLimit() const { return m_reloopLimit; }
     int replicationLimit() const { return m_replicationLimit; }
@@ -709,6 +768,7 @@ public:
     const VStringSet& cppFiles() const { return m_cppFiles; }
     const VStringList& cFlags() const { return m_cFlags; }
     const VStringSet& compilerIncludes() const { return m_compilerIncludes; }
+    const VStringList& ldLibFiles() const { return m_ldLibFiles; }
     const VStringList& ldLibs() const { return m_ldLibs; }
     const VStringList& makeFlags() const { return m_makeFlags; }
     const VFileLibSet& libraryFiles() const { return m_libraryFiles; }
@@ -730,6 +790,7 @@ public:
     bool fAcycSimp() const { return m_fAcycSimp; }
     bool fAssemble() const { return m_fAssemble; }
     bool fBitScanLoops() const { return m_fBitScanLoops; }
+    bool fBitblast() const { return m_fBitblast; }
     bool fCaseDecoder() const { return m_fCaseDecoder; }
     bool fCaseTable() const { return m_fCaseTable; }
     bool fCaseTree() const { return m_fCaseTree; }
@@ -748,6 +809,10 @@ public:
     }
     bool fDeadAssigns() const { return m_fDeadAssigns; }
     bool fDeadCells() const { return m_fDeadCells; }
+    bool fDeadMethods() const { return m_fDeadMethods; }
+    bool fDecompose() const { return m_fDecomposePacked || m_fDecomposeUnpacked; }
+    bool fDecomposePacked() const { return m_fDecomposePacked; }
+    bool fDecomposeUnpacked() const { return m_fDecomposeUnpacked; }
     bool fExpand() const { return m_fExpand; }
     bool fFuncBalanceCat() const { return m_fFuncBalanceCat; }
     bool fFuncSplitCat() const { return m_fFuncSplitCat; }
@@ -760,11 +825,9 @@ public:
     bool fInlineFuncsEager() const { return m_fInlineFuncsEager; }
     bool fLife() const { return m_fLife; }
     bool fLifePost() const { return m_fLifePost; }
-    bool fLiftExpr() const { return m_fLiftExpr; }
     bool fLocalize() const { return m_fLocalize; }
     bool fMergeCond() const { return m_fMergeCond; }
     bool fMergeCondMotion() const { return m_fMergeCondMotion; }
-    bool fMergeConstPool() const { return m_fMergeConstPool; }
     bool fReloop() const { return m_fReloop; }
     bool fReorder() const { return m_fReorder; }
     bool fSlice() const { return m_fSlice; }
@@ -774,7 +837,6 @@ public:
     bool fSubstConst() const { return m_fSubstConst; }
     bool fTable() const { return m_fTable; }
     bool fTaskifyAll() const { return m_fTaskifyAll; }
-    bool fVarSplit() const { return m_fVarSplit; }
 
     std::string traceClassBase() const VL_MT_SAFE;  // Deprecated
     std::string traceClassLang() const VL_MT_SAFE;  // Deprecated

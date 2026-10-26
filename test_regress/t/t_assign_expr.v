@@ -22,7 +22,8 @@ module t;
   function int foo();
     x += 1;
     return 1;
-  endfunction;
+  endfunction
+  ;
 
   // verilator lint_off ASSIGNEQEXPR
   initial begin
@@ -109,9 +110,9 @@ module t;
     `checkd(arr[1], 3);
     `checkd(x, 2);
 
-    arr[foo() + 1] = 6;
+    arr[foo()+1] = 6;
     `checkd(x, 3);
-    arr[foo() + 1] -= 5;
+    arr[foo()+1] -= 5;
     `checkd(arr[2], 1);
     `checkd(x, 4);
 

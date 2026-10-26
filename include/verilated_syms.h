@@ -72,4 +72,9 @@ public:
     ~VerilatedHierarchyMap() = default;
 };
 
+// Map of sorted interface reference names to the concrete interface they refer to
+// Stable nodes own references; duplicate names allow independently owned model instances.
+// Keyed by value, as the full name is built at construction
+using VerilatedIfaceRefMap = std::multimap<std::string, VerilatedIfaceRef, std::less<>>;
+
 #endif  // Guard

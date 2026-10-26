@@ -7,6 +7,11 @@
 // SPDX-FileCopyrightText: 2012 Jeremy Bennett, Embecosm
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -39,10 +44,20 @@ module array_test #(
   // verilator lint_on ASCRANGE
 
   typedef reg [7:0] r_t;
+  typedef r_t array_t[LEFT:RIGHT];
+
+  task automatic query_dimensions(input int dimension, output int left_bound, right_bound,
+                                  array_size);
+    // verilator no_inline_task
+    left_bound = $left(array_t, dimension);
+    right_bound = $right(array_t, dimension);
+    array_size = $size(array_t, dimension);
+  endtask
 
   integer l;
   integer r;
   integer s;
+  int cycle = 0;
 
   always @(posedge clk) begin
     l = $left(a);
@@ -55,8 +70,18 @@ module array_test #(
 
     if ((l != LEFT) || (r != RIGHT) || (s != (RIGHT - LEFT + 1))) $stop;
     if ($left(r_t) != 7 || $right(r_t) != 0 || $size(r_t) != 8 || $bits(r_t) != 8) $stop;
-    $write("*-* All Finished *-*\n");
-    $finish;
+
+    // A runtime dimension selects entries in compiler-generated constant tables.
+    query_dimensions(cycle[0] ? 2 : 1, l, r, s);
+    `checkd(l, cycle[0] ? 7 : LEFT);
+    `checkd(r, cycle[0] ? 0 : RIGHT);
+    `checkd(s, cycle[0] ? 8 : RIGHT - LEFT + 1);
+
+    cycle <= cycle + 1;
+    if (cycle == 3) begin
+      $write("*-* All Finished *-*\n");
+      $finish;
+    end
   end
 
 endmodule

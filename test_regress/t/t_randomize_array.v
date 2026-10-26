@@ -22,26 +22,28 @@ end
 
 class unconstrained_packed_array_test;
 
-    rand bit [3:0] [2:0] [15:0] packed_array;
-    function new();
-      packed_array = '{default: '{default: '{default: 'h0}}};
-    endfunction
+  rand bit [3:0][2:0][15:0] packed_array;
+  function new();
+    packed_array = '{default: '{default: '{default: 'h0}}};
+  endfunction
 
-    function void check_randomization();
-      `check_rand(this, this.packed_array)
-    endfunction
+  function void check_randomization();
+    `check_rand(this, this.packed_array)
+  endfunction
 
 endclass
 
 class unconstrained_unpacked_array_test;
 
-  rand bit [2:0] [15:0] unpacked_array [3][5];
-  rand int unpacked_array1 [9:3][4:8];
-  rand int unpacked_array2 [3:9][8:4];
+  rand bit [2:0][15:0] unpacked_array[3][5];
+  rand int unpacked_array1[9:3][4:8];
+  rand int unpacked_array2[3:9][8:4];
   function new();
-    unpacked_array = '{ '{default: '{default: 'h0}},
-                        '{default: '{default: 'h1}},
-                        '{default: '{default: 'h2}}};
+    unpacked_array = '{
+        '{default: '{default: 'h0}},
+        '{default: '{default: 'h1}},
+        '{default: '{default: 'h2}}
+    };
     unpacked_array1 = '{default: '{default: 0}};
     unpacked_array2 = '{default: '{default: 0}};
   endfunction
@@ -77,21 +79,21 @@ class unconstrained_dynamic_array_test;
   function new();
     // Initialize 1D dynamic array
     dynamic_array_1d = new[5];
-    foreach(dynamic_array_1d[i]) begin
+    foreach (dynamic_array_1d[i]) begin
       dynamic_array_1d[i] = 'h0 + i;
     end
 
     // Initialize 2D dynamic array
     dynamic_array_2d = new[3];
-    foreach(dynamic_array_2d[i]) begin
+    foreach (dynamic_array_2d[i]) begin
       dynamic_array_2d[i] = new[3];
-      foreach(dynamic_array_2d[i][j]) begin
+      foreach (dynamic_array_2d[i][j]) begin
         dynamic_array_2d[i][j] = 'h0 + i + j;
       end
     end
 
     class_dynamic_array = new[5];
-    foreach(class_dynamic_array[i]) begin
+    foreach (class_dynamic_array[i]) begin
       class_dynamic_array[i] = new;
     end
 
@@ -120,9 +122,7 @@ endclass
 
 class unconstrained_struct_with_array_test;
 
-  typedef struct {
-    rand bit [7:0] byte_array[4];
-  } struct_with_array_t;
+  typedef struct {rand bit [7:0] byte_array[4];} struct_with_array_t;
 
   rand struct_with_array_t struct_with_array;
 
@@ -144,7 +144,7 @@ class unconstrained_struct_array_test;
     rand int field_a;
     rand int field_b;
   } simple_struct_t;
-  rand simple_struct_t struct_array_1[3]; // Unpacked array
+  rand simple_struct_t struct_array_1[3];  // Unpacked array
   rand simple_struct_t struct_array_2[][];  // Dynamic array
 
   function new();
@@ -196,7 +196,7 @@ class unconstrained_associative_array_test;
     `check_rand(this, associative_array_1d["key1"]);
     `check_rand(this, associative_array_1d["key2"]);
 
-    foreach(associative_array_3d[key1, key2, key3]) begin
+    foreach (associative_array_3d[key1, key2, key3]) begin
       `check_rand(this, associative_array_3d[key1][key2][key3]);
     end
   endfunction
@@ -211,7 +211,7 @@ class unconstrained_queue_test;
   function new();
     queue_array_1d = {};
     for (int i = 0; i < 8; i++) begin
-        queue_array_1d.push_back('h0 + i);
+      queue_array_1d.push_back('h0 + i);
     end
     queue_array_2d = {};
     queue_array_2d[0] = '{1, 2, 3};
@@ -223,7 +223,7 @@ class unconstrained_queue_test;
     foreach (queue_array_1d[i]) begin
       `check_rand(this, queue_array_1d[i]);
     end
-    foreach(queue_array_2d[i, j]) begin
+    foreach (queue_array_2d[i, j]) begin
       `check_rand(this, queue_array_2d[i][j]);
     end
   endfunction
@@ -231,7 +231,7 @@ class unconstrained_queue_test;
 endclass
 
 module t_randomize_array;
-  unconstrained_packed_array_test  packed_class;
+  unconstrained_packed_array_test packed_class;
   unconstrained_unpacked_array_test unpacked_class;
   unconstrained_dynamic_array_test dynamic_class;
   unconstrained_struct_with_array_test struct_with_array_class;
@@ -242,42 +242,42 @@ module t_randomize_array;
   initial begin
     // Test 1: Packed Array Unconstrained Constrained Test
     packed_class = new();
-    repeat(2) begin
+    repeat (2) begin
       packed_class.check_randomization();
     end
 
     // Test 2: Unpacked Array Unconstrained Constrained Test
     unpacked_class = new();
-    repeat(2) begin
+    repeat (2) begin
       unpacked_class.check_randomization();
     end
 
     // Test 3: Dynamic Array Unconstrained Constrained Test
     dynamic_class = new();
-    repeat(2) begin
+    repeat (2) begin
       dynamic_class.check_randomization();
     end
 
     // Test 4: Struct Containing Array Test
     struct_with_array_class = new();
-    repeat(2) begin
+    repeat (2) begin
       struct_with_array_class.check_randomization();
     end
 
     struct_array_class = new();
-    repeat(2) begin
+    repeat (2) begin
       struct_array_class.check_randomization();
     end
 
     // Test 5: Associative Array Unconstrained Test
     associative_array_class = new();
-    repeat(2) begin
+    repeat (2) begin
       associative_array_class.check_randomization();
     end
 
     // Test 6: Queue Unconstrained Test
     queue_class = new();
-    repeat(2) begin
+    repeat (2) begin
       queue_class.check_randomization();
     end
 

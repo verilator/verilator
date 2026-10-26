@@ -76,7 +76,7 @@ namespace {
 
 class ReorderNodeVertex VL_NOT_FINAL : public V3GraphVertex {
     VL_RTTI_IMPL(ReorderNodeVertex, V3GraphVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Node this vertex represents
 
 protected:
     ReorderNodeVertex(V3Graph* graphp, AstNode* nodep)
@@ -293,7 +293,6 @@ class ReorderVisitor final : public VNVisitor {
         for (AstNode* currp = nodep; currp; currp = currp->nextp()) {
             ReorderLogicVertex* const vtxp = currp->user3u().to<ReorderLogicVertex*>();
             const uint32_t color = vtxp->color();
-            UASSERT_OBJ(color, currp, "No node color assigned");
             if (lastOfColor[color]) new ReorderStrictEdge{m_graphp, lastOfColor[color], vtxp};
             lastOfColor[color] = vtxp;
         }
@@ -321,7 +320,7 @@ class ReorderVisitor final : public VNVisitor {
 
         // Is the current ordering OK?
         bool leaveAlone = true;
-        int newOrder = 0;  // New sequence number of assignment
+        uint64_t newOrder = 0;  // New sequence number of assignment
         for (const auto& item : rankMap) {
             const AstNode* const nextp = item.second;
             if (++newOrder != nextp->user4()) leaveAlone = false;
@@ -430,6 +429,15 @@ class ReorderVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
 
+    void visit(AstNodeCCall* nodep) override {
+        if (!m_graphp || m_noReorderWhy) return;
+        // The callee is not inlined, so the variables it reads and writes carry no VarRef at
+        // the call site, and the scoreboard would let assignments to them move across the
+        // call. Treat any such call as a barrier.
+        m_noReorderWhy = "CCall";
+        iterateChildren(nodep);
+    }
+
     void visit(AstExprStmt* nodep) override {
         if (!m_graphp || m_noReorderWhy) return;
         VL_RESTORER(m_inDly);
@@ -439,10 +447,20 @@ class ReorderVisitor final : public VNVisitor {
 
     void visit(AstAssignDly* nodep) override {
         if (!m_graphp || m_noReorderWhy) return;
+        // An intra-assignment timing control does not block, but it reads variables when the NBA
+        // executes, like the value
+        if (AstNode* const controlp = nodep->timingControlp()) iterateChildren(controlp);
         iterate(nodep->rhsp());
         VL_RESTORER(m_inDly);
         m_inDly = true;
         iterate(nodep->lhsp());
+    }
+
+    void visit(AstMemberSel* nodep) override {
+        // A variable selected through a handle can be the same as one accessed otherwise, which
+        // is not known here, so the accesses must be kept in order
+        if (m_graphp) m_noReorderWhy = "Handle";
+        visit(static_cast<AstNode*>(nodep));
     }
 
     void visit(AstVarRef* nodep) override {

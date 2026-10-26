@@ -68,7 +68,7 @@ public:
 
     // CONSTRUCTORS
     OrderMoveVertex(OrderMoveGraph& graph, OrderLogicVertex* lVtxp,
-                    const AstSenTree* domainp) VL_MT_DISABLED;
+                    const OrderDomain* domainp) VL_MT_DISABLED;
     ~OrderMoveVertex() override = default;
     VL_UNCOPYABLE(OrderMoveVertex);
 
@@ -91,7 +91,7 @@ public:
     OrderGraph& orderGraph() const { return m_orderGraph; }
 
     // Build an OrderMoveGraph from an OrderGraph
-    static std::unique_ptr<OrderMoveGraph> build(OrderGraph&, const V3Order::TrigToSenMap&);
+    static std::unique_ptr<OrderMoveGraph> build(OrderGraph&);
 };
 
 //======================================================================
@@ -105,16 +105,16 @@ class OrderMoveDomScope final {
     OrderMoveVertex::List m_readyVertices;  // Ready vertices in this domain/scope
     V3ListLinks<OrderMoveDomScope> m_links;  // List links to store instances of this class
     bool m_isOnList = false;  // True if DomScope is already on a list through m_listEnt
-    const AstSenTree* const m_domainp;  // Domain the vertices belong to
+    const OrderDomain* const m_domainp;  // Domain the vertices belong to
     const AstScope* const m_scopep;  // Scope the vertices belong to
 
     // Key type for map below
     class DomScopeMapKey final {
-        const AstSenTree* const m_domainp;
-        const AstScope* const m_scopep;
+        const OrderDomain* const m_domainp;  // Domain the vertices belong to
+        const AstScope* const m_scopep;  // Scope the vertices belong to
 
     public:
-        DomScopeMapKey(const AstSenTree* domainp, const AstScope* scopep)
+        DomScopeMapKey(const OrderDomain* domainp, const AstScope* scopep)
             : m_domainp{domainp}
             , m_scopep{scopep} {}
 
@@ -146,7 +146,7 @@ public:
     using List = V3List<OrderMoveDomScope, &OrderMoveDomScope::links>;
 
     // STATIC MEMBERS
-    static OrderMoveDomScope& getOrCreate(const AstSenTree* domainp, const AstScope* scopep) {
+    static OrderMoveDomScope& getOrCreate(const OrderDomain* domainp, const AstScope* scopep) {
         return s_dsMap
             .emplace(std::piecewise_construct,  //
                      std::forward_as_tuple(domainp, scopep),  //
@@ -156,7 +156,7 @@ public:
     static void clear() { s_dsMap.clear(); }
 
     // CONSTRUCTOR
-    OrderMoveDomScope(const AstSenTree* domainp, const AstScope* scopep)
+    OrderMoveDomScope(const OrderDomain* domainp, const AstScope* scopep)
         : m_domainp{domainp}
         , m_scopep{scopep} {}
     ~OrderMoveDomScope() = default;
@@ -165,7 +165,7 @@ public:
 
     // MEMBERS
     OrderMoveVertex::List& readyVertices() { return m_readyVertices; }
-    const AstSenTree* domainp() const { return m_domainp; }
+    const OrderDomain* domainp() const { return m_domainp; }
     const AstScope* scopep() const { return m_scopep; }
 
     bool isOnList() const { return m_isOnList; }

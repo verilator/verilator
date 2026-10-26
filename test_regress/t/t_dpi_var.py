@@ -25,23 +25,23 @@ if test.vlt_all:
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.sub.in",.*"loc":"\w,91:[^"]*",.*"origName":"in",.*"dtypeName":"int",.*"isSigUserRdPublic":true'
+        r'{"type":"VAR","name":"t.sub.in",.*"loc":"\w,86:[^"]*",.*"origName":"in",.*"dtypeName":"int",.*"isSigUserRdPublic":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.sub.in_a",.*"loc":"\w,92:[^"]*",.*"origName":"in_a",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"t.sub.in_a",.*"loc":"\w,87:[^"]*",.*"origName":"in_a",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.sub.in_b",.*"loc":"\w,93:[^"]*",.*"origName":"in_b",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"t.sub.in_b",.*"loc":"\w,88:[^"]*",.*"origName":"in_b",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.sub.fr_a",.*"loc":"\w,94:[^"]*",.*"origName":"fr_a",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"t.sub.fr_a",.*"loc":"\w,89:[^"]*",.*"origName":"fr_a",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
     )
     test.file_grep(
         out_filename,
-        r'{"type":"VAR","name":"t.sub.fr_b",.*"loc":"\w,95:[^"]*",.*"origName":"fr_b",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
+        r'{"type":"VAR","name":"t.sub.fr_b",.*"loc":"\w,90:[^"]*",.*"origName":"fr_b",.*"dtypeName":"int",.*"isSigUserRdPublic":true,.*"isSigUserRWPublic":true'
     )
 
 test.execute()

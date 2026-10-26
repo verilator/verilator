@@ -8,17 +8,23 @@ module t (
     input clk
 );
 
-  integer cyc; initial cyc=1;
+  integer cyc;
+  initial cyc = 1;
 
-  wire    gain = 1'b0;
-  real    in;
-  always_comb in = (cyc-4) * 1.0;
-  wire    cmp;
+  wire gain = 1'b0;
+  real in;
+  always_comb in = (cyc - 4) * 1.0;
+  wire cmp;
 
-  adc_netlist netlist(.clk, .in, .gain, .cmp);
+  adc_netlist netlist (
+      .clk,
+      .in,
+      .gain,
+      .cmp
+  );
 
-  always @ (posedge clk) begin
-    if (cyc!=0) begin
+  always @(posedge clk) begin
+    if (cyc != 0) begin
       cyc <= cyc + 1;
       $display("cyc=%0d cmp=%d", cyc, cmp);
       if (cyc == 3) begin
@@ -39,19 +45,36 @@ module t (
 
 endmodule
 
-module adc_netlist(clk, in, gain, cmp);
+module adc_netlist (
+    clk,
+    in,
+    gain,
+    cmp
+);
   input clk;
   input real in;
   input gain;
   output cmp;
 
-  wire pga_out; //TODO: convert to real or support real
-  pga_model pga0(.in, .gain, .out(pga_out));
-  comparator_model cmp0(.clk, .in(pga_out), .cmp);
+  wire pga_out;  //TODO: convert to real or support real
+  pga_model pga0 (
+      .in,
+      .gain,
+      .out(pga_out)
+  );
+  comparator_model cmp0 (
+      .clk,
+      .in(pga_out),
+      .cmp
+  );
 
 endmodule
 
-module pga_model(in, gain, out);
+module pga_model (
+    in,
+    gain,
+    out
+);
   input real in;
   input gain;
   output real out;
@@ -62,7 +85,11 @@ module pga_model(in, gain, out);
 
 endmodule
 
-module comparator_model(clk, in, cmp);
+module comparator_model (
+    clk,
+    in,
+    cmp
+);
   input clk;
   input real in;
   output logic cmp;

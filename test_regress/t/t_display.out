@@ -70,8 +70,7 @@ extra argument:                    0
                    0 : pre argument after
 empty: > <
 [0] Embedded tab '	' and <#013> return
-[0] Embedded
-multiline
+[0] Embeddedmultiline
 '23 23       23'
 '23 23 23      '
 '23 23       23'

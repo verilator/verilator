@@ -22,12 +22,9 @@ interface intf #(
 `endif
 endinterface
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-
-  input clk;
 
   // finish report
   always @(posedge clk) begin

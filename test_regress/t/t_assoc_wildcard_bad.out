@@ -71,6 +71,10 @@
                                      : ... note: In instance 't'
    43 |     a[x] = "bad";
       |      ^
+%Error: t/t_assoc_wildcard_bad.v:43:7: Cannot convert 'class' handle to a string:'class Cls'
+                                     : ... note: In instance 't'
+   43 |     a[x] = "bad";
+      |       ^
 %Error: t/t_assoc_wildcard_bad.v:45:7: Unknown wildcard associative array method 'bad_not_defined'
                                      : ... note: In instance 't'
    45 |     a.bad_not_defined();

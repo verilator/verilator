@@ -8,7 +8,9 @@ module leaf (
     input sel,
     output logic ready
 );
+  /* verilator lint_off LATCH */  // Latch is intentional
   always @(sel) if ((sel == 1)) ready = 1;
+  /* verilator lint_on LATCH */
 endmodule
 
 interface iface (

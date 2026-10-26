@@ -12,21 +12,20 @@
 
 typedef bit bit_q_t[$];
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
-  integer        cyc = 0;
-  reg     [63:0] crc = '0;
-  reg     [63:0] sum = '0;
+
+  integer cyc = 0;
+  reg [63:0] crc = '0;
+  reg [63:0] sum = '0;
 
   // Take CRC data and apply to testblock inputs
-  wire    [31:0] in = crc[31:0];
+  wire [31:0] in = crc[31:0];
 
   /*AUTOWIRE*/
   // Beginning of automatic wires (for undeclared instantiated-module outputs)
-  wire    [31:0] out;  // From test of Test.v
+  wire [31:0] out;  // From test of Test.v
   // End of automatics
 
   Test test (
@@ -52,7 +51,7 @@ module t (  /*AUTOARG*/
     bits.push_front(1'b0);
     po = {<<8{bit_q_t'({<<{bits}})}};
 
-    s  = $sformatf("p=%p", p);
+    s = $sformatf("p=%p", p);
     `checks(s, "p='{'h84, 'haa}");
 
     s = $sformatf("bits=%p", bits);
@@ -75,9 +74,11 @@ module t (  /*AUTOARG*/
     if (cyc == 0) begin
       crc <= 64'h5aef0c8d_d70a4497;
       sum <= '0;
-    end else if (cyc < 10) begin
+    end
+    else if (cyc < 10) begin
       sum <= '0;
-    end else if (cyc == 99) begin
+    end
+    else if (cyc == 99) begin
       `checkh(crc, 64'hc77bb9b3784ea091);
       `checkh(sum, 64'h9721d4e989defb24);
       $write("*-* All Finished *-*\n");

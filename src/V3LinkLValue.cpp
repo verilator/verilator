@@ -48,6 +48,16 @@ class LinkLValueVisitor final : public VNVisitor {
         // VarRef: LValue its reference
         if (m_setIfRand && !(nodep->varp() && nodep->varp()->isRand())) return;
         if (m_setRefLvalue != VAccess::NOCHANGE) nodep->access(m_setRefLvalue);
+        // Linked via an input-only modport by V3LinkDot, before it was known if written
+        if (AstVarXRef* const xrefp = VN_CAST(nodep, VarXRef)) {
+            if (xrefp->readOnlyModport()) {
+                if (nodep->access().isWriteOrRW()) {
+                    nodep->v3error(
+                        "Attempt to drive input-only modport: " << nodep->prettyNameQ());
+                }
+                xrefp->readOnlyModport(false);
+            }
+        }
         if (nodep->varp() && nodep->access().isWriteOrRW()) {
             if (nodep->varp()->isParam()) {
                 // All parameters that did get constified happened before now
@@ -345,13 +355,9 @@ class LinkLValueVisitor final : public VNVisitor {
             if (!argp) continue;
             AstNodeExpr* const pinp = argp->exprp();
             if (!pinp) continue;
-            if (portp->isWritable()) {
-                VL_RESTORER(m_setRefLvalue);
-                m_setRefLvalue = VAccess::WRITE;
-                iterate(pinp);
-            } else {
-                iterate(pinp);
-            }
+            VL_RESTORER(m_setRefLvalue);
+            m_setRefLvalue = portp->direction().pinAccess();
+            iterate(pinp);
         }
         if (nodep->withp()) iterate(nodep->withp());
     }
@@ -385,9 +391,9 @@ void V3LinkLValue::linkLValue(AstNetlist* nodep) {
     { LinkLValueVisitor{nodep, VAccess::NOCHANGE}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("linklvalue", 0, dumpTreeEitherLevel() >= 6);
 }
-void V3LinkLValue::linkLValueSet(AstNode* const nodep, const bool isLValue) {
+void V3LinkLValue::linkLValueSet(AstNode* const nodep, const VAccess access) {
     // Called by later link functions when it is known a node needs
     // to be converted to a lvalue.
     UINFO(9, __FUNCTION__ << ": ");
-    { LinkLValueVisitor{nodep, isLValue ? VAccess::WRITE : VAccess::READ}; }
+    { LinkLValueVisitor{nodep, access}; }
 }

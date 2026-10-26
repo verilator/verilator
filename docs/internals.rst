@@ -425,8 +425,9 @@ logic.
 
 To achieve this, we invoke ``V3Order::order`` on all of the combinational
 and hybrid logic, and iterate the resulting evaluation function until no
-more hybrid logic is triggered. This yields the `_eval_settle` function,
-which is invoked at the beginning of simulation after the `_eval_initial`.
+more hybrid logic is triggered. This yields the `_eval_stl` function, which
+the runtime event loop iterates at the beginning of simulation, after the
+`_eval_initial`.
 
 
 Partitioning logic for correct NBA updates
@@ -500,51 +501,66 @@ and clock signals on separate evaluations, as was necessary with earlier
 versions of Verilator).
 
 
-Constructing the top level `_eval` function
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Constructing the region evaluation functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To construct the top level `_eval` function, which updates the state of the
-circuit to the end of the current time step, we invoke ``V3Order::order``
-separately on the 'ico', 'act' and 'nba' logic, which yields the
-`_eval_ico`, `_eval_act`, and `_eval_nba` functions. We then put these all
-together with the corresponding functions that compute the respective
-trigger expressions into the top level `_eval` function, which on the high
-level has the form:
+To update the state of the circuit to the end of the current time step, we
+invoke ``V3Order::order`` separately on the 'ico', 'act' and 'nba' logic,
+which yields the `_eval_body__ico`, `_eval_body__act`, and
+`_eval_body__nba` functions. Each of these is then combined with the
+function computing the respective trigger expressions into a single entry
+point per region, `_eval_ico`, `_eval_act` and `_eval_nba`. A region entry
+point evaluates one iteration of its region, and returns whether it did any
+work, meaning the region has not converged yet and must be evaluated again.
+On the high level, `_eval_act` has the form:
 
 .. code-block:: C++
 
-   void _eval() {
-      // Update combinational logic dependent on top level inputs ('ico' region)
-      while (true) {
-        _eval__triggers__ico();
-        // If no 'ico' region trigger is active
-        if (!ico_triggers.any()) break;
-        _eval_ico();
-      }
-
-      // Iterate 'act' and 'nba' regions together
-      while (true) {
-
-        // Iterate 'act' region, this computes all derived clocks updaed in the
-        // Active scheduling region, but does not commit any NBAs that executed
-        // in 'act' region logic.
-        while (true) {
-          _eval__triggers__act();
-          // If no 'act' region trigger is active
-          if (!act_triggers.any()) break;
-          // Remember what 'act' triggers were active, 'nba' uses the same
-          latch_act_triggers_for_nba();
-          _eval_act();
-        }
-
-        // If no 'nba' region trigger is active
-        if (!nba_triggers.any()) break;
-
-        // Evaluate all other Active region logic, and commit NBAs
-        _eval_nba();
-      }
+   bool _eval_act() {
+      _eval_triggers_vec__act();
+      // Remember what 'act' triggers were active, 'nba' uses the same
+      latch_act_triggers_for_nba();
+      const bool execute = act_triggers.any();
+      // Compute all derived clocks updated in the Active scheduling region,
+      // but do not commit any NBAs that executed in 'act' region logic.
+      if (execute) _eval_body__act();
+      return execute;
    }
 
+The loops iterating these regions are not generated. They live in the
+runtime library, in ``VerilatedEvalLoop``, and the model exposes its region
+entry points to it as virtual methods of ``VerilatedModel``. The generated
+model holds a ``VerilatedEvalLoop`` as a member, which its ``eval_step``
+runs, and which on the high level has the form:
+
+.. code-block:: C++
+
+   void VerilatedEvalLoop::evalImpl() {
+      // Update combinational logic dependent on top level inputs ('ico' region)
+      uint32_t icoIterCount = 0;
+      do {
+        if (++icoIterCount > m_convergeLimit) didNotConverge("Input combinational");
+      } while (m_model.evalIco(icoIterCount == 1));
+
+      // Iterate 'act' and 'nba' regions together
+      uint32_t nbaIterCount = 0;
+      do {
+        if (++nbaIterCount > m_convergeLimit) didNotConverge("NBA");
+        // Iterate the 'act' region to convergence
+        uint32_t actIterCount = 0;
+        do {
+          if (++actIterCount > m_convergeLimit) didNotConverge("Active");
+        } while (m_model.evalAct());
+        // Evaluate all other Active region logic, and commit NBAs
+      } while (m_model.evalNba());
+   }
+
+The remaining regions ('inact', 'obs' and 'react') nest around these in the
+same manner, each iterating the loops of all regions that precede it in the
+SystemVerilog scheduling order. The runtime event loop calls every region
+unconditionally, so scheduling emits an entry point for each one even when
+the design has no logic in it. Such an entry point immediately returns
+false, ending its loop after a single iteration.
 
 Timing
 ------
@@ -730,7 +746,8 @@ they wouldn't be evaluated and next coroutine after resumption would fire
 the event `a` then it is impossible to get to know whether await or fire on
 event `a` was called first - which is necessary to know.
 
-There are two functions for managing timing logic called by ``_eval()``:
+There are two functions for managing timing logic called by the 'act'
+region:
 
 - ``_timing_ready()``, which commits all coroutines whose triggers were not
   set in the current iteration,
@@ -751,36 +768,27 @@ Thanks to this separation a coroutine:
   (``test_regress/t/t_event_control_double_lost.v``) - which is possible
   when triggers are not evaluated right before awaiting.
 
-All coroutines are committed and resumed in the 'act' eval loop. With
-timing features enabled, the ``_eval()`` function takes this form:
+All coroutines are committed and resumed in the 'act' region. With timing
+features enabled, the 'act' region entry point takes this form:
 
 ::
 
-   void _eval() {
-     while (true) {
-       _eval__triggers__ico();
-       if (!ico_triggers.any()) break;
-       _eval_ico();
+   bool _eval_act() {
+     _eval_triggers_vec__act();
+
+     // Commit all non-triggered coroutines
+     _timing_commit();
+
+     const bool execute = act_triggers.any();
+     if (execute) {
+       latch_act_triggers_for_nba();
+
+       // Resume all triggered coroutines
+       _timing_resume();
+
+       _eval_body__act();
      }
-
-     while (true) {
-       while (true) {
-         _eval__triggers__act();
-
-         // Commit all non-triggered coroutines
-         _timing_commit();
-
-         if (!act_triggers.any()) break;
-         latch_act_triggers_for_nba();
-
-         // Resume all triggered coroutines
-         _timing_resume();
-
-         _eval_act();
-       }
-       if (!nba_triggers.any()) break;
-       _eval_nba();
-     }
+     return execute;
    }
 
 Forks
@@ -912,11 +920,42 @@ Chapter 5. Verilator takes this static approach. The only dynamic aspect is
 that each macro task may block before starting, to wait until its
 prerequisites on other threads have finished.
 
+The generated code also describes each macro-task graph as static data: the
+function of each macro-task, its estimated cost, the trigger bits its code
+tests, and the dependencies between macro-tasks. Where the graph executes,
+the generated code passes this description and the trigger vector to the
+run-time library, which executes the graph. If the macro-tasks whose
+triggers are set are cheap in total, it runs only those, in a topological
+order on the calling thread, without waking the other threads.
+
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major
 source of overhead in this approach. The ``--prof-exec`` switch and the
 ``verilator_gantt`` script can visualize the time lost to such
 fragmentation.
+
+
+Synchronizing Macro-Tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each thread of a schedule owns one progress word (``VlThreadProgress``), on
+its own cache line: the position, counted from 1, of its last finished
+macro-task. The words of each macro-task graph are held together in
+``VlScheduleProgress``.
+
+After a macro-task that a macro-task on another thread depends on, its
+thread publishes its position with a release store, however many threads
+depend on it. Before a macro-task, its thread waits, with acquire loads,
+for each producing thread to reach the latest position it needs, unless an
+earlier wait in the same thread already covered it. Each dependency
+therefore costs one cache line transfer from producer to consumer, and no
+read-modify-write.
+
+At the end of a schedule, each thread publishes that it is done, and the
+dispatching thread waits for the threads run by the thread pool. Before
+starting a schedule, while no thread is running one, the dispatching thread
+sets the words back to zero; handing the threads' functions to the thread
+pool orders this before they start.
 
 
 Locating Variables for Best Spatial Locality
@@ -1023,15 +1062,6 @@ Profile-guided optimization make this a bit better, by adjusting mtask
 scheduling, but this does not yet guide the packing into mtasks.
 
 
-Performance Regression
-++++++++++++++++++++++
-
-It would be nice if we had a regression of large designs, with some
-diversity of design styles, to test on both single- and multithreaded
-modes. This would help to avoid performance regressions, and also to
-evaluate the optimizations while minimizing the impact of parasitic noise.
-
-
 Per-Instance Classes
 ++++++++++++++++++++
 
@@ -1082,9 +1112,17 @@ solver gets a setup query, then the definition of variables, then all the
 constraints (SMT assertions) about the variables. Since the solver has no
 information about the class' PRNG state, if the problem is satisfiable, the
 solution space is further constrained by adding extra random constraints,
-and querying the values satisfying the problem statement. The constraint is
-currently constructed as fixing a simple xor of randomly chosen bits of the
-variables being randomized.
+and querying the values satisfying the problem statement. The constraints
+are currently built by the UniGen2 algorithm ("On Parallel Scalable Uniform
+SAT Witness Generation", Chakraborty et al.). It first works out how many
+random xor equations are needed to split the solution space into cells of a
+size worth enumerating, then draws one cell and enumerates it, which gives
+a near-uniform sample of the whole space. Both the estimate and the
+leftover solutions are cached, so the following calls are answered without
+asking the solver again. Cases outside its assumptions, such as ``randc``
+variables or soft constraints, fall back to pinning every free bit to a
+random value, or, when arrays are involved, to asserting four random xor
+equations in a row.
 
 The runtime classes used for handling the randomization are defined in
 ``verilated_random.h`` and ``verilated_random.cpp``.
@@ -1182,7 +1220,7 @@ is appreciated if you could match our style for C/C++:
   (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
-using clang-format version 18, and yapf for Python, and is automatically
+using clang-format version 21, and yapf for Python, and is automatically
 corrected in the CI actions. For those manually formatting C code:
 
 - Use four spaces per level, and no tabs.
@@ -1318,9 +1356,14 @@ AstNodeExpr``.
 ``astnode`` generates accessors for the child nodes based on these
 directives. For non-list children, the names of the getter and setter both
 are that of the given ``<identifier>``. For list-type children, the getter
-is ``<identifier>``, and instead of the setter, there an
-``add<Identifier>`` method is generated that appends new nodes (or lists of
-nodes) to the child list.
+is ``<identifier>``, and instead of the setter, an ``add<Identifier>``
+method is generated that appends new nodes (or lists of nodes) to the child
+list, and a ``prepend<Identifier>`` method that prepends them to the front
+of the child list.
+
+The ``<type>`` can be prefixed with ``private`` to generate no accessors,
+for a child that only the node's own methods may change, e.g. to keep it
+consistent with other members of the node.
 
 
 ``alias op<N>`` operand alias directives
@@ -1570,8 +1613,9 @@ For all tests to pass, you must install the following packages:
 
 - SystemC to compile the SystemC outputs, see https://systemc.org
 
-- wavediff to find differences in waveform outputs. See the readme at
-  https://github.com/hudson-trading/wavetools
+- wavetools to find differences in waveform outputs, and to convert from
+  FST to VCD when updating golden files. See
+  https://github.com/hudson-trading/wavetools.
 
 - Cmake for build paths that use it.
 
@@ -1629,7 +1673,7 @@ There are some traps to avoid when running regression tests
   Hat/Fedora/Centos offer *perl-Pod-Perldoc*', while Debian/Ubuntu/Linux
   Mint offer \`perl-doc'.
 
-- Running regression may exhaust resources on some Linux systems,
+- Running regression tests may exhaust resources on some Linux systems,
   particularly file handles and user processes. Increase these to
   respectively 16,384 and 4,096. The method of doing this is
   system-dependent, but on Fedora Linux it would require editing the
@@ -1648,6 +1692,18 @@ provides the *test-snap* and *test-diff* targets:
 - Apply your changes
 - Run the test suite again with ``make test``
 - See the changes in the output with ``make test-diff``
+
+``make test-snap`` copies the ``obj_*``, test output directories into
+``test_regress/snapshot``. Set ``TEST_SNAP_DIR`` to use a different
+location, e.g. to keep multiple snapshots. Files matching the patterns in
+``test_regress/test_diff_ignore.txt`` are not copied: build products, logs,
+debug dumps, and outputs that depend on host timing.
+
+``make test-diff`` shows in a pager the files that exist only in the
+snapshot or only in the current output, and the differences in files
+present in both. In C++ sources, hashed names (``_hHASH_``) and AstNode
+addresses from ``--decorations node`` are masked, as they change without
+the generated code changing.
 
 Continuous Integration
 ----------------------
@@ -1897,14 +1953,14 @@ Tree Hierarchy
    The dump lines begin with numbers and colons to indicate the child node
    hierarchy. As noted above, ``AstNode`` has lists of items at the same
    level in the AST, connected by the ``nextp()`` and ``prevp()`` pointers.
-   These appear as nodes at the same level. For example, after inlining:
+   These appear as nodes at the same level. For example:
 
    ::
 
        NETLIST 0x929c1c8 <e1> {a0} w0
-      1: MODULE 0x92bac80 <e3144> {e14} w0  TOP_t  L1 [P]
-      1:1: CELLINLINE 0x92bab18 <e3686#> {e14} w0  v -> t
-      1:1: CELLINLINE 0x92bc1d8 <e3688#> {e24} w0  v__DOT__i_test_gen -> test_gen
+      1: MODULE 0x92bac80 <e3144> {e14} w0  t  L2
+      1:1: VAR 0x92a2e90 <e79> {e18} w0  clk [I] INPUT
+      1:1: CELL 0x92bc1d8 <e3688#> {e24} w0  i_test_gen -> MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
       1: MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
@@ -1971,8 +2027,8 @@ referred to. For example:
 In general, examine the ``dump()`` method in ``V3AstNodes.cpp`` of the node
 type in question to determine additional fields that may be printed.
 
-The ``MODULE`` has a list of ``CELLINLINE`` nodes referred to by its
-``op1p()`` pointer, connected by ``nextp()`` and ``prevp()`` pointers.
+The ``MODULE`` has a list of statements referred to by its ``op1p()``
+pointer, connected by ``nextp()`` and ``prevp()`` pointers.
 
 Similarly, the ``NETLIST`` has a list of modules referred to by its
 ``op1p()`` pointer.
@@ -2233,7 +2289,7 @@ The following script is an example of this debugging:
    # Example script for finding nondeterminism
    cd $VERILATOR_ROOT
    set -e
-   t=t_split_var_0  # Test name
+   t=t_EXAMPLE  # Test name
    test_regress/t/$t.py --debug --debug-alloc-random 33 --dumpi-tree 9 --obj-suffix .33
    test_regress/t/$t.py --debug --debug-alloc-random 66 --dumpi-tree 9 --obj-suffix .66
    bin/verilator_difftree test_regress/obj_vlt/$t{.33,.66} | grep -v CFILE | grep -v "^ " | grep -v /tmp | grep -v @@
@@ -2356,6 +2412,11 @@ driver.py Non-Scenario Arguments
    requirements, but may result in longer runtime if the tests are run
    again.
 
+.. option:: --driver-prune
+
+   Similar to ``--driver-clean``, but keeps output required by
+   ``make test-snap`` / ``make test-diff``.
+
 .. option:: --dump-tree
 
    Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug
@@ -2406,7 +2467,7 @@ driver.py Non-Scenario Arguments
 .. option:: --quiet
 
    Suppress all output except for failures and progress messages every 15
-   seconds. Intended for use only in automated regressions. See also
+   seconds. Intended for use only in automated regression testing. See also
    ``--rerun``, and ``--verbose`` which is not the opposite of ``--quiet``.
 
 .. option:: --rerun
@@ -2548,6 +2609,14 @@ VERILATOR_SOLVER
    SMT solver command for constrained randomization; see primary Verilator
    documentation.
 
+VERILATOR_TESTS_OBJ_ROOT
+   If set, each output ``obj_*`` directory the driver creates is instead a
+   symlink to the same absolute path mirrored under this directory, e.g.
+   ``test_regress/obj_vlt`` links to ``$VERILATOR_TESTS_OBJ_ROOT/<path
+   to>/test_regress/obj_vlt``. Use to put test outputs on a different (e.g.
+   faster, not backed up) disk. Consider using with ``--driver-clean`` or
+   ``--driver-prue`` to save disk space.
+
 VERILATOR_TESTS_SITE
    Used with ``--site``, a colon-separated list of directories with tests
    to be added to testlist.
@@ -2560,6 +2629,13 @@ VERILATOR_XELAB
 
 VERILATOR_XVLOG
    Command to use to invoke XSim xvlog
+
+WAVECAT
+   Path to wavecat executable, used for FST to VCD conversion when using
+   --golden.
+
+WAVEDIFF
+   Path to wavediff executable, used for comparing VCD and FST trace files.
 
 
 Test Language

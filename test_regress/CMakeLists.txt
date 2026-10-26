@@ -137,6 +137,5 @@ target_compile_definitions(
     PRIVATE
         "TEST_OBJ_DIR=${CMAKE_CURRENT_BINARY_DIR}"
         "VM_PREFIX=${TEST_PREFIX}"
-        "VM_PREFIX_INCLUDE=<${TEST_PREFIX}.h>"
         "${TEST_NAME_UC}"
 )

@@ -136,8 +136,8 @@ public:
         } else {
             m_idNameMap.emplace(name, entp);
         }
-        if (name.find("__DOT__") == std::string::npos
-            && !ignoreForSimilarTest(entp->nodep()->type())) {  // ignore hierarchical equivalents
+        if (!name.empty() && name.find("__DOT__") == std::string::npos  // ignore hierarchical
+            && checkSimilarname(entp->nodep())) {
             string lc = name;
             for (auto& c : lc) c = (char)tolower(c);
             if (m_idNameSimilarMap.find(lc) == m_idNameSimilarMap.end())
@@ -168,19 +168,17 @@ public:
         if (it != m_idNameMap.end()) return it->second;
         return nullptr;
     }
-    bool ignoreForSimilarTest(VNType t) {  // node types that don't affect final net types
-        switch (t) {
-        case VNType::TypedefFwd:
-        case VNType::Typedef:
-        case VNType::ParamTypeDType:
-        case VNType::EnumItem:
-        case VNType::EnumItemRef:
-        case VNType::Let:
-        case VNType::Class:
-        case VNType::Task:
-        case VNType::Func: return true;
-        default: return false;
+    static bool checkSimilarname(const AstNode* nodep) {
+        // Only declarations that can contribute a name to the netlist handed
+        // to a backend tool.
+        if (const AstVar* const varp = VN_CAST(nodep, Var)) {
+            return !varp->isParam() && !varp->isGenVar();
         }
+        return VN_IS(nodep, Cell)  //
+               || VN_IS(nodep, NodeBlock)  //
+               || VN_IS(nodep, GenBlock)  //
+               || VN_IS(nodep, Func)  // Note: not AstNodeFTask (Property/Sequence)
+               || VN_IS(nodep, Task);
     }
     VSymEnt* findSimilarIdFlat(const string& name) const {
         // Find identifier without looking upward through symbol hierarchy
@@ -192,6 +190,9 @@ public:
         for (auto& c : s) c = (char)tolower(c);
         if (m_idNameSimilarMap.find(s) == m_idNameSimilarMap.end()) return nullptr;
         for (auto it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
+            // Only report a declaration that is itself checked, otherwise we
+            // might point at e.g. a localparam that merely sorts first
+            if (!checkSimilarname(it->second->nodep())) continue;
             string t = it->first;
             for (auto& c : t) c = (char)tolower(c);
             if (t == s && name != it->first) { return it->second; }
@@ -206,20 +207,25 @@ public:
         if (m_fallbackp) return m_fallbackp->findIdFallback(name);
         return nullptr;
     }
-    void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
+    void candidateIdFlat(VSpellCheck* spellerp, const VNodeMatcher* matcherp,
+                         bool includeType) const {
         // Suggest alternative symbol candidates without looking upward through symbol
         // hierarchy
         for (IdNameMap::const_iterator it = m_idNameMap.begin(); it != m_idNameMap.end(); ++it) {
             const AstNode* const itemp = it->second->nodep();
             if (itemp && (!matcherp || matcherp->nodeMatch(itemp))) {
-                spellerp->pushCandidate(itemp->prettyName());
+                if (includeType) {
+                    spellerp->pushCandidate(itemp->prettyName(), itemp->prettyTypeName());
+                } else {
+                    spellerp->pushCandidate(itemp->prettyName());
+                }
             }
         }
     }
     void candidateIdFallback(VSpellCheck* spellerp, const VNodeMatcher* matcherp) const {
         // Suggest alternative symbol candidates with looking upward through symbol hierarchy
         // Note VSpellCheck wants the most important (closest) items pushed first
-        candidateIdFlat(spellerp, matcherp);
+        candidateIdFlat(spellerp, matcherp, false);
         // Then suggest the upper begin/end block or module
         if (m_fallbackp) m_fallbackp->candidateIdFallback(spellerp, matcherp);
     }

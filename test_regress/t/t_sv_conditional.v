@@ -397,6 +397,7 @@ module simple_test_3d (
 );
 
 
+  // The chain covers every value of 'selector'; no latch should be inferred.
   always_comb begin
     unique if (selector == 4'h0) selected_out = wide_input_bus[7:0];
     else if (selector == 4'h1) selected_out = wide_input_bus[15:8];

@@ -8,13 +8,15 @@
 
 module t;
 
-  typedef struct {
-    string a;
-    string b;
+  typedef union {
+    int a;
+    int b;
   } foo_t;
 
   import "DPI-C" task dpix_twice(foo_t arg);
+  foo_t f;
   initial begin
+    dpix_twice(f);
     $stop;
   end
 endmodule

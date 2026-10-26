@@ -26,6 +26,8 @@
 
 #include "V3Broken.h"
 
+#include "V3ConstPool.h"
+
 #include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -227,6 +229,45 @@ private:
         }
         return false;
     }
+    static void checkArgRefs(AstNodeExpr* nodep, const char* descrp, AstNodeExpr* argsp) {
+        if (!std::strcmp(descrp, "TODO")) return;  // Skip if not yet checked
+
+        // Check each argument
+        const char* dp = descrp;
+        for (AstNodeExpr* argp = argsp; argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+            if (argp->fileline()->erroringOn()) return;  // Intentionally skip all checks
+            const AstNodeExpr* const lvalp = argp->getVAccessTargetRecurse();
+            const VAccess access
+                = lvalp ? lvalp->getVAccessRecurse()  // Since we call it on a result of above call
+                                                      // there should be no recursion at all
+                        : VAccess{VAccess::READ};
+            if (dp[0] == '+') --dp;  // Repeats the entry before it
+            switch (dp[0]) {
+            case 'r':
+                UASSERT_OBJ(access.isReadOnly(), argp,
+                            "Input argument of library call is not a read-only expression");
+                break;
+            case 'w':
+                UASSERT_OBJ(lvalp, argp,  //
+                            "Output argument of library call is not a valid C++ LValue");
+                UASSERT_OBJ(access.isWriteOnly(), argp,
+                            "Output argument of library call is not write-only");
+                break;
+            case 'm':
+                UASSERT_OBJ(lvalp, argp,  //
+                            "Inout argument of library call is not a valid C++ LValue");
+                UASSERT_OBJ(access.isRW(), argp,
+                            "Inout argument of library call is not read-write");
+                break;
+            default:
+                UASSERT_OBJ(dp[0], argp, "Unexpected trailing arguments to library call");
+                break;  // LCOV_EXCL_LINE
+            }
+            ++dp;
+        }
+        UASSERT_OBJ(!dp[0] || dp[0] == '+', nodep, "Insufficient arguments to library call");
+    }
+
     // VISITORS
     void visit(AstNodeAssign* nodep) override {
         processEnter(nodep);
@@ -291,6 +332,12 @@ private:
     void visit(AstCMethodHard* nodep) override {
         ++m_nCalls;
         processAndIterate(nodep);
+        checkArgRefs(nodep, nodep->method().args(), nodep->pinsp());
+    }
+    void visit(AstCFuncHard* nodep) override {
+        ++m_nCalls;
+        processAndIterate(nodep);
+        checkArgRefs(nodep, nodep->function().args(), nodep->pinsp());
     }
     void visit(AstNodeFTaskRef* nodep) override {
         ++m_nCalls;
@@ -391,6 +438,10 @@ void V3Broken::brokenAll(AstNetlist* nodep) {
 
         // Check every node in tree
         const BrokenCheckVisitor cvisitor{nodep};
+
+        // Check the constant pool lookup cache refers only to nodes in the tree
+        const char* const whyp = V3ConstPool::broken();
+        UASSERT_OBJ(!whyp, nodep, "Broken constant pool cache: " << whyp);
 
         s_allocTable.checkForLeaks();
         s_linkableTable.clear();

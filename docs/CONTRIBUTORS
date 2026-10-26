@@ -7,6 +7,7 @@ contribution terms including the AI policy in ``docs/CONTRIBUTING.rst``.
 
 Please see the Verilator manual for 200+ additional contributors. Thanks to all.
 
+00>> Please insert into sorted position, and see header as to agreement
 24bit-xjkp
 404allen404
 Adam Bagley
@@ -25,6 +26,7 @@ Aliaksei Chapyzhenka
 Ameya Vikram Singh
 Andrea Calabrese
 Andreas Kuster
+Andrei Girjoaba
 Andrei Kostovski
 Andrew Miloradovsky
 Andrew Nolte
@@ -37,6 +39,7 @@ apocelipes
 Arkadiusz Kozdra
 Arthur Rosa
 Artur Bieniek
+Ashvin Vaidyanathan
 AUDIY
 Aylon Chaim Porat
 Bartosz Skorowski
@@ -46,10 +49,12 @@ BRDR LIFE
 Brian Li
 Cameron Kirk
 Cameron Waite
+CatalpaEel
 Chih-Mao Chen
 Chris Bachhuber
 Chris Randall
 Christian Hecken
+Christopher Onyiuke
 Christopher Taylor
 Chuxuan Wang
 Chykon
@@ -61,22 +66,28 @@ Daniel Bates
 Danny Oler
 Dave Sargeant
 David Garau
+David Harris
 David Horton
 David Ledger
 David Metz
 David Stanford
 David Turner
+Deanyone Su
 dependabot[bot]
 Dercury
 Demin Han
 Diego Roux
+Doha Nam
 Dominick Grochowina
 Don Williamson
 Dragon-Git
 Drew Ranck
+Drew Risinger
 Drew Taussig
 Driss Hafdi
 Edgar E. Iglesias
+Edmund Lam
+Eddie Rydell
 em2machine
 emmettifelts
 Eric Mejdrich
@@ -89,8 +100,10 @@ Eyck Jentzsch
 Fabian Keßler-Schulz
 Fan Shupei
 february cozzocrea
+Felipe Paiva Alencar
 Felix Neumärker
 Felix Yan
+Francesco Urbani
 Frans Skarman
 Fuad Ismail
 Furqan Nadir
@@ -112,6 +125,7 @@ Han Qi
 Harald Heckmann
 Hennadii Chernyshchyk
 hjsanjana
+Hongseok Choi
 Howard Su
 Huang Rui
 Huanghuang Zhou
@@ -137,6 +151,7 @@ James Shi
 Jamey Hicks
 Jamie Iles
 Jan Van Winkel
+Jared Bold
 Jean Berniolles
 Jean-Nicolas Strauss
 Jeffrey Song
@@ -144,6 +159,7 @@ jeffrey.song
 Jens Yuechao Liu
 Jeremy Bennett
 Jesse Taube
+Jesús Alberto López Soto
 Jevin Sweval
 Jiacheng Qian
 Jiamin Zhu
@@ -158,6 +174,7 @@ John Demme
 John Khoo
 John Wehle
 Jonathan Drolet
+Jonathan Kimmitt
 Jonathan Schröter
 Jordan McConnon
 Jose Drowne
@@ -176,11 +193,13 @@ Kaleb Barrett
 Kamil Danecki
 Kamil Rakoczy
 Kanad Kanhere
+Karel Peeters
 Kefa Chen
 Keith Colbert
 Kevin Kiningham
 Kevin Nygaard
 Kornel Uriasz
+Kristof Marien
 Kritik Bhimani
 Krzysztof Bieganski
 Krzysztof Boronski
@@ -204,13 +223,16 @@ Maciej Sobkowski
 Marcel Chang
 Marco Bartoli
 Marco Brambilla
+Marco Frank
 Marco Widmer
 Mariusz Glebocki
 Markus Krause
 Marlon James
 Marshal Qiao
+Martijn Wobbes
 Martin Schmidt
 Martin Stadler
+Martin Velay
 Mateusz Gancarz
 Matt Stroud
 Matthew Ballance
@@ -223,27 +245,34 @@ Michael Rogenmoser
 Michal Czyz
 Michaël Lefebvre
 Miguel Perez Andrade
+Mike Murunov
 Mike Popoloski
 Miodrag Milanović
 Mladen Slijepcevic
 Morten Borup Petersen
 Mostafa Gamal
 Moubarak Jeje
+Muhammad Saad
 Muzaffer Kal
 Nandu Raj
 Natan Kreimer
+Nathan Chandrasekar
 Nathan Graybeal
 Nathan Kohagen
 Nathan Myers
+Nazar Zibilyuk
 Nick Brereton
 Nikolai Kumar
 Nikolay Puzanov
+Noam Gallmann
 Nolan Poe
 Oleh Maksymenko
 Patrick Creighton
+Patrick O'Neill
 Patrick Stewart
 Paul Bowen-Huggett
 Paul Campbell
+Paul Rigge
 Paul Swirhun
 Paul Wright
 Pawel Jewstafjew
@@ -261,10 +290,13 @@ Philipp Wagner
 Pierre-Henri Horrein
 Pieter Kapsenberg
 Piotr Binkowski
+qinkejiu
 Qingyao Sun
 Quentin Corradi
 Rafal Kapuscik
 Rahul Behl
+Raj Bazx (bazx-bit)
+Raj bazx
 Rasfunk
 Raynard Qiao
 Ricardo Barbedo
@@ -279,6 +311,7 @@ Ryan Ziegler
 Ryszard Rozak
 Saksham Gupta
 Samuel Riedel
+Saqib Khan
 Sean Cross
 Sebastien Van Cauwenberghe
 Secturion
@@ -289,6 +322,8 @@ Seth Pellegrino
 Shashvat Prabhu
 Shogo Yamazaki
 Shou-Li Hsu
+Shriyans Sahoo
+Simon Zhang
 spomatasmd
 Srinivasan Venkataramanan
 Stefan Wallentowitz
@@ -297,8 +332,10 @@ Steven Hugg
 Stuart Morris
 sumpster
 Szymon Gizler
+Szymon Jędras
 Sören Tempel
 Sumanth Kadiyala
+Sunimali Rathnayake
 Teng Huang
 Thomas Aldrian
 Thomas Brown
@@ -319,9 +356,11 @@ Tracy Narine
 Trung Nguyen
 Tudor Timi
 Tymoteusz Blazejczyk
+Tynan McAuley
 Tyrone Marhguy
 Udaya Raj Subedi
 Udi Finkelstein
+UnsignedByte
 Unai Martinez-Corral
 Valentin Atepalikhin
 Varun Koyyalagunta
@@ -337,6 +376,7 @@ Wolfgang Mayerwieser
 Xi Zhang
 Yan Xu
 Yangyu Chen
+Yash Raj
 Yilin Li
 Yilou Wang
 Yinan Xu
@@ -355,4 +395,4 @@ Zixi Li
 Zubin Jain
 Àlex Torregrosa
 Ícaro Lima
-Sunimali Rathnayake
+ÍÍ>> Please insert into sorted position, and see header as to agreement

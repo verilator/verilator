@@ -1,0 +1,18 @@
+%Error-UNSUPPORTED: t/t_pattern_key_unsup.v:10:19: Unsupported: Data-type key in array assignment pattern
+                                                 : ... note: In instance 't'
+   10 |   int unpk[1] = '{int : 1};
+      |                   ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_pattern_key_unsup.v:11:22: Unsupported: Data-type key in array assignment pattern
+                                                 : ... note: In instance 't'
+   11 |   int assoc[int] = '{int : 2};
+      |                      ^~~
+%Error-UNSUPPORTED: t/t_pattern_key_unsup.v:12:19: Unsupported: Data-type key in array assignment pattern
+                                                 : ... note: In instance 't'
+   12 |   int wild[*] = '{int : 3};
+      |                   ^~~
+%Error-UNSUPPORTED: t/t_pattern_key_unsup.v:14:27: Unsupported: Data-type key in array assignment pattern
+                                                 : ... note: In instance 't'
+   14 |   initial dyn = new[2] ('{int : 6});
+      |                           ^~~
+%Error: Exiting due to

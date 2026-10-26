@@ -11,7 +11,7 @@ module t;
     int v;
     m.get(v);
     // Only one thread should be here at a time (mailbox empty)
-    $display("mailbox read %0t", $time);
+    $display("[%0t] mailbox read", $time);
     #1;
     m.put(v);
   endtask
@@ -20,7 +20,7 @@ module t;
     int v;
     m.put(42);
     // Only one thread should be here at a time (mailbox full)
-    $display("mailbox write %0t", $time);
+    $display("[%0t] mailbox write", $time);
     #1;
     m.get(v);
   endtask

@@ -24,10 +24,13 @@
 class SoftRelax;
   rand bit [7:0] a;
   rand bit [7:0] b;
-  constraint c_hard { a < 8'd200; b < 8'd200; }
-  constraint c_soft0 { soft b > 8'd100; }
-  constraint c_soft1 { soft a == 8'd30; }
-  constraint c_soft2 { soft a == 8'd80; }
+  constraint c_hard {
+    a < 8'd200;
+    b < 8'd200;
+  }
+  constraint c_soft0 {soft b > 8'd100;}
+  constraint c_soft1 {soft a == 8'd30;}
+  constraint c_soft2 {soft a == 8'd80;}
 endclass
 
 module t;

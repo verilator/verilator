@@ -1,0 +1,2 @@
+%Warning: t/t_covergroup_limits.v:42: Coverage bin exclusions exceed the decision-graph work limit; bin retained
+*-* All Finished *-*

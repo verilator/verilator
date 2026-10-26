@@ -17,7 +17,7 @@
 
 // clang-format off
 #if defined(VERILATOR)  // Verilator
-# include "Vt_dpi_result_type__Dpi.h"
+# include VM_PREFIX_INCLUDE_DPI
 typedef long long sv_longint_t;
 typedef unsigned long long sv_longint_unsigned_t;
 # define NO_SHORTREAL
@@ -243,6 +243,21 @@ svBitVecVal i_array_2_state_32() {
 }
 #endif
 
+#ifndef NO_ARRAY
+// 2-state packed arrays of 1-bit typedef of width <= 32
+svBitVecVal i_bit_t_array_1() {
+    static int n = 0;
+    printf("i_bit_t_array_1 %d\n", n);
+    return !(n++ % 2);
+}
+
+svBitVecVal i_bit_t_array_32() {
+    static int n = 0;
+    printf("i_bit_t_array_32 %d\n", n);
+    return 0xffffffffU << n++;
+}
+#endif
+
 #ifndef NO_STRUCT_OR_UNION
 // 2-state packed structures of width <= 32
 svBitVecVal i_struct_2_state_1() {
@@ -338,6 +353,12 @@ void check_exports() {
     // 2-state packed arrays of width <= 32
     if (e_array_2_state_1() != (n % 2)) stop();
     if (e_array_2_state_32() != 0xffffffff >> n) stop();
+#endif
+
+#ifndef NO_ARRAY
+    // 2-state packed arrays of 1-bit typedef of width <= 32
+    if (e_bit_t_array_1() != (n % 2)) stop();
+    if (e_bit_t_array_32() != 0xffffffff >> n) stop();
 #endif
 
 #ifndef NO_STRUCT_OR_UNION

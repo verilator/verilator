@@ -34,9 +34,10 @@ class EmitCModel final : public EmitCFunc {
     V3UniqueNames m_uniqueNames;  // For generating unique file names
 
     // METHODS
+
     CFuncVector findFuncps(std::function<bool(const AstCFunc*)> cb) {
         CFuncVector funcps;
-        for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : m_modp->stmtspList()) {
             if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
                 if (cb(funcp)) funcps.push_back(funcp);
             }
@@ -44,6 +45,16 @@ class EmitCModel final : public EmitCFunc {
         stable_sort(funcps.begin(), funcps.end(),
                     [](const AstNode* ap, const AstNode* bp) { return ap->name() < bp->name(); });
         return funcps;
+    }
+
+    // Whether 'funcp' is a DPI function with arguments of unpacked structures
+    static bool isDpiPassingStructs(const AstCFunc* funcp) {
+        if (!funcp->dpiImportPrototype() && !funcp->dpiExportDispatcher()) return false;
+        for (const AstNode* const argp : funcp->argspList()) {
+            const AstVar* const varp = VN_CAST(argp, Var);
+            if (varp && varp->dtypep()->containsUnpackedStruct()) return true;
+        }
+        return false;
     }
 
     void putSectionDelimiter(const string& name) {
@@ -73,6 +84,10 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.coverage() || v3Global.useCovergroup())
             puts("#include \"verilated_covergroup.h\"\n");
         if (v3Global.dpi()) puts("#include \"svdpi.h\"\n");
+        // The model needs the C structures DPI functions pass, which the DPI header declares
+        if (!findFuncps(isDpiPassingStructs).empty()) {
+            puts("#include \"" + EmitCUtil::topClassName() + "__Dpi.h\"\n");
+        }
 
         // Declare foreign instances up front to make C++ happy
         puts("\n");
@@ -91,11 +106,16 @@ class EmitCModel final : public EmitCFunc {
             puts("public ::sc_core::sc_module, ");
         }
         puts("public VerilatedModel {\n");
+        // The symbol table references the model's evaluation state
+        puts("friend class " + EmitCUtil::symClassName() + ";\n");
+
         ofp()->resetPrivate();
         ofp()->putsPrivate(true);  // private:
 
         puts("// Symbol table holding complete model state (owned by this class)\n");
         puts(EmitCUtil::symClassName() + "* const vlSymsp;\n");
+        puts("// Evaluation loop\n");
+        puts("VerilatedEvalLoop m_evalLoop;\n");  // Evaluation loop
 
         puts("\n");
         ofp()->putsPrivate(false);  // public:
@@ -109,7 +129,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n// PORTS\n"
              "// The application code writes and reads these signals to\n"
              "// propagate new values into/out from the Verilated model.\n");
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {  //
                     emitVarDecl(varp, /* asRef: */ true);
@@ -121,7 +141,7 @@ class EmitCModel final : public EmitCFunc {
                  "// The application code should use these methods to\n"
                  "// propagate new values into/out from the Verilated model\n"
                  "// instead of using signal variables directly.\n");
-            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            for (const AstNode* const nodep : modp->stmtspList()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                     if (varp->isPrimaryIO()) emitVarAccessors(varp);
                 }
@@ -132,8 +152,9 @@ class EmitCModel final : public EmitCFunc {
         puts("\n// CELLS\n"
              "// Public to allow access to /* verilator public */ items.\n"
              "// Otherwise the application code can consider these internals.\n");
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
+                if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 putns(cellp, EmitCUtil::prefixNameProtect(cellp->modp()) + "* const "
                                  + cellp->nameProtect() + ";\n");
             }
@@ -164,6 +185,13 @@ class EmitCModel final : public EmitCFunc {
         }
         ofp()->putsPrivate(true);
         puts("VL_UNCOPYABLE(" + EmitCUtil::topClassName() + ");  ///< Copying not allowed\n");
+        if (!optSystemC()) {
+            puts("\n");
+            puts("protected:\n");
+            ofp()->resetPrivate();
+            puts(EmitCUtil::topClassName()
+                 + "(VerilatedContext* contextp, const char* name, bool isRoot);\n");
+        }
 
         puts("\n");
         ofp()->putsPrivate(false);  // public:
@@ -258,7 +286,23 @@ class EmitCModel final : public EmitCFunc {
         }
 
         ofp()->putsPrivate(true);  // private:
-        puts("// Internal functions - trace registration\n");
+        puts("\n// Internal functions - the model's evaluation entry points\n");
+        puts("void evalBegin() override final;\n");
+        puts("void evalEnd() override final;\n");
+        for (int i = 0; i < VEval::_ENUM_END; ++i) {
+            const VEval eval{i};
+            // Only the iterated regions report whether they did any work
+            puts(eval.isIterated() ? "bool "s : "void "s);
+            puts(eval.evalMethod() + (eval.firstIteration() ? "(bool firstIteration)"s : "()"s));
+            puts(" override final;\n");
+        }
+        for (int i = 0; i < VEval::_ENUM_END; ++i) {
+            const VEval eval{i};
+            if (!eval.hasTriggers()) continue;
+            puts("void " + eval.dumpTriggersMethod() + "() override final;\n");
+        }
+
+        puts("\n// Internal functions - trace registration\n");
         puts("void traceBaseModel(VerilatedTraceBaseC* tfp, int levels, int options);\n");
 
         puts("};\n");
@@ -272,45 +316,60 @@ class EmitCModel final : public EmitCFunc {
         putSectionDelimiter("Constructors");
 
         puts("\n");
-        putns(modp, EmitCUtil::topClassName() + "::" + EmitCUtil::topClassName());
+        const std::string ctorName = EmitCUtil::topClassName() + "::" + EmitCUtil::topClassName();
         if (optSystemC()) {
+            putns(modp, ctorName);
             puts("(sc_core::sc_module_name /* unused */)\n");
             puts("    : VerilatedModel{*Verilated::threadContextp()}\n");
             puts("    , vlSymsp{new " + EmitCUtil::symClassName()
-                 + "(contextp(), name(), this)}\n");
+                 + "(contextp(), this, name(), true)}\n");
         } else {
-            puts(+"(VerilatedContext* _vcontextp__, const char* _vcname__)\n");
+            putns(modp, ctorName + "(VerilatedContext* _vcontextp__, const char* _vcname__)\n");
+            puts("    : " + EmitCUtil::topClassName() + "{_vcontextp__, _vcname__, true} {}\n\n");
+
+            putns(modp, ctorName);
+            puts("(VerilatedContext* _vcontextp__, const char* _vcname__, "
+                 "bool _vcisRoot__)\n");
             puts("    : VerilatedModel{*_vcontextp__}\n");
             puts("    , vlSymsp{new " + EmitCUtil::symClassName()
-                 + "(contextp(), _vcname__, this)}\n");
+                 + "(contextp(), this, _vcname__, _vcisRoot__)}\n");
         }
+        puts("    , m_evalLoop{*this, /*convergeLimit:*/ "s
+             + cvtToStr(v3Global.opt.convergeLimit()) + "}\n");
 
         // Set up IO references
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {
                     const string protName = varp->nameProtect();
                     puts("    , ");
-                    putns(varp, protName + "{vlSymsp->TOP." + protName + "}\n");
+                    putns(varp, protName + "{vlSymsp->vlInst.TOP." + varName(varp) + "}\n");
                 }
             }
         }
 
         // Setup cell pointers
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
+                if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 const string protName = cellp->nameProtect();
                 puts("    , ");
-                putns(cellp, protName + "{vlSymsp->TOP." + protName + "}\n");
+                putns(cellp, protName + "{vlSymsp->vlInst.TOP." + protName + "}\n");
             }
         }
 
         // Setup rootp root instance pointer,
-        puts("    , rootp{&(vlSymsp->TOP)}\n");
+        puts("    , rootp{&(vlSymsp->vlInst.TOP)}\n");
 
         puts("{\n");
         puts("// Register model with the context\n");
         puts("contextp()->addModel(this);\n");
+        if (v3Global.opt.profExec()) {
+            putsDecoration(nullptr, "// Profile the evaluation loop's region loops\n");
+            const bool topLevel = !v3Global.opt.hierChild() && v3Global.opt.libCreate().empty();
+            puts("m_evalLoop.profiler(vlSymsp->__Vm_executionProfilerp, /*topLevel:*/ "s
+                 + (topLevel ? "true" : "false") + ");\n");
+        }
         if (v3Global.opt.trace())
             puts("contextp()->traceBaseModelCbAdd(\n"
                  "[this](VerilatedTraceBaseC* tfp, int levels, int options) {"
@@ -320,7 +379,11 @@ class EmitCModel final : public EmitCFunc {
             // Create sensitivity list for when to evaluate the model.
             putsDecoration(nullptr, "// Sensitivities on all clocks and combinational inputs\n");
             puts("SC_METHOD(eval);\n");
-            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            if (v3Global.usesTiming()) {
+                putsDecoration(nullptr, "// Notified by pending time delays/DPI exports\n");
+                puts("sensitive << vlSymsp->__Vm_wakeEvent;\n");
+            }
+            for (AstNode* const nodep : modp->stmtspList()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                     if (varp->isNonOutput() && (varp->isScSensitive() || varp->isPrimaryClock())) {
                         int vects = 0;
@@ -382,10 +445,14 @@ class EmitCModel final : public EmitCFunc {
         puts("void " + topModNameProtected + "__" + protect("_eval_debug_assertions") + selfDecl
              + ";\n");
         puts("#endif  // VL_DEBUG\n");
-        puts("void " + topModNameProtected + "__" + protect("_eval_static") + selfDecl + ";\n");
-        puts("void " + topModNameProtected + "__" + protect("_eval_initial") + selfDecl + ";\n");
-        puts("void " + topModNameProtected + "__" + protect("_eval_settle") + selfDecl + ";\n");
-        puts("void " + topModNameProtected + "__" + protect("_eval") + selfDecl + ";\n");
+        AstNetlist* const netlistp = v3Global.rootp();
+        for (int i = 0; i < VEval::_ENUM_END; ++i) {
+            emitCFuncDecl(netlistp->evalFuncp(VEval{i}), modp);
+        }
+        for (int i = 0; i < VEval::_ENUM_END; ++i) {
+            const VEval eval{i};
+            if (eval.hasTriggers()) emitCFuncDecl(netlistp->dumpTriggersFuncp(eval), modp);
+        }
 
         if (optSystemC() && v3Global.usesTiming()) {
             // ::eval
@@ -394,20 +461,24 @@ class EmitCModel final : public EmitCFunc {
             puts("if (eventsPending()) {\n");
             puts("sc_core::sc_time dt = sc_core::sc_time::from_value(nextTimeSlot() - "
                  "contextp()->time());\n");
-            puts("next_trigger(dt);\n");
+            puts("vlSymsp->__Vm_wakeEvent.notify(dt);\n");
             puts("}\n");
             puts("}\n");
         }
 
-        // ::eval_step
+        // ::eval_step - the run-time library drives the whole time step
         puts("\nvoid " + EmitCUtil::topClassName() + "::eval_step() {\n");
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+++++TOP Evaluate " + EmitCUtil::topClassName()
              + "::eval_step\\n\"); );\n");
+        puts("m_evalLoop.eval();\n");
+        puts("}\n");
 
+        // ::evalBegin - prepare the model for a time step
+        puts("\nvoid " + EmitCUtil::topClassName() + "::evalBegin() {\n");
         puts("#ifdef VL_DEBUG\n");
         putsDecoration(nullptr, "// Debug assertions\n");
         puts(topModNameProtected + "__" + protect("_eval_debug_assertions")
-             + "(&(vlSymsp->TOP));\n");
+             + "(&(vlSymsp->vlInst.TOP));\n");
         puts("#endif  // VL_DEBUG\n");
 
         if (v3Global.opt.trace()) puts("vlSymsp->__Vm_activity = true;\n");
@@ -415,32 +486,48 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.hasEvents()) puts("vlSymsp->clearTriggeredEvents();\n");
         if (v3Global.hasClasses()) puts("vlSymsp->__Vm_deleter.deleteAll();\n");
 
-        puts("if (VL_UNLIKELY(!vlSymsp->__Vm_didInit)) {\n");
-        puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Initial\\n\"););\n");
-        puts(topModNameProtected + "__" + protect("_eval_static") + "(&(vlSymsp->TOP));\n");
-        puts(topModNameProtected + "__" + protect("_eval_initial") + "(&(vlSymsp->TOP));\n");
-        puts(topModNameProtected + "__" + protect("_eval_settle") + "(&(vlSymsp->TOP));\n");
-        puts("vlSymsp->__Vm_didInit = true;\n");
         puts("}\n");
 
-        if (v3Global.opt.profExec() && !v3Global.opt.hierChild()
-            && v3Global.opt.libCreate().empty()) {
-            puts("vlSymsp->__Vm_executionProfilerp->configure();\n");
-        }
-
-        puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+ Eval\\n\"););\n");
-        puts(topModNameProtected + "__" + protect("_eval") + "(&(vlSymsp->TOP));\n");
-
+        // ::evalEnd - the time step is complete
+        puts("\nvoid " + EmitCUtil::topClassName() + "::evalEnd() {\n");
         putsDecoration(nullptr, "// Evaluate cleanup\n");
         puts("Verilated::endOfEval(vlSymsp->__Vm_evalMsgQp);\n");
+        if (AstVar* const delaySchedp = v3Global.rootp()->delaySchedulerp()) {
+            puts("vlSymsp->vlInst.TOP.");
+            puts(varName(delaySchedp));
+            puts(".cleanupForevered();\n");
+        }
 
         puts("}\n");
+
+        // Evaluation entry points
+        for (int i = 0; i < VEval::_ENUM_END; ++i) {
+            const VEval eval{i};
+            AstCFunc* const funcp = v3Global.rootp()->evalFuncp(eval);
+            puts(eval.isIterated() ? "\nbool " : "\nvoid ");
+            puts(EmitCUtil::topClassName() + "::" + eval.evalMethod() + "(");
+            if (eval.firstIteration()) puts("bool firstIteration");
+            puts(") {\n");
+            if (eval.isIterated()) puts("return ");
+            puts(funcNameProtect(funcp, m_modp) + "(&(vlSymsp->vlInst.TOP)");
+            if (eval.firstIteration()) puts(", firstIteration");
+            puts(");\n");
+            puts("}\n");
+        }
+
+        // The trigger dump of each region
+        for (int i = 0; i < VEval::_ENUM_END; ++i) {
+            const VEval eval{i};
+            if (!eval.hasTriggers()) continue;
+            puts("\nVL_ATTR_COLD void " + EmitCUtil::topClassName()
+                 + "::" + eval.dumpTriggersMethod() + "() {\n");
+            puts(funcNameProtect(v3Global.rootp()->dumpTriggersFuncp(eval), m_modp)
+                 + "(&(vlSymsp->vlInst.TOP));\n");
+            puts("}\n");
+        }
     }
 
     void emitStandardMethods2(AstNodeModule* modp) {
-        const string topModNameProtected = EmitCUtil::prefixNameProtect(modp);
-        const string selfDecl = "(" + topModNameProtected + "* vlSelf)";
-
         // ::eval_end_step
         if (v3Global.needTraceDumper() && !optSystemC()) {
             puts("\n");
@@ -458,13 +545,13 @@ class EmitCModel final : public EmitCFunc {
         putSectionDelimiter("Events and timing");
         if (auto* const delaySchedp = v3Global.rootp()->delaySchedulerp()) {
             putns(modp, "bool " + EmitCUtil::topClassName()
-                            + "::eventsPending() { return !vlSymsp->TOP.");
-            puts(delaySchedp->nameProtect());
+                            + "::eventsPending() { return !vlSymsp->vlInst.TOP.");
+            puts(varName(delaySchedp));
             puts(".empty() && !contextp()->gotFinish(); }\n\n");
 
             putns(modp, "uint64_t " + EmitCUtil::topClassName()
-                            + "::nextTimeSlot() { return vlSymsp->TOP.");
-            puts(delaySchedp->nameProtect());
+                            + "::nextTimeSlot() { return vlSymsp->vlInst.TOP.");
+            puts(varName(delaySchedp));
             puts(".nextTimeSlot(); }\n");
         } else {
             putns(modp,
@@ -485,14 +572,10 @@ class EmitCModel final : public EmitCFunc {
         }
 
         putSectionDelimiter("Invoke final blocks");
-        // Forward declarations
-        puts("\n");
-        putns(modp,
-              "void " + topModNameProtected + "__" + protect("_eval_final") + selfDecl + ";\n");
         // ::final
         puts("\nVL_ATTR_COLD void " + EmitCUtil::topClassName() + "::final() {\n");
         puts("contextp()->executingFinal(true);\n");
-        puts(/**/ topModNameProtected + "__" + protect("_eval_final") + "(&(vlSymsp->TOP));\n");
+        puts("evalFinal();\n");
         puts("contextp()->executingFinal(false);\n");
         puts("}\n");
 
@@ -528,8 +611,6 @@ class EmitCModel final : public EmitCFunc {
 
     void emitTraceMethods(AstNodeModule* modp) {
         const string topModNameProtected = EmitCUtil::prefixNameProtect(modp);
-        const string topTraceName
-            = V3OutFormatter::quoteNameControls(v3Global.rootp()->traceLibTopName());
 
         putSectionDelimiter("Trace configuration");
 
@@ -564,7 +645,8 @@ class EmitCModel final : public EmitCFunc {
             puts("if (tracep->rootInit()) {\n");
             puts("tracep->pushPrefix(vlSymsp->name(), VerilatedTracePrefixType::SCOPE_MODULE);\n");
             puts(topModNameProtected + "__" + protect("trace_init_root") + "(vlSelf, tracep);\n");
-            puts("tracep->pushPrefix(\"" + topTraceName
+            puts("tracep->pushPrefix(\""
+                 + V3OutFormatter::quoteNameControls(v3Global.rootp()->l2Names().front())
                  + "\", VerilatedTracePrefixType::SCOPE_MODULE);\n");
             puts("}\n");
         }
@@ -610,13 +692,13 @@ class EmitCModel final : public EmitCFunc {
         puts(/**/ "stfp->spTrace()->addModel(this);\n");
         puts(/**/ "stfp->spTrace()->addInitCb("s  //
              + "&" + protect("trace_init")  //
-             + ", &(vlSymsp->TOP)"  //
+             + ", &(vlSymsp->vlInst.TOP)"  //
              + ", name()"  //
              + ", " + (v3Global.opt.libCreate().empty() ? "false" : "true")  //
              + ", " + std::to_string(v3Global.rootp()->nTraceCodes())  //
              + ");\n");
         puts(/**/ topModNameProtected + "__" + protect("trace_register")
-             + "(&(vlSymsp->TOP), stfp->spTrace());\n");
+             + "(&(vlSymsp->vlInst.TOP), stfp->spTrace());\n");
         puts("}\n");
     }
 
@@ -664,7 +746,7 @@ class EmitCModel final : public EmitCFunc {
         const std::string fileBaseName = EmitCUtil::topClassName() + "__Dpi_Export";
 
         // Emit DPI Export dispatchers
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             AstCFunc* const funcp = VN_CAST(nodep, CFunc);
             if (!funcp || !funcp->dpiExportDispatcher()) continue;
 
@@ -710,5 +792,6 @@ public:
 
 void V3EmitC::emitcModel() {
     UINFO(2, __FUNCTION__ << ":");
+    v3Global.rootp()->addEvalStats("emitc");
     { EmitCModel{v3Global.rootp()->topModulep()}; }
 }

@@ -25,7 +25,7 @@ end
 class Foo;
   rand int q[$];
   rand int q2[$][$];
-  int      x = 1;
+  int x = 1;
   constraint c {
     q.size() == 15;
     q2.size() == 10;
@@ -72,10 +72,8 @@ module t;
     void'(baz.randomize());
 
     if (baz.foo_arr.size() != 7) $stop;
-    for (int i = 0; i < 4; i++)
-      if (baz.foo_arr[i] == null) $stop;
-    for (int i = 4; i < 7; i++)
-      if (baz.foo_arr[i] != null) $stop;
+    for (int i = 0; i < 4; i++) if (baz.foo_arr[i] == null) $stop;
+    for (int i = 4; i < 7; i++) if (baz.foo_arr[i] != null) $stop;
     if (baz.foo_arr[2].x != 2) $stop;
     `check_rand(baz, baz.foo_arr[1].q[5], 1'b1);
 

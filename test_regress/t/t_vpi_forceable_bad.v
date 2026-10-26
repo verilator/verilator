@@ -8,11 +8,6 @@ module t;
 
 `ifdef IVERILOG
 `elsif USE_VPI_NOT_DPI
-`ifdef VERILATOR
-`systemc_header
-  extern "C" int forceValue();
-`verilog
-`endif
 `else
   import "DPI-C" context function int forceValue();
 `endif
@@ -23,11 +18,7 @@ module t;
   initial begin
 
 `ifdef VERILATOR
-`ifdef USE_VPI_NOT_DPI
-    vpiStatus = $c32("forceValue()");
-`else
     vpiStatus = forceValue();
-`endif
 `elsif IVERILOG
     vpiStatus = $forceValue;
 `elsif USE_VPI_NOT_DPI

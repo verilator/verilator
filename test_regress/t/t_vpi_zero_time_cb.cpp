@@ -20,7 +20,7 @@
 #include "verilated_vpi.h"
 
 #include "Vt_vpi_zero_time_cb.h"
-#include "Vt_vpi_zero_time_cb__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
 #include <dlfcn.h>

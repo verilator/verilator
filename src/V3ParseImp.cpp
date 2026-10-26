@@ -81,8 +81,7 @@ void V3ParseImp::importIfInStd(FileLine* fileline, const string& id, bool doImpo
         if (doImport) {
             AstPackageImport* const impp = new AstPackageImport{stdpkgp->fileline(), stdpkgp, "*"};
             unitPackage(stdpkgp->fileline())->addStmtsp(impp);
-            for (AstNode* itemp = v3Global.rootp()->stdPackagep()->stmtsp(); itemp;
-                 itemp = itemp->nextp()) {
+            for (AstNode* const itemp : v3Global.rootp()->stdPackagep()->stmtspList()) {
                 if (itemp->name() == "process") {
                     v3Global.rootp()->stdPackageProcessp(VN_AS(itemp, Class));
                     UASSERT_OBJ(v3Global.rootp()->stdPackageProcessp(), v3Global.rootp(),
@@ -102,7 +101,7 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
 
     if (!itemsp) {
         flp->v3error("Property case statement with no items");
-        exprp->deleteTree();
+        VL_DO_DANGLING(exprp->deleteTree(), exprp);
         return new AstConst{flp, AstConst::BitTrue{}};
     }
 
@@ -113,7 +112,7 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         if (itemp->isDefault()) {
             if (defaultPropp) {
                 itemp->v3error("Multiple default statements in property case statement");
-                defaultPropp->deleteTree();
+                VL_DO_DANGLING(defaultPropp->deleteTree(), defaultPropp);
                 exprp->deleteTree();
                 return new AstConst{flp, AstConst::BitTrue{}};
             }
@@ -123,8 +122,7 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         }
 
         AstNodeExpr* itemMatchp = nullptr;
-        for (AstNodeExpr *condNextp, *condp = itemp->condsp(); condp; condp = condNextp) {
-            condNextp = VN_AS(condp->nextp(), NodeExpr);
+        for (AstNodeExpr* const condp : itemp->condspList()) {
             condp->unlinkFrBack();
             AstNodeExpr* const eqp
                 = new AstEqCase{condp->fileline(), exprp->cloneTreePure(false), condp};
@@ -140,11 +138,11 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         resultp = resultp ? new AstSAnd{flp, resultp, branchp, /*propertyControl=*/true} : branchp;
         matchedp = matchedp ? new AstLogOr{itemp->fileline(), matchedp, itemMatchp} : itemMatchp;
     }
-    itemsp->deleteTree();
+    VL_DO_DANGLING(itemsp->deleteTree(), itemsp);
 
     if (defaultPropp) {
         if (!matchedp) {
-            exprp->deleteTree();
+            VL_DO_DANGLING(exprp->deleteTree(), exprp);
             return defaultPropp;
         }
         AstNodeExpr* const noMatchp
@@ -152,8 +150,8 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
         AstNodeExpr* const branchp = new AstImplication{defaultFlp, noMatchp, defaultPropp, true};
         resultp = new AstSAnd{flp, resultp, branchp, /*propertyControl=*/true};
     }
-    matchedp->deleteTree();
-    exprp->deleteTree();
+    VL_DO_DANGLING(matchedp->deleteTree(), matchedp);
+    VL_DO_DANGLING(exprp->deleteTree(), exprp);
     return resultp;
 }
 

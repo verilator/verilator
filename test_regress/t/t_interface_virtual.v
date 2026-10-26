@@ -34,6 +34,10 @@ module t;
   Cls ca, cb;
   Clsgen #(virtual PBus) gen;
 
+  // Virtual interface port connected to an interface instance, and to a variable
+  Prog prog_ia (.vif(ia));
+  Prog prog_va (.vif(va));
+
   function automatic int interface_args(
       input virtual PBus.phy input_vif, ref virtual PBus.phy ref_vif,
       const ref virtual PBus.phy const_ref_vif, input virtual PBus.phy input_vifs[2],
@@ -132,3 +136,9 @@ module t;
     $finish;
   end
 endmodule
+
+program Prog (
+    input virtual PBus vif
+);
+  final if (vif.addr != 8'ha0) $stop;
+endprogram

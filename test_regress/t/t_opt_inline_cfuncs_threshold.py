@@ -19,6 +19,6 @@ test.execute()
 
 test.file_grep(test.stats, r'Optimizations, Inline CFuncs, calls inlined\s+(\d+)', 0)
 test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions inlined\s+(\d+)', 0)
-test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions removed\s+(\d+)', 0)
+test.file_grep(test.stats, r'Optimizations, Inline CFuncs, functions removed\s+(\d+)', 2)
 
 test.passes()

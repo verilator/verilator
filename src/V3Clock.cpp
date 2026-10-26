@@ -24,7 +24,6 @@
 #include "V3Clock.h"
 
 #include "V3Const.h"
-#include "V3Sched.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -33,7 +32,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class ConvertWriteRefsToRead final : public VNVisitor {
     // MEMBERS
-    AstNodeExpr* m_result = nullptr;
+    AstNodeExpr* m_result = nullptr;  // Converted expression
 
     // CONSTRUCTORS
     explicit ConvertWriteRefsToRead(AstNodeExpr* nodep) {
@@ -60,11 +59,6 @@ public:
 // Clock state, as a visitor of each AstNode
 
 class ClockVisitor final : public VNVisitor {
-    // NODE STATE
-
-    // STATE
-    AstCFunc* m_sampleCFuncp = nullptr;  // The CFunc to populate with sampled value assignments
-
     // VISITORS
     void visit(AstCoverToggle* nodep) override {
         // UINFOTREE(1, nodep, "", "ct");
@@ -97,26 +91,7 @@ class ClockVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstSenTree* nodep) override {
-        pushDeletep(nodep->unlinkFrBack());  // No longer needed
-    }
-
-    //========== Move sampled assignments
-    void visit(AstVarScope* nodep) override {
-        AstVar* const varp = nodep->varp();
-        if (!varp->valuep()) return;
-        if (!varp->sampled()) return;
-
-        // Create the containing function on first encounter
-        if (!m_sampleCFuncp) {
-            m_sampleCFuncp = V3Sched::util::makeSubFunction(v3Global.rootp(), "_sample", false);
-        }
-
-        FileLine* const flp = nodep->fileline();
-        AstNodeExpr* const rhsp = VN_AS(varp->valuep()->unlinkFrBack(), NodeExpr);
-        AstVarRef* const lhsp = new AstVarRef{flp, nodep, VAccess::WRITE};
-        m_sampleCFuncp->addStmtsp(new AstAssign{flp, lhsp, rhsp});
-        varp->direction(VDirection::NONE);  // Restore defaults
-        varp->primaryIO(false);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);  // No longer needed
     }
 
     //--------------------
@@ -124,16 +99,7 @@ class ClockVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit ClockVisitor(AstNetlist* netlistp) {
-        iterate(netlistp);
-        // If we need a sample function, call it at the begining of eval
-        if (m_sampleCFuncp) {
-            V3Sched::util::splitCheck(m_sampleCFuncp);
-            AstCCall* const callp = new AstCCall{m_sampleCFuncp->fileline(), m_sampleCFuncp};
-            callp->dtypeSetVoid();
-            netlistp->evalp()->stmtsp()->addHereThisAsNext(callp->makeStmt());
-        }
-    }
+    explicit ClockVisitor(AstNetlist* netlistp) { iterate(netlistp); }
     ~ClockVisitor() override = default;
 };
 

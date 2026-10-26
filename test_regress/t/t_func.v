@@ -68,6 +68,14 @@ module t;
     set_2_to_abcd;
     if (abcd != 2) $stop;
 
+    // Calls from named blocks with single character names
+    begin : a
+      if (toint(3) != 4) $stop;
+      begin : b
+        if (toint(4) != 5) $stop;
+      end
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end

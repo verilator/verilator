@@ -289,7 +289,7 @@
 ~000144     for (int loop_var_2 = 0; loop_var_2 < 32; loop_var_2 += 2) begin
 -000009  point: type=line comment=block hier=top.t
 +000144  point: type=line comment=block hier=top.t
-~000131       if (cyc[loop_var_2] | cyc[loop_var_2 + 1]) $write("");
+~000131       if (cyc[loop_var_2] | cyc[loop_var_2+1]) $write("");
 -000006  point: type=expr comment=(cyc[(loop_var_2 + 32'sh1)[4:0]+:1]==1) => 1 hier=top.t
 +000131  point: type=expr comment=(cyc[loop_var_2[4:0]+:1]==0 && cyc[(loop_var_2 + 32'sh1)[4:0]+:1]==0) => 0 hier=top.t
 -000009  point: type=expr comment=(cyc[loop_var_2[4:0]+:1]==1) => 1 hier=top.t

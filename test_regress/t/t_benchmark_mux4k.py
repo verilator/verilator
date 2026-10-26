@@ -15,4 +15,7 @@ test.compile(v_flags2=["--stats", test.wno_unopthreads_for_few_cores])
 
 test.execute()
 
+# Check netlist was NOT released on shutdown
+test.file_grep_not(test.stats, r"Stage, Elapsed time \(sec\), \d+_released")
+
 test.passes()

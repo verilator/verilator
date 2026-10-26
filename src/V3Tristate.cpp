@@ -140,7 +140,7 @@ public:
 
 class TristateVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TristateVertex, V3GraphVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Node this vertex represents
     bool m_isTristate = false;  // Logic indicates a tristate
     bool m_feedsTri = false;  // Propagates to a tristate node (on RHS)
     bool m_processed = false;  // Tristating was cleaned up
@@ -349,7 +349,7 @@ public:
 // See also V3LinkLValue::linkLValueSet
 
 class TristatePinVisitor final : public TristateBaseVisitor {
-    TristateGraph& m_tgraph;
+    TristateGraph& m_tgraph;  // Tristate graph being updated
     const bool m_lvalue;  // Flip to be an LVALUE
     // VISITORS
     // AstNodeVarRef, not just AstVarRef: a cross-hierarchy pin expression into an
@@ -420,18 +420,42 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     // TYPES
     struct RefStrength final {
-        AstNodeVarRef* m_varrefp;
-        VStrength m_strength;
+        AstNodeVarRef* m_varrefp;  // Variable reference this strength/enable info was found on
+        AstNodeAssign* m_assignp;  // Assignment containing m_varrefp
+        const AstNodeProcedure* m_procedurep;  // Process containing m_assignp, if procedural
+        AstNodeExpr* m_enLhsp;  // Procedural enable LHS with same footprint as m_varrefp
+        AstNodeVarRef* m_enVarrefp;  // Variable reference within m_enLhsp to retarget
+        AstNodeExpr* m_enRhsp;  // Procedural enable value matching m_enLhsp
+        VStrength m_strength;  // Drive strength of the assignment/procedural write
         AstDelay* m_delayp;  // Explicit delay on the continuous assignment
-        RefStrength(AstNodeVarRef* varrefp, VStrength strength, AstDelay* delayp)
+        RefStrength(AstNodeVarRef* varrefp, AstNodeAssign* assignp,
+                    const AstNodeProcedure* procedurep, AstNodeExpr* enLhsp,
+                    AstNodeVarRef* enVarrefp, AstNodeExpr* enRhsp, VStrength strength,
+                    AstDelay* delayp)
             : m_varrefp{varrefp}
+            , m_assignp{assignp}
+            , m_procedurep{procedurep}
+            , m_enLhsp{enLhsp}
+            , m_enVarrefp{enVarrefp}
+            , m_enRhsp{enRhsp}
             , m_strength{strength}
             , m_delayp{delayp} {}
+    };
+    struct LhsProjection final {
+        AstNodeExpr* m_lhsp;  // LHS giving the enable assign
+        AstNodeVarRef* m_varrefp;  // Variable reference within m_lhsp to retarget to enable var
+        AstNodeExpr* m_enp;  // Procedural enable value to assign through m_lhsp
+    };
+    struct ProceduralEnable final {
+        AstNodeExpr* m_lhsp;  // Enable LHS piece to concat onto the combined assignment LHS
+        AstNodeExpr* m_rhsp;  // Enable value piece to concat onto the combined assignment RHS
     };
     using RefStrengthVec = std::vector<RefStrength>;
     using VarMap = std::map<AstVar*, RefStrengthVec*>;
     using Assigns = std::vector<AstAssignW*>;
     using VarToAssignsMap = std::map<AstVar*, Assigns>;
+    using AssignEnableMap = std::map<AstNodeAssign*, AstNodeExpr*>;
+    using ProceduralEnableMap = std::map<AstNodeAssign*, std::vector<ProceduralEnable>>;
     enum : uint8_t {
         U2_GRAPHING = 1,  // bit[0] if did m_graphing visit
         U2_NONGRAPH = 2,  // bit[1] if did !m_graphing visit
@@ -445,6 +469,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstCell* m_cellp = nullptr;  // current cell
     VarMap m_lhsmap;  // Tristate left-hand-side driver map
     VarToAssignsMap m_assigns;  // Assigns in current module
+    AssignEnableMap m_assignEnps;  // Raw enable expression for each procedural assignment
+    ProceduralEnableMap m_proceduralEnables;  // Enable updates to merge into assignments
     int m_unique = 0;
     bool m_alhs = false;  // On LHS of assignment
     bool m_inAlias = false;  // Inside alias statement
@@ -453,6 +479,8 @@ class TristateVisitor final : public TristateBaseVisitor {
                                                       // Used only on LHS of assignment
     AstDelay* m_currentDelayp = nullptr;  // Delay of assignment currently collecting LHS drivers
     const AstNode* m_logicp = nullptr;  // Current logic being built
+    AstNodeAssign* m_assignp = nullptr;  // Current assignment
+    const AstNodeProcedure* m_procedurep = nullptr;  // Current procedural process
     TristateGraph m_tgraph;  // Logic graph
     // Map: interface AstVar* -> list of per-module (enVarp, outVarp) contribution pairs
     std::map<AstVar*, std::vector<std::pair<AstVar*, AstVar*>>> m_ifaceContribs;
@@ -497,7 +525,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstModport* findModportForDotted(AstNodeModule* modp, const string& dottedPath) {
         if (dottedPath.empty()) return nullptr;
         const string firstComp = dottedPath.substr(0, dottedPath.find('.'));
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : modp->stmtspList()) {
             AstVar* const ivarp = VN_CAST(stmtp, Var);
             if (!ivarp || ivarp->name() != firstComp) continue;
             const AstIfaceRefDType* const ifaceDtp
@@ -526,7 +554,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     // Add a ModportVarRef for varp to modportp if not already present
     void addModportVarRefIfMissing(AstModport* modportp, AstVar* varp, VDirection dir) {
-        for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+        for (AstNode* const mrp : modportp->varspList()) {
             AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
             if (mvrp && mvrp->varp() == varp) return;  // Already present
         }
@@ -549,10 +577,10 @@ class TristateVisitor final : public TristateBaseVisitor {
                 ownerModp->addStmtsp(newp);
                 // Add __en to any modports that reference the original var,
                 // so VarXRefs through modport paths can resolve it.
-                for (AstNode* stmtp = ownerModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                for (AstNode* const stmtp : ownerModp->stmtspList()) {
                     AstModport* const modportp = VN_CAST(stmtp, Modport);
                     if (!modportp) continue;
-                    for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+                    for (AstNode* const mrp : modportp->varspList()) {
                         AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
                         if (mvrp && mvrp->varp() == invarp) {
                             addModportVarRefIfMissing(modportp, newp, VDirection::INPUT);
@@ -633,12 +661,43 @@ class TristateVisitor final : public TristateBaseVisitor {
         return newp;
     }
 
+    LhsProjection newLhsProjection(AstNodeExpr* lhsp, AstNodeVarRef* targetp, AstNodeExpr* enp) {
+        // LHS concatenations are split before V3Tristate. Clone the remaining LHS expression so
+        // the data and enable assignments update the same footprint.
+        AstNodeExpr* const newLhsp = lhsp->cloneTreePure(false);
+        // user1p carries pass-local enable ownership, not semantic AST state. Sharing those
+        // pointers with the projected LHS would leave the clone referring to enable nodes owned
+        // by the original assignment.
+        newLhsp->foreach([](AstNode* nodep) { nodep->user1p(nullptr); });
+        AstNodeVarRef* const newVarrefp = targetp->clonep();
+        UASSERT_OBJ(newVarrefp, targetp, "Procedural tristate LHS clone lost variable reference");
+        return LhsProjection{newLhsp, newVarrefp, enp};
+    }
+
     void mapInsertLhsVarRef(AstNodeVarRef* nodep) {
         UINFO(9, "    mapInsertLhsVarRef " << nodep);
         AstVar* const key = nodep->varp();
         const auto pair = m_lhsmap.emplace(key, nullptr);
         if (pair.second) pair.first->second = new RefStrengthVec;
-        pair.first->second->push_back(RefStrength{nodep, m_currentStrength, m_currentDelayp});
+        AstNodeExpr* enLhsp = nullptr;
+        AstNodeVarRef* enVarrefp = nullptr;
+        AstNodeExpr* enRhsp = nullptr;
+        const auto enIt = m_assignEnps.find(m_assignp);
+        // Struct and union resolver expressions require member-wise lowering. Keep their
+        // established per-assignment path until procedural coalescing provides that
+        // representation.
+        const bool canCombineProcedural = !VN_IS(key->dtypep()->skipRefp(), NodeUOrStructDType);
+        const AstNodeProcedure* const procedurep
+            = enIt != m_assignEnps.end() && canCombineProcedural ? m_procedurep : nullptr;
+        if (procedurep) {
+            LhsProjection projection
+                = newLhsProjection(m_assignp->lhsp(), nodep, enIt->second->cloneTreePure(false));
+            enLhsp = projection.m_lhsp;
+            enVarrefp = projection.m_varrefp;
+            enRhsp = projection.m_enp;
+        }
+        pair.first->second->push_back(RefStrength{nodep, m_assignp, procedurep, enLhsp, enVarrefp,
+                                                  enRhsp, m_currentStrength, m_currentDelayp});
     }
 
     AstNodeExpr* newEnableDeposit(AstSel* selp, AstNodeExpr* enp) {
@@ -815,38 +874,37 @@ class TristateVisitor final : public TristateBaseVisitor {
     void aggregateTriSameStrength(AstNodeModule* nodep, AstVar* const varp, AstVar* const envarp,
                                   RefStrengthVec::iterator beginStrength,
                                   RefStrengthVec::iterator endStrength) {
-        // For each driver separate variables (normal and __en) are created and initialized with
-        // values. In case of normal variable, the original expression is reused. Their values are
-        // aggregated using | to form one expression, which are assigned to varp end envarp.
+        // Separate procedural processes are independent drivers, but ordered assignments within
+        // one process form a single driver. Create data and enable variables for each driver, then
+        // aggregate independent drivers using | to form assignments to varp and envarp.
+        struct DriverGroup final {
+            const AstNodeProcedure* m_procedurep;  // Process owning these assignments
+            std::vector<RefStrength*> m_refsp;  // Ordered assignments in this driver
+        };
+        std::vector<DriverGroup> drivers;
+        std::map<const AstNodeProcedure*, size_t> procedureToDriver;
+        for (auto it = beginStrength; it != endStrength; ++it) {
+            if (it->m_procedurep) {
+                const auto emplaced = procedureToDriver.emplace(it->m_procedurep, drivers.size());
+                if (!emplaced.second) {
+                    drivers[emplaced.first->second].m_refsp.push_back(&*it);
+                    continue;
+                }
+            }  // LCOV_EXCL_LINE -- GCC exception cleanup branch
+            drivers.push_back(DriverGroup{it->m_procedurep, {&*it}});
+        }
+
         AstNodeExpr* orp = nullptr;
         AstNodeExpr* enp = nullptr;
 
-        for (auto it = beginStrength; it != endStrength; it++) {
-            AstNodeVarRef* refp = it->m_varrefp;
-
-            // create the new lhs driver for this var
+        for (DriverGroup& driver : drivers) {
+            // Create the new LHS data and enable variables for this driver.
             AstVar* const newLhsp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
                                                varp->name() + "__out" + cvtToStr(m_unique),
                                                varp};  // 2-state ok; sep enable
             newLhsp->setDfgTriLowered();
             UINFO(9, "       newout " << newLhsp);
             nodep->addStmtsp(newLhsp);
-            // When retargeting a VarXRef to a local __out var, the dotted path
-            // becomes inconsistent. Replace the VarXRef with a local VarRef.
-            if (VN_IS(refp, VarXRef)) {
-                AstVarRef* const localRefp
-                    = new AstVarRef{refp->fileline(), newLhsp, VAccess::WRITE};
-                localRefp->user1p(refp->user1p());
-                refp->user1p(nullptr);
-                refp->replaceWith(localRefp);
-                VL_DO_DANGLING(pushDeletep(refp), refp);
-                refp = localRefp;
-                it->m_varrefp = localRefp;
-            } else {
-                refp->varp(newLhsp);
-            }
-
-            // create a new var for this drivers enable signal
             AstVar* const newEnLhsp
                 = new AstVar{varp->fileline(), VVarType::MODULETEMP,
                              varp->name() + "__en" + cvtToStr(m_unique++), envarp};  // 2-state ok
@@ -854,22 +912,76 @@ class TristateVisitor final : public TristateBaseVisitor {
             UINFO(9, "       newenlhsp " << newEnLhsp);
             nodep->addStmtsp(newEnLhsp);
 
-            AstAssignW* const enLhspAssignp = new AstAssignW{
-                refp->fileline(), new AstVarRef{refp->fileline(), newEnLhsp, VAccess::WRITE},
-                getEnp(refp)};
-            if (it->m_delayp) { enLhspAssignp->timingControlp(it->m_delayp->cloneTree(false)); }
-            UINFO(9, "       newenlhspAssignp " << enLhspAssignp);
-            nodep->addStmtsp(new AstAlways{enLhspAssignp});
+            for (RefStrength* const refStrengthp : driver.m_refsp) {
+                AstNodeVarRef* refp = refStrengthp->m_varrefp;
 
-            // now append this driver to the driver logic.
-            AstNodeExpr* const ref1p = new AstVarRef{refp->fileline(), newLhsp, VAccess::READ};
-            AstNodeExpr* const ref2p = new AstVarRef{refp->fileline(), newEnLhsp, VAccess::READ};
-            AstNodeExpr* const andp = new AstAnd{refp->fileline(), ref1p, ref2p};
+                // When retargeting a VarXRef to a local __out var, the dotted path becomes
+                // inconsistent. Replace the VarXRef with a local VarRef.
+                if (VN_IS(refp, VarXRef)) {
+                    AstVarRef* const localRefp
+                        = new AstVarRef{refp->fileline(), newLhsp, VAccess::WRITE};
+                    // Preserve ownership of any detached enable tree for the existing end-of-pass
+                    // cleanup, regardless of whether this is a procedural driver.
+                    localRefp->user1p(refp->user1p());
+                    refp->user1p(nullptr);
+                    refp->replaceWith(localRefp);
+                    VL_DO_DANGLING(pushDeletep(refp), refp);
+                    refp = localRefp;
+                    refStrengthp->m_varrefp = localRefp;
+                } else {
+                    refp->varp(newLhsp);
+                }
+
+                if (driver.m_procedurep) {
+                    UASSERT_OBJ(refStrengthp->m_assignp, refp,
+                                "Procedural tristate driver without assignment");
+                    UASSERT_OBJ(refStrengthp->m_enLhsp && refStrengthp->m_enVarrefp
+                                    && refStrengthp->m_enRhsp,
+                                refp, "Procedural tristate driver without projected enable");
+
+                    AstNodeExpr* enLhsp = refStrengthp->m_enLhsp;
+                    AstNodeVarRef* const enVarrefp = refStrengthp->m_enVarrefp;
+                    if (VN_IS(enVarrefp, VarXRef)) {
+                        AstVarRef* const localRefp
+                            = new AstVarRef{enVarrefp->fileline(), newEnLhsp, VAccess::WRITE};
+                        if (enLhsp == enVarrefp) {
+                            enLhsp = localRefp;
+                            VL_DO_DANGLING(enVarrefp->deleteTree(), enVarrefp);
+                        } else {
+                            enVarrefp->replaceWith(localRefp);
+                            VL_DO_DANGLING(pushDeletep(enVarrefp), enVarrefp);
+                        }
+                    } else {
+                        enVarrefp->varp(newEnLhsp);
+                    }
+                    UINFO(9, "       new procedural enable LHS " << enLhsp);
+                    m_proceduralEnables[refStrengthp->m_assignp].push_back(
+                        ProceduralEnable{enLhsp, refStrengthp->m_enRhsp});
+                    refStrengthp->m_enLhsp = nullptr;
+                    refStrengthp->m_enVarrefp = nullptr;
+                    refStrengthp->m_enRhsp = nullptr;
+                } else {
+                    AstAssignW* const enLhspAssignp = new AstAssignW{
+                        refp->fileline(),
+                        new AstVarRef{refp->fileline(), newEnLhsp, VAccess::WRITE}, getEnp(refp)};
+                    if (refStrengthp->m_delayp) {
+                        enLhspAssignp->timingControlp(refStrengthp->m_delayp->cloneTree(false));
+                    }
+                    UINFO(9, "       newenlhspAssignp " << enLhspAssignp);
+                    nodep->addStmtsp(new AstAlways{enLhspAssignp});
+                }
+            }
+
+            // Append this driver to the resolution logic.
+            FileLine* const fl = driver.m_refsp.front()->m_varrefp->fileline();
+            AstNodeExpr* const ref1p = new AstVarRef{fl, newLhsp, VAccess::READ};
+            AstNodeExpr* const ref2p = new AstVarRef{fl, newEnLhsp, VAccess::READ};
+            AstNodeExpr* const andp = new AstAnd{fl, ref1p, ref2p};
 
             // or this to the others
-            orp = (!orp) ? andp : new AstOr{refp->fileline(), orp, andp};
+            orp = (!orp) ? andp : new AstOr{fl, orp, andp};
 
-            AstNodeExpr* const ref3p = new AstVarRef{refp->fileline(), newEnLhsp, VAccess::READ};
+            AstNodeExpr* const ref3p = new AstVarRef{fl, newEnLhsp, VAccess::READ};
             enp = (!enp) ? ref3p : new AstOr{ref3p->fileline(), enp, ref3p};
         }
         AstAssignW* const assp = new AstAssignW{
@@ -881,6 +993,43 @@ class TristateVisitor final : public TristateBaseVisitor {
             envarp->fileline(), new AstVarRef{envarp->fileline(), envarp, VAccess::WRITE}, enp};
         UINFO(9, "       newenassp " << enAssp);
         nodep->addStmtsp(new AstAlways{enAssp});
+    }
+
+    void insertProceduralEnableAssignments(AstNodeModule* nodep) {
+        for (auto& assignEnables : m_proceduralEnables) {
+            AstNodeAssign* const assignp = assignEnables.first;
+            AstNodeExpr* combinedLhsp = assignp->lhsp()->unlinkFrBack();
+            AstNodeExpr* combinedRhsp = assignp->rhsp()->unlinkFrBack();
+            for (ProceduralEnable& enable : assignEnables.second) {
+                combinedLhsp = new AstConcat{assignp->fileline(), enable.m_lhsp, combinedLhsp};
+                combinedRhsp = new AstConcat{assignp->fileline(), enable.m_rhsp, combinedRhsp};
+            }
+
+            if (!VN_IS(assignp, AssignDly) && assignp->timingControlp()) {
+                // A blocking intra-assignment timing control must suspend only once. Sample data
+                // and enables together, then apply both after the timing control completes.
+                AstVar* const sampledp
+                    = new AstVar{assignp->fileline(), VVarType::MODULETEMP,
+                                 "__VtriSample" + cvtToStr(m_unique++), combinedRhsp->dtypep()};
+                nodep->addStmtsp(sampledp);
+                assignp->lhsp(new AstVarRef{assignp->fileline(), sampledp, VAccess::WRITE});
+                assignp->rhsp(combinedRhsp);
+                assignp->dtypeFrom(combinedRhsp);
+                AstAssign* const applyp
+                    = new AstAssign{assignp->fileline(), combinedLhsp,
+                                    new AstVarRef{assignp->fileline(), sampledp, VAccess::READ}};
+                UINFO(9, "       new timed procedural tristate apply " << applyp);
+                assignp->addNextHere(applyp);
+            } else {
+                // Keeping data and enables in one assignment preserves NBA scheduling and makes
+                // every partial LHS update affect the identical enable footprint.
+                assignp->lhsp(combinedLhsp);
+                assignp->rhsp(combinedRhsp);
+                assignp->dtypeFrom(combinedRhsp);
+                UINFO(9, "       augmented procedural tristate assignment " << assignp);
+            }
+        }
+        m_proceduralEnables.clear();
     }
 
     // isIfaceTri: true when the var is a tristate in an interface module (local or external).
@@ -898,9 +1047,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         // original port gets converted to an input. Don't tristate expand
         // if this is the top level so that we can force the final
         // tristate resolution at the top.
-        // Or if this is a top-level inout, do tristate expand if requested
-        // by pinsInoutEnables(). The resolution will be done outside of
-        // verilator.
+        // Top-level inouts are also expanded for pinsInoutEnables() or library generation.
+        // Resolution is then performed by the caller or the library's SV wrapper.
         // Interface tristate vars skip port conversion (they use contribution vars instead).
         AstVar* envarp = nullptr;
         AstVar* outvarp = nullptr;  // __out
@@ -908,7 +1056,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         const bool isTopInout = !isIfaceTri && (invarp->direction() == VDirection::INOUT)
                                 && invarp->isIO() && nodep->isTop();
         if (!isIfaceTri) {
-            if ((v3Global.opt.pinsInoutEnables() && isTopInout)
+            if (((v3Global.opt.pinsInoutEnables() || !v3Global.opt.libCreate().empty())
+                 && isTopInout)
                 || (!nodep->isTop() && invarp->isIO())) {
                 // This var becomes an input
                 invarp->varType2In();  // convert existing port to type input
@@ -1109,14 +1258,23 @@ class TristateVisitor final : public TristateBaseVisitor {
         nodep->addStmtsp(new AstAlways{assp});
 
         // If this is a top-level inout, make sure that the INOUT pins get __en and __out
-        if (v3Global.opt.pinsInoutEnables() && isTopInout) {
+        if ((v3Global.opt.pinsInoutEnables() || !v3Global.opt.libCreate().empty()) && isTopInout) {
             if (envarp) {
                 envarp->primaryIO(true);
                 envarp->direction(VDirection::OUTPUT);
+                envarp->protect(invarp->protect());
             }
             if (outvarp) {
                 outvarp->primaryIO(true);
                 outvarp->direction(VDirection::OUTPUT);
+                outvarp->protect(invarp->protect());
+            }
+            if (!v3Global.opt.libCreate().empty()) {
+                const int id = ++m_unique;
+                invarp->libInoutId(id);
+                outvarp->libInoutId(id);
+                envarp->libInoutId(id);
+                envarp->libInoutEnable(true);
             }
         }
     }
@@ -1384,9 +1542,13 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void visit(AstExprStmt* nodep) override {
-        iterateChildren(nodep);
+        {
+            // Not an lvalue, so on an LHS only as an index, which is read
+            VL_RESTORER(m_alhs);
+            m_alhs = false;
+            iterateChildren(nodep);
+        }
         if (m_graphing) {
-            UASSERT_OBJ(!m_alhs, nodep, "AstExprStmt node on the LHS of assignment");
             associateLogic(nodep->resultp(), nodep);
         } else if (nodep->resultp()->user1p()) {
             nodep->user1p(getEnp(nodep->resultp()));
@@ -1481,6 +1643,17 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    void visit(AstNodeConsItem* nodep) override {
+        iterateChildren(nodep);
+        // Unpacked aggregates have no enables, so Z bits of an item read as 0,
+        // as they do for a Z assigned to a non-tristate variable
+        if (m_graphing) return;
+        if (AstNode* const enp = nodep->valuep()->user1p()) {
+            nodep->valuep()->user1p(nullptr);
+            VL_DO_DANGLING(pushDeletep(enp), enp);
+        }
+    }
+
     void visit(AstBufIf1* nodep) override {
         // For BufIf1, the enable is the LHS expression
         iterateChildren(nodep);
@@ -1545,20 +1718,27 @@ class TristateVisitor final : public TristateBaseVisitor {
                 return;  // no tristates in either expression, so nothing to do
             }
             m_tgraph.didProcess(nodep);
-            AstNodeExpr* const en1p = getEnp(expr1p);
-            AstNodeExpr* const en2p = getEnp(expr2p);
+            AstNodeExpr* en1p = getEnp(expr1p);
+            AstNodeExpr* en2p = getEnp(expr2p);
             AstNodeExpr* subexpr1p = expr1p->cloneTreePure(false);
             AstNodeExpr* subexpr2p = expr2p->cloneTreePure(false);
             if (isAnd) {
                 subexpr1p = new AstNot{nodep->fileline(), subexpr1p};
                 subexpr2p = new AstNot{nodep->fileline(), subexpr2p};
             }
+            // The new output enable is en1&en2 | en1&sub1 | en2&sub2, which factors to
+            // en1&(en2|sub1) | en2&sub2. That references en1 once and en2 twice. Chained
+            // gates (e.g. a many-input primitive) nest on one side, so make the nested
+            // (non-leaf) side en1 to keep the enable linear in size.
+            if (!en1p->op1p() && en2p->op1p()) {
+                std::swap(en1p, en2p);
+                std::swap(subexpr1p, subexpr2p);
+            }
             // calc new output enable
             AstNodeExpr* const enp = new AstOr{
-                nodep->fileline(), new AstAnd{nodep->fileline(), en1p, en2p},
-                new AstOr{nodep->fileline(),
-                          new AstAnd{nodep->fileline(), en1p->cloneTree(false), subexpr1p},
-                          new AstAnd{nodep->fileline(), en2p->cloneTree(false), subexpr2p}}};
+                nodep->fileline(),
+                new AstAnd{nodep->fileline(), en1p, new AstOr{nodep->fileline(), en2p, subexpr1p}},
+                new AstAnd{nodep->fileline(), en2p->cloneTree(false), subexpr2p}};
             UINFO(9, "       neweqn " << enp);
             nodep->user1p(enp);
             expr1p->user1p(nullptr);
@@ -1570,8 +1750,10 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     void visitAssign(AstNodeAssign* nodep) {
         VL_RESTORER(m_alhs);
+        VL_RESTORER(m_assignp);
         VL_RESTORER(m_currentStrength);
         VL_RESTORER(m_currentDelayp);
+        m_assignp = nodep;
         if (VN_IS(nodep->rhsp(), CReset)) return;
         if (AstAssignW* const assignWp = VN_CAST(nodep, AssignW)) {
             m_currentDelayp = VN_CAST(assignWp->timingControlp(), Delay);
@@ -1603,6 +1785,16 @@ class TristateVisitor final : public TristateBaseVisitor {
             iterateAndNextNull(nodep->rhsp());
             UINFO(9, dbgState() << nodep);
             UINFOTREE(9, nodep, "", "assign");
+            if (m_procedurep) {
+                UASSERT_OBJ(!VN_IS(nodep, AssignW), nodep,
+                            "Continuous assignment inside procedural process");
+                AstNodeExpr* const enp
+                    = nodep->rhsp()->user1p()
+                          ? VN_AS(nodep->rhsp()->user1p(), NodeExpr)->cloneTreePure(false)
+                          : newAllZerosOrOnes(nodep->lhsp(), true);
+                const bool inserted = m_assignEnps.emplace(nodep, enp).second;
+                UASSERT_OBJ(inserted, nodep, "Procedural assignment enable recorded twice");
+            }
             // if the rhsp of this assign statement has an output enable driver,
             // then propagate the corresponding output enable assign statement.
             // down the lvalue tree by recursion for eventual attachment to
@@ -1659,6 +1851,14 @@ class TristateVisitor final : public TristateBaseVisitor {
     void visit(AstAssignW* nodep) override { visitAssign(nodep); }
     void visit(AstAssign* nodep) override { visitAssign(nodep); }
     void visit(AstAssignDly* nodep) override { visitAssign(nodep); }
+
+    void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_procedurep);
+        const AstAlways* const alwaysp = VN_CAST(nodep, Always);
+        m_procedurep = alwaysp && alwaysp->keyword() == VAlwaysKwd::CONT_ASSIGN ? nullptr : nodep;
+        iterateChildren(nodep);
+        checkUnhandled(nodep);
+    }
     void visit(AstAlias* nodep) override {
         VL_RESTORER(m_alhs);
         VL_RESTORER(m_inAlias);
@@ -1667,7 +1867,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (nodep->user2() & U2_GRAPHING) return;
             m_alhs = true;  // In AstAlias all operands should be considered as lhs
             iterateChildren(nodep);
-            for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+            for (AstNode* const itemp : nodep->itemspList()) {
                 associateLogic(itemp, nodep);
                 associateLogic(nodep, itemp);
             }
@@ -1805,8 +2005,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                     }
                     newp = new AstAdd{nodep->fileline(), nodep, newp};
                 } else {
-                    // TODO: looks dubious that we still iterate this below...
-                    pushDeletep(nodep);
+                    pushDeletep(nodep);  // TODO: looks dubious that we still iterate this below...
                 }
                 UINFOTREE(9, newp, "", "countout");
                 relinkHandle.relink(newp);
@@ -1835,15 +2034,23 @@ class TristateVisitor final : public TristateBaseVisitor {
                 associateLogic(nodep, varrefp->varp());
             } else {
                 // Replace any pullup/pulldowns with assignw logic and set the
-                // direction of the pull in the var aux data.  Given
-                // the complexity of merging tristate drivers at any level, the
-                // current limitation of this implementation is that a pullup/down
-                // gets applied to all bits of a bus and a bus cannot have drivers
-                // in opposite directions on individual pins.
+                // direction of the pull in the var aux data.  A pull on a
+                // constant part select is recorded per bit, so different bits
+                // of a bus may be pulled in opposite directions.  Otherwise
+                // the pull applies to all bits of the variable.
                 varrefp->access(VAccess::WRITE);
                 m_tgraph.didProcess(nodep);
                 m_tgraph.didProcess(varrefp->varp());
-                setPullDirection(varrefp->varp(), nodep);
+                const AstSel* const selp = VN_CAST(nodep->lhsp(), Sel);
+                const AstConst* const lsbp = selp ? VN_CAST(selp->lsbp(), Const) : nullptr;
+                if (lsbp) {
+                    const int lsb = lsbp->toSInt();
+                    for (int i = 0; i < selp->widthConst(); ++i) {
+                        setBitPullDirection(varrefp->varp(), lsb + i, nodep->direction());
+                    }
+                } else {
+                    setPullDirection(varrefp->varp(), nodep);
+                }
             }
         }
         if (!m_graphing) {
@@ -2106,13 +2313,13 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (m_graphing) {
             if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
             if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
-            // Only interface tristate nets need this: a plain (non-Z) cross-hierarchy
-            // driver has no Z in its own module's graph, so mark the net tristate here to
-            // collect the driver as a contribution. The ifaceTristate flag is only set for
-            // interface nets; a non-interface cross-module tri driver does nothing here and
-            // is instead rejected (E_UNSUPPORTED) later in insertTristates.
+            // A plain (non-Z) cross-hierarchy driver has no Z in its own module's graph, so
+            // mark a net already known tristate (interface net, or a net whose module already
+            // created its __en) tristate here. Interface nets collect the driver as a
+            // contribution; a non-interface cross-module tri driver is rejected
+            // (E_UNSUPPORTED) later in insertTristates.
             if (nodep->access().isWriteOrRW() && VN_IS(nodep, VarXRef)
-                && m_varAux(nodep->varp()).ifaceTristate) {
+                && (m_varAux(nodep->varp()).ifaceTristate || nodep->varp()->user1p())) {
                 m_tgraph.setTristate(nodep->varp());
             }
         } else {
@@ -2204,6 +2411,8 @@ class TristateVisitor final : public TristateBaseVisitor {
         VL_RESTORER(m_unique);
         VL_RESTORER_CLEAR(m_lhsmap);
         VL_RESTORER_CLEAR(m_assigns);
+        VL_RESTORER_CLEAR(m_assignEnps);
+        VL_RESTORER_CLEAR(m_proceduralEnables);
         // Not preserved, needs pointer instead: TristateGraph origTgraph = m_tgraph;
         UASSERT_OBJ(m_tgraph.empty(), nodep, "Unsupported: NodeModule under NodeModule");
 
@@ -2234,6 +2443,12 @@ class TristateVisitor final : public TristateBaseVisitor {
         iterateChildren(nodep);
         // Insert new logic for all tristates
         insertTristates(nodep);
+        insertProceduralEnableAssignments(nodep);
+
+        for (auto& assignEnp : m_assignEnps) {
+            VL_DO_DANGLING(assignEnp.second->deleteTree(), assignEnp.second);
+        }
+        m_assignEnps.clear();
 
         m_tgraph.clearAndCheck();  // Recursion not supported
     }
@@ -2338,7 +2553,7 @@ public:
         // own graph to mark the net tristate, so without this its driver would be dropped.
         // Collect only the interfaces (reverse declaration order to match the pass below).
         std::vector<AstNodeModule*> ifacesp;
-        for (AstNode* modp = netlistp->modulesp(); modp; modp = modp->nextp()) {
+        for (AstNode* const modp : netlistp->modulespList()) {
             if (VN_IS(modp, Iface)) ifacesp.push_back(VN_AS(modp, NodeModule));
         }
         for (auto it = ifacesp.rbegin(); it != ifacesp.rend(); ++it) iterate(*it);

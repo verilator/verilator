@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2020 Peter Monsson
 // SPDX-License-Identifier: Unlicense
 
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0d exp=%0d\n", `__FILE__, `__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -25,6 +30,12 @@ module t (
   );
 
   Test3 test3 (  /*AUTOINST*/
+      // Inputs
+      .clk(clk),
+      .in(in[31:0])
+  );
+
+  Test4 test4 (  /*AUTOINST*/
       // Inputs
       .clk(clk),
       .in(in[31:0])
@@ -54,6 +65,10 @@ module Test (  /*AUTOARG*/
   bit [31:0] dly0 = 0;
   bit [31:0] dly1 = 0;
   bit [31:0] dly2 = 0;
+  bit fell1 = 1;
+  bit stable1 = 1;
+
+  initial fell1 = 0;
 
   // If called in an assertion, sequence, or property, the appropriate clocking event.
   // Otherwise, if called in a disable condition or a clock expression in an assertion, sequence, or prop, explicit.
@@ -70,17 +85,44 @@ module Test (  /*AUTOARG*/
     if ($rose(dly0[4])) $stop;
     if ($fell(dly0[4])) $stop;
     if (!$stable(dly0[4])) $stop;
+    if (!$stable(1'b1)) $stop;
+    if (in == 1 && !$stable(stable1)) $stop;
     if ($changed(dly0[4])) $stop;
+    if (in == 1) begin
+      `checkd($past(stable1), 1);
+      `checkd($past(stable1, 2), 1);
+      `checkd($sampled(stable1), 1);
+      `checkd($rose(stable1), 0);
+      `checkd($fell(fell1), 1);
+      `checkd($stable(stable1), 1);
+      `checkd($changed(stable1), 0);
+    end
+    stable1 <= ~stable1;
   end
 
   assert property (@(posedge clk) $rose(dly0) || dly0 % 2 == 0 || dly2 < 3);
   assert property (@(posedge clk) $fell(dly1) || dly1 % 2 == 1 || dly2 < 3);
   assert property (@(posedge clk) !$stable(dly2) || dly2 < 3);
   assert property (@(posedge clk) $changed(dly2) || dly2 < 3);
+  // Source $past history must not initialize the history used to lower |=>.
+  assert property (@(posedge clk) stable1 |=> in > 1);
 
   global clocking @(posedge clk);
   endclocking
   always @($global_clock) $display("gc in=%0d", in);
+  always @(posedge clk) begin
+    if (in == 1) begin
+      `checkd($rose(stable1, $global_clock), 0);
+      `checkd($fell(fell1, $global_clock), 1);
+      `checkd($stable(stable1, $global_clock), 1);
+      `checkd($changed(stable1, $global_clock), 0);
+      `checkd($past_gclk(stable1), 1);
+      `checkd($rose_gclk(stable1), 0);
+      `checkd($fell_gclk(fell1), 1);
+      `checkd($stable_gclk(stable1), 1);
+      `checkd($changed_gclk(stable1), 0);
+    end
+  end
   //
   assert property (@(posedge clk) $rose(dly0, $global_clock) || dly0 % 2 == 0 || dly2 < 3);
   assert property (@(posedge clk) $fell(dly1, $global_clock) || dly1 % 2 == 1 || dly2 < 3);
@@ -148,4 +190,50 @@ module Test3 (  /*AUTOARG*/
   global clocking gck @(posedge clk);
   endclocking
 
+endmodule
+
+module Test4 (  /*AUTOARG*/
+    // Inputs
+    clk,
+    in
+);
+
+  input clk;
+  input [31:0] in;
+
+  // Elements of unpacked arrays without an initializer
+  bit [3:0] arr[2];
+  bit m[2][2];
+  bit [3:0] dly;
+  bit mdly;
+  // With an initializer, which is the default
+  bit [3:0] ai[2] = '{4'd1, 4'd2};
+  bit [3:0] aidly;
+  bit [3:0] vdly;
+
+  always @(posedge clk) begin
+    arr[0] <= in[3:0];
+    arr[1] <= ~in[3:0];
+    m[1][0] <= in[0];
+    dly <= arr[0];
+    mdly <= m[1][0];
+    ai[1] <= in[3:0];
+    aidly <= ai[1];
+    vdly <= arr[in[1]];
+    if (in == 1) begin
+      // Before the first tick, the default of the element type
+      `checkd($past(arr[0]), 0);
+      `checkd($past(m[1][0]), 0);
+      `checkd($past(ai[1]), 2);
+    end
+    if (in > 2) begin
+      `checkd($past(arr[0]), dly);
+      `checkd($past(arr[1]), ~dly);
+      `checkd($past(m[1][0]), mdly);
+      `checkd($stable(arr[0]), arr[0] == dly);
+      `checkd($past(ai[1]), aidly);
+      // Variable index
+      `checkd($past(arr[in[1]]), vdly);
+    end
+  end
 endmodule

@@ -27,5 +27,5 @@ endmodule
 
 module `LONG_NAME_MOD ();
   // Force Verilator to make a new class
-  logic a1 /* verilator public */;
+  logic a1 /* verilator public_flat_rw */;
 endmodule

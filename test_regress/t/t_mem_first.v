@@ -32,8 +32,8 @@ module t (
   wire sixtext2 = sixt2[sixfrom2];
 
   // Non-power of 2 memory overwriting checks
-  reg [2:0] np2_mem[5:0]  /*verilator public*/;
-  reg [2:0] np2_guard[7:6]  /*verilator public*/;
+  reg [2:0] np2_mem[5:0]  /*verilator public_flat_rw*/;
+  reg [2:0] np2_guard[7:6]  /*verilator public_flat_rw*/;
 
   integer i;
 

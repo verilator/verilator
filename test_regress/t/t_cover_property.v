@@ -44,7 +44,7 @@ module t (
   cp_seq0 :
   cover property (a ##0 b) n_seq0++;
   cp_strong :
-  cover property (strong(a ##1 b)) n_strong++;
+  cover property (strong (a ##1 b)) n_strong++;
   cp_bool :
   cover property (a) n_bool++;
   cp_named :

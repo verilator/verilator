@@ -20,7 +20,6 @@
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
-#include "V3Const.h"
 #include "V3EmitCBase.h"
 #include "V3EmitV.h"
 #include "V3Order.h"
@@ -46,11 +45,17 @@ AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow) {
     return funcp;
 }
 
-AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow) {
-    AstCFunc* const funcp = makeSubFunction(netlistp, name, slow);
-    funcp->entryPoint(true);
-    funcp->keepIfEmpty(true);
-    return funcp;
+AstVarScope* newArgument(AstCFunc* funcp, AstNodeDType* dtypep, const string& name,
+                         VDirection direction) {
+    FileLine* const flp = funcp->fileline();
+    AstScope* const scopep = funcp->scopep();
+    AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
+    varp->funcLocal(true);
+    varp->direction(direction);
+    funcp->addArgsp(varp);
+    AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
+    scopep->addVarsp(vscp);
+    return vscp;
 }
 
 AstNodeStmt* setVar(AstVarScope* vscp, uint32_t val) {
@@ -77,31 +82,6 @@ AstNodeStmt* callVoidFunc(AstCFunc* funcp) {
     return callp->makeStmt();
 }
 
-AstNodeStmt* checkIterationLimit(AstNetlist* netlistp, const string& name, AstVarScope* counterp,
-                                 AstNodeStmt* dumpCallp) {
-    FileLine* const flp = netlistp->fileline();
-
-    // If we exceeded the iteration limit, die
-    const uint32_t limit = v3Global.opt.convergeLimit();
-    AstVarRef* const counterRefp = new AstVarRef{flp, counterp, VAccess::READ};
-    AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, counterp->dtypep()};
-    constp->num().setLong(limit);
-    AstNodeExpr* const condp = new AstGt{flp, counterRefp, constp};
-    AstIf* const ifp = new AstIf{flp, condp};
-    ifp->branchPred(VBranchPred::BP_UNLIKELY);
-    if (dumpCallp) ifp->addThensp(dumpCallp);
-    AstCStmt* const stmtp = new AstCStmt{flp};
-    ifp->addThensp(stmtp);
-    const FileLine* const locp = netlistp->topModulep()->fileline();
-    const std::string& file = VIdProtect::protect(locp->filename());
-    const std::string& line = std::to_string(locp->lineno());
-    stmtp->add("VL_FATAL_MT(\"" + V3OutFormatter::quoteNameControls(file) + "\", " + line
-               + ", \"\", \"DIDNOTCONVERGE: " + name
-               + " region did not converge after '--converge-limit' of " + std::to_string(limit)
-               + " tries\");");
-    return ifp;
-}
-
 static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     static std::map<AstCFunc*, uint32_t> s_funcNums;  // What split number to attach to a function
     const uint32_t funcNum = s_funcNums[ofuncp]++;
@@ -115,7 +95,7 @@ static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     subFuncp->slow(ofuncp->slow());
     subFuncp->declPrivate(ofuncp->declPrivate());
     if (ofuncp->needProcess()) subFuncp->setNeedProcess();
-    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+    for (AstVar* const argp : ofuncp->argspList()) {
         AstVar* const clonep = argp->cloneTree(false);
         subFuncp->addArgsp(clonep);
         AstVarScope* const vscp = new AstVarScope{clonep->fileline(), scopep, clonep};
@@ -131,7 +111,7 @@ void splitCheckFinishSubFunc(AstCFunc* ofuncp, AstCFunc* subFuncp,
     AstCCall* const callp = new AstCCall{subFuncp->fileline(), subFuncp};
     callp->dtypeSetVoid();
     // Pass arguments through to subfunction
-    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+    for (AstVar* const argp : ofuncp->argspList()) {
         UASSERT_OBJ(argp->direction() == VDirection::CONSTREF, argp, "Unexpected direction");
         callp->addArgsp(new AstVarRef{flp, argVscps.at(argp), VAccess::READ});
     }
@@ -166,7 +146,7 @@ static std::vector<bool> splitCheckBreakable(const AstCFunc* ofuncp) {
     // Gather the top level statements, and where each locally declared variable is declared
     std::vector<const AstNode*> stmtps;
     std::unordered_map<const AstVar*, size_t> declIdx;  // Local var -> index it is declared at
-    for (const AstNode* nodep = ofuncp->stmtsp(); nodep; nodep = nodep->nextp()) {
+    for (const AstNode* const nodep : ofuncp->stmtspList()) {
         if (const AstVar* const varp = VN_CAST(nodep, Var)) declIdx.emplace(varp, stmtps.size());
         stmtps.push_back(nodep);
     }
@@ -203,11 +183,10 @@ void splitCheck(AstCFunc* const ofuncp) {
 
     // Need to find the AstVarScopes for the function arguments. They should be in the same Scope.
     std::unordered_map<const AstVar*, AstVarScope*> argVscps;
-    for (AstVar* argp = ofuncp->argsp(); argp; argp = VN_AS(argp->nextp(), Var)) {
+    for (AstVar* const argp : ofuncp->argspList()) {
         UASSERT_OBJ(argVscps.size() < 2, argp, "There should be at most 2 arguments, or O(n^2)");
         bool found = false;
-        for (AstVarScope *vscp = ofuncp->scopep()->varsp(), *nextp; vscp; vscp = nextp) {
-            nextp = VN_AS(vscp->nextp(), VarScope);
+        for (AstVarScope* const vscp : ofuncp->scopep()->varspList()) {
             if (vscp->varp() != argp) continue;
             argVscps[argp] = vscp;
             found = true;
@@ -242,22 +221,6 @@ void splitCheck(AstCFunc* const ofuncp) {
     if (subFuncp) splitCheckFinishSubFunc(ofuncp, subFuncp, argVscps);
 }
 
-// Build an AstIf conditional on the given SenTree being triggered
-AstIf* createIfFromSenTree(AstSenTree* senTreep) {
-    senTreep = VN_AS(V3Const::constifyExpensiveEdit(senTreep), SenTree);
-    UASSERT_OBJ(senTreep->sensesp(), senTreep, "No sensitivity list during scheduling");
-    // Convert the SenTree to a boolean expression that is true when triggered
-    AstNodeExpr* senEqnp = nullptr;
-    for (AstSenItem *senp = senTreep->sensesp(), *nextp; senp; senp = nextp) {
-        nextp = VN_AS(senp->nextp(), SenItem);
-        // They should all be ET_TRUE, as set up by V3Sched
-        UASSERT_OBJ(senp->edgeType() == VEdgeType::ET_TRUE, senp, "Bad scheduling trigger type");
-        AstNodeExpr* const senOnep = senp->sensp()->cloneTree(false);
-        senEqnp = senEqnp ? new AstOr{senp->fileline(), senEqnp, senOnep} : senOnep;
-    }
-    // Create the if statement conditional on the triggers
-    return new AstIf{senTreep->fileline(), senEqnp};
-}
-
 }  // namespace util
+
 }  // namespace V3Sched

@@ -62,7 +62,8 @@ module t;
   always @(posedge clk) begin
     if (assertEnable) begin
       // This is an 'assert' with another 'assert' in the fail branch
-      assert(cntB - 100 == cntA); else assert(cntB == cntA + 100);
+      assert (cntB - 100 == cntA);
+      else assert (cntB == cntA + 100);
     end
   end
 

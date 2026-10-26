@@ -147,9 +147,9 @@ private:
 
     struct CallbackRecord final {
         union {  // The callback
-            const initCb_t m_initCb;
-            const dumpCb_t m_dumpCb;
-            const cleanupCb_t m_cleanupCb;
+            const initCb_t m_initCb;  // Init-callback constructor
+            const dumpCb_t m_dumpCb;  // Dump-callback constructor
+            const cleanupCb_t m_cleanupCb;  // Cleanup-callback constructor
         };
         const uint32_t m_fidx;  // The index of the tracing function
         void* const m_userp;  // The user pointer to pass to the callback (the symbol table)
@@ -201,8 +201,8 @@ private:
             , m_bufp{bufp} {}
     };
 
-    // Passed a ParallelWorkerData*, second argument is ignored
-    static void parallelWorkerTask(void*, bool);
+    // Passed a ParallelWorkerData*
+    static void parallelWorkerTask(void*);
 
 protected:
     uint32_t* m_sigs_oldvalp = nullptr;  // Previous value store

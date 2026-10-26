@@ -14,7 +14,20 @@ module t;
     input int i,
     input int bad);
 
+  // Same, but void so the call sits in statement position
+  import "DPI-C" dpii_fa_void = function void oth_f_void1(input int i);
+  import "DPI-C" dpii_fa_void = function void oth_f_void2(
+    input int i,
+    input int bad);
+
+  int o1;
+  int o2;
+
   initial begin
+    o1 = oth_f_int1(1);
+    o2 = oth_f_int2(1, 2);
+    oth_f_void1(1);
+    oth_f_void2(1, 2);
     $stop;
   end
 

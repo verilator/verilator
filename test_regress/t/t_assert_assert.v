@@ -35,7 +35,7 @@ module t (
   always @(posedge clk) begin
     cyc <= cyc + 1;
     if (cyc == 10) begin
-      assert(cyc == 10);  // For debug to compare with other asserts
+      assert (cyc == 10);  // For debug to compare with other asserts
       value <= 0;
       cnt_tt = 0;
       cnt_tf = 0;

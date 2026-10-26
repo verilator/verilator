@@ -146,7 +146,11 @@ bool AstBasicDType::ascending() const {
 
 bool AstActive::hasClocked() const { return m_sentreep->hasClocked(); }
 bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
+bool AstActive::hasInitial() const { return m_sentreep->hasInitial(); }
 bool AstActive::hasStatic() const { return m_sentreep->hasStatic(); }
+
+bool AstNodeModule::isDollarUnit() const { return this == v3Global.rootp()->dollarUnitPkgp(); }
+bool AstNodeModule::isConstPool() const { return this == v3Global.rootp()->constPoolPkgp(); }
 
 AstAlways::AstAlways(AstAssignW* assignp)
     : ASTGEN_SUPER_Always(assignp->fileline(), assignp)
@@ -161,13 +165,14 @@ AstElabDisplay::AstElabDisplay(FileLine* fl, VDisplayType dispType, AstNodeExpr*
 bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return m_name == asamep->m_name && varType() == asamep->varType()
-           && covergroupRefMember() == asamep->covergroupRefMember();
+           && covergroupRefMember() == asamep->covergroupRefMember()
+           && libInoutId() == asamep->libInoutId() && libInoutEnable() == asamep->libInoutEnable();
 }
 
-AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarScope* matchp)
+AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarRef* matchp)
     : ASTGEN_SUPER_MatchMasked(fl) {
     this->lhsp(lhsp);
-    this->matchp(new AstVarRef{fl, matchp, VAccess::READ});
+    this->matchp(matchp);
     dtypeSetUInt32();
 }
 
@@ -213,6 +218,10 @@ AstVarXRef::AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const V
 }
 
 AstStmtExpr* AstNodeExpr::makeStmt() { return new AstStmtExpr{fileline(), this}; }
+
+AstConsArrayItem* AstConsArray::itemsp() const VL_MT_STABLE {
+    return VN_DBG_AS(op2p(), ConsArrayItem);
+}
 
 // Walk up the AST via backp() to find the containing AstNodeModule.
 // Returns nullptr if not found.

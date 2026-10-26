@@ -45,8 +45,7 @@ void V3LinkLevel::modSortByLevel() {
 
     ModVec mods;  // Modules
     ModVec tops;  // Top level modules
-    for (AstNodeModule* nodep = v3Global.rootp()->modulesp(); nodep;
-         nodep = VN_AS(nodep->nextp(), NodeModule)) {
+    for (AstNodeModule* const nodep : v3Global.rootp()->modulespList()) {
         if (nodep->isTop() && !VN_IS(nodep, NotFoundModule)) {
             UINFO(9, "top candidate " << nodep);
             tops.push_back(nodep);
@@ -55,7 +54,10 @@ void V3LinkLevel::modSortByLevel() {
     }
     if (tops.size() >= 2) {
         const AstNode* const secp = tops[1];  // Complain about second one, as first often intended
-        if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
+        if (!v3Global.opt.libCreate().empty()) {
+            secp->v3error("--lib-create cannot be used with multiple top level modules\n"
+                          << secp->warnMore() << "... Suggest use --top-module to select top.");
+        } else if (!secp->fileline()->warnIsOff(V3ErrorCode::MULTITOP)) {
             auto warnTopModules = [](const AstNode* const secp, ModVec tops)
                                       VL_REQUIRES(V3Error::s().m_mutex) -> std::string {
                 std::stringstream ss;
@@ -96,8 +98,7 @@ void V3LinkLevel::timescaling(const ModVec& mods) {
     // Move timeunit attributes from parse to module unit
     // Grammar only allows timeunit as module_item, so no need to recurse full tree
     for (AstNodeModule* modp : mods) {
-        for (AstNode *nextp, *childp = modp->stmtsp(); childp; childp = nextp) {
-            nextp = childp->nextp();
+        for (AstNode* const childp : modp->stmtspList()) {
             // cppcheck-suppress constVariablePointer
             if (AstPragma* pragp = VN_CAST(childp, Pragma)) {
                 if (pragp->pragType() == VPragmaType::TIMEUNIT_SET) {
@@ -187,7 +188,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
 
     // Instantiate all packages under the top wrapper
     // This way all later SCOPE based optimizations can ignore packages
-    for (AstNodeModule* modp = rootp->modulesp(); modp; modp = VN_AS(modp->nextp(), NodeModule)) {
+    for (AstNodeModule* const modp : rootp->modulespList()) {
         if (VN_IS(modp, Package)) {
             AstCell* const cellp
                 = new AstCell{modp->fileline(), modp->fileline(),
@@ -219,7 +220,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
     // cppcheck-suppress constVariablePointer
     for (AstNodeModule* oldmodp = VN_AS(rootp->modulesp()->nextp(), NodeModule);
          oldmodp && oldmodp->isTop(); oldmodp = VN_AS(oldmodp->nextp(), NodeModule)) {
-        for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
+        for (AstNode* const subnodep : oldmodp->stmtspList()) {
             if (AstVar* const oldvarp = VN_CAST(subnodep, Var)) {
                 if (oldvarp->isIO()) {
                     if (!ioNames.insert(oldvarp->name()).second) {
@@ -234,20 +235,6 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                             if (!ioNames.insert(oldvarp->name()).second) {
                                 // UINFO(8, "Multitop dup interface found: " << oldvarp);
                                 dupNames.insert(oldvarp->name());
-                            }
-                        }
-                    }
-                    if (VN_IS(subtypep, UnpackArrayDType)) {
-                        const AstUnpackArrayDType* const arrp = VN_AS(subtypep, UnpackArrayDType);
-                        const AstNodeDType* const arrsubtypep = arrp->subDTypep();
-                        if (VN_IS(arrsubtypep, IfaceRefDType)) {
-                            const AstIfaceRefDType* const ifacerefp
-                                = VN_AS(arrsubtypep, IfaceRefDType);
-                            if (!ifacerefp->cellp()) {
-                                if (!ioNames.insert(oldvarp->name()).second) {
-                                    // UINFO(8, "Multitop dup interface array found: " << oldvarp);
-                                    dupNames.insert(oldvarp->name());
-                                }
                             }
                         }
                     }
@@ -274,7 +261,7 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
         newmodp->addStmtsp(cellp);
 
         // Add pins
-        for (AstNode* subnodep = oldmodp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
+        for (AstNode* const subnodep : oldmodp->stmtspList()) {
             if (AstVar* const oldvarp = VN_CAST(subnodep, Var)) {
                 UINFO(8, "VARWRAP " << oldvarp);
                 if (oldvarp->isIO()) {
@@ -357,59 +344,6 @@ void V3LinkLevel::wrapTopCell(AstNetlist* rootp) {
                             pinp->modVarp(oldvarp);
                             cellp->addPinsp(pinp);
                         }
-                    } else if (VN_IS(subtypep, UnpackArrayDType)) {
-                        const AstUnpackArrayDType* const oldarrp
-                            = VN_AS(subtypep, UnpackArrayDType);
-                        const AstNodeDType* const arrsubtypep = oldarrp->subDTypep();
-                        if (VN_IS(arrsubtypep, IfaceRefDType)) {
-                            const AstIfaceRefDType* const ifacerefp
-                                = VN_AS(arrsubtypep, IfaceRefDType);
-                            if (!ifacerefp->cellp()) {
-                                string name = oldvarp->name();
-                                if (dupNames.find(name) != dupNames.end()) {
-                                    // __02E=. while __DOT__ looks nicer but will break V3LinkDot
-                                    name = oldmodp->name() + "__02E" + name;
-                                }
-
-                                AstUnpackArrayDType* arraydtypep
-                                    = VN_AS(oldvarp->dtypep(), UnpackArrayDType);
-                                AstCell* ifacearraycellp
-                                    = new AstCell{newmodp->fileline(),
-                                                  newmodp->fileline(),
-                                                  name,
-                                                  ifacerefp->ifaceName(),
-                                                  nullptr,
-                                                  nullptr,
-                                                  arraydtypep->rangep()->cloneTree(true)};
-                                ifacearraycellp->modp(ifacerefp->ifacep());
-                                newmodp->addStmtsp(ifacearraycellp);
-
-                                AstIfaceRefDType* const idtypep = new AstIfaceRefDType{
-                                    newmodp->fileline(), name, ifacerefp->ifaceName()};
-                                idtypep->ifacep(nullptr);
-                                idtypep->dtypep(idtypep);
-                                idtypep->cellp(ifacearraycellp);
-                                rootp->typeTablep()->addTypesp(idtypep);
-
-                                AstNodeArrayDType* const arrp = new AstUnpackArrayDType{
-                                    newmodp->fileline(), idtypep,
-                                    arraydtypep->rangep()->cloneTree(true)};
-                                AstVar* varp = new AstVar{newmodp->fileline(), VVarType::IFACEREF,
-                                                          name + "__Viftop", arrp};
-                                varp->isIfaceParent(true);
-                                ifacearraycellp->addNextHere(varp);
-                                ifacearraycellp->hasIfaceVar(true);
-                                rootp->typeTablep()->addTypesp(arrp);
-
-                                AstPin* const pinp = new AstPin{
-                                    oldvarp->fileline(), 0, varp->name(),
-                                    new AstVarRef{varp->fileline(), varp,
-                                                  oldvarp->isWritable() ? VAccess::WRITE
-                                                                        : VAccess::READ}};
-                                pinp->modVarp(oldvarp);
-                                cellp->addPinsp(pinp);
-                            }
-                        }
                     }
                 }
             }
@@ -432,7 +366,7 @@ void V3LinkLevel::nonWrapTop(AstNetlist* rootp) {
 
         UINFO(5, "LOOP " << modp);
 
-        for (AstNode* subnodep = modp->stmtsp(); subnodep; subnodep = subnodep->nextp()) {
+        for (AstNode* const subnodep : modp->stmtspList()) {
             if (AstVar* const varp = VN_CAST(subnodep, Var)) {
                 UINFO(8, "VARWRAP " << varp);
                 if (varp->isIO()) {

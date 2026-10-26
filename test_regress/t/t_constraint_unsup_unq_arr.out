@@ -24,7 +24,7 @@
                                                            : ... note: In instance 't'
    25 |     unique {uniq_val_arr_multidim_wild};
       |     ^~~~~~
-%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:26:5: Unsupported: Unique constraint on WILDCARDARRAYDTYPE
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:26:5: Unsupported: Unique constraint on bit[15:0]$[*]
                                                            : ... note: In instance 't'
    26 |     unique {uniq_val_wild};
       |     ^~~~~~

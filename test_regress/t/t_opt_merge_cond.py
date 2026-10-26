@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt_all')
 
-test.compile(verilator_flags2=["-unroll-count 64", "--stats"])
+test.compile(verilator_flags2=["-unroll-count 64", "--stats", "-fno-decompose"])
 
 test.execute()
 

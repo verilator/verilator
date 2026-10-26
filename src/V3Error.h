@@ -55,6 +55,7 @@ public:
         // Boolean information we track per-line, but aren't errors
         I_CELLDEFINE,   // Inside cell define from `celldefine/`endcelldefine
         I_COVERAGE,     // Coverage is on/off from /*verilator coverage_on/off*/
+        I_ERRORING,     // Node created to handle earlier error; suppress new errors
         I_DEF_NETTYPE_WIRE,  // `default_nettype is WIRE (false=NONE)
         I_LINT,         // All lint messages
         I_STYLE,        // All style messages
@@ -177,6 +178,7 @@ public:
         UNDRIVEN,       // No drivers
         UNOPT,          // Unoptimizable block. Historical, never issued.
         UNOPTFLAT,      // Unoptimizable block after flattening
+        UNOPTPUBLIC,    // Public signal, task or module prevents optimization
         UNOPTTHREADS,   // Thread partitioner unable to fill all requested threads
         UNPACKED,       // Unsupported unpacked
         UNSATCONSTR,    // Unsatisfied constraint
@@ -194,6 +196,7 @@ public:
         WAITCONST,      // Wait condition is constant
         WIDTH,          // Width mismatch
         WIDTHCONCAT,    // Unsized numbers/parameters in concatenations
+        WIDTHDIGITS,    // Mismatch between literal size and its value width in bits
         WIDTHEXPAND,    // Width mismatch- lhs > rhs
         WIDTHTRUNC,     // Width mismatch- lhs < rhs
         WIDTHXZEXPAND,  // Width mismatch- lhs > rhs xz filled
@@ -220,8 +223,8 @@ public:
             // Leading spaces indicate it can't be disabled.
             " MIN", " INFO", " FATAL", " FATALMANY", " FATALSRC", " ERROR", " FIRST_NAMED",
             // Boolean
-            " I_CELLDEFINE", " I_COVERAGE", " I_DEF_NETTYPE_WIRE", " I_LINT", " I_STYLE",
-            " I_TIMING", " I_TRACING",
+            " I_CELLDEFINE", " I_COVERAGE", " I_ERRORING", " I_DEF_NETTYPE_WIRE", " I_LINT",
+            " I_STYLE", " I_TIMING", " I_TRACING",
             // Errors
             "CONTASSINIT", "CONSTWRITTEN", "LIFETIME", "NEEDTIMINGOPT", "NOTIMING", "PORTSHORT",
             "TASKNSVAR", "UNSUPPORTED",
@@ -243,16 +246,16 @@ public:
             "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
             "SHORTREAL", "SIDEEFFECT", "SIMILARNAME", "SPECIFYIGN", "SPLITVAR", "STATICVAR",
             "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR",
-            "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL",
-            "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH",
-            "WIDTHCONCAT", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
-            " MAX"};
+            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTPUBLIC", "UNOPTTHREADS", "UNPACKED",
+            "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM",
+            "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN",
+            "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC",
+            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
     bool defaultsOff() const VL_MT_SAFE {
-        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || styleError());
+        return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == I_ERRORING || styleError());
     }
     // Warnings that warn about nasty side effects
     bool dangerous() const VL_MT_SAFE { return (m_e == COMBDLY); }
@@ -293,7 +296,8 @@ public:
                 || m_e == COLONPLUS || m_e == IMPLICIT || m_e == IMPLICITSTATIC || m_e == LATCH
                 || m_e == MISINDENT || m_e == NEWERSTD || m_e == PREPROCZERO || m_e == PINMISSING
                 || m_e == REALCVT || m_e == STATICVAR || m_e == UNSIGNED || m_e == WIDTH
-                || m_e == WIDTHTRUNC || m_e == WIDTHEXPAND || m_e == WIDTHXZEXPAND);
+                || m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                || m_e == WIDTHXZEXPAND);
     }
     // Warnings that are style only
     bool styleError() const VL_MT_SAFE {
@@ -345,6 +349,7 @@ public:
             action(V3ErrorCode{UNUSEDSIGNAL});
             return;
         case V3ErrorCode::WIDTH:
+            action(V3ErrorCode{WIDTHDIGITS});
             action(V3ErrorCode{WIDTHEXPAND});
             action(V3ErrorCode{WIDTHTRUNC});
             action(V3ErrorCode{WIDTHXZEXPAND});
@@ -364,7 +369,8 @@ public:
             return m_e == UNUSEDGENVAR || m_e == UNUSEDLOOP || m_e == UNUSEDPARAM
                    || m_e == UNUSEDSIGNAL;
         case V3ErrorCode::WIDTH:
-            return m_e == WIDTHEXPAND || m_e == WIDTHTRUNC || m_e == WIDTHXZEXPAND;
+            return m_e == WIDTHDIGITS || m_e == WIDTHEXPAND || m_e == WIDTHTRUNC
+                   || m_e == WIDTHXZEXPAND;
         default: return false;
         }
     }
@@ -782,11 +788,10 @@ void v3errorEndFatal(std::ostringstream& sstr)
         } \
     } while (false)
 /// Check self test values for expected value.  Safe from side-effects.
-// Type argument can be removed when go to C++11 (use auto).
-#define UASSERT_SELFTEST(Type, got, exp) \
+#define UASSERT_SELFTEST(got, exp) \
     do { \
-        Type g = (got); \
-        Type e = (exp); \
+        const auto g = (got); \
+        const decltype(g) e{exp}; \
         UASSERT(g == e, "Self-test failed '" #got "==" #exp "'" \
                         " got=" \
                             << g << " expected=" << e); \

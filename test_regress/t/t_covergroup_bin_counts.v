@@ -16,13 +16,18 @@ module t;
   logic [3:0] data;
   logic [7:0] opcode;
   logic signed [3:0] sdata;
+  bit [6:0] named_value;
+  bit tag;
 
   typedef struct packed {bit [7:0] value;} f_t;
   f_t f1;
 
   // cg: basic bin count tracking
   covergroup cg;
-    coverpoint data {bins zero = {0}; bins low = {[1 : 3]};}
+    coverpoint data {
+      bins zero = {0};
+      bins low = {[1 : 3]};
+    }
   endgroup
 
   // cg_mixed: mixed bin types - single values, multi-value lists, ranges
@@ -38,7 +43,10 @@ module t;
 
   // cg_db: labeled coverpoint - verifies the coverage database records the correct hierarchy path
   covergroup cg_db;
-    cp: coverpoint data {bins low = {[0 : 3]}; bins high = {[8 : 15]};}
+    cp: coverpoint data {
+      bins low = {[0 : 3]};
+      bins high = {[8 : 15]};
+    }
   endgroup
 
   // cg_unbounded: open-ended bin range - '$' resolves to the coverpoint domain max (15 for 4-bit)
@@ -75,7 +83,34 @@ module t;
   // cg_sel: coverpoint over a struct-member part-select expression (AstSel)
   covergroup cg_sel;
     cp: coverpoint f1.value[3:0] {  // low nibble only; upper bits ignored
-      bins lo = {[0 : 7]}; bins hi = {[8 : 15]};
+      bins lo = {[0 : 7]};
+      bins hi = {[8 : 15]};
+    }
+  endgroup
+
+  covergroup cg_namers;
+    cp: coverpoint named_value {
+      // Empty groups share a base index with the following nonempty namer.
+      bins empty_first[] = {[3 : 1]};
+      bins first = {7};
+      ignore_bins ignored[] = {8, 9};
+      bins middle[] = {20, 21, 22};
+      bins empty_middle[] = {[3 : 1]};
+      bins empty_next[] = {[5 : 4]};
+      illegal_bins illegal = {30};
+      bins last = {31};
+      bins empty_last[] = {[3 : 1]};
+    }
+    cp_tag: coverpoint tag {
+      bins zero = {0};
+    }
+    cx: cross cp, cp_tag;
+  endgroup
+
+  covergroup cg_empty_namers;
+    cp: coverpoint named_value {
+      bins first[] = {[3 : 1]};
+      bins last[] = {[5 : 4]};
     }
   endgroup
 
@@ -87,6 +122,8 @@ module t;
   cg_unbounded_all cg_unbounded_all_inst;
   cg_unbounded_signed cg_unbounded_signed_inst;
   cg_sel cg_sel_inst;
+  cg_namers cg_namers_inst;
+  cg_empty_namers cg_empty_namers_inst;
 
   initial begin
     cg_inst = new;
@@ -97,6 +134,8 @@ module t;
     cg_unbounded_all_inst = new;
     cg_unbounded_signed_inst = new;
     cg_sel_inst = new;
+    cg_namers_inst = new;
+    cg_empty_namers_inst = new;
 
     data = 0;
     cg_inst.sample();  // zero: 1
@@ -168,6 +207,25 @@ module t;
     f1.value = 8'hF9;
     cg_sel_inst.sample();  // nibble 9 -> hi (upper bits F ignored)
     `checkr(cg_sel_inst.get_inst_coverage(), 100.0);
+
+    for (int i = 0; i < 5; ++i) begin
+      case (i)
+        0: named_value = 7;
+        1: named_value = 20;
+        2: named_value = 21;
+        3: named_value = 22;
+        default: named_value = 31;
+      endcase
+      repeat (i + 1) cg_namers_inst.sample();
+    end
+    named_value = 8;
+    cg_namers_inst.sample();
+    named_value = 9;
+    cg_namers_inst.sample();
+    cg_empty_namers_inst.sample();
+    `checkr(cg_namers_inst.get_inst_coverage(), 100.0);
+    // Only empty bins: nothing contributes, so a nonzero weight gives 0 (IEEE 1800-2023 19.11)
+    `checkr(cg_empty_namers_inst.get_inst_coverage(), 0.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

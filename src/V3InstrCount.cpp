@@ -20,6 +20,7 @@
 #include "V3InstrCount.h"
 
 #include <iomanip>
+#include <unordered_map>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
@@ -32,7 +33,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class InstrCountVisitor final : public VNVisitorConst {
     // NODE STATE
     //  AstNode::user1()        -> bool. Processed if assertNoDups
-    //  AstNode::user2()        -> int.  Path cost + 1, 0 means don't dump
+    //  AstNode::user2()        -> uint64_t.  Path cost + 1, 0 means don't dump
     const VNUser2InUse m_inuser2;
 
     // MEMBERS
@@ -43,14 +44,15 @@ class InstrCountVisitor final : public VNVisitorConst {
     bool m_ignoreRemaining = false;  // Ignore remaining statements in the block
     const bool m_assertNoDups;  // Check for duplicates
     const std::ostream* const m_osp;  // Dump file
+    std::unordered_map<const AstCFunc*, uint32_t> m_funcCosts;  // Cost of each function
 
     // TYPES
     // Little class to cleanly call startVisitBase/endVisitBase
     class VisitBase final {
         // MEMBERS
-        uint32_t m_savedCount;
-        AstNode* const m_nodep;
-        InstrCountVisitor* const m_visitor;
+        uint32_t m_savedCount;  // Count before visit applied
+        AstNode* const m_nodep;  // Node helper is visiting
+        InstrCountVisitor* const m_visitor;  // Visitor whose start/endVisitBase are called
 
     public:
         // CONSTRUCTORS
@@ -227,7 +229,7 @@ private:
         iterateAndNextConstNull(nodep->stmtsp());
         uint32_t totalCount = m_instrCount;
         // Sum counts in each statement until the first await
-        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->forkspList()) {
             reset();
             iterateConst(stmtp);
             totalCount += m_instrCount;
@@ -255,9 +257,15 @@ private:
         if (m_ignoreRemaining) return;
         const VisitBase vb{this, nodep};
         iterateChildrenConst(nodep);
-        m_tracingCall = true;
-        iterateConst(nodep->funcp());
-        UASSERT_OBJ(!m_tracingCall, nodep, "visit(AstCFunc) should have cleared m_tracingCall.");
+        const auto it = m_funcCosts.find(nodep->funcp());
+        if (it == m_funcCosts.end()) {
+            m_tracingCall = true;
+            iterateConst(nodep->funcp());
+            UASSERT_OBJ(!m_tracingCall, nodep,
+                        "visit(AstCFunc) should have cleared m_tracingCall.");
+        } else {
+            m_instrCount += it->second;  // This guards and adds zero cost on recursive calls
+        }
     }
     void visit(AstCFunc* nodep) override {
         // Don't count a CFunc other than by tracing a call or counting it
@@ -265,14 +273,29 @@ private:
         UASSERT_OBJ(m_tracingCall || nodep == m_startNodep, nodep,
                     "AstCFunc not under AstCCall, or not start node");
         UASSERT_OBJ(!m_ignoreRemaining, nodep, "Should not be ignoring at the start of a CFunc");
+        const auto emplacePair = m_funcCosts.emplace(nodep, 0);
+        UASSERT_OBJ(emplacePair.second, nodep, "Should visit every CFunc at most once");
+        uint32_t& funcCostr = emplacePair.first->second;
         m_tracingCall = false;
-        VL_RESTORER(m_inCFunc);
+
+        const uint32_t savedCount = m_instrCount;
+        reset();
         {
+            VL_RESTORER(m_inCFunc);
             m_inCFunc = true;
             const VisitBase vb{this, nodep};
             iterateChildrenConst(nodep);
         }
+        funcCostr = m_instrCount;
+        m_instrCount += savedCount;
+
         m_ignoreRemaining = false;
+    }
+    void visit(AstNodeCons* nodep) override {
+        if (m_ignoreRemaining) return;
+        const VisitBase vb{this, nodep};
+        // A constant value is not built at run time, so its parts cost nothing
+        if (!nodep->isConstantTree()) iterateChildrenConst(nodep);
     }
     void visit(AstNode* nodep) override {
         if (m_ignoreRemaining) return;

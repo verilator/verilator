@@ -26,11 +26,18 @@ module t (
   // Ranged cycle delay before a multi-cycle sequence.
   cover sequence (a ##[1:2] (b ##1 c));
 
-  // Ranged cycle delay wide enough to use the counter FSM.
-  cover sequence (a ##[1:300] b);
+  // All range widths require a Boolean endpoint and cannot feed a sequence suffix.
+  cover sequence (a ##[1:300] (b ##1 c));
+  cover sequence ((a ##[1:300] b) ##1 c);
+  cover sequence ((a ##[1:2] b) ##1 c);
+  cover sequence (a ##[1:2] b [*2]);
 
   // Goto repetition coalesces multiple live attempts into one NFA state.
   cover sequence (a [-> 2]);
   cover sequence (a [-> 2: 3]);
+
+  // Simultaneous prefix endpoints are not preserved by concatenation.
+  cover sequence ((a [*1:2]) ##[1:258] b);
+  cover sequence ((a [*1:2]) ##[1:3] b);
 
 endmodule

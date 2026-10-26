@@ -14,11 +14,12 @@ test.scenarios('vlt')
 # Exercise both user and generated coverage in duplicated hierarchy instances;
 # the shared golden verifies inline and no-inline modules report the same
 # per-hierarchy counts when forcePerInstance is used.
-test.compile(top_filename="t/t_cover_hier.v",
-             v_flags2=["--assert --coverage-line --coverage-user t/t_cover_hier.cpp"],
-             verilator_flags2=["--exe --top-module t"],
-             make_flags=['CPPFLAGS_ADD=-DTEST_OBJ_DIR="' + test.obj_dir + '"'],
-             make_main=False)
+test.compile(
+    top_filename="t/t_cover_hier.v",
+    v_flags2=["--assert --coverage-line --coverage-branch --coverage-user t/t_cover_hier.cpp"],
+    verilator_flags2=["--exe --top-module t"],
+    make_flags=['CPPFLAGS_ADD=-DTEST_OBJ_DIR="' + test.obj_dir + '"'],
+    make_main=False)
 
 test.execute()
 

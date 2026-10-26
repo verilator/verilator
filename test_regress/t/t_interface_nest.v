@@ -34,11 +34,9 @@ module mod1 (
 
 endmodule
 
-module t (  /*AUTOARG*/
-    // Inputs
-    clk
+module t (
+    input clk
 );
-  input clk;
 
   if2 i2a ();
   if2 i2b ();

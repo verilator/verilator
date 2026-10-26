@@ -28,7 +28,7 @@ module testbench;
     // The combinational update needs to have take effect (in the 'ico'
     // region), before this always block is executed
     if (invdata != ~data) $stop;
-    $display("t=%t n=%d", $time, n);
+    $display("[%0t] n=%d", $time, n);
     if ($time != (1 * n + 1) * 500) $stop;
     if (n == 20) begin
       $write("*-* All Finished *-*\n");

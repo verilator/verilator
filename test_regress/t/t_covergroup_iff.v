@@ -8,6 +8,8 @@
 // Test iff (enable) guard: sampling is gated by the enable condition.
 // Covers iff on explicit value bins, default bin, array bins,
 // simple 2-step transition, and 3-step transition.
+// A false guard disables sampling entirely: the coverpoint expression is not
+// evaluated, no bin of any kind counts or errors, and transitions skip the sample.
 // Also covers coverpoint iff propagation into crosses and cross-level iff guards.
 //
 // Also covers compound iff expressions (&&, ||, unary !, bit/part-select,
@@ -19,6 +21,7 @@
 
 // verilog_format: off
 `define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checkr(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got=%f exp=%f\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
@@ -27,10 +30,14 @@ class CrossIffEmbedded;
   bit b;
   bit enabled;
 
-  // cross-level iff using an enclosing class member
+  // Bin- and cross-level iff using an enclosing class member.
   covergroup cg;
-    cp_a: coverpoint a {bins one = {1};}
-    cp_b: coverpoint b {bins one = {1};}
+    cp_a: coverpoint a {
+      bins one = {1} iff (this.enabled);
+    }
+    cp_b: coverpoint b {
+      bins one = {1};
+    }
     cross_ab: cross cp_a, cp_b iff (this.enabled);
   endgroup
 
@@ -49,6 +56,12 @@ endclass
 module t;
   logic enable;
   int value;
+  int calls;  // Evaluations of guarded_expression()
+
+  function automatic int guarded_expression(int result);
+    ++calls;
+    return result;
+  endfunction
 
   // Signals for the compound-iff covergroups below
   logic m_is_read;
@@ -56,11 +69,18 @@ module t;
   logic [1:0] m_a;
   logic [1:0] m_b;
   int count;
+  logic [3:0] bin_value;
+  bit point_enable;
+  bit bin_enable;
+  logic [2:0] bin_mask;
 
   // iff on explicit value bins
   covergroup cg_iff;
     cp_value: coverpoint value iff (enable) {
-      bins disabled_lo = {1}; bins disabled_hi = {2}; bins enabled_lo = {3}; bins enabled_hi = {4};
+      bins disabled_lo = {1};
+      bins disabled_hi = {2};
+      bins enabled_lo = {3};
+      bins enabled_hi = {4};
     }
   endgroup
 
@@ -81,12 +101,70 @@ module t;
 
   // iff on 2-step transition
   covergroup cg_trans2_iff;
-    cp: coverpoint value iff (enable) {bins t2 = (1 => 2);}
+    cp: coverpoint value iff (enable) {
+      bins t2 = (1 => 2);
+    }
   endgroup
 
   // iff on 3-step transition
   covergroup cg_trans3_iff;
-    cp: coverpoint value iff (enable) {bins t3 = (1 => 2 => 3);}
+    cp: coverpoint value iff (enable) {
+      bins t3 = (1 => 2 => 3);
+    }
+  endgroup
+
+  // A false iff guard: the coverpoint expression is not evaluated
+  covergroup cg_eval_iff;
+    cp: coverpoint guarded_expression(
+        1
+    ) iff (0) {
+      bins one = {1};
+    }
+  endgroup
+
+  // A sample with a false iff guard neither starts, breaks, nor ends a transition: it updates
+  // neither the previous value nor the sequence state
+  covergroup cg_trans_gap_iff;
+    cp_t2: coverpoint guarded_expression(
+        value
+    ) iff (enable) {
+      bins t2 = (1 => 2);
+    }
+    cp_t3: coverpoint value iff (enable) {
+      bins t3 = (1 => 2 => 3);
+    }
+  endgroup
+
+  // A false iff guard disables sampling of each kind of bin: the coverpoint expression is not
+  // evaluated, no bin counts, and no illegal bin errors
+  covergroup cg_kinds_iff;
+    // A sized array of bins
+    cp_sized: coverpoint guarded_expression(
+        value
+    ) iff (enable) {
+      bins sized[2] = {[4 : 7]};
+    }
+    // A sized array of illegal bins
+    cp_illegal: coverpoint guarded_expression(
+        value
+    ) iff (enable) {
+      bins legal = {[4 : 7]};
+      illegal_bins illegal[2] = {[0 : 3]};
+    }
+    // An excluded value
+    cp_ignore: coverpoint guarded_expression(
+        value
+    ) iff (enable) {
+      bins legal = {[4 : 7]};
+      ignore_bins ignored = {5};
+    }
+    // A default bin, holding no value of a sized array of bins
+    cp_default: coverpoint guarded_expression(
+        value
+    ) iff (enable) {
+      bins sized[2] = {[4 : 7]};
+      bins others = default;
+    }
   endgroup
 
   // --- compound iff expressions ---
@@ -97,51 +175,101 @@ module t;
     cp_concat: coverpoint {
       m_a[0], m_b[0]
     } iff (!m_is_read && m_be[0]) {
-      bins b00 = {2'b00}; bins b01 = {2'b01}; bins b10 = {2'b10}; bins b11 = {2'b11};
+      bins b00 = {2'b00};
+      bins b01 = {2'b01};
+      bins b10 = {2'b10};
+      bins b11 = {2'b11};
     }
   endgroup
 
   // logical || guard
   covergroup cg_or;
-    cp: coverpoint count iff (m_be[0] || m_be[1]) {bins lo = {1}; bins hi = {2};}
+    cp: coverpoint count iff (m_be[0] || m_be[1]) {
+      bins lo = {1};
+      bins hi = {2};
+    }
   endgroup
 
   // part-select compare guard
   covergroup cg_part;
-    cp: coverpoint count iff (m_be[3:0] != 0) {bins one = {1};}
+    cp: coverpoint count iff (m_be[3:0] != 0) {
+      bins one = {1};
+    }
   endgroup
 
   // relational compare guard
   covergroup cg_rel;
-    cp: coverpoint count iff (count > 3) {bins five = {5}; bins two = {2};}
+    cp: coverpoint count iff (count > 3) {
+      bins five = {5};
+      bins two = {2};
+    }
   endgroup
 
   // parenthesized bitwise guard
   covergroup cg_bitw;
-    cp: coverpoint count iff ((m_a & m_b) == 2'b10) {bins seven = {7};}
+    cp: coverpoint count iff ((m_a & m_b) == 2'b10) {
+      bins seven = {7};
+    }
   endgroup
 
   // coverpoint-level iff only; the cross has no guard
-  covergroup cg_cross_coverpoint_iff with function sample(
-      bit a, bit b, bit enable_a, bit enable_b);
-    cp_a: coverpoint a iff (enable_a) {bins one = {1};}
-    cp_b: coverpoint b iff (enable_b) {bins one = {1};}
+  covergroup cg_cross_coverpoint_iff with function sample (
+      bit a, bit b, bit enable_a, bit enable_b
+  );
+    cp_a: coverpoint a iff (enable_a) {
+      bins one = {1};
+    }
+    cp_b: coverpoint b iff (enable_b) {
+      bins one = {1};
+    }
     cross_ab: cross cp_a, cp_b;
   endgroup
 
   // coverpoint-level and cross-level iff together
-  covergroup cg_cross_iff with function sample(
-      bit a, bit b, bit enable_a, bit enable_b, bit enable_cross);
-    cp_a: coverpoint a iff (enable_a) {bins one = {1};}
-    cp_b: coverpoint b iff (enable_b) {bins one = {1};}
+  covergroup cg_cross_iff with function sample (
+      bit a, bit b, bit enable_a, bit enable_b, bit enable_cross
+  );
+    cp_a: coverpoint a iff (enable_a) {
+      bins one = {1};
+    }
+    cp_b: coverpoint b iff (enable_b) {
+      bins one = {1};
+    }
     cross_ab: cross cp_a, cp_b iff (enable_cross && (a == b));
   endgroup
 
   // cross-level iff only; also exercise an unnamed cross
-  covergroup cg_cross_iff_unnamed with function sample(bit a, bit b, bit disable_cross);
-    cp_a: coverpoint a {bins one = {1};}
-    cp_b: coverpoint b {bins one = {1};}
+  covergroup cg_cross_iff_unnamed with function sample (bit a, bit b, bit disable_cross);
+    cp_a: coverpoint a {
+      bins one = {1};
+    }
+    cp_b: coverpoint b {
+      bins one = {1};
+    }
     cross cp_a, cp_b iff (!disable_cross) {}
+  endgroup
+
+  covergroup cg_state_bin_iff;
+    cp: coverpoint bin_value iff (point_enable) {
+      bins scalar = {2} iff (bin_enable);
+      bins values[] = {0, 1} iff (bin_enable && bin_mask[0]);
+      bins grouped = {3, 4} iff (bin_enable && (bin_mask[2:1] != 0));
+      wildcard bins wild = {4'b01?1} iff (bin_enable && !(bin_mask[2] == 0));
+      ignore_bins ignored = {8} iff (bin_enable);
+      wildcard ignore_bins wild_ignored = {4'b10?1} iff (bin_enable && bin_mask[1]);
+      illegal_bins illegal = {12} iff (bin_enable);
+      wildcard illegal_bins wild_illegal = {4'b11?1} iff (bin_enable && bin_mask[2]);
+    }
+  endgroup
+
+  covergroup cg_bin_cross with function sample (bit a, bit b, bit enable_a, bit enable_b);
+    cp_a: coverpoint a {
+      bins one = {1} iff (enable_a);
+    }
+    cp_b: coverpoint b {
+      bins one = {1} iff (enable_b);
+    }
+    cross_ab: cross cp_a, cp_b;
   endgroup
 
   cg_iff cg1 = new;
@@ -149,6 +277,9 @@ module t;
   cg_array_iff cg3 = new;
   cg_trans2_iff cg4 = new;
   cg_trans3_iff cg5 = new;
+  cg_eval_iff eval_iff = new;
+  cg_trans_gap_iff trans_gap = new;
+  cg_kinds_iff kinds = new;
   cg_and ca = new;
   cg_or co = new;
   cg_part cpp = new;
@@ -158,6 +289,8 @@ module t;
   cg_cross_iff cx = new;
   cg_cross_iff_unnamed cxu = new;
   CrossIffEmbedded cxe = new;
+  cg_state_bin_iff state_bins = new;
+  cg_bin_cross cxb = new;
 
   initial begin
     cxc.sample(1, 1, 0, 1);
@@ -171,6 +304,42 @@ module t;
     cxu.sample(1, 1, 0);
     cxe.observe(1, 1, 0);
     cxe.observe(1, 1, 1);
+
+    cxb.sample(1, 1, 0, 0);
+    `checkr(cxb.get_inst_coverage(), 0.0);
+    cxb.sample(1, 1, 1, 0);
+    cxb.sample(1, 1, 0, 1);
+    `checkr(cxb.get_inst_coverage() < 100.0, 1);
+    cxb.sample(1, 1, 1, 1);
+    `checkr(cxb.get_inst_coverage(), 100.0);
+    cxb.sample(1, 1, 0, 0);
+
+    // IEEE 1800-2023 19.5.1: iff gates sampling, not bin construction.
+    point_enable = 1;
+    bin_enable = 0;
+    bin_mask = 3'b111;
+    for (int i = 0; i < 8; ++i) begin
+      bin_value = 4'(i);
+      state_bins.sample();
+    end
+    `checkr(state_bins.get_inst_coverage(), 0.0);
+    for (int i = 8; i < 16; ++i) begin
+      bin_value = 4'(i);
+      state_bins.sample();
+    end
+    point_enable = 0;
+    bin_enable = 1;
+    for (int i = 0; i < 16; ++i) begin
+      bin_value = 4'(i);
+      state_bins.sample();
+    end
+    `checkr(state_bins.get_inst_coverage(), 0.0);
+    point_enable = 1;
+    for (int i = 0; i < 12; ++i) begin
+      bin_value = 4'(i);
+      state_bins.sample();
+    end
+    `checkr(state_bins.get_inst_coverage(), 100.0);
 
     // Sample disabled_lo and disabled_hi with enable=0 -- must not be recorded
     enable = 0;
@@ -193,7 +362,8 @@ module t;
     enable = 1;
     value = 10;
     cg2.sample();  // hits 'known'
-    `checkr(cg2.get_inst_coverage(), 100.0);  // 1/1: only 'known' counts (default excluded, LRM 19.5)
+    `checkr(cg2.get_inst_coverage(),
+            100.0);  // 1/1: only 'known' counts (default excluded, LRM 19.5)
     value = 99;
     cg2.sample();  // hits 'def' (default)
     `checkr(cg2.get_inst_coverage(), 100.0);
@@ -234,7 +404,7 @@ module t;
     cg5.sample();  // mid-sequence, enable=1
     enable = 0;
     value = 3;
-    cg5.sample();  // iff is disabled at step 3 - incomplete sequence is discarded
+    cg5.sample();  // iff is disabled at step 3 - the sample is ignored, so no hit
     `checkr(cg5.get_inst_coverage(), 0.0);
     enable = 1;
     value = 1;
@@ -244,6 +414,63 @@ module t;
     value = 3;
     cg5.sample();  // (1=>2=>3) fully hit with enable=1
     `checkr(cg5.get_inst_coverage(), 100.0);
+
+    // eval_iff: the guarded coverpoint expression must not be evaluated
+    calls = 0;
+    eval_iff.sample();
+    `checkd(calls, 0);
+    `checkr(eval_iff.get_inst_coverage(), 0.0);
+
+    // trans_gap: samples with enable=0 are ignored by both transitions
+    enable = 1;
+    value = 5;
+    trans_gap.sample();
+    enable = 0;
+    value = 1;
+    trans_gap.sample();  // does not start (1=>2)
+    enable = 1;
+    value = 2;
+    trans_gap.sample();
+    `checkr(trans_gap.get_inst_coverage(), 0.0);
+    value = 1;
+    trans_gap.sample();
+    enable = 0;
+    value = 5;
+    trans_gap.sample();  // breaks neither (1=>2) nor (1=>2=>3)
+    enable = 1;
+    value = 2;
+    trans_gap.sample();  // (1=>2) hit
+    `checkr(trans_gap.get_inst_coverage(), 50.0);
+    enable = 0;
+    value = 3;
+    trans_gap.sample();  // does not end (1=>2=>3)
+    `checkr(trans_gap.get_inst_coverage(), 50.0);
+    enable = 1;
+    trans_gap.sample();  // (1=>2=>3) hit
+    `checkr(trans_gap.get_inst_coverage(), 100.0);
+    `checkd(calls, 5);  // Evaluated once per sample with enable=1
+
+    // kinds: samples with enable=0, even of illegal values, are neither evaluated nor counted
+    calls = 0;
+    enable = 0;
+    for (int i = 0; i < 9; ++i) begin
+      value = i;
+      kinds.sample();
+    end
+    `checkd(calls, 0);
+    `checkr(kinds.get_inst_coverage(), 0.0);
+    enable = 1;
+    value = 5;
+    kinds.sample();  // excluded from cp_ignore's bins
+    `checkr(kinds.get_inst_coverage(), 50.0);
+    value = 4;
+    kinds.sample();
+    value = 6;
+    kinds.sample();
+    value = 8;
+    kinds.sample();  // cp_default's default bin
+    `checkr(kinds.get_inst_coverage(), 100.0);
+    `checkd(calls, 16);  // Evaluated once per coverpoint and sample with enable=1
 
     // --- compound iff expressions ---
     // cg_and: guard true -> {0,1}=2'b01 sampled into b01

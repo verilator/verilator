@@ -35,4 +35,8 @@ def run(test, *, cmake=False, verilator_flags2=()):
 
     test.trace_identical(test.trace_filename, test.golden_filename)
 
+    if fmt == "vcd":
+        # IEEE 1800-2023 21.7.2.2, vector values may omit redundant leading zeros
+        test.file_grep_not(test.trace_filename, r'^b0[01xz]')
+
     test.passes()

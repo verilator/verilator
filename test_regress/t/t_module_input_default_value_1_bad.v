@@ -41,7 +41,7 @@ module t
     cyc <= cyc + 1;
     if (cyc == 10) begin
       // done checking various DUTs and finish
-      $display("%t %m: cyc=%0d", $time, cyc);
+      $display("[%0t] %m: cyc=%0d", $time, cyc);
       $write("*-* All Finished *-*\n");
       $finish();
     end

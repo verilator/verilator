@@ -6,10 +6,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 
 test.compile()
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
 test.passes()
