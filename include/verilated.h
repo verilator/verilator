@@ -1291,6 +1291,7 @@ public:
     // Internal: Throw signal assertion
     static void nullPointerError(const char* filename, int linenum) VL_ATTR_NORETURN VL_MT_SAFE;
     static void overWidthError(const char* signame) VL_ATTR_NORETURN VL_MT_SAFE;
+    static void queueBoundError(size_t maxSize, size_t attemptedSize) VL_MT_SAFE;
     static void scTimePrecisionError(int sc_prec, int vl_prec) VL_ATTR_NORETURN VL_MT_SAFE;
     static void scTraceBeforeElaborationError() VL_ATTR_NORETURN VL_MT_SAFE;
     static void stackCheck(QData needSize) VL_MT_UNSAFE;

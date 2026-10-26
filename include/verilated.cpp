@@ -301,15 +301,6 @@ void VL_WARN_MT(const char* filename, int linenum, const char* hier, const char*
     }});
 }
 
-void VL_WARN_QUEUE_BOUND(size_t maxSize, size_t attemptedSize) VL_MT_SAFE {
-    VL_WARN_MT("", 0, "",
-               ("Bounded queue [$:" + std::to_string(maxSize - 1) + "] overflow, attempted size "
-                + std::to_string(attemptedSize) + " exceeds maximum size "
-                + std::to_string(maxSize)
-                + ", discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)")
-                   .c_str());
-}
-
 //===========================================================================
 // Runtime VPI shared library loading (--vpi)
 
@@ -4066,6 +4057,15 @@ void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
                              + "' to value that overflows what the signal's width can fit");
     VL_FATAL_MT("unknown", 0, "", msg.c_str());
     VL_UNREACHABLE;
+}
+
+void Verilated::queueBoundError(size_t maxSize, size_t attemptedSize) VL_MT_SAFE {
+    // Slowpath - Called only when a bounded queue discards elements beyond its bound
+    const std::string msg = "Bounded queue [$:"s + std::to_string(maxSize - 1)
+                            + "] overflow, attempted size " + std::to_string(attemptedSize)
+                            + " exceeds maximum size " + std::to_string(maxSize)
+                            + ", discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)";
+    VL_WARN_MT("", 0, "", msg.c_str());
 }
 
 void Verilated::scTimePrecisionError(int sc_prec, int vl_prec) VL_MT_SAFE {

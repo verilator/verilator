@@ -6568,9 +6568,11 @@ class WidthVisitor final : public VNVisitor {
         const bool isElement
             = AstNode::computeCastable(arrayDtp->subDTypep(), valuep->dtypep(), nullptr)
                   .isAssignable();
-        // A bounded queue to splice is constructed first, to truncate it
+        // A bounded queue to splice is constructed first, to truncate it, unless it has this
+        // constructor's type (e.g. a nested concatenation), as truncating once keeps the same
+        // elements, and warns once with the full attempted size
         const AstQueueDType* const subQueueDtp = VN_CAST(valuep->dtypep()->skipRefp(), QueueDType);
-        if (!isElement && !(subQueueDtp && subQueueDtp->boundp())) {
+        if (!isElement && !(subQueueDtp && subQueueDtp->boundp() && subQueueDtp != arrayDtp)) {
             T_Cons* const subp = AstNode::cast<T_Cons>(valuep);
             if (subp && subp->dtypep()->skipRefp()->subDTypep() == arrayDtp->subDTypep()) {
                 if (subp->itemsp()) consp->addItemsp(subp->itemsp()->unlinkFrBackWithNext());

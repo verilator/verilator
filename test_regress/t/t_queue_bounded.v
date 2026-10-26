@@ -7,7 +7,14 @@
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+`define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
+
+class Base;
+endclass
+
+class Derived extends Base;
+endclass
 
 module t;
 
@@ -62,6 +69,7 @@ module t;
     begin
       int src[$];
       int big[$:3];
+      int same[$:TWO];
       src = '{1, 2, 3, 4, 5};
       q = src;
       `checkd(q.size(), 3);
@@ -74,6 +82,39 @@ module t;
       `checkd(q[0], 6);
       `checkd(q[1], 7);
       `checkd(q[2], 8);
+      same = '{4, 5, 6};
+      q = same;  // Same bound, nothing to discard
+      `checkd(q.size(), 3);
+      `checkd(q[2], 6);
+      // Assignment pattern and unpacked array concatenation (IEEE 1800-2023 10.10)
+      q = '{1, 2, 3, 4, 5, 6, 7};
+      `checkd(q.size(), 3);
+      `checkd(q[2], 3);
+      q = {src, 9};
+      `checkd(q.size(), 3);
+      `checkd(q[2], 3);
+    end
+
+    begin
+      string s[$:1];
+      string src[$];
+      src = '{"a", "b", "c"};
+      s = src;
+      `checkd(s.size(), 2);
+      `checks(s[1], "b");
+      s = {"d", "e", "f", "g"};
+      `checkd(s.size(), 2);
+      `checks(s[1], "e");
+    end
+
+    begin
+      Base bq[$:1];
+      Derived dq[$];
+      Derived d;
+      d = new;
+      dq = '{d, d, d};
+      bq = dq;
+      `checkd(bq.size(), 2);
     end
 
     $write("*-* All Finished *-*\n");
