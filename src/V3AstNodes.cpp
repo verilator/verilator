@@ -2786,16 +2786,18 @@ const AstNodeDType* AstNodeDType::elemDTypep(bool skipRef) const {
 }
 bool AstNodeDType::isDpiBitVec() const {
     const AstNodeDType* const dtypep = elemDTypep();
-    if (VN_IS(dtypep, PackArrayDType)) return !dtypep->isFourstate();
+    if (VN_IS(dtypep, PackArrayDType)) {
+        return !dtypep->isFourstate() && !dtypep->mimicsFourstate();
+    }
     const AstBasicDType* const basicp = dtypep->basicp();
     return basicp->keyword() == VBasicDTypeKwd::BIT && basicp->isRanged();
 }
 bool AstNodeDType::isDpiLogicVec() const {
     const AstNodeDType* const dtypep = elemDTypep();
-    if (VN_IS(dtypep, PackArrayDType)) return dtypep->isFourstate();
+    if (VN_IS(dtypep, PackArrayDType)) return dtypep->isFourstate() || dtypep->mimicsFourstate();
     const AstBasicDType* const basicp = dtypep->basicp();
-    return basicp->keyword().isFourstate()
-           && !(basicp->keyword() == VBasicDTypeKwd::LOGIC && !basicp->isRanged());
+    return (basicp->keyword().isFourstate() || basicp->keyword().mimicsFourstate())
+           && !(basicp->keyword().isSameish(VBasicDTypeKwd::LOGIC) && !basicp->isRanged());
 }
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 bool AstNodeDType::isLiteralType() const VL_MT_STABLE {
@@ -2866,6 +2868,10 @@ bool AstNodeDType::isTriviallyConstructible() const VL_MT_STABLE {
                || bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR;
     }
     dtypep->v3fatalSrc("Unknown data type: " << dtypep->prettyName());
+}
+bool AstNodeDType::mimicsFourstate() const VL_MT_STABLE {
+    const AstBasicDType* const basicDTypep = basicp();
+    return basicDTypep && basicDTypep->mimicsFourstate();
 }
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
@@ -3379,6 +3385,7 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     Super::dump(str);
     if (packed()) str << " [PACKED]";
     if (isFourstate()) str << " [4STATE]";
+    if (mimicsFourstate()) str << " [MIMICS4STATE]";
     if (isConstrainedRand()) str << " [CSRAND]";
     if (emitToString()) str << " [EMITSTR]";
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
@@ -3388,6 +3395,7 @@ void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);
     dumpJsonBoolFuncIf(str, isConstrainedRand);
     dumpJsonBoolFuncIf(str, isFourstate);
+    dumpJsonBoolFuncIf(str, mimicsFourstate);
     dumpJsonBoolFuncIf(str, emitToString);
     if (!m_typedefName.empty()) dumpJsonStr(str, "typedefName", m_typedefName);
     dumpJsonGen(str);
