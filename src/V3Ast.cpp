@@ -1814,7 +1814,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         // interface element can refer to an interface instance
         const AstNodeDType* const toSubp = toArrayp->subDTypep()->skipRefp();
         if (subCastable.isSameish()
-            || (subCastable == VCastable::COMPATIBLE
+            || (subCastable.isCompatible()
                 && (VN_IS(toSubp, UnpackArrayDType) || VN_IS(toSubp, IfaceRefDType)))) {
             return VCastable::COMPATIBLE;
         }
@@ -1841,8 +1841,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     if (VN_IS(node1p, Const)) std::swap(node1p, node2p);
     {
         const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
-        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE)
-            return node1p->dtypep();
+        if (castable.isSameish() || castable.isCompatible()) return node1p->dtypep();
         if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
     }
 

@@ -3175,7 +3175,7 @@ class WidthVisitor final : public VNVisitor {
                                               nodep->fromp()->unlinkFrBack()},
                                 new AstConst{fl, AstConst::Signed32{}, 1}},
                 new AstConst{fl, AstConst::Signed32{}, 0}};
-        } else if ((castable.isSameish() || castable == VCastable::COMPATIBLE)
+        } else if ((castable.isSameish() || castable.isCompatible())
                    // Unsupported: the static cast below has no lowering for unpacked arrays
                    && !VN_IS(toDtp, UnpackArrayDType)) {
             nodep->v3warn(CASTCONST, "$cast will always return one as "
@@ -3255,7 +3255,7 @@ class WidthVisitor final : public VNVisitor {
                                                  << toDtp->prettyDTypeNameQ() << " from "
                                                  << fromDtp->prettyDTypeNameQ());
                 bad = true;
-            } else if (castable.isSameish() || castable == VCastable::COMPATIBLE
+            } else if (castable.isSameish() || castable.isCompatible()
                        || castable == VCastable::ENUM_IMPLICIT
                        || castable == VCastable::ENUM_EXPLICIT) {
                 ;  // Continue
@@ -6326,7 +6326,7 @@ class WidthVisitor final : public VNVisitor {
             }
             const VCastable castable = AstNode::computeCastable(
                 arrayDtp->subDTypep()->skipRefp(), valuep->dtypep()->skipRefp(), valuep);
-            if (!castable.isSameish() && castable != VCastable::COMPATIBLE) {
+            if (!castable.isSameish() && !castable.isCompatible()) {
                 valuep->v3error("Unpacked array concatenation item is neither an element nor"
                                 " an array of elements of its target (IEEE 1800-2023 10.10)"
                                 << warnDTypes(valuep, arrayDtp->subDTypep(), valuep->dtypep(),
@@ -10096,7 +10096,7 @@ class WidthVisitor final : public VNVisitor {
             = VN_CAST(targetDTypep->skipRefToEnump(), EnumDType)) {
             const VCastable castable
                 = AstNode::computeCastable(targetEnump, sourceDTypep, sourceExprp);
-            if (!castable.isSameish() && castable != VCastable::COMPATIBLE
+            if (!castable.isSameish() && !castable.isCompatible()
                 && castable != VCastable::ENUM_IMPLICIT) {
                 nodep->v3warn(ENUMVALUE, "Implicit conversion to enum "
                                              << targetDTypep->prettyDTypeNameQ() << " from "

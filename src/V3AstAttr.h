@@ -1328,6 +1328,7 @@ public:
     }
     bool isMatching() const { return m_e == MATCHING; }
     bool isSameish() const { return m_e == MATCHING || m_e == SAMEISH; }
+    bool isCompatible() const { return m_e == COMPATIBLE; }
     bool isAssignable() const { return m_e != UNSUPPORTED && m_e != INCOMPATIBLE; }
     VCastable()
         : m_e{UNSUPPORTED} {}
