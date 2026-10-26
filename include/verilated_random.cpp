@@ -1010,7 +1010,8 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
         }
         int npins = 0;
         emitDiversityPins(os, rngr, *m_vars.at(names.front()), npins);
-        solveAssumingPins(sess, npins, false);
+        // Pins the solver could not settle leave no model, so get-value fails the draw
+        solveAssumingPins(sess, npins);
         os << "(get-value (";
         for (const auto& name : names) os << name << " ";
         os << "))\n";
@@ -1588,8 +1589,7 @@ void VlRandomizer::emitDiversityPins(std::ostream& os, VlRNG& rngr, const VlRand
     }
 }
 
-void VlRandomizer::solveAssumingPins(VlSolverSession& sess, int npins, bool applyToVars)
-    VL_REQUIRES(sess.m_mutex) {
+bool VlRandomizer::solveAssumingPins(VlSolverSession& sess, int npins) VL_REQUIRES(sess.m_mutex) {
     std::iostream& os = sess.os();
     std::vector<bool> dropped(npins, false);
     for (int round = 0; round <= npins; ++round) {
@@ -1599,12 +1599,9 @@ void VlRandomizer::solveAssumingPins(VlSolverSession& sess, int npins, bool appl
         }
         os << "))\n";
         const VlSolverStatus status = sess.readStatus();
-        if (status == VlSolverStatus::SAT) {
-            if (applyToVars) applyModel(sess);
-            return;
-        }
-        // Unknown or failure: the base solution already written stands
-        if (status != VlSolverStatus::UNSAT) return;
+        if (status == VlSolverStatus::SAT) return true;
+        // Unknown or failure: no model is left to read
+        if (status != VlSolverStatus::UNSAT) break;
         // get-unsat-assumptions only echoes still-active literals,
         // so the first in-range index is a live conflicting bit.
         const std::vector<int> core = readUnsatAssumptions(sess);
@@ -1616,8 +1613,9 @@ void VlRandomizer::solveAssumingPins(VlSolverSession& sess, int npins, bool appl
                 break;
             }
         }
-        if (!droppedOne) return;
+        if (!droppedOne) break;
     }
+    return false;
 }
 
 void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess,
@@ -1628,7 +1626,7 @@ void VlRandomizer::solveDiversityPins(VlRNG& rngr, VlSolverSession& sess,
     for (const auto& var : m_vars) {
         if (!pinned.count(var.first)) emitDiversityPins(sess.os(), rngr, *var.second, npins);
     }
-    if (npins) solveAssumingPins(sess, npins, true);
+    if (npins && solveAssumingPins(sess, npins)) applyModel(sess);
 }
 
 void VlRandomizer::solveDiversityXor(VlRNG& rngr, VlSolverSession& sess)

@@ -376,8 +376,9 @@ class VlRandomizer VL_NOT_FINAL {
     // One random per-bit assumption literal per bit of the variable, numbered from npinsr
     void emitDiversityPins(std::ostream& os, VlRNG& rngr, const VlRandomVar& var,
                            int& npinsr) const;
-    // Drop one conflicting assumption per round until compatible
-    void solveAssumingPins(VlSolverSession& sess, int npins, bool applyToVars);
+    // Drop one conflicting assumption per round until compatible; true if the last
+    // check was sat, leaving its model for the caller to read
+    bool solveAssumingPins(VlSolverSession& sess, int npins);
     // Layers of solve...before variables in dependency order
     bool buildSolveLayers(std::vector<std::vector<std::string>>& layersr);
     const char* phasedLogic() const;
