@@ -29,7 +29,6 @@
 #include "verilatedos.h"
 
 #include "verilated.h"  // Also presumably included by caller
-#include "verilated_util.h"
 
 #if VM_TIMING == 1
 #include "verilated_dpi_call.h"
