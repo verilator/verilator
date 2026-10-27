@@ -37,9 +37,9 @@ class VlDpiThread final {
     bool m_threadTurn VL_GUARDED_BY(m_mutex) = false;  // True if this thread runs
     bool m_exit VL_GUARDED_BY(m_mutex) = false;  // Thread should exit at next wake-up
     VlDpiCall* m_callp = nullptr;  // VlDpiCall assigned to this thread
-    // Thread-local state passed from the side that hands off to the side that runs
-    Verilated::ThreadLocal m_verilatedTls;
-    VlProcess* m_processp = nullptr;
+    Verilated::ThreadLocal m_verilatedTls;  // Thread-local state passed from the side that hands
+                                            // off to the side that runs
+    VlProcess* m_processp = nullptr;  // Current process
     VlRNG m_rng{0};  // Explicit seed: the default constructor draws from the current RNG
     std::thread m_thread;  // Must be last, starts running main()
 
