@@ -207,6 +207,53 @@ class LiftExprVisitor final : public VNVisitor {
         return m_newStmtps;
     }
 
+    // $fscanf/$sscanf: the generated VL_FSCANF/VL_SSCANF macros take the
+    // address of each destination, and a part-select has no address, so
+    // non-addressable destinations are routed through a temporary
+    // variable written back to the destination after the call. The
+    // grammar only accepts name-based lvalues as destinations, and at
+    // this point in the pipeline those are exactly VarRef or Sel nodes
+    // (part-select, array-element and struct-member accesses are all
+    // Sel before later passes decompose them into ArraySel/StructSel).
+    template<class T>
+    void visitScanf(T* nodep) {
+        bool needsTemp = false;
+        for (AstNodeExpr* const destp : nodep->exprspList())
+            if (!VN_IS(destp, VarRef)) needsTemp = true;
+        if (!m_lift) {
+            // The call is not part of a statement the lift mechanism
+            // reaches, e.g. it is in an event control: every statement
+            // lifts its own children, so no write-back statements can
+            // be inserted for it. It can stay in place if all
+            // destinations are addressable.
+            if (!needsTemp) return;
+            nodep->v3error("Unsupported: $fscanf/$sscanf in this context; "
+                           "the result cannot be placed in the destination variable.");
+            return;
+        }
+        iterateChildren(nodep);
+        // Leave the call in place if it is already in normal form and all
+        // destinations are addressable
+        if (!needsTemp && m_doNotLiftp == nodep) return;
+        // Lift the call into a statement of its own, ignoring any
+        // doNotLift, so the write-backs below can follow it
+        ++m_statLiftedExprs;
+        FileLine* const flp = nodep->fileline();
+        AstVar* const varp = newVar("Expr", nodep);
+        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep});
+        // Redirect the non-addressable destinations to temporary variables
+        // and write those back to the destinations
+        for (AstNodeExpr* const destp : nodep->exprspList()) {
+            if (!VN_IS(destp, VarRef)) {
+                AstVar* const tmp = newVar("Scanf", destp);
+                destp->replaceWith(new AstVarRef{flp, tmp, VAccess::WRITE});
+                addStmtps(new AstAssign{flp, destp, new AstVarRef{flp, tmp, VAccess::READ}});
+                ++m_statScanfDests;
+            }
+        }
+    }
+
     // VISITORS - non-statement, non-expression
     void visit(AstNode* nodep) override {
         VL_RESTORER(m_lift);
@@ -372,59 +419,8 @@ class LiftExprVisitor final : public VNVisitor {
     }
 
     // VISITORS - $fscanf/$sscanf
-    //
-    // The generated VL_FSCANF/VL_SSCANF macros take the address of each
-    // destination, and a part-select has no address. The grammar only
-    // accepts name-based lvalues as destinations, and at this point in
-    // the pipeline those are exactly VarRef or Sel nodes (part-select,
-    // array-element and struct-member accesses are all Sel before later
-    // passes decompose them into ArraySel/StructSel).
-    static bool addressable(AstNode* nodep) { return VN_IS(nodep, VarRef); }
-
-    void visitScanf(AstNodeExpr* nodep, AstNodeExpr* destsp) {
-        bool needsTemp = false;
-        for (AstNodeExpr* destp = destsp; destp;
-             destp = VN_AS(destp->nextp(), NodeExpr))
-            if (!addressable(destp)) needsTemp = true;
-        if (!m_lift) {
-            // The call is not part of a statement the lift mechanism
-            // reaches, e.g. it is in an event control: every statement
-            // lifts its own children, so no write-back statements can
-            // be inserted for it. It can stay in place if all
-            // destinations are addressable.
-            if (!needsTemp) return;
-            nodep->v3error("Unsupported: $fscanf/$sscanf in this context; "
-                           "the result cannot be placed in the destination variable.");
-            return;
-        }
-        iterateChildren(nodep);
-        // Leave the call in place if it is already in normal form and all
-        // destinations are addressable
-        if (!needsTemp && m_doNotLiftp == nodep) return;
-        // Lift the call into a statement of its own, ignoring any
-        // doNotLift, so the write-backs below can follow it
-        ++m_statLiftedExprs;
-        FileLine* const flp = nodep->fileline();
-        AstVar* const varp = newVar("Expr", nodep);
-        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
-        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep});
-        // Redirect the non-addressable destinations to temporary variables
-        // and write those back to the destinations. iterateChildren may have
-        // replaced a destination that needed lifting, so re-read the list
-        AstNodeExpr* destp = VN_CAST(nodep->op1p(), NodeExpr);
-        while (destp) {
-            AstNodeExpr* const nextp = VN_CAST(destp->nextp(), NodeExpr);
-            if (!addressable(destp)) {
-                AstVar* const tmp = newVar("Scanf", destp);
-                destp->replaceWith(new AstVarRef{flp, tmp, VAccess::WRITE});
-                addStmtps(new AstAssign{flp, destp, new AstVarRef{flp, tmp, VAccess::READ}});
-                ++m_statScanfDests;
-            }
-            destp = nextp;
-        }
-    }
-    void visit(AstFScanF* nodep) override { visitScanf(nodep, nodep->exprsp()); }
-    void visit(AstSScanF* nodep) override { visitScanf(nodep, nodep->exprsp()); }
+    void visit(AstFScanF* nodep) override { visitScanf(nodep); }
+    void visit(AstSScanF* nodep) override { visitScanf(nodep); }
 
     // VISITORS - RValue expressions
     void visit(AstCond* nodep) override {
