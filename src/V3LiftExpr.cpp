@@ -375,17 +375,11 @@ class LiftExprVisitor final : public VNVisitor {
     //
     // The generated VL_FSCANF/VL_SSCANF macros take the address of each
     // destination, and a part-select has no address. The grammar only
-    // accepts name-based lvalues as destinations, which after elaboration
-    // are exactly VarRef, Sel, or chains of ArraySel/StructSel.
-    static bool addressable(AstNode* nodep) {
-        if (VN_CAST(nodep, VarRef)) return true;
-        if (VN_CAST(nodep, Sel)) return false;
-        if (const AstArraySel* const arrayp = VN_CAST(nodep, ArraySel))
-            return addressable(arrayp->fromp());
-        if (const AstStructSel* const structp = VN_CAST(nodep, StructSel))
-            return addressable(structp->fromp());
-        return false;  // LCOV_EXCL_LINE
-    }
+    // accepts name-based lvalues as destinations, and at this point in
+    // the pipeline those are exactly VarRef or Sel nodes (part-select,
+    // array-element and struct-member accesses are all Sel before later
+    // passes decompose them into ArraySel/StructSel).
+    static bool addressable(AstNode* nodep) { return VN_IS(nodep, VarRef); }
 
     void visitScanf(AstNodeExpr* nodep, AstNodeExpr* destsp) {
         bool needsTemp = false;
@@ -394,23 +388,13 @@ class LiftExprVisitor final : public VNVisitor {
             if (!addressable(destp)) needsTemp = true;
         if (!m_lift) {
             // The call is not part of a statement the lift mechanism
-            // reaches, e.g. it is in an event control. It can stay in
-            // place if all destinations are addressable; otherwise the
-            // write-backs cannot be placed.
+            // reaches, e.g. it is in an event control: every statement
+            // lifts its own children, so no write-back statements can
+            // be inserted for it. It can stay in place if all
+            // destinations are addressable.
             if (!needsTemp) return;
-            AstNode* stmtp = nullptr;
-            for (AstNode* p = nodep->backp(); p; p = p->backp()) {
-                if (VN_IS(p, NodeStmt)) {
-                    stmtp = p;
-                    break;
-                }
-            }
-            // Only a statement that is itself an expression or an
-            // assignment can be followed by the write-backs
-            if (!(VN_IS(stmtp, StmtExpr) || VN_IS(stmtp, NodeAssign))) {
-                nodep->v3error("Unsupported: $fscanf/$sscanf in this context; "
-                               "the result cannot be placed in the destination variable.");
-            }
+            nodep->v3error("Unsupported: $fscanf/$sscanf in this context; "
+                           "the result cannot be placed in the destination variable.");
             return;
         }
         iterateChildren(nodep);
