@@ -24,10 +24,10 @@ test.compile()
 
 # TAMPER_AT counts one kind of reply from the start of the simulation, per the mode's
 # entry in randomize_solver_tamper.py: unknown_once counts status lines, err_reply
-# S-expression replies, short_model and bare_hash model replies. Status 1 answers the
-# check-sat sent when the session opens. To re-derive a constant, run the case's MODE
-# without TAMPER, with VERILATOR_SOLVER set to a wrapper that logs the conversation, and
-# count the replies up to the one its comment names.
+# S-expression replies, err_assume unsat-assumptions replies, short_model and bare_hash
+# model replies. Status 1 answers the check-sat sent when the session opens. To re-derive
+# a constant, run the case's MODE without TAMPER, with VERILATOR_SOLVER set to a wrapper
+# that logs the conversation, and count the replies up to the one its comment names.
 SOLVER = 'VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" '
 
 
@@ -58,6 +58,15 @@ run_case('draw_short', 4, 2, 'TAMPER=short_model TAMPER_AT=1')
 run_case('draw_extra_var', 5, 1, 'TAMPER=extra_var TAMPER_AT=1')
 # Status 15: the tail check-sat of call 3, which draws the c no x admits
 run_case('tail_unknown', 4, 2, 'TAMPER=unknown_once TAMPER_AT=15')
+# A draw pin round the solver cannot settle leaves no model, so the call fails.
+# Unsat-assumptions reply 2: the draw pin round of call 3
+run_case('draw_pin_error', 4, 2, 'TAMPER=err_assume TAMPER_AT=2')
+
+# The diversity round after the main solve gives up instead, keeping the solved values.
+# Status 5: the diversity check-sat-assuming of call 1
+run_case('diversity_unknown', 5, 1, 'TAMPER=unknown_once TAMPER_AT=5')
+# Unsat-assumptions reply 1: the diversity round of call 1
+run_case('diversity_error', 5, 1, 'TAMPER=err_assume TAMPER_AT=1')
 
 # Same through the solve...before layers
 run_case('phased_plain', 9, 3, mode='phased')
