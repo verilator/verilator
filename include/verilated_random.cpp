@@ -979,10 +979,7 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
     std::iostream& os = sess.os();
     // A cleared history cannot exhaust again, so this retries at most once
     for (;;) {
-        os << "(set-option :produce-models true)\n";
-        os << "(set-option :produce-unsat-assumptions true)\n";
-        os << "(set-logic QF_ABV)\n";
-        emitDefines(os);
+        emitFlatPreamble(os, rngr, true);
         for (const auto& name : names) {
             os << "(declare-fun " << name << " () ";
             m_vars.at(name)->emitType(os);
@@ -1148,6 +1145,20 @@ void VlRandomizer::emitDefines(std::ostream& os) const {
     os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
 }
 
+// The randc draw declares only randc variables, never an array lacking element constraints,
+// so it shares the flat solve's QF_ABV rather than phasedLogic()
+void VlRandomizer::emitFlatPreamble(std::ostream& os, VlRNG& rngr, bool seed) const {
+    os << "(set-option :produce-models true)\n";
+    if (!solverSamples()) {
+        // Lets the scalar pin path learn which free-bit assumptions conflict.
+        os << "(set-option :produce-unsat-assumptions true)\n";
+    } else if (seed) {
+        emitSolverSeed(os, rngr);
+    }
+    os << "(set-logic QF_ABV)\n";
+    emitDefines(os);
+}
+
 void VlRandomizer::emitDeclares(std::ostream& os, bool pinCurrent) const {
     for (const auto& var : m_vars) {
         if (var.second->dimension() > 0) {
@@ -1202,16 +1213,8 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
     for (;;) {
         std::map<std::string, std::string> drawn;
         if (useRandc && !drawRandcValues(rngr, sess, uniqueExprs, drawn)) return false;
-        os << "(set-option :produce-models true)\n";
-        if (!solverSamples()) {
-            // Lets the scalar pin path learn which free-bit assumptions conflict.
-            os << "(set-option :produce-unsat-assumptions true)\n";
-        } else if (!m_checkOnly) {
-            // Check-only results are not random, so leave the random state alone
-            emitSolverSeed(os, rngr);
-        }
-        os << "(set-logic QF_ABV)\n";
-        emitDefines(os);
+        // Check-only results are not random, so leave the random state alone
+        emitFlatPreamble(os, rngr, !m_checkOnly);
         emitDeclares(os, m_checkOnly);
         emitAsserts(os, uniqueExprs, false);
 

@@ -324,6 +324,9 @@ class VlRandomizer VL_NOT_FINAL {
     // "(distinct ...)" expression per unique-constrained array
     std::vector<std::string> buildUniqueExprs() const;
     void emitDefines(std::ostream& os) const;
+    // Options, logic and defines opening a flat solve or a randc draw; 'seed'
+    // seeds a solver-sampled solve from rngr
+    void emitFlatPreamble(std::ostream& os, VlRNG& rngr, bool seed) const;
     void emitDeclares(std::ostream& os, bool pinCurrent) const;
     void emitAsserts(std::ostream& os, const std::vector<std::string>& extras, bool named) const;
     bool nextFlat(VlRNG& rngr, VlSolverSession& sess, const std::vector<std::string>& uniqueExprs);
