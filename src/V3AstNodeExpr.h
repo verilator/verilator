@@ -326,10 +326,7 @@ public:
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
     bool isPure() override;
-    // Whether this call writes one of the caller's variables through an argument.
-    // isPure() does not report this, as the written variable is the callee's own
-    // automatic local; only the caller's binding makes the write visible. Such a
-    // call must be evaluated exactly where the source evaluates it.
+    // Call writes one of the caller's variables through an argument.
     bool writesCallerArgs() { return !m_taskp || m_taskp->hasWritableArgs(); }
     bool isUnlikely() const override { return m_taskp && m_taskp->isUnlikely(); }
     bool sameNode(const AstNode* samep) const override {
