@@ -217,6 +217,28 @@ module t;
   int psolved;
 
 
+  // Under +verilator+rand+sampler+solver the solver picks the draw order, so check only what
+  // any order keeps, given c == 3 satisfies no x: a value repeats only once a cycle has used
+  // 0..2, and a cycle fails at most once (its 3 drawn while feasible values are left)
+  task automatic sampler_step(int ok, bit [1:0] c, ref bit [3:0] seen, ref int cycFails);
+    if (ok == 0) begin
+      if (seen == 4'b0111) begin
+        seen = 4'b0;
+        cycFails = 0;
+      end
+      `checkd(cycFails, 0);
+      ++cycFails;
+    end
+    else begin
+      if (seen[c]) begin
+        `checkd(seen, 4'b0111);
+        seen = 4'b0;
+        cycFails = 0;
+      end
+      seen[c] = 1'b1;
+    end
+  endtask
+
   // t_randomize_solver_randc runs one scenario per +MODE, alone, so the replies its
   // TAMPER_AT counts start at that scenario's first call. Seeds are fixed per scenario.
   task automatic fault_mode(string mode);
@@ -248,6 +270,34 @@ module t;
         ok = bad.randomize();
         if (ok == 0)++fails;
         else ++good;
+      end
+    end
+    else if (mode == "sampler") begin
+      // Through the flat solve, then the solve...before layers
+      automatic Flat f = new;
+      automatic Phased ph = new;
+      automatic bit [3:0] seen = 4'b0;
+      automatic int cycFails = 0;
+      for (int i = 0; i < 12; ++i) begin
+        ok = f.randomize();
+        if (ok == 0)++fails;
+        else begin
+          ++good;
+          `checkd(f.c < f.x, 1'b1);
+        end
+        sampler_step(ok, f.c, seen, cycFails);
+      end
+      seen = 4'b0;
+      cycFails = 0;
+      for (int i = 0; i < 12; ++i) begin
+        ok = ph.randomize();
+        if (ok == 0)++fails;
+        else begin
+          ++good;
+          `checkd(ph.c < ph.x, 1'b1);
+          `checkd(ph.y > {2'b00, ph.x}, 1'b1);
+        end
+        sampler_step(ok, ph.c, seen, cycFails);
       end
     end
     else begin
