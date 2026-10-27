@@ -20,6 +20,8 @@
 
 #include "verilated_dpi_call.h"
 
+#include "verilated.h"
+
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -32,8 +34,8 @@
 
 class VlDpiThread final {
     // MEMBERS
-    std::mutex m_mutex;  // Protects m_threadTurn, m_exit
-    std::condition_variable m_cv;  // Signals m_threadTurn changes
+    VerilatedMutex m_mutex;  // Protects m_threadTurn, m_exit
+    std::condition_variable_any m_cv;  // Signals m_threadTurn changes
     bool m_threadTurn VL_GUARDED_BY(m_mutex) = false;  // True if this thread runs
     bool m_exit VL_GUARDED_BY(m_mutex) = false;  // Thread should exit at next wake-up
     VlDpiCall* m_callp = nullptr;  // VlDpiCall assigned to this thread
@@ -54,10 +56,10 @@ public:
     void handoff(bool threadTurn) {
         saveThreadLocals();
         {
-            std::unique_lock<std::mutex> lock{m_mutex};
+            const VerilatedLockGuard lock{m_mutex};
             m_threadTurn = threadTurn;
             m_cv.notify_one();
-            m_cv.wait(lock, [&] { return m_threadTurn != threadTurn; });
+            m_cv.wait(m_mutex, [&] { return m_threadTurn != threadTurn; });
         }
         restoreThreadLocals();
     }
@@ -65,7 +67,7 @@ public:
     // Stop and join an idle thread
     void stop() {
         {
-            const std::lock_guard<std::mutex> lock{m_mutex};
+            const VerilatedLockGuard lock{m_mutex};
             m_exit = true;
             m_threadTurn = true;
             m_cv.notify_one();
@@ -86,8 +88,8 @@ private:
     }
     void main() {
         {
-            std::unique_lock<std::mutex> lock{m_mutex};
-            m_cv.wait(lock, [this] { return m_threadTurn; });
+            const VerilatedLockGuard lock{m_mutex};
+            m_cv.wait(m_mutex, [this] { return m_threadTurn; });
         }
         restoreThreadLocals();
         while (!m_exit) {
@@ -104,7 +106,7 @@ private:
 // VlDpiThreadPool keeps idle VlDpiThreads for reuse
 
 class VlDpiThreadPool final {
-    std::mutex m_mutex;  // Protects m_idle and m_aborted
+    VerilatedMutex m_mutex;  // Protects m_idle and m_aborted
     std::vector<VlDpiThread*> m_idle VL_GUARDED_BY(m_mutex);  // Idle threads
     std::vector<VlDpiCall*> m_aborted VL_GUARDED_BY(m_mutex);  // Aborted DPI calls
 
@@ -119,7 +121,7 @@ public:
     }
     VlDpiThread* acquire() {
         {
-            const std::lock_guard<std::mutex> lock{m_mutex};
+            const VerilatedLockGuard lock{m_mutex};
             if (!m_idle.empty()) {
                 VlDpiThread* const threadp = m_idle.back();
                 m_idle.pop_back();
@@ -129,18 +131,18 @@ public:
         return new VlDpiThread;
     }
     void release(VlDpiThread* threadp) {
-        const std::lock_guard<std::mutex> lock{m_mutex};
+        const VerilatedLockGuard lock{m_mutex};
         m_idle.push_back(threadp);
     }
     void addAborted(VlDpiCall* callp) {
-        const std::lock_guard<std::mutex> lock{m_mutex};
+        const VerilatedLockGuard lock{m_mutex};
         m_aborted.push_back(callp);
     }
     void resumeAborted() {
         while (true) {
             VlDpiCall* callp;
             {
-                const std::lock_guard<std::mutex> lock{m_mutex};
+                const VerilatedLockGuard lock{m_mutex};
                 if (m_aborted.empty()) return;
                 callp = m_aborted.back();
                 m_aborted.pop_back();
