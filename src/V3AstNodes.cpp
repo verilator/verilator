@@ -3222,21 +3222,6 @@ bool AstNodeFTask::getPurityRecurse() const {
     }
     return true;
 }
-bool AstNodeFTask::hasWritableArgs() {
-    if (!m_writableArgs.isCached()) {
-        bool writable = false;
-        for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-                if (varp->isWritable()) {
-                    writable = true;
-                    break;
-                }
-            }
-        }
-        m_writableArgs.set(writable);
-    }
-    return m_writableArgs.get();
-}
 bool AstNodeFTask::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
     return m_purity.get();
@@ -3276,6 +3261,9 @@ bool AstNodeFTaskRef::getPurityRecurse() const {
     // First compute the purity of arguments
     for (AstArg* const argp : this->argspList()) {
         if (!argp->isPure()) return false;
+        // Writing the caller's variable through an output argument is an effect of the call,
+        // though not of the subroutine, whose written variable is its own automatic local
+        if (argp->exprp() && argp->exprp()->isLValue()) return false;
     }
     return taskp->isPure();
 }

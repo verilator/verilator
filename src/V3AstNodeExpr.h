@@ -326,8 +326,6 @@ public:
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
     bool isPure() override;
-    // Call writes one of the caller's variables through an argument.
-    bool writesCallerArgs() { return !m_taskp || m_taskp->hasWritableArgs(); }
     bool isUnlikely() const override { return m_taskp && m_taskp->isUnlikely(); }
     bool sameNode(const AstNode* samep) const override {
         const AstNodeFTaskRef* const asamep = VN_DBG_AS(samep, NodeFTaskRef);

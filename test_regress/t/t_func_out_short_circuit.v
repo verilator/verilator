@@ -64,6 +64,10 @@ module t (
     v = s;
     return s;
   endfunction
+  function automatic bit f_outd(input int s = 7, output int v);
+    v = s;
+    return 1'b1;
+  endfunction
   function automatic bit f_ref(input int s, ref int v);
     if (s < 0) return 1'b0;
     v = v + s;
@@ -172,6 +176,23 @@ module t (
     r = x && f_out(f_outi(s, b), a);
     `checkd(a, !x ? 11 : s < 0 ? 0 : s);
     `checkd(b, !x ? 22 : s < 0 ? 0 : s);
+    // Omitted argument taking its default
+    a = 11;
+    r = x && f_outd(, a);
+    `checkd(a, !x ? 11 : 7);
+    // Operand beside an all-ones '|', or under an out-of-range shift
+    a = 11;
+    r = 1'b1 | f_out(s, a);
+    `checkd(a, s < 0 ? 0 : s);
+    a = 11;
+    r = f_out(s, a) | 1'b1;
+    `checkd(a, s < 0 ? 0 : s);
+    a = 11;
+    b = int'(f_out(s, a)) << 40;
+    `checkd(a, s < 0 ? 0 : s);
+    a = 11;
+    b = int'(f_out(s, a)) >> 40;
+    `checkd(a, s < 0 ? 0 : s);
     // Condition of a conditional whose two arms are identical
     a = 11;
     r = f_out(s, a) ? 1 : 1;
