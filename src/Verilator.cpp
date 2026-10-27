@@ -98,7 +98,6 @@
 #include "V3Reloop.h"
 #include "V3Reorder.h"
 #include "V3Sampled.h"
-#include "V3ScanfDest.h"
 #include "V3Sched.h"
 #include "V3Scope.h"
 #include "V3Slice.h"
@@ -378,9 +377,6 @@ static void process() {
         }
 
         if (!v3Global.opt.serializeOnly()) {
-            // Make $fscanf/$sscanf destinations addressable
-            V3ScanfDest::scanfDestAll(v3Global.rootp());
-
             // Add __PVT's
             // After V3Task so task internal variables will get renamed
             V3Name::nameAll(v3Global.rootp());

@@ -10,6 +10,6 @@ module t;
   integer d2;
   string s;
 
-  always @($fscanf(f, "%d", d1)) d1 = d1 + 1;  // UNSUPPORTED
-  always @($sscanf(s, "%d", d2)) d2 = d2 + 1;  // UNSUPPORTED
+  always @($fscanf(f, "%h", d1[3:0])) d1 = d1 + 1;  // UNSUPPORTED
+  always @($sscanf(s, "%h", d2[3:0])) d2 = d2 + 1;  // UNSUPPORTED
 endmodule

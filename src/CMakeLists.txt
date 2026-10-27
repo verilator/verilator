@@ -175,7 +175,6 @@ set(HEADERS
     V3Reorder.h
     V3Rtti.h
     V3Sampled.h
-    V3ScanfDest.h
     V3Sched.h
     V3Scope.h
     V3SenExprBuilder.h
@@ -353,7 +352,6 @@ set(COMMON_SOURCES
     V3Reloop.cpp
     V3Reorder.cpp
     V3Sampled.cpp
-    V3ScanfDest.cpp
     V3Sched.cpp
     V3SchedAcyclic.cpp
     V3SchedCovergroup.cpp

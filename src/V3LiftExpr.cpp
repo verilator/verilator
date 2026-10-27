@@ -66,6 +66,17 @@
 // return references, and are marked as impure. For this reason only we still
 // need to special case their handling via AstNodeExpr::isLValue().
 //
+// $fscanf/$sscanf destinations:
+// The generated VL_FSCANF/VL_SSCANF macros take the address of each
+// destination, and a part-select has no address. A call with such a
+// destination is therefore always lifted into a statement of its own, even
+// if it would normally be left in place, the destination is redirected to a
+// temporary variable, and a write-back of that temporary to the destination
+// is inserted right after the lifted call. A call in a context where the
+// lift mechanism does not reach, e.g. an event control, is rejected with an
+// error if any destination is non-addressable, as no write-back can be
+// placed after it.
+//
 //*************************************************************************
 
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
@@ -110,6 +121,7 @@ class LiftExprVisitor final : public VNVisitor {
     VDouble0 m_statLiftedLogIfs;  // Statistic, logical implications lifted
     VDouble0 m_statLiftedExprStmts;  // Statistic, expression statements lifted
     VDouble0 m_statLiftedCaseConds;  // Statistic, case conditions lifted
+    VDouble0 m_statScanfDests;  // Statistic, $fscanf/$sscanf destinations rewritten
     VDouble0 m_statTemporariesCreated;  // Statistic, temporaries created
     VDouble0 m_statTemporariesReused;  // Statistic, temporaries reused
 
@@ -359,6 +371,77 @@ class LiftExprVisitor final : public VNVisitor {
         nodep->fromp(new AstVarRef{flp, varp, nodep->access()});
     }
 
+    // VISITORS - $fscanf/$sscanf
+    //
+    // The generated VL_FSCANF/VL_SSCANF macros take the address of each
+    // destination, and a part-select has no address. The grammar only
+    // accepts name-based lvalues as destinations, which after elaboration
+    // are exactly VarRef, Sel, or chains of ArraySel/StructSel.
+    static bool addressable(AstNode* nodep) {
+        if (VN_CAST(nodep, VarRef)) return true;
+        if (VN_CAST(nodep, Sel)) return false;
+        if (const AstArraySel* const arrayp = VN_CAST(nodep, ArraySel))
+            return addressable(arrayp->fromp());
+        if (const AstStructSel* const structp = VN_CAST(nodep, StructSel))
+            return addressable(structp->fromp());
+        return false;  // LCOV_EXCL_LINE
+    }
+
+    void visitScanf(AstNodeExpr* nodep, AstNodeExpr* destsp) {
+        bool needsTemp = false;
+        for (AstNodeExpr* destp = destsp; destp;
+             destp = VN_AS(destp->nextp(), NodeExpr))
+            if (!addressable(destp)) needsTemp = true;
+        if (!m_lift) {
+            // The call is not part of a statement the lift mechanism
+            // reaches, e.g. it is in an event control. It can stay in
+            // place if all destinations are addressable; otherwise the
+            // write-backs cannot be placed.
+            if (!needsTemp) return;
+            AstNode* stmtp = nullptr;
+            for (AstNode* p = nodep->backp(); p; p = p->backp()) {
+                if (VN_IS(p, NodeStmt)) {
+                    stmtp = p;
+                    break;
+                }
+            }
+            // Only a statement that is itself an expression or an
+            // assignment can be followed by the write-backs
+            if (!(VN_IS(stmtp, StmtExpr) || VN_IS(stmtp, NodeAssign))) {
+                nodep->v3error("Unsupported: $fscanf/$sscanf in this context; "
+                               "the result cannot be placed in the destination variable.");
+            }
+            return;
+        }
+        iterateChildren(nodep);
+        // Leave the call in place if it is already in normal form and all
+        // destinations are addressable
+        if (!needsTemp && m_doNotLiftp == nodep) return;
+        // Lift the call into a statement of its own, ignoring any
+        // doNotLift, so the write-backs below can follow it
+        ++m_statLiftedExprs;
+        FileLine* const flp = nodep->fileline();
+        AstVar* const varp = newVar("Expr", nodep);
+        nodep->replaceWith(new AstVarRef{flp, varp, VAccess::READ});
+        addStmtps(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep});
+        // Redirect the non-addressable destinations to temporary variables
+        // and write those back to the destinations. iterateChildren may have
+        // replaced a destination that needed lifting, so re-read the list
+        AstNodeExpr* destp = VN_CAST(nodep->op1p(), NodeExpr);
+        while (destp) {
+            AstNodeExpr* const nextp = VN_CAST(destp->nextp(), NodeExpr);
+            if (!addressable(destp)) {
+                AstVar* const tmp = newVar("Scanf", destp);
+                destp->replaceWith(new AstVarRef{flp, tmp, VAccess::WRITE});
+                addStmtps(new AstAssign{flp, destp, new AstVarRef{flp, tmp, VAccess::READ}});
+                ++m_statScanfDests;
+            }
+            destp = nextp;
+        }
+    }
+    void visit(AstFScanF* nodep) override { visitScanf(nodep, nodep->exprsp()); }
+    void visit(AstSScanF* nodep) override { visitScanf(nodep, nodep->exprsp()); }
+
     // VISITORS - RValue expressions
     void visit(AstCond* nodep) override {
         if (!m_lift) return;
@@ -526,6 +609,7 @@ public:
         V3Stats::addStat("LiftExpr, lifted LogIf", m_statLiftedLogIfs);
         V3Stats::addStat("LiftExpr, lifted ExprStmt", m_statLiftedExprStmts);
         V3Stats::addStat("LiftExpr, lifted case conditions", m_statLiftedCaseConds);
+        V3Stats::addStat("LiftExpr, $fscanf/$sscanf destinations rewritten", m_statScanfDests);
         V3Stats::addStat("LiftExpr, temporaries created", m_statTemporariesCreated);
         V3Stats::addStat("LiftExpr, temporaries reused", m_statTemporariesReused);
     }
