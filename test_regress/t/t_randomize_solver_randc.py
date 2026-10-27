@@ -71,4 +71,18 @@ run_case('draw_bad_value', 5, 1, 'TAMPER=bare_hash TAMPER_AT=1', mode='bad_draw'
 # Two cycling variables keep the joint solve, so no call fails
 run_case('two_randc', 12, 0, mode='two')
 
+# The solver sampler draws c from the seeded model, with no diversity pin round. The
+# counts depend on the solver, so the scenario checks only what any draw order keeps.
+# FreshCycle does not run here: its failure bound assumes Verilator's uniform draw, and a
+# solver free to draw c == 3 last in every cycle never fails a call.
+solver_log = test.obj_dir + '/solver_sampler.log'
+test.execute(logfile=test.obj_dir + '/sim_sampler.log',
+             all_run_flags=[
+                 '+verilator+wno+unsatconstr+1', '+MODE=sampler', '+verilator+rand+sampler+solver',
+                 '+verilator+solver+file+' + solver_log
+             ])
+test.file_grep(solver_log, r'; sampler: solver')
+test.file_grep(solver_log, r':random-seed')
+test.file_grep_not(solver_log, r'check-sat-assuming')
+
 test.passes()
