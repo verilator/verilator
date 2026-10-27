@@ -962,20 +962,25 @@ void V3EmitC::emitcImp() {
         std::vector<std::pair<std::vector<AstNodeModule*>, std::string>> groups;
 
         // Process each module in turn, gathering classes to be emitted below
-        std::vector<AstNodeModule*> classps;  // AstClass and AstClassPackage
+        std::vector<AstClassPackage*> clspkgps;  // Class packages, emitted with their class
         // Size of the slow and fast functions of all classes, as measured for --output-split
         size_t slowCost = 0;
         size_t fastCost = 0;
         for (AstNode* const nodep : v3Global.rootp()->modulespList()) {
             AstNodeModule* const modp = VN_AS(nodep, NodeModule);
             if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
-            // Gather classes and size their functions
-            if (VN_IS(modp, Class) || VN_IS(modp, ClassPackage)) {
-                classps.push_back(modp);
-                for (const AstNode* const stmtp : modp->stmtspList()) {
-                    const AstCFunc* const funcp = VN_CAST(stmtp, CFunc);
-                    if (!funcp || !EmitCImp::isImpFunc(funcp)) continue;
-                    (funcp->slow() ? slowCost : fastCost) += funcp->nodeCount();
+            if (VN_IS(modp, Class)) continue;  // Emitted with its package
+            // Gather class packages and size the functions of the package and class
+            if (AstClassPackage* const clspkgp = VN_CAST(modp, ClassPackage)) {
+                clspkgps.push_back(clspkgp);
+                const AstNodeModule* const pkgp = clspkgp;
+                const AstNodeModule* const clsp = clspkgp->classp();
+                for (const AstNodeModule* const implp : {pkgp, clsp}) {
+                    for (const AstNode* const stmtp : implp->stmtspList()) {
+                        const AstCFunc* const funcp = VN_CAST(stmtp, CFunc);
+                        if (!funcp || !EmitCImp::isImpFunc(funcp)) continue;
+                        (funcp->slow() ? slowCost : fastCost) += funcp->nodeCount();
+                    }
                 }
                 continue;
             }
@@ -986,12 +991,18 @@ void V3EmitC::emitcImp() {
         // Distribute classes into buckets by the hash of their name, so the buckets can be
         // emitted in parallel. Use a bucket for about each --output-split worth of the larger
         // of the slow and fast functions, so the buckets do not create many more files than
-        // splitting would anyway.
+        // splitting would anyway. A class goes right after its package, so the compiler sees
+        // them together.
         const size_t splitLimit = v3Global.opt.outputSplit();
         const size_t nBuckets = splitLimit ? std::max(slowCost, fastCost) / splitLimit + 1 : 1;
+        // Class code is split into multiple files, so use parallel build
+        if (nBuckets > 1) v3Global.useParallelBuild(true);
         std::vector<std::vector<AstNodeModule*>> buckets(nBuckets);
-        for (AstNodeModule* const modp : classps) {
-            buckets[VString::hashMurmur(modp->name()) % nBuckets].push_back(modp);
+        for (AstClassPackage* const clspkgp : clspkgps) {
+            std::vector<AstNodeModule*>& bucket
+                = buckets[VString::hashMurmur(clspkgp->name()) % nBuckets];
+            bucket.push_back(clspkgp);
+            bucket.push_back(clspkgp->classp());
         }
 
         // Emit all classes in the same bucket into the same files

@@ -18,8 +18,7 @@ if re.search(r'clang', test.cxx_version):
 
 test.compile(verilator_flags2=[
     "--binary",
-    test.build_jobs,
-    "--output-groups 0",
+    test.build_jobs_groups,
     "--vpi",
     "+define+T_V2020_3_1",
     "+incdir+t/uvm/v2020_3_1",  #

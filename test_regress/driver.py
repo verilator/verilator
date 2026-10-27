@@ -1780,12 +1780,9 @@ class VlTest:
         return VlTest._cached_aslr_off
 
     @property
-    def build_jobs(self) -> str:
-        return "--build-jobs " + str(Args.driver_build_jobs_n)
-
-    @property
     def build_jobs_groups(self) -> str:
-        return self.build_jobs + " --output-groups " + str(max(6, Args.driver_build_jobs_n))
+        return "--build-jobs " + str(Args.driver_build_jobs_n) + " --output-groups " + str(
+            max(6, Args.driver_build_jobs_n))
 
     @property
     def driver_verilator_flags(self) -> list:
