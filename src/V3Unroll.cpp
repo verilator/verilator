@@ -64,6 +64,7 @@ struct UnrollStats final {
     Stat m_nUnrolledIters{"Unrolled iterations"};
     Stat m_bitScanLowered{"Lowered priority-encoder to mostsetbitp1"};
     Stat m_countOnesLowered{"Lowered count-set-bits to countones"};
+    Stat m_bitCopyLowered{"Lowered bit-copy to part-select"};
 };
 
 //######################################################################
@@ -119,6 +120,198 @@ public:
         AstConst* const valp = vscp->user1() ? m_curr[vscp->user1()] : nullptr;
         UINFO(6, "Binding GET " << vscp->name() << " / " << vscp->user1() << " == " << valp);
         return valp;
+    }
+};
+
+//######################################################################
+// Replace a contiguous bit-copy loop with a packed part-select assignment before
+// unrolling can expand it past the statement limit. Only constant, in-range slices
+// of distinct variables are accepted. The index proof follows width changes too:
+// checking only the first and last iteration would miss a truncated, wrapping index.
+// Bound outer induction variables allow this to work recursively on packed arrays.
+// UnrollAllVisitor::tryLowerBitScanLoop lowers another loop idiom of the same shape.
+
+class UnrollBitCopy final {
+    struct Affine final {
+        int64_t m_base = 0;  // Value when the induction variable is zero
+        int64_t m_step = 0;  // Change per iteration, restricted to -1, 0, or 1
+    };
+
+    UnrolllBindings& m_bindings;
+    const AstVarScope* const m_idxVscp;
+    const AstVarScope* const m_dstVscp;
+    const int64_t m_count;
+
+    int64_t low(const Affine& value) const {
+        return value.m_base + std::min<int64_t>(0, value.m_step * (m_count - 1));
+    }
+    int64_t high(const Affine& value) const {
+        return value.m_base + std::max<int64_t>(0, value.m_step * (m_count - 1));
+    }
+    static bool constant(const AstConst* nodep, int64_t& value) {
+        if (!nodep || nodep->num().isOpaque() || nodep->num().isFourState()
+            || nodep->width() > 64) {
+            return false;
+        }
+        const uint64_t bits = nodep->toUQuad();
+        if (bits > static_cast<uint64_t>(std::numeric_limits<int32_t>::max())) return false;
+        value = bits;
+        return true;
+    }
+    // Keep every intermediate nonnegative and within its declared width, without
+    // modular wraparound. The int32 bound also keeps host arithmetic below int64 limits.
+    bool fits(const Affine& value, int width) const {
+        if (low(value) < 0 || high(value) > std::numeric_limits<int32_t>::max()) return false;
+        return width >= 31 || high(value) < (int64_t{1} << width);
+    }
+    bool affine(const AstNodeExpr* nodep, Affine& value) const {
+        if (const AstConst* const constp = VN_CAST(nodep, Const)) {
+            if (!constant(constp, value.m_base)) return false;
+        } else if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
+            if (!refp->access().isReadOnly() || refp->varScopep() == m_dstVscp) return false;
+            if (refp->varScopep() == m_idxVscp) {
+                value.m_step = 1;
+            } else if (!constant(m_bindings.get(refp->varScopep()), value.m_base)) {
+                return false;
+            }
+        } else if (const AstExtend* const extendp = VN_CAST(nodep, Extend)) {
+            if (!affine(extendp->lhsp(), value)) return false;
+        } else if (const AstExtendS* const extendp = VN_CAST(nodep, ExtendS)) {
+            if (!affine(extendp->lhsp(), value) || !fits(value, extendp->lhsp()->width() - 1)) {
+                return false;
+            }
+        } else if (const AstSel* const selp = VN_CAST(nodep, Sel)) {
+            if (!selp->lsbp()->isZero() || !affine(selp->fromp(), value)) return false;
+        } else if (const AstNodeBiop* const bip = VN_CAST(nodep, NodeBiop)) {
+            Affine lhs;
+            Affine rhs;
+            if (!affine(bip->lhsp(), lhs) || !affine(bip->rhsp(), rhs)) return false;
+            if (VN_IS(bip, Add)) {
+                value = {lhs.m_base + rhs.m_base, lhs.m_step + rhs.m_step};
+            } else if (VN_IS(bip, Sub)) {
+                value = {lhs.m_base - rhs.m_base, lhs.m_step - rhs.m_step};
+            } else if (VN_IS(bip, Mul) || VN_IS(bip, MulS)) {
+                if (lhs.m_step && rhs.m_step) return false;
+                value
+                    = {lhs.m_base * rhs.m_base, lhs.m_step * rhs.m_base + lhs.m_base * rhs.m_step};
+            } else if (VN_IS(bip, ShiftL)) {
+                if (rhs.m_step || rhs.m_base > 30) return false;
+                const int64_t scale = int64_t{1} << rhs.m_base;
+                value = {lhs.m_base * scale, lhs.m_step * scale};
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        return value.m_step >= -1 && value.m_step <= 1 && fits(value, nodep->width());
+    }
+    // Accept only conditions proved true throughout the loop. This includes the
+    // bounds guards introduced by V3Unknown, without dropping user conditions.
+    bool alwaysTrue(const AstNodeExpr* nodep) const {
+        if (nodep->isNeqZero()) return true;
+        if (!VN_IS(nodep, Gte) && !VN_IS(nodep, GteS)) return false;
+        const AstNodeBiop* const bip = VN_AS(nodep, NodeBiop);
+        Affine lhs;
+        Affine rhs;
+        if (!affine(bip->lhsp(), lhs) || !affine(bip->rhsp(), rhs)) return false;
+        if (VN_IS(nodep, GteS)
+            && (!fits(lhs, bip->lhsp()->width() - 1) || !fits(rhs, bip->rhsp()->width() - 1))) {
+            return false;
+        }
+        return low(lhs) >= high(rhs);
+    }
+    bool slice(const AstSel* selp, Affine& index) const {
+        if (!selp || selp->width() != 1) return false;
+        const AstVarRef* const refp = VN_CAST(selp->fromp(), VarRef);
+        if (!refp || refp->varScopep() == m_idxVscp) return false;
+        const AstVar* const varp = refp->varp();
+        if (varp->isForced() || varp->isSigUserRWPublic()) return false;
+        return affine(selp->lsbp(), index) && index.m_step != 0 && high(index) < refp->width();
+    }
+
+    UnrollBitCopy(UnrolllBindings& bindings, const AstVarScope* idxVscp,
+                  const AstVarScope* dstVscp, int64_t count)
+        : m_bindings{bindings}
+        , m_idxVscp{idxVscp}
+        , m_dstVscp{dstVscp}
+        , m_count{count} {}
+
+public:
+    static AstNode* apply(UnrolllBindings& bindings, AstLoop* loopp) {
+        const AstLoopTest* const testp = VN_CAST(loopp->stmtsp(), LoopTest);
+        if (!testp || testp->loopp() != loopp) return nullptr;
+        if (!VN_IS(testp->condp(), Gt) && !VN_IS(testp->condp(), GtS)) return nullptr;
+        const AstNodeBiop* const condp = VN_AS(testp->condp(), NodeBiop);
+        AstConst* const boundp = VN_CAST(condp->lhsp(), Const);
+        const AstVarRef* const idxp = VN_CAST(condp->rhsp(), VarRef);
+        int64_t count = 0;
+        if (!idxp || !constant(boundp, count) || count <= 1) return nullptr;
+        AstVarScope* const idxVscp = idxp->varScopep();
+        const AstConst* const initp = bindings.get(idxVscp);
+        if (!initp || !initp->isZero()) return nullptr;
+        const AstNode* const bodyp = testp->nextp();
+        if (!bodyp) return nullptr;
+        const AstAssign* const incp = VN_CAST(bodyp->nextp(), Assign);
+        if (!incp || incp->nextp() || incp->timingControlp()) return nullptr;
+        AstVarRef* const incLhsp = VN_CAST(incp->lhsp(), VarRef);
+        const AstAdd* const addp = VN_CAST(incp->rhsp(), Add);
+        if (!incLhsp || incLhsp->varScopep() != idxVscp || !addp || !addp->lhsp()->isOne()) {
+            return nullptr;
+        }
+        const AstVarRef* const incRhsp = VN_CAST(addp->rhsp(), VarRef);
+        if (!incRhsp || incRhsp->varScopep() != idxVscp || addp->width() != idxp->width()
+            || incLhsp->width() != boundp->width()) {
+            return nullptr;
+        }
+        const AstNode* assignp = bodyp;
+        const AstIf* const ifp = VN_CAST(bodyp, If);
+        if (ifp) {
+            if (ifp->elsesp() || !ifp->thensp() || ifp->thensp()->nextp()) return nullptr;
+            assignp = ifp->thensp();
+        }
+        const AstAssign* const copyp = VN_CAST(assignp, Assign);
+        if (!copyp || copyp->timingControlp()) return nullptr;
+        const AstSel* const dstp = VN_CAST(copyp->lhsp(), Sel);
+        if (!dstp) return nullptr;
+        const AstVarRef* const dstRefp = VN_CAST(dstp->fromp(), VarRef);
+        if (!dstRefp) return nullptr;
+        AstVarScope* const dstVscp = dstRefp->varScopep();
+        const UnrollBitCopy matcher{bindings, idxVscp, dstVscp, count};
+        // The exit value must also be representable; otherwise the increment wraps
+        // and the original loop may never terminate.
+        const int counterBits = idxp->width() - (VN_IS(condp, GtS) ? 1 : 0);
+        if (!matcher.fits({count, 0}, counterBits) || (ifp && !matcher.alwaysTrue(ifp->condp()))) {
+            return nullptr;
+        }
+        const AstNodeExpr* rhsp = copyp->rhsp();
+        if (const AstLogAnd* const andp = VN_CAST(rhsp, LogAnd)) {
+            if (!matcher.alwaysTrue(andp->lhsp())) return nullptr;
+            rhsp = andp->rhsp();
+        } else if (const AstCond* const ternp = VN_CAST(rhsp, Cond)) {
+            if (!matcher.alwaysTrue(ternp->condp())) return nullptr;
+            rhsp = ternp->thenp();
+        }
+        const AstSel* const srcp = VN_CAST(rhsp, Sel);
+        Affine dst;
+        Affine src;
+        if (!matcher.slice(dstp, dst) || !matcher.slice(srcp, src) || dst.m_step != src.m_step) {
+            return nullptr;
+        }
+        // Distinct variables exclude loop-carried dependencies and read-after-write
+        // overlap. Pure index arithmetic and plain VarRefs exclude all side effects.
+        if (dstVscp == VN_AS(srcp->fromp(), VarRef)->varScopep()) return nullptr;
+        FileLine* const flp = loopp->fileline();
+        AstAssign* const resultp = new AstAssign{
+            flp,
+            new AstSel{flp, dstp->fromp()->cloneTree(false), static_cast<int>(matcher.low(dst)),
+                       static_cast<int>(count)},
+            new AstSel{flp, srcp->fromp()->cloneTree(false), static_cast<int>(matcher.low(src)),
+                       static_cast<int>(count)}};
+        // The unroller then visits these assignments, which updates the bindings of the
+        // destination and the induction variable
+        resultp->addNext(new AstAssign{flp, incLhsp->cloneTree(false), boundp->cloneTree(false)});
+        return resultp;
     }
 };
 
@@ -293,6 +486,14 @@ class UnrollOneVisitor final : VNVisitor {
         // Do not unroll if we are told not to
         if (loopp->unroll().isSetFalse()) {
             cantUnroll(loopp, m_stats.m_nPragmaDisabled);
+            return;
+        }
+        AstNode* const copyp
+            = v3Global.opt.fBitCopyLoops() ? UnrollBitCopy::apply(m_bindings, loopp) : nullptr;
+        if (copyp) {
+            UINFO(4, "Lowered bit-copy loop to part-select: " << loopp);
+            m_stmtsp = copyp;
+            ++m_stats.m_bitCopyLowered;
             return;
         }
         // Attempt to unroll the loop

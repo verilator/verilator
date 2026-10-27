@@ -1511,6 +1511,7 @@ void V3Options::parseOptsList(FileLine* fl, const string& optdir, int argc,
 
     DECL_OPTION("-facyc-simp", FOnOff, &m_fAcycSimp);
     DECL_OPTION("-fassemble", FOnOff, &m_fAssemble);
+    DECL_OPTION("-fbit-copy-loops", FOnOff, &m_fBitCopyLoops);
     DECL_OPTION("-fbit-scan-loops", FOnOff, &m_fBitScanLoops);
     DECL_OPTION("-fbitblast", FOnOff, &m_fBitblast);
     DECL_OPTION("-fcase", CbFOnOff, [this](bool flag) {
@@ -2453,6 +2454,7 @@ void V3Options::optimize(int level) {
     const bool flag = level > 0;
     m_fAcycSimp = flag;
     m_fAssemble = flag;
+    m_fBitCopyLoops = flag;
     m_fBitScanLoops = flag;
     m_fBitblast = flag;
     m_fCaseDecoder = flag;

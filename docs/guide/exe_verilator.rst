@@ -778,6 +778,11 @@ Summary:
    Rarely needed. Disable merging adjacent bit selects and assignments of
    the same signal into wider operations.
 
+.. option:: -fno-bit-copy-loops
+
+   Rarely needed. Disable converting loops that copy bits one at a time into
+   part-select assignments.
+
 .. option:: -fno-bit-scan-loops
 
    Rarely needed. Disable converting bit counting loops into built-in operations.

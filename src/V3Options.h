@@ -440,6 +440,7 @@ private:
     // MEMBERS (optimizations)
     bool m_fAcycSimp;    // main switch: -fno-acyc-simp: acyclic pre-optimizations
     bool m_fAssemble;    // main switch: -fno-assemble: assign assemble
+    bool m_fBitCopyLoops;  // main switch: -fno-bit-copy-loops: convert bit copy loops to selects
     bool m_fBitScanLoops;  // main switch: -fno-bit-scan-loops: convert bit scan loops to builtins
     bool m_fBitblast;    // main switch: -fno-bitblast: split packed variables into bit ranges
     bool m_fCaseDecoder; // main switch: -fno-case-decoder: case decoder conversion
@@ -790,6 +791,7 @@ public:
     // ACCESSORS (optimization options)
     bool fAcycSimp() const { return m_fAcycSimp; }
     bool fAssemble() const { return m_fAssemble; }
+    bool fBitCopyLoops() const { return m_fBitCopyLoops; }
     bool fBitScanLoops() const { return m_fBitScanLoops; }
     bool fBitblast() const { return m_fBitblast; }
     bool fCaseDecoder() const { return m_fCaseDecoder; }
