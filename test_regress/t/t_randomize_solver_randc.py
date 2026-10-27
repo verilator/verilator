@@ -10,10 +10,11 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
+test.top_filename = "t/t_constraint_randc_solve_before.v"
 
 # Fixed-seed fault-injection test: the tamper positions and the pass/fail counts follow
 # the permutation each srandom() seed produces, and are re-derived if Verilator's RNG
-# usage changes. Seed-independent randc coverage is in t_constraint_randc_solve_first.
+# usage changes. Seed-independent randc coverage is in t_constraint_randc_solve_before.
 
 if not test.have_solver:
     test.skip("No constraint solver installed")
@@ -29,11 +30,10 @@ test.compile()
 SOLVER = 'VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" '
 
 
-def run_case(name, npass, nfail, tamper=None, mode=None):
+# Each case runs one fault_mode() scenario of the shared source, alone
+def run_case(name, npass, nfail, tamper=None, mode='flat'):
     logfile = test.obj_dir + '/sim_' + name + '.log'
-    flags = ['+verilator+wno+unsatconstr+1']
-    if mode:
-        flags.append('+MODE=' + mode)
+    flags = ['+verilator+wno+unsatconstr+1', '+MODE=' + mode]
     test.execute(logfile=logfile,
                  all_run_flags=flags,
                  run_env=(SOLVER + tamper + ' ') if tamper else '')

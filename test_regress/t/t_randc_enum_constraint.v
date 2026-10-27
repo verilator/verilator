@@ -33,6 +33,15 @@ module t;
     constraint c_range {color <= WHITE;}
   endclass
 
+  // Randc enum mixed with rand: the permutation covers members only, and a member
+  // no limit admits fails the call (IEEE 1800-2023 18.4.2)
+  class Enumc;
+    randc color_t color;
+    rand bit [2:0] limit;
+    constraint c_lim {limit <= 2;}
+    constraint c_rel {color < limit;}
+  endclass
+
   initial begin
     ColorClass c;
     AllColorsClass ac;
@@ -78,6 +87,26 @@ module t;
       else if (this_seq != first_seq) all_same = 0;
     end
     `checkd(all_same, 0);
+
+    // Test 3: Enumc, where BLUE, WHITE and BLACK admit no limit
+    begin
+      automatic Enumc en = new;
+      automatic int good = 0;
+      automatic int ecount[5] = '{default: 0};
+      en.srandom(44);
+      for (int i = 0; i < 24 && good < 6; ++i) begin
+        randomize_result = en.randomize();
+        if (randomize_result == 1) begin
+          ++good;
+          `checkd(en.color < en.limit, 1'b1);
+          ++ecount[int'(en.color)];
+        end
+      end
+      `checkd(good, 6);
+      `checkd(ecount[0], 3);
+      `checkd(ecount[1], 3);
+      for (int v = 2; v < 5; ++v) `checkd(ecount[v], 0);  // zero-ok: no limit above them
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;
