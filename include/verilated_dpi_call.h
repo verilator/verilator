@@ -73,7 +73,9 @@ public:
     const VlProcessRef& process() const noexcept { return m_process; }
     // Mark this VlDpiCall as aborted due to process::kill()
     void markAborted();
-    bool exportAborted() const noexcept { return m_exportAborted; }
+    bool exportAborted() const noexcept {
+        return m_exportAborted || (m_process && m_process->state() == VlProcess::KILLED);
+    }
 
     bool await_ready() const noexcept { return m_done; }
     void await_suspend(std::coroutine_handle<> waiter) noexcept { m_waiter = waiter; }

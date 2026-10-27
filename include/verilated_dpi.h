@@ -136,10 +136,14 @@ struct VlFunctionContext final {
 
 // DPI imported function being executed on this thread, defined in verilated_dpi.cpp
 extern thread_local VlFunctionContext t_fileline;
+// SV process of the active import, including synchronous calls made by an exported task
+extern thread_local VlProcessRef t_process;
 
 template <typename Callable, typename... Args>
-decltype(auto) callImportFunction(const char* const filename, int lineno, Callable&& call,
-                                  Args&&... args) {
+decltype(auto) callImportFunction(VlProcessRef process, const char* const filename, int lineno,
+                                  Callable&& call, Args&&... args) {
+    VL_RESTORER_COPY(t_process);
+    t_process = std::move(process);
     VL_RESTORER(t_fileline);
     t_fileline.m_filename = filename;
     t_fileline.m_lineno = lineno;
@@ -147,7 +151,9 @@ decltype(auto) callImportFunction(const char* const filename, int lineno, Callab
 }
 
 template <typename Callable, typename... Args>
-void callImportTask(Callable&& call, Args&&... args) {
+void callImportTask(VlProcessRef process, Callable&& call, Args&&... args) {
+    VL_RESTORER_COPY(t_process);
+    t_process = std::move(process);
     static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), int>::value,
                   "DPI imported tasks should have 'int' return type (IEEE 1800-2023 35.5.4 Import "
                   "declarations)");
@@ -155,8 +161,23 @@ void callImportTask(Callable&& call, Args&&... args) {
 }
 
 template <typename Callable, typename... Args>
+decltype(auto) invokeExport(Callable&& call, Args&&... args) {
+#if VM_TIMING == 1
+    if constexpr (std::is_invocable<Callable, VlProcessRef, Args...>::value) {
+        // Direct C callers have no importing SV process, so create an independent process.
+        VlProcessRef process = t_process;
+        if (!process) process = std::make_shared<VlProcess>();
+        return call(std::move(process), std::forward<Args>(args)...);
+    } else
+#endif
+    {
+        return call(std::forward<Args>(args)...);
+    }
+}
+
+template <typename Callable, typename... Args>
 decltype(auto) callExportFunction(Callable&& call, Args&&... args) {
-    return call(std::forward<Args>(args)...);
+    return invokeExport(std::forward<Callable>(call), std::forward<Args>(args)...);
 }
 
 #if VM_TIMING == 1
@@ -179,9 +200,10 @@ inline VlCoroutine resumeDpiCallAfter(VlCoroutine coro, VlDpiCall* callp) {
 
 template <typename Callable, typename... Args>
 VlCoroutine awaitImportTask(VlProcessRef process, Callable&& call, Args&&... args) {
-    VlDpiCall dpiCall{
-        std::move(process),
-        [&]() { callImportTask(std::forward<Callable>(call), std::forward<Args>(args)...); }};
+    VlDpiCall dpiCall{std::move(process), [&]() {
+                          callImportTask(dpiCall.process(), std::forward<Callable>(call),
+                                         std::forward<Args>(args)...);
+                      }};
     dpiCall.handoffWorker();
     co_await dpiCall;
 }
@@ -203,10 +225,10 @@ void callExportTask(Callable&& call, Args&&... args) {
         VL_FATAL_MT(t_fileline.m_filename, t_fileline.m_lineno, "",
                     "DPI exported task called from function context");
     }
-    if (VL_UNLIKELY(exportAborted())) return;
 #if VM_TIMING == 1
     // An exported task with timing is a coroutine. Suspend the DPI call until it completes.
-    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(call(std::forward<Args>(args)...)),
+    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(invokeExport(std::forward<Callable>(call),
+                                                              std::forward<Args>(args)...)),
                                         VlCoroutine>::value) {
         VlDpiCall* const callp = VlDpiCall::current();
         if (VL_UNLIKELY(!callp)) {
@@ -215,7 +237,7 @@ void callExportTask(Callable&& call, Args&&... args) {
         }
 
         // Call returns on the first delay or event control
-        VlCoroutine coro{call(std::forward<Args>(args)...)};
+        VlCoroutine coro{invokeExport(std::forward<Callable>(call), std::forward<Args>(args)...)};
         if (!coro.await_ready()) {
             resumeDpiCallAfter(std::move(coro), callp);
             VlDpiCall::stopWorker();
@@ -223,7 +245,7 @@ void callExportTask(Callable&& call, Args&&... args) {
         return;
     }
 #endif
-    call(std::forward<Args>(args)...);
+    invokeExport(std::forward<Callable>(call), std::forward<Args>(args)...);
 }
 
 };  //namespace VerilatedDpi

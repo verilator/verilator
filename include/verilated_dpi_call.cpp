@@ -180,7 +180,7 @@ void VlDpiCall::handoffWorker() {
     threadPool().release(m_threadp);
     if (const std::coroutine_handle<> waiter = m_waiter) {
         // Do not continue if this process was killed
-        if (m_exportAborted) waiter.destroy();
+        if (exportAborted()) waiter.destroy();
         // Resuming the waiter can destroy this object
         else
             waiter.resume();
