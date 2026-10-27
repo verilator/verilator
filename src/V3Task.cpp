@@ -873,9 +873,7 @@ class TaskVisitor final : public VNVisitor {
                 }
             }
             // Reset the user3p
-            for (auto unset : unsetUser3p) {
-                unset->user3p(nullptr);
-            }
+            for (auto unset : unsetUser3p) { unset->user3p(nullptr); }
         }
 
         // First argument is symbol table, then output if a function
@@ -1580,7 +1578,9 @@ class TaskVisitor final : public VNVisitor {
                                    && subVref->varp()->user4p()) {  // when we are making a call
                                                                     // with a child class
                             AstVarScope* newvscp;
-                            if (!correctScopep) { // When calling from a varref we must check the correctScopep which has where the tasks is being called from.
+                            if (!correctScopep) {  // When calling from a varref we must check the
+                                                   // correctScopep which has where the tasks is
+                                                   // being called from.
                                 newvscp = new AstVarScope{varRefp->fileline(), scopep,
                                                           varRefp->varp()};
                             } else {
@@ -1860,12 +1860,12 @@ class TaskVisitor final : public VNVisitor {
         // We are dealing with a pure system verilog class method,
         // where we aren't already doing pass by ref.
         if (!VN_IS(nodep, Func) && nodep->classMethod() && !nodep->isStatic()
-            && !nodep->isCovergroupSample()
-            && !nodep->dpiImport()
-            && cfuncp && cfuncp->scopep()->aboveScopep()
+            && !nodep->isCovergroupSample() && !nodep->dpiImport() && cfuncp
+            && cfuncp->scopep()->aboveScopep()
             && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))
-            && !cfuncp->scopep()->user4p()  // check that the user4p flag is not set from visit(assign)
+            && !cfuncp->scopep()
+                    ->user4p()  // check that the user4p flag is not set from visit(assign)
         ) {
             std::vector<AstNode*> unsetUser3p;
             methodBodyRefs(nodep, cfuncp, unsetUser3p);
