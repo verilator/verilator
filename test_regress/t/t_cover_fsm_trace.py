@@ -21,6 +21,7 @@ test.compile(verilator_flags2=[
 # Generated trace counters must be identifiable in both AST dump formats.
 test.file_grep(test.glob_one(test.obj_dir + '/*_coverage.tree'), r'\[COVERTRACE\]')
 test.file_grep(test.glob_one(test.obj_dir + '/*_coverage.tree.json'), r'"isCoverageTrace":true')
+
 test.execute()
 
 test.run(cmd=[
