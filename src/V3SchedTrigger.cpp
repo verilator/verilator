@@ -789,8 +789,14 @@ TriggerKit TriggerKit::create(AstNetlist* netlistp,  //
 //  shall be called before awaiting for a VCMethod::SCHED_TRIGGER) and add thier calls before
 //  proper CAwaits
 class AwaitBeforeTrigVisitor final : public VNVisitor {
-    const VNUser1InUse m_user1InUse;
+    // TYPES
+    struct BeforeTrig final {
+        AstSenTree* m_senTreep;  // The awaited SenTree
+        AstNodeExpr* m_schedp;  // Its trigger scheduler
+        AstCFunc* m_funcp;  // Its before-trigger function
+    };
 
+    // NODE STATE
     /**
      * AstCAwait::user1()       ->  bool.           True if node has been visited
      * AstSenTree::user1p()     ->  AstCFunc*.      Function that has to be called before awaiting
@@ -798,7 +804,9 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
      * AstCFunc::user1p()       ->  AstVarScope*    Function's local temporary extended trigger
      *                                              vector variable scope
      */
+    const VNUser1InUse m_user1InUse;
 
+    // STATE
     // Netlist - needed for using util::makeSubFunction()
     AstNetlist* const m_netlistp;
     // Trigger kit - for accessing trigger vectors and mapping senItems to thier indexes
@@ -808,13 +816,12 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     // Generator of unique names for before-trigger function
     V3UniqueNames m_beforeTriggerFuncUniqueName;
 
-    // Vector containing every generated CFuncs and related SenTree
-    std::vector<std::pair<AstCFunc*, AstSenTree*>> m_generatedFuncs;
-    // Vector containing SenTrees and coresponding scheduler
-    std::vector<std::pair<AstSenTree*, AstNodeExpr*>> m_senTreeToSched;
+    // Every awaited SenTree
+    std::vector<BeforeTrig> m_beforeTrigs;
     // Map containing vectors of SenItems that share the same prevValue variable
     std::unordered_map<VNRef<AstNode>, std::vector<AstSenItem*>> m_senExprToSenItem;
 
+    // METHODS
     // Returns node which is used for grouping SenItems in `m_senExprToSenItem`
     static AstNode* getSenHashNode(const AstSenItem* const nodep) {
         if (AstVarRef* const varRefp = VN_CAST(nodep->sensp(), VarRef)) return varRefp;
@@ -824,10 +831,8 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     // Populates `m_senExprToSenItem` with every group of SenItems that share the same prevValue
     // variable. Groups that contain only one type of an edge are omitted.
     void fillSenExprToSenItem() {
-        for (auto senTreeSched : m_senTreeToSched) {
-            AstSenTree* const senTreep = senTreeSched.first;
-
-            for (AstSenItem* const senItemp : senTreep->sensespList()) {
+        for (const BeforeTrig& beforeTrig : m_beforeTrigs) {
+            for (AstSenItem* const senItemp : beforeTrig.m_senTreep->sensespList()) {
                 const VEdgeType edge = senItemp->edgeType();
                 if (edge.anEdge() || edge == VEdgeType::ET_CHANGED
                     || edge == VEdgeType::ET_HYBRID) {
@@ -856,9 +861,9 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
     std::map<size_t, std::map<size_t, std::vector<AstNodeExpr*>>>
     getUsedTriggersToTrees(const std::set<size_t>& usedTriggers) {
         std::map<size_t, std::map<size_t, std::vector<AstNodeExpr*>>> usedTrigsToUsingTrees;
-        for (auto senTreeSched : m_senTreeToSched) {
-            const AstSenTree* const senTreep = senTreeSched.first;
-            AstNodeExpr* const shedp = senTreeSched.second;
+        for (const BeforeTrig& beforeTrig : m_beforeTrigs) {
+            const AstSenTree* const senTreep = beforeTrig.m_senTreep;
+            AstNodeExpr* const schedp = beforeTrig.m_schedp;
 
             // Find all common SenItem indexes for `senTreep` and `usedTriggers`
             for (AstSenItem* const senItemp : senTreep->sensespList()) {
@@ -866,7 +871,7 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
                 if (usedTriggers.find(idx) != usedTriggers.end()) {
                     usedTrigsToUsingTrees[idx / TriggerKit::WORD_SIZE]
                                          [size_t{1} << (idx % TriggerKit::WORD_SIZE)]
-                                             .push_back(shedp);
+                                             .push_back(schedp);
                 }
             }
         }
@@ -883,9 +888,9 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
         return usedTrigsToUsingTrees;
     }
 
-    // Returns a CCall to a before-trigger function for a given SenTree,
-    // Constructs such a function if it doesn't exist yet
-    AstCCall* getBeforeTriggerStmt(AstSenTree* const senTreep) {
+    // Returns a CCall to a before-trigger function for a given SenTree, awaited via scheduler
+    // 'schedp'. Constructs such a function if it doesn't exist yet
+    AstCCall* getBeforeTriggerStmt(AstSenTree* const senTreep, AstNodeExpr* const schedp) {
         FileLine* const flp = senTreep->fileline();
         if (!senTreep->user1p()) {
             AstCFunc* const funcp = util::makeSubFunction(
@@ -906,20 +911,22 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
             funcp->addArgsp(argp);
             // Scope is created in the constructor after iterate finishes
 
-            m_generatedFuncs.emplace_back(funcp, senTreep);
+            m_beforeTrigs.push_back({senTreep, schedp, funcp});
         }
         AstCCall* const callp = new AstCCall{flp, VN_AS(senTreep->user1p(), CFunc)};
         callp->dtypeSetVoid();
         return callp;
     }
 
+    // VISITORS
     void visit(AstCAwait* const nodep) override {
         if (nodep->user1SetOnce()) return;
 
         // Check whether it is a CAwait for a VCMethod::SCHED_TRIGGER
         if (const AstCMethodHard* const cMethodHardp = VN_CAST(nodep->exprp(), CMethodHard)) {
             if (cMethodHardp->method() == VCMethod::SCHED_TRIGGER) {
-                AstCCall* const beforeTrigp = getBeforeTriggerStmt(nodep->sentreep());
+                AstCCall* const beforeTrigp
+                    = getBeforeTriggerStmt(nodep->sentreep(), cMethodHardp->fromp());
 
                 // Add eventDescription argument value to a CCall - it is used for --runtime-debug
                 AstNode* const pinp = cMethodHardp->pinsp()->nextp()->nextp();
@@ -928,7 +935,6 @@ class AwaitBeforeTrigVisitor final : public VNVisitor {
 
                 // Call the before-trigger function before the CAwait
                 nodep->addHereThisAsNext(beforeTrigp->makeStmt());
-                m_senTreeToSched.emplace_back(nodep->sentreep(), cMethodHardp->fromp());
             }
         }
         nodep->clearSentreep();  // Clear as these sentrees will get deleted later
@@ -952,14 +958,14 @@ public:
         std::set<size_t> usedTriggers;
         // In each of before-trigger functions check if anything was triggered and mark as ready
         // triggered schedulers
-        for (const auto& funcToUsedTriggers : m_generatedFuncs) {
-            AstCFunc* const funcp = funcToUsedTriggers.first;
+        for (const BeforeTrig& beforeTrig : m_beforeTrigs) {
+            AstCFunc* const funcp = beforeTrig.m_funcp;
             AstVarScope* const vscp = VN_AS(funcp->user1p(), VarScope);
             FileLine* const flp = funcp->fileline();
 
             // Generate trigger evaluation
             {
-                AstSenTree* const senTreep = funcToUsedTriggers.second;
+                AstSenTree* const senTreep = beforeTrig.m_senTreep;
                 // Puts `exprp` at `pos` and makes sure that trigps.size() is multiple of
                 // TriggerKit::WORD_SIZE
                 const auto emplaceAt
