@@ -14,6 +14,9 @@ module t (
 );
 
   int cyc = 0;
+  // Vacuous successes also run pass actions (IEEE 1800-2023 20.11). Turn them off, so that the
+  // pass counts below count only non-vacuous successes
+  initial $assertvacuousoff;
   logic a1 = 0, b1 = 0, c1 = 0, a2 = 0, b2 = 0, a3 = 0, b3 = 0;
   logic [2:0] h = 3'd0;
 
@@ -35,8 +38,8 @@ module t (
     end
   end
 
-  // Single-cycle antecedent, b1 after it: every form passes once (pass actions run on
-  // non-vacuous success) and nothing fails
+  // Single-cycle antecedent, b1 after it: every form passes once (only non-vacuous
+  // successes are counted) and nothing fails
   int pass_non = 0, pass_over = 0, pass_func = 0, pass_rose = 0;
   int fail_non = 0, fail_over = 0, fail_func = 0, fail_rose = 0;
   function automatic int burst_len(logic [2:0] hb);
