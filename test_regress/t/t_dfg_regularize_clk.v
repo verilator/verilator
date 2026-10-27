@@ -27,7 +27,7 @@ module sub (
 `endif
     ++count;
   end
-  final `checkd(count, 2);
+  final `checkd(count, 1);
 endmodule
 
 module t (  /*AUTOARG*/

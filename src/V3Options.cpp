@@ -746,6 +746,8 @@ string V3Options::getenvBuiltins(const string& var) {
         return getenvSYSTEMC_INCLUDE();
     } else if (var == "SYSTEMC_LIBDIR") {
         return getenvSYSTEMC_LIBDIR();
+    } else if (var == "VERILATOR_RAND_SAMPLER") {
+        return getenvVERILATOR_RAND_SAMPLER();
     } else if (var == "VERILATOR_ROOT") {
         return getenvVERILATOR_ROOT();
     } else {
@@ -849,6 +851,18 @@ string V3Options::getenvSYSTEMC_LIBDIR() {
         if (sc != "" && arch != "") var = V3Os::filenameJoin(sc, "lib-" + arch);
     }
     return V3Os::filenameCleanup(var);
+}
+
+string V3Options::getenvVERILATOR_RAND_SAMPLER() {
+    string var = V3Os::getenvStr("VERILATOR_RAND_SAMPLER", "");
+    // Treat compiled-in DEFENV string literals as C-strings to enable
+    // binary patching for relocatable installs (e.g. conda)
+    const string defenv = string{DEFENV_VERILATOR_RAND_SAMPLER};
+    if (var == "" && defenv != "") {
+        var = defenv;
+        V3Os::setenvStr("VERILATOR_RAND_SAMPLER", var, "Hardcoded at build time");
+    }
+    return var;
 }
 
 string V3Options::getenvVERILATOR_ROOT() {
@@ -2335,6 +2349,7 @@ void V3Options::showVersion(bool verbose) {
     cout << "    SYSTEMC_ARCH       = " << DEFENV_SYSTEMC_ARCH << "\n";
     cout << "    SYSTEMC_INCLUDE    = " << DEFENV_SYSTEMC_INCLUDE << "\n";
     cout << "    SYSTEMC_LIBDIR     = " << DEFENV_SYSTEMC_LIBDIR << "\n";
+    cout << "    VERILATOR_RAND_SAMPLER = " << DEFENV_VERILATOR_RAND_SAMPLER << "\n";
     cout << "    VERILATOR_ROOT     = " << DEFENV_VERILATOR_ROOT << "\n";
     cout << "    VERILATOR_SOLVER   = " << DEFENV_VERILATOR_SOLVER << "\n";
     cout << "    SystemC system-wide = " << cvtToStr(systemCSystemWide()) << "\n";
@@ -2351,6 +2366,8 @@ void V3Options::showVersion(bool verbose) {
     cout << "    SYSTEMC_LIBDIR     = " << V3Os::getenvStr("SYSTEMC_LIBDIR", "") << "\n";
     // wrapper uses VERILATOR_BIN
     cout << "    VERILATOR_BIN      = " << V3Os::getenvStr("VERILATOR_BIN", "") << "\n";
+    cout << "    VERILATOR_RAND_SAMPLER = " << V3Os::getenvStr("VERILATOR_RAND_SAMPLER", "")
+         << "\n";
     cout << "    VERILATOR_ROOT     = " << V3Os::getenvStr("VERILATOR_ROOT", "") << "\n";
     cout << "    VERILATOR_SOLVER   = " << V3Os::getenvStr("VERILATOR_SOLVER", "") << "\n";
 

@@ -3175,7 +3175,7 @@ class WidthVisitor final : public VNVisitor {
                                               nodep->fromp()->unlinkFrBack()},
                                 new AstConst{fl, AstConst::Signed32{}, 1}},
                 new AstConst{fl, AstConst::Signed32{}, 0}};
-        } else if ((castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE)
+        } else if ((castable.isSameish() || castable.isCompatible())
                    // Unsupported: the static cast below has no lowering for unpacked arrays
                    && !VN_IS(toDtp, UnpackArrayDType)) {
             nodep->v3warn(CASTCONST, "$cast will always return one as "
@@ -3255,7 +3255,7 @@ class WidthVisitor final : public VNVisitor {
                                                  << toDtp->prettyDTypeNameQ() << " from "
                                                  << fromDtp->prettyDTypeNameQ());
                 bad = true;
-            } else if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE
+            } else if (castable.isSameish() || castable.isCompatible()
                        || castable == VCastable::ENUM_IMPLICIT
                        || castable == VCastable::ENUM_EXPLICIT) {
                 ;  // Continue
@@ -6326,7 +6326,7 @@ class WidthVisitor final : public VNVisitor {
             }
             const VCastable castable = AstNode::computeCastable(
                 arrayDtp->subDTypep()->skipRefp(), valuep->dtypep()->skipRefp(), valuep);
-            if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE) {
+            if (!castable.isSameish() && !castable.isCompatible()) {
                 valuep->v3error("Unpacked array concatenation item is neither an element nor"
                                 " an array of elements of its target (IEEE 1800-2023 10.10)"
                                 << warnDTypes(valuep, arrayDtp->subDTypep(), valuep->dtypep(),
@@ -6574,9 +6574,11 @@ class WidthVisitor final : public VNVisitor {
         const bool isElement
             = AstNode::computeCastable(arrayDtp->subDTypep(), valuep->dtypep(), nullptr)
                   .isAssignable();
-        // A bounded queue to splice is constructed first, to truncate it
+        // A bounded queue to splice is constructed first, to truncate it, unless it has this
+        // constructor's type (e.g. a nested concatenation), as truncating once keeps the same
+        // elements, and warns once with the full attempted size
         const AstQueueDType* const subQueueDtp = VN_CAST(valuep->dtypep()->skipRefp(), QueueDType);
-        if (!isElement && !(subQueueDtp && subQueueDtp->boundp())) {
+        if (!isElement && !(subQueueDtp && subQueueDtp->boundp() && subQueueDtp != arrayDtp)) {
             T_Cons* const subp = AstNode::cast<T_Cons>(valuep);
             if (subp && subp->dtypep()->skipRefp()->subDTypep() == arrayDtp->subDTypep()) {
                 if (subp->itemsp()) consp->addItemsp(subp->itemsp()->unlinkFrBackWithNext());
@@ -6846,7 +6848,7 @@ class WidthVisitor final : public VNVisitor {
                     condp->v3error("Case(type) statement requires items that have type() items");
                 } else {
                     AstNodeDType* const condDtp = condAttrp->dtypep();
-                    if (AstNode::computeCastable(exprDtp, condDtp, casep) == VCastable::SAMEISH) {
+                    if (AstNode::computeCastable(exprDtp, condDtp, casep).isMatching()) {
                         hit = true;
                         break;
                     }
@@ -8256,7 +8258,7 @@ class WidthVisitor final : public VNVisitor {
                                                             /* checkIfaceArgCompat */ true)
                                  : VCastable{VCastable::UNSUPPORTED};
                 const bool matchingRefDTypes = portIfacep
-                                                   ? ifaceCastable == VCastable::SAMEISH
+                                                   ? ifaceCastable.isSameish()
                                                    : similarDTypeRecurse(portDTypep, pinDTypep);
                 const bool pinIsNull = VN_IS(pinp, Const) && VN_AS(pinp, Const)->num().isNull();
                 if ((portp->isRef() || portp->isConstRef()) && !matchingRefDTypes) {
@@ -9086,10 +9088,9 @@ class WidthVisitor final : public VNVisitor {
             const AstNodeDType* const lhsDtp = lhsap->dtypep();
             const AstNodeDType* const rhsDtp = rhsap->dtypep();
             UINFO(9, "==type lhsDtp " << lhsDtp);
-            UINFO(9, "==type rhsDtp " << lhsDtp);
+            UINFO(9, "==type rhsDtp " << rhsDtp);
             const bool invert = VN_IS(nodep, NeqT);
-            const bool identical
-                = AstNode::computeCastable(lhsDtp, rhsDtp, nodep) == VCastable::SAMEISH;
+            const bool identical = AstNode::computeCastable(lhsDtp, rhsDtp, nodep).isMatching();
             UINFO(9, "== " << identical);
             const bool eq = invert ^ identical;
             AstNode* const newp = new AstConst{nodep->fileline(), AstConst::BitTrue{}, eq};
@@ -10097,7 +10098,7 @@ class WidthVisitor final : public VNVisitor {
             = VN_CAST(targetDTypep->skipRefToEnump(), EnumDType)) {
             const VCastable castable
                 = AstNode::computeCastable(targetEnump, sourceDTypep, sourceExprp);
-            if (castable != VCastable::SAMEISH && castable != VCastable::COMPATIBLE
+            if (!castable.isSameish() && !castable.isCompatible()
                 && castable != VCastable::ENUM_IMPLICIT) {
                 nodep->v3warn(ENUMVALUE, "Implicit conversion to enum "
                                              << targetDTypep->prettyDTypeNameQ() << " from "
