@@ -65,9 +65,9 @@ endmodule
 
 // --- Scoping: the same path means different things in different modules ------
 // Reaches outside: 0x5a[1] is 1, and the inner source has 0 there
-module leaf_out(output reg o, input i);
+module leaf_out(output o, input i);
   wire [7:0] ph = t.top.drv.tech_inst.phi;
-  always @(ph or i) o <= i ^ ph[1];
+  assign o = i ^ ph[1];
 endmodule
 
 module inner_tech(output [7:0] phi);
@@ -85,11 +85,11 @@ endmodule
 
 // Spells the same path at its own instance; must not be promoted. 0x3c[2] is
 // 1 where 0x5a[2] is 0, so a wrong rewrite flips the answer.
-module leaf_in(output reg o, input i);
+module leaf_in(output o, input i);
   wire [7:0] lcl;
   t_local t(lcl);
   wire [7:0] ph = t.top.drv.tech_inst.phi;
-  always @(ph or i) o <= i ^ ph[2];
+  assign o = i ^ ph[2];
 endmodule
 
 module blk_scope(output [1:0] o, input i);
@@ -101,9 +101,9 @@ module blk_scope(output [1:0] o, input i);
 endmodule
 
 // --- A de-parameterized block, whose mangled name the ports must follow ------
-module leaf_param #(parameter int SEL = 0) (output reg o, input i);
+module leaf_param #(parameter int SEL = 0) (output o, input i);
   wire [7:0] ph = t.top.drv.tech_inst.phi;
-  always @(ph or i) o <= i ^ ph[SEL];
+  assign o = i ^ ph[SEL];
 endmodule
 
 module blk_param #(parameter int P = 3) (output o, input i);
