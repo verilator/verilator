@@ -12,6 +12,11 @@ class Cube;
   constraint c1 {foreach (cube[i]) unique {cube[i]};}
 endclass
 
+class OneByTwoRow;
+  rand bit [4:0] cube[3][1][2];
+  constraint c1 {foreach (cube[i]) unique {cube[i]};}
+endclass
+
 class RowKinds;
   rand bit [4:0] queue_rows[3][2][$];
   rand bit [4:0] dynarr_rows[3][2][];
@@ -37,9 +42,11 @@ endclass
 module t;
   initial begin
     automatic Cube cb = new;
+    automatic OneByTwoRow obtr = new;
     automatic RowKinds rk = new;
     automatic DirectDynRow ddr = new;
     void'(cb.randomize());
+    void'(obtr.randomize());
     void'(rk.randomize());
     void'(ddr.randomize());
   end

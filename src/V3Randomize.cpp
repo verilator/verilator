@@ -3164,7 +3164,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 randUniqueCallp->dtypep(nodep->findVoidDType());
                 randUniqueCallp->addPinsp(new AstConst{fl, *m_uniqueConstraintId});
                 setupStmtsp = AstNode::addNext(setupStmtsp, new AstStmtExpr{fl, randUniqueCallp});
-            } else if (AstNodeExpr* const sliceItemp = VN_CAST(itemp, NodeExpr)) {
+            } else {
+                AstNodeExpr* const sliceItemp = VN_AS(itemp, NodeExpr);
                 const bool soleItem = itemp == nodep->rangesp() && !itemp->nextp();
                 if (soleItem && isSupportedUniqueSlice(sliceItemp)) {
                     const AstNodeDType* const dtypep = sliceItemp->dtypep()->skipRefp();

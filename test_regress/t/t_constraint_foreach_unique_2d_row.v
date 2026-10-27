@@ -78,6 +78,36 @@ class MemberRow;
   endfunction
 endclass
 
+class ArraySliceFirst;
+  rand bit [4:0] grid[3][3];
+  rand bit [3:0] arr[4];
+  constraint c1 {foreach (grid[i, j]) grid[i][j] inside {[1 : 9]};}
+  constraint c2 {unique {grid[0], arr};}
+
+  function void arr_is_unique();
+    for (int x = 0; x < 4; x++) begin
+      for (int y = x + 1; y < 4; y++) begin
+        `checkd(arr[x] == arr[y], 0)
+      end
+    end
+  endfunction
+endclass
+
+class ArraySliceSecond;
+  rand bit [4:0] grid[3][3];
+  rand bit [3:0] arr[4];
+  constraint c1 {foreach (grid[i, j]) grid[i][j] inside {[1 : 9]};}
+  constraint c2 {unique {arr, grid[0]};}
+
+  function void arr_is_unique();
+    for (int x = 0; x < 4; x++) begin
+      for (int y = x + 1; y < 4; y++) begin
+        `checkd(arr[x] == arr[y], 0)
+      end
+    end
+  endfunction
+endclass
+
 module t;
   initial begin
     Grid g;
@@ -85,12 +115,16 @@ module t;
     SliceRange sr;
     SliceRangeAscending sra;
     MemberRow mr;
+    ArraySliceFirst asf;
+    ArraySliceSecond ass;
     int i;
     g = new();
     rsi = new();
     sr = new();
     sra = new();
     mr = new();
+    asf = new();
+    ass = new();
     repeat (20) begin
       i = g.randomize();
       `checkd(i, 1)
@@ -111,6 +145,14 @@ module t;
       i = mr.randomize();
       `checkd(i, 1)
       mr.rows_are_unique();
+
+      i = asf.randomize();
+      `checkd(i, 1)
+      asf.arr_is_unique();
+
+      i = ass.randomize();
+      `checkd(i, 1)
+      ass.arr_is_unique();
     end
 
     $write("*-* All Finished *-*\n");
