@@ -875,7 +875,6 @@ class TaskVisitor final : public VNVisitor {
             // Reset the user3p
             for (auto unset : unsetUser3p) {
                 unset->user3p(nullptr);
-                // unset->user1p(nullptr);
             }
         }
 
@@ -1629,7 +1628,7 @@ class TaskVisitor final : public VNVisitor {
             // Find all assignment nodes in this task if it is a method.
             // If an Assign in the method refences a variable one scope above itself then pass it
             // by refence
-            if (varRefp && varRefp->varScopep() && !varRefp->varp()->user2()) {
+            if (varRefp && varRefp->varScopep() && !VN_IS(varRefp->varp()->user3p(), Var)) {
                 if (varRefp->varScopep()->scopep()->name()
                     == methodp->scopep()->aboveScopep()->name()) {
                     AstVarScope* newvscp;
@@ -1663,7 +1662,8 @@ class TaskVisitor final : public VNVisitor {
                 }
             } else if (AstVar* varpInFunc = VN_CAST(p, Var)) {  // The variable is declared in the
                                                                 // scope do not pass by reference
-                varpInFunc->user2SetOnce();
+                varpInFunc->user3p(varpInFunc);
+                unsetUser3p.push_back(varpInFunc);
             }
             if (p->op1p()) methodBodyRefs(p->op1p(), methodp, unsetUser3p);
             if (p->op2p()) methodBodyRefs(p->op2p(), methodp, unsetUser3p);
@@ -1861,7 +1861,7 @@ class TaskVisitor final : public VNVisitor {
         // where we aren't already doing pass by ref.
         if (!VN_IS(nodep, Func) && nodep->classMethod() && !nodep->isStatic()
             && !nodep->isCovergroupSample()
-            && !nodep->dpiImport()  
+            && !nodep->dpiImport()
             && cfuncp && cfuncp->scopep()->aboveScopep()
             && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
                 || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))
