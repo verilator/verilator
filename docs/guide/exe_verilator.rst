@@ -584,6 +584,12 @@ Summary:
    [sarif-tools](https://github.com/microsoft/sarif-tools), and the [SARIF
    web-based viewer](https://microsoft.github.io/sarif-web-component/).
 
+   Where the warning text already names the edit, the result also carries
+   SARIF `fixes`: a replacement for a misspelt name when the message gives a
+   "Suggested alternative", and an insertion of `/* verilator lint_off */` and
+   `/* verilator lint_on */` comments around the warned source for warnings
+   that can be disabled.
+
 .. option:: --diagnostics-sarif-output <filename>
 
    Specifies the filename for the SARIF output file (`.sarif`) of
