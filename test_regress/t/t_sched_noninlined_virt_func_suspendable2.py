@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['--binary', '--stats', '-fno-dfg'])
+test.compile(verilator_flags2=['--binary', '--stats', '-fno-dfg','-CFLAGS "-Wno-overloaded-virtual"'])
 
 test.execute()
 
