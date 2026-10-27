@@ -963,53 +963,53 @@ void V3EmitC::emitcImp() {
 
         // Process each module in turn, gathering classes to be emitted below
         std::vector<AstClassPackage*> clspkgps;  // Class packages, emitted with their class
-        // Size of the slow and fast functions of all classes, as measured for --output-split
-        size_t slowCost = 0;
-        size_t fastCost = 0;
         for (AstNode* const nodep : v3Global.rootp()->modulespList()) {
             AstNodeModule* const modp = VN_AS(nodep, NodeModule);
             if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
             if (VN_IS(modp, Class)) continue;  // Emitted with its package
-            // Gather class packages and size the functions of the package and class
             if (AstClassPackage* const clspkgp = VN_CAST(modp, ClassPackage)) {
                 clspkgps.push_back(clspkgp);
-                const AstNodeModule* const pkgp = clspkgp;
-                const AstNodeModule* const clsp = clspkgp->classp();
-                for (const AstNodeModule* const implp : {pkgp, clsp}) {
-                    for (const AstNode* const stmtp : implp->stmtspList()) {
-                        const AstCFunc* const funcp = VN_CAST(stmtp, CFunc);
-                        if (!funcp || !EmitCImp::isImpFunc(funcp)) continue;
-                        (funcp->slow() ? slowCost : fastCost) += funcp->nodeCount();
-                    }
-                }
                 continue;
             }
             groups.emplace_back(std::vector<AstNodeModule*>{modp},
                                 EmitCUtil::prefixNameProtect(modp));
         }
 
-        // Distribute classes into buckets by the hash of their name, so the buckets can be
-        // emitted in parallel. Use a bucket for about each --output-split worth of the larger
-        // of the slow and fast functions, so the buckets do not create many more files than
-        // splitting would anyway. A class goes right after its package, so the compiler sees
-        // them together.
+        // Cut the classes, in netlist order, into chunks of about one --output-split worth of
+        // slow or fast code, each emitted into its own files, in parallel. Netlist order keeps
+        // classes that use each other close, so the templates instantiated for a class (e.g.
+        // VlClassRef) are compiled in fewer files. A class goes right after its package, so the
+        // compiler sees them together.
         const size_t splitLimit = v3Global.opt.outputSplit();
-        const size_t nBuckets = splitLimit ? std::max(slowCost, fastCost) / splitLimit + 1 : 1;
-        // Class code is split into multiple files, so use parallel build
-        if (nBuckets > 1) v3Global.useParallelBuild(true);
-        std::vector<std::vector<AstNodeModule*>> buckets(nBuckets);
+        std::vector<std::vector<AstNodeModule*>> chunks;
+        // Size of the slow and fast code of the current chunk, as measured for --output-split
+        size_t slowCost = 0;
+        size_t fastCost = 0;
         for (AstClassPackage* const clspkgp : clspkgps) {
-            std::vector<AstNodeModule*>& bucket
-                = buckets[VString::hashMurmur(clspkgp->name()) % nBuckets];
-            bucket.push_back(clspkgp);
-            bucket.push_back(clspkgp->classp());
+            if (chunks.empty() || (splitLimit && std::max(slowCost, fastCost) >= splitLimit)) {
+                chunks.emplace_back();
+                slowCost = 0;
+                fastCost = 0;
+            }
+            AstNodeModule* const pkgp = clspkgp;
+            AstNodeModule* const clsp = clspkgp->classp();
+            chunks.back().push_back(pkgp);
+            chunks.back().push_back(clsp);
+            for (const AstNodeModule* const implp : {pkgp, clsp}) {
+                for (const AstNode* const stmtp : implp->stmtspList()) {
+                    const AstCFunc* const funcp = VN_CAST(stmtp, CFunc);
+                    if (!funcp || !EmitCImp::isImpFunc(funcp)) continue;
+                    (funcp->slow() ? slowCost : fastCost) += funcp->nodeCount();
+                }
+            }
         }
+        // Class code is split into multiple files, so use parallel build
+        if (chunks.size() > 1) v3Global.useParallelBuild(true);
 
-        // Emit all classes in the same bucket into the same files
-        for (size_t i = 0; i < nBuckets; ++i) {
-            if (buckets[i].empty()) continue;
-            const std::string suffix = "_Classes_h" + std::to_string(i);
-            groups.emplace_back(std::move(buckets[i]),
+        // Emit all classes in the same chunk into the same files
+        for (size_t i = 0; i < chunks.size(); ++i) {
+            const std::string suffix = "_Classes_" + std::to_string(i);
+            groups.emplace_back(std::move(chunks[i]),
                                 EmitCUtil::topClassName() + "_" + VIdProtect::protect(suffix));
         }
 
