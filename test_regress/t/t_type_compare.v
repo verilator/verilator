@@ -4,20 +4,33 @@
 // SPDX-FileCopyrightText: 2022 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-`define checkd(gotv, expv) \
-    do if ((gotv) !== (expv)) begin \
-        $write("%%Error: %s:%0d: got=%0d exp=%0d\n", `__FILE__, `__LINE__, (gotv), (expv)); \
-        $stop; \
-    end while (0);
+// verilog_format: off
+`define stop $stop
+`define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
+// verilog_format: on
 
-module Sub #(parameter type T = type(logic[11:0]));
+module Sub #(parameter type T = type(logic[11:0])) ();
+  int selected_branch;
+  generate
+    case (type(T))
+      type(bit signed [7:0]): initial selected_branch = 1;
+      type(int): initial selected_branch = 2;
+      type(real): initial selected_branch = 3;
+      default: initial selected_branch = 0;
+    endcase
+  endgenerate
 endmodule
 
 module t;
 
   int case_ok;
+  int gen_case_byte_res;
+  int gen_case_vec_res;
 
-  Sub #(.T(int)) sub();
+  Sub #(.T(int)) sub_int();
+  Sub #(.T(byte)) sub_byte();
+  Sub #(.T(bit signed [7:0])) sub_vec();
+  Sub #(.T(shortint)) sub_default();
 
   typedef logic [12:0] logic12_t;
 
@@ -32,6 +45,17 @@ module t;
     type(int): initial $stop;
     type(real): ;
     default: initial $stop;
+  endcase
+
+  // Generate case with matching predefined vector types
+  case (type(byte))
+    type(bit signed [7:0]): initial gen_case_byte_res = 1;
+    default: initial gen_case_byte_res = 0;
+  endcase
+
+  case (type(bit signed [7:0]))
+    type(byte): initial gen_case_vec_res = 1;
+    default: initial gen_case_vec_res = 0;
   endcase
 
   // Issue #8615: IEEE 1800-2023 6.22.1 matching type comparisons
@@ -399,6 +423,13 @@ module t;
       default: case_ok = 0;
     endcase
     `checkd(case_ok, 2);
+
+    `checkd(gen_case_byte_res, 1);
+    `checkd(gen_case_vec_res, 1);
+    `checkd(sub_int.selected_branch, 2);
+    `checkd(sub_byte.selected_branch, 1);
+    `checkd(sub_vec.selected_branch, 1);
+    `checkd(sub_default.selected_branch, 0);
 
     $write("*-* All Finished *-*\n");
     $finish;
