@@ -377,7 +377,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
 
         AstActive* const staticActivep = [scopep]() {
             // Try to find the existing static AstActive
-            for (AstNode* nodep = scopep->blocksp(); nodep; nodep = nodep->nextp()) {
+            for (AstNode* const nodep : scopep->blockspList()) {
                 AstActive* const activep = VN_CAST(nodep, Active);
                 if (!activep) continue;
                 if (activep->sentreep()->hasStatic()) return activep;
@@ -392,7 +392,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
         }();
         AstActive* const combActivep = [scopep]() {
             // Try to find the existing combinational AstActive
-            for (AstNode* nodep = scopep->blocksp(); nodep; nodep = nodep->nextp()) {
+            for (AstNode* const nodep : scopep->blockspList()) {
                 AstActive* const activep = VN_CAST(nodep, Active);
                 if (!activep) continue;
                 if (activep->sentreep()->hasCombo()) return activep;

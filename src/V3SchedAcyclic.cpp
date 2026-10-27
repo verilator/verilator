@@ -142,7 +142,7 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
         AstScope* const scopep = entry.m_scopep;
         AstActive* const activep = entry.m_activep;
         UASSERT_OBJ(activep->hasCombo(), activep, "Not combinational logic");
-        for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : activep->stmtspList()) {
             // Can safely ignore Postponed as we generate them all
             if (VN_IS(nodep, AlwaysPostponed)) continue;
 

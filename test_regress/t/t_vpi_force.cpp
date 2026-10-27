@@ -2497,6 +2497,51 @@ extern "C" int releaseSingleBit(  // NOLINT(readability-function-cognitive-compl
     return 0;
 }
 
+#ifdef VERILATOR
+// For calling from $c, which cannot declare an extern "C" function
+int checkContinuousValuesPartiallyReleased_cpp() {
+    return checkContinuousValuesPartiallyReleased();
+}
+int checkContinuousValuesReleased_cpp() { return checkContinuousValuesReleased(); }
+int checkContinuousValuesSingleBitReleased_cpp() {
+    return checkContinuousValuesSingleBitReleased();
+}
+int checkInertialDelay_cpp() { return checkInertialDelay(); }
+int checkNonContinuousSingleBitForced_cpp() { return checkNonContinuousSingleBitForced(); }
+int checkNonContinuousValuesForced_cpp() { return checkNonContinuousValuesForced(); }
+int checkNonContinuousValuesPartiallyForced_cpp() {
+    return checkNonContinuousValuesPartiallyForced();
+}
+int checkSingleBitForced_cpp() { return checkSingleBitForced(); }
+int checkSingleBitReleased_cpp() { return checkSingleBitReleased(); }
+int checkValuesForced_cpp() { return checkValuesForced(); }
+int checkValuesPartiallyForced_cpp() { return checkValuesPartiallyForced(); }
+int checkValuesPartiallyReleased_cpp() { return checkValuesPartiallyReleased(); }
+int checkValuesReleased_cpp() { return checkValuesReleased(); }
+int forceSingleBit_cpp(int a0, int a1) {
+    return forceSingleBit(static_cast<BitIndexingMethod>(a0), static_cast<DimIndexingMethod>(a1));
+}
+int forceValues_cpp(int a0) { return forceValues(static_cast<DimIndexingMethod>(a0)); }
+int partiallyForceValues_cpp(int a0) { return partiallyForceValues(static_cast<Direction>(a0)); }
+int partiallyReleaseValues_cpp(int a0) {
+    return partiallyReleaseValues(static_cast<Direction>(a0));
+}
+int putInertialDelay_cpp() { return putInertialDelay(); }
+int putString_cpp() { return putString(); }
+int releasePartiallyForcedValues_cpp(int a0) {
+    return releasePartiallyForcedValues(static_cast<DimIndexingMethod>(a0));
+}
+int releaseSingleBit_cpp(int a0, int a1) {
+    return releaseSingleBit(static_cast<BitIndexingMethod>(a0),
+                            static_cast<DimIndexingMethod>(a1));
+}
+int releaseSingleBitForcedValues_cpp(int a0) {
+    return releaseSingleBitForcedValues(static_cast<DimIndexingMethod>(a0));
+}
+int releaseValues_cpp(int a0) { return releaseValues(static_cast<DimIndexingMethod>(a0)); }
+int tryInvalidPutOperations_cpp() { return tryInvalidPutOperations(); }
+#endif
+
 #ifdef IS_VPI
 
 static int checkValuesForcedVpi() {

@@ -552,8 +552,8 @@ module t;
 
     // Sample cg_trans: transition coverpoint crossed with a value coverpoint
     // cg_trans: <t01,v6> never completes, so only the cross is partial (1/2)
-    // __Vprev_cp_t initializes to 0.
-    state = 0; val = 5; cg_trans_inst.sample();  // prev=0,cur=0: no t01; v5
+    // The first sample follows no other, so it completes no transition.
+    state = 0; val = 5; cg_trans_inst.sample();  // first sample: no t01; v5
     state = 1; val = 5; cg_trans_inst.sample();  // prev=0,cur=1: t01 completes; <t01,v5>
     state = 0; val = 6; cg_trans_inst.sample();  // prev=1,cur=0: no t01; v6 (no cross)
     `checkr(cg_trans_inst.get_inst_coverage(), (100.0 + 100.0 + 50.0) / 3);

@@ -288,12 +288,15 @@ public:
             AstNode* const nodep = new AstPragma{modp->fileline(), type};
             modp->addStmtsp(nodep);
         }
-        for (const auto& itr : m_modPragmas) {
-            // Catch hier param modules to mark their attributes before they are
-            // flagged dead in LinkDot.
-            if (itr == VPragmaType::HIER_PARAMS) modp->hierParams(true);
-            AstNode* const nodep = new AstPragma{modp->fileline(), itr};
-            modp->addStmtsp(nodep);
+        for (const VPragmaType pragma : m_modPragmas) {
+            // Handle internal pragmas here, user-facing ones are handled with validation later
+            switch (pragma) {
+            case VPragmaType::HIER_PARAMS: modp->hierParams(true); continue;
+            case VPragmaType::VERILATOR_LIB: modp->verilatorLib(true); continue;
+            default:
+                AstNode* const nodep = new AstPragma{modp->fileline(), pragma};
+                modp->addStmtsp(nodep);
+            }
         }
     }
 

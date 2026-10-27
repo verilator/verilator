@@ -58,8 +58,8 @@
 class SimStackNode final {
 public:
     // MEMBERS
-    AstFuncRef* const m_funcp;
-    V3TaskConnects* const m_tconnects;
+    AstFuncRef* const m_funcp;  // Function call being simulated
+    V3TaskConnects* const m_tconnects;  // Connections of the call's arguments
     // CONSTRUCTORS
     SimStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects)
         : m_funcp{funcp}
@@ -166,8 +166,7 @@ private:
             if (stp->packed()) {
                 std::ostringstream out;
                 out << "'{";
-                for (AstMemberDType* itemp = stp->membersp(); itemp;
-                     itemp = VN_AS(itemp->nextp(), MemberDType)) {
+                for (AstMemberDType* const itemp : stp->memberspList()) {
                     const int width = itemp->width();
                     const int lsb = itemp->lsb();
                     const int msb = lsb + width - 1;
@@ -443,8 +442,7 @@ private:
         if (const AstConsStruct* const avaluep = VN_CAST(valuep, ConsStruct)) {
             string result = "'{";
             string comma;
-            for (const AstConsStructItem* itemp = avaluep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+            for (const AstConsStructItem* const itemp : avaluep->itemspList()) {
                 result
                     += comma + itemp->memberp()->name() + ":" + toStringRecurse(itemp->valuep());
                 comma = ", ";
@@ -467,8 +465,7 @@ private:
         AstStructDType* const structp = VN_CAST(dtypep, StructDType);
         if (structp && !structp->packed()) {
             AstConsStruct* const newp = new AstConsStruct{nodep->fileline(), structp};
-            for (AstMemberDType* memberp = structp->membersp(); memberp;
-                 memberp = VN_AS(memberp->nextp(), MemberDType)) {
+            for (AstMemberDType* const memberp : structp->memberspList()) {
                 AstNodeExpr* const memberValuep = newInitValuep(nodep, memberp->subDTypep());
                 if (!memberValuep) {
                     VL_DO_DANGLING(newp->deleteTree(), newp);
@@ -664,15 +661,13 @@ private:
             return;
         }
         checkNodeInfo(nodep);
-        for (AstConsStructItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+        for (AstConsStructItem* const itemp : nodep->itemspList()) {
             iterateConst(itemp->valuep());
         }
         if (m_checkOnly || !optimizable()) return;
         AstConsStruct* const valuep = new AstConsStruct{
             nodep->fileline(), VN_AS(nodep->dtypep()->skipRefp(), StructDType)};
-        for (AstConsStructItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+        for (AstConsStructItem* const itemp : nodep->itemspList()) {
             valuep->addItemsp(
                 new AstConsStructItem{itemp->fileline(), itemp->memberp(),
                                       fetchValue(itemp->valuep())->cloneTree(false)});
@@ -1153,10 +1148,9 @@ private:
         } else if (optimizable()) {
             iterateAndNextConstNull(nodep->exprp());
             bool hit = false;
-            for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
+            for (AstCaseItem* const itemp : nodep->itemspList()) {
                 if (!itemp->isDefault()) {
-                    for (AstNode* ep = itemp->condsp(); ep; ep = ep->nextp()) {
+                    for (AstNode* const ep : itemp->condspList()) {
                         if (hit) break;
                         iterateAndNextConstNull(ep);
                         if (optimizable()) {
@@ -1171,8 +1165,7 @@ private:
                 }
             }
             // Else default match
-            for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
+            for (AstCaseItem* const itemp : nodep->itemspList()) {
                 if (hit) break;
                 if (itemp->isDefault()) {
                     iterateAndNextConstNull(itemp->stmtsp());

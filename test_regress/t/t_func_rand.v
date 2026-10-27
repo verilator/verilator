@@ -8,19 +8,14 @@ module t (clk, Rand);
   input clk;
   output reg [31:0] Rand;
 
-`ifdef verilator
-  `systemc_interface
-    unsigned int QxRandTbl (unsigned int tbl, unsigned int idx) { return 0xfeed0fad; }
-  `verilog
-`endif
-
   function [31:0] QxRand32;
-    /* verilator public */
     input [7:0]    tbl;
     input [7:0]    idx;
     begin
 `ifdef verilator
-      QxRand32 = $c("this->QxRandTbl(", tbl, ",", idx, ")");
+      // 'this' in $c must still refer to the module instance
+      QxRand32 = $c("[&](unsigned int, unsigned int) { return this->vlNamep ? 0xfeed0fadU : 0U; }(",
+                    tbl, ",", idx, ")");
 `else
       QxRand32 = 32'hfeed0fad;
 `endif
@@ -28,6 +23,7 @@ module t (clk, Rand);
   endfunction
 
   always @(posedge clk) begin
-    Rand <= #1 QxRand32 (8'h0, 8'h7);
+    Rand <= #1 QxRand32(8'h0, 8'h7);
+    $display(Rand);
   end
 endmodule

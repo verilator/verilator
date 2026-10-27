@@ -56,8 +56,7 @@ static string dpiMemberDecl(const AstNodeDType* dtypep, const string& name);
 // C structure declaration of an unpacked structure for DPI
 static string dpiStructDecl(const AstNodeUOrStructDType* sdtypep) {
     string decl = "struct {\n";
-    for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-         itemp = VN_AS(itemp->nextp(), MemberDType)) {
+    for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
         decl += dpiMemberDecl(itemp->subDTypep(), itemp->prettyName()) + ";\n";
     }
     return decl + "}";
@@ -79,10 +78,9 @@ static string dpiMemberDecl(const AstNodeDType* dtypep, const string& name) {
             = sdtypep->dpiName().empty() ? dpiStructDecl(sdtypep) : sdtypep->dpiName();
         return type + " " + name + dims;
     }
-    const AstBasicDType* const basicp = dtypep->basicp();
-    if (basicp->isDpiPrimitive()) return dpiPrimitiveType(basicp) + " " + name + dims;
+    if (dtypep->isDpiPrimitive()) return dpiPrimitiveType(dtypep->basicp()) + " " + name + dims;
     // Canonical representation of packed arrays (IEEE 1800-2023 H.7.7)
-    return (basicp->isDpiBitVec() ? "svBitVecVal " : "svLogicVecVal ") + name + dims
+    return (dtypep->isDpiBitVec() ? "svBitVecVal " : "svLogicVecVal ") + name + dims
            + "[SV_PACKED_DATA_NELEMS(" + cvtToStr(dtypep->width()) + ")]";
 }
 
@@ -100,9 +98,10 @@ virtual string unpackedStruct(const AstVar* varp) const {
 string convert(const AstVar* varp) const {
     if (varp->isDpiOpenArray()) {
         return openArray(varp);
-    } else if (const AstBasicDType* const basicp = varp->basicp()) {
-        if (basicp->isDpiBitVec() || basicp->isDpiLogicVec()) {
-            return bitLogicVector(varp, basicp->isDpiBitVec());
+    } else if (varp->basicp()) {
+        const AstNodeDType* const dtypep = varp->dtypep();
+        if (!dtypep->isDpiPrimitive()) {
+            return bitLogicVector(varp, dtypep->isDpiBitVec());
         } else {
             return primitive(varp);
         }
@@ -196,26 +195,52 @@ static string dtypeNameConst(const V3Number& num, const AstNodeDType* dtypep, bo
     } else {
         value.opAssign(num);
     }
+    // Packed arrays as concatenations of their elements
+    if (const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType)) {
+        const AstNodeDType* const elemDTypep = adtypep->subDTypep()->skipRefToEnumOrNullp();
+        const int elemWidth = adtypep->subDTypep()->width();
+        std::string result = "{";
+        for (int lsb = width - elemWidth; lsb >= 0; lsb -= elemWidth) {
+            V3Number elem{&num, elemWidth};
+            elem.opSel(value, lsb + elemWidth - 1, lsb);
+            if (lsb != width - elemWidth) result += ",";
+            result += dtypeNameConst(elem, elemDTypep, false);
+        }
+        result += "}";
+        return result;
+    }
+    // Packed structures as patterns of their members
+    if (const AstStructDType* const sdtypep = VN_CAST(dtypep, StructDType)) {
+        std::string result = "'{";
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
+            V3Number member{&num, itemp->width()};
+            member.opSel(value, itemp->lsb() + itemp->width() - 1, itemp->lsb());
+            if (itemp != sdtypep->membersp()) result += ",";
+            result += dtypeNameConst(member, itemp->subDTypep()->skipRefToEnumOrNullp(), false);
+        }
+        result += "}";
+        return result;
+    }
+    // Enumerations as the name of the item with the value
     if (const AstEnumDType* const enump = VN_CAST(dtypep, EnumDType)) {
-        for (const AstEnumItem* itemp = enump->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), EnumItem)) {
+        for (const AstEnumItem* const itemp : enump->itemspList()) {
             const AstConst* const constp = VN_CAST(itemp->valuep(), Const);
             if (constp && !constp->num().isAnyXZ() && value.isCaseEq(constp->num())) {
                 return dtypeNameIdent(itemp->name());
             }
         }
     }
+    // Values containing X or Z as binary
     if (value.isAnyXZ()) return value.ascii(true, true);
     const bool isSigned = dtypep ? dtypep->isSigned() : num.isSigned();
-    // Sized as $typename names values (IEEE 1800-2023 20.6.1), so that the specializations of
-    // values of other types are named apart, unless of the type of an unsized decimal literal
-    if (sized && (width != 32 || !isSigned)) {
-        const string prefix = cvtToStr(width) + (isSigned ? "'sd" : "'d");
-        if (!isSigned || !value.isNegative()) return prefix + value.toDecimalU();
-        V3Number magnitude{&num, width};
-        magnitude.opNegate(value);
-        return "-" + prefix + magnitude.toDecimalU();
+    // Bit and logic vectors in hex, with their width and signing, as is an untyped parameter of an
+    // integral value, which is a logic vector of the size of the value (IEEE 1800-2023 6.20.2),
+    // and a value of a type not yet resolved, which may be wide
+    if (sized || !basicp || basicp->isBitLogic()) {
+        return std::to_string(width) + (isSigned ? "'sh" : "'h")
+               + value.displayed(value.fileline(), "%0h");
     }
+    // Other basic types, at most 64 bits wide, in decimal
     return isSigned ? value.toDecimalS() : value.toDecimalU();
 }
 
@@ -269,8 +294,7 @@ static string dtypeNameValue(const AstNode* valuep, const AstNodeDType* dtypep,
     if (const AstConsStruct* const consp = VN_CAST(valuep, ConsStruct)) {
         string result = "'{";
         const char* sepp = "";
-        for (const AstConsStructItem* itemp = consp->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+        for (const AstConsStructItem* const itemp : consp->itemspList()) {
             result += sepp + dtypeNameValue(itemp->valuep(), itemp->memberp());
             sepp = ",";
         }
@@ -296,7 +320,7 @@ static void dtypeNameForeachParam(const AstNodeModule* modp, const T_Func& f) {
         for (const AstNode* const paramp : *paramsp) f(paramp);
         return;
     }
-    for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+    for (const AstNode* const stmtp : modp->stmtspList()) {
         if (dtypeNameIsParam(stmtp)) f(stmtp);
     }
 }
@@ -422,7 +446,7 @@ void VDTypeNameScopes::index(AstNode* nodep, AstNode* scopep) {
         } else if (const AstNodeModule* const modp = VN_CAST(nodep, NodeModule)) {
             m_outerps.emplace(nodep, scopep);
             std::vector<AstNode*>& paramps = m_paramps[nodep];
-            for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            for (AstNode* const stmtp : modp->stmtspList()) {
                 if (dtypeNameIsParam(stmtp)) paramps.push_back(stmtp);
             }
             innerp = nodep;
@@ -701,6 +725,28 @@ void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int 
     this->rangep(rangep);
     this->dtypep(this);
 }
+bool AstBasicDType::matchingDTypeNode(const AstNodeDType* samep) const {
+    const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
+
+    if (keyword().matchingType() != sp->keyword().matchingType()) return false;
+    if (numeric().isSigned() != sp->numeric().isSigned()) return false;
+    if (width() != sp->width()) return false;
+
+    const bool thisPre = keyword().isPredefinedInteger();
+    const bool samePre = sp->keyword().isPredefinedInteger();
+
+    if (thisPre && samePre) return keyword() == sp->keyword();
+
+    // Both are vector/scalar types: ranges must match exactly (IEEE 1800-2023 6.22.1)
+    if (!thisPre && !samePre) {
+        if (isRanged() != sp->isRanged()) return false;
+        return !isRanged() || (left() == sp->left() && right() == sp->right());
+    }
+
+    // One is predefined integer type and the other is a vector (IEEE 1800-2023 6.22.1(e)):
+    const AstBasicDType* const vecp = thisPre ? sp : this;
+    return vecp->isRanged() && !vecp->ascending() && vecp->lo() == 0;
+}
 string AstBasicDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     os << keyword().typeName();
@@ -871,7 +917,7 @@ void AstCFuncHard::dumpJson(std::ostream& str) const {
 }
 bool AstCFuncHard::getPurity() {
     if (!function().isPure()) return false;
-    for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+    for (AstNodeExpr* const argp : pinspList()) {
         if (!argp->isPure()) return false;
     }
     return true;
@@ -899,7 +945,7 @@ bool AstCMethodHard::getPurity() {
     }
     if (!method().isPure()) return false;
     if (!fromp()->isPure()) return false;
-    for (AstNodeExpr* argp = pinsp(); argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+    for (AstNodeExpr* const argp : pinspList()) {
         if (!argp->isPure()) return false;
     }
     return true;
@@ -1371,8 +1417,7 @@ const char* AstConsDynArray::broken() const {
     // Default only valid if sizep is present
     BROKEN_RTN(defaultp() && !sizep());
     // Items are keyed exactly when sizep is present
-    for (const AstConsDynArrayItem* itemp = itemsp(); itemp;
-         itemp = VN_AS(itemp->nextp(), ConsDynArrayItem)) {
+    for (const AstConsDynArrayItem* const itemp : itemspList()) {
         BROKEN_RTN(!itemp->keyp() != !sizep());
     }
     return nullptr;
@@ -1382,8 +1427,7 @@ const char* AstConsStruct::broken() const {
     BROKEN_RTN(!structp || structp->packed());
     // An item for each member, in order
     const AstMemberDType* memberp = structp->membersp();
-    for (const AstConsStructItem* itemp = itemsp(); itemp;
-         itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+    for (const AstConsStructItem* const itemp : itemspList()) {
         BROKEN_RTN(itemp->memberp() != memberp);
         memberp = VN_AS(memberp->nextp(), MemberDType);
     }
@@ -1391,8 +1435,7 @@ const char* AstConsStruct::broken() const {
     return nullptr;
 }
 AstNodeExpr* AstConsStruct::memberValuep(const string& name) const {
-    for (AstConsStructItem* itemp = itemsp(); itemp;
-         itemp = VN_AS(itemp->nextp(), ConsStructItem)) {
+    for (AstConsStructItem* const itemp : itemspList()) {
         if (itemp->memberp()->name() == name) return itemp->valuep();
     }
     v3fatalSrc("Structure value without member '" << name << "'");
@@ -2008,7 +2051,7 @@ void AstIntfRef::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 bool AstJumpBlock::getPurityRecurse() const {
-    for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+    for (AstNode* const stmtp : this->stmtspList()) {
         if (!stmtp->isPure()) return false;
     }
     return true;
@@ -2319,12 +2362,16 @@ void AstNetlist::dump(std::ostream& str) const {
     if (timescaleSpecified()) str << " [TIMESCALES]";
     str << " [" << timeunit() << "/" << timeprecision() << "]";
     if (resolvedTopModuleName() != "") str << " top=" << resolvedTopModuleName();
+    for (const std::string& name : l2Names()) str << " l2Name=" << name;
 }
 void AstNetlist::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "timescaleSpecified", timescaleSpecified());
     dumpJsonStr(str, "timeunit", timeunit().ascii());
     dumpJsonStr(str, "timeprecision", timeprecision().ascii());
     dumpJsonStr(str, "resolvedTopModuleName", resolvedTopModuleName());
+    std::string names;
+    for (const std::string& name : l2Names()) names += (names.empty() ? "" : " ") + name;
+    if (!names.empty()) dumpJsonStr(str, "l2Names", names);
     dumpJsonGen(str);
 }
 AstCFunc* AstNetlist::dumpTriggersFuncp(VEval eval) {
@@ -2365,8 +2412,7 @@ AstCFunc* AstNetlist::evalFuncp(VEval eval) {
 AstFuncRef* AstNetlist::stdPackageProcessSelfp(FileLine* flp) const {
     UASSERT(v3Global.rootp()->stdPackageProcessp(), "'std' should be imported");
     AstFunc* selfp = nullptr;
-    for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
-         itemp = itemp->nextp()) {
+    for (AstNode* const itemp : v3Global.rootp()->stdPackageProcessp()->memberspList()) {
         if (itemp->name() == "self") selfp = VN_AS(itemp, Func);
     }
     UASSERT(selfp, "'std::process::self' should be found");
@@ -2629,8 +2675,6 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "double";
         } else if (bdtypep->keyword().isString()) {
             info.m_type = "::std::string";
-        } else if (bdtypep->keyword().isMTaskState()) {
-            info.m_type = "::VlMTaskVertex";
         } else if (bdtypep->isDelayScheduler()) {
             info.m_type = "::VlDelayScheduler";
         } else if (bdtypep->isTriggerScheduler()) {
@@ -2681,8 +2725,7 @@ bool AstNodeDType::containsString() const {
         return adtypep->subDTypep()->containsString();
     }
     if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             if (itemp->subDTypep()->containsString()) return true;
         }
         return false;
@@ -2763,6 +2806,19 @@ const AstNodeDType* AstNodeDType::elemDTypep(bool skipRef) const {
     }
     return dtypep;
 }
+bool AstNodeDType::isDpiBitVec() const {
+    const AstNodeDType* const dtypep = elemDTypep();
+    if (VN_IS(dtypep, PackArrayDType)) return !dtypep->isFourstate();
+    const AstBasicDType* const basicp = dtypep->basicp();
+    return basicp->keyword() == VBasicDTypeKwd::BIT && basicp->isRanged();
+}
+bool AstNodeDType::isDpiLogicVec() const {
+    const AstNodeDType* const dtypep = elemDTypep();
+    if (VN_IS(dtypep, PackArrayDType)) return dtypep->isFourstate();
+    const AstBasicDType* const basicp = dtypep->basicp();
+    return basicp->keyword().isFourstate()
+           && !(basicp->keyword() == VBasicDTypeKwd::LOGIC && !basicp->isRanged());
+}
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 bool AstNodeDType::isLiteralType() const VL_MT_STABLE {
     if (const auto* const dtypep = VN_CAST(skipRefp(), BasicDType)) {
@@ -2790,8 +2846,7 @@ bool AstNodeDType::isStreamableFixedAggregate() const {
     } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
         if (sdtypep->packed()) return true;
         if (!VN_IS(sdtypep, StructDType)) return false;
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             if (!itemp->dtypep()->isStreamableFixedAggregate()) return false;
         }
         return true;
@@ -2822,8 +2877,7 @@ bool AstNodeDType::isTriviallyConstructible() const VL_MT_STABLE {
     }
     if (const auto* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
         if (sdtypep->packed()) return true;
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             if (!itemp->dtypep()->isTriviallyConstructible()) return false;
         }
         return true;
@@ -2834,6 +2888,13 @@ bool AstNodeDType::isTriviallyConstructible() const VL_MT_STABLE {
                || bdtypep->keyword() == VBasicDTypeKwd::SCOPEPTR;
     }
     dtypep->v3fatalSrc("Unknown data type: " << dtypep->prettyName());
+}
+bool AstNodeDType::matchingDType(const AstNodeDType* samep) const {
+    const AstNodeDType* const nodep = skipRefToNonRefp();
+    const AstNodeDType* const sameDtp = samep->skipRefToNonRefp();
+    if (nodep == sameDtp) return true;
+    if (nodep->type() != sameDtp->type()) return false;
+    return nodep->matchingDTypeNode(sameDtp);
 }
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
@@ -2973,8 +3034,7 @@ int AstNodeDType::widthStream() const {
     } else if (const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType)) {
         if (!VN_IS(sdtypep, StructDType) || sdtypep->packed()) return width();
         int width = 0;
-        for (const AstMemberDType* itemp = sdtypep->membersp(); itemp;
-             itemp = VN_AS(itemp->nextp(), MemberDType)) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             width += itemp->dtypep()->widthStream();
         }
         return width;
@@ -3006,18 +3066,8 @@ AstNode* AstNodeExpr::baseFromp(bool overMembers) {
         } else if (overMembers && VN_IS(nodep, StructSel)) {
             nodep = VN_AS(nodep, StructSel)->fromp();
             continue;
-        }
-        // AstNodePreSel stashes the associated variable under an ATTROF
-        // of VAttrType::VAR_BASE so it isn't constified
-        else if (VN_IS(nodep, AttrOf)) {
-            nodep = VN_AS(nodep, AttrOf)->fromp();
-            continue;
         } else if (VN_IS(nodep, NodePreSel)) {
-            if (VN_AS(nodep, NodePreSel)->attrp()) {
-                nodep = VN_AS(nodep, NodePreSel)->attrp();
-            } else {
-                nodep = VN_AS(nodep, NodePreSel)->fromp();
-            }
+            nodep = VN_AS(nodep, NodePreSel)->fromp();
             continue;
         } else {
             break;
@@ -3155,7 +3205,7 @@ bool AstNodeFTask::getPurityRecurse() const {
     if (this->dpiImport()) return this->dpiPure();
     // Check the list of statements if it contains any impure statement
     // or any write reference to a variable that isn't an automatic function local.
-    for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+    for (AstNode* const stmtp : this->stmtspList()) {
         if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
             if (varp->isInoutOrRef()) return false;
         }
@@ -3209,7 +3259,7 @@ bool AstNodeFTaskRef::getPurityRecurse() const {
     // Unlinked yet, so treat as impure
     if (!taskp) return false;
     // First compute the purity of arguments
-    for (AstArg* argp = this->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+    for (AstArg* const argp : this->argspList()) {
         if (!argp->isPure()) return false;
     }
     return taskp->isPure();
@@ -3232,6 +3282,11 @@ bool AstNodeFTaskRef::isPure() {
 }
 void AstNodeFile::dump(std::ostream& str) const { Super::dump(str); }
 void AstNodeFile::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstNodeFuncCovItem::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (instCoveragep()) str << " instCoverage=" << nodeAddr(instCoveragep());
+}
+void AstNodeFuncCovItem::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstNodeIf::dump(std::ostream& str) const {
     Super::dump(str);
     if (isBoundsCheck()) str << " [BOUNDS]";
@@ -3741,7 +3796,7 @@ void AstSampled::dumpJson(std::ostream& str) const {
 }
 AstActive* AstScope::comboActivep(bool create) {
     // Use an existing one
-    for (AstNode* nodep = blocksp(); nodep; nodep = nodep->nextp()) {
+    for (AstNode* const nodep : blockspList()) {
         AstActive* const activep = VN_CAST(nodep, Active);
         if (activep && activep->hasCombo()) return activep;
     }
@@ -3851,49 +3906,49 @@ void AstSenItem::dumpJson(std::ostream& str) const {
 }
 bool AstSenTree::hasClocked() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+    for (AstSenItem* const senp : sensespList()) {
         if (senp->isClocked()) return true;
     }
     return false;
 }
 bool AstSenTree::hasCombo() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+    for (AstSenItem* const senp : sensespList()) {
         if (senp->isComboOrStar()) return true;
     }
     return false;
 }
 bool AstSenTree::hasEdge() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+    for (AstSenItem* const senp : sensespList()) {
         if (senp->edgeType().anEdge()) return true;
     }
     return false;
 }
 bool AstSenTree::hasFinal() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+    for (AstSenItem* const senp : sensespList()) {
         if (senp->isFinal()) return true;
     }
     return false;
 }
 bool AstSenTree::hasHybrid() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+    for (AstSenItem* const senp : sensespList()) {
         if (senp->isHybrid()) return true;
     }
     return false;
 }
 bool AstSenTree::hasInitial() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+    for (AstSenItem* const senp : sensespList()) {
         if (senp->isInitial()) return true;
     }
     return false;
 }
 bool AstSenTree::hasStatic() const {
     UASSERT_OBJ(sensesp(), this, "SENTREE without any SENITEMs under it");
-    for (AstSenItem* senp = sensesp(); senp; senp = VN_AS(senp->nextp(), SenItem)) {
+    for (AstSenItem* const senp : sensespList()) {
         if (senp->isStatic()) return true;
     }
     return false;
@@ -4079,7 +4134,7 @@ void AstTypeTable::clearCache() {
     for (auto& itr : m_basicps) itr = nullptr;
     m_detailedMap.clear();
     // Clear generic()'s so dead detection will work
-    for (AstNode* nodep = typesp(); nodep; nodep = nodep->nextp()) {
+    for (AstNode* const nodep : typespList()) {
         if (AstBasicDType* const bdtypep = VN_CAST(nodep, BasicDType)) bdtypep->generic(false);
     }
 }
@@ -4188,7 +4243,7 @@ AstVoidDType* AstTypeTable::findVoidDType(FileLine* fl) {
 void AstTypeTable::repairCache() {
     // After we mass-change widthMin in V3WidthCommit, we need to correct the table.
     clearCache();
-    for (AstNode* nodep = typesp(); nodep; nodep = nodep->nextp()) {
+    for (AstNode* const nodep : typespList()) {
         if (AstBasicDType* const bdtypep = VN_CAST(nodep, BasicDType)) {
             (void)findInsertSameDType(bdtypep);
         }
@@ -4853,6 +4908,10 @@ void AstVoidDType::dumpSmall(std::ostream& str) const {
 void AstWildcardArrayDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "[*]";
+}
+bool AstWildcardArrayDType::matchingDTypeNode(const AstNodeDType* samep) const {
+    const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
+    return subDTypep()->matchingDType(asamep->subDTypep());
 }
 string AstWildcardArrayDType::prettyDTypeName(bool full) const {
     return subDTypep()->prettyDTypeName(full) + "$[*]";

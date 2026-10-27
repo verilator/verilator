@@ -57,8 +57,6 @@ class ScopeVisitor final : public VNVisitor {
     AstCell* m_aboveCellp = nullptr;  // Cell that instantiates this module
     AstScope* m_aboveScopep = nullptr;  // Scope that instantiates this scope
     bool m_last = false;  // Scoping the last instantiation of the current module
-    // The name length of the scope of the library top module instance, while within it
-    size_t m_libTopNameLen = 0;
 
     std::unordered_map<AstNodeModule*, AstScope*>
         m_classOrPackageScopes;  // Scopes for each class or package
@@ -72,7 +70,7 @@ class ScopeVisitor final : public VNVisitor {
     // Count module instantiations, visiting cells the same way the traversal below does
     static void countInstantiations(AstNodeModule* modp) {
         modp->user3Inc();
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : modp->stmtspList()) {
             if (const AstCell* const cellp = VN_CAST(stmtp, Cell)) {
                 countInstantiations(cellp->modp());
             }
@@ -142,17 +140,15 @@ class ScopeVisitor final : public VNVisitor {
         cleanupVarRefs();
     }
     void visit(AstNodeModule* nodep) override {
-        VL_RESTORER(m_libTopNameLen);
         // Create required blocks and add to module
         string scopename;
         if (!m_aboveScopep) {
             scopename = "TOP";
         } else {
             scopename = m_aboveScopep->name() + "." + m_aboveCellp->name();
-            // The top module is the only module directly under 'TOP'
-            if (!v3Global.opt.libCreate().empty() && m_aboveScopep->isTop()
-                && VN_IS(nodep, Module)) {
-                m_libTopNameLen = scopename.size();
+            // The top modules are directly under 'TOP'
+            if (m_aboveScopep->isTop() && VN_IS(nodep, Module)) {
+                v3Global.rootp()->addL2Name(AstNode::prettyName(m_aboveCellp->name()));
             }
         }
 
@@ -167,7 +163,7 @@ class ScopeVisitor final : public VNVisitor {
 
         // Get list of cells before we edit, to avoid excess visits (issue #6059)
         std::deque<AstCell*> cells;
-        for (AstNode* cellnextp = nodep->stmtsp(); cellnextp; cellnextp = cellnextp->nextp()) {
+        for (AstNode* const cellnextp : nodep->stmtspList()) {
             if (AstCell* const cellp = VN_CAST(cellnextp, Cell)) cells.push_back(cellp);
         }
 
@@ -330,11 +326,7 @@ class ScopeVisitor final : public VNVisitor {
     }
     void visit(AstScopeName* nodep) override {
         // If there's a %m in the display text, we add a special node that will contain the name()
-        std::string scopeName = m_scopep->name();
-        // Drop the "l2-name" (name of the top module) for library builds, otherwise
-        // would get "top.u_lib.lib.foo" instead of correct hierarchical path "top.u_lib.foo"
-        if (m_libTopNameLen) scopeName = "TOP" + scopeName.substr(m_libTopNameLen);
-        const string prefix = "__DOT__"s + scopeName;
+        const string prefix = "__DOT__"s + m_scopep->name();
         // TOP and above will be the user's name().
         // Note 'TOP.' is stripped by scopePrettyName
         // To keep correct visual order, must add before existing

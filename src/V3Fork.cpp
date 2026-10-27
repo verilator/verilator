@@ -122,7 +122,7 @@ public:
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             varp->usedLoopIdx(false);  // No longer unrollable
             UINFO(9, "insert DynScope member " << varp);
-            m_instance.m_classp->addStmtsp(varp);
+            m_instance.m_classp->addMembersp(varp);
         }
 
         // Create class's constructor
@@ -131,7 +131,7 @@ public:
         newp->isConstructor(true);
         newp->classMethod(true);
         newp->dtypep(newp->findVoidDType());
-        m_instance.m_classp->addStmtsp(newp);
+        m_instance.m_classp->addMembersp(newp);
     }
 
     void linkNodes(VMemberMap& memberMap) {
@@ -399,7 +399,7 @@ class DynScopeVisitor final : public VNVisitor {
         if (nodep->declsp() || nodep->stmtsp()) framep = pushDynScopeFrame(nodep);
 
         // This can be probably optimized to detect cases in which dynscopes could be avoided
-        for (AstNode* declp = nodep->declsp(); declp; declp = declp->nextp()) {
+        for (AstNode* const declp : nodep->declspList()) {
             AstVar* const varp = VN_CAST(declp, Var);
             UASSERT_OBJ(varp, declp, "Invalid node under block item initialization part of fork");
             UASSERT_OBJ(!varp->lifetime().isNone(), nodep, "Variable's lifetime is unknown");
@@ -411,7 +411,7 @@ class DynScopeVisitor final : public VNVisitor {
         }
         bindInitIterate(nodep->stmtsp(), framep);
 
-        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->forkspList()) {
             m_afterTimingControl = false;
             iterate(stmtp);
         }
@@ -432,6 +432,7 @@ class DynScopeVisitor final : public VNVisitor {
         bindNodeToDynScope(nodep, framep);
     }
     void visit(AstVarRef* nodep) override {
+        if (nodep->access().isWriteOrRW() && nodep->isClassHandleValue()) nodep->user2(true);
         ForkDynScopeFrame* const framep = frameOf(nodep->varp());
         if (!framep) return;
         if (needsDynScope(nodep)) {
@@ -453,12 +454,6 @@ class DynScopeVisitor final : public VNVisitor {
             framep->captureVarInsert(nodep->varp());
         }
         bindNodeToDynScope(nodep, framep);
-    }
-    void visit(AstAssign* nodep) override {
-        if (VN_IS(nodep->lhsp(), VarRef) && nodep->lhsp()->isClassHandleValue()) {
-            nodep->lhsp()->user2(true);
-        }
-        visit(static_cast<AstNodeStmt*>(nodep));
     }
     void visit(AstAssignDly* nodep) override {
         if (m_procp && !nodep->user2()  // Unhandled AssignDly in function/task
@@ -642,7 +637,7 @@ class ForkVisitor final : public VNVisitor {
         UASSERT_OBJ(moved, beginp, "Failed to move fork sentinel after disable queue pushes");
     }
     static bool forkIsDisableable(AstFork* const nodep) {
-        for (AstBegin* itemp = nodep->forksp(); itemp; itemp = VN_AS(itemp->nextp(), Begin)) {
+        for (AstBegin* const itemp : nodep->forkspList()) {
             if (isDisableQueuePushSelfPrefix(itemp->stmtsp())) return true;
         }
         return false;
@@ -676,8 +671,7 @@ class ForkVisitor final : public VNVisitor {
             FileLine* fl = nodep->fileline();
             // We use a sentinel value of UINT64_MAX to mark this delay so that it goes to the
             // ACTIVE region with a delay value of 0.
-            for (AstBegin *itemp = nodep->forksp(), *nextp; itemp; itemp = nextp) {
-                nextp = VN_AS(itemp->nextp(), Begin);
+            for (AstBegin* const itemp : nodep->forkspList()) {
                 if (!itemp->stmtsp()) continue;
                 AstDelay* const delayp = new AstDelay{
                     fl,
@@ -705,7 +699,7 @@ class ForkVisitor final : public VNVisitor {
         {
             VL_RESTORER(m_inFork);
             m_inFork = true;
-            for (AstBegin* itemp = nodep->forksp(); itemp; itemp = VN_AS(itemp->nextp(), Begin)) {
+            for (AstBegin* const itemp : nodep->forkspList()) {
                 if (taskify(itemp)) wrappedp.push_back(itemp);
             }
         }

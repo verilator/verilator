@@ -18,7 +18,7 @@ test.files_identical(test.obj_dir + "/" + test.vm_prefix + "__Dpi.h",
 
 test.extract(in_filename="t/" + test.name + "__Dpi.out",
              out_filename=test.root + "/docs/gen/ex_DPISTRUCT_hdr.rst",
-             lines="45-55")
+             lines="46-56")
 
 test.execute()
 

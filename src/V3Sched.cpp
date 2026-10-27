@@ -270,9 +270,8 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
         // Create a sub-function per scope so we can V3Combine them later
         if (!scopep->user1p()) scopep->user1p(createNewSubFuncp(scopep));
         // Add statements to sub-function
-        for (AstNode *logicp = activep->stmtsp(), *nextp; logicp; logicp = nextp) {
+        for (AstNode* const logicp : activep->stmtspList()) {
             auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
-            nextp = logicp->nextp();
             if (AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure)) {
                 if (AstNode* bodyp = procp->stmtsp()) {
                     bodyp->unlinkFrBackWithNext();
@@ -478,7 +477,7 @@ void createIcoRegion(AstNetlist* netlistp, AstCFunc* const initFuncp,
     if (v3Global.opt.fIcoChangeDetect().isTrue()) {
         FileLine* const flp = netlistp->fileline();
         AstScope* const scopep = netlistp->topScopep()->scopep();
-        for (AstVarScope* vscp = scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+        for (AstVarScope* const vscp : scopep->varspList()) {
             // Only for top level ports, assume outputs don't change externally
             if (!vscp->varp()->isPrimaryInish()) continue;
             // Don't do if written by the design - wouldn't update the change detect 'prev' value

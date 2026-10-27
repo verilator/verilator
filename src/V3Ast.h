@@ -105,7 +105,7 @@ class VIfaceCaptureTag;
 //######################################################################
 
 struct VNTypeInfo final {
-    const char* m_namep;
+    const char* m_namep;  // Name of the node type
     enum OpEn : uint8_t {
         OP_UNUSED,
         OP_USED,
@@ -113,7 +113,7 @@ struct VNTypeInfo final {
         OP_OPTIONAL,
     } m_opType[4];
     const char* m_opNamep[4];
-    size_t m_sizeof;
+    size_t m_sizeof;  // Size of the node type
 };
 
 class VNType final {
@@ -121,7 +121,7 @@ class VNType final {
 
 public:
 #include "V3Ast__gen_type_enum.h"  // From ./astgen
-    const en m_e;
+    const en m_e;  // Enumeration value
     VNType() = delete;
 
     // VNType is interconvetible with VNType::en
@@ -394,8 +394,8 @@ protected:
     };
     AstNode* m_oldp = nullptr;  // The old node that was linked to this point in the tree
     AstNode* m_backp = nullptr;  // Saved AstNode::m_backp of the unlinked node, to relink
-    AstNode** m_iterpp = nullptr;
-    RelinkWhatEn m_chg = RELINK_BAD;
+    AstNode** m_iterpp = nullptr;  // Iterator pointer of the unlinked node, to restore
+    RelinkWhatEn m_chg = RELINK_BAD;  // Kind of link the node previously had, to restore
 
 public:
     VNRelinker() = default;
@@ -1663,6 +1663,45 @@ template <typename T_Node>
 struct std::equal_to<VNRef<T_Node>> final {
     size_t operator()(VNRef<T_Node> ra, VNRef<T_Node> rb) const {
         return ra.get().sameTree(&(rb.get()));
+    }
+};
+
+//######################################################################
+// VNList - Proxy for a list of nodes chained via 'nextp()'
+
+template <typename T_Node>
+class VNList final {
+    T_Node* const m_headp;  // First node in the list, or nullptr if empty
+
+public:
+    class Iterator final {
+        AstNode* m_currp;  // Current node, or nullptr at end
+        AstNode* m_nextp;  // Successor of current node
+
+    public:
+        explicit Iterator(AstNode* nodep)
+            : m_currp{nodep}
+            , m_nextp{nodep ? nodep->nextp() : nullptr} {}
+        T_Node* operator*() const { return static_cast<T_Node*>(m_currp); }
+        Iterator& operator++() {
+            m_currp = m_nextp;
+            m_nextp = m_currp ? m_currp->nextp() : nullptr;
+            return *this;
+        }
+        bool operator!=(const Iterator& other) const { return m_currp != other.m_currp; }
+    };
+
+    explicit VNList(T_Node* headp)
+        : m_headp{headp} {}
+
+    // Iterates node list via nextp() in a ranged 'for' loop. Current node is editable
+    Iterator begin() const { return Iterator{m_headp}; }
+    Iterator end() const { return Iterator{nullptr}; }
+    // Number of nodes in the list - O(n)
+    size_t size() const {
+        size_t count = 0;
+        for (const AstNode* nodep = m_headp; nodep; nodep = nodep->nextp()) ++count;
+        return count;
     }
 };
 

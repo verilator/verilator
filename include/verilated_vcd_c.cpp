@@ -635,36 +635,51 @@ void VerilatedVcdBuffer::emitBit(uint32_t code, CData newval) {
     finishLine(code, wp);
 }
 
+// Omit redundant leading zeros for smaller files.
+// compute the number of significant digits from the value, shift the value up
+// so the digits are left aligned, convert the whole value, then advance the
+// write pointer by only the significant digits. The unused trailing digits are
+// overwritten by the suffix or later output. 'value | 1' keeps the count at
+// one digit for zero.
+
 VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitCData(uint32_t code, CData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    cvtCDataToStr(wp, newval << (VL_BYTESIZE - bits));
-    finishLine(code, wp + bits);
+    const IData value = newval & VL_MASK_I(bits);
+    const int sig = VL_MOSTSETBITP1_I(value | 1);
+    cvtCDataToStr(wp, value << (VL_BYTESIZE - sig));
+    finishLine(code, wp + sig);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitSData(uint32_t code, SData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    cvtSDataToStr(wp, newval << (VL_SHORTSIZE - bits));
-    finishLine(code, wp + bits);
+    const IData value = newval & VL_MASK_I(bits);
+    const int sig = VL_MOSTSETBITP1_I(value | 1);
+    cvtSDataToStr(wp, value << (VL_SHORTSIZE - sig));
+    finishLine(code, wp + sig);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitIData(uint32_t code, IData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    cvtIDataToStr(wp, newval << (VL_IDATASIZE - bits));
-    finishLine(code, wp + bits);
+    const IData value = newval & VL_MASK_I(bits);
+    const int sig = VL_MOSTSETBITP1_I(value | 1);
+    cvtIDataToStr(wp, value << (VL_IDATASIZE - sig));
+    finishLine(code, wp + sig);
 }
 
 VL_ATTR_ALWINLINE
 void VerilatedVcdBuffer::emitQData(uint32_t code, QData newval, int bits) {
     char* wp = m_writep;
     *wp++ = 'b';
-    cvtQDataToStr(wp, newval << (VL_QUADSIZE - bits));
-    finishLine(code, wp + bits);
+    const QData value = newval & VL_MASK_Q(bits);
+    const int sig = VL_MOSTSETBITP1_Q(value | 1);
+    cvtQDataToStr(wp, value << (VL_QUADSIZE - sig));
+    finishLine(code, wp + sig);
 }
 
 VL_ATTR_ALWINLINE
@@ -672,10 +687,14 @@ void VerilatedVcdBuffer::emitWData(uint32_t code, WDataInP newval, int bits) {
     int words = VL_WORDS_I(bits);
     char* wp = m_writep;
     *wp++ = 'b';
-    // Handle the most significant word
-    const int bitsInMSW = VL_BITBIT_E(bits) ? VL_BITBIT_E(bits) : VL_EDATASIZE;
-    cvtEDataToStr(wp, newval[--words] << (VL_EDATASIZE - bitsInMSW));
-    wp += bitsInMSW;
+    // Only the most significant word can hold bits above 'bits', so only it is
+    // masked. Skip leading zero words; the first non-zero word is the most
+    // significant digits (or the least significant word if all are zero).
+    EData value = newval[--words] & VL_MASK_E(bits);
+    while (!value && words > 0) value = newval[--words];
+    const int sig = VL_MOSTSETBITP1_I(value | 1);
+    cvtEDataToStr(wp, value << (VL_EDATASIZE - sig));
+    wp += sig;
     // Handle the remaining words
     while (words > 0) {
         cvtEDataToStr(wp, newval[--words]);

@@ -255,7 +255,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstSenTree* nodep) override {
         // AstSenItem is called for dumping in isolation by V3Order
         putfs(nodep, "@(");
-        for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {
+        for (AstNode* const expp : nodep->sensespList()) {
             iterateConst(expp);
             if (expp->nextp()) putqs(expp->nextp(), " or ");
         }
@@ -355,7 +355,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             puts(" = default");
         } else if (nodep->transp()) {
             puts(" = ");
-            for (AstNode* setp = nodep->transp(); setp; setp = setp->nextp()) {
+            for (AstNode* const setp : nodep->transpList()) {
                 if (setp != nodep->transp()) puts(", ");
                 iterateConst(setp);
             }
@@ -365,7 +365,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         } else if (nodep->rangesp()) {  // LCOV_EXCL_BR_LINE - false: CoverBin always has
                                         // transp/rangesp/default
             puts(" = {");
-            for (AstNode* rangep = nodep->rangesp(); rangep; rangep = rangep->nextp()) {
+            for (AstNode* const rangep : nodep->rangespList()) {
                 if (rangep != nodep->rangesp()) puts(", ");
                 iterateConst(rangep);
             }
@@ -435,7 +435,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstCoverCross* nodep) override {
         putfs(nodep, nodep->name() + ": cross ");
-        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : nodep->itemspList()) {
             if (itemp != nodep->itemsp()) puts(", ");
             iterateConst(itemp);
         }
@@ -455,7 +455,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstCoverTransSet* nodep) override {
         puts("(");
-        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : nodep->itemspList()) {
             if (itemp != nodep->itemsp()) puts(" => ");
             iterateConst(itemp);
         }
@@ -1139,10 +1139,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         {
             puts("{\n");
             VL_RESTORER_CLEAR(m_packedps);
-            for (AstMemberDType* itemp = nodep->membersp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), MemberDType)) {
-                iterateConst(itemp);
-            }
+            for (AstMemberDType* const itemp : nodep->memberspList()) { iterateConst(itemp); }
             puts("}");
         }
         emitPacked();
@@ -1451,8 +1448,7 @@ std::string V3EmitV::debugVerilogForTree(const AstNode* nodep) {
 
 void V3EmitV::emitvFiles() {
     UINFO(2, __FUNCTION__ << ":");
-    for (AstNodeFile* filep = v3Global.rootp()->filesp(); filep;
-         filep = VN_AS(filep->nextp(), NodeFile)) {
+    for (AstNodeFile* const filep : v3Global.rootp()->filespList()) {
         AstVFile* const vfilep = VN_CAST(filep, VFile);
         if (vfilep && vfilep->tblockp()) {
             V3OutVFile of{vfilep->name()};

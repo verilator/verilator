@@ -6,6 +6,9 @@
 // SPDX-FileCopyrightText: 2024 Diego Roux
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
+
 `ifdef VERILATOR_COMMENTS
  `define PUBLIC_FLAT_RD /*verilator public_flat_rd*/
  `define PUBLIC_FLAT_RW /*verilator public_flat_rw*/
@@ -15,12 +18,6 @@
 `endif
 
 module test ();
-
-`ifdef VERILATOR
-`systemc_header
-extern "C" int mon_check();
-`verilog
-`endif
 
   reg [7:0] read_bytes [0:3] `PUBLIC_FLAT_RD;
   reg [7:0] read_bytes_nonzero_index [1:4] `PUBLIC_FLAT_RD;
@@ -91,7 +88,7 @@ extern "C" int mon_check();
 `endif
 
 `ifdef VERILATOR
-  status = $c32("mon_check()");
+  status = `CPP_CALL(mon_check);
 `endif
 
     if (status != 0) begin

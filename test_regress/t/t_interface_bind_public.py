@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=['-public'])
+test.compile(verilator_flags2=["-Wno-UNOPTPUBLIC", '-public'])
 
 test.execute()
 

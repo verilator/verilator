@@ -623,34 +623,41 @@ private:
     T_Value m_defaultValue{};  // Default value
 
     // METHODS
-    // Helpers for the variadic constructor
-    void append(const T_Value& value) { push_back(value); }
+    // Discard elements beyond the bound, with the warning IEEE 1800-2023 7.10.5 requires
+    void applyBound() {
+        if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) {
+            Verilated::queueBoundError(N_MaxSize, m_deque.size());
+            m_deque.resize(N_MaxSize);
+        }
+    }
+    // Helpers for the variadic constructor, which applies the bound once all are appended
+    void append(const T_Value& value) { m_deque.push_back(value); }
     template <size_t N_RhsMaxSize>
     void append(const VlQueue<T_Value, N_RhsMaxSize>& rhs) {
-        for (const T_Value& value : rhs.m_deque) push_back(value);
+        for (const T_Value& value : rhs.m_deque) m_deque.push_back(value);
     }
     template <std::size_t N_Depth>
     void append(const VlUnpacked<T_Value, N_Depth>& rhs) {
-        for (std::size_t i = 0; i < N_Depth; ++i) push_back(rhs[i]);
+        for (std::size_t i = 0; i < N_Depth; ++i) m_deque.push_back(rhs[i]);
     }
     template <typename T_Subclass, size_t N_RhsMaxSize,
               typename = typename std::enable_if<
                   std::is_convertible<VlClassRef<T_Subclass>, T_Value>::value>::type>
     void append(const VlQueue<VlClassRef<T_Subclass>, N_RhsMaxSize>& rhs) {
-        for (const VlClassRef<T_Subclass>& value : rhs.m_deque) push_back(value);
+        for (const VlClassRef<T_Subclass>& value : rhs.m_deque) m_deque.push_back(value);
     }
     template <typename T_Subclass, std::size_t N_Depth,
               typename = typename std::enable_if<
                   std::is_convertible<VlClassRef<T_Subclass>, T_Value>::value>::type>
     void append(const VlUnpacked<VlClassRef<T_Subclass>, N_Depth>& rhs) {
-        for (std::size_t i = 0; i < N_Depth; ++i) push_back(rhs[i]);
+        for (std::size_t i = 0; i < N_Depth; ++i) m_deque.push_back(rhs[i]);
     }
     // An element given as another kind of array, e.g. a fixed-size array in a queue of queues
     template <typename T_Arg,
               typename
               = typename std::enable_if<!std::is_convertible<T_Arg, T_Value>::value>::type>
     void append(const T_Arg& value) {
-        push_back(T_Value{value});
+        m_deque.push_back(T_Value{value});
     }
     void appendAll() {}
     template <typename T_Arg, typename... T_Args>
@@ -679,6 +686,7 @@ public:
     template <typename... T_Args>
     explicit VlQueue(const T_Args&... args) {
         appendAll(args...);
+        applyBound();
     }
     // Verilog: new[size]('{index: value, default: value})
     explicit VlQueue(size_t size, const T_Value& defaultValue,
@@ -706,7 +714,7 @@ public:
     template <size_t N_RhsMaxSize = 0>
     VlQueue operator=(const VlQueue<T_Value, N_RhsMaxSize>& rhs) {
         m_deque = rhs.privateDeque();
-        if (VL_UNLIKELY(N_MaxSize && N_MaxSize < m_deque.size())) m_deque.resize(N_MaxSize - 1);
+        applyBound();
         return *this;
     }
 
@@ -747,11 +755,12 @@ public:
     // function void q.push_front(value)
     void push_front(const T_Value& value) {
         m_deque.push_front(value);
-        if (VL_UNLIKELY(N_MaxSize != 0 && m_deque.size() > N_MaxSize)) m_deque.pop_back();
+        applyBound();
     }
     // function void q.push_back(value)
     void push_back(const T_Value& value) {
-        if (VL_LIKELY(N_MaxSize == 0 || m_deque.size() < N_MaxSize)) m_deque.push_back(value);
+        m_deque.push_back(value);
+        applyBound();
     }
     // function value_t q.pop_front();
     T_Value pop_front() {
@@ -803,8 +812,8 @@ public:
     // function void q.insert(index, value);
     void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index > m_deque.size())) return;
-        if (VL_UNLIKELY(N_MaxSize != 0 && m_deque.size() >= N_MaxSize)) return;
         m_deque.insert(m_deque.begin() + index, value);
+        applyBound();
     }
 
     // inside (set membership operator)
@@ -2460,13 +2469,17 @@ template <typename T_Value, size_t N_MaxSize>
 template <typename T_Subclass>
 VlQueue<T_Value, N_MaxSize>::VlQueue(const VlQueue<VlClassRef<T_Subclass>>& that)
     : m_deque{that.m_deque.begin(), that.m_deque.end()}
-    , m_defaultValue{that.m_defaultValue} {}
+    , m_defaultValue{that.m_defaultValue} {
+    applyBound();
+}
 
 template <typename T_Value, size_t N_MaxSize>
 template <typename T_Subclass>
 VlQueue<T_Value, N_MaxSize>::VlQueue(VlQueue<VlClassRef<T_Subclass>>&& that)
     : m_deque{std::make_move_iterator(that.m_deque.begin()),
               std::make_move_iterator(that.m_deque.end())}
-    , m_defaultValue{std::move(that.m_defaultValue)} {}
+    , m_defaultValue{std::move(that.m_defaultValue)} {
+    applyBound();
+}
 
 #endif  // Guard

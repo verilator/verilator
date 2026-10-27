@@ -935,6 +935,29 @@ source of overhead in this approach. The ``--prof-exec`` switch and the
 fragmentation.
 
 
+Synchronizing Macro-Tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each thread of a schedule owns one progress word (``VlThreadProgress``), on
+its own cache line: the position, counted from 1, of its last finished
+macro-task. The words of each macro-task graph are held together in
+``VlScheduleProgress``.
+
+After a macro-task that a macro-task on another thread depends on, its
+thread publishes its position with a release store, however many threads
+depend on it. Before a macro-task, its thread waits, with acquire loads,
+for each producing thread to reach the latest position it needs, unless an
+earlier wait in the same thread already covered it. Each dependency
+therefore costs one cache line transfer from producer to consumer, and no
+read-modify-write.
+
+At the end of a schedule, each thread publishes that it is done, and the
+dispatching thread waits for the threads run by the thread pool. Before
+starting a schedule, while no thread is running one, the dispatching thread
+sets the words back to zero; handing the threads' functions to the thread
+pool orders this before they start.
+
+
 Locating Variables for Best Spatial Locality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1590,8 +1613,9 @@ For all tests to pass, you must install the following packages:
 
 - SystemC to compile the SystemC outputs, see https://systemc.org
 
-- wavediff to find differences in waveform outputs. See the readme at
-  https://github.com/hudson-trading/wavetools
+- wavetools to find differences in waveform outputs, and to convert from
+  FST to VCD when updating golden files. See
+  https://github.com/hudson-trading/wavetools.
 
 - Cmake for build paths that use it.
 
@@ -2605,6 +2629,13 @@ VERILATOR_XELAB
 
 VERILATOR_XVLOG
    Command to use to invoke XSim xvlog
+
+WAVECAT
+   Path to wavecat executable, used for FST to VCD conversion when using
+   --golden.
+
+WAVEDIFF
+   Path to wavediff executable, used for comparing VCD and FST trace files.
 
 
 Test Language

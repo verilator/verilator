@@ -64,8 +64,8 @@ class LinkJumpVisitor final : public VNVisitor {
     int m_modRepeatNum = 0;  // Repeat counter
     VOptionBool m_unrollFull;  // Pragma full, disable, or default unrolling
     std::vector<AstNodeBlock*> m_blockStack;  // All begin blocks above current node
-    V3UniqueNames m_queueNames{
-        "__VprocessQueue"};  // Names for queues needed for 'disable' handling
+    // Names for queues needed for 'disable' handling
+    V3UniqueNames m_queueNames{"__VprocessQueue"};
     std::unordered_map<const AstTask*, AstVar*> m_taskDisableQueues;  // Per-task process queues
     std::unordered_map<const AstBegin*, AstVar*> m_beginDisableQueues;  // Per-begin process queues
     std::unordered_map<const AstFork*, AstVar*> m_forkDisableQueues;  // Per-fork process queues
@@ -224,8 +224,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstNodeVarRef* const queueRefp
             = newQueueRefp(fl, processQueuep, VAccess::READWRITE, dotted);
         AstTaskRef* killQueueCall = nullptr;
-        for (AstNode* itemp = v3Global.rootp()->stdPackageProcessp()->stmtsp(); itemp;
-             itemp = itemp->nextp()) {
+        for (AstNode* const itemp : v3Global.rootp()->stdPackageProcessp()->memberspList()) {
             if (itemp->name() == "killQueue") {
                 killQueueCall
                     = new AstTaskRef{fl, VN_AS(itemp, Task), new AstArg{fl, "", queueRefp}};
@@ -236,6 +235,15 @@ class LinkJumpVisitor final : public VNVisitor {
         killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
         return new AstStmtExpr{fl, killQueueCall};
     }
+    static void requireTiming(FileLine* const fl) {
+        // The detached process the disable kills needs the timing runtime (VlProcess)
+        if (v3Global.opt.timing().isSetTrue()) {
+            v3Global.setUsesTiming();
+        } else {
+            fl->v3warn(E_NOTIMING,
+                       "Support for disable by name of task or block requires --timing");
+        }
+    }
     AstBegin* getOrCreateTaskDisableBeginp(AstTask* const taskp, FileLine* const fl) {
         const auto it = m_taskDisableBegins.find(taskp);
         if (it != m_taskDisableBegins.end()) return it->second;
@@ -244,13 +252,11 @@ class LinkJumpVisitor final : public VNVisitor {
         // Disable-by-name rewrites kill this detached task-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
         taskBodyp->setNeedProcess();
-        v3Global.setUsesTiming();
+        requireTiming(fl);
         // Ports stay in the task so calls see them
-        for (AstNode* stmtp = taskp->stmtsp(); stmtp;) {
-            AstNode* const nextp = stmtp->nextp();
+        for (AstNode* const stmtp : taskp->stmtspList()) {
             const AstVar* const varp = VN_CAST(stmtp, Var);
             if (!varp || !varp->isIO()) taskBodyp->addStmtsp(stmtp->unlinkFrBack());
-            stmtp = nextp;
         }
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};
@@ -306,7 +312,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Disable-by-name rewrites kill this detached block-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
         beginBodyp->setNeedProcess();
-        v3Global.setUsesTiming();
+        requireTiming(fl);
         if (beginp->stmtsp()) beginBodyp->addStmtsp(beginp->stmtsp()->unlinkFrBackWithNext());
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};
@@ -318,8 +324,7 @@ class LinkJumpVisitor final : public VNVisitor {
     }
     void prependForkBranchQueuePushes(AstFork* const forkp, AstVar* const processQueuep,
                                       FileLine* const fl, bool needProcess) {
-        for (AstBegin* branchp = forkp->forksp(); branchp;
-             branchp = VN_AS(branchp->nextp(), Begin)) {
+        for (AstBegin* const branchp : forkp->forkspList()) {
             if (needProcess) branchp->setNeedProcess();
             branchp->prependStmtsp(getQueuePushProcessSelfp(fl, processQueuep));
         }
@@ -353,8 +358,7 @@ class LinkJumpVisitor final : public VNVisitor {
         prependForkBranchQueuePushes(forkp, processQueuep, fl, true);
         // Disabling a fork must also terminate detached descendants created by nested forks
         // under each branch, so track nested fork branch processes in the same queue.
-        for (AstBegin* branchp = forkp->forksp(); branchp;
-             branchp = VN_AS(branchp->nextp(), Begin)) {
+        for (AstBegin* const branchp : forkp->forkspList()) {
             prependNestedForkBranchQueuePushes(branchp, processQueuep, fl, true);
         }
         m_forkDisableQueues.emplace(forkp, processQueuep);

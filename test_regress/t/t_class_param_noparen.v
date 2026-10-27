@@ -49,6 +49,10 @@ package pkg;
     static function int innerP();
       return Inner::p();
     endfunction
+    typedef Cls this_t;  // Ok, default specialization even here, unlike 'Cls::'
+    static function int thisQ();
+      return this_t::Q;
+    endfunction
   endclass
 endpackage
 
@@ -98,12 +102,18 @@ module t;
     `checkd(q, 5);
     `checkd(Cls#()::Q, 5);
     `checkd(Cls2_t::Q, 6);
+    `checkd(ClsNone_t::P, 3);
+    `checkd(ClsNone_t::Q, 5);
+    ClsNone_t::count += 1;
+    `checkd(Cls#()::count, 12);
     `checkd(twice, 42);
     `checks(type_id_name, $typename(Cls#()::type_id));
     `checks(t_name, $typename(Cls#()::T));
+    `checks($typename(ClsNone_t::T), $typename(Cls#()::T));
     `checkd($bits(value), 32);
     `checkd(Cls#()::innerP(), 3);
     `checkd(Cls2_t::innerP(), 4);
+    `checkd(Cls2_t::thisQ(), 5);
     $write("*-* All Finished *-*\n");
     $finish;
   end

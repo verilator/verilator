@@ -140,7 +140,7 @@ public:
 
 class TristateVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(TristateVertex, V3GraphVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Node this vertex represents
     bool m_isTristate = false;  // Logic indicates a tristate
     bool m_feedsTri = false;  // Propagates to a tristate node (on RHS)
     bool m_processed = false;  // Tristating was cleaned up
@@ -349,7 +349,7 @@ public:
 // See also V3LinkLValue::linkLValueSet
 
 class TristatePinVisitor final : public TristateBaseVisitor {
-    TristateGraph& m_tgraph;
+    TristateGraph& m_tgraph;  // Tristate graph being updated
     const bool m_lvalue;  // Flip to be an LVALUE
     // VISITORS
     // AstNodeVarRef, not just AstVarRef: a cross-hierarchy pin expression into an
@@ -525,7 +525,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     AstModport* findModportForDotted(AstNodeModule* modp, const string& dottedPath) {
         if (dottedPath.empty()) return nullptr;
         const string firstComp = dottedPath.substr(0, dottedPath.find('.'));
-        for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : modp->stmtspList()) {
             AstVar* const ivarp = VN_CAST(stmtp, Var);
             if (!ivarp || ivarp->name() != firstComp) continue;
             const AstIfaceRefDType* const ifaceDtp
@@ -554,7 +554,7 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
     // Add a ModportVarRef for varp to modportp if not already present
     void addModportVarRefIfMissing(AstModport* modportp, AstVar* varp, VDirection dir) {
-        for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+        for (AstNode* const mrp : modportp->varspList()) {
             AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
             if (mvrp && mvrp->varp() == varp) return;  // Already present
         }
@@ -577,10 +577,10 @@ class TristateVisitor final : public TristateBaseVisitor {
                 ownerModp->addStmtsp(newp);
                 // Add __en to any modports that reference the original var,
                 // so VarXRefs through modport paths can resolve it.
-                for (AstNode* stmtp = ownerModp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                for (AstNode* const stmtp : ownerModp->stmtspList()) {
                     AstModport* const modportp = VN_CAST(stmtp, Modport);
                     if (!modportp) continue;
-                    for (AstNode* mrp = modportp->varsp(); mrp; mrp = mrp->nextp()) {
+                    for (AstNode* const mrp : modportp->varspList()) {
                         AstModportVarRef* const mvrp = VN_CAST(mrp, ModportVarRef);
                         if (mvrp && mvrp->varp() == invarp) {
                             addModportVarRefIfMissing(modportp, newp, VDirection::INPUT);
@@ -1542,9 +1542,13 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     void visit(AstExprStmt* nodep) override {
-        iterateChildren(nodep);
+        {
+            // Not an lvalue, so on an LHS only as an index, which is read
+            VL_RESTORER(m_alhs);
+            m_alhs = false;
+            iterateChildren(nodep);
+        }
         if (m_graphing) {
-            UASSERT_OBJ(!m_alhs, nodep, "AstExprStmt node on the LHS of assignment");
             associateLogic(nodep->resultp(), nodep);
         } else if (nodep->resultp()->user1p()) {
             nodep->user1p(getEnp(nodep->resultp()));
@@ -1636,6 +1640,17 @@ class TristateVisitor final : public TristateBaseVisitor {
                     expr2p->user1p(nullptr);
                 }
             }
+        }
+    }
+
+    void visit(AstNodeConsItem* nodep) override {
+        iterateChildren(nodep);
+        // Unpacked aggregates have no enables, so Z bits of an item read as 0,
+        // as they do for a Z assigned to a non-tristate variable
+        if (m_graphing) return;
+        if (AstNode* const enp = nodep->valuep()->user1p()) {
+            nodep->valuep()->user1p(nullptr);
+            VL_DO_DANGLING(pushDeletep(enp), enp);
         }
     }
 
@@ -1852,7 +1867,7 @@ class TristateVisitor final : public TristateBaseVisitor {
             if (nodep->user2() & U2_GRAPHING) return;
             m_alhs = true;  // In AstAlias all operands should be considered as lhs
             iterateChildren(nodep);
-            for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+            for (AstNode* const itemp : nodep->itemspList()) {
                 associateLogic(itemp, nodep);
                 associateLogic(nodep, itemp);
             }
@@ -2298,13 +2313,13 @@ class TristateVisitor final : public TristateBaseVisitor {
         if (m_graphing) {
             if (nodep->access().isWriteOrRW()) associateLogic(nodep, nodep->varp());
             if (nodep->access().isReadOrRW()) associateLogic(nodep->varp(), nodep);
-            // Only interface tristate nets need this: a plain (non-Z) cross-hierarchy
-            // driver has no Z in its own module's graph, so mark the net tristate here to
-            // collect the driver as a contribution. The ifaceTristate flag is only set for
-            // interface nets; a non-interface cross-module tri driver does nothing here and
-            // is instead rejected (E_UNSUPPORTED) later in insertTristates.
+            // A plain (non-Z) cross-hierarchy driver has no Z in its own module's graph, so
+            // mark a net already known tristate (interface net, or a net whose module already
+            // created its __en) tristate here. Interface nets collect the driver as a
+            // contribution; a non-interface cross-module tri driver is rejected
+            // (E_UNSUPPORTED) later in insertTristates.
             if (nodep->access().isWriteOrRW() && VN_IS(nodep, VarXRef)
-                && m_varAux(nodep->varp()).ifaceTristate) {
+                && (m_varAux(nodep->varp()).ifaceTristate || nodep->varp()->user1p())) {
                 m_tgraph.setTristate(nodep->varp());
             }
         } else {
@@ -2538,7 +2553,7 @@ public:
         // own graph to mark the net tristate, so without this its driver would be dropped.
         // Collect only the interfaces (reverse declaration order to match the pass below).
         std::vector<AstNodeModule*> ifacesp;
-        for (AstNode* modp = netlistp->modulesp(); modp; modp = modp->nextp()) {
+        for (AstNode* const modp : netlistp->modulespList()) {
             if (VN_IS(modp, Iface)) ifacesp.push_back(VN_AS(modp, NodeModule));
         }
         for (auto it = ifacesp.rbegin(); it != ifacesp.rend(); ++it) iterate(*it);

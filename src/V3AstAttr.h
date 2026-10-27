@@ -361,7 +361,6 @@ public:
         TYPEID,                         // V3Width processes
         TYPENAME,                       // V3Width processes
         //
-        VAR_BASE,                       // V3LinkResolve creates for AstPreSel, V3LinkParam removes
         VAR_FORCEABLE,                  // V3LinkParse moves to AstVar::isForceable
         VAR_FSM_ARC_INCLUDE_COND,       // V3LinkParse moves to AstVar::attrFsmArcInclCond
         VAR_FSM_ARC_INCLUDE_COND_AUTO,  // Flavors of above option - setting expand mode per FSM
@@ -395,7 +394,7 @@ public:
             "ENUM_NEXT", "ENUM_PREV", "ENUM_NAME", "ENUM_VALID",
             "FUNC_ARG_PROTO", "FUNC_RETURN_PROTO",
             "TYPEID", "TYPENAME",
-            "VAR_BASE", "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND",
+            "VAR_FORCEABLE", "VAR_FSM_ARC_INCLUDE_COND",
             "VAR_FSM_ARC_INCLUDE_COND_AUTO",
             "VAR_FSM_ARC_INCLUDE_COND_AUTO_EXPAND",
             "VAR_FSM_ARC_INCLUDE_COND_FULL",
@@ -516,7 +515,6 @@ public:
         // Internal types for mid-steps
         SCOPEPTR,
         CHARPTR,
-        MTASKSTATE,
         DELAY_SCHEDULER,
         TRIGGER_SCHEDULER,
         DYNAMIC_TRIGGER_SCHEDULER,
@@ -556,7 +554,6 @@ public:
                                                       "untyped",
                                                       "VerilatedScope*",
                                                       "char*",
-                                                      "VlMTaskState",
                                                       "VlDelayScheduler",
                                                       "VlTriggerScheduler",
                                                       "VlDynamicTriggerScheduler",
@@ -601,7 +598,6 @@ public:
                                                       "%E-untyped",
                                                       "dpiScope",
                                                       "const char*",
-                                                      "%E-mtaskstate",
                                                       "%E-dly-sched",
                                                       "%E-trig-sched",
                                                       "%E-dyn-sched",
@@ -648,7 +644,6 @@ public:
         case STRING: return 64;  // opaque  // Just the pointer, for today
         case SCOPEPTR: return 0;  // opaque
         case CHARPTR: return 0;  // opaque
-        case MTASKSTATE: return 0;  // opaque
         case DELAY_SCHEDULER: return 0;  // opaque
         case TRIGGER_SCHEDULER: return 0;  // opaque
         case DYNAMIC_TRIGGER_SCHEDULER: return 0;  // opaque
@@ -698,7 +693,7 @@ public:
     }
     bool isOpaque() const VL_MT_SAFE {  // IE not a simple number we can bit optimize
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
-                || m_e == MTASKSTATE || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
+                || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
                 || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
                 || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR
                 || m_e == COVERGROUP_INSTHANDLE || m_e == DOUBLE || m_e == UNTYPED);
@@ -707,7 +702,6 @@ public:
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
     bool isEvent() const { return m_e == EVENT; }
     bool isString() const VL_MT_SAFE { return m_e == STRING; }
-    bool isMTaskState() const VL_MT_SAFE { return m_e == MTASKSTATE; }
     bool isSameish(const VBasicDTypeKwd& other) const VL_MT_SAFE {
         switch (other.m_e) {
         case LOGIC:
@@ -719,6 +713,23 @@ public:
         case TIME2STATE: return m_e == TIME || m_e == TIME2STATE;
         default: return m_e == other.m_e;
         }
+    }
+    // Canonical keyword for IEEE 1800-2023 6.22.1 matching types
+    VBasicDTypeKwd matchingType() const VL_MT_SAFE {
+        switch (m_e) {
+        case BYTE:
+        case SHORTINT:
+        case INT:
+        case LONGINT: return BIT;
+        case INTEGER:
+        case TIME:
+        case LOGIC_IMPLICIT: return LOGIC;
+        default: return *this;
+        }
+    }
+    bool isPredefinedInteger() const VL_MT_SAFE {
+        return m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
+               || m_e == INTEGER2STATE || m_e == TIME || m_e == TIME2STATE;
     }
     // Does this represent a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_SAFE {
@@ -766,7 +777,6 @@ public:
             /* UNTYPED:                   */ "",  // Should not be traced
             /* SCOPEPTR:                  */ "",  // Should not be traced
             /* CHARPTR:                   */ "",  // Should not be traced
-            /* MTASKSTATE:                */ "",  // Should not be traced
             /* DELAY_SCHEDULER:           */ "",  // Should not be traced
             /* TRIGGER_SCHEDULER:         */ "",  // Should not be traced
             /* DYNAMIC_TRIGGER_SCHEDULER: */ "",  // Should not be traced
@@ -965,6 +975,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(COVERGROUP_INIT,                    "init",                   false,  CLEAN,  "r+") \
     macro(COVERGROUP_INST_P,                  "p",                      PURE,   CLEAN,  "") \
     macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  CLEAN,  "rr") \
+    macro(COVERGROUP_MERGED_COVERAGE,         "mergedCoverage",         false,  CLEAN,  "r") \
     macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  CLEAN,  "r") \
     macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  CLEAN,  "rrrr") \
     macro(COVERGROUP_SAMPLE,                  "sample",                 false,  CLEAN,  "") \
@@ -984,6 +995,10 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(COVERGROUP_SIZED_RANGE_W,           "sizedRangeW",            false,  CLEAN,  "rr") \
     macro(COVERGROUP_SIZED_SAMPLE,            "sizedSample",            false,  CLEAN,  "rrr") \
     macro(COVERGROUP_SIZED_SAMPLE_W,          "sizedSampleW",           false,  CLEAN,  "rrr") \
+    macro(COVERGROUP_TRANSITION_ADD,          "transitionAdd",          false,  CLEAN,  "r") \
+    macro(COVERGROUP_TRANSITION_SAMPLE,       "transitionSample",       false,  CLEAN,  "rr") \
+    macro(COVERGROUP_TRANSITION_SAMPLE_W,     "transitionSampleW",      false,  CLEAN,  "rr") \
+    macro(COVERGROUP_TRANSITION_TABLE,        "transitionTable",        false,  CLEAN,  "r") \
     macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  CLEAN,  "rrrr") \
     macro(COVERGROUP_TYPE_WEIGHT,             "typeWeight",             false,  CLEAN,  "r") \
     macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   CLEAN,  "r") \
@@ -1202,6 +1217,9 @@ public:
         return values[m_e];
     }
 };
+constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
+    return lhs.m_e == rhs.m_e;
+}
 
 // Static assert all argument descriptors are well formed
 #define VL_CFUNCTION_ARGS_CHECK(id, method, pure, args) \
@@ -1291,22 +1309,26 @@ constexpr bool operator==(VCaseType::en lhs, const VCaseType& rhs) { return lhs 
 class VCastable final {
 public:
     enum en : uint8_t {
-        UNSUPPORTED,
-        SAMEISH,
-        COMPATIBLE,
-        ENUM_IMPLICIT,
-        ENUM_EXPLICIT,
-        DYNAMIC_CLASS,
-        INCOMPATIBLE,
+        UNSUPPORTED,  // Types are incompatible or unsupported
+        MATCHING,  // IEEE 1800-2023 6.22.1 matching types
+        SAMEISH,  // IEEE 1800-2023 6.22.2 equivalent types
+        COMPATIBLE,  // Types are assignable/castable
+        ENUM_IMPLICIT,  // Implicit conversion to enum allowed
+        ENUM_EXPLICIT,  // Explicit $cast required to enum
+        DYNAMIC_CLASS,  // Dynamic class cast check required
+        INCOMPATIBLE,  // Types cannot be cast or assigned
         _ENUM_MAX  // Leave last
     };
     enum en m_e;
     const char* ascii() const {
         static constexpr const char* const names[]
-            = {"UNSUPPORTED",   "SAMEISH",       "COMPATIBLE",  "ENUM_IMPLICIT",
-               "ENUM_EXPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
+            = {"UNSUPPORTED",   "MATCHING",      "SAMEISH",       "COMPATIBLE",
+               "ENUM_IMPLICIT", "ENUM_EXPLICIT", "DYNAMIC_CLASS", "INCOMPATIBLE"};
         return names[m_e];
     }
+    bool isMatching() const { return m_e == MATCHING; }
+    bool isSameish() const { return m_e == MATCHING || m_e == SAMEISH; }
+    bool isCompatible() const { return m_e == COMPATIBLE; }
     bool isAssignable() const { return m_e != UNSUPPORTED && m_e != INCOMPATIBLE; }
     VCastable()
         : m_e{UNSUPPORTED} {}
