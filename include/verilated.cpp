@@ -101,6 +101,12 @@
 
 #include "verilated_trace.h"
 
+#ifdef VM_RAND_SAMPLER_DEFAULT
+#define VL_RAND_SAMPLER_DEFAULT VM_RAND_SAMPLER_DEFAULT
+#else
+#define VL_RAND_SAMPLER_DEFAULT "default"
+#endif
+
 #ifdef VM_SOLVER_DEFAULT
 #define VL_SOLVER_DEFAULT VM_SOLVER_DEFAULT
 #else
@@ -3153,6 +3159,21 @@ void VL_TIMEFORMAT_IINI(bool hasUnits, int units, bool hasPrecision, int precisi
     if (hasWidth) contextp->impp()->timeFormatWidth(width);
 }
 
+// Parse a sampler name from +verilator+rand+sampler+, $VERILATOR_RAND_SAMPLER
+// or the build-time default; fatal naming 'whatp' if not a sampler
+static void vlRandSamplerParse(const std::string& str, const char* filenamep, const char* whatp,
+                               VerilatedRandSampler& samplerr) {
+    if (str == "default") {
+        samplerr = VerilatedRandSampler::SAMPLER_DEFAULT;
+    } else if (str == "solver") {
+        samplerr = VerilatedRandSampler::SAMPLER_SOLVER;
+    } else {
+        const std::string msg
+            = std::string{whatp} + " must be 'default' or 'solver': '" + str + "'";
+        VL_FATAL_MT(filenamep, 0, "", msg.c_str());
+    }
+}
+
 //======================================================================
 // VerilatedContext:: Methods
 
@@ -3164,6 +3185,8 @@ VerilatedContext::VerilatedContext()
     m_ns.m_profExecFilename = "profile_exec.dat";
     m_ns.m_profVltFilename = "profile.vlt";
     m_ns.m_solverProgram = VlOs::getenvStr("VERILATOR_SOLVER", VL_SOLVER_DEFAULT);
+    const std::string sampler = VlOs::getenvStr("VERILATOR_RAND_SAMPLER", VL_RAND_SAMPLER_DEFAULT);
+    vlRandSamplerParse(sampler, "", "VERILATOR_RAND_SAMPLER", m_ns.m_randSampler);
     m_ns.m_logFD = -1;
     m_ns.m_stdoutFD = -1;
     m_ns.m_stderrFD = -1;
@@ -3687,6 +3710,9 @@ void VerilatedContextImp::commandArgVl(const std::string& arg) {
             quiet(true);
         } else if (commandArgVlUint64(arg, "+verilator+rand+reset+", u64, 0, 2)) {
             randReset(static_cast<int>(u64));
+        } else if (commandArgVlString(arg, "+verilator+rand+sampler+", str)) {
+            vlRandSamplerParse(str, "COMMAND_LINE", "Argument '+verilator+rand+sampler+'",
+                               m_ns.m_randSampler);
         } else if (commandArgVlString(arg, "+verilator+solver+file+", str)) {
             solverLogFilename(str);
         } else if (commandArgVlUint64(arg, "+verilator+wno+unsatconstr+", u64, 0, 1)) {
@@ -3976,7 +4002,9 @@ const char* Verilated::catName(const char* n1, const char* n2, const char* delim
     }
     char* dp = t_strp;
     for (const char* sp = n1; *sp;) *dp++ = *sp++;
-    for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
+    if (*n1 && *n2) {
+        for (const char* sp = delimiter; *sp;) *dp++ = *sp++;
+    }
     for (const char* sp = n2; *sp;) *dp++ = *sp++;
     *dp++ = '\0';
     return t_strp;
@@ -4071,6 +4099,15 @@ void Verilated::overWidthError(const char* signame) VL_MT_SAFE {
     VL_UNREACHABLE;
 }
 
+void Verilated::queueBoundError(size_t maxSize, size_t attemptedSize) VL_MT_SAFE {
+    // Slowpath - Called only when a bounded queue discards elements beyond its bound
+    const std::string msg = "Bounded queue [$:"s + std::to_string(maxSize - 1)
+                            + "] overflow, attempted size " + std::to_string(attemptedSize)
+                            + " exceeds maximum size " + std::to_string(maxSize)
+                            + ", discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)";
+    VL_WARN_MT("", 0, "", msg.c_str());
+}
+
 void Verilated::scTimePrecisionError(int sc_prec, int vl_prec) VL_MT_SAFE {
     std::ostringstream msg;
     msg << "SystemC's sc_set_time_resolution is 10^-" << sc_prec
@@ -4088,6 +4125,13 @@ void Verilated::scTraceBeforeElaborationError() VL_MT_SAFE {
     VL_FATAL_MT("unknown", 0, "",
                 "%Error: Verilated*Sc::open(...) was called before sc_core::sc_start(). "
                 "Run sc_core::sc_start(sc_core::SC_ZERO_TIME) before opening a wave file.");
+    VL_UNREACHABLE;
+}
+
+void Verilated::sizeMismatchError() VL_MT_SAFE {
+    VL_FATAL_MT("unknown", 0, "",
+                "Dynamic array or queue size does not match unpacked array size"
+                " (IEEE 1800-2023 7.6)");
     VL_UNREACHABLE;
 }
 
@@ -4295,12 +4339,12 @@ void* VerilatedVarProps::datapAdjustIndex(void* datap, int dim, int indx) const 
 //======================================================================
 // VerilatedScope:: Methods
 
-VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* suffixp, const char* identifier,
-                               const char* defnamep, int8_t timeunit, Type type)
+VerilatedScope::VerilatedScope(VerilatedSyms* symsp, const char* prefixp, const char* suffixp,
+                               const char* identifier, const char* defnamep, int8_t timeunit,
+                               Type type)
     : m_symsp{symsp}
-    , m_namep{[symsp, suffixp]() {
+    , m_namep{[prefixp, suffixp]() {
         // We don't want the space and reference-count access overhead of strings.
-        const char* prefixp = symsp->name();
         char* const namep = new char[std::strlen(prefixp) + std::strlen(suffixp) + 2];
         char* dp = namep;
         for (const char* sp = prefixp; *sp;) *dp++ = *sp++;
@@ -4463,7 +4507,8 @@ void VerilatedScope::paramsInsertFromTable(const VlVarTableEntry* entp, size_t n
 }
 
 void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, size_t n,
-                                              VerilatedSyms* symsp) VL_MT_UNSAFE {
+                                              VerilatedSyms* symsp,
+                                              const std::string* topNamesp) VL_MT_UNSAFE {
     // Table-driven equivalent of a run of 'new VerilatedScope{...}' statements; see
     // VlScopeTableEntry. The generated Syms class derives VerilatedSyms as its sole primary
     // base at offset 0, so symsp doubles as the base for the offsetof-baked member addresses.
@@ -4471,13 +4516,21 @@ void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, siz
     for (size_t i = 0; i < n; ++i) {
         const VlScopeTableEntry& e = entp[i];
         VerilatedScope** const slotp = reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        *slotp = new VerilatedScope{symsp, e.namep, e.identp, e.defnamep, e.timeunit, e.type};
+        const std::string& prefix = topNamesp[e.topIndex];
+        const char* identp = e.identp;
+        if (e.topIndex && !*e.namep) {
+            // A top module instance is named after its instance in the parent model when
+            // the model is the instance of a library, which is only known here
+            const std::string::size_type pos = prefix.rfind('.');
+            identp = prefix.c_str() + (pos == std::string::npos ? 0 : pos + 1);
+        }
+        *slotp = new VerilatedScope{symsp,      prefix.c_str(), e.namep, identp,
+                                    e.defnamep, e.timeunit,     e.type};
     }
 }
 
-// Prefix with the model instance name, as VerilatedScope's constructor does
-static std::string vl_ifaceRefFullname(const VerilatedSyms* symsp, const char* suffixp) {
-    const char* const prefixp = symsp->name();
+// Prefix with the name it is below, as VerilatedScope's constructor does
+static std::string vl_ifaceRefFullname(const char* prefixp, const char* suffixp) {
     std::string out{prefixp};
     if (*prefixp && *suffixp) out += '.';
     out += suffixp;
@@ -4490,7 +4543,8 @@ static VerilatedScope* vl_ifaceRefParentp(uint8_t* basep, const VlIfaceRefTableE
 }
 
 void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                              VerilatedSyms* symsp) VL_MT_UNSAFE {
+                                              VerilatedSyms* symsp,
+                                              const std::string* topNamesp) VL_MT_UNSAFE {
     // Use the model's own context; at destruction threadContextp() may be another's
     VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
     uint8_t* const base = reinterpret_cast<uint8_t*>(symsp);
@@ -4498,8 +4552,9 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        const VerilatedIfaceRef ifaceRef{scopep, e.namep, vl_ifaceRefFullname(symsp, e.suffixp),
-                                         e.modportp};
+        const VerilatedIfaceRef ifaceRef{
+            scopep, e.namep, vl_ifaceRefFullname(topNamesp[e.topIndex].c_str(), e.suffixp),
+            e.modportp};
         const VerilatedIfaceRef* const refp = impp->ifaceRefInsert(ifaceRef);
         // Map nodes remain stable until this model's teardown. The scope only owns
         // the pointer vector; destroying it does not dereference the erased entries.
@@ -4510,14 +4565,15 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
 }
 
 void VerilatedScope::ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, size_t n,
-                                             const VerilatedSyms* symsp) VL_MT_UNSAFE {
+                                             const VerilatedSyms* symsp,
+                                             const std::string* topNamesp) VL_MT_UNSAFE {
     VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
     uint8_t* const base = reinterpret_cast<uint8_t*>(const_cast<VerilatedSyms*>(symsp));
     for (size_t i = 0; i < n; ++i) {
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
             = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
-        impp->ifaceRefErase(vl_ifaceRefFullname(symsp, e.suffixp), scopep);
+        impp->ifaceRefErase(vl_ifaceRefFullname(topNamesp[e.topIndex].c_str(), e.suffixp), scopep);
     }
 }
 

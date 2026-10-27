@@ -53,7 +53,7 @@ private:
     //=========================================================================
     // FST-specific internals
 
-    fst::Writer* m_fst = nullptr;
+    fst::Writer* m_fst = nullptr;  // FST writer, null if not open
     std::map<uint32_t, vlFstHandle> m_code2symbol;
     std::map<void*, std::map<int, vlFstEnumHandle>> m_local2fstdtype;
     vlFstHandle* m_symbolp = nullptr;  // same as m_code2symbol, but as an array

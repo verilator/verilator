@@ -100,7 +100,7 @@ module t (
   // Array of unpacked structs
   st_t sa[2][2];  // Split 11
   // Whole copy into an array that is not split
-  logic [4:0] mdp[0:2][3:1]  /*verilator public*/;  // No split: public
+  logic [4:0] mdp[0:2][3:1]  /*verilator public_flat_rw*/;  // No split: public
   // Whole copy of a struct element
   st_t sar;  // Split 2
   // Selected with variable indices, and assigned to and from them

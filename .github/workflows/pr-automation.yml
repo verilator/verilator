@@ -49,15 +49,9 @@ jobs:
             --repo "${{ github.repository }}" \
             --add-label 'pr: regression'
 
-      - name: Checkout
-        if: ${{ github.event.action != 'closed' }}
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
-        with:
-          sparse-checkout: .github/actions/update-pr-label
-
       - name: Check if C++ sources changed
         id: sources
-        if: ${{ github.event.action != 'closed' }}
+        if: ${{ github.event.action == 'opened' || github.event.action == 'reopened' }}
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |-
@@ -69,19 +63,16 @@ jobs:
           echo "${FILES}"
           if grep -q -E '^(src|include)/.*\.(h|cpp)$' <<< "${FILES}"; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: "Update the 'pr: dev-coverage' label"
-        if: ${{ github.event.action != 'closed' }}
-        uses: ./.github/actions/update-pr-label
-        with:
-          token: ${{ steps.generate-token.outputs.token }}
-          pr-number: ${{ github.event.number }}
-          head-sha: ${{ github.event.pull_request.head.sha }}
-          label: "pr: dev-coverage"
-          set: ${{ steps.sources.outputs.changed }}
+      - name: "Add 'pr: dev-coverage-auto' label on open"
+        if: ${{ steps.sources.outputs.changed }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          gh pr edit "${{ github.event.number }}" \
+            --repo "${{ github.repository }}" \
+            --add-label 'pr: dev-coverage-auto'
 
       - name: "Remove all 'pr*' labels on close"
         if: ${{ github.event.action == 'closed' }}
@@ -278,13 +269,19 @@ jobs:
         if: ${{ github.event.workflow_run.conclusion == 'success' }}
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          SMALL_PATCH_LINES: 50  # Most changed lines a patch counts as small
         run: |-
           # Whether every line the patch touches is covered
           if ! gh run download "${{ github.event.workflow_run.id }}" --name coverage-status; then
             echo "Run has no 'coverage-status' artifact"
             exit 0
           fi
-          echo "covered=$(cat coverage-status.txt)" >> "$GITHUB_OUTPUT"
+          read -r COVERED LINES < coverage-status.txt
+          echo "covered=${COVERED}" >> "$GITHUB_OUTPUT"
+          # A small patch needs no further coverage runs once fully covered
+          if [ "${COVERED}" = true ] && [ "${LINES}" -le "${SMALL_PATCH_LINES}" ]; then
+            echo "done=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: "Update the 'pr-blocked: improve-coverage' label"
         if: ${{ steps.pr.outputs.number && steps.coverage.outputs.covered }}
@@ -295,3 +292,13 @@ jobs:
           head-sha: ${{ github.event.workflow_run.head_sha }}
           label: "pr-blocked: improve-coverage"
           set: ${{ steps.coverage.outputs.covered != 'true' }}
+
+      - name: "Remove the 'pr: dev-coverage-auto' label"
+        if: ${{ steps.pr.outputs.number && steps.coverage.outputs.done }}
+        uses: ./.github/actions/update-pr-label
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          pr-number: ${{ steps.pr.outputs.number }}
+          head-sha: ${{ github.event.workflow_run.head_sha }}
+          label: "pr: dev-coverage-auto"
+          set: false

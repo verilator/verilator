@@ -286,6 +286,38 @@ inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     return ret;
 }
 
+// Copy dynamic array or queue to a fixed-size unpacked array, reversing each dimension whose
+// template argument is non-zero, outermost dimension is first
+template <typename T_To, typename T_From>
+inline void _vl_cvt_q_to_unpack(T_To& to, const T_From& from) VL_MT_SAFE {
+    to = from;
+}
+template <int T_Reverse, int... T_Inner, typename T_To, std::size_t N_Depth, typename T_From,
+          std::size_t N_MaxSize>
+inline void _vl_cvt_q_to_unpack(VlUnpacked<T_To, N_Depth>& to,
+                                const VlQueue<T_From, N_MaxSize>& from) VL_MT_SAFE {
+    if (VL_UNLIKELY(from.size() != static_cast<int>(N_Depth))) Verilated::sizeMismatchError();
+    for (std::size_t i = 0; i < N_Depth; ++i) {
+        _vl_cvt_q_to_unpack<T_Inner...>(to[T_Reverse ? N_Depth - 1 - i : i],
+                                        from.at(static_cast<int32_t>(i)));
+    }
+}
+template <int T_Reverse, int... T_Inner, typename T, std::size_t N_Depth>
+inline void _vl_cvt_q_to_unpack(VlUnpacked<T, N_Depth>& to,
+                                const VlUnpacked<T, N_Depth>& from) VL_MT_SAFE {
+    for (std::size_t i = 0; i < N_Depth; ++i) {
+        _vl_cvt_q_to_unpack<T_Inner...>(to[T_Reverse ? N_Depth - 1 - i : i], from[i]);
+    }
+}
+
+// Return unpacked array copied from a dynamic array or queue
+template <typename T_To, int... T_Reverse, typename T_From>
+inline T_To VL_CVT_Q_TO_UNPACK(const T_From& from) VL_MT_SAFE {
+    T_To to;
+    _vl_cvt_q_to_unpack<T_Reverse...>(to, from);
+    return to;
+}
+
 template <typename T>
 inline void _vl_cvt_unpack_to_unpack(T& to, const T& from) VL_MT_SAFE {
     to = from;

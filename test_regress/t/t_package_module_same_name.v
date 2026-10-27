@@ -55,10 +55,10 @@ module t;
   initial begin
     #1 clk = 1;
     #1;
-    `checkd (foo::next(), 11);
-    `checkd (foo_o, 21);
-    `checkd (bar_o, 31);
-    `checkd (bar::next(), 41);
+    `checkd(foo::next(), 11);
+    `checkd(foo_o, 21);
+    `checkd(bar_o, 31);
+    `checkd(bar::next(), 41);
     $write("*-* All Finished *-*\n");
     $finish;
   end

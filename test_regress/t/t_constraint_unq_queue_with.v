@@ -31,7 +31,10 @@ module t;
     automatic int first_size = -1;
     automatic bit found_variety = 0;
     repeat (30) begin
-      ok = f.randomize() with {q.size() inside {[3 : 5]}; unique {q};};
+      ok = f.randomize() with {
+        q.size() inside {[3 : 5]};
+        unique {q};
+      };
       `checkd(ok, 1)
       sz = f.q.size();
       if (sz < 3 || sz > 5) begin

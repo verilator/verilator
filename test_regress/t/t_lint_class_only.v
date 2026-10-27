@@ -6,8 +6,15 @@
 
 // Only unused parameterized classes, no module
 
-virtual class Cls #(parameter DECODE_W);
+// False positive in t_dist_whitespace.py
+// verilog_format: off
+
+virtual class Cls #(
+    parameter DECODE_W
+);
 endclass
 
-class ClsDefault #(int P = 1);
+class ClsDefault #(
+    int P = 1
+);
 endclass

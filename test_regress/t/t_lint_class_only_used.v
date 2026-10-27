@@ -6,10 +6,14 @@
 
 // Only classes, no module, with parameterized classes used by a non-parameterized class
 
-virtual class Cls #(parameter DECODE_W);
+virtual class Cls #(
+    parameter DECODE_W
+);
 endclass
 
-class ClsDefault #(int P = 1);
+class ClsDefault #(
+    int P = 1
+);
 endclass
 
 class ClsUser;

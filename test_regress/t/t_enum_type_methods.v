@@ -76,6 +76,19 @@ module t (
     `checks(s, "'{m_a:'h3, m_b:'h4}");
   end
 
+  // Next and prev by other than one, as a condition (IEEE 1800-2023 6.19.5)
+  typedef enum bit {
+    B0,
+    B1
+  } onebit_t;  // One bit, as a wider condition warns WIDTHTRUNC
+  onebit_t b;
+  initial begin
+    b = B1;
+    if (!b.next(0)) `stop;  // B1
+    if (b.next(3)) `stop;  // B0
+    if (b.prev(3)) `stop;  // B0
+  end
+
   localparam THREE = 3;
 
   // Check runtime

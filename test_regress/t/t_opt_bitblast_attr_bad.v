@@ -18,7 +18,7 @@ module t (
   logic [63:0] crc = 64'h5aef0c8d_d70a4497;
 
   // Public
-  logic [7:0] pub  /*verilator public*/  /*verilator split_var*/;
+  logic [7:0] pub  /*verilator public_flat_rw*/  /*verilator split_var*/;
   // Variable index, warned in each context
   logic [7:0] vix  /*verilator split_var*/;
   // Written other than by an assignment, to multiple fragments

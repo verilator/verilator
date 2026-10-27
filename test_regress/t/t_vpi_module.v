@@ -6,6 +6,8 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// verilator lint_off UNOPTPUBLIC
+
 // Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
 `define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
 
@@ -17,16 +19,13 @@ package somepackage;
   int someint /*verilator public_flat_rw*/;
 endpackage
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (
+    input clk
+);
 
-  input clk;
+  integer status;
 
-  integer        status;
-
-  wire           a, b, x;
+  wire a, b, x;
 
   A \mod.a (/*AUTOINST*/
         // Outputs
@@ -45,7 +44,7 @@ module t (/*AUTOARG*/
 `else
     status = mon_check();
 `endif
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_module.cpp:%0d: C Test failed\n", status);
       $stop;
     end

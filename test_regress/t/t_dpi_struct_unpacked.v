@@ -23,6 +23,7 @@ package pkg;
     bit [3:0] hi;
     logic [2:0] lo;
   } packed_t;
+  typedef logic logic_t;
   // A member of each type DPI passes
   typedef struct {
     byte b;
@@ -45,6 +46,7 @@ package pkg;
     enum_t en;
     packed_t pk;
     bit [1:0][7:0] pa;
+    logic_t [6:0] lt;
   } basic_t;
 endpackage
 
@@ -110,6 +112,7 @@ module t;
     p.en = n[0] ? pkg::E6 : pkg::E1;
     p.pk = '{hi: 4'(n + 3), lo: 3'(n)};
     p.pa = {8'(n), 8'ha5};
+    p.lt = 7'(n + 9);
     return p;
   endfunction
   function automatic void checkBasic(basic_t p, int n);
@@ -134,6 +137,7 @@ module t;
     `checkh(p.en, e.en);
     `checkh(p.pk, e.pk);
     `checkh(p.pa, e.pa);
+    `checkh(p.lt, e.lt);
   endfunction
 
   function automatic inner_t fillInner(int n);

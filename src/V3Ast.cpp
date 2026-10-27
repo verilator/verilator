@@ -1728,7 +1728,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     const VCastable castable = VCastable::UNSUPPORTED;
     toDtp = toDtp->skipRefToEnump();
     fromDtp = fromDtp->skipRefToEnump();
-    if (toDtp == fromDtp) return VCastable::SAMEISH;
+    if (toDtp->matchingDType(fromDtp)) return VCastable::MATCHING;
     if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
     // UNSUP unpacked struct/unions (treated like BasicDType)
     const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
@@ -1813,8 +1813,8 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
         // Elements must match, but a nested dimension is COMPATIBLE if equivalent, and a virtual
         // interface element can refer to an interface instance
         const AstNodeDType* const toSubp = toArrayp->subDTypep()->skipRefp();
-        if (subCastable == VCastable::SAMEISH
-            || (subCastable == VCastable::COMPATIBLE
+        if (subCastable.isSameish()
+            || (subCastable.isCompatible()
                 && (VN_IS(toSubp, UnpackArrayDType) || VN_IS(toSubp, IfaceRefDType)))) {
             return VCastable::COMPATIBLE;
         }
@@ -1841,8 +1841,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     if (VN_IS(node1p, Const)) std::swap(node1p, node2p);
     {
         const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
-        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE)
-            return node1p->dtypep();
+        if (castable.isSameish() || castable.isCompatible()) return node1p->dtypep();
         if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
     }
 
@@ -1863,7 +1862,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
 // Renders the canonical pattern S-expression for a single AstNode
 
 class VNPatternString final {
-    std::ostream& m_os;
+    std::ostream& m_os;  // Stream to write to
 
     std::map<std::string, std::string> m_internedConsts;  // Interned constants
     std::map<int, std::string> m_internedWordWidths;  // Interned widths

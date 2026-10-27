@@ -56,12 +56,17 @@ class VlCoverpointIf VL_NOT_FINAL {
     // MEMBERS
     int32_t m_weight = 1;  // option.weight; never negative
     int32_t m_typeWeight = 1;  // type_option.weight; never negative
+    std::string m_hier;  // "covergroup.item"
 
 public:
     // CONSTRUCTORS
     virtual ~VlCoverpointIf() = default;
 
     // METHODS
+    /// Name of the item, "covergroup.item", which its covergroup's instances share
+    const std::string& hier() const { return m_hier; }
+    /// Set the name of the item, as the implementor's init() does
+    void hier(const char* value) { m_hier = value; }
     // All bins, across every set; index range [0, binCount()).
     virtual uint32_t binCount() const = 0;
     // Bin name in declaration order (e.g. "myBin" or "b[3]"); for an auto
@@ -69,6 +74,9 @@ public:
     virtual std::string binName(uint32_t i) const = 0;
     // Bins covered / effective total (Normal set only) for the coverage calc
     virtual void coverageParts(double& covered, double& total) const = 0;
+    /// Coverage of this item in its covergroup instance, as returned by the item's
+    /// get_inst_coverage(), in 0..100 (IEEE 1800-2023 19.11.1, 19.11.2)
+    double coverage() const;
     /// Weight of this item in its covergroup instance's coverage (option.weight,
     /// IEEE 1800-2023 19.11)
     int32_t weight() const { return m_weight; }

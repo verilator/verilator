@@ -76,7 +76,7 @@ namespace {
 
 class ReorderNodeVertex VL_NOT_FINAL : public V3GraphVertex {
     VL_RTTI_IMPL(ReorderNodeVertex, V3GraphVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Node this vertex represents
 
 protected:
     ReorderNodeVertex(V3Graph* graphp, AstNode* nodep)

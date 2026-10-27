@@ -138,7 +138,7 @@ public:
         for (const Entry& entry : m_entries) {
             AstActive* const activep = entry.m_activep;
             if (v3Global.opt.debugCheck()) {
-                for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+                for (AstNode* const nodep : activep->stmtspList()) {
                     AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
                     UASSERT_OBJ(procp && !procp->stmtsp(), activep, "Leftover logic");
                 }
@@ -152,7 +152,7 @@ public:
     void foreachLogic(const std::function<void(AstNode*)>& f) const {
         for (const Entry& entry : m_entries) {
             const AstActive* const activep = entry.m_activep;
-            for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) f(nodep);
+            for (AstNode* const nodep : activep->stmtspList()) f(nodep);
         }
     }
 };
@@ -302,7 +302,7 @@ private:
     mutable AstCFunc* m_dumpExtp = nullptr;
     // The AstCFunc testing if a trigger vector has any bits set - create lazily
     mutable AstCFunc* m_anySetVecp = nullptr;
-    mutable AstCFunc* m_anySetExtp = nullptr;
+    mutable AstCFunc* m_anySetExtp = nullptr;  // Function testing if extra trigger bits are set
     // The AstCFunc setting bits in a trigger vector that are set in another - create lazily
     mutable std::array<AstCFunc*, 4> m_orIntoVecps = {nullptr};
     // The AstCFunc setting a trigger vector to all zeroes - create lazily
@@ -481,7 +481,7 @@ private:
     // How the sample() calls seen so far resolved. Statistics only, hence mutable: ordering
     // runs once per scheduling region and must hold this by const reference.
     mutable uint32_t m_numExactCalls = 0;
-    mutable uint32_t m_numUnionCalls = 0;
+    mutable uint32_t m_numUnionCalls = 0;  // Statistic, sample() calls that resolved to a union
     // Returned for a covergroup with no reference formal at all.
     static const Bindings s_none;
 

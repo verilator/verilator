@@ -3,6 +3,8 @@
 // SPDX-FileCopyrightText: 2019 Todd Strader
 // SPDX-License-Identifier: CC0-1.0
 
+typedef logic logic_t;
+
 module secret #(
     parameter GATED_CLK = 0
 ) (
@@ -28,6 +30,10 @@ module secret #(
     output logic [128:0] s129_out,
     input [3:0][31:0] s4x32_in,
     output logic [3:0][31:0] s4x32_out,
+    input logic_t [3:0] s4x1t_in,
+    output logic_t [3:0] s4x1t_out,
+    input [1:0][39:0] s2x2x40up_in[2],
+    output logic [1:0][39:0] s2x2x40up_out[2],
     /*verilator lint_off ASCRANGE*/
     input [0:15] s6x16up_in[0:1][2:0],
     output logic [0:15] s6x16up_out[0:1][2:0],
@@ -82,6 +88,8 @@ module secret #(
     s65_out = s65_in;
     s129_out = s129_in;
     s4x32_out = s4x32_in;
+    s4x1t_out = s4x1t_in;
+    s2x2x40up_out = s2x2x40up_in;
   end
 
   for (genvar i = 0; i < 3; ++i) begin

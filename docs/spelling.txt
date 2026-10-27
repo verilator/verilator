@@ -187,6 +187,7 @@ Hammoud
 Hao
 Haojin
 Harboe
+Haroosh
 Hashimoto
 Hayenga
 Heng
@@ -998,6 +999,7 @@ muzafferkal
 myftptoyman
 mysignal
 namespace
+namespaces
 nand
 nanduraj
 nasties
@@ -1311,12 +1313,15 @@ vpm
 vpp
 warmup
 wavealloca
+wavecat
 wavediff
 waveforms
+wavetools
 whitespace
 widthed
 wor
 wreal
+writablility
 writeb
 writeme
 writemem

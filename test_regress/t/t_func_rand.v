@@ -9,7 +9,6 @@ module t (clk, Rand);
   output reg [31:0] Rand;
 
   function [31:0] QxRand32;
-    /* verilator public */
     input [7:0]    tbl;
     input [7:0]    idx;
     begin
@@ -24,6 +23,7 @@ module t (clk, Rand);
   endfunction
 
   always @(posedge clk) begin
-    Rand <= #1 QxRand32 (8'h0, 8'h7);
+    Rand <= #1 QxRand32(8'h0, 8'h7);
+    $display(Rand);
   end
 endmodule

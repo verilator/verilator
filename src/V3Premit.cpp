@@ -79,7 +79,12 @@ class PremitVisitor final : public VNVisitor {
         // Must be a tree of constants (see AstNodeExpr::isConstantTree), which can be emitted
         const bool emittable = nodep->forall([&](const AstNodeExpr* exprp) {
             if (VN_IS(exprp, NodeCons)) {
-                hasDynamic |= exprp->dtypep()->skipRefp()->isDynamicallySized();
+                const AstNodeDType* const dtypep = exprp->dtypep()->skipRefp();
+                // A bounded queue discards and warns on overflow, which must happen at the
+                // assignment, not once when the pool is constructed
+                const AstQueueDType* const queueDtypep = VN_CAST(dtypep, QueueDType);
+                if (queueDtypep && queueDtypep->boundp()) return false;
+                hasDynamic |= dtypep->isDynamicallySized();
                 return true;
             }
             const AstConst* const constp = VN_CAST(exprp, Const);
@@ -379,6 +384,10 @@ class PremitVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkNode(nodep);
         if (!VN_IS(nodep->backp(), NodeAssign)) createTemp(nodep);
+    }
+    void visit(AstCvtQueueToUnpack* nodep) override {
+        iterateChildren(nodep);
+        checkNode(nodep);
     }
     void visit(AstCvtUnpackToQueue* nodep) override {
         iterateChildren(nodep);

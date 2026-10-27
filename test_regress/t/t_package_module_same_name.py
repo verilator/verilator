@@ -11,7 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(verilator_flags2=["--binary", "-y t/t_package_module_same_name"])
+test.compile(verilator_flags2=["--binary", "--stats", "-y t/t_package_module_same_name"])
 test.execute()
+
+# Each module is scanned once when read, rather than all again on every autoload
+test.file_grep(test.stats, r'LinkCells, Modules scanned\s+(\d+)', 8)
 
 test.passes()

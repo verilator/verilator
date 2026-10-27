@@ -256,16 +256,19 @@ private:
         // All event signals should be 1-bit at this point
         switch (senItemp->edgeType()) {
         case VEdgeType::ET_CHANGED:
-        case VEdgeType::ET_HYBRID:  //
+        case VEdgeType::ET_HYBRID: {
+            const bool fireAtInit = senItemp->edgeType() == VEdgeType::ET_HYBRID;
             if (VN_IS(senp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 // operand order reversed to avoid calling neq() method on non-VlUnpacked type, see
                 // issue #5125
                 AstCMethodHard* const resultp
                     = new AstCMethodHard{flp, prevp(), VCMethod::UNPACKED_NEQ, currp()};
                 resultp->dtypeSetBit();
-                return {wrapExprWithNullCheck(flp, resultp, baseRefp), true};
+                return {wrapExprWithNullCheck(flp, resultp, baseRefp), fireAtInit};
             }
-            return {wrapExprWithNullCheck(flp, new AstNeq{flp, currp(), prevp()}, baseRefp), true};
+            return {wrapExprWithNullCheck(flp, new AstNeq{flp, currp(), prevp()}, baseRefp),
+                    fireAtInit};
+        }
         case VEdgeType::ET_BOTHEDGE:  //
             return {wrapExprWithNullCheck(flp, lsb(new AstXor{flp, currp(), prevp()}), baseRefp),
                     false};
@@ -286,6 +289,21 @@ private:
             if (AstNodeVarRef* const refp
                 = VN_CAST(clearFromp->getVAccessTargetRecurse(), NodeVarRef)) {
                 refp->access(VAccess::WRITE);
+            }
+            // Dynamic array and queue selects were already made as read-only 'at'
+            for (AstNodeExpr* selp = clearFromp;;) {
+                if (AstCMethodHard* const cmethodp = VN_CAST(selp, CMethodHard)) {
+                    if (cmethodp->method() == VCMethod::ARRAY_AT) {
+                        cmethodp->method(VCMethod::ARRAY_AT_WRITE);
+                    } else if (cmethodp->method() == VCMethod::ARRAY_AT_BACK) {
+                        cmethodp->method(VCMethod::DYN_AT_WRITE_APPEND_BACK);
+                    }
+                    selp = cmethodp->fromp();
+                } else if (const AstNodeSel* const nodeSelp = VN_CAST(selp, NodeSel)) {
+                    selp = nodeSelp->fromp();
+                } else {
+                    break;
+                }
             }
             AstCMethodHard* const clearp
                 = new AstCMethodHard{flp, clearFromp, VCMethod::EVENT_CLEAR_FIRED};
@@ -338,8 +356,7 @@ public:
         FileLine* const flp = senTreep->fileline();
         AstNodeExpr* resultp = nullptr;
         bool firedAtInitialization = false;
-        for (AstSenItem* senItemp = senTreep->sensesp(); senItemp;
-             senItemp = VN_AS(senItemp->nextp(), SenItem)) {
+        for (AstSenItem* const senItemp : senTreep->sensespList()) {
             const auto& pair = build(senItemp);
             if (AstNodeExpr* termp = pair.first) {
                 resultp = resultp ? new AstOr{flp, resultp, termp} : termp;

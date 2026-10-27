@@ -10,7 +10,7 @@ module t (
     input clk
 );
 
-  reg [65:0] idx  /*verilator public*/;
+  reg [65:0] idx  /*verilator public_flat_rw*/;
   initial idx = 1;
 
   wire unlikely = idx > 200;
