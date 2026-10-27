@@ -11,9 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('dist')
 
-Contributors = {'github action': True}
+Contributors = {}
 Authors = {}
-RealNames = {}
+RealWaves = {}
 
 
 def read_contributors(filename):
@@ -26,36 +26,20 @@ def read_contributors(filename):
             if re.match(r'00>>', line):
                 start = True
                 continue
-            if re.match(r'__>> Please', line):
+            if re.search(r'>> Please', line):
                 break
             if not start:
                 continue
             author = author_from_line(line)
             Contributors[author] = True
-            if " # REALNAME" in line:
-                RealNames[author] = True
+            if " # REALWAIVE" in line:
+                RealWaves[author] = True
             found += 1
             if test.verbose and not realname(author):
                 print("- Not realname '%s'" % author)
 
         if not found:
             test.error("No contributors found in " + filename)
-
-
-def read_old_contributors():
-    filename = "docs/CONTRIBUTORS"
-    diff = test.run_capture("cd " + test.root + " && git diff --unified=0 master " + filename)
-    for line in diff.split("\n"):
-        line = line.rstrip()
-        if not re.match(r'^\+', line):
-            continue
-        if re.match(r'^\+\+', line):
-            continue
-        line = re.sub(r'^\+', '', line)
-        author = author_from_line(line)
-        msg = realname_msg(author)
-        if msg:
-            test.error_keep_going(msg)
 
 
 def read_user():
@@ -93,13 +77,18 @@ def realname(name):
     if re.match(r'^[^\x00-\x7F]{3}', name):
         return True  # Unicode exemption
     name = re.sub(r'[^\x00-\x7F]+', '_', name)
-    return re.match(r'^([A-Z_][-a-zA-Z_.\']* )+[A-Z_][-a-zA-Z_.\']+', name)
+    if re.match(r'^([A-Z_][-a-zA-Z_.\']* )+[A-Z_][-a-zA-Z_.\']+', name):
+        return True
+    paren = re.sub(r'.*\((.*)\)', r'\1', name)
+    if paren != name:
+        return realname(paren)
+    return False
 
 
 def realname_msg(name):
     if realname(name):
         return ""
-    if name in RealNames:
+    if name in RealWaves:
         return ""
     return ("%Warning: This does not look like a legal name: '" + name + "'\n" +
             "   Verilator requires use of a full first+last legal name," +
@@ -139,7 +128,12 @@ def check():
 
         test.error_keep_going(msg + "\n----\n")
 
-    read_old_contributors()
+    for author in sorted(Contributors.keys()):
+        if re.search(r'\[bot\]', author):
+            continue
+        msg = realname_msg(author)
+        if msg:
+            test.error_keep_going(msg)
 
 
 if 'VERILATOR_TEST_NO_CONTRIBUTORS' in os.environ:
