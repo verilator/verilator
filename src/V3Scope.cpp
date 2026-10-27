@@ -27,6 +27,7 @@
 
 #include "V3ConstPool.h"
 
+#include <set>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -421,6 +422,91 @@ public:
 };
 
 //######################################################################
+// Show the accesses through virtual interfaces to analyses, with AstHidden
+
+class ScopeHiddenVisitor final : public VNVisitor {
+    // TYPES
+    using Access = std::pair<const AstVar*, bool>;  // A member, and whether it is written
+
+    // STATE
+    // The variables of each member of an interface that may change, in all instances
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_ifaceVscps;
+    std::vector<Access> m_accesses;  // Members the statement accesses through virtual interfaces
+    bool m_inProcedure = false;  // Under a process or a function
+    bool m_inNba = false;  // Under an NBA, whose target is written by its commit, not by it
+
+    // VISITORS
+    void visit(AstNodeProcedure* nodep) override {
+        VL_RESTORER(m_inProcedure);
+        m_inProcedure = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_inProcedure);
+        m_inProcedure = true;
+        iterateChildren(nodep);
+    }
+    // Sensitivities through virtual interfaces are handled by their triggers
+    void visit(AstSenTree*) override {}
+    // Made below, and skipped, as replacing a statement visits its replacement
+    void visit(AstHidden*) override {}
+    void visit(AstNodeStmt* nodep) override {
+        VL_RESTORER_CLEAR(m_accesses);
+        VL_RESTORER(m_inNba);
+        m_inNba = VN_IS(nodep, AssignDly);
+        iterateChildren(nodep);
+        if (!m_inProcedure || m_accesses.empty()) return;
+        FileLine* const flp = nodep->fileline();
+        AstHidden* const hiddenp = new AstHidden{flp, nullptr};
+        nodep->replaceWith(hiddenp);
+        hiddenp->addStmtsp(nodep);
+        // Each member once as read and once as written, in all instances
+        std::set<Access> added;
+        for (const Access& access : m_accesses) {
+            if (!added.insert(access).second) continue;
+            for (AstVarScope* const vscp : m_ifaceVscps[access.first]) {
+                if (access.second) {
+                    hiddenp->addWrsp(new AstVarRef{flp, vscp, VAccess::WRITE});
+                } else {
+                    hiddenp->addRdsp(new AstVarRef{flp, vscp, VAccess::READ});
+                }
+            }
+        }
+    }
+    void visit(AstMemberSel* nodep) override {
+        iterateChildren(nodep);
+        const AstIfaceRefDType* const dtypep
+            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+        if (!dtypep || !dtypep->isVirtual() || !m_ifaceVscps.count(nodep->varp())) return;
+        if (nodep->access().isReadOrRW()) m_accesses.emplace_back(nodep->varp(), false);
+        // V3Delayed shows the target of an NBA as written by its commit
+        if (nodep->access().isWriteOrRW() && !m_inNba) {
+            m_accesses.emplace_back(nodep->varp(), true);
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit ScopeHiddenVisitor(AstNetlist* nodep) {
+        for (AstNodeModule* modp = nodep->modulesp(); modp;
+             modp = VN_AS(modp->nextp(), NodeModule)) {
+            if (!VN_IS(modp, Iface)) continue;
+            modp->foreach([&](AstVarScope* vscp) {
+                // Constants and references to instances cannot change, so need not be shown
+                const AstVar* const varp = vscp->varp();
+                const AstIfaceRefDType* const refp
+                    = VN_CAST(varp->dtypep()->skipRefp(), IfaceRefDType);
+                if (varp->isParam() || varp->isConst() || (refp && !refp->isVirtual())) return;
+                m_ifaceVscps[varp].push_back(vscp);
+            });
+        }
+        iterate(nodep);
+    }
+    ~ScopeHiddenVisitor() override = default;
+};
+
+//######################################################################
 // Scope class functions
 
 void V3Scope::scopeAll(AstNetlist* nodep) {
@@ -431,4 +517,10 @@ void V3Scope::scopeAll(AstNetlist* nodep) {
     }  // Destruct before checking
     V3ConstPool::setScoped();
     V3Global::dumpCheckGlobalTree("scope", 0, dumpTreeEitherLevel() >= 3);
+}
+
+void V3Scope::hiddenAll(AstNetlist* nodep) {
+    UINFO(2, __FUNCTION__ << ":");
+    { ScopeHiddenVisitor{nodep}; }  // Destruct before checking
+    V3Global::dumpCheckGlobalTree("hidden", 0, dumpTreeEitherLevel() >= 3);
 }

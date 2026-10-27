@@ -288,6 +288,8 @@ class DelayedVisitor final : public VNVisitor {
     // Commit queue data types, by element type and partial flag. Shared by all instances,
     // as m_dlyTmps only shares variables with the same data type.
     std::map<std::pair<const AstNodeDType*, bool>, AstNBACommitQueueDType*> m_cqDTypeps;
+    // The variables of each member of an interface, in all instances
+    std::unordered_map<const AstVar*, std::vector<AstVarScope*>> m_ifaceVscps;
 
     const std::unique_ptr<V3ClassGraph>
         m_classGraphp;  // class graph to get possibly called functions from a virtual call
@@ -611,7 +613,7 @@ class DelayedVisitor final : public VNVisitor {
         const std::string name = "_" + vscp->varp()->shortName();
         AstVarScope* const shadowVscp = m_dlyTmps.make(flp, scopep, vscp->dtypep(), name);
         vscpInfo.shadowVariableKit().vscp = shadowVscp;
-        // Mark both for V3LifePsot
+        // Mark both for V3LifePost
         vscp->optimizeLifePost(true);
         shadowVscp->optimizeLifePost(true);
         // Create the AstActive for the Pre/Post logic
@@ -847,8 +849,23 @@ class DelayedVisitor final : public VNVisitor {
         // Immediately clear the flag
         ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
                                      new AstConst{flp, AstConst::BitFalse{}}});
-        // Commit the value
-        ifp->addThensp(new AstAssign{flp, capturedLhsp, capturedRhsp});
+        // Commit the value. Through a virtual interface, it may write the member in any instance.
+        // Not shown in a process that cannot suspend: V3LifePost would then keep the shadow
+        // variables of the NBAs to the member before it, whose commits are not ordered with it.
+        AstNode* commitp = new AstAssign{flp, capturedLhsp, capturedRhsp};
+        if (vscpInfo.m_inSuspOrFork) {
+            capturedLhsp->foreach([&](const AstMemberSel* selp) {
+                const AstIfaceRefDType* const dtypep
+                    = VN_CAST(selp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+                if (!dtypep || !dtypep->isVirtual()) return;
+                AstHidden* const hiddenp = new AstHidden{flp, commitp};
+                for (AstVarScope* const memberVscp : m_ifaceVscps[selp->varp()]) {
+                    hiddenp->addWrsp(new AstVarRef{flp, memberVscp, VAccess::WRITE});
+                }
+                commitp = hiddenp;
+            });
+        }
+        ifp->addThensp(commitp);
 
         // Delete original NBA
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
@@ -1157,6 +1174,11 @@ class DelayedVisitor final : public VNVisitor {
         }
     }
     void visit(AstScope* nodep) override {
+        if (VN_IS(nodep->modp(), Iface)) {
+            for (AstVarScope* vscp = nodep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+                m_ifaceVscps[vscp->varp()].push_back(vscp);
+            }
+        }
         VL_RESTORER(m_scopep);
         m_scopep = nodep;
         iterateChildren(nodep);
@@ -1415,6 +1437,8 @@ class DelayedVisitor final : public VNVisitor {
         // Record write reference
         recordWriteRef(nodep, false);
     }
+    // Writes that the statements may do are not assignments of the variables
+    void visit(AstHidden* nodep) override { iterateAndNextNull(nodep->stmtsp()); }
     void visit(AstLoop* nodep) override {
         VL_RESTORER(m_inLoop);
         m_inLoop = true;

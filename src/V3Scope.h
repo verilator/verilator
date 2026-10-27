@@ -27,6 +27,8 @@ class AstNetlist;
 class V3Scope final {
 public:
     static void scopeAll(AstNetlist* nodep) VL_MT_DISABLED;
+    // Show the accesses through virtual interfaces, after V3LinkDot resolved all references
+    static void hiddenAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard
