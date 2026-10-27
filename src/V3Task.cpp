@@ -1575,21 +1575,13 @@ class TaskVisitor final : public VNVisitor {
                         if (!callFromp
                             || callFromp->varScopep()->scopep()
                                    == varRefp->varScopep()->scopep()) {
-                            // if(!correctScopep){
                             newVarRef->varScopep(varRefp->varScopep());
-                            // }else{
-                            //     AstVarScope* const newvscp
-                            //         = new AstVarScope{varRefp->fileline(), correctScopep,
-                            //         varRefp->varp()};
-                            //     correctScopep->addVarsp(newvscp);
-                            //     newVarRef->varScopep(newvscp);
-                            // }
                         } else if (subVref
                                    && subVref->varp()->user4p()) {  // when we are making a call
                                                                     // with a child class
                             AstVarScope* newvscp;
 
-                            if (!correctScopep) {
+                            if (!correctScopep) { // When calling from a varref we must check the correctScopep which has where the tasks is being called from.
                                 newvscp = new AstVarScope{varRefp->fileline(), scopep,
                                                           varRefp->varp()};
                             } else {
