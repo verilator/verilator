@@ -176,8 +176,7 @@ class CastVisitor final : public VNVisitor {
         iterateChildren(nodep);
         const AstNodeDType* const dtypep = nodep->dtypep()->skipRefp()->subDTypep();
         if (nodep->defaultp()) ensureCastValue(nodep->defaultp(), dtypep);
-        for (AstConsArrayItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+        for (AstConsArrayItem* itemp : nodep->itemspList()) {
             ensureCastValue(itemp->valuep(), dtypep);
         }
         nodep->user1(1);
