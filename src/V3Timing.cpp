@@ -445,7 +445,10 @@ public:
 
         // Propagate suspendability again after DPI exports have been resolved
         if (v3Global.usesSuspendableExports()) {
-            for (AstNode* procp : m_delayedProc) { addFlags(procp, T_SUSPENDEE | T_SUSPENDER); }
+            // Preserve the caller's process through suspendable DPI import wrappers.
+            for (AstNode* procp : m_delayedProc) {
+                addFlags(procp, T_SUSPENDEE | T_SUSPENDER | T_NEEDS_PROC);
+            }
             for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
                 DepVtx& depVtx = static_cast<DepVtx&>(vtx);
                 if (hasFlags(depVtx.nodep(), T_SUSPENDEE)) propagateFlags(&depVtx, T_SUSPENDEE);
@@ -985,6 +988,8 @@ class TimingControlVisitor final : public VNVisitor {
             if (!v3Global.usesSuspendableExports()) return;
             AstStmtExpr* const stmtExprp = VN_AS(nodep->backp(), StmtExpr);
             nodep->function(VCFunction::AWAIT_IMPORT_TASK);
+            nodep->pinsp()->addHereThisAsNext(
+                new AstCExpr{nodep->fileline(), m_hasProcess ? "vlProcess" : "nullptr"});
             AstCFuncHard* const cFuncp = nodep->unlinkFrBack();
             stmtExprp->replaceWith(new AstCAwait{nodep->fileline(), cFuncp});
             VL_DO_DANGLING(pushDeletep(stmtExprp), stmtExprp);

@@ -167,8 +167,9 @@ void resumeAborted() { threadPool().resumeAborted(); }
 
 thread_local VlDpiCall* VlDpiCall::t_currentp = nullptr;
 
-VlDpiCall::VlDpiCall(std::function<void()> fn)
-    : m_fn{std::move(fn)}
+VlDpiCall::VlDpiCall(VlProcessRef process, std::function<void()> fn)
+    : m_process{std::move(process)}
+    , m_fn{std::move(fn)}
     , m_threadp{threadPool().acquire()} {
     m_threadp->assign(this);
 }

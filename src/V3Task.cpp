@@ -1492,6 +1492,7 @@ class TaskVisitor final : public VNVisitor {
                                                     : VCFunction::CALL_IMPORT_FUNCTION};
         callImportp->dtypeSetVoid();
         // Add arguments
+        // V3Timing prepends the caller's VlProcess when awaitImportTask() is used.
         if (!nodep->verilogTask()) addDpiFunctionLocation(callImportp);
         // Pass name of the DPI imported function to call
         callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});

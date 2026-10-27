@@ -178,8 +178,9 @@ inline VlCoroutine resumeDpiCallAfter(VlCoroutine coro, VlDpiCall* callp) {
 }
 
 template <typename Callable, typename... Args>
-VlCoroutine awaitImportTask(Callable&& call, Args&&... args) {
+VlCoroutine awaitImportTask(VlProcessRef process, Callable&& call, Args&&... args) {
     VlDpiCall dpiCall{
+        std::move(process),
         [&]() { callImportTask(std::forward<Callable>(call), std::forward<Args>(args)...); }};
     dpiCall.handoffWorker();
     co_await dpiCall;

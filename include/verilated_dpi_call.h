@@ -49,6 +49,7 @@ class VlDpiCall final {
     friend class VlDpiThread;
 
     // MEMBERS
+    const VlProcessRef m_process;  // SV process executing the imported task
     const std::function<void()> m_fn;  // Function executed on the pool thread
     VlDpiThread* m_threadp;  // Pool thread, released when m_fn returns
     bool m_done = false;  // Set once m_fn returns
@@ -59,7 +60,7 @@ class VlDpiCall final {
 
 public:
     // CONSTRUCTORS
-    explicit VlDpiCall(std::function<void()> fn);
+    VlDpiCall(VlProcessRef process, std::function<void()> fn);
     VL_UNCOPYABLE(VlDpiCall);
 
     // METHODS
@@ -69,6 +70,7 @@ public:
     static void stopWorker();
     // VlDpiCall running on this thread (nullptr if not a DPI thread)
     static VlDpiCall* current() noexcept { return t_currentp; }
+    const VlProcessRef& process() const noexcept { return m_process; }
     // Mark this VlDpiCall as aborted due to process::kill()
     void markAborted();
     bool exportAborted() const noexcept { return m_exportAborted; }

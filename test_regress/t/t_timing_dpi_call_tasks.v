@@ -48,6 +48,8 @@ module t ();
 
   integer o = 0;
   initial begin
+    process caller;
+    caller = process::self();
     dpi_import1(o);
     `checkd(o, 11);
     `checkd($time, 38);
