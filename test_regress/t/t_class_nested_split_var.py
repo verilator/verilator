@@ -11,7 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--binary"])
+test.compile(verilator_flags2=["--binary","-fno-dfg"])
 
 test.execute()
 
