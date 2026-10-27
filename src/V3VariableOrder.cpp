@@ -122,6 +122,9 @@ class VariableOrder final {
     // Simple sort by stratum
     void simpleSortVars(std::vector<AstVar*>& varps) {
         stable_sort(varps.begin(), varps.end(), [](const AstVar* ap, const AstVar* bp) -> bool {
+            if (ap->isLazyColdStorage() != bp->isLazyColdStorage()) {
+                return bp->isLazyColdStorage();  // Cold last
+            }
             return ap->user1() < bp->user1();
         });
     }

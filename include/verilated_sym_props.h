@@ -182,6 +182,15 @@ public:
         return bits;
     }
     bool isPublicRW() const { return ((m_vlflags & VLVF_PUB_RW) != 0); }
+    /// --vpi-lazy: rematerialized on read, with no storage, see datap()
+    bool isLazyRemat() const { return ((m_vlflags & VLVF_LAZY_REMAT) != 0); }
+    /// --vpi-lazy: kept as storage, so writable, less any isLazyComb() bits
+    bool isLazyRetained() const { return ((m_vlflags & VLVF_LAZY_RETAINED) != 0); }
+    /// --vpi-lazy: reconstructed or combinationally driven, so a put may not change it, or with
+    /// isPublicRW(), its masked bits
+    bool isLazyComb() const { return ((m_vlflags & (VLVF_LAZY_COMB | VLVF_LAZY_REMAT)) != 0); }
+    /// --vpi-lazy: rematerialized by a copy from another variable's storage
+    bool isLazyCopy() const { return ((m_vlflags & VLVF_LAZY_COPY) != 0); }
     bool isForceable() const { return ((m_vlflags & VLVF_FORCEABLE) != 0); }
     bool isContinuously() const { return ((m_vlflags & VLVF_CONTINUOUSLY) != 0); }
     // DPI compatible C standard layout
@@ -296,13 +305,14 @@ class VerilatedVar final : public VerilatedVarProps {
 
 protected:
     const bool m_isParam;  // From a parameter
+    const int32_t m_lazyCombMask;  // VerilatedLazyState::combMasksp index, else -1
     friend class VerilatedScope;
     // CONSTRUCTORS
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam, uint32_t entSize,
-                 uint32_t bitOffset = 0);
+                 uint32_t bitOffset = 0, int32_t lazyCombMask = -1);
     VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                  VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
                  std::unique_ptr<const VerilatedForceControlSignals> forceControlSignals);
@@ -311,12 +321,29 @@ public:
     ~VerilatedVar();
     VerilatedVar(VerilatedVar&&);
     // ACCESSORS
-    void* datap() const { return m_datap; }
+    /// Null for a --vpi-lazy rematerialized signal, which has no storage
+    void* datap() const { return VL_UNLIKELY(isLazyRemat()) ? nullptr : m_datap; }
     const char* name() const { return m_namep; }
     bool isParam() const { return m_isParam; }
+    /// VerilatedLazyState::combMasksp index of a VLVF_LAZY_COMB row, else -1
+    int32_t lazyCombMask() const { return m_lazyCombMask; }
     const VerilatedForceControlSignals* forceControlSignals() const {
         return m_forceControlSignals.get();
     }
+
+private:
+    // Unchecked datap(), for VPI paths that handle lazy rows themselves
+    void* rawDatap() const { return m_datap; }
+    // The --vpi-lazy descriptor; only meaningful when isLazyRemat(). Private, as only VPI
+    // reads a rematerialized row.
+    VerilatedVarLazyDatap* lazyDatap() const {
+        VL_DEBUG_IFDEF(assert(isLazyRemat()););
+        return static_cast<VerilatedVarLazyDatap*>(m_datap);
+    }
+    // Reconstruct a --vpi-lazy row; only when isLazyRemat()
+    inline void datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE;
+    friend class VerilatedVpioVarBase;
+    friend class VerilatedVpioVar;
 };
 
 //===========================================================================
@@ -333,14 +360,16 @@ inline VerilatedVar::VerilatedVar(const char* namep, void* datap, VerilatedVarTy
     : VerilatedVarProps{vltype, vlflags, udims, pdims}
     , m_datap{datap}
     , m_namep{namep}
-    , m_isParam{isParam} {}
+    , m_isParam{isParam}
+    , m_lazyCombMask{-1} {}
 inline VerilatedVar::VerilatedVar(const char* namep, void* datap, VerilatedVarType vltype,
                                   VerilatedVarFlags vlflags, int udims, int pdims, bool isParam,
-                                  uint32_t entSize, uint32_t bitOffset)
+                                  uint32_t entSize, uint32_t bitOffset, int32_t lazyCombMask)
     : VerilatedVarProps{vltype, vlflags, udims, pdims, entSize, bitOffset}
     , m_datap{datap}
     , m_namep{namep}
-    , m_isParam{isParam} {}
+    , m_isParam{isParam}
+    , m_lazyCombMask{lazyCombMask} {}
 inline VerilatedVar::VerilatedVar(
     const char* namep, void* datap, VerilatedVarType vltype, VerilatedVarFlags vlflags, int udims,
     int pdims, bool isParam,
@@ -349,8 +378,23 @@ inline VerilatedVar::VerilatedVar(
     , m_datap{datap}
     , m_namep{namep}
     , m_forceControlSignals{std::move(forceControlSignals)}
-    , m_isParam{isParam} {}
+    , m_isParam{isParam}
+    , m_lazyCombMask{-1} {}
 inline VerilatedVar::~VerilatedVar() = default;
 inline VerilatedVar::VerilatedVar(VerilatedVar&&) = default;
+// Not MT safe: runs generated reconstruction code and writes the model's shadow storage
+void VerilatedVar::datapRefresh(VerilatedSyms* symsp) const VL_MT_UNSAFE_ONE {
+    VL_DEBUG_IFDEF(assert(isLazyRemat()););
+    VerilatedLazyState* const lazyp = symsp->lazyp();
+    // Until the first eval() a shadow holds the reset value its --public-flat-rw signal would
+    if (lazyp->beforeFirstEval()) return;
+    VerilatedVarLazyDatap* const descp = lazyDatap();
+    uint8_t* const basep = static_cast<uint8_t*>(descp->selfp);
+    if (!isLazyCopy()) {
+        (descp->refreshp)(descp->selfp);
+    } else if (lazyp->stale(descp->stamp)) {
+        std::memcpy(basep + descp->storageOffset, basep + descp->srcOffset, totalSize());
+    }
+}
 
 #endif  // Guard

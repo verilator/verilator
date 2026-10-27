@@ -119,6 +119,14 @@ class InstVisitor final : public VNVisitor {
             // resolution it built for it, so a port merged into it would be driven by
             // the resolution of the instance as well
             if (exprVarp->isTristate()) return false;
+            // Under --vpi-lazy an output port keeps its own storage, so VPI writability
+            // follows the RTL name, but V3LinkDot keeps the net's when it is a primary IO or
+            // the more public of the two
+            if (v3Global.opt.vpiLazy() && modVarp->direction() == VDirection::OUTPUT
+                && (exprVarp->isPrimaryIO()
+                    || (exprVarp->isSigPublic() && !modVarp->isSigPublic()))) {
+                return false;
+            }
         }
         // They will become the same variable, so propagate file-line and attributes
         exprVarp->fileline()->modifyStateInherit(modVarp->fileline());

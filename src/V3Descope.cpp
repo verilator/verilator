@@ -250,8 +250,16 @@ class DescopeVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // Convert the hierch name
         UASSERT_OBJ(m_scopep, nodep, "Node not under scope");
-        const AstScope* const scopep = nodep->funcp()->scopep();
-        nodep->selfPointer(descopedSelfPointer(scopep));
+        const AstCFunc* const funcp = nodep->funcp();
+        nodep->selfPointer(descopedSelfPointer(funcp->scopep()));
+        // A --vpi-lazy stub only lends its instance's self pointer to a call of a shared func
+        if (funcp->vpiLazyInstStub()) {
+            const AstStmtExpr* const stmtp = VN_AS(funcp->stmtsp(), StmtExpr);
+            const AstCCall* const sharedp = VN_CAST(stmtp->exprp(), CCall);
+            UASSERT_OBJ(sharedp && !stmtp->nextp(), funcp,
+                        "--vpi-lazy instance stub is not one call");
+            nodep->funcp(sharedp->funcp());
+        }
         // Can't do this, as we may have more calls later
         // nodep->funcp()->scopep(nullptr);
     }
@@ -276,6 +284,11 @@ class DescopeVisitor final : public VNVisitor {
     void visit(AstCMethodCall* nodep) override { iterateChildren(nodep); }
     void visit(AstCNew* nodep) override { iterateChildren(nodep); }
     void visit(AstCFunc* nodep) override {
+        if (nodep->vpiLazyInstStub()) {
+            // Callers still read it; deleted once the visitor finishes
+            pushDeletep(nodep->unlinkFrBack());
+            return;
+        }
         VL_RESTORER(m_funcp);
         if (!nodep->user1()) {
             // Static functions should have been moved under the corresponding AstClassPackage
