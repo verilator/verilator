@@ -386,6 +386,34 @@ module t;
       `checkd(fcount[3], 0);  // zero-ok: c == 3 satisfies no x
     end
 
+    // FreshCycle: seed-independent. The first cycle of a fresh Flat draws c ahead of x, so
+    // a drawn 3 fails the call while feasible values are left; drawn last, it restarts the
+    // cycle instead. Each cycle of four calls thus fails at most once and its successes
+    // cover 0..2, and a cycle fails nothing with probability 3/16. A joint solve of c and x
+    // never fails, so over 16 cycles some call must (missed with probability (3/16)**16).
+    begin
+      automatic Flat fc;
+      automatic int fails;
+      automatic int total = 0;
+      automatic int ccount[4];
+      for (int n = 0; n < 16; ++n) begin
+        fc = new;
+        fails = 0;
+        ccount = '{default: 0};
+        for (int i = 0; i < 4; ++i) begin
+          ok = fc.randomize();
+          if (ok == 0)++fails;
+          else ++ccount[fc.c];
+        end
+        `checkd(fails <= 1, 1'b1);
+        `checkd(ccount[3], 0);  // zero-ok: c == 3 satisfies no x
+        for (int v = 0; v < 3; ++v) `checkd(ccount[v] >= 1, 1'b1);
+        if (fails == 1) for (int v = 0; v < 3; ++v) `checkd(ccount[v], 1);
+        total += fails;
+      end
+      `checkd(total >= 1, 1'b1);
+    end
+
     // OneBit: only c == 0 admits x
     begin
       automatic OneBit ob = new;

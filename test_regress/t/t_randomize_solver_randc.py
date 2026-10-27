@@ -14,7 +14,8 @@ test.top_filename = "t/t_constraint_randc_solve_before.v"
 
 # Fixed-seed fault-injection test: the tamper positions and the pass/fail counts follow
 # the permutation each srandom() seed produces, and are re-derived if Verilator's RNG
-# usage changes. Seed-independent randc coverage is in t_constraint_randc_solve_before.
+# usage changes. The seed-independent check of the randc-first draw is the FreshCycle case
+# of t_constraint_randc_solve_before.
 
 if not test.have_solver:
     test.skip("No constraint solver installed")
