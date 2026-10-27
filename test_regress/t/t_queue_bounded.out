@@ -9,4 +9,9 @@
 %Warning: Bounded queue [$:1] overflow, attempted size 3 exceeds maximum size 2, discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)
 %Warning: Bounded queue [$:1] overflow, attempted size 4 exceeds maximum size 2, discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)
 %Warning: Bounded queue [$:1] overflow, attempted size 3 exceeds maximum size 2, discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)
+%Warning: Bounded queue [$:1] overflow, attempted size 3 exceeds maximum size 2, discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)
+%Warning: Bounded queue [$:3] overflow, attempted size 6 exceeds maximum size 4, discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)
+%Warning: Bounded queue [$:3] overflow, attempted size 7 exceeds maximum size 4, discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)
+%Warning: Bounded queue [$:1] overflow, attempted size 3 exceeds maximum size 2, discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)
+%Warning: Bounded queue [$:2] overflow, attempted size 4 exceeds maximum size 3, discarding out-of-bounds elements (IEEE 1800-2023 7.10.5)
 *-* All Finished *-*

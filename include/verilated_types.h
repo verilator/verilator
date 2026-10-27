@@ -812,11 +812,8 @@ public:
     // function void q.insert(index, value);
     void insert(int32_t index, const T_Value& value) {
         if (VL_UNLIKELY(index < 0 || index > m_deque.size())) return;
-        if (VL_UNLIKELY(N_MaxSize != 0 && m_deque.size() >= N_MaxSize)) {
-            Verilated::queueBoundError(N_MaxSize, m_deque.size() + 1);
-            return;
-        }
         m_deque.insert(m_deque.begin() + index, value);
+        applyBound();
     }
 
     // inside (set membership operator)
