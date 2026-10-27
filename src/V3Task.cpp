@@ -1558,8 +1558,9 @@ class TaskVisitor final : public VNVisitor {
             // by reference
             if (varRefp && varRefp->varScopep()) {
                 if (varRefp->varScopep()->scopep()->name() == scopep->name()
-                    || varRefp->varp()->user1p()) {
-                    if (!varRefp->varp()->user3SetOnce()) {
+                    || varRefp->varp()->user1()) {
+                    if (!varRefp->varp()->user3p()) {
+                        varRefp->varp()->user3p(varRefp->varp());
                         unsetUser3p.push_back(varRefp->varp());
                         AstVarRef* newVarRef = new AstVarRef{varRefp->fileline(), varRefp->varp(),
                                                              VAccess::READWRITE};
@@ -1580,7 +1581,6 @@ class TaskVisitor final : public VNVisitor {
                                    && subVref->varp()->user4p()) {  // when we are making a call
                                                                     // with a child class
                             AstVarScope* newvscp;
-
                             if (!correctScopep) { // When calling from a varref we must check the correctScopep which has where the tasks is being called from.
                                 newvscp = new AstVarScope{varRefp->fileline(), scopep,
                                                           varRefp->varp()};
@@ -1602,8 +1602,10 @@ class TaskVisitor final : public VNVisitor {
                 }
             } else if (AstVar* varpInFunc = VN_CAST(p, Var)) {  // The variable is declared in the
                                                                 // scope do not pass by reference
-                varpInFunc->user3SetOnce();
-                unsetUser3p.push_back(varpInFunc);
+                if (!varpInFunc->user3p()) {
+                    varpInFunc->user3p(varpInFunc);
+                    unsetUser3p.push_back(varpInFunc);
+                }
             }
             if (p->op1p())
                 methodCallArgsRefs(p->op1p(), scopep, methodCallp, refp, unsetUser3p,
@@ -1627,7 +1629,7 @@ class TaskVisitor final : public VNVisitor {
             // Find all assignment nodes in this task if it is a method.
             // If an Assign in the method refences a variable one scope above itself then pass it
             // by refence
-            if (varRefp && varRefp->varScopep() && !varRefp->varp()->user2p()) {
+            if (varRefp && varRefp->varScopep() && !varRefp->varp()->user2()) {
                 if (varRefp->varScopep()->scopep()->name()
                     == methodp->scopep()->aboveScopep()->name()) {
                     AstVarScope* newvscp;
@@ -1645,7 +1647,6 @@ class TaskVisitor final : public VNVisitor {
                                                   newVarp};
                         m_scopep->addVarsp(newvscp);
                         varRefp->varp()->user3p(newvscp);
-                        // varRefp->access(VAccess::READWRITE);
                     } else {
                         newvscp = VN_CAST(varRefp->varp()->user3p(), VarScope);
                         newVarp = newvscp->varp();
@@ -1657,8 +1658,6 @@ class TaskVisitor final : public VNVisitor {
                     AstVarRef* newArgRefp
                         = new AstVarRef{oldVarRefp->fileline(), newVarp, VAccess::READWRITE};
                     newArgRefp->varScopep(newvscp);
-                    // varRefp->varScopep(newvscp);
-                    // varRefp->varp(newVarp);
                     oldVarRefp->replaceWithKeepDType(newArgRefp);
                     VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
                 }
@@ -1858,20 +1857,18 @@ class TaskVisitor final : public VNVisitor {
             }
         }
 
+        // We are dealing with a pure system verilog class method,
+        // where we aren't already doing pass by ref.
         if (!VN_IS(nodep, Func) && nodep->classMethod() && !nodep->isStatic()
             && !nodep->isCovergroupSample()
-            && !nodep->dpiImport()  // We are dealing with a pure system verilog class method,
-                                    // where we aren't already doing pass by ref.
+            && !nodep->dpiImport()  
             && cfuncp && cfuncp->scopep()->aboveScopep()
             && (VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Module)
-                || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface)
-                // || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Package)
-                )
-            && !cfuncp->scopep()->user4p()  // check that the user3p flag is not set
+                || VN_IS(cfuncp->scopep()->aboveScopep()->modp(), Iface))
+            && !cfuncp->scopep()->user4p()  // check that the user4p flag is not set from visit(assign)
         ) {
             std::vector<AstNode*> unsetUser3p;
             methodBodyRefs(nodep, cfuncp, unsetUser3p);
-
             for (auto unset : unsetUser3p) { unset->user3p(nullptr); }
         }
 
