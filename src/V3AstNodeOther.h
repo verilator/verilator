@@ -149,6 +149,8 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     VLifetime m_lifetime;  // Default lifetime of local vars
     VIsCached m_purity;  // Pure state
+    // dist-ast-dump-suppress  // A cache of the arguments, not separate state
+    VIsCached m_writableArgs;  // Has a writable (output/inout/ref) argument
 
 protected:
     AstNodeFTask(VNType t, FileLine* fl, const string& name, AstNode* stmtsp)
@@ -265,6 +267,11 @@ public:
     void lifetime(const VLifetime& flag) { m_lifetime = flag; }
     VLifetime lifetime() const { return m_lifetime; }
     bool isPure() override;
+    // Whether a call writes one of the caller's variables through an argument.
+    // isPure() does not report this: the written variable is the subroutine's
+    // own automatic local, and only the caller's binding makes the write
+    // visible. Note a function's return value is fvarp(), not an argument.
+    bool hasWritableArgs();
     const char* broken() const override;
     void propagateAttrFrom(const AstNodeFTask* fromp) {
         // Creating a wrapper with e.g. cloneType(); preserve some attributes

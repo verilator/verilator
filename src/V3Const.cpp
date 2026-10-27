@@ -1257,6 +1257,11 @@ class ConstVisitor final : public VNVisitor {
         return true;
     }
 
+    bool matchCondSameArms(AstCond* const nodep) {
+        // 'c ? x : x' is 'x', but only when dropping 'c' drops no effect
+        if (hasEffect(nodep->condp())) return false;
+        return operandsSameTree(nodep->thenp(), nodep->elsep());
+    }
     bool matchCondCond(const AstCond* nodep) {
         // Same condition on either leg of a condition means that
         // expression is either always true or always false
@@ -1969,7 +1974,7 @@ class ConstVisitor final : public VNVisitor {
     // Replace 'nodep' with constant 'val', keeping the side effects of impure operands as
     // statements of an AstExprStmt
     void replaceValChkPure(AstNodeBiop* nodep, uint32_t val) {
-        if (nodep->lhsp()->isPure() && nodep->rhsp()->isPure()) {
+        if (!hasEffect(nodep->lhsp()) && !hasEffect(nodep->rhsp())) {
             VL_DO_DANGLING(replaceNum(nodep, val), nodep);
             return;
         }
@@ -1979,7 +1984,7 @@ class ConstVisitor final : public VNVisitor {
         stmtFlp->warnOff(V3ErrorCode::IGNOREDRETURN, true);
         AstNode* stmtsp = nullptr;
         for (AstNodeExpr* const opp : {nodep->lhsp(), nodep->rhsp()}) {
-            if (!opp->isPure()) {
+            if (hasEffect(opp)) {
                 stmtsp = AstNode::addNext(stmtsp, new AstStmtExpr{stmtFlp, opp->unlinkFrBack()});
             }
         }
@@ -3037,11 +3042,28 @@ class ConstVisitor final : public VNVisitor {
         return result;
     }
 
+    // Whether evaluating nodep calls a subroutine that writes one of the caller's
+    // variables through an output, inout or ref argument. isPure() does not report
+    // such a write, as the written variable is the subroutine's own automatic
+    // local, so an expression can be pure and still have an effect that is lost by
+    // deleting it, or gained by evaluating it unconditionally.
+    static bool callsWritableArgs(AstNode* const nodep) {
+        return nodep->exists([](AstNodeFTaskRef* const refp) { return refp->writesCallerArgs(); });
+    }
+    // Whether evaluating nodep has an effect that must be kept even when the value
+    // of nodep is discarded.
+    static bool hasEffect(AstNodeExpr* const nodep) {
+        return !nodep->isPure() || callsWritableArgs(nodep);
+    }
+
     bool matchBiopToBitwise(AstNodeBiop* const nodep) {
         if (!m_convertLogicToBit) return false;
         if (!nodep->lhsp()->width1()) return false;
         if (!nodep->rhsp()->width1()) return false;
         if (!nodep->isPure()) return false;
+        // Bitwise evaluates the RHS that the logical operator short-circuits
+        // (IEEE 1800-2023 11.3.5). The LHS is evaluated either way.
+        if (callsWritableArgs(nodep->rhsp())) return false;
         if (containsMemberAccessRecurse(nodep)) return false;
         return true;
     }
@@ -3864,7 +3886,7 @@ class ConstVisitor final : public VNVisitor {
                 VIsCached::clearCacheTree();
             } else if (!AstNode::afterCommentp(nodep->thensp())
                        && !AstNode::afterCommentp(nodep->elsesp())) {
-                if (!nodep->condp()->isPure()) {
+                if (hasEffect(nodep->condp())) {
                     // Condition has side effect - leave, but don't need return value
                     UINFO(4, "IF({x}) ; => STMTEXPR({x}): " << nodep);
                     nodep->fileline()->warnOff(V3ErrorCode::IGNOREDRETURN, true);
@@ -4396,7 +4418,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",        "replaceWLhs(nodep)");
     TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",        "replaceWLhsBool(nodep)");
     TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, $lhsp.isPure}",        "replaceWRhs(nodep)");  // ->allOnes
-    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, $lhsp.isPure, nodep->isPure()}",        "replaceNum(nodep,1)");
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero}",        "replaceValChkPure(nodep, 1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
@@ -4415,7 +4437,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstCond{$condp.isNeqZero,    $thenp, $elsep}", "replaceWChild(nodep,$thenp)");
     TREEOPA("AstCond{$condp.isZero,       $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$elsep)");
     TREEOPA("AstCond{$condp.isNeqZero,    $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$thenp)");
-    TREEOP ("AstCond{$condp, operandsSameTree($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
+    TREEOP ("AstCond{$condp, matchCondSameArms(nodep)}","replaceWChild(nodep,$thenp)");
     TREEOP ("AstCond{$condp, matchCondCond(nodep)}", "DONE")  // Same condition then skip
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstCond{$condp.isZero}",           "replaceWIteratedThs(nodep)");

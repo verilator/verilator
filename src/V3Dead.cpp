@@ -405,7 +405,9 @@ class DeadVisitor final : public VNVisitor {
     }
     void visit(AstNodeFTaskRef* nodep) override {
         iterateChildren(nodep);
-        if (!m_sideEffect && !nodep->isPure()) m_sideEffect = true;
+        // A call writing one of the caller's variables through an argument must be
+        // kept even when its result is unused, which isPure() does not report
+        if (!m_sideEffect && (!nodep->isPure() || nodep->writesCallerArgs())) m_sideEffect = true;
         checkAll(nodep);
         needsTask(nodep->taskp(), m_containingFTaskRefp);
         if (nodep->classOrPackagep()) {

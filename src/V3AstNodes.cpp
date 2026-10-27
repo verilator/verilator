@@ -3222,6 +3222,21 @@ bool AstNodeFTask::getPurityRecurse() const {
     }
     return true;
 }
+bool AstNodeFTask::hasWritableArgs() {
+    if (!m_writableArgs.isCached()) {
+        bool writable = false;
+        for (AstNode* stmtp = this->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
+                if (varp->isWritable()) {
+                    writable = true;
+                    break;
+                }
+            }
+        }
+        m_writableArgs.set(writable);
+    }
+    return m_writableArgs.get();
+}
 bool AstNodeFTask::isPure() {
     if (!m_purity.isCached()) m_purity.set(getPurityRecurse());
     return m_purity.get();
