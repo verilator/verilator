@@ -76,6 +76,12 @@ public:
     bool m_isMatch = false;
     // OWNED throughout-guard condition clones; IEEE 1800-2023 16.9.9
     std::vector<AstNodeExpr*> m_throughoutConds;
+    // Required condition of an unbounded repetition whose endpoint is
+    // continued by a following boolean expression.
+    AstNodeExpr* m_liveRepCondp = nullptr;
+    SvaStateVertex* m_liveRepCheckVtxp = nullptr;
+    // A valid endpoint match clears the live repetition state.
+    AstNodeExpr* m_liveRepClearCondp = nullptr;
     // Nonzero for a ring-buffer vertex for ## delays.
     bool m_isFixedDelayRing = false;
     unsigned m_delayRingSize = 0;  // Number of ring slots. Range: max-min+1.
@@ -108,6 +114,9 @@ public:
         : V3GraphVertex{graphp} {}
     ~SvaStateVertex() override {
         for (AstNodeExpr* cp : m_throughoutConds) VL_DO_DANGLING(cp->deleteTree(), cp);
+        if (m_liveRepCondp) VL_DO_DANGLING(m_liveRepCondp->deleteTree(), m_liveRepCondp);
+        if (m_liveRepClearCondp)
+            VL_DO_DANGLING(m_liveRepClearCondp->deleteTree(), m_liveRepClearCondp);
         if (m_delayRingClearCondp)
             VL_DO_DANGLING(m_delayRingClearCondp->deleteTree(), m_delayRingClearCondp);
         if (m_delayRingAdvanceCondp)
@@ -733,6 +742,30 @@ class SvaNfaBuilder final {
             if (result.valid()) addFiniteRangeReject(rangeRejectInfo, result, flp);
             return result;
         }
+        // A failed required repetition cannot be recovered by a later endpoint.
+        // Reject the attempt even when the endpoint is false on this tick.
+        if (isTopLevelStep && currentp->m_liveRepCondp) {
+            SvaStateVertex* const liveRepVtxp  // LCOV_EXCL_LINE
+                = currentp->m_liveRepCheckVtxp
+                                                  ? currentp->m_liveRepCheckVtxp
+                                                  : currentp;
+            // The endpoint is valid only when the repetition itself matched on this tick.
+            // A valid match also retires the live repetition state for later ticks.
+            liveRepVtxp->m_liveRepClearCondp
+                = new AstLogAnd{flp, currentp->m_liveRepCondp->cloneTreePure(false),
+                                exprp->cloneTreePure(false)};
+            SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
+            sinkVtxp->m_isRejectSink = true;
+            AstNodeExpr* const guardp = sampled(currentp->m_liveRepCondp->cloneTreePure(false));
+            SvaTransEdge* const rejEdgep = m_graph.addLink(liveRepVtxp, sinkVtxp, guardp);
+            rejEdgep->m_rejectOnFail = true;
+
+            // Do not allow the endpoint to match if the repetition failed on this tick.
+            return {currentp,
+                    new AstLogAnd{flp, currentp->m_liveRepCondp->cloneTreePure(false),
+                                  exprp->cloneTreePure(false)},
+                    std::move(rangeMidSources)};
+        }
         return {currentp, exprp, std::move(rangeMidSources)};
     }
 
@@ -807,8 +840,10 @@ class SvaNfaBuilder final {
                             flp);
                 guardedEdge(reCheckVtxp, loopBackVtxp, flp);
                 guardedLink(reCheckVtxp, currentp, flp);
+                currentp->m_liveRepCheckVtxp = loopBackVtxp;
             }
             currentp->m_isUnbounded = true;
+            currentp->m_liveRepCondp = exprp->cloneTreePure(false);
             m_inUnboundedScope = true;
         } else if (repp->maxCountp()) {
             const unsigned maxN = getConstUInt(repp->maxCountp());
@@ -1987,6 +2022,15 @@ class SvaNfaLowering final {
             UASSERT_OBJ(nextStatep, vtxp,
                         "Registered vertex has no clocked incoming contribution");
             nextStatep = gateNotKill(c, nextStatep);
+
+            // A successful endpoint consumes the unbounded repetition attempt. Keep the
+            // current-cycle match signal intact, but do not carry the repetition state into
+            // later cycles where it could be rejected after the endpoint already matched.
+            if (vtxp->m_liveRepClearCondp) {
+                nextStatep = new AstCond{
+                    c.flp, sampled(vtxp->m_liveRepClearCondp->cloneTreePure(false)),
+                    new AstConst{c.flp, AstConst::BitFalse{}}, nextStatep};
+            }
 
             AstAssignDly* const assignp = new AstAssignDly{
                 c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::WRITE}, nextStatep};
