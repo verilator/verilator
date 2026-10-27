@@ -59,6 +59,9 @@ class VSymEnt final {
     string m_symPrefix;  // String to prefix symbols with (for V3LinkDot, unused here)
     bool m_exported = true;  // Allow importing
     bool m_imported = false;  // Was imported
+    // Declaration of the same name in another wildcard imported package, so referencing this
+    // symbol is ambiguous, per IEEE 1800-2023 26.3
+    const VSymEnt* m_ambiguousp = nullptr;
 #ifdef VL_DEBUG
     VL_DEFINE_DEBUG_FUNCTIONS;
 #else
@@ -129,6 +132,7 @@ public:
     void exported(bool flag) { m_exported = flag; }
     bool imported() const { return m_imported; }
     void imported(bool flag) { m_imported = flag; }
+    const VSymEnt* ambiguousp() const { return m_ambiguousp; }
     VSymEnt* insert(const string& name, VSymEnt* entp) {
         UINFO(9, "     SymInsert se" << cvtToHex(this) << " '" << name << "' se" << cvtToHex(entp)
                                      << "  " << entp->nodep());
@@ -172,14 +176,24 @@ public:
                                                  : "se" + cvtToHex(it->second)
                                                        + " n=" + cvtToHex(it->second->nodep())));
         if (it != m_idNameMap.end()) return it->second;
-        // Then import it from the first wildcard imported package that exports it
+        // Then import it from the first wildcard imported package that exports it, noting if
+        // another package exports a different declaration of it
+        const VSymEnt* foundp = nullptr;
+        const VSymEnt* ambiguousp = nullptr;
         for (const VSymEnt* const pkgSymp : m_wildImportps) {
             const auto pkgIt = pkgSymp->m_idNameMap.find(name);
-            if (pkgIt != pkgSymp->m_idNameMap.end() && pkgIt->second->exported()) {
-                return insert(name, newImportedSymbol(pkgIt->second));
+            if (pkgIt == pkgSymp->m_idNameMap.end() || !pkgIt->second->exported()) continue;
+            if (!foundp) {
+                foundp = pkgIt->second;
+            } else if (pkgIt->second->nodep() != foundp->nodep()) {
+                ambiguousp = pkgIt->second;
+                break;
             }
         }
-        return nullptr;
+        if (!foundp) return nullptr;
+        VSymEnt* const symp = insert(name, newImportedSymbol(foundp));
+        symp->m_ambiguousp = ambiguousp;
+        return symp;
     }
     static bool checkSimilarname(const AstNode* nodep) {
         // Only declarations that can contribute a name to the netlist handed
@@ -266,12 +280,17 @@ private:
             insert(name, newImportedSymbol(srcp));
         }
     }
-    void exportOneSymbol(VSymGraph* /*graphp*/, const string& name, const VSymEnt* srcp) {
-        if (srcp->exported()) {
-            if (VSymEnt* const symp = findIdFlat(name)) {  // Should already exist in current table
-                if (!symp->exported()) symp->exported(true);
-            }
+    void exportOneSymbol(const string& name, const VSymEnt* pkgSymp, const VSymEnt* srcp) {
+        // Export srcp, declared in pkgSymp, importing it now if pkgSymp is wildcard imported
+        if (!srcp->exported()) return;
+        const auto it = m_idNameMap.find(name);
+        VSymEnt* symp = it != m_idNameMap.end() ? it->second : nullptr;
+        if (!symp
+            && std::find(m_wildImportps.begin(), m_wildImportps.end(), pkgSymp)
+                   != m_wildImportps.end()) {
+            symp = insert(name, newImportedSymbol(srcp));
         }
+        if (symp) symp->exported(true);
     }
 
 public:
@@ -301,15 +320,15 @@ public:
             m_wildImportps.push_back(srcp);  // Symbols are imported on lookup, see findIdFlat
         }
     }
-    void exportFromPackage(VSymGraph* graphp, const VSymEnt* srcp, const string& id_or_star) {
+    void exportFromPackage(const VSymEnt* srcp, const string& id_or_star) {
         // Export tokens from source symbol table into this symbol table
         if (id_or_star != "*") {
             const auto it = vlstd::as_const(srcp->m_idNameMap).find(id_or_star);
-            if (it != srcp->m_idNameMap.end()) exportOneSymbol(graphp, it->first, it->second);
+            if (it != srcp->m_idNameMap.end()) exportOneSymbol(it->first, srcp, it->second);
         } else {
             for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
                  it != srcp->m_idNameMap.end(); ++it) {
-                exportOneSymbol(graphp, it->first, it->second);
+                exportOneSymbol(it->first, srcp, it->second);
             }
         }
     }

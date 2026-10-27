@@ -1,0 +1,56 @@
+%Error: t/t_package_import_wild_ambig_bad.v:46:3: Ambiguous reference to 'word', as it is declared in more than one wildcard imported package (IEEE 1800-2023 26.3)
+   46 |   word my_v;   
+      |   ^~~~
+        t/t_package_import_wild_ambig_bad.v:10:23: ... Declared here
+   10 |   typedef logic [1:0] word;
+      |                       ^~~~
+        t/t_package_import_wild_ambig_bad.v:24:23: ... And here
+   24 |   typedef logic [1:0] word;
+      |                       ^~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_package_import_wild_ambig_bad.v:52:7: Ambiguous reference to 'e', as it is declared in more than one wildcard imported package (IEEE 1800-2023 26.3)
+   52 |     @(e) v = p1 + p2;   
+      |       ^
+        t/t_package_import_wild_ambig_bad.v:12:9: ... Declared here
+   12 |   event e;
+      |         ^
+        t/t_package_import_wild_ambig_bad.v:26:9: ... And here
+   26 |   event e;
+      |         ^
+%Error: t/t_package_import_wild_ambig_bad.v:52:19: Ambiguous reference to 'p2', as it is declared in more than one wildcard imported package (IEEE 1800-2023 26.3)
+   52 |     @(e) v = p1 + p2;   
+      |                   ^~
+        t/t_package_import_wild_ambig_bad.v:9:14: ... Declared here
+    9 |   localparam p2 = 2;
+      |              ^~
+        t/t_package_import_wild_ambig_bad.v:23:14: ... And here
+   23 |   localparam p2 = 2;
+      |              ^~
+%Error: t/t_package_import_wild_ambig_bad.v:52:10: Ambiguous reference to 'v', as it is declared in more than one wildcard imported package (IEEE 1800-2023 26.3)
+   52 |     @(e) v = p1 + p2;   
+      |          ^
+        t/t_package_import_wild_ambig_bad.v:11:8: ... Declared here
+   11 |   word v;
+      |        ^
+        t/t_package_import_wild_ambig_bad.v:25:8: ... And here
+   25 |   word v;
+      |        ^
+%Error: t/t_package_import_wild_ambig_bad.v:53:7: Ambiguous reference to 'f', as it is declared in more than one wildcard imported package (IEEE 1800-2023 26.3)
+   53 |     h(f(1));   
+      |       ^
+        t/t_package_import_wild_ambig_bad.v:13:27: ... Declared here
+   13 |   function automatic word f(word g);
+      |                           ^
+        t/t_package_import_wild_ambig_bad.v:27:27: ... And here
+   27 |   function automatic word f(word g);
+      |                           ^
+%Error: t/t_package_import_wild_ambig_bad.v:53:5: Ambiguous reference to 'h', as it is declared in more than one wildcard imported package (IEEE 1800-2023 26.3)
+   53 |     h(f(1));   
+      |     ^
+        t/t_package_import_wild_ambig_bad.v:16:18: ... Declared here
+   16 |   task automatic h(word i);
+      |                  ^
+        t/t_package_import_wild_ambig_bad.v:30:18: ... And here
+   30 |   task automatic h(word i);
+      |                  ^
+%Error: Exiting due to

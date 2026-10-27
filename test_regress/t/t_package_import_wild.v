@@ -34,6 +34,12 @@ package pkg_d;
   localparam int ONLY_D = ONLY_B + 1;
 endpackage
 
+package pkg_e;
+  import pkg_b::*;
+  import pkg_a::*;
+  export pkg_a::SHARED;  // Exports pkg_a's, though pkg_b is wildcard imported first
+endpackage
+
 interface ifc;
   import pkg_a::*;  // Wildcard imported names are visible through an interface port
   logic sig;
@@ -82,6 +88,7 @@ module t;
     `checkd(SHADOWED, 3);
     `checkd(get_a(), 4);
     `checkd(pkg_c::SHARED, 2);  // Re-exported from pkg_a
+    `checkd(pkg_e::SHARED, 2);
     begin
       // Wildcard import in an unnamed block
       import pkg_d::*;
