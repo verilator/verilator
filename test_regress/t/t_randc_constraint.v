@@ -268,8 +268,11 @@ endclass
 class RandcIfCond extends RandcMixedBase;
   rand bit [1:0] x;
   constraint c_if {
-    if (x > 0) c < 2;
-    else c >= 2;
+    if (x > 0) {
+      c < 2;
+    } else {
+      c >= 2;
+    }
   }
   function bit holds;
     return (x > 0) ? (c < 2) : (c >= 2);
