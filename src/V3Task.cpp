@@ -1556,20 +1556,23 @@ class TaskVisitor final : public VNVisitor {
                         unsetUser3p.push_back(varRefp->varp());
                         AstVarRef* newVarRef
                             = new AstVarRef{varRefp->fileline(), varRefp->varp(), VAccess::READWRITE};
+                        newVarRef->varp()->varType(VVarType::PORT);
+                        newVarRef->varp()->direction(VDirection::REF);
                         newVarRef->dtypeFrom(varRefp->varp());
-                        varRefp->varp()->sigPublic(true);  // make sure this doesn't get optimized away
+                        newVarRef->varp()->sigPublic(true);  // make sure this doesn't get optimized away
+
                         AstNodeVarRef* callFromp = VN_CAST(methodCallp->op1p(), NodeVarRef);
                         AstVarRef* subVref = VN_CAST(methodCallp->op1p(), VarRef);
                         // If the scope is the same keep it.
                         if (!callFromp || callFromp->varScopep()->scopep() == varRefp->varScopep()->scopep()) {
-                            if(!correctScopep){
+                            // if(!correctScopep){
                                 newVarRef->varScopep(varRefp->varScopep());
-                            }else{
-                                AstVarScope* const newvscp
-                                    = new AstVarScope{varRefp->fileline(), correctScopep, varRefp->varp()};
-                                correctScopep->addVarsp(newvscp);
-                                newVarRef->varScopep(newvscp);
-                            }
+                            // }else{
+                            //     AstVarScope* const newvscp
+                            //         = new AstVarScope{varRefp->fileline(), correctScopep, varRefp->varp()};
+                            //     correctScopep->addVarsp(newvscp);
+                            //     newVarRef->varScopep(newvscp);
+                            // }
                         } else if(subVref && subVref->varp()->user4p()){ // when we are making a call with a child class
                             AstVarScope* newvscp;
                             
@@ -1619,7 +1622,7 @@ class TaskVisitor final : public VNVisitor {
                     AstVar* newVarp;
                     // If we haven't emum over this node yet
                     if (!varRefp->varp()->user3p()) {
-                        newVarp = new AstVar{varRefp->fileline(), VVarType::BLOCKTEMP,
+                        newVarp = new AstVar{varRefp->fileline(), VVarType::PORT,
                                             varRefp->name() + "_REF", varRefp->dtypep()};
                         newVarp->funcLocal(true);
                         newVarp->funcReturn(false);
@@ -1627,10 +1630,10 @@ class TaskVisitor final : public VNVisitor {
 
                         methodp->addArgsp(newVarp);
                         newvscp
-                        = new AstVarScope{newVarp->fileline(), m_scopep, newVarp};
+                        = new AstVarScope{newVarp->fileline(), m_scopep->aboveScopep(), newVarp};
                             m_scopep->addVarsp(newvscp);
                         varRefp->varp()->user3p(newvscp);
-
+                        // varRefp->access(VAccess::READWRITE);
                     } else {
                         newvscp = VN_CAST(varRefp->varp()->user3p(), VarScope);
                         newVarp = newvscp->varp();
@@ -1639,7 +1642,7 @@ class TaskVisitor final : public VNVisitor {
                     // Replace all lhsp of this AssignNode with the varible that is passed by reference
                     AstVarRef* oldVarRefp = varRefp;
                     AstVarRef* newArgRefp
-                        = new AstVarRef{oldVarRefp->fileline(), newVarp, VAccess::WRITE};
+                        = new AstVarRef{oldVarRefp->fileline(), newVarp, VAccess::READWRITE};
                     newArgRefp->varScopep(newvscp);
                     // varRefp->varScopep(newvscp);
                     // varRefp->varp(newVarp);
