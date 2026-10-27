@@ -17,13 +17,13 @@ interface intf (input logic clk);
       @(posedge clk);
       data  = d;
       valid = 1'b1;
-      
+
       @(posedge clk);
       data  = '0;
       valid = 1'b0;
     endtask
   endclass
-  
+
   // Instantiate the class object for this specific interface instance
   driver_class drv;
 
@@ -51,7 +51,7 @@ module t(
 
   bit [7:0] intf_1_q [$];
   bit [7:0] intf_2_q [$];
-  
+
   initial begin
     drv1 = intf_1.get_drv();
     drv2 = intf_2.get_drv();
@@ -59,7 +59,6 @@ module t(
     drv1.send_data(8'hAA);
     repeat(5) @(posedge clk);
     drv2.send_data(8'hBB);
-    
     #20;
     `checks(intf_1_q[0],8'hAA);
     `checkh(intf_1_q.size(),1);
