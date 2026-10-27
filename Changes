@@ -74,6 +74,7 @@ Verilator 5.053 devel
 * Support parameterized class reference without `#()` as NONSTD warning (#8813). [Marco Bartoli]
 * Support `option.at_least` at covergroup and cross level (#8566). [Matthew Ballance]
 * Support pre/post increment/decrement in all expressions. [Geza Lore, Testorrent USA, Inc.]
+* Support coverpoint and cross get_inst_coverage() (#8901). [Marco Bartoli]
 * Optimize leading zeros in VCD dumps (#6104).
 * Optimize NBA shadow copies for partial writes (#8266). [Artur Bieniek, Antmicro Ltd.]
 * Optimize recursion depth in DFG circular driver tracing (#8272). [Drew Risinger]
@@ -343,7 +344,11 @@ Verilator 5.053 devel
 * Fix typedef of parameterized class without `#()` (#8888). [Marco Bartoli]
 * Fix covergroup transition bins counting the first sample and overlapping sequences (#8889). [Marco Bartoli]
 * Fix foreach using wrong bound after two or more fixed dimensions (#8891). [Chen Ben-Haroosh]
+* Fix unlimited bin sequence limit and fix negative and >64bit values (#8893). [Marco Bartoli]
 * Fix dynamic array of events writablility (#8897).
+* Fix method calls in conditions (#8900). [Marco Bartoli]
+* Fix `iff` guards on bins auto[N] (#8902). [Marco Bartoli]
+* Fix short-circuit of member select of function call (#8903). [Marco Bartoli]
 
 
 Verilator 5.052 2026-09-05
