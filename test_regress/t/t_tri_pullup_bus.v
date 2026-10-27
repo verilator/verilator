@@ -54,6 +54,13 @@ module t;
       .out_value(out_value)
   );
 
+  // A per-bit pull must preserve the tri1 default on the other packed bits.
+  tri1 [6:0] packed_default_pull;
+  logic pull_enable;
+  logic [6:0] pull_data;
+  pullup (packed_default_pull[3]);
+  assign packed_default_pull = pull_enable ? pull_data : 7'bz;
+
   initial begin
     // Test 1: Lower bits = 0xF
     in_value = 4'hF;
@@ -75,6 +82,13 @@ module t;
     #1;
     // Expected: 0x50 = 0101_0000
     `checkh(out_value, 8'h50);
+
+    for (int cyc = 0; cyc < 16; ++cyc) begin
+      pull_enable = cyc[0];
+      pull_data = 7'(cyc * 19);
+      #1;
+      `checkh(packed_default_pull, pull_enable ? pull_data : 7'h7f);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish;
