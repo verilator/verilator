@@ -67,6 +67,34 @@ public:
     static string topClassName() VL_MT_SAFE {  // Return name of top wrapper module
         return v3Global.opt.prefix();
     }
+    // Split a pretty path below the model into the name it is below, as an index into the
+    // run-time names (0 for the model, e.g. in a package, else AstNetlist::l2Names() index plus
+    // one), and the rest of the path
+    static std::pair<size_t, std::string> splitTopPath(const std::string& path) {
+        const std::vector<std::string>& tops = v3Global.rootp()->l2Names();
+        for (size_t i = 0; i < tops.size(); ++i) {
+            if (path == tops[i]) return {i + 1, ""};
+            if (VString::startsWith(path, tops[i] + ".")) {
+                return {i + 1, path.substr(tops[i].size() + 1)};
+            }
+        }
+        return {0, path};
+    }
+    static std::string topNamesVar(bool protect) {
+        return protect && v3Global.opt.protectIds() ? "__Vm_topNamesProt" : "__Vm_topNames";
+    }
+    static std::string topNameExpr(size_t index, bool protect) {
+        return "vlSymsp->" + topNamesVar(protect) + "[" + std::to_string(index) + "].c_str()";
+    }
+    // Expression for the run-time name of the given path below the model
+    static std::string instNameExpr(const std::string& path, bool protect) {
+        const std::pair<size_t, std::string> top = splitTopPath(path);
+        const std::string topName = topNameExpr(top.first, protect);
+        if (top.second.empty()) return topName;
+        return "Verilated::catName(" + topName + ", \""
+               + V3OutFormatter::quoteNameControls(VIdProtect::protectWordsIf(top.second, protect))
+               + "\")";
+    }
     // Return name of the VlExecGraph describing an AstExecGraph
     static string execGraphName(const AstExecGraph* nodep) {
         return topClassName() + "__ExecGraph__" + nodep->nameProtect();
@@ -251,7 +279,8 @@ public:
         // Otherwise they should be available in the local scope where emitted
         return name;
     }
-    string cFuncArgs(const AstCFunc* nodep);
+    // Argument list; if 'cpp', C++ rather than a C header
+    string cFuncArgs(const AstCFunc* nodep, bool cpp = true);
     void emitCDefaultConstructor(const AstNodeModule* modp);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);
@@ -259,7 +288,7 @@ public:
     void emitVarAccessors(const AstVar* nodep);
     template <typename T_Callable>
     static void forModCUse(const AstNodeModule* modp, VUseType useType, T_Callable action) {
-        for (const AstNode* itemp = modp->stmtsp(); itemp; itemp = itemp->nextp()) {
+        for (const AstNode* const itemp : modp->stmtspList()) {
             if (const AstCUse* const usep = VN_CAST(itemp, CUse)) {
                 if (usep->useType().containsAny(useType)) {
                     if (usep->useType().containsAny(VUseType::INT_INCLUDE)) {

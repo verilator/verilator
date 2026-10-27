@@ -108,6 +108,7 @@ class OrderGraphBuilder final : public VNVisitor {
     bool m_inPre = false;  // Underneath AlwaysPre
     bool m_inPost = false;  // Underneath AstAlwaysPost
     std::function<bool(const AstVarScope*)> m_readTriggersCombLogic;
+    // Variables whose force read edges are ignored
     V3Sched::util::VarScopeSet m_forceReadEdgeIgnores;
     const bool m_parallel;  // Ordering for multi-threaded execution (record variable accesses)
 
@@ -241,7 +242,7 @@ class OrderGraphBuilder final : public VNVisitor {
         bool con = false;
         if (!prevCon && access.isReadOrRW()) {
             con = true;
-            if (prevGen && !m_inClocked) {
+            if ((prevGen || gen) && !m_inClocked) {
                 // Dangerous assumption:
                 // If a variable is consumed in the same combinational process that produced it
                 // earlier, consider it something like:

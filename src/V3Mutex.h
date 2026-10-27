@@ -118,7 +118,7 @@ class VL_SCOPED_CAPABILITY V3LockGuardImp final {
     VL_UNCOPYABLE(V3LockGuardImp);
 
 private:
-    T& m_mutexr;
+    T& m_mutexr;  // Mutex being held
 
 public:
     /// Lock given mutex and hold it for the object lifetime.

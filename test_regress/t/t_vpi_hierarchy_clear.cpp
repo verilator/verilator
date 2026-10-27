@@ -30,11 +30,11 @@ int main(int argc, char** argv) {
     // Vt_vpi_hierarchy_clear::vlSymsp is private, so create a dummy syms object just to be able to
     // construct the VerilatedScope objects
     std::unique_ptr<Vt_vpi_hierarchy_clear__Syms> dummySymsp
-        = std::make_unique<Vt_vpi_hierarchy_clear__Syms>(contextp.get(), "dummySymsObject",
-                                                         nullptr);
-    std::unique_ptr<VerilatedScope> additionalScope
-        = std::make_unique<VerilatedScope>(dummySymsp.get(), "t.additional", "additional",
-                                           "Additional", -12, VerilatedScope::SCOPE_MODULE);
+        = std::make_unique<Vt_vpi_hierarchy_clear__Syms>(contextp.get(), nullptr,
+                                                         "dummySymsObject", true);
+    std::unique_ptr<VerilatedScope> additionalScope = std::make_unique<VerilatedScope>(
+        dummySymsp.get(), dummySymsp->name(), "t.additional", "additional", "Additional", -12,
+        VerilatedScope::SCOPE_MODULE);
 
     {
         // Construct and destroy

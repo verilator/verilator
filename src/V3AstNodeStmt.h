@@ -259,6 +259,11 @@ public:
                  AstNodeExpr* directiveTypep = nullptr, AstNodeExpr* levelp = nullptr,
                  AstNodeExpr* itemsp = nullptr);
     ASTGEN_MEMBERS_AstAssertCtl;
+    bool sameNode(const AstNode* samep) const override {
+        const AstAssertCtl* const sp = VN_DBG_AS(samep, AssertCtl);
+        return ctlType() == sp->ctlType() && assertTypes() == sp->assertTypes()
+               && directiveTypes() == sp->directiveTypes();
+    }
     string verilogKwd() const override { return m_ctlType.ascii(); }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
@@ -684,7 +689,9 @@ public:
     bool isPredictOptimizable() const override { return false; }
     bool isPure() override { return false; }
     virtual bool cleanOut() const { return true; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return ctlType() == VN_DBG_AS(samep, DumpCtl)->ctlType();
+    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     VDumpCtlType ctlType() const { return m_ctlType; }
@@ -811,6 +818,9 @@ public:
         this->operandp(operandp);
     }
     ASTGEN_MEMBERS_AstFireEvent;
+    bool sameNode(const AstNode* samep) const override {
+        return isDelayed() == VN_DBG_AS(samep, FireEvent)->isDelayed();
+    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     bool isDelayed() const { return m_delayed; }
@@ -993,6 +1003,10 @@ public:
     explicit AstPrintTimeScale(FileLine* fl)
         : ASTGEN_SUPER_PrintTimeScale(fl) {}
     ASTGEN_MEMBERS_AstPrintTimeScale;
+    bool sameNode(const AstNode* samep) const override {
+        const AstPrintTimeScale* const sp = VN_DBG_AS(samep, PrintTimeScale);
+        return name() == sp->name() && timeunit() == sp->timeunit();
+    }
     void name(const string& name) override { m_name = name; }
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
     void dump(std::ostream& str) const override;
@@ -1398,7 +1412,9 @@ public:
     int instrCount() const override { return 10 + 2 * INSTR_COUNT_LD; }
     bool hasDType() const override VL_MT_SAFE { return true; }
     bool sameNode(const AstNode* samep) const override {
-        return declp() == VN_DBG_AS(samep, TraceInc)->declp();
+        const AstTraceInc* const sp = VN_DBG_AS(samep, TraceInc);
+        return declp() == sp->declp() && baseCode() == sp->baseCode()
+               && traceType() == sp->traceType();
     }
     bool isGateOptimizable() const override { return false; }
     bool isPredictOptimizable() const override { return false; }
@@ -1494,7 +1510,7 @@ public:
     };
 
 private:
-    operation m_operation;
+    operation m_operation;  // Operation statement performs
 
 public:
     AstAssignCompound(AstAssignCompound::operation operation, FileLine* fl, AstNodeExpr* lhsp,

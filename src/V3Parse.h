@@ -30,7 +30,7 @@ class V3ParseImp;
 //============================================================================
 
 class V3Parse final {
-    V3ParseImp* m_impp;
+    V3ParseImp* m_impp;  // Implementation
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(V3Parse);

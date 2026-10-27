@@ -211,7 +211,7 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
             });
         }
 
-        for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : activep->stmtspList()) {
             SchedReplicateLogicVertex* const lvtxp
                 = new SchedReplicateLogicVertex{graphp.get(), scopep, senTreep, nodep, region};
             const VNUser2InUse user2InUse;
@@ -223,17 +223,19 @@ std::unique_ptr<Graph> buildGraph(const LogicRegions& logicRegions) {
             nodep->foreach([&](AstVarRef* refp) {
                 AstVarScope* const vscp = refp->varScopep();
                 SchedReplicateVarVertex* const vvtxp = getVarVertex(vscp);
-                if (refp->access().isReadOrRW() && !vscp->user3SetOnce()
-                    && readTriggersThisLogic(vscp) && !vscp->user2()
-                    && !forceReadEdgeIgnores.count(vscp)) {  //
-                    addEdge(vvtxp, lvtxp);
-                }
                 // If written, add logic -> var edge
                 // Note: See V3Order for why AlwaysPostponed is safe to be ignored. We ignore it
                 // as otherwise we would end up with a false cycle.
                 if (refp->access().isWriteOrRW() && !refp->varp()->ignoreSchedWrite()
                     && !vscp->user2SetOnce() && !VN_IS(nodep, AlwaysPostponed)) {  //
                     addEdge(lvtxp, vvtxp);
+                }
+                // If read, add var -> logic edge. Checked after the write, as in V3SchedAcyclic,
+                // so a read-write reference counts only as a write
+                if (refp->access().isReadOrRW() && !vscp->user3SetOnce()
+                    && readTriggersThisLogic(vscp) && !vscp->user2()
+                    && !forceReadEdgeIgnores.count(vscp)) {  //
+                    addEdge(vvtxp, lvtxp);
                 }
             });
         }

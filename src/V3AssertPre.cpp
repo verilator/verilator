@@ -48,7 +48,7 @@ class AssertPreClockingVisitor final : public VNVisitorConst {
     void visit(AstNodeModule* nodep) override { iterateAndNextConstNull(nodep->stmtsp()); }
     void visit(AstGenBlock* nodep) override { iterateAndNextConstNull(nodep->itemsp()); }
     void visit(AstClocking* nodep) override {
-        for (AstNode* itemp = nodep->itemsp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : nodep->itemspList()) {
             if (AstClockingItem* const citemp = VN_CAST(itemp, ClockingItem)) {
                 citemp->user3p(nodep);
             }
@@ -181,8 +181,7 @@ private:
         // null reference, which needs an integral value; scheduling does not guard it
         const bool guardNull = selp && !VN_IS(m_modp, Class);
         if (guardNull) {
-            for (AstSenItem* itemp = origp->sensesp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), SenItem)) {
+            for (AstSenItem* const itemp : origp->sensespList()) {
                 if (!itemp->sensp()->dtypep()->skipRefp()->isIntegralOrPacked()) {
                     delayp->v3warn(E_UNSUPPORTED,
                                    "Unsupported: cycle delay in synchronous drive through"
@@ -215,8 +214,7 @@ private:
             VL_DO_DANGLING(pushDeletep(refp), refp);
         }
         if (guardNull) {
-            for (AstSenItem* itemp = sentreep->sensesp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), SenItem)) {
+            for (AstSenItem* const itemp : sentreep->sensespList()) {
                 guardNullIface(itemp, selp->fromp());
             }
         }
@@ -355,7 +353,7 @@ private:
         // module-level __Vpropvar temps. Cross-cycle persistence is handled
         // by the match item lowering in visit(AstImplication*).
         std::unordered_map<const AstVar*, AstVar*> localVarMap;
-        for (AstNode* stmtp = propp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : propp->stmtspList()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (!varp->isIO()) {
                     const string newName = m_propVarNames.get(varp);
@@ -469,7 +467,7 @@ private:
     void visit(AstModportClockingRef* const nodep) override {
         // It has to be converted to a list of ModportClockingVarRefs,
         // because clocking blocks are removed in this pass
-        for (AstNode* itemp = nodep->clockingp()->itemsp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : nodep->clockingp()->itemspList()) {
             if (AstClockingItem* const citemp = VN_CAST(itemp, ClockingItem)) {
                 if (AstVar* const varp
                     = citemp->varp() ? citemp->varp() : VN_AS(citemp->user1p(), Var)) {
@@ -1481,13 +1479,11 @@ private:
                 // The assign evaluates RHS once; V3Sampled snapshots the
                 // result so all consequent refs read the same value.
                 AstNode* matchAssignsp = nullptr;
-                for (AstNode* stmtp = exprStmtp->stmtsp(); stmtp;) {
-                    AstNode* const nextp = stmtp->nextp();
+                for (AstNode* const stmtp : exprStmtp->stmtspList()) {
                     if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
                         assignp->unlinkFrBack();
                         matchAssignsp = AstNode::addNextNull(matchAssignsp, assignp);
                     }
-                    stmtp = nextp;
                 }
                 VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
                 lhsp = antExprp;
@@ -1503,8 +1499,7 @@ private:
                 // so the consequent (which already references __Vpropvar)
                 // sees the captured value.
                 AstNode* matchAssignsp = nullptr;
-                for (AstNode* stmtp = exprStmtp->stmtsp(); stmtp;) {
-                    AstNode* const nextp = stmtp->nextp();
+                for (AstNode* const stmtp : exprStmtp->stmtspList()) {
                     if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
                         assignp->unlinkFrBack();
                         AstNodeExpr* const assignLhsp = assignp->lhsp()->unlinkFrBack();
@@ -1513,7 +1508,6 @@ private:
                         VL_DO_DANGLING(pushDeletep(assignp), assignp);
                         matchAssignsp = AstNode::addNextNull(matchAssignsp, dlyp);
                     }
-                    stmtp = nextp;
                 }
                 VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
                 lhsp = antExprp;
@@ -1558,10 +1552,8 @@ private:
             // that are direct statements of the task.
             AstBegin* const bodyp = pexprp->bodyp();
             AstIf* const guardp = new AstIf{flp, condp};
-            for (AstNode* stmtp = bodyp->stmtsp(); stmtp;) {
-                AstNode* const nextp = stmtp->nextp();
+            for (AstNode* const stmtp : bodyp->stmtspList()) {
                 if (!VN_IS(stmtp, Var)) guardp->addThensp(stmtp->unlinkFrBack());
-                stmtp = nextp;
             }
             bodyp->addStmtsp(guardp);
             nodep->replaceWith(pexprp);
@@ -1861,8 +1853,11 @@ private:
         VL_RESTORER(m_defaultClkEvtVarp);
         VL_RESTORER(m_defaultDisablep);
         VL_RESTORER(m_modp);
-        m_defaultClockingp = nullptr;
-        m_defaultClkEvtVarp = nullptr;
+        if (!VN_IS(nodep, Class)) {
+            // A class nested in a module is in the scope of the module's default clocking
+            m_defaultClockingp = nullptr;
+            m_defaultClkEvtVarp = nullptr;
+        }
         m_defaultDisablep = nodep->defaultDisablep();
         m_modp = nodep;
         iterateChildren(nodep);

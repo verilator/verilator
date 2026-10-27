@@ -78,8 +78,7 @@ static void makeVlToString(AstNodeUOrStructDType* nodep) {
     funcp->isStatic(false);
     funcp->protect(false);
     funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;"});
-    for (const AstMemberDType* itemp = nodep->membersp(); itemp;
-         itemp = VN_AS(itemp->nextp(), MemberDType)) {
+    for (const AstMemberDType* const itemp : nodep->memberspList()) {
         std::string stmt = "out += \"";
         if (itemp == nodep->membersp()) {
             stmt += "'{";
@@ -108,7 +107,7 @@ static void makeToString(AstClass* nodep) {
     AstCExpr* const exprp = new AstCExpr{nodep->fileline(), R"("'{"s + to_string_middle() + "}")"};
     exprp->dtypeSetString();
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-    nodep->addStmtsp(funcp);
+    nodep->addMembersp(funcp);
 }
 static void makeToStringMiddle(AstClass* nodep) {
     AstCFunc* const funcp
@@ -118,7 +117,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     funcp->protect(false);
     AstNodeStmt* stmtsp = nullptr;
     std::string comma;
-    for (AstNode* itemp = nodep->membersp(); itemp; itemp = itemp->nextp()) {
+    for (AstNode* const itemp : nodep->memberspList()) {
         if (const auto* const varp = VN_CAST(itemp, Var)) {
             const AstBasicDType* const basicp = varp->dtypeSkipRefp()->basicp();
             if (!varp->isParam() && !varp->isInternal()
@@ -135,18 +134,28 @@ static void makeToStringMiddle(AstClass* nodep) {
             }
         }
     }
+
+    AstNodeExpr* exprp = nullptr;
     if (nodep->extendsp()) {
-        string stmt = "out += ";
-        if (!comma.empty()) stmt += "\", \" + ";
-        // comma = ", ";  // Nothing further so not needed
-        stmt += EmitCUtil::prefixNameProtect(nodep->extendsp()->dtypep());
-        stmt += "::to_string_middle();";
+        const string extendMiddleCall
+            = EmitCUtil::prefixNameProtect(nodep->extendsp()->dtypep()) + "::to_string_middle()";
         nodep->user1(true);  // So what we extend dumps this
-        stmtsp = AstNode::addNextNull(stmtsp, new AstCStmt{nodep->fileline(), stmt});
+        if (!stmtsp) {
+            // Single return, avoid an "out" temporary
+            exprp = new AstCExpr{nodep->fileline(), extendMiddleCall};
+            exprp->dtypeSetString();
+        } else {
+            string stmt = "out += ";
+            if (!comma.empty()) stmt += "\", \" + ";
+            // comma = ", ";  // Nothing further so not needed
+            stmt += extendMiddleCall;
+            stmt += ';';
+            stmtsp = AstNode::addNextNull(stmtsp, new AstCStmt{nodep->fileline(), stmt});
+        }
     }
 
-    AstNodeExpr* exprp;
-    if (stmtsp) {
+    if (exprp) {  // Single statement above
+    } else if (stmtsp) {
         funcp->addStmtsp(new AstCStmt{nodep->fileline(), "std::string out;"});
         funcp->addStmtsp(stmtsp);
         exprp = new AstCExpr{nodep->fileline(), "out"};
@@ -156,7 +165,7 @@ static void makeToStringMiddle(AstClass* nodep) {
     }
     funcp->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
 
-    nodep->addStmtsp(funcp);
+    nodep->addMembersp(funcp);
 }
 
 class ToStringVisitor final : public VNVisitorConst {
@@ -176,15 +185,15 @@ class ToStringVisitor final : public VNVisitorConst {
         NO_PRINTED_FROM_PARENT
     };
 
-    VDouble0 m_statClassToString;
-    VDouble0 m_statInterfaceToString;
-    VDouble0 m_statStructUnionToString;
+    VDouble0 m_statClassToString;  // Statistic, number of class to_string() created
+    VDouble0 m_statInterfaceToString;  // Statistic, number of interface to_string() created
+    VDouble0 m_statStructUnionToString;  // Statistic, number of struct/union to_string() created
 
     void markClassIterate(AstClass* classp) {
         if (classp->user1SetOnce()) return;
         VL_RESTORER(m_emitForMembers);
         ++m_emitForMembers;
-        for (AstNode* stmtp = classp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : classp->memberspList()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 AstNodeDType* nodeDtypep = varp->dtypep();
                 if (AstIfaceRefDType* const ifaceRedDTypep = VN_CAST(nodeDtypep, IfaceRefDType)) {
@@ -218,8 +227,7 @@ class ToStringVisitor final : public VNVisitorConst {
         if (m_emitForMembers
             > 0) {  // either this struct directly requires emission of to_string() or the
                     // class/struct that has this struct as a field requires it to emit to_string()
-            for (AstMemberDType* memberp = structp->membersp(); memberp;
-                 memberp = VN_AS(memberp->nextp(), MemberDType)) {
+            for (AstMemberDType* const memberp : structp->memberspList()) {
                 AstNodeDType* nodeDtypep = memberp->dtypep();
                 if (AstNodeUOrStructDType* const uOrStructDTypep
                     = VN_CAST(nodeDtypep, NodeUOrStructDType)) {
@@ -264,8 +272,7 @@ class ToStringVisitor final : public VNVisitorConst {
             markClassIterate(classp);
             VL_RESTORER(m_emitTowardsRoot);
             ++m_emitTowardsRoot;
-            for (const AstClassExtends* extendp = classp->extendsp(); extendp;
-                 extendp = VN_AS(extendp->nextp(), ClassExtends)) {
+            for (const AstClassExtends* const extendp : classp->extendspList()) {
                 if (extendp->classp() && !extendp->classp()->user1()) {
                     iterateConst(extendp->classp());
                 }
@@ -280,8 +287,7 @@ class ToStringVisitor final : public VNVisitorConst {
             if (m_emitTowardsRoot > 0) markClassIterate(classp);
 
             bool is_root = true;
-            for (const AstClassExtends* extendp = classp->extendsp(); extendp;
-                 extendp = VN_AS(extendp->nextp(), ClassExtends)) {
+            for (const AstClassExtends* const extendp : classp->extendspList()) {
                 if (extendp->classp()) {
                     if (static_cast<PrintedFromParent>(extendp->classp()->user2())
                             == PrintedFromParent::UNRESOLVED
@@ -309,8 +315,7 @@ class ToStringVisitor final : public VNVisitorConst {
                 //   Derived (this class)
                 VL_RESTORER(m_emitTowardsRoot);
                 ++m_emitTowardsRoot;
-                for (const AstClassExtends* extendp = classp->extendsp(); extendp;
-                     extendp = VN_AS(extendp->nextp(), ClassExtends)) {
+                for (const AstClassExtends* const extendp : classp->extendspList()) {
                     if (extendp->classp() && !extendp->classp()->user1()) {
                         iterateConst(extendp->classp());
                     }

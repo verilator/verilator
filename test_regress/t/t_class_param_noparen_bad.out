@@ -1,39 +1,39 @@
-%Warning-NONSTD: t/t_class_param_noparen.v:69:14: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+%Warning-NONSTD: t/t_class_param_noparen.v:73:14: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                                 : ... Suggest use 'Cls#()'
-   69 |       return Cls::type_id::create(name);   
+   73 |       return Cls::type_id::create(name);   
       |              ^~~
                  ... For warning description see https://verilator.org/warn/NONSTD?v=latest
                  ... Use "/* verilator lint_off NONSTD */" and lint_on around source to disable this message.
-%Warning-NONSTD: t/t_class_param_noparen.v:76:5: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+%Warning-NONSTD: t/t_class_param_noparen.v:80:5: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                                : ... Suggest use 'Cls#()'
-   76 |     Cls::T value;   
+   80 |     Cls::T value;   
       |     ^~~
-%Warning-NONSTD: t/t_class_param_noparen.v:85:5: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+%Warning-NONSTD: t/t_class_param_noparen.v:89:5: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                                : ... Suggest use 'Cls#()'
-   85 |     Cls::count += 10;   
+   89 |     Cls::count += 10;   
       |     ^~~
-%Warning-NONSTD: t/t_class_param_noparen.v:86:18: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+%Warning-NONSTD: t/t_class_param_noparen.v:90:18: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                                 : ... Suggest use 'Cls#()'
-   86 |     count = pkg::Cls::count;   
+   90 |     count = pkg::Cls::count;   
       |                  ^~~
-%Warning-NONSTD: t/t_class_param_noparen.v:87:9: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+%Warning-NONSTD: t/t_class_param_noparen.v:91:9: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                                : ... Suggest use 'Cls#()'
-   87 |     p = Cls::P;   
+   91 |     p = Cls::P;   
       |         ^~~
-%Warning-NONSTD: t/t_class_param_noparen.v:88:9: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+%Warning-NONSTD: t/t_class_param_noparen.v:92:9: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                                : ... Suggest use 'Cls#()'
-   88 |     q = Cls::Q;   
+   92 |     q = Cls::Q;   
       |         ^~~
-%Warning-NONSTD: t/t_class_param_noparen.v:89:13: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+%Warning-NONSTD: t/t_class_param_noparen.v:93:13: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                                 : ... Suggest use 'Cls#()'
-   89 |     twice = Cls::twice(21);   
+   93 |     twice = Cls::twice(21);   
       |             ^~~
-%Warning-NONSTD: t/t_class_param_noparen.v:90:30: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+%Warning-NONSTD: t/t_class_param_noparen.v:94:30: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                                 : ... Suggest use 'Cls#()'
-   90 |     type_id_name = $typename(Cls::type_id);   
+   94 |     type_id_name = $typename(Cls::type_id);   
       |                              ^~~
-%Warning-NONSTD: t/t_class_param_noparen.v:91:24: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
+%Warning-NONSTD: t/t_class_param_noparen.v:95:24: Reference to parameterized class without #() (IEEE 1800-2023 8.25.1)
                                                 : ... Suggest use 'Cls#()'
-   91 |     t_name = $typename(Cls::T);   
+   95 |     t_name = $typename(Cls::T);   
       |                        ^~~
 %Error: Exiting due to

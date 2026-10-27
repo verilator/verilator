@@ -1,0 +1,21 @@
+%Warning-UNOPTPUBLIC: Option '--public' prevents optimization
+                      ... Suggest use 'public_flat_rw' on only the needed signals instead
+                      ... For warning description see https://verilator.org/warn/UNOPTPUBLIC?v=latest
+                      ... Use "/* verilator lint_off UNOPTPUBLIC */" and lint_on around source to disable this message.
+%Warning-UNOPTPUBLIC: t/t_lint_unoptpublic_bad.v:8:7: Public signal 'pkg_sig' prevents optimization
+                                                    : ... Suggest use 'public_flat_rw' instead
+    8 |   int pkg_sig  /*verilator public*/;   
+      |       ^~~~~~~
+%Warning-UNOPTPUBLIC: t/t_lint_unoptpublic_bad.v:12:7: Public signal 'sig' prevents optimization
+                                                     : ... Suggest use 'public_flat_rw' instead
+   12 |   int sig  /*verilator public*/;   
+      |       ^~~
+%Warning-UNOPTPUBLIC: t/t_lint_unoptpublic_bad.v:15:5: Public task/function 'f' prevents optimization
+                                                     : ... Suggest use DPI export instead
+   15 |     /*verilator public*/   
+      |     ^~~~~~~~~~~~~~~~~~~~
+%Warning-UNOPTPUBLIC: t/t_lint_unoptpublic_bad.v:21:3: Public module 'pub_mod' prevents optimization
+                                                     : ... Suggest use 'public_flat_rw' on only the needed signals instead
+   21 |   /*verilator public_module*/   
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: Exiting due to

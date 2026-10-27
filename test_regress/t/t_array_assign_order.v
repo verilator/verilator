@@ -28,7 +28,10 @@ endmodule
 module t;
   // Values not known when verilating
   be_t be = '{
-      $urandom_range(10, 10), $urandom_range(11, 11), $urandom_range(12, 12), $urandom_range(13, 13)
+      $urandom_range(10, 10),
+      $urandom_range(11, 11),
+      $urandom_range(12, 12),
+      $urandom_range(13, 13)
   };
   bit sel = $urandom_range(1, 1) == 1;
 
@@ -164,7 +167,7 @@ module t;
     int outer[1:0][0:2];
     int inner[0:1][2:0];
     for (int i = 0; i < 2; ++i)
-      for (int j = 0; j < 3; ++j) be2[i][j] = 10 * i + j + $urandom_range(0, 0);
+    for (int j = 0; j < 3; ++j) be2[i][j] = 10 * i + j + $urandom_range(0, 0);
     le2 = be2;
     `checkd(le2[1][2], 0);
     `checkd(le2[0][0], 12);
@@ -193,8 +196,7 @@ module t;
     for (int b = 0; b < 3; ++b)
     for (int c = 0; c < 2; ++c)
     for (int d = 0; d < 2; ++d)
-    for (int e = 0; e < 3; ++e)
-    `checkd(mix5[a][2 - b][c][d][2 - e], be5[a][b][c][d][e]);
+    for (int e = 0; e < 3; ++e) `checkd(mix5[a][2-b][c][d][2-e], be5[a][b][c][d][e]);
   end
 
   // Continuous assignment, and input and output port, checked after they took effect

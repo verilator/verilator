@@ -201,8 +201,8 @@ private:
             , m_bufp{bufp} {}
     };
 
-    // Passed a ParallelWorkerData*, second argument is ignored
-    static void parallelWorkerTask(void*, bool);
+    // Passed a ParallelWorkerData*
+    static void parallelWorkerTask(void*);
 
 protected:
     uint32_t* m_sigs_oldvalp = nullptr;  // Previous value store

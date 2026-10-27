@@ -12,8 +12,11 @@ import vltest_bootstrap
 test.scenarios('vltmt')
 test.top_filename = "t/t_threads_counter.v"
 
-test.compile(verilator_flags2=['--cc', '-CFLAGS -DVL_THREADS_SERIAL_COST=0'], threads=2)
+test.compile(verilator_flags2=['--cc', '--stats', '-CFLAGS -DVL_THREADS_SERIAL_COST=0'], threads=2)
 
 test.execute()
+
+# Threads synchronize through progress words
+test.file_grep(test.stats, r'Optimizations, Thread progress waits\s+[1-9]')
 
 test.passes()

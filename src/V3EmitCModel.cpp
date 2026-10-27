@@ -37,7 +37,7 @@ class EmitCModel final : public EmitCFunc {
 
     CFuncVector findFuncps(std::function<bool(const AstCFunc*)> cb) {
         CFuncVector funcps;
-        for (AstNode* nodep = m_modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : m_modp->stmtspList()) {
             if (const AstCFunc* const funcp = VN_CAST(nodep, CFunc)) {
                 if (cb(funcp)) funcps.push_back(funcp);
             }
@@ -45,6 +45,16 @@ class EmitCModel final : public EmitCFunc {
         stable_sort(funcps.begin(), funcps.end(),
                     [](const AstNode* ap, const AstNode* bp) { return ap->name() < bp->name(); });
         return funcps;
+    }
+
+    // Whether 'funcp' is a DPI function with arguments of unpacked structures
+    static bool isDpiPassingStructs(const AstCFunc* funcp) {
+        if (!funcp->dpiImportPrototype() && !funcp->dpiExportDispatcher()) return false;
+        for (const AstNode* const argp : funcp->argspList()) {
+            const AstVar* const varp = VN_CAST(argp, Var);
+            if (varp && varp->dtypep()->containsUnpackedStruct()) return true;
+        }
+        return false;
     }
 
     void putSectionDelimiter(const string& name) {
@@ -74,6 +84,10 @@ class EmitCModel final : public EmitCFunc {
         if (v3Global.opt.coverage() || v3Global.useCovergroup())
             puts("#include \"verilated_covergroup.h\"\n");
         if (v3Global.dpi()) puts("#include \"svdpi.h\"\n");
+        // The model needs the C structures DPI functions pass, which the DPI header declares
+        if (!findFuncps(isDpiPassingStructs).empty()) {
+            puts("#include \"" + EmitCUtil::topClassName() + "__Dpi.h\"\n");
+        }
 
         // Declare foreign instances up front to make C++ happy
         puts("\n");
@@ -101,7 +115,7 @@ class EmitCModel final : public EmitCFunc {
         puts("// Symbol table holding complete model state (owned by this class)\n");
         puts(EmitCUtil::symClassName() + "* const vlSymsp;\n");
         puts("// Evaluation loop\n");
-        puts("VerilatedEvalLoop m_evalLoop;\n");
+        puts("VerilatedEvalLoop m_evalLoop;\n");  // Evaluation loop
 
         puts("\n");
         ofp()->putsPrivate(false);  // public:
@@ -115,7 +129,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n// PORTS\n"
              "// The application code writes and reads these signals to\n"
              "// propagate new values into/out from the Verilated model.\n");
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {  //
                     emitVarDecl(varp, /* asRef: */ true);
@@ -127,7 +141,7 @@ class EmitCModel final : public EmitCFunc {
                  "// The application code should use these methods to\n"
                  "// propagate new values into/out from the Verilated model\n"
                  "// instead of using signal variables directly.\n");
-            for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            for (const AstNode* const nodep : modp->stmtspList()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                     if (varp->isPrimaryIO()) emitVarAccessors(varp);
                 }
@@ -138,7 +152,7 @@ class EmitCModel final : public EmitCFunc {
         puts("\n// CELLS\n"
              "// Public to allow access to /* verilator public */ items.\n"
              "// Otherwise the application code can consider these internals.\n");
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 putns(cellp, EmitCUtil::prefixNameProtect(cellp->modp()) + "* const "
@@ -171,6 +185,13 @@ class EmitCModel final : public EmitCFunc {
         }
         ofp()->putsPrivate(true);
         puts("VL_UNCOPYABLE(" + EmitCUtil::topClassName() + ");  ///< Copying not allowed\n");
+        if (!optSystemC()) {
+            puts("\n");
+            puts("protected:\n");
+            ofp()->resetPrivate();
+            puts(EmitCUtil::topClassName()
+                 + "(VerilatedContext* contextp, const char* name, bool isRoot);\n");
+        }
 
         puts("\n");
         ofp()->putsPrivate(false);  // public:
@@ -295,23 +316,29 @@ class EmitCModel final : public EmitCFunc {
         putSectionDelimiter("Constructors");
 
         puts("\n");
-        putns(modp, EmitCUtil::topClassName() + "::" + EmitCUtil::topClassName());
+        const std::string ctorName = EmitCUtil::topClassName() + "::" + EmitCUtil::topClassName();
         if (optSystemC()) {
+            putns(modp, ctorName);
             puts("(sc_core::sc_module_name /* unused */)\n");
             puts("    : VerilatedModel{*Verilated::threadContextp()}\n");
             puts("    , vlSymsp{new " + EmitCUtil::symClassName()
-                 + "(contextp(), name(), this)}\n");
+                 + "(contextp(), this, name(), true)}\n");
         } else {
-            puts("(VerilatedContext* _vcontextp__, const char* _vcname__)\n");
+            putns(modp, ctorName + "(VerilatedContext* _vcontextp__, const char* _vcname__)\n");
+            puts("    : " + EmitCUtil::topClassName() + "{_vcontextp__, _vcname__, true} {}\n\n");
+
+            putns(modp, ctorName);
+            puts("(VerilatedContext* _vcontextp__, const char* _vcname__, "
+                 "bool _vcisRoot__)\n");
             puts("    : VerilatedModel{*_vcontextp__}\n");
             puts("    , vlSymsp{new " + EmitCUtil::symClassName()
-                 + "(contextp(), _vcname__, this)}\n");
+                 + "(contextp(), this, _vcname__, _vcisRoot__)}\n");
         }
         puts("    , m_evalLoop{*this, /*convergeLimit:*/ "s
              + cvtToStr(v3Global.opt.convergeLimit()) + "}\n");
 
         // Set up IO references
-        for (const AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (const AstNode* const nodep : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isPrimaryIO()) {
                     const string protName = varp->nameProtect();
@@ -322,7 +349,7 @@ class EmitCModel final : public EmitCFunc {
         }
 
         // Setup cell pointers
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             if (const AstCell* const cellp = VN_CAST(nodep, Cell)) {
                 if (cellp->modp()->isConstPool()) continue;  // Special emit rules
                 const string protName = cellp->nameProtect();
@@ -356,7 +383,7 @@ class EmitCModel final : public EmitCFunc {
                 putsDecoration(nullptr, "// Notified by pending time delays/DPI exports\n");
                 puts("sensitive << vlSymsp->__Vm_wakeEvent;\n");
             }
-            for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+            for (AstNode* const nodep : modp->stmtspList()) {
                 if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                     if (varp->isNonOutput() && (varp->isScSensitive() || varp->isPrimaryClock())) {
                         int vects = 0;
@@ -584,8 +611,6 @@ class EmitCModel final : public EmitCFunc {
 
     void emitTraceMethods(AstNodeModule* modp) {
         const string topModNameProtected = EmitCUtil::prefixNameProtect(modp);
-        const string topTraceName
-            = V3OutFormatter::quoteNameControls(v3Global.rootp()->traceLibTopName());
 
         putSectionDelimiter("Trace configuration");
 
@@ -620,7 +645,8 @@ class EmitCModel final : public EmitCFunc {
             puts("if (tracep->rootInit()) {\n");
             puts("tracep->pushPrefix(vlSymsp->name(), VerilatedTracePrefixType::SCOPE_MODULE);\n");
             puts(topModNameProtected + "__" + protect("trace_init_root") + "(vlSelf, tracep);\n");
-            puts("tracep->pushPrefix(\"" + topTraceName
+            puts("tracep->pushPrefix(\""
+                 + V3OutFormatter::quoteNameControls(v3Global.rootp()->l2Names().front())
                  + "\", VerilatedTracePrefixType::SCOPE_MODULE);\n");
             puts("}\n");
         }
@@ -720,7 +746,7 @@ class EmitCModel final : public EmitCFunc {
         const std::string fileBaseName = EmitCUtil::topClassName() + "__Dpi_Export";
 
         // Emit DPI Export dispatchers
-        for (AstNode* nodep = modp->stmtsp(); nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : modp->stmtspList()) {
             AstCFunc* const funcp = VN_CAST(nodep, CFunc);
             if (!funcp || !funcp->dpiExportDispatcher()) continue;
 

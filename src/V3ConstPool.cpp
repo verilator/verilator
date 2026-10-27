@@ -29,7 +29,8 @@ V3Hash V3ConstPool::hashValue(const AstNode* nodep) {
     hash += nodep->dtypep()->cType("", false, false);
     if (const AstConst* const constp = VN_CAST(nodep, Const)) return hash + constp->num().toHash();
     if (const AstConsArray* const consp = VN_CAST(nodep, ConsArray)) {
-        const uint64_t size = VN_AS(consp->dtypep(), UnpackArrayDType)->elementsConst();
+        const uint64_t size
+            = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
         for (uint64_t n = 0; n < size; ++n) hash += hashValue(consp->valuep(n));
         return hash;
     }
@@ -49,7 +50,8 @@ bool V3ConstPool::equalValue(const AstNode* ap, const AstNode* bp) {
     // and in which elements are given or defaulted
     if (const AstConsArray* const aConsp = VN_CAST(ap, ConsArray)) {
         const AstConsArray* const bConsp = VN_AS(bp, ConsArray);
-        const uint64_t size = VN_AS(aConsp->dtypep(), UnpackArrayDType)->elementsConst();
+        const uint64_t size
+            = VN_AS(aConsp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
         for (uint64_t n = 0; n < size; ++n) {
             if (!equalValue(aConsp->valuep(n), bConsp->valuep(n))) return false;
         }
@@ -64,7 +66,7 @@ void V3ConstPool::rebuildCache() {
     m_entries.clear();
     m_varScopes.clear();
     AstPackage* const pkgp = v3Global.rootp()->constPoolPkgp();
-    for (AstNode* nodep = pkgp->stmtsp(); nodep; nodep = nodep->nextp()) {
+    for (AstNode* const nodep : pkgp->stmtspList()) {
         if (AstScope* const scopep = VN_CAST(nodep, Scope)) {
             if (m_stage == Stage::SCOPED) m_scopep = scopep;
             continue;
@@ -75,7 +77,7 @@ void V3ConstPool::rebuildCache() {
         m_entries.insert(varp);
     }
     if (m_scopep) {
-        for (AstVarScope* vscp = m_scopep->varsp(); vscp; vscp = VN_AS(vscp->nextp(), VarScope)) {
+        for (AstVarScope* const vscp : m_scopep->varspList()) {
             m_varScopes.insert({vscp->varp(), vscp});
         }
     }

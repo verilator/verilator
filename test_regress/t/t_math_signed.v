@@ -183,7 +183,7 @@ module by_width (
   reg signed [64:0] i65;
 
   // verilator lint_off WIDTH
-  wire signed [WIDTH-1:0] i1extp  /*verilator public*/ = i1;
+  wire signed [WIDTH-1:0] i1extp  /*verilator public_flat_rw*/ = i1;
   wire signed [WIDTH-1:0] i1ext = i1;
   wire signed [WIDTH-1:0] i63ext = i63;
   wire signed [WIDTH-1:0] i65ext = i65;

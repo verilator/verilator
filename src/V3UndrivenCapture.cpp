@@ -32,7 +32,7 @@ public:
 };
 
 class CaptureVisitor final : public VNVisitorConst {
-    V3UndrivenCapture& m_cap;
+    V3UndrivenCapture& m_cap;  // Capture results being built
     const AstNodeFTask* m_curTaskp = nullptr;  // Current task
     bool m_inInitialSetup = false;  // In InitialAutomatic*/InitialStatic* assignment LHS
 

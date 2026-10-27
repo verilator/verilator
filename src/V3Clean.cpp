@@ -322,7 +322,7 @@ class CleanVisitor final : public VNVisitor {
     void visit(AstCMethodHard* nodep) override {
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->pinsp());
-        setClean(nodep, true);
+        setClean(nodep, nodep->cleanOut());
     }
     void visit(AstWith* nodep) override {
         iterateChildren(nodep);

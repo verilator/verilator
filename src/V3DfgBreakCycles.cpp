@@ -1449,7 +1449,7 @@ public:
 class FixUp final {
     DfgGraph& m_dfg;  // The graph being processed
     SccInfo& m_sccInfo;  // The SccInfo instance
-    TraceDriver m_traceDriver{m_dfg, m_sccInfo};
+    TraceDriver m_traceDriver{m_dfg, m_sccInfo};  // Traces drivers of the cyclic variables
     // The independent bits map
     const std::unordered_map<const DfgVertex*, BitMask> m_independentBits
         = IndependentBits::apply(m_dfg, m_sccInfo);

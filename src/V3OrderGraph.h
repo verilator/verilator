@@ -231,7 +231,7 @@ public:
 
 class OrderVarVertex VL_NOT_FINAL : public OrderEitherVertex {
     VL_RTTI_IMPL(OrderVarVertex, OrderEitherVertex)
-    AstVarScope* const m_vscp;
+    AstVarScope* const m_vscp;  // Variable scope vertex represents
 
 public:
     // CONSTRUCTOR

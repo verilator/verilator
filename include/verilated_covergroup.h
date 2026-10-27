@@ -113,11 +113,22 @@ public:
 class VlCoverpoint VL_NOT_FINAL : public VlCoverpointIf {
     struct ValueData;
     std::unique_ptr<ValueData> m_valuesp;  // Optional value metadata and exclusion state
+    // A transition sequence matched from a table of its values (see transitionAdd())
+    struct Transition final {
+        uint32_t m_words;  // Words of each value
+        std::vector<EData> m_values;  // Each item's values, ascending, item after item
+        std::vector<uint32_t> m_ends;  // Number of values to each item's end
+        std::vector<uint32_t> m_active;  // Lengths of the partial matches the samples end with
+        std::vector<uint32_t> m_next;  // m_active for the next sample, being computed
+        explicit Transition(uint32_t words)
+            : m_words{words} {}
+        bool matches(uint32_t item, WDataInP valuep) const;  // Whether item 'item' holds it
+    };
+    std::vector<Transition> m_transitions;  // In transitionAdd() order
     friend class VlCoverCrossDyn;
 
 protected:
     // MEMBERS (protected so VlCoverpointT::incrementBin can update them)
-    std::string m_hier;  // "covergroup.coverpoint"
     uint32_t m_atLeast = 1;  // option.at_least (coverpoint-wide)
     uint32_t m_total = 0;  // bins across all sets
     uint32_t m_normal = 0;  // Normal bins (coverage denominator)
@@ -225,6 +236,13 @@ public:
     /// sizedFinish())
     void withFinish(VlCovBinKind kind, QData count, bool positive, const char* name,
                     const char* file, int line, int col);
+    // Add a transition sequence too long for generated matching, of values of 'words' words,
+    // numbered from 0 in the order added, which transitionSample() matches from a table of
+    // its values that transitionTable() gives.
+    void transitionAdd(uint32_t words) { m_transitions.emplace_back(words); }
+    // Append items to the transition sequence added last: each is its number of values, then
+    // the values, ascending.
+    void transitionTable(std::initializer_list<EData> items);
 
     // ---- hot path (from generated sample()) ----
     // Clear the hit list at the start of each sample() for a cross-fed coverpoint.
@@ -235,6 +253,13 @@ public:
     /// if 'enabled'.  True if a bin holds the value, enabled or not.
     bool sizedSample(uint32_t sized, QData value, bool enabled);
     bool sizedSampleW(uint32_t sized, WDataInP valuep, bool enabled);
+    // Sample a value into transition sequence 'seq'; true if it completes a match.  Matches
+    // may overlap, and each counts (IEEE 1800-2023 19.5.2).  Costs, per partial match the
+    // samples end with, a binary search of the values of its next item.  Partial matches
+    // number at most one per item, and more than a few only for a sequence whose beginning
+    // recurs in it, as in a periodic one.
+    bool transitionSample(uint32_t seq, QData value);
+    bool transitionSampleW(uint32_t seq, WDataInP valuep);
     // incrementBin (Normal bin: count + hit-list append) lives in VlCoverpointT<MaxHits>,
     // where MaxHits is the gen-time max per-sample bin overlap.
 
@@ -363,7 +388,6 @@ protected:
 
 private:
     // MEMBERS
-    std::string m_hier;  // "covergroup.cross"
     const char* m_file = nullptr;  // Cross declaration file (registration metadata)
     int m_line = 0;  // Cross declaration line
     int m_col = 0;  // Cross declaration column
@@ -373,7 +397,8 @@ private:
     // index computed here provably fits.  That bound is far beyond anything
     // storable anyway: m_flatCountsp alone would need 16GB.
     uint32_t m_numAutoBins = 0;  // Product of per-dim Normal bin counts
-    uint32_t m_numCovered = 0;  // Distinct bins hit >= 1 (maintained incrementally)
+    uint32_t m_atLeast = 1;  // option.at_least
+    uint32_t m_numCovered = 0;  // Distinct bins hit >= m_atLeast (maintained incrementally)
     Dimension* m_dimensionsp = nullptr;  // [m_dims], owned by the concrete cross runtime
     uint32_t* m_flatCountsp = nullptr;  // [m_numAutoBins] Per-bin hit counts
     Explicit* m_explicitp = nullptr;  // Absent for automatic-only crosses
@@ -383,7 +408,7 @@ private:
     template <bool T_Explicit, bool T_RecordHits = true>
     void iterateProduct(uint32_t dim, uint32_t baseIdx);
     void incrementAuto(uint32_t idx) {
-        if (m_flatCountsp[idx]++ == 0) ++m_numCovered;
+        if (++m_flatCountsp[idx] == m_atLeast) ++m_numCovered;
     }
     void incrementBin(Bin& bin);
     template <bool T_RecordHits>
@@ -434,8 +459,8 @@ public:
 
     // METHODS
     // ---- configuration (from generated constructor, after coverpoints init'd) ----
-    virtual void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
-                      int line, int col);
+    virtual void init(const char* hier, uint32_t atLeast, uint32_t dims, VlCoverpoint* const* cps,
+                      const char* file, int line, int col);
     /// Add a cross bin using a verilation-time bitmap of selected Normal-bin tuples.
     void addBin(VlCovBinKind kind, std::initializer_list<uint64_t> selection, const char* namep,
                 const char* filep, int line, int col);
@@ -459,9 +484,10 @@ public:
     }
     std::string binName(uint32_t i) const override;
     void coverageParts(double& covered, double& total) const override {
-        covered = m_numCovered;
         total = hasExplicitBins() ? m_explicitp->normalBins + m_explicitp->autoBins.size()
                                   : m_numAutoBins;
+        // With option.at_least 0, every bin is covered before any sample
+        covered = m_atLeast ? m_numCovered : total;
     }
     void mergeInto(VlCovMergedItems& items) const override;
 };
@@ -484,7 +510,7 @@ class VlCoverCrossT final : public VlCoverCross {
     std::array<uint32_t, AutoBins> m_autoBins;
     std::array<uint32_t, BinWords> m_binWords;
     std::array<uint64_t, static_cast<uint64_t>(Bins) * WORDS> m_selections;
-    Explicit m_explicit;
+    Explicit m_explicit;  // Explicit bins, referencing the bins array
 
 public:
     VlCoverCrossT()
@@ -523,8 +549,8 @@ public:
 
     // METHODS
     /// Initialize after all feeding coverpoints have finalized their live bins.
-    void init(const char* hier, uint32_t dims, VlCoverpoint* const* cps, const char* file,
-              int line, int col) override;
+    void init(const char* hier, uint32_t atLeast, uint32_t dims, VlCoverpoint* const* cps,
+              const char* file, int line, int col) override;
     /// Build cross-bin selections in postfix order.
     void selectAll();
     /// Start a binsof term over the live bins declared in [first, end) of dimension 'dim'.
@@ -589,7 +615,7 @@ class VlCovergroupInst final {
     VlFileLineDebug m_fileline;  // Covergroup declaration, where a negative weight is reported
     bool m_retained = false;  // VM_COVERAGE: dead, but kept for registered count pointers
 
-    // Reads m_items to fold the residue; owns m_slot and m_retained.
+    // Reads m_items to fold the residue and merge an item; owns m_slot and m_retained.
     friend class VlCovergroupType;
 
 public:
@@ -656,6 +682,9 @@ public:
     void mergeInto(VlCovMergedItems& items) const;
     /// Instance coverage, as returned by get_inst_coverage(), in 0..100.
     double coverage();
+    /// Coverage of 'itemp', an item of this instance, with the instances of the type merged;
+    /// see VlCovergroupType::mergedCoverage()
+    double mergedCoverage(const VlCoverpointIf* itemp) const;
 };
 
 //=============================================================================
@@ -713,6 +742,9 @@ public:
     /// with each item weighted by its type_option.weight (IEEE 1800-2023 19.7.1).  Without
     /// merging them into a copy, as 'other', those of the instances that have died, may be large.
     std::pair<double, double> coverageSums(const VlCovMergedItems& other) const;
+    /// Coverage of the item 'name', which these items have, merged with that of 'other', in
+    /// 0..100.  Without bins, 0, or 100 if its type_option.weight is 0 (IEEE 1800-2023 19.11.1).
+    double coverage(const std::string& name, const VlCovMergedItems& other) const;
 };
 
 //=============================================================================
@@ -738,6 +770,8 @@ class VlCovergroupType final {
     // Harvest instp's contribution into m_retired, and m_mergedRetired.  Must run before
     // instp is unlinked: it reads the instance's items.
     void foldResidue(VlCovergroupInst* instp);
+    // The items of the live instances merged; those of the dead ones are in m_mergedRetired
+    VlCovMergedItems mergeLive() const;
 
 public:
     // CONSTRUCTORS
@@ -761,6 +795,10 @@ public:
     /// typeWeight is type_option.weight, which decides the result when no instance or item
     /// contributes; like option.weight, it is checked as it is loaded.
     double coverage(IData typeWeight, bool mergeInstances, VlFileLineDebug fileline);
+    /// Coverage of the item 'name' with the instances merged, as a union of their bins, which
+    /// is the item's get_coverage() with type_option.merge_instances (IEEE 1800-2023 19.11.3),
+    /// in 0..100.  The bins of the instances that have died count if the type may merge them.
+    double mergedCoverage(const std::string& name) const;
 
     // ---- introspection ----
     // Test and debug only; generated code never calls these, and SV reaches them

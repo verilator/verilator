@@ -20,6 +20,10 @@ module t;
     cp_array: coverpoint value {
       wildcard bins array[] = {1};
     }
+    // Nor are transition bins (IEEE 1800-2023 19.5.2)
+    cp_trans: coverpoint value {
+      bins trans = (1 => 2);
+    }
   endgroup
 
   cg cov = new;

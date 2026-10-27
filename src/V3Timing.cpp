@@ -667,7 +667,8 @@ class TimingControlVisitor final : public VNVisitor {
             std::stringstream ss;
             V3EmitV::verilogForTree(sentreep, ss);
             // possibly a multiline string
-            std::string comment = ss.str();
+            // Names were hashed by V3Name, show the user the original text
+            std::string comment = VName::dehash(ss.str());
             std::replace(comment.begin(), comment.end(), '\n', ' ');
             // Escape quotes, e.g. from string-indexed event array selects
             comment = '"' + V3OutFormatter::quoteNameControls(comment) + '"';
@@ -760,7 +761,7 @@ class TimingControlVisitor final : public VNVisitor {
         // push_back is no longer necessarily the first statement. Scan across this generated
         // prefix for it, stopping at the fork-start sentinel or the branch body. Registrations for
         // nested forks live in sub-blocks and so are not in this statement list.
-        for (AstNode* stmtp = beginp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : beginp->stmtspList()) {
             if (VN_IS(stmtp, Comment)) continue;
             AstStmtExpr* const stmtExprp = VN_CAST(stmtp, StmtExpr);
             if (!stmtExprp) break;
@@ -795,7 +796,7 @@ class TimingControlVisitor final : public VNVisitor {
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
         unsigned joinCount = 0;  // Needed for join counter
         // Add a <fork sync>.done() to each begin
-        for (AstNode* beginp = forkp->forksp(); beginp; beginp = beginp->nextp()) {
+        for (AstNode* const beginp : forkp->forkspList()) {
             addForkOnKill(VN_AS(beginp, Begin), forkVscp);
             addForkDone(VN_AS(beginp, Begin), forkVscp);
             joinCount++;
@@ -1484,8 +1485,7 @@ class TimingControlVisitor final : public VNVisitor {
 
         // Process and name each fork
         size_t idx = 0;  // Index for naming begins
-        for (AstBegin *itemp = nodep->forksp(), *nextp; itemp; itemp = nextp) {
-            nextp = VN_AS(itemp->nextp(), Begin);
+        for (AstBegin* const itemp : nodep->forkspList()) {
             iterate(itemp);
             // Note: Even if we do not find any awaits, we cannot simply inline
             // the process here, as new awaits could be added later.

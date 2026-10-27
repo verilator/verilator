@@ -1995,7 +1995,7 @@ port_declaration<nodep>:        // ==IEEE: port_declaration
                           AstIfaceRefDType* const dtp = new AstIfaceRefDType{$<fl>1, $<fl>3, "", *$1, *$3};
                           VARDTYPE(dtp); }
         /*cont*/    mpInstnameList
-                        { $$ = VARDONEP($5, nullptr, nullptr); DEL($5); }
+                        { $$ = $5; }
         //UNSUP: strengthSpecE for udp_instantiations
         ;
 
@@ -7187,8 +7187,9 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         |       yBINS idAny/*bin_identifier*/ '[' cgexpr ']' iffE
                         { // Check for automatic bins: bins auto[N]
                           if (*$2 == "auto") {
-                              $$ = new AstCoverBin{$<fl>2, *$2, $4};
-                              DEL($6);
+                              AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $4};
+                              binp->iffp($6);
+                              $$ = binp;
                           } else {
                               $$ = nullptr;
                               BBCOVERIGN($<fl>2, "Unsupported: 'bins' array (non-auto)");

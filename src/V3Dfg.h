@@ -76,7 +76,7 @@ class DfgUserMap;
 class VDfgType final {
 public:
 #include "V3Dfg__gen_type_enum.h"  // From ./astgen
-    const en m_e;
+    const en m_e;  // Enumeration value
     VDfgType() = delete;
 
     // VDfgType is interconvetible with VDfgType::en
