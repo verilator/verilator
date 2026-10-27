@@ -1005,10 +1005,13 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
             reportUnsatSetup(sess, uniqueExprs);
             return false;
         }
-        int npins = 0;
-        emitDiversityPins(os, rngr, *m_vars.at(names.front()), npins);
-        // Pins the solver could not settle leave no model, so get-value fails the draw
-        solveAssumingPins(sess, npins);
+        // The solver-sampled draw keeps the seeded model from the check-sat
+        if (!solverSamples()) {
+            int npins = 0;
+            emitDiversityPins(os, rngr, *m_vars.at(names.front()), npins);
+            // Pins the solver could not settle leave no model, so get-value fails the draw
+            solveAssumingPins(sess, npins);
+        }
         os << "(get-value (";
         for (const auto& name : names) os << name << " ";
         os << "))\n";
