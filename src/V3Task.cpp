@@ -1090,6 +1090,12 @@ class TaskVisitor final : public VNVisitor {
         m_topScopep->scopep()->addBlocksp(funcp);
         makePortList(nodep, funcp);
 
+        if (nodep->verilogTask()) {
+            // Aborted imports can unwind after the model's DPI scopes have been destroyed.
+            funcp->addStmtsp(new AstIf{flp, new AstCExpr{flp, "VerilatedDpi::exportAborted()", 1},
+                                       new AstCReturn{flp, new AstCExpr{flp, "void()"}}, nullptr});
+        }
+
         // Note this function may dispatch on a different class.
         // Thus we need to be careful not to assume a particular function layout.
         //
@@ -1492,7 +1498,8 @@ class TaskVisitor final : public VNVisitor {
                                                     : VCFunction::CALL_IMPORT_FUNCTION};
         callImportp->dtypeSetVoid();
         // Add arguments
-        // V3Timing prepends the caller's VlProcess when awaitImportTask() is used.
+        // V3Timing supplies the caller's process after process requirements have been resolved.
+        callImportp->addPinsp(new AstCExpr{nodep->fileline(), "nullptr"});
         if (!nodep->verilogTask()) addDpiFunctionLocation(callImportp);
         // Pass name of the DPI imported function to call
         callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});

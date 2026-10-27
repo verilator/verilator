@@ -181,8 +181,8 @@ class TimingSuspendableVisitor final : public VNVisitor {
     //                                                         process/task suspendable
     //                                                         and to T_PROC if it
     //                                                         needs process metadata.
-    //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_suspGraph
-    //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_procGraph
+    //  Ast{NodeProcedure,CFunc,Begin}::user3() -> DependencyVertex*. Vertex in m_suspGraph
+    //  Ast{NodeProcedure,CFunc,Begin}::user4() -> DependencyVertex*. Vertex in m_procGraph
     const VNUser3InUse m_user3InUse;
     const VNUser4InUse m_user4InUse;
 
@@ -315,6 +315,17 @@ class TimingSuspendableVisitor final : public VNVisitor {
         if (nodep->needProcess()) addFlags(nodep, T_FORCES_PROC | T_NEEDS_PROC);
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
+        if (nodep->dpiImportWrapper() || nodep->dpiExportImpl()) {
+            // Assume C/C++ can call any export.
+            AstNetlist* const netlistp = v3Global.rootp();
+            addFlags(nodep, T_NEEDS_PROC);
+            DepVtx* const dpiVxp = getNeedsProcDepVtx(netlistp);
+            if (nodep->dpiExportImpl()) {
+                new V3GraphEdge{&m_procGraph, pVxp, dpiVxp, P_CALL};
+            } else {
+                new V3GraphEdge{&m_procGraph, dpiVxp, pVxp, P_CALL};
+            }
+        }
         if (!m_classp) return;
 
         // Go over overridden functions
@@ -476,7 +487,11 @@ public:
         for (V3GraphVertex& vtx : m_procGraph.vertices()) {
             DepVtx& depVtx = static_cast<DepVtx&>(vtx);
             // Mark nodes that will be emitted with a VlProcess argument
-            if (hasFlags(depVtx.nodep(), T_ALLOCS_PROC | T_FORCES_PROC)) {
+            const AstCFunc* const cfuncp = VN_CAST(depVtx.nodep(), CFunc);
+            // An export entered directly from C receives its process from the dispatcher.
+            if (hasFlags(depVtx.nodep(), T_FORCES_PROC)
+                && (hasFlags(depVtx.nodep(), T_ALLOCS_PROC)
+                    || (cfuncp && cfuncp->dpiExportImpl()))) {
                 addFlags(depVtx.nodep(), T_HAS_PROC);
                 propagateFlagsReversedIf(&depVtx, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
                     return hasFlags(static_cast<DepVtx*>(e->fromp())->nodep(), T_NEEDS_PROC);
@@ -971,9 +986,7 @@ class TimingControlVisitor final : public VNVisitor {
         m_underIfaceCFunc = VN_IS(m_scopep->modp(), Iface);
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
-        if (!(hasFlags(nodep, T_SUSPENDEE))) {
-            if (!(nodep->dpiImportWrapper() && v3Global.usesSuspendableExports())) return;
-        }
+        if (!hasFlags(nodep, T_SUSPENDEE)) return;
 
         nodep->rtnType("VlCoroutine");
         // If in a class, create a shared pointer to 'this'
@@ -983,13 +996,18 @@ class TimingControlVisitor final : public VNVisitor {
         }
     }
     void visit(AstCFuncHard* nodep) override {
+        if (nodep->function() == VCFunction::CALL_IMPORT_FUNCTION
+            || nodep->function() == VCFunction::CALL_IMPORT_TASK) {
+            AstCExpr* const processp = VN_AS(nodep->pinsp(), CExpr);
+            processp->replaceWith(
+                new AstCExpr{nodep->fileline(), m_hasProcess ? "vlProcess" : "nullptr"});
+            VL_DO_DANGLING(pushDeletep(processp), processp);
+        }
         if (nodep->function() == VCFunction::CALL_IMPORT_TASK) {
             // Do not use awaitable DPI dispatcher, if there are no suspendable DPI exports
             if (!v3Global.usesSuspendableExports()) return;
             AstStmtExpr* const stmtExprp = VN_AS(nodep->backp(), StmtExpr);
             nodep->function(VCFunction::AWAIT_IMPORT_TASK);
-            nodep->pinsp()->addHereThisAsNext(
-                new AstCExpr{nodep->fileline(), m_hasProcess ? "vlProcess" : "nullptr"});
             AstCFuncHard* const cFuncp = nodep->unlinkFrBack();
             stmtExprp->replaceWith(new AstCAwait{nodep->fileline(), cFuncp});
             VL_DO_DANGLING(pushDeletep(stmtExprp), stmtExprp);

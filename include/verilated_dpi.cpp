@@ -56,6 +56,7 @@
 // VerilatedDpi:: Variables
 
 thread_local VerilatedDpi::VlFunctionContext VerilatedDpi::t_fileline{nullptr, 0};
+thread_local VlProcessRef VerilatedDpi::t_process;
 
 //======================================================================
 //======================================================================
