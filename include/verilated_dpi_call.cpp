@@ -53,15 +53,18 @@ public:
 
     // METHODS
     // Give control to the other side, block until it is given back
-    void handoff(bool threadTurn) {
+    bool handoff(bool threadTurn) {
         saveThreadLocals();
+        bool exitThread;
         {
             const VerilatedLockGuard lock{m_mutex};
             m_threadTurn = threadTurn;
             m_cv.notify_one();
-            m_cv.wait(m_mutex, [&] { return m_threadTurn != threadTurn; });
+            m_cv.wait(m_mutex, [&]() VL_REQUIRES(m_mutex) { return m_threadTurn != threadTurn; });
+            exitThread = m_exit;
         }
         restoreThreadLocals();
+        return exitThread;
     }
     void assign(VlDpiCall* callp) { m_callp = callp; }
     // Stop and join an idle thread
@@ -87,17 +90,20 @@ private:
         VlRNG::vl_thread_rng() = m_rng;
     }
     void main() {
+        bool exitThread;
         {
             const VerilatedLockGuard lock{m_mutex};
-            m_cv.wait(m_mutex, [this] { return m_threadTurn; });
+            m_cv.wait(m_mutex, [this]() VL_REQUIRES(m_mutex) { return m_threadTurn; });
+            exitThread = m_exit;
         }
         restoreThreadLocals();
-        while (!m_exit) {
+        while (!exitThread) {
             VlDpiCall::t_currentp = m_callp;
             m_callp->m_fn();
             m_callp->m_done = true;
             VlDpiCall::t_currentp = nullptr;
-            handoff(false);  // Returns when the next VlDpiCall is assigned, or on stop()
+            exitThread
+                = handoff(false);  // Returns when the next VlDpiCall is assigned, or on stop()
         }
     }
 };
@@ -177,7 +183,7 @@ VlDpiCall::VlDpiCall(VlProcessRef process, std::function<void()> fn)
 }
 
 void VlDpiCall::handoffWorker() {
-    m_threadp->handoff(true);
+    std::ignore = m_threadp->handoff(true);
     if (!m_done) return;
     threadPool().release(m_threadp);
     if (const std::coroutine_handle<> waiter = m_waiter) {
@@ -198,6 +204,6 @@ void VlDpiCall::stopWorker() {
     const VerilatedScope* const scopep = Verilated::dpiScope();
     const char* const filenamep = Verilated::dpiFilenamep();
     const int lineno = Verilated::dpiLineno();
-    t_currentp->m_threadp->handoff(false);
+    std::ignore = t_currentp->m_threadp->handoff(false);
     Verilated::dpiContext(scopep, filenamep, lineno);
 }
