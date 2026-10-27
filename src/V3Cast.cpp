@@ -53,6 +53,7 @@ class CastVisitor final : public VNVisitor {
     const VNUser1InUse m_inuser1;
 
     // STATE
+    const AstNodeDType* m_consArrayElemDTypep = nullptr;  // Current array constructor element type
 
     // METHODS
 
@@ -173,13 +174,17 @@ class CastVisitor final : public VNVisitor {
         nodep->user1(1);
     }
     void visit(AstConsArray* nodep) override {
+        VL_RESTORER(m_consArrayElemDTypep);
+        m_consArrayElemDTypep = nodep->dtypep()->skipRefp()->subDTypep();
         iterateChildren(nodep);
-        const AstNodeDType* const dtypep = nodep->dtypep()->skipRefp()->subDTypep();
-        if (nodep->defaultp()) ensureCastValue(nodep->defaultp(), dtypep);
-        for (AstConsArrayItem* itemp : nodep->itemspList()) {
-            ensureCastValue(itemp->valuep(), dtypep);
-        }
+        if (nodep->defaultp()) ensureCastValue(nodep->defaultp(), m_consArrayElemDTypep);
         nodep->user1(1);
+    }
+    void visit(AstConsArrayItem* nodep) override {
+        iterateChildren(nodep);
+        // V3Clean widened valuep()->dtypep(), so use the parent array's element type
+        // to avoid narrowing conversions in C++ aggregate initialization.
+        ensureCastValue(nodep->valuep(), m_consArrayElemDTypep);
     }
     void visit(AstConsAssoc* nodep) override {
         iterateChildren(nodep);
