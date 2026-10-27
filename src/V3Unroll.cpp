@@ -64,6 +64,7 @@ struct UnrollStats final {
     Stat m_nUnrolledIters{"Unrolled iterations"};
     Stat m_bitScanLowered{"Lowered priority-encoder to mostsetbitp1"};
     Stat m_countOnesLowered{"Lowered count-set-bits to countones"};
+    Stat m_nMergedCopies{"Merged copies of adjacent bits"};
 };
 
 //######################################################################
@@ -132,6 +133,7 @@ class UnrollOneVisitor final : VNVisitor {
     AstLoop* const m_loopp;  // The loop we are trying to unroll
     AstNode* m_stmtsp = nullptr;  // Resulting unrolled statement
     size_t m_unrolledSize = 0;  // Number of nodes in unrolled loop
+    AstAssign* m_lastCopyp = nullptr;  // Last statement of 'm_stmtsp', if it copies a slice
     // Temporary block needed for iteration of cloned statements
     AstBegin* const m_wrapp = new AstBegin{m_loopp->fileline(), "[EditWrapper]", nullptr, false};
     const bool m_unrollFull = m_loopp->unroll().isSetTrue();  // Completely unroll the loop?
@@ -142,6 +144,94 @@ class UnrollOneVisitor final : VNVisitor {
         m_ok = false;
         ++stat;
         UINFO(4, "   Can't Unroll: " << stat.name() << " :" << nodep);
+    }
+
+    // A constant slice 'vscp[lsb +: width]'
+    struct Slice final {
+        AstVarScope* m_vscp;  // The variable
+        uint32_t m_lsb;  // Lowest bit
+        uint32_t m_width;  // Number of bits
+    };
+    static bool slice(const AstNodeExpr* exprp, Slice& slice) {
+        const AstSel* const selp = VN_CAST(exprp, Sel);
+        if (!selp) return false;
+        const AstVarRef* const refp = VN_CAST(selp->fromp(), VarRef);
+        const AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
+        if (!refp || !lsbp || lsbp->num().isFourState() || lsbp->width() > 32) return false;
+        slice = {refp->varScopep(), lsbp->toUInt(), static_cast<uint32_t>(selp->widthConst())};
+        return true;
+    }
+    // If 'nodep' is a slice copy, 'dst[...] = src[...]', of two different variables. The
+    // index of 'dst' is folded here, as substitution only folds right-hand sides.
+    static bool isCopy(AstNode* nodep, Slice& dst, Slice& src) {
+        AstAssign* const assignp = VN_CAST(nodep, Assign);
+        if (!assignp) return false;
+        if (AstSel* const selp = VN_CAST(assignp->lhsp(), Sel))
+            V3Const::constifyEdit(selp->lsbp());
+        return !assignp->timingControlp() && slice(assignp->lhsp(), dst)
+               && slice(assignp->rhsp(), src) && dst.m_vscp != src.m_vscp;
+    }
+    // If 'nodep' copies the bit next to those 'm_lastCopyp' copies, between the same two
+    // variables, widen 'm_lastCopyp' to copy both. As the variables differ, the second copy
+    // does not read what the first wrote, so this keeps a bit-copy loop to one statement.
+    // Wider copies are usually of separate fields, which are better left apart.
+    bool mergeCopy(AstNode* nodep) {
+        Slice dst;
+        Slice src;
+        Slice lastDst;
+        Slice lastSrc;
+        if (!m_lastCopyp || !isCopy(nodep, dst, src) || dst.m_width != 1
+            || !isCopy(m_lastCopyp, lastDst, lastSrc) || dst.m_vscp != lastDst.m_vscp
+            || src.m_vscp != lastSrc.m_vscp) {
+            return false;
+        }
+        uint32_t dstLsb;
+        uint32_t srcLsb;
+        if (dst.m_lsb == lastDst.m_lsb + lastDst.m_width
+            && src.m_lsb == lastSrc.m_lsb + lastSrc.m_width) {
+            dstLsb = lastDst.m_lsb;  // Ascending
+            srcLsb = lastSrc.m_lsb;
+        } else if (dst.m_lsb + dst.m_width == lastDst.m_lsb
+                   && src.m_lsb + src.m_width == lastSrc.m_lsb) {
+            dstLsb = dst.m_lsb;  // Descending
+            srcLsb = src.m_lsb;
+        } else {
+            return false;
+        }
+        const int width = static_cast<int>(lastDst.m_width + dst.m_width);
+        FileLine* const flp = m_lastCopyp->fileline();
+        AstSel* const lhsp = VN_AS(m_lastCopyp->lhsp(), Sel);
+        AstSel* const rhsp = VN_AS(m_lastCopyp->rhsp(), Sel);
+        AstSel* const newLhsp
+            = new AstSel{flp, lhsp->fromp()->unlinkFrBack(), static_cast<int>(dstLsb), width};
+        AstSel* const newRhsp
+            = new AstSel{flp, rhsp->fromp()->unlinkFrBack(), static_cast<int>(srcLsb), width};
+        lhsp->replaceWith(newLhsp);
+        rhsp->replaceWith(newRhsp);
+        VL_DO_DANGLING(pushDeletep(lhsp), lhsp);
+        VL_DO_DANGLING(pushDeletep(rhsp), rhsp);
+        m_lastCopyp->dtypeFrom(newLhsp);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        ++m_stats.m_nMergedCopies;
+        return true;
+    }
+
+    // Track the last copy after adding 'nodep'. A constant assignment to another variable,
+    // such as the loop counter's, can be moved before a copy, so it keeps the last copy.
+    void updateLastCopy(AstNode* nodep) {
+        Slice dst;
+        Slice src;
+        if (isCopy(nodep, dst, src)) {
+            m_lastCopyp = VN_AS(nodep, Assign);
+            return;
+        }
+        const AstAssign* const assignp = VN_CAST(nodep, Assign);
+        const AstVarRef* const lhsp = assignp ? VN_CAST(assignp->lhsp(), VarRef) : nullptr;
+        if (!m_lastCopyp || !lhsp || !VN_IS(assignp->rhsp(), Const)
+            || !isCopy(m_lastCopyp, dst, src) || lhsp->varScopep() == dst.m_vscp
+            || lhsp->varScopep() == src.m_vscp) {
+            m_lastCopyp = nullptr;
+        }
     }
 
     // Returns false if the loop terminated (or we gave up)
@@ -170,6 +260,8 @@ class UnrollOneVisitor final : VNVisitor {
 
             // Add statements to unrolled body
             while (AstNode* const nodep = m_wrapp->stmtsp()) {
+                // Merge a copy of adjacent bits into the previous copy, adding nothing
+                if (mergeCopy(nodep)) continue;
                 // Check if we reached the size limit, unless full unrolling is requested
                 if (!m_unrollFull) {
                     m_unrolledSize += nodep->nodeCount();
@@ -200,6 +292,7 @@ class UnrollOneVisitor final : VNVisitor {
 
                 // Add this statement to the result list
                 m_stmtsp = AstNode::addNext(m_stmtsp, nodep);
+                updateLastCopy(nodep);
 
                 // Check if terminated via JumpGo
                 if (VN_IS(nodep, JumpGo)) {
