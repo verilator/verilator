@@ -214,6 +214,13 @@ enum class VerilatedAssertCtlQuery : uint8_t {
     ASSERT_CTL_PASS_ON_NONVACUOUS,
     ASSERT_CTL_FAIL_ON,
 };
+
+/// Which component samples randomize() results (+verilator+rand+sampler+<name>)
+enum class VerilatedRandSampler : uint8_t {
+    SAMPLER_DEFAULT = 0,  // Verilator samples over the solver: UniGen2 cells, diversity queries
+    SAMPLER_SOLVER = 1,  // The solver's seeded model is the result
+};
+
 using VerilatedAssertType_t = std::underlying_type<VerilatedAssertType>::type;
 using VerilatedAssertDirectiveType_t = std::underlying_type<VerilatedAssertDirectiveType>::type;
 
@@ -594,6 +601,8 @@ protected:
         std::string m_profVltFilename;  // +prof+vlt filename
         std::string m_solverLogFilename;  // SMT solver log filename
         std::string m_solverProgram;  // SMT solver program
+        VerilatedRandSampler m_randSampler
+            = VerilatedRandSampler::SAMPLER_DEFAULT;  // Who samples randomize() results
         bool m_warnUnsatConstr = true;  // Warn on unsatisfied constraints
         VlOs::DeltaCpuTime m_cpuTimeStart{false};  // CPU time, starts when create first model
         VlOs::DeltaWallTime m_wallTimeStart{false};  // Wall time, starts when create first model
@@ -727,6 +736,11 @@ public:
     /// 1 = Set all bits to one
     /// 2 = Randomize all bits
     void randReset(int val) VL_MT_SAFE;
+    /// Return which component samples randomize() results
+    VerilatedRandSampler randSampler() const VL_MT_SAFE { return m_ns.m_randSampler; }
+    /// Select which component samples randomize() results; default from
+    /// $VERILATOR_RAND_SAMPLER, else as configured at build time, else `default`
+    void randSampler(VerilatedRandSampler sampler) VL_MT_SAFE { m_ns.m_randSampler = sampler; }
     /// Return default random seed
     int randSeed() const VL_MT_SAFE { return m_s.m_randSeed; }
     /// Set default random seed, 0 = seed it automatically

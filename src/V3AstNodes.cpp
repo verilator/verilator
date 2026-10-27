@@ -725,6 +725,28 @@ void AstBasicDType::init(VBasicDTypeKwd kwd, VSigning numer, int wantwidth, int 
     this->rangep(rangep);
     this->dtypep(this);
 }
+bool AstBasicDType::matchingDTypeNode(const AstNodeDType* samep) const {
+    const AstBasicDType* const sp = VN_DBG_AS(samep, BasicDType);
+
+    if (keyword().matchingType() != sp->keyword().matchingType()) return false;
+    if (numeric().isSigned() != sp->numeric().isSigned()) return false;
+    if (width() != sp->width()) return false;
+
+    const bool thisPre = keyword().isPredefinedInteger();
+    const bool samePre = sp->keyword().isPredefinedInteger();
+
+    if (thisPre && samePre) return keyword() == sp->keyword();
+
+    // Both are vector/scalar types: ranges must match exactly (IEEE 1800-2023 6.22.1)
+    if (!thisPre && !samePre) {
+        if (isRanged() != sp->isRanged()) return false;
+        return !isRanged() || (left() == sp->left() && right() == sp->right());
+    }
+
+    // One is predefined integer type and the other is a vector (IEEE 1800-2023 6.22.1(e)):
+    const AstBasicDType* const vecp = thisPre ? sp : this;
+    return vecp->isRanged() && !vecp->ascending() && vecp->lo() == 0;
+}
 string AstBasicDType::prettyDTypeName(bool full) const {
     std::ostringstream os;
     os << keyword().typeName();
@@ -2867,6 +2889,13 @@ bool AstNodeDType::isTriviallyConstructible() const VL_MT_STABLE {
     }
     dtypep->v3fatalSrc("Unknown data type: " << dtypep->prettyName());
 }
+bool AstNodeDType::matchingDType(const AstNodeDType* samep) const {
+    const AstNodeDType* const nodep = skipRefToNonRefp();
+    const AstNodeDType* const sameDtp = samep->skipRefToNonRefp();
+    if (nodep == sameDtp) return true;
+    if (nodep->type() != sameDtp->type()) return false;
+    return nodep->matchingDTypeNode(sameDtp);
+}
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
     nodep = nodep->skipRefToNonRefp();
@@ -4879,6 +4908,10 @@ void AstVoidDType::dumpSmall(std::ostream& str) const {
 void AstWildcardArrayDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "[*]";
+}
+bool AstWildcardArrayDType::matchingDTypeNode(const AstNodeDType* samep) const {
+    const AstWildcardArrayDType* const asamep = VN_DBG_AS(samep, WildcardArrayDType);
+    return subDTypep()->matchingDType(asamep->subDTypep());
 }
 string AstWildcardArrayDType::prettyDTypeName(bool full) const {
     return subDTypep()->prettyDTypeName(full) + "$[*]";
