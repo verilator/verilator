@@ -1428,8 +1428,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         } else if (!VN_IS(rangep, Const)) {
             if (report) {
                 if (arrayBinp->isSetExpr()) {
-                    arrayBinp->v3warn(E_UNSUPPORTED, "Unsupported: Non-constant expression as "
-                                                     "array bins set_covergroup_expression");
+                    arrayBinp->v3warn(COVERIGN, "Unsupported: Non-constant expression as "
+                                                "array bins set_covergroup_expression");
                 } else {
                     arrayBinp->v3error("Non-constant expression in array bins value list; "
                                        "values must be constants (IEEE 1800-2023 19.5)");
