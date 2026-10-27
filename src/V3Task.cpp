@@ -861,7 +861,7 @@ class TaskVisitor final : public VNVisitor {
                         (VN_IS(scopep->modp(), Module)
                         || VN_IS(scopep->modp(), Iface))
                         ) {
-                            // ccallFromp->varp()->dtypeFrom(ccallFromp->varp()->user4p());
+                            ccallFromp->varp()->dtypeFrom(ccallFromp->varp()->user4p());
                             methodCallArgsRefs(finalTaskp->op3p(), scopep, ccallp, refp, unsetUser3p);
                         }
                     }
