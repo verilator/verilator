@@ -378,7 +378,7 @@ public:
     // duck-typed void emitSData(uint32_t code, SData newval, int bits) = 0;
     // duck-typed void emitIData(uint32_t code, IData newval, int bits) = 0;
     // duck-typed void emitQData(uint32_t code, QData newval, int bits) = 0;
-    // duck-typed void emitWData(uint32_t code, WDataInP newval, int bits) = 0;
+    // duck-typed void emitWData(uint32_t code, WDataInP<> newval, int bits) = 0;
     // duck-typed void emitDouble(uint32_t code, double newval) = 0;
 
     VL_ATTR_ALWINLINE uint32_t* oldp(uint32_t code) { return m_sigs_oldvalp + code; }
@@ -389,7 +389,14 @@ public:
     void fullSData(uint32_t* oldp, SData newval, int bits);
     void fullIData(uint32_t* oldp, IData newval, int bits);
     void fullQData(uint32_t* oldp, QData newval, int bits);
-    void fullWData(uint32_t* oldp, WDataInP newval, int bits);
+    void fullWData(uint32_t* oldp, WDataInP<> newval, int bits);
+    template <std::size_t Offset>
+    void fullWData(uint32_t* oldp, WDataInP<Offset> newval, int bits) {
+        const uint32_t code = oldp - m_sigs_oldvalp;
+        for (int i = 0; i < VL_WORDS_I(bits); ++i) oldp[i] = newval[i];
+        if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
+        emitWData(code, newval, bits);
+    }
     void fullDouble(uint32_t* oldp, double newval);
     void fullEvent(uint32_t* oldp, const VlEventBase* newvalp);
     void fullEventTriggered(uint32_t* oldp);
@@ -417,8 +424,17 @@ public:
         const uint64_t diff = old ^ newval;
         if (VL_UNLIKELY(diff)) fullQData(oldp, newval, bits);
     }
-    VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, WDataInP newval, int bits) {
+    VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, WDataInP<> newval, int bits) {
         for (int i = 0; i < (bits + 31) / 32; ++i) {
+            if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
+                fullWData(oldp, newval, bits);
+                return;
+            }
+        }
+    }
+    template <std::size_t Offset>
+    VL_ATTR_ALWINLINE void chgWData(uint32_t* oldp, WDataInP<Offset> newval, int bits) {
+        for (int i = 0; i < VL_WORDS_I(bits); ++i) {
             if (VL_UNLIKELY(oldp[i] ^ newval[i])) {
                 fullWData(oldp, newval, bits);
                 return;

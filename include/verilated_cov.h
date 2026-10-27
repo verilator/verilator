@@ -91,8 +91,9 @@ inline void VL_COV_TOGGLE_CHG_ST_Q(const int width, uint32_t* covp, const QData 
     }
 }
 
-inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp, WDataInP newData,
-                                   WDataInP oldData) {
+template <std::size_t New_Offset, std::size_t Old_Offset>
+inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp, WDataInP<New_Offset> newData,
+                                   WDataInP<Old_Offset> oldData) {
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData chgData = newData[i] ^ oldData[i];
         if (chgData) {
@@ -102,6 +103,12 @@ inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp, WDataInP new
             }
         }
     }
+}
+template <std::size_t New_Words, std::size_t Old_Words>
+inline void VL_COV_TOGGLE_CHG_ST_W(const int width, uint32_t* covp,
+                                   const VlWide<New_Words>& newData,
+                                   const VlWide<Old_Words>& oldData) {
+    VL_COV_TOGGLE_CHG_ST_W(width, covp, newData.aval(), oldData.aval());
 }
 
 inline void VL_COV_TOGGLE_CHG_MT_I(const int width, std::atomic<uint32_t>* covp,
@@ -124,8 +131,10 @@ inline void VL_COV_TOGGLE_CHG_MT_Q(const int width, std::atomic<uint32_t>* covp,
     }
 }
 
-inline void VL_COV_TOGGLE_CHG_MT_W(const int width, std::atomic<uint32_t>* covp, WDataInP newData,
-                                   WDataInP oldData) VL_MT_SAFE {
+template <std::size_t New_Offset, std::size_t Old_Offset>
+inline void VL_COV_TOGGLE_CHG_MT_W(const int width, std::atomic<uint32_t>* covp,
+                                   WDataInP<New_Offset> newData,
+                                   WDataInP<Old_Offset> oldData) VL_MT_SAFE {
     for (int i = 0; i < VL_WORDS_I(width); ++i) {
         const EData chgData = newData[i] ^ oldData[i];
         if (chgData) {
@@ -137,6 +146,12 @@ inline void VL_COV_TOGGLE_CHG_MT_W(const int width, std::atomic<uint32_t>* covp,
             }
         }
     }
+}
+template <std::size_t New_Words, std::size_t Old_Words>
+inline void VL_COV_TOGGLE_CHG_MT_W(const int width, std::atomic<uint32_t>* covp,
+                                   const VlWide<New_Words>& newData,
+                                   const VlWide<Old_Words>& oldData) VL_MT_SAFE {
+    VL_COV_TOGGLE_CHG_MT_W(width, covp, newData.aval(), oldData.aval());
 }
 
 //=============================================================================

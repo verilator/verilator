@@ -753,7 +753,7 @@ void VlRandomVar::emitConcreteValue(std::ostream& s) const {
         } else if (w <= VL_QUADSIZE) {
             bit = (*static_cast<const QData*>(dp) >> i) & 1;
         } else {
-            const WDataInP wp = WDataInP::external(static_cast<const EData*>(dp));
+            const WDataInP<> wp = WDataInP<>::external(static_cast<const EData*>(dp));
             bit = (wp[VL_BITWORD_E(i)] >> VL_BITBIT_E(i)) & 1;
         }
         s << (bit ? '1' : '0');
@@ -792,7 +792,7 @@ static bool validSMTNum(const std::string& val) {
 }
 
 // val must have passed validSMTNum
-static void parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
+static void parseSMTNum(int obits, WDataOutP<> owp, const std::string& val) {
     size_t i = val.find('#') + 1;
     switch (val[i++]) {
     case 'b': _vl_vsss_based(owp, obits, 1, &val[i], 0, val.size() - i); break;
@@ -802,14 +802,14 @@ static void parseSMTNum(int obits, WDataOutP owp, const std::string& val) {
 }
 void VlRandomVar::set(const std::string& idx, const std::string& val) const {
     VlWide<VL_WQ_WORDS_E> qowp;
-    VL_SET_WQ(qowp, 0ULL);
-    WDataOutP owp = qowp;
+    VL_SET_WQ(qowp.aval_mut(), 0ULL);
+    WDataOutP<> owp = qowp;
     const int obits = width();
     VlWide<VL_WQ_WORDS_E> qiwp;
-    VL_SET_WQ(qiwp, 0ULL);
+    VL_SET_WQ(qiwp.aval_mut(), 0ULL);
     if (!idx.empty()) parseSMTNum(64, qiwp, idx);
     const int nidx = qiwp[0];
-    if (obits > VL_QUADSIZE) owp = WDataOutP::external(reinterpret_cast<EData*>(datap(nidx)));
+    if (obits > VL_QUADSIZE) owp = WDataOutP<>::external(reinterpret_cast<EData*>(datap(nidx)));
     parseSMTNum(obits, owp, val);
 
     if (obits <= VL_BYTESIZE) {
@@ -823,7 +823,7 @@ void VlRandomVar::set(const std::string& idx, const std::string& val) const {
         *p = VL_CLEAN_II(obits, obits, owp[0]);
     } else if (obits <= VL_QUADSIZE) {
         QData* const p = static_cast<QData*>(datap(nidx));
-        *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(owp));
+        *p = VL_CLEAN_QQ(obits, obits, VL_SET_QW(WDataInP<>{owp}));
     } else {
         _vl_clean_inplace_w(obits, owp);
     }

@@ -117,7 +117,17 @@ public:
         updateLastTime(time);
     }
 
-    VL_ATTR_ALWINLINE void emitWData(uint64_t time, WDataInP newval, uint32_t bits);
+    VL_ATTR_ALWINLINE void emitWData(uint64_t time, WDataInP<> newval, uint32_t bits);
+    template <std::size_t Offset>
+    VL_ATTR_ALWINLINE void emitWData(uint64_t time, WDataInP<Offset> newval, uint32_t bits) {
+        assert(m_lastTime <= time);
+        const uint64_t dt = time - m_lastTime;
+        for (std::size_t i = 0; i < std::min(m_width, bits); ++i) {
+            const size_t wordIndex = i / VL_EDATASIZE;
+            m_bits[i].aggregateVal(dt, (newval[wordIndex] >> VL_BITBIT_E(i)) & 1);
+        }
+        updateLastTime(time);
+    }
     VL_ATTR_ALWINLINE void updateLastTime(uint64_t val) { m_lastTime = val; }
 
     // ACCESSORS
@@ -229,7 +239,7 @@ void VerilatedSaifActivityVar::emitBit(const uint64_t time, const CData newval) 
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifActivityVar::emitWData(const uint64_t time, WDataInP newval,
+void VerilatedSaifActivityVar::emitWData(const uint64_t time, WDataInP<> newval,
                                          const uint32_t bits) {
     assert(m_lastTime <= time);
     const uint64_t dt = time - m_lastTime;
@@ -670,7 +680,16 @@ void VerilatedSaifBuffer::emitQData(const uint32_t code, const QData newval, con
 }
 
 VL_ATTR_ALWINLINE
-void VerilatedSaifBuffer::emitWData(const uint32_t code, WDataInP newval, const int bits) {
+void VerilatedSaifBuffer::emitWData(const uint32_t code, WDataInP<> newval, const int bits) {
+    assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
+           && "Activity must be declared earlier");
+    VerilatedSaifActivityVar& activity
+        = m_owner.m_activityAccumulators.at(m_fidx)->m_activity.at(code);
+    activity.emitWData(m_owner.currentTime(), newval, bits);
+}
+
+VL_ATTR_ALWINLINE
+void VerilatedSaifBuffer::emitWData(const uint32_t code, WDataInP<2> newval, const int bits) {
     assert(m_owner.m_activityAccumulators.at(m_fidx)->m_activity.count(code)
            && "Activity must be declared earlier");
     VerilatedSaifActivityVar& activity

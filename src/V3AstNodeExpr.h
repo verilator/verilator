@@ -3275,8 +3275,9 @@ public:
     void numberOperate(V3Number&, const V3Number&, const V3Number&) override { V3ERROR_NA; }
     string emitVerilog() override { return "%f$fgets(%l,%r)"; }
     string emitC() override {
-        return strgp()->dtypep()->basicp()->isString() ? "VL_FGETS_NI(%li, %ri)"
-                                                       : "VL_FGETS_%nqX%rq(%lw, %P, &(%li), %ri)";
+        if (strgp()->dtypep()->basicp()->isString()) return "VL_FGETS_NI(%li, %ri)";
+        return strgp()->isWide() ? "VL_FGETS_%nqX%rq(%lw, %P, %lp, %ri)"
+                                 : "VL_FGETS_%nqX%rq(%lw, %P, &(%li), %ri)";
     }
     bool cleanOut() const override { return false; }
     bool cleanLhs() const override { return true; }
