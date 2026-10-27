@@ -297,10 +297,10 @@ module t;
     `checks($typename(\pack+gen .obj.\cg@symbol2 ), "class t.\\pack+gen .\\Klass! ::\\cg@symbol2 ");
     `checks($typename(esc_inst), "class t.\\gen_esc.cg ");
     `checks($typename(gen_esc.inst), "class t.gen_esc.cg");
-    `checks($typename(untyped1), "class $unit::Untyped#(1'd1)");
-    `checks($typename(untyped8), "class $unit::Untyped#(8'd1)");
-    `checks($typename(untyped32), "class $unit::Untyped#(1)");
-    `checks($typename(untyped_neg), "class $unit::Untyped#(-8'sd5)");
+    `checks($typename(untyped1), "class $unit::Untyped#(1'h1)");
+    `checks($typename(untyped8), "class $unit::Untyped#(8'h1)");
+    `checks($typename(untyped32), "class $unit::Untyped#(32'sh1)");
+    `checks($typename(untyped_neg), "class $unit::Untyped#(8'shfb)");
 
     $write("*-* All Finished *-*\n");
     $finish;

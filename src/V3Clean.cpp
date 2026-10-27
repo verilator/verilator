@@ -82,7 +82,6 @@ class CleanVisitor final : public VNVisitor {
     void computeCppWidth(AstNode* nodep) {
         if (!nodep->user2() && nodep->hasDType()) {
             if (VN_IS(nodep, Var)  //
-                || VN_IS(nodep, ConsPackMember)  //
                 || VN_IS(nodep, NodeDType)  // Don't want to change variable widths!
                 || VN_IS(nodep, NodeSel)  // Array selects should reflect variable widths
                 || VN_IS(nodep, SFormatArg)  // Retain the logical argument type, not storage width
@@ -231,11 +230,6 @@ class CleanVisitor final : public VNVisitor {
         iterateChildren(nodep);
         setClean(nodep, true);
     }
-    void visit(AstConsPackMember* nodep) override {
-        iterateChildren(nodep);
-        ensureClean(nodep->rhsp());
-        setClean(nodep, true);
-    }
     // Constructor values are stored, so must be clean
     void visit(AstConsAssoc* nodep) override {
         iterateChildren(nodep);
@@ -252,19 +246,7 @@ class CleanVisitor final : public VNVisitor {
         if (nodep->defaultp()) ensureClean(nodep->defaultp());
         setClean(nodep, true);
     }
-    void visit(AstConsAssocItem* nodep) override {
-        iterateChildren(nodep);
-        ensureClean(nodep->valuep());
-    }
-    void visit(AstConsDynArrayItem* nodep) override {
-        iterateChildren(nodep);
-        ensureClean(nodep->valuep());
-    }
-    void visit(AstConsQueueItem* nodep) override {
-        iterateChildren(nodep);
-        ensureClean(nodep->valuep());
-    }
-    void visit(AstConsWildcardItem* nodep) override {
+    void visit(AstNodeConsItem* nodep) override {
         iterateChildren(nodep);
         ensureClean(nodep->valuep());
     }
@@ -340,7 +322,7 @@ class CleanVisitor final : public VNVisitor {
     void visit(AstCMethodHard* nodep) override {
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->pinsp());
-        setClean(nodep, true);
+        setClean(nodep, nodep->cleanOut());
     }
     void visit(AstWith* nodep) override {
         iterateChildren(nodep);

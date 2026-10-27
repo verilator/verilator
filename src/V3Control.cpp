@@ -19,6 +19,7 @@
 #include "V3Control.h"
 
 #include "V3InstrCount.h"
+#include "V3Os.h"
 #include "V3String.h"
 
 #include <memory>
@@ -62,7 +63,8 @@ public:
         const V3LockGuard lock{m_mutex};
         // We might be adding a new entry under this, so clear the cache.
         m_mapResolved.clear();
-        return m_mapPatterns[name];
+        // Patterns use '/' as separator; normalize Windows backslashes
+        return m_mapPatterns[V3Os::filenameSlashPath(name)];
     }
     // Access an entity and resolve patterns that match it
     T* resolve(const string& name) VL_MT_SAFE_EXCLUDES(m_mutex) {
@@ -72,9 +74,12 @@ public:
         std::unique_ptr<T>& entryr = pair.first->second;
         // Resolve entry when first requested, cache the result
         if (pair.second) {
-            // Inserted: update the entity with all matches in the patterns
+            // Inserted: update the entity with all matches in the patterns.
+            // Normalize separators so Windows backslash filenames match the
+            // slash-separated patterns (normalized when loaded).
+            const string slashName = V3Os::filenameSlashPath(name);
             for (const auto& patEnt : m_mapPatterns) {
-                if (VString::wildmatch(name, patEnt.first)) {
+                if (VString::wildmatch(slashName, patEnt.first)) {
                     if (!entryr) entryr.reset(new T{});
                     entryr->update(patEnt.second);
                 }
@@ -283,12 +288,15 @@ public:
             AstNode* const nodep = new AstPragma{modp->fileline(), type};
             modp->addStmtsp(nodep);
         }
-        for (const auto& itr : m_modPragmas) {
-            // Catch hier param modules to mark their attributes before they are
-            // flagged dead in LinkDot.
-            if (itr == VPragmaType::HIER_PARAMS) modp->hierParams(true);
-            AstNode* const nodep = new AstPragma{modp->fileline(), itr};
-            modp->addStmtsp(nodep);
+        for (const VPragmaType pragma : m_modPragmas) {
+            // Handle internal pragmas here, user-facing ones are handled with validation later
+            switch (pragma) {
+            case VPragmaType::HIER_PARAMS: modp->hierParams(true); continue;
+            case VPragmaType::VERILATOR_LIB: modp->verilatorLib(true); continue;
+            default:
+                AstNode* const nodep = new AstPragma{modp->fileline(), pragma};
+                modp->addStmtsp(nodep);
+            }
         }
     }
 

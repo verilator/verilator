@@ -12,8 +12,8 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 
 test.compile(verilator_flags2=[
-    '--hierarchical', '-y', test.t_dir + '/t_flag_relinc_dir/chip', '+incdir+' + test.t_dir +
-    '/t_flag_relinc_dir/include'
+    '--hierarchical', '-work', 'lib_work', '-y', test.t_dir +
+    '/t_flag_relinc_dir/chip', '+incdir+' + test.t_dir + '/t_flag_relinc_dir/include'
 ])
 
 test.execute()

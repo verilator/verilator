@@ -252,7 +252,15 @@ protected:
     // Is the type an aggregate that can be split, as enabled by the options
     static bool isSplittableType(const AstNodeDType* dtypep) {
         if (isPacked(dtypep)) return v3Global.opt.fDecomposePacked();
-        if (isUnpacked(dtypep)) return v3Global.opt.fDecomposeUnpacked();
+        if (isUnpacked(dtypep)) {
+            // Not splittable if has member default values
+            if (const AstStructDType* const structp = VN_CAST(dtypep->skipRefp(), StructDType)) {
+                for (const AstMemberDType* const mp : structp->memberspList()) {
+                    if (mp->valuep()) return false;
+                }
+            }
+            return v3Global.opt.fDecomposeUnpacked();
+        }
         return false;
     }
 
@@ -293,8 +301,7 @@ protected:
             } else {
                 const AstStructDType* const structp = VN_AS(dtypep, StructDType);
                 const bool packed = isPacked(dtypep);
-                for (AstMemberDType* mp = structp->membersp(); mp;
-                     mp = VN_AS(mp->nextp(), MemberDType)) {
+                for (AstMemberDType* const mp : structp->memberspList()) {
                     const int lsb = packed ? mp->lsb() : 0;
                     const int msb = packed ? lsb + mp->width() - 1 : 0;
                     compsr.push_back({mp->subDTypep(), mp, 0, lsb, msb});

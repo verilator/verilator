@@ -51,7 +51,7 @@ class LinkParseVisitor final : public VNVisitor {
     // If set, move AstVar->valuep() initial values to this module
     ImplTypedefMap m_implTypedef;  // Created typedefs for each <container,name>
     AstVar* m_varp = nullptr;  // Variable we're under
-    AstNodeModule* m_valueModp = nullptr;
+    AstNodeModule* m_valueModp = nullptr;  // Module to move initial values into
     AstNodeModule* m_modp = nullptr;  // Current module
     bool m_inInterface = false;  // True when inside interface declaration
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
@@ -589,6 +589,27 @@ class LinkParseVisitor final : public VNVisitor {
             }
         }
     }
+    static bool isNegative(const AstConst* constp) {
+        return constp->isSigned() && constp->num().bitIs1(constp->width() - 1);
+    }
+    void visit(AstRange* nodep) override {
+        static constexpr uint64_t MAX_RANGE_ELEMENTS = 1 << 28;  // Same limit as V3Width
+        // Literal bounds are checked here as V3Width sees only int-wrapped values; a literal
+        // 32'hFFFF_FFFF reads there as -1, indistinguishable from a legitimate negative bound
+        const AstConst* const leftp = VN_CAST(nodep->leftp(), Const);
+        const AstConst* const rightp = VN_CAST(nodep->rightp(), Const);
+        if (leftp && rightp && leftp->width() <= 64 && rightp->width() <= 64 && !isNegative(leftp)
+            && !isNegative(rightp)) {
+            const uint64_t left = leftp->toUQuad();
+            const uint64_t right = rightp->toUQuad();
+            const uint64_t span = std::max(left, right) - std::min(left, right);
+            if (span >= MAX_RANGE_ELEMENTS) {
+                nodep->v3error("Width of bit range is huge; vector of over 1 billion bits: 0x"
+                               << std::hex << span + 1 << std::dec);
+            }
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstConst* nodep) override {
         if (nodep->num().autoExtend() && nodep->fileline()->language() < V3LangCode::L1800_2005) {
             nodep->v3warn(NEWERSTD, "Unbased unsized literals require IEEE 1800-2005 or later.");
@@ -794,7 +815,6 @@ class LinkParseVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeModule* nodep) override {
-        V3Control::applyModule(nodep);
         ++m_statModules;
         if (VN_IS(nodep, Class) && VN_CAST(nodep, Class)->isInterfaceClass()
             && VN_IS(m_modp, Class) && VN_CAST(m_modp, Class)->isInterfaceClass()) {
@@ -1092,8 +1112,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_defaultInSkewp);
         VL_RESTORER(m_defaultOutSkewp);
         // Find default input and output skews
-        for (AstNode *nextp, *itemp = nodep->itemsp(); itemp; itemp = nextp) {
-            nextp = itemp->nextp();
+        for (AstNode* const itemp : nodep->itemspList()) {
             if (AstClockingItem* citemp = VN_CAST(itemp, ClockingItem)) {
                 if (citemp->exprp() || citemp->assignp()) continue;
                 if (citemp->skewp()) {
@@ -1219,7 +1238,7 @@ class LinkParseVisitor final : public VNVisitor {
         AstVar* const defaultVarp
             = new AstVar{nodep->fileline(), VVarType::MEMBER, "__Vint", nodep->findIntDType()};
         defaultVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-        nodep->addStmtsp(defaultVarp);
+        nodep->addMembersp(defaultVarp);
 
         // Handle constructor arguments - add function parameters and assignments
         if (argsp) {
@@ -1362,7 +1381,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Convert constructor args to member variables
-        for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
+        for (AstNode* const argp : nodep->argspList()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             if (origVarp->direction() == VDirection::OUTPUT
                 || origVarp->direction() == VDirection::INOUT) {
@@ -1384,7 +1403,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Convert sample args to member variables
-        for (AstNode* argp = nodep->sampleArgsp(); argp; argp = argp->nextp()) {
+        for (AstNode* const argp : nodep->sampleArgspList()) {
             AstVar* const origVarp = VN_AS(argp, Var);
             if (!origVarp->isInput()) {
                 origVarp->v3error("Covergroup sample formal argument must have input direction "
@@ -1419,7 +1438,7 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_coverpointNum);
         VL_RESTORER_CLEAR(m_coverpoints);
         m_coverpointNum = 0;
-        for (const AstNode* stmtp = newFuncp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : newFuncp->stmtspList()) {
             if (const AstCoverpoint* const pointp = VN_CAST(stmtp, Coverpoint)) {
                 m_coverpoints.emplace(coverpointName(pointp), pointp);
             }
@@ -1465,8 +1484,7 @@ class LinkParseVisitor final : public VNVisitor {
         // into the typed binsp and optionsp slots.  The grammar attaches both node types
         // to binsp (op2) as a raw List[AstNode]; now that they are properly parented we
         // can iterate and split them without any temporary-parent tricks.
-        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
-            nextp = itemp->nextp();
+        for (AstNode* const itemp : nodep->binspList()) {
             if (AstCgOptionAssign* const optp = VN_CAST(itemp, CgOptionAssign)) {
                 if (dropDeprecatedCoverageOption(optp)) continue;
                 optp->unlinkFrBack();
@@ -1571,14 +1589,13 @@ class LinkParseVisitor final : public VNVisitor {
     void visit(AstCoverCross* nodep) override {
         cleanFileline(nodep);
         // Move options out of the mixed parse-time body, leaving only cross bins.
-        for (AstNode *itemp = nodep->binsp(), *nextp; itemp; itemp = nextp) {
-            nextp = itemp->nextp();
+        for (AstNode* const itemp : nodep->binspList()) {
             if (VN_IS(itemp, CoverCrossBin)) continue;
             AstCgOptionAssign* const optp = VN_AS(itemp, CgOptionAssign);
             if (dropDeprecatedCoverageOption(optp)) continue;
             itemp->unlinkFrBack();
             const VCoverOptionType optType = optp->optType();
-            if (!(optType == VCoverOptionType::WEIGHT)) {
+            if (!(optType == VCoverOptionType::AT_LEAST || optType == VCoverOptionType::WEIGHT)) {
                 optp->v3warn(COVERIGN,
                              "Ignoring unsupported coverage cross option: " + optp->prettyNameQ());
             }
@@ -1605,7 +1622,7 @@ class LinkParseVisitor final : public VNVisitor {
             flNoWarn->modifyWarnOff(V3ErrorCode::UNUSEDSIGNAL, true);
             flNoWarn->modifyWarnOff(V3ErrorCode::VARHIDDEN, true);
             std::set<string> names;
-            for (const AstNode* itemp = m_crossp->itemsp(); itemp; itemp = itemp->nextp()) {
+            for (const AstNode* const itemp : m_crossp->itemspList()) {
                 const AstCoverpointRef* const refp = VN_AS(itemp, CoverpointRef);
                 const AstCoverpoint* const pointp = findCoverpoint(refp);
                 if (!pointp || !names.insert(refp->name()).second) continue;

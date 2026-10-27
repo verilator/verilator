@@ -108,6 +108,13 @@ module t;
     }
   endgroup
 
+  // An iff guard gates each sample of automatic bins: [0:1], [2:3], and [4:7]
+  covergroup cg_auto_iff with function sample (bit enable);
+    coverpoint data {
+      bins auto[3] iff (enable);
+    }
+  endgroup
+
   initial begin
     automatic cg cg_inst = new;
     automatic cg_4bit cg4_inst = new;
@@ -120,6 +127,7 @@ module t;
     automatic cg_cross_auto cgx_inst = new;
     automatic cg_expr_size cge_inst = new;
     automatic cg_auto_default cgd_inst = new;
+    automatic cg_auto_iff cgi_inst = new;
 
     // Sample 3-bit cg: one value per bin - 4 bins: [0:1],[2:3],[4:5],[6:7]
     data = 0; cg_inst.sample();
@@ -229,6 +237,18 @@ module t;
     data = 3;
     cge_inst.sample();
     `checkr(cge_inst.get_inst_coverage(), 25.0);
+
+    // A false guard counts no sample; then only the odd values are enabled
+    for (int i = 0; i < 8; ++i) begin
+      data = 3'(i);
+      cgi_inst.sample(0);
+    end
+    `checkr(cgi_inst.get_inst_coverage(), 0.0);
+    for (int i = 0; i < 8; ++i) begin
+      data = 3'(i);
+      cgi_inst.sample(i[0]);
+    end
+    `checkr(cgi_inst.get_inst_coverage(), 100.0);
 
     $write("*-* All Finished *-*\n");
     $finish;

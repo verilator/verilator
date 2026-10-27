@@ -128,7 +128,7 @@ module t;
       // Assignment from unsized to sized
       ri = '{1, 2, 3, 4, 5, 6, 7, 8, 9};
       qi = ri;
-      `checkh(qi.size, 5);
+      `checkh(qi.size, 6);
     end
 
     $write("*-* All Finished *-*\n");

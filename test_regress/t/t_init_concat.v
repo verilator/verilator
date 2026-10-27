@@ -61,8 +61,8 @@ module regfile (
     input [31:0] wr_data,
     input wr_en,
     output reg [31:0] rd_data,
-    output [1:0] rd_guards  /*verilator public*/,
-    output [1:0] rd_guardsok  /*verilator public*/,
+    output [1:0] rd_guards  /*verilator public_flat_rw*/,
+    output [1:0] rd_guardsok  /*verilator public_flat_rw*/,
     input clk
 );
 

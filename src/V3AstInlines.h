@@ -219,6 +219,10 @@ AstVarXRef::AstVarXRef(FileLine* fl, AstVar* varp, const string& dotted, const V
 
 AstStmtExpr* AstNodeExpr::makeStmt() { return new AstStmtExpr{fileline(), this}; }
 
+AstConsArrayItem* AstConsArray::itemsp() const VL_MT_STABLE {
+    return VN_DBG_AS(op2p(), ConsArrayItem);
+}
+
 // Walk up the AST via backp() to find the containing AstNodeModule.
 // Returns nullptr if not found.
 inline AstNodeModule* findParentModule(AstNode* nodep) {

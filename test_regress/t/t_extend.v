@@ -8,7 +8,7 @@ module t (
     input clk
 );
 
-  /*verilator public_module*/
+  /*verilator no_inline_module*/
 
   // No verilator_public needed, because it's outside the "" in the $c statement
   reg [7:0] cyc; initial cyc = 0;

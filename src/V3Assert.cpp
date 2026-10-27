@@ -365,6 +365,13 @@ class DefaultSampledValueVisitor final : public VNVisitor {
         nodep->replaceWith(newTypeDefault(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
+    void visit(AstArraySel* nodep) override {
+        iterateChildren(nodep);
+        // The default of an element of an array replaced by its default above
+        if (!VN_IS(nodep->fromp(), Const)) return;
+        nodep->replaceWith(newTypeDefault(nodep));
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
@@ -395,6 +402,7 @@ class AssertVisitor final : public VNVisitor {
     unsigned m_monitorNum = 0;  // Global $monitor numbering (not per module)
     AstVar* m_monitorNumVarp = nullptr;  // $monitor number variable
     AstVar* m_monitorOffVarp = nullptr;  // $monitoroff variable
+    AstVar* m_monitorPendingVarp = nullptr;  // $monitor display pending variable
     unsigned m_modPastNum = 0;  // Module past numbering
     unsigned m_modStrobeNum = 0;  // Module $strobe numbering
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
@@ -413,7 +421,7 @@ class AssertVisitor final : public VNVisitor {
     AstFinal* m_finalp = nullptr;  // Current final block
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
-    V3UniqueNames m_caseTempNames{"__VCase"};
+    V3UniqueNames m_caseTempNames{"__VCase"};  // Unique names for case temporaries
     V3UniqueNames m_matchCountNames{"__VnfaRemainingMatchCount"};  // Match replay counter names
     // Maps from (expression, senTree) to the AstAlways that computes its delayed values.
     std::unordered_map<VNRef<AstNodeExpr>, std::unordered_map<VNRef<AstSenTree>, AstAlways*>>
@@ -533,6 +541,22 @@ class AssertVisitor final : public VNVisitor {
         AstVarRef* const varrefp = new AstVarRef{nodep->fileline(), m_monitorOffVarp, access};
         varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgp());
         return varrefp;
+    }
+    AstVarRef* newMonitorPendingVarRefp(const AstNode* nodep, VAccess access) {
+        FileLine* const flp = nodep->fileline();
+        if (!m_monitorPendingVarp) {
+            m_monitorPendingVarp = new AstVar{flp, VVarType::MODULETEMP, "__VmonitorPending",
+                                              nodep->findBitDType()};
+            v3Global.rootp()->dollarUnitPkgp()->addStmtsp(m_monitorPendingVarp);
+        }
+        AstVarRef* const varrefp = new AstVarRef{flp, m_monitorPendingVarp, access};
+        varrefp->classOrPackagep(v3Global.rootp()->dollarUnitPkgp());
+        return varrefp;
+    }
+    AstAssign* newMonitorPendingSetp(const AstNode* nodep) {
+        FileLine* const flp = nodep->fileline();
+        return new AstAssign{flp, newMonitorPendingVarRefp(nodep, VAccess::WRITE),
+                             new AstConst{flp, AstConst::BitTrue{}}};
     }
     static AstIf* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,
                                 VAssertType type = VAssertType::INTERNAL) {
@@ -878,7 +902,7 @@ class AssertVisitor final : public VNVisitor {
         if (!nodep) return true;
         if (AstBegin* const beginp = VN_CAST(nodep, Begin)) {
             if (beginp->declsp()) return false;
-            for (AstNode* stmtp = beginp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+            for (AstNode* const stmtp : beginp->stmtspList()) {
                 if (!isEmptyStmt(stmtp)) return false;
             }
             return true;
@@ -1033,8 +1057,7 @@ class AssertVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             bool has_default = false;
-            for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                 itemp = VN_AS(itemp->nextp(), CaseItem)) {
+            for (AstCaseItem* const itemp : nodep->itemspList()) {
                 if (itemp->isDefault()) has_default = true;
             }
             const AstNodeDType* exprDtypep = nodep->exprp()->dtypep()->skipRefp();
@@ -1071,11 +1094,9 @@ class AssertVisitor final : public VNVisitor {
                     // Not parallel, but harmlessly so.
                 } else {
                     AstNodeExpr* propp = nullptr;
-                    for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-                         itemp = VN_AS(itemp->nextp(), CaseItem)) {
+                    for (AstCaseItem* const itemp : nodep->itemspList()) {
                         AstNodeExpr* itembitp = nullptr;
-                        for (AstNodeExpr* icondp = itemp->condsp(); icondp;
-                             icondp = VN_AS(icondp->nextp(), NodeExpr)) {
+                        for (AstNodeExpr* const icondp : itemp->condspList()) {
                             AstNodeExpr* onep;
                             if (AstInsideRange* const rcondp = VN_CAST(icondp, InsideRange)) {
                                 onep = rcondp->newAndFromInside(
@@ -1276,6 +1297,14 @@ class AssertVisitor final : public VNVisitor {
             nodep->displayType(VDisplayType::DT_DISPLAY);
             FileLine* const fl = nodep->fileline();
 
+            const auto monNum = ++m_monitorNum;
+            // Where $monitor was we do "__VmonitorNum = N; __VmonitorPending = '1;", so it is
+            // displayed when invoked
+            AstAssign* const newsetp = new AstAssign{
+                fl, newMonitorNumVarRefp(nodep, VAccess::WRITE), new AstConst{fl, monNum}};
+            newsetp->addNext(newMonitorPendingSetp(nodep));
+            nodep->replaceWith(newsetp);
+            // Add "always @(args) if (__VmonitorNum == N) __VmonitorPending = '1;"
             AstSenItem* monSenItemsp = nullptr;
             if (AstNode* const monExprsp = nodep->fmtp()->exprsp()) {
                 monExprsp->foreachAndNext([&](AstVarRef* varrefp) {
@@ -1286,25 +1315,31 @@ class AssertVisitor final : public VNVisitor {
                     monSenItemsp = AstNode::addNextNull(monSenItemsp, senItemp);
                 });
             }
-
-            AstSenTree* const monSenTree = new AstSenTree{fl, monSenItemsp};
-            const auto monNum = ++m_monitorNum;
-            // Where $monitor was we do "__VmonitorNum = N;"
-            AstAssign* const newsetp = new AstAssign{
-                fl, newMonitorNumVarRefp(nodep, VAccess::WRITE), new AstConst{fl, monNum}};
-            nodep->replaceWith(newsetp);
-            // Add "always_comb if (__VmonitorOn && __VmonitorNum==N) $display(...);"
-            AstNode* const stmtsp = nodep;
-            AstIf* const ifp = new AstIf{
-                fl,
-                new AstLogAnd{fl, new AstLogNot{fl, newMonitorOffVarRefp(nodep, VAccess::READ)},
-                              new AstEq{fl, new AstConst{fl, monNum},
-                                        newMonitorNumVarRefp(nodep, VAccess::READ)}},
-                stmtsp};
+            if (monSenItemsp) {
+                AstNodeExpr* const activep = new AstEq{fl, new AstConst{fl, monNum},
+                                                       newMonitorNumVarRefp(nodep, VAccess::READ)};
+                AstIf* const setIfp = new AstIf{fl, activep, newMonitorPendingSetp(nodep)};
+                AstSenTree* const monSenTreep = new AstSenTree{fl, monSenItemsp};
+                m_modp->addStmtsp(new AstAlways{fl, VAlwaysKwd::ALWAYS, monSenTreep, setIfp});
+            }
+            // Display once at the end of the time step (IEEE 1800-2023 21.2.3), like $strobe:
+            // "always_postponed if (__VmonitorPending && __VmonitorNum == N) begin
+            //    __VmonitorPending = '0; if (!__VmonitorOff) $display(...); end"
+            AstNodeExpr* const pendingp
+                = new AstLogAnd{fl, newMonitorPendingVarRefp(nodep, VAccess::READ),
+                                new AstEq{fl, new AstConst{fl, monNum},
+                                          newMonitorNumVarRefp(nodep, VAccess::READ)}};
+            AstNodeExpr* const onp = new AstLogNot{fl, newMonitorOffVarRefp(nodep, VAccess::READ)};
+            AstIf* const onIfp = new AstIf{fl, onp, nodep};
+            onIfp->isBoundsCheck(true);  // To avoid LATCH warning
+            AstAssign* const clearp
+                = new AstAssign{fl, newMonitorPendingVarRefp(nodep, VAccess::WRITE),
+                                new AstConst{fl, AstConst::BitFalse{}}};
+            AstIf* const ifp = new AstIf{fl, pendingp, clearp};
+            ifp->addThensp(onIfp);
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             ifp->branchPred(VBranchPred::BP_UNLIKELY);
-            AstNode* const newp = new AstAlways{fl, VAlwaysKwd::ALWAYS, monSenTree, ifp};
-            m_modp->addStmtsp(newp);
+            m_modp->addStmtsp(new AstAlwaysPostponed{fl, ifp});
         } else if (nodep->displayType() == VDisplayType::DT_STROBE) {
             nodep->displayType(VDisplayType::DT_DISPLAY);
             // Need one-shot
@@ -1329,9 +1364,12 @@ class AssertVisitor final : public VNVisitor {
         }
     }
     void visit(AstMonitorOff* nodep) override {
+        FileLine* const flp = nodep->fileline();
         AstAssign* const newp
-            = new AstAssign{nodep->fileline(), newMonitorOffVarRefp(nodep, VAccess::WRITE),
-                            new AstConst{nodep->fileline(), AstConst::BitTrue{}, nodep->off()}};
+            = new AstAssign{flp, newMonitorOffVarRefp(nodep, VAccess::WRITE),
+                            new AstConst{flp, AstConst::BitTrue{}, nodep->off()}};
+        // $monitoron displays immediately (IEEE 1800-2023 21.2.3)
+        if (!nodep->off()) newp->addNext(newMonitorPendingSetp(nodep));
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }

@@ -32,6 +32,24 @@
 
 // === Abstract base node types (AstNode*) =====================================
 
+class AstNodeConsItem VL_NOT_FINAL : public AstNode {
+    // An item of an AstNodeCons,
+    // op1 used by some subclasses
+    // @astgen op2 := valuep : AstNodeExpr
+    friend class AstNodeExpr;  // For m_knownConstantTree
+    mutable bool m_knownConstantTree = false;  // Known to be a tree of constants
+
+protected:
+    AstNodeConsItem(VNType t, FileLine* fl, AstNodeExpr* valuep)
+        : AstNode{t, fl} {
+        this->valuep(valuep);
+    }
+
+public:
+    ASTGEN_MEMBERS_AstNodeConsItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+};
 class AstNodeCoverDecl VL_NOT_FINAL : public AstNode {
     // Coverage analysis point declaration
     //
@@ -279,6 +297,7 @@ public:
 };
 class AstNodeFuncCovItem VL_NOT_FINAL : public AstNode {
     // Base class for functional coverage items (coverpoints, crosses)
+    // @astgen ptr := m_instCoveragep : Optional[AstFunc]  // [V3Width] Its get_inst_coverage()
 protected:
     string m_name;  // Item name
 
@@ -287,9 +306,13 @@ public:
         : AstNode{t, fl}
         , m_name{name} {}
     ASTGEN_MEMBERS_AstNodeFuncCovItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& name) override { m_name = name; }
     bool maybePointedTo() const override { return true; }
+    AstFunc* instCoveragep() const { return m_instCoveragep; }
+    void instCoveragep(AstFunc* funcp) { m_instCoveragep = funcp; }
 };
 class AstNodeGen VL_NOT_FINAL : public AstNode {
     // Generate construct
@@ -990,81 +1013,6 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
-class AstConsAssocItem final : public AstNode {
-    // An element of an AstConsAssoc, setting the key to the value
-    // Parents: CONSASSOC
-    // @astgen op1 := keyp : AstNodeExpr // Const, or Cons for an aggregate key type
-    // @astgen op2 := valuep : AstNodeExpr
-public:
-    AstConsAssocItem(FileLine* fl, AstNodeExpr* keyp, AstNodeExpr* valuep)
-        : ASTGEN_SUPER_ConsAssocItem(fl) {
-        this->keyp(keyp);
-        this->valuep(valuep);
-    }
-    ASTGEN_MEMBERS_AstConsAssocItem;
-    const char* broken() const override {
-        // backp is the cons node or the previous element
-        BROKEN_RTN(!VN_IS(backp(), ConsAssoc) && !VN_IS(backp(), ConsAssocItem));
-        return nullptr;
-    }
-};
-class AstConsDynArrayItem final : public AstNode {
-    // An element of an AstConsDynArray: a value, an array to splice, or with sizep, the
-    // value at index 'keyp'
-    // Parents: CONSDYNARRAY
-    // @astgen op1 := keyp : Optional[AstConst]
-    // @astgen op2 := valuep : AstNodeExpr
-public:
-    AstConsDynArrayItem(FileLine* fl, AstNodeExpr* valuep)
-        : ASTGEN_SUPER_ConsDynArrayItem(fl) {
-        this->valuep(valuep);
-    }
-    AstConsDynArrayItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
-        : ASTGEN_SUPER_ConsDynArrayItem(fl) {
-        this->keyp(keyp);
-        this->valuep(valuep);
-    }
-    ASTGEN_MEMBERS_AstConsDynArrayItem;
-    const char* broken() const override {
-        // backp is the cons node or the previous element
-        BROKEN_RTN(!VN_IS(backp(), ConsDynArray) && !VN_IS(backp(), ConsDynArrayItem));
-        return nullptr;
-    }
-};
-class AstConsQueueItem final : public AstNode {
-    // An element of an AstConsQueue, a value or an array to splice
-    // Parents: CONSQUEUE
-    // @astgen op1 := valuep : AstNodeExpr
-public:
-    AstConsQueueItem(FileLine* fl, AstNodeExpr* valuep)
-        : ASTGEN_SUPER_ConsQueueItem(fl) {
-        this->valuep(valuep);
-    }
-    ASTGEN_MEMBERS_AstConsQueueItem;
-    const char* broken() const override {
-        // backp is the cons node or the previous element
-        BROKEN_RTN(!VN_IS(backp(), ConsQueue) && !VN_IS(backp(), ConsQueueItem));
-        return nullptr;
-    }
-};
-class AstConsWildcardItem final : public AstNode {
-    // An element of an AstConsWildcard, setting the key to the value
-    // Parents: CONSWILDCARD
-    // @astgen op1 := keyp : AstConst
-    // @astgen op2 := valuep : AstNodeExpr
-public:
-    AstConsWildcardItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
-        : ASTGEN_SUPER_ConsWildcardItem(fl) {
-        this->keyp(keyp);
-        this->valuep(valuep);
-    }
-    ASTGEN_MEMBERS_AstConsWildcardItem;
-    const char* broken() const override {
-        // backp is the cons node or the previous element
-        BROKEN_RTN(!VN_IS(backp(), ConsWildcard) && !VN_IS(backp(), ConsWildcardItem));
-        return nullptr;
-    }
-};
 class AstConstraint final : public AstNode {
     // Constraint
     // @astgen op1 := itemsp : List[AstNode]
@@ -1516,21 +1464,6 @@ public:
     }
     ASTGEN_MEMBERS_AstImplicit;
 };
-class AstInitItem final : public AstNode {
-    // Container for a item in an init array
-    // This container is present so that the value underneath may get replaced with a new nodep
-    // and the upper AstInitArray's map will remain correct (pointing to this InitItem)
-    // @astgen op1 := valuep : AstNodeExpr
-public:
-    // Parents: INITARRAY
-    AstInitItem(FileLine* fl, AstNodeExpr* valuep)
-        : ASTGEN_SUPER_InitItem(fl) {
-        this->valuep(valuep);
-    }
-    ASTGEN_MEMBERS_AstInitItem;
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    bool hasDType() const override VL_MT_SAFE { return false; }  // See valuep()'s dtype instead
-};
 class AstIntfRef final : public AstNode {
     // An interface reference
     string m_name;  // Hierarchical path of the reference
@@ -1678,6 +1611,7 @@ class AstNetlist final : public AstNode {
     VTimescale m_timeunit;  // Global time unit
     VTimescale m_timeprecision;  // Global time precision
     std::string m_resolvedTopModuleName;  // Selected design top before wrapping under $root
+    std::vector<std::string> m_l2Names;  // Pretty names of top module instances (l2 names)
     bool m_timescaleSpecified = false;  // Input HDL specified timescale
     uint32_t m_nTraceCodes = 0;  // Number of trace codes used by design
     // V3Param-deferred params awaiting V3LinkDot::linkDotParamed scope-resolution.
@@ -1750,14 +1684,12 @@ public:
     bool timescaleSpecified() const { return m_timescaleSpecified; }
     const std::string& resolvedTopModuleName() const { return m_resolvedTopModuleName; }
     void resolvedTopModuleName(const std::string& value) { m_resolvedTopModuleName = value; }
+    const std::vector<std::string>& l2Names() const { return m_l2Names; }
+    void addL2Name(const std::string& name) { m_l2Names.push_back(name); }
     uint32_t nTraceCodes() const { return m_nTraceCodes; }
     void nTraceCodes(uint32_t value) { m_nTraceCodes = value; }
     AstVarScope* stlFirstIterationp();
     void clearStlFirstIterationp() { m_stlFirstIterationp = nullptr; }
-    const std::string traceLibTopName() const {
-        const std::string& name = resolvedTopModuleName();
-        return prettyName(name.empty() ? v3Global.rootp()->topModulep()->name() : name);
-    }
 
     // Record statistics for eval functions
     void addEvalStats(const std::string& phase);
@@ -1935,7 +1867,7 @@ public:
 class AstPull final : public AstNode {
     // @astgen op1 := lhsp : AstNodeExpr
 
-    const bool m_direction;
+    const bool m_direction;  // Direction of the pull
 
 public:
     AstPull(FileLine* fl, AstNodeExpr* lhsp, bool direction)
@@ -2355,8 +2287,7 @@ class AstVar final : public AstNode {
     //
     // @astgen op1 := childDTypep : Optional[AstNodeDType]
     // @astgen op2 := delayp : Optional[AstDelay] // Net delay
-    // Initial value that never changes (static const), or constructor argument for
-    // MTASKSTATE variables
+    // Initial value that never changes (static const)
     // @astgen op3 := valuep : Optional[AstNode<AstNodeExpr|AstNodeDType>]
     //     Value is a DType for type parameter defaults
     // @astgen op4 := attrsp : List[AstNode] // Attributes during early parse
@@ -2595,7 +2526,8 @@ public:
     string scType() const;  // Return SysC type: bool, uint32_t, uint64_t, sc_bv
     // Return C /*public*/ type for argument: bool, uint32_t, uint64_t, etc.
     string cPubArgType(bool named, bool forReturn) const;
-    string dpiArgType(bool named, bool forReturn) const;  // Return DPI-C type for argument
+    // Return DPI-C type for argument; if 'cpp', C structures are qualified for C++ class scopes
+    string dpiArgType(bool named, bool forReturn, bool cpp = false) const;
     string dpiTmpVarType(const string& varName) const;
     // Return Verilator internal type for argument: CData, SData, IData, WData
     string vlArgType(bool named, bool forReturn, bool forFunc, bool asRef = false,
@@ -2897,6 +2829,111 @@ public:
     void forkByValue(bool flag) { m_forkByValue = flag; }
 };
 
+// === AstNodeConsItem ===
+class AstConsArrayItem final : public AstNodeConsItem {
+    // An element of an AstConsArray, setting the element at the index to the value
+    // Parents: CONSARRAY
+    const uint64_t m_index;  // Index of the element, with the array's lo() at 0
+public:
+    AstConsArrayItem(FileLine* fl, uint64_t index, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsArrayItem(fl, valuep)
+        , m_index{index} {}
+    ASTGEN_MEMBERS_AstConsArrayItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsArray) && !VN_IS(backp(), ConsArrayItem));
+        return nullptr;
+    }
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        return m_index == VN_DBG_AS(samep, ConsArrayItem)->m_index;
+    }
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }  // By AstConsArray's map
+    uint64_t index() const { return m_index; }
+};
+class AstConsAssocItem final : public AstNodeConsItem {
+    // An element of an AstConsAssoc, setting the key to the value
+    // Parents: CONSASSOC
+    // @astgen op1 := keyp : AstNodeExpr // Const, or Cons for an aggregate key type
+public:
+    AstConsAssocItem(FileLine* fl, AstNodeExpr* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsAssocItem(fl, valuep) {
+        this->keyp(keyp);
+    }
+    ASTGEN_MEMBERS_AstConsAssocItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsAssoc) && !VN_IS(backp(), ConsAssocItem));
+        return nullptr;
+    }
+};
+class AstConsDynArrayItem final : public AstNodeConsItem {
+    // An element of an AstConsDynArray: a value, an array to splice, or with sizep, the
+    // value at index 'keyp'
+    // Parents: CONSDYNARRAY
+    // @astgen op1 := keyp : Optional[AstConst]
+public:
+    AstConsDynArrayItem(FileLine* fl, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsDynArrayItem(fl, valuep) {}
+    AstConsDynArrayItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsDynArrayItem(fl, valuep) {
+        this->keyp(keyp);
+    }
+    ASTGEN_MEMBERS_AstConsDynArrayItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsDynArray) && !VN_IS(backp(), ConsDynArrayItem));
+        return nullptr;
+    }
+};
+class AstConsQueueItem final : public AstNodeConsItem {
+    // An element of an AstConsQueue, a value or an array to splice
+    // Parents: CONSQUEUE
+public:
+    AstConsQueueItem(FileLine* fl, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsQueueItem(fl, valuep) {}
+    ASTGEN_MEMBERS_AstConsQueueItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsQueue) && !VN_IS(backp(), ConsQueueItem));
+        return nullptr;
+    }
+};
+class AstConsStructItem final : public AstNodeConsItem {
+    // An element of an AstConsStruct, the value of a member
+    // Parents: CONSSTRUCT
+    // @astgen ptr := m_memberp : AstMemberDType  // The member set
+public:
+    AstConsStructItem(FileLine* fl, AstMemberDType* memberp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsStructItem(fl, valuep)
+        , m_memberp{memberp} {}
+    ASTGEN_MEMBERS_AstConsStructItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsStruct) && !VN_IS(backp(), ConsStructItem));
+        return nullptr;
+    }
+    void dump(std::ostream& str) const override;
+    AstMemberDType* memberp() const { return m_memberp; }
+};
+class AstConsWildcardItem final : public AstNodeConsItem {
+    // An element of an AstConsWildcard, setting the key to the value
+    // Parents: CONSWILDCARD
+    // @astgen op1 := keyp : AstConst
+public:
+    AstConsWildcardItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsWildcardItem(fl, valuep) {
+        this->keyp(keyp);
+    }
+    ASTGEN_MEMBERS_AstConsWildcardItem;
+    const char* broken() const override {
+        // backp is the cons node or the previous element
+        BROKEN_RTN(!VN_IS(backp(), ConsWildcard) && !VN_IS(backp(), ConsWildcardItem));
+        return nullptr;
+    }
+};
+
 // === AstNodeCoverDecl ===
 class AstCoverOtherDecl final : public AstNodeCoverDecl {
     // Coverage analysis point declaration
@@ -3180,6 +3217,7 @@ public:
 
 // === AstNodeModule ===
 class AstClass final : public AstNodeModule {
+    // @astgen alias op1 := membersp
     // @astgen op4 := extendsp : List[AstClassExtends]
     // MEMBERS
     // @astgen ptr := m_classOrPackagep : Optional[AstClassPackage]  // Package to be emitted with
@@ -3223,8 +3261,6 @@ public:
         return m_covergroupEnclosingClassp;
     }
     void covergroupEnclosingClassp(AstClass* classp) { m_covergroupEnclosingClassp = classp; }
-    AstNode* membersp() const VL_MT_STABLE { return stmtsp(); }
-    void addMembersp(AstNode* nodep) { addStmtsp(nodep); }
     bool hasRandVarsUpdate() const { return m_hasRandVarsUpdate; }
     void hasRandVarsUpdate(bool flag) { m_hasRandVarsUpdate = flag; }
     bool isCovergroup() const { return m_covergroup; }
@@ -3288,7 +3324,7 @@ public:
         if (const AstClassExtends* const cextendsp = this->extendsp()) {
             cextendsp->classp()->foreachMember(f);
         }
-        for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : memberspList()) {
             if (AstNode::privateTypeTest<T_Node>(stmtp)) f(this, static_cast<T_Node*>(stmtp));
         }
     }
@@ -3304,7 +3340,7 @@ public:
         if (const AstClassExtends* const cextendsp = this->extendsp()) {
             if (cextendsp->classp()->existsMember(p)) return true;
         }
-        for (AstNode* stmtp = stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : memberspList()) {
             if (AstNode::privateTypeTest<T_Node>(stmtp)) {
                 if (p(this, static_cast<T_Node*>(stmtp))) return true;
             }

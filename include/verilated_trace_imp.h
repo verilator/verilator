@@ -132,6 +132,11 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     // - Call decl* for each signal (these eventually call ::declCode)
     // - Call the initialize callbacks of library instances underneath
     // - Store the base code
+    // Library instances are created by their parents, so register before them, but are only
+    // roots if not under a traced instance, so call the callbacks of the others first.
+    for (size_t i = 0; i < m_initCbs.size(); ++i) {
+        if (!m_initCbs[i].m_isLibInstance) runInitCallback(i, true);
+    }
     for (size_t i = 0; i < m_initCbs.size(); ++i) runInitCallback(i, true);
 
     if (expectedCodes && nextCode() != expectedCodes) {
@@ -244,7 +249,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& 
 }
 
 template <>
-void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap, bool) {
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::parallelWorkerTask(void* datap) {
     ParallelWorkerData* const wdp = reinterpret_cast<ParallelWorkerData*>(datap);
     // Run the task
     wdp->m_cb(wdp->m_userp, wdp->m_bufp);
@@ -295,9 +300,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::runCallbacks(const std::vector<Callback
             }
         }
         // Execute main thread jobs
-        for (ParallelWorkerData* const itemp : mainThreadWorkerData) {
-            parallelWorkerTask(itemp, false);
-        }
+        for (ParallelWorkerData* const itemp : mainThreadWorkerData) parallelWorkerTask(itemp);
         // Commit all trace buffers in order
         for (ParallelWorkerData& item : workerData) {
             // Wait until ready

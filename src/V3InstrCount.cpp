@@ -229,7 +229,7 @@ private:
         iterateAndNextConstNull(nodep->stmtsp());
         uint32_t totalCount = m_instrCount;
         // Sum counts in each statement until the first await
-        for (AstNode* stmtp = nodep->forksp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : nodep->forkspList()) {
             reset();
             iterateConst(stmtp);
             totalCount += m_instrCount;
@@ -290,6 +290,12 @@ private:
         m_instrCount += savedCount;
 
         m_ignoreRemaining = false;
+    }
+    void visit(AstNodeCons* nodep) override {
+        if (m_ignoreRemaining) return;
+        const VisitBase vb{this, nodep};
+        // A constant value is not built at run time, so its parts cost nothing
+        if (!nodep->isConstantTree()) iterateChildrenConst(nodep);
     }
     void visit(AstNode* nodep) override {
         if (m_ignoreRemaining) return;

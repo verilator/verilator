@@ -34,7 +34,7 @@
                                                            : ... note: In instance 't'
    43 |       wildcard bins text = {TEXT};
       |                             ^~~~
-%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:49:25: Unsupported: non-integral value in a transition bin of a coverpoint with exclusions.
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:49:25: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
                                                            : ... note: In instance 't'
    49 |       bins text = (1 => TEXT);
       |                         ^~~~
@@ -51,4 +51,17 @@
                                                           : ... Suggest a larger --coverage-max-bins
    69 |       wildcard illegal_bins runs[2] = {16'b????_????_????_???1};
       |                             ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:80:23: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                           : ... note: In instance 't'
+   80 |                    => TEXT);
+      |                       ^~~~
+%Error-UNSUPPORTED: t/t_covergroup_exclusions_unsup.v:112:25: Unsupported: non-integral value in a coverage bin of an integral coverpoint.
+                                                            : ... note: In instance 't.sub1'
+  112 |       bins text = (1 => TEXT);
+      |                         ^~~~
+%Error: t/t_covergroup_exclusions_unsup.v:113:29: Non-constant expression in transition bin; values must be constants (IEEE 1800-2023 19.5)
+                                                : ... note: In instance 't.sub1'
+  113 |       bins nonconst = (1 => variable);
+      |                             ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
 %Error: Exiting due to

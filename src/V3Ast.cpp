@@ -265,6 +265,10 @@ string AstNode::prettyName(const string& namein) VL_PURE {
                 pos += 8;
                 continue;
             }
+            if (0 == std::strncmp(pos, "__Vpkg", 6)) {
+                pos += 6;
+                continue;
+            }
             if (pos[0] == '_' && pos[1] == '_' && pos[2] == '0' && std::isxdigit(pos[3])
                 && std::isxdigit(pos[4])) {
                 char value = 0;
@@ -1256,19 +1260,27 @@ bool AstNode::gateTreeIter() const {
 bool AstNode::sameTreeIter(const AstNode* node1p, const AstNode* node2p, bool ignNext,
                            bool gateOnly) {
     // private: Return true if the two trees are identical
-    if (!node1p && !node2p) return true;
-    if (!node1p || !node2p) return false;
-    if (node1p->type() != node2p->type()) return false;
-    UASSERT_OBJ(
-        (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()), node1p,
-        "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
-    if (node1p->dtypep() && !node1p->dtypep()->similarDType(node2p->dtypep())) return false;
-    if (!node1p->sameNode(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
-    return (sameTreeIter(node1p->m_op1p, node2p->m_op1p, false, gateOnly)
-            && sameTreeIter(node1p->m_op2p, node2p->m_op2p, false, gateOnly)
-            && sameTreeIter(node1p->m_op3p, node2p->m_op3p, false, gateOnly)
-            && sameTreeIter(node1p->m_op4p, node2p->m_op4p, false, gateOnly)
-            && (ignNext || sameTreeIter(node1p->m_nextp, node2p->m_nextp, false, gateOnly)));
+    // Iterate over the list, rather than recurse, as lists might be long
+    while (true) {
+        if (!node1p && !node2p) return true;
+        if (!node1p || !node2p) return false;
+        if (node1p->type() != node2p->type()) return false;
+        UASSERT_OBJ(
+            (!node1p->dtypep() && !node2p->dtypep()) || (node1p->dtypep() && node2p->dtypep()),
+            node1p,
+            "Comparison of a node with dtypep() with a node without dtypep()\n-node2=" << node2p);
+        if (node1p->dtypep() && !node1p->dtypep()->similarDType(node2p->dtypep())) return false;
+        if (!node1p->sameNode(node2p) || (gateOnly && !node1p->isGateOptimizable())) return false;
+        if (!sameTreeIter(node1p->m_op1p, node2p->m_op1p, false, gateOnly)
+            || !sameTreeIter(node1p->m_op2p, node2p->m_op2p, false, gateOnly)
+            || !sameTreeIter(node1p->m_op3p, node2p->m_op3p, false, gateOnly)
+            || !sameTreeIter(node1p->m_op4p, node2p->m_op4p, false, gateOnly)) {
+            return false;
+        }
+        if (ignNext) return true;
+        node1p = node1p->m_nextp;
+        node2p = node2p->m_nextp;
+    }
 }
 
 //======================================================================
@@ -1716,7 +1728,7 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     const VCastable castable = VCastable::UNSUPPORTED;
     toDtp = toDtp->skipRefToEnump();
     fromDtp = fromDtp->skipRefToEnump();
-    if (toDtp == fromDtp) return VCastable::SAMEISH;
+    if (toDtp->matchingDType(fromDtp)) return VCastable::MATCHING;
     if (toDtp->similarDType(fromDtp)) return VCastable::SAMEISH;
     // UNSUP unpacked struct/unions (treated like BasicDType)
     const AstNodeDType* fromBaseDtp = computeCastableBase(fromDtp);
@@ -1789,6 +1801,23 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
             return VCastable::COMPATIBLE;
         }
         return VCastable::INCOMPATIBLE;
+    } else if (const AstUnpackArrayDType* const toArrayp = VN_CAST(toDtp, UnpackArrayDType)) {
+        // Equivalent if the same size with equivalent elements, the bounds may differ
+        // (IEEE 1800-2023 6.22.2)
+        const AstUnpackArrayDType* const fromArrayp = VN_CAST(fromDtp, UnpackArrayDType);
+        if (!fromArrayp || toArrayp->elementsConst() != fromArrayp->elementsConst()) {
+            return castable;
+        }
+        const VCastable subCastable = computeCastableImp(
+            toArrayp->subDTypep(), fromArrayp->subDTypep(), nullptr, checkIfaceArgCompat);
+        // Elements must match, but a nested dimension is COMPATIBLE if equivalent, and a virtual
+        // interface element can refer to an interface instance
+        const AstNodeDType* const toSubp = toArrayp->subDTypep()->skipRefp();
+        if (subCastable.isSameish()
+            || (subCastable.isCompatible()
+                && (VN_IS(toSubp, UnpackArrayDType) || VN_IS(toSubp, IfaceRefDType)))) {
+            return VCastable::COMPATIBLE;
+        }
     }
     return castable;
 }
@@ -1812,8 +1841,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     if (VN_IS(node1p, Const)) std::swap(node1p, node2p);
     {
         const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
-        if (castable == VCastable::SAMEISH || castable == VCastable::COMPATIBLE)
-            return node1p->dtypep();
+        if (castable.isSameish() || castable.isCompatible()) return node1p->dtypep();
         if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
     }
 
@@ -1834,7 +1862,7 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
 // Renders the canonical pattern S-expression for a single AstNode
 
 class VNPatternString final {
-    std::ostream& m_os;
+    std::ostream& m_os;  // Stream to write to
 
     std::map<std::string, std::string> m_internedConsts;  // Interned constants
     std::map<int, std::string> m_internedWordWidths;  // Interned widths

@@ -117,7 +117,7 @@ for s in [
         'Unsupported: super',
         'Unsupported: with[] stream expression',
         'loading other than unpacked-array variable',
-        'loading other than unpacked/associative-array variable',
+        'loading other than unpacked/dynamic/associative-array variable',
         # These are safety limits requiring >1000 bins or >10000 members to trigger
 ]:
     Suppressed[s] = True

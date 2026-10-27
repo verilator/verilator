@@ -37,7 +37,7 @@ module t (
   always @(clk) begin
     ++cyc;
     if (cyc == MAX) begin
-      expected[1] = '{2, 3};
+      expected[1] = '{2, 2};
       // expected[2] shouldn't be initialized
       expected[3] = '{6, 0};
       `checkh(results, expected);
