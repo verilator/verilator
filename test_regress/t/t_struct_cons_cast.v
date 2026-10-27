@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2023 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
+// verilog_format: on
+
 class uvm_policy;
   typedef enum {
     NEVER,
@@ -50,6 +55,22 @@ module t;
     Cls c;
     c = new;
     $display("%p", c);
+
+    // Nested array constructor elements also need casts to their C++ storage type.
+    begin
+      typedef struct {
+        logic [6:0] data [2];
+      } sample_t;
+      sample_t result;
+      logic [31:0] value;
+      repeat (10) begin
+        value = $urandom;
+        result = '{'{value[6:0], value[13:7]}};
+        `checkh(result.data[0], value[6:0]);
+        `checkh(result.data[1], value[13:7]);
+      end
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
