@@ -4906,16 +4906,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
 
                     AstCellArrayRef* const cellarrayrefp
                         = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
+                    // Only a terminal modport denotes an interface value needing SelBit.
+                    // Mid-path, retain CellArrayRef in m_unlinkedScopep; final variable, enum,
+                    // or function/task resolution consumes it by constructing AstUnlinkedRef,
+                    // whose array index V3Param then resolves.
                     if (cellarrayrefp && lastStates.m_dotPos == DP_FINAL) {
-                        // iface[vec].modport became CellArrayRef(iface, lsb)
-                        // Convert back to SelBit(iface, lsb)
                         UINFO(9, indent() << "Array modport to SelBit " << cellarrayrefp);
                         newp = new AstSelBit{cellarrayrefp->fileline(), newp,
                                              cellarrayrefp->selp()->unlinkFrBack()};
                         newp->user3(true);  // Don't process again
                         VL_DO_DANGLING(pushDeletep(cellarrayrefp->unlinkFrBack()), cellarrayrefp);
                         m_ds.m_unlinkedScopep = nullptr;
-                        m_ds.m_unresolvedCell = false;
                     }
                     nodep->replaceWith(newp);
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
