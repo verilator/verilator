@@ -58,6 +58,7 @@ module t;
   tri1 [6:0] packed_default_pull;
   logic pull_enable;
   logic [6:0] pull_data;
+  bit pull_done = 0;
   pullup (packed_default_pull[3]);
   assign packed_default_pull = pull_enable ? pull_data : 7'bz;
 
@@ -65,6 +66,17 @@ module t;
   tri0 [6:0] packed_default_pulldown;
   pulldown (packed_default_pulldown[3]);
   assign packed_default_pulldown = pull_enable ? pull_data : 7'bz;
+
+  initial begin
+    for (int cyc = 0; cyc < 16; ++cyc) begin
+      pull_enable = cyc[0];
+      pull_data = 7'(cyc * 19);
+      #1;
+      `checkh(packed_default_pull, pull_enable ? pull_data : 7'h7f);
+      `checkh(packed_default_pulldown, pull_enable ? pull_data : 7'h00);
+    end
+    pull_done = 1;
+  end
 
   initial begin
     // Test 1: Lower bits = 0xF
@@ -88,14 +100,7 @@ module t;
     // Expected: 0x50 = 0101_0000
     `checkh(out_value, 8'h50);
 
-    for (int cyc = 0; cyc < 16; ++cyc) begin
-      pull_enable = cyc[0];
-      pull_data = 7'(cyc * 19);
-      #1;
-      `checkh(packed_default_pull, pull_enable ? pull_data : 7'h7f);
-      `checkh(packed_default_pulldown, pull_enable ? pull_data : 7'h00);
-    end
-
+    wait (pull_done);
     $write("*-* All Finished *-*\n");
     $finish;
   end
