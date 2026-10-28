@@ -3691,6 +3691,7 @@ class ConstVisitor final : public VNVisitor {
             && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
             && varrefp  // Don't do messes with BITREFs/ARRAYREFs
             && !varrefp->varp()->hasStrengthAssignment()  // Strengths are resolved in V3Tristate
+            && !varrefp->varp()->isWiredNet()  // Wired drivers are merged in V3Tristate
             && !varrefp->varp()->valuep()  // Not already constified
             && !varrefp->varScopep()  // Not scoped (or each scope may have different initial val.)
             && !varrefp->varp()->isForced()  // Not forced (not really a constant)
