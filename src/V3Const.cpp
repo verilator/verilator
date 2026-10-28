@@ -4415,7 +4415,7 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstCond{$condp.isNeqZero,    $thenp, $elsep}", "replaceWChild(nodep,$thenp)");
     TREEOPA("AstCond{$condp.isZero,       $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$elsep)");
     TREEOPA("AstCond{$condp.isNeqZero,    $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$thenp)");
-    TREEOP ("AstCond{$condp, operandsSameTree($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
+    TREEOP ("AstCond{$condp.isPure, operandsSameTree($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
     TREEOP ("AstCond{$condp, matchCondCond(nodep)}", "DONE")  // Same condition then skip
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstCond{$condp.isZero}",           "replaceWIteratedThs(nodep)");

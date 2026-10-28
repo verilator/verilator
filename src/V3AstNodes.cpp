@@ -3261,6 +3261,9 @@ bool AstNodeFTaskRef::getPurityRecurse() const {
     // First compute the purity of arguments
     for (AstArg* const argp : this->argspList()) {
         if (!argp->isPure()) return false;
+        // Writing the caller's variable through an output argument is an effect of the call,
+        // though not of the subroutine, whose written variable is its own automatic local
+        if (argp->exprp() && argp->exprp()->isLValue()) return false;
     }
     return taskp->isPure();
 }
@@ -4565,7 +4568,6 @@ void AstVar::dump(std::ostream& str) const {
     }
     if (hasUserInit()) str << " [UINIT]";
     if (icoMaybeWritten()) str << " [ICOMAYBEWRITTEN]";
-    if (isClockingDriven()) str << " [CLOCKINGDRIVEN]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -4604,7 +4606,6 @@ void AstVar::dumpJson(std::ostream& str) const {
     }
     dumpJsonBoolFuncIf(str, attrFileDescr);
     dumpJsonBoolFuncIf(str, icoMaybeWritten);
-    dumpJsonBoolFuncIf(str, isClockingDriven);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
     dumpJsonBoolFuncIf(str, isFuncReturn);
     dumpJsonBoolFuncIf(str, isFuncLocal);
