@@ -1,0 +1,64 @@
+---
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+# Code review of a pull request by Claude, requested by an organization owner
+# with a pull request comment containing '@claude review'. The owners are listed
+# by login, as 'author_association' reports them as 'MEMBER', and only the
+# organization itself as 'OWNER'.
+#
+# This uses 'issue_comment', and not 'pull_request_target', as the Claude GitHub
+# App token exchange rejects OIDC tokens from the latter
+# (https://github.com/anthropics/claude-code-action/issues/1886).
+#
+# 'issue_comment' runs the workflow from the default branch with access to
+# secrets. The pull request code is never checked out or executed, Claude only
+# sees its diff.
+
+name: Claude review
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write  # For the Claude GitHub App token exchange
+
+jobs:
+  review:
+    name: Review
+    if: |
+      github.repository == 'verilator/verilator'
+      && github.event.issue.pull_request
+      && contains(github.event.comment.body, '@claude review')
+      && contains(fromJSON('["gezalore", "wsnyder"]'), github.event.comment.user.login)
+    runs-on: ubuntu-26.04
+    steps:
+      # The base branch, for the AGENTS.md guides and the code around the diff
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Claude review
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6  # v1.0.264
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.issue.number }}
+
+            Review this pull request. Use `gh pr diff` to see the changes, and
+            `gh pr view --comments` for the description and earlier discussion.
+            The working directory holds the base branch, not the pull request.
+
+            First read AGENTS.md, and the AGENTS.md of each directory the pull
+            request changes. Focus on correctness bugs, missing tests, and
+            departures from the guidelines in those files. Be concise and only
+            report real issues.
+
+            Post specific issues as inline comments with
+            `mcp__github_inline_comment__create_inline_comment`, and post a short
+            overall summary with `gh pr comment`.
+          claude_args: |-
+            --model claude-opus-5-5 --effort medium --max-budget-usd 1
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
