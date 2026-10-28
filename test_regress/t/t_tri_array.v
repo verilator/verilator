@@ -69,4 +69,6 @@ module Pad (
     input data
 );
   assign pad = ena ? data : 1'bz;
+  // Pulled ports must also diagnose unsupported unpacked element connections.
+  pullup (pad);
 endmodule

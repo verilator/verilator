@@ -34,7 +34,20 @@ module sub_inout (
   end
 endmodule
 
+module pulled_stream_port (
+    output wire [8:0] pad
+);
+  pullup (pad);
+endmodule
+
 module t;
+  // Stream truncation still requires support for matching data, enables, and pulls.
+  wire [6:0] narrow_left, narrow_right;
+  // verilator lint_off WIDTHEXPAND
+  pulled_stream_port left_truncate (.pad({<<2{narrow_left}}));
+  pulled_stream_port right_truncate (.pad({>>{narrow_right}}));
+  // verilator lint_on WIDTHEXPAND
+
   logic sub_we_internal;
   sub_with_tri u_sub (.we_internal(sub_we_internal));
 

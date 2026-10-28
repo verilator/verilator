@@ -121,6 +121,7 @@
 
 #include "V3Tristate.h"
 
+#include "V3Const.h"
 #include "V3Graph.h"
 #include "V3Inst.h"
 #include "V3Stats.h"
@@ -345,9 +346,67 @@ public:
 };
 
 //######################################################################
-// Given a node, flip any VarRef from LValue to RValue (i.e. make it an input)
-// See also V3LinkLValue::linkLValueSet
+// Read a packed output stream back in the child's bit order after changing it to an input.
+class TristateStreamReadVisitor final : public VNVisitor {
+    // STATE
+    AstNodeModule* const m_modp;  // Module receiving readback temporaries
+    int& m_unique;  // Module-local temporary numbering
 
+    // VISITORS
+    void visit(AstNodeStream* nodep) override {
+        iterateChildren(nodep);
+        if (!nodep->lhsp()->dtypep()->skipRefp()->isIntegralOrPacked()) return;
+        AstNodeExpr* const fromp = V3Const::constifyEdit(nodep->lhsp()->unlinkFrBack());
+        if (VN_IS(nodep, StreamL)) {
+            const int slice
+                = std::min<uint32_t>(VN_AS(nodep->rhsp(), Const)->toUInt(), fromp->width());
+            const int remainder = fromp->width() % slice;
+            nodep->lhsp(fromp);
+            if (remainder) {
+                // Unpacking leaves the short slice at the LSB. Read it first when
+                // reconstructing the child's stream (IEEE 1800-2023 11.4.14.3).
+                // Evaluate the operand once so nested streams do not duplicate readback trees.
+                AstVar* const readp
+                    = new AstVar{nodep->fileline(), VVarType::MODULETEMP,
+                                 "__VtriStreamRead" + cvtToStr(m_unique++), fromp->dtypep()};
+                m_modp->addStmtsp(readp);
+                m_modp->addStmtsp(new AstAlways{new AstAssignW{
+                    nodep->fileline(), new AstVarRef{nodep->fileline(), readp, VAccess::WRITE},
+                    fromp->unlinkFrBack()}});
+                AstNodeExpr* const shortp = new AstSel{
+                    nodep->fileline(), new AstVarRef{nodep->fileline(), readp, VAccess::READ}, 0,
+                    remainder};
+                AstNodeExpr* const fullp = new AstSel{
+                    nodep->fileline(), new AstVarRef{nodep->fileline(), readp, VAccess::READ},
+                    remainder, readp->width() - remainder};
+                nodep->lhsp(fullp);
+                nodep->dtypeFrom(fullp);
+                VNRelinker relinker;
+                nodep->unlinkFrBack(&relinker);
+                relinker.relink(new AstConcat{nodep->fileline(), shortp, nodep});
+            }
+        } else {
+            nodep->replaceWith(fromp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+    }
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+    // CONSTRUCTORS
+    TristateStreamReadVisitor(AstNodeModule* modp, int& unique)
+        : m_modp{modp}
+        , m_unique{unique} {}
+
+public:
+    // METHODS
+    static void apply(AstNodeExpr* nodep, AstNodeModule* modp, int& unique) {
+        TristateStreamReadVisitor visitor{modp, unique};
+        visitor.iterateAndNextNull(nodep);
+    }
+};
+
+// Given a node, flip variable references from LValue to RValue (i.e. make it an input).
+// See also V3LinkLValue::linkLValueSet.
 class TristatePinVisitor final : public TristateBaseVisitor {
     TristateGraph& m_tgraph;  // Tristate graph being updated
     const bool m_lvalue;  // Flip to be an LVALUE
@@ -412,8 +471,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                                      // drives this var across hierarchy with a plain (non-Z)
                                      // assign be recognised as a tristate contributor even
                                      // though that module's own graph has no Z on the net.
-        std::unordered_map<int, int>
-            bitPulls;  // Per-bit pull: bit_index -> direction (1=up, 0=down)
+        std::map<int, int> bitPulls;  // Per-bit pull: bit_index -> direction (1=up, 0=down)
     };
 
     VNUser3Allocator<AstVar, AuxAstVar> m_varAux;
@@ -734,6 +792,62 @@ class TristateVisitor final : public TristateBaseVisitor {
                                             << bitIndex << " of " << varp->prettyNameQ());
         }
         bitPulls[bitIndex] = direction;
+    }
+
+    void propagatePulls(AstNodeExpr* const targetp, const AuxAstVar& source,
+                        const int sourceOffset = 0) {
+        if (!source.pullp && source.bitPulls.empty()) return;
+        if (const AstNodeStream* const streamp = VN_CAST(targetp, NodeStream)) {
+            if (VN_IS(streamp, StreamR)) {
+                propagatePulls(streamp->lhsp(), source, sourceOffset);
+            } else {
+                const int width = streamp->width();
+                const int slice
+                    = std::min<uint32_t>(VN_AS(streamp->rhsp(), Const)->toUInt(), width);
+                AuxAstVar reordered;
+                reordered.pullp = source.pullp;
+                for (auto it = source.bitPulls.lower_bound(sourceOffset);
+                     it != source.bitPulls.end() && it->first < sourceOffset + width; ++it) {
+                    const int bit = it->first - sourceOffset;
+                    const int start = (bit / slice) * slice;
+                    const int bits = std::min(slice, width - start);
+                    reordered.bitPulls.emplace(width - start - bits + (bit - start), it->second);
+                }
+                propagatePulls(streamp->lhsp(), reordered);
+            }
+            return;
+        }
+        if (const AstConcat* const concatp = VN_CAST(targetp, Concat)) {
+            // The right operand maps to the lower bits of the original port.
+            propagatePulls(concatp->rhsp(), source, sourceOffset);
+            propagatePulls(concatp->lhsp(), source, sourceOffset + concatp->rhsp()->width());
+            return;
+        }
+        AstNodeExpr* basep = targetp;
+        int offset = 0;
+        while (const AstSel* const selp = VN_CAST(basep, Sel)) {
+            // V3Width normalizes packed indices to zero-based bit offsets and requires
+            // constant selection indices on output/inout connections.
+            const AstConst* const indexp = VN_AS(selp->lsbp(), Const);
+            offset += indexp->toSInt();
+            basep = selp->fromp();
+        }
+        AstVarRef* const refp = VN_CAST(basep, VarRef);
+        if (!refp) return;
+        const int bits = targetp->width();
+        if (AstPull* const pullp = source.pullp) {
+            if (basep == targetp) {
+                setPullDirection(refp->varp(), pullp);
+            } else {
+                for (int i = 0; i < bits; ++i) {
+                    setBitPullDirection(refp->varp(), offset + i, pullp->direction());
+                }
+            }
+        }
+        for (auto it = source.bitPulls.lower_bound(sourceOffset);
+             it != source.bitPulls.end() && it->first < sourceOffset + bits; ++it) {
+            setBitPullDirection(refp->varp(), offset + it->first - sourceOffset, it->second);
+        }
     }
 
     AstConst* createPerBitPullConst(AstVar* const varp) {
@@ -1593,6 +1707,38 @@ class TristateVisitor final : public TristateBaseVisitor {
         }
     }
 
+    void visit(AstNodeStream* nodep) override {
+        if (!nodep->lhsp()->dtypep()->skipRefp()->isIntegralOrPacked()) {
+            visit(static_cast<AstNode*>(nodep));
+            return;
+        }
+        if (m_graphing) {
+            iterateChildren(nodep);
+            if (m_alhs) {
+                associateLogic(nodep, nodep->lhsp());
+            } else {
+                associateLogic(nodep->lhsp(), nodep);
+            }
+        } else {
+            if (!m_alhs) iterateChildren(nodep);
+            AstNodeExpr* const sourcep = m_alhs ? nodep : nodep->lhsp();
+            AstNodeExpr* const targetp = m_alhs ? nodep->lhsp() : nodep;
+            if (sourcep->user1p()) {
+                // Keep the data stream on the LHS for V3Const to lower after this pass.
+                // Permute the enable as a whole vector instead of splitting it into bits.
+                AstNodeExpr* enp = getEnp(sourcep);
+                sourcep->user1p(nullptr);
+                if (VN_IS(nodep, StreamL)) {
+                    enp = new AstStreamL{nodep->fileline(), enp,
+                                         nodep->rhsp()->cloneTreePure(false)};
+                }
+                targetp->user1p(enp);
+                m_tgraph.didProcess(nodep);
+            }
+            if (m_alhs) iterateChildren(nodep);
+        }
+    }
+
     void visit(AstConcat* nodep) override {
         if (m_graphing) {
             iterateChildren(nodep);
@@ -2200,6 +2346,10 @@ class TristateVisitor final : public TristateBaseVisitor {
 
             // Existing pin becomes an input, and we mark each resulting signal as tristate
             const TristatePinVisitor visitor{nodep->exprp(), m_tgraph, false};
+            if (nodep->modVarp()->declDirection().isOutput()) {
+                TristateStreamReadVisitor::apply(VN_AS(nodep->exprp(), NodeExpr), m_modp,
+                                                 m_unique);
+            }
             const AstNode* const inAssignp = V3Inst::pinReconnectSimple(
                 nodep, m_cellp, true);  // Note may change nodep->exprp()
             UINFOTREE(9, nodep, "", "pin-in:");
@@ -2222,6 +2372,11 @@ class TristateVisitor final : public TristateBaseVisitor {
                 // pinReconnect should have converted this
                 exprrefp = VN_CAST(outAssignp->rhsp(),
                                    VarRef);  // This should be the same var as the output pin
+                // Tristate stream data, enables, and pulls require matching widths.
+                if (VN_IS(outAssignp->lhsp(), NodeStream)
+                    && outAssignp->lhsp()->width() != outAssignp->rhsp()->width()) {
+                    exprrefp = nullptr;
+                }
                 if (!exprrefp) {
                     nodep->v3warn(E_UNSUPPORTED, "Unsupported tristate port expression: "
                                                      << nodep->exprp()->prettyTypeName());
@@ -2235,58 +2390,10 @@ class TristateVisitor final : public TristateBaseVisitor {
                     mapInsertLhsVarRef(exprrefp);  // insertTristates will convert
                     //                     // to a varref to the __out# variable
                 }  // else the assignment deals with the connection
-            }
 
-            // Propagate any pullups/pulldowns upwards if necessary
-            if (exprrefp) {
-                AstPull* const pullp = m_varAux(nodep->modVarp()).pullp;
-                const auto& srcBitPulls = m_varAux(nodep->modVarp()).bitPulls;
-
-                // For part-select port connections (e.g. .out(bus[23:16])) extract
-                // the parent var, LSB, and width once; reused by both propagations.
-                AstVar* selVarp = nullptr;
-                int selLsb = 0;
-                int selWidth = 0;
-                if (outAssignp) {
-                    if (AstSel* const selp = VN_CAST(outAssignp->lhsp(), Sel)) {
-                        AstVarRef* const vrefp = VN_CAST(selp->fromp(), VarRef);
-                        AstConst* const lsbp = VN_CAST(selp->lsbp(), Const);
-                        if (vrefp && lsbp) {  // LCOV_EXCL_BR_LINE
-                            selVarp = vrefp->varp();
-                            selLsb = lsbp->toSInt();
-                            selWidth = selp->widthConst();
-                        }
-                    }
-                }
-
-                if (pullp) {
-                    UINFO(9, "propagate pull on " << exprrefp);
-                    setPullDirection(exprrefp->varp(), pullp);
-                    // For a part-select target, record per-bit pull direction across
-                    // the SEL range instead of setting pull on the whole variable.
-                    if (selVarp) {
-                        const int direction = pullp->direction();
-                        for (int i = 0; i < selWidth; ++i) {
-                            setBitPullDirection(selVarp, selLsb + i, direction);
-                        }
-                    }
-                }
-
-                // Per-bit pulls: the source bit indices must be offset by the SEL's
-                // LSB so they land on the correct bits of the parent variable.
-                if (!srcBitPulls.empty()) {
-                    UINFO(9, "propagate per-bit pulls from " << nodep->modVarp());
-                    for (const auto& pair : srcBitPulls) {
-                        setBitPullDirection(exprrefp->varp(), pair.first, pair.second);
-                    }  // LCOV_EXCL_LINE
-                    if (selVarp) {
-                        UINFO(9, "propagate per-bit pulls to SEL target " << selVarp
-                                                                          << " offset=" << selLsb);
-                        for (const auto& pair : srcBitPulls) {
-                            setBitPullDirection(selVarp, selLsb + pair.first, pair.second);
-                        }  // LCOV_EXCL_LINE
-                    }
-                }
+                // Propagate any pullups/pulldowns upwards if necessary
+                propagatePulls(exprrefp, m_varAux(nodep->modVarp()));
+                if (outAssignp) propagatePulls(outAssignp->lhsp(), m_varAux(nodep->modVarp()));
             }
             // Don't need to visit the created assigns, as it was added at
             // the end of the next links and normal iterateChild recursion
