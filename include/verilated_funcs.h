@@ -1926,7 +1926,7 @@ inline VlQueue<T> VL_STREAMR_RRI(int lbits, const VlQueue<T> q, IData rd) VL_MT_
     return q;
 }
 
-inline VlQueue<std::string> VL_STREAMR_NRI(int lbits, const VlQueue<std::string> q,
+inline VlQueue<std::string> VL_STREAMR_NRI(int lbits, const VlQueue<std::string>& q,
                                            IData rd) VL_MT_SAFE {
     return q;
 }

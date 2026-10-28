@@ -44,7 +44,7 @@ class SccInfo final {
     size_t m_nCyclicVertices = 0;  // Number of vertices in non-trivial SCCs
 
 public:
-    SccInfo(DfgGraph& dfg)
+    explicit SccInfo(DfgGraph& dfg)
         : m_dfg{dfg} {
         // Initialize m_vtx2Scc for the graph from a proper analysis
         DfgUserMap<uint64_t> vtx2Scc = dfg.makeUserMap<uint64_t>();
@@ -884,8 +884,10 @@ public:
                 m_sub.emplace_back(flp, m_dtype.elemDtype());
         }
     }
+    // cppcheck-suppress noExplicitConstructor
     BitMask(const DfgVertex& vtx)
         : BitMask{vtx.fileline(), vtx.dtype()} {}
+    // cppcheck-suppress noExplicitConstructor
     BitMask(const BitMask& other)
         : m_dtype{other.m_dtype} {
         if (m_dtype.isPacked()) {

@@ -43,7 +43,9 @@ public:
     V3ListLinks() = default;
     ~V3ListLinks() {
 #ifdef VL_DEBUG
+        // cppcheck-suppress intToPointerCast
         m_nextp = reinterpret_cast<T_Base*>(1);
+        // cppcheck-suppress intToPointerCast
         m_prevp = reinterpret_cast<T_Base*>(1);
 #endif
     }
@@ -230,7 +232,9 @@ public:
     V3List() = default;
     ~V3List() {
 #ifdef VL_DEBUG
+        // cppcheck-suppress intToPointerCast
         m_headp = reinterpret_cast<T_Element*>(1);
+        // cppcheck-suppress intToPointerCast
         m_lastp = reinterpret_cast<T_Element*>(1);
 #endif
     }

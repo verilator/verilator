@@ -708,7 +708,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         }
         UASSERT_OBJ(isXorTree() || m_polarity, nodep, "must be the original polarity");
     }
-    virtual ~ConstBitOpTreeVisitor() = default;
+    ~ConstBitOpTreeVisitor() override = default;
 #undef CONST_BITOP_RETURN_IF
 #undef CONST_BITOP_SET_FAILED
 
