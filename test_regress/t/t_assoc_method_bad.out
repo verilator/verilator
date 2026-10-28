@@ -64,4 +64,28 @@
                                    : ... note: In instance 't'
    29 |     a.bad_not_defined();
       |       ^~~~~~~~~~~~~~~
+%Error: t/t_assoc_method_bad.v:53:19: Associative array method 'first' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+                                    : ... note: In instance 't'
+                                    : ... Index data type: 'bit[31:0]' (2-state)
+                                    : ... Argument data type: 'logic[63:0]' (4-state)
+   53 |     void'(by_data.first(wider_four_state));   
+      |                   ^~~~~
+%Error: t/t_assoc_method_bad.v:54:19: Associative array method 'next' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+                                    : ... note: In instance 't'
+                                    : ... Index data type: 'bit[31:0]'
+                                    : ... Argument data type: 'bit[7:0]'
+   54 |     void'(by_data.next(narrower));   
+      |                   ^~~~
+%Error: t/t_assoc_method_bad.v:55:19: Associative array method 'last' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+                                    : ... note: In instance 't'
+                                    : ... Index data type: 'bit[31:0]'
+                                    : ... Argument data type: 'class Base'
+   55 |     void'(by_data.last(base_handle));   
+      |                   ^~~~
+%Error: t/t_assoc_method_bad.v:56:20: Associative array method 'prev' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+                                    : ... note: In instance 't'
+                                    : ... Index data type: 'class Base'
+                                    : ... Argument data type: 'class Derived'
+   56 |     void'(by_class.prev(derived_handle));   
+      |                    ^~~~
 %Error: Exiting due to

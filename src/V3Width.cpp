@@ -4936,7 +4936,26 @@ class WidthVisitor final : public VNVisitor {
                    || nodep->name() == "next"  //
                    || nodep->name() == "prev") {
             methodOkArguments(nodep, 1, 1);
-            iterateCheckTyped(nodep, "argument", methodArg(nodep, 0), adtypep->keyDTypep(), BOTH);
+            iterateCheckTyped(nodep, "argument", methodArg(nodep, 0), adtypep->keyDTypep(),
+                              PRELIM);
+            const AstNodeExpr* const argp = methodArg(nodep, 0);
+            const AstNodeDType* const keyDTypep = adtypep->keyDTypep();
+            const AstNodeDType* const argDTypep = argp->dtypep();
+            const bool isIntegralPair = keyDTypep->skipRefp()->isIntegralOrPacked()
+                                        && argDTypep->skipRefp()->isIntegralOrPacked();
+            // Integral types are equivalent by size, state, and sign; others must match
+            const bool isEquivalentArg = isIntegralPair ? isEquivalentDType(keyDTypep, argDTypep)
+                                                        : keyDTypep->similarDType(argDTypep);
+            if (!isEquivalentArg && !argp->fileline()->erroringOn()) {
+                nodep->v3error("Associative array method "
+                               << nodep->prettyNameQ()
+                               << " requires an argument equivalent to the index type"
+                                  " (IEEE 1800-2023 7.9.4, 13.5.2)"
+                               << warnDTypes(nodep, keyDTypep, argDTypep, "Index", "Argument"));
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::Signed32{}, 0});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
             AstNodeExpr* const index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
             methodCallLValueRecurse(nodep, index_exprp, VAccess::READWRITE);
             newp
