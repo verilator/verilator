@@ -66,9 +66,10 @@
 // return references, and are marked as impure. For this reason only we still
 // need to special case their handling via AstNodeExpr::isLValue().
 //
-// $fscanf/$sscanf: part-select destinations have no address, so a call
-// with one is lifted and written back through a temporary, or rejected
-// in contexts where no statement can be inserted after the call.
+// $fscanf/$sscanf: the call is always lifted into a statement of its own,
+// and non-addressable destinations (part-selects, members, array elements)
+// are written through a temporary that is written back after the call.
+// Calls in contexts that cannot be lifted are rejected.
 //
 //*************************************************************************
 
@@ -202,18 +203,8 @@ class LiftExprVisitor final : public VNVisitor {
 
     template<class T>
     void visitScanf(T* nodep) {
-        // Find the first non-addressable destination, if any
-        AstNodeExpr* firstBadp = nullptr;
-        for (AstNodeExpr* const destp : nodep->exprspList()) {
-            if (!VN_IS(destp, VarRef)) {
-                firstBadp = destp;
-                break;
-            }
-        }
-        if (!firstBadp) return;  // All destinations addressable: nothing to do
         if (!m_lift) {
-            firstBadp->v3error("Unsupported: $fscanf/$sscanf in this context; "
-                               "destination location is not a whole variable");
+            nodep->v3error("Unsupported: $fscanf/$sscanf in this context");
             return;
         }
         iterateChildren(nodep);
