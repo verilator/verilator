@@ -61,6 +61,11 @@ module t;
   pullup (packed_default_pull[3]);
   assign packed_default_pull = pull_enable ? pull_data : 7'bz;
 
+  // Likewise, preserve the tri0 default with a per-bit pulldown.
+  tri0 [6:0] packed_default_pulldown;
+  pulldown (packed_default_pulldown[3]);
+  assign packed_default_pulldown = pull_enable ? pull_data : 7'bz;
+
   initial begin
     // Test 1: Lower bits = 0xF
     in_value = 4'hF;
@@ -88,6 +93,7 @@ module t;
       pull_data = 7'(cyc * 19);
       #1;
       `checkh(packed_default_pull, pull_enable ? pull_data : 7'h7f);
+      `checkh(packed_default_pulldown, pull_enable ? pull_data : 7'h00);
     end
 
     $write("*-* All Finished *-*\n");
