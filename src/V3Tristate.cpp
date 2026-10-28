@@ -1230,14 +1230,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 undrivenp = newAllZerosOrOnes(invarp, true);  // LCOV_EXCL_LINE
             }
 
-            AstConst* pullConstp;
-            if (hasPerBitPulls(lhsp)) {
-                pullConstp = createPerBitPullConst(lhsp);
-            } else {
-                const AstPull* const pullp = m_varAux(lhsp).pullp;
-                const bool pull1 = pullp && pullp->direction() == 1;
-                pullConstp = newAllZerosOrOnes(invarp, pull1);
-            }
+            AstConst* const pullConstp = createPerBitPullConst(lhsp);
 
             undrivenp = new AstAnd{invarp->fileline(), undrivenp, pullConstp};
             orp = orp ? new AstOr{invarp->fileline(), orp, undrivenp} : undrivenp;
