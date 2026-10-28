@@ -156,6 +156,7 @@ set(HEADERS
     V3OrderMoveGraph.h
     V3OrderMTaskGraph.h
     V3Os.h
+    V3Outline.h
     V3PairingHeap.h
     V3Param.h
     V3Parse.h
@@ -338,6 +339,7 @@ set(COMMON_SOURCES
     V3OrderProcessDomains.cpp
     V3OrderSerial.cpp
     V3Os.cpp
+    V3Outline.cpp
     V3Param.cpp
     V3ParseGrammar.cpp
     V3ParseImp.cpp

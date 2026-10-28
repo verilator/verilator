@@ -89,6 +89,7 @@
 #include "V3Name.h"
 #include "V3Order.h"
 #include "V3Os.h"
+#include "V3Outline.h"
 #include "V3Param.h"
 #include "V3PreShell.h"
 #include "V3Premit.h"
@@ -506,6 +507,11 @@ static void process() {
         // --MODULE OPTIMIZATIONS--------------
 
         if (!v3Global.opt.serializeOnly()) {
+            // Outline parts of large coroutines.  Must be before Localize.
+            if (!v3Global.opt.lintOnly() && v3Global.opt.outputSplitCFuncs()) {
+                V3Outline::outlineAll(v3Global.rootp());
+            }
+
             // Split deep blocks to appease MSVC++.  Must be before Localize.
             if (!v3Global.opt.lintOnly() && v3Global.opt.compLimitBlocks()) {
                 V3DepthBlock::depthBlockAll(v3Global.rootp());
