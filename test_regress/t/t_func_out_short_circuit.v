@@ -200,7 +200,8 @@ module t (
     // Result assigned to a temporary that is never read
     a = 11;
     if (f_out(s, a)) begin
-    end else begin
+    end
+    else begin
     end
     `checkd(a, s < 0 ? 0 : s);
 
