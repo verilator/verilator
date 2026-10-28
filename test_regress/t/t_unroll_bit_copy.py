@@ -17,4 +17,6 @@ test.execute()
 
 test.file_grep(test.stats,
                r'Optimizations, Loop unrolling, Failed - reached --unroll-stmts\s+(\d+)', 0)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled loops\s+(\d+)', 62)
+test.file_grep(test.stats, r'Optimizations, Loop unrolling, Unrolled iterations\s+(\d+)', 3322)
 test.passes()
