@@ -243,7 +243,7 @@ private:
     FsmStateValue m_value;  // Encoded state value for real state vertices.
 
 protected:
-    FsmVertex(V3Graph* graphp, Kind kind, string label, FsmStateValue value) VL_MT_DISABLED
+    FsmVertex(V3Graph* graphp, Kind kind, string label, const FsmStateValue& value) VL_MT_DISABLED
         : V3GraphVertex{graphp},
           m_kind{kind},
           m_label{label},
@@ -265,7 +265,7 @@ class FsmStateVertex final : public FsmVertex {
     VL_RTTI_IMPL(FsmStateVertex, FsmVertex)
 
 public:
-    FsmStateVertex(V3Graph* graphp, string label, FsmStateValue value) VL_MT_DISABLED
+    FsmStateVertex(V3Graph* graphp, const string& label, const FsmStateValue& value) VL_MT_DISABLED
         : FsmVertex{graphp, Kind::STATE, label, value} {}
     ~FsmStateVertex() override = default;
 
@@ -277,7 +277,7 @@ class FsmPseudoVertex final : public FsmVertex {
     VL_RTTI_IMPL(FsmPseudoVertex, FsmVertex)
 
 public:
-    FsmPseudoVertex(V3Graph* graphp, Kind kind, string label) VL_MT_DISABLED
+    FsmPseudoVertex(V3Graph* graphp, Kind kind, const string& label) VL_MT_DISABLED
         : FsmVertex{graphp, kind, label, FsmStateValue{}} {}
     ~FsmPseudoVertex() override = default;
 
@@ -370,15 +370,16 @@ public:
     FileLine* fileline() const { return m_flp; }
     void fileline(FileLine* flp) { m_flp = flp; }
 
-    FsmStateVertex* addStateVertex(string label, FsmStateValue value) VL_MT_DISABLED {
+    FsmStateVertex* addStateVertex(const string& label,
+                                   const FsmStateValue& value) VL_MT_DISABLED {
         FsmStateVertex* const vertexp = new FsmStateVertex{this, label, value};
         m_stateVertices.emplace(value, vertexp);
         return vertexp;
     }
     FsmPseudoVertex* resetAnyVertex() VL_MT_DISABLED { return m_resetVertexp; }
     FsmPseudoVertex* defaultAnyVertex() VL_MT_DISABLED { return m_defaultVertexp; }
-    FsmArcEdge* addArc(FsmStateValue fromValue, FsmStateValue toValue, bool isReset, bool isCond,
-                       bool isDefault, FileLine* flp) VL_MT_DISABLED {
+    FsmArcEdge* addArc(FsmStateValue fromValue, const FsmStateValue& toValue, bool isReset,
+                       bool isCond, bool isDefault, FileLine* flp) VL_MT_DISABLED {
         FsmStateVertex* const top = m_stateVertices.at(toValue);
         FsmVertex* fromp = nullptr;
         if (isReset) {
@@ -1680,7 +1681,7 @@ class FsmDetectVisitor final : public VNVisitor {
     }
 
     static void emitStmtArcsFrom(FsmGraph& graph, AstNode* stmtsp, AstVarScope* stateVscp,
-                                 const FsmStateSpace& stateSpace, FsmStateValue fromValue,
+                                 const FsmStateSpace& stateSpace, const FsmStateValue& fromValue,
                                  bool isDefault, bool forceCond) {
         AstNodeAssign* const assp = directStateAssign(stmtsp, stateVscp);
         UASSERT_OBJ(assp, stmtsp, "FSM if-chain branch should have been prevalidated");

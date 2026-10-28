@@ -104,7 +104,7 @@ class VerilatedTraceConfig final {
 public:
     const bool m_useParallel;  // Use parallel tracing
 
-    VerilatedTraceConfig(bool useParallel)
+    explicit VerilatedTraceConfig(bool useParallel)
         : m_useParallel{useParallel} {}
 };
 

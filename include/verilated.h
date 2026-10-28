@@ -164,8 +164,9 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_PACKED_AGG = (1 << 16),  // Element type is a packed struct or union
     VLVF_PACKED_UNION = (1 << 17),  // With VLVF_PACKED_AGG, element type is a packed union
     VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see VlVarTableEntry
-    VLVF_PACKED_NEEDS_INDEX = (1 << 19)  // With VLVF_PACKED_MEMBER, an ancestor is an array of
-                                         // packed structs/unions, so needs an element index
+    VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_PACKED_MEMBER, an ancestor is an array of
+                                          // packed structs/unions, so needs an element index
+    VLVF_DYNAMIC = (1 << 20)  // Unpacked dimension 1 is of a dynamic array or queue
 };
 
 // One VPI-visible variable, a row for VerilatedScope::varsInsertFromTable() or
