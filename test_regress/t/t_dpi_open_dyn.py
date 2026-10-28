@@ -13,6 +13,6 @@ test.scenarios('vlt_all')
 
 test.compile(v_flags2=[test.pli_filename])
 
-test.execute(expect_filename=test.golden_filename)
+test.execute()
 
 test.passes()

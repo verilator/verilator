@@ -4359,6 +4359,9 @@ void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "[]";
 }
+string AstUnsizedArrayDType::prettyDTypeName(bool full) const {
+    return subDTypep()->prettyDTypeName(full) + (packed() ? "[]" : "$[]");
+}
 bool AstUnsizedArrayDType::sameNode(const AstNode* samep) const {
     const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
     if (!asamep->subDTypep()) return false;
@@ -4366,7 +4369,8 @@ bool AstUnsizedArrayDType::sameNode(const AstNode* samep) const {
 }
 bool AstUnsizedArrayDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
-    return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep());
+    return asamep->subDTypep() && packed() == asamep->packed()
+           && subDTypep()->similarDType(asamep->subDTypep());
 }
 void AstUntil::dump(std::ostream& str) const {
     Super::dump(str);

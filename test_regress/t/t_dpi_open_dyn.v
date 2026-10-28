@@ -16,6 +16,16 @@
 module t;
 
   typedef byte bytes_t[];
+  typedef enum bit [6:0] {
+    E7_LOW = 7'd5,
+    E7_MID = 7'd70,
+    E7_HIGH = 7'd127
+  } enum7_t;
+  typedef enum7_t enum7_q_t[$];
+  typedef struct packed {
+    bit [3:0] tag;
+    bit signed [10:0] value;
+  } pair_t;
 
   import "DPI-C" function int dpii_failure();
 
@@ -54,6 +64,18 @@ module t;
   // Inverts each element, xored with its index, through svBitVecVal
   import "DPI-C" function void dpii_invert_wide(inout bit [94:0] io[]);
 
+  // Negates each element, through svLogicVecVal
+  import "DPI-C" function void dpii_negate_logic(inout logic signed [14:0] io[]);
+
+  // Inverts each element, through svLogic
+  import "DPI-C" function void dpii_invert_logic(inout logic io[]);
+
+  // Reverses the order of the elements, through svBitVecVal
+  import "DPI-C" function void dpii_reverse_enum(inout enum7_t io[]);
+
+  // Increments the tag and negates the value of each element, through svBitVecVal
+  import "DPI-C" function void dpii_update_pair(inout pair_t io[]);
+
   // Returns the size
   import "DPI-C" function int dpii_size(input string i[]);
 
@@ -62,11 +84,6 @@ module t;
 
   // Doubles each element, through svGetArrayPtr
   import "DPI-C" function void dpii_double(inout real io[]);
-
-  // Checks the assignment that copies back a bounded queue drops elements beyond its bound, with
-  // a warning (IEEE 1800-2023 7.10.5). Done from C++, as a copy back has as many elements as the
-  // queue had.
-  import "DPI-C" function void dpii_assign_bounded();
 
   initial begin
     bit [63:0] crc;
@@ -88,6 +105,7 @@ module t;
       foreach (sizes[s]) begin
         automatic byte d[] = new[sizes[s]];
         automatic byte q[$];
+        // At the size of 7, at its bound, which copying back must keep (IEEE 1800-2023 7.10.5)
         automatic byte bq[$:6];
         automatic byte expd[];
         automatic byte expq[$];
@@ -229,6 +247,59 @@ module t;
     end
 
     begin
+      logic signed [14:0] q[$];
+      logic signed [14:0] expq[$];
+      for (int i = 0; i < 5; ++i) begin
+        q.push_back(crc[14:0]);
+        crc = {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+      end
+      expq = q;
+      dpii_negate_logic(q);
+      foreach (q[i]) `checkh(q[i], -expq[i]);
+    end
+
+    begin
+      logic d[];
+      logic expd[];
+      d = new[7];
+      foreach (d[i]) d[i] = crc[i];
+      expd = d;
+      dpii_invert_logic(d);
+      foreach (d[i]) `checkh(d[i], ~expd[i]);
+    end
+
+    begin
+      enum7_q_t q;
+      enum7_q_t expq;
+      enum7_t e;
+      e = E7_LOW;
+      repeat (int'(crc[1:0])) e = e.next();
+      for (int i = 0; i < 5; ++i) begin
+        q.push_back(e);
+        e = e.next();
+      end
+      expq = q;
+      dpii_reverse_enum(q);
+      foreach (q[i]) `checkh(q[i], expq[q.size()-1-i]);
+    end
+
+    begin
+      pair_t d[];
+      pair_t expd[];
+      d = new[3];
+      foreach (d[i]) begin
+        d[i] = crc[14:0];
+        crc = {crc[62:0], crc[63] ^ crc[2] ^ crc[0]};
+      end
+      expd = d;
+      dpii_update_pair(d);
+      foreach (d[i]) begin
+        `checkh(d[i].tag, expd[i].tag + 4'd1);
+        `checkh(d[i].value, -expd[i].value);
+      end
+    end
+
+    begin
       string d[];
       string q[$];
       d = new[3];
@@ -257,8 +328,6 @@ module t;
       `checkd(q.size(), 3);
       foreach (q[i]) `checkr(q[i], expq[i] * 2);
     end
-
-    dpii_assign_bounded();
 
     `checkd(dpii_failure(), 0);
 

@@ -134,11 +134,7 @@ module Vt_debug_emitv_t;
         end
     endfunction
     task dpii_open;
-        input 
-        ???? // UNSIZEDARRAYDTYPE
-         h
-        ???? // UNSIZEDARRAYDTYPE
-        ;
+        input bit [] h[];
     endtask
     initial begin
         begin : unnamedblk1

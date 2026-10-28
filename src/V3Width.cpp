@@ -11040,8 +11040,9 @@ class WidthVisitor final : public VNVisitor {
         const AstNodeDType* portElemp = portp->dtypep()->skipRefp();
         while (VN_IS(portElemp, UnsizedArrayDType) || VN_IS(portElemp, UnpackArrayDType)) {
             const AstUnsizedArrayDType* const unsizedp = VN_CAST(portElemp, UnsizedArrayDType);
-            if (!unsizedp || !unsizedp->packed()) ++portDims;
+            if (unsizedp && unsizedp->packed()) break;  // Of the elements, e.g. 'bit []'
             portElemp = portElemp->subDTypep()->skipRefp();
+            ++portDims;
         }
         const AstBasicDType* const elemBasicp = elemDTypep->basicp();
         const AstBasicDType* const portBasicp = portp->basicp();

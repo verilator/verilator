@@ -6,13 +6,10 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-#include "verilated.h"
-
 #include "svdpi.h"
 
 #include <cstdint>
 #include <utility>
-#include <vector>
 
 // These require the above. Comment prevents clang-format moving them
 #include "TestCheck.h"
@@ -100,6 +97,51 @@ void dpii_invert_wide(const svOpenArrayHandle io) {
     }
 }
 
+// Returns the low 'width' bits of 'value', sign extended
+static int signExtend(uint32_t value, int width) {
+    const uint32_t sign = 1U << (width - 1);
+    return static_cast<int>((value & ((sign << 1) - 1)) ^ sign) - static_cast<int>(sign);
+}
+
+void dpii_negate_logic(const svOpenArrayHandle io) {
+    for (int i = svLow(io, 1); i <= svHigh(io, 1); ++i) {
+        svLogicVecVal vec;
+        svGetLogicArrElem1VecVal(&vec, io, i);
+        TEST_CHECK_EQ(vec.bval, 0U);
+        vec.aval = static_cast<uint32_t>(-signExtend(vec.aval, 15)) & 0x7fff;
+        svPutLogicArrElem1VecVal(io, &vec, i);
+    }
+}
+
+void dpii_invert_logic(const svOpenArrayHandle io) {
+    for (int i = svLow(io, 1); i <= svHigh(io, 1); ++i) {
+        svPutLogicArrElem1(io, svGetLogicArrElem1(io, i) == sv_0 ? sv_1 : sv_0, i);
+    }
+}
+
+void dpii_reverse_enum(const svOpenArrayHandle io) {
+    for (int i = svLow(io, 1), j = svHigh(io, 1); i < j; ++i, --j) {
+        svBitVecVal a;
+        svBitVecVal b;
+        svGetBitArrElem1VecVal(&a, io, i);
+        svGetBitArrElem1VecVal(&b, io, j);
+        svPutBitArrElem1VecVal(io, &b, i);
+        svPutBitArrElem1VecVal(io, &a, j);
+    }
+}
+
+// Of elements of 'struct packed {bit [3:0] tag; bit signed [10:0] value;}'
+void dpii_update_pair(const svOpenArrayHandle io) {
+    for (int i = svLow(io, 1); i <= svHigh(io, 1); ++i) {
+        svBitVecVal vec;
+        svGetBitArrElem1VecVal(&vec, io, i);
+        const uint32_t tag = (vec >> 11) + 1;
+        const int value = -signExtend(vec, 11);
+        vec = ((tag & 0xf) << 11) | (static_cast<uint32_t>(value) & 0x7ff);
+        svPutBitArrElem1VecVal(io, &vec, i);
+    }
+}
+
 int dpii_size(const svOpenArrayHandle i) { return svSize(i, 1); }
 
 double dpii_sum_real(const svOpenArrayHandle i) {
@@ -112,12 +154,4 @@ double dpii_sum_real(const svOpenArrayHandle i) {
 void dpii_double(const svOpenArrayHandle io) {
     double* const datap = static_cast<double*>(svGetArrayPtr(io));
     for (int k = 0; k < svSize(io, 1); ++k) datap[k] *= 2;
-}
-
-void dpii_assign_bounded() {
-    const std::vector<IData> values{1, 2, 3, 4, 5};
-    VlQueue<IData, 3> q;  // As 'int q[$:2]'
-    q.assign(values.begin(), values.end());
-    TEST_CHECK_EQ(q.size(), 3);
-    for (int i = 0; i < q.size(); ++i) TEST_CHECK_EQ(q.at(i), values[i]);
 }

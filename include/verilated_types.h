@@ -753,7 +753,7 @@ public:
     void resize(size_t size) { m_deque.resize(size, atDefault()); }
     // Assign the elements of a range, as DPI does from a C layout copy
     template <typename T_Iterator>
-    void assign(T_Iterator first, T_Iterator last) {
+    void assign(const T_Iterator& first, const T_Iterator& last) {
         m_deque.assign(first, last);
         applyBound();
     }

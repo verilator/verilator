@@ -18,8 +18,6 @@ module t;
     dpii_open(fixed_dyn);
     dpii_open(dyn_queue);
     dpii_open_packed(bits_fixed_dyn);
-    // Empty queue
-    dpii_open({});
     // Streaming concatenation (IEEE 1800-2023 11.4.14)
     dpii_open_int({>>{ints}});
   end

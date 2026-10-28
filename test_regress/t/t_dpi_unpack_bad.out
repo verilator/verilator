@@ -98,7 +98,7 @@
                                   : ... note: In instance 't'
    85 |     import_func8(wild);
       |                  ^~~~
-%Error: t/t_dpi_unpack_bad.v:93:18: DPI open array argument 'in' with elements of type 'bit' passed elements of type 'bit[7:0]$[]', which is not equivalent (IEEE 1800-2023 7.6)
+%Error: t/t_dpi_unpack_bad.v:93:18: DPI open array argument 'in' with elements of type 'bit[]' passed elements of type 'bit[7:0]$[]', which is not equivalent (IEEE 1800-2023 7.6)
                                   : ... note: In instance 't'
    93 |     import_func9(bits_dyn);
       |                  ^~~~~~~~

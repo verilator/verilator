@@ -11,12 +11,8 @@
                                                   : ... note: In instance 't'
    20 |     dpii_open_packed(bits_fixed_dyn);
       |                      ^~~~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_dpi_open_dyn_unsup.v:22:15: Unsupported/Illegal: empty queue ('{}') in this context
+%Error-UNSUPPORTED: t/t_dpi_open_dyn_unsup.v:22:20: Unsupported: DPI open array argument 'h' passed a streaming concatenation
                                                   : ... note: In instance 't'
-   22 |     dpii_open({});
-      |               ^
-%Error-UNSUPPORTED: t/t_dpi_open_dyn_unsup.v:24:20: Unsupported: DPI open array argument 'h' passed a streaming concatenation
-                                                  : ... note: In instance 't'
-   24 |     dpii_open_int({>>{ints}});
+   22 |     dpii_open_int({>>{ints}});
       |                    ^~
 %Error: Exiting due to

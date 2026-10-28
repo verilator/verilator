@@ -16,11 +16,11 @@
                     t/t_dpi_struct_unpacked_unsup.v:8:11: ... Location of the other structure type
     8 |   typedef struct {int x;} same_t;
       |           ^~~~~~
-%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:43:42: Unsupported: DPI argument of type REFDTYPE 'union_t'
+%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:43:42: Unsupported: DPI argument of type 'union t.union_t'
                                                          : ... For best portability, use bit, byte, int, or longint
    43 |   function void dpix_union(input union_t u);
       |                                          ^
-%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:62:55: Unsupported: DPI argument of type UNSIZEDARRAYDTYPE
+%Error-UNSUPPORTED: t/t_dpi_struct_unpacked_unsup.v:62:55: Unsupported: DPI argument of type 'struct t.elem_t$[]'
                                                          : ... For best portability, use bit, byte, int, or longint
    62 |   import "DPI-C" function void dpii_open(input elem_t s[]);
       |                                                       ^
