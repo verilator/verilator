@@ -166,6 +166,13 @@ B. Or, for finer-grained control, or C++ files with multiple Verilated
           tfp->close();
       }
 
+   To select signals by their full names instead, call
+   ``tfp->dumpvarsExact(name)`` for each before ``open()``. The name is the
+   scope names and the signal name separated by single spaces, for example
+   ``"top t cyc"``; a dot inside a scope name, as in a SystemC instance
+   name, stays part of it. After ``open()``, ``tfp->dumpvarsUnmatched()``
+   returns the names no signal had.
+
 You also need to compile :file:`verilated_vcd_c.cpp` and add it to your
 link, preferably by adding the dependencies in your Makefile's
 ``$(VK_GLOBAL_OBJS)`` link rule. This is done for you if you are using the

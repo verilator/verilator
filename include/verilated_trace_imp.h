@@ -126,6 +126,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     m_numSignals = 0;
     m_maxBits = 0;
     m_sigs_enabledVec.clear();
+    for (auto& item : m_exactvars) item.second = false;
     m_initCbsCalled.assign(m_initCbs.size(), false);
 
     // Call all initialize callbacks for root instances, which will:
@@ -176,10 +177,16 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::stri
     if (VL_UNCOVERABLE(!code)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
     }
+    const bool all = m_dumpvars.empty() && m_exactvars.empty();
+    bool enabled = all;
+    const auto exactIt = m_exactvars.find(declName);
+    if (exactIt != m_exactvars.end()) {
+        exactIt->second = true;
+        enabled = true;
+    }
     // To keep it simple, this is O(enables * signals), but we expect few enables
-    bool enabled = false;
-    if (m_dumpvars.empty()) enabled = true;
     for (const auto& item : m_dumpvars) {
+        if (enabled) break;
         const int dumpvarsLevel = item.first;
         const char* dvp = item.second.c_str();
         const char* np = declName.c_str();
@@ -194,12 +201,14 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::stri
             if (*np++ == ' ') ++levels;
         }
         if (levels > dumpvarsLevel) continue;  // Too deep
+        enabled = true;
+        break;
+    }
+    if (enabled && !all) {
         // We only need to set first code word if it's a multicode signal
         // as that's all we'll check for later
         if (m_sigs_enabledVec.size() <= code) m_sigs_enabledVec.resize((code + 1024) * 2);
         m_sigs_enabledVec[code] = true;
-        enabled = true;
-        break;
     }
 
     ++m_numSignals;
@@ -238,6 +247,7 @@ template <>
 void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& hier) VL_MT_SAFE {
     if (level == 0) {
         m_dumpvars.clear();  // empty = everything on
+        m_exactvars.clear();
     } else {
         // Convert Verilog . separators to trace space separators
         std::string hierSpaced = hier;
@@ -246,6 +256,21 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& 
         }
         m_dumpvars.emplace_back(level, hierSpaced);
     }
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsExact(const std::string& name) VL_MT_SAFE {
+    m_exactvars.emplace(name, false);
+}
+
+template <>
+std::vector<std::string> VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsUnmatched() const VL_MT_SAFE {
+    std::vector<std::string> names;
+    for (const auto& item : m_exactvars) {
+        if (!item.second) names.push_back(item.first);
+    }
+    std::sort(names.begin(), names.end());
+    return names;
 }
 
 template <>
