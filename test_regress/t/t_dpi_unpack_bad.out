@@ -58,4 +58,48 @@
                                               : ... Parameter data type: 'logic[3:0]$[0:2]' (4-state)
    44 |     import_func0(sig3);
       |                  ^~~~
+%Error: t/t_dpi_unpack_bad.v:53:18: DPI output open array argument 'out' may not be passed a dynamic array or queue (IEEE 1800-2023 7.7)
+                                  : ... note: In instance 't'
+   53 |     import_func4(dyn);
+      |                  ^~~
+%Error: t/t_dpi_unpack_bad.v:54:18: DPI output open array argument 'out' may not be passed a dynamic array or queue (IEEE 1800-2023 7.7)
+                                  : ... note: In instance 't'
+   54 |     import_func4(que);
+      |                  ^~~
+%Error: t/t_dpi_unpack_bad.v:70:18: DPI open array argument 'in' with elements of type 'real' passed elements of type 'int', which is not equivalent (IEEE 1800-2023 7.6)
+                                  : ... note: In instance 't'
+   70 |     import_func5(ints);
+      |                  ^~~~
+%Error: t/t_dpi_unpack_bad.v:71:18: DPI open array argument 'in' with elements of type 'int' passed elements of type 'real', which is not equivalent (IEEE 1800-2023 7.6)
+                                  : ... note: In instance 't'
+   71 |     import_func6(reals);
+      |                  ^~~~~
+%Error: t/t_dpi_unpack_bad.v:72:18: DPI open array argument 'in' with elements of type 'real' passed elements of type 'int', which is not equivalent (IEEE 1800-2023 7.6)
+                                  : ... note: In instance 't'
+   72 |     import_func7(ints32);
+      |                  ^~~~~~
+%Error: t/t_dpi_unpack_bad.v:73:18: DPI open array argument 'in' with elements of type 'int' passed elements of type 'class Cls', which is not equivalent (IEEE 1800-2023 7.6)
+                                  : ... note: In instance 't'
+   73 |     import_func6(objs);
+      |                  ^~~~
+%Error: t/t_dpi_unpack_bad.v:74:18: DPI open array argument 'in' with elements of type 'int' passed elements of type 'struct t.u_t', which is not equivalent (IEEE 1800-2023 7.6)
+                                  : ... note: In instance 't'
+   74 |     import_func6(sig3);
+      |                  ^~~~
+%Error: t/t_dpi_unpack_bad.v:75:18: DPI open array argument 'in' with elements of type 'int' passed elements of type 'int$[]', which is not equivalent (IEEE 1800-2023 7.6)
+                                  : ... note: In instance 't'
+   75 |     import_func6(ints_dyn);
+      |                  ^~~~~~~~
+%Error: t/t_dpi_unpack_bad.v:84:18: DPI open array argument 'in' passed 'byte$[int]', but associative arrays may only be passed to associative arrays (IEEE 1800-2023 7.9.10)
+                                  : ... note: In instance 't'
+   84 |     import_func8(assoc);
+      |                  ^~~~~
+%Error: t/t_dpi_unpack_bad.v:85:18: DPI open array argument 'in' passed 'byte$[*]', but associative arrays may only be passed to associative arrays (IEEE 1800-2023 7.9.10)
+                                  : ... note: In instance 't'
+   85 |     import_func8(wild);
+      |                  ^~~~
+%Error: t/t_dpi_unpack_bad.v:93:18: DPI open array argument 'in' with elements of type 'bit[]' passed elements of type 'bit[7:0]$[]', which is not equivalent (IEEE 1800-2023 7.6)
+                                  : ... note: In instance 't'
+   93 |     import_func9(bits_dyn);
+      |                  ^~~~~~~~
 %Error: Exiting due to

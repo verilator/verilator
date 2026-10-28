@@ -2532,7 +2532,8 @@ public:
                      bool constRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir(bool forMember = false) const;  // Return VerilatorVarDir: VLVD_INOUT, etc
-    string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
+    // Return VerilatorVarProps declaration, with 'sizeExpr' the size of a dynamic array or queue
+    string vlPropDecl(const string& propName, const string& sizeExpr) const;
     void combineType(VVarType type);
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* dtypeSkipRefp() const VL_MT_STABLE { return subDTypep()->skipRefp(); }
