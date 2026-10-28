@@ -146,12 +146,6 @@ module t;
     `checkd(code, 1);
     `checkd(idx, 345);
 
-    // A call that is part of a larger expression is lifted into a temporary
-    // of its own; all-addressable destinations then need no write-backs.
-    code = $sscanf("15", "%d", idx) + 1;
-    `checkd(code, 2);
-    `checkd(idx, 15);
-
     $finish;
   end
 

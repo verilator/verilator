@@ -66,16 +66,9 @@
 // return references, and are marked as impure. For this reason only we still
 // need to special case their handling via AstNodeExpr::isLValue().
 //
-// $fscanf/$sscanf destinations:
-// The generated VL_FSCANF/VL_SSCANF macros take the address of each
-// destination, and a part-select has no address. A call with such a
-// destination is therefore always lifted into a statement of its own, even
-// if it would normally be left in place, the destination is redirected to a
-// temporary variable, and a write-back of that temporary to the destination
-// is inserted right after the lifted call. A call in a context where the
-// lift mechanism does not reach, e.g. an event control, is rejected with an
-// error if any destination is non-addressable, as no write-back can be
-// placed after it.
+// $fscanf/$sscanf: part-select destinations have no address, so a call
+// with one is lifted and written back through a temporary, or rejected
+// in contexts where no statement can be inserted after the call.
 //
 //*************************************************************************
 
@@ -207,34 +200,23 @@ class LiftExprVisitor final : public VNVisitor {
         return m_newStmtps;
     }
 
-    // $fscanf/$sscanf: the generated VL_FSCANF/VL_SSCANF macros take the
-    // address of each destination, and a part-select has no address, so
-    // non-addressable destinations are routed through a temporary
-    // variable written back to the destination after the call. The
-    // grammar only accepts name-based lvalues as destinations, and at
-    // this point in the pipeline those are exactly VarRef or Sel nodes
-    // (part-select, array-element and struct-member accesses are all
-    // Sel before later passes decompose them into ArraySel/StructSel).
     template<class T>
     void visitScanf(T* nodep) {
-        bool needsTemp = false;
-        for (AstNodeExpr* const destp : nodep->exprspList())
-            if (!VN_IS(destp, VarRef)) needsTemp = true;
+        // Find the first non-addressable destination, if any
+        AstNodeExpr* firstBadp = nullptr;
+        for (AstNodeExpr* const destp : nodep->exprspList()) {
+            if (!VN_IS(destp, VarRef)) {
+                firstBadp = destp;
+                break;
+            }
+        }
+        if (!firstBadp) return;  // All destinations addressable: nothing to do
         if (!m_lift) {
-            // The call is not part of a statement the lift mechanism
-            // reaches, e.g. it is in an event control: every statement
-            // lifts its own children, so no write-back statements can
-            // be inserted for it. It can stay in place if all
-            // destinations are addressable.
-            if (!needsTemp) return;
-            nodep->v3error("Unsupported: $fscanf/$sscanf in this context; "
-                           "the result cannot be placed in the destination variable.");
+            firstBadp->v3error("Unsupported: $fscanf/$sscanf in this context; "
+                               "destination location is not a whole variable");
             return;
         }
         iterateChildren(nodep);
-        // Leave the call in place if it is already in normal form and all
-        // destinations are addressable
-        if (!needsTemp && m_doNotLiftp == nodep) return;
         // Lift the call into a statement of its own, ignoring any
         // doNotLift, so the write-backs below can follow it
         ++m_statLiftedExprs;

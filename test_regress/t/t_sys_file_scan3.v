@@ -39,6 +39,8 @@ module t;
     wide_struct_t wide;
     logic [255:0] wideps;
     unpacked_t up;
+    logic [10:0] addr;
+    string s;
     file_handle = $fopen("t/t_sys_file_scan3.dat", "r");
     // Non-addressable destinations: a packed member and a part-select
     scan = $fscanf(file_handle, "%h", test.a);
@@ -67,6 +69,16 @@ module t;
     scan = $fscanf(file_handle, "%d", up.b);
     `checkd(scan, 1);
     `checkd(up.b, 42);
+    // $sscanf into a packed member
+    s = "6";
+    scan = $sscanf(s, "%d", test.b);
+    `checkd(scan, 1);
+    `checkd(test.b, 6);
+    // Mixed addressable and non-addressable destinations
+    scan = $fscanf(file_handle, "%h%h", addr, test2[10:3]);
+    `checkd(scan, 2);
+    `checkd(addr, 291);  // 11'h123
+    `checkd(test2, 528);  // 8'h42 at bits [10:3]
 
     $write("*-* All Finished *-*\n");
     $finish;
