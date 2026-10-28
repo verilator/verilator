@@ -219,6 +219,21 @@ AC_ARG_WITH([solver],
 AC_SUBST(CFG_WITH_SOLVER)
 AC_MSG_RESULT($CFG_WITH_SOLVER)
 
+# Special Substitutions - CFG_WITH_RAND_SAMPLER
+AC_MSG_CHECKING(for default randomize() sampler)
+AC_ARG_WITH([rand-sampler],
+              [AS_HELP_STRING([--with-rand-sampler=default|solver],
+                              [set default sampler of randomize() results
+                               (defaults to 'default')])],
+              [case "${withval}" in
+                default|solver) CFG_WITH_RAND_SAMPLER="${withval}" ;;
+                *) AC_MSG_ERROR([bad value ${withval} for --with-rand-sampler]) ;;
+               esac],
+              [CFG_WITH_RAND_SAMPLER=default]
+              )
+AC_SUBST(CFG_WITH_RAND_SAMPLER)
+AC_MSG_RESULT($CFG_WITH_RAND_SAMPLER)
+
 ######################################################################
 ## Compiler checks
 

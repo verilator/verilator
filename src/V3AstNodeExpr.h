@@ -5227,7 +5227,7 @@ class AstNew final : public AstNodeFTaskRef {
     bool m_isImplicit = false;  // Implicitly generated from extends args
     bool m_isScoped = false;  // Had :: scope when parsed
 public:
-    AstNew(FileLine* fl, AstArg* argsp = nullptr, bool isScoped = false)
+    explicit AstNew(FileLine* fl, AstArg* argsp = nullptr, bool isScoped = false)
         : ASTGEN_SUPER_New(fl, "new", argsp)
         , m_isScoped{isScoped} {}
     ASTGEN_MEMBERS_AstNew;

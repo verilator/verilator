@@ -9,9 +9,12 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
+test.top_filename = "t/t_constraint_rand_sampler.v"
 
-test.compile(verilator_flags2=["--binary", "-Wno-ASSIGNIN"],
+test.compile()
+
+test.execute(all_run_flags=['+verilator+rand+sampler+0'],
              fails=True,
              expect_filename=test.golden_filename)
 

@@ -129,7 +129,7 @@ class ExpandOkVisitor final : public VNVisitorConst {
 public:
     // CONSTRUCTORS
     explicit ExpandOkVisitor(AstNetlist* nodep) { iterateConst(nodep); }
-    ~ExpandOkVisitor() = default;
+    ~ExpandOkVisitor() override = default;
 };
 
 //######################################################################

@@ -1699,6 +1699,7 @@ public:
     void visit(AstNewCopy* nodep) override {
         // Polymorphic shallow clone: preserves runtime type via virtual clone()
         // VL_NULL_CHECK enforces null check per IEEE 1800-2023 8.7
+        // TODO instead tree should have AstNullCheck and rely on visit(AstNullCheck
         putns(nodep, "VL_NULL_CHECK(");
         if (VN_IS(nodep->rhsp(), Const) && VN_AS(nodep->rhsp(), Const)->isNull()) {
             // V3Const folded rhs to null: emit a typed empty ref so VL_NULL_CHECK fires

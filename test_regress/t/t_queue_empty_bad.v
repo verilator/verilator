@@ -8,6 +8,8 @@ module t;
   task scalar_arg(int value);
   endtask
 
+  import "DPI-C" function void dpii_open_arg(input int h[]);
+
   initial begin
     int i;
 
@@ -16,6 +18,8 @@ module t;
     i = {};
 
     scalar_arg({});
+
+    dpii_open_arg({});
 
     $write("*-* All Finished *-*\n");
     $finish;

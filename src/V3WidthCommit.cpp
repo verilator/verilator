@@ -389,8 +389,8 @@ private:
         m_ftaskp = nodep;
         iterateChildren(nodep);
         editDType(nodep);
-        bool isVirtual = false;
         if (const AstClass* const classp = VN_CAST(m_modp, Class)) {
+            bool isVirtual = false;
             virtualRecurse(nodep, classp, isVirtual /*ref*/);
         }
         if (nodep->isStatic() && nodep->isVirtual())  // After propagated isVirtual

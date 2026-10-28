@@ -1043,6 +1043,15 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             iterateConst(nodep->subDTypep());  // For post's key
         }
     }
+    void visit(AstUnsizedArrayDType* nodep) override {
+        if (!m_arrayPost) {
+            iterateConst(nodep->subDTypep());
+            if (nodep->packed()) puts(" []");
+        } else {
+            if (!nodep->packed()) puts("[]");
+            iterateConst(nodep->subDTypep());  // For post's key
+        }
+    }
     void visit(AstEnumDType* nodep) override {
         if (m_arrayPost) return;
         putfs(nodep, "enum ");
