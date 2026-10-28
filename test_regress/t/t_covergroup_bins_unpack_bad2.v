@@ -8,24 +8,23 @@
 
 module t;
   logic [3:0] cp_expr;
+  int scalar_value;
 
   covergroup cg;
     cp1: coverpoint cp_expr {
-      bins t_single = (1);  // Error: a set expression must evaluate to an unpacked array
+      bins t_single = (scalar_value);  // Error: a set expression must evaluate to an array
     }
   endgroup
 
-  logic [1:0][3:0] packed_values;
   covergroup cg_scalars;
     cp: coverpoint cp_expr {
-      ignore_bins scalar_ignore = (2);
-      illegal_bins scalar_illegal[2] = (3);
-      wildcard bins scalar_wild = (4);
-      wildcard ignore_bins scalar_wild_ignore[] = (5);
-      wildcard illegal_bins scalar_wild_illegal[2] = (6);
-      bins packed_array[] = packed_values;
+      ignore_bins scalar_ignore = (scalar_value);
+      illegal_bins scalar_illegal[2] = (scalar_value);
       bins real_value = (1.5);
       bins string_value = string'("one");
+      wildcard bins wildcard_scalar = (1'b1);
+      wildcard ignore_bins wildcard_scalar_ignore[] = (1'b0);
+      wildcard illegal_bins wildcard_scalar_illegal[2] = (1'b1);
     }
   endgroup
   cg_scalars scalar_inst = new;

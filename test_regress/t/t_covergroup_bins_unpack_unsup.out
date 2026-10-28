@@ -1,222 +1,306 @@
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:151:22: Unsupported: 'bins' explicit array size (treated as '[]')
-  151 |       bins remaining[2] = default;
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:168:22: Unsupported: 'bins' explicit array size (treated as '[]')
+  168 |       bins remaining[2] = default;
       |                      ^
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:38:14: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:38:14: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    38 |         bins this_member[] = this.values;
       |              ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:39:14: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:39:14: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    39 |         bins inherited_member[] = inherited_values;
       |              ^~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:70:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:70:12: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    70 |       bins normal[] = values;
       |            ^~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:71:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:71:12: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    71 |       bins normal_iff[] = values iff (gate);
       |            ^~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:72:19: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:72:19: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    72 |       ignore_bins ignored[] = values;
       |                   ^~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:73:19: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:73:19: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    73 |       ignore_bins ignored_iff[] = values iff (gate);
       |                   ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:74:20: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:74:20: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    74 |       illegal_bins illegal[] = values;
       |                    ^~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:75:20: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:75:20: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    75 |       illegal_bins illegal_iff[] = values iff (gate);
       |                    ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:76:21: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:76:21: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    76 |       wildcard bins wild_normal[] = values;
       |                     ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:77:21: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:77:21: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    77 |       wildcard bins wild_normal_iff[] = values iff (gate);
       |                     ^~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:78:28: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:78:28: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    78 |       wildcard ignore_bins wild_ignored[] = values;
       |                            ^~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:79:28: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:79:28: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    79 |       wildcard ignore_bins wild_ignored_iff[] = values iff (gate);
       |                            ^~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:80:29: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:80:29: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    80 |       wildcard illegal_bins wild_illegal[] = values;
       |                             ^~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:81:29: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:81:29: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
    81 |       wildcard illegal_bins wild_illegal_iff[] = values iff (gate);
       |                             ^~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:92:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:83:12: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
-   92 |       bins queue_input[] = queue_arg;
-      |            ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:93:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+   83 |       bins single = values;
+      |            ^~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:84:12: Unsupported: Bin set_covergroup_expression.
                                                            : ... note: In instance 't'
-   93 |       bins dynamic_input[] = dynamic_arg;
-      |            ^~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:94:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                           : ... note: In instance 't'
-   94 |       bins fixed_input[] = fixed_arg;
-      |            ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:101:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  101 |       bins dynamic_array[] = dynamic_values;
-      |            ^~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:102:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  102 |       bins fixed_array[] = fixed_values;
-      |            ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:103:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  103 |       bins package_scope[] = queue_pkg::values;
-      |            ^~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:104:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  104 |       bins class_scope[] = source_t::static_values;
-      |            ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:105:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  105 |       bins hierarchical[] = t.values;
-      |            ^~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:106:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  106 |       bins class_member[] = source.values;
-      |            ^~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:109:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  109 |       bins indexed[] = indexed_values[index];
-      |            ^~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:110:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  110 |       bins associative_index[] = associative_values[index];
-      |            ^~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:111:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  111 |       bins slice[] = values[0:1];
+   84 |       bins sized[2] = values iff (gate);
       |            ^~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:112:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:85:19: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   85 |       ignore_bins single_ignored = values iff (gate);
+      |                   ^~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:86:19: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   86 |       ignore_bins sized_ignored[2] = values;
+      |                   ^~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:87:20: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   87 |       illegal_bins single_illegal = values;
+      |                    ^~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:88:20: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   88 |       illegal_bins sized_illegal[2] = values iff (gate);
+      |                    ^~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:89:21: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   89 |       wildcard bins single_wild = values iff (gate);
+      |                     ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:90:21: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   90 |       wildcard bins sized_wild[2] = values;
+      |                     ^~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:91:28: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   91 |       wildcard ignore_bins single_wild_ignored = values;
+      |                            ^~~~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:92:28: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   92 |       wildcard ignore_bins sized_wild_ignored[2] = values iff (gate);
+      |                            ^~~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:93:29: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   93 |       wildcard illegal_bins single_wild_illegal = values iff (gate);
+      |                             ^~~~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:94:29: Unsupported: Bin set_covergroup_expression.
+                                                           : ... note: In instance 't'
+   94 |       wildcard illegal_bins sized_wild_illegal[2] = values;
+      |                             ^~~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:109:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  112 |       bins slice_to_end[] = values[1:$];
-      |            ^~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:113:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  113 |       bins prefix_increment[] = indexed_values[++index];
-      |            ^~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:114:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  114 |       bins postfix_increment[] = indexed_values[index++];
-      |            ^~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:115:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  115 |       bins prefix_decrement[] = indexed_values[--index];
-      |            ^~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:116:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  116 |       bins postfix_decrement[] = indexed_values[index--];
-      |            ^~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:119:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  119 |       bins function_call[] = get_values();
-      |            ^~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:120:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  120 |       bins function_arguments[] = get_values(index + 1);
-      |            ^~~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:121:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  121 |       bins named_arguments[] = get_values(.offset(index));
-      |            ^~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:122:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  122 |       bins package_function[] = queue_pkg::get_values(index);
-      |            ^~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:123:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  123 |       bins method_call[] = source.get_values(index);
+  109 |       bins queue_input[] = queue_arg;
       |            ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:124:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:110:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  124 |       bins chained_call[] = get_source().get_values(index);
-      |            ^~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:125:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
-                                                            : ... note: In instance 't'
-  125 |       bins unique_values[] = values.unique();
+  110 |       bins dynamic_input[] = dynamic_arg;
       |            ^~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:126:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:111:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  126 |       bins minimum_values[] = values.min();
+  111 |       bins fixed_input[] = fixed_arg;
+      |            ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:118:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  118 |       bins dynamic_array[] = dynamic_values;
+      |            ^~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:119:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  119 |       bins fixed_array[] = fixed_values;
+      |            ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:120:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  120 |       bins package_scope[] = queue_pkg::values;
+      |            ^~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:121:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  121 |       bins class_scope[] = source_t::static_values;
+      |            ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:122:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  122 |       bins hierarchical[] = t.values;
+      |            ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:123:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  123 |       bins class_member[] = source.values;
+      |            ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:126:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  126 |       bins indexed[] = indexed_values[index];
+      |            ^~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:127:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  127 |       bins associative_index[] = associative_values[index];
+      |            ^~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:128:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  128 |       bins slice[] = values[0:1];
+      |            ^~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:129:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  129 |       bins slice_to_end[] = values[1:$];
+      |            ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:130:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  130 |       bins prefix_increment[] = indexed_values[++index];
+      |            ^~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:131:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  131 |       bins postfix_increment[] = indexed_values[index++];
+      |            ^~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:132:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  132 |       bins prefix_decrement[] = indexed_values[--index];
+      |            ^~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:133:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  133 |       bins postfix_decrement[] = indexed_values[index--];
+      |            ^~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:136:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  136 |       bins function_call[] = get_values();
+      |            ^~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:137:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  137 |       bins function_arguments[] = get_values(index + 1);
+      |            ^~~~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:138:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  138 |       bins named_arguments[] = get_values(.offset(index));
+      |            ^~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:139:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  139 |       bins package_function[] = queue_pkg::get_values(index);
+      |            ^~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:140:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  140 |       bins method_call[] = source.get_values(index);
+      |            ^~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:141:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  141 |       bins chained_call[] = get_source().get_values(index);
+      |            ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:142:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  142 |       bins unique_values[] = values.unique();
+      |            ^~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:143:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  143 |       bins minimum_values[] = values.min();
       |            ^~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:127:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:144:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  127 |       bins maximum_values[] = values.max();
+  144 |       bins maximum_values[] = values.max();
       |            ^~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:130:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:147:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  130 |       bins type_cast[] = queue_t'(values);
+  147 |       bins type_cast[] = queue_t'(values);
       |            ^~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:131:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:148:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  131 |       bins typed_pattern[] = queue_t'{index, index + 1, index + 2};
+  148 |       bins typed_pattern[] = queue_t'{index, index + 1, index + 2};
       |            ^~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:132:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:149:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  132 |       bins unpacked_concat[] = queue_t'({values, other_values});
+  149 |       bins unpacked_concat[] = queue_t'({values, other_values});
       |            ^~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:135:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:152:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  135 |       bins conditional[] = enabled ? values : other_values;
+  152 |       bins conditional[] = enabled ? values : other_values;
       |            ^~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:136:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:153:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  136 |       bins nested_conditional[] = enabled ? (index != 0 ? values : other_values) : values;
+  153 |       bins nested_conditional[] = enabled ? (index != 0 ? values : other_values) : values;
       |            ^~~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:139:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:156:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  139 |       bins arithmetic_condition[] = index + 2 * 3 - 1 > 0 ? values : other_values;
+  156 |       bins arithmetic_condition[] = index + 2 * 3 - 1 > 0 ? values : other_values;
       |            ^~~~~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:140:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:157:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  140 |       bins shift_condition[] = mask << index != 0 ? values : other_values;
+  157 |       bins shift_condition[] = mask << index != 0 ? values : other_values;
       |            ^~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:141:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:158:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  141 |       bins logical_condition[] = enabled && index != 0 || mask == 0 ? values : other_values;
+  158 |       bins logical_condition[] = enabled && index != 0 || mask == 0 ? values : other_values;
       |            ^~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:142:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:159:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  142 |       bins reduction_condition[] = ^mask ? values : other_values;
+  159 |       bins reduction_condition[] = ^mask ? values : other_values;
       |            ^~~~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:143:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:160:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  143 |       bins inside_condition[] = index inside {0, [2 : 3]} ? values : other_values;
+  160 |       bins inside_condition[] = index inside {0, [2 : 3]} ? values : other_values;
       |            ^~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:144:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:161:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  144 |       bins signed_condition[] = $signed(mask) < 0 ? values : other_values;
+  161 |       bins signed_condition[] = $signed(mask) < 0 ? values : other_values;
       |            ^~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:145:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:162:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  145 |       bins sized_cast_condition[] = 3'(index) != 0 ? values : other_values;
+  162 |       bins sized_cast_condition[] = 3'(index) != 0 ? values : other_values;
       |            ^~~~~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:146:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:163:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  146 |       bins streaming_condition[] = int'({<<{mask}}) != 0 ? values : other_values;
+  163 |       bins streaming_condition[] = int'({<<{mask}}) != 0 ? values : other_values;
       |            ^~~~~~~~~~~~~~~~~~~
-%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:158:12: Unsupported: Non-constant expression as array bins set_covergroup_expression
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:175:12: Unsupported: Bin set_covergroup_expression.
                                                             : ... note: In instance 't'
-  158 |       bins concat_condition[] = {1'b1 + 1'b1} == 2'b10 ? values : other_values;
+  175 |       bins concat_condition[] = {1'b1 + 1'b1} == 2'b10 ? values : other_values;
       |            ^~~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:194:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  194 |       bins packed_array[] = packed_values;
+      |            ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:195:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  195 |       bins packed_constant[] = PACKED_VALUES;
+      |            ^~~~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:196:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  196 |       bins packed_single = PACKED_VALUES;
+      |            ^~~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:197:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  197 |       bins packed_sized[2] = PACKED_VALUES;
+      |            ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:198:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  198 |       bins vector_array[] = vector_values;
+      |            ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:199:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  199 |       bins brace_select[] = {4'd1, 4'd2}[3:0];
+      |            ^~~~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:200:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  200 |       bins real_array[] = real_values;
+      |            ^~~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:203:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  203 |       bins same_enum[] = enum_values;
+      |            ^~~~~~~~~
+%Warning-COVERIGN: t/t_covergroup_bins_unpack_unsup.v:206:12: Unsupported: Bin set_covergroup_expression.
+                                                            : ... note: In instance 't'
+  206 |       bins integer_array[] = values;
+      |            ^~~~~~~~~~~~~
 %Error: Exiting due to

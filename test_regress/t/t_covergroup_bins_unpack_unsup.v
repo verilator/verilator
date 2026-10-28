@@ -79,6 +79,23 @@ module t;
       wildcard ignore_bins wild_ignored_iff[] = values iff (gate);
       wildcard illegal_bins wild_illegal[] = values;
       wildcard illegal_bins wild_illegal_iff[] = values iff (gate);
+      // Set expressions also permit one bin or a fixed number of bins.
+      bins single = values;
+      bins sized[2] = values iff (gate);
+      ignore_bins single_ignored = values iff (gate);
+      ignore_bins sized_ignored[2] = values;
+      illegal_bins single_illegal = values;
+      illegal_bins sized_illegal[2] = values iff (gate);
+      wildcard bins single_wild = values iff (gate);
+      wildcard bins sized_wild[2] = values;
+      wildcard ignore_bins single_wild_ignored = values;
+      wildcard ignore_bins sized_wild_ignored[2] = values iff (gate);
+      wildcard illegal_bins single_wild_illegal = values iff (gate);
+      wildcard illegal_bins sized_wild_illegal[2] = values;
+    }
+    gate_cp: coverpoint gate;
+    cx: cross cp, gate_cp {
+      bins selected = binsof (cp.single);
     }
   endgroup
 
@@ -159,6 +176,37 @@ module t;
       /* verilator lint_on WIDTHEXPAND */
     }
   endgroup
+
+  // Packed arrays are legal, including constants, but must not become one scalar bin.
+  typedef logic [2:1][4:0] packed_t;
+  packed_t packed_values;
+  localparam packed_t PACKED_VALUES = {5'd3, 5'd7};
+  typedef logic [4:0] vector_t;
+  vector_t vector_values;
+  typedef real real_array_t[2];
+  real_array_t real_values = '{1.5, 2.5};
+  typedef enum {ONE = 1, TWO = 2} enum_t;
+  enum_t enum_values[$] = '{ONE, TWO};
+  enum_t enum_value;
+  real real_value;
+  covergroup cg_types;
+    cp: coverpoint packed_values[1] {
+      bins packed_array[] = packed_values;
+      bins packed_constant[] = PACKED_VALUES;
+      bins packed_single = PACKED_VALUES;
+      bins packed_sized[2] = PACKED_VALUES;
+      bins vector_array[] = vector_values;
+      bins brace_select[] = {4'd1, 4'd2}[3:0];
+      bins real_array[] = real_values;
+    }
+    cp_enum: coverpoint enum_value {
+      bins same_enum[] = enum_values;
+    }
+    cp_real: coverpoint real_value {
+      bins integer_array[] = values;
+    }
+  endgroup
+  cg_types types_cov = new;
 
   cg_kinds kinds_cov = new;
   cg_inputs inputs_cov = new(values, dynamic_values, fixed_values);

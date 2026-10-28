@@ -449,12 +449,14 @@ module t (/*AUTOARG*/
     }
   endgroup
 
-  // Covergroup with array transitions with multi-value, ignored, and illegal sequences.
+  // Covergroup with array transitions and an array-valued set expression.
+  int cg_set_values[$] = '{1, 2};
   covergroup cg_forms with function sample (bit [3:0] value);
     cp: coverpoint value {
       bins lists[] = (1, 2 => 3, 4);
       ignore_bins ignored_array[] = (7 => 8);
       illegal_bins illegal_array[] = (11 => 12);
+      bins selected[] = cg_set_values;
     }
   endgroup
 

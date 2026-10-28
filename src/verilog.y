@@ -3964,7 +3964,7 @@ value_range<nodeExprp>:         // ==IEEE: value_range/open_value_range
         |       value_rangeNonExpr                      { $$ = $1; }
         ;
 
-value_rangeNonExpr<nodeExprp>:
+value_rangeNonExpr<nodeExprp>:  // IEEE: value_range/open_value_range excluding a single expression
                 '[' expr ':' expr ']'                   { $$ = new AstInsideRange{$1, $2, $4}; }
         //                      // IEEE-2023: added all four:
         //                      // Skipped as '$' is part of our expr
@@ -3982,7 +3982,7 @@ covergroup_value_range<nodeExprp>:  // ==IEEE-2012: covergroup_value_range
         |       covergroup_value_rangeNonExpr           { $$ = $1; }
         ;
 
-covergroup_value_rangeNonExpr<nodeExprp>:
+covergroup_value_rangeNonExpr<nodeExprp>:  // IEEE: covergroup_value_range excluding a single expression
                 '[' cgexpr ':' cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($1, "Unsupported: covergroup value range '[...]'"); DEL($2, $4); }
         //                      // IEEE-2023: added all four:
@@ -4211,11 +4211,13 @@ task_subroutine_callNoMethod<nodeExprp>:    // function_subroutine_callNoMethod 
         ;
 
 function_subroutine_callNoMethod<nodeExprp>:        // IEEE: function_subroutine_call (as function)
-                function_subroutine_callNoMethodNoWith { $$ = $1; }
+                function_subroutine_callNoMethodNoWith  { $$ = $1; }
         |       id yWITH__PAREN '(' expr ')'            { $$ = new AstWithParse{$2, new AstFuncRef{$<fl>1, *$1}, $4}; }
         ;
 
-function_subroutine_callNoMethodNoWith<nodeExprp>:
+function_subroutine_callNoMethodNoWith<nodeExprp>:  // IEEE: part of function_subroutine_call
+        // Exclude bare id-with so a coverpoint filter is not parsed as a function call.
+        // Calls with an explicit argument list may still have a with clause.
         //                      // IEEE: tf_call
                 funcRef                                 { $$ = $1; }
         |       funcRef yWITH__PAREN '(' expr ')'       { $$ = new AstWithParse{$2, $1, $4}; }
@@ -5324,7 +5326,7 @@ exprOkLvalue<nodeExprp>:            // expression that's also OK to use as a var
         |       exprPatternOrStream                     { $$ = $1; }
         ;
 
-exprPatternOrStream<nodeExprp>:     // Primaries shared with coverage set expressions
+exprPatternOrStream<nodeExprp>:  // IEEE: assignment_pattern_expression or streaming_concatenation
         //                      // IEEE: assignment_pattern_expression
         //                      // IEEE: [ assignment_pattern_expression_type ] == [ ps_type_id /ps_paremeter_id/data_type]
         //                      // We allow more here than the spec requires
@@ -7248,27 +7250,27 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $5, false, false, false, $6};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinSetExpr(binp, $3); }
+                          $$ = GRAMMARP->coverBinArray(binp, $3); }
         |       yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $5, true, false, false, $6};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinSetExpr(binp, $3); }
+                          $$ = GRAMMARP->coverBinArray(binp, $3); }
         |       yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $5, false, true, false, $6};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinSetExpr(binp, $3); }
+                          $$ = GRAMMARP->coverBinArray(binp, $3); }
         |       yWILDCARD yBINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $6, false, false, true, $7};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinSetExpr(binp, $4); }
+                          $$ = GRAMMARP->coverBinArray(binp, $4); }
         |       yWILDCARD yIGNORE_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $6, true, false, true, $7};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinSetExpr(binp, $4); }
+                          $$ = GRAMMARP->coverBinArray(binp, $4); }
         |       yWILDCARD yILLEGAL_BINS idAny/*bin_identifier*/ bins_orBraE '=' set_covergroup_expression iffE
                         { AstCoverBin* const binp = new AstCoverBin{$<fl>3, *$3, $6, false, true, true, $7};
                           binp->isSetExpr(true);
-                          $$ = GRAMMARP->coverBinSetExpr(binp, $4); }
+                          $$ = GRAMMARP->coverBinArray(binp, $4); }
         //
         |       yBINS idAny/*bin_identifier*/ bins_orBraE '=' trans_list iffE
                         { const bool isArray = GRAMMARP->coverBinArrayUnsized($3);
@@ -7329,40 +7331,46 @@ set_covergroup_expression<nodeExprp>:  // ==IEEE: set_covergroup_expression
                 BISONPRE_COPY(expr,{s/~l~expr\b/coverExprLhs/g; s/~l~/cover/g; s/~cover~/NoWith/g;})
         ;
 
-coverExprLhs<nodeExprp>:
+coverExprLhs<nodeExprp>:  // IEEE: set_covergroup_expression or concatenation/constant_concatenation
+        // Braces in an operand form a concatenation, unlike a top-level bin value list.
                 set_covergroup_expression               { $$ = $1; }
         |       coverConcat                             { $$ = GRAMMARP->createConcat($1); }
         ;
 
-coverexprScope<nodeExprp>:
+coverexprScope<nodeExprp>:  // IEEE: part of primary or method_call_body
+        // Scoped identifiers and implicit class handles within set_covergroup_expression.
                 BISONPRE_COPY(exprScope,{s/~l~expr/coverExprLhs/g;})
         ;
 
-coverinc_or_dec_expression<nodeExprp>:
+coverinc_or_dec_expression<nodeExprp>:  // IEEE: inc_or_dec_expression within set_covergroup_expression
                 BISONPRE_COPY(inc_or_dec_expression,{s/~l~/cover/g;})
         ;
 
-coverexprOkLvalue<nodeExprp>:
+coverexprOkLvalue<nodeExprp>:  // IEEE: part of primary or variable_lvalue
+        // Set expression that is also valid as a variable_lvalue.
                 coverexprScope                          { $$ = $1; }
         |       coverConcat part_select_rangeList       { $$ = GRAMMARP->scrubSel(GRAMMARP->createConcat($1), $2); }
         |       exprPatternOrStream                     { $$ = $1; }
         ;
 
-coverConcat<nodeExprp>:
+coverConcat<nodeExprp>:  // IEEE: concatenation/constant_concatenation or braced covergroup_range_list
+        // Return the elements; only expression callers wrap them in a concatenation.
                 '{' coverValueList '}'                  { $$ = $2; }
         ;
 
-coverValueList<nodeExprp>:
+coverValueList<nodeExprp>:  // IEEE: part of concatenation/constant_concatenation or covergroup_range_list
+        // Expression-only list shared by concatenations and bin value lists.
                 stream_expression                       { $$ = $1; }
         |       coverValueList ',' stream_expression    { $$ = $1->addNext($3); }
         ;
 
-coverBracedList<nodeExprp>:
+coverBracedList<nodeExprp>:  // IEEE: braced covergroup_range_list in bins_or_options
                 coverConcat                             { $$ = $1; }
         |       '{' coverRangeList '}'                  { $$ = $2; }
         ;
 
-coverRangeList<nodeExprp>:
+coverRangeList<nodeExprp>:  // IEEE: range_list/covergroup_range_list containing at least one bracketed range
+        // Separate from coverValueList so expression-only braces have a single parse.
                 value_rangeNonExpr                      { $$ = $1; }
         |       coverValueList ',' value_rangeNonExpr   { $$ = addNextNull($1, $3); }
         |       coverRangeList ',' value_range          { $$ = addNextNull($1, $3); }
@@ -7377,40 +7385,49 @@ trans_set<nodep>:  // ==IEEE: trans_set (returns AstCoverTransSet)
         // A single parenthesized expression belongs to set_covergroup_expression.
         // A transition starts with =>, a range/list, or a repetition operator.
                 cgexpr yP_EQGT trans_range_list
-                        { AstCoverTransSet* const setp = new AstCoverTransSet{$<fl>1,
-                              new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONE}};
-                          setp->addItemsp(VN_AS($3, CoverTransItem));
-                          $$ = setp; }
+                        {
+                            AstCoverTransSet* const setp = new AstCoverTransSet{$<fl>1,
+                                  new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONE}};
+                            setp->addItemsp(VN_AS($3, CoverTransItem));
+                            $$ = setp;
+                        }
         |       trans_range_listNonExpr
                         { $$ = new AstCoverTransSet{$<fl>1, VN_AS($1, CoverTransItem)}; }
         |       trans_set yP_EQGT trans_range_list
-                {
-                        AstCoverTransSet* const setp = static_cast<AstCoverTransSet*>($1);
-                        AstCoverTransItem* const itemp = static_cast<AstCoverTransItem*>($3);
-                        setp->addItemsp(itemp);
-                        $$ = setp;
-                }
+                        {
+                            AstCoverTransSet* const setp = static_cast<AstCoverTransSet*>($1);
+                            AstCoverTransItem* const itemp = static_cast<AstCoverTransItem*>($3);
+                            setp->addItemsp(itemp);
+                            $$ = setp;
+                        }
         ;
 
 trans_range_list<nodep>:  // ==IEEE: trans_range_list (returns AstCoverTransItem)
                 cgexpr                                  { $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONE}; }
-        |       trans_range_listNonExpr                  { $$ = $1; }
+        |       trans_range_listNonExpr                 { $$ = $1; }
         ;
 
-trans_range_listNonExpr<nodep>:
+trans_range_listNonExpr<nodep>:  // IEEE: trans_range_list excluding a single expression
+        // A range, list, or repetition distinguishes this from a parenthesized set expression.
                 covergroup_range_listNonExpr            { $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONE}; }
         |       trans_item yP_BRASTAR cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[*]' in cover transition"); DEL($1, $3); }
         |       trans_item yP_BRASTAR cgexpr ':' cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[*]' in cover transition"); DEL($1, $3, $5); }
         |       trans_item yP_BRAMINUSGT cgexpr ']'
-                        { BBCOVERIGN($<fl>2, "Unsupported: '[->' in cover transition"); DEL($3);
-                          $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::GOTO}; }
+                        {
+                            BBCOVERIGN($<fl>2, "Unsupported: '[->' in cover transition");
+                            DEL($3);
+                            $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::GOTO};
+                        }
         |       trans_item yP_BRAMINUSGT cgexpr ':' cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[->' in cover transition"); DEL($1, $3, $5); }
         |       trans_item yP_BRAEQ cgexpr ']'
-                        { BBCOVERIGN($<fl>2, "Unsupported: '[=]' in cover transition"); DEL($3);
-                          $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONCONS}; }
+                        {
+                            BBCOVERIGN($<fl>2, "Unsupported: '[=]' in cover transition");
+                            DEL($3);
+                            $$ = new AstCoverTransItem{$<fl>1, $1, VTransRepType::NONCONS};
+                        }
         |       trans_item yP_BRAEQ cgexpr ':' cgexpr ']'
                         { $$ = nullptr; BBCOVERIGN($<fl>2, "Unsupported: '[=]' in cover transition"); DEL($1, $3, $5); }
         ;
@@ -7421,12 +7438,13 @@ trans_item<nodep>:  // ==IEEE: range_list (returns range list node)
 
 covergroup_range_list<nodep>:  // ==IEEE: covergroup_range_list
                 cgexpr                                  { $$ = $1; }
-        |       covergroup_range_listNonExpr             { $$ = $1; }
+        |       covergroup_range_listNonExpr            { $$ = $1; }
         ;
 
-covergroup_range_listNonExpr<nodep>:
+covergroup_range_listNonExpr<nodep>:  // IEEE: covergroup_range_list excluding a single expression
                 covergroup_value_rangeNonExpr           { $$ = $1; }
-        |       covergroup_range_list ',' covergroup_value_range { $$ = addNextNull($1, $3); }
+        |       covergroup_range_list ',' covergroup_value_range
+                        { $$ = addNextNull($1, $3); }
         ;
 
 

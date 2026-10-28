@@ -1025,6 +1025,14 @@ module Vt_debug_emitv_t;
         input string name;
     endfunction
     endcovergroup
+    int signed cg_set_values[$];
+    cg_set_values = 
+    ???? // CONSQUEUE
+
+    ???? // CONSQUEUEITEM
+    32'sh1
+    ???? // CONSQUEUEITEM
+    32'sh2;
     covergroup Vt_debug_emitv_cg_forms;
     bit [3:0]  value;
     function new;
@@ -1034,6 +1042,7 @@ module Vt_debug_emitv_t;
                                            'sh8);
             illegal_bins illegal_array[] = ('shb => 
                                             'shc);
+            bins selected[] = cg_set_values;
         };
     endfunction
     int signed __Vint;
