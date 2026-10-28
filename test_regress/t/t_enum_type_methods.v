@@ -51,6 +51,8 @@ module t (
     `checkh(e.prev(1), E01);
     `checkh(e.prev(1).prev(1), E04);
     `checkh(e.prev(2), E04);
+    `checkh(e.next(30), E03);
+    `checkh(e.prev(31), E01);
     `checkh(e.num, 3);
     `checks(e.name, "E03");
     //
@@ -91,6 +93,23 @@ module t (
 
   localparam THREE = 3;
 
+  // Value not in the enum steps to the default value (IEEE 1800-2023 6.19.5.3)
+  typedef enum {
+    Z0,
+    Z1,
+    Z2
+  } z_t;
+  z_t z;
+  initial begin
+    z = z_t'(3);
+    `checkh(z.next(0), Z0);
+    `checkh(z.next(2), Z0);
+    `checkh(z.prev(2), Z0);
+    z = Z2;
+    `checkh(z.next(0), Z2);
+    `checkh(z.prev(0), Z2);
+  end
+
   // Check runtime
   always @(posedge clk) begin
     cyc <= cyc + 1;
@@ -106,6 +125,11 @@ module t (
       `checkh(e.prev, E04);
       `checkh(e.prev(1), E04);
       `checkh(e.prev(2), E03);
+      `checkh(e.next(30), E01);
+      `checkh(e.next(31), E03);
+      `checkh(e.next(1000000000), E03);
+      `checkh(e.prev(32), E03);
+      `checkh(e.prev(4294967295), E01);
       e <= E03;
     end
     else if (cyc == 2) begin
@@ -116,6 +140,8 @@ module t (
       `checkh(e.prev, E01);
       `checkh(e.prev(1), E01);
       `checkh(e.prev(2), E04);
+      `checkh(e.next(29), E01);
+      `checkh(e.prev(29), E04);
       e <= E04;
     end
     else if (cyc == 3) begin
