@@ -56,4 +56,10 @@ module t;
     dpii_same_a(sa);
     dpii_same_b(sb);
   end
+
+  // Open array of structures
+  typedef struct {int x;} elem_t;
+  import "DPI-C" function void dpii_open(input elem_t s[]);
+  elem_t es[2];
+  initial dpii_open(es);
 endmodule

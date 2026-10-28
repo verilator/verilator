@@ -72,7 +72,7 @@ protected:
     }
 
 public:
-    ~DfgVertexVar() {
+    ~DfgVertexVar() override {
         // Decrement reference count
         UASSERT_OBJ(m_vscp->user1() >= 0x40, m_vscp, "Reference count underflow");
         m_vscp->user1(m_vscp->user1() - 0x40);
@@ -195,7 +195,7 @@ public:
         UASSERT_OBJ(!DfgVertexVar::hasPrev(vscp), vscp, "Variable already has a DfgPrev");
         m_vscp->user1(m_vscp->user1() | 0x20);  // Mark having a DfgPrev
     }
-    ~DfgPrev() {
+    ~DfgPrev() override {
         m_vscp->user1(m_vscp->user1() & ~0x20);  // Unmark having a DfgPrev
     }
     ASTGEN_MEMBERS_DfgPrev;

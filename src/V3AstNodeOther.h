@@ -2334,7 +2334,6 @@ class AstVar final : public AstNode {
     bool m_attrFileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
-    bool m_isClockingDriven : 1;  // Driven from inside by a clocking block output
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -2403,7 +2402,6 @@ class AstVar final : public AstNode {
         m_attrFileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
-        m_isClockingDriven = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -2534,7 +2532,8 @@ public:
                      bool constRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir(bool forMember = false) const;  // Return VerilatorVarDir: VLVD_INOUT, etc
-    string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
+    // Return VerilatorVarProps declaration, with 'sizeExpr' the size of a dynamic array or queue
+    string vlPropDecl(const string& propName, const string& sizeExpr) const;
     void combineType(VVarType type);
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* dtypeSkipRefp() const VL_MT_STABLE { return subDTypep()->skipRefp(); }
@@ -2601,8 +2600,6 @@ public:
     void hasUserInit(bool flag) { m_hasUserInit = flag; }
     void icoMaybeWritten(bool flag) { m_icoMaybeWritten = flag; }
     bool icoMaybeWritten() const { return m_icoMaybeWritten; }
-    void isClockingDriven(bool flag) { m_isClockingDriven = flag; }
-    bool isClockingDriven() const { return m_isClockingDriven; }
     bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isHideLocal() const { return m_isHideLocal; }

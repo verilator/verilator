@@ -36,6 +36,7 @@ module t;
     logic [64:0] arg65;
     bit [2:0][4:0] pack2d;
     bit [14:0] unp[3];
+    bit [14:0] dyn[];
 
     arg7 = 7'h2d;
     arg32 = 32'h12345678;
@@ -44,6 +45,7 @@ module t;
     unp[0] = 15'h1;
     unp[1] = 15'h2;
     unp[2] = 15'h3;
+    dyn = new[5];
     dpii_action(res7, arg7, 7);
     `checkh(res7, ~arg7);
     dpii_action(res32, arg32, 32);
@@ -53,6 +55,8 @@ module t;
     `checkd(dpii_width(arg7, 0), 7);
     `checkd(dpii_width(pack2d, 0), 15);
     `checkd(dpii_size(unp, 1), 3);
+    `checkd(dpii_size(dyn, 0), 15);
+    `checkd(dpii_size(dyn, 1), 5);
 
     `checkd(dpii_failure(), 0);
 
