@@ -2503,10 +2503,12 @@ class ConstraintExprVisitor final : public VNVisitor {
     // True iff equivalent-shape dtypes declare the same range direction at
     // every dimension -- storage-index comparison pairs the wrong elements
     // otherwise (arr[0:1] vs arr[1:0]).
+    // rhsDtp is already known equivalent to lhsDtp (IEEE 6.22.2), so lhsDtp
+    // alone decides whether this dimension is an array.
     static bool arrayDirectionsMatch(const AstNodeDType* lhsDtp, const AstNodeDType* rhsDtp) {
         const AstUnpackArrayDType* const lhsArrp = VN_CAST(lhsDtp, UnpackArrayDType);
-        const AstUnpackArrayDType* const rhsArrp = VN_CAST(rhsDtp, UnpackArrayDType);
-        if (!lhsArrp || !rhsArrp) return true;
+        if (!lhsArrp) return true;
+        const AstUnpackArrayDType* const rhsArrp = VN_AS(rhsDtp, UnpackArrayDType);
         if (lhsArrp->declRange().ascending() != rhsArrp->declRange().ascending()) return false;
         return arrayDirectionsMatch(lhsArrp->subDTypep()->skipRefp(),
                                     rhsArrp->subDTypep()->skipRefp());
@@ -2518,10 +2520,12 @@ class ConstraintExprVisitor final : public VNVisitor {
                                      const AstUnpackArrayDType* lhsArrDtp,
                                      const AstUnpackArrayDType* rhsArrDtp, bool markLhs,
                                      bool markRhs) {
+        // rhsArrDtp's sub-dtype is already known equivalent to lhsArrDtp's
+        // (IEEE 6.22.2), so lhsSubDtp alone decides whether to recurse.
         const AstNodeDType* const lhsSubDtp = lhsArrDtp->subDTypep()->skipRefp();
-        const AstNodeDType* const rhsSubDtp = rhsArrDtp->subDTypep()->skipRefp();
         const AstUnpackArrayDType* const lhsSubArrDtp = VN_CAST(lhsSubDtp, UnpackArrayDType);
-        const AstUnpackArrayDType* const rhsSubArrDtp = VN_CAST(rhsSubDtp, UnpackArrayDType);
+        const AstUnpackArrayDType* const rhsSubArrDtp
+            = lhsSubArrDtp ? VN_AS(rhsArrDtp->subDTypep()->skipRefp(), UnpackArrayDType) : nullptr;
         std::vector<AstNodeExpr*> elemEqps;
         const int n = lhsArrDtp->elementsConst();
         elemEqps.reserve(n);
@@ -2543,10 +2547,9 @@ class ConstraintExprVisitor final : public VNVisitor {
             if (markLhs) markRandDependentPathRecurse(lhsElemp);
             if (markRhs) markRandDependentPathRecurse(rhsElemp);
             AstNodeExpr* const elemEqp
-                = (lhsSubArrDtp && rhsSubArrDtp)
-                      ? buildElementwiseEqp(fl, lhsElemp, rhsElemp, lhsSubArrDtp, rhsSubArrDtp,
-                                            markLhs, markRhs)
-                      : static_cast<AstNodeExpr*>(new AstEq{fl, lhsElemp, rhsElemp});
+                = lhsSubArrDtp ? buildElementwiseEqp(fl, lhsElemp, rhsElemp, lhsSubArrDtp,
+                                                     rhsSubArrDtp, markLhs, markRhs)
+                               : static_cast<AstNodeExpr*>(new AstEq{fl, lhsElemp, rhsElemp});
             elemEqp->user1(true);
             elemEqps.push_back(elemEqp);
         }

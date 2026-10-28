@@ -49,6 +49,18 @@ class mixed_rand_opp_dir;
   endfunction
 endclass
 
+// Same as mixed_rand_opp_dir, with the lhs (rand) side's declared range
+// flipped to descending instead of ascending.
+class mixed_rand_opp_dir_lhs_desc;
+  rand bit [3:0] frame[1:0];
+  bit [3:0] target[0:1];
+  constraint c { frame == target; }
+  function new();
+    target[0] = 4'd5;
+    target[1] = 4'd9;
+  endfunction
+endclass
+
 // Both dimensions of a 2-D array run opposite directions between the two
 // operands, at both the outer and inner level -- exercises the recursive
 // per-level fix, not just the top dimension.
@@ -68,6 +80,7 @@ module t;
     both_rand_opp_dir_eq opp_dir_eq_obj;
     both_rand_same_dir same_dir_obj;
     mixed_rand_opp_dir mixed_obj;
+    mixed_rand_opp_dir_lhs_desc mixed_lhs_desc_obj;
     nested_opp_dir nested_obj;
     int randomize_result;
 
@@ -107,6 +120,12 @@ module t;
     `checkd(randomize_result, 1);
     `checkd(mixed_obj.frame[0], 4'd5);
     `checkd(mixed_obj.frame[1], 4'd9);
+
+    mixed_lhs_desc_obj = new;
+    randomize_result = mixed_lhs_desc_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(mixed_lhs_desc_obj.frame[1], 4'd5);
+    `checkd(mixed_lhs_desc_obj.frame[0], 4'd9);
 
     nested_obj = new;
     randomize_result = nested_obj.randomize();
