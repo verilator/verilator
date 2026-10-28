@@ -205,6 +205,11 @@ public:
         if (dim < dims()) return &m_packed[dim - udims()];
         return nullptr;
     }
+    // Whether DPI dimension 'dim' is of a dynamic array or queue, so ranged [0:size-1] with
+    // increment -1, even if of size 0 or 1, unlike a VerilatedRange (IEEE 1800-2023 20.7)
+    bool isDynamic(int dim) const VL_MT_SAFE {
+        return dim == 1 && (m_vlflags & VLVF_DYNAMIC) != 0;
+    }
     // DPI accessors (with packed dimensions flattened!)
     int left(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.left()
@@ -218,28 +223,32 @@ public:
     }
     int low(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.low()
+               : isDynamic(dim)                        ? left(dim)
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low()
                                                        : 0;
     }
     int high(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.high()
+               : isDynamic(dim)                        ? right(dim)
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high()
                                                        : 0;
     }
     int increment(int dim) const {
         return dim == 0                                ? m_packedDpi.increment()
+               : isDynamic(dim)                        ? -1
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment()
                                                        : 0;
     }
     int elements(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.elements()
+               : isDynamic(dim)                        ? right(dim) + 1
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements()
                                                        : 0;
     }
     // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const {
         size_t size = entSize();
-        for (int udim = 0; udim < udims(); ++udim) size *= m_unpacked[udim].elements();
+        for (int dim = 1; dim <= udims(); ++dim) size *= elements(dim);
         return size;
     }
     // Adjust a data pointer to access a given array element, NULL if something goes bad

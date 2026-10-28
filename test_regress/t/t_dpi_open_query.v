@@ -11,11 +11,6 @@
 `define check(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0)
 `define unless(cond,gotv,expv) do if (!(cond)) `check(gotv, expv); while(0)
 
-`ifdef VERILATOR
- `define NO_DYNAMIC
- `define NO_QUEUE
-`endif
-
 `ifdef VCS
  `define NO_QUEUE
 `endif

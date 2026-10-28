@@ -1781,7 +1781,7 @@ public:
 class SvaNfaLowering final {
     AstNodeModule* const m_modp;  // Module to add state vars and always blocks to
     AstNodeDType* const m_u32DTypep;  // Shared unsigned counter dtype
-    V3UniqueNames m_names{"__Vnfa"};
+    V3UniqueNames m_names{"__Vnfa"};  // Unique names for generated variables
     size_t m_statDelayRingEdgeVisits = 0;  // Delay-ring incoming edges visited
 
     // Per-lowering shared context (passed to phase sub-functions)
@@ -2729,11 +2729,11 @@ public:
 
         // A packed range ring can emit several live endpoints without needing per-slot counts.
         // Widen only a ring whose input can already carry multiplicity.
-        std::vector<bool> stateMayHaveMultiplicity(N);
         std::vector<bool> ringNeedsMultiplicity(N);
-        std::vector<int> multiplicityWork;
         const bool countMatches = coverp && coverp->isCoverSeq() && !isSeqEvent;
         if (countMatches) {
+            std::vector<bool> stateMayHaveMultiplicity(N);
+            std::vector<int> multiplicityWork;
             for (int i = 0; i < N; ++i) {
                 const bool multipleInputs = vtx[i]->inEdges().size() > 1;
                 const bool isRing = vtx[i]->m_delayRingSize;
@@ -2992,7 +2992,7 @@ class AssertNfaVisitor final : public VNVisitor {
 
         // Promote property-local variables to module-level temps (IEEE 16.10).
         std::unordered_map<const AstVar*, AstVar*> localVarMap;
-        for (AstNode* stmtp = propyp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : propyp->stmtspList()) {
             if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (!varp->isIO()) {
                     const string newName = m_propVarNames.get(varp);
@@ -3371,7 +3371,7 @@ class AssertNfaVisitor final : public VNVisitor {
         // with at least one match item; V3LinkParse only emits ExprStmt for
         // this form and only emits AstAssign with VarRef LHS for each item.
         std::unordered_map<const AstVar*, AstNodeExpr*> matchItems;
-        for (AstNode* stmtp = exprStmtp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : exprStmtp->stmtspList()) {
             AstAssign* const assignp = VN_AS(stmtp, Assign);
             AstVarRef* const lhsRefp = VN_AS(assignp->lhsp(), VarRef);
             matchItems[lhsRefp->varp()] = assignp->rhsp();

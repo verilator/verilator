@@ -241,7 +241,10 @@ class ProtectVisitor final : public VNVisitor {
 
         txtp->add("chandle handle__V;\n");
         txtp->add("time last_combo_seqnum__V;\n");
-        if (m_hasClk) txtp->add("time last_seq_seqnum__V;\n");
+        if (m_hasClk) {
+            txtp->add("time last_seq_seqnum__V;\n");
+            txtp->add("bit init__V = 1'b0;\n");
+        }
         txtp->add("\n");
 
         m_comboDeclsp = new AstTextBlock{fl};
@@ -266,6 +269,7 @@ class ProtectVisitor final : public VNVisitor {
         txtp->add("if (handle__V == null) handle__V = " + m_libName
                   + "_protectlib_create"
                     "($sformatf(\"%m\"));\n");
+        if (m_hasClk) txtp->add("init__V = 1'b1;\n");
         txtp->add("end\n\n");
 
         // Combinatorial process
@@ -284,6 +288,7 @@ class ProtectVisitor final : public VNVisitor {
         if (m_hasClk) {
             addComment(txtp, fl, "Evaluate clock edges");
             m_clkSensp = new AstTextBlock{fl, "always @(", " or ", ")"};
+            m_clkSensp->add("init__V");
             txtp->add(m_clkSensp);
             txtp->add(" begin\n");
             m_comboIgnoreParamsp
@@ -606,7 +611,7 @@ class ProtectVisitor final : public VNVisitor {
     }
 
     static bool checkIfClockExists(const AstNodeModule* modp) {
-        for (const AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : modp->stmtspList()) {
             if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
                 if (varp->direction() == VDirection::INPUT && varp->isPrimaryClock()) {
                     return true;

@@ -2102,7 +2102,9 @@ data_typeBasic<nodeDTypep>:             // IEEE: part of data_type
         //                      // IEEE: packed_dimension: unsized_dimension, legal only in DPI import
         |       integer_vector_type signingE '[' ']'
                         { $1->setSignedState($2);
-                          $$ = new AstUnsizedArrayDType{$3, VFlagChildDType{}, $1}; }
+                          AstUnsizedArrayDType* const dtp = new AstUnsizedArrayDType{$3, VFlagChildDType{}, $1};
+                          dtp->packed(true);
+                          $$ = dtp; }
         |       integer_atom_type signingE              { $1->setSignedState($2); $$ = $1; }
         |       non_integer_type                        { $$ = $1; }
         ;
@@ -7187,8 +7189,9 @@ bins_or_options<nodep>:  // ==IEEE: bins_or_options
         |       yBINS idAny/*bin_identifier*/ '[' cgexpr ']' iffE
                         { // Check for automatic bins: bins auto[N]
                           if (*$2 == "auto") {
-                              $$ = new AstCoverBin{$<fl>2, *$2, $4};
-                              DEL($6);
+                              AstCoverBin* const binp = new AstCoverBin{$<fl>2, *$2, $4};
+                              binp->iffp($6);
+                              $$ = binp;
                           } else {
                               $$ = nullptr;
                               BBCOVERIGN($<fl>2, "Unsupported: 'bins' array (non-auto)");

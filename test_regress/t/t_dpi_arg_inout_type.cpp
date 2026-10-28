@@ -390,6 +390,78 @@ void i_array_2_state_128(svBitVecVal* x) {
     n++;
 }
 
+// 2-state packed arrays of 1-bit typedef
+void i_bit_t_array_1(svBitVecVal* x) {
+    static int n = 0;
+    printf("i_bit_t_array_1 %d\n", n);
+    *x &= 1;
+    if (*x != !(n++ % 2)) stop();
+    *x ^= 1;
+}
+
+void i_bit_t_array_32(svBitVecVal* x) {
+    static int n = 0;
+    printf("i_bit_t_array_32 %d\n", n);
+    if (*x != 0xffffffffU << n) stop();
+    *x >>= n;
+    n++;
+}
+
+void i_bit_t_array_33(svBitVecVal* x) {
+    static int n = 0;
+    printf("i_bit_t_array_33 %d\n", n);
+    x[1] &= 1;
+    if (x[0] != 0xffffffffU << n) stop();
+    if (x[1] != 1) stop();
+    if (n > 0) {
+        x[0] = x[1] << (32 - n) | x[0] >> n;
+        x[1] = x[1] >> n;
+    }
+    n++;
+}
+
+void i_bit_t_array_64(svBitVecVal* x) {
+    static int n = 0;
+    printf("i_bit_t_array_64 %d\n", n);
+    if (x[0] != 0xffffffffU << n) stop();
+    if (x[1] != -1) stop();
+    if (n > 0) {
+        x[0] = x[1] << (32 - n) | x[0] >> n;
+        x[1] = x[1] >> n;
+    }
+    n++;
+}
+
+void i_bit_t_array_65(svBitVecVal* x) {
+    static int n = 0;
+    printf("i_bit_t_array_65 %d\n", n);
+    x[2] &= 1;
+    if (x[0] != 0xffffffffU << n) stop();
+    if (x[1] != -1) stop();
+    if (x[2] != 1) stop();
+    if (n > 0) {
+        x[0] = -1;
+        x[1] = x[2] << (32 - n) | x[1] >> n;
+        x[2] = x[2] >> n;
+    }
+    n++;
+}
+
+void i_bit_t_array_128(svBitVecVal* x) {
+    static int n = 0;
+    printf("i_bit_t_array_128 %d\n", n);
+    if (x[0] != 0xffffffffU << n) stop();
+    if (x[1] != -1) stop();
+    if (x[2] != -1) stop();
+    if (x[3] != -1) stop();
+    if (n > 0) {
+        x[0] = -1;
+        x[2] = x[3] << (32 - n) | x[2] >> n;
+        x[3] = x[3] >> n;
+    }
+    n++;
+}
+
 // 2-state packed structures
 void i_struct_2_state_1(svBitVecVal* x) {
     static int n = 0;
@@ -599,6 +671,84 @@ void i_array_4_state_65(svLogicVecVal* x) {
 void i_array_4_state_128(svLogicVecVal* x) {
     static int n = 0;
     printf("i_array_4_state_128 %d\n", n);
+    if (x[0].aval != 0xffffffffU << n) stop();
+    if (x[1].aval != -1) stop();
+    if (x[2].aval != -1) stop();
+    if (x[3].aval != -1) stop();
+    check_bvals(x, 4);
+    if (n > 0) {
+        x[0].aval = -1;
+        x[2].aval = x[3].aval << (32 - n) | x[2].aval >> n;
+        x[3].aval = x[3].aval >> n;
+    }
+    n++;
+}
+
+// 4-state packed arrays of 1-bit typedef
+void i_logic_t_array_1(svLogicVecVal* x) {
+    static int n = 0;
+    printf("i_logic_t_array_1 %d\n", n);
+    x[0].aval &= 1;
+    if (x[0].aval != !(n++ % 2)) stop();
+    check_bvals(x, 1);
+    x[0].aval ^= 1;
+}
+
+void i_logic_t_array_32(svLogicVecVal* x) {
+    static int n = 0;
+    printf("i_logic_t_array_32 %d\n", n);
+    if (x[0].aval != 0xffffffffU << n) stop();
+    check_bvals(x, 1);
+    x[0].aval >>= n;
+    n++;
+}
+
+void i_logic_t_array_33(svLogicVecVal* x) {
+    static int n = 0;
+    printf("i_logic_t_array_33 %d\n", n);
+    x[1].aval &= 1;
+    if (x[0].aval != 0xffffffffU << n) stop();
+    if (x[1].aval != 1) stop();
+    check_bvals(x, 2);
+    if (n > 0) {
+        x[0].aval = x[1].aval << (32 - n) | x[0].aval >> n;
+        x[1].aval = x[1].aval >> n;
+    }
+    n++;
+}
+
+void i_logic_t_array_64(svLogicVecVal* x) {
+    static int n = 0;
+    printf("i_logic_t_array_64 %d\n", n);
+    if (x[0].aval != 0xffffffffU << n) stop();
+    if (x[1].aval != -1) stop();
+    check_bvals(x, 2);
+    if (n > 0) {
+        x[0].aval = x[1].aval << (32 - n) | x[0].aval >> n;
+        x[1].aval = x[1].aval >> n;
+    }
+    n++;
+}
+
+void i_logic_t_array_65(svLogicVecVal* x) {
+    static int n = 0;
+    printf("i_logic_t_array_65 %d\n", n);
+    x[2].aval &= 1;
+    if (x[0].aval != 0xffffffffU << n) stop();
+    if (x[1].aval != -1) stop();
+    if (x[2].aval != 1) stop();
+    check_bvals(x, 3);
+    if (n > 0) {
+        x[0].aval = -1;
+        x[1].aval = x[2].aval << (32 - n) | x[1].aval >> n;
+        x[2].aval = x[2].aval >> n;
+    }
+    n++;
+}
+
+void i_logic_t_array_128(svLogicVecVal* x) {
+    static int n = 0;
+    printf("i_logic_t_array_128 %d\n", n);
     if (x[0].aval != 0xffffffffU << n) stop();
     if (x[1].aval != -1) stop();
     if (x[2].aval != -1) stop();
@@ -828,6 +978,13 @@ void check_exports() {
     svBitVecVal x_array_2_state_65[3];
     svBitVecVal x_array_2_state_128[4];
 
+    svBitVecVal x_bit_t_array_1[1];
+    svBitVecVal x_bit_t_array_32[1];
+    svBitVecVal x_bit_t_array_33[2];
+    svBitVecVal x_bit_t_array_64[2];
+    svBitVecVal x_bit_t_array_65[3];
+    svBitVecVal x_bit_t_array_128[4];
+
     svBitVecVal x_struct_2_state_1[1];
     svBitVecVal x_struct_2_state_32[1];
     svBitVecVal x_struct_2_state_33[2];
@@ -848,6 +1005,13 @@ void check_exports() {
     svLogicVecVal x_array_4_state_64[2];
     svLogicVecVal x_array_4_state_65[3];
     svLogicVecVal x_array_4_state_128[4];
+
+    svLogicVecVal x_logic_t_array_1[1];
+    svLogicVecVal x_logic_t_array_32[1];
+    svLogicVecVal x_logic_t_array_33[2];
+    svLogicVecVal x_logic_t_array_64[2];
+    svLogicVecVal x_logic_t_array_65[3];
+    svLogicVecVal x_logic_t_array_128[4];
 
     svLogicVecVal x_struct_4_state_1[1];
     svLogicVecVal x_struct_4_state_32[1];
@@ -878,6 +1042,13 @@ void check_exports() {
     set_bvals(x_array_4_state_64, 2);
     set_bvals(x_array_4_state_65, 3);
     set_bvals(x_array_4_state_128, 4);
+
+    set_bvals(x_logic_t_array_1, 1);
+    set_bvals(x_logic_t_array_32, 1);
+    set_bvals(x_logic_t_array_33, 2);
+    set_bvals(x_logic_t_array_64, 2);
+    set_bvals(x_logic_t_array_65, 3);
+    set_bvals(x_logic_t_array_128, 4);
 
     set_bvals(x_struct_4_state_1, 1);
     set_bvals(x_struct_4_state_32, 1);
@@ -1099,6 +1270,44 @@ void check_exports() {
     if (x_array_2_state_128[1] != 0xffffffff) stop();
     if (x_array_2_state_128[0] != 0xffffffff << n) stop();
 
+    // 2-state packed arrays of 1-bit typedef
+    x_bit_t_array_1[0] = n % 2;
+    x_bit_t_array_32[0] = 0xffffffff >> n;
+    x_bit_t_array_33[1] = 1 >> n;
+    x_bit_t_array_33[0] = 0xffffffff >> m;
+    x_bit_t_array_64[1] = 0xffffffff >> n;
+    x_bit_t_array_64[0] = 0xffffffff;
+    x_bit_t_array_65[2] = 1 >> n;
+    x_bit_t_array_65[1] = 0xffffffff >> m;
+    x_bit_t_array_65[0] = 0xffffffff;
+    x_bit_t_array_128[3] = 0xffffffff >> n;
+    x_bit_t_array_128[2] = x_bit_t_array_128[1] = x_bit_t_array_128[0] = 0xffffffff;
+
+    e_bit_t_array_1(x_bit_t_array_1);
+    if ((x_bit_t_array_1[0] & 1) != !(n % 2)) stop();
+
+    e_bit_t_array_32(x_bit_t_array_32);
+    if (x_bit_t_array_32[0] != 0xffffffff << n) stop();
+
+    e_bit_t_array_33(x_bit_t_array_33);
+    if ((x_bit_t_array_33[1] & 1) != 1) stop();
+    if (x_bit_t_array_33[0] != 0xffffffff << n) stop();
+
+    e_bit_t_array_64(x_bit_t_array_64);
+    if (x_bit_t_array_64[1] != 0xffffffff) stop();
+    if (x_bit_t_array_64[0] != 0xffffffff << n) stop();
+
+    e_bit_t_array_65(x_bit_t_array_65);
+    if ((x_bit_t_array_65[2] & 1) != 1) stop();
+    if (x_bit_t_array_65[1] != 0xffffffff) stop();
+    if (x_bit_t_array_65[0] != 0xffffffff << n) stop();
+
+    e_bit_t_array_128(x_bit_t_array_128);
+    if (x_bit_t_array_128[3] != 0xffffffff) stop();
+    if (x_bit_t_array_128[2] != 0xffffffff) stop();
+    if (x_bit_t_array_128[1] != 0xffffffff) stop();
+    if (x_bit_t_array_128[0] != 0xffffffff << n) stop();
+
     // 2-state packed structures
     x_struct_2_state_1[0] = n % 2;
     x_struct_2_state_32[0] = 0xffffffff >> n;
@@ -1221,6 +1430,53 @@ void check_exports() {
     check_bvals(x_array_4_state_64, 2);
     check_bvals(x_array_4_state_65, 3);
     check_bvals(x_array_4_state_128, 4);
+
+    // 4-state packed arrays of 1-bit typedef
+    x_logic_t_array_1[0].aval = n % 2;
+    x_logic_t_array_32[0].aval = 0xffffffff >> n;
+    x_logic_t_array_33[1].aval = 1 >> n;
+    x_logic_t_array_33[0].aval = 0xffffffff >> m;
+    x_logic_t_array_64[1].aval = 0xffffffff >> n;
+    x_logic_t_array_64[0].aval = 0xffffffff;
+    x_logic_t_array_65[2].aval = 1 >> n;
+    x_logic_t_array_65[1].aval = 0xffffffff >> m;
+    x_logic_t_array_65[0].aval = 0xffffffff;
+    x_logic_t_array_128[3].aval = 0xffffffff >> n;
+    x_logic_t_array_128[2].aval = 0xffffffff;
+    x_logic_t_array_128[1].aval = 0xffffffff;
+    x_logic_t_array_128[0].aval = 0xffffffff;
+
+    e_logic_t_array_1(x_logic_t_array_1);
+    if ((x_logic_t_array_1[0].aval & 1) != !(n % 2)) stop();
+
+    e_logic_t_array_32(x_logic_t_array_32);
+    if (x_logic_t_array_32[0].aval != 0xffffffff << n) stop();
+
+    e_logic_t_array_33(x_logic_t_array_33);
+    if ((x_logic_t_array_33[1].aval & 1) != 1) stop();
+    if (x_logic_t_array_33[0].aval != 0xffffffff << n) stop();
+
+    e_logic_t_array_64(x_logic_t_array_64);
+    if (x_logic_t_array_64[1].aval != 0xffffffff) stop();
+    if (x_logic_t_array_64[0].aval != 0xffffffff << n) stop();
+
+    e_logic_t_array_65(x_logic_t_array_65);
+    if ((x_logic_t_array_65[2].aval & 1) != 1) stop();
+    if (x_logic_t_array_65[1].aval != 0xffffffff) stop();
+    if (x_logic_t_array_65[0].aval != 0xffffffff << n) stop();
+
+    e_logic_t_array_128(x_logic_t_array_128);
+    if (x_logic_t_array_128[3].aval != 0xffffffff) stop();
+    if (x_logic_t_array_128[2].aval != 0xffffffff) stop();
+    if (x_logic_t_array_128[1].aval != 0xffffffff) stop();
+    if (x_logic_t_array_128[0].aval != 0xffffffff << n) stop();
+
+    check_bvals(x_logic_t_array_1, 1);
+    check_bvals(x_logic_t_array_32, 1);
+    check_bvals(x_logic_t_array_33, 2);
+    check_bvals(x_logic_t_array_64, 2);
+    check_bvals(x_logic_t_array_65, 3);
+    check_bvals(x_logic_t_array_128, 4);
 
     // 4-state packed structures
     x_struct_4_state_1[0].aval = n % 2;

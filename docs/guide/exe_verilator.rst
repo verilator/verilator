@@ -416,10 +416,10 @@ Summary:
      the type coverage of a covergroup merges its instances as a union of
      their bins. This applies to ``get_coverage()``, to
      ``get_inst_coverage()`` unless ``option.get_inst_coverage`` is set, and
-     to the coverage that :command:`verilator_coverage` reports. This is
-     like the default behavior of Synopsys VCS. In Questa, it is the
-     equivalent of ``vsim -cvgmergeinstances``, which sets
-     ``SVCovergroupMergeInstancesDefault`` to 1.
+     to the coverage that :command:`verilator_coverage` reports. Use this
+     option to match the coverage of another simulator that merges
+     covergroup instances, either by default or with its own equivalent
+     option.
 
    With "--no-coverage-merge-instances", the default, the value is 0, as
      IEEE specifies, so the type coverage of a covergroup is the average of
@@ -976,6 +976,11 @@ Summary:
 
    Rarely needed. Disable eager inlining of SystemVerilog functions and tasks.
 
+.. option:: -fno-inline-getters
+
+   Rarely needed. Disable replacing calls to class methods that only return
+   a single member variable, with a direct read of that variable.
+
 .. option:: -fno-life
 
    Rarely needed. Disable removing assignments whose value is overwritten before
@@ -1015,8 +1020,8 @@ Summary:
 
 .. option:: -fno-reloop
 
-   Rarely needed. Disable converting sequences of similar array assignments
-   into loops.
+   Rarely needed. Disable converting sequences of statements that differ
+   only in constants into loops.
 
 .. option:: -fno-reorder
 
@@ -1064,10 +1069,11 @@ Summary:
 
    Disables four-state logic support which is the default. Exists for forward compatibility.
 
-.. option:: --fslice-element-limit
+.. option:: --fslice-element-limit <value>
 
    Rarely needed. Set the maximum array size (number of elements) for slice
-   optimization to avoid excessive memory usage.
+   optimization to avoid excessive memory usage. Defaults to 256. A value
+   of 0 removes the limit.
 
 .. option:: --func-recursion-depth <value>
 
@@ -1130,6 +1136,7 @@ Summary:
 
    Rarely needed. Set the maximum number of statements present in an
    equation for the gate substitution optimization to inline that equation.
+   Defaults to 100.
 
 .. option:: --gdb
 

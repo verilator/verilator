@@ -78,7 +78,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class SplitNodeVertex VL_NOT_FINAL : public V3GraphVertex {
     VL_RTTI_IMPL(SplitNodeVertex, V3GraphVertex)
-    AstNode* const m_nodep;
+    AstNode* const m_nodep;  // Node this vertex represents
 
 protected:
     SplitNodeVertex(V3Graph* graphp, AstNode* nodep)

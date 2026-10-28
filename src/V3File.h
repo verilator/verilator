@@ -84,7 +84,7 @@ public:
     using StrList = std::list<std::string>;
 
 private:
-    VInFilterImp* m_impp;
+    VInFilterImp* m_impp;  // Implementation
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VInFilter);
@@ -112,12 +112,12 @@ private:
     const Language m_lang;  // Indenting Verilog code
     int m_blockIndent;  // Characters per block indent
     int m_commaWidth;  // Width after which to break at ,'s
-    int m_lineno = 1;
-    int m_column = 0;
+    int m_lineno = 1;  // Current line number
+    int m_column = 0;  // Current column
     int m_nobreak = false;  // Basic operator or begin paren, don't break next
-    int m_sourceLastLineno = 0;
-    int m_sourceLastFilenameno = 0;
-    bool m_prependIndent = true;
+    int m_sourceLastLineno = 0;  // Last source line number emitted
+    int m_sourceLastFilenameno = 0;  // Last source file number emitted
+    bool m_prependIndent = true;  // Indent the next output
     bool m_inStringLiteral = false;  // Inside a quote
     bool m_inBackslash = false;  // Inside a backslash
     int m_indentLevel = 0;  // Current {} indentation
@@ -194,8 +194,8 @@ class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     static constexpr std::size_t WRITE_BUFFER_SIZE_BYTES = 128 * 1024;
 
     // MEMBERS
-    const std::string m_filename;
-    FILE* m_fp = nullptr;
+    const std::string m_filename;  // Name of the file being written
+    FILE* m_fp = nullptr;  // File being written, null if not open
     std::size_t m_usedBytes = 0;  // Number of bytes stored in m_bufferp
     std::size_t m_writtenBytes = 0;  // Number of bytes written to output
     std::unique_ptr<std::array<char, WRITE_BUFFER_SIZE_BYTES>> m_bufferp;  // Write buffer
@@ -428,7 +428,7 @@ public:
 
 class V3OutStream VL_NOT_FINAL : public V3OutFormatter {
     // MEMBERS
-    std::ostream& m_ostream;
+    std::ostream& m_ostream;  // Stream to write to
 
     VL_UNCOPYABLE(V3OutStream);
     VL_UNMOVABLE(V3OutStream);

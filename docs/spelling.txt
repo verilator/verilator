@@ -187,6 +187,7 @@ Hammoud
 Hao
 Haojin
 Harboe
+Haroosh
 Hashimoto
 Hayenga
 Heng
@@ -1318,6 +1319,7 @@ whitespace
 widthed
 wor
 wreal
+writablility
 writeb
 writeme
 writemem

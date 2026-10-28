@@ -32,7 +32,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class ConvertWriteRefsToRead final : public VNVisitor {
     // MEMBERS
-    AstNodeExpr* m_result = nullptr;
+    AstNodeExpr* m_result = nullptr;  // Converted expression
 
     // CONSTRUCTORS
     explicit ConvertWriteRefsToRead(AstNodeExpr* nodep) {

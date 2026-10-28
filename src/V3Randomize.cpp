@@ -177,8 +177,7 @@ static bool dtypeContainsReal(AstNodeDType* dtypep) {
     if (AstNodeDType* const subp = dtypep->subDTypep()) return dtypeContainsReal(subp);
     if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
         if (structp->packed()) return false;
-        for (AstMemberDType* memberp = structp->membersp(); memberp;
-             memberp = VN_AS(memberp->nextp(), MemberDType)) {
+        for (AstMemberDType* const memberp : structp->memberspList()) {
             if (dtypeContainsReal(memberp->subDTypep())) return true;
         }
         return false;
@@ -226,8 +225,7 @@ static void checkRandTypeEligibility(AstNode* contextp, AstNodeDType* dtypep, bo
                               "or randc)");
             return;
         }
-        for (AstMemberDType* memberp = structp->membersp(); memberp;
-             memberp = VN_AS(memberp->nextp(), MemberDType)) {
+        for (AstMemberDType* const memberp : structp->memberspList()) {
             // Each unpacked-struct member independently declares its own rand/randc.
             if (memberp->rand().isRandomizable()) {
                 checkRandTypeEligibility(memberp, memberp->subDTypep(), memberp->rand().isRandC());
@@ -298,7 +296,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void markGlobalConstrainedVars(AstClass* classp) {
         for (const AstClass* cp = classp; cp;
              cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
-            for (AstNode* memberp = cp->membersp(); memberp; memberp = memberp->nextp()) {
+            for (AstNode* const memberp : cp->memberspList()) {
                 AstVar* const varp = VN_CAST(memberp, Var);
                 if (!varp) continue;
                 if (varp->rand().isRandomizable()) varp->globalConstrained(true);
@@ -309,7 +307,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     bool isVarInStdRandomizeArgs(const AstVar* varp) const {
         if (!m_inStdWith || !m_stdRandCallp) return false;
 
-        for (AstArg* argp = m_stdRandCallp->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+        for (AstArg* const argp : m_stdRandCallp->argspList()) {
             const AstNodeExpr* exprp = argp->exprp();
             // Traverse through expression to find the base variable
             while (exprp) {
@@ -336,7 +334,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void markMembers(const AstClass* nodep) {
         for (const AstClass* classp = nodep; classp;
              classp = classp->extendsp() ? classp->extendsp()->classp() : nullptr) {
-            for (AstNode* memberp = classp->membersp(); memberp; memberp = memberp->nextp()) {
+            for (AstNode* const memberp : classp->memberspList()) {
                 AstVar* const varp = VN_CAST(memberp, Var);
                 if (!varp) continue;
                 // If member is randomizable and of class type, mark its class
@@ -484,8 +482,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
     void cloneNestedConstraintsRecurse(AstVarRef* rootVarRefp, AstClass* classp,
                                        const std::vector<AstVar*>& pathToClass,
                                        AstClass* targetClassp) {
-        for (AstNode* memberNodep = classp->membersp(); memberNodep;
-             memberNodep = memberNodep->nextp()) {
+        for (AstNode* const memberNodep : classp->memberspList()) {
             AstVar* const memberVarp = VN_CAST(memberNodep, Var);
             if (!memberVarp) continue;
             if (!memberVarp->rand().isRandomizable()) continue;
@@ -707,7 +704,7 @@ class RandomizeMarkVisitor final : public VNVisitor {
             if (m_constraintExprGenp || m_inStdWith) {
                 // Only the arguments decide whether a call depends on rand variables. The object
                 // it's called on doesn't count, so a.f() isn't marked just because 'a' is rand
-                for (AstNode* argp = nodep->argsp(); argp; argp = argp->nextp()) {
+                for (AstNode* const argp : nodep->argspList()) {
                     if (argp->user1()) {
                         nodep->user1(true);
                         break;
@@ -749,12 +746,12 @@ class RandomizeMarkVisitor final : public VNVisitor {
         }
         if (nodep->classOrPackagep()->name() == "std") {
             m_stdRandCallp = nullptr;
-            for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+            for (AstArg* const argp : nodep->argspList()) {
                 handleRandomizeArgument(argp->exprp(), nullptr, true);
             }
             return;
         }
-        for (AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+        for (AstArg* const argp : nodep->argspList()) {
             // randomize(null): handle before IS_RANDOMIZED_INLINE so the
             // check-only path does not allocate unused __Vrandmode slots.
             if (const AstConst* const constp = VN_CAST(argp->exprp(), Const)) {
@@ -915,7 +912,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // AstMemberSel::user2p()  -> AstNodeModule*. Pointer to containing module
     // VNuser3InUse m_inuser3; (Allocated for use in RandomizeVisitor)
 
-    AstClass* const m_classp;
+    AstClass* const m_classp;  // Class being processed
     AstBegin* const m_inlineInitBlockp;  // Block to add write_var calls to
                                          // (may be null, then new() is used)
     AstNodeFTask* const m_memberselInitTaskp;  // Fallback for membersel write_var when
@@ -937,6 +934,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     uint32_t* m_uniqueConstraintId = nullptr;  // Current ID of unique call
     V3UniqueNames& m_uniqueNames;  // Unique names of temporaries, and of blocks holding them
     std::vector<AstVar*> m_rangeConstrainedEnums;  // Enums that are already range-constrained
+    // First expression found under an inside index
     AstNode* m_firstExpressionInsideIndexp = nullptr;
     AstConstraintForeach* m_foreachp = nullptr;  // Innermost constraint-foreach being processed
     std::set<const AstVar*> m_foreachIdxVars;  // Index vars of all enclosing constraint-foreaches
@@ -1032,8 +1030,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstNodeModule* const genModp = VN_AS(genVarp->user2p(), NodeModule);
         const int width = enumDtp->width();
         std::string constraint = "(__Vbv (or";
-        for (AstEnumItem* itemp = enumDtp->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), EnumItem)) {
+        for (AstEnumItem* const itemp : enumDtp->itemspList()) {
             const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
             constraint += " (= " + smtName + " (_ bv" + cvtToStr(vconstp->toUInt()) + " "
                           + cvtToStr(width) + "))";
@@ -1096,8 +1093,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstStructDType* const structp = VN_CAST(arrayElementDTypep(dtypep), StructDType);
         if (!structp || structp->packed()) return;
         structp->markConstrainedRand(true);
-        for (AstMemberDType* memberp = structp->membersp(); memberp;
-             memberp = VN_AS(memberp->nextp(), MemberDType)) {
+        for (AstMemberDType* const memberp : structp->memberspList()) {
             // Non-rand members keep their value. TODO: randc members are solved as
             // plain rand (uniform); per-member cyclic state is not generated for structs.
             if (!memberp->rand().isRandomizable()) continue;
@@ -1643,7 +1639,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         for (const AstClass* cp = elemClassp; cp;
              cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
-            for (AstNode* mnodep = cp->membersp(); mnodep; mnodep = mnodep->nextp()) {
+            for (AstNode* const mnodep : cp->memberspList()) {
                 AstVar* const memberVarp = VN_CAST(mnodep, Var);
                 if (!memberVarp || !memberVarp->rand().isRandomizable()) continue;
                 AstNodeDType* const memberDtp = memberVarp->dtypep()->skipRefp();
@@ -3042,7 +3038,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Under a condition the distinctness must instead become part of the guarded
         // constraint expression, which needs an element count known at verilation time
         std::vector<std::string> smtExprs;
-        for (AstNode* itemp = nodep->rangesp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : nodep->rangespList()) {
             if (AstVarRef* const varRefp = VN_CAST(itemp, VarRef)) {
                 AstVar* const varp = varRefp->varp();
                 AstNodeModule* const varModp = VN_AS(varp->user2p(), NodeModule);
@@ -4188,7 +4184,7 @@ class RandomizeVisitor final : public VNVisitor {
 
             std::vector<AstNodeExpr*> exprItems;
             bool hasArrayVarRef = false;
-            for (AstNode* rp = uniquep->rangesp(); rp; rp = rp->nextp()) {
+            for (AstNode* const rp : uniquep->rangespList()) {
                 if (const AstVarRef* const vrp = VN_CAST(rp, VarRef)) {
                     // A container's elements are made distinct by rand_unique, not pairwise
                     const AstNodeDType* const dtypep = vrp->varp()->dtypep()->skipRefp();
@@ -4521,7 +4517,7 @@ class RandomizeVisitor final : public VNVisitor {
         // var declarations and super.new(). This ensures that user's constraint_mode()
         // or rand_mode() calls in the constructor execute after mode arrays are initialized.
         // Pattern from V3LinkDot::addImplicitSuperNewCall.
-        for (AstNode* stmtp = ctorNewp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : ctorNewp->stmtspList()) {
             if (!VN_IS(stmtp, NodeStmt)) continue;  // Skip var declarations
             if (const AstStmtExpr* const sep = VN_CAST(stmtp, StmtExpr)) {
                 if (VN_IS(sep->exprp(), New)) continue;  // Skip super.new()
@@ -4641,8 +4637,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstConsArray* const consp = new AstConsArray{nodep->fileline(), vardtypep};
         UASSERT_OBJ(nodep->itemsp(), nodep, "Enum without items");
         uint64_t index = 0;
-        for (AstEnumItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), EnumItem)) {
+        for (AstEnumItem* const itemp : nodep->itemspList()) {
             AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
             UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
             consp->valuep(index++, vconstp->cloneTree(false));
@@ -4769,8 +4764,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (const auto* const structDtp = VN_CAST(memberDtp, StructDType)) {
             AstNodeStmt* stmtsp = nullptr;
             if (structDtp->packed()) offset += memberp ? memberp->lsb() : 0;
-            for (AstMemberDType* smemberp = structDtp->membersp(); smemberp;
-                 smemberp = VN_AS(smemberp->nextp(), MemberDType)) {
+            for (AstMemberDType* const smemberp : structDtp->memberspList()) {
                 AstNodeStmt* randp = nullptr;
                 if (structDtp->packed()) {
                     randp = newRandStmtsp(fl, stmtsp ? exprp->cloneTree(false) : exprp, nullptr,
@@ -5408,8 +5402,7 @@ class RandomizeVisitor final : public VNVisitor {
         // Strip the null literal arg. V3Width already rejected mixed/non-null
         // AstConst args.
         bool hasNullArg = false;
-        for (AstArg *argp = nodep->argsp(), *nextp = nullptr; argp; argp = nextp) {
-            nextp = VN_AS(argp->nextp(), Arg);
+        for (AstArg* const argp : nodep->argspList()) {
             if (const AstConst* const constp = VN_CAST(argp->exprp(), Const)) {
                 UASSERT_OBJ(constp->num().isNull(), constp,
                             "Non-null AstConst arg to randomize() should have been "
@@ -5451,8 +5444,7 @@ class RandomizeVisitor final : public VNVisitor {
         AstNode* storeStmtsp = nullptr;
         AstNode* setStmtsp = nullptr;
         AstNodeStmt* restoreStmtsp = nullptr;
-        for (AstArg *argp = nodep->argsp(), *nextp = nullptr; argp; argp = nextp) {
-            nextp = VN_AS(argp->nextp(), Arg);
+        for (AstArg* const argp : nodep->argspList()) {
             AstNodeExpr* exprp = argp->exprp();
             AstNodeExpr* const commonPrefixp = sliceToCommonPrefix(exprp, nodep);
             UASSERT_OBJ(commonPrefixp != exprp, nodep,
@@ -5632,8 +5624,7 @@ class RandomizeVisitor final : public VNVisitor {
     std::vector<DistBucket> collectDistBuckets(AstDist* const distp) {
         FileLine* const fl = distp->fileline();
         std::vector<DistBucket> buckets;
-        for (AstDistItem* ditemp = distp->itemsp(); ditemp;
-             ditemp = VN_AS(ditemp->nextp(), DistItem)) {
+        for (AstDistItem* const ditemp : distp->itemspList()) {
             if (const AstConst* const constp = VN_CAST(ditemp->weightp(), Const)) {
                 if (constp->toUQuad() == 0) continue;
             }
@@ -6192,7 +6183,7 @@ class RandomizeVisitor final : public VNVisitor {
     }
 
     static void copyVariableRegistrations(AstFunc* const sourcep, AstFunc* const targetp) {
-        for (AstNode* stmtp = sourcep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : sourcep->stmtspList()) {
             bool hasRegistration = false;
             bool foundClearConstraints = false;
             // stmtp is possibly begin containing a few statements
@@ -6526,8 +6517,7 @@ class RandomizeVisitor final : public VNVisitor {
             = new AstIf{fl, new AstConst{fl, AstConst::BitFalse{}}, nullptr, nullptr};
         AstNodeIf* ifsp = firstIfsp;
 
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstCaseItem* const itemp : nodep->itemspList()) {
             AstNodeExpr* const condp = itemp->condsp()->unlinkFrBack();
             sump
                 = new AstAdd{condp->fileline(), sump, new AstExtend{itemp->fileline(), condp, 64}};
@@ -6654,7 +6644,7 @@ class RandomizeVisitor final : public VNVisitor {
             std::unique_ptr<CaptureVisitor> withCapturep;
             int argn = 0;
             AstWith* const withp = nodep->withp();
-            for (const AstArg* argp = nodep->argsp(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+            for (const AstArg* const argp : nodep->argspList()) {
                 AstNodeExpr* const exprp = argp->exprp();
                 AstCMethodHard* const basicMethodp = new AstCMethodHard{
                     nodep->fileline(),

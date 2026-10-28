@@ -177,7 +177,7 @@ public:
 };
 
 class VerilatedVpioConst final : public VerilatedVpio {
-    const int32_t m_num;
+    const int32_t m_num;  // Constant integer value
 
 public:
     explicit VerilatedVpioConst(int32_t num)
@@ -194,14 +194,14 @@ public:
 
 class VerilatedVpioVarBase VL_NOT_FINAL : public VerilatedVpio {
 protected:
-    const VerilatedVar* m_varp = nullptr;
-    const VerilatedScope* m_scopep = nullptr;
+    const VerilatedVar* m_varp = nullptr;  // Variable this handle refers to
+    const VerilatedScope* m_scopep = nullptr;  // Scope containing the variable
 
     // Usually empty, only gets filled when fullname() is called. Has to be stored as a member so
     // the char* that fullname() returns is not a temporary.
     mutable std::string m_fullname;
 
-    int32_t m_indexedDim = -1;
+    int32_t m_indexedDim = -1;  // Array dimensions indexed so far, -1 if none
     const VerilatedRange* get_range() const { return m_varp->range(m_indexedDim + 1); }
 
 public:
@@ -317,7 +317,7 @@ public:
 };
 
 class VerilatedVpioRange final : public VerilatedVpio {
-    const VerilatedRange m_range;
+    const VerilatedRange m_range;  // Range handle represents
 
 public:
     explicit VerilatedVpioRange(const VerilatedRange& range)
@@ -333,8 +333,8 @@ public:
 };
 
 class VerilatedVpioRangeIter final : public VerilatedVpio {
-    const std::vector<VerilatedRange> m_ranges;
-    std::vector<VerilatedRange>::const_iterator m_iter;
+    const std::vector<VerilatedRange> m_ranges;  // Ranges to iterate over
+    std::vector<VerilatedRange>::const_iterator m_iter;  // Next range to return
 
 public:
     explicit VerilatedVpioRangeIter(const std::vector<VerilatedRange>& ranges)
@@ -358,11 +358,11 @@ public:
 
 class VerilatedVpioScope VL_NOT_FINAL : public VerilatedVpio {
 protected:
-    const VerilatedScope* const m_scopep;
-    bool m_toplevel = false;
-    const char* m_name;
-    const char* m_fullname;
-    const char* m_defname;
+    const VerilatedScope* const m_scopep;  // Scope handle refers to
+    bool m_toplevel = false;  // Scope is a top-level module
+    const char* m_name;  // Scope's identifier
+    const char* m_fullname;  // Scope's full hierarchical name
+    const char* m_defname;  // Scope's definition name
 
 public:
     explicit VerilatedVpioScope(const VerilatedScope* scopep)
@@ -390,14 +390,14 @@ public:
 class VerilatedVpioVar VL_NOT_FINAL : public VerilatedVpioVarBase {
     uint8_t* m_prevDatap = nullptr;  // Previous value of data, for cbValueChange
     uint32_t m_entSize = 0;  // memoized variable size
-    uint32_t m_bitOffset = 0;
+    uint32_t m_bitOffset = 0;  // Bit offset of the variable
     int32_t m_partselBits = -1;  // Part-select width, -1 means no part-select active
-    std::string m_name;
-    std::string m_fullNameOverride;
+    std::string m_name;  // Variable name
+    std::string m_fullNameOverride;  // Full name used instead of default, if non-empty
 
 protected:
     void* m_varDatap = nullptr;  // varp()->datap() adjusted for array entries
-    std::vector<int32_t> m_index;
+    std::vector<int32_t> m_index;  // Index into each unpacked dimension
 
 public:
     VerilatedVpioVar(const VerilatedVar* varp, const VerilatedScope* scopep)
@@ -580,11 +580,11 @@ public:
 };
 
 class VerilatedVpioVarIter final : public VerilatedVpio {
-    const VerilatedScope* const m_scopep;
-    VerilatedVarNameMap::const_iterator m_it;
-    bool m_started = false;
-    const VerilatedScope* m_topscopep = nullptr;
-    bool m_onlyParams;
+    const VerilatedScope* const m_scopep;  // Scope whose variables are iterated
+    VerilatedVarNameMap::const_iterator m_it;  // Next variable to return
+    bool m_started = false;  // Iteration has begun
+    const VerilatedScope* m_topscopep = nullptr;  // Top scope, found on first iteration
+    bool m_onlyParams;  // Iterate only parameters
 
 public:
     explicit VerilatedVpioVarIter(const VerilatedVpioScope* vop, bool onlyParams = false)
@@ -640,10 +640,10 @@ public:
 };
 
 class VerilatedVpioRegIter final : public VerilatedVpio {
-    VerilatedVpioVar* m_var;
-    std::vector<VerilatedRange> m_ranges;
-    std::vector<int> m_nextIndex;
-    const int32_t m_maxDim;
+    VerilatedVpioVar* m_var;  // Variable whose elements are iterated
+    std::vector<VerilatedRange> m_ranges;  // Ranges of each dimension of the variable
+    std::vector<int> m_nextIndex;  // Next index to return in each dimension
+    const int32_t m_maxDim;  // Highest dimension to iterate
 
 public:
     explicit VerilatedVpioRegIter(const VerilatedVpioVar* vop)
@@ -689,9 +689,9 @@ public:
 };
 
 class VerilatedVpioMemberIter final : public VerilatedVpio {
-    VerilatedVpioVar* m_varp;
+    VerilatedVpioVar* m_varp;  // Variable whose members are iterated
     std::vector<const VerilatedVar*> m_members;  // Direct members, in iteration order
-    size_t m_next = 0;
+    size_t m_next = 0;  // Index of next member to return
 
     vpiHandle atEnd() {
         delete this;  // IEEE 37.2.2 vpi_scan at end does a vpi_release_handle
@@ -795,7 +795,7 @@ public:
 
 static const char* d_unit = "$unit";
 class VerilatedVpioPackage final : public VerilatedVpioScope {
-    std::string m_fullname_string;
+    std::string m_fullname_string;  // Package name with trailing "::"
 
 public:
     explicit VerilatedVpioPackage(const VerilatedScope* modulep)
@@ -981,8 +981,8 @@ using VerilatedPliCb = PLI_INT32 (*)(struct t_cb_data*);
 class VerilatedVpiCbHolder final {
     // Holds information needed to call a callback
     uint64_t m_id;  // Unique id/sequence number to find schedule's event, 0 = invalid
-    s_cb_data m_cbData;
-    s_vpi_value m_value;
+    s_cb_data m_cbData;  // Callback registration data from the user
+    s_vpi_value m_value;  // Value passed to the callback
     VerilatedVpioVar m_varo;  // If a cbValueChange callback, the object we will return
 
 public:
@@ -1009,8 +1009,8 @@ public:
 };
 
 class VerilatedVpiPutHolder final {
-    VerilatedVpioVar m_var;
-    s_vpi_value m_value;
+    VerilatedVpioVar m_var;  // Variable to be written
+    s_vpi_value m_value;  // Value to be written
     union Storage {
         char init = 0;  // to ensure trivial constructor
         std::string str;
@@ -1447,8 +1447,8 @@ thread_local uint8_t* VerilatedVpio::t_freeHeadp = nullptr;
 // Internal container for vpi error info
 
 class VerilatedVpiError final {
-    t_vpi_error_info m_errorInfo;
-    bool m_flag = false;
+    t_vpi_error_info m_errorInfo;  // Error information returned to the user
+    bool m_flag = false;  // Error information has been set
     char m_buff[VL_VPI_LINE_SIZE_];
     void setError(PLI_BYTE8* message, PLI_BYTE8* code, PLI_BYTE8* file, PLI_INT32 line) {
         m_errorInfo.message = message;

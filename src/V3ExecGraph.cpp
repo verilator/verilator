@@ -795,8 +795,7 @@ void normalizeCosts(Costs& costs) {
 
 void removeEmptyMTasks(AstExecGraph* execGraphp) {
     // Remove the calls to empty MTask functions, then the MTasks
-    for (AstCCall *callp = execGraphp->callsp(), *nextp; callp; callp = nextp) {
-        nextp = VN_AS(callp->nextp(), CCall);
+    for (AstCCall* const callp : execGraphp->callspList()) {
         if (!callp->funcp()->stmtsp()) VL_DO_DANGLING(callp->unlinkFrBack()->deleteTree(), callp);
     }
     V3Graph* const execMTaskGraphp = execGraphp->depGraphp();
@@ -1178,7 +1177,7 @@ void addTriggerMasks(AstExecGraph* const execGraphp) {
     // code tests
     FileLine* const flp = execGraphp->fileline();
     AstVar* const triggersp = execGraphp->triggerp()->varp();
-    for (AstCCall* callp = execGraphp->callsp(); callp; callp = VN_AS(callp->nextp(), CCall)) {
+    for (AstCCall* const callp : execGraphp->callspList()) {
         std::map<uint32_t, uint64_t> wordMasks;
         callp->funcp()->foreach([&](const AstTriggered* trigp) {
             UASSERT_OBJ(trigp->trigRefp()->varp() == triggersp, trigp,
@@ -1206,7 +1205,7 @@ void addTriggerCosts(AstExecGraph* const execGraphp) {
         = VN_AS(execGraphp->triggerp()->varp()->dtypep(), UnpackArrayDType)->elementsConst()
           * VL_QUADSIZE;
     std::vector<uint32_t> costs(nTriggers, 0);
-    for (AstCCall* callp = execGraphp->callsp(); callp; callp = VN_AS(callp->nextp(), CCall)) {
+    for (AstCCall* const callp : execGraphp->callspList()) {
         callp->funcp()->foreach([&](AstIf* ifp) {
             if (const AstTriggered* const trigp = VN_CAST(ifp->condp(), Triggered)) {
                 const uint32_t cost = V3InstrCount::count(ifp, false);

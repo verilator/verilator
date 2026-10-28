@@ -49,8 +49,7 @@ class EmitCExecGraph final : public EmitCFunc {
             mtaskps.emplace(mtaskp->funcp(), mtaskp);
         }
         std::unordered_map<const AstCFunc*, uint32_t> indices;
-        for (const AstCCall* callp = nodep->callsp(); callp;
-             callp = VN_AS(callp->nextp(), CCall)) {
+        for (const AstCCall* const callp : nodep->callspList()) {
             indices.emplace(callp->funcp(), indices.size());
         }
 
@@ -64,8 +63,7 @@ class EmitCExecGraph final : public EmitCFunc {
         putns(nodep, "static VL_CONSTINIT_CXX20 const VlExecGraph::Vertex " + name
                          + "__vertices[] = {\n");
         AstVarRef* maskp = nodep->maskps();
-        for (const AstCCall* callp = nodep->callsp(); callp;
-             callp = VN_AS(callp->nextp(), CCall)) {
+        for (const AstCCall* const callp : nodep->callspList()) {
             UASSERT_OBJ(maskp, callp, "MTask call without trigger mask");
             putns(callp, "{&" + funcNameProtect(callp->funcp()) + ", ");
             puts(std::to_string(mtaskps.at(callp->funcp())->cost()) + ", ");
@@ -77,8 +75,7 @@ class EmitCExecGraph final : public EmitCFunc {
 
         // The dependencies between MTasks
         uint32_t nEdges = 0;
-        for (const AstCCall* callp = nodep->callsp(); callp;
-             callp = VN_AS(callp->nextp(), CCall)) {
+        for (const AstCCall* const callp : nodep->callspList()) {
             for (const V3GraphEdge& edge : mtaskps.at(callp->funcp())->outEdges()) {
                 if (!nEdges) {
                     puts("\nstatic VL_CONSTINIT_CXX20 const VlExecGraph::Edge " + name

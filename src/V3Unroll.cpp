@@ -318,7 +318,7 @@ class UnrollOneVisitor final : VNVisitor {
             m_stats.m_nUnrolledIters += iterCount;
         }
     }
-    ~UnrollOneVisitor() { VL_DO_DANGLING(m_wrapp->deleteTree(), m_wrapp); }
+    ~UnrollOneVisitor() override { VL_DO_DANGLING(m_wrapp->deleteTree(), m_wrapp); }
 
     // VISIT - these are called for the statements directly in the loop body
     void visit(AstNode* nodep) override {

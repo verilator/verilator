@@ -127,9 +127,6 @@ extern WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint6
 /// Random reset a signal of given width (init time only)
 extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
 
-/// Zero reset a signal (slow - else use VL_ZERO_W)
-extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
-
 /// Fill a nonempty integral or packed unpacked array from its already initialized first element.
 extern void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE;
 
@@ -284,6 +281,38 @@ inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     VlQueue<T> ret;
     for (size_t i = 0; i < N_Depth; ++i) ret.push_back(q[i]);
     return ret;
+}
+
+// Copy dynamic array or queue to a fixed-size unpacked array, reversing each dimension whose
+// template argument is non-zero, outermost dimension is first
+template <typename T_To, typename T_From>
+inline void _vl_cvt_q_to_unpack(T_To& to, const T_From& from) VL_MT_SAFE {
+    to = from;
+}
+template <int T_Reverse, int... T_Inner, typename T_To, std::size_t N_Depth, typename T_From,
+          std::size_t N_MaxSize>
+inline void _vl_cvt_q_to_unpack(VlUnpacked<T_To, N_Depth>& to,
+                                const VlQueue<T_From, N_MaxSize>& from) VL_MT_SAFE {
+    if (VL_UNLIKELY(from.size() != static_cast<int>(N_Depth))) Verilated::sizeMismatchError();
+    for (std::size_t i = 0; i < N_Depth; ++i) {
+        _vl_cvt_q_to_unpack<T_Inner...>(to[T_Reverse ? N_Depth - 1 - i : i],
+                                        from.at(static_cast<int32_t>(i)));
+    }
+}
+template <int T_Reverse, int... T_Inner, typename T, std::size_t N_Depth>
+inline void _vl_cvt_q_to_unpack(VlUnpacked<T, N_Depth>& to,
+                                const VlUnpacked<T, N_Depth>& from) VL_MT_SAFE {
+    for (std::size_t i = 0; i < N_Depth; ++i) {
+        _vl_cvt_q_to_unpack<T_Inner...>(to[T_Reverse ? N_Depth - 1 - i : i], from[i]);
+    }
+}
+
+// Return unpacked array copied from a dynamic array or queue
+template <typename T_To, int... T_Reverse, typename T_From>
+inline T_To VL_CVT_Q_TO_UNPACK(const T_From& from) VL_MT_SAFE {
+    T_To to;
+    _vl_cvt_q_to_unpack<T_Reverse...>(to, from);
+    return to;
 }
 
 template <typename T>
@@ -1897,7 +1926,7 @@ inline VlQueue<T> VL_STREAMR_RRI(int lbits, const VlQueue<T> q, IData rd) VL_MT_
     return q;
 }
 
-inline VlQueue<std::string> VL_STREAMR_NRI(int lbits, const VlQueue<std::string> q,
+inline VlQueue<std::string> VL_STREAMR_NRI(int lbits, const VlQueue<std::string>& q,
                                            IData rd) VL_MT_SAFE {
     return q;
 }

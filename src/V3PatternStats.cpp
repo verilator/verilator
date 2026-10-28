@@ -75,7 +75,7 @@ private:
     }
 
 public:
-    V3PatternStats(const std::string& what)
+    explicit V3PatternStats(const std::string& what)
         : m_what{what} {}
     ~V3PatternStats() = default;
 

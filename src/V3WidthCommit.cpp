@@ -219,8 +219,7 @@ private:
         //
         if (nodep->isVirtual()) isVirtualr = true;
         // Propagate value from extends/implements
-        for (AstClassExtends* extendsp = classp->extendsp(); extendsp;
-             extendsp = VN_AS(extendsp->nextp(), ClassExtends)) {
+        for (AstClassExtends* const extendsp : classp->extendspList()) {
             const AstClass* const eclassp = extendsp->classp();
             if (AstNodeFTask* const fbasep
                 = VN_CAST(m_memberMap.findMember(eclassp, nodep->name()), NodeFTask)) {
@@ -390,8 +389,8 @@ private:
         m_ftaskp = nodep;
         iterateChildren(nodep);
         editDType(nodep);
-        bool isVirtual = false;
         if (const AstClass* const classp = VN_CAST(m_modp, Class)) {
+            bool isVirtual = false;
             virtualRecurse(nodep, classp, isVirtual /*ref*/);
         }
         if (nodep->isStatic() && nodep->isVirtual())  // After propagated isVirtual
