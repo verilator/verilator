@@ -10,11 +10,14 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
+test.top_filename = "t/t_threads_group.v"
 
-test.compile(verilator_flags2=["--stats", "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0"], threads=2)
+test.compile(
+    verilator_flags2=["--stats", "+define+TEST_VLT", "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0"],
+    threads=2)
 
 test.execute()
 
-test.file_grep(test.stats, r'MTask graph, threads_unit groups\s+(\d+)', 14)
+test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 14)
 
 test.passes()

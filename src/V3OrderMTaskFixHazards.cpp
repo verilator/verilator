@@ -254,15 +254,9 @@ class FixDataHazards final {
         std::vector<LogicMTask*>& pendingReaders = m_scratch;
         pendingReaders.clear();
         LogicMTask* prevWriterp = nullptr;
-        for (const Access* accp = beginp; accp != endp;) {
-            // An MTask holding a threads_unit group can access the variable from several logic
-            // blocks. They run in order within the MTask, so it is a writer if any of them writes.
+        for (const Access* accp = beginp; accp != endp; ++accp) {
             LogicMTask* const mtaskp = accp->m_mtaskp;
-            bool isWrite = false;
-            for (; accp != endp && accp->m_mtaskp == mtaskp; ++accp) {
-                if (accp->m_access.isWriteOrRW()) isWrite = true;
-            }
-            if (isWrite) {
+            if (accp->m_access.isWriteOrRW()) {
                 // Reads since the previous write must complete before this write
                 for (LogicMTask* const readerp : pendingReaders) addEdgeIfNeeded(readerp, mtaskp);
                 // Consecutive writes must be ordered. If a read came between them, the edges to

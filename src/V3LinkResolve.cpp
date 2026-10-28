@@ -73,6 +73,9 @@ class LinkResolveVisitor final : public VNVisitor {
         m_modp = nodep;
         m_senitemCvtNum = 0;
         iterateChildren(nodep);
+        // A library stub, such as a hier_block in its parent's Verilation, holds no logic to
+        // group. This also makes the control file and the metacomment behave the same there.
+        if (nodep->verilatorLib()) nodep->threadsGroup(false);
     }
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);
@@ -232,11 +235,11 @@ class LinkResolveVisitor final : public VNVisitor {
             m_modp->hierBlock(v3Global.opt.hierarchical());
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        } else if (nodep->pragType() == VPragmaType::THREADS_UNIT) {
-            UASSERT_OBJ(m_modp, nodep, "THREADS_UNIT not under a module");
-            // The top module is the whole model, not a unit of it. With --hierarchical, this is
-            // the case for a hier_block in its own Verilation.
-            m_modp->threadsUnit(!m_modp->isTop());
+        } else if (nodep->pragType() == VPragmaType::THREADS_GROUP) {
+            UASSERT_OBJ(m_modp, nodep, "THREADS_GROUP not under a module");
+            // The top module is the whole model, not a group within it. With --hierarchical, this
+            // is the case for a hier_block in its own Verilation.
+            m_modp->threadsGroup(!m_modp->isTop());
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (nodep->pragType() == VPragmaType::PUBLIC_MODULE) {

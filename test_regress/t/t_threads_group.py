@@ -10,12 +10,11 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
-test.top_filename = "t/t_threads_unit.v"
 
-# Keep the two accesses as separate logic blocks for the hazard-fixer control.
-test.compile(
-    verilator_flags2=["-fno-dfg", "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0"],
-    threads=2)
+test.compile(verilator_flags2=["--stats", "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0"], threads=2)
 
 test.execute()
+
+test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 14)
+
 test.passes()

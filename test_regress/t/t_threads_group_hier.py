@@ -10,13 +10,12 @@
 import vltest_bootstrap
 
 test.scenarios('vltmt')
-test.top_filename = "t/t_threads_unit.v"
+test.top_filename = "t/t_threads_group.v"
 
 test.clean_objs()
 
-# Each tile is both a hierarchical block and a unit, but is not a unit in its own Verilation,
-# where only its acc is. Unlike the metacomment, the control file also marks the tiles'
-# wrappers in the parent.
+# Each tile is both a hierarchical block and a group, but is not a group in its own Verilation,
+# where only its acc is, nor in the parent, where it is a library stub.
 test.compile(verilator_flags2=[
     "--stats", "--hierarchical", "+define+TEST_VLT", "+define+TEST_HIERARCHICAL", "-CFLAGS",
     "-DVL_THREADS_SERIAL_COST=0"
@@ -27,8 +26,8 @@ test.execute()
 
 test.file_grep(
     test.obj_dir + "/" + test.vm_prefix + "__hier.dir/" + test.vm_prefix + "__stats.txt",
-    r'MTask graph, threads_unit groups\s+(\d+)', 10)
+    r'MTask graph, threads_group parts\s+(\d+)', 2)
 test.file_grep(test.obj_dir + "/Vtile/Vtile__stats.txt",
-               r'MTask graph, threads_unit groups\s+(\d+)', 1)
+               r'MTask graph, threads_group parts\s+(\d+)', 1)
 
 test.passes()

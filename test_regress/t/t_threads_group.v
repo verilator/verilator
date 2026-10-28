@@ -11,26 +11,26 @@
 // verilog_format: on
 
 `ifdef TEST_VLT
-`define THREADS_UNIT
+`define THREADS_GROUP
 `else
-`define THREADS_UNIT /*verilator threads_unit*/
+`define THREADS_GROUP /*verilator threads_group*/
 `endif
 
-// Both accesses must be combined before deciding whether a unit writes hazard_q.
-module hazard_unit #(parameter int ID = 0);
-  `THREADS_UNIT
+// Each instance reads and writes hazard_q in separate logic blocks of one MTask
+module hazard_group #(parameter int ID = 0);
+  `THREADS_GROUP
   logic x;
   always_comb x = t.hazard_q[1-ID] ^ t.cyc[ID];
   always_comb t.hazard_q[ID] = x | t.cyc[ID];
 endmodule
 
-// A unit inside a unit; its logic belongs to its own instance, not the tile's
+// A group inside a group; its logic belongs to its own instance, not the tile's
 module acc (
     input clk,
     input [7:0] in,
     output [7:0] sum
 );
-  `THREADS_UNIT
+  `THREADS_GROUP
   reg [7:0] s = 0;
   assign sum = s;
   always @(posedge clk) s <= s + in;
@@ -43,7 +43,7 @@ module tile (
     output [7:0] out,
     output [7:0] st
 );
-  `THREADS_UNIT
+  `THREADS_GROUP
   reg [7:0] r = 0;
   wire [7:0] sum;
   acc u (
@@ -57,14 +57,14 @@ module tile (
   always @(posedge clk) r <= r + in + 8'd1;
 endmodule
 
-// A unit beside the tiles
+// A group beside the tiles
 module chk (
     input clk,
     input [7:0] a,
     input [7:0] b,
     output [7:0] sum
 );
-  `THREADS_UNIT
+  `THREADS_GROUP
   reg [7:0] s = 0;
   assign sum = s;
   always @(posedge clk) s <= s + (a ^ b);
@@ -74,14 +74,14 @@ module t (
     input clk
 );
   // Ignored, as the top module is the whole model
-  `THREADS_UNIT
+  `THREADS_GROUP
   integer cyc = 0;
   // The feedback reads become hybrid sensitivities, so dependency edges omit them.
   // verilator lint_off UNOPTFLAT
   logic [1:0] hazard_q = 0;
   // verilator lint_on UNOPTFLAT
-  hazard_unit #(0) h0();
-  hazard_unit #(1) h1();
+  hazard_group #(0) h0();
+  hazard_group #(1) h1();
   wire [7:0] out[4];
   wire [7:0] st[4];
   for (genvar i = 0; i < 4; ++i) begin : g
@@ -117,12 +117,12 @@ endmodule
 
 `ifdef TEST_VLT
 `verilator_config
-threads_unit -module "acc"
-threads_unit -module "chk"
-threads_unit -module "hazard_unit"
-threads_unit -module "tile"
+threads_group -module "acc"
+threads_group -module "chk"
+threads_group -module "hazard_group"
+threads_group -module "tile"
 // Ignored, as the top module is the whole model
-threads_unit -module "t"
+threads_group -module "t"
 `ifdef TEST_HIERARCHICAL
 hier_block -module "tile"
 hier_workers -module "tile" -workers 2

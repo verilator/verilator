@@ -519,4 +519,4 @@ package p;
 endpackage
 
 `verilator_config
-threads_unit -module "sub"
+threads_group -module "sub"
