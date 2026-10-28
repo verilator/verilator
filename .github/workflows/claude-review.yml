@@ -51,14 +51,39 @@ jobs:
             `gh pr view --comments` for the description and earlier discussion.
             The working directory holds the base branch, not the pull request.
 
-            First read AGENTS.md, and the AGENTS.md of each directory the pull
-            request changes. Focus on correctness bugs, missing tests, and
-            departures from the guidelines in those files. Be concise and only
-            report real issues.
+            First read AGENTS.md in all directories.
+
+            Review with focus on correctness bugs, missing tests, and departures
+            from the guidelines in those files.  Check specifically that the
+            patch matches the rules described in AGENTS.md in all directories.
+
+            There is no need to compile to check that the code compiles, or
+            tests pass, this is known.
 
             Post specific issues as inline comments with
-            `mcp__github_inline_comment__create_inline_comment`, and post a short
-            overall summary with `gh pr comment`.
+            `mcp__github_inline_comment__create_inline_comment`, and post a
+            short overall summary with `gh pr comment`.
+
+            For inline comments and overall summary:
+
+            - Be terse.
+
+            - Show only information critical to the person reading the review on
+              what needs changing.
+
+            - Do not put in any information about what is correct or what was
+              checked.
+
+            - Do not include any comments about the commit message, or pull
+              request message, or on additions to docs/CONTRIBUTORS.
+
+            - Reference exact filenames and line numbers.
+
+            - Do not wrap the text, keep long lines.
+
+            - Use bullets not numbered points; make one suggestion per line not
+              multiple suggestions per line.
+
           claude_args: |-
             --model claude-opus-5-5 --effort medium --max-budget-usd 1
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
