@@ -14,6 +14,12 @@
 # 'issue_comment' runs the workflow from the default branch with access to
 # secrets. The pull request code is never checked out or executed, Claude only
 # sees its diff.
+#
+# Claude posts all its comments in a single pull request review with
+# 'ci/ci-claude-post-review.bash', which fixes the COMMENT verdict. Posting each
+# inline comment separately would send a notification for every comment
+# (https://github.com/anthropics/claude-code-action/issues/1049). The only file
+# Claude may write is the one passing its comments to that script.
 
 name: Claude review
 
@@ -40,6 +46,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
       - name: Claude review
+        id: claude
         uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6  # v1.0.264
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -60,11 +67,17 @@ jobs:
             There is no need to compile to check that the code compiles, or
             tests pass, this is known.
 
-            Post specific issues as inline comments with
-            `mcp__github_inline_comment__create_inline_comment`.  Use only
-            inline comments; if there are comments that are not obviously
-            associated to an inline file, look at the files which the user
-            modified and pick the best one to use inline comments against.
+            Use only inline comments; if there are comments that are not
+            obviously associated to an inline file, look at the files which the
+            user modified and pick the best one to use inline comments against.
+
+            Post the review once: write the comments to
+            ${{ runner.temp }}/claude-review.json as a JSON array of
+            {"path": ..., "line": ..., "body": ...} objects, one inline comment
+            for each specific issue, or an empty array if there are none, then
+            run `ci/ci-claude-post-review.bash`.  'line' is a line of the new
+            version of the file at 'path', and must be in a hunk of the diff.
+            If posting fails, fix the file and run it again.
 
             For comments:
 
@@ -87,5 +100,21 @@ jobs:
               multiple suggestions per line.
 
           claude_args: |-
-            --model claude-opus-5-5 --effort medium --max-budget-usd 1
-            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
+            --model claude-opus-5-5
+            --effort medium
+            --max-budget-usd 1
+            --allowedTools
+              "Bash(gh pr diff:*)"
+              "Bash(gh pr view:*)"
+              "Edit(/${{ runner.temp }}/claude-review.json)"
+              "Bash(ci/ci-claude-post-review.bash)"
+            --disallowedTools
+              "Edit(/${{ github.workspace }}/ci/ci-claude-post-review.bash)"
+
+      # Temporary: list the tool calls that '--allowedTools' blocked, to decide
+      # whether it is missing anything
+      - name: Show denied tool calls
+        if: ${{ always() && steps.claude.outputs.execution_file != '' }}
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: jq '.[] | select(.type == "result") | .permission_denials' "${EXECUTION_FILE}"

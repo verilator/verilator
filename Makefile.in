@@ -470,6 +470,7 @@ analyzer-include:
 
 # Bash/sh files
 BASH_FILES = \
+  ci/ci-claude-post-review.bash \
   ci/ci-coverage-report.bash \
   ci/ci-install.bash \
   ci/ci-pages-notify.bash \
