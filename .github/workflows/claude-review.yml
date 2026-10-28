@@ -57,6 +57,8 @@ jobs:
             Review this pull request. Use `gh pr diff` to see the changes, and
             `gh pr view --comments` for the description and earlier discussion.
             The working directory holds the base branch, not the pull request.
+            Use the Read tool, not shell commands, to read files, including long
+            tool output saved to a file.
 
             First read AGENTS.md in all directories.
 
@@ -71,11 +73,12 @@ jobs:
             obviously associated to an inline file, look at the files which the
             user modified and pick the best one to use inline comments against.
 
-            Post the review once: write the comments to
+            Post the review once: with the Write tool, write the comments to
             ${{ runner.temp }}/claude-review.json as a JSON array of
             {"path": ..., "line": ..., "body": ...} objects, one inline comment
             for each specific issue, or an empty array if there are none, then
-            run `ci/ci-claude-post-review.bash`.  'line' is a line of the new
+            run `ci/ci-claude-post-review.bash` as a command on its own, not
+            combined with other commands.  'line' is a line of the new
             version of the file at 'path', and must be in a hunk of the diff.
             If posting fails, fix the file and run it again.
 
