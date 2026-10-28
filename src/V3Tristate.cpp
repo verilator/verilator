@@ -1087,15 +1087,16 @@ class TristateVisitor final : public TristateBaseVisitor {
         AstNodeExpr* orp = nullptr;
         AstNodeExpr* enp = nullptr;
 
-        std::sort(refsp->begin(), refsp->end(),
-                  [](RefStrength a, RefStrength b) { return a.m_strength > b.m_strength; });
+        std::sort(refsp->begin(), refsp->end(), [](const RefStrength& a, const RefStrength& b) {
+            return a.m_strength > b.m_strength;
+        });
 
         RefStrengthVec::iterator beginStrength = refsp->begin();
         while (beginStrength != refsp->end()) {
             RefStrengthVec::iterator endStrength = beginStrength + 1;
             while (endStrength != refsp->end()
                    && endStrength->m_strength == beginStrength->m_strength)
-                endStrength++;
+                ++endStrength;
 
             FileLine* const fl = beginStrength->m_varrefp->fileline();
             // For interface tristate vars, uniquify strength var names by including the

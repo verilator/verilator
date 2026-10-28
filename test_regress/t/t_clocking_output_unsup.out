@@ -1,6 +1,0 @@
-%Error: t/t_clocking_output_unsup.v:32:8: Unsupported: Clocking block output driving input port through non-decomposable connection 'bus'
-                                        : ... note: In instance 't.d'
-   32 |       .bus(a + b)
-      |        ^~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: Exiting due to
