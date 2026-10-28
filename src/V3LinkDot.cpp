@@ -1047,6 +1047,20 @@ public:
         }
         return false;
     }
+    static void checkAmbiguousImport(const AstNode* nodep, const VSymEnt* foundp) {
+        // Referencing a name that wildcard imports of several packages declare is illegal
+        if (!foundp || !foundp->ambiguousp()) return;
+        const AstNode* const declp = foundp->nodep();
+        const AstNode* const otherDeclp = foundp->ambiguousp()->nodep();
+        nodep->v3error("Ambiguous reference to " << nodep->prettyNameQ()
+                                                 << ", as it is declared in more than one wildcard"
+                                                    " imported package (IEEE 1800-2023 26.3)\n"
+                                                 << nodep->warnContextPrimary() << '\n'
+                                                 << declp->warnOther() << "... Declared here\n"
+                                                 << declp->warnContextSecondary()
+                                                 << otherDeclp->warnOther() << "... And here\n"
+                                                 << otherDeclp->warnContextSecondary());
+    }
     VSymEnt* resolveClassOrPackage(VSymEnt* lookSymp, AstClassOrPackageRef* nodep, bool fallback,
                                    bool classOnly, const string& forWhat,
                                    bool deferIfUnresolved = false) {
@@ -1076,6 +1090,7 @@ public:
             foundp = getNodeSym(v3Global.rootp()->stdPackagep())->findIdFlat(nodep->name());
         }
         if (foundp) {
+            checkAmbiguousImport(nodep, foundp);
             nodep->classOrPackageNodep(foundp->nodep());
             return foundp;
         }
@@ -3507,20 +3522,6 @@ class LinkDotResolveVisitor final : public VNVisitor {
         nodep->addStmtsp(superNewStmtp);
         return superNewStmtp;
     }
-    static void checkAmbiguousImport(const AstNode* nodep, const VSymEnt* foundp) {
-        // Referencing a name that wildcard imports of several packages declare is illegal
-        if (!foundp || !foundp->ambiguousp()) return;
-        const AstNode* const declp = foundp->nodep();
-        const AstNode* const otherDeclp = foundp->ambiguousp()->nodep();
-        nodep->v3error("Ambiguous reference to " << nodep->prettyNameQ()
-                                                 << ", as it is declared in more than one wildcard"
-                                                    " imported package (IEEE 1800-2023 26.3)\n"
-                                                 << nodep->warnContextPrimary() << '\n'
-                                                 << declp->warnOther() << "... Declared here\n"
-                                                 << declp->warnContextSecondary()
-                                                 << otherDeclp->warnOther() << "... And here\n"
-                                                 << otherDeclp->warnContextSecondary());
-    }
     void checkNoDot(AstNode* nodep) {
         if (VL_UNLIKELY(!nodep)) {
             UINFO(9, indent() << "iface capture null node passed to checkNoDot; dot state="
@@ -4734,7 +4735,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 UINFO(9, indent() << "found=se" << cvtToHex(foundp) << "  exp=" << expectWhat
                                   << "  n=" << foundp->nodep());
             }
-            checkAmbiguousImport(nodep, foundp);
+            LinkDotState::checkAmbiguousImport(nodep, foundp);
             // What fell out?
             bool ok = false;
             // Special case: waiting on clocking event
@@ -5700,7 +5701,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             VSymEnt* const foundp
                 = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
-            checkAmbiguousImport(nodep, foundp);
+            LinkDotState::checkAmbiguousImport(nodep, foundp);
             AstNodeFTask* const taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
             AstNodeModule* const taskModulep = foundp ? foundp->classOrPackagep() : nullptr;
             // Ignore deferring linking of functions inside params of classes extending
@@ -6560,7 +6561,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                            << nodep->prettyNameQ());  // LCOV_EXCL_LINE
                 foundp = nullptr;  // LCOV_EXCL_LINE
             }
-            checkAmbiguousImport(nodep, foundp);
+            LinkDotState::checkAmbiguousImport(nodep, foundp);
             {
                 if (AstTypedef* const defp
                     = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {

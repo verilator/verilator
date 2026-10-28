@@ -95,6 +95,10 @@ public:
                                             it->first);
                 }
             }
+            for (const VSymEnt* const pkgSymp : m_wildImportps) {
+                os << indent << "| * wildcard import se" << cvtToHex(pkgSymp)
+                   << "  n=" << pkgSymp->nodep() << '\n';
+            }
         }
     }
     void dumpSelf(std::ostream& os, const string& indent = "", int numLevels = 1) const {
@@ -274,6 +278,13 @@ private:
         symp->imported(true);
         return symp;
     }
+    void addWildImport(const VSymEnt* pkgSymp) {
+        // Repeated imports of a package would only slow lookups that miss
+        if (std::find(m_wildImportps.begin(), m_wildImportps.end(), pkgSymp)
+            == m_wildImportps.end()) {
+            m_wildImportps.push_back(pkgSymp);
+        }
+    }
     void importOneSymbol(const string& name, const VSymEnt* srcp, bool honorExport) {
         if ((!honorExport || srcp->exported())
             && !findIdFlat(name)) {  // Don't insert over existing entry
@@ -317,7 +328,7 @@ public:
             const auto it = srcp->m_idNameMap.find(id_or_star);
             if (it != srcp->m_idNameMap.end()) importOneSymbol(it->first, it->second, true);
         } else {
-            m_wildImportps.push_back(srcp);  // Symbols are imported on lookup, see findIdFlat
+            addWildImport(srcp);  // Symbols are imported on lookup, see findIdFlat
         }
     }
     void exportFromPackage(const VSymEnt* srcp, const string& id_or_star) {
@@ -349,8 +360,7 @@ public:
         // Import interface tokens from source symbol table into this symbol table, recursively
         UINFO(9, "     importIf  se" << cvtToHex(this) << " from se" << cvtToHex(srcp));
         if (!onlyUnmodportable) {
-            m_wildImportps.insert(m_wildImportps.end(), srcp->m_wildImportps.begin(),
-                                  srcp->m_wildImportps.end());
+            for (const VSymEnt* const pkgSymp : srcp->m_wildImportps) addWildImport(pkgSymp);
         }
         for (IdNameMap::const_iterator it = srcp->m_idNameMap.begin();
              it != srcp->m_idNameMap.end(); ++it) {
@@ -409,7 +419,7 @@ public:
     VSymEnt* rootp() const { return m_symRootp; }
     size_t importedCount() const {
         return std::count_if(m_symsp.begin(), m_symsp.end(),
-                             [](const VSymEnt* entp) { return entp->imported(); });
+                             [](const VSymEnt* const entp) { return entp->imported(); });
     }
     // Debug
     void dumpSelf(std::ostream& os, const string& indent = "") {

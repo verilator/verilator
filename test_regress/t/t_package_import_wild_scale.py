@@ -12,7 +12,7 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('linter')
 
 N_SPECIALIZATIONS = 20
 N_SYMBOLS_SMALL = 10

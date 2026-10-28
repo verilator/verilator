@@ -71,6 +71,7 @@ endmodule
 module t;
   import pkg_a::*;
   import pkg_c::*;
+  import pkg_a::*;  // Repeated import is harmless
 
   ifc u_ifc ();
   sub_ifc u_sub_ifc (

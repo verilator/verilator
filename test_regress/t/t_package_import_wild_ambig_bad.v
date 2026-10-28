@@ -16,6 +16,9 @@ package pkg1;
   task automatic h(word i);
     v = v + i;
   endtask
+  class C;
+    static int sx;
+  endclass
 endpackage
 
 package pkg2;
@@ -30,6 +33,9 @@ package pkg2;
   task automatic h(word i);
     v = v + i;
   endtask
+  class C;
+    static int sx;
+  endclass
   localparam ONLY2 = 3;
 endpackage
 
@@ -49,7 +55,11 @@ module t;
   initial begin
     int p1;  // Local declaration hides the wildcard imports
     p1 = 1;
-    @(e) v = p1 + p2;  // <--- Error: e, v, p2 ambiguous
-    h(f(1));  // <--- Error: h, f ambiguous
+    @(e);  // <--- Error: ambiguous
+    v = 0;  // <--- Error: ambiguous
+    p1 = p2;  // <--- Error: ambiguous
+    p1 = f(1);  // <--- Error: ambiguous
+    h(1);  // <--- Error: ambiguous
+    p1 = C::sx;  // <--- Error: ambiguous
   end
 endmodule
