@@ -1101,6 +1101,7 @@ void AstClass::dump(std::ostream& str) const {
     Super::dump(str);
     if (isCovergroup()) str << " [CG]";
     if (isExtended()) str << " [EXT]";
+    if (implChecksDeferred()) str << " [IMPLDEFER]";
     if (isInterfaceClass()) str << " [IFCCLS]";
     if (isPrintedFrom()) str << " [PRINTED]";
     if (isVirtual()) str << " [VIRT]";
@@ -1116,6 +1117,7 @@ void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
     dumpJsonBoolFuncIf(str, isCovergroup);
     dumpJsonBoolFuncIf(str, isExtended);
+    dumpJsonBoolFuncIf(str, implChecksDeferred);
     dumpJsonBoolFuncIf(str, isInterfaceClass);
     dumpJsonBoolFuncIf(str, isPrintedFrom);
     dumpJsonBoolFuncIf(str, isVirtual);
