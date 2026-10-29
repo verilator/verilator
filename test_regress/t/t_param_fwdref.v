@@ -3,6 +3,7 @@
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
+// verilator lint_off USEBEFOREDECL
 //
 //  A parameter default can reference a parameter declared later, so they are
 //  resolved in dependency order, not declaration order. Each case is present
