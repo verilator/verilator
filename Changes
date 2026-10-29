@@ -42,6 +42,7 @@ Verilator 5.053 devel
 * Support DPI unpacked open array (#3198). [Julie Schwartz]
 * Support different pull directions on bit-selected net (#3988). [Al Grant]
 * Support unpacked structs in DPI-C calls (#4679) (#8828). [Marco Bartoli]
+* Support dynamic arrays and queues in DPI (#5863) (#8929). [Marco Bartoli]
 * Support VPI interface references (#8081). [Todd Strader]
 * Support nested array and associative array element member access in constraint 1/4 - pre-cleanup (#8237). [Kamil Danecki, Antmicro Ltd.]
 * Support unique constraint inside std::randomize (#8241). [Kornel Uriasz, Antmicro Ltd.]
@@ -354,6 +355,10 @@ Verilator 5.053 devel
 * Fix firing of change sensitivities at time 0 (#8911). [Geza Lore, Testorrent USA, Inc.]
 * Fix internal error on substituting aggregate values (#8923). [Geza Lore, Testorrent USA, Inc.]
 * Fix short-circuited calls writing output arguments (#8928). [Michael Wrighton]
+* Fix wired net losing constant drivers (#8937). [Michael Wrighton]
+* Fix unpacked array concatenation splicing multidimensional arrays (#8947). [Geza Lore, Testorrent USA, Inc.]
+* Fix splitting statements around calls of non-inlined functions (#8951). [Geza Lore, Testorrent USA, Inc.]
+* Fix trace enable mask with sparse dumpvars (#8955) (#8956). [Vladimir Silyaev]
 
 
 Verilator 5.052 2026-09-05

@@ -12,7 +12,11 @@
 module t;
 
   typedef int ai3_t[1:3];
-  typedef enum logic [1:0] {E0, E1, E2} enum_t;
+  typedef enum logic [1:0] {
+    E0,
+    E1,
+    E2
+  } enum_t;
   ai3_t a3;
   int a9[1:9];
 
