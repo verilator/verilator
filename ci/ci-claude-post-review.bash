@@ -21,6 +21,13 @@ COMMENTS_FILE="${RUNNER_TEMP}/claude-review.json"
 
 PR_NUMBER=$(jq -r .issue.number "${GITHUB_EVENT_PATH}")
 
-jq '{event: "COMMENT", comments: .}
-    + if . == [] then {body: "No issues found."} else {} end' "${COMMENTS_FILE}" \
+# Nothing to say, so post nothing and mark the pull request as passing,
+# otherwise clear any mark left by an earlier review
+if [ "$(jq length "${COMMENTS_FILE}")" -eq 0 ]; then
+  gh pr edit "${PR_NUMBER}" --add-label "pr:claude-pass"
+  exit 0
+fi
+gh pr edit "${PR_NUMBER}" --remove-label "pr:claude-pass"
+
+jq '{event: "COMMENT", comments: .}' "${COMMENTS_FILE}" \
   | gh api --method POST "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" --input -
