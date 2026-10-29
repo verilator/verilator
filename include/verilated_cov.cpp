@@ -52,6 +52,9 @@ public:  // But only local to this file
     // MEMBERS
     int m_keys[VerilatedCovConst::MAX_KEYS];  // Key
     int m_vals[VerilatedCovConst::MAX_KEYS];  // Value for specified key
+    const void* m_weightObjectp
+        = nullptr;  // Runtime coverage object, if this is a covergroup item
+    int32_t (*m_weightFuncp)(const void*) = nullptr;  // Reads that object's current weight
     // CONSTRUCTORS
     // Derived classes should call zero() in their constructor
     VerilatedCovImpItem() {
@@ -369,6 +372,11 @@ public:
             std::string name;
             std::string hier;
             bool per_instance = false;
+            bool hasWeight = false;
+            const std::string dynamicWeight
+                = itemp->m_weightFuncp
+                      ? std::to_string(itemp->m_weightFuncp(itemp->m_weightObjectp))
+                      : std::string{};
             if (m_forcePerInstance) per_instance = true;
 
             for (int i = 0; i < VerilatedCovConst::MAX_KEYS; ++i) {
@@ -382,6 +390,11 @@ public:
                     if (key == VL_CIK_HIER) {
                         hier = val;
                     } else {
+                        if (key == VL_CIK_WEIGHT && itemp->m_weightFuncp) {
+                            hasWeight = true;
+                            name += keyValueFormatter(key, dynamicWeight);
+                            continue;
+                        }
                         // Print it
                         if (key == "page") {
                             const std::string type = val.substr(2, val.find('/') - 2);
@@ -390,6 +403,9 @@ public:
                         name += keyValueFormatter(key, val);
                     }
                 }
+            }
+            if (itemp->m_weightFuncp && !hasWeight && dynamicWeight != "1") {
+                name += keyValueFormatter(VL_CIK_WEIGHT, dynamicWeight);
             }
             if (per_instance) {  // Not collapsing hierarchies
                 name += keyValueFormatter(VL_CIK_HIER, hier);
@@ -443,6 +459,13 @@ void VerilatedCovContext::_inserti(uint32_t* itemp) VL_MT_SAFE {
 }
 void VerilatedCovContext::_inserti(uint64_t* itemp) VL_MT_SAFE {
     impp()->inserti(new VerilatedCoverItemSpec<uint64_t>{itemp});
+}
+void VerilatedCovContext::_inserti(uint32_t* itemp, const void* weightObjectp,
+                                   int32_t (*weightFuncp)(const void*)) VL_MT_SAFE {
+    auto* const covp = new VerilatedCoverItemSpec<uint32_t>{itemp};
+    covp->m_weightObjectp = weightObjectp;
+    covp->m_weightFuncp = weightFuncp;
+    impp()->inserti(covp);
 }
 void VerilatedCovContext::_insertf(const char* filename, int lineno) VL_MT_SAFE {
     impp()->insertf(filename, lineno);

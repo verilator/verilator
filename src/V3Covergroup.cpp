@@ -472,15 +472,34 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // Configure an item's option.weight, its weight in instance coverage (IEEE 1800-2023
     // 19.11), and, if the covergroup may merge its instances, its type_option.weight, its
     // weight in type coverage then (19.11.3).
-    void generateItemWeight(FileLine* fl, AstVar* itemVarp, AstNode* optionsp) {
+    void lendItemWeight(FileLine* fl, AstNodeFuncCovItem* itemp, AstVar* itemVarp,
+                        AstNode* optionsp) {
+        FileLine* weightFl = fl;
+        for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
+            const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
+            if (optp->optType() == VCoverOptionType::WEIGHT && !optp->typeOption()) {
+                weightFl = optp->fileline();
+                break;
+            }
+        }
+        // Keep the runtime item linked to its real option.weight member.  Procedural writes then
+        // update coverage without a special assignment rewrite.
+        AstCExpr* const weightAddrp = new AstCExpr{fl, "&"};
+        weightAddrp->add(newOptionSel(fl, itemp->optionVarp(), "weight", VAccess::READ));
+        m_constructorp->addStmtsp(itemCall(fl, itemVarp, VCMethod::COVERGROUP_LEND_WEIGHT,
+                                           {weightAddrp, fileLineDebug(weightFl)})
+                                      ->makeStmt());
+    }
+
+    void generateItemWeight(FileLine* fl, AstNodeFuncCovItem* itemp, AstVar* itemVarp,
+                            AstNode* optionsp) {
         for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
             if (!(optp->optType() == VCoverOptionType::WEIGHT)) continue;
             if (!optp->typeOption()) {
-                m_constructorp->addStmtsp(
-                    itemCall(fl, itemVarp, VCMethod::COVERGROUP_WEIGHT,
-                             {optp->valuep()->cloneTree(false), fileLineDebug(optp->fileline())})
-                        ->makeStmt());
+                m_constructorp->addStmtsp(new AstAssign{
+                    fl, newOptionSel(fl, itemp->optionVarp(), "weight", VAccess::WRITE),
+                    optp->valuep()->cloneTree(false)});
             } else if (m_cgMayMerge) {
                 // V3Width left type_option.weight a non-negative constant
                 m_constructorp->addStmtsp(itemCall(fl, itemVarp, VCMethod::COVERGROUP_TYPE_WEIGHT,
@@ -590,7 +609,6 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         for (AstCoverCross* crossp : m_coverCrosses) {
             generateItemCoverage(crossp, generateCrossCode(crossp));
         }
-
         // Every cross has been built, so runtime points only need their exclusions from here.
         for (AstCoverpoint* const cpp : m_coverpoints) {
             if (!m_runtimePoints.count(cpp)) continue;
@@ -2284,7 +2302,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_cpBins.at(cpVarp).crossed = crossFed;
         // Create the runtime in the instance node first; everything below configures it.
         m_constructorp->addStmtsp(makeItemCreate(fl, cpVarp, VCMethod::COVERGROUP_ADD_COVERPOINT));
-        generateItemWeight(fl, cpVarp, coverpointp->optionsp());
+        generateItemWeight(fl, coverpointp, cpVarp, coverpointp->optionsp());
+        lendItemWeight(fl, coverpointp, cpVarp, coverpointp->optionsp());
 
         // A cross reads this coverpoint's hit list, so clear it at the start of the
         // coverpoint's sample() contribution (before any incrementBin appends to it), even
@@ -2500,7 +2519,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                          {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
                           ctext(fl, quoted(page)),
                           cnum(fl, itemDatabaseWeight(coverpointp->optionsp())),
-                          cnum(fl, m_cgTypeWeight)})
+                          cnum(fl, m_cgTypeWeight),
+                          m_cgMergeInstances
+                              ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
+                              : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}})})
                     ->makeStmt());
         }
     }
@@ -3871,7 +3893,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         m_constructorp->addStmtsp(makeItemCreate(fl, cxVarp,
                                                  dynamic ? VCMethod::COVERGROUP_ADD_CROSS_DYN
                                                          : VCMethod::COVERGROUP_ADD_CROSS));
-        generateItemWeight(fl, cxVarp, crossp->optionsp());
+        generateItemWeight(fl, crossp, cxVarp, crossp->optionsp());
+        lendItemWeight(fl, crossp, cxVarp, crossp->optionsp());
         int atLeastValue;
         int autoBinMax;  // Not a cross option
         extractItemOptions(crossp->optionsp(), atLeastValue, autoBinMax);
@@ -3895,12 +3918,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (v3Global.opt.coverage()) {
             const std::string page
                 = VIdProtect::protectIf("v_covergroup/" + m_covergroupName, prot);
-            m_constructorp->addStmtsp(itemCall(fl, cxVarp, VCMethod::COVERGROUP_REGISTER_BINS,
-                                               {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"),
-                                                ctext(fl, quoted(page)),
-                                                cnum(fl, itemDatabaseWeight(crossp->optionsp())),
-                                                cnum(fl, m_cgTypeWeight)})
-                                          ->makeStmt());
+            m_constructorp->addStmtsp(
+                itemCall(
+                    fl, cxVarp, VCMethod::COVERGROUP_REGISTER_BINS,
+                    {ctext(fl, "vlSymsp->_vm_contextp__->coveragep()"), ctext(fl, quoted(page)),
+                     cnum(fl, itemDatabaseWeight(crossp->optionsp())), cnum(fl, m_cgTypeWeight),
+                     m_cgMergeInstances
+                         ? static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitTrue{}})
+                         : static_cast<AstNodeExpr*>(new AstConst{fl, AstConst::BitFalse{}})})
+                    ->makeStmt());
         }
 
         // sample(): after all coverpoints have sampled (cross loop runs after coverpoint loop).
