@@ -381,6 +381,11 @@ class SplitVisitor final : public VNVisitor {
         m_noSplitWhy = "JumpGo";
     }
 
+    void visit(AstNodeCCall*) override {
+        if (!m_graphp || m_noSplitWhy) return;
+        m_noSplitWhy = "CCall";
+    }
+
     void visit(AstVarRef* nodep) override {
         if (!m_graphp || m_noSplitWhy) return;
         UASSERT_OBJ(!m_stmtStackps.empty(), nodep, "Not under a statement");

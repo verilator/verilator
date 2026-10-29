@@ -6304,6 +6304,12 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(elemDefaultp), elemDefaultp);
         return valuep;
     }
+    // Return dtypep as an unpacked array if its elements are of type elemDtp, else nullptr.
+    static const AstUnpackArrayDType* spliceArrayDTypep(const AstNodeDType* dtypep,
+                                                        const AstNodeDType* elemDtp) {
+        const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
+        return arrayp && arrayp->subDTypep()->similarDType(elemDtp) ? arrayp : nullptr;
+    }
     // An unpacked array concatenation, with each item an element, or an array of the elements
     // spliced in (IEEE 1800-2023 10.10)
     void patternConcatArray(AstPattern* nodep, AstUnpackArrayDType* arrayDtp) {
@@ -6317,9 +6323,8 @@ class WidthVisitor final : public VNVisitor {
             patp->dtypep(arrayDtp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
             const uint64_t index = range.ascending() ? entn : elements - 1 - entn;
-            const AstUnpackArrayDType* const spliceDtp
-                = VN_CAST(valuep->dtypep()->skipRefp(), UnpackArrayDType);
-            if (spliceDtp && spliceDtp->subDTypep()->similarDType(arrayDtp->subDTypep())) {
+            if (const AstUnpackArrayDType* const spliceDtp
+                = spliceArrayDTypep(valuep->dtypep(), arrayDtp->subDTypep())) {
                 entn += spliceDtp->elementsConst();
                 newp->spliceValues(index, valuep);
                 continue;
@@ -6376,9 +6381,8 @@ class WidthVisitor final : public VNVisitor {
                 patp->dtypep(arrayDtp->subDTypep());
                 valuep = patternMemberValueIterate(patp);
                 // Only an unpacked array concatenation splices in arrays
-                const AstUnpackArrayDType* const memberDtp
-                    = VN_CAST(valuep->dtypep()->skipRefp(), UnpackArrayDType);
-                if (memberDtp && memberDtp->subDTypep()->similarDType(arrayDtp->subDTypep())) {
+                if (const AstUnpackArrayDType* const memberDtp
+                    = spliceArrayDTypep(valuep->dtypep(), arrayDtp->subDTypep())) {
                     valuep->v3error("Assignment pattern member is an array of the elements, not"
                                     " an element (IEEE 1800-2023 10.9.1)"
                                     << warnDTypes(valuep, arrayDtp->subDTypep(), memberDtp,
@@ -6748,7 +6752,13 @@ class WidthVisitor final : public VNVisitor {
                     "PatMember value should be singular w/replicates removed");
         // Need to propagate assignment type downwards, even on prelim
         userIterateChildren(nodep, WidthVP{nodep->dtypep(), PRELIM}.p());
-        iterateCheck(nodep, "Pattern value", nodep->lhssp(), ASSIGN, FINAL, vdtypep, EXTEND_LHS);
+        // An array of the elements in an unpacked array concatenation is spliced in, so is
+        // checked against its own type
+        AstNodeDType* const expDTypep
+            = nodep->isConcat() && spliceArrayDTypep(nodep->lhssp()->dtypep(), vdtypep)
+                  ? nodep->lhssp()->dtypep()
+                  : vdtypep;
+        iterateCheck(nodep, "Pattern value", nodep->lhssp(), ASSIGN, FINAL, expDTypep, EXTEND_LHS);
     }
     int visitPatMemberRep(AstPatMember* nodep) {
         uint32_t times = 1;
