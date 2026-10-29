@@ -37,7 +37,19 @@ endpackage
 package pkg_e;
   import pkg_b::*;
   import pkg_a::*;
+  function automatic int f_shadow();
+    int SHARED;  // Looking for an upper declaration does not fix SHARED to pkg_b's
+    SHARED = 0;
+    return SHARED;
+  endfunction
   export pkg_a::SHARED;  // Exports pkg_a's, though pkg_b is wildcard imported first
+endpackage
+
+package pkg_f;
+  import pkg_c::*;
+  export pkg_a::ONLY_A;  // Declared in pkg_a, imported through pkg_c's export
+  import pkg_b::ONLY_B;
+  export pkg_b::ONLY_B;
 endpackage
 
 interface ifc;
@@ -54,6 +66,23 @@ module sub_ifc (
     `checkd(i.ONLY_A, 1);
     `checkd(i.get_a(), 4);
     `checkd(m.ONLY_A, 1);
+  end
+endmodule
+
+module sub_named;
+  import pkg_a::*;
+  import pkg_b::*;
+  function automatic int f_shadow();
+    int SHARED;  // Looking for an upper declaration does not fix SHARED to pkg_a's
+    SHARED = 0;
+    return SHARED;
+  endfunction
+  import pkg_b::SHARED;  // Explicit import hides the wildcard imports
+  import pkg_a::ONLY_A;
+  import pkg_c::ONLY_A;  // Same declaration again is harmless
+  initial begin
+    `checkd(SHARED, 20);
+    `checkd(ONLY_A, 1);
   end
 endmodule
 
@@ -79,6 +108,7 @@ module t;
       .m(u_ifc)
   );
 
+  sub_named u_sub_named ();
   sub #(.W(1)) u_sub1 ();
   sub #(.W(2)) u_sub2 ();
 
@@ -90,6 +120,8 @@ module t;
     `checkd(get_a(), 4);
     `checkd(pkg_c::SHARED, 2);  // Re-exported from pkg_a
     `checkd(pkg_e::SHARED, 2);
+    `checkd(pkg_f::ONLY_A, 1);
+    `checkd(pkg_f::ONLY_B, 10);
     begin
       // Wildcard import in an unnamed block
       import pkg_d::*;

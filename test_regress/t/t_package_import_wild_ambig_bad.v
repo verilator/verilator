@@ -19,6 +19,9 @@ package pkg1;
   class C;
     static int sx;
   endclass
+  function automatic int g();
+    return 0;
+  endfunction
 endpackage
 
 package pkg2;
@@ -36,6 +39,9 @@ package pkg2;
   class C;
     static int sx;
   endclass
+  function automatic int g();
+    return 0;
+  endfunction
   localparam ONLY2 = 3;
 endpackage
 
@@ -50,6 +56,7 @@ module t;
   import pkg3::*;
 
   word my_v;  // <--- Error: ambiguous
+  export "DPI-C" function g;  // <--- Error: ambiguous
   int ok = ONLY2;  // Same declaration through pkg2 and pkg3 is not ambiguous
 
   initial begin

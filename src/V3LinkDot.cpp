@@ -740,10 +740,10 @@ public:
                                                     << ") <- se" << srcp << " " << srcp->nodep());
                 // srcp should be an interface reference pointing to the interface we want to
                 // import
-                lhsp->importFromIface(symsp(), srcp);
+                lhsp->importFromIface(srcp);
                 // Allow access to objects not permissible to be listed in a modport
                 if (VN_IS(srcp->nodep(), Modport)) {
-                    lhsp->importFromIface(symsp(), srcp->parentp(), true);
+                    lhsp->importFromIface(srcp->parentp(), true);
                 }
             }
             // m_scopeAliasMap[samn].clear();  // Done with it, but put into debug file
@@ -1177,15 +1177,16 @@ class LinkDotFindVisitor final : public VNVisitor {
 
     // METHODS
     void checkExports() {
-        // An exported name must be imported from the package named, so a missing or local
-        // declaration is an error (IEEE 1800-2023 26.6), even if declared after the export
+        // An exported name must be imported from the package named when exported, so a
+        // missing or local declaration is an error (IEEE 1800-2023 26.6), even if declared
+        // after the export
         for (const auto& exportSym : m_exports) {
             const AstPackageExport* const nodep = exportSym.first;
             const VSymEnt* const srcp
                 = m_statep->getNodeSym(nodep->packagep())->findIdFlat(nodep->name());
             if (!srcp) continue;  // Already reported as not found
             const VSymEnt* const foundp = exportSym.second->findIdFlat(nodep->name());
-            if (foundp && foundp->nodep() == srcp->nodep()) continue;
+            if (foundp && foundp->nodep() == srcp->nodep() && foundp->exported()) continue;
             const string nameQ
                 = "'" + nodep->packagep()->prettyName() + "::" + nodep->prettyName() + "'";
             if (!foundp || foundp->imported()) {
@@ -2235,7 +2236,7 @@ class LinkDotFindVisitor final : public VNVisitor {
     }
     void visit(AstPackageExportStarStar* nodep) override {  // FindVisitor::
         UINFO(4, "  Link: " << nodep);
-        m_curSymp->exportStarStar(m_statep->symsp());
+        m_curSymp->exportStarStar();
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
 
@@ -6649,6 +6650,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         iterateChildren(nodep);
         checkNoDot(nodep);
         VSymEnt* const foundp = m_curSymp->findIdFallback(nodep->name());
+        LinkDotState::checkAmbiguousImport(nodep, foundp);
         AstNodeFTask* const taskp = foundp ? VN_AS(foundp->nodep(), NodeFTask) : nullptr;
         if (!taskp) {
             nodep->v3error(
@@ -6860,7 +6862,9 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     state.dumpSelf("linkdot-preresolve");
     const LinkDotResolveVisitor visitor{rootp, &state};
     state.dumpSelf("linkdot-done");
-    V3Stats::addStatSum("LinkDot, Imported symbols", state.symsp()->importedCount());
+    if (v3Global.opt.stats()) {
+        V3Stats::addStatSum("LinkDot, Imported symbols", state.symsp()->importedCount());
+    }
 }
 
 void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {
