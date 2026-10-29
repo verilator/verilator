@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_assert_disabled.v"
 
 test.compile(verilator_flags2=['--no-assert', '--timing'])
 

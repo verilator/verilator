@@ -11,14 +11,9 @@ import vltest_bootstrap
 
 test.scenarios('vlt')
 
-test.top_filename = "t/t_sched_ico_change_detect_input_assigned.v"
-
 test.compile(make_top_shell=False,
              make_main=False,
-             verilator_flags2=[
-                 "--exe", "--stats", "-Wno-ASSIGNIN",
-                 "t/t_sched_ico_change_detect_input_assigned.cpp"
-             ])
+             verilator_flags2=["--exe", "--stats", "-Wno-ASSIGNIN", test.pli_filename])
 
 test.execute()
 

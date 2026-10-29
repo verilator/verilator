@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_class_dead_varscope_uaf.v"
 
 test.compile(verilator_flags2=['--binary', '--debug'])
 

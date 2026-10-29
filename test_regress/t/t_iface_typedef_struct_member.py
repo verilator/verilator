@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_iface_typedef_struct_member.v"
 
 test.compile(v_flags2=["--binary"])
 test.execute()
