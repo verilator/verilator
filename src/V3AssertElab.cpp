@@ -51,6 +51,7 @@
 #include "V3AssertElab.h"
 
 #include "V3Assert.h"
+#include "V3Const.h"
 #include "V3LinkLValue.h"
 #include "V3Stats.h"
 #include "V3Task.h"
@@ -134,6 +135,58 @@ class AssertElabVisitor final : public VNVisitor {
     VDouble0 m_statSeqInlined;  // Statistic tracking
 
     // METHODS
+    // Fold and validate weak eventually bounds after any formal arguments are substituted.
+    static bool checkSvaWeakEventuallyBounds(AstEventually* nodep) {
+        UASSERT_OBJ(!nodep->isStrong(), nodep, "Should be weak");
+        if (VN_IS(nodep->loBoundp(), Unbounded) || VN_IS(nodep->hiBoundp(), Unbounded)) {
+            nodep->v3error("The range for a weak eventually must be bounded (IEEE "
+                           "1800-2023 16.12.13)");
+            return false;
+        }
+        V3Const::constifyParamsEdit(nodep->loBoundp());
+        V3Const::constifyParamsEdit(nodep->hiBoundp());
+        const AstConst* const loConstp = VN_CAST(nodep->loBoundp(), Const);
+        const AstConst* const hiConstp = VN_CAST(nodep->hiBoundp(), Const);
+        if (!loConstp) {
+            nodep->v3error("eventually range low bound must be a constant expression"
+                           " (IEEE 1800-2023 16.12.13)");
+        } else {
+            if (loConstp->num().isOpaque()) {
+                nodep->loBoundp()->v3error("eventually range low bound must be integral"
+                                           " (IEEE 1800-2023 16.12.13)");
+                return false;
+            }
+            if (loConstp->dtypep()->isSigned() && loConstp->num().isNegative()) {
+                nodep->loBoundp()->v3error("eventually range low bound must be non-negative"
+                                           " (IEEE 1800-2023 16.12.13)");
+                return false;
+            }
+            if (!V3AssertCommon::checkSvaValueLimit(nodep, loConstp,
+                                                    "eventually range low bound value")) {
+                return false;
+            }
+        }
+        if (!hiConstp) {
+            nodep->v3error("eventually range high bound must be a constant expression"
+                           " (IEEE 1800-2023 16.12.13)");
+        } else {
+            if (hiConstp->num().isOpaque()) {
+                nodep->hiBoundp()->v3error("eventually range high bound must be integral"
+                                           " (IEEE 1800-2023 16.12.13)");
+                return false;
+            }
+            if (!V3AssertCommon::checkSvaValueLimit(nodep, hiConstp,
+                                                    "eventually high bound value")) {
+                return false;
+            }
+        }
+        if (loConstp && hiConstp && hiConstp->num().isLt(loConstp->num())) {
+            nodep->hiBoundp()->v3error("eventually range high bound must be >= low bound"
+                                       " (IEEE 1800-2023 16.12.13)");
+            return false;
+        }
+        return loConstp && hiConstp;
+    }
     // The property instantiated as the whole of specp, if any
     static const AstProperty* instancedProperty(const AstPropSpec* specp) {
         const AstSchemaRef* const schemaRefp = VN_CAST(specp->propp(), SchemaRef);
@@ -292,6 +345,14 @@ class AssertElabVisitor final : public VNVisitor {
         VL_RESTORER(m_inPropExpr);
         m_inPropExpr = true;
         iterateAndNextNull(nodep->propp());
+    }
+    void visit(AstEventually* nodep) override {
+        if (!nodep->isStrong() && !checkSvaWeakEventuallyBounds(nodep)) {
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
+        iterateChildren(nodep);
     }
     void visit(AstSenItem* nodep) override {
         // A clocking event inside a property expression has an expression condition

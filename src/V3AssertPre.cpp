@@ -945,7 +945,19 @@ private:
         sizep->dtypep(refp->findBasicDType(VBasicDTypeKwd::UINT32));
         return sizep;
     }
-    void visit(AstSEventually* nodep) override {
+    void visit(AstEventually* nodep) override {
+        if (nodep->exprp()->isMultiCycleSva() || !nodep->isStrong()) {
+            if (nodep->exprp()->isMultiCycleSva()) {
+                const char* const keyword = nodep->isStrong() ? "s_eventually" : "eventually";
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: property/sequence operator inside "s + keyword);
+            } else {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: eventually[] (in property expression)");
+            }
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
         UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
 
         AstSenTree* const sentreep = newSenTree(nodep);

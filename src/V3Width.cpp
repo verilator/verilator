@@ -2019,6 +2019,34 @@ class WidthVisitor final : public VNVisitor {
             nodep->dtypeSetBit();
         }
     }
+    void visit(AstEventually* nodep) override {
+        // IEEE 1800-2023 16.12.13
+        assertAtExpr(nodep);
+        if (!m_vup->prelim()) return;
+
+        nodep->dtypeSetBit();
+
+        if (nodep->isStrong()) {
+            if (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue()) {
+                nodep->v3warn(E_NOTIMING, "s_eventually requires --timing");
+                nodep->replaceWith(
+                    new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 1, 0});
+                VL_DO_DANGLING(nodep->deleteTree(), nodep);
+                return;
+            }
+            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
+            return;  // Ranged s_eventually is rejected by the parser.
+        }
+
+        userIterateAndNext(nodep->exprp(), WidthVP{SELF, BOTH}.p());
+
+        if (!VN_IS(nodep->loBoundp(), Unbounded)) {
+            userIterateAndNext(nodep->loBoundp(), WidthVP{SELF, BOTH}.p());
+        }
+        if (!VN_IS(nodep->hiBoundp(), Unbounded)) {
+            userIterateAndNext(nodep->hiBoundp(), WidthVP{SELF, BOTH}.p());
+        }
+    }
     void visit(AstRising* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
@@ -2153,18 +2181,6 @@ class WidthVisitor final : public VNVisitor {
                 nodep->dtypeSetInt();  // IEEE 1800-2023 20.14.1
             }
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
-        }
-    }
-    void visit(AstSEventually* nodep) override {
-        if (v3Global.opt.timing().isSetFalse() || !v3Global.opt.timing().isSetTrue()) {
-            nodep->v3warn(E_NOTIMING, "s_eventually requires --timing");
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 1, 0});
-            VL_DO_DANGLING(nodep->deleteTree(), nodep);
-            return;
-        }
-        if (m_vup->prelim()) {
-            iterateCheckBool(nodep, "exprp", nodep->exprp(), BOTH);
-            nodep->dtypeSetBit();
         }
     }
     void visit(AstSGotoRep* nodep) override {

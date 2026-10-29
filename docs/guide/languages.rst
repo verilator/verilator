@@ -351,6 +351,11 @@ Assertions
 Verilator partially supports assertions and assertion-driven functional
 coverage.
 
+Weak ``eventually [lo:hi]`` properties are parsed and their bounds are
+validated, but their simulation remains unsupported. Bounds must be
+integral constant expressions. Bounds that depend on property formal
+arguments are checked after substituting actual arguments at each instance.
+
 Coverage
 --------
 

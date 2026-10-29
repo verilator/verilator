@@ -1913,6 +1913,14 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
         return new AstEqWild{fl, lhsp, rhsp};
     }
 }
+void AstEventually::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (isStrong()) str << " [STRONG]";
+}
+void AstEventually::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, isStrong);
+    dumpJsonGen(str);
+}
 AstExecGraph::AstExecGraph(FileLine* fl, const string& name, AstVarScope* trigVscp) VL_MT_DISABLED
     : ASTGEN_SUPER_ExecGraph(fl),
       m_depGraphp{new V3Graph},

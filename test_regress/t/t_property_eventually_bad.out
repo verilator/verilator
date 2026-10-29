@@ -1,0 +1,66 @@
+%Error: t/t_property_eventually_bad.v:15:49: Expecting expression to be constant, but variable isn't const: 'b'
+                                           : ... note: In instance 't'
+   15 |   assert property (@(posedge clk) eventually[0: b] 1'b0);
+      |                                                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_property_eventually_bad.v:15:35: eventually range high bound must be a constant expression (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   15 |   assert property (@(posedge clk) eventually[0: b] 1'b0);
+      |                                   ^~~~~~~~~~
+%Error: t/t_property_eventually_bad.v:16:46: Expecting expression to be constant, but variable isn't const: 'a'
+                                           : ... note: In instance 't'
+   16 |   assert property (@(posedge clk) eventually[a: 3] 1'b0);
+      |                                              ^
+%Error: t/t_property_eventually_bad.v:16:35: eventually range low bound must be a constant expression (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   16 |   assert property (@(posedge clk) eventually[a: 3] 1'b0);
+      |                                   ^~~~~~~~~~
+%Error: t/t_property_eventually_bad.v:17:46: Expecting expression to be constant, but variable isn't const: 'a'
+                                           : ... note: In instance 't'
+   17 |   assert property (@(posedge clk) eventually[a: b] 1'b0);
+      |                                              ^
+%Error: t/t_property_eventually_bad.v:17:49: Expecting expression to be constant, but variable isn't const: 'b'
+                                           : ... note: In instance 't'
+   17 |   assert property (@(posedge clk) eventually[a: b] 1'b0);
+      |                                                 ^
+%Error: t/t_property_eventually_bad.v:17:35: eventually range low bound must be a constant expression (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   17 |   assert property (@(posedge clk) eventually[a: b] 1'b0);
+      |                                   ^~~~~~~~~~
+%Error: t/t_property_eventually_bad.v:17:35: eventually range high bound must be a constant expression (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   17 |   assert property (@(posedge clk) eventually[a: b] 1'b0);
+      |                                   ^~~~~~~~~~
+%Error: t/t_property_eventually_bad.v:18:35: The range for a weak eventually must be bounded (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   18 |   assert property (@(posedge clk) eventually[0: $] 1'b0);
+      |                                   ^~~~~~~~~~
+%Error: t/t_property_eventually_bad.v:19:46: eventually range low bound must be non-negative (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   19 |   assert property (@(posedge clk) eventually[-1: 5] 1'b0);
+      |                                              ^
+%Error: t/t_property_eventually_bad.v:20:46: eventually range low bound must be non-negative (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   20 |   assert property (@(posedge clk) eventually[-2: -3] 1'b0);
+      |                                              ^
+%Error: t/t_property_eventually_bad.v:21:49: eventually range high bound must be >= low bound (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   21 |   assert property (@(posedge clk) eventually[5: 0] 1'b0);
+      |                                                 ^
+%Error: t/t_property_eventually_bad.v:26:46: eventually range low bound must be integral (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   26 |   assert property (@(posedge clk) eventually[LO: 1] 1'b0);
+      |                                              ^~
+%Error: t/t_property_eventually_bad.v:27:49: eventually range high bound must be integral (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   27 |   assert property (@(posedge clk) eventually[0: HI] 1'b0);
+      |                                                 ^~
+%Error: t/t_property_eventually_bad.v:28:46: eventually range low bound must be integral (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   28 |   assert property (@(posedge clk) eventually[0.0: 1] 1'b0);
+      |                                              ^~~
+%Error: t/t_property_eventually_bad.v:29:49: eventually range high bound must be integral (IEEE 1800-2023 16.12.13)
+                                           : ... note: In instance 't'
+   29 |   assert property (@(posedge clk) eventually[0: 1.0] 1'b0);
+      |                                                 ^~~
+%Error: Exiting due to
