@@ -4943,7 +4943,9 @@ class WidthVisitor final : public VNVisitor {
             const AstNodeDType* const argDTypep = argp->dtypep();
             const bool isIntegralPair = keyDTypep->skipRefp()->isIntegralOrPacked()
                                         && argDTypep->skipRefp()->isIntegralOrPacked();
-            // Integral types are equivalent by size, state, and sign; others must match
+            // Integral types are equivalent by size, state, and sign; others must match.
+            // 13.5.2 requires ref arguments to be equivalent.
+            // (Commercial tools ignore the looser rule in 7.9.8)
             const bool isEquivalentArg = isIntegralPair ? isEquivalentDType(keyDTypep, argDTypep)
                                                         : keyDTypep->similarDType(argDTypep);
             if (!isEquivalentArg && !argp->fileline()->erroringOn()) {
@@ -4956,6 +4958,7 @@ class WidthVisitor final : public VNVisitor {
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
                 return;
             }
+            iterateCheckTyped(nodep, "argument", methodArg(nodep, 0), adtypep->keyDTypep(), FINAL);
             AstNodeExpr* const index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
             methodCallLValueRecurse(nodep, index_exprp, VAccess::READWRITE);
             newp

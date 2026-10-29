@@ -15,6 +15,12 @@ module t (
     input clk
 );
 
+  class Base;
+  endclass
+
+  class Derived extends Base;
+  endclass
+
   integer cyc = 0;
 
   integer i;
@@ -196,6 +202,29 @@ module t (
       ok = dict.last(a);
       if (a != 5) $stop;
       if (ok != 1) $stop;
+    end
+
+    begin  // Traversal methods accept arguments equivalent to the index type
+      int by_data[bit [31:0]];
+      int by_class[Base];
+      bit [3:0][7:0] equivalent_type;
+      bit [31:0] index_select[2];
+      Base base_handle;
+      Derived derived_handle;
+
+      by_data[5] = 1;
+      by_data[9] = 2;
+      i = by_data.first(equivalent_type);
+      `checkh(i, 1);
+      `checkh(equivalent_type, 5);
+      i = by_data.last(index_select[cyc+1]);
+      `checkh(i, 1);
+      `checkh(index_select[1], 9);
+      derived_handle = new;
+      by_class[derived_handle] = 1;
+      i = by_class.first(base_handle);
+      `checkh(i, 1);
+      if (base_handle != derived_handle) $stop;
     end
 
     begin  // Non-constant values whose expression is wider than the element
