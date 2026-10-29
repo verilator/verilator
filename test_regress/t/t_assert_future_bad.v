@@ -27,6 +27,15 @@ module t (
   assert property (@(posedge clk) 1 == 1)
   else $display("Future=%0d", $changing_gclk(a));
 
+  // Immediate assertion expressions are not property or sequence expressions
+  always @(posedge clk) begin
+    assert ($future_gclk(a) == a);
+    assume ($rising_gclk(a));
+    cover ($falling_gclk(a));
+    assert #0 ($steady_gclk(a));
+    assert final ($changing_gclk(a));
+  end
+
   initial $stop;
 
 endmodule

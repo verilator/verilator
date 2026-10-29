@@ -989,7 +989,10 @@ class AssertVisitor final : public VNVisitor {
         }
         if (m_beginp && nodep->name() == "") nodep->name(m_beginp->name());
 
-        { AssertDeFutureVisitor{nodep->propp(), m_modp, m_modPastNum++}; }
+        // An immediate or deferred assertion's expression is not a property or sequence
+        // expression, so a future value function there is left for visit(AstFuture) to
+        // reject (IEEE 1800-2023 16.9.4).
+        if (!nodep->immediate()) AssertDeFutureVisitor{nodep->propp(), m_modp, m_modPastNum++};
 
         iterateAndNextNull(nodep->sentreep());
         if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {

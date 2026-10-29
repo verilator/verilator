@@ -19,4 +19,24 @@
                                      : ... note: In instance 't'
    28 |   else $display("Future=%0d", $changing_gclk(a));
       |                               ^~~~~~~~~~~~~~
+%Error: t/t_assert_future_bad.v:32:13: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+                                     : ... note: In instance 't'
+   32 |     assert ($future_gclk(a) == a);
+      |             ^~~~~~~~~~~~
+%Error: t/t_assert_future_bad.v:33:13: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+                                     : ... note: In instance 't'
+   33 |     assume ($rising_gclk(a));
+      |             ^~~~~~~~~~~~
+%Error: t/t_assert_future_bad.v:34:12: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+                                     : ... note: In instance 't'
+   34 |     cover ($falling_gclk(a));
+      |            ^~~~~~~~~~~~~
+%Error: t/t_assert_future_bad.v:35:16: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+                                     : ... note: In instance 't'
+   35 |     assert #0 ($steady_gclk(a));
+      |                ^~~~~~~~~~~~
+%Error: t/t_assert_future_bad.v:36:19: Future sampled value function called outside property or sequence expression (IEEE 16.9.4)
+                                     : ... note: In instance 't'
+   36 |     assert final ($changing_gclk(a));
+      |                   ^~~~~~~~~~~~~~
 %Error: Exiting due to
