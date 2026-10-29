@@ -181,6 +181,36 @@ class C14;
   constraint c { frame == target[getIdx()]; }
 endclass
 
+// Same as C11, but the non-rand operand is a queue element instead of a
+// fixed-array element -- the rand-index-into-non-rand check has to see
+// through the queue's own 'at()' accessor the same way it does ArraySel.
+class C15;
+  rand int idx;
+  bit [7:0] cube[$][2];
+  rand bit [7:0] probe[2];
+  constraint ci { idx inside {[0:1]}; }
+  constraint c { probe == cube[idx]; }
+  function new();
+    cube = '{'{0, 0}, '{0, 0}};
+  endfunction
+endclass
+
+// Same as C14, but the impure index selects a queue element instead of a
+// fixed-array element.
+class C16;
+  rand bit [7:0] frame[2];
+  bit [7:0] target[$][2];
+  int calls;
+  function int getIdx();
+    calls++;
+    return 0;
+  endfunction
+  constraint c { frame == target[getIdx()]; }
+  function new();
+    target = '{'{0, 0}};
+  endfunction
+endclass
+
 module t;
   bit [7:0] hier_target[2][2];
 
@@ -201,6 +231,8 @@ module t;
     C12 obj12;
     C13 obj13;
     C14 obj14;
+    C15 obj15;
+    C16 obj16;
     obj1 = new;
     obj2 = new;
     obj3 = new;
@@ -217,6 +249,8 @@ module t;
     obj12 = new;
     obj13 = new;
     obj14 = new;
+    obj15 = new;
+    obj16 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
@@ -233,5 +267,7 @@ module t;
     if (obj12.randomize() == 0) $stop;
     if (obj13.randomize() == 0) $stop;
     if (obj14.randomize() == 0) $stop;
+    if (obj15.randomize() == 0) $stop;
+    if (obj16.randomize() == 0) $stop;
   end
 endmodule

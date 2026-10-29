@@ -2408,8 +2408,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
             return selChainRootVarp(selp->fromp());
         }
+        // ARRAY_AT_BACK ($-relative queue indexing) can't reach here: that
+        // syntax isn't accepted as a randomizable constraint expression at all.
         if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
-            if (cmethp->method() == VCMethod::ARRAY_AT) return selChainRootVarp(cmethp->fromp());
+            if (cmethp->method() == VCMethod::ARRAY_AT)  // LCOV_EXCL_BR_LINE
+                return selChainRootVarp(cmethp->fromp());
         }
         return nullptr;
     }
@@ -2420,7 +2423,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             return selChainIsRand(selp->fromp());
         }
         if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
-            if (cmethp->method() == VCMethod::ARRAY_AT) return selChainIsRand(cmethp->fromp());
+            if (cmethp->method() == VCMethod::ARRAY_AT)  // LCOV_EXCL_BR_LINE
+                return selChainIsRand(cmethp->fromp());
         }
         if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
             return selChainIsRand(sselp->fromp());
@@ -2436,7 +2440,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             return selp->bitp()->user1() || selChainHasRandIndex(selp->fromp());
         }
         if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
-            if (cmethp->method() == VCMethod::ARRAY_AT) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) {  // LCOV_EXCL_BR_LINE
                 return cmethp->pinsp()->user1() || selChainHasRandIndex(cmethp->fromp());
             }
         }
