@@ -1122,7 +1122,7 @@ public:
     }
     bool isPure() const VL_PURE {
         static constexpr bool PURE = true;
-            static constexpr bool values[] = {
+        static constexpr bool values[] = {
 #define VL_CMETHOD_PURE(id, method, pure, clean, awaitable, args) pure,
             FOR_EACH_CMETHOD(VL_CMETHOD_PURE)
 #undef VL_CMETHOD_PURE
