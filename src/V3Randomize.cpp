@@ -2629,23 +2629,19 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         AstNodeExpr* const idxp = nodep->bitp()->unlinkFrBack();
         const int elements = arrDtp->elementsConst();
-        AstNodeExpr* chainp = nullptr;
+        // Out-of-range idx reads as the element's default (IEEE 7.4.2), not arr[elements-1].
+        AstNodeExpr* chainp = new AstConst{fl, AstConst::WidthedValue{}, subp->width(), 0};
         // 0-based k, not arrDtp->lo()+k: idxp is already bias-adjusted.
         for (int k = elements - 1; k >= 0; --k) {
             AstArraySel* const elemp = new AstArraySel{
                 fl, nodep->fromp()->cloneTreePure(false),
                 new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(k)}};
-            if (!chainp) {
-                chainp = elemp;
-            } else {
-                AstEq* const eqp
-                    = new AstEq{fl, idxp->cloneTreePure(false),
-                                new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
-                                             static_cast<uint32_t>(k)}};
-                eqp->user1(true);  // else editFormat() folds this to idxp's stale value
-                chainp = new AstCond{fl, eqp, elemp, chainp};
-                chainp->user1(true);
-            }
+            AstEq* const eqp = new AstEq{fl, idxp->cloneTreePure(false),
+                                         new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
+                                                      static_cast<uint32_t>(k)}};
+            eqp->user1(true);  // else editFormat() folds this to idxp's stale value
+            chainp = new AstCond{fl, eqp, elemp, chainp};
+            chainp->user1(true);
         }
         VL_DO_DANGLING(idxp->deleteTree(), idxp);
         nodep->replaceWith(chainp);

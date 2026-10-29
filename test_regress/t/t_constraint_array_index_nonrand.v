@@ -112,6 +112,31 @@ class RandQueueRandIndex;
   constraint c_data { data[idx] == 1; }
 endclass
 
+// An out-of-range idx reads as 0 (IEEE 1800-2023 7.4.2), not as
+// used[used.size()-1] -- idx == used.size() is only satisfiable if the
+// solver models that default correctly.
+class OutOfBoundsIndex;
+  rand int idx;
+  bit used[3] = '{1, 1, 1};
+  constraint c { idx == 3; used[idx] == 0; }
+endclass
+
+// Same, but idx runs negative instead of past the top.
+class OutOfBoundsIndexNegative;
+  rand int idx;
+  bit used[3] = '{1, 1, 1};
+  constraint c { idx == -1; used[idx] == 0; }
+endclass
+
+// Same idea on a non-zero-based declared range, where idx is
+// bias-adjusted before comparison -- the default must still apply once
+// idx falls outside [1:3], not just outside [0:2].
+class OutOfBoundsIndexNonZeroBase;
+  rand int idx;
+  bit used[1:3] = '{1, 1, 1};
+  constraint c { idx == 4; used[idx] == 0; }
+endclass
+
 module t;
   initial begin
     UniqueIdPool obj;
@@ -124,6 +149,9 @@ module t;
     RandMultidimRandIndexOuterMinimal mrand_outer_min_obj;
     RandMultidimRandIndexDeep mrand_deep_obj;
     RandQueueRandIndex rq_obj;
+    OutOfBoundsIndex oob_obj;
+    OutOfBoundsIndexNegative oob_neg_obj;
+    OutOfBoundsIndexNonZeroBase oob_nzb_obj;
     bit [15:0] seen;
     int randomize_result;
 
@@ -208,6 +236,21 @@ module t;
       `checkd(randomize_result, 1);
       `checkd(rq_obj.data[rq_obj.idx], 1'b1);
     end
+
+    oob_obj = new;
+    randomize_result = oob_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(oob_obj.idx, 3);
+
+    oob_neg_obj = new;
+    randomize_result = oob_neg_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(oob_neg_obj.idx, -1);
+
+    oob_nzb_obj = new;
+    randomize_result = oob_nzb_obj.randomize();
+    `checkd(randomize_result, 1);
+    `checkd(oob_nzb_obj.idx, 4);
 
     mobj = new;
     for (int i = 0; i < 16; i++) begin
