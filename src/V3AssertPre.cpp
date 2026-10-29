@@ -937,7 +937,12 @@ private:
 
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
-        if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep, nullptr, nodep));
+        if (!nodep->immediate()) {
+            nodep->sentreep(newSenTree(nodep, nullptr, nodep));
+            if (!nodep->sentreep()->sensesp()) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            }
+        }
     }
     void visit(AstFalling* nodep) override {
         if (nodep->user1SetOnce()) return;

@@ -4,19 +4,141 @@
     9 |   assert property (a);
       |   ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_assert_unclocked_bad.v:10:22: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+%Error: t/t_assert_unclocked_bad.v:10:23: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                         : ... note: In instance 't'
                                         : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   10 |   assert property (a |=> b);
-      |                      ^~~
+   10 |   assert property ((a [* 2]) implies (a [* 2]));
+      |                       ^~
+%Error: t/t_assert_unclocked_bad.v:10:41: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   10 |   assert property ((a [* 2]) implies (a [* 2]));
+      |                                         ^~
 %Error: t/t_assert_unclocked_bad.v:10:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                        : ... note: In instance 't'
                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   10 |   assert property (a |=> b);
+   10 |   assert property ((a [* 2]) implies (a [* 2]));
       |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:11:21: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   11 |   assert property ((s_eventually a) implies (s_eventually a));
+      |                     ^~~~~~~~~~~~
+%Error: t/t_assert_unclocked_bad.v:11:46: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   11 |   assert property ((s_eventually a) implies (s_eventually a));
+      |                                              ^~~~~~~~~~~~
 %Error: t/t_assert_unclocked_bad.v:11:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
                                        : ... note: In instance 't'
                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
-   11 |   cover property (a);
+   11 |   assert property ((s_eventually a) implies (s_eventually a));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:12:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   12 |   assert property ((a s_until b) implies (a s_until b));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:13:23: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   13 |   assert property ((a until_with b) implies (a until_with b));
+      |                       ^~~~~~~~~~
+%Error: t/t_assert_unclocked_bad.v:13:48: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   13 |   assert property ((a until_with b) implies (a until_with b));
+      |                                                ^~~~~~~~~~
+%Error: t/t_assert_unclocked_bad.v:13:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   13 |   assert property ((a until_with b) implies (a until_with b));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:14:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   14 |   assert property ((a s_until_with b) implies (a s_until_with b));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:15:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   15 |   assert property ((a |-> b) implies (a |-> b));
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_unclocked_bad.v:16:23: Unsupported: followed-by (#-# / #=#) nested inside property operator (iff/implies/or) (IEEE 1800-2023 16.12.9)
+                                                    : ... note: In instance 't'
+   16 |   assert property ((a #-# b) implies (a #-# b));
+      |                       ^~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_unclocked_bad.v:16:41: Unsupported: followed-by (#-# / #=#) nested inside property operator (iff/implies/or) (IEEE 1800-2023 16.12.9)
+                                                    : ... note: In instance 't'
+   16 |   assert property ((a #-# b) implies (a #-# b));
+      |                                         ^~~
+%Error: t/t_assert_unclocked_bad.v:16:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   16 |   assert property ((a #-# b) implies (a #-# b));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:17:21: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   17 |   assert property ((s_eventually a) iff (s_eventually a));
+      |                     ^~~~~~~~~~~~
+%Error: t/t_assert_unclocked_bad.v:17:42: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   17 |   assert property ((s_eventually a) iff (s_eventually a));
+      |                                          ^~~~~~~~~~~~
+%Error: t/t_assert_unclocked_bad.v:17:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   17 |   assert property ((s_eventually a) iff (s_eventually a));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:18:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   18 |   assert property ((a s_until b) iff (a s_until b));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:19:23: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   19 |   assert property ((a until_with b) iff (a until_with b));
+      |                       ^~~~~~~~~~
+%Error: t/t_assert_unclocked_bad.v:19:44: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                        : ... note: In instance 't'
+                                        : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   19 |   assert property ((a until_with b) iff (a until_with b));
+      |                                            ^~~~~~~~~~
+%Error: t/t_assert_unclocked_bad.v:19:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   19 |   assert property ((a until_with b) iff (a until_with b));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:20:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   20 |   assert property ((a s_until_with b) iff (a s_until_with b));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:21:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   21 |   assert property ((a |-> b) iff (a |-> b));
+      |   ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_unclocked_bad.v:22:23: Unsupported: followed-by (#-# / #=#) nested inside property operator (iff/implies/or) (IEEE 1800-2023 16.12.9)
+                                                    : ... note: In instance 't'
+   22 |   assert property ((a #-# b) iff (a #-# b));
+      |                       ^~~
+%Error-UNSUPPORTED: t/t_assert_unclocked_bad.v:22:37: Unsupported: followed-by (#-# / #=#) nested inside property operator (iff/implies/or) (IEEE 1800-2023 16.12.9)
+                                                    : ... note: In instance 't'
+   22 |   assert property ((a #-# b) iff (a #-# b));
+      |                                     ^~~
+%Error: t/t_assert_unclocked_bad.v:22:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   22 |   assert property ((a #-# b) iff (a #-# b));
+      |   ^~~~~~
+%Error: t/t_assert_unclocked_bad.v:23:3: Concurrent assertion has no clock (IEEE 1800-2023 16.16)
+                                       : ... note: In instance 't'
+                                       : ... Suggest provide a clocking event, a default clocking, or a clocked procedural context
+   23 |   cover property (a);
       |   ^~~~~
 %Error: Exiting due to
