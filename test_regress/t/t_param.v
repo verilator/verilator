@@ -3,7 +3,6 @@
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2003 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
-// verilator lint_off USEBEFOREDECL
 
 module t (
     input clk
@@ -38,9 +37,9 @@ module t (
 endmodule
 
 module m1;
-  localparam PAR1MINUS1 = PAR1DUP - 2 - 1;
-  localparam PAR1DUP = PAR1 + 2;  // Check we propagate parameters properly
   parameter PAR1 = 0;
+  localparam PAR1DUP = PAR1 + 2;  // Check we propagate parameters properly
+  localparam PAR1MINUS1 = PAR1DUP - 2 - 1;
   m2 #(PAR1MINUS1) m2 ();
 
   // Packed arrays

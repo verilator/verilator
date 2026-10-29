@@ -6,7 +6,6 @@
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2026 Michael Bedford Taylor
 // SPDX-License-Identifier: CC0-1.0
-// verilator lint_off USEBEFOREDECL
 
 // verilator lint_off WIDTH
 
@@ -17,7 +16,9 @@ module m_none #(
 endmodule
 
 module m_cycle #(
+    // verilator lint_off USEBEFOREDECL
     parameter int A = B,
+    // verilator lint_on USEBEFOREDECL
     parameter int B = A,
     parameter logic [A:0] P = '0
 ) ();

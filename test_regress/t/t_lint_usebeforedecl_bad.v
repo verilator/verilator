@@ -29,11 +29,17 @@ module sub #(
   assign o = '0;
 endmodule
 
+module chk #(
+    parameter int W = 1
+) ();
+endmodule
+
 module t #(
     parameter int A = 2,
     parameter int B = A
 ) ();
   import pkg::*;
+  import pkg3::*;
 
   real p;
   initial begin
@@ -59,6 +65,17 @@ module t #(
   localparam int W2 = 4;
 
   logic [PB-1:0] x;
+  int i3 = P3;  // Imported from a package declared later in the file: no error
+  bind sub2 chk #(.W(SW)) u_chk ();  // SW resolves in sub2: no error
+  sub2 u_sub2 ();
   Cls c;
-  initial $display(g(), x, pkg2::Q1, A, B, c.f(), gb.GP);
+  initial $display(g(), x, pkg2::Q1, A, B, c.f(), gb.GP, i3);
 endmodule
+
+module sub2;
+  localparam int SW = 2;
+endmodule
+
+package pkg3;
+  localparam int P3 = 3;
+endpackage

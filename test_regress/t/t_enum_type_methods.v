@@ -3,7 +3,6 @@
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2014 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
-// verilator lint_off USEBEFOREDECL
 
 // verilog_format: off
 `define stop $stop
@@ -33,6 +32,8 @@ module t (
   mystr_t mystr;
 
   string s;
+
+  localparam THREE = 3;
 
   // Check constification
   initial begin
@@ -89,8 +90,6 @@ module t (
     if (b.next(3)) `stop;  // B0
     if (b.prev(3)) `stop;  // B0
   end
-
-  localparam THREE = 3;
 
   // Check runtime
   always @(posedge clk) begin

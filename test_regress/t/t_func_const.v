@@ -3,7 +3,6 @@
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
-// verilator lint_off USEBEFOREDECL
 
 package testpackage;
   localparam PARAM = 1024 >> 3;
@@ -12,13 +11,13 @@ import testpackage::*;
 
 module t;
 
+  localparam P3 = 3;
   localparam P4 = f_add(P3, 1);
   localparam P8 = f_add2(P3, P3, f_add(1, 1));
   localparam P5 = f_while(7);
   localparam P16 = f_for(P4);
   localparam P18 = f_case(P4);
   localparam P6 = f_return(P4);
-  localparam P3 = 3;
   localparam P128 = f_package();
   localparam [15:0] PSEL = f_concat_sel(16'h4321);
 

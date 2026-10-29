@@ -2638,7 +2638,7 @@ List Of Warnings
 
    Error that a parameter or localparam is referenced before its
    declaration. IEEE 1800-2023 6.20.1 lets a parameter refer only to
-   earlier parameters, and other tools reject such code.
+   earlier parameters, and some other tools reject such code.
 
    Faulty example:
 
