@@ -16,6 +16,7 @@ endclass
 module t;
   initial begin
     Cls c;
+    c = new;
     c.bar();
     $write("*-* All Finished *-*\n");
     $finish;

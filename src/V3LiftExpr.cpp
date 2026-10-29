@@ -303,7 +303,8 @@ class LiftExprVisitor final : public VNVisitor {
             nodep->addHereThisAsNext(newStmtps);
         }
 
-        if (nodep->timingControlp()) return;
+        // Lifting from NBA LHS is safe as it evaluates at the same time as the RHS
+        if (nodep->timingControlp() && !VN_IS(nodep, AssignDly)) return;
 
         if (AstNode* const newStmtps = lift(nodep->lhsp())) {
             nodep->addHereThisAsNext(newStmtps);

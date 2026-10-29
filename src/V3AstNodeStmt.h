@@ -1003,6 +1003,42 @@ public:
     }
     bool off() const { return m_off; }
 };
+class AstNbaCommit final : public AstNodeStmt {
+    // Commit generic NBAs currently pending in the NBA queue 'queuep'.
+    // @astgen op1 := queuep : AstVarRef  // The VlNbaGenericQueue
+    // @astgen op2 := targetsp : List[AstVarRef]  // The variables updated - only for scheduling
+public:
+    AstNbaCommit(FileLine* fl, AstVarRef* queuep)
+        : ASTGEN_SUPER_NbaCommit(fl) {
+        this->queuep(queuep);
+    }
+    ASTGEN_MEMBERS_AstNbaCommit;
+    bool isPure() override { return false; }
+};
+class AstNbaEnqueue final : public AstNodeStmt {
+    // Enqueue a generic NBA to the NBA queue 'queuep', until its next commit (see V3Delayed): take
+    // a closure from 'poolp', set its members to 'argsp', and enqueue it to call 'funcp'.
+    // @astgen op1 := queuep : AstVarRef  // The VlNbaGenericQueue
+    // @astgen op2 := poolp : AstVarRef  // The VlClosurePool
+    // @astgen op3 := argsp : List[AstNodeExpr]  // The values of the members, in order
+    // @astgen ptr := m_funcp : AstCFunc  // The function called with the closure on commit
+public:
+    AstNbaEnqueue(FileLine* fl, AstVarRef* queuep, AstVarRef* poolp, AstCFunc* funcp)
+        : ASTGEN_SUPER_NbaEnqueue(fl)
+        , m_funcp{funcp} {
+        this->queuep(queuep);
+        this->poolp(poolp);
+    }
+    ASTGEN_MEMBERS_AstNbaEnqueue;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool isPure() override { return false; }
+    bool sameNode(const AstNode* samep) const override {
+        return funcp() == VN_DBG_AS(samep, NbaEnqueue)->funcp();
+    }
+    AstCFunc* funcp() const { return m_funcp; }
+    void funcp(AstCFunc* funcp) { m_funcp = funcp; }
+};
 class AstPExprClause final : public AstNodeStmt {
     const bool m_pass;  // Will be replaced by passing assertion clause, false for
                         // assertion failure clause

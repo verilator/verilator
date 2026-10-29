@@ -121,6 +121,10 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
                 if (!args.empty()) args += ", ";
                 if (nodep->dpiImportPrototype() || nodep->dpiExportDispatcher()) {
                     args += portp->dpiArgType(true, false, cpp);
+                } else if (closureDTypep(portp)) {
+                    // Bound to the closure in the body, see EmitCFunc::visit(AstCFunc*)
+                    args += "VlClosure<" + EmitCUtil::symClassName() + ">* " + portp->nameProtect()
+                            + "p";
                 } else if (nodep->funcPublic()) {
                     args += portp->cPubArgType(true, false);
                 } else {

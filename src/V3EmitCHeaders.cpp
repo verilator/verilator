@@ -403,11 +403,20 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
         puts("};\n}\n");
     }
     void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
+        const AstStructDType* const structp = VN_CAST(sdtypep, StructDType);
+        const bool isClosure = structp && structp->isClosure();
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
-        puts(" " + EmitCUtil::prefixNameProtect(sdtypep) + " {\n");
+        puts(" " + EmitCUtil::prefixNameProtect(sdtypep));
+        if (isClosure) puts(" : public VlClosure<" + EmitCUtil::symClassName() + ">");
+        puts(" {\n");
         for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
+        }
+        // Closures are only passed to their function, never compared. Might have no members.
+        if (isClosure) {
+            puts("};\n");
+            return;
         }
 
         // Three helper functions for struct constrained randomization:
