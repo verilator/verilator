@@ -137,6 +137,18 @@ class OutOfBoundsIndexNonZeroBase;
   constraint c { idx == 4; used[idx] == 0; }
 endclass
 
+typedef struct {
+  bit [7:0] a;
+  bit [7:0] b;
+} s_t;
+
+// Member select off a constant-indexed struct array, which names the
+// element '%s.%s' rather than '(select %s %s)'.
+class StructArrayConstIndex;
+  rand s_t arr[4];
+  constraint c_a { arr[2].a == 8'hBB; }
+endclass
+
 module t;
   initial begin
     UniqueIdPool obj;
@@ -149,6 +161,7 @@ module t;
     RandMultidimRandIndexOuterMinimal mrand_outer_min_obj;
     RandMultidimRandIndexDeep mrand_deep_obj;
     RandQueueRandIndex rq_obj;
+    StructArrayConstIndex sa_const_obj;
     OutOfBoundsIndex oob_obj;
     OutOfBoundsIndexNegative oob_neg_obj;
     OutOfBoundsIndexNonZeroBase oob_nzb_obj;
@@ -237,6 +250,13 @@ module t;
       `checkd(rq_obj.data[rq_obj.idx], 1'b1);
     end
 
+    sa_const_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = sa_const_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(sa_const_obj.arr[2].a, 8'hBB);
+    end
+
     oob_obj = new;
     randomize_result = oob_obj.randomize();
     `checkd(randomize_result, 1);
@@ -288,6 +308,40 @@ module t;
       // Pool is now exhausted -- no legal id remains
       randomize_result = obj.randomize();
       `checkd(randomize_result, 0);
+    end
+
+    // A rand index into an array that's itself a std::randomize() argument:
+    // the argument's own captured copy must stay a symbolic SMT value, the
+    // same as a class's own rand member would.
+    begin
+      bit [7:0] sarr[4];
+      int sidx;
+      int std_result;
+      for (int i = 0; i < 20; i++) begin
+        sarr = '{0, 0, 0, 0};
+        std_result = std::randomize(sarr, sidx) with {sidx inside {[0 : 3]}; sarr[sidx] == 8'hFF;};
+        `checkd(std_result, 1);
+        `checkd(sarr[sidx], 8'hFF);
+      end
+    end
+
+    // Same rand index, but also reaching a plain (non-argument, non-rand)
+    // array in the same expression -- that side must still resolve to its
+    // own root var and get the non-rand elementwise treatment, not be
+    // mistaken for part of the std::randomize() call's own rand set.
+    begin
+      bit [7:0] sarr2[4];
+      bit [7:0] other[4];
+      int sidx2;
+      int std_result2;
+      other = '{8'h11, 8'h22, 8'h33, 8'h44};
+      for (int i = 0; i < 20; i++) begin
+        sarr2 = '{0, 0, 0, 0};
+        std_result2 = std::randomize(
+            sarr2, sidx2) with {sidx2 inside {[0 : 3]}; sarr2[sidx2] == other[sidx2];};
+        `checkd(std_result2, 1);
+        `checkd(sarr2[sidx2], other[sidx2]);
+      end
     end
 
     $write("*-* All Finished *-*\n");

@@ -2484,12 +2484,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstSFormatF* const fromFmtp = VN_CAST(nodep->fromp(), SFormatF);
         if (!fromFmtp) return;
         AstSFormatF* newp = nullptr;
-        // Reachable only via a rand-indexed rand array, a separate crash.
-        if (fromFmtp->name() == "%s.%s") {  // LCOV_EXCL_BR_LINE
+        if (fromFmtp->name() == "%s.%s") {
             newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
-                                   fromFmtp->exprsp()->cloneTreePure(true)};  // LCOV_EXCL_LINE
-            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)  // LCOV_EXCL_BR_LINE
-                newp->exprsp()->nextp()->name("%x");  // LCOV_EXCL_LINE
+                                   fromFmtp->exprsp()->cloneTreePure(true)};
+            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0) {
+                newp->exprsp()->nextp()->name("%x");
+            }
         } else {
             newp = new AstSFormatF{fl, fromFmtp->name() + "." + nodep->name(), false, nullptr};
         }
@@ -2588,21 +2588,14 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(origp->deleteTree(), origp);
         }
     }
-    // Diagnoses E_UNSUPPORTED itself and returns false on an unresolvable chain.
-    static bool resolveArraySelRootVarp(AstArraySel* nodep, AstNodeExpr* fromp,
-                                        AstVar*& rootVarpr) {
+    // Diagnoses E_UNSUPPORTED itself and returns nullptr on an unresolvable chain.
+    static AstVar* resolveArraySelRootVarp(AstArraySel* nodep, AstNodeExpr* fromp) {
         while (const AstArraySel* const selp = VN_CAST(fromp, ArraySel)) fromp = selp->fromp();
-        if (const AstVarRef* const refp = VN_CAST(fromp, VarRef)) {
-            rootVarpr = refp->varp();
-            return true;
-        }
-        if (const AstMemberSel* const mselp = VN_CAST(fromp, MemberSel)) {
-            rootVarpr = mselp->varp();
-            return true;
-        }
+        if (const AstVarRef* const refp = VN_CAST(fromp, VarRef)) return refp->varp();
+        if (const AstMemberSel* const mselp = VN_CAST(fromp, MemberSel)) return mselp->varp();
         nodep->v3warn(E_UNSUPPORTED, "Unsupported: rand-dependent index into an array reached "
                                      "through an operand that isn't a variable or member");
-        return false;
+        return nullptr;
     }
     void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl, const AstVar* arrVarp) {
         // Queue/dynamic/associative-array indexing never reaches here as an
@@ -2689,8 +2682,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         }
         if (indexIsRand) {
-            AstVar* rootVarp;
-            if (!resolveArraySelRootVarp(nodep, nodep->fromp(), rootVarp)) return;
+            AstVar* const rootVarp = resolveArraySelRootVarp(nodep, nodep->fromp());
+            if (!rootVarp) return;
             if (!rootVarp->rand().isRandomizable() && !rootVarp->isStdRandomizeArg()) {
                 handleRandIndexIntoNonrandArray(nodep, fl, rootVarp);
                 return;
