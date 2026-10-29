@@ -2,8 +2,8 @@
    18 |   export P1::y;   
       |              ^
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
-%Error: t/t_package_export_unimported_bad.v:32:14: Export object not imported: 'P1::x' (IEEE 1800-2023 26.6)
-   32 |   export P1::x;   
+%Error: t/t_package_export_unimported_bad.v:33:14: Export object not imported: 'P2::x' (IEEE 1800-2023 26.6)
+   33 |   export P2::x;   
       |              ^
 %Error: t/t_package_export_unimported_bad.v:28:14: Export object not imported: 'P2::x' (IEEE 1800-2023 26.6)
    28 |   export P2::x;   

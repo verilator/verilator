@@ -52,6 +52,13 @@ package pkg_f;
   export pkg_b::ONLY_B;
 endpackage
 
+package pkg_g;
+  export pkg_a::ONLY_A;  // Exports may precede the imports they name
+  export * ::*;
+  import pkg_a::*;
+  import pkg_b::*;
+endpackage
+
 interface ifc;
   import pkg_a::*;  // Wildcard imported names are visible through an interface port
   logic sig;
@@ -122,6 +129,8 @@ module t;
     `checkd(pkg_e::SHARED, 2);
     `checkd(pkg_f::ONLY_A, 1);
     `checkd(pkg_f::ONLY_B, 10);
+    `checkd(pkg_g::ONLY_A, 1);
+    `checkd(pkg_g::ONLY_B, 10);
     begin
       // Wildcard import in an unnamed block
       import pkg_d::*;

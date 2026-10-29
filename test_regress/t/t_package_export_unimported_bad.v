@@ -29,8 +29,8 @@ package P4;
 endpackage
 
 package P5;
-  export P1::x;  // <--- Error: P1::x is not imported until after the export
   import P1::*;
+  export P2::x;  // <--- Error: P2::x is not exported from P2, though P1::x is imported
 endpackage
 
 module t;

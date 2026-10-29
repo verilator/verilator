@@ -11,6 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
+# Dump symbol tables, to cover dumping wildcard imports
 test.compile(verilator_flags2=['--dumpi-V3LinkDot', '6'])
 
 test.execute()

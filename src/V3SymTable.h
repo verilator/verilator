@@ -60,9 +60,6 @@ class VSymEnt final {
     bool m_exported = true;  // Allow importing
     bool m_imported = false;  // Was imported
     bool m_wildImported = false;  // Was imported on lookup through a wildcard import
-    // Declaration of the same name in another wildcard imported package, so referencing this
-    // symbol is ambiguous, per IEEE 1800-2023 26.3
-    const VSymEnt* m_ambiguousp = nullptr;
 #ifdef VL_DEBUG
     VL_DEFINE_DEBUG_FUNCTIONS;
 #else
@@ -98,7 +95,7 @@ public:
             }
             for (const VSymEnt* const pkgSymp : m_wildImportps) {
                 os << indent << "| * wildcard import se" << cvtToHex(pkgSymp)
-                   << "  n=" << pkgSymp->nodep() << '\n';
+                   << "  n=" << cvtToHex(pkgSymp->nodep()) << '\n';
             }
         }
     }
@@ -137,7 +134,6 @@ public:
     void exported(bool flag) { m_exported = flag; }
     bool imported() const { return m_imported; }
     void imported(bool flag) { m_imported = flag; }
-    const VSymEnt* ambiguousp() const { return m_ambiguousp; }
     VSymEnt* insert(const string& name, VSymEnt* entp) {
         UINFO(9, "     SymInsert se" << cvtToHex(this) << " '" << name << "' se" << cvtToHex(entp)
                                      << "  " << entp->nodep());
@@ -181,25 +177,16 @@ public:
                                                  : "se" + cvtToHex(it->second)
                                                        + " n=" + cvtToHex(it->second->nodep())));
         if (it != m_idNameMap.end()) return it->second;
-        // Then import it from the first wildcard imported package that exports it, noting if
-        // another package exports a different declaration of it
-        const VSymEnt* foundp = nullptr;
-        const VSymEnt* ambiguousp = nullptr;
+        // Then import it from the first wildcard imported package that exports it
         for (const VSymEnt* const pkgSymp : m_wildImportps) {
             const auto pkgIt = pkgSymp->m_idNameMap.find(name);
-            if (pkgIt == pkgSymp->m_idNameMap.end() || !pkgIt->second->exported()) continue;
-            if (!foundp) {
-                foundp = pkgIt->second;
-            } else if (pkgIt->second->nodep() != foundp->nodep()) {
-                ambiguousp = pkgIt->second;
-                break;
+            if (pkgIt != pkgSymp->m_idNameMap.end() && pkgIt->second->exported()) {
+                VSymEnt* const symp = insert(name, newImportedSymbol(pkgIt->second));
+                symp->m_wildImported = true;
+                return symp;
             }
         }
-        if (!foundp) return nullptr;
-        VSymEnt* const symp = insert(name, newImportedSymbol(foundp));
-        symp->m_wildImported = true;
-        symp->m_ambiguousp = ambiguousp;
-        return symp;
+        return nullptr;
     }
     static bool checkSimilarname(const AstNode* nodep) {
         // Only declarations that can contribute a name to the netlist handed
@@ -372,6 +359,8 @@ public:
     void importFromIface(const VSymEnt* srcp, bool onlyUnmodportable = false) {
         // Import interface tokens from source symbol table into this symbol table, recursively
         UINFO(9, "     importIf  se" << cvtToHex(this) << " from se" << cvtToHex(srcp));
+        // A modport only makes the interface's parameters and types visible beyond its items,
+        // so not its wildcard imports, but LinkDot looks up those in the interface itself
         if (!onlyUnmodportable) {
             for (const VSymEnt* const pkgSymp : srcp->m_wildImportps) addWildImport(pkgSymp);
         }
