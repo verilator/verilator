@@ -1,0 +1,97 @@
+---
+# DESCRIPTION: Commit-time formatting using the same tools as CI
+# SPDX-FileCopyrightText: 2026-2026 Wilson Snyder
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+minimum_pre_commit_version: 3.2.0
+default_stages: [pre-commit]
+exclude: '^(include/(fstcpp|vltstd)/|nodist/fastcov\.py$)'
+
+repos:
+  # Reuse the development environment; python-dev-requirements.txt owns its pins.
+  - repo: local
+    hooks:
+      - id: format-c
+        name: Format C/C++
+        description: Format staged C/C++ files with the clang-format version used by CI.
+        entry: clang-format-21 -i
+        language: system
+        types_or: [c, c++]
+        files: |
+          (?x)^(
+            src/(V3|Verilator|Vlc)[^/]*\.cpp
+            |include/[^/]+\.cpp
+            |examples/[^/]+/[^/]+\.cpp
+            |(src|include)/[^/]+\.h
+            |test_regress/t/[^/]+\.(c[^/]*|h)
+          )$
+      - id: format-grammar
+        name: Format lexer/parser sources
+        description: Format staged Flex and Bison sources with clang-format.
+        entry: clang-format-21 -i
+        language: system
+        types: [text]
+        files: '^src/[^/]+\.(l|y)$'
+      - id: format-cmake
+        name: Format CMake
+        description: Format staged CMake files with gersemi.
+        entry: gersemi -i --no-warn-about-unknown-commands
+        language: system
+        types: [cmake]
+        files: '^(CMakeLists\.txt|(src|test_regress|examples/[^/]+)/CMakeLists\.txt)$'
+      - id: format-cmake-template
+        name: Format CMake templates
+        description: Format staged CMake configure templates with gersemi.
+        entry: gersemi -i --no-warn-about-unknown-commands
+        language: system
+        types: [text]
+        files: '^[^/]+\.cmake\.in$'
+      - id: format-exec-py
+        name: Make regression drivers executable
+        description: Set executable permissions on staged Python regression drivers.
+        entry: chmod a+x
+        language: system
+        types: [python]
+        files: '^test_regress/t/t_[^/]+\.py$'
+      - id: format-exec-verilog
+        name: Make regression sources non-executable
+        description: Clear executable permissions on staged Verilog regression sources.
+        entry: chmod a-x
+        language: system
+        types_or: [verilog, system-verilog]
+        files: '^test_regress/t/[^/]*\.v$'
+      - id: format-md
+        name: Format Markdown
+        description: Format staged Markdown files with mdformat.
+        entry: mdformat
+        language: system
+        types: [markdown]
+        files: '^([^./][^/]*/)?[^./][^/]*\.md$'
+      - id: format-py
+        name: Format Python
+        description: Format staged Python files, including scripts identified by their shebang.
+        entry: yapf -i
+        language: system
+        types: [python]
+      - id: format-rst
+        name: Format reStructuredText
+        description: Format staged reStructuredText files with the project's documentation style.
+        entry: docstrfmt
+        args: [--line-length, '75', --indent-width, '3', --keep-blanks, --ordered-marker, '#', --preserve-adornments, --no-center-section-titles]
+        language: system
+        types: [rst]
+        files: '^([^./][^/]*/|ci/docker/[^/]+/|docs/guide/)?[^./][^/]*\.rst$'
+      - id: format-yaml
+        name: Format YAML
+        description: Format staged YAML files with the project's yamlfix settings.
+        entry: yamlfix
+        language: system
+        types: [yaml]
+        files: '^(\.[^/]+\.(yaml|yml)|\.github/([^/]+/)?[^/]+\.yml)$'
+      - id: format-citation
+        name: Format citation metadata
+        description: Format staged Citation File Format metadata with yamlfix.
+        entry: yamlfix
+        language: system
+        types: [text]
+        files: '^CITATION\.cff$'
