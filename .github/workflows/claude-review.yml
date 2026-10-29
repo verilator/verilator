@@ -1,0 +1,123 @@
+---
+# DESCRIPTION: Github actions config
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+# Code review of a pull request by Claude, requested by an organization owner
+# with a pull request comment containing '@claude review'. The owners are listed
+# by login, as 'author_association' reports them as 'MEMBER', and only the
+# organization itself as 'OWNER'.
+#
+# This uses 'issue_comment', and not 'pull_request_target', as the Claude GitHub
+# App token exchange rejects OIDC tokens from the latter
+# (https://github.com/anthropics/claude-code-action/issues/1886).
+#
+# 'issue_comment' runs the workflow from the default branch with access to
+# secrets. The pull request code is never checked out or executed, Claude only
+# sees its diff.
+#
+# Claude posts all its comments in a single pull request review with
+# 'ci/ci-claude-post-review.bash', which fixes the COMMENT verdict. Posting each
+# inline comment separately would send a notification for every comment
+# (https://github.com/anthropics/claude-code-action/issues/1049). The only file
+# Claude may write is the one passing its comments to that script.
+
+name: Claude review
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write  # For the Claude GitHub App token exchange
+
+jobs:
+  review:
+    name: Review
+    if: |
+      github.repository == 'verilator/verilator'
+      && github.event.issue.pull_request
+      && contains(github.event.comment.body, '@claude review')
+      && contains(fromJSON('["gezalore", "wsnyder"]'), github.event.comment.user.login)
+    runs-on: ubuntu-26.04
+    steps:
+      # The base branch, for the AGENTS.md guides and the code around the diff
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+
+      - name: Claude review
+        id: claude
+        uses: anthropics/claude-code-action@d70510b174a1244958df0b03166a54912811f3e6  # v1.0.264
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.issue.number }}
+
+            Review this pull request. Use `gh pr diff` to see the changes, and
+            `gh pr view --comments` for the description and earlier discussion.
+            The working directory holds the base branch, not the pull request.
+            Use the Read tool, not shell commands, to read files, including long
+            tool output saved to a file.
+
+            First read AGENTS.md in all directories.
+
+            Review with focus on correctness bugs, missing tests, and departures
+            from the guidelines in those files.  Check specifically that the
+            patch matches the rules described in AGENTS.md in all directories.
+
+            There is no need to compile to check that the code compiles, or
+            tests pass, this is known.
+
+            Use only inline comments; if there are comments that are not
+            obviously associated to an inline file, look at the files which the
+            user modified and pick the best one to use inline comments against.
+
+            Post the review once: with the Write tool, write the comments to
+            ${{ runner.temp }}/claude-review.json as a JSON array of
+            {"path": ..., "line": ..., "body": ...} objects, one inline comment
+            for each specific issue, or an empty array if there are none, then
+            run `ci/ci-claude-post-review.bash` as a command on its own, not
+            combined with other commands.  'line' is a line of the new
+            version of the file at 'path', and must be in a hunk of the diff.
+            If posting fails, fix the file and run it again.
+
+            For comments:
+
+            - Be terse.
+
+            - Show only information critical to the person reading the review on
+              what needs changing.
+
+            - Do not put in any information about what is correct or what was
+              checked.
+
+            - Do not include any comments about the commit message, or pull
+              request message, or on additions to docs/CONTRIBUTORS.
+
+            - Reference exact filenames and line numbers.
+
+            - Do not wrap the text, keep long lines.
+
+            - Use bullets not numbered points; make one suggestion per line not
+              multiple suggestions per line.
+
+          claude_args: |-
+            --model claude-opus-5-5
+            --effort medium
+            --max-budget-usd 1
+            --allowedTools
+              "Bash(gh pr diff:*)"
+              "Bash(gh pr view:*)"
+              "Edit(/${{ runner.temp }}/claude-review.json)"
+              "Bash(ci/ci-claude-post-review.bash)"
+            --disallowedTools
+              "Edit(/${{ github.workspace }}/ci/ci-claude-post-review.bash)"
+
+      # Temporary: list the tool calls that '--allowedTools' blocked, to decide
+      # whether it is missing anything
+      - name: Show denied tool calls
+        if: ${{ always() && steps.claude.outputs.execution_file != '' }}
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: jq '.[] | select(.type == "result") | .permission_denials' "${EXECUTION_FILE}"

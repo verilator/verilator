@@ -75,6 +75,7 @@ def read_ast_dumps():
     for filename in (test.glob_some(test.root + "/src/V3AstNodes.cpp")):
         with open(filename, 'r', encoding="latin-1") as fh:
             class_name = None
+            dumper = None
             for line in fh:
                 line = line.rstrip()
                 m = re.match(r'^void (Ast\S+)::(dump|dumpJson)\(', line)
