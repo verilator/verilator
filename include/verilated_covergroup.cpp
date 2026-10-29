@@ -1314,7 +1314,7 @@ static const char* _vl_cov_score_key(const char* keyp, uint32_t value) VL_PURE {
 }
 
 void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* page,
-                                uint32_t itemWeight, uint32_t groupWeight) {
+                                uint32_t itemWeight, uint32_t groupWeight, bool mergeInstances) {
     const std::string threshStr = std::to_string(m_atLeast);
     const std::string weightStr = std::to_string(itemWeight);
     const std::string groupWeightStr = std::to_string(groupWeight);
@@ -1334,11 +1334,15 @@ void VlCoverpoint::registerBins(VerilatedCovContext* covcontextp, const char* pa
                                     : kind == VlCovBinKind::KIND_IGNORE  ? "ignore"
                                     : kind == VlCovBinKind::KIND_ILLEGAL ? "illegal"
                                                                          : "default";
-        VL_COVER_INSERT(covcontextp, full.c_str(), &m_counts[i], "page", page, "filename",
-                        nm.file(), "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                        binp.c_str(), binType[0] ? "bin_type" : "", binType, threshKeyp,
-                        threshStr.c_str(), weightKeyp, weightStr.c_str(), groupWeightKeyp,
-                        groupWeightStr.c_str());
+        covcontextp->_inserti(&m_counts[i], this,
+                              mergeInstances ? &VlCoverpointIf::databaseTypeWeight
+                                             : &VlCoverpointIf::databaseItemWeight);
+        covcontextp->_insertf(__FILE__, __LINE__);
+        covcontextp->_insertp("hier", full.c_str(), "page", page, "filename", nm.file(), "lineno",
+                              lineStr.c_str(), "column", colStr.c_str(), "bin", binp.c_str(),
+                              binType[0] ? "bin_type" : "", binType, threshKeyp, threshStr.c_str(),
+                              weightKeyp, weightStr.c_str(), groupWeightKeyp,
+                              groupWeightStr.c_str());
     }
 }
 #endif  // VM_COVERAGE
@@ -1637,7 +1641,7 @@ void VlCoverCross::mergeInto(VlCovMergedItems& items) const {
 
 #if VM_COVERAGE
 void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* page,
-                                uint32_t itemWeight, uint32_t groupWeight) {
+                                uint32_t itemWeight, uint32_t groupWeight, bool mergeInstances) {
     const std::string lineStr = std::to_string(m_line);
     const std::string colStr = std::to_string(m_col);
     const std::string threshStr = std::to_string(m_atLeast);
@@ -1660,11 +1664,15 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
             const char* const binType = userBin.kind == VlCovBinKind::KIND_NORMAL   ? ""
                                         : userBin.kind == VlCovBinKind::KIND_IGNORE ? "ignore"
                                                                                     : "illegal";
-            VL_COVER_INSERT(
-                covcontextp, full.c_str(), &userBin.count, "page", page, "filename", userBin.filep,
-                "lineno", binLineStr.c_str(), "column", binColStr.c_str(), "bin", bin.c_str(),
-                "cross", "1", binType[0] ? "bin_type" : "", binType, threshKeyp, threshStr.c_str(),
-                weightKeyp, weightStr.c_str(), groupWeightKeyp, groupWeightStr.c_str());
+            covcontextp->_inserti(&userBin.count, this,
+                                  mergeInstances ? &VlCoverpointIf::databaseTypeWeight
+                                                 : &VlCoverpointIf::databaseItemWeight);
+            covcontextp->_insertf(__FILE__, __LINE__);
+            covcontextp->_insertp("hier", full.c_str(), "page", page, "filename", userBin.filep,
+                                  "lineno", binLineStr.c_str(), "column", binColStr.c_str(), "bin",
+                                  bin.c_str(), "cross", "1", binType[0] ? "bin_type" : "", binType,
+                                  threshKeyp, threshStr.c_str(), weightKeyp, weightStr.c_str(),
+                                  groupWeightKeyp, groupWeightStr.c_str());
             continue;
         }
         const uint32_t flat = autoIndex(i - explicitCount);
@@ -1676,11 +1684,15 @@ void VlCoverCross::registerBins(VerilatedCovContext* covcontextp, const char* pa
             if (d > 0) crossBins += ",";
             crossBins += dimension.cpp->normalBinName(crossIdx);
         }
-        VL_COVER_INSERT(covcontextp, full.c_str(), &m_flatCountsp[flat], "page", page, "filename",
-                        m_file, "lineno", lineStr.c_str(), "column", colStr.c_str(), "bin",
-                        bin.c_str(), "cross", "1", "cross_bins", crossBins.c_str(), threshKeyp,
-                        threshStr.c_str(), weightKeyp, weightStr.c_str(), groupWeightKeyp,
-                        groupWeightStr.c_str());
+        covcontextp->_inserti(&m_flatCountsp[flat], this,
+                              mergeInstances ? &VlCoverpointIf::databaseTypeWeight
+                                             : &VlCoverpointIf::databaseItemWeight);
+        covcontextp->_insertf(__FILE__, __LINE__);
+        covcontextp->_insertp("hier", full.c_str(), "page", page, "filename", m_file, "lineno",
+                              lineStr.c_str(), "column", colStr.c_str(), "bin", bin.c_str(),
+                              "cross", "1", "cross_bins", crossBins.c_str(), threshKeyp,
+                              threshStr.c_str(), weightKeyp, weightStr.c_str(), groupWeightKeyp,
+                              groupWeightStr.c_str());
     }
 }
 #endif  // VM_COVERAGE
@@ -2165,10 +2177,29 @@ void VlCoverpointIf::weight(uint32_t value, VlFileLineDebug fileline) {
     m_weight = _vl_cov_load_weight("option.weight", value, fileline);
 }
 
+void VlCoverpointIf::lendWeight(const IData* weightp, VlFileLineDebug fileline) {
+    m_weightp = weightp;
+    m_fileline = fileline;
+    loadWeight();
+}
+
+void VlCoverpointIf::unlendWeight() {
+    if (!m_weightp) return;
+    loadWeight();
+    m_weightp = nullptr;
+}
+
+void VlCoverpointIf::loadWeight() const {
+    if (!m_weightp || *m_weightp == m_loadedWeight) return;
+    m_loadedWeight = *m_weightp;
+    m_weight = _vl_cov_load_weight("option.weight", m_loadedWeight, m_fileline);
+}
+
 double VlCoverpointIf::coverage() const {
     double covered = 0.0;
     double total = 0.0;
     coverageParts(covered, total);
+    loadWeight();
     return _vl_cov_calculate(100.0 * covered, total, m_weight);
 }
 
