@@ -3185,6 +3185,23 @@ class V3DfgPeephole final : public DfgVisitor {
                     return;
                 }
             }
+            // 'c ? a : b' on bits selected from vectors, as one bit of a Concat: in the bitwise
+            // form '(c & a) | (~c & b)' the Concat is pushed through, so that neighbouring bits
+            // merge into one operation on the vectors. Not if 'c' has other uses: the bitwise
+            // terms might then be shared, which stops the Concat being pushed through them.
+            if (condp->is<DfgSel>() && thenp->is<DfgSel>() && elsep->is<DfgSel>()
+                && !condp->hasMultipleSinks() && !thenp->unsafe() && !elsep->unsafe()) {
+                const DfgVertex* const sinkp = vtxp->singleSink();
+                if (sinkp && sinkp->is<DfgConcat>()) {
+                    APPLYING(REPLACE_COND_OF_SEL_BITS_WITH_BITWISE) {
+                        DfgAnd* const takenp = make<DfgAnd>(vtxp, condp, thenp);
+                        DfgNot* const notp = make<DfgNot>(condp, condp);
+                        DfgAnd* const otherp = make<DfgAnd>(vtxp, notp, elsep);
+                        replace(make<DfgOr>(vtxp, takenp, otherp));
+                        return;
+                    }
+                }
+            }
         }
 
         if (vtxp->width() <= VL_QUADSIZE) {
