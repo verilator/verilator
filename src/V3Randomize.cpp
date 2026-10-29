@@ -2405,16 +2405,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
             return selChainRootVarp(sselp->fromp());
         }
-        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
             return selChainRootVarp(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) return selChainRootVarp(cmethp->fromp());
         }
         return nullptr;
     }
     // True iff exprp is part of this randomize() call's rand set -- walks
-    // to a leaf via fromp(), since an ArraySel's own user1() is tainted by its index.
+    // to a leaf via fromp(), since a selector's own user1() is tainted by its index.
     static bool selChainIsRand(AstNodeExpr* exprp) {
-        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
             return selChainIsRand(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) return selChainIsRand(cmethp->fromp());
         }
         if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
             return selChainIsRand(sselp->fromp());
@@ -2426,8 +2432,13 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
     // True iff exprp's access path has a rand-dependent index anywhere.
     static bool selChainHasRandIndex(AstNodeExpr* exprp) {
-        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
             return selp->bitp()->user1() || selChainHasRandIndex(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) {
+                return cmethp->pinsp()->user1() || selChainHasRandIndex(cmethp->fromp());
+            }
         }
         if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
             return selChainHasRandIndex(sselp->fromp());
@@ -2447,8 +2458,13 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
             return selChainCloneSafe(sselp->fromp());
         }
-        if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
             return selp->bitp()->isPure() && selChainCloneSafe(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) {
+                return cmethp->pinsp()->isPure() && selChainCloneSafe(cmethp->fromp());
+            }
         }
         return false;
     }

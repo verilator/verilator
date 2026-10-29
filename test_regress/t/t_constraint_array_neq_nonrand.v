@@ -237,6 +237,19 @@ class frame_large;
   endfunction
 endclass
 
+// Both operands are constant-indexed elements of a queue -- the root
+// resolver must see through the queue's own 'at()' accessor, not just
+// a plain fixed-array ArraySel.
+class frame_queue_element;
+  rand bit frame[$][2];
+  bit target[$][2];
+  constraint c { frame[0] == target[0]; }
+  function new();
+    frame = '{'{1'b0, 1'b0}};
+    target = '{'{1'b1, 1'b0}};
+  endfunction
+endclass
+
 module t;
   initial begin
     frame_bothrand bothrand_obj;
@@ -256,6 +269,7 @@ module t;
     member_of_rand_array member_idx_obj;
     frame_nonrand_index nonrand_idx_obj;
     frame_large large_obj;
+    frame_queue_element queue_elem_obj;
     bit [7:0] prev[4][4];
     bit [7:0] prev_cube1[2][2];
     int randomize_result;
@@ -437,6 +451,14 @@ module t;
     end
     if (any_diff) begin
       $write("%%Error: frame_large did not force the expected values\n");
+      `stop;
+    end
+
+    queue_elem_obj = new;
+    randomize_result = queue_elem_obj.randomize();
+    `checkd(randomize_result, 1);
+    if (queue_elem_obj.frame[0] != queue_elem_obj.target[0]) begin
+      $write("%%Error: frame_queue_element did not force frame[0] == target[0]\n");
       `stop;
     end
 

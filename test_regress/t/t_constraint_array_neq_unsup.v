@@ -61,16 +61,6 @@ class C7;
   constraint c { frame == target; }
 endclass
 
-// Same fields as C7, but comparing a constant-indexed element of the queue
-// (frame[0]) rather than the whole array -- a different reason than C7
-// (an unresolvable operand, not a queue-shaped array), since indexing a
-// queue doesn't resolve to a plain variable the way a fixed array does.
-class C8;
-  rand bit frame[$][2];
-  bit target[$][2];
-  constraint c { frame[0] == target[0]; }
-endclass
-
 // A hierarchical (module-scope) reference operand: unlike a plain variable
 // or member, a hierarchical reference is a transient node the elementwise
 // expansion can't safely clone once per array element.
@@ -202,7 +192,6 @@ module t;
     C5 obj5;
     C6 obj6;
     C7 obj7;
-    C8 obj8;
     C9 obj9;
     C9b obj9b;
     C10 obj10;
@@ -219,7 +208,6 @@ module t;
     obj5 = new;
     obj6 = new;
     obj7 = new;
-    obj8 = new;
     obj9 = new;
     obj9b = new;
     obj10 = new;
@@ -236,7 +224,6 @@ module t;
     if (obj5.randomize() == 0) $stop;
     if (obj6.randomize() == 0) $stop;
     if (obj7.randomize() == 0) $stop;
-    if (obj8.randomize() == 0) $stop;
     if (obj9.randomize() == 0) $stop;
     if (obj9b.randomize() == 0) $stop;
     if (obj10.randomize() == 0) $stop;
