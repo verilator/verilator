@@ -566,13 +566,6 @@ void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, const VlEventBase
 }
 
 template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullEventTriggered(uint32_t* oldp) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    // No need to update *oldp
-    emitEvent(code);
-}
-
-template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullCData(uint32_t* oldp, CData newval, int bits) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     *oldp = newval;  // Still copy even if not tracing so chg doesn't call full

@@ -392,7 +392,6 @@ public:
     void fullWData(uint32_t* oldp, WDataInP newval, int bits);
     void fullDouble(uint32_t* oldp, double newval);
     void fullEvent(uint32_t* oldp, const VlEventBase* newvalp);
-    void fullEventTriggered(uint32_t* oldp);
 
     // Check previous dumped value of signal. If changed, then emit trace entry
     VL_ATTR_ALWINLINE void chgBit(uint32_t* oldp, CData newval) {
@@ -428,7 +427,6 @@ public:
     VL_ATTR_ALWINLINE void chgEvent(uint32_t* oldp, const VlEventBase* newvalp) {
         if (newvalp->isTriggered()) fullEvent(oldp, newvalp);
     }
-    VL_ATTR_ALWINLINE void chgEventTriggered(uint32_t* oldp) { fullEventTriggered(oldp); }
     VL_ATTR_ALWINLINE void chgDouble(uint32_t* oldp, double newval) {
         double old;  // LCOV_EXCL_LINE  // lcov bug
         std::memcpy(&old, oldp, sizeof(old));
