@@ -205,12 +205,20 @@ module t (
     end
 
     begin  // Traversal methods accept arguments equivalent to the index type
+      typedef enum int {
+        RED,
+        GREEN
+      } color_t;
       int by_data[bit [31:0]];
       int by_class[Base];
+      int by_string[string];
+      int by_enum[color_t];
       bit [3:0][7:0] equivalent_type;
       bit [31:0] index_select[2];
       Base base_handle;
       Derived derived_handle;
+      string string_key;
+      color_t enum_key;
 
       by_data[5] = 1;
       by_data[9] = 2;
@@ -225,6 +233,14 @@ module t (
       i = by_class.first(base_handle);
       `checkh(i, 1);
       if (base_handle != derived_handle) $stop;
+      by_string["key"] = 1;
+      i = by_string.first(string_key);
+      `checkh(i, 1);
+      `checks(string_key, "key");
+      by_enum[GREEN] = 1;
+      i = by_enum.first(enum_key);
+      `checkh(i, 1);
+      `checkh(enum_key, GREEN);
     end
 
     begin  // Non-constant values whose expression is wider than the element
