@@ -248,13 +248,18 @@ class FixDataHazards final {
     // Add the edges required to make the accesses of one variable race free. 'beginp'/'endp'
     // delimit the accesses of a single variable, in sequence number order.
     void serializeVariable(const Access* beginp, const Access* endp) {
-        // Nothing to order if there is only one access
+        // Nothing to order if at most one MTask accesses this variable. Each MTask appears at
+        // most once in the range, see the assertion below, so this is just the range size.
         if (endp - beginp < 2) return;
 
         std::vector<LogicMTask*>& pendingReaders = m_scratch;
         pendingReaders.clear();
         LogicMTask* prevWriterp = nullptr;
         for (const Access* accp = beginp; accp != endp; ++accp) {
+            // The accesses of a variable by the same MTask were combined into one, so an MTask
+            // cannot appear twice here.
+            UASSERT_OBJ(accp == beginp || accp[-1].m_mtaskp != accp->m_mtaskp, accp->m_mtaskp,
+                        "Multiple accesses of a variable in an MTask");
             LogicMTask* const mtaskp = accp->m_mtaskp;
             if (accp->m_access.isWriteOrRW()) {
                 // Reads since the previous write must complete before this write
@@ -309,6 +314,21 @@ class FixDataHazards final {
             if (a.m_vscp != b.m_vscp) return a.m_vscp->user1() < b.m_vscp->user1();
             return a.m_mtaskp->user() < b.m_mtaskp->user();
         });
+        // An MTask holding several logic blocks can access a variable more than once. Combine
+        // these into one access, as each OrderLogicVertex does for its own accesses.
+        if (accesses.size() > 1) {
+            size_t last = 0;  // Index of the last combined access
+            for (size_t i = 1; i < accesses.size(); ++i) {
+                Access& lastAcc = accesses[last];
+                const Access& acc = accesses[i];
+                if (acc.m_vscp == lastAcc.m_vscp && acc.m_mtaskp == lastAcc.m_mtaskp) {
+                    if (acc.m_access != lastAcc.m_access) lastAcc.m_access = VAccess::READWRITE;
+                } else {
+                    accesses[++last] = acc;
+                }
+            }
+            accesses.resize(last + 1);
+        }
 
         // Serialize the accesses of each variable
         for (size_t i = 0; i < accesses.size();) {
