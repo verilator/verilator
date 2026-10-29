@@ -3,13 +3,12 @@
 // This file ONLY is placed under the Creative Commons Public Domain.
 // SPDX-FileCopyrightText: 2009 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
-// verilator lint_off USEBEFOREDECL
 
 module t;
-  parameter [BMSB : BLSB] B = A[23:20];  // 3
   parameter A = 32'h12345678;
   parameter BLSB = A[16+:4];  // 4
   parameter BMSB = A[7:4];  // 7
+  parameter [BMSB : BLSB] B = A[23:20];  // 3
 
   initial begin
     if (B !== 4'h3) $stop;

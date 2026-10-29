@@ -6,39 +6,39 @@
    14 |   localparam int Q2 = 5;
       |                  ^~
                       ... For error description see https://verilator.org/warn/USEBEFOREDECL?v=latest
-%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:40:15: Reference to parameter 'N' before its declaration (IEEE 1800-2023 6.20.1)
+%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:46:15: Reference to parameter 'N' before its declaration (IEEE 1800-2023 6.20.1)
                                                         : ... Suggest move the declaration before the reference
-   40 |     p = 1.0 * N;   
+   46 |     p = 1.0 * N;   
       |               ^
-                      t/t_lint_usebeforedecl_bad.v:43:18: ... Location of declaration
-   43 |   localparam int N = 8;
+                      t/t_lint_usebeforedecl_bad.v:49:18: ... Location of declaration
+   49 |   localparam int N = 8;
       |                  ^
-%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:46:12: Reference to parameter 'LP' before its declaration (IEEE 1800-2023 6.20.1)
+%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:52:12: Reference to parameter 'LP' before its declaration (IEEE 1800-2023 6.20.1)
                                                         : ... Suggest move the declaration before the reference
-   46 |     return LP;   
+   52 |     return LP;   
       |            ^~
-                      t/t_lint_usebeforedecl_bad.v:48:18: ... Location of declaration
-   48 |   localparam int LP = 7;
+                      t/t_lint_usebeforedecl_bad.v:54:18: ... Location of declaration
+   54 |   localparam int LP = 7;
       |                  ^~
-%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:52:27: Reference to parameter 'GQ' before its declaration (IEEE 1800-2023 6.20.1)
+%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:58:27: Reference to parameter 'GQ' before its declaration (IEEE 1800-2023 6.20.1)
                                                         : ... Suggest move the declaration before the reference
-   52 |       localparam int GP = GQ;   
+   58 |       localparam int GP = GQ;   
       |                           ^~
-                      t/t_lint_usebeforedecl_bad.v:53:22: ... Location of declaration
-   53 |       localparam int GQ = 1;
+                      t/t_lint_usebeforedecl_bad.v:59:22: ... Location of declaration
+   59 |       localparam int GQ = 1;
       |                      ^~
-%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:57:10: Reference to parameter 'W2' before its declaration (IEEE 1800-2023 6.20.1)
+%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:63:10: Reference to parameter 'W2' before its declaration (IEEE 1800-2023 6.20.1)
                                                         : ... Suggest move the declaration before the reference
-   57 |   logic [W2-1:0] o2;   
+   63 |   logic [W2-1:0] o2;   
       |          ^~
-                      t/t_lint_usebeforedecl_bad.v:59:18: ... Location of declaration
-   59 |   localparam int W2 = 4;
+                      t/t_lint_usebeforedecl_bad.v:65:18: ... Location of declaration
+   65 |   localparam int W2 = 4;
       |                  ^~
-%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:58:12: Reference to parameter 'W2' before its declaration (IEEE 1800-2023 6.20.1)
+%Error-USEBEFOREDECL: t/t_lint_usebeforedecl_bad.v:64:12: Reference to parameter 'W2' before its declaration (IEEE 1800-2023 6.20.1)
                                                         : ... Suggest move the declaration before the reference
-   58 |   sub #(.W(W2)) u_sub (.o(o2));   
+   64 |   sub #(.W(W2)) u_sub (.o(o2));   
       |            ^~
-                      t/t_lint_usebeforedecl_bad.v:59:18: ... Location of declaration
-   59 |   localparam int W2 = 4;
+                      t/t_lint_usebeforedecl_bad.v:65:18: ... Location of declaration
+   65 |   localparam int W2 = 4;
       |                  ^~
 %Error: Exiting due to
