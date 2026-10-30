@@ -8,6 +8,11 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got='h%x exp='h%x\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 
+virtual class driver_class_virtual;
+  virtual task send_data(logic [7:0] d);
+  endtask
+endclass
+
 interface intf (input logic clk);
   logic [7:0] data;
   logic       valid;
@@ -32,11 +37,6 @@ interface intf (input logic clk);
     return drv;
   endfunction
 endinterface
-
-virtual class driver_class_virtual;
-  virtual task send_data(logic [7:0] d);
-  endtask
-endclass
 
 module t(
   input clk
