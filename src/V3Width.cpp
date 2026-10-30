@@ -8450,9 +8450,7 @@ class WidthVisitor final : public VNVisitor {
                     callerClassp = m_containingClassFinder.find(m_ftaskp->classOrPackagep());
                 }
                 const AstClass* calleeClassp = VN_CAST(nodep->classOrPackagep(), Class);
-                if (!calleeClassp) {
-                    calleeClassp = m_containingClassFinder.find(nodep->taskp());
-                }
+                if (!calleeClassp) { calleeClassp = m_containingClassFinder.find(nodep->taskp()); }
                 allow = AstClass::isClassExtendedFrom(callerClassp, calleeClassp);
             }
             if (!allow) {
