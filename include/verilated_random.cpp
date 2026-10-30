@@ -976,10 +976,15 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
     // A cleared history cannot exhaust again, so this retries at most once
     for (;;) {
         emitFlatPreamble(os, rngr, true);
-        for (const auto& name : randcNames) {
-            os << "(declare-fun " << name << " () ";
-            m_vars.at(name)->emitType(os);
-            os << ")\n";
+        // Every variable is declared so the query stays well-formed even when a constraint's
+        // names are incomplete or name a frozen variable outright, as an enum's value-range
+        // constraint does; a frozen scalar keeps its current value
+        emitDeclares(os, false);
+        for (const auto& var : m_vars) {
+            if (var.second->dimension() > 0 || !isFrozenVar(var.first, *var.second)) continue;
+            os << "(assert (= " << var.first << ' ';
+            var.second->emitConcreteValue(os);
+            os << "))\n";
         }
         // Only constraints evaluable at randc-solve time filter the cycle domain
         for (size_t n = 0; n < m_constraints.size(); ++n) {
@@ -1149,8 +1154,8 @@ void VlRandomizer::emitDefines(std::ostream& os) const {
     os << "(define-fun __Vbool ((v (_ BitVec 1))) Bool (= #b1 v))\n";
 }
 
-// The randc draw declares only randc variables, never an array lacking element constraints,
-// so it shares the flat solve's QF_ABV rather than phasedLogic()
+// The randc draw reads back only its scalar randc variable, never an array lacking element
+// constraints, so it shares the flat solve's QF_ABV rather than phasedLogic()
 void VlRandomizer::emitFlatPreamble(std::ostream& os, VlRNG& rngr, bool seed) const {
     os << "(set-option :produce-models true)\n";
     if (!solverSamples()) {
