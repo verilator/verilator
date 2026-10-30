@@ -1,0 +1,6 @@
+%Error: t/t_package_import_wild_bad.v:18:11: Can't find definition of variable: 'PKG_VALEU'
+                                           : ... Suggested alternative: 'PKG_VALUE'
+   18 |   int x = PKG_VALEU;   
+      |           ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

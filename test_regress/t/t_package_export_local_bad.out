@@ -1,0 +1,14 @@
+%Error: t/t_package_export_local_bad.v:19:14: Export object conflicts with local declaration: 'P1::x' (IEEE 1800-2023 26.6)
+   19 |   export P1::x;   
+      |              ^
+        t/t_package_export_local_bad.v:20:11: ... Location of local declaration
+   20 |   integer x = 456;
+      |           ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_package_export_local_bad.v:14:14: Export object conflicts with local declaration: 'P1::x' (IEEE 1800-2023 26.6)
+   14 |   export P1::x;   
+      |              ^
+        t/t_package_export_local_bad.v:13:11: ... Location of local declaration
+   13 |   integer x = 456;
+      |           ^
+%Error: Exiting due to

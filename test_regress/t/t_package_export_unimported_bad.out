@@ -1,0 +1,11 @@
+%Error: t/t_package_export_unimported_bad.v:18:14: Export object not imported: 'P1::y' (IEEE 1800-2023 26.6)
+   18 |   export P1::y;   
+      |              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_package_export_unimported_bad.v:28:14: Export object not imported: 'P2::x' (IEEE 1800-2023 26.6)
+   28 |   export P2::x;   
+      |              ^
+%Error: t/t_package_export_unimported_bad.v:23:14: Export object not imported: 'P1::y' (IEEE 1800-2023 26.6)
+   23 |   export P1::y;   
+      |              ^
+%Error: Exiting due to
