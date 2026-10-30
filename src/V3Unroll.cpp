@@ -96,11 +96,12 @@ public:
     void checkpoint() { m_checkpoints.push_back(m_curr); }
 
     void revert() {
+        // Preserve indices assigned since the checkpoint, but discard their bindings.
+        const size_t size = m_curr.size();
         m_curr = std::move(m_checkpoints.back());
+        m_curr.resize(size, nullptr);
         m_checkpoints.pop_back();
     }
-
-    void commit() { m_checkpoints.pop_back(); }
 
     void set(AstVarScope* vscp, AstConst* valp) {
         if (!vscp->user1()) {
@@ -112,10 +113,6 @@ public:
     }
 
     AstConst* get(AstVarScope* vscp) {
-        // It's possible after a revert that user1 is set, but the vector is shorter, pad up
-        if (static_cast<size_t>(vscp->user1()) >= m_curr.size()) {
-            m_curr.resize(vscp->user1() + 1, nullptr);
-        }
         AstConst* const valp = vscp->user1() ? m_curr[vscp->user1()] : nullptr;
         UINFO(6, "Binding GET " << vscp->name() << " / " << vscp->user1() << " == " << valp);
         return valp;
@@ -393,8 +390,8 @@ class UnrollOneVisitor final : VNVisitor {
             return;
         }
 
-        // Commit the bindings and replace the loop with the unrolled code
-        m_bindings.commit();
+        // The iterator revisits the unrolled code, so replay it with the entry bindings.
+        m_bindings.revert();
         if (pair.first) {
             nodep->replaceWith(pair.first);
         } else {
