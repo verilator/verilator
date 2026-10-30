@@ -54,6 +54,43 @@ module t;
       .out_value(out_value)
   );
 
+  logic pull_enable;
+  logic [6:0] pull_data;
+  bit pull_done = 0;
+
+  // A per-bit pull must preserve the tri1 default in both packed range directions.
+  tri1 [7:1] packed_default_pullup_desc;
+  // verilator lint_off ASCRANGE
+  tri1 [1:7] packed_default_pullup_asc;
+  // verilator lint_on ASCRANGE
+  pullup (packed_default_pullup_desc[3]);
+  pullup (packed_default_pullup_asc[3]);
+  assign packed_default_pullup_desc = pull_enable ? pull_data : 7'bz;
+  assign packed_default_pullup_asc = pull_enable ? pull_data : 7'bz;
+
+  // Likewise, preserve the tri0 default with a per-bit pulldown.
+  tri0 [7:1] packed_default_pulldown_desc;
+  // verilator lint_off ASCRANGE
+  tri0 [1:7] packed_default_pulldown_asc;
+  // verilator lint_on ASCRANGE
+  pulldown (packed_default_pulldown_desc[3]);
+  pulldown (packed_default_pulldown_asc[3]);
+  assign packed_default_pulldown_desc = pull_enable ? pull_data : 7'bz;
+  assign packed_default_pulldown_asc = pull_enable ? pull_data : 7'bz;
+
+  initial begin
+    for (int cyc = 0; cyc < 16; ++cyc) begin
+      pull_enable = cyc[0];
+      pull_data = 7'(cyc * 19);
+      #1;
+      `checkh(packed_default_pullup_desc, pull_enable ? pull_data : 7'h7f);
+      `checkh(packed_default_pullup_asc, pull_enable ? pull_data : 7'h7f);
+      `checkh(packed_default_pulldown_desc, pull_enable ? pull_data : 7'h00);
+      `checkh(packed_default_pulldown_asc, pull_enable ? pull_data : 7'h00);
+    end
+    pull_done = 1;
+  end
+
   initial begin
     // Test 1: Lower bits = 0xF
     in_value = 4'hF;
@@ -76,6 +113,7 @@ module t;
     // Expected: 0x50 = 0101_0000
     `checkh(out_value, 8'h50);
 
+    wait (pull_done);
     $write("*-* All Finished *-*\n");
     $finish;
   end

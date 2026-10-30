@@ -71,6 +71,33 @@ module mask_col (
   conb t7 (.LO(out[7]));  // bit 7 = 0
 endmodule
 
+// Combine whole-variable and per-bit pulls in both range directions. Strong
+// drivers produce an asymmetric pattern, leaving other bits at their defaults.
+module mask_ranges (
+    input drive_enable,
+    output tri1 [7:1] descending_up,
+    output tri0 [7:1] descending_down,
+    // verilator lint_off ASCRANGE
+    output tri1 [1:7] ascending_up,
+    output tri0 [1:7] ascending_down
+    // verilator lint_on ASCRANGE
+);
+  localparam [6:0] PULL_MASK = 7'b1010011;
+  pullup (descending_up[1]);
+  pullup (ascending_up[7]);
+  pulldown (descending_down[3]);
+  pulldown (ascending_down[5]);
+  for (genvar i = 1; i <= 7; ++i) begin : g
+    if (PULL_MASK[i-1]) begin : up
+      assign descending_down[i] = drive_enable ? 1'bz : 1'b1;
+      assign ascending_down[8-i] = drive_enable ? 1'bz : 1'b1;
+    end else begin : down
+      assign descending_up[i] = drive_enable ? 1'bz : 1'b0;
+      assign ascending_up[8-i] = drive_enable ? 1'bz : 1'b0;
+    end
+  end
+endmodule
+
 module top (
     input [31:0] in_value,
     output [31:0] out_value
@@ -103,10 +130,78 @@ module t;
   // 0x80 = bit 15 pullup + bits 14:8 pulldown, 0x00 = passthrough[7:0].
   wire [31:0] expected = 32'hDE55_8000;
 
+  // Cross both child port directions with both parent range directions.
+  // Different part-select offsets expose misplaced or reversed per-bit pulls.
+  wire [15:1] desc_from_desc_up;
+  wire [15:1] desc_from_desc_down;
+  wire [15:1] desc_from_asc_up;
+  wire [15:1] desc_from_asc_down;
+  // verilator lint_off ASCRANGE
+  wire [1:15] asc_from_desc_up;
+  wire [1:15] asc_from_desc_down;
+  wire [1:15] asc_from_asc_up;
+  wire [1:15] asc_from_asc_down;
+  // verilator lint_on ASCRANGE
+  logic range_enable;
+  logic [14:0] range_data;
+  bit ranges_done = 0;
+  mask_ranges desc_parent (
+      .drive_enable(range_enable),
+      .descending_up(desc_from_desc_up[11:5]),
+      .descending_down(desc_from_desc_down[11:5]),
+      .ascending_up(desc_from_asc_up[11:5]),
+      .ascending_down(desc_from_asc_down[11:5])
+  );
+  mask_ranges asc_parent (
+      .drive_enable(range_enable),
+      .descending_up(asc_from_desc_up[3:9]),
+      .descending_down(asc_from_desc_down[3:9]),
+      .ascending_up(asc_from_asc_up[3:9]),
+      .ascending_down(asc_from_asc_down[3:9])
+  );
+  assign desc_from_desc_up = {range_data[14:11],
+                             range_enable ? range_data[10:4] : 7'bz, range_data[3:0]};
+  assign desc_from_desc_down = {range_data[14:11],
+                               range_enable ? range_data[10:4] : 7'bz, range_data[3:0]};
+  assign desc_from_asc_up = {range_data[14:11],
+                            range_enable ? range_data[10:4] : 7'bz, range_data[3:0]};
+  assign desc_from_asc_down = {range_data[14:11],
+                              range_enable ? range_data[10:4] : 7'bz, range_data[3:0]};
+  assign asc_from_desc_up = {range_data[14:13],
+                            range_enable ? range_data[12:6] : 7'bz, range_data[5:0]};
+  assign asc_from_desc_down = {range_data[14:13],
+                              range_enable ? range_data[12:6] : 7'bz, range_data[5:0]};
+  assign asc_from_asc_up = {range_data[14:13],
+                           range_enable ? range_data[12:6] : 7'bz, range_data[5:0]};
+  assign asc_from_asc_down = {range_data[14:13],
+                             range_enable ? range_data[12:6] : 7'bz, range_data[5:0]};
+
+  initial begin
+    logic [14:0] expected_desc;
+    logic [14:0] expected_asc;
+    for (int cyc = 0; cyc < 16; ++cyc) begin
+      range_enable = cyc[0];
+      range_data = 15'(cyc * 1931);
+      #1;
+      expected_desc = range_enable ? range_data : {range_data[14:11], 7'h53, range_data[3:0]};
+      expected_asc = range_enable ? range_data : {range_data[14:13], 7'h53, range_data[5:0]};
+      `checkh(desc_from_desc_up, expected_desc);
+      `checkh(desc_from_desc_down, expected_desc);
+      `checkh(desc_from_asc_up, expected_desc);
+      `checkh(desc_from_asc_down, expected_desc);
+      `checkh(asc_from_desc_up, expected_asc);
+      `checkh(asc_from_desc_down, expected_asc);
+      `checkh(asc_from_asc_up, expected_asc);
+      `checkh(asc_from_asc_down, expected_asc);
+    end
+    ranges_done = 1;
+  end
+
   initial begin
     #0;  // Reading a continuously assigned net in an initial block is a time 0 race.
     $display("in_value = %h, out_value = %h, expected = %h", in_value, out_value, expected);
     `checkh(out_value, expected);
+    wait (ranges_done);
     $write("*-* All Finished *-*\n");
     $finish;
   end
