@@ -939,6 +939,7 @@ private:
         iterateChildren(nodep);
         if (!nodep->immediate()) {
             nodep->sentreep(newSenTree(nodep, nullptr, nodep));
+            // An empty SenTree only follows the no-clock error.
             if (!nodep->sentreep()->sensesp()) {
                 VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             }

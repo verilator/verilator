@@ -7,6 +7,7 @@
 module t;
   logic a, b;
   assert property (a);
+  assert property (a |=> b);
   assert property ((a [* 2]) implies (a [* 2]));
   assert property ((s_eventually a) implies (s_eventually a));
   assert property ((a s_until b) implies (a s_until b));
