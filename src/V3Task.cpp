@@ -1380,85 +1380,81 @@ class TaskVisitor final : public VNVisitor {
         string args;
         AstNode* copyBacksp = nullptr;  // Statements copying back open array copies
         for (AstNode* const stmtp : cfuncp->argspList()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                AstVarScope* const portvscp
-                    = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
-                if (portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
-                    && portp->name() != "__Vscopep"  // Passed to dpiContext, not callee
-                    && portp->name() != "__Vfilenamep" && portp->name() != "__Vlineno") {
+            AstVar* const portp = VN_CAST(stmtp, Var);
+            if (!portp) continue;
+            AstVarScope* const portvscp
+                = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
+            if (!(portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
+                  && portp->name() != "__Vscopep"  // Passed to dpiContext, not callee
+                  && portp->name() != "__Vfilenamep" && portp->name() != "__Vlineno")) {
+                continue;
+            }
 
-                    if (args != "") args += ", ";
+            if (args != "") args += ", ";
 
-                    if (portp->isDpiOpenArray()) {
-                        FileLine* const flp = portp->fileline();
-                        const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
-                        const bool dynamic
-                            = VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType);
-                        // Pass a copy of a dynamic array or queue, as the elements of a queue are
-                        // not contiguous
-                        const string copyName = portp->name() + "__Vopencopy";
-                        if (dynamic) {
-                            AstCStmt* const copyp = new AstCStmt{
-                                flp, "std::vector<" + dtypep->subDTypep()->cType("", false, false)
-                                         + "> " + copyName + "("};
-                            copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
-                            copyp->add(".begin(), ");
-                            copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
-                            copyp->add(".end());");
-                            cfuncp->addStmtsp(copyp);
-                            if (portp->isWritable()) {
-                                AstCStmt* const backp = new AstCStmt{flp};
-                                backp->add(new AstVarRef{flp, portvscp, VAccess::WRITE});
-                                backp->add(".assign(" + copyName + ".begin(), " + copyName
-                                           + ".end());");
-                                copyBacksp = AstNode::addNext(copyBacksp, backp);
-                            }
-                        }
-                        // Ideally we'd make a table of variable
-                        // characteristics, and reuse it wherever we can
-                        // At least put them into the module's CTOR as static?
-                        const string propName = portp->name() + "__Vopenprops";
-                        const string propCode = portp->vlPropDecl(
-                            propName, dynamic ? "static_cast<int>(" + copyName + ".size())" : "");
-                        cfuncp->addStmtsp(new AstCStmt{flp, propCode});
-                        //
-                        // At runtime we need the svOpenArrayHandle to
-                        // point to this task & thread's data, in addition
-                        // to static info about the variable
-                        const string name = portp->name() + "__Vopenarray";
-                        AstCStmt* const openVarp = new AstCStmt{
-                            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-                            flp, "VerilatedDpiOpenVar " + name + " (&" + propName + ", "};
-                        if (dynamic) {
-                            openVarp->add(copyName + ".data()");
-                        } else {
-                            openVarp->add("&");
-                            openVarp->add(new AstVarRef{flp, portvscp,
-                                                        portp->isWritable() ? VAccess::READWRITE
-                                                                            : VAccess::READ});
-                        }
-                        openVarp->add(");");
-                        cfuncp->addStmtsp(openVarp);
-                        args += "&" + name;
-                    } else {
-                        // Unpacked structures are passed by reference from a C array
-                        const bool isStruct = portp->dtypep()->containsUnpackedStruct();
-                        if (portp->isWritable() && !isStruct
-                            && portp->dtypep()->isDpiPrimitive()) {
-                            if (!VN_IS(portp->dtypep()->skipRefp(), UnpackArrayDType)) args += "&";
-                        }
-
-                        args += portp->name() + tmpSuffixp;
-
-                        cfuncp->addStmtsp(createDpiTemp(portp, tmpSuffixp));
-                        if (portp->isNonOutput()) {
-                            cfuncp->addStmtsp(
-                                isStruct
-                                    ? createDpiArgCvt(cfuncp, portvscp, portp->name() + tmpSuffixp,
-                                                      true)
-                                    : createAssignInternalToDpi(portp, false, "", tmpSuffixp));
-                        }
+            if (portp->isDpiOpenArray()) {
+                FileLine* const flp = portp->fileline();
+                const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
+                const bool dynamic = VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType);
+                // Pass a copy of a dynamic array or queue, as the elements of a queue are
+                // not contiguous
+                const string copyName = portp->name() + "__Vopencopy";
+                if (dynamic) {
+                    AstCStmt* const copyp = new AstCStmt{
+                        flp, "std::vector<" + dtypep->subDTypep()->cType("", false, false) + "> "
+                                 + copyName + "("};
+                    copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
+                    copyp->add(".begin(), ");
+                    copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
+                    copyp->add(".end());");
+                    cfuncp->addStmtsp(copyp);
+                    if (portp->isWritable()) {
+                        AstCStmt* const backp = new AstCStmt{flp};
+                        backp->add(new AstVarRef{flp, portvscp, VAccess::WRITE});
+                        backp->add(".assign(" + copyName + ".begin(), " + copyName + ".end());");
+                        copyBacksp = AstNode::addNext(copyBacksp, backp);
                     }
+                }
+                // Ideally we'd make a table of variable
+                // characteristics, and reuse it wherever we can
+                // At least put them into the module's CTOR as static?
+                const string propName = portp->name() + "__Vopenprops";
+                const string propCode = portp->vlPropDecl(
+                    propName, dynamic ? "static_cast<int>(" + copyName + ".size())" : "");
+                cfuncp->addStmtsp(new AstCStmt{flp, propCode});
+                //
+                // At runtime we need the svOpenArrayHandle to
+                // point to this task & thread's data, in addition
+                // to static info about the variable
+                const string name = portp->name() + "__Vopenarray";
+                AstCStmt* const openVarp
+                    = new AstCStmt{// NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                                   flp, "VerilatedDpiOpenVar " + name + " (&" + propName + ", "};
+                if (dynamic) {
+                    openVarp->add(copyName + ".data()");
+                } else {
+                    openVarp->add("&");
+                    openVarp->add(new AstVarRef{
+                        flp, portvscp, portp->isWritable() ? VAccess::READWRITE : VAccess::READ});
+                }
+                openVarp->add(");");
+                cfuncp->addStmtsp(openVarp);
+                args += "&" + name;
+            } else {
+                // Unpacked structures are passed by reference from a C array
+                const bool isStruct = portp->dtypep()->containsUnpackedStruct();
+                if (portp->isWritable() && !isStruct && portp->dtypep()->isDpiPrimitive()) {
+                    if (!VN_IS(portp->dtypep()->skipRefp(), UnpackArrayDType)) args += "&";
+                }
+
+                args += portp->name() + tmpSuffixp;
+
+                cfuncp->addStmtsp(createDpiTemp(portp, tmpSuffixp));
+                if (portp->isNonOutput()) {
+                    cfuncp->addStmtsp(
+                        isStruct
+                            ? createDpiArgCvt(cfuncp, portvscp, portp->name() + tmpSuffixp, true)
+                            : createAssignInternalToDpi(portp, false, "", tmpSuffixp));
                 }
             }
         }
