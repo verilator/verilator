@@ -69,6 +69,16 @@ class Flat;
   constraint rel_c {c < x;}
 endclass
 
+// The unique applies only when c == 3, and five 2-bit elements are never distinct
+class CondUnique;
+  randc bit [1:0] c;
+  rand bit [1:0] v[5];
+  constraint cond_c {
+    if (c == 3)
+    unique {v};
+  }
+endclass
+
 // Two-value domain, one feasible
 class OneBit;
   randc bit c;
@@ -459,6 +469,31 @@ module t;
         `checkd(ccount[3], 0);  // zero-ok: c == 3 satisfies no x
         for (int v = 0; v < 3; ++v) `checkd(ccount[v] >= 1, 1'b1);
         if (fails == 1) for (int v = 0; v < 3; ++v) `checkd(ccount[v], 1);
+        total += fails;
+      end
+      `checkd(total >= 1, 1'b1);
+    end
+
+    // CondUniqueCycle: as FreshCycle, with c == 3 infeasible through a unique under a
+    // condition. The unique names the rand array v, so the draw is blind to it; were the
+    // constraint drawn with v unconstrained, the draw would skip 3 and no call would fail.
+    begin
+      automatic CondUnique cu;
+      automatic int fails;
+      automatic int total = 0;
+      automatic int ccount[4];
+      for (int n = 0; n < 16; ++n) begin
+        cu = new;
+        fails = 0;
+        ccount = '{default: 0};
+        for (int i = 0; i < 4; ++i) begin
+          ok = cu.randomize();
+          if (ok == 0)++fails;
+          else ++ccount[cu.c];
+        end
+        `checkd(fails <= 1, 1'b1);
+        `checkd(ccount[3], 0);  // zero-ok: c == 3 admits no v
+        for (int v = 0; v < 3; ++v) `checkd(ccount[v] >= 1, 1'b1);
         total += fails;
       end
       `checkd(total >= 1, 1'b1);
