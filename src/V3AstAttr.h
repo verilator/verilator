@@ -913,194 +913,191 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
 // - "TODO" if not yet checked due to existing issues
 // clang-format off
 #define FOR_EACH_CMETHOD(macro) \
-    /*    id,                                 method,                   pure,   clean,  args */ \
-    macro(_NONE,                              "_none",                  false,  CLEAN,  "") \
-    macro(ARRAY_AT,                           "at",                     PURE,   CLEAN,  "r") \
-    macro(ARRAY_AT_BACK,                      "atBack",                 PURE,   CLEAN,  "r") \
-    macro(ARRAY_AT_WRITE,                     "atWrite",                PURE,   CLEAN,  "r") \
-    macro(ARRAY_FIND,                         "find",                   PURE,   CLEAN,  "") \
-    macro(ARRAY_FIND_FIRST,                   "find_first",             PURE,   CLEAN,  "") \
-    macro(ARRAY_FIND_FIRST_INDEX,             "find_first_index",       PURE,   CLEAN,  "") \
-    macro(ARRAY_FIND_INDEX,                   "find_index",             PURE,   CLEAN,  "") \
-    macro(ARRAY_FIND_LAST,                    "find_last",              PURE,   CLEAN,  "") \
-    macro(ARRAY_FIND_LAST_INDEX,              "find_last_index",        PURE,   CLEAN,  "") \
-    macro(ARRAY_FIRST,                        "first",                  false,  CLEAN,  "m") \
-    macro(ARRAY_INSIDE,                       "inside",                 PURE,   CLEAN,  "r") \
-    macro(ARRAY_LAST,                         "last",                   false,  CLEAN,  "m") \
-    macro(ARRAY_MAP,                          "map",                    PURE,   CLEAN,  "") \
-    macro(ARRAY_MAX,                          "max",                    PURE,   CLEAN,  "") \
-    macro(ARRAY_MIN,                          "min",                    PURE,   CLEAN,  "") \
-    macro(ARRAY_NEXT,                         "next",                   false,  CLEAN,  "m") \
-    macro(ARRAY_POP_BACK,                     "pop_back",               false,  CLEAN,  "") \
-    macro(ARRAY_POP_FRONT,                    "pop_front",              false,  CLEAN,  "") \
-    macro(ARRAY_PREV,                         "prev",                   false,  CLEAN,  "m") \
-    macro(ARRAY_PUSH_BACK,                    "push_back",              false,  CLEAN,  "r") \
-    macro(ARRAY_PUSH_FRONT,                   "push_front",             false,  CLEAN,  "r") \
-    macro(ARRAY_REVERSE,                      "reverse",                false,  CLEAN,  "") \
-    macro(ARRAY_RSORT,                        "rsort",                  false,  CLEAN,  "") \
-    macro(ARRAY_R_AND,                        "r_and",                  PURE,   CLEAN,  "") \
-    macro(ARRAY_R_OR,                         "r_or",                   PURE,   CLEAN,  "") \
-    macro(ARRAY_R_PRODUCT,                    "r_product",              PURE,   false,  "") \
-    macro(ARRAY_R_SUM,                        "r_sum",                  PURE,   false,  "") \
-    macro(ARRAY_R_XOR,                        "r_xor",                  PURE,   CLEAN,  "") \
-    macro(ARRAY_SHUFFLE,                      "shuffle",                false,  CLEAN,  "") \
-    macro(ARRAY_SLICE,                        "slice",                  PURE,   CLEAN,  "r") \
-    macro(ARRAY_SORT,                         "sort",                   false,  CLEAN,  "") \
-    macro(ARRAY_UNIQUE,                       "unique",                 PURE,   CLEAN,  "") \
-    macro(ARRAY_UNIQUE_INDEX,                 "unique_index",           PURE,   CLEAN,  "") \
-    macro(ASSOC_CLEAR,                        "clear",                  false,  CLEAN,  "") \
-    macro(ASSOC_ERASE,                        "erase",                  false,  CLEAN,  "r") \
-    macro(ASSOC_EXISTS,                       "exists",                 PURE,   CLEAN,  "r") \
-    macro(ASSOC_FIRST,                        "first",                  false,  CLEAN,  "m") \
-    macro(ASSOC_NEXT,                         "next",                   false,  CLEAN,  "m") \
-    macro(ASSOC_SIZE,                         "size",                   PURE,   CLEAN,  "") \
-    macro(CLASS_SET_RANDMODE,                 "set_randmode",           false,  CLEAN,  "r") \
-    macro(COVERGROUP_ADD_ARRAY_NAMER,         "addArrayNamer",          false,  CLEAN,  "r+") \
-    macro(COVERGROUP_ADD_BIN,                 "addBin",                 false,  CLEAN,  "r+") \
-    macro(COVERGROUP_ADD_COVERPOINT,          "addCoverpoint",          false,  CLEAN,  "") \
-    macro(COVERGROUP_ADD_CROSS,               "addCross",               false,  CLEAN,  "") \
-    macro(COVERGROUP_ADD_CROSS_DYN,           "addCrossDyn",            false,  CLEAN,  "") \
-    macro(COVERGROUP_ADD_NUMBERED_NAMER,      "addNumberedNamer",       false,  CLEAN,  "r+") \
-    macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false,  CLEAN,  "r+") \
-    macro(COVERGROUP_ATTACH,                  "attach",                 false,  CLEAN,  "r") \
-    macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  CLEAN,  "") \
-    macro(COVERGROUP_COVERAGE,                "coverage",               false,  CLEAN,  "") \
-    macro(COVERGROUP_CROSS_WITH_BEGIN,        "withBegin",              false,  CLEAN,  "r+") \
-    macro(COVERGROUP_CROSS_WITH_END,          "withEnd",                false,  CLEAN,  "") \
-    macro(COVERGROUP_CROSS_WITH_TEST,         "withTest",               false,  CLEAN,  "r") \
-    macro(COVERGROUP_CROSS_WITH_VALUE,        "withValue",              false,  CLEAN,  "r") \
-    macro(COVERGROUP_CROSS_WITH_VALUE_W,      "withValueW",             false,  CLEAN,  "rw") \
-    macro(COVERGROUP_FINALIZE_BINS,           "finalizeBins",           false,  CLEAN,  "") \
-    macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  CLEAN,  "r") \
-    macro(COVERGROUP_INIT,                    "init",                   false,  CLEAN,  "r+") \
-    macro(COVERGROUP_INST_P,                  "p",                      PURE,   CLEAN,  "") \
-    macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  CLEAN,  "rr") \
-    macro(COVERGROUP_MERGED_COVERAGE,         "mergedCoverage",         false,  CLEAN,  "r") \
-    macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  CLEAN,  "r") \
-    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  CLEAN,  "rrrr") \
-    macro(COVERGROUP_SAMPLE,                  "sample",                 false,  CLEAN,  "") \
-    macro(COVERGROUP_SAMPLE_IFFS,             "sample",                 false,  CLEAN,  "r") \
-    macro(COVERGROUP_SELECT_ALL,              "selectAll",              false,  CLEAN,  "") \
-    macro(COVERGROUP_SELECT_AND,              "selectAnd",              false,  CLEAN,  "") \
-    macro(COVERGROUP_SELECT_BIN,              "selectBin",              false,  CLEAN,  "r+") \
-    macro(COVERGROUP_SELECT_DIM,              "selectDim",              false,  CLEAN,  "r+") \
-    macro(COVERGROUP_SELECT_DIM_END,          "selectDimEnd",           false,  CLEAN,  "") \
-    macro(COVERGROUP_SELECT_OR,               "selectOr",               false,  CLEAN,  "") \
-    macro(COVERGROUP_SELECT_RANGE,            "selectRange",            false,  CLEAN,  "rr") \
-    macro(COVERGROUP_SELECT_RANGE_W,          "selectRangeW",           false,  CLEAN,  "rr") \
-    macro(COVERGROUP_SIZED_END,               "sizedEnd",               PURE,   CLEAN,  "r") \
-    macro(COVERGROUP_SIZED_FINISH,            "sizedFinish",            false,  CLEAN,  "r+") \
-    macro(COVERGROUP_SIZED_FIRST,             "sizedFirst",             PURE,   CLEAN,  "r") \
-    macro(COVERGROUP_SIZED_RANGE,             "sizedRange",             false,  CLEAN,  "rr") \
-    macro(COVERGROUP_SIZED_RANGE_W,           "sizedRangeW",            false,  CLEAN,  "rr") \
-    macro(COVERGROUP_SIZED_SAMPLE,            "sizedSample",            false,  CLEAN,  "rrr") \
-    macro(COVERGROUP_SIZED_SAMPLE_W,          "sizedSampleW",           false,  CLEAN,  "rrr") \
-    macro(COVERGROUP_TRANSITION_ADD,          "transitionAdd",          false,  CLEAN,  "r") \
-    macro(COVERGROUP_TRANSITION_SAMPLE,       "transitionSample",       false,  CLEAN,  "rr") \
-    macro(COVERGROUP_TRANSITION_SAMPLE_W,     "transitionSampleW",      false,  CLEAN,  "rr") \
-    macro(COVERGROUP_TRANSITION_TABLE,        "transitionTable",        false,  CLEAN,  "r") \
-    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  CLEAN,  "rrrr") \
-    macro(COVERGROUP_TYPE_WEIGHT,             "typeWeight",             false,  CLEAN,  "r") \
-    macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   CLEAN,  "r") \
-    macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   CLEAN,  "r") \
-    macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  CLEAN,  "") \
-    macro(COVERGROUP_VALUE_PATTERNS,          "valuePatterns",          false,  CLEAN,  "r") \
-    macro(COVERGROUP_VALUE_RANGES,            "valueRanges",            false,  CLEAN,  "r") \
-    macro(COVERGROUP_VALUE_RELEASE,           "valueRelease",           false,  CLEAN,  "") \
-    macro(COVERGROUP_VALUE_RUNS,              "valueRuns",              false,  CLEAN,  "r") \
-    macro(COVERGROUP_VALUE_TRANSITIONS,       "valueTransitions",       false,  CLEAN,  "r") \
-    macro(COVERGROUP_VALUE_TYPE,              "valueType",              false,  CLEAN,  "rr") \
-    macro(COVERGROUP_WEIGHT,                  "weight",                 false,  CLEAN,  "rr") \
-    macro(COVERGROUP_WITH_BEGIN,              "withBegin",              false,  CLEAN,  "rr") \
-    macro(COVERGROUP_WITH_FINISH,             "withFinish",             false,  CLEAN,  "r+") \
-    macro(COVERGROUP_WITH_HI,                 "withHi",                 false,  CLEAN,  "") \
-    macro(COVERGROUP_WITH_HI_W,               "withHiW",                false,  CLEAN,  "w") \
-    macro(COVERGROUP_WITH_LO,                 "withLo",                 false,  CLEAN,  "") \
-    macro(COVERGROUP_WITH_LO_W,               "withLoW",                false,  CLEAN,  "w") \
-    macro(COVERGROUP_WITH_NEXT,               "withNext",               false,  CLEAN,  "") \
-    macro(COVERGROUP_WITH_RUN,                "withRun",                false,  CLEAN,  "rr") \
-    macro(COVERGROUP_WITH_RUN_W,              "withRunW",               false,  CLEAN,  "rr") \
-    macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  CLEAN,  "r") \
-    macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  CLEAN,  "r") \
-    macro(DYN_CLEAR,                          "clear",                  false,  CLEAN,  "") \
-    macro(DYN_ERASE,                          "erase",                  false,  CLEAN,  "r") \
-    macro(DYN_INSERT,                         "insert",                 false,  CLEAN,  "rr") \
-    macro(DYN_POP,                            "pop",                    false,  CLEAN,  "rrm") \
-    macro(DYN_POP_FRONT,                      "pop_front",              false,  CLEAN,  "") \
-    macro(DYN_PUSH,                           "push",                   false,  CLEAN,  "rr") \
-    macro(DYN_PUSH_FRONT,                     "push_front",             false,  CLEAN,  "r") \
-    macro(DYN_RENEW,                          "renew",                  false,  CLEAN,  "r") \
-    macro(DYN_RENEW_COPY,                     "renew_copy",             false,  CLEAN,  "rr") \
-    macro(DYN_RESIZE,                         "resize",                 false,  CLEAN,  "TODO") \
-    macro(DYN_SIZE,                           "size",                   PURE,   CLEAN,  "") \
-    macro(DYN_SLICE,                          "slice",                  PURE,   CLEAN,  "rr") \
-    macro(DYN_SLICE_ASSIGN,                   "sliceAssign",            false,  CLEAN,  "rrr") \
-    macro(DYN_SLICE_ASSIGN_BACK_BACK,         "sliceAssignBackBack",    false,  CLEAN,  "rrr") \
-    macro(DYN_SLICE_ASSIGN_FRONT_BACK,        "sliceAssignFrontBack",   false,  CLEAN,  "rrr") \
-    macro(DYN_SLICE_BACK_BACK,                "sliceBackBack",          PURE,   CLEAN,  "rr") \
-    macro(DYN_SLICE_FRONT_BACK,               "sliceFrontBack",         PURE,   CLEAN,  "rr") \
-    macro(EVENT_CLEAR_FIRED,                  "clearFired",             false,  CLEAN,  "") \
-    macro(EVENT_CLEAR_TRIGGERED,              "clearTriggered",         false,  CLEAN,  "") \
-    macro(EVENT_FIRE,                         "fire",                   false,  CLEAN,  "") \
-    macro(EVENT_IS_FIRED,                     "isFired",                PURE,   CLEAN,  "") \
-    macro(EVENT_IS_TRIGGERED,                 "isTriggered",            PURE,   CLEAN,  "") \
-    macro(FORCE_ADD,                          "addForce",               false,  CLEAN,  "rrrr+") \
-    macro(FORCE_READ,                         "read",                   PURE,   CLEAN,  "r") \
-    macro(FORCE_READ_INDEX,                   "readIndex",              PURE,   CLEAN,  "rr") \
-    macro(FORCE_READ_SEL,                     "readSel",                PURE,   CLEAN,  "TODO") \
-    macro(FORCE_RELEASE,                      "release",                false,  CLEAN,  "rr+") \
-    macro(FORCE_TOUCH,                        "touch",                  false,  CLEAN,  "") \
-    macro(FORK_DONE,                          "done",                   false,  CLEAN,  "rr") \
-    macro(FORK_INIT,                          "init",                   false,  CLEAN,  "rr") \
-    macro(FORK_JOIN,                          "join",                   false,  CLEAN,  "rrr") \
-    macro(FORK_ON_KILL,                       "onKill",                 false,  CLEAN,  "r") \
-    macro(NBA_COMMIT,                         "commit",                 false,  CLEAN,  "w") \
-    macro(NBA_ENQUEUE,                        "enqueue",                false,  CLEAN,  "r+") \
-    macro(RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization",  false,  CLEAN,  "mr") \
-    macro(RANDOMIZER_CLEARCONSTRAINTS,        "clearConstraints",       false,  CLEAN,  "") \
-    macro(RANDOMIZER_CLEARALL,                "clearAll",               false,  CLEAN,  "") \
-    macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false,  CLEAN,  "r") \
-    macro(RANDOMIZER_HARD,                    "hard",                   false,  CLEAN,  "r+") \
-    macro(RANDOMIZER_SOFT,                    "soft",                   false,  CLEAN,  "rrrr") \
-    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  CLEAN,  "rr") \
-    macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  CLEAN,  "r") \
-    macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  CLEAN,  "rr") \
-    macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  CLEAN,  "rrr") \
-    macro(RANDOMIZER_UPDATE_VAR,              "update_var",             false,  CLEAN,  "TODO") \
-    macro(RANDOMIZER_WRITE_VAR,               "write_var",              false,  CLEAN,  "TODO") \
-    macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false,  CLEAN,  "r") \
-    macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false,  CLEAN,  "r") \
-    macro(RANDOMIZER_MARK_VAR_STATIC,         "mark_var_static",        false,  CLEAN,  "r") \
-    macro(RANDOMIZER_SET_STATIC_RANDMODE,     "set_static_randmode",    false,  CLEAN,  "r") \
-    macro(RNG_GET_RANDSTATE,                  "__Vm_rng.get_randstate", PURE,   CLEAN,  "") \
-    macro(RNG_SET_RANDSTATE,                  "__Vm_rng.set_randstate", false,  CLEAN,  "r") \
-    macro(SCHED_ANY_TRIGGERED,                "anyTriggered",           false,  CLEAN,  "r") \
-    macro(SCHED_AWAITING_CURRENT_TIME,        "awaitingCurrentTime",    PURE,   CLEAN,  "") \
-    macro(SCHED_AWAITING_ZERO_DELAY,          "awaitingZeroDelay",      PURE,   CLEAN,  "") \
-    macro(SCHED_READY,                        "ready",                  false,  CLEAN,  "r") \
-    macro(SCHED_MOVE_TO_RESUME_QUEUE,         "moveToResumeQueue",      false,  CLEAN,  "r") \
-    macro(SCHED_DELAY,                        "delay",                  false,  CLEAN,  "rrrr") \
-    macro(SCHED_DO_POST_UPDATES,              "doPostUpdates",          false,  CLEAN,  "") \
-    macro(SCHED_EVALUATE,                     "evaluate",               false,  CLEAN,  "") \
-    macro(SCHED_EVALUATION,                   "evaluation",             false,  CLEAN,  "rrrr") \
-    macro(SCHED_POST_UPDATE,                  "postUpdate",             false,  CLEAN,  "rrrr") \
-    macro(SCHED_RESUME,                       "resume",                 false,  CLEAN,  "TODO") \
-    macro(SCHED_RESUME_ZERO_DELAY,            "resumeZeroDelay",        false,  CLEAN,  "") \
-    macro(SCHED_RESUMPTION,                   "resumption",             false,  CLEAN,  "rrrr") \
-    macro(SCHED_TRIGGER,                      "trigger",                false,  CLEAN,  "rrrrr") \
-    macro(SCHED_WAIT_FOREVER,                 "waitForever",            false,  CLEAN,  "rrr") \
-    macro(UNPACKED_ASSIGN,                    "assign",                 false,  CLEAN,  "r") \
-    macro(UNPACKED_FILL,                      "fill",                   false,  CLEAN,  "r") \
-    macro(UNPACKED_NEQ,                       "neq",                    PURE,   CLEAN,  "r")
+    /*    id,                                 method,                   pure,   clean,  awaitable,  args */ \
+    macro(_NONE,                              "_none",                  false,  CLEAN,  false,      "") \
+    macro(ARRAY_AT,                           "at",                     PURE,   CLEAN,  false,      "r") \
+    macro(ARRAY_AT_BACK,                      "atBack",                 PURE,   CLEAN,  false,      "r") \
+    macro(ARRAY_AT_WRITE,                     "atWrite",                PURE,   CLEAN,  false,      "r") \
+    macro(ARRAY_FIND,                         "find",                   PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_FIND_FIRST,                   "find_first",             PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_FIND_FIRST_INDEX,             "find_first_index",       PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_FIND_INDEX,                   "find_index",             PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_FIND_LAST,                    "find_last",              PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_FIND_LAST_INDEX,              "find_last_index",        PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_FIRST,                        "first",                  false,  CLEAN,  false,      "m") \
+    macro(ARRAY_INSIDE,                       "inside",                 PURE,   CLEAN,  false,      "r") \
+    macro(ARRAY_LAST,                         "last",                   false,  CLEAN,  false,      "m") \
+    macro(ARRAY_MAP,                          "map",                    PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_MAX,                          "max",                    PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_MIN,                          "min",                    PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_NEXT,                         "next",                   false,  CLEAN,  false,      "m") \
+    macro(ARRAY_POP_BACK,                     "pop_back",               false,  CLEAN,  false,      "") \
+    macro(ARRAY_POP_FRONT,                    "pop_front",              false,  CLEAN,  false,      "") \
+    macro(ARRAY_PREV,                         "prev",                   false,  CLEAN,  false,      "m") \
+    macro(ARRAY_PUSH_BACK,                    "push_back",              false,  CLEAN,  false,      "r") \
+    macro(ARRAY_PUSH_FRONT,                   "push_front",             false,  CLEAN,  false,      "r") \
+    macro(ARRAY_REVERSE,                      "reverse",                false,  CLEAN,  false,      "") \
+    macro(ARRAY_RSORT,                        "rsort",                  false,  CLEAN,  false,      "") \
+    macro(ARRAY_R_AND,                        "r_and",                  PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_R_OR,                         "r_or",                   PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_R_PRODUCT,                    "r_product",              PURE,   false,  false,      "") \
+    macro(ARRAY_R_SUM,                        "r_sum",                  PURE,   false,  false,      "") \
+    macro(ARRAY_R_XOR,                        "r_xor",                  PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_SHUFFLE,                      "shuffle",                false,  CLEAN,  false,      "") \
+    macro(ARRAY_SLICE,                        "slice",                  PURE,   CLEAN,  false,      "r") \
+    macro(ARRAY_SORT,                         "sort",                   false,  CLEAN,  false,      "") \
+    macro(ARRAY_UNIQUE,                       "unique",                 PURE,   CLEAN,  false,      "") \
+    macro(ARRAY_UNIQUE_INDEX,                 "unique_index",           PURE,   CLEAN,  false,      "") \
+    macro(ASSOC_CLEAR,                        "clear",                  false,  CLEAN,  false,      "") \
+    macro(ASSOC_ERASE,                        "erase",                  false,  CLEAN,  false,      "r") \
+    macro(ASSOC_EXISTS,                       "exists",                 PURE,   CLEAN,  false,      "r") \
+    macro(ASSOC_FIRST,                        "first",                  false,  CLEAN,  false,      "m") \
+    macro(ASSOC_NEXT,                         "next",                   false,  CLEAN,  false,      "m") \
+    macro(ASSOC_SIZE,                         "size",                   PURE,   CLEAN,  false,      "") \
+    macro(CLASS_SET_RANDMODE,                 "set_randmode",           false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_ADD_ARRAY_NAMER,         "addArrayNamer",          false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_ADD_BIN,                 "addBin",                 false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_ADD_COVERPOINT,          "addCoverpoint",          false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_ADD_CROSS,               "addCross",               false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_ADD_CROSS_DYN,           "addCrossDyn",            false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_ADD_NUMBERED_NAMER,      "addNumberedNamer",       false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_ADD_SINGLE_NAMER,        "addSingleNamer",         false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_ATTACH,                  "attach",                 false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_CLEAR_HIT_LIST,          "clearHitList",           false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_COVERAGE,                "coverage",               false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_CROSS_WITH_BEGIN,        "withBegin",              false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_CROSS_WITH_END,          "withEnd",                false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_CROSS_WITH_TEST,         "withTest",               false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_CROSS_WITH_VALUE,        "withValue",              false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_CROSS_WITH_VALUE_W,      "withValueW",             false,  CLEAN,  false,      "rw") \
+    macro(COVERGROUP_FINALIZE_BINS,           "finalizeBins",           false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_INCREMENT_BIN,           "incrementBin",           false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_INIT,                    "init",                   false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_INST_P,                  "p",                      PURE,   CLEAN,  false,      "") \
+    macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_MERGED_COVERAGE,         "mergedCoverage",         false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  CLEAN,  false,      "rrrr") \
+    macro(COVERGROUP_SAMPLE,                  "sample",                 false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_SAMPLE_IFFS,             "sample",                 false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_SELECT_ALL,              "selectAll",              false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_SELECT_AND,              "selectAnd",              false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_SELECT_BIN,              "selectBin",              false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_SELECT_DIM,              "selectDim",              false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_SELECT_DIM_END,          "selectDimEnd",           false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_SELECT_OR,               "selectOr",               false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_SELECT_RANGE,            "selectRange",            false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_SELECT_RANGE_W,          "selectRangeW",           false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_SIZED_END,               "sizedEnd",               PURE,   CLEAN,  false,      "r") \
+    macro(COVERGROUP_SIZED_FINISH,            "sizedFinish",            false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_SIZED_FIRST,             "sizedFirst",             PURE,   CLEAN,  false,      "r") \
+    macro(COVERGROUP_SIZED_RANGE,             "sizedRange",             false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_SIZED_RANGE_W,           "sizedRangeW",            false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_SIZED_SAMPLE,            "sizedSample",            false,  CLEAN,  false,      "rrr") \
+    macro(COVERGROUP_SIZED_SAMPLE_W,          "sizedSampleW",           false,  CLEAN,  false,      "rrr") \
+    macro(COVERGROUP_TRANSITION_ADD,          "transitionAdd",          false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_TRANSITION_SAMPLE,       "transitionSample",       false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_TRANSITION_SAMPLE_W,     "transitionSampleW",      false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_TRANSITION_TABLE,        "transitionTable",        false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_TYPE_COVERAGE,           "typeCoverage",           false,  CLEAN,  false,      "rrrr") \
+    macro(COVERGROUP_TYPE_WEIGHT,             "typeWeight",             false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_VALUE_EXCLUDED,          "valueExcluded",          PURE,   CLEAN,  false,      "r") \
+    macro(COVERGROUP_VALUE_EXCLUDED_W,        "valueExcludedW",         PURE,   CLEAN,  false,      "r") \
+    macro(COVERGROUP_VALUE_FINALIZE,          "valueFinalize",          false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_VALUE_PATTERNS,          "valuePatterns",          false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_VALUE_RANGES,            "valueRanges",            false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_VALUE_RELEASE,           "valueRelease",           false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_VALUE_RUNS,              "valueRuns",              false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_VALUE_TRANSITIONS,       "valueTransitions",       false,  CLEAN,  false,      "r") \
+    macro(COVERGROUP_VALUE_TYPE,              "valueType",              false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_WEIGHT,                  "weight",                 false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_WITH_BEGIN,              "withBegin",              false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_WITH_FINISH,             "withFinish",             false,  CLEAN,  false,      "r+") \
+    macro(COVERGROUP_WITH_HI,                 "withHi",                 false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_WITH_HI_W,               "withHiW",                false,  CLEAN,  false,      "w") \
+    macro(COVERGROUP_WITH_LO,                 "withLo",                 false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_WITH_LO_W,               "withLoW",                false,  CLEAN,  false,      "w") \
+    macro(COVERGROUP_WITH_NEXT,               "withNext",               false,  CLEAN,  false,      "") \
+    macro(COVERGROUP_WITH_RUN,                "withRun",                false,  CLEAN,  false,      "rr") \
+    macro(COVERGROUP_WITH_RUN_W,              "withRunW",               false,  CLEAN,  false,      "rr") \
+    macro(DYN_AT_WRITE_APPEND,                "atWriteAppend",          false,  CLEAN,  false,      "r") \
+    macro(DYN_AT_WRITE_APPEND_BACK,           "atWriteAppendBack",      false,  CLEAN,  false,      "r") \
+    macro(DYN_CLEAR,                          "clear",                  false,  CLEAN,  false,      "") \
+    macro(DYN_ERASE,                          "erase",                  false,  CLEAN,  false,      "r") \
+    macro(DYN_INSERT,                         "insert",                 false,  CLEAN,  false,      "rr") \
+    macro(DYN_POP,                            "pop",                    false,  CLEAN,  false,      "rrm") \
+    macro(DYN_POP_FRONT,                      "pop_front",              false,  CLEAN,  false,      "") \
+    macro(DYN_PUSH,                           "push",                   false,  CLEAN,  false,      "rr") \
+    macro(DYN_PUSH_FRONT,                     "push_front",             false,  CLEAN,  false,      "r") \
+    macro(DYN_RENEW,                          "renew",                  false,  CLEAN,  false,      "r") \
+    macro(DYN_RENEW_COPY,                     "renew_copy",             false,  CLEAN,  false,      "rr") \
+    macro(DYN_RESIZE,                         "resize",                 false,  CLEAN,  false,      "TODO") \
+    macro(DYN_SIZE,                           "size",                   PURE,   CLEAN,  false,      "") \
+    macro(DYN_SLICE,                          "slice",                  PURE,   CLEAN,  false,      "rr") \
+    macro(DYN_SLICE_ASSIGN,                   "sliceAssign",            false,  CLEAN,  false,      "rrr") \
+    macro(DYN_SLICE_ASSIGN_BACK_BACK,         "sliceAssignBackBack",    false,  CLEAN,  false,      "rrr") \
+    macro(DYN_SLICE_ASSIGN_FRONT_BACK,        "sliceAssignFrontBack",   false,  CLEAN,  false,      "rrr") \
+    macro(DYN_SLICE_BACK_BACK,                "sliceBackBack",          PURE,   CLEAN,  false,      "rr") \
+    macro(DYN_SLICE_FRONT_BACK,               "sliceFrontBack",         PURE,   CLEAN,  false,      "rr") \
+    macro(EVENT_CLEAR_FIRED,                  "clearFired",             false,  CLEAN,  false,      "") \
+    macro(EVENT_CLEAR_TRIGGERED,              "clearTriggered",         false,  CLEAN,  false,      "") \
+    macro(EVENT_FIRE,                         "fire",                   false,  CLEAN,  false,      "") \
+    macro(EVENT_IS_FIRED,                     "isFired",                PURE,   CLEAN,  false,      "") \
+    macro(EVENT_IS_TRIGGERED,                 "isTriggered",            PURE,   CLEAN,  false,      "") \
+    macro(FORCE_ADD,                          "addForce",               false,  CLEAN,  false,      "rrrr+") \
+    macro(FORCE_READ,                         "read",                   PURE,   CLEAN,  false,      "r") \
+    macro(FORCE_READ_INDEX,                   "readIndex",              PURE,   CLEAN,  false,      "rr") \
+    macro(FORCE_READ_SEL,                     "readSel",                PURE,   CLEAN,  false,      "TODO") \
+    macro(FORCE_RELEASE,                      "release",                false,  CLEAN,  false,      "rr+") \
+    macro(FORCE_TOUCH,                        "touch",                  false,  CLEAN,  false,      "") \
+    macro(FORK_DONE,                          "done",                   false,  CLEAN,  false,      "rr") \
+    macro(FORK_INIT,                          "init",                   false,  CLEAN,  false,      "rr") \
+    macro(FORK_JOIN,                          "join",                   false,  CLEAN,  AWAITABLE,  "rrr") \
+    macro(FORK_ON_KILL,                       "onKill",                 false,  CLEAN,  false,      "r") \
+    macro(NBA_COMMIT,                         "commit",                 false,  CLEAN,  false,      "w") \
+    macro(NBA_ENQUEUE,                        "enqueue",                false,  CLEAN,  false,      "r+") \
+    macro(RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization",  false,  CLEAN,  false,      "mr") \
+    macro(RANDOMIZER_CLEARCONSTRAINTS,        "clearConstraints",       false,  CLEAN,  false,      "") \
+    macro(RANDOMIZER_CLEARALL,                "clearAll",               false,  CLEAN,  false,      "") \
+    macro(RANDOMIZER_DISABLE_SOFT,            "disable_soft",           false,  CLEAN,  false,      "r") \
+    macro(RANDOMIZER_HARD,                    "hard",                   false,  CLEAN,  false,      "r+") \
+    macro(RANDOMIZER_SOFT,                    "soft",                   false,  CLEAN,  false,      "rrrr") \
+    macro(RANDOMIZER_UNIQUE,                  "rand_unique",            false,  CLEAN,  false,      "rr") \
+    macro(RANDOMIZER_MARK_RANDC,              "markRandc",              false,  CLEAN,  false,      "r") \
+    macro(RANDOMIZER_SOLVE_BEFORE,            "solveBefore",            false,  CLEAN,  false,      "rr") \
+    macro(RANDOMIZER_PIN_VAR,                 "pin_var",                false,  CLEAN,  false,      "rrr") \
+    macro(RANDOMIZER_UPDATE_VAR,              "update_var",             false,  CLEAN,  false,      "TODO") \
+    macro(RANDOMIZER_WRITE_VAR,               "write_var",              false,  CLEAN,  false,      "TODO") \
+    macro(RANDOMIZER_SET_VAR_DISABLED,        "set_var_disabled",       false,  CLEAN,  false,      "r") \
+    macro(RANDOMIZER_CLEAR_VAR_DISABLED,      "clear_var_disabled",     false,  CLEAN,  false,      "r") \
+    macro(RANDOMIZER_MARK_VAR_STATIC,         "mark_var_static",        false,  CLEAN,  false,      "r") \
+    macro(RANDOMIZER_SET_STATIC_RANDMODE,     "set_static_randmode",    false,  CLEAN,  false,      "r") \
+    macro(RNG_GET_RANDSTATE,                  "__Vm_rng.get_randstate", PURE,   CLEAN,  false,      "") \
+    macro(RNG_SET_RANDSTATE,                  "__Vm_rng.set_randstate", false,  CLEAN,  false,      "r") \
+    macro(SCHED_ANY_TRIGGERED,                "anyTriggered",           false,  CLEAN,  false,      "r") \
+    macro(SCHED_AWAITING_CURRENT_TIME,        "awaitingCurrentTime",    PURE,   CLEAN,  false,      "") \
+    macro(SCHED_AWAITING_ZERO_DELAY,          "awaitingZeroDelay",      PURE,   CLEAN,  false,      "") \
+    macro(SCHED_READY,                        "ready",                  false,  CLEAN,  false,      "r") \
+    macro(SCHED_MOVE_TO_RESUME_QUEUE,         "moveToResumeQueue",      false,  CLEAN,  false,      "r") \
+    macro(SCHED_DELAY,                        "delay",                  false,  CLEAN,  AWAITABLE,  "rrrr") \
+    macro(SCHED_DO_POST_UPDATES,              "doPostUpdates",          false,  CLEAN,  false,      "") \
+    macro(SCHED_EVALUATE,                     "evaluate",               false,  CLEAN,  false,      "") \
+    macro(SCHED_EVALUATION,                   "evaluation",             false,  CLEAN,  AWAITABLE,  "rrrr") \
+    macro(SCHED_POST_UPDATE,                  "postUpdate",             false,  CLEAN,  AWAITABLE,  "rrrr") \
+    macro(SCHED_RESUME,                       "resume",                 false,  CLEAN,  false,      "TODO") \
+    macro(SCHED_RESUME_ZERO_DELAY,            "resumeZeroDelay",        false,  CLEAN,  false,      "") \
+    macro(SCHED_RESUMPTION,                   "resumption",             false,  CLEAN,  AWAITABLE,  "rrrr") \
+    macro(SCHED_TRIGGER,                      "trigger",                false,  CLEAN,  AWAITABLE,  "rrrrr") \
+    macro(SCHED_WAIT_FOREVER,                 "waitForever",            false,  CLEAN,  AWAITABLE,  "rrr") \
+    macro(UNPACKED_ASSIGN,                    "assign",                 false,  CLEAN,  false,      "r") \
+    macro(UNPACKED_FILL,                      "fill",                   false,  CLEAN,  false,      "r") \
+    macro(UNPACKED_NEQ,                       "neq",                    PURE,   CLEAN,  false,      "r")
 // clang-format on
 
 class VCMethod final {
-    static constexpr bool PURE = true;  // For macro expansion of 'pure' field only
-    static constexpr bool CLEAN = true;  // For macro expansion of 'clean' field only
-
 public:
     enum en : uint8_t {
-#define VL_CMETHOD_ID(id, method, pure, clean, args) id,
+#define VL_CMETHOD_ID(id, method, pure, clean, awaitable, args) id,
         FOR_EACH_CMETHOD(VL_CMETHOD_ID)
 #undef VL_CMETHOD_ID
             _ENUM_MAX  // Leave last
@@ -1116,7 +1113,7 @@ public:
     constexpr operator en() const { return m_e; }
     const char* ascii() const VL_PURE {
         static constexpr const char* const values[] = {
-#define VL_CMETHOD_NAME(id, method, pure, clean, args) method,
+#define VL_CMETHOD_NAME(id, method, pure, clean, awaitable, args) method,
             FOR_EACH_CMETHOD(VL_CMETHOD_NAME)
 #undef VL_CMETHOD_NAME
                 "_ENUM_MAX"  //
@@ -1124,8 +1121,9 @@ public:
         return values[m_e];
     }
     bool isPure() const VL_PURE {
+        static constexpr bool PURE = true;
         static constexpr bool values[] = {
-#define VL_CMETHOD_PURE(id, method, pure, clean, args) pure,
+#define VL_CMETHOD_PURE(id, method, pure, clean, awaitable, args) pure,
             FOR_EACH_CMETHOD(VL_CMETHOD_PURE)
 #undef VL_CMETHOD_PURE
                 false  //
@@ -1133,17 +1131,28 @@ public:
         return values[m_e];
     }
     bool isClean() const VL_PURE {
+        static constexpr bool CLEAN = true;
         static constexpr bool values[] = {
-#define VL_CMETHOD_CLEAN(id, method, pure, clean, args) clean,
+#define VL_CMETHOD_CLEAN(id, method, pure, clean, awaitable, args) clean,
             FOR_EACH_CMETHOD(VL_CMETHOD_CLEAN)
 #undef VL_CMETHOD_CLEAN
                 false  //
         };
         return values[m_e];
     }
+    bool isAwaitable() const VL_PURE {
+        static constexpr bool AWAITABLE = true;
+        static constexpr bool values[] = {
+#define VL_CMETHOD_AWAITABLE(id, method, pure, clean, awaitable, args) awaitable,
+            FOR_EACH_CMETHOD(VL_CMETHOD_AWAITABLE)
+#undef VL_CMETHOD_AWAITABLE
+                false  //
+        };
+        return values[m_e];
+    }
     const char* args() const VL_PURE {
         static constexpr const char* const values[] = {
-#define VL_CMETHOD_ARGS(id, method, pure, clean, args) args,
+#define VL_CMETHOD_ARGS(id, method, pure, clean, awaitable, args) args,
             FOR_EACH_CMETHOD(VL_CMETHOD_ARGS)
 #undef VL_CMETHOD_ARGS
                 ""  //
@@ -1161,7 +1170,7 @@ inline std::ostream& operator<<(std::ostream& os, const VCMethod& rhs) {
 }
 
 // Static assert all argument descriptors are well formed
-#define VL_CMETHOD_ARGS_CHECK(id, method, pure, clean, args) \
+#define VL_CMETHOD_ARGS_CHECK(id, method, pure, clean, awaitable, args) \
     static_assert(validateArgsDescriptor(args), "Malformed argument descriptor for " #id);
 FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 #undef VL_CMETHOD_ARGS_CHECK

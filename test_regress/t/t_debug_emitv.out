@@ -315,7 +315,7 @@ module Vt_debug_emitv_t;
                     begin
                         $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", 
                                136'h742f745f64656275675f656d6974762e76, 
-                               'sh10b, SUB_B, 2'h1);
+                               'sh111, SUB_B, 2'h1);
                         $stop;
                     end
                 end
@@ -1128,6 +1128,14 @@ module Vt_debug_emitv_t;
     cg_cross_inst = new();
     Vt_debug_emitv_cg_live_cross cg_live_cross_instVt_debug_emitv_cg_live_cross;
     cg_live_cross_inst = new();
+    initial begin
+        begin : unnamedblk4
+            Vt_debug_emitv_Cls objVt_debug_emitv_Cls;
+            obj = /*CRESET*/;
+            obj = new();
+            delay_caller();
+        end
+    end
     enum logic [2:0] {
         ZERO = 3'h0,
         ONE = 3'h1
@@ -1261,6 +1269,12 @@ package Vt_debug_emitv___024unit;
             if ((this != this)) begin
                 $stop;
             end
+        endtask
+        task delay_method;
+            #1;
+        endtask
+        task delay_caller;
+            delay_method();
         endtask
         function randomize;
         endfunction
