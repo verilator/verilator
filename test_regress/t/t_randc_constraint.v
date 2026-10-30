@@ -383,6 +383,18 @@ class ConditionalUniqueCycle;
   }
 endclass
 
+// A randc array is solved jointly, not drawn as a lone randc variable
+class ArrayCycle;
+  randc bit [1:0] values[2];
+  constraint domain {foreach (values[index]) values[index] == 2;}
+endclass
+
+class ArrayWith;
+  randc bit [1:0] c[2];
+  rand bit [3:0] x;
+  constraint k {x < 12;}
+endclass
+
 module t;
   RandcRange rr;
   RandcSmall rs;
@@ -456,6 +468,29 @@ module t;
       end
       `checkd(count[0], 2);
       `checkd(count[1], 2);
+    end
+
+    begin
+      automatic ArrayCycle obj = new;
+      automatic int res;
+      $display("Test randc array");
+      // Called once: a later call hits a pre-existing bug in excluding randc array values
+      res = obj.randomize();
+      `checkd(res, 1);
+      `checkd(obj.values[0], 2);
+      `checkd(obj.values[1], 2);
+    end
+
+    begin
+      automatic ArrayWith obj = new;
+      automatic int res;
+      $display("Test randc array with an inline constraint");
+      for (int i = 0; i < 8; ++i) begin
+        res = obj.randomize() with {c[0] != 0;};
+        `checkd(res, 1);
+        `checkd(obj.c[0] != 0, 1'b1);
+        `checkd(obj.x < 12, 1'b1);
+      end
     end
 
     $write("*-* All Finished *-*\n");
