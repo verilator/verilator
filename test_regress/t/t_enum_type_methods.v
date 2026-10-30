@@ -33,6 +33,8 @@ module t (
 
   string s;
 
+  localparam THREE = 3;
+
   // Check constification
   initial begin
     e = E03;
@@ -88,8 +90,6 @@ module t (
     if (b.next(3)) `stop;  // B0
     if (b.prev(3)) `stop;  // B0
   end
-
-  localparam THREE = 3;
 
   // Check runtime
   always @(posedge clk) begin

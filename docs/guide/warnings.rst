@@ -2634,6 +2634,29 @@ List Of Warnings
    the number of lint_off pragmas, reducing bugs.
 
 
+.. option:: USEBEFOREDECL
+
+   Error that a parameter or localparam is referenced before its
+   declaration. IEEE 1800-2023 6.20.1 lets a parameter refer only to
+   earlier parameters, and some other tools reject such code.
+
+   Faulty example:
+
+   .. code-block:: sv
+      :linenos:
+      :emphasize-lines: 2
+
+      module dut;
+        initial $display(N);  //<--- Error
+        localparam int N = 8;
+      endmodule
+
+   To fix, move the declaration before the reference.
+
+   Ignoring this error will only suppress the lint check; it will simulate
+   correctly.
+
+
 .. option:: USERERROR
 
    A SystemVerilog elaboration-time assertion error was executed.
