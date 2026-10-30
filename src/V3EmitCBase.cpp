@@ -134,7 +134,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
 
 void EmitCBaseVisitorConst::emitCDefaultConstructor(const AstNodeModule* const modp) {
     puts(EmitCUtil::prefixNameProtect(modp));
-    puts("() = default;\n");
+    puts(VN_AS(modp, Class)->isInterfaceClass() ? "() = default;\n" : "();\n");
 }
 
 void EmitCBaseVisitorConst::emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp,
@@ -176,7 +176,8 @@ void EmitCBaseVisitorConst::emitCFuncDecl(const AstCFunc* funcp, const AstNodeMo
     emitCFuncHeader(funcp, modp, /* withScope: */ false);
     const AstClass* const classp = VN_CAST(modp, Class);
     if (funcp->emptyBody() && !funcp->isLoose() && !cLinkage
-        && !(funcp->isConstructor() && classp && classp->isInterfaceClass())) {
+        && !(funcp->isConstructor() && classp && classp->isInterfaceClass())
+        && !funcp->isDestructor()) {
         putns(funcp, " {}\n");
     } else {
         putns(funcp, ";\n");

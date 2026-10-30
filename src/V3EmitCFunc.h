@@ -133,7 +133,7 @@ protected:
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;  // Statement that instantiates its own process
-    const AstClassPackage* m_classOrPackage = nullptr;  // Pointer to current class or package
+    const AstNodeModule* m_classOrPackage = nullptr;  // Pointer to current class or package
     string m_classOrPackageHash;  // Hash of class or package name
 
     bool constructorNeedsProcess(const AstClass* const classp) {
@@ -399,7 +399,13 @@ public:
     // VISITORS
     using EmitCConstInit::visit;
     void visit(AstCFunc* const nodep) override {
-        if (nodep->emptyBody() && !nodep->isLoose()) return;
+        // Emit SV class's C++ class constructor, just before its 'init' constructor
+        if (nodep->isConstructor() && !VN_AS(m_modp, Class)->isInterfaceClass()) {
+            const std::string className = EmitCUtil::prefixNameProtect(m_modp);
+            puts("\n");
+            putns(nodep, className + "::" + className + "() = default;\n");
+        }
+        if (nodep->emptyBody() && !nodep->isLoose() && !nodep->isDestructor()) return;
         VL_RESTORER(m_useSelfForThis);
         VL_RESTORER(m_cfuncp);
         VL_RESTORER(m_instantiatesOwnProcess);

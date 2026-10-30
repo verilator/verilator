@@ -1471,6 +1471,8 @@
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aForkDelayClass::~
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aForkClass::~
 -V{t#,#}+    Vt_timing_debug2___024root___eval_sample
 -V{t#,#}+    Vt_timing_debug2___024root___eval_ico
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__ico
@@ -1724,6 +1726,7 @@
 -V{t#,#}+++++TOP Evaluate Vt_timing_debug2::eval_step
 -V{t#,#}+ Eval
 -V{t#,#}+    Vt_timing_debug2___024root___eval_debug_assertions
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aAssignDelayClass::~
 -V{t#,#}+    Vt_timing_debug2___024root___eval_sample
 -V{t#,#}+    Vt_timing_debug2___024root___eval_ico
 -V{t#,#}+    Vt_timing_debug2___024root___dump_triggers__ico
@@ -1850,6 +1853,7 @@
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aDelayClass::~
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aNoDelay::~
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aDelayClass::~
+-V{t#,#}+        Vt_timing_debug2_t__03a__03aClkClass::~
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aLocalWaitClass::~
 -V{t#,#}+          Vt_timing_debug2___024unit__03a__03aBaseClass::~
 -V{t#,#}+        Vt_timing_debug2_t__03a__03aWaitClass::~

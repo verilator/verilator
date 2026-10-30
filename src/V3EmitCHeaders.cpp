@@ -19,7 +19,6 @@
 #include "V3EmitC.h"
 #include "V3EmitCBase.h"
 #include "V3File.h"
-#include "V3MemberMap.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
@@ -35,7 +34,6 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class EmitCHeader final : public EmitCBaseVisitorConst {
     V3UniqueNames m_names;  // Generates unique names
-    VMemberMap m_memberMap;  // Finds members of classes
     // METHODS
 
     class CoverCountVisitor final : public VNVisitorConst {
@@ -267,51 +265,6 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
             decorateFirst(first, section);
             puts("void " + protect("__Vserialize") + "(VerilatedSerialize& os);\n");
             puts("void " + protect("__Vdeserialize") + "(VerilatedDeserialize& os);\n");
-        }
-
-        // Polymorphic clone for concrete (non-abstract, non-interface) classes
-        if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            if (!classp->isInterfaceClass() && !classp->isVirtual()) {
-                decorateFirst(first, section);
-                using EmbeddedCovergroupVar = std::pair<const AstClass*, const AstVar*>;
-                std::vector<EmbeddedCovergroupVar> embeddedCovergroupVars;
-                const auto hasEnclosingBackPointer = [](const AstClass* covergroupp) {
-                    return covergroupp->exists([](const AstVar* const varp) {
-                        const AstClassRefDType* const refp
-                            = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
-                        return refp && refp->rawPointer();
-                    });
-                };
-                const_cast<AstClass*>(classp)->foreachMember(
-                    [&](AstClass* const memberClassp, AstVar* const varp) {
-                        const AstClassRefDType* const refp
-                            = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
-                        if (refp && refp->classp()->isCovergroup()
-                            && hasEnclosingBackPointer(refp->classp())) {
-                            embeddedCovergroupVars.emplace_back(memberClassp, varp);
-                        }
-                    });
-                const string className = EmitCUtil::prefixNameProtect(classp);
-                if (embeddedCovergroupVars.empty() && !classp->hasRandVarsUpdate()) {
-                    putns(classp,
-                          "VlClass* clone() const { return new " + className + "(*this); }\n");
-                } else {
-                    putns(classp, "VlClass* clone() const { " + className + "* const clonep = new "
-                                      + className + "(*this); ");
-                    if (classp->hasRandVarsUpdate()) {
-                        const string updateName = "__VnoInFunc___VupdateRandVars";
-                        AstCFunc* const updatep
-                            = VN_AS(m_memberMap.findMember(classp, updateName), CFunc);
-                        UASSERT_OBJ(updatep, classp, "Missing updateRandVars method");
-                        puts("clonep->" + updatep->nameProtect() + "();\n");
-                    }
-                    for (const EmbeddedCovergroupVar& item : embeddedCovergroupVars) {
-                        puts("clonep->" + EmitCUtil::prefixNameProtect(item.first)
-                             + "::" + item.second->nameProtect() + " = VlNull{}; ");
-                    }
-                    puts("return clonep; }\n");
-                }
-            }
         }
     }
     void emitEnums(const AstNodeModule* modp) {
@@ -652,15 +605,6 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
         }
     }
     void emitAll(const AstNodeModule* modp) {
-        // Include files required by this AstNodeModule
-        if (const AstClass* const classp = VN_CAST(modp, Class)) {
-            for (const AstClassExtends* const extp : classp->extendspList()) {
-                putns(extp, "#include \""
-                                + EmitCUtil::prefixNameProtect(extp->classp()->classOrPackagep())
-                                + ".h\"\n");
-            }
-        }
-
         // Forward declarations required by this AstNodeModule
         puts("\nclass " + EmitCUtil::symClassName() + ";\n");
 
@@ -749,20 +693,11 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
         auto add_to_cuse_set = [&](string s) { cuse_set.insert(s); };
 
         forModCUse(modp, VUseType::INT_FWD_CLASS | VUseType::INT_INCLUDE, add_to_cuse_set);
-        if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
-            forModCUse(packagep->classp(), VUseType::INT_INCLUDE | VUseType::INT_FWD_CLASS,
-                       add_to_cuse_set);
-        }
 
         for (const string& s : cuse_set) puts(s);
         puts("\n");
 
         emitAll(modp);
-
-        if (const AstClassPackage* const packagep = VN_CAST(modp, ClassPackage)) {
-            // Put the non-static class implementation in same h file for speed
-            emitAll(packagep->classp());
-        }
 
         ofp()->putsEndGuard();
 
@@ -783,7 +718,6 @@ void V3EmitC::emitcHeaders() {
 
     // Process each module in turn
     for (const AstNode* const nodep : v3Global.rootp()->modulespList()) {
-        if (VN_IS(nodep, Class)) continue;  // Declared with the ClassPackage
         const AstNodeModule* const modp = VN_AS(nodep, NodeModule);
         if (modp->isConstPool()) continue;  // Emitted by V3EmitCConstPool
         EmitCHeader::main(modp);

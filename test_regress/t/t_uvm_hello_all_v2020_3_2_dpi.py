@@ -23,6 +23,7 @@ test.compile(v_flags2=[
     "--vpi",
     "--CFLAGS -O0",
     "-Wall",
+    "--stats",
     "+incdir+t/uvm",  #
     "t/uvm/uvm_pkg_all_v2020_3_2_dpi.svh",
     test.pli_filename
@@ -31,5 +32,9 @@ test.compile(v_flags2=[
 test.execute(all_run_flags=['' if test.verbose else '+UVM_NO_RELNOTES'])
 
 test.file_grep(test.run_log_filename, r'UVM TEST PASSED')
+
+test.file_grep(test.stats, r'CUse, Implementation includes\s+(\d+)', 6071)
+test.file_grep(test.stats, r'CUse, Interface class forward declarations\s+(\d+)', 4074)
+test.file_grep(test.stats, r'CUse, Interface includes\s+(\d+)', 548)
 
 test.passes()

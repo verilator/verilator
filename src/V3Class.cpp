@@ -123,7 +123,15 @@ class ClassVisitor final : public VNVisitor {
         m_classScopep = classScopep;
         m_packageScopep = scopep;
         m_prefix = nodep->name() + "__02e";  // .
+        const size_t movesBefore = m_toScopeMoves.size();
         iterateChildren(nodep);
+        if (scopep->nextp()) return;
+        for (size_t i = movesBefore; i < m_toScopeMoves.size(); ++i) {
+            if (m_toScopeMoves[i].second == scopep) return;
+        }
+        nodep->classOrPackagep(nullptr);
+        VL_DO_DANGLING(pushDeletep(cellp->unlinkFrBack()), cellp);
+        VL_DO_DANGLING(pushDeletep(packagep->unlinkFrBack()), packagep);
     }
     void visit(AstNodeModule* nodep) override {
         // Visit for NodeModules that are not AstClass (AstClass is-a AstNodeModule)

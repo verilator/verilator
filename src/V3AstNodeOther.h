@@ -433,6 +433,7 @@ public:
     void timeunit(const VTimescale& flag) { m_timeunit = flag; }
     VOptionBool unconnectedDrive() const { return m_unconnectedDrive; }
     void unconnectedDrive(const VOptionBool flag) { m_unconnectedDrive = flag; }
+    bool hasAnyScSection(std::initializer_list<VSystemCSectionType> types) const;
 };
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always

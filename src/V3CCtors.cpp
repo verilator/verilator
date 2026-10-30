@@ -149,6 +149,51 @@ class CCtorsVisitor final : public VNVisitor {
         cstmtp->add(txtAndFlp.first);
         cfuncp->addStmtsp(cstmtp);
     }
+    static void makeClone(AstClass* classp) {
+        if (classp->isVirtual()) return;
+        using EmbeddedCovergroupVar = std::pair<const AstClass*, const AstVar*>;
+        std::vector<EmbeddedCovergroupVar> embeddedCovergroupVars;
+        const auto hasEnclosingBackPointer = [](const AstClass* covergroupp) {
+            return covergroupp->exists([](const AstVar* const varp) {
+                const AstClassRefDType* const refp
+                    = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+                return refp && refp->rawPointer();
+            });
+        };
+        classp->foreachMember([&](AstClass* const memberClassp, AstVar* const varp) {
+            const AstClassRefDType* const refp
+                = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType);
+            if (refp && refp->classp()->isCovergroup()
+                && hasEnclosingBackPointer(refp->classp())) {
+                embeddedCovergroupVars.emplace_back(memberClassp, varp);
+            }
+        });
+        AstCFunc* const funcp = new AstCFunc{classp->fileline(), "clone", nullptr, "VlClass*"};
+        funcp->isConst(true);
+        funcp->isStatic(false);
+        funcp->protect(false);
+        funcp->slow(false);
+        const string className = EmitCUtil::prefixNameProtect(classp);
+        funcp->addStmtsp(new AstCStmt{classp->fileline(), className + "* const clonep = new "
+                                                              + className + "(*this);"});
+        if (classp->hasRandVarsUpdate()) {
+            const AstCFunc* updatep = nullptr;
+            for (AstNode* itemp = classp->membersp(); itemp; itemp = itemp->nextp()) {
+                const AstCFunc* const cfuncp = VN_CAST(itemp, CFunc);
+                if (cfuncp && cfuncp->name() == "__VnoInFunc___VupdateRandVars") updatep = cfuncp;
+            }
+            UASSERT_OBJ(updatep, classp, "Missing updateRandVars method");
+            funcp->addStmtsp(
+                new AstCStmt{classp->fileline(), "clonep->" + updatep->nameProtect() + "();"});
+        }
+        for (const EmbeddedCovergroupVar& item : embeddedCovergroupVars) {
+            funcp->addStmtsp(new AstCStmt{
+                classp->fileline(), "clonep->" + EmitCUtil::prefixNameProtect(item.first)
+                                        + "::" + item.second->nameProtect() + " = VlNull{};"});
+        }
+        funcp->addStmtsp(new AstCStmt{classp->fileline(), "return clonep;"});
+        classp->addMembersp(funcp);
+    }
 
     // VISITORS
     void visit(AstNodeModule* nodep) override {
@@ -186,6 +231,7 @@ class CCtorsVisitor final : public VNVisitor {
             funcp->slow(false);
             insertSc(funcp, classp, VSystemCSectionType::DTOR);
             classp->addMembersp(funcp);
+            makeClone(classp);
         }
     }
 
