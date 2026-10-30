@@ -1098,7 +1098,7 @@ class TaskVisitor final : public VNVisitor {
         // but the compare is only done on first call then memoized, so
         // it's not worth optimizing.
 
-        // Peramble - fetch the exproted function from the scope table
+        // Preamble - fetch the exported function from the scope table
         AstCStmt* const prep = new AstCStmt{flp};
         funcp->addStmtsp(prep);
         // Static doesn't need save-restore as if below will re-fill proper value
@@ -1384,9 +1384,9 @@ class TaskVisitor final : public VNVisitor {
             if (!portp) continue;
             AstVarScope* const portvscp
                 = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
-            if (!(portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
-                  && portp->name() != "__Vscopep"  // Passed to dpiContext, not callee
-                  && portp->name() != "__Vfilenamep" && portp->name() != "__Vlineno")) {
+            if (!portp->isIO() || portp->isFuncReturn() || portvscp == rtnvscp
+                || portp->name() == "__Vscopep"  // Passed to dpiContext, not callee
+                || portp->name() == "__Vfilenamep" || portp->name() == "__Vlineno") {
                 continue;
             }
 
@@ -1505,7 +1505,7 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    AstVarScope* getDpiExporTrigger() {
+    AstVarScope* getDpiExportTrigger() {
         AstNetlist* const netlistp = v3Global.rootp();
         AstVarScope* dpiExportTriggerp = netlistp->dpiExportTriggerp();
         if (!dpiExportTriggerp) {
@@ -1765,7 +1765,7 @@ class TaskVisitor final : public VNVisitor {
             // If this DPI export writes some non-local variables, set the DPI Export Trigger flag
             // in the function.
             if (writesNonLocals) {
-                AstVarScope* const dpiExportTriggerp = getDpiExporTrigger();
+                AstVarScope* const dpiExportTriggerp = getDpiExportTrigger();
                 FileLine* const flp = cfuncp->fileline();
 
                 // Set DPI export trigger flag every time the DPI export is called.
