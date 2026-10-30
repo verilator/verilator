@@ -16,6 +16,6 @@ test.compile(verilator_flags2=['--binary', '--stats', '-fno-dfg'])
 test.execute()
 
 test.file_grep(test.stats,
-               r'Scheduling, count of non-inlined signal writes in suspendables\s+(\d+)', 6)
+               r'Scheduling, count of non-inlined signal writes in suspendables\s+(\d+)', 11)
 
 test.passes()
