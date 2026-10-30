@@ -2487,9 +2487,6 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (fromFmtp->name() == "%s.%s") {
             newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
                                    fromFmtp->exprsp()->cloneTreePure(true)};
-            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0) {
-                newp->exprsp()->nextp()->name("%x");
-            }
         } else {
             newp = new AstSFormatF{fl, fromFmtp->name() + "." + nodep->name(), false, nullptr};
         }
