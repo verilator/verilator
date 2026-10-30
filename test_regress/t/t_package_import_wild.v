@@ -27,6 +27,7 @@ package pkg_c;
   import pkg_a::*;
   export pkg_a::*;
   localparam int ONLY_C = 100;
+  localparam int C_USE = SHARED + ONLY_A;  // Import, so exported
 endpackage
 
 package pkg_d;
@@ -57,6 +58,7 @@ package pkg_g;
   export * ::*;
   import pkg_a::*;
   import pkg_b::*;
+  localparam int G_USE = ONLY_B;  // Import, so exported
 endpackage
 
 interface ifc;

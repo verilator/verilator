@@ -213,6 +213,8 @@ public:
             // Only report a declaration that is itself checked, otherwise we
             // might point at e.g. a localparam that merely sorts first
             if (!checkSimilarname(it->second->nodep())) continue;
+            // Not a wildcard import, which is only here if some lookup happened to import it
+            if (it->second->m_wildImported) continue;
             string t = it->first;
             for (auto& c : t) c = (char)tolower(c);
             if (t == s && name != it->first) { return it->second; }
@@ -359,8 +361,8 @@ public:
     void importFromIface(const VSymEnt* srcp, bool onlyUnmodportable = false) {
         // Import interface tokens from source symbol table into this symbol table, recursively
         UINFO(9, "     importIf  se" << cvtToHex(this) << " from se" << cvtToHex(srcp));
-        // A modport only makes the interface's parameters and types visible beyond its items,
-        // so not its wildcard imports, but LinkDot looks up those in the interface itself
+        // Not for a modport, as only its items are visible through it; modport parameter and
+        // type lookups fall back to the interface itself, which resolves its wildcard imports
         if (!onlyUnmodportable) {
             for (const VSymEnt* const pkgSymp : srcp->m_wildImportps) addWildImport(pkgSymp);
         }

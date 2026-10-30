@@ -1157,14 +1157,14 @@ class LinkDotFindVisitor final : public VNVisitor {
     int m_modArgNum = 0;  // Arg block number for randomize(), 0=none seen
     std::vector<AstIface*> m_virtIfaces;  // interfaces used as virtual,
                                           // needed for handleUnvisitedVirtIfaces()
-    std::vector<AstNode*> m_exportps;  // Exports in the current package, done at its end
+    std::vector<const AstNode*> m_exportps;  // Exports in the current package, done at its end
 
     // METHODS
     void doExports() {
         // Exports may precede the imports they name (IEEE 1800-2023 26.6), so are done once the
         // package is seen. An exported name must then be imported from the package named, so a
         // missing or local declaration is an error, even if declared after the export.
-        for (AstNode* const exportp : m_exportps) {
+        for (const AstNode* const exportp : m_exportps) {
             const AstPackageExport* const nodep = VN_CAST(exportp, PackageExport);
             if (!nodep) {
                 m_curSymp->exportStarStar();
