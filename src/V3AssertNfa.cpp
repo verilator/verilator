@@ -747,16 +747,16 @@ class SvaNfaBuilder final {
         // Reject the attempt even when the endpoint is false on this tick.
         if (!m_isCover && isTopLevelStep && currentp->m_liveRepCondp) {
             AstNodeExpr* const liveRepCondp = currentp->m_liveRepCondp;
-            SvaStateVertex* const liveRepVtxp = currentp->m_liveRepCheckVtxp ? currentp->m_liveRepCheckVtxp : currentp;
+            SvaStateVertex* const liveRepVtxp
+                = currentp->m_liveRepCheckVtxp ? currentp->m_liveRepCheckVtxp : currentp;
             // The endpoint is valid only when the repetition itself matched on this tick.
             // A valid match also retires the live repetition state for later ticks.
             if (liveRepVtxp->m_liveRepClearCondp) {
                 VL_DO_DANGLING(liveRepVtxp->m_liveRepClearCondp->deleteTree(),
                                liveRepVtxp->m_liveRepClearCondp);
             }
-            liveRepVtxp->m_liveRepClearCondp
-                = new AstLogAnd{flp, liveRepCondp->cloneTreePure(false),
-                                exprp->cloneTreePure(false)};
+            liveRepVtxp->m_liveRepClearCondp = new AstLogAnd{
+                flp, liveRepCondp->cloneTreePure(false), exprp->cloneTreePure(false)};
             SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
             sinkVtxp->m_isRejectSink = true;
             AstNodeExpr* const guardp = sampled(liveRepCondp->cloneTreePure(false));
@@ -2035,9 +2035,9 @@ class SvaNfaLowering final {
             // current-cycle match signal intact, but do not carry the repetition state into
             // later cycles where it could be rejected after the endpoint already matched.
             if (vtxp->m_liveRepClearCondp) {
-                nextStatep = new AstCond{
-                    c.flp, sampled(vtxp->m_liveRepClearCondp->cloneTreePure(false)),
-                    new AstConst{c.flp, AstConst::BitFalse{}}, nextStatep};
+                nextStatep
+                    = new AstCond{c.flp, sampled(vtxp->m_liveRepClearCondp->cloneTreePure(false)),
+                                  new AstConst{c.flp, AstConst::BitFalse{}}, nextStatep};
             }
 
             AstAssignDly* const assignp = new AstAssignDly{
