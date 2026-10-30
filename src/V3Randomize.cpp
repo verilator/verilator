@@ -40,6 +40,7 @@
 #include "V3ConstPool.h"
 #include "V3Container.h"
 #include "V3Error.h"
+#include "V3File.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
 #include "V3MemberMap.h"
@@ -938,6 +939,15 @@ class ConstraintExprVisitor final : public VNVisitor {
     AstNode* m_firstExpressionInsideIndexp = nullptr;
     AstConstraintForeach* m_foreachp = nullptr;  // Innermost constraint-foreach being processed
     std::set<const AstVar*> m_foreachIdxVars;  // Index vars of all enclosing constraint-foreaches
+    // Solver variables named by constraints folded into a single expression (m_wantSingle)
+    // by a top-level if; empty except between that fold and m_foldTakerp taking them over
+    std::set<std::string> m_constraintVars;
+    // Constraint replacing the top-level if whose folded names m_constraintVars holds
+    const AstConstraintExpr* m_foldTakerp = nullptr;
+    // Where the variable references being lowered record their solver names. Set by
+    // visit(AstConstraintExpr*), the only visit reaching a variable reference: the other
+    // constraint items either move their expressions into one or never iterate them.
+    std::set<std::string>* m_constraintVarsp = nullptr;
 
     class NestedAccessPath final {
         AstMemberSel* m_topNestedArrayMemberSelp
@@ -1039,6 +1049,9 @@ class ConstraintExprVisitor final : public VNVisitor {
         AstCMethodHard* const callp = new AstCMethodHard{
             fl, new AstVarRef{fl, genModp, genVarp, VAccess::READWRITE}, VCMethod::RANDOMIZER_HARD,
             new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
+        // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
+        callp->addPinsp(new AstCExpr{fl, AstCExpr::Pure{},
+                                     "{\"" + V3OutFormatter::quoteNameControls(smtName) + "\"}"});
         callp->dtypeSetVoid();
         return callp;
     };
@@ -1114,6 +1127,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         memberSelp->v3fatalSrc("Unexpected node type in MemberSel chain");
         return "";
+    }
+    // C++ initializer list of the recorded symbols
+    static std::string constraintVarsList(const std::set<std::string>& vars) {
+        std::string list = "{";
+        for (const std::string& name : vars) {
+            if (list.size() > 1) list += ", ";
+            list += "\"" + V3OutFormatter::quoteNameControls(name) + "\"";
+        }
+        return list + "}";
     }
 
     static AstNodeExpr* getFromp(const AstNodeExpr* const nodep) {
@@ -1948,6 +1970,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             // No MemberSel, StructSel or CMethodHard:at : just variable name
             smtName = nodep->name();
         }
+        // Names the runtime's randc draw needs, to tell randc-only constraints apart. A nested
+        // access path is formatted at runtime, so its name here matches no registered
+        // variable and keeps the constraint out of the draw.
+        UASSERT_OBJ(m_constraintVarsp, nodep,
+                    "Variable reference outside a constraint expression");
+        if (nodep->user1()) m_constraintVarsp->insert(smtName);
 
         if (memberselp) varp = memberselp->varp();
         // The SMT translation assumes bit-vector operands and does not
@@ -2830,6 +2858,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         // constraint-items list by the pre-pass; already fully lowered.
     }
     void visit(AstConstraintIf* nodep) override {
+        // Outside a fold, this if's branches are folded here and m_constraintVars collects
+        // their names for the constraint replacing it; a nested if adds to its parent's fold
+        const bool foldOwner = !m_wantSingle;
+        UASSERT_OBJ(!foldOwner || m_constraintVars.empty(), nodep,
+                    "Constraint names of an earlier fold were not taken over");
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
@@ -2844,7 +2877,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (newp) {
             newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
             newp->user1(true);  // Assume result-dependent
-            nodep->replaceWith(new AstConstraintExpr{fl, newp});
+            AstConstraintExpr* const exprp = new AstConstraintExpr{fl, newp};
+            nodep->replaceWith(exprp);
+            // Iterated next (AstNode::iterateAndNext), and takes over the folded names
+            if (foldOwner) m_foldTakerp = exprp;
         } else {
             nodep->unlinkFrBack();
         }
@@ -3109,6 +3145,19 @@ class ConstraintExprVisitor final : public VNVisitor {
         // are rewritten by extractConditionalDisableSofts() before this
         // visitor runs, so anything we see here is unconditional.
         VL_RESTORER(m_firstExpressionInsideIndexp);
+        // Outside a fold this constraint is emitted here with only its own names: those it
+        // records, plus the folded names when it replaces an if (see visit(AstConstraintIf*))
+        std::set<std::string> vars;
+        if (!m_wantSingle) {
+            if (nodep == m_foldTakerp) {
+                vars.swap(m_constraintVars);
+                m_foldTakerp = nullptr;
+            }
+            UASSERT_OBJ(m_constraintVars.empty(), nodep,
+                        "Constraint names carried over from another constraint");
+        }
+        VL_RESTORER(m_constraintVarsp);
+        m_constraintVarsp = m_wantSingle ? &m_constraintVars : &vars;
         if (nodep->isDisableSoft()) {
             nodep->replaceWith(buildDisableSoftCallStmt(nodep));
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
@@ -3143,6 +3192,11 @@ class ConstraintExprVisitor final : public VNVisitor {
                           VAccess::READWRITE},
             method, nodep->exprp()->unlinkFrBack()};
         callp->dtypeSetVoid();
+        if (method == VCMethod::RANDOMIZER_HARD) {
+            // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
+            callp->addPinsp(
+                new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, constraintVarsList(vars)});
+        }
         // Pass filename, lineno, and source as separate arguments
         // This allows EmitC to call protect() on filename, similar to VL_STOP
         // Add filename parameter
