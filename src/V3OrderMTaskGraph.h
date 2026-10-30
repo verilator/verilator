@@ -131,6 +131,7 @@ class LogicMTask final : public V3GraphVertex {
 
     friend class MTaskEdge;
     friend class OrderMTaskGraph;
+    friend class OrderMTaskGraphBuilder;
 
     // MEMBERS
 
@@ -165,6 +166,10 @@ class LogicMTask final : public V3GraphVertex {
     // Scratch pointer used only by the critical path propagation in OrderMTaskGraph: this MTask's
     // node in the pending heap, or nullptr if this MTask is not pending.
     PropagatePendingHeap::Node* m_propagateHeapNodep = nullptr;
+
+    // METHODS
+    // Add 'mVtxp' to this MTask, used while building the graph
+    void addVertex(OrderMoveVertex* mVtxp) VL_MT_DISABLED;
 
 public:
     // CONSTRUCTORS

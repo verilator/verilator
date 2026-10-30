@@ -158,6 +158,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "sc_bv"               { FL; return yVLT_SC_BV; }
   "sformat"             { FL; return yVLT_SFORMAT; }
   "split_var"           { FL; return yVLT_SPLIT_VAR; }
+  "threads_group"       { FL; return yVLT_THREADS_GROUP; }
   "timing_off"          { FL; return yVLT_TIMING_OFF; }
   "timing_on"           { FL; return yVLT_TIMING_ON; }
   "tracing_off"         { FL; return yVLT_TRACING_OFF; }
@@ -872,6 +873,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   "/*verilator fsm_state_full*/"        { FL; return yVL_FSM_STATE_FULL; }
   "/*verilator tag"[^*]*"*/"            { FL; yylval.strp = PARSEP->newString(V3ParseImp::lexParseTag(yytext));
                                           return yVL_TAG; }
+  "/*verilator threads_group*/"         { FL; return yVL_THREADS_GROUP; }
   "/*verilator timing_off*/"            { FL_FWD; PARSEP->lexFileline()->timingOn(false); FL_BRK; }
   "/*verilator timing_on*/"             { FL_FWD; PARSEP->lexFileline()->timingOn(true); FL_BRK; }
   "/*verilator tracing_off*/"           { FL_FWD; PARSEP->lexFileline()->tracingOn(false); FL_BRK; }
