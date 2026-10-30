@@ -317,6 +317,21 @@ class RandcInside extends RandcMixedBase;
   endfunction
 endclass
 
+// A unique under a condition names its array in the folded constraint's text
+class RandcCondUnique extends RandcMixedBase;
+  rand bit [1:0] v[2];
+  constraint c_unique {
+    if (c > 0)
+    unique {v};
+  }
+  function bit holds;
+    return c == 0 || v[0] != v[1];
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
 class RandcStructMember extends RandcMixedBase;
   typedef struct {rand bit [1:0] f;} pair_t;
   rand pair_t s;
@@ -356,6 +371,16 @@ class RandcStatic;
     end
     `checkd(count[3], 0);
   endfunction
+endclass
+
+class ConditionalUniqueCycle;
+  randc bit value;
+  rand bit [1:0] values[2];
+  constraint domain {
+    if (value) {
+      unique {values};
+    }
+  }
 endclass
 
 module t;
@@ -412,6 +437,26 @@ module t;
 
     rst = new;
     rst.test_cyclic();
+
+    begin
+      automatic RandcCondUnique rcu = new;
+      rcu.test_cyclic("a conditional unique");
+    end
+
+    begin
+      automatic ConditionalUniqueCycle obj = new;
+      automatic int count[2] = '{0, 0};
+      automatic int res;
+      $display("Test randc deciding whether a unique applies");
+      for (int i = 0; i < 4; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        if (obj.value) `checkd(obj.values[0] != obj.values[1], 1'b1);
+        ++count[obj.value];
+      end
+      `checkd(count[0], 2);
+      `checkd(count[1], 2);
+    end
 
     $write("*-* All Finished *-*\n");
     $finish();
