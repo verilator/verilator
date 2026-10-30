@@ -30,6 +30,7 @@
 
 #include "V3Active.h"
 
+#include "V3ClassGraph.h"
 #include "V3Const.h"
 #include "V3Graph.h"
 
@@ -380,6 +381,123 @@ public:
 };
 
 //######################################################################
+// Analyse the call graph to find functions that may execute a
+// '<=' non-blocking assignment or '->>' non-blocking event trigger.
+// Evaluated lazily and cached. Functions calling each other in a cycle
+// are analysed together, as Tarjan's strongly connected components, so
+// every function is visited at most once, and only if it is reachable
+// from a call in combinational logic.
+
+class ActiveNbaFuncs final : public VNVisitorConst {
+    // NODE STATE
+    //  AstCFunc::user3p()      AstNodeStmt*: A '<=' NBA or '->>' the function may execute,
+    //                                       or m_nonep sentinel if none. Unset until found or
+    //                                       analysed, so also while analysed and none found yet.
+    const VNUser3InUse m_user3InUse;
+
+    // STATE
+    // Sentinel for functions without NBAs
+    AstNodeStmt* const m_nonep = new AstComment{v3Global.rootp()->fileline(), "none"};
+    AstCFunc* m_funcp = nullptr;  // Current function being analysed
+    std::vector<AstCFunc*> m_stack;  // Functions being analysed
+    std::unordered_map<const AstCFunc*, size_t> m_stackIndex;  // Index of each in 'm_stack'
+    size_t m_low = 0;  // Lowest index in 'm_stack' of a function current 'm_funcp' calls
+    std::unique_ptr<V3ClassGraph> m_classGraphp;  // Virtual functions a call may resolve to
+
+    // METHODS
+    // Whether the function being analysed has an NBA already
+    bool found() const {
+        UASSERT_OBJ(m_funcp->user3p() != m_nonep, m_funcp, "None while being analysed");
+        return m_funcp->user3p() != nullptr;
+    }
+    // Return the one 'funcp' may execute, m_nonep if none, or nullptr if none found yet in a
+    // cycle still being analysed. A cycle is complete when the first of its functions to be
+    // analysed finishes.
+    AstNode* findNba(AstCFunc* funcp) {
+        if (funcp->user3p()) return funcp->user3p();
+
+        const auto pair = m_stackIndex.emplace(funcp, m_stack.size());
+        if (!pair.second) {  // Being analysed, so in a cycle with 'm_funcp'
+            m_low = std::min(m_low, pair.first->second);
+            return nullptr;
+        }
+        const size_t index = m_stack.size();
+        m_stack.push_back(funcp);
+        size_t low;
+        {
+            VL_RESTORER(m_funcp);
+            VL_RESTORER(m_low);
+            m_funcp = funcp;
+            m_low = index;
+            iterateChildrenConst(funcp);
+            low = m_low;
+        }
+        if (low < index) {  // In a cycle with a function still being analysed
+            m_low = std::min(m_low, low);
+            return funcp->user3p();
+        }
+        // Done with the cycle, its functions may execute any one found in them
+        AstNode* nbap = m_nonep;
+        for (size_t i = index; i < m_stack.size(); ++i) {
+            if (m_stack[i]->user3p()) nbap = m_stack[i]->user3p();
+        }
+        for (size_t i = index; i < m_stack.size(); ++i) {
+            if (!m_stack[i]->user3p()) m_stack[i]->user3p(nbap);
+            m_stackIndex.erase(m_stack[i]);
+        }
+        m_stack.resize(index);
+        return funcp->user3p();
+    }
+    // Return the one 'callp' may execute, or nullptr if none, or none found yet in a cycle
+    // still being analysed
+    AstNodeStmt* findNba(AstNodeCCall* callp) {
+        if (callp->funcp()->dpiImportWrapper()) return nullptr;
+        if (!m_classGraphp) m_classGraphp = V3ClassGraph::build(v3Global.rootp());
+        const std::unordered_set<AstCFunc*>& funcps = m_classGraphp->getCallPossibleCFuncs(callp);
+        if (funcps.empty()) {
+            AstNode* const nbap = findNba(callp->funcp());
+            if (nbap && nbap != m_nonep) return VN_AS(nbap, NodeStmt);
+        }
+        for (AstCFunc* const funcp : funcps) {
+            AstNode* const nbap = findNba(funcp);
+            if (nbap && nbap != m_nonep) return VN_AS(nbap, NodeStmt);
+        }
+        return nullptr;
+    }
+
+    // VISITORS
+    void visit(AstAssignDly* nodep) override {
+        if (found()) return;
+        m_funcp->user3p(nodep);  // Found one now
+    }
+    void visit(AstFireEvent* nodep) override {
+        if (found()) return;
+        if (nodep->isDelayed()) {
+            m_funcp->user3p(nodep);  // Found one now
+        } else {
+            iterateChildrenConst(nodep);
+        }
+    }
+    void visit(AstNodeCCall* nodep) override {
+        iterateChildrenConst(nodep);
+        if (AstNodeStmt* const nbap = findNba(nodep)) m_funcp->user3p(nbap);  // Found one now
+    }
+    void visit(AstNode* nodep) override {
+        if (found()) return;
+        iterateChildrenConst(nodep);
+    }
+
+public:
+    // CONSTRUCTORS
+    ActiveNbaFuncs() = default;
+    ~ActiveNbaFuncs() override { m_nonep->deleteTree(); }
+
+    // METHODS
+    // Return an AstAssignDly or non-blocking AstFireEvent the 'callp' may execute, if any
+    const AstNodeStmt* containsNba(AstNodeCCall* callp) { return findNba(callp); }
+};
+
+//######################################################################
 // Replace unsupported non-blocking assignments with blocking assignments
 
 class ActiveDlyVisitor final : public VNVisitor {
@@ -389,8 +507,22 @@ public:
 private:
     // MEMBERS
     const CheckType m_check;  // Process type we are checking
+    ActiveNbaFuncs& m_nbaFuncs;  // Functions that may execute a non-blocking assignment
 
     // VISITORS
+    void visit(AstNodeCCall* nodep) override {
+        if (m_check == CT_COMB) {
+            if (const AstNodeStmt* const nbap = m_nbaFuncs.containsNba(nodep)) {
+                nodep->v3warn(E_UNSUPPORTED, "Unsupported: Non-blocking assignment in a function "
+                                             "called from combinational logic\n"
+                                                 << nodep->warnContextPrimary() << '\n'
+                                                 << nbap->warnOther()
+                                                 << "... Location of the non-blocking assignment\n"
+                                                 << nbap->warnContextSecondary());
+            }
+        }
+        iterateChildren(nodep);
+    }
     void visit(AstAssignDly* nodep) override {
         // Issue appropriate warning
         if (m_check == CT_FINAL) {
@@ -416,8 +548,9 @@ private:
 
 public:
     // CONSTRUCTORS
-    ActiveDlyVisitor(AstNode* nodep, CheckType check)
-        : m_check{check} {
+    ActiveDlyVisitor(AstNode* nodep, CheckType check, ActiveNbaFuncs& nbaFuncs)
+        : m_check{check}
+        , m_nbaFuncs{nbaFuncs} {
         iterate(nodep);
     }
     ~ActiveDlyVisitor() override = default;
@@ -435,6 +568,7 @@ class ActiveVisitor final : public VNVisitor {
 
     // STATE
     ActiveNamer m_namer;  // Tracking of active names
+    ActiveNbaFuncs m_nbaFuncs;  // Functions that may execute a non-blocking assignment
     bool m_clockedProcess = false;  // Whether current process is a clocked process
     bool m_allChanged = false;  // Whether all SenItem in the SenTree are ET_CHANGED
     bool m_walkingBody = false;  // Walking body of a process
@@ -492,7 +626,7 @@ class ActiveVisitor final : public VNVisitor {
         wantactivep->addStmtsp(nodep);
 
         // Warn and convert any delayed assignments
-        if (!m_clockedProcess) ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB};
+        if (!m_clockedProcess) ActiveDlyVisitor{nodep, ActiveDlyVisitor::CT_COMB, m_nbaFuncs};
 
         // Delete sensitivity list
         if (oldsentreep) VL_DO_DANGLING(oldsentreep->deleteTree(), oldsentreep);
@@ -535,7 +669,7 @@ class ActiveVisitor final : public VNVisitor {
         moveUnderSpecial<AstSenItem::Initial>(nodep);
     }
     void visit(AstFinal* nodep) override {
-        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_FINAL};
+        const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_FINAL, m_nbaFuncs};
         moveUnderSpecial<AstSenItem::Final>(nodep);
     }
     void visit(AstCoverToggle* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
@@ -545,6 +679,7 @@ class ActiveVisitor final : public VNVisitor {
             return;
         }
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+            const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_COMB, m_nbaFuncs};
             moveUnderSpecial<AstSenItem::Combo>(nodep);
             return;
         }
