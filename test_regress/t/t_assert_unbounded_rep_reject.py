@@ -5,7 +5,10 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
-test.compile(verilator_flags2=['--binary', '--assert', '--timing'])
+test.scenarios("vlt")
+
+test.compile(verilator_flags2=["--binary", "--assert", "--timing"])
+
 test.execute()
+
 test.passes()
