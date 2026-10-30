@@ -79,6 +79,42 @@
                             }
                         }
                     ],
+                    "fixes": [
+                        {
+                            "description": {
+                                "text": "Disable MODDUP around this source with lint_off and lint_on"
+                            },
+                            "artifactChanges": [
+                                {
+                                    "artifactLocation": {
+                                        "uri": "file:///.../t_sarif.v"
+                                    },
+                                    "replacements": [
+                                        {
+                                            "deletedRegion": {
+                                                "startLine": 20,
+                                                "startColumn": 1,
+                                                "endColumn": 1
+                                            },
+                                            "insertedContent": {
+                                                "text": "/* verilator lint_off MODDUP */\n"
+                                            }
+                                        },
+                                        {
+                                            "deletedRegion": {
+                                                "startLine": 21,
+                                                "startColumn": 1,
+                                                "endColumn": 1
+                                            },
+                                            "insertedContent": {
+                                                "text": "/* verilator lint_on MODDUP */\n"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
                     "ruleId": "MODDUP",
                     "ruleIndex": 0
                 },
@@ -105,6 +141,42 @@
                                     }
                                 }
                             }
+                        }
+                    ],
+                    "fixes": [
+                        {
+                            "description": {
+                                "text": "Disable WIDTHTRUNC around this source with lint_off and lint_on"
+                            },
+                            "artifactChanges": [
+                                {
+                                    "artifactLocation": {
+                                        "uri": "file:///.../t_sarif.v"
+                                    },
+                                    "replacements": [
+                                        {
+                                            "deletedRegion": {
+                                                "startLine": 13,
+                                                "startColumn": 1,
+                                                "endColumn": 1
+                                            },
+                                            "insertedContent": {
+                                                "text": "  /* verilator lint_off WIDTHTRUNC */\n"
+                                            }
+                                        },
+                                        {
+                                            "deletedRegion": {
+                                                "startLine": 14,
+                                                "startColumn": 1,
+                                                "endColumn": 1
+                                            },
+                                            "insertedContent": {
+                                                "text": "  /* verilator lint_on WIDTHTRUNC */\n"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ],
                     "ruleId": "WIDTHTRUNC",
@@ -177,6 +249,42 @@
                                     }
                                 }
                             }
+                        }
+                    ],
+                    "fixes": [
+                        {
+                            "description": {
+                                "text": "Disable MULTIDRIVEN around this source with lint_off and lint_on"
+                            },
+                            "artifactChanges": [
+                                {
+                                    "artifactLocation": {
+                                        "uri": "file:///.../t_sarif.v"
+                                    },
+                                    "replacements": [
+                                        {
+                                            "deletedRegion": {
+                                                "startLine": 10,
+                                                "startColumn": 1,
+                                                "endColumn": 1
+                                            },
+                                            "insertedContent": {
+                                                "text": "    /* verilator lint_off MULTIDRIVEN */\n"
+                                            }
+                                        },
+                                        {
+                                            "deletedRegion": {
+                                                "startLine": 11,
+                                                "startColumn": 1,
+                                                "endColumn": 1
+                                            },
+                                            "insertedContent": {
+                                                "text": "    /* verilator lint_on MULTIDRIVEN */\n"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
                         }
                     ],
                     "ruleId": "MULTIDRIVEN",
