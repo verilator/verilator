@@ -295,6 +295,7 @@ private:
     bool m_containsGenBlock = false;  // Contains gen block reference
     bool m_pli = false;  // Pli system call ($name)
     bool m_superReference = false;  // Called with super reference
+    bool m_upwardReference = false;  // Simple name resolved through the instance hierarchy
     VIsCached m_purity;  // Pure state
 
 protected:
@@ -325,6 +326,8 @@ public:
     void pli(bool flag) { m_pli = flag; }
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
+    bool upwardReference() const { return m_upwardReference; }
+    void upwardReference(bool flag) { m_upwardReference = flag; }
     bool isPure() override;
     bool isUnlikely() const override { return m_taskp && m_taskp->isUnlikely(); }
     bool sameNode(const AstNode* samep) const override {
@@ -336,7 +339,8 @@ public:
                && inlinedDots() == asamep->inlinedDots()  //
                && pli() == asamep->pli()  //
                && containsGenBlock() == asamep->containsGenBlock()
-               && superReference() == asamep->superReference();
+               && superReference() == asamep->superReference()
+               && upwardReference() == asamep->upwardReference();
     }
     string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
     string emitC() final override { V3ERROR_NA_RETURN(""); }

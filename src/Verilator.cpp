@@ -116,6 +116,7 @@
 #include "V3Undriven.h"
 #include "V3Unknown.h"
 #include "V3Unroll.h"
+#include "V3Upward.h"
 #include "V3VariableOrder.h"
 #include "V3Waiver.h"
 #include "V3Width.h"
@@ -182,6 +183,11 @@ static void process() {
         //   This requires some width calculations and constant propagation
         // No more AstGenCase/AstGenFor/AstGenIf after this
         V3Param::param(v3Global.rootp());
+
+        // Specialize modules for each distinct set of upward task/function targets
+        // before V3LinkDot relinks the references and V3Width resolves their
+        // instance-dependent argument and return types.
+        V3Upward::uniquify(v3Global.rootp());
 
         V3LinkDot::linkDotParamed(v3Global.rootp());  // Cleanup as made new modules
         V3Param::finalizeDeferredParams(v3Global.rootp());

@@ -113,6 +113,7 @@ class V3Global final {
     bool m_useCovergroup = false;  // Has covergroup declarations
     bool m_useRandomizeMethods = false;  // Need to define randomize() class methods
     bool m_hasPrintedObjects = false;  // Design has format args printed with to_string()
+    bool m_hasUpwardReferences = false;  // Design has upward referenced tasks/functions.
     uint64_t m_currentHierBlockCost = 0;  // Total cost of this hier block, used for scheduling
 
     // Memory address to short string mapping (for debug)
@@ -215,6 +216,8 @@ public:
     static std::vector<std::string> verilatedCppFiles();
     uint64_t currentHierBlockCost() const { return m_currentHierBlockCost; }
     void currentHierBlockCost(uint64_t cost) { m_currentHierBlockCost = cost; }
+    void hasUpwardReferences(bool flag) { m_hasUpwardReferences = flag; }
+    bool hasUpwardReferences() const { return m_hasUpwardReferences; }
 };
 
 extern V3Global v3Global;
