@@ -237,8 +237,8 @@ endclass
 
 // Test 8: randc mixed with rand variables named only in an if condition, an
 // implication, a foreach, an inside list or a struct member. Each constraint names
-// a rand variable, so it must stay out of the randc-first draw, which declares only
-// randc variables. Every value of c stays feasible, so each cycle covers 0..3.
+// a rand variable, so it must stay out of the randc-first draw. Every value of c stays
+// feasible, so each cycle covers 0..3.
 virtual class RandcMixedBase;
   randc bit [1:0] c;
 
@@ -332,6 +332,22 @@ class RandcCondUnique extends RandcMixedBase;
   endfunction
 endclass
 
+// A frozen enum keeps its generated value-range constraint, which names it as is
+class RandcFrozenEnum extends RandcMixedBase;
+  typedef enum bit [1:0] {
+    LOW = 0,
+    HIGH = 2
+  } mode_t;
+  rand mode_t mode;
+  constraint c_mode {mode != HIGH;}
+  function bit holds;
+    return mode == LOW;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
 class RandcStructMember extends RandcMixedBase;
   typedef struct {rand bit [1:0] f;} pair_t;
   rand pair_t s;
@@ -387,6 +403,26 @@ endclass
 class ArrayCycle;
   randc bit [1:0] values[2];
   constraint domain {foreach (values[index]) values[index] == 2;}
+endclass
+
+class FrozenEnumCycle;
+  typedef enum bit [1:0] {
+    LOW = 0,
+    HIGH = 2
+  } mode_t;
+  rand mode_t mode;
+  randc bit [1:0] value;
+  constraint domain {
+    value < 3;
+    mode != HIGH;
+  }
+endclass
+
+// A frozen array keeps its values, so only c values it does not hold are feasible
+class FrozenArrayCycle;
+  randc bit [1:0] c;
+  rand bit [1:0] fa[2];
+  constraint k {foreach (fa[i]) c != fa[i];}
 endclass
 
 class ArrayWith;
@@ -468,6 +504,45 @@ module t;
       end
       `checkd(count[0], 2);
       `checkd(count[1], 2);
+    end
+
+    begin
+      automatic RandcFrozenEnum rfz = new;
+      rfz.mode.rand_mode(0);
+      rfz.test_cyclic("a frozen enum");
+    end
+
+    begin
+      automatic FrozenEnumCycle obj = new;
+      automatic int count[4] = '{0, 0, 0, 0};
+      automatic int res;
+      $display("Test randc with a frozen enum");
+      obj.mode.rand_mode(0);
+      for (int i = 0; i < 6; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.mode, FrozenEnumCycle::LOW);
+        ++count[obj.value];
+      end
+      for (int v = 0; v < 3; ++v) `checkd(count[v], 2);
+    end
+
+    begin
+      automatic FrozenArrayCycle obj = new;
+      automatic int count[4] = '{0, 0, 0, 0};
+      automatic int res;
+      $display("Test randc with a frozen array");
+      obj.fa = '{1, 2};
+      obj.fa.rand_mode(0);
+      for (int i = 0; i < 6; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.fa[0], 1);
+        `checkd(obj.fa[1], 2);
+        ++count[obj.c];
+      end
+      `checkd(count[0], 3);
+      `checkd(count[3], 3);
     end
 
     begin
