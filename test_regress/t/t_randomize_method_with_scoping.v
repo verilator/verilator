@@ -104,11 +104,30 @@ class SubC extends SubB;
   endfunction
 endclass
 
+// 'local::' only selects the lookup scope, the call is still virtual
+class LocalBase;
+  Cls c = new;
+  virtual function int vf();
+    return 1;
+  endfunction
+  function int doit();
+    void'(c.randomize() with { x == local::vf(); });
+    return c.x;
+  endfunction
+endclass
+class LocalExt extends LocalBase;
+  virtual function int vf();
+    return 2;
+  endfunction
+endclass
+
 module t;
   SubC obj = new;
+  LocalExt lext = new;
 
   initial begin
     if (obj.doit != 1) $stop;
+    if (lext.doit() != 2) $stop;
     $write("*-* All Finished *-*\n");
     $finish;
   end
