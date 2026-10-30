@@ -4661,8 +4661,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     if (foundp) m_ds.m_dotSymp = enclosingClassSymp;
                 }
             }
-            // If not found in modport, check interface fallback for parameters and typedefs.
-            // Parameters and typedefs are always visible through a modport (IEEE 1800-2023 25.5).
+            // If not found in modport, check interface fallback for parameters, typedefs, and
+            // enum names. These are always visible through a modport (IEEE 1800-2023 25.5).
             // This mirrors the VarXRef modport parameter fallback in visit(AstVarXRef).
             if (!foundp && VN_IS(m_ds.m_dotSymp->nodep(), Modport)
                 && m_ds.m_dotSymp->fallbackp()) {
@@ -4671,6 +4671,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 if (ifaceFoundp) {
                     if (const AstVar* const varp = VN_CAST(ifaceFoundp->nodep(), Var)) {
                         if (varp->isParam()) foundp = ifaceFoundp;
+                    } else if (VN_IS(ifaceFoundp->nodep(), EnumItem)) {
+                        foundp = ifaceFoundp;
                     } else if (VN_IS(ifaceFoundp->nodep(), Typedef)
                                || VN_IS(ifaceFoundp->nodep(), ParamTypeDType)) {
                         // Redirect dotSymp to the interface cell so that downstream
@@ -4901,14 +4903,17 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     m_ds.m_dotPos = DP_SCOPE;
                     UINFO(9, indent() << "modport -> iface varref " << foundp->nodep());
                     // We lose the modport name here, so we cannot detect mismatched modports.
-                    AstVarRef* const refp
+                    AstNodeExpr* newp
                         = new AstVarRef{nodep->fileline(), ifaceRefVarp, VAccess::READ};
-                    AstNodeExpr* newp = refp;
 
-                    auto* const cellarrayrefp = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
-                    if (cellarrayrefp) {
-                        // iface[vec].modport became CellArrayRef(iface, lsb)
-                        // Convert back to SelBit(iface, lsb)
+                    AstCellArrayRef* const cellarrayrefp
+                        = VN_CAST(m_ds.m_unlinkedScopep, CellArrayRef);
+                    // Only a terminal modport denotes an interface value needing SelBit.
+                    // Otherwise this ParseRef is the RHS of a nested AstDot, so the enclosing
+                    // AstDot must visit another ParseRef or FTaskRef before restoring DotStates.
+                    // That final reference consumes CellArrayRef by constructing AstUnlinkedRef;
+                    // V3Param then resolves its array index.
+                    if (cellarrayrefp && lastStates.m_dotPos == DP_FINAL) {
                         UINFO(9, indent() << "Array modport to SelBit " << cellarrayrefp);
                         newp = new AstSelBit{cellarrayrefp->fileline(), newp,
                                              cellarrayrefp->selp()->unlinkFrBack()};
