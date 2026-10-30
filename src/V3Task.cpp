@@ -845,7 +845,7 @@ class TaskVisitor final : public VNVisitor {
                     AstNodeFTask* const finalTaskp
                         = m_statep->findMember(classDtypep->classp(), refp->name());
                     AstNode* const varRef2User4p = varRefp2->varp()->user4p();
-                    AstScope* scopep;
+                    AstScope* scopep = nullptr;
                     // The base class pointer is set by a function
                     if (AstVarRef* const varRefp3 = VN_CAST(varRef2User4p, VarRef)) {
                         scopep = varRefp3->varScopep()->scopep();
@@ -1546,7 +1546,6 @@ class TaskVisitor final : public VNVisitor {
                     || varRefp->varp()->user1()) {
                     if (!varRefp->varp()->user3p()) {
                         // The functions signature will change so it will no longer be virtual
-                        methodCallp->funcp()->isVirtual(false);
                         varRefp->varp()->user3p(varRefp->varp());
                         unsetUser3p.push_back(varRefp->varp());
                         AstVarRef* const newVarRefp = new AstVarRef{varRefp->fileline(), varRefp->varp(),
