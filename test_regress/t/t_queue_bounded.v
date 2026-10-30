@@ -93,6 +93,10 @@ module t;
       q = {src, 9};
       `checkd(q.size(), 3);
       `checkd(q[2], 3);
+      // A keyed assignment pattern sized by its largest index key
+      q = '{4: 7, default: 1};
+      `checkd(q.size(), 3);
+      `checkd(q[2], 1);
     end
 
     begin

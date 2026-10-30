@@ -147,7 +147,12 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
                                  tabModulus(dynp->dtypep()->skipRefp()->subDTypep()));
             return;
         }
-        if (AstConsQueue* const queuep = VN_CAST(nodep, ConsQueue)) {
+        AstConsQueue* const queuep = VN_CAST(nodep, ConsQueue);
+        if (queuep && queuep->sizep()) {
+            emitKeyedConsItems(queuep->sizep(), queuep->defaultp(), queuep->itemsp());
+            return;
+        }
+        if (queuep) {
             emitUnkeyedConsItems(queuep->itemsp(),
                                  tabModulus(queuep->dtypep()->skipRefp()->subDTypep()));
             return;
