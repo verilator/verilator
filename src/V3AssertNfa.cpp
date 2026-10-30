@@ -745,27 +745,31 @@ class SvaNfaBuilder final {
         }
         // A failed required repetition cannot be recovered by a later endpoint.
         // Reject the attempt even when the endpoint is false on this tick.
-        if (isTopLevelStep && currentp->m_liveRepCondp) {
-            SvaStateVertex* const liveRepVtxp  // LCOV_EXCL_LINE
-                = currentp->m_liveRepCheckVtxp
-                                                  ? currentp->m_liveRepCheckVtxp
-                                                  : currentp;
+        if (!m_isCover && isTopLevelStep && currentp->m_liveRepCondp) {
+            AstNodeExpr* const liveRepCondp = currentp->m_liveRepCondp;
+            SvaStateVertex* const liveRepVtxp = currentp->m_liveRepCheckVtxp ? currentp->m_liveRepCheckVtxp : currentp;
             // The endpoint is valid only when the repetition itself matched on this tick.
             // A valid match also retires the live repetition state for later ticks.
+            if (liveRepVtxp->m_liveRepClearCondp) {
+                VL_DO_DANGLING(liveRepVtxp->m_liveRepClearCondp->deleteTree(),
+                               liveRepVtxp->m_liveRepClearCondp);
+            }
             liveRepVtxp->m_liveRepClearCondp
-                = new AstLogAnd{flp, currentp->m_liveRepCondp->cloneTreePure(false),
+                = new AstLogAnd{flp, liveRepCondp->cloneTreePure(false),
                                 exprp->cloneTreePure(false)};
             SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
             sinkVtxp->m_isRejectSink = true;
-            AstNodeExpr* const guardp = sampled(currentp->m_liveRepCondp->cloneTreePure(false));
+            AstNodeExpr* const guardp = sampled(liveRepCondp->cloneTreePure(false));
             SvaTransEdge* const rejEdgep = m_graph.addLink(liveRepVtxp, sinkVtxp, guardp);
             rejEdgep->m_rejectOnFail = true;
 
             // Do not allow the endpoint to match if the repetition failed on this tick.
-            return {currentp,
-                    new AstLogAnd{flp, currentp->m_liveRepCondp->cloneTreePure(false),
-                                  exprp->cloneTreePure(false)},
-                    std::move(rangeMidSources)};
+            BuildResult result{currentp,
+                               new AstLogAnd{flp, liveRepCondp->cloneTreePure(false),
+                                             exprp->cloneTreePure(false)},
+                               std::move(rangeMidSources)};
+            VL_DO_DANGLING(currentp->m_liveRepCondp->deleteTree(), currentp->m_liveRepCondp);
+            return result;
         }
         return {currentp, exprp, std::move(rangeMidSources)};
     }
@@ -844,6 +848,9 @@ class SvaNfaBuilder final {
                 currentp->m_liveRepCheckVtxp = loopBackVtxp;
             }
             currentp->m_isUnbounded = true;
+            if (currentp->m_liveRepCondp) {
+                VL_DO_DANGLING(currentp->m_liveRepCondp->deleteTree(), currentp->m_liveRepCondp);
+            }
             currentp->m_liveRepCondp = exprp->cloneTreePure(false);
             m_inUnboundedScope = true;
         } else if (repp->maxCountp()) {
