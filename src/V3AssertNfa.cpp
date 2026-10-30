@@ -747,7 +747,8 @@ class SvaNfaBuilder final {
         // Reject the attempt even when the endpoint is false on this tick.
         if (!m_isCover && isTopLevelStep && currentp->m_liveRepCondp) {
             AstNodeExpr* const liveRepCondp = currentp->m_liveRepCondp;
-            SvaStateVertex* const liveRepVtxp
+            // The declaration line has no executable code; exclude it from line coverage.
+            SvaStateVertex* const liveRepVtxp  // LCOV_EXCL_LINE
                 = currentp->m_liveRepCheckVtxp ? currentp->m_liveRepCheckVtxp : currentp;
             // The endpoint is valid only when the repetition itself matched on this tick.
             // A valid match also retires the live repetition state for later ticks.
