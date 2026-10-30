@@ -65,5 +65,6 @@ module sub3 (
   initial begin
     $dumpvars(1, sub2a);  // Under this instance
     $dumpvars(1, sub1b.sub2a);  // Found upward
+    $dumpvars(1, $root.t.cyc);  // From the top, already selected
   end
 endmodule

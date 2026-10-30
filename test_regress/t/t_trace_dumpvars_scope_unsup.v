@@ -10,5 +10,7 @@ module t;
   initial begin
     $dumpvars(1, a[i]);  // Index is not a constant
     $dumpvars(1, i + 1);  // Not a name
+    $dumpvars(1, a[i].x);  // Not a name before the dot
+    $dumpvars(1, a[i][0]);  // Not a name before the index
   end
 endmodule
