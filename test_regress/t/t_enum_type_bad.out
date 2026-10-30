@@ -115,4 +115,29 @@
                                           : ... Suggest use enum's mnemonic, or static cast
    81 |     ref_enum(enum_int);
       |              ^~~~~~~~
+%Error-ENUMVALUE: t/t_enum_type_bad.v:92:26: Implicit conversion to enum 'enum t.other_bit_enum_t' from 'enum t.bit_enum_t' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                           : ... Suggest use enum's mnemonic, or static cast
+   92 |     other_value = select ? BIT_A : BIT_B;
+      |                          ^
+%Error-ENUMVALUE: t/t_enum_type_bad.v:92:28: Implicit conversion to enum 'enum t.other_bit_enum_t' from 'enum t.bit_enum_t' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                           : ... Suggest use enum's mnemonic, or static cast
+   92 |     other_value = select ? BIT_A : BIT_B;
+      |                            ^~~~~
+%Error-ENUMVALUE: t/t_enum_type_bad.v:92:36: Implicit conversion to enum 'enum t.other_bit_enum_t' from 'enum t.bit_enum_t' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                           : ... Suggest use enum's mnemonic, or static cast
+   92 |     other_value = select ? BIT_A : BIT_B;
+      |                                    ^~~~~
+%Error-ENUMVALUE: t/t_enum_type_bad.v:93:24: Implicit conversion to enum 'enum t.bit_enum_t' from 'logic[6:0]' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                           : ... Suggest use enum's mnemonic, or static cast
+   93 |     bit_value = select ? BIT_A : (select ? OTHER_A : OTHER_B);
+      |                        ^
+%Error-ENUMVALUE: t/t_enum_type_bad.v:94:24: Implicit conversion to enum 'enum t.bit_enum_t' from 'logic[6:0]' (IEEE 1800-2023 6.19.3)
+                                           : ... note: In instance 't'
+                                           : ... Suggest use enum's mnemonic, or static cast
+   94 |     bit_value = select ? BIT_A : (select ? raw_value : raw_value);
+      |                        ^
 %Error: Exiting due to

@@ -80,4 +80,17 @@ module t;
     inout_enum(enum_int);
     ref_enum(enum_int);
   end
+
+  typedef enum bit [6:0] { BIT_A, BIT_B } bit_enum_t;
+  typedef enum bit [6:0] { OTHER_A, OTHER_B } other_bit_enum_t;
+  logic select;
+  bit_enum_t bit_value;
+  other_bit_enum_t other_value;
+  bit [6:0] raw_value;
+
+  always_comb begin
+    other_value = select ? BIT_A : BIT_B;
+    bit_value = select ? BIT_A : (select ? OTHER_A : OTHER_B);
+    bit_value = select ? BIT_A : (select ? raw_value : raw_value);
+  end
 endmodule

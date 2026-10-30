@@ -248,7 +248,7 @@ module t;
     `checkcond(l, bit15, bit15, logic15);
 
     `checkcond(b, e2a, e2b, e2a);
-    `checkcond(l, e2a, e2b, logic3);
+    `checkcond(l, e2a, e2b, e2a);
     `checkcond(b, e4a, e4b, e4a);
     `checkcond(l, e4a, e4b, e4a);
 
