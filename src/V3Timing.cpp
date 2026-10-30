@@ -416,7 +416,9 @@ class TimingSuspendableVisitor final : public VNVisitor {
         // Containing process will not suspend, don't mark it
     }
     void visit(AstCFuncHard* nodep) override {
-        if (nodep->function() == VCFunction::CALL_IMPORT_TASK) {
+        if (!VN_IS(m_procp, CFunc)) return;
+        AstCFunc* const cfuncp = VN_AS(m_procp, CFunc);
+        if (nodep->function() == VCFunction::CALL_IMPORT_TASK && cfuncp->dpiContext()) {
             m_delayedProc.push_back(m_procp);
         }
     }
@@ -975,6 +977,8 @@ class TimingControlVisitor final : public VNVisitor {
         if (nodep->function() == VCFunction::CALL_IMPORT_TASK) {
             // Do not use awaitable DPI dispatcher, if there are no suspendable DPI exports
             if (!v3Global.usesSuspendableExports()) return;
+            // Only emit awaitable dispatcher when the enclosing scope can suspend
+            if (!hasFlags(m_procp, T_SUSPENDEE)) return;
             AstStmtExpr* const stmtExprp = VN_AS(nodep->backp(), StmtExpr);
             nodep->function(VCFunction::AWAIT_IMPORT_TASK);
             AstCFuncHard* const cFuncp = nodep->unlinkFrBack();
