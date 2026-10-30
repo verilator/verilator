@@ -427,11 +427,11 @@ string VString::base64Enc(const string& str) VL_PURE {
     if (len >= 2 && pos < len - 1) {  // Pad 2
         result += digits[((str[pos] >> 2) & 0x3f)];
         result += digits[((str[pos] & 0x3) << 4) | (static_cast<int>(str[pos + 1] & 0xf0) >> 4)];
-        result += digits[((str[pos + 1] & 0xf) << 2) | (static_cast<int>(0) >> 6)];
+        result += digits[((str[pos + 1] & 0xf) << 2)];  // Given pos+2 is 0
         result += '=';
     } else if (pos < len) {  // Pad 1
         result += digits[((str[pos] >> 2) & 0x3f)];
-        result += digits[((str[pos] & 0x3) << 4) | (static_cast<int>(0) >> 4)];
+        result += digits[((str[pos] & 0x3) << 4)];  // Given pos+1 is 0
         result += '=';
         result += '=';
     }

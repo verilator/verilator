@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_preproc_noline.v"
 
 stdout_filename = os.path.join(test.obj_dir, test.name + "__test.vpp")
 

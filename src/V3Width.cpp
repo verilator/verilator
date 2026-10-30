@@ -2983,7 +2983,7 @@ class WidthVisitor final : public VNVisitor {
     }
     void visit(AstUnsizedArrayDType* nodep) override {
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
-        if (nodep->childDTypep() && !(m_ftaskp && m_ftaskp->dpiImport())) {
+        if (nodep->packed() && !(m_ftaskp && m_ftaskp->dpiImport())) {
             nodep->v3error("Unsized packed dimension '[]' is only legal in a DPI import"
                            " (IEEE 1800-2023 A.2.2.1)");
         }
@@ -6304,6 +6304,12 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(elemDefaultp), elemDefaultp);
         return valuep;
     }
+    // Return dtypep as an unpacked array if its elements are of type elemDtp, else nullptr.
+    static const AstUnpackArrayDType* spliceArrayDTypep(const AstNodeDType* dtypep,
+                                                        const AstNodeDType* elemDtp) {
+        const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep->skipRefp(), UnpackArrayDType);
+        return arrayp && arrayp->subDTypep()->similarDType(elemDtp) ? arrayp : nullptr;
+    }
     // An unpacked array concatenation, with each item an element, or an array of the elements
     // spliced in (IEEE 1800-2023 10.10)
     void patternConcatArray(AstPattern* nodep, AstUnpackArrayDType* arrayDtp) {
@@ -6317,9 +6323,8 @@ class WidthVisitor final : public VNVisitor {
             patp->dtypep(arrayDtp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
             const uint64_t index = range.ascending() ? entn : elements - 1 - entn;
-            const AstUnpackArrayDType* const spliceDtp
-                = VN_CAST(valuep->dtypep()->skipRefp(), UnpackArrayDType);
-            if (spliceDtp && spliceDtp->subDTypep()->similarDType(arrayDtp->subDTypep())) {
+            if (const AstUnpackArrayDType* const spliceDtp
+                = spliceArrayDTypep(valuep->dtypep(), arrayDtp->subDTypep())) {
                 entn += spliceDtp->elementsConst();
                 newp->spliceValues(index, valuep);
                 continue;
@@ -6376,9 +6381,8 @@ class WidthVisitor final : public VNVisitor {
                 patp->dtypep(arrayDtp->subDTypep());
                 valuep = patternMemberValueIterate(patp);
                 // Only an unpacked array concatenation splices in arrays
-                const AstUnpackArrayDType* const memberDtp
-                    = VN_CAST(valuep->dtypep()->skipRefp(), UnpackArrayDType);
-                if (memberDtp && memberDtp->subDTypep()->similarDType(arrayDtp->subDTypep())) {
+                if (const AstUnpackArrayDType* const memberDtp
+                    = spliceArrayDTypep(valuep->dtypep(), arrayDtp->subDTypep())) {
                     valuep->v3error("Assignment pattern member is an array of the elements, not"
                                     " an element (IEEE 1800-2023 10.9.1)"
                                     << warnDTypes(valuep, arrayDtp->subDTypep(), memberDtp,
@@ -6748,7 +6752,13 @@ class WidthVisitor final : public VNVisitor {
                     "PatMember value should be singular w/replicates removed");
         // Need to propagate assignment type downwards, even on prelim
         userIterateChildren(nodep, WidthVP{nodep->dtypep(), PRELIM}.p());
-        iterateCheck(nodep, "Pattern value", nodep->lhssp(), ASSIGN, FINAL, vdtypep, EXTEND_LHS);
+        // An array of the elements in an unpacked array concatenation is spliced in, so is
+        // checked against its own type
+        AstNodeDType* const expDTypep
+            = nodep->isConcat() && spliceArrayDTypep(nodep->lhssp()->dtypep(), vdtypep)
+                  ? nodep->lhssp()->dtypep()
+                  : vdtypep;
+        iterateCheck(nodep, "Pattern value", nodep->lhssp(), ASSIGN, FINAL, expDTypep, EXTEND_LHS);
     }
     int visitPatMemberRep(AstPatMember* nodep) {
         uint32_t times = 1;
@@ -8184,6 +8194,7 @@ class WidthVisitor final : public VNVisitor {
                          && !VN_IS(pinp, CvtPackString)
                          && !VN_IS(pinp, SFormatF)  // Already generates a string
                          && !VN_IS(portp->dtypep(), UnpackArrayDType)  // Unpacked array must match
+                         && !portp->isDpiOpenArray()  // As must DPI open array
                          && !(VN_IS(pinp, VarRef) && VN_AS(pinp, VarRef)->varp()->basicp()
                               && VN_AS(pinp, VarRef)->varp()->basicp()->keyword()
                                      == VBasicDTypeKwd::STRING)) {
@@ -8211,7 +8222,10 @@ class WidthVisitor final : public VNVisitor {
                 if (!pinp) continue;  // Argument error we'll find later
                 // Change data types based on above accept completion
                 if (nodep->taskp()->dpiImport()) checkUnpackedArrayArgs(portp, pinp);
-                if (portp->isDouble()) VL_DO_DANGLING(spliceCvtD(pinp), pinp);
+                // Not to a DPI open array, which takes the type of its actual
+                if (portp->isDouble() && !portp->isDpiOpenArray()) {
+                    VL_DO_DANGLING(spliceCvtD(pinp), pinp);
+                }
             }
         }
         // Stage 3
@@ -11007,6 +11021,67 @@ class WidthVisitor final : public VNVisitor {
         }
     }
 
+    // Check DPI open array argument 'portp' can be passed actual 'pinp' of a call, else report
+    static void checkOpenArrayActual(const AstVar* portp, const AstNode* pinp) {
+        const AstNodeDType* const pinDTypep = pinp->dtypep()->skipRefp();
+        if (VN_IS(pinDTypep, EmptyQueueDType)) return;  // '{}', reported as an argument
+        if (VN_IS(pinDTypep, StreamDType)) {
+            pinp->v3warn(E_UNSUPPORTED, "Unsupported: DPI open array argument "
+                                            << portp->prettyNameQ()
+                                            << " passed a streaming concatenation");
+            return;
+        }
+        const bool dynamic = VN_IS(pinDTypep, DynArrayDType) || VN_IS(pinDTypep, QueueDType);
+        if (dynamic && portp->direction().isOutput()) {
+            pinp->v3error("DPI output open array argument "
+                          << portp->prettyNameQ()
+                          << " may not be passed a dynamic array or queue (IEEE 1800-2023 7.7)");
+            return;
+        }
+        // DPI passes the elements as one C layout block, so only the first dimension may be of a
+        // dynamic array or queue
+        int pinDims = dynamic ? 1 : 0;  // Unpacked dimensions of the actual outside its elements
+        const AstNodeDType* elemDTypep = dynamic ? pinDTypep->subDTypep()->skipRefp() : pinDTypep;
+        while (const AstUnpackArrayDType* const adtypep = VN_CAST(elemDTypep, UnpackArrayDType)) {
+            elemDTypep = adtypep->subDTypep()->skipRefp();
+            ++pinDims;
+        }
+        int portDims = 0;  // Unpacked dimensions of the formal outside its elements
+        const AstNodeDType* portElemp = portp->dtypep()->skipRefp();
+        while (VN_IS(portElemp, UnsizedArrayDType) || VN_IS(portElemp, UnpackArrayDType)) {
+            const AstUnsizedArrayDType* const unsizedp = VN_CAST(portElemp, UnsizedArrayDType);
+            if (unsizedp && unsizedp->packed()) break;  // Of the elements, e.g. 'bit []'
+            portElemp = portElemp->subDTypep()->skipRefp();
+            ++portDims;
+        }
+        const AstBasicDType* const elemBasicp = elemDTypep->basicp();
+        const AstBasicDType* const portBasicp = portp->basicp();
+        if (VN_IS(elemDTypep, AssocArrayDType) || VN_IS(elemDTypep, WildcardArrayDType)) {
+            pinp->v3error("DPI open array argument "
+                          << portp->prettyNameQ() << " passed " << pinDTypep->prettyDTypeNameQ()
+                          << ", but associative arrays may only be passed to associative arrays"
+                             " (IEEE 1800-2023 7.9.10)");
+        } else if ((VN_IS(elemDTypep, DynArrayDType) || VN_IS(elemDTypep, QueueDType))
+                   && portDims > pinDims) {
+            // Only if the formal has a dimension matching it (IEEE 1800-2023 35.5.6.1), else as
+            // it has fewer unpacked dimensions, the element types are not equivalent (7.6)
+            pinp->v3warn(E_UNSUPPORTED, "Unsupported: DPI open array argument "
+                                            << portp->prettyNameQ() << " passed "
+                                            << pinDTypep->prettyDTypeNameQ()
+                                            << ", with a dynamic array or queue other than as"
+                                               " its first dimension");
+        } else if (!elemBasicp != !portBasicp
+                   || (elemBasicp && elemBasicp->isDouble() != portBasicp->isDouble())) {
+            // Element types DPI passes differently: of no basic type (e.g. class handles, or
+            // arrays), of a real type, or of another basic type
+            pinp->v3error("DPI open array argument "
+                          << portp->prettyNameQ() << " with elements of type "
+                          << portElemp->prettyDTypeNameQ() << " passed elements of type "
+                          << elemDTypep->prettyDTypeNameQ()
+                          << ", which is not equivalent (IEEE 1800-2023 7.6)");
+        }
+    }
+
     void makeOpenArrayShell(AstNodeFTaskRef* nodep) {
         UINFO(4, "Replicate openarray function " << nodep->taskp());
         AstNodeFTask* const oldTaskp = nodep->taskp();
@@ -11029,6 +11104,7 @@ class WidthVisitor final : public VNVisitor {
             const AstNode* const pinp = argp->exprp();
             if (!pinp) continue;  // Argument error we'll find later
             if (hasOpenArrayDTypeRecurse(portp->dtypep())) {
+                checkOpenArrayActual(portp, pinp);
                 AstNodeDType* const oldDTypep = portp->dtypep();
                 portp->dtypep(pinp->dtypep());
                 newTaskp->foreach([oldDTypep, portp](AstNode* nodep) {

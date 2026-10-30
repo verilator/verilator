@@ -45,4 +45,10 @@ module sub2 #(
 
   int value;
   always_comb value = cyc + ADD;
+
+  // Triggers whether or not dumpvars selected it
+  event ev;
+  int hits;
+  always @(cyc) if (cyc == 5) ->ev;
+  always @(ev) ++hits;
 endmodule

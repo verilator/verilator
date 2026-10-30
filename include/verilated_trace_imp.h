@@ -156,7 +156,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
         // We don't want to still use m_signs_enabledVec as std::vector<bool> is not
         // guaranteed to be fast
         m_sigs_enabledp = new uint32_t[1 + VL_WORDS_I(nextCode())]{0};
-        m_sigs_enabledVec.reserve(nextCode());
+        m_sigs_enabledVec.resize(nextCode(), false);
         for (size_t code = 0; code < nextCode(); ++code) {
             if (m_sigs_enabledVec[code]) {
                 m_sigs_enabledp[VL_BITWORD_I(code)] |= 1U << VL_BITBIT_I(code);
@@ -562,14 +562,8 @@ template <>
 void VerilatedTraceBuffer<VL_BUF_T>::fullEvent(uint32_t* oldp, const VlEventBase* newvalp) {
     const uint32_t code = oldp - m_sigs_oldvalp;
     // No need to update *oldp
+    if (VL_UNLIKELY(m_sigs_enabledp && !(VL_BITISSET_W(m_sigs_enabledp, code)))) return;
     if (newvalp->isTriggered()) emitEvent(code);
-}
-
-template <>
-void VerilatedTraceBuffer<VL_BUF_T>::fullEventTriggered(uint32_t* oldp) {
-    const uint32_t code = oldp - m_sigs_oldvalp;
-    // No need to update *oldp
-    emitEvent(code);
 }
 
 template <>

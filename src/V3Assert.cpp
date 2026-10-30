@@ -333,7 +333,7 @@ public:
         visit(nodep);  // Nodep may get deleted
         // UINFOTREE(9, nodep, "", "defuture-ou");
     }
-    ~AssertDeFutureVisitor() = default;
+    ~AssertDeFutureVisitor() override = default;
 };
 
 // Prepare one default sampled expression.

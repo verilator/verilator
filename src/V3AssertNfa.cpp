@@ -2774,11 +2774,11 @@ public:
 
         // A packed range ring can emit several live endpoints without needing per-slot counts.
         // Widen only a ring whose input can already carry multiplicity.
-        std::vector<bool> stateMayHaveMultiplicity(N);
         std::vector<bool> ringNeedsMultiplicity(N);
-        std::vector<int> multiplicityWork;
         const bool countMatches = coverp && coverp->isCoverSeq() && !isSeqEvent;
         if (countMatches) {
+            std::vector<bool> stateMayHaveMultiplicity(N);
+            std::vector<int> multiplicityWork;
             for (int i = 0; i < N; ++i) {
                 const bool multipleInputs = vtx[i]->inEdges().size() > 1;
                 const bool isRing = vtx[i]->m_delayRingSize;

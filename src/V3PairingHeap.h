@@ -147,7 +147,7 @@ public:
     bool empty() const { return !m_root; }
 
     // Insert given node into this heap with given key.
-    void insert(Node* nodep, T_Key key) {
+    void insert(Node* nodep, const T_Key& key) {
         // Update key of node
         nodep->m_key = key;
         insert(nodep);

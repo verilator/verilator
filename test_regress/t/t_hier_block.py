@@ -20,7 +20,7 @@ test.clean_objs()
 # So use 6 threads here though it's not optimal in performance, but ok.
 
 test.compile(
-    v_flags2=['t/t_hier_block.cpp'],
+    v_flags2=[test.pli_filename],
     verilator_flags2=[
         '--stats',
         '--hierarchical',

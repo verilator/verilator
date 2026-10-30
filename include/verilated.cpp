@@ -673,11 +673,6 @@ IData VL_RAND_RESET_I(int obits) VL_MT_SAFE {
     return data;
 }
 
-WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE {
-    // Not inlined to speed up compilation of slowpath code
-    return VL_ZERO_W(obits, outwp);
-}
-
 void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE {
     char* const bytesp = static_cast<char*>(arrayp);
     const size_t totalBytes = elementBytes * count;
