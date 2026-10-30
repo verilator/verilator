@@ -37,14 +37,58 @@ class outer_sequence;
   extern task body();
 endclass
 
+class base #(
+    type ITEM_T = item
+);
+endclass
+
+class limit #(int VALUE = 3);
+endclass
+
+class derived #(type T = fast_item) extends base #(T);
+  typedef item item_t;
+
+  function int randomize_item(base#(T)::ITEM_T obj);
+    return obj.randomize() with {driver_delay == 1;};
+  endfunction
+
+  function int randomize_known_item(item obj);
+    return obj.randomize() with {driver_delay == limit#(7)::VALUE;};
+  endfunction
+
+  function int randomize_typedef_item(item_t obj);
+    return obj.randomize() with {driver_delay == limit#(11)::VALUE;};
+  endfunction
+endclass
+
+class derived_default extends base #();
+  function int randomize_item(base#()::ITEM_T obj);
+    return obj.randomize() with {driver_delay == 1;};
+  endfunction
+endclass
+
+class derived_same_type extends base #(item);
+  function int randomize_item(base#(item)::ITEM_T obj);
+    return obj.randomize() with {driver_delay == 1;};
+  endfunction
+endclass
+
 task outer_sequence::body();
   generic_sequence #(item) seq;
   generic_sequence #(fast_item) fseq;
+  derived drvd;  // Derives from 'base' with 'fast_item'
+  derived_default drvd_default;  // Derives from 'base' default parameters
+  derived_same_type drvd_same;  // Derives from 'base' explicitly with 'item'
   item cmd;  // Caller-scope 'cmd' for the local:: check below
+  fast_item fast_cmd;
   int ok;
   seq = new;
   fseq = new;
   cmd = new;
+  fast_cmd = new;
+  drvd = new;
+  drvd_default = new;
+  drvd_same = new;
 
   // A second specialization of the same generic class resolves independently.
   ok = fseq.randomize() with {cmd.driver_delay == 11;};
@@ -86,6 +130,25 @@ task outer_sequence::body();
   ok = seq.randomize() with {cmd.driver_delay == local:: cmd.driver_delay + 1;};
   `checkd(ok, 1)
   `checkd(seq.cmd.driver_delay, 43)
+
+  // The randomized target's type is inherited from a parameterized base class.
+  ok = drvd.randomize_item(fast_cmd);
+  `checkd(ok, 1)
+  `checkd(fast_cmd.driver_delay, 1)
+  ok = drvd_default.randomize_item(cmd);
+  `checkd(ok, 1)
+  `checkd(cmd.driver_delay, 1)
+  ok = drvd_same.randomize_item(cmd);
+  `checkd(ok, 1)
+  `checkd(cmd.driver_delay, 1)
+
+  // Known target types must link class references before parameter specialization.
+  ok = drvd.randomize_known_item(cmd);
+  `checkd(ok, 1)
+  `checkd(cmd.driver_delay, 7)
+  ok = drvd.randomize_typedef_item(cmd);
+  `checkd(ok, 1)
+  `checkd(cmd.driver_delay, 11)
 
   // Target declared without #(), so the default specialization (IEEE 1800-2023 8.25).
   begin
