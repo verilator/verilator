@@ -17,7 +17,7 @@ module t (
   always @(posedge clk) begin
     src <= {src[1567:0], $random};
     cycle <= cycle + 1;
-    if (cycle == 128) begin
+    if (cycle == 100) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end

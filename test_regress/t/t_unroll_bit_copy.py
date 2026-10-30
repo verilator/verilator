@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.sim_time = 3000
 
 test.compile(verilator_flags2=['--stats'])
 test.execute()
