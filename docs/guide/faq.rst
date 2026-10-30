@@ -132,8 +132,7 @@ See also the next question for tracing in SystemC mode.
 
 A. Pass the :vlopt:`--trace-vcd` option to Verilator. Then you may use
    ``$dumpfile`` and ``$dumpvars`` to enable traces, the same as with any
-   Verilog simulator, although Verilator ignores the arguments to
-   ``$dumpvars``. See ``examples/make_tracing_c`` in the distribution.
+   Verilog simulator. See ``examples/make_tracing_c`` in the distribution.
 
    If writing the top-level C code, call ``Verilated::traceEverOn(true)``;
    this is done for you if using :vlopt:`--binary`.
@@ -170,8 +169,9 @@ B. Or, for finer-grained control, or C++ files with multiple Verilated
    ``tfp->dumpvarsExact(name)`` for each before ``open()``. The name is the
    scope names and the signal name separated by single spaces, for example
    ``"top t cyc"``; a dot inside a scope name, as in a SystemC instance
-   name, stays part of it. After ``open()``, ``tfp->dumpvarsUnmatched()``
-   returns the names no signal had.
+   name, stays part of it. ``tfp->dumpvarsScope(level, name)`` selects as
+   ``$dumpvars`` does, with a name in the same form. After ``open()``,
+   ``tfp->dumpvarsUnmatched()`` returns the names that selected no signal.
 
 You also need to compile :file:`verilated_vcd_c.cpp` and add it to your
 link, preferably by adding the dependencies in your Makefile's

@@ -1052,8 +1052,16 @@ public:
             puts(");\n");
             break;
         case VDumpCtlType::VARS:
-            // We ignore number of levels to dump in exprp()
             if (v3Global.opt.trace()) {
+                if (!nodep->scopesp()) putns(nodep, "vlSymsp->_traceDumpVars(0, \"\");\n");
+                for (const AstConst* constp = nodep->scopesp(); constp;
+                     constp = VN_AS(constp->nextp(), Const)) {
+                    putns(nodep, "vlSymsp->_traceDumpVars(");
+                    iterateConst(nodep->exprp());
+                    puts(", ");
+                    ofp()->putsQuoted(constp->num().toString());
+                    puts(");\n");
+                }
                 putns(nodep, "vlSymsp->_traceDumpOpen();\n");
             } else {
                 putns(nodep, "VL_PRINTF_MT(\"-Info: ");

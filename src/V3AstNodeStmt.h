@@ -675,6 +675,8 @@ class AstDumpCtl final : public AstNodeStmt {
     // $dumpon etc
     // Parents: expr
     // @astgen op1 := exprp : Optional[AstNodeExpr] // Expression based on type of statement
+    // @astgen op2 := scopesp : List[AstConst] // $dumpvars scopes, encoded names
+    // @astgen op3 := scopeNamep : Optional[AstScopeName] // $dumpvars caller, until V3TraceDecl
     const VDumpCtlType m_ctlType;  // Type of operation
 public:
     AstDumpCtl(FileLine* fl, VDumpCtlType ctlType, AstNodeExpr* exprp = nullptr)

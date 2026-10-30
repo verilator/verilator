@@ -217,6 +217,8 @@ void VerilatedSaif::Super::dumpvars(int level, const std::string& hier);
 template <>
 void VerilatedSaif::Super::dumpvarsExact(const std::string& name);
 template <>
+void VerilatedSaif::Super::dumpvarsScope(int level, const std::string& name);
+template <>
 std::vector<std::string> VerilatedSaif::Super::dumpvarsUnmatched() const;
 #endif  // DOXYGEN
 
@@ -323,6 +325,10 @@ public:
     }
     // Also dump the variable with exactly this name, see VerilatedTrace::dumpvarsExact
     void dumpvarsExact(const std::string& name) VL_MT_SAFE { m_sptrace.dumpvarsExact(name); }
+    // Also dump variables at or below this scope, see VerilatedTrace::dumpvarsScope
+    void dumpvarsScope(int level, const std::string& name) VL_MT_SAFE {
+        m_sptrace.dumpvarsScope(level, name);
+    }
     // dumpvarsExact() names the last open() did not declare
     std::vector<std::string> dumpvarsUnmatched() const VL_MT_SAFE {
         return m_sptrace.dumpvarsUnmatched();
