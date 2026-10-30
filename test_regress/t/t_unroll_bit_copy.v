@@ -9,15 +9,16 @@
 `define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d: got=%0x exp=%0x (%s !== %s)\n", `__FILE__,`__LINE__, (gotv), (expv), `"gotv`", `"expv`"); `stop; end while(0);
 // verilog_format: on
 
-module t (
-    input clk
-);
+module t;
+  logic clk = 1'b0;
+  always #5 clk = ~clk;
+
   logic [1599:0] src = '1;
   int cycle = 0;
   always @(posedge clk) begin
     src <= {src[1567:0], $random};
     cycle <= cycle + 1;
-    if (cycle == 100) begin
+    if (cycle == 128) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end
