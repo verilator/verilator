@@ -8438,26 +8438,20 @@ class WidthVisitor final : public VNVisitor {
             if (withp) nodep->withp(withp);
             return;
         }
+        // Static methods are called through their class package, never as a member. Only known
+        // here, as V3LinkDot may link the call before it applies 'static' from an extern prototype
+        if (nodep->taskp()->isStatic()) nodep->superReference(false);
         if ((nodep->taskp()->classMethod() && !nodep->taskp()->isStatic())
             && !VN_IS(m_procedurep, InitialAutomatic) && !m_constraintp) {
             bool allow = false;
             if (m_ftaskp && m_ftaskp->classMethod() && !m_ftaskp->isStatic()) {
-                if (const AstFuncRef* const funcRefp = VN_CAST(nodep, FuncRef)) {
-                    allow = funcRefp->superReference();
-                } else if (const AstTaskRef* const taskRefp = VN_CAST(nodep, TaskRef)) {
-                    allow = taskRefp->superReference();
+                const AstClass* callerClassp = m_containingClassFinder.find(m_ftaskp);
+                if (!callerClassp) {
+                    callerClassp = m_containingClassFinder.find(m_ftaskp->classOrPackagep());
                 }
-                if (!allow) {
-                    const AstClass* callerClassp = m_containingClassFinder.find(m_ftaskp);
-                    if (!callerClassp) {
-                        callerClassp = m_containingClassFinder.find(m_ftaskp->classOrPackagep());
-                    }
-                    const AstClass* calleeClassp = VN_CAST(nodep->classOrPackagep(), Class);
-                    if (!calleeClassp) {
-                        calleeClassp = m_containingClassFinder.find(nodep->taskp());
-                    }
-                    allow = AstClass::isClassExtendedFrom(callerClassp, calleeClassp);
-                }
+                const AstClass* calleeClassp = VN_CAST(nodep->classOrPackagep(), Class);
+                if (!calleeClassp) { calleeClassp = m_containingClassFinder.find(nodep->taskp()); }
+                allow = AstClass::isClassExtendedFrom(callerClassp, calleeClassp);
             }
             if (!allow) {
                 // An embedded covergroup may call methods of its enclosing class

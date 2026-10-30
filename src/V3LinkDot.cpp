@@ -5546,6 +5546,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
             } else {
                 nodep->classOrPackagep(cpackagerefp->classOrPackageSkipp());
             }
+            // 'Class::method()' names that class's implementation, so like 'super.' it is
+            // not dispatched virtually (IEEE 1800-2023 8.23)
+            if (VN_IS(nodep->classOrPackagep(), Class)) nodep->superReference(true);
             // Class/package :: HERE function() . method_called_on_function_return_value()
             m_ds.m_dotPos = DP_MEMBER;
         } else if (m_ds.m_dotp && m_ds.m_dotPos == DP_FINAL) {
