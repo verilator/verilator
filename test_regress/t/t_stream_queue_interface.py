@@ -11,8 +11,6 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.top_filename = "t/t_stream_queue_interface.v"
-
 test.compile(verilator_flags2=["--timing -Wno-WIDTHEXPAND"])
 
 test.execute()

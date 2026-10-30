@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_waiveroutput.v"
 
 out_filename = test.obj_dir + "/" + test.name + ".waiver_gen.out"
 

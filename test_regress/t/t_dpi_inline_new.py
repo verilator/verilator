@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 # Compile the SystemVerilog test with the DPI C stub.
-test.compile(v_flags2=["t/t_dpi_inline_new.cpp"])
+test.compile(v_flags2=[test.pli_filename])
 
 test.execute()
 

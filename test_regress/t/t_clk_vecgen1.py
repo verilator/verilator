@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_clk_vecgen1.v"
 
 test.compile(v_flags2=['+define+T_TEST1'])
 
