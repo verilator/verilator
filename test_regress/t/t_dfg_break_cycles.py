@@ -17,8 +17,6 @@ test.sim_time = 2000000
 if not os.path.exists(test.root + "/.git"):
     test.skip("Not in a git repository")
 
-test.top_filename = "t/t_dfg_break_cycles.v"
-
 # Read expected source lines hit
 expectedLines = set()
 
