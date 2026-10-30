@@ -753,7 +753,7 @@ class SvaNfaBuilder final {
             // The endpoint is valid only when the repetition itself matched on this tick.
             // A valid match also retires the live repetition state for later ticks.
             if (liveRepVtxp->m_liveRepClearCondp) {
-                VL_DO_DANGLING(liveRepVtxp->m_liveRepClearCondp->deleteTree(),
+                VL_DO_DANGLING(liveRepVtxp->m_liveRepClearCondp->deleteTree(),  // LCOV_EXCL_LINE
                                liveRepVtxp->m_liveRepClearCondp);
             }
             liveRepVtxp->m_liveRepClearCondp = new AstLogAnd{
@@ -849,9 +849,6 @@ class SvaNfaBuilder final {
                 currentp->m_liveRepCheckVtxp = loopBackVtxp;
             }
             currentp->m_isUnbounded = true;
-            if (currentp->m_liveRepCondp) {
-                VL_DO_DANGLING(currentp->m_liveRepCondp->deleteTree(), currentp->m_liveRepCondp);
-            }
             currentp->m_liveRepCondp = exprp->cloneTreePure(false);
             m_inUnboundedScope = true;
         } else if (repp->maxCountp()) {
