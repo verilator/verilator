@@ -874,6 +874,22 @@ module Vt_debug_emitv_t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_sig__option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_options__option;
     endcovergroup
     covergroup Vt_debug_emitv_cg_clocked;
     @(posedge clk)function new;
@@ -921,6 +937,14 @@ module Vt_debug_emitv_t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_cyc__option;
     endcovergroup
     covergroup Vt_debug_emitv_cg_trans;
     function new;
@@ -975,6 +999,14 @@ module Vt_debug_emitv_t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_t__option;
     endcovergroup
     covergroup Vt_debug_emitv_cg_cross;
     function new;
@@ -1064,6 +1096,38 @@ module Vt_debug_emitv_t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_x__option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_y__option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+    } __Vcg_cx__option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+    } __Vcg_cx_select__option;
     endcovergroup
     covergroup Vt_debug_emitv_cg_live_cross;
     function new;
@@ -1117,6 +1181,30 @@ module Vt_debug_emitv_t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_x__option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_y__option;
+    struct {
+        int signed weight;
+        int signed goal;
+        string comment;
+        int signed at_least;
+        int signed cross_num_print_missing;
+        bit cross_retain_auto_bins;
+    } __Vcg_cx__option;
     endcovergroup
     Vt_debug_emitv_cg_basic cg_basic_instVt_debug_emitv_cg_basic;
     cg_basic_inst = new();
@@ -1201,6 +1289,14 @@ package Vt_debug_emitv___024unit;
         function set_inst_name;
             input string name;
         endfunction
+        struct {
+            int signed weight;
+            int signed goal;
+            string comment;
+            int signed at_least;
+            int signed auto_bin_max;
+            bit detect_overlap;
+        } __Vcg_cp_m__option;
         endcovergroup
         Vt_debug_emitv___vlAnonCG_cg_in_class cg_in_classVt_debug_emitv___vlAnonCG_cg_in_class;
         covergroup Vt_debug_emitv___vlAnonCG_cg_ref;
@@ -1252,6 +1348,14 @@ package Vt_debug_emitv___024unit;
         function set_inst_name;
             input string name;
         endfunction
+        struct {
+            int signed weight;
+            int signed goal;
+            string comment;
+            int signed at_least;
+            int signed auto_bin_max;
+            bit detect_overlap;
+        } __Vcg_cp_ref__option;
         endcovergroup
         Vt_debug_emitv___vlAnonCG_cg_ref cg_refVt_debug_emitv___vlAnonCG_cg_ref;
         function new;
