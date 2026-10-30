@@ -1792,6 +1792,9 @@ class TaskVisitor final : public VNVisitor {
         // Mark the fact that this function allocates std::process
         if (nodep->needProcess()) cfuncp->setNeedProcess();
 
+        // Mark the fact that this function is std::process::kill()
+        if (nodep->isProcessKill()) cfuncp->isProcessKill(true);
+
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         UINFOTREE(9, cfuncp, "", "userFunc");
