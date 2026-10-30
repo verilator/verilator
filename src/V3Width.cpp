@@ -302,7 +302,8 @@ class WidthVisitor final : public VNVisitor {
     bool m_streamConcat = false;  // True if visiting arguments of stream concatenation
     bool m_inParamOverride = false;  // True if visiting the value of a parameter override pin
     // Created dimension and enum tables, mapped to a reference reading the table (always cloned)
-    std::map<std::pair<const AstNodeDType*, VAttrType>, AstVarRef*> m_tableMap;
+    // (enum next tables are also keyed by how many items they move forwards, others by 0)
+    std::map<std::tuple<const AstNodeDType*, VAttrType, size_t>, AstVarRef*> m_tableMap;
     // Queues with given index type
     std::map<const AstNodeDType*, AstQueueDType*> m_queueDTypeIndexed;
     ContainingClassFinder m_containingClassFinder;  // Finds the class containing a node
@@ -4769,6 +4770,7 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3fatalSrc("Bad case");
             }
 
+            uint32_t step = 1;
             if (nodep->name() != "name" && nodep->argsp()) {
                 AstNodeExpr* stepp = methodArg(nodep, 0);
                 VL_DO_DANGLING(V3Const::constifyParamsNoWarnEdit(stepp), stepp);
@@ -4783,37 +4785,10 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(stepp), stepp);
                     stepp = newp;
                 }
-                const uint32_t stepWidth = VN_AS(stepp, Const)->toUInt();
-                if (stepWidth == 0) {
-                    // Step of 0 "legalizes" like $cast, use .next.prev
-                    AstMethodCall* const newp = new AstMethodCall{
-                        nodep->fileline(),
-                        new AstMethodCall{nodep->fileline(), nodep->fromp()->unlinkFrBack(),
-                                          "next"},
-                        "prev"};
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                    // Resolved here, as a caller may not iterate the replacement
-                    userIterate(newp, m_vup);
-                    return;
-                } else if (stepWidth != 1) {
-                    // Unroll of enumVar.next(k) to enumVar.next(1).next(k - 1)
-                    pushDeletep(nodep->argsp()->unlinkFrBack());
-                    AstMethodCall* const clonep = nodep->cloneTree(false);
-                    VN_AS(stepp, Const)->num().setLong(1);
-                    AstConst* const constp = new AstConst(nodep->fileline(), stepWidth - 1);
-                    AstArg* const argp = new AstArg{nodep->fileline(), "", constp};
-                    AstMethodCall* const newp
-                        = new AstMethodCall{nodep->fileline(), clonep, nodep->name(), argp};
-                    nodep->replaceWith(newp);
-                    VL_DO_DANGLING(nodep->deleteTree(), nodep);
-                    // Resolved here, as a caller may not iterate the replacement
-                    userIterate(newp, m_vup);
-                    return;
-                }
+                step = VN_AS(stepp, Const)->toUInt();
             }
             AstNodeExpr* const newp
-                = enumSelect(nodep->fromp()->unlinkFrBack(), adtypep, attrType);
+                = enumSelect(nodep->fromp()->unlinkFrBack(), adtypep, attrType, step);
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else {
@@ -10731,7 +10706,7 @@ class WidthVisitor final : public VNVisitor {
     AstVarRef* dimensionVarRefp(AstNodeDType* nodep, VAttrType attrType, uint32_t msbdim) {
         // Return a reference to a constant table which has the specified dimension properties
         // for this data type. The reference is cached, so the table is built only once.
-        AstVarRef*& cachedpr = m_tableMap[std::make_pair(nodep, attrType)];
+        AstVarRef*& cachedpr = m_tableMap[std::make_tuple(nodep, attrType, 0)];
         if (cachedpr) return cachedpr->cloneTree(false);
 
         AstNodeArrayDType* const vardtypep = new AstUnpackArrayDType{
@@ -10773,10 +10748,23 @@ class WidthVisitor final : public VNVisitor {
         return maxval;
     }
     AstVarRef* enumVarRefp(AstEnumDType* const nodep, VAttrType attrType, bool assoc,
-                           uint32_t msbdim) {
+                           uint32_t msbdim, uint32_t step = 0) {
         // Return a reference to a constant table which has the specified attrType information
-        // for this enum. The reference is cached, so the table is built only once.
-        AstVarRef*& cachedpr = m_tableMap[std::make_pair(nodep, attrType)];
+        // for this enum, for next/prev moving 'step' items. The reference is cached, so the
+        // table is built only once.
+        UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
+        std::vector<const AstEnumItem*> items;  // For next/prev, the items in order
+        size_t offset = 0;  // For next/prev, how many items to move forwards
+        if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
+            for (const AstEnumItem* const itemp : nodep->itemspList()) items.push_back(itemp);
+            // Moving 'step' items wraps around the enum (IEEE 1800-2023 6.19.5.3), and moving
+            // backwards is moving forwards by the remaining items, so e.g. next(1), next(N + 1)
+            // and prev(N - 1) of N items share one table
+            offset = step % items.size();
+            if (attrType == VAttrType::ENUM_PREV) offset = (items.size() - offset) % items.size();
+            attrType = VAttrType::ENUM_NEXT;
+        }
+        AstVarRef*& cachedpr = m_tableMap[std::make_tuple(nodep, attrType, offset)];
         if (cachedpr) return cachedpr->cloneTree(false);
 
         UINFO(9, "Construct Venumtab attr=" << attrType.ascii() << " assoc=" << assoc
@@ -10808,7 +10796,7 @@ class WidthVisitor final : public VNVisitor {
         AstConst* defaultp = nullptr;
         if (attrType == VAttrType::ENUM_NAME) {
             defaultp = new AstConst{flp, AstConst::String{}, ""};
-        } else if (attrType == VAttrType::ENUM_NEXT || attrType == VAttrType::ENUM_PREV) {
+        } else if (attrType == VAttrType::ENUM_NEXT) {
             defaultp = new AstConst{flp, V3Number{nodep, nodep->width(), 0}};
         } else if (attrType == VAttrType::ENUM_VALID) {
             defaultp = new AstConst{flp, AstConst::BitFalse{}};
@@ -10817,15 +10805,11 @@ class WidthVisitor final : public VNVisitor {
         }
 
         // Find valid values and populate
-        UASSERT_OBJ(nodep->itemsp(), nodep, "enum without items");
         std::map<uint64_t, AstNodeExpr*> values;
         {
             uint64_t ordinal = 0;
-            AstEnumItem* const firstp = nodep->itemsp();
-            const AstEnumItem* prevp = firstp;  // Prev must start with last item
-            while (prevp->nextp()) prevp = VN_AS(prevp->nextp(), EnumItem);
-            for (AstEnumItem* itemp = firstp; itemp;) {
-                AstEnumItem* const nextp = VN_AS(itemp->nextp(), EnumItem);
+            size_t idx = 0;
+            for (const AstEnumItem* const itemp : nodep->itemspList()) {
                 const AstConst* const vconstp = VN_AS(itemp->valuep(), Const);
                 UASSERT_OBJ(vconstp, nodep, "Enum item without constified value");
                 if (!vconstp->num().isAnyXZ()) {  // Can 2-state runtime decode
@@ -10835,17 +10819,14 @@ class WidthVisitor final : public VNVisitor {
                                                  V3Number::displayedEnumName(itemp)};
                     } else if (attrType == VAttrType::ENUM_NEXT) {
                         values[i]
-                            = (nextp ? nextp : firstp)->valuep()->cloneTree(false);  // A const
-                    } else if (attrType == VAttrType::ENUM_PREV) {
-                        values[i] = prevp->valuep()->cloneTree(false);  // A const
+                            = items[(idx + offset) % items.size()]->valuep()->cloneTree(false);
                     } else if (attrType == VAttrType::ENUM_VALID) {
                         values[i] = new AstConst{flp, AstConst::BitTrue{}};
                     } else {
                         nodep->v3fatalSrc("Bad case");
                     }
                 }
-                prevp = itemp;
-                itemp = nextp;
+                ++idx;
             }
         }
         // Add all specified values to table
@@ -10878,8 +10859,10 @@ class WidthVisitor final : public VNVisitor {
         return cachedpr->cloneTree(false);
     }
 
-    AstNodeExpr* enumSelect(AstNodeExpr* nodep, AstEnumDType* adtypep, VAttrType attrType) {
-        // Return expression to get given attrType information from a enum's value (nodep)
+    AstNodeExpr* enumSelect(AstNodeExpr* nodep, AstEnumDType* adtypep, VAttrType attrType,
+                            uint32_t step = 0) {
+        // Return expression to get given attrType information from a enum's value (nodep),
+        // for next/prev moving 'step' items
         if (attrType == VAttrType::ENUM_NAME) {
             if (nodep->isPure()) nodep = V3Const::constifyEdit(nodep);
             if (const AstConst* const constp = VN_CAST(nodep, Const)) {
@@ -10918,12 +10901,12 @@ class WidthVisitor final : public VNVisitor {
         const bool assoc = msbdim > ENUM_LOOKUP_BITS;
         AstNodeExpr* newp;
         if (assoc) {
-            AstVarRef* const tabRefp = enumVarRefp(adtypep, attrType, true, 0);
+            AstVarRef* const tabRefp = enumVarRefp(adtypep, attrType, true, 0, step);
             newp = new AstAssocSel{nodep->fileline(), tabRefp, nodep};
         } else {
             const int selwidth = V3Number::log2b(msbdim) + 1;  // Width to address a bit
             AstVarRef* const tabRefp
-                = enumVarRefp(adtypep, attrType, false, (1ULL << selwidth) - 1);
+                = enumVarRefp(adtypep, attrType, false, (1ULL << selwidth) - 1, step);
             AstNodeExpr* const boundp
                 = attrType == VAttrType::ENUM_NAME
                           && (adtypep->width() > selwidth || msbdim != (1ULL << selwidth) - 1)
