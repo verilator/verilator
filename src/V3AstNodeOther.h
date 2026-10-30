@@ -1063,6 +1063,7 @@ class AstCoverBin final : public AstNode {
     bool m_isArray = false;  // Bin is an array: of a bin per value or transition, or of
                              // arraySizep() bins
     bool m_isWildcard = false;  // Bin uses wildcard matching (independent of ignore/illegal)
+    bool m_isSetExpr = false;  // Ranges contain one set_covergroup_expression, not a braced list
 
 public:
     AstCoverBin(FileLine* fl, const string& name, AstNode* rangesp, bool isIgnore, bool isIllegal,
@@ -1109,6 +1110,8 @@ public:
     bool isWildcard() const { return m_isWildcard; }
     bool isArray() const { return m_isArray; }
     void isArray(bool flag) { m_isArray = flag; }
+    bool isSetExpr() const { return m_isSetExpr; }
+    void isSetExpr(bool flag) { m_isSetExpr = flag; }
 };
 class AstCoverBinsof final : public AstNode {
     // A binsof selection of a coverpoint or one of its named bins

@@ -1570,11 +1570,13 @@ void AstCoverBin::dump(std::ostream& str) const {
     str << " " << m_binsType.ascii();
     if (m_isArray) str << "[]";
     if (m_isWildcard) str << "[*]";
+    if (m_isSetExpr) str << " [SETEXPR]";
 }
 void AstCoverBin::dumpJson(std::ostream& str) const {
     Super::dumpJson(str);
     dumpJsonBoolIf(str, "isArray", isArray());
     dumpJsonBoolIf(str, "isWildcard", isWildcard());
+    dumpJsonBoolIf(str, "isSetExpr", isSetExpr());
     str << ", \"binsType\": \"" << binsType().ascii() << "\"";
 }
 void AstCoverBinsof::dump(std::ostream& str) const {
