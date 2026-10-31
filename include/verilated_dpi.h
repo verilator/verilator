@@ -32,11 +32,6 @@
 
 #if VM_TIMING == 1
 #include "verilated_dpi_call.h"
-#else
-
-// Placeholder for compiling with --protect-ids
-#define VL_UNKNOWN "<unknown>"
-
 #endif
 
 #include "verilated_sym_props.h"
