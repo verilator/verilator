@@ -168,7 +168,7 @@ static VlDpiThreadPool& threadPool() {
 
 namespace VerilatedDpiCall {
 void resumeAborted() { threadPool().resumeAborted(); }
-};  //namespace VerilatedDpiCall
+}  // namespace VerilatedDpiCall
 
 //======================================================================
 // VlDpiCall:: Methods

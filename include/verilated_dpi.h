@@ -249,7 +249,7 @@ void callExportTask(Callable&& call, Args&&... args) {
     callExportFunction(std::forward<Callable>(call), std::forward<Args>(args)...);
 }
 
-};  //namespace VerilatedDpi
+}  // namespace VerilatedDpi
 
 //======================================================================
 
