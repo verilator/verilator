@@ -5,7 +5,7 @@
 // SPDX-FileCopyrightText: 2026 Antmicro
 // SPDX-License-Identifier: CC0-1.0
 
-event evt1, evt2, evt3;
+event evt1, evt2;
 
 class Foo;
   process p;
