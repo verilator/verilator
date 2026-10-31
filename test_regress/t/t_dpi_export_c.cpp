@@ -76,27 +76,19 @@ extern int dpix__under___score(int i);
         return 1; \
     }
 // clang-format on
-#define CHECK_RESULT_NNULL(got, o) \
-    if (!(got)) { \
-        printf("%%Error: %s:%d: GOT = %p   EXP = !NULL\n", __FILE__, __LINE__, (got)); \
-        *o = __LINE__; \
-        return 1; \
-    }
-
 static int check_sub(const char* name, int i) {
     svScope scope = svGetScopeFromName(name);
-    int out;
 #ifdef TEST_VERBOSE
     printf("svGetScopeFromName(\"%s\") -> %p\n", name, scope);
 #endif
-    CHECK_RESULT_NNULL(scope, (&out));
+    if (!scope) return __LINE__;
     svScope prev = svGetScope();
     svScope sout = svSetScope(scope);
-    CHECK_RESULT(svScope, sout, prev, (&out));
-    CHECK_RESULT(svScope, svGetScope(), scope, (&out));
+    if (sout != prev) return __LINE__;
+    if (svGetScope() != scope) return __LINE__;
 #ifndef T_DPI_EXPORT_NOOPT
     int dpix_out = dpix_sub_inst(100 * i);
-    CHECK_RESULT(int, dpix_out, 100 * i + i, (&out));
+    if (dpix_out != 100 * i + i) return __LINE__;
 #endif
     return 0;  // OK
 }
