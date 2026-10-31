@@ -171,7 +171,7 @@ void callImportTask(VlProcessRef process, Callable&& call, Args&&... args) {
 }
 
 template <typename Callable, typename... Args>
-decltype(auto) invokeExport(Callable&& call, Args&&... args) {
+decltype(auto) callExportFunction(Callable&& call, Args&&... args) {
 #if VM_TIMING == 1
     if constexpr (std::is_invocable<Callable, VlProcessRef, Args...>::value) {
         // Direct C callers have no importing SV process, so create an independent process.
@@ -183,11 +183,6 @@ decltype(auto) invokeExport(Callable&& call, Args&&... args) {
     {
         return call(std::forward<Args>(args)...);
     }
-}
-
-template <typename Callable, typename... Args>
-decltype(auto) callExportFunction(Callable&& call, Args&&... args) {
-    return invokeExport(std::forward<Callable>(call), std::forward<Args>(args)...);
 }
 
 #if VM_TIMING == 1
@@ -237,8 +232,8 @@ void callExportTask(Callable&& call, Args&&... args) {
     }
 #if VM_TIMING == 1
     // An exported task with timing is a coroutine. Suspend the DPI call until it completes.
-    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(invokeExport(std::forward<Callable>(call),
-                                                              std::forward<Args>(args)...)),
+    if VL_CONSTEXPR_CXX17 (std::is_same<decltype(callExportFunction(std::forward<Callable>(call),
+                                                                    std::forward<Args>(args)...)),
                                         VlCoroutine>::value) {
         VlDpiCall* const callp = VlDpiCall::current();
         if (VL_UNLIKELY(!callp)) {
@@ -247,7 +242,8 @@ void callExportTask(Callable&& call, Args&&... args) {
         }
 
         // Call returns on the first delay or event control
-        VlCoroutine coro{invokeExport(std::forward<Callable>(call), std::forward<Args>(args)...)};
+        VlCoroutine coro{
+            callExportFunction(std::forward<Callable>(call), std::forward<Args>(args)...)};
         if (!coro.await_ready()) {
             resumeDpiCallAfter(std::move(coro), callp);
             VlDpiCall::stopWorker();
@@ -255,7 +251,7 @@ void callExportTask(Callable&& call, Args&&... args) {
         return;
     }
 #endif
-    invokeExport(std::forward<Callable>(call), std::forward<Args>(args)...);
+    callExportFunction(std::forward<Callable>(call), std::forward<Args>(args)...);
 }
 
 };  //namespace VerilatedDpi
