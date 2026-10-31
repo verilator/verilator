@@ -16,10 +16,10 @@ class Base;
   endtask
 endclass
 
-module t;
+module t(
+  input clk
+);
   bit a;
-  bit clk;
-  assign #10 clk = ~clk;
 
   class Bar extends Base;
     task automatic wait_posedge(bit b = 0);

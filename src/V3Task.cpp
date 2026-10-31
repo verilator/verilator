@@ -1546,6 +1546,7 @@ class TaskVisitor final : public VNVisitor {
                     || varRefp->varp()->user1()) {
                     if (!varRefp->varp()->user3p()) {
                         // The functions signature will change so it will no longer be virtual
+                        methodCallp->funcp()->isVirtual(false);
                         varRefp->varp()->user3p(varRefp->varp());
                         unsetUser3p.push_back(varRefp->varp());
                         AstVarRef* const newVarRefp = new AstVarRef{varRefp->fileline(), varRefp->varp(),
