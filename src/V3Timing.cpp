@@ -1000,10 +1000,8 @@ class TimingControlVisitor final : public VNVisitor {
     void visit(AstCFuncHard* nodep) override {
         if (nodep->function() == VCFunction::CALL_IMPORT_FUNCTION
             || nodep->function() == VCFunction::CALL_IMPORT_TASK) {
-            AstCExpr* const processp = VN_AS(nodep->pinsp(), CExpr);
-            processp->replaceWith(
-                new AstCExpr{nodep->fileline(), m_hasProcess ? "vlProcess" : "nullptr"});
-            VL_DO_DANGLING(pushDeletep(processp), processp);
+            if (m_hasProcess)
+                nodep->pinsp()->replaceWith(new AstCExpr{nodep->fileline(), "vlProcess"});
         }
         if (nodep->function() == VCFunction::CALL_IMPORT_TASK) {
             // Do not use awaitable DPI dispatcher, if there are no suspendable DPI exports
