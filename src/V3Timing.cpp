@@ -454,7 +454,7 @@ public:
             if (hasFlags(depVtx.nodep(), T_SUSPENDEE)) propagateFlags(&depVtx, T_SUSPENDEE);
         }
 
-        for (AstCFunc* dpiExportp : m_dpiExports) {
+        for (AstCFunc* const dpiExportp : m_dpiExports) {
             if (hasFlags(dpiExportp, T_SUSPENDEE) || hasFlags(dpiExportp, T_SUSPENDER)) {
                 ++m_suspendableExports;
                 v3Global.setUsesSuspendableExports();
