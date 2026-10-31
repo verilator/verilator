@@ -788,9 +788,9 @@ public:
         }
 
         const string compilerIncludePch
-            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_H).fast.gch";
+            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_USER_PCH_FAST)";
         const string compilerIncludeFlag
-            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_PCH_I_FAST)";
+            = v3Global.opt.compilerIncludes().empty() ? "" : "$(VK_USER_PCH_I_FAST)";
         for (const string& cppfile : cppFiles) {
             const string basename = V3Os::filenameNonDirExt(cppfile);
             // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
