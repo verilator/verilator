@@ -202,8 +202,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
                           // suspendable makes the other node suspendable
     std::vector<AstCFunc*> m_delayedProc;  // Process/functions containing DPI task calls
     std::vector<AstCFunc*> m_dpiExports;  // Contains DPI exports
-    unsigned int m_suspendableExports
-        = 0;  // Used to count number of suspendable DPI exports for __stats.txt
+    unsigned m_suspendableExports = 0;  // Suspendable DPI exports counted for statistics
 
     // METHODS
     // Get or create the dependency vertex for the given node
@@ -435,8 +434,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit TimingSuspendableVisitor(AstNetlist* nodep)
-        : m_suspendableExports{0} {
+    explicit TimingSuspendableVisitor(AstNetlist* nodep) {
         iterate(nodep);
         m_suspGraph.removeTransitiveEdges();
         m_procGraph.removeTransitiveEdges();
