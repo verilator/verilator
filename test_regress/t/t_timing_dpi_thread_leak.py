@@ -14,10 +14,9 @@ if sys.platform != "linux":
     test.skip("This test uses /proc/self/task to count number of active threads.")
 
 test.scenarios("vlt")
-test.top_filename = "t/t_timing_dpi_thread_leak.v"
 
 test.compile(
-    v_flags2=["t/t_timing_dpi_thread_leak.cpp"],
+    v_flags2=[test.pli_filename],
     verilator_flags2=["--binary", "--stats"],
 )
 

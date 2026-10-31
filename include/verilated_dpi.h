@@ -233,7 +233,7 @@ template <typename Callable, typename... Args>
 void callExportTask(Callable&& call, Args&&... args) {
     if (t_fileline.inFunctionContext()) {
         VL_FATAL_MT(t_fileline.m_filename, t_fileline.m_lineno, "",
-                    "DPI exported task called from function context");
+                    "DPI exported task called from function context (IEEE 1800-2023 35.8)");
     }
 #if VM_TIMING == 1
     // An exported task with timing is a coroutine. Suspend the DPI call until it completes.

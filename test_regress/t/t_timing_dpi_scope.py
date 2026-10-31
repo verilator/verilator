@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios("vlt")
 
 test.compile(
-    v_flags2=["t/t_timing_dpi_scope.cpp"],
+    v_flags2=[test.pli_filename],
     verilator_flags2=["--binary", "--stats"],
 )
 
