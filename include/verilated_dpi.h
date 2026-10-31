@@ -173,7 +173,7 @@ void callImportTask(VlProcessRef process, Callable&& call, Args&&... args) {
 template <typename Callable, typename... Args>
 decltype(auto) callExportFunction(Callable&& call, Args&&... args) {
 #if VM_TIMING == 1
-    if constexpr (std::is_invocable<Callable, VlProcessRef, Args...>::value) {
+    if VL_CONSTEXPR_CXX17 (std::is_invocable<Callable, VlProcessRef, Args...>::value) {
         // Direct C callers have no importing SV process, so create an independent process.
         VlProcessRef process = t_process;
         if (!process) process = std::make_shared<VlProcess>();
