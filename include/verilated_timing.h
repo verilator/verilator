@@ -97,6 +97,8 @@ class VlCoroutineHandle final {
     VlProcessRef m_process;  // Data of the suspended process, null if not needed
     VlFileLineDebug m_fileline;  // Source location, for debug
 
+    void destroy();  // Clean up a nonempty handle
+
 public:
     // CONSTRUCTORS
     // Construct
@@ -121,7 +123,9 @@ public:
         : m_coro{std::exchange(moved.m_coro, nullptr)}
         , m_process{std::exchange(moved.m_process, nullptr)}
         , m_fileline{moved.m_fileline} {}
-    ~VlCoroutineHandle();
+    ~VlCoroutineHandle() {
+        if (VL_UNLIKELY(m_coro)) destroy();
+    }
     // METHODS
     // Move the handle, leaving a null handle
     auto& operator=(VlCoroutineHandle&& moved) {
