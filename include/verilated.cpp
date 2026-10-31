@@ -4373,8 +4373,8 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
 }
 
 VerilatedVar* VerilatedScope::varInsert(const char* namep, void* datap, bool isParam,
-                                        VerilatedVarType vltype, int vlflags, int udims,
-                                        int pdims...) VL_MT_UNSAFE {
+                                        VerilatedVarType vltype, int vlflags, int udims, int pdims,
+                                        ...) VL_MT_UNSAFE {
     // Grab dimensions
     // In the future we may just create a large table at emit time and
     // statically construct from that.
@@ -4519,7 +4519,7 @@ void VerilatedScope::ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, s
 
 VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, bool isParam,
                                              VerilatedVarType vltype, int vlflags, int udims,
-                                             uint32_t entSize...) VL_MT_UNSAFE {
+                                             uint32_t entSize, ...) VL_MT_UNSAFE {
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
     VerilatedVar var(namep, datap, vltype, static_cast<VerilatedVarFlags>(vlflags), udims, 0,
                      isParam, entSize);
@@ -4543,7 +4543,7 @@ VerilatedScope::forceableVarInsert(const char* namep, void* datap, bool isParam,
                                    VerilatedVarType vltype, int vlflags, void* forceReadSignalData,
                                    const char* const forceReadSignalName,
                                    std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
-                                   int udims, int pdims...) VL_MT_UNSAFE {
+                                   int udims, int pdims, ...) VL_MT_UNSAFE {
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
 
     // TODO: While the force read signal would be *expected* to have the same vltype and vlflags
