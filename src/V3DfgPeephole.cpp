@@ -207,6 +207,7 @@ class V3DfgPeephole final : public DfgVisitor {
     DfgUserMap<VertexInfo> m_vInfo = m_dfg.makeUserMap<VertexInfo>();  // Map to VertexInfo
     V3DfgCache m_cache{m_dfg};  // Vertex cache to avoid creating redundant vertices
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
+    std::vector<DfgVertex*> m_movedSinks;  // In replace(), the sinks moving to the replacement
     size_t m_currentGeneration = 0;  // Current generation number
     size_t m_lastId = 0;  // Last unique vertex ID assigned
     // Scope for transient temporariy variables cerated in this pass. They should all be
@@ -378,17 +379,18 @@ class V3DfgPeephole final : public DfgVisitor {
         });
 
         // Remove sinks of the original vertex from the cache - their inputs are changing
+        m_movedSinks.clear();
         m_vtxp->foreachSink([&](DfgVertex& dst) {
             invalidateVertex(&dst);
+            m_movedSinks.push_back(&dst);
             return false;
         });
         // Replace vertex with the replacement
         m_vtxp->replaceWith(resp);
-        // Re-cache all sinks of the replacement
-        resp->foreachSink([&](DfgVertex& dst) {
-            cacheVertex(&dst);
-            return false;
-        });
+        // The replacement itself might be an existing vertex that was cached, so it might
+        // have other unrelated sinks. Re-cache the sinks that moved to the replacement,
+        // but avoid re-caching the existing ones.
+        for (DfgVertex* const vtxp : vlstd::reverse_view(m_movedSinks)) cacheVertex(vtxp);
 
         // Original vertex is now unused, so delete it
         deleteVertex(m_vtxp);
