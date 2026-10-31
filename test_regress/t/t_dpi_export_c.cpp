@@ -124,7 +124,7 @@ int dpix_run_tests(int* out) {
 
     CHECK_RESULT(int, dpix_int123(), 0x123, out);
 
-#if !defined(CADENCE) && !defined(VERILATOR)  // No export calls from an import
+#ifndef CADENCE
     int o;
     dpix_t_int(0x456, &o);
     CHECK_RESULT(unsigned long, o, ~0x456UL, out);
