@@ -1188,7 +1188,7 @@ class TaskVisitor final : public VNVisitor {
             nodep->fileline(), nodep->verilogTask() ? VCFunction::CALL_EXPORT_TASK
                                                     : VCFunction::CALL_EXPORT_FUNCTION};
         callExportp->dtypeSetVoid();
-        AstVarRef* args{};
+        AstVarRef* argsp = nullptr;
         const auto addFuncArg = [&](AstVar* portp) -> AstVarScope* {
             // No createDpiTemp; we make a real internal variable instead
             AstVarScope* const vscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
@@ -1197,11 +1197,7 @@ class TaskVisitor final : public VNVisitor {
             portp->protect(false);
             // Add argument to call
             const VAccess access = portp->direction().pinAccess();
-            if (args) {
-                args->addNext(new AstVarRef{portp->fileline(), vscp, access});
-            } else {
-                args = new AstVarRef{portp->fileline(), vscp, access};
-            }
+            argsp = AstNode::addNext(argsp, new AstVarRef{portp->fileline(), vscp, access});
             return vscp;
         };
 
@@ -1239,7 +1235,7 @@ class TaskVisitor final : public VNVisitor {
         }
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
-        callExportp->addPinsp(args);
+        callExportp->addPinsp(argsp);
         funcp->addStmtsp(callExportp->makeStmt());
         // Convert output/inout arguments back to internal type
         if (outCvtsp) funcp->addStmtsp(outCvtsp);
