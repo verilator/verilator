@@ -1090,11 +1090,10 @@ class TaskVisitor final : public VNVisitor {
         m_topScopep->scopep()->addBlocksp(funcp);
         makePortList(nodep, funcp);
 
-        if (nodep->verilogTask()) {
-            // Aborted imports can unwind after the model's DPI scopes have been destroyed.
-            funcp->addStmtsp(new AstIf{flp, new AstCExpr{flp, "VerilatedDpi::exportAborted()", 1},
-                                       new AstCReturn{flp, new AstCExpr{flp, "void()"}}, nullptr});
-        }
+        // Aborted imports must not re-enter SystemVerilog while unwinding.
+        const std::string abortedRtn = rtnvarp ? "std::decay_t<" + rtnType + ">{}" : "void()";
+        funcp->addStmtsp(new AstIf{flp, new AstCExpr{flp, "VerilatedDpi::exportAborted()", 1},
+                                   new AstCReturn{flp, new AstCExpr{flp, abortedRtn}}, nullptr});
 
         // Note this function may dispatch on a different class.
         // Thus we need to be careful not to assume a particular function layout.
