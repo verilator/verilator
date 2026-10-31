@@ -1246,26 +1246,21 @@ class DelayedVisitor final : public VNVisitor {
     }
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
+        if (!nodep->isDelayed()) return;  // Convert only non-blocking event triggers
+
         FileLine* const flp = nodep->fileline();
 
         AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
-
-        // Enqueue for clearing 'triggered' state on next eval
-        AstCStmt* const cstmtp = new AstCStmt{flp};
-        cstmtp->add("vlSymsp->fireEvent(");
-        cstmtp->add(eventp);
-        cstmtp->add(");");
-
-        AstNode* newp = cstmtp;
+        AstNode* newp = new AstFireEvent{flp, eventp, false};
         const AstVarRef* const vrefp = VN_CAST(eventp, VarRef);
-        if (nodep->isDelayed() && (m_cfuncp || !vrefp)) {
+        if (m_cfuncp || !vrefp) {
             // V3Timing converts these with --timing
             nodep->v3warn(E_NOTIMING, "Nonblocking event trigger "
                                           << (m_cfuncp ? "in a non-inlined function/task"
                                                        : "of a class or interface member or "
                                                          "array element")
                                           << " requires --timing");
-        } else if (nodep->isDelayed()) {
+        } else {
             const std::string newvarname = "_" + vrefp->varp()->shortName();
             AstVarScope* const dlyvscp
                 = m_dlyTmps.make(flp, vrefp->varScopep()->scopep(), 1, newvarname);
