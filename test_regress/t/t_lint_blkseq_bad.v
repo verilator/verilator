@@ -29,6 +29,9 @@ module t (
     combo_nblk <= 1'b1;
   end
 
+  event combo_ev;
+  always_comb ->>combo_ev;
+
   always @(posedge clk) begin
     for (int i = 0; i < 20; i++) begin
       sync2_ok <= 1'b1;

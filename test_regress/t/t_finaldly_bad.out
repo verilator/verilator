@@ -1,5 +1,10 @@
 %Error-FINALDLY: t/t_finaldly_bad.v:9:13: Non-blocking assignment '<=' in final block
+                                        : ... This will be executed as a blocking assignment '='!
     9 |   final foo <= 1;   
       |             ^~
                  ... For error description see https://verilator.org/warn/FINALDLY?v=latest
+%Error-FINALDLY: t/t_finaldly_bad.v:11:9: Non-blocking event trigger '->>' in final block
+                                        : ... This will be executed as a blocking event trigger '->'!
+   11 |   final ->>ev;   
+      |         ^~~
 %Error: Exiting due to

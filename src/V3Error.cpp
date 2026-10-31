@@ -230,11 +230,6 @@ void V3ErrorGuarded::v3errorEndGuts(const std::ostringstream& sstr, const string
                 text += warnMoreSpaces() + "... Use \"/* verilator lint_off "
                         + m_message.code().ascii()
                         + " */\" and lint_on around source to disable this message.\n";
-                if (m_message.code().dangerous()) {
-                    text += warnMoreSpaces() + "*** See " + m_message.code().url()
-                            + " before disabling this,\n";
-                    text += warnMoreSpaces() + "else you may end up with different sim results.\n";
-                }
             }
         }
         if (!msg_additional.empty()) text += msg_additional;
