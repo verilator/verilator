@@ -37,7 +37,9 @@ if [ "$(jq length "${COMMENTS_FILE}")" -eq 0 ]; then
 else
   # Clear any mark left by an earlier review
   gh pr edit "${PR_NUMBER}" --remove-label "pr: claude-pass"
-  jq '{event: "COMMENT", comments: .}' "${COMMENTS_FILE}" \
+  # Add comments on files, not on the review as a whole
+  jq '.[0].body |= "Please consider the following AI review, which may be incorrect. Please click \"Resolve conversation\" on each item in GitHub (please avoid commentary only describing it was resolved).  Then once you think ready please request review.\n\n" + .
+      | {event: "COMMENT", comments: .}' "${COMMENTS_FILE}" \
     | gh api --method POST "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" --input -
 fi
 
