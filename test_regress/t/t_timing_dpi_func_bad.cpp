@@ -16,7 +16,7 @@ extern "C" {
 
 extern void dpi_export(void);
 
-int dpi_import(unsigned int len) {
+int dpi_import() {
     printf("Calling dpi_export\n");
     dpi_export();
     return 0;
