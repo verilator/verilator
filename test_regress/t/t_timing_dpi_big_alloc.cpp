@@ -16,7 +16,7 @@ extern "C" {
 
 extern void dpi_export(unsigned int i);
 
-static long long int SIZE = 1 << 14;
+static constexpr int SIZE = 1 << 14;
 
 static int rec(int n) {
     int big_array[SIZE];
