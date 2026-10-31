@@ -119,47 +119,7 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
         // Emit trivially constructible variables
         if (nTriv) {
             putsDecoration(nullptr, "\n// TRIVIALLY CONSTRUCTIBLE STATE\n");
-            if (v3Global.opt.compLimitMembers() == 0) {
-                // Anonymous structs disabled, so just emit them directly
-                for (size_t i = 0; i < nTriv; ++i) emitAndStep(trivp);
-            } else {
-                const size_t lim = v3Global.opt.compLimitMembers();
-                size_t anonL3s = 1;
-                size_t anonL2s = 1;
-                size_t anonL1s = 1;
-                if (nTriv > (lim * lim * lim)) {
-                    anonL3s = (nTriv + (lim * lim * lim) - 1) / (lim * lim * lim);
-                    anonL2s = lim;
-                    anonL1s = lim;
-                } else if (nTriv > (lim * lim)) {
-                    anonL2s = (nTriv + (lim * lim) - 1) / (lim * lim);
-                    anonL1s = lim;
-                } else if (nTriv > lim) {
-                    anonL1s = (nTriv + lim - 1) / lim;
-                }
-                if (anonL1s != 1) {
-                    putsDecoration(
-                        nullptr,
-                        "// Anonymous structures to workaround compiler member-count bugs\n");
-                }
-                size_t nEmitted = 0;
-                for (size_t l3 = 0; l3 < anonL3s && nEmitted < nTriv; ++l3) {
-                    if (anonL3s != 1) puts("struct {\n");
-                    for (size_t l2 = 0; l2 < anonL2s && nEmitted < nTriv; ++l2) {
-                        if (anonL2s != 1) puts("struct {\n");
-                        for (size_t l1 = 0; l1 < anonL1s && nEmitted < nTriv; ++l1) {
-                            if (anonL1s != 1) puts("struct {\n");
-                            for (size_t l0 = 0; l0 < lim && nEmitted < nTriv; ++l0, ++nEmitted) {
-                                emitAndStep(trivp);
-                            }
-                            if (anonL1s != 1) puts("};\n");
-                        }
-                        if (anonL2s != 1) puts("};\n");
-                    }
-                    if (anonL3s != 1) puts("};\n");
-                }
-                UASSERT_OBJ(nEmitted == nTriv, modp, "Not all variables emitted");
-            }
+            emitGroupedVarDecls(trivp, nTriv, false);
         }
 
         // Emit not trivially constructible variables
@@ -175,9 +135,45 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
             // While 'union { singleVar; }' for each variable would be simpler, it blows up
             // clang's compile time when using pre-compiled headers, joy.
             puts("union {\nstruct {\n");
-            for (size_t i = 0; i < nNont; ++i) emitAndStep(nontp);
+            emitGroupedVarDecls(nontp, nNont, true);
             puts("} __Vnontrivs;\n};\n");
         }
+    }
+    // Emit 'n' variables starting at 'firstp', nested in structs, named '__Vg<index>' if 'named'
+    void emitGroupedVarDecls(const AstVar* firstp, size_t n, bool named) {
+        // GCC does not allow non-trivially constructible members in anonymous structs, so
+        // these need named structs, and EmitCBaseVisitorConst::varName gives their path
+        const EmitCMemberGroups groups{n};
+        if (groups.l1s() != 1) {
+            putsDecoration(nullptr,
+                           named ? "// Structures to workaround compiler member-count bugs\n"
+                                 : "// Anonymous structures to workaround compiler "
+                                   "member-count bugs\n");
+        }
+        const auto closeStruct = [&](size_t count, size_t index) {
+            if (count == 1) return;
+            puts(named ? "} __Vg" + std::to_string(index) + ";\n" : "};\n");
+        };
+        const size_t lim = groups.lim() ? groups.lim() : n;
+        const AstVar* varp = firstp;
+        size_t nEmitted = 0;
+        for (size_t l3 = 0; l3 < groups.l3s(); ++l3) {
+            if (groups.l3s() != 1) puts("struct {\n");
+            for (size_t l2 = 0; l2 < groups.l2s() && nEmitted < n; ++l2) {
+                if (groups.l2s() != 1) puts("struct {\n");
+                for (size_t l1 = 0; l1 < groups.l1s() && nEmitted < n; ++l1) {
+                    if (groups.l1s() != 1) puts("struct {\n");
+                    for (size_t l0 = 0; l0 < lim && nEmitted < n; ++l0, ++nEmitted) {
+                        emitVarDecl(varp);
+                        varp = VN_CAST(varp->nextp(), Var);
+                    }
+                    closeStruct(groups.l1s(), l1);
+                }
+                closeStruct(groups.l2s(), l2);
+            }
+            closeStruct(groups.l3s(), l3);
+        }
+        UASSERT_OBJ(nEmitted == n, firstp, "Not all variables emitted");
     }
     void emitInternalVarDecls(const AstNodeModule* modp) {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {

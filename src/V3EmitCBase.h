@@ -28,14 +28,17 @@
 
 //######################################################################
 // Set user4p in all CFunc, Var, and coverage declarations to point to the
-// containing AstNodeModule
+// containing AstNodeModule, and number the explicitly constructed members
 
 class EmitCParentModule final {
     // NODE STATE
     //   AstCFunc::user4p()          AstNodeModule* Parent module pointer
     //   AstVar::user4p()            AstNodeModule* Parent module pointer
     //   AstNodeCoverDecl::user4p()  AstNodeModule* Parent module pointer
+    //   AstVar::user3()             Index of explicitly constructed member in '__Vnontrivs'
+    //   AstNodeModule::user3()      Number of explicitly constructed members in '__Vnontrivs'
     const VNUser4InUse user4InUse;
+    const VNUser3InUse user3InUse;
 
 public:
     EmitCParentModule();
@@ -106,6 +109,26 @@ public:
     }
     // Return C++ class name for a module/class object
     static string prefixNameProtect(const AstNode* nodep) VL_MT_STABLE;
+};
+
+//######################################################################
+// Nesting of member variables in structs of at most --comp-limit-members members,
+// to avoid C++ compilers parsing large class bodies in quadratic time
+
+class EmitCMemberGroups final {
+    const size_t m_lim;  // Members per innermost struct, or 0 if not nesting
+    size_t m_l3s = 1;  // Number of outermost structs, 1 if there is no struct at this level
+    size_t m_l2s = 1;  // Number of middle structs in each outermost struct, likewise
+    size_t m_l1s = 1;  // Number of innermost structs in each middle struct, likewise
+
+public:
+    explicit EmitCMemberGroups(size_t nMembers);
+    size_t lim() const { return m_lim; }
+    size_t l3s() const { return m_l3s; }
+    size_t l2s() const { return m_l2s; }
+    size_t l1s() const { return m_l1s; }
+    // Return access prefix of member 'idx' when the structs are named '__Vg<index>'
+    std::string namedPath(size_t idx) const;
 };
 
 //######################################################################
@@ -274,8 +297,13 @@ public:
         const std::string name = varp->nameProtect();
         // Primary IOs live 'union { struct { HERE } __VprimaryPorts; }'
         if (varp->isPrimaryIO()) return "__VprimaryPorts." + name;
-        // Explicitly constructed variables live 'union { struct { HERE } __Vnontrivs; }'
-        if (isExplicitlyConstructed(varp)) return "__Vnontrivs." + name;
+        // Explicitly constructed variables live 'union { struct { HERE } __Vnontrivs; }',
+        // possibly in nested named structs
+        if (isExplicitlyConstructed(varp)) {
+            const EmitCMemberGroups groups{
+                static_cast<size_t>(EmitCParentModule::get(varp)->user3())};
+            return "__Vnontrivs." + groups.namedPath(varp->user3()) + name;
+        }
         // Otherwise they should be available in the local scope where emitted
         return name;
     }

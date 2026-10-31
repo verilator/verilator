@@ -29,12 +29,43 @@ EmitCParentModule::EmitCParentModule() {
             if (VN_IS(nodep, CFunc) || VN_IS(nodep, Var) || VN_IS(nodep, NodeCoverDecl)) {
                 nodep->user4p(modp);
             }
+            AstVar* const varp = VN_CAST(nodep, Var);
+            if (varp && !varp->isPrimaryIO()
+                && EmitCBaseVisitorConst::isExplicitlyConstructed(varp)) {
+                varp->user3(modp->user3Inc());
+            }
         }
         modp->foreach([&](AstNodeCoverDecl* nodep) { nodep->user4p(modp); });
     };
     for (AstNode* const modp : v3Global.rootp()->modulespList()) {
         setAll(VN_AS(modp, NodeModule));
     }
+}
+
+//######################################################################
+// EmitCMemberGroups implementation
+
+EmitCMemberGroups::EmitCMemberGroups(size_t nMembers)
+    : m_lim{static_cast<size_t>(v3Global.opt.compLimitMembers())} {
+    if (!m_lim) return;
+    if (nMembers > (m_lim * m_lim * m_lim)) {
+        m_l3s = (nMembers + (m_lim * m_lim * m_lim) - 1) / (m_lim * m_lim * m_lim);
+        m_l2s = m_lim;
+        m_l1s = m_lim;
+    } else if (nMembers > (m_lim * m_lim)) {
+        m_l2s = (nMembers + (m_lim * m_lim) - 1) / (m_lim * m_lim);
+        m_l1s = m_lim;
+    } else if (nMembers > m_lim) {
+        m_l1s = (nMembers + m_lim - 1) / m_lim;
+    }
+}
+
+std::string EmitCMemberGroups::namedPath(size_t idx) const {
+    std::string path;
+    if (m_l3s != 1) path += "__Vg" + std::to_string(idx / (m_lim * m_l2s * m_l1s)) + ".";
+    if (m_l2s != 1) path += "__Vg" + std::to_string(idx / (m_lim * m_l1s) % m_l2s) + ".";
+    if (m_l1s != 1) path += "__Vg" + std::to_string(idx / m_lim % m_l1s) + ".";
+    return path;
 }
 
 //######################################################################
