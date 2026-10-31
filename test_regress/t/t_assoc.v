@@ -209,7 +209,9 @@ module t (
         RED,
         GREEN
       } color_t;
-      int by_data[bit [31:0]];
+      typedef color_t color_alias_t;
+      typedef bit [31:0] data_t;
+      int by_data[data_t];
       int by_class[Base];
       int by_string[string];
       int by_enum[color_t];
@@ -218,7 +220,7 @@ module t (
       Base base_handle;
       Derived derived_handle;
       string string_key;
-      color_t enum_key;
+      color_alias_t enum_key;
 
       by_data[5] = 1;
       by_data[9] = 2;

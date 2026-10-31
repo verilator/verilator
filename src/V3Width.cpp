@@ -4947,10 +4947,12 @@ class WidthVisitor final : public VNVisitor {
                                         && !VN_IS(argDTypep->skipRefToEnump(), EnumDType);
             // Integral non-enum types are equivalent by size, state, and sign; others must match.
             // 13.5.2 requires ref arguments to be equivalent.
-            // (Commercial tools ignore the looser rule in 7.9.8)
+            // (Most commercial tools ignore the looser rule in 7.9.8)
             const bool isEquivalentArg = isIntegralPair ? isEquivalentDType(keyDTypep, argDTypep)
                                                         : keyDTypep->similarDType(argDTypep);
-            if (!isEquivalentArg && !argp->fileline()->erroringOn()) {
+            // An earlier error, such as a missing argument, replaced the argument with 1'b0
+            const bool isErroringArg = argp->fileline()->erroringOn();
+            if (!isEquivalentArg && !isErroringArg) {
                 nodep->v3error("Associative array method "
                                << nodep->prettyNameQ()
                                << " requires an argument equivalent to the index type"

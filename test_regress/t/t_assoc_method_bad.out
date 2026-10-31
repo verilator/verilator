@@ -64,40 +64,52 @@
                                    : ... note: In instance 't'
    29 |     a.bad_not_defined();
       |       ^~~~~~~~~~~~~~~
-%Error: t/t_assoc_method_bad.v:55:19: Associative array method 'first' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+%Error: t/t_assoc_method_bad.v:57:19: Associative array method 'first' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
                                     : ... note: In instance 't'
                                     : ... Index data type: 'bit[31:0]' (2-state)
                                     : ... Argument data type: 'logic[63:0]' (4-state)
-   55 |     void'(by_data.first(wider_four_state));   
+   57 |     void'(by_data.first(wider_four_state));   
       |                   ^~~~~
-%Error: t/t_assoc_method_bad.v:56:19: Associative array method 'next' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+%Error: t/t_assoc_method_bad.v:58:19: Associative array method 'next' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
                                     : ... note: In instance 't'
                                     : ... Index data type: 'bit[31:0]'
                                     : ... Argument data type: 'bit[7:0]'
-   56 |     void'(by_data.next(narrower));   
+   58 |     void'(by_data.next(narrower));   
       |                   ^~~~
-%Error: t/t_assoc_method_bad.v:57:19: Associative array method 'last' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+%Error: t/t_assoc_method_bad.v:59:19: Associative array method 'last' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
                                     : ... note: In instance 't'
                                     : ... Index data type: 'bit[31:0]'
                                     : ... Argument data type: 'class Base'
-   57 |     void'(by_data.last(base_handle));   
+   59 |     void'(by_data.last(base_handle));   
       |                   ^~~~
-%Error: t/t_assoc_method_bad.v:58:20: Associative array method 'prev' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+%Error: t/t_assoc_method_bad.v:60:20: Associative array method 'prev' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
                                     : ... note: In instance 't'
                                     : ... Index data type: 'class Base'
                                     : ... Argument data type: 'class Derived'
-   58 |     void'(by_class.prev(derived_handle));   
+   60 |     void'(by_class.prev(derived_handle));   
       |                    ^~~~
-%Error: t/t_assoc_method_bad.v:59:18: Associative array method 'first' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+%Error: t/t_assoc_method_bad.v:61:18: Associative array method 'first' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
                                     : ... note: In instance 't'
                                     : ... Index data type: 'int'
                                     : ... Argument data type: 'enum t.color_t'
-   59 |     void'(by_int.first(enum_value));   
+   61 |     void'(by_int.first(enum_value));   
       |                  ^~~~~
-%Error: t/t_assoc_method_bad.v:60:19: Associative array method 'first' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+%Error: t/t_assoc_method_bad.v:62:19: Associative array method 'first' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
                                     : ... note: In instance 't'
                                     : ... Index data type: 'enum t.color_t'
                                     : ... Argument data type: 'int'
-   60 |     void'(by_enum.first(int_value));   
+   62 |     void'(by_enum.first(int_value));   
       |                   ^~~~~
+%Error: t/t_assoc_method_bad.v:63:18: Associative array method 'first' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+                                    : ... note: In instance 't'
+                                    : ... Index data type: 'int'
+                                    : ... Argument data type: 'int'
+   63 |     void'(by_int.first(unsigned_value));   
+      |                  ^~~~~
+%Error: t/t_assoc_method_bad.v:64:18: Associative array method 'first' requires an argument equivalent to the index type (IEEE 1800-2023 7.9.4, 13.5.2)
+                                    : ... note: In instance 't'
+                                    : ... Index data type: 'int' (2-state)
+                                    : ... Argument data type: 'integer' (4-state)
+   64 |     void'(by_int.first(four_state_value));   
+      |                  ^~~~~
 %Error: Exiting due to

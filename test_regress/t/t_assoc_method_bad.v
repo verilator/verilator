@@ -50,6 +50,8 @@ module t;
     Base base_handle;
     Derived derived_handle;
     int int_value;
+    int unsigned unsigned_value;
+    integer four_state_value;
     color_t enum_value;
 
     void'(by_data.first(wider_four_state));  // Bad: not equivalent
@@ -58,5 +60,7 @@ module t;
     void'(by_class.prev(derived_handle));  // Bad: derived class
     void'(by_int.first(enum_value));  // Bad: enum
     void'(by_enum.first(int_value));  // Bad: not an enum
+    void'(by_int.first(unsigned_value));  // Bad: unsigned
+    void'(by_int.first(four_state_value));  // Bad: 4-state
   end
 endmodule
