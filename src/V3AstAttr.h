@@ -1170,9 +1170,14 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 
 // clang-format off
 #define FOR_EACH_CFUNCTION(macro) \
-    /*    id,                                 function,                 pure,   args */ \
-    macro(_NONE,                              "_none",                  false,  "") \
-    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",          PURE,   "r")
+    /*    id,                                 function,                             pure,   args */ \
+    macro(_NONE,                              "_none",                              false,  "") \
+    macro(AWAIT_IMPORT_TASK,                  "VerilatedDpi::awaitImportTask",      false,  "TODO") \
+    macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "TODO") \
+    macro(CALL_EXPORT_TASK,                   "VerilatedDpi::callExportTask",       false,  "TODO") \
+    macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "TODO") \
+    macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "TODO") \
+    macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",                      PURE,   "r")
 // clang-format on
 
 class VCFunction final {
@@ -1220,6 +1225,7 @@ public:
 constexpr bool operator==(const VCFunction& lhs, const VCFunction& rhs) {
     return lhs.m_e == rhs.m_e;
 }
+constexpr bool operator==(const VCFunction& lhs, VCFunction::en rhs) { return lhs.m_e == rhs; }
 
 // Static assert all argument descriptors are well formed
 #define VL_CFUNCTION_ARGS_CHECK(id, method, pure, args) \
