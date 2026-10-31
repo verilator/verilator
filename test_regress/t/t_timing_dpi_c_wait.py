@@ -11,10 +11,9 @@ import vltest_bootstrap
 
 test.scenarios("simulator")
 test.enable_tsan()
-test.top_filename = "t/t_timing_dpi_c_wait.v"
 
 test.compile(
-    v_flags2=["t/t_timing_dpi_c_wait.cpp"],
+    v_flags2=[test.pli_filename],
     verilator_flags2=["--binary", "--stats"],
 )
 
