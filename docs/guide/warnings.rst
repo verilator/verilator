@@ -490,19 +490,25 @@ List Of Warnings
 
 .. option:: COMBDLY
 
-   .. TODO better example
-
-   Warns that there is a delayed assignment inside of a combinatorial
-   block. Using delayed assignments in this way is considered bad form, and
-   may lead to the simulator not matching synthesis. If this message is
-   suppressed, Verilator, like synthesis, will convert this to a
-   non-delayed assignment, which may result in logic races or other
-   nasties. See
+   Error issued when a non-blocking assignment `<=`, or a non-blocking event
+   trigger `->>`, is used in a combinational logic block. Using non-blocking
+   assignments in this way is bad practice, and may lead to the simulation not
+   matching synthesis. Verilator, like synthesis, will always convert these to
+   the blocking forms `=` and `->` and execute them as such. This may result in
+   race conditions and differ from other simulators.
    `http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf
    <http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf>`_
 
-   Ignoring this warning may make Verilator simulations differ from other
-   simulators.
+   This error can be disabled. Disabling it does not change execution, only
+   suppresses the error message.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_COMBDLY_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_COMBDLY_msg.rst
 
 
 .. option:: CONSTRAINTIGN
@@ -889,11 +895,12 @@ List Of Warnings
 
 .. option:: FINALDLY
 
-   Error issued when a non-blocking assignment `<=` is used in a
-   `final` block.
+   Error issued when a non-blocking assignment `<=`, or a non-blocking event
+   trigger `->>`, is used in a `final` block. Verilator will always convert
+   these to the blocking forms `=` and `->` and execute them as such.
 
-   This error can be disabled. If disabled, the assignment will be
-   executed as a `=` blocking assignment.
+   This error can be disabled. Disabling it does not change execution, only
+   suppresses the error message.
 
    Faulty example:
 
@@ -902,6 +909,7 @@ List Of Warnings
    Results in:
 
    .. include:: ../../docs/gen/ex_FINALDLY_msg.rst
+
 
 .. option:: FSMMULTI
 
