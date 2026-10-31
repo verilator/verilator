@@ -81,8 +81,14 @@ module t;
     ref_enum(enum_int);
   end
 
-  typedef enum bit [6:0] { BIT_A, BIT_B } bit_enum_t;
-  typedef enum bit [6:0] { OTHER_A, OTHER_B } other_bit_enum_t;
+  typedef enum bit [6:0] {
+    BIT_A,
+    BIT_B
+  } bit_enum_t;
+  typedef enum bit [6:0] {
+    OTHER_A,
+    OTHER_B
+  } other_bit_enum_t;
   logic select;
   bit_enum_t bit_value;
   other_bit_enum_t other_value;

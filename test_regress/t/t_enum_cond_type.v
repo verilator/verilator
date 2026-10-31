@@ -11,19 +11,25 @@
 
 package mode_pkg;
   typedef bit [6:0] mode_bits_t;
-  typedef enum mode_bits_t { MODE_A = 1, MODE_B = 3, MODE_C = 7 } mode_t;
+  typedef enum mode_bits_t {
+    MODE_A = 1,
+    MODE_B = 3,
+    MODE_C = 7
+  } mode_t;
 endpackage
 
 module enum_leaf #(
-  parameter mode_pkg::mode_t MODE = mode_pkg::MODE_A,
-  parameter mode_pkg::mode_t EXPECTED = mode_pkg::MODE_A
+    parameter mode_pkg::mode_t MODE = mode_pkg::MODE_A,
+    parameter mode_pkg::mode_t EXPECTED = mode_pkg::MODE_A
 ) ();
   initial begin
     `checkd(MODE, EXPECTED);
   end
 endmodule
 
-module t (clk);
+module t (
+    clk
+);
   input clk;
   import mode_pkg::*;
   typedef mode_t alias_t;
@@ -38,10 +44,14 @@ module t (clk);
   for (genvar i = 0; i < 3; ++i) begin : gen_leaf
     localparam logic [1:0] SELECT = 2'(i);
     localparam mode_t EXPECTED = i == 0 ? MODE_A : i == 1 ? MODE_B : MODE_C;
-    enum_leaf #(.MODE(SELECT == 1 ? MODE_B : MODE_A),
-                .EXPECTED(i == 1 ? MODE_B : MODE_A)) simple_leaf ();
-    enum_leaf #(.MODE(SELECT == 0 ? MODE_A : SELECT == 1 ? MODE_B : MODE_C),
-                .EXPECTED(EXPECTED)) nested_leaf ();
+    enum_leaf #(
+        .MODE(SELECT == 1 ? MODE_B : MODE_A),
+        .EXPECTED(i == 1 ? MODE_B : MODE_A)
+    ) simple_leaf ();
+    enum_leaf #(
+        .MODE(SELECT == 0 ? MODE_A : SELECT == 1 ? MODE_B : MODE_C),
+        .EXPECTED(EXPECTED)
+    ) nested_leaf ();
   end
 
   function automatic alias_t choose(input alias_t selected);

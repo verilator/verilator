@@ -45,7 +45,9 @@ class Top extends Mid;
 endclass
 
 // Parameterized extends
-class PMid #(type T = int) extends Base;
+class PMid #(
+    type T = int
+) extends Base;
 endclass
 
 class PTop extends PMid #(int);

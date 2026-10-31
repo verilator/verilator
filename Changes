@@ -359,6 +359,10 @@ Verilator 5.053 devel
 * Fix unpacked array concatenation splicing multidimensional arrays (#8947). [Geza Lore, Testorrent USA, Inc.]
 * Fix splitting statements around calls of non-inlined functions (#8951). [Geza Lore, Testorrent USA, Inc.]
 * Fix trace enable mask with sparse dumpvars (#8955) (#8956). [Vladimir Silyaev]
+* Fix tracing unselected events (#8958) (#8959). [Vladimir Silyaev]
+* Fix missing declaration of virtual interface types in headers (#8976). [Geza Lore, Testorrent USA, Inc.]
+* Fix nested loop unrolling substituting later assignments (#8980). [Geza Lore, Testorrent USA, Inc.]
+* Fix incorrect virtual dispatch of class-scoped method calls (#8983). [Geza Lore, Testorrent USA, Inc.]
 
 
 Verilator 5.052 2026-09-05

@@ -56,10 +56,9 @@ Did you write a patch that fixes a Verilator bug?
   from the repository root to enable them.
 
   The hooks reuse the development tools and version pins from
-  ``python-dev-requirements.txt``. They format only staged files and
-  exclude generated and vendored files. If a hook changes a file, review
-  and stage its changes before committing again. To format all eligible
-  tracked files manually, use ``prek run --all-files`` or ``pre-commit run
+  ``python-dev-requirements.txt``. If a hook changes a file, review and
+  stage its changes before committing again. To format all eligible tracked
+  files manually, use ``prek run --all-files`` or ``pre-commit run
   --all-files``.
 
 - Verilator uses GitHub Actions to provide continuous integration. You may

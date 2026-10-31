@@ -1256,6 +1256,7 @@ unoptimizable
 unparenthesized
 unroller
 unsatisfiable
+unselected
 unsized
 unsup
 untyped
