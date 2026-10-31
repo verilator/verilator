@@ -22,6 +22,7 @@ test.compile(
 
 if test.vlt_all:
     test.file_grep(test.stats, r'Timing, suspendable DPI exports\s+(\d+)', 1)
-    test.execute(fails=True, expect_filename=test.golden_filename)
+
+test.execute(fails=True, expect_filename=test.golden_filename)
 
 test.passes()
