@@ -3398,7 +3398,7 @@ class WidthVisitor final : public VNVisitor {
         // However the output width is exactly that requested.
         // So two steps, first do the calculation's width (max of the two widths)
         {
-            const int calcWidth = std::max(width, underDtp->width());
+            const int calcWidth = std::max(width, underp->dtypep()->width());
             AstNodeDType* const calcDtp = nodep->findBitOrLogicDType(
                 calcWidth, calcWidth, underDtp->numeric(), underDtp->isFourstate());
             nodep->dtypep(calcDtp);
