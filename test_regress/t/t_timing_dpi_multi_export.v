@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
+  bit clk = 0;
   export "DPI-C" task export_delay;
   task automatic export_delay();
     #1;
@@ -26,7 +27,6 @@ module t;
       $display("No delay\n");
   endtask
 
-  bit clk = 0;
   initial begin
     #1 clk = 1;
     $finish;
