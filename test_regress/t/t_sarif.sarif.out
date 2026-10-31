@@ -113,8 +113,8 @@
                 {
                     "level": "warning",
                     "message": {
-                        "text": "Signal has multiple driving blocks with different clocking: 'multidriven'\n... Location of first driving block\n... Location of other driving block\n... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.",
-                        "markdown": "```\n%Warning-MULTIDRIVEN: t/t_sarif.v:10:18: Signal has multiple driving blocks with different clocking: 'multidriven'\n                      t/t_sarif.v:15:26: ... Location of first driving block\n   15 |   always @(posedge clk1) multidriven <= '1;\n      |                          ^~~~~~~~~~~\n                      t/t_sarif.v:16:26: ... Location of other driving block\n   16 |   always @(posedge clk2) multidriven <= '0;\n      |                          ^~~~~~~~~~~\n                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n                      ... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.\n\n```\n"
+                        "text": "Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'multidriven'\n... note: In instance 't'\n... Location of other write\n... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.",
+                        "markdown": "```\n%Warning-MULTIDRIVEN: t/t_sarif.v:16:29: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'multidriven'\n                                       : ... note: In instance 't'\n                      t/t_sarif.v:16:29: \n   16 |   always_ff @(posedge clk2) multidriven <= '0;\n      |                             ^~~~~~~~~~~\n                      t/t_sarif.v:15:29: ... Location of other write\n   15 |   always_ff @(posedge clk1) multidriven <= '1;\n      |                             ^~~~~~~~~~~\n                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n                      ... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.\n\n```\n"
                     },
                     "locations": [
                         {
@@ -124,12 +124,12 @@
                                 },
                                 "region": {
                                     "sourceLanguage": "systemverilog",
-                                    "startLine": 10,
-                                    "startColumn": 18,
-                                    "endColumn": 29,
+                                    "startLine": 16,
+                                    "startColumn": 29,
+                                    "endColumn": 40,
                                     "snippit": {
-                                        "text": "    output logic multidriven",
-                                        "markdown": "```\n   10 |     output logic multidriven\n      |                  ^~~~~~~~~~~\n\n```\n"
+                                        "text": "  always_ff @(posedge clk2) multidriven <= '0;",
+                                        "markdown": "```\n   16 |   always_ff @(posedge clk2) multidriven <= '0;\n      |                             ^~~~~~~~~~~\n\n```\n"
                                     }
                                 }
                             }
@@ -138,29 +138,8 @@
                     "relatedLocations": [
                         {
                             "message": {
-                                "text": "... Location of first driving block",
-                                "markdown": "```\n                      t/t_sarif.v:15:26: ... Location of first driving block\n   15 |   always @(posedge clk1) multidriven <= '1;\n      |                          ^~~~~~~~~~~\n\n```\n"
-                            },
-                            "physicalLocation": {
-                                "artifactLocation": {
-                                    "uri": "file:///.../t_sarif.v"
-                                },
-                                "region": {
-                                    "sourceLanguage": "systemverilog",
-                                    "startLine": 15,
-                                    "startColumn": 26,
-                                    "endColumn": 37,
-                                    "snippit": {
-                                        "text": "  always @(posedge clk1) multidriven <= '1;",
-                                        "markdown": "```\n   15 |   always @(posedge clk1) multidriven <= '1;\n      |                          ^~~~~~~~~~~\n\n```\n"
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "message": {
-                                "text": "... Location of other driving block\n... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.",
-                                "markdown": "```\n                      t/t_sarif.v:16:26: ... Location of other driving block\n   16 |   always @(posedge clk2) multidriven <= '0;\n      |                          ^~~~~~~~~~~\n                      ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest\n                      ... Use \"/* verilator lint_off MULTIDRIVEN */\" and lint_on around source to disable this message.\n\n```\n"
+                                "text": "",
+                                "markdown": "```\n                      t/t_sarif.v:16:29: \n   16 |   always_ff @(posedge clk2) multidriven <= '0;\n      |                             ^~~~~~~~~~~\n\n```\n"
                             },
                             "physicalLocation": {
                                 "artifactLocation": {
@@ -169,11 +148,11 @@
                                 "region": {
                                     "sourceLanguage": "systemverilog",
                                     "startLine": 16,
-                                    "startColumn": 26,
-                                    "endColumn": 37,
+                                    "startColumn": 29,
+                                    "endColumn": 40,
                                     "snippit": {
-                                        "text": "  always @(posedge clk2) multidriven <= '0;",
-                                        "markdown": "```\n   16 |   always @(posedge clk2) multidriven <= '0;\n      |                          ^~~~~~~~~~~\n\n```\n"
+                                        "text": "  always_ff @(posedge clk2) multidriven <= '0;",
+                                        "markdown": "```\n   16 |   always_ff @(posedge clk2) multidriven <= '0;\n      |                             ^~~~~~~~~~~\n\n```\n"
                                     }
                                 }
                             }

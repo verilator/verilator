@@ -55,8 +55,8 @@ module t1 (
 
 endmodule
 
-// Different clocks: reported by MULTIDRIVEN (on by default). MULTIDRIVENPROC is
-// suppressed here so the conflict is reported only once.
+// Different clocks: two plain always blocks drive the whole of 'q', reported by
+// MULTIDRIVENPROC.
 module t2 (
     input wire clka,
     input wire clkb,
