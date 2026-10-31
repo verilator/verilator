@@ -1549,8 +1549,8 @@ class TaskVisitor final : public VNVisitor {
                         methodCallp->funcp()->isVirtual(false);
                         varRefp->varp()->user3p(varRefp->varp());
                         unsetUser3p.push_back(varRefp->varp());
-                        AstVarRef* const newVarRefp = new AstVarRef{varRefp->fileline(), varRefp->varp(),
-                                                              VAccess::READWRITE};
+                        AstVarRef* const newVarRefp = new AstVarRef{
+                            varRefp->fileline(), varRefp->varp(), VAccess::READWRITE};
                         newVarRefp->dtypeFrom(varRefp->varp());
                         // make sure this doesn't get optimized away
                         newVarRefp->varp()->sigPublic(true);
@@ -1563,13 +1563,14 @@ class TaskVisitor final : public VNVisitor {
                             newVarRefp->varScopep(varRefp->varScopep());
                         } else if (subVrefp
                                    && subVrefp->varp()->user4p()) {  // when we are making a call
-                                                                    // with a child class
+                                                                     // with a child class
                             AstVarScope* newvscp;
                             // When calling from a varref we must check the
                             // correctScopep which has where the tasks is
                             // being called from.
-                            newvscp = new AstVarScope{varRefp->fileline(), correctScopep ? correctScopep : scopep,
-                                                        varRefp->varp()};
+                            newvscp = new AstVarScope{varRefp->fileline(),
+                                                      correctScopep ? correctScopep : scopep,
+                                                      varRefp->varp()};
                             scopep->addVarsp(newvscp);
                             newVarRefp->varScopep(newvscp);
                             varRefp->varp()->user1SetOnce();
@@ -1580,8 +1581,9 @@ class TaskVisitor final : public VNVisitor {
                         refp->addArgsp(argp);
                     }
                 }
-            } else if (AstVar* const varpInFunc = VN_CAST(p, Var)) {  // The variable is declared in the
-                                                                // scope do not pass by reference
+            } else if (AstVar* const varpInFunc
+                       = VN_CAST(p, Var)) {  // The variable is declared in the
+                // scope do not pass by reference
                 if (!varpInFunc->user3p()) {
                     varpInFunc->user3p(varpInFunc);
                     unsetUser3p.push_back(varpInFunc);
@@ -1641,8 +1643,9 @@ class TaskVisitor final : public VNVisitor {
                     oldVarRefp->replaceWithKeepDType(newArgRefp);
                     VL_DO_DANGLING(pushDeletep(oldVarRefp), oldVarRefp);
                 }
-            } else if (AstVar* const varpInFunc = VN_CAST(p, Var)) {  // The variable is declared in the
-                                                                // scope do not pass by reference
+            } else if (AstVar* const varpInFunc
+                       = VN_CAST(p, Var)) {  // The variable is declared in the
+                // scope do not pass by reference
                 varpInFunc->user3p(varpInFunc);
                 unsetUser3p.push_back(varpInFunc);
             }
