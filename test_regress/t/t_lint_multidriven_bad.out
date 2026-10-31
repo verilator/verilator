@@ -1,17 +1,11 @@
-%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:21:13: Signal has multiple driving blocks with different clocking: 't.mem'
-                      t/t_lint_multidriven_bad.v:24:5: ... Location of first driving block
-   24 |     mem[a0] <= d0;   
-      |     ^~~
-                      t/t_lint_multidriven_bad.v:27:5: ... Location of other driving block
-   27 |     mem[a0] <= d1;   
-      |     ^~~
+%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:26:5: Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'q'
+                                                     : ... note: In instance 't'
+                      t/t_lint_multidriven_bad.v:26:5: 
+   26 |     q <= d1;   
+      |     ^
+                      t/t_lint_multidriven_bad.v:23:5: ... Location of other write
+   23 |     q <= d0;   
+      |     ^
                       ... For warning description see https://verilator.org/warn/MULTIDRIVEN?v=latest
                       ... Use "/* verilator lint_off MULTIDRIVEN */" and lint_on around source to disable this message.
-%Warning-MULTIDRIVEN: t/t_lint_multidriven_bad.v:19:21: Signal has multiple driving blocks with different clocking: 'out2'
-                      t/t_lint_multidriven_bad.v:32:5: ... Location of first driving block
-   32 |     out2[7:0] <= d0;   
-      |     ^~~~
-                      t/t_lint_multidriven_bad.v:35:5: ... Location of other driving block
-   35 |     out2[15:8] <= d0;   
-      |     ^~~~
 %Error: Exiting due to

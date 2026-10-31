@@ -150,10 +150,7 @@ class DelayedVisitor final : public VNVisitor {
     // All info associated with a variable that is the target of an NBA
     class VarScopeInfo final {
     public:
-        // First write reference encountered to the VarScope as the target on an NBA
-        const AstVarRef* m_firstNbaRefp = nullptr;
-        // Active block 'm_firstNbaRefp' is under
-        const AstActive* m_fistActivep = nullptr;
+        bool m_nbaTarget = false;  // Updated by an NBA, so in 'm_vscps'
         bool m_whole = false;  // Used on LHS of NBA directly via VarRef
         bool m_partial = false;  // Used on LHS of NBA under a Sel
         bool m_inLoop = false;  // Used on LHS of NBA in a loop
@@ -250,7 +247,6 @@ class DelayedVisitor final : public VNVisitor {
     };
 
     // NODE STATE
-    //  AstVar::user1()         -> bool.  Set true if already issued MULTIDRIVEN warning
     //  AstVarRef::user1()      -> bool.  Set true if target of NBA
     //  AstAssignDly::user1()   -> bool.  Set true if already visited
     //  AstCFunc::user1()       -> AstUser1Allocator.  See `m_cfuncsCache` below
@@ -1365,9 +1361,8 @@ class DelayedVisitor final : public VNVisitor {
         AstVarScope* const vscp = m_currNbaLhsRefp->varScopep();
         // Record it on first encounter
         VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
-        if (!vscpInfo.m_firstNbaRefp) {
-            vscpInfo.m_firstNbaRefp = m_currNbaLhsRefp;
-            vscpInfo.m_fistActivep = m_activep;
+        if (!vscpInfo.m_nbaTarget) {
+            vscpInfo.m_nbaTarget = true;
             m_vscps.emplace_back(vscp);
         }
         // Note usage context
@@ -1376,25 +1371,7 @@ class DelayedVisitor final : public VNVisitor {
         vscpInfo.m_inLoop |= m_inLoop;
         vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
         // Sensitivity might be non-clocked, in a suspendable process, which are handled elsewhere
-        if (m_activep->sentreep()->hasClocked()) {
-            if (vscpInfo.m_fistActivep != m_activep) {
-                AstVar* const varp = vscp->varp();
-                if (!varp->user1SetOnce()
-                    && !varp->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
-                    varp->v3warn(MULTIDRIVEN,
-                                 "Signal has multiple driving blocks with different clocking: "
-                                     << varp->prettyNameQ() << '\n'
-                                     << vscpInfo.m_firstNbaRefp->warnOther()
-                                     << "... Location of first driving block\n"
-                                     << vscpInfo.m_firstNbaRefp->warnContextSecondary()
-                                     << m_currNbaLhsRefp->warnOther()
-                                     << "... Location of other driving block\n"
-                                     << m_currNbaLhsRefp->warnContextPrimary() << '\n');
-                }
-            }
-            // Add this sensitivity to the variable
-            vscpInfo.addSensitivity(m_activep->sentreep());
-        }
+        if (m_activep->sentreep()->hasClocked()) vscpInfo.addSensitivity(m_activep->sentreep());
 
         // Record the NBA for later processing
         m_nbas.emplace_back();

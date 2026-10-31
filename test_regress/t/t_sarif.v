@@ -12,8 +12,8 @@ module t (
 
   wire [1:0] trunced = 5'b11111;  // Warned
 
-  always @(posedge clk1) multidriven <= '1;
-  always @(posedge clk2) multidriven <= '0;
+  always_ff @(posedge clk1) multidriven <= '1;
+  always_ff @(posedge clk2) multidriven <= '0;
 
 endmodule
 
