@@ -122,6 +122,46 @@ public:
 };
 
 //######################################################################
+// Counted loop patterns
+
+// Peel value-preserving width casts (Extend/ExtendS, or a low-bits Sel with lsb 0) to the
+// underlying VarRef.  A Sel kept narrower than 'minWidth' is a lossy narrowing (idx[1:0])
+// and is rejected.
+static AstVarRef* unwrapToVarRef(AstNodeExpr* nodep, int minWidth) {
+    while (true) {
+        if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) return refp;
+        if (AstExtend* const ep = VN_CAST(nodep, Extend)) {
+            nodep = ep->lhsp();
+        } else if (AstExtendS* const ep = VN_CAST(nodep, ExtendS)) {
+            nodep = ep->lhsp();
+        } else if (AstSel* const sp = VN_CAST(nodep, Sel)) {
+            const AstConst* const lsbp = VN_CAST(sp->lsbp(), Const);
+            if (!lsbp || lsbp->toUInt() != 0 || sp->width() < minWidth) return nullptr;
+            nodep = sp->fromp();
+        } else {
+            return nullptr;
+        }
+    }
+}
+// True if 'nodep' is exactly '1 + var' for 'vscp' (V3Const puts the constant on the LHS).
+// Passing the add's width as minWidth rejects a lossy increment like 32'(i[1:0]) + 1.
+static bool isVarPlus1(AstNode* nodep, const AstVarScope* vscp) {
+    AstAdd* const addp = VN_CAST(nodep, Add);
+    if (!addp || !addp->lhsp()->isOne()) return false;
+    const AstVarRef* const r = unwrapToVarRef(addp->rhsp(), addp->width());
+    return r && r->varScopep() == vscp;
+}
+// Match a strict ascending loop bound 'idx < W'.  V3Const canonicalizes this to the
+// 'W > idx' form (Gt unsigned, GtS signed), so only that form is matched.
+static bool ascendingBound(AstNodeExpr* condp, AstConst*& wp, AstVarRef*& idxRefp) {
+    if (!VN_IS(condp, Gt) && !VN_IS(condp, GtS)) return false;
+    AstNodeBiop* const bp = VN_AS(condp, NodeBiop);
+    wp = VN_CAST(bp->lhsp(), Const);
+    idxRefp = VN_CAST(bp->rhsp(), VarRef);
+    return wp && idxRefp && !wp->num().isFourState();
+}
+
+//######################################################################
 // Unroll one AstLoop
 
 class UnrollOneVisitor final : VNVisitor {
@@ -178,6 +218,38 @@ class UnrollOneVisitor final : VNVisitor {
         }
         // One iteration done, loop continues
         return true;
+    }
+
+    // True if the loop is 'while (C > i) { ...; i = i + 1; }' with 'i' bound, and the condition
+    // holds for its first 'limit + 1' values, with no other write to 'i' and no jump in the body
+    bool exceedsLimit(size_t limit) {
+        AstLoopTest* const testp = VN_CAST(m_loopp->stmtsp(), LoopTest);
+        if (!testp) return false;
+        AstAssign* const incp = VN_CAST(m_loopp->stmtsp()->lastp(), Assign);
+        AstConst* boundp = nullptr;
+        AstVarRef* refp = nullptr;
+        if (!incp || !ascendingBound(testp->condp(), boundp, refp)) return false;
+        AstVarScope* const vscp = refp->varScopep();
+        const AstVarRef* const lhsp = VN_CAST(incp->lhsp(), VarRef);
+        if (!lhsp || lhsp->varScopep() != vscp || !isVarPlus1(incp->rhsp(), vscp)) return false;
+        const AstConst* const initp = m_bindings.get(vscp);
+        if (!initp) return false;
+        V3Number value{initp->num()};
+        const V3Number one{&value, value.width(), 1};
+        V3Number cond{&value};
+        V3Number next{&value, value.width()};
+        for (size_t i = 0; i <= limit; ++i) {
+            VN_AS(testp->condp(), NodeBiop)->numberOperate(cond, boundp->num(), value);
+            if (!cond.isNeqZero()) return false;
+            next.opAdd(value, one);
+            value = next;
+        }
+        return !m_loopp->exists([&](const AstNode* nodep) {
+            if (VN_IS(nodep, JumpGo)) return true;
+            const AstVarRef* const varRefp = VN_CAST(nodep, VarRef);
+            return varRefp && varRefp != lhsp && varRefp->varScopep() == vscp
+                   && varRefp->access().isWriteOrRW();
+        });
     }
 
     // Substitute all reads of bound variables with their value. If a write is
@@ -259,6 +331,8 @@ class UnrollOneVisitor final : VNVisitor {
         const size_t iterLimit = m_unrollFull ? v3Global.opt.unrollLimit()  //
                                               : v3Global.opt.unrollCount();
         size_t iterCount = 0;
+        // If the loop is sure to reach the limit, fail without building its iterations
+        if (!m_unrollFull && exceedsLimit(iterLimit)) iterCount = iterLimit + 1;
         do {
             if (iterCount > iterLimit) {
                 cantUnroll(m_loopp, m_stats.m_nFailUnrollCount);
@@ -378,33 +452,6 @@ class UnrollAllVisitor final : VNVisitor {
     UnrolllBindings m_bindings;  // Variable bindings
 
     // METHODS
-    // Peel value-preserving width casts (Extend/ExtendS, or a low-bits Sel with lsb 0) to the
-    // underlying VarRef.  A Sel kept narrower than 'minWidth' is a lossy narrowing (idx[1:0])
-    // and is rejected.
-    static AstVarRef* unwrapToVarRef(AstNodeExpr* nodep, int minWidth) {
-        while (true) {
-            if (AstVarRef* const refp = VN_CAST(nodep, VarRef)) return refp;
-            if (AstExtend* const ep = VN_CAST(nodep, Extend)) {
-                nodep = ep->lhsp();
-            } else if (AstExtendS* const ep = VN_CAST(nodep, ExtendS)) {
-                nodep = ep->lhsp();
-            } else if (AstSel* const sp = VN_CAST(nodep, Sel)) {
-                const AstConst* const lsbp = VN_CAST(sp->lsbp(), Const);
-                if (!lsbp || lsbp->toUInt() != 0 || sp->width() < minWidth) return nullptr;
-                nodep = sp->fromp();
-            } else {
-                return nullptr;
-            }
-        }
-    }
-    // True if 'nodep' is exactly '1 + var' for 'vscp' (V3Const puts the constant on the LHS).
-    // Passing the add's width as minWidth rejects a lossy increment like 32'(i[1:0]) + 1.
-    bool isVarPlus1(AstNode* nodep, const AstVarScope* vscp) {
-        AstAdd* const addp = VN_CAST(nodep, Add);
-        if (!addp || !addp->lhsp()->isOne()) return false;
-        const AstVarRef* const r = unwrapToVarRef(addp->rhsp(), addp->width());
-        return r && r->varScopep() == vscp;
-    }
     // Resize the 32-bit reduction to the accumulator width; truncating the low bits matches
     // the original counted loop's wrap-around.
     static AstNodeExpr* resizeToWidth(AstNodeExpr* exprp, const AstVarRef* targetRefp) {
@@ -415,15 +462,6 @@ class UnrollAllVisitor final : VNVisitor {
         AstExtend* const extp = new AstExtend{flp, exprp};
         extp->dtypeFrom(targetRefp);
         return extp;
-    }
-    // Match a strict ascending loop bound 'idx < W'.  V3Const canonicalizes this to the
-    // 'W > idx' form (Gt unsigned, GtS signed), so only that form is matched.
-    static bool ascendingBound(AstNodeExpr* condp, AstConst*& wp, AstVarRef*& idxRefp) {
-        if (!VN_IS(condp, Gt) && !VN_IS(condp, GtS)) return false;
-        AstNodeBiop* const bp = VN_AS(condp, NodeBiop);
-        wp = VN_CAST(bp->lhsp(), Const);
-        idxRefp = VN_CAST(bp->rhsp(), VarRef);
-        return wp && idxRefp && !wp->num().isFourState();
     }
     // Recognize the redundant in-range guard Verilator auto-inserts for a select into a
     // non-power-of-two vector.  V3Const canonicalizes 'idx <= C' to '(C >= idx)' (Gte/GteS,

@@ -18,8 +18,8 @@
 %Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:156:5: Loop is not used and will be optimized out
   156 |     while(always_false);
       |     ^~~~~
-%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:280:5: Loop is not used and will be optimized out
-  280 |     while (m_2_ticked);
+%Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:282:5: Loop is not used and will be optimized out
+  282 |     while (m_2_ticked);
       |     ^~~~~
 %Warning-UNUSEDLOOP: t/t_lint_unusedloop_removed_bad.v:181:5: Loop condition is always false
   181 |     while(always_zero) begin

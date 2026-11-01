@@ -937,7 +937,13 @@ private:
 
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
-        if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep, nullptr, nodep));
+        if (!nodep->immediate()) {
+            nodep->sentreep(newSenTree(nodep, nullptr, nodep));
+            // An empty SenTree only follows the no-clock error.
+            if (!nodep->sentreep()->sensesp()) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            }
+        }
     }
     void visit(AstFalling* nodep) override {
         if (nodep->user1SetOnce()) return;

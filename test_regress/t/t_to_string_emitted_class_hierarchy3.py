@@ -20,8 +20,8 @@ test.compile(verilator_flags2=[
     "--stats", f"-DOBJ_TYPE={obj_type}", f"-DPRINTED_FROM_TYPE={printed_from_type}"
 ])
 for class_name in expected_to_string_classes:
-    test.file_grep(
-        f"{test.obj_dir}/{test.vm_prefix}___024unit__03a__03a{class_name}__Vclpkg__0.cpp",
+    test.file_grep_any(
+        test.glob_some(f"{test.obj_dir}/{test.vm_prefix}__Classes_*.cpp"),
         f"std::string {test.vm_prefix}___024unit__03a__03a{class_name}::to_string()")
 test.file_grep(test.stats, r"Optimizations, Class ToString emitted\s+(\d+)",
                len(expected_to_string_classes))

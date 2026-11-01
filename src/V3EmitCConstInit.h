@@ -147,7 +147,12 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
                                  tabModulus(dynp->dtypep()->skipRefp()->subDTypep()));
             return;
         }
-        if (AstConsQueue* const queuep = VN_CAST(nodep, ConsQueue)) {
+        AstConsQueue* const queuep = VN_CAST(nodep, ConsQueue);
+        if (queuep && queuep->sizep()) {
+            emitKeyedConsItems(queuep->sizep(), queuep->defaultp(), queuep->itemsp());
+            return;
+        }
+        if (queuep) {
             emitUnkeyedConsItems(queuep->itemsp(),
                                  tabModulus(queuep->dtypep()->skipRefp()->subDTypep()));
             return;
@@ -206,5 +211,15 @@ protected:
                                            + "::" + varp->nameProtect();
         putnbs(varp, varp->dtypep()->cType(name, false, false));
         emitInitializer(VN_AS(varp->valuep(), NodeExpr));
+        // Account for file splitting
+        varp->valuep()->foreach([this](const AstConst* constp) {
+            if (constp->num().isString()) {
+                splitSizeInc(AstNode::INSTR_COUNT_STR);
+            } else if (constp->isWide()) {
+                splitSizeInc(constp->widthWords());
+            } else {
+                splitSizeInc(1);
+            }
+        });
     }
 };

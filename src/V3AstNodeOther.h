@@ -2885,11 +2885,17 @@ public:
     }
 };
 class AstConsQueueItem final : public AstNodeConsItem {
-    // An element of an AstConsQueue, a value or an array to splice
+    // An element of an AstConsQueue, a value or an array to splice. With sizep, the value at
+    // index 'keyp'.
     // Parents: CONSQUEUE
+    // @astgen op1 := keyp : Optional[AstConst]
 public:
     AstConsQueueItem(FileLine* fl, AstNodeExpr* valuep)
         : ASTGEN_SUPER_ConsQueueItem(fl, valuep) {}
+    AstConsQueueItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsQueueItem(fl, valuep) {
+        this->keyp(keyp);
+    }
     ASTGEN_MEMBERS_AstConsQueueItem;
     const char* broken() const override {
         // backp is the cons node or the previous element
