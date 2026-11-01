@@ -810,6 +810,14 @@ void AstBegin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonGen(str);
 }
+const char* AstCAwait::broken() const {
+    if (const AstCMethodHard* const methodp = VN_CAST(exprp(), CMethodHard)) {
+        BROKEN_RTN(!methodp->method().isAwaitable());
+    } else {
+        BROKEN_RTN(!VN_AS(exprp(), NodeCCall)->funcp()->isCoroutine());
+    }
+    return nullptr;
+}
 void AstCAwait::dump(std::ostream& str) const {
     Super::dump(str);
     if (sentreep()) {

@@ -290,7 +290,7 @@ class AstCAwait final : public AstNodeStmt {
     // C++'s co_await. While this is an expression in C++, in Verilator it is only used
     // with void result types and always appears in statement position. There must never
     // be a suspendable process that returns a value, so modeling as a statement instead.
-    // @astgen op1 := exprp : AstNodeExpr
+    // @astgen op1 := exprp : AstNodeExpr<AstNodeCCall|AstCMethodHard>
     //
     // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sentree related to this await
 public:
@@ -302,6 +302,7 @@ public:
     ASTGEN_MEMBERS_AstCAwait;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
+    const char* broken() const override;
     bool isTimingControl() const override { return true; }
     AstSenTree* sentreep() const { return m_sentreep; }
     void clearSentreep() { m_sentreep = nullptr; }

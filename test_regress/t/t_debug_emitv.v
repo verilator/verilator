@@ -46,6 +46,12 @@ class Cls;
   function void method;
     if (this != this) $stop;
   endfunction
+  task delay_method;
+    #1;
+  endtask
+  task delay_caller;
+    delay_method();
+  endtask
 endclass
 
 function int rand_restricted(Cls obj, int member);
@@ -488,6 +494,12 @@ module t (/*AUTOARG*/
   cg_trans   cg_trans_inst   = new;
   cg_cross   cg_cross_inst   = new;
   cg_live_cross cg_live_cross_inst = new;
+
+  initial begin
+    Cls obj;
+    obj = new;
+    obj.delay_caller();
+  end
 endmodule
 
 module sub(input logic clk);
