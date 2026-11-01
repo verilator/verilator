@@ -54,9 +54,14 @@ enum class VlCovBinKind : uint8_t {
 
 class VlCoverpointIf VL_NOT_FINAL {
     // MEMBERS
-    int32_t m_weight = 1;  // option.weight; never negative
+    const IData* m_weightp = nullptr;  // Borrowed option.weight member
+    mutable IData m_loadedWeight = 1;  // Last option.weight loaded through m_weightp
+    mutable int32_t m_weight = 1;  // option.weight; never negative
     int32_t m_typeWeight = 1;  // type_option.weight; never negative
     std::string m_hier;  // "covergroup.item"
+    VlFileLineDebug m_fileline;  // Item declaration, where a negative weight is reported
+
+    void loadWeight() const;
 
 public:
     // CONSTRUCTORS
@@ -79,10 +84,25 @@ public:
     double coverage() const;
     /// Weight of this item in its covergroup instance's coverage (option.weight,
     /// IEEE 1800-2023 19.11)
-    int32_t weight() const { return m_weight; }
+    int32_t weight() const {
+        loadWeight();
+        return m_weight;
+    }
+    /// Read the current item weight from a coverage database registration callback.
+    static int32_t databaseItemWeight(const void* objp) {
+        return static_cast<const VlCoverpointIf*>(objp)->weight();
+    }
+    /// Read the current type weight from a coverage database registration callback.
+    static int32_t databaseTypeWeight(const void* objp) {
+        return static_cast<const VlCoverpointIf*>(objp)->m_typeWeight;
+    }
     /// Load option.weight, as evaluated by the covergroup constructor.  A negative
     /// weight is reported as an error, and counts as zero.
     void weight(uint32_t value, VlFileLineDebug fileline);
+    /// Lend the coverpoint or cross option.weight member so procedural writes are observed.
+    void lendWeight(const IData* weightp, VlFileLineDebug fileline);
+    /// Stop reading the option member when its owning covergroup object is destroyed.
+    void unlendWeight();
     /// Weight of this item in its covergroup type's coverage when the instances are merged
     /// (type_option.weight, IEEE 1800-2023 19.11.3)
     int32_t typeWeight() const { return m_typeWeight; }

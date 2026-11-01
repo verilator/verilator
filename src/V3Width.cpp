@@ -4177,6 +4177,7 @@ class WidthVisitor final : public VNVisitor {
             m_fromParentp = nodep;
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         }
+        if (nodep->didWidth()) return;
         UINFOTREE(9, nodep, "", "mbs-ic");
         // Find the fromp dtype - should be a class
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Unlinked data type");
@@ -4430,6 +4431,23 @@ class WidthVisitor final : public VNVisitor {
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return false;  // Caller handles error
     }
+    AstNodeFuncCovItem* findCoverItem(AstClass* classp, const string& name) {
+        const auto pair
+            = m_coverItems.emplace(classp, std::unordered_map<string, AstNodeFuncCovItem*>{});
+        auto& items = pair.first->second;
+        if (pair.second) {
+            // Until V3Covergroup, the constructor holds the coverpoints and crosses
+            AstFunc* const newp = VN_AS(m_memberMap.findMember(classp, "new"), Func);
+            for (AstNode* const stmtp : newp->stmtspList()) {
+                if (AstNodeFuncCovItem* const itemp = VN_CAST(stmtp, NodeFuncCovItem)) {
+                    items.emplace(itemp->name(), itemp);
+                }
+            }
+        }
+        const auto it = items.find(name);
+        return it == items.end() ? nullptr : it->second;
+    }
+
     // Return true if 'cg.item' names coverpoint or cross 'item' of covergroup instance 'cg'.  Its
     // only use is as the prefix of a hierarchical name (IEEE 1800-2023 19.5, 19.6), which a
     // formal argument of the same name does not hide, as formals are not visible there (19.3).
@@ -4443,22 +4461,36 @@ class WidthVisitor final : public VNVisitor {
         if (!(callp && callp->fromp() == nodep) && !(selp && selp->fromp() == nodep)) {
             return false;
         }
-        const auto pair
-            = m_coverItems.emplace(classp, std::unordered_map<string, AstNodeFuncCovItem*>{});
-        auto& items = pair.first->second;
-        if (pair.second) {
-            // Until V3Covergroup, the constructor holds the coverpoints and crosses
-            AstFunc* const newp = VN_AS(m_memberMap.findMember(classp, "new"), Func);
-            for (AstNode* const stmtp : newp->stmtspList()) {
-                if (AstNodeFuncCovItem* const itemp = VN_CAST(stmtp, NodeFuncCovItem)) {
-                    items.emplace(itemp->name(), itemp);
+        AstNodeFuncCovItem* const itemp = findCoverItem(classp, nodep->name());
+        if (!itemp) return false;
+        const string member = parentp->name();
+        if (member == "option") {
+            const AstMemberSel* const weightp = VN_CAST(parentp->backp(), MemberSel);
+            const bool isWeight
+                = weightp && weightp->fromp() == parentp && weightp->name() == "weight";
+            // Reject unsupported lvalue forms before later passes assume a normal class member.
+            if (isWeight && VN_IS(m_writerp, NodeAssign) && !VN_IS(m_writerp, Assign)) {
+                if (VN_IS(m_writerp, AssignForce)) {
+                    nodep->v3error("Unsupported: force assignment to coverpoint option.weight "
+                                   "(IEEE 1800-2023 6.21)");
+                } else {
+                    nodep->v3error("Unsupported: non-blocking or procedural assignment to "
+                                   "coverpoint option.weight (IEEE 1800-2023 6.21)");
                 }
             }
+            AstVar* const optionVarp = itemp->optionVarp();
+            UASSERT_OBJ(optionVarp, itemp, "Coverage item missing option member");
+            if (!optionVarp->didWidth()) userIterate(optionVarp, nullptr);
+            AstMemberSel* const optionSelp = VN_AS(parentp, MemberSel);
+            AstNodeExpr* const basep = nodep->fromp()->unlinkFrBack();
+            nodep->unlinkFrBack();
+            optionSelp->fromp(basep);
+            optionSelp->varp(optionVarp);
+            optionSelp->dtypep(optionVarp->dtypep());
+            optionSelp->didWidth(true);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return true;
         }
-        const auto it = items.find(nodep->name());
-        if (it == items.end()) return false;
-        AstNodeFuncCovItem* const itemp = it->second;
-        const string member = parentp->name();
         if (member == "get_coverage" || member == "start" || member == "stop" || member == "option"
             || member == "type_option") {
             // Continuing as the covergroup's member of the same name avoids another error
