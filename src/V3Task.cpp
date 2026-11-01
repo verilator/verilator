@@ -29,6 +29,7 @@
 
 #include "V3Task.h"
 
+#include "V3Ast.h"
 #include "V3Const.h"
 #include "V3ConstPool.h"
 #include "V3Control.h"
@@ -38,6 +39,7 @@
 #include "V3SharedTmps.h"
 #include "V3Stats.h"
 
+#include <string>
 #include <tuple>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -1088,6 +1090,11 @@ class TaskVisitor final : public VNVisitor {
         m_topScopep->scopep()->addBlocksp(funcp);
         makePortList(nodep, funcp);
 
+        // Aborted imports must not re-enter SystemVerilog while unwinding.
+        const std::string abortedRtn = rtnvarp ? "std::decay_t<" + rtnType + ">{}" : "void()";
+        funcp->addStmtsp(new AstIf{flp, new AstCExpr{flp, "VerilatedDpi::exportAborted()", 1},
+                                   new AstCReturn{flp, new AstCExpr{flp, abortedRtn}}, nullptr});
+
         // Note this function may dispatch on a different class.
         // Thus we need to be careful not to assume a particular function layout.
         //
@@ -1098,7 +1105,7 @@ class TaskVisitor final : public VNVisitor {
         // but the compare is only done on first call then memoized, so
         // it's not worth optimizing.
 
-        // Peramble - fetch the exproted function from the scope table
+        // Preamble - fetch the exported function from the scope table
         AstCStmt* const prep = new AstCStmt{flp};
         funcp->addStmtsp(prep);
         // Static doesn't need save-restore as if below will re-fill proper value
@@ -1117,7 +1124,11 @@ class TaskVisitor final : public VNVisitor {
                   + ">(VerilatedScope::exportFind(__Vscopep, __Vfuncnum));");
 
         // Convert input/inout DPI arguments to Internal types, and construct the call
-        AstCStmt* const callp = new AstCStmt{flp};
+        AstCFuncHard* const callExportp = new AstCFuncHard{
+            nodep->fileline(), nodep->verilogTask() ? VCFunction::CALL_EXPORT_TASK
+                                                    : VCFunction::CALL_EXPORT_FUNCTION};
+        callExportp->dtypeSetVoid();
+        AstVarRef* args{};
         const auto addFuncArg = [&](AstVar* portp) -> AstVarScope* {
             // No createDpiTemp; we make a real internal variable instead
             AstVarScope* const vscp = createFuncVar(funcp, portp->name() + tmpSuffixp, portp);
@@ -1126,14 +1137,20 @@ class TaskVisitor final : public VNVisitor {
             portp->protect(false);
             // Add argument to call
             const VAccess access = portp->direction().pinAccess();
-            callp->add(", ");
-            callp->add(new AstVarRef{portp->fileline(), vscp, access});
+            if (args) {
+                args->addNext(new AstVarRef{portp->fileline(), vscp, access});
+            } else {
+                args = new AstVarRef{portp->fileline(), vscp, access};
+            }
             return vscp;
         };
-        // Call callback
-        callp->add("(*__Vcb)(");
+
+        callExportp->addPinsp(new AstCExpr{nodep->fileline(), "__Vcb"});
+
         // First argument is the Syms
-        callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
+        callExportp->addPinsp(new AstCExpr{nodep->fileline(), "(" + EmitCUtil::symClassName()
+                                                                  + "*)(__Vscopep->symsp())"});
+
         // Add function arguments
         AstNode* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
         for (AstNode* const stmtp : nodep->stmtspList()) {
@@ -1162,10 +1179,8 @@ class TaskVisitor final : public VNVisitor {
         }
         // Return value argument goes last
         if (rtnvarp) addFuncArg(rtnvarp);
-        // Close statement
-        callp->add(");");
-        // Call the user function
-        funcp->addStmtsp(callp);
+        callExportp->addPinsp(args);
+        funcp->addStmtsp(callExportp->makeStmt());
         // Convert output/inout arguments back to internal type
         if (outCvtsp) funcp->addStmtsp(outCvtsp);
         // Convert return value
@@ -1368,6 +1383,18 @@ class TaskVisitor final : public VNVisitor {
         return allOk;
     }
 
+    static void addDpiFunctionLocation(AstCFuncHard* funcp) {
+        FileLine* const flp = funcp->fileline();
+        const bool protectIds = v3Global.opt.protectIds();
+        AstCExpr* const filenamep
+            = new AstCExpr{flp, protectIds ? "VL_UNKNOWN" : '"' + flp->filenameEsc() + '"'};
+        filenamep->dtypeSetString();
+        funcp->addPinsp(filenamep);
+        AstConst* const linenop
+            = new AstConst{flp, protectIds ? 0 : static_cast<uint32_t>(flp->lineno())};
+        funcp->addPinsp(linenop);
+    }
+
     void bodyDpiImportFunc(AstNodeFTask* nodep, AstVarScope* rtnvscp, AstCFunc* cfuncp,
                            AstCFunc* dpiFuncp) {
         const char* const tmpSuffixp = V3Task::dpiTemporaryVarSuffix();
@@ -1380,85 +1407,81 @@ class TaskVisitor final : public VNVisitor {
         string args;
         AstNode* copyBacksp = nullptr;  // Statements copying back open array copies
         for (AstNode* const stmtp : cfuncp->argspList()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                AstVarScope* const portvscp
-                    = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
-                if (portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
-                    && portp->name() != "__Vscopep"  // Passed to dpiContext, not callee
-                    && portp->name() != "__Vfilenamep" && portp->name() != "__Vlineno") {
+            AstVar* const portp = VN_CAST(stmtp, Var);
+            if (!portp) continue;
+            AstVarScope* const portvscp
+                = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
+            if (!portp->isIO() || portp->isFuncReturn() || portvscp == rtnvscp
+                || portp->name() == "__Vscopep"  // Passed to dpiContext, not callee
+                || portp->name() == "__Vfilenamep" || portp->name() == "__Vlineno") {
+                continue;
+            }
 
-                    if (args != "") args += ", ";
+            if (args != "") args += ", ";
 
-                    if (portp->isDpiOpenArray()) {
-                        FileLine* const flp = portp->fileline();
-                        const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
-                        const bool dynamic
-                            = VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType);
-                        // Pass a copy of a dynamic array or queue, as the elements of a queue are
-                        // not contiguous
-                        const string copyName = portp->name() + "__Vopencopy";
-                        if (dynamic) {
-                            AstCStmt* const copyp = new AstCStmt{
-                                flp, "std::vector<" + dtypep->subDTypep()->cType("", false, false)
-                                         + "> " + copyName + "("};
-                            copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
-                            copyp->add(".begin(), ");
-                            copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
-                            copyp->add(".end());");
-                            cfuncp->addStmtsp(copyp);
-                            if (portp->isWritable()) {
-                                AstCStmt* const backp = new AstCStmt{flp};
-                                backp->add(new AstVarRef{flp, portvscp, VAccess::WRITE});
-                                backp->add(".assign(" + copyName + ".begin(), " + copyName
-                                           + ".end());");
-                                copyBacksp = AstNode::addNext(copyBacksp, backp);
-                            }
-                        }
-                        // Ideally we'd make a table of variable
-                        // characteristics, and reuse it wherever we can
-                        // At least put them into the module's CTOR as static?
-                        const string propName = portp->name() + "__Vopenprops";
-                        const string propCode = portp->vlPropDecl(
-                            propName, dynamic ? "static_cast<int>(" + copyName + ".size())" : "");
-                        cfuncp->addStmtsp(new AstCStmt{flp, propCode});
-                        //
-                        // At runtime we need the svOpenArrayHandle to
-                        // point to this task & thread's data, in addition
-                        // to static info about the variable
-                        const string name = portp->name() + "__Vopenarray";
-                        AstCStmt* const openVarp = new AstCStmt{
-                            // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-                            flp, "VerilatedDpiOpenVar " + name + " (&" + propName + ", "};
-                        if (dynamic) {
-                            openVarp->add(copyName + ".data()");
-                        } else {
-                            openVarp->add("&");
-                            openVarp->add(new AstVarRef{flp, portvscp,
-                                                        portp->isWritable() ? VAccess::READWRITE
-                                                                            : VAccess::READ});
-                        }
-                        openVarp->add(");");
-                        cfuncp->addStmtsp(openVarp);
-                        args += "&" + name;
-                    } else {
-                        // Unpacked structures are passed by reference from a C array
-                        const bool isStruct = portp->dtypep()->containsUnpackedStruct();
-                        if (portp->isWritable() && !isStruct
-                            && portp->dtypep()->isDpiPrimitive()) {
-                            if (!VN_IS(portp->dtypep()->skipRefp(), UnpackArrayDType)) args += "&";
-                        }
-
-                        args += portp->name() + tmpSuffixp;
-
-                        cfuncp->addStmtsp(createDpiTemp(portp, tmpSuffixp));
-                        if (portp->isNonOutput()) {
-                            cfuncp->addStmtsp(
-                                isStruct
-                                    ? createDpiArgCvt(cfuncp, portvscp, portp->name() + tmpSuffixp,
-                                                      true)
-                                    : createAssignInternalToDpi(portp, false, "", tmpSuffixp));
-                        }
+            if (portp->isDpiOpenArray()) {
+                FileLine* const flp = portp->fileline();
+                const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
+                const bool dynamic = VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType);
+                // Pass a copy of a dynamic array or queue, as the elements of a queue are
+                // not contiguous
+                const string copyName = portp->name() + "__Vopencopy";
+                if (dynamic) {
+                    AstCStmt* const copyp = new AstCStmt{
+                        flp, "std::vector<" + dtypep->subDTypep()->cType("", false, false) + "> "
+                                 + copyName + "("};
+                    copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
+                    copyp->add(".begin(), ");
+                    copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
+                    copyp->add(".end());");
+                    cfuncp->addStmtsp(copyp);
+                    if (portp->isWritable()) {
+                        AstCStmt* const backp = new AstCStmt{flp};
+                        backp->add(new AstVarRef{flp, portvscp, VAccess::WRITE});
+                        backp->add(".assign(" + copyName + ".begin(), " + copyName + ".end());");
+                        copyBacksp = AstNode::addNext(copyBacksp, backp);
                     }
+                }
+                // Ideally we'd make a table of variable
+                // characteristics, and reuse it wherever we can
+                // At least put them into the module's CTOR as static?
+                const string propName = portp->name() + "__Vopenprops";
+                const string propCode = portp->vlPropDecl(
+                    propName, dynamic ? "static_cast<int>(" + copyName + ".size())" : "");
+                cfuncp->addStmtsp(new AstCStmt{flp, propCode});
+                //
+                // At runtime we need the svOpenArrayHandle to
+                // point to this task & thread's data, in addition
+                // to static info about the variable
+                const string name = portp->name() + "__Vopenarray";
+                AstCStmt* const openVarp
+                    = new AstCStmt{// NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                                   flp, "VerilatedDpiOpenVar " + name + " (&" + propName + ", "};
+                if (dynamic) {
+                    openVarp->add(copyName + ".data()");
+                } else {
+                    openVarp->add("&");
+                    openVarp->add(new AstVarRef{
+                        flp, portvscp, portp->isWritable() ? VAccess::READWRITE : VAccess::READ});
+                }
+                openVarp->add(");");
+                cfuncp->addStmtsp(openVarp);
+                args += "&" + name;
+            } else {
+                // Unpacked structures are passed by reference from a C array
+                const bool isStruct = portp->dtypep()->containsUnpackedStruct();
+                if (portp->isWritable() && !isStruct && portp->dtypep()->isDpiPrimitive()) {
+                    if (!VN_IS(portp->dtypep()->skipRefp(), UnpackArrayDType)) args += "&";
+                }
+
+                args += portp->name() + tmpSuffixp;
+
+                cfuncp->addStmtsp(createDpiTemp(portp, tmpSuffixp));
+                if (portp->isNonOutput()) {
+                    cfuncp->addStmtsp(
+                        isStruct
+                            ? createDpiArgCvt(cfuncp, portvscp, portp->name() + tmpSuffixp, true)
+                            : createAssignInternalToDpi(portp, false, "", tmpSuffixp));
                 }
             }
         }
@@ -1469,24 +1492,32 @@ class TaskVisitor final : public VNVisitor {
             cfuncp->addStmtsp(new AstCStmt{nodep->fileline(), stmt});
         }
 
-        {  // Call the imported function
-            AstCCall* const callp = new AstCCall{nodep->fileline(), dpiFuncp};
-            callp->dtypeSetVoid();
-            callp->argTypes(args);
-            if (rtnvscp) {
-                // If it has a return value, capture it
-                cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
-                const std::string sel = rtnvscp->varp()->dtypep()->isDpiPrimitive() ? "" : "[0]";
-                AstCStmt* const cstmtp = new AstCStmt{nodep->fileline()};
-                cstmtp->add(rtnvscp->varp()->name() + tmpSuffixp + sel);  // LHS
-                cstmtp->add(" = ");
-                cstmtp->add(callp);  // RHS
-                cstmtp->add(";");
-                cfuncp->addStmtsp(cstmtp);
-            } else {
-                // Othervise just call it
-                cfuncp->addStmtsp(callp->makeStmt());
-            }
+        AstCFuncHard* const callImportp = new AstCFuncHard{
+            nodep->fileline(), nodep->verilogTask() ? VCFunction::CALL_IMPORT_TASK
+                                                    : VCFunction::CALL_IMPORT_FUNCTION};
+        callImportp->dtypeSetVoid();
+        // Add arguments
+        // V3Timing supplies the caller's process after process requirements have been resolved.
+        callImportp->addPinsp(new AstCExpr{nodep->fileline(), "nullptr"});
+        if (!nodep->verilogTask()) addDpiFunctionLocation(callImportp);
+        // Pass name of the DPI imported function to call
+        callImportp->addPinsp(new AstAddrOfCFunc{nodep->fileline(), dpiFuncp});
+        if (!args.empty()) callImportp->addPinsp(new AstCExpr{nodep->fileline(), args});
+
+        if (rtnvscp) {
+            UASSERT_OBJ(nodep->verilogFunction(), nodep,
+                        "Only functions should have return values");
+            // If it has a return value, capture it
+            cfuncp->addStmtsp(createDpiTemp(rtnvscp->varp(), tmpSuffixp));
+            const std::string sel = rtnvscp->varp()->dtypep()->isDpiPrimitive() ? "" : "[0]";
+            AstCStmt* const funcAssignp = new AstCStmt{nodep->fileline()};
+            funcAssignp->add(rtnvscp->varp()->name() + tmpSuffixp + sel);  // LHS
+            funcAssignp->add(" = ");
+            funcAssignp->add(callImportp);  // RHS
+            funcAssignp->add(";");
+            cfuncp->addStmtsp(funcAssignp);
+        } else {
+            cfuncp->addStmtsp(callImportp->makeStmt());
         }
         if (copyBacksp) cfuncp->addStmtsp(copyBacksp);
 
@@ -1509,7 +1540,7 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    AstVarScope* getDpiExporTrigger() {
+    AstVarScope* getDpiExportTrigger() {
         AstNetlist* const netlistp = v3Global.rootp();
         AstVarScope* dpiExportTriggerp = netlistp->dpiExportTriggerp();
         if (!dpiExportTriggerp) {
@@ -1743,7 +1774,8 @@ class TaskVisitor final : public VNVisitor {
 
         if (cfuncp->dpiExportImpl()) {
             // Mark all non-local variables written by the DPI exported function as being updated
-            // by DPI exports. This ensures correct ordering and change detection later.
+            // by DPI exports. This ensures correct ordering and change detection
+            // later.
 
             // Mark non-local variables written by the exported function
             bool writesNonLocals = false;
@@ -1769,7 +1801,7 @@ class TaskVisitor final : public VNVisitor {
             // If this DPI export writes some non-local variables, set the DPI Export Trigger flag
             // in the function.
             if (writesNonLocals) {
-                AstVarScope* const dpiExportTriggerp = getDpiExporTrigger();
+                AstVarScope* const dpiExportTriggerp = getDpiExportTrigger();
                 FileLine* const flp = cfuncp->fileline();
 
                 // Set DPI export trigger flag every time the DPI export is called.
