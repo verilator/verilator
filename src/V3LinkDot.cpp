@@ -1047,6 +1047,20 @@ public:
         }
         return false;
     }
+    static void checkAmbiguousImport(const AstNode* nodep, const VSymEnt* foundp) {
+        // Referencing a name that wildcard imports of several packages declare is illegal
+        if (!foundp || !foundp->ambiguousp()) return;
+        const AstNode* const declp = foundp->nodep();
+        const AstNode* const otherDeclp = foundp->ambiguousp()->nodep();
+        nodep->v3error("Ambiguous reference to " << nodep->prettyNameQ()
+                                                 << ", as it is declared in more than one wildcard"
+                                                    " imported package (IEEE 1800-2023 26.3)\n"
+                                                 << nodep->warnContextPrimary() << '\n'
+                                                 << declp->warnOther() << "... Declared here\n"
+                                                 << declp->warnContextSecondary()
+                                                 << otherDeclp->warnOther() << "... And here\n"
+                                                 << otherDeclp->warnContextSecondary());
+    }
     VSymEnt* resolveClassOrPackage(VSymEnt* lookSymp, AstClassOrPackageRef* nodep, bool fallback,
                                    bool classOnly, const string& forWhat,
                                    bool deferIfUnresolved = false) {
@@ -1076,6 +1090,7 @@ public:
             foundp = getNodeSym(v3Global.rootp()->stdPackagep())->findIdFlat(nodep->name());
         }
         if (foundp) {
+            checkAmbiguousImport(nodep, foundp);
             nodep->classOrPackageNodep(foundp->nodep());
             return foundp;
         }
@@ -1157,8 +1172,35 @@ class LinkDotFindVisitor final : public VNVisitor {
     int m_modArgNum = 0;  // Arg block number for randomize(), 0=none seen
     std::vector<AstIface*> m_virtIfaces;  // interfaces used as virtual,
                                           // needed for handleUnvisitedVirtIfaces()
+    // Named exports and their package's symbol table, checked once all declarations are seen
+    std::vector<std::pair<AstPackageExport*, VSymEnt*>> m_exports;
 
     // METHODS
+    void checkExports() {
+        // An exported name must be imported from the package named, so a missing or local
+        // declaration is an error (IEEE 1800-2023 26.6), even if declared after the export
+        for (const auto& exportSym : m_exports) {
+            const AstPackageExport* const nodep = exportSym.first;
+            const VSymEnt* const srcp
+                = m_statep->getNodeSym(nodep->packagep())->findIdFlat(nodep->name());
+            if (!srcp) continue;  // Already reported as not found
+            const VSymEnt* const foundp = exportSym.second->findIdFlat(nodep->name());
+            if (foundp && foundp->nodep() == srcp->nodep()) continue;
+            const string nameQ
+                = "'" + nodep->packagep()->prettyName() + "::" + nodep->prettyName() + "'";
+            if (!foundp || foundp->imported()) {
+                nodep->v3error("Export object not imported: " << nameQ
+                                                              << " (IEEE 1800-2023 26.6)");
+            } else {
+                nodep->v3error("Export object conflicts with local declaration: "
+                               << nameQ << " (IEEE 1800-2023 26.6)\n"
+                               << nodep->warnContextPrimary() << '\n'
+                               << foundp->nodep()->warnOther()
+                               << "... Location of local declaration\n"
+                               << foundp->nodep()->warnContextSecondary());
+            }
+        }
+    }
     void makeImplicitNew(AstClass* nodep) {
         AstFunc* const newp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
         // If needed, super.new() call is added the 2nd pass of V3LinkDotResolve,
@@ -2170,7 +2212,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                     new AstClassOrPackageRef{nodep->fileline(), classp->name(), classp, nullptr});
             }
         }
-        m_curSymp->importFromPackage(m_statep->symsp(), srcp, nodep->name());
+        m_curSymp->importFromPackage(srcp, nodep->name());
         UINFO(9, "    Link Done: " << nodep);
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
@@ -2185,7 +2227,9 @@ class LinkDotFindVisitor final : public VNVisitor {
                                                             << "::" << nodep->prettyName() << "'");
             }
         }
-        m_curSymp->exportFromPackage(m_statep->symsp(), srcp, nodep->name());
+        m_curSymp->exportFromPackage(srcp, nodep->name());
+        if (m_statep->forPrimary() && nodep->name() != "*")
+            m_exports.emplace_back(nodep, m_curSymp);
         UINFO(9, "    Link Done: " << nodep);
         // No longer needed, but can't delete until any multi-instantiated modules are expanded
     }
@@ -2389,6 +2433,7 @@ public:
         iterate(rootp);
 
         if (!m_virtIfaces.empty()) handleUnvisitedVirtIfaces();
+        checkExports();
         for (AstScope* const scopep : m_scopes) scopep->modp()->addStmtsp(scopep);
         if (m_statep->forScopeCreation()) {
             V3Stats::addStat("LinkDot, Scope visits", m_statScopeVisits);
@@ -3816,7 +3861,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         AstClass* const baseClassp = cextp->classp();
         VSymEnt* const srcp = m_statep->getNodeSym(baseClassp);
         importDerivedClass(nodep, srcp, baseClassp);
-        if (!cextp->isImplements()) m_curSymp->importFromClass(m_statep->symsp(), srcp);
+        if (!cextp->isImplements()) m_curSymp->importFromClass(srcp);
     }
     void classExtendImport(AstClass* nodep) {
         // A class reference might be to a class that is later in Ast due to
@@ -4690,6 +4735,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 UINFO(9, indent() << "found=se" << cvtToHex(foundp) << "  exp=" << expectWhat
                                   << "  n=" << foundp->nodep());
             }
+            LinkDotState::checkAmbiguousImport(nodep, foundp);
             // What fell out?
             bool ok = false;
             // Special case: waiting on clocking event
@@ -5658,6 +5704,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
             VSymEnt* const foundp
                 = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+            LinkDotState::checkAmbiguousImport(nodep, foundp);
             AstNodeFTask* const taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
             AstNodeModule* const taskModulep = foundp ? foundp->classOrPackagep() : nullptr;
             // Ignore deferring linking of functions inside params of classes extending
@@ -6517,6 +6564,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                            << nodep->prettyNameQ());  // LCOV_EXCL_LINE
                 foundp = nullptr;  // LCOV_EXCL_LINE
             }
+            LinkDotState::checkAmbiguousImport(nodep, foundp);
             {
                 if (AstTypedef* const defp
                     = foundp ? VN_CAST(foundp->nodep(), Typedef) : nullptr) {
@@ -6815,6 +6863,7 @@ void V3LinkDot::linkDotGuts(AstNetlist* rootp, VLinkDotStep step) {
     state.dumpSelf("linkdot-preresolve");
     const LinkDotResolveVisitor visitor{rootp, &state};
     state.dumpSelf("linkdot-done");
+    V3Stats::addStatSum("LinkDot, Imported symbols", state.symsp()->importedCount());
 }
 
 void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {
