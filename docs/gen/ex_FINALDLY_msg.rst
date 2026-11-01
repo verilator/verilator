@@ -2,5 +2,6 @@
 .. code-block::
 
    %Error-FINALDLY: example.v:1:13 Non-blocking assignment '<=' in final block
+                                           : ... This will be executed as a blocking assignment '='!
        9 |   final foo <= 1;
          |             ^~

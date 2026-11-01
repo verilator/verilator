@@ -390,17 +390,20 @@ private:
     // MEMBERS
     const CheckType m_check;  // Process type we are checking
 
+    // METHODS
+    void warnNonBlocking(AstNode* nodep, const char* what, const char* nbOp, const char* bOp) {
+        const bool inFinal = m_check == CT_FINAL;
+        nodep->v3warnCode(inFinal ? V3ErrorCode::FINALDLY : V3ErrorCode::COMBDLY,
+                          "Non-blocking "
+                              << what << " '" << nbOp << "' in "
+                              << (inFinal ? "final block" : "combinational logic") << '\n'
+                              << nodep->warnMore() << "... This will be executed as a blocking "
+                              << what << " '" << bOp << "'!");
+    }
+
     // VISITORS
     void visit(AstAssignDly* nodep) override {
-        // Issue appropriate warning
-        if (m_check == CT_FINAL) {
-            nodep->v3warn(FINALDLY, "Non-blocking assignment '<=' in final block");
-        } else {
-            nodep->v3warn(COMBDLY,
-                          "Non-blocking assignment '<=' in combinational logic process\n"
-                              << nodep->warnMore()
-                              << "... This will be executed as a blocking assignment '='!");
-        }
+        warnNonBlocking(nodep, "assignment", "<=", "=");
 
         // Convert to blocking assignment
         nodep->replaceWith(new AstAssign{
@@ -408,6 +411,15 @@ private:
             nodep->lhsp()->unlinkFrBack(),  //
             nodep->rhsp()->unlinkFrBack(),  //
             nodep->timingControlp() ? nodep->timingControlp()->unlinkFrBack() : nullptr});
+        VL_DO_DANGLING(nodep->deleteTree(), nodep);
+    }
+    void visit(AstFireEvent* nodep) override {
+        if (!nodep->isDelayed()) return;
+        warnNonBlocking(nodep, "event trigger", "->>", "->");
+
+        // Convert to blocking event trigger
+        nodep->replaceWith(
+            new AstFireEvent{nodep->fileline(), nodep->operandp()->unlinkFrBack(), false});
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
 
