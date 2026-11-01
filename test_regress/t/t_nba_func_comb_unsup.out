@@ -1,0 +1,65 @@
+%Error-UNSUPPORTED: t/t_nba_func_comb_unsup.v:62:19: Unsupported: Non-blocking assignment in a function called from combinational logic
+                                                   : ... note: In instance 't'
+   62 |   always_comb obj.set(a);
+      |                   ^~~
+                    t/t_nba_func_comb_unsup.v:17:9: ... Location of the non-blocking assignment
+   17 |       b <= v;
+      |         ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_nba_func_comb_unsup.v:63:19: Unsupported: Non-blocking assignment in a function called from combinational logic
+                                                   : ... note: In instance 't'
+   63 |   always_comb obj.setViaCall(a);
+      |                   ^~~~~~~~~~
+                    t/t_nba_func_comb_unsup.v:17:9: ... Location of the non-blocking assignment
+   17 |       b <= v;
+      |         ^~
+%Error-UNSUPPORTED: t/t_nba_func_comb_unsup.v:64:19: Unsupported: Non-blocking assignment in a function called from combinational logic
+                                                   : ... note: In instance 't'
+   64 |   always_comb obj.setVirtual(a);
+      |                   ^~~~~~~~~~
+                    t/t_nba_func_comb_unsup.v:58:9: ... Location of the non-blocking assignment
+   58 |       d <= v;
+      |         ^~
+%Error-UNSUPPORTED: t/t_nba_func_comb_unsup.v:65:19: Unsupported: Non-blocking assignment in a function called from combinational logic
+                                                   : ... note: In instance 't'
+   65 |   always_comb obj.cycleA(a, 1);
+      |                   ^~~~~~
+                    t/t_nba_func_comb_unsup.v:17:9: ... Location of the non-blocking assignment
+   17 |       b <= v;
+      |         ^~
+%Error-UNSUPPORTED: t/t_nba_func_comb_unsup.v:66:19: Unsupported: Non-blocking assignment in a function called from combinational logic
+                                                   : ... note: In instance 't'
+   66 |   always_comb obj.cycleB(a, 1);
+      |                   ^~~~~~
+                    t/t_nba_func_comb_unsup.v:17:9: ... Location of the non-blocking assignment
+   17 |       b <= v;
+      |         ^~
+%Error-UNSUPPORTED: t/t_nba_func_comb_unsup.v:67:19: Unsupported: Non-blocking assignment in a function called from combinational logic
+                                                   : ... note: In instance 't'
+   67 |   always_comb obj.trigger();
+      |                   ^~~~~~~
+                    t/t_nba_func_comb_unsup.v:38:7: ... Location of the non-blocking assignment
+   38 |       ->>ev;
+      |       ^~~
+%Error-UNSUPPORTED: t/t_nba_func_comb_unsup.v:68:18: Unsupported: Non-blocking assignment in a function called from combinational logic
+                                                   : ... note: In instance 't'
+   68 |   assign c = obj.get(a);
+      |                  ^~~
+                    t/t_nba_func_comb_unsup.v:41:9: ... Location of the non-blocking assignment
+   41 |       e <= v;
+      |         ^~
+%Error-UNSUPPORTED: t/t_nba_func_comb_unsup.v:69:19: Unsupported: Non-blocking assignment in a function called from combinational logic
+                                                   : ... note: In instance 't'
+   69 |   always_comb obj.setFromGet(a);
+      |                   ^~~~~~~~~~
+                    t/t_nba_func_comb_unsup.v:41:9: ... Location of the non-blocking assignment
+   41 |       e <= v;
+      |         ^~
+%Error-UNSUPPORTED: t/t_nba_func_comb_unsup.v:70:19: Unsupported: Non-blocking assignment in a function called from combinational logic
+                                                   : ... note: In instance 't'
+   70 |   always_comb obj.triggerIndexed(a);
+      |                   ^~~~~~~~~~~~~~
+                    t/t_nba_func_comb_unsup.v:49:9: ... Location of the non-blocking assignment
+   49 |       f <= v;
+      |         ^~
+%Error: Exiting due to
