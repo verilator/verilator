@@ -5448,20 +5448,28 @@ class LinkDotResolveVisitor final : public VNVisitor {
                         }
                     }
                 }
-                if (m_statep->forPrimary() && isParamedClassRefDType(fromDtp)) {
-                    m_ds.m_unresolvedClass = true;
-                } else if (fromDtp) {
-                    const AstClassRefDType* const classDtp
-                        = VN_CAST(fromDtp->skipRefp(), ClassRefDType);
-                    if (!classDtp)
-                        nodep->v3error("'randomize() with' on a non-class-instance "
-                                       << fromDtp->prettyNameQ());
-                    else if (m_statep->forPrimary() && m_extendsParam.count(classDtp->classp())) {
-                        // Inherited members are unavailable until the base class is specialized.
-                        // Defer lookup rather than incorrectly binding names in the caller.
+                if (fromDtp) {
+                    const AstNodeDType* const resolvedDtp = fromDtp->skipRefOrNullp();
+                    // Inherited type references may remain unresolved until after V3Param.
+                    if (m_statep->forPrimary()
+                        && (isParamedClassRefDType(fromDtp)
+                            || (m_insideClassExtParam && !resolvedDtp))) {
                         m_ds.m_unresolvedClass = true;
                     } else {
-                        m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                        const AstClassRefDType* const classDtp
+                            = VN_CAST(resolvedDtp, ClassRefDType);
+                        if (!classDtp)
+                            nodep->v3error("'randomize() with' on a non-class-instance "
+                                           << fromDtp->prettyNameQ());
+                        else if (m_statep->forPrimary()
+                                 && m_extendsParam.count(classDtp->classp())) {
+                            // Inherited members are unavailable until the base class is
+                            // specialized. Defer lookup rather than incorrectly binding names in
+                            // the caller.
+                            m_ds.m_unresolvedClass = true;
+                        } else {
+                            m_randSymp = m_statep->getNodeSym(classDtp->classp());
+                        }
                     }
                 }
             }
