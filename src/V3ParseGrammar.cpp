@@ -96,6 +96,43 @@ AstArg* V3ParseGrammar::argWrapList(AstNodeExpr* nodep) {
     return outp;
 }
 
+static bool dumpVarsName(const AstNode* nodep, string& name) {
+    // Encode a $dumpvars scope as Verilator names it, '__DOT__' between components
+    if (const AstDot* const dotp = VN_CAST(nodep, Dot)) {
+        if (!dumpVarsName(dotp->lhsp(), name)) return false;
+        name += "__DOT__";
+        return dumpVarsName(dotp->rhsp(), name);
+    }
+    if (const AstSelBit* const selp = VN_CAST(nodep, SelBit)) {
+        const AstConst* const constp = VN_CAST(selp->bitp(), Const);
+        if (!constp || !dumpVarsName(selp->fromp(), name)) return false;
+        name += "__BRA__" + AstNode::encodeNumber(constp->toSInt()) + "__KET__";
+        return true;
+    }
+    if (const AstParseRef* const refp = VN_CAST(nodep, ParseRef)) {
+        name += refp->name();
+        return true;
+    }
+    return false;
+}
+
+AstDumpCtl* V3ParseGrammar::createDumpVars(FileLine* fileline, AstNodeExpr* levelp,
+                                           AstNodeExpr* scopesp) {
+    AstDumpCtl* const nodep = new AstDumpCtl{fileline, VDumpCtlType::VARS, levelp};
+    for (AstNode* itemp = scopesp; itemp; itemp = itemp->nextp()) {
+        string name;
+        if (!dumpVarsName(itemp, name)) {
+            itemp->v3warn(E_UNSUPPORTED,
+                          "Unsupported: $dumpvars scope that is not a hierarchical name");
+        } else if (v3Global.opt.trace()) {
+            nodep->addScopesp(new AstConst{itemp->fileline(), AstConst::String{}, name});
+        }
+    }
+    if (nodep->scopesp()) nodep->scopeNamep(new AstScopeName{fileline, true});
+    VL_DO_DANGLING(scopesp->deleteTree(), scopesp);
+    return nodep;
+}
+
 AstAssignW* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& name, int value) {
     AstAssignW* assignp = new AstAssignW{fileline, new AstParseRef{fileline, name},
                                          value ? new AstConst{fileline, AstConst::All1{}}

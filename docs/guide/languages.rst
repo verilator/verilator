@@ -484,9 +484,13 @@ $dump/$dumpports and related
    Verilated designs under the same C model, this will dump signals only
    from the design containing the $dumpvars.
 
-   $dumpvars and $dumpports module identifier is ignored; the traced
-   instances will always start at the top of the design. The levels
-   argument is also ignored; use tracing_on/tracing_off pragmas instead.
+   $dumpvars with scope arguments dumps the variables at most the given
+   number of levels at or below each scope (0 for all levels), or the given
+   variables. All $dumpvars in the time step of the first one select
+   signals, which then stay fixed. A scope that names no traced variable of
+   the design is matched by name from the top of the trace, e.g. "top".
+   Selecting part of a variable is not supported. The $dumpports module
+   identifier is ignored.
 
    $dumpportson/$dumpportsoff/$dumpportsall/$dumpportslimit filename
    argument is ignored; only a single trace file may be active at once.

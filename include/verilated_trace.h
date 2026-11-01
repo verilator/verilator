@@ -33,6 +33,7 @@
 #include <type_traits>
 #include <map>
 #include <set>
+#include <unordered_map>
 #include <vector>
 
 #include <deque>
@@ -222,8 +223,9 @@ private:
     uint32_t m_maxBits = 0;  // Number of bits in the widest signal
     void* m_initUserp = nullptr;  // The callback userp of the instance currently being initialized
     bool m_rootInit = true;  // Whether the current init callback was reached from the root
-    // TODO: Should keep this as a Trie, that is how it's accessed all the time.
-    std::vector<std::pair<int, std::string>> m_dumpvars;  // dumpvar() entries
+    // dumpvars*() names, each with the levels below it to dump (0 = the name only) and
+    // whether the last open() selected a signal by it
+    std::unordered_map<std::string, std::pair<int, bool>> m_dumpvars;
     double m_timeRes = 1e-9;  // Time resolution (ns/ms etc)
     double m_timeUnit = 1e-0;  // Time units (ns/ms etc)
     uint64_t m_timeLastDump = 0;  // Last time we did a dump
@@ -318,6 +320,14 @@ public:
     // Set variables to dump, using $dumpvars format
     // If level = 0, dump everything and hier is then ignored
     void dumpvars(int level, const std::string& hier) VL_MT_SAFE;
+    // Also dump the variable with exactly this name: the names of its scopes and its own,
+    // separated by single spaces. Dots are part of a name, not separators.
+    void dumpvarsExact(const std::string& name) VL_MT_SAFE;
+    // Also dump variables at most 'level' levels (0 = all levels) at or below the scope or
+    // variable with exactly this name, as for dumpvarsExact(). An empty name dumps everything.
+    void dumpvarsScope(int level, const std::string& name) VL_MT_SAFE;
+    // dumpvars*() names the last open() selected no signal by, sorted
+    std::vector<std::string> dumpvarsUnmatched() const VL_MT_SAFE;
 
     // Call
     void dump(uint64_t timeui) VL_MT_SAFE_EXCLUDES(m_mutex);
