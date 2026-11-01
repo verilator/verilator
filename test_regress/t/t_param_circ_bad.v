@@ -9,7 +9,9 @@ module t;
 endmodule
 
 module sub #(
+    // verilator lint_off USEBEFOREDECL
     parameter WIDTH = X,
+    // verilator lint_on USEBEFOREDECL
     parameter X = WIDTH
 ) ();
 endmodule

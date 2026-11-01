@@ -16,7 +16,9 @@ module m_none #(
 endmodule
 
 module m_cycle #(
+    // verilator lint_off USEBEFOREDECL
     parameter int A = B,
+    // verilator lint_on USEBEFOREDECL
     parameter int B = A,
     parameter logic [A:0] P = '0
 ) ();
