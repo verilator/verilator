@@ -1445,13 +1445,10 @@ List Of Warnings
 
    Warns that the specified signal has multiple procedural drivers.
 
-   One case is when the signal comes from multiple ``always`` blocks,
-   each with different clocking. This warning does not look at individual
-   bits (see the example below).
-
-   This is considered bad style, as the consumer of a given signal may be
-   unaware of the inconsistent clocking, causing clock domain crossing
-   or timing bugs.
+   One case is when a variable written in an ``always_comb`` or
+   ``always_ff`` block is also written by another process. IEEE 1800
+   requires variables written in these specialized always blocks to be
+   written only by that process.
 
    Faulty example:
 
@@ -1461,12 +1458,7 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_MULTIDRIVEN_msg.rst
 
-   Another case is when a variable written in an ``always_comb`` or
-   ``always_ff`` block is also written by another process. IEEE 1800
-   requires variables written in these specialized always blocks to be
-   written only by that process.
-
-   Faulty ``always_ff`` example:
+   An initialization in an ``initial`` block is another process too:
 
    .. include:: ../../docs/gen/ex_MULTIDRIVEN_alwaysff_faulty.rst
 
