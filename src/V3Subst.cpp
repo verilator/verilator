@@ -190,6 +190,11 @@ class SubstValidVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
     }
 
+    void visit(AstNodeConsItem* nodep) override {
+        if (!m_valid) return;
+        iterateChildrenConst(nodep);
+    }
+
     void visit(AstNode* nodep) override { nodep->v3fatalSrc("Non AstNodeExpr under AstNodeExpr"); }
 
     // CONSTRUCTORS
@@ -219,8 +224,6 @@ AstNodeExpr* SubstVarEntry::substRecord(SubstVarEntry::Record& record) {
 class SubstVisitor final : public VNVisitor {
     // NODE STATE - only Under AstCFunc
     // AstVar::user1p -> SubstVarEntry* for assignment tracking. Also used by SubstValidVisitor
-    // AstVar::user2  -> bool. Is a constant pool variable
-    const VNUser2InUse m_user2InUse;
 
     // STATE
     std::deque<SubstVarEntry> m_entries;  // Storage for SubstVarEntry instances
@@ -277,14 +280,7 @@ class SubstVisitor final : public VNVisitor {
 
     // VISITORS
 
-    void visit(AstNetlist* nodep) override {
-        // Mark constant pool variables
-        for (AstNode* np = nodep->constPoolp()->modp()->stmtsp(); np; np = np->nextp()) {
-            if (VN_IS(np, Var)) np->user2(true);
-        }
-
-        iterateAndNextNull(nodep->modulesp());
-    }
+    void visit(AstNetlist* nodep) override { iterateAndNextNull(nodep->modulesp()); }
 
     void visit(AstCFunc* nodep) override {
         UASSERT_OBJ(!m_funcp, nodep, "Should not nest");
@@ -378,7 +374,7 @@ class SubstVisitor final : public VNVisitor {
 
                 // If it's a constant pool variable, substiute with the constant word
                 AstVar* const varp = refp->varp();
-                if (varp->user2()) {
+                if (varp->constPoolEntry()) {
                     AstConst* const constp = VN_AS(varp->valuep(), Const);
                     const uint32_t value = constp->num().edataWord(word);
                     FileLine* const flp = nodep->fileline();

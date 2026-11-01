@@ -40,6 +40,7 @@ public:
     VVarType m_varDecl = VVarType::UNKNOWN;  // Type for next signal declaration (reg/wire/etc)
     VDirection m_varIO = VDirection::NONE;  // Direction for next signal declaration (reg/wire/etc)
     VLifetime m_varLifetime;  // Static/Automatic for next signal
+    // Kind of Verilator control file variable spec
     V3Control::VarSpecKind m_vltVarSpecKind = V3Control::VarSpecKind::VAR;
     bool m_impliedDecl = false;  // Allow implied wire declarations
     bool m_varDeclTyped = false;  // Var got reg/wire for dedup check
@@ -115,6 +116,27 @@ public:
         AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};
         AstNode::addNext<AstNode, AstNode>(nodep, new AstStop{fileline, false});
         return nodep;
+    }
+    // Apply the array marker of a bins declaration of values: '[]' creates a bin per value, and
+    // '[N]' N bins holding the values (IEEE 1800-2023 19.5.1)
+    static AstCoverBin* coverBinArray(AstCoverBin* binp, AstNodeExpr* sizep) {
+        if (!sizep) return binp;
+        binp->isArray(true);
+        if (VN_IS(sizep, Unbounded)) {
+            VL_DO_DANGLING(sizep->deleteTree(), sizep);
+        } else {
+            binp->arraySizep(sizep);
+        }
+        return binp;
+    }
+    // The array marker of another bins declaration, which supports only '[]'; true if present
+    static bool coverBinArrayUnsized(AstNodeExpr* sizep) {
+        if (!sizep) return false;
+        if (!VN_IS(sizep, Unbounded)) {
+            sizep->v3warn(COVERIGN, "Unsupported: 'bins' explicit array size (treated as '[]')");
+        }
+        VL_DO_DANGLING(sizep->deleteTree(), sizep);
+        return true;
     }
     AstNodeExpr* createGatePin(AstNodeExpr* exprp) {
         AstRange* const rangep = m_gateRangep;

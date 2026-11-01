@@ -84,7 +84,7 @@ public:
     using StrList = std::list<std::string>;
 
 private:
-    VInFilterImp* m_impp;
+    VInFilterImp* m_impp;  // Implementation
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(VInFilter);
@@ -112,12 +112,12 @@ private:
     const Language m_lang;  // Indenting Verilog code
     int m_blockIndent;  // Characters per block indent
     int m_commaWidth;  // Width after which to break at ,'s
-    int m_lineno = 1;
-    int m_column = 0;
+    int m_lineno = 1;  // Current line number
+    int m_column = 0;  // Current column
     int m_nobreak = false;  // Basic operator or begin paren, don't break next
-    int m_sourceLastLineno = 0;
-    int m_sourceLastFilenameno = 0;
-    bool m_prependIndent = true;
+    int m_sourceLastLineno = 0;  // Last source line number emitted
+    int m_sourceLastFilenameno = 0;  // Last source file number emitted
+    bool m_prependIndent = true;  // Indent the next output
     bool m_inStringLiteral = false;  // Inside a quote
     bool m_inBackslash = false;  // Inside a backslash
     int m_indentLevel = 0;  // Current {} indentation
@@ -194,8 +194,8 @@ class V3OutFile VL_NOT_FINAL : public V3OutFormatter {
     static constexpr std::size_t WRITE_BUFFER_SIZE_BYTES = 128 * 1024;
 
     // MEMBERS
-    const std::string m_filename;
-    FILE* m_fp = nullptr;
+    const std::string m_filename;  // Name of the file being written
+    FILE* m_fp = nullptr;  // File being written, null if not open
     std::size_t m_usedBytes = 0;  // Number of bytes stored in m_bufferp
     std::size_t m_writtenBytes = 0;  // Number of bytes written to output
     std::unique_ptr<std::array<char, WRITE_BUFFER_SIZE_BYTES>> m_bufferp;  // Write buffer
@@ -285,7 +285,7 @@ class V3OutJsonFile final : public V3OutFile {
 private:
     std::stack<char> m_scope;  // Stack of ']' and '}'  to close currently open scopes
     std::string m_prefix;  // Prefix emitted before each line in current scope
-    bool m_empty = true;  // Current scope is empty, no comma later
+    std::stack<bool> m_empty;  // Current scope is empty, no comma later
 
 public:
     explicit V3OutJsonFile(const string& filename)
@@ -308,6 +308,8 @@ public:
         puts(m_prefix + "\"" + name + "\": " + type + "\n");
         m_prefix += INDENT;
         m_scope.push(type == '{' ? '}' : ']');
+        if (!m_empty.empty()) m_empty.top() = false;
+        m_empty.push(true);
         return *this;
     }
     V3OutJsonFile& begin(char type = '{') {
@@ -315,6 +317,8 @@ public:
         puts(m_prefix + type + "\n");
         m_prefix += INDENT;
         m_scope.push(type == '{' ? '}' : ']');
+        if (!m_empty.empty()) m_empty.top() = false;
+        m_empty.push(true);
         return *this;
     }
 
@@ -348,8 +352,10 @@ public:
         UASSERT(m_prefix.length() >= strlen(INDENT), "prefix underflow");
         m_prefix.erase(m_prefix.end() - strlen(INDENT), m_prefix.end());
         UASSERT(!m_scope.empty(), "end() without begin()");
+        UASSERT(!m_empty.empty(), "end() without begin()");
         puts("\n" + m_prefix + m_scope.top());
         m_scope.pop();
+        m_empty.pop();
         return *this;
     }
 
@@ -360,8 +366,9 @@ public:
 
 private:
     void comma() {
-        if (!m_empty) puts(",\n");
-        m_empty = true;
+        if (m_empty.empty()) return;
+        if (!m_empty.top()) puts(",\n");
+        m_empty.top() = true;
     }
     V3OutJsonFile& putNamed(const std::string& name, const std::string& value, bool quoted) {
         comma();
@@ -372,7 +379,7 @@ private:
         } else {
             puts(m_prefix + "\"" + name + "\": " + valueQ);
         }
-        m_empty = false;
+        m_empty.top() = false;
         return *this;
     }
 };
@@ -421,7 +428,7 @@ public:
 
 class V3OutStream VL_NOT_FINAL : public V3OutFormatter {
     // MEMBERS
-    std::ostream& m_ostream;
+    std::ostream& m_ostream;  // Stream to write to
 
     VL_UNCOPYABLE(V3OutStream);
     VL_UNMOVABLE(V3OutStream);

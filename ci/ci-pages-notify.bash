@@ -32,7 +32,16 @@ readonly NEXTHIST_MARKER='<!-- Verilator CI notification entry'
 ARTIFACTS_ROOT=artifacts
 mkdir -p ${ARTIFACTS_ROOT}
 
+# Run IDs with a notification pending. Listing these up front is a single API call
+PENDING_RUN_IDS=" $(gh api --paginate "repos/{owner}/{repo}/actions/artifacts?name=pr-notification&per_page=100" \
+  --jq '.artifacts[].workflow_run.id' | tr '\n' ' ') "
+
 for RUN_ID in ${PR_RUN_IDS//,/ }; do
+  # Move on if no notification is pending for this run
+  if [[ ${PENDING_RUN_IDS} != *" ${RUN_ID} "* ]]; then
+    continue
+  fi
+
   # Create workflow artifacts directory
   ARTIFACTS_DIR=${ARTIFACTS_ROOT}/${RUN_ID}
   mkdir -p ${ARTIFACTS_DIR}
@@ -158,7 +167,7 @@ NEXTHIST_TEMPLATE
   # 'pr-notification' for a single run, as the artifacts endpoint lists
   # artifacts across all run attempts, and a re-run uploads a new one while
   # keeping the previous attempt's artifact.
-  ARTIFACT_IDS=$(gh api "repos/{owner}/{repo}/actions/runs/${RUN_ID}/artifacts" --jq '.artifacts[] | select(.name == "pr-notification") | .id')
+  ARTIFACT_IDS=$(gh api "repos/{owner}/{repo}/actions/runs/${RUN_ID}/artifacts?name=pr-notification" --jq '.artifacts[].id')
 
   # Delete them all, so we only notify once
   for ARTIFACT_ID in ${ARTIFACT_IDS}; do

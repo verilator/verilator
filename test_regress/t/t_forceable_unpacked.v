@@ -7,6 +7,7 @@
 // verilog_format: off
 `define stop $stop
 `define checkh(g,e) do if ((g) !==(e)) begin $write("%%Error: %s:%0d: got=%x exp=%x\n", `__FILE__,`__LINE__, (g),(e)); `stop; end while(0)
+`define checks(g,e) do if ((g) != (e)) begin $write("%%Error: %s:%0d: got='%s' exp='%s'\n", `__FILE__,`__LINE__, (g),(e)); `stop; end while(0)
 
 `ifdef CMT
  `define FORCEABLE /*verilator forceable*/
@@ -22,6 +23,17 @@ module t (input wire clk, output reg [31:0] cyc);
   reg [4:3] var_arr [7:6][5:4] `FORCEABLE;
   //verilator lint_off ASCRANGE
   reg [3:4] var_arr_a [6:7][4:5] `FORCEABLE;
+  reg [4:3] copy_arr [7:6][5:4];
+  reg [3:4] copy_arr_a [6:7][4:5];
+
+  always @(negedge clk) begin
+    copy_arr = var_arr;
+    copy_arr_a = var_arr_a;
+    foreach (copy_arr[i, j]) `checkh(copy_arr[i][j], var_arr[i][j]);
+    foreach (copy_arr_a[i, j]) `checkh(copy_arr_a[i][j], var_arr_a[i][j]);
+    `checks($sformatf("%p", var_arr), $sformatf("%p", copy_arr));
+    `checks($sformatf("%p", var_arr_a), $sformatf("%p", copy_arr_a));
+  end
 
   initial begin
     var_arr[6][4]   = 2'h1; var_arr[6][5]   = 2'h2;

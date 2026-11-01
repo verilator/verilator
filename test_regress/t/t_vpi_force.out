@@ -6,4 +6,6 @@ vpi_chk_error: vpi_put_value: Non hex character 'G' in '12AG' as value vpiHexStr
 vpi_chk_error: vl_check_format: Unsupported format (vpiRawFourStateVal) for 't.test.onebit'
 vpi_chk_error: vpi_put_value: Unsupported format (vpiSuppressVal) as requested for 't.test.onebit__VforceVal'
 vpi_chk_error: vpi_put_value: Unsupported p_vpi_value as requested for 't.test.onebit' with vpiInertialDelay
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.str with format vpiHexStrVal for 't.test.hexString'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.vector with format vpiVectorVal for 't.test.onebit'
 *-* All Finished *-*

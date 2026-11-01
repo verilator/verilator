@@ -48,25 +48,62 @@
 
 // clang-format off
 #if defined(__unix__) || defined(__unix) || (defined(__APPLE__) && defined(__MACH__))
-# define _VL_SOLVER_PIPE  // Allow pipe SMT solving.  Needs fork()
+# define _VL_SOLVER_PIPE_UNIX  // Allow pipe SMT solving.  Needs fork()
+#elif defined(_WIN32) || defined(__MINGW32__)
+# define _VL_SOLVER_PIPE_WIN  // Allow pipe SMT solving.  Uses CreateProcess
 #endif
 
-#ifdef _VL_SOLVER_PIPE
+#ifdef _VL_SOLVER_PIPE_UNIX
 # include <sys/wait.h>
 # include <csignal>
 # include <fcntl.h>
 #endif
 
-#if defined(_WIN32) || defined(__MINGW32__)
-# include <io.h>  // open, read, write, close
+#ifdef _VL_SOLVER_PIPE_WIN
+// <windows.h> comes from verilatedos.h, with WIN32_LEAN_AND_MEAN and NOMINMAX
+# include <fcntl.h>  // _O_BINARY, _O_WRONLY, _O_RDONLY
+# include <io.h>  // _open_osfhandle, read, write, close
+# include <cstdlib>
+# include <cstring>
 #endif
 // clang-format on
+
+#ifdef _VL_SOLVER_PIPE_WIN
+// Quote one argument of a command line, following the MSVCRT parsing rules:
+// a backslash is special only before a quote, so double every run of
+// backslashes preceding a quote; quote the whole argument if it is empty or
+// contains whitespace
+static std::string winQuoteArg(const char* const arg) {
+    if (VL_UNLIKELY(!*arg)) return "\"\""s;
+    if (!strpbrk(arg, " \t\"")) return std::string{arg};
+    std::string quoted = "\"";
+    unsigned backslashes = 0;
+    for (const char* p = arg; *p; ++p) {
+        if (*p == '\\') {
+            ++backslashes;
+        } else if (*p == '"') {
+            quoted.append(2 * backslashes + 1, '\\');
+            quoted += '"';
+            backslashes = 0;
+        } else {
+            quoted.append(backslashes, '\\');
+            quoted += *p;
+            backslashes = 0;
+        }
+    }
+    quoted.append(2 * backslashes, '\\');  // Before our closing quote
+    quoted += '"';
+    return quoted;
+}
+#endif
 
 class VlRProcess final : private std::streambuf, public std::iostream {
     static constexpr int BUFFER_SIZE = 4096;
     const char* const* m_cmd = nullptr;  // fork() process argv
-#ifdef _VL_SOLVER_PIPE
+#ifdef _VL_SOLVER_PIPE_UNIX
     pid_t m_pid = 0;  // fork() process id
+#elif defined(_VL_SOLVER_PIPE_WIN)
+    HANDLE m_pid = nullptr;  // Child process handle
 #else
     int m_pid = 0;  // fork() process id - always zero as disabled
 #endif
@@ -130,36 +167,62 @@ public:
 
     // Kill and reap a solver that is still running, so no child is left behind
     void terminate() {
-#ifdef _VL_SOLVER_PIPE
+#ifdef _VL_SOLVER_PIPE_UNIX
         if (!m_pidExited) {
             ::kill(m_pid, SIGKILL);
             waitpid(m_pid, &m_pidStatus, 0);
         }
+#elif defined(_VL_SOLVER_PIPE_WIN)
+        if (!m_pidExited && m_pid) {
+            TerminateProcess(m_pid, EXIT_FAILURE);
+            WaitForSingleObject(m_pid, INFINITE);
+            CloseHandle(m_pid);
+        }
 #endif
         m_pidExited = true;
-        m_pid = 0;
+        m_pid = 0;  // Reaped pid, or null HANDLE
         closeFds();
+    }
+
+    // Report the subprocess' nonzero exit status or signal, if any
+    void reportFailure(const std::string& reason) const {
+        std::stringstream msg;
+        msg << "Subprocess command `" << m_cmd[0];
+        for (const char* const* arg = m_cmd + 1; *arg; ++arg) msg << ' ' << *arg;
+        msg << "' failed: " << reason;
+        const std::string str = msg.str();
+        VL_WARN_MT("", 0, "VlRProcess", str.c_str());
     }
 
     void wait_report() {
         if (m_pidExited) return;
         bool reaped = true;
-#ifdef _VL_SOLVER_PIPE
+#ifdef _VL_SOLVER_PIPE_UNIX
         const pid_t rc = waitpid(m_pid, &m_pidStatus, WNOHANG);
         if (rc != m_pid) m_pidStatus = 0;
         reaped = rc != 0;  // Zero means still running, so terminate() reaps it
         if (m_pidStatus) {
-            std::stringstream msg;
-            msg << "Subprocess command `" << m_cmd[0];
-            for (const char* const* arg = m_cmd + 1; *arg; ++arg) msg << ' ' << *arg;
-            msg << "' failed: ";
-            if (WIFSIGNALED(m_pidStatus))
-                msg << strsignal(WTERMSIG(m_pidStatus))
-                    << (WCOREDUMP(m_pidStatus) ? " (core dumped)" : "");
-            else if (WIFEXITED(m_pidStatus))
-                msg << "exit status " << WEXITSTATUS(m_pidStatus);
-            const std::string str = msg.str();
-            VL_WARN_MT("", 0, "VlRProcess", str.c_str());
+            std::string reason;
+            if (WIFSIGNALED(m_pidStatus)) {
+                reason = strsignal(WTERMSIG(m_pidStatus));
+                if (WCOREDUMP(m_pidStatus)) reason += " (core dumped)";
+            } else if (WIFEXITED(m_pidStatus)) {
+                reason = "exit status "s + std::to_string(WEXITSTATUS(m_pidStatus));
+            }
+            reportFailure(reason);
+        }
+#elif defined(_VL_SOLVER_PIPE_WIN)
+        if (m_pid) {
+            if (WaitForSingleObject(m_pid, 0) == WAIT_OBJECT_0) {
+                DWORD exitCode = 0;
+                GetExitCodeProcess(m_pid, &exitCode);
+                m_pidStatus = static_cast<int>(exitCode);
+                if (m_pidStatus) reportFailure("exit status "s + std::to_string(m_pidStatus));
+                CloseHandle(m_pid);
+                m_pid = 0;
+            } else {
+                reaped = false;  // Still running, so terminate() reaps it
+            }
         }
 #endif
         if (reaped) {
@@ -184,13 +247,13 @@ public:
         clear();
         setp(std::begin(m_writeBuf), std::end(m_writeBuf));
         setg(m_readBuf, m_readBuf, m_readBuf);
-#ifdef _VL_SOLVER_PIPE
-        if (!cmd || !cmd[0]) return false;
+        if (VL_UNLIKELY(!cmd || !cmd[0])) return false;
         m_cmd = cmd;
         if (!m_logTried) {
             m_logTried = true;
             logOpen();
         }
+#ifdef _VL_SOLVER_PIPE_UNIX
         int fd_stdin[2];  // Can't use std::array
         int fd_stdout[2];  // Can't use std::array
         constexpr int P_RD = 0;
@@ -254,6 +317,90 @@ public:
         close(fd_stdin[P_RD]);
         close(fd_stdout[P_WR]);
 
+        return true;
+#elif defined(_VL_SOLVER_PIPE_WIN)
+        SECURITY_ATTRIBUTES sa;
+        sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+        sa.lpSecurityDescriptor = nullptr;
+        sa.bInheritHandle = TRUE;  // The child must inherit the pipe ends
+        HANDLE fd_stdin_rd = nullptr;  // Pipe end the child reads (we write)
+        HANDLE fd_stdin_wr = nullptr;
+        HANDLE fd_stdout_rd = nullptr;  // Pipe end the child writes (we read)
+        HANDLE fd_stdout_wr = nullptr;
+        if (VL_UNLIKELY(!CreatePipe(&fd_stdin_rd, &fd_stdin_wr, &sa, 0))) {
+            fprintf(stderr, "VlRProcess::open: CreatePipe failed\n");
+            return false;
+        }
+        if (VL_UNLIKELY(!CreatePipe(&fd_stdout_rd, &fd_stdout_wr, &sa, 0))) {
+            fprintf(stderr, "VlRProcess::open: CreatePipe failed\n");
+            CloseHandle(fd_stdin_rd);
+            CloseHandle(fd_stdin_wr);
+            return false;
+        }
+        // The parent's pipe ends must not be inherited, else the child holds
+        // copies of them and the pipes never reach EOF after we close our side
+        SetHandleInformation(fd_stdin_wr, HANDLE_FLAG_INHERIT, 0);
+        SetHandleInformation(fd_stdout_rd, HANDLE_FLAG_INHERIT, 0);
+
+        // Pass the parent's stderr through to the child, like the Unix version
+        HANDLE stderrOrig = GetStdHandle(STD_ERROR_HANDLE);
+        HANDLE stderrInheritable = nullptr;
+        if (stderrOrig && (stderrOrig != INVALID_HANDLE_VALUE)) {
+            DuplicateHandle(GetCurrentProcess(), stderrOrig, GetCurrentProcess(),
+                            &stderrInheritable, 0, TRUE /* inheritable */, DUPLICATE_SAME_ACCESS);
+        }
+
+        // Build the command line string, quoting each argument
+        std::string cmdline;
+        for (const char* const* arg = cmd; *arg; ++arg) {
+            if (arg != cmd) cmdline += ' ';
+            cmdline += winQuoteArg(*arg);
+        }
+
+        STARTUPINFOA si;
+        ZeroMemory(&si, sizeof(si));
+        si.cb = sizeof(si);
+        si.dwFlags = STARTF_USESTDHANDLES;
+        si.hStdInput = fd_stdin_rd;
+        si.hStdOutput = fd_stdout_wr;
+        si.hStdError = stderrInheritable ? stderrInheritable : fd_stdout_wr;
+        PROCESS_INFORMATION pi;
+        ZeroMemory(&pi, sizeof(pi));
+        log("", "# Open: "s + cmd[0]);
+        const BOOL procOk
+            = CreateProcessA(nullptr, &cmdline[0], nullptr, nullptr, TRUE /* inherit */,
+                             CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
+        // The child's ends are consumed by the child; close our references
+        CloseHandle(fd_stdin_rd);
+        CloseHandle(fd_stdout_wr);
+        if (stderrInheritable) CloseHandle(stderrInheritable);
+        if (VL_UNLIKELY(!procOk)) {
+            std::stringstream msg;
+            msg << "VlRProcess::open: CreateProcess(" << cmd[0] << ") error " << GetLastError();
+            const std::string str = msg.str();
+            fprintf(stderr, "%s\n", str.c_str());
+            CloseHandle(fd_stdin_wr);
+            CloseHandle(fd_stdout_rd);
+            return false;
+        }
+        CloseHandle(pi.hThread);  // Only the process handle is of interest
+        m_pid = pi.hProcess;
+        m_pidExited = false;
+        m_pidStatus = 0;
+        // Hand the pipe ends to the C runtime as file descriptors, so the
+        // streambuf overflow/underflow read/write code is platform independent
+        m_writeFd
+            = _open_osfhandle(reinterpret_cast<intptr_t>(fd_stdin_wr), _O_WRONLY | _O_BINARY);
+        m_readFd
+            = _open_osfhandle(reinterpret_cast<intptr_t>(fd_stdout_rd), _O_RDONLY | _O_BINARY);
+        if (VL_UNLIKELY(m_writeFd == -1 || m_readFd == -1)) {
+            // A handle taken by _open_osfhandle is owned by its descriptor and
+            // closed by closeFds; close only the one the CRT did not take
+            if (m_writeFd == -1) CloseHandle(fd_stdin_wr);
+            if (m_readFd == -1) CloseHandle(fd_stdout_rd);
+            terminate();
+            return false;
+        }
         return true;
 #else
         return false;
@@ -412,6 +559,12 @@ static bool readSExpr(std::istream& is, std::string& outr) {
 //======================================================================
 // Solver session lifecycle
 
+// With +verilator+rand+sampler+solver the solver's model is the random result, so
+// Verilator's own sampling (UniGen2 cells, diversity pins and XOR rounds) is skipped.
+static bool solverSamples() {
+    return Verilated::threadContextp()->randSampler() == VerilatedRandSampler::SAMPLER_SOLVER;
+}
+
 // Owns the solver process; serializes transactions and replaces a solver that
 // died or was left out of step with the reply stream
 class VlSolverSession final {
@@ -497,6 +650,8 @@ private:
             m_argv.emplace_back(nullptr);
         }
         m_proc.open(m_argv.data());
+        // Names the sampler in the +verilator+solver+file log
+        m_proc << "; sampler: " << (solverSamples() ? "solver" : "default") << "\n";
         m_proc << "(set-logic QF_ABV)\n";
         m_proc << "(check-sat)\n";
         m_proc << "(reset)\n";
@@ -524,7 +679,7 @@ static VlSolverSession s_solverSession;
 // One solver transaction; the caller holds the session mutex
 class VlSolverTxn final {
     VlSolverSession& m_sess;
-    const bool m_ok;
+    const bool m_ok;  // Session transaction began successfully
 
 public:
     explicit VlSolverTxn(VlSolverSession& sess) VL_REQUIRES(sess.m_mutex)
@@ -674,10 +829,38 @@ void VlRandomVar::set(const std::string& idx, const std::string& val) const {
     }
 }
 
-void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
-    const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
+void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits,
+                                    const std::vector<std::string>* layerVarsp) {
+    // layerVarsp scopes sampling to the current phase's own layer, so a
+    // phased solve's diversity constraint can't be built entirely out of a
+    // later phase's (still-unsolved) variable instead of this one's.
+    std::vector<const VlRandomVar*>& vars = m_randomConstraintVars;
+    vars.clear();
     int varBits = 0;
-    for (const auto& var : m_vars) varBits += var.second->totalWidth();
+    if (layerVarsp) {
+        for (const auto& name : *layerVarsp) {
+            const auto it = m_vars.find(name);
+            // buildSolveLayers() only ever adds a name after confirming
+            // it's already in m_vars.
+            assert(it != m_vars.end());
+            vars.push_back(it->second.get());
+            varBits += it->second->totalWidth();
+        }
+    } else {
+        for (const auto& var : m_vars) {
+            vars.push_back(var.second.get());
+            varBits += var.second->totalWidth();
+        }
+    }
+
+    if (varBits == 0) {
+        // Nothing to sample (e.g. a still-unsized queue/dynamic array, in a
+        // layer or the whole class) -- tautology instead of the degenerate
+        // empty-operand expression the loop below would otherwise build.
+        os << "(= #b1 #b1)";
+        return;
+    }
+    const IData hash = VL_RANDOM_RNG_I(rngr) & ((1 << bits) - 1);
     os << "(= #b";
     for (int i = bits - 1; i >= 0; i--) os << (VL_BITISSET_I(hash, i) ? '1' : '0');
     if (bits > 1) os << " (concat";
@@ -685,11 +868,12 @@ void VlRandomizer::randomConstraint(std::ostream& os, VlRNG& rngr, int bits) {
         IData varBitsLeft = varBits;
         IData varBitsWant = (varBits + 1) / 2;
         if (varBits > 2) os << " (bvxor";
-        for (const auto& var : m_vars) {
-            for (int j = 0; j < var.second->totalWidth(); j++, varBitsLeft--) {
+        for (const auto& varp : vars) {  // LCOV_EXCL_BR_LINE - reservoir-sampling below
+                                         // always forces its last pick before exhausting vars
+            for (int j = 0; j < varp->totalWidth(); j++, varBitsLeft--) {
                 const bool doEmit = (VL_RANDOM_RNG_I(rngr) % varBitsLeft) < varBitsWant;
                 if (doEmit) {
-                    var.second->emitExtract(os, j);
+                    varp->emitExtract(os, j);
                     if (--varBitsWant == 0) break;
                 }
             }
@@ -779,8 +963,11 @@ bool VlRandomizer::next_check_only(VlRNGReseeds& rngr) { return nextRandomize(rn
 bool VlRandomizer::next(VlRNGReseeds& rngr) { return nextRandomize(rngr, false); }
 
 bool VlRandomizer::nextRandomize(VlRNGReseeds& rngr, bool checkOnly) {
-    if (!checkOnly && m_vars.empty() && m_unique_arrays.empty()) return true;
-    if (checkOnly && m_vars.empty()) return true;  // No rand members: trivially SAT
+    // No rand variables: randomize() still checks the constraints (IEEE 1800-2023 18.11.1)
+    if (!checkOnly && m_vars.empty() && m_uniqueArrays.empty() && m_constraints.empty()) {
+        return true;
+    }
+    if (checkOnly && m_vars.empty() && m_constraints.empty()) return true;
     VlSolverSession& sess = s_solverSession;
     const VerilatedLockGuard lock{sess.m_mutex};
     m_checkOnly = checkOnly;
@@ -814,24 +1001,36 @@ bool VlRandomizer::nextRandomize(VlRNGReseeds& rngr, bool checkOnly) {
 
 std::vector<std::string> VlRandomizer::buildUniqueExprs() const {
     std::vector<std::string> exprs;
-    if (m_unique_arrays.empty()) return exprs;
+    if (m_uniqueArrays.empty()) return exprs;
     const auto arrVarsp = std::make_shared<const ArrayInfoMap>(m_arr_vars);
-    for (const std::string& baseName : m_unique_arrays) {
-        const auto it = m_vars.find(baseName);
-        if (it == m_vars.end()) continue;
-        const VlRandomVar& var = *it->second;
-        // Select the elements the array actually holds now, by their own index
-        // or key, rather than by ordinal position
-        var.setArrayInfo(arrVarsp);
-        // 'distinct' needs at least two operands; fewer elements are trivially unique
-        if (var.countMatchingElements(*arrVarsp, baseName) < 2) continue;
+    for (const auto& keyArrNames : m_uniqueArrays) {
+        uint32_t matchingElementsCount = 0;
+        std::ostringstream varsString;
+
+        for (const auto& baseName : keyArrNames.second) {
+            const auto it = m_vars.find(baseName);
+            if (it == m_vars.end()) continue;
+            const VlRandomVar& var = *it->second;
+            // Select the elements the array actually holds now, by their own index
+            // or key, rather than by ordinal position
+            var.setArrayInfo(arrVarsp);
+            // 'distinct' needs at least two operands; fewer elements are trivially unique
+            matchingElementsCount += var.countMatchingElements(*arrVarsp, baseName);
+            var.emitGetValue(varsString);
+        }
+
+        if (matchingElementsCount < 2) continue;
         std::ostringstream os;
-        os << "(__Vbv (distinct ";
-        var.emitGetValue(os);
-        os << "))";
+        os << "(__Vbv (distinct " << varsString.str() << "))";
         exprs.push_back(os.str());
     }
     return exprs;
+}
+
+// Seed the solver from the object's generator, so a solver-sampled result still
+// follows +verilator+seed and the object's random stability.
+static void emitSolverSeed(std::ostream& os, VlRNG& rngr) {
+    os << "(set-option :random-seed " << (VL_RANDOM_RNG_I(rngr) & 0x7fffffffU) << ")\n";
 }
 
 void VlRandomizer::emitDefines(std::ostream& os) const {
@@ -880,7 +1079,7 @@ void VlRandomizer::emitAsserts(std::ostream& os, const std::vector<std::string>&
 bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
                             const std::vector<std::string>& uniqueExprs)
     VL_REQUIRES(sess.m_mutex) {
-    if (m_randcVarNames.empty() && !m_checkOnly && !hasFrozenVar()
+    if (!solverSamples() && m_randcVarNames.empty() && !m_checkOnly && !hasFrozenVar()
         && unigen2(rngr, sess, uniqueExprs)) {
         return true;
     }
@@ -891,8 +1090,13 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
     const bool hasRandc = !m_randcVarNames.empty();
     for (int attempt = 0; attempt < (hasRandc ? 2 : 1); ++attempt) {
         os << "(set-option :produce-models true)\n";
-        // Lets the scalar pin path learn which free-bit assumptions conflict.
-        os << "(set-option :produce-unsat-assumptions true)\n";
+        if (!solverSamples()) {
+            // Lets the scalar pin path learn which free-bit assumptions conflict.
+            os << "(set-option :produce-unsat-assumptions true)\n";
+        } else if (!m_checkOnly) {
+            // Check-only results are not random, so leave the random state alone
+            emitSolverSeed(os, rngr);
+        }
         os << "(set-logic QF_ABV)\n";
         emitDefines(os);
         emitDeclares(os, m_checkOnly);
@@ -925,7 +1129,7 @@ bool VlRandomizer::nextFlat(VlRNG& rngr, VlSolverSession& sess,
         if (!applyModel(sess)) return false;
 
         if (!m_checkOnly) {
-            solveDiversity(rngr, sess);
+            if (!solverSamples()) solveDiversity(rngr, sess);
             // Check-only must not advance randc cycle state.
             recordRandcValues();
         }
@@ -1577,7 +1781,7 @@ void VlRandomizer::clearConstraints() {
     m_constraints_line.clear();
     m_solveBefore.clear();
     m_softConstraints.clear();
-    m_unique_arrays.clear();  // Re-registered by constraint setup
+    m_uniqueArrays.clear();  // Re-registered by constraint setup
     // Keep m_vars for class member randomization
 }
 
@@ -1590,7 +1794,7 @@ void VlRandomizer::clearAll() {
     m_randcConstraintHash = 0;
 }
 
-void VlRandomizer::markRandc(const char* name) { m_randcVarNames.insert(name); }
+void VlRandomizer::markRandc(const std::string& name) { m_randcVarNames.insert(name); }
 
 void VlRandomizer::solveBefore(const std::string& beforeName, const std::string& afterName) {
     m_solveBefore.emplace_back(beforeName, afterName);
@@ -1681,6 +1885,7 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
         const bool isFinalPhase = (phase == layers.size() - 1);
 
         os << "(set-option :produce-models true)\n";
+        if (solverSamples()) emitSolverSeed(os, rngr);
         os << "(set-logic " << logicp << ")\n";
         emitDefines(os);
         emitDeclares(os, false);
@@ -1707,7 +1912,7 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
 
         if (isFinalPhase) {
             if (!applyModel(sess)) return false;
-            solveDiversityXor(rngr, sess);
+            if (!solverSamples()) solveDiversityXor(rngr, sess);
             // Record solved randc values for future exclusion
             recordRandcValues();
         } else {
@@ -1719,7 +1924,7 @@ bool VlRandomizer::solvePhases(VlRNG& rngr, VlSolverSession& sess,
     return true;
 }
 
-// Intermediate phase: extract this layer's values, then try one diversity round
+// Intermediate phase: extract this layer's values, then optionally try one diversity round
 bool VlRandomizer::solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
                                     const std::vector<std::string>& layerVars,
                                     std::map<std::string, std::string>& solvedValuesr)
@@ -1745,11 +1950,13 @@ bool VlRandomizer::solvePhaseValues(VlSolverSession& sess, VlRNG& rngr,
     // Get baseline values (deterministic, always valid)
     emitGetValueCmd();
     if (!readPhaseValues(sess, solvedValuesr)) return false;
+    if (solverSamples()) return true;
 
     // Try diversity: add random constraint, re-check. If sat, get
     // updated (more diverse) values. If unsat, keep baseline values.
+    // Scoped to this layer's own vars -- see randomConstraint's comment.
     os << "(assert ";
-    randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN);
+    randomConstraint(os, rngr, _VL_SOLVER_HASH_LEN, &layerVars);
     os << ")\n";
     os << "(check-sat)\n";
     if (sess.readStatus() == VlSolverStatus::SAT) {

@@ -43,7 +43,9 @@ public:
     V3ListLinks() = default;
     ~V3ListLinks() {
 #ifdef VL_DEBUG
+        // cppcheck-suppress intToPointerCast
         m_nextp = reinterpret_cast<T_Base*>(1);
+        // cppcheck-suppress intToPointerCast
         m_prevp = reinterpret_cast<T_Base*>(1);
 #endif
     }
@@ -71,8 +73,8 @@ class V3List final {
     using ListType = V3List<T_Base, LinksGetter, T_Element>;
 
     // MEMBERS
-    T_Base* m_headp = nullptr;
-    T_Base* m_lastp = nullptr;
+    T_Base* m_headp = nullptr;  // First element, null if empty
+    T_Base* m_lastp = nullptr;  // Last element, null if empty
 
     // Given the T_Base, return the Links. The links are always mutable, even in const elements.
     VL_ATTR_ALWINLINE
@@ -230,7 +232,9 @@ public:
     V3List() = default;
     ~V3List() {
 #ifdef VL_DEBUG
+        // cppcheck-suppress intToPointerCast
         m_headp = reinterpret_cast<T_Element*>(1);
+        // cppcheck-suppress intToPointerCast
         m_lastp = reinterpret_cast<T_Element*>(1);
 #endif
     }

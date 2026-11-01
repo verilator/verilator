@@ -52,7 +52,7 @@ namespace {
 
 class SchedSenVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(SchedSenVertex, V3GraphVertex)
-    const AstSenItem* const m_senItemp;
+    const AstSenItem* const m_senItemp;  // Sensitivity item this vertex represents
 
 public:
     SchedSenVertex(V3Graph* graphp, const AstSenItem* senItemp)
@@ -72,9 +72,9 @@ public:
 
 class SchedLogicVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(SchedLogicVertex, V3GraphVertex)
-    AstScope* const m_scopep;
-    AstSenTree* const m_senTreep;
-    AstNode* const m_logicp;
+    AstScope* const m_scopep;  // Scope of the logic
+    AstSenTree* const m_senTreep;  // Sensitivity of the logic
+    AstNode* const m_logicp;  // Logic this vertex represents
 
 public:
     SchedLogicVertex(V3Graph* graphp, AstScope* scopep, AstSenTree* senTreep, AstNode* logicp)
@@ -96,7 +96,7 @@ public:
 
 class SchedVarVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(SchedVarVertex, V3GraphVertex)
-    const AstVarScope* const m_vscp;
+    const AstVarScope* const m_vscp;  // Variable scope this vertex represents
 
 public:
     SchedVarVertex(V3Graph* graphp, AstVarScope* vscp)
@@ -268,9 +268,9 @@ class SchedGraphBuilder final : public VNVisitor {
                       const LogicByScope& hybridLogic) {
         // Build the data flow graph
         const auto iter = [this](const LogicByScope& lbs) {
-            for (const auto& pair : lbs) {
-                m_scopep = pair.first;
-                iterate(pair.second);
+            for (const auto& entry : lbs) {
+                m_scopep = entry.m_scopep;
+                iterate(entry.m_activep);
                 m_scopep = nullptr;
             }
         };
@@ -385,19 +385,18 @@ LogicRegions partition(LogicByScope& clockedLogic, LogicByScope& combinationalLo
             });
         };
 
-        for (const auto& pair : result.m_act) {
-            AstActive* const activep = pair.second;
+        for (const auto& entry : result.m_act) {
+            AstActive* const activep = entry.m_activep;
             markVars(activep->sentreep());
             markVars(activep);
         }
 
         // AstAlwaysPre and AstAlwaysPost should only appear under a clocked
         // AstActive, and should be the only thing left at this point.
-        for (const auto& pair : clockedLogic) {
-            AstScope* const scopep = pair.first;
-            AstActive* const activep = pair.second;
-            for (AstNode *nodep = activep->stmtsp(), *nextp; nodep; nodep = nextp) {
-                nextp = nodep->nextp();
+        for (const auto& entry : clockedLogic) {
+            AstScope* const scopep = entry.m_scopep;
+            AstActive* const activep = entry.m_activep;
+            for (AstNode* const nodep : activep->stmtspList()) {
                 if (AstAlwaysPre* const logicp = VN_CAST(nodep, AlwaysPre)) {
                     bool toActiveRegion = false;
                     logicp->foreach([&](const AstNodeVarRef* vrefp) {

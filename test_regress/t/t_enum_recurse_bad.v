@@ -4,4 +4,4 @@
 // SPDX-FileCopyrightText: 2019 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-enum {u=u} e_t;
+enum {u = u} e_t;

@@ -55,7 +55,7 @@ static int force_value_vpi() {
 
 std::array<s_vpi_systf_data, 1> vpi_systf_data
     = {s_vpi_systf_data{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$forceValue",
-                        (PLI_INT32(*)(PLI_BYTE8*))force_value_vpi, 0, 0, 0}};
+                        (PLI_INT32 (*)(PLI_BYTE8*))force_value_vpi, 0, 0, 0}};
 
 // cver entry
 extern "C" void vpi_compat_bootstrap(void) {

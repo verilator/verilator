@@ -41,7 +41,7 @@ module m ();
   endclass
 
   c classinst;
-  class_if class_if_inst();
+  class_if class_if_inst ();
   int v;
 
   initial begin

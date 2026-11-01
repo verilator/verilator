@@ -68,15 +68,9 @@ class UnknownVisitor final : public VNVisitor {
         if (m_ftaskp) {
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            if (m_ftaskp->stmtsp())
-                m_ftaskp->stmtsp()->addHereThisAsNext(varp);
-            else
-                m_ftaskp->addStmtsp(varp);
+            m_ftaskp->prependStmtsp(varp);
         } else {
-            if (m_modp->stmtsp())
-                m_modp->stmtsp()->addHereThisAsNext(varp);
-            else
-                m_modp->addStmtsp(varp);
+            m_modp->prependStmtsp(varp);
         }
     }
 
@@ -119,14 +113,14 @@ class UnknownVisitor final : public VNVisitor {
             if (hasSideEffects) {
                 // Copy original statement and replace `prep` with reference to tmp var to make
                 // sure that side effect will take place
-                m_statElses++;
+                ++m_statElses;
                 elseStmtp = origStmtp->cloneTree(false);
                 AstVar* const varp = new AstVar{fl, VVarType::MODULETEMP, m_lvboundNames.get(prep),
                                                 prep->dtypep()};
                 addVar(varp);
                 AstNode* const prepCopyp = prep->clonep();
                 prepCopyp->replaceWith(new AstVarRef{fl, varp, VAccess::WRITE});
-                pushDeletep(prepCopyp);
+                VL_DO_DANGLING(pushDeletep(prepCopyp), prepCopyp);
             }
             AstIf* const newp = new AstIf{fl, condp, origStmtp, elseStmtp};
             replaceHandle.relink(newp);
@@ -146,7 +140,7 @@ class UnknownVisitor final : public VNVisitor {
     // Returns true if it is known at compile time that `msbConstp` is greater than or equal
     // `exprp`
     static bool isStaticlyGte(AstConst* const msbConstp, const AstNodeExpr* const exprp) {
-        if (msbConstp->width() >= exprp->width()
+        if (msbConstp->width() >= exprp->width() && exprp->width() < 32
             && msbConstp->num().toSInt() >= (1 << exprp->width()) - 1) {
             return true;
         }
@@ -380,10 +374,9 @@ class UnknownVisitor final : public VNVisitor {
                                       new AstVarRef{nodep->fileline(), newvarp, VAccess::READ}}}}};
                 // Add inits in front of other statement.
                 // In the future, we should stuff the initp into the module's constructor.
-                AstNode* const afterp = m_modp->stmtsp()->unlinkFrBackWithNext();
-                m_modp->addStmtsp(newvarp);
-                m_modp->addStmtsp(newinitp);
-                m_modp->addStmtsp(afterp);
+                // Must not unlink the statements, as one of them is being iterated
+                AstNode* const newStmtsp = AstNode::addNext<AstNode, AstNode>(newvarp, newinitp);
+                m_modp->prependStmtsp(newStmtsp);
                 UINFOTREE(9, newref1p, "", "_newref");
                 UINFOTREE(9, newvarp, "", "_newvar");
                 UINFOTREE(9, newinitp, "", "_newini");
@@ -396,7 +389,7 @@ class UnknownVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (!nodep->user1SetOnce()) {
             // Guard against reading/writing past end of bit vector array
-            const AstNode* const basefromp = AstArraySel::baseFromp(nodep, true);
+            const AstNode* const basefromp = nodep->baseFromp(true);
             bool lvalue = false;
             if (const AstNodeVarRef* const varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();
@@ -455,7 +448,7 @@ class UnknownVisitor final : public VNVisitor {
         if (!nodep->user1SetOnce()) {
             UINFOTREE(9, nodep, "", "in");
             // Guard against reading/writing past end of arrays
-            AstNode* const basefromp = AstArraySel::baseFromp(nodep->fromp(), true);
+            AstNode* const basefromp = nodep->fromp()->baseFromp(true);
             bool lvalue = false;
             if (const AstNodeVarRef* const varrefp = VN_CAST(basefromp, NodeVarRef)) {
                 lvalue = varrefp->access().isWriteOrRW();

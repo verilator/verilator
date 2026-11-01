@@ -38,7 +38,7 @@ module t;
       $write("fork..join_any process 2\n");
     join_any
     $write("back in main process\n");
-    #1->event1;
+    #1 ->event1;
     #1
     fork
       #2 $write("fork..join_any process 1\n");
@@ -49,7 +49,7 @@ module t;
       end
     join_any
     $write("back in main process\n");
-    #1->event1;
+    #1 ->event1;
     @event1;
     // Order of triggering:
     // p1->event2  ==>  p2->event3  ==>  p3->event3  ==>  p2->event2  ==>  p1->event3  ==>  p3->event1
@@ -58,17 +58,17 @@ module t;
         #1 $write("fork..join_none process 1\n");
         ->event2;
         @event2 $write("fork..join_none process 1 again\n");
-        #1->event3;
+        #1 ->event3;
       end
       begin
         @event2 $write("fork..join_none process 2\n");
-        #1->event3;
+        #1 ->event3;
         @event3 $write("fork..join_none process 2 again\n");
-        #1->event2;
+        #1 ->event2;
       end
       begin
         @event3 $write("fork..join_none process 3\n");
-        #1->event3;
+        #1 ->event3;
         @event3 $write("fork..join_none process 3 again\n");
         ->event1;
       end

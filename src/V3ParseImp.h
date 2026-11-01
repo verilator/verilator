@@ -48,7 +48,7 @@ enum V3ImportProperty : uint8_t { iprop_NONE, iprop_CONTEXT, iprop_PURE };
 
 struct VMemberQualifiers final {
     union {
-        uint32_t m_flags;
+        uint32_t m_flags;  // All qualifier flags, to clear at once
         struct {
             uint32_t m_local : 1;  // Local class item (ignored until warning implemented)
             uint32_t m_protected : 1;  // Protected class item (ignored until warning implemented)
@@ -291,7 +291,7 @@ public:
     size_t flexPpInputToLex(char* buf, size_t max_size) { return ppInputToLex(buf, max_size); }
 
     //==== Symbol tables
-    AstPackage* unitPackage(FileLine* /*fl*/) { return parsep()->rootp()->dollarUnitPkgAddp(); }
+    AstPackage* unitPackage(FileLine* /*fl*/) { return parsep()->rootp()->dollarUnitPkgp(); }
 
     // CONSTRUCTORS
     V3ParseImp(AstNetlist* rootp, VInFilter* filterp)

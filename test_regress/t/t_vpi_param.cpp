@@ -25,7 +25,7 @@
 
 #ifdef T_VPI_PARAM
 #include "Vt_vpi_param.h"
-#include "Vt_vpi_param__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #elif defined(T_VPI_PUBLIC_PARAMS)
 #include "Vt_vpi_public_params.h"
 #else
@@ -133,6 +133,26 @@ int check_param_str(std::string name, PLI_INT32 format, std::string exp_value, b
     return errors;
 }
 
+#ifdef T_VPI_PARAM
+// String array elements are unreachable: vpi_handle_by_index needs a packed dimension
+int check_param_exists(const char* name) {
+    TestVpiHandle param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
+    CHECK_RESULT_NZ(param_h);
+    return errors;
+}
+
+int check_param_value(const char* name, PLI_INT32 format, const char* exp_value) {
+    TestVpiHandle param_h = vpi_handle_by_name((PLI_BYTE8*)TestSimulator::rooted(name), NULL);
+    CHECK_RESULT_NZ(param_h);
+    s_vpi_value value;
+    value.format = format;
+    vpi_get_value(param_h, &value);
+    TEST_CHECK_ERROR(false);
+    CHECK_RESULT_CSTR(value.value.str, exp_value);
+    return errors;
+}
+#endif
+
 int _mon_check_param() {
     int status = 0;
 #ifdef TEST_VERBOSE
@@ -145,6 +165,13 @@ int _mon_check_param() {
     status += check_param_int("DEPTH", vpiIntVal, 16, verbose);
     status += check_param_str("PARAM_LONG", vpiHexStrVal, "fedcba9876543210", verbose);
     status += check_param_str("PARAM_STR", vpiStringVal, "'some string value'", verbose);
+#ifdef T_VPI_PARAM
+    status += check_param_exists("PARAM_STR_ARR");
+    status += check_param_exists("PARAM_STR_ARR_TD");
+    status += check_param_value("PARAM_PAIR.a", vpiDecStrVal, "1");
+    status += check_param_value("PARAM_PAIR.b", vpiDecStrVal, "2");
+    status += check_param_value("PARAM_PAIR_ARR[1].a", vpiDecStrVal, "5");
+#endif
     return status;
 }
 
@@ -153,6 +180,9 @@ extern "C" int mon_check() {
     if (int status = _mon_check_param()) return status;
     return 0;  // Ok
 }
+
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
 
 //======================================================================
 
@@ -170,7 +200,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 // cver entry

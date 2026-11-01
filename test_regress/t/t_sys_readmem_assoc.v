@@ -14,6 +14,7 @@ module t (
 
   reg [5:0] assoc_c[int];
   reg [95:0] assoc_w[int];
+  reg [6:0] assoc_empty[int];
 
   always_ff @(posedge clk) begin
     cyc <= cyc + 1;
@@ -33,6 +34,13 @@ module t (
       $writememh({`STRINGIFY(`TEST_OBJ_DIR), "/t_sys_writemem_w_h.mem"}, assoc_w);
     end
     else if (cyc == 4) begin
+      $writememb({`STRINGIFY(`TEST_OBJ_DIR), "/t_sys_writemem_w_b.mem"}, assoc_w);
+      $writememb({`STRINGIFY(`TEST_OBJ_DIR), "/t_sys_writemem_c_b2.mem"}, assoc_c);
+      // Empty array must still create an empty file
+      $writememb({`STRINGIFY(`TEST_OBJ_DIR), "/t_sys_writemem_empty_b.mem"}, assoc_empty);
+      $writememh({`STRINGIFY(`TEST_OBJ_DIR), "/t_sys_writemem_empty_h.mem"}, assoc_empty);
+    end
+    else if (cyc == 5) begin
       $write("*-* All Finished *-*\n");
       $finish;
     end

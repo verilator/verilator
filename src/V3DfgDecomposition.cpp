@@ -101,7 +101,7 @@ class SplitIntoComponents final {
         // Allocate the component graphs
         m_components.resize(m_componentCounter - 1);
         for (size_t i = 1; i < m_componentCounter; ++i) {
-            m_components[i - 1].reset(new DfgGraph{m_prefix + cvtToStr(i - 1)});
+            m_components[i - 1].reset(new DfgGraph{m_dfg.ctx(), m_prefix + cvtToStr(i - 1)});
         }
         // Move the vertices to the component graphs
         moveVertices(m_dfg.varVertices());
@@ -128,6 +128,7 @@ class ExtractCyclicComponents final {
     // Map from vertices to the component they belong to
     DfgUserMap<uint64_t> m_component = m_dfg.makeUserMap<uint64_t>();
     const std::string m_prefix;  // Component name prefix
+    // Enable expensive internal consistency checks
     const bool m_doExpensiveChecks = v3Global.opt.debugCheck();
     // The extracted cyclic components
     std::vector<std::unique_ptr<DfgGraph>> m_components;
@@ -316,7 +317,7 @@ class ExtractCyclicComponents final {
         // Allocate result graphs
         m_components.resize(nComponents);
         for (uint32_t i = 0; i < nComponents; ++i) {
-            m_components[i].reset(new DfgGraph{m_prefix + cvtToStr(i)});
+            m_components[i].reset(new DfgGraph{m_dfg.ctx(), m_prefix + cvtToStr(i)});
         }
 
         // Fix up edges crossing components (we can only do this at variable boundaries, and the

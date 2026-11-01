@@ -6,95 +6,93 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
+
 `ifdef USE_VPI_NOT_DPI
 //We call it via $c so we can verify DPI isn't required - see bug572
 `else
 import "DPI-C" context function int mon_check();
 `endif
 
-module t (/*AUTOARG*/
-  // Outputs
-  x,
-  // Inputs
-  clk, a
-  );
-
-`ifdef VERILATOR
-`systemc_header
-extern "C" int mon_check();
-`verilog
-`endif
+module t (  /*AUTOARG*/
+    // Outputs
+    x,
+    // Inputs
+    clk,
+    a
+);
 
   input clk;
 
   input [7:0] a;
   output reg [7:0] x;
 
-  reg          onebit;
-  reg [2:1]    twoone;
-  reg [2:1]    fourthreetwoone[4:3];
+  reg onebit;
+  reg [2:1] twoone;
+  reg [2:1] fourthreetwoone[4:3];
   reg LONGSTART_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_a_very_long_name_which_will_get_hashed_LONGEND;
 
   // verilator lint_off ASCRANGE
-  reg [0:61]   quads[2:3];
-  reg [8:19]   rev   /*verilator public_flat_rw @(posedge clk) */;
+  reg [0:61] quads[2:3];
+  reg [8:19] rev  /*verilator public_flat_rw @(posedge clk) */;
   // verilator lint_on ASCRANGE
 
-  reg [31:0]      count;
-  reg [31:0]      half_count;
-  reg [31:0]      delayed;
-  reg [31:0]      delayed_mem [16];
-  reg [7:0]       \escaped_with_brackets[3] ;
-  reg [7:0]       mem_2d[3:0][7:0];  // Descending indices
+  reg [31:0] count;
+  reg [31:0] half_count;
+  reg [31:0] delayed;
+  reg [31:0] delayed_mem[16];
+  reg [7:0] \escaped_with_brackets[3] ;
+  reg [7:0] mem_2d[3:0][7:0];  // Descending indices
   // verilator lint_off ASCRANGE
-  reg [0:95]      mem_3d[0:1][1:0][0:1];  // Mixed: asc, desc, asc
+  reg [0:95] mem_3d[0:1][1:0][0:1];  // Mixed: asc, desc, asc
 
   // Signal with multiple packed dimensions
   reg [0:15][0:3][7:0] multi_packed[2:0];
-  reg [0:1][0:3][0:2]      multi_packed_bit /*verilator public_flat_rw */;
-  reg [1:-1][2:1]      multi_packed_endian /*verilator public_flat_rw */;
-  reg [-1:1][1:2]      multi_packed_little_endian /*verilator public_flat_rw */;
-  reg [0:1][0:7]      multi_packed_short /*verilator public_flat_rw */;
-  reg [0:1][0:127]      multi_packed_wide /*verilator public_flat_rw */;
-  reg multi_unpacked_bit[0:1][0:3][0:7]      /*verilator public_flat_rw */;
-  reg [8:-7] [3:-4] negative_multi_packed[0:-2];
+  reg [0:1][0:3][0:2] multi_packed_bit  /*verilator public_flat_rw */;
+  reg [1:-1][2:1] multi_packed_endian  /*verilator public_flat_rw */;
+  reg [-1:1][1:2] multi_packed_little_endian  /*verilator public_flat_rw */;
+  reg [0:1][0:7] multi_packed_short  /*verilator public_flat_rw */;
+  reg [0:1][0:127] multi_packed_wide  /*verilator public_flat_rw */;
+  reg multi_unpacked_bit[0:1][0:3][0:7]  /*verilator public_flat_rw */;
+  reg [8:-7][3:-4] negative_multi_packed[0:-2];
   // verilator lint_on ASCRANGE
-  reg             unpacked_only[7:0];
+  reg unpacked_only[7:0];
 
-  reg [7:0]       text_byte;
-  reg [15:0]      text_half;
-  reg [31:0]      text_word;
-  reg [63:0]      text_long;
-  reg [511:0]     text;
-  reg [2047:0]    big;
+  reg [7:0] text_byte;
+  reg [15:0] text_half;
+  reg [31:0] text_word;
+  reg [63:0] text_long;
+  reg [511:0] text;
+  reg [2047:0] big;
 
-  integer        status;
+  integer status;
 
-  bit            bit1;
-  integer        integer1;
-  byte           byte1;
-  shortint       short1;
-  int            int1;
-  longint        long1;
-  real           real1;
-  string         str1;
+  bit bit1;
+  integer integer1;
+  byte byte1;
+  shortint short1;
+  int int1;
+  longint long1;
+  real real1;
+  string str1;
   localparam int nullptr = 123;
-  logic [31:0] some_mem [4] = {0, 0, 0, 432};
+  logic [31:0] some_mem[4] = {0, 0, 0, 432};
 
   generate
     for (genvar i = 0; i < 1; i++) begin : gen
-     wire [7:0] gen_sig /*verilator public_flat_rw*/ = 8'hAB;
+      wire [7:0] gen_sig  /*verilator public_flat_rw*/ = 8'hAB;
     end
   endgenerate
 
-  sub sub();
+  sub sub ();
 
   // Test loop
   initial begin
     count = 0;
     delayed = 0;
     onebit = 1'b0;
-    fourthreetwoone[3] = 0; // stop icarus optimizing away
+    fourthreetwoone[3] = 0;  // stop icarus optimizing away
     text_byte = "B";
     text_half = "Hf";
     text_word = "Word";
@@ -110,7 +108,7 @@ extern "C" int mon_check();
     long1 = 123;
     real1 = 1.0;
     str1 = "hello";
-    \escaped_with_brackets[3]  = 8'h5a;
+    \escaped_with_brackets[3] = 8'h5a;
 
     rev = 12'habc;
 
@@ -143,7 +141,7 @@ extern "C" int mon_check();
     end
 
 `ifdef VERILATOR
-    status = $c32("mon_check()");
+    status = `CPP_CALL(mon_check);
 `endif
 `ifdef IVERILOG
     status = $mon_check();
@@ -151,7 +149,7 @@ extern "C" int mon_check();
 `ifndef USE_VPI_NOT_DPI
     status = mon_check();
 `endif
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_var.cpp:%0d: C Test failed\n", status);
       $stop;
     end
@@ -165,13 +163,12 @@ extern "C" int mon_check();
     if (text_long != "44Four44") $stop;
     if (text != "lorem ipsum") $stop;
     if (str1 != "something a lot longer than hello") $stop;
-    if (real1 > 123456.7895 || real1 < 123456.7885 ) $stop;
+    if (real1 > 123456.7895 || real1 < 123456.7885) $stop;
   end
 
   always @(posedge clk) begin
     count <= count + 2;
-    if (count[1])
-      half_count <= half_count + 2;
+    if (count[1]) half_count <= half_count + 2;
 
     if (count == 1000) begin
       if (delayed != 123) $stop;
@@ -183,16 +180,16 @@ extern "C" int mon_check();
 
   genvar i;
   generate
-  for (i=1; i<=6; i=i+1) begin : arr
-    arr #(.LENGTH(i)) arr();
-  end
+    for (i = 1; i <= 6; i = i + 1) begin : arr
+      arr #(.LENGTH(i)) arr ();
+    end
   endgenerate
 
   genvar k;
   generate
-  for (k=1; k<=6; k=k+1) begin : subs
-    sub subsub();
-  end
+    for (k = 1; k <= 6; k = k + 1) begin : subs
+      sub subsub ();
+    end
   endgenerate
 
   arr #(.LENGTH(8)) \escaped.inst[0] ();
@@ -214,10 +211,10 @@ module arr;
 
   reg [LENGTH-1:0] sig;
   reg [LENGTH-1:0] rfr;
-  reg [LENGTH-1:0] \escaped_sig[1]  /*verilator public_flat_rw*/;
+  reg [LENGTH-1:0] \escaped_sig[1] /*verilator public_flat_rw*/;
 
-  reg            check;
-  reg          verbose;
+  reg check;
+  reg verbose;
 
   initial begin
     sig = {LENGTH{1'b0}};

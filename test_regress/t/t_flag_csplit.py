@@ -15,15 +15,35 @@ test.scenarios('vlt_all')
 def check_splits():
     got1 = False
     gotSyms1 = False
+    gotTopCtor = False
+    gotTopDtor = False
+    gotSubCtor = False
+    gotSubDtor = False
     for filename in test.glob_some(test.obj_dir + "/*.cpp"):
         if re.search(r'Syms__.*__1', filename):
             gotSyms1 = True
+        elif re.search(r'_t__ctor__0', filename):
+            gotTopCtor = True
+        elif re.search(r'_t__dtor__0', filename):
+            gotTopDtor = True
+        elif re.search(r'subNoInline__ctor__1', filename):
+            gotSubCtor = True
+        elif re.search(r'subNoInline__dtor__1', filename):
+            gotSubDtor = True
         elif re.search(r'__1', filename):
             got1 = True
     if not got1:
         test.error("No __1 split file found")
     if not gotSyms1:
         test.error("No Syms__*__1 split file found")
+    if not gotTopCtor:
+        test.error("No top module __ctor__0 split file found")
+    if not gotTopDtor:
+        test.error("No top module __dtor__0 split file found")
+    if not gotSubCtor:
+        test.error("No module __ctor__1 split file found")
+    if not gotSubDtor:
+        test.error("No module __dtor__1 split file found")
 
 
 def check_no_all_file():
@@ -39,7 +59,7 @@ def check_cpp(filename):
     funcs = []
     with open(filename, 'r', encoding="utf8") as fh:
         for line in fh:
-            m = re.search(r'^(void|IData)\s+(.*::.*){', line)
+            m = re.search(r'^(void|(?:::)?IData)\s+(.*::.*){', line)
             if not m:
                 continue
             func = m.group(2)
@@ -80,7 +100,8 @@ def check_gcc_flags(filename):
 if not test.make_version or float(test.make_version) < 4.1:
     test.skip("Test requires GNU Make version >= 4.1")
 
-test.compile(v_flags2=["--trace-vcd",
+test.compile(v_flags2=["-fno-inline",
+                       "--trace-vcd",
                        "--output-split 1",
                        "--output-split-cfuncs 1",
                        "--exe",

@@ -1,5 +1,13 @@
-vpi_chk_error: vpi_put_value: Unsupported p_vpi_value as requested for 't.delayed' with vpiInertialDelay
-vpi_chk_error: vpi_put_value: Unsupported p_vpi_value as requested for 't.delayed' with vpiInertialDelay
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.str with format vpiStringVal for 't.delayed'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.vector with format vpiVectorVal for 't.delayed'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.str with format vpiBinStrVal for 't.delayed'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.str with format vpiOctStrVal for 't.delayed'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.str with format vpiDecStrVal for 't.delayed'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.str with format vpiHexStrVal for 't.delayed'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.str with format vpiStringVal for 't.delayed'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.vector with format vpiVectorVal for 't.delayed'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.str with format vpiStringVal for 't.delayed_mem[7]'
+vpi_chk_error: vpi_put_value: Ignoring nullptr value.vector with format vpiVectorVal for 't.delayed_mem[7]'
 vpi_chk_error: Ignoring vpi_put_value with nullptr value pointer
 %Info: Checking results
 *-* All Finished *-*

@@ -42,16 +42,11 @@ module parentSourceMod (
 endmodule
 
 
-module t (  /*AUTOARG*/
-    // Outputs
-    data,
-    // Inputs
-    clk,
-    rst
+module t (
+    input clk,
+    input rst,
+    output logic data
 );
-  input clk;
-  input rst;
-  output logic data;
 
   validData ctrl (
       .clk,

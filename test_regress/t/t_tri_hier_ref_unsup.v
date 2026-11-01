@@ -25,6 +25,15 @@ module sub_with_tri (
   assign bus = we_internal ? 8'hAA : 8'hzz;
 endmodule
 
+module sub_inout (
+    inout wire io
+);
+  initial begin
+    #1;
+    `checkh(io, 1'b1);
+  end
+endmodule
+
 module t;
   logic sub_we_internal;
   sub_with_tri u_sub (.we_internal(sub_we_internal));
@@ -32,6 +41,12 @@ module t;
   logic hier_we;
   // Drive u_sub.bus hierarchically from this module
   assign u_sub.bus = hier_we ? 8'hBB : 8'hzz;
+
+  // Unconnected inout driven hierarchically (issue #5318)
+  // verilator lint_off PINMISSING
+  sub_inout u_inout ();
+  // verilator lint_on PINMISSING
+  assign u_inout.io = 1'b1;
 
   initial begin
     // All drivers off -> high-Z

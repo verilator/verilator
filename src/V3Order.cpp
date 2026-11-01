@@ -99,23 +99,24 @@ void V3Order::orderOrderGraph(OrderGraph& graph, const std::string& tag) {
 
 //######################################################################
 
-AstCFunc* V3Order::order(AstNetlist* netlistp,  //
-                         const std::vector<V3Sched::LogicByScope*>& logic,  //
-                         const V3Order::TrigToSenMap& trigToSen,
+AstCFunc* V3Order::order(const std::vector<V3Sched::LogicByScope*>& logic,  //
+                         const V3Sched::TriggerKit& trigKit,  //
+                         AstVarScope* trigVscp,  //
+                         const V3Sched::CovergroupRefBindings& cgRefBindings,
                          const string& tag,  //
                          bool parallel,  //
                          bool slow,  //
-                         const ExternalDomainsProvider& externalDomains) {
+                         const ExternalTriggersProvider& externalTriggers) {
     // Build the OrderGraph
     const std::unique_ptr<OrderGraph> graph
-        = buildOrderGraph(netlistp, logic, trigToSen, parallel);
+        = buildOrderGraph(trigKit, trigVscp, logic, cgRefBindings, parallel);
     // Order it
     orderOrderGraph(*graph, tag);
     // Assign sensitivity domains to combinational logic
-    processDomains(netlistp, *graph, tag, externalDomains);
+    processDomains(*graph, tag, externalTriggers);
     // Build the move graph
     OrderMoveDomScope::clear();
-    const std::unique_ptr<OrderMoveGraph> moveGraphp = OrderMoveGraph::build(*graph, trigToSen);
+    const std::unique_ptr<OrderMoveGraph> moveGraphp = OrderMoveGraph::build(*graph);
     if (dumpGraphLevel() >= 9) moveGraphp->dumpDotFilePrefixed(tag + "_ordermv");
 
     // The ordered statements, if there are any
@@ -141,6 +142,7 @@ AstCFunc* V3Order::order(AstNetlist* netlistp,  //
     if (!stmtsp) return nullptr;
 
     // Create the result function
+    AstNetlist* const netlistp = v3Global.rootp();
     FileLine* const flp = netlistp->fileline();
     AstCFunc* const funcp = [&]() {
         AstScope* const scopeTopp = netlistp->topScopep()->scopep();

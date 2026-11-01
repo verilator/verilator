@@ -1425,7 +1425,8 @@ int V3PreProcImp::getStateToken() {
                     else if (stateIsDefname()) {
                         unputDefrefString("__IF_OFF_IGNORED_DEFINE");
                     }
-                    m_lexp->m_parenLevel = 0;
+                    // Stringification may still be inside another macro's argument list.
+                    m_lexp->m_parenLevel = m_defRefs.empty() ? 0 : m_defRefs.top().parenLevel();
                 } else {  // Finished a defref inside a upper defref,
                           // and not under stringification or join.
                     // Can't subst now, or

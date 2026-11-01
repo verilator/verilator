@@ -1,0 +1,12 @@
+%Error-UNSUPPORTED: t/t_class_lparam_nonparam_bad.v:30:14: dotted expressions in parameters
+                                                         : ... note: In instance 't'
+                                                         : ... Suggest use a typedef
+   30 |   Sub #(CFG::notaparam) u_prop ();
+      |              ^~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_class_lparam_nonparam_bad.v:31:14: dotted expressions in parameters
+                                                         : ... note: In instance 't'
+                                                         : ... Suggest use a typedef
+   31 |   Sub #(CFG::alsonotaparam) u_static ();
+      |              ^~~~~~~~~~~~~
+%Error: Exiting due to

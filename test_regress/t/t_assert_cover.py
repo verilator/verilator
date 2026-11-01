@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('simulator')
-test.top_filename = "t/t_assert_cover.v"
 
 test.compile(verilator_flags2=['--assert --cc --coverage-user'],
              nc_flags2=["+nccovoverwrite +nccoverage+all +nccovtest+" + test.name])

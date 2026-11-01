@@ -10,7 +10,7 @@
 // The '$c1(1)' is there to prevent inlining of the signal by V3Gate
 `define IMPURE_ONE $c(1);
 `else
-// Use standard $random (chaces of getting 2 consecutive zeroes is zero).
+// Use standard $random (chances of getting 2 consecutive zeros is tiny).
 `define IMPURE_ONE |($random | $random);
 `endif
 
@@ -23,7 +23,7 @@ module top (
   reg clk_half = 0;
 
   reg [31:0] cyc = 0;
-  reg [31:0] a, b, c;
+  reg [31:0] a = 1, b = 2, c;
 
   always @(posedge clk) begin
     $display("tick %d: a: %d, b: %d, c: %d", cyc, a, b, c);

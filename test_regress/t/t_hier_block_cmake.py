@@ -42,7 +42,7 @@ test.file_grep(target_dir + 'Vsub0/sub0.sv', r'^module\s+(\S+)\s+', "sub0")
 test.file_grep(target_dir + 'Vsub1/sub1.sv', r'^module\s+(\S+)\s+', "sub1")
 test.file_grep(target_dir + 'Vsub2/sub2.sv', r'^module\s+(\S+)\s+', "sub2")
 test.file_grep(target_dir + 'Vt_hier_block__stats.txt',
-               r'HierBlock,\s+Hierarchical blocks\s+(\d+)', 14)
+               r'HierBlock,\s+Hierarchical blocks\s+(\d+)', 15)
 test.file_grep(test.obj_dir + '/run.log', r'MACRO:(\S+) is defined', "cplusplus")
 
 test.passes()

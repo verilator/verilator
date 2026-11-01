@@ -57,6 +57,7 @@ module t;
   assign z4[0] = 1'b1;
   assign z4[1] = !(y4[0]);
   assign z4[2] = !(|y4[1:0]);
+
   class Foo extends TestBase implements D4;
     function automatic int bar();
       // verilator no_inline_task
@@ -83,6 +84,7 @@ module t;
       if (!x) a(!x);
     endtask
   endclass
+
   initial begin
     static Foo inst = new;
     static TestBase foo = inst;
@@ -114,4 +116,5 @@ module t;
     $write("*-* All Finished *-*\n");
     $finish;
   end
+
 endmodule

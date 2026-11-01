@@ -1,3 +1,4 @@
+AArch
 ABCp
 Aadi
 Accellera
@@ -186,6 +187,7 @@ Hammoud
 Hao
 Haojin
 Harboe
+Haroosh
 Hashimoto
 Hayenga
 Heng
@@ -305,6 +307,7 @@ Mahmoudy
 Makefile
 Makefiles
 Maksymenko
+Manzoni
 Marche
 Markley
 Marquet
@@ -346,6 +349,7 @@ Narcis
 Nassim
 Nauticus
 Nayak
+Nazar
 Nenakhov
 Newgard
 Nigam
@@ -441,6 +445,7 @@ Shankar
 Shanshan
 Sharad
 Shareef
+Sheehan
 Shen
 Sheng
 Shi
@@ -546,6 +551,7 @@ VlRNG
 VlWide
 Vlip
 Vm
+Vour
 Vukobratovic
 Wai
 Wajahat
@@ -588,6 +594,7 @@ Yurii
 Zaruba
 Zhang
 Zhi
+Zibilyuk
 abirkmanis
 accessor
 accessors
@@ -627,12 +634,14 @@ benchmarking
 biguint
 binToOneHot
 bindir
+binsof
 biops
 bisonpre
 bitOpTree
 bitaggregat
 bitop
 bitstoreal
+bitwise
 blackbox
 bokke
 bool
@@ -718,6 +727,7 @@ deduplication
 defenv
 defname
 defparam
+dehash
 demangling
 dep
 deparametrized
@@ -737,6 +747,8 @@ devel
 difftree
 dir
 disambiguates
+discoverability
+disjunction
 displayb
 distcc
 doxygen
@@ -947,6 +959,7 @@ makefile
 makefiles
 malloc
 manpages
+memoization
 metacomment
 metacomments
 miree
@@ -986,6 +999,7 @@ muzafferkal
 myftptoyman
 mysignal
 namespace
+namespaces
 nand
 nanduraj
 nasties
@@ -1111,6 +1125,7 @@ rodata
 rolloverSize
 rr
 rst
+runnable
 runtime
 runtimes
 rw
@@ -1132,6 +1147,7 @@ shortint
 shortreal
 signame
 signedness
+slp
 sp
 specparam
 splitme
@@ -1182,6 +1198,7 @@ systemc
 taskify
 tcmalloc
 tcmalloc
+teardown
 tenghtt
 testbench
 testbenches
@@ -1216,6 +1233,7 @@ typedef'ed
 typedefed
 typedefs
 typename
+typenames
 uint
 un
 unbased
@@ -1238,6 +1256,7 @@ unoptimizable
 unparenthesized
 unroller
 unsatisfiable
+unselected
 unsized
 unsup
 untyped
@@ -1255,6 +1274,7 @@ vcddiff
 vcoverage
 vdhotre
 vec
+vectorize
 ventana
 venv
 ver
@@ -1292,12 +1312,15 @@ vpm
 vpp
 warmup
 wavealloca
+wavecat
 wavediff
 waveforms
+wavetools
 whitespace
 widthed
 wor
 wreal
+writablility
 writeb
 writeme
 writemem

@@ -13,7 +13,7 @@
 // source but then re-wrapped the now-packed expression in AstCvtArrayToPacked,
 // which EmitC dereferenced as an array.
 
-module t(
+module t (
     input clk
 );
 
@@ -36,8 +36,8 @@ module t(
   wire [W-1:0] src = crc[W-1:0];
 
   arr_t aw_r, aw_l;
-  always_comb {>>{aw_r}} = src;
-  always_comb {<<8{aw_l}} = src;
+  always_comb{>>{aw_r}} = src;
+  always_comb{<<8{aw_l}} = src;
 
   wire [W-1:0] rd_r = {>>{aw_r}};
   wire [W-1:0] rd_l = {<<8{aw_l}};  // {<<{}} read of aggregate array previously crashed

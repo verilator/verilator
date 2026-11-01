@@ -68,6 +68,7 @@ with open(rdFile, 'r', encoding="utf8") as rdFh, \
 # Compile un-optimized
 test.compile(verilator_flags2=[
     "--stats",
+    "-fno-decompose",
     "--build",
     "-fno-dfg",
     "+incdir+" + test.obj_dir,
@@ -88,13 +89,13 @@ if test.name == "t_dfg_peephole_off_each":
 
 test.compile(verilator_flags2=[
     "--stats",
+    "-fno-decompose",
     "--build",
     "--exe",
     "+incdir+" + test.obj_dir,
     "-Mdir", test.obj_dir + "/obj_opt",
     "--prefix", "Vopt",
     "-fno-const-before-dfg",  # Otherwise V3Const makes testing painful
-    "-fno-lift-expr", # Assumes V3Const run prior to V3LiftExpr
     "-fdfg-synthesize-all",
     "--dump-dfg",  # To fill code coverage
     "-CFLAGS \"-I .. -I ../obj_ref\"",

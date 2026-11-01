@@ -28,18 +28,16 @@ module t (
     results[1].passs++;
   else results[1].fails++;
 
-  assert property (@(posedge clk) disable iff (1) 1 ##1 0)
-    results[2].passs++;
+  assert property (@(posedge clk) disable iff (1) 1 ##1 0) results[2].passs++;
   else results[2].fails++;
 
-  assert property (@(posedge clk) disable iff (0) 1 ##1 0)
-    results[3].passs++;
+  assert property (@(posedge clk) disable iff (0) 1 ##1 0) results[3].passs++;
   else results[3].fails++;
 
   always @(clk) begin
     ++cyc;
     if (cyc == MAX) begin
-      expected[1] = '{2, 3};
+      expected[1] = '{2, 2};
       // expected[2] shouldn't be initialized
       expected[3] = '{6, 0};
       `checkh(results, expected);

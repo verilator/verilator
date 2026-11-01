@@ -1,0 +1,3 @@
+[0] %Error: t_covergroup_wildcard_max_bins.v:36: Assertion failed in top.t.cg.sample: Illegal bin 'high' hit in coverpoint 'ill'
+%Error: t/t_covergroup_wildcard_max_bins.v:36: Verilog $stop
+Aborting...

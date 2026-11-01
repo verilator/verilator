@@ -13,7 +13,8 @@ class Bar;
   rand int x;
   rand Foo foo;
 
-  constraint x_gt_0 {x > 0;};
+  constraint x_gt_0 {x > 0;}
+  ;
 
   function new;
     foo = new;
@@ -22,11 +23,13 @@ endclass
 
 class Qux extends Bar;
   rand int y;
-  constraint y_gt_x {y > x;};
-  constraint y_lt_10 {y < 10;};
+  constraint y_gt_x {y > x;}
+  ;
+  constraint y_lt_10 {y < 10;}
+  ;
 
   function bit get_rand_mode();
-     return bit'(y.rand_mode());
+    return bit'(y.rand_mode());
   endfunction
 
   function void test;
@@ -43,37 +46,37 @@ class Qux extends Bar;
     if (foo.b.rand_mode() != 1) $stop;  // Note has rand_mode parens
 
     for (int i = 0; i < 20; ++i) begin
-       x = 4;
-       y = 8;
-       foo.a = 15;
-       foo.b = 16;
-       void'(randomize());
-       if (x >= y) $stop;
-       if (x != 4) ok = 1;
-       if (y != 8) $stop;
-       if (foo.a != 15) $stop;
-       if (foo.b != 16) ok = 1;
-     end
-     if (!ok) $stop;
-     foo.b = 16;
-     foo.rand_mode(0);
-     if (foo.rand_mode == 1) $stop;
-     if (foo.a.rand_mode == 1) $stop;
-     if (foo.b.rand_mode == 0) $stop;
-     void'(randomize());
-     if (foo.a != 15) $stop;
-     if (foo.b != 16) $stop;
-     ok = 0;
-     foo.rand_mode(1);
-     if (foo.rand_mode == 0) $stop;
-     for (int i = 0; i < 20; ++i) begin
-       foo.a = 23;
-       foo.b = 42;
-       void'(randomize());
-       if (foo.a != 23) $stop;
-       if (foo.b != 42) ok = 1;
-     end
-     if (!ok) $stop;
+      x = 4;
+      y = 8;
+      foo.a = 15;
+      foo.b = 16;
+      void'(randomize());
+      if (x >= y) $stop;
+      if (x != 4) ok = 1;
+      if (y != 8) $stop;
+      if (foo.a != 15) $stop;
+      if (foo.b != 16) ok = 1;
+    end
+    if (!ok) $stop;
+    foo.b = 16;
+    foo.rand_mode(0);
+    if (foo.rand_mode == 1) $stop;
+    if (foo.a.rand_mode == 1) $stop;
+    if (foo.b.rand_mode == 0) $stop;
+    void'(randomize());
+    if (foo.a != 15) $stop;
+    if (foo.b != 16) $stop;
+    ok = 0;
+    foo.rand_mode(1);
+    if (foo.rand_mode == 0) $stop;
+    for (int i = 0; i < 20; ++i) begin
+      foo.a = 23;
+      foo.b = 42;
+      void'(randomize());
+      if (foo.a != 23) $stop;
+      if (foo.b != 42) ok = 1;
+    end
+    if (!ok) $stop;
   endfunction
 endclass
 
@@ -117,17 +120,17 @@ module t;
     qux.foo.b.rand_mode(0);
     if (qux.foo.b.rand_mode == 1) $stop;
     for (int i = 0; i < 20; ++i) begin
-       qux.x = 5;
-       qux.y = 8;
-       qux.foo.a = 13;
-       qux.foo.b = 21;
-       res = qux.randomize() with {y > 5;};
-       if (qux.x >= qux.y) $stop;
-       if (qux.y <= 5) $stop;
-       if (qux.x != 5) $stop;
-       if (qux.y != 8) ok = 1;
-       if (qux.foo.a != 13) ok = 1;
-       if (qux.foo.b != 21) $stop;
+      qux.x = 5;
+      qux.y = 8;
+      qux.foo.a = 13;
+      qux.foo.b = 21;
+      res = qux.randomize() with {y > 5;};
+      if (qux.x >= qux.y) $stop;
+      if (qux.y <= 5) $stop;
+      if (qux.x != 5) $stop;
+      if (qux.y != 8) ok = 1;
+      if (qux.foo.a != 13) ok = 1;
+      if (qux.foo.b != 21) $stop;
     end
     if (!ok) $stop;
 

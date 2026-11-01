@@ -214,11 +214,11 @@
 
           always_comb begin
             state_d = state_q;
-%000003     if ((state_q + 2'd0) == S0) state_d = S1;
+%000004     if ((state_q + 2'd0) == S0) state_d = S1;
         // [FSM coverage]
 %000003        // [fsm_arc t.nonvar_compare_u.state_q::S0->S1]
 %000003        // [fsm_arc t.nonvar_compare_u.state_q::S1->S0]
-%000003        // [fsm_state t.nonvar_compare_u.state_q::S0]
+%000004        // [fsm_state t.nonvar_compare_u.state_q::S0]
 %000003        // [fsm_state t.nonvar_compare_u.state_q::S1]
             else if (state_q == S1) state_d = S0;
           end
@@ -373,25 +373,40 @@
           logic side = 1'b0;
           logic dyn_side = 1'b0;
           logic [2:0] dyn_case = 3'd7;
-          state_t state  /*verilator fsm_reset_arc*/;
+          state_t state  /*verilator fsm_state*/;
 
           fsm_if_mixed_vars_bad mixed_vars_u (.clk(clk));
           fsm_if_one_branch_bad one_branch_u (.clk(clk));
           fsm_if_duplicate_bad duplicate_u (.clk(clk));
-          fsm_if_two_comparisons_bad two_comparisons_u (.clk(clk), .start(start));
+          fsm_if_two_comparisons_bad two_comparisons_u (
+              .clk(clk),
+              .start(start)
+          );
           fsm_if_or_bad or_u (.clk(clk));
-          fsm_if_alias_guard_bad alias_guard_u (.clk(clk), .start(start));
+          fsm_if_alias_guard_bad alias_guard_u (
+              .clk(clk),
+              .start(start)
+          );
           fsm_if_ambiguous_alias_bad ambiguous_alias_u (.clk(clk));
           fsm_if_missing_default_bad missing_default_u (.clk(clk));
           fsm_if_no_assign_bad no_assign_u (.clk(clk));
           fsm_if_nonvar_compare_bad nonvar_compare_u (.clk(clk));
           fsm_if_var_rhs_compare_bad var_rhs_compare_u (.clk(clk));
-          fsm_if_var_target_bad var_target_u (.clk(clk), .dyn(dyn_case[1:0]));
+          fsm_if_var_target_bad var_target_u (
+              .clk(clk),
+              .dyn(dyn_case[1:0])
+          );
           fsm_if_alias_other_state_bad alias_other_state_u (.clk(clk));
-          fsm_if_bit_or_bad bit_or_u (.clk(clk), .start(start));
+          fsm_if_bit_or_bad bit_or_u (
+              .clk(clk),
+              .start(start)
+          );
           fsm_if_reduction_bad reduction_u (.clk(clk));
           fsm_direct_active_low_dynamic_reset_bad active_low_dynamic_reset_u (
-              .clk(clk), .rst_n(cyc != 0), .dyn_reset(dyn_case[1:0]));
+              .clk(clk),
+              .rst_n(cyc != 0),
+              .dyn_reset(dyn_case[1:0])
+          );
 
           always @(posedge clk) begin
             cyc <= cyc + 1;
@@ -416,7 +431,7 @@
 %000002       case (state)
         // [FSM coverage]
 %000002        // [fsm_arc t.state::S0->S1]
-%000001        // [fsm_state t.state::S0]
+%000002        // [fsm_state t.state::S0]
 %000002        // [fsm_state t.state::S1]
 %000002        // [fsm_state t.state::S2]
                 S0, state_t'(dyn_case): state <= S1;

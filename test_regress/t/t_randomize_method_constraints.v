@@ -60,7 +60,7 @@ module t;
       $display("-------------------");
       if (!(obj.v inside {ONE, THREE})) $stop;
       if (obj.w != 5) $stop;
-      if (!(obj.x inside {1,2,4,5})) $stop;
+      if (!(obj.x inside {1, 2, 4, 5})) $stop;
       if (obj.z <= 13 || obj.z >= 21) $stop;
       if (obj.redor != 1) $stop;
     end

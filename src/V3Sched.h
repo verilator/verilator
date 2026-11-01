@@ -79,47 +79,80 @@ inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
 }  // namespace util
 
 //============================================================================
-// Throughout scheduling, we need to keep hold of AstActive nodes, together with the AstScope that
-// they are under. LogicByScope is simply a vector of such pairs, with some additional convenience
-// methods.
-struct LogicByScope final : public std::vector<std::pair<AstScope*, AstActive*>> {
+// Throughout scheduling, we need to keep hold of AstActive nodes, together
+// with the AstScope that they are under. LogicByScope is simply a list of
+// such pairs, with some additional convenience methods.
+
+class LogicByScope final {
+public:
+    // TYPES
+    // An AstActive and the AstScope it is under
+    struct Entry final {
+        AstScope* m_scopep;  // The scope the AstActive is under
+        AstActive* m_activep;  // The AstActive holding the logic
+        std::set<uint32_t> m_triggers;  // Trigger indices m_activep is sensitive to
+    };
+    using iterator = std::vector<Entry>::iterator;
+    using const_iterator = std::vector<Entry>::const_iterator;
+
+private:
+    // STATE
+    std::vector<Entry> m_entries;  // The AstActives held, with their scopes
+
+public:
+    // METHODS
+
+    // Iteration and access
+    iterator begin() { return m_entries.begin(); }
+    iterator end() { return m_entries.end(); }
+    const_iterator begin() const { return m_entries.begin(); }
+    const_iterator end() const { return m_entries.end(); }
+    bool empty() const { return m_entries.empty(); }
+    size_t size() const { return m_entries.size(); }
+    const Entry& operator[](size_t i) const { return m_entries[i]; }
+
+    // Add an AstActive under the given scope
+    void add(AstScope* scopep, AstActive* activep) { m_entries.push_back({scopep, activep, {}}); }
+
     // Add logic
     void add(AstScope* scopep, AstSenTree* senTreep, AstNode* logicp) {
         UASSERT_OBJ(!logicp->backp(), logicp, "Already linked");
-        if (empty() || back().first != scopep || back().second->sentreep() != senTreep) {
-            emplace_back(scopep, new AstActive{logicp->fileline(), "", senTreep});
+        if (m_entries.empty() || m_entries.back().m_scopep != scopep
+            || m_entries.back().m_activep->sentreep() != senTreep) {
+            add(scopep, new AstActive{logicp->fileline(), "", senTreep});
         }
-        back().second->addStmtsp(logicp);
+        m_entries.back().m_activep->addStmtsp(logicp);
     };
 
     // Create copy, with the AstActives cloned
     LogicByScope clone() const {
         LogicByScope result;
-        for (const auto& pair : *this) {
-            result.emplace_back(pair.first, pair.second->cloneTree(false));
+        for (const Entry& entry : m_entries) {
+            result.add(entry.m_scopep, entry.m_activep->cloneTree(false));
         }
         return result;
     }
 
     // Delete actives (they should all be empty)
     void deleteActives() {
-        for (const auto& pair : *this) {
-            AstActive* const activep = pair.second;
+        for (const Entry& entry : m_entries) {
+            AstActive* const activep = entry.m_activep;
             if (v3Global.opt.debugCheck()) {
-                for (AstNode* nodep = activep->stmtsp(); nodep; nodep = nodep->nextp()) {
+                for (AstNode* const nodep : activep->stmtspList()) {
                     AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
                     UASSERT_OBJ(procp && !procp->stmtsp(), activep, "Leftover logic");
                 }
             }
             if (activep->backp()) activep->unlinkFrBack();
-            activep->deleteTree();
+            VL_DO_DANGLING(activep->deleteTree(), activep);
         }
-        clear();
+        m_entries.clear();
     };
 
     void foreachLogic(const std::function<void(AstNode*)>& f) const {
-        for (const auto& pair : *this) {
-            for (AstNode* nodep = pair.second->stmtsp(); nodep; nodep = nodep->nextp()) f(nodep);
+        for (const Entry& entry : m_entries) {
+            const AstActive* const activep = entry.m_activep;
+            for (AstNode* const nodep : activep->stmtspList()) f(nodep);
         }
     }
 };
@@ -244,6 +277,8 @@ private:
 
     // SenItems to corresponding bit indexes
     std::unordered_map<VNRef<const AstSenItem>, size_t> m_senItem2TrigIdx;
+    // Bit index to corresponding SenItem, nullptr for padding and Extra triggers
+    std::vector<const AstSenItem*> m_trigIdx2SenItem;
     // Data type of a single trigger word
     AstNodeDType* m_wordDTypep = nullptr;
     // Data type of a trigger vector holding one copy of all triggers
@@ -267,16 +302,11 @@ private:
     mutable AstCFunc* m_dumpExtp = nullptr;
     // The AstCFunc testing if a trigger vector has any bits set - create lazily
     mutable AstCFunc* m_anySetVecp = nullptr;
-    mutable AstCFunc* m_anySetExtp = nullptr;
+    mutable AstCFunc* m_anySetExtp = nullptr;  // Function testing if extra trigger bits are set
     // The AstCFunc setting bits in a trigger vector that are set in another - create lazily
     mutable std::array<AstCFunc*, 4> m_orIntoVecps = {nullptr};
     // The AstCFunc setting a trigger vector to all zeroes - create lazily
     mutable AstCFunc* m_clearp = nullptr;
-
-    // The map from 'pre' input SenTree to trigger SenTree
-    std::unordered_map<const AstSenTree*, AstSenTree*> m_mapPre;
-    // The map from other input SenTree to trigger SenTree
-    std::unordered_map<const AstSenTree*, AstSenTree*> m_mapVec;
 
     // Methods to lazy construct functions processing trigger vectors
     AstCFunc* createDumpExtFunc() const;
@@ -285,12 +315,10 @@ private:
     AstCFunc* createOrIntoFunc(AstUnpackArrayDType* const oDtypep,
                                AstUnpackArrayDType* const iDtypep) const;
 
-    // Create an AstSenTree that is sensitive to the given trigger indices
-    AstSenTree* newTriggerSenTree(AstVarScope* vscp, const std::vector<uint32_t>& indices) const;
-
     TriggerKit(const std::string& name, bool slow, uint32_t nSenseWords, uint32_t nExtraWords,
                uint32_t nPreWords,
-               std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx, bool useAcc);
+               std::unordered_map<VNRef<const AstSenItem>, size_t> senItem2TrigIdx,
+               const std::vector<const AstSenItem*>& senItemps, bool useAcc);
     VL_UNCOPYABLE(TriggerKit);
 
 public:
@@ -335,10 +363,9 @@ public:
     size_t senItem2TrigIdx(const AstSenItem* senItemp) const {
         return m_senItem2TrigIdx.at(*senItemp);
     }
+    const std::vector<const AstSenItem*>& trigIdx2SenItem() const { return m_trigIdx2SenItem; }
     AstCFunc* compBasep() const { return m_compVecp; }
     const std::string& name() const { return m_name; }
-    const std::unordered_map<const AstSenTree*, AstSenTree*>& mapPre() const { return m_mapPre; }
-    const std::unordered_map<const AstSenTree*, AstSenTree*>& mapVec() const { return m_mapVec; }
 
     // Helpers for code generation - lazy construct relevant functions
     AstNodeStmt* newAndNotCall(AstVarScope* op, AstVarScope* ap, AstVarScope* bp) const;
@@ -352,8 +379,12 @@ public:
     // Create a new (non-extended) trigger vector - might return nullptr if there are no triggers
     AstVarScope* newTrigVec(const std::string& name) const;
 
-    // Create an AstSenTree that is sensitive to the given Extra trigger
-    AstSenTree* newExtraTriggerSenTree(AstVarScope* vscp, uint32_t index) const;
+    // Index in the trigger vector of the given Extra trigger
+    uint32_t extraTriggerIndex(uint32_t index) const;
+
+    // Indices in the trigger vector of the items of the given SenTree, either of the 'pre' copy,
+    // or of the regular triggers
+    std::set<uint32_t> triggerIndices(const AstSenTree* senTreep, bool pre) const;
 
     // Statement setting the extra trigger bit at 'index' to the value of 'vscp'
     AstNodeStmt* newExtraTriggerAssignment(AstVarScope* vscp, uint32_t index) const;
@@ -380,15 +411,15 @@ public:
     LogicByScope m_lbs;  // Actives that resume timing schedulers
     AstNodeStmt* m_postUpdates = nullptr;  // Post updates for the trigger eval function
 
-    // Remaps external domains using the specified trigger map
-    std::map<const AstVarScope*, std::vector<AstSenTree*>> remapDomains(
-        const std::unordered_map<const AstSenTree*, AstSenTree*>& trigMap) const VL_MT_DISABLED;
+    // Trigger indices of the external domains of each variable
+    std::map<const AstVarScope*, std::vector<uint32_t>>
+    externalTriggerIndices(const TriggerKit& trigKit) const VL_MT_DISABLED;
     // Get the delay scheduler variable
     AstVarScope* getDelayScheduler(AstNetlist* const netlistp) VL_MT_DISABLED;
     // Creates a timing resume call (if needed, else returns null)
-    AstCCall* createResume(AstNetlist* const netlistp) VL_MT_DISABLED;
+    AstCCall* createResume(AstVarScope* trigVscp) VL_MT_DISABLED;
     // Creates a timing ready call (if needed, else returns null)
-    AstCCall* createReady(AstNetlist* const netlistp) VL_MT_DISABLED;
+    AstCCall* createReady(AstVarScope* trigVscp) VL_MT_DISABLED;
 
     TimingKit() = default;
     TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
@@ -417,12 +448,11 @@ public:
         m_triggers.push_back(TriggerEntry{ifacep, memberp, vscp});
     }
 
-    // Maps each triggered VarScope to its AstSenTree. findTriggeredIface() uses this
+    // Maps each triggered VarScope to its trigger index. addTriggeredIface() uses this
     // to look up triggers -- by specific VarScope for non-virtual reads, or by iterating
     // all entries of the same interface type for virtual interface reads.
-    using VscpSensMap = std::map<const AstVarScope*, AstSenTree*>;
-    VscpSensMap makeVscpToSensMap(const TriggerKit& trigKit, uint32_t firstIndex,
-                                  AstVarScope* trigVscp) const;
+    using VscpTrigMap = std::map<const AstVarScope*, uint32_t>;
+    VscpTrigMap makeVscpToTrigMap(const TriggerKit& trigKit, uint32_t firstIndex) const;
 
     VL_UNCOPYABLE(VirtIfaceTriggers);
     VirtIfaceTriggers() = default;
@@ -430,8 +460,58 @@ public:
     VirtIfaceTriggers& operator=(VirtIfaceTriggers&&) = default;
 };
 
+// Design variables bound to covergroup 'ref'/'const ref' formal arguments at construction.
+//
+// Such a formal becomes a pointer member, bound when the covergroup is constructed, so a
+// sample() reading through it holds no AstVarRef naming the design variable. V3Order has to
+// model those reads, but by the time it runs the constructions sit in logic it does not order,
+// so they are collected before ordering and handed to it.
+class CovergroupRefBindings final {
+public:
+    // The design variables one covergroup sample() may read through its reference formals
+    using Bindings = std::vector<AstVarScope*>;
+
+private:
+    // Bindings of one covergroup handle. Exact, and so only present for a handle whose every
+    // write is a construction we recognized -- see dropInstance().
+    std::unordered_map<const AstVarScope*, Bindings> m_byInstance;
+    // Bindings over every construction of a covergroup class, used where the handle a sample()
+    // call reaches is not known. An over-approximation, which is safe.
+    std::unordered_map<const AstClass*, Bindings> m_byClass;
+    // How the sample() calls seen so far resolved. Statistics only, hence mutable: ordering
+    // runs once per scheduling region and must hold this by const reference.
+    mutable uint32_t m_numExactCalls = 0;
+    mutable uint32_t m_numUnionCalls = 0;  // Statistic, sample() calls that resolved to a union
+    // Returned for a covergroup with no reference formal at all.
+    static const Bindings s_none;
+
+public:
+    // Record one construction of covergroup 'classp' binding reference formals to 'bindings'.
+    // 'instp' is the handle assigned, or nullptr if the destination could not be identified.
+    void addConstruction(const AstClass* classp, const AstVarScope* instp,
+                         const Bindings& bindings);
+    // Forget the exact bindings of a handle, which turned out to be written by something other
+    // than a construction we recognized. Its sample() calls fall back to the class union.
+    void dropInstance(const AstVarScope* instp) { m_byInstance.erase(instp); }
+    // What a sample() of covergroup 'classp' may read through reference formals, when called on
+    // handle 'instp' (nullptr if the call is not on a plain handle reference)
+    const Bindings& forSample(const AstVarScope* instp, const AstClass* classp) const;
+    // Sample calls of a covergroup with a reference formal resolved to one handle's bindings
+    uint32_t numExactCalls() const { return m_numExactCalls; }
+    // ... and those that had to take the class union instead
+    uint32_t numUnionCalls() const { return m_numUnionCalls; }
+
+    VL_UNCOPYABLE(CovergroupRefBindings);
+    CovergroupRefBindings() = default;
+    CovergroupRefBindings(CovergroupRefBindings&&) = default;
+    CovergroupRefBindings& operator=(CovergroupRefBindings&&) = default;
+};
+
 // Creates trigger vars for signals driven via virtual interfaces
 VirtIfaceTriggers makeVirtIfaceTriggers(AstNetlist* nodep) VL_MT_DISABLED;
+
+// Collects what covergroup reference formal arguments are bound to at construction
+const CovergroupRefBindings makeCovergroupRefBindings(AstNetlist* nodep) VL_MT_DISABLED;
 
 // Creates the timing kit and marks variables written by suspendables
 TimingKit prepareTiming(AstNetlist* const netlistp) VL_MT_DISABLED;
@@ -451,8 +531,6 @@ LogicReplicas replicateLogic(LogicRegions&) VL_MT_DISABLED;
 
 // Utility functions used by various steps in scheduling
 namespace util {
-// Create a new top level entry point
-AstCFunc* makeTopFunction(AstNetlist* netlistp, const string& name, bool slow);
 // Create a new sub function (not an entry point)
 AstCFunc* makeSubFunction(AstNetlist* netlistp, const string& name, bool slow);
 // Add an argument of the given type to the given function
@@ -466,8 +544,6 @@ AstNodeStmt* incrementVar(AstVarScope* vscp);
 AstNodeStmt* callVoidFunc(AstCFunc* funcp);
 // Split large function according to --output-split-cfuncs
 void splitCheck(AstCFunc* ofuncp);
-// Build an AstIf conditional on the given SenTree being triggered
-AstIf* createIfFromSenTree(AstSenTree* senTreep);
 }  // namespace util
 
 void beforeTrigVisitor(AstNetlist* netlistp, SenExprBuilder& senExprBuilder,

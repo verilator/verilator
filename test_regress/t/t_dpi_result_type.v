@@ -115,6 +115,12 @@ module t (
   import "DPI-C" function bit [31:0] i_array_2_state_32 ();
 `endif
 
+`ifndef NO_ARRAY
+  // 2-state packed arrays of 1-bit typedef of width <= 32
+  import "DPI-C" function bit_t [ 0:0] i_bit_t_array_1  ();
+  import "DPI-C" function bit_t [31:0] i_bit_t_array_32 ();
+`endif
+
 `ifndef NO_STRUCT_OR_UNION
   // 2-state packed structures of width <= 32
   import "DPI-C" function struct_2_state_1   i_struct_2_state_1 ();
@@ -174,6 +180,12 @@ module t (
   // 2-state packed arrays of width <= 32
   export "DPI-C" function e_array_2_state_1;
   export "DPI-C" function e_array_2_state_32;
+`endif
+
+`ifndef NO_ARRAY
+  // 2-state packed arrays of 1-bit typedef of width <= 32
+  export "DPI-C" function e_bit_t_array_1;
+  export "DPI-C" function e_bit_t_array_32;
 `endif
 
 `ifndef NO_STRUCT_OR_UNION
@@ -403,6 +415,23 @@ module t (
   endfunction
 `endif
 
+`ifndef NO_ARRAY
+  // 2-state packed arrays of 1-bit typedef of width <= 32
+  int                       n_bit_t_array_1 = 0;
+  function bit_t [ 0:0] e_bit_t_array_1();
+    $display("e_bit_t_array_1 %1d", n_bit_t_array_1);
+    e_bit_t_array_1 = n_bit_t_array_1[0];
+    n_bit_t_array_1++;
+  endfunction
+
+  int                       n_bit_t_array_32 = 0;
+  function bit_t [31:0] e_bit_t_array_32();
+    $display("e_bit_t_array_32 %1d", n_bit_t_array_32);
+    e_bit_t_array_32 = ~32'd0 >> n_bit_t_array_32;
+    n_bit_t_array_32++;
+  endfunction
+`endif
+
 `ifndef NO_STRUCT_OR_UNION
   // 2-state packed structures of width <= 32
   int                       n_struct_2_state_1 = 0;
@@ -496,6 +525,12 @@ module t (
       // 2-state packed arrays of width <= 32
       if (i_array_2_state_1()   !== ~i[0]      ) $stop;
       if (i_array_2_state_32()  !== ~32'd0 << i) $stop;
+`endif
+
+`ifndef NO_ARRAY
+      // 2-state packed arrays of 1-bit typedef of width <= 32
+      if (i_bit_t_array_1()   !== ~i[0]      ) $stop;
+      if (i_bit_t_array_32()  !== ~32'd0 << i) $stop;
 `endif
 
 `ifndef NO_STRUCT_OR_UNION

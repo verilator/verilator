@@ -1,0 +1,11 @@
+%Error: t/t_covergroup_coverpoint_method_bad.v:21:14: Member 'cp' not found in covergroup 'cg'
+                                                    : ... note: In instance 't'
+   21 |     r = cg_i.cp;   
+      |              ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_coverpoint_method_bad.v:22:13: Class method 'cp.sample' not found in covergroup 'cg'
+                                                    : ... note: In instance 't'
+                                                    : ... Suggested alternative: 'sample'
+   22 |     cg_i.cp.sample();   
+      |             ^~~~~~
+%Error: Exiting due to

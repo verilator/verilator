@@ -1,0 +1,6 @@
+%Error: t/t_param_struct_unpacked_bad.v:22:32: Expecting expression to be constant, but variable isn't const: 'v'
+                                             : ... note: In instance 't'
+   22 |   m #(.S('{'{a: 1, b: 2}, '{a: v, b: 4}})) i ();
+      |                                ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

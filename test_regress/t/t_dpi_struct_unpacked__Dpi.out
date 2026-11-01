@@ -1,0 +1,100 @@
+// Verilated -*- C++ -*-
+// DESCRIPTION: Verilator output: Prototypes for DPI import and export functions.
+//
+// Verilator includes this file in all generated .cpp files that use DPI functions.
+// Manually include this file where DPI .c import functions are declared to ensure
+// the C functions match the expectations of the DPI imports.
+
+#ifndef VERILATED_VT_DPI_STRUCT_UNPACKED__DPI_H_
+#define VERILATED_VT_DPI_STRUCT_UNPACKED__DPI_H_  // guard
+
+#include "svdpi.h"
+
+// DPI TYPES
+#ifndef VL_DPITYPE_eval_
+#define VL_DPITYPE_eval_
+typedef struct {
+    int x;
+} eval;
+#endif
+#ifndef VL_DPITYPE_basic_t_
+#define VL_DPITYPE_basic_t_
+typedef struct {
+    char b;
+    unsigned char bu;
+    short si;
+    int i;
+    unsigned int iu;
+    long long li;
+    unsigned long long liu;
+    double r;
+    void* ch;
+    const char* s;
+    svBit bt;
+    svLogic lg;
+    svBitVecVal bv7[SV_PACKED_DATA_NELEMS(7)];
+    svLogicVecVal lv65[SV_PACKED_DATA_NELEMS(65)];
+    svBitVecVal bv96[SV_PACKED_DATA_NELEMS(96)];
+    svLogicVecVal ig[SV_PACKED_DATA_NELEMS(32)];
+    svLogicVecVal tm[SV_PACKED_DATA_NELEMS(64)];
+    svBitVecVal en[SV_PACKED_DATA_NELEMS(3)];
+    svLogicVecVal pk[SV_PACKED_DATA_NELEMS(7)];
+    svBitVecVal pa[SV_PACKED_DATA_NELEMS(16)];
+    svLogicVecVal lt[SV_PACKED_DATA_NELEMS(7)];
+} basic_t;
+#endif
+#ifndef VL_DPITYPE_inner_t_
+#define VL_DPITYPE_inner_t_
+typedef struct {
+    int x;
+    svBitVecVal v[3][SV_PACKED_DATA_NELEMS(33)];
+    struct {
+        char a;
+        short m[2][3];
+    } anon;
+} inner_t;
+#endif
+#ifndef VL_DPITYPE_outer_t_
+#define VL_DPITYPE_outer_t_
+typedef struct {
+    basic_t basic;
+    inner_t inner[2];
+} outer_t;
+#endif
+#ifndef VL_DPITYPE_sub_t_
+#define VL_DPITYPE_sub_t_
+typedef struct {
+    int w;
+} sub_t;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+    // DPI EXPORTS
+    // DPI export at t/t_dpi_struct_unpacked.v:183:17
+    extern void dpix_array(const eval* i, eval* o);
+    // DPI export at t/t_dpi_struct_unpacked.v:175:17
+    extern void dpix_outer(const outer_t* i, outer_t* o, outer_t* io);
+
+    // DPI IMPORTS
+    // DPI import at t/t_dpi_struct_unpacked.v:79:32
+    extern void dpii_array(const inner_t* i, inner_t* o, inner_t* io);
+    // DPI import at t/t_dpi_struct_unpacked.v:69:23
+    extern int dpii_basic(const basic_t* i, basic_t* o, basic_t* io);
+    // DPI import at t/t_dpi_struct_unpacked.v:84:40
+    extern void dpii_check_export(int n);
+    // DPI import at t/t_dpi_struct_unpacked.v:85:31
+    extern int dpii_failure();
+    // DPI import at t/t_dpi_struct_unpacked.v:74:32
+    extern void dpii_outer(const outer_t* i, outer_t* o, outer_t* io);
+    // DPI import at t/t_dpi_struct_unpacked.v:236:31
+    extern int dpii_sub(const sub_t* i);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif  // guard

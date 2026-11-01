@@ -22,7 +22,7 @@
 #include "verilated_vpi.h"
 
 #include "Vt_vpi_multidim.h"
-#include "Vt_vpi_multidim__Dpi.h"
+#include VM_PREFIX_INCLUDE_DPI
 #include "svdpi.h"
 
 #endif
@@ -144,9 +144,16 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
 
             // iterating through packed ranges
             TestVpiHandle range_iter_h = vpi_iterate(vpiRange, arr_elem_h);
+            TestVpiHandle ranges_h[2];
             for (int idx2 = 0; idx2 < 2; idx2++) {
-                TestVpiHandle range_h = vpi_scan(range_iter_h);
-                TEST_CHECK_NZ(range_h);
+                ranges_h[idx2] = vpi_scan(range_iter_h);
+                TEST_CHECK_NZ(ranges_h[idx2]);
+            }
+            TEST_CHECK_Z(vpi_scan(range_iter_h));
+            range_iter_h.freed();
+            // Range handles must survive iterator exhaustion.
+            for (int idx2 = 0; idx2 < 2; idx2++) {
+                const TestVpiHandle& range_h = ranges_h[idx2];
                 {
                     s_vpi_value value;
                     value.format = vpiIntVal;
@@ -168,8 +175,6 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
                     }
                 }
             }
-            TEST_CHECK_Z(vpi_scan(range_iter_h));
-            range_iter_h.freed();
         }
         TEST_CHECK_Z(vpi_scan(arr_iter_h));
         arr_iter_h.freed();
@@ -178,9 +183,15 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
     {
         // iterating through unpacked ranges
         TestVpiHandle range_iter_h = vpi_iterate(vpiRange, arr_h);
+        TestVpiHandle ranges_h[2];
         for (int idx = 0; idx < 2; idx++) {
-            TestVpiHandle range_h = vpi_scan(range_iter_h);
-            TEST_CHECK_NZ(range_h);
+            ranges_h[idx] = vpi_scan(range_iter_h);
+            TEST_CHECK_NZ(ranges_h[idx]);
+        }
+        range_iter_h.release();
+        // Range handles must also survive explicit iterator release.
+        for (int idx = 0; idx < 2; idx++) {
+            const TestVpiHandle& range_h = ranges_h[idx];
             {
                 s_vpi_value value;
                 value.format = vpiIntVal;
@@ -202,8 +213,6 @@ void _arr_iter_check(const char* name, int wordSize, const int* lows) {
                 }
             }
         }
-        TEST_CHECK_Z(vpi_scan(range_iter_h));
-        range_iter_h.freed();
     }
 }
 
@@ -366,6 +375,47 @@ void _multidim_check() {
     }
 }
 
+void _arr_6d_check() {
+    TestVpiHandle arr_h
+        = vpi_handle_by_name(const_cast<PLI_BYTE8*>(TestSimulator::rooted("arr_6d")), NULL);
+    TEST_CHECK_NZ(arr_h);
+    _arr_type_check(arr_h, vpiRegArray, 8, 1, 0);
+    // IEEE 1800-2023 38.19 requires a handle for any legal index select, Questa returns null for
+    // a subarray of a multidimensional array
+    if (TestSimulator::is_questa()) return;
+    TestVpiHandle elem1_h = vpi_handle_by_index(arr_h, 1);
+    TEST_CHECK_NZ(elem1_h);
+    _arr_type_check(elem1_h, vpiRegArray, 4, 1, 2);
+    TestVpiHandle elem2_h = vpi_handle_by_index(elem1_h, 2);
+    TEST_CHECK_NZ(elem2_h);
+    _arr_type_check(elem2_h, vpiRegArray, 2, 3, 2);
+    TestVpiHandle reg_h = vpi_handle_by_index(elem2_h, 3);
+    TEST_CHECK_NZ(reg_h);
+    _arr_type_check(reg_h, vpiReg, 8, 3, 2);
+    s_vpi_value value;
+    value.format = vpiIntVal;
+    vpi_get_value(reg_h, &value);
+    TEST_CHECK_EQ(value.value.integer, 0xb4);
+    // [1:2] ascends, so index 1 is the upper pair
+    TestVpiHandle nib_h = vpi_handle_by_index(reg_h, 3);
+    TEST_CHECK_NZ(nib_h);
+    TestVpiHandle pair1_h = vpi_handle_by_index(nib_h, 1);
+    TEST_CHECK_NZ(pair1_h);
+    vpi_get_value(pair1_h, &value);
+    TEST_CHECK_EQ(value.value.integer, 2);
+    TestVpiHandle pair2_h = vpi_handle_by_index(nib_h, 2);
+    TEST_CHECK_NZ(pair2_h);
+    vpi_get_value(pair2_h, &value);
+    TEST_CHECK_EQ(value.value.integer, 3);
+
+    // Checked by t_vpi_multidim.v
+    TestVpiHandle put_h = vpi_handle_by_name(
+        const_cast<PLI_BYTE8*>(TestSimulator::rooted("arr_6d[0][1][2]")), NULL);
+    TEST_CHECK_NZ(put_h);
+    value.value.integer = 0x3c;
+    vpi_put_value(put_h, &value, NULL, vpiNoDelay);
+}
+
 // TEST END
 
 extern "C" int mon_check() {
@@ -373,8 +423,12 @@ extern "C" int mon_check() {
     //if (int status = _mon_check_param()) return status;
     printf("-mon_check()\n");
     _multidim_check();
+    _arr_6d_check();
     return errors;
 }
+
+// For calling from $c, which cannot declare an extern "C" function
+int mon_check_cpp() { return mon_check(); }
 
 #ifdef IS_VPI
 
@@ -390,7 +444,7 @@ static int mon_check_vpi() {
 }
 
 static s_vpi_systf_data vpi_systf_data[] = {{vpiSysFunc, vpiIntFunc, (PLI_BYTE8*)"$mon_check",
-                                             (PLI_INT32(*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
+                                             (PLI_INT32 (*)(PLI_BYTE8*))mon_check_vpi, 0, 0, 0},
                                             0};
 
 void vpi_compat_bootstrap(void) {

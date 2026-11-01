@@ -1,0 +1,10 @@
+%Error: t/t_enum_format_param_bad.v:13:50: Expecting expression to be constant, but variable isn't const: 'small_value'
+                                         : ... note: In instance 't'
+   13 |   localparam string SMALL_TEXT = $sformatf("%p", small_value);
+      |                                                  ^~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_enum_format_param_bad.v:14:50: Expecting expression to be constant, but variable isn't const: 'large_value'
+                                         : ... note: In instance 't'
+   14 |   localparam string LARGE_TEXT = $sformatf("%p", large_value);
+      |                                                  ^~~~~~~~~~~
+%Error: Exiting due to

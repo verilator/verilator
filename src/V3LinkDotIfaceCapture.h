@@ -1,9 +1,8 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
 // DESCRIPTION: Interface typedef capture helper.
-//   Stores (refp, typedefp, cellp, owners, pendingClone) so LinkDot can
-//   rebind refs when symbol lookup fails, and V3Param clones can retarget
-//   typedefs without legacy paths.
+//   Records RefDTypes that reach an interface typedef through a cell path, so
+//   V3Param clones can retarget them to the correct interface specialization.
 //
 // Code available from: https://verilator.org
 //
@@ -24,109 +23,28 @@
 
 #include "V3Ast.h"
 
-#include <cstddef>
+#include <deque>
 #include <functional>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
-#include <vector>
 
 class VSymEnt;
 
-class V3LinkDotIfaceCapture final {
+// Capture record of an AstRefDType, shared by all clones of that reference
+class VIfaceCaptureTag final {
 public:
-    enum class CaptureType : uint8_t { IFACE, CLASS };
-    enum class TargetKind : uint8_t { TYPEDEF, PARAM_TYPE };
-
-    // Path-based map key: no pointers, only stable strings.
-    // {ownerModName, refName, cellPath, cloneCellPath} uniquely identifies
-    // every captured REFDTYPE.  You cannot have two typedefs with the same
-    // name in the same module, so this tuple is unique.
-    struct CaptureKey final {
-        string ownerModName;  // Module containing the REFDTYPE (e.g. "cca_xbar")
-        string refName;  // REFDTYPE name (e.g. "r_chan_t")
-        string cellPath;  // Template path (e.g. "cca_io.tlb_io")
-        string cloneCellPath;  // Instance path (e.g. "xbar1"), empty for template
-        bool operator==(const CaptureKey& o) const {
-            return ownerModName == o.ownerModName && refName == o.refName && cellPath == o.cellPath
-                   && cloneCellPath == o.cloneCellPath;
-        }
+    enum class Kind : uint8_t {
+        TYPEDEF,  // Refers to a typedef in the interface
+        PARAM_TYPE  // Refers to a type parameter of the interface
     };
-    struct CaptureKeyHash final {
-        size_t operator()(const CaptureKey& k) const {
-            size_t h = std::hash<string>{}(k.ownerModName);
-            h ^= std::hash<string>{}(k.refName) + 0x9e3779b9 + (h << 6) + (h >> 2);
-            h ^= std::hash<string>{}(k.cellPath) + 0x9e3779b9 + (h << 6) + (h >> 2);
-            h ^= std::hash<string>{}(k.cloneCellPath) + 0x9e3779b9 + (h << 6) + (h >> 2);
-            return h;
-        }
-    };
+    Kind m_kind;  // What the reference refers to
+    string m_cellPath;  // Cell path from the owner module (e.g. "cca_io.tlb_io")
+    string m_ownerModName;  // Name of the interface that owns the target
+    string m_capturedInName;  // Original name of the module the reference was captured in
+};
 
-    // Template key: matches ALL entries regardless of cloneCellPath.
-    // Used for propagateClone and debug searches.
-    struct TemplateKey final {
-        string ownerModName;
-        string refName;
-        string cellPath;
-    };
-
-    struct CapturedEntry final {
-        CaptureType captureType = CaptureType::IFACE;
-        // Semantic target identity, retained when template pointers are cleared.
-        TargetKind targetKind = TargetKind::TYPEDEF;
-        AstRefDType* refp = nullptr;
-        string cellPath;  // Template path (e.g. "cca_io.tlb_io") - immutable key component
-        string cloneCellPath;  // Instance-specific path (e.g. "cca_io1.tlb_io") - set by
-                               // propagateClone when V3Param clones; empty for original entries
-        AstClass* origClassp = nullptr;  // For CLASS captures
-        // Module where the RefDType lives
-        AstNodeModule* ownerModp = nullptr;
-        // Typedef definition being referenced
-        AstTypedef* typedefp = nullptr;
-        // For PARAMTYPEDTYPE
-        AstParamTypeDType* paramTypep = nullptr;
-        // Name of the module/interface that owns the typedef (stable string)
-        string typedefOwnerModName;
-        // Interface port variable for matching during cloning
-        AstVar* ifacePortVarp = nullptr;
-        // Additional REFDTYPEs sharing the same key (e.g. from macro expansions
-        // that produce multiple $bits() references to the same interface typedef).
-        // The primary refp is stored above; extras are appended here so that
-        // retargeting fixes ALL of them, not just the last-writer-wins primary.
-        std::vector<AstRefDType*> extraRefps;
-        // Clear template-specific targets that are stale in a clone context.
-        // Called by propagateClone before inserting a clone entry.
-        void clearStaleRefs() {
-            paramTypep = nullptr;
-            typedefp = nullptr;
-            extraRefps.clear();
-        }
-        // Visit every AstNode* pointer field (analogous to AstNode::foreachLink).
-        // The callback receives an AstNode* by reference; if it nulls the
-        // pointer the typed member is nulled accordingly.
-        template <typename T_func>
-        void foreachLink(T_func&& fn) {
-            auto callOnNode = [&](auto*& ptr) {
-                AstNode* np = ptr;
-                fn(np);
-                if (!np) ptr = nullptr;
-            };
-            callOnNode(refp);
-            callOnNode(ownerModp);
-            callOnNode(typedefp);
-            callOnNode(paramTypep);
-            callOnNode(ifacePortVarp);
-            callOnNode(origClassp);
-            for (auto& xrefp : extraRefps) callOnNode(xrefp);
-        }
-    };
-
-    using CapturedMap = std::unordered_map<CaptureKey, CapturedEntry, CaptureKeyHash>;
-
-private:
-    friend class TypeTableDeadRefVisitor;
-
-    static CapturedMap s_map;
+class V3LinkDotIfaceCapture final {
+    static std::deque<VIfaceCaptureTag> s_tags;  // Owns every tag; a deque keeps addresses stable
     static bool s_enabled;
 
     // --- Internal-only methods (not called outside V3LinkDotIfaceCapture.cpp) ---
@@ -134,26 +52,21 @@ private:
     static void reset();
     static void clearModuleCache();
     static AstIfaceRefDType* ifaceRefFromVarDType(AstNodeDType* dtypep);
-    static string extractIfacePortName(const string& dotText);
-    static AstNodeModule* findCloneViaHierarchy(AstNodeModule* containingModp,
-                                                AstNodeModule* deadTargetModp, int depth = 0);
-    static AstNodeModule* findLiveCloneOf(AstNodeModule* deadTargetModp,
-                                          AstNodeModule** containerp = nullptr);
-    static int fixDeadRefs(AstRefDType* refp, AstNodeModule* containingModp, const char* location,
-                           const std::unordered_set<const AstNode*>& liveNodes);
-    static void captureInnerParamTypeRefs(AstParamTypeDType* paramTypep, AstRefDType* refp,
-                                          const string& cellPath, const string& ownerModName,
-                                          const string& ptOwnerName);
-    static void nullStaleLedgerRefs(const std::unordered_set<const AstNode*>& liveNodes);
-    static int fixDeadRefsInTypeTable(const std::unordered_set<const AstNode*>& liveNodes);
-    static int fixDeadRefsInModules(const std::unordered_set<const AstNode*>& liveNodes);
+    // Point a reference at a typedef and fix its other links.
+    static void retargetRefToTypedef(AstRefDType* refp, AstTypedef* typedefp);
+    // Same, for a parameter type.
+    static void retargetRefToParamType(AstRefDType* refp, AstParamTypeDType* paramTypep);
+    // Tag a reference captured in capturedInp
+    static void tag(AstRefDType* refp, const AstNodeModule* capturedInp,
+                    VIfaceCaptureTag::Kind kind, const string& cellPath,
+                    const string& ownerModName);
     static int resolveCapturedRefs();
     static void verifyNoDeadRefs(const std::unordered_set<const AstNode*>& liveNodes);
-    template <typename T_FilterFn, typename T_Fn>
-    static void forEachImpl(T_FilterFn&& filter, T_Fn&& fn);
 
 public:
     static bool enabled() { return s_enabled; }
+    // Tag of a reference, or nullptr if untagged or copied into another module
+    static const VIfaceCaptureTag* captureTag(AstRefDType* refp);
     static AstNodeModule* findOwnerModule(AstNode* nodep);
     // Find a Typedef by name in a module's top-level statements
     static AstTypedef* findTypedefInModule(AstNodeModule* modp, const string& name);
@@ -161,50 +74,22 @@ public:
     static AstNodeDType* findDTypeInModule(AstNodeModule* modp, const string& name, VNType type);
     // Find a ParamTypeDType by name in a module's top-level statements
     static AstParamTypeDType* findParamTypeInModule(AstNodeModule* modp, const string& name);
-    // Retarget every live RefDType in an entry using only stable capture metadata.
-    static bool retargetRefToModule(const CapturedEntry& entry, AstNodeModule* targetModp);
-    static void add(AstRefDType* refp, const string& cellPath, AstNodeModule* ownerModp,
-                    AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "",
-                    AstVar* ifacePortVarp = nullptr);
-    static void addClass(AstRefDType* refp, AstClass* origClassp, AstNodeModule* ownerModp,
-                         AstTypedef* typedefp = nullptr, const string& typedefOwnerModName = "");
+    // Retarget a captured reference at the same-named target in targetModp.
+    static bool retargetRefToModule(AstRefDType* refp, AstNodeModule* targetModp);
     static void addParamType(AstRefDType* refp, const string& cellPath, AstNodeModule* ownerModp,
-                             AstParamTypeDType* paramTypep, const string& paramTypeOwnerModName,
-                             AstVar* ifacePortVarp);
-    // Exact lookup by full key
-    static const CapturedEntry* find(const CaptureKey& key);
-    // Pointer-based lookup: linear scan with early exit (no std::function overhead)
-    static const CapturedEntry* find(const AstRefDType* refp);
-    static void forEach(const std::function<void(const CapturedEntry&)>& fn);
-    static void forEachOwned(const AstNodeModule* ownerModp,
-                             const std::function<void(const CapturedEntry&)>& fn);
-    static std::size_t size() { return s_map.size(); }
+                             AstParamTypeDType* paramTypep, const string& paramTypeOwnerModName);
 
     // Walk a dot-separated cell path (e.g. "cca_io.tlb_io") starting from
     // startModp, returning the module at the end of the path.  Returns
     // nullptr if any component cannot be resolved.
     static AstNodeModule* followCellPath(AstNodeModule* startModp, const string& cellPath);
 
-    // Create a new clone entry in the ledger, inheriting from the template.
-    // Ledger-only: no target lookup or AST mutation.  Target resolution
-    // happens later in finalizeIfaceCapture where cell pointers are wired up.
-    static void propagateClone(const TemplateKey& tkey, AstRefDType* newRefp,
-                               AstNodeModule* newOwnerModp, const string& cloneCellPath);
-
     static void captureTypedefContext(AstRefDType* refp, const char* stageLabel, int dotPos,
-                                      bool dotIsFinal, const std::string& dotText,
-                                      VSymEnt* dotSymp, VSymEnt* curSymp, AstNodeModule* modp,
-                                      AstNode* nodep,
+                                      const std::string& dotText, VSymEnt* dotSymp,
+                                      AstNodeModule* modp,
                                       const std::function<std::string()>& indentFn);
 
-    // Null out ledger entries that point to freed nodes (not in the live AST).
-    // Called at pass boundaries before code dereferences ledger pointers.
-    static void purgeStaleRefs();
-
-    // Remove any saved references that point into a subtree, just before it is deleted.
-    static void purgeDeletedSubtree(AstNode* nodep);
-
-    // Debug: dump all captured entries
+    // Debug: dump all captured references
     static void dumpEntries(const string& label);
 
     // Called after V3Param but before V3Dead to fix any remaining cross-interface refs

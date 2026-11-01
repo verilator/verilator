@@ -1,0 +1,62 @@
+---
+# DESCRIPTION: Github actions composite action
+# SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
+
+name: Update PR label
+description: >-
+  Add or remove a label on a pull request. Does nothing unless the pull
+  request is still open and still at the commit the result is for, so that a
+  result superseded by a push does not label/unlabel the work that replaced it.
+
+inputs:
+  token:
+    description: "Token to label with"
+    required: true
+  pr-number:
+    description: "Number of the pull request"
+    required: true
+  head-sha:
+    description: "Commit the result is for"
+    required: true
+  label:
+    description: "Label to set"
+    required: true
+  set:
+    description: "'true' to add the label, 'false' to remove it"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set the label
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+        PR: ${{ inputs.pr-number }}
+        SHA: ${{ inputs.head-sha }}
+        LABEL: ${{ inputs.label }}
+        SET: ${{ inputs.set }}
+      run: |-
+        # The state and head of the pull request as they are now, and whether
+        # it carries the label already
+        read -r STATE HEAD LABELLED < <(gh pr view "${PR}" \
+          --repo "${REPO}" \
+          --json state,headRefOid,labels \
+          --jq '"\(.state) \(.headRefOid) \(any(.labels[]; .name == env.LABEL))"')
+        # Only act on a change, so a run does not reapply what is already set
+        if [ "${STATE}" != OPEN ]; then
+          # Only label open PRs
+          echo "PR #${PR} is ${STATE}"
+        elif [ "${HEAD}" != "${SHA}" ]; then
+          # Pushed to since, so this result is stale and a new run will decide
+          echo "PR #${PR} has moved on from ${SHA}"
+        elif [ "${SET}" = true ] && [ "${LABELLED}" = false ]; then
+          echo "Adding '${LABEL}' to PR #${PR}"
+          gh pr edit "${PR}" --repo "${REPO}" --add-label "${LABEL}"
+        elif [ "${SET}" = false ] && [ "${LABELLED}" = true ]; then
+          echo "Removing '${LABEL}' from PR #${PR}"
+          gh pr edit "${PR}" --repo "${REPO}" --remove-label "${LABEL}"
+        else
+          echo "No change to PR #${PR}"
+        fi

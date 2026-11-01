@@ -447,7 +447,7 @@ not directly correspond to the similarly named SystemVerilog scheduling
 regions as defined in the standard:
 
 - All logic (clocked, combinational and hybrid) that transitively feeds
-  into, or drives via a non-blocking or continuous assignments (or via any
+  into, or drives via a blocking or continuous assignments (or via any
   update that SystemVerilog executes in the Active scheduling region), a
   variable that is used in the explicit sensitivity list of some clocked or
   hybrid logic, is assigned to the 'act' region.
@@ -920,11 +920,42 @@ Chapter 5. Verilator takes this static approach. The only dynamic aspect is
 that each macro task may block before starting, to wait until its
 prerequisites on other threads have finished.
 
+The generated code also describes each macro-task graph as static data: the
+function of each macro-task, its estimated cost, the trigger bits its code
+tests, and the dependencies between macro-tasks. Where the graph executes,
+the generated code passes this description and the trigger vector to the
+run-time library, which executes the graph. If the macro-tasks whose
+triggers are set are cheap in total, it runs only those, in a topological
+order on the calling thread, without waking the other threads.
+
 The synchronization cost is cheap if the prereqs are done. If they're not,
 fragmentation (idle CPU cores waiting) is possible. This is the major
 source of overhead in this approach. The ``--prof-exec`` switch and the
 ``verilator_gantt`` script can visualize the time lost to such
 fragmentation.
+
+
+Synchronizing Macro-Tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each thread of a schedule owns one progress word (``VlThreadProgress``), on
+its own cache line: the position, counted from 1, of its last finished
+macro-task. The words of each macro-task graph are held together in
+``VlScheduleProgress``.
+
+After a macro-task that a macro-task on another thread depends on, its
+thread publishes its position with a release store, however many threads
+depend on it. Before a macro-task, its thread waits, with acquire loads,
+for each producing thread to reach the latest position it needs, unless an
+earlier wait in the same thread already covered it. Each dependency
+therefore costs one cache line transfer from producer to consumer, and no
+read-modify-write.
+
+At the end of a schedule, each thread publishes that it is done, and the
+dispatching thread waits for the threads run by the thread pool. Before
+starting a schedule, while no thread is running one, the dispatching thread
+sets the words back to zero; handing the threads' functions to the thread
+pool orders this before they start.
 
 
 Locating Variables for Best Spatial Locality
@@ -1029,15 +1060,6 @@ scramble things.
 
 Profile-guided optimization make this a bit better, by adjusting mtask
 scheduling, but this does not yet guide the packing into mtasks.
-
-
-Performance Regression
-++++++++++++++++++++++
-
-It would be nice if we had a regression of large designs, with some
-diversity of design styles, to test on both single- and multithreaded
-modes. This would help to avoid performance regressions, and also to
-evaluate the optimizations while minimizing the impact of parasitic noise.
 
 
 Per-Instance Classes
@@ -1198,7 +1220,7 @@ is appreciated if you could match our style for C/C++:
   (This convention has not been applied retroactively.)
 
 C and Python indentation is automatically maintained with "make format"
-using clang-format version 18, and yapf for Python, and is automatically
+using clang-format version 21, and yapf for Python, and is automatically
 corrected in the CI actions. For those manually formatting C code:
 
 - Use four spaces per level, and no tabs.
@@ -1334,9 +1356,14 @@ AstNodeExpr``.
 ``astnode`` generates accessors for the child nodes based on these
 directives. For non-list children, the names of the getter and setter both
 are that of the given ``<identifier>``. For list-type children, the getter
-is ``<identifier>``, and instead of the setter, there an
-``add<Identifier>`` method is generated that appends new nodes (or lists of
-nodes) to the child list.
+is ``<identifier>``, and instead of the setter, an ``add<Identifier>``
+method is generated that appends new nodes (or lists of nodes) to the child
+list, and a ``prepend<Identifier>`` method that prepends them to the front
+of the child list.
+
+The ``<type>`` can be prefixed with ``private`` to generate no accessors,
+for a child that only the node's own methods may change, e.g. to keep it
+consistent with other members of the node.
 
 
 ``alias op<N>`` operand alias directives
@@ -1586,8 +1613,9 @@ For all tests to pass, you must install the following packages:
 
 - SystemC to compile the SystemC outputs, see https://systemc.org
 
-- wavediff to find differences in waveform outputs. See the readme at
-  https://github.com/hudson-trading/wavetools
+- wavetools to find differences in waveform outputs, and to convert from
+  FST to VCD when updating golden files. See
+  https://github.com/hudson-trading/wavetools.
 
 - Cmake for build paths that use it.
 
@@ -1645,7 +1673,7 @@ There are some traps to avoid when running regression tests
   Hat/Fedora/Centos offer *perl-Pod-Perldoc*', while Debian/Ubuntu/Linux
   Mint offer \`perl-doc'.
 
-- Running regression may exhaust resources on some Linux systems,
+- Running regression tests may exhaust resources on some Linux systems,
   particularly file handles and user processes. Increase these to
   respectively 16,384 and 4,096. The method of doing this is
   system-dependent, but on Fedora Linux it would require editing the
@@ -1664,6 +1692,18 @@ provides the *test-snap* and *test-diff* targets:
 - Apply your changes
 - Run the test suite again with ``make test``
 - See the changes in the output with ``make test-diff``
+
+``make test-snap`` copies the ``obj_*``, test output directories into
+``test_regress/snapshot``. Set ``TEST_SNAP_DIR`` to use a different
+location, e.g. to keep multiple snapshots. Files matching the patterns in
+``test_regress/test_diff_ignore.txt`` are not copied: build products, logs,
+debug dumps, and outputs that depend on host timing.
+
+``make test-diff`` shows in a pager the files that exist only in the
+snapshot or only in the current output, and the differences in files
+present in both. In C++ sources, hashed names (``_hHASH_``) and AstNode
+addresses from ``--decorations node`` are masked, as they change without
+the generated code changing.
 
 Continuous Integration
 ----------------------
@@ -1913,14 +1953,14 @@ Tree Hierarchy
    The dump lines begin with numbers and colons to indicate the child node
    hierarchy. As noted above, ``AstNode`` has lists of items at the same
    level in the AST, connected by the ``nextp()`` and ``prevp()`` pointers.
-   These appear as nodes at the same level. For example, after inlining:
+   These appear as nodes at the same level. For example:
 
    ::
 
        NETLIST 0x929c1c8 <e1> {a0} w0
-      1: MODULE 0x92bac80 <e3144> {e14} w0  TOP_t  L1 [P]
-      1:1: CELLINLINE 0x92bab18 <e3686#> {e14} w0  v -> t
-      1:1: CELLINLINE 0x92bc1d8 <e3688#> {e24} w0  v__DOT__i_test_gen -> test_gen
+      1: MODULE 0x92bac80 <e3144> {e14} w0  t  L2
+      1:1: VAR 0x92a2e90 <e79> {e18} w0  clk [I] INPUT
+      1:1: CELL 0x92bc1d8 <e3688#> {e24} w0  i_test_gen -> MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
       1: MODULE 0x92b9bb0 <e503> {e47} w0  test_gen  L3
       ...
@@ -1987,8 +2027,8 @@ referred to. For example:
 In general, examine the ``dump()`` method in ``V3AstNodes.cpp`` of the node
 type in question to determine additional fields that may be printed.
 
-The ``MODULE`` has a list of ``CELLINLINE`` nodes referred to by its
-``op1p()`` pointer, connected by ``nextp()`` and ``prevp()`` pointers.
+The ``MODULE`` has a list of statements referred to by its ``op1p()``
+pointer, connected by ``nextp()`` and ``prevp()`` pointers.
 
 Similarly, the ``NETLIST`` has a list of modules referred to by its
 ``op1p()`` pointer.
@@ -2249,7 +2289,7 @@ The following script is an example of this debugging:
    # Example script for finding nondeterminism
    cd $VERILATOR_ROOT
    set -e
-   t=t_split_var_0  # Test name
+   t=t_EXAMPLE  # Test name
    test_regress/t/$t.py --debug --debug-alloc-random 33 --dumpi-tree 9 --obj-suffix .33
    test_regress/t/$t.py --debug --debug-alloc-random 66 --dumpi-tree 9 --obj-suffix .66
    bin/verilator_difftree test_regress/obj_vlt/$t{.33,.66} | grep -v CFILE | grep -v "^ " | grep -v /tmp | grep -v @@
@@ -2372,6 +2412,11 @@ driver.py Non-Scenario Arguments
    requirements, but may result in longer runtime if the tests are run
    again.
 
+.. option:: --driver-prune
+
+   Similar to ``--driver-clean``, but keeps output required by
+   ``make test-snap`` / ``make test-diff``.
+
 .. option:: --dump-tree
 
    Same as ``verilator --dump-tree``: Enable Verilator writing .tree debug
@@ -2422,7 +2467,7 @@ driver.py Non-Scenario Arguments
 .. option:: --quiet
 
    Suppress all output except for failures and progress messages every 15
-   seconds. Intended for use only in automated regressions. See also
+   seconds. Intended for use only in automated regression testing. See also
    ``--rerun``, and ``--verbose`` which is not the opposite of ``--quiet``.
 
 .. option:: --rerun
@@ -2564,6 +2609,14 @@ VERILATOR_SOLVER
    SMT solver command for constrained randomization; see primary Verilator
    documentation.
 
+VERILATOR_TESTS_OBJ_ROOT
+   If set, each output ``obj_*`` directory the driver creates is instead a
+   symlink to the same absolute path mirrored under this directory, e.g.
+   ``test_regress/obj_vlt`` links to ``$VERILATOR_TESTS_OBJ_ROOT/<path
+   to>/test_regress/obj_vlt``. Use to put test outputs on a different (e.g.
+   faster, not backed up) disk. Consider using with ``--driver-clean`` or
+   ``--driver-prue`` to save disk space.
+
 VERILATOR_TESTS_SITE
    Used with ``--site``, a colon-separated list of directories with tests
    to be added to testlist.
@@ -2576,6 +2629,13 @@ VERILATOR_XELAB
 
 VERILATOR_XVLOG
    Command to use to invoke XSim xvlog
+
+WAVECAT
+   Path to wavecat executable, used for FST to VCD conversion when using
+   --golden.
+
+WAVEDIFF
+   Path to wavediff executable, used for comparing VCD and FST trace files.
 
 
 Test Language

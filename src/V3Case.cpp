@@ -38,6 +38,8 @@
 
 #include "V3Case.h"
 
+#include "V3ConstPool.h"
+#include "V3SharedTmps.h"
 #include "V3Stats.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -174,7 +176,13 @@ class CaseVisitor final : public VNVisitor {
         VDouble0 provenAssertions;  // Assertions proven to hold
     } m_stats;
     const AstNode* m_alwaysp = nullptr;  // Always in which case is located
-    size_t m_nTmps = 0;  // Sequence numbers for temporary variables
+    // Temporary variables, shared by instances
+    // For table lookup results
+    V3SharedTmps m_tableOutTmps{"__VcaseTableOut", VVarType::MODULETEMP};
+    // For decoder results
+    V3SharedTmps m_decoderOutTmps{"__VcaseDecoderOut", VVarType::MODULETEMP};
+    // For item conditions with side effects
+    V3SharedTmps m_condTmps{"__VcaseCond", VVarType::MODULETEMP};
     AstScope* m_scopep = nullptr;  // Current scope
 
     // STATE - per AstCase. Update by 'analyzeCase', treat 'const' otherwise
@@ -250,7 +258,7 @@ class CaseVisitor final : public VNVisitor {
     bool analyzeDecoderCaseItem(AstCaseItem* cip) {
         // AstVarScope::user1() -> bool: true if written to
         const VNUser1InUse user1InUse;
-        for (AstNode* stmtp = cip->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : cip->stmtspList()) {
             // Must be an assignment that fits the decoder pattern
             AstNodeAssign* const assp = checkDecoderAssign(stmtp);
             if (!assp) return false;
@@ -286,7 +294,7 @@ class CaseVisitor final : public VNVisitor {
         const uint32_t numCases = 1UL << nodep->exprp()->width();
         bool fullyCovered = true;
         string missingItems;
-        for (AstEnumItem* eip = enump->itemsp(); eip; eip = VN_AS(eip->nextp(), EnumItem)) {
+        for (AstEnumItem* const eip : enump->itemspList()) {
             const auto& match = matchPattern(nodep, VN_AS(eip->valuep(), Const));
             const uint32_t mask = match.first.toUInt();
             const uint32_t bits = match.second.toUInt();
@@ -592,9 +600,9 @@ class CaseVisitor final : public VNVisitor {
 
         // Check each case item
         bool canBeDecoder = true;
-        for (AstCaseItem* cip = nodep->itemsp(); cip; cip = VN_AS(cip->nextp(), CaseItem)) {
+        for (AstCaseItem* const cip : nodep->itemspList()) {
             // Check conditions
-            for (AstNode* condp = cip->condsp(); condp; condp = condp->nextp()) {
+            for (AstNode* const condp : cip->condspList()) {
                 // Count conditions that can actually match.
                 if (!neverItem(nodep, VN_AS(condp, NodeExpr))) ++m_caseNConditions;
                 // Mark opaque if non-constant condition
@@ -621,8 +629,7 @@ class CaseVisitor final : public VNVisitor {
         if (canBeDecoder) analyzeDecoderPattern(nodep);
     }
 
-    AstNodeStmt* connectDecoderOutputs(AstCase* nodep, AstNodeExpr* exprp,
-                                       const char* tmpPrefixp) {
+    AstNodeStmt* connectDecoderOutputs(AstCase* nodep, AstNodeExpr* exprp, V3SharedTmps& tmps) {
         FileLine* const flp = nodep->fileline();
 
         // If there is only one LHS, just use the result
@@ -642,8 +649,7 @@ class CaseVisitor final : public VNVisitor {
         }
 
         // There are multiple LHSs, store the lookup result in a temporary
-        const std::string name = tmpPrefixp + std::to_string(m_nTmps++);
-        AstVarScope* const tempVscp = m_scopep->createTemp(name, m_caseDecoderEntryWidth);
+        AstVarScope* const tempVscp = tmps.make(flp, m_scopep, m_caseDecoderEntryWidth);
         AstNodeExpr* const tempWritep = new AstVarRef{flp, tempVscp, VAccess::WRITE};
         AstNodeStmt* const resultp = new AstAssign{flp, tempWritep, exprp};
 
@@ -701,7 +707,7 @@ class CaseVisitor final : public VNVisitor {
                  cip = VN_AS(cip->prevp(), CaseItem)) {
                 // Find the RHS in this case
                 AstConst* const rhsp = [&]() -> AstConst* {
-                    for (AstNode* stmtp = cip->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+                    for (AstNode* const stmtp : cip->stmtspList()) {
                         AstNodeAssign* const ap = VN_AS(stmtp, NodeAssign);
                         if (lhsRecord.lhsp->sameTree(ap->lhsp())) return VN_AS(ap->rhsp(), Const);
                     }
@@ -738,18 +744,15 @@ class CaseVisitor final : public VNVisitor {
             }
         }
 
-        // Create the table in the constant pool, unless using an inline table
-        AstVarScope* const tableVscp = [&]() -> AstVarScope* {
-            if (isTinyTable) return nullptr;
-            AstVarScope* vscp = v3Global.rootp()->constPoolp()->findConst(tablep, true);
-            VL_DO_DANGLING(tablep->deleteTree(), tablep);  // findConst clones
-            return vscp;
+        // Create the lookup table reference, in the constant pool unless using an inline table
+        AstNodeExpr* const tableRefp = [&]() -> AstNodeExpr* {
+            if (isTinyTable) return tablep;
+            AstVarRef* const refp = V3ConstPool::find(tablep);
+            VL_DO_DANGLING(tablep->deleteTree(), tablep);  // V3ConstPool::find clones
+            return refp;
         }();
 
-        // Create the lookup table reference and index
-        AstNodeExpr* const tableRefp
-            = tableVscp ? static_cast<AstNodeExpr*>(new AstVarRef{flp, tableVscp, VAccess::READ})
-                        : static_cast<AstNodeExpr*>(tablep);
+        // Create the lookup index
         AstNodeExpr* const caseExprp
             = new AstExtend{flp, nodep->exprp()->cloneTreePure(false), 32};
         AstNodeExpr* const scalep = new AstConst{flp, entryWidth};
@@ -758,7 +761,7 @@ class CaseVisitor final : public VNVisitor {
             = new AstSel{flp, tableRefp, tableLsbp, static_cast<int>(m_caseDecoderEntryWidth)};
 
         // Connect outputs
-        return connectDecoderOutputs(nodep, tableSelp, "__VcaseTableOut");
+        return connectDecoderOutputs(nodep, tableSelp, m_tableOutTmps);
     }
 
     AstNodeStmt* convertCaseDecoder(AstCase* nodep) {
@@ -770,12 +773,12 @@ class CaseVisitor final : public VNVisitor {
         // matches anything (the default case, or the catch-all added below).
         std::vector<std::pair<AstConst*, AstNode*>> clauses;  // (condition, item statements)
         clauses.reserve(m_caseNConditions + 1);
-        for (AstCaseItem* cip = nodep->itemsp(); cip; cip = VN_AS(cip->nextp(), CaseItem)) {
+        for (AstCaseItem* const cip : nodep->itemspList()) {
             if (cip->isDefault()) {
                 clauses.emplace_back(nullptr, cip->stmtsp());
                 continue;
             }
-            for (AstNode* condp = cip->condsp(); condp; condp = condp->nextp()) {
+            for (AstNode* const condp : cip->condspList()) {
                 AstConst* const iconstp = VN_AS(condp, Const);
                 // Skip items that can never match in 2-state simulation (e.g. X in casez)
                 if (neverItem(nodep, iconstp)) continue;
@@ -824,7 +827,7 @@ class CaseVisitor final : public VNVisitor {
             m_caseDecoderEntryWidth, m_caseDecoderEntryWidth, VSigning::UNSIGNED);
         AstNodeDType* const tableDtypep = new AstUnpackArrayDType{flp, entryDtypep, rangep};
         v3Global.rootp()->typeTablep()->addTypesp(tableDtypep);
-        AstInitArray* const tablep = new AstInitArray{flp, tableDtypep, nullptr};
+        AstConsArray* const tablep = new AstConsArray{flp, tableDtypep};
 
         // Build a single value table for all LHSs: one entry per clause, packing each LHS's value
         // at its offset. The entry width is the table packing computed by 'analyzeDecoderPattern'
@@ -851,22 +854,21 @@ class CaseVisitor final : public VNVisitor {
                 }
                 entryp->num().opSelInto(valConstp->num(), lhsRecord.offset, lhsp->width());
             }
-            tablep->addIndexValuep(i, entryp);
+            tablep->valuep(i, entryp);
         }
 
         // Create the tables
-        AstVarScope* const matchVscp = v3Global.rootp()->constPoolp()->findConst(matchp, true);
-        AstVarScope* const tableVscp = v3Global.rootp()->constPoolp()->findTable(tablep);
+        AstVarRef* const matchRefp = V3ConstPool::find(matchp);
+        AstVarRef* const tableRefp = V3ConstPool::find(tablep);
         VL_DO_DANGLING(matchp->deleteTree(), matchp);
         VL_DO_DANGLING(tablep->deleteTree(), tablep);
 
         // AstMatchMasked produces the index of the matching entry
-        AstNodeExpr* const tableRefp = new AstVarRef{flp, tableVscp, VAccess::READ};
         AstNodeExpr* const caseExprp = nodep->exprp()->cloneTreePure(false);
-        AstMatchMasked* const indexp = new AstMatchMasked{flp, caseExprp, matchVscp};
+        AstMatchMasked* const indexp = new AstMatchMasked{flp, caseExprp, matchRefp};
         AstNodeExpr* const entryp = new AstArraySel{flp, tableRefp, indexp};
 
-        return connectDecoderOutputs(nodep, entryp, "__VcaseDecoderOut");
+        return connectDecoderOutputs(nodep, entryp, m_decoderOutTmps);
     }
 
     // TODO: should return AstNodeStmt after #6280
@@ -924,6 +926,71 @@ class CaseVisitor final : public VNVisitor {
         return ifrootp && ifrootp->backp() ? ifrootp->cloneTree(true) : ifrootp;
     }
 
+    AstNodeExpr* newCaseCompare(const AstCase* casep, AstNodeExpr* itemExprp) {
+        FileLine* const flp = itemExprp->fileline();
+        if (neverItem(casep, itemExprp)) {
+            VL_DO_DANGLING(pushDeletep(itemExprp), itemExprp);
+            return new AstConst{flp, AstConst::BitFalse{}};
+        }
+
+        if (AstCond* const condp = VN_CAST(itemExprp, Cond)) {
+            // Bounds checks can leave X-valued branches in case items. Compare each
+            // branch using case semantics before lowering to two-state expressions.
+            AstNodeExpr* const testp = condp->condp()->unlinkFrBack();
+            AstNodeExpr* const thenp = newCaseCompare(casep, condp->thenp()->unlinkFrBack());
+            AstNodeExpr* const elsep = newCaseCompare(casep, condp->elsep()->unlinkFrBack());
+            VL_DO_DANGLING2(pushDeletep(itemExprp), itemExprp, condp);
+            return new AstCond{flp, testp, thenp, elsep};
+        }
+
+        AstNodeExpr* const caseExprp = casep->exprp()->cloneTreePure(false);
+        // InsideRange: Similar logic in V3Width::visit(AstInside)
+        if (AstInsideRange* const itemRangep = VN_CAST(itemExprp, InsideRange)) {
+            AstNodeExpr* const resultp = itemRangep->newAndFromInside(
+                caseExprp, itemRangep->lhsp()->unlinkFrBack(), itemRangep->rhsp()->unlinkFrBack());
+            VL_DO_DANGLING2(pushDeletep(itemExprp), itemExprp, itemRangep);
+            return resultp;
+        }
+
+        if (AstConst* const itemConstp = VN_CAST(itemExprp, Const)) {
+            // neverItem has already rejected X/Z values that cannot match.
+            if (itemConstp->num().isFourState()) {
+                const auto& match = matchPattern(casep, itemConstp);
+                const V3Number& matchMask = match.first;
+                const V3Number& matchBits = match.second;
+                VL_DO_DANGLING2(pushDeletep(itemExprp), itemExprp, itemConstp);
+                return AstEq::newTyped(flp, new AstConst{flp, matchBits},
+                                       new AstAnd{flp, caseExprp, new AstConst{flp, matchMask}});
+            }
+        }
+
+        return AstEq::newTyped(flp, caseExprp, itemExprp);
+    }
+
+    // Return an AstExprStmt 'or'-ing the given terms, evaluating them in order until one is true:
+    // ExprStmt{s1; tmp = r1; if (!tmp) {s2; tmp = r2; if (!tmp) ...}; tmp}
+    AstExprStmt* newOrderedOrp(FileLine* flp, const std::vector<AstNodeExpr*>& termps) {
+        AstVarScope* const vscp = m_condTmps.make(flp, m_scopep, 1);
+        AstNode* stmtsp = nullptr;
+        for (AstNodeExpr* termp : vlstd::reverse_view(termps)) {
+            AstNode* termStmtsp = nullptr;
+            if (AstExprStmt* const exprStmtp = VN_CAST(termp, ExprStmt)) {
+                termStmtsp = exprStmtp->stmtsp()->unlinkFrBackWithNext();
+                termp = exprStmtp->resultp()->unlinkFrBack();
+                VL_DO_DANGLING(pushDeletep(exprStmtp), exprStmtp);
+            }
+            AstNode* const thisp = AstNode::addNext(
+                termStmtsp, new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, termp});
+            if (stmtsp) {
+                AstNodeExpr* const notp
+                    = new AstLogNot{flp, new AstVarRef{flp, vscp, VAccess::READ}};
+                thisp->addNext(new AstIf{flp, notp, stmtsp});
+            }
+            stmtsp = thisp;
+        }
+        return new AstExprStmt{flp, stmtsp, new AstVarRef{flp, vscp, VAccess::READ}};
+    }
+
     // Convet case statement using generic if/else tree
     // CASEx(cexpr,ITEM(icond1,istmts1),ITEM(icond2,istmts2),ITEM(default,istmts3))
     // ->  IF((cexpr==icond1),istmts1,
@@ -935,8 +1002,8 @@ class CaseVisitor final : public VNVisitor {
         // We'll do this in two stages.
         // First stage, convert the conditions to the appropriate IF AND terms.
         bool hasDefault = false;
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        bool hasExprStmt = false;  // Some item condition is an AstExprStmt
+        for (AstCaseItem* const itemp : nodep->itemspList()) {
 
             FileLine* const flp = itemp->fileline();
 
@@ -948,55 +1015,40 @@ class CaseVisitor final : public VNVisitor {
             }
 
             // Regular clause. Construct the condition expression.
-            AstNodeExpr* newCondp = nullptr;
-            for (AstNodeExpr *itemExprp = itemp->condsp(), *nextp; itemExprp; itemExprp = nextp) {
-                nextp = VN_AS(itemExprp->nextp(), NodeExpr);
+            std::vector<AstNodeExpr*> termps;
+            bool itemHasExprStmt = false;
+            for (AstNodeExpr* const itemExprp : itemp->condspList()) {
                 itemExprp->unlinkFrBack();
 
                 // If case never matches, ignore it
                 if (neverItem(nodep, itemExprp)) {
-                    VL_DO_DANGLING(itemExprp->deleteTree(), itemExprp);
+                    VL_DO_DANGLING(pushDeletep(itemExprp), itemExprp);
                     continue;
                 }
 
-                // Compute the term to add to the condition expression
-                AstNodeExpr* const termp = [&]() -> AstNodeExpr* {
-                    // Will need a copy of the caseExpr regardless
-                    AstNodeExpr* const caseExprp = nodep->exprp()->cloneTreePure(false);
+                // Compute the term to add to the condition expression. Keep the statements of
+                // an AstExprStmt outermost, so they can be lifted before the AstIf.
+                if (AstExprStmt* const exprStmtp = VN_CAST(itemExprp, ExprStmt)) {
+                    AstNodeExpr* const resultp = exprStmtp->resultp()->unlinkFrBack();
+                    exprStmtp->resultp(newCaseCompare(nodep, resultp));
+                    exprStmtp->dtypeFrom(exprStmtp->resultp());
+                    termps.push_back(exprStmtp);
+                    itemHasExprStmt = true;
+                    hasExprStmt = true;
+                } else {
+                    termps.push_back(newCaseCompare(nodep, itemExprp));
+                }
+            }
 
-                    // InsideRange: Similar logic in V3Width::visit(AstInside)
-                    if (AstInsideRange* const itemRangep = VN_CAST(itemExprp, InsideRange)) {
-                        AstNodeExpr* const resultp = itemRangep->newAndFromInside(  //
-                            caseExprp,  //
-                            itemRangep->lhsp()->unlinkFrBack(),
-                            itemRangep->rhsp()->unlinkFrBack());
-                        VL_DO_DANGLING2(itemExprp->deleteTree(), itemExprp, itemRangep);
-                        return resultp;
-                    }
-
-                    // Check if we need to perform a wildcard match, this needs masking
-                    if (AstConst* const itemConstp = VN_CAST(itemExprp, Const)) {
-                        // TODO: 4-state will need to fix this
-                        if (itemConstp->num().isFourState()
-                            && (nodep->casex() || nodep->casez() || nodep->caseInside())) {
-                            // Wildcard match, make 'caseExpr' & 'mask' == 'itemExpr' & 'mask'
-                            const auto& match = matchPattern(nodep, itemConstp);
-                            const V3Number& matchMask = match.first;
-                            const V3Number& matchBits = match.second;
-                            VL_DO_DANGLING2(itemExprp->deleteTree(), itemExprp, itemConstp);
-                            return AstEq::newTyped(
-                                flp,  //
-                                new AstConst{flp, matchBits},
-                                new AstAnd{flp, caseExprp, new AstConst{flp, matchMask}});
-                        }
-                    }
-
-                    // Regular case, use simple equality comparison
-                    return AstEq::newTyped(flp, caseExprp, itemExprp);
-                }();
-
-                // 'Or' new term with previous terms
-                newCondp = newCondp ? new AstLogOr{flp, newCondp, termp} : termp;
+            // 'Or' the terms. With side effects, evaluate them in order until one is true,
+            // as a single AstExprStmt, so its statements can be lifted before the AstIf
+            AstNodeExpr* newCondp = nullptr;
+            if (termps.size() > 1 && itemHasExprStmt) {
+                newCondp = newOrderedOrp(flp, termps);
+            } else {
+                for (AstNodeExpr* const termp : termps) {
+                    newCondp = newCondp ? new AstLogOr{flp, newCondp, termp} : termp;
+                }
             }
             // Replace expression in tree. Needs to be non-null, so add a constant false if
             // needed
@@ -1004,11 +1056,29 @@ class CaseVisitor final : public VNVisitor {
             itemp->addCondsp(newCondp);
         }
 
-        // If there was no default, add a empty one, this greatly simplifies below code
+        // If there was no default, make one up, this greatly simplifies below code
         // and constant propagation will just eliminate it for us later.
         if (!hasDefault) {
-            nodep->addItemsp(new AstCaseItem{
-                nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}}, nullptr});
+            if (m_caseDetailsValid && m_caseDetails.exhaustive
+                && !m_caseDetails.exhaustiveOverEnumOnly) {
+                // Case is proven exhaustive, so the last is reached only when its test holds,
+                // make it unconditional
+                AstCaseItem* const lastp = VN_AS(nodep->itemsp()->lastp(), CaseItem);
+                pushDeletep(lastp->condsp()->unlinkFrBackWithNext());
+                lastp->addCondsp(new AstConst{lastp->fileline(), AstConst::BitTrue{}});
+            } else {
+                // Otherwise needs an explicit empty default
+                nodep->addItemsp(new AstCaseItem{
+                    nodep->fileline(), new AstConst{nodep->fileline(), AstConst::BitTrue{}},
+                    nullptr});
+            }
+        }
+
+        // Impure conditions must be evaluated in order, each at most once, so no grouping
+        bool dontGroup = hasExprStmt;
+        for (AstCaseItem* const itemp : nodep->itemspList()) {
+            if (dontGroup) break;
+            dontGroup = !itemp->condsp()->isPure();
         }
 
         // Now build the IF statement tree
@@ -1018,11 +1088,10 @@ class CaseVisitor final : public VNVisitor {
         // should pull out the most common item from here and instead make
         // it the first IF branch.
         int depth = 0;
-        AstIf* grouprootp = nullptr;
+        AstNode* grouprootp = nullptr;
         AstIf* groupnextp = nullptr;
         AstIf* itemnextp = nullptr;
-        for (AstCaseItem* itemp = nodep->itemsp(); itemp;
-             itemp = VN_AS(itemp->nextp(), CaseItem)) {
+        for (AstCaseItem* const itemp : nodep->itemspList()) {
 
             // Grab the statements from this item. May be empty.
             AstNode* const istmtsp = itemp->stmtsp();
@@ -1030,6 +1099,25 @@ class CaseVisitor final : public VNVisitor {
 
             // Expressioned clause
             AstNodeExpr* const ifexprp = itemp->condsp()->unlinkFrBack();
+            if (dontGroup) {
+                // Lift the statements of an AstExprStmt condition before the AstIf
+                AstNode* stmtsp = nullptr;
+                AstNodeExpr* condp = ifexprp;
+                if (AstExprStmt* const exprStmtp = VN_CAST(ifexprp, ExprStmt)) {
+                    stmtsp = exprStmtp->stmtsp()->unlinkFrBackWithNext();
+                    condp = exprStmtp->resultp()->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(exprStmtp), exprStmtp);
+                }
+                AstIf* const newp = new AstIf{itemp->fileline(), condp, istmtsp};
+                stmtsp = AstNode::addNext(stmtsp, newp);
+                if (itemnextp) {
+                    itemnextp->addElsesp(stmtsp);
+                } else {
+                    grouprootp = stmtsp;
+                }
+                itemnextp = newp;
+                continue;
+            }
             {  // Prepare for next group
                 if (++depth > CASE_ENCODER_GROUP_DEPTH) depth = 1;
                 if (depth == 1) {  // First group or starting new group

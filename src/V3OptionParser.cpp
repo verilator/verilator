@@ -130,7 +130,7 @@ V3OPTION_PARSER_DEF_ACT_CB_CLASS(ActionCbPartialMatchVal, void(const char*, cons
 
 template <>
 class V3OptionParser::Impl::ActionCbVal<int> final : public ActionBase<en::VALUE> {
-    std::function<void(int)> m_cb;
+    std::function<void(int)> m_cb;  // Callback function
 
 public:
     using CbType = std::function<void(int)>;
@@ -245,7 +245,7 @@ void V3OptionParser::finalize() {
 
 void V3OptionParser::dumpOptions() {
     for (const auto& opt : m_pimpl->m_spellCheck.candidates()) {
-        std::cout << "OPTION: \"" + opt + "\"\n";
+        std::cout << "OPTION: \"" + opt.msg + "\"\n";
     }
 }
 

@@ -120,9 +120,9 @@ module t (
   //============================================================
 
   reg        [127:0] WA1063                     ; //=00000000000000000000000000000001
-  reg [ 34:0]        WA1064 /*verilator public*/; //=7FFFFFFFF
+  reg [ 34:0]        WA1064 /*verilator public_flat_rw*/; //=7FFFFFFFF
   reg [ 62:0]        WA1065                     ; //=0000000000000000
-  reg [ 89:0]        WA1066 /*verilator public*/; //=00000000000000000000001
+  reg [ 89:0]        WA1066 /*verilator public_flat_rw*/; //=00000000000000000000001
   reg [ 34:0]        WA1067                     ; //=7FFFFFFFF
   reg [111:0]        WA1068;
 
@@ -142,9 +142,9 @@ module t (
   //============================================================
 
   reg        [127:0] WB1063                     ; //=00000000000000000000000000000001
-  reg [ 34:0]        WB1064 /*verilator public*/; //=7FFFFFFFF
+  reg [ 34:0]        WB1064 /*verilator public_flat_rw*/; //=7FFFFFFFF
   reg [ 62:0]        WB1065                     ; //=0000000000000000
-  reg [ 89:0]        WB1066 /*verilator public*/; //=00000000000000000000001
+  reg [ 89:0]        WB1066 /*verilator public_flat_rw*/; //=00000000000000000000001
   reg [ 34:0]        WB1067                     ; //=7FFFFFFFF
   reg [111:0]        WB1068;
 
@@ -169,7 +169,7 @@ module t (
 
   reg signed [ 60:0] WC0064                     ; //=1FFFFFFFFFFFFFFF
   reg signed [  6:0] WC0065                     ; //=00
-  reg signed [ 62:0] WC0067 /*verilator public*/; //=33250A3BFFFFFFFF
+  reg signed [ 62:0] WC0067 /*verilator public_flat_rw*/; //=33250A3BFFFFFFFF
 
   always @(check) begin
     WC0064 = 61'sh1FFFFFFFFFFFFFFF;
@@ -180,7 +180,7 @@ module t (
   //============================================================
 
   reg signed [ 76:0] W0234                     ; //=00000000000000000000
-  reg signed [  7:0] W0235 /*verilator public*/; //=B6
+  reg signed [  7:0] W0235 /*verilator public_flat_rw*/; //=B6
   always @(check) begin
     W0235 = 8'shb6;
     W0234 = ((77'sh0001ffffffffffffffff) >>> (W0235));
@@ -197,7 +197,7 @@ module t (
 
   //============================================================
 
-  reg signed [ 54:0] W0857 /*verilator public*/; //=7FFFFFFFFFFFFF
+  reg signed [ 54:0] W0857 /*verilator public_flat_rw*/; //=7FFFFFFFFFFFFF
 
   always @(check) begin : Block405
     W0857 = 55'sh7fffffffffffff;
@@ -222,7 +222,7 @@ module t (
 
   //============================================================
 
-  reg signed [ 68:0] W0792 /*verilator public*/; //=169351569551247E0C
+  reg signed [ 68:0] W0792 /*verilator public_flat_rw*/; //=169351569551247E0C
   reg signed [ 68:0] W0793                     ; //=1FFFFFFFFF4EB1A91A
 
   always @(posedge clk) begin
@@ -233,7 +233,7 @@ module t (
 
   //============================================================
 
-  reg signed [  2:0] DW0515 /*verilator public*/; //=7
+  reg signed [  2:0] DW0515 /*verilator public_flat_rw*/; //=7
 
   always @(posedge clk) begin
     DW0515 <= 3'sh7;
@@ -243,7 +243,7 @@ module t (
   //============================================================
 
   reg signed [ 62:0] W0753                     ; //=004E20004ED93E26
-  reg        [  2:0] W0772 /*verilator public*/; //=7
+  reg        [  2:0] W0772 /*verilator public_flat_rw*/; //=7
 
   always @(posedge clk) begin
     W0753 <= 63'sh004E20004ED93E26; //(63'sh7fffffffffffffff + (63'sh464eac8c4ed93e27 & (63'sh08cf6243ffffffff)));
@@ -275,7 +275,7 @@ module t (
 
   //============================================================
 
-  reg signed [105:  0] W0032 /*verilator public*/; //=106'h3ff0000000100000000bd597bb1
+  reg signed [105:  0] W0032 /*verilator public_flat_rw*/; //=106'h3ff0000000100000000bd597bb1
   always @(check) begin : Block237
     W0032 = 106'sh3ff0000000100000000bd597bb1;
     if ((106'sh1ca0000000000000000b96b8dc2 / 106'sh3ff0000000100000000bd597bb1) != 106'sh3fffffffffffffffffffffffe36) if (check) $stop;

@@ -29,6 +29,7 @@ RUN apt-get update \
                         python3 \
                         zlib1g \
                         zlib1g-dev \
+                        liblz4-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

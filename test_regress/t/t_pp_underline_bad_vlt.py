@@ -13,8 +13,6 @@ test.scenarios('vlt')
 
 test.top_filename = "t/t_pp_underline_bad.v"
 
-test.lint(verilator_flags2=["t/t_pp_underline_bad_vlt.vlt"],
-          fails=True,
-          expect_filename=test.golden_filename)
+test.lint(verilator_flags2=[test.vlt_filename], fails=True, expect_filename=test.golden_filename)
 
 test.passes()

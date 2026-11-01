@@ -18,13 +18,13 @@ class RandcFull;
 
   // Full 16-bit domain (65536 valid values).
   // Old enumerateRandcValues() would try to enumerate all -> hang.
-  constraint range_c { value >= 0; }
+  constraint range_c {value >= 0;}
 endclass
 
 class RandcSmall;
   randc bit [15:0] value;
 
-  constraint range_c { value inside {[0:7]}; }
+  constraint range_c {value inside {[0 : 7]};}
 endclass
 
 typedef enum logic [59:0] {

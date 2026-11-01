@@ -49,7 +49,8 @@ module genif_body #(
     request_t internal_req;
     assign internal_req = master.req;
     always_comb slave.req = internal_req;
-  end else begin : gen_off
+  end
+  else begin : gen_off
     always_comb slave.req = '0;
   end
 endmodule
@@ -69,8 +70,18 @@ module t;
   avmm_if #(.DW(64)) off_m_if ();
   avmm_if #(.DW(64)) off_s_if ();
   // ENABLE=0 deletes the generate branch holding the captured typedef
-  genif_body #(.ENABLE(1)) body_on (.master(on_m_if), .slave(on_s_if));
-  genif_body #(.ENABLE(0)) body_off (.master(off_m_if), .slave(off_s_if));
+  genif_body #(
+      .ENABLE(1)
+  ) body_on (
+      .master(on_m_if),
+      .slave(on_s_if)
+  );
+  genif_body #(
+      .ENABLE(0)
+  ) body_off (
+      .master(off_m_if),
+      .slave(off_s_if)
+  );
 
   initial begin
     #1;

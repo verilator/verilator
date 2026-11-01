@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_randomize_with_dyn_arr_unsup.v:30:21: Unsupported: Randomization of an index to a non-random variable
+   30 |             x == arr[bit'(foo)];
+      |                     ^
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

@@ -6,6 +6,11 @@
 // SPDX-FileCopyrightText: 2010 Wilson Snyder
 // SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
+// verilator lint_off UNOPTPUBLIC
+
+// Call the C++-linkage wrapper of a test function, as $c cannot declare an extern "C" function
+`define CPP_CALL(f) $c32(`"[] { extern int f``_cpp(); return f``_cpp(); }()`")
+
 `ifndef IVERILOG
 import "DPI-C" context function int mon_check();
 `endif
@@ -14,22 +19,13 @@ package somepackage;
   int someint /*verilator public_flat_rw*/;
 endpackage
 
-module t (/*AUTOARG*/
-  // Inputs
-  clk
-  );
+module t (
+    input clk
+);
 
-`ifdef USE_DOLLAR_C32
-`systemc_header
-extern "C" int mon_check();
-`verilog
-`endif
+  integer status;
 
-  input clk;
-
-  integer        status;
-
-  wire           a, b, x;
+  wire a, b, x;
 
   A \mod.a (/*AUTOINST*/
         // Outputs
@@ -44,11 +40,11 @@ extern "C" int mon_check();
 `ifdef IVERILOG
     status = $mon_check();
 `elsif USE_DOLLAR_C32
-    status = $c32("mon_check()");
+    status = `CPP_CALL(mon_check);
 `else
     status = mon_check();
 `endif
-    if (status!=0) begin
+    if (status != 0) begin
       $write("%%Error: t_vpi_module.cpp:%0d: C Test failed\n", status);
       $stop;
     end

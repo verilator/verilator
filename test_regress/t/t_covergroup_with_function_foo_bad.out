@@ -1,4 +1,4 @@
-%Error: t/t_covergroup_with_function_foo_bad.v:8:35: Coverage sampling function must be named 'sample'
+%Error: t/t_covergroup_with_function_foo_bad.v:8:35: Coverage sampling function must be named 'sample' (IEEE 1800-2023 19.8.1)
     8 |   covergroup cg_bad with function foo(int x);
       |                                   ^~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.

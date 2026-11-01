@@ -16,9 +16,9 @@
 module t;
 
   wire [1:0] out;
-  reg        in;
-  reg        rst;
-  reg        clk;
+  reg in;
+  reg rst;
+  reg clk;
 
   initial begin
     clk = 0;
@@ -37,38 +37,41 @@ module t;
     #10 clk <= !clk;
   end
 
-  Test test(.out(out), .in(in),
-            .clk(clk), .rst(rst));
+  Test test (
+      .out(out),
+      .in(in),
+      .clk(clk),
+      .rst(rst)
+  );
 endmodule
 
 
-module Test(/*AUTOARG*/
-   // Outputs
-   out,
-   // Inputs
-   clk, in, rst
-   );
+module Test (  /*AUTOARG*/
+    // Outputs
+    out,
+    // Inputs
+    clk,
+    in,
+    rst
+);
 
-   input             clk;
-   input             in;
-   input             rst;
-   output wire [1:0] out;
+  input clk;
+  input in;
+  input rst;
+  output wire [1:0] out;
 
-   reg [1:0] s;
-   reg       sin;
+  reg [1:0] s;
+  reg sin;
 
-   assign out = s;
+  assign out = s;
 
-   always @(posedge clk)
-     begin
-       s[1] <= in;
-       s[0] <= sin;
-     end
+  always @(posedge clk) begin
+    s[1] <= in;
+    s[0] <= sin;
+  end
 
-   always @(negedge clk, posedge rst)
-     if (rst)
-       sin <= 1'b0;
-     else
-       sin <= in;
+  always @(negedge clk, posedge rst)
+    if (rst) sin <= 1'b0;
+    else sin <= in;
 
 endmodule
