@@ -224,7 +224,7 @@ LogicClasses gatherLogicClasses(AstNetlist* netlistp) {
             } else if (senTreep->hasCombo()) {
                 UASSERT_OBJ(!senTreep->sensesp()->nextp(), activep,
                             "combinational logic with additional sensitivities");
-                if (VN_IS(activep->stmtsp(), AlwaysPostponed)) {
+                if (activep->isPostponed()) {
                     UASSERT_OBJ(!activep->stmtsp()->nextp(), activep,
                                 "AlwaysPostponed must be alone under its active");
                     result.m_postponed.add(scopep, activep);
