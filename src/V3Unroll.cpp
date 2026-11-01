@@ -312,9 +312,11 @@ class UnrollOneVisitor final : VNVisitor {
             AstConst* const valp = VN_CAST(V3Const::constifyEdit(nodep->rhsp()), Const);
             if (lhsp && valp && !lhsp->varp()->isForced() && !lhsp->varp()->isSigUserRWPublic()) {
                 m_bindings.set(lhsp->varScopep(), valp);
-            } else {
-                // Otherwise just like a generic statement
-                process(nodep->lhsp());
+            } else if (process(nodep->lhsp())) {
+                // Fold the substituted index of a selected bit range
+                if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
+                    V3Const::constifyEdit(selp->lsbp());
+                }
             }
         }
         emit(nodep);
