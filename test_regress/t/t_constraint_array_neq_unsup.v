@@ -195,8 +195,6 @@ class C15;
   endfunction
 endclass
 
-// Same as C14, but the impure index selects a queue element instead of a
-// fixed-array element.
 class C16;
   rand bit [7:0] frame[2];
   bit [7:0] target[$][2];
@@ -208,6 +206,37 @@ class C16;
   constraint c { frame == target[getIdx()]; }
   function new();
     target = '{'{0, 0}};
+  endfunction
+endclass
+
+// Same as C13, but the rand-indexed outer dimension is a fixed array and
+// the non-rand inner one is a queue -- the search has to recurse from a
+// CMethodHard access into an ArraySel one to find the rand index.
+class C17;
+  rand int i;
+  bit [7:0] cube[4][$][2];
+  rand bit [7:0] probe[2];
+  constraint ci { i inside {[0:3]}; }
+  constraint c { probe == cube[i][0]; }
+  function new();
+    cube[0] = '{'{0, 0}};
+    cube[1] = '{'{0, 0}};
+    cube[2] = '{'{0, 0}};
+    cube[3] = '{'{0, 0}};
+  endfunction
+endclass
+
+class C18;
+  bit [7:0] cube[4][$][2];
+  rand bit [7:0] probe[2];
+  int calls;
+  function int getIdx();
+    calls++;
+    return 0;
+  endfunction
+  constraint c { probe == cube[getIdx()][0]; }
+  function new();
+    cube[0] = '{'{0, 0}};
   endfunction
 endclass
 
@@ -233,6 +262,8 @@ module t;
     C14 obj14;
     C15 obj15;
     C16 obj16;
+    C17 obj17;
+    C18 obj18;
     obj1 = new;
     obj2 = new;
     obj3 = new;
@@ -251,6 +282,8 @@ module t;
     obj14 = new;
     obj15 = new;
     obj16 = new;
+    obj17 = new;
+    obj18 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
@@ -269,5 +302,7 @@ module t;
     if (obj14.randomize() == 0) $stop;
     if (obj15.randomize() == 0) $stop;
     if (obj16.randomize() == 0) $stop;
+    if (obj17.randomize() == 0) $stop;
+    if (obj18.randomize() == 0) $stop;
   end
 endmodule

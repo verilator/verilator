@@ -2466,7 +2466,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             return selp->bitp()->isPure() && selChainCloneSafe(selp->fromp());
         }
         if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
-            if (cmethp->method() == VCMethod::ARRAY_AT) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) {  // LCOV_EXCL_BR_LINE
                 return cmethp->pinsp()->isPure() && selChainCloneSafe(cmethp->fromp());
             }
         }
