@@ -148,6 +148,7 @@ bool AstActive::hasClocked() const { return m_sentreep->hasClocked(); }
 bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
 bool AstActive::hasInitial() const { return m_sentreep->hasInitial(); }
 bool AstActive::hasStatic() const { return m_sentreep->hasStatic(); }
+bool AstActive::isPostponed() const { return VN_IS(stmtsp(), AlwaysPostponed); }
 
 bool AstNodeModule::isDollarUnit() const { return this == v3Global.rootp()->dollarUnitPkgp(); }
 bool AstNodeModule::isConstPool() const { return this == v3Global.rootp()->constPoolPkgp(); }
