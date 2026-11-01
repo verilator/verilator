@@ -233,8 +233,8 @@ public:
         const AstPin* const pinp = VN_CAST(refp->backp(), Pin);
         const AstVar* const childVarp = pinp ? pinp->modVarp() : nullptr;
         if (!childVarp || childVarp->isIfaceRef()) return true;
-        const UndrivenVarEntry* const childEntry =
-            reinterpret_cast<UndrivenVarEntry*>(childVarp->user1p());
+        const UndrivenVarEntry* const childEntry
+            = reinterpret_cast<UndrivenVarEntry*>(childVarp->user1p());
         return childEntry && childEntry->anyBitDriven();
     }
     void underGenerate() { m_underGen = true; }
@@ -324,8 +324,8 @@ public:
             const bool pin1 = m_pinDriverp && pinChildDrives(m_pinDriverp);
             const bool pin2 = m_pinDriver2p && pinChildDrives(m_pinDriver2p);
             const int pinDrivers = (pin1 ? 1 : 0) + (pin2 ? 1 : 0);
-            const AstNode* const drivingPinp =
-                pin1 ? m_pinDriverp : (pin2 ? m_pinDriver2p : nullptr);
+            const AstNode* const drivingPinp
+                = pin1 ? m_pinDriverp : (pin2 ? m_pinDriver2p : nullptr);
             const int initDrivers = m_initDriverp ? 1 : 0;
             const int contDrivers = m_contDriverCount;
             if (pinDrivers >= 1 && (initDrivers + contDrivers + pinDrivers) >= 2) {
@@ -497,7 +497,8 @@ class UndrivenVisitor final : public VNVisitorConst {
     bool m_inInoutOrRefPin = false;  // Connected to pin that is inout
     bool m_inDrivingPin = false;  // In a pin of an output port, which drives its net
     const AstPin* m_pinp = nullptr;  // Current pin
-    bool m_contAssignZExempt = false;  // Current continuous assign RHS cannot conflict (pure-Z or Z-containing)
+    bool m_contAssignZExempt
+        = false;  // Current continuous assign RHS cannot conflict (pure-Z or Z-containing)
     bool m_inSelLhs = false;  // Iterating the fromp of an AstSel (a partial-bit write target)
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysp = nullptr;  // Current always of either type
