@@ -2398,6 +2398,264 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstShiftL* nodep) override { handleShift(nodep); }
     void visit(AstShiftR* nodep) override { handleShift(nodep); }
     void visit(AstShiftRS* nodep) override { handleShift(nodep); }
+    // Root var behind a VarRef/MemberSel/StructSel/ArraySel chain.
+    static AstVar* selChainRootVarp(AstNodeExpr* exprp) {
+        if (const AstNodeVarRef* const refp = VN_CAST(exprp, NodeVarRef)) return refp->varp();
+        if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) return mselp->varp();
+        if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            return selChainRootVarp(sselp->fromp());
+        }
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+            return selChainRootVarp(selp->fromp());
+        }
+        // ARRAY_AT_BACK ($-relative queue indexing) can't reach here: that
+        // syntax isn't accepted as a randomizable constraint expression at all.
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT)  // LCOV_EXCL_BR_LINE
+                return selChainRootVarp(cmethp->fromp());
+        }
+        return nullptr;
+    }
+    // True iff exprp is part of this randomize() call's rand set -- walks
+    // to a leaf via fromp(), since a selector's own user1() is tainted by its index.
+    static bool selChainIsRand(AstNodeExpr* exprp) {
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+            return selChainIsRand(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT)  // LCOV_EXCL_BR_LINE
+                return selChainIsRand(cmethp->fromp());
+        }
+        if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            return selChainIsRand(sselp->fromp());
+        }
+        if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
+            return mselp->user1() && selChainIsRand(mselp->fromp());
+        }
+        return exprp->user1();
+    }
+    // True iff exprp's access path has a rand-dependent index anywhere.
+    static bool selChainHasRandIndex(AstNodeExpr* exprp) {
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+            return selp->bitp()->user1() || selChainHasRandIndex(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) {  // LCOV_EXCL_BR_LINE
+                return cmethp->pinsp()->user1() || selChainHasRandIndex(cmethp->fromp());
+            }
+        }
+        if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            return selChainHasRandIndex(sselp->fromp());
+        }
+        if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
+            return selChainHasRandIndex(mselp->fromp());
+        }
+        return false;
+    }
+    // True iff exprp's chain is clonable per-element: pure throughout, and
+    // no AstVarXRef (leaves a dangling classOrPackagep once V3Inline runs).
+    static bool selChainCloneSafe(AstNodeExpr* exprp) {
+        if (VN_IS(exprp, VarRef)) return true;
+        if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
+            return selChainCloneSafe(mselp->fromp());
+        }
+        if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            return selChainCloneSafe(sselp->fromp());
+        }
+        if (const AstNodeSel* const selp = VN_CAST(exprp, NodeSel)) {
+            return selp->bitp()->isPure() && selChainCloneSafe(selp->fromp());
+        }
+        if (const AstCMethodHard* const cmethp = VN_CAST(exprp, CMethodHard)) {
+            if (cmethp->method() == VCMethod::ARRAY_AT) {
+                return cmethp->pinsp()->isPure() && selChainCloneSafe(cmethp->fromp());
+            }
+        }
+        return false;
+    }
+    void discardUnsupportedCompare(AstNodeBiop* nodep) {
+        AstConst* const constp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        constp->dtypeFrom(nodep);
+        nodep->replaceWith(constp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    // Marks the value-path chain only, never an ArraySel's index.
+    static void markRandDependentPathRecurse(AstNodeExpr* exprp) {
+        exprp->user1(true);
+        if (const AstMemberSel* const mselp = VN_CAST(exprp, MemberSel)) {
+            markRandDependentPathRecurse(mselp->fromp());
+        } else if (const AstStructSel* const sselp = VN_CAST(exprp, StructSel)) {
+            markRandDependentPathRecurse(sselp->fromp());
+        } else if (const AstArraySel* const selp = VN_CAST(exprp, ArraySel)) {
+            markRandDependentPathRecurse(selp->fromp());
+        }
+    }
+    static bool isDynamicSizedArrayDType(const AstNodeDType* dtp) {
+        return VN_IS(dtp, QueueDType) || VN_IS(dtp, DynArrayDType) || VN_IS(dtp, AssocArrayDType)
+               || VN_IS(dtp, WildcardArrayDType);
+    }
+    // True iff no such array appears anywhere in dtp's shape.
+    static bool arrayDTypeSupported(const AstNodeDType* dtp) {
+        if (const AstUnpackArrayDType* const arrp = VN_CAST(dtp, UnpackArrayDType)) {
+            return arrayDTypeSupported(arrp->subDTypep()->skipRefp());
+        }
+        return !isDynamicSizedArrayDType(dtp);
+    }
+    // Balanced (log2(N)-deep) AstLogAnd tree, not a left-deep (N-deep) fold --
+    // left-deep overflows the stack in a later pass past a few thousand elements.
+    static AstNodeExpr* balancedLogAndp(FileLine* fl, std::vector<AstNodeExpr*>& elemsp) {
+        std::vector<AstNodeExpr*> nextp;
+        nextp.reserve((elemsp.size() + 1) / 2);
+        while (elemsp.size() > 1) {
+            nextp.resize((elemsp.size() + 1) / 2);
+            for (size_t i = 0; i < elemsp.size(); i += 2) {
+                if (i + 1 == elemsp.size()) {
+                    nextp[i / 2] = elemsp[i];
+                } else {
+                    AstNodeExpr* const andp = new AstLogAnd{fl, elemsp[i], elemsp[i + 1]};
+                    andp->user1(true);
+                    nextp[i / 2] = andp;
+                }
+            }
+            elemsp.swap(nextp);
+        }
+        return elemsp.front();
+    }
+    // True iff equivalent-shape dtypes declare the same range direction at
+    // every dimension -- storage-index comparison pairs the wrong elements
+    // otherwise (arr[0:1] vs arr[1:0]).
+    // rhsDtp is already known equivalent to lhsDtp (IEEE 6.22.2), so lhsDtp
+    // alone decides whether this dimension is an array.
+    static bool arrayDirectionsMatch(const AstNodeDType* lhsDtp, const AstNodeDType* rhsDtp) {
+        const AstUnpackArrayDType* const lhsArrp = VN_CAST(lhsDtp, UnpackArrayDType);
+        if (!lhsArrp) return true;
+        const AstUnpackArrayDType* const rhsArrp = VN_AS(rhsDtp, UnpackArrayDType);
+        if (lhsArrp->declRange().ascending() != rhsArrp->declRange().ascending()) return false;
+        return arrayDirectionsMatch(lhsArrp->subDTypep()->skipRefp(),
+                                    rhsArrp->subDTypep()->skipRefp());
+    }
+    // Builds lhs[0]==rhs[0] && lhs[1]==rhs[1] && ..., recursing into
+    // sub-arrays. markLhs/markRhs mark that side's clones symbolic (rand
+    // arrays only).
+    AstNodeExpr* buildElementwiseEqp(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
+                                     const AstUnpackArrayDType* lhsArrDtp,
+                                     const AstUnpackArrayDType* rhsArrDtp, bool markLhs,
+                                     bool markRhs) {
+        // rhsArrDtp's sub-dtype is already known equivalent to lhsArrDtp's
+        // (IEEE 6.22.2), so lhsSubDtp alone decides whether to recurse.
+        const AstNodeDType* const lhsSubDtp = lhsArrDtp->subDTypep()->skipRefp();
+        const AstUnpackArrayDType* const lhsSubArrDtp = VN_CAST(lhsSubDtp, UnpackArrayDType);
+        const AstUnpackArrayDType* const rhsSubArrDtp
+            = lhsSubArrDtp ? VN_AS(rhsArrDtp->subDTypep()->skipRefp(), UnpackArrayDType) : nullptr;
+        std::vector<AstNodeExpr*> elemEqps;
+        const int n = lhsArrDtp->elementsConst();
+        elemEqps.reserve(n);
+        // p is declared position (0 = $left); storage index is p ascending,
+        // n-1-p descending.
+        const bool lhsAscending = lhsArrDtp->declRange().ascending();
+        const bool rhsAscending = rhsArrDtp->declRange().ascending();
+        for (int p = 0; p < n; ++p) {
+            const int lhsK = lhsAscending ? p : (n - 1 - p);
+            const int rhsK = rhsAscending ? p : (n - 1 - p);
+            AstNodeExpr* const lhsBasep = lhsp->cloneTreePure(false);
+            AstNodeExpr* const rhsBasep = rhsp->cloneTreePure(false);
+            AstArraySel* const lhsElemp = new AstArraySel{
+                fl, lhsBasep,
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(lhsK)}};
+            AstArraySel* const rhsElemp = new AstArraySel{
+                fl, rhsBasep,
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(rhsK)}};
+            if (markLhs) markRandDependentPathRecurse(lhsElemp);
+            if (markRhs) markRandDependentPathRecurse(rhsElemp);
+            AstNodeExpr* const elemEqp
+                = lhsSubArrDtp ? buildElementwiseEqp(fl, lhsElemp, rhsElemp, lhsSubArrDtp,
+                                                     rhsSubArrDtp, markLhs, markRhs)
+                               : static_cast<AstNodeExpr*>(new AstEq{fl, lhsElemp, rhsElemp});
+            elemEqp->user1(true);
+            elemEqps.push_back(elemEqp);
+        }
+        VL_DO_DANGLING(lhsp->deleteTree(), lhsp);
+        VL_DO_DANGLING(rhsp->deleteTree(), rhsp);
+        return balancedLogAndp(fl, elemEqps);
+    }
+    // Strip V3Width's declared-position reorder wrapper on rhs (IEEE
+    // 1800-2023 7.6) -- the SMT emitter has no case for it and crashes, and
+    // arrayDirectionsMatch() below redoes the reorder itself.
+    static void stripUnpackReorderCvt(AstNodeBiop* nodep) {
+        if (AstCvtUnpackToUnpack* const cvtp = VN_CAST(nodep->rhsp(), CvtUnpackToUnpack)) {
+            AstNodeExpr* const fromp = cvtp->fromp()->unlinkFrBack();
+            cvtp->replaceWith(fromp);
+            VL_DO_DANGLING(cvtp->deleteTree(), cvtp);
+        }
+    }
+    void handleEqNeq(AstNodeBiop* nodep, bool isNeq) {
+        if (editFormat(nodep)) return;
+        stripUnpackReorderCvt(nodep);
+        AstNodeDType* const lhsDtp = nodep->lhsp()->dtypep()->skipRefp();
+        AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
+        const bool isArrayShaped
+            = VN_IS(lhsDtp, UnpackArrayDType) || isDynamicSizedArrayDType(lhsDtp);
+        AstVar* const lhsRootVarp = isArrayShaped ? selChainRootVarp(nodep->lhsp()) : nullptr;
+        AstVar* const rhsRootVarp = isArrayShaped ? selChainRootVarp(nodep->rhsp()) : nullptr;
+        const bool lhsIsRand = lhsRootVarp && selChainIsRand(nodep->lhsp());
+        const bool rhsIsRand = rhsRootVarp && selChainIsRand(nodep->rhsp());
+        // Opposite declared directions still need elementwise expansion --
+        // see arrayDirectionsMatch().
+        const bool directionMismatch
+            = lhsIsRand && rhsIsRand && !arrayDirectionsMatch(lhsDtp, rhsDtp);
+        if (isArrayShaped && (!lhsIsRand || !rhsIsRand || directionMismatch)) {
+            FileLine* const fl = nodep->fileline();
+            if (!arrayDTypeSupported(lhsDtp)) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint on an array "
+                              "shape containing a queue, dynamic, or associative array");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            if (!lhsRootVarp || !rhsRootVarp) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint with an operand "
+                              "shape Verilator can't resolve to a variable, member, or "
+                              "array-indexed element");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            if (!selChainCloneSafe(nodep->lhsp()) || !selChainCloneSafe(nodep->rhsp())) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint with an operand "
+                              "Verilator can't safely evaluate once per array element (a "
+                              "hierarchical reference or a function call)");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            if ((!lhsIsRand && selChainHasRandIndex(nodep->lhsp()))
+                || (!rhsIsRand && selChainHasRandIndex(nodep->rhsp()))) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: array comparison in constraint against a "
+                              "non-random operand indexed by a random variable");
+                discardUnsupportedCompare(nodep);
+                return;
+            }
+            // The shape check above already confirmed both sides'
+            // UnpackArrayDType chain, so neither cast can fail.
+            const AstUnpackArrayDType* const lhsArrDtp = VN_AS(lhsDtp, UnpackArrayDType);
+            const AstUnpackArrayDType* const rhsArrDtp = VN_AS(rhsDtp, UnpackArrayDType);
+            AstNodeExpr* const lhsp = nodep->lhsp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = nodep->rhsp()->unlinkFrBack();
+            AstNodeExpr* resultp
+                = buildElementwiseEqp(fl, lhsp, rhsp, lhsArrDtp, rhsArrDtp, lhsIsRand, rhsIsRand);
+            if (isNeq) {
+                resultp = new AstLogNot{fl, resultp};
+                resultp->user1(true);
+            }
+            nodep->replaceWith(resultp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            iterate(resultp);
+            return;
+        }
+        editSMT(nodep, nodep->lhsp(), nodep->rhsp());
+    }
+    void visit(AstEq* nodep) override { handleEqNeq(nodep, false); }
+    void visit(AstNeq* nodep) override { handleEqNeq(nodep, true); }
     void visit(AstNodeBiop* nodep) override {
         if (editFormat(nodep)) return;
         editSMT(nodep, nodep->lhsp(), nodep->rhsp());
