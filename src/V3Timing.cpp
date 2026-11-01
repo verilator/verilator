@@ -388,8 +388,13 @@ class TimingSuspendableVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstAssignDly* nodep) override {
-        if (!VN_IS(m_procp, NodeProcedure)) v3Global.setUsesTiming();
-        visit(static_cast<AstNode*>(nodep));
+        // An intra-assignment timing control on an NBA is moved into a forked
+        // process with the update, so it does not suspend the containing process
+        if (nodep->timingControlp() || !VN_IS(m_procp, NodeProcedure)) {
+            v3Global.setUsesTiming();
+        }
+        iterateAndNextNull(nodep->rhsp());
+        iterateAndNextNull(nodep->lhsp());
     }
     void visit(AstFireEvent* nodep) override {
         if (nodep->isDelayed()
