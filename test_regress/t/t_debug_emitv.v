@@ -488,6 +488,20 @@ module t (/*AUTOARG*/
   cg_trans   cg_trans_inst   = new;
   cg_cross   cg_cross_inst   = new;
   cg_live_cross cg_live_cross_inst = new;
+
+  class ProcessKiller;
+    function new(std::process victim);
+      kill_virtual(victim);
+    endfunction
+    virtual function void kill_virtual(std::process victim);
+      victim.kill();
+    endfunction
+  endclass
+
+  initial begin
+    ProcessKiller killer;
+    killer = new(process::self());
+  end
 endmodule
 
 module sub(input logic clk);
