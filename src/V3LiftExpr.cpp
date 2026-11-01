@@ -201,7 +201,7 @@ class LiftExprVisitor final : public VNVisitor {
         return m_newStmtps;
     }
 
-    template<class T>
+    template <class T>
     void visitScanf(T* nodep) {
         if (!m_lift) {
             nodep->v3error("Unsupported: $fscanf/$sscanf in this context");
