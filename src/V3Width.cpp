@@ -2338,6 +2338,16 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstCoverBin* nodep) override {
         // No m_vup for a bin directly in a covergroup body (unsupported, already warned)
         widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
+        if (nodep->isSetExpr()) {
+            AstNodeExpr* const valuep = VN_AS(nodep->rangesp(), NodeExpr);
+            const AstNodeDType* const dtypep = valuep->dtypep()->skipRefp();
+            if (!dtypep->isNonPackedArray()) {
+                valuep->v3error("Bin set expression must evaluate to an unpacked array, not "
+                                << dtypep->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.1).");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+        }
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         if (nodep->arraySizep()) {
             // The size of 'bins b[N]' or 'bins auto[N]' is a self-determined expression, which

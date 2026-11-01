@@ -1,0 +1,8 @@
+%Error: t/t_covergroup_bins_unpack_parse_bad.v:12:18: Bin set expression requires an unsized array declaration '[]' (IEEE 1800-2023 19.5.1).
+   12 |       bins sized[2] = values;
+      |                  ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_bins_unpack_parse_bad.v:13:12: Bin set expression requires an unsized array declaration '[]' (IEEE 1800-2023 19.5.1).
+   13 |       bins missing_brackets = values;
+      |            ^~~~~~~~~~~~~~~~
+%Error: Exiting due to

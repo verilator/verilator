@@ -1,0 +1,23 @@
+%Error: t/t_covergroup_bins_unpack_bad2.v:14:12: Bin set expression requires an unsized array declaration '[]' (IEEE 1800-2023 19.5.1).
+   14 |       bins t_single = (1);   
+      |            ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_bins_unpack_bad2.v:21:19: Bin set expression requires an unsized array declaration '[]' (IEEE 1800-2023 19.5.1).
+   21 |       ignore_bins scalar_ignore = (2);
+      |                   ^~~~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad2.v:22:35: Bin set expression requires an unsized array declaration '[]' (IEEE 1800-2023 19.5.1).
+   22 |       illegal_bins scalar_illegal[2] = (3);
+      |                                   ^
+%Error: t/t_covergroup_bins_unpack_bad2.v:23:21: Bin set expression requires an unsized array declaration '[]' (IEEE 1800-2023 19.5.1).
+   23 |       wildcard bins scalar_wild = (4);
+      |                     ^~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad2.v:25:49: Bin set expression requires an unsized array declaration '[]' (IEEE 1800-2023 19.5.1).
+   25 |       wildcard illegal_bins scalar_wild_illegal[2] = (6);
+      |                                                 ^
+%Error: t/t_covergroup_bins_unpack_bad2.v:27:12: Bin set expression requires an unsized array declaration '[]' (IEEE 1800-2023 19.5.1).
+   27 |       bins real_value = (1.5);
+      |            ^~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad2.v:28:12: Bin set expression requires an unsized array declaration '[]' (IEEE 1800-2023 19.5.1).
+   28 |       bins string_value = string'("one");
+      |            ^~~~~~~~~~~~
+%Error: Exiting due to
