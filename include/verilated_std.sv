@@ -174,9 +174,11 @@ package std;
 
     // verilog_format: off
 `ifdef VERILATOR_TIMING
+    // verilator lint_off DEPRECATED
 `systemc_dtor
     if (m_process) m_process->clearSelf(this);
 `verilog
+    // verilator lint_on DEPRECATED
 `endif
     // verilog_format: on
 
