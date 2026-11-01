@@ -276,6 +276,10 @@ class InlineModGraphBuilder final : public VNVisitor {
 
         // Don't inline public modules by default
         if (nodep->modPublic()) vtxp->setNoInlineSoft("Public module");
+        // Keep the instances V3OrderParallel partitions as groups
+        if (v3Global.opt.mtasks() && nodep->threadsGroup()) {
+            vtxp->setNoInlineHard("threads_group");
+        }
 
         // Iterate children
         VL_RESTORER(m_modVtxp);

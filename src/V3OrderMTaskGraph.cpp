@@ -19,10 +19,14 @@
 #include "V3OrderMTaskGraph.h"
 
 #include "V3Global.h"
+#include "V3GraphStream.h"
 #include "V3InstrCount.h"
+#include "V3Stats.h"
 
 #include <algorithm>
+#include <map>
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -35,7 +39,10 @@ uint32_t LogicMTask::s_nextId = 1;  // Start at 1, for historic reasons
 LogicMTask::LogicMTask(OrderMTaskGraph& graph, OrderMoveVertex* mVtxp)
     : V3GraphVertex{&graph} {
     UASSERT(s_nextId < 0xFFFFFFFFUL, "Too many LogicMTask instances");
-    if (!mVtxp) return;
+    if (mVtxp) addVertex(mVtxp);
+}
+
+void LogicMTask::addVertex(OrderMoveVertex* mVtxp) {
     m_mVertices.linkBack(mVtxp);
     if (const OrderLogicVertex* const olvp = mVtxp->logicp()) {
         m_cost += V3InstrCount::count(olvp->nodep(), true);
@@ -394,13 +401,155 @@ void OrderMTaskGraph::validate() const {
 
 class OrderMTaskGraphBuilder final {
     // NODE STATE
-    // Used by V3InstrCount::count within the LogicMTask constructor only
+    // AstNode::user1()    Used by V3InstrCount::count within LogicMTask::addVertex only
+    // AstScope::user3p()  Cached group of Scope, see groupOf. Claimed in threadsGroupParts
     const VNUser1InUse m_user1InUse;
+
+    // TYPES
+    struct Part final {
+        const AstScope* groupp;  // The Scope forming the group
+        uint32_t depth;  // The depth of the vertex
+        bool operator<(const Part& other) const {
+            if (groupp != other.groupp) return groupp < other.groupp;
+            return depth < other.depth;
+        }
+    };
 
     // MEMBERS
     OrderMTaskGraph& m_mtaskGraph;  // Output OrderMTaskGraph
 
     // METHODS
+
+    // The group of a move vertex, if any.
+    static const AstScope* groupOf(const OrderMoveVertex* mVtxp) {
+        // Logic vertex belongs to the nearest enclosing instance of a marked module.
+        if (const OrderLogicVertex* const lVtxp = mVtxp->logicp()) {
+            const AstScope* const groupp = [&]() {
+                AstScope* const scopep = lVtxp->scopep();
+                // Result is cached in user3p
+                if (scopep->user3p()) return VN_AS(scopep->user3p(), Scope);
+                // Walk up to the nearest group
+                AstScope* resultp = scopep;
+                while (!resultp->modp()->threadsGroup() && !resultp->isTop()) {
+                    resultp = resultp->user3p() ? VN_AS(resultp->user3p(), Scope)
+                                                : resultp->aboveScopep();
+                }
+                // Cache the group in every scope walked to find it
+                resultp->user3p(resultp);
+                for (AstScope* currp = scopep; !currp->user3p(); currp = currp->aboveScopep()) {
+                    currp->user3p(resultp);
+                }
+                return resultp;
+            }();
+            // The top scope does not form a group
+            return groupp->isTop() ? nullptr : groupp;
+        }
+
+        // Variable vertex belongs to the group of its predecessors, if they
+        // all agree. There is always at least one, as OrderMoveGraph only
+        // creates a var vertex if reachable from logic.
+        const AstScope* const groupp
+            = groupOf(mVtxp->inEdges().frontp()->fromp()->as<OrderMoveVertex>());
+        for (const V3GraphEdge& edge : mVtxp->inEdges()) {
+            if (groupOf(edge.fromp()->as<OrderMoveVertex>()) != groupp) return nullptr;
+        }
+        return groupp;
+    }
+
+    // Decide which move vertices start out in the same MTask, so the
+    // partitioner keeps the logic of each threads_group instance together.
+    //
+    // A group is an instance of a marked module. A logic vertex belongs to the
+    // nearest enclosing group, and a variable vertex to the group of its
+    // predecessors, if they all agree. Other vertices are in no group.
+    //
+    // Making a whole group one MTask could create a cycle, through a path that
+    // leaves the group and comes back, so groups need to be split into 'parts'.
+    //
+    // A path in the graph 'visits' a group if either the path starts in the
+    // group, or it enters it from outside the group.
+    //
+    // Define 'depth' of a vertex as the largest number of group visits on
+    // any path to that vertex. This can be computed in topological order.
+    //
+    // A 'part' is then the vertices of one group at the same depth. Vertices
+    // in the same part will start as a single MTask.
+    //
+    // The resulting MTasks (parts contracted into a single MTask, plus
+    // vertices in no group as their own MTasks) form a DAG. The original
+    // graph is acyclic, so a cycle could only appear by contracting a part
+    // into one MTask, with the cycle leaving the part and entering it again.
+    // The depth never goes down along an edge, and goes up on entering a part.
+    // As all vertices of a part have the same depth, closing the cycle
+    // would require the depth to decrease, which never happens.
+    //
+    // For example, with each vertex annotated with (group, depth),
+    // where '-' is no group:
+    //
+    //   i (-,0) ---------+
+    //                    v
+    //   a (G,1) -------> c (G,1)         b (G,2) -------> d (G,2)
+    //   |                                ^                ^
+    //   +--------------> t (-,1) --------+                |
+    //                    |                                |
+    //                    +--------------------------------+
+    //
+    // i has no group upstream, so c stays at depth 1 with a. The path
+    // a -> t -> b visits G twice, so b and d are at depth 2, and G is split
+    // into the parts {a, c} and {b, d}.
+    // As one MTask, G would form a cycle with t.
+    //
+    // This is still conservative and might break a group into more parts than
+    // needed, but is cheap to compute.
+    //
+    // Returns the group and depth of each vertex. The group is nullptr for
+    // vertices not in a group. For vertices in a group the pair (group, depth)
+    // identifies the 'part' they belong to.
+    std::unordered_map<const OrderMoveVertex*, Part> threadsGroupParts() {
+        std::unordered_map<const OrderMoveVertex*, Part> vtx2Part;
+        // Nothing to do unless some module is marked
+        {
+            AstNodeModule* modp = v3Global.rootp()->modulesp();
+            while (modp && !modp->threadsGroup()) modp = VN_AS(modp->nextp(), NodeModule);
+            if (!modp) return vtx2Part;
+        }
+        const VNUser3InUse user3InUse;
+        // Find the group and depth of each vertex, in dependency order
+        GraphStreamUnordered stream{&m_mtaskGraph.moveGraph()};
+        while (const V3GraphVertex* const vtxp = stream.nextp()) {
+            const OrderMoveVertex* const mVtxp = vtxp->as<OrderMoveVertex>();
+            const AstScope* const groupp = groupOf(mVtxp);
+            // Compute the depth of this vertex (largest number of group visits
+            // along any path leading to this vertex, see comment above).
+            uint32_t depth = 0;
+            if (!groupp) {
+                // Vertex not in a group, so a group visit does not start here.
+                // Its depth is the max of its predecessors.
+                for (const V3GraphEdge& edge : vtxp->inEdges()) {
+                    const Part& from = vtx2Part.at(edge.fromp()->as<OrderMoveVertex>());
+                    depth = std::max(depth, from.depth);
+                }
+            } else {
+                // Vertex is in a group. The depth is the highest of:
+                // - 1 (path starts in the group, counts as a visit)
+                // - the depth of predecessors in the same group (within same visit)
+                // - depth + 1 of predecessors not in same group (visit enter group)
+                depth = 1;
+                for (const V3GraphEdge& edge : vtxp->inEdges()) {
+                    const Part& from = vtx2Part.at(edge.fromp()->as<OrderMoveVertex>());
+                    if (from.groupp != groupp) {
+                        // Edge enters from different/no group, increase visit count
+                        depth = std::max(depth, from.depth + 1);
+                    } else {
+                        // Edge is within same group, does not increase visit count
+                        depth = std::max(depth, from.depth);
+                    }
+                }
+            }
+            vtx2Part.emplace(mVtxp, Part{groupp, depth});
+        }
+        return vtx2Part;
+    }
 
     // Predicate function to determine what OrderMoveVertex to bypass when constructing the MTask
     // graph. The OrderMoveGraph is a bipartite graph of:
@@ -437,9 +586,10 @@ class OrderMTaskGraphBuilder final {
         return fanIn + fanOut == 4;
     }
 
-    // Add an edge to the graph, if there is not already an edge between the two vertices.
+    // Add an edge to the graph, if there is not already an edge between the two vertices, and
+    // they are not the same, which happens within a part.
     void addEdge(LogicMTask* srcp, LogicMTask* dstp) {
-        if (srcp->hasEdgeTo(dstp)) return;  // Don't create redundant edges.
+        if (srcp == dstp || srcp->hasEdgeTo(dstp)) return;  // Don't create redundant edges.
         m_mtaskGraph.addEdge(srcp, dstp);
     }
 
@@ -447,39 +597,47 @@ class OrderMTaskGraphBuilder final {
     explicit OrderMTaskGraphBuilder(OrderMTaskGraph& mtaskGraph)
         : m_mtaskGraph{mtaskGraph} {
 
-        // Create the LogicMTasks for each OrderMoveVertex
+        // Create the LogicMTasks for each OrderMoveVertex, or each threads_group part of them
+        const std::unordered_map<const OrderMoveVertex*, Part> vtx2Part = threadsGroupParts();
+        std::map<Part, LogicMTask*> partMTasks;
         for (V3GraphVertex& vtx : mtaskGraph.moveGraph().vertices()) {
             OrderMoveVertex& mVtx = static_cast<OrderMoveVertex&>(vtx);
+
+            // If the vertex is in a group, add it to the single LogicMTask of its part
+            if (!vtx2Part.empty()) {
+                const Part part = vtx2Part.at(&mVtx);
+                if (part.groupp) {
+                    LogicMTask*& mtaskp = partMTasks[part];
+                    if (!mtaskp) mtaskp = new LogicMTask{mtaskGraph, nullptr};
+                    mtaskp->addVertex(&mVtx);
+                    mVtx.userp(mtaskp);
+                    continue;
+                }
+            }
+
             if (bypassOk(&mVtx)) {
                 mVtx.userp(nullptr);  // Set to nullptr to mark as bypassed
             } else {
                 mVtx.userp(new LogicMTask{mtaskGraph, &mVtx});  // Create vertex and set userp
             }
         }
+        V3Stats::addStatSum("MTask graph, threads_group parts", partMTasks.size());
 
         LogicMTask& entry = *mtaskGraph.entryp();
         LogicMTask& exit = *mtaskGraph.exitp();
 
         // Create the MTask dependency edges based on the OrderMoveGraph dependencies
-        for (V3GraphVertex& vtx : mtaskGraph.vertices()) {
-            LogicMTask& mtask = static_cast<LogicMTask&>(vtx);
-
-            // Entry and exit vertices handled separately
-            if (VL_UNLIKELY((&mtask == &entry) || (&mtask == &exit))) continue;
-
-            OrderMoveVertex::List& vertexList = mtask.vertexList();
-            // At this point, there should only be one OrderMoveVertex per LogicMTask
-            UASSERT_OBJ(vertexList.hasSingleElement(), &mtask, "Multiple OrderMoveVertex");
-            OrderMoveVertex* const mVtxp = vertexList.frontp();
-            UASSERT_OBJ(mVtxp->userp(), &mtask, "Bypassed OrderMoveVertex should not have MTask");
+        for (V3GraphVertex& vtx : mtaskGraph.moveGraph().vertices()) {
+            LogicMTask* const mtaskp = static_cast<LogicMTask*>(vtx.userp());
+            if (!mtaskp) continue;  // Bypassed
 
             // Iterate downstream direct dependents
-            for (const V3GraphEdge& dEdge : mVtxp->outEdges()) {
+            for (const V3GraphEdge& dEdge : vtx.outEdges()) {
                 V3GraphVertex* const top = dEdge.top();
 
                 // If the opposite end of the edge is not a bypassed vertex, add direct dependency
                 if (LogicMTask* const otherp = static_cast<LogicMTask*>(top->userp())) {
-                    addEdge(&mtask, otherp);
+                    addEdge(mtaskp, otherp);
                     continue;
                 }
 
@@ -488,8 +646,8 @@ class OrderMTaskGraphBuilder final {
                     LogicMTask* const transp = static_cast<LogicMTask*>(tEdge.top()->userp());
                     // The Move graph is bipartite (logic <-> var), and logic is never
                     // bypassed, hence 'transp' must be non-nullptr.
-                    UASSERT_OBJ(transp, mVtxp, "This cannot be a bypassed vertex");
-                    addEdge(&mtask, transp);
+                    UASSERT_OBJ(transp, &vtx, "This cannot be a bypassed vertex");
+                    addEdge(mtaskp, transp);
                 }
             }
         }

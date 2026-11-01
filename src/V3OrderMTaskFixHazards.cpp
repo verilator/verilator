@@ -256,8 +256,8 @@ class FixDataHazards final {
         pendingReaders.clear();
         LogicMTask* prevWriterp = nullptr;
         for (const Access* accp = beginp; accp != endp; ++accp) {
-            // The OrderLogicVertices record one access per variable, and at this point each MTask
-            // holds exactly one logic block, so an MTask cannot appear twice here.
+            // The accesses of a variable by the same MTask were combined into one, so an MTask
+            // cannot appear twice here.
             UASSERT_OBJ(accp == beginp || accp[-1].m_mtaskp != accp->m_mtaskp, accp->m_mtaskp,
                         "Multiple accesses of a variable in an MTask");
             LogicMTask* const mtaskp = accp->m_mtaskp;
@@ -314,6 +314,21 @@ class FixDataHazards final {
             if (a.m_vscp != b.m_vscp) return a.m_vscp->user1() < b.m_vscp->user1();
             return a.m_mtaskp->user() < b.m_mtaskp->user();
         });
+        // An MTask holding several logic blocks can access a variable more than once. Combine
+        // these into one access, as each OrderLogicVertex does for its own accesses.
+        if (accesses.size() > 1) {
+            size_t last = 0;  // Index of the last combined access
+            for (size_t i = 1; i < accesses.size(); ++i) {
+                Access& lastAcc = accesses[last];
+                const Access& acc = accesses[i];
+                if (acc.m_vscp == lastAcc.m_vscp && acc.m_mtaskp == lastAcc.m_mtaskp) {
+                    if (acc.m_access != lastAcc.m_access) lastAcc.m_access = VAccess::READWRITE;
+                } else {
+                    accesses[++last] = acc;
+                }
+            }
+            accesses.resize(last + 1);
+        }
 
         // Serialize the accesses of each variable
         for (size_t i = 0; i < accesses.size();) {
