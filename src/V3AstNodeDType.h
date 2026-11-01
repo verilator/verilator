@@ -564,6 +564,7 @@ public:
     VNumRange declRange() const { return isRanged() ? VNumRange{left(), right()} : VNumRange{}; }
     void cvtRangeConst();  // Convert to smaller representation
     bool isCompound() const override { return isString(); }
+    bool isDynamicallySized() const override { return isString(); }
     bool isIntegralOrPacked() const override { return keyword().isIntNumeric(); }
 };
 class AstBracketArrayDType final : public AstNodeDType {

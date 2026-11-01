@@ -59,10 +59,10 @@ class WidthCommitVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Current module
     const char* m_contNbap = nullptr;  // In continuous- or non-blocking assignment
     bool m_contReads = false;  // Check read continuous automatic variables
-    bool m_dynsizedelem = false;  // Writing dynamically-sized array element, not the array itself
+    bool m_dynsizedelem = false;  // Under an element of a dynamically sized variable, not itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     bool m_taskRefWarn = true;  // Allow task reference warnings
-    bool m_underSel = false;  // Under AstMemberSel or AstSel
+    bool m_underSel = false;  // Under a MemberSel handle or what a Sel reads, unless m_contReads
     bool m_underAlwaysEdged = false;  // Under always with sequential SenTree
     std::vector<AstNew*> m_virtualNewsp;  // Instantiations of virtual classes
     std::vector<AstNodeFTask*> m_tasksp;  // All the tasks, we will check if they are ever called
@@ -479,7 +479,7 @@ private:
         {
             VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
-            m_contNbap = "continuous";
+            m_contNbap = "procedural continuous";
             m_contReads = true;
             iterateAndNextNull(nodep->lhsp());
             iterateAndNextNull(nodep->rhsp());
@@ -492,7 +492,7 @@ private:
         {
             VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
-            m_contNbap = "nonblocking";
+            m_contNbap = "non-blocking";
             m_contReads = false;
             iterateAndNextNull(nodep->lhsp());
         }
@@ -582,6 +582,20 @@ private:
         iterateChildren(nodep);
         editDType(nodep);
     }
+    void visit(AstGetcN* nodep) override {
+        // A character of a string, which is dynamically sized
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
+    void visit(AstGetcRefN* nodep) override {
+        // A character of a string, which is dynamically sized
+        VL_RESTORER(m_dynsizedelem);
+        m_dynsizedelem = true;
+        iterateChildren(nodep);
+        editDType(nodep);
+    }
     void visit(AstStructSel* nodep) override {
         iterateChildren(nodep);
         editDType(nodep);
@@ -595,8 +609,10 @@ private:
     void visit(AstSel* nodep) override {
         {
             VL_RESTORER(m_underSel);
-            m_underSel = true;
-            iterateChildren(nodep);
+            if (!nodep->isLValue() && !m_contReads) m_underSel = true;
+            iterateAndNextNull(nodep->fromp());
+            if (!m_contReads) m_underSel = true;
+            iterateAndNextNull(nodep->lsbp());
         }
         editDType(nodep);
     }
