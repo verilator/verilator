@@ -29,6 +29,7 @@ module t;
     automatic c o = new;
     automatic str_s st = '{"qux"};
     automatic string sc = {"foo", "bar"};
+    automatic string sa[2] = '{"ab", "cd"};
 
     // read
     if (str[0] != "b") $stop;
@@ -52,6 +53,8 @@ module t;
     if (o.str != "boo") $stop;
     st.str[2] = "z";
     if (st.str != "quz") $stop;
+    sa[1][0] = "x";
+    if (sa[1] != "xd") $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;
