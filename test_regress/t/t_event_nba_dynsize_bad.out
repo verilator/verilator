@@ -1,0 +1,30 @@
+%Error: t/t_event_nba_dynsize_bad.v:31:8: Dynamically-sized variable not allowed in non-blocking event trigger (IEEE 1800-2023 6.21): 'teq'
+                                        : ... note: In instance 't'
+   31 |     ->>teq[i];   
+      |        ^~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_event_nba_dynsize_bad.v:32:8: Dynamically-sized variable not allowed in non-blocking event trigger (IEEE 1800-2023 6.21): 'teq'
+                                        : ... note: In instance 't'
+   32 |     ->>teq[0];   
+      |        ^~~
+%Error: t/t_event_nba_dynsize_bad.v:33:8: Dynamically-sized variable not allowed in non-blocking event trigger (IEEE 1800-2023 6.21): 'ted'
+                                        : ... note: In instance 't'
+   33 |     ->>ted[i];   
+      |        ^~~
+%Error: t/t_event_nba_dynsize_bad.v:34:8: Dynamically-sized variable not allowed in non-blocking event trigger (IEEE 1800-2023 6.21): 'tes'
+                                        : ... note: In instance 't'
+   34 |     ->>tes[i];   
+      |        ^~~
+%Error: t/t_event_nba_dynsize_bad.v:35:8: Dynamically-sized variable not allowed in non-blocking event trigger (IEEE 1800-2023 6.21): 'tew'
+                                        : ... note: In instance 't'
+   35 |     ->>tew[i];   
+      |        ^~~
+%Error: t/t_event_nba_dynsize_bad.v:43:13: Dynamically-sized variable not allowed in non-blocking event trigger (IEEE 1800-2023 6.21): 's_teq'
+                                         : ... note: In instance 't'
+   43 |     ->>Cls::s_teq[i];   
+      |             ^~~~~
+%Error: t/t_event_nba_dynsize_bad.v:44:10: Dynamically-sized variable not allowed in non-blocking event trigger (IEEE 1800-2023 6.21): 'teq'
+                                         : ... note: In instance 't'
+   44 |     ->>c.teq[i];   
+      |          ^~~
+%Error: Exiting due to
