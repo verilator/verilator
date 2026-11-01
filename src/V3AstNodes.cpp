@@ -3816,10 +3816,12 @@ void AstSampled::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 AstActive* AstScope::comboActivep(bool create) {
-    // Use an existing one
+    // Use an existing one, but not the active of an AlwaysPostponed, which must stay alone
     for (AstNode* const nodep : blockspList()) {
         AstActive* const activep = VN_CAST(nodep, Active);
-        if (activep && activep->hasCombo()) return activep;
+        if (activep && activep->hasCombo() && !VN_IS(activep->stmtsp(), AlwaysPostponed)) {
+            return activep;
+        }
     }
     if (!create) return nullptr;
     // Otherwise create a new one
