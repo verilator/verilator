@@ -4921,7 +4921,33 @@ class WidthVisitor final : public VNVisitor {
                    || nodep->name() == "next"  //
                    || nodep->name() == "prev") {
             methodOkArguments(nodep, 1, 1);
-            iterateCheckTyped(nodep, "argument", methodArg(nodep, 0), adtypep->keyDTypep(), BOTH);
+            iterateCheckTyped(nodep, "argument", methodArg(nodep, 0), adtypep->keyDTypep(),
+                              PRELIM);
+            const AstNodeExpr* const argp = methodArg(nodep, 0);
+            const AstNodeDType* const keyDTypep = adtypep->keyDTypep();
+            const AstNodeDType* const argDTypep = argp->dtypep();
+            const bool isIntegralPair = keyDTypep->skipRefp()->isIntegralOrPacked()
+                                        && argDTypep->skipRefp()->isIntegralOrPacked()
+                                        && !VN_IS(keyDTypep->skipRefToEnump(), EnumDType)
+                                        && !VN_IS(argDTypep->skipRefToEnump(), EnumDType);
+            // Integral non-enum types are equivalent by size, state, and sign; others must match.
+            // 13.5.2 requires ref arguments to be equivalent.
+            // (Most commercial tools ignore the looser rule in 7.9.8)
+            const bool isEquivalentArg = isIntegralPair ? isEquivalentDType(keyDTypep, argDTypep)
+                                                        : keyDTypep->similarDType(argDTypep);
+            // An earlier error, such as a missing argument, replaced the argument with 1'b0
+            const bool isErroringArg = argp->fileline()->erroringOn();
+            if (!isEquivalentArg && !isErroringArg) {
+                nodep->v3error("Associative array method "
+                               << nodep->prettyNameQ()
+                               << " requires an argument equivalent to the index type"
+                                  " (IEEE 1800-2023 7.9.4, 13.5.2)"
+                               << warnDTypes(nodep, keyDTypep, argDTypep, "Index", "Argument"));
+                nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::Signed32{}, 0});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+                return;
+            }
+            iterateCheckTyped(nodep, "argument", methodArg(nodep, 0), adtypep->keyDTypep(), FINAL);
             AstNodeExpr* const index_exprp = methodCallAssocIndexExpr(nodep, adtypep);
             methodCallLValueRecurse(nodep, index_exprp, VAccess::READWRITE);
             newp
