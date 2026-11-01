@@ -312,6 +312,15 @@ static AstNodeStmt* newIfAssertFailOn(AstNode* bodyp, VAssertDirectiveType direc
     return ifp;
 }
 
+static AstAlways* newAssertAlways(FileLine* flp, VAlwaysKwd kwd, AstSenTree* sentreep,
+                                  AstNode* bodyp) {
+    AstAlways* const alwaysp = new AstAlways{flp, kwd, sentreep, bodyp};
+    alwaysp->foreach([](AstNodeVarRef* nodep) {
+        nodep->fileline()->modifyWarnOff(V3ErrorCode::SYNCASYNCNET, true);
+    });
+    return alwaysp;
+}
+
 //######################################################################
 // NFA Builder
 
@@ -519,7 +528,7 @@ class SvaNfaBuilder final {
         m_modp->addStmtsp(tempVarp);
         AstAssign* const assignp = new AstAssign{flp, new AstVarRef{flp, tempVarp, VAccess::WRITE},
                                                  sampled(exprp->cloneTreePure(false))};
-        m_modp->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS_COMB, nullptr, assignp});
+        m_modp->addStmtsp(newAssertAlways(flp, VAlwaysKwd::ALWAYS_COMB, nullptr, assignp));
         return tempVarp;
     }
 
@@ -1945,13 +1954,13 @@ class SvaNfaLowering final {
     // Callers pass a null clearp when the disable cannot rise between clock events.
     void addStateAlways(LowerCtx& c, AstNode* bodyp, AstNode* clearp) {
         m_modp->addStmtsp(
-            new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), bodyp});
+            newAssertAlways(c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), bodyp));
         if (!clearp) return;
-        m_modp->addStmtsp(new AstAlways{
+        m_modp->addStmtsp(newAssertAlways(
             c.flp, VAlwaysKwd::ALWAYS,
             new AstSenTree{c.flp, new AstSenItem{c.flp, VEdgeType::ET_POSEDGE,
                                                  c.disableExprp->cloneTreePure(false)}},
-            clearp});
+            clearp));
     }
 
     // Phase 2/2b/2c: Emit NBA register updates and in-place delay-ring writes.
@@ -2218,7 +2227,7 @@ class SvaNfaLowering final {
             = new AstAssignDly{c.flp, new AstVarRef{c.flp, c.killVarp, VAccess::WRITE},
                                assertKillGet(c.flp, c.assertType, c.directiveType)};
         m_modp->addStmtsp(
-            new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), ackp});
+            newAssertAlways(c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), ackp));
     }
 
     // Phase 3/3a/3b: Compute terminal match/reject signals, required-step reject,
@@ -2450,8 +2459,8 @@ class SvaNfaLowering final {
 
         if (sigs.matchCountOverflowp) {
             m_modp->addStmtsp(
-                new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false),
-                              newCountOverflowWarning(c.flp, sigs.matchCountOverflowp)});
+                newAssertAlways(c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false),
+                                newCountOverflowWarning(c.flp, sigs.matchCountOverflowp)));
             sigs.matchCountOverflowp = nullptr;
         }
 
@@ -3286,7 +3295,7 @@ class AssertNfaVisitor final : public VNVisitor {
                               decrementedFailCountp});
             replayStmtsp->addNext(replayLoopp);
             m_modp->addStmtsp(
-                new AstAlways{flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayStmtsp});
+                newAssertAlways(flp, VAlwaysKwd::ALWAYS, threadFailReplaySenTreep, replayStmtsp));
         }
     }
 

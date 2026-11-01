@@ -6,9 +6,13 @@
 
 module b (
   input clk_b,
-  input rst_b
+  input rst_b,
+  output reg out
 );
 /* verilator no_inline_module */
+  always @(posedge clk_b) begin
+    out <= (rst_b) ? 1 : 0;
+  end
   assert property (@(posedge clk_b) rst_b);
 endmodule
 
@@ -18,7 +22,8 @@ module t (
     input rst_sync_l,
     input rst_async_l,
     input rst_both_b,
-    input d
+    input d,
+    output o1
 );
 
   reg q1;
@@ -67,7 +72,8 @@ module t (
 
   b t_b (
     .clk_b(clk),
-    .rst_b(rst_both_b)
+    .rst_b(rst_both_b),
+    .out(o1)
   );
   reg q6;
   always_ff @(negedge rst_both_b) begin
