@@ -691,21 +691,10 @@ class UndrivenVisitor final : public VNVisitorConst {
                     // SystemVerilog, but a driver conflict for synthesis. The
                     // always_ff/always_comb cases above already cover mixes with
                     // an explicit process, so only warn for plain+plain here.
-                    // When the two blocks are clocked differently, the
-                    // (on-by-default) MULTIDRIVEN check in V3Delayed already reports
-                    // the conflict, so don't also emit MULTIDRIVENPROC for that case.
                     const AstAlways* const otherAlwaysp = entryp->getAlwPlainp();
-                    const AstSenTree* const senp
-                        = m_alwaysPlainp ? m_alwaysPlainp->sentreep() : nullptr;
-                    const AstSenTree* const otherSenp
-                        = otherAlwaysp ? otherAlwaysp->sentreep() : nullptr;
-                    const bool differentClocking = senp && otherSenp && senp->hasClocked()
-                                                   && otherSenp->hasClocked()
-                                                   && !senp->sameTree(otherSenp);
                     if (m_alwaysPlainp && entryp->isDrivenAlwaysPlainWhole()
                         && m_alwaysPlainp != otherAlwaysp
-                        && m_alwaysPlainp->fileline() != otherAlwaysp->fileline()
-                        && !differentClocking) {
+                        && m_alwaysPlainp->fileline() != otherAlwaysp->fileline()) {
                         nodep->v3warn(
                             MULTIDRIVENPROC,
                             "Variable written to in always block also written by another always "

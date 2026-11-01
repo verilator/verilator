@@ -22,6 +22,12 @@ class Cls;
   endfunction
 endclass : Cls
 
+class ECls extends Cls;
+  function int call_super();
+    return super.static_function(23);
+  endfunction
+endclass
+
 class OCls;
   int i;
   static function OCls create();
@@ -40,6 +46,7 @@ module t;
     int x;
     OCls oc;
     Cls c;
+    ECls ec;
 
     Cls::static_task(16);
     x = Cls::static_function(23);
@@ -53,6 +60,9 @@ module t;
     c = new;
     if (!c.static_bit()) $stop;
     if (!c.static_bit) $stop;
+
+    ec = new;
+    if (ec.call_super() != 42) $stop;
 
     $write("*-* All Finished *-*\n");
     $finish;

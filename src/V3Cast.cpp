@@ -186,6 +186,13 @@ class CastVisitor final : public VNVisitor {
         }
         nodep->user1(1);
     }
+    void visit(AstConsQueue* nodep) override {
+        iterateChildren(nodep);
+        if (nodep->defaultp()) {
+            ensureCastValue(nodep->defaultp(), nodep->dtypep()->skipRefp()->subDTypep());
+        }
+        nodep->user1(1);
+    }
     void visit(AstConsStructItem* nodep) override {
         iterateChildren(nodep);
         ensureCastValue(nodep->valuep(), nodep->memberp());

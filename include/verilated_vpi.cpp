@@ -653,7 +653,7 @@ public:
             m_ranges.push_back(*vop->varp()->range(it));
         for (auto it : m_ranges) m_nextIndex.push_back(it.right());
     }
-    ~VerilatedVpioRegIter() override = default;
+    ~VerilatedVpioRegIter() override { VL_DO_CLEAR(delete m_var, m_var = nullptr); }
     // cppcheck-suppress duplInheritedMember
     static VerilatedVpioRegIter* castp(vpiHandle h) {
         return dynamic_cast<VerilatedVpioRegIter*>(reinterpret_cast<VerilatedVpio*>(h));

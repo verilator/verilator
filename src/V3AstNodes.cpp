@@ -810,6 +810,14 @@ void AstBegin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonGen(str);
 }
+const char* AstCAwait::broken() const {
+    if (const AstCMethodHard* const methodp = VN_CAST(exprp(), CMethodHard)) {
+        BROKEN_RTN(!methodp->method().isAwaitable());
+    } else {
+        BROKEN_RTN(!VN_AS(exprp(), NodeCCall)->funcp()->isCoroutine());
+    }
+    return nullptr;
+}
 void AstCAwait::dump(std::ostream& str) const {
     Super::dump(str);
     if (sentreep()) {
@@ -1418,6 +1426,16 @@ const char* AstConsDynArray::broken() const {
     BROKEN_RTN(defaultp() && !sizep());
     // Items are keyed exactly when sizep is present
     for (const AstConsDynArrayItem* const itemp : itemspList()) {
+        BROKEN_RTN(!itemp->keyp() != !sizep());
+    }
+    return nullptr;
+}
+const char* AstConsQueue::broken() const {
+    BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), QueueDType));
+    // Default only valid if sizep is present
+    BROKEN_RTN(defaultp() && !sizep());
+    // Items are keyed exactly when sizep is present
+    for (const AstConsQueueItem* const itemp : itemspList()) {
         BROKEN_RTN(!itemp->keyp() != !sizep());
     }
     return nullptr;

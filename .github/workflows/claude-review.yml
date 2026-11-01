@@ -121,3 +121,30 @@ jobs:
         env:
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
         run: jq '.[] | select(.type == "result") | .permission_denials' "${EXECUTION_FILE}"
+
+      # Temporary: show the commands Claude ran to post the review, and what they
+      # returned, which the log of the Claude review step leaves out
+      - name: Show review posting output
+        if: ${{ always() && steps.claude.outputs.execution_file != '' }}
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |-
+          jq -r '
+            [.[] | .message?.content? | arrays | .[]] as $blocks
+            | $blocks[]
+            | select(.type == "tool_use")
+            | select(.input.command? // "" | contains("ci-claude-post-review.bash"))
+            | .id as $id
+            | "$ \(.input.command)",
+              ($blocks[] | select(.type == "tool_result" and .tool_use_id == $id) | .content
+               | if type == "array" then map(.text? // empty) | join("\n") else . end)
+          ' "${EXECUTION_FILE}"
+
+      # Fail if Claude did not manage to post its review or set the label, which
+      # 'ci/ci-claude-post-review.bash' marks by creating this file at the end
+      - name: Check review posted
+        run: |-
+          if [ ! -f "${RUNNER_TEMP}/claude-review-done" ]; then
+            echo "::error::Claude did not post its review or set the label"
+            exit 1
+          fi

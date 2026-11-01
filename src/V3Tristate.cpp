@@ -736,14 +736,16 @@ class TristateVisitor final : public TristateBaseVisitor {
         bitPulls[bitIndex] = direction;
     }
 
-    AstConst* createPerBitPullConst(AstVar* varp) {
+    AstConst* createPerBitPullConst(AstVar* const varp) {
         // Create a constant with per-bit pull values.
-        // Bits without explicit pull default to pulldown (0).
+        // Bits without explicit pull retain the whole-variable pull direction.
         // V3Number::setBit silently no-ops if bitIndex exceeds the variable width.
         const auto& bitPulls = m_varAux(varp).bitPulls;
-        V3Number num{varp, varp->width(), 0};  // Start with all zeros
+        const AstPull* const pullp = m_varAux(varp).pullp;
+        V3Number num{varp, varp->width(), 0};
+        if (pullp && pullp->direction() == 1) num.setAllBits1();
         for (const auto& pair : bitPulls) {
-            if (pair.second == 1) num.setBit(pair.first, 1);
+            num.setBit(pair.first, pair.second);
         }  // LCOV_EXCL_LINE
         return new AstConst{varp->fileline(), num};
     }
@@ -1228,14 +1230,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 undrivenp = newAllZerosOrOnes(invarp, true);  // LCOV_EXCL_LINE
             }
 
-            AstConst* pullConstp;
-            if (hasPerBitPulls(lhsp)) {
-                pullConstp = createPerBitPullConst(lhsp);
-            } else {
-                const AstPull* const pullp = m_varAux(lhsp).pullp;
-                const bool pull1 = pullp && pullp->direction() == 1;
-                pullConstp = newAllZerosOrOnes(invarp, pull1);
-            }
+            AstConst* const pullConstp = createPerBitPullConst(lhsp);
 
             undrivenp = new AstAnd{invarp->fileline(), undrivenp, pullConstp};
             orp = orp ? new AstOr{invarp->fileline(), orp, undrivenp} : undrivenp;
