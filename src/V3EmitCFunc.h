@@ -838,6 +838,12 @@ public:
         iterateConst(nodep->exprp());
         puts(";\n");
     }
+    void visit(AstFireEvent* nodep) override {
+        UASSERT_OBJ(!nodep->isDelayed(), nodep, "'->>' should have been lowered by V3Delayed");
+        putns(nodep, "vlSymsp->fireEvent(");
+        iterateConst(nodep->operandp());
+        puts(");\n");
+    }
     void visit(AstCNew* nodep) override {
         if (VN_IS(nodep->dtypep(), VoidDType)) {  // super.new case
             putsDecoration(nodep, "/*super.new*/");
