@@ -77,6 +77,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <unordered_map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -196,7 +197,6 @@ private:
     // TYPES
     using ScopeAliasMap = std::unordered_map<VSymEnt*, VSymEnt*>;
     using IfaceModSyms = std::vector<std::pair<AstIface*, VSymEnt*>>;
-
     static LinkDotState* s_errorThisp;  // Last self, for error reporting only
 
     // MEMBERS
@@ -5495,7 +5495,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeFTaskRef* nodep) override {
-        if (nodep->user3SetOnce()) return;
+        if (nodep->user3SetOnce() && !nodep->upwardReference()) return;
         LINKDOT_VISIT_START();
         UINFO(8, indent() << "visit " << nodep);
         UINFO(8, indent() << m_ds.ascii());
@@ -5656,8 +5656,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // which may find std::randomize and overwrite classOrPackagep
                 return;
             }
-            VSymEnt* const foundp
-                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+            VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+            bool foundUpward = false;
+            // IEEE 1800-2023 23.8.1 A simple task/function name uses upward
+            // hierarchical name resolution.
+            if (!foundp && first && nodep->dotted().empty() && !nodep->classOrPackagep()) {
+                VSymEnt* okSymp = nullptr;
+                foundp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->name(), baddot,
+                                              okSymp, true);
+                foundUpward = foundp != nullptr;
+            }
             AstNodeFTask* const taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
             AstNodeModule* const taskModulep = foundp ? foundp->classOrPackagep() : nullptr;
             // Ignore deferring linking of functions inside params of classes extending
@@ -5683,6 +5691,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
 
             if (taskp) {
+                if (foundUpward) {
+                    nodep->upwardReference(true);
+                    m_modp->hasUpwardRef(true);
+                    v3Global.hasUpwardReferences(true);
+                }
                 if (staticAccess && !taskp->isStatic()) {
                     // TODO bug4077
                     // nodep->v3error("Static access to non-static task/function "
