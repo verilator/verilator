@@ -1,8 +1,52 @@
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:20:38: Unsupported: s_eventually after a multi-cycle antecedent
+                                                           : ... note: In instance 't'
+   20 |   assert property (@(posedge clk) (a ##1 a) |-> s_eventually b);
+      |                                      ^~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:21:36: Unsupported: s_eventually after a multi-cycle antecedent
+                                                           : ... note: In instance 't'
+   21 |   assert property (@(posedge clk) a[*1:2] |=> s_eventually b);
+      |                                    ^~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:22:43: Unsupported: s_eventually after a nested non-overlapped implication
+                                                           : ... note: In instance 't'
+   22 |   assert property (@(posedge clk) a |-> c |=> s_eventually b);
+      |                                           ^~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:23:41: Unsupported: s_eventually under this property operator
+                                                           : ... note: In instance 't'
+                                                           : ... Supported: s_eventually as the consequent of |-> or |=>
+   23 |   assert property (@(posedge clk) a |=> not s_eventually b);
+      |                                         ^~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:24:35: Unsupported: s_eventually under this property operator
+                                                           : ... note: In instance 't'
+                                                           : ... Supported: s_eventually as the consequent of |-> or |=>
+   24 |   assert property (@(posedge clk) not (a |=> s_eventually b));
+      |                                   ^~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:25:58: Unsupported: s_eventually under this property operator
+                                                           : ... note: In instance 't'
+                                                           : ... Supported: s_eventually as the consequent of |-> or |=>
+   25 |   assert property (@(posedge clk) a |-> (s_eventually b) and c);
+      |                                                          ^~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:26:37: Unsupported: s_eventually under this property operator
+                                                           : ... note: In instance 't'
+                                                           : ... Supported: s_eventually as the consequent of |-> or |=>
+   26 |   assert property (@(posedge clk) a #=# s_eventually b);
+      |                                     ^~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:27:48: Unsupported: s_eventually with disable iff after a non-overlapped implication
+                                                           : ... note: In instance 't'
+   27 |   assert property (@(posedge clk) disable iff (c) a |=> s_eventually b);
+      |                                                ^
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:29:35: Unsupported: temporal property if/case with a pass action
+                                                           : ... note: In instance 't'
+   29 |   assert property (@(posedge clk) case (c) 1'b1: s_eventually b; default: a |=> b; endcase)
+      |                                   ^~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:49:24: Unsupported: s_eventually with disable iff after a non-overlapped implication
+                                                           : ... note: In instance 't.u_sub'
+   49 |   default disable iff (rst);
+      |                        ^~~
 %Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:14:35: Unsupported: cycle delay in s_eventually
                                                            : ... note: In instance 't'
    14 |   assert property (@(posedge clk) s_eventually ##1 1);
       |                                   ^~~~~~~~~~~~
-                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
 %Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:15:35: Unsupported: cycle delay in s_eventually
                                                            : ... note: In instance 't'
    15 |   assert property (@(negedge clk) s_eventually ##1 1);
