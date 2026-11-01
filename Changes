@@ -363,6 +363,7 @@ Verilator 5.053 devel
 * Fix missing declaration of virtual interface types in headers (#8976). [Geza Lore, Testorrent USA, Inc.]
 * Fix nested loop unrolling substituting later assignments (#8980). [Geza Lore, Testorrent USA, Inc.]
 * Fix incorrect virtual dispatch of class-scoped method calls (#8983). [Geza Lore, Testorrent USA, Inc.]
+* Fix VPI register leak (#8993). [Leandro Ajo]
 
 
 Verilator 5.052 2026-09-05
