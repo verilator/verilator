@@ -10,6 +10,8 @@ module t;
   int unpk[1] = '{int : 1};
   int assoc[int] = '{int : 2};
   int wild[*] = '{int : 3};
+  int dt[] = '{int : 4};
+  int qt[$] = '{int : 5};
   int dyn[];
   initial dyn = new[2] ('{int : 6});
 endmodule

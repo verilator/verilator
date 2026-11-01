@@ -688,15 +688,16 @@ public:
         appendAll(args...);
         applyBound();
     }
-    // Verilog: new[size]('{index: value, default: value})
+    // Verilog: '{index: value, default: value}, sized by new[size], else by the largest index
     explicit VlQueue(size_t size, const T_Value& defaultValue,
                      std::initializer_list<std::pair<QData, T_Value>> items) {
         m_deque.resize(size, defaultValue);
         for (const auto& item : items) {
             if (item.first < size) m_deque[item.first] = item.second;
         }
+        applyBound();
     }
-    // Verilog: new[size]('{index: value})
+    // Verilog: '{index: value}, sized by new[size], else by the largest index
     explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items)
         : VlQueue{size, T_Value{}, items} {}
 

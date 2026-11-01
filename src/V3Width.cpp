@@ -6426,16 +6426,20 @@ class WidthVisitor final : public VNVisitor {
         return constp;
     }
     // Return the key of a pattern member of a non-aggregate key type, converted to the key type,
-    // unlinked, or nullptr after reporting an error
-    AstConst* patternScalarKeyp(AstPatMember* patp, AstNodeDType* keyDTypep) {
+    // unlinked, or nullptr after reporting an error. A key that is an index of the dynamic array
+    // or queue 'indexConsp' constructs is checked before conversion, so not truncated into range.
+    AstConst* patternScalarKeyp(AstPatMember* patp, AstNodeDType* keyDTypep,
+                                const AstNodeCons* indexConsp = nullptr) {
         if (!patp->keyp()) {
             patp->v3error("Missing pattern key (need an expression then a ':')");
             return nullptr;
         }
+        bool keySigned = false;  // Signedness of the key, before conversion
         // An integral key is evaluated in the context of the key type, as an index converted to
         // it (IEEE 1800-2023 7.8.4), but not truncated before checking it for X or Z
         if (keyDTypep->skipRefp()->isIntegralOrPacked() && patp->keyExprp()) {
             userIterate(patp->keyExprp(), WidthVP{keyDTypep, PRELIM}.p());
+            keySigned = patp->keyExprp()->isSigned();
             const int width = std::max(patp->keyExprp()->width(), keyDTypep->width());
             AstNodeDType* const contextDTypep
                 = keyDTypep->findBitOrLogicDType(width, width, keyDTypep->numeric(), true);
@@ -6447,6 +6451,24 @@ class WidthVisitor final : public VNVisitor {
         if (constp->num().isFourState()) {
             patp->keyp()->v3error("Assignment pattern key cannot contain X or Z");
             return nullptr;
+        }
+        if (indexConsp) {
+            const bool isDynArray = VN_IS(indexConsp, ConsDynArray);
+            const char* const kindp = isDynArray ? "dynamic array" : "queue";
+            const V3Number& num = constp->num();
+            if (keySigned && num.isNegative()) {
+                patp->keyp()->v3error("Assignment pattern key is negative, so cannot index a "
+                                      << kindp);
+                return nullptr;
+            }
+            // The size is an int, the type size() returns, so the index is below its maximum
+            constexpr uint32_t maxSize = std::numeric_limits<int32_t>::max();
+            if (num.widthToFit() > 32 || num.toUInt() >= maxSize) {
+                patp->keyp()->v3error("Assignment pattern key is too large for a "
+                                      << kindp << ", as its size is an int (IEEE 1800-2023 "
+                                      << (isDynArray ? "7.5.2" : "7.10.2.1") << ")");
+                return nullptr;
+            }
         }
         // Convert to the key type. The conversion is inserted above 'constp', so take the key
         // from the member again rather than from what iterateCheck returns.
@@ -6482,10 +6504,10 @@ class WidthVisitor final : public VNVisitor {
     AstConst* patternKeyp(AstConsWildcard*, AstPatMember* patp, AstNodeDType* arrayDtp) {
         return patternScalarKeyp(patp, arrayDtp->findStringDType());
     }
-    AstConst* patternKeyp(AstConsDynArray*, AstPatMember* patp, AstNodeDType* arrayDtp) {
-        // Converted to longint, not int, so a key wider than 32 bits is out of bounds rather than
-        // truncated to a valid index
-        return patternScalarKeyp(patp, arrayDtp->findBasicDType(VBasicDTypeKwd::LONGINT));
+    // A dynamic array or queue key is an index. One that no array can have (negative, or too
+    // large for an int size) is an error, while keys beyond a new[] size are ignored.
+    AstConst* patternKeyp(AstNodeCons* consp, AstPatMember* patp, AstNodeDType* arrayDtp) {
+        return patternScalarKeyp(patp, arrayDtp->findBasicDType(VBasicDTypeKwd::LONGINT), consp);
     }
     // Sort constructor items by key, so equal values have equal trees, and report duplicate
     // keys (IEEE 1800-2023 10.9.1). Keys are compared after conversion to the key type, e.g.
@@ -6521,20 +6543,25 @@ class WidthVisitor final : public VNVisitor {
             nodep->addItemsp(itemp);
         }
     }
-    // Convert a keyed pattern into the constructor 'consp' of an associative, wildcard or
-    // dynamic array
+    // Convert a keyed pattern into the constructor 'consp' of an associative array, wildcard
+    // array, dynamic array, or queue
     template <typename T_Item, typename T_Cons>
     void patternKeyed(AstPattern* nodep, T_Cons* consp, AstNodeDType* arrayDtp,
                       AstPatMember* defaultp) {
         consp->dtypeFrom(arrayDtp);
         consp->defaultp(patternDefaultValuep(defaultp, arrayDtp->subDTypep()));
+        if (consp->defaultp()) {
+            iterateCheckTyped(consp, "default", consp->defaultp(), arrayDtp->subDTypep(), FINAL);
+        }
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
             const auto keyp = patternKeyp(consp, patp, arrayDtp);
             patp->dtypep(arrayDtp->subDTypep());
             AstNodeExpr* const valuep = patternMemberValueIterate(patp);
             if (keyp) {
-                consp->addItemsp(new T_Item{patp->fileline(), keyp, valuep});
+                T_Item* const itemp = new T_Item{valuep->fileline(), keyp, valuep};
+                consp->addItemsp(itemp);
+                iterateCheckTyped(itemp, "value", valuep, arrayDtp->subDTypep(), FINAL);
             } else {
                 VL_DO_DANGLING(pushDeletep(valuep), valuep);
             }
@@ -6552,10 +6579,17 @@ class WidthVisitor final : public VNVisitor {
         if (VN_IS(dtypep, QueueDType)) return new AstConsQueue{fileline};
         return nullptr;
     }
+    // Whether 'nodep' constructs a dynamic array or queue from keyed items
+    static bool isKeyedCons(const AstNodeExpr* nodep) {
+        if (const AstConsDynArray* const dynp = VN_CAST(nodep, ConsDynArray)) return dynp->sizep();
+        if (const AstConsQueue* const queuep = VN_CAST(nodep, ConsQueue)) return queuep->sizep();
+        return false;
+    }
     // Add 'valuep' to a dynamic array or queue constructor: as one element, or as an array whose
     // elements are spliced in. A constructor being spliced (e.g. a concatenation's left operand)
     // has its items moved over, or added one by one to convert them if its kind or element type
-    // differs.
+    // differs. A keyed constructor is added as one array instead, as its items are not in
+    // element order.
     template <typename T_Item, typename T_Cons>
     void addConsItem(T_Cons* consp, AstNodeExpr* valuep) {
         AstNodeDType* const arrayDtp = consp->dtypep()->skipRefp();
@@ -6567,7 +6601,8 @@ class WidthVisitor final : public VNVisitor {
         // constructor's type (e.g. a nested concatenation), as truncating once keeps the same
         // elements, and warns once with the full attempted size
         const AstQueueDType* const subQueueDtp = VN_CAST(valuep->dtypep()->skipRefp(), QueueDType);
-        if (!isElement && !(subQueueDtp && subQueueDtp->boundp() && subQueueDtp != arrayDtp)) {
+        if (!isElement && !isKeyedCons(valuep)
+            && !(subQueueDtp && subQueueDtp->boundp() && subQueueDtp != arrayDtp)) {
             T_Cons* const subp = AstNode::cast<T_Cons>(valuep);
             if (subp && subp->dtypep()->skipRefp()->subDTypep() == arrayDtp->subDTypep()) {
                 if (subp->itemsp()) consp->addItemsp(subp->itemsp()->unlinkFrBackWithNext());
@@ -6620,18 +6655,62 @@ class WidthVisitor final : public VNVisitor {
             patternKeyed<AstConsDynArrayItem>(nodep, VN_AS(newp, ConsDynArray), arrayp, defaultp);
             return;
         }
-        const char* const kindp = VN_IS(arrayp, DynArrayDType) ? "dynamic array" : "queue";
-        if (defaultp) defaultp->v3error("Assignment pattern default cannot be used for " << kindp);
+        if (keyed) {
+            // Sized by the largest index, unlike the initializer of a dynamic array new[] above
+            const bool isDynArray = VN_IS(arrayp, DynArrayDType);
+            if (!firstp) {
+                defaultp->v3error(
+                    "Assignment pattern for a "
+                    << (isDynArray ? "dynamic array" : "queue")
+                    << " needs an index key to set its size"
+                    << (isDynArray ? "\n" + defaultp->warnMore() + "... Suggest new[size]('{...})"
+                                   : ""));
+            }
+            if (isDynArray) {
+                AstConsDynArray* const dynp = VN_AS(newp, ConsDynArray);
+                patternKeyed<AstConsDynArrayItem>(nodep, dynp, arrayp, defaultp);
+                patternKeyedSize<AstConsDynArrayItem>(dynp);
+            } else {
+                AstConsQueue* const queuep = VN_AS(newp, ConsQueue);
+                patternKeyed<AstConsQueueItem>(nodep, queuep, arrayp, defaultp);
+                patternKeyedSize<AstConsQueueItem>(queuep);
+            }
+            return;
+        }
         for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;
              patp = VN_AS(patp->nextp(), PatMember)) {
-            if (patp->keyp()) {
-                patp->keyp()->v3error("Assignment pattern key cannot be used for " << kindp);
-            }
             patp->dtypep(arrayp->subDTypep());
             addConsItem(newp, patternMemberValueIterate(patp));
         }
         nodep->replaceWith(newp);
         // UINFOTREE(9, newp, "", "apat-out");
+    }
+    // Set the size of a keyed dynamic array or queue constructor from its largest index. With
+    // no new[] size to pad to, each element needs a key or the default (IEEE 1800-2023 10.9.1).
+    template <typename T_Item, typename T_Cons>
+    void patternKeyedSize(T_Cons* consp) {
+        std::vector<uint64_t> keys;  // All valid indices, as patternKeyp dropped the others
+        for (const T_Item* const itemp : consp->itemspList()) {
+            keys.push_back(itemp->keyp()->num().toUQuad());
+        }
+        std::sort(keys.begin(), keys.end());
+        if (!consp->defaultp()) {
+            std::string missing;  // The indices not covered, as ranges
+            uint64_t index = 0;  // Lowest index not yet known to be covered
+            for (const uint64_t key : keys) {
+                if (index < key) {
+                    missing += " " + std::to_string(index);
+                    if (index + 1 < key) missing += "-" + std::to_string(key - 1);
+                }
+                index = key + 1;
+            }
+            if (!missing.empty()) {
+                consp->v3error("Assignment pattern missed initializing elements:" << missing);
+            }
+        }
+        const uint64_t size = keys.empty() ? 0 : keys.back() + 1;
+        consp->sizep(
+            new AstConst{consp->fileline(), AstConst::Signed32{}, static_cast<int32_t>(size)});
     }
     void patternBasic(AstPattern* nodep, AstNodeDType* vdtypep, AstPatMember* defaultp) {
         const AstBasicDType* bdtypep = VN_AS(vdtypep, BasicDType);

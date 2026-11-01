@@ -1430,6 +1430,16 @@ const char* AstConsDynArray::broken() const {
     }
     return nullptr;
 }
+const char* AstConsQueue::broken() const {
+    BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), QueueDType));
+    // Default only valid if sizep is present
+    BROKEN_RTN(defaultp() && !sizep());
+    // Items are keyed exactly when sizep is present
+    for (const AstConsQueueItem* const itemp : itemspList()) {
+        BROKEN_RTN(!itemp->keyp() != !sizep());
+    }
+    return nullptr;
+}
 const char* AstConsStruct::broken() const {
     const AstStructDType* const structp = VN_CAST(dtypep()->skipRefp(), StructDType);
     BROKEN_RTN(!structp || structp->packed());

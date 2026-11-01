@@ -5142,8 +5142,8 @@ public:
     }
 };
 class AstConsDynArray final : public AstNodeCons {
-    // Construct a dynamic array value, '{value, ...}, {value, array, ...},
-    // or with 'sizep', new[size]('{index: value, default: value})
+    // Construct a dynamic array value, '{value, ...} and {value, array, ...}. With 'sizep',
+    // '{index: value, default: value}, sized by new[size], else by the largest index.
     // @astgen op1 := sizep : Optional[AstNodeExpr]
     // @astgen op2 := defaultp : Optional[AstNodeExpr] // Only with sizep
     // @astgen op3 := itemsp : List[AstConsDynArrayItem]
@@ -5154,16 +5154,16 @@ public:
     const char* broken() const override;
 };
 class AstConsQueue final : public AstNodeCons {
-    // Construct a queue value, '{value, ...}, {value, array, ...}
-    // @astgen op1 := itemsp : List[AstConsQueueItem]
+    // Construct a queue value, '{value, ...} and {value, array, ...}. With 'sizep',
+    // '{index: value, default: value}, sized by the largest index.
+    // @astgen op1 := sizep : Optional[AstNodeExpr]
+    // @astgen op2 := defaultp : Optional[AstNodeExpr] // Only with sizep
+    // @astgen op3 := itemsp : List[AstConsQueueItem]
 public:
     explicit AstConsQueue(FileLine* fl)
         : ASTGEN_SUPER_ConsQueue(fl) {}
     ASTGEN_MEMBERS_AstConsQueue;
-    const char* broken() const override {
-        BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), QueueDType));
-        return nullptr;
-    }
+    const char* broken() const override;
 };
 class AstConsStruct final : public AstNodeCons {
     // Construct an unpacked struct value, '{member: value, ...}
