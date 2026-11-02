@@ -5871,7 +5871,7 @@ public:
     }
     ASTGEN_MEMBERS_AstLenN;
     void numberOperate(V3Number& out, const V3Number& lhs) override { out.opLenN(lhs); }
-    string emitVerilog() override { return "%f(%l)"; }
+    string emitVerilog() override { return "%f(%l).len()"; }
     string emitC() override { return "VL_LEN_IN(%li)"; }
     bool cleanOut() const override { return true; }
     bool cleanLhs() const override { return true; }
