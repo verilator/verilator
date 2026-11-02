@@ -29,7 +29,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3Ast.h"
-#include "V3ClassGraph.h"
+#include "V3CallTargets.h"
 #include "V3Graph.h"
 #include "V3Sched.h"
 #include "V3Stats.h"
@@ -123,8 +123,8 @@ class ExternalDomainsVisitor final : public VNVisitorConst {
     const VNUser1InUse m_inuser1;
 
     // STATE
-    // Class graph to get possibly called functions from a virtual call
-    std::unique_ptr<V3ClassGraph> m_classGraphp;
+    // To get the functions a virtual call may call
+    std::unique_ptr<V3CallTargets> m_callTargetsp;
     V3Graph m_graph;  // The call graph used for analysis
     Vertex* m_vtxp = nullptr;  // Vertex of the current body, if suspendable code
     std::vector<AstCFunc*> m_funcps;  // Functions not yet recorded when visited
@@ -266,11 +266,8 @@ class ExternalDomainsVisitor final : public VNVisitorConst {
         iterateChildrenConst(nodep);
         if (!m_vtxp) return;  // Not in suspendable code
         // Add edges to all functions that may be called, including through virtual calls
-        const std::unordered_set<AstCFunc*>& cfuncps = m_classGraphp->getCallPossibleCFuncs(nodep);
-        if (cfuncps.empty()) {
-            addEdge(recordBody(nodep->funcp()));
-        } else {
-            for (AstCFunc* const cfuncp : cfuncps) addEdge(recordBody(cfuncp));
+        for (AstCFunc* const cfuncp : m_callTargetsp->getTargets(nodep)) {
+            addEdge(recordBody(cfuncp));
         }
     }
     void visit(AstNodeVarRef* nodep) override {
@@ -286,7 +283,7 @@ class ExternalDomainsVisitor final : public VNVisitorConst {
 
     // CONSTRUCTORS
     explicit ExternalDomainsVisitor(AstNetlist* nodep)
-        : m_classGraphp{V3ClassGraph::build(nodep)} {
+        : m_callTargetsp{V3CallTargets::build()} {
         // Record the bodies of suspendable processes, coroutines, and forks
         iterateConst(nodep);
         // Regular functions not called by any of the above are walked only to find their forks
