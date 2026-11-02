@@ -1,6 +1,10 @@
-%Error: t/t_udp_bad_no_output.v:7:11: No output port for UDP table, there must be one output port
+%Error: t/t_udp_bad_no_output.v:7:11: No output port for UDP table, there must be one output port (IEEE 1800-2023 29.3)
                                     : ... note: In instance 'top'
     7 | primitive t_gate(a, b);
       |           ^~~~~~
         ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_udp_bad_no_output.v:20:3: UDP table used outside primitive (IEEE 1800-2023 29.3)
+                                    : ... note: In instance 'top.u_mod'
+   20 |   table
+      |   ^~~~~
 %Error: Exiting due to

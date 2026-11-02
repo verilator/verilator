@@ -12,7 +12,19 @@ primitive t_gate(a, b);
   endtable
 endprimitive
 
-module top (a, b);
+// 'module' written where 'primitive' was intended
+module t_mod (o, a);
+  output o;
+  input a;
+
+  table
+    0 : 0;
+  endtable
+endmodule
+
+module top (a, b, o);
   input a, b;
+  output o;
   t_gate(a, b);
+  t_mod u_mod (o, a);
 endmodule
