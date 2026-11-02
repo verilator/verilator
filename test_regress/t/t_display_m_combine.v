@@ -48,8 +48,8 @@ module t;
   ifc i2 ();
   virtual ifc v;
   initial begin
-    // A virtual interface call runs one instance's copy of the function (#8770), which now
-    // names the instance the handle points to
+    // A virtual interface call runs the copy of the function of the instance the handle points
+    // to, which names that instance
     v = i1;
     $display("vif %s", v.name());
     v = i2;
