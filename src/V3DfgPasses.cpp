@@ -390,21 +390,7 @@ void V3DfgPasses::binToOneHot(DfgGraph& dfg, V3DfgBinToOneHotContext& ctx) {
             scopep->addBlocksp(activep);
             return activep;
         }();
-        AstActive* const combActivep = [scopep]() {
-            // Try to find the existing combinational AstActive
-            for (AstNode* const nodep : scopep->blockspList()) {
-                AstActive* const activep = VN_CAST(nodep, Active);
-                if (!activep) continue;
-                if (activep->sentreep()->hasCombo()) return activep;
-            }
-            // If there isn't one, create a new one
-            FileLine* const flp = scopep->fileline();
-            AstSenTree* const stp = new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}};
-            AstActive* const activep = new AstActive{flp, "", stp};
-            activep->senTreeStorep(stp);
-            scopep->addBlocksp(activep);
-            return activep;
-        }();
+        AstActive* const combActivep = scopep->comboActivep(true);
 
         // Required data types
         const DfgDataType& idxDType = srcp->dtype();

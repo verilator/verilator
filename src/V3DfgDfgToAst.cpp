@@ -103,27 +103,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
     // METHODS
     static AstActive* getCombActive(AstScope* scopep) {
-        if (!scopep->user2p()) {
-            // Try to find the existing combinational AstActive
-            for (AstNode* const nodep : scopep->blockspList()) {
-                AstActive* const activep = VN_CAST(nodep, Active);
-                if (!activep) continue;
-                if (activep->hasCombo()) {
-                    scopep->user2p(activep);
-                    break;
-                }
-            }
-            // If there isn't one, create a new one
-            if (!scopep->user2p()) {
-                FileLine* const flp = scopep->fileline();
-                AstSenTree* const senTreep
-                    = new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}};
-                AstActive* const activep = new AstActive{flp, "", senTreep};
-                activep->senTreeStorep(senTreep);
-                scopep->addBlocksp(activep);
-                scopep->user2p(activep);
-            }
-        }
+        if (!scopep->user2p()) scopep->user2p(scopep->comboActivep(true));
         return VN_AS(scopep->user2p(), Active);
     }
 

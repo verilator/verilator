@@ -501,6 +501,8 @@ public:
     inline bool hasCombo() const;
     inline bool hasInitial() const;
     inline bool hasStatic() const;
+    // V3Active puts each AlwaysPostponed alone under a combinational active
+    inline bool isPostponed() const;
 };
 class AstAlias final : public AstNode {
     // Alias construct - Used for source level net alias, and also for variable aliases internally
