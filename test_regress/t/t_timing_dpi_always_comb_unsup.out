@@ -1,0 +1,8 @@
+%Error-UNSUPPORTED: t/t_timing_dpi_always_comb_unsup.v:21:3: Unsupported: Potentially suspending DPI import in always process.
+   21 |   always_comb dpi_import(a, b);
+      |   ^~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_timing_dpi_always_comb_unsup.v:22:3: Unsupported: Potentially suspending DPI import in always process.
+   22 |   always_comb shared_import(a, helper_result);
+      |   ^~~~~~~~~~~
+%Error: Exiting due to

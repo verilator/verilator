@@ -91,6 +91,7 @@ enum NodeFlag : uint8_t {
     T_NEEDS_PROC = 1 << 4,  // Needs access to VlProcess if it's allocated
     T_HAS_PROC = 1 << 5,  // Has VlProcess argument in the signature
     T_NBA_UPDATE = 1 << 6,  // Fork branch of a pending NBA update, which is not a subprocess
+    T_DPI_CALL = 1 << 7,  // Calls a context DPI imported task, directly or indirectly
 };
 
 enum ForkType : uint8_t {
@@ -444,6 +445,7 @@ public:
                             P_CALL};
         }
         for (AstCFunc* const cfuncp : m_dpiImportTaskCallers) {
+            addFlags(cfuncp, T_DPI_CALL);
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(cfuncp),
                             P_CALL};
         }
@@ -452,6 +454,7 @@ public:
         for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
             DepVtx& depVtx = static_cast<DepVtx&>(vtx);
             if (hasFlags(depVtx.nodep(), T_SUSPENDEE)) propagateFlags(&depVtx, T_SUSPENDEE);
+            if (hasFlags(depVtx.nodep(), T_DPI_CALL)) propagateFlags(&depVtx, T_DPI_CALL);
         }
 
         for (AstCFunc* const dpiExportp : m_dpiExports) {
@@ -913,6 +916,12 @@ class TimingControlVisitor final : public VNVisitor {
     }
     void visit(AstAlways* nodep) override {
         if (nodep->user1SetOnce()) return;
+        if (v3Global.usesSuspendableExports() && hasFlags(nodep, T_DPI_CALL)) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Potentially suspending DPI import in always process.");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
         m_procp = nodep;
