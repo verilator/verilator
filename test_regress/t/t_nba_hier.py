@@ -16,7 +16,8 @@ test.compile(verilator_flags2=[
 ])
 
 test.file_grep(test.stats, r'NBA, variables using ShadowVar scheme\s+(\d+)', 2)
-test.file_grep(test.stats, r'NBA, variables using ShadowVarMasked scheme\s+(\d+)', 2)
+test.file_grep(test.stats, r'NBA, variables using ShadowVarMasked scheme\s+(\d+)', 4)
+test.file_grep(test.stats, r'NBA, variables using ShadowVarFlagged scheme\s+(\d+)', 2)
 test.file_grep(test.stats, r'NBA, variables using FlagShared scheme\s+(\d+)', 2)
 test.file_grep(test.stats, r'NBA, variables using FlagUnique scheme\s+(\d+)', 2)
 test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 2)

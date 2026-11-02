@@ -141,6 +141,7 @@ class DelayedVisitor final : public VNVisitor {
         UnsupportedCompoundArrayInLoop,
         ShadowVar,
         ShadowVarMasked,
+        ShadowVarFlagged,
         FlagShared,
         FlagUnique,
         ValueQueueWhole,
@@ -153,6 +154,7 @@ class DelayedVisitor final : public VNVisitor {
         bool m_nbaTarget = false;  // Updated by an NBA, so in 'm_vscps'
         bool m_whole = false;  // Used on LHS of NBA directly via VarRef
         bool m_partial = false;  // Used on LHS of NBA under a Sel
+        bool m_notWhole = false;  // Used on LHS of NBA other than directly via VarRef
         bool m_inLoop = false;  // Used on LHS of NBA in a loop
         bool m_inSuspOrFork = false;  // Used on LHS of NBA in suspendable process or fork
         Scheme m_scheme = Scheme::Undecided;  // Conversion scheme to use for this variable
@@ -170,6 +172,11 @@ class DelayedVisitor final : public VNVisitor {
                 AstVarScope* vscp;  // The shadow variable
                 AstVarScope* maskp;  // The mask variable
             } m_shadowVarMaskedKit;
+            struct {  // Stuff needed for Scheme::ShadowVarFlagged
+                AstVarScope* vscp;  // The shadow variable
+                AstVarScope* flagp;  // The set flag
+                bool copy;  // Copy target into shadow at first NBA of time step
+            } m_shadowVarFlaggedKit;
             struct {  // Stuff needed for Scheme::FlagShared
                 AstActive* activep;  // The active block for the Pre/Post logic
                 AstAlwaysPost* postp;  // The post block for commiting results
@@ -198,6 +205,10 @@ class DelayedVisitor final : public VNVisitor {
         auto& shadowVarMaskedKit() {
             UASSERT(m_scheme == Scheme::ShadowVarMasked, "Inconsistent Scheme");
             return m_kitUnion.m_shadowVarMaskedKit;
+        }
+        auto& shadowVarFlaggedKit() {
+            UASSERT(m_scheme == Scheme::ShadowVarFlagged, "Inconsistent Scheme");
+            return m_kitUnion.m_shadowVarFlaggedKit;
         }
         auto& flagSharedKit() {
             UASSERT(m_scheme == Scheme::FlagShared, "Inconsistent Scheme");
@@ -311,6 +322,7 @@ class DelayedVisitor final : public VNVisitor {
     // STATE - Statistic tracking
     VDouble0 m_nSchemeShadowVar;  // Number of variables using Scheme::ShadowVar
     VDouble0 m_nSchemeShadowVarMasked;  // Number of variabels using Scheme::ShadowVarMasked
+    VDouble0 m_nSchemeShadowVarFlagged;  // Number of variables using Scheme::ShadowVarFlagged
     VDouble0 m_nSchemeFlagShared;  // Number of variables using Scheme::FlagShared
     VDouble0 m_nSchemeFlagUnique;  // Number of variables using Scheme::FlagUnique
     VDouble0 m_nSchemeValueQueuesWhole;  //  Number of variables using Scheme::ValueQueueWhole
@@ -446,17 +458,19 @@ class DelayedVisitor final : public VNVisitor {
             // fork, which resume outside the 'nba' region, so its 'pre' logic would overwrite the
             // value they write in the shadow variable
             if (vscpInfo.m_whole) {
-                return vscpInfo.m_inSuspOrFork ? Scheme::FlagUnique : Scheme::ShadowVar;
+                if (!vscpInfo.m_inSuspOrFork) return Scheme::ShadowVar;
+                return vscpInfo.m_notWhole ? Scheme::FlagUnique : Scheme::ShadowVarFlagged;
             }
             // Basic underlying type of elements, if any.
             const AstBasicDType* const basicp = uaDTypep->basicp();
-            // If used in a loop, we must have a dynamic commit queue. (Also works in suspendables)
-            if (vscpInfo.m_inLoop) {
+            // Loops and suspendables can issue several NBAs per element per step: queue in order
+            if (vscpInfo.m_inLoop || vscpInfo.m_inSuspOrFork) {
                 // Arrays with compound element types are currently not supported in loops
                 if (!basicp
                     || !(basicp->isIntegralOrPacked()  //
                          || basicp->isDouble()  //
                          || basicp->isString())) {
+                    if (!vscpInfo.m_inLoop) return Scheme::FlagUnique;
                     return Scheme::UnsupportedCompoundArrayInLoop;
                 }
                 if (vscpInfo.m_partial) return Scheme::ValueQueuePartial;
@@ -473,11 +487,17 @@ class DelayedVisitor final : public VNVisitor {
             return Scheme::ShadowVar;
         }
 
-        // Likewise, the 'pre' logic of the shadow variable scheme would undo the updates of a
-        // suspendable process or fork, so use the unique flag scheme
-        if (vscpInfo.m_inSuspOrFork) return Scheme::FlagUnique;
-
         const bool isIntegralOrPacked = dtypep->isIntegralOrPacked();
+        // Suspendables need no 'pre' logic and issue-order commit (IEEE 1800-2023 10.4.2)
+        if (vscpInfo.m_inSuspOrFork) {
+            if (!vscpInfo.m_notWhole) return Scheme::ShadowVarFlagged;
+            if (isIntegralOrPacked) return Scheme::ShadowVarMasked;
+            // Copying into the shadow would discard a concurrent blocking update
+            const auto& refs = m_writeRefs(vscp);
+            const bool blocking = std::any_of(refs.begin(), refs.end(),
+                                              [](const WriteReference& r) { return !r.m_isNBA; });
+            return blocking ? Scheme::FlagUnique : Scheme::ShadowVarFlagged;
+        }
         // Check for mixed usage (this also warns if not OK)
         if (checkMixedUsage(vscp, isIntegralOrPacked)) {
             // If it's a variable updated by both blocking and non-blocking
@@ -700,6 +720,59 @@ class DelayedVisitor final : public VNVisitor {
         AstConst* const onesp = new AstConst{flp, AstConst::DTyped{}, lhsClonep->dtypep()};
         onesp->num().setAllBits1();
         nodep->addNextHere(new AstAssign{flp, lhsClonep, onesp});
+    }
+
+    // Scheme::ShadowVarFlagged
+    void prepareSchemeShadowVarFlagged(AstVarScope* vscp, VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::ShadowVarFlagged, vscp,
+                    "Inconsistent NBA scheme");
+        FileLine* const flp = vscp->fileline();
+        AstScope* const scopep = vscp->scopep();
+        const std::string baseName = "__" + vscp->varp()->shortName();
+        AstVarScope* const shadowVscp
+            = m_dlyTmps.make(flp, scopep, vscp->dtypep(), "Val" + baseName);
+        AstVarScope* const flagVscp = m_dlyTmps.make(flp, scopep, 1, "Set" + baseName);
+        flagVscp->varp()->setIgnorePostWrite();
+        vscpInfo.shadowVarFlaggedKit().vscp = shadowVscp;
+        vscpInfo.shadowVarFlaggedKit().flagp = flagVscp;
+        vscpInfo.shadowVarFlaggedKit().copy = vscpInfo.m_notWhole;
+        AstActive* const activep
+            = new AstActive{flp, "nba-shadow-var-flagged", vscpInfo.senTreep()};
+        activep->senTreeStorep(vscpInfo.senTreep());
+        scopep->addBlocksp(activep);
+        AstAlwaysPost* const postp = new AstAlwaysPost{flp};
+        activep->addStmtsp(postp);
+        // Commit - if (flagVscp) { flagVscp = 0; vscp = shadowVscp; }
+        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, flagVscp, VAccess::READ}};
+        postp->addStmtsp(ifp);
+        ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
+                                     new AstConst{flp, AstConst::BitFalse{}}});
+        ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE},
+                                     new AstVarRef{flp, shadowVscp, VAccess::READ}});
+    }
+    void convertSchemeShadowVarFlagged(AstAssignDly* nodep, AstVarScope* vscp,
+                                       VarScopeInfo& vscpInfo) {
+        UASSERT_OBJ(vscpInfo.m_scheme == Scheme::ShadowVarFlagged, vscp,
+                    "Inconsistent NBA scheme");
+        AstVarScope* const shadowVscp = vscpInfo.shadowVarFlaggedKit().vscp;
+        AstVarScope* const flagVscp = vscpInfo.shadowVarFlaggedKit().flagp;
+        FileLine* const flp = nodep->fileline();
+        if (vscpInfo.shadowVarFlaggedKit().copy) {
+            // if (!flagVscp) shadowVscp = vscp;
+            AstIf* const ifp
+                = new AstIf{flp, new AstNot{flp, new AstVarRef{flp, flagVscp, VAccess::READ}}};
+            ifp->addThensp(new AstAssign{flp, new AstVarRef{flp, shadowVscp, VAccess::WRITE},
+                                         new AstVarRef{flp, vscp, VAccess::READ}});
+            nodep->addHereThisAsNext(ifp);
+        }
+        nodep->lhsp()->foreach([&](AstVarRef* const refp) {
+            if (!refp->access().isWriteOnly()) return;
+            UASSERT_OBJ(refp->varScopep() == vscp, nodep, "NBA not setting expected variable");
+            refp->varScopep(shadowVscp);
+            refp->varp(shadowVscp->varp());
+        });
+        nodep->addNextHere(new AstAssign{flp, new AstVarRef{flp, flagVscp, VAccess::WRITE},
+                                         new AstConst{flp, AstConst::BitTrue{}}});
     }
 
     // Scheme::FlagShared
@@ -1087,6 +1160,11 @@ class DelayedVisitor final : public VNVisitor {
                 prepareSchemeShadowVarMasked(vscp, vscpInfo);
                 break;
             }
+            case Scheme::ShadowVarFlagged: {
+                ++m_nSchemeShadowVarFlagged;
+                prepareSchemeShadowVarFlagged(vscp, vscpInfo);
+                break;
+            }
             case Scheme::FlagShared: {
                 ++m_nSchemeFlagShared;
                 prepareSchemeFlagShared(vscp, vscpInfo);
@@ -1132,6 +1210,10 @@ class DelayedVisitor final : public VNVisitor {
             }
             case Scheme::ShadowVarMasked: {
                 convertSchemeShadowVarMasked(nbap, vscp, vscpInfo);
+                break;
+            }
+            case Scheme::ShadowVarFlagged: {
+                convertSchemeShadowVarFlagged(nbap, vscp, vscpInfo);
                 break;
             }
             case Scheme::FlagShared: {
@@ -1363,6 +1445,7 @@ class DelayedVisitor final : public VNVisitor {
         // Note usage context
         vscpInfo.m_whole |= VN_IS(nodep->lhsp(), VarRef);
         vscpInfo.m_partial |= VN_IS(nodep->lhsp(), Sel);
+        vscpInfo.m_notWhole |= !VN_IS(nodep->lhsp(), VarRef);
         vscpInfo.m_inLoop |= m_inLoop;
         vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
         // Sensitivity might be non-clocked, in a suspendable process, which are handled elsewhere
@@ -1429,6 +1512,8 @@ public:
     ~DelayedVisitor() override {
         V3Stats::addStat("NBA, variables using ShadowVar scheme", m_nSchemeShadowVar);
         V3Stats::addStat("NBA, variables using ShadowVarMasked scheme", m_nSchemeShadowVarMasked);
+        V3Stats::addStat("NBA, variables using ShadowVarFlagged scheme",
+                         m_nSchemeShadowVarFlagged);
         V3Stats::addStat("NBA, variables using FlagShared scheme", m_nSchemeFlagShared);
         V3Stats::addStat("NBA, variables using FlagUnique scheme", m_nSchemeFlagUnique);
         V3Stats::addStat("NBA, variables using ValueQueueWhole scheme", m_nSchemeValueQueuesWhole);
