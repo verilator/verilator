@@ -15,8 +15,11 @@ module t;
   logic psel_no_endpoint = 0;
   logic paddr_no_endpoint = 0;
   logic pready_no_endpoint = 0;
+  logic idle_start = 0;
+  logic idle_a = 1;
   int failures = 0;
   int no_endpoint_failures = 0;
+  int endpoint_calls = 0;
   time failure_time = 0;
   time no_endpoint_failure_time = 0;
 
@@ -31,6 +34,16 @@ module t;
     failures++;
     failure_time = $time;
   end
+
+  // An inactive attempt must not evaluate an impure endpoint while building
+  // the unbounded-repetition rejection path.
+  function logic endpoint();
+    endpoint_calls++;
+    return 0;
+  endfunction
+
+  assert property (@(posedge clk)
+    idle_start |-> idle_a[*1:$] ##0 endpoint());
 
   // The repetition must also reject when paddr changes before pready ever
   // becomes true; a missing endpoint cannot repair the broken repetition.
@@ -54,6 +67,7 @@ module t;
     `checkh(failure_time, 35);
     `checkh(no_endpoint_failures, 1);
     `checkh(no_endpoint_failure_time, 35);
+    `checkh(endpoint_calls, 0);
     $write("PASS\n");
     $finish;
   end
