@@ -1,0 +1,3 @@
+%Error: COMMAND_LINE:0: Argument '+verilator+seed+' must be an unsigned integer, less than 2147483648
+Aborting...
+Arguments in exit callback: '+after'

@@ -396,9 +396,8 @@ private:
 
 protected:
     // METHODS - protected
-    void commandArgsGuts(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
-    void commandArgsAddGutsLock(int argc, const char** argv) VL_MT_SAFE_EXCLUDES(m_argMutex);
-    void commandArgsAddGuts(int argc, const char** argv) VL_REQUIRES(m_argMutex);
+    // Store the complete argument list before processing options that can invoke callbacks.
+    void commandArgsGuts(int argc, const char** argv, bool add) VL_MT_SAFE_EXCLUDES(m_argMutex);
     void commandArgVl(const std::string& arg);
     bool commandArgVlString(const std::string& arg, const std::string& prefix,
                             std::string& valuer);
