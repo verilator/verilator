@@ -385,15 +385,15 @@ class LinkCellsVisitor final : public VNVisitor {
             return nullptr;
         }
 
-        const V3GraphVertex* vtx = m_topVertexp;
+        const V3GraphVertex* vtxp = m_topVertexp;
         const CellEdge* finalEdgep = nullptr;
         std::string seg;
         while (std::getline(ss, seg, '.')) {
             finalEdgep = nullptr;
-            for (const V3GraphEdge& edge : vtx->outEdges()) {
+            for (const V3GraphEdge& edge : vtxp->outEdges()) {
                 if (const CellEdge* const cedgep = edge.cast<CellEdge>()) {
                     if (cedgep->cellp()->name() == seg) {
-                        vtx = cedgep->top();
+                        vtxp = cedgep->top();
                         finalEdgep = cedgep;
                         break;
                     }

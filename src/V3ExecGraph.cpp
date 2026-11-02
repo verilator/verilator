@@ -164,9 +164,9 @@ private:
 
             // Order tasks based on their start time
             struct Cmp final {
-                bool operator()(const ExecMTask* const a, const ExecMTask* const b) const {
-                    if (startTime(a) == startTime(b)) return threadId(a) < threadId(b);
-                    return startTime(a) < startTime(b);
+                bool operator()(const ExecMTask* const ap, const ExecMTask* const bp) const {
+                    if (startTime(ap) == startTime(bp)) return threadId(ap) < threadId(bp);
+                    return startTime(ap) < startTime(bp);
                 }
             };
             const std::multiset<const ExecMTask*, Cmp> tasks(schedule.mtasks.begin(),
@@ -177,9 +177,9 @@ private:
                 UASSERT(column.size() <= nThreads, "Invalid partitioning");
 
                 bool intersects = true;
-                for (const ExecMTask* const earlierMtask : column) {
-                    if (endTime(mtaskp) <= startTime(earlierMtask)
-                        || startTime(mtaskp) >= endTime(earlierMtask)) {
+                for (const ExecMTask* const earlierMtaskp : column) {
+                    if (endTime(mtaskp) <= startTime(earlierMtaskp)
+                        || startTime(mtaskp) >= endTime(earlierMtaskp)) {
                         intersects = false;
                         break;
                     }
@@ -553,30 +553,30 @@ public:
         AstExecGraph* const execGraphp = new AstExecGraph{flp, "test", trigVscp};
         V3Graph& graph = *execGraphp->depGraphp();
         const auto makeBody = [&]() -> AstNodeStmt* { return new AstComment{flp, ""}; };
-        ExecMTask* const t0 = new ExecMTask{execGraphp, nullptr, makeBody()};
-        t0->cost(1000);
-        t0->priority(1100);
-        ExecMTask* const t1 = new ExecMTask{execGraphp, nullptr, makeBody()};
-        t1->cost(100);
-        t1->priority(100);
-        ExecMTask* const t2 = new ExecMTask{execGraphp, nullptr, makeBody()};
-        t2->cost(100);
-        t2->priority(100);
-        t2->threads(2);
-        ExecMTask* const t3 = new ExecMTask{execGraphp, nullptr, makeBody()};
-        t3->cost(100);
-        t3->priority(100);
-        t3->threads(3);
-        ExecMTask* const t4 = new ExecMTask{execGraphp, nullptr, makeBody()};
-        t4->cost(100);
-        t4->priority(100);
-        t4->threads(3);
-        ExecMTask* const t5 = new ExecMTask{execGraphp, nullptr, makeBody()};
-        t5->cost(100);
-        t5->priority(100);
-        ExecMTask* const t6 = new ExecMTask{execGraphp, nullptr, makeBody()};
-        t6->cost(100);
-        t6->priority(100);
+        ExecMTask* const t0p = new ExecMTask{execGraphp, nullptr, makeBody()};
+        t0p->cost(1000);
+        t0p->priority(1100);
+        ExecMTask* const t1p = new ExecMTask{execGraphp, nullptr, makeBody()};
+        t1p->cost(100);
+        t1p->priority(100);
+        ExecMTask* const t2p = new ExecMTask{execGraphp, nullptr, makeBody()};
+        t2p->cost(100);
+        t2p->priority(100);
+        t2p->threads(2);
+        ExecMTask* const t3p = new ExecMTask{execGraphp, nullptr, makeBody()};
+        t3p->cost(100);
+        t3p->priority(100);
+        t3p->threads(3);
+        ExecMTask* const t4p = new ExecMTask{execGraphp, nullptr, makeBody()};
+        t4p->cost(100);
+        t4p->priority(100);
+        t4p->threads(3);
+        ExecMTask* const t5p = new ExecMTask{execGraphp, nullptr, makeBody()};
+        t5p->cost(100);
+        t5p->priority(100);
+        ExecMTask* const t6p = new ExecMTask{execGraphp, nullptr, makeBody()};
+        t6p->cost(100);
+        t6p->priority(100);
 
         /*
                           0
@@ -587,12 +587,12 @@ public:
                          /    \
                         5      6
         */
-        new V3GraphEdge{&graph, t0, t1, 1};
-        new V3GraphEdge{&graph, t0, t2, 1};
-        new V3GraphEdge{&graph, t2, t3, 1};
-        new V3GraphEdge{&graph, t2, t4, 1};
-        new V3GraphEdge{&graph, t3, t5, 1};
-        new V3GraphEdge{&graph, t4, t6, 1};
+        new V3GraphEdge{&graph, t0p, t1p, 1};
+        new V3GraphEdge{&graph, t0p, t2p, 1};
+        new V3GraphEdge{&graph, t2p, t3p, 1};
+        new V3GraphEdge{&graph, t2p, t4p, 1};
+        new V3GraphEdge{&graph, t3p, t5p, 1};
+        new V3GraphEdge{&graph, t4p, t6p, 1};
 
         constexpr uint32_t threads = 2;
         constexpr uint32_t hierThreads = 6;
@@ -607,70 +607,70 @@ public:
         for (size_t i = 1; i < scheduled[0].m_threads.size(); ++i)
             UASSERT_SELFTEST(scheduled[0].m_threads[i].size(), 0);
 
-        UASSERT_SELFTEST(scheduled[0].m_threads[0][0], t0);
-        UASSERT_SELFTEST(scheduled[0].m_threads[0][1], t1);
+        UASSERT_SELFTEST(scheduled[0].m_threads[0][0], t0p);
+        UASSERT_SELFTEST(scheduled[0].m_threads[0][1], t1p);
 
         UASSERT_SELFTEST(scheduled[1].m_threads.size(), hierThreads / 3);
-        UASSERT_SELFTEST(scheduled[1].m_threads[0][0], t2);
-        UASSERT_SELFTEST(scheduled[1].m_threads[0][1], t3);
-        UASSERT_SELFTEST(scheduled[1].m_threads[1][0], t4);
+        UASSERT_SELFTEST(scheduled[1].m_threads[0][0], t2p);
+        UASSERT_SELFTEST(scheduled[1].m_threads[0][1], t3p);
+        UASSERT_SELFTEST(scheduled[1].m_threads[1][0], t4p);
 
         UASSERT_SELFTEST(scheduled[2].m_threads.size(), threads);
-        UASSERT_SELFTEST(scheduled[2].m_threads[0][0], t5);
-        UASSERT_SELFTEST(scheduled[2].m_threads[1][0], t6);
+        UASSERT_SELFTEST(scheduled[2].m_threads[0][0], t5p);
+        UASSERT_SELFTEST(scheduled[2].m_threads[1][0], t6p);
 
         UASSERT_SELFTEST(ThreadSchedule::s_mtaskState.size(), 7);
 
-        UASSERT_SELFTEST(ThreadSchedule::threadId(t0), 0);
-        UASSERT_SELFTEST(ThreadSchedule::threadId(t1), 0);
-        UASSERT_SELFTEST(ThreadSchedule::threadId(t2), 0);
-        UASSERT_SELFTEST(ThreadSchedule::threadId(t3), 0);
-        UASSERT_SELFTEST(ThreadSchedule::threadId(t4), 1);
-        UASSERT_SELFTEST(ThreadSchedule::threadId(t5), 0);
-        UASSERT_SELFTEST(ThreadSchedule::threadId(t6), 1);
+        UASSERT_SELFTEST(ThreadSchedule::threadId(t0p), 0);
+        UASSERT_SELFTEST(ThreadSchedule::threadId(t1p), 0);
+        UASSERT_SELFTEST(ThreadSchedule::threadId(t2p), 0);
+        UASSERT_SELFTEST(ThreadSchedule::threadId(t3p), 0);
+        UASSERT_SELFTEST(ThreadSchedule::threadId(t4p), 1);
+        UASSERT_SELFTEST(ThreadSchedule::threadId(t5p), 0);
+        UASSERT_SELFTEST(ThreadSchedule::threadId(t6p), 1);
 
         // On its native thread, we see the actual end time for t0:
-        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t0, 0), 1000);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t0p, 0), 1000);
         // On the other thread, we see a sandbagged end time which does not
         // exceed the t1 end time:
-        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t0, 1), 1099);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t0p, 1), 1099);
 
         // Actual end time on native thread:
-        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t1, 0), 1100);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t1p, 0), 1100);
         // Sandbagged end time seen on thread 1.  Note it does not compound
         // with t0's sandbagged time; compounding caused trouble in
         // practice.
-        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t1, 1), 1130);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t1p, 1), 1130);
 
         // Wide task scheduling
 
         // Task does not depend on previous or future schedules
-        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t2, 0), 0);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[2], t2, 0), 0);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t2p, 0), 0);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[2], t2p, 0), 0);
 
         // We allow sandbagging for hierarchical children tasks, this does not affect
         // wide task scheduling. When the next schedule is created it doesn't matter
         // anyway.
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2, 0), 1200);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2, 1), 1230);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2, 2), 1230);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2, 3), 1230);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2, 4), 1230);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2, 5), 1230);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2p, 0), 1200);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2p, 1), 1230);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2p, 2), 1230);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2p, 3), 1230);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2p, 4), 1230);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t2p, 5), 1230);
 
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3, 0), 1300);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3, 1), 1330);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3, 2), 1330);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3, 3), 1330);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3, 4), 1330);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3, 5), 1330);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3p, 0), 1300);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3p, 1), 1330);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3p, 2), 1330);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3p, 3), 1330);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3p, 4), 1330);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t3p, 5), 1330);
 
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4, 0), 1360);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4, 1), 1330);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4, 2), 1360);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4, 3), 1360);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4, 4), 1360);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4, 5), 1360);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4p, 0), 1360);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4p, 1), 1330);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4p, 2), 1360);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4p, 3), 1360);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4p, 4), 1360);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t4p, 5), 1360);
 
         for (V3GraphVertex& vtx : graph.vertices()) vtx.as<ExecMTask>()->funcp()->deleteTree();
         VL_DO_DANGLING(execGraphp->deleteTree(), execGraphp);
@@ -681,20 +681,20 @@ public:
         AstExecGraph* const execGraphp = new AstExecGraph{flp, "test", trigVscp};
         V3Graph& graph = *execGraphp->depGraphp();
         const auto makeBody = [&]() -> AstNodeStmt* { return new AstComment{flp, ""}; };
-        ExecMTask* const t0 = new ExecMTask{execGraphp, nullptr, makeBody()};
-        t0->cost(1000);
-        t0->priority(1100);
-        t0->threads(2);
-        ExecMTask* const t1 = new ExecMTask{execGraphp, nullptr, makeBody()};
-        t1->cost(100);
-        t1->priority(100);
+        ExecMTask* const t0p = new ExecMTask{execGraphp, nullptr, makeBody()};
+        t0p->cost(1000);
+        t0p->priority(1100);
+        t0p->threads(2);
+        ExecMTask* const t1p = new ExecMTask{execGraphp, nullptr, makeBody()};
+        t1p->cost(100);
+        t1p->priority(100);
 
         /*
                           0
                           |
                           1
         */
-        new V3GraphEdge{&graph, t0, t1, 1};
+        new V3GraphEdge{&graph, t0p, t1p, 1};
 
         constexpr uint32_t threads = 1;
         constexpr uint32_t hierThreads = 2;
@@ -709,23 +709,23 @@ public:
         for (size_t i = 1; i < scheduled[0].m_threads.size(); ++i)
             UASSERT_SELFTEST(scheduled[0].m_threads[i].size(), 0);
 
-        UASSERT_SELFTEST(scheduled[0].m_threads[0][0], t0);
+        UASSERT_SELFTEST(scheduled[0].m_threads[0][0], t0p);
 
         UASSERT_SELFTEST(scheduled[1].m_threads.size(), threads);
         UASSERT_SELFTEST(scheduled[1].m_threads[0].size(), 1);
         for (size_t i = 1; i < scheduled[1].m_threads.size(); ++i)
             UASSERT_SELFTEST(scheduled[1].m_threads[i].size(), 0);
-        UASSERT_SELFTEST(scheduled[1].m_threads[0][0], t1);
+        UASSERT_SELFTEST(scheduled[1].m_threads[0][0], t1p);
 
         UASSERT_SELFTEST(ThreadSchedule::s_mtaskState.size(), 2);
 
-        UASSERT_SELFTEST(ThreadSchedule::threadId(t0), 0);
-        UASSERT_SELFTEST(ThreadSchedule::threadId(t1), 0);
+        UASSERT_SELFTEST(ThreadSchedule::threadId(t0p), 0);
+        UASSERT_SELFTEST(ThreadSchedule::threadId(t1p), 0);
 
-        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t0, 0), 1000);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[0], t0p, 0), 1000);
 
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t1, 0), 1100);
-        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t1, 1), 1130);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t1p, 0), 1100);
+        UASSERT_SELFTEST(packer.completionTime(scheduled[1], t1p, 1), 1130);
 
         for (V3GraphVertex& vtx : graph.vertices()) vtx.as<ExecMTask>()->funcp()->deleteTree();
         VL_DO_DANGLING(execGraphp->deleteTree(), execGraphp);

@@ -126,9 +126,9 @@ public:
             if (info.m_cfuncp) info.m_cache.insert(info.m_cfuncp);
             if (info.m_virtualization != V3ClassGraphVertex::NON_VIRTUAL) {
                 for (V3GraphEdge& edge : outEdges()) {
-                    V3ClassGraphVertex* const other = edge.top()->as<V3ClassGraphVertex>();
+                    V3ClassGraphVertex* const otherp = edge.top()->as<V3ClassGraphVertex>();
                     const std::unordered_set<AstCFunc*> otherCalls
-                        = other->getCallPossibleCFuncs(name);
+                        = otherp->getCallPossibleCFuncs(name);
                     info.m_cache.insert(otherCalls.begin(), otherCalls.end());
                 }
             }

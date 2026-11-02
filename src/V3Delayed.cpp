@@ -968,9 +968,9 @@ class DelayedVisitor final : public VNVisitor {
                 }();
             } else {
                 // If this assignment is not partial, set mask to ones and we are done
-                AstConst* const ones = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                ones->num().setAllBits1();
-                maskp = ones;
+                AstConst* const onesp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
+                onesp->num().setAllBits1();
+                maskp = onesp;
             }
         }
 

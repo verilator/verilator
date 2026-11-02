@@ -124,12 +124,12 @@ class UnrollGenVisitor final : public VNVisitor {
         return true;
     }
 
-    bool simulateTree(AstNodeExpr* nodep, const V3Number* loopValue, const AstNode* dtypep,
+    bool simulateTree(AstNodeExpr* nodep, const V3Number* loopValuep, const AstNode* dtypep,
                       V3Number& outNum) {
         AstNode* clonep = nodep->cloneTree(true);
         UASSERT_OBJ(clonep, nodep, "Failed to clone tree");
-        if (loopValue) {
-            AstConst* varValuep = new AstConst{nodep->fileline(), *loopValue};
+        if (loopValuep) {
+            AstConst* varValuep = new AstConst{nodep->fileline(), *loopValuep};
             // Iteration requires a back, so put under temporary node
             AstBegin* tempp = new AstBegin{nodep->fileline(), "[EditWrapper]", clonep, false};
             replaceVarRef(tempp->stmtsp(), varValuep);
@@ -227,9 +227,9 @@ class UnrollGenVisitor final : public VNVisitor {
                     newbodysp = AstNode::addNextNull(newbodysp, oneloopp);
 
                     // loopValue += valInc
-                    const AstAssign* const incpass = VN_AS(incp, Assign);
+                    const AstAssign* const incpassp = VN_AS(incp, Assign);
                     V3Number newLoopValue{nodep};
-                    if (!simulateTree(incpass->rhsp(), &loopValue, incpass, newLoopValue)) {
+                    if (!simulateTree(incpassp->rhsp(), &loopValue, incpassp, newLoopValue)) {
                         nodep->v3error("Loop unrolling failed");
                         return false;
                     }

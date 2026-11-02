@@ -146,8 +146,8 @@ private:
 class AstNodeBiCom VL_NOT_FINAL : public AstNodeBiop {
     // Binary expr with commutative properties
 protected:
-    AstNodeBiCom(VNType t, FileLine* fl, AstNodeExpr* lhs, AstNodeExpr* rhs)
-        : AstNodeBiop{t, fl, lhs, rhs} {}
+    AstNodeBiCom(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : AstNodeBiop{t, fl, lhsp, rhsp} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeBiCom;
@@ -155,8 +155,8 @@ public:
 class AstNodeBiComAsv VL_NOT_FINAL : public AstNodeBiCom {
     // Binary expr with commutative & associative properties
 protected:
-    AstNodeBiComAsv(VNType t, FileLine* fl, AstNodeExpr* lhs, AstNodeExpr* rhs)
-        : AstNodeBiCom{t, fl, lhs, rhs} {}
+    AstNodeBiComAsv(VNType t, FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp)
+        : AstNodeBiCom{t, fl, lhsp, rhsp} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeBiComAsv;
@@ -1638,11 +1638,11 @@ class AstFSeek final : public AstNodeExpr {
     // @astgen op2 := offset : Optional[AstNodeExpr]
     // @astgen op3 := operation : Optional[AstNodeExpr]
 public:
-    AstFSeek(FileLine* fl, AstNodeExpr* filep, AstNodeExpr* offset, AstNodeExpr* operation)
+    AstFSeek(FileLine* fl, AstNodeExpr* filep, AstNodeExpr* offsetp, AstNodeExpr* operationp)
         : ASTGEN_SUPER_FSeek(fl) {
         this->filep(filep);
-        this->offset(offset);
-        this->operation(operation);
+        this->offset(offsetp);
+        this->operation(operationp);
         dtypeSetLogic2StateUnsized(
             32, v3Global.widthMinUsage() == VWidthMinUsage::MATCHES_WIDTH ? 32 : 1,
             VSigning::SIGNED);  // Spec says integer return
@@ -5430,8 +5430,8 @@ public:
 class AstPutcN final : public AstNodeTriop {
     // Verilog string.putc()
 public:
-    AstPutcN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* ths)
-        : ASTGEN_SUPER_PutcN(fl, lhsp, rhsp, ths) {
+    AstPutcN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
+        : ASTGEN_SUPER_PutcN(fl, lhsp, rhsp, thsp) {
         dtypeSetString();
     }
     ASTGEN_MEMBERS_AstPutcN;
@@ -5486,8 +5486,8 @@ public:
 class AstSubstrN final : public AstNodeTriop {
     // Verilog string.substr()
 public:
-    AstSubstrN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* ths)
-        : ASTGEN_SUPER_SubstrN(fl, lhsp, rhsp, ths) {
+    AstSubstrN(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp, AstNodeExpr* thsp)
+        : ASTGEN_SUPER_SubstrN(fl, lhsp, rhsp, thsp) {
         dtypeSetString();
     }
     ASTGEN_MEMBERS_AstSubstrN;

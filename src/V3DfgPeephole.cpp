@@ -2193,12 +2193,12 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        if (DfgNot* const lNot = lhsp->cast<DfgNot>()) {
-            if (DfgNot* const rNot = rhsp->cast<DfgNot>()) {
-                if (!lNot->hasMultipleSinks() && !rNot->hasMultipleSinks()) {
+        if (DfgNot* const lNotp = lhsp->cast<DfgNot>()) {
+            if (DfgNot* const rNotp = rhsp->cast<DfgNot>()) {
+                if (!lNotp->hasMultipleSinks() && !rNotp->hasMultipleSinks()) {
                     APPLYING(PUSH_CONCAT_THROUGH_NOTS) {
                         DfgConcat* const newCatp
-                            = make<DfgConcat>(vtxp, lNot->srcp(), rNot->srcp());
+                            = make<DfgConcat>(vtxp, lNotp->srcp(), rNotp->srcp());
                         replace(make<DfgNot>(vtxp, newCatp));
                         return;
                     }

@@ -611,7 +611,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     emitVarResetScopeHash();
                     const uint64_t salt = VString::hashMurmur(varp->prettyName());
                     out += ", ";
-                    out += m_classOrPackage ? m_classOrPackageHash : "__VscopeHash";
+                    out += m_classOrPackagep ? m_classOrPackageHash : "__VscopeHash";
                     out += ", ";
                     out += std::to_string(salt);
                     out += "ull";
@@ -638,7 +638,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 if (varp->isXTemp()) out += "ASSIGN_";
                 out += dtypep->charIQWN();
                 out += "(" + cvtToStr(dtypep->widthMin()) + ", "
-                       + (m_classOrPackage ? m_classOrPackageHash : "__VscopeHash") + ", "
+                       + (m_classOrPackagep ? m_classOrPackageHash : "__VscopeHash") + ", "
                        + std::to_string(salt) + "ull);\n";
             }
             return out;
@@ -651,9 +651,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
 
 void EmitCFunc::emitVarResetScopeHash() {
     if (VL_LIKELY(m_createdScopeHash)) { return; }
-    if (m_classOrPackage) {
+    if (m_classOrPackagep) {
         m_classOrPackageHash
-            = std::to_string(VString::hashMurmur(m_classOrPackage->name())) + "ULL";
+            = std::to_string(VString::hashMurmur(m_classOrPackagep->name())) + "ULL";
     } else {
         puts(string("const uint64_t __VscopeHash = VL_MURMUR64_HASH(")
              + (m_useSelfForThis ? "vlSelf" : "this") + "->vlNamep);\n");

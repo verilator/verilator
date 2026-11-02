@@ -2500,10 +2500,10 @@ class WidthVisitor final : public VNVisitor {
         userIterateAndNext(nodep->lhsp(), WidthVP{SELF, BOTH, currentStreamUse()}.p());
         // Type set in constructor
         // A class handle is not a legal implicit conversion to string
-        if (AstNodeDType* const dt = nodep->lhsp()->dtypep()) {
-            if (VN_IS(dt->skipRefToEnump(), ClassRefDType)) {
+        if (AstNodeDType* const dtp = nodep->lhsp()->dtypep()) {
+            if (VN_IS(dtp->skipRefToEnump(), ClassRefDType)) {
                 nodep->lhsp()->v3error(
-                    "Cannot convert 'class' handle to a string:" << dt->prettyDTypeNameQ());
+                    "Cannot convert 'class' handle to a string:" << dtp->prettyDTypeNameQ());
             }
         }
     }
@@ -3806,14 +3806,14 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING(userIterate(itemp, WidthVP{CONTEXT_DET, PRELIM}.p()), itemp);
         }
 
-        AstBasicDType* dtype = VN_CAST(nodep->exprp()->dtypep(), BasicDType);
+        AstBasicDType* dtypep = VN_CAST(nodep->exprp()->dtypep(), BasicDType);
         AstNodeDType* subDTypep = nullptr;
         nodep->dtypeSetBit();
 
-        if (dtype && dtype->isString()) {
+        if (dtypep && dtypep->isString()) {
             nodep->dtypeSetString();
             subDTypep = nodep->findStringDType();
-        } else if (dtype && dtype->isDouble()) {
+        } else if (dtypep && dtypep->isDouble()) {
             nodep->dtypeSetDouble();
             subDTypep = nodep->findDoubleDType();
         } else {
@@ -3889,13 +3889,13 @@ class WidthVisitor final : public VNVisitor {
             VL_DO_DANGLING(userIterate(itemp, WidthVP{CONTEXT_DET, PRELIM}.p()), itemp);
         }
 
-        AstBasicDType* dtype = VN_CAST(nodep->exprp()->dtypep(), BasicDType);
+        AstBasicDType* dtypep = VN_CAST(nodep->exprp()->dtypep(), BasicDType);
         AstNodeDType* expDTypep = nullptr;
 
-        if (dtype && dtype->isString()) {
+        if (dtypep && dtypep->isString()) {
             nodep->dtypeSetString();
             expDTypep = nodep->findStringDType();
-        } else if (dtype && dtype->isDouble()) {
+        } else if (dtypep && dtypep->isDouble()) {
             nodep->dtypeSetDouble();
             expDTypep = nodep->findDoubleDType();
         } else {
@@ -4182,9 +4182,9 @@ class WidthVisitor final : public VNVisitor {
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Unlinked data type");
         AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
         UINFO(9, "     from dt " << fromDtp);
-        const AstMemberSel* const fromSel = VN_CAST(nodep->fromp(), MemberSel);
-        if (AstClocking* const clockingp = fromSel && fromSel->varp()
-                                               ? VN_CAST(fromSel->varp()->firstAbovep(), Clocking)
+        const AstMemberSel* const fromSelp = VN_CAST(nodep->fromp(), MemberSel);
+        if (AstClocking* const clockingp = fromSelp && fromSelp->varp()
+                                               ? VN_CAST(fromSelp->varp()->firstAbovep(), Clocking)
                                                : nullptr) {
             // In:  MEMBERSEL{MEMBERSEL{vifaceref, "cb", cb_event}, "clockvar", null}
             // Out: MEMBERSEL{vifaceref, "clockvar", clockvar}
@@ -5671,17 +5671,17 @@ class WidthVisitor final : public VNVisitor {
                 FileLine* const fl = nodep->fileline();
                 AstNodeExpr* newp = nullptr;
                 for (int i = 0; i < adtypep->elementsConst(); ++i) {
-                    AstNodeExpr* const arrayRef = nodep->fromp()->cloneTreePure(false);
-                    AstNodeExpr* const selector = new AstArraySel{fl, arrayRef, i};
+                    AstNodeExpr* const arrayRefp = nodep->fromp()->cloneTreePure(false);
+                    AstNodeExpr* const selectorp = new AstArraySel{fl, arrayRefp, i};
                     if (!newp) {
-                        newp = selector;
+                        newp = selectorp;
                     } else {
                         switch (methodId) {
-                        case ARRAY_OR: newp = new AstOr{fl, newp, selector}; break;
-                        case ARRAY_AND: newp = new AstAnd{fl, newp, selector}; break;
-                        case ARRAY_XOR: newp = new AstXor{fl, newp, selector}; break;
-                        case ARRAY_SUM: newp = new AstAdd{fl, newp, selector}; break;
-                        case ARRAY_PRODUCT: newp = new AstMul{fl, newp, selector}; break;
+                        case ARRAY_OR: newp = new AstOr{fl, newp, selectorp}; break;
+                        case ARRAY_AND: newp = new AstAnd{fl, newp, selectorp}; break;
+                        case ARRAY_XOR: newp = new AstXor{fl, newp, selectorp}; break;
+                        case ARRAY_SUM: newp = new AstAdd{fl, newp, selectorp}; break;
+                        case ARRAY_PRODUCT: newp = new AstMul{fl, newp, selectorp}; break;
                         default: nodep->v3fatalSrc("bad case");
                         }
                     }
@@ -5757,9 +5757,9 @@ class WidthVisitor final : public VNVisitor {
             methodOkArguments(nodep, 1, 1);
             iterateCheckString(nodep, "argument", methodArg(nodep, 0), BOTH);
             AstArg* const argp = nodep->argsp();
-            AstNodeExpr* const lhs = nodep->fromp()->unlinkFrBack();
-            AstNodeExpr* const rhs = argp->exprp()->unlinkFrBack();
-            AstNode* const newp = new AstCompareNN{nodep->fileline(), lhs, rhs, ignoreCase};
+            AstNodeExpr* const lhsp = nodep->fromp()->unlinkFrBack();
+            AstNodeExpr* const rhsp = argp->exprp()->unlinkFrBack();
+            AstNode* const newp = new AstCompareNN{nodep->fileline(), lhsp, rhsp, ignoreCase};
             nodep->replaceWith(newp);
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (nodep->name() == "putc") {
@@ -6212,15 +6212,15 @@ class WidthVisitor final : public VNVisitor {
     AstNodeExpr* nestedvalueConcat_patternStruct(AstStructDType* memp_vdtypep,
                                                  AstPatMember* defaultp, AstNodeExpr* newp,
                                                  AstPattern* nodep, const DTypeMap& dtypemap) {
-        for (AstMemberDType* const memp_nested : memp_vdtypep->memberspList()) {
+        for (AstMemberDType* const memp_nestedp : memp_vdtypep->memberspList()) {
             if (AstStructDType* const memp_multinested_vdtypep
-                = VN_CAST(memp_nested->virtRefDTypep(), StructDType)) {
+                = VN_CAST(memp_nestedp->virtRefDTypep(), StructDType)) {
                 newp = nestedvalueConcat_patternStruct(memp_multinested_vdtypep, defaultp, newp,
                                                        nodep, dtypemap);
             } else {
                 AstPatMember* const patp
-                    = defaultPatp_patternStruct(nodep, memp_nested, defaultp, dtypemap);
-                newp = valueConcat_patternStruct(patp, newp, memp_nested, nodep);
+                    = defaultPatp_patternStruct(nodep, memp_nestedp, defaultp, dtypemap);
+                newp = valueConcat_patternStruct(patp, newp, memp_nestedp, nodep);
                 if (patp) VL_DO_DANGLING(pushDeletep(patp), patp);
             }
         }
@@ -8935,32 +8935,32 @@ class WidthVisitor final : public VNVisitor {
     }
 
     // IEEE 1800-2023 6.22.2 Equivalent types
-    bool isEquivalentDType(const AstNodeDType* lhs, const AstNodeDType* rhs) {
+    bool isEquivalentDType(const AstNodeDType* lhsp, const AstNodeDType* rhsp) {
         // a) If two types match, they are equivalent.
-        if (!lhs || !rhs) return false;
-        lhs = lhs->skipRefToEnump();
-        rhs = rhs->skipRefToEnump();
-        if (lhs == rhs) return true;
+        if (!lhsp || !rhsp) return false;
+        lhsp = lhsp->skipRefToEnump();
+        rhsp = rhsp->skipRefToEnump();
+        if (lhsp == rhsp) return true;
         // If both are basic types, check if they are the same type
-        if (VN_IS(lhs, BasicDType) && VN_IS(rhs, BasicDType)) {
-            const auto* lb = VN_CAST(lhs, BasicDType);
-            const auto* rb = VN_CAST(rhs, BasicDType);
-            if (lb->isString() != rb->isString()) return false;
+        if (VN_IS(lhsp, BasicDType) && VN_IS(rhsp, BasicDType)) {
+            const auto* lbp = VN_CAST(lhsp, BasicDType);
+            const auto* rbp = VN_CAST(rhsp, BasicDType);
+            if (lbp->isString() != rbp->isString()) return false;
         }
 
         // d) Unpacked fixed-size array types are equivalent if they have equivalent element types
         // and equal size; the actual range bounds may differ. Note that the element type of a
         // multidimensional array is itself an array type.
-        const bool lhsIsUnpackArray = VN_IS(lhs, UnpackArrayDType);
-        const bool rhsIsUnpackArray = VN_IS(rhs, UnpackArrayDType);
+        const bool lhsIsUnpackArray = VN_IS(lhsp, UnpackArrayDType);
+        const bool rhsIsUnpackArray = VN_IS(rhsp, UnpackArrayDType);
         if (lhsIsUnpackArray || rhsIsUnpackArray) {
             if (lhsIsUnpackArray && rhsIsUnpackArray) {
-                const AstUnpackArrayDType* const lhsp = VN_CAST(lhs, UnpackArrayDType);
-                const AstUnpackArrayDType* const rhsp = VN_CAST(rhs, UnpackArrayDType);
-                const int lsz = lhsp->elementsConst();
-                const int rsz = rhsp->elementsConst();
+                const AstUnpackArrayDType* const lhsUnpackp = VN_CAST(lhsp, UnpackArrayDType);
+                const AstUnpackArrayDType* const rhsUnpackp = VN_CAST(rhsp, UnpackArrayDType);
+                const int lsz = lhsUnpackp->elementsConst();
+                const int rsz = rhsUnpackp->elementsConst();
                 if (lsz >= 0 && rsz >= 0 && lsz != rsz) return false;
-                return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+                return isEquivalentDType(lhsUnpackp->subDTypep(), rhsUnpackp->subDTypep());
             }
             return false;
         }
@@ -8968,31 +8968,31 @@ class WidthVisitor final : public VNVisitor {
         // e) Dynamic array, associative array, and queue types are equivalent if they are the same
         // kind of array (dynamic, associative, or queue), have equivalent index types (for
         // associative arrays), and have equivalent element types.
-        const bool lhsIsDynArray = VN_IS(lhs, DynArrayDType);
-        const bool rhsIsDynArray = VN_IS(rhs, DynArrayDType);
-        const bool lhsIsQueue = VN_IS(lhs, QueueDType);
-        const bool rhsIsQueue = VN_IS(rhs, QueueDType);
-        const bool lhsIsAssocArray = VN_IS(lhs, AssocArrayDType);
-        const bool rhsIsAssocArray = VN_IS(rhs, AssocArrayDType);
+        const bool lhsIsDynArray = VN_IS(lhsp, DynArrayDType);
+        const bool rhsIsDynArray = VN_IS(rhsp, DynArrayDType);
+        const bool lhsIsQueue = VN_IS(lhsp, QueueDType);
+        const bool rhsIsQueue = VN_IS(rhsp, QueueDType);
+        const bool lhsIsAssocArray = VN_IS(lhsp, AssocArrayDType);
+        const bool rhsIsAssocArray = VN_IS(rhsp, AssocArrayDType);
 
         if (lhsIsDynArray || rhsIsDynArray || lhsIsQueue || rhsIsQueue || lhsIsAssocArray
             || rhsIsAssocArray) {
-            if (const AstDynArrayDType* const lhsp = VN_CAST(lhs, DynArrayDType)) {
-                if (const AstDynArrayDType* const rhsp = VN_CAST(rhs, DynArrayDType)) {
-                    return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+            if (const AstDynArrayDType* const lhsDynp = VN_CAST(lhsp, DynArrayDType)) {
+                if (const AstDynArrayDType* const rhsDynp = VN_CAST(rhsp, DynArrayDType)) {
+                    return isEquivalentDType(lhsDynp->subDTypep(), rhsDynp->subDTypep());
                 }
             }
 
-            if (const AstQueueDType* const lhsp = VN_CAST(lhs, QueueDType)) {
-                if (const AstQueueDType* const rhsp = VN_CAST(rhs, QueueDType)) {
-                    return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep());
+            if (const AstQueueDType* const lhsQueuep = VN_CAST(lhsp, QueueDType)) {
+                if (const AstQueueDType* const rhsQueuep = VN_CAST(rhsp, QueueDType)) {
+                    return isEquivalentDType(lhsQueuep->subDTypep(), rhsQueuep->subDTypep());
                 }
             }
 
-            if (const AstAssocArrayDType* const lhsp = VN_CAST(lhs, AssocArrayDType)) {
-                if (const AstAssocArrayDType* const rhsp = VN_CAST(rhs, AssocArrayDType)) {
-                    return isEquivalentDType(lhsp->subDTypep(), rhsp->subDTypep())
-                           && isEquivalentDType(lhsp->keyDTypep(), rhsp->keyDTypep());
+            if (const AstAssocArrayDType* const lhsAssocp = VN_CAST(lhsp, AssocArrayDType)) {
+                if (const AstAssocArrayDType* const rhsAssocp = VN_CAST(rhsp, AssocArrayDType)) {
+                    return isEquivalentDType(lhsAssocp->subDTypep(), rhsAssocp->subDTypep())
+                           && isEquivalentDType(lhsAssocp->keyDTypep(), rhsAssocp->keyDTypep());
                 }
             }
 
@@ -9002,10 +9002,10 @@ class WidthVisitor final : public VNVisitor {
         // c) Packed arrays, packed structures, packed unions, and built-in integral
         // types are equivalent if they contain the same number of total bits, are either all
         // 2-state or all 4-state, and are either all signed or all unsigned.
-        if (lhs->isIntegralOrPacked() && rhs->isIntegralOrPacked()) {
-            if (lhs->width() != rhs->width()) return false;
-            if (lhs->isFourstate() != rhs->isFourstate()) return false;
-            if (lhs->isSigned() != rhs->isSigned()) return false;
+        if (lhsp->isIntegralOrPacked() && rhsp->isIntegralOrPacked()) {
+            if (lhsp->width() != rhsp->width()) return false;
+            if (lhsp->isFourstate() != rhsp->isFourstate()) return false;
+            if (lhsp->isSigned() != rhsp->isSigned()) return false;
             return true;
         }
 
@@ -9014,8 +9014,8 @@ class WidthVisitor final : public VNVisitor {
         // types.
 
         // DTypes compared above, if any remained then not equivalent.
-        if (VN_IS(lhs, EnumDType) || VN_IS(rhs, EnumDType)) return false;
-        return !(VN_IS(lhs, NodeUOrStructDType) || VN_IS(rhs, NodeUOrStructDType));
+        if (VN_IS(lhsp, EnumDType) || VN_IS(rhsp, EnumDType)) return false;
+        return !(VN_IS(lhsp, NodeUOrStructDType) || VN_IS(rhsp, NodeUOrStructDType));
     }
 
     static bool isAggregateType(const AstNode* nodep) {
@@ -9064,12 +9064,12 @@ class WidthVisitor final : public VNVisitor {
 
             if ((isAggrLhs || isAggrRhs)
                 && (cmpType == ComparisonType::NORMAL_EQ || cmpType == ComparisonType::CASE)) {
-                const AstNodeDType* const lhsDType = nodep->lhsp()->dtypep();
-                const AstNodeDType* const rhsDType = nodep->rhsp()->dtypep();
+                const AstNodeDType* const lhsDTypep = nodep->lhsp()->dtypep();
+                const AstNodeDType* const rhsDTypep = nodep->rhsp()->dtypep();
 
-                if (lhsDType && rhsDType && !isEquivalentDType(lhsDType, rhsDType)) {
+                if (lhsDTypep && rhsDTypep && !isEquivalentDType(lhsDTypep, rhsDTypep)) {
                     nodep->v3error("Comparison requires matching data types"
-                                   << warnDTypes(nodep, lhsDType, rhsDType));
+                                   << warnDTypes(nodep, lhsDTypep, rhsDTypep));
                     AstNode* const newp
                         = new AstConst{nodep->fileline(), AstConst::BitFalseErroring{}};
                     nodep->replaceWith(newp);
@@ -11479,13 +11479,13 @@ class WidthVisitor final : public VNVisitor {
 
     AstNode* userIterateSubtreeReturnEdits(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return nullptr;
-        AstNode* ret;
+        AstNode* retp;
         {
             VL_RESTORER(m_vup);
             m_vup = vup;
-            ret = iterateSubtreeReturnEdits(nodep);
+            retp = iterateSubtreeReturnEdits(nodep);
         }
-        return ret;
+        return retp;
     }
     void userIterate(AstNode* nodep, WidthVP* vup) {
         if (!nodep) return;

@@ -133,7 +133,7 @@ protected:
     const AstNodeModule* m_modp = nullptr;  // Current module being emitted
     const AstCFunc* m_cfuncp = nullptr;  // Current function being emitted
     bool m_instantiatesOwnProcess = false;  // Statement that instantiates its own process
-    const AstClassPackage* m_classOrPackage = nullptr;  // Pointer to current class or package
+    const AstClassPackage* m_classOrPackagep = nullptr;  // Pointer to current class or package
     string m_classOrPackageHash;  // Hash of class or package name
 
     bool constructorNeedsProcess(const AstClass* const classp) {
@@ -1751,7 +1751,7 @@ public:
             emitOpName(nodep, nodep->emitC(), nodep->srcp(), nodep->countp(), nullptr);
         }
     }
-    void emitStreamR(AstStreamR* nodep, AstNode* parent) {
+    void emitStreamR(AstStreamR* nodep, AstNode* parentp) {
         //TODO: This might need to handle more cases like the visit(AstStreamR) function
         emitOpName(nodep, nodep->emitC(), nodep->lhsp(), nodep->rhsp(), nullptr);
     }

@@ -1210,10 +1210,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             return false;
         }
         // Each bound must be a constant unless it is '$'; reject non-const and 4-state.
-        AstConst* const lc = rb.loConstp();
-        AstConst* const hc = rb.hiConstp();
-        if ((!lc && !rb.loUnbounded()) || (!hc && !rb.hiUnbounded())) return false;
-        if ((lc && lc->num().isFourState()) || (hc && hc->num().isFourState())) return false;
+        AstConst* const lcp = rb.loConstp();
+        AstConst* const hcp = rb.hiConstp();
+        if ((!lcp && !rb.loUnbounded()) || (!hcp && !rb.hiUnbounded())) return false;
+        if ((lcp && lcp->num().isFourState()) || (hcp && hcp->num().isFourState())) return false;
         return true;
     }
 
@@ -2470,7 +2470,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                      {ctext(fl, quoted(hier)), cnum(fl, static_cast<uint32_t>(atLeastValue)),
                       cnum(fl, static_cast<uint32_t>(idx))})
                 ->makeStmt());
-        for (AstNodeStmt* const ns : namerStmts) m_constructorp->addStmtsp(ns);
+        for (AstNodeStmt* const nsp : namerStmts) m_constructorp->addStmtsp(nsp);
         if (dynamic) {
             m_constructorp->addStmtsp(
                 itemCall(fl, cpVarp, VCMethod::COVERGROUP_VALUE_TYPE,
@@ -2747,34 +2747,34 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // the array into the cross, so sample() reads it from there and needs no array at all.
     AstCStmt* makeCrossCpsCall(FileLine* fl, const std::vector<AstVar*>& cpVars,
                                AstCMethodHard* callp) {
-        AstCStmt* const cs = new AstCStmt{fl};
-        cs->add("{ VlCoverpoint* __Vcx_cps[] = {");
+        AstCStmt* const csp = new AstCStmt{fl};
+        csp->add("{ VlCoverpoint* __Vcx_cps[] = {");
         for (size_t d = 0; d < cpVars.size(); ++d) {
-            if (d != 0) cs->add(", ");
-            cs->add(memberRef(fl, cpVars[d]));
+            if (d != 0) csp->add(", ");
+            csp->add(memberRef(fl, cpVars[d]));
         }
-        cs->add("}; ");
-        cs->add(callp);
-        cs->add("; }");
-        return cs;
+        csp->add("}; ");
+        csp->add(callp);
+        csp->add("; }");
+        return csp;
     }
 
     // Assign the per-bin flags individually: one-bit SV results have integer C++ storage types,
     // which may narrow in a bool initializer list but convert implicitly in assignments.
     AstCStmt* makeCrossIffsCall(FileLine* fl, const std::vector<AstCoverCrossBin*>& bins,
                                 AstCMethodHard* callp) {
-        AstCStmt* const cs = new AstCStmt{fl};
-        cs->add("{ bool __Vcx_iffs[" + cvtToStr(bins.size()) + "]; ");
+        AstCStmt* const csp = new AstCStmt{fl};
+        csp->add("{ bool __Vcx_iffs[" + cvtToStr(bins.size()) + "]; ");
         for (size_t i = 0; i < bins.size(); ++i) {
             const AstCoverCrossBin* const binp = bins[i];
-            cs->add("__Vcx_iffs[" + cvtToStr(i) + "] = ");
-            cs->add(binp->iffp() ? binp->iffp()->cloneTree(false)
-                                 : new AstConst{fl, AstConst::BitTrue{}});
-            cs->add("; ");
+            csp->add("__Vcx_iffs[" + cvtToStr(i) + "] = ");
+            csp->add(binp->iffp() ? binp->iffp()->cloneTree(false)
+                                  : new AstConst{fl, AstConst::BitTrue{}});
+            csp->add("; ");
         }
-        cs->add(callp);
-        cs->add("; }");
-        return cs;
+        csp->add(callp);
+        csp->add("; }");
+        return csp;
     }
 
     using CrossSelection = std::vector<uint64_t>;
@@ -4095,9 +4095,10 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         value.opBitsOne(range.pattern);
         AstConst* const maskConstp = newValueConst(fl, mask, exprp);
         AstConst* const valueConstp = newValueConst(fl, value, exprp);
-        AstNodeExpr* const exprMasked = new AstAnd{fl, exprp->cloneTree(false), maskConstp};
-        AstNodeExpr* const valueMasked = new AstAnd{fl, valueConstp, maskConstp->cloneTree(false)};
-        return new AstLogAnd{fl, condp, new AstEq{fl, exprMasked, valueMasked}};
+        AstNodeExpr* const exprMaskedp = new AstAnd{fl, exprp->cloneTree(false), maskConstp};
+        AstNodeExpr* const valueMaskedp
+            = new AstAnd{fl, valueConstp, maskConstp->cloneTree(false)};
+        return new AstLogAnd{fl, condp, new AstEq{fl, exprMaskedp, valueMaskedp}};
     }
 
     void generateCoverageComputationCode() {

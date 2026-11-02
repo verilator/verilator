@@ -345,14 +345,14 @@ public:
         if (!fnodep) {
             // Not found, will add in a moment.
             if (forPrimary() && VSymEnt::checkSimilarname(nodep)) {
-                const VSymEnt* const alt = lookupSymp->findSimilarIdFlat(name);
-                if (alt) {
+                const VSymEnt* const altp = lookupSymp->findSimilarIdFlat(name);
+                if (altp) {
                     nodep->v3warn(SIMILARNAME, "Declaration overlaps another with different case: "
                                                    << nodep->prettyNameQ() << '\n'
                                                    << nodep->warnContextPrimary() << '\n'
-                                                   << alt->nodep()->warnOther()
+                                                   << altp->nodep()->warnOther()
                                                    << "... Location of original declaration\n"
-                                                   << alt->nodep()->warnContextSecondary());
+                                                   << altp->nodep()->warnContextSecondary());
                 }
             }
         } else if (nodep == fnodep) {  // Already inserted.
@@ -1379,8 +1379,8 @@ class LinkDotFindVisitor final : public VNVisitor {
                 UINFO(1, "Found module with hier type parameters");
                 m_hierParamsName = nodep->name();
                 for (const AstNode* const stmtp : nodep->stmtspList()) {
-                    if (const AstTypedef* const tdef = VN_CAST(stmtp, Typedef)) {
-                        UINFO(1, "Inserting hier type parameter typedef: " << tdef);
+                    if (const AstTypedef* const tdefp = VN_CAST(stmtp, Typedef)) {
+                        UINFO(1, "Inserting hier type parameter typedef: " << tdefp);
                         VSymEnt* const upperSymp = m_curSymp ? m_curSymp : m_statep->rootEntp();
                         m_curSymp = m_modSymp = m_statep->insertBlock(upperSymp, nodep->name(),
                                                                       nodep, m_classOrPackagep);
@@ -3108,8 +3108,8 @@ class LinkDotIfaceVisitor final : public VNVisitor {
                 symp = m_statep->findDotted(fl, m_curSymp, fullPath, baddot, okSymp, true);
                 // Handle nested interface path when findDotted had partial match
                 if (okSymp && !baddot.empty()) {
-                    VSymEnt* const resolved = resolveNestedInterfacePath(fl, okSymp, baddot);
-                    if (resolved) symp = resolved;
+                    VSymEnt* const resolvedp = resolveNestedInterfacePath(fl, okSymp, baddot);
+                    if (resolvedp) symp = resolvedp;
                 }
             }
         } else if (AstDot* const dotp = VN_CAST(exprp, Dot)) {
@@ -3127,8 +3127,8 @@ class LinkDotIfaceVisitor final : public VNVisitor {
 
                 // Handle nested interface path when findDotted had partial match
                 if (okSymp && !baddot.empty()) {
-                    VSymEnt* const resolved = resolveNestedInterfacePath(fl, okSymp, baddot);
-                    if (resolved) symp = resolved;
+                    VSymEnt* const resolvedp = resolveNestedInterfacePath(fl, okSymp, baddot);
+                    if (resolvedp) symp = resolvedp;
                 }
 
                 if (!symp || !baddot.empty()) {
@@ -3446,12 +3446,12 @@ class LinkDotResolveVisitor final : public VNVisitor {
         if (!V3LinkDotIfaceCapture::enabled() || !m_statep->forPrimary()) return;
         AstNodeModule* const defOwnerModp = V3LinkDotIfaceCapture::findOwnerModule(defp);
         if (!defOwnerModp || !VN_IS(defOwnerModp, Iface)) return;
-        AstCell* const cellForCapture
+        AstCell* const cellForCapturep
             = m_ds.m_dotSymp ? VN_CAST(m_ds.m_dotSymp->nodep(), Cell) : nullptr;
-        if (!cellForCapture) return;
+        if (!cellForCapturep) return;
         UINFO(9, indent() << "iface capture add paramtype " << nodep
                           << " iface=" << defOwnerModp->prettyNameQ());
-        V3LinkDotIfaceCapture::addParamType(nodep, cellForCapture->name(), m_modp, defp,
+        V3LinkDotIfaceCapture::addParamType(nodep, cellForCapturep->name(), m_modp, defp,
                                             defOwnerModp->name());
     }
 
