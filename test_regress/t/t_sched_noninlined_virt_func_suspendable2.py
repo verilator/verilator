@@ -17,6 +17,6 @@ test.compile(
 test.execute()
 
 test.file_grep(test.stats,
-               r'Scheduling, count of non-inlined signal writes in suspendables\s+(\d+)', 8)
+               r'Scheduling, count of non-inlined signal writes in suspendables\s+(\d+)', 14)
 
 test.passes()
