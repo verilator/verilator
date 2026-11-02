@@ -200,7 +200,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
                           // suspendable makes the other node suspendable
     V3Graph m_procGraph;  // Dependency graph where a node is a dependency of another if it being
                           // suspendable makes the other node suspendable
-    std::vector<AstNode*> m_delayedProc;  // Process/functions containing DPI task calls
+    std::vector<AstCFunc*> m_delayedProc;  // Process/functions containing DPI task calls
     std::vector<AstCFunc*> m_dpiExports;  // Contains DPI exports
     unsigned int m_suspendableExports
         = 0;  // Used to count number of suspendable DPI exports for __stats.txt
@@ -419,7 +419,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         if (!VN_IS(m_procp, CFunc)) return;
         AstCFunc* const cfuncp = VN_AS(m_procp, CFunc);
         if (nodep->function() == VCFunction::CALL_IMPORT_TASK && cfuncp->dpiContext()) {
-            m_delayedProc.push_back(m_procp);
+            m_delayedProc.push_back(cfuncp);
         }
     }
     void visit(AstNode* nodep) override {
@@ -440,6 +440,16 @@ public:
         iterate(nodep);
         m_suspGraph.removeTransitiveEdges();
         m_procGraph.removeTransitiveEdges();
+        // Opaque DPI calls may introduce cycles, so add them after transitive pruning.
+        for (AstCFunc* const dpiExportp : m_dpiExports) {
+            new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(dpiExportp), getSuspendDepVtx(nodep),
+                            P_CALL};
+        }
+        for (AstCFunc* const cfuncp : m_delayedProc) {
+            new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(cfuncp),
+                            P_CALL};
+        }
+
         // Propagate suspendability
         for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
             DepVtx& depVtx = static_cast<DepVtx&>(vtx);
@@ -450,18 +460,6 @@ public:
             if (hasFlags(dpiExportp, T_SUSPENDEE) || hasFlags(dpiExportp, T_SUSPENDER)) {
                 ++m_suspendableExports;
                 v3Global.setUsesSuspendableExports();
-            }
-        }
-
-        // Propagate suspendability again after DPI exports have been resolved
-        if (v3Global.usesSuspendableExports()) {
-            // Preserve the caller's process through suspendable DPI import wrappers.
-            for (AstNode* procp : m_delayedProc) {
-                addFlags(procp, T_SUSPENDEE | T_SUSPENDER | T_NEEDS_PROC);
-            }
-            for (V3GraphVertex& vtx : m_suspGraph.vertices()) {
-                DepVtx& depVtx = static_cast<DepVtx&>(vtx);
-                if (hasFlags(depVtx.nodep(), T_SUSPENDEE)) propagateFlags(&depVtx, T_SUSPENDEE);
             }
         }
 
