@@ -80,13 +80,18 @@ class UdpVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstUdpTable* nodep) override {
+        if (m_outputVars.empty()) {
+            m_primp->v3error("No output port for UDP table, there must be one output port");
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            return;
+        }
         FileLine* const fl = nodep->fileline();
         if (m_outputVars.size() != 1) {
             m_outputVars.back()->v3error(
                 m_outputVars.size()
                 << " output ports for UDP table, there must be one output port");
         }
-        if (!m_isFirstOutput && m_outputVars.size()) {
+        if (!m_isFirstOutput) {
             m_inputVars[0]->v3error("First UDP port must be the output port");
         }
         m_oFieldVarp = m_outputVars[0];

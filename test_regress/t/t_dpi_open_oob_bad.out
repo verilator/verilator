@@ -1,6 +1,6 @@
 dpii_nullptr:
 dpii_int_u3:
-%Warning: DPI svOpenArrayHandle function index 3 out of bounds; 1 outside [4:-4].
+%Warning: DPI svOpenArrayHandle function index 3 out of bounds; 30 outside [4:-4].
 %Warning: DPI svOpenArrayHandle function index 2 out of bounds; 20 outside [-3:3].
 %Warning: DPI svOpenArrayHandle function index 1 out of bounds; 10 outside [2:-2].
 %Warning: DPI svOpenArrayHandle function called on 3 dimensional array using 1 dimensional function.
