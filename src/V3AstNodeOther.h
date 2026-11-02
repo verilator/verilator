@@ -501,6 +501,8 @@ public:
     inline bool hasCombo() const;
     inline bool hasInitial() const;
     inline bool hasStatic() const;
+    // V3Active puts each AlwaysPostponed alone under a combinational active
+    inline bool isPostponed() const;
 };
 class AstAlias final : public AstNode {
     // Alias construct - Used for source level net alias, and also for variable aliases internally
@@ -2356,7 +2358,6 @@ class AstVar final : public AstNode {
     bool m_attrFileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
-    bool m_isClockingDriven : 1;  // Driven from inside by a clocking block output
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -2426,7 +2427,6 @@ class AstVar final : public AstNode {
         m_attrFileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
-        m_isClockingDriven = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -2559,7 +2559,8 @@ public:
     string vlEnumDir(bool forMember = false) const { return vlEnumDir(vpiLazyComb(), forMember); }
     // Return VerilatorVarDir: VLVD_INOUT, etc, for one instance's --vpi-lazy class
     string vlEnumDir(VVpiLazyComb comb, bool forMember = false) const;
-    string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
+    // Return VerilatorVarProps declaration, with 'sizeExpr' the size of a dynamic array or queue
+    string vlPropDecl(const string& propName, const string& sizeExpr) const;
     void combineType(VVarType type);
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* dtypeSkipRefp() const VL_MT_STABLE { return subDTypep()->skipRefp(); }
@@ -2635,8 +2636,6 @@ public:
     void hasUserInit(bool flag) { m_hasUserInit = flag; }
     void icoMaybeWritten(bool flag) { m_icoMaybeWritten = flag; }
     bool icoMaybeWritten() const { return m_icoMaybeWritten; }
-    void isClockingDriven(bool flag) { m_isClockingDriven = flag; }
-    bool isClockingDriven() const { return m_isClockingDriven; }
     bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isHideLocal() const { return m_isHideLocal; }
@@ -2959,11 +2958,17 @@ public:
     }
 };
 class AstConsQueueItem final : public AstNodeConsItem {
-    // An element of an AstConsQueue, a value or an array to splice
+    // An element of an AstConsQueue, a value or an array to splice. With sizep, the value at
+    // index 'keyp'.
     // Parents: CONSQUEUE
+    // @astgen op1 := keyp : Optional[AstConst]
 public:
     AstConsQueueItem(FileLine* fl, AstNodeExpr* valuep)
         : ASTGEN_SUPER_ConsQueueItem(fl, valuep) {}
+    AstConsQueueItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsQueueItem(fl, valuep) {
+        this->keyp(keyp);
+    }
     ASTGEN_MEMBERS_AstConsQueueItem;
     const char* broken() const override {
         // backp is the cons node or the previous element

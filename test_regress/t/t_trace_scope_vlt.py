@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('vlt_all')
-test.top_filename = "t/t_trace_scope_vlt.v"
 
 test.compile(v_flags2=["--trace-vcd", test.vlt_filename])
 

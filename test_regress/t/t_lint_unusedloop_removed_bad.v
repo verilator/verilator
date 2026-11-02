@@ -268,11 +268,13 @@ module clock_init_race(input clk, input reset_l);
     end
   end
 
+  // verilator lint_off MULTIDRIVENPROC
   bit m_2_ticked;
   always @(posedge m_2_clock) if (!m_2_reset) begin
     m_2_ticked = 1'b1;
   end
   always @(negedge m_2_clock) m_2_ticked = 1'b0;
+  // verilator lint_on MULTIDRIVENPROC
 
   always @(posedge m_3_clock) if (!m_3_reset) begin
     $write("*-* m_3_clocked *-*\n");

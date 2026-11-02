@@ -581,10 +581,10 @@ class AstToDfgSynthesize final {
     // SymTab must be ordered in order to yield stable results
     struct AstVarScopeComparator final {
         static int s_vscpIdCounter;  // Counter for lazily allocating the unique AstVarScope IDs
-        bool operator()(AstVarScope* lhs, AstVarScope* rhs) const {
-            if (!lhs->user4()) lhs->user4(++s_vscpIdCounter);
-            if (!rhs->user4()) rhs->user4(++s_vscpIdCounter);
-            return lhs->user4() < rhs->user4();
+        bool operator()(AstVarScope* lhsp, AstVarScope* rhsp) const {
+            if (!lhsp->user4()) lhsp->user4(++s_vscpIdCounter);
+            if (!rhsp->user4()) rhsp->user4(++s_vscpIdCounter);
+            return lhsp->user4() < rhsp->user4();
         }
     };
     using SymTab = std::map<AstVarScope*, DfgVertexVar*, AstVarScopeComparator>;
@@ -2084,9 +2084,9 @@ static void dfgSelectLogicForSynthesis(DfgGraph& dfg) {
         logic.setSelectedForSynthesis();
         // Enqueue all other logic driving the same variables as this one
         logic.foreachSink([&](DfgVertex& sink) {
-            DfgUnresolved* unresolved = sink.as<DfgUnresolved>();
-            if (!isVisited.insert(unresolved).second) return false;
-            unresolved->foreachSource([&](DfgVertex& sibling) {
+            DfgUnresolved* unresolvedp = sink.as<DfgUnresolved>();
+            if (!isVisited.insert(unresolvedp).second) return false;
+            unresolvedp->foreachSource([&](DfgVertex& sibling) {
                 DfgLogic& siblingLogic = *sibling.as<DfgLogic>();
                 if (!siblingLogic.selectedForSynthesis()) worklist.push_front(siblingLogic);
                 return false;

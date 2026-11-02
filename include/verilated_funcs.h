@@ -127,9 +127,6 @@ extern WDataOutP VL_SCOPED_RAND_RESET_ASSIGN_W(int obits, WDataOutP outwp, uint6
 /// Random reset a signal of given width (init time only)
 extern IData VL_RAND_RESET_I(int obits) VL_MT_SAFE;
 
-/// Zero reset a signal (slow - else use VL_ZERO_W)
-extern WDataOutP VL_ZERO_RESET_W(int obits, WDataOutP outwp) VL_MT_SAFE;
-
 /// Fill a nonempty integral or packed unpacked array from its already initialized first element.
 extern void VL_UNPACKED_FILL(void* arrayp, size_t elementBytes, size_t count) VL_MT_SAFE;
 
@@ -1929,7 +1926,7 @@ inline VlQueue<T> VL_STREAMR_RRI(int lbits, const VlQueue<T> q, IData rd) VL_MT_
     return q;
 }
 
-inline VlQueue<std::string> VL_STREAMR_NRI(int lbits, const VlQueue<std::string> q,
+inline VlQueue<std::string> VL_STREAMR_NRI(int lbits, const VlQueue<std::string>& q,
                                            IData rd) VL_MT_SAFE {
     return q;
 }

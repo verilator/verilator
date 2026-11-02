@@ -7,4 +7,6 @@
 module t;
   bit [] bad;
   logic signed [] bad2;
+  function void f(bit [] bad3);
+  endfunction
 endmodule

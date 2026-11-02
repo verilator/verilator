@@ -1069,10 +1069,11 @@ Summary:
 
    Disables four-state logic support which is the default. Exists for forward compatibility.
 
-.. option:: --fslice-element-limit
+.. option:: --fslice-element-limit <value>
 
    Rarely needed. Set the maximum array size (number of elements) for slice
-   optimization to avoid excessive memory usage.
+   optimization to avoid excessive memory usage. Defaults to 256. A value
+   of 0 removes the limit.
 
 .. option:: --func-recursion-depth <value>
 
@@ -1135,6 +1136,7 @@ Summary:
 
    Rarely needed. Set the maximum number of statements present in an
    equation for the gate substitution optimization to inline that equation.
+   Defaults to 100.
 
 .. option:: --gdb
 

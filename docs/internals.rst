@@ -447,7 +447,7 @@ not directly correspond to the similarly named SystemVerilog scheduling
 regions as defined in the standard:
 
 - All logic (clocked, combinational and hybrid) that transitively feeds
-  into, or drives via a non-blocking or continuous assignments (or via any
+  into, or drives via a blocking or continuous assignments (or via any
   update that SystemVerilog executes in the Active scheduling region), a
   variable that is used in the explicit sensitivity list of some clocked or
   hybrid logic, is assigned to the 'act' region.

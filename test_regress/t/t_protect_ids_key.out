@@ -8,6 +8,10 @@
   <map from="PSeFAM" to="_Syms"/>
   <map from="PSaTXQ" to="__024root"/>
   <map from="PSFHpR" to="__PVT__secret_cyc"/>
+  <map from="PSClSP" to="__PVT__secret_cyc_r"/>
+  <map from="PSDZS9" to="__PVT__secret_pair__DOT____PVT__secret_field"/>
+  <map from="PSEemP" to="__PVT__secret_pair__DOT____PVT__secret_field_r"/>
+  <map from="PSzHRl" to="__PVT__secret_r"/>
   <map from="PSF0iF" to="__PVT__t__DOT__secret_inst"/>
   <map from="PSSAnA" to="__VactTriggered"/>
   <map from="PSqQuK" to="__Vdly__secret_cyc_1"/>
@@ -20,6 +24,7 @@
   <map from="PSInnD" to="__VnbaTriggered"/>
   <map from="PSPiYK" to="__Vscopep_t__secret_inst"/>
   <map from="PSHASP" to="__VstlTriggered"/>
+  <map from="PSb1cP" to="__Vtask_dpix_a_task__i_0"/>
   <map from="PSkXH4" to="__Vtrigprevexpr___TOP__clk__0"/>
   <map from="PSNCIp" to="__Vtrigprevexpr___TOP__clk__1"/>
   <map from="PSbgAc" to="_ctor_var_reset"/>

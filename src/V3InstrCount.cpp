@@ -52,16 +52,16 @@ class InstrCountVisitor final : public VNVisitorConst {
         // MEMBERS
         uint32_t m_savedCount;  // Count before visit applied
         AstNode* const m_nodep;  // Node helper is visiting
-        InstrCountVisitor* const m_visitor;  // Visitor whose start/endVisitBase are called
+        InstrCountVisitor* const m_visitorp;  // Visitor whose start/endVisitBase are called
 
     public:
         // CONSTRUCTORS
-        VisitBase(InstrCountVisitor* visitor, AstNode* nodep)
+        VisitBase(InstrCountVisitor* visitorp, AstNode* nodep)
             : m_nodep{nodep}
-            , m_visitor{visitor} {
-            m_savedCount = m_visitor->startVisitBase(nodep);
+            , m_visitorp{visitorp} {
+            m_savedCount = m_visitorp->startVisitBase(nodep);
         }
-        ~VisitBase() { m_visitor->endVisitBase(m_savedCount, m_nodep); }
+        ~VisitBase() { m_visitorp->endVisitBase(m_savedCount, m_nodep); }
 
     private:
         VL_UNCOPYABLE(VisitBase);

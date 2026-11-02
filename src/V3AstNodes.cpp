@@ -811,6 +811,14 @@ void AstBegin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonGen(str);
 }
+const char* AstCAwait::broken() const {
+    if (const AstCMethodHard* const methodp = VN_CAST(exprp(), CMethodHard)) {
+        BROKEN_RTN(!methodp->method().isAwaitable());
+    } else {
+        BROKEN_RTN(!VN_AS(exprp(), NodeCCall)->funcp()->isCoroutine());
+    }
+    return nullptr;
+}
 void AstCAwait::dump(std::ostream& str) const {
     Super::dump(str);
     if (sentreep()) {
@@ -1427,6 +1435,16 @@ const char* AstConsDynArray::broken() const {
     }
     return nullptr;
 }
+const char* AstConsQueue::broken() const {
+    BROKEN_RTN(!VN_IS(dtypep()->skipRefp(), QueueDType));
+    // Default only valid if sizep is present
+    BROKEN_RTN(defaultp() && !sizep());
+    // Items are keyed exactly when sizep is present
+    for (const AstConsQueueItem* const itemp : itemspList()) {
+        BROKEN_RTN(!itemp->keyp() != !sizep());
+    }
+    return nullptr;
+}
 const char* AstConsStruct::broken() const {
     const AstStructDType* const structp = VN_CAST(dtypep()->skipRefp(), StructDType);
     BROKEN_RTN(!structp || structp->packed());
@@ -1850,12 +1868,11 @@ AstNodeBiop* AstEqWild::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* r
         return new AstEqWild{fl, lhsp, rhsp};
     }
 }
-AstExecGraph::AstExecGraph(FileLine* fileline, const string& name,
-                           AstVarScope* trigVscp) VL_MT_DISABLED
-    : ASTGEN_SUPER_ExecGraph(fileline),
+AstExecGraph::AstExecGraph(FileLine* fl, const string& name, AstVarScope* trigVscp) VL_MT_DISABLED
+    : ASTGEN_SUPER_ExecGraph(fl),
       m_depGraphp{new V3Graph},
       m_name{name} {
-    triggerp(new AstVarRef{fileline, trigVscp, VAccess::READ});
+    triggerp(new AstVarRef{fl, trigVscp, VAccess::READ});
 }
 const char* AstExecGraph::broken() const {
     BROKEN_RTN(!m_depGraphp);
@@ -2033,8 +2050,8 @@ AstNodeExpr* AstInsideRange::newAndFromInside(AstNodeExpr* exprp, AstNodeExpr* l
     // Normal case: [N:M] - check expr >= lhs && expr <= rhs
     AstNodeExpr* const ap = new AstGte{fileline(), exprp, lhsp};
     AstNodeExpr* lteLhsp;
-    if (const AstExprStmt* const exprStmt = VN_CAST(exprp, ExprStmt)) {
-        lteLhsp = exprStmt->resultp()->cloneTreePure(true);
+    if (const AstExprStmt* const exprStmtp = VN_CAST(exprp, ExprStmt)) {
+        lteLhsp = exprStmtp->resultp()->cloneTreePure(true);
     } else {
         lteLhsp = exprp->cloneTreePure(true);
     }
@@ -3276,6 +3293,9 @@ bool AstNodeFTaskRef::getPurityRecurse() const {
     // First compute the purity of arguments
     for (AstArg* const argp : this->argspList()) {
         if (!argp->isPure()) return false;
+        // Writing the caller's variable through an output argument is an effect of the call,
+        // though not of the subroutine, whose written variable is its own automatic local
+        if (argp->exprp() && argp->exprp()->isLValue()) return false;
     }
     return taskp->isPure();
 }
@@ -3810,10 +3830,10 @@ void AstSampled::dumpJson(std::ostream& str) const {
     dumpJsonGen(str);
 }
 AstActive* AstScope::comboActivep(bool create) {
-    // Use an existing one
+    // Use an existing one, but not the active of an AlwaysPostponed, which must stay alone
     for (AstNode* const nodep : blockspList()) {
         AstActive* const activep = VN_CAST(nodep, Active);
-        if (activep && activep->hasCombo()) return activep;
+        if (activep && activep->hasCombo() && !activep->isPostponed()) return activep;
     }
     if (!create) return nullptr;
     // Otherwise create a new one
@@ -4362,18 +4382,30 @@ std::vector<AstUnpackArrayDType*> AstUnpackArrayDType::unpackDimensions() {
     }
     return dims;
 }
+void AstUnsizedArrayDType::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (packed()) str << " [PACKED]";
+}
+void AstUnsizedArrayDType::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, packed);
+    dumpJsonGen(str);
+}
 void AstUnsizedArrayDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
     str << "[]";
 }
+string AstUnsizedArrayDType::prettyDTypeName(bool full) const {
+    return subDTypep()->prettyDTypeName(full) + (packed() ? "[]" : "$[]");
+}
 bool AstUnsizedArrayDType::sameNode(const AstNode* samep) const {
     const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
     if (!asamep->subDTypep()) return false;
-    return (subDTypep() == asamep->subDTypep());
+    return subDTypep() == asamep->subDTypep() && packed() == asamep->packed();
 }
 bool AstUnsizedArrayDType::similarDTypeNode(const AstNodeDType* samep) const {
     const AstUnsizedArrayDType* const asamep = VN_DBG_AS(samep, UnsizedArrayDType);
-    return asamep->subDTypep() && subDTypep()->similarDType(asamep->subDTypep());
+    return asamep->subDTypep() && packed() == asamep->packed()
+           && subDTypep()->similarDType(asamep->subDTypep());
 }
 void AstUntil::dump(std::ostream& str) const {
     Super::dump(str);
@@ -4594,7 +4626,6 @@ void AstVar::dump(std::ostream& str) const {
     }
     if (hasUserInit()) str << " [UINIT]";
     if (icoMaybeWritten()) str << " [ICOMAYBEWRITTEN]";
-    if (isClockingDriven()) str << " [CLOCKINGDRIVEN]";
     if (isDpiOpenArray()) str << " [DPIOPENA]";
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
@@ -4633,7 +4664,6 @@ void AstVar::dumpJson(std::ostream& str) const {
     }
     dumpJsonBoolFuncIf(str, attrFileDescr);
     dumpJsonBoolFuncIf(str, icoMaybeWritten);
-    dumpJsonBoolFuncIf(str, isClockingDriven);
     dumpJsonBoolFuncIf(str, isDpiOpenArray);
     dumpJsonBoolFuncIf(str, isFuncReturn);
     dumpJsonBoolFuncIf(str, isFuncLocal);
@@ -4786,7 +4816,8 @@ string AstVar::vlEnumDir(VVpiLazyComb comb, bool forMember) const {
     if (isForceable() && !forMember) out += "|VLVF_FORCEABLE";
     if (isContinuously()) out += "|VLVF_CONTINUOUSLY";
     //
-    if (const AstBasicDType* const bdtypep = basicp()) {
+    // Of the elements, also of a dynamic array or queue DPI passes as an open array
+    if (const AstBasicDType* const bdtypep = dtypep()->elemDTypep()->basicp()) {
         if (bdtypep->keyword().isDpiCLayout() || (isDpiOpenArray() && bdtypep->isDpiCLayout())) {
             out += "|VLVF_DPI_CLAY";
         }
@@ -4803,28 +4834,39 @@ string AstVar::vlEnumDir(VVpiLazyComb comb, bool forMember) const {
     return out;
 }
 string AstVar::vlEnumType() const { return dtypep()->vlEnumType(); }
-string AstVar::vlPropDecl(const string& propName) const {
+string AstVar::vlPropDecl(const string& propName, const string& sizeExpr) const {
     string out;
 
-    std::vector<int> plims;  // Packed dimension limits
-    std::vector<int> ulims;  // Unpacked dimension limits
+    std::vector<string> plims;  // Packed dimension limits
+    std::vector<string> ulims;  // Unpacked dimension limits
 
-    if (const AstBasicDType* const bdtypep = basicp()) {
-        for (const AstNodeDType* dtp = dtypep(); dtp;) {
+    const AstNodeDType* dtp = dtypep()->skipRefp();
+    // DPI passes a dynamic array or queue as an open array ranged [0:size-1]
+    // (IEEE 1800-2023 20.7), so with properties not static
+    const bool dynamic = VN_IS(dtp, DynArrayDType) || VN_IS(dtp, QueueDType);
+    const string qualifiers = dynamic ? "const " : "static const ";
+    if (dynamic) {
+        ulims.emplace_back("0");
+        ulims.emplace_back(sizeExpr + " - 1");
+        dtp = dtp->subDTypep();
+    }
+
+    if (const AstBasicDType* const bdtypep = dtp->basicp()) {
+        while (true) {
             dtp = dtp->skipRefp();  // Skip AstRefDType/AstTypedef, or return same node
             if (const AstNodeArrayDType* const adtypep = VN_CAST(dtp, NodeArrayDType)) {
                 if (VN_IS(dtp, PackArrayDType)) {
-                    plims.push_back(adtypep->declRange().left());
-                    plims.push_back(adtypep->declRange().right());
+                    plims.push_back(cvtToStr(adtypep->declRange().left()));
+                    plims.push_back(cvtToStr(adtypep->declRange().right()));
                 } else {
-                    ulims.push_back(adtypep->declRange().left());
-                    ulims.push_back(adtypep->declRange().right());
+                    ulims.push_back(cvtToStr(adtypep->declRange().left()));
+                    ulims.push_back(cvtToStr(adtypep->declRange().right()));
                 }
                 dtp = adtypep->subDTypep();
             } else {
                 if (bdtypep->isRanged()) {
-                    plims.push_back(bdtypep->left());
-                    plims.push_back(bdtypep->right());
+                    plims.push_back(cvtToStr(bdtypep->left()));
+                    plims.push_back(cvtToStr(bdtypep->right()));
                 }
                 break;  // AstBasicDType - nothing below
             }
@@ -4832,14 +4874,14 @@ string AstVar::vlPropDecl(const string& propName) const {
     }
 
     if (!ulims.empty()) {
-        out += "static const int " + propName + "__ulims[";
+        out += qualifiers + "int " + propName + "__ulims[";
         out += cvtToStr(ulims.size());
         out += "] = {";
         auto it = ulims.cbegin();
-        out += cvtToStr(*it);
+        out += *it;
         while (++it != ulims.cend()) {
             out += ", ";
-            out += cvtToStr(*it);
+            out += *it;
         }
         out += "};\n";
     }
@@ -4849,19 +4891,20 @@ string AstVar::vlPropDecl(const string& propName) const {
         out += cvtToStr(plims.size());
         out += "] = {";
         auto it = plims.cbegin();
-        out += cvtToStr(*it);
+        out += *it;
         while (++it != plims.cend()) {
             out += ", ";
-            out += cvtToStr(*it);
+            out += *it;
         }
         out += "};\n";
     }
 
-    out += "static const VerilatedVarProps ";
+    out += qualifiers + "VerilatedVarProps ";
     out += propName;
     out += "(";
-    out += vlEnumType();  // VLVT_UINT32 etc
+    out += dtypep()->elemDTypep()->vlEnumType();  // VLVT_UINT32 etc
     out += ", " + vlEnumDir();  // VLVD_IN etc
+    if (dynamic) out += "|VLVF_DYNAMIC";
 
     if (!ulims.empty()) {
         out += ", VerilatedVarProps::Unpacked{}";

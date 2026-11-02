@@ -5,16 +5,6 @@
 // SPDX-License-Identifier: CC0-1.0
 
 module t;
-
-  reg g;
-
-  task automatic tsk;
-    reg l;
-    begin : cont_block
-      assign g = signed'(l);  // <--- BAD: using automatic in cont assignment
-    end
-  endtask
-
-  initial $stop;
-
+  logic a, b;
+  always_comb b <= a;  // <--- Error
 endmodule

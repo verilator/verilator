@@ -19,96 +19,173 @@
                                    : ... note: In instance 't'
    17 |     automatic int wild3[*] = '{9};
       |                                ^
-%Error: t/t_pattern_key_bad.v:24:15: Assignment pattern key cannot be used for dynamic array
+%Error: t/t_pattern_key_bad.v:24:13: Assignment pattern missed initializing elements: 0-2
                                    : ... note: In instance 't'
    24 |   int d[] = '{3: 10};
-      |               ^
-%Error: t/t_pattern_key_bad.v:25:16: Assignment pattern key cannot be used for queue
+      |             ^~
+%Error: t/t_pattern_key_bad.v:25:14: Assignment pattern missed initializing elements: 1
                                    : ... note: In instance 't'
-   25 |   int q[$] = '{3: 11};
-      |                ^
-%Error: t/t_pattern_key_bad.v:26:16: Assignment pattern key cannot be used for dynamic array
-                                   : ... note: In instance 't'
-   26 |   int dt[] = '{int : 12};
-      |                ^~~
-%Error: t/t_pattern_key_bad.v:27:17: Assignment pattern key cannot be used for queue
-                                   : ... note: In instance 't'
-   27 |   int qt[$] = '{int : 13};
-      |                 ^~~
-%Error: t/t_pattern_key_bad.v:28:16: Assignment pattern default cannot be used for dynamic array
-   28 |   int dd[] = '{default: 23};
-      |                ^~~~~~~
-%Error: t/t_pattern_key_bad.v:29:17: Assignment pattern default cannot be used for queue
-   29 |   int qd[$] = '{default: 24};
-      |                 ^~~~~~~
-%Error: t/t_pattern_key_bad.v:34:22: Assignment pattern key cannot be used for queue
-                                   : ... note: In instance 't'
-   34 |     d = new[4] (T_Q'{0: 33});
-      |                      ^
-%Error: t/t_pattern_key_bad.v:35:19: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
-                                   : ... note: In instance 't'
-   35 |     d = new[4] ('{k: 28});
-      |                   ^
-%Error: t/t_pattern_key_bad.v:36:33: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
-   36 |     d = new[4] ('{1: 29, 2: 30, 1: 31});
+   25 |   int q[$] = '{0: 11, 2: 12};
+      |              ^~
+%Error: t/t_pattern_key_bad.v:26:33: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   26 |   int qdup[$] = '{1: 15, 2: 16, 1: 17};
       |                                 ^
-        t/t_pattern_key_bad.v:36:19: ... Location of first use
-   36 |     d = new[4] ('{1: 29, 2: 30, 1: 31});
+        t/t_pattern_key_bad.v:26:19: ... Location of first use
+   26 |   int qdup[$] = '{1: 15, 2: 16, 1: 17};
       |                   ^
-%Error: t/t_pattern_key_bad.v:37:19: Assignment pattern key cannot contain X or Z
+%Error: t/t_pattern_key_bad.v:26:17: Assignment pattern missed initializing elements: 0
                                    : ... note: In instance 't'
-   37 |     d = new[4] ('{2'bx1: 32, default: 0});
+   26 |   int qdup[$] = '{1: 15, 2: 16, 1: 17};
+      |                 ^~
+%Error: t/t_pattern_key_bad.v:27:16: Assignment pattern for a dynamic array needs an index key to set its size
+                                   : ... Suggest new[size]('{...})
+   27 |   int dd[] = '{default: 23};
+      |                ^~~~~~~
+%Error: t/t_pattern_key_bad.v:28:17: Assignment pattern for a queue needs an index key to set its size
+   28 |   int qd[$] = '{default: 24};
+      |                 ^~~~~~~
+%Error: t/t_pattern_key_bad.v:29:18: Assignment pattern missed initializing elements: 0 2-3 5
+                                   : ... note: In instance 't'
+   29 |   int qgaps[$] = '{1: 18, 4: 19, 6: 20};
+      |                  ^~
+%Error: t/t_pattern_key_bad.v:30:16: Assignment pattern key is negative, so cannot index a dynamic array
+                                   : ... note: In instance 't'
+   30 |   int dn[] = '{-1: 13, default: 0};
+      |                ^
+%Error: t/t_pattern_key_bad.v:31:17: Assignment pattern key is negative, so cannot index a queue
+                                   : ... note: In instance 't'
+   31 |   int qn[$] = '{-1: 27, default: 0};
+      |                 ^
+%Error: t/t_pattern_key_bad.v:32:18: Assignment pattern key is too large for a dynamic array, as its size is an int (IEEE 1800-2023 7.5.2)
+                                   : ... note: In instance 't'
+   32 |   int dbig[] = '{32'h8000_0000: 28, default: 0};
+      |                  ^~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:33:19: Assignment pattern key is too large for a queue, as its size is an int (IEEE 1800-2023 7.10.2.1)
+                                   : ... note: In instance 't'
+   33 |   int qbig[$] = '{64'h8000_0000: 14, default: 0};
+      |                   ^~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:34:19: Assignment pattern key is too large for a queue, as its size is an int (IEEE 1800-2023 7.10.2.1)
+                                   : ... note: In instance 't'
+   34 |   int qmax[$] = '{32'h7fff_ffff: 25, default: 0};
+      |                   ^~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:35:20: Assignment pattern key is too large for a queue, as its size is an int (IEEE 1800-2023 7.10.2.1)
+                                   : ... note: In instance 't'
+   35 |   int qwide[$] = '{65'h1_0000_0000_0000_0000: 21, default: 0};
+      |                    ^~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:36:19: Assignment pattern key is too large for a queue, as its size is an int (IEEE 1800-2023 7.10.2.1)
+                                   : ... note: In instance 't'
+   36 |   int qu64[$] = '{64'hffff_ffff_ffff_ffff: 22, default: 0};
+      |                   ^~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:37:19: Assignment pattern key is negative, so cannot index a queue
+                                   : ... note: In instance 't'
+   37 |   int qneg[$] = '{65'sh1_0000_0000_0000_0005: 26, default: 0};
+      |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:42:20: Operator CONSQUEUEITEM expects a numeric value operand, but it has data type 'struct t.v_t' (IEEE 1800-2023 11.3)
+   42 |   int qs[$] = '{0: sv};
+      |                    ^~
+%Error: t/t_pattern_key_bad.v:43:16: Operator CONSQUEUE expects a numeric default operand, but it has data type 'struct t.v_t' (IEEE 1800-2023 11.3)
+   43 |   int qsd[$] = '{0: 1, default: sv};
+      |                ^~
+%Error: t/t_pattern_key_bad.v:44:22: Operator CONSASSOCITEM expects a numeric value operand, but it has data type 'struct t.v_t' (IEEE 1800-2023 11.3)
+   44 |   int as[int] = '{0: sv};
+      |                      ^~
+%Error: t/t_pattern_key_bad.v:45:18: Operator CONSASSOC expects a numeric default operand, but it has data type 'struct t.v_t' (IEEE 1800-2023 11.3)
+   45 |   int asd[int] = '{default: sv};
+      |                  ^~
+%Error: t/t_pattern_key_bad.v:46:22: Operator CONSWILDCARDITEM expects a numeric value operand, but it has data type 'struct t.v_t' (IEEE 1800-2023 11.3)
+   46 |   int ws[*] = '{"a": sv};
+      |                      ^~
+%Error: t/t_pattern_key_bad.v:47:16: Operator CONSWILDCARD expects a numeric default operand, but it has data type 'struct t.v_t' (IEEE 1800-2023 11.3)
+   47 |   int wsd[*] = '{default: sv};
+      |                ^~
+%Error: t/t_pattern_key_bad.v:51:19: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
+                                   : ... note: In instance 't'
+   51 |     d = new[4] ('{k: 28});
+      |                   ^
+%Error: t/t_pattern_key_bad.v:52:33: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   52 |     d = new[4] ('{1: 29, 2: 30, 1: 31});
+      |                                 ^
+        t/t_pattern_key_bad.v:52:19: ... Location of first use
+   52 |     d = new[4] ('{1: 29, 2: 30, 1: 31});
+      |                   ^
+%Error: t/t_pattern_key_bad.v:53:19: Assignment pattern key cannot contain X or Z
+                                   : ... note: In instance 't'
+   53 |     d = new[4] ('{2'bx1: 32, default: 0});
       |                   ^~~~~
-%Error: t/t_pattern_key_bad.v:41:34: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
-   41 |   int dup[int] = '{1: 14, 2: 15, 1: 16};
+%Error: t/t_pattern_key_bad.v:54:19: Assignment pattern key is negative, so cannot index a dynamic array
+                                   : ... note: In instance 't'
+   54 |     d = new[4] ('{-1: 33});
+      |                   ^
+%Error: t/t_pattern_key_bad.v:55:19: Assignment pattern key is too large for a dynamic array, as its size is an int (IEEE 1800-2023 7.5.2)
+                                   : ... note: In instance 't'
+   55 |     d = new[4] ('{64'h1_0000_0001: 34});
+      |                   ^~~~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:56:19: Assignment pattern key is too large for a dynamic array, as its size is an int (IEEE 1800-2023 7.5.2)
+                                   : ... note: In instance 't'
+   56 |     d = new[4] ('{65'h1_0000_0000_0000_0001: 35});
+      |                   ^~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:57:19: Assignment pattern key is negative, so cannot index a dynamic array
+                                   : ... note: In instance 't'
+   57 |     d = new[4] ('{65'sh1_0000_0000_0000_0002: 36});
+      |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:58:19: Assignment pattern key is too large for a dynamic array, as its size is an int (IEEE 1800-2023 7.5.2)
+                                   : ... note: In instance 't'
+   58 |     d = new[4] ('{64'hffff_ffff_ffff_fff0: 37, 64'hffff_ffff_ffff_fff1: 38});
+      |                   ^~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:58:48: Assignment pattern key is too large for a dynamic array, as its size is an int (IEEE 1800-2023 7.5.2)
+                                   : ... note: In instance 't'
+   58 |     d = new[4] ('{64'hffff_ffff_ffff_fff0: 37, 64'hffff_ffff_ffff_fff1: 38});
+      |                                                ^~~~~~~~~~~~~~~~~~~~~~~
+%Error: t/t_pattern_key_bad.v:62:34: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   62 |   int dup[int] = '{1: 14, 2: 15, 1: 16};
       |                                  ^
-        t/t_pattern_key_bad.v:41:20: ... Location of first use
-   41 |   int dup[int] = '{1: 14, 2: 15, 1: 16};
+        t/t_pattern_key_bad.v:62:20: ... Location of first use
+   62 |   int dup[int] = '{1: 14, 2: 15, 1: 16};
       |                    ^
-%Error: t/t_pattern_key_bad.v:42:35: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
-   42 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
+%Error: t/t_pattern_key_bad.v:63:35: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   63 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
       |                                   ^
-        t/t_pattern_key_bad.v:42:21: ... Location of first use
-   42 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
+        t/t_pattern_key_bad.v:63:21: ... Location of first use
+   63 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
       |                     ^
-%Error: t/t_pattern_key_bad.v:42:42: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
-   42 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
+%Error: t/t_pattern_key_bad.v:63:42: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   63 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
       |                                          ^
-        t/t_pattern_key_bad.v:42:21: ... Location of first use
-   42 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
+        t/t_pattern_key_bad.v:63:21: ... Location of first use
+   63 |   int trip[int] = '{1: 17, 2: 18, 1: 19, 1: 20};
       |                     ^
-%Error: t/t_pattern_key_bad.v:43:30: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
-   43 |   int wdup[*] = '{"CCC": 21, 23'h434343: 22};
+%Error: t/t_pattern_key_bad.v:64:30: Assignment pattern key used multiple times (IEEE 1800-2023 10.9.1)
+   64 |   int wdup[*] = '{"CCC": 21, 23'h434343: 22};
       |                              ^~~~~~~~~~
-        t/t_pattern_key_bad.v:43:19: ... Location of first use
-   43 |   int wdup[*] = '{"CCC": 21, 23'h434343: 22};
+        t/t_pattern_key_bad.v:64:19: ... Location of first use
+   64 |   int wdup[*] = '{"CCC": 21, 23'h434343: 22};
       |                   ^~~~~
-%Error: t/t_pattern_key_bad.v:47:18: Assignment pattern key cannot contain X or Z
+%Error: t/t_pattern_key_bad.v:68:18: Assignment pattern key cannot contain X or Z
                                    : ... note: In instance 't'
-   47 |   int xun[2] = '{2'bx1: 25, default: 0};
+   68 |   int xun[2] = '{2'bx1: 25, default: 0};
       |                  ^~~~~
-%Error: t/t_pattern_key_bad.v:48:20: Assignment pattern key cannot contain X or Z
+%Error: t/t_pattern_key_bad.v:69:20: Assignment pattern key cannot contain X or Z
                                    : ... note: In instance 't'
-   48 |   int xwild[*] = '{4'b10x1: 26};
+   69 |   int xwild[*] = '{4'b10x1: 26};
       |                    ^~~~~~~
-%Error: t/t_pattern_key_bad.v:49:31: Assignment pattern key cannot contain X or Z
+%Error: t/t_pattern_key_bad.v:70:31: Assignment pattern key cannot contain X or Z
                                    : ... note: In instance 't'
-   49 |   int xlogic[logic [3:0]] = '{4'bx: 27};
+   70 |   int xlogic[logic [3:0]] = '{4'bx: 27};
       |                               ^~~~
-%Error: t/t_pattern_key_bad.v:50:21: Assignment pattern key cannot contain X or Z
+%Error: t/t_pattern_key_bad.v:71:21: Assignment pattern key cannot contain X or Z
                                    : ... note: In instance 't'
-   50 |   int xint[int] = '{4'bx: 28};
+   71 |   int xint[int] = '{4'bx: 28};
       |                     ^~~~
-%Error: t/t_pattern_key_bad.v:51:31: Assignment pattern key cannot contain X or Z
+%Error: t/t_pattern_key_bad.v:72:31: Assignment pattern key cannot contain X or Z
                                    : ... note: In instance 't'
-   51 |   int xtrunc[logic [1:0]] = '{4'bx001: 29};
+   72 |   int xtrunc[logic [1:0]] = '{4'bx001: 29};
       |                               ^~~~~~~
-%Error: t/t_pattern_key_bad.v:58:26: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
+%Error: t/t_pattern_key_bad.v:79:26: Assignment pattern key is not a constant expression (IEEE 1800-2023 10.9)
                                    : ... note: In instance 't'
-   58 |   int snonconst[s_t] = '{'{k, 1} : 30};
+   79 |   int snonconst[s_t] = '{'{k, 1} : 30};
       |                          ^~
-%Error: t/t_pattern_key_bad.v:59:19: Assignment pattern key cannot contain X or Z
+%Error: t/t_pattern_key_bad.v:80:19: Assignment pattern key cannot contain X or Z
                                    : ... note: In instance 't'
-   59 |   int sx[s_t] = '{'{1, 4'bx} : 31};
+   80 |   int sx[s_t] = '{'{1, 4'bx} : 31};
       |                   ^~
 %Error: Exiting due to

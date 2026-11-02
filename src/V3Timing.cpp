@@ -219,9 +219,9 @@ class TimingSuspendableVisitor final : public VNVisitor {
         return nodep->user4u().to<NeedsProcDepVtx*>();
     }
     // Pass timing flag between nodes
-    bool passFlag(const AstNode* from, AstNode* to, NodeFlag flag) {
-        if ((from->user2() & flag) && !(to->user2() & flag)) {
-            addFlags(to, flag);
+    bool passFlag(const AstNode* fromp, AstNode* top, NodeFlag flag) {
+        if ((fromp->user2() & flag) && !(top->user2() & flag)) {
+            addFlags(top, flag);
             return true;
         }
         return false;
@@ -318,10 +318,10 @@ class TimingSuspendableVisitor final : public VNVisitor {
         if (m_classp->extendsp()) extends.push(m_classp->extendsp());
 
         while (!extends.empty()) {
-            AstClassExtends* ext_list = extends.front();
+            AstClassExtends* ext_listp = extends.front();
             extends.pop();
 
-            for (AstClassExtends* cextp = ext_list; cextp;
+            for (AstClassExtends* cextp = ext_listp; cextp;
                  cextp = VN_AS(cextp->nextp(), ClassExtends)) {
                 // TODO: It is possible that a methods the same name in the base class is not
                 // actually overridden by our method. If this causes a problem, traverse to
@@ -337,8 +337,8 @@ class TimingSuspendableVisitor final : public VNVisitor {
                     new V3GraphEdge{&m_procGraph, pVxp, overriddenPVxp, P_SIGNATURE};
                     new V3GraphEdge{&m_procGraph, overriddenPVxp, pVxp, P_SIGNATURE};
                 } else {
-                    AstClassExtends* more_extends = cextp->classp()->extendsp();
-                    if (more_extends) extends.push(more_extends);
+                    AstClassExtends* more_extendsp = cextp->classp()->extendsp();
+                    if (more_extendsp) extends.push(more_extendsp);
                 }
             }
         }
@@ -431,14 +431,14 @@ public:
             DepVtx& depVtx = static_cast<DepVtx&>(vtx);
             // Find processes that'll allocate VlProcess
             if (hasFlags(depVtx.nodep(), T_FORCES_PROC)) {
-                propagateFlagsIf(&depVtx, T_FORCES_PROC, [&](const V3GraphEdge* e) -> bool {
-                    return !hasFlags(static_cast<DepVtx*>(e->fromp())->nodep(), T_ALLOCS_PROC);
+                propagateFlagsIf(&depVtx, T_FORCES_PROC, [&](const V3GraphEdge* ep) -> bool {
+                    return !hasFlags(static_cast<DepVtx*>(ep->fromp())->nodep(), T_ALLOCS_PROC);
                 });
             }
             // Mark nodes on paths between processes and statements that use VlProcess
             if (hasFlags(depVtx.nodep(), T_NEEDS_PROC)) {
-                propagateFlagsIf(&depVtx, T_NEEDS_PROC, [&](const V3GraphEdge* e) -> bool {
-                    return !hasFlags(static_cast<DepVtx*>(e->top())->nodep(), T_ALLOCS_PROC);
+                propagateFlagsIf(&depVtx, T_NEEDS_PROC, [&](const V3GraphEdge* ep) -> bool {
+                    return !hasFlags(static_cast<DepVtx*>(ep->top())->nodep(), T_ALLOCS_PROC);
                 });
             }
         }
@@ -447,8 +447,8 @@ public:
             // Mark nodes that will be emitted with a VlProcess argument
             if (hasFlags(depVtx.nodep(), T_ALLOCS_PROC | T_FORCES_PROC)) {
                 addFlags(depVtx.nodep(), T_HAS_PROC);
-                propagateFlagsReversedIf(&depVtx, T_HAS_PROC, [&](const V3GraphEdge* e) -> bool {
-                    return hasFlags(static_cast<DepVtx*>(e->fromp())->nodep(), T_NEEDS_PROC);
+                propagateFlagsReversedIf(&depVtx, T_HAS_PROC, [&](const V3GraphEdge* ep) -> bool {
+                    return hasFlags(static_cast<DepVtx*>(ep->fromp())->nodep(), T_NEEDS_PROC);
                 });
             }
         }

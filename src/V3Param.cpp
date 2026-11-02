@@ -1917,18 +1917,18 @@ class ParamProcessor final {
     }
 
     void resolveDefaultParams(AstNode* nodep) {
-        AstClassOrPackageRef* classOrPackageRef = VN_CAST(nodep, ClassOrPackageRef);
-        AstClassRefDType* classRefDType = VN_CAST(nodep, ClassRefDType);
+        AstClassOrPackageRef* classOrPackageRefp = VN_CAST(nodep, ClassOrPackageRef);
+        AstClassRefDType* classRefDTypep = VN_CAST(nodep, ClassRefDType);
         AstClass* classp = nullptr;
         AstPin* paramsp = nullptr;
 
-        if (classOrPackageRef) {
-            classp = VN_CAST(classOrPackageRef->classOrPackageSkipp(), Class);
+        if (classOrPackageRefp) {
+            classp = VN_CAST(classOrPackageRefp->classOrPackageSkipp(), Class);
             if (!classp) return;  // No parameters in packages
-            paramsp = classOrPackageRef->paramsp();
-        } else if (classRefDType) {
-            classp = classRefDType->classp();
-            paramsp = classRefDType->paramsp();
+            paramsp = classOrPackageRefp->paramsp();
+        } else if (classRefDTypep) {
+            classp = classRefDTypep->classp();
+            paramsp = classRefDTypep->paramsp();
         } else {
             nodep->v3fatalSrc("resolveDefaultParams called on node which is not a Class ref");
         }
@@ -2020,10 +2020,10 @@ class ParamProcessor final {
                     newPinp->name("__paramNumber" + cvtToStr(paramIdx + 1));
                     newPinp->param(true);
                     newPinp->modPTypep(m_classTypeParams[paramIdx].first);
-                    if (classOrPackageRef) {
-                        classOrPackageRef->addParamsp(newPinp);
-                    } else if (classRefDType) {
-                        classRefDType->addParamsp(newPinp);
+                    if (classOrPackageRefp) {
+                        classOrPackageRefp->addParamsp(newPinp);
+                    } else if (classRefDTypep) {
+                        classRefDTypep->addParamsp(newPinp);
                     }
                     // Update local tracking so future dependent defaults can find it
                     pinsByIndex[paramIdx] = newPinp;
@@ -3594,13 +3594,13 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstCellArrayRef* nodep) override {
         // Multi-dim iface arrays chain multiple selps via nextp(); constify each in place.
-        for (AstNode* const s : nodep->selpList()) { V3Const::constifyParamsEdit(s); }
+        for (AstNode* const sp : nodep->selpList()) { V3Const::constifyParamsEdit(sp); }
         std::vector<int> indices;
-        for (AstNode* const s : nodep->selpList()) {
-            const AstConst* const constp = VN_CAST(s, Const);
+        for (AstNode* const sp : nodep->selpList()) {
+            const AstConst* const constp = VN_CAST(sp, Const);
             if (!constp) {
                 nodep->v3error("Could not expand constant selection inside dotted reference: "
-                               << s->prettyNameQ());
+                               << sp->prettyNameQ());
                 return;
             }
             indices.push_back(constp->toSInt());

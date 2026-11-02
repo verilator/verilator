@@ -9,9 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('simulator')
+test.scenarios('vlt')
 
-test.compile(verilator_flags2=["--binary"])
+test.compile(verilator_flags2=["-fno-inline"])
+
+# The header holding the virtual interface handle declares the interface class
+test.file_grep(test.obj_dir + "/" + test.vm_prefix + "_sub.h",
+               r'^class ' + test.vm_prefix + r'_ifc;$')
 
 test.execute()
 

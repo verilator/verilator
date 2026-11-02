@@ -302,7 +302,7 @@ class FixDataHazards final {
     }
 
     // CONSTRUCTOR
-    FixDataHazards(OrderMTaskGraph& mTaskGraph)
+    explicit FixDataHazards(OrderMTaskGraph& mTaskGraph)
         : m_mTaskGraph{mTaskGraph} {
         // Give the MTasks a total order consistent with their dependencies
         assignSequenceNumbers();

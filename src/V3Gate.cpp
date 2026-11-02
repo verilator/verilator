@@ -430,7 +430,7 @@ class GateOkVisitor final : public VNVisitorConst {
     // Set when we only allow simple buffering, no equations (for clocks)
     const bool m_buffersOnly;
     // VarRef on lhs of assignment (what we're replacing)
-    const AstNodeVarRef* m_lhsVarRef = nullptr;
+    const AstNodeVarRef* m_lhsVarRefp = nullptr;
     int m_ops = 0;  // Operation count
 
     // METHODS
@@ -456,8 +456,8 @@ class GateOkVisitor final : public VNVisitorConst {
         // something else being read.
         AstVarScope* const vscp = nodep->varScopep();
         if (nodep->access().isWriteOnly()) {
-            if (m_lhsVarRef) clearSimple(">1 write refs");
-            m_lhsVarRef = nodep;
+            if (m_lhsVarRefp) clearSimple(">1 write refs");
+            m_lhsVarRefp = nodep;
         } else {
             // TODO: possible bug, should it be >= 1 as add is below?
             if (m_readVscps.size() > 1) {
@@ -524,9 +524,9 @@ public:
             clearSimple("No assignment found\n");
             return;
         }
-        if (m_isSimple && m_lhsVarRef) {
+        if (m_isSimple && m_lhsVarRefp) {
             for (const AstVarScope* const vscp : m_readVscps) {
-                if (m_lhsVarRef->varScopep() == vscp) {
+                if (m_lhsVarRefp->varScopep() == vscp) {
                     clearSimple("Circular logic\n");
                     return;
                 }
@@ -542,7 +542,7 @@ public:
     }
     const std::vector<AstVarScope*>& readVscps() const { return m_readVscps; }
     bool varAssigned(const AstVarScope* scopep) const {
-        return m_lhsVarRef && (m_lhsVarRef->varScopep() == scopep);
+        return m_lhsVarRefp && (m_lhsVarRefp->varScopep() == scopep);
     }
 };
 
@@ -898,7 +898,7 @@ class GateDedupeHash final : public V3DupFinderUserSame {
 
 public:
     GateDedupeHash() = default;
-    ~GateDedupeHash() = default;
+    ~GateDedupeHash() override = default;
 
     const AstNodeAssign* hashAndFindDupe(AstNodeAssign* assignp, AstActive* activep,
                                          AstNodeExpr* condp) {
@@ -1153,9 +1153,9 @@ class GateMergeAssignments final {
         AstVarRef* const cRefp = VN_CAST(currSelp->fromp(), VarRef);
         if (!pRefp || !cRefp || !cRefp->sameNode(pRefp)) return nullptr;  // not the same var
 
-        const AstConst* const pstart = VN_CAST(prevSelp->lsbp(), Const);
-        const AstConst* const cstart = VN_CAST(currSelp->lsbp(), Const);
-        if (!pstart || !cstart) return nullptr;  // too complicated
+        const AstConst* const pstartp = VN_CAST(prevSelp->lsbp(), Const);
+        const AstConst* const cstartp = VN_CAST(currSelp->lsbp(), Const);
+        if (!pstartp || !cstartp) return nullptr;  // too complicated
 
         if (currSelp->msbConst() + 1 == prevSelp->lsbConst()) {
             return new AstSel{cRefp->fileline(), cRefp->cloneTree(false), currSelp->lsbConst(),

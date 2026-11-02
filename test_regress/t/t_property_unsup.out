@@ -11,10 +11,10 @@
 %Error-UNSUPPORTED: t/t_property_unsup.v:87:50: Unsupported: eventually[] (in property expression)
    87 |   assert property ((eventually[0: 1] a) implies (eventually[0: 1] a));
       |                                                  ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:109:21: Unsupported: eventually[] (in property expression)
-  109 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:97:21: Unsupported: eventually[] (in property expression)
+   97 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
       |                     ^~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_unsup.v:109:46: Unsupported: eventually[] (in property expression)
-  109 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
+%Error-UNSUPPORTED: t/t_property_unsup.v:97:46: Unsupported: eventually[] (in property expression)
+   97 |   assert property ((eventually[0: 1] a) iff (eventually[0: 1] a));
       |                                              ^~~~~~~~~~
 %Error: Exiting due to

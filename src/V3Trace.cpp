@@ -626,9 +626,9 @@ class TraceVisitor final : public VNVisitor {
         FileLine* const flp = m_topScopep->fileline();
         AstNodeDType* const newScalarDtp = new AstBasicDType{flp, VFlagBitPacked{}, 1};
         v3Global.rootp()->typeTablep()->addTypesp(newScalarDtp);
-        AstRange* const newArange
+        AstRange* const newArangep
             = new AstRange{flp, VNumRange{static_cast<int>(m_activityNumber) - 1, 0}};
-        AstNodeDType* const newArrDtp = new AstUnpackArrayDType{flp, newScalarDtp, newArange};
+        AstNodeDType* const newArrDtp = new AstUnpackArrayDType{flp, newScalarDtp, newArangep};
         v3Global.rootp()->typeTablep()->addTypesp(newArrDtp);
         m_activityVscp = v3Global.rootp()->topScopep()->createTemp("__VtraceActivity", newArrDtp);
 
@@ -916,7 +916,7 @@ class TraceVisitor final : public VNVisitor {
             int subStmts = 0;
             const uint32_t maxCodes = std::max((nAllCodes + parallelism - 1) / parallelism, 1U);
             uint32_t nCodes = 0;
-            const ActCodeSet* prevActSet = nullptr;
+            const ActCodeSet* prevActSetp = nullptr;
             AstIf* ifp = nullptr;
             uint32_t baseCode = 0;
             for (; nCodes < maxCodes && it != traces.end(); ++it) {
@@ -948,12 +948,12 @@ class TraceVisitor final : public VNVisitor {
                     subFulFuncp = newCFunc(VTraceType::FULL, topFulFuncp, subFuncNum, baseCode);
                     subChgFuncp = newCFunc(VTraceType::CHANGE, topChgFuncp, subFuncNum, baseCode);
                     ++subFuncNum;
-                    prevActSet = nullptr;
+                    prevActSetp = nullptr;
                     ifp = nullptr;
                 }
 
                 // If required, create the conditional node checking the activity flags
-                if (!prevActSet || actSet != *prevActSet) {
+                if (!prevActSetp || actSet != *prevActSetp) {
                     FileLine* const flp = m_topScopep->fileline();
                     const bool always = actSet.count(TraceActivityVertex::ACTIVITY_ALWAYS) != 0;
                     AstNodeExpr* condp = nullptr;
@@ -969,7 +969,7 @@ class TraceVisitor final : public VNVisitor {
                     if (!always) ifp->branchPred(VBranchPred::BP_UNLIKELY);
                     subChgFuncp->addStmtsp(ifp);
                     subStmts += ifp->nodeCount();
-                    prevActSet = &actSet;
+                    prevActSetp = &actSet;
                 }
 
                 // Add TraceInc nodes

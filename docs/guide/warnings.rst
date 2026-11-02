@@ -490,19 +490,25 @@ List Of Warnings
 
 .. option:: COMBDLY
 
-   .. TODO better example
-
-   Warns that there is a delayed assignment inside of a combinatorial
-   block. Using delayed assignments in this way is considered bad form, and
-   may lead to the simulator not matching synthesis. If this message is
-   suppressed, Verilator, like synthesis, will convert this to a
-   non-delayed assignment, which may result in logic races or other
-   nasties. See
+   Error issued when a non-blocking assignment `<=`, or a non-blocking event
+   trigger `->>`, is used in a combinational logic block. Using non-blocking
+   assignments in this way is bad practice, and may lead to the simulation not
+   matching synthesis. Verilator, like synthesis, will always convert these to
+   the blocking forms `=` and `->` and execute them as such. This may result in
+   race conditions and differ from other simulators.
    `http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf
    <http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf>`_
 
-   Ignoring this warning may make Verilator simulations differ from other
-   simulators.
+   This error can be disabled. Disabling it does not change execution, only
+   suppresses the error message.
+
+   Faulty example:
+
+   .. include:: ../../docs/gen/ex_COMBDLY_faulty.rst
+
+   Results in:
+
+   .. include:: ../../docs/gen/ex_COMBDLY_msg.rst
 
 
 .. option:: CONSTRAINTIGN
@@ -889,11 +895,12 @@ List Of Warnings
 
 .. option:: FINALDLY
 
-   Error issued when a non-blocking assignment `<=` is used in a
-   `final` block.
+   Error issued when a non-blocking assignment `<=`, or a non-blocking event
+   trigger `->>`, is used in a `final` block. Verilator will always convert
+   these to the blocking forms `=` and `->` and execute them as such.
 
-   This error can be disabled. If disabled, the assignment will be
-   executed as a `=` blocking assignment.
+   This error can be disabled. Disabling it does not change execution, only
+   suppresses the error message.
 
    Faulty example:
 
@@ -902,6 +909,7 @@ List Of Warnings
    Results in:
 
    .. include:: ../../docs/gen/ex_FINALDLY_msg.rst
+
 
 .. option:: FSMMULTI
 
@@ -1437,13 +1445,10 @@ List Of Warnings
 
    Warns that the specified signal has multiple procedural drivers.
 
-   One case is when the signal comes from multiple ``always`` blocks,
-   each with different clocking. This warning does not look at individual
-   bits (see the example below).
-
-   This is considered bad style, as the consumer of a given signal may be
-   unaware of the inconsistent clocking, causing clock domain crossing
-   or timing bugs.
+   One case is when a variable written in an ``always_comb`` or
+   ``always_ff`` block is also written by another process. IEEE 1800
+   requires variables written in these specialized always blocks to be
+   written only by that process.
 
    Faulty example:
 
@@ -1453,12 +1458,7 @@ List Of Warnings
 
    .. include:: ../../docs/gen/ex_MULTIDRIVEN_msg.rst
 
-   Another case is when a variable written in an ``always_comb`` or
-   ``always_ff`` block is also written by another process. IEEE 1800
-   requires variables written in these specialized always blocks to be
-   written only by that process.
-
-   Faulty ``always_ff`` example:
+   An initialization in an ``initial`` block is another process too:
 
    .. include:: ../../docs/gen/ex_MULTIDRIVEN_alwaysff_faulty.rst
 

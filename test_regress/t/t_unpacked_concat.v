@@ -12,6 +12,11 @@
 module t;
 
   typedef int ai3_t[1:3];
+  typedef enum logic [1:0] {
+    E0,
+    E1,
+    E2
+  } enum_t;
   ai3_t a3;
   int a9[1:9];
 
@@ -56,6 +61,37 @@ module t;
       `checkd(x3[0], 1);
       `checkd(x3[1], 2);
       `checkd(x3[2], 3);
+    end
+    begin  // Arrays spliced in, of elements that are themselves arrays
+      logic [7:0] e[2:0];
+      logic [7:0] e3[3:1][2:0];
+      logic [7:0] e4[3:0][2:0];
+      logic [7:0] e5[4:0][2:0];
+      foreach (e[j]) e[j] = 8'(100 + j);
+      foreach (e4[i, j]) e4[i][j] = 8'(i * 3 + j);
+      e3[3:1] = {e4[1:0], e};
+      foreach (e[j]) begin
+        `checkd(e3[3][j], e4[1][j]);
+        `checkd(e3[2][j], e4[0][j]);
+        `checkd(e3[1][j], e[j]);
+      end
+      e5 = {e, e4};
+      foreach (e[j]) begin
+        `checkd(e5[4][j], e[j]);
+        `checkd(e5[3][j], e4[3][j]);
+        `checkd(e5[2][j], e4[2][j]);
+        `checkd(e5[1][j], e4[1][j]);
+        `checkd(e5[0][j], e4[0][j]);
+      end
+    end
+    begin  // An array of enums spliced in
+      enum_t en2[2];
+      enum_t en3[3];
+      en2 = '{E1, E2};
+      en3 = {en2, E0};
+      `checkd(en3[0], E1);
+      `checkd(en3[1], E2);
+      `checkd(en3[2], E0);
     end
 
     s0 = 3'd1;

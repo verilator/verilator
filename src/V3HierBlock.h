@@ -40,7 +40,7 @@ class AstVar;
 class V3HierGraph final : public V3Graph {
 public:
     V3HierGraph() = default;
-    ~V3HierGraph() = default;
+    ~V3HierGraph() override = default;
     VL_UNCOPYABLE(V3HierGraph);
     VL_UNMOVABLE(V3HierGraph);
 

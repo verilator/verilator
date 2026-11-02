@@ -24,7 +24,7 @@ gersemi==0.23.1
 mbake==1.4.3
 mdformat==1.0.0
 mypy==1.19.0
-pylint==3.0.2
+pylint==4.0.9
 ruff==0.14.8
 sarif-tools==3.0.5
 sphinx==8.1.3

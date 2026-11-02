@@ -81,18 +81,18 @@ class VerilatedVarProps VL_NOT_FINAL {
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     std::vector<VerilatedRange> m_packed;  // Packed array ranges
     VerilatedRange m_packedDpi;  // Flattened packed array range
-    void initUnpacked(int udims, const int* ulims) {
+    void initUnpacked(int udims, const int* ulimsp) {
         for (int i = 0; i < udims; ++i) {
-            const int uleft = ulims ? ulims[2 * i + 0] : 0;
-            const int uright = ulims ? ulims[2 * i + 1] : 0;
+            const int uleft = ulimsp ? ulimsp[2 * i + 0] : 0;
+            const int uright = ulimsp ? ulimsp[2 * i + 1] : 0;
             m_unpacked.emplace_back(uleft, uright);
         }
     }
-    void initPacked(int pdims, const int* plims) {
+    void initPacked(int pdims, const int* plimsp) {
         int packedSize = 1;
         for (int i = 0; i < pdims; ++i) {
-            const int pleft = plims ? plims[2 * i + 0] : 0;
-            const int pright = plims ? plims[2 * i + 1] : 0;
+            const int pleft = plimsp ? plimsp[2 * i + 0] : 0;
+            const int pright = plimsp ? plimsp[2 * i + 1] : 0;
             m_packed.emplace_back(pleft, pright);
             packedSize *= abs(pleft - pright) + 1;
         }
@@ -128,33 +128,33 @@ public:
         , m_entSize{0}
         , m_bitOffset{0} {}
 
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulimsp)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_entSize{0}
         , m_bitOffset{0} {
-        initUnpacked(udims, ulims);
+        initUnpacked(udims, ulimsp);
     }
     // With packed
     class Packed {};
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pdims, const int* plims)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pdims, const int* plimsp)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_entSize{0}
         , m_bitOffset{0} {
-        initPacked(pdims, plims);
+        initPacked(pdims, plimsp);
     }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims,
-                      Packed, int pdims, const int* plims)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulimsp,
+                      Packed, int pdims, const int* plimsp)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_entSize{0}
         , m_bitOffset{0} {
-        initUnpacked(udims, ulims);
-        initPacked(pdims, plims);
+        initUnpacked(udims, ulimsp);
+        initPacked(pdims, plimsp);
     }
 
     ~VerilatedVarProps() = default;
@@ -214,6 +214,11 @@ public:
         if (dim < dims()) return &m_packed[dim - udims()];
         return nullptr;
     }
+    // Whether DPI dimension 'dim' is of a dynamic array or queue, so ranged [0:size-1] with
+    // increment -1, even if of size 0 or 1, unlike a VerilatedRange (IEEE 1800-2023 20.7)
+    bool isDynamic(int dim) const VL_MT_SAFE {
+        return dim == 1 && (m_vlflags & VLVF_DYNAMIC) != 0;
+    }
     // DPI accessors (with packed dimensions flattened!)
     int left(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.left()
@@ -227,28 +232,32 @@ public:
     }
     int low(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.low()
+               : isDynamic(dim)                        ? left(dim)
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].low()
                                                        : 0;
     }
     int high(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.high()
+               : isDynamic(dim)                        ? right(dim)
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].high()
                                                        : 0;
     }
     int increment(int dim) const {
         return dim == 0                                ? m_packedDpi.increment()
+               : isDynamic(dim)                        ? -1
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].increment()
                                                        : 0;
     }
     int elements(int dim) const VL_MT_SAFE {
         return dim == 0                                ? m_packedDpi.elements()
+               : isDynamic(dim)                        ? right(dim) + 1
                : VL_LIKELY(dim >= 1 && dim <= udims()) ? m_unpacked[dim - 1].elements()
                                                        : 0;
     }
     // Total size in bytes (note DPI limited to 4GB)
     size_t totalSize() const {
         size_t size = entSize();
-        for (int udim = 0; udim < udims(); ++udim) size *= m_unpacked[udim].elements();
+        for (int dim = 1; dim <= udims(); ++dim) size *= elements(dim);
         return size;
     }
     // Adjust a data pointer to access a given array element, NULL if something goes bad

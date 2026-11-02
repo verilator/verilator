@@ -77,6 +77,9 @@ class CUseVisitor final : public VNVisitorConst {
         } else if (const AstClassRefDType* const classp
                    = VN_CAST(nodep->skipRefp(), ClassRefDType)) {
             addNewUse(nodep, VUseType::INT_FWD_CLASS, classp->name());
+        } else if (const AstIfaceRefDType* const ifacep
+                   = VN_CAST(nodep->skipRefp(), IfaceRefDType)) {
+            addNewUse(nodep, VUseType::INT_FWD_CLASS, ifacep->ifaceViaCellp()->name());
         }
     }
     void visit(AstNode* nodep) override {

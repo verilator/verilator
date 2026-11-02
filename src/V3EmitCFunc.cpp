@@ -597,7 +597,6 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                || (varp->isXTemp()
                        ? (v3Global.opt.xAssign() != "unique")
                        : (v3Global.opt.xInitial() == "fast" || v3Global.opt.xInitial() == "0")));
-        const bool slow = !varp->isFuncLocal() && !varp->isClassMember();
         splitSizeInc(1);
         if (dtypep->isWide()) {  // Handle unpacked; not basicp->isWide
             string out;
@@ -609,7 +608,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     out += cvtToStr(constp->num().edataWord(w)) + "U;\n";
                 }
             } else {
-                out += zeroit ? (slow ? "VL_ZERO_RESET_W(" : "VL_ZERO_W(")
+                out += zeroit ? "VL_ZERO_W("
                               : (varp->isXTemp() ? "VL_SCOPED_RAND_RESET_ASSIGN_W("
                                                  : "VL_SCOPED_RAND_RESET_W(");
                 out += cvtToStr(dtypep->widthMin());
@@ -618,7 +617,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                     emitVarResetScopeHash();
                     const uint64_t salt = VString::hashMurmur(AstNode::prettyName(name));
                     out += ", ";
-                    out += m_classOrPackage ? m_classOrPackageHash : "__VscopeHash";
+                    out += m_classOrPackagep ? m_classOrPackageHash : "__VscopeHash";
                     out += ", ";
                     out += std::to_string(salt);
                     out += "ull";
@@ -645,7 +644,7 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
                 if (varp->isXTemp()) out += "ASSIGN_";
                 out += dtypep->charIQWN();
                 out += "(" + cvtToStr(dtypep->widthMin()) + ", "
-                       + (m_classOrPackage ? m_classOrPackageHash : "__VscopeHash") + ", "
+                       + (m_classOrPackagep ? m_classOrPackageHash : "__VscopeHash") + ", "
                        + std::to_string(salt) + "ull);\n";
             }
             return out;
@@ -658,9 +657,9 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
 
 void EmitCFunc::emitVarResetScopeHash() {
     if (VL_LIKELY(m_createdScopeHash)) { return; }
-    if (m_classOrPackage) {
+    if (m_classOrPackagep) {
         m_classOrPackageHash
-            = std::to_string(VString::hashMurmur(m_classOrPackage->name())) + "ULL";
+            = std::to_string(VString::hashMurmur(m_classOrPackagep->name())) + "ULL";
     } else {
         puts(string("const uint64_t __VscopeHash = VL_MURMUR64_HASH(")
              + (m_useSelfForThis ? "vlSelf" : "this") + "->vlNamep);\n");

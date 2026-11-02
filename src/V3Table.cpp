@@ -56,15 +56,15 @@ class TableVisitor;
 
 class TableSimulateVisitor final : public SimulateVisitor {
     // MEMBERS
-    TableVisitor* const m_cbthis;  ///< Class for callback
+    TableVisitor* const m_cbthisp;  ///< Class for callback
 
 public:
     ///< Call other-this function on all new var references
     void varRefCb(AstVarRef* nodep) override;
 
     // CONSTRUCTORS
-    explicit TableSimulateVisitor(TableVisitor* cbthis)
-        : m_cbthis{cbthis} {}
+    explicit TableSimulateVisitor(TableVisitor* cbthisp)
+        : m_cbthisp{cbthisp} {}
     ~TableSimulateVisitor() override = default;
 };
 
@@ -84,24 +84,24 @@ public:
         if (m_consp) VL_DO_DANGLING(m_consp->deleteTree(), m_consp);
     }
 
-    void setTableSize(AstNodeDType* elemDType, unsigned size) {
+    void setTableSize(AstNodeDType* elemDTypep, unsigned size) {
         UASSERT_OBJ(!m_consp, m_fl, "Table size already set");
         UASSERT_OBJ(size > 0, m_fl, "Size zero");
         // TODO: Assert elemDType is a packed type
         // Create data type
-        const int width = elemDType->width();
+        const int width = elemDTypep->width();
         AstNodeDType* const subDTypep
-            = elemDType->isString() || elemDType->isDouble()
-                  ? elemDType
+            = elemDTypep->isString() || elemDTypep->isDouble()
+                  ? elemDTypep
                   : v3Global.rootp()->findBitDType(width, width, VSigning::UNSIGNED);
         AstUnpackArrayDType* const tableDTypep = new AstUnpackArrayDType{
             m_fl, subDTypep, new AstRange{m_fl, static_cast<int>(size), 0}};
         v3Global.rootp()->typeTablep()->addTypesp(tableDTypep);
         // Create table initializer (with default value 0)
         AstConst* const defaultp
-            = elemDType->isString()   ? new AstConst{m_fl, AstConst::String{}, ""}
-              : elemDType->isDouble() ? new AstConst{m_fl, AstConst::RealDouble{}, 0.0}
-                                      : new AstConst{m_fl, AstConst::WidthedValue{}, width, 0};
+            = elemDTypep->isString()   ? new AstConst{m_fl, AstConst::String{}, ""}
+              : elemDTypep->isDouble() ? new AstConst{m_fl, AstConst::RealDouble{}, 0.0}
+                                       : new AstConst{m_fl, AstConst::WidthedValue{}, width, 0};
         m_consp = new AstConsArray{m_fl, tableDTypep, defaultp};
     }
 
@@ -413,7 +413,7 @@ public:
 void TableSimulateVisitor::varRefCb(AstVarRef* nodep) {
     // Called by checking on each new varref encountered
     // We cross-call into a TableVisitor function.
-    m_cbthis->simulateVarRefCb(nodep);
+    m_cbthisp->simulateVarRefCb(nodep);
 }
 
 //######################################################################
