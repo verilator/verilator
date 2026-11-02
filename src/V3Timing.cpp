@@ -200,7 +200,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
                           // suspendable makes the other node suspendable
     V3Graph m_procGraph;  // Dependency graph where a node is a dependency of another if it being
                           // suspendable makes the other node suspendable
-    std::vector<AstCFunc*> m_delayedProc;  // Process/functions containing DPI task calls
+    std::vector<AstCFunc*> m_dpiImportTaskCallers;  // Process/functions containing DPI task calls
     std::vector<AstCFunc*> m_dpiExports;  // Contains DPI exports
     unsigned m_suspendableExports = 0;  // Suspendable DPI exports counted for statistics
 
@@ -418,7 +418,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         if (!VN_IS(m_procp, CFunc)) return;
         AstCFunc* const cfuncp = VN_AS(m_procp, CFunc);
         if (nodep->function() == VCFunction::CALL_IMPORT_TASK && cfuncp->dpiContext()) {
-            m_delayedProc.push_back(cfuncp);
+            m_dpiImportTaskCallers.push_back(cfuncp);
         }
     }
     void visit(AstNode* nodep) override {
@@ -443,7 +443,7 @@ public:
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(dpiExportp), getSuspendDepVtx(nodep),
                             P_CALL};
         }
-        for (AstCFunc* const cfuncp : m_delayedProc) {
+        for (AstCFunc* const cfuncp : m_dpiImportTaskCallers) {
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(cfuncp),
                             P_CALL};
         }
