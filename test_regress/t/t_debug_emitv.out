@@ -67,6 +67,7 @@ module t;
     Iface the_ifaces[2] ();
     Iface the_ifaces[1] ();
     Iface the_ifaces[0] ();
+    localparam int CP_SCOPE_PARAM = 32'sh2;
     initial begin
         begin
             if ((| $test$plusargs("HELLO"))) begin
@@ -394,7 +395,7 @@ module t;
                 if ((SUB_B !== 2'h1)) begin
                     begin
                         $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", "t/t_debug_emitv.v", 
-                               32'sh190, SUB_B, 2'h1);
+                               32'sh191, SUB_B, 2'h1);
                         $stop;
                     end
                 end
@@ -485,6 +486,9 @@ module t;
                 $write("");
             end
             if ((cls_param.tq.size() != 32'sh0)) begin
+                $write("");
+            end
+            if ((CP_SCOPE_PARAM != 32'sh2)) begin
                 $write("");
             end
             sel_idx <= cyc[3:0];

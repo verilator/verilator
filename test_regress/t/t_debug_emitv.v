@@ -186,6 +186,7 @@ module t (/*AUTOARG*/
   endfunction
 
   Iface the_ifaces [3:0] (.*);
+  localparam int CP_SCOPE_PARAM = ClsParam#(bit, 2)::PP;
 
   initial begin
     if ($test$plusargs("HELLO")) $display("Hello argument found.");
@@ -439,6 +440,7 @@ module t (/*AUTOARG*/
     if (var_part != 0) $write("");
     if (tri_sig[0]) $write("");
     if (cls_param.tq.size() != 0) $write("");
+    if (CP_SCOPE_PARAM != 2) $write("");
     sel_idx <= cyc[3:0];
     queue_of_t.push_back(1);
 
