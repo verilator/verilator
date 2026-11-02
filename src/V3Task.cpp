@@ -837,8 +837,6 @@ class TaskVisitor final : public VNVisitor {
                 if (ccallFromp) { correctScopep = ccallFromp->varScopep()->scopep(); }
                 methodCallArgsRefs(refp->taskp()->op3p(), aboveFuncScopep, ccallp, refp,
                                    unsetUser3p, correctScopep);
-                // The functions signature will change so it will no longer be virtual
-                cfuncp->isVirtual(false);
             } else if (ccallFromp) {
                 // If the function is a virtual function. Get the final
                 // function not the parent's.
@@ -860,7 +858,6 @@ class TaskVisitor final : public VNVisitor {
                         && (VN_IS(scopep->modp(), Module) || VN_IS(scopep->modp(), Iface))) {
                         ccallFromp->varp()->dtypeFrom(ccallFromp->varp()->user4p());
                         methodCallArgsRefs(finalTaskp->op3p(), scopep, ccallp, refp, unsetUser3p);
-                        cfuncp->isVirtual(false);
                     }
                 }
             }
@@ -1549,6 +1546,8 @@ class TaskVisitor final : public VNVisitor {
                 if (varRefp->varScopep()->scopep()->name() == scopep->name()
                     || varRefp->varp()->user1()) {
                     if (!varRefp->varp()->user3p()) {
+                        // The functions signature will change so it will no longer be virtual
+                        cfuncp->isVirtual(false);
                         varRefp->varp()->user3p(varRefp->varp());
                         unsetUser3p.push_back(varRefp->varp());
                         AstVarRef* const newVarRefp = new AstVarRef{varRefp->fileline(), varRefp->varp(),
