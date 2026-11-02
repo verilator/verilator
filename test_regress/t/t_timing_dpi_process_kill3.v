@@ -22,6 +22,7 @@ module t;
   initial begin
     fork
       begin
+        // Sample process:self() outside of dpi_export() to test VlProcess propagation
         victim = process::self();
         imp();
         completed++;
