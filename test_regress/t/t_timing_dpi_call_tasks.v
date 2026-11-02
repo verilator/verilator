@@ -50,6 +50,7 @@ module t ();
   initial begin
     process caller;
     caller = process::self();
+    `checkd(caller.status(), process::RUNNING);
     dpi_import1(o);
     `checkd(o, 11);
     `checkd($time, 38);
