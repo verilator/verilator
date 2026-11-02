@@ -273,6 +273,11 @@ private:
                 UASSERT_OBJ(access.isRW(), argp,
                             "Inout argument of library call is not read-write");
                 break;
+            case 'p':
+                UASSERT_OBJ(
+                    !access.isWriteOrRW() || lvalp, argp,
+                    "Mutable forwarded argument of library call is not a valid C++ LValue");
+                break;
             default:
                 UASSERT_OBJ(dp[0], argp, "Unexpected trailing arguments to library call");
                 break;  // LCOV_EXCL_LINE

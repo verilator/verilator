@@ -902,10 +902,10 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
         && !descrp[4]) {
         return true;
     }
-    // Is a sequence of 'r'/'w'/'m' with an optional trailing '+'
+    // Is a sequence of access modes with an optional trailing '+'
     for (const char* cp = descrp; *cp; ++cp) {
         if (*cp == '+') return cp != descrp && !cp[1];
-        if (*cp != 'r' && *cp != 'w' && *cp != 'm') return false;
+        if (*cp != 'r' && *cp != 'w' && *cp != 'm' && *cp != 'p') return false;
     }
     return true;
 }
@@ -919,6 +919,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
 // - 'w' written by the call (Use only if unconditionally and wholly written,
 //   that is: a preceding write can be removed. Otherwise use 'm'.)
 // - 'm' read and written (modified) by the call
+// - 'p' forwarded to another callable; its argument node retains the access direction
 // - '+' repeats the entry before it for all remaining arguments, must be last
 // - "" if the method takes no arguments
 // - "TODO" if not yet checked due to existing issues
@@ -1192,11 +1193,11 @@ FOR_EACH_CMETHOD(VL_CMETHOD_ARGS_CHECK)
 #define FOR_EACH_CFUNCTION(macro) \
     /*    id,                                 function,                             pure,   args */ \
     macro(_NONE,                              "_none",                              false,  "") \
-    macro(AWAIT_IMPORT_TASK,                  "VerilatedDpi::awaitImportTask",      false,  "TODO") \
-    macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "TODO") \
-    macro(CALL_EXPORT_TASK,                   "VerilatedDpi::callExportTask",       false,  "TODO") \
-    macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "TODO") \
-    macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "TODO") \
+    macro(AWAIT_IMPORT_TASK,                  "VerilatedDpi::awaitImportTask",      false,  "r+") \
+    macro(CALL_EXPORT_FUNCTION,               "VerilatedDpi::callExportFunction",   false,  "rp+") \
+    macro(CALL_EXPORT_TASK,                   "VerilatedDpi::callExportTask",       false,  "rp+") \
+    macro(CALL_IMPORT_FUNCTION,               "VerilatedDpi::callImportFunction",   false,  "r+") \
+    macro(CALL_IMPORT_TASK,                   "VerilatedDpi::callImportTask",       false,  "r+") \
     macro(RANDOMIZER_TO_SOLVER_HEX,           "vlToSolverHex",                      PURE,   "r") \
     macro(STRING_APPEND,                      "VL_APPENDN_NN",                      false,  "mr")
 // clang-format on
