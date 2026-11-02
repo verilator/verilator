@@ -831,6 +831,8 @@ class TaskVisitor final : public VNVisitor {
             // TODO t_gen_class does not work because the
             // classes generated do not get the right type
             std::vector<AstNode*> unsetUser3p;
+            // The functions signature will change so it will no longer be virtual
+            cfuncp->isVirtual(false);
             if (VN_IS(aboveFuncScopep->modp(), Module) || VN_IS(aboveFuncScopep->modp(), Iface)) {
                 AstScope* correctScopep = aboveFuncScopep;
                 if (ccallFromp) { correctScopep = ccallFromp->varScopep()->scopep(); }
@@ -1545,8 +1547,6 @@ class TaskVisitor final : public VNVisitor {
                 if (varRefp->varScopep()->scopep()->name() == scopep->name()
                     || varRefp->varp()->user1()) {
                     if (!varRefp->varp()->user3p()) {
-                        // The functions signature will change so it will no longer be virtual
-                        methodCallp->funcp()->isVirtual(false);
                         varRefp->varp()->user3p(varRefp->varp());
                         unsetUser3p.push_back(varRefp->varp());
                         AstVarRef* const newVarRefp = new AstVarRef{varRefp->fileline(), varRefp->varp(),
@@ -1612,6 +1612,7 @@ class TaskVisitor final : public VNVisitor {
             if (varRefp && varRefp->varScopep() && !VN_IS(varRefp->varp()->user3p(), Var)) {
                 if (varRefp->varScopep()->scopep()->name()
                     == methodp->scopep()->aboveScopep()->name()) {
+                    // The functions signature will change so it will no longer be virtual
                     methodp->isVirtual(false);
                     AstVarScope* newvscp;
                     AstVar* newVarp;
