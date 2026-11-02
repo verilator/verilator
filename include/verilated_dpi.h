@@ -156,6 +156,9 @@ void callImportTask(VlProcessRef process, Callable&& call, Args&&... args) {
     static_assert(std::is_same<decltype(call(std::forward<Args>(args)...)), int>::value,
                   "DPI imported tasks should have 'int' return type (IEEE 1800-2023 35.5.4 Import "
                   "declarations)");
+    // A new task call chain may be entered by evaluating another model from an import function.
+    VL_RESTORER(t_fileline);
+    t_fileline = {nullptr, 0};
     if (VL_UNLIKELY(process)) {
         VL_RESTORER_COPY(t_process);
         t_process = std::move(process);
