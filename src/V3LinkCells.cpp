@@ -273,7 +273,7 @@ class LinkCellsVisitor final : public VNVisitor {
 
     AstNodeModule* findModuleLibSym(const string& modName, const string& libname) {
         // Given module name and library name, find within that exact library
-        const VSymEnt* const libSymp = m_mods.rootp()->findIdFallback(libname);
+        VSymEnt* const libSymp = m_mods.rootp()->findIdFallback(libname);
         if (!libSymp) return nullptr;
         const VSymEnt* const foundp = libSymp->findIdFallback(modName);
         return foundp ? VN_AS(foundp->nodep(), NodeModule) : nullptr;
@@ -564,7 +564,7 @@ class LinkCellsVisitor final : public VNVisitor {
     }
 
     void visit(AstPackageExport* nodep) override {
-        // Package Import: We need to do the package before the use of a package
+        // Package Export: We need to do the package before the use of a package
         iterateChildren(nodep);
         if (!nodep->packagep()) {
             nodep->packagep(resolvePackage(nodep, nodep->pkgName()));
@@ -573,6 +573,7 @@ class LinkCellsVisitor final : public VNVisitor {
                 return;
             }
         }
+        newEdge(vertex(m_modp), vertex(nodep->packagep()), 1, false);
     }
     void visit(AstPackageImport* nodep) override {
         // Package Import: We need to do the package before the use of a package
