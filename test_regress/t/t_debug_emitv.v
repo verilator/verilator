@@ -713,3 +713,6 @@ endmodule
 package p;
   logic pkgvar;
 endpackage
+
+`verilator_config
+threads_group -module "sub"
