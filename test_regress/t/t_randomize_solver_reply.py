@@ -67,4 +67,35 @@ for mode, at, npass in runs:
                  'TAMPER=' + mode + ' TAMPER_AT=' + str(at))
     test.file_grep(logfile, r'NPASS=(\d+)', npass)
 
+# 4 randomize calls through the diversity pin rounds, alone, from a fixed seed. A round
+# the solver leaves unsettled keeps the base solution, so every call still passes; the
+# count of check-sat-assuming rounds shows where each call's rounds stopped.
+# Status 1 answers the check-sat sent when the session opens; statuses 2 and 3 are the
+# soft relaxation and the base check-sat of call 1. To re-derive a TAMPER_AT, log the
+# untampered +MODE=pins conversation and count the replies its mode counts.
+pin_runs = [
+    # Untampered: calls 1 to 4 settle after 4, 7, 5 and 4 rounds
+    (None, 0, 20),
+    # Status 4: the first pin round of call 1, answered unknown
+    ('unknown_once', 4, 17),
+    # Unsat-assumptions reply 1: the first pin round of call 1, an error leaving no core
+    ('err_assume', 1, 17),
+    # Unsat-assumptions reply 1: the first pin round of call 1, naming only literals out of
+    # range
+    ('oor_assume', 1, 17),
+    # Unsat-assumptions reply 1 on: every pin round names the already dropped a0, so each
+    # call runs out its 8 rounds, one per pin plus one
+    ('stale_assume', 1, 32),
+]
+
+for mode, at, nrounds in pin_runs:
+    logfile = test.obj_dir + '/sim_pins_' + str(mode) + '.log'
+    solver_log = test.obj_dir + '/solver_pins_' + str(mode) + '.log'
+    test.execute(logfile=logfile,
+                 all_run_flags=['+MODE=pins', '+verilator+solver+file+' + solver_log],
+                 run_env=('VERILATOR_SOLVER="' + test.t_dir + '/randomize_solver_tamper.py" ' +
+                          'TAMPER=' + mode + ' TAMPER_AT=' + str(at)) if mode else '')
+    test.file_grep(logfile, r'NPASS=(\d+)', 4)
+    test.file_grep_count(solver_log, r'^  \(check-sat-assuming', nrounds)
+
 test.passes()
