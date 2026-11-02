@@ -750,6 +750,20 @@ class SvaNfaBuilder final {
             // The declaration line has no executable code; exclude it from line coverage.
             SvaStateVertex* const liveRepVtxp  // LCOV_EXCL_LINE
                 = currentp->m_liveRepCheckVtxp ? currentp->m_liveRepCheckVtxp : currentp;
+
+            // Do not clone an impure endpoint: cloning would duplicate its side effects. Keep
+            // the original expression path, as in the non-repetition case.
+            if (!exprp->isPure()) {
+                VL_DO_DANGLING(currentp->m_liveRepCondp->deleteTree(), currentp->m_liveRepCondp);
+                return {currentp, exprp, std::move(rangeMidSources)};
+            }
+
+            SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
+            sinkVtxp->m_isRejectSink = true;
+            AstNodeExpr* const guardp = sampled(liveRepCondp->cloneTreePure(false));
+            SvaTransEdge* const rejEdgep = m_graph.addLink(liveRepVtxp, sinkVtxp, guardp);
+            rejEdgep->m_rejectOnFail = true;
+
             // The endpoint is valid only when the repetition itself matched on this tick.
             // A valid match also retires the live repetition state for later ticks.
             if (liveRepVtxp->m_liveRepClearCondp) {
@@ -758,11 +772,6 @@ class SvaNfaBuilder final {
             }
             liveRepVtxp->m_liveRepClearCondp = new AstLogAnd{
                 flp, liveRepCondp->cloneTreePure(false), exprp->cloneTreePure(false)};
-            SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
-            sinkVtxp->m_isRejectSink = true;
-            AstNodeExpr* const guardp = sampled(liveRepCondp->cloneTreePure(false));
-            SvaTransEdge* const rejEdgep = m_graph.addLink(liveRepVtxp, sinkVtxp, guardp);
-            rejEdgep->m_rejectOnFail = true;
 
             // Do not allow the endpoint to match if the repetition failed on this tick.
             BuildResult result{currentp,
@@ -849,7 +858,16 @@ class SvaNfaBuilder final {
                 currentp->m_liveRepCheckVtxp = loopBackVtxp;
             }
             currentp->m_isUnbounded = true;
-            currentp->m_liveRepCondp = exprp->cloneTreePure(false);
+            // The rejection path clones this condition. Leave impure repetition
+            // expressions on the existing path so their side effects are not duplicated.
+            if (minN != 0 && exprp->isPure()) {
+                // A live repetition condition is installed only once per vertex;
+                if (currentp->m_liveRepCondp) {
+                    VL_DO_DANGLING(currentp->m_liveRepCondp->deleteTree(),  // LCOV_EXCL_LINE
+                                   currentp->m_liveRepCondp);
+                }
+                currentp->m_liveRepCondp = exprp->cloneTreePure(false);
+            }
             m_inUnboundedScope = true;
         } else if (repp->maxCountp()) {
             const unsigned maxN = getConstUInt(repp->maxCountp());
