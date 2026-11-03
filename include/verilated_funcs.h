@@ -283,6 +283,7 @@ inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     return ret;
 }
 
+// Return queue from a descending unpacked array, left index first
 template <typename T, std::size_t N_Depth>
 inline VlQueue<T> VL_CVT_UNPACK_TO_Q_REVERSED(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     VlQueue<T> ret;

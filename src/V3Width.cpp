@@ -306,6 +306,9 @@ class WidthVisitor final : public VNVisitor {
     std::map<std::tuple<const AstNodeDType*, VAttrType, size_t>, AstVarRef*> m_tableMap;
     // Queues with given index type
     std::map<const AstNodeDType*, AstQueueDType*> m_queueDTypeIndexed;
+    // Unpacked conversion types, keyed by element type and outer range
+    std::map<std::pair<const AstNodeDType*, VNumRange>, AstUnpackArrayDType*>
+        m_unpackedConversionDTypes;
     ContainingClassFinder m_containingClassFinder;  // Finds the class containing a node
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
@@ -2544,9 +2547,14 @@ class WidthVisitor final : public VNVisitor {
             = VN_CAST(elemDtp->skipRefp(), UnpackArrayDType);
         if (elemArrayp && elemArrayp->isReverseOf(fromDtp->subDTypep())) {
             // Match inner dimensions before converting the outer dimension to a queue.
-            AstNodeDType* const orderedDtp = new AstUnpackArrayDType{
-                nodep->fileline(), elemDtp, new AstRange{nodep->fileline(), fromDtp->declRange()}};
-            v3Global.rootp()->typeTablep()->addTypesp(orderedDtp);
+            AstUnpackArrayDType*& orderedDtp
+                = m_unpackedConversionDTypes[{elemArrayp, fromDtp->declRange()}];
+            if (!orderedDtp) {
+                orderedDtp = new AstUnpackArrayDType{
+                    nodep->fileline(), elemDtp,
+                    new AstRange{nodep->fileline(), fromDtp->declRange()}};
+                v3Global.rootp()->typeTablep()->addTypesp(orderedDtp);
+            }
             convertUnpackedOrder(nodep->fromp(), orderedDtp);
         }
     }
@@ -7164,23 +7172,21 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->rhsp()->dtypep()) {  // May be null on earlier errors
                 const AstNodeDType* const lhsDtp = lhsDTypep->skipRefp();
                 const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
-                // Only check if number of states match for unpacked array to unpacked array
-                // assignments
-                const bool lhsIsUnpackArray = lhsDtp->isNonPackedArray();
-                const bool rhsIsUnpackArray = rhsDtp->isNonPackedArray();
-                if (lhsIsUnpackArray && rhsIsUnpackArray) {
-                    if (lhsDtp->elemDTypep()->isFourstate()
-                        != rhsDtp->elemDTypep()->isFourstate()) {
-                        nodep->v3error("Assignment between 2-state and 4-state types requires "
-                                       "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)"
-                                       << warnDTypes(nodep, lhsDtp, rhsDtp));
-                    }
+                const AstNodeVarRef* const lhsRefp = VN_CAST(nodep->lhsp(), NodeVarRef);
+                const AstNodeVarRef* const rhsRefp = VN_CAST(nodep->rhsp(), NodeVarRef);
+                // Variable references get full element-type checks; avoid a second state error.
+                if (lhsRefp && rhsRefp) {
+                    checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(
+                        nodep, lhsRefp, rhsRefp);
+                } else if (lhsDtp->isNonPackedArray() && rhsDtp->isNonPackedArray()
+                           && lhsDtp->elemDTypep()->isFourstate()
+                                  != rhsDtp->elemDTypep()->isFourstate()) {
+                    nodep->v3error("Assignment between 2-state and 4-state types requires "
+                                   "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)"
+                                   << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
-                checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(
-                    nodep, VN_CAST(nodep->lhsp(), NodeVarRef), VN_CAST(nodep->rhsp(), NodeVarRef));
                 // Variable references were checked above, this catches e.g. method call results
-                if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType()
-                    && !VN_IS(nodep->rhsp(), NodeVarRef)) {
+                if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType() && !rhsRefp) {
                     nodep->v3error("Illegal assignment betwen unpacked aggregate and "
                                    "integral type (IEEE 1800-2023 7.6)"
                                    << warnDTypes(nodep, lhsDtp, rhsDtp));
