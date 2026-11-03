@@ -20,12 +20,10 @@
 //      SEL(VARREF(...))) mark only some bits as used/driven
 //      else VARREF(...) mark all bits as used/driven
 //      Report unused/undriven nets
-//      Also report MULTIDRIVEN when a net has a second driver besides an
-//      output port connection: the lowered declaration initial value (the
-//      flagged assign the parser creates for the net's initializer) and
-//      continuous assigns, which the DFG driver check does not see.  Pins
-//      whose child module never drives the port and drivers that may be
-//      all-Z (open-drain style) are not counted.
+//      Also report MULTIDRIVEN for a net's second driver besides an output
+//      port connection: its lowered declaration initializer and continuous
+//      assigns (the DFG check does not see these); undriven ports and
+//      Z/open-drain drivers are not counted
 //
 //*************************************************************************
 
@@ -41,14 +39,10 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// Nets to which the port-connection MULTIDRIVEN check applies.  Only the
-// plain wire type: tri-family nets resolve multiple drivers by design
-// (wired OR/AND, strength resolution, and the built-in pull of tri0/1
-// and supply0/1), so an output port alongside their default drivers is
-// intended use, not a conflict.  Variables are excluded: a declaration
-// initial value is a one-time write that the port drive legitimately
-// overwrites, and a continuous assign to a variable is a last-write-wins
-// ordering matter, not a value conflict.
+// Driver nets for the port-connection check: only the plain wire type --
+// tri-family nets resolve multiple drivers by design (wired OR/AND,
+// strength, built-in pulls), and variables have no driver conflict (their
+// initial value is a one-time write; assigns are last-write-wins)
 static bool isDriverNet(const AstVar* const varp) {
     return varp->varType().isWireNet() && !varp->isFuncLocal();
 }
@@ -223,8 +217,7 @@ public:
         if (!m_contDriverp) m_contDriverp = nodep;
     }
     const AstNode* contDriverp() const { return m_contDriverp; }
-    // Whole-net connection to an output pin. Whether it counts as a real
-    // driver is decided at report time, when every child entry exists
+    // Whole-net output pin; counted as a driver at report time
     void addPinDriver(const AstPin* const pinp) { m_pinps.push_back(pinp); }
     void underGenerate() { m_underGen = true; }
     bool isUnderGen() const { return m_underGen; }
@@ -307,10 +300,8 @@ public:
         // driver logic.  Pure-Z (open-drain), inout bus, and pins whose child
         // module never drives the port were not counted above.
         if (isDriverNet(nodep) && !nodep->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
-            // Output pins drive the net only when the module behind the pin
-            // drives its port; a port that module never drives only ever
-            // contributes Z. Decided here at report time, when every child
-            // entry exists.
+            // A pin drives the net only if its child module drives the port;
+            // decided at report time, when all child entries exist
             int pinDrivers = 0;
             const AstNode* drivingPin1p = nullptr;
             const AstNode* drivingPin2p = nullptr;
@@ -488,8 +479,7 @@ class UndrivenVisitor final : public VNVisitorConst {
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps = {};  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In a continuous assignment
-    bool m_inDeclInitAssign
-        = false;  // The continuous assign is a lowered net declaration initializer
+    bool m_inDeclInitAssign = false;  // The assign is a lowered declaration initializer
     bool m_inInitial = false;  // In explicit initial block
     bool m_inInitialSetup = false;  // In InitialAutomatic*/InitialStatic* assignment LHS
     bool m_inInitialStatic = false;  // In InitialStatic
@@ -552,13 +542,9 @@ class UndrivenVisitor final : public VNVisitorConst {
                                             true);  // Complain just once for any usage
         }
     }
-    // A driver that may produce Z is not a definite conflict: a pure Z
-    // constant drives nothing, and a Z constant on the data path of a
-    // conditional is an open-drain "drives only sometimes" form
-    // (enable ? data : 1'bz), which must not be reported. A Z constant
-    // inside a comparison or function argument never reaches the net and
-    // does not exempt; a partially-Z constant drives the non-Z bits and
-    // counts as a driver.
+    // A driver that may produce Z is not a definite conflict: a pure-Z
+    // constant, or a Z on a conditional's data path (the open-drain idiom);
+    // a Z in a comparison/argument never reaches the net; partially-Z counts
     static bool isZDataPath(AstNodeExpr* nodep) {
         if (const AstConst* const constp = VN_CAST(nodep, Const)) return constp->num().hasZ();
         if (const AstCond* const condp = VN_CAST(nodep, Cond))
@@ -569,8 +555,8 @@ class UndrivenVisitor final : public VNVisitorConst {
         if (const AstConst* const constp = VN_CAST(nodep, Const)) return constp->num().isAllZ();
         return isZDataPath(nodep);
     }
-    // A continuous-assign write to a driver net that is not the net's own
-    // lowered declaration initializer and not Z-exempt, counts as a driver
+    // A continuous-assign write to a driver net, not Z-exempt and not the
+    // net's own lowered declaration initializer, counts as a driver
     bool isContDriver(const AstNodeVarRef* const refp) const {
         return refp->access().isWriteOrRW() && isDriverNet(refp->varp()) && m_inContAssign
                && !m_contAssignZExempt && !m_inDeclInitAssign;
@@ -870,10 +856,8 @@ class UndrivenVisitor final : public VNVisitorConst {
                     // both read and writing
                     || m_inInoutOrRefPin))
                 entryp->usedWhole(nodep);
-            // Count the net's drivers for the port-connection MULTIDRIVEN
-            // check below.  Only write refs qualify: the flagged assignment's
-            // right-hand side may reference other nets, and those reads are
-            // not drivers
+            // Count the net's drivers: only write refs qualify, since the
+            // flagged assign's RHS may reference (read) other nets
             if (usr == 1 && nodep->access().isWriteOrRW() && isDriverNet(nodep->varp())) {
                 if (m_inContAssign && !m_contAssignZExempt) {
                     if (m_inDeclInitAssign)
@@ -920,8 +904,7 @@ class UndrivenVisitor final : public VNVisitorConst {
         m_inContAssign = true;
         VL_RESTORER(m_contAssignZExempt);
         m_contAssignZExempt = isZExemptDriver(nodep->rhsp());
-        // The flagged assign is the net's lowered declaration initial
-        // value, an init driver, not a user continuous assign
+        // The flagged assign is the net's lowered declaration initializer
         VL_RESTORER(m_inDeclInitAssign);
         m_inDeclInitAssign = nodep->declInit();
         iterateChildrenConst(nodep);

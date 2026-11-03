@@ -1582,9 +1582,7 @@ public:
         clonep->m_declInit = m_declInit;
         return clonep;
     }
-    // The parser sets this on the assign it creates for a net's declaration
-    // initializer, so late passes (V3Undriven) can tell it apart from a user
-    // continuous assign
+    // Set by the parser on the assign it creates for a net's declaration initializer
     void declInit(bool set) { m_declInit = set; }
     bool declInit() const { return m_declInit; }
     bool isTimingControl() const override {

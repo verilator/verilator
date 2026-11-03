@@ -3100,8 +3100,7 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3);
                           AstDelay* const delayp = $$->delayp() ? $$->delayp()->unlinkFrBack() : nullptr;
                           AstAssignW* const assignp = new AstAssignW{$4, new AstParseRef{$<fl>1, *$1}, $5, delayp};
-                          // The net's lowered declaration initial value: a driver, not a
-                          // user continuous assign (V3Undriven)
+                          // Mark the parser-generated assign as the lowered declaration initializer
                           assignp->declInit(true);
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           AstNode::addNext<AstNode, AstNode>($$, new AstAlways{assignp}); }
