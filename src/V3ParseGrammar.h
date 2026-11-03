@@ -112,6 +112,18 @@ public:
         }
         return exprp;
     }
+    static AstNodeExpr* createConcat(AstNodeExpr* itemsp) {
+        AstNodeExpr* concatp = itemsp;
+        AstNodeExpr* nextp = VN_AS(itemsp->nextp(), NodeExpr);
+        if (nextp) nextp->unlinkFrBackWithNext();
+        while (nextp) {
+            AstNodeExpr* const itemp = nextp;
+            nextp = VN_AS(itemp->nextp(), NodeExpr);
+            if (nextp) nextp->unlinkFrBackWithNext();
+            concatp = new AstConcat{itemp->fileline(), concatp, itemp};
+        }
+        return new AstReplicate{concatp->fileline(), concatp, 1};
+    }
     AstDisplay* createDisplayError(FileLine* fileline) {
         AstDisplay* nodep = new AstDisplay{fileline, VDisplayType::DT_ERROR, "", nullptr, nullptr};
         AstNode::addNext<AstNode, AstNode>(nodep, new AstStop{fileline, false});

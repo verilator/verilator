@@ -2337,8 +2337,50 @@ class WidthVisitor final : public VNVisitor {
         widthCovergroupRanges(nodep->rangesp(), 0);
     }
     void visit(AstCoverBin* nodep) override {
-        // No m_vup for a bin directly in a covergroup body (unsupported, already warned)
-        widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
+        if (nodep->isSetExpr()) {
+            // Validate before constification can erase the array's declared element type.
+            userIterateAndNext(nodep->rangesp(), WidthVP{SELF, BOTH}.p());
+            AstNodeExpr* const valuep = VN_AS(nodep->rangesp(), NodeExpr);
+            const AstNodeDType* const dtypep = valuep->dtypep()->skipRefToEnump();
+            const AstNodeDType* elementp = nullptr;
+            if (VN_IS(dtypep, NodeArrayDType) || VN_IS(dtypep, DynArrayDType)
+                || VN_IS(dtypep, QueueDType)) {
+                elementp = dtypep->subDTypep();
+            } else if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
+                // The innermost packed dimension is represented by a ranged basic type.
+                if (basicp->isBitLogic() && basicp->isRanged()) {
+                    elementp
+                        = basicp->isFourstate() ? nodep->findLogicDType() : nodep->findBitDType();
+                }
+            }
+            if (!elementp) {
+                valuep->v3error("Bin set expression must evaluate to a non-associative array, not "
+                                << dtypep->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.1.2).");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+            if (m_vup) {
+                // Coverpoints are integral or real; strings and unpacked aggregates cannot
+                // be implicitly assigned to them, even if an explicit cast would be legal.
+                const AstNodeDType* const elementBasep = elementp->skipRefp();
+                const VCastable castable
+                    = AstNode::computeCastable(m_vup->dtypep(), elementp, nullptr);
+                if ((!elementBasep->isIntegralOrPacked() && !elementBasep->isDouble())
+                    || (!castable.isSameish() && !castable.isCompatible()
+                        && castable != VCastable::ENUM_IMPLICIT)) {
+                    valuep->v3error("Bin set expression element type "
+                                    << elementp->prettyDTypeNameQ()
+                                    << " is not assignment compatible with coverpoint type "
+                                    << m_vup->dtypep()->prettyDTypeNameQ()
+                                    << " (IEEE 1800-2023 19.5.1.2).");
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    return;
+                }
+            }
+        } else {
+            // No m_vup for a bin directly in a covergroup body (unsupported, already warned).
+            widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
+        }
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         if (nodep->arraySizep()) {
             // The size of 'bins b[N]' or 'bins auto[N]' is a self-determined expression, which
