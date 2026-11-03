@@ -96,7 +96,7 @@ class CombineVisitor final : VNVisitor {
             // Remove functions already replaced in the previous iteration
             if (m_cfuncInfo(funcp).m_replaced) {
                 funcps.erase(it);
-                VL_DO_DANGLING(funcp->unlinkFrBack()->deleteTree(), funcp);
+                VL_DO_DANGLING(pushDeletep(funcp->unlinkFrBack()), funcp);
                 continue;
             }
 
