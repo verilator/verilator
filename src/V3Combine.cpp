@@ -35,9 +35,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 class CombineVisitor final : VNVisitor {
     // NODE STATE
     // AstNodeModule::user1()   List of AstCFuncs in this module (via m_cfuncs)
-    // AstCFunc::user1()        List of AstCCalls to this function (via m_callSites)
-    // AstCFunc::user2()        bool: Already replaced (in 'process')
-    // AstCFunc::user3()        bool: Marks functions earlier in iteration order (in 'combinePass')
+    // AstCFunc::user1()        CFuncInfo (via m_cfuncInfo)
     // *::user4()               Used by V3Hasher
     const VNUser1InUse m_user1InUse;
 
@@ -47,10 +45,15 @@ class CombineVisitor final : VNVisitor {
         std::list<AstCFunc*> m_fast;  // Functions that are not slow
         std::list<AstCFunc*> m_slow;  // Functions marked for slow files
     };
+    struct CFuncInfo final {
+        std::vector<AstCCall*> m_callSites;  // Call sites of this function
+        size_t m_index = 0;  // Position in the list of functions being combined
+        bool m_replaced = false;  // Already replaced by an equivalent function
+    };
 
     // STATE
     AstUser1Allocator<AstNodeModule, CFuncs> m_cfuncs;  // AstCFuncs under module
-    AstUser1Allocator<AstCFunc, std::vector<AstCCall*>> m_callSites;  // Call sites of the AstCFunc
+    AstUser1Allocator<AstCFunc, CFuncInfo> m_cfuncInfo;  // Data associated with each AstCFunc
     AstNodeModule* m_modp = nullptr;  // Current module
     const V3Hasher m_hasher;  // For hashing
     VDouble0 m_cfuncsCombined;  // Statistic tracking
@@ -65,12 +68,13 @@ class CombineVisitor final : VNVisitor {
 
             if (funcp->emptyBody()) {
                 // Delete call sites
-                for (AstCCall* const callp : m_callSites(funcp)) {
+                std::vector<AstCCall*>& callSites = m_cfuncInfo(funcp).m_callSites;
+                for (AstCCall* const callp : callSites) {
                     UASSERT_OBJ(VN_IS(callp->backp(), StmtExpr), callp,
                                 "Deleting non-statement call");
                     VL_DO_DANGLING(callp->backp()->unlinkFrBack()->deleteTree(), callp);
                 }
-                m_callSites(funcp).clear();
+                callSites.clear();
                 // Remove from list
                 funcps.erase(it);
                 // Delete function
@@ -81,8 +85,6 @@ class CombineVisitor final : VNVisitor {
 
     // One pass of combining. Returns true if did replacement.
     bool combinePass(std::list<AstCFunc*>& funcps, V3DupFinder& dupFinder) {
-        const VNUser3InUse user3InUse;
-
         bool replaced = false;
 
         // Replace all identical functions with the first function in the list
@@ -92,7 +94,7 @@ class CombineVisitor final : VNVisitor {
             ++nit;
 
             // Remove functions already replaced in the previous iteration
-            if (funcp->user2()) {
+            if (m_cfuncInfo(funcp).m_replaced) {
                 funcps.erase(it);
                 VL_DO_DANGLING(funcp->unlinkFrBack()->deleteTree(), funcp);
                 continue;
@@ -104,13 +106,16 @@ class CombineVisitor final : VNVisitor {
 
                 AstCFunc* oldp = VN_AS(dit->second, CFunc);
                 AstCFunc* newp = funcp;
-                UASSERT_OBJ(!oldp->user2(), oldp, "Should have been removed from dupFinder");
+                UASSERT_OBJ(!m_cfuncInfo(oldp).m_replaced, oldp,
+                            "Should have been removed from dupFinder");
 
                 // Swap them, if the duplicate is earlier in the list of functions. This is
                 // necessary because replacing a call site in a later function might have made that
                 // function equivalent to an earlier function, but we want the first equivalent
                 // function in the list to be the canonical one.
-                if (oldp->user3()) std::swap(oldp, newp);
+                if (m_cfuncInfo(oldp).m_index < m_cfuncInfo(newp).m_index) {
+                    std::swap(oldp, newp);
+                }
 
                 // Something is being replaced
                 UINFO(9, "Replacing " << oldp);
@@ -119,10 +124,10 @@ class CombineVisitor final : VNVisitor {
                 replaced = true;
 
                 // Mark as replaced
-                oldp->user2(true);
+                m_cfuncInfo(oldp).m_replaced = true;
 
                 // Redirect the calls
-                for (AstCCall* const callp : m_callSites(oldp)) {
+                for (AstCCall* const callp : m_cfuncInfo(oldp).m_callSites) {
                     // For sanity check only
                     const V3Hash oldHash = m_hasher(callp);
 
@@ -142,9 +147,6 @@ class CombineVisitor final : VNVisitor {
                 // equivalent earlier in the list), then move on, as this is on longer a candidate
                 if (oldp == funcp) break;
             }
-
-            // Mark as function earlier in list of functions.
-            funcp->user3(true);
         }
 
         return replaced;
@@ -167,14 +169,15 @@ class CombineVisitor final : VNVisitor {
 
             V3DupFinder dupFinder{m_hasher};
 
-            // First, hash all functions
-            for (AstCFunc* const funcp : funcps) dupFinder.insert(funcp);
+            // First, hash all functions, and record their position in the list
+            size_t index = 0;
+            for (AstCFunc* const funcp : funcps) {
+                m_cfuncInfo(funcp).m_index = index++;
+                dupFinder.insert(funcp);
+            }
 
             // Iterate to fixed point
-            {
-                const VNUser2InUse user2InUse;
-                while (combinePass(funcps, dupFinder)) {}
-            }
+            while (combinePass(funcps, dupFinder)) {}
         }
     }
 
@@ -201,7 +204,7 @@ class CombineVisitor final : VNVisitor {
         iterateChildrenConst(nodep);
         AstCFunc* const funcp = nodep->funcp();
         if (funcp->dontCombine()) return;
-        m_callSites(funcp).emplace_back(nodep);
+        m_cfuncInfo(funcp).m_callSites.emplace_back(nodep);
     }
 
     void visit(AstAddrOfCFunc* nodep) override {
