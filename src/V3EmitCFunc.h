@@ -919,9 +919,10 @@ public:
         }
         if (nodep->method() == VCMethod::RANDOMIZER_HARD) {
             // Pins are (constraint, variables) or (constraint, variables, filename, line,
-            // source); the filename is located by position below
+            // source[, namesMerged]); the filename is located by position below
             const size_t npins = nodep->pinspList().size();
-            UASSERT_OBJ(npins == 2 || npins == 5, nodep, "Unexpected hard() pin layout");
+            UASSERT_OBJ(npins == 2 || npins == 5 || npins == 6, nodep,
+                        "Unexpected hard() pin layout");
         }
         puts("(");
         bool comma = false;

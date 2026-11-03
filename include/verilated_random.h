@@ -261,6 +261,8 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<const char*> m_constraintVarNames;
     // Per hard constraint, the end of its names in m_constraintVarNames
     std::vector<size_t> m_constraintVarEnds;
+    // Per hard constraint, whether its names are merged from more than its text (see hard())
+    std::vector<bool> m_constraintNamesMerged;
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::vector<std::string> m_softConstraints;  // Soft constraints
@@ -317,6 +319,9 @@ class VlRandomizer VL_NOT_FINAL {
     // and the randc variables are solved jointly with the rand variables, with two or
     // more active randc variables, a randc array, or in a randomize() that resizes
     // arrays (next_sized(): its size solve sees the elements from before the resize).
+    // A constraint whose names are merged (see hard()) filters the draw with its rand
+    // variables free, as the joint solve would, where 18.4.2 would draw blind to it if
+    // the text the state chose also involves rand variables.
     bool drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
                          const std::vector<std::string>& randcNames,
                          const std::vector<std::string>& uniqueExprs,
@@ -991,8 +996,12 @@ public:
 
     // varNames are the solver variables the constraint names, kept without copying until
     // clearConstraints(), so they must live that long (the generated code passes literals)
+    // namesMerged: varNames are merged from branches the state chose between, or from several
+    // items folded into the constraint, so they may name a rand variable that the randc-only
+    // part of the text does not
     void hard(std::string&& constraint, std::initializer_list<const char*> varNames = {},
-              const char* filename = "", uint32_t linenum = 0, const char* source = "");
+              const char* filename = "", uint32_t linenum = 0, const char* source = "",
+              bool namesMerged = false);
     void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
     // name is kept without copying until clearConstraints(), like hard()'s varNames, so it

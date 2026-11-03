@@ -153,6 +153,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     std::set<std::string> m_constraintVars;
     // Constraint replacing the top-level if whose folded names m_constraintVars holds
     const AstConstraintExpr* m_foldTakerp = nullptr;
+    // The names of the constraint being built are merged from more than its own text (see
+    // its use in visit(AstConstraintExpr*))
+    bool m_namesMerged = false;
     // Where the variable references being lowered record their solver names. Set by
     // visit(AstConstraintExpr*), the only visit reaching a variable reference: the other
     // constraint items either move their expressions into one or never iterate them.
@@ -1651,7 +1654,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstCond* nodep) override {
         if (editFormat(nodep)) return;
         if (!nodep->condp()->user1()) {
-            // Do not burden the solver if cond computable: (cond ? "then" : "else")
+            // Do not burden the solver if cond computable: (cond ? "then" : "else"). The
+            // names cover both branches, the text holds one
+            m_namesMerged = true;
             iterate(nodep->thenp());
             iterate(nodep->elsep());
             UASSERT_OBJ(
@@ -2073,6 +2078,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         const bool foldOwner = !m_wantSingle;
         UASSERT_OBJ(!foldOwner || m_constraintVars.empty(), nodep,
                     "Constraint names of an earlier fold were not taken over");
+        // A condition on state chooses the folded text, and several items folded into one
+        // constraint merge their names
+        UASSERT_OBJ(nodep->thensp(), nodep, "constraint if without a then body");
+        const bool namesMerged = !nodep->condp()->user1() || nodep->thensp()->nextp()
+                                 || (nodep->elsesp() && nodep->elsesp()->nextp());
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
@@ -2085,6 +2095,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             newp = new AstLogIf{fl, new AstNot{fl, nodep->condp()->unlinkFrBack()}, elsep};
         }
         if (newp) {
+            if (namesMerged) m_namesMerged = true;
             newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
             newp->user1(true);  // Assume result-dependent
             AstConstraintExpr* const exprp = new AstConstraintExpr{fl, newp};
@@ -2431,6 +2442,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         callp->addPinsp(
             new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + prettyText + "\""});
+        // Names merged from branches the state chooses between, or from several folded items,
+        // can name a rand variable the randc-only part of the text does not, so the randc
+        // draw asserts this constraint too, with its rand variables free. A single item
+        // under a rand condition keeps names exact for its text, and stays out of the draw
+        // as IEEE 1800-2023 18.4.2 requires, as for 'if (c == 3) unique {v};'
+        if (method == VCMethod::RANDOMIZER_HARD && m_namesMerged) {
+            callp->addPinsp(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
+        }
+        m_namesMerged = false;
         nodep->replaceWith(callp->makeStmt());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }

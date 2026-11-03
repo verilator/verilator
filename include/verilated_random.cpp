@@ -989,9 +989,11 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
             var.second->emitConcreteValue(os);
             os << "))\n";
         }
-        // Only constraints evaluable at randc-solve time filter the cycle domain
+        // Only constraints evaluable at randc-solve time filter the cycle domain. One whose
+        // names are merged may hold a randc-only part its names cannot show, so it filters
+        // too, with its rand variables free (see hard())
         for (size_t n = 0; n < m_constraints.size(); ++n) {
-            if (!constraintIsRandcOnly(n)) continue;
+            if (!constraintIsRandcOnly(n) && !m_constraintNamesMerged[n]) continue;
             os << "(assert (= #b1 " << m_constraints[n] << "))\n";
         }
         emitRandcExclusions(os, randcNames);
@@ -1901,7 +1903,9 @@ bool VlRandomizer::parseModel(std::istream& is, size_t requested) {
 }
 
 void VlRandomizer::hard(std::string&& constraint, std::initializer_list<const char*> varNames,
-                        const char* filename, uint32_t linenum, const char* source) {
+                        const char* filename, uint32_t linenum, const char* source,
+                        bool namesMerged) {
+    m_constraintNamesMerged.push_back(namesMerged);
     m_constraints.emplace_back(std::move(constraint));
     // Stored for every constraint: a randomize() with clause registers its constraints
     // before markRandc() marks its randc variables, so whether the randc draw needs the
@@ -1938,6 +1942,7 @@ void VlRandomizer::clearConstraints() {
     m_constraints.clear();
     m_constraintVarNames.clear();
     m_constraintVarEnds.clear();
+    m_constraintNamesMerged.clear();
     m_constraints_line.clear();
     m_solveBefore.clear();
     m_softConstraints.clear();
@@ -1949,6 +1954,7 @@ void VlRandomizer::clearAll() {
     m_constraints.clear();
     m_constraintVarNames.clear();
     m_constraintVarEnds.clear();
+    m_constraintNamesMerged.clear();
     m_softConstraints.clear();
     m_vars.clear();
     m_randcVarNames.clear();
