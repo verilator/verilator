@@ -50,6 +50,8 @@ module t (
   int count_fail23 = 0;
   int count_fail24 = 0;
 
+  unbounded_rep_reject_test unboundedRepRejectTest (clk);
+
   // Test 1: a[*3] |-> b
   assert property (@(posedge clk) a [* 3] |-> b)
   else count_fail1 <= count_fail1 + 1;
@@ -186,5 +188,130 @@ module t (
       $write("*-* All Finished *-*\n");
       $finish;
     end
+  end
+endmodule
+
+// Directed checks for failed unbounded repetitions and a later ranged-delay
+// candidate. Kept with the consecutive-repetition tests.
+module unbounded_rep_reject_test (input logic clk);
+  logic psel = 0;
+  logic paddr = 0;
+  logic pready = 0;
+  logic psel_no_endpoint = 0;
+  logic paddr_no_endpoint = 0;
+  logic pready_no_endpoint = 0;
+  logic range_start = 0;
+  logic range_x = 0;
+  logic range_a = 0;
+  logic range_b = 0;
+  logic disable_reset = 0;
+  logic disable_start = 0;
+  logic disable_a = 1;
+  logic disable_b = 0;
+  logic replay_a = 1;
+  int failures = 0;
+  int no_endpoint_failures = 0;
+  int range_passes = 0;
+  int range_failures = 0;
+  int disable_failures = 0;
+  int replay_failures = 0;
+  time replay_failure_times [0:3];
+  int cycle = 0;
+  int start_cycle = 0;
+  int failure_cycle = 0;
+  int no_endpoint_failure_cycle = 0;
+
+  always @(posedge clk) cycle <= cycle + 1;
+
+  assert property (@(posedge clk)
+    $rose(psel) |->
+    ($rose(psel) ##1 ((!$changed(paddr))[*1:$] ##0 (pready == 1))))
+  else begin
+    failures++;
+    failure_cycle = cycle;
+  end
+
+  assert property (@(posedge clk)
+    $rose(psel_no_endpoint) |->
+    ($rose(psel_no_endpoint) ##1 ((!$changed(paddr_no_endpoint))[*1:$]
+                                  ##0 (pready_no_endpoint == 1))))
+  else begin
+    no_endpoint_failures++;
+    no_endpoint_failure_cycle = cycle;
+  end
+
+  assert property (@(posedge clk)
+    range_start |-> ##[0:2] (range_x ##0 range_a[*1:$] ##0 range_b))
+  range_passes++;
+  else range_failures++;
+
+  assert property (@(posedge clk) disable iff (disable_reset)
+    disable_start |-> disable_a[*1:$] ##0 disable_b)
+  else disable_failures++;
+
+  // Several live repetitions can fail on the same sample; replay each failure action.
+  assert property (@(posedge clk) replay_a[*1:$] ##0 1'b0)
+  else begin
+    if (replay_failures < 4) replay_failure_times[replay_failures] = $time;
+    replay_failures++;
+  end
+
+  initial begin
+    repeat (2) @(negedge clk);
+    range_start = 1;
+    range_x = 1;
+    range_a = 1;
+    @(negedge clk);
+    range_start = 0;
+    range_x = 0;
+    range_a = 0;
+    @(negedge clk);
+    range_x = 1;
+    range_a = 1;
+    range_b = 1;
+    @(negedge clk);
+    `checkh(range_passes, 1);
+    `checkh(range_failures, 0);
+  end
+
+  initial begin
+    $assertvacuousoff(0);
+    repeat (2) @(negedge clk);
+    psel = 1;
+    psel_no_endpoint = 1;
+    start_cycle = cycle;
+    @(negedge clk);
+    paddr = 1;
+    paddr_no_endpoint = 1;
+    pready = 1;
+    repeat (3) @(posedge clk);
+    `checkh(failures, 1);
+    `checkh(failure_cycle, start_cycle + 1);
+    `checkh(no_endpoint_failures, 1);
+    `checkh(no_endpoint_failure_cycle, start_cycle + 1);
+  end
+
+  initial begin
+    repeat (2) @(negedge clk);
+    disable_start = 1;
+    @(negedge clk);
+    disable_start = 0;
+    disable_reset = 1;
+    @(negedge clk);
+    disable_reset = 0;
+    repeat (2) @(posedge clk);
+    `checkh(disable_failures, 0);
+  end
+
+  initial begin
+    repeat (2) @(posedge clk);
+    @(negedge clk);
+    replay_a = 0;
+    repeat (2) @(posedge clk);
+    @(negedge clk);
+    `checkh(replay_failures, 4);
+    `checkh(replay_failure_times[0] == replay_failure_times[1], 1);
+    `checkh(replay_failure_times[1] == replay_failure_times[2], 1);
+    `checkh(replay_failure_times[3] > replay_failure_times[2], 1);
   end
 endmodule

@@ -58,6 +58,7 @@ struct SvaVertexData final {
         = nullptr;  // Cached outgoing slot; isolates readers from in-place writes
     AstVar* delayRingIdxVarp = nullptr;  // Next slot written in delayRingVarp
     AstVar* delayRingLiveCountVarp = nullptr;  // Number of threads in delayRingVarp
+    AstVar* liveRepCountVarp = nullptr;  // Number of attempts represented by a live repetition
     AstVar* delayRingWrappedVarp = nullptr;  // All slots written since the last clear
     AstVar* doneLVarp = nullptr;  // SAnd LHS done-latch
     AstVar* doneRVarp = nullptr;  // SAnd RHS done-latch
@@ -81,6 +82,9 @@ public:
     AstNodeExpr* m_liveRepCondp = nullptr;
     // Vertex used to check whether the live repetition can continue.
     SvaStateVertex* m_liveRepCheckVtxp = nullptr;
+    // The terminal combines new entries and continuing attempts for this repetition.
+    SvaStateVertex* m_liveRepEntryVtxp = nullptr;
+    bool m_tracksLiveRepThreads = false;
     // A valid endpoint match clears the live repetition state.
     AstNodeExpr* m_liveRepClearCondp = nullptr;
     // Nonzero for a ring-buffer vertex for ## delays.
@@ -856,6 +860,8 @@ class SvaNfaBuilder final {
             } else {
                 SvaStateVertex* const loopBackVtxp = scopedCreateVertex();
                 guardedEdge(currentp, loopBackVtxp, flp);
+                loopBackVtxp->m_tracksLiveRepThreads = !m_isCover;
+                if (!m_isCover) loopBackVtxp->m_liveRepEntryVtxp = currentp;
                 SvaStateVertex* const reCheckVtxp = scopedCreateVertex();
                 guardedLink(loopBackVtxp, reCheckVtxp, sampledRefOrClone(hoistVarp, exprp, flp),
                             flp);
@@ -2065,12 +2071,46 @@ class SvaNfaLowering final {
             AstAssignDly* const assignp = new AstAssignDly{
                 c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::WRITE}, nextStatep};
             bodyp = AstNode::addNextNull(bodyp, assignp);
+            if (vtxp->datap()->liveRepCountVarp) {
+                UASSERT_OBJ(vtxp->m_liveRepEntryVtxp
+                                && vtxp->m_liveRepEntryVtxp->datap()->stateCountSigp,
+                            vtxp, "Live-repetition count source missing stateCountSig");
+                AstNodeExpr* nextCountp
+                    = vtxp->m_liveRepEntryVtxp->datap()->stateCountSigp->cloneTreePure(false);
+                UASSERT_OBJ(nextCountp, vtxp,
+                            "Live-repetition count register has no clocked contribution");
+                if (c.disableExprp) {
+                    nextCountp = addCountp(
+                        c.flp, nullptr, nextCountp,
+                        new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)});
+                }
+                nextCountp = addCountp(c.flp, nullptr, nextCountp, notKillActive(c));
+                if (vtxp->m_liveRepClearCondp) {
+                    nextCountp = new AstCond{
+                        c.flp, sampled(vtxp->m_liveRepClearCondp->cloneTreePure(false)),
+                        newTypedConstp(c.flp, nextCountp->dtypep(), 0), nextCountp};
+                }
+                bodyp = AstNode::addNextNull(
+                    bodyp, new AstAssignDly{
+                               c.flp,
+                               new AstVarRef{c.flp, vtxp->datap()->liveRepCountVarp,
+                                             VAccess::WRITE},
+                               nextCountp});
+            }
             if (asyncDisable) {
                 clearp = AstNode::addNextNull(
                     clearp,
                     new AstAssignDly{
                         c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::WRITE},
                         new AstConst{c.flp, AstConst::BitFalse{}}});
+                if (vtxp->datap()->liveRepCountVarp) {
+                    clearp = AstNode::addNextNull(
+                        clearp,
+                        new AstAssignDly{
+                            c.flp,
+                            new AstVarRef{c.flp, vtxp->datap()->liveRepCountVarp, VAccess::WRITE},
+                            newTypedConstp(c.flp, m_u32DTypep, 0)});
+                }
             }
         }
         if (bodyp) addStateAlways(c, bodyp, clearp);
@@ -2455,10 +2495,20 @@ class SvaNfaLowering final {
             AstNodeExpr* const notCondp = new AstLogNot{c.flp, condp};
             AstNodeExpr* const rawFailp = new AstLogAnd{c.flp, srcSigp, notCondp};
             if (needThreadFailCount) {
-                // thread_fail_count += fail;
+                // Replay one failure for each attempt represented by this shared repetition
+                // state; other rejection links still contribute their boolean failure.
+                AstNodeExpr* contributionp = nullptr;
+                if (fromVtxp->datap()->liveRepCountVarp) {
+                    contributionp = new AstCond{
+                        c.flp, rawFailp->cloneTreePure(false),
+                        new AstVarRef{c.flp, fromVtxp->datap()->liveRepCountVarp, VAccess::READ},
+                        newTypedConstp(c.flp, m_u32DTypep, 0)};
+                } else {
+                    contributionp = new AstExtend{
+                        c.flp, rawFailp->cloneTreePure(false), m_u32DTypep->width()};
+                }
                 sigs.threadFailCountp = addCountp(
-                    c.flp, sigs.threadFailCountp,
-                    new AstExtend{c.flp, rawFailp->cloneTreePure(false), m_u32DTypep->width()});
+                    c.flp, sigs.threadFailCountp, contributionp);
             }
             AstNodeExpr* const failp = gateNotKill(c, rawFailp);
             sigs.requiredStepRejectp = orExprs(c.flp, sigs.requiredStepRejectp, failp);
@@ -2543,9 +2593,14 @@ class SvaNfaLowering final {
             if (vtxp->datap()->stateVarp) {
                 vtxp->datap()->stateSigp
                     = new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ};
-                vtxp->datap()->stateCountSigp = new AstExtend{
-                    c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ},
-                    m_u32DTypep->width()};
+                if (vtxp->datap()->liveRepCountVarp) {
+                    vtxp->datap()->stateCountSigp = new AstVarRef{
+                        c.flp, vtxp->datap()->liveRepCountVarp, VAccess::READ};
+                } else {
+                    vtxp->datap()->stateCountSigp = new AstExtend{
+                        c.flp, new AstVarRef{c.flp, vtxp->datap()->stateVarp, VAccess::READ},
+                        m_u32DTypep->width()};
+                }
             } else if (vtxp->datap()->delayRingVarp) {
                 if (vtxp->m_isFixedDelayRing) {
                     // state_count = wrapped ? head : 0; state = state_count != 0;
@@ -2913,6 +2968,13 @@ public:
             varp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(varp);
             vtx[i]->datap()->stateVarp = varp;
+            if (vtx[i]->m_tracksLiveRepThreads) {
+                AstVar* const countVarp = new AstVar{
+                    regFlp, VVarType::MODULETEMP, varName + "_liveCount", m_u32DTypep};
+                countVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(countVarp);
+                vtx[i]->datap()->liveRepCountVarp = countVarp;
+            }
         }
 
         // Build lowering context for phase sub-functions.
