@@ -27,7 +27,7 @@ class V3ParseGrammar final {
 public:
     AstVar* m_varAttrp = nullptr;  // Current variable for attribute adding
     AstRange* m_gateRangep = nullptr;  // Current range for gate declarations
-    AstNode* m_scopedSigAttr = nullptr;  // Pointer to default signal attribute
+    AstNode* m_scopedSigAttrp = nullptr;  // Pointer to default signal attribute
     AstCase* m_caseAttrp = nullptr;  // Current case statement for attribute adding
     AstNodeDType* m_varDTypep = nullptr;  // Pointer to data type for next signal declaration
     AstNodeDType* m_memDTypep = nullptr;  // Pointer to data type for next member declaration
@@ -74,10 +74,10 @@ public:
     bool allTracingOn(const FileLine* fl) const {
         return v3Global.opt.trace() && m_tracingParse && fl->tracingOn();
     }
-    AstRange* scrubRange(AstNodeRange* rangep) VL_MT_DISABLED;
-    AstRange* scrubRangeMulti(AstNodeRange* rangep) VL_MT_DISABLED;
+    AstRange* scrubRange(AstNodeRange* nrangep) VL_MT_DISABLED;
+    AstRange* scrubRangeMulti(AstNodeRange* nrangep) VL_MT_DISABLED;
     AstNodePreSel* scrubSel(AstNodeExpr* fromp, AstNodePreSel* selp) VL_MT_DISABLED;
-    AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* rangep,
+    AstNodeDType* createArray(AstNodeDType* basep, AstNodeRange* nrangep,
                               bool isPacked) VL_MT_DISABLED;
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
                            AstNode* attrsp) VL_MT_DISABLED;
@@ -273,11 +273,11 @@ public:
     }
 
     void setScopedSigAttr(AstNode* attrsp) {
-        if (m_scopedSigAttr) {  // clearing set attribute
-            UASSERT_OBJ(!m_scopedSigAttr->backp(), m_scopedSigAttr, "Should not link directly");
-            VL_DO_DANGLING(m_scopedSigAttr->deleteTree(), m_scopedSigAttr);
+        if (m_scopedSigAttrp) {  // clearing set attribute
+            UASSERT_OBJ(!m_scopedSigAttrp->backp(), m_scopedSigAttrp, "Should not link directly");
+            VL_DO_DANGLING(m_scopedSigAttrp->deleteTree(), m_scopedSigAttrp);
         }
-        m_scopedSigAttr = attrsp;
+        m_scopedSigAttrp = attrsp;
     }
 
     void createScopedSigAttr(VAttrType vattrT) {
@@ -285,7 +285,7 @@ public:
     }
 
     AstNode* cloneScopedSigAttr() const {
-        return m_scopedSigAttr ? m_scopedSigAttr->cloneTree(true) : nullptr;
+        return m_scopedSigAttrp ? m_scopedSigAttrp->cloneTree(true) : nullptr;
     }
 
     void createGenericIface(AstNode* const nodep, AstNodeRange* const rangep,

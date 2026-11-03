@@ -67,7 +67,7 @@ class GatherMTaskWriters final : VNVisitorConst {
         , m_id{mTaskp->id()} {
         iterateConst(mTaskp->funcp());
     }
-    ~GatherMTaskWriters() = default;
+    ~GatherMTaskWriters() override = default;
     VL_UNMOVABLE(GatherMTaskWriters);
 
     // VISIT

@@ -44,7 +44,7 @@ class V3DfgSubContext VL_NOT_FINAL {
 protected:
     VL_DEFINE_DEBUG_FUNCTIONS;
 
-    V3DfgSubContext(const std::string& name)
+    explicit V3DfgSubContext(const std::string& name)
         : m_name{name} {}
 
     void addStat(const std::string& what, double value) {

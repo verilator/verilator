@@ -257,8 +257,6 @@ public:
     bool defaultsOff() const VL_MT_SAFE {
         return (m_e == IMPERFECTSCH || m_e == I_CELLDEFINE || m_e == I_ERRORING || styleError());
     }
-    // Warnings that warn about nasty side effects
-    bool dangerous() const VL_MT_SAFE { return (m_e == COMBDLY); }
     // Insuppressible error codes that should always stop elaboration
     bool hardError() const VL_MT_SAFE {
         return (m_e != EC_INFO && m_e < V3ErrorCode::EC_FIRST_WARN);
@@ -276,7 +274,7 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
-                || m_e == BLKLOOPINIT || m_e == CONTASSREG || m_e == ENCAPSULATED
+                || m_e == BLKLOOPINIT || m_e == COMBDLY || m_e == CONTASSREG || m_e == ENCAPSULATED
                 || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == FINALDLY
                 || m_e == HIERPARAM || m_e == FUNCTIMECTL || m_e == IMPURE || m_e == MODMISSING
                 || m_e == NOTREDOP || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND

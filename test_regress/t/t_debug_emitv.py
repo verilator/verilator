@@ -26,7 +26,7 @@ test.lint(
         "--dump-graph --dumpi-tree-json 9 --no-json-ids"
     ])
 
-output_vs = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*_width.tree.v")
+output_vs = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*_widthcommit.tree.v")
 
 for output_v in output_vs:
     test.files_identical(output_v, test.golden_filename)

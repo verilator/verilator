@@ -118,7 +118,7 @@
 #include "V3Delayed.h"
 
 #include "V3AstUserAllocator.h"
-#include "V3ClassGraph.h"
+#include "V3CallTargets.h"
 #include "V3Const.h"
 #include "V3LinkLValue.h"
 #include "V3SharedTmps.h"
@@ -150,10 +150,7 @@ class DelayedVisitor final : public VNVisitor {
     // All info associated with a variable that is the target of an NBA
     class VarScopeInfo final {
     public:
-        // First write reference encountered to the VarScope as the target on an NBA
-        const AstVarRef* m_firstNbaRefp = nullptr;
-        // Active block 'm_firstNbaRefp' is under
-        const AstActive* m_fistActivep = nullptr;
+        bool m_nbaTarget = false;  // Updated by an NBA, so in 'm_vscps'
         bool m_whole = false;  // Used on LHS of NBA directly via VarRef
         bool m_partial = false;  // Used on LHS of NBA under a Sel
         bool m_inLoop = false;  // Used on LHS of NBA in a loop
@@ -250,7 +247,6 @@ class DelayedVisitor final : public VNVisitor {
     };
 
     // NODE STATE
-    //  AstVar::user1()         -> bool.  Set true if already issued MULTIDRIVEN warning
     //  AstVarRef::user1()      -> bool.  Set true if target of NBA
     //  AstAssignDly::user1()   -> bool.  Set true if already visited
     //  AstCFunc::user1()       -> AstUser1Allocator.  See `m_cfuncsCache` below
@@ -289,8 +285,8 @@ class DelayedVisitor final : public VNVisitor {
     // as m_dlyTmps only shares variables with the same data type.
     std::map<std::pair<const AstNodeDType*, bool>, AstNBACommitQueueDType*> m_cqDTypeps;
 
-    const std::unique_ptr<V3ClassGraph>
-        m_classGraphp;  // class graph to get possibly called functions from a virtual call
+    // To get the functions a virtual call may call
+    const std::unique_ptr<V3CallTargets> m_callTargetsp;
     std::vector<const AstCFunc*> m_callStack;  // Current callstack of AstCFuncs
 
     // STATE - for current visit position (use VL_RESTORER)
@@ -972,9 +968,9 @@ class DelayedVisitor final : public VNVisitor {
                 }();
             } else {
                 // If this assignment is not partial, set mask to ones and we are done
-                AstConst* const ones = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                ones->num().setAllBits1();
-                maskp = ones;
+                AstConst* const onesp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
+                onesp->num().setAllBits1();
+                maskp = onesp;
             }
         }
 
@@ -1246,26 +1242,21 @@ class DelayedVisitor final : public VNVisitor {
     }
     void visit(AstFireEvent* nodep) override {
         UASSERT_OBJ(v3Global.hasEvents(), nodep, "Inconsistent");
+        if (!nodep->isDelayed()) return;  // Convert only non-blocking event triggers
+
         FileLine* const flp = nodep->fileline();
 
         AstNodeExpr* const eventp = nodep->operandp()->unlinkFrBack();
-
-        // Enqueue for clearing 'triggered' state on next eval
-        AstCStmt* const cstmtp = new AstCStmt{flp};
-        cstmtp->add("vlSymsp->fireEvent(");
-        cstmtp->add(eventp);
-        cstmtp->add(");");
-
-        AstNode* newp = cstmtp;
+        AstNode* newp = new AstFireEvent{flp, eventp, false};
         const AstVarRef* const vrefp = VN_CAST(eventp, VarRef);
-        if (nodep->isDelayed() && (m_cfuncp || !vrefp)) {
+        if (m_cfuncp || !vrefp) {
             // V3Timing converts these with --timing
             nodep->v3warn(E_NOTIMING, "Nonblocking event trigger "
                                           << (m_cfuncp ? "in a non-inlined function/task"
                                                        : "of a class or interface member or "
                                                          "array element")
                                           << " requires --timing");
-        } else if (nodep->isDelayed()) {
+        } else {
             const std::string newvarname = "_" + vrefp->varp()->shortName();
             AstVarScope* const dlyvscp
                 = m_dlyTmps.make(flp, vrefp->varScopep()->scopep(), 1, newvarname);
@@ -1365,9 +1356,8 @@ class DelayedVisitor final : public VNVisitor {
         AstVarScope* const vscp = m_currNbaLhsRefp->varScopep();
         // Record it on first encounter
         VarScopeInfo& vscpInfo = m_vscpInfo(vscp);
-        if (!vscpInfo.m_firstNbaRefp) {
-            vscpInfo.m_firstNbaRefp = m_currNbaLhsRefp;
-            vscpInfo.m_fistActivep = m_activep;
+        if (!vscpInfo.m_nbaTarget) {
+            vscpInfo.m_nbaTarget = true;
             m_vscps.emplace_back(vscp);
         }
         // Note usage context
@@ -1376,25 +1366,7 @@ class DelayedVisitor final : public VNVisitor {
         vscpInfo.m_inLoop |= m_inLoop;
         vscpInfo.m_inSuspOrFork |= m_inSuspendableOrFork;
         // Sensitivity might be non-clocked, in a suspendable process, which are handled elsewhere
-        if (m_activep->sentreep()->hasClocked()) {
-            if (vscpInfo.m_fistActivep != m_activep) {
-                AstVar* const varp = vscp->varp();
-                if (!varp->user1SetOnce()
-                    && !varp->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
-                    varp->v3warn(MULTIDRIVEN,
-                                 "Signal has multiple driving blocks with different clocking: "
-                                     << varp->prettyNameQ() << '\n'
-                                     << vscpInfo.m_firstNbaRefp->warnOther()
-                                     << "... Location of first driving block\n"
-                                     << vscpInfo.m_firstNbaRefp->warnContextSecondary()
-                                     << m_currNbaLhsRefp->warnOther()
-                                     << "... Location of other driving block\n"
-                                     << m_currNbaLhsRefp->warnContextPrimary() << '\n');
-                }
-            }
-            // Add this sensitivity to the variable
-            vscpInfo.addSensitivity(m_activep->sentreep());
-        }
+        if (m_activep->sentreep()->hasClocked()) vscpInfo.addSensitivity(m_activep->sentreep());
 
         // Record the NBA for later processing
         m_nbas.emplace_back();
@@ -1423,11 +1395,8 @@ class DelayedVisitor final : public VNVisitor {
     void visit(AstNodeCCall* const nodep) override {
         iterateChildren(nodep);
         // We need to visit bodies of non-inlined functions
-        const auto& cfuncps = m_classGraphp->getCallPossibleCFuncs(nodep);
-        if (cfuncps.empty()) {
-            visitCalledCFunc(nodep->funcp());
-        } else {
-            for (AstCFunc* const cfuncp : cfuncps) visitCalledCFunc(cfuncp);
+        for (AstCFunc* const cfuncp : m_callTargetsp->getTargets(nodep)) {
+            visitCalledCFunc(cfuncp);
         }
     }
     void visit(AstCFunc* const nodep) override {
@@ -1451,7 +1420,7 @@ class DelayedVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit DelayedVisitor(AstNetlist* nodep)
-        : m_classGraphp{V3ClassGraph::build(nodep)} {
+        : m_callTargetsp{V3CallTargets::build()} {
         iterate(nodep);
     }
     ~DelayedVisitor() override {

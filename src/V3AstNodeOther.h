@@ -354,6 +354,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_parameterizedTemplate : 1;  // True when at least one specialized clone exists;
                                        // set by V3Param::deepCloneModule. Suppresses
                                        // width/type errors on the unresolved template.
+    bool m_threadsGroup : 1;  // Partitioned as a group with --threads, marked by THREADS_GROUP
     bool m_verilatorLib : 1;  // Module is a stub for a Verilator produced --lib-create
 protected:
     AstNodeModule(VNType t, FileLine* fl, const string& name, const string& libname)
@@ -373,6 +374,7 @@ protected:
         , m_recursive{false}
         , m_recursiveClone{false}
         , m_parameterizedTemplate{false}
+        , m_threadsGroup{false}
         , m_verilatorLib{false} {}
 
 public:
@@ -425,6 +427,8 @@ public:
     bool recursiveClone() const { return m_recursiveClone; }
     bool parameterizedTemplate() const { return m_parameterizedTemplate; }
     void parameterizedTemplate(bool flag) { m_parameterizedTemplate = flag; }
+    bool threadsGroup() const { return m_threadsGroup; }
+    void threadsGroup(bool flag) { m_threadsGroup = flag; }
     void verilatorLib(bool flag) { m_verilatorLib = flag; }
     bool verilatorLib() const { return m_verilatorLib; }
     VLifetime lifetime() const { return m_lifetime; }
@@ -501,6 +505,8 @@ public:
     inline bool hasCombo() const;
     inline bool hasInitial() const;
     inline bool hasStatic() const;
+    // V3Active puts each AlwaysPostponed alone under a combinational active
+    inline bool isPostponed() const;
 };
 class AstAlias final : public AstNode {
     // Alias construct - Used for source level net alias, and also for variable aliases internally
@@ -2337,7 +2343,6 @@ class AstVar final : public AstNode {
     bool m_attrFileDescr : 1;  // File descriptor
     bool m_gotNansiType : 1;  // Linker saw Non-ANSI type declaration
     bool m_icoMaybeWritten : 1;  // Design might write this input signal - for ico change detect
-    bool m_isClockingDriven : 1;  // Driven from inside by a clocking block output
     bool m_isConst : 1;  // Table contains constant data
     bool m_isContinuously : 1;  // Ever assigned continuously (for force/release)
     bool m_hasStrengthAssignment : 1;  // Is on LHS of assignment with strength specifier
@@ -2406,7 +2411,6 @@ class AstVar final : public AstNode {
         m_attrFileDescr = false;
         m_gotNansiType = false;
         m_icoMaybeWritten = false;
-        m_isClockingDriven = false;
         m_isConst = false;
         m_isContinuously = false;
         m_hasStrengthAssignment = false;
@@ -2537,7 +2541,8 @@ public:
                      bool constRef = false) const;
     string vlEnumType() const;  // Return VerilatorVarType: VLVT_UINT32, etc
     string vlEnumDir(bool forMember = false) const;  // Return VerilatorVarDir: VLVD_INOUT, etc
-    string vlPropDecl(const string& propName) const;  // Return VerilatorVarProps declaration
+    // Return VerilatorVarProps declaration, with 'sizeExpr' the size of a dynamic array or queue
+    string vlPropDecl(const string& propName, const string& sizeExpr) const;
     void combineType(VVarType type);
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* dtypeSkipRefp() const VL_MT_STABLE { return subDTypep()->skipRefp(); }
@@ -2604,8 +2609,6 @@ public:
     void hasUserInit(bool flag) { m_hasUserInit = flag; }
     void icoMaybeWritten(bool flag) { m_icoMaybeWritten = flag; }
     bool icoMaybeWritten() const { return m_icoMaybeWritten; }
-    void isClockingDriven(bool flag) { m_isClockingDriven = flag; }
-    bool isClockingDriven() const { return m_isClockingDriven; }
     bool isDpiOpenArray() const VL_MT_SAFE { return m_isDpiOpenArray; }
     void isDpiOpenArray(bool flag) { m_isDpiOpenArray = flag; }
     bool isHideLocal() const { return m_isHideLocal; }
@@ -2891,11 +2894,17 @@ public:
     }
 };
 class AstConsQueueItem final : public AstNodeConsItem {
-    // An element of an AstConsQueue, a value or an array to splice
+    // An element of an AstConsQueue, a value or an array to splice. With sizep, the value at
+    // index 'keyp'.
     // Parents: CONSQUEUE
+    // @astgen op1 := keyp : Optional[AstConst]
 public:
     AstConsQueueItem(FileLine* fl, AstNodeExpr* valuep)
         : ASTGEN_SUPER_ConsQueueItem(fl, valuep) {}
+    AstConsQueueItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsQueueItem(fl, valuep) {
+        this->keyp(keyp);
+    }
     ASTGEN_MEMBERS_AstConsQueueItem;
     const char* broken() const override {
         // backp is the cons node or the previous element

@@ -164,8 +164,9 @@ enum VerilatedVarFlags : uint32_t {
     VLVF_PACKED_AGG = (1 << 16),  // Element type is a packed struct or union
     VLVF_PACKED_UNION = (1 << 17),  // With VLVF_PACKED_AGG, element type is a packed union
     VLVF_PACKED_MEMBER = (1 << 18),  // Is a packed struct/union member, see VlVarTableEntry
-    VLVF_PACKED_NEEDS_INDEX = (1 << 19)  // With VLVF_PACKED_MEMBER, an ancestor is an array of
-                                         // packed structs/unions, so needs an element index
+    VLVF_PACKED_NEEDS_INDEX = (1 << 19),  // With VLVF_PACKED_MEMBER, an ancestor is an array of
+                                          // packed structs/unions, so needs an element index
+    VLVF_DYNAMIC = (1 << 20)  // Unpacked dimension 1 is of a dynamic array or queue
 };
 
 // One VPI-visible variable, a row for VerilatedScope::varsInsertFromTable() or
@@ -1006,7 +1007,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                    const char* identifier, const char* defnamep, int8_t timeunit, Type type);
     ~VerilatedScope();
 
-    void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
+    void exportInsert(int finalize, const char* namep, void* cbp) VL_MT_UNSAFE;
     VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
                             int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
     VerilatedVar* varInsertSized(const char* namep, void* datap, bool isParam,
@@ -1014,7 +1015,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                  ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
-                                     void* forceReadSignalData, const char* forceReadSignalName,
+                                     void* forceReadSignalDatap, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;

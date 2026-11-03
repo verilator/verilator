@@ -688,15 +688,16 @@ public:
         appendAll(args...);
         applyBound();
     }
-    // Verilog: new[size]('{index: value, default: value})
+    // Verilog: '{index: value, default: value}, sized by new[size], else by the largest index
     explicit VlQueue(size_t size, const T_Value& defaultValue,
                      std::initializer_list<std::pair<QData, T_Value>> items) {
         m_deque.resize(size, defaultValue);
         for (const auto& item : items) {
             if (item.first < size) m_deque[item.first] = item.second;
         }
+        applyBound();
     }
-    // Verilog: new[size]('{index: value})
+    // Verilog: '{index: value}, sized by new[size], else by the largest index
     explicit VlQueue(size_t size, std::initializer_list<std::pair<QData, T_Value>> items)
         : VlQueue{size, T_Value{}, items} {}
 
@@ -751,6 +752,12 @@ public:
     void renew_copy(size_t size, const VlUnpacked<T_UnpackedValue, N_UnpackedDepth>& rhs);
 
     void resize(size_t size) { m_deque.resize(size, atDefault()); }
+    // Assign the elements of a range, as DPI does from a C layout copy
+    template <typename T_Iterator>
+    void assign(const T_Iterator& first, const T_Iterator& last) {
+        m_deque.assign(first, last);
+        applyBound();
+    }
 
     // function void q.push_front(value)
     void push_front(const T_Value& value) {
@@ -2201,22 +2208,22 @@ struct VlNull final {
         return nullptr;
     }
     template <class T>
-    bool operator==(T* rhs) const {
-        return !rhs;
+    bool operator==(T* rhsp) const {
+        return !rhsp;
     }
     template <class T>
-    bool operator==(const T* rhs) const {
-        return !rhs;
+    bool operator==(const T* rhsp) const {
+        return !rhsp;
     }
 };
 
 template <class T>
-inline bool operator==(T* lhs, VlNull) {
-    return !lhs;
+inline bool operator==(T* lhsp, VlNull) {
+    return !lhsp;
 }
 template <class T>
-inline bool operator==(const T* lhs, VlNull) {
-    return !lhs;
+inline bool operator==(const T* lhsp, VlNull) {
+    return !lhsp;
 }
 
 //===================================================================

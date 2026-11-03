@@ -192,7 +192,7 @@ void V3LinkLevel::wrapTop(AstNetlist* rootp) {
         if (VN_IS(modp, Package)) {
             AstCell* const cellp
                 = new AstCell{modp->fileline(), modp->fileline(),
-                              // Could add __03a__03a="::" to prevent conflict
+                              // Could add __03A__03A="::" to prevent conflict
                               // with module names/"v"
                               modp->name(), modp->name(), nullptr, nullptr, nullptr};
             cellp->modp(modp);

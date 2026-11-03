@@ -77,6 +77,37 @@ module t;
       $display("loop_9 %0d", i);
       if (i == nonConst3) break;
     end
+    // Inner loop reads a variable before it is assigned a constant
+    begin
+      automatic int z = nonConst3;
+      for (int i = 0; i < 2; ++i) begin : loop_10
+        for (int j = 0; j < 2; ++j) begin : loop_11
+          $display("loop_11 %0d %0d %0d", i, j, z);
+          z = 5;
+        end
+      end
+    end
+    // Inner loops in a constant 'if' branch, the first with no iterations, the last exiting both
+    begin : loop_12_block
+      for (int i = 0; i < 3; ++i) begin : loop_12
+        if (i >= 0) begin
+          for (int j = 0; j < i; ++j) begin : loop_13
+            $display("loop_13 %0d %0d", i, j);
+            if (i == 2 && j == 1) disable loop_12_block;
+          end
+          $display("loop_12 %0d", i);
+        end
+      end
+    end
+    // Loop exiting only via 'break'
+    begin
+      automatic int i = 0;
+      while (1) begin : loop_14
+        $display("loop_14 %0d", i);
+        if (i != 2) ++i;
+        else break;
+      end
+    end
     // Done
     $write("*-* All Finished *-*\n");
     $finish;

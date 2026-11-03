@@ -28,6 +28,7 @@
 
 #include "verilated.h"
 
+#include <initializer_list>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
@@ -255,6 +256,11 @@ class VlSolverSession;
 class VlRandomizer VL_NOT_FINAL {
     // MEMBERS
     std::vector<std::string> m_constraints;  // Solver-dependent hard constraints
+    // Solver variables the hard constraints name, flattened in m_constraints order; the
+    // string literals of the generated code, so stored without copying
+    std::vector<const char*> m_constraintVarNames;
+    // Per hard constraint, the end of its names in m_constraintVarNames
+    std::vector<size_t> m_constraintVarEnds;
     std::vector<std::string>
         m_constraints_line;  // fileline content of the constraint for unsat constraints
     std::vector<std::string> m_softConstraints;  // Soft constraints
@@ -940,14 +946,18 @@ public:
         }
     }
 
-    void hard(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
-              const char* source = "");
+    // varNames are the solver variables the constraint names, kept without copying until
+    // clearConstraints(), so they must live that long (the generated code passes literals)
+    void hard(std::string&& constraint, std::initializer_list<const char*> varNames = {},
+              const char* filename = "", uint32_t linenum = 0, const char* source = "");
     void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
+    // name is kept without copying until clearConstraints(), like hard()'s varNames, so it
+    // must live that long (the generated code passes literals)
     void pin_var(const char* name, int width, uint64_t value) {
         std::string constraint = "(__Vbv (= "s + name + " (_ bv" + std::to_string(value) + " "
                                  + std::to_string(width) + ")))";
-        hard(std::move(constraint));
+        hard(std::move(constraint), {name});
     }
     void disable_soft(const std::string& varName);
     void clearConstraints();

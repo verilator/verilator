@@ -478,11 +478,11 @@ LogicByScope fixCuts(AstNetlist* netlistp,
             AstSenItem* const nextp = new AstSenItem{flp, VEdgeType::ET_HYBRID, refp};
             senItemsp = AstNode::addNext(senItemsp, nextp);
         }
-        AstSenTree* const senTree = new AstSenTree{flp, senItemsp};
+        AstSenTree* const senTreep = new AstSenTree{flp, senItemsp};
         // Add logic to result with new sensitivity
-        result.add(lvtxp->scopep(), finder.getSenTree(senTree), logicp);
+        result.add(lvtxp->scopep(), finder.getSenTree(senTreep), logicp);
         // SenTreeFinder::getSenTree clones, so clean up
-        VL_DO_DANGLING(senTree->deleteTree(), senTree);
+        VL_DO_DANGLING(senTreep->deleteTree(), senTreep);
     }
     return result;
 }

@@ -43,4 +43,53 @@ module t;
     // packed v.s. unpacked structure
     import_func0(sig3);
   end
+
+  import "DPI-C" function void import_func4(output byte out[]);
+  byte dyn[];
+  byte que[$];
+
+  initial begin
+    // dynamic array or queue for an output open array
+    import_func4(dyn);
+    import_func4(que);
+  end
+
+  import "DPI-C" function void import_func5(input real in[]);
+  import "DPI-C" function void import_func6(input int in[]);
+  import "DPI-C" function void import_func7(input real in[][2]);
+  int ints[2];
+  real reals[];
+  int ints32[3][2];
+  int ints_dyn[3][];
+  class Cls;
+  endclass
+  Cls objs[];
+
+  initial begin
+    // elements not of an equivalent type for an open array
+    import_func5(ints);
+    import_func6(reals);
+    import_func7(ints32);
+    import_func6(objs);
+    import_func6(sig3);
+    import_func6(ints_dyn);
+  end
+
+  import "DPI-C" function void import_func8(input byte in[]);
+  byte assoc[int];
+  byte wild[*];
+
+  initial begin
+    // associative arrays for an open array
+    import_func8(assoc);
+    import_func8(wild);
+  end
+
+  import "DPI-C" function void import_func9(input bit [] in[]);
+  bit [7:0] bits_dyn[3][];
+
+  initial begin
+    // fewer unpacked dimensions, not counting the unsized packed dimension
+    import_func9(bits_dyn);
+  end
 endmodule

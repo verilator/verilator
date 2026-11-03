@@ -372,11 +372,11 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
 
     uint64_t h = seed ^ (len * m);
 
-    const uint64_t* data = reinterpret_cast<const uint64_t*>(key);
-    const uint64_t* end = data + (len / 8);
+    const uint64_t* datap = reinterpret_cast<const uint64_t*>(key);
+    const uint64_t* endp = datap + (len / 8);
 
-    while (data != end) {
-        uint64_t k = *data++;
+    while (datap != endp) {
+        uint64_t k = *datap++;
 
         k *= m;
         k ^= k >> r;
@@ -386,7 +386,7 @@ uint64_t VString::hashMurmur(const string& str) VL_PURE {
         h *= m;
     }
 
-    const unsigned char* data2 = reinterpret_cast<const unsigned char*>(data);
+    const unsigned char* data2 = reinterpret_cast<const unsigned char*>(datap);
 
     switch (len & 7) {
     case 7: h ^= static_cast<uint64_t>(data2[6]) << 48;  // FALLTHRU
@@ -427,11 +427,11 @@ string VString::base64Enc(const string& str) VL_PURE {
     if (len >= 2 && pos < len - 1) {  // Pad 2
         result += digits[((str[pos] >> 2) & 0x3f)];
         result += digits[((str[pos] & 0x3) << 4) | (static_cast<int>(str[pos + 1] & 0xf0) >> 4)];
-        result += digits[((str[pos + 1] & 0xf) << 2) | (static_cast<int>(0) >> 6)];
+        result += digits[((str[pos + 1] & 0xf) << 2)];  // Given pos+2 is 0
         result += '=';
     } else if (pos < len) {  // Pad 1
         result += digits[((str[pos] >> 2) & 0x3f)];
-        result += digits[((str[pos] & 0x3) << 4) | (static_cast<int>(0) >> 4)];
+        result += digits[((str[pos] & 0x3) << 4)];  // Given pos+1 is 0
         result += '=';
         result += '=';
     }
@@ -483,12 +483,12 @@ static uint64_t shaRotr64(uint64_t lhs, uint64_t rhs) VL_PURE {
 }
 
 VL_ATTR_ALWINLINE
-static void sha512Block(uint64_t* h, const uint64_t* chunk) VL_PURE {
+static void sha512Block(uint64_t* hp, const uint64_t* chunkp) VL_PURE {
     uint64_t ah[8];
-    const uint64_t* p = chunk;
+    const uint64_t* p = chunkp;
 
     // Initialize working variables to current hash value
-    for (unsigned i = 0; i < 8; i++) ah[i] = h[i];
+    for (unsigned i = 0; i < 8; i++) ah[i] = hp[i];
     // Compression function main loop
     uint64_t w[16] = {};
     for (unsigned i = 0; i < 5; ++i) {
@@ -521,7 +521,7 @@ static void sha512Block(uint64_t* h, const uint64_t* chunk) VL_PURE {
             ah[0] = temp1 + temp2;
         }
     }
-    for (unsigned i = 0; i < 8; ++i) h[i] += ah[i];
+    for (unsigned i = 0; i < 8; ++i) hp[i] += ah[i];
 }
 
 void VHashSha512::insert(const void* datap, size_t length) {
