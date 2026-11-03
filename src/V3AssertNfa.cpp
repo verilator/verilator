@@ -756,10 +756,11 @@ class SvaNfaBuilder final {
             SvaStateVertex* const liveRepVtxp  // LCOV_EXCL_LINE
                 = currentp->m_liveRepCheckVtxp ? currentp->m_liveRepCheckVtxp : currentp;
 
-            // Do not clone an impure endpoint: cloning would duplicate its side effects.
+            // Functions shall have no side effects in boolean expressions of assertions
+            // (IEEE 1800-2023 16.6).
             if (!exprp->isPure()) {
-                exprp->v3warn(E_UNSUPPORTED,
-                              "Unsupported: impure endpoint after unbounded repetition");
+                exprp->v3error("Functions shall have no side effects in boolean expressions "
+                               "of assertions (IEEE 1800-2023 16.6)");
                 return BuildResult::failWithError();
             }
 
