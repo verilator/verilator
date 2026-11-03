@@ -4,8 +4,8 @@
    %Warning-MULTIDRIVEN: example.v:1:5 Variable written to in always_ff also written by other process (IEEE 1800-2023 9.2.2.4): 'q'
                                                         : ... note: In instance 't'
                          example.v:1:5
-      26 |     q <= d1;
+      21 |     q <= d1;
          |     ^
                          example.v:1:5 ... Location of other write
-      23 |     q <= d0;
+      18 |     q <= d0;
          |     ^

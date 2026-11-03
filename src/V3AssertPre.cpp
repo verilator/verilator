@@ -1623,14 +1623,14 @@ private:
             };
 
             AstLoop* const loopp = new AstLoop{flp};
-            AstAssign* const decrementVar = new AstAssign{
+            AstAssign* const decrementVarp = new AstAssign{
                 flp, new AstVarRef{flp, activep, VAccess::WRITE},
                 new AstSub{flp, new AstVarRef{flp, activep, VAccess::READ}, new AstConst{flp, 1}}};
             loopp->addStmtsp(new AstLoopTest{
                 flp, loopp, new AstLogNot{flp, new AstVarRef{flp, donep, VAccess::READ}}});
             {
                 AstNode* const passp = new AstPExprClause{flp};
-                passp->addNext(decrementVar);
+                passp->addNext(decrementVarp);
                 passp->addNext(setDone());
                 AstNodeExpr* passCondp = rhsp;
                 if (nodep->isOverlapping()) {
@@ -1640,7 +1640,7 @@ private:
             }
             {
                 AstNode* const failp = new AstPExprClause{flp, false};
-                failp->addNext(decrementVar->cloneTree(false));
+                failp->addNext(decrementVarp->cloneTree(false));
                 failp->addNext(setDone());
                 loopp->addStmtsp(new AstIf{
                     flp,

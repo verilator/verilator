@@ -42,50 +42,50 @@ public:
     // Just a pointer to a heap Node, but with special accessors to help keep back pointers
     // consistent.
     struct Link final {
-        Node* m_ptr = nullptr;  // The managed pointer
+        Node* m_ptrp = nullptr;  // The managed pointer
 
         Link() = default;
         VL_UNCOPYABLE(Link);
 
         // Make the pointer point to the target, and the target's owner pointer to this pointer
         VL_ATTR_ALWINLINE void link(Node* targetp) {
-            m_ptr = targetp;
+            m_ptrp = targetp;
             if (!targetp) return;
 #if VL_DEBUG
             UASSERT(!targetp->m_ownerpp, "Already linked");
 #endif
-            targetp->m_ownerpp = &m_ptr;
+            targetp->m_ownerpp = &m_ptrp;
         }
 
         // Make the pointer point to the target, and the target's owner pointer to this pointer
         VL_ATTR_ALWINLINE void linkNonNull(Node* targetp) {
-            m_ptr = targetp;
+            m_ptrp = targetp;
 #if VL_DEBUG
             UASSERT(!targetp->m_ownerpp, "Already linked");
 #endif
-            targetp->m_ownerpp = &m_ptr;
+            targetp->m_ownerpp = &m_ptrp;
         }
 
         // Clear the pointer and return it's previous value
         VL_ATTR_ALWINLINE Node* unlink() {
-            Node* const result = m_ptr;
+            Node* const resultp = m_ptrp;
 #if VL_DEBUG
-            if (result) {
-                UASSERT(m_ptr->m_ownerpp == &m_ptr, "Bad back link");
+            if (resultp) {
+                UASSERT(m_ptrp->m_ownerpp == &m_ptrp, "Bad back link");
                 // Not strictly necessary to clear this, but helps debugging
-                m_ptr->m_ownerpp = nullptr;
+                m_ptrp->m_ownerpp = nullptr;
             }
 #endif
-            m_ptr = nullptr;
-            return result;
+            m_ptrp = nullptr;
+            return resultp;
         }
 
         // Minimal convenience accessors and operators
-        VL_ATTR_ALWINLINE Node* ptr() const { return m_ptr; }
-        VL_ATTR_ALWINLINE operator bool() const { return m_ptr; }
-        VL_ATTR_ALWINLINE bool operator!() const { return !m_ptr; }
-        VL_ATTR_ALWINLINE Node* operator->() const { return m_ptr; }
-        VL_ATTR_ALWINLINE Node& operator*() const { return *m_ptr; }
+        VL_ATTR_ALWINLINE Node* ptr() const { return m_ptrp; }
+        VL_ATTR_ALWINLINE operator bool() const { return m_ptrp; }
+        VL_ATTR_ALWINLINE bool operator!() const { return !m_ptrp; }
+        VL_ATTR_ALWINLINE Node* operator->() const { return m_ptrp; }
+        VL_ATTR_ALWINLINE Node& operator*() const { return *m_ptrp; }
     };
 
     // A single node in the pairing heap tree

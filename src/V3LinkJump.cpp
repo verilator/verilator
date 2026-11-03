@@ -223,17 +223,17 @@ class LinkJumpVisitor final : public VNVisitor {
                                           const std::string& dotted = "") {
         AstNodeVarRef* const queueRefp
             = newQueueRefp(fl, processQueuep, VAccess::READWRITE, dotted);
-        AstTaskRef* killQueueCall = nullptr;
+        AstTaskRef* killQueueCallp = nullptr;
         for (AstNode* const itemp : v3Global.rootp()->stdPackageProcessp()->memberspList()) {
             if (itemp->name() == "killQueue") {
-                killQueueCall
+                killQueueCallp
                     = new AstTaskRef{fl, VN_AS(itemp, Task), new AstArg{fl, "", queueRefp}};
                 break;
             }
         }
-        UASSERT(killQueueCall, "Should be found");
-        killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
-        return new AstStmtExpr{fl, killQueueCall};
+        UASSERT(killQueueCallp, "Should be found");
+        killQueueCallp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
+        return new AstStmtExpr{fl, killQueueCallp};
     }
     static void requireTiming(FileLine* const fl) {
         // The detached process the disable kills needs the timing runtime (VlProcess)

@@ -376,8 +376,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         }
 
         // CONSTRUCTORS
-        VarInfo(ConstBitOpTreeVisitor* parent, AstVarRef* refp, int width)
-            : m_parentp{parent}
+        VarInfo(ConstBitOpTreeVisitor* parentp, AstVarRef* refp, int width)
+            : m_parentp{parentp}
             , m_refp{refp}
             , m_width{width}
             , m_bitPolarity{refp, m_width} {
@@ -1876,11 +1876,11 @@ class ConstVisitor final : public VNVisitor {
         const AstNode* const lfromp = lhsp->fromp();
         const AstNode* const rfromp = rhsp->fromp();
         if (!lfromp || !rfromp || !lfromp->sameGateTree(rfromp)) return false;
-        const AstConst* const lstart = VN_CAST(lhsp->lsbp(), Const);
-        const AstConst* const rstart = VN_CAST(rhsp->lsbp(), Const);
-        if (!lstart || !rstart) return false;  // too complicated
-        const int rend = (rstart->toSInt() + rhsp->widthConst());
-        return (rend == lstart->toSInt());
+        const AstConst* const lstartp = VN_CAST(lhsp->lsbp(), Const);
+        const AstConst* const rstartp = VN_CAST(rhsp->lsbp(), Const);
+        if (!lstartp || !rstartp) return false;  // too complicated
+        const int rend = (rstartp->toSInt() + rhsp->widthConst());
+        return (rend == lstartp->toSInt());
     }
     bool ifMergeAdjacent(const AstNodeExpr* lhsp, const AstNodeExpr* rhsp) {
         // Called by concatmergeable to determine if {lhsp, rhsp} make sense

@@ -81,18 +81,18 @@ class VerilatedVarProps VL_NOT_FINAL {
     std::vector<VerilatedRange> m_unpacked;  // Unpacked array ranges
     std::vector<VerilatedRange> m_packed;  // Packed array ranges
     VerilatedRange m_packedDpi;  // Flattened packed array range
-    void initUnpacked(int udims, const int* ulims) {
+    void initUnpacked(int udims, const int* ulimsp) {
         for (int i = 0; i < udims; ++i) {
-            const int uleft = ulims ? ulims[2 * i + 0] : 0;
-            const int uright = ulims ? ulims[2 * i + 1] : 0;
+            const int uleft = ulimsp ? ulimsp[2 * i + 0] : 0;
+            const int uright = ulimsp ? ulimsp[2 * i + 1] : 0;
             m_unpacked.emplace_back(uleft, uright);
         }
     }
-    void initPacked(int pdims, const int* plims) {
+    void initPacked(int pdims, const int* plimsp) {
         int packedSize = 1;
         for (int i = 0; i < pdims; ++i) {
-            const int pleft = plims ? plims[2 * i + 0] : 0;
-            const int pright = plims ? plims[2 * i + 1] : 0;
+            const int pleft = plimsp ? plimsp[2 * i + 0] : 0;
+            const int pright = plimsp ? plimsp[2 * i + 1] : 0;
             m_packed.emplace_back(pleft, pright);
             packedSize *= abs(pleft - pright) + 1;
         }
@@ -128,33 +128,33 @@ public:
         , m_entSize{0}
         , m_bitOffset{0} {}
 
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulimsp)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_entSize{0}
         , m_bitOffset{0} {
-        initUnpacked(udims, ulims);
+        initUnpacked(udims, ulimsp);
     }
     // With packed
     class Packed {};
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pdims, const int* plims)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Packed, int pdims, const int* plimsp)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_entSize{0}
         , m_bitOffset{0} {
-        initPacked(pdims, plims);
+        initPacked(pdims, plimsp);
     }
-    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulims,
-                      Packed, int pdims, const int* plims)
+    VerilatedVarProps(VerilatedVarType vltype, int vlflags, Unpacked, int udims, const int* ulimsp,
+                      Packed, int pdims, const int* plimsp)
         : m_magic{MAGIC}
         , m_vltype{vltype}
         , m_vlflags(VerilatedVarFlags(vlflags))  // Need () or GCC 4.8 false warning
         , m_entSize{0}
         , m_bitOffset{0} {
-        initUnpacked(udims, ulims);
-        initPacked(pdims, plims);
+        initUnpacked(udims, ulimsp);
+        initPacked(pdims, plimsp);
     }
 
     ~VerilatedVarProps() = default;

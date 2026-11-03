@@ -166,7 +166,7 @@ class DfgVertex VL_NOT_FINAL {
     // The only way to access thes is via DfgUserMap, so mutable is appropriate,
     // the map can change while the keys (DfgVertex) are const.
     mutable uint32_t m_userGeneration = 0;  // User data generation number
-    mutable void* m_userStorage = nullptr;  // User data storage - one pointer worth
+    mutable void* m_userStoragep = nullptr;  // User data storage - one pointer worth
 
 #ifdef VL_DEBUG
     DfgGraph* m_dfgp = nullptr;  // Graph this vertex belongs to
@@ -651,7 +651,7 @@ public:
 // Specialization where T_Value fits in DfgVertex::m_userStorage directly
 template <typename T_Value>
 class DfgUserMap<T_Value, true> final : public DfgUserMapBase {
-    static_assert(fitsSpaceAllocatedFor<T_Value, decltype(DfgVertex::m_userStorage)>(),
+    static_assert(fitsSpaceAllocatedFor<T_Value, decltype(DfgVertex::m_userStoragep)>(),
                   "'T_Value' does not fit 'DfgVertex::m_userStorage'");
     friend class DfgGraph;
 
@@ -671,7 +671,7 @@ public:
 #ifdef VL_DEBUG
         UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
 #endif
-        T_Value* const storagep = reinterpret_cast<T_Value*>(&vtx.m_userStorage);
+        T_Value* const storagep = reinterpret_cast<T_Value*>(&vtx.m_userStoragep);
         if (vtx.m_userGeneration != m_currentGeneration) {
             new (storagep) T_Value{};
             vtx.m_userGeneration = m_currentGeneration;
@@ -687,7 +687,7 @@ public:
         UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
 #endif
         UASSERT_OBJ(vtx.m_userGeneration == m_currentGeneration, &vtx, "Vertex not in map");
-        T_Value* const storagep = reinterpret_cast<T_Value*>(&vtx.m_userStorage);
+        T_Value* const storagep = reinterpret_cast<T_Value*>(&vtx.m_userStoragep);
         return *storagep;
     }
     // Same as above with pointer as key
@@ -697,7 +697,7 @@ public:
 // Specialization where T_Value does not fit in DfgVertex::m_userStorage directly
 template <typename T_Value>
 class DfgUserMap<T_Value, false> final : public DfgUserMapBase {
-    static_assert(fitsSpaceAllocatedFor<T_Value*, decltype(DfgVertex::m_userStorage)>(),
+    static_assert(fitsSpaceAllocatedFor<T_Value*, decltype(DfgVertex::m_userStoragep)>(),
                   "'T_Value*' does not fit 'DfgVertex::m_userStorage'");
     friend class DfgGraph;
 
@@ -720,7 +720,7 @@ public:
 #ifdef VL_DEBUG
         UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
 #endif
-        T_Value*& storagepr = reinterpret_cast<T_Value*&>(vtx.m_userStorage);
+        T_Value*& storagepr = reinterpret_cast<T_Value*&>(vtx.m_userStoragep);
         if (vtx.m_userGeneration != m_currentGeneration) {
             m_storage.emplace_back();
             storagepr = &m_storage.back();
@@ -737,7 +737,7 @@ public:
         UASSERT_OBJ(vtx.m_dfgp == m_dfgp, &vtx, "Vertex not in this graph");
 #endif
         UASSERT_OBJ(vtx.m_userGeneration == m_currentGeneration, &vtx, "Vertex not in map");
-        return *reinterpret_cast<T_Value*&>(vtx.m_userStorage);
+        return *reinterpret_cast<T_Value*&>(vtx.m_userStoragep);
     }
     // Same as above with pointer as key
     T_Value& at(const DfgVertex* vtxp) const { return (*this).at(*vtxp); }

@@ -449,10 +449,10 @@ class EmitCImp final : public EmitCFunc {
     void emitCFuncImp() {
         for (const AstNodeModule* const modp : m_modps) {
             VL_RESTORER(m_modp);
-            VL_RESTORER(m_classOrPackage);
+            VL_RESTORER(m_classOrPackagep);
             m_modp = modp;
             const AstClass* const classp = VN_CAST(modp, Class);
-            m_classOrPackage = classp ? classp->classOrPackagep() : VN_CAST(modp, ClassPackage);
+            m_classOrPackagep = classp ? classp->classOrPackagep() : VN_CAST(modp, ClassPackage);
             for (AstNode* const nodep : modp->stmtspList()) {
                 AstCFunc* const funcp = VN_CAST(nodep, CFunc);
                 if (!funcp || !isImpFunc(funcp)) continue;

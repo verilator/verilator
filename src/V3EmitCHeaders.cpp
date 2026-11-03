@@ -374,9 +374,9 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
         case AttributeType::WIDTH: {
             if (isArrayType) {
                 // For arrays, get innermost element width
-                const AstNodeDType* dtype = itemp->dtypep();
-                while (dtype->subDTypep()) dtype = dtype->subDTypep();
-                return dtype->width();
+                const AstNodeDType* dtypep = itemp->dtypep();
+                while (dtypep->subDTypep()) dtypep = dtypep->subDTypep();
+                return dtypep->width();
             }
             return itemp->width();
         }
@@ -487,21 +487,21 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
 
     // getfunc: VL_ASSIGNSEL_XX(rbits, obits, off, lhsdata, rhsdata);
     // !getfunc: VL_SELASSIGN_XX(rbits, obits, lhsdata, rhsdata, off);
-    void emitVlAssign(const AstNodeDType* const lhstype, const AstNodeDType* rhstype,
+    void emitVlAssign(const AstNodeDType* const lhstypep, const AstNodeDType* rhstypep,
                       const std::string& off, const std::string& lhsdata,
                       const std::string& rhsdata, bool getfunc) {
         puts(getfunc ? "VL_ASSIGNSEL_" : "VL_SELASSIGN_");
-        puts(lhstype->charIQWN());
-        puts(rhstype->charIQWN());
-        puts("(" + std::to_string(lhstype->width()) + ", ");  // LHS width
+        puts(lhstypep->charIQWN());
+        puts(rhstypep->charIQWN());
+        puts("(" + std::to_string(lhstypep->width()) + ", ");  // LHS width
         if (getfunc) {
-            puts(std::to_string(rhstype->width()) + ", ");  // Number of copy bits
+            puts(std::to_string(rhstypep->width()) + ", ");  // Number of copy bits
             puts(off + ", ");  // LHS offset
         } else {
             // Number of copy bits. Use widthTototalBytes to
             // make VL_SELASSIGN_XX clear upper unused bits for us.
             // puts(std::to_string(lhstype->width()) + ", ");
-            puts(std::to_string(lhstype->widthTotalBytes() * 8) + ", ");
+            puts(std::to_string(lhstypep->widthTotalBytes() * 8) + ", ");
         }
         puts(lhsdata + ", ");  // LHS data
         puts(rhsdata);  // RHS data

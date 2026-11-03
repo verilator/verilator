@@ -289,7 +289,7 @@ public:
     ~FileLine();
 #ifdef VL_LEAK_CHECKS
     static void* operator new(size_t size);
-    static void operator delete(void* obj, size_t size);
+    static void operator delete(void* objp, size_t size);
 #endif
     // METHODS
     void newContent();

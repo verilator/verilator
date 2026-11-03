@@ -213,8 +213,34 @@ Summary:
    When make is run on the generated makefile, these will be passed to the
    C++ compiler (g++/clang++/msvc++).
 
-   C++ modules (e.g. :command:`-CFLAGS -fmodules`) are not supported due to
-   precompiled header (PCH) incompatibilities in GCC.
+   C++ modules may be used in user-provided C++ files.  Verilator compiles
+   its generated code with modules disabled, so the precompiled header (PCH)
+   remains usable, and keeps the module flags for user files.  Verilator does
+   not build module interface units or module CMIs; imported modules must be
+   prebuilt before building the Verilated model.
+
+   With GCC, pass :command:`-CFLAGS -fmodules` and prebuild the standard
+   library module in the model object directory:
+
+   .. code-block:: bash
+
+      cd obj_dir
+      g++ -std=c++23 -fmodules --compile-std-module -c -x c++ /dev/null -o /dev/null
+
+   With Clang, precompile libc++'s ``std.cppm`` and pass
+   :command:`-CFLAGS -fmodule-file=std=std.pcm`.  Clang's
+   :command:`-fmodules` enables Clang modules, not C++20 modules.
+   The :command:`-fmodule-header` and :command:`-fmodule-only` options are not
+   supported.
+
+   For modules defined by the user, precompile the module interface unit and
+   pass the resulting object file to Verilator as a ``.o`` input.  Keep the
+   module CMI in the model object directory, or pass it with
+   :command:`-CFLAGS -fmodule-file` when using Clang.
+
+   User translation units that use modules do not use the PCH; include the
+   Verilator headers explicitly.  ``--compiler-include`` headers must also be
+   included explicitly in those translation units.
 
 .. option:: --clk <signal-name>
 

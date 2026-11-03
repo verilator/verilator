@@ -2208,22 +2208,22 @@ struct VlNull final {
         return nullptr;
     }
     template <class T>
-    bool operator==(T* rhs) const {
-        return !rhs;
+    bool operator==(T* rhsp) const {
+        return !rhsp;
     }
     template <class T>
-    bool operator==(const T* rhs) const {
-        return !rhs;
+    bool operator==(const T* rhsp) const {
+        return !rhsp;
     }
 };
 
 template <class T>
-inline bool operator==(T* lhs, VlNull) {
-    return !lhs;
+inline bool operator==(T* lhsp, VlNull) {
+    return !lhsp;
 }
 template <class T>
-inline bool operator==(const T* lhs, VlNull) {
-    return !lhs;
+inline bool operator==(const T* lhsp, VlNull) {
+    return !lhsp;
 }
 
 //===================================================================
