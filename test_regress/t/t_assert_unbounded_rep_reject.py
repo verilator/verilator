@@ -7,6 +7,12 @@ import vltest_bootstrap
 
 test.scenarios("vlt")
 
+# Impure endpoints after unbounded repetition are not supported because
+# cloning the endpoint would duplicate its side effects.
+test.lint(expect_filename=test.golden_filename,
+          verilator_flags2=["--assert --timing +define+TEST_IMPURE_ENDPOINT"],
+          fails=True)
+
 test.compile(verilator_flags2=["--binary", "--assert", "--timing"])
 
 test.execute()

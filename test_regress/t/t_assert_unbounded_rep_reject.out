@@ -1,0 +1,6 @@
+%Error-UNSUPPORTED: t/t_assert_unbounded_rep_reject.v:24:57: Unsupported: impure endpoint after unbounded repetition
+                                                           : ... note: In instance 't'
+   24 |   assert property (@(posedge clk) start |-> a[*1:$] ##0 endpoint());
+      |                                                         ^~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

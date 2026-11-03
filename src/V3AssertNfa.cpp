@@ -343,6 +343,9 @@ class SvaNfaBuilder final {
     // Unsupported endpoint topology must reject, not ignore, or the wait hangs
     bool m_isSeqEvent = false;
     bool m_inSequencePrefix = false;  // Prefix composition does not preserve every endpoint
+    // Building the RHS of a ranged delay. A failed candidate cannot reject
+    // while another delay candidate can still match.
+    bool m_inRangedDelayRhs = false;
     bool m_wantBoolLeaf = false;  // Building a |-> / |=> or top-level body (see buildOrMerge)
 
     struct RangeDelayRejectInfo final {
@@ -739,23 +742,25 @@ class SvaNfaBuilder final {
 
         // Multi-cycle RHS: recurse (only plain boolean is returned as finalCondp).
         if (exprp->isMultiCycleSva()) {
+            VL_RESTORER(m_inRangedDelayRhs);
+            if (delayp->isRangeDelay()) m_inRangedDelayRhs = true;
             const BuildResult result = buildExpr(exprp, currentp, isTopLevelStep);
             if (result.valid()) addFiniteRangeReject(rangeRejectInfo, result, flp);
             return result;
         }
         // A failed required repetition cannot be recovered by a later endpoint.
         // Reject the attempt even when the endpoint is false on this tick.
-        if (!m_isCover && isTopLevelStep && currentp->m_liveRepCondp) {
+        if (!m_isCover && isTopLevelStep && !m_inRangedDelayRhs && currentp->m_liveRepCondp) {
             AstNodeExpr* const liveRepCondp = currentp->m_liveRepCondp;
             // The declaration line has no executable code; exclude it from line coverage.
             SvaStateVertex* const liveRepVtxp  // LCOV_EXCL_LINE
                 = currentp->m_liveRepCheckVtxp ? currentp->m_liveRepCheckVtxp : currentp;
 
-            // Do not clone an impure endpoint: cloning would duplicate its side effects. Keep
-            // the original expression path, as in the non-repetition case.
+            // Do not clone an impure endpoint: cloning would duplicate its side effects.
             if (!exprp->isPure()) {
-                VL_DO_DANGLING(currentp->m_liveRepCondp->deleteTree(), currentp->m_liveRepCondp);
-                return {currentp, exprp, std::move(rangeMidSources)};
+                exprp->v3warn(E_UNSUPPORTED,
+                              "Unsupported: impure endpoint after unbounded repetition");
+                return BuildResult::failWithError();
             }
 
             SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
