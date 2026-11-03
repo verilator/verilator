@@ -970,8 +970,11 @@ bool VlRandomizer::drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
                                    std::map<std::string, std::string>& drawnr)
     VL_REQUIRES(sess.m_mutex) {
     // Only a lone scalar cycling variable is drawn ahead of the rand variables; two or
-    // more, or an array, are left to the joint solve (see the declaration)
-    if (randcNames.size() != 1 || m_vars.at(randcNames.front())->dimension() > 0) return true;
+    // more, an array, or a randomize() resizing arrays are left to the joint solve (see the
+    // declaration)
+    if (m_sized || randcNames.size() != 1 || m_vars.at(randcNames.front())->dimension() > 0) {
+        return true;
+    }
     std::iostream& os = sess.os();
     // A cleared history cannot exhaust again, so this retries at most once
     for (;;) {
@@ -1077,6 +1080,13 @@ bool VlRandomizer::hasFrozenVar() const {
 bool VlRandomizer::next_check_only(VlRNGReseeds& rngr) { return nextRandomize(rngr, true); }
 
 bool VlRandomizer::next(VlRNGReseeds& rngr) { return nextRandomize(rngr, false); }
+
+bool VlRandomizer::next_sized(VlRNGReseeds& rngr) {
+    m_sized = true;
+    const bool ok = nextRandomize(rngr, false);
+    m_sized = false;
+    return ok;
+}
 
 bool VlRandomizer::nextRandomize(VlRNGReseeds& rngr, bool checkOnly) {
     // No rand variables: randomize() still checks the constraints (IEEE 1800-2023 18.11.1)
