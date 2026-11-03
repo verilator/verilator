@@ -654,6 +654,14 @@ void AstAssertCtl::dumpJson(std::ostream& str) const {
     }
     dumpJsonGen(str);
 }
+void AstAssignW::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (m_declInit) str << " [DECLINIT]";
+}
+void AstAssignW::dumpJson(std::ostream& str) const {
+    Super::dumpJson(str);
+    dumpJsonBoolIf(str, "declInit", m_declInit);
+}
 AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
 void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);

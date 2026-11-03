@@ -20,11 +20,12 @@
 //      SEL(VARREF(...))) mark only some bits as used/driven
 //      else VARREF(...) mark all bits as used/driven
 //      Report unused/undriven nets
-//      Also report MULTIDRIVEN when a wire has a second driver besides an
-//      output port connection: the lowered declaration initial value and
-//      continuous assigns, which the DFG driver check does not see.  Drivers
-//      that may be all-Z (open-drain style) and inout bus connections are
-//      not counted.
+//      Also report MULTIDRIVEN when a net has a second driver besides an
+//      output port connection: the lowered declaration initial value (the
+//      flagged assign the parser creates for the net's initializer) and
+//      continuous assigns, which the DFG driver check does not see.  Pins
+//      whose child module never drives the port and drivers that may be
+//      all-Z (open-drain style) are not counted.
 //
 //*************************************************************************
 
@@ -40,10 +41,16 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// A net that can trigger the port-connection MULTIDRIVEN check
+// Nets to which the port-connection MULTIDRIVEN check applies.  Only the
+// plain wire type: tri-family nets resolve multiple drivers by design
+// (wired OR/AND, strength resolution, and the built-in pull of tri0/1
+// and supply0/1), so an output port alongside their default drivers is
+// intended use, not a conflict.  Variables are excluded: a declaration
+// initial value is a one-time write that the port drive legitimately
+// overwrites, and a continuous assign to a variable is a last-write-wins
+// ordering matter, not a value conflict.
 static bool isDriverNet(const AstVar* const varp) {
-    return varp->varType() == VVarType::WIRE && !varp->isIfaceRef() && !varp->isFuncLocal()
-           && !varp->isClassMember() && !varp->isUsedLoopIdx();
+    return varp->varType().isWireNet() && !varp->isFuncLocal();
 }
 
 //######################################################################
@@ -72,9 +79,7 @@ class UndrivenVarEntry final {
     const AstNode* m_initDriverp = nullptr;  // Lowered declaration initial value
     int m_contDriverCount = 0;  // Real user continuous-assign drivers
     const AstNode* m_contDriverp = nullptr;  // First of them
-    int m_pinDriverCount = 0;  // Whole-net output pin drivers
-    const AstNode* m_pinDriverp = nullptr;  // First of them
-    const AstNode* m_pinDriver2p = nullptr;  // Second of them
+    std::vector<const AstPin*> m_pinps;  // Whole-net output pin connections
 
     const AstNodeFTaskRef* m_callNodep = nullptr;  // Call node if driven via writeSummary
 
@@ -218,25 +223,9 @@ public:
         if (!m_contDriverp) m_contDriverp = nodep;
     }
     const AstNode* contDriverp() const { return m_contDriverp; }
-    void addPinDriver(const AstNode* nodep) {
-        ++m_pinDriverCount;
-        if (!m_pinDriverp)
-            m_pinDriverp = nodep;
-        else if (!m_pinDriver2p)
-            m_pinDriver2p = nodep;
-    }
-    // True if the module of the pin connected through this varref drives that
-    // port. A port the module never drives only ever contributes Z to the
-    // net, so its pin is not a real driver. Interface ports keep counting:
-    // their driving is tracked per interface, not per module.
-    bool pinChildDrives(const AstNode* const refp) const {
-        const AstPin* const pinp = VN_CAST(refp->backp(), Pin);
-        const AstVar* const childVarp = pinp ? pinp->modVarp() : nullptr;
-        if (!childVarp || childVarp->isIfaceRef()) return true;
-        const UndrivenVarEntry* const childEntry
-            = reinterpret_cast<UndrivenVarEntry*>(childVarp->user1p());
-        return childEntry && childEntry->anyBitDriven();
-    }
+    // Whole-net connection to an output pin. Whether it counts as a real
+    // driver is decided at report time, when every child entry exists
+    void addPinDriver(const AstPin* const pinp) { m_pinps.push_back(pinp); }
     void underGenerate() { m_underGen = true; }
     bool isUnderGen() const { return m_underGen; }
     bool isDrivenWhole() const { return m_wholeFlags[FLAG_DRIVEN]; }
@@ -315,17 +304,27 @@ public:
         }
         // Drivers no other check sees: the lowered initial value and output
         // port connections, which the DFG driver check does not lower into
-        // driver logic.  Pure-Z (open-drain), inout bus, and ports not driven
-        // in their child module were not counted above.  The isUnderGen
-        // suppression is kept in parallel with the per-write MULTIDRIVEN
-        // checks.
-        if (isDriverNet(nodep) && !isUnderGen()
-            && !nodep->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
-            const bool pin1 = m_pinDriverp && pinChildDrives(m_pinDriverp);
-            const bool pin2 = m_pinDriver2p && pinChildDrives(m_pinDriver2p);
-            const int pinDrivers = (pin1 ? 1 : 0) + (pin2 ? 1 : 0);
-            const AstNode* const drivingPinp
-                = pin1 ? m_pinDriverp : (pin2 ? m_pinDriver2p : nullptr);
+        // driver logic.  Pure-Z (open-drain), inout bus, and pins whose child
+        // module never drives the port were not counted above.
+        if (isDriverNet(nodep) && !nodep->fileline()->warnIsOff(V3ErrorCode::MULTIDRIVEN)) {
+            // Output pins drive the net only when the module behind the pin
+            // drives its port; a port that module never drives only ever
+            // contributes Z. Decided here at report time, when every child
+            // entry exists.
+            int pinDrivers = 0;
+            const AstNode* drivingPin1p = nullptr;
+            const AstNode* drivingPin2p = nullptr;
+            for (const AstPin* const pinp : m_pinps) {
+                const AstVar* const childVarp = pinp->modVarp();
+                const UndrivenVarEntry* const childEntry
+                    = reinterpret_cast<UndrivenVarEntry*>(childVarp->user1p());
+                if (!childEntry || !childEntry->anyBitDriven()) continue;
+                if (!drivingPin1p)
+                    drivingPin1p = pinp->exprp();
+                else if (!drivingPin2p)
+                    drivingPin2p = pinp->exprp();
+                ++pinDrivers;
+            }
             const int initDrivers = m_initDriverp ? 1 : 0;
             const int contDrivers = m_contDriverCount;
             if (pinDrivers >= 1 && (initDrivers + contDrivers + pinDrivers) >= 2) {
@@ -333,12 +332,12 @@ public:
                     nodep->v3warn(MULTIDRIVEN,
                                   "Variable driven by multiple module output ports: "
                                       << nodep->prettyNameQ() << '\n'
-                                      << m_pinDriverp->warnOther()
+                                      << drivingPin1p->warnOther()
                                       << "... Location of output port connection\n"
-                                      << m_pinDriverp->warnContextSecondary() << '\n'
-                                      << m_pinDriver2p->warnOther()
+                                      << drivingPin1p->warnContextSecondary() << '\n'
+                                      << drivingPin2p->warnOther()
                                       << "... Location of other output port connection\n"
-                                      << m_pinDriver2p->warnContextSecondary());
+                                      << drivingPin2p->warnContextSecondary());
                 } else if (initDrivers) {
                     nodep->v3warn(MULTIDRIVEN, "Variable with initial value also driven by "
                                                "module output port: "
@@ -346,9 +345,9 @@ public:
                                                    << m_initDriverp->warnOther()
                                                    << "... Location of variable initialization\n"
                                                    << m_initDriverp->warnContextPrimary() << '\n'
-                                                   << drivingPinp->warnOther()
+                                                   << drivingPin1p->warnOther()
                                                    << "... Location of output port connection\n"
-                                                   << drivingPinp->warnContextSecondary());
+                                                   << drivingPin1p->warnContextSecondary());
                 } else {
                     nodep->v3warn(
                         MULTIDRIVEN,
@@ -358,9 +357,9 @@ public:
                             << contDriverp()->warnOther()
                             << "... Location of continuous assignment\n"
                             << contDriverp()->warnContextSecondary() << '\n'
-                            << drivingPinp->warnOther()
+                            << drivingPin1p->warnOther()
                             << "... Location of output port connection\n"
-                            << drivingPinp->warnContextSecondary());
+                            << drivingPin1p->warnContextSecondary());
                 }
             }
         }
@@ -489,16 +488,16 @@ class UndrivenVisitor final : public VNVisitorConst {
     std::array<std::vector<UndrivenVarEntry*>, 3> m_entryps = {};  // Nodes to delete when finished
     bool m_inBBox = false;  // In black box; mark as driven+used
     bool m_inContAssign = false;  // In a continuous assignment
+    bool m_inDeclInitAssign
+        = false;  // The continuous assign is a lowered net declaration initializer
     bool m_inInitial = false;  // In explicit initial block
     bool m_inInitialSetup = false;  // In InitialAutomatic*/InitialStatic* assignment LHS
     bool m_inInitialStatic = false;  // In InitialStatic
     bool m_inProcAssign = false;  // In procedural assignment
     bool m_inFTaskRef = false;  // In function or task call
     bool m_inInoutOrRefPin = false;  // Connected to pin that is inout
-    bool m_inDrivingPin = false;  // In a pin of an output port, which drives its net
-    const AstPin* m_pinp = nullptr;  // Current pin
-    bool m_contAssignZExempt
-        = false;  // Current continuous assign RHS cannot conflict (pure-Z or Z-containing)
+    const AstPin* m_drivingPinp = nullptr;  // In a pin of an output port, which drives its net
+    bool m_contAssignZExempt = false;  // Current continuous assign RHS may be all-Z (open-drain)
     bool m_inSelLhs = false;  // Iterating the fromp of an AstSel (a partial-bit write target)
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysp = nullptr;  // Current always of either type
@@ -553,16 +552,28 @@ class UndrivenVisitor final : public VNVisitorConst {
                                             true);  // Complain just once for any usage
         }
     }
-    // A driver that may produce Z is not always a conflict: a pure-Z constant
-    // asserts no value, and a non-constant expression containing a Z constant
-    // is the open-drain "only drives sometimes" style (enable ? data : 1'bz),
-    // which must not be reported.  A bare partially-Z constant drives its
-    // non-Z bits and counts.
-    static bool isZExemptDriver(const AstNodeExpr* nodep) {
-        if (const AstConst* const constp = VN_CAST(nodep, Const)) {
-            return constp->num().hasZ() && constp->num().isAllZ();
-        }
-        return nodep->exists([](const AstConst* const childp) { return childp->num().hasZ(); });
+    // A driver that may produce Z is not a definite conflict: a pure Z
+    // constant drives nothing, and a Z constant on the data path of a
+    // conditional is an open-drain "drives only sometimes" form
+    // (enable ? data : 1'bz), which must not be reported. A Z constant
+    // inside a comparison or function argument never reaches the net and
+    // does not exempt; a partially-Z constant drives the non-Z bits and
+    // counts as a driver.
+    static bool isZDataPath(AstNodeExpr* nodep) {
+        if (const AstConst* const constp = VN_CAST(nodep, Const)) return constp->num().hasZ();
+        if (const AstCond* const condp = VN_CAST(nodep, Cond))
+            return isZDataPath(condp->thenp()) || isZDataPath(condp->elsep());
+        return false;
+    }
+    static bool isZExemptDriver(AstNodeExpr* nodep) {
+        if (const AstConst* const constp = VN_CAST(nodep, Const)) return constp->num().isAllZ();
+        return isZDataPath(nodep);
+    }
+    // A continuous-assign write to a driver net that is not the net's own
+    // lowered declaration initializer and not Z-exempt, counts as a driver
+    bool isContDriver(const AstNodeVarRef* const refp) const {
+        return refp->access().isWriteOrRW() && isDriverNet(refp->varp()) && m_inContAssign
+               && !m_contAssignZExempt && !m_inDeclInitAssign;
     }
     // A clocking block 'output' is an additional driver of the signal it names.
     // The conflict is found from whichever driver is reached second.
@@ -680,10 +691,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                     }
                     entryp->drivenBit(lsb, nodep->width());
                     // Partial-range continuous assigns count as drivers too
-                    if (usr == 1 && varrefp->access().isWriteOrRW() && isDriverNet(varrefp->varp())
-                        && m_inContAssign && !m_contAssignZExempt
-                        && !varrefp->fileline()->equalFirstLineCol(*(varrefp->varp()->fileline())))
-                        entryp->addContDriver(varrefp);
+                    if (usr == 1 && isContDriver(varrefp)) entryp->addContDriver(varrefp);
                 }
                 if (m_inBBox || !varrefp->access().isWriteOrRW())
                     entryp->usedBit(lsb, nodep->width(), varrefp);
@@ -862,20 +870,19 @@ class UndrivenVisitor final : public VNVisitorConst {
                     // both read and writing
                     || m_inInoutOrRefPin))
                 entryp->usedWhole(nodep);
-            // Count the net's drivers for the port-connection MULTIDRIVEN check
-            // below; a varref at the declaration's fileline is the lowered
-            // initial value, not a user assign.
+            // Count the net's drivers for the port-connection MULTIDRIVEN
+            // check below.  Only write refs qualify: the flagged assignment's
+            // right-hand side may reference other nets, and those reads are
+            // not drivers
             if (usr == 1 && nodep->access().isWriteOrRW() && isDriverNet(nodep->varp())) {
                 if (m_inContAssign && !m_contAssignZExempt) {
-                    if (nodep->fileline()->equalFirstLineCol(*(nodep->varp()->fileline()))) {
+                    if (m_inDeclInitAssign)
                         entryp->setInitDriver(nodep);
-                    } else {
+                    else if (isContDriver(nodep))
                         entryp->addContDriver(nodep);
-                    }
                 }
-                if (m_inDrivingPin && m_pinp && m_pinp->exprp() == nodep) {
-                    entryp->addPinDriver(nodep);
-                }
+                if (m_drivingPinp && m_drivingPinp->exprp() == nodep)
+                    entryp->addPinDriver(m_drivingPinp);
             }
         }
     }
@@ -913,6 +920,10 @@ class UndrivenVisitor final : public VNVisitorConst {
         m_inContAssign = true;
         VL_RESTORER(m_contAssignZExempt);
         m_contAssignZExempt = isZExemptDriver(nodep->rhsp());
+        // The flagged assign is the net's lowered declaration initial
+        // value, an init driver, not a user continuous assign
+        VL_RESTORER(m_inDeclInitAssign);
+        m_inDeclInitAssign = nodep->declInit();
         iterateChildrenConst(nodep);
     }
     void visit(AstRelease* nodep) override {
@@ -1011,10 +1022,8 @@ class UndrivenVisitor final : public VNVisitorConst {
         VL_RESTORER(m_inInoutOrRefPin);
         m_inInoutOrRefPin = nodep->modVarp()->isInoutOrRef();
         // Only output pins count as drivers; inout pins are bus connections
-        VL_RESTORER(m_inDrivingPin);
-        m_inDrivingPin = nodep->modVarp()->direction().isOutput();
-        VL_RESTORER(m_pinp);
-        m_pinp = nodep;
+        VL_RESTORER(m_drivingPinp);
+        m_drivingPinp = nodep->modVarp()->direction().isOutput() ? nodep : nullptr;
         iterateChildrenConst(nodep);
     }
 

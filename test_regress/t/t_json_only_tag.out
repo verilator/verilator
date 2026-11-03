@@ -12,7 +12,7 @@
     {"type":"VAR","name":"dotted","addr":"(S)","loc":"d,33:15,33:21","dtypep":"(T)","origName":"dotted","verilogName":"dotted","direction":"NONE","declDirection":"NONE","icoMaybeWritten":true,"lifetime":"VSTATICI","varType":"WIRE","dtypeName":"logic"},
     {"type":"ALWAYS","addr":"(U)","loc":"d,33:22,33:23","keyword":"cont_assign",
      "stmtsp": [
-      {"type":"ASSIGNW","addr":"(V)","loc":"d,33:22,33:23","dtypep":"(T)",
+      {"type":"ASSIGNW","addr":"(V)","loc":"d,33:22,33:23","dtypep":"(T)","declInit":true,
        "rhsp": [
         {"type":"VARXREF","name":"value","addr":"(W)","loc":"d,33:29,33:34","dtypep":"(X)","dotted":"itop","access":"RD","varp":"(Y)"}
       ],
