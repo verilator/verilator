@@ -84,6 +84,7 @@ public:
     SvaStateVertex* m_liveRepCheckVtxp = nullptr;
     // The terminal combines new entries and continuing attempts for this repetition.
     SvaStateVertex* m_liveRepEntryVtxp = nullptr;
+    // Whether live repetition state represents multiple concurrent attempts.
     bool m_tracksLiveRepThreads = false;
     // A valid endpoint match clears the live repetition state.
     AstNodeExpr* m_liveRepClearCondp = nullptr;
