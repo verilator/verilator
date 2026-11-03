@@ -392,6 +392,8 @@ class UndrivenVisitor final : public VNVisitorConst {
     bool m_inFTaskRef = false;  // In function or task call
     bool m_inInoutOrRefPin = false;  // Connected to pin that is inout
     bool m_inSelLhs = false;  // Iterating the fromp of an AstSel (a partial-bit write target)
+    int m_memberSelLsb = 0;  // Bit offset through nested packed selections of a member
+    int m_memberSelWidth = 0;  // Selected member width, or zero for a whole-member access
     const AstNodeFTask* m_taskp = nullptr;  // Current task
     const AstAlways* m_alwaysp = nullptr;  // Current always of either type
     const AstAlways* m_alwaysCombp = nullptr;  // Current always if combo, otherwise nullptr
@@ -545,6 +547,26 @@ class UndrivenVisitor final : public VNVisitorConst {
         // Arrays are rarely constant assigned, so for now we punt and do all entries
         iterateChildrenConst(nodep);
     }
+    void visit(AstMemberSel* nodep) override {
+        // The selected field is not a VarRef child; track it separately from the object handle.
+        UndrivenVarEntry* const entryp = getEntryp(nodep->varp(), 1);
+        if (m_inBBox || nodep->access().isWriteOrRW()) {
+            if (m_memberSelWidth)
+                entryp->drivenBit(m_memberSelLsb, m_memberSelWidth);
+            else
+                entryp->drivenWhole(nodep);
+        }
+        if (m_inBBox || nodep->access().isReadOrRW()) {
+            if (m_memberSelWidth)
+                entryp->usedBit(m_memberSelLsb, m_memberSelWidth, nodep);
+            else
+                entryp->usedWhole(nodep);
+        }
+        // The object's own fields and indices are independent of this field's bit range.
+        VL_RESTORER(m_memberSelWidth);
+        m_memberSelWidth = 0;
+        iterateChildrenConst(nodep);
+    }
     void visit(AstSel* nodep) override {
         AstNodeVarRef* const varrefp = VN_CAST(nodep->fromp(), NodeVarRef);
         AstConst* const constp = VN_CAST(nodep->lsbp(), Const);
@@ -566,7 +588,21 @@ class UndrivenVisitor final : public VNVisitorConst {
             }
         } else {
             // skip over static longest static prefix
-            iterateConst(nodep->lsbp());
+            {
+                VL_RESTORER(m_memberSelWidth);
+                m_memberSelWidth = 0;
+                iterateConst(nodep->lsbp());
+            }
+            VL_RESTORER(m_memberSelLsb);
+            VL_RESTORER(m_memberSelWidth);
+            if (constp && !constp->num().isFourState()
+                && (VN_IS(nodep->fromp(), Sel) || VN_IS(nodep->fromp(), MemberSel))) {
+                m_memberSelLsb = constp->toUInt() + (m_memberSelWidth ? m_memberSelLsb : 0);
+                if (!m_memberSelWidth) m_memberSelWidth = nodep->width();
+            } else {
+                // A dynamic select may access any bit of its constant prefix.
+                m_memberSelWidth = 0;
+            }
             VL_RESTORER(m_inSelLhs);
             m_inSelLhs = !V3Width::selectNonConstantRecurse(nodep->lsbp(), /*inSel=*/true);
             iterateConst(nodep->fromp());

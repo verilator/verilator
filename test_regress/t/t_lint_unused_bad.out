@@ -66,4 +66,76 @@
                                                  : ... note: In instance 't.sub'
    59 |   localparam linter_param3 = 3;
       |              ^~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:99:9: Signal is not driven, nor used: 'never_accessed'
+                                                 : ... note: In instance 't.sub'
+   99 |     int never_accessed;
+      |         ^~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:100:9: Signal is not used: 'only_written'
+                                                  : ... note: In instance 't.sub'
+  100 |     int only_written;
+      |         ^~~~~~~~~~~~
+%Warning-UNDRIVEN: t/t_lint_unused_bad.v:101:9: Signal is not driven: 'only_read'
+                                              : ... note: In instance 't.sub'
+  101 |     int only_read;
+      |         ^~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:112:15: Bits of signal are not driven, nor used: 'bit0'[6:1]
+                                                   : ... note: In instance 't.sub'
+  112 |     bit [6:0] bit0;
+      |               ^~~~
+%Warning-UNDRIVEN: t/t_lint_unused_bad.v:113:15: Bits of signal are not driven: 'read_all'[6:1]
+                                               : ... note: In instance 't.sub'
+  113 |     bit [6:0] read_all;
+      |               ^~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:114:15: Bits of signal are not used: 'write_all'[6:1]
+                                                   : ... note: In instance 't.sub'
+  114 |     bit [6:0] write_all;
+      |               ^~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:115:15: Bits of signal are not used: 'mixed_bit0'[6:1]
+                                                   : ... note: In instance 't.sub'
+  115 |     bit [6:0] mixed_bit0;
+      |               ^~~~~~~~~~
+%Warning-UNDRIVEN: t/t_lint_unused_bad.v:116:15: Bits of signal are not driven: 'mixed_undriven'[6:1]
+                                               : ... note: In instance 't.sub'
+  116 |     bit [6:0] mixed_undriven;
+      |               ^~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:117:15: Bits of signal are not driven, nor used: 'part_range'[8:6,2]
+                                                   : ... note: In instance 't.sub'
+  117 |     bit [8:2] part_range;
+      |               ^~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:118:20: Bits of signal are not driven, nor used: 'nested_range'[14:8,5:0]
+                                                   : ... note: In instance 't.sub'
+  118 |     bit [2:0][4:0] nested_range;
+      |                    ^~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:119:20: Bits of signal are not driven, nor used: 'dynamic_range'[6:0]
+                                                   : ... note: In instance 't.sub'
+  119 |     bit [1:0][6:0] dynamic_range;
+      |                    ^~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:121:15: Bits of signal are not driven, nor used: 'update_bit'[6:1]
+                                                   : ... note: In instance 't.sub'
+  121 |     bit [6:0] update_bit;
+      |               ^~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:160:13: Bits of signal are not driven, nor used: 'module_bit0'[6:1]
+                                                   : ... note: In instance 't.sub'
+  160 |   bit [6:0] module_bit0;
+      |             ^~~~~~~~~~~
+%Warning-UNDRIVEN: t/t_lint_unused_bad.v:161:13: Bits of signal are not driven: 'module_read_all'[6:1]
+                                               : ... note: In instance 't.sub'
+  161 |   bit [6:0] module_read_all;
+      |             ^~~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:162:13: Bits of signal are not used: 'module_write_all'[6:1]
+                                                   : ... note: In instance 't.sub'
+  162 |   bit [6:0] module_write_all;
+      |             ^~~~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:163:13: Bits of signal are not used: 'module_mixed_bit0'[6:1]
+                                                   : ... note: In instance 't.sub'
+  163 |   bit [6:0] module_mixed_bit0;
+      |             ^~~~~~~~~~~~~~~~~
+%Warning-UNDRIVEN: t/t_lint_unused_bad.v:164:13: Bits of signal are not driven: 'module_mixed_undriven'[6:1]
+                                               : ... note: In instance 't.sub'
+  164 |   bit [6:0] module_mixed_undriven;
+      |             ^~~~~~~~~~~~~~~~~~~~~
+%Warning-UNUSEDSIGNAL: t/t_lint_unused_bad.v:165:18: Bits of signal are not driven, nor used: 'module_dynamic_range'[6:0]
+                                                   : ... note: In instance 't.sub'
+  165 |   bit [1:0][6:0] module_dynamic_range;
+      |                  ^~~~~~~~~~~~~~~~~~~~
 %Error: Exiting due to
