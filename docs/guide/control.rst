@@ -323,10 +323,10 @@ The grammar of control commands is as follows:
    as a group, keeping its logic in a few mtasks instead of spreading it
    across many mtasks shared with other instances. This can improve
    locality in designs with many instances of a module, each a small part
-   of the design, such as the tiles of a manycore. Marking a module that is
-   a large part of the design reduces parallelism. Several modules may be
-   marked, and logic belongs to the nearest marked instance above it. The
-   module is not inlined. Ignored for the top module.
+   of the design, such as the tiles of a many-core system. Marking a module
+   that is a large part of the design reduces parallelism. Several modules
+   may be marked, and logic belongs to the nearest marked instance above
+   it. The module is not inlined. Ignored for the top module.
 
    Same as :option:`/*verilator&32;threads_group*/` metacomment.
 

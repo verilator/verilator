@@ -15,7 +15,7 @@ test.lint(fails=True, expect_filename=test.golden_filename)
 
 test.extract(in_filename=test.top_filename,
              out_filename=test.root + "/docs/gen/ex_MULTIDRIVEN_faulty.rst",
-             lines="22-27")
+             lines="17-22")
 
 test.extract(in_filename=test.golden_filename,
              out_filename=test.root + "/docs/gen/ex_MULTIDRIVEN_msg.rst",

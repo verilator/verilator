@@ -112,7 +112,9 @@ module t;
       wide = 65'h1_2345_6789_abcd_ef01;
       q = '{1, 2, 3};
       foreach (arr[i]) arr[i] = 15'(i * 3);
-      randomize_result = std::randomize(x, y, wide, q, arr) with {
+      randomize_result = std::randomize(
+          x, y, wide, q, arr
+      ) with {
         x + y == 8'd10;
         x + y == 8'd11;
       };
@@ -132,7 +134,9 @@ module t;
       int randomize_result;
       x = 7;
       arr = '{1, 2, 3};
-      randomize_result = std::randomize(x, x, arr, arr[1]) with {
+      randomize_result = std::randomize(
+          x, x, arr, arr[1]
+      ) with {
         x > 10;
         x < 5;
       };
@@ -148,7 +152,9 @@ module t;
       int dyn[];
       int randomize_result;
       dyn = '{5, 6};
-      randomize_result = std::randomize(dyn) with {
+      randomize_result = std::randomize(
+          dyn
+      ) with {
         dyn.size() == 3;
         foreach (dyn[i]) {
           dyn[i] == 1;
@@ -167,7 +173,9 @@ module t;
       int q[$];
       int randomize_result;
       q = '{7};
-      randomize_result = std::randomize(q) with {
+      randomize_result = std::randomize(
+          q
+      ) with {
         q.size() == 4;
         foreach (q[i]) {
           q[i] > 5;

@@ -42,10 +42,14 @@ class base #(
 );
 endclass
 
-class limit #(int VALUE = 3);
+class limit #(
+    int VALUE = 3
+);
 endclass
 
-class derived #(type T = fast_item) extends base #(T);
+class derived #(
+    type T = fast_item
+) extends base #(T);
   typedef item item_t;
 
   function int randomize_item(base#(T)::ITEM_T obj);
@@ -53,11 +57,11 @@ class derived #(type T = fast_item) extends base #(T);
   endfunction
 
   function int randomize_known_item(item obj);
-    return obj.randomize() with {driver_delay == limit#(7)::VALUE;};
+    return obj.randomize() with {driver_delay == limit #(7)::VALUE;};
   endfunction
 
   function int randomize_typedef_item(item_t obj);
-    return obj.randomize() with {driver_delay == limit#(11)::VALUE;};
+    return obj.randomize() with {driver_delay == limit #(11)::VALUE;};
   endfunction
 endclass
 
@@ -155,7 +159,7 @@ task outer_sequence::body();
     generic_sequence dseq = new;
     cmd.driver_delay = 20;
     ok = dseq.randomize() with {
-      cmd.driver_delay == local::cmd.driver_delay + 1;
+      cmd.driver_delay == local:: cmd.driver_delay + 1;
       mode == limit();
     };
     `checkd(ok, 1)
