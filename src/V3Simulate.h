@@ -59,11 +59,11 @@ class SimStackNode final {
 public:
     // MEMBERS
     AstFuncRef* const m_funcp;  // Function call being simulated
-    V3TaskConnects* const m_tconnects;  // Connections of the call's arguments
+    V3TaskConnects* const m_tconnectsp;  // Connections of the call's arguments
     // CONSTRUCTORS
-    SimStackNode(AstFuncRef* funcp, V3TaskConnects* tconnects)
+    SimStackNode(AstFuncRef* funcp, V3TaskConnects* tconnectsp)
         : m_funcp{funcp}
-        , m_tconnects{tconnects} {}
+        , m_tconnectsp{tconnectsp} {}
     ~SimStackNode() = default;
 };
 
@@ -227,9 +227,9 @@ public:
                 const AstFuncRef* const funcp = callstack->m_funcp;
                 stack << "\n        " << funcp->fileline() << "... Called from '"
                       << funcp->prettyName() << "()' with parameters:";
-                V3TaskConnects* tconnects = callstack->m_tconnects;
-                for (V3TaskConnects::iterator conIt = tconnects->begin();
-                     conIt != tconnects->end(); ++conIt) {
+                V3TaskConnects* tconnectsp = callstack->m_tconnectsp;
+                for (V3TaskConnects::iterator conIt = tconnectsp->begin();
+                     conIt != tconnectsp->end(); ++conIt) {
                     const AstVar* const portp = conIt->first;
                     AstNodeExpr* const pinp = conIt->second->exprp();
                     const AstNodeDType* const dtypep = pinp->dtypep();

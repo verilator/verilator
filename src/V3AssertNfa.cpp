@@ -483,8 +483,8 @@ class SvaNfaBuilder final {
     // total match length is exactly `len`. `lo` is the operand's minimum length
     // (lengthRange().first). A fixed operand has no such delay and is returned
     // as a plain clone (callers only request its single achievable length).
-    static AstNodeExpr* realizeAtLength(AstNodeExpr* operand, int len, int lo) {
-        AstNodeExpr* const clonep = operand->cloneTreePure(false);
+    static AstNodeExpr* realizeAtLength(AstNodeExpr* operandp, int len, int lo) {
+        AstNodeExpr* const clonep = operandp->cloneTreePure(false);
         AstDelay* rangeDelayp = nullptr;
         clonep->foreach([&](AstDelay* dp) {
             if (!rangeDelayp && dp->isRangeDelay() && !dp->isUnbounded()
@@ -1144,17 +1144,17 @@ class SvaNfaBuilder final {
                 AstConst* const prePadp = new AstConst{flp, AstConst::BitTrue{}};
                 AstDelay* const delayp
                     = new AstDelay{flp, new AstConst{flp, static_cast<uint32_t>(i)}, true};
-                AstSExpr* const wrapped = new AstSExpr{flp, prePadp, delayp, branchp};
-                wrapped->dtypeSetBit();
-                branchp = wrapped;
+                AstSExpr* const wrappedp = new AstSExpr{flp, prePadp, delayp, branchp};
+                wrappedp->dtypeSetBit();
+                branchp = wrappedp;
             }
             if (postPad > 0) {
                 AstConst* const postTruep = new AstConst{flp, AstConst::BitTrue{}};
                 AstDelay* const delayp
                     = new AstDelay{flp, new AstConst{flp, static_cast<uint32_t>(postPad)}, true};
-                AstSExpr* const wrapped = new AstSExpr{flp, branchp, delayp, postTruep};
-                wrapped->dtypeSetBit();
-                branchp = wrapped;
+                AstSExpr* const wrappedp = new AstSExpr{flp, branchp, delayp, postTruep};
+                wrappedp->dtypeSetBit();
+                branchp = wrappedp;
             }
             innerOrp = innerOrp ? static_cast<AstNodeExpr*>(new AstSOr{flp, innerOrp, branchp})
                                 : branchp;
@@ -1569,8 +1569,8 @@ class SvaNfaBuilder final {
         }
 
         auto sampledAbortFire = [&]() -> AstNodeExpr* {
-            AstNodeExpr* const expr = abortFireExpr(condp, flp);
-            return sampled(expr);
+            AstNodeExpr* const exprp = abortFireExpr(condp, flp);
+            return sampled(exprp);
         };
 
         if (kind.isAccept()) {
@@ -2938,9 +2938,9 @@ class AssertNfaVisitor final : public VNVisitor {
         if (!result.termIsMidMerge) { graph.addLink(result.termVertexp, graph.m_matchVertexp); }
         for (SvaStateVertex* srcVtxp : result.midSources) {
             AstNodeExpr* condp = nullptr;
-            for (AstNodeExpr* const tc : srcVtxp->m_throughoutConds) {
-                AstNodeExpr* const tcClone = tc->cloneTreePure(false);
-                condp = condp ? new AstLogAnd{flp, condp, tcClone} : tcClone;
+            for (AstNodeExpr* const tcp : srcVtxp->m_throughoutConds) {
+                AstNodeExpr* const tcClonep = tcp->cloneTreePure(false);
+                condp = condp ? new AstLogAnd{flp, condp, tcClonep} : tcClonep;
             }
             graph.addLink(srcVtxp, graph.m_matchVertexp, condp);
             srcVtxp->m_isUnbounded = true;

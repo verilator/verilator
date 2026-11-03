@@ -91,7 +91,8 @@ module mask_ranges (
     if (PULL_MASK[i-1]) begin : up
       assign descending_down[i] = drive_enable ? 1'bz : 1'b1;
       assign ascending_down[8-i] = drive_enable ? 1'bz : 1'b1;
-    end else begin : down
+    end
+    else begin : down
       assign descending_up[i] = drive_enable ? 1'bz : 1'b0;
       assign ascending_up[8-i] = drive_enable ? 1'bz : 1'b0;
     end
@@ -159,22 +160,30 @@ module t;
       .ascending_up(asc_from_asc_up[3:9]),
       .ascending_down(asc_from_asc_down[3:9])
   );
-  assign desc_from_desc_up = {range_data[14:11],
-                             range_enable ? range_data[10:4] : 7'bz, range_data[3:0]};
-  assign desc_from_desc_down = {range_data[14:11],
-                               range_enable ? range_data[10:4] : 7'bz, range_data[3:0]};
-  assign desc_from_asc_up = {range_data[14:11],
-                            range_enable ? range_data[10:4] : 7'bz, range_data[3:0]};
-  assign desc_from_asc_down = {range_data[14:11],
-                              range_enable ? range_data[10:4] : 7'bz, range_data[3:0]};
-  assign asc_from_desc_up = {range_data[14:13],
-                            range_enable ? range_data[12:6] : 7'bz, range_data[5:0]};
-  assign asc_from_desc_down = {range_data[14:13],
-                              range_enable ? range_data[12:6] : 7'bz, range_data[5:0]};
-  assign asc_from_asc_up = {range_data[14:13],
-                           range_enable ? range_data[12:6] : 7'bz, range_data[5:0]};
-  assign asc_from_asc_down = {range_data[14:13],
-                             range_enable ? range_data[12:6] : 7'bz, range_data[5:0]};
+  assign desc_from_desc_up = {
+    range_data[14:11], range_enable ? range_data[10:4] : 7'bz, range_data[3:0]
+  };
+  assign desc_from_desc_down = {
+    range_data[14:11], range_enable ? range_data[10:4] : 7'bz, range_data[3:0]
+  };
+  assign desc_from_asc_up = {
+    range_data[14:11], range_enable ? range_data[10:4] : 7'bz, range_data[3:0]
+  };
+  assign desc_from_asc_down = {
+    range_data[14:11], range_enable ? range_data[10:4] : 7'bz, range_data[3:0]
+  };
+  assign asc_from_desc_up = {
+    range_data[14:13], range_enable ? range_data[12:6] : 7'bz, range_data[5:0]
+  };
+  assign asc_from_desc_down = {
+    range_data[14:13], range_enable ? range_data[12:6] : 7'bz, range_data[5:0]
+  };
+  assign asc_from_asc_up = {
+    range_data[14:13], range_enable ? range_data[12:6] : 7'bz, range_data[5:0]
+  };
+  assign asc_from_asc_down = {
+    range_data[14:13], range_enable ? range_data[12:6] : 7'bz, range_data[5:0]
+  };
 
   initial begin
     logic [14:0] expected_desc;

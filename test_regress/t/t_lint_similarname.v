@@ -379,6 +379,16 @@ module t #(parameter int SIZE = 4);
   logic [SORTS_FIRST-1:0] Sorts_First;
   logic [SORTS_FIRST-1:0] sorts_first;
 
+  // Wildcard import candidate: should not warn, as not declared here
+  logic PKG_VAR;
+  // Nor once a lookup for an upper declaration has imported it
+  // verilator lint_off VARHIDDEN
+  task automatic hide_pkg_var2();
+    logic pkg_var2;
+  endtask
+  // verilator lint_on VARHIDDEN
+  logic PKG_VAR2;
+
 endmodule
 
 module sub;
@@ -397,4 +407,6 @@ endclass
 
 package pkg;
   localparam logic [7:0] REG_CTRL = 8'h00;
+  logic pkg_var;
+  logic pkg_var2;
 endpackage

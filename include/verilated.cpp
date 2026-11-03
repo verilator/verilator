@@ -327,8 +327,8 @@ void Verilated::loadVpiLib(const std::string& arg) VL_MT_UNSAFE {
     const bool has_entry = (colon_pos != std::string::npos);
     const std::string libpath = has_entry ? arg.substr(0, colon_pos) : arg;
     const std::string entry_name = has_entry ? arg.substr(colon_pos + 1) : std::string{};
-    void* handle = dlopen(libpath.c_str(), RTLD_LAZY);
-    if (!handle)
+    void* handlep = dlopen(libpath.c_str(), RTLD_LAZY);
+    if (!handlep)
         // The library path is stable; the dlerror() text is platform-specific, so put it on
         // a separate "- " line (test golden files strip "- " lines, keeping output portable).
         VL_FATAL_MT(
@@ -336,7 +336,7 @@ void Verilated::loadVpiLib(const std::string& arg) VL_MT_UNSAFE {
             (std::string{"Cannot load VPI library: "} + libpath + "\n- dlerror: " + dlerror())
                 .c_str());
     if (has_entry) {
-        vlog_startup_t bsp = reinterpret_cast<vlog_startup_t>(dlsym(handle, entry_name.c_str()));
+        vlog_startup_t bsp = reinterpret_cast<vlog_startup_t>(dlsym(handlep, entry_name.c_str()));
         if (!bsp)
             VL_FATAL_MT(
                 "", 0, "",
@@ -345,7 +345,7 @@ void Verilated::loadVpiLib(const std::string& arg) VL_MT_UNSAFE {
         bsp();
     } else {
         vlog_startup_t* routinesp
-            = reinterpret_cast<vlog_startup_t*>(dlsym(handle, "vlog_startup_routines"));
+            = reinterpret_cast<vlog_startup_t*>(dlsym(handlep, "vlog_startup_routines"));
         if (!routinesp)
             VL_FATAL_MT(
                 "", 0, "",
@@ -2240,11 +2240,11 @@ uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE {
 
     uint64_t h = seed ^ (len * m);
 
-    const uint64_t* data = reinterpret_cast<const uint64_t*>(key);
-    const uint64_t* end = data + (len / 8);
+    const uint64_t* datap = reinterpret_cast<const uint64_t*>(key);
+    const uint64_t* endp = datap + (len / 8);
 
-    while (data != end) {
-        uint64_t k = *data++;
+    while (datap != endp) {
+        uint64_t k = *datap++;
 
         k *= m;
         k ^= k >> r;
@@ -2254,16 +2254,16 @@ uint64_t VL_MURMUR64_HASH(const char* key) VL_PURE {
         h *= m;
     }
 
-    const unsigned char* data2 = reinterpret_cast<const unsigned char*>(data);
+    const uint8_t* data2p = reinterpret_cast<const uint8_t*>(datap);
 
     switch (len & 7) {
-    case 7: h ^= static_cast<uint64_t>(data2[6]) << 48;  // FALLTHRU
-    case 6: h ^= static_cast<uint64_t>(data2[5]) << 40;  // FALLTHRU
-    case 5: h ^= static_cast<uint64_t>(data2[4]) << 32;  // FALLTHRU
-    case 4: h ^= static_cast<uint64_t>(data2[3]) << 24;  // FALLTHRU
-    case 3: h ^= static_cast<uint64_t>(data2[2]) << 16;  // FALLTHRU
-    case 2: h ^= static_cast<uint64_t>(data2[1]) << 8;  // FALLTHRU
-    case 1: h ^= static_cast<uint64_t>(data2[0]); h *= m;  // FALLTHRU
+    case 7: h ^= static_cast<uint64_t>(data2p[6]) << 48;  // FALLTHRU
+    case 6: h ^= static_cast<uint64_t>(data2p[5]) << 40;  // FALLTHRU
+    case 5: h ^= static_cast<uint64_t>(data2p[4]) << 32;  // FALLTHRU
+    case 4: h ^= static_cast<uint64_t>(data2p[3]) << 24;  // FALLTHRU
+    case 3: h ^= static_cast<uint64_t>(data2p[2]) << 16;  // FALLTHRU
+    case 2: h ^= static_cast<uint64_t>(data2p[1]) << 8;  // FALLTHRU
+    case 1: h ^= static_cast<uint64_t>(data2p[0]); h *= m;  // FALLTHRU
     default:;
     };
 
@@ -4351,10 +4351,10 @@ void VerilatedScope::ifaceRefInsert(const VerilatedIfaceRef* ifaceRefp) VL_MT_UN
     m_ifaceRefsp->emplace_back(ifaceRefp);
 }
 
-void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE {
+void VerilatedScope::exportInsert(int finalize, const char* namep, void* cbp) VL_MT_UNSAFE {
     // Slowpath - called once/scope*export at construction
     // Insert a exported function into scope table
-    const int funcnum = VerilatedImp::exportInsert(namep, cb);
+    const int funcnum = VerilatedImp::exportInsert(namep, cbp);
     if (!finalize) {
         // Need two passes so we know array size to create
         // Alternative is to dynamically stretch the array, which is more code, and slower.
@@ -4368,7 +4368,7 @@ void VerilatedScope::exportInsert(int finalize, const char* namep, void* cb) VL_
             m_callbacksp = new void*[m_funcnumMax];
             std::memset(m_callbacksp, 0, m_funcnumMax * sizeof(void*));
         }
-        m_callbacksp[funcnum] = cb;
+        m_callbacksp[funcnum] = cbp;
     }
 }
 
@@ -4433,8 +4433,8 @@ void VerilatedScope::varsInsertFromTable(const VlVarTableEntry* entp, size_t n,
     // Table-driven equivalent of a run of varInsert()/varInsertSized() calls; see VlVarTableEntry.
     // A packed member row's basep is its parent's storage
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
-    uint8_t* const base = static_cast<uint8_t*>(basep);
-    for (size_t i = 0; i < n; ++i) varInsertFromRow(entp[i], base + entp[i].byteOffset, false);
+    uint8_t* const rowBasep = static_cast<uint8_t*>(basep);
+    for (size_t i = 0; i < n; ++i) varInsertFromRow(entp[i], rowBasep + entp[i].byteOffset, false);
 }
 
 void VerilatedScope::paramsInsertFromTable(const VlVarTableEntry* entp, size_t n,
@@ -4452,10 +4452,10 @@ void VerilatedScope::scopesConstructFromTable(const VlScopeTableEntry* entp, siz
     // Table-driven equivalent of a run of 'new VerilatedScope{...}' statements; see
     // VlScopeTableEntry. The generated Syms class derives VerilatedSyms as its sole primary
     // base at offset 0, so symsp doubles as the base for the offsetof-baked member addresses.
-    uint8_t* const base = reinterpret_cast<uint8_t*>(symsp);
+    uint8_t* const basep = reinterpret_cast<uint8_t*>(symsp);
     for (size_t i = 0; i < n; ++i) {
         const VlScopeTableEntry& e = entp[i];
-        VerilatedScope** const slotp = reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
+        VerilatedScope** const slotp = reinterpret_cast<VerilatedScope**>(basep + e.ptrOffset);
         const std::string& prefix = topNamesp[e.topIndex];
         const char* identp = e.identp;
         if (e.topIndex && !*e.namep) {
@@ -4487,18 +4487,18 @@ void VerilatedScope::ifaceRefsInsertFromTable(const VlIfaceRefTableEntry* entp, 
                                               const std::string* topNamesp) VL_MT_UNSAFE {
     // Use the model's own context; at destruction threadContextp() may be another's
     VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
-    uint8_t* const base = reinterpret_cast<uint8_t*>(symsp);
+    uint8_t* const basep = reinterpret_cast<uint8_t*>(symsp);
     for (size_t i = 0; i < n; ++i) {
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
-            = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
+            = *reinterpret_cast<VerilatedScope**>(basep + e.ptrOffset);
         const VerilatedIfaceRef ifaceRef{
             scopep, e.namep, vl_ifaceRefFullname(topNamesp[e.topIndex].c_str(), e.suffixp),
             e.modportp};
         const VerilatedIfaceRef* const refp = impp->ifaceRefInsert(ifaceRef);
         // Map nodes remain stable until this model's teardown. The scope only owns
         // the pointer vector; destroying it does not dereference the erased entries.
-        if (VerilatedScope* const parentp = vl_ifaceRefParentp(base, e)) {
+        if (VerilatedScope* const parentp = vl_ifaceRefParentp(basep, e)) {
             parentp->ifaceRefInsert(refp);
         }
     }
@@ -4508,11 +4508,11 @@ void VerilatedScope::ifaceRefsEraseFromTable(const VlIfaceRefTableEntry* entp, s
                                              const VerilatedSyms* symsp,
                                              const std::string* topNamesp) VL_MT_UNSAFE {
     VerilatedContextImp* const impp = symsp->_vm_contextp__->impp();
-    uint8_t* const base = reinterpret_cast<uint8_t*>(const_cast<VerilatedSyms*>(symsp));
+    uint8_t* const basep = reinterpret_cast<uint8_t*>(const_cast<VerilatedSyms*>(symsp));
     for (size_t i = 0; i < n; ++i) {
         const VlIfaceRefTableEntry& e = entp[i];
         const VerilatedScope* const scopep
-            = *reinterpret_cast<VerilatedScope**>(base + e.ptrOffset);
+            = *reinterpret_cast<VerilatedScope**>(basep + e.ptrOffset);
         impp->ifaceRefErase(vl_ifaceRefFullname(topNamesp[e.topIndex].c_str(), e.suffixp), scopep);
     }
 }
@@ -4538,12 +4538,11 @@ VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, boo
     return &(m_varsp->find(namep)->second);
 }
 
-VerilatedVar*
-VerilatedScope::forceableVarInsert(const char* namep, void* datap, bool isParam,
-                                   VerilatedVarType vltype, int vlflags, void* forceReadSignalData,
-                                   const char* const forceReadSignalName,
-                                   std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
-                                   int udims, int pdims...) VL_MT_UNSAFE {
+VerilatedVar* VerilatedScope::forceableVarInsert(
+    const char* namep, void* datap, bool isParam, VerilatedVarType vltype, int vlflags,
+    void* forceReadSignalDatap, const char* const forceReadSignalName,
+    std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals, int udims,
+    int pdims...) VL_MT_UNSAFE {
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
 
     // TODO: While the force read signal would be *expected* to have the same vltype and vlflags
@@ -4556,7 +4555,7 @@ VerilatedScope::forceableVarInsert(const char* namep, void* datap, bool isParam,
         = static_cast<VerilatedVarFlags>(vlflags & ~VLVF_FORCEABLE & ~VLVF_PUB_RW & ~VLVF_PUB_RD);
 
     VerilatedVar forceReadSignal{forceReadSignalName,
-                                 forceReadSignalData,
+                                 forceReadSignalDatap,
                                  vltype,
                                  forceReadValueVlflags,
                                  udims,

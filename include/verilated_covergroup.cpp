@@ -678,8 +678,8 @@ void VlCoverpoint::valueRuns(std::initializer_list<EData> entries) {
     static constexpr uint32_t VALUES = 3;  // Low, span, and high values
     ValueData& data = *m_valuesp;
     assert(!data.m_frozen);
-    const uint32_t words = data.m_words;
-    const uint32_t entryWords = HEADER_WORDS + VALUES * words;
+    const uint32_t wordsp = data.m_words;
+    const uint32_t entryWords = HEADER_WORDS + VALUES * wordsp;
     const EData* const endp = entries.end();
     for (const EData* entryp = entries.begin(); entryp != endp; entryp += entryWords) {
         assert(static_cast<size_t>(endp - entryp) >= entryWords);  // Only whole entries
@@ -687,8 +687,8 @@ void VlCoverpoint::valueRuns(std::initializer_list<EData> entries) {
         const uint32_t count = entryp[1];
         const EData* const valuesp = entryp + HEADER_WORDS;
         ValueData::Value lo = data.read(WDataInP::external(valuesp));
-        const ValueData::Value span = data.read(WDataInP::external(valuesp + words));
-        const ValueData::Value hi = data.read(WDataInP::external(valuesp + 2 * words));
+        const ValueData::Value span = data.read(WDataInP::external(valuesp + wordsp));
+        const ValueData::Value hi = data.read(WDataInP::external(valuesp + 2 * wordsp));
         // Expand the run into the value range of each of its bins, as valueRanges() gives them:
         // until valueRelease(), valueFinalize() finds the bins exclusions leave without values,
         // and runtime cross selections intersect their filters, from these ranges.  Each bin
@@ -1439,11 +1439,11 @@ template <bool T_Explicit, bool T_RecordHits>
 void VlCoverCross::iterateProduct(uint32_t dim, uint32_t baseIdx) {
     const VlCoverpoint* const cpp = m_dimensionsp[dim].cpp;
     const uint32_t hits = cpp->hitCount();
-    const uint32_t* const list = m_dimensionsp[dim].hitsp;
+    const uint32_t* const listp = m_dimensionsp[dim].hitsp;
     const bool last = (dim == m_dims - 1);
     const uint32_t stride = m_dimensionsp[dim].stride;
     for (uint32_t hit = 0; hit < hits; ++hit) {
-        const uint32_t idx = baseIdx + list[hit] * stride;
+        const uint32_t idx = baseIdx + listp[hit] * stride;
         if (last) {
             if (T_Explicit) {
                 incrementTuple<T_RecordHits>(idx);
@@ -1466,7 +1466,7 @@ void VlCoverCross::incrementBin(Bin& bin) {
 }
 
 template <bool T_ApplyIffs>
-void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
+void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffsp) {
     Explicit& data = *m_explicitp;
     const uint32_t word = idx / VL_QUADSIZE;
     const uint64_t bit = uint64_t{1} << VL_BITBIT_Q(idx);
@@ -1475,13 +1475,13 @@ void VlCoverCross::sampleSingleTuple(uint32_t idx, const bool* binIffs) {
         return;
     }
     for (Bin& bin : data.bins) {
-        if (T_ApplyIffs && !binIffs[bin.iffIndex]) continue;
+        if (T_ApplyIffs && !binIffsp[bin.iffIndex]) continue;
         if (bin.selectionp[word] & bit) incrementBin(bin);
     }
 }
 
 template <bool T_ApplyIffs, uint32_t T_Touched, bool T_Dense>
-void VlCoverCross::sampleBins(const bool* binIffs) {
+void VlCoverCross::sampleBins(const bool* binIffsp) {
     struct HitWord final {
         uint32_t index;
         uint64_t bits;
@@ -1497,7 +1497,7 @@ void VlCoverCross::sampleBins(const bool* binIffs) {
     }
     for (uint64_t binIdx = 0; binIdx < bins; ++binIdx) {
         Bin& bin = data.bins[binIdx];
-        if (T_ApplyIffs && !binIffs[bin.iffIndex]) continue;
+        if (T_ApplyIffs && !binIffsp[bin.iffIndex]) continue;
         bool matched = false;
         if (T_Touched == 1) {
             matched = (bin.selectionp[cached[0].index] & cached[0].bits) != 0;
@@ -1528,16 +1528,16 @@ void VlCoverCross::sampleBins(const bool* binIffs) {
 }
 
 template <bool T_ApplyIffs, bool T_Dense>
-void VlCoverCross::sampleHitWords(const bool* binIffs) {
+void VlCoverCross::sampleHitWords(const bool* binIffsp) {
     switch (m_explicitp->numTouchedWords) {
-    case 1: sampleBins<T_ApplyIffs, 1, T_Dense>(binIffs); break;
-    case 2: sampleBins<T_ApplyIffs, 2, T_Dense>(binIffs); break;
-    case 3: sampleBins<T_ApplyIffs, 3, T_Dense>(binIffs); break;
-    default: sampleBins<T_ApplyIffs, 0, T_Dense>(binIffs); break;
+    case 1: sampleBins<T_ApplyIffs, 1, T_Dense>(binIffsp); break;
+    case 2: sampleBins<T_ApplyIffs, 2, T_Dense>(binIffsp); break;
+    case 3: sampleBins<T_ApplyIffs, 3, T_Dense>(binIffsp); break;
+    default: sampleBins<T_ApplyIffs, 0, T_Dense>(binIffsp); break;
     }
 }
 
-void VlCoverCross::sample(const bool* binIffs) {
+void VlCoverCross::sample(const bool* binIffsp) {
     if (VL_UNLIKELY(!m_numAutoBins)) return;
     // Fast path: if any dimension had no Normal-bin hit, the cross cannot hit.
     bool single = true;
@@ -1552,8 +1552,8 @@ void VlCoverCross::sample(const bool* binIffs) {
             idx += m_dimensionsp[d].cpp->hitList()[0] * m_dimensionsp[d].stride;
         }
         if (hasExplicitBins()) {
-            if (binIffs) {
-                sampleSingleTuple<true>(idx, binIffs);
+            if (binIffsp) {
+                sampleSingleTuple<true>(idx, binIffsp);
             } else {
                 sampleSingleTuple<false>(idx, nullptr);
             }
@@ -1563,9 +1563,9 @@ void VlCoverCross::sample(const bool* binIffs) {
         return;
     }
     bool enabled = true;
-    if (hasExplicitBins() && binIffs && !binIffs[m_explicitp->bins[0].iffIndex]) {
+    if (hasExplicitBins() && binIffsp && !binIffsp[m_explicitp->bins[0].iffIndex]) {
         enabled = std::any_of(m_explicitp->bins.begin() + 1, m_explicitp->bins.end(),
-                              [binIffs](const Bin& bin) { return binIffs[bin.iffIndex]; });
+                              [binIffsp](const Bin& bin) { return binIffsp[bin.iffIndex]; });
         if (!enabled && m_explicitp->autoBins.empty()) return;
     }
     for (uint32_t d = 0; d < m_dims; ++d) {
@@ -1582,11 +1582,11 @@ void VlCoverCross::sample(const bool* binIffs) {
     iterateProduct<true>(0, 0);
     if (m_explicitp->numTouchedWords) {
         const bool dense = m_explicitp->minBinWords >= m_explicitp->numTouchedWords;
-        if (binIffs) {
+        if (binIffsp) {
             if (dense) {
-                sampleHitWords<true, true>(binIffs);
+                sampleHitWords<true, true>(binIffsp);
             } else {
-                sampleHitWords<true, false>(binIffs);
+                sampleHitWords<true, false>(binIffsp);
             }
         } else {
             if (dense) {

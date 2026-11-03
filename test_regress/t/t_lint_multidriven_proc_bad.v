@@ -20,23 +20,23 @@ module t (
 
   t1 u1 (
       .clk(clk),
-      .d  (d),
-      .q  (q1)
+      .d(d),
+      .q(q1)
   );
 
   t2 u2 (
       .clka(clka),
       .clkb(clkb),
-      .d   (d),
-      .q   (q2)
+      .d(d),
+      .q(q2)
   );
 
   t3 u3 (
       .clk(clk),
-      .d  (dv),
-      .q1 (q3a),
-      .q2 (q3b),
-      .q3 (q3c)
+      .d(dv),
+      .q1(q3a),
+      .q2(q3b),
+      .q3(q3c)
   );
 
 endmodule

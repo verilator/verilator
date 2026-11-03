@@ -15,7 +15,29 @@ Verilator 5.055 devel
 
 **Other:**
 
-* TBD
+* Add error on non-blocking event trigger on event with invalid lifetime. [Geza Lore, Testorrent USA, Inc.]
+* Add `threads_group` to partition module instances as groups (#8804). [Michael Bedford Taylor]
+* Add COMBDLY/FINALDLY on `->>` in combinational and final blocks (#8987). [Geza Lore, Testorrent USA, Inc.]
+* Optimize compile time by emitting SV classes into shared source files (#8914). [Geza Lore, Testorrent USA, Inc.]
+* Optimize wildcard package imports to resolve lazily (#8918). [Rahul Behl, Testorrent USA, Inc.]
+* Optimize wide decimal conversion (#8950). [Andrew Nolte]
+* Optimize unrolled bit-select index on assignment left-hand side (#8953). [Michael Bedford Taylor]
+* Fix missing IEEE errors on NBA/assign to dynamically sized variables. [Geza Lore, Testorrent USA, Inc.]
+* Fix writing a character of a string array element. [Geza Lore, Testorrent USA, Inc.]
+* Fix type check of associative array traversal arguments (#5439) (#8954). [Ethan Sifferman]
+* Fix `std::randomize` changing variables when constraints fail (#8686) (#8880). [Steven Bellock]
+* Fix $fscanf/$sscanf into non-addressable destinations (#8860) (#8912). [Adrien Le Masle]
+* Fix class size constraints in randomize..with (#8861). [Ryszard Rozak, Antmicro Ltd.]
+* Fix modport array ref access (#8908). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix 'randomize with' on inherited type parameter (#8922). [Mateusz Gancarz, Antmicro Ltd.]
+* Fix whole-variable pulls when resolving per-bit pulls (#8939). [Yutetsu TAKATSUKASA]
+* Fix timing sensitivities lost through recursive task calls (#8946). [Geza Lore, Testorrent USA, Inc.]
+* Fix internal error on unclocked concurrent assert (#8978). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix escaped module name containing :: colliding with class in generated C++ (#8979). [Artur Bieniek, Antmicro Ltd.]
+* Fix keyed assignment patterns of dynamic arrays and queues (#8984) (#8985). [Geza Lore, Testorrent USA, Inc.]
+* Fix loops repeatedly hitting --unroll-stmts (#8986). [Michael Bedford Taylor]
+* Fix DFG adding combinational logic to a Postponed active (#8994). [Michael Bedford Taylor]
+* Fix SystemVerilog emission for declarations (#8997). [Martijn Wobbes, Antmicro Ltd.]
 
 
 Verilator 5.054 2026-11-01

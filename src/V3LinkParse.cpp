@@ -454,15 +454,15 @@ class LinkParseVisitor final : public VNVisitor {
                         if (!rhsDotp) break;
                         FileLine* const fl = dotp->fileline();
                         const bool colon = dotp->colon();
-                        AstNodeExpr* const lhs = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
-                        AstNodeExpr* const rhsLhs
+                        AstNodeExpr* const lhsp = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsLhsp
                             = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
-                        AstNodeExpr* const rhsRhs
+                        AstNodeExpr* const rhsRhsp
                             = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
                         FileLine* const rhsFl = rhsDotp->fileline();
                         const bool rhsColon = rhsDotp->colon();
-                        AstDot* const newLhs = new AstDot{fl, colon, lhs, rhsLhs};
-                        exprp = new AstDot{rhsFl, rhsColon, newLhs, rhsRhs};
+                        AstDot* const newLhsp = new AstDot{fl, colon, lhsp, rhsLhsp};
+                        exprp = new AstDot{rhsFl, rhsColon, newLhsp, rhsRhsp};
                         VL_DO_DANGLING(dotp->deleteTree(), dotp);
                         dotp = VN_CAST(exprp, Dot);
                     }

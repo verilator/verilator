@@ -952,7 +952,7 @@ class AssertVisitor final : public VNVisitor {
 
                 // Note: if this ends with an 'else', then we don't need to validate that one of
                 // the predicates evaluates to true.
-                AstNodeExpr* const ohot
+                AstNodeExpr* const ohotp
                     = ((allow_none || hasDefaultElse)
                            ? static_cast<AstNodeExpr*>(new AstOneHot0{nodep->fileline(), propp})
                            : static_cast<AstNodeExpr*>(new AstOneHot{nodep->fileline(), propp}));
@@ -962,7 +962,7 @@ class AssertVisitor final : public VNVisitor {
                 VNRelinker relinker;
                 nodep->unlinkFrBack(&relinker);
                 AstIf* const checkifp
-                    = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot},
+                    = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohotp},
                                 newFireAssert(nodep, VAssertDirectiveType::VIOLATION_IF,
                                               assertType, "'unique if' statement violated"),
                                 nodep};
@@ -1137,14 +1137,14 @@ class AssertVisitor final : public VNVisitor {
                     //     if (propp == '0) begin if (!allow_none) $error("none match"); end
                     //     else $error("multiple match");
                     // end
-                    AstNodeExpr* const ohot = new AstOneHot{nodep->fileline(), propp};
-                    AstConst* const zero = new AstConst{
+                    AstNodeExpr* const ohotp = new AstOneHot{nodep->fileline(), propp};
+                    AstConst* const zerop = new AstConst{
                         nodep->fileline(), AstConst::WidthedValue{}, propp->width(), 0};
                     AstIf* const ohotIfp
-                        = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohot}};
+                        = new AstIf{nodep->fileline(), new AstLogNot{nodep->fileline(), ohotp}};
                     AstIf* const zeroIfp = new AstIf{
                         nodep->fileline(),
-                        new AstEq{nodep->fileline(), propp->cloneTreePure(false), zero}};
+                        new AstEq{nodep->fileline(), propp->cloneTreePure(false), zerop}};
                     AstNodeExpr* const exprp = nodep->exprp();
                     const string pragmaStr = nodep->pragmaString();
                     if (!allow_none)

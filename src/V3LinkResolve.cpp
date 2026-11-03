@@ -232,6 +232,14 @@ class LinkResolveVisitor final : public VNVisitor {
             m_modp->hierBlock(v3Global.opt.hierarchical());
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        } else if (nodep->pragType() == VPragmaType::THREADS_GROUP) {
+            UASSERT_OBJ(m_modp, nodep, "THREADS_GROUP not under a module");
+            // The top module is the whole model, not a group within it. With --hierarchical, this
+            // is the case for a hier_block in its own Verilation. A library stub, such as a
+            // hier_block in its parent's Verilation, holds no logic to group.
+            m_modp->threadsGroup(!m_modp->isTop() && !m_modp->verilatorLib());
+            nodep->unlinkFrBack();
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (nodep->pragType() == VPragmaType::PUBLIC_MODULE) {
             UASSERT_OBJ(m_modp, nodep, "PUBLIC_MODULE not under a module");
             m_modp->modPublic(true);

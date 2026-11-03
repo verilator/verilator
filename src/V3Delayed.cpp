@@ -118,7 +118,7 @@
 #include "V3Delayed.h"
 
 #include "V3AstUserAllocator.h"
-#include "V3ClassGraph.h"
+#include "V3CallTargets.h"
 #include "V3Const.h"
 #include "V3LinkLValue.h"
 #include "V3SharedTmps.h"
@@ -285,8 +285,8 @@ class DelayedVisitor final : public VNVisitor {
     // as m_dlyTmps only shares variables with the same data type.
     std::map<std::pair<const AstNodeDType*, bool>, AstNBACommitQueueDType*> m_cqDTypeps;
 
-    const std::unique_ptr<V3ClassGraph>
-        m_classGraphp;  // class graph to get possibly called functions from a virtual call
+    // To get the functions a virtual call may call
+    const std::unique_ptr<V3CallTargets> m_callTargetsp;
     std::vector<const AstCFunc*> m_callStack;  // Current callstack of AstCFuncs
 
     // STATE - for current visit position (use VL_RESTORER)
@@ -968,9 +968,9 @@ class DelayedVisitor final : public VNVisitor {
                 }();
             } else {
                 // If this assignment is not partial, set mask to ones and we are done
-                AstConst* const ones = new AstConst{flp, AstConst::DTyped{}, eDTypep};
-                ones->num().setAllBits1();
-                maskp = ones;
+                AstConst* const onesp = new AstConst{flp, AstConst::DTyped{}, eDTypep};
+                onesp->num().setAllBits1();
+                maskp = onesp;
             }
         }
 
@@ -1395,11 +1395,8 @@ class DelayedVisitor final : public VNVisitor {
     void visit(AstNodeCCall* const nodep) override {
         iterateChildren(nodep);
         // We need to visit bodies of non-inlined functions
-        const auto& cfuncps = m_classGraphp->getCallPossibleCFuncs(nodep);
-        if (cfuncps.empty()) {
-            visitCalledCFunc(nodep->funcp());
-        } else {
-            for (AstCFunc* const cfuncp : cfuncps) visitCalledCFunc(cfuncp);
+        for (AstCFunc* const cfuncp : m_callTargetsp->getTargets(nodep)) {
+            visitCalledCFunc(cfuncp);
         }
     }
     void visit(AstCFunc* const nodep) override {
@@ -1423,7 +1420,7 @@ class DelayedVisitor final : public VNVisitor {
 public:
     // CONSTRUCTORS
     explicit DelayedVisitor(AstNetlist* nodep)
-        : m_classGraphp{V3ClassGraph::build(nodep)} {
+        : m_callTargetsp{V3CallTargets::build()} {
         iterate(nodep);
     }
     ~DelayedVisitor() override {

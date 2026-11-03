@@ -1007,7 +1007,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                    const char* identifier, const char* defnamep, int8_t timeunit, Type type);
     ~VerilatedScope();
 
-    void exportInsert(int finalize, const char* namep, void* cb) VL_MT_UNSAFE;
+    void exportInsert(int finalize, const char* namep, void* cbp) VL_MT_UNSAFE;
     VerilatedVar* varInsert(const char* namep, void* datap, bool isParam, VerilatedVarType vltype,
                             int vlflags, int udims, int pdims, ...) VL_MT_UNSAFE;
     VerilatedVar* varInsertSized(const char* namep, void* datap, bool isParam,
@@ -1015,7 +1015,7 @@ public:  // But internals only - called from verilated modules, VerilatedSyms
                                  ...) VL_MT_UNSAFE;
     VerilatedVar* forceableVarInsert(const char* namep, void* datap, bool isParam,
                                      VerilatedVarType vltype, int vlflags,
-                                     void* forceReadSignalData, const char* forceReadSignalName,
+                                     void* forceReadSignalDatap, const char* forceReadSignalName,
                                      std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals,
                                      int udims, int pdims...) VL_MT_UNSAFE;
     void varsInsertFromTable(const VlVarTableEntry* entp, size_t n, void* basep) VL_MT_UNSAFE;

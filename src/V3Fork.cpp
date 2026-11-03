@@ -313,16 +313,16 @@ class DynScopeVisitor final : public VNVisitor {
     void replaceWithMemberSel(AstVarRef* refp, const ForkDynScopeInstance& dynScope) {
         VNRelinker handle;
         refp->unlinkFrBack(&handle);
-        AstMemberSel* const membersel = new AstMemberSel{
+        AstMemberSel* const memberselp = new AstMemberSel{
             refp->fileline(), new AstVarRef{refp->fileline(), dynScope.m_handlep, refp->access()},
             refp->varp()};
         if (refp->varp()->direction().isAny()) {
-            membersel->varp(
+            memberselp->varp(
                 VN_AS(m_memberMap.findMember(dynScope.m_classp, refp->varp()->name()), Var));
         } else {
-            membersel->varp(refp->varp());
+            memberselp->varp(refp->varp());
         }
-        handle.relink(membersel);
+        handle.relink(memberselp);
         VL_DO_DANGLING(pushDeletep(refp), refp);
     }
 

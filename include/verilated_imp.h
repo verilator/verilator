@@ -188,8 +188,8 @@ public:
     const_iterator end() const { return m_fp + m_sz; }
     std::size_t size() const { return m_sz; }
     static std::size_t capacity() { return 31; }
-    void push_back(FILE* fd) {
-        if (VL_LIKELY(size() < capacity())) m_fp[m_sz++] = fd;
+    void push_back(FILE* fdp) {
+        if (VL_LIKELY(size() < capacity())) m_fp[m_sz++] = fdp;
     }
 };
 
@@ -478,18 +478,18 @@ public:
     // There's often many more scopes than userdata's and thus having a ~48byte
     // per map overhead * N scopes would take much more space and cache thrashing.
     // As scopep's are pointers, this implicitly handles multiple Context's
-    static void userInsert(const void* scopep, void* userKey, void* userData) VL_MT_SAFE {
+    static void userInsert(const void* scopep, void* userKeyp, void* userDatap) VL_MT_SAFE {
         const VerilatedLockGuard lock{s().m_userMapMutex};
-        const auto it = s().m_userMap.find(std::make_pair(scopep, userKey));
+        const auto it = s().m_userMap.find(std::make_pair(scopep, userKeyp));
         if (it != s().m_userMap.end()) {
-            it->second = userData;
+            it->second = userDatap;
         } else {
-            s().m_userMap.emplace(std::make_pair(scopep, userKey), userData);
+            s().m_userMap.emplace(std::make_pair(scopep, userKeyp), userDatap);
         }
     }
-    static void* userFind(const void* scopep, void* userKey) VL_MT_SAFE {
+    static void* userFind(const void* scopep, void* userKeyp) VL_MT_SAFE {
         const VerilatedLockGuard lock{s().m_userMapMutex};
-        const auto& it = vlstd::as_const(s().m_userMap).find(std::make_pair(scopep, userKey));
+        const auto& it = vlstd::as_const(s().m_userMap).find(std::make_pair(scopep, userKeyp));
         if (VL_UNLIKELY(it == s().m_userMap.end())) return nullptr;
         return it->second;
     }
@@ -567,7 +567,7 @@ private:
     }
 
 public:
-    static int exportInsert(const char* namep, void* cb) VL_MT_SAFE {
+    static int exportInsert(const char* namep, void* cbp) VL_MT_SAFE {
         const int funcnum = VerilatedImp::exportInsertName(namep);
         const VerilatedLockGuard lock{s().m_exportMutex};
         // Slow ok - called once/function at creation
@@ -576,9 +576,9 @@ public:
             s().m_exportFlatMulti.resize(funcnum + 1);
         }
         if (!s().m_exportFlatMulti[funcnum]) {
-            if (s().m_exportFlatCbs[funcnum] == cb) {  // Duplicate
+            if (s().m_exportFlatCbs[funcnum] == cbp) {  // Duplicate
             } else if (!s().m_exportFlatCbs[funcnum]) {  // First
-                s().m_exportFlatCbs[funcnum] = cb;
+                s().m_exportFlatCbs[funcnum] = cbp;
             } else {  // Multiple registrants
                 s().m_exportFlatCbs[funcnum] = nullptr;
                 s().m_exportFlatMulti[funcnum] = true;
