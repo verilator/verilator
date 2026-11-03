@@ -3926,12 +3926,13 @@ class SolverSmtLowering final : public V3SolverLowering {
         }
     }
 
-    static AstCExpr* newSolverCallp(AstVar* const genp) {
+    // 'sized' for the two solves of a randomize() resizing arrays, which keep the joint solve
+    static AstCExpr* newSolverCallp(AstVar* const genp, bool sized = false) {
         AstCExpr* const callp = new AstCExpr{genp->fileline()};
         callp->dtypeSetBit();
         callp->add(new AstVarRef{genp->fileline(), VN_CAST(genp->user2p(), NodeModule), genp,
                                  VAccess::READWRITE});
-        callp->add(".next(__Vm_rng)");
+        callp->add(sized ? ".next_sized(__Vm_rng)" : ".next(__Vm_rng)");
         return callp;
     }
 
@@ -3949,7 +3950,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             addFrozenSizePin(fl, arrVarp, randomizep, genp, randModeVarp);
         }
         randomizep->addStmtsp(new AstAssign{fl, new AstVarRef{fl, sizeOkVarp, VAccess::WRITE},
-                                            newSolverCallp(genp)});
+                                            newSolverCallp(genp, true)});
         return sizeOkVarp;
     }
 
@@ -4154,8 +4155,9 @@ public:
                                                        nodep->findBasicDType(VBasicDTypeKwd::BIT)};
                 finalOkVarp->funcLocal(true);
                 randomizep->addDeclsp(finalOkVarp);
-                randomizep->addStmtsp(new AstAssign{
-                    fl, new AstVarRef{fl, finalOkVarp, VAccess::WRITE}, newSolverCallp(genp)});
+                randomizep->addStmtsp(new AstAssign{fl,
+                                                    new AstVarRef{fl, finalOkVarp, VAccess::WRITE},
+                                                    newSolverCallp(genp, true)});
 
                 beginValp = new AstAnd{fl, new AstVarRef{fl, sizeOkVarp, VAccess::READ},
                                        new AstVarRef{fl, finalOkVarp, VAccess::READ}};
@@ -4500,7 +4502,7 @@ public:
             }
 
             // Final solve: element values with sizes pinned
-            AstCExpr* const solverCall2p = newSolverCallp(localGenp);
+            AstCExpr* const solverCall2p = newSolverCallp(localGenp, true);
             randomizeFuncp->addStmtsp(
                 new AstAssign{fl, new AstVarRef{fl, finalOkVarp, VAccess::WRITE}, solverCall2p});
 

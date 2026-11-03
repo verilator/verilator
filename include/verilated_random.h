@@ -283,6 +283,7 @@ class VlRandomizer VL_NOT_FINAL {
     std::vector<std::pair<std::string, std::string>>
         m_solveBefore;  // Solve-before ordering pairs (beforeVar, afterVar)
     bool m_checkOnly = false;  // Set for randomize(null)
+    bool m_sized = false;  // Set for the solves of a randomize() that resizes arrays
     bool isFrozenVar(const std::string& name,
                      const VlRandomVar& var) const;  // true if this var is currently frozen
     bool hasFrozenVar() const;  // true if any var is currently rand_mode(0)-frozen
@@ -312,9 +313,10 @@ class VlRandomizer VL_NOT_FINAL {
     bool constraintIsRandcOnly(size_t n) const;
     // When exactly one randc variable is active, draw its next cyclic value blind
     // to rand feasibility (IEEE 1800-2023 18.4.2: randc variables are solved
-    // before rand ones). Limitation: with two or more active randc variables, or
-    // a randc array, nothing is drawn and they are solved jointly with the rand
-    // variables, which does not follow 18.4.2.
+    // before rand ones). Limitations, which do not follow 18.4.2: nothing is drawn,
+    // and the randc variables are solved jointly with the rand variables, with two or
+    // more active randc variables, a randc array, or in a randomize() that resizes
+    // arrays (next_sized(): its size solve sees the elements from before the resize).
     bool drawRandcValues(VlRNG& rngr, VlSolverSession& sess,
                          const std::vector<std::string>& randcNames,
                          const std::vector<std::string>& uniqueExprs,
@@ -413,6 +415,9 @@ public:
     // METHODS
     // Finds the next solution satisfying the constraints
     bool next(VlRNGReseeds& rngr);
+    // As next(), for both solves of a randomize() resizing arrays: no randc draw, as the
+    // size solve sees the elements the arrays held before resizing
+    bool next_sized(VlRNGReseeds& rngr);
     // Validate the constraints against the current runtime values of every
     // registered rand variable without picking new ones.
     bool next_check_only(VlRNGReseeds& rngr);
