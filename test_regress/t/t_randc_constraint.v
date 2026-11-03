@@ -431,6 +431,73 @@ class ArrayWith;
   constraint k {x < 12;}
 endclass
 
+// Test 10: randc sizing an array whose elements are constrained. randomize() solves the
+// sizes first, and both solves keep the joint solve, so every call succeeds.
+class SizedElements;
+  randc bit [1:0] count;
+  rand byte data[];
+  constraint size_constraint {data.size() == int'(count);}
+  constraint element_constraint {foreach (data[index]) data[index] == 0;}
+endclass
+
+// The size solve sees the elements from before the resize, here none, so count is 0
+class SizedSum;
+  randc bit [1:0] count;
+  rand bit [7:0] data[];
+  constraint k {
+    data.size() == int'(count);
+    data.sum() with (int'(item)) == 2 * int'(count);
+  }
+endclass
+
+// Test 11: constraints whose names cover more than the text holding their randc-only part.
+// The draw filters by them, so a randc value the text excludes is never drawn.
+class StateIfElse;
+  bit enabled;
+  randc bit [1:0] count;
+  rand bit [1:0] limit;
+  constraint domain {
+    if (enabled)
+    count < limit;
+    else
+    count < 2;
+  }
+endclass
+
+class StateOperand;
+  bit enabled;
+  randc bit [1:0] c;
+  rand bit [1:0] x;
+  constraint k {c != (enabled ? x : 3);}
+endclass
+
+class StateUnderRandcFold;
+  bit enabled;
+  randc bit [1:0] c;
+  rand bit [1:0] x;
+  constraint k {
+    if (c > 0) {
+      if (enabled)
+      c < x;
+      else
+      c > 2;
+    }
+  }
+endclass
+
+class RandcFoldItems;
+  randc bit [1:0] c;
+  rand bit [3:0] x;
+  constraint k {
+    if (c < 2) {
+      x > 3;
+    } else {
+      c < 3;
+      x < 8;
+    }
+  }
+endclass
+
 module t;
   RandcRange rr;
   RandcSmall rs;
@@ -565,6 +632,80 @@ module t;
         `checkd(res, 1);
         `checkd(obj.c[0] != 0, 1'b1);
         `checkd(obj.x < 12, 1'b1);
+      end
+    end
+
+    begin
+      automatic SizedElements obj = new;
+      automatic int res;
+      $display("Test randc sizing an array with constrained elements");
+      for (int i = 0; i < 12; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.data.size(), int'(obj.count));
+        foreach (obj.data[j]) `checkd(obj.data[j], 0);
+      end
+    end
+
+    begin
+      automatic SizedSum obj = new;
+      automatic int res;
+      $display("Test randc sizing an array by its sum");
+      for (int i = 0; i < 12; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.data.size(), int'(obj.count));
+        `checkd(obj.data.sum() with (int'(item)), 2 * int'(obj.count));
+      end
+    end
+
+    // Without the filter, a cycle fails unless the draw takes the feasible values first,
+    // so each case below passes unfiltered with probability at most (1/6)**6
+    begin
+      automatic StateIfElse obj = new;
+      automatic int res;
+      $display("Test randc under an if on state");
+      obj.enabled = 0;
+      for (int i = 0; i < 12; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.count < 2, 1'b1);
+      end
+    end
+
+    begin
+      automatic StateOperand obj = new;
+      automatic int res;
+      $display("Test randc under a conditional operator on state");
+      obj.enabled = 0;
+      for (int i = 0; i < 32; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c != 3, 1'b1);
+      end
+    end
+
+    begin
+      automatic StateUnderRandcFold obj = new;
+      automatic int res;
+      $display("Test randc under an if on state inside an if on randc");
+      obj.enabled = 0;
+      for (int i = 0; i < 32; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c == 0 || obj.c == 3, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcFoldItems obj = new;
+      automatic int res;
+      $display("Test randc under an if on randc holding several constraints");
+      for (int i = 0; i < 32; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c != 3, 1'b1);
+        `checkd((obj.c < 2) ? obj.x > 3 : obj.x < 8, 1'b1);
       end
     end
 
