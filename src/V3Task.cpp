@@ -608,6 +608,14 @@ class TaskVisitor final : public VNVisitor {
             postRhsp = new AstRToIRoundS{pinp->fileline(), postRhsp};
             postRhsp->dtypeFrom(outPinp);
         }
+        if (AstCvtUnpackToQueue* const cvtp = VN_CAST(outPinp, CvtUnpackToQueue)) {
+            // Copy back to the actual array, not the temporary created for input conversion.
+            outPinp = cvtp->fromp();
+            if (AstCvtUnpackToUnpack* const orderp = VN_CAST(outPinp, CvtUnpackToUnpack)) {
+                outPinp = orderp->fromp();
+            }
+            postRhsp = new AstCvtQueueToUnpack{pinp->fileline(), postRhsp, outPinp->dtypep()};
+        }
         // Put output assignment AFTER function call
         AstNodeExpr* const outPinClonep
             = pureCheck ? outPinp->cloneTreePure(true) : outPinp->cloneTree(true);

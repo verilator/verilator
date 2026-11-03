@@ -283,6 +283,14 @@ inline VlQueue<T> VL_CVT_UNPACK_TO_Q(const VlUnpacked<T, N_Depth>& q) VL_PURE {
     return ret;
 }
 
+// Return queue from a descending unpacked array, left index first
+template <typename T, std::size_t N_Depth>
+inline VlQueue<T> VL_CVT_UNPACK_TO_Q_REVERSED(const VlUnpacked<T, N_Depth>& q) VL_PURE {
+    VlQueue<T> ret;
+    for (size_t i = 0; i < N_Depth; ++i) ret.push_back(q[N_Depth - 1 - i]);
+    return ret;
+}
+
 // Copy dynamic array or queue to a fixed-size unpacked array, reversing each dimension whose
 // template argument is non-zero, outermost dimension is first
 template <typename T_To, typename T_From>
