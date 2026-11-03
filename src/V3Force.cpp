@@ -1344,7 +1344,9 @@ public:
         iterateAndNextNull(nodep->modulesp());
     }
     ~ForceConvertVisitor() override {
-        V3Stats::addStat("Release read-back sels", m_releaseReadSels);
+        V3Stats::addStat(m_state.doingAssign() ? "Deassign read-back sels"
+                                               : "Release read-back sels",
+                         m_releaseReadSels);
     }
 };
 
