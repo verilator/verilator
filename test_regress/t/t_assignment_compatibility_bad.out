@@ -65,6 +65,12 @@
                                                 : ... Right-hand data type: 'logic$[string]' (2-state)
    43 |   assign unpackedA = assocArrayA;
       |                    ^
+%Error: t/t_assignment_compatibility_bad.v:44:17: Assignment between 2-state and 4-state types requires equivalent element types (IEEE 1800-2023 6.22.2, 7.6)
+                                                : ... note: In instance 't'
+                                                : ... Left-hand data type: 'logic$[$]'
+                                                : ... Right-hand data type: 'bit$[$]'
+   44 |   assign queueA = queueB;
+      |                 ^
 %Error: t/t_assignment_compatibility_bad.v:44:17: Illegal assignment: Array element types are not equivalent (IEEE 1800-2023 6.22.2)
                                                 : ... note: In instance 't'
                                                 : ... Left-hand data type: 'logic$[$]'
