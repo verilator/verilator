@@ -741,6 +741,7 @@ static bool verilate(const string& argString) {
         V3Broken::selfTest();
         V3Control::selfTest();
         V3HashTableInternals::selfTest();
+        V3Split::selfTest();
         V3ThreadPool::selfTest();
         UINFO(2, "selfTest done");
     }
