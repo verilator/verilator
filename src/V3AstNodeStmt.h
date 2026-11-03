@@ -1567,11 +1567,12 @@ public:
 class AstAssignW final : public AstNodeAssign {
     // Like assign, but wire/assign's in verilog, the only setting of the specified variable
     // @astgen op4 := strengthSpecp : Optional[AstStrengthSpec]
-    bool m_declInit : 1 = false;  // Lowered declaration initializer of the net
+    bool m_declInit : 1;  // Lowered declaration initializer of the net
 public:
     AstAssignW(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignW(fl, lhsp, rhsp, timingControlp) {}
+        : ASTGEN_SUPER_AssignW(fl, lhsp, rhsp, timingControlp)
+        , m_declInit{false} {}
     ASTGEN_MEMBERS_AstAssignW;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
