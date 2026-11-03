@@ -342,7 +342,7 @@ class DefaultSampledValueVisitor final : public VNVisitor {
     static AstNodeExpr* newTypeDefault(FileLine* const flp, AstNodeDType* const dtypep) {
         if (const AstUnpackArrayDType* const arrayp
             = VN_CAST(dtypep->skipRefp(), UnpackArrayDType)) {
-            return new AstInitArray{flp, dtypep, newTypeDefault(flp, arrayp->subDTypep())};
+            return new AstConsArray{flp, dtypep, newTypeDefault(flp, arrayp->subDTypep())};
         }
         AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, dtypep};
         if (dtypep->isFourstate()) constp->num().setAllBitsX();
@@ -351,6 +351,30 @@ class DefaultSampledValueVisitor final : public VNVisitor {
     }
 
     // VISITORS
+    void visit(AstArraySel* nodep) override {
+        iterateChildren(nodep);
+        if (const AstConsArray* const initp = VN_CAST(nodep->fromp(), ConsArray)) {
+            // A generated default array has the same value at every index.
+            if (!initp->itemsp() && initp->defaultp()) {
+                nodep->replaceWith(initp->defaultp()->cloneTreePure(false));
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
+        } else if (VN_IS(nodep->fromp(), Const)) {
+            nodep->replaceWith(newTypeDefault(nodep->fileline(), nodep->dtypep()));
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
+    }
+    void visit(AstSliceSel* nodep) override {
+        iterateChildren(nodep);
+        if (const AstConsArray* const initp = VN_CAST(nodep->fromp(), ConsArray)) {
+            // Retain the slice's shape when selecting from a generated default array.
+            if (!initp->itemsp() && initp->defaultp()) {
+                nodep->replaceWith(new AstConsArray{nodep->fileline(), nodep->dtypep(),
+                                                    initp->defaultp()->cloneTreePure(false)});
+                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            }
+        }
+    }
     void visit(AstCMethodHard* nodep) override {
         if (nodep->method() == VCMethod::EVENT_IS_TRIGGERED) {
             nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
@@ -366,13 +390,6 @@ class DefaultSampledValueVisitor final : public VNVisitor {
             return;
         }
         nodep->replaceWith(newTypeDefault(nodep->fileline(), nodep->dtypep()));
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
-    void visit(AstArraySel* nodep) override {
-        iterateChildren(nodep);
-        // The default of an element of an array replaced by its default above
-        if (!VN_IS(nodep->fromp(), Const)) return;
-        nodep->replaceWith(newTypeDefault(nodep));
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstNode* nodep) override { iterateChildren(nodep); }

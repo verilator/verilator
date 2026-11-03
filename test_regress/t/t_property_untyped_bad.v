@@ -14,15 +14,12 @@ module t (
   int values[2];
 
   property sampled_values(signal);
-    @(posedge clk) $changing_gclk(signal)
-    && $falling_gclk(signal)
+    @(posedge clk) $falling_gclk(signal)
     && $fell(signal)
     && $fell_gclk(signal)
-    && $future_gclk(signal)
     && $rising_gclk(signal)
     && $rose(signal)
-    && $rose_gclk(signal)
-    && $steady_gclk(signal);
+    && $rose_gclk(signal);
   endproperty
 
   assert property (sampled_values(values));

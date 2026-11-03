@@ -63,18 +63,30 @@ module UnpackedSamples(input clk, input [31:0] in);
   ascending_t previous_ascending;
   bit [6:0] matrix[1:0][4:6];
   bit [6:0] previous_matrix[1:0][4:6];
+  bit [7:0] slice_values[4];
+  bit [7:0] previous_slice[2];
+  bit [7:0] previous_slice2[2];
+  bit [14:0] previous_descending[3:2];
+  bit [6:0] previous_row[4:6];
+  bit [6:0] previous_selected_row[4:6];
+  bit row_index;
   logic [7:0] unchanged[2] = '{8'h11, 8'h22};
   int cycles = 0;
   bit seen_stable = 0;
   bit seen_changed = 0;
 
   always @(negedge clk) begin
+    row_index = in[0];
     if (cycles % 2 == 0) begin
       values[0] = in[7:0];
       values[1] = in[15:8];
       ascending[3] = in[14:0];
       ascending[1] = in[29:15];
       matrix[(cycles / 2) % 2][4 + cycles % 3] = in[6:0];
+      slice_values[0] = in[7:0];
+      slice_values[1] = in[15:8];
+      slice_values[2] = in[23:16];
+      slice_values[3] = in[31:24];
     end
   end
 
@@ -84,10 +96,27 @@ module UnpackedSamples(input clk, input [31:0] in);
     previous2 <= previous;
     previous_ascending <= ascending;
     previous_matrix <= matrix;
+    previous_slice <= slice_values[0:1];
+    previous_slice2 <= previous_slice;
+    previous_descending <= ascending[3:2];
+    previous_row <= matrix[0];
+    previous_selected_row <= matrix[row_index];
     `checkh($past(values), previous)
     `checkh($past(values, 2), previous2)
     `checkh($past(ascending), previous_ascending)
     `checkh($past(matrix), previous_matrix)
+    `checkh($past(slice_values[0:1]), previous_slice)
+    `checkh($past(slice_values[0:1], 2), previous_slice2)
+    `checkh($past(ascending[3:2]), previous_descending)
+    `checkh($past(matrix[0]), previous_row)
+    `checkh($past(matrix[row_index]), previous_selected_row)
+    `checkh($sampled(slice_values[0:1]), slice_values[0:1])
+    `checkh($sampled(matrix[row_index]), matrix[row_index])
+    `checkh($stable(slice_values[0:1]), slice_values[0:1] == previous_slice)
+    `checkh($changed(slice_values[0:1]), slice_values[0:1] != previous_slice)
+    `checkh($stable(matrix[0]), matrix[0] == previous_row)
+    `checkh($changed(matrix[row_index]), matrix[row_index] != previous_selected_row)
+    `checkh($past(unchanged[0:1]), unchanged)
     `checkh($sampled(values), values)
     `checkh($sampled(matrix), matrix)
     `checkh($stable(values), values == previous)

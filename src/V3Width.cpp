@@ -10018,8 +10018,9 @@ class WidthVisitor final : public VNVisitor {
         AstNodeDType* const expDTypep = underp->dtypep();
         underp = iterateCheck(parentp, side, underp, SELF, FINAL, expDTypep, EXTEND_EXP);
         AstNodeDType* checkDtp = expDTypep->skipRefToEnump();
-        if (VN_IS(parentp, Past) || VN_IS(parentp, Stable) || VN_IS(parentp, Sampled)) {
-            // These sampling functions operate on the whole fixed-size array value.
+        if (VN_IS(parentp, Past) || VN_IS(parentp, Stable) || VN_IS(parentp, Sampled)
+            || VN_IS(parentp, Future) || VN_IS(parentp, Steady)) {
+            // Whole-value sampling and comparisons accept arrays; edge detection needs an LSB.
             while (const AstUnpackArrayDType* const arrayp = VN_CAST(checkDtp, UnpackArrayDType)) {
                 checkDtp = arrayp->subDTypep()->skipRefToEnump();
             }

@@ -253,8 +253,9 @@ private:
 
     static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp) {
         const AstNodeDType* dtypep = exprp->dtypep()->skipRefp();
-        if (VN_IS(nodep, Past) || VN_IS(nodep, Stable) || VN_IS(nodep, Sampled)) {
-            // Check the element type, without treating array values as packed numbers.
+        if (VN_IS(nodep, Past) || VN_IS(nodep, Stable) || VN_IS(nodep, Sampled)
+            || VN_IS(nodep, Future) || VN_IS(nodep, Steady)) {
+            // Whole-value sampling and comparisons accept arrays; edge detection needs an LSB.
             while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
                 dtypep = arrayp->subDTypep()->skipRefp();
             }
@@ -1214,7 +1215,6 @@ private:
         checkSamplingFuncDType(nodep, nodep->exprp());
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
-        if (exprp->width() > 1) exprp = new AstSel{fl, exprp, 0, 1};
         AstNodeExpr* const futurep = new AstFuture{fl, exprp, newSenTree(nodep)};
         futurep->dtypeFrom(exprp);
         exprp = new AstEq{fl, exprp->cloneTreePure(false), futurep};
