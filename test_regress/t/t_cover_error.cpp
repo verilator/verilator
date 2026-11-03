@@ -40,8 +40,9 @@ int main(int argc, char** argv) {
         context.coverageFilename(".");
         // The callback retries the failing write, so error reporting must release the coverage
         // mutex before invoking it. Both failures must be reported without hanging.
-        Verilated::addExitCb([](void* datap) { static_cast<VerilatedCovContext*>(datap)->write(); },
-                             context.coveragep());
+        Verilated::addExitCb(
+            [](void* datap) { static_cast<VerilatedCovContext*>(datap)->write(); },
+            context.coveragep());
         context.coveragep()->write();
     }
 
