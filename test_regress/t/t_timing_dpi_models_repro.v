@@ -1,4 +1,4 @@
-// DESCRIPTION: Verilator: R3 reproducer, evaluate two models on the same DPI call stack
+// DESCRIPTION: Verilator: Evaluate two models on the same DPI call stack
 //
 // This file ONLY is placed under the Creative Commons Public Domain, for
 // any use, without warranty, 2026 by Antmicro.

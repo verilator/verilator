@@ -12,6 +12,8 @@ import vltest_bootstrap
 test.scenarios("vlt")
 
 repro = "t/" + test.name
+test.pli_filename = "t/t_timing_dpi_models_repro.cpp"
+
 test.compile(make_main=False,
              vm_prefix="Vb",
              verilator_make_gmake=False,
@@ -21,7 +23,7 @@ test.run(cmd=[os.environ["MAKE"], "-C", test.obj_dir, "-f", "Vb.mk", "Vb__ALL.a"
 test.vm_prefix = "Va"
 test.compile(make_main=False,
              v_flags2=[os.path.abspath(test.obj_dir + "/Vb__ALL.a")],
-             verilator_flags2=["--no-timing", "--top-module", "a", "--exe", repro + "/main.cpp"])
+             verilator_flags2=["--no-timing", "--top-module", "a", "--exe", test.pli_filename])
 test.execute(check_finished=False, expect_filename=test.golden_filename)
 
 test.passes()
