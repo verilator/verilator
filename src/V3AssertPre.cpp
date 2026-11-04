@@ -251,15 +251,11 @@ private:
         return new AstIf{flp, new AstNot{flp, isTriggeredp}, waitp};
     }
 
-    static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp) {
-        const AstNodeDType* dtypep = exprp->dtypep()->skipRefp();
-        if (VN_IS(nodep, Past) || VN_IS(nodep, Stable) || VN_IS(nodep, Sampled)
-            || VN_IS(nodep, Future) || VN_IS(nodep, Steady)) {
-            // Whole-value sampling and comparisons accept arrays; edge detection needs an LSB.
-            while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
-                dtypep = arrayp->subDTypep()->skipRefp();
-            }
-        }
+    static void checkSamplingFuncDType(AstNodeExpr* nodep, const AstNode* exprp,
+                                       const bool allowUnpacked = false) {
+        const AstNodeDType* const dtypep
+            = allowUnpacked ? V3AssertCommon::sampledValueDTypep(exprp->dtypep())
+                            : exprp->dtypep()->skipRefp();
         if (!dtypep->isIntegralOrPacked()) {
             nodep->v3error("Expected numeric type, but got a " << dtypep->prettyDTypeNameQ()
                                                                << " data type");
@@ -986,13 +982,13 @@ private:
     void visit(AstFuture* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
-        checkSamplingFuncDType(nodep, nodep->exprp());
+        checkSamplingFuncDType(nodep, nodep->exprp(), /* allowUnpacked */ true);
         AstSenTree* const sentreep = nodep->sentreep();
         if (sentreep) VL_DO_DANGLING(pushDeletep(sentreep->unlinkFrBack()), sentreep);
         nodep->sentreep(newSenTree(nodep));
     }
     void visit(AstPast* nodep) override {
-        checkSamplingFuncDType(nodep, nodep->exprp());
+        checkSamplingFuncDType(nodep, nodep->exprp(), /* allowUnpacked */ true);
         if (nodep->sentreep()) return;  // Already processed
         iterateChildren(nodep);
         nodep->sentreep(newSenTree(nodep));
@@ -1196,7 +1192,7 @@ private:
     void visit(AstStable* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
-        checkSamplingFuncDType(nodep, nodep->exprp());
+        checkSamplingFuncDType(nodep, nodep->exprp(), /* allowUnpacked */ true);
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
         AstSenTree* sentreep = nodep->sentreep();
@@ -1212,7 +1208,7 @@ private:
     void visit(AstSteady* nodep) override {
         if (nodep->user1SetOnce()) return;
         iterateChildren(nodep);
-        checkSamplingFuncDType(nodep, nodep->exprp());
+        checkSamplingFuncDType(nodep, nodep->exprp(), /* allowUnpacked */ true);
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* exprp = nodep->exprp()->unlinkFrBack();
         AstNodeExpr* const futurep = new AstFuture{fl, exprp, newSenTree(nodep)};
@@ -1224,7 +1220,8 @@ private:
     }
     void visit(AstSampled* nodep) override {
         iterateChildren(nodep);
-        if (!nodep->internal()) checkSamplingFuncDType(nodep, nodep->exprp());
+        if (!nodep->internal())
+            checkSamplingFuncDType(nodep, nodep->exprp(), /* allowUnpacked */ true);
     }
 
     // Validate repetition count: must be a non-negative elaboration-time constant.

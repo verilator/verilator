@@ -18,4 +18,9 @@ module t (
     if ($past(d, 32'h7ffffffe)) $stop;
     if ($past(d, 32'h7ffffffc)) $stop;
   end
+
+  localparam int TICKS[1] = '{1};
+  always @(posedge clk) begin
+    if ($past(d, TICKS)) $stop;
+  end
 endmodule

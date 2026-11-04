@@ -143,6 +143,13 @@ module UnpackedSamples(input clk, input [31:0] in);
     $stable(v) == (matrix == previous_matrix);
   endproperty
   assert property (@(posedge clk) matrix_stable(matrix)) else `stop;
+
+  typedef bit [7:0] pair_t [2];
+  property constructed_samples(pair_t v);
+    $past(v[0]) == 8'h11 && $past(v[1]) == 8'h22;
+  endproperty
+  assert property (@(posedge clk) constructed_samples(pair_t'{8'h11, 8'h22}))
+  else `stop;
 endmodule
 
 module Test (  /*AUTOARG*/

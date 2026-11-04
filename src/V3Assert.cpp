@@ -145,6 +145,14 @@ public:
 
 }  // namespace
 
+const AstNodeDType* V3AssertCommon::sampledValueDTypep(const AstNodeDType* dtypep) {
+    dtypep = dtypep->skipRefp();
+    while (const AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
+        dtypep = arrayp->subDTypep()->skipRefp();
+    }
+    return dtypep;
+}
+
 void V3AssertCommon::collectDefaultDisable(AstNetlist* nodep) {
     { DefaultDisableLocalVisitor{nodep}; }
     { DefaultDisablePropagateVisitor{nodep}; }
@@ -355,20 +363,18 @@ class DefaultSampledValueVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (const AstConsArray* const initp = VN_CAST(nodep->fromp(), ConsArray)) {
             // A generated default array has the same value at every index.
-            if (!initp->itemsp() && initp->defaultp()) {
+            // Explicit constructors from property substitution may have individual items.
+            if (!initp->itemsp()) {
                 nodep->replaceWith(initp->defaultp()->cloneTreePure(false));
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
-        } else if (VN_IS(nodep->fromp(), Const)) {
-            nodep->replaceWith(newTypeDefault(nodep->fileline(), nodep->dtypep()));
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
         }
     }
     void visit(AstSliceSel* nodep) override {
         iterateChildren(nodep);
         if (const AstConsArray* const initp = VN_CAST(nodep->fromp(), ConsArray)) {
             // Retain the slice's shape when selecting from a generated default array.
-            if (!initp->itemsp() && initp->defaultp()) {
+            if (!initp->itemsp()) {
                 nodep->replaceWith(new AstConsArray{nodep->fileline(), nodep->dtypep(),
                                                     initp->defaultp()->cloneTreePure(false)});
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
