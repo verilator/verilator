@@ -711,13 +711,21 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(binp->unlinkFrBack()), binp);
     }
 
+    // Validate the count even when an unsupported bins declaration will be dropped.
+    static bool checkBinsArrayCount(AstCoverBin* binp) {
+        AstNodeExpr* const sizep = binp->arraySizep();
+        if (VN_IS(sizep, Unbounded)) {  // A parameter of '$'; see bins_orBraE
+            binp->v3error("Bins array size must be integral, not '$' (IEEE 1800-2023 19.5.1)");
+            return false;
+        }
+        return checkCount(sizep, "Bins array size", "19.5.1");
+    }
+
     // Check the size of a sized array of bins, which drops an invalid array.  A real coverpoint's
     // are unsupported, and treated as arrays of a bin per value.  False unless it stays sized.
     bool checkBinsArraySize(const AstCoverpoint* coverpointp, AstCoverBin* binp, bool integral) {
         AstNodeExpr* const sizep = binp->arraySizep();
-        if (VN_IS(sizep, Unbounded)) {  // A parameter of '$'; see bins_orBraE
-            binp->v3error("Bins array size must be integral, not '$' (IEEE 1800-2023 19.5.1)");
-        } else if (checkCount(sizep, "Bins array size", "19.5.1")) {
+        if (checkBinsArrayCount(binp)) {
             if (integral) return true;
             binp->v3warn(COVERIGN, "Unsupported: 'bins' explicit array size of a real "
                                    "coverpoint (treated as '[]')");
@@ -728,13 +736,22 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         return false;
     }
 
-    // Check the bins of a coverpoint whose values the constructor computes, dropping invalid
-    // ones.  A wildcard array of too many ranges of values is ignored, or if ignore or illegal,
-    // treated as one bin; filtering too many ranges of values ignores the bins.
+    // Check bin declarations before constructing their values.  Unsupported set expressions
+    // are dropped before any scalar-range lowering or cross-bin selection.
+    // A wildcard array of too many ranges is ignored, or if ignore or illegal, treated as one
+    // bin; filtering too many ranges of values ignores the bins.
     void checkConstructedBins(AstCoverpoint* coverpointp) {
         const bool integral = coverpointp->exprp()->dtypep()->skipRefp()->isIntegralOrPacked();
         for (AstNode* const nodep : coverpointp->binspList()) {
             AstCoverBin* const binp = VN_AS(nodep, CoverBin);
+            if (binp->isSetExpr()) {
+                if (!binp->arraySizep() || checkBinsArrayCount(binp)) {
+                    binp->v3warn(COVERIGN, "Unsupported: Bin set_covergroup_expression.");
+                }
+                if (binp->binsType().binIsNormal()) coverpointp->user2(true);
+                dropBins(coverpointp, binp);
+                continue;
+            }
             if (!isConstructedBins(binp)) continue;
             if (isSizedArray(binp) && !checkBinsArraySize(coverpointp, binp, integral)) continue;
             if (!binp->isWildcard()
