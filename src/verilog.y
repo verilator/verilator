@@ -8634,11 +8634,35 @@ vltItem:
         |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
                         { V3Control::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
         |       yVLT_THREADS_GROUP vltDModule
-                        { V3Control::addModulePragma(*$2, VPragmaType::THREADS_GROUP); }
+                        { V3Control::addModulePragma(*$2, VPragmaType::THREADS_GROUP);
+                          GRAMMARP->m_vltThreadsGroupModule = *$2; }
+                vltThreadsGroupWorkersE
         |       yVLT_FSM_REGISTER_WRAPPER vltDModule vltDFsmD vltDFsmQ vltDFsmClock vltDFsmResetE vltDFsmResetValueE
                         { V3Control::addFsmRegisterWrapper($<fl>1, *$2, *$3, *$4, *$5, *$6, *$7); }
         |       yVLT_VERILATOR_LIB vltDModule
                         { V3Control::addModulePragma(*$2, VPragmaType::VERILATOR_LIB); }
+        ;
+
+// Verilator extension: the worker of each instance, for an instance count and --threads
+vltThreadsGroupWorkersE:
+                /* empty */
+        |       vltThreadsGroupWorkersE yVLT_D_WORKERS yaINTNUM yP_MINUSGT yaINTNUM
+                        { GRAMMARP->m_vltThreadsGroupWorkers.clear(); }
+                vltThreadsGroupWorkerListE
+                        { V3Control::addThreadsGroupWorkers($2, GRAMMARP->m_vltThreadsGroupModule,
+                              $3->toUInt(), $5->toUInt(), GRAMMARP->m_vltThreadsGroupWorkers); }
+        ;
+
+vltThreadsGroupWorkerListE:  // Without a list, the instances are placed automatically
+                /* empty */
+        |       ':' '{' vltThreadsGroupWorkerList '}'
+        ;
+
+vltThreadsGroupWorkerList:
+                yaINTNUM
+                        { GRAMMARP->m_vltThreadsGroupWorkers.push_back($1->toUInt()); }
+        |       vltThreadsGroupWorkerList yaINTNUM
+                        { GRAMMARP->m_vltThreadsGroupWorkers.push_back($2->toUInt()); }
         ;
 
 vltOffFront<errcodeen>:

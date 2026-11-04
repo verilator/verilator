@@ -57,6 +57,8 @@ public:
                                const string& match);
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
     static void addModulePragma(const string& module, VPragmaType pragma);
+    static void addThreadsGroupWorkers(FileLine* fl, const string& module, uint32_t instances,
+                                       uint32_t threads, const std::vector<uint32_t>& workers);
     static void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost);
     static void addProfileData(FileLine* fl, const string& model, const string& key,
                                uint64_t cost);
@@ -81,6 +83,11 @@ public:
     static uint64_t getProfileData(const string& model, const string& key);
     static FileLine* getProfileDataFileLine();
     static bool getScopeTraceOn(const string& scope);
+    // Whether the module is a threads_group at --threads: always without -workers lists,
+    // else only at the thread counts they name
+    static bool isThreadsGroupAtThreads(const AstNodeModule* modulep);
+    // Set the worker of threads_group instances, given all scopes in hierarchy order
+    static void applyThreadsGroupWorkers(const std::vector<AstScope*>& scopes);
 
     static void contentsPushText(const string& text);
 

@@ -1,0 +1,5 @@
+%Error: t/t_threads_group_workers_count_bad.vlt:9:29: threads_group -workers 3->2 expects 3 instances, but module 'acc' has 4.
+    9 | threads_group -module "acc" -workers 3->2: { 0 1 0 }
+      |                             ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to

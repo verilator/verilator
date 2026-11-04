@@ -1,0 +1,11 @@
+%Error: t/t_threads_group_workers_bad.vlt:8:29: threads_group -workers lists 3 workers for 4 instances.
+    8 | threads_group -module "acc" -workers 4->2: { 0 1 0 }
+      |                             ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_threads_group_workers_bad.vlt:9:29: threads_group -workers worker 2 is not below the 2 workers.
+    9 | threads_group -module "acc" -workers 3->2: { 0 1 2 }
+      |                             ^~~~~~~~
+%Error: t/t_threads_group_workers_bad.vlt:10:29: threads_group -workers 3->2 is given more than once for module 'acc'.
+   10 | threads_group -module "acc" -workers 3->2: { 0 1 1 }
+      |                             ^~~~~~~~
+%Error: Exiting due to
