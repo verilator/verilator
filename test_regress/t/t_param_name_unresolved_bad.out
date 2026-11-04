@@ -11,8 +11,8 @@
                                              : ... note: In instance 't.i_none'
    14 |     parameter logic [N:0] P = '0
       |                      ^
-%Error: t/t_param_name_unresolved_bad.v:20:19: Variable's initial value is circular: 'B'
+%Error: t/t_param_name_unresolved_bad.v:22:19: Variable's initial value is circular: 'B'
                                              : ... note: In instance 't.i_cycle'
-   20 |     parameter int B = A,
+   22 |     parameter int B = A,
       |                   ^
 %Error: Exiting due to

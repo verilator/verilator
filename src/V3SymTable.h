@@ -374,8 +374,10 @@ public:
             if (!onlyUnmodportable || (varp && varp->isParam())) {
                 VSymEnt* const subSymp = new VSymEnt{m_graphp, subSrcp};
                 reinsert(name, subSymp);
-                // And recurse to create children
-                subSymp->importFromIface(subSrcp);
+                // And recurse to create children, except under an AstVar: an interface reference
+                // may be of the interface being imported, so would recurse forever, and lookups
+                // through it go to its own symbol or its interface, never this copy.
+                if (!varp) subSymp->importFromIface(subSrcp);
             }
         }
     }

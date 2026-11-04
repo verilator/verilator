@@ -616,10 +616,31 @@ module t (/*AUTOARG*/
     }
   endgroup
 
+  // Covergroup with both-open and default range lists
+  covergroup cg_open_default;
+    open_both: coverpoint cg_sig {
+      bins all[] = {[$ : $]};
+    }
+    defaults: coverpoint cg_sig {
+      bins remaining[] = default;
+    }
+  endgroup
+
+  // Covergroup with array transitions and an array-valued set expression.
+  int cg_set_values[$] = '{1, 2};
+  covergroup cg_forms with function sample (bit [3:0] value);
+    cp: coverpoint value {
+      bins lists[] = (1, 2 => 3, 4);
+      ignore_bins ignored_array[] = (7 => 8);
+      illegal_bins illegal_array[] = (11 => 12);
+      bins selected[] = cg_set_values;
+    }
+  endgroup
+
   // Covergroup with cross coverage
   covergroup cg_cross;
     cp_x: coverpoint cg_sig {
-      bins x0 = {0};
+      bins x0 = {(0)};
       bins x1 = {1};
     }
     cp_y: coverpoint cg_sig2 {

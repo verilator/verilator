@@ -1141,6 +1141,13 @@ bool AstClass::isCacheableChild(const AstNode* nodep) {
            || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
            || VN_IS(nodep, CFunc);
 }
+bool AstClass::isClassDerivedFrom(const AstClass* refClassp, const AstClass* baseClassp) {
+    if (refClassp == baseClassp) return true;
+    for (const AstClassExtends* const extp : refClassp->extendspList()) {
+        if (isClassDerivedFrom(extp->classp(), baseClassp)) return true;
+    }
+    return false;
+}
 bool AstClass::isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp) {
     // TAIL RECURSIVE
     if (!refClassp || !baseClassp) return false;
@@ -1588,11 +1595,13 @@ void AstCoverBin::dump(std::ostream& str) const {
     str << " " << m_binsType.ascii();
     if (m_isArray) str << "[]";
     if (m_isWildcard) str << "[*]";
+    if (m_isSetExpr) str << " [SETEXPR]";
 }
 void AstCoverBin::dumpJson(std::ostream& str) const {
     Super::dumpJson(str);
     dumpJsonBoolIf(str, "isArray", isArray());
     dumpJsonBoolIf(str, "isWildcard", isWildcard());
+    dumpJsonBoolIf(str, "isSetExpr", isSetExpr());
     str << ", \"binsType\": \"" << binsType().ascii() << "\"";
 }
 void AstCoverBinsof::dump(std::ostream& str) const {
