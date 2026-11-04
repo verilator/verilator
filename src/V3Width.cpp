@@ -1421,15 +1421,22 @@ class WidthVisitor final : public VNVisitor {
             if (!m_doGenerate) {
                 // Must check bounds before adding a select that truncates the bound
                 // Note we've already subtracted off LSB
-                if (VN_IS(nodep->bitp(), Const)
-                    && (VN_AS(nodep->bitp(), Const)->toSInt() > (frommsb - fromlsb)
-                        || VN_AS(nodep->bitp(), Const)->toSInt() < 0)) {
-                    // Suppress in dead/parameterized template modules
-                    if (!(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))) {
-                        nodep->v3warn(SELRANGE,
-                                      "Selection index out of range: "
-                                          << (VN_AS(nodep->bitp(), Const)->toSInt() + fromlsb)
-                                          << " outside " << frommsb << ":" << fromlsb);
+                if (const AstConst* const constp = VN_CAST(nodep->bitp(), Const)) {
+                    const bool hasAnyXZ = constp->num().isAnyXZ();
+                    if (hasAnyXZ || constp->toSInt() > (frommsb - fromlsb)
+                        || constp->toSInt() < 0) {
+                        // Suppress in dead/parameterized template modules
+                        if (!(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))) {
+                            std::stringstream val;
+                            if (hasAnyXZ) {
+                                val << constp->num();
+                            } else {
+                                val << (constp->toSInt() + fromlsb);
+                            }
+                            nodep->v3warn(SELRANGE, "Selection index out of range: "
+                                                        << val.str() << " outside " << frommsb
+                                                        << ":" << fromlsb);
+                        }
                     }
                 }
                 widthCheckSized(nodep, "Extract Range", nodep->bitp(), selwidthDTypep, EXTEND_EXP,
@@ -3759,10 +3766,22 @@ class WidthVisitor final : public VNVisitor {
         bool wrapAround = false;
         std::map<const V3Number, AstEnumItem*> inits;
         for (AstEnumItem* const itemp : nodep->itemspList()) {
+            bool valueHasXZ = false;
             if (itemp->valuep()) {
                 if (debug() >= 9) {
                     UINFO(0, "EnumInit " << itemp);
                     itemp->valuep()->dumpTree("-  EnumInit: ");
+                }
+                AstNodeExpr* castFromp = nullptr;
+                if (AstCast* const castp = VN_CAST(itemp->valuep(), Cast)) {
+                    V3Const::constifyParamsEdit(castp->fromp());
+                    castFromp = castp->fromp();
+                } else if (AstCastWrap* const castp = VN_CAST(itemp->valuep(), CastWrap)) {
+                    V3Const::constifyParamsEdit(castp->lhsp());
+                    castFromp = castp->lhsp();
+                }
+                if (const AstConst* const constp = VN_CAST(castFromp, Const)) {
+                    valueHasXZ = constp->num().isFourState();
                 }
                 V3Const::constifyParamsEdit(itemp->valuep());  // itemp may change
                 if (!VN_IS(itemp->valuep(), Const)) {
@@ -3785,7 +3804,8 @@ class WidthVisitor final : public VNVisitor {
             }
 
             const AstConst* const constp = VN_AS(itemp->valuep(), Const);
-            if (constp->num().isFourState() && basicp->basicp() && !basicp->isFourstate()) {
+            if ((valueHasXZ || constp->num().isFourState()) && basicp->basicp()
+                && !basicp->isFourstate()) {
                 itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type "
                                "(IEEE 1800-2023 6.19)");
             }
@@ -3843,6 +3863,7 @@ class WidthVisitor final : public VNVisitor {
             // Always create a cast, to avoid later ENUMVALUE warnings
             nodep->valuep(new AstCast{nodep->valuep()->fileline(), nodep->valuep()->unlinkFrBack(),
                                       nodep->dtypep()});
+            iterate(nodep->valuep());
         }
     }
     void visit(AstEnumItemRef* nodep) override {
