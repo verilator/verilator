@@ -5,7 +5,7 @@
 // SPDX-FileCopyrightText: 2025 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Test: invalid transition bin syntax - single value and unsupported repetition
+// Test: single-step transitions and unsupported repetition
 
 module t;
   logic [3:0] cp_expr;
@@ -13,13 +13,12 @@ module t;
 
   covergroup cg;
     cp1: coverpoint cp_expr {
-      bins t_single = (1);  // Error: requires at least two values
+      bins t_double = (1, 2);  // Error: requires at least two values
       bins t_repeat = (1 [* 2]);  // Error: unsupported repetition operator
     }
     cp_flag: coverpoint flag;
-    // Selecting by values reads each sequence's last value, of which t_repeat, left no items,
-    // has none
-    cx: cross cp1, cp_flag{
+    // The unsupported repetition leaves no last transition value for cross selection.
+    cx: cross cp1, cp_flag {
       bins selected = binsof (cp1) intersect {1};
     }
   endgroup

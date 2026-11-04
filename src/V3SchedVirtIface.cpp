@@ -28,6 +28,7 @@
 #include "V3PchAstNoMT.h"  // VL_MT_DISABLED_CODE_UNIT
 
 #include "V3AstNodeExpr.h"
+#include "V3CallTargets.h"
 #include "V3Sched.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -54,6 +55,7 @@ private:
     // Callables already added to the worklist
     std::set<IfaceCallable> m_seenReachableIfaceCallables;
     VirtIfaceTriggers m_triggers;  // Triggers found for virtual interface writes
+    const std::unique_ptr<V3CallTargets> m_callTargetsp;  // For the methods a call may run
 
     // METHODS
     // Returns true if statement writes across a virtual interface boundary
@@ -80,12 +82,15 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstCMethodCall* nodep) override {
-        if (const AstIfaceRefDType* const dtypep
-            = VN_CAST(nodep->fromp()->dtypep()->skipRefp(), IfaceRefDType)) {
-            if (VL_UNCOVERABLE(!dtypep->isVirtual())) {
-                // Concrete interface method calls are lowered before this pass.
-            } else {
-                addReachableIfaceCallable(dtypep->ifaceViaCellp(), nodep->funcp());
+        // A method call on a member selected through a virtual interface. This includes the
+        // calls through a virtual interface, which call a method of its dispatcher (V3Task)
+        if (const AstMemberSel* const selp = VN_CAST(nodep->fromp(), MemberSel)) {
+            const AstIfaceRefDType* const dtypep
+                = VN_CAST(selp->fromp()->dtypep()->skipRefp(), IfaceRefDType);
+            if (dtypep && dtypep->isVirtual()) {
+                for (AstCFunc* const funcp : m_callTargetsp->getTargets(nodep)) {
+                    addReachableIfaceCallable(dtypep->ifaceViaCellp(), funcp);
+                }
             }
         }
         iterateChildren(nodep);
@@ -135,7 +140,8 @@ private:
 
 public:
     // CONSTRUCTORS
-    explicit VirtIfaceVisitor(AstNetlist* nodep) {
+    explicit VirtIfaceVisitor(AstNetlist* nodep)
+        : m_callTargetsp{V3CallTargets::build()} {
         iterate(nodep);
         for (size_t i = 0; i < m_reachableIfaceCallables.size(); ++i) {
             const IfaceCallable callable = m_reachableIfaceCallables[i];
