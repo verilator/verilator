@@ -421,7 +421,8 @@ public:
         std::ostringstream hex_stream;
         for (size_t i = key.size(); i > 0; --i) {
             const size_t segment_value = key.at(i - 1);
-            hex_stream << std::hex << segment_value;
+            // Zero padded, so a zero segment is not dropped
+            hex_stream << std::hex << std::setw(8) << std::setfill('0') << segment_value;
             integral_index.push_back(segment_value);
         }
         std::string index_string = hex_stream.str();
@@ -797,8 +798,10 @@ public:
 
                 process_key(key, indexed_name, integral_index, name, idx_width);
                 std::ostringstream oss;
-                for (int i = 0; i < integral_index.size(); ++i)
+                for (int i = 0; i < integral_index.size(); ++i) {
+                    if (i) oss << std::setw(8) << std::setfill('0');  // As in process_key
                     oss << std::hex << static_cast<int>(integral_index[i]);
+                }
 
                 std::string result = oss.str();
                 result.insert(result.begin(), int(idx_width / 4) - result.size(), '0');
@@ -820,6 +823,7 @@ public:
             process_key(key, indexed_name, integral_index, name, idx_width);
             std::ostringstream oss;
             for (size_t i = 0; i < integral_index.size(); ++i) {
+                if (i) oss << std::setw(8) << std::setfill('0');  // As in process_key
                 oss << std::hex << static_cast<int>(integral_index[i]);
             }
 
