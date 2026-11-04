@@ -30,6 +30,7 @@
 #include "V3DupFinder.h"
 #include "V3Graph.h"
 #include "V3Stats.h"
+#include "V3VpiLazy.h"
 
 #include <list>
 #include <unordered_map>
@@ -168,6 +169,15 @@ public:
                 // Public signals shouldn't be changed, pli code might be messing with them
                 vVtxp->clearReducibleAndDedupable("SigPublic");
                 vVtxp->setConsumed("SigPublic");
+            } else if (vscp->varp()->isVpiLazyStorageKept()) {
+                // Dedup would sever VPI or a reconstruct cone from the driver.
+                vVtxp->clearDedupable("SigVpiLazyKept");
+                vVtxp->setConsumed("SigVpiLazyKept");
+                // Substituting a writable signal's driver into its readers would hide a put
+                if (vscp->varp()->isSigVpiLazyRetained()
+                    && V3VpiLazy::combOf(vscp->scopep(), vscp->varp()) != VVpiLazyComb::WHOLE) {
+                    vVtxp->clearReducible("SigVpiLazyWritable");
+                }
             }
             if (vscp->varp()->isIO() && vscp->scopep()->isTop()) {
                 // We may need to convert to/from sysc/reg sigs
@@ -598,7 +608,8 @@ class GateInline final {
         if (nReads > 1 && !allowMultiIn) return false;
         // Reads multiple variables, or is expensive to compute.
         // Inline if used only once, ignoring slow code, or dead code that can be deleted.
-        int n = 0;
+        // A --vpi-lazy kept store is a use.
+        int n = vVtxp->varScp()->varp()->isVpiLazyStorageKept() ? 1 : 0;
         for (V3GraphEdge& edge : vVtxp->outEdges()) {
             const GateLogicVertex* const dstVtxp = edge.top()->as<GateLogicVertex>();
             // Ignore slow code, or if the destination is not used
@@ -734,6 +745,11 @@ class GateInline final {
             for (V3GraphEdge* const edgep : vVtxp->outEdges().unlinkable()) {
                 GateLogicVertex* const dstVtxp = edgep->top()->as<GateLogicVertex>();
 
+                // One reconstruct function serves every instance.
+                if (const AstCFunc* const cfuncp = VN_CAST(dstVtxp->nodep(), CFunc)) {
+                    if (cfuncp->vpiLazyReconstruct()) continue;
+                }
+
                 // Do not inline anything other than buffers and inverters into
                 // sensitivity lists. If the signal becomes constant, we might
                 // miss an initialization time edge.
@@ -788,8 +804,8 @@ class GateInline final {
                 ++m_statRefs;
             }
 
-            // If removed all usage
-            if (vVtxp->outEmpty()) {
+            // Retained and pinned variables keep their drivers, for VPI or a reconstruct cone.
+            if (vVtxp->outEmpty() && !vscp->varp()->isVpiLazyStorageKept()) {
                 // Remove Variable vertex
                 VL_DO_DANGLING(vVtxp->unlinkDelete(&m_graph), vVtxp);
                 // Remove driving logic and vertex

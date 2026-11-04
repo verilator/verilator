@@ -1605,6 +1605,11 @@ List Of Warnings
 
    For a fix, remove the statement.
 
+   Also warns that a command-line option is ignored, e.g.
+   :vlopt:`--public-flat-rw`, :vlopt:`--public-depth` or
+   :vlopt:`--public-params` together with :vlopt:`--vpi-lazy`, or
+   :vlopt:`--vpi-lazy` together with :vlopt:`--no-vpi <--vpi>`.
+
 
 .. option:: NOLATCH
 

@@ -1,0 +1,5 @@
+%Warning-NOEFFECT: --public-flat-rw is ignored when --vpi-lazy is set; --vpi-lazy makes the same signals VPI accessible, but does not pin them as model members
+                   ... Suggest mark individual signals with a public_flat_rw attribute to keep their storage.
+                   ... For warning description see https://verilator.org/warn/NOEFFECT?v=latest
+                   ... Use "/* verilator lint_off NOEFFECT */" and lint_on around source to disable this message.
+%Error: Exiting due to
