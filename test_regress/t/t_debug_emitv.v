@@ -691,6 +691,20 @@ module t (/*AUTOARG*/
     obj = new;
     obj.delay_caller();
   end
+
+  class ProcessKiller;
+    function new(std::process victim);
+      kill_virtual(victim);
+    endfunction
+    virtual function void kill_virtual(std::process victim);
+      victim.kill();
+    endfunction
+  endclass
+
+  initial begin
+    ProcessKiller killer;
+    killer = new(process::self());
+  end
 endmodule
 
 module param_mod #(

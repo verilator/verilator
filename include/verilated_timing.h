@@ -495,4 +495,37 @@ public:
     void await_resume() const noexcept {}
 };
 
+//=============================================================================
+// VlNewAwaitable
+// Awaitable for 'new' of a class whose constructor is a coroutine. Used for constructors using
+// kill() function
+
+template <typename T_Class>
+class VlNewAwaitable final {
+    VlClassRef<T_Class> m_object;  // Object being constructed
+    VlCoroutine m_init;  // Running constructor (init) of m_object
+
+public:
+    template <typename... T_Args>
+    VlNewAwaitable(VlDeleter& deleter, T_Args&&... args)
+        : m_object{deleter, VlClassRefNoInit{}}
+        , m_init{m_object->init(std::forward<T_Args>(args)...)} {}
+
+    bool await_ready() const noexcept { return m_init.await_ready(); }
+    void await_suspend(std::coroutine_handle<VlPromise> awaiting_coro) {
+        m_init.await_suspend(awaiting_coro);
+    }
+    VlClassRef<T_Class> await_resume() noexcept {
+        m_init.await_resume();
+        return std::move(m_object);
+    }
+};
+
+template <typename T_Class, typename... T_Args>
+VlNewAwaitable<T_Class> vlNewAsync(VlDeleter& deleter, T_Args&&... args) {
+    return {deleter, std::forward<T_Args>(args)...};
+}
+
+#define VL_NEW_ASYNC(Class, ...) vlNewAsync<Class>(vlSymsp->__Vm_deleter, __VA_ARGS__)
+
 #endif  // Guard

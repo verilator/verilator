@@ -142,11 +142,15 @@ package std;
 `endif
     endfunction
 
-    function void kill();
+    protected function void disable_process();
 `ifdef VERILATOR_TIMING
       // IEEE 1800-2023 9.7: kill() terminates the process and all its descendants
       $c(m_process, "->disable();");
 `endif
+    endfunction
+
+    function void kill();
+      disable_process();
     endfunction
 
     function void suspend();
@@ -165,10 +169,13 @@ package std;
 
     static task killQueue(ref process processQueue[$]);
 `ifdef VERILATOR_TIMING
+      process current = process::self();
       repeat (processQueue.size()) begin
         process p = processQueue.pop_front();
-        if (p) p.kill();
+        if (p) p.disable_process();
       end
+      // Park already-killed caller
+      if (current.status() == KILLED) current.kill();
 `endif
     endtask
 
