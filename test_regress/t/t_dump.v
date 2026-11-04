@@ -73,6 +73,13 @@ module Test(/*AUTOARG*/
   // Change the code in the t module to apply values to the inputs and
   // merge the output values into the result vector.
 
+  class C #(type T);
+    static function C#(T) f();
+        C #(T) c = new();
+        return c;
+    endfunction
+  endclass
+
   input clk;
   input [31:0] in;
   output reg [31:0] out;
@@ -91,6 +98,9 @@ module Test(/*AUTOARG*/
      end
   end
   initial begin
+    static C#(int) c = C#(int)::f();
+    if (c == null) $stop;
+
      assert_simple_immediate_else: assert(0) else $display("fail");
      assert_simple_immediate_stmt: assert(0) $display("pass");
      assert_simple_immediate_stmt_else: assert(0) $display("pass"); else $display("fail");
