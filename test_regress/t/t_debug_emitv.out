@@ -1234,6 +1234,22 @@ module t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_open_both__option;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_defaults__option;
     endcovergroup
     int cg_set_values[$];
     cg_set_values = 
@@ -1299,6 +1315,14 @@ module t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp__option;
     endcovergroup
     covergroup cg_cross;
     function new;
