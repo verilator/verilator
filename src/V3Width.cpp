@@ -10129,7 +10129,10 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         // We iterate and size the RHS based on the result of RHS evaluation
-        rhsp = checkClassAssign(parentp, side, VN_AS(rhsp, NodeExpr), lhsDTypep);
+        // A datatype RHS is diagnosed by iterateCheck below
+        if (AstNodeExpr* const exprp = VN_CAST(rhsp, NodeExpr)) {
+            rhsp = checkClassAssign(parentp, side, exprp, lhsDTypep);
+        }
         const bool lhsStream = (VN_IS(parentp, NodeAssign)
                                 && VN_IS(VN_AS(parentp, NodeAssign)->lhsp(), NodeStream));
         rhsp = iterateCheck(parentp, side, rhsp, ASSIGN, FINAL, lhsDTypep,
