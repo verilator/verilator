@@ -6,4 +6,4 @@
 
 `verilator_config
 // There are four instances of acc
-threads_group -module "acc" -workers 3->2: { 0 1 0 }
+threads_group -module "acc" -workers 3->2: { 0 1 0 } -workers 4->8

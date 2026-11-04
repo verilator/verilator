@@ -263,8 +263,7 @@ public:
         for (auto it = m.m_modPragmas.cbegin(); it != m.m_modPragmas.cend(); ++it) {
             m_modPragmas.insert(*it);
         }
-        m_threadsGroupWorkers.insert(m.m_threadsGroupWorkers.begin(),
-                                     m.m_threadsGroupWorkers.end());
+        for (const auto& it : m.m_threadsGroupWorkers) m_threadsGroupWorkers.insert(it);
     }
     void updateFinalize() {}
 
