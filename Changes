@@ -38,6 +38,7 @@ Verilator 5.055 devel
 * Fix loops repeatedly hitting --unroll-stmts (#8986). [Michael Bedford Taylor]
 * Fix DFG adding combinational logic to a Postponed active (#8994). [Michael Bedford Taylor]
 * Fix SystemVerilog emission for declarations (#8997). [Martijn Wobbes, Antmicro Ltd.]
+* Fix $cast on multiple implements (#9016).
 
 
 Verilator 5.054 2026-11-01

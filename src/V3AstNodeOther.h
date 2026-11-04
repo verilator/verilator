@@ -3310,6 +3310,9 @@ public:
     // Covergroup options accessors
     int cgAutoBinMax() const { return m_cgAutoBinMax; }
     void cgAutoBinMax(int value) { m_cgAutoBinMax = value; }
+    // Return true if this class is an extension of base class following all extends (SLOW)
+    // Accepts nullptrs
+    static bool isClassDerivedFrom(const AstClass* refClassp, const AstClass* baseClassp);
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);
