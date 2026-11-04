@@ -573,6 +573,17 @@ public:
     }
     ASTGEN_MEMBERS_AstDeassign;
 };
+class AstDeferredAssertFlush final : public AstNodeStmt {
+    // Deferred assertion flush point created by V3Assert. V3Timing preserves it only when a
+    // wait actually suspends the process.
+    // @astgen op1 := stmtsp : List[AstNodeStmt] // Clear the process's pending calls
+public:
+    AstDeferredAssertFlush(FileLine* fl, AstNodeStmt* stmtsp)
+        : ASTGEN_SUPER_DeferredAssertFlush(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstDeferredAssertFlush;
+};
 class AstDelay final : public AstNodeStmt {
     // Delay statement
     // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
@@ -622,6 +633,18 @@ public:
         : ASTGEN_SUPER_DisableFork(fl) {}
     ASTGEN_MEMBERS_AstDisableFork;
     string verilogKwd() const override { return "disable fork"; }
+};
+class AstDisableTargetBody final : public AstNodeStmt {
+    // Body of a 'disable' target that may be the outermost scope of a process, wrapped by
+    // V3LinkJump so later passes can tell whether the scope ran to its end
+    //
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstDisableTargetBody(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_DisableTargetBody(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstDisableTargetBody;
 };
 class AstDisplay final : public AstNodeStmt {
     // Parents: stmtlist
@@ -1589,11 +1612,13 @@ class AstBegin final : public AstNodeBlock {
     // A 'begin'/'end' named block.
     bool m_needProcess : 1;  // Uses VlProcess
     const bool m_implied : 1;  // Not inserted by user
+    bool m_disableWrapper : 1;  // Fork branch letting 'disable' kill a block, same process
 public:
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
         : ASTGEN_SUPER_Begin(fl, name)
         , m_needProcess{false}
-        , m_implied{implied} {
+        , m_implied{implied}
+        , m_disableWrapper{false} {
         addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstBegin;
@@ -1602,6 +1627,8 @@ public:
     void setNeedProcess() { m_needProcess = true; }
     bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }
+    void setDisableWrapper() { m_disableWrapper = true; }
+    bool disableWrapper() const { return m_disableWrapper; }
 };
 class AstFork final : public AstNodeBlock {
     // A 'fork'/'join*' named block. Note that this is a strict superset of
