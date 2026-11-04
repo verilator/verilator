@@ -10,6 +10,7 @@ module t (  /*AUTOARG*/
   );
 
   wire w;
+  wire [1:0] w2;
   reg r;
   output o;
   output [1:0] oa;
@@ -32,6 +33,9 @@ module t (  /*AUTOARG*/
     r = 0;
     ro = 0;
     roa = 0;
+    // Bit-select procedural write to a wire: the sel's ref is not visited,
+    // so no PROCASSWIRE (known gap)
+    w2[0] = 0;
     //vo = 0;
     //voa = 0;
   end

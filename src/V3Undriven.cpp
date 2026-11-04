@@ -556,7 +556,8 @@ class UndrivenVisitor final : public VNVisitorConst {
         return isZDataPath(nodep);
     }
     // A continuous-assign write to a driver net, not Z-exempt and not the
-    // net's own lowered declaration initializer, counts as a driver
+    // net's own lowered declaration initializer, counts as a driver. The
+    // read-ref path is never taken: both call sites pre-gate write access.
     bool isContDriver(const AstNodeVarRef* const refp) const {
         return refp->access().isWriteOrRW() && isDriverNet(refp->varp()) && m_inContAssign
                && !m_contAssignZExempt && !m_inDeclInitAssign;
@@ -862,7 +863,7 @@ class UndrivenVisitor final : public VNVisitorConst {
                 if (m_inContAssign && !m_contAssignZExempt) {
                     if (m_inDeclInitAssign)
                         entryp->setInitDriver(nodep);
-                    else if (isContDriver(nodep))
+                    else if (isContDriver(nodep))  // always true: caller gated all conditions
                         entryp->addContDriver(nodep);
                 }
                 if (m_drivingPinp && m_drivingPinp->exprp() == nodep)
