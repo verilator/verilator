@@ -72,6 +72,7 @@
 #include "V3Begin.h"
 #include "V3Const.h"
 #include "V3ConstPool.h"
+#include "V3Depth.h"
 #include "V3Error.h"
 #include "V3Global.h"
 #include "V3LinkLValue.h"
@@ -7203,6 +7204,20 @@ class WidthVisitor final : public VNVisitor {
             // AstPattern needs to know the proposed data type of the lhs, so pass on the prelim
             // UINFOTREE(1, nodep, "", "assrhs");
             userIterateAndNext(nodep->rhsp(), WidthVP{nodep->dtypep(), PRELIM}.p());
+            // Prelim has dtypes. The final walk is one C frame per operator, so a
+            // long spine (a many-input OR lowered to a chain) segfaults at the
+            // default stack limit. Break it before that walk.
+            if (m_modep && nodep->rhsp()) {
+                const std::vector<AstNodeAssign*> extrasp
+                    = V3Depth::breakDeepAssign(nodep, m_modep, false);
+                for (auto it = extrasp.rbegin(); it != extrasp.rend(); ++it) {
+                    AstNodeAssign* const extrap = *it;
+                    if (const AstVarRef* const lrefp = VN_CAST(extrap->lhsp(), VarRef)) {
+                        iterate(lrefp->varp());
+                    }
+                    iterate(extrap);
+                }
+            }
             //
             // UINFOTREE(1, nodep, "", "assign");
             streamAssignLower(nodep);

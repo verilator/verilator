@@ -28,6 +28,7 @@
 #include "V3Const.h"
 
 #include "V3Ast.h"
+#include "V3Depth.h"
 #include "V3Global.h"
 #include "V3Simulate.h"
 #include "V3Stats.h"
@@ -4818,6 +4819,7 @@ void V3Const::constifyGenerateParamsEdit(AstNode* nodep) {
 void V3Const::constifyAllLint(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2, __FUNCTION__ << ":");
+    V3Depth::breakDeepExprs(nodep);
     {
         ConstVisitor visitor{ConstVisitor::PROC_V_WARN, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
@@ -4827,6 +4829,7 @@ void V3Const::constifyAllLint(AstNetlist* nodep) {
 
 void V3Const::constifyCpp(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    V3Depth::breakDeepExprs(nodep);
     {
         ConstVisitor visitor{ConstVisitor::PROC_CPP, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
@@ -4851,6 +4854,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
     // This only pushes constants up, doesn't make any other edits
     // IE doesn't prune dead statements, as we need to do some usability checks after this
     UINFO(2, __FUNCTION__ << ":");
+    V3Depth::breakDeepExprs(nodep);
     {
         ConstVisitor visitor{ConstVisitor::PROC_LIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
@@ -4861,6 +4865,7 @@ void V3Const::constifyAllLive(AstNetlist* nodep) {
 void V3Const::constifyAll(AstNetlist* nodep) {
     // Only call from Verilator.cpp, as it uses user#'s
     UINFO(2, __FUNCTION__ << ":");
+    V3Depth::breakDeepExprs(nodep);
     {
         ConstVisitor visitor{ConstVisitor::PROC_V_EXPENSIVE, /* globalPass: */ true};
         (void)visitor.mainAcceptEdit(nodep);
