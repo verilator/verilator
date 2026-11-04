@@ -22,6 +22,7 @@
 #include "V3Os.h"
 #include "V3String.h"
 
+#include <algorithm>
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -298,10 +299,10 @@ public:
     // Whether a threads_group at this --threads: always without -workers, else where named
     bool threadsGroupAt(uint32_t threads) const {
         if (m_threadsGroupWorkers.empty()) return true;
-        for (const auto& it : m_threadsGroupWorkers) {
-            if (it.first.second == threads) return true;
-        }
-        return false;
+        return std::any_of(m_threadsGroupWorkers.begin(), m_threadsGroupWorkers.end(),
+                           [threads](const ThreadsGroupWorkersMap::value_type& it) {
+                               return it.first.second == threads;
+                           });
     }
 
     void apply(AstNodeModule* modp) {
