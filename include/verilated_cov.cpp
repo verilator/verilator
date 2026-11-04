@@ -54,7 +54,7 @@ public:  // But only local to this file
     int m_vals[VerilatedCovConst::MAX_KEYS];  // Value for specified key
     const void* m_weightObjectp
         = nullptr;  // Runtime coverage object, if this is a covergroup item
-    int32_t (*m_weightFuncp)(const void*) = nullptr;  // Reads that object's current weight
+    VerilatedCovWeightFunc m_weightFuncp = nullptr;  // Reads that object's current weight
     // CONSTRUCTORS
     // Derived classes should call zero() in their constructor
     VerilatedCovImpItem() {
@@ -463,7 +463,7 @@ void VerilatedCovContext::_inserti(uint64_t* itemp) VL_MT_SAFE {
     impp()->inserti(new VerilatedCoverItemSpec<uint64_t>{itemp});
 }
 void VerilatedCovContext::_inserti(uint32_t* itemp, const void* weightObjectp,
-                                   int32_t (*weightFuncp)(const void*)) VL_MT_SAFE {
+                                   VerilatedCovWeightFunc weightFuncp) VL_MT_SAFE {
     auto* const covp = new VerilatedCoverItemSpec<uint32_t>{itemp};
     covp->m_weightObjectp = weightObjectp;
     covp->m_weightFuncp = weightFuncp;

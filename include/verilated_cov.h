@@ -35,6 +35,8 @@
 
 class VerilatedCovImp;
 
+using VerilatedCovWeightFunc = int32_t (*)(const void*);
+
 //=============================================================================
 /// Insert an item for coverage analysis.
 /// The first argument is a pointer to the count to be dumped.
@@ -176,7 +178,7 @@ public:
     void _inserti(uint32_t* itemp) VL_MT_SAFE;
     void _inserti(uint64_t* itemp) VL_MT_SAFE;
     void _inserti(uint32_t* itemp, const void* weightObjectp,
-                  int32_t (*weightFuncp)(const void*)) VL_MT_SAFE;
+                  VerilatedCovWeightFunc weightFuncp) VL_MT_SAFE;
     // _insert2: Set default filename and line number
     void _insertf(const char* filename, int lineno) VL_MT_SAFE;
     // _insert3: Set parameters

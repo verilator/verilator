@@ -4178,6 +4178,7 @@ class WidthVisitor final : public VNVisitor {
             m_fromParentp = nodep;
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         }
+        // Child traversal may have already width-resolved this member selection.
         if (nodep->didWidth()) return;
         UINFOTREE(9, nodep, "", "mbs-ic");
         // Find the fromp dtype - should be a class
