@@ -46,10 +46,9 @@
           integer cyc;
           initial cyc = 1;
 %000006   wire [7:0] cyc_copy = cyc[7:0];
-          // Both alpha instances drive this net, a conflict the test relies on
-          // verilator lint_off MULTIDRIVEN
-%000001   wire toggle_up;
-          // verilator lint_on MULTIDRIVEN
+          // One net per alpha instance (identical values) to avoid a two-driver conflict
+%000001   wire toggle_up1;
+%000001   wire toggle_up2;
         
           typedef struct {int q[$];} str_queue_t;
           str_queue_t str_queue;
@@ -67,14 +66,14 @@
         
           alpha a1 (/*AUTOINST*/
                  // Outputs
-                 .toggle_up                 (toggle_up),
+                 .toggle_up                 (toggle_up1),
                  // Inputs
                  .clk                       (clk),
                  .toggle                    (toggle),
                  .cyc_copy                  (cyc_copy[7:0]));
           alpha a2 (/*AUTOINST*/
                  // Outputs
-                 .toggle_up                 (toggle_up),
+                 .toggle_up                 (toggle_up2),
                  // Inputs
                  .clk                       (clk),
                  .toggle                    (toggle),
@@ -83,7 +82,7 @@
           beta  b1 (/*AUTOINST*/
                  // Inputs
                  .clk                       (clk),
-                 .toggle_up                 (toggle_up));
+                 .toggle_up                 (toggle_up1));
         
           off   o1 (/*AUTOINST*/
                  // Inputs
