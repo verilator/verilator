@@ -1477,8 +1477,8 @@ class RandomizeVisitor final : public VNVisitor {
     AstNodeStmt* wrapIfRandMode(AstClass* classp, AstVar* const varp, AstNodeStmt* stmtp) {
         const RandomizeMode rmode = {.asUQuad = varp->user1()};
         AstVar* const modeVarp = varp->lifetime().isStatic() ? getStaticRandModeVar(classp)
-                                                             : getRandModeVarFromClass(classp);
-        return VN_AS(wrapIfMode(rmode, modeVarp, stmtp), NodeStmt);
+                                                             : RandModeVars::randModeVarp(classp);
+        return VN_AS(RandModeVars::wrapIfMode(rmode, modeVarp, stmtp), NodeStmt);
     }
     AstVarRef* enumValueTabRefp(AstEnumDType* const nodep) {
         // Return a reference to a constant table of the values of the given enum. The reference
@@ -2186,7 +2186,7 @@ class RandomizeVisitor final : public VNVisitor {
                 AstClass* const classp = VN_AS(randVarp->user2p(), Class);
                 AstVar* const randModeVarp = randVarp->lifetime().isStatic()
                                                  ? getStaticRandModeVar(classp)
-                                                 : getRandModeVarFromClass(classp);
+                                                 : RandModeVars::randModeVarp(classp);
                 UASSERT_OBJ(randModeVarp, randVarp,
                             "Rand var with rand_mode must have a mode array");
                 if (savedRandModeVarps.find(randModeVarp) == savedRandModeVarps.end()) {
@@ -2309,7 +2309,7 @@ class RandomizeVisitor final : public VNVisitor {
         FileLine* const fl = nodep->fileline();
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
         AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
-        AstVar* const randModeVarp = getRandModeVarFromClass(nodep);
+        AstVar* const randModeVarp = RandModeVars::randModeVarp(nodep);
         addPrePostCall(nodep, randomizep, "pre_randomize");
 
         // Call nested pre_randomize on rand class-type members (IEEE 18.4.1)
@@ -2440,7 +2440,7 @@ class RandomizeVisitor final : public VNVisitor {
                 = receiverp && receiverp->rand().isRand() && receiverp->lifetime().isStatic();
             AstVar* const randModeVarp = receiverIsStaticRand
                                              ? getStaticRandModeVar(randModeTarget.classp)
-                                             : getRandModeVarFromClass(randModeTarget.classp);
+                                             : RandModeVars::randModeVarp(randModeTarget.classp);
             if (!randModeVarp) {
                 UASSERT_OBJ(isClassLevel && classLevelStaticLoopp, nodep,
                             "Per-instance rand_mode var missing without static fallback");

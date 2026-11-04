@@ -80,16 +80,7 @@ union RandomizeMode final {
     uint64_t asUQuad;  // Representation as int to be stored in nodep->user*
 };
 
-// Walk extends chain to find __Vrandmode variable (stored in AstClass::user2p).
-// user2p is only set on the root class where __Vrandmode was created, so
-// derived classes need this chain walk. Accepts AstNodeModule* for flexibility.
-AstVar* getRandModeVarFromClass(AstNodeModule* classp) VL_MT_DISABLED;
-
-// Guard stmtp by the mode bit, if the variable/constraint uses one
-AstNode* wrapIfMode(const RandomizeMode mode, AstVar* modeVarp, AstNode* stmtp) VL_MT_DISABLED;
-
-// The rand_mode/constraint_mode state arrays created by the front end. The
-// per-instance __Vrandmode array is found by getRandModeVarFromClass().
+// The rand_mode/constraint_mode state arrays created by the front end
 struct RandModeVars final {
     std::map<AstClass*, AstVar*> staticConstraintModeVars;  // Static constraint mode vars
     std::map<AstClass*, AstVar*> staticRandModeVars;  // Static rand mode vars per class
@@ -100,6 +91,12 @@ struct RandModeVars final {
     AstVar* staticRandModeVarp(AstClass* classp) const VL_MT_DISABLED;
     // Per-instance constraint_mode array (AstClass::user4p) of classp or its nearest base
     static AstVar* constraintModeVarp(AstClass* classp) VL_MT_DISABLED;
+    // Per-instance rand_mode array (__Vrandmode, AstNodeModule::user2p) of classp or its
+    // nearest base. user2p is only set on the root class where __Vrandmode was created.
+    static AstVar* randModeVarp(AstNodeModule* classp) VL_MT_DISABLED;
+    // Guard stmtp by the mode bit, if the variable/constraint uses one
+    static AstNode* wrapIfMode(const RandomizeMode mode, AstVar* modeVarp,
+                               AstNode* stmtp) VL_MT_DISABLED;
 };
 
 //######################################################################

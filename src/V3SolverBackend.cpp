@@ -35,10 +35,7 @@ V3SolverRuntime V3SolverBackend::runtime() { return V3SolverSmt::runtime(); }
 
 std::vector<std::string> V3SolverBackend::runtimeCFlags() { return V3SolverSmt::runtimeCFlags(); }
 
-//######################################################################
-// Definitions shared by the randomize front end and the back-ends
-
-AstVar* getRandModeVarFromClass(AstNodeModule* classp) {
+AstVar* RandModeVars::randModeVarp(AstNodeModule* classp) {
     while (classp) {
         if (classp->user2p()) return VN_AS(classp->user2p(), Var);
         AstClass* const cp = VN_CAST(classp, Class);
@@ -48,7 +45,7 @@ AstVar* getRandModeVarFromClass(AstNodeModule* classp) {
     return nullptr;
 }
 
-AstNode* wrapIfMode(const RandomizeMode mode, AstVar* modeVarp, AstNode* stmtp) {
+AstNode* RandModeVars::wrapIfMode(const RandomizeMode mode, AstVar* modeVarp, AstNode* stmtp) {
     FileLine* const fl = stmtp->fileline();
     if (mode.usesMode) {
         // user2p can be either AstClass or AstClassPackage (for static constraints)

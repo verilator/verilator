@@ -768,7 +768,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                      const std::string& smtName, const RandomizeMode& randMode,
                      AstBegin* const initp) {
         AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
-        AstVar* const subRandModeVarp = getRandModeVarFromClass(varClassp);
+        AstVar* const subRandModeVarp = RandModeVars::randModeVarp(varClassp);
         if (subRandModeVarp) {
             AstNodeExpr* const parentAccessp = memberselp->fromp()->cloneTree(false);
             AstMemberSel* const randModeSelp
@@ -1089,7 +1089,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                             ownerStaticRandModeVarp, VAccess::READ};
         } else if (memberselp) {
             AstNodeModule* const varClassp = VN_AS(varp->user2p(), NodeModule);
-            AstVar* const effectiveRandModeVarp = getRandModeVarFromClass(varClassp);
+            AstVar* const effectiveRandModeVarp = RandModeVars::randModeVarp(varClassp);
             if (effectiveRandModeVarp) {
                 // Member's class has randmode, use it
                 AstNodeExpr* parentAccessp = memberselp->fromp()->cloneTree(false);
@@ -3148,7 +3148,7 @@ class SolverSmt final : public V3SolverBackend {
         const RandomizeMode rmode = {.asUQuad = constrp->user1()};
         AstVar* const modeVarp = constrp->isStatic() ? getStaticConstraintModeVar(classp)
                                                      : getConstraintModeVar(classp);
-        return wrapIfMode(rmode, modeVarp, stmtp);
+        return RandModeVars::wrapIfMode(rmode, modeVarp, stmtp);
     }
     AstTask* newSetupConstraintTask(AstClass* const nodep, const std::string& name) {
         AstTask* const taskp = new AstTask{nodep->fileline(), name + "_setup_constraint", nullptr};
@@ -3438,7 +3438,8 @@ class SolverSmt final : public V3SolverBackend {
             UASSERT_OBJ(smodep, varp, "usesMode static var without a static rand-mode array");
             arrayp = new AstVarRef{fl, VN_AS(smodep->user2p(), NodeModule), smodep, VAccess::READ};
         } else if (mselp) {
-            AstVar* const memberModep = getRandModeVarFromClass(VN_AS(varp->user2p(), NodeModule));
+            AstVar* const memberModep
+                = RandModeVars::randModeVarp(VN_AS(varp->user2p(), NodeModule));
             UASSERT_OBJ(memberModep, varp, "usesMode member without a class rand-mode array");
             arrayp = new AstMemberSel{fl, mselp->fromp()->cloneTreePure(false), memberModep};
         } else {
@@ -4230,7 +4231,7 @@ public:
         }
 
         // Set rand mode if present (not needed if classGenp exists and was copied)
-        AstVar* const randModeVarp = getRandModeVarFromClass(classp);
+        AstVar* const randModeVarp = RandModeVars::randModeVarp(classp);
         if (!classGenp && randModeVarp) addSetRandMode(randomizeFuncp, localGenp, randModeVarp);
         if (!classGenp) {
             if (AstVar* const sVarp = getStaticRandModeVar(classp)) {
