@@ -28,6 +28,7 @@
 #include "V3Parse.h"
 #include "V3ParseImp.h"
 #include "V3PreShell.h"
+#include "V3SolverBackend.h"
 #include "V3Stats.h"
 #include "V3ThreadPool.h"
 
@@ -254,7 +255,10 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
         result.emplace_back(base + "_c.cpp");
     if (v3Global.usesProbDist()) result.emplace_back("verilated_probdist.cpp");
     if (v3Global.usesTiming()) result.emplace_back("verilated_timing.cpp");
-    if (v3Global.useRandomizeMethods()) result.emplace_back("verilated_random.cpp");
+    if (v3Global.useRandomizeMethods()) {
+        for (const string& source : V3SolverBackend::runtime().sources)
+            result.emplace_back(source);
+    }
     result.emplace_back("verilated_threads.cpp");
     if (v3Global.opt.usesProfiler()) result.emplace_back("verilated_profiler.cpp");
     return result;
