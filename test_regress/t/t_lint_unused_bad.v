@@ -194,4 +194,13 @@ module sub;
     $display("%h", module_dynamic_range[1][module_dynamic_index]);
   end
 
+  class external_fields;
+    bit [6:0] partial;
+  endclass
+
+  initial begin
+    automatic external_fields obj = new();
+    $bboxed(obj.partial[0]);
+  end
+
 endmodule

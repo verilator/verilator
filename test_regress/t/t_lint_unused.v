@@ -125,6 +125,41 @@ module class_data;
     $display("%h", obj.child.data[2]);
   end
 
+  class randomized_fields;
+    rand bit [6:0] value;
+  endclass
+
+  initial begin
+    automatic randomized_fields obj = new();
+    if (obj.randomize() == 0) $fatal(1, "Randomization failed");
+    $display("%h", obj.value);
+  end
+
+  class copied_fields;
+    int value;
+  endclass
+
+  initial begin
+    automatic copied_fields source_obj = new();
+    automatic copied_fields copy_obj;
+    source_obj.value = 42;
+    copy_obj = new source_obj;
+    $display("%0d", copy_obj.value);
+  end
+
+  class external_fields;
+    bit [6:0] whole;
+    bit [6:0] partial;
+  endclass
+
+  initial begin
+    automatic external_fields obj = new();
+    $bboxed(obj.whole);
+    $bboxed(obj.partial[2:0]);
+    obj.partial[6:3] = '0;
+    $display("%h", obj.partial[6:3]);
+  end
+
 endmodule
 
 module sub;

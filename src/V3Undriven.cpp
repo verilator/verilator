@@ -549,6 +549,8 @@ class UndrivenVisitor final : public VNVisitorConst {
     }
     void visit(AstMemberSel* nodep) override {
         // The selected field is not a VarRef child; track it separately from the object handle.
+        // Only user1: user2 tracks per-always_comb order, but this field declaration
+        // is shared across class instances, so field-only tracking lacks object identity.
         UndrivenVarEntry* const entryp = getEntryp(nodep->varp(), 1);
         if (m_inBBox || nodep->access().isWriteOrRW()) {
             if (m_memberSelWidth)
