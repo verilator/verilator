@@ -705,7 +705,9 @@ public:
                 }
             }
             // Alias won't expand until interfaces and modport names are known; see notes at top
-            insertScopeAlias(SAMN_IFTOP, varSymp, ifOrPortSymp);
+            // Virtual interface members are resolved through the dtype, not the symbol table,
+            // and importing could recurse infinitely when the interface references itself
+            if (!ifacerefp->isVirtual()) insertScopeAlias(SAMN_IFTOP, varSymp, ifOrPortSymp);
         }
         m_ifaceVarSyms.clear();
     }
