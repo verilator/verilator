@@ -35,4 +35,19 @@
 %Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:85:44: Unsupported: rand-dependent index into an array reached through an operand that isn't a variable or member
    85 |   constraint c { id inside {[0:3]}; get_a()[id] == 8'hAA; }
       |                                            ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:97:65: Unsupported: Randomized index in complex expression
+   97 |   constraint c { h inside {[0:1]}; id inside {[0:1]}; hs[h].used[id] == 1; }
+      |                                                                 ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:104:65: Unsupported: Randomized index in complex expression
+  104 |   constraint c { h inside {[0:1]}; id inside {[0:1]}; hs[h].used[id] == 1; }
+      |                                                                 ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:112:41: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
+  112 |   constraint c { id inside {[0:1]}; d[0][id] == 8'hAA; }
+      |                                         ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:118:41: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
+  118 |   constraint c { id inside {[0:1]}; q[0][id] == 8'hAA; }
+      |                                         ^
+%Error-UNSUPPORTED: t/t_constraint_array_index_multidim_unsup.v:124:41: Unsupported: rand-dependent index into this array shape in constraint (multidimensional, queue, dynamic, or associative array, or a struct/class-typed element)
+  124 |   constraint c { id inside {[0:1]}; a[0][id] == 8'hAA; }
+      |                                         ^
 %Error: Exiting due to

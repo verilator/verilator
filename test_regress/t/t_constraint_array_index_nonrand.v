@@ -112,7 +112,7 @@ class RandQueueRandIndex;
   constraint c_data { data[idx] == 1; }
 endclass
 
-// An out-of-range idx reads as 0 (IEEE 1800-2023 7.4.2), not as
+// An out-of-range idx reads as 0 (IEEE 1800-2023 7.4.5), not as
 // used[used.size()-1] -- idx == used.size() is only satisfiable if the
 // solver models that default correctly.
 class OutOfBoundsIndex;
@@ -135,6 +135,66 @@ class OutOfBoundsIndexNonZeroBase;
   rand int idx;
   bit used[1:3] = '{1, 1, 1};
   constraint c { idx == 4; used[idx] == 0; }
+endclass
+
+// Same, but idx is wide enough to alias back into range if truncated to
+// the array's 2-bit index width (4 -> used[0], 5 -> used[1]).
+class OutOfBoundsIndexPastIndexWidth;
+  rand int idx;
+  bit used[3] = '{1, 1, 1};
+  constraint c { idx inside {[4:5]}; used[idx] == 0; }
+endclass
+
+// An explicit idx[1:0] does truncate, so idx == 4 reads used[0].
+class ExplicitlyTruncatedIndex;
+  rand int idx;
+  bit used[3] = '{1, 1, 1};
+  constraint c { idx == 4; used[idx[1:0]] == 0; }
+endclass
+
+// idx is exactly as wide as the array's index, so there's no truncation.
+class ExactWidthIndex;
+  rand bit [1:0] idx;
+  bit used[4] = '{1, 1, 0, 1};
+  constraint c { used[idx] == 0; }
+endclass
+
+// A rand index into a fixed array reached through a rand dynamic, queue,
+// or associative outer array.
+class RandDynOuterRandIndex;
+  rand int idx;
+  rand bit [7:0] data[][2];
+  constraint c { idx inside {[0:1]}; data.size() == 1; data[0][idx] == 8'hAA; }
+endclass
+
+class RandQueueOuterRandIndex;
+  rand int idx;
+  rand bit [7:0] data[$][2];
+  constraint c { idx inside {[0:1]}; data.size() == 1; data[0][idx] == 8'hAA; }
+endclass
+
+class RandAssocOuterRandIndex;
+  rand int idx;
+  rand bit [7:0] data[int][2];
+  constraint c { idx inside {[0:1]}; data[0][idx] == 8'hAA; }
+  function new();
+    data[0][0] = 8'h00;
+    data[0][1] = 8'h00;
+  endfunction
+endclass
+
+// A non-rand index (a method call) on the way to a non-rand array.
+class HolderQueueLastIndex;
+  rand int idx;
+  Holder holders[$];
+  constraint c { idx inside {[0:15]}; holders[holders.size() - 1].used[idx]; }
+  function new();
+    Holder h0 = new;
+    Holder h1 = new;
+    h1.used[5] = 1'b1;
+    holders.push_back(h0);
+    holders.push_back(h1);
+  endfunction
 endclass
 
 typedef struct {
@@ -165,6 +225,13 @@ module t;
     OutOfBoundsIndex oob_obj;
     OutOfBoundsIndexNegative oob_neg_obj;
     OutOfBoundsIndexNonZeroBase oob_nzb_obj;
+    OutOfBoundsIndexPastIndexWidth oob_wide_obj;
+    ExplicitlyTruncatedIndex trunc_obj;
+    ExactWidthIndex exact_obj;
+    RandDynOuterRandIndex rdyn_outer_obj;
+    RandQueueOuterRandIndex rq_outer_obj;
+    RandAssocOuterRandIndex raa_outer_obj;
+    HolderQueueLastIndex hq_last_obj;
     bit [15:0] seen;
     int randomize_result;
 
@@ -271,6 +338,58 @@ module t;
     randomize_result = oob_nzb_obj.randomize();
     `checkd(randomize_result, 1);
     `checkd(oob_nzb_obj.idx, 4);
+
+    oob_wide_obj = new;
+    seen = '0;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = oob_wide_obj.randomize();
+      `checkd(randomize_result, 1);
+      if (oob_wide_obj.idx < 4 || oob_wide_obj.idx > 5) begin
+        $write("%%Error: idx out of range: %0d\n", oob_wide_obj.idx);
+        `stop;
+      end
+      seen[oob_wide_obj.idx] = 1'b1;
+    end
+    `checkd(seen, 16'h0030);
+
+    trunc_obj = new;
+    randomize_result = trunc_obj.randomize();
+    `checkd(randomize_result, 0);
+
+    exact_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = exact_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(exact_obj.idx, 2);
+    end
+
+    rdyn_outer_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = rdyn_outer_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(rdyn_outer_obj.data[0][rdyn_outer_obj.idx], 8'hAA);
+    end
+
+    rq_outer_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = rq_outer_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(rq_outer_obj.data[0][rq_outer_obj.idx], 8'hAA);
+    end
+
+    raa_outer_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = raa_outer_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(raa_outer_obj.data[0][raa_outer_obj.idx], 8'hAA);
+    end
+
+    hq_last_obj = new;
+    for (int i = 0; i < 20; i++) begin
+      randomize_result = hq_last_obj.randomize();
+      `checkd(randomize_result, 1);
+      `checkd(hq_last_obj.idx, 5);
+    end
 
     mobj = new;
     for (int i = 0; i < 16; i++) begin

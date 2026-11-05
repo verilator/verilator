@@ -85,6 +85,45 @@ class C9;
   constraint c { id inside {[0:3]}; get_a()[id] == 8'hAA; }
 endclass
 
+// A rand index on the way to the indexed non-rand array, through a fixed
+// array or a queue of handles.
+class Holder;
+  bit used[2];
+endclass
+class C10;
+  rand int h;
+  rand int id;
+  Holder hs[2];
+  constraint c { h inside {[0:1]}; id inside {[0:1]}; hs[h].used[id] == 1; }
+endclass
+
+class C11;
+  rand int h;
+  rand int id;
+  Holder hs[$];
+  constraint c { h inside {[0:1]}; id inside {[0:1]}; hs[h].used[id] == 1; }
+endclass
+
+// A fixed 1-D non-rand array reached through a dynamic, queue, or
+// associative outer array.
+class C12;
+  rand int id;
+  bit [7:0] d[][2];
+  constraint c { id inside {[0:1]}; d[0][id] == 8'hAA; }
+endclass
+
+class C13;
+  rand int id;
+  bit [7:0] q[$][2];
+  constraint c { id inside {[0:1]}; q[0][id] == 8'hAA; }
+endclass
+
+class C14;
+  rand int id;
+  bit [7:0] a[int][2];
+  constraint c { id inside {[0:1]}; a[0][id] == 8'hAA; }
+endclass
+
 module t;
   initial begin
     C1 obj1;
@@ -96,6 +135,11 @@ module t;
     C7 obj7;
     C8 obj8;
     C9 obj9;
+    C10 obj10;
+    C11 obj11;
+    C12 obj12;
+    C13 obj13;
+    C14 obj14;
     obj1 = new;
     obj2 = new;
     obj3 = new;
@@ -105,6 +149,11 @@ module t;
     obj7 = new;
     obj8 = new;
     obj9 = new;
+    obj10 = new;
+    obj11 = new;
+    obj12 = new;
+    obj13 = new;
+    obj14 = new;
     if (obj1.randomize() == 0) $stop;
     if (obj2.randomize() == 0) $stop;
     if (obj3.randomize() == 0) $stop;
@@ -114,5 +163,10 @@ module t;
     if (obj7.randomize() == 0) $stop;
     if (obj8.randomize() == 0) $stop;
     if (obj9.randomize() == 0) $stop;
+    if (obj10.randomize() == 0) $stop;
+    if (obj11.randomize() == 0) $stop;
+    if (obj12.randomize() == 0) $stop;
+    if (obj13.randomize() == 0) $stop;
+    if (obj14.randomize() == 0) $stop;
   end
 endmodule
