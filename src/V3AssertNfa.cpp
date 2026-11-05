@@ -783,10 +783,6 @@ class SvaNfaBuilder final {
 
             // The endpoint is valid only when the repetition itself matched on this tick.
             // A valid match also retires the live repetition state for later ticks.
-            if (liveRepVtxp->m_liveRepClearCondp) {
-                VL_DO_DANGLING(liveRepVtxp->m_liveRepClearCondp->deleteTree(),
-                               liveRepVtxp->m_liveRepClearCondp);
-            }
             liveRepVtxp->m_liveRepClearCondp = new AstLogAnd{
                 flp, liveRepCondp->cloneTreePure(false), endpointBoolp->cloneTreePure(false)};
 
@@ -2124,7 +2120,7 @@ class SvaNfaLowering final {
                 matchItemCondp = new AstLogAnd{
                     c.flp, matchItemCondp,
                     sampled(vtxp->m_liveRepClearCondp->cloneTreePure(false))};
-                matchItemCondp = andCond(c.flp, matchItemCondp, notKillActive(c));
+                matchItemCondp = new AstLogAnd{c.flp, matchItemCondp, notKillActive(c)};
                 if (c.disableExprp) {
                     matchItemCondp = new AstLogAnd{
                         c.flp, matchItemCondp,
