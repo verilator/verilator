@@ -239,6 +239,40 @@ two", "one two");
     $display("%o", 12'b1zz_zzz_x1x_xxx);
     $display("%o", 12'b1zx_zzx_x1z_xxx);
 
+    // Suppressing leading zeroes may collapse an extending X/Z run, but must preserve value.
+    `checks($sformatf("%0b", 1'bx), "x");
+    `checks($sformatf("%0b", 1'bz), "z");
+    `checks($sformatf("%0b", 4'bxx01), "x01");
+    `checks($sformatf("%0b", 4'bzz01), "z01");
+    `checks($sformatf("%6b", 4'bxx01), "00xx01");
+    `checks($sformatf("%6b", 4'bzz01), "00zz01");
+    `checks($sformatf("%-6b", 4'bxx01), "x01   ");
+    `checks($sformatf("%-6b", 4'bzz01), "z01   ");
+    `checks($sformatf("%2o", 7'bxxxx001), "x1");
+    `checks($sformatf("%2o", 7'bzzzz001), "z1");
+    `checks($sformatf("%3o", 7'bxxxx001), "xx1");
+    `checks($sformatf("%3o", 7'bzzzz001), "zz1");
+    `checks($sformatf("%4o", 7'bxxxx001), "0xx1");
+    `checks($sformatf("%4o", 7'bzzzz001), "0zz1");
+    `checks($sformatf("%0o", 7'b000x001), "0X1");
+    `checks($sformatf("%0o", 7'b000z001), "0Z1");
+    `checks($sformatf("%0o", 7'bxxx0001), "xX1");
+    `checks($sformatf("%0o", 7'bzzz0001), "zZ1");
+    `checks($sformatf("%0o", 7'bzzx0001), "zX1");
+    `checks($sformatf("%2h", 12'bxxxxxxxx0001), "x1");
+    `checks($sformatf("%2h", 12'bzzzzzzzz0001), "z1");
+    `checks($sformatf("%3h", 12'bxxxxxxxx0001), "xx1");
+    `checks($sformatf("%3h", 12'bzzzzzzzz0001), "zz1");
+    `checks($sformatf("%4h", 12'bxxxxxxxx0001), "0xx1");
+    `checks($sformatf("%4h", 12'bzzzzzzzz0001), "0zz1");
+    `checks($sformatf("%0h", 9'b000x00001), "0X1");
+    `checks($sformatf("%0h", 9'b000z00001), "0Z1");
+    `checks($sformatf("%0h", 9'b0000x0001), "0X1");
+    `checks($sformatf("%0h", 9'b0000z0001), "0Z1");
+    `checks($sformatf("%0h", 9'bxxxx00001), "xX1");
+    `checks($sformatf("%0h", 9'bzzzz00001), "zZ1");
+    `checks($sformatf("%0h", 9'bzzzx00001), "zX1");
+
     $display(,, 10);  // Strange but legal
 
     // $sformat allows only single format while $display/write allow multiple

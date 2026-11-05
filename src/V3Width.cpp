@@ -1421,15 +1421,22 @@ class WidthVisitor final : public VNVisitor {
             if (!m_doGenerate) {
                 // Must check bounds before adding a select that truncates the bound
                 // Note we've already subtracted off LSB
-                if (VN_IS(nodep->bitp(), Const)
-                    && (VN_AS(nodep->bitp(), Const)->toSInt() > (frommsb - fromlsb)
-                        || VN_AS(nodep->bitp(), Const)->toSInt() < 0)) {
-                    // Suppress in dead/parameterized template modules
-                    if (!(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))) {
-                        nodep->v3warn(SELRANGE,
-                                      "Selection index out of range: "
-                                          << (VN_AS(nodep->bitp(), Const)->toSInt() + fromlsb)
-                                          << " outside " << frommsb << ":" << fromlsb);
+                if (const AstConst* const constp = VN_CAST(nodep->bitp(), Const)) {
+                    const bool hasAnyXZ = constp->num().isAnyXZ();
+                    if (hasAnyXZ || constp->toSInt() > (frommsb - fromlsb)
+                        || constp->toSInt() < 0) {
+                        // Suppress in dead/parameterized template modules
+                        if (!(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))) {
+                            std::stringstream val;
+                            if (hasAnyXZ) {
+                                val << constp->num();
+                            } else {
+                                val << (constp->toSInt() + fromlsb);
+                            }
+                            nodep->v3warn(SELRANGE, "Selection index out of range: "
+                                                        << val.str() << " outside " << frommsb
+                                                        << ":" << fromlsb);
+                        }
                     }
                 }
                 widthCheckSized(nodep, "Extract Range", nodep->bitp(), selwidthDTypep, EXTEND_EXP,
@@ -3759,10 +3766,22 @@ class WidthVisitor final : public VNVisitor {
         bool wrapAround = false;
         std::map<const V3Number, AstEnumItem*> inits;
         for (AstEnumItem* const itemp : nodep->itemspList()) {
+            bool valueHasXZ = false;
             if (itemp->valuep()) {
                 if (debug() >= 9) {
                     UINFO(0, "EnumInit " << itemp);
                     itemp->valuep()->dumpTree("-  EnumInit: ");
+                }
+                AstNodeExpr* castFromp = nullptr;
+                if (AstCast* const castp = VN_CAST(itemp->valuep(), Cast)) {
+                    V3Const::constifyParamsEdit(castp->fromp());
+                    castFromp = castp->fromp();
+                } else if (AstCastWrap* const castp = VN_CAST(itemp->valuep(), CastWrap)) {
+                    V3Const::constifyParamsEdit(castp->lhsp());
+                    castFromp = castp->lhsp();
+                }
+                if (const AstConst* const constp = VN_CAST(castFromp, Const)) {
+                    valueHasXZ = constp->num().isFourState();
                 }
                 V3Const::constifyParamsEdit(itemp->valuep());  // itemp may change
                 if (!VN_IS(itemp->valuep(), Const)) {
@@ -3785,7 +3804,8 @@ class WidthVisitor final : public VNVisitor {
             }
 
             const AstConst* const constp = VN_AS(itemp->valuep(), Const);
-            if (constp->num().isFourState() && basicp->basicp() && !basicp->isFourstate()) {
+            if ((valueHasXZ || constp->num().isFourState()) && basicp->basicp()
+                && !basicp->isFourstate()) {
                 itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type "
                                "(IEEE 1800-2023 6.19)");
             }
@@ -3843,6 +3863,7 @@ class WidthVisitor final : public VNVisitor {
             // Always create a cast, to avoid later ENUMVALUE warnings
             nodep->valuep(new AstCast{nodep->valuep()->fileline(), nodep->valuep()->unlinkFrBack(),
                                       nodep->dtypep()});
+            iterate(nodep->valuep());
         }
     }
     void visit(AstEnumItemRef* nodep) override {
@@ -4240,6 +4261,8 @@ class WidthVisitor final : public VNVisitor {
             m_fromParentp = nodep;
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         }
+        // Child traversal may have already width-resolved this member selection.
+        if (nodep->didWidth()) return;
         UINFOTREE(9, nodep, "", "mbs-ic");
         // Find the fromp dtype - should be a class
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Unlinked data type");
@@ -4493,6 +4516,23 @@ class WidthVisitor final : public VNVisitor {
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return false;  // Caller handles error
     }
+    AstNodeFuncCovItem* findCoverItem(AstClass* classp, const string& name) {
+        const auto pair
+            = m_coverItems.emplace(classp, std::unordered_map<string, AstNodeFuncCovItem*>{});
+        auto& items = pair.first->second;
+        if (pair.second) {
+            // Until V3Covergroup, the constructor holds the coverpoints and crosses
+            AstFunc* const newp = VN_AS(m_memberMap.findMember(classp, "new"), Func);
+            for (AstNode* const stmtp : newp->stmtspList()) {
+                if (AstNodeFuncCovItem* const itemp = VN_CAST(stmtp, NodeFuncCovItem)) {
+                    items.emplace(itemp->name(), itemp);
+                }
+            }
+        }
+        const auto it = items.find(name);
+        return it == items.end() ? nullptr : it->second;
+    }
+
     // Return true if 'cg.item' names coverpoint or cross 'item' of covergroup instance 'cg'.  Its
     // only use is as the prefix of a hierarchical name (IEEE 1800-2023 19.5, 19.6), which a
     // formal argument of the same name does not hide, as formals are not visible there (19.3).
@@ -4506,22 +4546,36 @@ class WidthVisitor final : public VNVisitor {
         if (!(callp && callp->fromp() == nodep) && !(selp && selp->fromp() == nodep)) {
             return false;
         }
-        const auto pair
-            = m_coverItems.emplace(classp, std::unordered_map<string, AstNodeFuncCovItem*>{});
-        auto& items = pair.first->second;
-        if (pair.second) {
-            // Until V3Covergroup, the constructor holds the coverpoints and crosses
-            AstFunc* const newp = VN_AS(m_memberMap.findMember(classp, "new"), Func);
-            for (AstNode* const stmtp : newp->stmtspList()) {
-                if (AstNodeFuncCovItem* const itemp = VN_CAST(stmtp, NodeFuncCovItem)) {
-                    items.emplace(itemp->name(), itemp);
+        AstNodeFuncCovItem* const itemp = findCoverItem(classp, nodep->name());
+        if (!itemp) return false;
+        const string member = parentp->name();
+        if (member == "option") {
+            const AstMemberSel* const weightp = VN_CAST(parentp->backp(), MemberSel);
+            const bool isWeight
+                = weightp && weightp->fromp() == parentp && weightp->name() == "weight";
+            // Reject unsupported lvalue forms before later passes assume a normal class member.
+            if (isWeight && VN_IS(m_writerp, NodeAssign) && !VN_IS(m_writerp, Assign)) {
+                if (VN_IS(m_writerp, AssignForce)) {
+                    nodep->v3error("Unsupported: force assignment to coverpoint option.weight "
+                                   "(IEEE 1800-2023 6.21)");
+                } else {
+                    nodep->v3error("Unsupported: non-blocking or procedural assignment to "
+                                   "coverpoint option.weight (IEEE 1800-2023 6.21)");
                 }
             }
+            AstVar* const optionVarp = itemp->optionVarp();
+            UASSERT_OBJ(optionVarp, itemp, "Coverage item missing option member");
+            if (!optionVarp->didWidth()) userIterate(optionVarp, nullptr);
+            AstMemberSel* const optionSelp = VN_AS(parentp, MemberSel);
+            AstNodeExpr* const basep = nodep->fromp()->unlinkFrBack();
+            nodep->unlinkFrBack();
+            optionSelp->fromp(basep);
+            optionSelp->varp(optionVarp);
+            optionSelp->dtypep(optionVarp->dtypep());
+            optionSelp->didWidth(true);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return true;
         }
-        const auto it = items.find(nodep->name());
-        if (it == items.end()) return false;
-        AstNodeFuncCovItem* const itemp = it->second;
-        const string member = parentp->name();
         if (member == "get_coverage" || member == "start" || member == "stop" || member == "option"
             || member == "type_option") {
             // Continuing as the covergroup's member of the same name avoids another error
@@ -6779,9 +6833,9 @@ class WidthVisitor final : public VNVisitor {
         const AstBasicDType* bdtypep = VN_AS(vdtypep, BasicDType);
         const VNumRange range = bdtypep->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
-        UINFO(9, "ent " << range.hi() << " to " << range.lo());
+        UINFO(9, "ent " << range.left() << " to " << range.right());
         AstNodeExpr* newp = nullptr;
-        for (const int ent : range.seqHiToLo()) {
+        for (const int ent : range.seqLeftToRight()) {
             AstNodeExpr* valuep = nullptr;
             const auto it = patmap.find(ent);
             if (it == patmap.end()) {

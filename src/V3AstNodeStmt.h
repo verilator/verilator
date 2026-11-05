@@ -573,6 +573,17 @@ public:
     }
     ASTGEN_MEMBERS_AstDeassign;
 };
+class AstDeferredAssertFlush final : public AstNodeStmt {
+    // Deferred assertion flush point created by V3Assert. V3Timing preserves it only when a
+    // wait actually suspends the process.
+    // @astgen op1 := stmtsp : List[AstNodeStmt] // Clear the process's pending calls
+public:
+    AstDeferredAssertFlush(FileLine* fl, AstNodeStmt* stmtsp)
+        : ASTGEN_SUPER_DeferredAssertFlush(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstDeferredAssertFlush;
+};
 class AstDelay final : public AstNodeStmt {
     // Delay statement
     // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
@@ -622,6 +633,18 @@ public:
         : ASTGEN_SUPER_DisableFork(fl) {}
     ASTGEN_MEMBERS_AstDisableFork;
     string verilogKwd() const override { return "disable fork"; }
+};
+class AstDisableTargetBody final : public AstNodeStmt {
+    // Body of a 'disable' target that may be the outermost scope of a process, wrapped by
+    // V3LinkJump so later passes can tell whether the scope ran to its end
+    //
+    // @astgen op1 := stmtsp : List[AstNode]
+public:
+    AstDisableTargetBody(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_DisableTargetBody(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstDisableTargetBody;
 };
 class AstDisplay final : public AstNodeStmt {
     // Parents: stmtlist
@@ -979,6 +1002,42 @@ public:
         return m_off == VN_DBG_AS(samep, MonitorOff)->m_off;
     }
     bool off() const { return m_off; }
+};
+class AstNbaCommit final : public AstNodeStmt {
+    // Commit generic NBAs currently pending in the NBA queue 'queuep'.
+    // @astgen op1 := queuep : AstVarRef  // The VlNbaGenericQueue
+    // @astgen op2 := targetsp : List[AstVarRef]  // The variables updated - only for scheduling
+public:
+    AstNbaCommit(FileLine* fl, AstVarRef* queuep)
+        : ASTGEN_SUPER_NbaCommit(fl) {
+        this->queuep(queuep);
+    }
+    ASTGEN_MEMBERS_AstNbaCommit;
+    bool isPure() override { return false; }
+};
+class AstNbaEnqueue final : public AstNodeStmt {
+    // Enqueue a generic NBA to the NBA queue 'queuep', until its next commit (see V3Delayed): take
+    // a closure from 'poolp', set its members to 'argsp', and enqueue it to call 'funcp'.
+    // @astgen op1 := queuep : AstVarRef  // The VlNbaGenericQueue
+    // @astgen op2 := poolp : AstVarRef  // The VlClosurePool
+    // @astgen op3 := argsp : List[AstNodeExpr]  // The values of the members, in order
+    // @astgen ptr := m_funcp : AstCFunc  // The function called with the closure on commit
+public:
+    AstNbaEnqueue(FileLine* fl, AstVarRef* queuep, AstVarRef* poolp, AstCFunc* funcp)
+        : ASTGEN_SUPER_NbaEnqueue(fl)
+        , m_funcp{funcp} {
+        this->queuep(queuep);
+        this->poolp(poolp);
+    }
+    ASTGEN_MEMBERS_AstNbaEnqueue;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool isPure() override { return false; }
+    bool sameNode(const AstNode* samep) const override {
+        return funcp() == VN_DBG_AS(samep, NbaEnqueue)->funcp();
+    }
+    AstCFunc* funcp() const { return m_funcp; }
+    void funcp(AstCFunc* funcp) { m_funcp = funcp; }
 };
 class AstPExprClause final : public AstNodeStmt {
     const bool m_pass;  // Will be replaced by passing assertion clause, false for
@@ -1598,11 +1657,13 @@ class AstBegin final : public AstNodeBlock {
     // A 'begin'/'end' named block.
     bool m_needProcess : 1;  // Uses VlProcess
     const bool m_implied : 1;  // Not inserted by user
+    bool m_disableWrapper : 1;  // Fork branch letting 'disable' kill a block, same process
 public:
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
         : ASTGEN_SUPER_Begin(fl, name)
         , m_needProcess{false}
-        , m_implied{implied} {
+        , m_implied{implied}
+        , m_disableWrapper{false} {
         addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstBegin;
@@ -1611,6 +1672,8 @@ public:
     void setNeedProcess() { m_needProcess = true; }
     bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }
+    void setDisableWrapper() { m_disableWrapper = true; }
+    bool disableWrapper() const { return m_disableWrapper; }
 };
 class AstFork final : public AstNodeBlock {
     // A 'fork'/'join*' named block. Note that this is a strict superset of

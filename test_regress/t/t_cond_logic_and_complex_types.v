@@ -17,6 +17,20 @@
 // verilog_format: on
 
 module t;
+  typedef logic [3:0] fixed_array_t[2];
+  typedef struct {
+    logic [3:0] first;
+    logic [3:0] second;
+  } struct_t;
+  typedef struct_t struct_array_t[2];
+
+  localparam fixed_array_t FIXED_ARRAY = 1'bx ? '{4'h5, 4'h6} : '{4'h5, 4'h7};
+  localparam struct_array_t STRUCT_ARRAY = 1'bx ?
+  '{'{4'h1, 4'h2}, '{4'h3, 4'h4}}
+  : '{'{4'h1, 4'h2}, '{4'h3, 4'h5}};
+  localparam bit STRUCT_ARR_X_FIRST = STRUCT_ARRAY[1].first === 4'hx;
+  localparam bit STRUCT_ARR_X_SECOND = STRUCT_ARRAY[1].second === 4'hx;
+
   task foo(int q[$]);
     `checkd(q.size(), 2);
     `checkd(q.pop_front(), 1);
@@ -33,6 +47,11 @@ module t;
     automatic logic c;
     automatic int a[$];
     automatic int b[$];
+    `checkd(FIXED_ARRAY[0], 4'h5);
+    `checkd(STRUCT_ARRAY[0].first, 4'h1);
+    `checkd(STRUCT_ARRAY[0].second, 4'h2);
+    `checkd(STRUCT_ARR_X_FIRST, 1'b1);
+    `checkd(STRUCT_ARR_X_SECOND, 1'b1);
     c = `IMPURE_ONE;
     a.push_back(1);
     a.push_back(2);

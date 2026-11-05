@@ -125,7 +125,7 @@ module t;
     wire logic [1:0]  var_part;
     assign var_part = concat_src[sel_idx+:2];
     tri logic [1:0]  tri_sig;
-    assign tri_sig = (in ? 2'h1 : 2'bzz);
+    assign tri_sig = (in ? 2'h1 : 2'bz);
     int fd;
     int i;
     int q[$];
@@ -1049,6 +1049,22 @@ module t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_sig__option;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_options__option;
     endcovergroup
     covergroup cg_clocked;
     @(posedge clk)function new;
@@ -1096,6 +1112,14 @@ module t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_cyc__option;
     endcovergroup
     covergroup cg_trans;
     function new;
@@ -1150,6 +1174,14 @@ module t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_t__option;
     endcovergroup
     covergroup cg_open_default;
     function new;
@@ -1202,6 +1234,22 @@ module t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_open_both__option;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_defaults__option;
     endcovergroup
     int cg_set_values[$];
     cg_set_values = 
@@ -1267,6 +1315,14 @@ module t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp__option;
     endcovergroup
     covergroup cg_cross;
     function new;
@@ -1356,6 +1412,38 @@ module t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_x__option;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_y__option;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int cross_num_print_missing;
+        bit cross_retain_auto_bins;
+    } __Vcg_cx__option;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int cross_num_print_missing;
+        bit cross_retain_auto_bins;
+    } __Vcg_cx_select__option;
     endcovergroup
     covergroup cg_live_cross;
     function new;
@@ -1409,6 +1497,30 @@ module t;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_x__option;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_y__option;
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int cross_num_print_missing;
+        bit cross_retain_auto_bins;
+    } __Vcg_cx__option;
     endcovergroup
     cg_basic cg_basic_inst;
     cg_basic_inst = new();
@@ -1503,6 +1615,14 @@ class Cls;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_m__option;
     endcovergroup
     __vlAnonCG_cg_in_class cg_in_class;
     covergroup __vlAnonCG_cg_ref;
@@ -1554,6 +1674,14 @@ class Cls;
     function set_inst_name;
         input string name;
     endfunction
+    struct {
+        int weight = 'sh1;
+        int goal;
+        string comment;
+        int at_least;
+        int auto_bin_max;
+        bit detect_overlap;
+    } __Vcg_cp_ref__option;
     endcovergroup
     __vlAnonCG_cg_ref cg_ref;
     function new;

@@ -2,10 +2,11 @@
 # DESCRIPTION: Github actions config
 # SPDX-License-Identifier: LGPL-3.0-only OR Artistic-2.0
 
-# Code review of a pull request by Claude, requested by an organization owner
-# with a pull request comment containing '@claude review'. The owners are listed
-# by login, as 'author_association' reports them as 'MEMBER', and only the
-# organization itself as 'OWNER'.
+# Code review of a pull request by Claude, requested with a pull request comment
+# containing '@claude review' by one of the listed users, or by the CI app,
+# 'verilator-bot', which requests a review of every new pull request in
+# 'pr-automation.yml'. The comment of the CI app must start with the request,
+# as it also posts other comments.
 #
 # This uses 'issue_comment', and not 'pull_request_target', as the Claude GitHub
 # App token exchange rejects OIDC tokens from the latter
@@ -20,6 +21,9 @@
 # inline comment separately would send a notification for every comment
 # (https://github.com/anthropics/claude-code-action/issues/1049). The only file
 # Claude may write is the one passing its comments to that script.
+#
+# Claude may run 'gh' only in the exact forms listed, and may not read '.git',
+# so that the pull request under review cannot get it to reveal credentials.
 
 name: Claude review
 
@@ -38,8 +42,10 @@ jobs:
     if: |
       github.repository == 'verilator/verilator'
       && github.event.issue.pull_request
-      && contains(github.event.comment.body, '@claude review')
-      && contains(fromJSON('["gezalore", "wsnyder"]'), github.event.comment.user.login)
+      && ((contains(github.event.comment.body, '@claude review')
+           && contains(fromJSON('["gezalore", "wsnyder"]'), github.event.comment.user.login))
+          || (startsWith(github.event.comment.body, '<!-- @claude review -->')
+              && github.event.comment.user.login == 'verilator-bot[bot]'))
     runs-on: ubuntu-26.04
     steps:
       # The base branch, for the AGENTS.md guides and the code around the diff
@@ -50,12 +56,16 @@ jobs:
         uses: anthropics/claude-code-action@6d5ae526d25ce88daa2200be073e1a373167f064  # v1.0.265
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_bots: verilator-bot
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.issue.number }}
 
-            Review this pull request. Use `gh pr diff` to see the changes, and
-            `gh pr view --comments` for the description and earlier discussion.
+            Review this pull request. Run `gh pr diff ${{ github.event.issue.number }}`
+            to see the changes, `gh pr view ${{ github.event.issue.number }}` for the
+            description, and `gh pr view ${{ github.event.issue.number }} --comments`
+            for the earlier discussion, exactly as written, as no other form is
+            allowed.
             The working directory holds the base branch, not the pull request.
             Use the Read tool, not shell commands, to read files, including long
             tool output saved to a file.
@@ -107,12 +117,14 @@ jobs:
             --effort medium
             --max-budget-usd 1
             --allowedTools
-              "Bash(gh pr diff:*)"
-              "Bash(gh pr view:*)"
+              "Bash(gh pr diff ${{ github.event.issue.number }})"
+              "Bash(gh pr view ${{ github.event.issue.number }})"
+              "Bash(gh pr view ${{ github.event.issue.number }} --comments)"
               "Edit(/${{ runner.temp }}/claude-review.json)"
               "Bash(ci/ci-claude-post-review.bash)"
             --disallowedTools
               "Edit(/${{ github.workspace }}/ci/ci-claude-post-review.bash)"
+              "Read(/${{ github.workspace }}/.git/**)"
 
       # Temporary: list the tool calls that '--allowedTools' blocked, to decide
       # whether it is missing anything

@@ -15,7 +15,7 @@ on:
   push:  # A pull request can start conflicting when its base branch moves
     branches: [master]
 permissions:
-  contents: read  # To check out the local action, everything else uses the CI app token
+  contents: read  # To check out local files, everything else uses the CI app token
 
 defaults:
   run:
@@ -73,6 +73,22 @@ jobs:
           gh pr edit "${{ github.event.number }}" \
             --repo "${{ github.repository }}" \
             --add-label 'pr: dev-coverage-auto'
+
+      - name: Checkout
+        if: ${{ github.event.action == 'opened' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
+        with:
+          sparse-checkout: .github/pr-open-comment.md
+          sparse-checkout-cone-mode: false
+
+      - name: Comment on open
+        if: ${{ github.event.action == 'opened' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          gh pr comment "${{ github.event.number }}" \
+            --repo "${{ github.repository }}" \
+            --body-file .github/pr-open-comment.md
 
       - name: "Remove all 'pr*' labels on close"
         if: ${{ github.event.action == 'closed' }}
