@@ -942,7 +942,7 @@ class EmitMkHierVerilation final {
             const V3HierBlock* const blockp = vtx.as<V3HierBlock>();
             const string prefix = blockp->hierPrefix();
             const string argsFilename = blockp->commandArgsFilename(false);
-            of.puts(blockp->hierGeneratedFilenames(true));
+            of.puts(blockp->hierMkFilename(true));
             of.puts(": $(VM_HIER_INPUT_FILES) $(VM_HIER_VERILOG_LIBS) ");
             of.puts(V3Os::filenameNonDir(argsFilename) + " ");
             for (const V3GraphEdge& edge : blockp->outEdges()) {
@@ -951,7 +951,11 @@ class EmitMkHierVerilation final {
             }
             of.puts("\n");
             emitLaunchVerilator(of, argsFilename);
-
+            // Rule for the *.sv stub. The same Verilation writes it. It is not
+            // a second target of the rule above, as 'make -j' would then run
+            // the recipe once per target.
+            of.puts(blockp->hierWrapperFilename(true) + ": " + blockp->hierMkFilename(true)
+                    + "\n\t@:\n");
             // Rule to build lib*.a
             of.puts(blockp->hierLibFilename(true));
             of.puts(": ");

@@ -404,6 +404,9 @@ class WidthVisitor final : public VNVisitor {
     std::map<std::tuple<const AstNodeDType*, VAttrType, size_t>, AstVarRef*> m_tableMap;
     // Queues with given index type
     std::map<const AstNodeDType*, AstQueueDType*> m_queueDTypeIndexed;
+    // Unpacked conversion types, keyed by element type and outer range
+    std::map<std::pair<const AstNodeDType*, VNumRange>, AstUnpackArrayDType*>
+        m_unpackedConversionDTypes;
     ContainingClassFinder m_containingClassFinder;  // Finds the class containing a node
     std::unordered_set<AstVar*> m_aliasedVars;  // Variables referenced in alias
     std::unordered_set<const AstVar*> m_curModVars;  // Variables declared in current module
@@ -1516,15 +1519,22 @@ class WidthVisitor final : public VNVisitor {
             if (!m_doGenerate) {
                 // Must check bounds before adding a select that truncates the bound
                 // Note we've already subtracted off LSB
-                if (VN_IS(nodep->bitp(), Const)
-                    && (VN_AS(nodep->bitp(), Const)->toSInt() > (frommsb - fromlsb)
-                        || VN_AS(nodep->bitp(), Const)->toSInt() < 0)) {
-                    // Suppress in dead/parameterized template modules
-                    if (!(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))) {
-                        nodep->v3warn(SELRANGE,
-                                      "Selection index out of range: "
-                                          << (VN_AS(nodep->bitp(), Const)->toSInt() + fromlsb)
-                                          << " outside " << frommsb << ":" << fromlsb);
+                if (const AstConst* const constp = VN_CAST(nodep->bitp(), Const)) {
+                    const bool hasAnyXZ = constp->num().isAnyXZ();
+                    if (hasAnyXZ || constp->toSInt() > (frommsb - fromlsb)
+                        || constp->toSInt() < 0) {
+                        // Suppress in dead/parameterized template modules
+                        if (!(m_modep && (m_modep->dead() || m_modep->parameterizedTemplate()))) {
+                            std::stringstream val;
+                            if (hasAnyXZ) {
+                                val << constp->num();
+                            } else {
+                                val << (constp->toSInt() + fromlsb);
+                            }
+                            nodep->v3warn(SELRANGE, "Selection index out of range: "
+                                                        << val.str() << " outside " << frommsb
+                                                        << ":" << fromlsb);
+                        }
                     }
                 }
                 widthCheckSized(nodep, "Extract Range", nodep->bitp(), selwidthDTypep, EXTEND_EXP,
@@ -2435,8 +2445,50 @@ class WidthVisitor final : public VNVisitor {
         widthCovergroupRanges(nodep->rangesp(), 0);
     }
     void visit(AstCoverBin* nodep) override {
-        // No m_vup for a bin directly in a covergroup body (unsupported, already warned)
-        widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
+        if (nodep->isSetExpr()) {
+            // Validate before constification can erase the array's declared element type.
+            userIterateAndNext(nodep->rangesp(), WidthVP{SELF, BOTH}.p());
+            AstNodeExpr* const valuep = VN_AS(nodep->rangesp(), NodeExpr);
+            const AstNodeDType* const dtypep = valuep->dtypep()->skipRefToEnump();
+            const AstNodeDType* elementp = nullptr;
+            if (VN_IS(dtypep, NodeArrayDType) || VN_IS(dtypep, DynArrayDType)
+                || VN_IS(dtypep, QueueDType)) {
+                elementp = dtypep->subDTypep();
+            } else if (const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType)) {
+                // The innermost packed dimension is represented by a ranged basic type.
+                if (basicp->isBitLogic() && basicp->isRanged()) {
+                    elementp
+                        = basicp->isFourstate() ? nodep->findLogicDType() : nodep->findBitDType();
+                }
+            }
+            if (!elementp) {
+                valuep->v3error("Bin set expression must evaluate to a non-associative array, not "
+                                << dtypep->prettyDTypeNameQ() << " (IEEE 1800-2023 19.5.1.2).");
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                return;
+            }
+            if (m_vup) {
+                // Coverpoints are integral or real; strings and unpacked aggregates cannot
+                // be implicitly assigned to them, even if an explicit cast would be legal.
+                const AstNodeDType* const elementBasep = elementp->skipRefp();
+                const VCastable castable
+                    = AstNode::computeCastable(m_vup->dtypep(), elementp, nullptr);
+                if ((!elementBasep->isIntegralOrPacked() && !elementBasep->isDouble())
+                    || (!castable.isSameish() && !castable.isCompatible()
+                        && castable != VCastable::ENUM_IMPLICIT)) {
+                    valuep->v3error("Bin set expression element type "
+                                    << elementp->prettyDTypeNameQ()
+                                    << " is not assignment compatible with coverpoint type "
+                                    << m_vup->dtypep()->prettyDTypeNameQ()
+                                    << " (IEEE 1800-2023 19.5.1.2).");
+                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+                    return;
+                }
+            }
+        } else {
+            // No m_vup for a bin directly in a covergroup body (unsupported, already warned).
+            widthCovergroupRanges(nodep->rangesp(), m_vup ? m_vup->dtypep()->width() : 0);
+        }
         if (nodep->iffp()) iterateCheckBool(nodep, "iff condition", nodep->iffp(), BOTH);
         if (nodep->arraySizep()) {
             // The size of 'bins b[N]' or 'bins auto[N]' is a self-determined expression, which
@@ -2635,6 +2687,23 @@ class WidthVisitor final : public VNVisitor {
         // Opaque returns, so arbitrary
         userIterateAndNext(nodep->fromp(), WidthVP{SELF, BOTH}.p());
         // Type set in constructor
+        const AstUnpackArrayDType* const fromDtp
+            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+        AstNodeDType* const elemDtp = nodep->dtypep()->skipRefp()->subDTypep();
+        const AstUnpackArrayDType* const elemArrayp
+            = VN_CAST(elemDtp->skipRefp(), UnpackArrayDType);
+        if (elemArrayp && elemArrayp->isReverseOf(fromDtp->subDTypep())) {
+            // Match inner dimensions before converting the outer dimension to a queue.
+            AstUnpackArrayDType*& orderedDtp
+                = m_unpackedConversionDTypes[{elemArrayp, fromDtp->declRange()}];
+            if (!orderedDtp) {
+                orderedDtp = new AstUnpackArrayDType{
+                    nodep->fileline(), elemDtp,
+                    new AstRange{nodep->fileline(), fromDtp->declRange()}};
+                v3Global.rootp()->typeTablep()->addTypesp(orderedDtp);
+            }
+            convertUnpackedOrder(nodep->fromp(), orderedDtp);
+        }
     }
     void visit(AstCvtUnpackToUnpack* nodep) override {
         // Type set when created, the value converted is of its own type
@@ -3795,10 +3864,22 @@ class WidthVisitor final : public VNVisitor {
         bool wrapAround = false;
         std::map<const V3Number, AstEnumItem*> inits;
         for (AstEnumItem* const itemp : nodep->itemspList()) {
+            bool valueHasXZ = false;
             if (itemp->valuep()) {
                 if (debug() >= 9) {
                     UINFO(0, "EnumInit " << itemp);
                     itemp->valuep()->dumpTree("-  EnumInit: ");
+                }
+                AstNodeExpr* castFromp = nullptr;
+                if (AstCast* const castp = VN_CAST(itemp->valuep(), Cast)) {
+                    V3Const::constifyParamsEdit(castp->fromp());
+                    castFromp = castp->fromp();
+                } else if (AstCastWrap* const castp = VN_CAST(itemp->valuep(), CastWrap)) {
+                    V3Const::constifyParamsEdit(castp->lhsp());
+                    castFromp = castp->lhsp();
+                }
+                if (const AstConst* const constp = VN_CAST(castFromp, Const)) {
+                    valueHasXZ = constp->num().isFourState();
                 }
                 V3Const::constifyParamsEdit(itemp->valuep());  // itemp may change
                 if (!VN_IS(itemp->valuep(), Const)) {
@@ -3821,7 +3902,8 @@ class WidthVisitor final : public VNVisitor {
             }
 
             const AstConst* const constp = VN_AS(itemp->valuep(), Const);
-            if (constp->num().isFourState() && basicp->basicp() && !basicp->isFourstate()) {
+            if ((valueHasXZ || constp->num().isFourState()) && basicp->basicp()
+                && !basicp->isFourstate()) {
                 itemp->v3error("Enum value with X/Zs cannot be assigned to non-fourstate type "
                                "(IEEE 1800-2023 6.19)");
             }
@@ -3879,6 +3961,7 @@ class WidthVisitor final : public VNVisitor {
             // Always create a cast, to avoid later ENUMVALUE warnings
             nodep->valuep(new AstCast{nodep->valuep()->fileline(), nodep->valuep()->unlinkFrBack(),
                                       nodep->dtypep()});
+            iterate(nodep->valuep());
         }
     }
     void visit(AstEnumItemRef* nodep) override {
@@ -4276,6 +4359,8 @@ class WidthVisitor final : public VNVisitor {
             m_fromParentp = nodep;
             userIterateChildren(nodep, WidthVP{SELF, BOTH}.p());
         }
+        // Child traversal may have already width-resolved this member selection.
+        if (nodep->didWidth()) return;
         UINFOTREE(9, nodep, "", "mbs-ic");
         // Find the fromp dtype - should be a class
         UASSERT_OBJ(nodep->fromp()->dtypep(), nodep->fromp(), "Unlinked data type");
@@ -4529,6 +4614,23 @@ class WidthVisitor final : public VNVisitor {
                       << (suggest.empty() ? "" : nodep->fileline()->warnMore() + suggest));
         return false;  // Caller handles error
     }
+    AstNodeFuncCovItem* findCoverItem(AstClass* classp, const string& name) {
+        const auto pair
+            = m_coverItems.emplace(classp, std::unordered_map<string, AstNodeFuncCovItem*>{});
+        auto& items = pair.first->second;
+        if (pair.second) {
+            // Until V3Covergroup, the constructor holds the coverpoints and crosses
+            AstFunc* const newp = VN_AS(m_memberMap.findMember(classp, "new"), Func);
+            for (AstNode* const stmtp : newp->stmtspList()) {
+                if (AstNodeFuncCovItem* const itemp = VN_CAST(stmtp, NodeFuncCovItem)) {
+                    items.emplace(itemp->name(), itemp);
+                }
+            }
+        }
+        const auto it = items.find(name);
+        return it == items.end() ? nullptr : it->second;
+    }
+
     // Return true if 'cg.item' names coverpoint or cross 'item' of covergroup instance 'cg'.  Its
     // only use is as the prefix of a hierarchical name (IEEE 1800-2023 19.5, 19.6), which a
     // formal argument of the same name does not hide, as formals are not visible there (19.3).
@@ -4542,22 +4644,36 @@ class WidthVisitor final : public VNVisitor {
         if (!(callp && callp->fromp() == nodep) && !(selp && selp->fromp() == nodep)) {
             return false;
         }
-        const auto pair
-            = m_coverItems.emplace(classp, std::unordered_map<string, AstNodeFuncCovItem*>{});
-        auto& items = pair.first->second;
-        if (pair.second) {
-            // Until V3Covergroup, the constructor holds the coverpoints and crosses
-            AstFunc* const newp = VN_AS(m_memberMap.findMember(classp, "new"), Func);
-            for (AstNode* const stmtp : newp->stmtspList()) {
-                if (AstNodeFuncCovItem* const itemp = VN_CAST(stmtp, NodeFuncCovItem)) {
-                    items.emplace(itemp->name(), itemp);
+        AstNodeFuncCovItem* const itemp = findCoverItem(classp, nodep->name());
+        if (!itemp) return false;
+        const string member = parentp->name();
+        if (member == "option") {
+            const AstMemberSel* const weightp = VN_CAST(parentp->backp(), MemberSel);
+            const bool isWeight
+                = weightp && weightp->fromp() == parentp && weightp->name() == "weight";
+            // Reject unsupported lvalue forms before later passes assume a normal class member.
+            if (isWeight && VN_IS(m_writerp, NodeAssign) && !VN_IS(m_writerp, Assign)) {
+                if (VN_IS(m_writerp, AssignForce)) {
+                    nodep->v3error("Unsupported: force assignment to coverpoint option.weight "
+                                   "(IEEE 1800-2023 6.21)");
+                } else {
+                    nodep->v3error("Unsupported: non-blocking or procedural assignment to "
+                                   "coverpoint option.weight (IEEE 1800-2023 6.21)");
                 }
             }
+            AstVar* const optionVarp = itemp->optionVarp();
+            UASSERT_OBJ(optionVarp, itemp, "Coverage item missing option member");
+            if (!optionVarp->didWidth()) userIterate(optionVarp, nullptr);
+            AstMemberSel* const optionSelp = VN_AS(parentp, MemberSel);
+            AstNodeExpr* const basep = nodep->fromp()->unlinkFrBack();
+            nodep->unlinkFrBack();
+            optionSelp->fromp(basep);
+            optionSelp->varp(optionVarp);
+            optionSelp->dtypep(optionVarp->dtypep());
+            optionSelp->didWidth(true);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return true;
         }
-        const auto it = items.find(nodep->name());
-        if (it == items.end()) return false;
-        AstNodeFuncCovItem* const itemp = it->second;
-        const string member = parentp->name();
         if (member == "get_coverage" || member == "start" || member == "stop" || member == "option"
             || member == "type_option") {
             // Continuing as the covergroup's member of the same name avoids another error
@@ -6815,9 +6931,9 @@ class WidthVisitor final : public VNVisitor {
         const AstBasicDType* bdtypep = VN_AS(vdtypep, BasicDType);
         const VNumRange range = bdtypep->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
-        UINFO(9, "ent " << range.hi() << " to " << range.lo());
+        UINFO(9, "ent " << range.left() << " to " << range.right());
         AstNodeExpr* newp = nullptr;
-        for (const int ent : range.seqHiToLo()) {
+        for (const int ent : range.seqLeftToRight()) {
             AstNodeExpr* valuep = nullptr;
             const auto it = patmap.find(ent);
             if (it == patmap.end()) {
@@ -7250,22 +7366,21 @@ class WidthVisitor final : public VNVisitor {
             if (nodep->rhsp()->dtypep()) {  // May be null on earlier errors
                 const AstNodeDType* const lhsDtp = lhsDTypep->skipRefp();
                 const AstNodeDType* const rhsDtp = nodep->rhsp()->dtypep()->skipRefp();
-                // Only check if number of states match for unpacked array to unpacked array
-                // assignments
-                const bool lhsIsUnpackArray = lhsDtp->isNonPackedArray();
-                const bool rhsIsUnpackArray = rhsDtp->isNonPackedArray();
-                if (lhsIsUnpackArray && rhsIsUnpackArray) {
-                    if (lhsDtp->isFourstate() != rhsDtp->isFourstate()) {
-                        nodep->v3error("Assignment between 2-state and 4-state types requires "
-                                       "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)"
-                                       << warnDTypes(nodep, lhsDtp, rhsDtp));
-                    }
+                const AstNodeVarRef* const lhsRefp = VN_CAST(nodep->lhsp(), NodeVarRef);
+                const AstNodeVarRef* const rhsRefp = VN_CAST(nodep->rhsp(), NodeVarRef);
+                // Variable references get full element-type checks; avoid a second state error.
+                if (lhsRefp && rhsRefp) {
+                    checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(
+                        nodep, lhsRefp, rhsRefp);
+                } else if (lhsDtp->isNonPackedArray() && rhsDtp->isNonPackedArray()
+                           && lhsDtp->elemDTypep()->isFourstate()
+                                  != rhsDtp->elemDTypep()->isFourstate()) {
+                    nodep->v3error("Assignment between 2-state and 4-state types requires "
+                                   "equivalent element types (IEEE 1800-2023 6.22.2, 7.6)"
+                                   << warnDTypes(nodep, lhsDtp, rhsDtp));
                 }
-                checkUnpackedArrayAssignmentCompatible<AstNodeVarRef, AstNodeVarRef>(
-                    nodep, VN_CAST(nodep->lhsp(), NodeVarRef), VN_CAST(nodep->rhsp(), NodeVarRef));
                 // Variable references were checked above, this catches e.g. method call results
-                if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType()
-                    && !VN_IS(nodep->rhsp(), NodeVarRef)) {
+                if (lhsDtp->isIntegralOrPacked() && rhsDtp->isAggregateType() && !rhsRefp) {
                     nodep->v3error("Illegal assignment betwen unpacked aggregate and "
                                    "integral type (IEEE 1800-2023 7.6)"
                                    << warnDTypes(nodep, lhsDtp, rhsDtp));
@@ -8490,8 +8605,8 @@ class WidthVisitor final : public VNVisitor {
                     iterateCheckSelf(nodep, "Function Argument", pinp, SELF, FINAL);
                 } else if (!portp->basicp() || portp->basicp()->isOpaque()) {
                     // Output args: at return caller = callee, reverse direction.
-                    checkClassAssign(nodep, "Function Argument", pinp, portDTypep,
-                                     portp->direction() == VDirection::OUTPUT);
+                    pinp = checkClassAssign(nodep, "Function Argument", pinp, portDTypep,
+                                            portp->direction() == VDirection::OUTPUT);
                     userIterate(pinp, WidthVP{portDTypep, FINAL, STREAM_USE_ASSIGN}.p());
                 } else {
                     iterateCheckAssign(nodep, "Function Argument", pinp, FINAL, portDTypep,
@@ -9973,8 +10088,8 @@ class WidthVisitor final : public VNVisitor {
                            << warnDTypes(nodep, lhsDtp, rhsDtp, lhsName, rhsName));
         }
     }
-    void checkClassAssign(const AstNode* nodep, const char* side, AstNode* rhsp,
-                          AstNodeDType* const lhsDTypep, bool isOutputArg = false) {
+    AstNodeExpr* checkClassAssign(const AstNode* nodep, const char* side, AstNodeExpr* rhsp,
+                                  AstNodeDType* const lhsDTypep, bool isOutputArg = false) {
         UASSERT_OBJ(rhsp->dtypep(), rhsp, "Node has no type");
         const AstNodeDType* const lhsRawDTypep = lhsDTypep->skipRefp();
         const AstNodeDType* const rhsRawDTypep = rhsp->dtypep()->skipRefp();
@@ -9986,9 +10101,9 @@ class WidthVisitor final : public VNVisitor {
                     = isOutputArg ? rhsClassRefp->classp() : lhsClassRefp->classp();
                 const AstClass* const srcp
                     = isOutputArg ? lhsClassRefp->classp() : rhsClassRefp->classp();
-                if (isBaseClassRecurse(dstp, srcp)) return;
+                if (isBaseClassRecurse(dstp, srcp)) return rhsp;
             } else if (rhsp->isNull()) {
-                return;
+                return rhsp;
             }
             nodep->v3error(side << " expects a " << lhsClassRefp->prettyTypeName() << ", got "
                                 << rhsRawDTypep->prettyTypeName());
@@ -9997,18 +10112,20 @@ class WidthVisitor final : public VNVisitor {
                                 << " cannot be assigned to non-class "
                                 << lhsDTypep->prettyDTypeNameQ());
         }
-        if (VN_IS(lhsRawDTypep, DynArrayDType) && VN_IS(rhsRawDTypep, UnpackArrayDType)) {
+        if ((VN_IS(lhsRawDTypep, DynArrayDType) || VN_IS(lhsRawDTypep, QueueDType))
+            && VN_IS(rhsRawDTypep, UnpackArrayDType)) {
             VNRelinker relinker;
             rhsp->unlinkFrBack(&relinker);
-            relinker.relink(
-                new AstCvtUnpackToQueue{rhsp->fileline(), VN_AS(rhsp, NodeExpr), lhsDTypep});
+            rhsp = new AstCvtUnpackToQueue{rhsp->fileline(), rhsp, lhsDTypep};
+            relinker.relink(rhsp);
         } else if (VN_IS(lhsRawDTypep, UnpackArrayDType)
                    && (VN_IS(rhsRawDTypep, DynArrayDType) || VN_IS(rhsRawDTypep, QueueDType))) {
             VNRelinker relinker;
             rhsp->unlinkFrBack(&relinker);
-            relinker.relink(
-                new AstCvtQueueToUnpack{rhsp->fileline(), VN_AS(rhsp, NodeExpr), lhsDTypep});
+            rhsp = new AstCvtQueueToUnpack{rhsp->fileline(), rhsp, lhsDTypep};
+            relinker.relink(rhsp);
         }
+        return rhsp;
     }
     static bool similarDTypeRecurse(const AstNodeDType* const node1p,
                                     const AstNodeDType* const node2p) {
@@ -10172,7 +10289,10 @@ class WidthVisitor final : public VNVisitor {
             }
         }
         // We iterate and size the RHS based on the result of RHS evaluation
-        checkClassAssign(parentp, side, rhsp, lhsDTypep);
+        // A datatype RHS is diagnosed by iterateCheck below
+        if (AstNodeExpr* const exprp = VN_CAST(rhsp, NodeExpr)) {
+            rhsp = checkClassAssign(parentp, side, exprp, lhsDTypep);
+        }
         const bool lhsStream = (VN_IS(parentp, NodeAssign)
                                 && VN_IS(VN_AS(parentp, NodeAssign)->lhsp(), NodeStream));
         rhsp = iterateCheck(parentp, side, rhsp, ASSIGN, FINAL, lhsDTypep,

@@ -281,6 +281,11 @@ public:
     }
     // Argument list; if 'cpp', C++ rather than a C header
     string cFuncArgs(const AstCFunc* nodep, bool cpp = true);
+    // The closure type of 'portp', if it is the closure argument of a function (see V3Delayed)
+    static const AstStructDType* closureDTypep(const AstVar* portp) {
+        const AstStructDType* const dtypep = VN_CAST(portp->dtypep()->skipRefp(), StructDType);
+        return dtypep && dtypep->isClosure() ? dtypep : nullptr;
+    }
     void emitCDefaultConstructor(const AstNodeModule* modp);
     void emitCFuncHeader(const AstCFunc* funcp, const AstNodeModule* modp, bool withScope);
     void emitCFuncDecl(const AstCFunc* funcp, const AstNodeModule* modp, bool cLinkage = false);

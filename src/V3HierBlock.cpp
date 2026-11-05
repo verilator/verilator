@@ -274,10 +274,6 @@ string V3HierBlock::hierLibFilename(bool withDir) const {
     return hierSomeFilename(withDir, "lib", ".a");
 }
 
-string V3HierBlock::hierGeneratedFilenames(bool withDir) const {
-    return hierWrapperFilename(withDir) + ' ' + hierMkFilename(withDir);
-}
-
 string V3HierBlock::vFileIfNecessary() const {
     string filename = V3Os::filenameRealPath(m_modp->fileline()->filename());
     for (const auto& v : v3Global.opt.vFiles()) {

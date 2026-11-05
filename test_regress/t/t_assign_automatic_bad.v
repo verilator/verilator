@@ -12,7 +12,7 @@ class Cls;
   static int s_ok1;
   static int s_ok2;
   int m_bad1;
-  int m_bad2;
+  int m_ok2;
 endclass
 
 module t (
@@ -32,7 +32,7 @@ module t (
 
   always @(posedge clk) begin
     Cls::s_ok2 <= 2;  // OK: nonblocking class static
-    c.m_bad2 <= 2;  // <--- Error: nonblocking class automatic
+    c.m_ok2 <= 2;  // OK: nonblocking class non-static
     mt(ok_7);
     $stop;
   end
@@ -48,19 +48,17 @@ module t (
     end
   endtask
 
-  // Only the member is an error, as Verilator rejects NBAs to non-static class properties: the
-  // pending update would have to keep the object alive (#7541). The dynarray element is only
-  // read, to get the handle.
-  Cls bad_arr_h[2][];
+  // The dynarray element is only read, to get the handle
+  Cls ok_arr_h[2][];
   always @(posedge clk) begin
-    bad_arr_h[0][0].m_bad2 <= 2;  // Error: nonblocking class automatic
+    ok_arr_h[0][0].m_ok2 <= 2;  // OK: nonblocking class non-static
   end
 
   // Also a part of them
   always @(posedge clk) begin
     automatic int bad_auto;
     bad_auto[3:0] <= 2;  // Error: nonblocking automatic, part of it
-    c.m_bad2[3:0] <= 2;  // Error: nonblocking class automatic, part of it
+    c.m_ok2[3:0] <= 2;  // OK: nonblocking class non-static, part of it
   end
 
 endmodule

@@ -324,6 +324,10 @@ class CleanVisitor final : public VNVisitor {
         ensureCleanAndNext(nodep->argsp());
         setClean(nodep, true);
     }
+    void visit(AstNbaEnqueue* nodep) override {
+        iterateChildren(nodep);
+        ensureCleanAndNext(nodep->argsp());
+    }
     void visit(AstCMethodHard* nodep) override {
         iterateChildren(nodep);
         ensureCleanAndNext(nodep->pinsp());

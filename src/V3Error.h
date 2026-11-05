@@ -83,7 +83,7 @@ public:
         BADSTDPRAGMA,   // Any error related to pragmas
         BADVLTPRAGMA,   // Unknown Verilator pragma
         BLKANDNBLK,     // Blocked and non-blocking assignments to same variable
-        BLKLOOPINIT,    // Delayed assignment to array inside for loops
+        BLKLOOPINIT,    // Delayed assignment to array inside for loops. Historical, never issued.
         BLKSEQ,         // Blocking assignments in sequential block
         BSSPACE,        // Backslash space
         CASEINCOMPLETE, // Case statement has missing values
@@ -96,6 +96,7 @@ public:
         CMPCONST,       // Comparison is constant due to limited range
         COLONPLUS,      // :+ instead of +:
         COMBDLY,        // Combinatorial delayed assignment
+        COMBDLYCALL,    // Delayed assignment in a call from combinational logic
         CONSTRAINTIGN,  // Constraint ignored
         CONTASSREG,     // Continuous assignment on reg
         COVERIGN,       // Coverage ignored
@@ -188,6 +189,7 @@ public:
         UNUSEDLOOP,     // Loop is unused
         UNUSEDPARAM,    // No receivers for parameters
         UNUSEDSIGNAL,   // No receivers for signals
+        USEBEFOREDECL,  // Parameter referenced before its declaration
         USERERROR,      // Elaboration time $error
         USERFATAL,      // Elaboration time $fatal
         USERINFO,       // Elaboration time $info
@@ -232,25 +234,26 @@ public:
             " EC_FIRST_WARN", "ALWCOMBORDER", "ALWNEVER", "ASCRANGE", "ASSIGNDLY", "ASSIGNEQEXPR",
             "ASSIGNIN", "BADSTDPRAGMA", "BADVLTPRAGMA", "BLKANDNBLK", "BLKLOOPINIT", "BLKSEQ",
             "BSSPACE", "CASEINCOMPLETE", "CASEOVERLAP", "CASEWITHX", "CASEX", "CASTCONST",
-            "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "CONSTRAINTIGN",
-            "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM", "DEPRECATED",
-            "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE", "FINALDLY",
-            "FSMMULTI", "FUNCTIMECTL", "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK", "HIERPARAM",
-            "IEEEMAYDEPRECATE", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH", "IMPLICIT",
-            "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP", "INITIALDLY",
-            "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN", "MINTYPMAXDLY", "MISINDENT", "MODDUP",
-            "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC", "MULTITOP", "NEVERMATCH", "NEWERSTD",
-            "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NOTREDOP", "NULLPORT", "PARAMNODEFAULT",
-            "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT", "PINNOTFOUND", "PKGNODECL",
-            "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE", "PROFOUTOFDATE", "PROTECTED",
-            "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO", "RISEFALLDLY", "SELRANGE",
-            "SHORTREAL", "SIDEEFFECT", "SIMILARNAME", "SPECIFYIGN", "SPLITVAR", "STATICVAR",
-            "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET", "TICKCOUNT", "TIMESCALEMOD",
-            "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTPUBLIC", "UNOPTTHREADS", "UNPACKED",
-            "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR", "UNUSEDLOOP", "UNUSEDPARAM",
-            "UNUSEDSIGNAL", "USERERROR", "USERFATAL", "USERINFO", "USERWARN", "VARHIDDEN",
-            "WAITCONST", "WIDTH", "WIDTHCONCAT", "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC",
-            "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL", " MAX"};
+            "CDCRSTLOGIC", "CLKDATA", "CMPCONST", "COLONPLUS", "COMBDLY", "COMBDLYCALL",
+            "CONSTRAINTIGN", "CONTASSREG", "COVERIGN", "DECLFILENAME", "DEFOVERRIDE", "DEFPARAM",
+            "DEPRECATED", "ENCAPSULATED", "ENDLABEL", "ENUMITEMWIDTH", "ENUMVALUE", "EOFNEWLINE",
+            "FINALDLY", "FSMMULTI", "FUNCTIMECTL", "FUTURE", "GENCLK", "GENUNNAMED", "HIERBLOCK",
+            "HIERPARAM", "IEEEMAYDEPRECATE", "IFDEPTH", "IGNOREDRETURN", "IMPERFECTSCH",
+            "IMPLICIT", "IMPLICITSTATIC", "IMPORTSTAR", "IMPURE", "INCABSPATH", "INFINITELOOP",
+            "INITIALDLY", "INSECURE", "INSIDETRUE", "LATCH", "LITENDIAN", "MINTYPMAXDLY",
+            "MISINDENT", "MODDUP", "MODMISSING", "MULTIDRIVEN", "MULTIDRIVENPROC", "MULTITOP",
+            "NEVERMATCH", "NEWERSTD", "NOEFFECT", "NOLATCH", "NONSTD", "NORETURN", "NOTREDOP",
+            "NULLPORT", "PARAMNODEFAULT", "PINCONNECTEMPTY", "PINMISSING", "PINNOCONNECT",
+            "PINNOTFOUND", "PKGNODECL", "PREPROCZERO", "PROCASSINIT", "PROCASSWIRE",
+            "PROFOUTOFDATE", "PROTECTED", "PROTOTYPEMIS", "RANDC", "REALCVT", "REDEFMACRO",
+            "RISEFALLDLY", "SELRANGE", "SHORTREAL", "SIDEEFFECT", "SIMILARNAME", "SPECIFYIGN",
+            "SPLITVAR", "STATICVAR", "STMTDLY", "SUPERNFIRST", "SYMRSVDWORD", "SYNCASYNCNET",
+            "TICKCOUNT", "TIMESCALEMOD", "UNDRIVEN", "UNOPT", "UNOPTFLAT", "UNOPTPUBLIC",
+            "UNOPTTHREADS", "UNPACKED", "UNSATCONSTR", "UNSIGNED", "UNUSED", "UNUSEDGENVAR",
+            "UNUSEDLOOP", "UNUSEDPARAM", "UNUSEDSIGNAL", "USEBEFOREDECL", "USERERROR", "USERFATAL",
+            "USERINFO", "USERWARN", "VARHIDDEN", "WAITCONST", "WIDTH", "WIDTHCONCAT",
+            "WIDTHDIGITS", "WIDTHEXPAND", "WIDTHTRUNC", "WIDTHXZEXPAND", "ZERODLY", "ZEROREPL",
+            " MAX"};
         return names[m_e];
     }
     // Warnings that default to off
@@ -274,12 +277,13 @@ public:
     // Later -Werror- options may make more of these.
     bool pretendError() const VL_MT_SAFE {
         return (m_e == ASSIGNIN || m_e == BADSTDPRAGMA || m_e == BADVLTPRAGMA || m_e == BLKANDNBLK
-                || m_e == BLKLOOPINIT || m_e == COMBDLY || m_e == CONTASSREG || m_e == ENCAPSULATED
-                || m_e == ENDLABEL || m_e == ENUMITEMWIDTH || m_e == ENUMVALUE || m_e == FINALDLY
-                || m_e == HIERPARAM || m_e == FUNCTIMECTL || m_e == IMPURE || m_e == MODMISSING
-                || m_e == NOTREDOP || m_e == PARAMNODEFAULT || m_e == PINNOTFOUND
-                || m_e == PKGNODECL || m_e == PROCASSWIRE || m_e == PROTOTYPEMIS
-                || m_e == SUPERNFIRST || m_e == ZEROREPL);
+                || m_e == BLKLOOPINIT || m_e == COMBDLY || m_e == COMBDLYCALL || m_e == CONTASSREG
+                || m_e == ENCAPSULATED || m_e == ENDLABEL || m_e == ENUMITEMWIDTH
+                || m_e == ENUMVALUE || m_e == FINALDLY || m_e == HIERPARAM || m_e == FUNCTIMECTL
+                || m_e == IMPURE || m_e == MODMISSING || m_e == NOTREDOP || m_e == PARAMNODEFAULT
+                || m_e == PINNOTFOUND || m_e == PKGNODECL || m_e == PROCASSWIRE
+                || m_e == PROTOTYPEMIS || m_e == SUPERNFIRST || m_e == USEBEFOREDECL
+                || m_e == ZEROREPL);
     }
     // Warnings to mention manual
     bool mentionManual() const VL_MT_SAFE {

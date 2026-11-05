@@ -2281,7 +2281,6 @@ Summary:
    Rarely needed. Specifies the maximum number of iterations for procedural
    loops that may be unrolled. If the loop has more iterations, it will not
    be unrolled at all. Does not effect generate loops. See also
-   :option:`BLKLOOPINIT` warning, and
    :option:`/*verilator&32;unroll_disable*/` and
    :option:`/*verilator&32;unroll_full*/` metacomments.
 
@@ -2302,7 +2301,6 @@ Summary:
 
    Rarely needed. Specifies the maximum number of statements in the
    unrolling of a loop for that loop to be unrolled. See also
-   :option:`BLKLOOPINIT` warning, and
    :option:`/*verilator&32;unroll_disable*/` and
    :option:`/*verilator&32;unroll_full*/` metacomments.
 

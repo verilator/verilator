@@ -267,22 +267,341 @@ private:
     }
 
 public:
+    static void assignValueNumber(AstNode* nodep, V3Number& out, const V3Number& value) {
+        out.opAssign(value);
+        if (VN_IS(nodep, Var) || VN_IS(nodep, VarScope)) {
+            out.opCleanTwoStateNumber(nodep->dtypep());
+        }
+    }
+    static void cleanTwoStateValue(AstNodeExpr* const valuep, AstNodeDType* const dtypep) {
+        if (AstConst* const constp = VN_CAST(valuep, Const)) {
+            constp->num().opCleanTwoStateNumber(dtypep->skipRefp());
+        } else if (AstConsArray* const arrayp = VN_CAST(valuep, ConsArray)) {
+            AstNodeDType* const subDTypep
+                = VN_AS(dtypep->skipRefp(), UnpackArrayDType)->subDTypep();
+            if (arrayp->defaultp()) cleanTwoStateValue(arrayp->defaultp(), subDTypep);
+            for (AstConsArrayItem* itemp = arrayp->itemsp(); itemp;
+                 itemp = VN_AS(itemp->nextp(), ConsArrayItem)) {
+                cleanTwoStateValue(itemp->valuep(), subDTypep);
+            }
+        } else if (AstConsStruct* const structp = VN_CAST(valuep, ConsStruct)) {
+            for (AstConsStructItem* const itemp : structp->itemspList()) {
+                cleanTwoStateValue(itemp->valuep(), itemp->memberp()->subDTypep());
+            }
+        }
+    }
+    static AstNodeExpr* defaultOf(FileLine* const flp, AstNodeDType* const dtypep) {
+        AstNodeDType* const dtypeSkippedp = dtypep->skipRefp();
+        if (const AstBasicDType* const basicp = VN_CAST(dtypeSkippedp, BasicDType)) {
+            if (basicp->isIntegralOrPacked()) {
+                AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, dtypep};
+                if (basicp->isZeroInit()) {
+                    constp->num().setAllBits0();
+                } else {
+                    constp->num().setAllBitsX();
+                }
+                constp->dtypep(dtypep);
+                return constp;
+            }
+            if (basicp->isDouble()) {
+                AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, dtypep};
+                constp->num().setDouble(0.0);
+                constp->dtypep(dtypep);
+                return constp;
+            }
+            if (basicp->isString()) {
+                AstConst* const constp = new AstConst{flp, AstConst::String{}, ""};
+                constp->dtypep(dtypep);
+                return constp;
+            }
+            switch (basicp->keyword()) {
+            case VBasicDTypeKwd::EVENT:
+            case VBasicDTypeKwd::CHANDLE:
+            case VBasicDTypeKwd::NULLTYPE: {
+                AstConst* const constp = new AstConst{flp, AstConst::Null{}};
+                constp->dtypep(dtypep);
+                return constp;
+            }
+            default: flp->v3fatalSrc("Unhandled dtype keyword: " << basicp->keyword());
+            }
+        }
+        if (const AstPackArrayDType* const packArrayDTypep
+            = VN_CAST(dtypeSkippedp, PackArrayDType)) {
+            AstConst* const constp = new AstConst{flp, AstConst::DTyped{}, dtypep};
+            if (packArrayDTypep->basicp()->isZeroInit()) {
+                constp->num().setAllBits0();
+            } else {
+                constp->num().setAllBitsX();
+            }
+            constp->dtypep(dtypep);
+            return constp;
+        }
+        if (const AstUnpackArrayDType* const unpackedArrayDtypep
+            = VN_CAST(dtypeSkippedp, UnpackArrayDType)) {
+            if (AstNodeExpr* const defaultp = defaultOf(flp, unpackedArrayDtypep->subDTypep())) {
+                AstConsArray* const arrayp = new AstConsArray{flp, dtypep, defaultp};
+                arrayp->dtypep(dtypep);
+                return arrayp;
+            }
+            return nullptr;
+        }
+        if (VN_IS(dtypeSkippedp, DynArrayDType)) {
+            AstConsDynArray* const dynArrayp = new AstConsDynArray{flp};
+            dynArrayp->dtypep(dtypep);
+            return dynArrayp;
+        }
+        if (VN_IS(dtypeSkippedp, QueueDType)) {
+            AstConsQueue* const queuep = new AstConsQueue{flp};
+            queuep->dtypep(dtypep);
+            return queuep;
+        }
+        if (AstAssocArrayDType* const assocArrayDTypep = VN_CAST(dtypeSkippedp, AssocArrayDType)) {
+            if (AstNodeExpr* const defaultp = defaultOf(flp, assocArrayDTypep->subDTypep())) {
+                AstConsAssoc* const assocArrayp = new AstConsAssoc{flp, defaultp};
+                assocArrayp->dtypep(dtypep);
+                return assocArrayp;
+            }
+            return nullptr;
+        }
+        if (const AstWildcardArrayDType* const wildCardArrayDTypep
+            = VN_CAST(dtypeSkippedp, WildcardArrayDType)) {
+            if (AstNodeExpr* const defaultp = defaultOf(flp, wildCardArrayDTypep->subDTypep())) {
+                AstConsWildcard* const assocArrayp = new AstConsWildcard{flp, defaultp};
+                assocArrayp->dtypep(dtypep);
+                return assocArrayp;
+            }
+            return nullptr;
+        }
+        if (AstStructDType* const structDTypep = VN_CAST(dtypeSkippedp, StructDType)) {
+            if (structDTypep->packed()) {
+                AstConst* const constp
+                    = new AstConst{flp, AstConst::DTyped{}, structDTypep->basicp()};
+                if (structDTypep->isFourstate()) {
+                    constp->num().setAllBitsX();
+                } else {
+                    constp->num().setAllBits0();
+                }
+                constp->dtypep(dtypep);
+                return constp;
+            }
+            AstConsStruct* const structp = new AstConsStruct{flp, structDTypep};
+            for (AstMemberDType* const memberDTypep : structDTypep->memberspList()) {
+                if (AstNodeExpr* const defaultp
+                    = memberDTypep->valuep()
+                          ? VN_AS(memberDTypep->valuep(), NodeExpr)->cloneTreePure(false)
+                          : defaultOf(flp, memberDTypep->subDTypep())) {
+                    structp->addItemsp(new AstConsStructItem{flp, memberDTypep, defaultp});
+                } else {
+                    VL_DO_DANGLING(structp->deleteTree(), structp);
+                    return nullptr;
+                }
+            }
+            structp->dtypep(dtypep);
+            return structp;
+        }
+        if (const AstUnionDType* const unionDType = VN_CAST(dtypeSkippedp, UnionDType)) {
+            if (unionDType->packed()) {
+                AstNodeExpr* const resultp = defaultOf(flp, unionDType->basicp());
+                resultp->dtypep(dtypep);
+                return resultp;
+            }
+        }
+        return nullptr;
+    }
+    static VBoolOrUnknown isMatch(const AstNodeExpr* const lhsp, const AstNodeExpr* const rhsp) {
+        // IEEE 1800-2023 11.4.11 considers the values matching only when logical equality is 1.
+        if (const AstConst* const lconstp = VN_CAST(lhsp, Const)) {
+            const AstConst* const rconstp = VN_CAST(rhsp, Const);
+            if (!rconstp) return VBoolOrUnknown::BU_FALSE;
+            V3Number result{&lconstp->num()};
+            result.opEq(lconstp->num(), rconstp->num());
+            return result.isEqOne() ? VBoolOrUnknown::BU_TRUE : VBoolOrUnknown::BU_FALSE;
+        }
+        if (const AstConsArray* const larrayp = VN_CAST(lhsp, ConsArray)) {
+            const AstConsArray* const rarrayp = VN_CAST(rhsp, ConsArray);
+            if (!rarrayp) return VBoolOrUnknown::BU_FALSE;
+            const AstUnpackArrayDType* const dtypep
+                = VN_AS(larrayp->dtypep()->skipRefp(), UnpackArrayDType);
+            for (int index = 0; index < dtypep->elementsConst(); ++index) {
+                const VBoolOrUnknown match
+                    = isMatch(larrayp->valuep(index), rarrayp->valuep(index));
+                if (!match.trueKnown()) return match;
+            }
+            return VBoolOrUnknown::BU_TRUE;
+        }
+        if (const AstConsStruct* const lstructp = VN_CAST(lhsp, ConsStruct)) {
+            const AstConsStruct* const rstructp = VN_CAST(rhsp, ConsStruct);
+            if (!rstructp) return VBoolOrUnknown::BU_FALSE;
+            const AstConsStructItem* ritemp = rstructp->itemsp();
+            for (const AstConsStructItem* const litemp : lstructp->itemspList()) {
+                if (!ritemp) return VBoolOrUnknown::BU_FALSE;
+                const VBoolOrUnknown match = isMatch(litemp->valuep(), ritemp->valuep());
+                if (!match.trueKnown()) return match;
+                ritemp = VN_AS(ritemp->nextp(), ConsStructItem);
+            }
+            return ritemp ? VBoolOrUnknown::BU_FALSE : VBoolOrUnknown::BU_TRUE;
+        }
+        if (const AstConsQueue* const lqueuep = VN_CAST(lhsp, ConsQueue)) {
+            const AstConsQueue* const rqueuep = VN_CAST(rhsp, ConsQueue);
+            if (!rqueuep) return VBoolOrUnknown::BU_FALSE;
+            const AstConsQueueItem* ritemp = rqueuep->itemsp();
+            for (const AstConsQueueItem* const litemp : lqueuep->itemspList()) {
+                if (!ritemp) return VBoolOrUnknown::BU_FALSE;
+                const VBoolOrUnknown match = isMatch(litemp->valuep(), ritemp->valuep());
+                if (!match.trueKnown()) return match;
+                ritemp = VN_AS(ritemp->nextp(), ConsQueueItem);
+            }
+            return ritemp ? VBoolOrUnknown::BU_FALSE : VBoolOrUnknown::BU_TRUE;
+        }
+        if (const AstConsDynArray* const larrayp = VN_CAST(lhsp, ConsDynArray)) {
+            const AstConsDynArray* const rarrayp = VN_CAST(rhsp, ConsDynArray);
+            if (!rarrayp) return VBoolOrUnknown::BU_FALSE;
+            const AstConsDynArrayItem* ritemp = rarrayp->itemsp();
+            for (const AstConsDynArrayItem* const litemp : larrayp->itemspList()) {
+                if (!ritemp) return VBoolOrUnknown::BU_FALSE;
+                const VBoolOrUnknown match = isMatch(litemp->valuep(), ritemp->valuep());
+                if (!match.trueKnown()) return match;
+                ritemp = VN_AS(ritemp->nextp(), ConsDynArrayItem);
+            }
+            return ritemp ? VBoolOrUnknown::BU_FALSE : VBoolOrUnknown::BU_TRUE;
+        }
+        return VBoolOrUnknown::BU_UNKNOWN;
+    }
+    static AstNodeExpr* conditionalMerge(FileLine* const fl, const V3Number& cond,
+                                         AstNodeExpr* const thenp, const AstNodeExpr* const elsep,
+                                         AstNodeDType* const dtypep) {
+        AstNodeDType* const skippedDTypep = dtypep->skipRefp();
+        if (skippedDTypep->isIntegralOrPacked()) {
+            const AstConst* const thenConstp = VN_CAST(thenp, Const);
+            const AstConst* const elseConstp = VN_CAST(elsep, Const);
+            if (!thenConstp || !elseConstp) return nullptr;
+            V3Number result{thenConstp->num()};
+            result.opCond(cond, thenConstp->num(), elseConstp->num());
+            AstConst* const constp = new AstConst{fl, result};
+            constp->dtypep(dtypep);
+            return constp;
+        }
+        if (const AstUnpackArrayDType* const arrayDTypep
+            = VN_CAST(skippedDTypep, UnpackArrayDType)) {
+            const AstConsArray* const thenArrayp = VN_CAST(thenp, ConsArray);
+            const AstConsArray* const elseArrayp = VN_CAST(elsep, ConsArray);
+            if (!thenArrayp || !elseArrayp) return nullptr;
+            AstConsArray* const resultp = new AstConsArray{fl, dtypep};
+            for (int index = 0; index < arrayDTypep->elementsConst(); ++index) {
+                AstNodeExpr* const thenValuep = thenArrayp->valuep(index);
+                switch (isMatch(thenValuep, elseArrayp->valuep(index))) {
+                case VBoolOrUnknown::BU_FALSE:
+                    resultp->valuep(index, defaultOf(fl, arrayDTypep->subDTypep()));
+                    break;
+                case VBoolOrUnknown::BU_TRUE:
+                    resultp->valuep(index, thenValuep->cloneTreePure(false));
+                    break;
+                default:
+                    VL_DO_DANGLING(resultp->deleteTree(), resultp);
+                    return defaultOf(fl, dtypep);
+                }
+            }
+            resultp->dtypep(dtypep);
+            return resultp;
+        }
+        if (const AstQueueDType* const queueDTypep = VN_CAST(skippedDTypep, QueueDType)) {
+            const AstConsQueue* const thenArrayp = VN_CAST(thenp, ConsQueue);
+            const AstConsQueue* const elseArrayp = VN_CAST(elsep, ConsQueue);
+            if (!thenArrayp || !elseArrayp) return nullptr;
+            AstConsQueue* const resultp = new AstConsQueue{fl};
+            AstConsQueueItem* elseItemp = elseArrayp->itemsp();
+            for (AstConsQueueItem* const thenItemp : thenArrayp->itemspList()) {
+                if (!elseItemp) {
+                    VL_DO_DANGLING(resultp->deleteTree(), resultp);
+                    return defaultOf(fl, dtypep);
+                }
+                switch (isMatch(thenItemp->valuep(), elseItemp->valuep())) {
+                case VBoolOrUnknown::BU_FALSE:
+                    resultp->addItemsp(
+                        new AstConsQueueItem{fl, defaultOf(fl, queueDTypep->subDTypep())});
+                    break;
+                case VBoolOrUnknown::BU_TRUE:
+                    resultp->addItemsp(thenItemp->cloneTreePure(false));
+                    break;
+                default:
+                    VL_DO_DANGLING(resultp->deleteTree(), resultp);
+                    return defaultOf(fl, dtypep);
+                }
+                elseItemp = VN_AS(elseItemp->nextp(), ConsQueueItem);
+            }
+            if (elseItemp) {
+                VL_DO_DANGLING(resultp->deleteTree(), resultp);
+                return defaultOf(fl, dtypep);
+            }
+            resultp->dtypep(dtypep);
+            return resultp;
+        }
+        if (const AstDynArrayDType* const dynArrayDTypep = VN_CAST(skippedDTypep, DynArrayDType)) {
+            const AstConsDynArray* const thenArrayp = VN_CAST(thenp, ConsDynArray);
+            const AstConsDynArray* const elseArrayp = VN_CAST(elsep, ConsDynArray);
+            if (!thenArrayp || !elseArrayp) return nullptr;
+            AstConsDynArray* const resultp = new AstConsDynArray{fl};
+            AstConsDynArrayItem* elseItemp = elseArrayp->itemsp();
+            for (AstConsDynArrayItem* const thenItemp : thenArrayp->itemspList()) {
+                if (!elseItemp) {
+                    VL_DO_DANGLING(resultp->deleteTree(), resultp);
+                    return defaultOf(fl, dtypep);
+                }
+                switch (isMatch(thenItemp->valuep(), elseItemp->valuep())) {
+                case VBoolOrUnknown::BU_FALSE:
+                    resultp->addItemsp(
+                        new AstConsDynArrayItem{fl, defaultOf(fl, dynArrayDTypep->subDTypep())});
+                    break;
+                case VBoolOrUnknown::BU_TRUE:
+                    resultp->addItemsp(thenItemp->cloneTreePure(false));
+                    break;
+                default:
+                    VL_DO_DANGLING(resultp->deleteTree(), resultp);
+                    return defaultOf(fl, dtypep);
+                }
+                elseItemp = VN_AS(elseItemp->nextp(), ConsDynArrayItem);
+            }
+            if (elseItemp) {
+                VL_DO_DANGLING(resultp->deleteTree(), resultp);
+                return defaultOf(fl, dtypep);
+            }
+            resultp->dtypep(dtypep);
+            return resultp;
+        }
+        // Check this at the end because if `thenp` and `elsep` are matching and they fall into one
+        // of above `if`'s the result will be the same as it would be here. But if they don't match
+        // at the last element the recursive check would be preformed twice
+        if (isMatch(thenp, elsep).trueKnown()) {
+            AstNodeExpr* const resultp = thenp->cloneTreePure(false);
+            resultp->dtypep(dtypep);
+            return resultp;
+        }
+        return defaultOf(fl, dtypep);
+    }
     void newValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
-            newConst(nodep)->num().opAssign(constp->num());
+            assignValueNumber(nodep, newConst(nodep)->num(), constp->num());
             UINFO(9, "     new val " << valuep->name() << " on " << nodep);
         } else if (fetchValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
+            AstNodeExpr* const newp = newTrackedClone(const_cast<AstNodeExpr*>(valuep));
+            if (VN_IS(nodep, Var) || VN_IS(nodep, VarScope)) {
+                cleanTwoStateValue(newp, nodep->dtypep());
+            }
+            setValue(nodep, newp);
         }
     }
     void newOutValue(AstNode* nodep, const AstNodeExpr* valuep) {
         if (const AstConst* const constp = VN_CAST(valuep, Const)) {
-            newOutConst(nodep)->num().opAssign(constp->num());
+            assignValueNumber(nodep, newOutConst(nodep)->num(), constp->num());
             UINFO(9, "     new oval " << valuep->name() << " on " << nodep);
         } else if (fetchOutValueNull(nodep) != valuep) {
             // const_cast, as clonep() is set on valuep, but nothing should care
-            setOutValue(nodep, newTrackedClone(const_cast<AstNodeExpr*>(valuep)));
+            AstNodeExpr* const newp = newTrackedClone(const_cast<AstNodeExpr*>(valuep));
+            if (VN_IS(nodep, Var) || VN_IS(nodep, VarScope)) {
+                cleanTwoStateValue(newp, nodep->dtypep());
+            }
+            setOutValue(nodep, newp);
         }
     }
 
@@ -454,41 +773,8 @@ private:
         return "";
     }
 
-    // Return a new value of the initial value of a variable of the given type, or nullptr if
-    // the type isn't supported
-    AstNodeExpr* newInitValuep(AstNode* nodep, AstNodeDType* dtypep) {
-        dtypep = dtypep->skipRefp();
-        if (AstUnpackArrayDType* const arrayp = VN_CAST(dtypep, UnpackArrayDType)) {
-            AstNodeExpr* const elementp = newInitValuep(nodep, arrayp->subDTypep());
-            return elementp ? new AstConsArray{nodep->fileline(), arrayp, elementp} : nullptr;
-        }
-        AstStructDType* const structp = VN_CAST(dtypep, StructDType);
-        if (structp && !structp->packed()) {
-            AstConsStruct* const newp = new AstConsStruct{nodep->fileline(), structp};
-            for (AstMemberDType* const memberp : structp->memberspList()) {
-                AstNodeExpr* const memberValuep = newInitValuep(nodep, memberp->subDTypep());
-                if (!memberValuep) {
-                    VL_DO_DANGLING(newp->deleteTree(), newp);
-                    return nullptr;
-                }
-                newp->addItemsp(new AstConsStructItem{nodep->fileline(), memberp, memberValuep});
-            }
-            return newp;
-        }
-        if (const AstBasicDType* const basicp = dtypep->basicp()) {
-            AstConst* const constp
-                = new AstConst{nodep->fileline(), AstConst::WidthedValue{}, basicp->widthMin(), 0};
-            if (basicp->isZeroInit()) {
-                constp->num() = V3Number{nodep, basicp};
-            } else {
-                constp->num().setAllBitsX();
-            }
-            return constp;
-        }
-        return nullptr;
-    }
     void initVar(AstVar* nodep) {
-        if (AstNodeExpr* const valuep = newInitValuep(nodep, nodep->dtypep())) {
+        if (AstNodeExpr* const valuep = defaultOf(nodep->fileline(), nodep->dtypep())) {
             newValue(nodep, valuep);
             VL_DO_DANGLING(valuep->deleteTree(), valuep);
         }
@@ -626,7 +912,9 @@ private:
         } else {
             iterateAndNextConstNull(nodep->condp());
             if (optimizable()) {
-                if (fetchConst(nodep->condp())->num().isNeqZero()) {
+                V3Number cond{nodep, 1, 0};
+                cond.opRedOr(fetchConst(nodep->condp())->num());
+                if (cond.isEqOne()) {
                     iterateAndNextConstNull(nodep->thensp());
                 } else {
                     iterateAndNextConstNull(nodep->elsesp());
@@ -809,12 +1097,19 @@ private:
         } else {
             iterateConst(nodep->lhsp());
             if (!optimizable()) return;
-            if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
+            V3Number num{nodep, 1, 0};
+            num.opRedOr(fetchConst(nodep->lhsp())->num());
+            if (num.isEqZero()) {
+                const AstConst result{nodep->fileline(), num};
+                newValue(nodep, &result);  // a zero
+            } else {
                 iterateConst(nodep->rhsp());
                 if (!optimizable()) return;
-                newValue(nodep, fetchValue(nodep->rhsp()));
-            } else {
-                newValue(nodep, fetchValue(nodep->lhsp()));  // a zero
+                V3Number rhs{nodep, 1, 0};
+                rhs.opRedOr(fetchConst(nodep->rhsp())->num());
+                num.opLogAnd(V3Number{num}, rhs);
+                const AstConst result{nodep->fileline(), num};
+                newValue(nodep, &result);
             }
         }
     }
@@ -827,12 +1122,19 @@ private:
         } else {
             iterateConst(nodep->lhsp());
             if (!optimizable()) return;
-            if (fetchConst(nodep->lhsp())->num().isNeqZero()) {
-                newValue(nodep, fetchValue(nodep->lhsp()));  // a one
+            V3Number num{nodep, 1, 0};
+            num.opRedOr(fetchConst(nodep->lhsp())->num());
+            if (num.isEqOne()) {
+                const AstConst result{nodep->fileline(), num};
+                newValue(nodep, &result);  // a one
             } else {
                 iterateConst(nodep->rhsp());
                 if (!optimizable()) return;
-                newValue(nodep, fetchValue(nodep->rhsp()));
+                V3Number rhs{nodep, 1, 0};
+                rhs.opRedOr(fetchConst(nodep->rhsp())->num());
+                num.opLogOr(V3Number{num}, rhs);
+                const AstConst result{nodep->fileline(), num};
+                newValue(nodep, &result);
             }
         }
     }
@@ -845,13 +1147,20 @@ private:
         } else {
             iterateConst(nodep->lhsp());
             if (!optimizable()) return;
-            if (fetchConst(nodep->lhsp())->num().isEqZero()) {
-                const AstConst cnst{nodep->fileline(), AstConst::WidthedValue{}, 1, 1};  // a one
-                newValue(nodep, &cnst);  // a one
+            V3Number num{nodep, 1, 0};
+            num.opRedOr(fetchConst(nodep->lhsp())->num());
+            num.opLogNot(V3Number{num});
+            if (num.isEqOne()) {
+                const AstConst result{nodep->fileline(), num};
+                newValue(nodep, &result);  // a one
             } else {
                 iterateConst(nodep->rhsp());
                 if (!optimizable()) return;
-                newValue(nodep, fetchValue(nodep->rhsp()));
+                V3Number rhs{nodep, 1, 0};
+                rhs.opRedOr(fetchConst(nodep->rhsp())->num());
+                num.opLogOr(V3Number{num}, rhs);
+                const AstConst result{nodep->fileline(), num};
+                newValue(nodep, &result);
             }
         }
     }
@@ -866,14 +1175,29 @@ private:
         } else {
             iterateConst(nodep->condp());
             if (!optimizable()) return;
-            if (fetchConst(nodep->condp())->num().isNeqZero()) {
+            V3Number cond{nodep->fileline(), 1, 0};
+            cond.opRedOr(fetchConst(nodep->condp())->num());
+            if (cond.isEqOne()) {
                 iterateConst(nodep->thenp());
                 if (!optimizable()) return;
                 newValue(nodep, fetchValue(nodep->thenp()));
-            } else {
+            } else if (cond.isEqZero()) {
                 iterateConst(nodep->elsep());
                 if (!optimizable()) return;
                 newValue(nodep, fetchValue(nodep->elsep()));
+            } else {
+                iterateConst(nodep->thenp());
+                iterateConst(nodep->elsep());
+                if (!optimizable()) return;
+                AstNodeExpr* const valuep
+                    = conditionalMerge(nodep->fileline(), cond, fetchValue(nodep->thenp()),
+                                       fetchValue(nodep->elsep()), nodep->dtypep());
+                if (!valuep) {
+                    clearOptimizable(nodep, "Unexpected conditional result type");
+                    return;
+                }
+                newValue(nodep, valuep);
+                VL_DO_DANGLING(valuep->deleteTree(), valuep);
             }
         }
     }
@@ -915,7 +1239,9 @@ private:
         for (AstNodeExpr* const selp : vlstd::reverse_view(selps)) {
             if (const AstArraySel* const aselp = VN_CAST(selp, ArraySel)) {
                 AstConsArray* const consp = VN_AS(itemp, ConsArray);
-                const uint32_t index = fetchConst(aselp->bitp())->toUInt();
+                const AstConst* const indexp = fetchConst(aselp->bitp());
+                if (indexp->num().isFourState()) return;
+                const uint32_t index = indexp->toUInt();
                 const int elements
                     = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType)->elementsConst();
                 if (index >= static_cast<uint32_t>(elements)) {
@@ -932,6 +1258,7 @@ private:
         }
         // Clone first, as the value assigned may be the old value of the element
         AstNodeExpr* const valuep = newTrackedClone(fetchValue(valueFromp));
+        cleanTwoStateValue(valuep, itemp->dtypep());
         UINFO(9, "     set " << lhsp << " = " << valuep);
         itemp->replaceWith(valuep);
         m_reclaimValuesp.push_back(itemp);
@@ -961,7 +1288,9 @@ private:
             }
             m_reclaimValuesp.emplace_back(outconstp);
         }
-        outconstp->num().opSelInto(fetchConst(valueFromp)->num(), lsb, selp->widthConst());
+        V3Number value{fetchConst(valueFromp)->num()};
+        value.opCleanTwoStateNumber(selp->dtypep());
+        outconstp->num().opSelInto(value, lsb, selp->widthConst());
         assignOutValue(nodep, vscp, outconstp);
     }
     void handleAssignSelRecurse(AstNodeAssign* nodep, AstSel* selp, AstVarRef*& outVarrefpRef,
@@ -1083,6 +1412,16 @@ private:
         iterateChildrenConst(nodep);
         if (const AstConsArray* const consp = VN_CAST(fetchValueNull(nodep->fromp()), ConsArray)) {
             const AstConst* const indexp = fetchConst(nodep->bitp());
+            if (indexp->num().isFourState()) {
+                AstNodeExpr* const valuep = defaultOf(nodep->fileline(), nodep->dtypep());
+                if (!valuep) {
+                    clearOptimizable(nodep, "Unsupported array element type");
+                    return;
+                }
+                newValue(nodep, valuep);
+                VL_DO_DANGLING(valuep->deleteTree(), valuep);
+                return;
+            }
             const uint32_t offset = indexp->num().toUInt();
             AstNodeExpr* const itemp = consp->valuep(offset);
             if (!itemp) {
@@ -1139,6 +1478,82 @@ private:
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
+    static bool caseItemMatches(const AstCase* casep, const V3Number& expr, const V3Number& item) {
+        if (casep->caseSimple() || expr.isOpaque() || item.isOpaque()) {
+            return expr.isCaseEq(item);
+        }
+        UASSERT_OBJ(expr.width() == item.width(), casep, "Case item width mismatch");
+        FileLine* const flp = casep->fileline();
+        if (casep->caseInside()) return V3Number{flp, 1, 0}.opWildEq(expr, item).isEqOne();
+        if (casep->casex() || casep->casez()) {
+            V3Number num1{expr};
+            V3Number num2{expr};
+            V3Number mask{expr};
+            if (casep->casex()) {
+                num1.opBitsXZ(expr);
+                num2.opBitsXZ(item);
+            } else {
+                num1.opBitsZ(expr);
+                num2.opBitsZ(item);
+            }
+            mask.opOr(num1, num2);
+            num1.opOr(expr, mask);
+            num2.opOr(item, mask);
+            return num1.isCaseEq(num2);
+        }
+        return expr.isCaseEq(item);
+    }
+    static bool insideRangeBoundMatches(AstNode* nodep, const V3Number& expr,
+                                        const AstNodeExpr* exprp, const V3Number& bound,
+                                        const AstNodeExpr* boundp, bool lowerBound) {
+        V3Number match{nodep, 1};
+        if (expr.isDouble() || bound.isDouble()) {
+            if (lowerBound) {
+                match.opGteD(expr, bound);
+            } else {
+                match.opLteD(expr, bound);
+            }
+        } else if (exprp->isSigned() && boundp->isSigned()) {
+            if (lowerBound) {
+                match.opGteS(expr, bound);
+            } else {
+                match.opLteS(expr, bound);
+            }
+        } else if (lowerBound) {
+            match.opGte(expr, bound);
+        } else {
+            match.opLte(expr, bound);
+        }
+
+        return match.isEqOne();
+    }
+    bool caseInsideRangeMatches(AstCase* casep, AstInsideRange* rangep) {
+        UASSERT_OBJ(casep->caseInside(), rangep, "Range item outside case inside");
+        if (casep->exprp()->dtypep()->skipRefp()->isString()) {
+            clearOptimizable(rangep, "Unsupported: string range item");
+            return false;
+        }
+        const AstConst* const exprp = fetchConst(casep->exprp());
+        if (!VN_IS(rangep->lhsp(), Unbounded)) {
+            iterateConst(rangep->lhsp());
+            if (!optimizable()) return false;
+            if (!insideRangeBoundMatches(rangep, exprp->num(), casep->exprp(),
+                                         fetchConst(rangep->lhsp())->num(), rangep->lhsp(),
+                                         true)) {
+                return false;
+            }
+        }
+        if (!VN_IS(rangep->rhsp(), Unbounded)) {
+            iterateConst(rangep->rhsp());
+            if (!optimizable()) return false;
+            if (!insideRangeBoundMatches(rangep, exprp->num(), casep->exprp(),
+                                         fetchConst(rangep->rhsp())->num(), rangep->rhsp(),
+                                         false)) {
+                return false;
+            }
+        }
+        return true;
+    }
     void visit(AstCase* nodep) override {
         if (jumpingOver()) return;
         UINFO(5, "   CASE " << nodep);
@@ -1152,11 +1567,22 @@ private:
                 if (!itemp->isDefault()) {
                     for (AstNode* const ep : itemp->condspList()) {
                         if (hit) break;
-                        iterateAndNextConstNull(ep);
+                        bool match = false;
+                        AstInsideRange* rangep = VN_CAST(ep, InsideRange);
+                        if (const AstCvtPackString* const cvtp = VN_CAST(ep, CvtPackString)) {
+                            rangep = VN_CAST(cvtp->lhsp(), InsideRange);
+                        }
+                        if (rangep) {
+                            match = caseInsideRangeMatches(nodep, rangep);
+                        } else {
+                            iterateAndNextConstNull(ep);
+                            if (optimizable()) {
+                                match = caseItemMatches(nodep, fetchConst(nodep->exprp())->num(),
+                                                        fetchConst(ep)->num());
+                            }
+                        }
                         if (optimizable()) {
-                            V3Number match{nodep, 1};
-                            match.opEq(fetchConst(nodep->exprp())->num(), fetchConst(ep)->num());
-                            if (match.isNeqZero()) {
+                            if (match) {
                                 iterateAndNextConstNull(itemp->stmtsp());
                                 hit = true;
                             }
@@ -1176,8 +1602,12 @@ private:
     }
 
     void visit(AstCaseItem* nodep) override {
-        // Real handling is in AstNodeCase
+        // Real handling is in AstCase
         if (jumpingOver()) return;
+        checkNodeInfo(nodep);
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstInsideRange* nodep) override {
         checkNodeInfo(nodep);
         iterateChildrenConst(nodep);
     }
@@ -1258,7 +1688,9 @@ private:
         checkNodeInfo(nodep);
         iterateConst(nodep->condp());
         if (m_checkOnly || !optimizable()) return;
-        if (fetchConst(nodep->condp())->num().isEqZero()) {
+        V3Number cond{nodep, 1, 0};
+        cond.opRedOr(fetchConst(nodep->condp())->num());
+        if (!cond.isEqOne()) {
             UINFO(5, "   LOOP TEST GO " << nodep);
             UASSERT_OBJ(!m_jumptargetp, nodep, "Jump inside jump");
             m_jumptargetp = nodep->loopp();
@@ -1514,6 +1946,7 @@ private:
         // properly dispatch them
         knownBadNodeType(nodep);
     }
+    void visit(AstDeferredAssertFlush* nodep) override { knownBadNodeType(nodep); }
     void visit(AstGetInitialRandomSeed* nodep) override { knownBadNodeType(nodep); }
     void visit(AstMemberSel* nodep) override { knownBadNodeType(nodep); }
     void visit(AstSampled* nodep) override { knownBadNodeType(nodep); }

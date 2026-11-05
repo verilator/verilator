@@ -59,7 +59,11 @@ bool AstNode::isZero() const {
 bool AstNode::isNeqZero() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isNeqZero());
 }
+bool AstNode::isTrue() const { return (VN_IS(this, Const) && VN_AS(this, Const)->num().isTrue()); }
 bool AstNode::isOne() const { return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqOne()); }
+bool AstNode::isAnyXZ() const {
+    return (VN_IS(this, Const) && VN_AS(this, Const)->num().isAnyXZ());
+}
 bool AstNode::isAllOnes() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->isEqAllOnes());
 }
@@ -123,6 +127,8 @@ AstPackArrayDType::AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* 
     const int width = subDTypep()->width() * rangep->elementsConst();
     widthForce(width, width);
 }
+
+AstNodeDType* AstClosurePoolDType::subDTypep() const VL_MT_STABLE { return m_subDTypep; }
 
 int AstQueueDType::boundConst() const VL_MT_STABLE {
     const AstConst* const constp = VN_CAST(boundp(), Const);

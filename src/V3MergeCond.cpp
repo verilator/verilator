@@ -637,38 +637,43 @@ class MergeCondVisitor final : public VNVisitor {
         return new AstAnd{nodep->fileline(), maskp, nodep};
     }
 
-    // Fold the RHS expression of an assignment assuming the given condition state.
+    // Fold the RHS expression of an assignment assuming the condition is true, and false.
+    // Returns the folded expressions for the 'then' and 'else' branches respectively.
     // Unlink bits from the RHS which is only used once, and can be reused (is an unmodified
     // sub-tree). What remains of the RHS is expected to be deleted by the caller.
-    AstNodeExpr* foldAndUnlink(AstNodeExpr* rhsp, bool condTrue) {
+    std::pair<AstNodeExpr*, AstNodeExpr*> foldAndUnlink(AstNodeExpr* rhsp) {
+        FileLine* const flp = rhsp->fileline();
         if (rhsp->sameTree(m_mgCondp)) {
-            return new AstConst{rhsp->fileline(), AstConst::BitTrue{}, condTrue};
-        } else if (const AstCond* const condp = extractCondFromRhs(rhsp)) {
-            AstNodeExpr* const resp
-                = condTrue ? condp->thenp()->unlinkFrBack() : condp->elsep()->unlinkFrBack();
-            if (condp == rhsp) return resp;
-            if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
-                UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
-                return new AstAnd{andp->fileline(), andp->lhsp()->cloneTreePure(false), resp};
-            }
-        } else if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
+            return {new AstConst{flp, AstConst::BitTrue{}},
+                    new AstConst{flp, AstConst::BitFalse{}}};
+        }
+        if (const AstCond* const condp = extractCondFromRhs(rhsp)) {
+            AstNodeExpr* const thenp = condp->thenp()->unlinkFrBack();
+            AstNodeExpr* const elsep = condp->elsep()->unlinkFrBack();
+            if (condp == rhsp) return {thenp, elsep};
+            const AstAnd* const andp = VN_AS(rhsp, And);
+            UASSERT_OBJ(andp->rhsp() == condp, rhsp, "Should not try to fold this");
+            return {new AstAnd{andp->fileline(), andp->lhsp()->cloneTreePure(false), thenp},
+                    new AstAnd{andp->fileline(), andp->lhsp()->cloneTreePure(false), elsep}};
+        }
+        if (const AstAnd* const andp = VN_CAST(rhsp, And)) {
             if (andp->lhsp()->sameTree(m_mgCondp)) {
-                return condTrue ? maskLsb(andp->rhsp()->unlinkFrBack())
-                                : new AstConst{rhsp->fileline(), AstConst::BitFalse{}};
-            } else {
-                UASSERT_OBJ(andp->rhsp()->sameTree(m_mgCondp), rhsp,
-                            "AstAnd doesn't hold condition expression");
-                return condTrue ? maskLsb(andp->lhsp()->unlinkFrBack())
-                                : new AstConst{rhsp->fileline(), AstConst::BitFalse{}};
+                return {maskLsb(andp->rhsp()->unlinkFrBack()),
+                        new AstConst{flp, AstConst::BitFalse{}}};
             }
-        } else if (VN_IS(rhsp, ArraySel) || VN_IS(rhsp, WordSel) || VN_IS(rhsp, VarRef)
-                   || VN_IS(rhsp, Const)) {
-            return rhsp->cloneTree(false);
+            UASSERT_OBJ(andp->rhsp()->sameTree(m_mgCondp), rhsp,
+                        "AstAnd doesn't hold condition expression");
+            return {maskLsb(andp->lhsp()->unlinkFrBack()),
+                    new AstConst{flp, AstConst::BitFalse{}}};
+        }
+        if (VN_IS(rhsp, ArraySel) || VN_IS(rhsp, WordSel) || VN_IS(rhsp, VarRef)
+            || VN_IS(rhsp, Const)) {
+            return {rhsp->cloneTree(false), rhsp->cloneTree(false)};
         }
         // LCOV_EXCL_START
         if (debug()) rhsp->dumpTree("Don't know how to fold expression: ");
         rhsp->v3fatalSrc("Should not try to fold this during conditional merging");
-        return nullptr;
+        return {nullptr, nullptr};
         // LCOV_EXCL_STOP
     }
 
@@ -730,8 +735,9 @@ class MergeCondVisitor final : public VNVisitor {
                     AstNodeAssign* const thenp = assignp;
                     AstNodeAssign* const elsep = assignp->cloneTree(false);
                     // Construct the new RHSs and add to branches
-                    thenp->rhsp(foldAndUnlink(rhsp, true));
-                    elsep->rhsp(foldAndUnlink(rhsp, false));
+                    const std::pair<AstNodeExpr*, AstNodeExpr*> folded = foldAndUnlink(rhsp);
+                    thenp->rhsp(folded.first);
+                    elsep->rhsp(folded.second);
                     resultp->addThensp(thenp);
                     resultp->addElsesp(elsep);
                     // Cleanup
