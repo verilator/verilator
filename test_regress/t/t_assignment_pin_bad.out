@@ -113,4 +113,52 @@
                                        : ... note: In instance 't'
   111 |   output_port stream_nested (.pad({<<{{>>{pin_pad[1 + int'($time % 3)]}}}}));
       |                                                     ^
+%Error: t/t_assignment_pin_bad.v:119:69: Output port connection 'pad' requires constant selection indices (IEEE 1800-2023 23.3.3, 10.2, A.8.5).
+                                       : ... note: In instance 't'
+  119 |       .pad({selected_value(variable_pad[cyc[2:0]]), variable_pad[cyc[2:0]]})
+      |                                                                     ^
+%Error: t/t_assignment_pin_bad.v:124:76: Output port connection 'pad' requires constant selection indices (IEEE 1800-2023 23.3.3, 10.2, A.8.5).
+                                       : ... note: In instance 't'
+  124 |       .pad({queue_pad[variable_pad[cyc[2:0]]].pop_front(), variable_pad[cyc[2:0]]})
+      |                                                                            ^
+%Error: t/t_assignment_pin_bad.v:131:31: Output port connection 'pad' cannot write to a dynamically sized array element (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  131 |       .pad(associative_members[int'(variable_pad[cyc[2:0]])])
+      |                               ^
+%Error: t/t_assignment_pin_bad.v:133:87: Output port connection 'pad' cannot write to a dynamically sized array element (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  133 |   output_port #(.T(logic [6:0])) associative_constant_output (.pad(associative_members[0]));
+      |                                                                                       ^
+%Error: t/t_assignment_pin_bad.v:137:25: Output port connection 'pad' cannot write to a dynamically sized array element (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  137 |       .pad(queue_members[{31'b0, variable_pad[cyc[2:0]]}])
+      |                         ^
+%Error: t/t_assignment_pin_bad.v:139:75: Output port connection 'pad' cannot write to a dynamically sized array element (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  139 |   output_port #(.T(logic [6:0])) queue_constant_output (.pad(queue_members[0]));
+      |                                                                           ^
+%Error: t/t_assignment_pin_bad.v:140:71: Output port connection 'pad' cannot write to a dynamically sized array element (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  140 |   output_port #(.T(logic [6:0])) queue_back_output (.pad(queue_members[$]));
+      |                                                                       ^
+%Error: t/t_assignment_pin_bad.v:143:70: Output port connection 'pad' cannot write to a dynamically sized array element (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  143 |   output_port #(.T(logic [6:0])) dynamic_output (.pad(dynamic_members[cyc]));
+      |                                                                      ^
+%Error: t/t_assignment_pin_bad.v:144:79: Output port connection 'pad' cannot write to a dynamically sized array element (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  144 |   output_port #(.T(logic [6:0])) dynamic_constant_output (.pad(dynamic_members[0]));
+      |                                                                               ^
+%Error: t/t_assignment_pin_bad.v:147:72: Output port connection 'pad' cannot write to a dynamically sized array element (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  147 |   output_port #(.T(logic [6:0])) wildcard_output (.pad(wildcard_members[cyc]));
+      |                                                                        ^
+%Error: t/t_assignment_pin_bad.v:158:50: Output port connection 'pad' cannot write to a non-static class property (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  158 |       .pad(class_members[variable_pad[cyc[2:0]]].data)
+      |                                                  ^~~~
+%Error: t/t_assignment_pin_bad.v:160:79: Output port connection 'pad' cannot write to a non-static class property (IEEE 1800-2023 23.3.3, 6.21).
+                                       : ... note: In instance 't'
+  160 |   output_port #(.T(logic [6:0])) class_constant_output (.pad(class_members[0].data));
+      |                                                                               ^~~~
 %Error: Exiting due to

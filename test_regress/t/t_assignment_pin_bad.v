@@ -109,6 +109,55 @@ module t (
   output_port #(.T(vector_t)) stream_left_part (.pad({<<2{packed_pad[cyc[2:0] +: 3]}}));
   output_port #(.T(vector_t)) stream_right_concat (.pad({>>{packed_pad[1:0], packed_pad[cyc[2:0]]}}));
   output_port stream_nested (.pad({<<{{>>{pin_pad[1 + int'($time % 3)]}}}}));
+
+  // Calls are not valid destinations. Their read operands must not be mistaken
+  // for destination selections; report the dynamic selection after each call.
+  function automatic logic selected_value(input logic value);
+    return value;
+  endfunction
+  output_port #(.T(logic [1:0])) function_concat_output (
+      .pad({selected_value(variable_pad[cyc[2:0]]), variable_pad[cyc[2:0]]})
+  );
+
+  logic queue_pad [2][$];
+  output_port #(.T(logic [1:0])) method_concat_output (
+      .pad({queue_pad[variable_pad[cyc[2:0]]].pop_front(), variable_pad[cyc[2:0]]})
+  );
+
+  // Output connections imply continuous assignments, which cannot write dynamic
+  // array elements or non-static class properties (IEEE 1800-2023 6.21).
+  logic [6:0] associative_members [int];
+  net_output_port associative_output (
+      .pad(associative_members[int'(variable_pad[cyc[2:0]])])
+  );
+  output_port #(.T(logic [6:0])) associative_constant_output (.pad(associative_members[0]));
+
+  logic [6:0] queue_members [$] = '{0, 0};
+  net_output_port queue_output (
+      .pad(queue_members[{31'b0, variable_pad[cyc[2:0]]}])
+  );
+  output_port #(.T(logic [6:0])) queue_constant_output (.pad(queue_members[0]));
+  output_port #(.T(logic [6:0])) queue_back_output (.pad(queue_members[$]));
+
+  logic [6:0] dynamic_members [];
+  output_port #(.T(logic [6:0])) dynamic_output (.pad(dynamic_members[cyc]));
+  output_port #(.T(logic [6:0])) dynamic_constant_output (.pad(dynamic_members[0]));
+
+  logic [6:0] wildcard_members [*];
+  output_port #(.T(logic [6:0])) wildcard_output (.pad(wildcard_members[cyc]));
+
+  class output_entry;
+    logic [6:0] data;
+  endclass
+  output_entry class_members [2];
+  initial begin
+    class_members[0] = new;
+    class_members[1] = new;
+  end
+  net_output_port class_output (
+      .pad(class_members[variable_pad[cyc[2:0]]].data)
+  );
+  output_port #(.T(logic [6:0])) class_constant_output (.pad(class_members[0].data));
 endmodule
 
 // Only the port direction and type matter to these elaboration-time diagnostics.
@@ -123,5 +172,10 @@ module inout_port #(
     parameter type T = logic
 ) (
     inout wire T pad
+);
+endmodule
+
+module net_output_port (
+    output wire [6:0] pad
 );
 endmodule

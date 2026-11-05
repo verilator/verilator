@@ -14,6 +14,10 @@ typedef struct {
   logic [6:0] tail [2];
 } aggregate_t;
 
+class output_entry;
+  static logic [6:0] data;
+endclass
+
 // bug1015
 module t (
     input clk
@@ -54,7 +58,16 @@ module t (
   selected_output variable_output (
       .value(crc[13:7]),
       .pad(variable_slices[row][2:3]),
-      .member(variable_members[row].data)
+      // A packed selection used to compute an unpacked index is an rvalue.
+      .member(variable_members[1 + int'(crc[crc[19:14]]) % 3].data)
+  );
+
+  // Static class properties permit output connections, including access through a handle.
+  output_entry static_member;
+  selected_output class_output (
+      .value(crc[6:0]),
+      .pad(),
+      .member(static_member.data)
   );
 
   // Inputs may select dynamically inside constructors. Output array constructors
@@ -82,7 +95,8 @@ module t (
       `checkh(net_members[2].data, crc[6:0]);
       `checkh(variable_slices[row][2], crc[13:7]);
       `checkh(variable_slices[row][3], ~crc[13:7]);
-      `checkh(variable_members[row].data, crc[13:7]);
+      `checkh(variable_members[1 + int'(crc[crc[19:14]]) % 3].data, crc[13:7]);
+      `checkh(output_entry::data, crc[6:0]);
       `checkh(struct_result.head, input_value);
       `checkh(struct_result.tail[0], crc[6:0]);
       `checkh(struct_result.tail[1], crc[13:7]);
