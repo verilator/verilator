@@ -6833,9 +6833,9 @@ class WidthVisitor final : public VNVisitor {
         const AstBasicDType* bdtypep = VN_AS(vdtypep, BasicDType);
         const VNumRange range = bdtypep->declRange();
         PatVecMap patmap = patVectorMap(nodep, range);
-        UINFO(9, "ent " << range.hi() << " to " << range.lo());
+        UINFO(9, "ent " << range.left() << " to " << range.right());
         AstNodeExpr* newp = nullptr;
-        for (const int ent : range.seqHiToLo()) {
+        for (const int ent : range.seqLeftToRight()) {
             AstNodeExpr* valuep = nullptr;
             const auto it = patmap.find(ent);
             if (it == patmap.end()) {
