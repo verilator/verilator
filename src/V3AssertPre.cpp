@@ -423,28 +423,6 @@ private:
         return nodep;
     }
 
-    void substituteNestedPropertyCall(AstFuncRef* funcrefp, const AstProperty* propp) {
-        AstPropSpec* const specp = clonePropertyBody(funcrefp, propp);
-        AstNode* replp = nullptr;
-        if (specp->disablep()) {
-            funcrefp->v3error("Illegal 'disable iff' in a nested property instance"
-                              " (IEEE 1800-2023 16.12.1)");
-        } else if (specp->sensesp()) {
-            funcrefp->v3warn(E_UNSUPPORTED,
-                             "Unsupported: clock event in a nested property instance");
-        } else if (specp->propp()->exists(
-                       [](const AstNodeExpr* np) { return np->isMultiCycleSva(); })) {
-            funcrefp->v3warn(E_UNSUPPORTED,
-                             "Unsupported: multi-cycle body in a nested property instance");
-        } else {
-            replp = specp->propp()->unlinkFrBack();
-        }
-        if (!replp) replp = new AstConst{funcrefp->fileline(), AstConst::BitFalse{}};
-        funcrefp->replaceWith(replp);
-        VL_DO_DANGLING(pushDeletep(funcrefp), funcrefp);
-        VL_DO_DANGLING(pushDeletep(specp), specp);
-    }
-
     // VISITORS
     //========== Statements
     void visit(AstClocking* const nodep) override {
@@ -1409,10 +1387,8 @@ private:
             // The replacement node will be visited by the parent's iterateChildren.
             return;
         }
-        if (const AstProperty* const propp = VN_CAST(nodep->taskp(), Property)) {
-            substituteNestedPropertyCall(nodep, propp);
-            return;
-        }
+        UASSERT_OBJ(!VN_IS(nodep->taskp(), Property), nodep,
+                    "Property instance should have been inlined by V3AssertNfa");
         iterateChildren(nodep);
     }
     void visit(AstImplication* nodep) override {

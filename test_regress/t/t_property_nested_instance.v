@@ -35,6 +35,12 @@ module t (
   int count_fail11 = 0;
   int count_fail12 = 0;
   int count_fail13 = 0;
+  int count_fail14 = 0;
+  int count_fail15 = 0;
+  int count_fail16 = 0;
+  int count_fail17 = 0;
+  int count_fail18 = 0;
+  int count_fail19 = 0;
   int count_cover_nested = 0;
   int count_cover_inline = 0;
 
@@ -52,6 +58,14 @@ module t (
 
   property p_top;
     c |-> p_outer;
+  endproperty
+
+  property q_seq;
+    b ##1 c;
+  endproperty
+
+  property q_rep;
+    b [* 2];
   endproperty
 
   property p_loc;
@@ -105,6 +119,20 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2) p_top)
   else count_fail13 <= count_fail13 + 1;
 
+  // Test 14-19: multi-cycle bodies, under implication and in a composite
+  assert property (@(posedge clk) disable iff (cyc < 2) a |-> q_seq)
+  else count_fail14 <= count_fail14 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 2) a |-> (b ##1 c))
+  else count_fail15 <= count_fail15 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 2) a |-> q_rep)
+  else count_fail16 <= count_fail16 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 2) a |-> b [* 2])
+  else count_fail17 <= count_fail17 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 2) q_seq and a)
+  else count_fail18 <= count_fail18 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 2) (b ##1 c) and a)
+  else count_fail19 <= count_fail19 + 1;
+
   // Cover: nested instance vs inline body, counted only with --coverage
   cover property (@(posedge clk) disable iff (cyc < 2) a |-> p_b)
     count_cover_nested <= count_cover_nested + 1;
@@ -137,6 +165,12 @@ module t (
       `checkd(count_fail11, 8);
       `checkd(count_fail12, 8);
       `checkd(count_fail13, 8);
+      `checkd(count_fail14, 27);
+      `checkd(count_fail15, 27);
+      `checkd(count_fail16, 27);
+      `checkd(count_fail17, 27);
+      `checkd(count_fail18, 23);
+      `checkd(count_fail19, 23);
 `ifdef TEST_COVERAGE
       `checkd(count_cover_nested, 28);
       `checkd(count_cover_inline, 28);

@@ -15,16 +15,6 @@ module t (
     @(posedge clk) b;
   endproperty
 
-  property q_seq;
-    b ##1 a;
-  endproperty
-
-  property q_rep;
-    b [* 2];
-  endproperty
-
   assert property (@(posedge clk) a |-> q_clk);
-  assert property (@(posedge clk) a |-> q_seq);
-  assert property (@(posedge clk) a |-> q_rep);
 
 endmodule

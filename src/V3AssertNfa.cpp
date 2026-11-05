@@ -2920,6 +2920,7 @@ class AssertNfaVisitor final : public VNVisitor {
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
     std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
+    bool m_inlinePropRefs = false;  // Inline property instances in visit(AstFuncRef)
 
     template <typename T_Node>
     void visitSampledValue(T_Node* const nodep) {
@@ -2966,15 +2967,9 @@ class AssertNfaVisitor final : public VNVisitor {
         return VN_CAST(stmtp, PropSpec);
     }
 
-    void inlineNamedProperty(AstPropSpec* outerSpecp, AstFuncRef* funcrefp,
-                             const AstProperty* propyp) {
-        // Recursion guard: IEEE 1800-2023 16.12.1 forbids recursive properties.
-        // V3Width emits "Recursive property call" for direct recursion before this
-        // pass runs; this catches any nested-inlining cycle that slips past.
-        if (!m_inliningProps.emplace(propyp).second) {
-            funcrefp->v3error("Illegal recursive property reference");  // LCOV_EXCL_LINE
-            return;  // LCOV_EXCL_LINE
-        }
+    AstPropSpec* clonePropertyBody(AstFuncRef* funcrefp, const AstProperty* propyp) {
+        UASSERT_OBJ(m_inliningProps.emplace(propyp).second, funcrefp,
+                    "Recursive property reference should have been rejected by V3Width");
         struct Guard final {
             std::set<const AstProperty*>& setr;
             const AstProperty* keyp;
@@ -3020,6 +3015,25 @@ class AssertNfaVisitor final : public VNVisitor {
             pushDeletep(tconnect.second->exprp()->unlinkFrBack());
         }
         V3AssertCommon::checkSvaInstanceDelays(propSpecp, funcrefp);
+        if (AstFuncRef* const rootRefp = VN_CAST(propSpecp->propp(), FuncRef)) {
+            if (const AstProperty* const rootPropp = VN_CAST(rootRefp->taskp(), Property)) {
+                AstPropSpec* const mergedp = mergeNamedProperty(propSpecp, rootRefp, rootPropp);
+                VL_DO_DANGLING(pushDeletep(propSpecp), propSpecp);
+                return mergedp;
+            }
+        }
+        {
+            VL_RESTORER(m_inlinePropRefs);
+            m_inlinePropRefs = true;
+            iterate(propSpecp->propp());
+        }
+        return propSpecp;
+    }
+
+    // The outer disable iff and clock move onto the body (IEEE 1800-2023 16.12.1)
+    AstPropSpec* mergeNamedProperty(AstPropSpec* outerSpecp, AstFuncRef* funcrefp,
+                                    const AstProperty* propyp) {
+        AstPropSpec* const propSpecp = clonePropertyBody(funcrefp, propyp);
 
         // Merge disable iff (IEEE 1800-2023 16.12.1)
         if (outerSpecp->disablep() && propSpecp->disablep()) {
@@ -3041,7 +3055,12 @@ class AssertNfaVisitor final : public VNVisitor {
             sensesp->unlinkFrBack();
             propSpecp->sensesp(sensesp);
         }
+        return propSpecp;
+    }
 
+    void inlineNamedProperty(AstPropSpec* outerSpecp, AstFuncRef* funcrefp,
+                             const AstProperty* propyp) {
+        AstPropSpec* const propSpecp = mergeNamedProperty(outerSpecp, funcrefp, propyp);
         outerSpecp->replaceWith(propSpecp);
         VL_DO_DANGLING(pushDeletep(outerSpecp), outerSpecp);
     }
@@ -3411,6 +3430,11 @@ class AssertNfaVisitor final : public VNVisitor {
             }
         }
 
+        if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
+            VL_RESTORER(m_inlinePropRefs);
+            m_inlinePropRefs = true;
+            iterate(specp->propp());
+        }
         inlineAllSequenceRefs(assertp->propp());
 
         if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
@@ -3427,14 +3451,6 @@ class AssertNfaVisitor final : public VNVisitor {
         }
 
         if (!hasMultiCycleExpr(propp)) return nullptr;
-        // A nested property instance keeps its body behind the call; lowering would drop it.
-        if (propp->exists([](const AstFuncRef* refp) { return VN_IS(refp->taskp(), Property); })) {
-            assertp->v3warn(E_UNSUPPORTED,
-                            "Unsupported: property instance inside a multi-cycle property "
-                            "expression");
-            VL_DO_DANGLING(pushDeletep(assertp->unlinkFrBack()), assertp);
-            return nullptr;
-        }
         if (isBareTopLevelUntil(propp)) return nullptr;
         return propp;
     }
@@ -3608,6 +3624,26 @@ class AssertNfaVisitor final : public VNVisitor {
         // Restrict property is ignored by simulators (IEEE 1800-2023 16.12.2).
         // Remove here so temporal SExpr don't leak to V3AssertPre.
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+    }
+    void visit(AstFuncRef* nodep) override {
+        iterateChildren(nodep);
+        if (!m_inlinePropRefs) return;
+        const AstProperty* const propyp = VN_CAST(nodep->taskp(), Property);
+        if (!propyp) return;
+        AstPropSpec* const specp = clonePropertyBody(nodep, propyp);
+        AstNode* replp = nullptr;
+        if (specp->disablep()) {
+            nodep->v3error("Illegal 'disable iff' in a nested property instance"
+                           " (IEEE 1800-2023 16.12.1)");
+        } else if (specp->sensesp()) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: clock event in a nested property instance");
+        } else {
+            replp = specp->propp()->unlinkFrBack();
+        }
+        if (!replp) replp = new AstConst{nodep->fileline(), AstConst::BitFalse{}};
+        nodep->replaceWith(replp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        VL_DO_DANGLING(pushDeletep(specp), specp);
     }
     void visit(AstAssertIntrinsic* nodep) override {}
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
