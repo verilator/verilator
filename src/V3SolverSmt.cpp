@@ -1829,6 +1829,37 @@ class ConstraintExprVisitor final : public VNVisitor {
             newp->exprsp()->nextp()->name("%x");
         }
     }
+    // The solver has no variable for a state array to select from, so an element is chosen by
+    // comparing the index with each position; an index out of range reads as zero. Returns false
+    // if an element is not a value or there are more than --constraint-array-limit to compare.
+    bool editStateArraySel(AstArraySel* nodep) {
+        const AstUnpackArrayDType* const arrayp
+            = VN_AS(nodep->fromp()->dtypep()->skipRefp(), UnpackArrayDType);
+        if (!nodep->dtypep()->skipRefp()->isIntegralOrPacked()
+            || arrayp->elementsConst() > v3Global.opt.constraintArrayLimit()) {
+            return false;
+        }
+        FileLine* const fl = nodep->fileline();
+        const int indexWidth = nodep->bitp()->width();
+        // Edited once, as the marks telling rand from state would not survive cloning it
+        AstNodeExpr* const indexp
+            = VN_AS(iterateSubtreeReturnEdits(nodep->bitp()->unlinkFrBack()), NodeExpr);
+        AstNodeExpr* condsp = new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), 0};
+        for (int i = arrayp->elementsConst() - 1; i >= 0; --i) {
+            AstEq* const eqp = new AstEq{
+                fl, indexp->cloneTree(false),
+                new AstConst{fl, AstConst::WidthedValue{}, indexWidth, static_cast<uint32_t>(i)}};
+            eqp->user1(true);
+            condsp = new AstCond{
+                fl, eqp, new AstArraySel{fl, nodep->fromp()->cloneTreePure(false), i}, condsp};
+            condsp->user1(true);
+        }
+        VL_DO_DANGLING(indexp->deleteTree(), indexp);
+        nodep->replaceWith(condsp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterate(condsp);
+        return true;
+    }
     void visit(AstArraySel* nodep) override {
         if (editFormat(nodep)) return;
         FileLine* const fl = nodep->fileline();
@@ -1843,6 +1874,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 indexIsRand = true;
             }
         });
+        if (indexIsRand && !nodep->fromp()->user1() && editStateArraySel(nodep)) return;
         if (m_nestedAccessp) {
             AstNodeExpr* const bitp = nodep->bitp()->cloneTreePure(false);
             AstNodeExpr* const bitFormatp
