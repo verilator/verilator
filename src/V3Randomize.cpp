@@ -2569,13 +2569,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     static bool hasSameSel(const std::vector<AstNodeExpr*>& selps, AstNodeExpr* selp) {
-        for (AstNodeExpr* const otherp : selps) {
-            if (arraySelFromp(otherp)->sameTree(arraySelFromp(selp))
-                && arraySelIndexp(otherp)->sameTree(arraySelIndexp(selp))) {
-                return true;
-            }
-        }
-        return false;
+        return std::any_of(selps.begin(), selps.end(), [selp](AstNodeExpr* otherp) {
+            return arraySelFromp(otherp)->sameTree(arraySelFromp(selp))
+                   && arraySelIndexp(otherp)->sameTree(arraySelIndexp(selp));
+        });
     }
     // 'index < size', compared unsigned at a width holding both, so a negative index is out of
     // range
