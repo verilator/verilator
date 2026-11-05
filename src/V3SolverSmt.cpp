@@ -2080,8 +2080,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                     "Constraint names of an earlier fold were not taken over");
         // A condition on state chooses the folded text, and several items folded into one
         // constraint merge their names
-        UASSERT_OBJ(nodep->thensp(), nodep, "constraint if without a then body");
-        const bool namesMerged = !nodep->condp()->user1() || nodep->thensp()->nextp()
+        const bool namesMerged = !nodep->condp()->user1()
+                                 || (nodep->thensp() && nodep->thensp()->nextp())
                                  || (nodep->elsesp() && nodep->elsesp()->nextp());
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
