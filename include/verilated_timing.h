@@ -164,62 +164,38 @@ enum class VlDelayPhase : bool { ACTIVE, INACTIVE };
 // VlDelayedCoroutineQueue -- time-ordered FIFO buckets of delayed coroutines.
 //
 // Why not std::multimap: equal-time inserts sift handles through the tree.
-// One map node per distinct time; FIFO within the bucket. After drain, the
-// vector is kept as one spare for the next multi-waiter time slot.
+// One map node per distinct time; FIFO within that vector.
 //
-// drainTop erases the map node before resumes run so a same-time re-await
-// creates a new entry (must not append into the bucket being drained).
-// C++14: no std::optional / map::extract (covergroup tests force -std=c++14).
+// drainTop moves the vector out and erases the map node before resumes run, so
+// a same-time re-await creates a new entry (must not append into the bucket
+// being drained). Move-and-erase stays valid when this header is compiled as
+// C++14 (covergroup builds pass -std=c++14); no std::optional / map::extract.
 
 class VlDelayedCoroutineQueue final {
-    using RestVec = std::vector<VlCoroutineHandle>;
-
-    struct Bucket final {
-        RestVec m_handles;  // FIFO waiters at this time (size >= 1 while mapped)
-    };
-
-    std::map<uint64_t, Bucket> m_map;  // Time -> waiters
-    RestVec m_spareRest;  // At most one recycled waiter vector
-
-    void ensureHandles(Bucket& bucket) {
-        if (bucket.m_handles.capacity() != 0) return;
-        if (m_spareRest.capacity() != 0) bucket.m_handles = std::move(m_spareRest);
-    }
-    void recycleHandles(Bucket& bucket) {
-        if (bucket.m_handles.capacity() == 0) return;
-        bucket.m_handles.clear();
-        m_spareRest = std::move(bucket.m_handles);
-    }
+    // Time -> FIFO waiters. A mapped vector has size >= 1.
+    std::map<uint64_t, std::vector<VlCoroutineHandle>> m_map;
 
 public:
     bool empty() const { return m_map.empty(); }
     // Called from resume() only when gotFinish is already set. Delay trigger
     // evaluation is gated on !gotFinish, so this is a rare safety path.
-    void clear() {  // LCOV_EXCL_START
-        m_map.clear();
-        m_spareRest.clear();
-    }  // LCOV_EXCL_STOP
+    void clear() { m_map.clear(); }  // LCOV_EXCL_LINE
     uint64_t topTime() const { return m_map.begin()->first; }
     void emplace(uint64_t time, VlCoroutineHandle&& handle) {
-        Bucket& bucket = m_map[time];
-        ensureHandles(bucket);
-        bucket.m_handles.push_back(std::move(handle));
+        m_map[time].push_back(std::move(handle));
     }
     template <typename T_Func>
     void drainTop(T_Func&& func) {
         auto it = m_map.begin();
-        Bucket bucket = std::move(it->second);
+        std::vector<VlCoroutineHandle> handles = std::move(it->second);
         m_map.erase(it);
-        for (VlCoroutineHandle& handle : bucket.m_handles) func(handle);
-        recycleHandles(bucket);
+        for (VlCoroutineHandle& handle : handles) func(handle);
     }
 #ifdef VL_DEBUG
     template <typename T_Func>
     void foreachInOrder(T_Func&& func) const {
         for (const auto& pair : m_map) {
-            for (const VlCoroutineHandle& handle : pair.second.m_handles) {
-                func(pair.first, handle);
-            }
+            for (const VlCoroutineHandle& handle : pair.second) func(pair.first, handle);
         }
     }
 #endif

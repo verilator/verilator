@@ -108,6 +108,8 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
     }
     if (nodep->needProcess()) {
         if (!args.empty()) args += ", ";
+        // By value. VlCoroutineHandle keeps a VlProcess* into this object; a
+        // reference parameter would dangle after the caller returns.
         args += "VlProcessRef vlProcess";
     }
     if (!nodep->argTypes().empty()) {
