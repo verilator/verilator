@@ -574,6 +574,8 @@ string EmitCFunc::emitVarResetRecurse(const AstVar* varp, bool constructing,
         return "";
     } else if (basicp && basicp->isDynamicTriggerScheduler()) {
         return "";
+    } else if (basicp && basicp->isNbaGenericQueue()) {
+        return "";
     } else if (basicp && (basicp->isRandomGenerator() || basicp->isStdRandomGenerator())) {
         return "";
     } else if (basicp && basicp->isCovergroupInstHandle()) {

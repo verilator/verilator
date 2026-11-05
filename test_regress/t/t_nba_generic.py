@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# DESCRIPTION: Verilator: Nonblocking event triggers requiring --timing
+# DESCRIPTION: Verilator: Verilog Test driver/expect definition
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of either the GNU Lesser General Public License Version 3
@@ -9,8 +9,13 @@
 
 import vltest_bootstrap
 
-test.scenarios('linter')
+test.scenarios('simulator')
 
-test.lint(verilator_flags2=["--no-timing"], fails=True, expect_filename=test.golden_filename)
+test.compile(verilator_flags2=['--binary', '--stats'])
+
+test.execute()
+
+test.file_grep(test.stats, r'NBA, variables using GenericLocal scheme\s+(\d+)', 1)
+test.file_grep(test.stats, r'NBA, variables using GenericGlobal scheme\s+(\d+)', 9)
 
 test.passes()

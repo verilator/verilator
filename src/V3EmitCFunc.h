@@ -80,6 +80,10 @@ class EmitCLazyDecls final : public VNVisitorConst {
         lazyDeclare(nodep->funcp());
         iterateChildrenConst(nodep);
     }
+    void visit(AstNbaEnqueue* nodep) override {
+        lazyDeclare(nodep->funcp());
+        iterateChildrenConst(nodep);
+    }
 
     void visit(AstVarRef* nodep) override {
         AstVar* const varp = nodep->varp();
@@ -471,6 +475,12 @@ public:
         for (AstNode* const subnodep : nodep->argspList()) {
             if (AstVar* const varp = VN_CAST(subnodep, Var)) {
                 if (varp->isFuncReturn()) emitVarDecl(varp);
+                // Bind the closure argument to the closure passed (see cFuncArgs)
+                if (const AstStructDType* const dtypep = closureDTypep(varp)) {
+                    const std::string type = EmitCUtil::prefixNameProtect(dtypep);
+                    puts(type + "& " + varp->nameProtect() + " = *static_cast<" + type + "*>("
+                         + varp->nameProtect() + "p);\n");
+                }
             }
         }
 
@@ -848,6 +858,30 @@ public:
         putns(nodep, "vlSymsp->fireEvent(");
         iterateConst(nodep->operandp());
         puts(");\n");
+    }
+    void visit(AstNbaCommit* nodep) override {
+        iterateConst(nodep->queuep());
+        puts(".commit(vlSymsp);\n");
+    }
+    void visit(AstNbaEnqueue* nodep) override {
+        const AstClosurePoolDType* const poolDTypep
+            = VN_AS(nodep->poolp()->varp()->dtypep(), ClosurePoolDType);
+        const AstStructDType* const dtypep = VN_AS(poolDTypep->subDTypep(), StructDType);
+        putns(nodep, "{\n");
+        puts(EmitCUtil::prefixNameProtect(dtypep) + "& __Vclosure = ");
+        iterateConst(nodep->poolp());
+        puts(".allocate();\n");
+        puts("__Vclosure.m_funcp = &" + funcNameProtect(nodep->funcp()) + ";\n");
+        const AstMemberDType* memberp = dtypep->membersp();
+        for (AstNodeExpr* const argp : nodep->argspList()) {
+            puts("__Vclosure." + memberp->nameProtect() + " = ");
+            iterateConst(argp);
+            puts(";\n");
+            memberp = VN_AS(memberp->nextp(), MemberDType);
+        }
+        iterateConst(nodep->queuep());
+        puts(".enqueue(&__Vclosure);\n");
+        puts("}\n");
     }
     void visit(AstCNew* nodep) override {
         if (VN_IS(nodep->dtypep(), VoidDType)) {  // super.new case

@@ -181,6 +181,11 @@ class HasherVisitor final : public VNVisitorConst {
             iterateConstNull(nodep->classp());
         });
     }
+    void visit(AstClosurePoolDType* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
+            iterateConstNull(nodep->subDTypep());
+        });
+    }
     void visit(AstIfaceRefDType* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
             iterateConstNull(nodep->cellp());
@@ -281,6 +286,11 @@ class HasherVisitor final : public VNVisitorConst {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, []() {});
     }
     void visit(AstNodeCCall* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
+            iterateConstNull(nodep->funcp());
+        });
+    }
+    void visit(AstNbaEnqueue* nodep) override {
         m_hash += hashNodeAndIterate(nodep, false, HASH_CHILDREN, [this, nodep]() {  //
             iterateConstNull(nodep->funcp());
         });

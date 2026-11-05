@@ -1616,8 +1616,7 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_stdPackageProcessp : Optional[AstClass]  // SystemVerilog std process class
     // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
     // @astgen ptr := m_delaySchedulerp : Optional[AstVar]  // Delay scheduler variable
-    // @astgen ptr := m_nbaEventp : Optional[AstVarScope]  // NBA event variable
-    // @astgen ptr := m_nbaEventTriggerp : Optional[AstVarScope]  // NBA event trigger
+    // @astgen ptr := m_nbaQueuep : Optional[AstVarScope]  // Global queue of NBAs (V3Delayed)
     // @astgen ptr := m_topScopep : Optional[AstTopScope]  // Singleton AstTopScope
     // @astgen ptr := m_stlFirstIterationp: Optional[AstVarScope]  // Settle first iteration flag
     VTimescale m_timeunit;  // Global time unit
@@ -1673,10 +1672,8 @@ public:
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
     void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
-    AstVarScope* nbaEventp() const { return m_nbaEventp; }
-    void nbaEventp(AstVarScope* const varScopep) { m_nbaEventp = varScopep; }
-    AstVarScope* nbaEventTriggerp() const { return m_nbaEventTriggerp; }
-    void nbaEventTriggerp(AstVarScope* const varScopep) { m_nbaEventTriggerp = varScopep; }
+    AstVarScope* nbaQueuep() const { return m_nbaQueuep; }
+    void nbaQueuep(AstVarScope* varScopep) { m_nbaQueuep = varScopep; }
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
     AstPackage* stdPackagep() const { return m_stdPackagep; }
     void stdPackageProcessp(AstClass* const classp) { m_stdPackageProcessp = classp; }
@@ -1950,7 +1947,6 @@ public:
     class Combo {};  // for constructor type-overload selection
     class Static {};  // for constructor type-overload selection
     class Initial {};  // for constructor type-overload selection
-    class InitialNBA {};  // for constructor type-overload selection
     class Final {};  // for constructor type-overload selection
     class Never {};  // for constructor type-overload selection
     AstSenItem(FileLine* fl, VEdgeType edgeType, AstNodeExpr* senp, AstNodeExpr* condp = nullptr)
@@ -1968,9 +1964,6 @@ public:
     AstSenItem(FileLine* fl, Initial)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_INITIAL} {}
-    AstSenItem(FileLine* fl, InitialNBA)
-        : ASTGEN_SUPER_SenItem(fl)
-        , m_edgeType{VEdgeType::ET_INITIAL_NBA} {}
     AstSenItem(FileLine* fl, Final)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_FINAL} {}

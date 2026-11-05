@@ -227,6 +227,7 @@ class AstNodeCCall VL_NOT_FINAL : public AstNodeExpr {
     // dist-ast-dump-suppress  // Too verbose
     string m_argTypes;
     bool m_superReference = false;  // Called with super reference
+    bool m_mayEnqueueGlobalNBA = false;  // May enqueue an NBA to the global queue (see V3Delayed)
 
 protected:
     AstNodeCCall(VNType t, FileLine* fl, AstCFunc* funcp, AstNodeExpr* argsp = nullptr)
@@ -259,6 +260,8 @@ public:
     bool cleanOut() const final override { return true; }
     bool superReference() const { return m_superReference; }
     void superReference(bool flag) { m_superReference = flag; }
+    bool mayEnqueueGlobalNBA() const { return m_mayEnqueueGlobalNBA; }
+    void setMayEnqueueGlobalNBA() { m_mayEnqueueGlobalNBA = true; }
 };
 class AstNodeCons VL_NOT_FINAL : public AstNodeExpr {
     // Construct a value of an aggregate type

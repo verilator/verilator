@@ -128,6 +128,8 @@ AstPackArrayDType::AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* 
     widthForce(width, width);
 }
 
+AstNodeDType* AstClosurePoolDType::subDTypep() const VL_MT_STABLE { return m_subDTypep; }
+
 int AstQueueDType::boundConst() const VL_MT_STABLE {
     const AstConst* const constp = VN_CAST(boundp(), Const);
     return (constp ? constp->toSInt() : 0);
