@@ -42,10 +42,12 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
+#include "V3Hasher.h"
 #include "V3MemberMap.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
+#include <map>
 #include <queue>
 #include <tuple>
 #include <utility>
@@ -2568,11 +2570,14 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    static bool hasSameSel(const std::vector<AstNodeExpr*>& selps, AstNodeExpr* selp) {
-        return std::any_of(selps.begin(), selps.end(), [selp](AstNodeExpr* otherp) {
-            return arraySelFromp(otherp)->sameTree(arraySelFromp(selp))
-                   && arraySelIndexp(otherp)->sameTree(arraySelIndexp(selp));
-        });
+    // Whether selsByHash holds the same select as selp, whose hash is given; found by hash so
+    // that collecting the selects of a constraint stays linear
+    static bool hasSameSel(const std::multimap<V3Hash, AstNodeExpr*>& selsByHash, V3Hash hash,
+                           AstNodeExpr* selp) {
+        return std::any_of(selsByHash.lower_bound(hash), selsByHash.upper_bound(hash),
+                           [selp](const std::pair<const V3Hash, AstNodeExpr*>& entry) {
+                               return entry.second->sameTree(selp);
+                           });
     }
     // 'index < size', compared unsigned at a width holding both, so a negative index is out of
     // range
@@ -2610,12 +2615,19 @@ class ConstraintExprVisitor final : public VNVisitor {
     // once it is resized after solving its size, which the implication waits for.
     bool guardRandIndexedStructSels(AstNode* nodep, AstNode* searchp) {
         if (nodep == m_guardedp) return false;
-        // Distinct element selects
+        // Distinct element selects, in order of appearance
         std::vector<AstNodeExpr*> selps;
+        std::multimap<V3Hash, AstNodeExpr*> selsByHash;
         searchp->foreach([&](AstStructSel* structSelp) {
             for (AstNodeExpr* selp = structSelp->fromp(); isArraySel(selp);
                  selp = arraySelFromp(selp)) {
-                if (hasRandIndex(selp) && !hasSameSel(selps, selp)) selps.push_back(selp);
+                if (hasRandIndex(selp)) {
+                    const V3Hash hash = V3Hasher::uncachedHash(selp);
+                    if (!hasSameSel(selsByHash, hash, selp)) {
+                        selsByHash.emplace(hash, selp);
+                        selps.push_back(selp);
+                    }
+                }
             }
         });
         if (selps.empty()) return false;
