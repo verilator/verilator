@@ -498,6 +498,60 @@ class RandcFoldItems;
   }
 endclass
 
+// The rand variable cannot change the outcome, which is c >= 1 whatever it holds
+class RandcBranchOnRand;
+  randc bit [1:0] c;
+  rand bit [1:0] y;
+  constraint k {
+    if (y < 1) {
+      y != c;
+    } else {
+      c >= 1;
+    }
+  }
+endclass
+
+// c == 1 is rejected by a branch that reads no rand variable
+class RandcBranchOnRandc;
+  randc bit [1:0] c;
+  rand bit [1:0] y;
+  constraint k {
+    if (c < 2) {
+      c != 1;
+    } else {
+      y > 1;
+    }
+  }
+endclass
+
+// z is too narrow for the condition ever to be false, so c >= 1 always applies
+class RandcAlwaysTrue;
+  randc bit [1:0] c;
+  rand bit z;
+  constraint k {
+    if (int'(z) < 3) {
+      c >= 1;
+    }
+  }
+endclass
+
+class RandcBranchSub;
+  randc bit [1:0] c;
+endclass
+
+// As RandcBranchOnRandc, the branch reaching its randc through a rand handle
+class RandcBranchThroughHandle;
+  rand RandcBranchSub s = new;
+  rand bit [1:0] y;
+  constraint k {
+    if (s.c == 0) {
+      s.c != 0;
+    } else {
+      y >= s.c;
+    }
+  }
+endclass
+
 // Sized without element constraints, so a single solve: c == 3 admits no size
 class SizeOnly;
   randc bit [1:0] c;
@@ -721,6 +775,50 @@ module t;
         `checkd(res, 1);
         `checkd(obj.c != 3, 1'b1);
         `checkd((obj.c < 2) ? obj.x > 3 : obj.x < 8, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcBranchOnRand obj = new;
+      automatic int res;
+      $display("Test randc under an if on rand with a randc-only branch");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c >= 1, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcBranchOnRandc obj = new;
+      automatic int res;
+      $display("Test randc under an if on randc with a randc-only branch");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c != 1, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcAlwaysTrue obj = new;
+      automatic int res;
+      $display("Test randc under an if on rand that always holds");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c >= 1, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcBranchThroughHandle obj = new;
+      automatic int res;
+      $display("Test randc through a handle under an if with a randc-only branch");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.s.c != 0, 1'b1);
       end
     end
 

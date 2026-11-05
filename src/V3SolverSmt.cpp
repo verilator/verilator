@@ -170,6 +170,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // The names of the constraint being built are merged from more than its own text (see
     // its use in visit(AstConstraintExpr*))
     bool m_namesMerged = false;
+    size_t m_randReads = 0;  // Rand, non-randc variable references visited so far
     // Where the variable references being lowered record their solver names. Set by
     // visit(AstConstraintExpr*), the only visit reaching a variable reference: the other
     // constraint items either move their expressions into one or never iterate them.
@@ -1151,6 +1152,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeVarRef* nodep) override {
         AstVar* varp = nodep->varp();
+        countRandRead(varp);
         if (varp->user4p()) {
             bool isSizeRef = false;
             if (AstCMethodHard* const methodp = VN_CAST(nodep->backp(), CMethodHard)) {
@@ -1971,6 +1973,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         return true;
     }
     void visit(AstMemberRef* nodep) override {
+        countRandRead(nodep->varp());
         // Check if rootVar is globalConstrained
         if (nodep->varp()->rand().isRandomizable() && nodep->fromp()) {
             FileLine* const fl = nodep->fileline();
@@ -2091,21 +2094,32 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
     }
     void visit(AstSFormatF* nodep) override {}
+    void countRandRead(const AstVar* varp) {
+        if (varp->rand().isRandomizable() && !varp->rand().isRandC()
+            && !varp->isClassHandleValue()) {
+            ++m_randReads;
+        }
+    }
     void visit(AstConstraintIf* nodep) override {
         // Outside a fold, this if's branches are folded here and m_constraintVars collects
         // their names for the constraint replacing it; a nested if adds to its parent's fold
         const bool foldOwner = !m_wantSingle;
         UASSERT_OBJ(!foldOwner || m_constraintVars.empty(), nodep,
                     "Constraint names of an earlier fold were not taken over");
-        // A condition on state chooses the folded text, and several items folded into one
-        // constraint merge their names
-        const bool namesMerged = !nodep->condp()->user1()
-                                 || (nodep->thensp() && nodep->thensp()->nextp())
-                                 || (nodep->elsesp() && nodep->elsesp()->nextp());
+        // A condition on state chooses the folded text, several items folded into one
+        // constraint merge their names, and a branch naming no rand variable is a randc-only
+        // part the names of the whole if cannot show
+        const bool hasThen = nodep->thensp();
+        const bool hasElse = nodep->elsesp();
+        bool namesMerged = !nodep->condp()->user1() || (hasThen && nodep->thensp()->nextp())
+                           || (hasElse && nodep->elsesp()->nextp());
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
+        const size_t thenFrom = m_randReads;
         AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
+        const size_t elseFrom = m_randReads;
         AstNodeExpr* const elsep = editSingle(fl, nodep->elsesp());
+        namesMerged |= (hasThen && elseFrom == thenFrom) || (hasElse && m_randReads == elseFrom);
         if (thenp && elsep) {
             newp = new AstCond{fl, nodep->condp()->unlinkFrBack(), thenp, elsep};
         } else if (thenp) {
@@ -2236,6 +2250,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         for (AstNodeExpr* const itemp : nodep->rangespList()) {
             if (AstVarRef* const varRefp = VN_CAST(itemp, VarRef)) {
                 AstVar* const varp = varRefp->varp();
+                countRandRead(varp);
                 AstNodeModule* const varModp = VN_AS(varp->user2p(), NodeModule);
                 UASSERT_OBJ(varModp, nodep, "varp has no NodeModule set");
                 AstNodeDType* const dtypep = varp->dtypep()->skipRefp();
@@ -2453,11 +2468,12 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         callp->addPinsp(
             new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + prettyText + "\""});
-        // Names merged from branches the state chooses between, or from several folded items,
-        // can name a rand variable the randc-only part of the text does not, so the randc
-        // draw asserts this constraint too, with its rand variables free. A single item
-        // under a rand condition keeps names exact for its text, and stays out of the draw
-        // as IEEE 1800-2023 18.4.2 requires, as for 'if (c == 3) unique {v};'
+        // Names merged from branches the state chooses between, from several folded items, or
+        // around a branch naming no rand variable can name a rand variable the randc-only part
+        // of the text does not, so the randc draw asserts this constraint too, with its rand
+        // variables free. A single item involving a rand variable under a rand condition keeps
+        // names exact for its text, and stays out of the draw as IEEE 1800-2023 18.4.2
+        // requires, as for 'if (c == 3) unique {v};'
         if (method == VCMethod::RANDOMIZER_HARD && m_namesMerged) {
             callp->addPinsp(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
         }
