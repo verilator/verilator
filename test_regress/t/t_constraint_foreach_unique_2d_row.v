@@ -108,6 +108,33 @@ class ArraySliceSecond;
   endfunction
 endclass
 
+class GuardedRow;
+  rand bit en;
+  rand bit [1:0] grid[2][4];
+  constraint c {foreach (grid[i]) if (en) unique {grid[i]};}
+
+  function void rows_are_unique();
+    for (int r = 0; r < 2; r++) begin
+      for (int x = 0; x < 4; x++) begin
+        for (int y = x + 1; y < 4; y++) begin
+          `checkd(grid[r][x] == grid[r][y], 0)
+        end
+      end
+    end
+  endfunction
+endclass
+
+class ImpliedRow;
+  rand bit [1:0] grid[2][4];
+  constraint c {foreach (grid[i]) (i == 1) -> unique {grid[i]};}
+endclass
+
+class StateRows;
+  rand bit dummy;
+  bit [1:0] grid[2][3];
+  constraint c {foreach (grid[i]) unique {grid[i]};}
+endclass
+
 module t;
   initial begin
     Grid g;
@@ -117,6 +144,9 @@ module t;
     MemberRow mr;
     ArraySliceFirst asf;
     ArraySliceSecond ass;
+    GuardedRow gr;
+    ImpliedRow ir;
+    StateRows st;
     int i;
     g = new();
     rsi = new();
@@ -125,6 +155,9 @@ module t;
     mr = new();
     asf = new();
     ass = new();
+    gr = new();
+    ir = new();
+    st = new();
     repeat (20) begin
       i = g.randomize();
       `checkd(i, 1)
@@ -153,7 +186,28 @@ module t;
       i = ass.randomize();
       `checkd(i, 1)
       ass.arr_is_unique();
+
+      i = gr.randomize() with {en == 1;};
+      `checkd(i, 1)
+      gr.rows_are_unique();
+      i = gr.randomize() with {en == 0;};
+      `checkd(i, 1)
+
+      i = ir.randomize();
+      `checkd(i, 1)
+      for (int x = 0; x < 4; x++) begin
+        for (int y = x + 1; y < 4; y++) begin
+          `checkd(ir.grid[1][x] == ir.grid[1][y], 0)
+        end
+      end
     end
+
+    st.grid = '{'{0, 1, 2}, '{3, 1, 2}};
+    i = st.randomize();
+    `checkd(i, 1)
+    st.grid[1][0] = 1;
+    i = st.randomize();
+    `checkd(i, 0)
 
     $write("*-* All Finished *-*\n");
     $finish;

@@ -29,6 +29,13 @@ class ScalarAndArray;
   constraint c1 {unique {x, arr};}
 endclass
 
+class TwoScalarsAndArray;
+  rand bit [3:0] x;
+  rand bit [3:0] y;
+  rand bit [3:0] arr[4];
+  constraint c1 {unique {x, y, arr};}
+endclass
+
 typedef bit [4:0] row3_t[3];
 class FuncItem;
   rand bit [4:0] grid[3][3];
@@ -43,6 +50,7 @@ module t;
     automatic Cube cb = new;
     automatic WideRows wr = new;
     automatic ScalarAndArray sa = new;
+    automatic TwoScalarsAndArray tsa = new;
     automatic FuncItem fi = new;
     int ok;
     repeat (20) begin
@@ -52,6 +60,14 @@ module t;
       `checkd(ok, 1)
       ok = sa.randomize();
       `checkd(ok, 1)
+      ok = tsa.randomize();
+      `checkd(ok, 1)
+      `checkd(tsa.x == tsa.y, 0)
+      for (int i = 0; i < 4; i++) begin
+        for (int j = i + 1; j < 4; j++) begin
+          `checkd(tsa.arr[i] == tsa.arr[j], 0)
+        end
+      end
       ok = fi.randomize();
       `checkd(ok, 1)
     end

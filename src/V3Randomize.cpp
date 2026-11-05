@@ -1448,11 +1448,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
             argsp = AstNode::addNext(argsp, wrapWithCond(elemp, elemCondp, elemWidth));
         }
-        AstSFormatF* const newp = new AstSFormatF{fl, smtExpr, false, argsp};
-        // visit(AstConstraintExpr*) checks width() before translating; without
-        // this, it defaults wide and wraps the already-boolean text in != 0.
-        newp->dtypeSetBit();
-        return newp;
+        return new AstSFormatF{fl, smtExpr, false, argsp};
     }
 
     AstNodeExpr* editSingle(FileLine* fl, AstNode* itemsp) {
@@ -3220,16 +3216,32 @@ class ConstraintExprVisitor final : public VNVisitor {
                         const VNumRange& declRange = sliceSelp->declRange();
                         return declRange.lo() + (!declRange.ascending() ? sliceSize - 1 - k : k);
                     };
-                    AstNodeExpr* const distinctExprp
-                        = buildDistinctExprp(fl, sliceSize, [&](int k) -> AstNodeExpr* {
-                              AstNodeExpr* const clonep = basep->cloneTree(false);
-                              clonep->user1(true);
-                              AstArraySel* const elemp
-                                  = new AstArraySel{fl, clonep, elemOffset(k)};
-                              elemp->user1(true);
-                              return elemp;
-                          });
-                    nodep->replaceWith(new AstConstraintExpr{fl, distinctExprp});
+                    const bool randElems = sliceItemp->user1();
+                    AstNodeExpr* distinctExprp;
+                    {
+                        VL_RESTORER(m_constraintVarsp);
+                        m_constraintVarsp = &m_constraintVars;
+                        distinctExprp
+                            = buildDistinctExprp(fl, sliceSize, [&](int k) -> AstNodeExpr* {
+                                  AstNodeExpr* const clonep = basep->cloneTree(false);
+                                  clonep->user1(randElems);
+                                  AstArraySel* const elemp
+                                      = new AstArraySel{fl, clonep, elemOffset(k)};
+                                  elemp->user1(randElems);
+                                  return elemp;
+                              });
+                    }
+                    if (m_wantSingle) {
+                        nodep->replaceWith(distinctExprp);
+                    } else {
+                        // visit(AstConstraintExpr*) checks width() before translating; without
+                        // this, it defaults wide and wraps the already-boolean text in != 0.
+                        distinctExprp->dtypeSetBit();
+                        AstConstraintExpr* const exprp = new AstConstraintExpr{fl, distinctExprp};
+                        nodep->replaceWith(exprp);
+                        // Iterated next, and takes over the names recorded above
+                        m_foldTakerp = exprp;
+                    }
                     VL_DO_DANGLING(pushDeletep(nodep), nodep);
                     return;
                 }

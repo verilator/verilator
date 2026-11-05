@@ -28,4 +28,8 @@
                                                            : ... note: In instance 't'
    26 |     unique {uniq_val_wild};
       |     ^~~~~~
+%Warning-CONSTRAINTIGN: t/t_constraint_unsup_unq_arr.v:33:42: Unsupported: Unique constraint on array slices of size > 100
+                                                            : ... note: In instance 't'
+   33 |   constraint unique_c {foreach (wide[i]) unique {wide[i]};}
+      |                                          ^~~~~~
 %Error: Exiting due to
