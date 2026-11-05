@@ -1208,13 +1208,13 @@ The front end handles everything that does not depend on the solver:
 ``pre_randomize``/``post_randomize`` callbacks, ``rand_mode`` and
 ``constraint_mode`` state, randomization of unconstrained variables
 (``__VBasicRand``), ``randomize()`` arguments, and the capture of inline
-``with`` expressions. The lowering handles the constraints of each randomize
-site: a class ``randomize()``, a ``randomize() with``, a ``std::randomize()
-with`` and a ``randomize(null)``. Each site is lowered by one hook, which
-the front end calls at a fixed point of its own lowering. A hook returns
-the solver result for the front end to combine with ``__VBasicRand``,
-except for ``randomize() with``, where the hook assigns the return value
-itself.
+``with`` expressions. The lowering handles the constraints of each
+randomize site: a class ``randomize()``, a ``randomize() with``, a
+``std::randomize() with`` and a ``randomize(null)``. Each site is lowered
+by one hook, which the front end calls at a fixed point of its own
+lowering. A hook returns the solver result for the front end to combine
+with ``__VBasicRand``, except for ``randomize() with``, where the hook
+assigns the return value itself.
 
 The back-end also describes the runtime library its generated code needs:
 the header to include, the runtime sources to compile with the model, and
