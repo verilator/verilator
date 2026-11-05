@@ -3008,7 +3008,7 @@ public:
 //######################################################################
 // SMT-LIB solver back-end
 
-class SolverSmt final : public V3SolverBackend {
+class SolverSmtLowering final : public V3SolverLowering {
     // STATE
     int m_distNum = 0;  // Dist bucket variable counter within a class for var naming
     std::set<std::string> m_writtenVars;  // Track write_var calls per class to avoid duplicates
@@ -3976,12 +3976,12 @@ class SolverSmt final : public V3SolverBackend {
 
 public:
     // CONSTRUCTORS
-    SolverSmt(VMemberMap& memberMap, V3UniqueNames& uniqueNames, const RandModeVars& modeVars,
-              VNDeleter& deleter)
-        : V3SolverBackend{memberMap, uniqueNames, modeVars, deleter} {}
-    ~SolverSmt() override = default;
+    SolverSmtLowering(VMemberMap& memberMap, V3UniqueNames& uniqueNames,
+                      const RandModeVars& modeVars, VNDeleter& deleter)
+        : V3SolverLowering{memberMap, uniqueNames, modeVars, deleter} {}
+    ~SolverSmtLowering() override = default;
 
-    // V3SolverBackend
+    // V3SolverLowering
     void prepareClass(AstClass* classp) override { createRandomGenerator(classp); }
     void startClass(AstClass*) override {
         m_writtenVars.clear();  // Each class has its own set of written variables
@@ -4559,17 +4559,15 @@ public:
 //######################################################################
 // V3SolverSmt class functions
 
-std::unique_ptr<V3SolverBackend> V3SolverSmt::newBackend(VMemberMap& memberMap,
-                                                         V3UniqueNames& uniqueNames,
-                                                         const RandModeVars& modeVars,
-                                                         VNDeleter& deleter) {
-    return std::unique_ptr<V3SolverBackend>{
-        new SolverSmt{memberMap, uniqueNames, modeVars, deleter}};
+std::unique_ptr<V3SolverLowering> V3SolverSmt::newLowering(VMemberMap& memberMap,
+                                                           V3UniqueNames& uniqueNames,
+                                                           const RandModeVars& modeVars,
+                                                           VNDeleter& deleter) const {
+    return std::unique_ptr<V3SolverLowering>{
+        new SolverSmtLowering{memberMap, uniqueNames, modeVars, deleter}};
 }
 
-V3SolverRuntime V3SolverSmt::runtime() { return {"verilated_random.h", {"verilated_random.cpp"}}; }
-
-std::vector<std::string> V3SolverSmt::runtimeCFlags() {
+std::vector<std::string> V3SolverSmt::runtimeCFlags() const {
     std::vector<std::string> cflags;
     const std::string solver = V3Options::getenvVERILATOR_SOLVER();
     if (solver != "") {

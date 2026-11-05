@@ -14,35 +14,8 @@
 //
 //*************************************************************************
 // V3Randomize is split into a solver-neutral front end (V3Randomize.cpp) and
-// a constraint solver back-end, selected per run by V3SolverBackend::create().
-//
-// The front end owns pre/post_randomize callbacks, rand_mode/constraint_mode
-// state, __VBasicRand (randomization of unconstrained variables), argument
-// handling and the capture of inline 'with' expressions. A back-end owns
-// everything emitted to solve the constraints of a randomize site: a class
-// randomize(), a randomize() with {...}, a std::randomize() with {...} and a
-// randomize(null). Each site is lowered by a single hook, which the front end
-// calls at a fixed point of its own lowering.
-//
-// Contract between the front end and a back-end:
-//  * Input: the AST marked by RandomizeMarkVisitor (AstNodeExpr::user1() set
-//    on expressions depending on a randomized variable), the constraint blocks
-//    of the class, the rand_mode/constraint_mode state (RandomizeMode in
-//    user1() of the variables and constraints, the mode arrays in
-//    RandModeVars), and, for inline sites, the captured 'with' items.
-//  * Variable ownership: __VBasicRand skips variables with AstVar::user3()
-//    set. The front end sets it on variables named in a class's own
-//    constraints; a back-end sets it on any other variable it assigns, before
-//    the front end emits __VBasicRand for the class.
-//  * Output: a site hook either returns the solver result for the front end
-//    to combine with __VBasicRand, or for inline sites, where the order of
-//    __VBasicRand against the solver call matters, assigns the function's
-//    return value itself. All other statements go into the given function,
-//    or into members the back-end creates.
-//  * Constraint items are consumed: the front end deletes every AstConstraint
-//    once all sites are lowered, so a back-end may unlink or rewrite items.
-//  * A back-end runs within the V3Randomize pass, and may use the AstNode
-//    user fields that pass documents.
+// a constraint solver back-end. See V3SolverBackend.cpp for the contract
+// between them.
 //
 //*************************************************************************
 
@@ -81,10 +54,21 @@ union RandomizeMode final {
 };
 
 // The rand_mode/constraint_mode state arrays created by the front end
-struct RandModeVars final {
-    std::map<AstClass*, AstVar*> staticConstraintModeVars;  // Static constraint mode vars
-    std::map<AstClass*, AstVar*> staticRandModeVars;  // Static rand mode vars per class
+class RandModeVars final {
+    // MEMBERS
+    // Static constraint_mode array per root class
+    std::map<AstClass*, AstVar*> m_staticConstraintModeVars;
+    // Static rand_mode array per root class
+    std::map<AstClass*, AstVar*> m_staticRandModeVars;
 
+public:
+    // METHODS
+    void addStaticConstraintModeVar(AstClass* classp, AstVar* varp) {
+        m_staticConstraintModeVars.emplace(classp, varp);
+    }
+    void addStaticRandModeVar(AstClass* classp, AstVar* varp) {
+        m_staticRandModeVars.emplace(classp, varp);
+    }
     // Static constraint_mode array of classp, or of its nearest base class with one
     AstVar* staticConstraintModeVarp(AstClass* classp) const VL_MT_DISABLED;
     // Static rand_mode array of classp, or of its nearest base class with one
@@ -100,17 +84,10 @@ struct RandModeVars final {
 };
 
 //######################################################################
-// Runtime library needed by the code a back-end generates
+// Lowering of the randomize sites of one V3Randomize pass, created by
+// V3SolverBackend::newLowering()
 
-struct V3SolverRuntime final {
-    std::string header;  // Header included by the generated code
-    std::vector<std::string> sources;  // Runtime sources compiled with the model
-};
-
-//######################################################################
-// Constraint solver back-end
-
-class V3SolverBackend VL_NOT_FINAL {
+class V3SolverLowering VL_NOT_FINAL {
 protected:
     // MEMBERS, shared with the front end for one V3Randomize pass
     VMemberMap& m_memberMap;  // Member names cached for fast lookup
@@ -119,8 +96,8 @@ protected:
     VNDeleter& m_deleter;  // Deferred deletion of nodes removed by the back-end
 
     // CONSTRUCTORS
-    V3SolverBackend(VMemberMap& memberMap, V3UniqueNames& uniqueNames,
-                    const RandModeVars& modeVars, VNDeleter& deleter)
+    V3SolverLowering(VMemberMap& memberMap, V3UniqueNames& uniqueNames,
+                     const RandModeVars& modeVars, VNDeleter& deleter)
         : m_memberMap{memberMap}
         , m_uniqueNames{uniqueNames}
         , m_modeVars{modeVars}
@@ -130,17 +107,7 @@ protected:
     void pushDeletep(AstNode* nodep) { m_deleter.pushDeletep(nodep); }
 
 public:
-    // Back-end selected for this run, for one V3Randomize pass
-    static std::unique_ptr<V3SolverBackend> create(VMemberMap& memberMap,
-                                                   V3UniqueNames& uniqueNames,
-                                                   const RandModeVars& modeVars,
-                                                   VNDeleter& deleter) VL_MT_DISABLED;
-    // Runtime library of the back-end selected for this run
-    static V3SolverRuntime runtime() VL_MT_DISABLED;
-    // Flags for VM_USER_CFLAGS of the generated makefile, from the environment
-    static std::vector<std::string> runtimeCFlags() VL_MT_DISABLED;
-
-    virtual ~V3SolverBackend() = default;
+    virtual ~V3SolverLowering() = default;
 
     // Per class. prepareClass() is called before any class is lowered, for each
     // class that has constraint blocks, declared or inherited.
@@ -179,6 +146,27 @@ public:
         = 0;
     // randomize(null): add the constraint check to funcp, and return its result
     virtual AstNodeExpr* lowerCheckOnly(AstClass* classp, AstFunc* funcp) = 0;
+};
+
+//######################################################################
+// Constraint solver back-end selected for the run, see V3Global::solverBackendp()
+
+class V3SolverBackend VL_NOT_FINAL {
+public:
+    virtual ~V3SolverBackend() = default;
+
+    // Header of the runtime library, included by the generated code
+    virtual std::string runtimeHeader() const VL_MT_DISABLED = 0;
+    // Runtime sources compiled with the model
+    virtual std::vector<std::string> runtimeSources() const VL_MT_DISABLED = 0;
+    // Flags for VM_USER_CFLAGS of the generated makefile, from the environment
+    virtual std::vector<std::string> runtimeCFlags() const VL_MT_DISABLED = 0;
+
+    // Lowering for one V3Randomize pass, sharing the given state with the front end
+    virtual std::unique_ptr<V3SolverLowering>
+    newLowering(VMemberMap& memberMap, V3UniqueNames& uniqueNames, const RandModeVars& modeVars,
+                VNDeleter& deleter) const VL_MT_DISABLED
+        = 0;
 };
 
 #endif  // Guard

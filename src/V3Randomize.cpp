@@ -1123,7 +1123,7 @@ class RandomizeVisitor final : public VNVisitor {
     std::map<AstClass*, std::pair<bool, bool>>
         m_prePostWrap;  // Per-handle-type pre/post virtual wrapper presence
     RandModeVars m_modeVars;  // Static rand_mode/constraint_mode state vars per class
-    const std::unique_ptr<V3SolverBackend> m_solverp;  // Constraint solver back-end
+    const std::unique_ptr<V3SolverLowering> m_solverp;  // Constraint solver lowering
 
     // METHODS
     // Check if two nodes are semantically equivalent (not pointer equality):
@@ -1195,27 +1195,28 @@ class RandomizeVisitor final : public VNVisitor {
         return RandModeVars::constraintModeVarp(classp);
     }
     AstVar* getCreateStaticConstraintModeVar(AstClass* const classp) {
-        std::map<AstClass*, AstVar*>& modeVars = m_modeVars.staticConstraintModeVars;
-        auto it = modeVars.find(classp);
-        if (it != modeVars.end()) return it->second;
+        if (AstVar* const staticModeVarp = m_modeVars.staticConstraintModeVarp(classp)) {
+            return staticModeVarp;
+        }
         if (AstClassExtends* const extendsp = classp->extendsp()) {
             return getCreateStaticConstraintModeVar(extendsp->classp());
         }
         AstVar* const staticModeVarp = createStaticModeVar(classp, "__Vstaticconstraintmode");
-        modeVars[classp] = staticModeVarp;
+        m_modeVars.addStaticConstraintModeVar(classp, staticModeVarp);
         return staticModeVarp;
     }
     AstVar* getStaticConstraintModeVar(AstClass* const classp) {
         return m_modeVars.staticConstraintModeVarp(classp);
     }
     AstVar* getCreateStaticRandModeVar(AstClass* const classp) {
-        std::map<AstClass*, AstVar*>& modeVars = m_modeVars.staticRandModeVars;
-        if (modeVars.count(classp)) return modeVars[classp];
+        if (AstVar* const staticModeVarp = m_modeVars.staticRandModeVarp(classp)) {
+            return staticModeVarp;
+        }
         if (AstClassExtends* const extendsp = classp->extendsp()) {
             return getCreateStaticRandModeVar(extendsp->classp());
         }
         AstVar* const staticModeVarp = createStaticModeVar(classp, "__Vstaticrandmode");
-        modeVars[classp] = staticModeVarp;
+        m_modeVars.addStaticRandModeVar(classp, staticModeVarp);
         return staticModeVarp;
     }
     AstVar* getStaticRandModeVar(AstClass* const classp) {
@@ -1358,7 +1359,7 @@ class RandomizeVisitor final : public VNVisitor {
         for (const auto& kv : rootStaticRandModeCount) emitRootStaticModeInit(kv.first, kv.second);
     }
     void emitRootStaticModeInit(AstClass* const rootp, const uint32_t count) {
-        AstVar* const staticRandModeVarp = m_modeVars.staticRandModeVars[rootp];
+        AstVar* const staticRandModeVarp = m_modeVars.staticRandModeVarp(rootp);
         UASSERT_OBJ(staticRandModeVarp, rootp, "Root must have a static rand-mode var");
         makeStaticModeInit(staticRandModeVarp, rootp, count);
     }
@@ -2728,7 +2729,8 @@ public:
     // CONSTRUCTORS
     explicit RandomizeVisitor(AstNetlist* nodep)
         : m_inlineUniqueNames{"__Vrandwith"}
-        , m_solverp{V3SolverBackend::create(m_memberMap, m_uniqueNames, m_modeVars, deleter())} {
+        , m_solverp{v3Global.solverBackendp()->newLowering(m_memberMap, m_uniqueNames, m_modeVars,
+                                                           deleter())} {
         createRandomizeClassVars(nodep);
         // Flag local constraint leaves as solver-owned so __VBasicRand skips them.
         // Runs before any class is lowered. Only a randomized class counts, and

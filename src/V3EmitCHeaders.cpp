@@ -753,7 +753,7 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
             puts("#include \"verilated_covergroup.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
         if (v3Global.useRandomizeMethods())
-            puts("#include \"" + V3SolverBackend::runtime().header + "\"\n");
+            puts("#include \"" + v3Global.solverBackendp()->runtimeHeader() + "\"\n");
         if (v3Global.usesForce()) puts("#include \"verilated_force.h\"\n");
 
         std::set<string> cuse_set;

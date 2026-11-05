@@ -22,14 +22,16 @@
 
 #include "V3SolverBackend.h"
 
-class V3SolverSmt final {
+class V3SolverSmt final : public V3SolverBackend {
 public:
-    static std::unique_ptr<V3SolverBackend> newBackend(VMemberMap& memberMap,
-                                                       V3UniqueNames& uniqueNames,
-                                                       const RandModeVars& modeVars,
-                                                       VNDeleter& deleter) VL_MT_DISABLED;
-    static V3SolverRuntime runtime() VL_MT_DISABLED;
-    static std::vector<std::string> runtimeCFlags() VL_MT_DISABLED;
+    std::string runtimeHeader() const override VL_MT_DISABLED { return "verilated_random.h"; }
+    std::vector<std::string> runtimeSources() const override VL_MT_DISABLED {
+        return {"verilated_random.cpp"};
+    }
+    std::vector<std::string> runtimeCFlags() const override VL_MT_DISABLED;
+    std::unique_ptr<V3SolverLowering>
+    newLowering(VMemberMap& memberMap, V3UniqueNames& uniqueNames, const RandModeVars& modeVars,
+                VNDeleter& deleter) const override VL_MT_DISABLED;
 };
 
 #endif  // Guard

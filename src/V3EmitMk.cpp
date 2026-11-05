@@ -718,7 +718,7 @@ public:
         of.puts("# User CFLAGS (from -CFLAGS on Verilator command line)\n");
         of.puts("VM_USER_CFLAGS = \\\n");
         if (v3Global.useRandomizeMethods()) {
-            for (const string& flag : V3SolverBackend::runtimeCFlags())
+            for (const string& flag : v3Global.solverBackendp()->runtimeCFlags())
                 of.puts("\t" + flag + " \\\n");
         }
         if (!v3Global.opt.libCreate().empty()) of.puts("\t-fPIC \\\n");

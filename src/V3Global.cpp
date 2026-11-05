@@ -65,6 +65,7 @@ void V3Global::shutdown() {
     VL_DO_CLEAR(delete m_threadPoolp, m_threadPoolp = nullptr);  // delete nullptr is safe
     VL_DO_CLEAR(delete m_libMapp, m_libMapp = nullptr);  // delete nullptr is safe
     VL_DO_CLEAR(delete m_constPoolp, m_constPoolp = nullptr);  // delete nullptr is safe
+    VL_DO_CLEAR(delete m_solverBackendp, m_solverBackendp = nullptr);  // delete nullptr is safe
 #ifdef VL_LEAK_CHECKS
     if (m_rootp) VL_DO_CLEAR(m_rootp->deleteTree(), m_rootp = nullptr);
 #endif
@@ -256,7 +257,7 @@ std::vector<std::string> V3Global::verilatedCppFiles() {
     if (v3Global.usesProbDist()) result.emplace_back("verilated_probdist.cpp");
     if (v3Global.usesTiming()) result.emplace_back("verilated_timing.cpp");
     if (v3Global.useRandomizeMethods()) {
-        for (const string& source : V3SolverBackend::runtime().sources)
+        for (const string& source : v3Global.solverBackendp()->runtimeSources())
             result.emplace_back(source);
     }
     result.emplace_back("verilated_threads.cpp");
