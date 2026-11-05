@@ -44,7 +44,8 @@ inline bool isVlForceVec(const AstVarScope* vscp) {
 }
 
 inline bool isForceReadMethod(VCMethod method) {
-    return method == VCMethod::FORCE_READ || method == VCMethod::FORCE_READ_INDEX;
+    return method == VCMethod::FORCE_READ || method == VCMethod::FORCE_READ_INDEX
+           || method == VCMethod::FORCE_READ_SEL;
 }
 
 inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
@@ -68,7 +69,10 @@ inline void collectForceReadEdgeIgnores(AstNode* nodep, VarScopeSet& out) {
         const AstVarRef* const fromRefp = VN_CAST(callp->fromp(), VarRef);
         if (!fromRefp || !writtenForceVecs.count(fromRefp->varScopep())) return;
 
-        AstNodeExpr* const origp = callp->pinsp();
+        // readSel has the variable width before the original value
+        AstNode* const origp = callp->method() == VCMethod::FORCE_READ_SEL
+                                   ? callp->pinsp()->nextp()
+                                   : callp->pinsp();
         if (!origp) return;
         origp->foreach([&](const AstVarRef* refp) {
             AstVarScope* const vscp = refp->varScopep();

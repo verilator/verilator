@@ -1439,7 +1439,7 @@ List Of Warnings
 
 .. option:: MULTIDRIVEN
 
-   Warns that the specified signal has multiple procedural drivers.
+   Warns that the specified signal has multiple drivers.
 
    One case is when a variable written in an ``always_comb`` or
    ``always_ff`` block is also written by another process. IEEE 1800
@@ -1474,6 +1474,16 @@ List Of Warnings
    signal, so the design and the testbench contend for it and the
    synchronous drive may be silently lost. Declare the clocking block
    ``input`` if the intent is only to observe the signal.
+
+   A module output port connection is another driver of a wire net: a
+   wire with a declaration initializer or a continuous assignment that is
+   also connected to a module output port is multi-driven, and so is a
+   wire connected to two or more module output ports. A port only counts
+   as a driver if the instantiated module actually drives it; a port the
+   module never drives only ever contributes ``Z`` to the net. Tri-family
+   nets are excluded, as they resolve multiple drivers by design, and the
+   initializer of a ``logic``/``var`` variable is not a net driver, so
+   neither triggers this check.
 
    Ignoring this warning may hide clock domain crossing, timing, or
    portability bugs. It may also cause longer simulation runtimes due to

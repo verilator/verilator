@@ -1984,9 +1984,9 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             if (nodep->urandom()) {
-                nodep->dtypeSetUInt32();  // Says the spec
+                nodep->dtypeSetUInt32();  // IEEE 1800-2023 18.13.1
             } else {
-                nodep->dtypeSetInt();  // Says the spec
+                nodep->dtypeSetInt();  // IEEE 1800-2023 20.14.1
             }
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
@@ -2128,7 +2128,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstURandomRange* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            nodep->dtypeSetUInt32();  // Says the spec
+            nodep->dtypeSetUInt32();  // IEEE 1800-2023 18.13.2
             AstNodeDType* const expDTypep = nodep->findUInt32DType();
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
@@ -4179,8 +4179,9 @@ class WidthVisitor final : public VNVisitor {
             // MSB is first, so loop backwards
             for (itemp = nodep->membersp(); itemp && itemp->nextp();
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {}
+            bool isFourstate = false;
             for (; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
-                if (itemp->isFourstate()) nodep->isFourstate(true);
+                isFourstate |= itemp->isFourstate();
                 itemp->lsb(lsb);
                 if (VN_IS(nodep, UnionDType)) {
                     const int itemWidth = itemp->width();
@@ -4195,6 +4196,14 @@ class WidthVisitor final : public VNVisitor {
                     width += itemp->width();
                 }
                 first = false;
+            }
+            nodep->isFourstate(isFourstate);
+            if (nodep->packed()) {
+                VNumRange range{width - 1, 0};
+                nodep->refDTypep(
+                    VN_AS(isFourstate ? nodep->findLogicRangeDType(range, width, nodep->numeric())
+                                      : nodep->findBitRangeDType(range, width, nodep->numeric()),
+                          BasicDType));
             }
             nodep->widthForce(width, width);  // Signing stays as-is, as parsed from declaration
         } else {
@@ -6702,6 +6711,28 @@ class WidthVisitor final : public VNVisitor {
         if (const AstConsQueue* const queuep = VN_CAST(nodep, ConsQueue)) return queuep->sizep();
         return false;
     }
+    // Whether a value of type 'fromDtp' is never assignable to type 'toDtp'
+    static bool isNeverAssignable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp) {
+        // computeCastable does not decide a class handle or an unpacked array against a type of
+        // another kind (e.g. for a bit-stream cast), but a class handle is assignable only to a
+        // class handle, and only a class handle or null is assignable to one; and an unpacked
+        // array only from an unpacked array of assignable elements (IEEE 1800-2023 7.6). An
+        // empty queue '{}' is left to computeCastable, as it is reported elsewhere.
+        const AstNodeDType* const toSkipp = toDtp->skipRefp();
+        const AstNodeDType* const fromSkipp = fromDtp->skipRefp();
+        if (!VN_IS(fromSkipp, EmptyQueueDType)) {
+            const bool toArray = toSkipp->isNonPackedArray();
+            if (toArray && fromSkipp->isNonPackedArray()) {
+                return isNeverAssignable(toSkipp->subDTypep(), fromSkipp->subDTypep());
+            }
+            if (toArray != fromSkipp->isNonPackedArray()) return true;
+            if (VN_IS(toSkipp, ClassRefDType) != VN_IS(fromSkipp, ClassRefDType)) {
+                const AstBasicDType* const fromBasicp = VN_CAST(fromSkipp, BasicDType);
+                return !(fromBasicp && fromBasicp->keyword() == VBasicDTypeKwd::NULLTYPE);
+            }
+        }
+        return AstNode::computeCastable(toDtp, fromDtp, nullptr) == VCastable::INCOMPATIBLE;
+    }
     // Add 'valuep' to a dynamic array or queue constructor: as one element, or as an array whose
     // elements are spliced in. A constructor being spliced (e.g. a concatenation's left operand)
     // has its items moved over, or added one by one to convert them if its kind or element type
@@ -6710,18 +6741,28 @@ class WidthVisitor final : public VNVisitor {
     template <typename T_Item, typename T_Cons>
     void addConsItem(T_Cons* consp, AstNodeExpr* valuep) {
         AstNodeDType* const arrayDtp = consp->dtypep()->skipRefp();
-        // An element if assignable to the element type, else an array (IEEE 1800-2023 10.10)
-        const bool isElement
-            = AstNode::computeCastable(arrayDtp->subDTypep(), valuep->dtypep(), nullptr)
-                  .isAssignable();
+        AstNodeDType* const elemDtp = arrayDtp->subDTypep();
+        const AstNodeDType* const valueDtp = valuep->dtypep()->skipRefp();
+        // An element if assignable to the element type, else an array of such elements
+        // (IEEE 1800-2023 10.10)
+        const bool isElement = AstNode::computeCastable(elemDtp, valueDtp, nullptr).isAssignable();
+        if (!isElement && isNeverAssignable(elemDtp, valueDtp)
+            && (!valueDtp->isNonPackedArray()
+                || isNeverAssignable(elemDtp, valueDtp->subDTypep()))) {
+            valuep->v3error("Unpacked array concatenation item is neither an element nor"
+                            " an array of elements of its target (IEEE 1800-2023 10.10)"
+                            << warnDTypes(valuep, elemDtp, valuep->dtypep(), "Element", "Item"));
+            VL_DO_DANGLING(pushDeletep(valuep), valuep);
+            return;
+        }
         // A bounded queue to splice is constructed first, to truncate it, unless it has this
         // constructor's type (e.g. a nested concatenation), as truncating once keeps the same
         // elements, and warns once with the full attempted size
-        const AstQueueDType* const subQueueDtp = VN_CAST(valuep->dtypep()->skipRefp(), QueueDType);
+        const AstQueueDType* const subQueueDtp = VN_CAST(valueDtp, QueueDType);
         if (!isElement && !isKeyedCons(valuep)
             && !(subQueueDtp && subQueueDtp->boundp() && subQueueDtp != arrayDtp)) {
             T_Cons* const subp = AstNode::cast<T_Cons>(valuep);
-            if (subp && subp->dtypep()->skipRefp()->subDTypep() == arrayDtp->subDTypep()) {
+            if (subp && subp->dtypep()->skipRefp()->subDTypep() == elemDtp) {
                 if (subp->itemsp()) consp->addItemsp(subp->itemsp()->unlinkFrBackWithNext());
                 VL_DO_DANGLING(pushDeletep(subp), subp);
                 return;
@@ -6739,7 +6780,7 @@ class WidthVisitor final : public VNVisitor {
         consp->addItemsp(itemp);
         // Width the value now, as constructors are widthed when created
         if (isElement) {
-            iterateCheckTyped(itemp, "value", valuep, arrayDtp->subDTypep(), FINAL);
+            iterateCheckTyped(itemp, "value", valuep, elemDtp, FINAL);
         } else {
             userIterateAndNext(valuep, WidthVP{arrayDtp, FINAL}.p());
         }
