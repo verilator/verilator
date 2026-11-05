@@ -271,7 +271,7 @@ class PortLValueVisitor final : public VNVisitor {
     bool m_failed = false;  // Report only the first invalid destination
 
     // METHODS
-    void error(AstNodeExpr* nodep, const char* message) {
+    void portError(AstNodeExpr* nodep, const char* message) {
         if (m_failed) return;
         nodep->v3error(ucfirst(m_pinp->modVarp()->direction().prettyName())
                        << " port connection " << m_pinp->modVarp()->prettyNameQ() << " "
@@ -279,12 +279,12 @@ class PortLValueVisitor final : public VNVisitor {
         m_failed = true;
     }
     void nonConstantIndex(AstNodeExpr* nodep) {
-        error(nodep, "requires constant selection indices"
-                     " (IEEE 1800-2023 23.3.3, 10.2, A.8.5).");
+        portError(nodep, "requires constant selection indices"
+                         " (IEEE 1800-2023 23.3.3, 10.2, A.8.5).");
     }
     void dynamicElement(AstNodeExpr* nodep) {
-        error(nodep, "cannot write to a dynamically sized array element"
-                     " (IEEE 1800-2023 23.3.3, 6.21).");
+        portError(nodep, "cannot write to a dynamically sized array element"
+                         " (IEEE 1800-2023 23.3.3, 6.21).");
     }
 
     void iterateDestination(AstNode* nodep) {
@@ -336,8 +336,8 @@ class PortLValueVisitor final : public VNVisitor {
     void visit(AstMemberSel* nodep) override {
         // Static class properties have already been replaced with variable references.
         if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
-            error(nodep, "cannot write to a non-static class property"
-                         " (IEEE 1800-2023 23.3.3, 6.21).");
+            portError(nodep, "cannot write to a non-static class property"
+                             " (IEEE 1800-2023 23.3.3, 6.21).");
         }
     }
     // Function/method arguments compute values, not destinations.
