@@ -24,4 +24,12 @@ module t;
     $write("*-* All Finished *-*\n");
     $finish;
   end
+
+  class Cls;
+  endclass
+
+  initial begin
+    Cls cq[$];
+    cq = {cq, {}};
+  end
 endmodule
