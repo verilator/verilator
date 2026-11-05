@@ -357,13 +357,15 @@ class BeginVisitor final : public VNVisitor {
         }
     }
     void visit(AstTypedef* nodep) override {
-        if (m_unnamedScope != "") {
-            // Rename it
-            nodep->name(dot(m_unnamedScope, nodep->name()));
-            m_statep->userMarkChanged(nodep);
-            // Move it under enclosing tree
-            liftNode(nodep);
-        }
+        // Lift out of functions too, as later passes expect typedefs only under the module
+        const std::string scope
+            = m_ftaskp ? dot(m_ftaskp->name(), m_unnamedScope) : m_unnamedScope;
+        if (scope.empty()) return;
+        // Rename it
+        nodep->name(dot(scope, nodep->name()));
+        m_statep->userMarkChanged(nodep);
+        // Move it under enclosing module
+        m_modp->addStmtsp(nodep->unlinkFrBack());
     }
     void visit(AstCell* nodep) override {
         UINFO(8, "   CELL " << nodep);

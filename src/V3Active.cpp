@@ -122,7 +122,7 @@ public:
     ~LatchDetectGraph() override { clear(); }
     // ACCESSORS
     LatchDetectGraphVertex* currentp() { return m_curVertexp; }
-    void currentp(LatchDetectGraphVertex* vertex) { m_curVertexp = vertex; }
+    void currentp(LatchDetectGraphVertex* vertexp) { m_curVertexp = vertexp; }
     // METHODS
     void begin() {
         // Start a new if/else tracking graph
@@ -138,22 +138,22 @@ public:
         m_curVertexp = nullptr;
     }
     // Add a new control path and connect it to its parent
-    LatchDetectGraphVertex* addPathVertex(LatchDetectGraphVertex* parent, const string& name,
+    LatchDetectGraphVertex* addPathVertex(LatchDetectGraphVertex* parentp, const string& name,
                                           bool branch = false) {
         m_curVertexp = new LatchDetectGraphVertex{this, name,
                                                   branch ? LatchDetectGraphVertex::VT_BRANCH
                                                          : LatchDetectGraphVertex::VT_BLOCK};
-        new V3GraphEdge{this, parent, m_curVertexp, 1};
+        new V3GraphEdge{this, parentp, m_curVertexp, 1};
         return m_curVertexp;
     }
     // Add an infeasible control path (e.g. the absent else of a 'unique if' chain).  An output
     // vertex with user() set represents a path that assigns every output, which is what an
     // unreachable path must do.
-    void addUnreachableVertex(LatchDetectGraphVertex* parent) {
+    void addUnreachableVertex(LatchDetectGraphVertex* parentp) {
         LatchDetectGraphVertex* const vertexp
             = new LatchDetectGraphVertex{this, "UNREACHABLE", LatchDetectGraphVertex::VT_OUTPUT};
         vertexp->user(true);
-        new V3GraphEdge{this, parent, vertexp, 1};
+        new V3GraphEdge{this, parentp, vertexp, 1};
     }
     // Add a new output variable vertex and store a pointer to it in the user1 field of the
     // variables AstNode

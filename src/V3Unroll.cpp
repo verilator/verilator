@@ -148,8 +148,8 @@ static AstVarRef* unwrapToVarRef(AstNodeExpr* nodep, int minWidth) {
 static bool isVarPlus1(AstNode* nodep, const AstVarScope* vscp) {
     AstAdd* const addp = VN_CAST(nodep, Add);
     if (!addp || !addp->lhsp()->isOne()) return false;
-    const AstVarRef* const r = unwrapToVarRef(addp->rhsp(), addp->width());
-    return r && r->varScopep() == vscp;
+    const AstVarRef* const rp = unwrapToVarRef(addp->rhsp(), addp->width());
+    return rp && rp->varScopep() == vscp;
 }
 // Match a strict ascending loop bound 'idx < W'.  V3Const canonicalizes this to the
 // 'W > idx' form (Gt unsigned, GtS signed), so only that form is matched.
@@ -240,7 +240,7 @@ class UnrollOneVisitor final : VNVisitor {
         V3Number next{&value, value.width()};
         for (size_t i = 0; i <= limit; ++i) {
             VN_AS(testp->condp(), NodeBiop)->numberOperate(cond, boundp->num(), value);
-            if (!cond.isNeqZero()) return false;
+            if (!cond.isTrue()) return false;
             next.opAdd(value, one);
             value = next;
         }
@@ -367,7 +367,7 @@ class UnrollOneVisitor final : VNVisitor {
             if (condp->isZero()) {
                 // Loop terminates
                 m_state = State::TERMINATED;
-            } else if (condp->isNeqZero()) {
+            } else if (condp->isTrue()) {
                 // Loop continues
             } else {
                 // Loop condition unknown - cannot unroll
@@ -386,9 +386,11 @@ class UnrollOneVisitor final : VNVisitor {
             AstConst* const valp = VN_CAST(V3Const::constifyEdit(nodep->rhsp()), Const);
             if (lhsp && valp && !lhsp->varp()->isForced() && !lhsp->varp()->isSigUserRWPublic()) {
                 m_bindings.set(lhsp->varScopep(), valp);
-            } else {
-                // Otherwise just like a generic statement
-                process(nodep->lhsp());
+            } else if (process(nodep->lhsp())) {
+                // Fold the substituted index of a selected bit range
+                if (AstSel* const selp = VN_CAST(nodep->lhsp(), Sel)) {
+                    V3Const::constifyEdit(selp->lsbp());
+                }
             }
         }
         emit(nodep);
@@ -397,7 +399,7 @@ class UnrollOneVisitor final : VNVisitor {
         if (process(nodep->condp())) {
             // If condition is constant, process the statements of the relevant branch instead
             if (AstConst* const condp = VN_CAST(V3Const::constifyEdit(nodep->condp()), Const)) {
-                AstNode* stmtp = condp->isNeqZero() ? nodep->thensp() : nodep->elsesp();
+                AstNode* stmtp = condp->isTrue() ? nodep->thensp() : nodep->elsesp();
                 while (stmtp && m_state == State::UNROLL) {
                     AstNode* const nextp = stmtp->nextp();
                     iterate(stmtp->unlinkFrBack());
@@ -473,8 +475,8 @@ class UnrollAllVisitor final : VNVisitor {
         AstNodeBiop* const bp = VN_AS(condp, NodeBiop);
         const AstConst* const cp = VN_CAST(bp->lhsp(), Const);
         if (!cp || cp->num().isFourState() || cp->toUInt() < width - 1) return false;
-        const AstVarRef* const r = unwrapToVarRef(bp->rhsp(), addrBits);
-        return r && r->varScopep() == idxVscp;
+        const AstVarRef* const rp = unwrapToVarRef(bp->rhsp(), addrBits);
+        return rp && rp->varScopep() == idxVscp;
     }
     // Recognize a single-bit scan loop over all W bits of 'vec' (idx 0..W-1, target
     // pre-zeroed) and lower it to a bit-reduction primitive.  Two idioms are matched:
@@ -534,8 +536,8 @@ class UnrollAllVisitor final : VNVisitor {
         // Must scan all W bits of 'vec', indexed by exactly 'idx' (address kept >= clog2(W),
         // so a lossy narrowing like vec[idx[2:0]] is rejected).
         if (static_cast<int>(width) != vecExprp->width()) return false;
-        const AstVarRef* const idxInSel = unwrapToVarRef(selp->lsbp(), addrBits);
-        if (!idxInSel || idxInSel->varScopep() != idxVscp) return false;
+        const AstVarRef* const idxInSelp = unwrapToVarRef(selp->lsbp(), addrBits);
+        if (!idxInSelp || idxInSelp->varScopep() != idxVscp) return false;
         // 'target' must be const-0 immediately before the loop (collected in m_bindings),
         // so that an all-zero 'vec' yields 0, matching $mostsetbitp1's definition.
         const AstConst* const targetInitp = m_bindings.get(targetVscp);

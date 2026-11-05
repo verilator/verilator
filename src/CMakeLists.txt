@@ -59,11 +59,11 @@ set(HEADERS
     V3Broken.h
     V3CCtors.h
     V3CUse.h
+    V3CallTargets.h
     V3Case.h
     V3Cast.h
     V3Cfg.h
     V3Class.h
-    V3ClassGraph.h
     V3Clean.h
     V3Clock.h
     V3Combine.h
@@ -230,13 +230,13 @@ set(COMMON_SOURCES
     V3Broken.cpp
     V3CCtors.cpp
     V3CUse.cpp
+    V3CallTargets.cpp
     V3Case.cpp
     V3Cast.cpp
     V3Cfg.cpp
     V3CfgBuilder.cpp
     V3CfgLiveVariables.cpp
     V3Class.cpp
-    V3ClassGraph.cpp
     V3Clean.cpp
     V3Clock.cpp
     V3Combine.cpp

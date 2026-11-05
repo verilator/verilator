@@ -377,7 +377,11 @@ class EmitCImp final : public EmitCFunc {
                             // System C top I/O doesn't need loading, as the
                             // lower level subinst code does it.
                         } else if (varp->isParam()) {
-                        } else if (VN_IS(varp->dtypep(), NBACommitQueueDType)) {
+                        } else if (VN_IS(varp->dtypep(), ClosurePoolDType)) {
+                            // Closure pools are not saved, they are simply memory pools
+                        } else if (varp->basicp() && varp->basicp()->isNbaGenericQueue()) {
+                            // NBAs enqueued in an eval are committed by its end. Those made by
+                            // a DPI export called between evals are pending, so a save drops them
                         } else {
                             int vects = 0;
                             AstNodeDType* elementp = varp->dtypeSkipRefp();
@@ -449,10 +453,10 @@ class EmitCImp final : public EmitCFunc {
     void emitCFuncImp() {
         for (const AstNodeModule* const modp : m_modps) {
             VL_RESTORER(m_modp);
-            VL_RESTORER(m_classOrPackage);
+            VL_RESTORER(m_classOrPackagep);
             m_modp = modp;
             const AstClass* const classp = VN_CAST(modp, Class);
-            m_classOrPackage = classp ? classp->classOrPackagep() : VN_CAST(modp, ClassPackage);
+            m_classOrPackagep = classp ? classp->classOrPackagep() : VN_CAST(modp, ClassPackage);
             for (AstNode* const nodep : modp->stmtspList()) {
                 AstCFunc* const funcp = VN_CAST(nodep, CFunc);
                 if (!funcp || !isImpFunc(funcp)) continue;

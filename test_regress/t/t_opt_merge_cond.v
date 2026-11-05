@@ -171,6 +171,28 @@ module t (
     for (genvar i = 0; i < 64; i = i + 1) assign shuf_w[i] = cyc[2] ? crc[i] : crc[63-i];
   endgenerate
 
+  // Merge 'value & cond' interleaved with '?:' on the same condition (#9005)
+  always @(posedge clk) begin
+    reg c, a, b, d, e;
+    reg c_q, a_q, b_q, d_q, e_q;
+    reg y1, y2, y3, y4;
+
+    {c, a, b, d, e} <= crc[4:0];
+    {c_q, a_q, b_q, d_q, e_q} <= {c, a, b, d, e};
+
+    y1 <= a & c;
+    y2 <= c ? b : d;
+    y3 <= e & c;
+    y4 <= c ? d : b;
+
+    if (cyc > 1) begin
+      `check(y1, a_q & c_q);
+      `check(y2, c_q ? b_q : d_q);
+      `check(y3, e_q & c_q);
+      `check(y4, c_q ? d_q : b_q);
+    end
+  end
+
   // Things not to merge
   always @(posedge clk) begin
     reg bits[63:0];

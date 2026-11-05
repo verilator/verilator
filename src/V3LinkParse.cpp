@@ -454,15 +454,15 @@ class LinkParseVisitor final : public VNVisitor {
                         if (!rhsDotp) break;
                         FileLine* const fl = dotp->fileline();
                         const bool colon = dotp->colon();
-                        AstNodeExpr* const lhs = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
-                        AstNodeExpr* const rhsLhs
+                        AstNodeExpr* const lhsp = VN_AS(dotp->lhsp()->unlinkFrBack(), NodeExpr);
+                        AstNodeExpr* const rhsLhsp
                             = VN_AS(rhsDotp->lhsp()->unlinkFrBack(), NodeExpr);
-                        AstNodeExpr* const rhsRhs
+                        AstNodeExpr* const rhsRhsp
                             = VN_AS(rhsDotp->rhsp()->unlinkFrBack(), NodeExpr);
                         FileLine* const rhsFl = rhsDotp->fileline();
                         const bool rhsColon = rhsDotp->colon();
-                        AstDot* const newLhs = new AstDot{fl, colon, lhs, rhsLhs};
-                        exprp = new AstDot{rhsFl, rhsColon, newLhs, rhsRhs};
+                        AstDot* const newLhsp = new AstDot{fl, colon, lhsp, rhsLhsp};
+                        exprp = new AstDot{rhsFl, rhsColon, newLhsp, rhsRhsp};
                         VL_DO_DANGLING(dotp->deleteTree(), dotp);
                         dotp = VN_CAST(exprp, Dot);
                     }
@@ -1460,6 +1460,20 @@ class LinkParseVisitor final : public VNVisitor {
         return refp ? refp->name() : "";
     }
 
+    AstVar* createCoverItemOption(AstNodeFuncCovItem* itemp, const string& typeName) {
+        AstClass* const cgClassp = VN_AS(m_modp, Class);
+        AstVar* const optionp = new AstVar{
+            cgClassp->fileline(), VVarType::MEMBER, "__Vcg_" + itemp->name() + "__option",
+            VFlagChildDType{},
+            new AstRefDType{itemp->fileline(), typeName,
+                            new AstClassOrPackageRef{itemp->fileline(), "std", nullptr, nullptr},
+                            nullptr}};
+        optionp->isInternal(true);
+        cgClassp->addMembersp(optionp);
+        itemp->optionVarp(optionp);
+        return optionp;
+    }
+
     // The coverpoint of the current covergroup a cross item names, or null
     const AstCoverpoint* findCoverpoint(const AstCoverpointRef* refp) const {
         if (refp->exprp()) return nullptr;  // A hierarchical reference, unsupported
@@ -1480,6 +1494,7 @@ class LinkParseVisitor final : public VNVisitor {
             const string name = coverpointName(nodep);
             nodep->name(name.empty() ? "__Vcoverpoint" + cvtToStr(m_coverpointNum++) : name);
         }
+        createCoverItemOption(nodep, "vl_coverpoint_options_t");
         // Re-sort the parse-time mixed bins list (AstCoverBin + AstCgOptionAssign)
         // into the typed binsp and optionsp slots.  The grammar attaches both node types
         // to binsp (op2) as a raw List[AstNode]; now that they are properly parented we
@@ -1588,6 +1603,7 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstCoverCross* nodep) override {
         cleanFileline(nodep);
+        createCoverItemOption(nodep, "vl_cross_options_t");
         // Move options out of the mixed parse-time body, leaving only cross bins.
         for (AstNode* const itemp : nodep->binspList()) {
             if (VN_IS(itemp, CoverCrossBin)) continue;

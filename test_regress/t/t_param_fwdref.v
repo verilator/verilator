@@ -179,14 +179,18 @@ module ModType #(
 endmodule
 
 module ModValue #(
+    // verilator lint_off USEBEFOREDECL
     int A = B,
+    // verilator lint_on USEBEFOREDECL
     int B = 1
 );
   int a = A;
 endmodule
 
 module ModRange #(
+    // verilator lint_off USEBEFOREDECL
     logic [B:0] A = 0,
+    // verilator lint_on USEBEFOREDECL
     int B = 1
 );
   logic [B:0] a = A;
@@ -201,8 +205,10 @@ endmodule
 
 module ModAll #(
     type TA = TB,
+    // verilator lint_off USEBEFOREDECL
     int VA = VB,
     logic [VB:0] RA = 0,
+    // verilator lint_on USEBEFOREDECL
     TB DA = 0,
     int VB = 1,
     type TB = int
@@ -265,7 +271,9 @@ module ModPatKey #(
 endmodule
 
 module ModPatVal #(
+    // verilator lint_off USEBEFOREDECL
     s_t P = '{MEMBER: VAL},
+    // verilator lint_on USEBEFOREDECL
     logic [7:0] VAL = 3
 );
   logic [7:0] m = P.MEMBER + VAL;

@@ -59,7 +59,11 @@ bool AstNode::isZero() const {
 bool AstNode::isNeqZero() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isNeqZero());
 }
+bool AstNode::isTrue() const { return (VN_IS(this, Const) && VN_AS(this, Const)->num().isTrue()); }
 bool AstNode::isOne() const { return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqOne()); }
+bool AstNode::isAnyXZ() const {
+    return (VN_IS(this, Const) && VN_AS(this, Const)->num().isAnyXZ());
+}
 bool AstNode::isAllOnes() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->isEqAllOnes());
 }
@@ -124,6 +128,8 @@ AstPackArrayDType::AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* 
     widthForce(width, width);
 }
 
+AstNodeDType* AstClosurePoolDType::subDTypep() const VL_MT_STABLE { return m_subDTypep; }
+
 int AstQueueDType::boundConst() const VL_MT_STABLE {
     const AstConst* const constp = VN_CAST(boundp(), Const);
     return (constp ? constp->toSInt() : 0);
@@ -148,6 +154,7 @@ bool AstActive::hasClocked() const { return m_sentreep->hasClocked(); }
 bool AstActive::hasCombo() const { return m_sentreep->hasCombo(); }
 bool AstActive::hasInitial() const { return m_sentreep->hasInitial(); }
 bool AstActive::hasStatic() const { return m_sentreep->hasStatic(); }
+bool AstActive::isPostponed() const { return VN_IS(stmtsp(), AlwaysPostponed); }
 
 bool AstNodeModule::isDollarUnit() const { return this == v3Global.rootp()->dollarUnitPkgp(); }
 bool AstNodeModule::isConstPool() const { return this == v3Global.rootp()->constPoolPkgp(); }

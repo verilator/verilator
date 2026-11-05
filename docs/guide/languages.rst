@@ -331,14 +331,6 @@ All specify blocks and timing checks are ignored. All min:typ:max delays
 use the typical value.
 
 
-Array Initialization
---------------------
-
-When initializing a large array, you need to use non-delayed assignments.
-Verilator will tell you when this needs to be fixed; see the BLKLOOPINIT
-error for more information.
-
-
 Array Out of Bounds
 -------------------
 

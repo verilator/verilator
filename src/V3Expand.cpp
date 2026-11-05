@@ -911,12 +911,12 @@ class ExpandVisitor final : public VNVisitor {
                 // valid range of nodep which we apply to the new shifted RHS.
                 V3Number cleanmask{nodep, destp->widthMin()};
                 cleanmask.setMask(destp->widthMin());
-                AstNodeExpr* const shifted = new AstShiftL{
+                AstNodeExpr* const shiftedp = new AstShiftL{
                     lfl, rhsp, new AstConst{lfl, static_cast<uint32_t>(lsb)}, destp->width()};
-                AstNodeExpr* const cleaned
-                    = new AstAnd{lfl, shifted, new AstConst{lfl, cleanmask}};
+                AstNodeExpr* const cleanedp
+                    = new AstAnd{lfl, shiftedp, new AstConst{lfl, cleanmask}};
                 AstNodeExpr* const orp
-                    = V3Const::constifyEditCpp(new AstOr{lfl, oldvalp, cleaned});
+                    = V3Const::constifyEditCpp(new AstOr{lfl, oldvalp, cleanedp});
                 insertBefore(nodep, new AstAssign{nfl, destp, orp});
             }
             return true;

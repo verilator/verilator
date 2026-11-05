@@ -518,6 +518,7 @@ public:
         DELAY_SCHEDULER,
         TRIGGER_SCHEDULER,
         DYNAMIC_TRIGGER_SCHEDULER,
+        NBA_GENERIC_QUEUE,
         FORK_SYNC,
         PROCESS_REFERENCE,
         RANDOM_GENERATOR,
@@ -557,6 +558,7 @@ public:
                                                       "VlDelayScheduler",
                                                       "VlTriggerScheduler",
                                                       "VlDynamicTriggerScheduler",
+                                                      "VlNbaGenericQueue",
                                                       "VlFork",
                                                       "VlProcessRef",
                                                       "VlRandomizer",
@@ -601,6 +603,7 @@ public:
                                                       "%E-dly-sched",
                                                       "%E-trig-sched",
                                                       "%E-dyn-sched",
+                                                      "%E-nba-queue",
                                                       "%E-fork",
                                                       "%E-proc-ref",
                                                       "%E-rand-gen",
@@ -647,6 +650,7 @@ public:
         case DELAY_SCHEDULER: return 0;  // opaque
         case TRIGGER_SCHEDULER: return 0;  // opaque
         case DYNAMIC_TRIGGER_SCHEDULER: return 0;  // opaque
+        case NBA_GENERIC_QUEUE: return 0;  // opaque
         case FORK_SYNC: return 0;  // opaque
         case PROCESS_REFERENCE: return 0;  // opaque
         case RANDOM_GENERATOR: return 0;  // opaque
@@ -694,9 +698,10 @@ public:
     bool isOpaque() const VL_MT_SAFE {  // IE not a simple number we can bit optimize
         return (m_e == EVENT || m_e == STRING || m_e == SCOPEPTR || m_e == CHARPTR
                 || m_e == DELAY_SCHEDULER || m_e == TRIGGER_SCHEDULER
-                || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == FORK_SYNC || m_e == PROCESS_REFERENCE
-                || m_e == RANDOM_GENERATOR || m_e == RANDOM_STDGENERATOR
-                || m_e == COVERGROUP_INSTHANDLE || m_e == DOUBLE || m_e == UNTYPED);
+                || m_e == DYNAMIC_TRIGGER_SCHEDULER || m_e == NBA_GENERIC_QUEUE || m_e == FORK_SYNC
+                || m_e == PROCESS_REFERENCE || m_e == RANDOM_GENERATOR
+                || m_e == RANDOM_STDGENERATOR || m_e == COVERGROUP_INSTHANDLE || m_e == DOUBLE
+                || m_e == UNTYPED);
     }
     bool isCHandle() const VL_MT_SAFE { return m_e == CHANDLE; }
     bool isDouble() const VL_MT_SAFE { return m_e == DOUBLE; }
@@ -780,6 +785,7 @@ public:
             /* DELAY_SCHEDULER:           */ "",  // Should not be traced
             /* TRIGGER_SCHEDULER:         */ "",  // Should not be traced
             /* DYNAMIC_TRIGGER_SCHEDULER: */ "",  // Should not be traced
+            /* NBA_GENERIC_QUEUE:         */ "",  // Should not be traced
             /* FORK_SYNC:                 */ "",  // Should not be traced
             /* PROCESS_REFERENCE:         */ "",  // Should not be traced
             /* RANDOM_GENERATOR:          */ "",  // Should not be traced
@@ -825,6 +831,7 @@ public:
     bool isKnown() const { return m_e != BU_UNKNOWN; }
     bool trueKnown() const { return m_e == BU_TRUE; }
     void setTrueOrFalse(bool flag) { m_e = flag ? BU_TRUE : BU_FALSE; }
+    constexpr operator en() const { return m_e; }
 };
 constexpr bool operator==(const VBoolOrUnknown& lhs, const VBoolOrUnknown& rhs) {
     return lhs.m_e == rhs.m_e;
@@ -955,6 +962,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(ASSOC_NEXT,                         "next",                   false,  CLEAN,  false,      "m") \
     macro(ASSOC_SIZE,                         "size",                   PURE,   CLEAN,  false,      "") \
     macro(CLASS_SET_RANDMODE,                 "set_randmode",           false,  CLEAN,  false,      "r") \
+    macro(CLOSURE_POOL_RELEASE,               "release",                false,  CLEAN,  false,      "w") \
     macro(COVERGROUP_ADD_ARRAY_NAMER,         "addArrayNamer",          false,  CLEAN,  false,      "r+") \
     macro(COVERGROUP_ADD_BIN,                 "addBin",                 false,  CLEAN,  false,      "r+") \
     macro(COVERGROUP_ADD_COVERPOINT,          "addCoverpoint",          false,  CLEAN,  false,      "") \
@@ -977,7 +985,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(COVERGROUP_LEND_WEIGHT,             "lendWeight",             false,  CLEAN,  false,      "rr") \
     macro(COVERGROUP_MERGED_COVERAGE,         "mergedCoverage",         false,  CLEAN,  false,      "r") \
     macro(COVERGROUP_RECORD_HIT,              "recordHit",              false,  CLEAN,  false,      "r") \
-    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  CLEAN,  false,      "rrrr") \
+    macro(COVERGROUP_REGISTER_BINS,           "registerBins",           false,  CLEAN,  false,      "rrrrr") \
     macro(COVERGROUP_SAMPLE,                  "sample",                 false,  CLEAN,  false,      "") \
     macro(COVERGROUP_SAMPLE_IFFS,             "sample",                 false,  CLEAN,  false,      "r") \
     macro(COVERGROUP_SELECT_ALL,              "selectAll",              false,  CLEAN,  false,      "") \
@@ -1054,8 +1062,7 @@ static constexpr bool validateArgsDescriptor(const char* descrp) {
     macro(FORK_INIT,                          "init",                   false,  CLEAN,  false,      "rr") \
     macro(FORK_JOIN,                          "join",                   false,  CLEAN,  AWAITABLE,  "rrr") \
     macro(FORK_ON_KILL,                       "onKill",                 false,  CLEAN,  false,      "r") \
-    macro(NBA_COMMIT,                         "commit",                 false,  CLEAN,  false,      "w") \
-    macro(NBA_ENQUEUE,                        "enqueue",                false,  CLEAN,  false,      "r+") \
+    macro(NBA_GENERIC_QUEUE_COMMIT_TRIGGER,   "commitTrigger",          false,  CLEAN,  false,      "") \
     macro(RANDOMIZER_BASIC_STD_RANDOMIZATION, "basicStdRandomization",  false,  CLEAN,  false,      "mr") \
     macro(RANDOMIZER_CLEARCONSTRAINTS,        "clearConstraints",       false,  CLEAN,  false,      "") \
     macro(RANDOMIZER_CLEARALL,                "clearAll",               false,  CLEAN,  false,      "") \
@@ -1648,7 +1655,6 @@ public:
         ET_EVENT,  // VlEventBase::isFired
         // Involving an expression
         ET_TRUE,
-        ET_INITIAL_NBA,  // Event that is fired initially and never again
         //
         ET_COMBO,  // Sensitive to all combo inputs to this block
         ET_COMBO_STAR,  // Sensitive to all combo inputs to this block (from .*)
@@ -1667,7 +1673,6 @@ public:
             true,  // ET_NEGEDGE
             true,  // ET_EVENT
             true,  // ET_TRUE
-            true,  // ET_INITIAL_NBA
 
             false,  // ET_COMBO
             false,  // ET_COMBO_STAR
@@ -1691,14 +1696,14 @@ public:
     }
     const char* ascii() const {
         static constexpr const char* const names[]
-            = {"CHANGED", "BOTH",       "POS",    "NEG",    "EVENT",   "TRUE",  "ET_INITIAL_NBA",
-               "COMBO",   "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
+            = {"CHANGED",    "BOTH",   "POS",    "NEG",     "EVENT", "TRUE", "COMBO",
+               "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
         return names[m_e];
     }
     const char* verilogKwd() const {
-        static constexpr const char* const names[] = {
-            "[changed]", "edge", "posedge",  "negedge",  "[event]",   "[true]",  "[initial_nba]",
-            "*",         "*",    "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
+        static constexpr const char* const names[]
+            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]", "*",
+               "*",         "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
         return names[m_e];
     }
     // Return true iff this and the other have mutually exclusive transitions
@@ -2088,6 +2093,7 @@ public:
         NO_INLINE_TASK,
         PUBLIC_MODULE,
         PUBLIC_TASK,
+        THREADS_GROUP,
         TIMEUNIT_SET,
         UNROLL_DISABLE,
         UNROLL_FULL,
@@ -2107,6 +2113,7 @@ public:
             "NO_INLINE_TASK",  //
             "PUBLIC_MODULE",  //
             "PUBLIC_TASK",  //
+            "THREADS_GROUP",  //
             "TIMEUNIT_SET",  //
             "UNROLL_DISABLE",  //
             "UNROLL_FULL",  //

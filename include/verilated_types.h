@@ -35,8 +35,10 @@
 #include <initializer_list>
 #include <map>
 #include <memory>
+#include <new>
 #include <set>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 class VlClass;
@@ -1940,177 +1942,92 @@ void VlQueue<T_Value, N_MaxSize>::renew_copy(
 }
 
 //===================================================================
-// Helper to apply the given indices to a target expression
+// VlClosure is the base class for generated structures holding
+// values captured in one execution context, together with a function
+// to be executed later in a different context
 
-template <size_t N_Curr, size_t N_Rank, typename T_Target>
-struct VlApplyIndices final {
-    VL_ATTR_ALWINLINE
-    static auto& apply(T_Target& target, const size_t* indicesp) {
-        return VlApplyIndices<N_Curr + 1, N_Rank, decltype(target[indicesp[N_Curr]])>::apply(
-            target[indicesp[N_Curr]], indicesp);
-    }
-};
-
-template <size_t N_Rank, typename T_Target>
-struct VlApplyIndices<N_Rank, N_Rank, T_Target> final {
-    VL_ATTR_ALWINLINE
-    static T_Target& apply(T_Target& target, const size_t*) { return target; }
-};
-
-//===================================================================
-// Commit queue for NBAs - currently only for unpacked arrays
-//
-// This data-structure is used to handle non-blocking assignments
-// that might execute a variable number of times in a single
-// evaluation. It has 2 operations:
-// - 'enqueue' will add an update to the queue
-// - 'commit' will apply all enqueued updates to the target variable,
-//   in the order they were enqueued. This ensures the last NBA
-//   takes effect as it is expected.
-// There are 2 specializations of this class below:
-// - A version when a partial element update is not required,
-//   e.g, to handle:
-//      logic [31:0] array[N];
-//      for (int i = 0 ; i < N ; ++i) array[i] <= x;
-//   Here 'enqueue' takes the RHS ('x'), and the array indices ('i')
-//   as arguments.
-// - A different version when a partial element update is required,
-//   e.g. for:
-//      logic [31:0] array[N];
-//      for (int i = 0 ; i < N ; ++i) array[i][3:1] <= y;
-//   Here 'enqueue' takes one additional argument, which is a bitmask
-//   derived from the bit selects (_[3:1]), which masks the bits that
-//   need to be updated, and additionally the RHS is widened to a full
-//   element size, with the bits inserted into the masked region.
-template <typename T_Target,  // Type of the variable this commit queue updates
-          bool Partial,  // Whether partial element updates are necessary
-          // The following we could figure out from 'T_Target using type traits, but passing
-          // explicitly to avoid template expansion, as Verilator already knows them
-          typename T_Element,  // Non-array leaf element type of T_Target array
-          std::size_t N_Rank  // Rank of T_Target (i.e.: how many dimensions it has)
-          >
-class VlNBACommitQueue;
-
-// Specialization for whole element updates only
-template <typename T_Target, typename T_Element, std::size_t N_Rank>
-class VlNBACommitQueue<T_Target, /* Partial: */ false, T_Element, N_Rank> final {
-    // TYPES
-    struct Entry final {
-        T_Element value;
-        size_t indices[N_Rank];
+template <typename T_Syms>
+struct VlClosure VL_NOT_FINAL {
+    union {
+        // The function to execute with this closure
+        void (*m_funcp)(T_Syms* symsp, VlClosure<T_Syms>* closurep);
+        // The next free closure structure, while in the pool
+        VlClosure<T_Syms>* m_nextp;
     };
-
-    // STATE
-    std::vector<Entry> m_pending;  // Pending updates, in program order
-
-public:
-    // CONSTRUCTOR
-    VlNBACommitQueue() = default;
-    VL_UNCOPYABLE(VlNBACommitQueue);
-
-    // METHODS
-    template <typename... T_Args>
-    void enqueue(const T_Element& value, T_Args... indices) {
-        m_pending.emplace_back(Entry{value, {indices...}});
-    }
-
-    // Note: T_Commit might be different from T_Target. Specifically, when the signal is a
-    // top-level IO port, T_Commit will be a native C array, while T_Target, will be a VlUnpacked
-    template <typename T_Commit>
-    void commit(T_Commit& target) {
-        if (m_pending.empty()) return;
-        for (const Entry& entry : m_pending) {
-            VlApplyIndices<0, N_Rank, T_Commit>::apply(target, entry.indices) = entry.value;
-        }
-        m_pending.clear();
-    }
 };
 
-// With partial element updates
-template <typename T_Target, typename T_Element, std::size_t N_Rank>
-class VlNBACommitQueue<T_Target, /* Partial: */ true, T_Element, N_Rank> final {
-    // TYPES
-    struct Entry final {
-        T_Element value;
-        T_Element mask;
-        size_t indices[N_Rank];
-    };
-
+// Pool of closures of type T_Closure, to allow reuse without heap churn
+template <typename T_Closure>
+class VlClosurePool final {
     // STATE
-    std::vector<Entry> m_pending;  // Pending updates, in program order
+    std::vector<std::unique_ptr<T_Closure[]>> m_chunks;  // All allocated closures, in chunks
+    T_Closure* m_freep = nullptr;  // Head of the free list
 
-    // STATIC METHODS
-
-    // Binary & | ~ for elements to use for masking in partial updates. Sorry for the templates.
-    template <typename T>
-    VL_ATTR_ALWINLINE static typename std::enable_if<!VlIsVlWide<T>::value, T>::type
-    bAnd(const T& a, const T& b) {
-        return a & b;
-    }
-
-    template <typename T>
-    VL_ATTR_ALWINLINE static typename std::enable_if<VlIsVlWide<T>::value, T>::type
-    bAnd(const T& a, const T& b) {
-        T result;
-        for (size_t i = 0; i < T::Words; ++i) {
-            result.m_storage[i] = a.m_storage[i] & b.m_storage[i];
+    // Add a chunk of closures to the empty free list
+    void grow() {
+        constexpr size_t CHUNK_SIZE = 32;  // Number of closures in a chunk
+        m_chunks.emplace_back(new T_Closure[CHUNK_SIZE]);
+        T_Closure* const chunkp = m_chunks.back().get();
+        for (size_t i = 0; i < CHUNK_SIZE; ++i) {
+            chunkp[i].m_nextp = i + 1 < CHUNK_SIZE ? &chunkp[i + 1] : nullptr;
         }
-        return result;
-    }
-
-    template <typename T>
-    VL_ATTR_ALWINLINE static typename std::enable_if<!VlIsVlWide<T>::value, T>::type
-    bOr(const T& a, const T& b) {
-        return a | b;
-    }
-
-    template <typename T>
-    VL_ATTR_ALWINLINE static typename std::enable_if<VlIsVlWide<T>::value, T>::type  //
-    bOr(const T& a, const T& b) {
-        T result;
-        for (size_t i = 0; i < T::Words; ++i) {
-            result.m_storage[i] = a.m_storage[i] | b.m_storage[i];
-        }
-        return result;
-    }
-
-    template <typename T>
-    VL_ATTR_ALWINLINE static typename std::enable_if<!VlIsVlWide<T>::value, T>::type
-    bNot(const T& a) {
-        return ~a;
-    }
-
-    template <typename T>
-    VL_ATTR_ALWINLINE static typename std::enable_if<VlIsVlWide<T>::value, T>::type
-    bNot(const T& a) {
-        T result;
-        for (size_t i = 0; i < T::Words; ++i) result.m_storage[i] = ~a.m_storage[i];
-        return result;
+        m_freep = chunkp;
     }
 
 public:
     // CONSTRUCTOR
-    VlNBACommitQueue() = default;
-    VL_UNCOPYABLE(VlNBACommitQueue);
+    VlClosurePool() = default;
+    VL_UNCOPYABLE(VlClosurePool);
 
     // METHODS
-    template <typename... T_Args>
-    void enqueue(const T_Element& value, const T_Element& mask, T_Args... indices) {
-        m_pending.emplace_back(Entry{value, mask, {indices...}});
+    // Return a free closure, it is always in default initialized state.
+    T_Closure& allocate() {
+        if (VL_UNLIKELY(!m_freep)) grow();
+        T_Closure* const closurep = m_freep;
+        m_freep = static_cast<T_Closure*>(closurep->m_nextp);
+        return *closurep;
     }
-
-    // Note: T_Commit might be different from T_Target. Specifically, when the signal is a
-    // top-level IO port, T_Commit will be a native C array, while T_Target, will be a VlUnpacked
-    template <typename T_Commit>
-    void commit(T_Commit& target) {
-        if (m_pending.empty()) return;
-        for (const Entry& entry : m_pending) {  //
-            auto& ref = VlApplyIndices<0, N_Rank, T_Commit>::apply(target, entry.indices);
-            // Maybe inefficient, but it works for now ...
-            const auto oldValue = ref;
-            ref = bOr(bAnd(entry.value, entry.mask), bAnd(oldValue, bNot(entry.mask)));
+    // Return a closure to the pool
+    void release(T_Closure& closure) {
+        // Drop what it captured, e.g. a class handle keeping its object alive.
+        if (!std::is_trivially_destructible<T_Closure>::value) {
+            closure.~T_Closure();
+            new (&closure) T_Closure;
         }
-        m_pending.clear();
+        closure.m_nextp = m_freep;
+        m_freep = &closure;
+    }
+};
+
+// Closure based commit queue for generic NBAs
+template <typename T_Syms>
+class VlNbaGenericQueue final {
+    static_assert(std::is_trivially_destructible<VlClosure<T_Syms>>::value,
+                  "VlClosure should be trivially destructible");
+
+    // STATE
+    std::vector<VlClosure<T_Syms>*> m_enqueued;  // Closures to call at the next commit
+    bool m_commitTrigger = false;  // Set when enqueueing into the empty queue
+
+public:
+    // CONSTRUCTOR
+    VlNbaGenericQueue() = default;
+    VL_UNCOPYABLE(VlNbaGenericQueue);
+
+    // METHODS
+    // Commit trigger: whether the queue became non-empty (and still is) since the last call
+    bool commitTrigger() { return std::exchange(m_commitTrigger, false); }
+    // Enqueue the closure until the next commit
+    void enqueue(VlClosure<T_Syms>* closurep) {
+        if (m_enqueued.empty()) m_commitTrigger = true;
+        m_enqueued.push_back(closurep);
+    }
+    // Call the functions of the enqueued closures, in the order they were enqueued
+    void commit(T_Syms* symsp) {
+        // A function only makes its update, it never enqueues another
+        for (VlClosure<T_Syms>* const closurep : m_enqueued) closurep->m_funcp(symsp, closurep);
+        m_enqueued.clear();
+        m_commitTrigger = false;
     }
 };
 
@@ -2208,22 +2125,22 @@ struct VlNull final {
         return nullptr;
     }
     template <class T>
-    bool operator==(T* rhs) const {
-        return !rhs;
+    bool operator==(T* rhsp) const {
+        return !rhsp;
     }
     template <class T>
-    bool operator==(const T* rhs) const {
-        return !rhs;
+    bool operator==(const T* rhsp) const {
+        return !rhsp;
     }
 };
 
 template <class T>
-inline bool operator==(T* lhs, VlNull) {
-    return !lhs;
+inline bool operator==(T* lhsp, VlNull) {
+    return !lhsp;
 }
 template <class T>
-inline bool operator==(const T* lhs, VlNull) {
-    return !lhs;
+inline bool operator==(const T* lhsp, VlNull) {
+    return !lhsp;
 }
 
 //===================================================================

@@ -343,7 +343,7 @@ public:
         uint32_t size() const { return m_descriptions.size(); }
     };
     // Generates list of assignments that fills
-    static AstAssign* createSenTrigVecAssignment(AstVarScope* const target,
+    static AstAssign* createSenTrigVecAssignment(AstVarScope* const targetp,
                                                  std::vector<AstNodeExpr*>& trigps);
 
     // Create a TriggerKit for the given AstSenTree vector
@@ -409,7 +409,7 @@ class TimingKit final {
 
 public:
     LogicByScope m_lbs;  // Actives that resume timing schedulers
-    AstNodeStmt* m_postUpdates = nullptr;  // Post updates for the trigger eval function
+    AstNodeStmt* m_postUpdatesp = nullptr;  // Post updates for the trigger eval function
 
     // Trigger indices of the external domains of each variable
     std::map<const AstVarScope*, std::vector<uint32_t>>
@@ -422,11 +422,11 @@ public:
     AstCCall* createReady(AstVarScope* trigVscp) VL_MT_DISABLED;
 
     TimingKit() = default;
-    TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdates,
+    TimingKit(LogicByScope&& lbs, AstNodeStmt* postUpdatesp,
               std::map<const AstVarScope*, std::set<AstSenTree*>>&& externalDomains)
         : m_externalDomains{externalDomains}
         , m_lbs{lbs}
-        , m_postUpdates{postUpdates} {}
+        , m_postUpdatesp{postUpdatesp} {}
     VL_UNCOPYABLE(TimingKit);
     TimingKit(TimingKit&&) = default;
     TimingKit& operator=(TimingKit&&) = default;

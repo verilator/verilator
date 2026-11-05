@@ -634,7 +634,7 @@ public:
 
 #if defined(VL_LEAK_CHECKS) || defined(VL_ALLOC_RANDOM_CHECKS)
     static void* operator new(size_t size);
-    static void operator delete(void* obj, size_t size);
+    static void operator delete(void* objp, size_t size);
 #endif
 
     // CONSTANTS
@@ -803,7 +803,10 @@ public:
     inline bool isNull() const;
     inline bool isZero() const;
     inline bool isOne() const;
+    inline bool isAnyXZ() const;
     inline bool isNeqZero() const;
+    // Whether value is true - same as !$isunknown(x) && x != 0  // x and z are false
+    inline bool isTrue() const;
     inline bool isAllOnes() const;
     inline bool isAllOnesV() const;  // Verilog width rules apply
 
@@ -914,7 +917,7 @@ public:
 
     static VCastable computeCastable(const AstNodeDType* toDtp, const AstNodeDType* fromDtp,
                                      const AstNode* fromConstp, bool checkIfaceArgCompat = false);
-    static AstNodeDType* getCommonClassTypep(AstNode* nodep1, AstNode* nodep2);
+    static AstNodeDType* getCommonClassTypep(AstNode* node1p, AstNode* node2p);
 
     // METHODS - dump and error
     void v3errorEnd(const std::ostringstream& str) const VL_RELEASE(V3Error::s().m_mutex);
@@ -1611,13 +1614,13 @@ bool AstNode::predicateImpl(ConstCorrectAstNode<T_Arg>* nodep, const T_Callable&
     return N_Default;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const AstNode* rhs) {
-    if (!rhs) {  // LCOV_EXCL_LINE
+inline std::ostream& operator<<(std::ostream& os, const AstNode* rhsp) {
+    if (!rhsp) {  // LCOV_EXCL_LINE
         os << "nullptr";  // LCOV_EXCL_LINE
-    } else if (VN_DELETED(rhs)) {  // LCOV_EXCL_LINE
+    } else if (VN_DELETED(rhsp)) {  // LCOV_EXCL_LINE
         os << "%E-0x1/deleted!";  // LCOV_EXCL_LINE
     } else {
-        rhs->dump(os);
+        rhsp->dump(os);
     }
     return os;
 }

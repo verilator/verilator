@@ -50,9 +50,11 @@ class LinkJumpVisitor final : public VNVisitor {
     //  AstFinish::user1()     -> bool, processed
     //  AstNode::user2()       -> AstJumpBlock*, for this block
     //  AstNodeBegin::user3()  -> bool, true if contains a fork
+    //  AstBegin::user4()      -> bool, true if body of a disable target is wrapped
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
     const VNUser3InUse m_user3InUse;
+    const VNUser4InUse m_user4InUse;
 
     // STATE
     AstNodeModule* m_modp = nullptr;  // Current module
@@ -223,17 +225,17 @@ class LinkJumpVisitor final : public VNVisitor {
                                           const std::string& dotted = "") {
         AstNodeVarRef* const queueRefp
             = newQueueRefp(fl, processQueuep, VAccess::READWRITE, dotted);
-        AstTaskRef* killQueueCall = nullptr;
+        AstTaskRef* killQueueCallp = nullptr;
         for (AstNode* const itemp : v3Global.rootp()->stdPackageProcessp()->memberspList()) {
             if (itemp->name() == "killQueue") {
-                killQueueCall
+                killQueueCallp
                     = new AstTaskRef{fl, VN_AS(itemp, Task), new AstArg{fl, "", queueRefp}};
                 break;
             }
         }
-        UASSERT(killQueueCall, "Should be found");
-        killQueueCall->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
-        return new AstStmtExpr{fl, killQueueCall};
+        UASSERT(killQueueCallp, "Should be found");
+        killQueueCallp->classOrPackagep(v3Global.rootp()->stdPackageProcessp());
+        return new AstStmtExpr{fl, killQueueCallp};
     }
     static void requireTiming(FileLine* const fl) {
         // The detached process the disable kills needs the timing runtime (VlProcess)
@@ -252,6 +254,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Disable-by-name rewrites kill this detached task-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
         taskBodyp->setNeedProcess();
+        taskBodyp->setDisableWrapper();
         requireTiming(fl);
         // Ports stay in the task so calls see them
         for (AstNode* const stmtp : taskp->stmtspList()) {
@@ -312,6 +315,7 @@ class LinkJumpVisitor final : public VNVisitor {
         // Disable-by-name rewrites kill this detached block-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
         beginBodyp->setNeedProcess();
+        beginBodyp->setDisableWrapper();
         requireTiming(fl);
         if (beginp->stmtsp()) beginBodyp->addStmtsp(beginp->stmtsp()->unlinkFrBackWithNext());
 
@@ -597,6 +601,16 @@ class LinkJumpVisitor final : public VNVisitor {
         } else if (VN_IS(targetp, Fork)) {
             handleDisableOnFork(nodep);
         } else if (AstBegin* const beginp = VN_CAST(targetp, Begin)) {
+            // A block directly under a procedure or fork may be a process's outermost scope.
+            // Wrap its body before the disable is lowered below, so later passes can tell
+            // whether the block ran to its end.
+            if (!beginp->user4SetOnce() && beginp->stmtsp()) {
+                const AstNode* const abovep = beginp->aboveLoopp();
+                if (VN_IS(abovep, NodeProcedure) || VN_IS(abovep, Fork)) {
+                    beginp->addStmtsp(new AstDisableTargetBody{
+                        beginp->fileline(), beginp->stmtsp()->unlinkFrBackWithNext()});
+                }
+            }
             if (existsBlockAbove(beginp->name())) {
                 if (!beginp->user3()) {
                     // Jump to the end of the named block

@@ -32,11 +32,11 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 
 class ConvertWriteRefsToRead final : public VNVisitor {
     // MEMBERS
-    AstNodeExpr* m_result = nullptr;  // Converted expression
+    AstNodeExpr* m_resultp = nullptr;  // Converted expression
 
     // CONSTRUCTORS
     explicit ConvertWriteRefsToRead(AstNodeExpr* nodep) {
-        m_result = VN_AS(iterateSubtreeReturnEdits(nodep), NodeExpr);
+        m_resultp = VN_AS(iterateSubtreeReturnEdits(nodep), NodeExpr);
     }
 
     // VISITORS
@@ -52,7 +52,9 @@ class ConvertWriteRefsToRead final : public VNVisitor {
     void visit(AstNode* nodep) override { iterateChildren(nodep); }
 
 public:
-    static AstNodeExpr* main(AstNodeExpr* nodep) { return ConvertWriteRefsToRead{nodep}.m_result; }
+    static AstNodeExpr* main(AstNodeExpr* nodep) {
+        return ConvertWriteRefsToRead{nodep}.m_resultp;
+    }
 };
 
 //######################################################################
