@@ -2507,15 +2507,15 @@ class ConstraintExprVisitor final : public VNVisitor {
             iterateChildren(nodep);
         }
         FileLine* const fl = nodep->fileline();
+        // fromp() may already be unsupported-warned instead of lowered here.
+        AstSFormatF* const fromFmtp = VN_CAST(nodep->fromp(), SFormatF);
+        if (!fromFmtp) return;
         AstSFormatF* newp = nullptr;
-        if (VN_AS(nodep->fromp(), SFormatF)->name() == "%s.%s") {
+        if (fromFmtp->name() == "%s.%s") {
             newp = new AstSFormatF{fl, "%s.%s." + nodep->name(), false,
-                                   VN_AS(nodep->fromp(), SFormatF)->exprsp()->cloneTreePure(true)};
-            if (newp->exprsp()->nextp()->name().rfind("#x", 0) == 0)
-                newp->exprsp()->nextp()->name("%x");  //  for #x%x to %x
+                                   fromFmtp->exprsp()->cloneTreePure(true)};
         } else {
-            newp = new AstSFormatF{fl, nodep->fromp()->name() + "." + nodep->name(), false,
-                                   nullptr};
+            newp = new AstSFormatF{fl, fromFmtp->name() + "." + nodep->name(), false, nullptr};
         }
         nodep->replaceWith(newp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -2612,6 +2612,104 @@ class ConstraintExprVisitor final : public VNVisitor {
             VL_DO_DANGLING(origp->deleteTree(), origp);
         }
     }
+    // Diagnoses E_UNSUPPORTED itself and returns nullptr on an unresolvable chain.
+    static AstVar* resolveArraySelRootVarp(AstArraySel* nodep, AstNodeExpr* fromp) {
+        while (true) {
+            if (const AstNodeSel* const selp = VN_CAST(fromp, NodeSel)) {
+                fromp = selp->fromp();
+            } else if (const AstCMethodHard* const methodp = VN_CAST(fromp, CMethodHard)) {
+                fromp = methodp->fromp();
+            } else {
+                break;
+            }
+        }
+        if (const AstVarRef* const refp = VN_CAST(fromp, VarRef)) return refp->varp();
+        if (const AstMemberSel* const mselp = VN_CAST(fromp, MemberSel)) return mselp->varp();
+        nodep->v3warn(E_UNSUPPORTED, "Unsupported: rand-dependent index into an array reached "
+                                     "through an operand that isn't a variable or member");
+        return nullptr;
+    }
+    static bool refsRandVar(const AstNode* nodep) {
+        return nodep->exists([](const AstNodeVarRef* vrefp) {
+            return vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg();
+        });
+    }
+    // Balanced, so nesting depth (and later passes' recursion over it) is log2(elements).
+    static AstNodeExpr* newElementMuxp(FileLine* fl, AstNodeExpr* fromp, AstNodeExpr* idxp, int lo,
+                                       int hi, int width) {
+        AstNodeExpr* condp;
+        AstNodeExpr* thenp;
+        AstNodeExpr* elsep;
+        if (lo == hi) {
+            condp = new AstEq{fl, idxp->cloneTreePure(false),
+                              new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
+                                           static_cast<uint32_t>(lo)}};
+            // 0-based lo, not arrDtp->lo()+lo: idxp is already bias-adjusted.
+            thenp = new AstArraySel{
+                fl, fromp->cloneTreePure(false),
+                new AstConst{fl, AstConst::WidthedValue{}, 32, static_cast<uint32_t>(lo)}};
+            elsep = new AstConst{fl, AstConst::WidthedValue{}, width, 0};
+        } else {
+            const int mid = lo + (hi - lo + 1) / 2;
+            condp = new AstLt{fl, idxp->cloneTreePure(false),
+                              new AstConst{fl, AstConst::WidthedValue{}, idxp->width(),
+                                           static_cast<uint32_t>(mid)}};
+            thenp = newElementMuxp(fl, fromp, idxp, lo, mid - 1, width);
+            elsep = newElementMuxp(fl, fromp, idxp, mid, hi, width);
+        }
+        condp->user1(true);  // else editFormat() folds this to idxp's stale value
+        AstCond* const muxp = new AstCond{fl, condp, thenp, elsep};
+        muxp->user1(true);
+        return muxp;
+    }
+    void handleRandIndexIntoNonrandArray(AstArraySel* nodep, FileLine* fl, const AstVar* arrVarp) {
+        const AstUnpackArrayDType* const arrDtp
+            = VN_CAST(arrVarp->dtypep()->skipRefp(), UnpackArrayDType);
+        // 1-D only, scalar element -- editSMT()'s hex formatting needs a bit vector.
+        const AstNodeDType* const subp = arrDtp ? arrDtp->subDTypep()->skipRefp() : nullptr;
+        // WildcardArrayDType: untestable, hits an unrelated V3Width error first.
+        const bool arrIsSupported1D = arrDtp && !VN_IS(subp, NodeArrayDType)
+                                      && !VN_IS(subp, QueueDType) && !VN_IS(subp, DynArrayDType)
+                                      && !VN_IS(subp, AssocArrayDType)
+                                      && !VN_IS(subp, WildcardArrayDType)  // LCOV_EXCL_BR_LINE
+                                      // Tested (C6, C8); gcov misattributes one branch of each.
+                                      && !VN_IS(subp, NodeUOrStructDType)  // LCOV_EXCL_BR_LINE
+                                      && !VN_IS(subp, ClassRefDType);  // LCOV_EXCL_BR_LINE
+        if (!arrIsSupported1D) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: rand-dependent index into this array shape in "
+                          "constraint (multidimensional, queue, dynamic, or associative array, "
+                          "or a struct/class-typed element)");
+            return;
+        }
+        // Each cloned element would read those indices at their stale pre-solve values.
+        const bool fromIndexIsRand = nodep->fromp()->exists([](const AstNodeSel* selp) {
+            return refsRandVar(selp->bitp());
+        }) || nodep->fromp()->exists([](const AstCMethodHard* methodp) {
+            return methodp->method() == VCMethod::ARRAY_AT && refsRandVar(methodp->pinsp());
+        });
+        if (fromIndexIsRand) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Randomized index in complex expression");
+            return;
+        }
+
+        AstNodeExpr* idxp = nodep->bitp()->unlinkFrBack();
+        // V3Width's implicit truncation (no declRange) would alias an out-of-range idx in range.
+        if (AstSel* const truncp = VN_CAST(idxp, Sel)) {
+            if (!truncp->declRange().ranged()) {
+                idxp = truncp->fromp()->unlinkFrBack();
+                VL_DO_DANGLING(truncp->deleteTree(), truncp);
+            }
+        }
+        const int elements = arrDtp->elementsConst();
+        // Out-of-range idx reads the element default (IEEE 1800-2023 7.4.5), not the last one.
+        AstNodeExpr* const muxp
+            = newElementMuxp(fl, nodep->fromp(), idxp, 0, elements - 1, subp->width());
+        VL_DO_DANGLING(idxp->deleteTree(), idxp);
+        nodep->replaceWith(muxp);
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        iterate(muxp);
+    }
     void renameArrayExpr(AstSFormatF* const newp) const {
         if (m_structSel) {
             newp->name("%s.%s");
@@ -2626,12 +2724,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // which can be over-marked in sum/with expansion contexts). A
         // std::randomize() with-clause argument carries no rand qualifier of
         // its own but is still part of the solve.
-        bool indexIsRand = false;
-        nodep->bitp()->foreach([&](const AstNodeVarRef* vrefp) {
-            if (vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg()) {
-                indexIsRand = true;
-            }
-        });
+        const bool indexIsRand = refsRandVar(nodep->bitp());
         if (m_nestedAccessp) {
             AstNodeExpr* const bitp = nodep->bitp()->cloneTreePure(false);
             AstNodeExpr* const bitFormatp
@@ -2653,6 +2746,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
         }
         if (indexIsRand) {
+            AstVar* const rootVarp = resolveArraySelRootVarp(nodep, nodep->fromp());
+            if (!rootVarp) return;
+            if (!rootVarp->rand().isRandomizable() && !rootVarp->isStdRandomizeArg()) {
+                handleRandIndexIntoNonrandArray(nodep, fl, rootVarp);
+                return;
+            }
             // Index depends on rand variable -- keep as SMT symbol.
             // Array index sort is 32-bit, so zero-extend narrower indices.
             AstNodeExpr* indexp = nodep->bitp()->unlinkFrBack(&handle);
