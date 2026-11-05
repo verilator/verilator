@@ -88,6 +88,8 @@ public:
     bool m_tracksLiveRepThreads = false;
     // A valid endpoint match clears the live repetition state.
     AstNodeExpr* m_liveRepClearCondp = nullptr;
+    // OWNED; match-item statements to execute when the live repetition matches.
+    AstNode* m_liveRepMatchItemsp = nullptr;
     // Nonzero for a ring-buffer vertex for ## delays.
     bool m_isFixedDelayRing = false;
     unsigned m_delayRingSize = 0;  // Number of ring slots. Range: max-min+1.
@@ -123,6 +125,8 @@ public:
         if (m_liveRepCondp) VL_DO_DANGLING(m_liveRepCondp->deleteTree(), m_liveRepCondp);
         if (m_liveRepClearCondp)
             VL_DO_DANGLING(m_liveRepClearCondp->deleteTree(), m_liveRepClearCondp);
+        if (m_liveRepMatchItemsp)
+            VL_DO_DANGLING(m_liveRepMatchItemsp->deleteTree(), m_liveRepMatchItemsp);
         if (m_delayRingClearCondp)
             VL_DO_DANGLING(m_delayRingClearCondp->deleteTree(), m_delayRingClearCondp);
         if (m_delayRingAdvanceCondp)
@@ -763,7 +767,9 @@ class SvaNfaBuilder final {
 
             // Functions shall have no side effects in boolean expressions of assertions
             // (IEEE 1800-2023 16.6).
-            if (!exprp->isPure()) {
+            AstExprStmt* const matchItemExprp = VN_CAST(exprp, ExprStmt);
+            AstNodeExpr* const endpointBoolp = matchItemExprp ? matchItemExprp->resultp() : exprp;
+            if (!endpointBoolp->isPure()) {
                 exprp->v3error("Functions shall have no side effects in boolean expressions "
                                "of assertions (IEEE 1800-2023 16.6)");
                 return BuildResult::failWithError();
@@ -778,16 +784,24 @@ class SvaNfaBuilder final {
             // The endpoint is valid only when the repetition itself matched on this tick.
             // A valid match also retires the live repetition state for later ticks.
             if (liveRepVtxp->m_liveRepClearCondp) {
-                VL_DO_DANGLING(liveRepVtxp->m_liveRepClearCondp->deleteTree(),  // LCOV_EXCL_LINE
+                VL_DO_DANGLING(liveRepVtxp->m_liveRepClearCondp->deleteTree(),
                                liveRepVtxp->m_liveRepClearCondp);
             }
             liveRepVtxp->m_liveRepClearCondp = new AstLogAnd{
-                flp, liveRepCondp->cloneTreePure(false), exprp->cloneTreePure(false)};
+                flp, liveRepCondp->cloneTreePure(false), endpointBoolp->cloneTreePure(false)};
+
+            // Match items are statements, not side effects in the endpoint's boolean expression.
+            // Execute them once on the successful-match path instead of cloning them into guards.
+            if (matchItemExprp) {
+                UASSERT_OBJ(!liveRepVtxp->m_liveRepMatchItemsp, liveRepVtxp,
+                            "Live repetition match items set more than once");
+                liveRepVtxp->m_liveRepMatchItemsp = matchItemExprp->stmtsp()->cloneTree(false);
+            }
 
             // Do not allow the endpoint to match if the repetition failed on this tick.
             BuildResult result{currentp,
                                new AstLogAnd{flp, liveRepCondp->cloneTreePure(false),
-                                             exprp->cloneTreePure(false)},
+                                             endpointBoolp->cloneTreePure(false)},
                                std::move(rangeMidSources)};
             VL_DO_DANGLING(currentp->m_liveRepCondp->deleteTree(), currentp->m_liveRepCondp);
             return result;
@@ -1854,6 +1868,7 @@ class SvaNfaLowering final {
     AstNodeModule* const m_modp;  // Module to add state vars and always blocks to
     AstNodeDType* const m_u32DTypep;  // Shared unsigned counter dtype
     V3UniqueNames m_names{"__Vnfa"};  // Unique names for generated variables
+    V3UniqueNames m_matchItemCountNames{"__VnfaMatchItemCount"};  // Match-item replay counters
     size_t m_statDelayRingEdgeVisits = 0;  // Delay-ring incoming edges visited
 
     // Per-lowering shared context (passed to phase sub-functions)
@@ -2097,6 +2112,50 @@ class SvaNfaLowering final {
                                new AstVarRef{c.flp, vtxp->datap()->liveRepCountVarp,
                                              VAccess::WRITE},
                                nextCountp});
+            }
+            if (vtxp->m_liveRepMatchItemsp) {
+                UASSERT_OBJ(vtxp->m_liveRepEntryVtxp
+                                && vtxp->m_liveRepEntryVtxp->datap()->stateCountSigp,
+                            vtxp, "Live-repetition match items missing entry state count");
+                AstNodeExpr* const entryCountp
+                    = vtxp->m_liveRepEntryVtxp->datap()->stateCountSigp->cloneTreePure(false);
+                AstNodeExpr* matchItemCondp = new AstNeq{
+                    c.flp, entryCountp->cloneTreePure(false), newTypedConstp(c.flp, m_u32DTypep, 0)};
+                matchItemCondp = new AstLogAnd{
+                    c.flp, matchItemCondp,
+                    sampled(vtxp->m_liveRepClearCondp->cloneTreePure(false))};
+                matchItemCondp = andCond(c.flp, matchItemCondp, notKillActive(c));
+                if (c.disableExprp) {
+                    matchItemCondp = new AstLogAnd{
+                        c.flp, matchItemCondp,
+                        new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)}};
+                }
+                AstNodeExpr* const matchItemCountp
+                    = new AstCond{c.flp, matchItemCondp, entryCountp,
+                                  newTypedConstp(c.flp, m_u32DTypep, 0)};
+                AstVar* const remainingMatchCountVarp = new AstVar{
+                    c.flp, VVarType::MODULETEMP, m_matchItemCountNames.get(""), m_u32DTypep};
+                remainingMatchCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
+                m_modp->addStmtsp(remainingMatchCountVarp);
+                bodyp = AstNode::addNextNull(
+                    bodyp, new AstAssign{c.flp,
+                                         new AstVarRef{c.flp, remainingMatchCountVarp,
+                                                       VAccess::WRITE},
+                                         matchItemCountp});
+                AstLoop* const matchItemLoop = new AstLoop{c.flp};
+                matchItemLoop->addStmtsp(new AstLoopTest{
+                    c.flp, matchItemLoop,
+                    new AstGt{c.flp,
+                              new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::READ},
+                              newTypedConstp(c.flp, m_u32DTypep, 0)}});
+                matchItemLoop->addStmtsp(vtxp->m_liveRepMatchItemsp->cloneTree(false));
+                matchItemLoop->addStmtsp(new AstAssign{
+                    c.flp,
+                    new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::WRITE},
+                    new AstSub{c.flp,
+                               new AstVarRef{c.flp, remainingMatchCountVarp, VAccess::READ},
+                               newTypedConstp(c.flp, m_u32DTypep, 1)}});
+                bodyp = AstNode::addNextNull(bodyp, matchItemLoop);
             }
             if (asyncDisable) {
                 clearp = AstNode::addNextNull(
