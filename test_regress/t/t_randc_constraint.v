@@ -498,6 +498,21 @@ class RandcFoldItems;
   }
 endclass
 
+// Sized without element constraints, so a single solve: c == 3 admits no size
+class SizeOnly;
+  randc bit [1:0] c;
+  rand int q[$];
+  constraint size_c {
+    q.size() < 3;
+    q.size() >= c;
+  }
+endclass
+
+class SizeOnlyWith;
+  randc bit [1:0] c;
+  rand int q[$];
+endclass
+
 module t;
   RandcRange rr;
   RandcSmall rs;
@@ -706,6 +721,31 @@ module t;
         `checkd(res, 1);
         `checkd(obj.c != 3, 1'b1);
         `checkd((obj.c < 2) ? obj.x > 3 : obj.x < 8, 1'b1);
+      end
+    end
+
+    begin
+      automatic SizeOnly obj = new;
+      automatic int res;
+      $display("Test randc sizing an array in a single solve");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.q.size() < 3 && obj.q.size() >= obj.c, 1'b1);
+      end
+    end
+
+    begin
+      automatic SizeOnlyWith obj = new;
+      automatic int res;
+      $display("Test randc sizing an array in a single solve of a with clause");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize() with {
+          q.size() < 3;
+          q.size() >= c;
+        };
+        `checkd(res, 1);
+        `checkd(obj.q.size() < 3 && obj.q.size() >= obj.c, 1'b1);
       end
     end
 

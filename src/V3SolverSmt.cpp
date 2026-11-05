@@ -3953,7 +3953,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         }
     }
 
-    // 'sized' for the two solves of a randomize() resizing arrays, which keep the joint solve
+    // 'sized' for the solves of a randomize() resizing arrays, which keep the joint solve
     static AstCExpr* newSolverCallp(AstVar* const genp, bool sized = false) {
         AstCExpr* const callp = new AstCExpr{genp->fileline()};
         callp->dtypeSetBit();
@@ -4188,7 +4188,9 @@ public:
                 beginValp = new AstAnd{fl, new AstVarRef{fl, sizeOkVarp, VAccess::READ},
                                        new AstVarRef{fl, finalOkVarp, VAccess::READ}};
             } else {
-                beginValp = newSolverCallp(genp);
+                // Arrays with only a size constraint resize after this one solve
+                beginValp = newSolverCallp(
+                    genp, m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"));
             }
             if (randModeVarp) {
                 AstNodeModule* const randModeClassp = VN_AS(randModeVarp->user2p(), Class);
@@ -4531,7 +4533,7 @@ public:
             VL_DO_DANGLING(capturedClonep->deleteTree(), capturedClonep);
 
             // Call the solver and set return value
-            AstCExpr* const solverCallp = newSolverCallp(localGenp);
+            AstCExpr* const solverCallp = newSolverCallp(localGenp, resizeStmtsp);
             randomizeFuncp->addStmtsp(
                 new AstAssign{fl, new AstVarRef{fl, retVarp, VAccess::WRITE},
                               new AstAnd{fl, basicRandomizeFuncCallp, solverCallp}});
