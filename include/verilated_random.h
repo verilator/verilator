@@ -996,9 +996,9 @@ public:
 
     // varNames are the solver variables the constraint names, kept without copying until
     // clearConstraints(), so they must live that long (the generated code passes literals)
-    // namesMerged: varNames are merged from branches the state chose between, or from several
-    // items folded into the constraint, so they may name a rand variable that the randc-only
-    // part of the text does not
+    // namesMerged: varNames are merged from branches the state chose between, from several
+    // items folded into the constraint, or around a branch naming no rand variable, so they
+    // may name a rand variable that the randc-only part of the text does not
     void hard(std::string&& constraint, std::initializer_list<const char*> varNames = {},
               const char* filename = "", uint32_t linenum = 0, const char* source = "",
               bool namesMerged = false);
