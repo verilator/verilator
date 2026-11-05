@@ -2481,18 +2481,22 @@ class ConstraintExprVisitor final : public VNVisitor {
         if (AstArraySel* const arraySelp = VN_CAST(selp, ArraySel)) return arraySelp->bitp();
         return VN_AS(selp, CMethodHard)->pinsp();
     }
-    // Return the array element select of a struct member select (arr[i].a) whose index
-    // depends on a random variable, or nullptr
-    static AstNodeExpr* randIndexedArraySel(AstStructSel* nodep) {
-        AstNodeExpr* const selp = nodep->fromp();
-        const AstCMethodHard* const methodp = VN_CAST(selp, CMethodHard);
-        if (!VN_IS(selp, ArraySel) && !(methodp && methodp->method() == VCMethod::ARRAY_AT)) {
-            return nullptr;
-        }
-        const bool indexIsRand = arraySelIndexp(selp)->exists([](const AstNodeVarRef* vrefp) {
+    static bool isArraySel(const AstNode* nodep) {
+        const AstCMethodHard* const methodp = VN_CAST(nodep, CMethodHard);
+        return VN_IS(nodep, ArraySel) || (methodp && methodp->method() == VCMethod::ARRAY_AT);
+    }
+    static bool hasRandIndex(AstNodeExpr* selp) {
+        return arraySelIndexp(selp)->exists([](const AstNodeVarRef* vrefp) {
             return vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg();
         });
-        return indexIsRand ? selp : nullptr;
+    }
+    // Return the outermost array element select a struct member select (arr[i][j].a) takes its
+    // element from whose index depends on a random variable, or nullptr
+    static AstNodeExpr* randIndexedArraySel(AstStructSel* nodep) {
+        for (AstNodeExpr* selp = nodep->fromp(); isArraySel(selp); selp = arraySelFromp(selp)) {
+            if (hasRandIndex(selp)) return selp;
+        }
+        return nullptr;
     }
     // Offset of the element of foreach variable loopVarp in an array with lower bound lo, at
     // the given width, as V3WidthSel computes from an index
@@ -2521,17 +2525,23 @@ class ConstraintExprVisitor final : public VNVisitor {
         const AstUnpackArrayDType* const unpackDtp
             = VN_CAST(arrayp->dtypep()->skipRefp(), UnpackArrayDType);
         const int lo = unpackDtp ? unpackDtp->lo() : 0;
-        // The member of the iteration's element; selected at the index width only when
-        // narrower, as array indices are int. A member of a non-random element is state.
-        const int selWidth = std::min(indexp->width(), loopVarp->width());
+        // The member of the iteration's element; a member of a non-random element is state.
+        // An unpacked array is indexed at the width V3WidthSel gave the index, other arrays
+        // with an int.
+        const int selWidth = unpackDtp ? indexp->width() : loopVarp->width();
         AstNodeExpr* const loopSelp
             = newSel(fl, arrayp, newElementOffsetp(fl, loopVarp, lo, selWidth));
         loopSelp->user1(arrayIsRand);
         arraySelp->replaceWith(loopSelp);
         VL_DO_DANGLING(pushDeletep(arraySelp), arraySelp);
         elemp->user1(arrayIsRand);
-        AstEq* const eqp
-            = new AstEq{fl, indexp, newElementOffsetp(fl, loopVarp, lo, indexp->width())};
+        const int cmpWidth = std::max(indexp->width(), selWidth);
+        AstNodeExpr* cmpIndexp = indexp;
+        if (cmpIndexp->width() < cmpWidth) {
+            cmpIndexp = new AstExtend{fl, cmpIndexp, cmpWidth};
+            cmpIndexp->user1(true);
+        }
+        AstEq* const eqp = new AstEq{fl, cmpIndexp, newElementOffsetp(fl, loopVarp, lo, cmpWidth)};
         eqp->dtypeSetBit();
         eqp->user1(true);
         // The chain built by the previous iterations
@@ -2557,6 +2567,15 @@ class ConstraintExprVisitor final : public VNVisitor {
         cexprp->add("return ret;\n})()");
         nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    static bool hasSameSel(const std::vector<AstNodeExpr*>& selps, AstNodeExpr* selp) {
+        for (AstNodeExpr* const otherp : selps) {
+            if (arraySelFromp(otherp)->sameTree(arraySelFromp(selp))
+                && arraySelIndexp(otherp)->sameTree(arraySelIndexp(selp))) {
+                return true;
+            }
+        }
+        return false;
     }
     // 'index < size', compared unsigned at a width holding both, so a negative index is out of
     // range
@@ -2597,15 +2616,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Distinct element selects
         std::vector<AstNodeExpr*> selps;
         searchp->foreach([&](AstStructSel* structSelp) {
-            AstNodeExpr* const selp = randIndexedArraySel(structSelp);
-            if (!selp) return;
-            for (AstNodeExpr* const otherp : selps) {
-                if (arraySelFromp(otherp)->sameTree(arraySelFromp(selp))
-                    && arraySelIndexp(otherp)->sameTree(arraySelIndexp(selp))) {
-                    return;
-                }
+            for (AstNodeExpr* selp = structSelp->fromp(); isArraySel(selp);
+                 selp = arraySelFromp(selp)) {
+                if (hasRandIndex(selp) && !hasSameSel(selps, selp)) selps.push_back(selp);
             }
-            selps.push_back(selp);
         });
         if (selps.empty()) return false;
         FileLine* const fl = nodep->fileline();
