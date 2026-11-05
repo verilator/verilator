@@ -335,15 +335,21 @@ The grammar of control commands is as follows:
    parameterizations of the module; this is not necessarily the order of
    their names or declarations. Worker 0 is the thread calling ``eval()``,
    and workers 1 to ``<threads>-1`` are the worker pool. Without the colon
-   and list, the instances are placed automatically. Several ``-workers`` may be given for
-   different instance and thread counts. A module with ``-workers`` is a
-   group only at the :vlopt:`--threads` values they name, so grouping can
-   differ between thread counts. If lists exist for that thread count but none match the
-   elaborated instance count, Verilator reports an error. Low-cost
-   evaluations may still run serially
-   on the calling thread. With :vlopt:`--hierarchical`, counts and workers
-   are those of each separately Verilated block, and a block using several
-   threads is placed automatically.
+   and list, the instances are placed automatically.
+
+   Several ``-workers`` may be given for different instance and thread
+   counts. A module with ``-workers`` is a group only at the
+   :vlopt:`--threads` values they name, so grouping can differ between
+   thread counts. If lists exist for that thread count but none match the
+   elaborated instance count, Verilator reports an error. If several
+   ``-module`` patterns match a module and give the same
+   ``<instances>-><threads>``, the pattern first in sorted order is used.
+   Low-cost evaluations may still run serially on the calling thread.
+
+   With :vlopt:`--hierarchical`, counts and workers are those of each
+   separately Verilated block. A block's workers are the threads of its
+   own schedule, which may run on different threads of the pool on each
+   evaluation, and a block using several threads is placed automatically.
 
    For example, to alternate four tiles between two threads:
 

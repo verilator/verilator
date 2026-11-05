@@ -58,7 +58,7 @@ public:
     static void addInline(FileLine* fl, const string& module, const string& ftask, bool on);
     static void addModulePragma(const string& module, VPragmaType pragma);
     static void addThreadsGroupWorkers(FileLine* fl, const string& module, uint32_t instances,
-                                       uint32_t threads, const std::vector<uint32_t>& workers);
+                                       uint32_t threads, AstNodeExpr* workersp);
     static void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost);
     static void addProfileData(FileLine* fl, const string& model, const string& key,
                                uint64_t cost);

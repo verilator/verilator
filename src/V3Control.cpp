@@ -977,22 +977,27 @@ void V3Control::addModulePragma(const string& module, VPragmaType pragma) {
 }
 
 void V3Control::addThreadsGroupWorkers(FileLine* fl, const string& module, uint32_t instances,
-                                       uint32_t threads, const std::vector<uint32_t>& workers) {
-    if (!workers.empty() && workers.size() != instances) {
-        fl->v3error("threads_group -workers lists " << workers.size() << " workers for "
-                                                    << instances << " instances.");
-    }
-    for (const uint32_t worker : workers) {
+                                       uint32_t threads, AstNodeExpr* workersp) {
+    std::vector<uint32_t> workers;
+    for (const AstNodeExpr* const exprp : VNList<AstNodeExpr>{workersp}) {
+        const uint32_t worker = VN_AS(exprp, Const)->toUInt();
         if (worker >= threads) {
-            fl->v3error("threads_group -workers worker " << worker << " is not below the "
-                                                         << threads << " workers.");
+            exprp->v3error("threads_group -workers worker '"
+                           << worker << "' must be less than the '" << threads << "' threads.");
         }
+        workers.push_back(worker);
+    }
+    if (workersp) VL_DO_DANGLING(workersp->deleteTree(), workersp);
+    if (!workers.empty() && workers.size() != instances) {
+        fl->v3error("threads_group -workers lists '" << workers.size()
+                                                     << "' workers, but expects '" << instances
+                                                     << "' instances.");
     }
     if (!V3ControlResolver::s().modules().at(module).addThreadsGroupWorkers(
             instances, threads, ThreadsGroupWorkers{fl, workers})) {
-        fl->v3error("threads_group -workers " << instances << "->" << threads
-                                              << " is given more than once for module '" << module
-                                              << "'.");
+        fl->v3error("threads_group -workers '" << instances << "->" << threads
+                                               << "' is given more than once for module '"
+                                               << module << "'.");
     }
 }
 
@@ -1020,10 +1025,11 @@ void V3Control::applyThreadsGroupWorkers(const std::vector<AstScope*>& scopes) {
         if (listIt == lists.end()) {
             for (const auto& other : lists) {
                 if (other.first.second != threads) continue;
-                other.second.m_flp->v3error("threads_group -workers "
-                                            << other.first.first << "->" << threads << " expects "
-                                            << other.first.first << " instances, but module '"
-                                            << it.first << "' has " << it.second.size() << ".");
+                other.second.m_flp->v3error("threads_group -workers '"
+                                            << other.first.first << "->" << threads
+                                            << "' expects '" << other.first.first
+                                            << "' instances, but module '" << it.first << "' has '"
+                                            << it.second.size() << "'.");
             }
             continue;
         }
