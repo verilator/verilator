@@ -553,16 +553,18 @@ class UndrivenVisitor final : public VNVisitorConst {
         // is shared across class instances, so field-only tracking lacks object identity.
         UndrivenVarEntry* const entryp = getEntryp(nodep->varp(), 1);
         if (m_inBBox || nodep->access().isWriteOrRW()) {
-            if (m_memberSelWidth)
+            if (m_memberSelWidth) {
                 entryp->drivenBit(m_memberSelLsb, m_memberSelWidth);
-            else
+            } else {
                 entryp->drivenWhole(nodep);
+            }
         }
         if (m_inBBox || nodep->access().isReadOrRW()) {
-            if (m_memberSelWidth)
+            if (m_memberSelWidth) {
                 entryp->usedBit(m_memberSelLsb, m_memberSelWidth, nodep);
-            else
+            } else {
                 entryp->usedWhole(nodep);
+            }
         }
         // The object's own fields and indices are independent of this field's bit range.
         VL_RESTORER(m_memberSelWidth);
@@ -597,6 +599,8 @@ class UndrivenVisitor final : public VNVisitorConst {
             }
             VL_RESTORER(m_memberSelLsb);
             VL_RESTORER(m_memberSelWidth);
+            // The width is known, but an X/Z LSB has no definite offset for toUInt().
+            // Track it like a dynamic index rather than claiming a specific bit range.
             if (constp && !constp->num().isFourState()
                 && (VN_IS(nodep->fromp(), Sel) || VN_IS(nodep->fromp(), MemberSel))) {
                 m_memberSelLsb = constp->toUInt() + (m_memberSelWidth ? m_memberSelLsb : 0);
