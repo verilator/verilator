@@ -42,10 +42,12 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
+#include "V3Hasher.h"
 #include "V3MemberMap.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
+#include <map>
 #include <queue>
 #include <tuple>
 #include <utility>
@@ -924,6 +926,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     bool m_structSel = false;  // Marks when inside structSel
                                // (used to format "%s.%s" for struct arrays and nested structs)
     bool m_deferRandModeHoist = false;  // Wait for the complete struct member path
+    AstNode* m_guardedp = nullptr;  // Constraint item being guarded for random struct indices
     std::set<std::string>& m_writtenVars;  // Track which variable paths have write_var generated
                                            // (shared across all constraints)
     std::set<std::string> m_inlineWrittenVars;  // Per-instance tracking for inline constraints
@@ -2471,8 +2474,204 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         editSMT(nodep, nodep->fromp(), lsbp, msbp);
     }
+    // Array and index of an array element select
+    static AstNodeExpr* arraySelFromp(AstNodeExpr* selp) {
+        if (AstArraySel* const arraySelp = VN_CAST(selp, ArraySel)) return arraySelp->fromp();
+        return VN_AS(selp, CMethodHard)->fromp();
+    }
+    static AstNodeExpr* arraySelIndexp(AstNodeExpr* selp) {
+        if (AstArraySel* const arraySelp = VN_CAST(selp, ArraySel)) return arraySelp->bitp();
+        return VN_AS(selp, CMethodHard)->pinsp();
+    }
+    static bool isArraySel(const AstNode* nodep) {
+        const AstCMethodHard* const methodp = VN_CAST(nodep, CMethodHard);
+        return VN_IS(nodep, ArraySel) || (methodp && methodp->method() == VCMethod::ARRAY_AT);
+    }
+    static bool hasRandIndex(AstNodeExpr* selp) {
+        return arraySelIndexp(selp)->exists([](const AstNodeVarRef* vrefp) {
+            return vrefp->varp()->rand().isRandomizable() || vrefp->varp()->isStdRandomizeArg();
+        });
+    }
+    // Return the outermost array element select a struct member select (arr[i][j].a) takes its
+    // element from whose index depends on a random variable, or nullptr
+    static AstNodeExpr* randIndexedArraySel(AstStructSel* nodep) {
+        for (AstNodeExpr* selp = nodep->fromp(); isArraySel(selp); selp = arraySelFromp(selp)) {
+            if (hasRandIndex(selp)) return selp;
+        }
+        return nullptr;
+    }
+    // Offset of the element of foreach variable loopVarp in an array with lower bound lo, at
+    // the given width, as V3WidthSel computes from an index
+    static AstNodeExpr* newElementOffsetp(FileLine* fl, AstVar* loopVarp, int lo, int width) {
+        AstNodeExpr* offsetp = new AstVarRef{fl, loopVarp, VAccess::READ};
+        if (lo) offsetp = new AstSub{fl, offsetp, new AstConst{fl, static_cast<uint32_t>(lo)}};
+        if (width < offsetp->width()) return new AstSel{fl, offsetp, 0, width};
+        if (width > offsetp->width()) return new AstExtend{fl, offsetp, width};
+        return offsetp;
+    }
+    // Each struct array element member is a solver variable of its own (arr.<index>.member),
+    // so the member of the element at random index e becomes a chain over the current
+    // elements, built at runtime: (ite (= e 0) arr.0.member (ite (= e 1) arr.1.member ... 0)).
+    // guardRandIndexedStructSels() keeps e within the array.
+    void lowerRandIndexedStructSel(AstStructSel* nodep) {
+        FileLine* const fl = nodep->fileline();
+        AstStructSel* const elemp = nodep->cloneTree(false);
+        AstNodeExpr* const arraySelp = randIndexedArraySel(elemp);
+        AstNodeExpr* const arrayp = arraySelFromp(arraySelp);
+        AstNodeExpr* const indexp = arraySelIndexp(arraySelp)->unlinkFrBack();
+        const bool arrayIsRand = arrayp->user1();
+        AstVar* const loopVarp = new AstVar{fl, VVarType::BLOCKTEMP, m_uniqueNames.get("__Vindex"),
+                                            nodep->findIntDType()};
+        AstForeachHeader* const headerp
+            = new AstForeachHeader{fl, arrayp->cloneTreePure(false), loopVarp};
+        const AstUnpackArrayDType* const unpackDtp
+            = VN_CAST(arrayp->dtypep()->skipRefp(), UnpackArrayDType);
+        const int lo = unpackDtp ? unpackDtp->lo() : 0;
+        // The member of the iteration's element; a member of a non-random element is state.
+        // An unpacked array is indexed at the width V3WidthSel gave the index, other arrays
+        // with an int.
+        const int selWidth = unpackDtp ? indexp->width() : loopVarp->width();
+        AstNodeExpr* const loopSelp
+            = newSel(fl, arrayp, newElementOffsetp(fl, loopVarp, lo, selWidth));
+        loopSelp->user1(arrayIsRand);
+        arraySelp->replaceWith(loopSelp);
+        VL_DO_DANGLING(pushDeletep(arraySelp), arraySelp);
+        elemp->user1(arrayIsRand);
+        const int cmpWidth = std::max(indexp->width(), selWidth);
+        AstNodeExpr* cmpIndexp = indexp;
+        if (cmpIndexp->width() < cmpWidth) {
+            cmpIndexp = new AstExtend{fl, cmpIndexp, cmpWidth};
+            cmpIndexp->user1(true);
+        }
+        AstEq* const eqp = new AstEq{fl, cmpIndexp, newElementOffsetp(fl, loopVarp, lo, cmpWidth)};
+        eqp->dtypeSetBit();
+        eqp->user1(true);
+        // The chain built by the previous iterations
+        AstCExpr* const prevp = new AstCExpr{fl, "ret"};
+        prevp->dtypeSetString();
+        AstSFormatF* const prevFmtp = new AstSFormatF{fl, "%s", false, prevp};
+        prevFmtp->user1(true);
+        AstCond* const condp = new AstCond{fl, eqp, elemp, prevFmtp};
+        condp->dtypeFrom(nodep);
+        condp->user1(true);
+
+        AstCStmt* const cstmtp = new AstCStmt{fl};
+        cstmtp->add("ret = ");
+        cstmtp->add(iterateSubtreeReturnEdits(condp));
+        cstmtp->add(";");
+        AstCExpr* const cexprp = new AstCExpr{fl};
+        cexprp->dtypeSetString();
+        cexprp->add("([&]{\nstd::string ret = ");
+        cexprp->add(getConstFormat(new AstConst{fl, AstConst::WidthedValue{}, nodep->width(), 0}));
+        cexprp->add(";\n");
+        cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
+                                 new AstForeach{fl, headerp, cstmtp}, true});
+        cexprp->add("return ret;\n})()");
+        nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
+        VL_DO_DANGLING(pushDeletep(nodep), nodep);
+    }
+    // Whether selsByHash holds the same select as selp, whose hash is given; found by hash so
+    // that collecting the selects of a constraint stays linear
+    static bool hasSameSel(const std::multimap<V3Hash, AstNodeExpr*>& selsByHash, V3Hash hash,
+                           AstNodeExpr* selp) {
+        return std::any_of(selsByHash.lower_bound(hash), selsByHash.upper_bound(hash),
+                           [selp](const std::pair<const V3Hash, AstNodeExpr*>& entry) {
+                               return entry.second->sameTree(selp);
+                           });
+    }
+    // 'index < size', compared unsigned at a width holding both, so a negative index is out of
+    // range
+    static AstNodeExpr* newIndexInRangep(FileLine* fl, AstNodeExpr* indexp, AstNodeExpr* sizep) {
+        const int width = std::max(indexp->width(), sizep->width());
+        if (indexp->width() < width) {
+            AstNodeExpr* const extendp = new AstExtend{fl, indexp, width};
+            extendp->user1(indexp->user1());
+            indexp = extendp;
+        }
+        if (sizep->width() < width) {
+            AstNodeExpr* const extendp = new AstExtend{fl, sizep, width};
+            extendp->user1(sizep->user1());
+            sizep = extendp;
+        }
+        AstLt* const ltp = new AstLt{fl, indexp, sizep};
+        ltp->user1(true);
+        return ltp;
+    }
+    // Number of elements an array has when the constraints are set up
+    static AstNodeExpr* newCurrentSizep(FileLine* fl, AstNodeExpr* arrayp) {
+        if (const AstUnpackArrayDType* const unpackDtp
+            = VN_CAST(arrayp->dtypep()->skipRefp(), UnpackArrayDType)) {
+            return new AstConst{fl, static_cast<uint32_t>(unpackDtp->elementsConst())};
+        }
+        AstCMethodHard* const sizep
+            = new AstCMethodHard{fl, arrayp->cloneTreePure(false), VCMethod::DYN_SIZE};
+        sizep->dtypeSetInt();
+        return sizep;
+    }
+    // A random index into a struct array must address an element, so a constraint item whose
+    // expression (searchp) uses arr[e].member becomes:
+    //   e < arr.size();  (e < current arr.size()) -> item;
+    // The size of a size-constrained array is that being solved, but its elements exist only
+    // once it is resized after solving its size, which the implication waits for.
+    bool guardRandIndexedStructSels(AstNode* nodep, AstNode* searchp) {
+        if (nodep == m_guardedp) return false;
+        // Distinct element selects, in order of appearance
+        std::vector<AstNodeExpr*> selps;
+        std::multimap<V3Hash, AstNodeExpr*> selsByHash;
+        searchp->foreach([&](AstStructSel* structSelp) {
+            for (AstNodeExpr* selp = structSelp->fromp(); isArraySel(selp);
+                 selp = arraySelFromp(selp)) {
+                if (hasRandIndex(selp)) {
+                    const V3Hash hash = V3Hasher::uncachedHash(selp);
+                    if (!hasSameSel(selsByHash, hash, selp)) {
+                        selsByHash.emplace(hash, selp);
+                        selps.push_back(selp);
+                    }
+                }
+            }
+        });
+        if (selps.empty()) return false;
+        FileLine* const fl = nodep->fileline();
+        const AstConstraintExpr* const exprp = VN_CAST(nodep, ConstraintExpr);
+        AstNode* guardsp = nullptr;
+        AstNodeExpr* existsp = nullptr;
+        for (AstNodeExpr* const selp : selps) {
+            AstNodeExpr* const arrayp = arraySelFromp(selp);
+            AstNodeExpr* const indexp = arraySelIndexp(selp);
+            AstNodeExpr* sizep = newCurrentSizep(fl, arrayp);
+            AstNodeExpr* const elemExistsp
+                = newIndexInRangep(fl, indexp->cloneTreePure(false), sizep->cloneTreePure(false));
+            existsp = existsp ? new AstLogAnd{fl, existsp, elemExistsp} : elemExistsp;
+            existsp->user1(true);
+            const AstVarRef* const arrayRefp = VN_CAST(arrayp, VarRef);
+            if (AstVar* const sizeVarp
+                = arrayRefp ? VN_CAST(arrayRefp->varp()->user4p(), Var) : nullptr) {
+                VL_DO_DANGLING(sizep->deleteTree(), sizep);
+                sizep = new AstVarRef{fl, VN_AS(sizeVarp->user2p(), NodeModule), sizeVarp,
+                                      VAccess::READ};
+                sizep->user1(true);
+            }
+            AstConstraintExpr* const guardp = new AstConstraintExpr{
+                fl, newIndexInRangep(fl, indexp->cloneTreePure(false), sizep)};
+            guardp->isSoft(exprp && exprp->isSoft());
+            guardsp = AstNode::addNext(guardsp, guardp);
+        }
+        VNRelinker handle;
+        nodep->unlinkFrBack(&handle);
+        AstConstraintIf* const ifp = new AstConstraintIf{fl, existsp, nodep, nullptr};
+        handle.relink(ifp);
+        ifp->addNextHere(guardsp);
+        VL_RESTORER(m_guardedp);
+        m_guardedp = nodep;
+        iterate(ifp);
+        return true;
+    }
     void visit(AstStructSel* nodep) override {
         if (editFormat(nodep)) return;
+        if (randIndexedArraySel(nodep)) {
+            lowerRandIndexedStructSel(nodep);
+            return;
+        }
         const bool outermost = !m_deferRandModeHoist;
         AstNodeExpr* const origp = outermost ? nodep->cloneTree(false) : nullptr;
         VL_RESTORER(m_structSel);
@@ -2857,6 +3056,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // constraint-items list by the pre-pass; already fully lowered.
     }
     void visit(AstConstraintIf* nodep) override {
+        if (guardRandIndexedStructSels(nodep, nodep->condp())) return;
         // Outside a fold, this if's branches are folded here and m_constraintVars collects
         // their names for the constraint replacing it; a nested if adds to its parent's fold
         const bool foldOwner = !m_wantSingle;
@@ -3142,6 +3342,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     }
 
     void visit(AstConstraintExpr* nodep) override {
+        if (guardRandIndexedStructSels(nodep, nodep->exprp())) return;
         // IEEE 1800-2023 18.5.13: 'disable soft' is a meta-level directive on
         // the constraint graph, lowered to a void RANDOMIZER_DISABLE_SOFT
         // call.  Conditional occurrences (if / foreach / implication body)
