@@ -94,7 +94,7 @@ public:
     // External interface to client code
 
     // CONSTRUCTOR
-    explicit VerilatedFst(void* fst = nullptr);
+    explicit VerilatedFst(void* fstp = nullptr);
     ~VerilatedFst();
 
     // METHODS - All must be thread safe

@@ -22,7 +22,6 @@ internalsDump:
 -V{t#,#}+    Vt_verilated_debug___024root___eval_triggers_vec__ico
 -V{t#,#}+    Vt_verilated_debug___024root___dump_triggers__ico
 -V{t#,#}+    Vt_verilated_debug___024root___trigger_anySet__ico
--V{t#,#}         'ico' region trigger index 0 is active: @( clk)
 -V{t#,#}         'ico' region trigger index 64 is active: Internal 'ico' trigger - first iteration
 -V{t#,#}+    Vt_verilated_debug___024root___eval_act
 -V{t#,#}+    Vt_verilated_debug___024root___eval_triggers_vec__act

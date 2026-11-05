@@ -1,0 +1,202 @@
+%Error: t/t_assign_dynsize_bad.v:31:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nq'
+                                     : ... note: In instance 't'
+   31 |     nq[i] <= 1;   
+      |     ^~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assign_dynsize_bad.v:32:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nq'
+                                     : ... note: In instance 't'
+   32 |     nq[i][7:0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:33:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nq'
+                                     : ... note: In instance 't'
+   33 |     nq[0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:34:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nq'
+                                     : ... note: In instance 't'
+   34 |     nq[0][7:0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:41:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nd'
+                                     : ... note: In instance 't'
+   41 |     nd[i] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:42:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nd'
+                                     : ... note: In instance 't'
+   42 |     nd[i][7:0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:43:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nd'
+                                     : ... note: In instance 't'
+   43 |     nd[0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:44:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nd'
+                                     : ... note: In instance 't'
+   44 |     nd[0][7:0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:51:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'na'
+                                     : ... note: In instance 't'
+   51 |     na[i] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:52:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'na'
+                                     : ... note: In instance 't'
+   52 |     na[i][7:0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:53:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'na'
+                                     : ... note: In instance 't'
+   53 |     na[0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:54:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'na'
+                                     : ... note: In instance 't'
+   54 |     na[0][7:0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:60:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nw'
+                                     : ... note: In instance 't'
+   60 |     nw[i] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:61:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nw'
+                                     : ... note: In instance 't'
+   61 |     nw[i][7:0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:62:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nw'
+                                     : ... note: In instance 't'
+   62 |     nw[0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:63:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nw'
+                                     : ... note: In instance 't'
+   63 |     nw[0][7:0] <= 1;   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:72:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'ns'
+                                     : ... note: In instance 't'
+   72 |     ns[i] <= "x";   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:73:8: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nsa'
+                                     : ... note: In instance 't'
+   73 |     nsa[i][i] <= "x";   
+      |        ^
+%Error: t/t_assign_dynsize_bad.v:74:5: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'ns'
+                                     : ... note: In instance 't'
+   74 |     ns[0] <= "x";   
+      |     ^~
+%Error: t/t_assign_dynsize_bad.v:75:8: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nsa'
+                                     : ... note: In instance 't'
+   75 |     nsa[0][0] <= "x";   
+      |        ^
+%Error: t/t_assign_dynsize_bad.v:87:10: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 's_dyn'
+                                      : ... note: In instance 't'
+   87 |     Cls::s_dyn[0] <= 1;   
+      |          ^~~~~
+%Error: t/t_assign_dynsize_bad.v:89:18: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 's_dyn'
+                                      : ... note: In instance 't'
+   89 |     nc[nci[0]++].s_dyn[0] <= 1;   
+      |                  ^~~~~
+%Error: t/t_assign_dynsize_bad.v:91:9: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'aa'
+                                     : ... note: In instance 't'
+   91 |     nst.aa[0] <= 1;   
+      |         ^~
+%Error: t/t_assign_dynsize_bad.v:92:9: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'da'
+                                     : ... note: In instance 't'
+   92 |     nst.da[0] <= 1;   
+      |         ^~
+%Error: t/t_assign_dynsize_bad.v:93:9: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'q'
+                                     : ... note: In instance 't'
+   93 |     nst.q[0] <= 1;   
+      |         ^
+%Error: t/t_assign_dynsize_bad.v:94:13: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'da'
+                                      : ... note: In instance 't'
+   94 |     nsta[1].da[0] <= 1;   
+      |             ^~
+%Error: t/t_assign_dynsize_bad.v:95:8: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'naa'
+                                     : ... note: In instance 't'
+   95 |     naa[0][0] <= 1;   
+      |        ^
+%Error: t/t_assign_dynsize_bad.v:96:8: Dynamically-sized variable not allowed in non-blocking assignment (IEEE 1800-2023 6.21): 'nad'
+                                     : ... note: In instance 't'
+   96 |     nad[0][0] <= 1;   
+      |        ^
+%Error: t/t_assign_dynsize_bad.v:110:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'cq'
+                                       : ... note: In instance 't'
+  110 |   assign cq[0] = 1;   
+      |          ^~
+%Error: t/t_assign_dynsize_bad.v:111:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'cq'
+                                       : ... note: In instance 't'
+  111 |   assign cq[1][7:0] = 1;   
+      |          ^~
+%Error: t/t_assign_dynsize_bad.v:116:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'cd'
+                                       : ... note: In instance 't'
+  116 |   assign cd[0] = 1;   
+      |          ^~
+%Error: t/t_assign_dynsize_bad.v:117:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'cd'
+                                       : ... note: In instance 't'
+  117 |   assign cd[1][7:0] = 1;   
+      |          ^~
+%Error: t/t_assign_dynsize_bad.v:122:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'ca'
+                                       : ... note: In instance 't'
+  122 |   assign ca[0] = 1;   
+      |          ^~
+%Error: t/t_assign_dynsize_bad.v:123:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'ca'
+                                       : ... note: In instance 't'
+  123 |   assign ca[1][7:0] = 1;   
+      |          ^~
+%Error: t/t_assign_dynsize_bad.v:128:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'cw'
+                                       : ... note: In instance 't'
+  128 |   assign cw[0] = 1;   
+      |          ^~
+%Error: t/t_assign_dynsize_bad.v:129:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'cw'
+                                       : ... note: In instance 't'
+  129 |   assign cw[1][7:0] = 1;   
+      |          ^~
+%Error: t/t_assign_dynsize_bad.v:136:10: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'cs'
+                                       : ... note: In instance 't'
+  136 |   assign cs[0] = "x";   
+      |          ^~
+%Error: t/t_assign_dynsize_bad.v:137:13: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'csa'
+                                       : ... note: In instance 't'
+  137 |   assign csa[0][0] = "x";   
+      |             ^
+%Error: t/t_assign_dynsize_bad.v:140:14: Dynamically-sized variable not allowed in continuous assignment (IEEE 1800-2023 6.21): 'da'
+                                       : ... note: In instance 't'
+  140 |   assign cst.da[0] = 1;   
+      |              ^~
+%Error: t/t_assign_dynsize_bad.v:158:12: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'pq'
+                                       : ... note: In instance 't'
+  158 |     assign pq[0] = 1;   
+      |            ^~
+%Error: t/t_assign_dynsize_bad.v:159:17: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'pq'
+                                       : ... note: In instance 't'
+  159 |     assign pr = pq[0];   
+      |                 ^~
+%Error: t/t_assign_dynsize_bad.v:160:18: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'pq'
+                                       : ... note: In instance 't'
+  160 |     assign pr8 = pq[0][7:0];   
+      |                  ^~
+%Error: t/t_assign_dynsize_bad.v:161:22: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'pq'
+                                       : ... note: In instance 't'
+  161 |     assign pbit = pb[pq[0]];   
+      |                      ^~
+%Error: t/t_assign_dynsize_bad.v:163:12: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'ps'
+                                       : ... note: In instance 't'
+  163 |     assign ps[0] = "x";   
+      |            ^~
+%Error: t/t_assign_dynsize_bad.v:164:15: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'psa'
+                                       : ... note: In instance 't'
+  164 |     assign psa[0][0] = "x";   
+      |               ^
+%Error: t/t_assign_dynsize_bad.v:165:18: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'ps'
+                                       : ... note: In instance 't'
+  165 |     assign pr8 = ps[0];   
+      |                  ^~
+%Error: t/t_assign_dynsize_bad.v:166:21: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'psa'
+                                       : ... note: In instance 't'
+  166 |     assign pr8 = psa[0][0];   
+      |                     ^
+%Error: t/t_assign_dynsize_bad.v:167:21: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'da'
+                                       : ... note: In instance 't'
+  167 |     assign pr = pst.da[0];   
+      |                     ^~
+%Error: t/t_assign_dynsize_bad.v:168:17: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'pw'
+                                       : ... note: In instance 't'
+  168 |     assign pr = pw[0];   
+      |                 ^~
+%Error: t/t_assign_dynsize_bad.v:169:20: Dynamically-sized variable not allowed in procedural continuous assignment (IEEE 1800-2023 6.21): 'paa'
+                                       : ... note: In instance 't'
+  169 |     assign pr = paa[0][0];   
+      |                    ^
+%Error: Exiting due to

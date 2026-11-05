@@ -15,6 +15,7 @@ package Pkg;
     BAR,
     BAZ
   } enum_t;
+
 endpackage
 package PkgImp;
   import Pkg::*;
@@ -24,8 +25,11 @@ endpackage
 class Cls;
   bit cg_clk;
   int member = 1;
+  local int lmember;
+  protected int pmember;
   rand int rmember1;
   rand int rmember2;
+  randc bit [1:0] rcmember;
   rand int rarray[3];
   constraint array_values {
     solve rarray[0] before rmember1;
@@ -45,6 +49,47 @@ class Cls;
   endfunction
   function void method;
     if (this != this) $stop;
+  endfunction
+  task delay_method;
+    #1;
+  endtask
+  task delay_caller;
+    delay_method();
+  endtask
+endclass
+
+class ClsParam #(type T = int, int P = 1);
+  T pval;
+  T tq[$];  // Queue post pass descends into the element, so T is reached with m_arrayPost
+  localparam int PP = P;
+endclass
+
+class ClsParam2 #(
+    type T1,
+    type T2 = bit,
+    parameter P3 = 3,
+    parameter int P4 = 4
+);
+  localparam type LT = int;
+  T1 a;
+  T2 b;
+  LT c;
+  localparam int SUM = P3 + P4;
+endclass
+
+virtual class VBase;
+  pure virtual function int vfunc();
+endclass
+
+class VDer extends VBase;
+  function int vfunc();
+    return 1;
+  endfunction
+endclass
+
+class ClsExt extends Cls;
+  function int inherited();
+    return rmember1 + member;
   endfunction
 endclass
 
@@ -85,8 +130,51 @@ module t (/*AUTOARG*/
   } union_t;
 
   const ps_t ps[3];
+  const int c_scalar = 5;
   us_t us;
   union_t unu;
+
+  // Signedness differing from the keyword's default
+  int unsigned uns_int;
+
+  // Ascending packed range: the declared direction must survive
+  /* verilator lint_off ASCRANGE */
+  logic [2:3] ascending_packed;
+  /* verilator lint_on ASCRANGE */
+
+  // Typedef of a queue: the dimension belongs after the typedef's name
+  typedef int queue_t[$];
+  queue_t queue_of_t;
+
+  // Unpacked struct with an unpacked array member
+  typedef struct {
+    logic [3:0] marr[2];
+  } usarr_t;
+  usarr_t usarr;
+
+  // Reference to a named enum, so the dtype is emitted by name rather than re-expanded
+  e_t plain_enum;
+
+  /* verilator lint_off ENUMVALUE */
+  // No item has this value, so the lookup runs off the end and prints the number
+  localparam e_t LP_ENUM_ODD = e_t'(7);
+  // Pre-width this is a bare Const while ONE has no value yet, so the item's
+  // value can be missing during the lookup
+  localparam e_t LP_ENUM_ONE = 1;
+  /* verilator lint_on ENUMVALUE */
+
+  // Real to integral; its own variable, as 'i1' is written elsewhere
+  int r2i;
+
+  // Implicit type with explicit signedness
+  wire signed [3:0] implicit_signed = 4'sb1;
+
+  // Class references: a handle array, a specialization
+  Cls cls_arr[3];
+  ClsExt cls_ext;
+  ClsParam #(bit, 2) cls_param;
+  ClsParam2 #(byte, bit, 1, 2) cls_param2;
+  VDer vder;
 
   integer i1;
   int array[3];
@@ -98,6 +186,7 @@ module t (/*AUTOARG*/
   endfunction
 
   Iface the_ifaces [3:0] (.*);
+  localparam int CP_SCOPE_PARAM = ClsParam#(bit, 2)::PP;
 
   initial begin
     if ($test$plusargs("HELLO")) $display("Hello argument found.");
@@ -124,6 +213,16 @@ module t (/*AUTOARG*/
 
   reg [15:0] pubflat_r;
   wire [15:0] pubflat_w = pubflat;
+
+  // Variable part-select whose base is no longer a VarRef at late stages
+  logic [15:0] concat_src;
+  assign concat_src = {pubflat_r[7:0], pubflat_w[15:8]};
+  logic [3:0] sel_idx;
+  wire [1:0] var_part = concat_src[sel_idx +: 2];
+
+  // A tri-type net, for verilogKwd's isTristate() form
+  tri [1:0] tri_sig;
+  assign tri_sig = in ? 2'b01 : 2'bz;
   int fd;
   int i;
 
@@ -144,6 +243,7 @@ module t (/*AUTOARG*/
     logic [11:10] nn3;
   } nibble_t;
   nibble_t [5:4] nibblearray[3:2];
+  logic after_struct_packed;
 
   task t;
     $display("stmt");
@@ -152,9 +252,44 @@ module t (/*AUTOARG*/
     $display("stmt");
     return v == 0 ? 99 : ~v + 1;
   endfunction
+  function automatic void refports(ref int rq[$], ref int ra[string], ref int rd[],
+                                   input int withdef = 5);
+    rq.push_back(withdef);
+    ra["k"] = 1;
+    rd = new[1];
+  endfunction
+
+  // Implicit port type with explicit signedness
+  function automatic int implicit_ports(input signed [3:0] sa);
+    return int'(sa);
+  endfunction
+  function automatic logic signed [7:0] signed_val();
+    return -1;
+  endfunction
+  import "DPI-C" pure function int dpi_pure(input int a);
+  import "DPI-C" context function int dpi_ctx(input int a);
+  import "DPI-C" dpi_c_name = function int dpi_renamed(input int a);
+  import "DPI-C" task dpi_task_i(input int a);
+  import "DPI-C" function int dpi_two(input int a, input int b);
+  import "DPI-C" function int dpi_def(input int a = 7);
+  export "DPI-C" function dpi_exported;
+  function int dpi_exported(input int a);
+    return a + 1;
+  endfunction
+  export "DPI-C" task dpi_exported_task;
+  task dpi_exported_task(input int a);
+    $display("exported task %0d", a);
+  endtask
+  import "DPI-C" function void dpii_open(input bit [] h[]);
 
   sub sub(.*);
   seq_event seq_event(.*);
+
+  logic [2:0] pm_out;
+  param_mod #(.PT(byte), .PW(3)) pm (
+      .pin(8'sd1),
+      .pout(pm_out)
+  );
 
   initial begin
     int other;
@@ -267,6 +402,48 @@ module t (/*AUTOARG*/
 
     mod_res = mod_val % 5;
 
+    if (str.len() > 0) $write("");  // AstLenN
+    sum = f(.v(1));  // Named argument
+    r2i = int'(r);  // Real to integral: rounds
+    if (r2i != 0) $write("");
+    refports(q, assoc, dyn);
+    sum = dpi_pure(1) + dpi_ctx(2) + dpi_renamed(3);
+    sum = dpi_two(1, 2) + dpi_def();
+    dpi_task_i(4);
+    dpi_exported_task(5);
+    if (plain_enum == LP_ENUM_ODD || plain_enum == LP_ENUM_ONE) $write("");
+    if (pm_out != 0) $write("");
+    // Selects by the kind of their base node, as visit(AstSel*) switches on it:
+    //   VarRef    - ascending_packed[2]
+    //   VarXRef   - sub.xr_vec[1]              (cross-module)
+    //   MemberSel - cls_ext.member[1]          (class member)
+    //   StructSel - us.a[1]                    (unpacked struct member)
+    //   ArraySel  - arraymanyd[10][12][14][6]  (unpacked element, then packed)
+    //   Sel       - arraymanyd[...][6][4][2]   (select of a select)
+    if (us.a[1]) $write("");
+    if (c_scalar != 5) $stop;
+    if (sub.xr_vec[1]) $write("");
+    if (cls_ext != null && cls_ext.member[1]) $write("");
+    sum = implicit_ports(-4'sd1);
+    if (implicit_signed < 0) $write("");
+    if (cls_ext != null && cls_ext.inherited() != 0) $write("");
+    if (cls_param2 != null && cls_param2.SUM != 0) $write("");
+    sum = dpi_exported(3);
+    if (cls_arr[0] == null) $write("");
+    if (cls_param.PP != 2) $write("");
+    if (vder.vfunc() != 1) $write("");
+    if (after_struct_packed) $write("");
+    if (ascending_packed[2]) $write("");
+    if (uns_int > 0) $write("");
+    if (usarr.marr[0] != 0) $write("");
+    if (arraymanyd[10][12][14][6][4][2]) $write("");
+    if (var_part != 0) $write("");
+    if (tri_sig[0]) $write("");
+    if (cls_param.tq.size() != 0) $write("");
+    if (CP_SCOPE_PARAM != 2) $write("");
+    sel_idx <= cyc[3:0];
+    queue_of_t.push_back(1);
+
     $display("%g", $log10(r));
     $display("%g", $ln(r));
     $display("%g", $exp(r));
@@ -298,7 +475,7 @@ module t (/*AUTOARG*/
     if ($stable(cyc, clk)) $write("");
     if ($changed(cyc, clk)) $write("");
     if ($past(cyc[1], 5)) $write("");
-
+    if (signed_val()[3:0] != 4'hf) $stop;
     force sum = 10;
     repeat (2) if (sum != 10) $stop;
     release sum;
@@ -439,10 +616,31 @@ module t (/*AUTOARG*/
     }
   endgroup
 
+  // Covergroup with both-open and default range lists
+  covergroup cg_open_default;
+    open_both: coverpoint cg_sig {
+      bins all[] = {[$ : $]};
+    }
+    defaults: coverpoint cg_sig {
+      bins remaining[] = default;
+    }
+  endgroup
+
+  // Covergroup with array transitions and an array-valued set expression.
+  int cg_set_values[$] = '{1, 2};
+  covergroup cg_forms with function sample (bit [3:0] value);
+    cp: coverpoint value {
+      bins lists[] = (1, 2 => 3, 4);
+      ignore_bins ignored_array[] = (7 => 8);
+      illegal_bins illegal_array[] = (11 => 12);
+      bins selected[] = cg_set_values;
+    }
+  endgroup
+
   // Covergroup with cross coverage
   covergroup cg_cross;
     cp_x: coverpoint cg_sig {
-      bins x0 = {0};
+      bins x0 = {(0)};
       bins x1 = {1};
     }
     cp_y: coverpoint cg_sig2 {
@@ -487,9 +685,29 @@ module t (/*AUTOARG*/
   cg_trans   cg_trans_inst   = new;
   cg_cross   cg_cross_inst   = new;
   cg_live_cross cg_live_cross_inst = new;
+
+  initial begin
+    Cls obj;
+    obj = new;
+    obj.delay_caller();
+  end
+endmodule
+
+module param_mod #(
+    parameter type PT = int,
+    parameter int PW = 4
+) (
+    input PT pin,
+    output logic [PW-1:0] pout
+);
+  typedef PT pt_alias_t;
+  pt_alias_t pt_var;
+  assign pt_var = pin;
+  assign pout = PW'(pt_var);
 endmodule
 
 module sub(input logic clk);
+  logic [7:0] xr_vec;
   if (1) begin : sub_gen
     typedef enum logic [1:0] {SUB_A, SUB_B} sub_e;
   end
@@ -516,3 +734,6 @@ endmodule
 package p;
   logic pkgvar;
 endpackage
+
+`verilator_config
+threads_group -module "sub"

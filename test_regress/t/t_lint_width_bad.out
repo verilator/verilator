@@ -1,4 +1,4 @@
-%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:17:20: Operator VAR 'XS' expects 4 bits on the Initial value, but Initial value's CONST '?32?bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' generates 32 bits.
+%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:17:20: Operator VAR 'XS' expects 4 bits on the Initial value, but Initial value's CONST '?32?bx' generates 32 bits.
                                                : ... note: In instance 't'
    17 |   localparam [3:0] XS = 'hx;   
       |                    ^~

@@ -288,6 +288,39 @@ module t;
       `checkh(bs[0].wide[32*(cyc%8)+:32], 32'h5555_6666);
       `checkh(bs[1].narrow, 2);
     end
+    begin  // Keyed patterns, sized by the largest index key
+      int qk[$];
+      int dk[];
+      int dn[];
+      nested_t nk;
+      qk = '{4: 5, 1: 2, default: 9};
+      `checkh(qk.size(), 5);
+      `checkh(qk[cyc%5], cyc % 5 == 4 ? 5 : cyc % 5 == 1 ? 2 : 9);
+      dk = '{2: 3, 0: 1, 1: 2};
+      `checkh(dk[cyc%3], cyc % 3 + 1);
+      // Sized by new[] instead, which ignores an index out of bounds
+      dn = new[3] ('{1: 8, 5: 7, default: 6});
+      `checkh(dn.size(), 3);
+      `checkh(dn[cyc%3], cyc % 3 == 1 ? 8 : 6);
+      // Nested in a struct, which is in the pool whole
+      nk = '{
+          wide: {8{32'h9999_aaaa}},
+          q: '{1: 11, 0: 10},
+          d: '{2: 14, default: 12},
+          m: '{1: 13},
+          a: '{1, 2, 3},
+          s: '{wide: {8{32'h0}}, narrow: 0}
+      };
+      `checkh(nk.q[cyc%2], cyc % 2 + 10);
+      `checkh(nk.d.size(), 3);
+      `checkh(nk.d[cyc%3], cyc % 3 == 2 ? 14 : 12);
+    end
+    if (cyc == 1) begin  // A bounded queue is not in the pool, so overflow warns where assigned
+      int qbk[$:2];
+      qbk = '{4: 7, default: 1};
+      `checkh(qbk.size(), 3);
+      `checkh(qbk[cyc%3], 1);
+    end
     begin
       withQueue_t wq;
       wq = '{a: 1, q: '{2, 3}};  // Small, but holds a container, so in the pool whole

@@ -1757,10 +1757,13 @@ static VCastable computeCastableImp(const AstNodeDType* toDtp, const AstNodeDTyp
     } else if (VN_IS(toDtp, ClassRefDType) && VN_IS(fromDtp, ClassRefDType)) {
         const AstClass* const toClassp = VN_AS(toDtp, ClassRefDType)->classp();
         const AstClass* const fromClassp = VN_AS(fromDtp, ClassRefDType)->classp();
-        const bool downcast = AstClass::isClassExtendedFrom(toClassp, fromClassp);
-        const bool upcast = AstClass::isClassExtendedFrom(fromClassp, toClassp);
+        const bool downcast = AstClass::isClassDerivedFrom(toClassp, fromClassp);
+        const bool upcast = AstClass::isClassDerivedFrom(fromClassp, toClassp);
         if (upcast) return VCastable::COMPATIBLE;
-        if (downcast) return VCastable::DYNAMIC_CLASS;
+        // IEEE 1800-2023 8.16: The object may be of a class derived from both types
+        if (downcast || toClassp->isInterfaceClass() || fromClassp->isInterfaceClass()) {
+            return VCastable::DYNAMIC_CLASS;
+        }
         return VCastable::INCOMPATIBLE;
     } else if (const AstIfaceRefDType* const toIfp
                = VN_CAST(checkIfaceArgCompat ? toDtp->elemDTypep(true) : toDtp, IfaceRefDType)) {
@@ -1842,7 +1845,16 @@ AstNodeDType* AstNode::getCommonClassTypep(AstNode* node1p, AstNode* node2p) {
     {
         const VCastable castable = computeCastable(node1p->dtypep(), node2p->dtypep(), node2p);
         if (castable.isSameish() || castable.isCompatible()) return node1p->dtypep();
-        if (castable == VCastable::DYNAMIC_CLASS) return node2p->dtypep();
+        if (castable == VCastable::DYNAMIC_CLASS) {
+            // Only a downcast has node2's type as the common type
+            const AstClassRefDType* const refp
+                = VN_CAST(node1p->dtypep()->skipRefp(), ClassRefDType);
+            const AstClassRefDType* const baserefp
+                = VN_CAST(node2p->dtypep()->skipRefp(), ClassRefDType);
+            if (refp && baserefp
+                && AstClass::isClassDerivedFrom(refp->classp(), baserefp->classp()))
+                return node2p->dtypep();
+        }
     }
 
     AstClassRefDType* classDtypep1 = VN_CAST(node1p->dtypep()->skipRefp(), ClassRefDType);

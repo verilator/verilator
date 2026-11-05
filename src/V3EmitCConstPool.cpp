@@ -76,16 +76,6 @@ class EmitCConstPool final : public EmitCConstInit {
             if (varp->dtypep()->isLiteralType()) putns(varp, "VL_CONSTINIT_CXX20 ");
             putns(varp, "const ");
             emitVarDefn(varp);
-            // Account for file splitting
-            varp->valuep()->foreach([this](const AstConst* constp) {
-                if (constp->num().isString()) {
-                    splitSizeInc(AstNode::INSTR_COUNT_STR);
-                } else if (constp->isWide()) {
-                    splitSizeInc(constp->widthWords());
-                } else {
-                    splitSizeInc(1);
-                }
-            });
             putns(varp, ";\n");
             // Keep track of stats
             ++m_emitted[varp->valuep()->type()];

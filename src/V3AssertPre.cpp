@@ -514,11 +514,6 @@ private:
             exprp->foreach([](const AstNodeVarRef* varrefp) {
                 // Prevent confusing BLKANDNBLK warnings on clockvars due to generated assignments
                 varrefp->fileline()->warnOff(V3ErrorCode::BLKANDNBLK, true);
-                // Mark the driven signal so later passes (e.g. V3Inst port
-                // connection) know the drive flows out from inside the cell.
-                // Item expressions are plain signal references, so only the
-                // driven signal is marked, never index selects.
-                varrefp->varp()->isClockingDriven(true);
             });
             AstVarRef* const skewedReadRefp = new AstVarRef{flp, varp, VAccess::READ};
             skewedReadRefp->user1(true);
@@ -942,7 +937,13 @@ private:
 
         // Find Clocking's buried under nodep->exprsp
         iterateChildren(nodep);
-        if (!nodep->immediate()) nodep->sentreep(newSenTree(nodep, nullptr, nodep));
+        if (!nodep->immediate()) {
+            nodep->sentreep(newSenTree(nodep, nullptr, nodep));
+            // An empty SenTree only follows the no-clock error.
+            if (!nodep->sentreep()->sensesp()) {
+                VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+            }
+        }
     }
     void visit(AstFalling* nodep) override {
         if (nodep->user1SetOnce()) return;
@@ -1622,14 +1623,14 @@ private:
             };
 
             AstLoop* const loopp = new AstLoop{flp};
-            AstAssign* const decrementVar = new AstAssign{
+            AstAssign* const decrementVarp = new AstAssign{
                 flp, new AstVarRef{flp, activep, VAccess::WRITE},
                 new AstSub{flp, new AstVarRef{flp, activep, VAccess::READ}, new AstConst{flp, 1}}};
             loopp->addStmtsp(new AstLoopTest{
                 flp, loopp, new AstLogNot{flp, new AstVarRef{flp, donep, VAccess::READ}}});
             {
                 AstNode* const passp = new AstPExprClause{flp};
-                passp->addNext(decrementVar);
+                passp->addNext(decrementVarp);
                 passp->addNext(setDone());
                 AstNodeExpr* passCondp = rhsp;
                 if (nodep->isOverlapping()) {
@@ -1639,7 +1640,7 @@ private:
             }
             {
                 AstNode* const failp = new AstPExprClause{flp, false};
-                failp->addNext(decrementVar->cloneTree(false));
+                failp->addNext(decrementVarp->cloneTree(false));
                 failp->addNext(setDone());
                 loopp->addStmtsp(new AstIf{
                     flp,

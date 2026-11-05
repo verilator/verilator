@@ -20,12 +20,13 @@ test.lint(
         # unsupported (dropped) but the bin is still created with a non-NONE VTransRepType, which
         # is what exercises VTransRepType::ascii() and AstCoverTransItem::dump()'s repType arm.
         "--Wno-COVERIGN",
+        "--bbox-unsup",  # Continue after the set-expression bin to cover its dump and emission
         "--timing",
         "--dumpi-tree 9 --dumpi-V3EmitV 9 --debug-emitv",  # Dev coverage of the V3EmitV code
         "--dump-graph --dumpi-tree-json 9 --no-json-ids"
     ])
 
-output_vs = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*_width.tree.v")
+output_vs = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*_widthcommit.tree.v")
 
 for output_v in output_vs:
     test.files_identical(output_v, test.golden_filename)

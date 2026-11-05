@@ -1,0 +1,34 @@
+%Error: t/t_covergroup_bins_unpack_bad2.v:15:24: Bin set expression must evaluate to a non-associative array, not 'int' (IEEE 1800-2023 19.5.1.2).
+                                               : ... note: In instance 't'
+   15 |       bins t_single = (scalar_value);   
+      |                        ^~~~~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_covergroup_bins_unpack_bad2.v:21:36: Bin set expression must evaluate to a non-associative array, not 'int' (IEEE 1800-2023 19.5.1.2).
+                                               : ... note: In instance 't'
+   21 |       ignore_bins scalar_ignore = (scalar_value);
+      |                                    ^~~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad2.v:22:41: Bin set expression must evaluate to a non-associative array, not 'int' (IEEE 1800-2023 19.5.1.2).
+                                               : ... note: In instance 't'
+   22 |       illegal_bins scalar_illegal[2] = (scalar_value);
+      |                                         ^~~~~~~~~~~~
+%Error: t/t_covergroup_bins_unpack_bad2.v:23:26: Bin set expression must evaluate to a non-associative array, not 'real' (IEEE 1800-2023 19.5.1.2).
+                                               : ... note: In instance 't'
+   23 |       bins real_value = (1.5);
+      |                          ^~~
+%Error: t/t_covergroup_bins_unpack_bad2.v:24:27: Bin set expression must evaluate to a non-associative array, not 'string' (IEEE 1800-2023 19.5.1.2).
+                                               : ... note: In instance 't'
+   24 |       bins string_value = string'("one");
+      |                           ^~~~~~
+%Error: t/t_covergroup_bins_unpack_bad2.v:25:40: Bin set expression must evaluate to a non-associative array, not 'bit' (IEEE 1800-2023 19.5.1.2).
+                                               : ... note: In instance 't'
+   25 |       wildcard bins wildcard_scalar = (1'b1);
+      |                                        ^~~~
+%Error: t/t_covergroup_bins_unpack_bad2.v:26:56: Bin set expression must evaluate to a non-associative array, not 'bit' (IEEE 1800-2023 19.5.1.2).
+                                               : ... note: In instance 't'
+   26 |       wildcard ignore_bins wildcard_scalar_ignore[] = (1'b0);
+      |                                                        ^~~~
+%Error: t/t_covergroup_bins_unpack_bad2.v:27:59: Bin set expression must evaluate to a non-associative array, not 'bit' (IEEE 1800-2023 19.5.1.2).
+                                               : ... note: In instance 't'
+   27 |       wildcard illegal_bins wildcard_scalar_illegal[2] = (1'b1);
+      |                                                           ^~~~
+%Error: Exiting due to

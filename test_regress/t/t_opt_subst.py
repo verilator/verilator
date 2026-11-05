@@ -15,10 +15,10 @@ test.compile(verilator_flags2=["--stats"])
 
 if test.vlt_all:
     test.file_grep(test.stats, r'Optimizations, Subst, Constant words reinlined\s+(\d+)', 156)
-    test.file_grep(test.stats, r'Optimizations, Subst, Substituted temps\s+(\d+)', 257)
+    test.file_grep(test.stats, r'Optimizations, Subst, Substituted temps\s+(\d+)', 262)
     test.file_grep(test.stats, r'Optimizations, Subst, Whole variable assignments deleted\s+(\d+)',
-                   1)
-    test.file_grep(test.stats, r'Optimizations, Subst, Whole variables substituted\s+(\d+)', 1)
+                   6)
+    test.file_grep(test.stats, r'Optimizations, Subst, Whole variables substituted\s+(\d+)', 6)
     test.file_grep(test.stats, r'Optimizations, Subst, Word assignments deleted\s+(\d+)', 100)
     test.file_grep(test.stats, r'Optimizations, Subst, Words substituted\s+(\d+)', 100)
 

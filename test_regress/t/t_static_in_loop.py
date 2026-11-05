@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_static_in_loop.v"
 
 test.compile()
 

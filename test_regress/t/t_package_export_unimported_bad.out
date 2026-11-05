@@ -1,0 +1,29 @@
+%Error: t/t_package_export_unimported_bad.v:18:14: Export object not imported: 'P1::y' (IEEE 1800-2023 26.6)
+   18 |   export P1::y;   
+      |              ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_package_export_unimported_bad.v:52:14: Export object conflicts with local declaration: 'P1::x' (IEEE 1800-2023 26.6)
+   52 |   export P1::x;   
+      |              ^
+        t/t_package_export_unimported_bad.v:53:11: ... Location of local declaration
+   53 |   integer x = 456;
+      |           ^
+%Error: t/t_package_export_unimported_bad.v:47:14: Export object conflicts with local declaration: 'P1::x' (IEEE 1800-2023 26.6)
+   47 |   export P1::x;   
+      |              ^
+        t/t_package_export_unimported_bad.v:46:11: ... Location of local declaration
+   46 |   integer x = 456;
+      |           ^
+%Error: t/t_package_export_unimported_bad.v:41:15: Export object not imported: 'P6x::x' (IEEE 1800-2023 26.6)
+   41 |   export P6x::x;   
+      |               ^
+%Error: t/t_package_export_unimported_bad.v:33:14: Export object not imported: 'P2::x' (IEEE 1800-2023 26.6)
+   33 |   export P2::x;   
+      |              ^
+%Error: t/t_package_export_unimported_bad.v:28:14: Export object not imported: 'P2::x' (IEEE 1800-2023 26.6)
+   28 |   export P2::x;   
+      |              ^
+%Error: t/t_package_export_unimported_bad.v:23:14: Export object not imported: 'P1::y' (IEEE 1800-2023 26.6)
+   23 |   export P1::y;   
+      |              ^
+%Error: Exiting due to

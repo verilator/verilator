@@ -78,6 +78,14 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+static void cleanTwoStateParamValue(AstVar* varp) {
+    if (AstNodeExpr* const valuep = VN_CAST(varp->valuep(), NodeExpr)) {
+        if (varp->dtypep() || VN_IS(valuep, ConsStruct)) {
+            SimulateVisitor::cleanTwoStateValue(valuep, varp->dtypep());
+        }
+    }
+}
+
 // Walk a class-typed node through typedef/RefDType chains to its ClassRefDType, or null.
 static AstClassRefDType* classRefDTypeOfNode(AstNode* nodep) {
     while (AstTypedef* const tdp = VN_CAST(nodep, Typedef)) nodep = tdp->subDTypep();
@@ -250,24 +258,22 @@ public:
                 var = varNum.toDouble();
             }
             return V3Number::epsilonEqual(var, hierOptParamp->num().toDouble());
-        } else {  // Now integer type is assumed
-            // Bitwidth of hierOptParamp is accurate because V3Width already calculated in the
-            // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
-            // to hierOptParamp width.
-            V3Number varNum{pinValuep, hierOptParamp->num().width()};
-            if (pinValuep->isDouble()) {  // Need to cast to int
-                // Parameter is actually an integral type, but passed value is floating point.
-                // Conversion from real to integer uses rounding in V3Width.cpp
-                varNum.opRToIRoundS(pinValuep->num());
-            } else if (pinValuep->isSigned()) {
-                varNum.opExtendS(pinValuep->num(), pinValuep->num().width());
-            } else {
-                varNum.opAssign(pinValuep->num());
-            }
-            V3Number isEq{pinValuep, 1};
-            isEq.opEq(varNum, hierOptParamp->num());
-            return isEq.isNeqZero();
         }
+        // Now integer type is assumed
+        // Bitwidth of hierOptParamp is accurate because V3Width already calculated in the
+        // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
+        // to hierOptParamp width.
+        V3Number varNum{pinValuep, hierOptParamp->num().width()};
+        if (pinValuep->isDouble()) {  // Need to cast to int
+            // Parameter is actually an integral type, but passed value is floating point.
+            // Conversion from real to integer uses rounding in V3Width.cpp
+            varNum.opRToIRoundS(pinValuep->num());
+        } else if (pinValuep->isSigned()) {
+            varNum.opExtendS(pinValuep->num(), pinValuep->num().width());
+        } else {
+            varNum.opAssign(pinValuep->num());
+        }
+        return varNum.isCaseEq(hierOptParamp->num());
     }
 };
 
@@ -1207,6 +1213,7 @@ class ParamProcessor final {
         // Resolve class-scoped references and any member selections they expose.
         resolveDeferredDotsReachableFrom(varp->valuep(), m_modp);
         V3Const::constifyParamsEdit(varp);
+        cleanTwoStateParamValue(varp);
         inProgress.erase(varp);
     }
 
@@ -1447,9 +1454,7 @@ class ParamProcessor final {
         } else {
             origNum.opAssign(origp->num());
         }
-        V3Number isEq{exprp, 1};
-        isEq.opEq(exprNum, origNum);
-        return isEq.isNeqZero();
+        return exprNum.isCaseEq(origNum);
     }
 
     // Rewrite placeholder __VGIfaceParam pins emitted by
@@ -1655,6 +1660,7 @@ class ParamProcessor final {
                     }
                     if (!cloneVarpUnresolved) {
                         V3Const::constifyParamsEdit(cloneVarp);
+                        cleanTwoStateParamValue(cloneVarp);
                         if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
                             // Stamp the port's type so equal values hash the same.
                             if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
@@ -1917,18 +1923,18 @@ class ParamProcessor final {
     }
 
     void resolveDefaultParams(AstNode* nodep) {
-        AstClassOrPackageRef* classOrPackageRef = VN_CAST(nodep, ClassOrPackageRef);
-        AstClassRefDType* classRefDType = VN_CAST(nodep, ClassRefDType);
+        AstClassOrPackageRef* classOrPackageRefp = VN_CAST(nodep, ClassOrPackageRef);
+        AstClassRefDType* classRefDTypep = VN_CAST(nodep, ClassRefDType);
         AstClass* classp = nullptr;
         AstPin* paramsp = nullptr;
 
-        if (classOrPackageRef) {
-            classp = VN_CAST(classOrPackageRef->classOrPackageSkipp(), Class);
+        if (classOrPackageRefp) {
+            classp = VN_CAST(classOrPackageRefp->classOrPackageSkipp(), Class);
             if (!classp) return;  // No parameters in packages
-            paramsp = classOrPackageRef->paramsp();
-        } else if (classRefDType) {
-            classp = classRefDType->classp();
-            paramsp = classRefDType->paramsp();
+            paramsp = classOrPackageRefp->paramsp();
+        } else if (classRefDTypep) {
+            classp = classRefDTypep->classp();
+            paramsp = classRefDTypep->paramsp();
         } else {
             nodep->v3fatalSrc("resolveDefaultParams called on node which is not a Class ref");
         }
@@ -2020,10 +2026,10 @@ class ParamProcessor final {
                     newPinp->name("__paramNumber" + cvtToStr(paramIdx + 1));
                     newPinp->param(true);
                     newPinp->modPTypep(m_classTypeParams[paramIdx].first);
-                    if (classOrPackageRef) {
-                        classOrPackageRef->addParamsp(newPinp);
-                    } else if (classRefDType) {
-                        classRefDType->addParamsp(newPinp);
+                    if (classOrPackageRefp) {
+                        classOrPackageRefp->addParamsp(newPinp);
+                    } else if (classRefDTypep) {
+                        classRefDTypep->addParamsp(newPinp);
                     }
                     // Update local tracking so future dependent defaults can find it
                     pinsByIndex[paramIdx] = newPinp;
@@ -3036,6 +3042,7 @@ class ParamVisitor final : public VNVisitor {
                         if (AstVar* const varp = VN_CAST(sp, Var)) {
                             if (varp->isParam() && varp->valuep()) {
                                 V3Const::constifyParamsEdit(varp);
+                                cleanTwoStateParamValue(varp);
                             }
                         }
                     }
@@ -3422,6 +3429,7 @@ class ParamVisitor final : public VNVisitor {
                 }
                 m_processor.resolveDeferredDotsReachableFrom(nodep, m_modp);
                 V3Const::constifyParamsEdit(nodep);
+                cleanTwoStateParamValue(nodep);
             }
         }
     }
@@ -3448,6 +3456,7 @@ class ParamVisitor final : public VNVisitor {
                     // caller's hasUnresolvedLparamXRef check sees a Const.
                     if (varp->isParam() && varp->valuep() && !VN_IS(varp->valuep(), Const)) {
                         V3Const::constifyParamsEdit(varp);
+                        cleanTwoStateParamValue(varp);
                     }
                     nodep->varp(varp);
                     return true;
@@ -3594,13 +3603,13 @@ class ParamVisitor final : public VNVisitor {
     }
     void visit(AstCellArrayRef* nodep) override {
         // Multi-dim iface arrays chain multiple selps via nextp(); constify each in place.
-        for (AstNode* const s : nodep->selpList()) { V3Const::constifyParamsEdit(s); }
+        for (AstNode* const sp : nodep->selpList()) { V3Const::constifyParamsEdit(sp); }
         std::vector<int> indices;
-        for (AstNode* const s : nodep->selpList()) {
-            const AstConst* const constp = VN_CAST(s, Const);
+        for (AstNode* const sp : nodep->selpList()) {
+            const AstConst* const constp = VN_CAST(sp, Const);
             if (!constp) {
                 nodep->v3error("Could not expand constant selection inside dotted reference: "
-                               << s->prettyNameQ());
+                               << sp->prettyNameQ());
                 return;
             }
             indices.push_back(constp->toSInt());
@@ -3742,7 +3751,7 @@ class ParamVisitor final : public VNVisitor {
                 for (AstNode* const ep : itemp->condspList()) {
                     if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
                         V3Number match{nodep, 1};
-                        match.opEq(ccondp->num(), exprp->num());
+                        match.opCaseEq(ccondp->num(), exprp->num());
                         if (!hit && match.isNeqZero()) {
                             hit = true;
                             keepp = itemp->itemsp();
@@ -3973,6 +3982,7 @@ void V3Param::finalizeDeferredParams(AstNetlist* rootp) {
     // Constify params whose Dot RHS was resolved by V3LinkDot::linkDotParamed.
     for (AstVar* const varp : rootp->deferredParamVarps()) {
         if (varp->valuep() && !VN_IS(varp->valuep(), Const)) V3Const::constifyParamsEdit(varp);
+        cleanTwoStateParamValue(varp);
     }
     rootp->clearDeferredParamVarps();
 }

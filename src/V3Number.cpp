@@ -800,11 +800,30 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
     case 'h':  // FALLTHRU
     case 'x': {
         int bit = width() - 1;
-        if (left || !fmtsize.empty()) {
+        const int fmtsizen = std::atoi(fmtsize.c_str());
+        const int bitsToDisplay = fmtsize.empty() ? width()
+                                                  : fmtsizen
+                                                        * (fmt == 'b'   ? 1
+                                                           : fmt == 'o' ? 3
+                                                                        : 4);
+        if (left || bit >= bitsToDisplay) {
             while (bit && bitIs0(bit)) --bit;
         }
         switch (fmt) {
         case 'b': {
+            if (bit == width() - 1) {
+                if (bit && (left || bit >= bitsToDisplay)) {
+                    if (bitIsX(bit)) {
+                        while (bit && bitIsX(bit)) --bit;
+                        if (bit || !bitIsX(0)) str += 'x';
+                    } else if (bitIsZ(bit)) {
+                        while (bit && bitIsZ(bit)) --bit;
+                        if (bit || !bitIsZ(0)) str += 'z';
+                    }
+                }
+            } else if (bitIsXZ(bit)) {
+                str += '0';
+            }
             for (; bit >= 0; --bit) {
                 if (bitIs0(bit)) {
                     str += '0';
@@ -819,7 +838,24 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
             break;
         }
         case 'o': {
+            if (bit == width() - 1) {
+                if (bit && (left || bit >= bitsToDisplay)) {
+                    if (bitIsX(bit)) {
+                        while (bit && bitIsX(bit)) --bit;
+                    } else if (bitIsZ(bit)) {
+                        while (bit && bitIsZ(bit)) --bit;
+                    }
+                }
+            }
             while ((bit % 3) != 2) ++bit;
+            if (bit < width() - 1) {
+                const char prev = bitIs0(bit + 1) ? '0' : (bitIsX(bit + 1) ? 'x' : 'z');
+                const int numX = countX(bit - 2, 3);
+                const int numZ = countZ(bit - 2, 3);
+                const char next
+                    = numX ? (numX == 3 ? 'x' : 'X') : (numZ ? (numZ == 3 ? 'z' : 'Z') : '0');
+                if (prev != next) str += prev;
+            }
             for (; bit > 0; bit -= 3) {
                 const int numX = countX(bit - 2, 3);
                 const int numZ = countZ(bit - 2, 3);
@@ -845,7 +881,24 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
             break;
         }
         default: {  // h/x
+            if (bit == width() - 1) {
+                if (bit && (left || bit >= bitsToDisplay)) {
+                    if (bitIsX(bit)) {
+                        while (bit && bitIsX(bit)) --bit;
+                    } else if (bitIsZ(bit)) {
+                        while (bit && bitIsZ(bit)) --bit;
+                    }
+                }
+            }
             while ((bit % 4) != 3) ++bit;
+            if (bit < width() - 1) {
+                const char prev = bitIs0(bit + 1) ? '0' : (bitIsX(bit + 1) ? 'x' : 'z');
+                const int numX = countX(bit - 3, 4);
+                const int numZ = countZ(bit - 3, 4);
+                const char next
+                    = numX ? (numX == 4 ? 'x' : 'X') : (numZ ? (numZ == 4 ? 'z' : 'Z') : '0');
+                if (prev != next) str += prev;
+            }
             for (; bit > 0; bit -= 4) {
                 const int numX = countX(bit - 3, 4);
                 const int numZ = countZ(bit - 3, 4);
@@ -875,14 +928,13 @@ string V3Number::displayed(FileLine* fl, const string& vformat,
             break;
         }
         }  // switch
-        const size_t fmtsizen = static_cast<size_t>(std::atoi(fmtsize.c_str()));
         str = displayPad(fmtsizen, (left ? ' ' : '0'), left, str);
         return str;
     }  // case b/d/x/o
     case 't':  // Time
     case 'd': {  // Unsigned decimal
         const bool issigned = formatAttr.isSigned();
-        if (fmtsize == "" && !left) {
+        if (fmtsize.empty() && !left) {
             const double mantissabits = width() - (issigned ? 1 : 0);
             // To get the number of digits required, we want to compute
             // log10(2**mantissabits) and round it up. To be able to handle
@@ -1045,42 +1097,32 @@ string V3Number::toDecimalS() const VL_MT_STABLE {
 }
 
 string V3Number::toDecimalU() const VL_MT_STABLE {
-    const int maxdecwidth = (width() + 3) * 4 / 3;
-
-    // Or (maxdecwidth+7)/8], but can't have more than 4 BCD bits per word
-    V3Number bcd(this, maxdecwidth + 4);
-    V3Number tmp(this, maxdecwidth + 4);
-    V3Number tmp2(this, maxdecwidth + 4);
-
-    int from_bit = width() - 1;
-    // Skip all leading zeros
-    for (; from_bit >= 0 && bitIs0(from_bit); --from_bit) {}
-    // Double-dabble algorithm
-    for (; from_bit >= 0; --from_bit) {
-        // Any digits >= 5 need an add 3 (via tmp)
-        for (int nibble_bit = 0; nibble_bit < maxdecwidth; nibble_bit += 4) {
-            if (bcd.bitsValue(nibble_bit, 4) >= 5) {
-                tmp2.setAllBits0();
-                tmp2.setBit(nibble_bit, 1);  // Add 3, decomposed as two bits
-                tmp2.setBit(nibble_bit + 1, 1);
-                tmp.opAssign(bcd);
-                bcd.opAdd(tmp, tmp2);
-            }
+    // Quadratic conversion processes whole words using base 10^9 limbs, with each
+    // multiplication by 2^32 and carry fitting in uint64_t.
+    static constexpr uint32_t BASE = 1'000'000'000;
+    std::vector<uint32_t> digits{0};
+    // Each word has VL_EDATASIZE bits; BASE > 2^29 gives a conservative limb count.
+    digits.reserve(words() * VL_EDATASIZE / 29 + 1);
+    const ValueAndX* const wordsp = m_data.num();
+    for (int word = words() - 1; word >= 0; --word) {
+        uint64_t carry = wordsp[word].m_value & ~wordsp[word].m_valueX;
+        if (word == words() - 1) carry &= hiWordMask();
+        for (uint32_t& digit : digits) {
+            const uint64_t value = (static_cast<uint64_t>(digit) << 32) + carry;
+            digit = value % BASE;
+            carry = value / BASE;
         }
-        // Shift; bcd = bcd << 1
-        tmp.opAssign(bcd);
-        bcd.opShiftL(tmp, V3Number(this, 32, 1));
-        // bcd[0] = this[from_bit]
-        if (bitIs1(from_bit)) bcd.setBit(0, 1);
+        while (carry) {
+            digits.push_back(carry % BASE);
+            carry /= BASE;
+        }
     }
-
-    string output;
-    int lsb = (maxdecwidth - 1) & ~3;
-    for (; lsb > 0; lsb -= 4) {  // Skip leading zeros
-        if (bcd.bitsValue(lsb, 4)) break;
-    }
-    for (; lsb >= 0; lsb -= 4) {
-        output += static_cast<char>('0' + bcd.bitsValue(lsb, 4));  // 0..9
+    string output = std::to_string(digits.back());
+    output.reserve(digits.size() * 9);
+    for (auto it = digits.crbegin() + 1; it != digits.crend(); ++it) {
+        const string part = std::to_string(*it);
+        output.append(9 - part.size(), '0');
+        output += part;
     }
     return output;
 }
@@ -1229,6 +1271,16 @@ bool V3Number::isNeqZero() const {
         if (v.m_value & ~v.m_valueX) return true;
     }
     return false;
+}
+bool V3Number::isTrue() const {
+    if (isString()) return !m_data.str().empty();
+    if (isDouble()) return isNeqZero();
+    bool result = false;
+    for (int word = 0; word < words(); ++word) {
+        if (m_data.num()[word].m_valueX) return false;
+        result |= m_data.num()[word].m_value;
+    }
+    return result;
 }
 bool V3Number::isBitsZero(int msb, int lsb) const {
     for (int i = lsb; i <= msb; ++i) {
@@ -1392,22 +1444,43 @@ V3Number& V3Number::opBitsNonXZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
 }
 V3Number& V3Number::opBitsOne(const V3Number& lhs) {  // 1->1, 0/X/Z->0
     // op i, L(lhs) bit return
-    NUM_ASSERT_OP_ARGS1(lhs);
-    NUM_ASSERT_LOGIC_ARGS1(lhs);
-    setZero();
-    for (int bit = 0; bit < width(); ++bit) {
-        if (lhs.bitIs1(bit)) setBit(bit, 1);
+    if (lhs.isString()) {
+        setString(lhs.toString());
+        return *this;
     }
+    if (lhs.isDouble()) {
+        setDouble(lhs.toDouble());
+        return *this;
+    }
+    m_data.setLogic();
+    const int totalWords = std::min(words(), lhs.words());
+    for (int word = 0; word < totalWords; ++word) {
+        m_data.num()[word].m_value
+            = lhs.m_data.num()[word].m_value & ~lhs.m_data.num()[word].m_valueX;
+        m_data.num()[word].m_valueX = 0;
+    }
+    if (const int mod = std::min(width(), lhs.width()) % 32) {
+        m_data.num()[totalWords - 1].m_value &= VL_MASK_E(mod);
+        m_data.num()[totalWords - 1].m_valueX &= VL_MASK_E(mod);
+    }
+    for (int word = totalWords; word < words(); ++word) m_data.num()[word] = {0, 0};
     return *this;
 }
-V3Number& V3Number::opBitsXZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
+V3Number& V3Number::opBitsXZ(const V3Number& lhs) {  // 0/1->0, X/Z->1
     // op i, L(lhs) bit return
-    NUM_ASSERT_OP_ARGS1(lhs);
-    NUM_ASSERT_LOGIC_ARGS1(lhs);
-    setZero();
-    for (int bit = 0; bit < width(); ++bit) {
-        if (lhs.bitIsXZ(bit)) setBit(bit, 1);
+    UASSERT(lhs.isNumber(),
+            "Verilator's string representation does not allow strings to have any XZ bits");
+    m_data.setLogic();
+    const int totalWords = std::min(words(), lhs.words());
+    for (int word = 0; word < totalWords; ++word) {
+        m_data.num()[word].m_value = lhs.m_data.num()[word].m_valueX;
+        m_data.num()[word].m_valueX = 0;
     }
+    if (const int mod = std::min(width(), lhs.width()) % 32) {
+        m_data.num()[totalWords - 1].m_value &= VL_MASK_E(mod);
+        m_data.num()[totalWords - 1].m_valueX &= VL_MASK_E(mod);
+    }
+    for (int word = totalWords; word < words(); ++word) m_data.num()[word] = {0, 0};
     return *this;
 }
 V3Number& V3Number::opBitsZ(const V3Number& lhs) {  // 0/1->1, X/Z->0
@@ -1804,6 +1877,30 @@ V3Number& V3Number::opLogIf(const V3Number& lhs, const V3Number& rhs) {
     return opLogOr(lnot, rhs);
 }
 
+V3Number& V3Number::opCond(const V3Number& cond, const V3Number& then, const V3Number& elseNum) {
+    NUM_ASSERT_OP_ARGS1(cond);
+    NUM_ASSERT_LOGIC_ARGS1(cond);
+    if (cond.isEqOne()) return opAssign(then);
+    if (cond.isEqZero()) return opAssign(elseNum);
+    if (then.isOpaque()) {
+        UASSERT(then.dataType() == elseNum.dataType(), "then and else must have same type");
+        if (then.isCaseEq(elseNum)) return opAssign(then);
+        if (then.isString()) return setString("");
+        return setDouble(0.0);
+    }
+    NUM_ASSERT_LOGIC_ARGS2(then, elseNum);
+    UASSERT(then.width() == elseNum.width(), "then and else must have same width");
+    m_data.resize(then.width());
+    for (int word = 0; word < then.words(); ++word) {
+        const uint32_t mask
+            = (then.m_data.num()[word].m_value ^ elseNum.m_data.num()[word].m_value)
+              | then.m_data.num()[word].m_valueX | elseNum.m_data.num()[word].m_valueX;
+        m_data.num()[word].m_value = then.m_data.num()[word].m_value | mask;
+        m_data.num()[word].m_valueX = then.m_data.num()[word].m_valueX | mask;
+    }
+    return *this;
+}
+
 V3Number& V3Number::opLogEq(const V3Number& lhs, const V3Number& rhs) {
     // i op j, 1 bit return, max(L(lhs),L(rhs)) calculation, careful need to
     // X/Z extend. Use definition in IEEE to do this for us.
@@ -1897,16 +1994,14 @@ V3Number& V3Number::opEq(const V3Number& lhs, const V3Number& rhs) {
     for (int bit = 0; bit < std::max(lhs.width(), rhs.width()); ++bit) {
         if (lhs.bitIs1(bit) && rhs.bitIs0(bit)) {
             outc = 0;
-            goto last;
+            break;
         }
         if (lhs.bitIs0(bit) && rhs.bitIs1(bit)) {
             outc = 0;
-            goto last;
+            break;
         }
-        if (lhs.bitIsXZ(bit)) outc = 'x';
-        if (rhs.bitIsXZ(bit)) outc = 'x';
+        if (lhs.bitIsXZ(bit) || rhs.bitIsXZ(bit)) outc = 'x';
     }
-last:
     return setSingleBits(outc);
 }
 
@@ -1919,16 +2014,14 @@ V3Number& V3Number::opNeq(const V3Number& lhs, const V3Number& rhs) {
     for (int bit = 0; bit < std::max(lhs.width(), rhs.width()); ++bit) {
         if (lhs.bitIs1(bit) && rhs.bitIs0(bit)) {
             outc = 1;
-            goto last;
+            break;
         }
         if (lhs.bitIs0(bit) && rhs.bitIs1(bit)) {
             outc = 1;
-            goto last;
+            break;
         }
-        if (lhs.bitIsXZ(bit)) outc = 'x';
-        if (rhs.bitIsXZ(bit)) outc = 'x';
+        if (lhs.bitIsXZ(bit) || rhs.bitIsXZ(bit)) outc = 'x';
     }
-last:
     return setSingleBits(outc);
 }
 
@@ -2505,6 +2598,20 @@ V3Number& V3Number::opSetRange(uint32_t lsb, uint32_t width, char bitValue) {
     return *this;
 }
 
+V3Number& V3Number::opCleanTwoStateNumber(const AstNodeDType* dtypep, const int lsb) {
+    dtypep = dtypep->skipRefp();
+    const AstBasicDType* const basicp = dtypep->basicp();
+    if (!basicp || !basicp->isIntegralOrPacked() || !basicp->isZeroInit()) return *this;
+    if (width() == dtypep->width() && lsb == 0) {
+        opBitsOne(*this);
+    } else {
+        for (int bit = 0; bit < dtypep->width(); ++bit) {
+            if (bitIsXZ(lsb + bit)) setBit(lsb + bit, 0);
+        }
+    }
+    return *this;
+}
+
 V3Number& V3Number::opAssign(const V3Number& lhs) { return opAssignNonXZ(lhs, false); }
 V3Number& V3Number::opAssignNonXZ(const V3Number& lhs, bool ignoreXZ) {
     // Note may be a width change during the assign.
@@ -2622,6 +2729,7 @@ V3Number& V3Number::opSel(const V3Number& lhs, uint32_t msbval, uint32_t lsbval)
 }
 
 V3Number& V3Number::opSelInto(const V3Number& lhs, const V3Number& lsb, int width) {
+    if (lsb.isFourState()) return *this;
     return opSelInto(lhs, lsb.toSInt(), width);
 }
 
@@ -2879,6 +2987,68 @@ void V3Number::selfTestThis() {
     UASSERT_SELFTEST(V3Number::epsilonIntegral(0.9999), false);
     UASSERT_SELFTEST(V3Number::epsilonIntegral(-1.0001), false);
     UASSERT_SELFTEST(V3Number::epsilonIntegral(-0.9999), false);
+
+    const char* const decimals[] = {
+        "0",
+        "1",
+        "999999999",
+        "1000000000",
+        "1000000001",
+        "4294967295",
+        "4294967296",
+        "999999999999999999",
+        "1000000000000000000",
+        "1000000000000000001",
+        "18446744073709551615",
+        "18446744073709551616",
+        "39614081257132168796771975167",
+        "79228162514264337593543950336",
+        "340282366920938463463374607431768211455",
+        "340282366920938463463374607431768211456",
+        "10000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    };
+    for (const char* const decimalp : decimals) {
+        const string literal = "1024'd"s + decimalp;
+        const V3Number value{fileline(), VerilogNumberLiteral{}, literal.c_str()};
+        UASSERT_SELFTEST(value.toDecimalU(), string{decimalp});
+    }
+    const std::pair<const char*, const char*> boundaries[] = {
+        {"7'h7f", "127"},
+        {"31'h7fffffff", "2147483647"},
+        {"33'h1ffffffff", "8589934591"},
+        {"63'hde0b6b3a763ffff", "999999999999999999"},
+        {"63'hde0b6b3a7640000", "1000000000000000000"},
+        {"63'hde0b6b3a7640001", "1000000000000000001"},
+        {"63'h7fffffffffffffff", "9223372036854775807"},
+        {"65'h1ffffffffffffffff", "36893488147419103231"},
+        {"95'h7fffffffffffffffffffffff", "39614081257132168796771975167"},
+        {"1031'h4000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+         "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+         "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+         "1",
+         "1150523606311882180946755322104975829515505266523076206549952519409489125155206164049334"
+         "2548634082305351687288311769174890162545204122663839542235560926343960177145179191391057"
+         "6833420544797500236449973089334403692056416436699176244143304390746129431784544326838135"
+         "23087356623740062701843509462805095950344781825"},
+        {"7'b1x0z1?1", "69"},
+        {"95'bx", "0"},
+        {"95'bz", "0"},
+        {"65'b1x01z", "18"},
+    };
+    for (const std::pair<const char*, const char*>& boundary : boundaries) {
+        const V3Number value{fileline(), VerilogNumberLiteral{}, boundary.first};
+        UASSERT_SELFTEST(value.toDecimalU(), string{boundary.second});
+    }
+    const std::pair<const char*, const char*> signedBoundaries[] = {
+        {"7'h3f", "63"},
+        {"7'sh40", "-64"},
+        {"33'sh100000000", "-4294967296"},
+        {"65'sh10000000000000000", "-18446744073709551616"},
+    };
+    for (const std::pair<const char*, const char*>& boundary : signedBoundaries) {
+        const V3Number value{fileline(), VerilogNumberLiteral{}, boundary.first};
+        UASSERT_SELFTEST(value.toDecimalS(), string{boundary.second});
+    }
 
     UASSERT_SELFTEST(log2b(0), 0);
     UASSERT_SELFTEST(log2b(1), 0);

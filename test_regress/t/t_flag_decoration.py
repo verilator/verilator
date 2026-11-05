@@ -10,7 +10,6 @@
 import vltest_bootstrap
 
 test.scenarios('vlt')
-test.top_filename = "t/t_flag_decoration.v"
 
 test.compile(verilator_flags2=["--decoration"])
 

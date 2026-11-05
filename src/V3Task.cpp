@@ -125,6 +125,11 @@ class TaskStateVisitor final : public VNVisitor {
     std::vector<AstInitialAutomatic*> m_initialps;  // Initial blocks to move
     bool m_underPortVar = false;  // Visiting under a port AstVar; any expression there
                                   // is a default value, evaluated at call sites only
+    // Instances of each interface
+    std::map<const AstIface*, std::vector<AstScope*>> m_ifaceScopes;
+    // Copies of the tasks of interfaces, by instance and name
+    std::map<std::pair<const AstScope*, std::string>, AstNodeFTask*> m_ifaceFTasks;
+    std::set<AstNodeFTask*> m_vifTaskps;  // Tasks called through virtual interfaces
 
 public:
     // METHODS
@@ -143,6 +148,16 @@ public:
         AstScope* const scopep = VN_AS(nodep->user3p(), Scope);
         UASSERT_OBJ(scopep, nodep, "No scope for function");
         return scopep;
+    }
+    // The instances of 'ifacep'
+    const std::vector<AstScope*>& ifaceScopes(const AstIface* ifacep) {
+        return m_ifaceScopes.at(ifacep);
+    }
+    // The copy of the interface task 'taskp' in the instance 'scopep' of its interface
+    AstNodeFTask* ifaceFTaskp(const AstScope* scopep, const AstNodeFTask* taskp) {
+        const auto it = m_ifaceFTasks.find(std::make_pair(scopep, taskp->name()));
+        UASSERT_OBJ(it != m_ifaceFTasks.end(), taskp, "No copy of task in interface instance");
+        return it->second;
     }
     AstVarScope* findVarScope(AstScope* scopep, AstVar* nodep) {
         const auto iter = m_varToScopeMap.find(std::make_pair(scopep, nodep));
@@ -242,8 +257,13 @@ private:
             }
         }
         // Likewise, all FTask->scope mappings
+        const AstIface* const ifacep = VN_CAST(nodep->modp(), Iface);
+        if (ifacep) m_ifaceScopes[ifacep].push_back(nodep);
         for (AstNode* const stmtp : nodep->blockspList()) {
-            if (AstNodeFTask* const taskp = VN_CAST(stmtp, NodeFTask)) taskp->user3p(nodep);
+            if (AstNodeFTask* const taskp = VN_CAST(stmtp, NodeFTask)) {
+                taskp->user3p(nodep);
+                if (ifacep) m_ifaceFTasks.emplace(std::make_pair(nodep, taskp->name()), taskp);
+            }
         }
         iterateChildren(nodep);
     }
@@ -252,9 +272,8 @@ private:
         UASSERT_OBJ(nodep->taskp(), nodep, "Unlinked task");
         TaskFTaskVertex* const taskVtxp = getFTaskVertex(nodep->taskp());
         new TaskEdge{&m_callGraph, m_curVxp, taskVtxp};
-        // Virtual-interface method calls dispatch through a runtime handle and
-        // must not be inlined.
-        if (isVirtualIfaceMethodCall(nodep)) taskVtxp->needsNonInlineCFunc(true);
+        // The copy of every instance may be called through a virtual interface (see below)
+        if (isVirtualIfaceMethodCall(nodep)) m_vifTaskps.insert(nodep->taskp());
         // Do we have to disable inlining the function?
         const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
         if (!taskVtxp->noInline()) {  // Else short-circuit below
@@ -346,6 +365,14 @@ public:
         m_curVxp = new TaskCodeVertex{&m_callGraph};
         //
         iterate(nodep);
+        // A call through a virtual interface calls the copy of the task of the instance the
+        // handle selects (see TaskVisitor::vifDispatchMethodp), so each copy needs a CFunc
+        for (AstNodeFTask* const taskp : m_vifTaskps) {
+            const AstIface* const ifacep = VN_AS(getScope(taskp)->modp(), Iface);
+            for (const AstScope* const instScopep : ifaceScopes(ifacep)) {
+                getFTaskVertex(ifaceFTaskp(instScopep, taskp))->needsNonInlineCFunc(true);
+            }
+        }
         //
         m_callGraph.removeRedundantEdgesSum(&TaskEdge::followAlwaysTrue);
         propagateImpureReason();
@@ -420,6 +447,19 @@ class TaskVisitor final : public VNVisitor {
 
     // TYPES
     using DpiCFuncs = std::map<const string, std::tuple<AstNodeFTask*, std::string, AstCFunc*>>;
+    // A call through a virtual interface needs to dispatch to the CFunc of the instance the
+    // virtual interface handle selects. To do this, a member variable '__VvifDispatcher' holding
+    // a class handle is added to the interface, with each instance of the interface having it
+    // initialized to an object of a derived class specific to that instance. The virtual methods
+    // of this class forward calls to the instance's copy of the CFuncs. Calls through virtual
+    // interfaces then work via regular virtual method dispatch.
+    struct VifDispatcher final {
+        AstScope* scopep = nullptr;  // Scope of the abstract dispatcher base class
+        AstVar* varp = nullptr;  // The member of the interface holding the object
+        std::map<std::string, AstCFunc*> methodps;  // Virtual methods of the base, by name
+        // Iface instances, and their class scope
+        std::vector<std::pair<AstScope*, AstScope*>> instances;
+    };
 
     // STATE
     TaskStateVisitor* const m_statep;  // Common state between visitors
@@ -435,6 +475,7 @@ class TaskVisitor final : public VNVisitor {
     V3SharedTmps m_consArrayTmps{"__VconsArrayTemp", VVarType::BLOCKTEMP};  // For ConsArray args
     V3SharedTmps m_forceTmps{"__Vforcefuncout", VVarType::VAR};  // For calls in force statements
     int m_unconVarNum = 0;  // Unique bad connection variable
+    std::map<const AstIface*, VifDispatcher> m_vifDispatchers;  // Dispatchers of each interface
 
     // STATE - across all visitors
     DpiCFuncs m_dpiNames;  // Map of all created DPI functions
@@ -566,6 +607,14 @@ class TaskVisitor final : public VNVisitor {
             outPinp = VN_AS(outPinp, NodeUniop)->lhsp();
             postRhsp = new AstRToIRoundS{pinp->fileline(), postRhsp};
             postRhsp->dtypeFrom(outPinp);
+        }
+        if (AstCvtUnpackToQueue* const cvtp = VN_CAST(outPinp, CvtUnpackToQueue)) {
+            // Copy back to the actual array, not the temporary created for input conversion.
+            outPinp = cvtp->fromp();
+            if (AstCvtUnpackToUnpack* const orderp = VN_CAST(outPinp, CvtUnpackToUnpack)) {
+                outPinp = orderp->fromp();
+            }
+            postRhsp = new AstCvtQueueToUnpack{pinp->fileline(), postRhsp, outPinp->dtypep()};
         }
         // Put output assignment AFTER function call
         AstNodeExpr* const outPinClonep
@@ -783,7 +832,18 @@ class TaskVisitor final : public VNVisitor {
             // Parent AstNew will replace with this CNew
             cnewpr = cnewp;
         } else if (const AstMethodCall* const mrefp = VN_CAST(refp, MethodCall)) {
-            ccallp = new AstCMethodCall{refp->fileline(), mrefp->fromp()->unlinkFrBack(), cfuncp};
+            // Test before unlinking 'fromp', which it inspects
+            const bool viaVif = TaskStateVisitor::isVirtualIfaceMethodCall(refp);
+            AstNodeExpr* fromp = mrefp->fromp()->unlinkFrBack();
+            AstCFunc* funcp = cfuncp;
+            if (viaVif) {
+                // Call the method of the dispatcher of the instance (see vifDispatchMethodp)
+                AstIface* const ifacep = VN_AS(m_statep->getScope(refp->taskp())->modp(), Iface);
+                VifDispatcher& dispatcher = vifDispatcher(ifacep);
+                fromp = new AstMemberSel{refp->fileline(), fromp, dispatcher.varp};
+                funcp = vifDispatchMethodp(dispatcher, refp->taskp());
+            }
+            ccallp = new AstCMethodCall{refp->fileline(), fromp, funcp};
             ccallp->dtypeSetVoid();
             beginp->addNext(ccallp->makeStmt());
         } else {
@@ -1086,8 +1146,7 @@ class TaskVisitor final : public VNVisitor {
         funcp->cname(cname);
         // Add DPI Export to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
-        // Check the arguments before converting them
-        if (!makePortList(nodep, funcp)) return nullptr;
+        makePortList(nodep, funcp);
 
         // Note this function may dispatch on a different class.
         // Thus we need to be careful not to assume a particular function layout.
@@ -1099,7 +1158,7 @@ class TaskVisitor final : public VNVisitor {
         // but the compare is only done on first call then memoized, so
         // it's not worth optimizing.
 
-        // Peramble - fetch the exproted function from the scope table
+        // Preamble - fetch the exported function from the scope table
         AstCStmt* const prep = new AstCStmt{flp};
         funcp->addStmtsp(prep);
         // Static doesn't need save-restore as if below will re-fill proper value
@@ -1203,7 +1262,7 @@ class TaskVisitor final : public VNVisitor {
         // Add DPI Import to top, since it's a global function
         m_topScopep->scopep()->addBlocksp(funcp);
         funcp->dpiCDecl(nodep->dpiCDecl());
-        if (!makePortList(nodep, funcp)) return nullptr;
+        makePortList(nodep, funcp);
         return funcp;
     }
 
@@ -1247,8 +1306,7 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    static bool makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
-        bool allOk = true;
+    static void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
         // Copy nodep's list of function I/O to the new dpip c function
         for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
@@ -1257,19 +1315,35 @@ class TaskVisitor final : public VNVisitor {
                     AstVar* const newPortp = portp->cloneTree(false);
                     newPortp->funcLocal(true);
                     dpip->addArgsp(newPortp);
-                    // Unpacked structures were checked by checkDpiStruct
-                    if (!portp->basicp() && !portp->dtypep()->containsUnpackedStruct()) {
-                        allOk = false;
-                        portp->v3warn(
-                            E_UNSUPPORTED,
-                            "Unsupported: DPI argument of type "
-                                << portp->dtypep()->prettyTypeName() << '\n'
-                                << portp->warnMore()
-                                << "... For best portability, use bit, byte, int, or longint");
-                        // We don't warn on logic either, although the 4-stateness is lost.
-                        // That's what other simulators do.
-                    }
                 }
+            }
+        }
+    }
+
+    // Check DPI can pass the types of the arguments of 'nodep', else report. Those of an open
+    // array are of the actual argument of the call the task was replicated for.
+    static bool checkDpiArgTypes(const AstNodeFTask* nodep) {
+        bool allOk = true;
+        for (const AstNode* const stmtp : nodep->stmtspList()) {
+            const AstVar* const portp = VN_CAST(stmtp, Var);
+            if (!portp || !portp->isIO()) continue;
+            const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
+            // Of the elements, if passed a dynamic array or queue as an open array
+            const AstBasicDType* const basicp
+                = portp->isDpiOpenArray()
+                          && (VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType))
+                      ? dtypep->subDTypep()->basicp()
+                      : portp->basicp();
+            // Unpacked structures were checked by checkDpiStruct
+            if (!basicp && !portp->dtypep()->containsUnpackedStruct()) {
+                allOk = false;
+                portp->v3warn(E_UNSUPPORTED,
+                              "Unsupported: DPI argument of type "
+                                  << portp->dtypep()->prettyDTypeNameQ(true) << '\n'
+                                  << portp->warnMore()
+                                  << "... For best portability, use bit, byte, int, or longint");
+                // Don't warn on logic either, although the 4-stateness is lost.
+                // That's what other simulators do.
             }
         }
         return allOk;
@@ -1364,58 +1438,83 @@ class TaskVisitor final : public VNVisitor {
 
         // Convert input/inout arguments to DPI types
         string args;
+        AstNode* copyBacksp = nullptr;  // Statements copying back open array copies
         for (AstNode* const stmtp : cfuncp->argspList()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                AstVarScope* const portvscp
-                    = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
-                if (portp->isIO() && !portp->isFuncReturn() && portvscp != rtnvscp
-                    && portp->name() != "__Vscopep"  // Passed to dpiContext, not callee
-                    && portp->name() != "__Vfilenamep" && portp->name() != "__Vlineno") {
+            AstVar* const portp = VN_CAST(stmtp, Var);
+            if (!portp) continue;
+            AstVarScope* const portvscp
+                = VN_AS(portp->user2p(), VarScope);  // Remembered when we created it earlier
+            if (!portp->isIO() || portp->isFuncReturn() || portvscp == rtnvscp
+                || portp->name() == "__Vscopep"  // Passed to dpiContext, not callee
+                || portp->name() == "__Vfilenamep" || portp->name() == "__Vlineno") {
+                continue;
+            }
 
-                    if (args != "") args += ", ";
+            if (args != "") args += ", ";
 
-                    if (portp->isDpiOpenArray()) {
-                        AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
-                        UASSERT_OBJ(!VN_IS(dtypep, DynArrayDType) && !VN_IS(dtypep, QueueDType),
-                                    portp,
-                                    "Passing dynamic array or queue as actual argument to DPI "
-                                    "open array is not yet supported");
-                        // Ideally we'd make a table of variable
-                        // characteristics, and reuse it wherever we can
-                        // At least put them into the module's CTOR as static?
-                        const string propName = portp->name() + "__Vopenprops";
-                        const string propCode = portp->vlPropDecl(propName);
-                        cfuncp->addStmtsp(new AstCStmt{portp->fileline(), propCode});
-                        //
-                        // At runtime we need the svOpenArrayHandle to
-                        // point to this task & thread's data, in addition
-                        // to static info about the variable
-                        const string name = portp->name() + "__Vopenarray";
-                        const string varCode
-                            = ("VerilatedDpiOpenVar "
-                               // NOLINTNEXTLINE(performance-inefficient-string-concatenation)
-                               + name + " (&" + propName + ", &" + portp->name() + ");\n");
-                        cfuncp->addStmtsp(new AstCStmt{portp->fileline(), varCode});
-                        args += "&" + name;
-                    } else {
-                        // Unpacked structures are passed by reference from a C array
-                        const bool isStruct = portp->dtypep()->containsUnpackedStruct();
-                        if (portp->isWritable() && !isStruct
-                            && portp->dtypep()->isDpiPrimitive()) {
-                            if (!VN_IS(portp->dtypep()->skipRefp(), UnpackArrayDType)) args += "&";
-                        }
-
-                        args += portp->name() + tmpSuffixp;
-
-                        cfuncp->addStmtsp(createDpiTemp(portp, tmpSuffixp));
-                        if (portp->isNonOutput()) {
-                            cfuncp->addStmtsp(
-                                isStruct
-                                    ? createDpiArgCvt(cfuncp, portvscp, portp->name() + tmpSuffixp,
-                                                      true)
-                                    : createAssignInternalToDpi(portp, false, "", tmpSuffixp));
-                        }
+            if (portp->isDpiOpenArray()) {
+                FileLine* const flp = portp->fileline();
+                const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
+                const bool dynamic = VN_IS(dtypep, DynArrayDType) || VN_IS(dtypep, QueueDType);
+                // Pass a copy of a dynamic array or queue, as the elements of a queue are
+                // not contiguous
+                const string copyName = portp->name() + "__Vopencopy";
+                if (dynamic) {
+                    AstCStmt* const copyp = new AstCStmt{
+                        flp, "std::vector<" + dtypep->subDTypep()->cType("", false, false) + "> "
+                                 + copyName + "("};
+                    copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
+                    copyp->add(".begin(), ");
+                    copyp->add(new AstVarRef{flp, portvscp, VAccess::READ});
+                    copyp->add(".end());");
+                    cfuncp->addStmtsp(copyp);
+                    if (portp->isWritable()) {
+                        AstCStmt* const backp = new AstCStmt{flp};
+                        backp->add(new AstVarRef{flp, portvscp, VAccess::WRITE});
+                        backp->add(".assign(" + copyName + ".begin(), " + copyName + ".end());");
+                        copyBacksp = AstNode::addNext(copyBacksp, backp);
                     }
+                }
+                // Ideally we'd make a table of variable
+                // characteristics, and reuse it wherever we can
+                // At least put them into the module's CTOR as static?
+                const string propName = portp->name() + "__Vopenprops";
+                const string propCode = portp->vlPropDecl(
+                    propName, dynamic ? "static_cast<int>(" + copyName + ".size())" : "");
+                cfuncp->addStmtsp(new AstCStmt{flp, propCode});
+                //
+                // At runtime we need the svOpenArrayHandle to
+                // point to this task & thread's data, in addition
+                // to static info about the variable
+                const string name = portp->name() + "__Vopenarray";
+                AstCStmt* const openVarp
+                    = new AstCStmt{// NOLINTNEXTLINE(performance-inefficient-string-concatenation)
+                                   flp, "VerilatedDpiOpenVar " + name + " (&" + propName + ", "};
+                if (dynamic) {
+                    openVarp->add(copyName + ".data()");
+                } else {
+                    openVarp->add("&");
+                    openVarp->add(new AstVarRef{
+                        flp, portvscp, portp->isWritable() ? VAccess::READWRITE : VAccess::READ});
+                }
+                openVarp->add(");");
+                cfuncp->addStmtsp(openVarp);
+                args += "&" + name;
+            } else {
+                // Unpacked structures are passed by reference from a C array
+                const bool isStruct = portp->dtypep()->containsUnpackedStruct();
+                if (portp->isWritable() && !isStruct && portp->dtypep()->isDpiPrimitive()) {
+                    if (!VN_IS(portp->dtypep()->skipRefp(), UnpackArrayDType)) args += "&";
+                }
+
+                args += portp->name() + tmpSuffixp;
+
+                cfuncp->addStmtsp(createDpiTemp(portp, tmpSuffixp));
+                if (portp->isNonOutput()) {
+                    cfuncp->addStmtsp(
+                        isStruct
+                            ? createDpiArgCvt(cfuncp, portvscp, portp->name() + tmpSuffixp, true)
+                            : createAssignInternalToDpi(portp, false, "", tmpSuffixp));
                 }
             }
         }
@@ -1445,6 +1544,7 @@ class TaskVisitor final : public VNVisitor {
                 cfuncp->addStmtsp(callp->makeStmt());
             }
         }
+        if (copyBacksp) cfuncp->addStmtsp(copyBacksp);
 
         // Convert output/inout arguments back to internal type
         for (AstNode* const stmtp : cfuncp->argspList()) {
@@ -1465,7 +1565,7 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    AstVarScope* getDpiExporTrigger() {
+    AstVarScope* getDpiExportTrigger() {
         AstNetlist* const netlistp = v3Global.rootp();
         AstVarScope* dpiExportTriggerp = netlistp->dpiExportTriggerp();
         if (!dpiExportTriggerp) {
@@ -1534,7 +1634,9 @@ class TaskVisitor final : public VNVisitor {
         if (nodep->dpiImport() || nodep->dpiExport()) {
             UASSERT_OBJ(!(nodep->dpiOpenParent() && nodep->dpiOpenChild()), nodep,
                         "DPI task should not be both parent and child");
-            dpiFuncp = checkDpiStructArgs(nodep) ? getDpiFunc(nodep, rtnvarp) : nullptr;
+            dpiFuncp = checkDpiStructArgs(nodep) && checkDpiArgTypes(nodep)
+                           ? getDpiFunc(nodep, rtnvarp)
+                           : nullptr;
             if (!dpiFuncp || (nodep->dpiImport() && nodep->dpiOpenParent())) {
                 // No need to make more than just the DPI Import prototype, the children will
                 // create the wrapper implementations.
@@ -1723,7 +1825,7 @@ class TaskVisitor final : public VNVisitor {
             // If this DPI export writes some non-local variables, set the DPI Export Trigger flag
             // in the function.
             if (writesNonLocals) {
-                AstVarScope* const dpiExportTriggerp = getDpiExporTrigger();
+                AstVarScope* const dpiExportTriggerp = getDpiExportTrigger();
                 FileLine* const flp = cfuncp->fileline();
 
                 // Set DPI export trigger flag every time the DPI export is called.
@@ -1750,6 +1852,136 @@ class TaskVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
         UINFOTREE(9, cfuncp, "", "userFunc");
         return cfuncp;
+    }
+
+    // A new class 'name', as V3Class makes them. Returns its constructor, under the scope of the
+    // class.
+    AstCFunc* newDispatcherClass(FileLine* flp, const std::string& name) {
+        AstNetlist* const netlistp = v3Global.rootp();
+        AstScope* const topScopep = m_topScopep->scopep();
+        const std::string libname = netlistp->topModulep()->libname();
+        AstClass* const clsp = new AstClass{flp, name, libname};
+        AstClassPackage* const pkgp = new AstClassPackage{flp, name + "__Vclpkg", libname};
+        clsp->classOrPackagep(pkgp);
+        clsp->timeunit(netlistp->topModulep()->timeunit());
+        pkgp->classp(clsp);
+        pkgp->timeunit(clsp->timeunit());
+        netlistp->addModulesp(clsp);
+        netlistp->addModulesp(pkgp);
+        AstCell* const cellp
+            = new AstCell{flp, flp, pkgp->name(), pkgp->name(), nullptr, nullptr, nullptr};
+        cellp->modp(pkgp);
+        netlistp->topModulep()->addStmtsp(cellp);
+        const std::string scopeName = topScopep->name() + "." + name;
+        AstScope* const scopep = new AstScope{flp, clsp, scopeName, topScopep, cellp};
+        clsp->addMembersp(scopep);
+        pkgp->addStmtsp(new AstScope{flp, pkgp, scopeName, topScopep, cellp});
+        AstCFunc* const newp = new AstCFunc{flp, "new", scopep, ""};
+        newp->isConstructor(true);
+        newp->isStatic(false);
+        newp->dontCombine(true);
+        newp->argTypes(EmitCUtil::symClassVar());
+        scopep->addBlocksp(newp);
+        return newp;
+    }
+    // A new class derived from the class constructed by 'baseNewp', for the instance number
+    // 'index' of its interface. Returns its constructor. It is named by 'index' rather than by
+    // the name of the instance, which can be too long to be part of a file name.
+    AstCFunc* newInstanceDispatcherClass(AstCFunc* baseNewp, size_t index) {
+        AstClass* const basep = VN_AS(baseNewp->scopep()->modp(), Class);
+        FileLine* const flp = basep->fileline();
+        AstCFunc* const newp
+            = newDispatcherClass(flp, basep->name() + "__" + std::to_string(index));
+        basep->isExtended(true);
+        AstClassRefDType* const dtypep = new AstClassRefDType{flp, basep, nullptr};
+        AstClassExtends* const extendsp = new AstClassExtends{flp, nullptr, false};
+        extendsp->childDTypep(dtypep);
+        extendsp->dtypep(dtypep);
+        VN_AS(newp->scopep()->modp(), Class)->addExtendsp(extendsp);
+        AstCNew* const superp = new AstCNew{flp, baseNewp};
+        superp->dtypeSetVoid();
+        newp->addStmtsp(superp->makeStmt());
+        return newp;
+    }
+    // A virtual method 'name' of the class of 'scopep', with the arguments of 'tmplp'. With
+    // 'calleep', it overrides the method of the base class, calling 'calleep' with its arguments,
+    // otherwise it is the method of the base class, which does nothing.
+    static AstCFunc* newDispatcherMethod(AstScope* scopep, const std::string& name,
+                                         const AstCFunc* tmplp, AstCFunc* calleep) {
+        FileLine* const flp = tmplp->fileline();
+        AstCFunc* const funcp = new AstCFunc{flp, name, scopep, ""};
+        funcp->isStatic(false);
+        funcp->isVirtual(true);
+        funcp->entryPoint(true);
+        funcp->argTypes(tmplp->argTypes());
+        AstCCall* const callp = calleep ? new AstCCall{flp, calleep} : nullptr;
+        if (callp && !tmplp->argTypes().empty()) callp->argTypes("vlSymsp");
+        for (AstNode* argp = tmplp->argsp(); argp; argp = argp->nextp()) {
+            AstVar* const varp = VN_AS(argp, Var)->cloneTree(false);
+            funcp->addArgsp(varp);
+            AstVarScope* const vscp = new AstVarScope{flp, scopep, varp};
+            scopep->addVarsp(vscp);
+            if (!callp) continue;
+            const VAccess access = varp->isWritable() ? VAccess::READWRITE : VAccess::READ;
+            callp->addArgsp(new AstVarRef{flp, vscp, access});
+        }
+        if (callp) {
+            callp->dtypeSetVoid();
+            funcp->addStmtsp(callp->makeStmt());
+        }
+        scopep->addBlocksp(funcp);
+        return funcp;
+    }
+    // The dispatcher of 'ifacep', constructed on demand
+    VifDispatcher& vifDispatcher(AstIface* ifacep) {
+        VifDispatcher& dispatcher = m_vifDispatchers[ifacep];
+        if (dispatcher.scopep) return dispatcher;
+
+        FileLine* const flp = ifacep->fileline();
+        AstCFunc* const baseNewp = newDispatcherClass(flp, "__VvifDispatcher__" + ifacep->name());
+        dispatcher.scopep = baseNewp->scopep();
+        AstClass* const basep = VN_AS(dispatcher.scopep->modp(), Class);
+        basep->isVirtual(true);  // Only the classes of the instances are made
+        AstClassRefDType* const baseDTypep = new AstClassRefDType{flp, basep, nullptr};
+        v3Global.rootp()->typeTablep()->addTypesp(baseDTypep);
+        dispatcher.varp = new AstVar{flp, VVarType::MODULETEMP, "__VvifDispatcher", baseDTypep};
+        dispatcher.varp->sensIfacep(ifacep);  // Read via a virtual interface
+        ifacep->addStmtsp(dispatcher.varp);
+        // Initialize the dispatcher variables first in the static initialization of the top
+        // scope, which runs before that of any instance, as any may call through a handle
+        AstInitialStatic* const initp = new AstInitialStatic{flp, nullptr};
+        m_topScopep->scopep()->prependBlocksp(initp);
+        for (AstScope* const ifaceScopep : m_statep->ifaceScopes(ifacep)) {
+            AstCFunc* const newp
+                = newInstanceDispatcherClass(baseNewp, dispatcher.instances.size());
+            dispatcher.instances.emplace_back(ifaceScopep, newp->scopep());
+            AstVarScope* const vscp = new AstVarScope{flp, ifaceScopep, dispatcher.varp};
+            ifaceScopep->addVarsp(vscp);
+            AstClassRefDType* const dtypep
+                = new AstClassRefDType{flp, VN_AS(newp->scopep()->modp(), Class), nullptr};
+            v3Global.rootp()->typeTablep()->addTypesp(dtypep);
+            // Initialize the dispatcher variable to an instance of this dispatcher class
+            AstCNew* const cnewp = new AstCNew{flp, newp};
+            cnewp->dtypep(dtypep);
+            initp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, vscp, VAccess::WRITE}, cnewp});
+        }
+        return dispatcher;
+    }
+    // The virtual method of the base class of 'dispatcher' that calls the copy of 'taskp' of
+    // the instance selected
+    AstCFunc* vifDispatchMethodp(VifDispatcher& dispatcher, AstNodeFTask* taskp) {
+        AstCFunc*& methodpr = dispatcher.methodps[taskp->name()];
+        if (methodpr) return methodpr;
+
+        const AstCFunc* const tmplp = m_statep->ftaskCFuncp(taskp);
+        const std::string name = "__VvifDispatcher_" + taskp->name();
+        methodpr = newDispatcherMethod(dispatcher.scopep, name, tmplp, nullptr);
+        for (const auto& instance : dispatcher.instances) {
+            AstNodeFTask* const copyp = m_statep->ifaceFTaskp(instance.first, taskp);
+            iterateIntoFTask(copyp);  // Not called directly, so its CFunc may not be made yet
+            newDispatcherMethod(instance.second, name, tmplp, m_statep->ftaskCFuncp(copyp));
+        }
+        return methodpr;
     }
 
     void iterateIntoFTask(AstNodeFTask* nodep) {
@@ -1935,11 +2167,8 @@ class TaskVisitor final : public VNVisitor {
         // Create cloned statements
         AstNode* beginp;
         AstCNew* cnewp = nullptr;
-        // getScope() is safe here: TaskStateVisitor stamped all FTask scopes before this pass.
-        const bool virtualIfaceCall
-            = TaskStateVisitor::isVirtualIfaceMethodCall(nodep)
-              && TaskStateVisitor::isIfaceFTaskScope(m_statep->getScope(nodep->taskp()));
-        if (m_statep->ftaskNoInline(nodep->taskp()) || virtualIfaceCall) {
+        if (m_statep->ftaskNoInline(nodep->taskp())
+            || TaskStateVisitor::isVirtualIfaceMethodCall(nodep)) {
             processArgs(nodep);
             // This may share VarScope's with a public task, if any.  Yuk.
             beginp = createNonInlinedFTask(nodep, outvscp, cnewp /*ref*/);
@@ -2167,49 +2396,6 @@ public:
         V3Stats::addStat("Optimizations, Hierarchical DPI wrappers with costs",
                          m_statHierDpisWithCosts);
     }
-};
-
-//######################################################################
-// Mark interface members under timing controls of interface CFuncs as interface-sensed
-
-class TaskIfaceSensVisitor final : public VNVisitorConst {
-    // STATE
-    bool m_underIfaceFunc = false;  // Under a CFunc owned by an interface scope
-    bool m_underSenses = false;  // Under a sensitivity expression of such a CFunc
-
-    // METHODS
-    void markSensesAndIterate(AstNode* nodep) {
-        if (!m_underIfaceFunc) return;
-        VL_RESTORER(m_underSenses);
-        m_underSenses = true;
-        iterateAndNextConstNull(nodep);
-    }
-    // VISITORS
-    void visit(AstCFunc* nodep) override {
-        VL_RESTORER(m_underIfaceFunc);
-        m_underIfaceFunc = VN_IS(nodep->scopep()->modp(), Iface);
-        iterateChildrenConst(nodep);
-    }
-    void visit(AstSenTree* nodep) override { markSensesAndIterate(nodep->sensesp()); }
-    void visit(AstWait* nodep) override {
-        markSensesAndIterate(nodep->condp());
-        iterateAndNextConstNull(nodep->stmtsp());
-    }
-    void visit(AstVarRef* nodep) override {
-        if (!m_underSenses) return;
-        UASSERT_OBJ(nodep->varScopep(), nodep, "No var scope");
-        // Keep temps: the clocking event var is a MODULETEMP
-        if (nodep->varp()->isFuncLocal()) return;
-        if (AstIface* const ifacep = VN_CAST(nodep->varScopep()->scopep()->modp(), Iface)) {
-            nodep->varp()->sensIfacep(ifacep);
-        }
-    }
-    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
-
-public:
-    // CONSTRUCTORS
-    explicit TaskIfaceSensVisitor(AstNetlist* nodep) { iterateChildrenConst(nodep); }
-    ~TaskIfaceSensVisitor() override = default;
 };
 
 //######################################################################
@@ -2630,6 +2816,5 @@ void V3Task::taskAll(AstNetlist* nodep) {
         TaskStateVisitor visitors{nodep};
         const TaskVisitor visitor{nodep, &visitors};
     }  // Destruct before checking
-    { TaskIfaceSensVisitor{nodep}; }
     V3Global::dumpCheckGlobalTree("task", 0, dumpTreeEitherLevel() >= 3);
 }

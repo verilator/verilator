@@ -376,8 +376,8 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         }
 
         // CONSTRUCTORS
-        VarInfo(ConstBitOpTreeVisitor* parent, AstVarRef* refp, int width)
-            : m_parentp{parent}
+        VarInfo(ConstBitOpTreeVisitor* parentp, AstVarRef* refp, int width)
+            : m_parentp{parentp}
             , m_refp{refp}
             , m_width{width}
             , m_bitPolarity{refp, m_width} {
@@ -708,7 +708,7 @@ class ConstBitOpTreeVisitor final : public VNVisitorConst {
         }
         UASSERT_OBJ(isXorTree() || m_polarity, nodep, "must be the original polarity");
     }
-    virtual ~ConstBitOpTreeVisitor() = default;
+    ~ConstBitOpTreeVisitor() override = default;
 #undef CONST_BITOP_RETURN_IF
 #undef CONST_BITOP_SET_FAILED
 
@@ -1876,11 +1876,11 @@ class ConstVisitor final : public VNVisitor {
         const AstNode* const lfromp = lhsp->fromp();
         const AstNode* const rfromp = rhsp->fromp();
         if (!lfromp || !rfromp || !lfromp->sameGateTree(rfromp)) return false;
-        const AstConst* const lstart = VN_CAST(lhsp->lsbp(), Const);
-        const AstConst* const rstart = VN_CAST(rhsp->lsbp(), Const);
-        if (!lstart || !rstart) return false;  // too complicated
-        const int rend = (rstart->toSInt() + rhsp->widthConst());
-        return (rend == lstart->toSInt());
+        const AstConst* const lstartp = VN_CAST(lhsp->lsbp(), Const);
+        const AstConst* const rstartp = VN_CAST(rhsp->lsbp(), Const);
+        if (!lstartp || !rstartp) return false;  // too complicated
+        const int rend = (rstartp->toSInt() + rhsp->widthConst());
+        return (rend == lstartp->toSInt());
     }
     bool ifMergeAdjacent(const AstNodeExpr* lhsp, const AstNodeExpr* rhsp) {
         // Called by concatmergeable to determine if {lhsp, rhsp} make sense
@@ -2195,6 +2195,14 @@ class ConstVisitor final : public VNVisitor {
         VL_DO_DANGLING(pushDeletep(rp), rp);
         VL_DO_DANGLING(pushDeletep(rrp), rrp);
         // UINFOTREE(1, nodep, "", "repShiftSame_new");
+    }
+    void replaceAmbiguousCond(AstCond* nodep) {
+        if (AstNodeExpr* const exprp = SimulateVisitor::conditionalMerge(
+                nodep->fileline(), V3Number{nodep, V3Number::VerilogNumberLiteral{}, "x"},
+                nodep->thenp(), nodep->elsep(), nodep->dtypep())) {
+            nodep->replaceWith(exprp);
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        }
     }
     void replaceConcatSel(AstConcat* nodep) {
         // {a[1], a[0]} -> a[1:0]
@@ -3351,8 +3359,12 @@ class ConstVisitor final : public VNVisitor {
         // Handle ARRAYSEL directly on ConsArray (not through VarRef)
         else if (VN_IS(nodep->bitp(), Const) && VN_IS(nodep->fromp(), ConsArray)) {
             const AstConsArray* const consp = VN_AS(nodep->fromp(), ConsArray);
-            const uint32_t bit = VN_AS(nodep->bitp(), Const)->toUInt();
-            AstNodeExpr* const itemp = consp->valuep(bit);
+            const AstConst* const bitp = VN_AS(nodep->bitp(), Const);
+            AstNodeExpr* const defaultp
+                = bitp->num().isAnyXZ()
+                      ? SimulateVisitor::defaultOf(nodep->fileline(), consp->dtypep()->subDTypep())
+                      : nullptr;
+            AstNodeExpr* const itemp = defaultp ? defaultp : consp->valuep(bitp->toUInt());
             if (VN_IS(itemp, Const)) {
                 const V3Number& num = VN_AS(itemp, Const)->num();
                 VL_DO_DANGLING(replaceNum(nodep, num), nodep);
@@ -3361,6 +3373,7 @@ class ConstVisitor final : public VNVisitor {
                 nodep->replaceWithKeepDType(itemp->cloneTree(false));
                 VL_DO_DANGLING(pushDeletep(nodep), nodep);
             }
+            if (defaultp) VL_DO_DANGLING(defaultp->deleteTree(), defaultp);
         }
         m_selp = nullptr;
     }
@@ -3405,8 +3418,19 @@ class ConstVisitor final : public VNVisitor {
             AstNode* const valuep = nodep->varp()->valuep();
             // The selected element, when under a constant select of an array
             const AstConsArray* const consp = VN_CAST(valuep, ConsArray);
-            const AstNode* const selItemp
-                = (m_selp && consp) ? consp->valuep(m_selp->bitConst()) : nullptr;
+            const AstNode* selItemp = nullptr;
+            AstNodeExpr* selDefaultp = nullptr;
+            if (consp && m_selp) {
+                if (const AstConst* const constp = VN_CAST(m_selp->bitp(), Const)) {
+                    if (constp->num().isAnyXZ()) {
+                        selDefaultp = SimulateVisitor::defaultOf(m_selp->fileline(),
+                                                                 consp->dtypep()->subDTypep());
+                        selItemp = selDefaultp;
+                    } else {
+                        selItemp = consp->valuep(constp->toSInt());
+                    }
+                }
+            }
             if (nodep->access().isReadOnly() && valuep
                 && ((!m_params  // Can reduce constant wires into equations
                      && m_doNConst && v3Global.opt.fConst() && nodep->varp()->isConst())
@@ -3442,6 +3466,7 @@ class ConstVisitor final : public VNVisitor {
                     did = true;
                 }
             }
+            if (selDefaultp) VL_DO_DANGLING(selDefaultp->deleteTree(), selDefaultp);
         }
         if (!did && m_required) {
             nodep->v3error("Expecting expression to be constant, but variable isn't const: "
@@ -3691,6 +3716,7 @@ class ConstVisitor final : public VNVisitor {
             && !VN_AS(nodep->rhsp(), Const)->num().isFourState()
             && varrefp  // Don't do messes with BITREFs/ARRAYREFs
             && !varrefp->varp()->hasStrengthAssignment()  // Strengths are resolved in V3Tristate
+            && !varrefp->varp()->isWiredNet()  // Wired drivers are merged in V3Tristate
             && !varrefp->varp()->valuep()  // Not already constified
             && !varrefp->varScopep()  // Not scoped (or each scope may have different initial val.)
             && !varrefp->varp()->isForced()  // Not forced (not really a constant)
@@ -3832,7 +3858,7 @@ class ConstVisitor final : public VNVisitor {
                     UINFO(4, "IF(0,{any},{x}) => {x}: " << nodep);
                     keepp = nodep->elsesp();
                     delp = nodep->thensp();
-                } else if (!m_doV || constp->isNeqZero()) {  // Might be X in Verilog
+                } else if (!m_doV || (constp->isTrue())) {
                     UINFO(4, "IF(!0,{x},{any}) => {x}: " << nodep);
                     keepp = nodep->thensp();
                     delp = nodep->elsesp();
@@ -4184,7 +4210,7 @@ class ConstVisitor final : public VNVisitor {
         iterateChildren(nodep);
 
         // If never breaks, remove
-        if (nodep->condp()->isNeqZero()) {
+        if (nodep->condp()->isTrue()) {
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }
@@ -4390,13 +4416,13 @@ class ConstVisitor final : public VNVisitor {
     TREEOP ("AstXor   {$lhsp, $rhsp.isZero}",   "replaceWLhs(nodep)");
     // Non-zero on one side or the other
     TREEOP ("AstAnd   {$lhsp.isAllOnes, $rhsp}",        "replaceWRhs(nodep)");
-    TREEOP ("AstLogAnd{$lhsp.isNeqZero, $rhsp}",        "replaceWRhsBool(nodep)");
+    TREEOP ("AstLogAnd{$lhsp.isTrue, $rhsp}",        "replaceWRhsBool(nodep)");
     TREEOP ("AstOr    {$lhsp.isAllOnes, $rhsp, $rhsp.isPure}",        "replaceWLhs(nodep)");  // ->allOnes
-    TREEOP ("AstLogOr {$lhsp.isNeqZero, $rhsp}",        "replaceNum(nodep,1)");
+    TREEOP ("AstLogOr {$lhsp.isTrue, $rhsp}",        "replaceNum(nodep,1)");
     TREEOP ("AstAnd   {$lhsp, $rhsp.isAllOnes}",        "replaceWLhs(nodep)");
-    TREEOP ("AstLogAnd{$lhsp, $rhsp.isNeqZero}",        "replaceWLhsBool(nodep)");
+    TREEOP ("AstLogAnd{$lhsp, $rhsp.isTrue}",        "replaceWLhsBool(nodep)");
     TREEOP ("AstOr    {$lhsp, $rhsp.isAllOnes, $lhsp.isPure}",        "replaceWRhs(nodep)");  // ->allOnes
-    TREEOP ("AstLogOr {$lhsp, $rhsp.isNeqZero, $lhsp.isPure, nodep->isPure()}",        "replaceNum(nodep,1)");
+    TREEOP ("AstLogOr {$lhsp, $rhsp.isTrue, $lhsp.isPure, nodep->isPure()}",        "replaceNum(nodep,1)");
     TREEOP ("AstXor   {$lhsp.isAllOnes, $rhsp}",        "AstNot{$rhsp}");
     TREEOP ("AstMul   {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
     TREEOP ("AstMulS  {$lhsp.isOne, $rhsp}",    "replaceWRhs(nodep)");
@@ -4412,19 +4438,21 @@ class ConstVisitor final : public VNVisitor {
     // Trinary ops
     // Note V3Case::Sel requires Cond to always be conditionally executed in C to prevent core dump!
     TREEOP ("AstCond{$condp.isZero,       $thenp, $elsep}", "replaceWChild(nodep,$elsep)");
-    TREEOP ("AstCond{$condp.isNeqZero,    $thenp, $elsep}", "replaceWChild(nodep,$thenp)");
+    TREEOP ("AstCond{$condp.isTrue,    $thenp, $elsep}", "replaceWChild(nodep,$thenp)");
+    TREEOP ("AstCond{$condp.isAnyXZ,    $thenp, $elsep}", "replaceAmbiguousCond(nodep)");
     TREEOPA("AstCond{$condp.isZero,       $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$elsep)");
-    TREEOPA("AstCond{$condp.isNeqZero,    $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$thenp)");
-    TREEOP ("AstCond{$condp, operandsSameTree($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
+    TREEOPA("AstCond{$condp.isTrue,    $thenp.castConst, $elsep.castConst}", "replaceWChild(nodep,$thenp)");
+    TREEOPA("AstCond{$condp.isAnyXZ,    $thenp.castConst, $elsep.castConst}", "replaceAmbiguousCond(nodep)");
+    TREEOP ("AstCond{$condp.isPure, operandsSameTree($thenp,,$elsep)}","replaceWChild(nodep,$thenp)");
     TREEOP ("AstCond{$condp, matchCondCond(nodep)}", "DONE")  // Same condition then skip
     // This visit function here must allow for short-circuiting.
     TREEOPS("AstCond{$condp.isZero}",           "replaceWIteratedThs(nodep)");
-    TREEOPS("AstCond{$condp.isNeqZero}",        "replaceWIteratedRhs(nodep)");
+    TREEOPS("AstCond{$condp.isTrue}",        "replaceWIteratedRhs(nodep)");
     TREEOP ("AstCond{$condp.castNot, $thenp, $elsep}", "AstCond{$condp->castNot()->lhsp(), $elsep, $thenp}");
-    TREEOP ("AstCond{$condp.width1, $thenp.width1, $thenp.isAllOnes, $elsep}", "AstLogOr {$condp, $elsep}");  // a?1:b == a||b
-    TREEOP ("AstCond{$condp.width1, $thenp.width1, $thenp, $elsep.isZero, !$elsep.isClassHandleValue}", "AstLogAnd{$condp, $thenp}");  // a?b:0 == a&&b
-    TREEOP ("AstCond{$condp.width1, $thenp.width1, $thenp, $elsep.isAllOnes}", "AstLogOr {AstNot{$condp}, $thenp}");  // a?b:1 == ~a||b
-    TREEOP ("AstCond{$condp.width1, $thenp.width1, $thenp.isZero, !$thenp.isClassHandleValue, $elsep}", "AstLogAnd{AstNot{$condp}, $elsep}");  // a?0:b == ~a&&b
+    TREEOP ("AstCond{!v3Global.opt.fourstate() && v3Global.constRemoveXs(), $condp.width1, $thenp.width1, $thenp.isAllOnes, $elsep}", "AstLogOr {$condp, $elsep}");  // a?1:b == a||b
+    TREEOP ("AstCond{!v3Global.opt.fourstate() && v3Global.constRemoveXs(), $condp.width1, $thenp.width1, $thenp, $elsep.isZero, !$elsep.isClassHandleValue}", "AstLogAnd{$condp, $thenp}");  // a?b:0 == a&&b
+    TREEOP ("AstCond{!v3Global.opt.fourstate() && v3Global.constRemoveXs(), $condp.width1, $thenp.width1, $thenp, $elsep.isAllOnes}", "AstLogOr {AstNot{$condp}, $thenp}");  // a?b:1 == ~a||b
+    TREEOP ("AstCond{!v3Global.opt.fourstate() && v3Global.constRemoveXs(), $condp.width1, $thenp.width1, $thenp.isZero, !$thenp.isClassHandleValue, $elsep}", "AstLogAnd{AstNot{$condp}, $elsep}");  // a?0:b == ~a&&b
     TREEOP ("AstCond{!$condp.width1, operandBoolShift(nodep->condp())}", "replaceBoolShift(nodep->condp())");
     // Prefer constants on left, since that often needs a shift, it lets
     // constant red remove the shift

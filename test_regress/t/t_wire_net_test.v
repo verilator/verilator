@@ -53,6 +53,22 @@ clk
   assign tri_y[1] = tri_y_en[1] ? tri_y_dat[1] : 1'bz;
   assign tri_y[2] = tri_y_en[2] ? tri_y_dat[2] : 1'bz;
   assign tri_y[3] = tri_y_en[3] ? tri_y_dat[3] : 1'bz;
+  // Constant drivers are merged like any other driver
+  wor [4:0] c_wor;
+  assign c_wor = 5'b00001;
+  assign c_wor = 5'b00100;
+  wand [4:0] c_wand;
+  assign c_wand = 5'b10111;
+  assign c_wand = 5'b11101;
+  assign c_wand = 5'b11110;
+  trior [4:0] c_trior;
+  assign c_trior = {1'b0, x};
+  assign c_trior = 5'b10010;
+  triand [4:0] c_triand;
+  assign c_triand = 5'b01101;
+  assign c_triand = {1'b1, y};
+  wire [4:0] c_trior_exp = {1'b0, x} | 5'b10010;
+  wire [4:0] c_triand_exp = {1'b1, y} & 5'b01101;
   always @ (posedge clk) begin
     cyc <= cyc + 1;
     x = {$random}[3:0];
@@ -65,6 +81,10 @@ clk
     `checkb(ptrior2, tri_z1);
     `checkb(ptriand1, z2);
     `checkb(ptriand2, tri_z2);
+    `checkb(c_wor, 5'b00101);
+    `checkb(c_wand, 5'b10100);
+    `checkb(c_trior, c_trior_exp);
+    `checkb(c_triand, c_triand_exp);
     if (cyc == 20) begin
       $write("*-* All Finished *-*\n");
       $finish;

@@ -159,10 +159,10 @@ void V3ThreadPool::selfTest() {
 
 V3ThreadScope::V3ThreadScope() {
     UASSERT(v3Global.threadPoolp(), "ThreadPool must be initialized before ThreadScope.");
-    m_pool = v3Global.threadPoolp();
+    m_poolp = v3Global.threadPoolp();
     wait();
 }
 
-void V3ThreadScope::enqueue(std::function<void()>&& f) { m_pool->enqueue(std::move(f)); }
+void V3ThreadScope::enqueue(std::function<void()>&& f) { m_poolp->enqueue(std::move(f)); }
 
-void V3ThreadScope::wait() { m_pool->wait(); }
+void V3ThreadScope::wait() { m_poolp->wait(); }

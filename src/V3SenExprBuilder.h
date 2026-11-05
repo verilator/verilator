@@ -256,16 +256,19 @@ private:
         // All event signals should be 1-bit at this point
         switch (senItemp->edgeType()) {
         case VEdgeType::ET_CHANGED:
-        case VEdgeType::ET_HYBRID:  //
+        case VEdgeType::ET_HYBRID: {
+            const bool fireAtInit = senItemp->edgeType() == VEdgeType::ET_HYBRID;
             if (VN_IS(senp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 // operand order reversed to avoid calling neq() method on non-VlUnpacked type, see
                 // issue #5125
                 AstCMethodHard* const resultp
                     = new AstCMethodHard{flp, prevp(), VCMethod::UNPACKED_NEQ, currp()};
                 resultp->dtypeSetBit();
-                return {wrapExprWithNullCheck(flp, resultp, baseRefp), true};
+                return {wrapExprWithNullCheck(flp, resultp, baseRefp), fireAtInit};
             }
-            return {wrapExprWithNullCheck(flp, new AstNeq{flp, currp(), prevp()}, baseRefp), true};
+            return {wrapExprWithNullCheck(flp, new AstNeq{flp, currp(), prevp()}, baseRefp),
+                    fireAtInit};
+        }
         case VEdgeType::ET_BOTHEDGE:  //
             return {wrapExprWithNullCheck(flp, lsb(new AstXor{flp, currp(), prevp()}), baseRefp),
                     false};
@@ -315,10 +318,6 @@ private:
                 = new AstCMethodHard{flp, currp(), VCMethod::EVENT_IS_FIRED};
             callp->dtypeSetBit();
             AstNodeExpr* const firedp = wrapExprWithNullCheck(flp, callp, baseRefp);
-            if (const AstVarRef* const refp = VN_CAST(senp, VarRef)) {
-                // The private NBA event must run so pending assignments finish settling.
-                if (refp->varScopep() == v3Global.rootp()->nbaEventp()) return {firedp, false};
-            }
             // Do not trigger user named-event processes after $finish.
             AstNodeExpr* const notFinishp
                 = new AstCExpr{flp,
@@ -329,8 +328,6 @@ private:
         }
         case VEdgeType::ET_TRUE:  //
             return {currp(), false};
-        case VEdgeType::ET_INITIAL_NBA:  //
-            return {new AstConst{flp, AstConst::BitFalse{}}, true};
         default:  // LCOV_EXCL_START
             senItemp->v3fatalSrc("Unknown edge type");
             return {nullptr, false};

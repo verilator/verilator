@@ -534,6 +534,9 @@ public:
     bool isDynamicTriggerScheduler() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::DYNAMIC_TRIGGER_SCHEDULER;
     }
+    bool isNbaGenericQueue() const VL_MT_SAFE {
+        return keyword() == VBasicDTypeKwd::NBA_GENERIC_QUEUE;
+    }
     bool isRandomGenerator() const VL_MT_SAFE {
         return keyword() == VBasicDTypeKwd::RANDOM_GENERATOR;
     }
@@ -564,6 +567,7 @@ public:
     VNumRange declRange() const { return isRanged() ? VNumRange{left(), right()} : VNumRange{}; }
     void cvtRangeConst();  // Convert to smaller representation
     bool isCompound() const override { return isString(); }
+    bool isDynamicallySized() const override { return isString(); }
     bool isIntegralOrPacked() const override { return keyword().isIntNumeric(); }
 };
 class AstBracketArrayDType final : public AstNodeDType {
@@ -664,6 +668,27 @@ public:
     bool rawPointer() const { return m_rawPointer; }
     void rawPointer(bool flag) { m_rawPointer = flag; }
     static void selfTest();
+    bool isCompound() const override { return true; }
+};
+class AstClosurePoolDType final : public AstNodeDType {
+    // Run-time closure pool
+    // @astgen ptr := m_subDTypep : AstStructDType  // Type of the closures
+public:
+    AstClosurePoolDType(FileLine* fl, AstStructDType* subDTypep)
+        : ASTGEN_SUPER_ClosurePoolDType(fl)
+        , m_subDTypep{subDTypep} {
+        dtypep(this);
+    }
+    ASTGEN_MEMBERS_AstClosurePoolDType;
+    const char* broken() const override;
+    inline AstNodeDType* subDTypep() const override VL_MT_STABLE;
+    bool sameNode(const AstNode* samep) const override {
+        return m_subDTypep == VN_DBG_AS(samep, ClosurePoolDType)->m_subDTypep;
+    }
+    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
+    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
+    int widthAlignBytes() const override { return 8; }
+    int widthTotalBytes() const override { return 32; }
     bool isCompound() const override { return true; }
 };
 class AstConstDType final : public AstNodeDType {
@@ -1161,32 +1186,6 @@ public:
     VRandAttr rand() const { return m_rand; }
     void rand(const VRandAttr flag) { m_rand = flag; }
 };
-class AstNBACommitQueueDType final : public AstNodeDType {
-    // @astgen ptr := m_subDTypep : AstNodeDType  // Type of the corresponding variable
-    const bool m_partial;  // Partial element update required
-
-public:
-    AstNBACommitQueueDType(FileLine* fl, AstNodeDType* subDTypep, bool partial)
-        : ASTGEN_SUPER_NBACommitQueueDType(fl)
-        , m_partial{partial}
-        , m_subDTypep{subDTypep} {
-        dtypep(this);
-    }
-    ASTGEN_MEMBERS_AstNBACommitQueueDType;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    AstNodeDType* subDTypep() const override VL_MT_STABLE { return m_subDTypep; }
-    bool partial() const { return m_partial; }
-    bool sameNode(const AstNode* samep) const override {
-        const AstNBACommitQueueDType* const asamep = VN_DBG_AS(samep, NBACommitQueueDType);
-        return m_partial == asamep->m_partial;
-    }
-    bool similarDTypeNode(const AstNodeDType* samep) const override { return this == samep; }
-    AstBasicDType* basicp() const override VL_MT_STABLE { return nullptr; }
-    int widthAlignBytes() const override { return 1; }
-    int widthTotalBytes() const override { return 24; }
-    bool isCompound() const override { return true; }
-};
 class AstParamTypeDType final : public AstNodeDType {
     // Parents: MODULE
     // A parameter type statement; much like a var or typedef
@@ -1475,10 +1474,12 @@ public:
     bool isCompound() const override { return false; }
 };
 class AstUnsizedArrayDType final : public AstNodeDType {
-    // Unsized/open-range Array data type, ie "some_dtype var_name []"
+    // Unsized/open-range Array data type, ie "some_dtype var_name []", or if packed, as only in a
+    // DPI import, "bit [] var_name"
     // @astgen op1 := childDTypep : Optional[AstNodeDType] // moved to refDTypep() in V3Width
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
+    bool m_packed = false;  // Packed dimension, not unpacked
 public:
     AstUnsizedArrayDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp)
         : ASTGEN_SUPER_UnsizedArrayDType(fl) {
@@ -1498,7 +1499,10 @@ public:
     }
     bool sameNode(const AstNode* samep) const override;
     bool similarDTypeNode(const AstNodeDType* samep) const override;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     void dumpSmall(std::ostream& str) const override;
+    string prettyDTypeName(bool full) const override;
     AstNodeDType* getChildDTypep() const override { return childDTypep(); }
     AstNodeDType* subDTypep() const override VL_MT_STABLE {
         return m_refDTypep ? m_refDTypep : childDTypep();
@@ -1507,6 +1511,8 @@ public:
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
     // METHODS
+    bool packed() const { return m_packed; }
+    void packed(bool flag) { m_packed = flag; }
     AstBasicDType* basicp() const override VL_MT_STABLE { return subDTypep()->basicp(); }
     int widthAlignBytes() const override { return subDTypep()->widthAlignBytes(); }
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
@@ -1625,12 +1631,18 @@ public:
 
 // === AstNodeUOrStructDType ===
 class AstStructDType final : public AstNodeUOrStructDType {
+    bool m_isClosure = false;  // Is a closure, derived from VlClosure
+
 public:
     // VSigning below is mispurposed to indicate if packed or not
     AstStructDType(FileLine* fl, VSigning numericUnpack)
         : ASTGEN_SUPER_StructDType(fl, numericUnpack) {}
     ASTGEN_MEMBERS_AstStructDType;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     string verilogKwd() const override { return "struct"; }
+    bool isClosure() const { return m_isClosure; }
+    void isClosure(bool flag) { m_isClosure = flag; }
 };
 class AstUnionDType final : public AstNodeUOrStructDType {
     bool m_isSoft;  // Is a "union soft"
