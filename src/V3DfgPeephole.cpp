@@ -207,6 +207,7 @@ class V3DfgPeephole final : public DfgVisitor {
     DfgUserMap<VertexInfo> m_vInfo = m_dfg.makeUserMap<VertexInfo>();  // Map to VertexInfo
     V3DfgCache m_cache{m_dfg};  // Vertex cache to avoid creating redundant vertices
     DfgVertex* m_vtxp = nullptr;  // Currently considered vertex
+    std::vector<DfgVertex*> m_movedSinks;  // In replace(), the sinks moving to the replacement
     size_t m_currentGeneration = 0;  // Current generation number
     size_t m_lastId = 0;  // Last unique vertex ID assigned
     // Scope for transient temporariy variables cerated in this pass. They should all be
@@ -378,17 +379,18 @@ class V3DfgPeephole final : public DfgVisitor {
         });
 
         // Remove sinks of the original vertex from the cache - their inputs are changing
+        m_movedSinks.clear();
         m_vtxp->foreachSink([&](DfgVertex& dst) {
             invalidateVertex(&dst);
+            m_movedSinks.push_back(&dst);
             return false;
         });
         // Replace vertex with the replacement
         m_vtxp->replaceWith(resp);
-        // Re-cache all sinks of the replacement
-        resp->foreachSink([&](DfgVertex& dst) {
-            cacheVertex(&dst);
-            return false;
-        });
+        // The replacement itself might be an existing vertex that was cached, so it might
+        // have other unrelated sinks. Re-cache the sinks that moved to the replacement,
+        // but avoid re-caching the existing ones.
+        for (DfgVertex* const vtxp : vlstd::reverse_view(m_movedSinks)) cacheVertex(vtxp);
 
         // Original vertex is now unused, so delete it
         deleteVertex(m_vtxp);
@@ -2193,12 +2195,12 @@ class V3DfgPeephole final : public DfgVisitor {
             }
         }
 
-        if (DfgNot* const lNot = lhsp->cast<DfgNot>()) {
-            if (DfgNot* const rNot = rhsp->cast<DfgNot>()) {
-                if (!lNot->hasMultipleSinks() && !rNot->hasMultipleSinks()) {
+        if (DfgNot* const lNotp = lhsp->cast<DfgNot>()) {
+            if (DfgNot* const rNotp = rhsp->cast<DfgNot>()) {
+                if (!lNotp->hasMultipleSinks() && !rNotp->hasMultipleSinks()) {
                     APPLYING(PUSH_CONCAT_THROUGH_NOTS) {
                         DfgConcat* const newCatp
-                            = make<DfgConcat>(vtxp, lNot->srcp(), rNot->srcp());
+                            = make<DfgConcat>(vtxp, lNotp->srcp(), rNotp->srcp());
                         replace(make<DfgNot>(vtxp, newCatp));
                         return;
                     }
@@ -3183,6 +3185,23 @@ class V3DfgPeephole final : public DfgVisitor {
                 APPLYING(REPLACE_COND_WITH_ELSE_BRANCH_COND) {
                     replace(make<DfgAnd>(vtxp, condp, thenp));
                     return;
+                }
+            }
+            // 'c ? a : b' on bits selected from vectors, as one bit of a Concat: in the bitwise
+            // form '(c & a) | (~c & b)' the Concat is pushed through, so that neighbouring bits
+            // merge into one operation on the vectors. Not if 'c' has other uses: the bitwise
+            // terms might then be shared, which stops the Concat being pushed through them.
+            if (condp->is<DfgSel>() && thenp->is<DfgSel>() && elsep->is<DfgSel>()
+                && !condp->hasMultipleSinks() && !thenp->unsafe() && !elsep->unsafe()) {
+                const DfgVertex* const sinkp = vtxp->singleSink();
+                if (sinkp && sinkp->is<DfgConcat>()) {
+                    APPLYING(REPLACE_COND_OF_SEL_BITS_WITH_BITWISE) {
+                        DfgAnd* const takenp = make<DfgAnd>(vtxp, condp, thenp);
+                        DfgNot* const notp = make<DfgNot>(condp, condp);
+                        DfgAnd* const otherp = make<DfgAnd>(vtxp, notp, elsep);
+                        replace(make<DfgOr>(vtxp, takenp, otherp));
+                        return;
+                    }
                 }
             }
         }

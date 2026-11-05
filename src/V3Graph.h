@@ -177,7 +177,7 @@ public:
     void weight(int weight) { m_weight = weight; }
     bool cutable() const { return m_cutable; }
     void cutable(bool cutable) { m_cutable = cutable; }
-    void userp(void* user) { m_userp = user; }
+    void userp(void* userp) { m_userp = userp; }
     void* userp() const { return m_userp; }
     void user(uint64_t user) { m_user = user; }
     uint64_t user() const { return m_user; }

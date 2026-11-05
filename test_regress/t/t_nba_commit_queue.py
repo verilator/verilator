@@ -15,8 +15,8 @@ test.compile(verilator_flags2=["-unroll-count 1", "--stats", "-fno-decompose"])
 
 test.execute()
 
-test.file_grep(test.stats, r'NBA, variables using ValueQueueWhole scheme\s+(\d+)', 6)
-test.file_grep(test.stats, r'NBA, variables using ValueQueuePartial scheme\s+(\d+)', 3)
-test.file_grep(test.stats, r'NBA, variables using ShadowVar scheme\s+(\d+)', 3)
+test.file_grep(test.stats, r'NBA, variables using ShadowVar scheme\s+(\d+)', 2)
+test.file_grep(test.stats, r'NBA, variables using GenericLocal scheme\s+(\d+)', 13)
+test.file_grep(test.stats, r'NBA, variables using GenericGlobal scheme\s+(\d+)', 0)
 
 test.passes()

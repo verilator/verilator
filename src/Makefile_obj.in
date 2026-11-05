@@ -247,13 +247,13 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3Branch.o \
   V3CCtors.o \
   V3CUse.o \
+  V3CallTargets.o \
   V3Case.o \
   V3Cast.o \
   V3Cfg.o \
   V3CfgBuilder.o \
   V3CfgLiveVariables.o \
   V3Class.o \
-  V3ClassGraph.o \
   V3Clean.o \
   V3Clock.o \
   V3Combine.o \
@@ -342,6 +342,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3SchedPartition.o \
   V3SchedReplicate.o \
   V3SchedTiming.o \
+  V3SchedTimingPrep.o \
   V3SchedTrigger.o \
   V3SchedUtil.o \
   V3SchedVirtIface.o \

@@ -7,4 +7,7 @@
 module t;
   bit foo;
   final foo <= 1;  // <--- Error
+  event ev;
+  final ->>ev;  // <--- Error
+  final ->ev;
 endmodule

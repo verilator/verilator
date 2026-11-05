@@ -53,8 +53,9 @@ ______________________________________________________________________
   `.py` drivers carry the standard driver header -- distribution tests check
   headers on every committed file.
 - Use `--binary` instead of `--exe --main --timing` -- it implies the others.
-- Error tests use `test.compile(fails=True, expect_filename=test.golden_filename)`
-  (or `test.lint(...)`) and must not call `test.execute()`.
+- Error tests use `test.lint(fails=True, expect_filename=test.golden_filename)`
+  and must not call `test.execute()`.
+- Error tests should use `test.lint(fails=True, ...` instead of `test.compile(fails=True, ...)`.
 - Use `.out` golden files with `expect_filename` instead of inline `expect`
   regex strings -- goldens are diffable and maintainable.
 - Use `test.glob_one()`/`test.glob_some()` and `test.timeout()` instead of raw
@@ -124,8 +125,8 @@ ______________________________________________________________________
   the language forces a declaration elsewhere (ports, module-level items), keep
   it as close as it can be rather than contorting the test.
 - Use the `checkh`/`checkd`/`checks` assertion macros, not manual
-  `if`/`$display`/`$stop` sequences. Note `checkh` prints with `%p`, which renders
-  integers as hex -- use `checkd` for integer comparisons.
+  `if`/`$display`/`$stop` sequences. Accept `checkd` or `checkh` as nearly
+  interchangable for small numbers; use `checkh` for large hex values.
 - Use the `` `stop `` macro rather than direct `$stop`.
 - Drive logic with runtime-varying inputs (counters, CRC/LFSR registers) so
   constant folding cannot pre-evaluate the logic under test; check behavior across

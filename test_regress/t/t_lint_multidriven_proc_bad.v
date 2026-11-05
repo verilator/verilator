@@ -20,23 +20,23 @@ module t (
 
   t1 u1 (
       .clk(clk),
-      .d  (d),
-      .q  (q1)
+      .d(d),
+      .q(q1)
   );
 
   t2 u2 (
       .clka(clka),
       .clkb(clkb),
-      .d   (d),
-      .q   (q2)
+      .d(d),
+      .q(q2)
   );
 
   t3 u3 (
       .clk(clk),
-      .d  (dv),
-      .q1 (q3a),
-      .q2 (q3b),
-      .q3 (q3c)
+      .d(dv),
+      .q1(q3a),
+      .q2(q3b),
+      .q3(q3c)
   );
 
 endmodule
@@ -55,8 +55,8 @@ module t1 (
 
 endmodule
 
-// Different clocks: reported by MULTIDRIVEN (on by default). MULTIDRIVENPROC is
-// suppressed here so the conflict is reported only once.
+// Different clocks: two plain always blocks drive the whole of 'q', reported by
+// MULTIDRIVENPROC.
 module t2 (
     input wire clka,
     input wire clkb,

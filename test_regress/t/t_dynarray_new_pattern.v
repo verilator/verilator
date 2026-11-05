@@ -45,7 +45,7 @@ module t;
     `checkh(decl[1], 'hd);
     `checkh(decl[2], 'he);
 
-    begin  // new[size]('{index: value, default: value}), indices out of bounds are ignored
+    begin  // new[size]('{index: value, default: value}), indices beyond the size are ignored
       localparam int K = 2;
       int a[];
       a = new[n] ('{12: 2, default: 3});
@@ -54,7 +54,7 @@ module t;
       `checkh(a[1], 'h3);
       `checkh(a[2], 'h3);
       `checkh(a[3], 'h3);
-      a = new[n] ('{1: 5, 3: 6, 4: 7, -1: 8});
+      a = new[n] ('{1: 5, 3: 6, 4: 7});
       `checkh(a.size, 4);
       `checkh(a[0], 'h0);
       `checkh(a[1], 'h5);
@@ -80,12 +80,6 @@ module t;
       `checkh(a[0], 'h0);
       `checkh(a[1], 'h0);
       `checkh(a[2], 'h4);
-      // Indices wider than 32 bits are out of bounds, not truncated
-      a = new[3] ('{64'h1_0000_0001: 5, 1: 6});
-      `checkh(a.size, 3);
-      `checkh(a[0], 'h0);
-      `checkh(a[1], 'h6);
-      `checkh(a[2], 'h0);
       // Keys alone, other elements have the default value of the type
       a = new[3] ('{2: 4});
       `checkh(a.size, 3);

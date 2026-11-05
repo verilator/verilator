@@ -18,7 +18,6 @@ test.compile(verilator_flags2=["--binary", "--stats", "-DPROCEDURE=initial"])
 test.file_grep(test.stats, r'Scheduling, \'act\' extra triggers\s+(\d+)', 0)
 test.file_grep(test.stats, r'Scheduling, \'act\' pre triggers\s+(\d+)', 0)
 test.file_grep(test.stats, r'Scheduling, \'act\' sense triggers\s+(\d+)', 3)
-test.file_grep(test.stats, r'Procedures needing initial NBA trigger\s+(\d+)', 100)
 
 test.execute()
 

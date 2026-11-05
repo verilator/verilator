@@ -223,7 +223,7 @@ public:
         return false;
     }
     int lexKwdLastState() const { return m_lexKwdLast; }
-    static const char* tokenName(int tok) VL_MT_DISABLED;
+    static const char* tokenName(int token) VL_MT_DISABLED;
     static bool isStrengthToken(int tok) VL_MT_DISABLED;
 
     void ppPushText(const string& text) {

@@ -258,7 +258,7 @@ static void* _vl_sv_adjusted_datap(const VerilatedDpiOpenVar* varp, int nargs, i
         if (VL_UNLIKELY(!datap)) {
             VL_SVDPI_WARN_("%%Warning: DPI svOpenArrayHandle function index 3 "
                            "out of bounds; %d outside [%d:%d].\n",
-                           indx1, varp->left(3), varp->right(3));
+                           indx3, varp->left(3), varp->right(3));
             return nullptr;
         }
     }

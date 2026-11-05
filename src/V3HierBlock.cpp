@@ -165,8 +165,8 @@ bool V3HierBlock::stringParamPassable(const string& value) {
 V3HierBlock::StrGParams V3HierBlock::stringifyParams(const std::vector<AstVar*>& gparams,
                                                      bool forGOption) {
     StrGParams strParams;
-    for (const AstVar* const gparam : gparams) {
-        if (const AstConst* const constp = VN_CAST(gparam->valuep(), Const)) {
+    for (const AstVar* const gparamp : gparams) {
+        if (const AstConst* const constp = VN_CAST(gparamp->valuep(), Const)) {
             string s;
             // Only constant parameter needs to be set to -G because already checked in
             // V3Param.cpp. See also ParamVisitor::checkSupportedParam() in the file.
@@ -191,7 +191,7 @@ V3HierBlock::StrGParams V3HierBlock::stringifyParams(const std::vector<AstVar*>&
                 s = num.ascii(true, true);
                 s = VString::quoteAny(s, '\'', '\\');
             }
-            strParams.emplace_back(gparam->name(), s);
+            strParams.emplace_back(gparamp->name(), s);
         }
     }
     return strParams;
@@ -274,10 +274,6 @@ string V3HierBlock::hierLibFilename(bool withDir) const {
     return hierSomeFilename(withDir, "lib", ".a");
 }
 
-string V3HierBlock::hierGeneratedFilenames(bool withDir) const {
-    return hierWrapperFilename(withDir) + ' ' + hierMkFilename(withDir);
-}
-
 string V3HierBlock::vFileIfNecessary() const {
     string filename = V3Os::filenameRealPath(m_modp->fileline()->filename());
     for (const auto& v : v3Global.opt.vFiles()) {
@@ -324,10 +320,10 @@ void V3HierBlock::writeParametersFile() const {
     const string moduleName = "Vhsh" + hash.digestSymbol24();
     const std::unique_ptr<std::ofstream> of{V3File::new_ofstream(typeParametersFilename())};
     *of << "module " << moduleName << ";\n";
-    for (AstParamTypeDType* const gparam : m_typeParams) {
+    for (AstParamTypeDType* const gparamp : m_typeParams) {
         AstTypedef* tdefp
-            = new AstTypedef{new FileLine{FileLine::builtInFilename()}, gparam->name(), nullptr,
-                             VFlagChildDType{}, gparam->skipRefp()->cloneTreePure(true)};
+            = new AstTypedef{new FileLine{FileLine::builtInFilename()}, gparamp->name(), nullptr,
+                             VFlagChildDType{}, gparamp->skipRefp()->cloneTreePure(true)};
         V3EmitV::verilogForTree(tdefp, *of);
         VL_DO_DANGLING(tdefp->deleteTree(), tdefp);
     }

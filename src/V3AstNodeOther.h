@@ -298,6 +298,7 @@ public:
 class AstNodeFuncCovItem VL_NOT_FINAL : public AstNode {
     // Base class for functional coverage items (coverpoints, crosses)
     // @astgen ptr := m_instCoveragep : Optional[AstFunc]  // [V3Width] Its get_inst_coverage()
+    // @astgen ptr := m_optionVarp : Optional[AstVar]  // Generated option struct member
 protected:
     string m_name;  // Item name
 
@@ -313,6 +314,8 @@ public:
     bool maybePointedTo() const override { return true; }
     AstFunc* instCoveragep() const { return m_instCoveragep; }
     void instCoveragep(AstFunc* funcp) { m_instCoveragep = funcp; }
+    AstVar* optionVarp() const { return m_optionVarp; }
+    void optionVarp(AstVar* varp) { m_optionVarp = varp; }
 };
 class AstNodeGen VL_NOT_FINAL : public AstNode {
     // Generate construct
@@ -354,6 +357,7 @@ class AstNodeModule VL_NOT_FINAL : public AstNode {
     bool m_parameterizedTemplate : 1;  // True when at least one specialized clone exists;
                                        // set by V3Param::deepCloneModule. Suppresses
                                        // width/type errors on the unresolved template.
+    bool m_threadsGroup : 1;  // Partitioned as a group with --threads, marked by THREADS_GROUP
     bool m_verilatorLib : 1;  // Module is a stub for a Verilator produced --lib-create
 protected:
     AstNodeModule(VNType t, FileLine* fl, const string& name, const string& libname)
@@ -373,6 +377,7 @@ protected:
         , m_recursive{false}
         , m_recursiveClone{false}
         , m_parameterizedTemplate{false}
+        , m_threadsGroup{false}
         , m_verilatorLib{false} {}
 
 public:
@@ -425,6 +430,8 @@ public:
     bool recursiveClone() const { return m_recursiveClone; }
     bool parameterizedTemplate() const { return m_parameterizedTemplate; }
     void parameterizedTemplate(bool flag) { m_parameterizedTemplate = flag; }
+    bool threadsGroup() const { return m_threadsGroup; }
+    void threadsGroup(bool flag) { m_threadsGroup = flag; }
     void verilatorLib(bool flag) { m_verilatorLib = flag; }
     bool verilatorLib() const { return m_verilatorLib; }
     VLifetime lifetime() const { return m_lifetime; }
@@ -501,6 +508,8 @@ public:
     inline bool hasCombo() const;
     inline bool hasInitial() const;
     inline bool hasStatic() const;
+    // V3Active puts each AlwaysPostponed alone under a combinational active
+    inline bool isPostponed() const;
 };
 class AstAlias final : public AstNode {
     // Alias construct - Used for source level net alias, and also for variable aliases internally
@@ -1063,6 +1072,7 @@ class AstCoverBin final : public AstNode {
     bool m_isArray = false;  // Bin is an array: of a bin per value or transition, or of
                              // arraySizep() bins
     bool m_isWildcard = false;  // Bin uses wildcard matching (independent of ignore/illegal)
+    bool m_isSetExpr = false;  // Ranges contain one set_covergroup_expression, not a braced list
 
 public:
     AstCoverBin(FileLine* fl, const string& name, AstNode* rangesp, bool isIgnore, bool isIllegal,
@@ -1109,6 +1119,8 @@ public:
     bool isWildcard() const { return m_isWildcard; }
     bool isArray() const { return m_isArray; }
     void isArray(bool flag) { m_isArray = flag; }
+    bool isSetExpr() const { return m_isSetExpr; }
+    void isSetExpr(bool flag) { m_isSetExpr = flag; }
 };
 class AstCoverBinsof final : public AstNode {
     // A binsof selection of a coverpoint or one of its named bins
@@ -1604,8 +1616,7 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_stdPackageProcessp : Optional[AstClass]  // SystemVerilog std process class
     // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
     // @astgen ptr := m_delaySchedulerp : Optional[AstVar]  // Delay scheduler variable
-    // @astgen ptr := m_nbaEventp : Optional[AstVarScope]  // NBA event variable
-    // @astgen ptr := m_nbaEventTriggerp : Optional[AstVarScope]  // NBA event trigger
+    // @astgen ptr := m_nbaQueuep : Optional[AstVarScope]  // Global queue of NBAs (V3Delayed)
     // @astgen ptr := m_topScopep : Optional[AstTopScope]  // Singleton AstTopScope
     // @astgen ptr := m_stlFirstIterationp: Optional[AstVarScope]  // Settle first iteration flag
     VTimescale m_timeunit;  // Global time unit
@@ -1661,10 +1672,8 @@ public:
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
     void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
-    AstVarScope* nbaEventp() const { return m_nbaEventp; }
-    void nbaEventp(AstVarScope* const varScopep) { m_nbaEventp = varScopep; }
-    AstVarScope* nbaEventTriggerp() const { return m_nbaEventTriggerp; }
-    void nbaEventTriggerp(AstVarScope* const varScopep) { m_nbaEventTriggerp = varScopep; }
+    AstVarScope* nbaQueuep() const { return m_nbaQueuep; }
+    void nbaQueuep(AstVarScope* varScopep) { m_nbaQueuep = varScopep; }
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
     AstPackage* stdPackagep() const { return m_stdPackagep; }
     void stdPackageProcessp(AstClass* const classp) { m_stdPackageProcessp = classp; }
@@ -1938,7 +1947,6 @@ public:
     class Combo {};  // for constructor type-overload selection
     class Static {};  // for constructor type-overload selection
     class Initial {};  // for constructor type-overload selection
-    class InitialNBA {};  // for constructor type-overload selection
     class Final {};  // for constructor type-overload selection
     class Never {};  // for constructor type-overload selection
     AstSenItem(FileLine* fl, VEdgeType edgeType, AstNodeExpr* senp, AstNodeExpr* condp = nullptr)
@@ -1956,9 +1964,6 @@ public:
     AstSenItem(FileLine* fl, Initial)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_INITIAL} {}
-    AstSenItem(FileLine* fl, InitialNBA)
-        : ASTGEN_SUPER_SenItem(fl)
-        , m_edgeType{VEdgeType::ET_INITIAL_NBA} {}
     AstSenItem(FileLine* fl, Final)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_FINAL} {}
@@ -2885,11 +2890,17 @@ public:
     }
 };
 class AstConsQueueItem final : public AstNodeConsItem {
-    // An element of an AstConsQueue, a value or an array to splice
+    // An element of an AstConsQueue, a value or an array to splice. With sizep, the value at
+    // index 'keyp'.
     // Parents: CONSQUEUE
+    // @astgen op1 := keyp : Optional[AstConst]
 public:
     AstConsQueueItem(FileLine* fl, AstNodeExpr* valuep)
         : ASTGEN_SUPER_ConsQueueItem(fl, valuep) {}
+    AstConsQueueItem(FileLine* fl, AstConst* keyp, AstNodeExpr* valuep)
+        : ASTGEN_SUPER_ConsQueueItem(fl, valuep) {
+        this->keyp(keyp);
+    }
     ASTGEN_MEMBERS_AstConsQueueItem;
     const char* broken() const override {
         // backp is the cons node or the previous element
@@ -3295,6 +3306,9 @@ public:
     // Covergroup options accessors
     int cgAutoBinMax() const { return m_cgAutoBinMax; }
     void cgAutoBinMax(int value) { m_cgAutoBinMax = value; }
+    // Return true if this class is an extension of base class following all extends (SLOW)
+    // Accepts nullptrs
+    static bool isClassDerivedFrom(const AstClass* refClassp, const AstClass* baseClassp);
     // Return true if this class is an extension of base class (SLOW)
     // Accepts nullptrs
     static bool isClassExtendedFrom(const AstClass* refClassp, const AstClass* baseClassp);

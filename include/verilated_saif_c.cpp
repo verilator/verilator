@@ -89,14 +89,14 @@ public:
 class VerilatedSaifActivityVar final {
     // MEMBERS
     uint64_t m_lastTime;  // Last time when variable value was updated
-    VerilatedSaifActivityBit* m_bits;  // Pointer to variable bits objects
+    VerilatedSaifActivityBit* m_bitsp;  // Pointer to variable bits objects
     uint32_t m_width;  // Width of variable (in bits)
 
 public:
     // CONSTRUCTORS
-    VerilatedSaifActivityVar(uint64_t startTime, uint32_t width, VerilatedSaifActivityBit* bits)
+    VerilatedSaifActivityVar(uint64_t startTime, uint32_t width, VerilatedSaifActivityBit* bitsp)
         : m_lastTime{startTime}
-        , m_bits{bits}
+        , m_bitsp{bitsp}
         , m_width{width} {}
 
     VerilatedSaifActivityVar(VerilatedSaifActivityVar&&) = default;
@@ -112,7 +112,7 @@ public:
 
         const uint64_t dt = time - m_lastTime;
         for (size_t i = 0; i < std::min(m_width, bits); ++i) {
-            m_bits[i].aggregateVal(dt, (newval >> i) & 1);
+            m_bitsp[i].aggregateVal(dt, (newval >> i) & 1);
         }
         updateLastTime(time);
     }
@@ -144,15 +144,15 @@ class VerilatedSaifActivityScope final {
     // Children signals codes mapped to their names in the current scope
     std::vector<std::pair<uint32_t, std::string>> m_childActivities;
     // Parent scope pointer
-    VerilatedSaifActivityScope* m_parentScope = nullptr;
+    VerilatedSaifActivityScope* m_parentScopep = nullptr;
 
 public:
     // CONSTRUCTORS
     VerilatedSaifActivityScope(std::string scopePath, std::string name,
-                               VerilatedSaifActivityScope* parentScope = nullptr)
+                               VerilatedSaifActivityScope* parentScopep = nullptr)
         : m_scopePath{std::move(scopePath)}
         , m_scopeName{std::move(name)}
-        , m_parentScope{parentScope} {}
+        , m_parentScopep{parentScopep} {}
 
     VerilatedSaifActivityScope(VerilatedSaifActivityScope&&) = default;
     VerilatedSaifActivityScope& operator=(VerilatedSaifActivityScope&&) = default;
@@ -164,7 +164,7 @@ public:
     VL_ATTR_ALWINLINE void addActivityVar(uint32_t code, std::string name) {
         m_childActivities.emplace_back(code, std::move(name));
     }
-    VL_ATTR_ALWINLINE bool hasParent() const { return m_parentScope; }
+    VL_ATTR_ALWINLINE bool hasParent() const { return m_parentScopep; }
 
     // ACCESSORS
     VL_ATTR_ALWINLINE const std::string& path() const { return m_scopePath; }
@@ -177,7 +177,7 @@ public:
     const std::vector<std::pair<uint32_t, std::string>>& childActivities() const {
         return m_childActivities;
     }
-    VL_ATTR_ALWINLINE VerilatedSaifActivityScope* parentScope() const { return m_parentScope; }
+    VL_ATTR_ALWINLINE VerilatedSaifActivityScope* parentScope() const { return m_parentScopep; }
 
 private:
     // CONSTRUCTORS
@@ -224,7 +224,7 @@ private:
 VL_ATTR_ALWINLINE
 void VerilatedSaifActivityVar::emitBit(const uint64_t time, const CData newval) {
     assert(m_lastTime <= time);
-    m_bits[0].aggregateVal(time - m_lastTime, newval);
+    m_bitsp[0].aggregateVal(time - m_lastTime, newval);
     updateLastTime(time);
 }
 
@@ -235,7 +235,7 @@ void VerilatedSaifActivityVar::emitWData(const uint64_t time, WDataInP newval,
     const uint64_t dt = time - m_lastTime;
     for (std::size_t i = 0; i < std::min(m_width, bits); ++i) {
         const size_t wordIndex = i / VL_EDATASIZE;
-        m_bits[i].aggregateVal(dt, (newval[wordIndex] >> VL_BITBIT_E(i)) & 1);
+        m_bitsp[i].aggregateVal(dt, (newval[wordIndex] >> VL_BITBIT_E(i)) & 1);
     }
 
     updateLastTime(time);
@@ -243,7 +243,7 @@ void VerilatedSaifActivityVar::emitWData(const uint64_t time, WDataInP newval,
 
 VerilatedSaifActivityBit& VerilatedSaifActivityVar::bit(const std::size_t index) {
     assert(index < m_width);
-    return m_bits[index];
+    return m_bitsp[index];
 }
 
 //=============================================================================
@@ -433,7 +433,7 @@ bool VerilatedSaif::printActivityStats(VerilatedSaifActivityVar& activity,
 }
 
 void VerilatedSaif::clearCurrentlyCollectedData() {
-    m_currentScope = nullptr;
+    m_currentScopep = nullptr;
     m_scopes.clear();
     m_activityAccumulators.clear();
 }
@@ -500,16 +500,16 @@ void VerilatedSaif::pushPrefix(const char* namep, VerilatedTracePrefixType type)
         std::string scopeName = lastWord(scopePath);
 
         auto newScope = std::make_unique<VerilatedSaifActivityScope>(
-            std::move(scopePath), std::move(scopeName), m_currentScope);
-        VerilatedSaifActivityScope* newScopePtr = newScope.get();
+            std::move(scopePath), std::move(scopeName), m_currentScopep);
+        VerilatedSaifActivityScope* newScopePtrp = newScope.get();
 
-        if (m_currentScope) {
-            m_currentScope->addChildScope(std::move(newScope));
+        if (m_currentScopep) {
+            m_currentScopep->addChildScope(std::move(newScope));
         } else {
             m_scopes.emplace_back(std::move(newScope));
         }
 
-        m_currentScope = newScopePtr;
+        m_currentScopep = newScopePtrp;
     }
 
     const std::string newPrefix = prevPrefix + name;
@@ -523,8 +523,8 @@ void VerilatedSaif::popPrefix() {
     if (m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_UNPACKED
         && m_prefixStack.back().second != VerilatedTracePrefixType::ARRAY_PACKED
         && m_prefixStack.back().second != VerilatedTracePrefixType::ROOTIO_WRAPPER
-        && m_currentScope) {
-        m_currentScope = m_currentScope->parentScope();
+        && m_currentScopep) {
+        m_currentScopep = m_currentScopep->parentScope();
     }
     m_prefixStack.pop_back();
     assert(!m_prefixStack.empty());  // Always one left, the constructor's initial one
@@ -543,9 +543,9 @@ void VerilatedSaif::declare(const uint32_t code, uint32_t fidx, const char* name
     if (!Super::declCode(code, hierarchicalName, bits)) return;
 
     std::string variableName = lastWord(hierarchicalName);
-    m_currentScope->addActivityVar(code, variableName);
+    m_currentScopep->addActivityVar(code, variableName);
 
-    accumulator.declare(code, m_currentScope->path(), std::move(variableName), bits, array,
+    accumulator.declare(code, m_currentScopep->path(), std::move(variableName), bits, array,
                         arraynum, m_startTime);
 }
 

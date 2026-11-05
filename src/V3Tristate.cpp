@@ -676,8 +676,8 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     void mapInsertLhsVarRef(AstNodeVarRef* nodep) {
         UINFO(9, "    mapInsertLhsVarRef " << nodep);
-        AstVar* const key = nodep->varp();
-        const auto pair = m_lhsmap.emplace(key, nullptr);
+        AstVar* const keyp = nodep->varp();
+        const auto pair = m_lhsmap.emplace(keyp, nullptr);
         if (pair.second) pair.first->second = new RefStrengthVec;
         AstNodeExpr* enLhsp = nullptr;
         AstNodeVarRef* enVarrefp = nullptr;
@@ -686,7 +686,7 @@ class TristateVisitor final : public TristateBaseVisitor {
         // Struct and union resolver expressions require member-wise lowering. Keep their
         // established per-assignment path until procedural coalescing provides that
         // representation.
-        const bool canCombineProcedural = !VN_IS(key->dtypep()->skipRefp(), NodeUOrStructDType);
+        const bool canCombineProcedural = !VN_IS(keyp->dtypep()->skipRefp(), NodeUOrStructDType);
         const AstNodeProcedure* const procedurep
             = enIt != m_assignEnps.end() && canCombineProcedural ? m_procedurep : nullptr;
         if (procedurep) {
@@ -736,14 +736,16 @@ class TristateVisitor final : public TristateBaseVisitor {
         bitPulls[bitIndex] = direction;
     }
 
-    AstConst* createPerBitPullConst(AstVar* varp) {
+    AstConst* createPerBitPullConst(AstVar* const varp) {
         // Create a constant with per-bit pull values.
-        // Bits without explicit pull default to pulldown (0).
+        // Bits without explicit pull retain the whole-variable pull direction.
         // V3Number::setBit silently no-ops if bitIndex exceeds the variable width.
         const auto& bitPulls = m_varAux(varp).bitPulls;
-        V3Number num{varp, varp->width(), 0};  // Start with all zeros
+        const AstPull* const pullp = m_varAux(varp).pullp;
+        V3Number num{varp, varp->width(), 0};
+        if (pullp && pullp->direction() == 1) num.setAllBits1();
         for (const auto& pair : bitPulls) {
-            if (pair.second == 1) num.setBit(pair.first, 1);
+            num.setBit(pair.first, pair.second);
         }  // LCOV_EXCL_LINE
         return new AstConst{varp->fileline(), num};
     }
@@ -1228,14 +1230,7 @@ class TristateVisitor final : public TristateBaseVisitor {
                 undrivenp = newAllZerosOrOnes(invarp, true);  // LCOV_EXCL_LINE
             }
 
-            AstConst* pullConstp;
-            if (hasPerBitPulls(lhsp)) {
-                pullConstp = createPerBitPullConst(lhsp);
-            } else {
-                const AstPull* const pullp = m_varAux(lhsp).pullp;
-                const bool pull1 = pullp && pullp->direction() == 1;
-                pullConstp = newAllZerosOrOnes(invarp, pull1);
-            }
+            AstConst* const pullConstp = createPerBitPullConst(lhsp);
 
             undrivenp = new AstAnd{invarp->fileline(), undrivenp, pullConstp};
             orp = orp ? new AstOr{invarp->fileline(), orp, undrivenp} : undrivenp;
@@ -1306,8 +1301,8 @@ class TristateVisitor final : public TristateBaseVisitor {
     }
 
     uint8_t getStrength(const AstAssignW* const nodep, bool value) {
-        if (AstStrengthSpec* const strengthSpec = nodep->strengthSpecp()) {
-            return value ? strengthSpec->strength1() : strengthSpec->strength0();
+        if (AstStrengthSpec* const strengthSpecp = nodep->strengthSpecp()) {
+            return value ? strengthSpecp->strength1() : strengthSpecp->strength0();
         }
         return VStrength::STRONG;  // default strength is strong
     }
@@ -1347,12 +1342,12 @@ class TristateVisitor final : public TristateBaseVisitor {
 
     AstNodeExpr* newMergeExpr(AstNodeExpr* const lhsp, AstNodeExpr* const rhsp, FileLine* const fl,
                               bool isWor) {
-        AstNodeExpr* expr = nullptr;
+        AstNodeExpr* exprp = nullptr;
         if (isWor)
-            expr = new AstOr{fl, lhsp, rhsp};
+            exprp = new AstOr{fl, lhsp, rhsp};
         else
-            expr = new AstAnd{fl, lhsp, rhsp};
-        return expr;
+            exprp = new AstAnd{fl, lhsp, rhsp};
+        return exprp;
     }
 
     void mergeWiredNetsAssignments() {
@@ -1368,19 +1363,19 @@ class TristateVisitor final : public TristateBaseVisitor {
             FileLine* const fl = assignWp0->fileline();
             AstNodeExpr* wExp = nullptr;
             while (++it != assigns.end()) {
-                AstAssignW* assignWpi = *it;
+                AstAssignW* assignWpip = *it;
                 if (!wExp) {
-                    wExp
-                        = newMergeExpr(assignWp0->rhsp()->cloneTreePure(false),
-                                       assignWpi->rhsp()->cloneTreePure(false), fl, varp->isWor());
+                    wExp = newMergeExpr(assignWp0->rhsp()->cloneTreePure(false),
+                                        assignWpip->rhsp()->cloneTreePure(false), fl,
+                                        varp->isWor());
                 } else {
-                    wExp = newMergeExpr(wExp, assignWpi->rhsp()->cloneTreePure(false), fl,
+                    wExp = newMergeExpr(wExp, assignWpip->rhsp()->cloneTreePure(false), fl,
                                         varp->isWor());
                 }
-                VL_DO_DANGLING((assignWpi->unlinkFrBack()->deleteTree()), assignWpi);
+                VL_DO_DANGLING((assignWpip->unlinkFrBack()->deleteTree()), assignWpip);
             }
-            AstVarRef* const wVarRef = new AstVarRef{fl, varp, VAccess::WRITE};
-            AstAssignW* const wAssignp = new AstAssignW{fl, wVarRef, wExp};
+            AstVarRef* const wVarRefp = new AstVarRef{fl, varp, VAccess::WRITE};
+            AstAssignW* const wAssignp = new AstAssignW{fl, wVarRefp, wExp};
             assignWp0->replaceWith(wAssignp);
             VL_DO_DANGLING(pushDeletep(assignWp0), assignWp0);
             assigns.clear();

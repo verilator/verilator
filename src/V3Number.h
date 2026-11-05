@@ -707,6 +707,7 @@ public:
     bool isAllX() const VL_MT_SAFE;
     bool isEqZero() const VL_MT_SAFE;
     bool isNeqZero() const;
+    bool isTrue() const;
     bool isBitsZero(int msb, int lsb) const;
     bool isBroken(int vwidth) const;
     bool isEqOne() const;
@@ -792,6 +793,7 @@ public:
     V3Number& opWildNeq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opBufIf1(const V3Number& ens, const V3Number& if1s);
     V3Number& opSetRange(uint32_t lsb, uint32_t width, char bitValue);
+    V3Number& opCleanTwoStateNumber(const AstNodeDType* dtypep, int lsb = 0);
     // "standard" math
     V3Number& opNot(const V3Number& lhs);
     V3Number& opLogNot(const V3Number& lhs);
@@ -799,6 +801,7 @@ public:
     V3Number& opLogOr(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLogEq(const V3Number& lhs, const V3Number& rhs);
     V3Number& opLogIf(const V3Number& lhs, const V3Number& rhs);
+    V3Number& opCond(const V3Number& cond, const V3Number& then, const V3Number& elseNum);
     V3Number& opNegate(const V3Number& lhs);
     V3Number& opAdd(const V3Number& lhs, const V3Number& rhs);
     V3Number& opSub(const V3Number& lhs, const V3Number& rhs);

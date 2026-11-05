@@ -10,7 +10,58 @@ The changes in each Verilator version are described below.  The
 contributors that suggested or implemented a given issue are shown in []. Thanks!
 
 
-Verilator 5.053 devel
+Verilator 5.055 devel
+==========================
+
+**Other:**
+
+* Add error on non-blocking event trigger on event with invalid lifetime. [Geza Lore, Testorrent USA, Inc.]
+* Add `threads_group` to partition module instances as groups (#8804). [Michael Bedford Taylor]
+* Add USEBEFOREDECL error for a parameter referenced before declared (#8962). [Chili CHIPS]
+* Add COMBDLY/FINALDLY on `->>` in combinational and final blocks (#8987). [Geza Lore, Testorrent USA, Inc.]
+* Support user C++ modules while keeping the PCH (#7808) (#8906). [林俊杰]
+* Support parsing covergroup bins with set_covergroup_expression (#8862). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Support procedural coverpoint option weights (#8944) (#8945). [Madhusudan Kannan]
+* Support four-state constructs in V3Simulate and V3Param (#9001). [Igor Zaworski, Antmicro Ltd.]
+* Optimize compile time by emitting SV classes into shared source files (#8914). [Geza Lore, Testorrent USA, Inc.]
+* Optimize wildcard package imports to resolve lazily (#8918). [Rahul Behl, Testorrent USA, Inc.]
+* Optimize wide decimal conversion (#8950). [Andrew Nolte]
+* Optimize unrolled bit-select index on assignment left-hand side (#8953). [Michael Bedford Taylor]
+* Optimize bitwise form of a bit select condition under a concatenation (#9014). [Varun Koyyalagunta, Testorrent USA, Inc.]
+* Optimize DFG peephole cache (#9015). [Varun Koyyalagunta, Testorrent USA, Inc.]
+* Fix missing IEEE errors on NBA/assign to dynamically sized variables. [Geza Lore, Testorrent USA, Inc.]
+* Fix writing a character of a string array element. [Geza Lore, Testorrent USA, Inc.]
+* Fix type check of associative array traversal arguments (#5439) (#8954). [Ethan Sifferman]
+* Fix unordered NBAs executing in wrong order (#5485) (#9030) (#7541) (#8214) (#8346). [Geza Lore, Testorrent USA, Inc.]
+* Fix `std::randomize` changing variables when constraints fail (#8686) (#8880). [Steven Bellock]
+* Fix $fscanf/$sscanf into non-addressable destinations (#8860) (#8912). [Adrien Le Masle]
+* Fix class size constraints in randomize..with (#8861). [Ryszard Rozak, Antmicro Ltd.]
+* Fix modport array ref access (#8908). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix 'randomize with' on inherited type parameter (#8922). [Mateusz Gancarz, Antmicro Ltd.]
+* Fix whole-variable pulls when resolving per-bit pulls (#8939). [Yutetsu TAKATSUKASA]
+* Fix timing sensitivities lost through recursive task calls (#8946). [Geza Lore, Testorrent USA, Inc.]
+* Fix internal error on unclocked concurrent assert (#8978). [Bartłomiej Chmiel, Antmicro Ltd.]
+* Fix escaped module name containing :: colliding with class in generated C++ (#8979). [Artur Bieniek, Antmicro Ltd.]
+* Fix keyed assignment patterns of dynamic arrays and queues (#8984) (#8985). [Geza Lore, Testorrent USA, Inc.]
+* Fix loops repeatedly hitting --unroll-stmts (#8986). [Michael Bedford Taylor]
+* Fix DFG adding combinational logic to a Postponed active (#8994). [Michael Bedford Taylor]
+* Fix SystemVerilog emission for declarations (#8997). [Martijn Wobbes, Antmicro Ltd.]
+* Fix undefined behavior merging and conditionals (#9005). [Geza Lore, Testorrent USA, Inc.]
+* Fix use-after-free in V3Combine. [Geza Lore, Testorrent USA, Inc.]
+* Fix duplicate hierarchical block Verilation with `--build -j`. [Geza Lore, Testorrent USA, Inc.]
+* Fix virtual interface method call dispatch (#8770) (#9002). [Geza Lore, Testorrent USA, Inc.]
+* Fix C++ narrowing in unpacked array constructors (#8924). [Yutetsu TAKATSUKASA]
+* Fix exponential time of enum next/prev with constant step (#8938). [Michael Wrighton]
+* Fix deadlocks in fatal error callbacks (#9006). [Andrew Nolte]
+* Fix UDP table crashes and wrong DPI index 3 warning (#9010). [Yu-Cheng Liu]
+* Fix observed immediate deferred assertions (#9012). [Artur Bieniek, Antmicro Ltd.]
+* Fix hang on virtual interface variable of its own interface type (#9013). [Michael Wrighton]
+* Fix $cast on multiple implements (#9016).
+* Fix fixed-size array to queue conversions (#9018). [Marco Bartoli]
+* Fix assignment-pattern order on ascending packed vectors (#9023) (#9033). [Juntao Liu]
+
+
+Verilator 5.054 2026-11-01
 ==========================
 
 **Important:**
@@ -359,6 +410,11 @@ Verilator 5.053 devel
 * Fix unpacked array concatenation splicing multidimensional arrays (#8947). [Geza Lore, Testorrent USA, Inc.]
 * Fix splitting statements around calls of non-inlined functions (#8951). [Geza Lore, Testorrent USA, Inc.]
 * Fix trace enable mask with sparse dumpvars (#8955) (#8956). [Vladimir Silyaev]
+* Fix tracing unselected events (#8958) (#8959). [Vladimir Silyaev]
+* Fix missing declaration of virtual interface types in headers (#8976). [Geza Lore, Testorrent USA, Inc.]
+* Fix nested loop unrolling substituting later assignments (#8980). [Geza Lore, Testorrent USA, Inc.]
+* Fix incorrect virtual dispatch of class-scoped method calls (#8983). [Geza Lore, Testorrent USA, Inc.]
+* Fix VPI register leak (#8993). [Leandro Ajo]
 
 
 Verilator 5.052 2026-09-05

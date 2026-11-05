@@ -1,0 +1,32 @@
+%Error-UNSUPPORTED: t/t_assert_obs_defer_unsup.v:14:19: Unsupported: Observed deferred immediate assertion in a task or function.
+                                                      : ... note: In instance 't'
+   14 |     if (!suspend) assert #0 (1) $display("REPORT");
+      |                   ^~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error-UNSUPPORTED: t/t_assert_obs_defer_unsup.v:19:5: Unsupported: Observed deferred immediate assertion in a task or function.
+                                                     : ... note: In instance 't'
+   19 |     assert #0 (1) $display("REPORT");
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_obs_defer_unsup.v:24:5: Unsupported: Observed deferred immediate assertion in a task or function.
+                                                     : ... note: In instance 't'
+   24 |     assert #0 (0)
+      |     ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_obs_defer_unsup.v:40:7: Unsupported: Observed deferred immediate assertion in a task or function.
+                                                     : ... note: In instance 't'
+   40 |       assert #0 (1) $display("REPORT");
+      |       ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_obs_defer_unsup.v:41:7: Unsupported: Observed deferred immediate assertion in a task or function.
+                                                     : ... note: In instance 't'
+   41 |       cover #0 (1) $display("REPORT");
+      |       ^~~~~
+%Error-UNSUPPORTED: t/t_assert_obs_defer_unsup.v:47:7: Unsupported: Observed deferred immediate assertion in fork...join_any or fork...join_none.
+                                                     : ... note: In instance 't'
+   47 |       assert #0 (1) $display("REPORT");
+      |       ^~~~~~
+%Error-UNSUPPORTED: t/t_assert_obs_defer_unsup.v:64:20: Unsupported: Observed deferred immediate assertion action.
+   64 |     assert #0 (1) q.delete();
+      |                    ^
+%Error-UNSUPPORTED: t/t_assert_obs_defer_unsup.v:65:19: Unsupported: Observed deferred immediate assertion action.
+   65 |     assert #0 (1) $timeformat(-9, digits, " ns", 0);
+      |                   ^~~~~~~~~~~
+%Error: Exiting due to

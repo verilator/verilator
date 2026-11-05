@@ -40,10 +40,31 @@ class A;
   }
 endclass
 
+class Sub;
+  rand bit on;
+endclass
+
+// The guard is a member of a rand sub-object
+class G;
+  rand Sub s;
+  rand bit [1:0] arr[4];
+
+  constraint c {
+    if (s.on) {
+      unique {arr};
+    }
+  }
+
+  function new;
+    s = new;
+  endfunction
+endclass
+
 module t;
   initial begin
     automatic C c = new;
     automatic A a = new;
+    automatic G g = new;
     int ok;
 
     // The 'then' arm holds: its operands are pairwise distinct
@@ -95,6 +116,18 @@ module t;
       arr[0] == arr[1];
     };
     `checkd(ok, 1);
+
+    // A guard reached through a sub-object applies the same way
+    for (int i = 0; i < 20; ++i) begin
+      ok = g.randomize() with {s.on == 1;};
+      `checkd(ok, 1);
+      foreach (g.arr[j]) foreach (g.arr[k]) if (j != k) `checkh(g.arr[j] == g.arr[k], 1'b0);
+    end
+    ok = g.randomize() with {
+      s.on == 1;
+      arr[0] == arr[1];
+    };
+    `checkd(ok, 0);
 
     $write("*-* All Finished *-*\n");
     $finish;

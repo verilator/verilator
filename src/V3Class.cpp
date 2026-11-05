@@ -131,7 +131,9 @@ class ClassVisitor final : public VNVisitor {
         VL_RESTORER_CLEAR(m_prefix);
         VL_RESTORER(m_modp);
         m_modp = nodep;
-        m_prefix = nodep->name() + "__03a__03a";  // ::
+        // "::" in uppercase hex. encodeName() writes ':' as lowercase "__03a", so no user
+        // identifier, alone or joined with "__", spells this prefix.
+        m_prefix = nodep->name() + "__03A__03A";
         iterateChildren(nodep);
     }
 

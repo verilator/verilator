@@ -183,7 +183,7 @@ public:
     /// coverpoint, itemWeight, and of its covergroup, groupWeight.  The weights are those of
     /// every instance, as the database merges the instances.
     void registerBins(VerilatedCovContext* covcontextp, const char* page, uint32_t itemWeight,
-                      uint32_t groupWeight);
+                      uint32_t groupWeight, bool mergeInstances);
 
     /// Configure construction-time value metadata for exclusions and cross selections.
     void valueType(uint32_t bits, bool isSigned);
@@ -427,11 +427,11 @@ private:
         incrementAuto(idx);
     }
     template <bool T_ApplyIffs>
-    void sampleSingleTuple(uint32_t idx, const bool* binIffs);
+    void sampleSingleTuple(uint32_t idx, const bool* binIffsp);
     template <bool T_ApplyIffs, uint32_t T_Touched, bool T_Dense>
-    void sampleBins(const bool* binIffs);
+    void sampleBins(const bool* binIffsp);
     template <bool T_ApplyIffs, bool T_Dense>
-    void sampleHitWords(const bool* binIffs);
+    void sampleHitWords(const bool* binIffsp);
     uint32_t autoIndex(uint32_t i) const {
         return hasExplicitBins() ? m_explicitp->autoBins[i] : i;
     }
@@ -468,12 +468,12 @@ public:
     virtual void finalizeBins();
     /// Register the bins in the coverage database; see VlCoverpoint::registerBins().
     void registerBins(VerilatedCovContext* covcontextp, const char* page, uint32_t itemWeight,
-                      uint32_t groupWeight);
+                      uint32_t groupWeight, bool mergeInstances);
 
     // ---- hot path (from generated sample(), after all coverpoints sampled) ----
     /// Sample automatic and explicit bins, optionally applying per-bin iff guards.
     /// Reads the feeding coverpoints saved by init(), so the caller passes no coverpoints.
-    void sample(const bool* binIffs = nullptr);
+    void sample(const bool* binIffsp = nullptr);
 
     // ---- VlCoverpointIf ----
     // Explicit bins (including ignore/illegal) precede retained automatic bins.
@@ -653,6 +653,10 @@ public:
         m_weightp = weightp;
         m_fileline = fileline;
         loadWeight();
+    }
+    // Cache each item weight before its generated covergroup owner is destroyed.
+    void unlendItemWeights() {
+        for (const auto& itemp : m_items) itemp->unlendWeight();
     }
     // The lending object is being destroyed.  Its members may already be gone, so
     // the weight is not read again; the last loaded value stays in effect.
@@ -885,6 +889,7 @@ class VlCovInstHandle final {
     static void release(VlCovergroupInst* instp, const IData* weightp) {
         if (VL_UNCOVERABLE(!instp)) return;  // Never attach()ed; codegen always does
         instp->unlendWeight(weightp);
+        if (weightp) instp->unlendItemWeights();
         if (instp->attachDec()) instp->typep()->retire(instp);
     }
 
