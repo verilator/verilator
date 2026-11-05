@@ -46,7 +46,6 @@ typedef struct {
 class Ascending;
   rand elem_t elems[1:3];
   rand bit [1:0] idx;
-  constraint c_idx {idx != 0;}
   constraint c_elems {
     elems[idx].a == 15'h7ffe;
     if (elems[idx].b > 7'd50) elems[idx].a[0] == 1'b0;
@@ -58,6 +57,26 @@ class Descending;
   rand int idx;
   constraint c_idx {idx inside {[1:3]};}
   constraint c_elems {(elems[idx].b == 7'd99) && (elems[idx].a == 15'(idx));}
+endclass
+
+typedef elem_t row_t[3];
+typedef elem_t elem_dyn_t[];
+
+// Multi-dimensional and typedef'd arrays, random indices narrower than int
+class Grid;
+  rand elem_t grid[2][3];
+  rand row_t rows[1:2];
+  rand elem_dyn_t dyn;
+  rand bit r;
+  rand bit [1:0] c;
+  rand bit [1:0] k;
+  constraint c_size {dyn.size() == 3;}
+  constraint c_elems {
+    grid[r][1].a == 15'd7;
+    grid[1][c].b == 7'd8;
+    rows[k][c].a == 15'd9;
+    dyn[c].b == 7'd10;
+  }
 endclass
 
 // Several arrays, a queue, a wide index, a non-random lookup array
@@ -130,6 +149,7 @@ module t;
     automatic Bounds bounds = new;
     automatic OutOfRange outOfRange = new;
     automatic Outer outer = new;
+    automatic Grid grid = new;
     automatic pair_t lookup[3];
     automatic int unsigned k;
     automatic int unsigned next;
@@ -153,6 +173,7 @@ module t;
 
       ok = asc.randomize();
       `checkd(ok, 1);
+      `checkd(asc.idx != 0, 1'b1);
       `checkd(asc.elems[asc.idx].a, 15'h7ffe);
 
       ok = asc.randomize() with {elems[idx].b == 7'd77;};
@@ -191,6 +212,14 @@ module t;
         `checkd(bounds.items[bounds.idx].b, 5);
       end
 
+      ok = grid.randomize();
+      `checkd(ok, 1);
+      `checkd(grid.c < 3 && grid.k != 0 && grid.k < 3, 1'b1);
+      `checkd(grid.grid[grid.r][1].a, 15'd7);
+      `checkd(grid.grid[1][grid.c].b, 7'd8);
+      `checkd(grid.rows[grid.k][grid.c].a, 15'd9);
+      `checkd(grid.dyn[grid.c].b, 7'd10);
+
       ok = outer.randomize();
       `checkd(ok, 1);
       `checkd(outer.idx < 3, 1'b1);
@@ -198,6 +227,16 @@ module t;
     end
 
     ok = outOfRange.randomize();
+    `checkd(ok, 0);
+
+    // The bounds of [1:3] are reachable, outside them is not
+    ok = asc.randomize() with {idx == 3;};
+    `checkd(ok, 1);
+    `checkd(asc.elems[3].a, 15'h7ffe);
+    ok = asc.randomize() with {idx == 1;};
+    `checkd(ok, 1);
+    `checkd(asc.elems[1].a, 15'h7ffe);
+    ok = asc.randomize() with {idx == 0;};
     `checkd(ok, 0);
 
     $write("*-* All Finished *-*\n");
