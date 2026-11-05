@@ -262,6 +262,104 @@ public:
 
 //######################################################################
 
+// Check output/inout destinations after preliminary widthing.
+// Follow only destination operands, not expressions computing indices or sizes.
+// This is not a general lvalue validator.
+class PortLValueVisitor final : public VNVisitor {
+    // STATE
+    const AstPin* const m_pinp;  // Connection being checked
+    bool m_failed = false;  // Report only the first invalid destination
+
+    // METHODS
+    void portError(AstNodeExpr* nodep, const char* message) {
+        if (m_failed) return;
+        nodep->v3error(ucfirst(m_pinp->modVarp()->direction().prettyName())
+                       << " port connection " << m_pinp->modVarp()->prettyNameQ() << " "
+                       << message);
+        m_failed = true;
+    }
+    void nonConstantIndex(AstNodeExpr* nodep) {
+        portError(nodep, "requires constant selection indices"
+                         " (IEEE 1800-2023 23.3.3, 10.2, A.8.5).");
+    }
+    void dynamicElement(AstNodeExpr* nodep) {
+        portError(nodep, "cannot write to a dynamically sized array element"
+                         " (IEEE 1800-2023 23.3.3, 6.21).");
+    }
+
+    void iterateDestination(AstNode* nodep) {
+        if (!m_failed) iterateAndNextNull(nodep);
+    }
+
+    // VISITORS
+    void visit(AstSel* nodep) override {
+        if (m_failed) return;
+        // Continuous assignment destinations require constant packed selects (10.2, Table 10-1).
+        V3Const::constifyParamsNoWarnEdit(nodep->lsbp());
+        if (!VN_IS(nodep->lsbp(), Const)) {
+            nonConstantIndex(nodep->lsbp());
+            return;
+        }
+        iterateDestination(nodep->fromp());
+    }
+    void visit(AstArraySel* nodep) override {
+        if (m_failed) return;
+        const AstNodeVarRef* const refp = VN_CAST(nodep->baseFromp(true), NodeVarRef);
+        // Net lvalues require constant selects, including unpacked dimensions (A.8.5).
+        if (m_pinp->modVarp()->isInout() || (refp && refp->varp()->isNet())) {
+            V3Const::constifyParamsNoWarnEdit(nodep->bitp());
+            if (!VN_IS(nodep->bitp(), Const)) {
+                nonConstantIndex(nodep->bitp());
+                return;
+            }
+        }
+        iterateDestination(nodep->fromp());
+    }
+    void visit(AstSliceSel* nodep) override { iterateDestination(nodep->fromp()); }
+    void visit(AstAssocSel* nodep) override { dynamicElement(nodep); }
+    void visit(AstWildcardSel* nodep) override { dynamicElement(nodep); }
+    void visit(AstNodeStream* nodep) override { iterateDestination(nodep->lhsp()); }
+    void visit(AstReplicate* nodep) override { iterateDestination(nodep->srcp()); }
+    void visit(AstNodeConsItem* nodep) override { iterateDestination(nodep->valuep()); }
+    void visit(AstStructSel* nodep) override { iterateDestination(nodep->fromp()); }
+    void visit(AstCMethodHard* nodep) override {
+        // Dynamic array and queue element accesses are lowered to methods.
+        switch (nodep->method()) {
+        case VCMethod::ARRAY_AT:
+        case VCMethod::ARRAY_AT_BACK:
+        case VCMethod::ARRAY_AT_WRITE:
+        case VCMethod::DYN_AT_WRITE_APPEND:
+        case VCMethod::DYN_AT_WRITE_APPEND_BACK: dynamicElement(nodep); break;
+        default: break;
+        }
+    }
+    void visit(AstMemberSel* nodep) override {
+        // Static class properties have already been replaced with variable references.
+        if (VN_IS(nodep->fromp()->dtypep()->skipRefp(), ClassRefDType)) {
+            portError(nodep, "cannot write to a non-static class property"
+                             " (IEEE 1800-2023 23.3.3, 6.21).");
+        }
+    }
+    // Function/method arguments compute values, not destinations.
+    void visit(AstNodeFTaskRef*) override {}
+    void visit(AstNode* nodep) override {
+        if (!m_failed) iterateChildren(nodep);
+    }
+
+    // CONSTRUCTORS
+    explicit PortLValueVisitor(const AstPin* pinp)
+        : m_pinp{pinp} {}
+
+public:
+    static bool apply(AstPin* nodep) {
+        PortLValueVisitor visitor{nodep};
+        visitor.iterateDestination(nodep->exprp());
+        return visitor.m_failed;
+    }
+};
+
+//######################################################################
+
 class WidthVisitor final : public VNVisitor {
     // TYPES
     using PatVecMap = std::map<int, AstPatMember*>;
@@ -7923,6 +8021,14 @@ class WidthVisitor final : public VNVisitor {
                                         << "' port (IEEE 1800-2023 11.4.14)");
             }
             userIterateAndNext(nodep->exprp(), WidthVP{nodep->modVarp()->dtypep(), PRELIM}.p());
+            // Outputs are continuous assignments; inouts are transistor connections (23.3.3).
+            if (pinDirection.isOutput() || pinDirection.isInout()) {
+                if (PortLValueVisitor::apply(nodep)) {
+                    AstNode* const exprp = nodep->exprp()->unlinkFrBack();
+                    VL_DO_DANGLING(pushDeletep(exprp), exprp);
+                    return;
+                }
+            }
             AstNodeDType* modDTypep = nodep->modVarp()->dtypep();
             AstNodeDType* conDTypep = nodep->exprp()->dtypep();
             UASSERT_OBJ(modDTypep, nodep, "Unlinked pin data type");
