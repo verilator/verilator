@@ -736,6 +736,10 @@ public:
         return m_e == BYTE || m_e == SHORTINT || m_e == INT || m_e == LONGINT || m_e == INTEGER
                || m_e == INTEGER2STATE || m_e == TIME || m_e == TIME2STATE;
     }
+    // Originally four-state, converted by V3Unknown to two-state domain
+    bool mimicsFourstate() const VL_MT_SAFE {
+        return m_e == LOGIC2STATE || m_e == INTEGER2STATE || m_e == TIME2STATE;
+    }
     // Does this represent a C++ LiteralType? (can be constexpr)
     bool isLiteralType() const VL_MT_SAFE {
         switch (m_e) {
@@ -2471,6 +2475,7 @@ public:
     }
     bool isWor() const { return (m_e == TRIOR); }
     bool isWiredNet() const { return (m_e == TRIOR || m_e == TRIAND); }
+    bool isWireNet() const { return (m_e == WIRE); }
     bool isContAssignable() const {  // In Verilog, always ok in SystemVerilog
         return (m_e == SUPPLY0 || m_e == SUPPLY1 || m_e == WIRE || m_e == WREAL || m_e == TRIWIRE
                 || m_e == TRI0 || m_e == TRI1 || m_e == PORT || m_e == BLOCKTEMP

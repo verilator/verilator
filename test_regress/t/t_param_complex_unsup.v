@@ -15,7 +15,7 @@ module t;
 
   function automatic int eval_case_inside_range_string(input string value);
     case (value) inside
-      ["b":"d"]: eval_case_inside_range_string = 1;
+      ["b" : "d"]: eval_case_inside_range_string = 1;
       default: eval_case_inside_range_string = 2;
     endcase
   endfunction

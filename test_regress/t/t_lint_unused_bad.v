@@ -95,4 +95,112 @@ module sub;
     end
   endgenerate
 
+  class fields;
+    int never_accessed;
+    int only_written;
+    int only_read;
+    int initialized = 5;
+  endclass
+
+  initial begin
+    automatic fields obj = new();
+    obj.only_written = 2;
+    $display("%0d %0d", obj.only_read, obj.initialized);
+  end
+
+  class partial_fields;
+    bit [6:0] bit0;
+    bit [6:0] read_all;
+    bit [6:0] write_all;
+    bit [6:0] mixed_bit0;
+    bit [6:0] mixed_undriven;
+    bit [8:2] part_range;
+    bit [2:0][4:0] nested_range;
+    bit [1:0][6:0] dynamic_range;
+    bit [2:0] dynamic_index;
+    bit [6:0] update_bit;
+
+    function void touch();
+      mixed_bit0[0] = 1'b1;
+      $display("%h", mixed_bit0[0]);
+    endfunction
+
+    function void seed();
+      mixed_undriven[0] = 1'b1;
+    endfunction
+
+    function bit [6:0] get_data();
+      return mixed_undriven;
+    endfunction
+  endclass
+
+  initial begin
+    automatic partial_fields obj = new();
+    obj.bit0[0] = 1'b1;
+    $display("%h", obj.bit0[0]);
+    obj.read_all[0] = 1'b1;
+    $display("%h", obj.read_all);
+    obj.write_all = '1;
+    $display("%h", obj.write_all[0]);
+    obj.touch();
+    $display("%h", obj.mixed_bit0[0]);
+    obj.mixed_undriven[0] = 1'b1;
+    $display("%h", obj.get_data());
+    obj.part_range[5:3] = '1;
+    $display("%h", obj.part_range[5:3]);
+    obj.nested_range[1][2:1] = '1;
+    $display("%h", obj.nested_range[1][2:1]);
+    obj.dynamic_index = 3'd1;
+    obj.dynamic_range[1][obj.dynamic_index] = 1'b1;
+    $display("%h", obj.dynamic_range[1][obj.dynamic_index]);
+    obj.update_bit[0]++;
+  end
+
+  // Ordinary variables provide controls for the corresponding class field accesses.
+  bit [6:0] module_bit0;
+  bit [6:0] module_read_all;
+  bit [6:0] module_write_all;
+  bit [6:0] module_mixed_bit0;
+  bit [6:0] module_mixed_undriven;
+  bit [1:0][6:0] module_dynamic_range;
+  bit [2:0] module_dynamic_index;
+
+  function void touch();
+    module_mixed_bit0[0] = 1'b1;
+    $display("%h", module_mixed_bit0[0]);
+  endfunction
+
+  function void seed();
+    module_mixed_undriven[0] = 1'b1;
+  endfunction
+
+  function bit [6:0] get_data();
+    return module_mixed_undriven;
+  endfunction
+
+  initial begin
+    module_bit0[0] = 1'b1;
+    $display("%h", module_bit0[0]);
+    module_read_all[0] = 1'b1;
+    $display("%h", module_read_all);
+    module_write_all = '1;
+    $display("%h", module_write_all[0]);
+    touch();
+    $display("%h", module_mixed_bit0[0]);
+    module_mixed_undriven[0] = 1'b1;
+    $display("%h", get_data());
+    module_dynamic_index = 3'd1;
+    module_dynamic_range[1][module_dynamic_index] = 1'b1;
+    $display("%h", module_dynamic_range[1][module_dynamic_index]);
+  end
+
+  class external_fields;
+    bit [6:0] partial;
+  endclass
+
+  initial begin
+    automatic external_fields obj = new();
+    $bboxed(obj.partial[0]);
+  end
+
 endmodule

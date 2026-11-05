@@ -45,7 +45,9 @@ module t (/*AUTOARG*/
   integer cyc;
   initial cyc = 1;
   wire [7:0] cyc_copy = cyc[7:0];
-  wire toggle_up;
+  // One net per alpha instance (identical values) to avoid a two-driver conflict
+  wire toggle_up1;
+  wire toggle_up2;
 
   typedef struct {int q[$];} str_queue_t;
   str_queue_t str_queue;
@@ -63,14 +65,14 @@ module t (/*AUTOARG*/
 
   alpha a1 (/*AUTOINST*/
          // Outputs
-         .toggle_up                 (toggle_up),
+         .toggle_up                 (toggle_up1),
          // Inputs
          .clk                       (clk),
          .toggle                    (toggle),
          .cyc_copy                  (cyc_copy[7:0]));
   alpha a2 (/*AUTOINST*/
          // Outputs
-         .toggle_up                 (toggle_up),
+         .toggle_up                 (toggle_up2),
          // Inputs
          .clk                       (clk),
          .toggle                    (toggle),
@@ -79,7 +81,7 @@ module t (/*AUTOARG*/
   beta  b1 (/*AUTOINST*/
          // Inputs
          .clk                       (clk),
-         .toggle_up                 (toggle_up));
+         .toggle_up                 (toggle_up1));
 
   off   o1 (/*AUTOINST*/
          // Inputs
