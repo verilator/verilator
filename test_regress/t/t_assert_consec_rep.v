@@ -51,6 +51,7 @@ module t (
   int count_fail24 = 0;
 
   unbounded_rep_reject_test unboundedRepRejectTest (clk);
+  unbounded_rep_match_item_test unboundedRepMatchItemTest (clk);
 
   // Test 1: a[*3] |-> b
   assert property (@(posedge clk) a [* 3] |-> b)
@@ -188,6 +189,94 @@ module t (
       $write("*-* All Finished *-*\n");
       $finish;
     end
+  end
+endmodule
+
+// A sequence match item after an unbounded repetition is legal and must not
+// be mistaken for a side effect in the endpoint's boolean expression.
+module unbounded_rep_match_item_test (input logic clk);
+  logic start = 0;
+  logic a = 0;
+  logic b = 0;
+  logic start_overlap = 0;
+  logic a_overlap = 1;
+  logic b_overlap = 0;
+  int passes = 0;
+  int failures = 0;
+  int overlap_match_items = 0;
+  int overlap_failures = 0;
+  logic disable_match = 0;
+  logic disable_start = 0;
+  logic disable_a = 0;
+  logic disable_b = 0;
+  int disable_failures = 0;
+
+  property p;
+    int x;
+    start |-> a [*1:$] ##0 (b, x = 1);
+  endproperty
+
+  assert property (@(posedge clk) p)
+  passes++;
+  else failures++;
+
+  property p_disable;
+    int y;
+    disable iff (disable_match)
+      disable_start |-> disable_a [*1:$] ##0 (disable_b, y = 1);
+  endproperty
+
+  assert property (@(posedge clk) p_disable)
+  else disable_failures++;
+
+  function void count_overlap_match();
+    overlap_match_items++;
+  endfunction
+
+  assert property (@(posedge clk)
+    start_overlap |-> a_overlap [*1:$] ##0 (b_overlap, count_overlap_match()))
+  else overlap_failures++;
+
+  initial begin
+    @(negedge clk);
+    start = 1;
+    a = 1;
+    @(negedge clk);
+    start = 0;
+    b = 1;
+    @(negedge clk);
+    a = 0;
+    b = 0;
+    repeat (2) @(posedge clk);
+    `checkh(passes, 1);
+    `checkh(failures, 0);
+
+    @(negedge clk);
+    disable_start = 1;
+    disable_a = 1;
+    @(negedge clk);
+    disable_start = 0;
+    disable_b = 1;
+    disable_match = 1;
+    @(negedge clk);
+    disable_match = 0;
+    disable_a = 0;
+    disable_b = 0;
+    repeat (2) @(posedge clk);
+    `checkh(disable_failures, 0);
+
+    // Two overlapping attempts match the endpoint on the same tick. Each
+    // match item must execute once, even though both attempts share NFA state.
+    @(negedge clk);
+    start_overlap = 1;
+    @(negedge clk);
+    b_overlap = 1;
+    @(negedge clk);
+    start_overlap = 0;
+    b_overlap = 0;
+    repeat (2) @(posedge clk);
+    `checkh(overlap_match_items, 2);
+    `checkh(overlap_failures, 0);
   end
 endmodule
 
