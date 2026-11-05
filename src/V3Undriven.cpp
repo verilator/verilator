@@ -557,7 +557,8 @@ class UndrivenVisitor final : public VNVisitorConst {
     }
     // A continuous-assign write to a driver net, not Z-exempt and not the
     // net's own lowered declaration initializer, counts as a driver. The
-    // read-ref path is never taken: both call sites pre-gate write access.
+    // read-ref, Z-exempt, and decl-init arcs are untaken in coverage: no
+    // test case routes those combinations to this helper.
     bool isContDriver(const AstNodeVarRef* const refp) const {
         return refp->access().isWriteOrRW() && isDriverNet(refp->varp()) && m_inContAssign
                && !m_contAssignZExempt && !m_inDeclInitAssign;
