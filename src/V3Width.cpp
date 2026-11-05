@@ -1984,9 +1984,9 @@ class WidthVisitor final : public VNVisitor {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
             if (nodep->urandom()) {
-                nodep->dtypeSetUInt32();  // Says the spec
+                nodep->dtypeSetUInt32();  // IEEE 1800-2023 18.13.1
             } else {
-                nodep->dtypeSetInt();  // Says the spec
+                nodep->dtypeSetInt();  // IEEE 1800-2023 20.14.1
             }
             if (nodep->seedp()) iterateCheckSigned32(nodep, "seed", nodep->seedp(), BOTH);
         }
@@ -2128,7 +2128,7 @@ class WidthVisitor final : public VNVisitor {
     void visit(AstURandomRange* nodep) override {
         assertAtExpr(nodep);
         if (m_vup->prelim()) {
-            nodep->dtypeSetUInt32();  // Says the spec
+            nodep->dtypeSetUInt32();  // IEEE 1800-2023 18.13.2
             AstNodeDType* const expDTypep = nodep->findUInt32DType();
             userIterateAndNext(nodep->lhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
             userIterateAndNext(nodep->rhsp(), WidthVP{CONTEXT_DET, PRELIM}.p());
@@ -4179,8 +4179,9 @@ class WidthVisitor final : public VNVisitor {
             // MSB is first, so loop backwards
             for (itemp = nodep->membersp(); itemp && itemp->nextp();
                  itemp = VN_AS(itemp->nextp(), MemberDType)) {}
+            bool isFourstate = false;
             for (; itemp; itemp = VN_CAST(itemp->backp(), MemberDType)) {
-                if (itemp->isFourstate()) nodep->isFourstate(true);
+                isFourstate |= itemp->isFourstate();
                 itemp->lsb(lsb);
                 if (VN_IS(nodep, UnionDType)) {
                     const int itemWidth = itemp->width();
@@ -4195,6 +4196,14 @@ class WidthVisitor final : public VNVisitor {
                     width += itemp->width();
                 }
                 first = false;
+            }
+            nodep->isFourstate(isFourstate);
+            if (nodep->packed()) {
+                VNumRange range{width - 1, 0};
+                nodep->refDTypep(
+                    VN_AS(isFourstate ? nodep->findLogicRangeDType(range, width, nodep->numeric())
+                                      : nodep->findBitRangeDType(range, width, nodep->numeric()),
+                          BasicDType));
             }
             nodep->widthForce(width, width);  // Signing stays as-is, as parsed from declaration
         } else {

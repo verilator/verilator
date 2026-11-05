@@ -184,11 +184,25 @@ private:
         UASSERT_OBJ(!whyp, nodep,
                     "Broken link in node (or something without maybePointedTo): " << whyp);
         if (!s_brokenAllowMidvisitorCheck) nodep->checkIter();
-        if (nodep->dtypep()) {
-            UASSERT_OBJ(nodep->dtypep()->brokeExists(), nodep,
-                        "Broken link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
-            UASSERT_OBJ(nodep->dtypep(), nodep,
-                        "Non-dtype link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
+        if (const AstNodeDType* const dtypep = nodep->dtypep()) {
+            UASSERT_OBJ(dtypep->brokeExists(), nodep,
+                        "Broken link in node->dtypep() to " << cvtToHex(dtypep));
+            if (v3Global.fourstateResolved()) {
+                if (const AstNodeDType* const ndtypep = VN_CAST(nodep, NodeDType)) {
+                    UASSERT_OBJ(!ndtypep->subDTypep() || !ndtypep->subDTypep()->isFourstate(),
+                                nodep,
+                                "After resolving four-state values in V3Tristate and V3Unknown no "
+                                "four-state dtype should be present");
+                    UASSERT_OBJ(!ndtypep->subDType2p() || !ndtypep->subDType2p()->isFourstate(),
+                                nodep,
+                                "After resolving four-state values in V3Tristate and V3Unknown no "
+                                "four-state dtype should be present");
+                } else {
+                    UASSERT_OBJ(!dtypep->isFourstate(), nodep,
+                                "After resolving four-state values in V3Tristate and V3Unknown no "
+                                "four-state dtype should be present");
+                }
+            }
         }
         if (v3Global.assertDTypesResolved()) {
             if (nodep->hasDType()) {
