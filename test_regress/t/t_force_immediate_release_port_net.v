@@ -12,7 +12,7 @@
 module t;
   logic [31:0] b = 0;
   logic [31:0] d = 32'h1111_2222;
-  logic [7:0] e [32];
+  logic [7:0] e[32];
   wire [7:0] f;
   wire [31:0] g;
   logic [4:0] idx = 0;

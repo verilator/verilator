@@ -11,7 +11,7 @@
 
 typedef struct {
   logic [6:0] head;
-  logic [6:0] tail [2];
+  logic [6:0] tail[2];
 } aggregate_t;
 
 class output_entry;
@@ -42,13 +42,11 @@ module t (
   wire [63:0] result = {32'h0, 6'h0, o[13], 6'h0, o[12], 6'h0, o[11], 6'h0, o[10]};
 
   // Constant net selections and dynamic variable selections are valid output destinations.
-  typedef struct {
-    logic [6:0] data;
-  } entry_t;
-  wire entry_t net_members [3:1];
-  entry_t variable_members [3:1];
-  wire [6:0] net_slices [3:1][4:1];
-  logic [6:0] variable_slices [3:1][1:4];
+  typedef struct {logic [6:0] data;} entry_t;
+  wire entry_t net_members[3:1];
+  entry_t variable_members[3:1];
+  wire [6:0] net_slices[3:1][4:1];
+  logic [6:0] variable_slices[3:1][1:4];
   wire [31:0] row = 1 + int'(crc[15:14]) % 3;
   selected_output net_output (
       .value(crc[6:0]),
@@ -59,7 +57,7 @@ module t (
       .value(crc[13:7]),
       .pad(variable_slices[row][2:3]),
       // A packed selection used to compute an unpacked index is an rvalue.
-      .member(variable_members[1 + int'(crc[crc[19:14]]) % 3].data)
+      .member(variable_members[1+int'(crc[crc[19:14]])%3].data)
   );
 
   // Static class properties permit output connections, including access through a handle.
@@ -72,16 +70,16 @@ module t (
 
   // Inputs may select dynamically inside constructors. Output array constructors
   // permit constant net selections and dynamic unpacked variable selections.
-  wire [6:0] pattern_net [2];
-  logic [6:0] pattern_variable [3:1][2];
+  wire [6:0] pattern_net[2];
+  logic [6:0] pattern_variable[3:1][2];
   aggregate_t struct_result;
-  wire [6:0] input_value = crc[7 * int'(crc[17:16]) +: 7];
+  wire [6:0] input_value = crc[7*int'(crc[17:16])+:7];
   aggregate_echo struct_echo (
-      .source('{crc[7 * int'(crc[17:16]) +: 7], '{crc[6:0], crc[13:7]}}),
+      .source('{crc[7*int'(crc[17:16])+:7], '{crc[6:0], crc[13:7]}}),
       .sink(struct_result)
   );
   array_echo pattern_echo (
-      .source({crc[7 * int'(crc[17:16]) +: 7], crc[13:7]}),
+      .source({crc[7*int'(crc[17:16])+:7], crc[13:7]}),
       .sink('{pattern_net[0], pattern_net[1]})
   );
   array_echo variable_pattern_echo (
@@ -95,7 +93,7 @@ module t (
       `checkh(net_members[2].data, crc[6:0]);
       `checkh(variable_slices[row][2], crc[13:7]);
       `checkh(variable_slices[row][3], ~crc[13:7]);
-      `checkh(variable_members[1 + int'(crc[crc[19:14]]) % 3].data, crc[13:7]);
+      `checkh(variable_members[1+int'(crc[crc[19:14]])%3].data, crc[13:7]);
       `checkh(output_entry::data, crc[6:0]);
       `checkh(struct_result.head, input_value);
       `checkh(struct_result.tail[0], crc[6:0]);
@@ -167,7 +165,7 @@ endmodule
 
 module selected_output (
     input wire [6:0] value,
-    output wire [6:0] pad [1:2],
+    output wire [6:0] pad[1:2],
     output wire [6:0] member
 );
   assign pad[1] = value;
@@ -183,8 +181,8 @@ module aggregate_echo (
 endmodule
 
 module array_echo (
-    input wire [6:0] source [2],
-    output wire [6:0] sink [2]
+    input wire [6:0] source[2],
+    output wire [6:0] sink[2]
 );
   assign sink = source;
 endmodule

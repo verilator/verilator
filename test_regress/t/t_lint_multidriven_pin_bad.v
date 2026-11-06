@@ -7,36 +7,50 @@
 // A net driven by an output port plus an initial value or continuous
 // assignment; inout connections are bus connections.
 
-module t_pin_sub (output logic [31:0] o);
+module t_pin_sub (
+    output logic [31:0] o
+);
   assign o = 1;
 endmodule
 
-module t_pin_sub_inout (inout logic [31:0] o);
+module t_pin_sub_inout (
+    inout logic [31:0] o
+);
 endmodule
 
-module t_pin_sub16 (output logic [15:0] o);
+module t_pin_sub16 (
+    output logic [15:0] o
+);
   assign o = 1;
 endmodule
 
-module t_pin_sub1 (output logic o);
+module t_pin_sub1 (
+    output logic o
+);
   assign o = 1;
 endmodule
 
-module t_pin_sub_undriven (output logic [31:0] o);
+module t_pin_sub_undriven (
+    output logic [31:0] o
+);
 endmodule
 
-module t_pin_sub_part (output logic [31:0] o);
+module t_pin_sub_part (
+    output logic [31:0] o
+);
   assign o[3:0] = 1;
 endmodule
 
-module t_pin_sub_readonly (output logic [31:0] o);
-  always @(o)
-    if (o[0]) $display("");
+module t_pin_sub_readonly (
+    output logic [31:0] o
+);
+  always @(o) if (o[0]) $display("");
 endmodule
 
 module t_lint_multidriven_pin_bad (
-  input logic [31:0] a,
-  input logic [31:0] b);
+    input logic [31:0] a,
+    input logic [31:0] b
+);
   // Initial value plus output port connection  // <--- Warning
   wire [31:0] init_pin = 0;
   // A pure-Z initial value drives no value, so no warning
@@ -138,7 +152,25 @@ module t_lint_multidriven_pin_bad (
   t_pin_sub_inout i11 (.o(inout_bus));
   t_pin_sub16 i8 (.o(two_sel[31:16]));
   t_pin_sub16 i9 (.o(two_sel[15:0]));
-  initial $display("init_pin=%h init_z=%h cont_pin=%h cont_z=%h cont_sel=%h two_pins=%h inout_bus=%h two_sel=%h no_pin=%h init_off=%h undriven_port=%h part_port=%h readonly_port=%h mixed_port=%h tri_pin=%h supply_pin=%h wor_bus=%h",
-                   init_pin, init_z, cont_pin, cont_z, cont_sel, two_pins, inout_bus, two_sel, no_pin, init_off,
-                   undriven_port, part_port, readonly_port, mixed_port, tri_pin, supply_pin, wor_bus);
+  initial
+    $display(
+        "init_pin=%h init_z=%h cont_pin=%h cont_z=%h cont_sel=%h two_pins=%h inout_bus=%h two_sel=%h no_pin=%h init_off=%h undriven_port=%h part_port=%h readonly_port=%h mixed_port=%h tri_pin=%h supply_pin=%h wor_bus=%h",
+        init_pin,
+        init_z,
+        cont_pin,
+        cont_z,
+        cont_sel,
+        two_pins,
+        inout_bus,
+        two_sel,
+        no_pin,
+        init_off,
+        undriven_port,
+        part_port,
+        readonly_port,
+        mixed_port,
+        tri_pin,
+        supply_pin,
+        wor_bus
+    );
 endmodule
