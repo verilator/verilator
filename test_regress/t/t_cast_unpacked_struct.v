@@ -4,7 +4,7 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
-// Bit-stream casts to and from unpacked structs (IEEE 1800-2023 6.24.3)
+// Casts to and from unpacked structs and arrays (IEEE 1800-2023 6.24.1, 6.24.3)
 
 // verilog_format: off
 `define stop $stop
@@ -24,19 +24,13 @@ class Monitor;
     return v;
   endfunction
 
-  function string check_tohost(longint v);
+  function void check_tohost(longint v);
     tohost_t tohost_value;
     tohost_value = tohost_t'(get_val(v));
-    if (tohost_value.dev !== v[63:56] || tohost_value.cmd !== v[55:48]
-        || tohost_value.val !== v[47:0] || longint'(tohost_value) != v)
-      return $sformatf(
-          "dev=%h cmd=%h val=%h back=%h",
-          tohost_value.dev,
-          tohost_value.cmd,
-          tohost_value.val,
-          longint'(tohost_value)
-      );
-    return "";
+    `checkh(tohost_value.dev, v[63:56]);
+    `checkh(tohost_value.cmd, v[55:48]);
+    `checkh(tohost_value.val, v[47:0]);
+    `checkh(longint'(tohost_value), v);
   endfunction
 endclass
 
@@ -61,7 +55,7 @@ module t (
   // Casts between longint and an unpacked struct, in a class
   Monitor mon = new;
   always @(posedge clk) begin
-    `checks(mon.check_tohost(crc), "");
+    mon.check_tohost(crc);
   end
 
   typedef enum logic [2:0] {
@@ -177,6 +171,7 @@ module t (
     automatic bytes_desc_t d = bytes_desc_t'(a);
     automatic nibbles_t n = nibbles_t'(a);
     automatic bytes_t same = bytes_t'(a);
+    automatic byte duo[2] = '{crc[23:16], crc[15:8]};
     `checkh(a[0], crc[31:24]);
     `checkh(a[3], crc[7:0]);
     `checkh(int'(a), crc[31:0]);
@@ -189,21 +184,27 @@ module t (
     `checkh(int'(bytes_t'{1: crc[15:8], default: 8'h5a}), {8'h5a, crc[15:8], 16'h5a5a});
     `checkh(d == bytes_desc_t'(a), 1'b1);
     `checkh(int'(bytes_desc_t'(a)), crc[31:0]);
+    // Braces are an unpacked array concatenation, as if assigned (IEEE 1800-2023 10.10.2)
+    `checkh(int'(bytes_t'({crc[31:24], duo, crc[7:0]})), crc[31:0]);
   end
 
   typedef real reals_t[1:2];
   typedef Monitor monitors_t[3:2];
 
-  // Casts between equivalent arrays, of any elements, are as assigned (IEEE 1800-2023 6.24.1)
+  // Casts between equivalent arrays, of any elements, are as assigned (IEEE 1800-2023 6.24.1),
+  // and of the cast type, e.g. with other bounds
   always @(posedge clk) begin
     automatic real r[2] = '{real'(cyc), 0.5};
     automatic reals_t rr = reals_t'(r);
     automatic Monitor m[2] = '{mon, null};
     automatic monitors_t mm = monitors_t'(m);
+    automatic Monitor md[1:0] = '{mon, null};
     `checkh(rr[1] == real'(cyc), 1'b1);
     `checkh(rr[2] == 0.5, 1'b1);
     `checkh(mm[3] == mon, 1'b1);
     `checkh(mm[2] == null, 1'b1);
+    `checkd($left(reals_t'(r)), 1);
+    `checkd($left(monitors_t'(md)), 3);
   end
 
   typedef struct {
@@ -320,17 +321,27 @@ module t (
     `checkd(value_calls, 2);
     `checkd(targets[2], 1);
     `checkd(targets[3], 2);
+    `checkd(static_user(), 1);
   end
 
+  // Defined after its uses, so first widthed where used in the static value of static_user()
   function automatic int index_of(logic [31:0] v);
     return int'(halves_t'(count_value(v))) & 3;
   endfunction
 
-  // In a property of a class, of each specialization, with temporaries in the module
+  function automatic enum_t count_e5();
+    calls++;
+    return E5;
+  endfunction
+
+  // In a property of a class, of each specialization, with temporaries in the module, also of
+  // an inside expression and of an enum name
   class Counted #(
       int N = 0
   );
     halves_t h = halves_t'(count_crc());
+    bit is_in = count_e5() inside {E0, E5};
+    string name = count_e5().name();
   endclass
 
   always @(posedge clk) begin
@@ -341,7 +352,11 @@ module t (
     two = new;
     `checkh(int'(one.h), crc[31:0]);
     `checkh(int'(two.h), crc[31:0]);
-    `checkd(calls, 2);
+    `checkh(one.is_in, 1'b1);
+    `checkh(two.is_in, 1'b1);
+    `checks(one.name, "E5");
+    `checks(two.name, "E5");
+    `checkd(calls, 6);
   end
 
   function automatic int one_count();
@@ -384,6 +399,8 @@ module t (
     `checkh(swapped.hi, crc[15:0]);
     `checkh(swapped.lo, crc[31:16]);
     `checkh(int'({<<16{h}}), {crc[15:0], crc[31:16]});
+    // Also a wider size cast, which as if assigned fills zeros on the right
+    `checkh(33'({<<16{h}}), {crc[15:0], crc[31:16], 1'b0});
   end
 
   typedef struct {
@@ -450,7 +467,7 @@ module t (
   end
 
 `ifdef VERILATOR
-  // As in other streams, a real streams as its 64 bits, an extension of the standard
+  // As in an assigned stream, a real member streams as its 64 bits, an extension of the standard
   typedef struct {
     real r;
     logic [6:0] t;

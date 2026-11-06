@@ -5,7 +5,8 @@
 // SPDX-License-Identifier: CC0-1.0
 
 // A select of a bit-stream cast to an unpacked struct. Selecting from a cast is an extension of
-// the standard (IEEE 1800-2023 A.8.4) that other simulators and verilog_format reject.
+// the standard (IEEE 1800-2023 A.8.4) that other simulators and verilog_format reject, so it is
+// only tested with Verilator.
 
 // verilog_format: off
 `define stop $stop
@@ -33,6 +34,7 @@ module t (
     logic [6:0] t;
   } s31_t;
 
+`ifdef VERILATOR
   always @(posedge clk) begin
     automatic int idx = 1 + cyc % 3;
     automatic byte b;
@@ -41,5 +43,6 @@ module t (
     b = s31_t'(crc[30:0]).d[3];
     `checkh(b, crc[30:23]);
   end
+`endif
 
 endmodule

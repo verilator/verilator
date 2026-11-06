@@ -4,6 +4,9 @@
 // SPDX-FileCopyrightText: 2026 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// A bit-stream cast of a non-constant parameter value. Not in t_cast_unpacked_struct_bad.v, as an
+// error in a parameter value ends the elaboration before other errors.
+
 module t;
 
   typedef struct {

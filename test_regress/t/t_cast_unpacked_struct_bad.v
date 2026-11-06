@@ -26,6 +26,8 @@ module t;
     logic [6:0] t;
   } real_t;
 
+  typedef struct {chandle h;} ch_t;
+
   typedef byte assoc_t[int];
 
   typedef struct {byte a[int];} sa_t;
@@ -34,19 +36,19 @@ module t;
 
   typedef byte bytes_t[4];
 
-  s15_t s;
-  u15_t u;
-  real_t rs;
-  int i;
-  logic [14:0] v15;
-  logic [70:0] v71;
-  Cls obj;
-  assoc_t aa;
-  sa_t sa;
-  sc_t sc;
-  bytes_t b4;
-
   initial begin
+    s15_t s;
+    u15_t u;
+    real_t rs;
+    ch_t ch;
+    int i;
+    logic [14:0] v15;
+    logic [70:0] v71;
+    Cls obj;
+    assoc_t aa;
+    sa_t sa;
+    sc_t sc;
+    bytes_t b4;
     s = s15_t'(i);  // Bad: 32 bits to 15
     i = int'(s);  // Bad: 15 bits to 32
     b4 = bytes_t'(s);  // Bad: 15 bits to 32
@@ -57,13 +59,18 @@ module t;
     u = u15_t'(s);  // Bad: an unpacked union is not a bit-stream type
     s = s15_t'(u);  // Bad: an unpacked union is not a bit-stream type
     rs = real_t'(v71);  // Bad: a real is not a bit-stream type
+    ch = ch_t'(64'h0);  // Bad: a chandle is not a bit-stream type
     obj = Cls'(s);  // Bad: a class destination
     aa = assoc_t'(s);  // Bad: an associative array destination
     sa = sa_t'(s);  // Bad: an associative array in the destination
     sc = sc_t'(s);  // Bad: a class in the destination
-    {<<8{bytes_t'(i)}} = i;  // Bad: a cast is not a variable
-    {<<8{bytes_t'({i[15:0], i[31:16]})}} = i;  // Bad: also of a concatenation
-    {<<8{bytes_t'({>>{i}})}} = i;  // Bad: also of a stream
+    i = int'(b4[2:5]);  // Bad: a slice out of range, as the operand
+    b4 = bytes_t'({i[15:8], i[7:0]});  // Bad: braces of too few elements
+    begin
+      typedef byte b2_t[2];
+      b2_t b2;
+      b2 = b2_t'({2{i[7:0]}});  // Bad: replication in an unpacked array concatenation
+    end
   end
 
 endmodule

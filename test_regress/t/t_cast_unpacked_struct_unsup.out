@@ -1,46 +1,68 @@
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:39:16: Unsupported: bit-stream cast to 'struct t.s16_t' from a streaming concatenation of a value of type 'byte$[]'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:50:16: Unsupported: bit-stream cast to 'struct t.s16_t' from a streaming concatenation of a value of type 'byte$[]'.
                                                           : ... note: In instance 't'
-   39 |     s16 = s16_t'({<<8{dyn}});   
+   50 |     s16 = s16_t'({<<8{dyn}});   
       |                ^
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:40:16: Unsupported: bit-stream cast to 'struct t.s16_t' from a streaming concatenation of a value of type 'byte$[$]'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:51:16: Unsupported: bit-stream cast to 'struct t.s16_t' from a streaming concatenation of a value of type 'byte$[$]'.
                                                           : ... note: In instance 't'
-   40 |     s16 = s16_t'({<<8{que}});   
+   51 |     s16 = s16_t'({<<8{que}});   
       |                ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:41:16: Unsupported: bit-stream cast to 'struct t.s16_t' from a streaming concatenation of a value of type 'byte$[]'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:52:16: Unsupported: bit-stream cast to 'struct t.s16_t' from a streaming concatenation of a value of type 'byte$[]'.
                                                           : ... note: In instance 't'
-   41 |     s16 = s16_t'({<<8{dyn, s16}});   
+   52 |     s16 = s16_t'({<<8{dyn, s16}});   
       |                ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:42:15: Unsupported: bit-stream cast to 'int' from a streaming concatenation of a value of type 'byte$[]'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:53:15: Unsupported: bit-stream cast to 'int' from a streaming concatenation of a value of type 'byte$[]'.
                                                           : ... note: In instance 't'
-   42 |     word = int'({<<8{dyn, s16}});   
+   53 |     word = int'({<<8{dyn, s16}});   
       |               ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:43:15: Unsupported: bit-stream cast to 'int' from a streaming concatenation of a value of type 'byte$[]'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:54:15: Unsupported: bit-stream cast to 'int' from a streaming concatenation of a value of type 'byte$[]'.
                                                           : ... note: In instance 't'
-   43 |     word = int'({<<8{{>>{dyn}}}});   
+   54 |     word = int'({<<8{{>>{dyn}}}});   
       |               ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:44:15: Unsupported: bit-stream cast to 'int' from a streaming concatenation of a value of type 'union t.uni_t'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:55:15: Unsupported: bit-stream cast to 'int' from a streaming concatenation of a value of type 'union t.uni_t'.
                                                           : ... note: In instance 't'
-   44 |     word = int'({>>{uni, s16}});   
+   55 |     word = int'({>>{uni, s16}});   
       |               ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:45:19: Unsupported: Stream operation on a variable of a type 'union t.uni_t'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:56:19: Unsupported: Stream operation on a variable of a type 'union t.uni_t'
                                                           : ... note: In instance 't'
-   45 |     s16 = s16_t'({>>{uni}});   
+   56 |     s16 = s16_t'({>>{uni}});   
       |                   ^~
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:46:16: Unsupported: static cast to 'struct t.s16_t' from 'string'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:57:16: Unsupported: bit-stream cast to 'struct t.s16_t' from 'string', involving a class object, string, or dynamically sized array.
                                                           : ... note: In instance 't'
-   46 |     s16 = s16_t'(str);   
+   57 |     s16 = s16_t'(str);   
       |                ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:47:16: Unsupported: static cast to 'struct t.str_t' from 'struct t.s16_t'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:58:16: Unsupported: bit-stream cast to 'struct t.str_t' from 'struct t.s16_t', involving a class object, string, or dynamically sized array.
                                                           : ... note: In instance 't'
-   47 |     sts = str_t'(s16);   
+   58 |     sts = str_t'(s16);   
       |                ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:48:16: Unsupported: static cast to 'struct t.s16_t' from 'struct t.wild_t'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:59:16: Unsupported: bit-stream cast to 'struct t.s16_t' from 'struct t.wild_t', involving a class object, string, or dynamically sized array.
                                                           : ... note: In instance 't'
-   48 |     s16 = s16_t'(wild);   
+   59 |     s16 = s16_t'(wild);   
       |                ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:49:16: Unsupported: static cast to 'struct t.s16_t' from 'class Cls'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:60:16: Unsupported: bit-stream cast to 'struct t.s16_t' from 'class Cls', involving a class object, string, or dynamically sized array.
                                                           : ... note: In instance 't'
-   49 |     s16 = s16_t'(obj);   
+   60 |     s16 = s16_t'(obj);   
       |                ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:61:9: Unsupported: real in a streaming concatenation target with other values, or in another streaming concatenation.
+   61 |     {>>{rs, word}} = 104'h0;   
+      |         ^~
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:62:14: Unsupported: real in a streaming concatenation target with other values, or in another streaming concatenation.
+   62 |     {>>{{<<8{rs}}}} = 72'h0;   
+      |              ^~
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:63:15: Unsupported: bit-stream cast to 'byte$[$]' from 'byte$[0:1]', involving a class object, string, or dynamically sized array.
+                                                          : ... note: In instance 't'
+   63 |     que = bq_t'(b2);   
+      |               ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:64:15: Unsupported: bit-stream cast to 'byte$[]' from 'byte$[0:1]', involving a class object, string, or dynamically sized array.
+                                                          : ... note: In instance 't'
+   64 |     dyn = bd_t'(b2);   
+      |               ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:65:14: Unsupported: bit-stream cast to 'byte$[0:1]' from 'byte$[]', involving a class object, string, or dynamically sized array.
+                                                          : ... note: In instance 't'
+   65 |     b2 = b2_t'(dyn);   
+      |              ^
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:66:15: Unsupported: bit-stream cast to 'byte$[$]' from 'int$[0:1]', involving a class object, string, or dynamically sized array.
+                                                          : ... note: In instance 't'
+   66 |     que = bq_t'(words);   
+      |               ^
 %Error: Exiting due to

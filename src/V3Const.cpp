@@ -1012,43 +1012,9 @@ class ConstVisitor final : public VNVisitor {
         return dtypep->isStreamableFixedAggregate() && dtypep->containsUnpackedStruct();
     }
 
-    AstStructSel* newStructSel(AstNodeExpr* const fromp, const AstMemberDType* const itemp) {
-        AstStructSel* const selp = new AstStructSel{fromp->fileline(), fromp, itemp->name()};
-        selp->dtypeFrom(itemp->dtypep());
-        return selp;
-    }
-
-    void collectFixedAggregateTerms(AstNodeExpr* const fromp, std::vector<AstNodeExpr*>& termps,
-                                    const bool packReal) {
-        const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
-        if (const AstUnpackArrayDType* const unpackDtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            for (const int idx : unpackDtypep->declRange().seqLeftToRight()) {
-                AstArraySel* const selp
-                    = new AstArraySel{fromp->fileline(), fromp->cloneTreePure(false), idx};
-                collectFixedAggregateTerms(selp, termps, packReal);
-            }
-            VL_DO_DANGLING(pushDeletep(fromp), fromp);
-        } else if (const AstNodeUOrStructDType* const sdtypep
-                   = VN_CAST(dtypep, NodeUOrStructDType)) {
-            if (sdtypep->packed()) {
-                termps.push_back(fromp);
-                return;
-            }
-            for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
-                collectFixedAggregateTerms(newStructSel(fromp->cloneTreePure(false), itemp),
-                                           termps, packReal);
-            }
-            VL_DO_DANGLING(pushDeletep(fromp), fromp);
-        } else if (packReal && dtypep->isDouble()) {
-            termps.push_back(new AstRealToBits{fromp->fileline(), fromp});
-        } else {
-            termps.push_back(fromp);
-        }
-    }
-
     AstNodeExpr* packFixedAggregate(AstNodeExpr* const fromp) {
         std::vector<AstNodeExpr*> termps;
-        collectFixedAggregateTerms(fromp, termps, true);
+        V3Const::collectFixedAggregateTerms(deleter(), fromp, termps, true);
         UASSERT(!termps.empty(), "No stream terms");
         AstNodeExpr* resultp = termps[0];
         for (size_t i = 1; i < termps.size(); ++i) {
@@ -1061,7 +1027,7 @@ class ConstVisitor final : public VNVisitor {
                                        AstNodeExpr* srcp) {
         const int dstWidth = dstp->dtypep()->widthStream();
         std::vector<AstNodeExpr*> termps;
-        collectFixedAggregateTerms(dstp, termps, false);
+        V3Const::collectFixedAggregateTerms(deleter(), dstp, termps, false);
         int srcWidth = srcp->width();
         if (srcWidth < dstWidth) {
             AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dstWidth};
@@ -4762,6 +4728,34 @@ uint32_t ConstVisitor::s_globalPassNum = 0;
 
 //######################################################################
 // Const class functions
+
+void V3Const::collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* const fromp,
+                                         std::vector<AstNodeExpr*>& termps, const bool packReal,
+                                         const bool warnImpure) {
+    FileLine* const flp = fromp->fileline();
+    const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
+    const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType);
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        for (const int index : adtypep->declRange().seqLeftToRight()) {
+            collectFixedAggregateTerms(
+                deleter,
+                new AstArraySel{flp, fromp->cloneTree(false, warnImpure), index - adtypep->lo()},
+                termps, packReal, warnImpure);
+        }
+    } else if (sdtypep && !sdtypep->packed()) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
+            AstStructSel* const selp
+                = new AstStructSel{flp, fromp->cloneTree(false, warnImpure), itemp->name()};
+            selp->dtypeFrom(itemp->dtypep());
+            selp->didWidth(true);
+            collectFixedAggregateTerms(deleter, selp, termps, packReal, warnImpure);
+        }
+    } else {
+        termps.push_back(packReal && dtypep->isDouble() ? new AstRealToBits{flp, fromp} : fromp);
+        return;
+    }
+    deleter.pushDeletep(fromp);
+}
 
 //! Force this cell node's parameter list to become a constant
 void V3Const::constifyParamsEdit(AstNode* nodep) {
