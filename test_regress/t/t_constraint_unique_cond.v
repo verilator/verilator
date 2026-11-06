@@ -60,11 +60,52 @@ class G;
   endfunction
 endclass
 
+// From a method of the class the arm's unique reaches the fold as an empty branch. It is not
+// enforced there, so only that these build and solve is checked
+class M;
+  rand bit [1:0] arr[3];
+  rand bit sel;
+  rand bit [1:0] level;
+  bit on = 1;
+
+  function int ifThen();
+    return randomize() with {
+      if (on) {
+        unique {arr};
+      }
+    };
+  endfunction
+  function int randCondition();
+    return randomize() with {
+      if (level > 1) {
+        unique {arr};
+      }
+    };
+  endfunction
+  function int implication();
+    return randomize() with {
+      (on) -> {
+        unique {arr};
+      }
+    };
+  endfunction
+  function int ifElse();
+    return randomize() with {
+      if (on) {
+        unique {arr};
+      } else {
+        sel == 1;
+      }
+    };
+  endfunction
+endclass
+
 module t;
   initial begin
     automatic C c = new;
     automatic A a = new;
     automatic G g = new;
+    automatic M m = new;
     int ok;
 
     // The 'then' arm holds: its operands are pairwise distinct
@@ -128,6 +169,14 @@ module t;
       arr[0] == arr[1];
     };
     `checkd(ok, 0);
+
+    `checkd(m.ifThen(), 1);
+    `checkd(m.randCondition(), 1);
+    `checkd(m.implication(), 1);
+    `checkd(m.ifElse(), 1);
+    m.on = 0;
+    `checkd(m.ifElse(), 1);
+    `checkd(m.sel, 1'b1);
 
     $write("*-* All Finished *-*\n");
     $finish;

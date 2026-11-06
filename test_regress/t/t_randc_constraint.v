@@ -235,6 +235,338 @@ class RandcDeep;
   endfunction
 endclass
 
+// Test 8: randc mixed with rand variables named only in an if condition, an
+// implication, a foreach, an inside list or a struct member. Each constraint names
+// a rand variable, so it must stay out of the randc-first draw. Every value of c stays
+// feasible, so each cycle covers 0..3.
+virtual class RandcMixedBase;
+  randc bit [1:0] c;
+
+  pure virtual function bit holds;
+  // Each case randomizes itself, so the call is resolved in the class declaring its members
+  pure virtual function int randomize_case;
+
+  function void test_cyclic(string what);
+    automatic int count[4] = '{0, 0, 0, 0};
+    automatic int randomize_result;
+    $display("Test randc mixed with rand through %s", what);
+    // Run 3 full cycles
+    for (int trial = 0; trial < 3; ++trial) begin
+      for (int i = 0; i < 4; ++i) begin
+        randomize_result = randomize_case();
+        `checkd(randomize_result, 1);
+        `checkd(holds(), 1);
+        ++count[c];
+      end
+    end
+    for (int v = 0; v < 4; ++v) begin
+      `checkd(count[v], 3);
+    end
+  endfunction
+endclass
+
+class RandcIfCond extends RandcMixedBase;
+  rand bit [1:0] x;
+  constraint c_if {
+    if (x > 0) {
+      c < 2;
+    } else {
+      c >= 2;
+    }
+  }
+  function bit holds;
+    return (x > 0) ? (c < 2) : (c >= 2);
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+class RandcImplication extends RandcMixedBase;
+  rand bit x;
+  constraint c_imp {x -> c != 3;}
+  function bit holds;
+    return !x || c != 3;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+class RandcForeach extends RandcMixedBase;
+  rand bit [1:0] arr[3];
+  constraint c_each {foreach (arr[i]) arr[i] != c;}
+  function bit holds;
+    foreach (arr[i]) if (arr[i] == c) return 0;
+    return 1;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+class RandcInside extends RandcMixedBase;
+  rand bit [1:0] x;
+  rand bit [1:0] y;
+  constraint c_in {c inside {x, y};}
+  function bit holds;
+    return c == x || c == y;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+// A unique under a condition names its array in the folded constraint's text
+class RandcCondUnique extends RandcMixedBase;
+  rand bit [1:0] v[2];
+  constraint c_unique {
+    if (c > 0)
+    unique {v};
+  }
+  function bit holds;
+    return c == 0 || v[0] != v[1];
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+// A frozen enum keeps its generated value-range constraint, which names it as is
+class RandcFrozenEnum extends RandcMixedBase;
+  typedef enum bit [1:0] {
+    LOW = 0,
+    HIGH = 2
+  } mode_t;
+  rand mode_t mode;
+  constraint c_mode {mode != HIGH;}
+  function bit holds;
+    return mode == LOW;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+class RandcStructMember extends RandcMixedBase;
+  typedef struct {rand bit [1:0] f;} pair_t;
+  rand pair_t s;
+  constraint c_member {c != s.f;}
+  function bit holds;
+    return c != s.f;
+  endfunction
+  function int randomize_case;
+    return randomize();
+  endfunction
+endclass
+
+// Test 9: static randc, with a randc-only constraint the draw must apply and a
+// constraint mixed with rand that it must not
+class RandcStatic;
+  static randc bit [1:0] c;
+  rand bit [1:0] x;
+  constraint c_no3 {c != 3;}
+  constraint c_rel {x > c;}
+
+  function void test_cyclic;
+    automatic int count[4] = '{0, 0, 0, 0};
+    automatic int domain_size = 3;
+    automatic int randomize_result;
+    $display("Test static randc with randc-only and mixed constraints");
+    // Run 4 full cycles
+    for (int trial = 0; trial < 4; ++trial) begin
+      for (int i = 0; i < domain_size; ++i) begin
+        randomize_result = randomize();
+        `checkd(randomize_result, 1);
+        `checkd(x > c, 1);
+        ++count[c];
+      end
+    end
+    for (int v = 0; v <= 2; ++v) begin
+      `checkd(count[v], 4);
+    end
+    `checkd(count[3], 0);
+  endfunction
+endclass
+
+class ConditionalUniqueCycle;
+  randc bit value;
+  rand bit [1:0] values[2];
+  constraint domain {
+    if (value) {
+      unique {values};
+    }
+  }
+endclass
+
+// A randc array is solved jointly, not drawn as a lone randc variable
+class ArrayCycle;
+  randc bit [1:0] values[2];
+  constraint domain {foreach (values[index]) values[index] == 2;}
+endclass
+
+class FrozenEnumCycle;
+  typedef enum bit [1:0] {
+    LOW = 0,
+    HIGH = 2
+  } mode_t;
+  rand mode_t mode;
+  randc bit [1:0] value;
+  constraint domain {
+    value < 3;
+    mode != HIGH;
+  }
+endclass
+
+// A frozen array keeps its values, so only c values it does not hold are feasible
+class FrozenArrayCycle;
+  randc bit [1:0] c;
+  rand bit [1:0] fa[2];
+  constraint k {foreach (fa[i]) c != fa[i];}
+endclass
+
+class ArrayWith;
+  randc bit [1:0] c[2];
+  rand bit [3:0] x;
+  constraint k {x < 12;}
+endclass
+
+// Test 10: randc sizing an array whose elements are constrained. randomize() solves the
+// sizes first, and both solves keep the joint solve, so every call succeeds.
+class SizedElements;
+  randc bit [1:0] count;
+  rand byte data[];
+  constraint size_constraint {data.size() == int'(count);}
+  constraint element_constraint {foreach (data[index]) data[index] == 0;}
+endclass
+
+// The size solve sees the elements from before the resize, here none, so count is 0
+class SizedSum;
+  randc bit [1:0] count;
+  rand bit [7:0] data[];
+  constraint k {
+    data.size() == int'(count);
+    data.sum() with (int'(item)) == 2 * int'(count);
+  }
+endclass
+
+// Test 11: constraints whose names cover more than the text holding their randc-only part.
+// The draw filters by them, so a randc value the text excludes is never drawn.
+class StateIfElse;
+  bit enabled;
+  randc bit [1:0] count;
+  rand bit [1:0] limit;
+  constraint domain {
+    if (enabled)
+    count < limit;
+    else
+    count < 2;
+  }
+endclass
+
+class StateOperand;
+  bit enabled;
+  randc bit [1:0] c;
+  rand bit [1:0] x;
+  constraint k {c != (enabled ? x : 3);}
+endclass
+
+class StateUnderRandcFold;
+  bit enabled;
+  randc bit [1:0] c;
+  rand bit [1:0] x;
+  constraint k {
+    if (c > 0) {
+      if (enabled)
+      c < x;
+      else
+      c > 2;
+    }
+  }
+endclass
+
+class RandcFoldItems;
+  randc bit [1:0] c;
+  rand bit [3:0] x;
+  constraint k {
+    if (c < 2) {
+      x > 3;
+    } else {
+      c < 3;
+      x < 8;
+    }
+  }
+endclass
+
+// The rand variable cannot change the outcome, which is c >= 1 whatever it holds
+class RandcBranchOnRand;
+  randc bit [1:0] c;
+  rand bit [1:0] y;
+  constraint k {
+    if (y < 1) {
+      y != c;
+    } else {
+      c >= 1;
+    }
+  }
+endclass
+
+// c == 1 is rejected by a branch that reads no rand variable
+class RandcBranchOnRandc;
+  randc bit [1:0] c;
+  rand bit [1:0] y;
+  constraint k {
+    if (c < 2) {
+      c != 1;
+    } else {
+      y > 1;
+    }
+  }
+endclass
+
+// z is too narrow for the condition ever to be false, so c >= 1 always applies
+class RandcAlwaysTrue;
+  randc bit [1:0] c;
+  rand bit z;
+  constraint k {
+    if (int'(z) < 3) {
+      c >= 1;
+    }
+  }
+endclass
+
+class RandcBranchSub;
+  randc bit [1:0] c;
+endclass
+
+// As RandcBranchOnRandc, the branch reaching its randc through a rand handle
+class RandcBranchThroughHandle;
+  rand RandcBranchSub s = new;
+  rand bit [1:0] y;
+  constraint k {
+    if (s.c == 0) {
+      s.c != 0;
+    } else {
+      y >= s.c;
+    }
+  }
+endclass
+
+// Sized without element constraints, so a single solve: c == 3 admits no size
+class SizeOnly;
+  randc bit [1:0] c;
+  rand int q[$];
+  constraint size_c {
+    q.size() < 3;
+    q.size() >= c;
+  }
+endclass
+
+class SizeOnlyWith;
+  randc bit [1:0] c;
+  rand int q[$];
+endclass
+
 module t;
   RandcRange rr;
   RandcSmall rs;
@@ -243,6 +575,12 @@ module t;
   RandcModeSwitch rms;
   RandcEnumConstrained rec;
   RandcDeep rd;
+  RandcIfCond ric;
+  RandcImplication rim;
+  RandcForeach rfe;
+  RandcInside rin;
+  RandcStructMember rsm;
+  RandcStatic rst;
 
   initial begin
     rr = new;
@@ -265,6 +603,249 @@ module t;
 
     rd = new;
     rd.test_cyclic();
+
+    ric = new;
+    ric.test_cyclic("an if condition");
+
+    rim = new;
+    rim.test_cyclic("an implication");
+
+    rfe = new;
+    rfe.test_cyclic("a foreach");
+
+    rin = new;
+    rin.test_cyclic("an inside list");
+
+    rsm = new;
+    rsm.test_cyclic("a struct member");
+
+    rst = new;
+    rst.test_cyclic();
+
+    begin
+      automatic RandcCondUnique rcu = new;
+      rcu.test_cyclic("a conditional unique");
+    end
+
+    begin
+      automatic ConditionalUniqueCycle obj = new;
+      automatic int count[2] = '{0, 0};
+      automatic int res;
+      $display("Test randc deciding whether a unique applies");
+      for (int i = 0; i < 4; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        if (obj.value) `checkd(obj.values[0] != obj.values[1], 1'b1);
+        ++count[obj.value];
+      end
+      `checkd(count[0], 2);
+      `checkd(count[1], 2);
+    end
+
+    begin
+      automatic RandcFrozenEnum rfz = new;
+      rfz.mode.rand_mode(0);
+      rfz.test_cyclic("a frozen enum");
+    end
+
+    begin
+      automatic FrozenEnumCycle obj = new;
+      automatic int count[4] = '{0, 0, 0, 0};
+      automatic int res;
+      $display("Test randc with a frozen enum");
+      obj.mode.rand_mode(0);
+      for (int i = 0; i < 6; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.mode, FrozenEnumCycle::LOW);
+        ++count[obj.value];
+      end
+      for (int v = 0; v < 3; ++v) `checkd(count[v], 2);
+    end
+
+    begin
+      automatic FrozenArrayCycle obj = new;
+      automatic int count[4] = '{0, 0, 0, 0};
+      automatic int res;
+      $display("Test randc with a frozen array");
+      obj.fa = '{1, 2};
+      obj.fa.rand_mode(0);
+      for (int i = 0; i < 6; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.fa[0], 1);
+        `checkd(obj.fa[1], 2);
+        ++count[obj.c];
+      end
+      `checkd(count[0], 3);
+      `checkd(count[3], 3);
+    end
+
+    begin
+      automatic ArrayCycle obj = new;
+      automatic int res;
+      $display("Test randc array");
+      // Called once: a later call hits a pre-existing bug in excluding randc array values
+      res = obj.randomize();
+      `checkd(res, 1);
+      `checkd(obj.values[0], 2);
+      `checkd(obj.values[1], 2);
+    end
+
+    begin
+      automatic ArrayWith obj = new;
+      automatic int res;
+      $display("Test randc array with an inline constraint");
+      for (int i = 0; i < 8; ++i) begin
+        res = obj.randomize() with {c[0] != 0;};
+        `checkd(res, 1);
+        `checkd(obj.c[0] != 0, 1'b1);
+        `checkd(obj.x < 12, 1'b1);
+      end
+    end
+
+    begin
+      automatic SizedElements obj = new;
+      automatic int res;
+      $display("Test randc sizing an array with constrained elements");
+      for (int i = 0; i < 12; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.data.size(), int'(obj.count));
+        foreach (obj.data[j]) `checkd(obj.data[j], 0);
+      end
+    end
+
+    begin
+      automatic SizedSum obj = new;
+      automatic int res;
+      $display("Test randc sizing an array by its sum");
+      for (int i = 0; i < 12; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.data.size(), int'(obj.count));
+        `checkd(obj.data.sum() with (int'(item)), 2 * int'(obj.count));
+      end
+    end
+
+    // Without the filter, a cycle fails unless the draw takes the feasible values first,
+    // so each case below passes unfiltered with probability at most (1/6)**6
+    begin
+      automatic StateIfElse obj = new;
+      automatic int res;
+      $display("Test randc under an if on state");
+      obj.enabled = 0;
+      for (int i = 0; i < 12; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.count < 2, 1'b1);
+      end
+    end
+
+    begin
+      automatic StateOperand obj = new;
+      automatic int res;
+      $display("Test randc under a conditional operator on state");
+      obj.enabled = 0;
+      for (int i = 0; i < 32; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c != 3, 1'b1);
+      end
+    end
+
+    begin
+      automatic StateUnderRandcFold obj = new;
+      automatic int res;
+      $display("Test randc under an if on state inside an if on randc");
+      obj.enabled = 0;
+      for (int i = 0; i < 32; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c == 0 || obj.c == 3, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcFoldItems obj = new;
+      automatic int res;
+      $display("Test randc under an if on randc holding several constraints");
+      for (int i = 0; i < 32; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c != 3, 1'b1);
+        `checkd((obj.c < 2) ? obj.x > 3 : obj.x < 8, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcBranchOnRand obj = new;
+      automatic int res;
+      $display("Test randc under an if on rand with a randc-only branch");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c >= 1, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcBranchOnRandc obj = new;
+      automatic int res;
+      $display("Test randc under an if on randc with a randc-only branch");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c != 1, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcAlwaysTrue obj = new;
+      automatic int res;
+      $display("Test randc under an if on rand that always holds");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.c >= 1, 1'b1);
+      end
+    end
+
+    begin
+      automatic RandcBranchThroughHandle obj = new;
+      automatic int res;
+      $display("Test randc through a handle under an if with a randc-only branch");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.s.c != 0, 1'b1);
+      end
+    end
+
+    begin
+      automatic SizeOnly obj = new;
+      automatic int res;
+      $display("Test randc sizing an array in a single solve");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize();
+        `checkd(res, 1);
+        `checkd(obj.q.size() < 3 && obj.q.size() >= obj.c, 1'b1);
+      end
+    end
+
+    begin
+      automatic SizeOnlyWith obj = new;
+      automatic int res;
+      $display("Test randc sizing an array in a single solve of a with clause");
+      for (int i = 0; i < 16; ++i) begin
+        res = obj.randomize() with {
+          q.size() < 3;
+          q.size() >= c;
+        };
+        `checkd(res, 1);
+        `checkd(obj.q.size() < 3 && obj.q.size() >= obj.c, 1'b1);
+      end
+    end
 
     $write("*-* All Finished *-*\n");
     $finish();

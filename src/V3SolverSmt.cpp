@@ -153,6 +153,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     std::set<std::string> m_constraintVars;
     // Constraint replacing the top-level if whose folded names m_constraintVars holds
     const AstConstraintExpr* m_foldTakerp = nullptr;
+    // The names of the constraint being built are merged from more than its own text (see
+    // its use in visit(AstConstraintExpr*))
+    bool m_namesMerged = false;
     // Where the variable references being lowered record their solver names. Set by
     // visit(AstConstraintExpr*), the only visit reaching a variable reference: the other
     // constraint items either move their expressions into one or never iterate them.
@@ -1181,7 +1184,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Recorded so the runtime can tell constraints naming only randc variables apart
         // (#8058). A name matching no registered variable, as a nested access path formatted
         // at runtime does, must be taken as a non-randc variable, so its constraint is never
-        // randc-only.
+        // randc-only. That keeps the constraint out of the randc draw.
         UASSERT_OBJ(m_constraintVarsp, nodep,
                     "Variable reference outside a constraint expression");
         if (nodep->user1()) m_constraintVarsp->insert(smtName);
@@ -1651,7 +1654,9 @@ class ConstraintExprVisitor final : public VNVisitor {
     void visit(AstCond* nodep) override {
         if (editFormat(nodep)) return;
         if (!nodep->condp()->user1()) {
-            // Do not burden the solver if cond computable: (cond ? "then" : "else")
+            // Do not burden the solver if cond computable: (cond ? "then" : "else"). The
+            // names cover both branches, the text holds one
+            m_namesMerged = true;
             iterate(nodep->thenp());
             iterate(nodep->elsep());
             UASSERT_OBJ(
@@ -2067,12 +2072,28 @@ class ConstraintExprVisitor final : public VNVisitor {
         // Hoisted runtime-conditional disable_soft statements parked in the
         // constraint-items list by the pre-pass; already fully lowered.
     }
+    static bool readsNoRand(const AstNode* const branchp) {
+        return branchp && !branchp->existsAndNext([](const AstNode* const nodep) {
+            const AstVar* const varp = VN_IS(nodep, NodeVarRef)  ? VN_AS(nodep, NodeVarRef)->varp()
+                                       : VN_IS(nodep, MemberSel) ? VN_AS(nodep, MemberSel)->varp()
+                                                                 : nullptr;
+            return varp && varp->rand().isRandomizable() && !varp->rand().isRandC()
+                   && !varp->isClassHandleValue();
+        });
+    }
     void visit(AstConstraintIf* nodep) override {
         // Outside a fold, this if's branches are folded here and m_constraintVars collects
         // their names for the constraint replacing it; a nested if adds to its parent's fold
         const bool foldOwner = !m_wantSingle;
         UASSERT_OBJ(!foldOwner || m_constraintVars.empty(), nodep,
                     "Constraint names of an earlier fold were not taken over");
+        // A condition on state chooses the folded text, several items folded into one
+        // constraint merge their names, and a branch naming no rand variable is a randc-only
+        // part the names of the whole if cannot show
+        const bool namesMerged = !nodep->condp()->user1()
+                                 || (nodep->thensp() && nodep->thensp()->nextp())
+                                 || (nodep->elsesp() && nodep->elsesp()->nextp())
+                                 || readsNoRand(nodep->thensp()) || readsNoRand(nodep->elsesp());
         AstNodeExpr* newp = nullptr;
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* const thenp = editSingle(fl, nodep->thensp());
@@ -2085,6 +2106,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             newp = new AstLogIf{fl, new AstNot{fl, nodep->condp()->unlinkFrBack()}, elsep};
         }
         if (newp) {
+            if (namesMerged) m_namesMerged = true;
             newp->dtypeSetBit();  // Result is boolean (prevents bare-var != 0 wrapping)
             newp->user1(true);  // Assume result-dependent
             AstConstraintExpr* const exprp = new AstConstraintExpr{fl, newp};
@@ -2431,6 +2453,16 @@ class ConstraintExprVisitor final : public VNVisitor {
         }
         callp->addPinsp(
             new AstCExpr{nodep->fileline(), AstCExpr::Pure{}, "\"" + prettyText + "\""});
+        // Names merged from branches the state chooses between, from several folded items, or
+        // around a branch naming no rand variable can name a rand variable the randc-only part
+        // of the text does not, so the randc draw asserts this constraint too, with its rand
+        // variables free. A single item involving a rand variable under a rand condition keeps
+        // names exact for its text, and stays out of the draw as IEEE 1800-2023 18.4.2
+        // requires, as for 'if (c == 3) unique {v};'
+        if (method == VCMethod::RANDOMIZER_HARD && m_namesMerged) {
+            callp->addPinsp(new AstConst{nodep->fileline(), AstConst::BitTrue{}});
+        }
+        m_namesMerged = false;
         nodep->replaceWith(callp->makeStmt());
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
@@ -3933,12 +3965,13 @@ class SolverSmtLowering final : public V3SolverLowering {
         }
     }
 
-    static AstCExpr* newSolverCallp(AstVar* const genp) {
+    // 'sized' for the solves of a randomize() resizing arrays, which keep the joint solve
+    static AstCExpr* newSolverCallp(AstVar* const genp, bool sized = false) {
         AstCExpr* const callp = new AstCExpr{genp->fileline()};
         callp->dtypeSetBit();
         callp->add(new AstVarRef{genp->fileline(), VN_CAST(genp->user2p(), NodeModule), genp,
                                  VAccess::READWRITE});
-        callp->add(".next(__Vm_rng)");
+        callp->add(sized ? ".next_sized(__Vm_rng)" : ".next(__Vm_rng)");
         return callp;
     }
 
@@ -3956,7 +3989,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             addFrozenSizePin(fl, arrVarp, randomizep, genp, randModeVarp);
         }
         randomizep->addStmtsp(new AstAssign{fl, new AstVarRef{fl, sizeOkVarp, VAccess::WRITE},
-                                            newSolverCallp(genp)});
+                                            newSolverCallp(genp, true)});
         return sizeOkVarp;
     }
 
@@ -4160,13 +4193,16 @@ public:
                                                        nodep->findBasicDType(VBasicDTypeKwd::BIT)};
                 finalOkVarp->funcLocal(true);
                 randomizep->addStmtsp(finalOkVarp);
-                randomizep->addStmtsp(new AstAssign{
-                    fl, new AstVarRef{fl, finalOkVarp, VAccess::WRITE}, newSolverCallp(genp)});
+                randomizep->addStmtsp(new AstAssign{fl,
+                                                    new AstVarRef{fl, finalOkVarp, VAccess::WRITE},
+                                                    newSolverCallp(genp, true)});
 
                 beginValp = new AstAnd{fl, new AstVarRef{fl, sizeOkVarp, VAccess::READ},
                                        new AstVarRef{fl, finalOkVarp, VAccess::READ}};
             } else {
-                beginValp = newSolverCallp(genp);
+                // Arrays with only a size constraint resize after this one solve
+                beginValp = newSolverCallp(
+                    genp, m_memberMap.findMember(nodep, "__Vresize_constrained_arrays"));
             }
             if (randModeVarp) {
                 AstNodeModule* const randModeClassp = VN_AS(randModeVarp->user2p(), Class);
@@ -4495,7 +4531,7 @@ public:
             }
 
             // Final solve: element values with sizes pinned
-            AstCExpr* const solverCall2p = newSolverCallp(localGenp);
+            AstCExpr* const solverCall2p = newSolverCallp(localGenp, true);
             randomizeFuncp->addStmtsp(
                 new AstAssign{fl, new AstVarRef{fl, finalOkVarp, VAccess::WRITE}, solverCall2p});
 
@@ -4509,7 +4545,7 @@ public:
             VL_DO_DANGLING(capturedClonep->deleteTree(), capturedClonep);
 
             // Call the solver and set return value
-            AstCExpr* const solverCallp = newSolverCallp(localGenp);
+            AstCExpr* const solverCallp = newSolverCallp(localGenp, resizeStmtsp);
             randomizeFuncp->addStmtsp(
                 new AstAssign{fl, new AstVarRef{fl, retVarp, VAccess::WRITE},
                               new AstAnd{fl, basicRandomizeFuncCallp, solverCallp}});
