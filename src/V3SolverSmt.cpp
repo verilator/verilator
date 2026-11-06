@@ -257,7 +257,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         constraint += "))";
         AstCMethodHard* const callp = new AstCMethodHard{
             fl, new AstVarRef{fl, genModp, genVarp, VAccess::READWRITE}, VCMethod::RANDOMIZER_HARD,
-            new AstCExpr{fl, AstCExpr::Pure{}, "\"" + constraint + "\""}};
+            new AstConst{fl, AstConst::String{}, constraint}};
         // hard() pin layout is asserted in EmitCFunc: the variable list is always pin 2
         callp->addPinsp(new AstCExpr{fl, AstCExpr::Pure{}, "{\"" + smtName + "\"}"});
         callp->dtypeSetVoid();
@@ -359,70 +359,48 @@ class ConstraintExprVisitor final : public VNVisitor {
         return "";
     }
 
-    static void buildNamePrefix(AstCExpr* exprp, const AstNodeExpr* const nodep) {
+    // Solver name of the element at index 'idxp' of the array named 'namep'
+    static AstNodeExpr* newElementNamep(FileLine* fl, AstNodeExpr* namep, AstNodeExpr* idxp) {
+        AstCFuncHard* const hexp = new AstCFuncHard{fl, VCFunction::RANDOMIZER_TO_SOLVER_HEX,
+                                                    idxp->cloneTreePure(false)};
+        hexp->dtypeSetString();
+        AstNodeExpr* const prefixp
+            = new AstConcatN{fl, namep, new AstConst{fl, AstConst::String{}, "."}};
+        return new AstConcatN{fl, prefixp, hexp};
+    }
+
+    // Solver name of the variable referenced by the selects and array elements in 'nodep'
+    static AstNodeExpr* buildNamePrefix(FileLine* fl, const AstNodeExpr* const nodep) {
         if (const AstVarRef* const refp = VN_CAST(nodep, VarRef)) {
-            exprp->add("(\""s + refp->name());
-            return;
+            return new AstConst{fl, AstConst::String{}, refp->name()};
         }
 
+        // Empty if not rooted in a variable, as under an unsupported MemberSel reported below
         const AstNodeExpr* const fromp = getFromp(nodep);
-        if (fromp) buildNamePrefix(exprp, fromp);
+        AstNodeExpr* const namep
+            = fromp ? buildNamePrefix(fl, fromp) : new AstConst{fl, AstConst::String{}, ""};
 
         if (const AstStructSel* const selp = VN_CAST(nodep, StructSel)) {
-            exprp->add("." + selp->name());
+            return new AstConcatN{fl, namep,
+                                  new AstConst{fl, AstConst::String{}, "." + selp->name()}};
         } else if (VN_IS(nodep, MemberSel)) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Nested array element access in global constraint");
-            return;
         } else if (const AstCMethodHard* const cmethp = VN_CAST(nodep, CMethodHard)) {
-            if (cmethp->method() == VCMethod::ARRAY_AT) {
-                AstNodeExpr* const argp = cmethp->pinsp();
-                exprp->add(".\" + ");
-                AstCFuncHard* const solverHexFuncp
-                    = new AstCFuncHard{nodep->fileline(), VCFunction::RANDOMIZER_TO_SOLVER_HEX};
-                solverHexFuncp->addPinsp(argp->cloneTreePure(false));
-                solverHexFuncp->dtypeSetString();
-                exprp->add(solverHexFuncp);
-                exprp->add(" + \"");
-            } else {
-                cmethp->v3fatalSrc("Unexpected CMethodHard: " << cmethp->prettyTypeName());
-                return;
-            }
+            UASSERT_OBJ(cmethp->method() == VCMethod::ARRAY_AT, cmethp,
+                        "Unexpected CMethodHard: " << cmethp->prettyTypeName());
+            return newElementNamep(fl, namep, cmethp->pinsp());
         }
+        return namep;
     }
 
-    // Build a C++ expression (as AstNodeExpr) that evaluates to a const char*
-    // containing the SMT variable name for a solve-before variable reference.
+    // Solver name of a solve-before variable reference, as a string expression.
     // Handles simple vars, struct selects, and array element selects (for foreach).
-    static AstCExpr* buildPathExpr(FileLine* const fl, const AstNodeExpr* nodep,
-                                   const std::string selName) {
-        AstCExpr* const exprp = new AstCExpr{fl, ""};
-        buildNamePrefix(exprp, nodep);
-        if (selName != "") {
-            exprp->add(".");
-            exprp->add(selName);
-        }
-        exprp->add("\")");
-        return exprp;
-    }
-    // Build a C++ expression (as AstNodeExpr) that evaluates to a const char*
-    // containing the SMT variable name for a solve-before variable reference.
-    // Handles simple vars, member selects, and array element selects (for foreach).
-    // Returns nullptr for unsupported expression types.
-    // Helper: build a dynamic AstCExpr for "baseName[idx]" pattern
-    AstCExpr* buildArraySelNameExpr(FileLine* fl, const std::string& baseName,
-                                    const AstNodeSel* selp) {
-        AstCExpr* const p = new AstCExpr{fl, ""};
-        p->add("(\""s + baseName + ".\"");
-        p->add("+");
-        AstCFuncHard* const solverHexFuncp
-            = new AstCFuncHard{fl, VCFunction::RANDOMIZER_TO_SOLVER_HEX};
-        solverHexFuncp->addPinsp(selp->bitp()->cloneTreePure(false));
-        solverHexFuncp->dtypeSetString();
-        p->add(solverHexFuncp);
-        p->add(")");
-        p->dtypeSetString();
-        return p;
+    static AstNodeExpr* buildPathExpr(FileLine* const fl, const AstNodeExpr* nodep,
+                                      const std::string selName) {
+        AstNodeExpr* const namep = buildNamePrefix(fl, nodep);
+        if (selName.empty()) return namep;
+        return new AstConcatN{fl, namep, new AstConst{fl, AstConst::String{}, "." + selName}};
     }
 
     // Helper: get fromp from MemberSel or StructSel
@@ -432,11 +410,11 @@ class ConstraintExprVisitor final : public VNVisitor {
         return nullptr;
     }
 
+    // Solver name of a solve-before variable reference, as a string expression.
+    // Returns nullptr for unsupported expression types.
     AstNodeExpr* buildSolveBeforeNameExpr(FileLine* fl, AstNodeExpr* exprp) {
         if (const AstVarRef* const varrefp = VN_CAST(exprp, VarRef)) {
-            AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + varrefp->name() + "\"s"};
-            p->dtypeSetString();
-            return p;
+            return new AstConst{fl, AstConst::String{}, varrefp->name()};
         }
         // Handle MemberSel or StructSel (V3Width converts MemberSel -> StructSel for structs)
         if (AstNodeExpr* const selFromp = getSelFromp(exprp)) {
@@ -450,38 +428,20 @@ class ConstraintExprVisitor final : public VNVisitor {
                     baseName = buildMemberPath(mp);
                 }
                 if (baseName.empty()) return nullptr;
-                AstCExpr* const p = new AstCExpr{fl, ""};
-                p->add("(\""s + baseName + ".\"");
-                p->add("+");
-                AstCFuncHard* const solverHexFuncp
-                    = new AstCFuncHard{fl, VCFunction::RANDOMIZER_TO_SOLVER_HEX};
-                solverHexFuncp->addPinsp(arrSelp->bitp()->cloneTreePure(false));
-                solverHexFuncp->dtypeSetString();
-                p->add(solverHexFuncp);
-                p->add(")");
-                p->dtypeSetString();
-                return p;
+                return newElementNamep(fl, new AstConst{fl, AstConst::String{}, baseName},
+                                       arrSelp->bitp());
             }
             // Static member path (obj.field)
             if (const AstVarRef* const vp = VN_CAST(selFromp, VarRef)) {
-                const std::string path = vp->name() + "." + selName;
-                AstCExpr* const p = new AstCExpr{fl, AstCExpr::Pure{}, "\"" + path + "\"s"};
-                p->dtypeSetString();
-                return p;
+                return new AstConst{fl, AstConst::String{}, vp->name() + "." + selName};
             }
             if (VN_IS(selFromp, MemberSel) || VN_IS(selFromp, StructSel)
                 || VN_IS(selFromp, CMethodHard)) {
-                AstCExpr* const p = buildPathExpr(fl, selFromp, selName);
-                p->dtypeSetString();
-                return p;
+                return buildPathExpr(fl, selFromp, selName);
             }
             return nullptr;
         }
-        if (VN_IS(exprp, CMethodHard)) {
-            AstCExpr* const p = buildPathExpr(fl, exprp, "");
-            p->dtypeSetString();
-            return p;
-        }
+        if (VN_IS(exprp, CMethodHard)) return buildPathExpr(fl, exprp, "");
         const AstNodeSel* selp = VN_CAST(exprp, ArraySel);
         if (!selp) selp = VN_CAST(exprp, AssocSel);
         if (selp) {
@@ -493,7 +453,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 baseName = buildMemberPath(mp);
             }
             if (baseName.empty()) return nullptr;
-            return buildArraySelNameExpr(fl, baseName, selp);
+            return newElementNamep(fl, new AstConst{fl, AstConst::String{}, baseName},
+                                   selp->bitp());
         }
         // Packed struct member: SEL(ARRAYSEL(...)) -- bit select on array element.
         // Solver registers the whole element, so promote to array element level.
@@ -724,6 +685,54 @@ class ConstraintExprVisitor final : public VNVisitor {
         nodep->user3p(nullptr);
         preamblep->addNext(bodyp);
         return preamblep;
+    }
+
+    // Constraint text over the elements of an array is built at run time, by a loop
+    // appending to a string variable.
+
+    // Variable the text is built in
+    static AstVar* newTextVarp(AstNode* nodep) {
+        AstVar* const varp = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, "__Vtext",
+                                        nodep->findStringDType()};
+        varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        return varp;
+    }
+    // Statement appending 'exprp' to the text in 'varp'
+    static AstStmtExpr* newTextAppendp(FileLine* flp, AstVar* varp, AstNodeExpr* exprp) {
+        AstCFuncHard* const callp = new AstCFuncHard{flp, VCFunction::STRING_APPEND,
+                                                     new AstVarRef{flp, varp, VAccess::READWRITE}};
+        callp->addPinsp(exprp);
+        callp->dtypeSetVoid();
+        return callp->makeStmt();
+    }
+    // Statement appending a space and the term 'termp' to the text in 'varp'
+    static AstStmtExpr* newTermAppendp(FileLine* flp, AstVar* varp, AstNodeExpr* termp) {
+        return newTextAppendp(
+            flp, varp, new AstConcatN{flp, new AstConst{flp, AstConst::String{}, " "}, termp});
+    }
+    // The SMT operator 'op' applied to the terms in 'varp', or 'identity' if there are none
+    static AstCond* newTextApplyp(FileLine* flp, AstVar* varp, const std::string& op,
+                                  const std::string& identity) {
+        AstNodeExpr* const isEmptyp = new AstEqN{flp, new AstVarRef{flp, varp, VAccess::READ},
+                                                 new AstConst{flp, AstConst::String{}, ""}};
+        AstNodeExpr* const openp
+            = new AstConcatN{flp, new AstConst{flp, AstConst::String{}, "(" + op},
+                             new AstVarRef{flp, varp, VAccess::READ}};
+        AstNodeExpr* const appliedp
+            = new AstConcatN{flp, openp, new AstConst{flp, AstConst::String{}, ")"}};
+        return new AstCond{flp, isEmptyp, new AstConst{flp, AstConst::String{}, identity},
+                           appliedp};
+    }
+    // The text 'resultp', after 'foreachp' built it in 'varp', starting from 'init'
+    AstSFormatF* newTextBuildp(FileLine* flp, AstVar* varp, const std::string& init,
+                               AstForeach* foreachp, AstNodeExpr* resultp) {
+        AstBegin* const blockp
+            = new AstBegin{flp, m_uniqueNames.get("__VrandBlock"), nullptr, true};
+        blockp->addDeclsp(varp);
+        blockp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE},
+                                        new AstConst{flp, AstConst::String{}, init}});
+        blockp->addStmtsp(foreachp);
+        return new AstSFormatF{flp, "%s", false, new AstExprStmt{flp, blockp, resultp}};
     }
 
     // True if the statement references an index variable of an enclosing
@@ -2109,20 +2118,11 @@ class ConstraintExprVisitor final : public VNVisitor {
             nodep->unlinkFrBack();
         } else if (m_wantSingle) {
             AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp());
-            AstCStmt* const cstmtp = new AstCStmt{fl};
-            cstmtp->add("ret += \" \";\n");
-            cstmtp->add("ret += ");
-            cstmtp->add(itemp);
-            cstmtp->add(";");
-            AstNode* const bodyp = prependDistPreamble(nodep, cstmtp);
-            AstCExpr* const cexprp = new AstCExpr{fl};
-            cexprp->dtypeSetString();
-            cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
-                                     new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
-                                     true});
-            cexprp->add("return ret.empty() ? \"#b1\" : \"(bvand\" + ret + \")\";\n})()");
-            nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
+            AstVar* const textVarp = newTextVarp(nodep);
+            AstNode* const bodyp = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
+            nodep->replaceWith(newTextBuildp(
+                fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
+                newTextApplyp(fl, textVarp, "bvand", "#b1")));
         } else {
             VL_RESTORER(m_foreachp);
             VL_RESTORER_COPY(m_foreachIdxVars);
@@ -2539,18 +2539,12 @@ class ConstraintExprVisitor final : public VNVisitor {
             AstNode* const itemp = new AstEq{fl, selp, nodep->pinsp()->unlinkFrBack()};
             itemp->user1(true);
 
-            AstCStmt* const cstmtp = new AstCStmt{fl};
-            cstmtp->add("ret += \" \";\n");
-            cstmtp->add("ret += ");
-            cstmtp->add(iterateSubtreeReturnEdits(itemp));
-            cstmtp->add(";");
-            AstCExpr* const cexprp = new AstCExpr{fl};
-            cexprp->dtypeSetString();
-            cexprp->add("([&]{\nstd::string ret;\n");
-            cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
-                                     new AstForeach{fl, headerp, cstmtp}, true});
-            cexprp->add("return ret.empty() ? \"#b0\" : \"(bvor\" + ret + \")\";\n})()");
-            nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
+            AstVar* const textVarp = newTextVarp(nodep);
+            AstStmtExpr* const appendp
+                = newTermAppendp(fl, textVarp, VN_AS(iterateSubtreeReturnEdits(itemp), NodeExpr));
+            nodep->replaceWith(newTextBuildp(fl, textVarp, "",
+                                             new AstForeach{fl, headerp, appendp},
+                                             newTextApplyp(fl, textVarp, "bvor", "#b0")));
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
         }
@@ -2661,7 +2655,8 @@ class ConstraintExprVisitor final : public VNVisitor {
             }
 
             // Build loop body based on whether we have a 'with' clause
-            AstCStmt* const cstmtp = new AstCStmt{fl};
+            AstVar* const textVarp = newTextVarp(nodep);
+            AstNode* bodyp;
             if (withp) {
                 // With 'with' clause: evaluate expression for each element
                 const bool randArr = nodep->fromp()->user1();
@@ -2715,11 +2710,17 @@ class ConstraintExprVisitor final : public VNVisitor {
                     }
                 });
 
-                cstmtp->add("ret = \"(" + std::string(smtOp) + " \" + ret + \" \";\n");
-                cstmtp->add("ret += ");
-                cstmtp->add(iterateSubtreeReturnEdits(perElemExprp));
-                cstmtp->add(";\n");
-                cstmtp->add("ret += \")\";\n");
+                // Apply the operator to the text so far and the element's term
+                AstNodeExpr* const openp = new AstConcatN{
+                    fl, new AstConst{fl, AstConst::String{}, "(" + std::string{smtOp} + " "},
+                    new AstVarRef{fl, textVarp, VAccess::READ}};
+                bodyp = new AstAssign{
+                    fl, new AstVarRef{fl, textVarp, VAccess::WRITE},
+                    new AstConcatN{fl, openp, new AstConst{fl, AstConst::String{}, " "}}};
+                bodyp->addNext(newTextAppendp(
+                    fl, textVarp, VN_AS(iterateSubtreeReturnEdits(perElemExprp), NodeExpr)));
+                bodyp->addNext(
+                    newTextAppendp(fl, textVarp, new AstConst{fl, AstConst::String{}, ")"}));
             } else {
                 // Without 'with' clause: register each element as solver variable
                 AstVarRef* const arrRefp = VN_CAST(nodep->fromp(), VarRef);
@@ -2767,32 +2768,19 @@ class ConstraintExprVisitor final : public VNVisitor {
                 AstSFormatF* const varNamep
                     = createSolverArrDerefp(fl, nodep->fromp()->unlinkFrBack(), idxFormatp);
 
-                cstmtp->add("ret += \" \";\n");
-                cstmtp->add("ret += ");
-                cstmtp->add(varNamep);
-                cstmtp->add(";\n");
+                bodyp = newTermAppendp(fl, textVarp, varNamep);
             }
 
             // Build final expression
+            AstForeach* const foreachp = new AstForeach{fl, headerp, bodyp};
             if (withp) {
-                // For 'with' clause: use lambda expression with AstCExpr
-                AstCExpr* const cexprp = new AstCExpr{fl};
-                cexprp->dtypeSetString();
-                cexprp->add("([&]{\nstd::string ret = \"" + identity + "\";\n");
-                cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
-                                         new AstForeach{fl, headerp, cstmtp}, true});
-                cexprp->add("return ret;\n})()");
-                nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
+                // For 'with' clause: the nested operator terms, built from the identity
+                nodep->replaceWith(newTextBuildp(fl, textVarp, identity, foreachp,
+                                                 new AstVarRef{fl, textVarp, VAccess::READ}));
             } else {
-                // For without 'with' clause: use AstCExpr with conditional
-                AstCExpr* const cexprp = new AstCExpr{fl};
-                cexprp->dtypeSetString();
-                cexprp->add("([&]{\nstd::string ret;\n");
-                cexprp->add(new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
-                                         new AstForeach{fl, headerp, cstmtp}, true});
-                cexprp->add("return ret.empty() ? \"" + identity + "\" : \"(" + smtOp
-                            + "\" + ret + \")\";\n})()");
-                nodep->replaceWith(new AstSFormatF{fl, "%s", false, cexprp});
+                // For without 'with' clause: the operator applied to the element terms
+                nodep->replaceWith(newTextBuildp(fl, textVarp, "", foreachp,
+                                                 newTextApplyp(fl, textVarp, smtOp, identity)));
             }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             return;
