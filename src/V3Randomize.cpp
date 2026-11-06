@@ -42,6 +42,7 @@
 #include "V3Error.h"
 #include "V3FileLine.h"
 #include "V3Global.h"
+#include "V3LinkLValue.h"
 #include "V3MemberMap.h"
 #include "V3SolverBackend.h"
 #include "V3UniqueNames.h"
@@ -2077,6 +2078,76 @@ class RandomizeVisitor final : public VNVisitor {
             }
         });
     }
+    // IEEE 1800-2023 18.6.3: "If randomize() fails, the constraints are infeasible, and the
+    // random variables retain their previous values." Return statements copying each random
+    // variable of the object that fromp refers to (nullptr: 'this') into a new temporary of
+    // funcp, also through its rand class members, and add the statements copying them back
+    // to restoresp
+    AstNodeStmt* newSaveRandVarsp(AstFunc* const funcp, AstClass* const classp,
+                                  AstNodeExpr* const fromp, AstNodeStmt*& restoresp) {
+        FileLine* const fl = funcp->fileline();
+        AstNodeStmt* savesp = nullptr;
+        classp->foreachMember([&](AstClass* const declClassp, AstVar* const varp) {
+            if (!varp->rand().isRandomizable()) return;
+            const auto newRefp = [&](const VAccess access) -> AstNodeExpr* {
+                if (!fromp) return new AstVarRef{fl, declClassp, varp, access};
+                AstMemberRef* const selp = new AstMemberRef{fl, fromp->cloneTree(false), varp};
+                V3LinkLValue::linkLValueSet(selp, access);
+                return selp;
+            };
+            if (const AstClassRefDType* const classRefp
+                = VN_CAST(varp->dtypep()->skipRefp(), ClassRefDType)) {
+                // A member of the class's own type is unsupported, see addBasicRandomizeBody
+                if (classRefp->classp() == classp) return;
+                // __VBasicRand also changes the object that a rand class member refers to
+                AstNodeExpr* const objp = newRefp(VAccess::READ);
+                AstNodeStmt* objRestoresp = nullptr;
+                AstNodeStmt* const objSavesp
+                    = newSaveRandVarsp(funcp, classRefp->classp(), objp, objRestoresp);
+                if (objSavesp) {
+                    const auto newIfNotNullp = [&](AstNodeStmt* const stmtsp) {
+                        return new AstIf{fl,
+                                         new AstNeq{fl, objp->cloneTree(false),
+                                                    new AstConst{fl, AstConst::Null{}}},
+                                         stmtsp};
+                    };
+                    savesp = AstNode::addNextNull(savesp, newIfNotNullp(objSavesp));
+                    restoresp = AstNode::addNextNull(restoresp, newIfNotNullp(objRestoresp));
+                }
+                VL_DO_DANGLING(objp->deleteTree(), objp);
+                return;
+            }
+            AstVar* const prevVarp = new AstVar{fl, VVarType::BLOCKTEMP,
+                                                m_uniqueNames.get("__Vprev"), varp->dtypep()};
+            prevVarp->funcLocal(true);
+            prevVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+            funcp->addDeclsp(prevVarp);
+            savesp = AstNode::addNextNull(
+                savesp, new AstAssign{fl, new AstVarRef{fl, prevVarp, VAccess::WRITE},
+                                      newRefp(VAccess::READ)});
+            restoresp = AstNode::addNextNull(
+                restoresp, new AstAssign{fl, newRefp(VAccess::WRITE),
+                                         new AstVarRef{fl, prevVarp, VAccess::READ}});
+        });
+        return savesp;
+    }
+    // Add to funcp the statements saving the random variables of 'this', of class classp,
+    // and return the statements restoring them if randomize() fails
+    AstNodeStmt* addSaveRandVars(AstFunc* const funcp, AstClass* const classp) {
+        AstNodeStmt* restoresp = nullptr;
+        if (AstNodeStmt* const savesp = newSaveRandVarsp(funcp, classp, nullptr, restoresp)) {
+            funcp->addStmtsp(savesp);
+        }
+        return restoresp;
+    }
+    // Add to funcp an if that runs restoresp when randomize() failed
+    static void addRestoreIfFailed(AstFunc* const funcp, AstNodeStmt* const restoresp) {
+        if (!restoresp) return;
+        FileLine* const fl = funcp->fileline();
+        AstVar* const fvarp = funcp->fvarp();
+        funcp->addStmtsp(
+            new AstIf{fl, new AstLogNot{fl, new AstVarRef{fl, fvarp, VAccess::READ}}, restoresp});
+    }
 
     // Creates a lvalue reference to the randomize mode var. Called by visit(AstNodeFTaskRef*)
     AstNodeExpr* makeModeAssignLhs(FileLine* const fl, AstClass* const classp,
@@ -2349,6 +2420,12 @@ class RandomizeVisitor final : public VNVisitor {
             randomizep->addStmtsp((new AstTaskRef{fl, preTaskp})->makeStmt());
         }
 
+        // A basicFirst owner basic-randomizes first, then the solver overrides the
+        // constrained leaves, so a globally-constrained leaf (not user3) is still
+        // basic-randomized when its type is randomized standalone. Save the random
+        // variables first, to restore them if randomize() fails.
+        AstNodeStmt* const restoresp = basicFirst ? addSaveRandVars(randomizep, nodep) : nullptr;
+
         // Both IS_RANDOMIZED and IS_RANDOMIZED_GLOBAL classes need full constraint support
         // IS_RANDOMIZED_GLOBAL classes can be randomized independently
         AstNodeExpr* const beginValp
@@ -2357,26 +2434,25 @@ class RandomizeVisitor final : public VNVisitor {
         AstFunc* const basicRandomizep
             = V3Randomize::newRandomizeFunc(m_memberMap, nodep, BASIC_RANDOMIZE_FUNC_NAME);
         addBasicRandomizeBody(basicRandomizep, nodep, randModeVarp);
-        // A basicFirst owner basic-randomizes first, then the solver overrides the
-        // constrained leaves, so a globally-constrained leaf (not user3) is still
-        // basic-randomized when its type is randomized standalone.
-        AstVarRef* const fvarRefp = new AstVarRef{fl, fvarp, VAccess::WRITE};
-        randomizep->addStmtsp(new AstAssign{
-            fl, fvarRefp, basicFirst ? new AstFuncRef{fl, basicRandomizep} : beginValp});
-
-        // Back-end statements after the solver result; emit them after whichever
-        // assignment below holds the solver call.
-        if (!basicFirst) m_solverp->addAfterClassSolve(nodep, randomizep);
-
-        AstVarRef* const fvarRefReadp = fvarRefp->cloneTree(false);
-        fvarRefReadp->access(VAccess::READ);
-
-        AstNodeExpr* const secondHalfp
-            = basicFirst ? beginValp : new AstFuncRef{fl, basicRandomizep};
-        randomizep->addStmtsp(new AstAssign{fl, fvarRefp->cloneTree(false),
-                                            new AstAnd{fl, fvarRefReadp, secondHalfp}});
-
-        if (basicFirst) m_solverp->addAfterClassSolve(nodep, randomizep);
+        AstFuncRef* const basicCallp = new AstFuncRef{fl, basicRandomizep};
+        if (basicFirst) {
+            randomizep->addStmtsp(
+                new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE}, basicCallp});
+            randomizep->addStmtsp(
+                new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE},
+                              new AstAnd{fl, new AstVarRef{fl, fvarp, VAccess::READ}, beginValp}});
+            m_solverp->addAfterClassSolve(nodep, randomizep);
+            addRestoreIfFailed(randomizep, restoresp);
+        } else {
+            randomizep->addStmtsp(
+                new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE}, beginValp});
+            m_solverp->addAfterClassSolve(nodep, randomizep);
+            // Fill the variables the solver does not own only if it succeeded (IEEE
+            // 1800-2023 18.6.3)
+            randomizep->addStmtsp(new AstIf{
+                fl, new AstVarRef{fl, fvarp, VAccess::READ},
+                new AstAssign{fl, new AstVarRef{fl, fvarp, VAccess::WRITE}, basicCallp}});
+        }
 
         // Call nested post_randomize on rand class-type members (IEEE 18.4.1)
         AstNodeStmt* postp = nullptr;
@@ -2701,6 +2777,10 @@ class RandomizeVisitor final : public VNVisitor {
         // Add function arguments
         captured.addFunctionArguments(randomizeFuncp);
 
+        // __VBasicRand runs before the solver, so save the random variables first, to
+        // restore them if randomize() fails
+        AstNodeStmt* const restoresp = addSaveRandVars(randomizeFuncp, classp);
+
         AstFunc* const basicRandomizeFuncp
             = V3Randomize::newRandomizeFunc(m_memberMap, classp, BASIC_RANDOMIZE_FUNC_NAME);
         AstFuncRef* const basicRandomizeFuncCallp
@@ -2710,6 +2790,7 @@ class RandomizeVisitor final : public VNVisitor {
         m_solverp->lowerInlineRandomize(nodep, classp, randomizeFuncp,
                                         withp->exprp()->unlinkFrBackWithNext(),
                                         captured.getThisp(), basicRandomizeFuncCallp);
+        addRestoreIfFailed(randomizeFuncp, restoresp);
 
         // Call nested post_randomize on rand class-type members (IEEE 18.4.1)
         AstNodeStmt* postp = nullptr;
