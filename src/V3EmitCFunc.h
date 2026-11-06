@@ -472,15 +472,13 @@ public:
             nodep->prependStmtsp(setProcessp);
         }
 
-        for (AstNode* const subnodep : nodep->argspList()) {
-            if (AstVar* const varp = VN_CAST(subnodep, Var)) {
-                if (varp->isFuncReturn()) emitVarDecl(varp);
-                // Bind the closure argument to the closure passed (see cFuncArgs)
-                if (const AstStructDType* const dtypep = closureDTypep(varp)) {
-                    const std::string type = EmitCUtil::prefixNameProtect(dtypep);
-                    puts(type + "& " + varp->nameProtect() + " = *static_cast<" + type + "*>("
-                         + varp->nameProtect() + "p);\n");
-                }
+        for (AstVar* const varp : nodep->argspList()) {
+            if (varp->isFuncReturn()) emitVarDecl(varp);
+            // Bind the closure argument to the closure passed (see cFuncArgs)
+            if (const AstStructDType* const dtypep = closureDTypep(varp)) {
+                const std::string type = EmitCUtil::prefixNameProtect(dtypep);
+                puts(type + "& " + varp->nameProtect() + " = *static_cast<" + type + "*>("
+                     + varp->nameProtect() + "p);\n");
             }
         }
 
