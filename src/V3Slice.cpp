@@ -235,6 +235,24 @@ class SliceVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_assignp || m_okConsArray, nodep,
                     "Array initialization should have been removed earlier");
     }
+    void visit(AstArraySel* nodep) override {
+        {
+            // An element may be selected from an array value, e.g. from a cast
+            VL_RESTORER(m_okConsArray);
+            m_okConsArray = true;
+            iterateAndNextNull(nodep->fromp());
+        }
+        iterateAndNextNull(nodep->bitp());
+    }
+    // An array value, e.g. from a cast, may be converted whole, e.g. in a stream
+    void iterateConverted(AstNodeExpr* nodep) {
+        VL_RESTORER(m_okConsArray);
+        m_okConsArray = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstCvtArrayToArray* nodep) override { iterateConverted(nodep); }
+    void visit(AstCvtArrayToPacked* nodep) override { iterateConverted(nodep); }
+    void visit(AstCvtUnpackToQueue* nodep) override { iterateConverted(nodep); }
 
     template <typename T_NodeBiop>
     void expandBiOp(T_NodeBiop* biopp) {

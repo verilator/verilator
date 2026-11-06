@@ -50,6 +50,7 @@ module t;
   } struct_array_t;
 
   typedef struct {byte data[1:0];} descending_array_t;
+  typedef struct {byte data[3:1];} offset_array_t;
 
   typedef struct {byte matrix[2][3];} matrix_array_t;
 
@@ -277,6 +278,19 @@ module t;
     {>>{descending_out}} = 16'h1234;
     `checkh(descending_out.data[1], 8'h12);
     `checkh(descending_out.data[0], 8'h34);
+
+    begin
+      // An array not starting at index 0
+      offset_array_t offset;
+      offset_array_t offset_out;
+      logic [23:0] offset_bits;
+      offset = '{data: '{8'h33, 8'h22, 8'h11}};
+      offset_bits = {>>{offset}};
+      `checkh(offset_bits, 24'h332211);
+      {>>{offset_out}} = 24'h123456;
+      `checkh(offset_out.data[3], 8'h12);
+      `checkh(offset_out.data[1], 8'h56);
+    end
 
     matrix_array.matrix[0][0] = 8'h11;
     matrix_array.matrix[0][1] = 8'h22;

@@ -15,12 +15,28 @@
                               : ... note: In instance 't'
    15 |     packed_data_32 = {<<x{byte_in}};
       |                       ^~
-%Error: t/t_stream_bad.v:20:31: Streaming concatenation cannot be connected to 'inout' port (IEEE 1800-2023 11.4.14)
+%Error: t/t_stream_bad.v:16:23: Slice size cannot be zero or negative (IEEE 1800-2023 11.4.14.2)
                               : ... note: In instance 't'
-   20 |   sub_inout i_sub_inout (.io({>>{io_bus}}));
+   16 |     packed_data_32 = {<<0{byte_in}};
+      |                       ^~
+%Error: t/t_stream_bad.v:17:23: Slice size cannot be zero or negative (IEEE 1800-2023 11.4.14.2)
+                              : ... note: In instance 't'
+   17 |     packed_data_32 = {<<-1{byte_in}};
+      |                       ^~
+%Error: t/t_stream_bad.v:18:25: Value too wide for 32-bits expected in this context 33'h100000000
+                              : ... note: In instance 't'
+   18 |     packed_data_32 = {<<33'h1_0000_0000{byte_in}};
+      |                         ^~~~~~~~~~~~~~~
+%Error: t/t_stream_bad.v:18:23: Slice size cannot be zero or negative (IEEE 1800-2023 11.4.14.2)
+                              : ... note: In instance 't'
+   18 |     packed_data_32 = {<<33'h1_0000_0000{byte_in}};
+      |                       ^~
+%Error: t/t_stream_bad.v:23:31: Streaming concatenation cannot be connected to 'inout' port (IEEE 1800-2023 11.4.14)
+                              : ... note: In instance 't'
+   23 |   sub_inout i_sub_inout (.io({>>{io_bus}}));
       |                               ^~
-%Error: t/t_stream_bad.v:25:26: Streaming concatenation cannot be connected to 'ref' port (IEEE 1800-2023 11.4.14)
+%Error: t/t_stream_bad.v:28:26: Streaming concatenation cannot be connected to 'ref' port (IEEE 1800-2023 11.4.14)
                               : ... note: In instance 't'
-   25 |   sub_ref i_sub_ref (.r({>>{ref_var}}));
+   28 |   sub_ref i_sub_ref (.r({>>{ref_var}}));
       |                          ^~
 %Error: Exiting due to
