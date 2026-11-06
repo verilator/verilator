@@ -3302,7 +3302,7 @@ class WidthVisitor final : public VNVisitor {
             }
             {
                 VL_RESTORER(m_underCast);
-                m_underCast |= nodep->dtypep()->skipRefp()->isIntegralOrPacked();
+                m_underCast = nodep->dtypep()->skipRefp()->isIntegralOrPacked();
                 userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
             }
             UINFOTREE(9, nodep, "", "CastDit");
@@ -8338,6 +8338,8 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void processFTaskRefArgs(AstNodeFTaskRef* nodep) {
+        VL_RESTORER(m_underCast);
+        m_underCast = false;  // Arguments are checked independently of a cast of the result.
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
         UINFO(5, "  FTASKREF " << nodep);
@@ -8758,6 +8760,8 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWith* nodep) override {
+        VL_RESTORER(m_underCast);
+        m_underCast = false;  // The lambda is checked independently of a cast of the result.
         // Should otherwise be underneath a method call
         AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
         VL_RESTORER(m_withp);

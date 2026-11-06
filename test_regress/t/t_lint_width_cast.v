@@ -22,6 +22,10 @@ module t;
   int sum;
   bit equals_64;
 
+  function automatic int cast_argument(input int value);
+    return value;
+  endfunction
+
   initial begin
     // issue #3417
     a6 = b2 - b1;
@@ -39,6 +43,17 @@ module t;
     narrow = 5'd25;
     sum = word_t'(lhs + narrow);
     `checkh(sum, 32'd70);
+    // Explicit casts inside arguments and lambdas still suppress local warnings.
+    sum = int'(cast_argument(int'(lhs + narrow)));
+    `checkh(sum, 32'd70);
+    begin
+      logic [5:0] values[$];
+      values = '{lhs, rhs};
+      sum = int'(values.sum() with (int'(item + narrow)));
+      `checkh(sum, 32'd125);
+    end
+    sum = int'(real'(int'(lhs == narrow)));
+    `checkh(sum, 32'd0);
     sum = int'((lhs + rhs) + (lhs - narrow));
     `checkh(sum, 32'd95);
     sum = 32'((lhs + rhs) + (lhs - narrow));

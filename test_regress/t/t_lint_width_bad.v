@@ -51,8 +51,19 @@ module t;
   int cast_value = 6'd45 + 5'd25;
   typedef enum int { CAST_ENUM_VALUE = 6'd45 + 5'd25 } cast_enum_t;
 
-  // A non-integral cast does not suppress operand width warnings.
-  initial $display("%f", real'(6'd45 == 5'd25));
+  // A non-integral cast does not suppress operand width warnings, even when nested.
+  initial begin
+    $display("%f", real'(6'd45 == 5'd25));
+    $display("%0d", int'(real'(6'd45 == 5'd25)));
+    $display("%0d", 32'(real'(6'd45 == 5'd25)));
+  end
+
+  // Casting the result does not change the argument or lambda width checks.
+  initial begin
+    logic [4:0] values[$];
+    $display("%0d", int'(cast_add(7'd100, 4'd3)));
+    $display("%0d", int'(values.sum() with (item == 7'd100)));
+  end
 
   // A nested cast's type expression is checked independently of its operand.
   initial $display("%0d", int'(type(6'd45 == 5'd25)'(1'b1)));

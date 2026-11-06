@@ -4,9 +4,9 @@
       |                    ^~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:67:18: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:78:18: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
                                                 : ... note: In instance 't.p4'
-   67 |   wire [4:0] out = in;
+   78 |   wire [4:0] out = in;
       |                  ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
@@ -70,12 +70,37 @@
                                                 : ... note: In instance 't'
    51 |   int cast_value = 6'd45 + 5'd25;
       |                          ^
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:55:38: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:56:32: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
                                                 : ... note: In instance 't'
-   55 |   initial $display("%f", real'(6'd45 == 5'd25));
+   56 |     $display("%f", real'(6'd45 == 5'd25));
+      |                                ^~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:57:38: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   57 |     $display("%0d", int'(real'(6'd45 == 5'd25)));
       |                                      ^~
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:58:43: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:58:37: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
                                                 : ... note: In instance 't'
-   58 |   initial $display("%0d", int'(type(6'd45 == 5'd25)'(1'b1)));
+   58 |     $display("%0d", 32'(real'(6'd45 == 5'd25)));
+      |                                     ^~
+%Warning-REALCVT: t/t_lint_width_bad.v:58:29: Implicit conversion of real to integer
+   58 |     $display("%0d", 32'(real'(6'd45 == 5'd25)));
+      |                             ^
+                  ... For warning description see https://verilator.org/warn/REALCVT?v=latest
+                  ... Use "/* verilator lint_off REALCVT */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:64:26: Operator FUNCREF 'cast_add' expects 6 bits on the Function Argument, but Function Argument's CONST '7'h64' generates 7 bits.
+                                               : ... note: In instance 't'
+   64 |     $display("%0d", int'(cast_add(7'd100, 4'd3)));
+      |                          ^~~~~~~~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:64:26: Operator FUNCREF 'cast_add' expects 5 bits on the Function Argument, but Function Argument's CONST '4'h3' generates 4 bits.
+                                                : ... note: In instance 't'
+   64 |     $display("%0d", int'(cast_add(7'd100, 4'd3)));
+      |                          ^~~~~~~~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:65:50: Operator EQ expects 7 bits on the LHS, but LHS's LAMBDAARGREF 'item' generates 5 bits.
+                                                : ... note: In instance 't'
+   65 |     $display("%0d", int'(values.sum() with (item == 7'd100)));
+      |                                                  ^~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:69:43: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   69 |   initial $display("%0d", int'(type(6'd45 == 5'd25)'(1'b1)));
       |                                           ^~
 %Error: Exiting due to
