@@ -486,7 +486,6 @@ class TimingControlVisitor final : public VNVisitor {
     AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/ForkItem we're under
     bool m_hasProcess = false;  // True if current scope has a VlProcess handle available
     int m_forkCnt = 0;  // Number of forks inside a module
-    bool m_underJumpBlock = false;  // True if we are inside of a jump-block
     bool m_underProcedure = false;  // True if we are under an always or initial
     bool m_hasStaticZeroDelay = false;  // True if we have a static #0 delay
     std::vector<FileLine*> m_unknownDelayFlps;  // Locations of AstDelay with non-constant value
@@ -793,14 +792,14 @@ class TimingControlVisitor final : public VNVisitor {
     // `varsp` vector of vars which shall be localized.
     static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
         UASSERT(procp, "procp is nullptr");
+        // A process is not re-entered, so its vars can stay in the module
+        if (VN_IS(procp, NodeProcedure)) return;
         AstVar* newVarsp = nullptr;
         for (AstVar* const varp : varsp) {
             varp->funcLocal(true);
             newVarsp = AstNode::addNextNull(newVarsp, varp->unlinkFrBack());
         }
-        if (AstNodeProcedure* const nodeProcp = VN_CAST(procp, NodeProcedure)) {
-            nodeProcp->prependStmtsp(newVarsp);
-        } else if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {
+        if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {
             cfuncp->prependVarsp(newVarsp);
         } else if (AstForkItem* const itemp = VN_CAST(procp, ForkItem)) {
             itemp->addDeclsp(newVarsp);
@@ -864,11 +863,6 @@ class TimingControlVisitor final : public VNVisitor {
             nodep->addStmtsp(
                 new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
         }
-    }
-    void visit(AstJumpBlock* nodep) override {
-        VL_RESTORER(m_underJumpBlock);
-        m_underJumpBlock = true;
-        visit(static_cast<AstNodeStmt*>(nodep));
     }
     void visit(AstAlways* nodep) override {
         VL_RESTORER(m_procp);
@@ -1036,7 +1030,8 @@ class TimingControlVisitor final : public VNVisitor {
         if (needDynamicTrigger(nodep->sentreep())) {
             // Create the trigger variable and init it with 0
             AstVarScope* const trigvscp
-                = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType(), nodep);
+                = createTemp(flp, m_dynTrigNames.get(nodep), nodep->findBitDType());
+            localizeVars(m_procp, {trigvscp->varp()});
             auto* const initp = new AstAssign{flp, new AstVarRef{flp, trigvscp, VAccess::WRITE},
                                               new AstConst{flp, AstConst::BitFalse{}}};
             // Await the eval step with the dynamic trigger scheduler. First, create the method
@@ -1141,18 +1136,15 @@ class TimingControlVisitor final : public VNVisitor {
         }
         // The timing control, which is put in a fork for an NBA
         AstNode* const timingp = controlp;
-        // Insert new vars before the timing control if we're in a function; in a process we can't
-        // do that, as after V3Begin only modules and functions declare variables. These
-        // intra-assignment vars will later be passed to forked processes by value.
-        AstNode* insertBeforep = m_underProcedure ? nullptr : controlp;
+        // The new vars are locals if we're in a function.
+        // These intra-assignment vars will later be passed to forked processes by value.
+        const bool localVars = !m_underProcedure;
         // Special case for NBA
         if (inAssignDly) {
             // Put it in a fork so it doesn't block
             // Could already be the only thing directly under a fork, reuse that if possible
             AstFork* forkp = !nodep->nextp() ? VN_CAST(nodep->firstAbovep(), Fork) : nullptr;
             if (!forkp) forkp = new AstFork{flp, VJoinType::JOIN_NONE};
-            // In a function, the vars go before the fork, which gets them by value
-            if (insertBeforep) insertBeforep = forkp;
             controlp->replaceWith(forkp);
             // The Begin from V3AssertPre is not needed to group the statements in the fork item
             AstNode* stmtsp = controlp;
@@ -1166,20 +1158,20 @@ class TimingControlVisitor final : public VNVisitor {
             controlp = forkp;
         }
         UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
-        // Move `insertBeforep` into `AstCLocalScope` if necessary to avoid jumping over
-        // a variable initialization that would be inserted before `insertBeforep`. All
-        // access to this variable should be contained within returned `AstCLocalScope`.
-        if (m_underJumpBlock) addCLocalScope(flp, insertBeforep);
         // Function for replacing values with intermediate variables
-        const auto replaceWithIntermediate = [&](AstNodeExpr* const valuep,
-                                                 const std::string& name) {
-            AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep(), insertBeforep);
-            // A pending update keeps its own value, even if its process schedules more
-            if (inAssignDly && !insertBeforep) newvscp->forkByValue(true);
-            valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
-            controlp->addHereThisAsNext(
-                new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
-        };
+        const auto replaceWithIntermediate
+            = [&](AstNodeExpr* const valuep, const std::string& name) {
+                  AstVarScope* const newvscp = createTemp(flp, name, valuep->dtypep());
+                  if (localVars) {
+                      localizeVars(m_procp, {newvscp->varp()});
+                  } else if (inAssignDly) {
+                      // A pending update keeps its own value, even if its process schedules more
+                      newvscp->forkByValue(true);
+                  }
+                  valuep->replaceWith(new AstVarRef{flp, newvscp, VAccess::READ});
+                  controlp->addHereThisAsNext(
+                      new AstAssign{flp, new AstVarRef{flp, newvscp, VAccess::WRITE}, valuep});
+              };
         // NBAs with delays evaluate the indices selecting the target now (IEEE 1800-2023 10.4.2),
         // in order, each as a whole, also the selects and function calls in it. So follow the
         // selects of the target up from the variable, not into their indices. As an example, this
@@ -1280,9 +1272,9 @@ class TimingControlVisitor final : public VNVisitor {
         // Increment generation and copy it to a local
         AstVarScope* const generationVarp
             = m_assignWGens.make(flp, m_scopep, alwaysp->findUInt64DType());
-        AstVarScope* const genLocalVarp
-            = createTemp(flp, generationVarp->varp()->name() + "__local",
-                         alwaysp->findUInt64DType(), preAssignp);
+        AstVarScope* const genLocalVarp = createTemp(
+            flp, generationVarp->varp()->name() + "__local", alwaysp->findUInt64DType());
+        localizeVars(itemp, {genLocalVarp->varp()});
         preAssignp->addHereThisAsNext(
             new AstAssign{flp, new AstVarRef{flp, generationVarp, VAccess::WRITE},
                           new AstAdd{flp, new AstVarRef{flp, generationVarp, VAccess::READ},

@@ -15,6 +15,6 @@ test.compile(verilator_flags2=["--binary --output-split-cfuncs 100 --stats"])
 
 test.execute()
 
-test.file_grep(test.stats, r'Outline, functions created\s+(\d+)', 22)
+test.file_grep(test.stats, r'Outline, functions created\s+(\d+)', 23)
 
 test.passes()
