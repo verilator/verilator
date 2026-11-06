@@ -2919,7 +2919,7 @@ class AssertNfaVisitor final : public VNVisitor {
     V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable names
     V3UniqueNames m_propTempNames{"__VnfaSampled"};  // Hoisted $sampled(propp) temps
     V3UniqueNames m_failCountNames{"__VnfaRemainingFailCount"};  // Fail replay counter names
-    std::set<const AstProperty*> m_inliningProps;  // Recursion guard for inlineNamedProperty
+    std::set<const AstProperty*> m_inliningProps;  // Recursion guard for clonePropertyBody
     bool m_inlinePropRefs = false;  // Inline property instances in visit(AstFuncRef)
 
     template <typename T_Node>
@@ -3423,17 +3423,16 @@ class AssertNfaVisitor final : public VNVisitor {
     // Returns the PropSpec to lower, or nullptr when fully handled here.
     AstPropSpec* prepareAssertionProp(AstNodeCoverOrAssert* assertp) {
         if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
-            if (AstFuncRef* const funcrefp = VN_CAST(specp->propp(), FuncRef)) {
-                if (const AstProperty* const propyp = VN_CAST(funcrefp->taskp(), Property)) {
-                    inlineNamedProperty(specp, funcrefp, propyp);
-                }
+            AstFuncRef* const funcrefp = VN_CAST(specp->propp(), FuncRef);
+            const AstProperty* const propyp
+                = funcrefp ? VN_CAST(funcrefp->taskp(), Property) : nullptr;
+            if (propyp) {
+                inlineNamedProperty(specp, funcrefp, propyp);
+            } else {
+                VL_RESTORER(m_inlinePropRefs);
+                m_inlinePropRefs = true;
+                iterate(specp->propp());
             }
-        }
-
-        if (AstPropSpec* const specp = VN_CAST(assertp->propp(), PropSpec)) {
-            VL_RESTORER(m_inlinePropRefs);
-            m_inlinePropRefs = true;
-            iterate(specp->propp());
         }
         inlineAllSequenceRefs(assertp->propp());
 

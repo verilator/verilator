@@ -41,6 +41,8 @@ module t (
   int count_fail17 = 0;
   int count_fail18 = 0;
   int count_fail19 = 0;
+  int count_fail20 = 0;
+  int count_fail21 = 0;
   int count_cover_nested = 0;
   int count_cover_inline = 0;
 
@@ -66,6 +68,19 @@ module t (
 
   property q_rep;
     b [* 2];
+  endproperty
+
+  // Body is a bare instance of another property
+  property p_alias;
+    q_seq;
+  endproperty
+
+  property p_dis;
+    @(posedge clk) disable iff (cyc < 2) a |-> b ##1 c;
+  endproperty
+
+  property p_dis_alias;
+    p_dis;
   endproperty
 
   property p_loc;
@@ -133,6 +148,13 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 2) (b ##1 c) and a)
   else count_fail19 <= count_fail19 + 1;
 
+  // Test 20/21: alias instances, nested and with the target's clock and disable iff,
+  // compared with test 15
+  assert property (@(posedge clk) disable iff (cyc < 2) a |-> p_alias)
+  else count_fail20 <= count_fail20 + 1;
+  assert property (p_dis_alias)
+  else count_fail21 <= count_fail21 + 1;
+
   // Cover: nested instance vs inline body, counted only with --coverage
   cover property (@(posedge clk) disable iff (cyc < 2) a |-> p_b)
     count_cover_nested <= count_cover_nested + 1;
@@ -171,6 +193,8 @@ module t (
       `checkd(count_fail17, 27);
       `checkd(count_fail18, 23);
       `checkd(count_fail19, 23);
+      `checkd(count_fail20, 27);
+      `checkd(count_fail21, 27);
 `ifdef TEST_COVERAGE
       `checkd(count_cover_nested, 28);
       `checkd(count_cover_inline, 28);
