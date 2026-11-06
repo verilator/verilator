@@ -118,12 +118,14 @@ class CastVisitor final : public VNVisitor {
     // VISITORS
     void visit(AstNodeUniop* nodep) override {
         iterateChildren(nodep);
-        nodep->user1(nodep->lhsp()->user1());
+        // A 1-bit result might be C++ 'bool', which promotes to signed 'int', so size is unknown
+        nodep->user1(nodep->widthMin() != 1 && nodep->lhsp()->user1());
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
     }
     void visit(AstNodeBiop* nodep) override {
         iterateChildren(nodep);
-        nodep->user1(nodep->lhsp()->user1() | nodep->rhsp()->user1());
+        // A 1-bit result might be C++ 'bool', which promotes to signed 'int', so size is unknown
+        nodep->user1(nodep->widthMin() != 1 && (nodep->lhsp()->user1() | nodep->rhsp()->user1()));
         if (nodep->sizeMattersLhs()) ensureCast(nodep->lhsp());
         if (nodep->sizeMattersRhs()) ensureCast(nodep->rhsp());
     }
@@ -151,6 +153,8 @@ class CastVisitor final : public VNVisitor {
             }
         }
         visit(static_cast<AstNodeTriop*>(nodep));
+        // C++ '?:' takes the type of its branches, not of the condition
+        nodep->user1(nodep->thenp()->user1() | nodep->elsep()->user1());
     }
     void visit(AstNodeTriop* nodep) override {
         iterateChildren(nodep);

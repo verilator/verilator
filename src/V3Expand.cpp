@@ -539,7 +539,9 @@ class ExpandVisitor final : public VNVisitor {
             } else {  // Long
                 UASSERT_OBJ(!(lhsp->isQuad() || lhsp->isWide()), nodep,
                             "extending larger thing into smaller?");
-                lhsp->dtypeFrom(nodep);  // Just mark it, else nop
+                // Just mark it, else nop. Keep widthMin, which V3Cast relies on
+                lhsp->dtypeChgWidthSigned(nodep->width(), lhsp->widthMin(),
+                                          nodep->dtypep()->numeric());
             }
             VL_DO_DANGLING(replaceWithDelete(nodep, newp), nodep);
         }
