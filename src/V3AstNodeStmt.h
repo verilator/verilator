@@ -563,6 +563,25 @@ public:
     void declp(AstNodeCoverDecl* nodep) { m_declp = nodep; }
     bool isDuplicate() const { return m_isDuplicate; }
 };
+class AstCoverInsert final : public AstNodeStmt {
+    // Register coverage point with the coverage database
+    // @astgen ptr := m_declp : AstNodeCoverDecl  // Declaration
+public:
+    AstCoverInsert(FileLine* fl, AstNodeCoverDecl* declp)
+        : ASTGEN_SUPER_CoverInsert(fl)
+        , m_declp{declp} {}
+    ASTGEN_MEMBERS_AstCoverInsert;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        return declp() == VN_DBG_AS(samep, CoverInsert)->declp();
+    }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isOutputter() override { return true; }
+    bool isPure() override { return false; }
+    AstNodeCoverDecl* declp() const { return m_declp; }
+};
 class AstDeassign final : public AstNodeStmt {
     // Procedural 'deassign' statement
     // @astgen op1 := lhsp : AstNodeExpr

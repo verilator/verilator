@@ -220,6 +220,39 @@ protected:
         putsQuoted(VIdProtect::protectWordsIf(nodep->fsmTag(), nodep->protect()));
         puts(");\n");
     }
+    void emitCoverToggleDeclInsert(AstCoverToggleDecl* nodep) {
+        putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
+        puts(cvtToStr(nodep->range().right()));
+        puts(", ");
+        puts(cvtToStr(nodep->range().left()));
+        puts(", ");
+        puts(cvtToStr(nodep->range().ranged()));
+        puts(", ");
+        putCoverageArray(nodep);
+        puts(" + ");
+        puts(cvtToStr(coverageBinNum(nodep)));
+        // first controls whether duplicate module instances are collapsed in
+        // the default coverage view. The following flag says whether countp
+        // points to an object-local counter; only those counters must be kept
+        // real for later instances so forcePerInstance can split hierarchy.
+        puts(", first");  // Enable, passed from __Vconfigure parameter
+        puts(", ");
+        puts(coverageUsesLocalCounter(nodep) ? "true" : "false");
+        puts(", ");
+        putsQuoted(protect(nodep->fileline()->filename()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->lineno()));
+        puts(", ");
+        puts(cvtToStr(nodep->fileline()->firstColumn()));
+        puts(", ");
+        putsQuoted((!nodep->hier().empty() ? "." : "")
+                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
+        puts(", ");
+        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
+        puts(");\n");
+    }
 
 public:
     // METHODS
@@ -1000,47 +1033,18 @@ public:
         }
         iterateChildrenConst(nodep);
     }
-    void visit(AstCoverOtherDecl* nodep) override {
-        emitCoverOtherDeclInsert(nodep);
-        if (coverageUsesLocalCounter(nodep)) {
-            // Some task bodies are cloned into a caller module where the
-            // original instance-local counter is not addressable. Those clones
-            // fall back to the global bin number, so register that slot too.
-            emitCoverOtherDeclInsert(nodep, true);
+    void visit(AstCoverInsert* nodep) override {
+        if (AstCoverOtherDecl* const declp = VN_CAST(nodep->declp(), CoverOtherDecl)) {
+            emitCoverOtherDeclInsert(declp);
+            if (coverageUsesLocalCounter(declp)) {
+                // Some task bodies are cloned into a caller module where the
+                // original instance-local counter is not addressable. Those clones
+                // fall back to the global bin number, so register that slot too.
+                emitCoverOtherDeclInsert(declp, true);
+            }
+        } else {
+            emitCoverToggleDeclInsert(VN_AS(nodep->declp(), CoverToggleDecl));
         }
-    }
-    void visit(AstCoverToggleDecl* nodep) override {
-        putns(nodep, "vlSelf->__vlCoverToggleInsert(");  // As Declared in emitCoverageDecl
-        puts(cvtToStr(nodep->range().right()));
-        puts(", ");
-        puts(cvtToStr(nodep->range().left()));
-        puts(", ");
-        puts(cvtToStr(nodep->range().ranged()));
-        puts(", ");
-        putCoverageArray(nodep);
-        puts(" + ");
-        puts(cvtToStr(coverageBinNum(nodep)));
-        // first controls whether duplicate module instances are collapsed in
-        // the default coverage view. The following flag says whether countp
-        // points to an object-local counter; only those counters must be kept
-        // real for later instances so forcePerInstance can split hierarchy.
-        puts(", first");  // Enable, passed from __Vconfigure parameter
-        puts(", ");
-        puts(coverageUsesLocalCounter(nodep) ? "true" : "false");
-        puts(", ");
-        putsQuoted(protect(nodep->fileline()->filename()));
-        puts(", ");
-        puts(cvtToStr(nodep->fileline()->lineno()));
-        puts(", ");
-        puts(cvtToStr(nodep->fileline()->firstColumn()));
-        puts(", ");
-        putsQuoted((!nodep->hier().empty() ? "." : "")
-                   + VIdProtect::protectWordsIf(nodep->hier(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->page(), nodep->protect()));
-        puts(", ");
-        putsQuoted(VIdProtect::protectWordsIf(nodep->comment(), nodep->protect()));
-        puts(");\n");
     }
     void visit(AstCoverInc* nodep) override {
         if (VN_IS(nodep->declp(), CoverOtherDecl)) {

@@ -1673,6 +1673,16 @@ void AstCoverInc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isDuplicate);
     dumpJsonGen(str);
 }
+void AstCoverInsert::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " -> ";
+    if (declp()) {
+        declp()->dump(str);
+    } else {
+        str << "%E:UNLINKED";
+    }
+}
+void AstCoverInsert::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstCoverOption::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << m_optType.ascii();

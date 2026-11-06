@@ -178,7 +178,7 @@ class CCtorsVisitor final : public VNVisitor {
                     // ... else we don't have a static VlSym to be able to coverage insert
                     UASSERT_OBJ(!VN_IS(nodep, Class), coverp,
                                 "NodeCoverDecl should be in class's package, not class itself");
-                    configure_coverage.add(coverp->unlinkFrBack());
+                    configure_coverage.add(new AstCoverInsert{coverp->fileline(), coverp});
                 }
             }
         }
