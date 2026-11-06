@@ -112,8 +112,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     std::vector<ScopeModPair> m_scopes;  // Every scope by module
     std::vector<AstCFunc*> m_dpis;  // DPI functions
     std::vector<ModVarPair> m_modVars;  // Each public {mod,var}
-    // Each force read signal by {mod,name}
-    std::map<std::pair<const AstNodeModule*, std::string>, const AstVar*> m_forceRdVars;
     std::map<const std::string, ScopeFuncData> m_scopeFuncs;  // Each {scope,dpi-export-func}
     std::map<const std::string, ScopeVarData> m_scopeVars;  // Each {scope,public-var}
     ScopeNames m_scopeNames;  // Each unique AstScopeName. Dpi scopes added later
@@ -645,9 +643,9 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += varp->vlEnumDir();  // VLVD_IN etc
         stmt += ", &(";
         // The read signal is a separate member, so its path and protected name are its own
-        const auto rdIt = m_forceRdVars.find({svd.m_modp, varp->name() + "__VforceRd"});
-        UASSERT_OBJ(rdIt != m_forceRdVars.end(), varp, "Forceable signal without read signal");
-        stmt += "vlSymsp->" + instName(scopep) + "." + varName(rdIt->second);
+        const AstVar* const rdVarp = varp->forceRdVarp();
+        UASSERT_OBJ(rdVarp, varp, "Forceable signal without read signal");
+        stmt += "vlSymsp->" + instName(scopep) + "." + varName(rdVarp);
         stmt += "), \"" + V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty))
                 + "__VforceRd" + '"';
         stmt += ", {";
@@ -1054,9 +1052,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         if ((nodep->isSigUserRdPublic() || nodep->isSigUserRWPublic()) && !m_cfuncp
             && !nodep->vlEnumType().empty()) {
             m_modVars.emplace_back(m_modp, nodep);
-        }
-        if (VString::endsWith(nodep->name(), "__VforceRd")) {
-            m_forceRdVars.emplace(std::make_pair(m_modp, nodep->name()), nodep);
         }
     }
     void visit(AstNodeCoverDecl* nodep) override {

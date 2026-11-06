@@ -45,7 +45,7 @@ EmitCParentModule::EmitCParentModule() {
 //######################################################################
 // EmitCMemberGroups implementation
 
-EmitCMemberGroups::EmitCMemberGroups(size_t nMembers)
+EmitCMemberGroups::EmitCMemberGroups(const size_t nMembers)
     : m_lim{static_cast<size_t>(v3Global.opt.compLimitMembers())} {
     if (!m_lim) return;
     if (nMembers > (m_lim * m_lim * m_lim)) {
@@ -60,7 +60,7 @@ EmitCMemberGroups::EmitCMemberGroups(size_t nMembers)
     }
 }
 
-std::string EmitCMemberGroups::namedPath(size_t idx) const {
+std::string EmitCMemberGroups::namedPath(const size_t idx) const {
     std::string path;
     if (m_l3s != 1) path += "__Vg" + std::to_string(idx / (m_lim * m_l2s * m_l1s)) + ".";
     if (m_l2s != 1) path += "__Vg" + std::to_string(idx / (m_lim * m_l1s) % m_l2s) + ".";

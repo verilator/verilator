@@ -15,6 +15,13 @@ test.scenarios('vlt')
 
 LIMIT = 3
 
+# Disabled and one-member grouping also exercise split construction/destruction paths.
+for limit in [0, 1]:
+    test.compile(verilator_flags2=[
+        "--comp-limit-members", str(limit), "--vpi", "--output-split-cfuncs", "16"
+    ])
+    test.execute()
+
 test.compile(verilator_flags2=["--comp-limit-members", str(LIMIT), "--vpi"])
 
 test.execute()
@@ -53,5 +60,8 @@ test.file_grep_count(test.obj_dir + "/" + test.vm_prefix + "_sub__N14.h", r'\} _
 test.file_grep_count(test.obj_dir + "/" + test.vm_prefix + "_sub__N5.h", r'\} __Vg\d+;', 2)
 # 3 members are not nested
 test.file_grep_count(test.obj_dir + "/" + test.vm_prefix + "_sub__N3.h", r'\} __Vg\d+;', 0)
+# Exact square and cube boundaries use one and two levels, respectively.
+test.file_grep_count(test.obj_dir + "/" + test.vm_prefix + "_sub__N9.h", r'\} __Vg\d+;', 3)
+test.file_grep_count(test.obj_dir + "/" + test.vm_prefix + "_sub__N1b.h", r'\} __Vg\d+;', 12)
 
 test.passes()

@@ -321,7 +321,7 @@ module t (/*AUTOARG*/
 
   int cyc;
   int fo;
-  int sum;
+  int sum /*verilator forceable*/;
   real r;
   string str;
   int mod_val;

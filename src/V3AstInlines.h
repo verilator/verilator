@@ -167,7 +167,8 @@ bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return m_name == asamep->m_name && varType() == asamep->varType()
            && covergroupRefMember() == asamep->covergroupRefMember()
-           && libInoutId() == asamep->libInoutId() && libInoutEnable() == asamep->libInoutEnable();
+           && forceRdVarp() == asamep->forceRdVarp() && libInoutId() == asamep->libInoutId()
+           && libInoutEnable() == asamep->libInoutEnable();
 }
 
 AstMatchMasked::AstMatchMasked(FileLine* fl, AstNodeExpr* lhsp, AstVarRef* matchp)

@@ -4612,6 +4612,7 @@ void AstVar::dump(std::ostream& str) const {
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
     if (isStdRandomizeArg()) str << " [STDRANDARG]";
+    if (forceRdVarp()) str << " forceRdVarp=" << cvtToHex(forceRdVarp());
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
 }

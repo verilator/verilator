@@ -134,13 +134,14 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
             // constructor/destructor calls for them. They are managed explicitly in ctor/dtor.
             // While 'union { singleVar; }' for each variable would be simpler, it blows up
             // clang's compile time when using pre-compiled headers, joy.
+            UASSERT_OBJ(modp->user3() == nNont, modp, "Nontrivial member count mismatch");
             puts("union {\nstruct {\n");
             emitGroupedVarDecls(nontp, nNont, true);
             puts("} __Vnontrivs;\n};\n");
         }
     }
     // Emit 'n' variables starting at 'firstp', nested in structs, named '__Vg<index>' if 'named'
-    void emitGroupedVarDecls(const AstVar* firstp, size_t n, bool named) {
+    void emitGroupedVarDecls(const AstVar* const firstp, const size_t n, const bool named) {
         // GCC does not allow non-trivially constructible members in anonymous structs, so
         // these need named structs, and EmitCBaseVisitorConst::varName gives their path
         const EmitCMemberGroups groups{n};
@@ -150,7 +151,7 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
                                  : "// Anonymous structures to workaround compiler "
                                    "member-count bugs\n");
         }
-        const auto closeStruct = [&](size_t count, size_t index) {
+        const auto closeStruct = [&](const size_t count, const size_t index) {
             if (count == 1) return;
             puts(named ? "} __Vg" + std::to_string(index) + ";\n" : "};\n");
         };
@@ -164,6 +165,8 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
                 for (size_t l1 = 0; l1 < groups.l1s() && nEmitted < n; ++l1) {
                     if (groups.l1s() != 1) puts("struct {\n");
                     for (size_t l0 = 0; l0 < lim && nEmitted < n; ++l0, ++nEmitted) {
+                        UASSERT_OBJ(!named || varp->user3() == nEmitted, varp,
+                                    "Nontrivial member index mismatch");
                         emitVarDecl(varp);
                         varp = VN_CAST(varp->nextp(), Var);
                     }

@@ -36,6 +36,9 @@ module t (
   sub #(.N(20)) u_20 (.*);
   sub #(.N(5)) u_5 (.*);
   sub #(.N(3)) u_3 (.*);
+  // Exact square and cube boundaries of the member limit.
+  sub #(.N(9)) u_9 (.*);
+  sub #(.N(27)) u_27 (.*);
 
   for (genvar i = 0; i < 40; ++i) begin : gen
     string s;

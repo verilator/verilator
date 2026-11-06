@@ -122,7 +122,7 @@ class EmitCMemberGroups final {
     size_t m_l1s = 1;  // Number of innermost structs in each middle struct, likewise
 
 public:
-    explicit EmitCMemberGroups(size_t nMembers);
+    explicit EmitCMemberGroups(const size_t nMembers);
     size_t lim() const { return m_lim; }
     size_t l3s() const { return m_l3s; }
     size_t l2s() const { return m_l2s; }
