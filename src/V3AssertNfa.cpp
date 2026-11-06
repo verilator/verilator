@@ -1968,6 +1968,17 @@ class SvaNfaLowering final {
             clearp));
     }
 
+    // Boolean edge contribution to a state register or packed ring: src && cond && !disable
+    static AstNodeExpr* gatedEdgeSigp(LowerCtx& c, const SvaTransEdge& tedger) {
+        const SvaStateVertex* const fromVtxp = tedger.fromVtxp();
+        UASSERT_OBJ(fromVtxp->datap()->stateSigp, fromVtxp, "Edge source missing stateSig");
+        AstNodeExpr* const srcSigp
+            = andCond(c.flp, fromVtxp->datap()->stateSigp->cloneTreePure(false), tedger.m_condp);
+        if (!c.disableExprp) return srcSigp;
+        return new AstLogAnd{c.flp, srcSigp,
+                             new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)}};
+    }
+
     // Phase 2/2b/2c: Emit NBA register updates and in-place delay-ring writes.
     // Phase 2: State register NBA always block. Each clocked-edge target
     // latches the OR of its incoming contributions.
@@ -1983,19 +1994,7 @@ class SvaNfaLowering final {
             for (const V3GraphEdge& edger : vtxp->inEdges()) {
                 const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
                 if (!tedger.m_consumesCycle) continue;
-                const SvaStateVertex* const fromVtxp = tedger.fromVtxp();
-                UASSERT_OBJ(fromVtxp->datap()->stateSigp, fromVtxp,
-                            "Clocked-edge source missing stateSig");
-
-                AstNodeExpr* srcSigp = fromVtxp->datap()->stateSigp->cloneTreePure(false);
-                srcSigp = andCond(c.flp, srcSigp, tedger.m_condp);
-
-                if (c.disableExprp) {
-                    AstNodeExpr* const notDisp
-                        = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
-                    srcSigp = new AstLogAnd{c.flp, srcSigp, notDisp};
-                }
-                nextStatep = orExprs(c.flp, nextStatep, srcSigp);
+                nextStatep = orExprs(c.flp, nextStatep, gatedEdgeSigp(c, tedger));
             }
 
             UASSERT_OBJ(nextStatep, vtxp,
@@ -2017,7 +2016,7 @@ class SvaNfaLowering final {
     }
 
     // Phase 2b: In-place ring storage and registered ring metadata.
-    void emitDelayRingUpdates(LowerCtx& c, const bool countMatches) {
+    void emitDelayRingUpdates(LowerCtx& c) {
         const bool asyncDisable = isAsyncDisable(c.disableExprp);
         for (V3GraphVertex& vtxr : c.graph.m_graph.vertices()) {
             SvaStateVertex* const vtxp = static_cast<SvaStateVertex*>(&vtxr);
@@ -2026,7 +2025,9 @@ class SvaNfaLowering final {
             AstVar* const liveCountVarp = vtxp->datap()->delayRingLiveCountVarp;
             AstVar* const wrappedp = vtxp->datap()->delayRingWrappedVarp;
             const uint32_t size = static_cast<uint32_t>(vtxp->m_delayRingSize);
+            const bool storesCounts = vtxp->datap()->delayRingCounts;
 
+            // Packed rings store whether any thread arrives, count rings store how many.
             AstNodeExpr* incomingp = nullptr;
             AstNodeExpr* incomingOverflowp = nullptr;
             for (const V3GraphEdge& edger : vtxp->inEdges()) {
@@ -2034,60 +2035,44 @@ class SvaNfaLowering final {
                 const SvaTransEdge& tedger = static_cast<const SvaTransEdge&>(edger);
                 UASSERT_OBJ(tedger.m_consumesCycle == vtxp->m_isFixedDelayRing, vtxp,
                             "Delay-ring incoming edge kind mismatch");
+                if (!storesCounts) {
+                    incomingp = orExprs(c.flp, incomingp, gatedEdgeSigp(c, tedger));
+                    continue;
+                }
                 const SvaStateVertex* const fromVtxp = tedger.fromVtxp();
-                UASSERT_OBJ(fromVtxp->datap()->stateSigp, fromVtxp,
-                            "Delay-ring incoming source missing stateSig");
-                UASSERT_OBJ(!countMatches || fromVtxp->datap()->stateCountSigp, fromVtxp,
+                UASSERT_OBJ(fromVtxp->datap()->stateCountSigp, fromVtxp,
                             "Delay-ring incoming source missing stateCountSig");
                 // IEEE 1800-2023 16.14.1/16.14.3: assertion alternatives belong to one
                 // evaluation; only cover sequence counts each end-of-match.
-                AstNodeExpr* contribp
-                    = countMatches
-                          ? fromVtxp->datap()->stateCountSigp->cloneTreePure(false)
-                          : new AstExtend{c.flp,
-                                          fromVtxp->datap()->stateSigp->cloneTreePure(false),
-                                          m_u32DTypep->width()};
+                AstNodeExpr* contribp = fromVtxp->datap()->stateCountSigp->cloneTreePure(false);
                 AstNodeExpr* contribOverflowp
-                    = countMatches && fromVtxp->datap()->stateCountOverflowSigp
+                    = fromVtxp->datap()->stateCountOverflowSigp
                           ? fromVtxp->datap()->stateCountOverflowSigp->cloneTreePure(false)
                           : nullptr;
                 if (tedger.m_condp) {
-                    AstNodeExpr* const enablep = tedger.m_condp->cloneTreePure(false);
-                    contribp = countMatches
-                                   ? gateCheckedCountp(c.flp, contribp, contribOverflowp, enablep)
-                                   : addCountp(c.flp, nullptr, contribp, enablep);
+                    contribp = gateCheckedCountp(c.flp, contribp, contribOverflowp,
+                                                 tedger.m_condp->cloneTreePure(false));
                 }
                 if (c.disableExprp) {
-                    AstNodeExpr* const notDisp
-                        = new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)};
-                    contribp = countMatches
-                                   ? gateCheckedCountp(c.flp, contribp, contribOverflowp, notDisp)
-                                   : addCountp(c.flp, nullptr, contribp, notDisp);
+                    contribp = gateCheckedCountp(
+                        c.flp, contribp, contribOverflowp,
+                        new AstLogNot{c.flp, c.disableExprp->cloneTreePure(false)});
                 }
-                incomingp = countMatches ? addCheckedCountp(c.flp, incomingp, contribp,
-                                                            incomingOverflowp, contribOverflowp)
-                                         : addCountp(c.flp, incomingp, contribp);
+                incomingp = addCheckedCountp(c.flp, incomingp, contribp, incomingOverflowp,
+                                             contribOverflowp);
             }
             UASSERT_OBJ(incomingp, vtxp, "Delay ring has no incoming edge");
-            const bool storesCounts = vtxp->datap()->delayRingCounts;
             AstNodeExpr* const incomingCountp
-                = storesCounts
-                      ? incomingp->cloneTreePure(false)
-                      : new AstExtend{c.flp,
-                                      new AstNeq{c.flp, incomingp->cloneTreePure(false),
-                                                 newTypedConstp(c.flp, incomingp->dtypep(), 0)},
-                                      m_u32DTypep->width()};
-            AstNodeExpr* const storedIncomingp
-                = storesCounts ? incomingp
-                               : new AstNeq{c.flp, incomingp,
-                                            newTypedConstp(c.flp, incomingp->dtypep(), 0)};
+                = storesCounts ? incomingp->cloneTreePure(false)
+                               : new AstExtend{c.flp, incomingp->cloneTreePure(false),
+                                               m_u32DTypep->width()};
             // Only this block accesses the storage. Other processes read the cached head, so
             // the ring can be updated in place without an NBA shadow copy.
             AstAssign* const writeIncomingp = new AstAssign{
                 c.flp,
                 delayRingSlot(c.flp, vtxp, new AstVarRef{c.flp, idxp, VAccess::READ},
                               VAccess::WRITE),
-                storedIncomingp};
+                incomingp};
             AstNodeStmt* updateBodyp = writeIncomingp;
             // live_count <= live_count - outgoing_count + incoming_count;
             AstNodeExpr* const outgoingp = delayRingOutputCount(c.flp, vtxp);
@@ -2868,7 +2853,7 @@ public:
 
         // Phase 2/2b/2c: Emit NBA register updates and in-place delay-ring writes.
         emitStateRegisterNba(c);
-        emitDelayRingUpdates(c, countMatches);
+        emitDelayRingUpdates(c);
         emitAndCombinerDoneLatchNba(c);
         emitKillAckNba(c);
 
