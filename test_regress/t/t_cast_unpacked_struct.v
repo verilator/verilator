@@ -450,7 +450,7 @@ module t (
   end
 
 `ifdef VERILATOR
-  // As in other streams, a real streams as its 64 bits, an extension of the standard
+  // As in an assigned stream, a real member streams as its 64 bits, an extension of the standard
   typedef struct {
     real r;
     logic [6:0] t;

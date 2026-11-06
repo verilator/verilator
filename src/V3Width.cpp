@@ -3320,8 +3320,9 @@ class WidthVisitor final : public VNVisitor {
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
             AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
             const auto castable = AstNode::computeCastable(toDtp, fromDtp, nodep->fromp());
-            // An equivalent array is assignment compatible, so cast as assigned (IEEE 1800-2023
-            // 6.24.1), but otherwise casting an unpacked array or struct is a bit-stream cast
+            // An equivalent array is assignment compatible, so cast as assigned
+            // (IEEE 1800-2023 6.24.1), but otherwise casting an unpacked array or struct is a
+            // bit-stream cast
             const bool assignable = castable.isSameish()
                                     || (castable.isCompatible() && VN_IS(toDtp, UnpackArrayDType));
             const bool bitstream
@@ -3359,9 +3360,17 @@ class WidthVisitor final : public VNVisitor {
                                << ", but an associative array or class is illegal in the"
                                   " destination type (IEEE 1800-2023 6.24.3)");
                 bad = true;
-            } else if (bitstream ? !toDtp->isStreamableFixedAggregate()
-                                       || !fromDtp->isStreamableFixedAggregate()
-                                 : castable == VCastable::UNSUPPORTED) {
+            } else if (bitstream
+                       && !(toDtp->isStreamableFixedAggregate()
+                            && fromDtp->isStreamableFixedAggregate())) {
+                nodep->v3warn(E_UNSUPPORTED,
+                              "Unsupported: bit-stream cast to "
+                                  << toDtp->prettyDTypeNameQ() << " from "
+                                  << fromDtp->prettyDTypeNameQ()
+                                  << ", involving a class object, string, or dynamically sized"
+                                     " array");
+                bad = true;
+            } else if (!bitstream && castable == VCastable::UNSUPPORTED) {
                 nodep->v3warn(E_UNSUPPORTED, "Unsupported: static cast to "
                                                  << toDtp->prettyDTypeNameQ() << " from "
                                                  << fromDtp->prettyDTypeNameQ());
@@ -3461,16 +3470,6 @@ class WidthVisitor final : public VNVisitor {
                 }
             } else if (VN_IS(toDtp, QueueDType)) {
                 if (VN_IS(fromDtp, BasicDType)) {
-                    // The bits must fill whole elements (IEEE 1800-2023 6.24.3)
-                    const AstNodeDType* const elemDtp = toDtp->subDTypep()->skipRefp();
-                    if (fromDtp->isIntegralOrPacked() && elemDtp->isIntegralOrPacked()
-                        && fromDtp->width() % elemDtp->width()) {
-                        nodep->v3error("Bit-stream cast to "
-                                       << toDtp->prettyDTypeNameQ() << " of " << elemDtp->width()
-                                       << "-bit elements from " << fromDtp->prettyDTypeNameQ()
-                                       << " of " << fromDtp->width()
-                                       << " bits, but sizes must match (IEEE 1800-2023 6.24.3)");
-                    }
                     AstNodeExpr* fromp = nodep->fromp()->unlinkFrBack();
                     // A right stream does not reorder a packed value
                     if (AstStreamR* const streamp = VN_CAST(fromp, StreamR)) {
@@ -3583,9 +3582,9 @@ class WidthVisitor final : public VNVisitor {
             VL_DANGLING(underp);
         }
     }
+    // An unpacked array, struct or union, which has a fixed size
     static bool isUnpackedArrayOrUOrStruct(const AstNodeDType* dtypep) {
-        return VN_IS(dtypep, UnpackArrayDType)
-               || (VN_IS(dtypep, NodeUOrStructDType) && dtypep->isAggregateType());
+        return dtypep->isAggregateType() && !dtypep->isDynamicallySized();
     }
     // Whether a value is written, e.g. in an assignment target, also in braces or a stream, which
     // isLValue() does not look into
@@ -3673,9 +3672,6 @@ class WidthVisitor final : public VNVisitor {
     void packBitstream(AstNodeExpr* valuep, Bitstream& bits) {
         // Parts of a value may be taken separately, so evaluate it once
         if (!VN_IS(valuep, Concat) && !VN_IS(valuep, NodeStream)) valuep = newTemp(valuep, bits);
-        FileLine* const fl = valuep->fileline();
-        const AstNodeDType* const dtypep = valuep->dtypep()->skipRefp();
-        const AstStructDType* const sdtypep = VN_CAST(dtypep, StructDType);
         if (AstConcat* const concatp = VN_CAST(valuep, Concat)) {
             packBitstream(concatp->lhsp()->unlinkFrBack(), bits);
             packBitstream(concatp->rhsp()->unlinkFrBack(), bits);
@@ -3695,32 +3691,24 @@ class WidthVisitor final : public VNVisitor {
                 blockps.push_back(takeBitstream(streamBits, blockWidth));
             }
             bits.m_termps.insert(bits.m_termps.end(), blockps.rbegin(), blockps.rend());
-        } else if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            // Take an element of a constructed value, e.g. from a cast, instead of selecting it
-            AstConsArray* const consp = VN_CAST(valuep, ConsArray);
-            UASSERT_OBJ(!consp || !consp->defaultp(), consp, "Not an item for each element");
+        } else if (AstConsArray* const consp = VN_CAST(valuep, ConsArray)) {
+            // Take the items of a constructed value, e.g. from a cast, instead of selecting them
+            const AstUnpackArrayDType* const adtypep
+                = VN_AS(consp->dtypep()->skipRefp(), UnpackArrayDType);
+            UASSERT_OBJ(!consp->defaultp(), consp, "Not an item for each element");
             for (const int index : adtypep->declRange().seqLeftToRight()) {
-                const int offset = index - adtypep->lo();
-                packBitstream(consp ? consp->valuep(offset)->unlinkFrBack()
-                                    : new AstArraySel{fl, cloneValue(valuep), offset},
-                              bits);
+                packBitstream(consp->valuep(index - adtypep->lo())->unlinkFrBack(), bits);
             }
         } else if (AstConsStruct* const consp = VN_CAST(valuep, ConsStruct)) {
             // Its values are in member order
             for (AstConsStructItem* const itemp : consp->itemspList()) {
                 packBitstream(itemp->valuep()->unlinkFrBack(), bits);
             }
-        } else if (sdtypep && !sdtypep->packed()) {
-            for (const AstMemberDType* const memberp : sdtypep->memberspList()) {
-                AstStructSel* const selp
-                    = new AstStructSel{fl, cloneValue(valuep), memberp->name()};
-                selp->dtypep(memberp->subDTypep()->skipRefToEnump());
-                selp->didWidth(true);
-                packBitstream(selp, bits);
-            }
         } else {
-            // Only in a stream, as an extension of the standard, a real streams as its 64 bits
-            bits.m_termps.push_back(dtypep->isDouble() ? new AstRealToBits{fl, valuep} : valuep);
+            // Only in a stream, as in an assigned stream, a real streams as its 64 bits, an
+            // extension of the standard
+            V3Const::collectFixedAggregateTerms(deleter(), valuep, bits.m_termps, true,
+                                                m_ftaskp || m_modep);
             return;
         }
         VL_DO_DANGLING(pushDeletep(valuep), valuep);
@@ -3741,18 +3729,8 @@ class WidthVisitor final : public VNVisitor {
         }
         FileLine* const fl = valuep->fileline();
         // Not const, as assigned
-        AstVar* const varp = new AstVar{fl, VVarType::XTEMP, m_bitstreamTempNames.get(valuep),
-                                        valuep->dtypep()->skipRefToEnump()};
-        if (m_ftaskp) {
-            varp->funcLocal(true);
-            varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            m_ftaskp->prependStmtsp(varp);
-        } else {
-            // As any variable of a module (IEEE 1800-2023 6.21), e.g. for V3Fork
-            varp->lifetime(VLifetime::STATIC_EXPLICIT);
-            m_modep->addStmtsp(varp);
-        }
-        iterate(varp);
+        AstVar* const varp = newTempVarp(m_bitstreamTempNames.get(valuep), valuep,
+                                         valuep->dtypep()->skipRefToEnump());
         AstAssign* const assignp
             = new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, valuep};
         userIterateAndNext(assignp, nullptr);
@@ -3813,11 +3791,13 @@ class WidthVisitor final : public VNVisitor {
             }
             return consp;
         }
-        AstSel* const selp
-            = new AstSel{fl, takeBitstream(bits, dtypep->width()), 0, dtypep->width()};
-        selp->dtypep(dtypep);  // Keep e.g. signed or enum type
-        selp->didWidth(true);
-        return selp;
+        AstNodeExpr* valuep = takeBitstream(bits, dtypep->width());
+        // A select can take the type, but a concatenation is unsigned (IEEE 1800-2023 11.8.1)
+        // and a value taken whole has its own, so they are selected whole
+        if (!VN_IS(valuep, Sel)) valuep = new AstSel{fl, valuep, 0, dtypep->width()};
+        valuep->dtypep(dtypep);  // Keep e.g. signed or enum type
+        valuep->didWidth(true);
+        return valuep;
     }
     void visit(AstConstraintBefore* nodep) override {
         userIterateAndNext(nodep->lhssp(), WidthVP{SELF, BOTH}.p());
@@ -4004,7 +3984,8 @@ class WidthVisitor final : public VNVisitor {
         }
         if (nodep->valuep() && !didchk) {
             // UINFOTREE(1, nodep, "", "final");
-            // A default of a port is evaluated where called, a static value before running
+            // A default of a port is evaluated where called (IEEE 1800-2023 13.5.3), a static
+            // value before running
             VL_RESTORER(m_valueOutsideFTaskp);
             m_valueOutsideFTaskp
                 = nodep->isIO() || nodep->lifetime().isStatic() ? m_ftaskp : nullptr;
@@ -4370,20 +4351,12 @@ class WidthVisitor final : public VNVisitor {
                                         : nodep->findBitOrLogicDType(w, w, exprDtp->numeric(),
                                                                      exprDtp->isFourstate());
             AstVar* const varp
-                = new AstVar{fl, VVarType::XTEMP, m_insideTempNames.get(nodep), tempDTypep};
+                = newTempVarp(m_insideTempNames.get(nodep), nodep->exprp(), tempDTypep);
             exprp = new AstVarRef{fl, varp, VAccess::READ};
             exprStmtp = new AstExprStmt{fl,
                                         new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE},
                                                       nodep->exprp()->unlinkFrBack()},
                                         exprp};
-            if (m_ftaskp) {
-                varp->funcLocal(true);
-                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                m_ftaskp->prependStmtsp(varp);
-            } else {
-                m_modep->prependStmtsp(varp);
-            }
-            iterate(varp);
             iterate(exprStmtp);
         } else {
             exprp = nodep->exprp();
@@ -9220,7 +9193,8 @@ class WidthVisitor final : public VNVisitor {
         if (AstClass* const classp = VN_CAST(nodep, Class)) {
             visitClass(classp);
         } else {
-            // Not for a class, whose values have temporaries in the module
+            // Like the names above, but not per class, as the temporaries of a class are in the
+            // module, where a name reused by another class would clash
             VL_RESTORER_COPY(m_bitstreamTempNames);
             VL_RESTORER(m_modep);
             m_modep = nodep;
@@ -10028,20 +10002,28 @@ class WidthVisitor final : public VNVisitor {
         return enumDtp;
     }
 
-    AstExprStmt* newEnumCapture(AstNodeExpr* valuep, AstEnumDType* dtypep) {
-        FileLine* const flp = valuep->fileline();
-        AstVar* const varp = new AstVar{flp, VVarType::XTEMP, m_enumTempNames.get(valuep), dtypep};
-        varp->noSubst(true);
+    // Return a new temporary for a value, local to the function, or else of the module
+    AstVar* newTempVarp(const string& name, AstNodeExpr* valuep, AstNodeDType* dtypep) {
+        AstVar* const varp = new AstVar{valuep->fileline(), VVarType::XTEMP, name, dtypep};
         if (m_ftaskp) {
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             // Declare before use, including in non-inlined class methods.
             m_ftaskp->prependStmtsp(varp);
         } else {
-            UASSERT_OBJ(m_modep, valuep, "Enum expression without a containing module");
+            UASSERT_OBJ(m_modep, valuep, "Temporary without a containing module");
+            // Static as any variable of a module (IEEE 1800-2023 6.21), e.g. for V3Fork
+            varp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modep->addStmtsp(varp);
         }
         iterate(varp);
+        return varp;
+    }
+
+    AstExprStmt* newEnumCapture(AstNodeExpr* valuep, AstEnumDType* dtypep) {
+        FileLine* const flp = valuep->fileline();
+        AstVar* const varp = newTempVarp(m_enumTempNames.get(valuep), valuep, dtypep);
+        varp->noSubst(true);
         AstExprStmt* const exprp = new AstExprStmt{
             flp, new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, valuep},
             new AstVarRef{flp, varp, VAccess::READ}};

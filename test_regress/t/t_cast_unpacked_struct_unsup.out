@@ -27,19 +27,19 @@
                                                           : ... note: In instance 't'
    45 |     s16 = s16_t'({>>{uni}});   
       |                   ^~
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:46:16: Unsupported: static cast to 'struct t.s16_t' from 'string'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:46:16: Unsupported: bit-stream cast to 'struct t.s16_t' from 'string', involving a class object, string, or dynamically sized array
                                                           : ... note: In instance 't'
    46 |     s16 = s16_t'(str);   
       |                ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:47:16: Unsupported: static cast to 'struct t.str_t' from 'struct t.s16_t'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:47:16: Unsupported: bit-stream cast to 'struct t.str_t' from 'struct t.s16_t', involving a class object, string, or dynamically sized array
                                                           : ... note: In instance 't'
    47 |     sts = str_t'(s16);   
       |                ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:48:16: Unsupported: static cast to 'struct t.s16_t' from 'struct t.wild_t'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:48:16: Unsupported: bit-stream cast to 'struct t.s16_t' from 'struct t.wild_t', involving a class object, string, or dynamically sized array
                                                           : ... note: In instance 't'
    48 |     s16 = s16_t'(wild);   
       |                ^
-%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:49:16: Unsupported: static cast to 'struct t.s16_t' from 'class Cls'
+%Error-UNSUPPORTED: t/t_cast_unpacked_struct_unsup.v:49:16: Unsupported: bit-stream cast to 'struct t.s16_t' from 'class Cls', involving a class object, string, or dynamically sized array
                                                           : ... note: In instance 't'
    49 |     s16 = s16_t'(obj);   
       |                ^

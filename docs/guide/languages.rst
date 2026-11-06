@@ -419,7 +419,11 @@ cast operator
    they have a fixed size. Bit-stream casts between unpacked arrays or
    structs and class objects, strings, or dynamically sized arrays are not
    supported, nor casts of streaming concatenations of dynamically sized
-   arrays with other values or in other streaming concatenations.
+   arrays with other values or in other streaming concatenations. As an
+   extension of the standard (IEEE 1800-2023 11.4.14.1), a real in an
+   unpacked structure in a streaming concatenation is streamed as its 64
+   bits, as by ``$realtobits``, also when the streaming concatenation is
+   cast.
 
 chandle
    Treated as a "longint"; does not yet warn about operations specified as
