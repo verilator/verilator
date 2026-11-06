@@ -89,9 +89,16 @@ class EmitCImp final : public EmitCFunc {
                         putsDecoration(modp, "// Parameter definitions for " + modName + "\n");
                         first = false;
                     }
-                    if (varp->dtypep()->isLiteralType()) putns(varp, "VL_CONSTINIT_CXX20 ");
-                    putns(varp, "const ");
-                    emitVarDefn(varp);
+                    if (varp->dtypep()->isLiteralType()) {
+                        // C++14 requires storage when the header's constexpr member is odr-used.
+                        putns(varp, "constexpr ");
+                        const string name
+                            = EmitCUtil::prefixNameProtect(modp) + "::" + varp->nameProtect();
+                        puts(varp->dtypep()->cType(name, false, false));
+                    } else {
+                        putns(varp, "const ");
+                        emitVarDefn(varp);
+                    }
                     puts(";\n");
                 }
             }

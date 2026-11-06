@@ -12,7 +12,7 @@ import vltest_bootstrap
 test.scenarios('simulator')
 
 if test.vlt_all:
-    test.compile(verilator_flags2=["-GTOP_PARAM=30 --exe", test.pli_filename],
+    test.compile(verilator_flags2=["-GTOP_PARAM=30 --exe -CFLAGS -std=c++14", test.pli_filename],
                  make_top_shell=False,
                  make_main=False)
 else:

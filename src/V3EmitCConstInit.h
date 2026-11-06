@@ -189,6 +189,7 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
         nodep->v3fatalSrc("Unknown node type in emitInitializerBody: " << nodep->prettyTypeName());
     }
 
+protected:
     // Emit the braced initializer for the given value '{...}'
     void emitInitializer(AstNodeExpr* nodep) {
         putns(nodep, "{");
@@ -196,7 +197,6 @@ class EmitCConstInit VL_NOT_FINAL : public EmitCBaseVisitorConst {
         puts("}");
     }
 
-protected:
     // Emit a C++ value constructor: 'Type{...}'
     void emitValCons(AstNodeCons* nodep) {
         putnbs(nodep, nodep->dtypep()->cType("", false, false));

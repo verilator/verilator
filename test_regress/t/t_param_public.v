@@ -11,6 +11,9 @@
 module t;
 
   parameter TOP_PARAM  /*verilator public*/ = 20;
+  localparam real REAL_PARAM /*verilator public*/ = 1.25;
+  localparam logic [95:0] WIDE_PARAM /*verilator public*/ = 96'h12345678_9abcdef0_12345678;
+  localparam int ARRAY_PARAM[2] /*verilator public*/ = '{3, 5};
 
   a #(1) a1 ();
   b #(2) b2 ();

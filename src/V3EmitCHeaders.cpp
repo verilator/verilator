@@ -17,7 +17,7 @@
 #include "V3PchAstMT.h"
 
 #include "V3EmitC.h"
-#include "V3EmitCBase.h"
+#include "V3EmitCConstInit.h"
 #include "V3File.h"
 #include "V3MemberMap.h"
 #include "V3SolverBackend.h"
@@ -34,7 +34,7 @@ VL_DEFINE_DEBUG_FUNCTIONS;
 //######################################################################
 // Internal EmitC implementation
 
-class EmitCHeader final : public EmitCBaseVisitorConst {
+class EmitCHeader final : public EmitCConstInit {
     V3UniqueNames m_names;  // Generates unique names
     VMemberMap m_memberMap;  // Finds members of classes
     // METHODS
@@ -207,8 +207,12 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
             if (const AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isParam()) {
                     decorateFirst(first, "\n// PARAMETERS\n");
-                    putns(varp, "static const ");
+                    // C++ consumers need the initializer to use a parameter in constant
+                    // expressions.
+                    const bool canBeConstexpr = varp->dtypep()->isLiteralType();
+                    putns(varp, canBeConstexpr ? "static constexpr " : "static const ");
                     puts(varp->dtypep()->cType(varp->nameProtect(), false, false));
+                    if (canBeConstexpr) emitInitializer(VN_AS(varp->valuep(), NodeExpr));
                     puts(";\n");
                 }
             }
