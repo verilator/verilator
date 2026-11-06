@@ -164,8 +164,9 @@ public:
                 vVtxp->clearReducibleAndDedupable("VirtIface");
                 vVtxp->setConsumed("VirtIface");
             }
-            if (vscp->varp()->isSigPublic()) {
-                // Public signals shouldn't be changed, pli code might be messing with them
+            if (vscp->varp()->isSigPublic() || vscp->varp()->keepPort()) {
+                // Public signals shouldn't be changed, pli code might be messing with them.
+                // A kept port of a threads_group module is read as itself by its instance.
                 vVtxp->clearReducibleAndDedupable("SigPublic");
                 vVtxp->setConsumed("SigPublic");
             }

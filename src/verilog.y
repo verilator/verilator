@@ -284,6 +284,7 @@ BISONPRE_VERSION(3.7,%define api.header.include {"V3ParseBison.h"})
 %token<fl>              yVLT_D_MTASK    "--mtask"
 %token<fl>              yVLT_D_PARAM    "--param"
 %token<fl>              yVLT_D_PORT     "--port"
+%token<fl>              yVLT_D_PORT_SQUASH "--port_squash"
 %token<fl>              yVLT_D_RULE     "--rule"
 %token<fl>              yVLT_D_Q        "--q"
 %token<fl>              yVLT_D_RESET    "--reset"
@@ -8649,16 +8650,30 @@ vltThreadsGroupFront<strp>:  // Returns the module name
         |       vltThreadsGroupFront yVLT_D_WORKERS yaINTNUM yP_MINUSGT yaINTNUM vltThreadsGroupWorkerListE
                         { V3Control::addThreadsGroupWorkers($2, *$1, $3->toUInt(), $5->toUInt(), $6);
                           $$ = $1; }
+        |       vltThreadsGroupFront yVLT_D_PORT_SQUASH vltThreadsGroupThreadsE vltThreadsGroupPortListE
+                        { V3Control::addThreadsGroupPortSquash($2, *$1, $3, $4);
+                          $$ = $1; }
         ;
 
 vltThreadsGroupWorkerListE<nodeExprp>:  // Without a list, the instances are placed automatically
                 /* empty */                             { $$ = nullptr; }
-        |       ':' '{' vltThreadsGroupWorkerList '}'   { $$ = $3; }
+        |       ':' '{' vltThreadsGroupNumberList '}'   { $$ = $3; }
         ;
 
-vltThreadsGroupWorkerList<nodeExprp>:
+vltThreadsGroupThreadsE<nodeExprp>:  // Without a list, every --threads
+                /* empty */                             { $$ = nullptr; }
+        |       '{' vltThreadsGroupNumberList '}'       { $$ = $2; }
+        ;
+
+vltThreadsGroupPortListE<nodeExprp>:  // Without names, every input port
+                /* empty */                             { $$ = nullptr; }
+        |       vltThreadsGroupPortListE str
+                        { $$ = addNextNull($1, new AstConst{$<fl>2, AstConst::String{}, *$2}); }
+        ;
+
+vltThreadsGroupNumberList<nodeExprp>:
                 yaINTNUM                                { $$ = new AstConst{$<fl>1, *$1}; }
-        |       vltThreadsGroupWorkerList yaINTNUM      { $$ = addNextNull($1, new AstConst{$<fl>2, *$2}); }
+        |       vltThreadsGroupNumberList yaINTNUM      { $$ = addNextNull($1, new AstConst{$<fl>2, *$2}); }
         ;
 
 vltOffFront<errcodeen>:

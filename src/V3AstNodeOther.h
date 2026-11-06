@@ -2359,6 +2359,7 @@ class AstVar final : public AstNode {
     bool m_noCReset : 1;  // Do not do automated CReset creation
     bool m_noReset : 1;  // Do not do automated reset/randomization
     bool m_noSubst : 1;  // Do not substitute out references
+    bool m_keepPort : 1;  // Input port of a threads_group module, kept per instance
     bool m_sampled : 1;  // Sampled timing region
     bool m_substConstOnly : 1;  // Only substitute if constant
     bool m_overriddenParam : 1;  // Overridden parameter by #(...) or defparam
@@ -2426,6 +2427,7 @@ class AstVar final : public AstNode {
         m_noCReset = false;
         m_noReset = false;
         m_noSubst = false;
+        m_keepPort = false;
         m_sampled = false;
         m_substConstOnly = false;
         m_overriddenParam = false;
@@ -2620,6 +2622,8 @@ public:
     void noReset(bool flag) { m_noReset = flag; }
     bool noSubst() const { return m_noSubst; }
     void noSubst(bool flag) { m_noSubst = flag; }
+    bool keepPort() const { return m_keepPort; }
+    void keepPort(bool flag) { m_keepPort = flag; }
     bool processQueue() const { return m_processQueue; }
     void processQueue(bool flag) { m_processQueue = flag; }
     bool sampled() const { return m_sampled; }
@@ -2768,6 +2772,7 @@ public:
         noReset(fromp->noReset());
         noCReset(fromp->noCReset());
         attrSplitVar(fromp->attrSplitVar());
+        keepPort(fromp->keepPort());
     }
     // Reason why the properties of the variable prevent splitting it, nullptr if none
     const char* cannotSplitKindReason() const;

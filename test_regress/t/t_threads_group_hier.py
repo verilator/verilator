@@ -27,7 +27,8 @@ test.execute()
 test.file_grep(
     test.obj_dir + "/" + test.vm_prefix + "__hier.dir/" + test.vm_prefix + "__stats.txt",
     r'MTask graph, threads_group parts\s+(\d+)', 2)
+# Includes the logic of acc's kept input ports
 test.file_grep(test.obj_dir + "/Vtile/Vtile__stats.txt",
-               r'MTask graph, threads_group parts\s+(\d+)', 1)
+               r'MTask graph, threads_group parts\s+(\d+)', 2)
 
 test.passes()

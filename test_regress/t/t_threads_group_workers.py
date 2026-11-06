@@ -20,8 +20,9 @@ test.compile(verilator_flags2=[
 
 test.execute()
 
-test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 14)
-test.file_grep(test.stats, r'MTask graph, threads_group placed parts\s+(\d+)', 14)
+# Includes the logic of the groups' kept input ports
+test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 19)
+test.file_grep(test.stats, r'MTask graph, threads_group placed parts\s+(\d+)', 19)
 
 # Verify the values in the dump, including worker zero and nested groups.
 scope_json = test.glob_one(test.obj_dir + '/' + test.vm_prefix + '_*_scope.tree.json')

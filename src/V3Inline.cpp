@@ -594,6 +594,7 @@ void inlineCell(AstNodeModule* modp, AstCell* cellp, bool last, InlineModGraph& 
                 varp->varType(VVarType::TRIWIRE);
             }
             varp->direction(VDirection::NONE);
+            varp->keepPort(false);
             if (!cellp->isTrace()) varp->trace(false);
         } else if (AstCell* const subCellp = VN_CAST(nodep, Cell)) {
             subCellp->name(prefix + subCellp->name());

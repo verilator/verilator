@@ -24,8 +24,8 @@ test.compile(verilator_flags2=[
 test.execute()
 
 test.file_grep(test.obj_dir + "/Vtile/Vtile__stats.txt",
-               r'MTask graph, threads_group parts\s+(\d+)', 1)
+               r'MTask graph, threads_group parts\s+(\d+)', 2)
 test.file_grep(test.obj_dir + "/Vtile/Vtile__stats.txt",
-               r'MTask graph, threads_group placed parts\s+(\d+)', 1)
+               r'MTask graph, threads_group placed parts\s+(\d+)', 2)
 
 test.passes()

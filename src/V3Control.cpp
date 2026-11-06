@@ -20,6 +20,7 @@
 
 #include "V3InstrCount.h"
 #include "V3Os.h"
+#include "V3Stats.h"
 #include "V3String.h"
 
 #include <algorithm>
@@ -230,6 +231,12 @@ struct ThreadsGroupWorkers final {
 };
 // By instance count and --threads
 using ThreadsGroupWorkersMap = std::map<std::pair<uint32_t, uint32_t>, ThreadsGroupWorkers>;
+// A threads_group -port_squash name: the input ports it matches are optimized as usual
+struct ThreadsGroupPortSquash final {
+    FileLine* m_flp;  // Where given
+    string m_pattern;  // Port name pattern, empty for every input port
+    std::vector<uint32_t> m_threads;  // The --threads it applies at, empty for every count
+};
 
 class V3ControlModule final {
     V3ControlFTaskResolver m_tasks;  // Functions/tasks in module
@@ -240,6 +247,7 @@ class V3ControlModule final {
     std::unordered_set<std::string> m_coverageOffBlocks;  // List of block names for coverage_off
     std::set<VPragmaType> m_modPragmas;  // List of Pragmas for modules
     ThreadsGroupWorkersMap m_threadsGroupWorkers;  // threads_group -workers
+    std::vector<ThreadsGroupPortSquash> m_portSquashes;  // threads_group -port_squash
     bool m_hasFsmRegisterWrapper = false;  // Whether descriptor has been set
     bool m_inline = false;  // Whether to force the inline
     bool m_inlineValue = false;  // The inline value (on/off)
@@ -265,6 +273,8 @@ public:
             m_modPragmas.insert(*it);
         }
         for (const auto& it : m.m_threadsGroupWorkers) m_threadsGroupWorkers.insert(it);
+        m_portSquashes.insert(m_portSquashes.end(), m.m_portSquashes.begin(),
+                              m.m_portSquashes.end());
     }
     void updateFinalize() {}
 
@@ -296,6 +306,8 @@ public:
         return m_threadsGroupWorkers.emplace(std::make_pair(instances, threads), workers).second;
     }
     const ThreadsGroupWorkersMap& threadsGroupWorkers() const { return m_threadsGroupWorkers; }
+    void addPortSquash(const ThreadsGroupPortSquash& squash) { m_portSquashes.push_back(squash); }
+    const std::vector<ThreadsGroupPortSquash>& portSquashes() const { return m_portSquashes; }
     // Whether a threads_group at this --threads: always without -workers, else where named
     bool threadsGroupAt(uint32_t threads) const {
         if (m_threadsGroupWorkers.empty()) return true;
@@ -999,6 +1011,62 @@ void V3Control::addThreadsGroupWorkers(FileLine* fl, const string& module, uint3
                                                << "' is given more than once for module '"
                                                << module << "'.");
     }
+}
+
+void V3Control::addThreadsGroupPortSquash(FileLine* fl, const string& module,
+                                          AstNodeExpr* threadsp, AstNodeExpr* portsp) {
+    std::vector<uint32_t> threads;
+    for (const AstNodeExpr* const exprp : VNList<AstNodeExpr>{threadsp}) {
+        threads.push_back(VN_AS(exprp, Const)->toUInt());
+    }
+    if (threadsp) VL_DO_DANGLING(threadsp->deleteTree(), threadsp);
+    V3ControlModule& modr = V3ControlResolver::s().modules().at(module);
+    if (!portsp) modr.addPortSquash({fl, "", threads});
+    for (const AstNodeExpr* const exprp : VNList<AstNodeExpr>{portsp}) {
+        modr.addPortSquash({exprp->fileline(), VN_AS(exprp, Const)->num().toString(), threads});
+    }
+    if (portsp) VL_DO_DANGLING(portsp->deleteTree(), portsp);
+}
+
+void V3Control::markThreadsGroupKeptPorts(AstNodeModule* modp) {
+    const V3ControlModule* const controlp
+        = V3ControlResolver::s().modules().resolve(modp->prettyDehashOrigOrName());
+    const std::vector<ThreadsGroupPortSquash> none;
+    const std::vector<ThreadsGroupPortSquash>& squashes
+        = controlp ? controlp->portSquashes() : none;
+    std::vector<bool> used(squashes.size(), false);
+    size_t kept = 0;
+    for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
+        AstVar* const varp = VN_CAST(stmtp, Var);
+        if (!varp || varp->direction() != VDirection::INPUT) continue;
+        bool squashed = false;
+        for (size_t i = 0; i < squashes.size(); ++i) {
+            const ThreadsGroupPortSquash& squash = squashes[i];
+            if (!squash.m_pattern.empty()
+                && !VString::wildmatch(varp->prettyName(), squash.m_pattern)) {
+                continue;
+            }
+            // A name is checked at every thread count, but squashes only at its counts
+            used[i] = true;
+            const std::vector<uint32_t>& counts = squash.m_threads;
+            if (counts.empty()
+                || std::find(counts.begin(), counts.end(), v3Global.opt.threads())
+                       != counts.end()) {
+                squashed = true;
+            }
+        }
+        if (squashed) continue;
+        varp->keepPort(true);
+        ++kept;
+    }
+    for (size_t i = 0; i < squashes.size(); ++i) {
+        if (used[i] || squashes[i].m_pattern.empty()) continue;
+        squashes[i].m_flp->v3warn(BADVLTPRAGMA, "threads_group -port_squash "
+                                                    << AstNode::prettyNameQ(squashes[i].m_pattern)
+                                                    << " matches no input port of module "
+                                                    << modp->prettyNameQ() << ".");
+    }
+    V3Stats::addStatSum("Threads group, kept input ports", kept);
 }
 
 bool V3Control::isThreadsGroupAtThreads(const AstNodeModule* modulep) {

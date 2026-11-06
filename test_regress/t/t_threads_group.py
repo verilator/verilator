@@ -15,6 +15,7 @@ test.compile(verilator_flags2=["--stats", "-CFLAGS", "-DVL_THREADS_SERIAL_COST=0
 
 test.execute()
 
-test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 14)
+# Includes the logic of the groups' kept input ports
+test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 19)
 
 test.passes()

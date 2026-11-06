@@ -20,7 +20,7 @@ test.compile(verilator_flags2=[
 
 test.execute()
 
-test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 6)
+test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 10)
 test.file_grep_not(test.stats, r'MTask graph, threads_group placed parts')
 
 test.passes()

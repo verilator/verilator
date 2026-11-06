@@ -317,7 +317,7 @@ The grammar of control commands is as follows:
 
    Same as :option:`/*verilator&32;split_var*/` metacomment.
 
-.. option:: threads_group -module "<modulename>" [-workers <instances>-><threads>[: { <worker>... }]]...
+.. option:: threads_group -module "<modulename>" [-workers <instances>-><threads>[: { <worker>... }]]... [-port_squash [{ <threads>... }] ["<port>"...]]...
 
    With :vlopt:`--threads` above 1, partition each instance of the module
    as a group, keeping its logic in a few mtasks instead of spreading it
@@ -350,6 +350,17 @@ The grammar of control commands is as follows:
    separately Verilated block. A block's workers are the threads of its
    own schedule, which may run on different threads of the pool on each
    evaluation, and a block using several threads is placed automatically.
+
+   The input ports of a group module are kept as variables of each
+   instance, instead of being replaced by whatever drives them, so the
+   instances' code can be identical and shared. ``-port_squash`` instead
+   optimizes the named input ports as usual, where ``*`` and ``?`` are
+   wildcards, or all input ports with no names. A braced list limits it to
+   those :vlopt:`--threads` values; for example ``-port_squash { 2 4 8 }
+   "clk_i"`` keeps the clock port with one thread, where it lets instances
+   share code. For a module grouped at the current thread count, a name
+   matching no input port is an error, even when the squash applies only
+   at other thread counts.
 
    For example, to alternate four tiles between two threads:
 

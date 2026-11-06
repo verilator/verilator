@@ -1,0 +1,11 @@
+%Error-BADVLTPRAGMA: t/t_threads_group_port_squash_bad.vlt:7:49: threads_group -port_squash 'nope*' matches no input port of module 'tile'.
+    7 | threads_group -module "tile" -port_squash "clk" "nope*"
+      |                                                 ^~~~~~~
+                     ... For error description see https://verilator.org/warn/BADVLTPRAGMA?v=latest
+%Error-BADVLTPRAGMA: t/t_threads_group_port_squash_bad.vlt:8:43: threads_group -port_squash 'out' matches no input port of module 'tile'.
+    8 | threads_group -module "tile" -port_squash "out"
+      |                                           ^~~~~
+%Error-BADVLTPRAGMA: t/t_threads_group_port_squash_bad.vlt:9:49: threads_group -port_squash 'nope2' matches no input port of module 'tile'.
+    9 | threads_group -module "tile" -port_squash { 8 } "nope2"
+      |                                                 ^~~~~~~
+%Error: Exiting due to
