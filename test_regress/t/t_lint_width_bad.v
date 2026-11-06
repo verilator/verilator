@@ -39,6 +39,24 @@ module t;
 
   initial if (THREE) $stop;
 
+  // A cast of a call or reference must not suppress warnings in its definition.
+  initial begin
+    $display("%0d", int'(cast_add(6'd45, 5'd25)));
+    $display("%0d", int'(cast_value));
+    $display("%0d", int'(CAST_ENUM_VALUE));
+  end
+  function automatic int cast_add(input logic [5:0] lhs, input logic [4:0] rhs);
+    return lhs + rhs;
+  endfunction
+  int cast_value = 6'd45 + 5'd25;
+  typedef enum int { CAST_ENUM_VALUE = 6'd45 + 5'd25 } cast_enum_t;
+
+  // A non-integral cast does not suppress operand width warnings.
+  initial $display("%f", real'(6'd45 == 5'd25));
+
+  // A nested cast's type expression is checked independently of its operand.
+  initial $display("%0d", int'(type(6'd45 == 5'd25)'(1'b1)));
+
 endmodule
 
 module p #(

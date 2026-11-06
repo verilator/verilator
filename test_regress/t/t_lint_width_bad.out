@@ -4,9 +4,9 @@
       |                    ^~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:49:18: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:67:18: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
                                                 : ... note: In instance 't.p4'
-   49 |   wire [4:0] out = in;
+   67 |   wire [4:0] out = in;
       |                  ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
@@ -46,4 +46,36 @@
                                                : ... note: In instance 't'
    40 |   initial if (THREE) $stop;
       |           ^~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:49:16: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'lhs' generates 6 bits.
+                                                : ... note: In instance 't'
+   49 |     return lhs + rhs;
+      |                ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:49:16: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rhs' generates 5 bits.
+                                                : ... note: In instance 't'
+   49 |     return lhs + rhs;
+      |                ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:52:46: Operator ADD expects 32 bits on the LHS, but LHS's CONST '6'h2d' generates 6 bits.
+                                                : ... note: In instance 't'
+   52 |   typedef enum int { CAST_ENUM_VALUE = 6'd45 + 5'd25 } cast_enum_t;
+      |                                              ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:52:46: Operator ADD expects 32 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   52 |   typedef enum int { CAST_ENUM_VALUE = 6'd45 + 5'd25 } cast_enum_t;
+      |                                              ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:51:26: Operator ADD expects 32 bits on the LHS, but LHS's CONST '6'h2d' generates 6 bits.
+                                                : ... note: In instance 't'
+   51 |   int cast_value = 6'd45 + 5'd25;
+      |                          ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:51:26: Operator ADD expects 32 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   51 |   int cast_value = 6'd45 + 5'd25;
+      |                          ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:55:38: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   55 |   initial $display("%f", real'(6'd45 == 5'd25));
+      |                                      ^~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:58:43: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   58 |   initial $display("%0d", int'(type(6'd45 == 5'd25)'(1'b1)));
+      |                                           ^~
 %Error: Exiting due to

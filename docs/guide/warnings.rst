@@ -2769,7 +2769,8 @@ List Of Warnings
 
    Verilator attempts to track the minimum width of unsized constants
    and will suppress the warning when the minimum width is appropriate to
-   fit the required size.
+   fit the required size. A size cast or an integral type cast can also
+   suppress operand width warnings within its expression.
 
    Disabling/enabling WIDTH is equivalent to disabling/enabling the
    :option:`WIDTHDIGITS`, :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`,
