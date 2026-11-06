@@ -20,7 +20,6 @@
 
 #include "V3InstrCount.h"
 #include "V3Os.h"
-#include "V3Stats.h"
 #include "V3String.h"
 
 #include <algorithm>
@@ -1031,11 +1030,10 @@ void V3Control::addThreadsGroupPortSquash(FileLine* fl, const string& module,
 void V3Control::markThreadsGroupKeptPorts(AstNodeModule* modp) {
     const V3ControlModule* const controlp
         = V3ControlResolver::s().modules().resolve(modp->prettyDehashOrigOrName());
-    const std::vector<ThreadsGroupPortSquash> none;
+    static const std::vector<ThreadsGroupPortSquash> none;
     const std::vector<ThreadsGroupPortSquash>& squashes
         = controlp ? controlp->portSquashes() : none;
     std::vector<bool> used(squashes.size(), false);
-    size_t kept = 0;
     for (AstNode* stmtp = modp->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
         AstVar* const varp = VN_CAST(stmtp, Var);
         if (!varp || varp->direction() != VDirection::INPUT) continue;
@@ -1057,7 +1055,6 @@ void V3Control::markThreadsGroupKeptPorts(AstNodeModule* modp) {
         }
         if (squashed) continue;
         varp->keepPort(true);
-        ++kept;
     }
     for (size_t i = 0; i < squashes.size(); ++i) {
         if (used[i] || squashes[i].m_pattern.empty()) continue;
@@ -1066,7 +1063,6 @@ void V3Control::markThreadsGroupKeptPorts(AstNodeModule* modp) {
                                                     << " matches no input port of module "
                                                     << modp->prettyNameQ() << ".");
     }
-    V3Stats::addStatSum("Threads group, kept input ports", kept);
 }
 
 bool V3Control::isThreadsGroupAtThreads(const AstNodeModule* modulep) {

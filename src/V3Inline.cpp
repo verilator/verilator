@@ -677,6 +677,16 @@ void process(AstNetlist* netlistp, InlineModGraph& graph) {
     });
 
     V3Stats::addStat("Optimizations, Inlined instances", m_nInlined);
+
+    // Input ports of threads_group modules kept per instance, after inlining
+    size_t nKept = 0;
+    for (AstNodeModule* const modp : netlistp->modulespList()) {
+        for (AstNode* const stmtp : modp->stmtspList()) {
+            const AstVar* const varp = VN_CAST(stmtp, Var);
+            if (varp && varp->keepPort()) ++nKept;
+        }
+    }
+    V3Stats::addStatSum("Threads group, kept input ports", nKept);
 }
 
 }  //namespace ModuleInliner

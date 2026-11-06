@@ -20,8 +20,9 @@ for threads in (1, 2):
     test.execute()
     if threads == 1:
         # A group inlined with one thread no longer keeps its ports
-        test.file_grep(test.stats, r'Optimizations, DFG, DfgToAst, output variables\s+(\d+)', 5)
+        test.file_grep_not(test.stats, r'Threads group, kept input ports')
     else:
+        test.file_grep(test.stats, r'Threads group, kept input ports\s+(\d+)', 4)
         # The sub input connected to a kept port is kept too
         test.file_grep(test.stats, r'Optimizations, DFG, DfgToAst, var refs substituted\s+(\d+)',
                        16)

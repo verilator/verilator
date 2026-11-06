@@ -164,11 +164,15 @@ public:
                 vVtxp->clearReducibleAndDedupable("VirtIface");
                 vVtxp->setConsumed("VirtIface");
             }
-            if (vscp->varp()->isSigPublic() || vscp->varp()->keepPort()) {
-                // Public signals shouldn't be changed, pli code might be messing with them.
-                // A kept port of a threads_group module is read as itself by its instance.
+            if (vscp->varp()->isSigPublic()) {
+                // Public signals shouldn't be changed, pli code might be messing with them
                 vVtxp->clearReducibleAndDedupable("SigPublic");
                 vVtxp->setConsumed("SigPublic");
+            }
+            if (vscp->varp()->keepPort()) {
+                // A kept port of a threads_group module is read as itself by its instance
+                vVtxp->clearReducibleAndDedupable("KeepPort");
+                vVtxp->setConsumed("KeepPort");
             }
             if (vscp->varp()->isIO() && vscp->scopep()->isTop()) {
                 // We may need to convert to/from sysc/reg sigs
