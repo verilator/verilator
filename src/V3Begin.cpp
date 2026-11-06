@@ -529,6 +529,7 @@ static AstNode* createForeachLoop(AstNodeForeach* /*nodep*/, AstNode* bodysp, bo
         sizeVarp = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vloopsize",
                               varp->findUInt32DType()};
         sizeVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        sizeVarp->funcLocal(varp->isFuncLocal());
         sizeVarp->usedLoopIdx(true);  // Not technically an index, but used only inside loop
         varp->addNext(sizeVarp);
         sizeGetp
@@ -573,12 +574,14 @@ static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr* subf
         = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vnext", varp};
     next_varp->usedLoopIdx(true);
     next_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    next_varp->funcLocal(varp->isFuncLocal());
     loopp->addNext(next_varp);
 
     AstVar* const more_varp  // bool var. 0 = loop empty/done, 1 = continue with loop
         = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vmore", VFlagBitPacked{}, 1};
     more_varp->usedLoopIdx(true);  // Not technically an index, but used only inside loop
     more_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    more_varp->funcLocal(varp->isFuncLocal());
     loopp->addNext(more_varp);
 
     AstNodeExpr* const firstp
