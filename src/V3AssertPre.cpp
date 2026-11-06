@@ -111,7 +111,6 @@ private:
     V3UniqueNames m_nonConsRepNames{"__VnonConsRep"};  // Nonconsecutive rep name generator
     V3UniqueNames m_disableCntNames{"__VdisableCnt"};  // Disable condition counter name generator
     V3UniqueNames m_blockNames{"__VassertBlock"};  // Names of blocks with temporaries
-    V3UniqueNames m_propVarNames{"__Vpropvar"};  // Property-local variable name generator
     V3UniqueNames m_activeNames{"__VassertsActive"};  // Active asserts map name generator
     V3UniqueNames m_drivenNames{"__VclockingDriven"};  // Clockvar drive flag name generator
     bool m_inAssign = false;  // True if in an AssignNode
@@ -290,17 +289,6 @@ private:
         while (bodyp && VN_IS(bodyp, Var)) bodyp = bodyp->nextp();
         return VN_CAST(bodyp, NodeExpr);
     }
-    AstPropSpec* getPropertyExprp(const AstProperty* const propp) {
-        // Statements in AstProperty: AstVar (ports/local vars),
-        // AstInitialStaticStmt/AstInitialAutomaticStmt (var init), AstPropSpec (body).
-        AstNode* propExprp = propp->stmtsp();
-        while (propExprp
-               && (VN_IS(propExprp, Var) || VN_IS(propExprp, InitialStaticStmt)
-                   || VN_IS(propExprp, InitialAutomaticStmt))) {
-            propExprp = propExprp->nextp();
-        }
-        return VN_CAST(propExprp, PropSpec);
-    }
     void substituteSequenceCall(AstFuncRef* funcrefp, AstSequence* seqp) {
         // IEEE 1800-2023 16.7 (sequence declarations), 16.8 (sequence instances)
         // Inline the sequence body at the call site, replacing the FuncRef
@@ -332,97 +320,6 @@ private:
         // Clear referenced flag; sequences with isReferenced==false are deleted in assertPreAll
         seqp->isReferenced(false);
     }
-    AstPropSpec* clonePropertyBody(AstFuncRef* funcrefp, const AstProperty* propp) {
-        AstPropSpec* propExprp = getPropertyExprp(propp);
-        // Substitute inner property call before copying in order to not doing the same for
-        // each call of outer property call.
-        propExprp = substitutePropertyCall(propExprp);
-        // Clone subtree after substitution. It is needed, because property might be called
-        // multiple times with different arguments.
-        propExprp = propExprp->cloneTree(false);
-        // Build substitution maps for formal arguments and property-local
-        // variables, then perform a single foreach to apply all replacements.
-        // Map port vars to their actual argument expressions
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->stmtsp());
-        std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
-        for (const auto& tconnect : tconnects) {
-            portMap[tconnect.first] = tconnect.second->exprp();
-        }
-
-        // Promote property-local variables (non-port vars, IEEE 16.10) to
-        // module-level __Vpropvar temps. Cross-cycle persistence is handled
-        // by the match item lowering in visit(AstImplication*).
-        std::unordered_map<const AstVar*, AstVar*> localVarMap;
-        for (AstNode* const stmtp : propp->stmtspList()) {
-            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                if (!varp->isIO()) {
-                    const string newName = m_propVarNames.get(varp);
-                    AstVar* const newVarp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
-                                                       newName, varp->dtypep()};
-                    newVarp->lifetime(VLifetime::STATIC_EXPLICIT);
-                    m_modp->addStmtsp(newVarp);
-                    localVarMap[varp] = newVarp;
-                }
-            }
-        }
-
-        // Single traversal: substitute ports and update local var references
-        propExprp->foreach([&](AstVarRef* refp) {
-            const auto portIt = portMap.find(refp->varp());
-            if (portIt != portMap.end()) {
-                refp->replaceWith(portIt->second->cloneTree(false));
-                VL_DO_DANGLING(pushDeletep(refp), refp);
-                return;
-            }
-            const auto localIt = localVarMap.find(refp->varp());
-            if (localIt != localVarMap.end()) refp->varp(localIt->second);
-        });  // LCOV_EXCL_LINE -- gcov attributes lambda's implicit return to `})`
-
-        // Clean up argument expressions
-        for (const auto& tconnect : tconnects) {
-            pushDeletep(tconnect.second->exprp()->unlinkFrBack());
-        }
-        V3AssertCommon::checkSvaInstanceDelays(propExprp, funcrefp);
-        return propExprp;
-    }
-    AstPropSpec* substitutePropertyCall(AstPropSpec* nodep) {
-        if (AstFuncRef* const funcrefp = VN_CAST(nodep->propp(), FuncRef)) {
-            if (const AstProperty* const propp = VN_CAST(funcrefp->taskp(), Property)) {
-                AstPropSpec* const propExprp = clonePropertyBody(funcrefp, propp);
-
-                // Handle case with 2 disable iff statement (IEEE 1800-2023 16.12.1)
-                if (nodep->disablep() && propExprp->disablep()) {
-                    nodep->v3error("disable iff expression before property call and in its "
-                                   "body is not legal");
-                    pushDeletep(propExprp->disablep()->unlinkFrBack());
-                }
-                // If disable iff is in outer property, move it to inner
-                if (nodep->disablep()) {
-                    AstNodeExpr* const disablep = nodep->disablep()->unlinkFrBack();
-                    propExprp->disablep(disablep);
-                }
-
-                if (nodep->sensesp() && propExprp->sensesp()) {
-                    nodep->v3warn(E_UNSUPPORTED,
-                                  "Unsupported: Clock event before property call and in its body");
-                    pushDeletep(propExprp->sensesp()->unlinkFrBack());
-                }
-                // If clock event is in outer property, move it to inner
-                if (nodep->sensesp()) {
-                    AstSenItem* const sensesp = nodep->sensesp();
-                    sensesp->unlinkFrBack();
-                    propExprp->sensesp(sensesp);
-                }
-
-                // Now substitute property reference with property body
-                nodep->replaceWith(propExprp);
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                return propExprp;
-            }
-        }
-        return nodep;
-    }
-
     // VISITORS
     //========== Statements
     void visit(AstClocking* const nodep) override {
@@ -1719,7 +1616,6 @@ private:
     }
 
     void visit(AstPropSpec* nodep) override {
-        nodep = substitutePropertyCall(nodep);
         iterateAndNextNull(nodep->sensesp());
         if (m_senip && m_senip != nodep->sensesp())
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: Only one PSL clock allowed per assertion");
@@ -1845,8 +1741,7 @@ private:
         iterateChildren(nodep);
     }
     void visit(AstProperty* nodep) override {
-        // The body will be visited when will be substituted in place of property reference
-        // (AstFuncRef)
+        // V3AssertNfa has already inlined every instance
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstSequence* nodep) override {
