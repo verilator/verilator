@@ -25,7 +25,7 @@
 class V3SolverSmt final : public V3SolverBackend {
 public:
     std::string runtimeHeader() const override VL_MT_DISABLED { return "verilated_random.h"; }
-    std::vector<std::string> runtimeSources() const override VL_MT_DISABLED {
+    std::vector<std::string> runtimeCppFiles() const override VL_MT_DISABLED {
         return {"verilated_random.cpp"};
     }
     std::vector<std::string> runtimeCFlags() const override VL_MT_DISABLED;

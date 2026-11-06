@@ -47,70 +47,70 @@
 
 #include "V3SolverSmt.h"
 
-#include "V3Ast.h"
 #include "V3Const.h"
-#include "V3Container.h"
-#include "V3Error.h"
 #include "V3File.h"
-#include "V3FileLine.h"
-#include "V3Global.h"
 #include "V3MemberMap.h"
-#include "V3Options.h"
 #include "V3Randomize.h"
 #include "V3Task.h"
 #include "V3UniqueNames.h"
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
-// Walk up the extends chain from classp to find the nearest ancestor (starting
-// with classp itself) that has its own persistent VlRandomizer generator
-// variable (stored in AstClass::user3p()). That is normally classp itself, or
-// otherwise the base-most class, since createRandomGenerator() only creates
-// one on a class that owns class-level constraints; a purely-derived class
-// with no constraints of its own has no user3p() and defers to its base.
-static AstVar* getRandomGenerator(AstClass* const classp) {
-    if (classp->user3p()) return VN_AS(classp->user3p(), Var);
-    if (classp->extendsp()) return getRandomGenerator(classp->extendsp()->classp());
-    return nullptr;
-}
+//######################################################################
+// Helpers shared by the lowering visitors
 
-// Create __Vsetup_constraints function if non existant inside memberMap,
-// if existant return one already present
-static AstTask* getCreateConstraintSetupFunc(AstClass* classp, VMemberMap& memberMap) {
-    static const char* const name = "__Vsetup_constraints";
-    AstTask* setupAllTaskp = VN_AS(memberMap.findMember(classp, name), Task);
-    if (setupAllTaskp) return setupAllTaskp;
-    setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
-    setupAllTaskp->classMethod(true);
-    setupAllTaskp->isVirtual(true);
-    classp->addMembersp(setupAllTaskp);
-    memberMap.insert(classp, setupAllTaskp);
-    return setupAllTaskp;
-}
-
-// Look through unpacked array dimensions to the element type
-static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
-    dtypep = dtypep->skipRefp();
-    while (dtypep->isNonPackedArray()) dtypep = dtypep->subDTypep()->skipRefp();
-    return dtypep;
-}
-
-// Whether dtypep is, or contains anywhere through unpacked array/struct
-// nesting, a real value. A packed struct can't hold one (IEEE disallows
-// real as a packed-struct member), so it's never worth descending into.
-static bool dtypeContainsReal(AstNodeDType* dtypep) {
-    dtypep = dtypep->skipRefp();
-    if (AstNodeDType* const subp = dtypep->subDTypep()) return dtypeContainsReal(subp);
-    if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
-        if (structp->packed()) return false;
-        for (AstMemberDType* const memberp : structp->memberspList()) {
-            if (dtypeContainsReal(memberp->subDTypep())) return true;
-        }
-        return false;
+class SmtUtil final {
+public:
+    // Walk up the extends chain from classp to find the nearest ancestor (starting
+    // with classp itself) that has its own persistent VlRandomizer generator
+    // variable (stored in AstClass::user3p()). That is normally classp itself, or
+    // otherwise the base-most class, since createRandomGenerator() only creates
+    // one on a class that owns class-level constraints; a purely-derived class
+    // with no constraints of its own has no user3p() and defers to its base.
+    static AstVar* getRandomGenerator(AstClass* const classp) {
+        if (classp->user3p()) return VN_AS(classp->user3p(), Var);
+        if (classp->extendsp()) return getRandomGenerator(classp->extendsp()->classp());
+        return nullptr;
     }
-    const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType);
-    return basicp && basicp->isDouble();
-}
+
+    // Create __Vsetup_constraints function if non existant inside memberMap,
+    // if existant return one already present
+    static AstTask* getCreateConstraintSetupFunc(AstClass* classp, VMemberMap& memberMap) {
+        static const char* const name = "__Vsetup_constraints";
+        AstTask* setupAllTaskp = VN_AS(memberMap.findMember(classp, name), Task);
+        if (setupAllTaskp) return setupAllTaskp;
+        setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
+        setupAllTaskp->classMethod(true);
+        setupAllTaskp->isVirtual(true);
+        classp->addMembersp(setupAllTaskp);
+        memberMap.insert(classp, setupAllTaskp);
+        return setupAllTaskp;
+    }
+
+    // Look through unpacked array dimensions to the element type
+    static AstNodeDType* arrayElementDTypep(AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        while (dtypep->isNonPackedArray()) dtypep = dtypep->subDTypep()->skipRefp();
+        return dtypep;
+    }
+
+    // Whether dtypep is, or contains anywhere through unpacked array/struct
+    // nesting, a real value. A packed struct can't hold one (IEEE disallows
+    // real as a packed-struct member), so it's never worth descending into.
+    static bool dtypeContainsReal(AstNodeDType* dtypep) {
+        dtypep = dtypep->skipRefp();
+        if (AstNodeDType* const subp = dtypep->subDTypep()) return dtypeContainsReal(subp);
+        if (const AstNodeUOrStructDType* const structp = VN_CAST(dtypep, NodeUOrStructDType)) {
+            if (structp->packed()) return false;
+            for (AstMemberDType* const memberp : structp->memberspList()) {
+                if (dtypeContainsReal(memberp->subDTypep())) return true;
+            }
+            return false;
+        }
+        const AstBasicDType* const basicp = VN_CAST(dtypep, BasicDType);
+        return basicp && basicp->isDouble();
+    }
+};
 
 //######################################################################
 // Visitor that turns constraints into template strings for solvers
@@ -311,7 +311,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // IEEE 1800-2023 18.4: all rand members of a rand unpacked struct are solved
     // concurrently, so unreferenced rand members must still reach the solver.
     static void markStructConstrainedRandRecurse(AstNodeDType* const dtypep) {
-        AstStructDType* const structp = VN_CAST(arrayElementDTypep(dtypep), StructDType);
+        AstStructDType* const structp = VN_CAST(SmtUtil::arrayElementDTypep(dtypep), StructDType);
         if (!structp || structp->packed()) return;
         structp->markConstrainedRand(true);
         for (AstMemberDType* const memberp : structp->memberspList()) {
@@ -1022,7 +1022,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             varRefp->classOrPackagep(classOrPackagep);
             methodp->addPinsp(varRefp);
         }
-        const size_t width = arrayElementDTypep(varp->dtypep())->width();
+        const size_t width = SmtUtil::arrayElementDTypep(varp->dtypep())->width();
         methodp->addPinsp(new AstConst{varp->fileline(), AstConst::Unsized64{}, width});
         AstNodeExpr* const varnamep = new AstCExpr{varp->fileline(), AstCExpr::Pure{},
                                                    "\"" + smtName + "\"", varp->width()};
@@ -1191,7 +1191,7 @@ class ConstraintExprVisitor final : public VNVisitor {
         // type-check; embedding a real value produces a malformed width.
         // Check the selected field/element's type, not the whole
         // struct/array's -- a real sibling field elsewhere is irrelevant.
-        if (dtypeContainsReal(structSelOrCMeth ? selectedDtypep : varp->dtypep())) {
+        if (SmtUtil::dtypeContainsReal(structSelOrCMeth ? selectedDtypep : varp->dtypep())) {
             nodep->v3warn(E_UNSUPPORTED, "Unsupported: real value in this constraint expression");
             return;
         }
@@ -1210,7 +1210,8 @@ class ConstraintExprVisitor final : public VNVisitor {
                 = createEnumConstraint(nodep->fileline(), varp->name(), enumDtp, genVarp);
             AstBegin* targetp = m_inlineInitBlockp;
             if (!targetp) {
-                targetp = newInitBlockp(getCreateConstraintSetupFunc(m_classp, m_memberMap));
+                targetp
+                    = newInitBlockp(SmtUtil::getCreateConstraintSetupFunc(m_classp, m_memberMap));
             }
             targetp->addStmtsp(enumRangeExprp->makeStmt());
             m_rangeConstrainedEnums.push_back(varp);
@@ -2189,7 +2190,7 @@ class ConstraintExprVisitor final : public VNVisitor {
             genVarp = m_genp;
         } else {
             initp = newInitBlockp(VN_AS(m_memberMap.findMember(m_classp, "new"), NodeFTask));
-            genVarp = getRandomGenerator(m_classp);
+            genVarp = SmtUtil::getRandomGenerator(m_classp);
             UASSERT_OBJ(genVarp, nodep, "No generator variable");
             genModp = VN_AS(genVarp->user2p(), NodeModule);
             UASSERT_OBJ(genModp, nodep, "genVarp has no NodeModule set");
@@ -3844,7 +3845,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         varRefp->classOrPackagep(classp);
         methodp->addPinsp(varRefp);
 
-        const size_t width = arrayElementDTypep(arrVarp->dtypep())->width();
+        const size_t width = SmtUtil::arrayElementDTypep(arrVarp->dtypep())->width();
 
         methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});
         AstNodeExpr* const varnamep
@@ -4036,7 +4037,7 @@ public:
         m_distNum = 0;
         FileLine* const fl = nodep->fileline();
         AstNodeExpr* beginValp = nullptr;
-        AstVar* genp = getRandomGenerator(nodep);
+        AstVar* genp = SmtUtil::getRandomGenerator(nodep);
         if (genp) {
             // Phase 1: Process all constraints (create tasks, run ConstraintExprVisitor)
             // Setup task refs are NOT added to setupAllTaskp here -- done in phase 2
@@ -4089,7 +4090,8 @@ public:
                 nodep->foreachMember([&](AstClass* const, AstConstraint* const constrp) {
                     maxDepth = std::max(maxDepth, constraintDepth(constrp));
                 });
-                AstTask* const setupAllTaskp = getCreateConstraintSetupFunc(nodep, m_memberMap);
+                AstTask* const setupAllTaskp
+                    = SmtUtil::getCreateConstraintSetupFunc(nodep, m_memberMap);
                 for (int d = maxDepth; d >= 0; --d) {
                     nodep->foreachMember(
                         [&](AstClass* const classp, AstConstraint* const constrp) {
@@ -4123,7 +4125,8 @@ public:
             if (sizeArraysIt != m_sizeConstrainedArrays.end()) {
                 for (AstVar* const arrVarp : sizeArraysIt->second) sizeArrayVars.insert(arrVarp);
             }
-            AstTask* const setupAllTaskp = getCreateConstraintSetupFunc(nodep, m_memberMap);
+            AstTask* const setupAllTaskp
+                = SmtUtil::getCreateConstraintSetupFunc(nodep, m_memberMap);
             if (!sizeArrayVars.empty() && prepareArraysTaskp->stmtsp()) {
                 AstNodeStmt* const preparep = (new AstTaskRef{fl, prepareArraysTaskp})->makeStmt();
                 // A size-constrained array always has a preceding write_var registration.
@@ -4201,7 +4204,7 @@ public:
     void lowerInlineRandomize(AstNodeFTaskRef* nodep, AstClass* classp, AstFunc* randomizeFuncp,
                               AstNode* capturedTreep, const AstVar* thisVarp,
                               AstNodeExpr* basicRandomizeFuncCallp) override {
-        AstVar* const classGenp = getRandomGenerator(classp);
+        AstVar* const classGenp = SmtUtil::getRandomGenerator(classp);
         AstVar* const localGenp
             = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, "randomizer",
                          classp->findBasicDType(VBasicDTypeKwd::RANDOM_GENERATOR)};
@@ -4221,7 +4224,8 @@ public:
 
         // Copy (derive) class constraints if present
         if (classGenp) {
-            AstTask* const constrSetupFuncp = getCreateConstraintSetupFunc(classp, m_memberMap);
+            AstTask* const constrSetupFuncp
+                = SmtUtil::getCreateConstraintSetupFunc(classp, m_memberMap);
             AstTaskRef* const callp = new AstTaskRef{nodep->fileline(), constrSetupFuncp};
             randomizeFuncp->addStmtsp(callp->makeStmt());
             randomizeFuncp->addStmtsp(new AstAssign{
@@ -4390,7 +4394,7 @@ public:
             if (classGenp) {
                 randomizeFuncp->addStmtsp(implementConstraintsClear(fl, classGenp));
                 AstTask* const constrSetupFuncp2
-                    = getCreateConstraintSetupFunc(classp, m_memberMap);
+                    = SmtUtil::getCreateConstraintSetupFunc(classp, m_memberMap);
                 randomizeFuncp->addStmtsp((new AstTaskRef{fl, constrSetupFuncp2})->makeStmt());
                 randomizeFuncp->addStmtsp(
                     new AstAssign{fl, new AstVarRef{fl, localGenp, VAccess::WRITE},
@@ -4466,7 +4470,7 @@ public:
                     dimension = dims.second;
                 }
 
-                const size_t width = arrayElementDTypep(arrVarp->dtypep())->width();
+                const size_t width = SmtUtil::arrayElementDTypep(arrVarp->dtypep())->width();
                 methodp->addPinsp(new AstConst{fl, AstConst::Unsized64{}, width});
                 AstNodeExpr* const varnamep = new AstCExpr{
                     fl, AstCExpr::Pure{}, "\"" + arrVarp->name() + "\"", arrVarp->width()};
@@ -4541,11 +4545,11 @@ public:
     }
     AstNodeExpr* lowerCheckOnly(AstClass* classp, AstFunc* funcp) override {
         FileLine* const fl = classp->fileline();
-        AstVar* const classGenp = getRandomGenerator(classp);
+        AstVar* const classGenp = SmtUtil::getRandomGenerator(classp);
         if (!classGenp) return new AstConst{fl, AstConst::WidthedValue{}, 32, 1};
         AstNodeModule* const genModp = VN_AS(classGenp->user2p(), NodeModule);
         funcp->addStmtsp(implementConstraintsClear(fl, classGenp));
-        AstTask* const setupAllTaskp = getCreateConstraintSetupFunc(classp, m_memberMap);
+        AstTask* const setupAllTaskp = SmtUtil::getCreateConstraintSetupFunc(classp, m_memberMap);
         funcp->addStmtsp((new AstTaskRef{fl, setupAllTaskp})->makeStmt());
         AstCExpr* const solverCallp = new AstCExpr{fl};
         solverCallp->dtypeSetBit();

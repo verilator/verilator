@@ -27,9 +27,9 @@
 
 #include "V3Ast.h"
 
-#include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 class V3UniqueNames;
@@ -57,9 +57,9 @@ union RandomizeMode final {
 class RandModeVars final {
     // MEMBERS
     // Static constraint_mode array per root class
-    std::map<AstClass*, AstVar*> m_staticConstraintModeVars;
+    std::unordered_map<AstClass*, AstVar*> m_staticConstraintModeVars;
     // Static rand_mode array per root class
-    std::map<AstClass*, AstVar*> m_staticRandModeVars;
+    std::unordered_map<AstClass*, AstVar*> m_staticRandModeVars;
 
 public:
     // METHODS
@@ -157,8 +157,8 @@ public:
 
     // Header of the runtime library, included by the generated code
     virtual std::string runtimeHeader() const VL_MT_DISABLED = 0;
-    // Runtime sources compiled with the model
-    virtual std::vector<std::string> runtimeSources() const VL_MT_DISABLED = 0;
+    // Runtime C++ files compiled with the model
+    virtual std::vector<std::string> runtimeCppFiles() const VL_MT_DISABLED = 0;
     // Flags for VM_USER_CFLAGS of the generated makefile, from the environment
     virtual std::vector<std::string> runtimeCFlags() const VL_MT_DISABLED = 0;
 
