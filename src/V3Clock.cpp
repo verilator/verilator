@@ -28,70 +28,10 @@
 VL_DEFINE_DEBUG_FUNCTIONS;
 
 //######################################################################
-// Convert every WRITE AstVarRef to a READ ref
-
-class ConvertWriteRefsToRead final : public VNVisitor {
-    // MEMBERS
-    AstNodeExpr* m_resultp = nullptr;  // Converted expression
-
-    // CONSTRUCTORS
-    explicit ConvertWriteRefsToRead(AstNodeExpr* nodep) {
-        m_resultp = VN_AS(iterateSubtreeReturnEdits(nodep), NodeExpr);
-    }
-
-    // VISITORS
-    void visit(AstVarRef* nodep) override {
-        UASSERT_OBJ(!nodep->access().isRW(), nodep, "Cannot handle a READWRITE reference");
-        if (nodep->access().isWriteOnly()) {
-            nodep->replaceWith(
-                new AstVarRef{nodep->fileline(), nodep->varScopep(), VAccess::READ});
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        }
-    }
-
-    void visit(AstNode* nodep) override { iterateChildren(nodep); }
-
-public:
-    static AstNodeExpr* main(AstNodeExpr* nodep) {
-        return ConvertWriteRefsToRead{nodep}.m_resultp;
-    }
-};
-
-//######################################################################
 // Clock state, as a visitor of each AstNode
 
 class ClockVisitor final : public VNVisitor {
     // VISITORS
-    void visit(AstCoverToggle* nodep) override {
-        // UINFOTREE(1, nodep, "", "ct");
-        // COVERTOGGLE(INC, ORIG, CHANGE) ->
-        //   IF(ORIG ^ CHANGE) { INC; CHANGE = ORIG; }
-        AstCoverInc* const incp = nodep->incp()->unlinkFrBack();
-        AstNodeExpr* const origp = nodep->origp()->unlinkFrBack();
-        AstNodeExpr* const changeWrp = nodep->changep()->unlinkFrBack();
-        AstNodeExpr* const changeRdp = ConvertWriteRefsToRead::main(changeWrp->cloneTree(false));
-        AstNodeExpr* comparedp = nullptr;
-        incp->toggleExprp(origp->cloneTree(false));
-        incp->toggleCovExprp(changeRdp->cloneTree(false));
-        FileLine* const flp = nodep->fileline();
-        // Xor will optimize better than Eq, when CoverToggle has bit selects,
-        // but can only use Xor with non-opaque types
-        if (const AstBasicDType* const bdtypep
-            = VN_CAST(origp->dtypep()->skipRefp(), BasicDType)) {
-            if (!bdtypep->isOpaque()) {
-                AstNodeExpr* const zp = new AstConst{flp, AstConst::DTyped{}, origp->dtypep()};
-                comparedp = new AstNeq{flp, zp, new AstXor{flp, origp, changeRdp}};
-            }
-        }
-        if (!comparedp) comparedp = AstNeq::newTyped(flp, origp, changeRdp);
-        AstIf* const newp = new AstIf{flp, comparedp, incp};
-        // We could add another IF to detect posedges, and only increment if so.
-        // It's another whole branch though versus a potential memory miss.
-        // We'll go with the miss.
-        newp->addThensp(new AstAssign{flp, changeWrp, origp->cloneTree(false)});
-        nodep->replaceWith(newp);
-        VL_DO_DANGLING(nodep->deleteTree(), nodep);
-    }
     void visit(AstSenTree* nodep) override {
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);  // No longer needed
     }

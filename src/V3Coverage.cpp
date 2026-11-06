@@ -310,6 +310,7 @@ class CoverageVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstAlways* nodep) override {
+        if (nodep->keyword() == VAlwaysKwd::COVER_TOGGLE) return;  // Made here, nothing to cover
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             // Handle continuous assigns for expression coverage (but not line coverage)
             VL_RESTORER(m_state);
@@ -458,7 +459,8 @@ class CoverageVisitor final : public VNVisitor {
         AstCoverToggle* const newp = new AstCoverToggle{
             varp->fileline(), newCoverInc(varp->fileline(), declp, ""),
             above.m_varRefp->cloneTree(false), above.m_chgRefp->cloneTree(false)};
-        m_modp->addStmtsp(newp);
+        m_modp->addStmtsp(
+            new AstAlways{varp->fileline(), VAlwaysKwd::COVER_TOGGLE, nullptr, newp});
     }
 
     void toggleVarRecurse(const AstNodeDType* const dtypep, const int depth,  // per-iteration

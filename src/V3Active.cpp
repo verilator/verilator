@@ -550,13 +550,13 @@ class ActiveVisitor final : public VNVisitor {
         const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_FINAL};
         moveUnderSpecial<AstSenItem::Final>(nodep);
     }
-    void visit(AstCoverToggle* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
     void visit(AstAlways* nodep) override {
         if (!nodep->stmtsp()) {  // Empty always. Remove it now.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN
+            || nodep->keyword() == VAlwaysKwd::COVER_TOGGLE) {
             moveUnderSpecial<AstSenItem::Combo>(nodep);
             return;
         }

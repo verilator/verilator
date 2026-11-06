@@ -412,7 +412,13 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstNodeCoverDecl*) override {}  // N/A
     void visit(AstCoverInc*) override {}  // N/A
     void visit(AstCoverInsert*) override {}  // N/A
-    void visit(AstCoverToggle*) override {}  // N/A
+    void visit(AstCoverToggle* nodep) override {
+        putfs(nodep, "$_COVERTOGGLE(");
+        iterateConst(nodep->origp());
+        putbs(", ");
+        iterateConst(nodep->changep());
+        puts(");\n");
+    }
 
     void visit(AstCovergroup* nodep) override {
         // AstCovergroup appears as a member inside the lowered AstClass body.

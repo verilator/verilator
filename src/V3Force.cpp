@@ -1390,7 +1390,6 @@ class ForceReplaceVisitor final : public VNVisitor {
     }
     void visit(AstDeassign*) override {}
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
-    void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
     void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }
     void visit(AstAlways* nodep) override {
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {

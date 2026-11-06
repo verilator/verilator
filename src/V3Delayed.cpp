@@ -523,9 +523,6 @@ class DelayedRecord final : public VNVisitorConst, public DelayedBase {
         m_vtxp = new ProcVertex{&m_state.graph, m_activep->sentreep(), nodep};
         iterateChildrenConst(nodep);
     }
-    void visit(AstCoverToggle*) override {
-        // Toggle coverage only writes its own variables, which are not updated by NBAs, ignored
-    }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_vtxp);
         FuncVertex* const vtxp = funcVtxp(nodep);
