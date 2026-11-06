@@ -834,12 +834,16 @@ locking. ``Verilated`` thread-local state (context, DPI scope),
 ``VlProcess::currentp()`` and ``VlRNG::vl_thread_rng()`` are copied at each
 handoff.
 
-``VlDpiThread`` and ``VlDpiThreadPool``
-+++++++++++++++++++++++++++++++++++++++
+``VlThreadPool``
+++++++++++++++++
 
-``VlDpiThread`` wraps a ``std::thread`` with a mutex and condition variable
-used for the handoff. ``VlDpiThreadPool`` keeps idle threads for reuse and
-joins them at program exit.
+Imported tasks acquire workers from their context's ``VlThreadPool``. Each
+call retains its worker and C++ stack while an exported task is suspended.
+These workers are separate from the statically assigned model evaluation
+workers, so suspended calls do not block model evaluation or parallel
+tracing. The pool creates workers as needed, reuses them after calls
+return, and joins idle workers when the context is destroyed. ``VlDpiCall``
+manages the handoff with a mutex and condition variable.
 
 Calling and awaiting DPI tasks
 ++++++++++++++++++++++++++++++

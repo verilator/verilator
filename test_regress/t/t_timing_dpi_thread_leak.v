@@ -24,14 +24,15 @@ module t ();
     export_completed++;
   endtask
   initial begin
-    `checkd(live_threads(), 1);
+    int baseline_threads;
+    baseline_threads = live_threads();
 
     repeat (3) begin
       dpi_import();
     end
 
-    // There should be one simulation thread and one worker thread
-    `checkd(live_threads(), 2);
+    // Completed imports retain one reusable worker in addition to the simulation threads.
+    `checkd(live_threads(), baseline_threads + 1);
     `checkd(export_completed, 6);
     `checkd(c_completed(), 3);
 
@@ -46,12 +47,20 @@ module t ();
       // This kills the process mid-execution in dpi_export()
       victim.kill();
       #10;
-      // Thread count should be at 2
-      `checkd(live_threads(), 2);
+      `checkd(live_threads(), baseline_threads + 1);
       // Killed processes should not reach the end of dpi_export()
       `checkd(export_completed, 6);
       `checkd(c_completed(), ++c_completed_expected);
     end
+
+    // Suspended imports need distinct workers in addition to the simulation threads.
+    fork
+      dpi_import();
+      dpi_import();
+    join
+    `checkd(export_completed, 10);
+    `checkd(c_completed(), c_completed_expected + 2);
+    `checkd(live_threads(), baseline_threads + 2);
     $finish;
   end
 endmodule

@@ -22,152 +22,27 @@
 
 #include "verilated.h"
 
-#include <condition_variable>
-#include <mutex>
-#include <thread>
 #include <vector>
 
 //======================================================================
-// VlDpiThread is a pool thread that runs one VlDpiCall at a time.
-// m_threadTurn selects which side runs: this thread (true) or the
-// thread that called VlDpiCall::handoffWorker() (false).
-
-class VlDpiThread final {
-    // MEMBERS
-    VerilatedMutex m_mutex;  // Protects m_threadTurn, m_exit
-    std::condition_variable_any m_cv;  // Signals m_threadTurn changes
-    bool m_threadTurn VL_GUARDED_BY(m_mutex) = false;  // True if this thread runs
-    bool m_exit VL_GUARDED_BY(m_mutex) = false;  // Thread should exit at next wake-up
-    VlDpiCall* m_callp = nullptr;  // VlDpiCall assigned to this thread
-    Verilated::ThreadLocal m_verilatedTls;  // Thread-local state passed from the side that hands
-                                            // off to the side that runs
-    VlProcess* m_processp = nullptr;  // Current process
-    VlRNG m_rng{0};  // Explicit seed: the default constructor draws from the current RNG
-    std::thread m_thread;  // Must be last, starts running main()
-
-public:
-    // CONSTRUCTORS
-    VlDpiThread()
-        : m_thread{&VlDpiThread::main, this} {}
-    VL_UNCOPYABLE(VlDpiThread);
-
-    // METHODS
-    // Give control to the other side, block until it is given back
-    bool handoff(bool threadTurn) {
-        saveThreadLocals();
-        bool exitThread;
-        {
-            const VerilatedLockGuard lock{m_mutex};
-            m_threadTurn = threadTurn;
-            m_cv.notify_one();
-            m_cv.wait(m_mutex, [&]() VL_REQUIRES(m_mutex) { return m_threadTurn != threadTurn; });
-            exitThread = m_exit;
-        }
-        restoreThreadLocals();
-        return exitThread;
-    }
-    void assign(VlDpiCall* callp) { m_callp = callp; }
-    // Stop and join an idle thread
-    void stop() {
-        {
-            const VerilatedLockGuard lock{m_mutex};
-            m_exit = true;
-            m_threadTurn = true;
-            m_cv.notify_one();
-        }
-        m_thread.join();
-    }
-
-private:
-    void saveThreadLocals() {
-        m_verilatedTls = Verilated::t_s;
-        m_processp = VlProcess::currentp();
-        m_rng = VlRNG::vl_thread_rng();
-    }
-    void restoreThreadLocals() {
-        Verilated::t_s = m_verilatedTls;
-        VlProcess::currentp(m_processp);
-        VlRNG::vl_thread_rng() = m_rng;
-    }
-    void main() {
-        bool exitThread;
-        {
-            const VerilatedLockGuard lock{m_mutex};
-            m_cv.wait(m_mutex, [this]() VL_REQUIRES(m_mutex) { return m_threadTurn; });
-            exitThread = m_exit;
-        }
-        restoreThreadLocals();
-        while (!exitThread) {
-            VlDpiCall::t_currentp = m_callp;
-            m_callp->m_fn();
-            m_callp->m_done = true;
-            VlDpiCall::t_currentp = nullptr;
-            exitThread
-                = handoff(false);  // Returns when the next VlDpiCall is assigned, or on stop()
-        }
-    }
-};
-
-//======================================================================
-// VlDpiThreadPool keeps idle VlDpiThreads for reuse
-
-class VlDpiThreadPool final {
-    VerilatedMutex m_mutex;  // Protects m_idle and m_aborted
-    std::vector<VlDpiThread*> m_idle VL_GUARDED_BY(m_mutex);  // Idle threads
-    std::vector<VlDpiCall*> m_aborted VL_GUARDED_BY(m_mutex);  // Aborted DPI calls
-
-public:
-    VlDpiThreadPool() = default;
-    VL_UNCOPYABLE(VlDpiThreadPool);
-    ~VlDpiThreadPool() {
-        for (VlDpiThread* const threadp : m_idle) {
-            threadp->stop();
-            delete threadp;
-        }
-    }
-    VlDpiThread* acquire() {
-        {
-            const VerilatedLockGuard lock{m_mutex};
-            if (!m_idle.empty()) {
-                VlDpiThread* const threadp = m_idle.back();
-                m_idle.pop_back();
-                return threadp;
-            }
-        }
-        return new VlDpiThread;
-    }
-    void release(VlDpiThread* threadp) {
-        const VerilatedLockGuard lock{m_mutex};
-        m_idle.push_back(threadp);
-    }
-    void addAborted(VlDpiCall* callp) {
-        const VerilatedLockGuard lock{m_mutex};
-        m_aborted.push_back(callp);
-    }
-    void resumeAborted() {
-        while (true) {
-            VlDpiCall* callp;
-            {
-                const VerilatedLockGuard lock{m_mutex};
-                if (m_aborted.empty()) return;
-                callp = m_aborted.back();
-                m_aborted.pop_back();
-            }
-
-            // Thread that is currently executing this VlDpiCall is stuck in stopWorker().
-            // Here we resume it.
-            callp->handoffWorker();
-        }
-    }
-};
-
-static VlDpiThreadPool& threadPool() {
-    static VlDpiThreadPool s_pool;
-    return s_pool;
-}
+// Aborted calls must resume their blocked imports before their workers can be released.
 
 namespace VerilatedDpiCall {
-void resumeAborted() { threadPool().resumeAborted(); }
+static VerilatedMutex s_mutex;
+static std::vector<VlDpiCall*> s_aborted VL_GUARDED_BY(s_mutex);
+
+void resumeAborted() {
+    while (true) {
+        VlDpiCall* callp;
+        {
+            const VerilatedLockGuard lock{s_mutex};
+            if (s_aborted.empty()) return;
+            callp = s_aborted.back();
+            s_aborted.pop_back();
+        }
+        callp->handoffWorker();
+    }
+}
 }  // namespace VerilatedDpiCall
 
 //======================================================================
@@ -178,14 +53,56 @@ thread_local VlDpiCall* VlDpiCall::t_currentp = nullptr;
 VlDpiCall::VlDpiCall(VlProcessRef process, std::function<void()> fn)
     : m_process{std::move(process)}
     , m_fn{std::move(fn)}
-    , m_threadp{threadPool().acquire()} {
-    m_threadp->assign(this);
+    , m_contextp{Verilated::threadContextp()}
+    , m_threadp{static_cast<VlThreadPool*>(m_contextp->threadPoolp())->acquireWorker()} {
+    m_threadp->addTask([](void* selfp) { static_cast<VlDpiCall*>(selfp)->run(); }, this);
+}
+
+void VlDpiCall::saveThreadLocals() {
+    m_verilatedTls = Verilated::t_s;
+    m_currentProcessp = VlProcess::currentp();
+    m_rng = VlRNG::vl_thread_rng();
+}
+
+void VlDpiCall::restoreThreadLocals() {
+    Verilated::t_s = m_verilatedTls;
+    VlProcess::currentp(m_currentProcessp);
+    VlRNG::vl_thread_rng() = m_rng;
+}
+
+void VlDpiCall::handoff(bool workerTurn) {
+    saveThreadLocals();
+    {
+        const VerilatedLockGuard lock{m_mutex};
+        m_workerTurn = workerTurn;
+        m_cv.notify_one();
+        m_cv.wait(m_mutex, [&]() VL_REQUIRES(m_mutex) { return m_workerTurn != workerTurn; });
+    }
+    restoreThreadLocals();
+}
+
+void VlDpiCall::run() {
+    {
+        const VerilatedLockGuard lock{m_mutex};
+        m_cv.wait(m_mutex, [this]() VL_REQUIRES(m_mutex) { return m_workerTurn; });
+    }
+    restoreThreadLocals();
+    t_currentp = this;
+    m_fn();
+    t_currentp = nullptr;
+    saveThreadLocals();
+    // The caller can destroy this object once it acquires the mutex. All accesses to the
+    // call, including the notification, must finish before releasing the lock.
+    const VerilatedLockGuard lock{m_mutex};
+    m_done = true;
+    m_workerTurn = false;
+    m_cv.notify_one();
 }
 
 void VlDpiCall::handoffWorker() {
-    std::ignore = m_threadp->handoff(true);
+    handoff(true);
     if (!m_done) return;
-    threadPool().release(m_threadp);
+    static_cast<VlThreadPool*>(m_contextp->threadPoolp())->releaseWorker(m_threadp);
     if (const std::coroutine_handle<> waiter = m_waiter) {
         // Do not continue if this process was killed
         if (exportAborted()) waiter.destroy();
@@ -197,13 +114,14 @@ void VlDpiCall::handoffWorker() {
 
 void VlDpiCall::markAborted() {
     m_exportAborted = true;
-    threadPool().addAborted(this);
+    const VerilatedLockGuard lock{VerilatedDpiCall::s_mutex};
+    VerilatedDpiCall::s_aborted.push_back(this);
 }
 
 void VlDpiCall::stopWorker() {
     const VerilatedScope* const scopep = Verilated::dpiScope();
     const char* const filenamep = Verilated::dpiFilenamep();
     const int lineno = Verilated::dpiLineno();
-    std::ignore = t_currentp->m_threadp->handoff(false);
+    t_currentp->handoff(false);
     Verilated::dpiContext(scopep, filenamep, lineno);
 }

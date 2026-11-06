@@ -1131,7 +1131,7 @@ class Verilated final {
     } t_s;
 
     friend struct VerilatedInitializer;
-    friend class VlDpiThread;  // Copies t_s between threads on DPI thread handoff
+    friend class VlDpiCall;  // Copies t_s between threads on DPI thread handoff
 
     // CONSTRUCTORS
     VL_UNCOPYABLE(Verilated);

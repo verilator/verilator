@@ -31,11 +31,10 @@
 
 #include "verilatedos.h"
 
+#include "verilated_threads.h"
 #include "verilated_timing.h"
 
 #include <functional>
-
-class VlDpiThread;
 
 namespace VerilatedDpiCall {
 void resumeAborted();
@@ -46,12 +45,17 @@ void resumeAborted();
 // suspends until the function returns.
 
 class VlDpiCall final {
-    friend class VlDpiThread;
-
     // MEMBERS
     const VlProcessRef m_process;  // SV process executing the imported task
     const std::function<void()> m_fn;  // Function executed on the pool thread
-    VlDpiThread* m_threadp;  // Pool thread, released when m_fn returns
+    VerilatedContext* const m_contextp;  // Owning context, whose pool can be recreated on clone
+    VlWorkerThread* const m_threadp;  // Worker retained until m_fn returns
+    VerilatedMutex m_mutex;  // Protects m_workerTurn and orders thread-local state transfers
+    std::condition_variable_any m_cv;  // Signals handoff between the worker and its caller
+    bool m_workerTurn VL_GUARDED_BY(m_mutex) = false;  // True while the worker runs
+    Verilated::ThreadLocal m_verilatedTls;  // State passed to the side that runs
+    VlProcess* m_currentProcessp = nullptr;  // Current process passed at handoff
+    VlRNG m_rng{0};  // Explicit seed: the default constructor draws from the current RNG
     bool m_done = false;  // Set once m_fn returns
     bool m_exportAborted = false;  // Set if the process was killed during the DPI call
     std::coroutine_handle<> m_waiter;  // Coroutine resumed when m_fn returns
@@ -80,6 +84,12 @@ public:
     bool await_ready() const noexcept { return m_done; }
     void await_suspend(std::coroutine_handle<> waiter) noexcept { m_waiter = waiter; }
     void await_resume() const noexcept {}
+
+private:
+    void saveThreadLocals();
+    void restoreThreadLocals();
+    void handoff(bool workerTurn);
+    void run();
 };
 
 #endif  // Guard
