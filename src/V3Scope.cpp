@@ -26,6 +26,7 @@
 #include "V3Scope.h"
 
 #include "V3ConstPool.h"
+#include "V3Control.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -137,6 +138,7 @@ class ScopeVisitor final : public VNVisitor {
         // Defer attachment until all instances are visited so cell collection and child
         // iteration do not rescan a growing list of completed scopes.
         for (AstScope* const scopep : m_scopes) scopep->modp()->addStmtsp(scopep);
+        if (v3Global.opt.mtasks()) V3Control::applyThreadsGroupWorkers(m_scopes);
         cleanupVarRefs();
     }
     void visit(AstNodeModule* nodep) override {

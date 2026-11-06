@@ -317,7 +317,7 @@ The grammar of control commands is as follows:
 
    Same as :option:`/*verilator&32;split_var*/` metacomment.
 
-.. option:: threads_group -module "<modulename>"
+.. option:: threads_group -module "<modulename>" [-workers <instances>-><threads>[: { <worker>... }]]...
 
    With :vlopt:`--threads` above 1, partition each instance of the module
    as a group, keeping its logic in a few mtasks instead of spreading it
@@ -328,7 +328,44 @@ The grammar of control commands is as follows:
    may be marked, and logic belongs to the nearest marked instance above
    it. The module is not inlined. Ignored for the top module.
 
-   Same as :option:`/*verilator&32;threads_group*/` metacomment.
+   With ``-workers``, when the module has ``<instances>`` instances and
+   :vlopt:`--threads` is ``<threads>``, each instance's parallel work is
+   scheduled on the worker at its position in the list. Instances are
+   numbered in the depth-first order of the elaborated hierarchy, across
+   parameterizations of the module; this is not necessarily the order of
+   their names or declarations. Worker 0 is the thread calling ``eval()``,
+   and workers 1 to ``<threads>-1`` are the worker pool. Without the colon
+   and list, the instances are placed automatically.
+
+   Several ``-workers`` may be given for different instance and thread
+   counts. A module with ``-workers`` is a group only at the
+   :vlopt:`--threads` values they name, so grouping can differ between
+   thread counts. If lists exist for that thread count but none match the
+   elaborated instance count, Verilator reports an error. If several
+   ``-module`` patterns match a module and give the same
+   ``<instances>-><threads>``, the pattern first in sorted order is used.
+   Low-cost evaluations may still run serially on the calling thread.
+
+   With :vlopt:`--hierarchical`, counts and workers are those of each
+   separately Verilated block. A block's workers are the threads of its
+   own schedule, which may run on different threads of the pool on each
+   evaluation, and a block using several threads is placed automatically.
+
+   For example, to alternate four tiles between two threads:
+
+   .. code-block:: sv
+
+      threads_group -module "tile" -workers 4->2: { 0 1 0 1 }
+
+   Or to group a processor only with four or eight threads, automatically
+   placed with four:
+
+   .. code-block:: sv
+
+      threads_group -module "cpu" -workers 1->4 -workers 1->8: { 3 }
+
+   Without ``-workers``, same as :option:`/*verilator&32;threads_group*/`
+   metacomment.
 
 .. option:: timing_off [-file "<filename>" [-lines <line> [ - <line>]]]
 
