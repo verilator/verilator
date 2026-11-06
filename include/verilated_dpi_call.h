@@ -53,9 +53,15 @@ class VlDpiCall final {
     VerilatedMutex m_mutex;  // Protects m_workerTurn and orders thread-local state transfers
     std::condition_variable_any m_cv;  // Signals handoff between the worker and its caller
     bool m_workerTurn VL_GUARDED_BY(m_mutex) = false;  // True while the worker runs
+
+    // Changes of this state happen only in saveThreadLocals() and restoreThreadLocals().
+    // The calls to these functions never interleave in the scope of one VlDpiCall instance,
+    // because the handoff() forces one side to be suspended and waiting for resumption.
+    // This orders the copies despite their changes outside the lock.
     Verilated::ThreadLocal m_verilatedTls;  // State passed to the side that runs
     VlProcess* m_currentProcessp = nullptr;  // Current process passed at handoff
     VlRNG m_rng{0};  // Explicit seed: the default constructor draws from the current RNG
+
     bool m_done = false;  // Set once m_fn returns
     bool m_exportAborted = false;  // Set if the process was killed during the DPI call
     std::coroutine_handle<> m_waiter;  // Coroutine resumed when m_fn returns

@@ -15,11 +15,18 @@
 extern "C" {
 #endif
 
-extern void dpi_export(void);
+extern void dpi_export_task(void);
+extern void dpi_export_func(void);
 
-int dpi_import() {
-    printf("Calling dpi_export\n");
-    dpi_export();
+int dpi_import_calls_func() {
+    printf("Calling dpi_export_func\n");
+    dpi_export_func();
+    return 0;
+}
+
+int dpi_import_calls_task() {
+    printf("Calling dpi_export_task\n");
+    dpi_export_task();
     return 0;
 }
 
