@@ -2639,6 +2639,10 @@ List Of Warnings
    signals in one place makes it easy to find what is unused and reduces
    the number of lint_off pragmas, reducing bugs.
 
+   Verilator intentionally does not consider a `$display("%p")` to consume
+   all members of a class/structure as this would otherwise hide that a
+   variable is unused functionally otherwise.
+
 
 .. option:: USEBEFOREDECL
 
