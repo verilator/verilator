@@ -4541,8 +4541,8 @@ VerilatedVar* VerilatedScope::varInsertSized(const char* namep, void* datap, boo
 VerilatedVar* VerilatedScope::forceableVarInsert(
     const char* namep, void* datap, bool isParam, VerilatedVarType vltype, int vlflags,
     void* forceReadSignalDatap, const char* const forceReadSignalName,
-    std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals, int udims,
-    int pdims, ...) VL_MT_UNSAFE {
+    std::pair<VerilatedVar*, VerilatedVar*> forceControlSignals, int udims, int pdims,
+    ...) VL_MT_UNSAFE {
     if (!m_varsp) m_varsp = new VerilatedVarNameMap;
 
     // TODO: While the force read signal would be *expected* to have the same vltype and vlflags
