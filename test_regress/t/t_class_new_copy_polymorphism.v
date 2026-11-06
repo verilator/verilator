@@ -95,6 +95,20 @@ module t;
       `checkd(copy2.value, 10);
     end
 
+    // Test 5: Copy of a derived handle assigned to a base handle (IEEE 1800-2023 8.12)
+    begin
+      Derived d2;
+      Base copy3;
+      d2 = new();
+      d2.extra = 77;
+      copy3 = new d2;
+      `checks(copy3.get_type(), "DERIVED");
+      `checkd(copy3.value, 20);
+      if (copy3 == d2) `stop;
+      $cast(d, copy3);
+      `checkd(d.extra, 77);
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
