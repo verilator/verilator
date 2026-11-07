@@ -248,7 +248,10 @@ class SplitVisitor final : public VNVisitor {
                     // keeps the 'if' and all it holds in one component, so just once.
                     AstIf* const clonep = new AstIf{flp, ifp->condp()->cloneTree(true),
                                                     thens[color], elses[color]};
-                    // Preserve pragmas from unique if's so assertions work properly
+                    // Preserve the branch prediction (assertions mark their failure
+                    // branch unlikely), and pragmas from unique if's so assertions work
+                    clonep->branchPred(ifp->branchPred());
+                    clonep->isBoundsCheck(ifp->isBoundsCheck());
                     clonep->uniquePragma(ifp->uniquePragma());
                     clonep->unique0Pragma(ifp->unique0Pragma());
                     clonep->priorityPragma(ifp->priorityPragma());
@@ -454,12 +457,60 @@ class SplitVisitor final : public VNVisitor {
     }
 
     // CONSTRUCTORS
-    explicit SplitVisitor(AstNetlist* nodep) { iterate(nodep); }
-    ~SplitVisitor() override { V3Stats::addStat("Optimizations, Split always", m_statSplits); }
+    explicit SplitVisitor(AstNode* nodep) { iterate(nodep); }
+    ~SplitVisitor() override = default;
     VL_UNCOPYABLE(SplitVisitor);
 
 public:
-    static void apply(AstNetlist* nodep) { SplitVisitor{nodep}; }
+    static void apply(AstNetlist* nodep) {
+        const SplitVisitor visitor{nodep};
+        V3Stats::addStat("Optimizations, Split always", visitor.m_statSplits);
+    }
+
+    static void selfTest() {
+        // always if (in) begin a = 1; b = 1; end else begin a = 0; b = 0; end
+        // splits into one always per variable, each with its own copy of the 'if'
+        FileLine* const flp = v3Global.rootp()->fileline();
+        AstScope* const scopep = new AstScope{flp, nullptr, "test", nullptr, nullptr};
+        std::vector<AstVar*> varps;
+        std::vector<AstVarScope*> vscps;
+        for (const char* const name : {"in", "a", "b"}) {
+            varps.push_back(
+                new AstVar{flp, VVarType::MODULETEMP, name, v3Global.rootp()->findBitDType()});
+            vscps.push_back(new AstVarScope{flp, scopep, varps.back()});
+        }
+        const auto assign = [&](size_t i, bool value) {
+            return new AstAssign{flp, new AstVarRef{flp, vscps[i], VAccess::WRITE},
+                                 new AstConst{flp, AstConst::BitTrue{}, value}};
+        };
+        AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, vscps[0], VAccess::READ}};
+        ifp->addThensp(assign(1, true));
+        ifp->addThensp(assign(2, true));
+        ifp->addElsesp(assign(1, false));
+        ifp->addElsesp(assign(2, false));
+        ifp->branchPred(VBranchPred::BP_UNLIKELY);
+        ifp->isBoundsCheck(true);
+        scopep->addBlocksp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, ifp});
+
+        const SplitVisitor visitor{scopep};
+        UASSERT_SELFTEST(static_cast<double>(visitor.m_statSplits), 1.0);
+        int nIfs = 0;
+        for (AstNode* blockp = scopep->blocksp(); blockp; blockp = blockp->nextp()) {
+            const AstIf* const splitIfp = VN_AS(VN_AS(blockp, Always)->stmtsp(), If);
+            UASSERT_OBJ(splitIfp->thensp() && splitIfp->elsesp(), splitIfp,
+                        "Self-test: split 'if' should keep both branches");
+            UASSERT_OBJ(splitIfp->branchPred().unlikely(), splitIfp,
+                        "Self-test: split 'if' lost its branch prediction");
+            UASSERT_OBJ(splitIfp->isBoundsCheck(), splitIfp,
+                        "Self-test: split 'if' lost its bounds check flag");
+            ++nIfs;
+        }
+        UASSERT_SELFTEST(nIfs, 2);
+
+        VL_DO_DANGLING(scopep->deleteTree(), scopep);
+        for (AstVarScope* const vscp : vscps) vscp->deleteTree();
+        for (AstVar* const varp : varps) varp->deleteTree();
+    }
 };
 
 //######################################################################
@@ -470,3 +521,5 @@ void V3Split::splitAll(AstNetlist* nodep) {
     SplitVisitor::apply(nodep);
     V3Global::dumpCheckGlobalTree("split", 0, dumpTreeEitherLevel() >= 3);
 }
+
+void V3Split::selfTest() { SplitVisitor::selfTest(); }
