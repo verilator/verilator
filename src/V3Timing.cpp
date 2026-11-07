@@ -459,7 +459,7 @@ public:
 
 class TimingControlVisitor final : public VNVisitor {
     // NODE STATE
-    //  Ast{Always,NodeCCall,Fork,NodeAssign}::user1()  -> bool.         Set true if the node has
+    //  Ast{Initial,NodeCCall,Fork,NodeAssign}::user1() -> bool.         Set true if the node has
     //                                                                   been processed.
     //  AstAssignW::user1()                             -> bool.         Set true if the assignment
     //                                                                   represents the net delay
@@ -520,6 +520,7 @@ class TimingControlVisitor final : public VNVisitor {
     size_t m_statZeroDelays = 0;  // Number of statically known #0 delays
     size_t m_statConstDelays = 0;  // Number of statically known #const (non-zero) delays
     size_t m_statVariableDelays = 0;  // Number of delays with value unknown at compile time
+    size_t m_statSuspendableProcs = 0;  // Number of suspendable processes
 
     // METHODS
     // Transform an assignment with an intra timing control into a timing control with the
@@ -850,12 +851,16 @@ class TimingControlVisitor final : public VNVisitor {
         VL_RESTORER(m_underProcedure);
         m_underProcedure = true;
         iterateChildren(nodep);
-        if (hasFlags(nodep, T_SUSPENDEE)) nodep->setSuspendable();
+        if (hasFlags(nodep, T_SUSPENDEE)) {
+            nodep->setSuspendable();
+            ++m_statSuspendableProcs;
+        }
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
     }
     void visit(AstInitial* nodep) override {
+        if (nodep->user1SetOnce()) return;
         visit(static_cast<AstNodeProcedure*>(nodep));
-        if (nodep->needProcess() && !nodep->user1SetOnce()) {
+        if (nodep->needProcess()) {
             nodep->addStmtsp(
                 new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
         }
@@ -866,7 +871,6 @@ class TimingControlVisitor final : public VNVisitor {
         visit(static_cast<AstNodeStmt*>(nodep));
     }
     void visit(AstAlways* nodep) override {
-        if (nodep->user1SetOnce()) return;
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
         m_procp = nodep;
@@ -884,7 +888,6 @@ class TimingControlVisitor final : public VNVisitor {
         iterateChildren(nodep);
         if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
         if (!hasFlags(nodep, T_SUSPENDEE)) return;
-        nodep->setSuspendable();
         FileLine* const flp = nodep->fileline();
         AstSenTree* const sentreep = m_activep->sentreep();
         if (sentreep->hasClocked()) {
@@ -893,12 +896,22 @@ class TimingControlVisitor final : public VNVisitor {
             nodep->addStmtsp(controlp);
             iterate(controlp);
         }
-        // Note: The 'while (true)' outer loop will be added in V3Sched
+        // A suspendable 'always' is an 'initial forever', which stops on $finish
+        AstLoop* const loopp = new AstLoop{flp};
+        loopp->addStmtsp(new AstLoopTest{
+            flp, loopp, new AstCExpr{flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1}});
+        loopp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
+        AstInitial* const initialp = new AstInitial{flp, loopp};
+        initialp->user1(true);  // Already processed
+        initialp->setSuspendable();
+        ++m_statSuspendableProcs;
+        if (nodep->needProcess()) initialp->setNeedProcess();
         auto* const activep = new AstActive{
             flp, "", new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Initial{}}}};
         activep->senTreeStorep(activep->sentreep());
-        activep->addStmtsp(nodep->unlinkFrBack());
+        activep->addStmtsp(initialp);
         m_activep->addNextHere(activep);
+        VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }
     void visit(AstCFunc* nodep) override {
         VL_RESTORER(m_procp);
@@ -1449,6 +1462,7 @@ public:
         V3Stats::addStat("Timing, known #0 delays", m_statZeroDelays);
         V3Stats::addStat("Timing, known #const delays", m_statConstDelays);
         V3Stats::addStat("Timing, unknown #variable delays", m_statVariableDelays);
+        V3Stats::addStat("Timing, suspendable processes", m_statSuspendableProcs);
     }
 };
 

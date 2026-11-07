@@ -131,10 +131,6 @@ public:
         // Some properties to consider
         const bool suspendable = procp && procp->isSuspendable();
         const bool needProcess = procp && procp->needProcess();
-        // TODO: This is a bit muddy: 'initial forever @(posedge clk) begin ... end' is a fancy
-        //       way of saying always @(posedge clk), so it might be quite hot...
-        //       Also, if m_funcp is slow, but this one isn't we should force a new function
-        const bool slow = m_slow && !(suspendable && VN_IS(procp, Always));
 
         // Put suspendable processes into individual functions on their own
         if (suspendable) forceNewFunction();
@@ -174,7 +170,7 @@ public:
                 if (needProcess) m_funcp->setNeedProcess();
                 m_funcp->isStatic(false);
                 m_funcp->isLoose(true);
-                m_funcp->slow(slow);
+                m_funcp->slow(m_slow);
                 scopep->addBlocksp(m_funcp);
                 // Record function and sensitivity to call it with
                 m_result.emplace_back(m_funcp, domainp);

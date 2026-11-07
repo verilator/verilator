@@ -1666,8 +1666,7 @@ public:
         ET_HYBRID,  // This is like ET_COMB, but with explicit sensitivity to an expression
         ET_STATIC,  // static variable initializers (runs before 'initial')
         ET_INITIAL,  // 'initial' statements
-        ET_FINAL,  // 'final' statements
-        ET_NEVER  // Never occurs (optimized away)
+        ET_FINAL  // 'final' statements
     };
     enum en m_e;
     bool clockedStmt() const {
@@ -1685,7 +1684,6 @@ public:
             false,  // ET_STATIC
             false,  // ET_INITIAL
             false,  // ET_FINAL
-            false,  // ET_NEVER
         };
         return clocked[m_e];
     }
@@ -1701,14 +1699,14 @@ public:
     }
     const char* ascii() const {
         static constexpr const char* const names[]
-            = {"CHANGED",    "BOTH",   "POS",    "NEG",     "EVENT", "TRUE", "COMBO",
-               "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL", "NEVER"};
+            = {"CHANGED", "BOTH",       "POS",    "NEG",    "EVENT",   "TRUE",
+               "COMBO",   "COMBO_STAR", "HYBRID", "STATIC", "INITIAL", "FINAL"};
         return names[m_e];
     }
     const char* verilogKwd() const {
         static constexpr const char* const names[]
-            = {"[changed]", "edge",     "posedge",  "negedge",   "[event]", "[true]", "*",
-               "*",         "[hybrid]", "[static]", "[initial]", "[final]", "[never]"};
+            = {"[changed]", "edge", "posedge",  "negedge",  "[event]",   "[true]",
+               "*",         "*",    "[hybrid]", "[static]", "[initial]", "[final]"};
         return names[m_e];
     }
     // Return true iff this and the other have mutually exclusive transitions

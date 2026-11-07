@@ -1977,7 +1977,6 @@ public:
     class Static {};  // for constructor type-overload selection
     class Initial {};  // for constructor type-overload selection
     class Final {};  // for constructor type-overload selection
-    class Never {};  // for constructor type-overload selection
     AstSenItem(FileLine* fl, VEdgeType edgeType, AstNodeExpr* senp, AstNodeExpr* condp = nullptr)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{edgeType} {
@@ -1996,9 +1995,6 @@ public:
     AstSenItem(FileLine* fl, Final)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_FINAL} {}
-    AstSenItem(FileLine* fl, Never)
-        : ASTGEN_SUPER_SenItem(fl)
-        , m_edgeType{VEdgeType::ET_NEVER} {}
     ASTGEN_MEMBERS_AstSenItem;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -2021,7 +2017,6 @@ public:
     bool isStatic() const { return edgeType() == VEdgeType::ET_STATIC; }
     bool isInitial() const { return edgeType() == VEdgeType::ET_INITIAL; }
     bool isFinal() const { return edgeType() == VEdgeType::ET_FINAL; }
-    bool isNever() const { return edgeType() == VEdgeType::ET_NEVER; }
 };
 class AstSenTree final : public AstNode {
     // A sensitivity list

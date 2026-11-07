@@ -486,8 +486,7 @@ void EmitCFunc::emitVarReset(const string& prefix, AstVar* varp, bool constructi
         // If an ARRAYINIT we initialize it using an initial block similar to a signal
         // puts("// parameter "+varp->nameProtect()+" = "+varp->valuep()->name()+"\n");
     } else {
-        putns(varp,
-              emitVarResetRecurse(varp, constructing, newPrefix, dtypep, 0, "", varp->valuep()));
+        putns(varp, emitVarResetRecurse(varp, constructing, newPrefix, dtypep, 0, "", nullptr));
     }
 }
 

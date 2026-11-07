@@ -462,14 +462,6 @@ class ActiveVisitor final : public VNVisitor {
 
     void visitAlways(AstNode* nodep, AstSenTree* oldsentreep, VAlwaysKwd kwd) {
         // Move always to appropriate ACTIVE based on its sense list
-        if (oldsentreep && oldsentreep->sensesp() && oldsentreep->sensesp()->isNever()) {
-            // Never executing.  Kill it.
-            UASSERT_OBJ(!oldsentreep->sensesp()->nextp(), nodep,
-                        "Never senitem should be alone, else the never should be eliminated.");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            return;
-        }
-
         {
             const VNUser1InUse user1InUse;
 

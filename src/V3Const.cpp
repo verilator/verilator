@@ -3513,37 +3513,31 @@ class ConstVisitor final : public VNVisitor {
         }
     }
 
-    bool onlySenItemInSenTree(const AstSenItem* nodep) {
-        // Only one if it's not in a list
-        return (!nodep->nextp() && nodep->backp()->nextp() != nodep);
-    }
     void visit(AstSenItem* nodep) override {
         iterateChildren(nodep);
-        if (m_doNConst
-            && !v3Global.opt.timing().isSetTrue()  // If --timing, V3Sched would turn this into an
-                                                   // infinite loop. See #5080
-            && (VN_IS(nodep->sensp(), Const) || VN_IS(nodep->sensp(), EnumItemRef)
-                || (nodep->varrefp() && nodep->varrefp()->varp()->isParam()))) {
-            // Constants in sensitivity lists may be removed (we'll simplify later)
-            if (nodep->isClocked()) {  // A constant can never get a pos/negedge
-                if (onlySenItemInSenTree(nodep)) {
-                    if (nodep->edgeType() == VEdgeType::ET_CHANGED) {
-                        // TODO: This really is dodgy, as strictly compliant simulators will not
-                        //       execute this block, but but t_func_check relies on it
-                        nodep->replaceWith(
-                            new AstSenItem{nodep->fileline(), AstSenItem::Initial{}});
-                    } else {
-                        nodep->replaceWith(new AstSenItem{nodep->fileline(), AstSenItem::Never{}});
-                    }
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                } else {
-                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-                }
-            } else {  // Otherwise it may compute a result that needs to settle out
-                nodep->replaceWith(new AstSenItem{nodep->fileline(), AstSenItem::Combo{}});
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        if (!m_doNConst) return;
+        if (AstConst* const constp = VN_CAST(nodep->sensp(), Const)) {
+            // posedge/negedge on an expression that folded to constant either
+            // never triggers (posedge 0/negedge 1), or might trigger precisely
+            // once at time 0 (posedge 1/negedge 0), if the static initialization
+            // state of the expression was not that value. We can't check the
+            // latter easily so fire them once regardless by changing them to
+            // a 'change' sensitivity. V3ActiveTop deletes the never cases.
+            if ((nodep->edgeType() == VEdgeType::ET_POSEDGE && constp->num().bitIs1(0))
+                || (nodep->edgeType() == VEdgeType::ET_NEGEDGE && constp->num().bitIs0(0))) {
+                nodep->edgeType(VEdgeType::ET_CHANGED);
             }
-        } else if (m_doNConst && VN_IS(nodep->sensp(), Not)) {
+            if (nodep->edgeType() == VEdgeType::ET_CHANGED
+                && !(constp->dtypep() == constp->findBitDType() && constp->num().isEqOne())) {
+                // A change sensitivity behaves the same on any constant, so use the same constant
+                // for all, which makes them share a trigger. TODO: this is not quite right
+                // if the static initializer is the same as the constant, but oh well.
+                constp->replaceWith(new AstConst{constp->fileline(), AstConst::BitTrue{}});
+                VL_DO_DANGLING(pushDeletep(constp), constp);
+            }
+            return;
+        }
+        if (VN_IS(nodep->sensp(), Not)) {
             // V3Gate may propagate NOTs into clocks... Just deal with it
             AstNode* const sensp = nodep->sensp();
             AstNode* lastSensp = sensp;
