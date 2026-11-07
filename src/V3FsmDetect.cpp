@@ -915,7 +915,7 @@ class FsmDetectVisitor final : public VNVisitor {
         if (VN_IS(nodep, CoverInc)) return true;
         const AstIf* const ifp = VN_CAST(nodep, If);
         if (!ifp || ifp->elsesp()) return false;
-        for (AstNode* stmtp = ifp->thensp(); stmtp; stmtp = stmtp->nextp()) {
+        for (const AstNode* const stmtp : ifp->thenspList()) {
             if (!VN_IS(stmtp, CoverInc)) return false;
         }
         return true;

@@ -20,6 +20,8 @@ module t (
   logic flush;
   logic go;
   logic last;
+  state_t state2;
+  state_t state2_next;
   state_t saved;
   int cyc;
 
@@ -30,10 +32,28 @@ module t (
     else state <= state_next;
   end
 
-  // An enable register with no else is not an FSM state register
+  // The same reset as a conditional, which expression coverage instruments
+  always_ff @(posedge clk) begin
+    state2 <= (rst | flush) ? IDLE : state2_next;
+  end
+
+  always_comb begin
+    case (state2)
+      IDLE:
+      if (go) state2_next = RUN;
+      else state2_next = IDLE;
+      RUN: state2_next = DONE;
+      default: state2_next = IDLE;
+    endcase
+  end
+
+  // An enable register with no else is not an FSM state register.  Line
+  // coverage would add an else, so it is off here.
+  // verilator coverage_off
   always_ff @(posedge clk) begin
     if (go) saved <= state;
   end
+  // verilator coverage_on
 
   always_comb begin
     case (state)
