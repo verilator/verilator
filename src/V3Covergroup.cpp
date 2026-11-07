@@ -197,7 +197,7 @@ class CovergroupExprValidVisitor final : public VNVisitor {
             bool invalidDirection = false;
             for (AstNode* const stmtp : nodep->taskp()->stmtspList()) {
                 const AstVar* const varp = VN_CAST(stmtp, Var);
-                if (varp && varp->isIO() && varp->isWritable()) {
+                if (varp && varp->isIO() && varp->isWritable() && !varp->isFuncReturn()) {
                     invalidDirection = true;
                     break;
                 }

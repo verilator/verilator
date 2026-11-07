@@ -1948,6 +1948,7 @@ void AstFunc::initFvarp(AstVar* varp) {
     varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
     varp->funcLocal(true);
     varp->funcReturn(true);
+    addStmtsp(varp);
     fvarp(varp);
 }
 string AstGenBlock::dtypeNameInnerScope(const string& outer) const {

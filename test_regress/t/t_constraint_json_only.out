@@ -68,11 +68,9 @@
       {"type":"VAR","name":"if_state_ok","addr":"(PB)","loc":"d,13:12,13:23","dtypep":"(R)","origName":"if_state_ok","verilogName":"if_state_ok","direction":"NONE","declDirection":"NONE","lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"bit","rand":"RAND"},
       {"type":"VAR","name":"array","addr":"(QB)","loc":"d,15:12,15:17","dtypep":"(RB)","origName":"array","verilogName":"array","direction":"NONE","declDirection":"NONE","lifetime":"VAUTOMI","varType":"MEMBER","rand":"RAND"},
       {"type":"VAR","name":"state","addr":"(SB)","loc":"d,17:10,17:15","dtypep":"(HB)","origName":"state","verilogName":"state","direction":"NONE","declDirection":"NONE","lifetime":"VAUTOMI","varType":"MEMBER","dtypeName":"string"},
-      {"type":"FUNC","name":"strings_equal","addr":"(TB)","loc":"d,61:16,61:29","dtypep":"(R)","method":true,"lifetime":"VAUTOMI","cname":"strings_equal",
-       "fvarp": [
-        {"type":"VAR","name":"strings_equal","addr":"(UB)","loc":"d,61:16,61:29","dtypep":"(R)","origName":"strings_equal","verilogName":"strings_equal","direction":"OUTPUT","declDirection":"NONE","noCReset":true,"icoMaybeWritten":true,"isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit"}
-      ],
+      {"type":"FUNC","name":"strings_equal","addr":"(TB)","loc":"d,61:16,61:29","dtypep":"(R)","method":true,"lifetime":"VAUTOMI","cname":"strings_equal","fvarp":"(UB)",
        "stmtsp": [
+        {"type":"VAR","name":"strings_equal","addr":"(UB)","loc":"d,61:16,61:29","dtypep":"(R)","origName":"strings_equal","verilogName":"strings_equal","direction":"OUTPUT","declDirection":"NONE","noCReset":true,"icoMaybeWritten":true,"isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit"},
         {"type":"VAR","name":"a","addr":"(VB)","loc":"d,61:37,61:38","dtypep":"(HB)","origName":"a","verilogName":"a","direction":"INPUT","declDirection":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string"},
         {"type":"VAR","name":"b","addr":"(WB)","loc":"d,61:47,61:48","dtypep":"(HB)","origName":"b","verilogName":"b","direction":"INPUT","declDirection":"INPUT","isFuncLocal":true,"lifetime":"VAUTOMI","varType":"PORT","dtypeName":"string"},
         {"type":"ASSIGN","addr":"(XB)","loc":"d,61:16,61:29","dtypep":"(R)",
@@ -232,11 +230,9 @@
           ]}
         ]}
       ]},
-      {"type":"FUNC","name":"randomize","addr":"(CB)","loc":"d,7:1,7:6","dtypep":"(V)","method":true,"lifetime":"NONE","cname":"randomize",
-       "fvarp": [
-        {"type":"VAR","name":"randomize","addr":"(UE)","loc":"d,7:1,7:6","dtypep":"(V)","origName":"randomize","verilogName":"randomize","direction":"OUTPUT","declDirection":"NONE","isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit"}
-      ],
+      {"type":"FUNC","name":"randomize","addr":"(CB)","loc":"d,7:1,7:6","dtypep":"(V)","method":true,"lifetime":"NONE","cname":"randomize","fvarp":"(UE)",
        "stmtsp": [
+        {"type":"VAR","name":"randomize","addr":"(UE)","loc":"d,7:1,7:6","dtypep":"(V)","origName":"randomize","verilogName":"randomize","direction":"OUTPUT","declDirection":"NONE","isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit"},
         {"type":"STMTEXPR","addr":"(VE)","loc":"d,7:1,7:6",
          "exprp": [
           {"type":"CMETHODHARD","name":"clearConstraints","addr":"(WE)","loc":"d,7:1,7:6","dtypep":"(FC)",
@@ -903,11 +899,9 @@
           ]}
         ]}
       ]},
-      {"type":"FUNC","name":"__VBasicRand","addr":"(KF)","loc":"d,7:1,7:6","dtypep":"(V)","method":true,"lifetime":"NONE","cname":"__VBasicRand",
-       "fvarp": [
-        {"type":"VAR","name":"__VBasicRand","addr":"(AQ)","loc":"d,7:1,7:6","dtypep":"(V)","origName":"__VBasicRand","verilogName":"__VBasicRand","direction":"OUTPUT","declDirection":"NONE","isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit"}
-      ],
+      {"type":"FUNC","name":"__VBasicRand","addr":"(KF)","loc":"d,7:1,7:6","dtypep":"(V)","method":true,"lifetime":"NONE","cname":"__VBasicRand","fvarp":"(AQ)",
        "stmtsp": [
+        {"type":"VAR","name":"__VBasicRand","addr":"(AQ)","loc":"d,7:1,7:6","dtypep":"(V)","origName":"__VBasicRand","verilogName":"__VBasicRand","direction":"OUTPUT","declDirection":"NONE","isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit"},
         {"type":"ASSIGN","addr":"(BQ)","loc":"d,7:1,7:6","dtypep":"(V)",
          "rhsp": [
           {"type":"CONST","name":"32'h1","addr":"(CQ)","loc":"d,7:1,7:6","dtypep":"(T)"}

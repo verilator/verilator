@@ -149,6 +149,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         for (AstNode* itemp = nodep->stmtsp(); itemp; itemp = itemp->nextp()) {
             AstVar* const portp = VN_AS(itemp, Var);
             UASSERT_OBJ(portp->isIO(), portp, "Non-port in a DPI import prototype");
+            if (portp->isFuncReturn()) continue;
             if (!first) puts(", ");
             first = false;
             puts(portp->verilogKwd());
@@ -205,7 +206,9 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(nodep->prettyName());
         puts(";\n");
         // Only putfs the first time for each visitor; later for same node is putqs
-        iterateAndNextConstNull(nodep->stmtsp());
+        for (AstNode* const stmtp : nodep->stmtspList()) {
+            if (stmtp != nodep->fvarp()) iterateConst(stmtp);
+        }
         putqs(nodep, "end" + nodep->verilogKwd() + "\n");
     }
 

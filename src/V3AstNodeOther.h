@@ -106,14 +106,13 @@ public:
     AstNodeCoverDecl* dataDeclThisp() { return dataDeclNullp() ? dataDeclNullp() : this; }
 };
 class AstNodeFTask VL_NOT_FINAL : public AstNode {
-    // Output variable in functions, nullptr in tasks
-    // @astgen op1 := fvarp : Optional[AstVar]
     // Class/package scope
-    // @astgen op2 := classOrPackagep : Optional[AstNode]
+    // @astgen op1 := classOrPackagep : Optional[AstNode]
     // Statements/Ports/Vars
     // @astgen op3 := stmtsp : List[AstNode]
     // Scope name
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
+    // @astgen ptr := m_fvarp : Optional[AstVar]  // Output variable in functions, under stmtsp
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
     // dist-ast-dump-suppress  // Not dumped due to verbosity
@@ -183,6 +182,7 @@ protected:
         addStmtsp(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
     }
+    void fvarp(AstVar* varp) { m_fvarp = varp; }
 
 public:
     ASTGEN_MEMBERS_AstNodeFTask;
@@ -193,10 +193,10 @@ public:
     bool isGateOptimizable() const override {
         return !((m_dpiExport || m_dpiImport) && !m_dpiPure);
     }
-    // {AstFunc only} op1 = Range output variable
     void name(const string& name) override { m_name = name; }
     string cname() const { return m_cname; }
     void cname(const string& cname) { m_cname = cname; }
+    AstVar* fvarp() const { return m_fvarp; }
     bool isFunction() const { return fvarp() != nullptr; }
     // MORE ACCESSORS
     void dpiOpenParentInc() { ++m_dpiOpenParent; }

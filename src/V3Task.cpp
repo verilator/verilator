@@ -760,6 +760,7 @@ class TaskVisitor final : public VNVisitor {
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstNode* const newbodysp
             = refp->taskp()->stmtsp() ? refp->taskp()->stmtsp()->cloneTree(true) : nullptr;
+        AstVar* const fvarp = outvscp ? refp->taskp()->fvarp()->clonep() : nullptr;
         AstNodeStmt* const beginp
             = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
         if (newbodysp) AstNode::addNext<AstNode, AstNode>(beginp, newbodysp);
@@ -776,6 +777,11 @@ class TaskVisitor final : public VNVisitor {
             }
         }
         UASSERT_OBJ(!refp->argsp(), refp, "Arg wasn't removed by above loop");
+        // Create function output variables
+        if (fvarp) {
+            fvarp->user2p(outvscp);
+            VL_DO_DANGLING(pushDeletep(fvarp->unlinkFrBack()), fvarp);
+        }
         {
             AstNode* nextstmtp;
             for (AstNode* stmtp = beginp; stmtp; stmtp = nextstmtp) {
@@ -802,11 +808,6 @@ class TaskVisitor final : public VNVisitor {
                     }
                 }
             }
-        }
-        // Create function output variables
-        if (outvscp) {
-            // UINFO(0, "setflag on " << funcp->fvarp() << " to " << outvscp);
-            refp->taskp()->fvarp()->user2p(outvscp);
         }
         // Replace variable refs
         relink(beginp);
@@ -1620,7 +1621,7 @@ class TaskVisitor final : public VNVisitor {
             if (ftaskNoInline || nodep->dpiExport()) {
                 portp->funcReturn(false);  // Converting return to 'outputs'
             }
-            unlinkAndClone(nodep, portp, false);
+            portp->unlinkFrBack();
             rtnvarp = portp;
             rtnvarp->funcLocal(true);
             rtnvarp->noCReset(true);  // As made for port in V3LinkResolve
@@ -2055,8 +2056,10 @@ class TaskVisitor final : public VNVisitor {
     // If taskp is a getter, return the reference to the member variable it returns
     static AstVarRef* getterVarRefp(AstNodeFTask* taskp) {
         AstNode* stmtp = taskp->stmtsp();
-        // Skip the default initialization of the function's return value
+        // Skip the return variable itself
         const AstVar* const fvarp = taskp->fvarp();
+        if (stmtp == fvarp) stmtp = stmtp->nextp();
+        // Skip the default initialization of the function's return value
         if (const AstAssign* const initp = VN_CAST(stmtp, Assign)) {
             const AstVarRef* const lvarrefp = VN_CAST(initp->lhsp(), VarRef);
             if (lvarrefp && lvarrefp->varp() == fvarp && VN_IS(initp->rhsp(), Const))
@@ -2268,13 +2271,6 @@ class TaskVisitor final : public VNVisitor {
 
             // Any variables inside the function still have varscopes pointing to them.
             // We're going to delete the vars, so delete the varscopes.
-            if (nodep->isFunction()) {
-                if (AstVar* const portp = nodep->fvarp()) {
-                    AstVarScope* const vscp = m_statep->findVarScope(m_scopep, portp);
-                    UINFO(9, "   funcremovevsc " << vscp);
-                    VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
-                }
-            }
             for (AstNode* const stmtp : nodep->stmtspList()) {
                 if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                     AstVarScope* const vscp = m_statep->findVarScope(m_scopep, portp);
@@ -2382,7 +2378,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
     AstVar* sformatp = nullptr;
     for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
         if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-            if (portp->isIO()) {
+            if (portp->isIO() && !portp->isFuncReturn()) {
                 tconnects.emplace_back(portp, static_cast<AstArg*>(nullptr));
                 nameToIndex.emplace(portp->name(), tpinnum);  // For name based connections
                 ++tpinnum;

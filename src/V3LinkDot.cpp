@@ -1217,7 +1217,6 @@ class LinkDotFindVisitor final : public VNVisitor {
         nodep->isExternDef(true);  // So we check there's a matching extern
         nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
         // Any "Type::" reference in the function's IO are really "MovedToClass::" references
-        if (nodep->fvarp()) moveExternFuncDeclRefs(nodep->fvarp(), classp);
         for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isIO()) moveExternFuncDeclRefs(portp, classp);
@@ -3723,9 +3722,9 @@ class LinkDotResolveVisitor final : public VNVisitor {
         AstVar* fvarp = nullptr;
         AstNodeFTask* newp;
         if (AstFunc* const implFuncp = VN_CAST(implp, Func)) {
-            fvarp = implFuncp->fvarp()->cloneTree(false);
-            newp = new AstFunc{flp, implp->name()};
-            newp->fvarp(fvarp);
+            newp = new AstFunc{flp, implp->name(), VFlagChildDType{},
+                               implFuncp->fvarp()->subDTypep()->cloneTree(false)};
+            fvarp = newp->fvarp();
         } else {
             newp = new AstTask{flp, implp->name()};
         }
@@ -3735,7 +3734,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
         AstArg* argsp = nullptr;
         for (AstNode* const stmtp : implp->stmtspList()) {
             AstVar* const portp = VN_CAST(stmtp, Var);
-            if (!portp || !portp->isIO()) continue;
+            if (!portp || !portp->isIO() || portp->isFuncReturn()) continue;
             AstVar* const newPortp = portp->cloneTree(false);
             newp->addStmtsp(newPortp);
             argsp = AstNode::addNext(
@@ -5959,13 +5958,13 @@ class LinkDotResolveVisitor final : public VNVisitor {
                                                    ? protop->fvarp()->subDTypep()->cloneTree(false)
                                                    : new AstVoidDType{protop->fileline()}});
                 for (AstNode* const stmtp : protop->stmtspList()) {
-                    if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                        AstAttrOf* const attrp
-                            = new AstAttrOf{protop->fileline(), VAttrType::FUNC_ARG_PROTO,
-                                            portp->subDTypep()->cloneTree(false)};
-                        attrp->name(portp->name());
-                        nodep->addStmtsp(attrp);
-                    }
+                    const AstVar* const portp = VN_CAST(stmtp, Var);
+                    if (!portp || portp->isFuncReturn()) continue;
+                    AstAttrOf* const attrp
+                        = new AstAttrOf{protop->fileline(), VAttrType::FUNC_ARG_PROTO,
+                                        portp->subDTypep()->cloneTree(false)};
+                    attrp->name(portp->name());
+                    nodep->addStmtsp(attrp);
                 }
             } else {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());

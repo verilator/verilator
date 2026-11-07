@@ -207,7 +207,7 @@ class LinkParseVisitor final : public VNVisitor {
         std::unordered_map<std::string, AstVar*> portNames;
         for (AstNode* nodep = nodeListp; nodep; nodep = nodep->nextp()) {
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
-                if (varp->isIO()) portNames.emplace(varp->name(), varp);
+                if (varp->isIO() && !varp->isFuncReturn()) portNames.emplace(varp->name(), varp);
             }
         }
         for (AstNode* nodep = nodeListp; nodep; nodep = nodep->nextp()) {

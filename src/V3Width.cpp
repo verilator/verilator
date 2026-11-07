@@ -11484,6 +11484,7 @@ class WidthVisitor final : public VNVisitor {
         bool hasOpen = false;
         for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+                if (portp->isFuncReturn()) continue;
                 if (portp->isDpiOpenArray() || hasOpenArrayDTypeRecurse(portp->dtypep())) {
                     portp->isDpiOpenArray(true);
                     hasOpen = true;
