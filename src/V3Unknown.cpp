@@ -657,8 +657,7 @@ class KnownVisitor final : public VNVisitor {
     }
     void visit(AstFunc* const nodep) override {
         iterateChildren(nodep);
-        // VN_AS on purpose since fvarp should be either var or nullptr
-        if (const AstVar* const varp = VN_AS(nodep->fvarp(), Var)) nodep->dtypeFrom(varp);
+        if (const AstVar* const varp = nodep->fvarp()) nodep->dtypeFrom(varp);
     }
     void visit(AstNode* const nodep) override { iterateChildren(nodep); }
 

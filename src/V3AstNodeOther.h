@@ -107,7 +107,7 @@ public:
 };
 class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // Output variable in functions, nullptr in tasks
-    // @astgen op1 := fvarp : Optional[AstNode]
+    // @astgen op1 := fvarp : Optional[AstVar]
     // Class/package scope
     // @astgen op2 := classOrPackagep : Optional[AstNode]
     // Statements/Ports/Vars
@@ -186,7 +186,6 @@ protected:
 
 public:
     ASTGEN_MEMBERS_AstNodeFTask;
-    virtual AstNodeFTask* cloneType(const string& name) = 0;
     void dump(std::ostream& str = std::cout) const override;
     void dumpJson(std::ostream& str = std::cout) const override;
     string name() const override VL_MT_STABLE { return m_name; }  // * = Var name
@@ -3029,16 +3028,26 @@ public:
 // === AstNodeFTask ===
 class AstFunc final : public AstNodeFTask {
     // A function inside a module
+    void initFvarp(AstVar* varp);  // Make 'varp' the return variable
+
 public:
-    AstFunc(FileLine* fl, const string& name, AstNode* stmtp, AstNode* fvarp)
-        : ASTGEN_SUPER_Func(fl, name, stmtp) {
-        this->fvarp(fvarp);
+    // Returning a value of child data type
+    AstFunc(FileLine* fl, const string& name, VFlagChildDType, AstNodeDType* dtypep)
+        : ASTGEN_SUPER_Func(fl, name, nullptr) {
+        initFvarp(new AstVar{fl, VVarType::VAR, name, VFlagChildDType{}, dtypep});
+    }
+    // Returning a value of resolved data type, or void if nullptr
+    AstFunc(FileLine* fl, const string& name, AstNodeDType* dtypep = nullptr)
+        : ASTGEN_SUPER_Func(fl, name, nullptr) {
+        if (!dtypep) {
+            dtypeSetVoid();
+            return;
+        }
+        initFvarp(new AstVar{fl, VVarType::VAR, name, dtypep});
+        this->dtypep(dtypep);
     }
     ASTGEN_MEMBERS_AstFunc;
     bool hasDType() const override VL_MT_SAFE { return true; }
-    AstNodeFTask* cloneType(const string& name) override {
-        return new AstFunc{fileline(), name, nullptr, nullptr};
-    }
     string verilogKwd() const override { return "function"; }
 };
 class AstLet final : public AstNodeFTask {
@@ -3054,7 +3063,6 @@ public:
         BROKEN_RTN(!VN_IS(stmtsp(), StmtExpr));
         return nullptr;
     }
-    AstNodeFTask* cloneType(const string& name) override { return new AstLet{fileline(), name}; }
     string verilogKwd() const override { return "let"; }
 };
 class AstProperty final : public AstNodeFTask {
@@ -3064,9 +3072,6 @@ public:
         : ASTGEN_SUPER_Property(fl, name, stmtp) {}
     ASTGEN_MEMBERS_AstProperty;
     bool hasDType() const override VL_MT_SAFE { return true; }
-    AstNodeFTask* cloneType(const string& name) override {
-        return new AstProperty{fileline(), name, nullptr};
-    }
     string verilogKwd() const override { return "property"; }
 };
 class AstSequence final : public AstNodeFTask {
@@ -3082,9 +3087,6 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     bool hasDType() const override VL_MT_SAFE { return true; }
-    AstNodeFTask* cloneType(const string& name) override {
-        return new AstSequence{fileline(), name, nullptr};
-    }
     string verilogKwd() const override { return "sequence"; }
     bool isReferenced() const { return m_referenced; }
     void isReferenced(bool flag) { m_referenced = flag; }
@@ -3092,12 +3094,9 @@ public:
 class AstTask final : public AstNodeFTask {
     // A task inside a module
 public:
-    AstTask(FileLine* fl, const string& name, AstNode* stmtp)
-        : ASTGEN_SUPER_Task(fl, name, stmtp) {}
+    AstTask(FileLine* fl, const string& name)
+        : ASTGEN_SUPER_Task(fl, name, nullptr) {}
     ASTGEN_MEMBERS_AstTask;
-    AstNodeFTask* cloneType(const string& name) override {
-        return new AstTask{fileline(), name, nullptr};
-    }
     string verilogKwd() const override { return "task"; }
 };
 

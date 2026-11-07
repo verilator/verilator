@@ -409,7 +409,7 @@ class LinkParseVisitor final : public VNVisitor {
                     nodep->lifetime(VLifetime::STATIC_IMPLICIT);
                 }
             }
-        } else if (m_ftaskp) {
+        } else if (m_ftaskp && !nodep->isFuncReturn()) {  // Return variables are created automatic
             // Variables in static tasks with timing control can be used after the task has ended
             // with use of join..fork_none, so they need to be static
             if (m_ftaskp->lifetime().isStatic() && m_hasTimingControl) {
@@ -493,7 +493,9 @@ class LinkParseVisitor final : public VNVisitor {
         // Maybe this variable has a signal attribute
         V3Control::applyVarAttr(m_modp, m_ftaskp, nodep);
 
-        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()) {
+        // The function return variable is not user visible
+        if (v3Global.opt.anyPublicFlat() && nodep->varType().isVPIAccessible()
+            && !nodep->isFuncReturn()) {
             if (v3Global.opt.publicFlatRW()) {
                 nodep->sigUserRWPublic(true);
             } else if (v3Global.opt.publicParams() && nodep->isParam()) {
@@ -732,11 +734,13 @@ class LinkParseVisitor final : public VNVisitor {
             UINFO(9, "Reused impltypedef " << nodep << "  -->  " << defp);
         } else {
             // Definition must be inserted right after the variable (etc) that needed it
-            // AstVar, AstTypedef, AstNodeFTask, AstParamTypeDType are common containers
+            // AstVar, AstTypedef, AstNodeFTask, AstParamTypeDType are common containers.
+            // A function return variable is not in a list, so after its function instead.
             AstNode* backp = nodep->backp();
             for (; backp; backp = backp->backp()) {
-                if (VN_IS(backp, Var) || VN_IS(backp, Typedef) || VN_IS(backp, NodeFTask)
-                    || VN_IS(backp, ParamTypeDType))
+                const AstVar* const varp = VN_CAST(backp, Var);
+                if ((varp && !varp->isFuncReturn()) || VN_IS(backp, Typedef)
+                    || VN_IS(backp, NodeFTask) || VN_IS(backp, ParamTypeDType))
                     break;
             }
             UASSERT_OBJ(backp, nodep,
@@ -1276,40 +1280,28 @@ class LinkParseVisitor final : public VNVisitor {
 
         // IEEE: function void sample([arguments])
         {
-            AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample", nullptr, nullptr};
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), "sample"};
             funcp->addStmtsp(makeArgMemberCopies(sampleArgsp, false));
             funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
             funcp->keepAlive(true);  // TODO create AstFuncRef and hold until findMethod("sample")
             nodep->addMembersp(funcp);
         }
 
         // IEEE: function void start(), void stop()
         for (const string& name : {"start"s, "stop"s}) {
-            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), name};
             funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
         }
 
         // IEEE: static function real get_coverage(optional ref int, optional ref int)
         // IEEE: function real get_inst_coverage(optional ref int, optional ref int)
         for (const string& name : {"get_coverage"s, "get_inst_coverage"s}) {
-            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nullptr, nullptr};
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), name, nodep->findDoubleDType()};
             funcp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
             funcp->isStatic(name == "get_coverage");
             funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
-            {
-                AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, name,
-                                                nodep->findDoubleDType()};
-                varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                varp->funcLocal(true);
-                varp->direction(VDirection::OUTPUT);
-                varp->funcReturn(true);
-                funcp->fvarp(varp);
-            }
             for (const string& varname : {"covered_bins"s, "total_bins"s}) {
                 AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, varname,
                                                 nodep->findStringDType()};
@@ -1323,10 +1315,8 @@ class LinkParseVisitor final : public VNVisitor {
 
         // IEEE: function void set_inst_name(string)
         {
-            AstFunc* const funcp
-                = new AstFunc{nodep->fileline(), "set_inst_name", nullptr, nullptr};
+            AstFunc* const funcp = new AstFunc{nodep->fileline(), "set_inst_name"};
             funcp->classMethod(true);
-            funcp->dtypep(funcp->findVoidDType());
             nodep->addMembersp(funcp);
             AstVar* const varp = new AstVar{nodep->fileline(), VVarType::MEMBER, "name",
                                             nodep->findStringDType()};
@@ -1420,7 +1410,7 @@ class LinkParseVisitor final : public VNVisitor {
         }
 
         // Create the constructor; detach membersp (coverage body) and use as its body
-        AstFunc* const newFuncp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
+        AstFunc* const newFuncp = new AstFunc{nodep->fileline(), "new"};
         newFuncp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
         newFuncp->classMethod(true);
         newFuncp->isConstructor(true);

@@ -234,7 +234,7 @@
       ]},
       {"type":"FUNC","name":"randomize","addr":"(CB)","loc":"d,7:1,7:6","dtypep":"(V)","method":true,"lifetime":"NONE","cname":"randomize",
        "fvarp": [
-        {"type":"VAR","name":"randomize","addr":"(UE)","loc":"d,7:1,7:6","dtypep":"(V)","origName":"randomize","verilogName":"randomize","direction":"OUTPUT","declDirection":"NONE","isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"MEMBER","dtypeName":"bit"}
+        {"type":"VAR","name":"randomize","addr":"(UE)","loc":"d,7:1,7:6","dtypep":"(V)","origName":"randomize","verilogName":"randomize","direction":"OUTPUT","declDirection":"NONE","isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit"}
       ],
        "stmtsp": [
         {"type":"STMTEXPR","addr":"(VE)","loc":"d,7:1,7:6",
@@ -802,7 +802,7 @@
           {"type":"TASKREF","name":"meth_setup_constraint","addr":"(IO)","loc":"d,56:14,56:18","dtypep":"(FC)","taskp":"(DN)","classOrPackagep":"(N)"}
         ]}
       ]},
-      {"type":"FUNC","name":"__VupdateRandVars","addr":"(JO)","loc":"d,7:1,7:6","method":true,"isVirtual":true,"keepAlive":true,"lifetime":"NONE","cname":"__VupdateRandVars",
+      {"type":"FUNC","name":"__VupdateRandVars","addr":"(JO)","loc":"d,7:1,7:6","dtypep":"(FC)","method":true,"isVirtual":true,"keepAlive":true,"lifetime":"NONE","cname":"__VupdateRandVars",
        "stmtsp": [
         {"type":"STMTEXPR","addr":"(KO)","loc":"d,8:12,8:18",
          "exprp": [
@@ -905,7 +905,7 @@
       ]},
       {"type":"FUNC","name":"__VBasicRand","addr":"(KF)","loc":"d,7:1,7:6","dtypep":"(V)","method":true,"lifetime":"NONE","cname":"__VBasicRand",
        "fvarp": [
-        {"type":"VAR","name":"__VBasicRand","addr":"(AQ)","loc":"d,7:1,7:6","dtypep":"(V)","origName":"__VBasicRand","verilogName":"__VBasicRand","direction":"OUTPUT","declDirection":"NONE","isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"MEMBER","dtypeName":"bit"}
+        {"type":"VAR","name":"__VBasicRand","addr":"(AQ)","loc":"d,7:1,7:6","dtypep":"(V)","origName":"__VBasicRand","verilogName":"__VBasicRand","direction":"OUTPUT","declDirection":"NONE","isFuncReturn":true,"isFuncLocal":true,"lifetime":"VAUTOM","varType":"VAR","dtypeName":"bit"}
       ],
        "stmtsp": [
         {"type":"ASSIGN","addr":"(BQ)","loc":"d,7:1,7:6","dtypep":"(V)",

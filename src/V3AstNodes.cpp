@@ -1942,6 +1942,14 @@ void AstForkItem::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, disableWrapper);
     dumpJsonGen(str);
 }
+void AstFunc::initFvarp(AstVar* varp) {
+    // The function implicitly declares a variable with its name (IEEE 1800-2023 13.4.1)
+    varp->direction(VDirection::OUTPUT);
+    varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    varp->funcLocal(true);
+    varp->funcReturn(true);
+    fvarp(varp);
+}
 string AstGenBlock::dtypeNameInnerScope(const string& outer) const {
     // A named generate block is a scope (IEEE 1800-2023 27.6), so the types of distinct blocks,
     // as of the iterations of a loop, are named apart; an unnamed block, as around the 'if' of an

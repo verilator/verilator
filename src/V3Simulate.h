@@ -1792,7 +1792,7 @@ private:
         m_callStack.push_back(&stackNode);
         if (!m_checkOnly) {
             // Clear output variable
-            initVar(VN_CAST(funcp->fvarp(), Var));
+            initVar(funcp->fvarp());
             // Clear other automatic variables
             funcp->foreach([this](AstVar* varp) {
                 if (varp->lifetime().isAutomatic() && (!varp->isIO() || varp->isFuncReturn()))

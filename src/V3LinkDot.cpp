@@ -1194,7 +1194,7 @@ class LinkDotFindVisitor final : public VNVisitor {
         m_exportps.clear();
     }
     void makeImplicitNew(AstClass* nodep) {
-        AstFunc* const newp = new AstFunc{nodep->fileline(), "new", nullptr, nullptr};
+        AstFunc* const newp = new AstFunc{nodep->fileline(), "new"};
         // If needed, super.new() call is added the 2nd pass of V3LinkDotResolve,
         // because base classes are already resolved there.
         newp->isConstructor(true);
@@ -1807,28 +1807,10 @@ class LinkDotFindVisitor final : public VNVisitor {
         const string name = (nodep->isExternProto() ? "extern "s : ""s) + nodep->name();
         m_curSymp = m_statep->insertBlock(m_curSymp, name, nodep, m_classOrPackagep);
         m_curSymp->fallbackp(upSymp);
-        // Convert the func's range to the output variable
-        // This should probably be done in the Parser instead, as then we could
-        // just attach normal signal attributes to it.
-        if (!nodep->isExternProto() && nodep->fvarp() && !VN_IS(nodep->fvarp(), Var)) {
-            AstNodeDType* dtypep = VN_CAST(nodep->fvarp(), NodeDType);
-            // If unspecified, function returns one bit; however when we
-            // support NEW() it could also return the class reference.
-            if (dtypep) {
-                dtypep->unlinkFrBack();
-            } else {
-                dtypep = new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::LOGIC};
-            }
-            AstVar* const newvarp
-                = new AstVar{nodep->fileline(), VVarType::VAR, nodep->name(), VFlagChildDType{},
-                             dtypep};  // Not dtype resolved yet
-            newvarp->direction(VDirection::OUTPUT);
-            newvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            newvarp->funcReturn(true);
-            newvarp->trace(false);  // Not user visible
-            nodep->fvarp(newvarp);
-            // Explicit insert required, as the var name shadows the upper level's task name
-            m_statep->insertSym(m_curSymp, newvarp->name(), newvarp, nullptr /*classOrPackagep*/);
+        // Explicit insert required, as the var name shadows the upper level's task name
+        AstVar* const fvarp = nodep->fvarp();
+        if (fvarp && !m_statep->forScopeCreation()) {
+            m_statep->insertSym(m_curSymp, fvarp->name(), fvarp, nullptr /*classOrPackagep*/);
         }
         VL_RESTORER(m_ftaskp);
         m_ftaskp = nodep;
@@ -3741,10 +3723,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         AstVar* fvarp = nullptr;
         AstNodeFTask* newp;
         if (AstFunc* const implFuncp = VN_CAST(implp, Func)) {
-            fvarp = VN_AS(implFuncp->fvarp(), Var)->cloneTree(false);
-            newp = new AstFunc{flp, implp->name(), nullptr, fvarp};
+            fvarp = implFuncp->fvarp()->cloneTree(false);
+            newp = new AstFunc{flp, implp->name()};
+            newp->fvarp(fvarp);
         } else {
-            newp = new AstTask{flp, implp->name(), nullptr};
+            newp = new AstTask{flp, implp->name()};
         }
         newp->classMethod(true);
         newp->isVirtual(true);
@@ -5771,10 +5754,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
                     // definitions within referenced class.
                     // TODO perhaps cleaner to add to symbol table up-front with
                     // a lambda to construct them on a reference.
-                    AstFunc* const funcp
-                        = new AstFunc{nodep->fileline(), nodep->name(), nullptr, nullptr};
+                    AstFunc* const funcp = new AstFunc{nodep->fileline(), nodep->name()};
                     funcp->classMethod(true);
-                    funcp->dtypep(funcp->findVoidDType());
                     classp->addMembersp(funcp);
                     m_statep->insertBlock(dotSymp, nodep->name(), funcp, classp);
                     nodep->taskp(funcp);
@@ -5975,7 +5956,7 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // Always add an FUNC_RETURN_PROTO even if task, so we can locate the prototype
                 nodep->addStmtsp(new AstAttrOf{protop->fileline(), VAttrType::FUNC_RETURN_PROTO,
                                                protop->fvarp()
-                                                   ? protop->fvarp()->cloneTree(false)
+                                                   ? protop->fvarp()->subDTypep()->cloneTree(false)
                                                    : new AstVoidDType{protop->fileline()}});
                 for (AstNode* const stmtp : protop->stmtspList()) {
                     if (AstVar* const portp = VN_CAST(stmtp, Var)) {

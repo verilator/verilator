@@ -1584,7 +1584,7 @@ class TaskVisitor final : public VNVisitor {
         AstNode::user2ClearTree();
         AstVar* rtnvarp = nullptr;
         if (nodep->isFunction()) {
-            AstVar* const portp = VN_AS(nodep->fvarp(), Var);
+            AstVar* const portp = nodep->fvarp();
             UASSERT_OBJ(portp, nodep, "function without function output variable");
             UASSERT_OBJ(portp->isFuncReturn(), nodep, "Not marked as function return var");
             if (nodep->dpiImport() || nodep->dpiExport()) {
@@ -2056,7 +2056,7 @@ class TaskVisitor final : public VNVisitor {
     static AstVarRef* getterVarRefp(AstNodeFTask* taskp) {
         AstNode* stmtp = taskp->stmtsp();
         // Skip the default initialization of the function's return value
-        const AstVar* const fvarp = VN_AS(taskp->fvarp(), Var);
+        const AstVar* const fvarp = taskp->fvarp();
         if (const AstAssign* const initp = VN_CAST(stmtp, Assign)) {
             const AstVarRef* const lvarrefp = VN_CAST(initp->lhsp(), VarRef);
             if (lvarrefp && lvarrefp->varp() == fvarp && VN_IS(initp->rhsp(), Const))
@@ -2139,7 +2139,7 @@ class TaskVisitor final : public VNVisitor {
         // Create output variable
         AstVarScope* outvscp = nullptr;
         if (nodep->taskp()->isFunction()) {
-            AstVar* const fvarp = VN_AS(nodep->taskp()->fvarp(), Var);
+            AstVar* const fvarp = nodep->taskp()->fvarp();
             // If the call is on the RHS of a simple assignment 'lhs = call()',
             // the LHS variable can be reused as the output variable iff it has
             // the same type, and the function does not read the output variable itself.
@@ -2269,7 +2269,7 @@ class TaskVisitor final : public VNVisitor {
             // Any variables inside the function still have varscopes pointing to them.
             // We're going to delete the vars, so delete the varscopes.
             if (nodep->isFunction()) {
-                if (AstVar* const portp = VN_CAST(nodep->fvarp(), Var)) {
+                if (AstVar* const portp = nodep->fvarp()) {
                     AstVarScope* const vscp = m_statep->findVarScope(m_scopep, portp);
                     UINFO(9, "   funcremovevsc " << vscp);
                     VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
@@ -2589,32 +2589,30 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
                                          const VInsertionSet<const AstVar*>& argWrap) {
     std::map<const AstVar*, AstVar*> oldNewVars;  // Old -> new var mappings
 
-    AstNodeFTask* const newTaskp = taskp->cloneType(newname);
-    newTaskp->propagateAttrFrom(taskp);
-    taskp->addNextHere(newTaskp);
-
+    AstNodeFTask* newTaskp = nullptr;
     AstNodeFTaskRef* newCallp = nullptr;
     AstNode* newCallInsertp = nullptr;
-    if (VN_IS(taskp, Func)) {
-        AstVar* const fvarp = VN_AS(taskp->fvarp(), Var);
+    if (AstFunc* const funcp = VN_CAST(taskp, Func)) {
+        AstVar* const fvarp = funcp->fvarp();
         UASSERT_OBJ(fvarp, taskp, "FuncRef without fvar");
-        AstVar* const newFVarp = fvarp->cloneTree(true);
+        newTaskp = new AstFunc{taskp->fileline(), newname, fvarp->dtypep()};
+        AstVar* const newFVarp = newTaskp->fvarp();
         oldNewVars.emplace(fvarp, newFVarp);
-        newFVarp->name(newTaskp->name());
-        newTaskp->fvarp(newFVarp);
-        newTaskp->dtypeFrom(newFVarp);
-        newCallp = new AstFuncRef{taskp->fileline(), VN_AS(taskp, Func)};
+        newCallp = new AstFuncRef{taskp->fileline(), funcp};
         newCallInsertp
             = new AstAssign{taskp->fileline(),
                             new AstVarRef{fvarp->fileline(), newFVarp, VAccess::WRITE}, newCallp};
         newCallInsertp->dtypeFrom(newFVarp);
-    } else if (VN_IS(taskp, Task)) {
-        newCallp = new AstTaskRef{taskp->fileline(), VN_AS(taskp, Task)};
+    } else if (AstTask* const origTaskp = VN_CAST(taskp, Task)) {
+        newTaskp = new AstTask{taskp->fileline(), newname};
+        newCallp = new AstTaskRef{taskp->fileline(), origTaskp};
         newCallInsertp = new AstStmtExpr{taskp->fileline(), newCallp};
     } else {
         taskp->v3fatalSrc("Unsupported: Non-constant default value in missing argument in a "
                           << taskp->prettyTypeName());
     }
+    newTaskp->propagateAttrFrom(taskp);
+    taskp->addNextHere(newTaskp);
 
     // Create wrapper's ports matching original's
     for (const auto& tconnect : tconnects) {

@@ -126,11 +126,9 @@ public:
         }
 
         // Create class's constructor
-        AstFunc* const newp
-            = new AstFunc{m_instance.m_classp->fileline(), "new", nullptr, nullptr};
+        AstFunc* const newp = new AstFunc{m_instance.m_classp->fileline(), "new"};
         newp->isConstructor(true);
         newp->classMethod(true);
-        newp->dtypep(newp->findVoidDType());
         m_instance.m_classp->addMembersp(newp);
     }
 
@@ -579,7 +577,8 @@ class ForkVisitor final : public VNVisitor {
         // Create task holding the statement and repalce statement with call to that task
         FileLine* const flp = itemp->fileline();
         const std::string name = "__VforkTask_" + std::to_string(m_nForkTasks++);
-        AstTask* const taskp = new AstTask{flp, name, m_capturedVarsp};
+        AstTask* const taskp = new AstTask{flp, name};
+        taskp->addStmtsp(m_capturedVarsp);
         // A branch that spawns another process must hand its captured variables over to it
         if (m_hasNestedFork) {
             taskp->classMethod(VN_IS(m_modp, Class));

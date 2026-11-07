@@ -3650,7 +3650,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             FileLine* const fl = binp->fileline();
             // Generate the selection apart, so that an unsupported one leaves no code, which
             // could leave its state for the next bin
-            AstFunc* const selectionp = new AstFunc{fl, "", nullptr, nullptr};
+            AstFunc* const selectionp = new AstFunc{fl, ""};
             bool supported;
             {
                 VL_RESTORER(m_constructorp);
@@ -4168,9 +4168,9 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstFunc* const getCoveragep
             = VN_AS(m_memberMap.findMember(m_covergroupp, "get_coverage"), Func);
         FileLine* const typeFl = getCoveragep->fileline();
-        getCoveragep->addStmtsp(new AstAssign{
-            typeFl, new AstVarRef{typeFl, VN_AS(getCoveragep->fvarp(), Var), VAccess::WRITE},
-            typeCoverageCall(typeFl)});
+        getCoveragep->addStmtsp(
+            new AstAssign{typeFl, new AstVarRef{typeFl, getCoveragep->fvarp(), VAccess::WRITE},
+                          typeCoverageCall(typeFl)});
     }
 
     // The registry call computing the covergroup's type coverage, per its type options
@@ -4201,8 +4201,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                     fl, newOptionSel(fl, optionVar(false), "get_inst_coverage", VAccess::READ)}};
             valuep = new AstCond{fl, condp, mergedp, instp};
         }
-        funcp->addStmtsp(new AstAssign{
-            fl, new AstVarRef{fl, VN_AS(funcp->fvarp(), Var), VAccess::WRITE}, valuep});
+        funcp->addStmtsp(
+            new AstAssign{fl, new AstVarRef{fl, funcp->fvarp(), VAccess::WRITE}, valuep});
     }
 
     // The get_inst_coverage() of a coverpoint or cross, which V3Width added if called (IEEE

@@ -146,7 +146,7 @@ class LinkResolveVisitor final : public VNVisitor {
 
         if (nodep->lifetime().isAutomatic() && nodep->fvarp()) {
             // Must clear automatic function output variable on function invocation
-            AstVar* const fvarp = VN_AS(nodep->fvarp(), Var);
+            AstVar* const fvarp = nodep->fvarp();
             AstNode* const crstp = new AstAssign{
                 fvarp->fileline(), new AstVarRef{fvarp->fileline(), fvarp, VAccess::WRITE},
                 new AstCReset{fvarp->fileline(), fvarp, false}};

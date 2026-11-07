@@ -79,7 +79,7 @@ public:
         static const char* const name = "__Vsetup_constraints";
         AstTask* setupAllTaskp = VN_AS(memberMap.findMember(classp, name), Task);
         if (setupAllTaskp) return setupAllTaskp;
-        setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
+        setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints"};
         setupAllTaskp->classMethod(true);
         setupAllTaskp->isVirtual(true);
         classp->addMembersp(setupAllTaskp);
@@ -631,7 +631,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Uses foreach to walk all assigns regardless of body organization (JumpBlock nesting etc.).
     // Takes the last assignment to the return variable -- the first is the initializer.
     AstNodeExpr* extractReturnExpr(AstFunc* funcp) {
-        AstVar* const retVarp = VN_CAST(funcp->fvarp(), Var);
+        AstVar* const retVarp = funcp->fvarp();
         if (!retVarp) return nullptr;
         AstNodeExpr* retExprp = nullptr;
         int assignCount = 0;
@@ -3095,7 +3095,7 @@ class SolverSmtLowering final : public V3SolverLowering {
     }
     AstTask* createPrepareConstrainedArraysTask(AstClass* const classp) {
         static const char* const name = "__Vprepare_constrained_arrays";
-        AstTask* const taskp = new AstTask{classp->fileline(), name, nullptr};
+        AstTask* const taskp = new AstTask{classp->fileline(), name};
         taskp->classMethod(true);
         classp->addMembersp(taskp);
         m_memberMap.insert(classp, taskp);
@@ -3105,7 +3105,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         static constexpr const char* const name = "__Vresize_constrained_arrays";
         AstTask* resizeTaskp = VN_AS(m_memberMap.findMember(classp, name), Task);
         if (resizeTaskp) return resizeTaskp;
-        resizeTaskp = new AstTask{classp->fileline(), name, nullptr};
+        resizeTaskp = new AstTask{classp->fileline(), name};
         resizeTaskp->classMethod(true);
         resizeTaskp->isVirtual(true);
         classp->addMembersp(resizeTaskp);
@@ -3142,14 +3142,13 @@ class SolverSmtLowering final : public V3SolverLowering {
         return RandModeVars::wrapIfMode(rmode, modeVarp, stmtp);
     }
     AstTask* newSetupConstraintTask(AstClass* const nodep, const std::string& name) {
-        AstTask* const taskp = new AstTask{nodep->fileline(), name + "_setup_constraint", nullptr};
+        AstTask* const taskp = new AstTask{nodep->fileline(), name + "_setup_constraint"};
         taskp->classMethod(true);
         nodep->addMembersp(taskp);
         return taskp;
     }
     AstTask* newResizeConstrainedArrayTask(AstClass* const nodep, const std::string& name) {
-        AstTask* const taskp
-            = new AstTask{nodep->fileline(), name + "_resize_constrained_array", nullptr};
+        AstTask* const taskp = new AstTask{nodep->fileline(), name + "_resize_constrained_array"};
         taskp->classMethod(true);
         nodep->addMembersp(taskp);
         return taskp;
@@ -3253,8 +3252,7 @@ class SolverSmtLowering final : public V3SolverLowering {
 
     void addUpdateRandVarsBody(AstClass* const nodep, AstFunc* const randomizep) {
         UASSERT_OBJ(!nodep->hasRandVarsUpdate(), nodep, "__VupdateRandVars already exists");
-        AstFunc* const updatep
-            = new AstFunc{nodep->fileline(), "__VupdateRandVars", nullptr, nullptr};
+        AstFunc* const updatep = new AstFunc{nodep->fileline(), "__VupdateRandVars"};
         updatep->classMethod(true);
         updatep->isVirtual(true);
         updatep->keepAlive(true);
@@ -4336,7 +4334,7 @@ public:
         FileLine* const fl = nodep->fileline();
         collectSizeConstrainedArrays(classp, allSizeArrays);
         const bool needsSizePhase = !allSizeArrays.empty();
-        AstVar* const retVarp = VN_AS(randomizeFuncp->fvarp(), Var);
+        AstVar* const retVarp = randomizeFuncp->fvarp();
 
         if (needsSizePhase) {
             // Call __VBasicRand and stash its result FIRST, as its own statement,

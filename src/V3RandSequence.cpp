@@ -131,7 +131,7 @@ class RandSequenceVisitor final : public VNVisitor {
 
     AstTask* newStartFunc(AstRandSequence* nodep) {
         // Create wrapper that is called by the sequence
-        AstTask* const taskp = new AstTask{m_startProdp->fileline(), m_rsp->name(), nullptr};
+        AstTask* const taskp = new AstTask{m_startProdp->fileline(), m_rsp->name()};
         taskp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         m_modp->addStmtsp(taskp);
 
@@ -174,8 +174,7 @@ class RandSequenceVisitor final : public VNVisitor {
 
     void newProdFunc(AstRSProd* nodep) {
         // Task, as time may pass
-        AstTask* const newp
-            = new AstTask{nodep->fileline(), m_rsp->name() + "_" + nodep->name(), nullptr};
+        AstTask* const newp = new AstTask{nodep->fileline(), m_rsp->name() + "_" + nodep->name()};
         m_modp->addStmtsp(newp);
         m_prodFuncps.emplace(nodep, newp);
         UINFOTREE(9, newp, "newProd", "");

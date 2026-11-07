@@ -4741,16 +4741,16 @@ lifetime<lifetime>:             // ==IEEE: lifetime
 
 taskId<nodeFTaskp>:
                 id
-                        { $$ = new AstTask{$<fl>$, *$1, nullptr};
+                        { $$ = new AstTask{$<fl>$, *$1};
                           $$->verilogTask(true); }
         //
         |       id/*interface_identifier*/ '.' idAny
-                        { $$ = new AstTask{$<fl>$, *$3, nullptr};
+                        { $$ = new AstTask{$<fl>$, *$3};
                           $$->verilogTask(true);
                           $$->ifacePortName(*$1); }
         //
         |       packageClassScope id
-                        { $$ = new AstTask{$<fl>$, *$2, nullptr};
+                        { $$ = new AstTask{$<fl>$, *$2};
                           $$->verilogTask(true);
                           $$->classOrPackagep($1);
                           $$->classMethod(true); }
@@ -4758,28 +4758,32 @@ taskId<nodeFTaskp>:
 
 funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part of function_body_declaration
         //                      // IEEE: function_data_type_or_implicit must be expanded here to prevent conflict
-        //                      // function_data_type expanded here to prevent conflicts with
         //                      // implicit_type:empty vs data_type:ID
-                /**/ fIdScoped
-                        { $$ = $1;
-                          $$->fvarp(new AstBasicDType{$<fl>1, LOGIC_IMPLICIT}); }
-        |       signingE rangeList fIdScoped
-                        { $$ = $3;
-                          $$->fvarp(GRAMMARP->addRange(new AstBasicDType{$<fl>3, LOGIC_IMPLICIT, $1}, $2, true)); }
-        |       signing fIdScoped
-                        { $$ = $2;
-                          $$->fvarp(new AstBasicDType{$<fl>2, LOGIC_IMPLICIT, $1}); }
-        |       data_typeNoRef fIdScoped
-                        { $$ = $2;
-                          $$->fvarp($1); }
-        |       packageClassScopeE idInstType packed_dimensionListE fIdScoped
-                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
-                          $$ = $4;
-                          $$->fvarp(GRAMMARP->createArray(refp, $3, true)); }
-        |       packageClassScopeE idInstType parameter_value_assignmentClass packed_dimensionListE fIdScoped
-                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
-                          $$ = $5;
-                          $$->fvarp(GRAMMARP->createArray(refp, $4, true)); }
+        //                      // IEEE: [ interface_identifier '.' | class_scope ] function_identifier
+                id
+                        { $$ = new AstFunc{$<fl>1, *$1, VFlagChildDType{}, new AstBasicDType{$<fl>1, LOGIC_IMPLICIT}};
+                          $$->verilogFunction(true); }
+        |       id/*interface_identifier*/ '.' idAny
+                        { $$ = new AstFunc{$<fl>1, *$3, VFlagChildDType{}, new AstBasicDType{$<fl>1, LOGIC_IMPLICIT}};
+                          $$->verilogFunction(true);
+                          $$->ifacePortName(*$1); }
+        |       packageClassScope id
+                        { $$ = new AstFunc{$<fl>1, *$2, VFlagChildDType{}, new AstBasicDType{$<fl>1, LOGIC_IMPLICIT}};
+                          $$->verilogFunction(true);
+                          $$->classMethod(true);
+                          $$->classOrPackagep($1); }
+        |       funcDType id
+                        { $$ = new AstFunc{$<fl>2, *$2, VFlagChildDType{}, $1};
+                          $$->verilogFunction(true); }
+        |       funcDType id/*interface_identifier*/ '.' idAny
+                        { $$ = new AstFunc{$<fl>2, *$4, VFlagChildDType{}, $1};
+                          $$->verilogFunction(true);
+                          $$->ifacePortName(*$2); }
+        |       funcDType packageClassScope id
+                        { $$ = new AstFunc{$<fl>2, *$3, VFlagChildDType{}, $1};
+                          $$->verilogFunction(true);
+                          $$->classMethod(true);
+                          $$->classOrPackagep($2); }
         //                      // To verilator tasks are the same as void functions (we separately detect time passing)
         |       yVOID taskId
                         { $$ = $2;  // Internals represent it as a task, not a function (TODO cleanup)
@@ -4787,42 +4791,35 @@ funcId<nodeFTaskp>:             // IEEE: function_data_type_or_implicit + part o
                           $$->verilogFunction(true); }
         ;
 
+funcDType<nodeDTypep>:          // IEEE: function_data_type_or_implicit, except empty
+        //                      // function_data_type expanded here to prevent conflicts with
+        //                      // implicit_type:empty vs data_type:ID
+                signingE rangeList                      { $$ = GRAMMARP->addRange(new AstBasicDType{$<fl>2, LOGIC_IMPLICIT, $1}, $2, true); }
+        |       signing                                 { $$ = new AstBasicDType{$<fl>1, LOGIC_IMPLICIT, $1}; }
+        |       data_typeNoRef                          { $$ = $1; }
+        |       packageClassScopeE idInstType packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, nullptr};
+                          $$ = GRAMMARP->createArray(refp, $3, true); }
+        |       packageClassScopeE idInstType parameter_value_assignmentClass packed_dimensionListE
+                        { AstRefDType* const refp = new AstRefDType{$<fl>2, *$2, $1, $3};
+                          $$ = GRAMMARP->createArray(refp, $4, true); }
+        ;
+
 funcIdNew<nodeFTaskp>:          // IEEE: from class_constructor_declaration
                 yNEW__ETC
-                        { $$ = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                        { $$ = new AstFunc{$<fl>1, "new"};
                           $$->verilogFunction(true);
                           $$->isConstructor(true); }
         |       yNEW__PAREN
-                        { $$ = new AstFunc{$<fl>1, "new", nullptr, nullptr};
+                        { $$ = new AstFunc{$<fl>1, "new"};
                           $$->verilogFunction(true);
                           $$->isConstructor(true); }
         |       packageClassScopeNoId yNEW__PAREN
-                        { $$ = new AstFunc{$<fl>2, "new", nullptr, nullptr};
+                        { $$ = new AstFunc{$<fl>2, "new"};
                           $$->verilogFunction(true);
                           $$->classOrPackagep($1);
                           $$->isConstructor(true);
                           $$->classMethod(true); }
-        ;
-
-fIdScoped<funcp>:               // IEEE: part of function_body_declaration/task_body_declaration
-        //                      // IEEE: [ interface_identifier '.' | class_scope ] function_identifier
-                id
-                        { $<fl>$ = $<fl>1;
-                          $$ = new AstFunc{$<fl>$, *$1, nullptr, nullptr};
-                          $$->verilogFunction(true); }
-        //
-        |       id/*interface_identifier*/ '.' idAny
-                        { $<fl>$ = $<fl>1;
-                          $$ = new AstFunc{$<fl>$, *$3, nullptr, nullptr};
-                          $$->verilogFunction(true);
-                          $$->ifacePortName(*$1); }
-        //
-        |       packageClassScope id
-                        { $<fl>$ = $<fl>1;
-                          $$ = new AstFunc{$<fl>$, *$2, nullptr, nullptr};
-                          $$->verilogFunction(true);
-                          $$->classMethod(true);
-                          $$->classOrPackagep($1); }
         ;
 
 tfGuts<nodep>:

@@ -551,10 +551,10 @@ class LinkJumpVisitor final : public VNVisitor {
         } else {
             if (funcp && nodep->lhsp()) {
                 // Set output variable to return value
-                nodep->addHereThisAsNext(new AstAssign{
-                    nodep->fileline(),
-                    new AstVarRef{nodep->fileline(), VN_AS(funcp->fvarp(), Var), VAccess::WRITE},
-                    nodep->lhsp()->unlinkFrBackWithNext()});
+                nodep->addHereThisAsNext(
+                    new AstAssign{nodep->fileline(),
+                                  new AstVarRef{nodep->fileline(), funcp->fvarp(), VAccess::WRITE},
+                                  nodep->lhsp()->unlinkFrBackWithNext()});
             }
             // Jump to the end of the function call
             AstJumpBlock* const blockp = getJumpBlock(m_ftaskp, false);

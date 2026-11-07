@@ -1748,7 +1748,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (AstTask* const existingp = VN_CAST(m_memberMap.findMember(classp, name), Task)) {
             return existingp;
         }
-        AstTask* const taskp = new AstTask{classp->fileline(), name, nullptr};
+        AstTask* const taskp = new AstTask{classp->fileline(), name};
         taskp->classMethod(true);
         taskp->isVirtual(classp->isExtended());
         classp->addMembersp(taskp);
@@ -1833,7 +1833,7 @@ class RandomizeVisitor final : public VNVisitor {
         const string name = "__VrandCb_" + suffix;
         AstTask* taskp = VN_CAST(m_memberMap.findMember(classp, name), Task);
         if (taskp) return taskp;
-        taskp = new AstTask{classp->fileline(), name, nullptr};
+        taskp = new AstTask{classp->fileline(), name};
         taskp->classMethod(true);
         classp->addMembersp(taskp);
         m_memberMap.insert(classp, taskp);
@@ -1997,7 +1997,7 @@ class RandomizeVisitor final : public VNVisitor {
                                AstVar* randModeVarp) {
         UINFO(9, "addBasicRTB " << nodep);
         FileLine* const fl = nodep->fileline();
-        AstVar* const basicFvarp = VN_AS(basicRandomizep->fvarp(), Var);
+        AstVar* const basicFvarp = basicRandomizep->fvarp();
         AstVarRef* const basicFvarRefp = new AstVarRef{fl, basicFvarp, VAccess::WRITE};
         AstConst* const beginBasicValp = new AstConst{fl, AstConst::WidthedValue{}, 32, 1};
         basicRandomizep->addStmtsp(new AstAssign{fl, basicFvarRefp, beginBasicValp});
@@ -2275,7 +2275,7 @@ class RandomizeVisitor final : public VNVisitor {
         }
         FileLine* const fl = classp->fileline();
         AstFunc* const funcp = V3Randomize::newRandomizeFunc(m_memberMap, classp, name);
-        AstVar* const fvarp = VN_AS(funcp->fvarp(), Var);
+        AstVar* const fvarp = funcp->fvarp();
 
         // 1. pre_randomize -- always
         addPrePostCall(classp, funcp, "pre_randomize");
@@ -2330,7 +2330,7 @@ class RandomizeVisitor final : public VNVisitor {
 
         FileLine* const fl = nodep->fileline();
         AstFunc* const randomizep = V3Randomize::newRandomizeFunc(m_memberMap, nodep);
-        AstVar* const fvarp = VN_AS(randomizep->fvarp(), Var);
+        AstVar* const fvarp = randomizep->fvarp();
         AstVar* const randModeVarp = RandModeVars::randModeVarp(nodep);
         addPrePostCall(nodep, randomizep, "pre_randomize");
 
@@ -2524,11 +2524,10 @@ class RandomizeVisitor final : public VNVisitor {
                 stdrandp->lifetime(VLifetime::STATIC_EXPLICIT);
                 randomizeFuncp->isStatic(true);
             }
-            randomizeFuncp->addStmtsp(
-                new AstAssign{nodep->fileline(),
-                              new AstVarRef{nodep->fileline(), VN_AS(randomizeFuncp->fvarp(), Var),
-                                            VAccess::WRITE},
-                              new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
+            randomizeFuncp->addStmtsp(new AstAssign{
+                nodep->fileline(),
+                new AstVarRef{nodep->fileline(), randomizeFuncp->fvarp(), VAccess::WRITE},
+                new AstConst{nodep->fileline(), AstConst::WidthedValue{}, 32, 1}});
             std::unique_ptr<CaptureVisitor> withCapturep;
             int argn = 0;
             AstWith* const withp = nodep->withp();
@@ -2591,15 +2590,13 @@ class RandomizeVisitor final : public VNVisitor {
 
                 basicStmtsp = AstNode::addNextNull<AstNode, AstNode>(
                     basicStmtsp,
-                    new AstAssign{nodep->fileline(),
-                                  new AstVarRef{nodep->fileline(),
-                                                VN_AS(randomizeFuncp->fvarp(), Var),
-                                                VAccess::WRITE},
-                                  new AstAnd{nodep->fileline(),
-                                             new AstVarRef{nodep->fileline(),
-                                                           VN_AS(randomizeFuncp->fvarp(), Var),
-                                                           VAccess::READ},
-                                             basicMethodp}});
+                    new AstAssign{
+                        nodep->fileline(),
+                        new AstVarRef{nodep->fileline(), randomizeFuncp->fvarp(), VAccess::WRITE},
+                        new AstAnd{nodep->fileline(),
+                                   new AstVarRef{nodep->fileline(), randomizeFuncp->fvarp(),
+                                                 VAccess::READ},
+                                   basicMethodp}});
             }
             if (basicStmtsp) randomizeFuncp->addStmtsp(basicStmtsp);
             if (withp) {
@@ -2609,7 +2606,7 @@ class RandomizeVisitor final : public VNVisitor {
                 withCapturep->addFunctionArguments(randomizeFuncp);
                 AstNodeExpr* const solverCallp = m_solverp->lowerStdRandomizeWith(
                     nodep, randomizeFuncp, withp->exprp()->unlinkFrBackWithNext(), stdrandp);
-                AstVar* const fvarp = VN_AS(randomizeFuncp->fvarp(), Var);
+                AstVar* const fvarp = randomizeFuncp->fvarp();
                 AstNodeExpr* const andExprp
                     = new AstAnd{fl, new AstVarRef{fl, fvarp, VAccess::READ}, solverCallp};
                 randomizeFuncp->addStmtsp(
@@ -2797,22 +2794,15 @@ AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
     AstFunc* funcp = VN_AS(memberMap.findMember(nodep, name), Func);
     if (!funcp) {
         v3Global.useRandomizeMethods(true);
-        AstNodeDType* const dtypep
-            = childDType
-                  ? new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::INT}
-                  : nodep->findBitDType(32, 32, VSigning::SIGNED);  // IEEE says int return of 0/1
-        AstVar* const fvarp = childDType
-                                  ? new AstVar{nodep->fileline(), VVarType::MEMBER, name,
-                                               VFlagChildDType{}, dtypep}
-                                  : new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
-        fvarp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
-        fvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        fvarp->funcLocal(true);
-        fvarp->funcReturn(true);
-        fvarp->direction(VDirection::OUTPUT);
-        nodep->addMembersp(funcp);
-        funcp = new AstFunc{nodep->fileline(), name, nullptr, fvarp};
-        if (!childDType) funcp->dtypep(dtypep);
+        if (childDType) {
+            funcp = new AstFunc{nodep->fileline(), name, VFlagChildDType{},
+                                new AstBasicDType{nodep->fileline(), VBasicDTypeKwd::INT}};
+        } else {
+            // IEEE says int return of 0/1
+            funcp = new AstFunc{nodep->fileline(), name,
+                                nodep->findBitDType(32, 32, VSigning::SIGNED)};
+        }
+        funcp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
         funcp->classMethod(true);
         funcp->isVirtual(allowVirtual && nodep->isExtended());
         nodep->addMembersp(funcp);
@@ -2824,14 +2814,7 @@ AstFunc* V3Randomize::newRandomizeFunc(VMemberMap& memberMap, AstClass* nodep,
 AstFunc* V3Randomize::newRandomizeStdFunc(AstNodeModule* nodep, const std::string& name) {
     AstFunc* funcp = nullptr;
     v3Global.useRandomizeMethods(true);
-    AstNodeDType* const dtypep = nodep->findBitDType(32, 32, VSigning::SIGNED);
-    AstVar* const fvarp = new AstVar{nodep->fileline(), VVarType::MEMBER, name, dtypep};
-    fvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-    fvarp->funcLocal(true);
-    fvarp->funcReturn(true);
-    fvarp->direction(VDirection::OUTPUT);
-    funcp = new AstFunc{nodep->fileline(), name, nullptr, fvarp};
-    funcp->dtypep(dtypep);
+    funcp = new AstFunc{nodep->fileline(), name, nodep->findBitDType(32, 32, VSigning::SIGNED)};
     if (VN_IS(nodep, Class)) {
         funcp->classMethod(true);
     } else {
@@ -2853,8 +2836,8 @@ AstFunc* V3Randomize::newSRandomFunc(VMemberMap& memberMap, AstClass* nodep) {
         ivarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         ivarp->funcLocal(true);
         ivarp->direction(VDirection::INPUT);
-        funcp = new AstFunc{basep->fileline(), "srandom", ivarp, nullptr};
-        funcp->dtypep(basep->findVoidDType());
+        funcp = new AstFunc{basep->fileline(), "srandom"};
+        funcp->addStmtsp(ivarp);
         funcp->classMethod(true);
         funcp->isVirtual(false);
         basep->addMembersp(funcp);

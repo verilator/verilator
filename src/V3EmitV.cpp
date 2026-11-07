@@ -136,7 +136,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         decl += nodep->dpiTask() ? "task " : "function ";
         puts(decl);
         if (!nodep->dpiTask()) {
-            if (AstVar* const fvp = VN_CAST(nodep->fvarp(), Var)) {
+            if (AstVar* const fvp = nodep->fvarp()) {
                 iterateConstNull(fvp->subDTypep());
                 puts(" ");
             } else {
