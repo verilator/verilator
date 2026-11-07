@@ -1,0 +1,75 @@
+//      // verilator_coverage annotation
+        // DESCRIPTION: Verilator: FSM coverage with a compound reset and line and expression coverage
+        //
+        // This file ONLY is placed under the Creative Commons Public Domain
+        // SPDX-FileCopyrightText: 2026 David Harris
+        // SPDX-License-Identifier: CC0-1.0
+        
+        module t (
+            input clk
+        );
+        
+          typedef enum logic [1:0] {
+            IDLE,
+            RUN,
+            DONE
+          } state_t;
+        
+          state_t state;
+          state_t state_next;
+          logic rst;
+          logic flush;
+          logic go;
+          logic last;
+          state_t saved;
+          int cyc;
+        
+          // Reset and flush share the reset branch, as in a pipeline stage that
+          // returns to IDLE on either.
+ 000011   always_ff @(posedge clk) begin
+%000009     if (rst | flush) state <= IDLE;
+%000009     else state <= state_next;
+          end
+        
+          // An enable register with no else is not an FSM state register
+ 000011   always_ff @(posedge clk) begin
+%000009     if (go) saved <= state;
+          end
+        
+ 000012   always_comb begin
+~000012     case (state)
+        // [FSM coverage]
+%000001        // [fsm_arc t.state::DONE->IDLE]
+%000002        // [fsm_arc t.state::IDLE->RUN]
+%000001        // [fsm_arc t.state::RUN->DONE]
+%000001        // [fsm_arc t.state::RUN->IDLE]
+%000001        // [fsm_state t.state::DONE]
+%000003        // [fsm_state t.state::IDLE]
+%000002        // [fsm_state t.state::RUN]
+%000006       IDLE:
+%000004       if (go) state_next = RUN;
+%000004       else state_next = IDLE;
+%000005       RUN:
+%000004       if (last) state_next = DONE;
+%000004       else state_next = RUN;
+%000001       DONE: state_next = IDLE;
+%000000       default: state_next = IDLE;
+            endcase
+          end
+        
+%000001   initial cyc = 0;
+        
+ 000011   always @(posedge clk) begin
+ 000011     cyc <= cyc + 1;
+ 000011     rst <= (cyc == 0);
+ 000011     flush <= (cyc == 4);
+~000011     go <= (cyc == 1) || (cyc == 5);
+ 000011     last <= (cyc == 7);
+~000010     if (cyc == 10) begin
+%000001       if (saved != IDLE) $stop;
+%000001       $write("*-* All Finished *-*\n");
+%000001       $finish;
+            end
+          end
+        endmodule
+        

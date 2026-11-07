@@ -908,9 +908,18 @@ class FsmDetectVisitor final : public VNVisitor {
         return senses;
     }
 
-    // Ignore existing coverage increments so FSM detection sees the user logic
-    // rather than other instrumentation already attached to the block.
-    static bool isIgnorableStmt(AstNode* nodep) { return VN_IS(nodep, CoverInc); }
+    // Ignore existing coverage instrumentation so FSM detection sees the user
+    // logic: line coverage increments, and the 'if (term) CoverInc' probes that
+    // expression coverage adds after the statement it covers.
+    static bool isIgnorableStmt(AstNode* nodep) {
+        if (VN_IS(nodep, CoverInc)) return true;
+        const AstIf* const ifp = VN_CAST(nodep, If);
+        if (!ifp || ifp->elsesp()) return false;
+        for (AstNode* stmtp = ifp->thensp(); stmtp; stmtp = stmtp->nextp()) {
+            if (!VN_IS(stmtp, CoverInc)) return false;
+        }
+        return true;
+    }
 
     static AstNode* skipLeadingIgnorableStmt(AstNode* nodep) {
         while (nodep && isIgnorableStmt(nodep)) nodep = nodep->nextp();
@@ -1390,7 +1399,11 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* stateVscp = nullptr;
         AstVarScope* nextVscp = nullptr;
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
-            if (!ifp->elsesp() || !isSimpleResetCond(ifp->condp())) return false;
+            // As in the 'reset ? CONST : next' form below, a reset condition
+            // other than a plain signal (e.g. 'rst | flush') is accepted but
+            // not described.  Line coverage keeps that if/else from being
+            // folded into the conditional form.
+            if (!ifp->elsesp()) return false;
             AstVarScope* resetStateVscp = nullptr;
             const ResetAssignStatus resetStatus
                 = collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs());
