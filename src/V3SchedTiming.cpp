@@ -190,8 +190,9 @@ class TransformForksVisitor final : public VNVisitor {
 
     // STATE
     bool m_inClass = false;  // Are we in a class?
-    bool m_beginHasAwaits = false;  // Does the current begin have awaits?
+    bool m_itemHasAwaits = false;  // Does the current fork item have awaits?
     AstFork* m_forkp = nullptr;  // Current fork
+    size_t m_forkItemIdx = 0;  // Index of the next fork item in the current fork
     AstCFunc* m_funcp = nullptr;  // Current function
 
     // METHODS
@@ -257,13 +258,16 @@ class TransformForksVisitor final : public VNVisitor {
     }
     void visit(AstFork* nodep) override {
         if (m_forkp) return;  // Handle forks in forks after moving them to new functions
+        UASSERT_OBJ(!nodep->name().empty(), nodep, "Fork needs a name");
         VL_RESTORER(m_forkp);
+        VL_RESTORER(m_forkItemIdx);
         m_forkp = nodep;
+        m_forkItemIdx = 0;
         iterateChildrenConst(nodep);  // Const, so we don't iterate the calls twice
         // Replace self with the function calls (no co_await, as we don't want the main
         // process to suspend whenever any of the children do)
         // V3Dead could have removed all statements from the fork, so guard against it
-        // Inline begins now that they are not needed
+        // Inline fork items now that they are not needed
         AstNode* resp = nullptr;
         if (AstNode* const declsp = nodep->declsp()) {
             resp = AstNode::addNext(resp, declsp->unlinkFrBackWithNext());
@@ -271,14 +275,14 @@ class TransformForksVisitor final : public VNVisitor {
         if (AstNode* const stmtsp = nodep->stmtsp()) {
             resp = AstNode::addNext(resp, stmtsp->unlinkFrBackWithNext());
         }
-        while (AstBegin* const beginp = nodep->forksp()) {
-            if (AstNode* const declsp = beginp->declsp()) {
+        while (AstForkItem* const itemp = nodep->forksp()) {
+            if (AstNode* const declsp = itemp->declsp()) {
                 resp = AstNode::addNext(resp, declsp->unlinkFrBackWithNext());
             }
-            if (AstNode* const stmtsp = beginp->stmtsp()) {
+            if (AstNode* const stmtsp = itemp->stmtsp()) {
                 resp = AstNode::addNext(resp, stmtsp->unlinkFrBackWithNext());
             }
-            VL_DO_DANGLING(pushDeletep(beginp->unlinkFrBack()), beginp);
+            VL_DO_DANGLING(pushDeletep(itemp->unlinkFrBack()), itemp);
         }
         if (resp) {
             nodep->replaceWith(resp);
@@ -287,19 +291,19 @@ class TransformForksVisitor final : public VNVisitor {
         }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstBegin* nodep) override {
-        UASSERT_OBJ(m_forkp, nodep, "Begin outside of a fork");
-        // Start with children, so later we only find awaits that are actually in this begin
-        m_beginHasAwaits = false;
+    void visit(AstForkItem* nodep) override {
+        UASSERT_OBJ(m_forkp, nodep, "ForkItem outside of a fork");
+        const std::string name = m_forkp->name() + "__" + std::to_string(m_forkItemIdx++);
+        // Start with children, so later we only find awaits that are actually in this fork item
+        m_itemHasAwaits = false;
         iterateChildrenConst(nodep);
         if (!nodep->stmtsp()) return;
-        if (!m_beginHasAwaits && !nodep->needProcess()) return;
+        if (!m_itemHasAwaits && !nodep->needProcess()) return;
 
-        UASSERT_OBJ(!nodep->name().empty(), nodep, "Begin needs a name");
-        // Create a function to put this begin's statements in
+        // Create a function to put this fork item's statements in
         FileLine* const flp = nodep->fileline();
-        AstCFunc* const newfuncp = new AstCFunc{flp, m_funcp->name() + "__" + nodep->name(),
-                                                m_funcp->scopep(), "VlCoroutine"};
+        AstCFunc* const newfuncp
+            = new AstCFunc{flp, m_funcp->name() + "__" + name, m_funcp->scopep(), "VlCoroutine"};
 
         m_funcp->addNextHere(newfuncp);
         newfuncp->isLoose(m_funcp->isLoose());
@@ -315,21 +319,21 @@ class TransformForksVisitor final : public VNVisitor {
             newfuncp->argTypes(EmitCUtil::symClassVar());
             callp->argTypes("vlSymsp");
         }
-        // Put the begin's statements in the function
-        if (AstNode* const declsp = nodep->declsp()) {
-            newfuncp->addStmtsp(declsp->unlinkFrBackWithNext());
+        // Put the fork item's local variables and statements in the function
+        if (AstVar* const declsp = nodep->declsp()) {
+            newfuncp->addVarsp(declsp->unlinkFrBackWithNext());
         }
         if (AstNode* const stmtsp = nodep->stmtsp()) {
             newfuncp->addStmtsp(stmtsp->unlinkFrBackWithNext());
         }
-        // Replace the body of the begin with a call to the newly created function
+        // Replace the body of the fork item with a call to the newly created function
         nodep->addStmtsp(callp->makeStmt());
         // Propagate if needs process
         if (nodep->needProcess()) newfuncp->setNeedProcess();
         remapLocals(newfuncp, callp);
     }
     void visit(AstCAwait* nodep) override {
-        m_beginHasAwaits = true;
+        m_itemHasAwaits = true;
         iterateChildrenConst(nodep);
     }
 

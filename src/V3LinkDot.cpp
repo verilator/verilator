@@ -1593,10 +1593,7 @@ class LinkDotFindVisitor final : public VNVisitor {
                 }
                 return false;
             };
-            bool needName = nodep->declsp() || containsDecl(nodep->stmtsp());
-            if (const AstFork* const forkp = VN_CAST(nodep, Fork)) {
-                needName = needName || containsDecl(forkp->forksp());
-            }
+            const bool needName = nodep->declsp() || containsDecl(nodep->stmtsp());
             if (needName) {
                 const std::string stepStr
                     = m_statep->forPrimary() ? "" : std::to_string(m_statep->stepNumber()) + "_";

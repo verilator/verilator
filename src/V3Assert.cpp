@@ -577,7 +577,8 @@ class AssertVisitor final : public VNVisitor {
         return new AstDeferredAssertFlush{flp, m_obsFlushp->cloneTree(true)};
     }
     // Add the flushes of a process once it is known to have observed deferred assertions
-    void addObsFlushes(AstBegin* scopep) {
+    template <typename T_Scope>
+    void addObsFlushes(T_Scope* scopep) {
         if (!m_obsFlushp) return;
         for (AstNode* const nodep : m_obsWaitsp) {
             if (AstEventControl* const controlp = VN_CAST(nodep, EventControl)) {
@@ -707,7 +708,7 @@ class AssertVisitor final : public VNVisitor {
                 return new AstBegin{nodep->fileline(), "", nullptr, false};
             }
             AstFork* const forkp = new AstFork{nodep->fileline(), VJoinType::JOIN_NONE};
-            forkp->addForksp(pexprp->bodyp()->unlinkFrBack());
+            forkp->addForksp(new AstForkItem{nodep->fileline(), pexprp->bodyp()->unlinkFrBack()});
             if (AstNodeStmt* const finalp = pexprp->finalp()) {
                 if (!m_finalp) {
                     m_finalp = new AstFinal{m_modp->fileline(), finalp->unlinkFrBack()};
@@ -1624,8 +1625,7 @@ class AssertVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->stmtsp());
         VL_RESTORER(m_inSpawnedFork);
         m_inSpawnedFork |= !nodep->joinType().join();
-        for (AstBegin *branchp = nodep->forksp(), *nextp; branchp; branchp = nextp) {
-            nextp = VN_AS(branchp->nextp(), Begin);
+        for (AstForkItem* const branchp : nodep->forkspList()) {
             // V3LinkJump's wrapper runs part of the enclosing process
             if (branchp->disableWrapper()) {
                 iterate(branchp);

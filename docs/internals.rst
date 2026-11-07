@@ -713,9 +713,9 @@ condition is always false, the ``wait`` statement is replaced by a
 the ``wait`` is deep in a call stack (otherwise, the coroutine's caller
 would continue execution).
 
-Each sub-statement of a ``fork`` is put in an ``AstBegin`` node for easier
-grouping. In a later step, each of these gets transformed into a new,
-separate function. See the `Forks` section for more detail.
+Each sub-statement of a ``fork`` is put in an ``AstForkItem`` node, the
+process that executes it. In a later step, each of these gets transformed
+into a new, separate function. See the `Forks` section for more detail.
 
 Suspendable functions get the return type of ``VlCoroutine``, which makes
 them coroutines. Later, during ``V3Sched``, suspendable processes are also

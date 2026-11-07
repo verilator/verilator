@@ -51,7 +51,6 @@
 // - for each wait(cond) statement:
 //     - replace it with a loop like: while (!cond) @(<vars from cond>)
 // - for each fork:
-//     - put each statement in a begin if it isn't in one already
 //     - if it's not a fork..join_none:
 //         - create a join sync variable
 //         - create statements that sync the main process with its children
@@ -182,19 +181,19 @@ class TimingSuspendableVisitor final : public VNVisitor {
 
     // NODE STATE
     //  AstClass::user1() -> bool.  Class member cache has been refreshed.
-    //  Ast{NodeProcedure,CFunc,Begin}::user2()  -> uint64_t.  Set to >= T_SUSP if
-    //                                                         process/task suspendable
-    //                                                         and to T_PROC if it
-    //                                                         needs process metadata.
-    //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_suspGraph
-    //  Ast{NodeProcedure,CFunc,Begin}::user3()  -> DependencyVertex*.  Vertex in m_procGraph
+    //  Ast{NodeProcedure,CFunc,ForkItem}::user2()  -> uint64_t.  Set to >= T_SUSP if
+    //                                                            process/task suspendable
+    //                                                            and to T_PROC if it
+    //                                                            needs process metadata.
+    //  Ast{NodeProcedure,CFunc,ForkItem}::user3()  -> DependencyVertex*.  Vertex in m_suspGraph
+    //  Ast{NodeProcedure,CFunc,ForkItem}::user3()  -> DependencyVertex*.  Vertex in m_procGraph
     const VNUser3InUse m_user3InUse;
     const VNUser4InUse m_user4InUse;
 
     // STATE
     VMemberMap m_memberMap;  // Member names cached for fast lookup
     AstClass* m_classp = nullptr;  // Current class
-    AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
+    AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/ForkItem we're under
     uint8_t m_underFork = F_NONE;  // F_NONE or flags of a fork we are under
     V3Graph m_suspGraph;  // Dependency graph where a node is a dependency of another if it being
                           // suspendable makes the other node suspendable
@@ -354,7 +353,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
     void visit(AstNodeCCall* nodep) override {
         AstCFunc* const funcp = nodep->funcp();
         UASSERT_OBJ(funcp, nodep, "AstNodeCCall must have non-null funcp post-link");
-        UASSERT_OBJ(m_procp, nodep, "AstNodeCCall must be inside a procedure/CFunc/Begin");
+        UASSERT_OBJ(m_procp, nodep, "AstNodeCCall must be inside a procedure/CFunc/ForkItem");
 
         UINFO(9, "V3Timing: Processing CCall to " << funcp->name() << " in dependency graph\n");
         new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(funcp), getSuspendDepVtx(m_procp), P_CALL};
@@ -364,18 +363,19 @@ class TimingSuspendableVisitor final : public VNVisitor {
 
         iterateChildren(nodep);
     }
-    void visit(AstBegin* nodep) override {
+    void visit(AstForkItem* nodep) override {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_underFork);
 
-        if (!m_underFork || (m_underFork & F_MIGHT_SUSPEND))
+        if (m_underFork & F_MIGHT_SUSPEND) {
             new V3GraphEdge{&m_suspGraph, getSuspendDepVtx(nodep), getSuspendDepVtx(m_procp),
-                            m_underFork ? P_FORK : P_CALL};
+                            P_FORK};
+        }
 
         new V3GraphEdge{&m_procGraph, getNeedsProcDepVtx(nodep), getNeedsProcDepVtx(m_procp),
                         P_CALL};
 
-        if (m_underFork) addFlags(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
+        addFlags(nodep, T_NEEDS_PROC | T_ALLOCS_PROC);
 
         m_procp = nodep;
         m_underFork = 0;
@@ -387,7 +387,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
 
         v3Global.setUsesTiming();  // Even if there are no event controls, we have to set this flag
                                    // so that transformForks() in V3SchedTiming gets called and
-                                   // removes all forks and begins
+                                   // removes all forks
         if (nodep->isTimingControl() && m_procp) {
             addFlags(m_procp, T_SUSPENDEE | T_SUSPENDER);
             m_underFork |= F_MIGHT_SUSPEND;
@@ -465,7 +465,7 @@ class TimingControlVisitor final : public VNVisitor {
     //                                                                   represents the net delay
     //  AstSenTree::user1()                             -> AstVarScope*. Trigger scheduler assigned
     //                                                                   to this sentree
-    //  Ast{NodeProcedure,CFunc,Begin}::user2()         -> bool.         Set true if process/task
+    //  Ast{NodeProcedure,CFunc,ForkItem}::user2()      -> bool.         Set true if process/task
     //                                                                   is suspendable
     //  Ast{EventControl}::user2()                      -> bool.         Set true if event control
     //                                                                   should immediately be
@@ -483,7 +483,7 @@ class TimingControlVisitor final : public VNVisitor {
     AstClass* m_classp = nullptr;  // Current class
     AstScope* m_scopep = nullptr;  // Current scope
     AstActive* m_activep = nullptr;  // Current active
-    AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/Begin we're under
+    AstNode* m_procp = nullptr;  // NodeProcedure/CFunc/ForkItem we're under
     bool m_hasProcess = false;  // True if current scope has a VlProcess handle available
     int m_forkCnt = 0;  // Number of forks inside a module
     bool m_underJumpBlock = false;  // True if we are inside of a jump-block
@@ -716,15 +716,15 @@ class TimingControlVisitor final : public VNVisitor {
         return vscp;
     }
     // Add a done() call on the fork sync
-    void addForkDone(AstBegin* const beginp, AstVarScope* const forkVscp) const {
-        FileLine* const flp = beginp->fileline();
+    void addForkDone(AstForkItem* const itemp, AstVarScope* const forkVscp) const {
+        FileLine* const flp = itemp->fileline();
         auto* const donep = new AstCMethodHard{
-            beginp->fileline(), new AstVarRef{flp, forkVscp, VAccess::WRITE}, VCMethod::FORK_DONE};
+            itemp->fileline(), new AstVarRef{flp, forkVscp, VAccess::WRITE}, VCMethod::FORK_DONE};
         donep->dtypeSetVoid();
         addDebugInfo(donep);
-        beginp->addStmtsp(donep->makeStmt());
+        itemp->addStmtsp(donep->makeStmt());
     }
-    static bool hasDisableQueuePushSelfPrefix(AstBegin* const beginp) {
+    static bool hasDisableQueuePushSelfPrefix(AstForkItem* const itemp) {
         // LinkJump prepends disable-by-name registration as:
         //   __VprocessQueue_*.push_back(std::process::self())
         // V3LiftExpr lifts std::process::self() into an assignment to a temporary, then V3Task
@@ -732,7 +732,7 @@ class TimingControlVisitor final : public VNVisitor {
         // push_back is no longer necessarily the first statement. Scan across this generated
         // prefix for it, stopping at the fork-start sentinel or the branch body. Registrations for
         // nested forks live in sub-blocks and so are not in this statement list.
-        for (AstNode* const stmtp : beginp->stmtspList()) {
+        for (AstNode* const stmtp : itemp->stmtspList()) {
             if (VN_IS(stmtp, Comment)) continue;
             AstStmtExpr* const stmtExprp = VN_CAST(stmtp, StmtExpr);
             if (!stmtExprp) break;
@@ -741,9 +741,9 @@ class TimingControlVisitor final : public VNVisitor {
         return false;
     }
     // Register a callback so killing a process-backed fork branch decrements the join counter
-    void addForkOnKill(AstBegin* const beginp, AstVarScope* const forkVscp) const {
-        if (!beginp->needProcess() && !hasDisableQueuePushSelfPrefix(beginp)) return;
-        FileLine* const flp = beginp->fileline();
+    void addForkOnKill(AstForkItem* const itemp, AstVarScope* const forkVscp) const {
+        if (!itemp->needProcess() && !hasDisableQueuePushSelfPrefix(itemp)) return;
+        FileLine* const flp = itemp->fileline();
         AstCMethodHard* const onKillp = new AstCMethodHard{
             flp, new AstVarRef{flp, forkVscp, VAccess::WRITE}, VCMethod::FORK_ON_KILL};
         onKillp->dtypeSetVoid();
@@ -752,7 +752,7 @@ class TimingControlVisitor final : public VNVisitor {
             ->dtypeSetVoid();  // Opaque process reference; type is irrelevant for hardcoded emit
         onKillp->addPinsp(processp);
         AstNodeStmt* const stmtp = onKillp->makeStmt();
-        beginp->prependStmtsp(stmtp);
+        itemp->prependStmtsp(stmtp);
     }
     // Handle the 'join' part of a fork..join
     void makeForkJoin(AstFork* const forkp) {
@@ -766,10 +766,10 @@ class TimingControlVisitor final : public VNVisitor {
         AstVarScope* forkVscp
             = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
         unsigned joinCount = 0;  // Needed for join counter
-        // Add a <fork sync>.done() to each begin
-        for (AstNode* const beginp : forkp->forkspList()) {
-            addForkOnKill(VN_AS(beginp, Begin), forkVscp);
-            addForkDone(VN_AS(beginp, Begin), forkVscp);
+        // Add a <fork sync>.done() to each fork item
+        for (AstForkItem* const itemp : forkp->forkspList()) {
+            addForkOnKill(itemp, forkVscp);
+            addForkDone(itemp, forkVscp);
             joinCount++;
         }
         if (forkp->joinType().joinAny()) joinCount = 1;
@@ -788,7 +788,7 @@ class TimingControlVisitor final : public VNVisitor {
         forkp->addNextHere(new AstCAwait{flp, joinp});
     }
 
-    // `procp` shall be a NodeProcedure/CFunc/Begin and within it vars from `varsp` will be placed.
+    // `procp` shall be a NodeProcedure/CFunc/ForkItem, in which the vars from `varsp` are placed.
     // `varsp` vector of vars which shall be localized.
     static void localizeVars(AstNode* const procp, const std::vector<AstVar*>& varsp) {
         UASSERT(procp, "procp is nullptr");
@@ -801,12 +801,12 @@ class TimingControlVisitor final : public VNVisitor {
             nodeProcp->prependStmtsp(newVarsp);
         } else if (AstCFunc* const cfuncp = VN_CAST(procp, CFunc)) {
             cfuncp->prependVarsp(newVarsp);
-        } else if (AstBegin* const beginp = VN_CAST(procp, Begin)) {
-            beginp->prependStmtsp(newVarsp);
+        } else if (AstForkItem* const itemp = VN_CAST(procp, ForkItem)) {
+            itemp->addDeclsp(newVarsp);
         } else {
             procp->v3fatalSrc(
                 procp->prettyNameQ()
-                << " is not of an expected type NodeProcedure/CFunc/Begin instead it is: "
+                << " is not of an expected type NodeProcedure/CFunc/ForkItem instead it is: "
                 << procp->prettyTypeName());
         }
     }
@@ -1141,10 +1141,15 @@ class TimingControlVisitor final : public VNVisitor {
             // In a function, the vars go before the fork, which gets them by value
             if (insertBeforep) insertBeforep = forkp;
             controlp->replaceWith(forkp);
-            AstBegin* beginp = VN_CAST(controlp, Begin);
-            if (!beginp) beginp = new AstBegin{nodep->fileline(), "", controlp, false};
-            forkp->addForksp(beginp);
-            addFlags(beginp, T_NBA_UPDATE);
+            // The Begin from V3AssertPre is not needed to group the statements in the fork item
+            AstNode* stmtsp = controlp;
+            if (AstBegin* const beginp = VN_CAST(controlp, Begin)) {
+                stmtsp = beginp->stmtsp()->unlinkFrBackWithNext();
+                VL_DO_DANGLING(pushDeletep(beginp), beginp);
+            }
+            AstForkItem* const itemp = new AstForkItem{nodep->fileline(), stmtsp};
+            forkp->addForksp(itemp);
+            addFlags(itemp, T_NBA_UPDATE);
             controlp = forkp;
         }
         UASSERT_OBJ(nodep, controlp, "Assignment should have timing control");
@@ -1247,15 +1252,15 @@ class TimingControlVisitor final : public VNVisitor {
         AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
         nodep->replaceWith(forkp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
-        AstBegin* const beginp = new AstBegin{flp, "", assignp, false};
-        forkp->addForksp(beginp);
+        AstForkItem* const itemp = new AstForkItem{flp, assignp};
+        forkp->addForksp(itemp);
         visit(forkp);  // Visit now as we need to do some post-processing
         // IEEE 1800-2023 10.3.3 - if the RHS value differs from the currently scheduled value to
         // be assigned, the currently scheduled assignment is descheduled. To keep track if an
         // assignment should be descheduled, each scheduled assignment event has a 'generation',
         // and if at assignment time its generation differs from the current generation, it won't
         // be performed
-        AstAssign* const preAssignp = VN_AS(beginp->stmtsp(), Assign);
+        AstAssign* const preAssignp = VN_AS(itemp->stmtsp(), Assign);
         UASSERT_OBJ(preAssignp, alwaysp, "Pre-assign should be there from visit(AstFork)");
         AstAssign* const postAssignp = VN_AS(preAssignp->nextp()->nextp(), Assign);
         UASSERT_OBJ(postAssignp, alwaysp, "Post-assign should be there from visit(AstFork)");
@@ -1273,7 +1278,7 @@ class TimingControlVisitor final : public VNVisitor {
             new AstAssign{flp, new AstVarRef{flp, genLocalVarp, VAccess::WRITE},
                           new AstVarRef{flp, generationVarp, VAccess::READ}});
         // If the current generation is same as the one saved in the local var, assign
-        beginp->addStmtsp(
+        itemp->addStmtsp(
             new AstIf{flp,
                       new AstEq{flp, new AstVarRef{flp, generationVarp, VAccess::READ},
                                 new AstVarRef{flp, genLocalVarp, VAccess::READ}},
@@ -1379,7 +1384,7 @@ class TimingControlVisitor final : public VNVisitor {
         }
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
-    void visit(AstBegin* nodep) override {
+    void visit(AstForkItem* nodep) override {
         VL_RESTORER(m_procp);
         VL_RESTORER(m_hasProcess);
         m_hasProcess |= hasFlags(nodep, T_HAS_PROC);
@@ -1401,15 +1406,11 @@ class TimingControlVisitor final : public VNVisitor {
         // TODO: Should process nodep->stmtsp() in case an earlier pass
         //       inserted something there, but as of today we don't need to.
 
-        // Process and name each fork
-        size_t idx = 0;  // Index for naming begins
-        for (AstBegin* const itemp : nodep->forkspList()) {
+        // Process each fork item
+        for (AstForkItem* const itemp : nodep->forkspList()) {
             iterate(itemp);
             // Note: Even if we do not find any awaits, we cannot simply inline
             // the process here, as new awaits could be added later.
-
-            // Name the begin (later the name will be used for a new function)
-            itemp->name(nodep->name() + "__" + std::to_string(idx++));
             if (itemp->needProcess()) {
                 itemp->addStmtsp(
                     new AstCStmt{itemp->fileline(), "vlProcess->state(VlProcess::FINISHED);"});

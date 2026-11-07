@@ -203,12 +203,7 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstFork* nodep) override {
         dotNames(nodep->name(), nodep->fileline(), "__FORK__");
         iterateAndNextNull(nodep->stmtsp());
-        {
-            // Keep begins in forks to group their statements together
-            VL_RESTORER(m_keepBegins);
-            m_keepBegins = true;
-            iterateAndNextNull(nodep->forksp());
-        }
+        iterateAndNextNull(nodep->forksp());
         AstNode* addsp = nullptr;
         if (AstNode* const declsp = nodep->declsp()) {
             declsp->unlinkFrBackWithNext();

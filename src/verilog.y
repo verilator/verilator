@@ -3552,7 +3552,7 @@ par_block<forkp>:               // ==IEEE: par_block
                             $$ = new AstFork{$1, $5, $2 ? *$2 : ""};
                             GRAMMARP->endLabel($<fl>6, $$, $6);
                             $$->addDeclsp($3);
-                            $$->addForksp(V3ParseGrammar::wrapInBegin($4));
+                            $$->addForksp(V3ParseGrammar::wrapInForkItems($4));
                         }
         ;
 
@@ -3562,7 +3562,7 @@ par_blockPreId<forkp>:          // ==IEEE: par_block but called with leading ID
                             $$ = new AstFork{$3, $6, *$1};
                             GRAMMARP->endLabel($<fl>7, $$, $7);
                             $$->addDeclsp($4);
-                            $$->addForksp(V3ParseGrammar::wrapInBegin($5));
+                            $$->addForksp(V3ParseGrammar::wrapInForkItems($5));
                         }
             ;
 

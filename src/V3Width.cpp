@@ -1040,7 +1040,10 @@ class WidthVisitor final : public VNVisitor {
             nodep->replaceWith(newp);
             if (nodep->declsp()) newp->addDeclsp(nodep->declsp()->unlinkFrBackWithNext());
             if (nodep->stmtsp()) newp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
-            if (nodep->forksp()) newp->addStmtsp(nodep->forksp()->unlinkFrBackWithNext());
+            for (AstForkItem* const itemp : nodep->forkspList()) {
+                if (itemp->declsp()) newp->addDeclsp(itemp->declsp()->unlinkFrBackWithNext());
+                if (itemp->stmtsp()) newp->addStmtsp(itemp->stmtsp()->unlinkFrBackWithNext());
+            }
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
         } else if (v3Global.opt.timing().isSetTrue()) {
             VL_RESTORER(m_underFork);

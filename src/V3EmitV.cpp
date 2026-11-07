@@ -276,6 +276,11 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         puts(nodep->joinType().verilogKwd());
         puts("\n");
     }
+    void visit(AstForkItem* nodep) override {
+        putbs("begin\n");
+        iterateChildrenConst(nodep);
+        puts("end\n");
+    }
     void visit(AstFinal* nodep) override {
         putfs(nodep, "final begin\n");
         iterateChildrenConst(nodep);

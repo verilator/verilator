@@ -310,15 +310,13 @@ public:
         m_varDecl = VVarType::VAR;
     }
 
-    // Wrap all statements in the given list in an AstBegin (except those already an AstBegin)
-    static AstBegin* wrapInBegin(AstNodeStmt* stmtsp) {
-        AstBegin* resp = nullptr;
+    // Wrap each statement in the given list in an AstForkItem
+    static AstForkItem* wrapInForkItems(AstNodeStmt* stmtsp) {
+        AstForkItem* resp = nullptr;
         for (AstNodeStmt *nodep = stmtsp, *nextp; nodep; nodep = nextp) {
             nextp = VN_AS(nodep->nextp(), NodeStmt);
             if (nextp) nextp->unlinkFrBackWithNext();
-            AstBegin* beginp = VN_CAST(nodep, Begin);
-            if (!beginp) beginp = new AstBegin{nodep->fileline(), "", nodep, true};
-            resp = AstNode::addNext(resp, beginp);
+            resp = AstNode::addNext(resp, new AstForkItem{nodep->fileline(), nodep});
         }
         return resp;
     }

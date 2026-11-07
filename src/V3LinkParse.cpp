@@ -146,8 +146,15 @@ class LinkParseVisitor final : public VNVisitor {
         // Try very hard to avoid false positives
         AstNode* nextp = nodep->nextp();
         if (!childp) return;
-        if (!nextp && VN_IS(nodep, Loop) && VN_IS(nodep->backp(), Begin))
-            nextp = nodep->backp()->nextp();
+        if (!nextp && VN_IS(nodep, Loop)) {
+            // Compare with what follows the begin ending with the loop, or with the next fork item
+            AstNode* abovep = nodep->backp();
+            if (VN_IS(abovep, Begin)) {
+                nextp = abovep->nextp();
+                abovep = abovep->backp();
+            }
+            if (!nextp && VN_IS(abovep, ForkItem)) nextp = abovep->nextp();
+        }
         if (!nextp) return;
         if (VN_IS(childp, Begin) || VN_IS(childp, GenBlock)) return;
         FileLine* const nodeFlp = nodep->fileline();

@@ -560,7 +560,7 @@ private:
                 // before the assignment happens
                 AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
                 forkp->immediateStart(true);
-                forkp->addForksp(new AstBegin{flp, "", assignp->unlinkFrBack(), true});
+                forkp->addForksp(new AstForkItem{flp, assignp->unlinkFrBack()});
                 ifp->addThensp(forkp);
                 // Read the clockvar in Postponed, so a drive late in the time step is applied
                 // at this event plus the skew (IEEE 1800-2023 14.16)
@@ -1548,9 +1548,9 @@ private:
             }
             // Wrap existing PExpr body: if (antecedent) { <original body> } else { /* vacuous pass
             // */ }
-            // Only the statements are guarded; declarations stay directly in the block. After
-            // V3Fork moves the block's statements into a task, V3Task only handles variables
-            // that are direct statements of the task.
+            // Only the statements are guarded; declarations stay directly in the block. V3Fork
+            // moves the block into a task, from which V3Begin lifts them to be direct statements
+            // of the task, the only variables V3Task handles.
             AstBegin* const bodyp = pexprp->bodyp();
             AstIf* const guardp = new AstIf{flp, condp};
             for (AstNode* const stmtp : bodyp->stmtspList()) {

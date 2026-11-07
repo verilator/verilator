@@ -384,6 +384,8 @@ class CoverageVisitor final : public VNVisitor {
             }
         } else if (AstBegin* const itemp = VN_CAST(nodep, Begin)) {
             itemp->addStmtsp(stmtp);
+        } else if (AstForkItem* const itemp = VN_CAST(nodep, ForkItem)) {
+            itemp->addStmtsp(stmtp);
         } else {
             nodep->v3fatalSrc("Bad node type");
         }
@@ -780,6 +782,13 @@ class CoverageVisitor final : public VNVisitor {
         lineTrack(nodep);
     }
 
+    void visit(AstForkItem* nodep) override {
+        // Expression coverage of a process goes in it
+        VL_RESTORER(m_exprStmtsp);
+        m_exprStmtsp = nodep;
+        iterateChildren(nodep);
+        lineTrack(nodep);
+    }
     void visit(AstBegin* nodep) override {
         // Record the hierarchy of any named begins, so we can apply to user
         // coverage points.  This is because there may be cov points inside

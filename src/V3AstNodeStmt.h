@@ -240,6 +240,30 @@ public:
     bool sameNode(const AstNode* /*samep*/) const override { return true; }
     bool maybePointedTo() const override VL_MT_SAFE { return false; }
 };
+class AstForkItem final : public AstNode {
+    // A branch of an AstFork, executed by its own process
+    // @astgen op1 := declsp : List[AstVar]  // Local variables
+    // @astgen op2 := stmtsp : List[AstNode]
+    bool m_needProcess = false;  // Uses VlProcess
+    bool m_disableWrapper = false;  // Lets 'disable' kill a block, same process
+public:
+    AstForkItem(FileLine* fl, AstNode* stmtsp)
+        : ASTGEN_SUPER_ForkItem(fl) {
+        addStmtsp(stmtsp);
+    }
+    ASTGEN_MEMBERS_AstForkItem;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        const AstForkItem* const asamep = VN_DBG_AS(samep, ForkItem);
+        return needProcess() == asamep->needProcess()
+               && disableWrapper() == asamep->disableWrapper();
+    }
+    void setNeedProcess() { m_needProcess = true; }
+    bool needProcess() const { return m_needProcess; }
+    void setDisableWrapper() { m_disableWrapper = true; }
+    bool disableWrapper() const { return m_disableWrapper; }
+};
 
 // === AstNodeStmt ===
 class AstAssertCtl final : public AstNodeStmt {
@@ -1645,25 +1669,17 @@ public:
 // === AstNodeBlock ===
 class AstBegin final : public AstNodeBlock {
     // A 'begin'/'end' named block.
-    bool m_needProcess : 1;  // Uses VlProcess
-    const bool m_implied : 1;  // Not inserted by user
-    bool m_disableWrapper : 1;  // Fork branch letting 'disable' kill a block, same process
+    const bool m_implied;  // Not inserted by user
 public:
     AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
         : ASTGEN_SUPER_Begin(fl, name)
-        , m_needProcess{false}
-        , m_implied{implied}
-        , m_disableWrapper{false} {
+        , m_implied{implied} {
         addStmtsp(stmtsp);
     }
     ASTGEN_MEMBERS_AstBegin;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    void setNeedProcess() { m_needProcess = true; }
-    bool needProcess() const { return m_needProcess; }
     bool implied() const { return m_implied; }
-    void setDisableWrapper() { m_disableWrapper = true; }
-    bool disableWrapper() const { return m_disableWrapper; }
 };
 class AstFork final : public AstNodeBlock {
     // A 'fork'/'join*' named block. Note that this is a strict superset of
@@ -1671,10 +1687,10 @@ class AstFork final : public AstNodeBlock {
     // statements that execute sequentially before the parallel statements are
     // spawned. This is necessary to implement things like local variable
     // initializers properly. The parallel statements inside the fork must all
-    // be AstBegin, as lowering stages will introduce additional statements to
-    // be executed sequentially within each fork branch.
+    // be in an AstForkItem, as lowering stages will introduce additional statements
+    // to be executed sequentially within each fork branch.
     //
-    // @astgen op3 := forksp : List[AstBegin]
+    // @astgen op3 := forksp : List[AstForkItem]
     const VJoinType m_joinType;  // Join keyword type
     bool m_immediateStart = false;  // Fork starts before its parent blocks or exits
 
