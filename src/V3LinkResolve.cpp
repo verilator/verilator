@@ -74,6 +74,7 @@ class LinkResolveVisitor final : public VNVisitor {
         m_modp = nodep;
         m_senitemCvtNum = 0;
         iterateChildren(nodep);
+        if (nodep->threadsGroup()) V3Control::markThreadsGroupKeptPorts(nodep);
     }
     void visit(AstClass* nodep) override {
         VL_RESTORER(m_classp);

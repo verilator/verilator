@@ -59,6 +59,8 @@ public:
     static void addModulePragma(const string& module, VPragmaType pragma);
     static void addThreadsGroupWorkers(FileLine* fl, const string& module, uint32_t instances,
                                        uint32_t threads, AstNodeExpr* workersp);
+    static void addThreadsGroupPortSquash(FileLine* fl, const string& module,
+                                          AstNodeExpr* threadsp, AstNodeExpr* portsp);
     static void addProfileData(FileLine* fl, const string& hierDpi, uint64_t cost);
     static void addProfileData(FileLine* fl, const string& model, const string& key,
                                uint64_t cost);
@@ -86,6 +88,8 @@ public:
     // Whether the module is a threads_group at --threads: always without -workers lists,
     // else only at the thread counts they name
     static bool isThreadsGroupAtThreads(const AstNodeModule* modulep);
+    // Mark the input ports a threads_group module keeps per instance
+    static void markThreadsGroupKeptPorts(AstNodeModule* modp);
     // Set the worker of threads_group instances, given all scopes in hierarchy order
     static void applyThreadsGroupWorkers(const std::vector<AstScope*>& scopes);
 

@@ -182,6 +182,7 @@ vnum    {vnum1}|{vnum2}|{vnum3}|{vnum4}|{vnum5}
   -?"-mtask"            { FL; return yVLT_D_MTASK; }
   -?"-param"            { FL; return yVLT_D_PARAM; }
   -?"-port"             { FL; return yVLT_D_PORT; }
+  -?"-port_squash"      { FL; return yVLT_D_PORT_SQUASH; }
   -?"-rule"             { FL; return yVLT_D_RULE; }
   -?"-q"                { FL; return yVLT_D_Q; }
   -?"-reset"            { FL; return yVLT_D_RESET; }

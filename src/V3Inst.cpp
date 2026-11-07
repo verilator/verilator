@@ -64,6 +64,11 @@ class InstVisitor final : public VNVisitor {
         if (exprVarp->isIfaceRef()) return false;
         // A ref port must become an alias
         if (!modVarp->direction().isRef()) {
+            // A kept port of a threads_group module, or an input connected to one, stays a
+            // variable of its own, so each instance reads its own ports
+            if (modVarp->isNonOutput() && (modVarp->keepPort() || exprVarp->keepPort())) {
+                return false;
+            }
             // V3FsmDetect recognizes the registers of an fsm_register_wrapper instance via
             // the assignments of its pins, so leave those as assignments
             AstNodeModule* const cellModp = m_cellp->modp();
