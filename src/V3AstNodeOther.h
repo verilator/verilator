@@ -1249,28 +1249,6 @@ public:
         return m_optType.m_e == asamep->m_optType.m_e && m_typeOption == asamep->m_typeOption;
     }  // LCOV_EXCL_STOP
 };
-class AstCoverToggle final : public AstNode {
-    // Toggle analysis of given signal
-    // Parents:  MODULE
-    // @astgen op1 := incp : AstCoverInc
-    // @astgen op2 := origp : AstNodeExpr
-    // @astgen op3 := changep : AstNodeExpr
-public:
-    AstCoverToggle(FileLine* fl, AstCoverInc* incp, AstNodeExpr* origp, AstNodeExpr* changep)
-        : ASTGEN_SUPER_CoverToggle(fl) {
-        this->incp(incp);
-        this->origp(origp);
-        this->changep(changep);
-    }
-    ASTGEN_MEMBERS_AstCoverToggle;
-    int instrCount() const override { return 3 + INSTR_COUNT_BRANCH + INSTR_COUNT_LD; }
-    bool sameNode(const AstNode* /*samep*/) const override { return true; }
-    bool isGateOptimizable() const override { return false; }
-    bool isPredictOptimizable() const override { return true; }
-    bool isOutputter() override {
-        return false;  // Though the AstCoverInc under this is an outputter
-    }
-};
 class AstCoverTransItem final : public AstNode {
     // Represents a single transition item: value or value[*N] or value[->N] or value[=N]
     // @astgen op1 := valuesp : List[AstNode]
@@ -1616,8 +1594,7 @@ class AstNetlist final : public AstNode {
     // @astgen ptr := m_stdPackageProcessp : Optional[AstClass]  // SystemVerilog std process class
     // @astgen ptr := m_dpiExportTriggerp : Optional[AstVarScope]  // DPI export trigger variable
     // @astgen ptr := m_delaySchedulerp : Optional[AstVar]  // Delay scheduler variable
-    // @astgen ptr := m_nbaEventp : Optional[AstVarScope]  // NBA event variable
-    // @astgen ptr := m_nbaEventTriggerp : Optional[AstVarScope]  // NBA event trigger
+    // @astgen ptr := m_nbaQueuep : Optional[AstVarScope]  // Global queue of NBAs (V3Delayed)
     // @astgen ptr := m_topScopep : Optional[AstTopScope]  // Singleton AstTopScope
     // @astgen ptr := m_stlFirstIterationp: Optional[AstVarScope]  // Settle first iteration flag
     VTimescale m_timeunit;  // Global time unit
@@ -1673,10 +1650,8 @@ public:
     void dpiExportTriggerp(AstVarScope* varScopep) { m_dpiExportTriggerp = varScopep; }
     AstVar* delaySchedulerp() const { return m_delaySchedulerp; }
     void delaySchedulerp(AstVar* const varScopep) { m_delaySchedulerp = varScopep; }
-    AstVarScope* nbaEventp() const { return m_nbaEventp; }
-    void nbaEventp(AstVarScope* const varScopep) { m_nbaEventp = varScopep; }
-    AstVarScope* nbaEventTriggerp() const { return m_nbaEventTriggerp; }
-    void nbaEventTriggerp(AstVarScope* const varScopep) { m_nbaEventTriggerp = varScopep; }
+    AstVarScope* nbaQueuep() const { return m_nbaQueuep; }
+    void nbaQueuep(AstVarScope* varScopep) { m_nbaQueuep = varScopep; }
     void stdPackagep(AstPackage* const packagep) { m_stdPackagep = packagep; }
     AstPackage* stdPackagep() const { return m_stdPackagep; }
     void stdPackageProcessp(AstClass* const classp) { m_stdPackageProcessp = classp; }
@@ -1895,6 +1870,54 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
+class AstRSProd final : public AstNode {
+    // randomsequence production, under a AstRandSequence
+    // @astgen op1 := fvarp : Optional[AstVar]
+    // @astgen op2 := portsp : List[AstNode]
+    // @astgen op3 := rulesp : List[AstRSRule]
+    string m_name;  // Name of block, or "" to use first production
+public:
+    AstRSProd(FileLine* fl, const string& name, AstNode* portsp, AstRSRule* rulesp)
+        : ASTGEN_SUPER_RSProd(fl)
+        , m_name{name} {
+        addPortsp(portsp);
+        addRulesp(rulesp);
+    }
+    ASTGEN_MEMBERS_AstRSProd;
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    string name() const override VL_MT_STABLE { return m_name; }
+};
+class AstRSProdList final : public AstNode {
+    // randomsquence production list
+    // @astgen op1 := weightp : Optional[AstNodeExpr]
+    // @astgen op2 := prodsp : List[AstNode]
+    bool m_randJoin = false;  // Is rand join'ed
+public:
+    AstRSProdList(FileLine* fl, AstNodeExpr* weightp, AstNode* prodsp)
+        : ASTGEN_SUPER_RSProdList(fl) {
+        this->weightp(weightp);
+        addProdsp(prodsp);
+    }
+    ASTGEN_MEMBERS_AstRSProdList;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool randJoin() const { return m_randJoin; }
+    void randJoin(bool flag) { m_randJoin = flag; }
+};
+class AstRSRule final : public AstNode {
+    // randomsquence rule
+    // @astgen op1 := weightp : Optional[AstNodeExpr]
+    // @astgen op2 := prodlistsp : List[AstRSProdList]
+    // @astgen op3 := weightStmtsp : List[AstNode]
+public:
+    AstRSRule(FileLine* fl, AstNodeExpr* weightp, AstRSProdList* prodlistsp, AstNode* weightStmtsp)
+        : ASTGEN_SUPER_RSRule(fl) {
+        this->weightp(weightp);
+        addProdlistsp(prodlistsp);
+        addWeightStmtsp(weightStmtsp);
+    }
+    ASTGEN_MEMBERS_AstRSRule;
+};
 class AstScope final : public AstNode {
     // A particular usage of a cell
     // Parents: MODULE
@@ -1910,6 +1933,7 @@ class AstScope final : public AstNode {
 
     // An AstScope->name() is special: . indicates an uninlined scope, __DOT__ an inlined scope
     string m_name;  // Name
+    int m_threadsGroupWorker = -1;  // threads_group -workers worker, or -1 for automatic
 public:
     AstScope(FileLine* fl, AstNodeModule* modp, const string& name, AstScope* aboveScopep,
              AstCell* aboveCellp)
@@ -1940,6 +1964,8 @@ public:
     AstCell* aboveCellp() const { return m_aboveCellp; }
     void aboveCellp(AstCell* nodep) { m_aboveCellp = nodep; }
     bool isTop() const VL_MT_SAFE { return aboveScopep() == nullptr; }  // At top of hierarchy
+    int threadsGroupWorker() const { return m_threadsGroupWorker; }
+    void threadsGroupWorker(int worker) { m_threadsGroupWorker = worker; }
 };
 class AstSenItem final : public AstNode {
     // Parents:  SENTREE
@@ -1950,9 +1976,7 @@ public:
     class Combo {};  // for constructor type-overload selection
     class Static {};  // for constructor type-overload selection
     class Initial {};  // for constructor type-overload selection
-    class InitialNBA {};  // for constructor type-overload selection
     class Final {};  // for constructor type-overload selection
-    class Never {};  // for constructor type-overload selection
     AstSenItem(FileLine* fl, VEdgeType edgeType, AstNodeExpr* senp, AstNodeExpr* condp = nullptr)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{edgeType} {
@@ -1968,15 +1992,9 @@ public:
     AstSenItem(FileLine* fl, Initial)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_INITIAL} {}
-    AstSenItem(FileLine* fl, InitialNBA)
-        : ASTGEN_SUPER_SenItem(fl)
-        , m_edgeType{VEdgeType::ET_INITIAL_NBA} {}
     AstSenItem(FileLine* fl, Final)
         : ASTGEN_SUPER_SenItem(fl)
         , m_edgeType{VEdgeType::ET_FINAL} {}
-    AstSenItem(FileLine* fl, Never)
-        : ASTGEN_SUPER_SenItem(fl)
-        , m_edgeType{VEdgeType::ET_NEVER} {}
     ASTGEN_MEMBERS_AstSenItem;
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
@@ -1999,7 +2017,6 @@ public:
     bool isStatic() const { return edgeType() == VEdgeType::ET_STATIC; }
     bool isInitial() const { return edgeType() == VEdgeType::ET_INITIAL; }
     bool isFinal() const { return edgeType() == VEdgeType::ET_FINAL; }
-    bool isNever() const { return edgeType() == VEdgeType::ET_NEVER; }
 };
 class AstSenTree final : public AstNode {
     // A sensitivity list
@@ -2306,6 +2323,8 @@ class AstVar final : public AstNode {
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
     // @astgen ptr := m_forceRdVarp : Optional[AstVar]  // [AfterForce] Generated force read signal
+    // @astgen ptr := m_forceEnVarp : Optional[AstVar]  // [AfterForce] Generated force enable
+    // @astgen ptr := m_forceValVarp : Optional[AstVar]  // [AfterForce] Generated force value
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
@@ -2640,6 +2659,10 @@ public:
     bool isForceable() const { return m_isForceable; }
     AstVar* forceRdVarp() const { return m_forceRdVarp; }
     void forceRdVarp(AstVar* const nodep) { m_forceRdVarp = nodep; }
+    AstVar* forceEnVarp() const { return m_forceEnVarp; }
+    void forceEnVarp(AstVar* const nodep) { m_forceEnVarp = nodep; }
+    AstVar* forceValVarp() const { return m_forceValVarp; }
+    void forceValVarp(AstVar* const nodep) { m_forceValVarp = nodep; }
     void setForceable() { m_isForceable = true; }
     void setForcedByCode() { m_isForcedByCode = true; }
     bool isForced() const { return m_isForceable || m_isForcedByCode; }
@@ -3248,6 +3271,7 @@ class AstClass final : public AstNodeModule {
                                        // which updates pointers to rand variables in clone()
     bool m_covergroup = false;  // Is covergroup (TODO perhaps make a new Ast node type for CG?)
     bool m_extended = false;  // Is extension or extended by other classes
+    bool m_implChecksDeferred = false;  // V3LinkDot checks implementations after V3Param
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
@@ -3285,6 +3309,8 @@ public:
     void isCovergroup(bool flag) { m_covergroup = flag; }
     bool isExtended() const { return m_extended; }
     void isExtended(bool flag) { m_extended = flag; }
+    bool implChecksDeferred() const { return m_implChecksDeferred; }
+    void implChecksDeferred(bool flag) { m_implChecksDeferred = flag; }
     bool isInterfaceClass() const { return m_interfaceClass; }
     void isInterfaceClass(bool flag) { m_interfaceClass = flag; }
     bool isVirtual() const { return m_virtual; }

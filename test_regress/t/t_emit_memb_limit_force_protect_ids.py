@@ -12,9 +12,10 @@ import vltest_bootstrap
 test.scenarios('vlt_all')
 test.top_filename = "t/t_emit_memb_limit_force.v"
 
-test.compile(verilator_flags2=[
-    "--binary", "--vpi", "--protect-ids", "-Wno-INSECURE", "--comp-limit-members", "1"
-])
+test.compile(threads=2 if test.vltmt else 1,
+             verilator_flags2=[
+                 "--binary", "--vpi", "--protect-ids", "-Wno-INSECURE", "--comp-limit-members", "1"
+             ])
 
 test.execute()
 

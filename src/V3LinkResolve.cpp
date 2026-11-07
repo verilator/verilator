@@ -28,6 +28,7 @@
 
 #include "V3LinkResolve.h"
 
+#include "V3Control.h"
 #include "V3String.h"
 #include "V3Task.h"
 
@@ -237,7 +238,8 @@ class LinkResolveVisitor final : public VNVisitor {
             // The top module is the whole model, not a group within it. With --hierarchical, this
             // is the case for a hier_block in its own Verilation. A library stub, such as a
             // hier_block in its parent's Verilation, holds no logic to group.
-            m_modp->threadsGroup(!m_modp->isTop() && !m_modp->verilatorLib());
+            m_modp->threadsGroup(!m_modp->isTop() && !m_modp->verilatorLib()
+                                 && V3Control::isThreadsGroupAtThreads(m_modp));
             nodep->unlinkFrBack();
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
         } else if (nodep->pragType() == VPragmaType::PUBLIC_MODULE) {

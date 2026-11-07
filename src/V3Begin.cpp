@@ -203,12 +203,7 @@ class BeginVisitor final : public VNVisitor {
     void visit(AstFork* nodep) override {
         dotNames(nodep->name(), nodep->fileline(), "__FORK__");
         iterateAndNextNull(nodep->stmtsp());
-        {
-            // Keep begins in forks to group their statements together
-            VL_RESTORER(m_keepBegins);
-            m_keepBegins = true;
-            iterateAndNextNull(nodep->forksp());
-        }
+        iterateAndNextNull(nodep->forksp());
         AstNode* addsp = nullptr;
         if (AstNode* const declsp = nodep->declsp()) {
             declsp->unlinkFrBackWithNext();
@@ -231,41 +226,6 @@ class BeginVisitor final : public VNVisitor {
             VL_RESTORER(m_keepBegins);
             m_keepBegins = false;
             dotNames(nodep->name(), nodep->fileline(), "__BEGIN__");
-            iterateChildren(nodep);
-        }
-
-        // Cleanup
-        if (m_keepBegins) {
-            nodep->name("");
-            return;
-        }
-        AstNode* addsp = nullptr;
-        if (AstNode* const declsp = nodep->declsp()) {
-            declsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, declsp);
-        }
-        if (AstNode* const stmtsp = nodep->stmtsp()) {
-            stmtsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, stmtsp);
-        }
-        if (addsp) {
-            nodep->replaceWith(addsp);
-        } else {
-            nodep->unlinkFrBack();
-        }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
-    void visit(AstNodeBlock* nodep) override {
-        // Begin/Fork blocks were only useful in variable creation, change names and delete
-        UINFO(8, "  " << nodep);
-        VL_RESTORER_COPY(m_displayScope);
-        VL_RESTORER_COPY(m_namedScope);
-        VL_RESTORER_COPY(m_unnamedScope);
-        {
-            VL_RESTORER(m_keepBegins);
-            m_keepBegins = VN_IS(nodep, Fork);
-            dotNames(nodep->name(), nodep->fileline(),
-                     VN_IS(nodep, Fork) ? "__FORK__" : "__BEGIN__");
             iterateChildren(nodep);
         }
 
@@ -357,13 +317,15 @@ class BeginVisitor final : public VNVisitor {
         }
     }
     void visit(AstTypedef* nodep) override {
-        if (m_unnamedScope != "") {
-            // Rename it
-            nodep->name(dot(m_unnamedScope, nodep->name()));
-            m_statep->userMarkChanged(nodep);
-            // Move it under enclosing tree
-            liftNode(nodep);
-        }
+        // Lift out of functions too, as later passes expect typedefs only under the module
+        const std::string scope
+            = m_ftaskp ? dot(m_ftaskp->name(), m_unnamedScope) : m_unnamedScope;
+        if (scope.empty()) return;
+        // Rename it
+        nodep->name(dot(scope, nodep->name()));
+        m_statep->userMarkChanged(nodep);
+        // Move it under enclosing module
+        m_modp->addStmtsp(nodep->unlinkFrBack());
     }
     void visit(AstCell* nodep) override {
         UINFO(8, "   CELL " << nodep);
@@ -527,6 +489,7 @@ static AstNode* createForeachLoop(AstNodeForeach* /*nodep*/, AstNode* bodysp, bo
         sizeVarp = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vloopsize",
                               varp->findUInt32DType()};
         sizeVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+        sizeVarp->funcLocal(varp->isFuncLocal());
         sizeVarp->usedLoopIdx(true);  // Not technically an index, but used only inside loop
         varp->addNext(sizeVarp);
         sizeGetp
@@ -571,12 +534,14 @@ static AstNode* createForeachAssoc(FileLine* fl, AstVar* varp, AstNodeExpr* subf
         = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vnext", varp};
     next_varp->usedLoopIdx(true);
     next_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    next_varp->funcLocal(varp->isFuncLocal());
     loopp->addNext(next_varp);
 
     AstVar* const more_varp  // bool var. 0 = loop empty/done, 1 = continue with loop
         = new AstVar{fl, VVarType::BLOCKTEMP, varp->name() + "__Vmore", VFlagBitPacked{}, 1};
     more_varp->usedLoopIdx(true);  // Not technically an index, but used only inside loop
     more_varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+    more_varp->funcLocal(varp->isFuncLocal());
     loopp->addNext(more_varp);
 
     AstNodeExpr* const firstp

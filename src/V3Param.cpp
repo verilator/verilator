@@ -78,6 +78,14 @@
 
 VL_DEFINE_DEBUG_FUNCTIONS;
 
+static void cleanTwoStateParamValue(AstVar* varp) {
+    if (AstNodeExpr* const valuep = VN_CAST(varp->valuep(), NodeExpr)) {
+        if (varp->dtypep() || VN_IS(valuep, ConsStruct)) {
+            SimulateVisitor::cleanTwoStateValue(valuep, varp->dtypep());
+        }
+    }
+}
+
 // Walk a class-typed node through typedef/RefDType chains to its ClassRefDType, or null.
 static AstClassRefDType* classRefDTypeOfNode(AstNode* nodep) {
     while (AstTypedef* const tdp = VN_CAST(nodep, Typedef)) nodep = tdp->subDTypep();
@@ -250,24 +258,22 @@ public:
                 var = varNum.toDouble();
             }
             return V3Number::epsilonEqual(var, hierOptParamp->num().toDouble());
-        } else {  // Now integer type is assumed
-            // Bitwidth of hierOptParamp is accurate because V3Width already calculated in the
-            // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
-            // to hierOptParamp width.
-            V3Number varNum{pinValuep, hierOptParamp->num().width()};
-            if (pinValuep->isDouble()) {  // Need to cast to int
-                // Parameter is actually an integral type, but passed value is floating point.
-                // Conversion from real to integer uses rounding in V3Width.cpp
-                varNum.opRToIRoundS(pinValuep->num());
-            } else if (pinValuep->isSigned()) {
-                varNum.opExtendS(pinValuep->num(), pinValuep->num().width());
-            } else {
-                varNum.opAssign(pinValuep->num());
-            }
-            V3Number isEq{pinValuep, 1};
-            isEq.opEq(varNum, hierOptParamp->num());
-            return isEq.isNeqZero();
         }
+        // Now integer type is assumed
+        // Bitwidth of hierOptParamp is accurate because V3Width already calculated in the
+        // previous run. Bitwidth of pinValuep is before width analysis, so pinValuep is casted
+        // to hierOptParamp width.
+        V3Number varNum{pinValuep, hierOptParamp->num().width()};
+        if (pinValuep->isDouble()) {  // Need to cast to int
+            // Parameter is actually an integral type, but passed value is floating point.
+            // Conversion from real to integer uses rounding in V3Width.cpp
+            varNum.opRToIRoundS(pinValuep->num());
+        } else if (pinValuep->isSigned()) {
+            varNum.opExtendS(pinValuep->num(), pinValuep->num().width());
+        } else {
+            varNum.opAssign(pinValuep->num());
+        }
+        return varNum.isCaseEq(hierOptParamp->num());
     }
 };
 
@@ -350,6 +356,13 @@ class ParamProcessor final {
 
     // member names cached for fast lookup
     VMemberMap m_memberMap;
+
+    // Type references in declarations linked to an inherited typedef. Declarations stay in the
+    // tree until after ParamClassRefDTypeRelinkVisitor, which reads these.
+    std::unordered_set<const AstRefDType*> m_inheritedTypeRefs;
+    const AstNodeModule* m_visitModp = nullptr;  // Module whose references ParamVisitor queued
+    bool m_visitBaseQueued = false;  // ParamVisitor queued m_visitModp's base, to specialize it
+    std::unordered_set<const AstNode*> m_inheritBaseps;  // Bases specialized for a lookup
 
     // METHODS
 
@@ -1207,6 +1220,7 @@ class ParamProcessor final {
         // Resolve class-scoped references and any member selections they expose.
         resolveDeferredDotsReachableFrom(varp->valuep(), m_modp);
         V3Const::constifyParamsEdit(varp);
+        cleanTwoStateParamValue(varp);
         inProgress.erase(varp);
     }
 
@@ -1256,6 +1270,16 @@ class ParamProcessor final {
         replaceMemberDot(dotp, memberRefp, newp);
     }
 
+    // Link refp to memberp, if a type, declared in memberClassp
+    static void linkClassType(AstRefDType* refp, AstNode* memberp, AstClass* memberClassp) {
+        if (AstParamTypeDType* const typep = VN_CAST(memberp, ParamTypeDType)) {
+            refp->refDTypep(typep);
+            refp->classOrPackagep(memberClassp);
+        } else if (AstTypedef* const typedefp = VN_CAST(memberp, Typedef)) {
+            refp->typedefp(typedefp);
+        }
+    }
+
     // Helper to resolve DOT to RefDType for class type references.
     // If the class is parameterized and not yet specialized, specialize it first.
     // This handles cases like: iface #(param_class#(value)::typedef_name)
@@ -1271,7 +1295,7 @@ class ParamProcessor final {
         AstParseRef* const parseRefp = memberParseRef(dotp->rhsp());
         if (!parseRefp) return;
 
-        const AstClass* lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
+        AstClass* lhsClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
 
         // Specialize parameterized class through type parameter indirection (#7000)
         AstParamTypeDType* const paramTypep
@@ -1311,12 +1335,14 @@ class ParamProcessor final {
         }
         if (!lhsClassp) return;
 
-        AstNode* const memberp = m_memberMap.findMember(lhsClassp, parseRefp->name());
+        AstClass* memberClassp = nullptr;
+        AstNode* const memberp
+            = findClassMember(lhsClassp, parseRefp->name(), memberClassp /*ref*/);
         UINFO(9, "Resolve deferred class member: " << parseRefp->name() << " -> " << memberp);
-        if (AstTypedef* const tdefp = VN_CAST(memberp, Typedef)) {
+        if (VN_IS(memberp, ParamTypeDType) || VN_IS(memberp, Typedef)) {
             if (parseRefp != dotp->rhsp()) return;
-            AstRefDType* const refp = new AstRefDType{dotp->fileline(), tdefp->name()};
-            refp->typedefp(tdefp);
+            AstRefDType* const refp = new AstRefDType{dotp->fileline(), parseRefp->name()};
+            linkClassType(refp, memberp, memberClassp);
             dotp->replaceWith(refp);
             VL_DO_DANGLING(dotp->deleteTree(), dotp);
         } else if (AstVar* const varp = VN_CAST(memberp, Var)) {
@@ -1372,13 +1398,15 @@ class ParamProcessor final {
             classRefDeparam(classRefDTypep, srcClassp);
             newClassp = classRefDTypep->classp();
         }
+        linkClassMemberType(refp, newClassp);
+    }
 
-        AstTypedef* const typedefp
-            = VN_CAST(m_memberMap.findMember(newClassp, refp->name()), Typedef);
-        if (typedefp) {
-            refp->typedefp(typedefp);
-            refp->classOrPackagep(newClassp);
-        }
+    // Link refp to the type it names in classp or a class it extends
+    void linkClassMemberType(AstRefDType* refp, AstClass* classp) {
+        AstClass* memberClassp = nullptr;
+        AstNode* const memberp = findClassMember(classp, refp->name(), memberClassp /*ref*/);
+        linkClassType(refp, memberp, memberClassp);
+        if (refp->typedefp()) refp->classOrPackagep(memberClassp);
     }
 
     // True if a $bits/$size type query in nodep's parameters reads another type parameter.
@@ -1447,9 +1475,7 @@ class ParamProcessor final {
         } else {
             origNum.opAssign(origp->num());
         }
-        V3Number isEq{exprp, 1};
-        isEq.opEq(exprNum, origNum);
-        return isEq.isNeqZero();
+        return exprNum.isCaseEq(origNum);
     }
 
     // Rewrite placeholder __VGIfaceParam pins emitted by
@@ -1655,6 +1681,7 @@ class ParamProcessor final {
                     }
                     if (!cloneVarpUnresolved) {
                         V3Const::constifyParamsEdit(cloneVarp);
+                        cleanTwoStateParamValue(cloneVarp);
                         if (AstConst* const widthedp = VN_CAST(cloneVarp->valuep(), Const)) {
                             // Stamp the port's type so equal values hash the same.
                             if (cloneVarp->dtypep()) widthedp->dtypep(cloneVarp->dtypep());
@@ -1736,11 +1763,17 @@ class ParamProcessor final {
                 }
                 if (rawTypep && !skipWidthForTemplateStruct) V3Width::widthParamsEdit(rawTypep);
             }
-            AstNodeDType* exprp = rawTypep ? rawTypep->skipRefToNonRefp() : nullptr;
+            // A name left unlinked, e.g. one inherited through a circular base, is not a type
+            AstNodeDType* exprp
+                = rawTypep && rawTypep->skipRefOrNullp() ? rawTypep->skipRefToNonRefp() : nullptr;
             const AstNodeDType* origp = modvarp->skipRefToNonRefp();
             if (!exprp) {
                 pinp->v3error("Parameter type pin value isn't a type: Param "
-                              << pinp->prettyNameQ() << " of " << nodep->prettyNameQ());
+                              << modvarp->prettyNameQ() << " of " << nodep->prettyNameQ());
+                // Continue with the declared type, as specialization expects a type
+                AstNode* const oldp = pinp->exprp();
+                oldp->replaceWith(modvarp->subDTypep()->cloneTree(false));
+                VL_DO_DANGLING(m_deleter.pushDeletep(oldp), oldp);
             } else if (!origp) {
                 pinp->v3error("Parameter type variable isn't a type: Param "
                               << modvarp->prettyNameQ());
@@ -2260,14 +2293,8 @@ class ParamProcessor final {
         AstRefDType* const refDTypep = VN_CAST(nodep->backp(), RefDType);
         AstClass* const newClassp = refDTypep ? VN_CAST(newModp, Class) : nullptr;
         if (newClassp && !refDTypep->typedefp() && !refDTypep->subDTypep()) {
-            if (AstTypedef* const typedefp
-                = VN_CAST(m_memberMap.findMember(newClassp, refDTypep->name()), Typedef)) {
-                refDTypep->typedefp(typedefp);
-                refDTypep->classOrPackagep(newClassp);
-                UINFO(9, "Resolved parameterized class typedef: " << refDTypep->name() << " -> "
-                                                                  << typedefp << " in "
-                                                                  << newClassp->name());
-            }
+            linkClassMemberType(refDTypep, newClassp);
+            UINFO(9, "Resolve parameterized class type: " << refDTypep);
         }
         return newModp;
     }
@@ -2288,17 +2315,58 @@ class ParamProcessor final {
     class DeferredResolverVisitor final : public VNVisitor {
         ParamProcessor& m_processor;  // Processor used to resolve deferred references
         std::set<const AstNode*> m_reachedDecls;
+        AstNode* m_scopep;  // Root, or declaration reached from it, being iterated
+        AstNodeModule* m_scopeModp = nullptr;  // Module declaring m_scopep, once needed
+        bool m_inPin = false;  // Under a parameter override, which may use inherited names
+        bool m_inDecl = false;  // Under a declaration reached through a reference
+        bool m_inDot = false;  // Under a dotted name, resolved by its own scope
 
         bool firstReach(const AstNode* const declp) { return m_reachedDecls.insert(declp).second; }
 
+        void iterateDecl(AstNode* declp, AstNode* subp) {
+            VL_RESTORER(m_scopep);
+            VL_RESTORER(m_scopeModp);
+            VL_RESTORER(m_inDecl);
+            m_scopep = declp;
+            m_scopeModp = nullptr;
+            m_inDecl = true;
+            iterate(subp);
+        }
         void iterateParamType(AstParamTypeDType* const paramTypep) {
-            if (firstReach(paramTypep)) iterate(paramTypep);
+            if (firstReach(paramTypep)) iterateDecl(paramTypep, paramTypep);
         }
         void iterateTypedef(AstTypedef* const tdefp) {
-            if (firstReach(tdefp)) iterate(tdefp->subDTypep());
+            if (firstReach(tdefp)) iterateDecl(tdefp, tdefp->subDTypep());
+        }
+        // Class whose inherited members an unlinked name here may refer to, if any
+        AstClass* inheritingClassp() {
+            if (!m_inPin || m_inDot) return nullptr;
+            if (!m_scopeModp) m_scopeModp = V3LinkDotIfaceCapture::findOwnerModule(m_scopep);
+            AstClass* const classp = VN_CAST(m_scopeModp, Class);
+            // Only resolve in specializations, as each is copied from its template
+            if (!classp || (classp->hasGParam() && !classp->user3p())) return nullptr;
+            return classp;
         }
 
         void visit(AstNode* nodep) override { iterateChildren(nodep); }
+        void visit(AstPin* nodep) override {
+            VL_RESTORER(m_inPin);
+            VL_RESTORER(m_inDecl);
+            VL_RESTORER(m_inDot);
+            m_inPin = nodep->param();
+            m_inDecl = false;  // Specialization consumes the override
+            m_inDot = false;
+            iterateChildren(nodep);
+        }
+        void visit(AstParseRef* nodep) override {
+            iterateChildren(nodep);
+            AstClass* const classp = inheritingClassp();
+            if (!classp) return;
+            // The member's declaration may itself use inherited names
+            if (AstNode* const newp = m_processor.resolveInheritedParseRef(nodep, classp)) {
+                iterate(newp);
+            }
+        }
         void visit(AstClassOrPackageRef* nodep) override {
             iterateChildren(nodep);
             AstNode* const targetp = nodep->classOrPackageNodep();
@@ -2309,11 +2377,18 @@ class ParamProcessor final {
             }
         }
         void visit(AstDot* nodep) override {
-            iterateChildren(nodep);
+            {
+                VL_RESTORER(m_inDot);
+                m_inDot = true;
+                iterateChildren(nodep);
+            }
             m_processor.resolveDotToTypedef(nodep);
         }
         void visit(AstRefDType* nodep) override {
             iterateChildren(nodep);
+            if (AstClass* const classp = inheritingClassp()) {
+                m_processor.resolveInheritedRefDType(nodep, classp, m_inDecl);
+            }
             AstTypedef* const tdefp = nodep->typedefp();
             if (tdefp) {
                 iterateTypedef(tdefp);
@@ -2327,23 +2402,98 @@ class ParamProcessor final {
             iterateChildren(nodep);
             AstVar* const varp = nodep->varp();
             if (firstReach(varp)) {
-                iterate(varp->subDTypep());
+                iterateDecl(varp, varp->subDTypep());
                 const auto& deferredVarps = v3Global.rootp()->deferredParamVarps();
                 if (varp->varType() == VVarType::LPARAM && deferredVarps.count(varp)) {
                     UASSERT_OBJ(varp->valuep(), varp, "VarRef should have non-null valuep");
-                    iterate(varp->valuep());
+                    iterateDecl(varp, varp->valuep());
                 }
             }
         }
 
     public:
         DeferredResolverVisitor(ParamProcessor& processor, AstNode* rootp)
-            : m_processor{processor} {
+            : m_processor{processor}
+            , m_scopep{rootp} {
             iterate(rootp);
         }
     };
 
+    // Link a name in a parameter override of classp to a member classp inherits. Returns the
+    // replacement reference, if any.
+    AstNode* resolveInheritedParseRef(AstParseRef* nodep, AstClass* classp) {
+        AstClass* memberClassp = nullptr;
+        AstNode* const memberp = findClassMember(classp, nodep->name(), memberClassp /*ref*/);
+        AstNode* newp = nullptr;
+        if (VN_IS(memberp, ParamTypeDType) || VN_IS(memberp, Typedef)) {
+            AstRefDType* const refp = new AstRefDType{nodep->fileline(), nodep->name()};
+            linkClassType(refp, memberp, memberClassp);
+            newp = refp;
+        } else if (AstVar* const varp = VN_CAST(memberp, Var)) {
+            newp = new AstVarRef{nodep->fileline(), varp, VAccess::READ};
+        }
+        if (!newp) return nullptr;
+        nodep->replaceWith(newp);
+        VL_DO_DANGLING(m_deleter.pushDeletep(nodep), nodep);
+        return newp;
+    }
+    // Link a type in a parameter override of classp, or in a declaration the override uses,
+    // to a type classp inherits.
+    void resolveInheritedRefDType(AstRefDType* nodep, AstClass* classp, bool inDecl) {
+        if (nodep->typedefp() || nodep->refDTypep() || nodep->typeofp() || nodep->classOrPackagep()
+            || nodep->classOrPackageOpp()) {
+            return;
+        }
+        AstClass* memberClassp = nullptr;
+        AstNode* const memberp = findClassMember(classp, nodep->name(), memberClassp /*ref*/);
+        linkClassType(nodep, memberp, memberClassp);
+        // An override is consumed by specialization, but a declaration is kept, so V3WidthCommit
+        // checks access to the typedef from the declaring class
+        if (inDecl && nodep->typedefp()) {
+            nodep->classOrPackagep(memberClassp);
+            m_inheritedTypeRefs.emplace(nodep);
+        }
+    }
+
 public:
+    // Find 'name' declared in classp or a class it extends, setting memberClassp to the declaring
+    // class. V3LinkDot defers names inherited through a parameterized base until the base is
+    // specialized, so each base is specialized on the way. Inherited parameters use the
+    // specialized base (IEEE 1800-2023 8.25).
+    AstNode* findClassMember(AstClass* classp, const string& name, AstClass*& memberClassp) {
+        std::unordered_set<const AstClass*> visitedps;  // Stops on cyclic inheritance
+        while (visitedps.emplace(classp).second) {
+            if (AstNode* const memberp = m_memberMap.findMember(classp, name)) {
+                memberClassp = classp;
+                return memberp;
+            }
+            const AstClassExtends* const extendsp = classp->extendsp();
+            if (!extendsp || extendsp->isImplements()) break;
+            AstClassRefDType* const baseRefp = classRefDTypeOfNode(extendsp->childDTypep());
+            if (!baseRefp) break;
+            if (baseRefp->paramsp() || baseRefp->classp()->hasGParam()) {
+                // Specializing would delete references ParamVisitor queued in the parameters,
+                // so the name is unknown until ParamVisitor has specialized the base
+                if (baseRefp->paramsp() && classp == m_visitModp && m_visitBaseQueued) break;
+                if (!m_inheritBaseps.emplace(baseRefp).second) break;
+                VL_RESTORER(m_modp);
+                nodeDeparam(baseRefp, baseRefp->classp(), classp, classp->someInstanceName());
+                m_inheritBaseps.erase(baseRefp);
+            }
+            classp = baseRefp->classp();
+        }
+        return nullptr;
+    }
+    bool isInheritedTypeRef(const AstRefDType* refp) const {
+        return m_inheritedTypeRefs.count(refp);
+    }
+
+    void visitModp(const AstNodeModule* modp) {
+        m_visitModp = modp;
+        m_visitBaseQueued = false;
+    }
+    void visitBaseQueued(bool flag) { m_visitBaseQueued = flag; }
+
     // After an interface cell inside parentModp has been deparameterized
     // (rewired from template to clone), retarget REFDTYPEs that still
     // reference the old template's types so that $bits(iface_typedef)
@@ -2511,6 +2661,7 @@ public:
 
 class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
 
+    ParamProcessor& m_processor;  // Finds members through bases, knows inherited links
     AstClass* m_classp = nullptr;  // Current class
     std::unordered_map<const AstParamTypeDType*, AstClass*> m_paramTypeClassMap;
 
@@ -2563,17 +2714,6 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
         return classp->origName().empty() ? classp->name() : classp->origName();
     }
 
-    // Find 'name' in classp or any base class (findTypedefInModule() searches
-    // only the class itself).
-    static AstTypedef* findTypedefWithBases(AstClass* classp, const string& name) {
-        for (AstClass* cp = classp; cp; cp = cp->extendsp() ? cp->extendsp()->classp() : nullptr) {
-            if (AstTypedef* const tdp = V3LinkDotIfaceCapture::findTypedefInModule(cp, name)) {
-                if (tdp->subDTypep()) return tdp;
-            }
-        }
-        return nullptr;
-    }
-
     // Re-resolve REFDTYPE.typedefp/refDTypep using the containing module's
     // own resolved typedef chain. The eager retargeting in deepCloneModule
     // blindly retargets every captured entry to whichever sibling clone is
@@ -2584,6 +2724,8 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
     // those local typedefs as ground truth.
     void retargetRefDType(AstRefDType* refp) {
         if (!m_ownerModp) return;
+        // An inherited member is not named through an owner's typedef
+        if (m_processor.isInheritedTypeRef(refp)) return;
 
         // IEEE 1800-2023 8.25.1: a bare class-qualified reference to the class
         // being compiled means the current specialization, but V3LinkDot binds
@@ -2592,26 +2734,31 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
         // specialization's own typedef.
         if (AstClass* const ownerClassp = VN_CAST(m_ownerModp, Class)) {
             if (!ownerClassp->hasGParam() && !refp->paramsp()) {
-                // What the reference resolves to: its typedef's owner if
-                // linked, else the class it is qualified by.
+                // What the reference resolves to: the class it is qualified
+                // by, as an inherited typedef's owner is a base, else its
+                // typedef's owner if linked.
                 const AstClass* refClassp = nullptr;
-                if (AstTypedef* const tdp = refp->typedefp()) {
-                    refClassp = VN_CAST(V3LinkDotIfaceCapture::findOwnerModule(tdp), Class);
-                } else if (const AstClassOrPackageRef* const classRefp
-                           = VN_CAST(refp->classOrPackageOpp(), ClassOrPackageRef)) {
+                if (const AstClassOrPackageRef* const classRefp
+                    = VN_CAST(refp->classOrPackageOpp(), ClassOrPackageRef)) {
                     refClassp = VN_CAST(classRefp->classOrPackageSkipp(), Class);
+                } else if (AstTypedef* const tdp = refp->typedefp()) {
+                    refClassp = VN_CAST(V3LinkDotIfaceCapture::findOwnerModule(tdp), Class);
                 }
                 // Same originating class => bare self reference (another
                 // specialization would carry #(), rejected above).
                 if (refClassp && refClassp != ownerClassp
                     && classOrigName(refClassp) == classOrigName(ownerClassp)) {
-                    AstTypedef* const selfTdp = findTypedefWithBases(ownerClassp, refp->name());
+                    AstClass* memberClassp = nullptr;
+                    AstTypedef* const selfTdp
+                        = VN_CAST(m_processor.findClassMember(ownerClassp, refp->name(),
+                                                              memberClassp /*ref*/),
+                                  Typedef);
                     if (selfTdp) {
                         UINFO(9, "post-param REFDTYPE self-reference retarget: "
                                      << refp << " from " << refClassp->name() << " to "
                                      << ownerClassp->name());
                         refp->typedefp(selfTdp);
-                        refp->classOrPackagep(V3LinkDotIfaceCapture::findOwnerModule(selfTdp));
+                        refp->classOrPackagep(memberClassp);
                         refp->refDTypep(selfTdp->subDTypep());
                         return;
                     }
@@ -2669,7 +2816,10 @@ class ParamClassRefDTypeRelinkVisitor final : public VNVisitor {
     }
 
 public:
-    explicit ParamClassRefDTypeRelinkVisitor(AstNetlist* netlistp) { iterate(netlistp); }
+    ParamClassRefDTypeRelinkVisitor(AstNetlist* netlistp, ParamProcessor& processor)
+        : m_processor{processor} {
+        iterate(netlistp);
+    }
     void visit(AstNodeModule* nodep) override {
         VL_RESTORER(m_ownerModp);
         m_ownerModp = nodep;
@@ -2756,7 +2906,8 @@ class ParamVisitor final : public VNVisitor {
 
     bool m_iterateModule = false;  // Iterating module body
     string m_unlinkedTxt;  // Text for AstUnlinkedRef
-    std::multimap<bool, AstNode*> m_cellps;  // Cells left to process (in current module)
+    // Cells left to process (in current module), keyed by (!isIface, !inClassExtends)
+    std::multimap<std::pair<bool, bool>, AstNode*> m_cellps;
     std::unordered_map<const AstNode*, std::string>
         m_genHierNames;  // Maps ast nodes to generated hierarchy names
     std::map<const AstRefDType*, bool>
@@ -2774,6 +2925,7 @@ class ParamVisitor final : public VNVisitor {
     bool m_modIfaceRefsDone = false;  // m_modIfaceRefs has been gathered for m_modp
     string m_generateHierName;  // Generate portion of hierarchy name
     bool m_inGenerateCond = false;  // Traversing a generate condition; see iterateGenerateCond
+    bool m_inClassExtends = false;  // Traversing the base of a class
 
     // METHODS
 
@@ -2795,6 +2947,7 @@ class ParamVisitor final : public VNVisitor {
             const auto itm = workQueue.cbegin();
             AstNodeModule* const modp = itm->second;
             workQueue.erase(itm);
+            m_processor.visitModp(modp);
             // Starting a new module, so what was learned about the last one no longer holds.
             v3Global.rootp()->clearContainingModules();
 
@@ -2826,10 +2979,13 @@ class ParamVisitor final : public VNVisitor {
             }
 
             // Process interface cells, then non-interface cells, which may reference an interface
-            // cell.
+            // cell. Specialize the base of a class before the rest, whose parameter overrides may
+            // use names it inherits.
             while (!m_cellps.empty()) {
                 const auto itim = m_cellps.cbegin();
                 AstNode* const cellp = itim->second;
+                // Past the references under a class base, the base is specialized
+                if (itim->first == std::make_pair(true, true)) m_processor.visitBaseQueued(false);
                 m_cellps.erase(itim);
 
                 // Consume the generated hierarchy name for the node
@@ -3036,6 +3192,7 @@ class ParamVisitor final : public VNVisitor {
                         if (AstVar* const varp = VN_CAST(sp, Var)) {
                             if (varp->isParam() && varp->valuep()) {
                                 V3Const::constifyParamsEdit(varp);
+                                cleanTwoStateParamValue(varp);
                             }
                         }
                     }
@@ -3167,10 +3324,17 @@ class ParamVisitor final : public VNVisitor {
         iterateChildren(nodep);
         // A generate condition is folded and deleted before the drain loop runs, so
         // queueing from one only leaves a dangling pointer.  See iterateGenerateCond.
-        if (!m_inGenerateCond) m_cellps.emplace(!isIface, nodep);
+        if (!m_inGenerateCond)
+            m_cellps.emplace(std::make_pair(!isIface, !m_inClassExtends), nodep);
     }
 
     // VISITORS
+    void visit(AstClassExtends* nodep) override {
+        VL_RESTORER(m_inClassExtends);
+        m_inClassExtends = true;
+        m_processor.visitBaseQueued(true);
+        iterateChildren(nodep);
+    }
     void visit(AstNodeModule* nodep) override {
         if (nodep->recursiveClone()) nodep->dead(true);  // Fake, made for recursive elimination
         if (nodep->dead()) return;  // Marked by LinkDot (and above)
@@ -3422,6 +3586,7 @@ class ParamVisitor final : public VNVisitor {
                 }
                 m_processor.resolveDeferredDotsReachableFrom(nodep, m_modp);
                 V3Const::constifyParamsEdit(nodep);
+                cleanTwoStateParamValue(nodep);
             }
         }
     }
@@ -3448,6 +3613,7 @@ class ParamVisitor final : public VNVisitor {
                     // caller's hasUnresolvedLparamXRef check sees a Const.
                     if (varp->isParam() && varp->valuep() && !VN_IS(varp->valuep(), Const)) {
                         V3Const::constifyParamsEdit(varp);
+                        cleanTwoStateParamValue(varp);
                     }
                     nodep->varp(varp);
                     return true;
@@ -3742,7 +3908,7 @@ class ParamVisitor final : public VNVisitor {
                 for (AstNode* const ep : itemp->condspList()) {
                     if (const AstConst* const ccondp = VN_CAST(ep, Const)) {
                         V3Number match{nodep, 1};
-                        match.opEq(ccondp->num(), exprp->num());
+                        match.opCaseEq(ccondp->num(), exprp->num());
                         if (!hit && match.isNeqZero()) {
                             hit = true;
                             keepp = itemp->itemsp();
@@ -3784,6 +3950,7 @@ public:
         iterate(netlistp);
     }
     ~ParamVisitor() override = default;
+    ParamProcessor& processor() { return m_processor; }
     VL_UNCOPYABLE(ParamVisitor);
 };
 
@@ -3858,7 +4025,7 @@ public:
     // CONSTRUCTORS
     explicit ParamTop(AstNetlist* netlistp) {
         // Relies on modules already being in top-down-order
-        const ParamVisitor paramVisitor{m_state /*ref*/, netlistp};
+        ParamVisitor paramVisitor{m_state /*ref*/, netlistp};
 
         // Mark classes which cannot be removed because they are still referenced
         const ClassRefUnlinkerVisitor classUnlinkerVisitor{netlistp};
@@ -3906,7 +4073,8 @@ public:
             }
         });
 
-        const ParamClassRefDTypeRelinkVisitor paramClassDTypeRelinkVisitor{netlistp};
+        const ParamClassRefDTypeRelinkVisitor paramClassDTypeRelinkVisitor{
+            netlistp, paramVisitor.processor()};
 
         relinkDots();
 
@@ -3973,6 +4141,7 @@ void V3Param::finalizeDeferredParams(AstNetlist* rootp) {
     // Constify params whose Dot RHS was resolved by V3LinkDot::linkDotParamed.
     for (AstVar* const varp : rootp->deferredParamVarps()) {
         if (varp->valuep() && !VN_IS(varp->valuep(), Const)) V3Const::constifyParamsEdit(varp);
+        cleanTwoStateParamValue(varp);
     }
     rootp->clearDeferredParamVarps();
 }

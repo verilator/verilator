@@ -20,8 +20,4 @@ test.lint(
     # non-NONE VTransRepType.
     v_flags=["--lint-only --dumpi-tree 9 --dump-tree-addrids --Wno-COVERIGN --timing"])
 
-# The force-read link uses the same readable address IDs as the rest of the tree.
-test.file_grep(test.glob_one(test.obj_dir + "/" + test.vm_prefix + "*_force.tree"),
-               r'\bVAR\b[^\n]*\s__PVT__sum\b[^\n]*forceRdVarp=\([A-Z]+\)')
-
 test.passes()

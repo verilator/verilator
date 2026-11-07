@@ -253,27 +253,38 @@ List Of Warnings
    warning may make Verilator simulations differ from other simulators.
 
    It is generally safe to disable this error (with a
-   ``// verilator lint_off BLKANDNBLK`` metacomment or the
-   ``-Wno-BLKANDNBLK`` option) when one of the assignments is inside a
-   public task, or when the blocking and non-blocking assignments have
-   non-overlapping bits and structure members.
+   ``// verilator lint_off BLKANDNBLK`` metacomment or the ``-Wno-BLKANDNBLK``
+   option) when one of the assignments is inside a public task, or when the
+   blocking and non-blocking assignments have non-overlapping static prefixes
+   (write to different bits/elements/members).
 
-   From Verilator 5.038, this warning is only issued when Verilator can't prove that
-   the assignments are to non-overlapping sub-parts, and the blocking
-   assignment is in combinational logic (which is the case where simulation
-   results might differ from other simulators). Review any BLKANDNBLK
-   cases carefully after this version, and sign them off as
+   From Verilator 5.038, this warning is only issued when Verilator can't prove
+   that the assignments are to non-overlapping static prefixes, and the
+   blocking assignment is in combinational logic (which is the case where
+   simulation results might differ from other simulators). Review any
+   BLKANDNBLK cases carefully after this version, and sign them off as
    described above, only if know for sure the updates are not to overlapping
    parts of the signal.
 
-   Generally, this is caused by a register driven by both combo logic and a
-   flop:
+   Assignments through a virtual interface are checked too. As Verilator does
+   not know which instance a virtual interface refers to, an assignment to a
+   member through a virtual interface is taken to possibly be to that member
+   of any instance. The exception is a blocking assignment made directly to an
+   instance in an ``always_comb`` or ``always_latch`` block, or by a continuous
+   assignment, which is not checked against non-blocking assignments through a
+   virtual interface: no other process may write the same static prefix of a
+   variable that these write (IEEE 1800-2023 6.5, 9.2.2.2, 9.2.2.3), so the
+   virtual interface cannot legally refer to that instance. Blocking
+   assignments in functions called from these blocks are still checked.
+
+   Generally, this is caused by a variable written by both a flop and
+   combinational logic:
 
    .. code-block:: sv
 
       logic [3:0] foo;
       always @(posedge clk) foo[index] <= ...  // With index != 0
-      always_comb foo[0] = ...
+      always @* foo[0] = ...
 
    Instead, use a different register for the flop:
 
@@ -285,49 +296,16 @@ List Of Warnings
       always_comb foo[0] = ...
       always_comb foo[3:1] = foo_flopped;
 
-   Or, this may also avoid the error:
-
-   .. code-block:: sv
-
-      logic [1:0] foo /*verilator split_var*/;
-
 
 .. option:: BLKLOOPINIT
 
-   Indicates certain constructs where non-blocking assignments to unpacked
-   arrays (memories) are not supported inside loops. These typically appear in
-   initialization/reset code:
+   Historical, never issued since version 5.056.
 
-   .. code-block:: sv
-
-      always @(posedge clk)
-        if (~reset_l)
-          for (i=0; i<`ARRAY_SIZE; i++)
-            array[i] <= 0;  // Non-blocking assignment inside loop
-        else
-          array[address] <= data;
-
-   While this is supported in typical synthesizable code (including the
-   example above), some complicated cases are not supported. Namely:
-
-   1. If the above loop is inside a suspendable process or fork statement.
-
-   2. If the variable is also the target of a '<=' non-blocking assignment
-   in a suspendable process or fork statement (in addition to a synthesizable
-   loop).
-
-   3. If the element type of the array is a compound type.
-
-   4. In versions before 5.026, any delayed assignment to an array.
-
-   It might slightly improve run-time performance if you change the
-   non-blocking assignment inside the loop into a blocking assignment
-   (that is: use '=' instead of '<='), if possible.
-
-   This message is only seen on large or complicated loops because
-   Verilator generally unrolls small loops. You may want to try increasing
-   :vlopt:`--unroll-count` (and occasionally :vlopt:`--unroll-stmts`),
-   which will raise the small loop bar to avoid this error.
+   Indicated that a non-blocking assignment to an unpacked array (memory)
+   inside a loop was not supported. In earlier versions, this was the case
+   with some complicated constructs, such as an array with a compound
+   element type, and before version 5.026, any non-blocking assignment to an
+   array inside a loop that was not unrolled.
 
 
 .. option:: BLKSEQ
@@ -490,17 +468,17 @@ List Of Warnings
 
 .. option:: COMBDLY
 
-   Error issued when a non-blocking assignment `<=`, or a non-blocking event
-   trigger `->>`, is used in a combinational logic block. Using non-blocking
-   assignments in this way is bad practice, and may lead to the simulation not
-   matching synthesis. Verilator, like synthesis, will always convert these to
-   the blocking forms `=` and `->` and execute them as such. This may result in
-   race conditions and differ from other simulators.
+   Warns that a non-blocking assignment `<=`, or a non-blocking event trigger
+   `->>`, is used in a combinational logic block. Using non-blocking assignments
+   in this way is bad practice, and may lead to the simulation not matching
+   synthesis. Verilator, like synthesis, will always convert these to the
+   blocking forms `=` and `->` and execute them as such. This may result in race
+   conditions and differ from other simulators.
    `http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf
    <http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf>`_
 
-   This error can be disabled. Disabling it does not change execution, only
-   suppresses the error message.
+   Disabling this warning does not change execution, only suppresses the
+   warning message.
 
    Faulty example:
 
@@ -509,6 +487,24 @@ List Of Warnings
    Results in:
 
    .. include:: ../../docs/gen/ex_COMBDLY_msg.rst
+
+
+.. option:: COMBDLYCALL
+
+   Error issued when a function or task that is not inlined, such as a class
+   method or a recursive function, called from combinational logic (including
+   through an arbitrary static call chain, and through virtual methods)
+   contains a non-blocking assignment ``<=``, or a non-blocking event trigger
+   ``->>``. A DPI import declared with ``context`` is taken to call every DPI
+   export. Unlike in the combinational logic block itself (see
+   :option:`COMBDLY`), Verilator cannot convert it to the blocking form, as the
+   function or task might also be called from elsewhere. A non-blocking
+   assignment in a function or task that is inlined becomes part of the
+   combinational logic block, so is reported as :option:`COMBDLY` instead.
+
+   This error can be disabled. Disabling it is only safe if no non-blocking
+   assignment executes at runtime through the reported call site. Otherwise the
+   simulation outcome is unpredictable.
 
 
 .. option:: CONSTRAINTIGN
@@ -1443,7 +1439,7 @@ List Of Warnings
 
 .. option:: MULTIDRIVEN
 
-   Warns that the specified signal has multiple procedural drivers.
+   Warns that the specified signal has multiple drivers.
 
    One case is when a variable written in an ``always_comb`` or
    ``always_ff`` block is also written by another process. IEEE 1800
@@ -1478,6 +1474,16 @@ List Of Warnings
    signal, so the design and the testbench contend for it and the
    synchronous drive may be silently lost. Declare the clocking block
    ``input`` if the intent is only to observe the signal.
+
+   A module output port connection is another driver of a wire net: a
+   wire with a declaration initializer or a continuous assignment that is
+   also connected to a module output port is multi-driven, and so is a
+   wire connected to two or more module output ports. A port only counts
+   as a driver if the instantiated module actually drives it; a port the
+   module never drives only ever contributes ``Z`` to the net. Tri-family
+   nets are excluded, as they resolve multiple drivers by design, and the
+   initializer of a ``logic``/``var`` variable is not a net driver, so
+   neither triggers this check.
 
    Ignoring this warning may hide clock domain crossing, timing, or
    portability bugs. It may also cause longer simulation runtimes due to
@@ -2633,6 +2639,10 @@ List Of Warnings
    signals in one place makes it easy to find what is unused and reduces
    the number of lint_off pragmas, reducing bugs.
 
+   Verilator intentionally does not consider a `$display("%p")` to consume
+   all members of a class/structure as this would otherwise hide that a
+   variable is unused functionally otherwise.
+
 
 .. option:: USEBEFOREDECL
 
@@ -2769,7 +2779,8 @@ List Of Warnings
 
    Verilator attempts to track the minimum width of unsized constants
    and will suppress the warning when the minimum width is appropriate to
-   fit the required size.
+   fit the required size. A size cast or an integral type cast can also
+   suppress operand width warnings within its expression.
 
    Disabling/enabling WIDTH is equivalent to disabling/enabling the
    :option:`WIDTHDIGITS`, :option:`WIDTHEXPAND`, :option:`WIDTHTRUNC`,

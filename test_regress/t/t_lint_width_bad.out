@@ -1,12 +1,12 @@
-%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:17:20: Operator VAR 'XS' expects 4 bits on the Initial value, but Initial value's CONST '?32?bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx' generates 32 bits.
+%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:17:20: Operator VAR 'XS' expects 4 bits on the Initial value, but Initial value's CONST '?32?bx' generates 32 bits.
                                                : ... note: In instance 't'
    17 |   localparam [3:0] XS = 'hx;   
       |                    ^~
                      ... For warning description see https://verilator.org/warn/WIDTHTRUNC?v=latest
                      ... Use "/* verilator lint_off WIDTHTRUNC */" and lint_on around source to disable this message.
-%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:49:18: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:78:18: Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's VARREF 'in' generates 4 bits.
                                                 : ... note: In instance 't.p4'
-   49 |   wire [4:0] out = in;
+   78 |   wire [4:0] out = in;
       |                  ^
                       ... For warning description see https://verilator.org/warn/WIDTHEXPAND?v=latest
                       ... Use "/* verilator lint_off WIDTHEXPAND */" and lint_on around source to disable this message.
@@ -46,4 +46,61 @@
                                                : ... note: In instance 't'
    40 |   initial if (THREE) $stop;
       |           ^~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:49:16: Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'lhs' generates 6 bits.
+                                                : ... note: In instance 't'
+   49 |     return lhs + rhs;
+      |                ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:49:16: Operator ADD expects 32 bits on the RHS, but RHS's VARREF 'rhs' generates 5 bits.
+                                                : ... note: In instance 't'
+   49 |     return lhs + rhs;
+      |                ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:52:46: Operator ADD expects 32 bits on the LHS, but LHS's CONST '6'h2d' generates 6 bits.
+                                                : ... note: In instance 't'
+   52 |   typedef enum int { CAST_ENUM_VALUE = 6'd45 + 5'd25 } cast_enum_t;
+      |                                              ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:52:46: Operator ADD expects 32 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   52 |   typedef enum int { CAST_ENUM_VALUE = 6'd45 + 5'd25 } cast_enum_t;
+      |                                              ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:51:26: Operator ADD expects 32 bits on the LHS, but LHS's CONST '6'h2d' generates 6 bits.
+                                                : ... note: In instance 't'
+   51 |   int cast_value = 6'd45 + 5'd25;
+      |                          ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:51:26: Operator ADD expects 32 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   51 |   int cast_value = 6'd45 + 5'd25;
+      |                          ^
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:56:32: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   56 |     $display("%f", real'(6'd45 == 5'd25));
+      |                                ^~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:57:38: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   57 |     $display("%0d", int'(real'(6'd45 == 5'd25)));
+      |                                      ^~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:58:37: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   58 |     $display("%0d", 32'(real'(6'd45 == 5'd25)));
+      |                                     ^~
+%Warning-REALCVT: t/t_lint_width_bad.v:58:29: Implicit conversion of real to integer
+   58 |     $display("%0d", 32'(real'(6'd45 == 5'd25)));
+      |                             ^
+                  ... For warning description see https://verilator.org/warn/REALCVT?v=latest
+                  ... Use "/* verilator lint_off REALCVT */" and lint_on around source to disable this message.
+%Warning-WIDTHTRUNC: t/t_lint_width_bad.v:64:26: Operator FUNCREF 'cast_add' expects 6 bits on the Function Argument, but Function Argument's CONST '7'h64' generates 7 bits.
+                                               : ... note: In instance 't'
+   64 |     $display("%0d", int'(cast_add(7'd100, 4'd3)));
+      |                          ^~~~~~~~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:64:26: Operator FUNCREF 'cast_add' expects 5 bits on the Function Argument, but Function Argument's CONST '4'h3' generates 4 bits.
+                                                : ... note: In instance 't'
+   64 |     $display("%0d", int'(cast_add(7'd100, 4'd3)));
+      |                          ^~~~~~~~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:65:50: Operator EQ expects 7 bits on the LHS, but LHS's LAMBDAARGREF 'item' generates 5 bits.
+                                                : ... note: In instance 't'
+   65 |     $display("%0d", int'(values.sum() with (item == 7'd100)));
+      |                                                  ^~
+%Warning-WIDTHEXPAND: t/t_lint_width_bad.v:69:43: Operator EQ expects 6 bits on the RHS, but RHS's CONST '5'h19' generates 5 bits.
+                                                : ... note: In instance 't'
+   69 |   initial $display("%0d", int'(type(6'd45 == 5'd25)'(1'b1)));
+      |                                           ^~
 %Error: Exiting due to

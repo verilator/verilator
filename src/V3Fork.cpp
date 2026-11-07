@@ -466,7 +466,7 @@ class DynScopeVisitor final : public VNVisitor {
             FileLine* const flp = nodep->fileline();
             AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
             nodep->replaceWith(forkp);
-            forkp->addForksp(new AstBegin{flp, "", nodep, false});
+            forkp->addForksp(new AstForkItem{flp, nodep});
             UINFO(9, "assign new fork " << forkp);
         } else {
             visit(static_cast<AstNodeStmt*>(nodep));
@@ -554,9 +554,9 @@ class ForkVisitor final : public VNVisitor {
         return varp;
     }
 
-    // Wrap body of the given Begin (an AstFork branch), in an AstTask, and
-    // replace body with a call to that task. Returns true iff wrapped.
-    bool taskify(AstBegin* beginp) {
+    // Wrap body of the given AstFork branch in an AstTask, and replace body with a call to that
+    // task. Returns true iff wrapped.
+    bool taskify(AstForkItem* itemp) {
         // Visit statement to gather variables (And recursively process)
         VL_RESTORER_CLEAR(m_forkLocalsp);
         VL_RESTORER(m_hasNestedFork);
@@ -565,13 +565,13 @@ class ForkVisitor final : public VNVisitor {
         VL_RESTORER(m_capturedArgsp);
         m_capturedVarsp = nullptr;
         m_capturedArgsp = nullptr;
-        iterate(beginp);
+        iterate(itemp);
 
         // No need to do it if no variabels are captured
         if (m_forkLocalsp.empty() && !m_capturedVarsp && !v3Global.opt.fTaskifyAll()) return false;
 
         // Create task holding the statement and repalce statement with call to that task
-        FileLine* const flp = beginp->fileline();
+        FileLine* const flp = itemp->fileline();
         const std::string name = "__VforkTask_" + std::to_string(m_nForkTasks++);
         AstTask* const taskp = new AstTask{flp, name, m_capturedVarsp};
         // A branch that spawns another process must hand its captured variables over to it
@@ -580,10 +580,10 @@ class ForkVisitor final : public VNVisitor {
             taskp->isStatic(m_ftaskp && m_ftaskp->isStatic());
         }
         m_tasksp = AstNode::addNext(m_tasksp, taskp);
-        if (beginp->declsp()) taskp->addStmtsp(beginp->declsp()->unlinkFrBackWithNext());
-        if (beginp->stmtsp()) taskp->addStmtsp(beginp->stmtsp()->unlinkFrBackWithNext());
+        if (itemp->declsp()) taskp->addStmtsp(itemp->declsp()->unlinkFrBackWithNext());
+        if (itemp->stmtsp()) taskp->addStmtsp(itemp->stmtsp()->unlinkFrBackWithNext());
         AstTaskRef* const callp = new AstTaskRef{flp, taskp, m_capturedArgsp};
-        beginp->addStmtsp(callp->makeStmt());
+        itemp->addStmtsp(callp->makeStmt());
 
         // Variables were moved under the task, so make sure they are marked as funcLocal
         for (AstVar* const localp : m_forkLocalsp) localp->funcLocal(true);
@@ -625,19 +625,19 @@ class ForkVisitor final : public VNVisitor {
         }
         return true;
     }
-    static void moveForkSentinelAfterDisableQueuePushes(AstBegin* const beginp) {
-        AstNode* const firstStmtp = beginp->stmtsp();
+    static void moveForkSentinelAfterDisableQueuePushes(AstForkItem* const itemp) {
+        AstNode* const firstStmtp = itemp->stmtsp();
         if (!isForkJoinNoneSentinelDelay(firstStmtp)) return;
         AstNode* const afterSentinelp = firstStmtp->nextp();
         if (!isDisableQueuePushSelfPrefix(afterSentinelp)) return;
 
         AstNode* const delayp = firstStmtp->unlinkFrBack();
         const bool moved
-            = insertForkSentinelAfterDisableQueuePushes(beginp, afterSentinelp, delayp);
-        UASSERT_OBJ(moved, beginp, "Failed to move fork sentinel after disable queue pushes");
+            = insertForkSentinelAfterDisableQueuePushes(itemp, afterSentinelp, delayp);
+        UASSERT_OBJ(moved, itemp, "Failed to move fork sentinel after disable queue pushes");
     }
     static bool forkIsDisableable(AstFork* const nodep) {
-        for (AstBegin* const itemp : nodep->forkspList()) {
+        for (AstForkItem* const itemp : nodep->forkspList()) {
             if (isDisableQueuePushSelfPrefix(itemp->stmtsp())) return true;
         }
         return false;
@@ -671,7 +671,7 @@ class ForkVisitor final : public VNVisitor {
             FileLine* fl = nodep->fileline();
             // We use a sentinel value of UINT64_MAX to mark this delay so that it goes to the
             // ACTIVE region with a delay value of 0.
-            for (AstBegin* const itemp : nodep->forkspList()) {
+            for (AstForkItem* const itemp : nodep->forkspList()) {
                 if (!itemp->stmtsp()) continue;
                 AstDelay* const delayp = new AstDelay{
                     fl,
@@ -695,16 +695,16 @@ class ForkVisitor final : public VNVisitor {
             return;
         }
 
-        std::vector<AstBegin*> wrappedp;
+        std::vector<AstForkItem*> wrappedp;
         {
             VL_RESTORER(m_inFork);
             m_inFork = true;
-            for (AstBegin* const itemp : nodep->forkspList()) {
+            for (AstForkItem* const itemp : nodep->forkspList()) {
                 if (taskify(itemp)) wrappedp.push_back(itemp);
             }
         }
         // Analyze replacements in context of enclosing fork
-        for (AstBegin* const beginp : wrappedp) iterateAndNextNull(beginp);
+        for (AstForkItem* const itemp : wrappedp) iterateAndNextNull(itemp);
     }
     void visit(AstNodeFTask* nodep) override {
         VL_RESTORER(m_ftaskp);

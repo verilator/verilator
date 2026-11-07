@@ -1001,7 +1001,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         AstVar* const stateVarp = new AstVar{
             fl, VVarType::MEMBER,
             m_seqposNames.get(sanitizeGeneratedName(coverpointp->name() + "__" + binp->name())),
-            VFlagLogicPacked{}, width};
+            VFlagBitPacked{}, width};
         m_covergroupp->addMembersp(stateVarp);
         m_constructorp->addStmtsp(
             new AstAssign{fl, new AstVarRef{fl, stateVarp, VAccess::WRITE},
@@ -4385,7 +4385,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             loopp->addStmtsp(new AstIf{fl, newEmbeddedVarNonNull(fl), newSampleStmt(fl)});
             AstFork* const forkp = new AstFork{fl, VJoinType::JOIN_NONE};
             forkp->immediateStart(true);
-            forkp->addForksp(new AstBegin{fl, "", loopp, true});
+            forkp->addForksp(new AstForkItem{fl, loopp});
             constructp->addNextHere(forkp);
         }
         VL_DO_DANGLING(pushDeletep(eventp), eventp);

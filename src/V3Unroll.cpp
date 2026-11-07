@@ -240,7 +240,7 @@ class UnrollOneVisitor final : VNVisitor {
         V3Number next{&value, value.width()};
         for (size_t i = 0; i <= limit; ++i) {
             VN_AS(testp->condp(), NodeBiop)->numberOperate(cond, boundp->num(), value);
-            if (!cond.isNeqZero()) return false;
+            if (!cond.isTrue()) return false;
             next.opAdd(value, one);
             value = next;
         }
@@ -367,7 +367,7 @@ class UnrollOneVisitor final : VNVisitor {
             if (condp->isZero()) {
                 // Loop terminates
                 m_state = State::TERMINATED;
-            } else if (condp->isNeqZero()) {
+            } else if (condp->isTrue()) {
                 // Loop continues
             } else {
                 // Loop condition unknown - cannot unroll
@@ -399,7 +399,7 @@ class UnrollOneVisitor final : VNVisitor {
         if (process(nodep->condp())) {
             // If condition is constant, process the statements of the relevant branch instead
             if (AstConst* const condp = VN_CAST(V3Const::constifyEdit(nodep->condp()), Const)) {
-                AstNode* stmtp = condp->isNeqZero() ? nodep->thensp() : nodep->elsesp();
+                AstNode* stmtp = condp->isTrue() ? nodep->thensp() : nodep->elsesp();
                 while (stmtp && m_state == State::UNROLL) {
                     AstNode* const nextp = stmtp->nextp();
                     iterate(stmtp->unlinkFrBack());

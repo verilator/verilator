@@ -310,6 +310,7 @@ class CoverageVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstAlways* nodep) override {
+        if (nodep->keyword() == VAlwaysKwd::COVER_TOGGLE) return;  // Made here, nothing to cover
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             // Handle continuous assigns for expression coverage (but not line coverage)
             VL_RESTORER(m_state);
@@ -382,6 +383,8 @@ class CoverageVisitor final : public VNVisitor {
                 itemp->addElsesp(stmtp);
             }
         } else if (AstBegin* const itemp = VN_CAST(nodep, Begin)) {
+            itemp->addStmtsp(stmtp);
+        } else if (AstForkItem* const itemp = VN_CAST(nodep, ForkItem)) {
             itemp->addStmtsp(stmtp);
         } else {
             nodep->v3fatalSrc("Bad node type");
@@ -458,7 +461,8 @@ class CoverageVisitor final : public VNVisitor {
         AstCoverToggle* const newp = new AstCoverToggle{
             varp->fileline(), newCoverInc(varp->fileline(), declp, ""),
             above.m_varRefp->cloneTree(false), above.m_chgRefp->cloneTree(false)};
-        m_modp->addStmtsp(newp);
+        m_modp->addStmtsp(
+            new AstAlways{varp->fileline(), VAlwaysKwd::COVER_TOGGLE, nullptr, newp});
     }
 
     void toggleVarRecurse(const AstNodeDType* const dtypep, const int depth,  // per-iteration
@@ -778,6 +782,13 @@ class CoverageVisitor final : public VNVisitor {
         lineTrack(nodep);
     }
 
+    void visit(AstForkItem* nodep) override {
+        // Expression coverage of a process goes in it
+        VL_RESTORER(m_exprStmtsp);
+        m_exprStmtsp = nodep;
+        iterateChildren(nodep);
+        lineTrack(nodep);
+    }
     void visit(AstBegin* nodep) override {
         // Record the hierarchy of any named begins, so we can apply to user
         // coverage points.  This is because there may be cov points inside

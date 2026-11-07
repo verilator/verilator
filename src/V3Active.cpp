@@ -462,14 +462,6 @@ class ActiveVisitor final : public VNVisitor {
 
     void visitAlways(AstNode* nodep, AstSenTree* oldsentreep, VAlwaysKwd kwd) {
         // Move always to appropriate ACTIVE based on its sense list
-        if (oldsentreep && oldsentreep->sensesp() && oldsentreep->sensesp()->isNever()) {
-            // Never executing.  Kill it.
-            UASSERT_OBJ(!oldsentreep->sensesp()->nextp(), nodep,
-                        "Never senitem should be alone, else the never should be eliminated.");
-            VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
-            return;
-        }
-
         {
             const VNUser1InUse user1InUse;
 
@@ -550,13 +542,13 @@ class ActiveVisitor final : public VNVisitor {
         const ActiveDlyVisitor dlyvisitor{nodep, ActiveDlyVisitor::CT_FINAL};
         moveUnderSpecial<AstSenItem::Final>(nodep);
     }
-    void visit(AstCoverToggle* nodep) override { moveUnderSpecial<AstSenItem::Combo>(nodep); }
     void visit(AstAlways* nodep) override {
         if (!nodep->stmtsp()) {  // Empty always. Remove it now.
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
-        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
+        if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN
+            || nodep->keyword() == VAlwaysKwd::COVER_TOGGLE) {
             moveUnderSpecial<AstSenItem::Combo>(nodep);
             return;
         }

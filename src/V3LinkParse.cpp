@@ -146,8 +146,15 @@ class LinkParseVisitor final : public VNVisitor {
         // Try very hard to avoid false positives
         AstNode* nextp = nodep->nextp();
         if (!childp) return;
-        if (!nextp && VN_IS(nodep, Loop) && VN_IS(nodep->backp(), Begin))
-            nextp = nodep->backp()->nextp();
+        if (!nextp && VN_IS(nodep, Loop)) {
+            // Compare with what follows the begin ending with the loop, or with the next fork item
+            AstNode* abovep = nodep->backp();
+            if (VN_IS(abovep, Begin)) {
+                nextp = abovep->nextp();
+                abovep = abovep->backp();
+            }
+            if (!nextp && VN_IS(abovep, ForkItem)) nextp = abovep->nextp();
+        }
         if (!nextp) return;
         if (VN_IS(childp, Begin) || VN_IS(childp, GenBlock)) return;
         FileLine* const nodeFlp = nodep->fileline();
@@ -1523,11 +1530,14 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstCoverBin* nodep) override {
         cleanFileline(nodep);
-        if (!m_coverpointp && VN_IS(nodep->rangesp(), CoverWith)) {
-            // A 'with' filter's candidates are of its coverpoint's type
-            nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
-                                               "coverpoint; bin "
-                                                   << nodep->prettyNameQ() << " ignored");
+        // Outside a coverpoint, as of a bare '{ bins ... }' item, there is nothing to bin
+        if (!m_coverpointp) {
+            if (VN_IS(nodep->rangesp(), CoverWith)) {
+                // A 'with' filter's candidates are of its coverpoint's type
+                nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
+                                                   "coverpoint; bin "
+                                                       << nodep->prettyNameQ() << " ignored");
+            }
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }

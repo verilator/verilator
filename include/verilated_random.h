@@ -948,9 +948,9 @@ public:
 
     // varNames are the solver variables the constraint names, kept without copying until
     // clearConstraints(), so they must live that long (the generated code passes literals)
-    void hard(std::string&& constraint, std::initializer_list<const char*> varNames = {},
+    void hard(std::string constraint, std::initializer_list<const char*> varNames = {},
               const char* filename = "", uint32_t linenum = 0, const char* source = "");
-    void soft(std::string&& constraint, const char* filename = "", uint32_t linenum = 0,
+    void soft(std::string constraint, const char* filename = "", uint32_t linenum = 0,
               const char* source = "");
     // name is kept without copying until clearConstraints(), like hard()'s varNames, so it
     // must live that long (the generated code passes literals)

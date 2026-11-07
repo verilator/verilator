@@ -184,11 +184,25 @@ private:
         UASSERT_OBJ(!whyp, nodep,
                     "Broken link in node (or something without maybePointedTo): " << whyp);
         if (!s_brokenAllowMidvisitorCheck) nodep->checkIter();
-        if (nodep->dtypep()) {
-            UASSERT_OBJ(nodep->dtypep()->brokeExists(), nodep,
-                        "Broken link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
-            UASSERT_OBJ(nodep->dtypep(), nodep,
-                        "Non-dtype link in node->dtypep() to " << cvtToHex(nodep->dtypep()));
+        if (const AstNodeDType* const dtypep = nodep->dtypep()) {
+            UASSERT_OBJ(dtypep->brokeExists(), nodep,
+                        "Broken link in node->dtypep() to " << cvtToHex(dtypep));
+            if (v3Global.fourstateResolved()) {
+                if (const AstNodeDType* const ndtypep = VN_CAST(nodep, NodeDType)) {
+                    UASSERT_OBJ(!ndtypep->subDTypep() || !ndtypep->subDTypep()->isFourstate(),
+                                nodep,
+                                "After resolving four-state values in V3Tristate and V3Unknown no "
+                                "four-state dtype should be present");
+                    UASSERT_OBJ(!ndtypep->subDType2p() || !ndtypep->subDType2p()->isFourstate(),
+                                nodep,
+                                "After resolving four-state values in V3Tristate and V3Unknown no "
+                                "four-state dtype should be present");
+                } else {
+                    UASSERT_OBJ(!dtypep->isFourstate(), nodep,
+                                "After resolving four-state values in V3Tristate and V3Unknown no "
+                                "four-state dtype should be present");
+                }
+            }
         }
         if (v3Global.assertDTypesResolved()) {
             if (nodep->hasDType()) {
@@ -470,33 +484,4 @@ void V3Broken::selfTest() {
     deleted(newp);
 #endif
     VL_DO_DANGLING(newp->deleteTree(), newp);
-
-    // Variable identity includes its force read link, and cloning a linked declaration
-    // list must retarget that link rather than aliasing the original read signal.
-    AstBasicDType* const dtypep = new AstBasicDType{fl, VBasicDTypeKwd::UINT32};
-    AstVar* const varp = new AstVar{fl, VVarType::VAR, "forceSignal", dtypep};
-    AstVar* const rdp = new AstVar{fl, VVarType::WIRE, "forceRead", dtypep};
-    varp->forceRdVarp(rdp);
-    varp->addNext(rdp);
-    AstVar* const samep = varp->cloneTree(false);
-    UASSERT_OBJ(samep->forceRdVarp() == rdp, samep, "Isolated clone lost force read link");
-    UASSERT_OBJ(varp->sameNode(samep), varp, "Shared force read link changed identity");
-    AstVar* const linkedp = varp->cloneTree(true);
-    UASSERT_OBJ(linkedp->forceRdVarp() == linkedp->nextp(), linkedp,
-                "Cloned force read link not retargeted");
-    UASSERT_OBJ(!varp->sameNode(linkedp), varp, "Distinct force read links have same identity");
-
-    // The lowered inout port's group and enable role are also part of variable identity.
-    samep->libInoutId(1);
-    UASSERT_OBJ(!varp->sameNode(samep), varp, "Distinct inout groups have same identity");
-    samep->libInoutId(0);
-    samep->libInoutEnable(true);
-    UASSERT_OBJ(!varp->sameNode(samep), varp, "Distinct inout roles have same identity");
-    samep->libInoutEnable(false);
-    UASSERT_OBJ(varp->sameNode(samep), varp, "Restored variable identity differs");
-
-    VL_DO_DANGLING(samep->deleteTree(), samep);
-    VL_DO_DANGLING(linkedp->deleteTree(), linkedp);
-    VL_DO_DANGLING(varp->deleteTree(), varp);
-    VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
 }

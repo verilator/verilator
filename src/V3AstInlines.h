@@ -59,7 +59,11 @@ bool AstNode::isZero() const {
 bool AstNode::isNeqZero() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->num().isNeqZero());
 }
+bool AstNode::isTrue() const { return (VN_IS(this, Const) && VN_AS(this, Const)->num().isTrue()); }
 bool AstNode::isOne() const { return (VN_IS(this, Const) && VN_AS(this, Const)->num().isEqOne()); }
+bool AstNode::isAnyXZ() const {
+    return (VN_IS(this, Const) && VN_AS(this, Const)->num().isAnyXZ());
+}
 bool AstNode::isAllOnes() const {
     return (VN_IS(this, Const) && VN_AS(this, Const)->isEqAllOnes());
 }
@@ -124,6 +128,8 @@ AstPackArrayDType::AstPackArrayDType(FileLine* fl, AstNodeDType* dtp, AstRange* 
     widthForce(width, width);
 }
 
+AstNodeDType* AstClosurePoolDType::subDTypep() const VL_MT_STABLE { return m_subDTypep; }
+
 int AstQueueDType::boundConst() const VL_MT_STABLE {
     const AstConst* const constp = VN_CAST(boundp(), Const);
     return (constp ? constp->toSInt() : 0);
@@ -167,7 +173,8 @@ bool AstVar::sameNode(const AstNode* samep) const {
     const AstVar* const asamep = VN_DBG_AS(samep, Var);
     return m_name == asamep->m_name && varType() == asamep->varType()
            && covergroupRefMember() == asamep->covergroupRefMember()
-           && forceRdVarp() == asamep->forceRdVarp() && libInoutId() == asamep->libInoutId()
+           && forceRdVarp() == asamep->forceRdVarp() && forceEnVarp() == asamep->forceEnVarp()
+           && forceValVarp() == asamep->forceValVarp() && libInoutId() == asamep->libInoutId()
            && libInoutEnable() == asamep->libInoutEnable();
 }
 

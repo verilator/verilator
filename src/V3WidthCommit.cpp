@@ -58,7 +58,7 @@ class WidthCommitVisitor final : public VNVisitor {
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     AstNodeModule* m_modp = nullptr;  // Current module
     const char* m_contNbap = nullptr;  // In continuous- or non-blocking assignment, or trigger
-    bool m_dlyFire = false;  // In a non-blocking event trigger
+    bool m_inNba = false;  // In a non-blocking assignment or event trigger
     bool m_contReads = false;  // Check read continuous automatic variables
     bool m_dynsizedelem = false;  // Under an element of a dynamically sized variable, not itself
     VMemberMap m_memberMap;  // Member names cached for fast lookup
@@ -166,14 +166,13 @@ private:
         if (!m_underSel && m_contNbap) {
             std::string varType;
             const AstNodeDType* const varDtp = varp->dtypep()->skipRefp();
-            const bool classPropOk = m_dlyFire && varp->isClassMember();
-            if (!classPropOk && varp->lifetime().isAutomatic() && !VN_IS(varDtp, IfaceRefDType)
-                && !(varp->isFuncLocal() && varp->isIO()))
+            if (varp->isClassMember() && !varp->lifetime().isStatic()) {
+                // Only an NBA may update a non-static class property
+                if (!m_inNba) varType = "Class non-static";
+            } else if (varp->lifetime().isAutomatic() && !(varp->isFuncLocal() && varp->isIO())) {
                 varType = "Automatic lifetime";
-            else if (!classPropOk && varp->isClassMember() && !varp->lifetime().isStatic()
-                     && !VN_IS(varDtp, IfaceRefDType))
-                varType = "Class non-static";
-            else if (varDtp->isDynamicallySized() && m_dynsizedelem)
+            }
+            if (varType.empty() && varDtp->isDynamicallySized() && m_dynsizedelem)
                 varType = "Dynamically-sized";
             if (!varType.empty()) {
                 UINFO(1, "    Related var dtype: " << varDtp);
@@ -492,8 +491,10 @@ private:
         {
             VL_RESTORER(m_contNbap);
             VL_RESTORER(m_contReads);
+            VL_RESTORER(m_inNba);
             m_contNbap = "non-blocking assignment";
             m_contReads = false;
+            m_inNba = true;
             iterateAndNextNull(nodep->lhsp());
         }
         editDType(nodep);
@@ -512,10 +513,10 @@ private:
     }
     void visit(AstFireEvent* nodep) override {
         VL_RESTORER(m_contNbap);
-        VL_RESTORER(m_dlyFire);
+        VL_RESTORER(m_inNba);
         if (nodep->isDelayed()) {
             m_contNbap = "non-blocking event trigger";
-            m_dlyFire = true;
+            m_inNba = true;
         }
         iterateChildren(nodep);
     }

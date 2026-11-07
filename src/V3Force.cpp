@@ -511,9 +511,11 @@ public:
             helperVars.m_enVarp
                 = new AstVar{flp, enValType, varp->name() + "__VforceEn", enDtypep};
             helperVars.m_enVarp->sigUserRWPublic(true);
+            varp->forceEnVarp(helperVars.m_enVarp);
             helperVars.m_valVarp
                 = new AstVar{flp, enValType, varp->name() + "__VforceVal", varp->dtypep()};
             helperVars.m_valVarp->sigUserRWPublic(true);
+            varp->forceValVarp(helperVars.m_valVarp);
             varp->addNextHere(helperVars.m_rdVarp);
             varp->addNextHere(helperVars.m_enVarp);
             varp->addNextHere(helperVars.m_valVarp);
@@ -855,6 +857,20 @@ public:
                                    nullptr);
     }
 
+    // Build a selected force read. Takes ownership of the prepared value and index.
+    AstNodeExpr* createForceReadSelExpression(const VarForceInfo& varInfo, AstNodeExpr* valuep,
+                                              AstNodeExpr* lsbp, AstNodeExpr* selPathp) const {
+        FileLine* const flp = selPathp->fileline();
+        AstCMethodHard* const callp = new AstCMethodHard{
+            flp, new AstVarRef{flp, varInfo.m_forceVecVscp, VAccess::READ},
+            VCMethod::FORCE_READ_SEL, makeConst32(flp, varInfo.m_varp->width())};
+        callp->addPinsp(valuep);
+        callp->addPinsp(lsbp);
+        callp->addPinsp(makeConst32(flp, selPathp->width()));
+        callp->dtypeFrom(selPathp);
+        return callp;
+    }
+
     AstNodeExpr* createForceReadIndexExpression(const VarForceInfo& varInfo,
                                                 AstNodeExpr* originalExprp,
                                                 AstNodeExpr* indexExprp) const {
@@ -1088,6 +1104,7 @@ public:
 
 class ForceConvertVisitor final : public VNVisitor {
     ForceState& m_state;  // Force state shared across passes
+    VDouble0 m_releaseReadSels;  // Statistic tracking
 
     void visit(AstAssignForce* nodep) override {
         UINFO(2, "Converting force statement: " << nodep << "\n");
@@ -1295,6 +1312,15 @@ class ForceConvertVisitor final : public VNVisitor {
                     *varInfop, basep,
                     ForceState::buildFlattenIndexExpr(flp, rangeInfo.m_arrayInfo));
                 if (selp) { forceReadp = ForceState::rebuildSelPath(lhsp, forceReadp); }
+            } else if (selp && releasedVarp->isWide() && !varInfop->m_forceRdVscp) {
+                // Read back only the released bits
+                AstVarRef* const readRefp = lhsVarRefp->cloneTreePure(false);
+                readRefp->access(VAccess::READ);
+                ForceState::markNonReplaceable(readRefp);
+                forceReadp = m_state.createForceReadSelExpression(
+                    *varInfop, m_state.addRhsValueReads(*varInfop, readRefp),
+                    ForceState::makeConst32(flp, rangeInfo.m_rangeLsb), lhsp);
+                ++m_releaseReadSels;
             } else {
                 forceReadp
                     = selp ? ForceState::rebuildSelPath(
@@ -1319,6 +1345,11 @@ public:
     ForceConvertVisitor(AstNetlist* nodep, ForceState& state)
         : m_state{state} {
         iterateAndNextNull(nodep->modulesp());
+    }
+    ~ForceConvertVisitor() override {
+        V3Stats::addStat(m_state.doingAssign() ? "Deassign read-back sels"
+                                               : "Release read-back sels",
+                         m_releaseReadSels);
     }
 };
 
@@ -1362,7 +1393,6 @@ class ForceReplaceVisitor final : public VNVisitor {
     }
     void visit(AstDeassign*) override {}
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
-    void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
     void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }
     void visit(AstAlways* nodep) override {
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
@@ -1400,17 +1430,11 @@ class ForceReplaceVisitor final : public VNVisitor {
             }
         }
 
-        FileLine* const flp = nodep->fileline();
         ForceState::markNonReplaceable(refp);
         AstVarRef* const refClonep = refp->cloneTreePure(false);
         ForceState::markNonReplaceable(refClonep);
-        AstCMethodHard* const callp = new AstCMethodHard{
-            flp, new AstVarRef{flp, varInfop->m_forceVecVscp, VAccess::READ},
-            VCMethod::FORCE_READ_SEL, ForceState::makeConst32(flp, varp->width())};
-        callp->addPinsp(refClonep);
-        callp->addPinsp(nodep->lsbp()->cloneTreePure(false));
-        callp->addPinsp(ForceState::makeConst32(flp, nodep->width()));
-        callp->dtypeFrom(nodep);
+        AstNodeExpr* const callp = m_state.createForceReadSelExpression(
+            *varInfop, refClonep, nodep->lsbp()->cloneTreePure(false), nodep);
         nodep->replaceWith(callp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }

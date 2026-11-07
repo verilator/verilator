@@ -33,7 +33,6 @@
 #include "V3Cast.h"
 #include "V3Class.h"
 #include "V3Clean.h"
-#include "V3Clock.h"
 #include "V3Combine.h"
 #include "V3Common.h"
 #include "V3Const.h"
@@ -89,6 +88,7 @@
 #include "V3Name.h"
 #include "V3Order.h"
 #include "V3Os.h"
+#include "V3Outline.h"
 #include "V3Param.h"
 #include "V3PreShell.h"
 #include "V3Premit.h"
@@ -101,6 +101,7 @@
 #include "V3Sched.h"
 #include "V3Scope.h"
 #include "V3Slice.h"
+#include "V3SolverSmt.h"
 #include "V3Split.h"
 #include "V3Stats.h"
 #include "V3String.h"
@@ -477,9 +478,6 @@ static void process() {
             V3Sched::schedule(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
 
-            // Post scheduling transformations - TODO: this should at least be renamed
-            V3Clock::clockAll(v3Global.rootp());
-
             // Cleanup any dly vars or other temps that are simple assignments
             // Life must be done before Subst, as it assumes each CFunc under
             // _eval is called only once.
@@ -506,6 +504,11 @@ static void process() {
         // --MODULE OPTIMIZATIONS--------------
 
         if (!v3Global.opt.serializeOnly()) {
+            // Outline parts of large coroutines.  Must be before Localize.
+            if (!v3Global.opt.lintOnly() && v3Global.opt.outputSplitCFuncs()) {
+                V3Outline::outlineAll(v3Global.rootp());
+            }
+
             // Split deep blocks to appease MSVC++.  Must be before Localize.
             if (!v3Global.opt.lintOnly() && v3Global.opt.compLimitBlocks()) {
                 V3DepthBlock::depthBlockAll(v3Global.rootp());
@@ -715,6 +718,9 @@ static bool verilate(const string& argString) {
 
     // Initialize thread pool
     v3Global.threadPoolp(new V3ThreadPool{v3Global.opt.verilateJobs()});
+
+    // Constraint solver back-end
+    v3Global.solverBackendp(new V3SolverSmt);
 
     // --FRONTEND------------------
 

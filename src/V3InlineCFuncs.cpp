@@ -412,6 +412,11 @@ class InlineCFuncsVisitor final : public VNVisitor {
         getInlineCFuncsFunctionVertexp(nodep->funcp())->setKeep("Referenced by AddressOfCFunc");
         iterateChildrenConst(nodep);
     }
+    void visit(AstNbaEnqueue* nodep) override {
+        if (m_cfuncVtxp) m_cfuncVtxp->sizeInc();
+        getInlineCFuncsFunctionVertexp(nodep->funcp())->setKeep("Referenced by NbaEnqueue");
+        iterateChildrenConst(nodep);
+    }
 
     // Nodes preventing inlining
     void visit(AstTraceDecl* nodep) override {

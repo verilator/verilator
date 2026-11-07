@@ -257,6 +257,9 @@ private:
         switch (senItemp->edgeType()) {
         case VEdgeType::ET_CHANGED:
         case VEdgeType::ET_HYBRID: {
+            // If a change sense folded to a constant, run it once at time 0 only
+            if (VN_IS(senp, Const)) return {new AstConst{flp, AstConst::BitFalse{}}, true};
+            // Hybrid needs to run on startup
             const bool fireAtInit = senItemp->edgeType() == VEdgeType::ET_HYBRID;
             if (VN_IS(senp->dtypep()->skipRefp(), UnpackArrayDType)) {
                 // operand order reversed to avoid calling neq() method on non-VlUnpacked type, see
@@ -318,10 +321,6 @@ private:
                 = new AstCMethodHard{flp, currp(), VCMethod::EVENT_IS_FIRED};
             callp->dtypeSetBit();
             AstNodeExpr* const firedp = wrapExprWithNullCheck(flp, callp, baseRefp);
-            if (const AstVarRef* const refp = VN_CAST(senp, VarRef)) {
-                // The private NBA event must run so pending assignments finish settling.
-                if (refp->varScopep() == v3Global.rootp()->nbaEventp()) return {firedp, false};
-            }
             // Do not trigger user named-event processes after $finish.
             AstNodeExpr* const notFinishp
                 = new AstCExpr{flp,
@@ -332,8 +331,6 @@ private:
         }
         case VEdgeType::ET_TRUE:  //
             return {currp(), false};
-        case VEdgeType::ET_INITIAL_NBA:  //
-            return {new AstConst{flp, AstConst::BitFalse{}}, true};
         default:  // LCOV_EXCL_START
             senItemp->v3fatalSrc("Unknown edge type");
             return {nullptr, false};

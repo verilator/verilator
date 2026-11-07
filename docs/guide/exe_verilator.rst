@@ -1610,7 +1610,9 @@ Summary:
    faster, at a small loss in performance that gets worse with decreasing
    split values. Note that this option is stronger than
    :vlopt:`--output-split` in the sense that :vlopt:`--output-split` will
-   not split inside a function.
+   not split inside a function. Timed processes and tasks (coroutines)
+   are also split inside nested statements, such as the items of a case
+   statement, by moving parts of them into separate functions.
 
    Defaults to the value of :vlopt:`--output-split`, unless explicitly
    specified.
@@ -2281,7 +2283,6 @@ Summary:
    Rarely needed. Specifies the maximum number of iterations for procedural
    loops that may be unrolled. If the loop has more iterations, it will not
    be unrolled at all. Does not effect generate loops. See also
-   :option:`BLKLOOPINIT` warning, and
    :option:`/*verilator&32;unroll_disable*/` and
    :option:`/*verilator&32;unroll_full*/` metacomments.
 
@@ -2302,7 +2303,6 @@ Summary:
 
    Rarely needed. Specifies the maximum number of statements in the
    unrolling of a loop for that loop to be unrolled. See also
-   :option:`BLKLOOPINIT` warning, and
    :option:`/*verilator&32;unroll_disable*/` and
    :option:`/*verilator&32;unroll_full*/` metacomments.
 

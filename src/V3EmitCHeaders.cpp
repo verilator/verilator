@@ -20,6 +20,7 @@
 #include "V3EmitCBase.h"
 #include "V3File.h"
 #include "V3MemberMap.h"
+#include "V3SolverBackend.h"
 #include "V3UniqueNames.h"
 
 #include <algorithm>
@@ -134,7 +135,7 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
             // constructor/destructor calls for them. They are managed explicitly in ctor/dtor.
             // While 'union { singleVar; }' for each variable would be simpler, it blows up
             // clang's compile time when using pre-compiled headers, joy.
-            UASSERT_OBJ(modp->user3() == nNont, modp, "Nontrivial member count mismatch");
+            UASSERT_OBJ(modp->user3() == nNont, modp, "Nontrivial member count mismatch.");
             puts("union {\nstruct {\n");
             emitGroupedVarDecls(nontp, nNont, true);
             puts("} __Vnontrivs;\n};\n");
@@ -166,7 +167,7 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
                     if (groups.l1s() != 1) puts("struct {\n");
                     for (size_t l0 = 0; l0 < lim && nEmitted < n; ++l0, ++nEmitted) {
                         UASSERT_OBJ(!named || varp->user3() == nEmitted, varp,
-                                    "Nontrivial member index mismatch");
+                                    "Nontrivial member index mismatch.");
                         emitVarDecl(varp);
                         varp = VN_CAST(varp->nextp(), Var);
                     }
@@ -176,7 +177,7 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
             }
             closeStruct(groups.l3s(), l3);
         }
-        UASSERT_OBJ(nEmitted == n, firstp, "Not all variables emitted");
+        UASSERT_OBJ(nEmitted == n, firstp, "Not all variables emitted.");
     }
     void emitInternalVarDecls(const AstNodeModule* modp) {
         if (const AstClass* const classp = VN_CAST(modp, Class)) {
@@ -402,11 +403,20 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
         puts("};\n}\n");
     }
     void emitUnpackedUOrSBody(AstNodeUOrStructDType* sdtypep) {
+        const AstStructDType* const structp = VN_CAST(sdtypep, StructDType);
+        const bool isClosure = structp && structp->isClosure();
         putns(sdtypep, sdtypep->verilogKwd());  // "struct"/"union"
-        puts(" " + EmitCUtil::prefixNameProtect(sdtypep) + " {\n");
+        puts(" " + EmitCUtil::prefixNameProtect(sdtypep));
+        if (isClosure) puts(" : public VlClosure<" + EmitCUtil::symClassName() + ">");
+        puts(" {\n");
         for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
             putns(itemp, itemp->dtypep()->cType(itemp->nameProtect(), false, false));
             puts(";\n");
+        }
+        // Closures are only passed to their function, never compared. Might have no members.
+        if (isClosure) {
+            puts("};\n");
+            return;
         }
 
         // Three helper functions for struct constrained randomization:
@@ -741,7 +751,8 @@ class EmitCHeader final : public EmitCBaseVisitorConst {
         if (v3Global.opt.coverage() || v3Global.useCovergroup())
             puts("#include \"verilated_covergroup.h\"\n");
         if (v3Global.usesTiming()) puts("#include \"verilated_timing.h\"\n");
-        if (v3Global.useRandomizeMethods()) puts("#include \"verilated_random.h\"\n");
+        if (v3Global.useRandomizeMethods())
+            puts("#include \"" + v3Global.solverBackendp()->runtimeHeader() + "\"\n");
         if (v3Global.usesForce()) puts("#include \"verilated_force.h\"\n");
 
         std::set<string> cuse_set;

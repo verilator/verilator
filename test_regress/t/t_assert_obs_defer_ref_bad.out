@@ -1,0 +1,14 @@
+%Error: t/t_assert_obs_defer_ref_bad.v:20:21: Observed deferred immediate assertion ref action argument cannot have automatic or dynamic storage (IEEE 1800-2023 16.4).
+   20 |     else report_ref(a);
+      |                     ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_assert_obs_defer_ref_bad.v:27:24: Observed deferred immediate assertion ref action argument cannot have automatic or dynamic storage (IEEE 1800-2023 16.4).
+   27 |     else report_ref(dyn[0]);
+      |                        ^
+%Error: t/t_assert_obs_defer_ref_bad.v:29:22: Observed deferred immediate assertion ref action argument cannot have automatic or dynamic storage (IEEE 1800-2023 16.4).
+   29 |     else report_ref(q[0]);
+      |                      ^
+%Error: t/t_assert_obs_defer_ref_bad.v:31:27: Observed deferred immediate assertion ref action argument cannot have automatic or dynamic storage (IEEE 1800-2023 16.4).
+   31 |     else report_queue_ref(q);
+      |                           ^
+%Error: Exiting due to

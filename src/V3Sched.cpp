@@ -119,11 +119,7 @@ void createEvalRegion(
     AstVarScope* trigp,  // The trigger vector - may be nullptr if no triggers or using 'condp'
     AstNodeExpr* condp,  // Explicit condition that must be true to run 'phaseWorkp'
     AstNodeStmt* phasePrepp,  // Prep statements run before checking triggers
-    AstNodeStmt* phaseWorkp,  // The work to do if anything triggered
-    // Extra statements to run after the work, even if no triggers fired. This function is
-    // passed a variable, which must be set to true if we must continue and loop again,
-    // and must be unmodified otherwise.
-    std::function<AstNodeStmt*(AstVarScope*)> phaseExtra = [](AstVarScope*) { return nullptr; }  //
+    AstNodeStmt* phaseWorkp  // The work to do if anything triggered
 ) {
     UASSERT(!trigp || !condp, "Cannot use both 'trigp' and 'condp' in 'createEvalRegion'");
     UASSERT(!eval.firstIteration() || trigp,
@@ -187,13 +183,9 @@ void createEvalRegion(
             funcp->addStmtsp(ifp);
         }
 
-        // Construct the extra statements
-        AstNodeStmt* const extraWorkp = phaseExtra(executeFlagp);
-        if (extraWorkp) funcp->addStmtsp(extraWorkp);
-
         // The function returns true iff it did run work
         AstNodeExpr* const retp
-            = phaseWorkp || extraWorkp
+            = phaseWorkp
                   ? static_cast<AstNodeExpr*>(new AstVarRef{flp, executeFlagp, VAccess::READ})
                   : static_cast<AstNodeExpr*>(new AstConst{flp, AstConst::BitFalse{}});
         funcp->addStmtsp(new AstCReturn{flp, retp});
@@ -275,7 +267,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
         for (AstNode* const logicp : activep->stmtspList()) {
             auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
             if (AstNodeProcedure* const procp = VN_CAST(logicp, NodeProcedure)) {
-                if (AstNode* bodyp = procp->stmtsp()) {
+                if (AstNode* const bodyp = procp->stmtsp()) {
                     bodyp->unlinkFrBackWithNext();
                     // If the process is suspendable, we need a separate function (a coroutine)
                     if (procp->isSuspendable()) {
@@ -284,16 +276,6 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                         subFuncp->name(subFuncp->name() + "__Vtiming__"
                                        + cvtToStr(scopep->user2Inc()));
                         subFuncp->rtnType("VlCoroutine");
-                        if (VN_IS(procp, Always)) {
-                            subFuncp->slow(false);
-                            FileLine* const flp = procp->fileline();
-                            AstNodeExpr* const condp = new AstCExpr{
-                                flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1};
-                            AstLoop* const loopp = new AstLoop{flp};
-                            loopp->addStmtsp(new AstLoopTest{flp, loopp, condp});
-                            loopp->addStmtsp(bodyp);
-                            bodyp = loopp;
-                        }
                     }
                     subFuncp->addStmtsp(bodyp);
                     if (procp->needProcess()) subFuncp->setNeedProcess();
@@ -703,27 +685,7 @@ void createEval(AstNetlist* netlistp,  //
             workp = AstNode::addNext(workp, trigKit.newClearCall(nbaKit.m_vscp));
             //
             return workp;
-        }(),
-        // Extra work (not conditional on having had a fired trigger)
-        [&](AstVarScope* continuep) -> AstNodeStmt* {
-            // Check if any dynamic NBAs are pending, if there are any in the design
-            if (!netlistp->nbaEventp()) return nullptr;
-            AstVarScope* const nbaEventp = netlistp->nbaEventp();
-            AstVarScope* const nbaEventTriggerp = netlistp->nbaEventTriggerp();
-            UASSERT(nbaEventTriggerp, "NBA event trigger var should exist");
-            netlistp->nbaEventp(nullptr);
-            netlistp->nbaEventTriggerp(nullptr);
-
-            // If a dynamic NBA is pending, clear the pending flag and fire the ready event
-            AstIf* const ifp = new AstIf{flp, new AstVarRef{flp, nbaEventTriggerp, VAccess::READ}};
-            ifp->addThensp(util::setVar(continuep, 1));
-            ifp->addThensp(util::setVar(nbaEventTriggerp, 0));
-            AstCMethodHard* const firep = new AstCMethodHard{
-                flp, new AstVarRef{flp, nbaEventp, VAccess::WRITE}, VCMethod::EVENT_FIRE};
-            firep->dtypeSetVoid();
-            ifp->addThensp(firep->makeStmt());
-            return ifp;
-        });
+        }());
 
     // Create the 'obs' region
     createEvalRegion(  //
@@ -991,44 +953,14 @@ void schedule(AstNetlist* netlistp) {
     createEval(netlistp, trigKit, actKit, nbaKit, obsKit, reactKit, timingKit);
 
     // Step 17: Add neccessary evaluation before awaits
-    if (AstCCall* const readyp = timingKit.createReady(trigKit.vscp())) {
-        staticp->addStmtsp(readyp->makeStmt());
-        beforeTrigVisitor(netlistp, senExprBuilder, trigKit);
-    } else {
-        // beforeTrigVisitor clears Sentree pointers in AstCAwaits (as these sentrees will get
-        // deleted later) if there was no need to call it, SenTrees have to be cleaned manually
-        netlistp->foreach([](AstCAwait* const cAwaitp) { cAwaitp->clearSentreep(); });
-    }
-    if (AstVarScope* const trigAccp = trigKit.vscAccp()) {
-        // Copy trigger vector to accumulator at the end of static initialziation so,
-        // triggers fired during initialization persist to the first resume.
-        const AstUnpackArrayDType* const trigAccDTypep
-            = VN_AS(trigAccp->dtypep(), UnpackArrayDType);
-        UASSERT_OBJ(
-            trigAccDTypep->right() == 0, trigAccp,
-            "Expected that trigger vector and accumulator start elements enumeration from 0");
-        UASSERT_OBJ(trigAccDTypep->left() >= 0, trigAccp,
-                    "Expected that trigger vector and accumulator has no negative indexes");
-        FileLine* const flp = trigAccp->fileline();
-        AstVarScope* const vscp = netlistp->topScopep()->createTemp("__Vi", 32);
-        AstLoop* const loopp = new AstLoop{flp};
-        loopp->addStmtsp(
-            new AstAssign{flp,
-                          new AstArraySel{flp, new AstVarRef{flp, trigAccp, VAccess::WRITE},
-                                          new AstVarRef{flp, vscp, VAccess::READ}},
-                          new AstArraySel{flp, new AstVarRef{flp, actKit.m_vscp, VAccess::READ},
-                                          new AstVarRef{flp, vscp, VAccess::READ}}});
-        loopp->addStmtsp(util::incrementVar(vscp));
-        loopp->addStmtsp(new AstLoopTest{
-            flp, loopp,
-            new AstLte{flp, new AstVarRef{flp, vscp, VAccess::READ},
-                       new AstConst{flp, AstConst::WidthedValue{}, 32,
-                                    static_cast<uint32_t>(trigAccDTypep->left())}}});
-        staticp->addStmtsp(loopp);
-    }
+    beforeTrigVisitor(netlistp, senExprBuilder, trigKit);
 
     // Step 18: Clean up
     netlistp->clearStlFirstIterationp();
+    netlistp->nbaQueuep(nullptr);  // Finished with this here
+    if (AstSenTree* const senTreesp = topScopep->senTreesp()) {
+        VL_DO_DANGLING(senTreesp->unlinkFrBackWithNext()->deleteTree(), senTreesp);
+    }
 
     if (v3Global.opt.stats()) {
         // A sample() call resolved to the union over its covergroup's constructions reads more

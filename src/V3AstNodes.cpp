@@ -654,6 +654,14 @@ void AstAssertCtl::dumpJson(std::ostream& str) const {
     }
     dumpJsonGen(str);
 }
+void AstAssignW::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (m_declInit) str << " [DECLINIT]";
+}
+void AstAssignW::dumpJson(std::ostream& str) const {
+    Super::dumpJson(str);
+    dumpJsonBoolIf(str, "declInit", m_declInit);
+}
 AstDelay* AstAssignW::getLhsNetDelay() const { return getLhsNetDelayRecurse(lhsp()); }
 void AstAssocArrayDType::dumpSmall(std::ostream& str) const {
     Super::dumpSmall(str);
@@ -803,11 +811,9 @@ int AstBasicDType::widthTotalBytes() const {
 void AstBegin::dump(std::ostream& str) const {
     Super::dump(str);
     if (implied()) str << " [IMPLIED]";
-    if (needProcess()) str << " [NPRC]";
 }
 void AstBegin::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, implied);
-    dumpJsonBoolFuncIf(str, needProcess);
     dumpJsonGen(str);
 }
 const char* AstCAwait::broken() const {
@@ -1101,6 +1107,7 @@ void AstClass::dump(std::ostream& str) const {
     Super::dump(str);
     if (isCovergroup()) str << " [CG]";
     if (isExtended()) str << " [EXT]";
+    if (implChecksDeferred()) str << " [IMPLDEFER]";
     if (isInterfaceClass()) str << " [IFCCLS]";
     if (isPrintedFrom()) str << " [PRINTED]";
     if (isVirtual()) str << " [VIRT]";
@@ -1116,6 +1123,7 @@ void AstClass::dumpJson(std::ostream& str) const {
     // dumpJsonNumFunc(str, declTokenNum);  // Not dumped as adding token changes whole file
     dumpJsonBoolFuncIf(str, isCovergroup);
     dumpJsonBoolFuncIf(str, isExtended);
+    dumpJsonBoolFuncIf(str, implChecksDeferred);
     dumpJsonBoolFuncIf(str, isInterfaceClass);
     dumpJsonBoolFuncIf(str, isPrintedFrom);
     dumpJsonBoolFuncIf(str, isVirtual);
@@ -1135,7 +1143,7 @@ string AstClass::embeddedCovergroupName() const {
     return origName().substr(prefix.size());
 }
 bool AstClass::isCacheableChild(const AstNode* nodep) {
-    return VN_IS(nodep, Var) || VN_IS(nodep, Typedef)
+    return VN_IS(nodep, Var) || VN_IS(nodep, Typedef) || VN_IS(nodep, ParamTypeDType)
            || (VN_IS(nodep, Constraint) && !VN_AS(nodep, Constraint)->isExternProto())
            || VN_IS(nodep, EnumItemRef)
            || (VN_IS(nodep, NodeFTask) && !VN_AS(nodep, NodeFTask)->isExternProto())
@@ -1302,6 +1310,10 @@ void AstClockingItem::dump(std::ostream& str) const {
 void AstClockingItem::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "direction", direction().ascii());
     dumpJsonGen(str);
+}
+const char* AstClosurePoolDType::broken() const {
+    BROKEN_RTN(!m_subDTypep->isClosure());
+    return nullptr;
 }
 void AstComment::dump(std::ostream& str) const {
     Super::dump(str);
@@ -1659,6 +1671,16 @@ void AstCoverInc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isDuplicate);
     dumpJsonGen(str);
 }
+void AstCoverInsert::dump(std::ostream& str) const {
+    Super::dump(str);
+    str << " -> ";
+    if (declp()) {
+        declp()->dump(str);
+    } else {
+        str << "%E:UNLINKED";
+    }
+}
+void AstCoverInsert::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
 void AstCoverOption::dump(std::ostream& str) const {
     Super::dump(str);
     str << " " << m_optType.ascii();
@@ -1912,6 +1934,16 @@ void AstFork::dump(std::ostream& str) const {
 void AstFork::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "joinType", joinType().ascii());
     dumpJsonBoolFuncIf(str, immediateStart);
+    dumpJsonGen(str);
+}
+void AstForkItem::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (needProcess()) str << " [NPRC]";
+    if (disableWrapper()) str << " [DISABLEWRAP]";
+}
+void AstForkItem::dumpJson(std::ostream& str) const {
+    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, disableWrapper);
     dumpJsonGen(str);
 }
 string AstGenBlock::dtypeNameInnerScope(const string& outer) const {
@@ -2274,12 +2306,13 @@ void AstMonitorOff::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, off);
     dumpJsonGen(str);
 }
-void AstNBACommitQueueDType::dump(std::ostream& str) const {
+void AstNbaEnqueue::dump(std::ostream& str) const {
     Super::dump(str);
-    if (partial()) str << " [PARTIAL]";
+    str << " -> ";
+    funcp()->dump(str);
 }
-void AstNBACommitQueueDType::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, partial);
+void AstNbaEnqueue::dumpJson(std::ostream& str) const {
+    dumpJsonStr(str, "funcName", funcp()->name());
     dumpJsonGen(str);
 }
 AstNodeBiop* AstNeq::newTyped(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp) {
@@ -2371,8 +2404,7 @@ void AstNetlist::deleteContents() {
     m_stdPackagep = nullptr;
     m_dpiExportTriggerp = nullptr;
     m_delaySchedulerp = nullptr;
-    m_nbaEventp = nullptr;
-    m_nbaEventTriggerp = nullptr;
+    m_nbaQueuep = nullptr;
     m_topScopep = nullptr;
     m_containingModules.clear();
     m_evalFuncps.fill(nullptr);
@@ -2515,6 +2547,7 @@ void AstNodeBlock::dumpJson(std::ostream& str) const {
 void AstNodeCCall::dump(std::ostream& str) const {
     Super::dump(str);
     if (superReference()) str << " [SUPERREF]";
+    if (mayEnqueueGlobalNBA()) str << " [MAYENQUEUEGLOBALNBA]";
     if (funcp()) {
         str << " " << funcp()->name() << " => ";
         funcp()->dump(str);
@@ -2524,6 +2557,7 @@ void AstNodeCCall::dump(std::ostream& str) const {
 }
 void AstNodeCCall::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, superReference);
+    dumpJsonBoolFuncIf(str, mayEnqueueGlobalNBA);
     if (funcp()) dumpJsonStr(str, "funcName", funcp()->name());
     dumpJsonStr(str, "argTypes", argTypes());
     dumpJsonGen(str);
@@ -2660,22 +2694,10 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
         info.m_type = "::VlUnpacked<" + sub.m_type;
         info.m_type += ", " + cvtToStr(adtypep->declRange().elements());
         info.m_type += ">";
-    } else if (const auto* const adtypep = VN_CAST(dtypep, NBACommitQueueDType)) {
+    } else if (const auto* const adtypep = VN_CAST(dtypep, ClosurePoolDType)) {
         UASSERT_OBJ(!packed, this, "Unsupported type for packed struct or union");
-        compound = true;
-        const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(compound, false);
-        AstNodeDType* eDTypep = adtypep->subDTypep();
-        unsigned rank = 0;
-        while (AstUnpackArrayDType* const uaDTypep = VN_CAST(eDTypep, UnpackArrayDType)) {
-            eDTypep = uaDTypep->subDTypep()->skipRefp();
-            ++rank;
-        }
-        info.m_type = "::VlNBACommitQueue<";
-        info.m_type += sub.m_type;
-        info.m_type += adtypep->partial() ? ", true" : ", false";
-        info.m_type += ", " + eDTypep->cTypeRecurse(compound, false).m_type;
-        info.m_type += ", " + std::to_string(rank);
-        info.m_type += ">";
+        info.m_type
+            = "::VlClosurePool<" + EmitCUtil::prefixNameProtect(adtypep->subDTypep()) + ">";
     } else if (packed && (VN_IS(dtypep, PackArrayDType))) {
         const AstPackArrayDType* const adtypep = VN_CAST(dtypep, PackArrayDType);
         const CTypeRecursed sub = adtypep->subDTypep()->cTypeRecurse(false, true);
@@ -2707,6 +2729,8 @@ AstNodeDType::CTypeRecursed AstNodeDType::cTypeRecurse(bool compound, bool packe
             info.m_type = "::VlTriggerScheduler";
         } else if (bdtypep->isDynamicTriggerScheduler()) {
             info.m_type = "::VlDynamicTriggerScheduler";
+        } else if (bdtypep->isNbaGenericQueue()) {
+            info.m_type = "::VlNbaGenericQueue<" + EmitCUtil::symClassName() + ">";
         } else if (bdtypep->isForkSync()) {
             info.m_type = "::VlForkSync";
         } else if (bdtypep->isProcessRef()) {
@@ -2834,16 +2858,18 @@ const AstNodeDType* AstNodeDType::elemDTypep(bool skipRef) const {
 }
 bool AstNodeDType::isDpiBitVec() const {
     const AstNodeDType* const dtypep = elemDTypep();
-    if (VN_IS(dtypep, PackArrayDType)) return !dtypep->isFourstate();
+    if (VN_IS(dtypep, PackArrayDType)) {
+        return !dtypep->isFourstate() && !dtypep->mimicsFourstate();
+    }
     const AstBasicDType* const basicp = dtypep->basicp();
     return basicp->keyword() == VBasicDTypeKwd::BIT && basicp->isRanged();
 }
 bool AstNodeDType::isDpiLogicVec() const {
     const AstNodeDType* const dtypep = elemDTypep();
-    if (VN_IS(dtypep, PackArrayDType)) return dtypep->isFourstate();
+    if (VN_IS(dtypep, PackArrayDType)) return dtypep->isFourstate() || dtypep->mimicsFourstate();
     const AstBasicDType* const basicp = dtypep->basicp();
-    return basicp->keyword().isFourstate()
-           && !(basicp->keyword() == VBasicDTypeKwd::LOGIC && !basicp->isRanged());
+    return (basicp->keyword().isFourstate() || basicp->keyword().mimicsFourstate())
+           && !(basicp->keyword().isSameish(VBasicDTypeKwd::LOGIC) && !basicp->isRanged());
 }
 bool AstNodeDType::isFourstate() const { return basicp() && basicp()->isFourstate(); }
 bool AstNodeDType::isLiteralType() const VL_MT_STABLE {
@@ -2889,7 +2915,7 @@ bool AstNodeDType::isTriviallyConstructible() const VL_MT_STABLE {
     if (VN_IS(dtypep, DynArrayDType)) return false;
     if (VN_IS(dtypep, QueueDType)) return false;
     if (VN_IS(dtypep, SampleQueueDType)) return false;
-    if (VN_IS(dtypep, NBACommitQueueDType)) return false;
+    if (VN_IS(dtypep, ClosurePoolDType)) return false;
     // Pointers
     if (VN_IS(dtypep, CoverCrossDType)) return true;
     if (VN_IS(dtypep, CoverpointDType)) return true;
@@ -2921,6 +2947,10 @@ bool AstNodeDType::matchingDType(const AstNodeDType* samep) const {
     if (nodep == sameDtp) return true;
     if (nodep->type() != sameDtp->type()) return false;
     return nodep->matchingDTypeNode(sameDtp);
+}
+bool AstNodeDType::mimicsFourstate() const VL_MT_STABLE {
+    const AstBasicDType* const basicDTypep = basicp();
+    return basicDTypep && basicDTypep->mimicsFourstate();
 }
 bool AstNodeDType::similarDType(const AstNodeDType* samep) const {
     const AstNodeDType* nodep = this;
@@ -3439,15 +3469,18 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     Super::dump(str);
     if (packed()) str << " [PACKED]";
     if (isFourstate()) str << " [4STATE]";
+    if (mimicsFourstate()) str << " [MIMICS4STATE]";
     if (isConstrainedRand()) str << " [CSRAND]";
     if (emitToString()) str << " [EMITSTR]";
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
+    if (subDTypep()) str << " refDTypep=" << nodeAddr(subDTypep());
     if (!m_typedefName.empty()) str << " typedefName=" << m_typedefName;
 }
 void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);
     dumpJsonBoolFuncIf(str, isConstrainedRand);
     dumpJsonBoolFuncIf(str, isFourstate);
+    dumpJsonBoolFuncIf(str, mimicsFourstate);
     dumpJsonBoolFuncIf(str, emitToString);
     if (!m_typedefName.empty()) dumpJsonStr(str, "typedefName", m_typedefName);
     dumpJsonGen(str);
@@ -3846,8 +3879,12 @@ void AstScope::dump(std::ostream& str) const {
     str << " [abovep=" << nodeAddr(aboveScopep()) << "]";
     str << " [cellp=" << nodeAddr(aboveCellp()) << "]";
     str << " [modp=" << nodeAddr(modp()) << "]";
+    if (threadsGroupWorker() >= 0) str << " [threadsGroupWorker=" << threadsGroupWorker() << "]";
 }
-void AstScope::dumpJson(std::ostream& str) const { dumpJsonGen(str); }
+void AstScope::dumpJson(std::ostream& str) const {
+    if (threadsGroupWorker() >= 0) { str << ",\"threadsGroupWorker\":" << threadsGroupWorker(); }
+    dumpJsonGen(str);
+}
 string AstScope::nameDotless() const {
     string result = shortName();
     string::size_type pos;
@@ -3864,7 +3901,7 @@ string AstScope::prettyNameMsg() const {
 }
 bool AstScope::sameNode(const AstNode* samep) const {
     const AstScope* const asamep = VN_DBG_AS(samep, Scope);
-    return name() == asamep->name()
+    return name() == asamep->name() && threadsGroupWorker() == asamep->threadsGroupWorker()
            && ((!aboveScopep() && !asamep->aboveScopep())
                || (aboveScopep() && asamep->aboveScopep()
                    && aboveScopep()->name() == asamep->aboveScopep()->name()));
@@ -4020,6 +4057,14 @@ void AstStrengthSpec::dumpJson(std::ostream& str) const {
     dumpJsonStr(str, "strength0", m_s0.ascii());
     dumpJsonStr(str, "strength1", m_s1.ascii());
     dumpJsonGen(str);
+}
+void AstStructDType::dump(std::ostream& str) const {
+    Super::dump(str);
+    if (isClosure()) str << " [CLOSURE]";
+}
+void AstStructDType::dumpJson(std::ostream& str) const {
+    Super::dumpJson(str);
+    dumpJsonBoolFuncIf(str, isClosure);
 }
 void AstSystemCSection::dump(std::ostream& str) const {
     Super::dump(str);
@@ -4612,9 +4657,20 @@ void AstVar::dump(std::ostream& str) const {
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
     if (isStdRandomizeArg()) str << " [STDRANDARG]";
-    if (forceRdVarp()) str << " forceRdVarp=" << nodeAddr(forceRdVarp());
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
+    if (forceRdVarp()) {
+        str << " forceRdVarp=";
+        forceRdVarp()->dump(str);
+    }
+    if (forceEnVarp()) {
+        str << " forceEnVarp=";
+        forceEnVarp()->dump(str);
+    }
+    if (forceValVarp()) {
+        str << " forceValVarp=";
+        forceValVarp()->dump(str);
+    }
 }
 void AstVar::dumpJson(std::ostream& str) const {
     if (libInoutId()) dumpJsonNumFunc(str, libInoutId);

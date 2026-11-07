@@ -3100,6 +3100,8 @@ netSig<varp>:                   // IEEE: net_decl_assignment -  one element from
                         { $$ = VARDONEA($<fl>1, *$1, $2, $3);
                           AstDelay* const delayp = $$->delayp() ? $$->delayp()->unlinkFrBack() : nullptr;
                           AstAssignW* const assignp = new AstAssignW{$4, new AstParseRef{$<fl>1, *$1}, $5, delayp};
+                          // Mark the parser-generated assign as the lowered declaration initializer
+                          assignp->declInit(true);
                           if (GRAMMARP->m_netStrengthp) assignp->strengthSpecp(GRAMMARP->m_netStrengthp->cloneTree(false));
                           AstNode::addNext<AstNode, AstNode>($$, new AstAlways{assignp}); }
         ;
@@ -3550,7 +3552,7 @@ par_block<forkp>:               // ==IEEE: par_block
                             $$ = new AstFork{$1, $5, $2 ? *$2 : ""};
                             GRAMMARP->endLabel($<fl>6, $$, $6);
                             $$->addDeclsp($3);
-                            $$->addForksp(V3ParseGrammar::wrapInBegin($4));
+                            $$->addForksp(V3ParseGrammar::wrapInForkItems($4));
                         }
         ;
 
@@ -3560,7 +3562,7 @@ par_blockPreId<forkp>:          // ==IEEE: par_block but called with leading ID
                             $$ = new AstFork{$3, $6, *$1};
                             GRAMMARP->endLabel($<fl>7, $$, $7);
                             $$->addDeclsp($4);
-                            $$->addForksp(V3ParseGrammar::wrapInBegin($5));
+                            $$->addForksp(V3ParseGrammar::wrapInForkItems($5));
                         }
             ;
 
@@ -8631,12 +8633,32 @@ vltItem:
                         { V3Control::addProfileData($<fl>1, *$2, $3->toUQuad()); }
         |       yVLT_PROFILE_DATA vltDModel vltDMtask vltDCost
                         { V3Control::addProfileData($<fl>1, *$2, *$3, $4->toUQuad()); }
-        |       yVLT_THREADS_GROUP vltDModule
-                        { V3Control::addModulePragma(*$2, VPragmaType::THREADS_GROUP); }
+        |       vltThreadsGroupFront
+                        { }
         |       yVLT_FSM_REGISTER_WRAPPER vltDModule vltDFsmD vltDFsmQ vltDFsmClock vltDFsmResetE vltDFsmResetValueE
                         { V3Control::addFsmRegisterWrapper($<fl>1, *$2, *$3, *$4, *$5, *$6, *$7); }
         |       yVLT_VERILATOR_LIB vltDModule
                         { V3Control::addModulePragma(*$2, VPragmaType::VERILATOR_LIB); }
+        ;
+
+// Verilator extension: the worker of each instance, for an instance count and --threads
+vltThreadsGroupFront<strp>:  // Returns the module name
+                yVLT_THREADS_GROUP vltDModule
+                        { V3Control::addModulePragma(*$2, VPragmaType::THREADS_GROUP);
+                          $$ = $2; }
+        |       vltThreadsGroupFront yVLT_D_WORKERS yaINTNUM yP_MINUSGT yaINTNUM vltThreadsGroupWorkerListE
+                        { V3Control::addThreadsGroupWorkers($2, *$1, $3->toUInt(), $5->toUInt(), $6);
+                          $$ = $1; }
+        ;
+
+vltThreadsGroupWorkerListE<nodeExprp>:  // Without a list, the instances are placed automatically
+                /* empty */                             { $$ = nullptr; }
+        |       ':' '{' vltThreadsGroupWorkerList '}'   { $$ = $3; }
+        ;
+
+vltThreadsGroupWorkerList<nodeExprp>:
+                yaINTNUM                                { $$ = new AstConst{$<fl>1, *$1}; }
+        |       vltThreadsGroupWorkerList yaINTNUM      { $$ = addNextNull($1, new AstConst{$<fl>2, *$2}); }
         ;
 
 vltOffFront<errcodeen>:

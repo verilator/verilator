@@ -60,6 +60,7 @@ Cai
 Cavium
 Cfuncs
 Chandan
+Cheng
 Chentai
 Cherkasov
 Chih
@@ -1059,7 +1060,10 @@ postincrement
 pragma
 pragmas
 pre
+prebuild
+prebuilt
 precisions
+precompile
 precompiled
 predefines
 prefetch
@@ -1268,6 +1272,7 @@ uvm
 uwire
 uwires
 valgrind
+variadic
 vc
 vcd
 vcddiff

@@ -17,6 +17,47 @@ module t;
     endfunction
   endclass
 
+  interface class Ifc;
+  endclass
+  class Base;
+  endclass
+  class Impl extends Base implements Ifc;
+  endclass
+
+  initial begin
+    // Elements of the queue's class by an upcast, or null, or an array of them
+    Ifc iq[$];
+    Impl impl;
+    Impl implq[$];
+    impl = new;
+    implq.push_back(impl);
+    iq = {iq, impl, null, implq};
+    if (iq.size() != 3) $stop;
+    if (iq[0] != impl) $stop;
+    if (iq[1] != null) $stop;
+    if (iq[2] != impl) $stop;
+  end
+
+  initial begin
+    // Arrays of elements assignable to an element type that is itself an array
+    Base bqq[$][$];
+    Impl implq[$];
+    Impl impl;
+    int qq[$][$];
+    int fa[2];
+    impl = new;
+    implq.push_back(impl);
+    bqq = {bqq, implq};
+    if (bqq.size() != 1) $stop;
+    if (bqq[0].size() != 1) $stop;
+    if (bqq[0][0] != impl) $stop;
+    fa = '{1, 2};
+    qq = {qq, fa};
+    if (qq.size() != 1) $stop;
+    if (qq[0].size() != 2) $stop;
+    if (qq[0][1] != 2) $stop;
+  end
+
   initial begin
     Cls c2[1:0];
     Cls cq[$];

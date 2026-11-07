@@ -47,6 +47,7 @@ class CombineVisitor final : VNVisitor {
     };
     struct CFuncInfo final {
         std::vector<AstCCall*> m_callSites;  // Call sites of this function
+        std::vector<AstNbaEnqueue*> m_enqueueSites;  // Enqueues of closures calling this function
         size_t m_index = 0;  // Position in the list of functions being combined
         bool m_replaced = false;  // Already replaced by an equivalent function
     };
@@ -139,6 +140,13 @@ class CombineVisitor final : VNVisitor {
                     // the hash of the caller should not change.
                     UASSERT_OBJ(oldHash == m_hasher.rehash(callp), callp, "Hash changed");
                 }
+                // Redirect the enqueued closures, likewise
+                for (AstNbaEnqueue* const enqueuep : m_cfuncInfo(oldp).m_enqueueSites) {
+                    // For sanity check only
+                    const V3Hash oldHash = m_hasher(enqueuep);
+                    enqueuep->funcp(newp);
+                    UASSERT_OBJ(oldHash == m_hasher.rehash(enqueuep), enqueuep, "Hash changed");
+                }
 
                 // Erase the replaced duplicate
                 UASSERT_OBJ(dupFinder.erase(oldp) == 1, oldp, "Replaced node not in dupFinder");
@@ -205,6 +213,10 @@ class CombineVisitor final : VNVisitor {
         AstCFunc* const funcp = nodep->funcp();
         if (funcp->dontCombine()) return;
         m_cfuncInfo(funcp).m_callSites.emplace_back(nodep);
+    }
+    void visit(AstNbaEnqueue* nodep) override {
+        iterateChildrenConst(nodep);
+        m_cfuncInfo(nodep->funcp()).m_enqueueSites.emplace_back(nodep);
     }
 
     void visit(AstAddrOfCFunc* nodep) override {
