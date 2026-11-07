@@ -235,7 +235,7 @@ class OutlineVisitor final : public VNVisitor {
         subFuncp->isStatic(m_funcp->isStatic());
         subFuncp->isLoose(m_funcp->isLoose());
         subFuncp->slow(m_funcp->slow());
-        if (m_funcp->needProcess()) subFuncp->setNeedProcess();
+        if (m_funcp->needsVlProcess()) subFuncp->setNeedsVlProcess();
         subFuncp->addStmtsp(firstp);
         AstCCall* const callp = new AstCCall{flp, subFuncp};
         callp->dtypeSetVoid();

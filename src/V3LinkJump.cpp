@@ -261,7 +261,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstForkItem* const taskBodyp = new AstForkItem{fl, nullptr};
         // Disable-by-name rewrites kill this detached task-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
-        taskBodyp->setNeedProcess();
+        taskBodyp->setNeedsVlProcess();
         taskBodyp->setDisableWrapper();
         requireTiming(fl);
         // Variables stay in the task, ports so calls see them, locals as they live for the call
@@ -321,7 +321,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstForkItem* const beginBodyp = new AstForkItem{fl, nullptr};
         // Disable-by-name rewrites kill this detached block-body process, so mark it as process
         // backed to ensure fork/join kill-accounting hooks are always emitted.
-        beginBodyp->setNeedProcess();
+        beginBodyp->setNeedsVlProcess();
         beginBodyp->setDisableWrapper();
         requireTiming(fl);
         if (beginp->stmtsp()) beginBodyp->addStmtsp(beginp->stmtsp()->unlinkFrBackWithNext());
@@ -334,16 +334,16 @@ class LinkJumpVisitor final : public VNVisitor {
         return beginBodyp;
     }
     void prependForkBranchQueuePushes(AstFork* const forkp, AstVar* const processQueuep,
-                                      FileLine* const fl, bool needProcess) {
+                                      FileLine* const fl, bool needsVlProcess) {
         for (AstForkItem* const branchp : forkp->forkspList()) {
-            if (needProcess) branchp->setNeedProcess();
+            if (needsVlProcess) branchp->setNeedsVlProcess();
             branchp->prependStmtsp(getQueuePushProcessSelfp(fl, processQueuep));
         }
     }
     void prependNestedForkBranchQueuePushes(AstNode* const nodep, AstVar* const processQueuep,
-                                            FileLine* const fl, bool needProcess) {
+                                            FileLine* const fl, bool needsVlProcess) {
         nodep->foreach([&](AstFork* const forkp) {
-            prependForkBranchQueuePushes(forkp, processQueuep, fl, needProcess);
+            prependForkBranchQueuePushes(forkp, processQueuep, fl, needsVlProcess);
         });
     }
     AstVar* getOrCreateBeginDisableQueuep(AstBegin* const beginp, FileLine* const fl) {

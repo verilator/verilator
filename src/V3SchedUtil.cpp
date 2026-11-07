@@ -94,7 +94,7 @@ static AstCFunc* splitCheckCreateNewSubFunc(AstCFunc* ofuncp) {
     subFuncp->isLoose(true);
     subFuncp->slow(ofuncp->slow());
     subFuncp->declPrivate(ofuncp->declPrivate());
-    if (ofuncp->needProcess()) subFuncp->setNeedProcess();
+    if (ofuncp->needsVlProcess()) subFuncp->setNeedsVlProcess();
     for (AstVar* const argp : ofuncp->argspList()) {
         AstVar* const clonep = argp->cloneTree(false);
         subFuncp->addArgsp(clonep);

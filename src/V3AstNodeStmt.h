@@ -244,7 +244,7 @@ class AstForkItem final : public AstNode {
     // A branch of an AstFork, executed by its own process
     // @astgen op1 := declsp : List[AstVar]  // Local variables
     // @astgen op2 := stmtsp : List[AstNode]
-    bool m_needProcess = false;  // Uses VlProcess
+    bool m_needsVlProcess = false;  // Uses VlProcess
     bool m_disableWrapper = false;  // Lets 'disable' kill a block, same process
 public:
     AstForkItem(FileLine* fl, AstNode* stmtsp)
@@ -256,11 +256,11 @@ public:
     void dumpJson(std::ostream& str) const override;
     bool sameNode(const AstNode* samep) const override {
         const AstForkItem* const asamep = VN_DBG_AS(samep, ForkItem);
-        return needProcess() == asamep->needProcess()
+        return needsVlProcess() == asamep->needsVlProcess()
                && disableWrapper() == asamep->disableWrapper();
     }
-    void setNeedProcess() { m_needProcess = true; }
-    bool needProcess() const { return m_needProcess; }
+    void setNeedsVlProcess() { m_needsVlProcess = true; }
+    bool needsVlProcess() const { return m_needsVlProcess; }
     void setDisableWrapper() { m_disableWrapper = true; }
     bool disableWrapper() const { return m_disableWrapper; }
 };

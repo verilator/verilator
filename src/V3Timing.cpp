@@ -272,7 +272,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         getNeedsProcDepVtx(nodep);
         addFlags(nodep, T_ALLOCS_PROC);
         if (VN_IS(nodep, Always)) {
-            UINFO(9, "Always does " << (nodep->needProcess() ? "" : "NOT ") << "need process");
+            UINFO(9, "Always does " << (nodep->needsVlProcess() ? "" : "NOT ") << "need process");
         }
         iterateChildren(nodep);
     }
@@ -314,7 +314,7 @@ class TimingSuspendableVisitor final : public VNVisitor {
         VL_RESTORER(m_procp);
         m_procp = nodep;
         iterateChildren(nodep);
-        if (nodep->needProcess()) addFlags(nodep, T_FORCES_PROC | T_NEEDS_PROC);
+        if (nodep->needsVlProcess()) addFlags(nodep, T_FORCES_PROC | T_NEEDS_PROC);
         DepVtx* const sVxp = getSuspendDepVtx(nodep);
         DepVtx* const pVxp = getNeedsProcDepVtx(nodep);
         if (!m_classp) return;
@@ -742,7 +742,7 @@ class TimingControlVisitor final : public VNVisitor {
     }
     // Register a callback so killing a process-backed fork branch decrements the join counter
     void addForkOnKill(AstForkItem* const itemp, AstVarScope* const forkVscp) const {
-        if (!itemp->needProcess() && !hasDisableQueuePushSelfPrefix(itemp)) return;
+        if (!itemp->needsVlProcess() && !hasDisableQueuePushSelfPrefix(itemp)) return;
         FileLine* const flp = itemp->fileline();
         AstCMethodHard* const onKillp = new AstCMethodHard{
             flp, new AstVarRef{flp, forkVscp, VAccess::WRITE}, VCMethod::FORK_ON_KILL};
@@ -854,12 +854,12 @@ class TimingControlVisitor final : public VNVisitor {
             nodep->setSuspendable();
             ++m_statSuspendableProcs;
         }
-        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
+        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedsVlProcess();
     }
     void visit(AstInitial* nodep) override {
         if (nodep->user1SetOnce()) return;
         visit(static_cast<AstNodeProcedure*>(nodep));
-        if (nodep->needProcess()) {
+        if (nodep->needsVlProcess()) {
             nodep->addStmtsp(
                 new AstCStmt{nodep->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
         }
@@ -880,7 +880,7 @@ class TimingControlVisitor final : public VNVisitor {
             addFlags(nodep, T_SUSPENDEE);
 
         iterateChildren(nodep);
-        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
+        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedsVlProcess();
         if (!hasFlags(nodep, T_SUSPENDEE)) return;
         FileLine* const flp = nodep->fileline();
         AstSenTree* const sentreep = m_activep->sentreep();
@@ -899,7 +899,7 @@ class TimingControlVisitor final : public VNVisitor {
         initialp->user1(true);  // Already processed
         initialp->setSuspendable();
         ++m_statSuspendableProcs;
-        if (nodep->needProcess()) initialp->setNeedProcess();
+        if (nodep->needsVlProcess()) initialp->setNeedsVlProcess();
         auto* const activep = new AstActive{
             flp, "", new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Initial{}}}};
         activep->senTreeStorep(activep->sentreep());
@@ -913,7 +913,7 @@ class TimingControlVisitor final : public VNVisitor {
         m_procp = nodep;
         m_hasProcess = hasFlags(nodep, T_HAS_PROC);
         iterateChildren(nodep);
-        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedProcess();
+        if (hasFlags(nodep, T_HAS_PROC)) nodep->setNeedsVlProcess();
         if (!(hasFlags(nodep, T_SUSPENDEE))) return;
 
         nodep->rtnType("VlCoroutine");
@@ -941,7 +941,7 @@ class TimingControlVisitor final : public VNVisitor {
             return;
         }
 
-        if (funcp->needProcess()) m_hasProcess = true;
+        if (funcp->needsVlProcess()) m_hasProcess = true;
         if (hasFlags(funcp, T_SUSPENDEE) && !nodep->user1SetOnce()) {  // If suspendable
             // Calls to suspendables are always void return type, hence parent must be StmtExpr
             AstStmtExpr* const stmtp = VN_AS(nodep->backp(), StmtExpr);
@@ -1397,7 +1397,7 @@ class TimingControlVisitor final : public VNVisitor {
         // unaffected by 'disable fork' and 'wait fork' (IEEE 1800-2023 9.6.1, 9.6.3)
         if (hasFlags(nodep, T_NBA_UPDATE)) m_hasProcess = false;
         m_procp = nodep;
-        if (m_hasProcess) nodep->setNeedProcess();
+        if (m_hasProcess) nodep->setNeedsVlProcess();
         iterateChildren(nodep);
     }
     void visit(AstFork* nodep) override {
@@ -1416,7 +1416,7 @@ class TimingControlVisitor final : public VNVisitor {
             iterate(itemp);
             // Note: Even if we do not find any awaits, we cannot simply inline
             // the process here, as new awaits could be added later.
-            if (itemp->needProcess()) {
+            if (itemp->needsVlProcess()) {
                 itemp->addStmtsp(
                     new AstCStmt{itemp->fileline(), "vlProcess->state(VlProcess::FINISHED);"});
             }

@@ -128,7 +128,7 @@ public:
 
         // Some properties to consider
         const bool suspendable = procp->isSuspendable();
-        const bool needProcess = procp->needProcess();
+        const bool needsVlProcess = procp->needsVlProcess();
 
         // Put suspendable processes into individual functions on their own
         if (suspendable) forceNewFunction();
@@ -160,7 +160,7 @@ public:
                 AstNodeModule* const modp = scopep->modp();
                 const std::string name = cfuncName(flp, scopep, modp, lVtxp);
                 m_funcp = new AstCFunc{flp, name, scopep, suspendable ? "VlCoroutine" : ""};
-                if (needProcess) m_funcp->setNeedProcess();
+                if (needsVlProcess) m_funcp->setNeedsVlProcess();
                 m_funcp->isStatic(false);
                 m_funcp->isLoose(true);
                 m_funcp->slow(m_slow);

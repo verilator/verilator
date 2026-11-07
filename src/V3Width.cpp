@@ -9013,7 +9013,7 @@ class WidthVisitor final : public VNVisitor {
                 // Mark that self requires process instance
                 if (AstNodeFTask* const ftaskp
                     = VN_CAST(m_memberMap.findMember(nodep, "self"), NodeFTask)) {
-                    ftaskp->setNeedProcess();
+                    ftaskp->setNeedsVlProcess();
                     v3Global.setUsesTiming();
                 }
             }

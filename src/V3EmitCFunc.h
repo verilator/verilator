@@ -146,7 +146,7 @@ protected:
         const AstCFunc* const ctorp = VN_CAST(newp, CFunc);
         if (!ctorp) return false;
         UASSERT_OBJ(ctorp->isConstructor(), ctorp, "`new` is not a constructor!");
-        return ctorp->needProcess();
+        return ctorp->needsVlProcess();
     }
 
     bool constructorNeedsProcess(const AstNodeDType* const dtypep) {
@@ -484,9 +484,9 @@ public:
 
         // Instantiate a process class if it's going to be needed somewhere later
         nodep->forall([&](const AstNodeCCall* ccallp) -> bool {
-            if (ccallp->funcp()->needProcess()
+            if (ccallp->funcp()->needsVlProcess()
                 && (ccallp->funcp()->isCoroutine() == VN_IS(ccallp->backp(), CAwait))) {
-                if (!nodep->needProcess() && !m_instantiatesOwnProcess) {
+                if (!nodep->needsVlProcess() && !m_instantiatesOwnProcess) {
                     m_instantiatesOwnProcess = true;
                     return false;
                 }
@@ -498,7 +498,7 @@ public:
             vlprocp->add("VlProcessRef vlProcess = std::make_shared<VlProcess>();\n");
             vlprocp->add("VlProcess::currentp(vlProcess.get());");
             nodep->prependStmtsp(vlprocp);
-        } else if (nodep->needProcess() && nodep->stmtsp()) {
+        } else if (nodep->needsVlProcess() && nodep->stmtsp()) {
             // Set current process so VlRNG() constructors in this function seed from it
             AstCStmt* const setProcessp = new AstCStmt{nodep->fileline()};
             setProcessp->add("VlProcess::currentp(vlProcess.get());");
@@ -864,7 +864,8 @@ public:
             }
             putns(nodep, funcp->nameProtect());
         }
-        emitCCallArgs(nodep, nodep->selfPointerProtect(m_useSelfForThis), m_cfuncp->needProcess());
+        emitCCallArgs(nodep, nodep->selfPointerProtect(m_useSelfForThis),
+                      m_cfuncp->needsVlProcess());
     }
     void visit(AstCMethodCall* nodep) override {
         const AstCFunc* const funcp = nodep->funcp();
@@ -877,7 +878,7 @@ public:
             putns(funcModp, EmitCUtil::prefixNameProtect(funcModp) + "::");
         }
         putns(funcp, funcp->nameProtect());
-        emitCCallArgs(nodep, "", m_cfuncp->needProcess());
+        emitCCallArgs(nodep, "", m_cfuncp->needsVlProcess());
     }
     void visit(AstCAwait* nodep) override {
         putns(nodep, "co_await ");
@@ -1491,7 +1492,7 @@ public:
     }
     void visit(AstFinish* nodep) override {
         // Disable all the forks so they don't operate after simulation is finished.
-        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
+        if (m_cfuncp && m_cfuncp->needsVlProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");
@@ -1500,7 +1501,7 @@ public:
     }
     void visit(AstFinishFork* nodep) override {
         // Disable all the forks so they don't operate after simulation is finished.
-        if (m_cfuncp && m_cfuncp->needProcess()) putns(nodep, "vlProcess->disableFork();\n");
+        if (m_cfuncp && m_cfuncp->needsVlProcess()) putns(nodep, "vlProcess->disableFork();\n");
         putns(nodep, "VL_FINISH_MT(");
         putsQuoted(protect(nodep->fileline()->filename()));
         puts(", ");

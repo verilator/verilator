@@ -883,7 +883,7 @@ void AstCFunc::dump(std::ostream& str) const {
     if (isUnlikely()) str << " [UNL]";
     if (isVirtual()) str << " [VIRT]";
     if (isCoroutine()) str << " [CORO]";
-    if (needProcess()) str << " [NPRC]";
+    if (needsVlProcess()) str << " [NPRC]";
     if (entryPoint()) str << " [ENTRY]";
     if (noLife()) str << " [NOLIFE]";
     if (voidSelf()) str << " [VOIDSELF]";
@@ -908,7 +908,7 @@ void AstCFunc::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isUnlikely);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, isCoroutine);
-    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonBoolFuncIf(str, noLife);
     dumpJsonBoolFuncIf(str, voidSelf);
     dumpJsonStr(str, "isConst", isConst().ascii());
@@ -1938,11 +1938,11 @@ void AstFork::dumpJson(std::ostream& str) const {
 }
 void AstForkItem::dump(std::ostream& str) const {
     Super::dump(str);
-    if (needProcess()) str << " [NPRC]";
+    if (needsVlProcess()) str << " [NPRC]";
     if (disableWrapper()) str << " [DISABLEWRAP]";
 }
 void AstForkItem::dumpJson(std::ostream& str) const {
-    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonBoolFuncIf(str, disableWrapper);
     dumpJsonGen(str);
 }
@@ -3231,7 +3231,7 @@ void AstNodeFTask::dump(std::ostream& str) const {
     if (isStatic()) str << " [STATIC]";
     if (verilogTask()) str << " [VTASK]";
     if (verilogFunction()) str << " [VFUNC]";
-    if (needProcess()) str << " [NPRC]";
+    if (needsVlProcess()) str << " [NPRC]";
     if (!ifacePortName().empty()) str << " ifp=" << ifacePortName();
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     if ((dpiImport() || dpiExport()) && cname() != name()) str << " [c=" << cname() << "]";
@@ -3247,7 +3247,7 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isExternProto);
     dumpJsonBoolFuncIf(str, isVirtual);
     dumpJsonBoolFuncIf(str, keepAlive);
-    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonBoolFuncIf(str, prototype);
     dumpJsonBoolFuncIf(str, recursive);
     dumpJsonBoolFuncIf(str, taskPublic);
@@ -3417,11 +3417,11 @@ bool AstNodePreSel::isPure() {
 void AstNodeProcedure::dump(std::ostream& str) const {
     Super::dump(str);
     if (isSuspendable()) str << " [SUSP]";
-    if (needProcess()) str << " [NPRC]";
+    if (needsVlProcess()) str << " [NPRC]";
 }
 void AstNodeProcedure::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, isSuspendable);
-    dumpJsonBoolFuncIf(str, needProcess);
+    dumpJsonBoolFuncIf(str, needsVlProcess);
     dumpJsonGen(str);
 }
 const char* AstNodeQuadop::broken() const {

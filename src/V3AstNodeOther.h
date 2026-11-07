@@ -144,7 +144,7 @@ class AstNodeFTask VL_NOT_FINAL : public AstNode {
     bool m_verilogFunction : 1;  // Declared by user as function (versus internal-made)
     bool m_verilogTask : 1;  // Declared by user as task (versus internal-made)
     bool m_virtual : 1;  // Virtual method in class
-    bool m_needProcess : 1;  // Needs access to VlProcess of the caller
+    bool m_needsVlProcess : 1;  // Needs access to VlProcess of the caller
     bool m_isCovergroupSample : 1;  // Covergroup sample() method
     VBaseOverride m_baseOverride;  // BaseOverride (inital/final/extends)
     VLifetime m_lifetime;  // Default lifetime of local vars
@@ -178,7 +178,7 @@ protected:
         , m_verilogFunction{false}
         , m_verilogTask{false}
         , m_virtual{false}
-        , m_needProcess{false}
+        , m_needsVlProcess{false}
         , m_isCovergroupSample{false} {
         addStmtsp(stmtsp);
         cname(name);  // Might be overridden by dpi import/export
@@ -256,8 +256,8 @@ public:
     void verilogTask(bool flag) { m_verilogTask = flag; }
     bool isVirtual() const { return m_virtual; }
     void isVirtual(bool flag) { m_virtual = flag; }
-    bool needProcess() const { return m_needProcess; }
-    void setNeedProcess() { m_needProcess = true; }
+    bool needsVlProcess() const { return m_needsVlProcess; }
+    void setNeedsVlProcess() { m_needsVlProcess = true; }
     bool isCovergroupSample() const { return m_isCovergroupSample; }
     void isCovergroupSample(bool flag) { m_isCovergroupSample = flag; }
     void baseOverride(const VBaseOverride& flag) { m_baseOverride = flag; }
@@ -445,11 +445,11 @@ class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
     // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
     bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
-    bool m_needProcess : 1;  // Uses VlProcess
+    bool m_needsVlProcess : 1;  // Uses VlProcess
 protected:
     AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
         : AstNode{t, fl} {
-        m_needProcess = false;
+        m_needsVlProcess = false;
         m_suspendable = false;
         addStmtsp(stmtsp);
     }
@@ -462,8 +462,8 @@ public:
     bool isJustOneBodyStmt() const { return stmtsp() && !stmtsp()->nextp(); }
     bool isSuspendable() const { return m_suspendable; }
     void setSuspendable() { m_suspendable = true; }
-    bool needProcess() const { return m_needProcess; }
-    void setNeedProcess() { m_needProcess = true; }
+    bool needsVlProcess() const { return m_needsVlProcess; }
+    void setNeedsVlProcess() { m_needsVlProcess = true; }
 };
 class AstNodeRange VL_NOT_FINAL : public AstNode {
     // A range, sized or unsized
@@ -589,7 +589,7 @@ class AstCFunc final : public AstNode {
     bool m_dpiExportImpl : 1;  // DPI export implementation (called from DPI dispatcher via lookup)
     bool m_dpiImportPrototype : 1;  // This is the DPI import prototype (i.e.: provided by user)
     bool m_dpiImportWrapper : 1;  // Wrapper for invoking DPI import prototype from generated code
-    bool m_needProcess : 1;  // Needs access to VlProcess of the caller
+    bool m_needsVlProcess : 1;  // Needs access to VlProcess of the caller
     bool m_recursive : 1;  // Recursive or part of recursion
     bool m_unlikely : 1;  // Unlikely to get called (though still optimize unlike slow())
     bool m_noLife : 1;  // Disable V3Life on this function - has multiple calls, and reads Syms
@@ -616,7 +616,7 @@ public:
         m_isMethod = true;
         m_isLoose = false;
         m_isVirtual = false;
-        m_needProcess = false;
+        m_needsVlProcess = false;
         m_entryPoint = false;
         m_dpiPure = false;
         m_dpiContext = false;
@@ -684,8 +684,8 @@ public:
     bool isProperMethod() const { return isMethod() && !isLoose(); }
     bool isVirtual() const { return m_isVirtual; }
     void isVirtual(bool flag) { m_isVirtual = flag; }
-    bool needProcess() const { return m_needProcess; }
-    void setNeedProcess() { m_needProcess = true; }
+    bool needsVlProcess() const { return m_needsVlProcess; }
+    void setNeedsVlProcess() { m_needsVlProcess = true; }
     bool entryPoint() const { return m_entryPoint; }
     void entryPoint(bool flag) { m_entryPoint = flag; }
     bool dpiPure() const { return m_dpiPure; }

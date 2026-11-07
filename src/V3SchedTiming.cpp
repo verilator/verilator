@@ -300,7 +300,7 @@ class TransformForksVisitor final : public VNVisitor {
         m_itemHasAwaits = false;
         iterateChildrenConst(nodep);
         if (!nodep->stmtsp()) return;
-        if (!m_itemHasAwaits && !nodep->needProcess()) return;
+        if (!m_itemHasAwaits && !nodep->needsVlProcess()) return;
 
         // Create a function to put this fork item's statements in
         FileLine* const flp = nodep->fileline();
@@ -331,7 +331,7 @@ class TransformForksVisitor final : public VNVisitor {
         // Replace the body of the fork item with a call to the newly created function
         nodep->addStmtsp(callp->makeStmt());
         // Propagate if needs process
-        if (nodep->needProcess()) newfuncp->setNeedProcess();
+        if (nodep->needsVlProcess()) newfuncp->setNeedsVlProcess();
         remapLocals(newfuncp, callp);
     }
     void visit(AstCAwait* nodep) override {

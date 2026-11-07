@@ -277,7 +277,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
                     subFuncp->rtnType("VlCoroutine");
                 }
                 subFuncp->addStmtsp(bodyp);
-                if (procp->needProcess()) subFuncp->setNeedProcess();
+                if (procp->needsVlProcess()) subFuncp->setNeedsVlProcess();
                 // A coroutine holds a single process, so it is complete here
                 if (procp->isSuspendable()) util::splitCheck(subFuncp);
             }
