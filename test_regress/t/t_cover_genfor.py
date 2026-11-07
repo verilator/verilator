@@ -11,11 +11,10 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-cov_flags = ['--binary',
-             '--coverage-line',
-             '--coverage-branch',
-             '--coverage-expr',
-             '--coverage-per-instance']
+cov_flags = [
+    '--binary', '--coverage-line', '--coverage-branch', '--coverage-expr',
+    '--coverage-per-instance'
+]
 
 
 def run_and_check(golden):

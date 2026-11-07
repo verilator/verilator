@@ -11,10 +11,7 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-cov_flags = ['--binary',
-             '--coverage-line',
-             '--coverage-branch',
-             '--coverage-expr']
+cov_flags = ['--binary', '--coverage-line', '--coverage-branch', '--coverage-expr']
 
 
 def run_and_check(golden):
@@ -25,8 +22,7 @@ def run_and_check(golden):
 # Default (no --coverage-per-instance): the hierarchy stays the enclosing
 # module, so generate-for iterations still merge and the report matches the
 # pre-change behavior -- proving the fix does not alter default reports.
-test.compile(top_filename="t/t_cover_genfor.v",
-             verilator_flags2=cov_flags)
+test.compile(top_filename="t/t_cover_genfor.v", verilator_flags2=cov_flags)
 run_and_check("t/t_cover_genfor_default.dat.out")
 
 test.passes()
