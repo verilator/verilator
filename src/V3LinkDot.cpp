@@ -404,25 +404,14 @@ public:
         m_packageEntp->fallbackp(dunitEntp());
         rootEntp()->insert("$packages ", m_packageEntp);
     }
-    VSymEnt* insertTopCell(AstNodeModule* nodep, const string& scopename) {
-        // Only called on the module at the very top of the hierarchy
+    VSymEnt* insertMod(AstNodeModule* nodep, const string& scopename) {
+        // Insert modules without cells (modules at the very top of the hierarchy and interfaces
+        // used as top module ports)
         VSymEnt* const symp = new VSymEnt{&m_syms, nodep};
-        UINFO(9, "      INSERTtop se" << cvtToHex(symp) << "  " << scopename << " " << nodep);
+        UINFO(9, "      INSERTmod se" << cvtToHex(symp) << "  " << scopename << " " << nodep);
         symp->parentp(rootEntp());  // Needed so backward search can find name of top module
         symp->fallbackp(dunitEntp());  // Needed so can find $unit stuff
         nodep->user1p(symp);
-        checkDuplicate(rootEntp(), nodep, nodep->origName());
-        rootEntp()->insert(nodep->origName(), symp);
-        if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
-        return symp;
-    }
-    VSymEnt* insertTopIface(AstCell* nodep, const string& scopename) {
-        VSymEnt* const symp = new VSymEnt{&m_syms, nodep};
-        UINFO(9, "      INSERTtopiface se" << cvtToHex(symp) << "  " << scopename << " " << nodep);
-        symp->parentp(rootEntp());  // Needed so backward search can find name of top module
-        symp->fallbackp(dunitEntp());  // Needed so can find $unit stuff
-        nodep->user1p(symp);
-        if (nodep->modp()) nodep->modp()->user1p(symp);
         checkDuplicate(rootEntp(), nodep, nodep->origName());
         rootEntp()->insert(nodep->origName(), symp);
         if (forScopeCreation()) m_nameScopeSymMap.emplace(scopename, symp);
@@ -654,11 +643,6 @@ public:
                 // use default params, but this port should point to a
                 // specialized clone based on the pin connection).
                 const bool isDead = ifacerefp->ifaceViaCellp()->dead();
-                if (isDead && forPrimary() && !varp->isIfaceParent()
-                    && !v3Global.opt.topIfacesSupported()) {
-                    varp->v3warn(E_UNSUPPORTED,
-                                 "Unsupported: Interfaced port on top level module");
-                }
                 // Attempt repair: trace through parent cell's pin to find
                 // the correct live interface for this port variable
                 const bool repaired = repairIfaceRef(varSymp, varp, ifacerefp, isDead);
@@ -1155,9 +1139,13 @@ class LinkDotFindVisitor final : public VNVisitor {
     int m_modBlockNum = 0;  // Begin block number in module, 0=none seen
     int m_modWithNum = 0;  // With block number, 0=none seen
     int m_modArgNum = 0;  // Arg block number for randomize(), 0=none seen
+    bool m_underTop = false;  // True if the iterated module is top module
+    bool m_underTopIfacePort = false;  // True if iterating under top module interface port
     std::vector<AstIface*> m_virtIfaces;  // interfaces used as virtual,
                                           // needed for handleUnvisitedVirtIfaces()
     std::vector<const AstNode*> m_exportps;  // Exports in the current package, done at its end
+    std::list<AstIface*>
+        m_ifacePorts;  // Interface ports under top module and their interface ports
 
     // METHODS
     void doExports() {
@@ -1274,72 +1262,50 @@ class LinkDotFindVisitor final : public VNVisitor {
                 nodep->v3error("No top level module found");
             }
         }
+        const string scopeName = "TOP";
         for (AstNodeModule* modp = nodep->modulesp(); modp && modp->isTop();
              modp = VN_AS(modp->nextp(), NodeModule)) {
             UINFO(8, "Top Module: " << modp);
-            m_scope = "TOP";
+            m_scope = scopeName;
 
-            if (!m_statep->forScopeCreation() && v3Global.opt.topIfacesSupported()) {
-                for (AstNode* const subnodep : modp->stmtspList()) {
-                    if (AstVar* const varp = VN_CAST(subnodep, Var)) {
-                        if (varp->isIfaceRef()) {
-                            const AstNodeDType* const subtypep = varp->subDTypep();
-                            const AstIfaceRefDType* ifacerefp = nullptr;
-                            if (VN_IS(subtypep, IfaceRefDType)) {
-                                ifacerefp = VN_AS(varp->subDTypep(), IfaceRefDType);
-                            } else if (VN_IS(subtypep, BracketArrayDType)) {
-                                const AstBracketArrayDType* const arrp
-                                    = VN_AS(subtypep, BracketArrayDType);
-                                const AstNodeDType* const arrsubtypep = arrp->subDTypep();
-                                if (VN_IS(arrsubtypep, IfaceRefDType)) {
-                                    ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
-                                }
-                            } else if (VN_IS(subtypep, UnpackArrayDType)) {
-                                const AstUnpackArrayDType* const arrp
-                                    = VN_AS(subtypep, UnpackArrayDType);
-                                const AstNodeDType* const arrsubtypep = arrp->subDTypep();
-                                if (VN_IS(arrsubtypep, IfaceRefDType)) {
-                                    ifacerefp = VN_AS(arrsubtypep, IfaceRefDType);
-                                }
-                            }
-
-                            if (ifacerefp && !ifacerefp->cellp()) {
-                                // A dummy cell to keep the top level interface alive and correctly
-                                // optimized for default parameter values
-                                AstCell* ifacecellp
-                                    = new AstCell{nodep->fileline(),
-                                                  nodep->fileline(),
-                                                  modp->name() + "__02E" + varp->name(),
-                                                  ifacerefp->ifaceName(),
-                                                  nullptr,
-                                                  nullptr,
-                                                  nullptr};
-                                ifacecellp->modp(ifacerefp->ifacep());
-                                m_curSymp = m_modSymp
-                                    = m_statep->insertTopIface(ifacecellp, m_scope);
-                                iterate(ifacecellp);
-                                VL_DO_DANGLING(pushDeletep(ifacecellp), ifacecellp);
-                            }
-                        }
-                    }
-                }
-            }
-
-            m_curSymp = m_modSymp = m_statep->insertTopCell(modp, m_scope);
+            m_curSymp = m_modSymp = m_statep->insertMod(modp, m_scope);
             { iterate(modp); }
 
             m_scope = "";
             m_curSymp = m_modSymp = nullptr;
         }
+        m_underTopIfacePort = true;
+        for (AstIface* const ifacep : m_ifacePorts) {
+            if (!m_statep->existsNodeSym(ifacep)) {
+                m_scope = scopeName;
+                m_curSymp = m_modSymp = m_statep->insertMod(ifacep, m_scope);
+                iterate(ifacep);
+            }
+        }
+        m_underTopIfacePort = false;
+        m_scope = "";
+        m_curSymp = m_modSymp = nullptr;
     }
     void visit(AstTypeTable*) override {}  // FindVisitor::
     void visit(AstIfaceRefDType* nodep) override {  // FindVisitor::
-        if (!m_statep->forScopeCreation() && nodep->isVirtual() && nodep->ifacep()
-            && !nodep->ifacep()->user3()) {
-            m_virtIfaces.push_back(nodep->ifacep());
-            nodep->ifacep()->user3(true);
+        if (!m_statep->forScopeCreation() && nodep->ifacep()) {
+            if (nodep->isVirtual() && !nodep->ifacep()->user3()) {
+                m_virtIfaces.push_back(nodep->ifacep());
+                nodep->ifacep()->user3(true);
+            } else if (!nodep->cellp() && !m_statep->existsNodeSym(nodep->ifacep())
+                       && (m_underTop || m_underTopIfacePort)) {
+                m_ifacePorts.emplace_back(nodep->ifacep());
+            }
         }
         iterateChildren(nodep);
+    }
+    void visit(AstIfaceGenericDType* nodep) override {  // FindVisitor::
+        if (m_underTop) {
+            nodep->v3warn(E_UNSUPPORTED, "Unsupported: Generic interface as top module port");
+        } else if (m_underTopIfacePort) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: Top module interface port with generic interface port\n");
+        }
     }
     void visit(AstNodeModule* nodep) override {  // FindVisitor::
         // Called on top module from Netlist, other modules from the cell creating them,
@@ -1359,6 +1325,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         VL_RESTORER(m_modBlockNum);
         VL_RESTORER(m_modWithNum);
         VL_RESTORER(m_modArgNum);
+        VL_RESTORER(m_underTop);
+        m_underTop = nodep->isTop();
         if (doit && nodep->user2()) {
             nodep->v3warn(E_UNSUPPORTED,
                           "Unsupported: Identically recursive module (module instantiates "
@@ -1541,6 +1509,12 @@ class LinkDotFindVisitor final : public VNVisitor {
     void visit(AstRefDType* nodep) override {  // FindVisitor::
         nodep->user1p(m_curSymp);
         iterateChildren(nodep);
+        if (VN_IS(m_curSymp->nodep(), NodeModule) && (m_underTop || m_underTopIfacePort)
+            && !m_statep->forScopeCreation()) {
+            if (AstIface* const ifacep = VN_CAST(m_statep->findModuleSym(nodep->name()), Iface)) {
+                if (!m_statep->existsNodeSym(ifacep)) m_ifacePorts.emplace_back(ifacep);
+            }
+        }
     }
     void visit(AstGenBlock* nodep) override {  // FindVisitor::
         UINFO(5, "   " << nodep);
