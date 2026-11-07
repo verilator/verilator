@@ -717,7 +717,8 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
+        AstBegin* const beginp = new AstBegin{flp, delayName + "__block", nullptr, true};
+        beginp->addDeclsp(cntVarp);
         // A non-constant delay is counted at runtime. The count is integral of 64 bits, as
         // V3Width makes delays, or real, which is rounded (IEEE 1800-2023 6.12.1)
         if (valuep->isDouble()) {
@@ -742,7 +743,7 @@ private:
             throughoutOkp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__throughoutOk",
                                        nodep->findBasicDType(VBasicDTypeKwd::LOGIC_IMPLICIT)};
             throughoutOkp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            beginp->addStmtsp(throughoutOkp);
+            beginp->addDeclsp(throughoutOkp);
             beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
                                             new AstConst{flp, AstConst::BitTrue{}}});
             // Check condition at tick 0 (sequence start, before entering loop)
@@ -1164,7 +1165,7 @@ private:
 
         // Final assertion block
         AstBegin* const finalp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
-        finalp->addStmtsp(activeCountp);
+        finalp->addDeclsp(activeCountp);
         finalp->addStmtsp(initActiveCountp);
         finalp->addStmtsp(finalLoopp);
 
@@ -1283,7 +1284,8 @@ private:
                                            exprp->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
-        AstBegin* const beginp = new AstBegin{flp, name + "__block", cntVarp, true};
+        AstBegin* const beginp = new AstBegin{flp, name + "__block", nullptr, true};
+        beginp->addDeclsp(cntVarp);
         beginp->addStmtsp(
             new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, new AstConst{flp, 0}});
 
@@ -1318,7 +1320,7 @@ private:
             AstVar* const doneVarp
                 = new AstVar{flp, VVarType::BLOCKTEMP, name + "__done", exprp->findBitDType()};
             doneVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            beginp->addStmtsp(doneVarp);
+            beginp->addDeclsp(doneVarp);
             beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
                                             new AstConst{flp, AstConst::BitFalse{}}});
             auto setDone = [&]() {
@@ -1656,7 +1658,7 @@ private:
 
             // Main assertion block
             AstBegin* const bodyp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
-            bodyp->addStmtsp(donep);
+            bodyp->addDeclsp(donep);
             bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, donep, VAccess::WRITE},
                                            new AstConst{flp, AstConst::BitFalse{}}});
             FileLine* const flp = activep->fileline();
@@ -1688,7 +1690,7 @@ private:
 
             // Final assertion block
             AstBegin* const finalp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
-            finalp->addStmtsp(activeCountp);
+            finalp->addDeclsp(activeCountp);
             finalp->addStmtsp(initActiveCountp);
             finalp->addStmtsp(finalLoopp);
 
@@ -1836,10 +1838,9 @@ private:
             AstAssign* const assignp
                 = new AstAssign{flp, new AstVarRef{flp, initialCntp, VAccess::WRITE},
                                 readCntRefp->cloneTree(false)};
-            // Prepend to the sequence body to keep statement list structure valid.
             UASSERT_OBJ(!bodyp->name().empty(), bodyp, "Sequence body should be named");
-            AstNode* const newStmtsp = AstNode::addNext<AstNode, AstNode>(initialCntp, assignp);
-            bodyp->prependStmtsp(newStmtsp);
+            bodyp->addDeclsp(initialCntp);
+            bodyp->prependStmtsp(assignp);
 
             m_disableSeqIfp
                 = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, initialCntp, VAccess::READ},

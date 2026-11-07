@@ -3723,7 +3723,16 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                           loopp->addContsp(new AstLoopTest{$<fl>5, loopp, $5});
                           $$ = loopp; }
         |       yFOR  '(' { VARRESET_NONLIST(UNKNOWN); } for_initializationE ';' exprE ';' for_stepE ')' stmt
-                        { AstBegin* const blockp = new AstBegin{$1, "", $4, true};
+                        { AstBegin* const blockp = new AstBegin{$1, "", nullptr, true};
+                          for (AstNode *nextp, *itemp = $4; itemp; itemp = nextp) {
+                              nextp = itemp->nextp();
+                              if (nextp) nextp->unlinkFrBackWithNext();
+                              if (AstVar* const varp = VN_CAST(itemp, Var)) {
+                                  blockp->addDeclsp(varp);
+                              } else {
+                                  blockp->addStmtsp(itemp);
+                              }
+                          }
                           AstLoop* const loopp = new AstLoop{$1};
                           if ($6) loopp->addStmtsp(new AstLoopTest{$<fl>6, loopp, $6});
                           loopp->addStmtsp($10);
@@ -4104,23 +4113,23 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
                         { VARRESET_NONLIST(VAR); VARDTYPE($1);
                           AstVar* const varp = VARDONEA($<fl>2, *$2, nullptr, nullptr);
                           varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                          $$ = varp;
-                          $$->addNext(new AstAssign{$3, new AstParseRef{$<fl>2, *$2}, $4}); }
+                          varp->valuep($4);
+                          $$ = varp; }
         //                      // IEEE-2012:
         |       yVAR data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($2);
                           AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
                           varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                          $$ = varp;
-                          $$->addNext(new AstAssign{$4, new AstParseRef{$<fl>3, *$3}, $5}); }
+                          varp->valuep($5);
+                          $$ = varp; }
         //                      // IEEE: variable_assignment
         //                      // UNSUP variable_lvalue below
         |       id/*newOrExisting*/ '=' expr
                         { if (GRAMMARP->m_varDecl) {
                               AstVar* const varp = VARDONEA($<fl>1, *$1, nullptr, nullptr);
                               varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                              varp->valuep($3);
                               $$ = varp;
-                              $$->addNext(new AstAssign{$2, new AstParseRef{$<fl>1, *$1}, $3});
                           } else {
                               $$ = new AstAssign{$2, new AstParseRef{$<fl>1, *$1}, $3};
                           }

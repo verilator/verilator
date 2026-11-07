@@ -480,8 +480,8 @@ class LinkJumpVisitor final : public VNVisitor {
             = new AstVar{nodep->fileline(), VVarType::BLOCKTEMP, name, nodep->findIntDType()};
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         varp->usedLoopIdx(true);
-        beginp->addStmtsp(varp);
-        AstNode* initsp = new AstAssign{
+        beginp->addDeclsp(varp);
+        AstNodeStmt* const initsp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, countp};
         AstNodeStmt* const decp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},

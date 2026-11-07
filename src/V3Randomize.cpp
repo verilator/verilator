@@ -1422,7 +1422,7 @@ class RandomizeVisitor final : public VNVisitor {
             = new AstCMethodHard{fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
                                  VCMethod::DYN_RESIZE, new AstConst{fl, modeCount}};
         dynarrayNewp->dtypeSetVoid();
-        AstNode* const thenStmtsp = dynarrayNewp->makeStmt();
+        AstNodeStmt* const thenStmtsp = dynarrayNewp->makeStmt();
         thenStmtsp->addNext(
             makeModeSetLoop(fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE},
                             new AstConst{fl, 1}, true));
@@ -1435,8 +1435,8 @@ class RandomizeVisitor final : public VNVisitor {
         UASSERT_OBJ(newp, classp, "No new() in class");
         newp->addStmtsp(ifp);
     }
-    AstNode* makeModeSetLoop(FileLine* const fl, AstNodeExpr* const lhsp, AstNodeExpr* const rhsp,
-                             bool inTask, AstNodeExpr* const startp = nullptr) {
+    AstBegin* makeModeSetLoop(FileLine* const fl, AstNodeExpr* const lhsp, AstNodeExpr* const rhsp,
+                              bool inTask, AstNodeExpr* const startp = nullptr) {
         AstVar* const iterVarp = new AstVar{fl, VVarType::BLOCKTEMP, "i", lhsp->findUInt32DType()};
         iterVarp->funcLocal(inTask);
         iterVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
@@ -1446,9 +1446,8 @@ class RandomizeVisitor final : public VNVisitor {
             = new AstCMethodHard{fl, lhsp->cloneTree(false), VCMethod::ARRAY_AT_WRITE,
                                  new AstVarRef{fl, iterVarp, VAccess::READ}};
         setp->dtypeSetUInt32();
-        AstNode* const stmtsp = iterVarp;
-        stmtsp->addNext(new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
-                                      startp ? startp : new AstConst{fl, 0}});
+        AstNodeStmt* const stmtsp = new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
+                                                  startp ? startp : new AstConst{fl, 0}};
 
         AstLoop* const loopp = new AstLoop{fl};
         stmtsp->addNext(loopp);
@@ -1458,7 +1457,9 @@ class RandomizeVisitor final : public VNVisitor {
         loopp->addStmtsp(new AstAssign{
             fl, new AstVarRef{fl, iterVarp, VAccess::WRITE},
             new AstAdd{fl, new AstConst{fl, 1}, new AstVarRef{fl, iterVarp, VAccess::READ}}});
-        return new AstBegin{fl, m_uniqueNames.get("__VrandBlock"), stmtsp, true};
+        AstBegin* const beginp = new AstBegin{fl, m_uniqueNames.get("__VrandBlock"), stmtsp, true};
+        beginp->addDeclsp(iterVarp);
+        return beginp;
     }
     void addTempVarsp(AstVar* varsp) {
         for (AstVar* varp = varsp; varp; varp = VN_AS(varp->nextp(), Var)) {

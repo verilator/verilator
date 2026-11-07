@@ -203,8 +203,13 @@ public:
             stmtp = asgnp;
         }
 
-        AstNode::addNext(static_cast<AstNode*>(m_instance.m_handlep), stmtp);
-        stmtpHandle.relink(m_instance.m_handlep);
+        if (AstBegin* const beginp = VN_CAST(m_procp, Begin)) {
+            beginp->prependDeclsp(m_instance.m_handlep);
+            stmtpHandle.relink(stmtp);
+        } else {
+            AstNode::addNext(static_cast<AstNode*>(m_instance.m_handlep), stmtp);
+            stmtpHandle.relink(m_instance.m_handlep);
+        }
         m_modp->addStmtsp(m_instance.m_classp);
     }
 
@@ -228,7 +233,8 @@ private:
         const std::string name = "_Vwrapped_"  //
                                  + (forkp->name().empty() ? "" : forkp->name() + "_")  //
                                  + std::to_string(m_id);
-        AstBegin* const beginp = new AstBegin{forkp->fileline(), name, m_instance.m_handlep, true};
+        AstBegin* const beginp = new AstBegin{forkp->fileline(), name, nullptr, true};
+        beginp->addDeclsp(m_instance.m_handlep);
         forkp->replaceWith(beginp);
         // Create the dynamic scope in the Begin
         beginp->addStmtsp(instantiateDynScope(memberMap));

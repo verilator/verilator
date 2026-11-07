@@ -995,12 +995,7 @@ class LinkParseVisitor final : public VNVisitor {
         if (AstFork* const forkp = VN_CAST(nodep, Fork)) iterateAndNextNull(forkp->forksp());
         // Add statements created by AstVar vistor; can't do as-go because iteration
         // would then get confused, additionally we did already iterate the contents
-        AstNode* stmtsp = nullptr;
-        // Move all Vars to front of function
-        stmtsp = AstNode::addNextNull(stmtsp, getVarsAndUnlink(nodep->stmtsp()));
-        // Follow vars by m_blockAddp's (if any)
-        stmtsp = AstNode::addNextNull(stmtsp, getBlockAdds());
-        nodep->prependStmtsp(stmtsp);
+        nodep->prependStmtsp(getBlockAdds());
     }
     void visit(AstCase* nodep) override {
         V3Control::applyCase(nodep);

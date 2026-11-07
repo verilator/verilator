@@ -678,7 +678,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     // Prepend the bucket preamble stmts stored on user3p by lowerDistConstraints to the
     // statements that will become the body of the generated AstForeach, so the per-element
-    // bucket draw is declared and evaluated in the same scope as its references.
+    // bucket draw is evaluated in the same scope as its references.
     static AstNode* prependDistPreamble(AstConstraintForeach* nodep, AstNode* bodyp) {
         AstNode* const preamblep = nodep->user3p();
         if (!preamblep) return bodyp;
@@ -3650,9 +3650,10 @@ class SolverSmtLowering final : public V3SolverLowering {
                               AstConstraintForeach* foreachp = nullptr) {
         // When inside a foreach, bucket preamble stmts are stored in foreachp->user3p()
         // (as a linked list) so visit(AstConstraintForeach*) can inject them into the
-        // real AstForeach body. Outside a foreach, they go directly into taskp.
-        AstNode* foreachTailp = nullptr;
-        auto addStmt = [&](AstNode* nodep) {
+        // real AstForeach body. Outside a foreach, they go directly into taskp. The
+        // variables are always declared in taskp, assigned before use in each iteration.
+        AstNodeStmt* foreachTailp = nullptr;
+        auto addStmt = [&](AstNodeStmt* nodep) {
             if (foreachp) {
                 if (!foreachTailp) {
                     foreachp->user3p(nodep);
@@ -3744,7 +3745,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             totalVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             totalVarp->funcLocal(true);
             totalVarp->isInternal(true);
-            addStmt(totalVarp);
+            taskp->addStmtsp(totalVarp);
             addStmt(
                 new AstAssign{fl, new AstVarRef{fl, totalVarp, VAccess::WRITE}, totalWeightExprp});
 
@@ -3756,7 +3757,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             bucketVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             bucketVarp->funcLocal(true);
             bucketVarp->isInternal(true);
-            addStmt(bucketVarp);
+            taskp->addStmtsp(bucketVarp);
 
             AstNodeExpr* const randp = new AstRand{fl, nullptr, false};
             randp->dtypeSetUInt64();
