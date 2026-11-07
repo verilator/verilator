@@ -18,7 +18,8 @@ LIMIT = 3
 # Disabled and one-member grouping also exercise split construction/destruction paths.
 for limit in [0, 1]:
     test.compile(verilator_flags2=[
-        "--comp-limit-members", str(limit), "--vpi", "--output-split-cfuncs", "16"
+        "--comp-limit-members",
+        str(limit), "--vpi", "--output-split-cfuncs", "16"
     ])
     test.execute()
 
