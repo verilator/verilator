@@ -908,9 +908,17 @@ class FsmDetectVisitor final : public VNVisitor {
         return senses;
     }
 
-    // Ignore existing coverage increments so FSM detection sees the user logic
-    // rather than other instrumentation already attached to the block.
-    static bool isIgnorableStmt(AstNode* nodep) { return VN_IS(nodep, CoverInc); }
+    // Coverage instrumentation: line coverage CoverIncs and expression coverage
+    // 'if (term) CoverInc' probes
+    static bool isIgnorableStmt(AstNode* nodep) {
+        if (VN_IS(nodep, CoverInc)) return true;
+        const AstIf* const ifp = VN_CAST(nodep, If);
+        if (!ifp || ifp->elsesp()) return false;
+        for (const AstNode* const stmtp : ifp->thenspList()) {
+            if (!VN_IS(stmtp, CoverInc)) return false;
+        }
+        return true;
+    }
 
     static AstNode* skipLeadingIgnorableStmt(AstNode* nodep) {
         while (nodep && isIgnorableStmt(nodep)) nodep = nodep->nextp();
@@ -1390,7 +1398,8 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* stateVscp = nullptr;
         AstVarScope* nextVscp = nullptr;
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
-            if (!ifp->elsesp() || !isSimpleResetCond(ifp->condp())) return false;
+            // Any reset condition is accepted; only a plain signal is described
+            if (!ifp->elsesp()) return false;
             AstVarScope* resetStateVscp = nullptr;
             const ResetAssignStatus resetStatus
                 = collectConstStateAssigns(ifp->thensp(), resetStateVscp, cand.resetArcs());
