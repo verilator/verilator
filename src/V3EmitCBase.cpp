@@ -46,21 +46,26 @@ EmitCParentModule::EmitCParentModule() {
 
 EmitCMemberGroups::EmitCMemberGroups(const size_t nMembers)
     : m_lim{static_cast<size_t>(v3Global.opt.compLimitMembers())} {
-    if (!m_lim) return;
-    if (nMembers > (m_lim * m_lim * m_lim)) {
-        m_l3s = (nMembers + (m_lim * m_lim * m_lim) - 1) / (m_lim * m_lim * m_lim);
-        m_l2s = m_lim;
+    if (!m_lim || nMembers <= m_lim) return;
+    // Divide ceiling counts in stages instead of multiplying limits that may overflow.
+    const size_t l1Groups = (nMembers - 1) / m_lim + 1;
+    if (l1Groups > m_lim) {
         m_l1s = m_lim;
-    } else if (nMembers > (m_lim * m_lim)) {
-        m_l2s = (nMembers + (m_lim * m_lim) - 1) / (m_lim * m_lim);
-        m_l1s = m_lim;
-    } else if (nMembers > m_lim) {
-        m_l1s = (nMembers + m_lim - 1) / m_lim;
+        const size_t l2Groups = (l1Groups - 1) / m_lim + 1;
+        if (l2Groups > m_lim) {
+            m_l2s = m_lim;
+            m_l3s = (l2Groups - 1) / m_lim + 1;
+        } else {
+            m_l2s = l2Groups;
+        }
+    } else {
+        m_l1s = l1Groups;
     }
 }
 
 std::string EmitCMemberGroups::namedPath(const size_t idx) const {
     std::string path;
+    // Each divisor is bounded by the member count when its grouping level is active.
     if (m_l3s != 1) path += "__Vg" + std::to_string(idx / (m_lim * m_l2s * m_l1s)) + ".";
     if (m_l2s != 1) path += "__Vg" + std::to_string(idx / (m_lim * m_l1s) % m_l2s) + ".";
     if (m_l1s != 1) path += "__Vg" + std::to_string(idx / m_lim % m_l1s) + ".";
