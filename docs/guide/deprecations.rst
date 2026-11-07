@@ -27,3 +27,9 @@ Pragma :option:`/*verilator&32;fsm_reset_arc*/`
    Verilator currently supports :option:`/*verilator&32;fsm_reset_arc*/`
    which aliases :option:`/*verilator&32;fsm_state*/`. This alias may be
    removed no sooner than February 2027.
+
+Verilator-specific :option:`\`systemc_... <\`systemc_header>` sections
+   Verilator currently supports the :option:`\`systemc_header` and related
+   sections, which insert C++ code verbatim into the generated model. DPI
+   should be used instead. These constructs will be removed no sooner than
+   May 2027.
