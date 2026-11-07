@@ -272,8 +272,7 @@ public:
             m_modPragmas.insert(*it);
         }
         for (const auto& it : m.m_threadsGroupWorkers) m_threadsGroupWorkers.insert(it);
-        m_portSquashes.insert(m_portSquashes.end(), m.m_portSquashes.begin(),
-                              m.m_portSquashes.end());
+        for (const ThreadsGroupPortSquash& it : m.m_portSquashes) m_portSquashes.push_back(it);
     }
     void updateFinalize() {}
 
