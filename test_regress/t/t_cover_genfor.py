@@ -11,21 +11,22 @@ import vltest_bootstrap
 
 test.scenarios('simulator')
 
-test.compile(top_filename="t/t_cover_genfor.v",
-             verilator_flags2=[
-                 '--binary',
-                 '--coverage-line',
-                 '--coverage-branch',
-                 '--coverage-expr',
-                 '--coverage-per-instance',
-                 '--top-module',
-                 'tb',
-             ])
+cov_flags = ['--binary',
+             '--coverage-line',
+             '--coverage-branch',
+             '--coverage-expr',
+             '--coverage-per-instance']
 
-test.execute(all_run_flags=[" +verilator+coverage+file+" + test.obj_dir + "/coverage.dat"])
 
-cov = test.obj_dir + "/coverage.dat"
+def run_and_check(golden):
+    test.execute(all_run_flags=[" +verilator+coverage+file+" + test.obj_dir + "/coverage.dat"])
+    test.files_identical(test.obj_dir + "/coverage.dat", golden)
 
-test.files_identical(cov, "t/t_cover_genfor.dat.out")
+
+# --coverage-per-instance: each unrolled generate-for iteration reports
+# separately, with a distinct hierarchy per iteration (labeled g_loop,
+# unlabeled genblk2, and nested g_nest).
+test.compile(verilator_flags2=cov_flags)
+run_and_check("t/t_cover_genfor.dat.out")
 
 test.passes()

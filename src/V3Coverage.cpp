@@ -792,7 +792,7 @@ class CoverageVisitor final : public VNVisitor {
     void visit(AstGenBlock* nodep) override {
         // Similar to AstBegin
         VL_RESTORER_COPY(m_beginHier);
-        if (nodep->name() != "" && !nodep->unnamed()) {
+        if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
         }
         iterateChildren(nodep);
@@ -807,17 +807,16 @@ class CoverageVisitor final : public VNVisitor {
         lineTrack(nodep);
     }
     void visit(AstBegin* nodep) override {
-        // Record the hierarchy of any named begins, so we can apply to user
-        // coverage points.  This is because there may be cov points inside
-        // generate blocks; each point should get separate consideration.
-        // (Currently ignored for line coverage, since any generate iteration
-        // covers the code in that line.)
+        // Track the hierarchy of named begins so coverage points inside them
+        // carry it: user points always, line/branch/expr under
+        // --coverage-per-instance (see setCoverageHier).  Each generate
+        // iteration is a distinct begin, so its points report separately.
         VL_RESTORER_COPY(m_beginHier);
         VL_RESTORER(m_inToggleOff);
         VL_RESTORER(m_exprStmtsp);
         m_exprStmtsp = nodep;
         m_inToggleOff = true;
-        if (nodep->name() != "" && !nodep->unnamed()) {
+        if (nodep->name() != "") {
             m_beginHier = m_beginHier + (m_beginHier != "" ? "__DOT__" : "") + nodep->name();
         }
         iterateChildren(nodep);
