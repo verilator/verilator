@@ -88,6 +88,9 @@ public:
     AstNodeExpr* m_abortRejectp = nullptr;
     // Liveness terminal (IEEE weak semantics): reject must not fire from this source
     bool m_isUnbounded = false;
+    // Implication antecedent vertex: a dropped throughout guard ends the attempt without
+    // a verdict, as a non-matching antecedent is vacuously true (IEEE 1800-2023 16.12.7)
+    bool m_isAntecedent = false;
     // Temporal sequence AND combiner; IEEE 1800-2023 16.9.5
     bool m_isAndCombiner = false;
     SvaStateVertex* m_andLhsTermp = nullptr;  // LHS sub-NFA terminal vertex
@@ -1712,8 +1715,16 @@ public:
     BuildResult buildImplicationEdges(AstNodeExpr* antExprp, AstNodeExpr* bodyExprp,
                                       SvaStateVertex* entryVtxp, bool isOverlapped,
                                       bool isFollowedBy, AstNode* errorNodep, FileLine* flp) {
+        std::unordered_set<const V3GraphVertex*> preExisting;
+        for (const V3GraphVertex& vtxr : m_graph.m_graph.vertices()) preExisting.insert(&vtxr);
         const BuildResult antResult = buildExpr(antExprp, entryVtxp);
         if (!antResult.valid()) return antResult;
+        entryVtxp->m_isAntecedent = true;
+        for (V3GraphVertex& vtxr : m_graph.m_graph.vertices()) {
+            if (preExisting.count(&vtxr)) continue;
+            SvaStateVertex* const vtxp = static_cast<SvaStateVertex*>(&vtxr);
+            vtxp->m_isAntecedent = true;
+        }
 
         // Followed-by requires pure-boolean antecedent for non-vacuous-fail at
         // the attempt-start cycle. IEEE 1800-2023 16.12.9 permits a multi-cycle
@@ -1730,28 +1741,32 @@ public:
         // Use raw createStateVertex() so trigVtxp starts without liveness --
         // reaching the antecedent terminal is a definitive event.
         SvaStateVertex* const trigVtxp = m_graph.createStateVertex();
+        AstNodeExpr* antMatchp = nullptr;
         if (antResult.finalCondp) {
-            m_graph.addLink(antResult.termVertexp, trigVtxp,
-                            sampled(antResult.finalCondp->cloneTreePure(false)));
-            // Followed-by non-vacuous fail: rejectOnFail fires when the attempt
-            // is live (termVtx reachable) and sampled(antecedent) is false.
-            if (isFollowedBy) {
-                SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
-                sinkVtxp->m_isRejectSink = true;
-                SvaTransEdge* const ep
-                    = m_graph.addLink(antResult.termVertexp, sinkVtxp,
-                                      sampled(antResult.finalCondp->cloneTreePure(false)));
-                ep->m_rejectOnFail = true;
-            }
+            antMatchp = sampled(antResult.finalCondp->cloneTreePure(false));
             // finalCondp is cloned into the Sampled nodes; if the original is
             // not parented anywhere in the AST anymore it must be freed here
             // or ASan flags it as a leak (e.g. t_sequence_bool_ops).
             if (!antResult.finalCondp->backp()) {
                 VL_DO_DANGLING(antResult.finalCondp->deleteTree(), antResult.finalCondp);
             }
-        } else {
-            m_graph.addLink(antResult.termVertexp, trigVtxp);
         }
+        // Antecedent vertices do not reject on a dropped throughout guard, so a guard
+        // dropped on the last tick must instead prevent the match
+        for (AstNodeExpr* const tcp : antResult.termVertexp->m_throughoutConds) {
+            AstNodeExpr* const sp = sampled(tcp->cloneTreePure(false));
+            antMatchp = antMatchp ? new AstLogAnd{flp, antMatchp, sp} : sp;
+        }
+        // Followed-by non-vacuous fail: rejectOnFail fires when the attempt
+        // is live (termVtx reachable) and sampled(antecedent) is false.
+        if (isFollowedBy) {
+            SvaStateVertex* const sinkVtxp = m_graph.createStateVertex();
+            sinkVtxp->m_isRejectSink = true;
+            m_graph.addLink(antResult.termVertexp, sinkVtxp, antMatchp->cloneTreePure(false))
+                ->m_rejectOnFail
+                = true;
+        }
+        m_graph.addLink(antResult.termVertexp, trigVtxp, antMatchp);
         resetScope();
 
         SvaStateVertex* bodyEntryp = trigVtxp;
@@ -2291,8 +2306,8 @@ class SvaNfaLowering final {
     void computeThroughoutReject(LowerCtx& c, SignalSet& sigs, const bool needThreadFailCount) {
         for (const V3GraphVertex& vtxr : c.graph.m_graph.vertices()) {
             const SvaStateVertex* const vtxp = static_cast<const SvaStateVertex*>(&vtxr);
-            const auto& conds = vtxp->m_throughoutConds;
-            if (conds.empty() && !vtxp->m_abortRejectp) continue;
+            const bool guardRejects = !vtxp->m_throughoutConds.empty() && !vtxp->m_isAntecedent;
+            if (!guardRejects && !vtxp->m_abortRejectp) continue;
             if (vtxp->m_isAndCombiner) continue;
             AstNodeExpr* stateExprp = nullptr;
             if (vtxp->datap()->stateVarp) {
@@ -2306,9 +2321,12 @@ class SvaNfaLowering final {
                 stateExprp = vtxp->datap()->stateSigp->cloneTreePure(false);
             }
             AstNodeExpr* guardp = nullptr;
-            for (AstNodeExpr* const cp : conds) {
-                AstNodeExpr* const sp = sampled(cp->cloneTreePure(false));
-                guardp = guardp ? static_cast<AstNodeExpr*>(new AstLogAnd{c.flp, guardp, sp}) : sp;
+            if (guardRejects) {
+                for (AstNodeExpr* const cp : vtxp->m_throughoutConds) {
+                    AstNodeExpr* const sp = sampled(cp->cloneTreePure(false));
+                    guardp = guardp ? static_cast<AstNodeExpr*>(new AstLogAnd{c.flp, guardp, sp})
+                                    : sp;
+                }
             }
             if (vtxp->m_abortRejectp) {
                 AstNodeExpr* const notAbortp

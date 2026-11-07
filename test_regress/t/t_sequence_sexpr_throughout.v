@@ -31,6 +31,12 @@ module t (
   int count_fail4 = 0;
   int count_fail5 = 0;
   int count_fail6 = 0;
+  int count_fail7 = 0;
+  int count_fail7_ref = 0;
+  int count_fail8 = 0;
+  int count_fail8_ref = 0;
+  int count_fail9 = 0;
+  int count_fail9_ref = 0;
 
   // Test 1: a |-> (cond throughout (1'b1 ##3 1'b1))
   // If a fires, cond must hold for 4 consecutive ticks (start + 3 delay ticks).
@@ -61,6 +67,28 @@ module t (
       a |-> (a throughout (b throughout (b ##1 c))))
   else count_fail6 <= count_fail6 + 1;
 
+  // Tests 7-9: throughout in the antecedent. A dropped guard means no antecedent match,
+  // so the implication is vacuously true (IEEE 1800-2023 16.12.7). Each is checked
+  // against the equivalent sequence without throughout.
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond throughout (1'b1 ##1 a)) |=> b)
+  else count_fail7 <= count_fail7 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond ##1 (cond && a)) |=> b)
+  else count_fail7_ref <= count_fail7_ref + 1;
+
+  // Delay ring in the antecedent
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond throughout (1'b1 ##3 1'b1)) |-> b)
+  else count_fail8 <= count_fail8 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond ##1 cond ##1 cond ##1 cond) |-> b)
+  else count_fail8_ref <= count_fail8_ref + 1;
+
+  // An abort still rejects during the antecedent
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      reject_on (c && a) ((cond throughout (1'b1 ##2 a)) |=> b))
+  else count_fail9 <= count_fail9 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10)
+      reject_on (c && a) ((cond ##1 cond ##1 (cond && a)) |=> b))
+  else count_fail9_ref <= count_fail9_ref + 1;
+
   // Throughout with range-delay, pure-boolean RHS: the range-delay SExpr
   // generates midSource vertices that inherit the throughout guard.
   // Exercises the throughoutCond clone path in wireMatchAndMidSources.
@@ -90,6 +118,12 @@ module t (
       // (propagating isTopLevelStep causes double-counting; fix is future work).
       `checkd(count_fail5, 25);  // All other sims: 36
       `checkd(count_fail6, 33);
+      `checkd(count_fail7, count_fail7_ref);
+      `checkd(count_fail8, count_fail8_ref);
+      `checkd(count_fail9, count_fail9_ref);
+`ifdef TEST_VERBOSE
+      $write("fail7=%0d fail8=%0d fail9=%0d\n", count_fail7, count_fail8, count_fail9);
+`endif
       $write("*-* All Finished *-*\n");
       $finish;
     end
