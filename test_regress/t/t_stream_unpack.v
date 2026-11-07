@@ -388,6 +388,8 @@ module t;
       automatic logic [11:0] got;
       {<<SLICE{got}} = 12'h123;
       `checkh(got, 12'h321);
+      {>>SLICE{got}} = 12'h456;
+      `checkh(got, 12'h456);
     end
 
     $write("*-* All Finished *-*\n");
