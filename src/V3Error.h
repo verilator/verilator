@@ -777,13 +777,15 @@ void v3errorEndFatal(std::ostringstream& sstr)
     do { \
         if (VL_UNCOVERABLE(!(condition))) (obj)->v3fatalSrc(stmsg); \
     } while (false)
-// For use in V3Ast static functions only
+// For use in V3Ast static functions only. The tree may be inconsistent or in use by
+// another thread, so abort without global shutdown or reentering structured error handling.
 #define UASSERT_STATIC(condition, stmsg) \
     do { \
         if (VL_UNCOVERABLE(!(condition))) { \
             std::cerr << "Internal Error: " << __FILE__ << ":" << std::dec << __LINE__ << ":" \
                       << (stmsg) << std::endl; \
-            V3Error::vlAbort(); \
+            VL_GCOV_DUMP(); \
+            std::abort(); \
         } \
     } while (false)
 /// Check self test values for expected value.  Safe from side-effects.
