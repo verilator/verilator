@@ -255,41 +255,6 @@ class BeginVisitor final : public VNVisitor {
         }
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
-    void visit(AstNodeBlock* nodep) override {
-        // Begin/Fork blocks were only useful in variable creation, change names and delete
-        UINFO(8, "  " << nodep);
-        VL_RESTORER_COPY(m_displayScope);
-        VL_RESTORER_COPY(m_namedScope);
-        VL_RESTORER_COPY(m_unnamedScope);
-        {
-            VL_RESTORER(m_keepBegins);
-            m_keepBegins = VN_IS(nodep, Fork);
-            dotNames(nodep->name(), nodep->fileline(),
-                     VN_IS(nodep, Fork) ? "__FORK__" : "__BEGIN__");
-            iterateChildren(nodep);
-        }
-
-        // Cleanup
-        if (m_keepBegins) {
-            nodep->name("");
-            return;
-        }
-        AstNode* addsp = nullptr;
-        if (AstNode* const declsp = nodep->declsp()) {
-            declsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, declsp);
-        }
-        if (AstNode* const stmtsp = nodep->stmtsp()) {
-            stmtsp->unlinkFrBackWithNext();
-            addsp = AstNode::addNext(addsp, stmtsp);
-        }
-        if (addsp) {
-            nodep->replaceWith(addsp);
-        } else {
-            nodep->unlinkFrBack();
-        }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
-    }
     void visit(AstVar* nodep) override {
         if (nodep->user1SetOnce()) { return; }
         // If static variable, move it outside a function.
