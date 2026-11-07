@@ -293,7 +293,8 @@ class GateBuildVisitor final : public VNVisitorConst {
         if (m_inSenItem) {
             vVtxp->setIsClock();
             vscp->user2(true);
-        } else if (m_inEdgeActive && nodep->access().isReadOnly()) {
+        } else if (m_inEdgeActive && nodep->access().isReadOnly()
+                   && !nodep->fileline()->warnIsOff(V3ErrorCode::SYNCASYNCNET)) {
             // For SYNCASYNCNET
             if (vscp->user2()) {
                 if (!vVtxp->rstAsyncNodep()) vVtxp->rstAsyncNodep(nodep);
