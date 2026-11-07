@@ -37,6 +37,8 @@ module t (
   int count_fail8_ref = 0;
   int count_fail9 = 0;
   int count_fail9_ref = 0;
+  int count_fail10 = 0;
+  int count_fail10_ref = 0;
 
   // Test 1: a |-> (cond throughout (1'b1 ##3 1'b1))
   // If a fires, cond must hold for 4 consecutive ticks (start + 3 delay ticks).
@@ -67,7 +69,7 @@ module t (
       a |-> (a throughout (b throughout (b ##1 c))))
   else count_fail6 <= count_fail6 + 1;
 
-  // Tests 7-9: throughout in the antecedent. A dropped guard means no antecedent match,
+  // Tests 7-10: throughout in the antecedent. A dropped guard means no antecedent match,
   // so the implication is vacuously true (IEEE 1800-2023 16.12.7). Each is checked
   // against the equivalent sequence without throughout.
   assert property (@(posedge clk) disable iff (cyc < 10) (cond throughout (1'b1 ##1 a)) |=> b)
@@ -88,6 +90,12 @@ module t (
   assert property (@(posedge clk) disable iff (cyc < 10)
       reject_on (c && a) ((cond ##1 cond ##1 (cond && a)) |=> b))
   else count_fail9_ref <= count_fail9_ref + 1;
+
+  // Antecedent ending in a repetition, which has no final condition of its own
+  assert property (@(posedge clk) disable iff (cyc < 10) (cond throughout (a [* 2])) |-> b)
+  else count_fail10 <= count_fail10 + 1;
+  assert property (@(posedge clk) disable iff (cyc < 10) ((cond && a) ##1 (cond && a)) |-> b)
+  else count_fail10_ref <= count_fail10_ref + 1;
 
   // Throughout with range-delay, pure-boolean RHS: the range-delay SExpr
   // generates midSource vertices that inherit the throughout guard.
@@ -121,8 +129,10 @@ module t (
       `checkd(count_fail7, count_fail7_ref);
       `checkd(count_fail8, count_fail8_ref);
       `checkd(count_fail9, count_fail9_ref);
+      `checkd(count_fail10, count_fail10_ref);
 `ifdef TEST_VERBOSE
-      $write("fail7=%0d fail8=%0d fail9=%0d\n", count_fail7, count_fail8, count_fail9);
+      $write("fail7=%0d fail8=%0d fail9=%0d fail10=%0d\n", count_fail7, count_fail8, count_fail9,
+             count_fail10);
 `endif
       $write("*-* All Finished *-*\n");
       $finish;
