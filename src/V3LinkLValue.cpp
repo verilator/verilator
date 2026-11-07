@@ -311,6 +311,13 @@ class LinkLValueVisitor final : public VNVisitor {
         m_setRefLvalue = VAccess::NOCHANGE;
         iterateAndNextNull(nodep->bitp());
     }
+    void visit(AstNodeStream* nodep) override {
+        VL_RESTORER(m_setRefLvalue);
+        // Only set lvalues on the streamed value, not on the slice size
+        iterateAndNextNull(nodep->lhsp());
+        m_setRefLvalue = VAccess::NOCHANGE;
+        iterateAndNextNull(nodep->rhsp());
+    }
     void visit(AstCellArrayRef* nodep) override {
         VL_RESTORER(m_setRefLvalue);
         // selp is not an lvalue

@@ -382,6 +382,14 @@ module t;
       end
     end
 
+    // A parameter as the slice size of a stream target is only read, not assigned
+    begin
+      localparam int SLICE = 4;
+      automatic logic [11:0] got;
+      {<<SLICE{got}} = 12'h123;
+      `checkh(got, 12'h321);
+    end
+
     $write("*-* All Finished *-*\n");
     $finish;
   end
