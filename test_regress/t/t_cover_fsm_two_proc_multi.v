@@ -383,6 +383,35 @@ module fsm_seqmix_off (
   end
 endmodule
 
+module fsm_if_chain_guard (
+    input logic clk,
+    input logic rst,
+    input logic sel
+);
+  localparam logic [1:0] S0 = 2'd0;
+  localparam logic [1:0] S1 = 2'd1;
+  localparam logic [1:0] S2 = 2'd2;
+
+  logic [1:0] state_q;
+  logic [1:0] state_d;
+
+  // Input guards inside the state branches of an if/else-if chain
+  always_comb begin
+    if (state_q == S0) begin
+      if (sel) state_d = S1;
+      else state_d = S2;
+    end
+    else if (state_q == S1) state_d = sel ? S2 : S0;
+    else if (state_q == S2) state_d = S0;
+    else state_d = S0;
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
 module t (
     input clk
 );
@@ -424,6 +453,11 @@ module t (
       .start(start)
   );
   fsm_ternary ternary_u (
+      .clk(clk),
+      .rst(rst),
+      .sel(sel)
+  );
+  fsm_if_chain_guard if_chain_guard_u (
       .clk(clk),
       .rst(rst),
       .sel(sel)

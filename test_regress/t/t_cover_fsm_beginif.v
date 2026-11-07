@@ -431,6 +431,32 @@ module fsm_if_case_priority (
   end
 endmodule
 
+// Ending a chain in else lets V3Const fold it into nested conditionals
+module fsm_if_else_chain_guard (
+    input logic clk,
+    input logic rst,
+    input logic start
+);
+  localparam logic [1:0] IDLE = 2'd0;
+  localparam logic [1:0] BUSY = 2'd1;
+  localparam logic [1:0] DONE = 2'd2;
+
+  logic [1:0] state_q;
+  logic [1:0] state_d;
+
+  always_comb begin
+    if (state_q == IDLE && start) state_d = BUSY;
+    else if (state_q == BUSY) state_d = DONE;
+    else if (state_q == DONE) state_d = IDLE;
+    else state_d = state_q;
+  end
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= IDLE;
+    else state_q <= state_d;
+  end
+endmodule
+
 module t (
     input logic clk
 );
@@ -525,6 +551,11 @@ module t (
   fsm_if_case_priority case_priority_u (
       .clk(clk),
       .rst(rst)
+  );
+  fsm_if_else_chain_guard else_chain_guard_u (
+      .clk(clk),
+      .rst(rst),
+      .start(start)
   );
 
   initial begin
