@@ -411,6 +411,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     }
     void visit(AstNodeCoverDecl*) override {}  // N/A
     void visit(AstCoverInc*) override {}  // N/A
+    void visit(AstCoverInsert*) override {}  // N/A
     void visit(AstCoverToggle*) override {}  // N/A
 
     void visit(AstCovergroup* nodep) override {

@@ -1892,6 +1892,54 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
 };
+class AstRSProd final : public AstNode {
+    // randomsequence production, under a AstRandSequence
+    // @astgen op1 := fvarp : Optional[AstVar]
+    // @astgen op2 := portsp : List[AstNode]
+    // @astgen op3 := rulesp : List[AstRSRule]
+    string m_name;  // Name of block, or "" to use first production
+public:
+    AstRSProd(FileLine* fl, const string& name, AstNode* portsp, AstRSRule* rulesp)
+        : ASTGEN_SUPER_RSProd(fl)
+        , m_name{name} {
+        addPortsp(portsp);
+        addRulesp(rulesp);
+    }
+    ASTGEN_MEMBERS_AstRSProd;
+    bool maybePointedTo() const override VL_MT_SAFE { return true; }
+    string name() const override VL_MT_STABLE { return m_name; }
+};
+class AstRSProdList final : public AstNode {
+    // randomsquence production list
+    // @astgen op1 := weightp : Optional[AstNodeExpr]
+    // @astgen op2 := prodsp : List[AstNode]
+    bool m_randJoin = false;  // Is rand join'ed
+public:
+    AstRSProdList(FileLine* fl, AstNodeExpr* weightp, AstNode* prodsp)
+        : ASTGEN_SUPER_RSProdList(fl) {
+        this->weightp(weightp);
+        addProdsp(prodsp);
+    }
+    ASTGEN_MEMBERS_AstRSProdList;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool randJoin() const { return m_randJoin; }
+    void randJoin(bool flag) { m_randJoin = flag; }
+};
+class AstRSRule final : public AstNode {
+    // randomsquence rule
+    // @astgen op1 := weightp : Optional[AstNodeExpr]
+    // @astgen op2 := prodlistsp : List[AstRSProdList]
+    // @astgen op3 := weightStmtsp : List[AstNode]
+public:
+    AstRSRule(FileLine* fl, AstNodeExpr* weightp, AstRSProdList* prodlistsp, AstNode* weightStmtsp)
+        : ASTGEN_SUPER_RSRule(fl) {
+        this->weightp(weightp);
+        addProdlistsp(prodlistsp);
+        addWeightStmtsp(weightStmtsp);
+    }
+    ASTGEN_MEMBERS_AstRSRule;
+};
 class AstScope final : public AstNode {
     // A particular usage of a cell
     // Parents: MODULE
@@ -1907,6 +1955,7 @@ class AstScope final : public AstNode {
 
     // An AstScope->name() is special: . indicates an uninlined scope, __DOT__ an inlined scope
     string m_name;  // Name
+    int m_threadsGroupWorker = -1;  // threads_group -workers worker, or -1 for automatic
 public:
     AstScope(FileLine* fl, AstNodeModule* modp, const string& name, AstScope* aboveScopep,
              AstCell* aboveCellp)
@@ -1937,6 +1986,8 @@ public:
     AstCell* aboveCellp() const { return m_aboveCellp; }
     void aboveCellp(AstCell* nodep) { m_aboveCellp = nodep; }
     bool isTop() const VL_MT_SAFE { return aboveScopep() == nullptr; }  // At top of hierarchy
+    int threadsGroupWorker() const { return m_threadsGroupWorker; }
+    void threadsGroupWorker(int worker) { m_threadsGroupWorker = worker; }
 };
 class AstSenItem final : public AstNode {
     // Parents:  SENTREE

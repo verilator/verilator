@@ -563,6 +563,25 @@ public:
     void declp(AstNodeCoverDecl* nodep) { m_declp = nodep; }
     bool isDuplicate() const { return m_isDuplicate; }
 };
+class AstCoverInsert final : public AstNodeStmt {
+    // Register coverage point with the coverage database
+    // @astgen ptr := m_declp : AstNodeCoverDecl  // Declaration
+public:
+    AstCoverInsert(FileLine* fl, AstNodeCoverDecl* declp)
+        : ASTGEN_SUPER_CoverInsert(fl)
+        , m_declp{declp} {}
+    ASTGEN_MEMBERS_AstCoverInsert;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
+    bool sameNode(const AstNode* samep) const override {
+        return declp() == VN_DBG_AS(samep, CoverInsert)->declp();
+    }
+    bool isGateOptimizable() const override { return false; }
+    bool isPredictOptimizable() const override { return false; }
+    bool isOutputter() override { return true; }
+    bool isPure() override { return false; }
+    AstNodeCoverDecl* declp() const { return m_declp; }
+};
 class AstDeassign final : public AstNodeStmt {
     // Procedural 'deassign' statement
     // @astgen op1 := lhsp : AstNodeExpr
@@ -1089,24 +1108,6 @@ public:
     string verilogKwd() const override { return "break"; }
     bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
 };
-class AstRSProd final : public AstNodeStmt {
-    // randomsequence production, under a AstRandSequence
-    // @astgen op1 := fvarp : Optional[AstVar]
-    // @astgen op2 := portsp : List[AstNode]
-    // @astgen op3 := rulesp : List[AstRSRule]
-    string m_name;  // Name of block, or "" to use first production
-public:
-    AstRSProd(FileLine* fl, const string& name, AstNode* portsp, AstRSRule* rulesp)
-        : ASTGEN_SUPER_RSProd(fl)
-        , m_name{name} {
-        addPortsp(portsp);
-        addRulesp(rulesp);
-    }
-    ASTGEN_MEMBERS_AstRSProd;
-    bool maybePointedTo() const override VL_MT_SAFE { return true; }
-    string name() const override VL_MT_STABLE { return m_name; }
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-};
 class AstRSProdItem final : public AstNodeStmt {
     // randomsquence production item
     // @astgen op1 := argsp : List[AstArg]
@@ -1124,24 +1125,6 @@ public:
     AstRSProd* prodp() const { return m_prodp; }
     void prodp(AstRSProd* nodep) { m_prodp = nodep; }
 };
-class AstRSProdList final : public AstNodeStmt {
-    // randomsquence production list
-    // @astgen op1 := weightp : Optional[AstNodeExpr]
-    // @astgen op2 := prodsp : List[AstNode]
-    bool m_randJoin = false;  // Is rand join'ed
-public:
-    AstRSProdList(FileLine* fl, AstNodeExpr* weightp, AstNode* prodsp)
-        : ASTGEN_SUPER_RSProdList(fl) {
-        this->weightp(weightp);
-        addProdsp(prodsp);
-    }
-    ASTGEN_MEMBERS_AstRSProdList;
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
-    bool randJoin() const { return m_randJoin; }
-    void randJoin(bool flag) { m_randJoin = flag; }
-};
 class AstRSReturn final : public AstNodeStmt {
     // randsequence return
 public:
@@ -1150,21 +1133,6 @@ public:
     ASTGEN_MEMBERS_AstRSReturn;
     string verilogKwd() const override { return "return"; }
     bool isBrancher() const override { V3ERROR_NA_RETURN(true); }  // Node removed early
-};
-class AstRSRule final : public AstNodeStmt {
-    // randomsquence rule
-    // @astgen op1 := weightp : Optional[AstNodeExpr]
-    // @astgen op2 := prodlistsp : List[AstRSProdList]
-    // @astgen op3 := weightStmtsp : List[AstNode]
-public:
-    AstRSRule(FileLine* fl, AstNodeExpr* weightp, AstRSProdList* prodlistsp, AstNode* weightStmtsp)
-        : ASTGEN_SUPER_RSRule(fl) {
-        this->weightp(weightp);
-        addProdlistsp(prodlistsp);
-        addWeightStmtsp(weightStmtsp);
-    }
-    ASTGEN_MEMBERS_AstRSRule;
-    int instrCount() const override { return INSTR_COUNT_BRANCH; }
 };
 class AstRandCase final : public AstNodeStmt {
     // @astgen op2 := itemsp : List[AstCaseItem]
@@ -1626,15 +1594,24 @@ public:
 class AstAssignW final : public AstNodeAssign {
     // Like assign, but wire/assign's in verilog, the only setting of the specified variable
     // @astgen op4 := strengthSpecp : Optional[AstStrengthSpec]
+    bool m_declInit : 1;  // Lowered declaration initializer of the net
 public:
     AstAssignW(FileLine* fl, AstNodeExpr* lhsp, AstNodeExpr* rhsp,
                AstNode* timingControlp = nullptr)
-        : ASTGEN_SUPER_AssignW(fl, lhsp, rhsp, timingControlp) {}
+        : ASTGEN_SUPER_AssignW(fl, lhsp, rhsp, timingControlp)
+        , m_declInit{false} {}
     ASTGEN_MEMBERS_AstAssignW;
+    void dump(std::ostream& str) const override;
+    void dumpJson(std::ostream& str) const override;
     AstNodeAssign* cloneType(AstNodeExpr* lhsp, AstNodeExpr* rhsp) override {
         AstNode* const controlp = timingControlp() ? timingControlp()->cloneTree(false) : nullptr;
-        return new AstAssignW{fileline(), lhsp, rhsp, controlp};
+        AstAssignW* const clonep = new AstAssignW{fileline(), lhsp, rhsp, controlp};
+        clonep->m_declInit = m_declInit;
+        return clonep;
     }
+    // Set by the parser on the assign it creates for a net's declaration initializer
+    void declInit(bool set) { m_declInit = set; }
+    bool declInit() const { return m_declInit; }
     bool isTimingControl() const override {
         return timingControlp() || lhsp()->exists([](const AstNodeVarRef* refp) {
             return refp->access().isWriteOrRW() && refp->varp()->delayp();

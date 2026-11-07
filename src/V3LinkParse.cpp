@@ -1523,11 +1523,14 @@ class LinkParseVisitor final : public VNVisitor {
 
     void visit(AstCoverBin* nodep) override {
         cleanFileline(nodep);
-        if (!m_coverpointp && VN_IS(nodep->rangesp(), CoverWith)) {
-            // A 'with' filter's candidates are of its coverpoint's type
-            nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
-                                               "coverpoint; bin "
-                                                   << nodep->prettyNameQ() << " ignored");
+        // Outside a coverpoint, as of a bare '{ bins ... }' item, there is nothing to bin
+        if (!m_coverpointp) {
+            if (VN_IS(nodep->rangesp(), CoverWith)) {
+                // A 'with' filter's candidates are of its coverpoint's type
+                nodep->rangesp()->v3warn(COVERIGN, "Unsupported: 'with' in cover bin outside a "
+                                                   "coverpoint; bin "
+                                                       << nodep->prettyNameQ() << " ignored");
+            }
             VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
             return;
         }

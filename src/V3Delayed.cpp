@@ -46,9 +46,9 @@
 // means an NBA in such a function may be executed by different classes of logic.
 //
 // NBAs in combinational logic cannot be supported. These have either been
-// rejected earlier in V3Active with a COMBDLY error, or will be rejected
-// in this pass with a COMBDLYCALL error if performed by a non-inlined function
-// which is called from combinational logic.
+// converted to blocking assignments earlier in V3Active with a COMBDLY warning,
+// or will be rejected in this pass with a COMBDLYCALL error if performed by a
+// non-inlined function which is called from combinational logic.
 //
 // For the choice of the correct scheme, it is also necessary to know if the
 // target of an NBA also has other blocking writes also targeting it.

@@ -227,10 +227,8 @@ class BitBlastVisitor final : public VNVisitorConst, public VNDeleter {
         std::string name = varp->name() + "__BRA__" + AstNode::encodeNumber(msb);
         if (width > 1) name += AstNode::encodeName(":") + AstNode::encodeNumber(lsb);
         name += "__KET__";
-        AstNodeDType* const dtypep = varp->dtypep()->isFourstate()
-                                         ? varp->findLogicDType(width, width, VSigning::UNSIGNED)
-                                         : varp->findBitDType(width, width, VSigning::UNSIGNED);
-        fragVarpr = new AstVar{varp->fileline(), varp->varType(), name, dtypep};
+        fragVarpr = new AstVar{varp->fileline(), varp->varType(), name,
+                               varp->findBitDType(width, width, VSigning::UNSIGNED)};
         fragVarpr->propagateSplitAttrFrom(varp);
         varp->addHereThisAsNext(fragVarpr);
         return fragVarpr;

@@ -1193,6 +1193,38 @@ gets reset, so that it can be reused by subsequent randomization attempts:
    (reset)
 
 
+Constraint solver back-ends
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the internals of Verilator, the randomization pass is split into a
+solver-neutral front end, ``V3Randomize.cpp``, and a constraint solver
+back-end implementing the ``V3SolverBackend`` interface
+(``V3SolverBackend.h``). ``v3Global.solverBackendp()`` is the back-end for
+the run; the SMT-LIB back-end, ``V3SolverSmt.cpp``, is currently the only
+one. For each ``V3Randomize`` pass, the back-end creates a
+``V3SolverLowering``, which lowers the randomize sites.
+
+The front end handles everything that does not depend on the solver:
+``pre_randomize``/``post_randomize`` callbacks, ``rand_mode`` and
+``constraint_mode`` state, randomization of unconstrained variables
+(``__VBasicRand``), ``randomize()`` arguments, and the capture of inline
+``with`` expressions. The lowering handles the constraints of each
+randomize site: a class ``randomize()``, a ``randomize() with``, a
+``std::randomize() with`` and a ``randomize(null)``. Each site is lowered
+by one hook, which the front end calls at a fixed point of its own
+lowering. A hook returns the solver result for the front end to combine
+with ``__VBasicRand``, except for ``randomize() with``, where the hook
+assigns the return value itself.
+
+The back-end also describes the runtime library its generated code needs:
+the header to include, the runtime sources to compile with the model, and
+the flags added to the generated makefile.
+
+The contract between the two halves (which variables the back-end owns, how
+the mode state is passed, which AST the back-end may rewrite) is documented
+at the top of ``V3SolverBackend.cpp``.
+
+
 Coding Conventions
 ==================
 
