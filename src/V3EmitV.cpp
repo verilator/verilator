@@ -1570,7 +1570,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstActive* nodep) override {
         VL_RESTORER(m_sentreep);
         m_sentreep = nodep->sentreep();
-        iterateAndNextConstNull(nodep->stmtsp());
+        iterateAndNextConstNull(nodep->procsp());
     }
     void visit(AstDelay* nodep) override {
         puts("");  // this is for proper alignment

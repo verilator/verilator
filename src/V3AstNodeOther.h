@@ -484,7 +484,7 @@ class AstActive final : public AstNode {
     // Block of code with sensitivity activation
     // Parents:  MODULE | CFUNC
     // @astgen op1 := senTreeStorep : Optional[AstSenTree] // Moved into m_sensesp in V3Active
-    // @astgen op2 := stmtsp : List[AstNode] // Logic
+    // @astgen op2 := procsp : List[AstNodeProcedure] // The processes
     //
     // @astgen ptr := m_sentreep : Optional[AstSenTree]  // Sensitivity list for this process
     string m_name;

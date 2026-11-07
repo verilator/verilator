@@ -59,23 +59,23 @@ namespace {
 
 class SchedAcyclicLogicVertex final : public V3GraphVertex {
     VL_RTTI_IMPL(SchedAcyclicLogicVertex, V3GraphVertex)
-    AstNode* const m_logicp;  // The logic node this vertex represents
+    AstNodeProcedure* const m_procp;  // The process this vertex represents
     AstScope* const m_scopep;  // The enclosing AstScope of the logic node
 
 public:
-    SchedAcyclicLogicVertex(V3Graph* graphp, AstNode* logicp, AstScope* scopep)
+    SchedAcyclicLogicVertex(V3Graph* graphp, AstNodeProcedure* procp, AstScope* scopep)
         : V3GraphVertex{graphp}
-        , m_logicp{logicp}
+        , m_procp{procp}
         , m_scopep{scopep} {}
     V3GraphVertex* clone(V3Graph* graphp) const override {
-        return new SchedAcyclicLogicVertex{graphp, logicp(), scopep()};
+        return new SchedAcyclicLogicVertex{graphp, procp(), scopep()};
     }
 
-    AstNode* logicp() const { return m_logicp; }
+    AstNodeProcedure* procp() const { return m_procp; }
     AstScope* scopep() const { return m_scopep; }
 
     // LCOV_EXCL_START // Debug code
-    string name() const override VL_MT_STABLE { return m_logicp->fileline()->ascii(); };
+    string name() const override VL_MT_STABLE { return m_procp->fileline()->ascii(); };
     string dotShape() const override { return "rectangle2"; }
     // LCOV_EXCL_STOP
 };
@@ -104,14 +104,14 @@ public:
 class Graph final : public V3Graph {
     string loopsVertexCb(V3GraphVertex* vtxp) override {
         if (SchedAcyclicLogicVertex* const lvtxp = vtxp->cast<SchedAcyclicLogicVertex>()) {
-            AstNode* const logicp = lvtxp->logicp();
-            std::string logicName = logicp->prettyTypeName();
-            if (const AstAlways* const alwaysp = VN_CAST(logicp, Always)) {
+            AstNode* const procp = lvtxp->procp();
+            std::string logicName = procp->prettyTypeName();
+            if (const AstAlways* const alwaysp = VN_CAST(procp, Always)) {
                 if (alwaysp->keyword() == VAlwaysKwd::CONT_ASSIGN) {
                     logicName = "ASSIGNW";  // Keep using historiacl name until we have better
                 }
             }
-            return logicp->fileline()->warnOther() + "     Example path: " + logicName + "\n";
+            return procp->fileline()->warnOther() + "     Example path: " + logicName + "\n";
         } else {
             SchedAcyclicVarVertex* const vvtxp = vtxp->as<SchedAcyclicVarVertex>();
             AstVarScope* const vscp = vvtxp->vscp();
@@ -142,7 +142,7 @@ std::unique_ptr<Graph> buildGraph(const LogicByScope& lbs) {
         AstScope* const scopep = entry.m_scopep;
         AstActive* const activep = entry.m_activep;
         UASSERT_OBJ(activep->hasCombo(), activep, "Not combinational logic");
-        for (AstNode* const nodep : activep->stmtspList()) {
+        for (AstNodeProcedure* const nodep : activep->procspList()) {
             // Can safely ignore Postponed as we generate them all
             if (VN_IS(nodep, AlwaysPostponed)) continue;
 
@@ -438,8 +438,8 @@ void dumpSccs(V3Graph* graphp) {
         for (V3GraphVertex* vtxp : vtxps) {
             const SchedAcyclicLogicVertex* const lvtxp = vtxp->cast<SchedAcyclicLogicVertex>();
             if (!lvtxp) continue;
-            *ofp << "// " << lvtxp->logicp()->fileline()->ascii() << "\n";
-            V3EmitV::debugVerilogForTree(lvtxp->logicp(), *ofp);
+            *ofp << "// " << lvtxp->procp()->fileline()->ascii() << "\n";
+            V3EmitV::debugVerilogForTree(lvtxp->procp(), *ofp);
             *ofp << "\n";
         }
     }
@@ -457,7 +457,7 @@ LogicByScope fixCuts(AstNetlist* netlistp,
             for (V3GraphEdge& edge : vvtxp->outEdges()) {
                 SchedAcyclicLogicVertex* const lvtxp
                     = static_cast<SchedAcyclicLogicVertex*>(edge.top());
-                if (!lvtxp->logicp()->user1SetOnce()) lvtxps.push_back(lvtxp);
+                if (!lvtxp->procp()->user1SetOnce()) lvtxps.push_back(lvtxp);
                 lvtx2Cuts[lvtxp].push_back(vvtxp->vscp());
             }
         }
@@ -468,9 +468,9 @@ LogicByScope fixCuts(AstNetlist* netlistp,
     LogicByScope result;
     SenTreeFinder finder{netlistp};
     for (SchedAcyclicLogicVertex* const lvtxp : lvtxps) {
-        AstNode* const logicp = lvtxp->logicp();
-        logicp->unlinkFrBack();
-        FileLine* const flp = logicp->fileline();
+        AstNodeProcedure* const procp = lvtxp->procp();
+        procp->unlinkFrBack();
+        FileLine* const flp = procp->fileline();
         // Build the hybrid sensitivity list
         AstSenItem* senItemsp = nullptr;
         for (AstVarScope* const vscp : lvtx2Cuts[lvtxp]) {
@@ -480,7 +480,7 @@ LogicByScope fixCuts(AstNetlist* netlistp,
         }
         AstSenTree* const senTreep = new AstSenTree{flp, senItemsp};
         // Add logic to result with new sensitivity
-        result.add(lvtxp->scopep(), finder.getSenTree(senTreep), logicp);
+        result.add(lvtxp->scopep(), finder.getSenTree(senTreep), procp);
         // SenTreeFinder::getSenTree clones, so clean up
         VL_DO_DANGLING(senTreep->deleteTree(), senTreep);
     }

@@ -903,7 +903,7 @@ class TimingControlVisitor final : public VNVisitor {
         auto* const activep = new AstActive{
             flp, "", new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Initial{}}}};
         activep->senTreeStorep(activep->sentreep());
-        activep->addStmtsp(initialp);
+        activep->addProcsp(initialp);
         m_activep->addNextHere(activep);
         VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
     }

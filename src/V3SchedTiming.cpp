@@ -90,10 +90,11 @@ AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
             AstActive* const activep = entry.m_activep;
             // Resume time delays last. For no particular reason other than
             // that's what we used to do prior to proper #0 support.
-            AstVarRef* const schedrefp = VN_AS(
-                VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
+            AstStmtExpr* const resumeStmtp = VN_AS(activep->procsp()->stmtsp(), StmtExpr);
+            AstVarRef* const schedrefp
+                = VN_AS(VN_AS(resumeStmtp->exprp(), CMethodHard)->fromp(), VarRef);
 
-            AstNode* const actionp = activep->stmtsp()->unlinkFrBackWithNext();
+            AstNode* const actionp = resumeStmtp->unlinkFrBack();
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
                 FileLine* const flp = trigVscp->fileline();
                 const std::set<uint32_t>& triggers = entry.m_triggers;
@@ -118,9 +119,9 @@ AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
 AstVarScope* TimingKit::getDelayScheduler(AstNetlist* const /*netlistp*/) {
     for (const auto& entry : m_lbs) {
         AstActive* const ap = entry.m_activep;
-        // TODO: this triple VN_AS expression is ridiculous
+        AstStmtExpr* const resumeStmtp = VN_AS(ap->procsp()->stmtsp(), StmtExpr);
         AstVarRef* const schedrefp
-            = VN_AS(VN_AS(VN_AS(ap->stmtsp(), StmtExpr)->exprp(), CMethodHard)->fromp(), VarRef);
+            = VN_AS(VN_AS(resumeStmtp->exprp(), CMethodHard)->fromp(), VarRef);
         AstVarScope* const vscp = schedrefp->varScopep();
         if (vscp->dtypep()->basicp()->isDelayScheduler()) return vscp;
     }
@@ -135,7 +136,8 @@ AstCCall* TimingKit::createReady(AstVarScope* trigVscp) {
     if (!m_readyFuncp) {
         for (const auto& entry : m_lbs) {
             AstActive* const activep = entry.m_activep;
-            auto* const resumep = VN_AS(VN_AS(activep->stmtsp(), StmtExpr)->exprp(), CMethodHard);
+            auto* const resumep
+                = VN_AS(VN_AS(activep->procsp()->stmtsp(), StmtExpr)->exprp(), CMethodHard);
             UASSERT_OBJ(!resumep->nextp(), resumep, "Should be the only statement here");
             AstVarScope* const schedulerp = VN_AS(resumep->fromp(), VarRef)->varScopep();
             UASSERT_OBJ(schedulerp->dtypep()->basicp()->isDelayScheduler()

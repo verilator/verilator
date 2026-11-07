@@ -2349,7 +2349,7 @@ class TaskVisitor final : public VNVisitor {
             AstActive* const activep
                 = new AstActive{nodep->fileline(), "force-func-update", senTreep};
             activep->senTreeStorep(activep->sentreep());
-            activep->addStmtsp(
+            activep->addProcsp(
                 new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, nullptr, assignp});
             m_scopep->addBlocksp(activep);
 
