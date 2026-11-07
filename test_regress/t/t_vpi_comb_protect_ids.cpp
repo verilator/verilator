@@ -24,9 +24,6 @@ namespace {
 // --protect-ids hashes non-top identifiers; recover 'realName's hash from the idmap.xml
 // that sits next to the model binary, as TEST_OBJ_DIR is not defined for a PLI plugin
 std::string hashedName(const std::string& realName) {
-#ifdef T_VPI_UNPROTECTED
-    return realName;
-#else
     s_vpi_vlog_info vlogInfo{};
     vpi_get_vlog_info(&vlogInfo);
     const std::string idmapPath = std::string{vlogInfo.argv[0]} + "__idmap.xml";
@@ -50,7 +47,6 @@ std::string hashedName(const std::string& realName) {
     std::printf("%%Error: %s:%d: no idmap entry for '%s'\n", __FILE__, __LINE__, realName.c_str());
     ++errors;
     return "";
-#endif
 }
 
 void checkInt(const std::string& name, int expected) {
