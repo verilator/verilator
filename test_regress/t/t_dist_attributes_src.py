@@ -49,4 +49,21 @@ test.run(logfile=test.run_log_filename,
 
 test.file_grep(test.run_log_filename, r'Number of functions reported unsafe: +(\d+)', 0)
 
+# Source-only checked conversions must terminate without compiler global teardown.
+executable = test.obj_dir + "/user_slots"
+flags = "--coverage -DVL_GCOV" if test.have_dev_gcov else ""
+if test.have_dev_asan:
+    flags += " -fsanitize=address"
+test.run(cmd=[
+    os.environ['CXX'], "-std=c++17", "-pthread", flags, "-I" + test.root + "/include",
+    "-I" + test.root + "/src", "-I" + test.root + "/src/obj_dbg",
+    "-I" + test.root + "/src/obj_opt", "t/t_dist_attributes_src.cpp", "-o", executable
+])
+test.run(cmd=[executable], logfile=test.obj_dir + "/slots_valid.log")
+for mode, golden in [("integer", "t/t_dist_attributes_src_integer.out"),
+                     ("pointer", "t/t_dist_attributes_src_pointer.out"),
+                     ("worker", "t/t_dist_attributes_src_integer.out")]:
+    test.run(cmd=[executable, mode], fails='any',
+             logfile=test.obj_dir + "/slots_" + mode + ".log", expect_filename=golden)
+
 test.passes()
