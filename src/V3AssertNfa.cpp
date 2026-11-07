@@ -325,7 +325,8 @@ class SvaNfaBuilder final {
     std::vector<AstNodeExpr*> m_outerAbortStack;
     bool m_inUnboundedScope = false;  // Sticky: nodes created after inherit liveness
     bool m_markStrongPending = false;  // Mark new vertices as strong s_always in-window
-    bool m_isCover = false;  // Cover directives do not fail at end-of-simulation
+    // A cover only records matches, so a pending obligation at $finish is not a failure
+    bool m_noEosFailure = false;
     // IEEE 1800-2023 16.14.3 cover sequence: each end-of-match fires the action,
     // not just the first. Builder builds parallel-branch (no first-match-wins)
     // topology when true. Default false preserves cover_property semantics.
@@ -885,7 +886,7 @@ class SvaNfaBuilder final {
         // not flagged; an attempt whose final tick coincides with $finish is still
         // flagged, matching the strong reference. Weak always[m:n] is not marked.
         VL_RESTORER(m_markStrongPending);
-        m_markStrongPending = nodep->isStrong();
+        m_markStrongPending = nodep->isStrong() && !m_noEosFailure;
         // Check the first in-window tick, then reuse a guarded fixed-delay ring
         // for the remaining ticks instead of creating one state per cycle.
         SvaStateVertex* currentp = addDelayChain(entryVtxp, lo, flp);
@@ -1417,7 +1418,7 @@ class SvaNfaBuilder final {
         SvaStateVertex* const waitCp = scopedCreateVertex();
         SvaStateVertex* const waitRp = scopedCreateVertex();
         waitCp->m_isUnbounded = true;
-        waitRp->m_strongPending = nodep->isStrong() && !m_isCover;
+        waitRp->m_strongPending = nodep->isStrong() && !m_noEosFailure;
 
         // Entry and back-loop Links carry no condition; throughout-folding still applies.
         guardedLink(entryVtxp, waitCp, flp);
@@ -1613,11 +1614,11 @@ public:
     }
 
     SvaNfaBuilder(SvaGraph& graph, AstNodeModule* modp, V3UniqueNames& propTempNames,
-                  bool isCoverSeq = false, bool isSeqEvent = false, bool isCover = false)
+                  bool isCoverSeq = false, bool isSeqEvent = false, bool noEosFailure = false)
         : m_graph{graph}
         , m_modp{modp}
         , m_propTempNames{propTempNames}
-        , m_isCover{isCover}
+        , m_noEosFailure{noEosFailure}
         , m_isCoverSeq{isCoverSeq}
         , m_isSeqEvent{isSeqEvent} {}
 
@@ -2890,11 +2891,18 @@ public:
             AstCExpr* const assertOnp
                 = new AstCExpr{flp, AstCExpr::Pure{}, "vlSymsp->_vm_contextp__->assertOn()", 1};
             AstNodeExpr* const condp = new AstLogAnd{flp, assertOnp, pendingp};
-            AstDisplay* const dispp
-                = new AstDisplay{flp, VDisplayType::DT_ERROR, "", nullptr, nullptr};
-            dispp->fmtp()->timeunit(m_modp->timeunit());
-            AstNodeStmt* const firep = dispp;
-            if (v3Global.opt.stopFail()) firep->addNext(new AstStop{flp, false});
+            // The action block belongs to the directive (IEEE 1800-2023 16.14.6)
+            AstNode* firep;
+            AstAssert* const assertNodep = VN_CAST(assertp, Assert);
+            if (AstNode* const failsp = assertNodep ? assertNodep->failsp() : nullptr) {
+                firep = failsp->cloneTree(true);
+            } else {
+                AstDisplay* const dispp
+                    = new AstDisplay{flp, VDisplayType::DT_ERROR, "", nullptr, nullptr};
+                dispp->fmtp()->timeunit(m_modp->timeunit());
+                firep = dispp;
+                if (v3Global.opt.stopFail()) firep->addNext(new AstStop{flp, false});
+            }
             m_modp->addStmtsp(new AstFinal{flp, new AstIf{flp, condp, firep}});
         }
 
@@ -3493,6 +3501,10 @@ class AssertNfaVisitor final : public VNVisitor {
             VL_RESTORER(m_sampledValueClockp);
             m_sampledValueClockp = senTreep;
             iterate(propp->propp());
+            // The final block clones the action block, so resolve its clocks while in scope
+            if (AstAssert* const ap = VN_CAST(assertp, Assert)) {
+                iterateAndNextNull(ap->failsp());
+            }
         }
 
         FileLine* const flp = assertp->fileline();
