@@ -943,7 +943,7 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    static AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
+    static AstNodeStmt* createDpiTemp(AstVar* portp, const string& suffix) {
         const string stmt = portp->dpiTmpVarType(portp->name() + suffix) + ";";
         return new AstCStmt{portp->fileline(), stmt};
     }
@@ -972,8 +972,8 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    static AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
-                                              const string& toSuffix) {
+    static AstNodeStmt* createAssignInternalToDpi(AstVar* portp, bool isPtr,
+                                                  const string& frSuffix, const string& toSuffix) {
         const string stmt = V3Task::assignInternalToDpi(portp, isPtr, frSuffix, toSuffix);
         return new AstCStmt{portp->fileline(), stmt};
     }
@@ -1195,7 +1195,7 @@ class TaskVisitor final : public VNVisitor {
         // First argument is the Syms
         callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
         // Add function arguments
-        AstNode* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
+        AstNodeStmt* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
         for (AstNode* const stmtp : nodep->stmtspList()) {
             AstVar* const portp = VN_CAST(stmtp, Var);
             if (!portp) continue;
@@ -1438,7 +1438,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Convert input/inout arguments to DPI types
         string args;
-        AstNode* copyBacksp = nullptr;  // Statements copying back open array copies
+        AstNodeStmt* copyBacksp = nullptr;  // Statements copying back open array copies
         for (AstNode* const stmtp : cfuncp->argspList()) {
             AstVar* const portp = VN_CAST(stmtp, Var);
             if (!portp) continue;

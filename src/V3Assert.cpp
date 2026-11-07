@@ -652,7 +652,7 @@ class AssertVisitor final : public VNVisitor {
             exprp = nextp;
         }
     }
-    static AstIf* newIfAssertOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+    static AstIf* newIfAssertOn(AstNodeStmt* bodyp, VAssertDirectiveType directiveType,
                                 VAssertType type = VAssertType::INTERNAL) {
         // Add an internal if to check assertions are on.
         // Don't make this an AND term, as it's unlikely to need to test this.
@@ -1081,7 +1081,7 @@ class AssertVisitor final : public VNVisitor {
                 flp, VVarType::MODULETEMP, m_matchCountNames.get(""), matchCountp->dtypep()};
             remainingp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(remainingp);
-            AstNode* const replaysp
+            AstNodeStmt* const replaysp
                 = new AstAssign{flp, new AstVarRef{flp, remainingp, VAccess::WRITE}, matchCountp};
             AstLoop* const loopp = new AstLoop{flp};
             loopp->addStmtsp(
@@ -1095,11 +1095,12 @@ class AssertVisitor final : public VNVisitor {
             replaysp->addNext(loopp);
             passsp = replaysp;
         }
-        AstNode* bodysp = assertBody(nodep, propExprp, passsp, failsp);
+        AstNodeStmt* bodysp = assertBody(nodep, propExprp, passsp, failsp);
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};
         // Add assertOn check last, for better combining
         if (!seqEvent) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
-        if (sentreep) bodysp = new AstAlways{flp, VAlwaysKwd::ALWAYS, sentreep, bodysp};
+        AstNode* newp = bodysp;
+        if (sentreep) newp = new AstAlways{flp, VAlwaysKwd::ALWAYS, sentreep, bodysp};
 
         if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);
         if (failsp && !failsp->backp()) VL_DO_DANGLING(pushDeletep(failsp), failsp);
@@ -1108,10 +1109,10 @@ class AssertVisitor final : public VNVisitor {
         if (selfDestruct) {
             // Delete it after making the tree.  This way we can tell the user
             // if it wasn't constructed nicely or has other errors without needing --coverage.
-            VL_DO_DANGLING(bodysp->deleteTree(), bodysp);
+            VL_DO_DANGLING(newp->deleteTree(), newp);
             nodep->unlinkFrBack();
         } else {
-            nodep->replaceWith(bodysp);
+            nodep->replaceWith(newp);
         }
         // Bye
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1572,7 +1573,7 @@ class AssertVisitor final : public VNVisitor {
                                                      new AstConst{fl, AstConst::BitTrue{}}};
             nodep->replaceWith(newsetp);
             // Add "always_comb if (__Vstrobe) begin $display(...); __Vstrobe = '0; end"
-            AstNode* const stmtsp = nodep;
+            AstNodeStmt* const stmtsp = nodep;
             AstIf* const ifp = new AstIf{fl, new AstVarRef{fl, varp, VAccess::READ}, stmtsp};
             ifp->isBoundsCheck(true);  // To avoid LATCH warning
             ifp->branchPred(VBranchPred::BP_UNLIKELY);

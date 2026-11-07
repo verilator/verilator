@@ -83,7 +83,7 @@ class V3CCtorsBuilder final {
     }
 
 public:
-    void add(AstNode* nodep) {
+    void add(AstNodeStmt* nodep) {
         if (m_newFunctions.empty()) m_newFunctions.push_back(makeNewFunc());
         if (v3Global.opt.outputSplitCFuncs() && m_numStmts > v3Global.opt.outputSplitCFuncs()) {
             m_newFunctions.push_back(makeNewFunc());
@@ -200,7 +200,7 @@ class CCtorsVisitor final : public VNVisitor {
         m_varResetp = nullptr;
         m_cfuncp = nodep;
         // Arguments are not reset, locals are reset at the start of the body
-        AstNode* resetsp = nullptr;
+        AstAssign* resetsp = nullptr;
         for (AstVar* const varp : nodep->varspList()) {
             if (varp->needsCReset()) resetsp = AstNode::addNext(resetsp, newResetp(varp));
         }

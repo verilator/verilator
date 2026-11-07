@@ -986,7 +986,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     }
 
     // Add a statement sampling the current coverpoint to sample(), under its iff guard if any
-    void addSampleStmt(AstNode* stmtp) {
+    void addSampleStmt(AstNodeStmt* stmtp) {
         if (m_cpGuardp) {
             m_cpGuardp->addThensp(stmtp);
         } else {
@@ -1817,7 +1817,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void emitConvHitIf(AstCoverpoint* coverpointp, AstCoverBin* binp, AstVar* cpVarp,
                        AstNodeExpr* idxp, AstNodeExpr* condp) {
         FileLine* const fl = binp->fileline();
-        AstNode* actionp = makeRuntimeBinHit(fl, cpVarp, idxp, binp->binsType().binIsNormal());
+        AstNodeStmt* actionp = makeRuntimeBinHit(fl, cpVarp, idxp, binp->binsType().binIsNormal());
         if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
             actionp->addNext(makeIllegalBinAction(fl, "Illegal bin " + binp->prettyNameQ()
                                                           + " hit in coverpoint "
@@ -2047,14 +2047,15 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         itemp->name(prefix + "_item");
         m_constructorp->addStmtsp(itemp);
         const auto ref = [&](AstVar* varp) { return new AstVarRef{fl, varp, VAccess::READ}; };
-        const auto assign = [&](AstVar* varp, AstNodeExpr* rhsp) -> AstNode* {
+        const auto assign = [&](AstVar* varp, AstNodeExpr* rhsp) -> AstNodeStmt* {
             return new AstAssign{fl, new AstVarRef{fl, varp, VAccess::WRITE}, rhsp};
         };
         const auto flag = [&](AstVar* varp, bool value) {
             return assign(varp, value ? new AstConst{fl, AstConst::BitTrue{}}
                                       : new AstConst{fl, AstConst::BitFalse{}});
         };
-        const auto bound = [&](VCMethod narrow, VCMethod wideMethod, AstVar* varp) -> AstNode* {
+        const auto bound
+            = [&](VCMethod narrow, VCMethod wideMethod, AstVar* varp) -> AstNodeStmt* {
             if (wide) {
                 return itemCall(fl, cpVarp, wideMethod, {new AstVarRef{fl, varp, VAccess::WRITE}})
                     ->makeStmt();
@@ -2289,7 +2290,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             generateSingleTransitionCode(coverpointp, binp, exprp, hitVarp,
                                          VN_AS(setp, CoverTransSet));
         }
-        AstNode* const actionp = makeRuntimeBinHit(fl, tgt);
+        AstNodeStmt* const actionp = makeRuntimeBinHit(fl, tgt);
         if (binp->binsType() == VCoverBinsType::BINS_ILLEGAL) {
             actionp->addNext(makeIllegalBinAction(
                 fl, "Illegal transition bin " + binp->prettyNameQ() + " hit in coverpoint "

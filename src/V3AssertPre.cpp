@@ -909,7 +909,7 @@ private:
         // Note the drives when they take effect, after the cycle delay if any. Each clockvar
         // of the LHS is driven, e.g. in a concatenation which other simulators accept, although
         // IEEE 1800-2023 14.16 does not allow it
-        AstNode* setsp = nullptr;
+        AstNodeStmt* setsp = nullptr;
         for (const SynchDrive& drive : m_drives) {
             setsp = AstNode::addNext(setsp, newDrivenSetp(nodep->fileline(), drive));
         }
@@ -1330,11 +1330,11 @@ private:
             windowp->addStmtsp(new AstLoopTest{
                 flp, windowp, new AstNot{flp, new AstVarRef{flp, doneVarp, VAccess::READ}}});
             // if (expr) { fail; done = 1; } -- window closed, expr true again
-            AstNode* const failsp = new AstPExprClause{flp, false};
+            AstNodeStmt* const failsp = new AstPExprClause{flp, false};
             failsp->addNext(setDone());
             windowp->addStmtsp(new AstIf{flp, exprp->cloneTreePure(false), failsp});
             // if (rhs) { pass; done = 1; } -- consequent true at this !expr endpoint
-            AstNode* const passsp = new AstPExprClause{flp, true};
+            AstNodeStmt* const passsp = new AstPExprClause{flp, true};
             passsp->addNext(setDone());
             windowp->addStmtsp(new AstIf{flp, rhsp, passsp});
             // @(clk) -- advance to next cycle in window
@@ -1499,7 +1499,7 @@ private:
                 // The NBA commits before the next cycle's sampled snapshot,
                 // so the consequent (which already references __Vpropvar)
                 // sees the captured value.
-                AstNode* matchAssignsp = nullptr;
+                AstNodeStmt* matchAssignsp = nullptr;
                 for (AstNode* const stmtp : exprStmtp->stmtspList()) {
                     if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
                         assignp->unlinkFrBack();
@@ -1629,7 +1629,7 @@ private:
             loopp->addStmtsp(new AstLoopTest{
                 flp, loopp, new AstLogNot{flp, new AstVarRef{flp, donep, VAccess::READ}}});
             {
-                AstNode* const passp = new AstPExprClause{flp};
+                AstNodeStmt* const passp = new AstPExprClause{flp};
                 passp->addNext(decrementVarp);
                 passp->addNext(setDone());
                 AstNodeExpr* passCondp = rhsp;
@@ -1639,7 +1639,7 @@ private:
                 loopp->addStmtsp(new AstIf{flp, passCondp, passp});
             }
             {
-                AstNode* const failp = new AstPExprClause{flp, false};
+                AstNodeStmt* const failp = new AstPExprClause{flp, false};
                 failp->addNext(decrementVarp->cloneTree(false));
                 failp->addNext(setDone());
                 loopp->addStmtsp(new AstIf{

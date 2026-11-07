@@ -1843,7 +1843,7 @@ class RandomizeVisitor final : public VNVisitor {
                 m_solverp->startClass(classp);
             }
 
-            AstNode* stmtsp = nullptr;
+            AstNodeStmt* stmtsp = nullptr;
 
             // 1. Call member.pre/post_randomize() if exists in hierarchy
             if (AstTask* const userFuncp = findPrePostTask(memberClassp, cbName)) {
@@ -2514,7 +2514,7 @@ class RandomizeVisitor final : public VNVisitor {
             // IEEE 1800-2023 18.6.3: "If randomize() fails, the constraints are infeasible, and
             // the random variables retain their previous values." Save every argument before
             // any basic randomization, and restore them if the solver fails.
-            AstNode* restoreStmtsp = nullptr;
+            AstNodeStmt* restoreStmtsp = nullptr;
             AstNode* basicStmtsp = nullptr;
             for (const AstArg* const argp : nodep->argspList()) {
                 AstNodeExpr* const exprp = argp->exprp();
@@ -2554,7 +2554,7 @@ class RandomizeVisitor final : public VNVisitor {
                     randomizeFuncp->addStmtsp(
                         new AstAssign{fl, new AstVarRef{fl, prevVarp, VAccess::WRITE},
                                       new AstVarRef{fl, refvarp, VAccess::READ}});
-                    restoreStmtsp = AstNode::addNextNull<AstNode, AstNode>(
+                    restoreStmtsp = AstNode::addNextNull(
                         restoreStmtsp,
                         new AstAssign{fl, new AstVarRef{fl, refvarp, VAccess::WRITE},
                                       new AstVarRef{fl, prevVarp, VAccess::READ}});

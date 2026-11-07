@@ -94,7 +94,7 @@ AstCCall* TimingKit::createResume(AstVarScope* trigVscp) {
             AstVarRef* const schedrefp
                 = VN_AS(VN_AS(resumeStmtp->exprp(), CMethodHard)->fromp(), VarRef);
 
-            AstNode* const actionp = resumeStmtp->unlinkFrBack();
+            AstNodeStmt* const actionp = resumeStmtp->unlinkFrBack();
             if (schedrefp->varScopep()->dtypep()->basicp()->isDelayScheduler()) {
                 FileLine* const flp = trigVscp->fileline();
                 const std::set<uint32_t>& triggers = entry.m_triggers;

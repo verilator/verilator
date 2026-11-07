@@ -483,7 +483,7 @@ class LinkJumpVisitor final : public VNVisitor {
         beginp->addStmtsp(varp);
         AstNode* initsp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE}, countp};
-        AstNode* const decp = new AstAssign{
+        AstNodeStmt* const decp = new AstAssign{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::WRITE},
             new AstSub{nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::READ},
                        new AstConst{nodep->fileline(), 1}}};

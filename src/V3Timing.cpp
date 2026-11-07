@@ -109,7 +109,7 @@ static void addFlags(AstNode* const nodep, uint8_t flags) { nodep->user2Or(flags
 // Check if a node has ALL of the expected flags set
 static bool hasFlags(AstNode* const nodep, uint8_t flags) { return !(~nodep->user2() & flags); }
 
-static AstNode* takeDeferredAssertFlush(AstNode* nodep) {
+static AstDeferredAssertFlush* takeDeferredAssertFlush(AstNode* nodep) {
     AstDeferredAssertFlush* const flushp = VN_CAST(nodep, DeferredAssertFlush);
     return flushp ? flushp->unlinkFrBack() : nullptr;
 }
@@ -524,8 +524,8 @@ class TimingControlVisitor final : public VNVisitor {
     // METHODS
     // Transform an assignment with an intra timing control into a timing control with the
     // assignment under it
-    AstNode* factorOutTimingControl(AstNodeAssign* nodep) const {
-        AstNode* stmtp = nodep;
+    AstNodeStmt* factorOutTimingControl(AstNodeAssign* nodep) const {
+        AstNodeStmt* stmtp = nodep;
         AstNode* const controlp = nodep->timingControlp();
         if (AstDelay* const delayp = VN_CAST(controlp, Delay)) {
             stmtp->replaceWith(delayp->unlinkFrBack());
@@ -1127,7 +1127,7 @@ class TimingControlVisitor final : public VNVisitor {
         if (nodep->user1SetOnce()) return;
         UINFO(9, "control-visit " << nodep);
         FileLine* const flp = nodep->fileline();
-        AstNode* controlp = factorOutTimingControl(nodep);
+        AstNodeStmt* controlp = factorOutTimingControl(nodep);
         const bool inAssignDly = VN_IS(nodep, AssignDly);
         // Handle the intra assignment timing control
         if (!controlp) {
@@ -1335,7 +1335,7 @@ class TimingControlVisitor final : public VNVisitor {
         // Wait on changed events related to the vars in the wait statement
         UINFO(9, "control-visit " << nodep);
         FileLine* const flp = nodep->fileline();
-        AstNode* const flushp = takeDeferredAssertFlush(nodep->stmtsp());
+        AstDeferredAssertFlush* const flushp = takeDeferredAssertFlush(nodep->stmtsp());
         AstNode* const stmtsp = nodep->stmtsp();
         if (stmtsp) stmtsp->unlinkFrBackWithNext();
         AstNodeExpr* const condp = V3Const::constifyEdit(nodep->condp()->unlinkFrBack());

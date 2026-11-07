@@ -340,7 +340,7 @@ class CoverageVisitor final : public VNVisitor {
                 = new AstCoverOtherDecl{nodep->fileline(), "v_line/" + m_modp->prettyName(),
                                         "block", linesCov(m_state, nodep), 0};
             m_modp->addStmtsp(declp);
-            AstNode* const newp
+            AstCoverInc* const newp
                 = newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "block"));
             insertProcStatement(nodep, newp);
         }
@@ -369,7 +369,7 @@ class CoverageVisitor final : public VNVisitor {
         if (!nodep->dpiImport()) iterateProcedure(nodep);
     }
 
-    void insertProcStatement(AstNode* nodep, AstNode* stmtp) {
+    void insertProcStatement(AstNode* nodep, AstNodeStmt* stmtp) {
         if (AstNodeProcedure* const itemp = VN_CAST(nodep, NodeProcedure)) {
             itemp->addStmtsp(stmtp);
         } else if (AstNodeFTask* const itemp = VN_CAST(nodep, NodeFTask)) {
@@ -404,7 +404,7 @@ class CoverageVisitor final : public VNVisitor {
                 = new AstCoverOtherDecl{nodep->fileline(), "v_line/" + m_modp->prettyName(),
                                         "block", linesCov(m_state, nodep), 0};
             m_modp->addStmtsp(declp);
-            AstNode* const newp
+            AstCoverInc* const newp
                 = newCoverInc(nodep->fileline(), declp, traceNameForLine(nodep, "block"));
             insertProcStatement(nodep, newp);
         }
@@ -875,7 +875,7 @@ class CoverageVisitor final : public VNVisitor {
             AstCoverOtherDecl* const declp = new AstCoverOtherDecl{
                 nodep->fileline(), "v_expr/" + m_modp->prettyName(), comment, "", 0};
             m_modp->addStmtsp(declp);
-            AstNode* const newp = newCoverInc(fl, declp, traceNameForLine(nodep, name));
+            AstCoverInc* const newp = newCoverInc(fl, declp, traceNameForLine(nodep, name));
             UASSERT_OBJ(condp, nodep, "No terms in expression coverage branch");
             AstIf* const ifp = new AstIf{fl, condp, newp, nullptr};
             ifp->user2(true);

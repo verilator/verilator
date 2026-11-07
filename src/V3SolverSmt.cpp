@@ -754,7 +754,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Place a solver-registration statement: into the enclosing foreach body when it
     // references an enclosing foreach index (so it is not hoisted out of the index's
     // scope), otherwise into the init block.
-    void addRegistrationStmt(AstNode* const stmtp, AstBegin* const initp) {
+    void addRegistrationStmt(AstNodeStmt* const stmtp, AstBegin* const initp) {
         if (m_foreachp && referencesForeachIdx(stmtp)) {
             // Appending to the body mid-iteration is safe: visit(AstStmtExpr) is a
             // no-op so the appended node is not re-processed, and prependDistPreamble()
@@ -935,7 +935,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                                  m_uniqueNames.get("__Vk"), assocDtp->keyDTypep()}
                                     : iterVarp;
 
-        AstNode* const stmtsp
+        AstNodeStmt* const stmtsp
             = new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}};
 
         AstNodeExpr* sizep;
@@ -2656,7 +2656,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
             // Build loop body based on whether we have a 'with' clause
             AstVar* const textVarp = newTextVarp(nodep);
-            AstNode* bodyp;
+            AstNodeStmt* bodyp;
             if (withp) {
                 // With 'with' clause: evaluate expression for each element
                 const bool randArr = nodep->fromp()->user1();
@@ -2878,7 +2878,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Build the runtime statement that calls RANDOMIZER_DISABLE_SOFT on the
     // variable referenced by the given AstConstraintExpr.  Parser enforces
     // constraint_primary operand (verilog.y, IEEE 1800-2023 18.5.13).
-    AstNode* buildDisableSoftCallStmt(AstConstraintExpr* nodep) {
+    AstNodeStmt* buildDisableSoftCallStmt(AstConstraintExpr* nodep) {
         std::string varName;
         if (const AstNodeVarRef* const vrefp = VN_CAST(nodep->exprp(), NodeVarRef)) {
             varName = vrefp->name();
@@ -3274,7 +3274,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         FileLine* const fl = logIfp->fileline();
         AstNodeExpr* const condp = logIfp->lhsp()->unlinkFrBack();
         AstNodeExpr* const rhsp = logIfp->rhsp()->unlinkFrBack();
-        AstNode* thenBodyp;
+        AstNodeStmt* thenBodyp;
         if (AstLogIf* const innerLogIfp = VN_CAST(rhsp, LogIf)) {
             thenBodyp = liftLogIfChainToConstraintIf(innerLogIfp);
             VL_DO_DANGLING(pushDeletep(innerLogIfp), innerLogIfp);
@@ -3558,8 +3558,8 @@ class SolverSmtLowering final : public V3SolverLowering {
 
     // Weighted chain while the dist value can still be freshly drawn, membership
     // once it is frozen; membership only when it can never be re-drawn.
-    AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
-                            const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
+    AstNodeStmt* gateFrozenDist(AstNodeStmt* chainp, AstDist* distp,
+                                const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
         FileLine* const fl = distp->fileline();
         AstNodeExpr* gatep = newDistGate(distp->exprp(), randModeVarp, fl);
         if (VN_IS(gatep, Const)) {
@@ -3609,9 +3609,10 @@ class SolverSmtLowering final : public V3SolverLowering {
     }
 
     // Soft weighted bucket chain: select a bucket by bucketVar against cumulative weights.
-    AstNode* buildWeightedBucketChain(AstDist* distp, const std::vector<DistBucket>& buckets,
-                                      AstVar* bucketVarp,
-                                      const std::vector<AstNodeExpr*>& cumSums) {
+    AstConstraintExpr* buildWeightedBucketChain(AstDist* distp,
+                                                const std::vector<DistBucket>& buckets,
+                                                AstVar* bucketVarp,
+                                                const std::vector<AstNodeExpr*>& cumSums) {
         FileLine* const fl = distp->fileline();
         AstNodeExpr* chainp = nullptr;
         for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
@@ -3779,7 +3780,7 @@ class SolverSmtLowering final : public V3SolverLowering {
                 cumSums.push_back(runningSump->cloneTreePure(true));
             }
 
-            AstNode* chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
+            AstNodeStmt* chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
 
             chainp = gateFrozenDist(chainp, distp, buckets, randModeVarp);
 
@@ -4242,7 +4243,7 @@ public:
         // so extract the underlying variable from the MemberSel chain.
         // Collect the class-wide resize call and the with-block's own resize
         // statements to run after a successful solver call.
-        AstNode* resizeStmtsp = nullptr;
+        AstNodeStmt* resizeStmtsp = nullptr;
         if (AstTask* const resizeAllTaskp
             = VN_AS(m_memberMap.findMember(classp, "__Vresize_constrained_arrays"), Task)) {
             resizeStmtsp = (new AstTaskRef{nodep->fileline(), resizeAllTaskp})->makeStmt();

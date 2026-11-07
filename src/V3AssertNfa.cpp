@@ -2074,7 +2074,7 @@ class SvaNfaLowering final {
                 delayRingSlot(c.flp, vtxp, new AstVarRef{c.flp, idxp, VAccess::READ},
                               VAccess::WRITE),
                 storedIncomingp};
-            AstNode* updateBodyp = writeIncomingp;
+            AstNodeStmt* updateBodyp = writeIncomingp;
             // live_count <= live_count - outgoing_count + incoming_count;
             AstNodeExpr* const outgoingp = delayRingOutputCount(c.flp, vtxp);
             AstNodeExpr* const afterOutgoingp
