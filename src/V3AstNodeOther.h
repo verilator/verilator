@@ -2323,6 +2323,8 @@ class AstVar final : public AstNode {
     // @astgen ptr := m_sensIfacep : Optional[AstIface]  // Interface type to which reads from this
     //                                                      var are sensitive
     // @astgen ptr := m_forceRdVarp : Optional[AstVar]  // [AfterForce] Generated force read signal
+    // @astgen ptr := m_forceEnVarp : Optional[AstVar]  // [AfterForce] Generated force enable
+    // @astgen ptr := m_forceValVarp : Optional[AstVar]  // [AfterForce] Generated force value
 
     string m_name;  // Name of variable
     string m_origName;  // Original name before dot addition
@@ -2657,6 +2659,10 @@ public:
     bool isForceable() const { return m_isForceable; }
     AstVar* forceRdVarp() const { return m_forceRdVarp; }
     void forceRdVarp(AstVar* const nodep) { m_forceRdVarp = nodep; }
+    AstVar* forceEnVarp() const { return m_forceEnVarp; }
+    void forceEnVarp(AstVar* const nodep) { m_forceEnVarp = nodep; }
+    AstVar* forceValVarp() const { return m_forceValVarp; }
+    void forceValVarp(AstVar* const nodep) { m_forceValVarp = nodep; }
     void setForceable() { m_isForceable = true; }
     void setForcedByCode() { m_isForcedByCode = true; }
     bool isForced() const { return m_isForceable || m_isForcedByCode; }

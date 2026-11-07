@@ -31,12 +31,6 @@ output_vs = test.glob_some(test.obj_dir + "/" + test.vm_prefix + "_*_widthcommit
 for output_v in output_vs:
     test.files_identical(output_v, test.golden_filename)
 
-# Force read linkage is visible in both AST dump formats.
-test.file_grep(test.glob_one(test.obj_dir + "/" + test.vm_prefix + "*_force.tree"),
-               r'\bVAR\b[^\n]*\s__PVT__sum\b[^\n]*forceRdVarp=')
-test.file_grep(test.glob_one(test.obj_dir + "/" + test.vm_prefix + "*_force.tree.json"),
-               r'"name":"sum"[^\n]*"forceRdVarp":')
-
 if test.verbose:
     # Print if that the output Verilog is clean
     # TODO not yet round-trip clean

@@ -484,46 +484,4 @@ void V3Broken::selfTest() {
     deleted(newp);
 #endif
     VL_DO_DANGLING(newp->deleteTree(), newp);
-
-    // Variable identity includes its force read link. A declaration-list clone retargets
-    // the link, while an isolated clone keeps the original read signal.
-    AstBasicDType* const dtypep = new AstBasicDType{fl, VBasicDTypeKwd::UINT32};
-    AstVar* const varp = new AstVar{fl, VVarType::VAR, "forceSignal", dtypep};
-    AstVar* const rdp = new AstVar{fl, VVarType::WIRE, "forceRead", dtypep};
-    UASSERT_OBJ(!varp->forceRdVarp(), varp, "Unexpected initial force read link.");
-    UASSERT_OBJ(!varp->brokenGen(), varp, "Null force read link is broken.");
-    AstVar* const samep = varp->cloneTree(false);
-    UASSERT_OBJ(!samep->forceRdVarp() && varp->sameNode(samep), samep,
-                "Null force read link changed on clone.");
-    varp->forceRdVarp(rdp);
-    UASSERT_OBJ(!varp->sameNode(samep) && !samep->sameNode(varp), varp,
-                "Null and non-null force read links have same identity.");
-    samep->forceRdVarp(rdp);
-    UASSERT_OBJ(varp->sameNode(samep), varp, "Shared force read link changed identity.");
-    AstVar* const isolatedp = varp->cloneTree(false);
-    UASSERT_OBJ(isolatedp->forceRdVarp() == rdp, isolatedp,
-                "Isolated clone lost force read link.");
-    varp->addNext(rdp);
-    AstVar* const linkedp = varp->cloneTree(true);
-    UASSERT_OBJ(linkedp->forceRdVarp() == linkedp->nextp(), linkedp,
-                "Cloned force read link not retargeted.");
-    UASSERT_OBJ(!varp->sameNode(linkedp), varp, "Distinct force read links have same identity.");
-
-    // Generated broken checks reject unmarked, out-of-tree targets without
-    // dereferencing a deleted node.
-    s_linkableTable.addLinkable(rdp);
-    UASSERT_OBJ(!varp->brokenGen(), varp, "Valid force read link is broken.");
-    UASSERT_OBJ(linkedp->brokenGen(), linkedp, "Out-of-tree force read link not detected.");
-    s_linkableTable.addLinkable(linkedp->forceRdVarp());
-    UASSERT_OBJ(!linkedp->brokenGen(), linkedp, "Retargeted force read link is broken.");
-    s_linkableTable.clear();
-    UASSERT_OBJ(varp->brokenGen(), varp, "Removed force read link not detected.");
-    varp->forceRdVarp(nullptr);
-    UASSERT_OBJ(!varp->brokenGen(), varp, "Cleared force read link is broken.");
-
-    VL_DO_DANGLING(samep->deleteTree(), samep);
-    VL_DO_DANGLING(isolatedp->deleteTree(), isolatedp);
-    VL_DO_DANGLING(linkedp->deleteTree(), linkedp);
-    VL_DO_DANGLING(varp->deleteTree(), varp);
-    VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
 }

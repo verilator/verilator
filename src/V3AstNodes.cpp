@@ -4657,9 +4657,20 @@ void AstVar::dump(std::ostream& str) const {
     if (ignorePostWrite()) str << " [IGNPWR]";
     if (ignoreSchedWrite()) str << " [IGNWR]";
     if (isStdRandomizeArg()) str << " [STDRANDARG]";
-    if (forceRdVarp()) str << " forceRdVarp=" << nodeAddr(forceRdVarp());
     if (!lifetime().isNone()) str << " [" << lifetime().ascii() << "] ";
     str << " " << varType();
+    if (forceRdVarp()) {
+        str << " forceRdVarp=";
+        forceRdVarp()->dump(str);
+    }
+    if (forceEnVarp()) {
+        str << " forceEnVarp=";
+        forceEnVarp()->dump(str);
+    }
+    if (forceValVarp()) {
+        str << " forceValVarp=";
+        forceValVarp()->dump(str);
+    }
 }
 void AstVar::dumpJson(std::ostream& str) const {
     if (libInoutId()) dumpJsonNumFunc(str, libInoutId);
