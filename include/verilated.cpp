@@ -3551,11 +3551,12 @@ VerilatedVirtualBase* VerilatedContext::threadPoolp(unsigned modelThreads) {
     // fewer than a model uses, e.g. a model Verilated with --threads 4 on a single core machine.
     // Oversubscribing is slow but works, so grow to fit the model, unless the user picked the
     // thread count themselves, in which case addModel() reports the mismatch instead.
-    if (VL_UNLIKELY(modelThreads > m_threads) && !m_threadsSet && !m_threadPool) {
+    if (VL_UNLIKELY(modelThreads > m_threads) && !m_threadsSet
+        && (!m_threadPool || static_cast<VlThreadPool*>(m_threadPool.get())->numThreads() == 0)) {
+        m_threadPool.reset();
         m_threads = modelThreads;
         warnThreadsOversubscribed(m_threads);
     }
-    if (m_threads == 1) return nullptr;
     if (!m_threadPool) m_threadPool.reset(new VlThreadPool{this, m_threads - 1});
     return m_threadPool.get();
 }

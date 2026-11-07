@@ -1,0 +1,5 @@
+%Error-UNSUPPORTED: t/t_timing_dpi_always_latch_unsup.v:16:3: Unsupported: Potentially suspending DPI import in always process.
+   16 |   always_latch if (a != 0) dpi_import(a, b);
+      |   ^~~~~~~~~~~~
+                    ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
+%Error: Exiting due to

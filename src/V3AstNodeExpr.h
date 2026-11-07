@@ -686,13 +686,13 @@ public:
     }
 
     ASTGEN_MEMBERS_AstAddrOfCFunc;
-    bool sameNode(const AstNode* samep) const override {
-        return funcp() == VN_DBG_AS(samep, AddrOfCFunc)->funcp();
-    }
     void dump(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
+    bool sameNode(const AstNode* samep) const override {
+        return funcp() == VN_DBG_AS(samep, AddrOfCFunc)->funcp();
+    }
     AstCFunc* funcp() const { return m_funcp; }
 };
 class AstAttrOf final : public AstNodeExpr {
@@ -806,12 +806,13 @@ public:
         addPinsp(pinsp);
     }
     ASTGEN_MEMBERS_AstCFuncHard;
-    bool sameNode(const AstNode* samep) const override {
-        return function() == VN_DBG_AS(samep, CFuncHard)->function();
-    }
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     string name() const override VL_MT_STABLE { return function().ascii(); }
+    bool sameNode(const AstNode* samep) const override {
+        const AstCFuncHard* const asamep = VN_DBG_AS(samep, CFuncHard);
+        return (m_function == asamep->m_function);
+    }
     bool isPure() override {
         if (!m_purity.isCached()) m_purity.set(getPurity());
         return m_purity.get();
@@ -820,6 +821,10 @@ public:
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
     VCFunction function() const VL_MT_STABLE { return m_function; }
+    void function(const VCFunction value) {
+        m_function = value;
+        m_purity.clearCache();
+    }
 
 private:
     bool getPurity();

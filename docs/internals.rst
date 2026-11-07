@@ -803,6 +803,64 @@ In forked processes, references to local variables are only allowed in
 ``fork..join``, as this is the only case that ensures the lifetime of these
 locals are at least as long as the execution of the forked processes.
 
+DPI with timing
+~~~~~~~~~~~~~~~
+
+Verilator supports DPI exported tasks with timing constructs by running the
+DPI imported task on a separate thread with its own call stack. When an
+exported task suspends, the thread blocks and the simulation event loop
+continues.
+
+The implementation is present in ``verilated_dpi_call.cpp`` and
+``verilated_dpi_call.h``.
+
+``VlDpiCall``
++++++++++++++
+
+Runs the function passed to its constructor on a pool thread. It implements
+the following key functions:
+
+- ``handoffWorker()`` - Runs the function, or continues it after the last
+  ``stopWorker()``. The calling thread blocks until the function yields or
+  returns.
+- ``stopWorker()`` - Called on the DPI thread. Blocks the DPI thread and
+  returns control to the thread blocked in ``handoffWorker()``.
+
+``co_await`` on a ``VlDpiCall`` suspends the awaiting coroutine until the
+function returns.
+
+Only one of the two threads runs at any time, so model state needs no
+locking. ``Verilated`` thread-local state (context, DPI scope),
+``VlProcess::currentp()`` and ``VlRNG::vl_thread_rng()`` are copied at each
+handoff.
+
+``VlThreadPool``
+++++++++++++++++
+
+Imported tasks acquire workers from their context's ``VlThreadPool``. Each
+call retains its worker and C++ stack while an exported task is suspended.
+These workers are separate from the statically assigned model evaluation
+workers, so suspended calls do not block model evaluation or parallel
+tracing. The pool creates workers as needed, reuses them after calls
+return, and joins idle workers when the context is destroyed. ``VlDpiCall``
+manages the handoff with a mutex and condition variable.
+
+Calling and awaiting DPI tasks
+++++++++++++++++++++++++++++++
+
+Verilator emits a call to ``awaitImportTask()`` (defined in
+``verilated_dpi.h``) to call DPI imported tasks. If no suspendable exports
+are present, Verilator emits ``callImportTask()`` instead. Exported tasks
+are called through ``callExportTask()``.
+
+``awaitImportTask()`` creates a ``VlDpiCall`` that calls the imported task,
+resumes it, and awaits it. If the imported task calls an exported task that
+returns a ``VlCoroutine`` and the coroutine suspends, ``callExportTask()``
+makes ``resumeDpiCallAfter()`` await it and calls
+``VlDpiCall::stopWorker()``. ``handoffWorker()`` in ``awaitImportTask()``
+then returns, ``awaitImportTask()`` suspends, and the event loop continues.
+When the exported task completes, ``resumeDpiCallAfter()`` resumes the DPI
+call.
 
 Multithreaded Mode
 ------------------
