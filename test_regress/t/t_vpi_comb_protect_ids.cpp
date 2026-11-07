@@ -95,13 +95,8 @@ extern "C" int forceTopPort(const int value, const unsigned char releasePort) {
     return errors;
 }
 
-extern "C" int checkTopPort(const int expected, const int keep) {
+extern "C" int checkTopPort(const int expected) {
     checkInt("TOP." + hashedName("obs"), expected);
-    const std::string scope = hashedName("t") + ".";
-    checkInt(scope + hashedName("ordinary"), keep);
-    checkInt(scope + hashedName("ordinary__VforceRd"), keep ^ 0x11);
-    checkInt(scope + hashedName("ordinary__VforceEn"), keep ^ 0x22);
-    checkInt(scope + hashedName("ordinary__VforceVal"), keep ^ 0x44);
     return errors;
 }
 

@@ -661,6 +661,7 @@ class EmitCSyms final : EmitCBaseVisitorConst {
     }
 
     void collectForceControls() {
+        if (!v3Global.hasForceableSignals()) return;
         for (auto& entry : m_scopeVars) {
             ScopeVarData& svd = entry.second;
             const bool inserted
@@ -677,9 +678,6 @@ class EmitCSyms final : EmitCBaseVisitorConst {
             for (const AstVar* const controlVarp : {varp->forceEnVarp(), varp->forceValVarp()}) {
                 forceControlScopeVar(svd.m_scopep, varp, controlVarp).m_isForceControl = true;
             }
-            // The read helper is C++ public, but normally has no separate VPI entry.
-            const auto rdIt = m_scopeVarsByVar.find(ScopedVar{svd.m_scopep, varp->forceRdVarp()});
-            if (rdIt != m_scopeVarsByVar.end()) rdIt->second->m_isForceControl = true;
         }
     }
 

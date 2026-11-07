@@ -15,6 +15,7 @@ test.pli_filename = "t/t_vpi_comb_protect_ids.cpp"
 
 test.compile(make_top_shell=False,
              make_pli=True,
+             threads=2 if test.vltmt else 1,
              verilator_flags2=[
                  "--binary --vpi --public-flat-rw --no-l2name"
                  " +define+NO_T_VPI_DUMP +define+T_VPI_FORCE_PORT --CFLAGS -DT_VPI_UNPROTECTED",
