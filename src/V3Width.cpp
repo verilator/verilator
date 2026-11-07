@@ -1227,15 +1227,22 @@ class WidthVisitor final : public VNVisitor {
             iterateCheckSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
             const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
-            if (!constp || !constp->num().fitsInUInt() || constp->toUInt() == 0
-                || (constp->isSigned() && constp->num().isNegative())) {
-                if (!constp) {
-                    nodep->v3error("Slice size isn't a constant or basic data type.");
-                } else {
-                    nodep->v3error("Slice size must be a positive 32-bit value"
-                                   " (IEEE 1800-2023 11.4.14.2), but is "
-                                   << constp->prettyNameQ() << ".");
-                }
+            bool bad = true;
+            if (!constp) {
+                nodep->v3error("Slice size isn't a constant or basic data type.");
+            } else if (!constp->num().fitsInUInt() || constp->toUInt() == 0
+                       || (constp->isSigned() && constp->num().isNegative())) {
+                const V3Number& num = constp->num();
+                nodep->v3error("Slice size must be a positive 32-bit value"
+                               " (IEEE 1800-2023 11.4.14.2), but is '"
+                               << (num.isFourState()    ? num.ascii()
+                                   : constp->isSigned() ? num.toDecimalS()
+                                                        : num.toDecimalU())
+                               << "'.");
+            } else {
+                bad = false;
+            }
+            if (bad) {
                 // Continue with a valid slice size
                 pushDeletep(nodep->rhsp()->unlinkFrBack());
                 nodep->rhsp(new AstConst{nodep->fileline(), 1});
