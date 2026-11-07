@@ -275,6 +275,8 @@ class AstNodeUOrStructDType VL_NOT_FINAL : public AstNodeDType {
     //
     // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package emitted with
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Equivalent BasicDType if packed
+    // @astgen ptr := m_baseDTypep : Optional[AstNodeUOrStructDType]  // Base DType from which this
+    //                                                                   is derived
     string m_name;  // Name from upper typedef, if any
     string m_typedefName;  // Typedef's dtypeName() once moved off the typedef declaring it
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
@@ -288,7 +290,8 @@ protected:
     AstNodeUOrStructDType(VNType t, FileLine* fl, VSigning numericUnpack)
         : AstNodeDType{t, fl}
         , m_uniqueNum{uniqueNumInc()}
-        , m_refDTypep{nullptr} {
+        , m_refDTypep{nullptr}
+        , m_baseDTypep{nullptr} {
         // VSigning::NOSIGN overloaded to indicate not packed
         m_packed = (numericUnpack != VSigning::NOSIGN);
         numeric(VSigning::fromBool(numericUnpack.isSigned()));
@@ -301,7 +304,8 @@ protected:
         , m_packed{other.m_packed}
         , m_isFourstate{other.m_isFourstate}
         , m_mimicsFourstate{other.m_mimicsFourstate}
-        , m_refDTypep{other.m_refDTypep} {}
+        , m_refDTypep{other.m_refDTypep}
+        , m_baseDTypep{nullptr} {}
 
 public:
     ASTGEN_MEMBERS_AstNodeUOrStructDType;
@@ -316,6 +320,7 @@ public:
         m_refDTypep = dtypep;
     }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
+    AstNodeDType* virtRefDType2p() const override { return m_baseDTypep; }
     AstNodeDType* subDTypep() const override VL_MT_STABLE { return m_refDTypep; }
     // (Slow) recurses - Structure alignment 1,2,4 or 8 bytes (arrays affect this)
     int widthAlignBytes() const override;
@@ -351,6 +356,8 @@ public:
     bool emitToString() const { return m_emitToString; }
     void setEmitToString() { m_emitToString = true; }
     bool isAggregateType() const override { return !packed(); }
+    AstNodeUOrStructDType* baseDTypep() const { return m_baseDTypep; }
+    void baseDTypep(AstNodeUOrStructDType* const baseDTypep) { m_baseDTypep = baseDTypep; }
 };
 
 // === Concrete node types =====================================================
@@ -960,6 +967,8 @@ class AstEnumDType final : public AstNodeDType {
     // @astgen op2 := itemsp : List[AstEnumItem]
     //
     // @astgen ptr := m_refDTypep : Optional[AstNodeDType]  // Elements of this type (post-width)
+    // @astgen ptr := m_baseDTypep : Optional[AstEnumDType]  // Base DType from which this is
+    //                                                          derived
     string m_name;  // Name from upper typedef, if any
     string m_typedefName;  // Typedef's dtypeName() once moved off the typedef declaring it
     const int m_uniqueNum;  // Unique ID distinguishing this dtype instance, for hashing/naming
@@ -967,7 +976,8 @@ class AstEnumDType final : public AstNodeDType {
 public:
     AstEnumDType(FileLine* fl, VFlagChildDType, AstNodeDType* dtp, AstEnumItem* itemsp)
         : ASTGEN_SUPER_EnumDType(fl)
-        , m_uniqueNum{uniqueNumInc()} {
+        , m_uniqueNum{uniqueNumInc()}
+        , m_baseDTypep{nullptr} {
         childDTypep(dtp);  // Only for parser
         refDTypep(nullptr);
         addItemsp(itemsp);
@@ -979,7 +989,8 @@ public:
         , m_name{other.m_name}
         , m_typedefName{other.m_typedefName}
         , m_uniqueNum{uniqueNumInc()}
-        , m_refDTypep{other.m_refDTypep} {}
+        , m_refDTypep{other.m_refDTypep}
+        , m_baseDTypep{nullptr} {}
     ASTGEN_MEMBERS_AstEnumDType;
 
     const char* broken() const override;
@@ -996,6 +1007,7 @@ public:
     void refDTypep(AstNodeDType* nodep) { m_refDTypep = nodep; }
     AstNodeDType* virtRefDTypep() const override { return m_refDTypep; }
     void virtRefDTypep(AstNodeDType* nodep) override { refDTypep(nodep); }
+    AstNodeDType* virtRefDType2p() const override { return m_baseDTypep; }
     string name() const override VL_MT_STABLE { return m_name; }
     void name(const string& flag) override { m_name = flag; }
     // Keep the name the typedef declaring it gives, as it moves off it to the type table
@@ -1010,6 +1022,8 @@ public:
     int widthTotalBytes() const override { return subDTypep()->widthTotalBytes(); }
     size_t itemCount() const { return itemspList().size(); }
     bool isCompound() const override { return false; }
+    AstEnumDType* baseDTypep() const { return m_baseDTypep; }
+    void baseDTypep(AstEnumDType* const baseDTypep) { m_baseDTypep = baseDTypep; }
 };
 
 class AstIfaceGenericDType final : public AstNodeDType {

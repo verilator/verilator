@@ -1844,10 +1844,14 @@ void AstEnumDType::dump(std::ostream& str) const {
     Super::dump(str);
     str << " enum";
     if (!m_typedefName.empty()) str << " typedefName=" << m_typedefName;
+    if (AstEnumDType* const enumDTypep = baseDTypep()) {
+        str << "2stateBase=" << nodeAddr(enumDTypep);
+    }
 }
 void AstEnumDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "enum", true);
     if (!m_typedefName.empty()) dumpJsonStr(str, "typedefName", m_typedefName);
+    dumpJsonPtr(str, "2stateBase", baseDTypep());
     dumpJsonGen(str);
 }
 void AstEnumDType::dumpSmall(std::ostream& str) const {
@@ -3467,6 +3471,9 @@ void AstNodeUOrStructDType::dump(std::ostream& str) const {
     if (classOrPackagep()) str << " pkg=" << nodeAddr(classOrPackagep());
     if (subDTypep()) str << " refDTypep=" << nodeAddr(subDTypep());
     if (!m_typedefName.empty()) str << " typedefName=" << m_typedefName;
+    if (AstNodeUOrStructDType* const uOrStructDtypep = baseDTypep()) {
+        str << "2stateBase=" << nodeAddr(uOrStructDtypep);
+    }
 }
 void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, packed);
@@ -3475,6 +3482,7 @@ void AstNodeUOrStructDType::dumpJson(std::ostream& str) const {
     dumpJsonBoolFuncIf(str, mimicsFourstate);
     dumpJsonBoolFuncIf(str, emitToString);
     if (!m_typedefName.empty()) dumpJsonStr(str, "typedefName", m_typedefName);
+    dumpJsonPtr(str, "2stateBase", baseDTypep());
     dumpJsonGen(str);
 }
 string AstNodeUOrStructDType::prettyDTypeName(bool full) const {
