@@ -443,11 +443,11 @@ public:
 };
 class AstNodeProcedure VL_NOT_FINAL : public AstNode {
     // IEEE procedure: initial, final, always
-    // @astgen op2 := stmtsp : List[AstNode] // Note: op1 is used in some sub-types only
+    // @astgen op2 := stmtsp : List[AstNodeStmt] // Note: op1 is used in some sub-types only
     bool m_suspendable : 1;  // Is suspendable by a Delay, EventControl, etc.
     bool m_needsVlProcess : 1;  // Uses VlProcess
 protected:
-    AstNodeProcedure(VNType t, FileLine* fl, AstNode* stmtsp)
+    AstNodeProcedure(VNType t, FileLine* fl, AstNodeStmt* stmtsp)
         : AstNode{t, fl} {
         m_needsVlProcess = false;
         m_suspendable = false;
@@ -459,7 +459,6 @@ public:
     // METHODS
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
-    bool isJustOneBodyStmt() const { return stmtsp() && !stmtsp()->nextp(); }
     bool isSuspendable() const { return m_suspendable; }
     void setSuspendable() { m_suspendable = true; }
     bool needsVlProcess() const { return m_needsVlProcess; }
@@ -3489,7 +3488,8 @@ class AstAlways final : public AstNodeProcedure {
     const VAlwaysKwd m_keyword;
 
 public:
-    AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sentreep, AstNode* stmtsp = nullptr)
+    AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sentreep,
+              AstNodeStmt* stmtsp = nullptr)
         : ASTGEN_SUPER_Always(fl, stmtsp)
         , m_keyword{keyword} {
         this->sentreep(sentreep);
@@ -3506,7 +3506,7 @@ class AstAlwaysObserved final : public AstNodeProcedure {
     // @astgen op1 := sentreep : Optional[AstSenTree] // Sensitivity list, removed in V3Active
 
 public:
-    AstAlwaysObserved(FileLine* fl, AstSenTree* sentreep, AstNode* bodysp)
+    AstAlwaysObserved(FileLine* fl, AstSenTree* sentreep, AstNodeStmt* bodysp)
         : ASTGEN_SUPER_AlwaysObserved(fl, bodysp) {
         this->sentreep(sentreep);
     }
@@ -3524,7 +3524,7 @@ class AstAlwaysPostponed final : public AstNodeProcedure {
     // Like always but Postponed scheduling region
 
 public:
-    AstAlwaysPostponed(FileLine* fl, AstNode* stmtsp)
+    AstAlwaysPostponed(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_AlwaysPostponed(fl, stmtsp) {}
     ASTGEN_MEMBERS_AstAlwaysPostponed;
 };
@@ -3541,7 +3541,7 @@ class AstAlwaysReactive final : public AstNodeProcedure {
     // @astgen op1 := sentreep : Optional[AstSenTree] // Sensitivity list, removed in V3Active
 
 public:
-    AstAlwaysReactive(FileLine* fl, AstSenTree* sentreep, AstNode* bodysp)
+    AstAlwaysReactive(FileLine* fl, AstSenTree* sentreep, AstNodeStmt* bodysp)
         : ASTGEN_SUPER_AlwaysReactive(fl, bodysp) {
         this->sentreep(sentreep);
     }
@@ -3549,13 +3549,13 @@ public:
 };
 class AstFinal final : public AstNodeProcedure {
 public:
-    AstFinal(FileLine* fl, AstNode* stmtsp)
+    AstFinal(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_Final(fl, stmtsp) {}
     ASTGEN_MEMBERS_AstFinal;
 };
 class AstInitial final : public AstNodeProcedure {
 public:
-    AstInitial(FileLine* fl, AstNode* stmtsp)
+    AstInitial(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_Initial(fl, stmtsp) {}
     ASTGEN_MEMBERS_AstInitial;
 };
@@ -3563,7 +3563,7 @@ class AstInitialAutomatic final : public AstNodeProcedure {
     // Automatic variable initialization
     // That is, it runs every function start, or class construction
 public:
-    AstInitialAutomatic(FileLine* fl, AstNode* stmtsp)
+    AstInitialAutomatic(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_InitialAutomatic(fl, stmtsp) {}
     ASTGEN_MEMBERS_AstInitialAutomatic;
 };
@@ -3571,7 +3571,7 @@ class AstInitialStatic final : public AstNodeProcedure {
     // Static variable initialization
     // That is, it runs at the beginning of simulation, before 'initial' blocks
 public:
-    AstInitialStatic(FileLine* fl, AstNode* stmtsp)
+    AstInitialStatic(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_InitialStatic(fl, stmtsp) {}
     ASTGEN_MEMBERS_AstInitialStatic;
 };

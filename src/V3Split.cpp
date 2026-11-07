@@ -332,7 +332,7 @@ class SplitVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         const VAlwaysKwd kwd = nodep->keyword();
         for (size_t i = 1; i < numColors; ++i) {
-            AstNode* const stmtsp = lists[i];
+            AstNodeStmt* const stmtsp = lists[i];
             UASSERT_OBJ(stmtsp, nodep, "Color with no statements");
             AstAlways* const newp = new AstAlways{flp, kwd, nullptr, stmtsp};
             newp->user3(1);  // Do not split again

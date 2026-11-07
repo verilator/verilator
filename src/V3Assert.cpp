@@ -300,7 +300,8 @@ class AssertDeFutureVisitor final : public VNVisitor {
             varRefAWritep->user1(true);
             AstNodeVarRef* varRefAReadp = nodep->cloneTree(false);
             varRefAReadp->user1(true);
-            AstNode* const assp = new AstAssignDly{nodep->fileline(), varRefAWritep, varRefAReadp};
+            AstNodeStmt* const assp
+                = new AstAssignDly{nodep->fileline(), varRefAWritep, varRefAReadp};
             alwaysp->addStmtsp(assp);
             m_delayedVars.emplace(nodep->varp(), outvarp);
         } else {

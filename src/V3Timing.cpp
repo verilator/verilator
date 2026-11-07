@@ -884,7 +884,7 @@ class TimingControlVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         AstSenTree* const sentreep = m_activep->sentreep();
         if (sentreep->hasClocked()) {
-            AstNodeStmt* const bodysp = VN_AS(nodep->stmtsp(), NodeStmt)->unlinkFrBackWithNext();
+            AstNodeStmt* const bodysp = nodep->stmtsp()->unlinkFrBackWithNext();
             auto* const controlp = new AstEventControl{flp, sentreep->cloneTree(false), bodysp};
             nodep->addStmtsp(controlp);
             iterate(controlp);
@@ -893,7 +893,7 @@ class TimingControlVisitor final : public VNVisitor {
         AstLoop* const loopp = new AstLoop{flp};
         loopp->addStmtsp(new AstLoopTest{
             flp, loopp, new AstCExpr{flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1}});
-        loopp->addStmtsp(VN_AS(nodep->stmtsp(), NodeStmt)->unlinkFrBackWithNext());
+        loopp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
         AstInitial* const initialp = new AstInitial{flp, loopp};
         initialp->user1(true);  // Already processed
         initialp->setSuspendable();

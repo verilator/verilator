@@ -266,7 +266,7 @@ void orderSequentially(AstCFunc* funcp, const LogicByScope& lbs) {
         // Add statements to sub-function
         for (AstNodeProcedure* const procp : activep->procspList()) {
             auto* subFuncp = VN_AS(scopep->user1p(), CFunc);
-            if (AstNodeStmt* const bodyp = VN_AS(procp->stmtsp(), NodeStmt)) {
+            if (AstNodeStmt* const bodyp = procp->stmtsp()) {
                 bodyp->unlinkFrBackWithNext();
                 // If the process is suspendable, we need a separate function (a coroutine)
                 if (procp->isSuspendable()) {

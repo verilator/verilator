@@ -6466,7 +6466,7 @@ assertion_item<nodep>:          // ==IEEE: assertion_item
                         { $$ = $1 ? new AstAlways{$1->fileline(), VAlwaysKwd::ALWAYS_COMB, nullptr, $1} : nullptr; }
         ;
 
-deferred_immediate_assertion_item<nodep>:       // ==IEEE: deferred_immediate_assertion_item
+deferred_immediate_assertion_item<nodeStmtp>:       // ==IEEE: deferred_immediate_assertion_item
                 deferred_immediate_assertion_statement  { $$ = $1; }
         |       id/*block_identifier*/ ':' deferred_immediate_assertion_statement
                         { $$ = new AstBegin{$<fl>1, *$1, $3, true}; }

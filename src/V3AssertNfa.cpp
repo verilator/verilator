@@ -1943,7 +1943,7 @@ class SvaNfaLowering final {
     // would advance the attempts as if the clock had ticked. Blocks that hold no attempt
     // state, such as the $assertkill acknowledge in emitKillAckNba, do not go through here.
     // Callers pass a null clearp when the disable cannot rise between clock events.
-    void addStateAlways(LowerCtx& c, AstNode* bodyp, AstNode* clearp) {
+    void addStateAlways(LowerCtx& c, AstNodeStmt* bodyp, AstNodeStmt* clearp) {
         m_modp->addStmtsp(
             new AstAlways{c.flp, VAlwaysKwd::ALWAYS, c.senTreep->cloneTree(false), bodyp});
         if (!clearp) return;
@@ -1959,8 +1959,8 @@ class SvaNfaLowering final {
     // latches the OR of its incoming contributions.
     void emitStateRegisterNba(LowerCtx& c) {
         const bool asyncDisable = isAsyncDisable(c.disableExprp);
-        AstNode* bodyp = nullptr;
-        AstNode* clearp = nullptr;
+        AstNodeStmt* bodyp = nullptr;
+        AstNodeStmt* clearp = nullptr;
         for (const V3GraphVertex& vtxr : c.graph.m_graph.vertices()) {
             const SvaStateVertex* const vtxp = static_cast<const SvaStateVertex*>(&vtxr);
             if (!vtxp->datap()->stateVarp) continue;
@@ -3268,7 +3268,7 @@ class AssertNfaVisitor final : public VNVisitor {
                              m_modp->findBasicDType(VBasicDTypeKwd::UINT32)};
             remainingFailCountVarp->lifetime(VLifetime::STATIC_EXPLICIT);
             m_modp->addStmtsp(remainingFailCountVarp);
-            AstNode* const replayStmtsp = new AstAssign{
+            AstNodeStmt* const replayStmtsp = new AstAssign{
                 flp, new AstVarRef{flp, remainingFailCountVarp, VAccess::WRITE}, threadFailCountp};
             AstLoop* const replayLoopp = new AstLoop{flp};
             replayLoopp->addStmtsp(new AstLoopTest{

@@ -139,7 +139,7 @@ public:
         if (!m_result.empty() && m_result.back().second != domainp) forceNewFunction();
 
         // Process the procedure per statement, so we can split CFuncs within it
-        AstNodeStmt* const headp = VN_AS(procp->stmtsp(), NodeStmt);
+        AstNodeStmt* const headp = procp->stmtsp();
         UASSERT_OBJ(headp, procp, "Empty process should have been deleted earlier");
         headp->unlinkFrBackWithNext();
         // 'procp' is no longer needed but the OrderGraph still references

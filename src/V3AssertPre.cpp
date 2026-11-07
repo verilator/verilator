@@ -1482,7 +1482,7 @@ private:
                 // |-> : assign to __Vpropvar via always_comb (continuous).
                 // The assign evaluates RHS once; V3Sampled snapshots the
                 // result so all consequent refs read the same value.
-                AstNode* matchAssignsp = nullptr;
+                AstNodeStmt* matchAssignsp = nullptr;
                 for (AstNode* const stmtp : exprStmtp->stmtspList()) {
                     if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
                         assignp->unlinkFrBack();

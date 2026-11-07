@@ -266,7 +266,7 @@ private:
         // Populate the tables
         createTables(nodep, outputAssignedTableBuilder);
 
-        AstNode* const stmtsp = createLookupInput(fl, indexVscp);
+        AstNodeStmt* const stmtsp = createLookupInput(fl, indexVscp);
         createOutputAssigns(nodep, stmtsp, indexVscp, outputAssignedTableBuilder.varScopep());
 
         // Link it in.
@@ -330,7 +330,7 @@ private:
         }  // each value
     }
 
-    AstNode* createLookupInput(FileLine* fl, AstVarScope* indexVscp) {
+    AstNodeStmt* createLookupInput(FileLine* fl, AstVarScope* indexVscp) {
         // Concat inputs into a single temp variable (inside always)
         // First var in inVars becomes the LSB of the concat
         AstNodeExpr* concatp = nullptr;
