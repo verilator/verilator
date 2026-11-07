@@ -1,0 +1,6 @@
+%Error: t/t_assert_consec_rep_bad.v:19:57: Functions shall have no side effects in boolean expressions of assertions (IEEE 1800-2023 16.6)
+                                         : ... note: In instance 't'
+   19 |   assert property (@(posedge clk) start |-> a[*1:$] ##0 endpoint());
+      |                                                         ^~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: Exiting due to
