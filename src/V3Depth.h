@@ -20,13 +20,25 @@
 #include "config_build.h"
 #include "verilatedos.h"
 
+#include <vector>
+
 class AstNetlist;
+class AstNodeAssign;
+class AstNodeModule;
 
 //============================================================================
 
 class V3Depth final {
 public:
     static void depthAll(AstNetlist* nodep) VL_MT_DISABLED;
+    // Break expression spines so later visitors do not use one C frame per node.
+    // Width calls this on an assignment after the preliminary width walk, when
+    // dtypes exist and the final walk would otherwise recurse down the spine.
+    // markWidthed is true once V3WidthCommit has already run.
+    static std::vector<AstNodeAssign*> breakDeepAssign(AstNodeAssign* assignp,
+                                                       AstNodeModule* modp,
+                                                       bool markWidthed) VL_MT_DISABLED;
+    static void breakDeepExprs(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard
