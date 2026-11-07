@@ -65,7 +65,6 @@ set(HEADERS
     V3Cfg.h
     V3Class.h
     V3Clean.h
-    V3Clock.h
     V3Combine.h
     V3Common.h
     V3Const.h
@@ -241,7 +240,6 @@ set(COMMON_SOURCES
     V3CfgLiveVariables.cpp
     V3Class.cpp
     V3Clean.cpp
-    V3Clock.cpp
     V3Combine.cpp
     V3Common.cpp
     V3ConstPool.cpp

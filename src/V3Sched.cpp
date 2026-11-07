@@ -1002,6 +1002,9 @@ void schedule(AstNetlist* netlistp) {
     // Step 18: Clean up
     netlistp->clearStlFirstIterationp();
     netlistp->nbaQueuep(nullptr);  // Finished with this here
+    if (AstSenTree* const senTreesp = topScopep->senTreesp()) {
+        VL_DO_DANGLING(senTreesp->unlinkFrBackWithNext()->deleteTree(), senTreesp);
+    }
 
     if (v3Global.opt.stats()) {
         // A sample() call resolved to the union over its covergroup's constructions reads more
