@@ -26,6 +26,10 @@
 //      Top-down traversal in LinkDotResolveVisitor
 //          VarXRef/Func's:
 //              Find appropriate named cell and link to var they reference
+//      Top-down traversal in UpwardRefUniquifier
+//          Identify module subtrees containing upward task/function references
+//          Build instance dependencies through child cells and interface ports
+//          Clone modules for distinct instance configurations and relink their references
 //*************************************************************************
 // Interfaces:
 //      CELL (.port (ifref)
@@ -65,8 +69,11 @@
 
 #include "V3LinkDot.h"
 
+#include "V3Error.h"
 #include "V3Global.h"
 #include "V3Graph.h"
+#include "V3GraphStream.h"
+#include "V3Hash.h"
 #include "V3LinkDotIfaceCapture.h"
 #include "V3MemberMap.h"
 #include "V3Parse.h"
@@ -74,9 +81,12 @@
 #include "V3Stats.h"
 #include "V3String.h"
 #include "V3SymTable.h"
+#include "V3UniqueNames.h"
 
 #include <algorithm>
 #include <cstdlib>
+#include <map>
+#include <unordered_map>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -5720,8 +5730,16 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 // which may find std::randomize and overwrite classOrPackagep
                 return;
             }
-            VSymEnt* const foundp
-                = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+            VSymEnt* foundp = m_statep->findSymPrefixed(dotSymp, nodep->name(), baddot, first);
+            bool foundUpward = false;
+            // IEEE 1800-2023 23.8.1 A simple task/function name uses upward
+            // hierarchical name resolution.
+            if (!foundp && first && nodep->dotted().empty() && !nodep->classOrPackagep()) {
+                VSymEnt* okSymp = nullptr;
+                foundp = m_statep->findDotted(nodep->fileline(), dotSymp, nodep->name(), baddot,
+                                              okSymp, true);
+                foundUpward = foundp != nullptr;
+            }
             AstNodeFTask* const taskp = foundp ? VN_CAST(foundp->nodep(), NodeFTask) : nullptr;
             AstNodeModule* const taskModulep = foundp ? foundp->classOrPackagep() : nullptr;
             // Ignore deferring linking of functions inside params of classes extending
@@ -5747,6 +5765,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
             }
 
             if (taskp) {
+                if (foundUpward) {
+                    nodep->upwardReference(true);
+                    m_modp->hasUpwardRef(true);
+                    v3Global.hasUpwardReferences(true);
+                }
                 if (staticAccess && !taskp->isStatic()) {
                     // TODO bug4077
                     // nodep->v3error("Static access to non-static task/function "
@@ -6839,6 +6862,586 @@ public:
     ~LinkDotResolveVisitor() override = default;
 };
 
+namespace {
+
+struct CellInfo final {
+    AstCell* const m_cellp = nullptr;  // Cell to specialize.
+    AstNode* const m_scopep = nullptr;  // Lexical scope containing the cell.
+};
+
+struct ModuleInfo final {
+    std::vector<AstNodeFTaskRef*> m_upwardRefps;  // Upward references in AST traversal order.
+    std::vector<CellInfo> m_cells;  // Cells in the same traversal order in every clone.
+    std::vector<AstVar*> m_ifacePortps;  // Interface ports in AST traversal order.
+    std::map<const AstCell*, size_t> m_cellIndices;  // Cell traversal indices.
+    std::map<const AstVar*, size_t> m_ifacePortIndices;  // Interface port traversal indices.
+};
+
+class ModuleInfoCollector final : public VNVisitorConst {
+    ModuleInfo& m_info;  // Information being collected.
+    AstNode* m_scopep;  // Current lexical scope.
+
+    void visit(AstNodeFTaskRef* nodep) override {
+        if (nodep->upwardReference()) m_info.m_upwardRefps.push_back(nodep);
+        iterateChildrenConst(nodep);
+    }
+
+    void visit(AstCell* nodep) override {
+        m_info.m_cellIndices.emplace(nodep, m_info.m_cells.size());
+        m_info.m_cells.push_back(CellInfo{nodep, m_scopep});
+        iterateChildrenConst(nodep);
+    }
+
+    void visit(AstVar* nodep) override {
+        if (nodep->isIfaceRef() && !nodep->isIfaceParent()) {
+            m_info.m_ifacePortIndices.emplace(nodep, m_info.m_ifacePortps.size());
+            m_info.m_ifacePortps.push_back(nodep);
+        }
+        iterateChildrenConst(nodep);
+    }
+
+    void visit(AstGenBlock* nodep) override { iterateScope(nodep); }
+
+    void iterateScope(AstNode* nodep) {
+        VL_RESTORER(m_scopep);
+        m_scopep = nodep;
+        iterateChildrenConst(nodep);
+    }
+
+    void visit(AstNodeBlock* nodep) override { iterateScope(nodep); }
+
+    void visit(AstNodeModule*) override { /* Noop. Ignore children modules. */ }
+
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+public:
+    ModuleInfoCollector(AstNodeModule* nodep, ModuleInfo& info)
+        : m_info{info}
+        , m_scopep{nodep} {
+        iterateAndNextConstNull(nodep->stmtsp());
+    }
+    ~ModuleInfoCollector() override = default;
+};
+
+ModuleInfo gatherModuleInfo(AstNodeModule* nodep) {
+    ModuleInfo modInfo;
+    ModuleInfoCollector{nodep, modInfo};
+    return modInfo;
+}
+
+struct Variant;
+
+struct IfaceVariant final {
+    AstNodeModule* m_sourcep = nullptr;  // Original interface module definition.
+    Variant* m_variantp = nullptr;  // Selected variant, or null for the original definition.
+
+    bool operator==(const IfaceVariant& rhs) const {
+        return m_sourcep == rhs.m_sourcep && m_variantp == rhs.m_variantp;
+    }
+};
+
+struct VariantKey final {
+    std::vector<AstNodeFTask*> m_targetps;  // Resolved targets of this module's upward references.
+    std::vector<Variant*> m_childVariantps;  // Selected variant for each child cell.
+    std::vector<IfaceVariant> m_ifaceVariantps;  // Selected binding for each interface port.
+
+    bool operator==(const VariantKey& rhs) const {
+        return m_targetps == rhs.m_targetps && m_childVariantps == rhs.m_childVariantps
+               && m_ifaceVariantps == rhs.m_ifaceVariantps;
+    }
+};
+
+struct VariantKeyHash final {
+    size_t operator()(const VariantKey& key) const {
+        V3Hash hash;
+        for (const AstNodeFTask* const targetp : key.m_targetps) hash += targetp;
+        for (const Variant* const childp : key.m_childVariantps) hash += childp;
+        for (const IfaceVariant& ifacep : key.m_ifaceVariantps) {
+            hash += ifacep.m_sourcep;
+            hash += ifacep.m_variantp;
+        }
+        return hash.value();
+    }
+};
+
+struct Variant final {
+    const VariantKey m_key;  // Instance-dependent choices defining this variant.
+    AstNodeModule* m_modulep = nullptr;  // Definition assigned after all variants are classified.
+
+    explicit Variant(VariantKey&& key)
+        : m_key{std::move(key)} {}
+};
+
+struct ModuleVariants final {
+    std::vector<std::unique_ptr<Variant>> m_variants;  // Owned variants in discovery order.
+    std::unordered_map<VariantKey, Variant*, VariantKeyHash> m_byKey;  // Interned variants.
+};
+
+struct Ancestor final {
+    AstNodeModule* const m_modulep;  // Module containing the ancestor cell.
+    AstNode* const m_scopep;  // Lexical scope from which upward lookup continues.
+};
+
+class UpwardVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(UpwardVertex, V3GraphVertex)
+
+    AstNodeModule* const m_modulep;  // Module represented by this vertex.
+    bool m_subtreeHasUpwardRef = false;  // Whether this module's subtree has an upward reference.
+
+public:
+    UpwardVertex(V3Graph* graphp, AstNodeModule* modulep)
+        : V3GraphVertex{graphp}
+        , m_modulep{modulep}
+        , m_subtreeHasUpwardRef{m_modulep->hasUpwardRef()} {}
+
+    bool subtreeHasUpwardRef() const { return m_subtreeHasUpwardRef; }
+    void subtreeHasUpwardRef(bool flag) { m_subtreeHasUpwardRef = flag; }
+
+    string name() const override { return m_modulep->prettyNameQ(); }
+    string dotColor() const override {
+        if (m_subtreeHasUpwardRef) return "red";
+        return "black";
+    }
+};
+
+class UpwardSubtreesIdentifier final : public VNVisitorConst {
+    const VNUser3InUse m_user3InUse;  // AstNodeModule::user3p() -> UpwardVertex*
+    V3Graph m_graph;  // Child-to-parent module dependency graph.
+    AstNodeModule* m_currModulep = nullptr;  // Module containing the current AST node.
+
+    UpwardVertex* vertex(AstNodeModule* modulep) {
+        if (!modulep->user3p()) { modulep->user3p(new UpwardVertex{&m_graph, modulep}); }
+        return modulep->user3u().to<UpwardVertex*>();
+    }
+
+    void visit(AstNodeModule* nodep) override {
+        VL_RESTORER(m_currModulep);
+        m_currModulep = nodep;
+        vertex(nodep);
+        iterateChildrenConst(nodep);
+    }
+
+    void addDependency(UpwardVertex* childp, UpwardVertex* parentp) {
+        for (const V3GraphEdge& edge : childp->outEdges()) {
+            if (edge.top() == parentp) return;
+        }
+        new V3GraphEdge{&m_graph, childp, parentp, 1};
+    }
+
+    void visit(AstCell* nodep) override {
+        if (AstNodeModule* const modp = nodep->modp()) {
+            UpwardVertex* const childp = vertex(modp);
+            UpwardVertex* const parentp = vertex(m_currModulep);
+            addDependency(childp, parentp);
+        }
+        iterateChildrenConst(nodep);
+    }
+
+    void visit(AstVar* nodep) override {
+        if (nodep->isIfaceRef() && !nodep->isIfaceParent()) {
+            const AstIfaceRefDType* const irefp
+                = VN_CAST(nodep->subDTypep()->skipRefp()->elemDTypep(), IfaceRefDType);
+            if (irefp && !irefp->isVirtual()) {
+                if (AstIface* const ifacep = irefp->ifaceViaCellp()) {
+                    addDependency(vertex(ifacep), vertex(m_currModulep));
+                }
+            }
+        }
+        iterateChildrenConst(nodep);
+    }
+
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    void propagate() {
+        GraphStreamUnordered order{&m_graph};
+        while (const V3GraphVertex* const vertexp = order.nextp()) {
+            const UpwardVertex* const childp = vertexp->as<const UpwardVertex>();
+            if (childp->subtreeHasUpwardRef()) {
+                for (const V3GraphEdge& edge : childp->outEdges()) {
+                    edge.top()->as<UpwardVertex>()->subtreeHasUpwardRef(true);
+                }
+            }
+        }
+    }
+
+public:
+    UpwardSubtreesIdentifier(AstNetlist* const rootp) {
+        iterateChildrenConst(rootp);
+        propagate();
+    }
+
+    bool subtreeHasUpwardRef(AstNodeModule* nodep) const {
+        return nodep->user3p() && nodep->user3u().to<UpwardVertex*>()->subtreeHasUpwardRef();
+    }
+
+    void dumpDotFile() { m_graph.dumpDotFilePrefixed("linkdotupward-subtrees"); }
+};
+
+class InstanceVertex final : public V3GraphVertex {
+    VL_RTTI_IMPL(InstanceVertex, V3GraphVertex)
+
+    AstNodeModule* const m_sourcep;  // Module definition instantiated by this vertex.
+    const uint32_t m_discoveryIndex;  // Stable instance traversal order.
+
+    std::vector<AstNodeFTask*> m_targetps;  // Resolved targets of upward references.
+    std::vector<InstanceVertex*> m_childps;  // One entry per source cell, including nulls.
+    Variant* m_variantp = nullptr;  // Selected module variant for this instance.
+    std::vector<InstanceVertex*> m_ifaceSourceps;  // Source instance for each interface port.
+
+public:
+    InstanceVertex(V3Graph* graphp, AstNodeModule* sourcep, uint32_t discoveryIndex)
+        : V3GraphVertex{graphp}
+        , m_sourcep{sourcep}
+        , m_discoveryIndex{discoveryIndex} {}
+
+    uint32_t discoveryIndex() const { return m_discoveryIndex; }
+
+    const std::vector<AstNodeFTask*>& targetps() const { return m_targetps; }
+    void addTargetp(AstNodeFTask* targetp) { m_targetps.push_back(targetp); }
+
+    const std::vector<InstanceVertex*>& childps() const { return m_childps; }
+    void addChildp(InstanceVertex* childp) { m_childps.push_back(childp); }
+
+    Variant* variantp() const { return m_variantp; }
+    void variantp(Variant* variantp) { m_variantp = variantp; }
+
+    AstNodeModule* sourcep() const { return m_sourcep; }
+
+    const std::vector<InstanceVertex*>& ifaceSourceps() const { return m_ifaceSourceps; }
+    void allocateIfaceSourceps(size_t size) { m_ifaceSourceps.resize(size); }
+    void ifaceSourcep(size_t index, InstanceVertex* ifacep) {
+        UASSERT(index < m_ifaceSourceps.size(), "Array should be resized properly.");
+        m_ifaceSourceps[index] = ifacep;
+    }
+
+    string name() const override { return m_sourcep->prettyNameQ(); }
+};
+
+class UpwardRefUniquifier final {
+    AstNetlist* const m_rootp;  // Design being rewritten.
+    LinkDotState& m_state;  // Symbol state used to resolve upward references.
+    std::unordered_map<AstNodeFTask*, AstNodeModule*>
+        m_targetOwners;  // Owners of resolved targets.
+    UpwardSubtreesIdentifier
+        m_subtreesWithUpward;  // Visitor collecting subtrees with upward references.
+    V3Graph m_instanceGraph;  // Instance dependencies for child and interface variant ordering.
+    uint32_t m_nextDiscoveryIndex = 0;  // Allows ordering instances by their appearance order.
+    std::unordered_map<AstNodeModule*, ModuleInfo> m_moduleInfos;  // Cached module contents.
+    std::unordered_map<AstNodeModule*, std::vector<InstanceVertex*>>
+        m_instancesByModule;  // Analyzed instances grouped by module definition.
+    std::vector<AstNodeModule*> m_instanceModules;  // Module definitions in discovery order.
+    std::unordered_map<AstNodeModule*, ModuleVariants>
+        m_moduleVariants;  // Owns additional configurations that require cloned modules.
+    std::vector<AstNodeModule*> m_modulesToRelink;  // Deterministic child-first order.
+    V3UniqueNames m_names{"__Vupward"};  // Cloned module names.
+    int m_clonedModules = 0;  // Number of cloned module definitions.
+    int m_relinkedRefs = 0;  // Number of relinked task and function references.
+    int m_relinkedCells = 0;  // Number of cells relinked to cloned definitions.
+    int m_relinkedIfacePorts = 0;  // Number of interface ports relinked to variants.
+    int m_instancesAnalyzed = 0;  // Number of hierarchy instances analyzed.
+
+    void buildInstanceGraph() {
+        for (AstNodeModule* modulep = m_rootp->modulesp(); modulep;
+             modulep = VN_AS(modulep->nextp(), NodeModule)) {
+            if (modulep->isTop()) {
+                std::vector<Ancestor> ancestors;
+                if (InstanceVertex* const rootp = buildInstanceGraph(modulep, ancestors)) {
+                    rootp->allocateIfaceSourceps(moduleInfo(modulep).m_ifacePortps.size());
+                    connectIfaceDependencies(rootp);
+                }
+            }
+        }
+    }
+
+    InstanceVertex* buildInstanceGraph(AstNodeModule* modulep, std::vector<Ancestor>& ancestors) {
+        if (!m_subtreesWithUpward.subtreeHasUpwardRef(modulep)
+            || std::any_of(
+                ancestors.begin(), ancestors.end(),
+                [modulep](const Ancestor& ancestor) { return ancestor.m_modulep == modulep; }))
+            return nullptr;
+
+        InstanceVertex* const vertexp
+            = new InstanceVertex{&m_instanceGraph, modulep, m_nextDiscoveryIndex++};
+        ++m_instancesAnalyzed;
+        std::vector<InstanceVertex*>& instances = m_instancesByModule[modulep];
+        if (instances.empty()) m_instanceModules.push_back(modulep);
+        instances.push_back(vertexp);
+
+        ModuleInfo& info = moduleInfo(modulep);
+
+        for (AstNodeFTaskRef* const refp : info.m_upwardRefps) {
+            vertexp->addTargetp(findTarget(ancestors, refp));
+        }
+
+        for (const CellInfo& cell : info.m_cells) {
+            InstanceVertex* childp = nullptr;
+            if (AstNodeModule* const childModulep = cell.m_cellp->modp()) {
+                ancestors.push_back(Ancestor{modulep, cell.m_scopep});
+                childp = buildInstanceGraph(childModulep, ancestors);
+                ancestors.pop_back();
+            }
+            vertexp->addChildp(childp);
+            // Point child to parent so graph ranks classify child variants first.
+            if (childp) { new V3GraphEdge{&m_instanceGraph, childp, vertexp, /*weight=*/1}; }
+        }
+
+        return vertexp;
+    }
+
+    ModuleInfo& moduleInfo(AstNodeModule* nodep) {
+        const auto it = m_moduleInfos.find(nodep);
+        if (it != m_moduleInfos.end()) return it->second;
+        return m_moduleInfos.emplace(nodep, gatherModuleInfo(nodep)).first->second;
+    }
+
+    AstNodeFTask* findTarget(const std::vector<Ancestor>& ancestors, AstNodeFTaskRef* refp) {
+        for (auto it = ancestors.rbegin(); it != ancestors.rend(); ++it) {
+            VSymEnt* const scopeSymp = m_state.getNodeSym(it->m_scopep);
+            VSymEnt* const foundp = scopeSymp->findIdFallback(refp->name());
+            if (!foundp) continue;
+
+            AstNodeFTask* const taskp = VN_CAST(foundp->nodep(), NodeFTask);
+            UASSERT_OBJ(taskp, refp, "Upward task/function lookup resolved to a non-task symbol");
+
+            m_targetOwners.emplace(taskp, foundp->classOrPackagep());
+            return taskp;
+        }
+        refp->v3fatalSrc("Upward task/function reference no longer resolves");
+        return nullptr;  // LCOV_EXCL_LINE
+    }
+
+    void connectIfaceDependencies(InstanceVertex* const parentp) {
+        const ModuleInfo& parentInfo = moduleInfo(parentp->sourcep());
+
+        for (size_t i = 0; i < parentp->childps().size(); ++i) {
+            InstanceVertex* const consumerp = parentp->childps()[i];
+            if (!consumerp) continue;
+
+            AstCell* const cellp = parentInfo.m_cells[i].m_cellp;
+            const ModuleInfo& consumerInfo = moduleInfo(consumerp->sourcep());
+            consumerp->allocateIfaceSourceps(consumerInfo.m_ifacePortps.size());
+
+            for (AstPin* const pinp : cellp->pinspList()) {
+                const auto it = consumerInfo.m_ifacePortIndices.find(pinp->modVarp());
+                if (it != consumerInfo.m_ifacePortIndices.end()) {
+                    InstanceVertex* const sourcep = findIfaceSource(parentp, pinp->exprp());
+                    consumerp->ifaceSourcep(it->second, sourcep);
+
+                    if (sourcep) addInstanceDependency(sourcep, consumerp);
+                }
+            }
+        }
+
+        // Child bindings must be established before resolving forwarded ports
+        // at the next hierarchy level.
+        for (InstanceVertex* const childp : parentp->childps()) {
+            if (childp) connectIfaceDependencies(childp);
+        }
+    }
+
+    InstanceVertex* findIfaceSource(InstanceVertex* const parentp, AstNode* exprp) {
+        const AstNodeVarRef* const refp = VN_CAST(exprp, NodeVarRef);
+        if (!refp || !refp->varp()) return nullptr;
+
+        AstVar* const actualp = refp->varp();
+        const AstIfaceRefDType* const irefp
+            = VN_CAST(actualp->subDTypep()->skipRefp()->elemDTypep(), IfaceRefDType);
+        if (!irefp) return nullptr;
+
+        const ModuleInfo& parentInfo = moduleInfo(parentp->sourcep());
+        // Find if interface var is defined locally.
+        if (const AstCell* const cellp = irefp->cellp()) {
+            const auto it = parentInfo.m_cellIndices.find(cellp);
+            if (it != parentInfo.m_cellIndices.end()) return parentp->childps()[it->second];
+        }
+
+        // Find if interface var is defined in module's port.
+        const auto it = parentInfo.m_ifacePortIndices.find(actualp);
+        if (it != parentInfo.m_ifacePortIndices.end()) {
+            return parentp->ifaceSourceps()[it->second];
+        }
+        refp->v3fatalSrc("Interface should resolve to existing port or cell");
+        return nullptr;  // LCOV_EXCL_LINE
+    }
+
+    void addInstanceDependency(InstanceVertex* sourcep, InstanceVertex* consumerp) {
+        for (const V3GraphEdge& edge : sourcep->outEdges()) {
+            if (edge.top() == consumerp) return;
+        }
+        new V3GraphEdge{&m_instanceGraph, sourcep, consumerp, /*weight=*/1};
+    }
+
+    void classifyInstanceGraph() {
+        m_instanceGraph.rank();
+        std::stable_sort(
+            m_instanceModules.begin(), m_instanceModules.end(),
+            [this](AstNodeModule* lhs, AstNodeModule* rhs) {
+                const auto lhsIt = m_instancesByModule.find(lhs);
+                const auto rhsIt = m_instancesByModule.find(rhs);
+                UASSERT(lhsIt != m_instancesByModule.end() && !lhsIt->second.empty()
+                            && rhsIt != m_instancesByModule.end() && !rhsIt->second.empty(),
+                        "Instances should be collected and assigned to relevant modules");
+                const InstanceVertex* const lhsInstancep = lhsIt->second[0];
+                const InstanceVertex* const rhsInstancep = rhsIt->second[0];
+                if (lhsInstancep->rank() != rhsInstancep->rank()) {
+                    return lhsInstancep->rank() < rhsInstancep->rank();
+                }
+                return lhsInstancep->discoveryIndex() < rhsInstancep->discoveryIndex();
+            });
+
+        for (AstNodeModule* const sourcep : m_instanceModules) {
+            const std::vector<InstanceVertex*>& instanceps = m_instancesByModule[sourcep];
+            bool issueRelink = false;
+            ModuleVariants& variants = m_moduleVariants[sourcep];
+            for (InstanceVertex* const instancep : instanceps) {
+                VariantKey key = variantKey(instancep);
+                if (variants.m_byKey.empty()) {
+                    // Make first variant a default.
+                    variants.m_byKey.emplace(std::move(key), nullptr);
+                    instancep->variantp(nullptr);
+                    issueRelink = needsRelink(instancep);
+                    continue;
+                }
+                const auto it = variants.m_byKey.find(key);
+                if (it != variants.m_byKey.end()) {
+                    // Reuse existing variant if already present.
+                    instancep->variantp(it->second);
+                } else {
+                    variants.m_variants.emplace_back(std::make_unique<Variant>(std::move(key)));
+                    Variant* const variantp = variants.m_variants.back().get();
+                    variants.m_byKey.emplace(variantp->m_key, variantp);
+                    instancep->variantp(variantp);
+                    issueRelink = true;
+                }
+            }
+            if (issueRelink) m_modulesToRelink.push_back(sourcep);
+        }
+    }
+
+    static VariantKey variantKey(const InstanceVertex* vertexp) {
+        VariantKey key;
+        key.m_targetps = vertexp->targetps();
+        key.m_childVariantps.reserve(vertexp->childps().size());
+        for (const InstanceVertex* const childp : vertexp->childps()) {
+            key.m_childVariantps.push_back(childp ? childp->variantp() : nullptr);
+        }
+        key.m_ifaceVariantps.reserve(vertexp->ifaceSourceps().size());
+        for (const InstanceVertex* const ifacep : vertexp->ifaceSourceps()) {
+            key.m_ifaceVariantps.push_back(IfaceVariant{ifacep ? ifacep->sourcep() : nullptr,
+                                                        ifacep ? ifacep->variantp() : nullptr});
+        }
+        return key;
+    }
+
+    static bool needsRelink(const InstanceVertex* vertexp) {
+        const std::vector<InstanceVertex*>& childps = vertexp->childps();
+        const std::vector<InstanceVertex*>& ifaceps = vertexp->ifaceSourceps();
+        return !vertexp->targetps().empty()
+               || std::any_of(
+                   childps.begin(), childps.end(),
+                   [](const InstanceVertex* const childp) { return childp && childp->variantp(); })
+               || std::any_of(ifaceps.begin(), ifaceps.end(),
+                              [](const InstanceVertex* const ifacep) {
+                                  return ifacep && ifacep->variantp();
+                              });
+    }
+
+    void cloneVariantModules() {
+        for (AstNodeModule* const sourcep : m_modulesToRelink) {
+            const auto it = m_moduleVariants.find(sourcep);
+            if (it != m_moduleVariants.end()) {
+                for (const std::unique_ptr<Variant>& variantp : it->second.m_variants) {
+                    variantp->m_modulep = cloneModule(sourcep);
+                }
+            }
+        }
+    }
+
+    AstNodeModule* cloneModule(AstNodeModule* nodep) {
+        AstNodeModule* const clonep = nodep->cloneTree(false);
+        clonep->name(m_names.get(nodep));
+        m_rootp->addModulesp(clonep);
+        ++m_clonedModules;
+        return clonep;
+    }
+
+    void relinkModule(AstNodeModule* modulep, const VariantKey& key) {
+        const ModuleInfo& info = moduleInfo(modulep);
+
+        for (size_t i = 0; i < key.m_targetps.size(); ++i) {
+            AstNodeFTask* const targetp = key.m_targetps[i];
+            info.m_upwardRefps[i]->taskp(targetp);
+            info.m_upwardRefps[i]->classOrPackagep(m_targetOwners.at(targetp));
+            ++m_relinkedRefs;
+        }
+
+        for (size_t i = 0; i < info.m_cells.size(); ++i) {
+            Variant* const childVariantp = key.m_childVariantps[i];
+            if (!childVariantp) continue;
+
+            AstCell* const cellp = info.m_cells[i].m_cellp;
+            cellp->modp(childVariantp->m_modulep);
+            cellp->modName(childVariantp->m_modulep->name());
+            ++m_relinkedCells;
+
+            // LinkDot must resolve pins against the selected clone's formals.
+            for (AstPin* const pinp : cellp->pinspList()) { pinp->modVarp(nullptr); }
+        }
+
+        for (size_t i = 0; i < info.m_ifacePortps.size(); ++i) {
+            const IfaceVariant& binding = key.m_ifaceVariantps[i];
+            if (!binding.m_sourcep) continue;
+
+            AstNodeModule* const selectedp
+                = binding.m_variantp ? binding.m_variantp->m_modulep : binding.m_sourcep;
+
+            AstIfaceRefDType* const irefp = VN_AS(
+                info.m_ifacePortps[i]->subDTypep()->skipRefp()->elemDTypep(), IfaceRefDType);
+            irefp->ifacep(VN_AS(selectedp, Iface));
+            ++m_relinkedIfacePorts;
+        }
+    }
+
+    void relinkVariants() {
+        for (AstNodeModule* const sourcep : m_modulesToRelink) {
+            ModuleVariants& variants = m_moduleVariants.at(sourcep);
+            const auto defaultIt = std::find_if(variants.m_byKey.begin(), variants.m_byKey.end(),
+                                                [](const auto& entry) { return !entry.second; });
+            UASSERT(defaultIt != variants.m_byKey.end(), "Default variant not found");
+            relinkModule(sourcep, defaultIt->first);
+
+            const auto it = m_moduleVariants.find(sourcep);
+            if (it != m_moduleVariants.end()) {
+                for (const std::unique_ptr<Variant>& variantp : it->second.m_variants) {
+                    relinkModule(variantp->m_modulep, variantp->m_key);
+                }
+            }
+        }
+    }
+
+public:
+    explicit UpwardRefUniquifier(AstNetlist* rootp, LinkDotState& state)
+        : m_rootp{rootp}
+        , m_state{state}
+        , m_subtreesWithUpward{rootp} {
+        if (dumpGraphLevel()) m_subtreesWithUpward.dumpDotFile();
+        buildInstanceGraph();
+        classifyInstanceGraph();
+        cloneVariantModules();
+        relinkVariants();
+        if (dumpGraphLevel()) m_instanceGraph.dumpDotFilePrefixed("linkdotupward-uniquifier");
+    }
+    ~UpwardRefUniquifier() {
+        V3Stats::addStat("LinkDotUpward, Modules cloned", m_clonedModules);
+        V3Stats::addStat("LinkDotUpward, Task/function references relinked", m_relinkedRefs);
+        V3Stats::addStat("LinkDotUpward, Cells relinked", m_relinkedCells);
+        V3Stats::addStat("LinkDotUpward, Interface ports relinked", m_relinkedIfacePorts);
+        V3Stats::addStat("LinkDotUpward, Instances analyzed", m_instancesAnalyzed);
+    }
+};
+
+}  // namespace
+
 //######################################################################
 // Link class functions
 
@@ -6888,6 +7491,15 @@ void V3LinkDot::linkDotPrimary(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
     linkDotGuts(nodep, LDS_PRIMARY);
     V3Global::dumpCheckGlobalTree("linkdot", 0, dumpTreeEitherLevel() >= 6);
+}
+
+void V3LinkDot::linkDotUpward(AstNetlist* nodep) {
+    if (!v3Global.hasUpwardReferences()) return;
+    UINFO(2, __FUNCTION__ << ":");
+    LinkDotState state{nodep, LDS_PARAMED};
+    { LinkDotFindVisitor{nodep, &state}; }
+    UpwardRefUniquifier{nodep, state};
+    V3Global::dumpCheckGlobalTree("linkdotupward", 0, dumpTreeEitherLevel() >= 3);
 }
 
 void V3LinkDot::linkDotParamed(AstNetlist* nodep) {

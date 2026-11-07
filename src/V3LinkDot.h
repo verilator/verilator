@@ -33,6 +33,7 @@ class V3LinkDot final {
 
 public:
     static void linkDotPrimary(AstNetlist* nodep) VL_MT_DISABLED;
+    static void linkDotUpward(AstNetlist* nodep) VL_MT_DISABLED;
     static void linkDotParamed(AstNetlist* nodep) VL_MT_DISABLED;
     static void linkDotScope(AstNetlist* nodep) VL_MT_DISABLED;
 };

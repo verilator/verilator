@@ -112,6 +112,7 @@ module t;
             #1;
             $write("After #1 delay");
             wait((clk == 32'sh1)) $write("After wait(clk == 1)");
+            up_referenced.up_ref.method();
         end
     end
     bit [6:5] [4:3] [2:1]  arraymanyd[10:11][12:13][14:15];
@@ -395,7 +396,7 @@ module t;
                 if ((SUB_B !== 2'h1)) begin
                     begin
                         $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", "t/t_debug_emitv.v", 
-                               32'sh191, SUB_B, 2'h1);
+                               32'sh1a2, SUB_B, 2'h1);
                         $stop;
                     end
                 end
@@ -1987,6 +1988,12 @@ interface Iface;
         input logic ifsig
     );
 endinterface
+module UpwardReferenced;
+    UpwardRef up_ref ();
+    task func;
+        $display("Upward referenced call.");
+    endtask
+endmodule
 module sub;
     input logic clk;
     logic [7:0]  xr_vec;
@@ -2050,3 +2057,8 @@ package Pkg;
         BAZ = 32'h2
     } enum_t;
 endpackage
+interface UpwardRef;
+    task method;
+        func();
+    endtask
+endinterface
