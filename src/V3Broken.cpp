@@ -470,4 +470,32 @@ void V3Broken::selfTest() {
     deleted(newp);
 #endif
     VL_DO_DANGLING(newp->deleteTree(), newp);
+
+    // Variable identity includes its force read link, and cloning a linked declaration
+    // list must retarget that link rather than aliasing the original read signal.
+    AstVar* const varp
+        = new AstVar{fl, VVarType::VAR, "forceSignal", v3Global.rootp()->findUInt32DType()};
+    AstVar* const rdp = new AstVar{fl, VVarType::WIRE, "forceRead", varp->dtypep()};
+    varp->forceRdVarp(rdp);
+    varp->addNext(rdp);
+    AstVar* const samep = varp->cloneTree(false);
+    UASSERT_OBJ(samep->forceRdVarp() == rdp, samep, "Isolated clone lost force read link");
+    UASSERT_OBJ(varp->sameNode(samep), varp, "Shared force read link changed identity");
+    AstVar* const linkedp = varp->cloneTree(true);
+    UASSERT_OBJ(linkedp->forceRdVarp() == linkedp->nextp(), linkedp,
+                "Cloned force read link not retargeted");
+    UASSERT_OBJ(!varp->sameNode(linkedp), varp, "Distinct force read links have same identity");
+
+    // The lowered inout port's group and enable role are also part of variable identity.
+    samep->libInoutId(1);
+    UASSERT_OBJ(!varp->sameNode(samep), varp, "Distinct inout groups have same identity");
+    samep->libInoutId(0);
+    samep->libInoutEnable(true);
+    UASSERT_OBJ(!varp->sameNode(samep), varp, "Distinct inout roles have same identity");
+    samep->libInoutEnable(false);
+    UASSERT_OBJ(varp->sameNode(samep), varp, "Restored variable identity differs");
+
+    VL_DO_DANGLING(samep->deleteTree(), samep);
+    VL_DO_DANGLING(linkedp->deleteTree(), linkedp);
+    VL_DO_DANGLING(varp->deleteTree(), varp);
 }
