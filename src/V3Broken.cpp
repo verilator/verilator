@@ -473,9 +473,9 @@ void V3Broken::selfTest() {
 
     // Variable identity includes its force read link, and cloning a linked declaration
     // list must retarget that link rather than aliasing the original read signal.
-    AstVar* const varp
-        = new AstVar{fl, VVarType::VAR, "forceSignal", v3Global.rootp()->findUInt32DType()};
-    AstVar* const rdp = new AstVar{fl, VVarType::WIRE, "forceRead", varp->dtypep()};
+    AstBasicDType* const dtypep = new AstBasicDType{fl, VBasicDTypeKwd::UINT32};
+    AstVar* const varp = new AstVar{fl, VVarType::VAR, "forceSignal", dtypep};
+    AstVar* const rdp = new AstVar{fl, VVarType::WIRE, "forceRead", dtypep};
     varp->forceRdVarp(rdp);
     varp->addNext(rdp);
     AstVar* const samep = varp->cloneTree(false);
@@ -498,4 +498,5 @@ void V3Broken::selfTest() {
     VL_DO_DANGLING(samep->deleteTree(), samep);
     VL_DO_DANGLING(linkedp->deleteTree(), linkedp);
     VL_DO_DANGLING(varp->deleteTree(), varp);
+    VL_DO_DANGLING(dtypep->deleteTree(), dtypep);
 }
