@@ -1910,14 +1910,6 @@ const char* AstExecGraph::broken() const {
     return nullptr;
 }
 AstExecGraph::~AstExecGraph() { VL_DO_DANGLING(delete m_depGraphp, m_depGraphp); }
-void AstExprStmt::dump(std::ostream& str) const {
-    Super::dump(str);
-    if (hasResult()) str << " [HASRESULT]";
-}
-void AstExprStmt::dumpJson(std::ostream& str) const {
-    dumpJsonBoolIf(str, "hasResult", hasResult());
-    dumpJsonGen(str);
-}
 bool AstExprStmt::isPure() {
     if (AstNode::afterCommentp(stmtsp())) return false;
     return resultp()->isPure();

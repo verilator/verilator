@@ -453,10 +453,6 @@ public:
         emitCFuncHeader(nodep, m_modp, /* withScope: */ true);
 
         puts(" {\n");
-        if (nodep->isConstructor()) {
-            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
-            if (classp && classp->extendsp()) putConstructorSubinit(classp, nodep);
-        }
 
         // "+" in the debug indicates a print from the model
         puts("VL_DEBUG_IF(VL_DBG_MSGF(\"+  ");
@@ -530,6 +526,15 @@ public:
         if (nodep->varsp()) {
             putsDecoration(nodep, "// Locals\n");
             iterateAndNextConstNull(nodep->varsp());
+        }
+
+        // After the locals, as the super.new arguments might use them
+        if (nodep->isConstructor()) {
+            const AstClass* const classp = VN_CAST(nodep->scopep()->modp(), Class);
+            if (classp && classp->extendsp()) {
+                putsDecoration(nodep, "// Super\n");
+                putConstructorSubinit(classp, nodep);
+            }
         }
 
         if (nodep->stmtsp()) {
@@ -1466,10 +1471,6 @@ public:
             putnbs(nodep, "(co_await ([&]() -> VlCoroutine {\n");
             iterateAndNextConstNull(nodep->stmtsp());
             puts("co_return;\n");
-            if (!nodep->hasResult()) {
-                puts("}()))");
-                return;
-            }
             puts("}()), ");
             iterateAndNextConstNull(nodep->resultp());
             puts(")");
@@ -1478,11 +1479,6 @@ public:
         // GCC allows compound statements in expressions, but this is not standard.
         // So we use an immediate-evaluation lambda and comma operator
         putnbs(nodep, "([&]() {\n");
-        if (!nodep->hasResult()) {
-            iterateAndNextConstNull(nodep->stmtsp());
-            puts("}())");
-            return;
-        }
         iterateAndNextConstNull(nodep->stmtsp());
         puts("}(), ");
         iterateAndNextConstNull(nodep->resultp());

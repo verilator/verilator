@@ -468,7 +468,6 @@ class TaskVisitor final : public VNVisitor {
     AstScope* m_scopep = nullptr;  // Current scope
     AstNode* m_insStmtp = nullptr;  // Where to insert statement
     bool m_inSensesp = false;  // Are we under a senitem?
-    bool m_inNew = false;  // Are we under a constructor?
     // Variables created by createVarScope, shared by instances
     V3SharedTmps m_funcTmps{"__Vfunc", VVarType::BLOCKTEMP};  // For function calls
     V3SharedTmps m_taskTmps{"__Vtask", VVarType::BLOCKTEMP};  // For task calls
@@ -2053,11 +2052,6 @@ class TaskVisitor final : public VNVisitor {
         iterateChildren(nodep);
         UASSERT_OBJ(!m_insStmtp, nodep, "Didn't finish out last statement");
     }
-    void visit(AstCNew* nodep) override {
-        VL_RESTORER(m_inNew);
-        m_inNew = true;
-        iterateChildren(nodep);
-    }
     // If taskp is a getter, return the reference to the member variable it returns
     static AstVarRef* getterVarRefp(AstNodeFTask* taskp) {
         AstNode* stmtp = taskp->stmtsp();
@@ -2194,44 +2188,9 @@ class TaskVisitor final : public VNVisitor {
             UASSERT_OBJ(nodep->taskp()->isFunction(), nodep,
                         "funcref-like expression to non-function");
             AstVarRef* const outrefp = new AstVarRef{nodep->fileline(), outvscp, VAccess::READ};
-            AstExprStmt* lambdap = new AstExprStmt{nodep->fileline(), beginp, outrefp};
-
-            if (m_inNew) {
-                AstVar* varp = outvscp->varp();
-
-                // Create a new var that will be inside the lambda
-                AstVar* newvarp = varp->cloneTree(false);
-                newvarp->funcLocal(true);
-
-                // Create a new VarScope for the new variable
-                AstVarScope* const newvscp
-                    = new AstVarScope{newvarp->fileline(), m_scopep, newvarp};
-                m_scopep->addVarsp(newvscp);
-
-                // Replace all references so they point to the new var and varscope
-                lambdap->stmtsp()->foreachAndNext([outvscp, newvscp](AstVarRef* refp) {
-                    if (refp->varScopep() == outvscp) {
-                        refp->varScopep(newvscp);
-                        refp->varp(newvscp->varp());
-                    }
-                });
-
-                // Declare the variable in a scope inside the lambda
-                AstCLocalScope* const scopep = new AstCLocalScope{
-                    nodep->fileline(), lambdap->stmtsp()->unlinkFrBackWithNext()};
-                scopep->addVarsp(newvarp);
-                lambdap->addStmtsp(scopep);
-                lambdap->hasResult(false);
-
-                // Add return statement - TODO: Why not VarRef(outvscp)?
-                AstCExpr* const exprp = new AstCExpr{nodep->fileline(), varp->name()};
-                exprp->dtypeSetString();
-                scopep->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
-            }
-
             // AstExprStmt is currently treated as impure, so clear the cached purity of its
             // parents
-            nodep->replaceWith(lambdap);
+            nodep->replaceWith(new AstExprStmt{nodep->fileline(), beginp, outrefp});
             VL_DO_DANGLING(nodep->deleteTree(), nodep);
             VIsCached::clearCacheTree();
         } else {  // VN_IS(nodep->backp(), StmtExpr)
