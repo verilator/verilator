@@ -208,6 +208,15 @@ class CCtorsVisitor final : public VNVisitor {
         iterateAndNextNull(nodep->stmtsp());
         if (nodep->name() == "new") insertSc(nodep, m_modp, VSystemCSectionType::CTOR);
     }
+    void visit(AstCLocalScope* nodep) override {
+        // Locals are reset at the start of the scope
+        AstAssign* resetsp = nullptr;
+        for (AstVar* const varp : nodep->varspList()) {
+            if (varp->needsCReset()) resetsp = AstNode::addNext(resetsp, newResetp(varp));
+        }
+        if (resetsp) nodep->prependStmtsp(resetsp);
+        iterateAndNextNull(nodep->stmtsp());
+    }
     void visit(AstCStmt* nodep) override {
         if (nodep->stmtType() == VCStmtType::CTOR_VAR_RESET_CALL) {
             UASSERT_OBJ(m_modp, nodep, "ctor_var_reset call not under module");

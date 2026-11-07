@@ -1419,7 +1419,14 @@ public:
     void visit(AstCLocalScope* nodep) override {
         putns(nodep, "{\n");
         VL_RESTORER(m_createdScopeHash);
-        iterateAndNextConstNull(nodep->stmtsp());
+        if (nodep->varsp()) {
+            putsDecoration(nodep, "// Locals\n");
+            iterateAndNextConstNull(nodep->varsp());
+        }
+        if (nodep->stmtsp()) {
+            putsDecoration(nodep, "// Body\n");
+            iterateAndNextConstNull(nodep->stmtsp());
+        }
         puts("}\n");
     }
     void visit(AstNodeIf* nodep) override {

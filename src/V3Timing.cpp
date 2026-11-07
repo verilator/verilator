@@ -691,7 +691,7 @@ class TimingControlVisitor final : public VNVisitor {
         return m_forkDtp;
     }
     // Move `nodep` into `AstCLocalScope`.
-    AstCLocalScope* addCLocalScope(FileLine* const flp, AstNode* const nodep) const {
+    AstCLocalScope* addCLocalScope(FileLine* const flp, AstNodeStmt* const nodep) const {
         if (!nodep) return nullptr;
         VNRelinker handle;
         nodep->unlinkFrBack(&handle);
@@ -699,14 +699,14 @@ class TimingControlVisitor final : public VNVisitor {
         handle.relink(cscopep);
         return cscopep;
     }
-    // Create a temp variable and optionally put it before the specified node (mark local if so)
+    // Create a temp variable and optionally put it in the specified local scope (mark local if so)
     AstVarScope* createTemp(FileLine* const flp, const std::string& name,
-                            AstNodeDType* const dtypep, AstNode* const insertBeforep = nullptr) {
+                            AstNodeDType* const dtypep, AstCLocalScope* const cscopep = nullptr) {
         AstVar* varp;
-        if (insertBeforep) {
+        if (cscopep) {
             varp = new AstVar{flp, VVarType::BLOCKTEMP, name, dtypep};
             varp->funcLocal(true);
-            insertBeforep->addHereThisAsNext(varp);
+            cscopep->addVarsp(varp);
         } else {
             varp = new AstVar{flp, VVarType::MODULETEMP, name, dtypep};
             m_scopep->modp()->addStmtsp(varp);
@@ -758,13 +758,12 @@ class TimingControlVisitor final : public VNVisitor {
     void makeForkJoin(AstFork* const forkp) {
         // Create a fork sync var
         FileLine* const flp = forkp->fileline();
-        // Insert the sync var directly before the fork
-        AstNode* const insertBeforep = forkp;
-        // Make sure all references to the fork var are contained within a single scope to prevent
-        // moving statements accessing it in case of large functions splitting.
-        addCLocalScope(flp, insertBeforep);
+        // Declare the sync var in a scope around the fork. Make sure all references to the fork
+        // var are contained within a single scope to prevent moving statements accessing it in
+        // case of large functions splitting.
+        AstCLocalScope* const cscopep = addCLocalScope(flp, forkp);
         AstVarScope* forkVscp
-            = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), insertBeforep);
+            = createTemp(flp, forkp->name() + "__sync", getCreateForkSyncDTypep(), cscopep);
         unsigned joinCount = 0;  // Needed for join counter
         // Add a <fork sync>.done() to each fork item
         for (AstForkItem* const itemp : forkp->forkspList()) {

@@ -333,7 +333,8 @@ public:
 };
 class AstCLocalScope final : public AstNodeStmt {
     // Pack statements into an unnamed scope when generating C++
-    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op1 := varsp : List[AstVar]  // Local variables
+    // @astgen op2 := stmtsp : List[AstNode]
 public:
     AstCLocalScope(FileLine* fl, AstNode* stmtsp)
         : ASTGEN_SUPER_CLocalScope(fl) {

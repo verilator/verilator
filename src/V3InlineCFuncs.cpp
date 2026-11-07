@@ -224,7 +224,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
         for (AstVar* const varp : calleep->varspList()) {
             AstVar* const newVarp = varp->cloneTree(false);
             newVarp->name(varPrefix + varp->name());
-            lscopep->addStmtsp(newVarp);
+            lscopep->addVarsp(newVarp);
             varp->user2p(newVarp);
         }
 
