@@ -569,10 +569,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         m_wantSingle = true;
 
         {
-            AstBegin* const tempp
-                = new AstBegin{fl, "[EditWrapper]", itemsp->unlinkFrBackWithNext(), false};
-            VL_DO_DANGLING(iterateAndNextNull(tempp->stmtsp()), itemsp);
-            itemsp = tempp->stmtsp();
+            AstBegin* const tempp = new AstBegin{fl, "[EditWrapper]", nullptr, false};
+            tempp->addDeclsp(itemsp->unlinkFrBackWithNext());
+            VL_DO_DANGLING(iterateAndNextNull(tempp->declsp()), itemsp);
+            itemsp = tempp->declsp();
             if (itemsp) itemsp->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }

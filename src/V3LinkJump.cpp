@@ -132,6 +132,14 @@ class LinkJumpVisitor final : public VNVisitor {
             if (AstJumpBlock* const blockp = VN_CAST(underp, JumpBlock)) return blockp;
         }
 
+        // Keep any AstVars under the function not under the new JumpLabel
+        if (under_and_next) {
+            for (AstNode *nextp, *varp = underp->nextp(); varp; varp = nextp) {
+                nextp = varp->nextp();
+                if (VN_IS(varp, Var)) underp->addHereThisAsNext(varp->unlinkFrBack());
+            }
+        }
+
         // Move underp stuff to be under a new AstJumpBlock
         VNRelinker repHandle;
         if (under_and_next) {
@@ -146,12 +154,6 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->user2p(blockp);
         }
         repHandle.relink(blockp);
-
-        // Keep any AstVars under the function not under the new JumpLabel
-        for (AstNode *nextp, *varp = underp; varp; varp = nextp) {
-            nextp = varp->nextp();
-            if (VN_IS(varp, Var)) blockp->addHereThisAsNext(varp->unlinkFrBack());
-        }
         return blockp;
     }
     void addPrefixToBlocksRecurse(const std::string& prefix, AstNode* const nodep) {
@@ -266,7 +268,9 @@ class LinkJumpVisitor final : public VNVisitor {
         requireTiming(fl);
         // Variables stay in the task, ports so calls see them, locals as they live for the call
         for (AstNode* const stmtp : taskp->stmtspList()) {
-            if (!VN_IS(stmtp, Var)) taskBodyp->addStmtsp(stmtp->unlinkFrBack());
+            if (AstNodeStmt* const sp = VN_CAST(stmtp, NodeStmt)) {
+                taskBodyp->addStmtsp(sp->unlinkFrBack());
+            }
         }
 
         AstFork* const forkp = new AstFork{fl, VJoinType::JOIN};

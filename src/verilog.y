@@ -6777,9 +6777,12 @@ property_case_item<caseItemp>:  // ==IEEE: property_case_item
         //                      // IEEE: expression_or_dist { ',' expression_or_dist } ':' property_expr
         //                      // IEEE 1800-2012 changed from property_statement to property_expr
         //                      // IEEE 1800-2017 changed to require the semicolon
-                caseCondList ':' pexpr ';'              { $$ = new AstCaseItem{$2, $1, $3}; }
-        |       yDEFAULT pexpr ';'                      { $$ = new AstCaseItem{$1, nullptr, $2}; }
-        |       yDEFAULT ':' pexpr ';'                  { $$ = new AstCaseItem{$1, nullptr, $3}; }
+                caseCondList ':' pexpr ';'
+                        { $$ = new AstCaseItem{$2, $1, new AstStmtExpr{$3->fileline(), $3}}; }
+        |       yDEFAULT pexpr ';'
+                        { $$ = new AstCaseItem{$1, nullptr, new AstStmtExpr{$2->fileline(), $2}}; }
+        |       yDEFAULT ':' pexpr ';'
+                        { $$ = new AstCaseItem{$1, nullptr, new AstStmtExpr{$3->fileline(), $3}}; }
         ;
 
 //UNSUPpev_expr<nodep>:  // IEEE: property_actual_arg | expr

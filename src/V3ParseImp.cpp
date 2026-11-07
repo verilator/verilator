@@ -107,7 +107,7 @@ AstNodeExpr* V3ParseImp::makePropertyCase(FileLine* flp, AstNodeExpr* exprp, Ast
 
     for (AstCaseItem *nextp, *itemp = itemsp; itemp; itemp = nextp) {
         nextp = VN_AS(itemp->nextp(), CaseItem);
-        AstNodeExpr* const propp = VN_AS(itemp->stmtsp()->unlinkFrBack(), NodeExpr);
+        AstNodeExpr* const propp = VN_AS(itemp->stmtsp(), StmtExpr)->exprp()->unlinkFrBack();
 
         if (itemp->isDefault()) {
             if (defaultPropp) {

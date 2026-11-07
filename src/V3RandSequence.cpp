@@ -181,6 +181,20 @@ class RandSequenceVisitor final : public VNVisitor {
         UINFOTREE(9, newp, "newProd", "");
     }
 
+    // Statements of a rule, its code block followed by its productions
+    static AstNode* ruleStmtsp(const AstRSRule* rulep) {
+        AstNode* stmtsp = nullptr;
+        if (rulep->weightStmtsp()) stmtsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
+        for (const AstRSProdList* const listp : rulep->prodlistspList()) {
+            UASSERT_OBJ(!listp->randJoin(), listp,
+                        "rand join should have been handled in visit(RSRule)");
+            if (listp->prodsp()) {
+                stmtsp = AstNode::addNext(stmtsp, listp->prodsp()->unlinkFrBackWithNext());
+            }
+        }
+        return stmtsp;
+    }
+
     AstNodeStmt* newProdRandJoin(AstRSProd* /*prodp*/, AstRSProdList* prodlistp) {
         // For weight == 1.0 longer sequence (favor stay in a)
         // For weight == 0.0 shorter squence (favor change a/b)
@@ -517,10 +531,7 @@ class RandSequenceVisitor final : public VNVisitor {
         } else if (!nodep->rulesp()->nextp()) {  // Single rule/list, can just do it
             // RSPROD(RSRULE(weight, stmt)) -> IF(weight != 0, stmt)
             const AstRSRule* const rulep = nodep->rulesp();
-            AstNode* itemsp = nullptr;
-            if (rulep->weightStmtsp()) itemsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
-            if (rulep->prodlistsp())
-                itemsp = AstNode::addNext(itemsp, rulep->prodlistsp()->unlinkFrBackWithNext());
+            AstNode* itemsp = ruleStmtsp(rulep);
             // Can ignore rulep->weightp() unless is zero, in which case noop, add if
             if (rulep->weightp())
                 itemsp = new AstIf{rulep->weightp()->fileline(),
@@ -541,11 +552,7 @@ class RandSequenceVisitor final : public VNVisitor {
             //   -> RANDCASE(CASEITEM(weight1, stmt1), CASEITEM(weight2, stmt2))
             AstRandCase* const randcasep = new AstRandCase{nodep->fileline(), nullptr};
             for (AstRSRule* const rulep : nodep->rulespList()) {
-                AstNode* itemsp = nullptr;
-                if (rulep->weightStmtsp()) itemsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
-                if (rulep->prodlistsp())
-                    itemsp = AstNode::addNext(itemsp, rulep->prodlistsp()->unlinkFrBackWithNext());
-                if (itemsp) {
+                if (AstNode* const itemsp = ruleStmtsp(rulep)) {
                     AstNodeExpr* const weightp = rulep->weightp()
                                                      ? rulep->weightp()->unlinkFrBack()
                                                      : new AstConst{rulep->fileline(), 1};
@@ -568,23 +575,6 @@ class RandSequenceVisitor final : public VNVisitor {
     void visit(AstRSRule* nodep) override {
         // Rule of what to produce (as a list) under a production
         nodep->v3fatalSrc("randsequence rule should be iterated and deleted by AstRSProd");
-    }
-    void visit(AstRSProdList* nodep) override {
-        // List of productions to call, potentially with a weight
-        UINFO(9, "visit " << nodep);
-        UASSERT_OBJ(m_prodFuncp, nodep, "RSProdList not under production");
-
-        // Move prodlist to parent (m_prodFunc) and process
-        if (AstNode* const itemsp = nodep->prodsp()) {
-            UASSERT_OBJ(!nodep->randJoin(), nodep,
-                        "rand join should have been handled in visit(RSRule)");
-            nodep->replaceWith(itemsp->unlinkFrBackWithNext());
-            // Will soon iterate itemsp as part of normal visit process
-            // These will become sequential in the generated task
-        } else {
-            nodep->unlinkFrBack();
-        }
-        VL_DO_DANGLING(pushDeletep(nodep), nodep);
     }
     void visit(AstRSProdItem* nodep) override {
         // "call" to generate using another production

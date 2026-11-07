@@ -1773,16 +1773,17 @@ class TaskVisitor final : public VNVisitor {
         if (bodysp) {
             unlinkAndClone(nodep, bodysp, true);
             AstBegin* const tempp
-                = new AstBegin{nodep->fileline(), "[EditWrapper]", bodysp, false};
+                = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
+            tempp->addDeclsp(bodysp);
             VL_DANGLING(bodysp);
             // If we cloned due to recursion, now need to rip out the variables
             // (that remained in place) then got cloned
-            for (AstNode* const stmtp : tempp->stmtspList()) {
+            for (AstNode* const stmtp : tempp->declspList()) {
                 if (AstVar* const varp = VN_CAST(stmtp, Var)) {
                     VL_DO_DANGLING(pushDeletep(varp->unlinkFrBack()), varp);
                 }
             }
-            if (tempp->stmtsp()) cfuncp->addStmtsp(tempp->stmtsp()->unlinkFrBackWithNext());
+            if (tempp->declsp()) cfuncp->addStmtsp(tempp->declsp()->unlinkFrBackWithNext());
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
         if (nodep->dpiImport()) bodyDpiImportFunc(nodep, rtnvscp, cfuncp, dpiFuncp);
