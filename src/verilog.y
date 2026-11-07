@@ -7736,27 +7736,28 @@ rs_weight_specification<nodeExprp>:  // ==IEEE: rs_weight_specification
         |       '(' expr ')'                            { $$ = $2; }
         ;
 
-rs_code_block<nodep>:  // ==IEEE: rs_code_block
-                '{' '}'                                 { $$ = nullptr; }
-        |       '{' rs_code_blockItemList '}'           { $$ = $2; }
+rs_code_block<nodeStmtp>:  // ==IEEE: rs_code_block
+                '{' rs_code_blockDeclListE stmtListE '}'
+                        { $$ = $3;
+                          // The data declarations are local to the code block
+                          if ($2) {
+                              AstBegin* const blockp = new AstBegin{$<fl>1, "", $3, true};
+                              blockp->addDeclsp($2);
+                              $$ = blockp;
+                          } }
         ;
 
-rs_code_blockItemList<nodep>:  // IEEE: part of rs_code_block
-                rs_code_blockItem                       { $$ = $1; }
-        |       rs_code_blockItemList rs_code_blockItem         { $$ = addNextNull($1, $2); }
+rs_code_blockDeclListE<nodep>:  // IEEE: part of rs_code_block
+                /*empty*/                               { $$ = nullptr; }
+        |       rs_code_blockDeclListE data_declaration { $$ = addNextNull($1, $2); }
         ;
 
-rs_code_blockItem<nodep>:  // IEEE: part of rs_code_block
-                data_declaration                        { $$ = $1; }
-        |       stmt                                    { $$ = $1; }
-        ;
-
-rs_prodList<nodep>:  // IEEE: rs_prod+
+rs_prodList<nodeStmtp>:  // IEEE: rs_prod+
                 rs_prod                                 { $$ = $1; }
         |       rs_prodList rs_prod                     { $$ = addNextNull($1, $2); }
         ;
 
-rs_prod<nodep>:  // ==IEEE: rs_prod
+rs_prod<nodeStmtp>:  // ==IEEE: rs_prod
                 rs_production_item                      { $$ = $1; }
         |       rs_code_block                           { $$ = $1; }
         //                      // IEEE: rs_if_else
@@ -7772,7 +7773,7 @@ rs_prod<nodep>:  // ==IEEE: rs_prod
                         { $$ = new AstCase{$<fl>1, VCaseType::CT_RANDSEQUENCE, $3, $5}; }
         ;
 
-rs_production_itemList<nodep>:  // IEEE: rs_production_item+
+rs_production_itemList<nodeStmtp>:  // IEEE: rs_production_item+
                 rs_production_item                         { $$ = $1; }
         |       rs_production_itemList rs_production_item  { $$ = addNextNull($1, $2); }
         ;

@@ -183,7 +183,7 @@ class RandSequenceVisitor final : public VNVisitor {
 
     // Statements of a rule, its code block followed by its productions
     static AstNodeStmt* ruleStmtsp(const AstRSRule* rulep) {
-        AstNode* stmtsp = nullptr;
+        AstNodeStmt* stmtsp = nullptr;
         if (rulep->weightStmtsp()) stmtsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
         for (const AstRSProdList* const listp : rulep->prodlistspList()) {
             UASSERT_OBJ(!listp->randJoin(), listp,
@@ -192,7 +192,7 @@ class RandSequenceVisitor final : public VNVisitor {
                 stmtsp = AstNode::addNext(stmtsp, listp->prodsp()->unlinkFrBackWithNext());
             }
         }
-        return VN_AS(stmtsp, NodeStmt);
+        return stmtsp;
     }
 
     AstNodeStmt* newProdRandJoin(AstRSProd* /*prodp*/, AstRSProdList* prodlistp) {
@@ -212,9 +212,7 @@ class RandSequenceVisitor final : public VNVisitor {
             if (!subProdp) continue;
             if (!subProdp->rulesp()) continue;
             if (!subProdp->rulesp()->prodlistsp()) continue;
-            for (AstNodeStmt* subStmtp
-                 = VN_AS(subProdp->rulesp()->prodlistsp()->prodsp(), NodeStmt);
-                 subStmtp; subStmtp = VN_AS(subStmtp->nextp(), NodeStmt)) {
+            for (AstNodeStmt* const subStmtp : subProdp->rulesp()->prodlistsp()->prodspList()) {
                 listStmts[proditemp].push_back(subStmtp);
             }
         }

@@ -1889,10 +1889,10 @@ public:
 class AstRSProdList final : public AstNode {
     // randomsquence production list
     // @astgen op1 := weightp : Optional[AstNodeExpr]
-    // @astgen op2 := prodsp : List[AstNode]
+    // @astgen op2 := prodsp : List[AstNodeStmt]
     bool m_randJoin = false;  // Is rand join'ed
 public:
-    AstRSProdList(FileLine* fl, AstNodeExpr* weightp, AstNode* prodsp)
+    AstRSProdList(FileLine* fl, AstNodeExpr* weightp, AstNodeStmt* prodsp)
         : ASTGEN_SUPER_RSProdList(fl) {
         this->weightp(weightp);
         addProdsp(prodsp);
@@ -1907,9 +1907,10 @@ class AstRSRule final : public AstNode {
     // randomsquence rule
     // @astgen op1 := weightp : Optional[AstNodeExpr]
     // @astgen op2 := prodlistsp : List[AstRSProdList]
-    // @astgen op3 := weightStmtsp : List[AstNode]
+    // @astgen op3 := weightStmtsp : List[AstNodeStmt]
 public:
-    AstRSRule(FileLine* fl, AstNodeExpr* weightp, AstRSProdList* prodlistsp, AstNode* weightStmtsp)
+    AstRSRule(FileLine* fl, AstNodeExpr* weightp, AstRSProdList* prodlistsp,
+              AstNodeStmt* weightStmtsp)
         : ASTGEN_SUPER_RSRule(fl) {
         this->weightp(weightp);
         addProdlistsp(prodlistsp);

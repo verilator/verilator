@@ -53,6 +53,15 @@ module t;
     endsequence
     `checkd(x, 10);
 
+    // Data declarations are local to their code block
+    x = 0;
+    randsequence(main)
+      main : first second := 1 { int z; z = 3; x += z; };
+      first : { int y; y = 5; x += y; };
+      second : { int y; y = 7; x += y; };
+    endsequence
+    `checkd(x, 15);
+
     if (sfunc() != 1) $stop;
 
     x = 0;
