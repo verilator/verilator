@@ -735,11 +735,18 @@ class TaskVisitor final : public VNVisitor {
                 AstAssign* const postassp = connectPortMakeOutAssign(portp, pinp, newvscp, false);
                 // Put assignment BEHIND of all other statements
                 beginp->addNext(postassp);
-            } else if (inlineTask && portp->isNonOutput()) {
-                // Make input variable
+            } else if ((inlineTask || VN_IS(pinp, NodeStream)) && portp->isNonOutput()) {
+                // Make input variable for inlined calls. We also need to do it for
+                // streams that are input arguments of non-inlined functions because
+                // they are only lowered if they are part of an assignment, and otherwise
+                // nothing will lower them and we get a C++ compilation error.
                 AstVarScope* const newvscp
                     = createVarScope(refp, portp, "__" + portp->shortName());
                 portp->user2p(newvscp);
+                if (!inlineTask) {
+                    pinp->replaceWith(new AstVarRef{newvscp->fileline(), newvscp, VAccess::READ});
+                    pushDeletep(pinp);  // Cloned by connectPortMakeInAssign
+                }
                 AstAssign* const preassp = connectPortMakeInAssign(pinp, newvscp, false);
                 // Put assignment in FRONT of all other statements
                 beginp->addNextHere(preassp);
