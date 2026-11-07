@@ -377,6 +377,7 @@ class WidthVisitor final : public VNVisitor {
     V3TaskConnectState m_taskConnectState;  // State to cache V3Task::taskConnects
     WidthVP* m_vup = nullptr;  // Current node state
     bool m_underFork = false;  // Visiting under a fork
+    bool m_underCast = false;  // Visiting the expression of a size or integral type cast
     bool m_underSExpr = false;  // Visiting under a sequence expression
     bool m_underPackedArray = false;  // Visiting under a AstPackArrayDType
     bool m_underMemberSel = false;  // Viting under a MemberSel
@@ -3397,7 +3398,11 @@ class WidthVisitor final : public VNVisitor {
                     VL_DO_DANGLING(fromp->deleteTree(), fromp);
                 }
             }
-            userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
+            {
+                VL_RESTORER(m_underCast);
+                m_underCast = nodep->dtypep()->skipRefp()->isIntegralOrPacked();
+                userIterateAndNext(nodep->fromp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
+            }
             UINFOTREE(9, nodep, "", "CastDit");
             AstNodeDType* const toDtp = nodep->dtypep()->skipRefToEnump();
             AstNodeDType* const fromDtp = nodep->fromp()->dtypep()->skipRefToEnump();
@@ -3523,7 +3528,11 @@ class WidthVisitor final : public VNVisitor {
                 nodep->v3error("Size-changing cast to zero or negative size: " << width);
                 width = 1;
             }
-            userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
+            {
+                VL_RESTORER(m_underCast);
+                m_underCast = true;
+                userIterateAndNext(nodep->lhsp(), WidthVP{SELF, PRELIM, STREAM_USE_CAST}.p());
+            }
             castSized(nodep, nodep->lhsp(), width);  // lhsp may change
         }
         if (m_vup->final()) {
@@ -3551,6 +3560,8 @@ class WidthVisitor final : public VNVisitor {
         // However the output width is exactly that requested.
         // So two steps, first do the calculation's width (max of the two widths)
         {
+            VL_RESTORER(m_underCast);
+            m_underCast = true;
             const int calcWidth = std::max(width, underDtp->width());
             AstNodeDType* const calcDtp = nodep->findBitOrLogicDType(
                 calcWidth, calcWidth, underDtp->numeric(), underDtp->isFourstate());
@@ -3592,6 +3603,8 @@ class WidthVisitor final : public VNVisitor {
         nodep->dtypep(nodep->rangep()->dtypep());
     }
     void visit(AstVar* nodep) override {
+        VL_RESTORER(m_underCast);
+        m_underCast = false;  // A referenced declaration is outside the cast expression.
         // UINFOTREE(1, nodep, "", "InitPre");
         // Must have deterministic constant width
         // We can't skip this step when width()!=0, as creating a AstVar
@@ -3839,6 +3852,8 @@ class WidthVisitor final : public VNVisitor {
     }
 
     void visit(AstEnumDType* nodep) override {
+        VL_RESTORER(m_underCast);
+        m_underCast = false;  // An enum's definition is outside the cast expression.
         if (nodep->didWidthAndSet()) return;  // This node is a dtype & not both PRELIMed+FINALed
         UINFO(5, "  ENUMDTYPE " << nodep);
         nodep->refDTypep(iterateEditMoveDTypep(nodep, nodep->subDTypep()));
@@ -8193,6 +8208,8 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void visit(AstNodeFTask* nodep) override {
+        VL_RESTORER(m_underCast);
+        m_underCast = false;  // A called function's body is outside the cast expression.
         // Grab width from the output variable (if it's a function)
         if (nodep->didWidth()) return;
         if (nodep->doingWidth()) {
@@ -8463,6 +8480,8 @@ class WidthVisitor final : public VNVisitor {
         }
     }
     void processFTaskRefArgs(AstNodeFTaskRef* nodep) {
+        VL_RESTORER(m_underCast);
+        m_underCast = false;  // Arguments are checked independently of a cast of the result.
         // For arguments, is assignment-like context; see IEEE rules in AstNodeAssign
         // Function hasn't been widthed, so make it so.
         UINFO(5, "  FTASKREF " << nodep);
@@ -8883,6 +8902,8 @@ class WidthVisitor final : public VNVisitor {
         VL_DO_DANGLING(nodep->deleteTree(), nodep);
     }
     void visit(AstWith* nodep) override {
+        VL_RESTORER(m_underCast);
+        m_underCast = false;  // The lambda is checked independently of a cast of the result.
         // Should otherwise be underneath a method call
         AstNodeDType* const vdtypep = m_vup->dtypeNullSkipRefp();
         VL_RESTORER(m_withp);
@@ -10640,9 +10661,8 @@ class WidthVisitor final : public VNVisitor {
                 underp = nullptr;  // Changes underp
                 return;
             }
-            // If user has a sizing cast, assume they know what they are doing
-            // (for better or worse)
-            if (VN_IS(parentp->backp(), CastSize)) warnOn = false;
+            // An explicit cast suppresses width warnings in its expression.
+            if (m_underCast) warnOn = false;
             if (parentp->fileline()->erroringOn() || underp->fileline()->erroringOn())
                 warnOn = false;
             if (VN_IS(underp, Const) && VN_AS(underp, Const)->num().isFromString()
@@ -10943,6 +10963,8 @@ class WidthVisitor final : public VNVisitor {
     // METHODS - data types
 
     AstNodeDType* iterateEditMoveDTypep(AstNode* parentp, AstNodeDType* dtnodep) {
+        VL_RESTORER(m_underCast);
+        m_underCast = false;  // A type's definition is outside the cast expression.
         UASSERT_OBJ(dtnodep, parentp, "Caller should check for nullptr before computing dtype");
         // Iterate into a data type to resolve that type.
         // The data type may either:
