@@ -885,6 +885,16 @@ class LinkParseVisitor final : public VNVisitor {
     }
     void visit(AstCover* nodep) override { visitIterateNoValueMod(nodep); }
     void visit(AstRestrict* nodep) override { visitIterateNoValueMod(nodep); }
+    void visit(AstPropSpec* nodep) override {
+        cleanFileline(nodep);
+        AstSClocked* const clockedp = VN_CAST(nodep->propp(), SClocked);
+        if (clockedp && !nodep->sensesp()) {
+            nodep->addSensesp(clockedp->sensesp()->unlinkFrBackWithNext());
+            clockedp->replaceWith(clockedp->exprp()->unlinkFrBack());
+            VL_DO_DANGLING(pushDeletep(clockedp), clockedp);
+        }
+        iterateChildren(nodep);
+    }
 
     void visit(AstGenBlock* nodep) override {
         V3Control::applyCoverageBlock(m_modp, nodep);

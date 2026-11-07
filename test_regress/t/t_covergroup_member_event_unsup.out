@@ -1,6 +1,6 @@
-%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:15:29: Unsupported: 'covergroup' clocking event signal has no assignment within the enclosing class; no coverage sampled. Use --timing for full support.
+%Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:15:27: Unsupported: 'covergroup' clocking event signal has no assignment within the enclosing class; no coverage sampled. Use --timing for full support.
    15 |     covergroup cov_extclk @(posedge clk);
-      |                             ^~~~~~~
+      |                           ^
                    ... For warning description see https://verilator.org/warn/COVERIGN?v=latest
                    ... Use "/* verilator lint_off COVERIGN */" and lint_on around source to disable this message.
 %Warning-COVERIGN: t/t_covergroup_member_event_unsup.v:40:5: Unsupported: 'covergroup' clocking event on complex member expression; use --timing for full support.
