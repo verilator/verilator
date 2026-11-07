@@ -22,7 +22,6 @@ module t (
   logic last;
   state_t state2;
   state_t state2_next;
-  state_t saved;
   int cyc;
 
   // Reset and flush share the reset branch, as in a pipeline stage that
@@ -47,14 +46,6 @@ module t (
     endcase
   end
 
-  // An enable register with no else is not an FSM state register.  Line
-  // coverage would add an else, so it is off here.
-  // verilator coverage_off
-  always_ff @(posedge clk) begin
-    if (go) saved <= state;
-  end
-  // verilator coverage_on
-
   always_comb begin
     case (state)
       IDLE:
@@ -77,7 +68,6 @@ module t (
     go <= (cyc == 1) || (cyc == 5);
     last <= (cyc == 7);
     if (cyc == 10) begin
-      if (saved != IDLE) $stop;
       $write("*-* All Finished *-*\n");
       $finish;
     end

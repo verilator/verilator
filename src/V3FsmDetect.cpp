@@ -908,9 +908,8 @@ class FsmDetectVisitor final : public VNVisitor {
         return senses;
     }
 
-    // Ignore existing coverage instrumentation so FSM detection sees the user
-    // logic: line coverage increments, and the 'if (term) CoverInc' probes that
-    // expression coverage adds after the statement it covers.
+    // Coverage instrumentation: line coverage CoverIncs and expression coverage
+    // 'if (term) CoverInc' probes
     static bool isIgnorableStmt(AstNode* nodep) {
         if (VN_IS(nodep, CoverInc)) return true;
         const AstIf* const ifp = VN_CAST(nodep, If);
@@ -1399,10 +1398,7 @@ class FsmDetectVisitor final : public VNVisitor {
         AstVarScope* stateVscp = nullptr;
         AstVarScope* nextVscp = nullptr;
         if (AstIf* const ifp = VN_CAST(nodep, If)) {
-            // As in the 'reset ? CONST : next' form below, a reset condition
-            // other than a plain signal (e.g. 'rst | flush') is accepted but
-            // not described.  Line coverage keeps that if/else from being
-            // folded into the conditional form.
+            // Any reset condition is accepted; only a plain signal is described
             if (!ifp->elsesp()) return false;
             AstVarScope* resetStateVscp = nullptr;
             const ResetAssignStatus resetStatus
