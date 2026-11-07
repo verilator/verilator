@@ -26,6 +26,8 @@
 
 class V3AssertCommon final {
 public:
+    // Return the innermost fixed-size array element type, following typedefs
+    static const AstNodeDType* sampledValueDTypep(const AstNodeDType* dtypep) VL_MT_DISABLED;
     static void collectDefaultDisable(AstNetlist* nodep) VL_MT_DISABLED;
     static void lowerSequenceEvents(AstNetlist* nodep) VL_MT_DISABLED;
     static string assertCtlGetCall(const char* query, VAssertType type,

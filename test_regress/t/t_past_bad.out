@@ -30,4 +30,12 @@
                                        : ... note: In instance 't'
    19 |     if ($past(d, 32'h7ffffffc)) $stop;
       |         ^~~~~
+%Error: t/t_past_bad.v:24:9: Operator PAST expects a numeric Ticks operand, but it has data type 'int$[0:0]' (IEEE 1800-2023 11.3)
+                           : ... note: In instance 't'
+   24 |     if ($past(d, TICKS)) $stop;
+      |         ^~~~~
+%Error: t/t_past_bad.v:24:9: $past tick value must be constant (IEEE 1800-2023 16.9.3)
+                           : ... note: In instance 't'
+   24 |     if ($past(d, TICKS)) $stop;
+      |         ^~~~~
 %Error: Exiting due to

@@ -4,6 +4,11 @@
 // SPDX-FileCopyrightText: 2018 Wilson Snyder
 // SPDX-License-Identifier: CC0-1.0
 
+// verilog_format: off
+`define stop $stop
+`define checkh(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%p exp=%p\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// verilog_format: on
+
 module t (
     input clk
 );
@@ -27,6 +32,8 @@ module t (
       .in(in[31:0])
   );
 
+  UnpackedSamples unpacked_samples(clk, in);
+
   // Test loop
   always @(posedge clk) begin
     cyc <= cyc + 1;
@@ -45,6 +52,104 @@ module t (
     end
   end
 
+endmodule
+
+module UnpackedSamples(input clk, input [31:0] in);
+  typedef bit [14:0] ascending_t [3:1];
+  bit [7:0] values[2];
+  bit [7:0] previous[2];
+  bit [7:0] previous2[2];
+  ascending_t ascending;
+  ascending_t previous_ascending;
+  bit [6:0] matrix[1:0][4:6];
+  bit [6:0] previous_matrix[1:0][4:6];
+  bit [7:0] slice_values[4];
+  bit [7:0] previous_slice[2];
+  bit [7:0] previous_slice2[2];
+  bit [14:0] previous_descending[3:2];
+  bit [6:0] previous_row[4:6];
+  bit [6:0] previous_selected_row[4:6];
+  bit row_index;
+  logic [7:0] unchanged[2] = '{8'h11, 8'h22};
+  int cycles = 0;
+  bit seen_stable = 0;
+  bit seen_changed = 0;
+
+  always @(negedge clk) begin
+    row_index = in[0];
+    if (cycles % 2 == 0) begin
+      values[0] = in[7:0];
+      values[1] = in[15:8];
+      ascending[3] = in[14:0];
+      ascending[1] = in[29:15];
+      matrix[(cycles / 2) % 2][4 + cycles % 3] = in[6:0];
+      slice_values[0] = in[7:0];
+      slice_values[1] = in[15:8];
+      slice_values[2] = in[23:16];
+      slice_values[3] = in[31:24];
+    end
+  end
+
+  always @(posedge clk) begin
+    cycles <= cycles + 1;
+    previous <= values;
+    previous2 <= previous;
+    previous_ascending <= ascending;
+    previous_matrix <= matrix;
+    previous_slice <= slice_values[0:1];
+    previous_slice2 <= previous_slice;
+    previous_descending <= ascending[3:2];
+    previous_row <= matrix[0];
+    previous_selected_row <= matrix[row_index];
+    `checkh($past(values), previous)
+    `checkh($past(values, 2), previous2)
+    `checkh($past(ascending), previous_ascending)
+    `checkh($past(matrix), previous_matrix)
+    `checkh($past(slice_values[0:1]), previous_slice)
+    `checkh($past(slice_values[0:1], 2), previous_slice2)
+    `checkh($past(ascending[3:2]), previous_descending)
+    `checkh($past(matrix[0]), previous_row)
+    `checkh($past(matrix[row_index]), previous_selected_row)
+    `checkh($sampled(slice_values[0:1]), slice_values[0:1])
+    `checkh($sampled(matrix[row_index]), matrix[row_index])
+    `checkh($stable(slice_values[0:1]), slice_values[0:1] == previous_slice)
+    `checkh($changed(slice_values[0:1]), slice_values[0:1] != previous_slice)
+    `checkh($stable(matrix[0]), matrix[0] == previous_row)
+    `checkh($changed(matrix[row_index]), matrix[row_index] != previous_selected_row)
+    `checkh($past(unchanged[0:1]), unchanged)
+    `checkh($sampled(values), values)
+    `checkh($sampled(matrix), matrix)
+    `checkh($stable(values), values == previous)
+    `checkh($changed(values), values != previous)
+    `checkh($stable(ascending), ascending == previous_ascending)
+    `checkh($stable(matrix), matrix == previous_matrix)
+    if ($stable(values)) seen_stable = 1;
+    if ($changed(values)) seen_changed = 1;
+    if (cycles == 90) begin
+      `checkh(seen_stable, 1'b1)
+      `checkh(seen_changed, 1'b1)
+    end
+  end
+
+  assert property (@(posedge clk) $stable(unchanged)) else `stop;
+  assert property (@(posedge clk) unchanged == $past(unchanged)) else `stop;
+  assert property (@(posedge clk) $stable(values) == (values == previous)) else `stop;
+  global clocking @(posedge clk);
+  endclocking
+  assert property (@(posedge clk) $past_gclk(values) == previous) else `stop;
+  assert property (@(posedge clk) $stable_gclk(values) == (values == previous)) else `stop;
+  assert property (@(posedge clk) $changed_gclk(values) == (values != previous)) else `stop;
+  property matrix_stable(v);
+    $stable(v) == (matrix == previous_matrix);
+  endproperty
+  assert property (@(posedge clk) matrix_stable(matrix)) else `stop;
+
+  typedef bit [7:0] pair_t [2];
+  property constructed_samples(pair_t v);
+    $past(v[0]) == 8'h11 && $past(v[1]) == 8'h22;
+  endproperty
+  assert property (@(posedge clk) constructed_samples(pair_t'{8'h11, 8'h22}))
+  else `stop;
 endmodule
 
 module Test (  /*AUTOARG*/
