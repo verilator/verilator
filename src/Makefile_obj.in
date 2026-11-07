@@ -255,7 +255,6 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3CfgLiveVariables.o \
   V3Class.o \
   V3Clean.o \
-  V3Clock.o \
   V3Combine.o \
   V3Common.o \
   V3Const__gen.o \
@@ -327,6 +326,7 @@ RAW_OBJS_PCH_ASTNOMT = \
   V3OrderParallel.o \
   V3OrderProcessDomains.o \
   V3OrderSerial.o \
+  V3Outline.o \
   V3Param.o \
   V3PatternStats.o \
   V3Premit.o \

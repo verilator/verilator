@@ -1,6 +1,6 @@
 // -*- mode: C++; c-file-style: "cc-mode" -*-
 //*************************************************************************
-// DESCRIPTION: Verilator: Clocking POS/NEGEDGE insertion
+// DESCRIPTION: Verilator: Outline parts of large coroutines into sub-functions
 //
 // Code available from: https://verilator.org
 //
@@ -14,8 +14,8 @@
 //
 //*************************************************************************
 
-#ifndef VERILATOR_V3CLOCK_H_
-#define VERILATOR_V3CLOCK_H_
+#ifndef VERILATOR_V3OUTLINE_H_
+#define VERILATOR_V3OUTLINE_H_
 
 #include "config_build.h"
 #include "verilatedos.h"
@@ -24,9 +24,9 @@ class AstNetlist;
 
 //============================================================================
 
-class V3Clock final {
+class V3Outline final {
 public:
-    static void clockAll(AstNetlist* nodep) VL_MT_DISABLED;
+    static void outlineAll(AstNetlist* nodep) VL_MT_DISABLED;
 };
 
 #endif  // Guard

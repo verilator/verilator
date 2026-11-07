@@ -135,7 +135,7 @@ class DfgToAstVisitor final : DfgVisitor {
 
         // Otherwise create an AssignW
         AstAssignW* const ap = new AstAssignW{flp, lhsp, rhsp};
-        m_activep->addStmtsp(new AstAlways{ap});
+        m_activep->addProcsp(new AstAlways{ap});
     }
 
     void convertDriver(FileLine* flp, AstNodeExpr* lhsp, DfgVertex* driverp) {
@@ -278,7 +278,7 @@ class DfgToAstVisitor final : DfgVisitor {
             if (DfgVertex* const defaultp = vtx.defaultp()) {
                 ++m_ctx.m_outputVariablesWithDefault;
                 m_alwaysp = new AstAlways{vtx.fileline(), VAlwaysKwd::ALWAYS_COMB, nullptr};
-                m_activep->addStmtsp(m_alwaysp);
+                m_activep->addProcsp(m_alwaysp);
                 // The default assignment needs to go first
                 createAssignment(vtx.fileline(), lhsp->cloneTreePure(false), defaultp);
             }

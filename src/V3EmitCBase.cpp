@@ -30,7 +30,6 @@ EmitCParentModule::EmitCParentModule() {
                 nodep->user4p(modp);
             }
         }
-        modp->foreach([&](AstNodeCoverDecl* nodep) { nodep->user4p(modp); });
     };
     for (AstNode* const modp : v3Global.rootp()->modulespList()) {
         setAll(VN_AS(modp, NodeModule));
@@ -106,7 +105,7 @@ string EmitCBaseVisitorConst::cFuncArgs(const AstCFunc* nodep, bool cpp) {
             args += "* vlSelf";
         }
     }
-    if (nodep->needProcess()) {
+    if (nodep->needsVlProcess()) {
         if (!args.empty()) args += ", ";
         args += "VlProcessRef vlProcess";
     }

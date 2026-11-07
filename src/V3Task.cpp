@@ -943,7 +943,7 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    static AstNode* createDpiTemp(AstVar* portp, const string& suffix) {
+    static AstNodeStmt* createDpiTemp(AstVar* portp, const string& suffix) {
         const string stmt = portp->dpiTmpVarType(portp->name() + suffix) + ";";
         return new AstCStmt{portp->fileline(), stmt};
     }
@@ -972,8 +972,8 @@ class TaskVisitor final : public VNVisitor {
         }
     }
 
-    static AstNode* createAssignInternalToDpi(AstVar* portp, bool isPtr, const string& frSuffix,
-                                              const string& toSuffix) {
+    static AstNodeStmt* createAssignInternalToDpi(AstVar* portp, bool isPtr,
+                                                  const string& frSuffix, const string& toSuffix) {
         const string stmt = V3Task::assignInternalToDpi(portp, isPtr, frSuffix, toSuffix);
         return new AstCStmt{portp->fileline(), stmt};
     }
@@ -1195,7 +1195,7 @@ class TaskVisitor final : public VNVisitor {
         // First argument is the Syms
         callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
         // Add function arguments
-        AstNode* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
+        AstNodeStmt* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
         for (AstNode* const stmtp : nodep->stmtspList()) {
             AstVar* const portp = VN_CAST(stmtp, Var);
             if (!portp) continue;
@@ -1438,7 +1438,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Convert input/inout arguments to DPI types
         string args;
-        AstNode* copyBacksp = nullptr;  // Statements copying back open array copies
+        AstNodeStmt* copyBacksp = nullptr;  // Statements copying back open array copies
         for (AstNode* const stmtp : cfuncp->argspList()) {
             AstVar* const portp = VN_CAST(stmtp, Var);
             if (!portp) continue;
@@ -1730,7 +1730,7 @@ class TaskVisitor final : public VNVisitor {
             cfuncp->scopeNamep(snp);
         }
 
-        // Create list of arguments and move to function
+        // Move arguments and local variables to function
         for (AstNode* const stmtp : nodep->stmtspList()) {
             if (AstVar* const portp = VN_CAST(stmtp, Var)) {
                 if (portp->isParam() && VN_IS(portp->valuep(), ConsArray)) {
@@ -1739,10 +1739,9 @@ class TaskVisitor final : public VNVisitor {
                     pushDeletep(portp);
                     portp->user2p(constPoolTable(portp));
                 } else {
+                    unlinkAndClone(nodep, portp, false);
+                    portp->funcLocal(true);
                     if (portp->isIO()) {
-                        // Move it to new function
-                        unlinkAndClone(nodep, portp, false);
-                        portp->funcLocal(true);
                         if (portp->valuep()) pushDeletep(portp->valuep()->unlinkFrBack());
                         cfuncp->addArgsp(portp);
                         // Pass inputs to DPI import wrappers by reference, unless fits in register
@@ -1753,8 +1752,7 @@ class TaskVisitor final : public VNVisitor {
                             }
                         }
                     } else {
-                        // "Normal" variable, mark inside function
-                        portp->funcLocal(true);
+                        cfuncp->addVarsp(portp);
                     }
                     AstVarScope* const newvscp
                         = new AstVarScope{portp->fileline(), m_scopep, portp};
@@ -1777,11 +1775,11 @@ class TaskVisitor final : public VNVisitor {
             AstBegin* const tempp
                 = new AstBegin{nodep->fileline(), "[EditWrapper]", bodysp, false};
             VL_DANGLING(bodysp);
-            // If we cloned due to recursion, now need to rip out the ports
+            // If we cloned due to recursion, now need to rip out the variables
             // (that remained in place) then got cloned
             for (AstNode* const stmtp : tempp->stmtspList()) {
-                if (AstVar* const portp = VN_CAST(stmtp, Var)) {
-                    if (portp->isIO()) VL_DO_DANGLING(pushDeletep(portp->unlinkFrBack()), portp);
+                if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+                    VL_DO_DANGLING(pushDeletep(varp->unlinkFrBack()), varp);
                 }
             }
             if (tempp->stmtsp()) cfuncp->addStmtsp(tempp->stmtsp()->unlinkFrBackWithNext());
@@ -1846,7 +1844,7 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // Mark the fact that this function allocates std::process
-        if (nodep->needProcess()) cfuncp->setNeedProcess();
+        if (nodep->needsVlProcess()) cfuncp->setNeedsVlProcess();
 
         // Delete rest of cloned task and return new func
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -2351,7 +2349,7 @@ class TaskVisitor final : public VNVisitor {
             AstActive* const activep
                 = new AstActive{nodep->fileline(), "force-func-update", senTreep};
             activep->senTreeStorep(activep->sentreep());
-            activep->addStmtsp(
+            activep->addProcsp(
                 new AstAlways{nodep->fileline(), VAlwaysKwd::ALWAYS, nullptr, assignp});
             m_scopep->addBlocksp(activep);
 

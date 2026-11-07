@@ -560,7 +560,7 @@ private:
                 // before the assignment happens
                 AstFork* const forkp = new AstFork{flp, VJoinType::JOIN_NONE};
                 forkp->immediateStart(true);
-                forkp->addForksp(new AstBegin{flp, "", assignp->unlinkFrBack(), true});
+                forkp->addForksp(new AstForkItem{flp, assignp->unlinkFrBack()});
                 ifp->addThensp(forkp);
                 // Read the clockvar in Postponed, so a drive late in the time step is applied
                 // at this event plus the skew (IEEE 1800-2023 14.16)
@@ -717,7 +717,8 @@ private:
         AstVar* const cntVarp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__counter",
                                            nodep->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-        AstBegin* const beginp = new AstBegin{flp, delayName + "__block", cntVarp, true};
+        AstBegin* const beginp = new AstBegin{flp, delayName + "__block", nullptr, true};
+        beginp->addDeclsp(cntVarp);
         // A non-constant delay is counted at runtime. The count is integral of 64 bits, as
         // V3Width makes delays, or real, which is rounded (IEEE 1800-2023 6.12.1)
         if (valuep->isDouble()) {
@@ -742,7 +743,7 @@ private:
             throughoutOkp = new AstVar{flp, VVarType::BLOCKTEMP, delayName + "__throughoutOk",
                                        nodep->findBasicDType(VBasicDTypeKwd::LOGIC_IMPLICIT)};
             throughoutOkp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            beginp->addStmtsp(throughoutOkp);
+            beginp->addDeclsp(throughoutOkp);
             beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, throughoutOkp, VAccess::WRITE},
                                             new AstConst{flp, AstConst::BitTrue{}}});
             // Check condition at tick 0 (sequence start, before entering loop)
@@ -909,7 +910,7 @@ private:
         // Note the drives when they take effect, after the cycle delay if any. Each clockvar
         // of the LHS is driven, e.g. in a concatenation which other simulators accept, although
         // IEEE 1800-2023 14.16 does not allow it
-        AstNode* setsp = nullptr;
+        AstNodeStmt* setsp = nullptr;
         for (const SynchDrive& drive : m_drives) {
             setsp = AstNode::addNext(setsp, newDrivenSetp(nodep->fileline(), drive));
         }
@@ -1164,7 +1165,7 @@ private:
 
         // Final assertion block
         AstBegin* const finalp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
-        finalp->addStmtsp(activeCountp);
+        finalp->addDeclsp(activeCountp);
         finalp->addStmtsp(initActiveCountp);
         finalp->addStmtsp(finalLoopp);
 
@@ -1283,7 +1284,8 @@ private:
                                            exprp->findBasicDType(VBasicDTypeKwd::UINT32)};
         cntVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
 
-        AstBegin* const beginp = new AstBegin{flp, name + "__block", cntVarp, true};
+        AstBegin* const beginp = new AstBegin{flp, name + "__block", nullptr, true};
+        beginp->addDeclsp(cntVarp);
         beginp->addStmtsp(
             new AstAssign{flp, new AstVarRef{flp, cntVarp, VAccess::WRITE}, new AstConst{flp, 0}});
 
@@ -1318,7 +1320,7 @@ private:
             AstVar* const doneVarp
                 = new AstVar{flp, VVarType::BLOCKTEMP, name + "__done", exprp->findBitDType()};
             doneVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            beginp->addStmtsp(doneVarp);
+            beginp->addDeclsp(doneVarp);
             beginp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, doneVarp, VAccess::WRITE},
                                             new AstConst{flp, AstConst::BitFalse{}}});
             auto setDone = [&]() {
@@ -1330,11 +1332,11 @@ private:
             windowp->addStmtsp(new AstLoopTest{
                 flp, windowp, new AstNot{flp, new AstVarRef{flp, doneVarp, VAccess::READ}}});
             // if (expr) { fail; done = 1; } -- window closed, expr true again
-            AstNode* const failsp = new AstPExprClause{flp, false};
+            AstNodeStmt* const failsp = new AstPExprClause{flp, false};
             failsp->addNext(setDone());
             windowp->addStmtsp(new AstIf{flp, exprp->cloneTreePure(false), failsp});
             // if (rhs) { pass; done = 1; } -- consequent true at this !expr endpoint
-            AstNode* const passsp = new AstPExprClause{flp, true};
+            AstNodeStmt* const passsp = new AstPExprClause{flp, true};
             passsp->addNext(setDone());
             windowp->addStmtsp(new AstIf{flp, rhsp, passsp});
             // @(clk) -- advance to next cycle in window
@@ -1499,7 +1501,7 @@ private:
                 // The NBA commits before the next cycle's sampled snapshot,
                 // so the consequent (which already references __Vpropvar)
                 // sees the captured value.
-                AstNode* matchAssignsp = nullptr;
+                AstNodeStmt* matchAssignsp = nullptr;
                 for (AstNode* const stmtp : exprStmtp->stmtspList()) {
                     if (AstAssign* const assignp = VN_CAST(stmtp, Assign)) {
                         assignp->unlinkFrBack();
@@ -1548,9 +1550,9 @@ private:
             }
             // Wrap existing PExpr body: if (antecedent) { <original body> } else { /* vacuous pass
             // */ }
-            // Only the statements are guarded; declarations stay directly in the block. After
-            // V3Fork moves the block's statements into a task, V3Task only handles variables
-            // that are direct statements of the task.
+            // Only the statements are guarded; declarations stay directly in the block. V3Fork
+            // moves the block into a task, from which V3Begin lifts them to be direct statements
+            // of the task, the only variables V3Task handles.
             AstBegin* const bodyp = pexprp->bodyp();
             AstIf* const guardp = new AstIf{flp, condp};
             for (AstNode* const stmtp : bodyp->stmtspList()) {
@@ -1629,7 +1631,7 @@ private:
             loopp->addStmtsp(new AstLoopTest{
                 flp, loopp, new AstLogNot{flp, new AstVarRef{flp, donep, VAccess::READ}}});
             {
-                AstNode* const passp = new AstPExprClause{flp};
+                AstNodeStmt* const passp = new AstPExprClause{flp};
                 passp->addNext(decrementVarp);
                 passp->addNext(setDone());
                 AstNodeExpr* passCondp = rhsp;
@@ -1639,7 +1641,7 @@ private:
                 loopp->addStmtsp(new AstIf{flp, passCondp, passp});
             }
             {
-                AstNode* const failp = new AstPExprClause{flp, false};
+                AstNodeStmt* const failp = new AstPExprClause{flp, false};
                 failp->addNext(decrementVarp->cloneTree(false));
                 failp->addNext(setDone());
                 loopp->addStmtsp(new AstIf{
@@ -1656,7 +1658,7 @@ private:
 
             // Main assertion block
             AstBegin* const bodyp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
-            bodyp->addStmtsp(donep);
+            bodyp->addDeclsp(donep);
             bodyp->addStmtsp(new AstAssign{flp, new AstVarRef{flp, donep, VAccess::WRITE},
                                            new AstConst{flp, AstConst::BitFalse{}}});
             FileLine* const flp = activep->fileline();
@@ -1688,7 +1690,7 @@ private:
 
             // Final assertion block
             AstBegin* const finalp = new AstBegin{flp, m_blockNames.get(""), nullptr, true};
-            finalp->addStmtsp(activeCountp);
+            finalp->addDeclsp(activeCountp);
             finalp->addStmtsp(initActiveCountp);
             finalp->addStmtsp(finalLoopp);
 
@@ -1836,10 +1838,9 @@ private:
             AstAssign* const assignp
                 = new AstAssign{flp, new AstVarRef{flp, initialCntp, VAccess::WRITE},
                                 readCntRefp->cloneTree(false)};
-            // Prepend to the sequence body to keep statement list structure valid.
             UASSERT_OBJ(!bodyp->name().empty(), bodyp, "Sequence body should be named");
-            AstNode* const newStmtsp = AstNode::addNext<AstNode, AstNode>(initialCntp, assignp);
-            bodyp->prependStmtsp(newStmtsp);
+            bodyp->addDeclsp(initialCntp);
+            bodyp->prependStmtsp(assignp);
 
             m_disableSeqIfp
                 = new AstIf{flp, new AstEq{flp, new AstVarRef{flp, initialCntp, VAccess::READ},

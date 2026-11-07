@@ -72,23 +72,32 @@ class ActiveTopVisitor final : public VNVisitor {
         V3Const::constifyExpensiveEdit(nodep);
         AstSenTree* sentreep = nodep->sentreep();
         UASSERT_OBJ(sentreep, nodep, "nullptr");
-        if (sentreep->sensesp() && sentreep->sensesp()->isNever()) {
-            // Never executing.  Kill it.
-            UASSERT_OBJ(!sentreep->sensesp()->nextp(), nodep,
-                        "Never senitem should be alone, else the never should be eliminated.");
+
+        // Remove posedge/negedge on constants that can never occur
+        for (AstSenItem* const senItemp : sentreep->sensespList()) {
+            const AstConst* const constp = VN_CAST(senItemp->sensp(), Const);
+            if (!constp) continue;
+            const VEdgeType edgeType = senItemp->edgeType();
+            if ((edgeType == VEdgeType::ET_POSEDGE && constp->num().bitIs0(0))
+                || (edgeType == VEdgeType::ET_NEGEDGE && constp->num().bitIs1(0))) {
+                VL_DO_DANGLING(pushDeletep(senItemp->unlinkFrBack()), senItemp);
+            }
+        }
+        // Delete actives that can never execute
+        if (!sentreep->sensesp()) {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
 
         // Delete empty procedures
-        for (AstNode* const stmtp : nodep->stmtspList()) {
+        for (AstNode* const stmtp : nodep->procspList()) {
             if (AstNodeProcedure* const procp = VN_CAST(stmtp, NodeProcedure)) {
                 if (!procp->stmtsp()) VL_DO_DANGLING(pushDeletep(procp->unlinkFrBack()), stmtp);
             }
         }
 
         // Delete empty actives
-        if (!nodep->stmtsp()) {
+        if (!nodep->procsp()) {
             VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);
             return;
         }
@@ -120,10 +129,10 @@ class ActiveTopVisitor final : public VNVisitor {
         if (nodep->sentreep()->hasCombo()) {
             FileLine* const flp = nodep->fileline();
             AstActive* initialp = nullptr;
-            for (AstNode* const logicp : nodep->stmtspList()) {
+            for (AstNodeProcedure* const logicp : nodep->procspList()) {
                 if (!isInitial(logicp)) continue;
                 if (!initialp) initialp = new AstActive{flp, "", m_finder.getInitial()};
-                initialp->addStmtsp(logicp->unlinkFrBack());
+                initialp->addProcsp(logicp->unlinkFrBack());
             }
             if (initialp) nodep->addHereThisAsNext(initialp);
         }

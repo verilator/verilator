@@ -2448,7 +2448,7 @@ class FsmLowerVisitor final {
         initActivep->senTreeStorep(initActivep->sentreep());
         // Seed the previous-state temp during initialization so the first
         // clock edge compares against a defined state value.
-        initActivep->addStmtsp(new AstInitialStatic{
+        initActivep->addProcsp(new AstInitialStatic{
             flp, new AstAssign{flp, new AstVarRef{flp, prevVscp, VAccess::WRITE},
                                new AstVarRef{flp, sampleVscp, VAccess::READ}}});
         scopep->addBlocksp(initActivep);
@@ -2476,7 +2476,7 @@ class FsmLowerVisitor final {
             // Create and increment proper AstNodeCoverDecls
             const FsmCoverIncBuilder coverIncBuilder{graph, prevVscp};
             modp->addStmtsp(coverIncBuilder.getCoverDeclsp());
-            initActivep->addStmtsp(coverIncBuilder.getInitialCoverIncp());
+            initActivep->addProcsp(new AstInitial{flp, coverIncBuilder.getInitialCoverIncp()});
             covPostp->addStmtsp(
                 new AstIf{flp,
                           new AstNeq{flp, new AstVarRef{flp, prevVscp, VAccess::READ},
@@ -2493,7 +2493,7 @@ class FsmLowerVisitor final {
         AstActive* const activep = new AstActive{flp, "fsm-coverage", sentreep};
         activep->senTreeStorep(sentreep);
         scopep->addBlocksp(activep);
-        activep->addStmtsp(covPostp);
+        activep->addProcsp(covPostp);
     }
 
 public:

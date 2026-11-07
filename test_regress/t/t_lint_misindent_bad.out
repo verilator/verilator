@@ -24,4 +24,16 @@
                     t/t_lint_misindent_bad.v:28:5: ... Expected indentation matching this earlier statement's line:
    28 |     while (0)
       |     ^~~~~
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:52:9: Misleading indentation
+   52 |         $display("bad5");   
+      |         ^~~~~~~~
+                    t/t_lint_misindent_bad.v:50:7: ... Expected indentation matching this earlier statement's line:
+   50 |       for (;0;)
+      |       ^~~
+%Warning-MISINDENT: t/t_lint_misindent_bad.v:55:9: Misleading indentation
+   55 |         $display("bad6");   
+      |         ^~~~~~~~
+                    t/t_lint_misindent_bad.v:53:7: ... Expected indentation matching this earlier statement's line:
+   53 |       while (0)
+      |       ^~~~~
 %Error: Exiting due to
