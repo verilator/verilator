@@ -3722,21 +3722,13 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                         { AstLoop* const loopp = new AstLoop{$1, $2};
                           loopp->addContsp(new AstLoopTest{$<fl>5, loopp, $5});
                           $$ = loopp; }
-        |       yFOR  '(' { VARRESET_NONLIST(UNKNOWN); } for_initializationE ';' exprE ';' for_stepE ')' stmt
-                        { AstBegin* const blockp = new AstBegin{$1, "", nullptr, true};
-                          for (AstNode *nextp, *itemp = $4; itemp; itemp = nextp) {
-                              nextp = itemp->nextp();
-                              if (nextp) nextp->unlinkFrBackWithNext();
-                              if (AstVar* const varp = VN_CAST(itemp, Var)) {
-                                  blockp->addDeclsp(varp);
-                              } else {
-                                  blockp->addStmtsp(VN_AS(itemp, NodeStmt));
-                              }
-                          }
+        |       yFOR '(' for_initializationE ';' exprE ';' for_stepE ')' stmt
+                        { AstBegin* const blockp = $3;
+                          blockp->fileline($1);
                           AstLoop* const loopp = new AstLoop{$1};
-                          if ($6) loopp->addStmtsp(new AstLoopTest{$<fl>6, loopp, $6});
-                          loopp->addStmtsp($10);
-                          loopp->addContsp($8);
+                          if ($5) loopp->addStmtsp(new AstLoopTest{$<fl>5, loopp, $5});
+                          loopp->addStmtsp($9);
+                          loopp->addContsp($7);
                           blockp->addStmtsp(loopp);
                           $$ = blockp; }
         |       yFOREVER stmt
@@ -4097,43 +4089,49 @@ assignment_pattern<patternp>:   // ==IEEE: assignment_pattern
         ;
 
 // "datatype id = x {, id = x }"  |  "yaId = x {, id=x}" is legal
-for_initializationE<nodep>:      // ==IEEE: for_initialization + for_variable_declaration
-                /* empty */                     { $$ = nullptr; }
-        |       for_initializationItemList      { $$ = $1; }
+for_initializationE<beginp>:     // ==IEEE: [for_initialization], in the block of the loop
+                /* empty */                     { $$ = new AstBegin{CRELINE(), "", nullptr, true}; }
+        |       for_variable_declarationList
+                        { $$ = new AstBegin{$<fl>1, "", nullptr, true};
+                          $$->addDeclsp($1); }
+        |       list_of_variable_assignments    { $$ = new AstBegin{$<fl>1, "", $1, true}; }
         ;
 
-for_initializationItemList<nodep>:      // IEEE: [for_variable_declaration...]
-                for_initializationItem                  { $$ = $1; }
-        |       for_initializationItemList ',' for_initializationItem   { $$ = addNextNull($1, $3); }
+for_variable_declarationList<varp>:     // IEEE: for_variable_declaration { ',' for_variable_declaration }
+                for_variable_declaration        { $$ = $1; }
+        |       for_variable_declarationList ',' for_variable_declaration
+                        { $$ = addNextNull($1, $3); }
+        //                      // IEEE: part of for_variable_declaration, of the same data type
+        |       for_variable_declarationList ',' id/*new*/ '=' expr
+                        { AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
+                          varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                          varp->valuep($5);
+                          $$ = addNextNull($1, varp); }
         ;
 
-for_initializationItem<nodep>:          // IEEE: variable_assignment + for_variable_declaration
-        //                      // IEEE: for_variable_declaration
+for_variable_declaration<varp>:         // ==IEEE: for_variable_declaration (first variable)
                 data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($1);
-                          AstVar* const varp = VARDONEA($<fl>2, *$2, nullptr, nullptr);
-                          varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                          varp->valuep($4);
-                          $$ = varp; }
+                          $$ = VARDONEA($<fl>2, *$2, nullptr, nullptr);
+                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                          $$->valuep($4); }
         //                      // IEEE-2012:
         |       yVAR data_type idAny/*new*/ '=' expr
                         { VARRESET_NONLIST(VAR); VARDTYPE($2);
-                          AstVar* const varp = VARDONEA($<fl>3, *$3, nullptr, nullptr);
-                          varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                          varp->valuep($5);
-                          $$ = varp; }
-        //                      // IEEE: variable_assignment
+                          $$ = VARDONEA($<fl>3, *$3, nullptr, nullptr);
+                          $$->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
+                          $$->valuep($5); }
+        ;
+
+list_of_variable_assignments<nodeStmtp>:        // ==IEEE: list_of_variable_assignments
+                variable_assignment             { $$ = $1; }
+        |       list_of_variable_assignments ',' variable_assignment
+                        { $$ = addNextNull($1, $3); }
+        ;
+
+variable_assignment<nodeStmtp>:         // ==IEEE: variable_assignment
         //                      // UNSUP variable_lvalue below
-        |       id/*newOrExisting*/ '=' expr
-                        { if (GRAMMARP->m_varDecl) {
-                              AstVar* const varp = VARDONEA($<fl>1, *$1, nullptr, nullptr);
-                              varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                              varp->valuep($3);
-                              $$ = varp;
-                          } else {
-                              $$ = new AstAssign{$2, new AstParseRef{$<fl>1, *$1}, $3};
-                          }
-                        }
+                id '=' expr                     { $$ = new AstAssign{$2, new AstParseRef{$<fl>1, *$1}, $3}; }
         ;
 
 for_stepE<nodeStmtp>:               // IEEE: for_step + empty
