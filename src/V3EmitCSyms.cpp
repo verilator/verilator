@@ -1143,6 +1143,8 @@ void EmitCSyms::emitSymHdr() {
         // __Vm_dumperp is local, otherwise we wouldn't know what design's eval()
         // should call a global dumpperp
         puts("bool __Vm_dumping = false;  // Dumping is active\n");
+        puts("bool __Vm_dumpOpened = false;  // Dump file opened, $dumpvars selection is fixed\n");
+        puts("std::string __Vm_dumpfile;  // $dumpfile when dumping started\n");
         puts("VerilatedMutex __Vm_dumperMutex;  // Protect __Vm_dumperp\n");
         puts(v3Global.opt.traceClassLang()
              + "* __Vm_dumperp VL_GUARDED_BY(__Vm_dumperMutex) = nullptr;"
@@ -1251,6 +1253,8 @@ void EmitCSyms::emitSymHdr() {
 
     if (v3Global.needTraceDumper()) {
         if (!optSystemC()) puts("void _traceDump();\n");
+        puts("void _traceDumpNew() VL_REQUIRES(__Vm_dumperMutex);\n");
+        puts("void _traceDumpVars(int level, const std::string& name);\n");
         puts("void _traceDumpOpen();\n");
         puts("void _traceDumpClose();\n");
     }
@@ -1840,24 +1844,54 @@ void EmitCSyms::emitSymImp(const AstNetlist* netlistp) {
             puts("\nvoid " + symClassName() + "::_traceDump() {\n");
             puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
             // Caller checked for __Vm_dumperp non-nullptr
+            // Open at the end of the time step, so all its $dumpvars select signals
+            puts("if (VL_UNLIKELY(!__Vm_dumpOpened)) {\n");
+            puts("__Vm_dumpOpened = true;\n");
+            puts("__Vm_dumperp->open(__Vm_dumpfile.c_str());\n");
+            puts("}\n");
             puts("__Vm_dumperp->dump(VL_TIME_Q());\n");
             puts("}\n");
         }
 
-        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
-        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
+        puts("\nvoid " + symClassName() + "::_traceDumpNew() {\n");
         puts("if (VL_UNLIKELY(!__Vm_dumperp)) {\n");
         puts("__Vm_dumperp = new " + v3Global.opt.traceClassLang() + "();\n");
         puts("__Vm_modelp->trace(__Vm_dumperp, 0, 0);\n");
-        puts("const std::string dumpfile = _vm_contextp__->dumpfileCheck();\n");
-        puts("__Vm_dumperp->open(dumpfile.c_str());\n");
-        puts("__Vm_dumping = true;\n");
         puts("}\n");
+        puts("}\n");
+
+        puts("\nvoid " + symClassName()
+             + "::_traceDumpVars(int level, const std::string& name) {\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
+        puts("if (__Vm_dumpOpened) return;\n");
+        puts("_traceDumpNew();\n");
+        // A leading space marks a name under the model's root scope
+        puts("if (name.empty() || name[0] != ' ') {\n");
+        puts("__Vm_dumperp->dumpvarsScope(level, name);\n");
+        puts("} else if (*this->name()) {\n");
+        puts("__Vm_dumperp->dumpvarsScope(level, this->name() + name);\n");
+        puts("} else {\n");
+        puts("__Vm_dumperp->dumpvarsScope(level, name.substr(1));\n");
+        puts("}\n");
+        puts("}\n");
+
+        puts("\nvoid " + symClassName() + "::_traceDumpOpen() {\n");
+        puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
+        puts("_traceDumpNew();\n");
+        puts("if (!__Vm_dumping) __Vm_dumpfile = _vm_contextp__->dumpfileCheck();\n");
+        puts("__Vm_dumping = true;\n");
+        if (optSystemC()) {
+            puts("if (!__Vm_dumpOpened) {\n");
+            puts("__Vm_dumpOpened = true;\n");
+            puts("__Vm_dumperp->open(__Vm_dumpfile.c_str());\n");
+            puts("}\n");
+        }
         puts("}\n");
 
         puts("\nvoid " + symClassName() + "::_traceDumpClose() {\n");
         puts("const VerilatedLockGuard lock{__Vm_dumperMutex};\n");
         puts("__Vm_dumping = false;\n");
+        puts("__Vm_dumpOpened = false;\n");
         puts("VL_DO_CLEAR(delete __Vm_dumperp, __Vm_dumperp = nullptr);\n");
         puts("}\n");
     }

@@ -82,6 +82,8 @@ public:
     AstVar* createVariable(FileLine* fileline, const string& name, AstNodeRange* arrayp,
                            AstNode* attrsp) VL_MT_DISABLED;
     AstAssignW* createSupplyExpr(FileLine* fileline, const string& name, int value) VL_MT_DISABLED;
+    AstDumpCtl* createDumpVars(FileLine* fileline, AstNodeExpr* levelp,
+                               AstNodeExpr* scopesp) VL_MT_DISABLED;
     std::string textQuoted(FileLine* fileline, const std::string& text) {
         return singletonp()->unquoteString(fileline, text);
     }

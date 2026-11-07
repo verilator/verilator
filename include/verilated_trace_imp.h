@@ -126,6 +126,7 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::traceInit() VL_MT_UNSAFE {
     m_numSignals = 0;
     m_maxBits = 0;
     m_sigs_enabledVec.clear();
+    for (auto& item : m_dumpvars) item.second.second = false;
     m_initCbsCalled.assign(m_initCbs.size(), false);
 
     // Call all initialize callbacks for root instances, which will:
@@ -176,30 +177,31 @@ bool VerilatedTrace<VL_SUB_T, VL_BUF_T>::declCode(uint32_t code, const std::stri
     if (VL_UNCOVERABLE(!code)) {
         VL_FATAL_MT(__FILE__, __LINE__, "", "Internal: internal trace problem, code 0 is illegal");
     }
-    // To keep it simple, this is O(enables * signals), but we expect few enables
-    bool enabled = false;
-    if (m_dumpvars.empty()) enabled = true;
-    for (const auto& item : m_dumpvars) {
-        const int dumpvarsLevel = item.first;
-        const char* dvp = item.second.c_str();
-        const char* np = declName.c_str();
-        while (*dvp && *dvp == *np) {
-            ++dvp;
-            ++np;
+    const bool all = m_dumpvars.empty();
+    bool enabled = all;
+    // Look up the name, then each enclosing scope with one more level below it
+    std::string prefix = all ? "" : declName;
+    int levels = 0;
+    while (!all) {
+        const auto it = m_dumpvars.find(prefix);
+        if (it != m_dumpvars.end() && levels <= it->second.first) {
+            it->second.second = true;
+            enabled = true;
         }
-        if (*dvp) continue;  // Didn't match dumpvar item
-        if (*np && *np != ' ') continue;  // e.g. "t" isn't a match for "top"
-        int levels = 0;
-        while (*np) {
-            if (*np++ == ' ') ++levels;
+        if (prefix.empty()) break;
+        const size_t pos = prefix.rfind(' ');
+        if (pos == std::string::npos) {
+            prefix.clear();  // The empty name, as deep as the top scope
+        } else {
+            prefix.resize(pos);
+            ++levels;
         }
-        if (levels > dumpvarsLevel) continue;  // Too deep
+    }
+    if (enabled && !all) {
         // We only need to set first code word if it's a multicode signal
         // as that's all we'll check for later
         if (m_sigs_enabledVec.size() <= code) m_sigs_enabledVec.resize((code + 1024) * 2);
         m_sigs_enabledVec[code] = true;
-        enabled = true;
-        break;
     }
 
     ++m_numSignals;
@@ -244,8 +246,30 @@ void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvars(int level, const std::string& 
         for (auto& i : hierSpaced) {
             if (i == '.') i = ' ';
         }
-        m_dumpvars.emplace_back(level, hierSpaced);
+        dumpvarsScope(level, hierSpaced);
     }
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsExact(const std::string& name) VL_MT_SAFE {
+    m_dumpvars.emplace(name, std::make_pair(0, false));
+}
+
+template <>
+void VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsScope(int level,
+                                                       const std::string& name) VL_MT_SAFE {
+    int& levels = m_dumpvars[name].first;
+    levels = std::max(levels, level ? level : std::numeric_limits<int>::max());
+}
+
+template <>
+std::vector<std::string> VerilatedTrace<VL_SUB_T, VL_BUF_T>::dumpvarsUnmatched() const VL_MT_SAFE {
+    std::vector<std::string> names;
+    for (const auto& item : m_dumpvars) {
+        if (!item.second.second) names.push_back(item.first);
+    }
+    std::sort(names.begin(), names.end());
+    return names;
 }
 
 template <>

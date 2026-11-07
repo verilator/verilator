@@ -40,6 +40,7 @@
 #include <limits>
 #include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 VL_DEFINE_DEBUG_FUNCTIONS;
@@ -1021,10 +1022,80 @@ public:
 };
 
 //######################################################################
+// Resolve $dumpvars scopes to trace names
+
+class TraceDumpVarsVisitor final : public VNVisitor {
+    // STATE
+    std::unordered_set<std::string> m_names;  // Trace names of variables and their scopes
+    std::vector<AstDumpCtl*> m_dumpCtlps;  // $dumpvars with scopes
+
+    // METHODS
+    static std::string traceName(std::string name) {
+        // Scope names start with TOP, the model's runtime name()
+        if (VString::startsWith(name, "__DOT__")) name.erase(0, 7);
+        if (name == "TOP") return "";
+        if (VString::startsWith(name, "TOP.")) name.erase(0, 4);
+        return AstNode::vcdName(name);
+    }
+    void resolve(AstDumpCtl* nodep) {
+        const std::string caller = traceName(nodep->scopeNamep()->scopeAttr());
+        for (AstConst *constp = nodep->scopesp(), *nextp; constp; constp = nextp) {
+            nextp = VN_AS(constp->nextp(), Const);
+            std::string name = traceName(constp->num().toString());
+            // Search upward from the caller; a leading space marks a name under the root
+            std::string prefix = caller;
+            if (VString::startsWith(name, "$root ")) {
+                name.erase(0, 6);
+                prefix.clear();
+            }
+            while (true) {
+                const std::string fullName = prefix.empty() ? name : prefix + " " + name;
+                if (m_names.count(fullName)) {
+                    name = " " + fullName;
+                    break;
+                }
+                if (prefix.empty()) break;
+                const size_t pos = prefix.rfind(' ');
+                prefix.erase(pos == std::string::npos ? 0 : pos);
+            }
+            constp->replaceWith(new AstConst{constp->fileline(), AstConst::String{}, name});
+            VL_DO_DANGLING(pushDeletep(constp), constp);
+        }
+        pushDeletep(nodep->scopeNamep()->unlinkFrBack());
+    }
+
+    // VISITORS
+    void visit(AstVarScope* nodep) override {
+        const std::string scope = traceName(nodep->scopep()->name());
+        const std::string var = AstNode::vcdName(nodep->varp()->name());
+        const std::string name = scope.empty() ? var : scope + " " + var;
+        for (size_t pos = name.find(' '); pos != std::string::npos;
+             pos = name.find(' ', pos + 1)) {
+            m_names.insert(name.substr(0, pos));
+        }
+        m_names.insert(name);
+    }
+    void visit(AstDumpCtl* nodep) override {
+        if (nodep->scopeNamep()) m_dumpCtlps.push_back(nodep);
+    }
+    void visit(AstNodeExpr*) override {}  // Accelerate
+    void visit(AstNode* nodep) override { iterateChildren(nodep); }
+
+public:
+    // CONSTRUCTORS
+    explicit TraceDumpVarsVisitor(AstNetlist* nodep) {
+        iterate(nodep);
+        for (AstDumpCtl* const dumpCtlp : m_dumpCtlps) resolve(dumpCtlp);
+    }
+    ~TraceDumpVarsVisitor() override = default;
+};
+
+//######################################################################
 // Trace class functions
 
 void V3TraceDecl::traceDeclAll(AstNetlist* nodep) {
     UINFO(2, __FUNCTION__ << ":");
+    { TraceDumpVarsVisitor{nodep}; }
     { TraceDeclVisitor{nodep}; }  // Destruct before checking
     V3Global::dumpCheckGlobalTree("tracedecl", 0, dumpTreeEitherLevel() >= 3);
 }
