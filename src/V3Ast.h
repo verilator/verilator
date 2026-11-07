@@ -731,7 +731,7 @@ public:
     void user1u(const VNUser& user) { m_user1u = user; m_user1Cnt = VNUser1InUse::s_userCntGbl; }
     void user1p(void* userp) { user1u(VNUser{userp}); }
     void user1(uint64_t val) { user1u(VNUser{val}); }
-    uint64_t user1() const VL_MT_STABLE { return user1u().toUQuad(); }
+    uint64_t user1() const { return user1u().toUQuad(); }
     uint64_t user1Inc(uint64_t val = 1) { const uint64_t v = user1(); user1(v + val); return v; }
     uint64_t user1Or(uint64_t val) { const uint64_t v = user1(); user1(v | val); return v; }
     uint64_t user1SetOnce() { const uint64_t v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
@@ -746,7 +746,7 @@ public:
     void user2u(const VNUser& user) { m_user2u = user; m_user2Cnt = VNUser2InUse::s_userCntGbl; }
     void user2p(void* userp) { user2u(VNUser{userp}); }
     void user2(uint64_t val) { user2u(VNUser{val}); }
-    uint64_t user2() const VL_MT_STABLE { return user2u().toUQuad(); }
+    uint64_t user2() const { return user2u().toUQuad(); }
     uint64_t user2Inc(uint64_t val = 1) { const uint64_t v = user2(); user2(v + val); return v; }
     uint64_t user2Or(uint64_t val) { const uint64_t v = user2(); user2(v | val); return v; }
     uint64_t user2SetOnce() { const uint64_t v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
@@ -776,7 +776,7 @@ public:
     void user4u(const VNUser& user) { m_user4u = user; m_user4Cnt = VNUser4InUse::s_userCntGbl; }
     void user4p(void* userp) { user4u(VNUser{userp}); }
     void user4(uint64_t val) { user4u(VNUser{val}); }
-    uint64_t user4() const VL_MT_STABLE { return user4u().toUQuad(); }
+    uint64_t user4() const { return user4u().toUQuad(); }
     uint64_t user4Or(uint64_t val) { const uint64_t v = user4(); user4(v | val); return v; }
     uint64_t user4Inc(uint64_t val = 1) { const uint64_t v = user4(); user4(v + val); return v; }
     uint64_t user4SetOnce() { const uint64_t v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()

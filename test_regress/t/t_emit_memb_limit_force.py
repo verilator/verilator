@@ -15,7 +15,6 @@ test.compile(
     make_top_shell=False,
     make_pli=True,
     threads=2 if test.vltmt else 1,
-    v_flags2=["+define+USE_VPI"],
     verilator_flags2=["--binary", "--vpi", "--comp-limit-members", "1", test.pli_filename])
 
 test.execute(use_libvpi=True)

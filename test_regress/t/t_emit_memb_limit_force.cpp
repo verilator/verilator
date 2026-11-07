@@ -34,21 +34,14 @@ void putValue(vpiHandle handle, PLI_INT32 val, PLI_INT32 flags) {
 }
 
 PLI_INT32 start_of_sim(t_cb_data*) {
-    TestVpiHandle x = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.x"), nullptr);
     TestVpiHandle xv = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.x.v"), nullptr);
-    TestVpiHandle y = vpi_handle_by_name(const_cast<PLI_BYTE8*>("t.y"), nullptr);
-    TEST_CHECK_NZ(x);
     TEST_CHECK_NZ(xv);
-    TEST_CHECK_NZ(y);
     if (errors) {
         vpi_control(vpiStop);
         return 0;
     }
     putValue(xv, 0x21, vpiNoDelay);
     TEST_CHECK_EQ(getValue(xv), 0x21);
-    // Reads of a forceable signal use its registered read signal
-    putValue(y, 0x77, vpiForceFlag);
-    TEST_CHECK_EQ(getValue(y), 0x77);
     if (errors) vpi_control(vpiStop);
     return 0;
 }

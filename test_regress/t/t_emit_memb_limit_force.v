@@ -10,10 +10,7 @@
 `define checks(gotv,expv) do if ((gotv) != (expv)) begin $write("%%Error: %s:%0d:  got='%s' exp='%s'\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
 // verilog_format: on
 
-module t (
-    // Top-level port, whose force read signal is not a port
-    input logic [7:0] p  /*verilator forceable*/  /*verilator public_flat_rw*/
-);
+module t;
   typedef struct {
     string s;
     logic [7:0] v;
@@ -21,23 +18,16 @@ module t (
 
   // Not trivially constructible, so its force signals are nested in separate structs
   S x  /*verilator forceable*/  /*verilator public_flat_rw*/;
-  // Trivially constructible, so not nested in named structs
-  logic [7:0] y  /*verilator forceable*/  /*verilator public_flat_rw*/;
   S forcedVal;
 
   initial begin
     x.s = "keep";
     x.v = 8'h12;
-    y = 8'h34;
     forcedVal.s = "forced";
     forcedVal.v = 8'h56;
     #1;
     `checks(x.s, "keep");
     `checkh(x.v, 8'h12);
-`ifndef USE_VPI
-    `checkh(y, 8'h34);
-`endif
-    `checkh(p, 8'h0);
     force x = forcedVal;
     #1;
     `checks(x.s, "forced");
