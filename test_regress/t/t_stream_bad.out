@@ -15,12 +15,28 @@
                               : ... note: In instance 't'
    15 |     packed_data_32 = {<<x{byte_in}};
       |                       ^~
-%Error: t/t_stream_bad.v:20:31: Streaming concatenation cannot be connected to 'inout' port (IEEE 1800-2023 11.4.14)
+%Error: t/t_stream_bad.v:16:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2), but is '?32?sh0'.
                               : ... note: In instance 't'
-   20 |   sub_inout i_sub_inout (.io({>>{io_bus}}));
+   16 |     packed_data_32 = {<<0{byte_in}};
+      |                       ^~
+%Error: t/t_stream_bad.v:17:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2), but is '32'hffffffff'.
+                              : ... note: In instance 't'
+   17 |     packed_data_32 = {<<-1{byte_in}};
+      |                       ^~
+%Error: t/t_stream_bad.v:18:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2), but is '33'h100000000'.
+                              : ... note: In instance 't'
+   18 |     packed_data_32 = {<<33'h1_0000_0000{byte_in}};
+      |                       ^~
+%Error: t/t_stream_bad.v:19:23: Slice size must be a positive 32-bit value (IEEE 1800-2023 11.4.14.2), but is '4'bx'.
+                              : ... note: In instance 't'
+   19 |     packed_data_32 = {<<4'bx{byte_in}};
+      |                       ^~
+%Error: t/t_stream_bad.v:24:31: Streaming concatenation cannot be connected to 'inout' port (IEEE 1800-2023 11.4.14)
+                              : ... note: In instance 't'
+   24 |   sub_inout i_sub_inout (.io({>>{io_bus}}));
       |                               ^~
-%Error: t/t_stream_bad.v:25:26: Streaming concatenation cannot be connected to 'ref' port (IEEE 1800-2023 11.4.14)
+%Error: t/t_stream_bad.v:29:26: Streaming concatenation cannot be connected to 'ref' port (IEEE 1800-2023 11.4.14)
                               : ... note: In instance 't'
-   25 |   sub_ref i_sub_ref (.r({>>{ref_var}}));
+   29 |   sub_ref i_sub_ref (.r({>>{ref_var}}));
       |                          ^~
 %Error: Exiting due to
