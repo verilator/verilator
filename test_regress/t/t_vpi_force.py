@@ -15,6 +15,7 @@ test.compile(
     make_top_shell=False,
     make_main=False,
     make_pli=True,
+    threads=2 if test.vltmt else 1,
     verilator_flags2=[
         "+define+VERILATOR_COMMENTS",  #
         "--binary",

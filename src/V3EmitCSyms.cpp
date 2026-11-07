@@ -634,13 +634,15 @@ class EmitCSyms final : EmitCBaseVisitorConst {
                 + "__VforceRd" + '"';
         stmt += ", {";
 
-        for (const AstVar* const controlVarp : {varp->forceEnVarp(), varp->forceValVarp()}) {
-            const ScopeVarData& control = forceControlScopeVar(scopep, varp, controlVarp);
-            const VarDims dims = dimsFor(control);
-            stmt += insertVarStatement(control, control.m_scopep, control.m_varp, dims.udim,
-                                       dims.pdim, boundsString(dims));
-            if (controlVarp == varp->forceEnVarp()) stmt += ",";
-        }
+        const ScopeVarData& enable = forceControlScopeVar(scopep, varp, varp->forceEnVarp());
+        const VarDims enableDims = dimsFor(enable);
+        stmt += insertVarStatement(enable, enable.m_scopep, enable.m_varp, enableDims.udim,
+                                   enableDims.pdim, boundsString(enableDims));
+        stmt += ",";
+        const ScopeVarData& value = forceControlScopeVar(scopep, varp, varp->forceValVarp());
+        const VarDims valueDims = dimsFor(value);
+        stmt += insertVarStatement(value, value.m_scopep, value.m_varp, valueDims.udim,
+                                   valueDims.pdim, boundsString(valueDims));
 
         stmt += "}";
         stmt += ", ";
