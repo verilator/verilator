@@ -17,6 +17,7 @@ module t (
   logic rst;
   integer cyc;
   state_t state  /*verilator fsm_state*/;
+  state_t state_folded  /*verilator fsm_state*/;
 
   initial begin
     rst = 1'b1;
@@ -45,6 +46,22 @@ module t (
         S0: state <= S2;
         S1: state <= S2;
         default: state <= S2;
+      endcase
+    end
+  end
+
+  // Folding this if leaves a coverage counter between the reset assignments.
+  // The second assignment must still trigger the multiple-assignment warning.
+  always_ff @(posedge clk) begin
+    if (rst) begin
+      state_folded <= S0;
+      if (1'b1) state_folded <= S1;
+    end
+    else begin
+      case (state_folded)
+        S0: state_folded <= S2;
+        S1: state_folded <= S2;
+        default: state_folded <= S2;
       endcase
     end
   end
