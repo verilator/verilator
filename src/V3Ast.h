@@ -183,7 +183,7 @@ public:
         UASSERT_STATIC(upp, "AstNode user() slot written as uint64_t, read as pointer");
         return reinterpret_cast<T>(*upp);
     }
-    uint64_t toUQuad() const {
+    uint64_t toUQuad() const VL_MT_SAFE {
         if (std::holds_alternative<std::monostate>(m_u)) return 0;
         const uint64_t* const uip = std::get_if<uint64_t>(&m_u);
         UASSERT_STATIC(uip, "AstNode user() slot written as pointer, read as uint64_t");
@@ -204,7 +204,7 @@ public:
     typename std::enable_if<std::is_pointer<T>::value, T>::type to() const VL_MT_SAFE {
         return reinterpret_cast<T>(m_u.up);
     }
-    uint64_t toUQuad() const { return m_u.uq; }
+    uint64_t toUQuad() const VL_MT_SAFE { return m_u.uq; }
 #endif
     VSymEnt* toSymEnt() const { return to<VSymEnt*>(); }
     AstNode* toNodep() const VL_MT_SAFE { return to<AstNode*>(); }
@@ -731,7 +731,7 @@ public:
     void user1u(const VNUser& user) { m_user1u = user; m_user1Cnt = VNUser1InUse::s_userCntGbl; }
     void user1p(void* userp) { user1u(VNUser{userp}); }
     void user1(uint64_t val) { user1u(VNUser{val}); }
-    uint64_t user1() const { return user1u().toUQuad(); }
+    uint64_t user1() const VL_MT_STABLE { return user1u().toUQuad(); }
     uint64_t user1Inc(uint64_t val = 1) { const uint64_t v = user1(); user1(v + val); return v; }
     uint64_t user1Or(uint64_t val) { const uint64_t v = user1(); user1(v | val); return v; }
     uint64_t user1SetOnce() { const uint64_t v = user1(); if (!v) user1(1); return v; }  // Better for cache than user1Inc()
@@ -746,7 +746,7 @@ public:
     void user2u(const VNUser& user) { m_user2u = user; m_user2Cnt = VNUser2InUse::s_userCntGbl; }
     void user2p(void* userp) { user2u(VNUser{userp}); }
     void user2(uint64_t val) { user2u(VNUser{val}); }
-    uint64_t user2() const { return user2u().toUQuad(); }
+    uint64_t user2() const VL_MT_STABLE { return user2u().toUQuad(); }
     uint64_t user2Inc(uint64_t val = 1) { const uint64_t v = user2(); user2(v + val); return v; }
     uint64_t user2Or(uint64_t val) { const uint64_t v = user2(); user2(v | val); return v; }
     uint64_t user2SetOnce() { const uint64_t v = user2(); if (!v) user2(1); return v; }  // Better for cache than user2Inc()
@@ -761,7 +761,7 @@ public:
     void user3u(const VNUser& user) { m_user3u = user; m_user3Cnt = VNUser3InUse::s_userCntGbl; }
     void user3p(void* userp) { user3u(VNUser{userp}); }
     void user3(uint64_t val) { user3u(VNUser{val}); }
-    uint64_t user3() const { return user3u().toUQuad(); }
+    uint64_t user3() const VL_MT_STABLE { return user3u().toUQuad(); }
     uint64_t user3Inc(uint64_t val = 1) { const uint64_t v = user3(); user3(v + val); return v; }
     uint64_t user3Or(uint64_t val) { const uint64_t v = user3(); user3(v | val); return v; }
     uint64_t user3SetOnce() { const uint64_t v = user3(); if (!v) user3(1); return v; }  // Better for cache than user3Inc()
@@ -776,7 +776,7 @@ public:
     void user4u(const VNUser& user) { m_user4u = user; m_user4Cnt = VNUser4InUse::s_userCntGbl; }
     void user4p(void* userp) { user4u(VNUser{userp}); }
     void user4(uint64_t val) { user4u(VNUser{val}); }
-    uint64_t user4() const { return user4u().toUQuad(); }
+    uint64_t user4() const VL_MT_STABLE { return user4u().toUQuad(); }
     uint64_t user4Or(uint64_t val) { const uint64_t v = user4(); user4(v | val); return v; }
     uint64_t user4Inc(uint64_t val = 1) { const uint64_t v = user4(); user4(v + val); return v; }
     uint64_t user4SetOnce() { const uint64_t v = user4(); if (!v) user4(1); return v; }  // Better for cache than user4Inc()

@@ -642,7 +642,10 @@ class EmitCSyms final : EmitCBaseVisitorConst {
         stmt += ", ";
         stmt += varp->vlEnumDir();  // VLVD_IN etc
         stmt += ", &(";
-        stmt += varExpr + "__VforceRd";
+        // The read signal is a separate member, so its path and protected name are its own
+        const AstVar* const rdVarp = varp->forceRdVarp();
+        UASSERT_OBJ(rdVarp, varp, "Forceable signal without read signal");
+        stmt += "vlSymsp->" + instName(scopep) + "." + varName(rdVarp);
         stmt += "), \"" + V3OutFormatter::quoteNameControls(protect(svd.m_varBasePretty))
                 + "__VforceRd" + '"';
         stmt += ", {";
