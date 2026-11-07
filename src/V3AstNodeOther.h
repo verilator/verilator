@@ -3262,6 +3262,7 @@ class AstClass final : public AstNodeModule {
                                        // which updates pointers to rand variables in clone()
     bool m_covergroup = false;  // Is covergroup (TODO perhaps make a new Ast node type for CG?)
     bool m_extended = false;  // Is extension or extended by other classes
+    bool m_implChecksDeferred = false;  // V3LinkDot checks implementations after V3Param
     bool m_interfaceClass = false;  // Interface class
     bool m_needRNG = false;  // Need RNG, uses srandom/randomize
     bool m_useVirtualPublic = false;  // Subclasses need virtual public as uses interface class
@@ -3299,6 +3300,8 @@ public:
     void isCovergroup(bool flag) { m_covergroup = flag; }
     bool isExtended() const { return m_extended; }
     void isExtended(bool flag) { m_extended = flag; }
+    bool implChecksDeferred() const { return m_implChecksDeferred; }
+    void implChecksDeferred(bool flag) { m_implChecksDeferred = flag; }
     bool isInterfaceClass() const { return m_interfaceClass; }
     void isInterfaceClass(bool flag) { m_interfaceClass = flag; }
     bool isVirtual() const { return m_virtual; }

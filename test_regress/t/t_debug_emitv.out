@@ -1757,6 +1757,11 @@ function rand_restricted;
         disable label8;
     end
 endfunction
+class ClsParamExt extends ClsParam__Tz7d09f080_P2;
+    function new;
+        new();
+    endfunction
+endclass
 package __Vconstpool;
     const string CONSARRAY_0[1:0] = '{0:"ZERO", 1:"ONE"};
 endpackage
