@@ -311,6 +311,11 @@ class CoverageVisitor final : public VNVisitor {
     }
     void visit(AstAlways* nodep) override {
         if (nodep->keyword() == VAlwaysKwd::COVER_TOGGLE) return;  // Made here, nothing to cover
+        if (nodep->keyword() == VAlwaysKwd::ASSERT_COVER) {
+            // Not procedural code, but user coverage points might be under it
+            iterateChildren(nodep);
+            return;
+        }
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {
             // Handle continuous assigns for expression coverage (but not line coverage)
             VL_RESTORER(m_state);

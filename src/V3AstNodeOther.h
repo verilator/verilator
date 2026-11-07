@@ -3486,7 +3486,7 @@ public:
 // === AstNodeProcedure ===
 class AstAlways final : public AstNodeProcedure {
     // @astgen op1 := sentreep : Optional[AstSenTree] // Sensitivity list iff clocked
-    const VAlwaysKwd m_keyword;
+    VAlwaysKwd m_keyword;
 
 public:
     AstAlways(FileLine* fl, VAlwaysKwd keyword, AstSenTree* sentreep,
@@ -3501,6 +3501,7 @@ public:
     void dump(std::ostream& str) const override;
     void dumpJson(std::ostream& str) const override;
     VAlwaysKwd keyword() const { return m_keyword; }
+    void keyword(VAlwaysKwd keyword) { m_keyword = keyword; }
 };
 class AstAlwaysObserved final : public AstNodeProcedure {
     // Like always but Observed scheduling region

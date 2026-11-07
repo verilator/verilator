@@ -6521,9 +6521,11 @@ deferred_immediate_assertion_statement<nodeStmtp>:  // ==IEEE: deferred_immediat
         ;
 
 concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
-                concurrent_assertion_statement          { $$ = $1; }
+                concurrent_assertion_statement
+                        { $$ = new AstAlways{$1->fileline(), VAlwaysKwd::ASSERT_COVER, nullptr, $1}; }
         |       id/*block_identifier*/ ':' concurrent_assertion_statement
-                        { $$ = new AstGenBlock{$<fl>1, *$1, $3, true}; }
+                        { $$ = new AstAlways{$<fl>1, VAlwaysKwd::ASSERT_COVER, nullptr,
+                                             new AstBegin{$<fl>1, *$1, $3, true}}; }
         //                      // IEEE: checker_instantiation
         //                      // identical to module_instantiation; see etcInst
         ;

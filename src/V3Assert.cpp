@@ -133,7 +133,7 @@ class SeqEventLowerVisitor final : public VNVisitor {
                                VAssertType::CONCURRENT};
             coverp->isCoverSeq(true);
             coverp->isSeqEvent(true);
-            m_modp->addStmtsp(coverp);
+            m_modp->addStmtsp(new AstAlways{flp, VAlwaysKwd::ASSERT_COVER, nullptr, coverp});
             return;
         }
         iterateChildren(nodep);
@@ -414,6 +414,7 @@ class AssertVisitor final : public VNVisitor {
     AstVar* m_obsEventp = nullptr;  // Current module event to run deferred calls
     AstAlwaysReactive* m_obsReactivep = nullptr;  // Current module block running deferred calls
     AstNodeProcedure* m_procedurep = nullptr;  // Current procedure
+    AstAlways* m_assertCoverp = nullptr;  // Process of the current concurrent assertion
     VDouble0 m_statCover;  // Statistic tracking
     VDouble0 m_statAsNotImm;  // Statistic tracking
     VDouble0 m_statAsImm;  // Statistic tracking
@@ -981,7 +982,14 @@ class AssertVisitor final : public VNVisitor {
                 nodep->v3warn(E_UNSUPPORTED,
                               "Unsupported: Procedural concurrent assertion with"
                               " clocking event inside always (IEEE 1800-2023 16.14.6)");
-                static_cast<AstNode*>(m_procedurep)->addNext(nodep->unlinkFrBack());
+                m_procedurep->addNext(
+                    new AstAlways{flp, VAlwaysKwd::ASSERT_COVER, nullptr, nodep->unlinkFrBack()});
+                return;  // Later iterate will pick up
+            }
+            // A task is not a process, so the assertion gets its own beside the task
+            if (m_ftaskp) {
+                m_ftaskp->addNextHere(
+                    new AstAlways{flp, VAlwaysKwd::ASSERT_COVER, nullptr, nodep->unlinkFrBack()});
                 return;  // Later iterate will pick up
             }
             sentreep->unlinkFrBack();
@@ -1101,8 +1109,6 @@ class AssertVisitor final : public VNVisitor {
         if (disablep) bodysp = new AstIf{flp, new AstLogNot{flp, disablep}, bodysp};
         // Add assertOn check last, for better combining
         if (!seqEvent) bodysp = newIfAssertOn(bodysp, nodep->directive(), nodep->userType());
-        AstNode* newp = bodysp;
-        if (sentreep) newp = new AstAlways{flp, VAlwaysKwd::ALWAYS, sentreep, bodysp};
 
         if (passsp && !passsp->backp()) VL_DO_DANGLING(pushDeletep(passsp), passsp);
         if (failsp && !failsp->backp()) VL_DO_DANGLING(pushDeletep(failsp), failsp);
@@ -1111,10 +1117,17 @@ class AssertVisitor final : public VNVisitor {
         if (selfDestruct) {
             // Delete it after making the tree.  This way we can tell the user
             // if it wasn't constructed nicely or has other errors without needing --coverage.
-            VL_DO_DANGLING(newp->deleteTree(), newp);
+            VL_DO_DANGLING(bodysp->deleteTree(), bodysp);
+            if (sentreep) VL_DO_DANGLING(sentreep->deleteTree(), sentreep);
             nodep->unlinkFrBack();
         } else {
-            nodep->replaceWith(newp);
+            if (sentreep) {
+                // The process of the concurrent assertion is clocked by it
+                UASSERT_OBJ(m_assertCoverp, nodep, "Concurrent assertion not in its process");
+                m_assertCoverp->keyword(VAlwaysKwd::ALWAYS);
+                m_assertCoverp->sentreep(sentreep);
+            }
+            nodep->replaceWith(bodysp);
         }
         // Bye
         VL_DO_DANGLING(pushDeletep(nodep), nodep);
@@ -1749,6 +1762,20 @@ class AssertVisitor final : public VNVisitor {
         m_modStrobeNum = 0;
         m_finalp = nullptr;
         iterateChildren(nodep);
+    }
+    void visit(AstAlways* nodep) override {
+        if (nodep->keyword() != VAlwaysKwd::ASSERT_COVER) {
+            visit(static_cast<AstNodeProcedure*>(nodep));
+            return;
+        }
+        // The process of a concurrent assertion, not a procedural context. The assertion clocks
+        // it, or it goes with the assertion.
+        VL_RESTORER(m_assertCoverp);
+        m_assertCoverp = nodep;
+        iterateChildren(nodep);
+        if (nodep->keyword() == VAlwaysKwd::ASSERT_COVER) {
+            VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
+        }
     }
     void visit(AstNodeProcedure* nodep) override {
         VL_RESTORER(m_procedurep);

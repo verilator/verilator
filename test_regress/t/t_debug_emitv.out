@@ -564,13 +564,13 @@ module t;
     sequence s_clocked;
     @(posedge clk) in
     endsequence
-    /* generate */ begin : assert_seq_clocked
+    begin : assert_seq_clocked
         assert property ( s_clocked()
         ) begin
         end
         else begin
         end
-    end : assert_seq_clocked
+    end
     property p;
     @(posedge clk) ##1 sum[0]
     endproperty
@@ -783,30 +783,30 @@ module t;
     property prop;
     @(posedge clk) 1'h0
     endproperty
-    /* generate */ begin : assert_concurrent
+    begin : assert_concurrent
         assert property ( prop
         ) begin
         end
         else begin
         end
-    end : assert_concurrent
-    /* generate */ begin : assert_concurrent_else
+    end
+    begin : assert_concurrent_else
         assert property ( prop
         ) begin
         end
         else begin
             $display("fail");
         end
-    end : assert_concurrent_else
-    /* generate */ begin : assert_concurrent_stmt
+    end
+    begin : assert_concurrent_stmt
         assert property ( prop
         ) begin
             $display("pass");
         end
         else begin
         end
-    end : assert_concurrent_stmt
-    /* generate */ begin : assert_concurrent_stmt_else
+    end
+    begin : assert_concurrent_stmt_else
         assert property ( prop
         ) begin
             $display("pass");
@@ -814,31 +814,31 @@ module t;
         else begin
             $display("fail");
         end
-    end : assert_concurrent_stmt_else
-    /* generate */ begin : assume_concurrent
+    end
+    begin : assume_concurrent
         assume property ( prop
         ) begin
         end
         else begin
         end
-    end : assume_concurrent
-    /* generate */ begin : assume_concurrent_else
+    end
+    begin : assume_concurrent_else
         assume property ( prop
         ) begin
         end
         else begin
             $display("fail");
         end
-    end : assume_concurrent_else
-    /* generate */ begin : assume_concurrent_stmt
+    end
+    begin : assume_concurrent_stmt
         assume property ( prop
         ) begin
             $display("pass");
         end
         else begin
         end
-    end : assume_concurrent_stmt
-    /* generate */ begin : assume_concurrent_stmt_else
+    end
+    begin : assume_concurrent_stmt_else
         assume property ( prop
         ) begin
             $display("pass");
@@ -846,40 +846,40 @@ module t;
         else begin
             $display("fail");
         end
-    end : assume_concurrent_stmt_else
-    /* generate */ begin : cover_concurrent
+    end
+    begin : cover_concurrent
         cover property ( prop
         ) begin
         end
-    end : cover_concurrent
-    /* generate */ begin : cover_concurrent_stmt
+    end
+    begin : cover_concurrent_stmt
         cover property ( prop
         ) begin
             $display("pass");
         end
-    end : cover_concurrent_stmt
-    /* generate */ begin : cover_sequence_concurrent
+    end
+    begin : cover_sequence_concurrent
         cover property (@(posedge clk) in##1 in
         ) begin
         end
-    end : cover_sequence_concurrent
-    /* generate */ begin : assert_prop_always
+    end
+    begin : assert_prop_always
         assert property (@(posedge clk) always [32'sh0:
                          32'sh3] in
         ) begin
         end
         else begin
         end
-    end : assert_prop_always
-    /* generate */ begin : assert_prop_s_always
+    end
+    begin : assert_prop_s_always
         assert property (@(posedge clk) s_always [32'sh1:
                          32'sh2] in
         ) begin
         end
         else begin
         end
-    end : assert_prop_s_always
-    /* generate */ begin : assert_prop_overlap_impl
+    end
+    begin : assert_prop_overlap_impl
         assert property (@(posedge clk) 
             ???? // IMPLICATION
             inin
@@ -887,8 +887,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_overlap_impl
-    /* generate */ begin : assert_prop_nonoverlap_impl
+    end
+    begin : assert_prop_nonoverlap_impl
         assert property (@(posedge clk) 
             ???? // IMPLICATION
             inin
@@ -896,8 +896,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_nonoverlap_impl
-    /* generate */ begin : assert_prop_overlap_fb
+    end
+    begin : assert_prop_overlap_fb
         assert property (@(posedge clk) 
             ???? // IMPLICATION
             inin
@@ -905,8 +905,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_overlap_fb
-    /* generate */ begin : assert_prop_nonoverlap_fb
+    end
+    begin : assert_prop_nonoverlap_fb
         assert property (@(posedge clk) 
             ???? // IMPLICATION
             inin
@@ -914,8 +914,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_nonoverlap_fb
-    /* generate */ begin : assert_prop_accept_on
+    end
+    begin : assert_prop_accept_on
         assert property (@(posedge clk) accept_on (
                                                    in) 
                          in
@@ -923,8 +923,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_accept_on
-    /* generate */ begin : assert_prop_reject_on
+    end
+    begin : assert_prop_reject_on
         assert property (@(posedge clk) reject_on (
                                                    in) 
                          in
@@ -932,8 +932,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_reject_on
-    /* generate */ begin : assert_prop_sync_accept_on
+    end
+    begin : assert_prop_sync_accept_on
         assert property (@(posedge clk) sync_accept_on (
                                                         in) 
                          in
@@ -941,8 +941,8 @@ module t;
         end
         else begin
         end
-    end : assert_prop_sync_accept_on
-    /* generate */ begin : assert_prop_sync_reject_on
+    end
+    begin : assert_prop_sync_reject_on
         assert property (@(posedge clk) sync_reject_on (
                                                         in) 
                          in
@@ -950,19 +950,19 @@ module t;
         end
         else begin
         end
-    end : assert_prop_sync_reject_on
-    /* generate */ begin : assert_prop_weak
+    end
+    begin : assert_prop_weak
         assert property (@(posedge clk) weak(in)
         ) begin
         end
         else begin
         end
-    end : assert_prop_weak
-    /* generate */ begin : cover_prop_strong
+    end
+    begin : cover_prop_strong
         cover property (@(posedge clk) strong(in)
         ) begin
         end
-    end : cover_prop_strong
+    end
     int a;
     int ao;
     initial begin
