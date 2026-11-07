@@ -72,7 +72,7 @@ class AstNodeBlock VL_NOT_FINAL : public AstNodeStmt {
     // A Begin/fork block
     // Parents: statement
     // @astgen op1 := declsp : List[AstNode] // Declarations inside block
-    // @astgen op2 := stmtsp : List[AstNode] // Sequential statements inside block
+    // @astgen op2 := stmtsp : List[AstNodeStmt] // Sequential statements inside block
     string m_name;  // Name of block
     bool m_unnamed;  // Originally unnamed (name change does not affect this)
 protected:
@@ -96,7 +96,7 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := propp : AstNode
     // @astgen op2 := sentreep : Optional[AstSenTree]
     // op3 used by some sub-types only
-    // @astgen op4 := passsp: List[AstNode] // Statements when propp is passing/truthly
+    // @astgen op4 := passsp: List[AstNodeStmt] // Statements when propp is passing/truthly
     string m_name;  // Name to report
     const VAssertType m_userType;  // Assertion/cover type for user enable/disable
     const VAssertDirectiveType m_directive;  // Assertion directive type
@@ -104,7 +104,7 @@ class AstNodeCoverOrAssert VL_NOT_FINAL : public AstNodeStmt {
     bool m_immediate = false;  // Immediate assert (may differ from userType being immediate)
 
 public:
-    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNode* passsp,
+    AstNodeCoverOrAssert(VNType t, FileLine* fl, AstNode* propp, AstNodeStmt* passsp,
                          VAssertType userType, VAssertDirectiveType directive,
                          const string& name = "")
         : AstNodeStmt{t, fl}
@@ -134,9 +134,9 @@ public:
 };
 class AstNodeForeach VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := headerp : AstForeachHeader
-    // @astgen op2 := bodyp : List[AstNode]
+    // @astgen op2 := bodyp : List[AstNodeStmt]
 public:
-    AstNodeForeach(VNType t, FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp)
+    AstNodeForeach(VNType t, FileLine* fl, AstForeachHeader* headerp, AstNodeStmt* bodyp)
         : AstNodeStmt(t, fl) {
         this->headerp(headerp);
         addBodyp(bodyp);
@@ -148,12 +148,12 @@ public:
 };
 class AstNodeIf VL_NOT_FINAL : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr
-    // @astgen op2 := thensp : List[AstNode]
-    // @astgen op3 := elsesp : List[AstNode]
+    // @astgen op2 := thensp : List[AstNodeStmt]
+    // @astgen op3 := elsesp : List[AstNodeStmt]
     VBranchPred m_branchPred;  // Branch prediction as taken/untaken?
     bool m_isBoundsCheck;  // True if this if node is for assertion/bounds checking
 protected:
-    AstNodeIf(VNType t, FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
+    AstNodeIf(VNType t, FileLine* fl, AstNodeExpr* condp, AstNodeStmt* thensp, AstNodeStmt* elsesp)
         : AstNodeStmt{t, fl} {
         this->condp(condp);
         addThensp(thensp);
@@ -212,9 +212,9 @@ public:
 class AstCaseItem final : public AstNode {
     // Single item of AstCase/AstRandCase
     // @astgen op1 := condsp : List[AstNodeExpr]
-    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op2 := stmtsp : List[AstNodeStmt]
 public:
-    AstCaseItem(FileLine* fl, AstNodeExpr* condsp, AstNode* stmtsp)
+    AstCaseItem(FileLine* fl, AstNodeExpr* condsp, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_CaseItem(fl) {
         addCondsp(condsp);
         addStmtsp(stmtsp);
@@ -243,11 +243,11 @@ public:
 class AstForkItem final : public AstNode {
     // A branch of an AstFork, executed by its own process
     // @astgen op1 := declsp : List[AstVar]  // Local variables
-    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op2 := stmtsp : List[AstNodeStmt]
     bool m_needsVlProcess = false;  // Uses VlProcess
     bool m_disableWrapper = false;  // Lets 'disable' kill a block, same process
 public:
-    AstForkItem(FileLine* fl, AstNode* stmtsp)
+    AstForkItem(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_ForkItem(fl) {
         addStmtsp(stmtsp);
     }
@@ -334,9 +334,9 @@ public:
 class AstCLocalScope final : public AstNodeStmt {
     // Pack statements into an unnamed scope when generating C++
     // @astgen op1 := varsp : List[AstVar]  // Local variables
-    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op2 := stmtsp : List[AstNodeStmt]
 public:
-    AstCLocalScope(FileLine* fl, AstNode* stmtsp)
+    AstCLocalScope(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_CLocalScope(fl) {
         addStmtsp(stmtsp);
     }
@@ -443,7 +443,7 @@ class AstCase final : public AstNodeStmt {
     // Case statement
     // @astgen op1 := exprp : AstNodeExpr // Condition (scurtinee) expression
     // @astgen op2 := itemsp : List[AstCaseItem]
-    // @astgen op3 := notParallelp : List[AstNode] // assertion code for non-full case's
+    // @astgen op3 := notParallelp : List[AstNodeStmt] // assertion code for non-full case's
     VCaseType m_caseType;  // 0=case, 1=casex, 2=casez
     bool m_fullPragma = false;  // Synthesis full_case
     bool m_parallelPragma = false;  // Synthesis parallel_case
@@ -653,7 +653,7 @@ public:
 class AstDelay final : public AstNodeStmt {
     // Delay statement
     // @astgen op1 := lhsp : AstNodeExpr // Delay value (or min for range)
-    // @astgen op2 := stmtsp : List[AstNode] // Statements under delay
+    // @astgen op2 := stmtsp : List[AstNodeStmt] // Statements under delay
     // @astgen op3 := rhsp : Optional[AstNodeExpr] // Max bound for cycle range or fall delay
     // @astgen op4 := throughoutp : Optional[AstNodeExpr] // Throughout condition (IEEE 16.9.9)
     VTimescale m_timeunit;  // Delay's time unit
@@ -704,9 +704,9 @@ class AstDisableTargetBody final : public AstNodeStmt {
     // Body of a 'disable' target that may be the outermost scope of a process, wrapped by
     // V3LinkJump so later passes can tell whether the scope ran to its end
     //
-    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op1 := stmtsp : List[AstNodeStmt]
 public:
-    AstDisableTargetBody(FileLine* fl, AstNode* stmtsp)
+    AstDisableTargetBody(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_DisableTargetBody(fl) {
         addStmtsp(stmtsp);
     }
@@ -789,9 +789,9 @@ public:
 class AstEventControl final : public AstNodeStmt {
     // Parents: stmtlist
     // @astgen op1 := sentreep : Optional[AstSenTree]
-    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op2 := stmtsp : List[AstNodeStmt]
 public:
-    AstEventControl(FileLine* fl, AstSenTree* sentreep, AstNode* stmtsp)
+    AstEventControl(FileLine* fl, AstSenTree* sentreep, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_EventControl(fl) {
         this->sentreep(sentreep);
         addStmtsp(stmtsp);
@@ -921,9 +921,9 @@ class AstInitialAutomaticStmt final : public AstNodeStmt {
     // Moves later to an appropriate constructor, or AstInitialAutomatic, or
     // AstCFunc normal statement
     // Children: {statement list usually only with assignments}
-    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op1 := stmtsp : List[AstNodeStmt]
 public:
-    AstInitialAutomaticStmt(FileLine* fl, AstNode* stmtsp)
+    AstInitialAutomaticStmt(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_InitialAutomaticStmt(fl) {
         addStmtsp(stmtsp);
     }
@@ -937,9 +937,9 @@ class AstInitialStaticStmt final : public AstNodeStmt {
     // Moves later to an appropriate constructor, or AstInitialStatic, or
     // AstCFunc normal statement
     // Children: {statement list usually only with assignments}
-    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op1 := stmtsp : List[AstNodeStmt]
 public:
-    AstInitialStaticStmt(FileLine* fl, AstNode* stmtsp)
+    AstInitialStaticStmt(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_InitialStaticStmt(fl) {
         addStmtsp(stmtsp);
     }
@@ -954,11 +954,11 @@ class AstJumpBlock final : public AstNodeStmt {
     // enclosing AstJumpBlocks (can break out of mulitple levels).
     // Parents:  {statement list}
     // Children: {statement list, with JumpGo below}
-    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op1 := stmtsp : List[AstNodeStmt]
     VIsCached m_purity;  // Pure state
 public:
     // After construction must call ->labelp to associate with appropriate label
-    AstJumpBlock(FileLine* fl, AstNode* stmtsp)
+    AstJumpBlock(FileLine* fl, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_JumpBlock(fl) {
         addStmtsp(stmtsp);
     }
@@ -1003,11 +1003,11 @@ class AstLoop final : public AstNodeStmt {
     //      contsp;
     //  }
     // 'contsp' is moved into 'stmtsp' in LinkJump when 'continue' statements are resovled.
-    // @astgen op1 := stmtsp : List[AstNode]
-    // @astgen op2 := contsp : List[AstNode] // Empty after LinkJump
+    // @astgen op1 := stmtsp : List[AstNodeStmt]
+    // @astgen op2 := contsp : List[AstNodeStmt] // Empty after LinkJump
     VOptionBool m_unroll;  // Full, none, or default unrolling
 public:
-    explicit AstLoop(FileLine* fl, AstNode* stmtsp = nullptr)
+    explicit AstLoop(FileLine* fl, AstNodeStmt* stmtsp = nullptr)
         : ASTGEN_SUPER_Loop(fl) {
         addStmtsp(stmtsp);
     }
@@ -1225,9 +1225,9 @@ public:
 };
 class AstRepeat final : public AstNodeStmt {
     // @astgen op1 := countp : AstNodeExpr
-    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op2 := stmtsp : List[AstNodeStmt]
 public:
-    AstRepeat(FileLine* fl, AstNodeExpr* countp, AstNode* stmtsp)
+    AstRepeat(FileLine* fl, AstNodeExpr* countp, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_Repeat(fl) {
         this->countp(countp);
         addStmtsp(stmtsp);
@@ -1533,9 +1533,9 @@ public:
 };
 class AstWait final : public AstNodeStmt {
     // @astgen op1 := condp : AstNodeExpr
-    // @astgen op2 := stmtsp : List[AstNode]
+    // @astgen op2 := stmtsp : List[AstNodeStmt]
 public:
-    AstWait(FileLine* fl, AstNodeExpr* condp, AstNode* stmtsp)
+    AstWait(FileLine* fl, AstNodeExpr* condp, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_Wait(fl) {
         this->condp(condp);
         addStmtsp(stmtsp);
@@ -1672,7 +1672,7 @@ class AstBegin final : public AstNodeBlock {
     // A 'begin'/'end' named block.
     const bool m_implied;  // Not inserted by user
 public:
-    AstBegin(FileLine* fl, const string& name, AstNode* stmtsp, bool implied)
+    AstBegin(FileLine* fl, const string& name, AstNodeStmt* stmtsp, bool implied)
         : ASTGEN_SUPER_Begin(fl, name)
         , m_implied{implied} {
         addStmtsp(stmtsp);
@@ -1714,12 +1714,12 @@ public:
 
 // === AstNodeCoverOrAssert ===
 class AstAssert final : public AstNodeCoverOrAssert {
-    // @astgen op3 := failsp: List[AstNode] // Statements when propp is failing/falsey
+    // @astgen op3 := failsp: List[AstNodeStmt] // Statements when propp is failing/falsey
 
 public:
     ASTGEN_MEMBERS_AstAssert;
-    AstAssert(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp, VAssertType type,
-              VAssertDirectiveType directive, const string& name = "")
+    AstAssert(FileLine* fl, AstNode* propp, AstNodeStmt* passsp, AstNodeStmt* failsp,
+              VAssertType type, VAssertDirectiveType directive, const string& name = "")
         : ASTGEN_SUPER_Assert(fl, propp, passsp, type, directive, name) {
         addFailsp(failsp);
     }
@@ -1729,10 +1729,10 @@ public:
 };
 class AstAssertIntrinsic final : public AstNodeCoverOrAssert {
     // A $cast or other compiler inserted assert, that must run even without --assert option
-    // @astgen op3 := failsp: List[AstNode] // Statements when propp is failing/falsey
+    // @astgen op3 := failsp: List[AstNodeStmt] // Statements when propp is failing/falsey
 public:
     ASTGEN_MEMBERS_AstAssertIntrinsic;
-    AstAssertIntrinsic(FileLine* fl, AstNode* propp, AstNode* passsp, AstNode* failsp,
+    AstAssertIntrinsic(FileLine* fl, AstNode* propp, AstNodeStmt* passsp, AstNodeStmt* failsp,
                        const string& name = "")
         // Intrinsic asserts are always enabled thus 'type' field is set to INTERNAL.
         : ASTGEN_SUPER_AssertIntrinsic(fl, propp, passsp, VAssertType::INTERNAL,
@@ -1742,14 +1742,14 @@ public:
     string verilogKwd() const override { return "assert"; }
 };
 class AstCover final : public AstNodeCoverOrAssert {
-    // @astgen op3 := coverincsp: List[AstNode] // Coverage node
+    // @astgen op3 := coverincsp: List[AstNodeStmt] // Coverage node
     bool m_isCoverSeq = false;  // 'cover sequence' (IEEE 1800-2023 16.14.3): fires per
                                 // end-of-match, not per property success
     bool m_isSeqEvent = false;  // Synthesized for a sequence used as an event control
                                 // (IEEE 1800-2023 9.4.2.4)
 public:
     ASTGEN_MEMBERS_AstCover;
-    AstCover(FileLine* fl, AstNode* propp, AstNode* stmtsp, VAssertType type,
+    AstCover(FileLine* fl, AstNode* propp, AstNodeStmt* stmtsp, VAssertType type,
              const string& name = "")
         : ASTGEN_SUPER_Cover(fl, propp, stmtsp, type, VAssertDirectiveType::COVER, name) {}
     string verilogKwd() const override { return "cover"; }
@@ -1775,7 +1775,7 @@ class AstConstraintForeach final : public AstNodeForeach {
     // Constraint foreach statement
     bool m_soft;  // is soft foreach, non-standard extension
 public:
-    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* bodyp,
+    AstConstraintForeach(FileLine* fl, AstForeachHeader* headerp, AstNodeStmt* bodyp,
                          bool soft = false)
         : ASTGEN_SUPER_ConstraintForeach(fl, headerp, bodyp)
         , m_soft{soft} {}
@@ -1786,7 +1786,7 @@ public:
 };
 class AstForeach final : public AstNodeForeach {
 public:
-    AstForeach(FileLine* fl, AstForeachHeader* headerp, AstNode* stmtsp)
+    AstForeach(FileLine* fl, AstForeachHeader* headerp, AstNodeStmt* stmtsp)
         : ASTGEN_SUPER_Foreach(fl, headerp, stmtsp) {}
     ASTGEN_MEMBERS_AstForeach;
 };
@@ -1794,7 +1794,7 @@ public:
 // === AstNodeIf ===
 class AstConstraintIf final : public AstNodeIf {
 public:
-    AstConstraintIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp, AstNode* elsesp)
+    AstConstraintIf(FileLine* fl, AstNodeExpr* condp, AstNodeStmt* thensp, AstNodeStmt* elsesp)
         : ASTGEN_SUPER_ConstraintIf(fl, condp, thensp, elsesp) {}
     ASTGEN_MEMBERS_AstConstraintIf;
 };
@@ -1804,7 +1804,8 @@ class AstIf final : public AstNodeIf {
     bool m_unique0Pragma = false;  // unique0 case
     bool m_priorityPragma = false;  // priority case
 public:
-    AstIf(FileLine* fl, AstNodeExpr* condp, AstNode* thensp = nullptr, AstNode* elsesp = nullptr)
+    AstIf(FileLine* fl, AstNodeExpr* condp, AstNodeStmt* thensp = nullptr,
+          AstNodeStmt* elsesp = nullptr)
         : ASTGEN_SUPER_If(fl, condp, thensp, elsesp) {}
     ASTGEN_MEMBERS_AstIf;
     bool uniquePragma() const { return m_uniquePragma; }

@@ -229,7 +229,7 @@ class InlineCFuncsVisitor final : public VNVisitor {
         }
 
         // Clone the function body
-        AstNode* const bodyp = calleep->stmtsp()->cloneTree(true);
+        AstNodeStmt* const bodyp = calleep->stmtsp()->cloneTree(true);
         lscopep->addStmtsp(bodyp);
 
         // Retarget local variable references to the cloned locals

@@ -693,7 +693,7 @@ AstNode* V3Begin::convertToWhile(AstForeach* nodep) {
     }
     VL_DO_DANGLING(subfromp->deleteTree(), subfromp);
     // The parser validates we don't have "foreach (array[,,,])"
-    AstNode* const bodyp = nodep->bodyp();
+    AstNodeStmt* const bodyp = nodep->bodyp();
     if (!blockp->declsp()) {
         nodep->v3warn(NOEFFECT, "foreach with no loop variable has no effect");
         VL_DO_DANGLING(nodep->unlinkFrBack()->deleteTree(), nodep);

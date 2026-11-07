@@ -756,14 +756,14 @@ class TaskVisitor final : public VNVisitor {
         return false;
     }
 
-    AstNode* createInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp) {
+    AstNodeStmt* createInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstNode* const newbodysp
             = refp->taskp()->stmtsp() ? refp->taskp()->stmtsp()->cloneTree(true) : nullptr;
-        AstNode* const beginp
+        AstNodeStmt* const beginp
             = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
-        if (newbodysp) beginp->addNext(newbodysp);
+        if (newbodysp) AstNode::addNext<AstNode, AstNode>(beginp, newbodysp);
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
         // Create input variables
@@ -816,13 +816,14 @@ class TaskVisitor final : public VNVisitor {
         return beginp;
     }
 
-    AstNode* createNonInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp, AstCNew*& cnewpr) {
+    AstNodeStmt* createNonInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp,
+                                       AstCNew*& cnewpr) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
         AstCFunc* const cfuncp = m_statep->ftaskCFuncp(refp->taskp());
         UASSERT_OBJ(cfuncp, refp, "No non-inline task associated with this task call?");
         //
-        AstNode* const beginp
+        AstNodeStmt* const beginp
             = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
         AstNodeCCall* ccallp;
         if (VN_IS(refp, New)) {
@@ -1783,7 +1784,8 @@ class TaskVisitor final : public VNVisitor {
                     VL_DO_DANGLING(pushDeletep(varp->unlinkFrBack()), varp);
                 }
             }
-            if (tempp->declsp()) cfuncp->addStmtsp(tempp->declsp()->unlinkFrBackWithNext());
+            if (tempp->declsp())
+                cfuncp->addStmtsp(VN_AS(tempp->declsp()->unlinkFrBackWithNext(), NodeStmt));
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
         if (nodep->dpiImport()) bodyDpiImportFunc(nodep, rtnvscp, cfuncp, dpiFuncp);
@@ -2164,7 +2166,7 @@ class TaskVisitor final : public VNVisitor {
             if (!outvscp) outvscp = createVarScope(nodep, fvarp, "__Vfuncout");
         }
         // Create cloned statements
-        AstNode* beginp;
+        AstNodeStmt* beginp;
         AstCNew* cnewp = nullptr;
         if (m_statep->ftaskNoInline(nodep->taskp())
             || TaskStateVisitor::isVirtualIfaceMethodCall(nodep)) {
@@ -2214,14 +2216,17 @@ class TaskVisitor final : public VNVisitor {
                     }
                 });
 
-                // Add variable initialization
-                lambdap->prependStmtsp(newvarp);
+                // Declare the variable in a scope inside the lambda
+                AstCLocalScope* const scopep = new AstCLocalScope{
+                    nodep->fileline(), lambdap->stmtsp()->unlinkFrBackWithNext()};
+                scopep->addVarsp(newvarp);
+                lambdap->addStmtsp(scopep);
                 lambdap->hasResult(false);
 
                 // Add return statement - TODO: Why not VarRef(outvscp)?
                 AstCExpr* const exprp = new AstCExpr{nodep->fileline(), varp->name()};
                 exprp->dtypeSetString();
-                lambdap->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
+                scopep->addStmtsp(new AstCReturn{nodep->fileline(), exprp});
             }
 
             // AstExprStmt is currently treated as impure, so clear the cached purity of its

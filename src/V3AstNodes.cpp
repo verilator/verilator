@@ -1918,6 +1918,10 @@ void AstExprStmt::dumpJson(std::ostream& str) const {
     dumpJsonBoolIf(str, "hasResult", hasResult());
     dumpJsonGen(str);
 }
+bool AstExprStmt::isPure() {
+    if (AstNode::afterCommentp(stmtsp())) return false;
+    return resultp()->isPure();
+}
 void AstFireEvent::dump(std::ostream& str) const {
     Super::dump(str);
     if (isDelayed()) str << " [DLY]";

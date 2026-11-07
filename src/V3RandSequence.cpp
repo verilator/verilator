@@ -182,7 +182,7 @@ class RandSequenceVisitor final : public VNVisitor {
     }
 
     // Statements of a rule, its code block followed by its productions
-    static AstNode* ruleStmtsp(const AstRSRule* rulep) {
+    static AstNodeStmt* ruleStmtsp(const AstRSRule* rulep) {
         AstNode* stmtsp = nullptr;
         if (rulep->weightStmtsp()) stmtsp = rulep->weightStmtsp()->unlinkFrBackWithNext();
         for (const AstRSProdList* const listp : rulep->prodlistspList()) {
@@ -192,7 +192,7 @@ class RandSequenceVisitor final : public VNVisitor {
                 stmtsp = AstNode::addNext(stmtsp, listp->prodsp()->unlinkFrBackWithNext());
             }
         }
-        return stmtsp;
+        return VN_AS(stmtsp, NodeStmt);
     }
 
     AstNodeStmt* newProdRandJoin(AstRSProd* /*prodp*/, AstRSProdList* prodlistp) {
@@ -531,7 +531,7 @@ class RandSequenceVisitor final : public VNVisitor {
         } else if (!nodep->rulesp()->nextp()) {  // Single rule/list, can just do it
             // RSPROD(RSRULE(weight, stmt)) -> IF(weight != 0, stmt)
             const AstRSRule* const rulep = nodep->rulesp();
-            AstNode* itemsp = ruleStmtsp(rulep);
+            AstNodeStmt* itemsp = ruleStmtsp(rulep);
             // Can ignore rulep->weightp() unless is zero, in which case noop, add if
             if (rulep->weightp())
                 itemsp = new AstIf{rulep->weightp()->fileline(),
@@ -552,7 +552,7 @@ class RandSequenceVisitor final : public VNVisitor {
             //   -> RANDCASE(CASEITEM(weight1, stmt1), CASEITEM(weight2, stmt2))
             AstRandCase* const randcasep = new AstRandCase{nodep->fileline(), nullptr};
             for (AstRSRule* const rulep : nodep->rulespList()) {
-                if (AstNode* const itemsp = ruleStmtsp(rulep)) {
+                if (AstNodeStmt* const itemsp = ruleStmtsp(rulep)) {
                     AstNodeExpr* const weightp = rulep->weightp()
                                                      ? rulep->weightp()->unlinkFrBack()
                                                      : new AstConst{rulep->fileline(), 1};

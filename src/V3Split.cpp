@@ -223,8 +223,8 @@ class SplitVisitor final : public VNVisitor {
     }
 
     // Take the statements of the given list, and return them distributed into one list per color.
-    static std::vector<AstNode*> splitStatements(AstNode* stmtsp, uint32_t numColors) {
-        std::vector<AstNode*> result{numColors, nullptr};
+    static std::vector<AstNodeStmt*> splitStatements(AstNode* stmtsp, uint32_t numColors) {
+        std::vector<AstNodeStmt*> result{numColors, nullptr};
         for (AstNode *stmtp = stmtsp, *nextp = nullptr; stmtp; stmtp = nextp) {
             nextp = stmtp->nextp();  // 'stmtp' is unlinked below
 
@@ -271,7 +271,8 @@ class SplitVisitor final : public VNVisitor {
 
             // Move the leaf into its color's list
             const uint32_t color = vtxp->color();
-            result[color] = AstNode::addNext(result[color], stmtp->unlinkFrBack());
+            result[color]
+                = AstNode::addNext(result[color], VN_AS(stmtp, NodeStmt)->unlinkFrBack());
         }
         return result;
     }

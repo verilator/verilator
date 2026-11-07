@@ -36,7 +36,7 @@
 //  AstClass::user3p()      -> AstVar*.  Constrained randomizer variable
 //  AstConstraint::user2p() -> AstTask*. Pointer to constraint setup procedure
 //  AstConstraint::user3p() -> AstTask*. Pointer to resize procedure
-//  AstConstraintForeach::user3p() -> AstNode*. Dist bucket preamble stmts (foreach case)
+//  AstConstraintForeach::user3p() -> AstNodeStmt*. Dist bucket preamble stmts (foreach case)
 //  AstVar::user4p()        -> AstVar*.  Size variable for constrained queues
 //
 //*************************************************************************
@@ -679,8 +679,8 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Prepend the bucket preamble stmts stored on user3p by lowerDistConstraints to the
     // statements that will become the body of the generated AstForeach, so the per-element
     // bucket draw is evaluated in the same scope as its references.
-    static AstNode* prependDistPreamble(AstConstraintForeach* nodep, AstNode* bodyp) {
-        AstNode* const preamblep = nodep->user3p();
+    static AstNodeStmt* prependDistPreamble(AstConstraintForeach* nodep, AstNodeStmt* bodyp) {
+        AstNodeStmt* const preamblep = VN_AS(nodep->user3p(), NodeStmt);
         if (!preamblep) return bodyp;
         nodep->user3p(nullptr);
         preamblep->addNext(bodyp);
@@ -2119,7 +2119,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         } else if (m_wantSingle) {
             AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp());
             AstVar* const textVarp = newTextVarp(nodep);
-            AstNode* const bodyp = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
+            AstNodeStmt* const bodyp
+                = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
             nodep->replaceWith(newTextBuildp(
                 fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
                 newTextApplyp(fl, textVarp, "bvand", "#b1")));
@@ -2131,7 +2132,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 if (const AstVar* const varp = VN_CAST(elemp, Var)) m_foreachIdxVars.insert(varp);
             }
             iterateAndNextNull(nodep->bodyp());
-            AstNode* const bodyp
+            AstNodeStmt* const bodyp
                 = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
             nodep->replaceWith(
                 new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
@@ -3133,7 +3134,8 @@ class SolverSmtLowering final : public V3SolverLowering {
         setp->dtypeSetVoid();
         ftaskp->addStmtsp(setp->makeStmt());
     }
-    AstNode* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp, AstNode* stmtp) {
+    AstNodeStmt* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp,
+                                      AstNodeStmt* stmtp) {
         const RandomizeMode rmode = {.asUQuad = constrp->user1()};
         AstVar* const modeVarp = constrp->isStatic() ? getStaticConstraintModeVar(classp)
                                                      : getConstraintModeVar(classp);
@@ -4058,7 +4060,8 @@ public:
                     m_uniqueNames, randomizep,   &sizeArrays,       prepareArraysTaskp};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
-                        nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
+                        nodep, constrp,
+                        VN_AS(constrp->itemsp()->unlinkFrBackWithNext(), NodeStmt)));
                 }
             });
 
@@ -4234,8 +4237,8 @@ public:
         }
 
         // Generate constraint setup code and a hardcoded call to the solver
-        AstBegin* const setupBlockp
-            = new AstBegin{nodep->fileline(), "__Vsetup_constraints", capturedTreep, true};
+        AstBegin* const setupBlockp = new AstBegin{nodep->fileline(), "__Vsetup_constraints",
+                                                   VN_AS(capturedTreep, NodeStmt), true};
         randomizeFuncp->addStmtsp(setupBlockp);
 
         // Pre-scan captured tree for .size on dynamic/assoc arrays and replace
@@ -4473,7 +4476,7 @@ public:
 
             expandUniqueElementList(capturedClonep);
             AstBegin* const elementSetupBlockp
-                = new AstBegin{fl, "__Vsetup_constraints", capturedClonep, true};
+                = new AstBegin{fl, "__Vsetup_constraints", VN_AS(capturedClonep, NodeStmt), true};
             randomizeFuncp->addStmtsp(elementSetupBlockp);
             ConstraintExprVisitor{
                 classp,       m_memberMap,   capturedClonep,        elementSetupBlockp, localGenp,
@@ -4519,7 +4522,7 @@ public:
         randomizeFuncp->addStmtsp(
             implementConstraintsClearAll(randomizeFuncp->fileline(), stdrandp));
         AstBegin* const setupBlockp
-            = new AstBegin{fl, "__Vsetup_constraints", capturedTreep, true};
+            = new AstBegin{fl, "__Vsetup_constraints", VN_AS(capturedTreep, NodeStmt), true};
         randomizeFuncp->addStmtsp(setupBlockp);
         {
             expandUniqueElementList(capturedTreep);

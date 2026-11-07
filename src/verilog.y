@@ -3730,7 +3730,7 @@ statement_item<nodeStmtp>:          // IEEE: statement_item
                               if (AstVar* const varp = VN_CAST(itemp, Var)) {
                                   blockp->addDeclsp(varp);
                               } else {
-                                  blockp->addStmtsp(itemp);
+                                  blockp->addStmtsp(VN_AS(itemp, NodeStmt));
                               }
                           }
                           AstLoop* const loopp = new AstLoop{$1};
@@ -4136,17 +4136,17 @@ for_initializationItem<nodep>:          // IEEE: variable_assignment + for_varia
                         }
         ;
 
-for_stepE<nodep>:               // IEEE: for_step + empty
+for_stepE<nodeStmtp>:               // IEEE: for_step + empty
                 /* empty */                             { $$ = nullptr; }
         |       for_step                                { $$ = $1; }
         ;
 
-for_step<nodep>:                // IEEE: for_step
+for_step<nodeStmtp>:                // IEEE: for_step
                 for_step_assignment                     { $$ = $1; }
         |       for_step ',' for_step_assignment        { $$ = addNextNull($1, $3); }
         ;
 
-for_step_assignment<nodep>:     // ==IEEE: for_step_assignment
+for_step_assignment<nodeStmtp>:     // ==IEEE: for_step_assignment
                 foperator_assignment                    { $$ = $1; }
         |       finc_or_dec_expression                  { $$ = new AstStmtExpr{$<fl>1, $1}; }
         //                      // IEEE: function_subroutine_call
@@ -6525,7 +6525,7 @@ deferred_immediate_assertion_statement<nodeStmtp>:  // ==IEEE: deferred_immediat
 concurrent_assertion_item<nodep>:       // IEEE: concurrent_assertion_item
                 concurrent_assertion_statement          { $$ = $1; }
         |       id/*block_identifier*/ ':' concurrent_assertion_statement
-                        { $$ = new AstBegin{$<fl>1, *$1, $3, true}; }
+                        { $$ = new AstGenBlock{$<fl>1, *$1, $3, true}; }
         //                      // IEEE: checker_instantiation
         //                      // identical to module_instantiation; see etcInst
         ;
@@ -7025,12 +7025,12 @@ cycle_delay_range<delayp>:  // IEEE: ==cycle_delay_range
                           $$->rhsp(new AstUnbounded{$1}); }
         ;
 
-sequence_match_itemList<nodep>:  // IEEE: [sequence_match_item] part of sequence_expr
+sequence_match_itemList<nodeStmtp>:  // IEEE: [sequence_match_item] part of sequence_expr
                 sequence_match_item                     { $$ = $1; }
         |       sequence_match_itemList ',' sequence_match_item { $$ = addNextNull($1, $3); }
         ;
 
-sequence_match_item<nodep>:  // ==IEEE: sequence_match_item
+sequence_match_item<nodeStmtp>:  // ==IEEE: sequence_match_item
         //                      // IEEE says: operator_assignment
         //                      // IEEE says: inc_or_dec_expression
         //                      // IEEE says: subroutine_call
@@ -7779,7 +7779,7 @@ rs_production_itemList<nodep>:  // IEEE: rs_production_item+
         |       rs_production_itemList rs_production_item  { $$ = addNextNull($1, $2); }
         ;
 
-rs_production_item<nodep>:  // ==IEEE: rs_production_item
+rs_production_item<nodeStmtp>:  // ==IEEE: rs_production_item
                 idAny/*production_identifier*/
                         { $$ = new AstRSProdItem{$<fl>1, *$1, nullptr}; }
         |       idAny/*production_identifier*/ '(' list_of_argumentsE ')'
@@ -8265,7 +8265,7 @@ constraint_primary<nodeExprp>:  // ==IEEE: constraint_primary
                 exprScope                                       { $$ = $1; }
         ;
 
-constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
+constraint_expressionList<nodeStmtp>:  // ==IEEE: { constraint_expression }
                 constraint_expression                           { $$ = $1; }
         |       ySOLVE solve_before_list yBEFORE solve_before_list ';'
                         { $$ = new AstConstraintBefore{$1, $2, $4}; }
@@ -8274,7 +8274,7 @@ constraint_expressionList<nodep>:  // ==IEEE: { constraint_expression }
                         { $$ = addNextNull($1, new AstConstraintBefore{$<fl>2, $3, $5}); }
         ;
 
-constraint_expression<nodep>:  // ==IEEE: constraint_expression
+constraint_expression<nodeStmtp>:  // ==IEEE: constraint_expression
                 expr/*expression_or_dist*/ ';'
                         { $$ = new AstConstraintExpr{$1->fileline(), $1}; }
         //                      // 1800-2012:
@@ -8338,7 +8338,7 @@ constraint_expression<nodep>:  // ==IEEE: constraint_expression
                         { $$ = nullptr; }  // LCOV_EXCL_LINE
         ;
 
-constraint_set<nodep>:  // ==IEEE: constraint_set
+constraint_set<nodeStmtp>:  // ==IEEE: constraint_set
                 constraint_expression                   { $$ = $1; }
         |       '{' constraint_expressionList '}'       { $$ = $2; }
         //

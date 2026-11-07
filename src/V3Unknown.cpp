@@ -112,11 +112,13 @@ class UnknownVisitor final : public VNVisitor {
             UINFO(4, "Edit BOUNDLVALUE " << newp);
             replaceHandle.relink(newp);
         } else {
-            AstNode* stmtp = prep->backp();  // Grab above point before we replace 'prep'
-            while (!VN_IS(stmtp, NodeStmt)) stmtp = stmtp->backp();
+            AstNodeStmt* stmtp = nullptr;  // Grab above point before we replace 'prep'
+            for (AstNode* abovep = prep->backp(); !stmtp; abovep = abovep->backp()) {
+                stmtp = VN_CAST(abovep, NodeStmt);
+            }
             VNRelinker replaceHandle;
-            AstNode* const origStmtp = stmtp->unlinkFrBack(&replaceHandle);
-            AstNode* elseStmtp = nullptr;
+            AstNodeStmt* const origStmtp = stmtp->unlinkFrBack(&replaceHandle);
+            AstNodeStmt* elseStmtp = nullptr;
             const bool hasSideEffects = origStmtp->exists(
                 [](AstNode* const np) { return !np->isPure() || np->isTimingControl(); });
             if (hasSideEffects) {

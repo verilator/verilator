@@ -120,10 +120,10 @@ class LinkJumpVisitor final : public VNVisitor {
             nodep->v3fatalSrc("Unknown jump point for break/disable/continue");
             return nullptr;
         }
-        // Skip over variables as we'll just move them in a moment
+        // Skip over non-statements as we'll just move them in a moment
         // Also this would otherwise prevent us from using a label twice
         // see t_func_return test.
-        while (underp && VN_IS(underp, Var)) underp = underp->nextp();
+        while (underp && !VN_IS(underp, NodeStmt)) underp = underp->nextp();
         UASSERT_OBJ(underp, nodep, "Break/disable/continue not under expected statement");
         UINFO(5, "  Underpoint is " << underp);
 
@@ -132,11 +132,12 @@ class LinkJumpVisitor final : public VNVisitor {
             if (AstJumpBlock* const blockp = VN_CAST(underp, JumpBlock)) return blockp;
         }
 
-        // Keep any AstVars under the function not under the new JumpLabel
+        // Keep any non-statements (variables, prototype attributes) under the function, not
+        // under the new JumpLabel
         if (under_and_next) {
-            for (AstNode *nextp, *varp = underp->nextp(); varp; varp = nextp) {
-                nextp = varp->nextp();
-                if (VN_IS(varp, Var)) underp->addHereThisAsNext(varp->unlinkFrBack());
+            for (AstNode *nextp, *itemp = underp->nextp(); itemp; itemp = nextp) {
+                nextp = itemp->nextp();
+                if (!VN_IS(itemp, NodeStmt)) underp->addHereThisAsNext(itemp->unlinkFrBack());
             }
         }
 
@@ -147,7 +148,7 @@ class LinkJumpVisitor final : public VNVisitor {
         } else {
             underp->unlinkFrBack(&repHandle);
         }
-        AstJumpBlock* const blockp = new AstJumpBlock{nodep->fileline(), underp};
+        AstJumpBlock* const blockp = new AstJumpBlock{nodep->fileline(), VN_AS(underp, NodeStmt)};
         if (endOfIter) {
             nodep->user1p(blockp);
         } else {
@@ -494,7 +495,7 @@ class LinkJumpVisitor final : public VNVisitor {
         AstNodeExpr* const zerosp = new AstConst{nodep->fileline(), AstConst::Signed32{}, 0};
         AstNodeExpr* const condp = new AstGtS{
             nodep->fileline(), new AstVarRef{nodep->fileline(), varp, VAccess::READ}, zerosp};
-        AstNode* const bodysp = nodep->stmtsp();
+        AstNodeStmt* const bodysp = nodep->stmtsp();
         if (bodysp) bodysp->unlinkFrBackWithNext();
         FileLine* const flp = nodep->fileline();
         AstLoop* const loopp = new AstLoop{flp};

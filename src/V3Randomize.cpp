@@ -1480,7 +1480,7 @@ class RandomizeVisitor final : public VNVisitor {
         const RandomizeMode rmode = {.asUQuad = varp->user1()};
         AstVar* const modeVarp = varp->lifetime().isStatic() ? getStaticRandModeVar(classp)
                                                              : RandModeVars::randModeVarp(classp);
-        return VN_AS(RandModeVars::wrapIfMode(rmode, modeVarp, stmtp), NodeStmt);
+        return RandModeVars::wrapIfMode(rmode, modeVarp, stmtp);
     }
     AstVarRef* enumValueTabRefp(AstEnumDType* const nodep) {
         // Return a reference to a constant table of the values of the given enum. The reference
@@ -2389,7 +2389,7 @@ class RandomizeVisitor final : public VNVisitor {
             AstNodeExpr* const condp = itemp->condsp()->unlinkFrBack();
             sump
                 = new AstAdd{condp->fileline(), sump, new AstExtend{itemp->fileline(), condp, 64}};
-            AstNode* const stmtsp
+            AstNodeStmt* const stmtsp
                 = itemp->stmtsp() ? itemp->stmtsp()->unlinkFrBackWithNext() : nullptr;
             AstVarRef* const randVarRefp = new AstVarRef{fl, randVarp, VAccess::WRITE};
             AstNodeIf* const newifp

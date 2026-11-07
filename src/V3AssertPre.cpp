@@ -778,7 +778,8 @@ private:
             beginp->addStmtsp(loopp);
         }
         // Compose wrappers on remaining sequence: throughout gate (inner), disable iff (outer)
-        AstNode* remainp = nodep->nextp() ? nodep->nextp()->unlinkFrBackWithNext() : nullptr;
+        AstNodeStmt* remainp
+            = nodep->nextp() ? VN_AS(nodep->nextp(), NodeStmt)->unlinkFrBackWithNext() : nullptr;
         if (throughoutOkp) {
             // If condition failed during delay, fail assertion
             remainp = new AstIf{flp, new AstVarRef{flp, throughoutOkp, VAccess::READ}, remainp,
@@ -1550,13 +1551,10 @@ private:
             }
             // Wrap existing PExpr body: if (antecedent) { <original body> } else { /* vacuous pass
             // */ }
-            // Only the statements are guarded; declarations stay directly in the block. V3Fork
-            // moves the block into a task, from which V3Begin lifts them to be direct statements
-            // of the task, the only variables V3Task handles.
             AstBegin* const bodyp = pexprp->bodyp();
             AstIf* const guardp = new AstIf{flp, condp};
-            for (AstNode* const stmtp : bodyp->stmtspList()) {
-                if (!VN_IS(stmtp, Var)) guardp->addThensp(stmtp->unlinkFrBack());
+            if (AstNodeStmt* const stmtsp = bodyp->stmtsp()) {
+                guardp->addThensp(stmtsp->unlinkFrBackWithNext());
             }
             bodyp->addStmtsp(guardp);
             nodep->replaceWith(pexprp);

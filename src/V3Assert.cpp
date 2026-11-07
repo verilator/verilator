@@ -422,8 +422,8 @@ class AssertVisitor final : public VNVisitor {
     VDouble0 m_statAssertOnHoisted;  // Statistic tracking
     bool m_inSampled = false;  // True inside a sampled expression
     bool m_inRestrict = false;  // True inside restrict assertion
-    AstNode* m_passsp = nullptr;  // Current pass statement
-    AstNode* m_failsp = nullptr;  // Current fail statement
+    AstNodeStmt* m_passsp = nullptr;  // Current pass statement
+    AstNodeStmt* m_failsp = nullptr;  // Current fail statement
     AstNodeCoverOrAssert* m_assertp = nullptr;  // Current assertion
     AstFinal* m_finalp = nullptr;  // Current final block
     VDouble0 m_statLiftedCaseExprs;  // Count of purified case expressions
@@ -664,7 +664,7 @@ class AssertVisitor final : public VNVisitor {
         newp->user2(true);  // Mark as an assertOn() check
         return newp;
     }
-    static AstNodeStmt* newIfAssertPassOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+    static AstNodeStmt* newIfAssertPassOn(AstNodeStmt* bodyp, VAssertDirectiveType directiveType,
                                           VAssertType type, bool vacuous) {
         // Add an internal if to check assertion passOn is enabled.
         // Don't make this an AND term, as it's unlikely to need to test this.
@@ -676,7 +676,7 @@ class AssertVisitor final : public VNVisitor {
         newp->user2(true);  // Mark as an assertOn() check
         return newp;
     }
-    static AstNodeStmt* newIfAssertFailOn(AstNode* bodyp, VAssertDirectiveType directiveType,
+    static AstNodeStmt* newIfAssertFailOn(AstNodeStmt* bodyp, VAssertDirectiveType directiveType,
                                           VAssertType type) {
         // Add an internal if to check assertion failOn is enabled.
         // Don't make this an AND term, as it's unlikely to need to test this.
@@ -690,7 +690,7 @@ class AssertVisitor final : public VNVisitor {
     }
 
     static AstIf* assertCond(const AstNodeCoverOrAssert* nodep, AstNodeExpr* propp,
-                             AstNode* passsp, AstNode* failsp) {
+                             AstNodeStmt* passsp, AstNodeStmt* failsp) {
         AstIf* const ifp = new AstIf{nodep->fileline(), propp, passsp, failsp};
         // It's more LIKELY that we'll take the nullptr if clause
         // than the sim-killing else clause:
@@ -699,8 +699,8 @@ class AssertVisitor final : public VNVisitor {
         return ifp;
     }
 
-    AstNodeStmt* assertBody(const AstNodeCoverOrAssert* nodep, AstNode* propp, AstNode* passsp,
-                            AstNode* failsp) {
+    AstNodeStmt* assertBody(const AstNodeCoverOrAssert* nodep, AstNode* propp, AstNodeStmt* passsp,
+                            AstNodeStmt* failsp) {
         if (AstPExpr* const pexprp = VN_CAST(propp, PExpr)) {
             if (!v3Global.opt.timing().isSetTrue()) {
                 nodep->v3warn(E_NOTIMING, "This property expression requires --timing");
@@ -839,7 +839,7 @@ class AssertVisitor final : public VNVisitor {
     // Lower observed deferred action into a pending call with its input arguments snapshotted.
     // Pending calls run in the Reactive region unless a flush of their process clears them
     // (IEEE 1800-2023 16.4.1).
-    AstNodeStmt* newObservedDeferredAction(FileLine* flp, AstNode* actionsp) {
+    AstNodeStmt* newObservedDeferredAction(FileLine* flp, AstNodeStmt* actionsp) {
         if (!(actionsp->isOutputter() || VN_IS(actionsp, SFormat) || VN_IS(actionsp, StmtExpr))) {
             actionsp->v3error("Observed deferred immediate assertion action block must be a "
                               "single subroutine call (IEEE 1800-2023 16.4).");
@@ -892,7 +892,8 @@ class AssertVisitor final : public VNVisitor {
         return newObservedDeferredCall(flp, actionsp, queuesp);
     }
     // Make statements pending, appending what queues them to queuesp
-    AstNodeStmt* newObservedDeferredCall(FileLine* flp, AstNode* callsp, AstNodeStmt* queuesp) {
+    AstNodeStmt* newObservedDeferredCall(FileLine* flp, AstNodeStmt* callsp,
+                                         AstNodeStmt* queuesp) {
         AstVar* const pendingp
             = newModuleTemp(flp, m_obsNames.get("Pending"), m_modp->findUInt32DType(), m_modp);
         pendingp->setIgnoreSchedWrite();
@@ -931,7 +932,7 @@ class AssertVisitor final : public VNVisitor {
         return queuesp;
     }
 
-    void visitAssertionIterate(AstNodeCoverOrAssert* nodep, AstNode* failsp) {
+    void visitAssertionIterate(AstNodeCoverOrAssert* nodep, AstNodeStmt* failsp) {
         FileLine* const flp = nodep->fileline();
         const bool obsDeferred = nodep->userType() == VAssertType::OBSERVED_DEFERRED_IMMEDIATE;
         if (obsDeferred && (!v3Global.opt.timing().isSetTrue() || m_ftaskp || m_inSpawnedFork)) {
@@ -987,7 +988,7 @@ class AssertVisitor final : public VNVisitor {
         }
         //
         const string& message = nodep->name();
-        AstNode* passsp = nodep->passsp();
+        AstNodeStmt* passsp = nodep->passsp();
         if (passsp) passsp->unlinkFrBackWithNext();
         if (AstAssert* const assertp = VN_CAST(nodep, Assert)) {
             failsp = assertp->failsp();
@@ -1014,7 +1015,7 @@ class AssertVisitor final : public VNVisitor {
                 covincp->unlinkFrBackWithNext();  // next() might have  AstAssign for trace
                 if (message != "") covincp->declp()->comment(message);
                 // IEEE 1800-2023 16.4.2: Deferred coverage is flushed like a pending report
-                AstNode* creditsp = covincp;
+                AstNodeStmt* creditsp = covincp;
                 if (obsDeferred) {
                     creditsp = newObservedDeferredCall(flp, covincp, nullptr);
                     if (passsp) passsp = newObservedDeferredAction(flp, passsp);
@@ -1023,7 +1024,7 @@ class AssertVisitor final : public VNVisitor {
                     passsp = newIfAssertPassOn(passsp, nodep->directive(), nodep->userType(),
                                                /*vacuous=*/false);
                     passspGated = true;
-                    passsp = AstNode::addNext<AstNode, AstNode>(creditsp, passsp);
+                    passsp = AstNode::addNext(creditsp, passsp);
                 } else {
                     passsp = creditsp;
                 }
@@ -1470,7 +1471,7 @@ class AssertVisitor final : public VNVisitor {
         iterateChildren(nodep);
     }
     void visit(AstPExprClause* nodep) override {
-        AstNode* stmtsp = nullptr;
+        AstNodeStmt* stmtsp = nullptr;
         if (nodep->pass() && m_passsp) {
             // Cover adds COVERINC by AstNode::addNext, thus need to clone next too.
             stmtsp = m_passsp->cloneTree(true);

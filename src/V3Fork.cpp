@@ -612,7 +612,7 @@ class ForkVisitor final : public VNVisitor {
     template <typename T_Owner>
     static bool insertForkSentinelAfterDisableQueuePushes(T_Owner* const ownerp,
                                                           AstNode* const firstStmtp,
-                                                          AstNode* const delayp) {
+                                                          AstNodeStmt* const delayp) {
         AstNode* insertBeforep = firstStmtp;
         while (insertBeforep && insertBeforep->isDisableQueuePushSelfStmt()) {
             insertBeforep = insertBeforep->nextp();
@@ -632,12 +632,12 @@ class ForkVisitor final : public VNVisitor {
         return true;
     }
     static void moveForkSentinelAfterDisableQueuePushes(AstForkItem* const itemp) {
-        AstNode* const firstStmtp = itemp->stmtsp();
+        AstNodeStmt* const firstStmtp = itemp->stmtsp();
         if (!isForkJoinNoneSentinelDelay(firstStmtp)) return;
         AstNode* const afterSentinelp = firstStmtp->nextp();
         if (!isDisableQueuePushSelfPrefix(afterSentinelp)) return;
 
-        AstNode* const delayp = firstStmtp->unlinkFrBack();
+        AstNodeStmt* const delayp = firstStmtp->unlinkFrBack();
         const bool moved
             = insertForkSentinelAfterDisableQueuePushes(itemp, afterSentinelp, delayp);
         UASSERT_OBJ(moved, itemp, "Failed to move fork sentinel after disable queue pushes");

@@ -400,8 +400,8 @@ class TraceVisitor final : public VNVisitor {
                 curSize = 0;
             };
 
-            for (AstNode *stmtp = funcp->stmtsp(), *nextp; stmtp; stmtp = nextp) {
-                nextp = stmtp->nextp();
+            for (AstNodeStmt *stmtp = funcp->stmtsp(), *nextp; stmtp; stmtp = nextp) {
+                nextp = VN_AS(stmtp->nextp(), NodeStmt);
                 curSize += stmtp->nodeCount();
 
                 if (curFuncp != funcp) {

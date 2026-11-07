@@ -556,7 +556,7 @@ class AstCFunc final : public AstNode {
     // If adding node accessors, see below emptyBody
     // @astgen op1 := argsp : List[AstVar]  // Argument (and return value) variables
     // @astgen op2 := varsp : List[AstVar]  // Local variables
-    // @astgen op3 := stmtsp : List[AstNode]
+    // @astgen op3 := stmtsp : List[AstNodeStmt]
     // @astgen op4 := scopeNamep : Optional[AstScopeName]  // Scoping context for DPI export
     //
     // @astgen ptr := m_scopep : Optional[AstScope]  // Scope that function is under

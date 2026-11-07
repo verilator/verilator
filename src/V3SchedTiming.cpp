@@ -325,7 +325,7 @@ class TransformForksVisitor final : public VNVisitor {
         if (AstVar* const declsp = nodep->declsp()) {
             newfuncp->addVarsp(declsp->unlinkFrBackWithNext());
         }
-        if (AstNode* const stmtsp = nodep->stmtsp()) {
+        if (AstNodeStmt* const stmtsp = nodep->stmtsp()) {
             newfuncp->addStmtsp(stmtsp->unlinkFrBackWithNext());
         }
         // Replace the body of the fork item with a call to the newly created function

@@ -884,7 +884,7 @@ class TimingControlVisitor final : public VNVisitor {
         FileLine* const flp = nodep->fileline();
         AstSenTree* const sentreep = m_activep->sentreep();
         if (sentreep->hasClocked()) {
-            AstNode* const bodysp = nodep->stmtsp()->unlinkFrBackWithNext();
+            AstNodeStmt* const bodysp = VN_AS(nodep->stmtsp(), NodeStmt)->unlinkFrBackWithNext();
             auto* const controlp = new AstEventControl{flp, sentreep->cloneTree(false), bodysp};
             nodep->addStmtsp(controlp);
             iterate(controlp);
@@ -893,7 +893,7 @@ class TimingControlVisitor final : public VNVisitor {
         AstLoop* const loopp = new AstLoop{flp};
         loopp->addStmtsp(new AstLoopTest{
             flp, loopp, new AstCExpr{flp, "VL_LIKELY(!vlSymsp->_vm_contextp__->gotFinish())", 1}});
-        loopp->addStmtsp(nodep->stmtsp()->unlinkFrBackWithNext());
+        loopp->addStmtsp(VN_AS(nodep->stmtsp(), NodeStmt)->unlinkFrBackWithNext());
         AstInitial* const initialp = new AstInitial{flp, loopp};
         initialp->user1(true);  // Already processed
         initialp->setSuspendable();
@@ -1146,7 +1146,7 @@ class TimingControlVisitor final : public VNVisitor {
             if (!forkp) forkp = new AstFork{flp, VJoinType::JOIN_NONE};
             controlp->replaceWith(forkp);
             // The Begin from V3AssertPre is not needed to group the statements in the fork item
-            AstNode* stmtsp = controlp;
+            AstNodeStmt* stmtsp = controlp;
             if (AstBegin* const beginp = VN_CAST(controlp, Begin)) {
                 stmtsp = beginp->stmtsp()->unlinkFrBackWithNext();
                 VL_DO_DANGLING(pushDeletep(beginp), beginp);
