@@ -15,7 +15,7 @@ test.compile(verilator_flags2=['--binary', '--stats'])
 
 test.execute()
 
-test.file_grep(test.stats, r'Optimizations, Coalesced references\s+(\d+)', 14)
-test.file_grep(test.stats, r'Optimizations, Coalesced variables\s+(\d+)', 5)
+test.file_grep(test.stats, r'Optimizations, Coalesced references\s+(\d+)', 12)
+test.file_grep(test.stats, r'Optimizations, Coalesced variables\s+(\d+)', 4)
 
 test.passes()

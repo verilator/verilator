@@ -18,6 +18,6 @@ test.compile(
 
 test.execute()
 
-test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 14)
+test.file_grep(test.stats, r'MTask graph, threads_group parts\s+(\d+)', 18)
 
 test.passes()

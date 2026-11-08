@@ -38,13 +38,52 @@ static void markContinuousLhs(AstNode* const nodep) {
 }
 
 //######################################################################
+// Collect port access before replacing any instance connection.
+// The user slots are owned by InstVisitor and shared with its connection rewrite.
+class InstPortAccessVisitor final : public VNVisitorConst {
+    bool m_inInitial = false;  // Read before continuous assignments may have settled
+
+    void iterateInitial(AstNode* nodep) {
+        VL_RESTORER(m_inInitial);
+        m_inInitial = true;
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstCell* nodep) override {
+        nodep->modp()->user2Inc();
+        iterateChildrenConst(nodep);
+    }
+    void visit(AstNodeVarRef* nodep) override {
+        if (nodep->access().isWriteOrRW()) nodep->varp()->user3(true);
+        if (m_inInitial && nodep->access().isReadOrRW()) nodep->varp()->user4(true);
+    }
+    void visit(AstInitial* nodep) override { iterateInitial(nodep); }
+    void visit(AstInitialStatic* nodep) override { iterateInitial(nodep); }
+    void visit(AstInitialAutomatic* nodep) override { iterateInitial(nodep); }
+    void visit(AstNodeFTask* nodep) override { iterateInitial(nodep); }
+    void visit(AstNode* nodep) override { iterateChildrenConst(nodep); }
+
+    explicit InstPortAccessVisitor(AstNetlist* nodep) { iterateConst(nodep); }
+    ~InstPortAccessVisitor() override = default;
+
+public:
+    static void apply(AstNetlist* nodep) { InstPortAccessVisitor{nodep}; }
+};
+
+//######################################################################
 // Inst state, as a visitor of each AstNode
 
 class InstVisitor final : public VNVisitor {
     // NODE STATE
     // Cleared each Cell:
     //  AstPin::user1p()        -> bool.  True if created assignment already
+    // Set by InstPortAccessVisitor:
+    //  AstNodeModule::user2()  -> int.   Number of instances of the module
+    //  AstVar::user3()         -> bool.  Written by the design
+    //  AstVar::user4()         -> bool.  Read in an initial block or a task/function
     const VNUser1InUse m_inuser1;
+    const VNUser2InUse m_inuser2;
+    const VNUser3InUse m_inuser3;
+    const VNUser4InUse m_inuser4;
 
     // STATE
     AstCell* m_cellp = nullptr;  // Current cell
@@ -56,6 +95,19 @@ class InstVisitor final : public VNVisitor {
         AstVar* const modVarp = nodep->modVarp();
         // An interface reference is aliased via AstAliasScope below, not as a variable
         if (modVarp->isIfaceRef()) return false;
+        // An input port stays a variable of its own if its module is not inlined, so the
+        // instances can share their code; V3Inline and V3Coalesce remove the rest. A
+        // --lib-create wrapper calls into the library and an interface has no code of its
+        // own, so neither has code to share. Inputs written by the design or read at time
+        // zero are not kept, as initial blocks run before continuous assignments settle.
+        if (v3Global.opt.fCoalesce() && modVarp->direction() == VDirection::INPUT
+            && !m_cellp->modp()->verilatorLib() && !VN_IS(m_cellp->modp(), Iface)
+            && !modVarp->user3() && !modVarp->user4()) {
+            modVarp->keepPort(true);
+            // The port of a single instance is aliased as usual; it is copied back from
+            // its alias if the module is not inlined
+            if (m_cellp->modp()->user2() > 1) return false;
+        }
         // Only a whole variable can be aliased, anything else needs the assignment
         AstVarRef* const refp = VN_CAST(exprp, VarRef);
         if (!refp) return false;
@@ -179,7 +231,10 @@ class InstVisitor final : public VNVisitor {
 
 public:
     // CONSTRUCTORS
-    explicit InstVisitor(AstNetlist* nodep) { iterate(nodep); }
+    explicit InstVisitor(AstNetlist* nodep) {
+        InstPortAccessVisitor::apply(nodep);
+        iterate(nodep);
+    }
     ~InstVisitor() override = default;
 };
 

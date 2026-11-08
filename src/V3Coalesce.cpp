@@ -43,8 +43,10 @@ class CoalesceVisitor final : public VNVisitorConst {
     // Cleared on netlist
     //  AstVarScope::user1p()  -> AstVarScope*. The signal this one is a copy of
     //  AstVarScope::user2()   -> uint64_t. Number of references that write it
+    //  AstVarScope::user3()   -> bool. Used in a sensitivity list
     const VNUser1InUse m_user1InUse;
     const VNUser2InUse m_user2InUse;
+    const VNUser3InUse m_user3InUse;
 
     // STATE
     std::vector<AstNodeVarRef*> m_refps;  // All references, to redirect at the end
@@ -59,6 +61,8 @@ class CoalesceVisitor final : public VNVisitorConst {
         if (varp->delayp()) return false;
         if (varp->isForced()) return false;
         if (varp->isSigUserRWPublic()) return false;
+        // The user asked for it to be split, which needs the variable itself
+        if (varp->attrSplitVar()) return false;
         if (varp->isSc()) return false;
         if (const AstIface* const ifacep = VN_CAST(vscp->scopep()->modp(), Iface)) {
             if (ifacep->hasVirtualRef()) return false;
@@ -74,10 +78,11 @@ class CoalesceVisitor final : public VNVisitorConst {
         if (!lhsp) return;
         const AstVarRef* const rhsp = VN_CAST(nodep->rhsp(), VarRef);
         if (!rhsp) return;
-        // Check types, packed to packed is allowed, otherwise must be the same
+        // Check types: plain vectors of the same width, or the same type. A copy that
+        // reshapes a packed struct or array is kept, as V3Decompose splits along its shape.
         const AstNodeDType* const lDtp = lhsp->dtypep()->skipRefp();
         const AstNodeDType* const rDtp = rhsp->dtypep()->skipRefp();
-        if (lDtp->isIntegralOrPacked() && rDtp->isIntegralOrPacked()) {
+        if (VN_IS(lDtp, BasicDType) && VN_IS(rDtp, BasicDType)) {
             UASSERT_OBJ(lDtp->width() == rDtp->width(), nodep, "Malformed assignment");
         } else if (!lDtp->sameTree(rDtp)) {
             return;
@@ -95,6 +100,13 @@ class CoalesceVisitor final : public VNVisitorConst {
     static AstVarScope* driverOf(AstVarScope* vscp) {
         // Don't substitute if written more than once
         if (vscp->user2() != 1) return nullptr;
+        // A port V3Inst kept for an instance that remains a module stays a variable of its
+        // own, so the module's instances can share code. With several threads, a clock is
+        // coalesced instead, as it would otherwise add serial trigger work.
+        if (vscp->varp()->keepPort()) {
+            if (!v3Global.opt.mtasks() || !vscp->user3()) return nullptr;
+            vscp->varp()->keepPort(false);
+        }
         return VN_AS(vscp->user1p(), VarScope);
     }
 
@@ -119,6 +131,10 @@ class CoalesceVisitor final : public VNVisitorConst {
     void visit(AstNodeVarRef* nodep) override {
         m_refps.push_back(nodep);
         if (nodep->access().isWriteOrRW()) nodep->varScopep()->user2Inc();
+    }
+    void visit(AstSenItem* nodep) override {
+        iterateChildrenConst(nodep);
+        if (const AstNodeVarRef* const refp = nodep->varrefp()) refp->varScopep()->user3(true);
     }
     void visit(AstAssignW* nodep) override {
         iterateChildrenConst(nodep);
@@ -145,6 +161,13 @@ class CoalesceVisitor final : public VNVisitorConst {
             AstVarScope* const vscp = refp->varScopep();
             AstVarScope* const rootp = findEquivalent(vscp);
             if (!rootp) continue;
+            // A reference redirected to another scope makes the code of this scope specific
+            // to that instance, so its instances can't share it. Only a clock port, whose
+            // copy costs trigger work, is redirected across scopes.
+            if (rootp->scopep() != vscp->scopep()
+                && !(vscp->varp()->direction() == VDirection::INPUT && vscp->user3())) {
+                continue;
+            }
             // The sole write of a copy is the copy assignment itself, keep it
             if (refp->access().isWriteOrRW()) {
                 ++m_nCoalesced;

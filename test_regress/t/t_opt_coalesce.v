@@ -66,7 +66,7 @@ module t;
   logic [31:0] pub /*verilator public_flat_rw*/;
   assign pub = src;
 
-  // Coalesced: a packed array of the same width holds the very same bits
+  // Not coalesced: a copy that reshapes a packed array is kept, so it can be decomposed
   logic [3:0][7:0] arr;
   assign arr = src;
 

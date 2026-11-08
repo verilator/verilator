@@ -173,13 +173,13 @@ module t (
   logic [6:0] cw2[4];  // No split: only copied whole
   logic [6:0] cwo[4];  // No split: variable index
   // Only copied whole, but copied to a variable that is split, so split too
-  logic [6:0] cl1[4];  // Split 1
-  logic [6:0] cl2[4];  // Split 1
+  logic [6:0] cl1[4];  // Coalesced into dyn
+  logic [6:0] cl2[4];  // Coalesced into dyn
   // Chain of whole copies, only the last selected from, so split from the end of the chain
-  logic [6:0] wc0[4];  // Split 1
-  logic [6:0] wc1[4];  // Split 1
-  logic [6:0] wc2[4];  // Split 1
-  logic [6:0] wc3[4];  // Split 1
+  logic [6:0] wc0[4];  // Coalesced into dyn
+  logic [6:0] wc1[4];  // Coalesced into dyn
+  logic [6:0] wc2[4];  // Coalesced into dyn
+  logic [6:0] wc3[4];  // Coalesced into dyn
 
   always_comb begin
     for (int i = 1; i <= 3; i++) dn[i] = crc[i*7+:7];
