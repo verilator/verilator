@@ -1723,10 +1723,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         }
         // Recurse into all children
         for (AstNode* childp : {nodep->op1p(), nodep->op2p(), nodep->op3p(), nodep->op4p()}) {
-            while (childp) {
-                AstNode* const nextp = childp->nextp();
-                rewriteIfacePortRefsSingle(childp, portName);
-                childp = nextp;
+            for (AstNode* const subp : VNList<AstNode>{childp}) {
+                rewriteIfacePortRefsSingle(subp, portName);
             }
         }
     }
@@ -2105,8 +2103,8 @@ class LinkDotFindVisitor final : public VNVisitor {
             if (const VSymEnt* const typedefEntp = m_curSymp->findIdFallback(m_hierParamsName)) {
                 const AstModule* modp = VN_CAST(typedefEntp->nodep(), Module);
 
-                for (const AstNode* stmtp = modp ? modp->stmtsp() : nullptr; stmtp;
-                     stmtp = stmtp->nextp()) {
+                for (const AstNode* const stmtp :
+                     VNList<AstNode>{modp ? modp->stmtsp() : nullptr}) {
                     const AstTypedef* tdefp = VN_CAST(stmtp, Typedef);
 
                     if (tdefp && tdefp->name() == nodep->name() && m_statep->forPrimary()) {

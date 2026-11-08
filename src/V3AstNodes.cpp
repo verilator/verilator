@@ -435,8 +435,8 @@ VDTypeNameScopes::VDTypeNameScopes(AstNetlist* nodep)
     s_currentp = this;
 }
 VDTypeNameScopes::~VDTypeNameScopes() { s_currentp = m_prevp; }
-void VDTypeNameScopes::index(AstNode* nodep, AstNode* scopep) {
-    for (; nodep; nodep = nodep->nextp()) {
+void VDTypeNameScopes::index(AstNode* nodesp, AstNode* scopep) {
+    for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
         // Only statements declare types
         if (VN_IS(nodep, NodeExpr) || VN_IS(nodep, NodeDType)) continue;
         AstNode* innerp = scopep;
@@ -3271,7 +3271,7 @@ bool AstNodeFTask::getPurityRecurse() const {
     // Check the declarations and statements if they contain any impure node
     // or any write reference to a variable that isn't an automatic function local.
     for (AstNode* const listp : std::initializer_list<AstNode*>{this->declsp(), this->stmtsp()}) {
-        for (AstNode* itemp = listp; itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : VNList<AstNode>{listp}) {
             if (const AstVar* const varp = VN_CAST(itemp, Var)) {
                 if (varp->isInoutOrRef()) return false;
             }

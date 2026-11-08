@@ -139,11 +139,8 @@ class CleanVisitor final : public VNVisitor {
         if (!isClean(nodep)) insertClean(nodep);
     }
     void ensureCleanAndNext(AstNode* nodep) {
-        // Editing list, careful looping!
-        for (AstNode* argp = nodep; argp;) {
-            AstNode* const nextp = argp->nextp();
+        for (AstNode* const argp : VNList<AstNode>{nodep}) {
             if (AstNodeExpr* const exprp = VN_CAST(argp, NodeExpr)) ensureClean(exprp);
-            argp = nextp;
         }
     }
 

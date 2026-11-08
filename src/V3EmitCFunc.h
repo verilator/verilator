@@ -302,7 +302,7 @@ public:
     void emitVarResetScopeHash();
     void emitChangeDet();
     void putCommaIterateNext(AstNode* nodep, bool comma = false) {
-        for (AstNode* subnodep = nodep; subnodep; subnodep = subnodep->nextp()) {
+        for (AstNode* const subnodep : VNList<AstNode>{nodep}) {
             if (comma) puts(", ");
             iterateConst(subnodep);
             comma = true;
@@ -393,7 +393,7 @@ public:
 
     void emitNodesWithText(AstNode* nodesp, bool useSelfForThis, bool tracking,
                            const std::string& separator) {
-        for (AstNode* nodep = nodesp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
             if (const AstText* const textp = VN_CAST(nodep, Text)) {
                 const std::string text
                     = VSelfPointerText::replaceThis(useSelfForThis, textp->text());

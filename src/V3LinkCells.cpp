@@ -406,7 +406,7 @@ class LinkCellsVisitor final : public VNVisitor {
     }
 
     void assignParamNumbers(AstPin* const firstPinp) {
-        for (AstPin* pinp = firstPinp; pinp; pinp = VN_AS(pinp->nextp(), Pin)) {
+        for (AstPin* const pinp : VNList<AstPin>{firstPinp}) {
             pinp->param(true);
             if (pinp->name() == "") pinp->name("__paramNumber" + cvtToStr(pinp->pinNum()));
         }
@@ -891,8 +891,7 @@ class LinkCellsVisitor final : public VNVisitor {
         UASSERT((hierIt != hierBlocks.end()) == !!v3Global.opt.hierChild(),
                 "information of the top module must exist if --hierarchical-child is set");
         // Look at the new modules, and store pointers to their names
-        for (AstNodeModule *nextp, *nodep = firstp; nodep; nodep = nextp) {
-            nextp = VN_AS(nodep->nextp(), NodeModule);
+        for (AstNodeModule* const nodep : VNList<AstNodeModule>{firstp}) {
             ++m_statModsScanned;
             if (AstPackage* const pkgp = VN_CAST(nodep, Package)) {
                 // Packages have their own global name space (IEEE 1800-2023 3.13)

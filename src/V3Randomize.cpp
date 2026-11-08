@@ -1077,7 +1077,7 @@ public:
     AstVar* getThisp() const { return m_thisp; }
 
     void addFunctionArguments(AstNodeFTask* funcp) const {
-        for (AstArg* argp = getArgs(); argp; argp = VN_AS(argp->nextp(), Arg)) {
+        for (AstArg* const argp : VNList<AstArg>{getArgs()}) {
             if (AstNodeVarRef* varrefp = VN_CAST(argp->exprp(), NodeVarRef)) {
                 if ((varrefp->classOrPackagep() == m_callerp) || VN_IS(varrefp, VarXRef)) {
                     // Keeping classOrPackagep will cause a broken link after inlining
@@ -1470,7 +1470,7 @@ class RandomizeVisitor final : public VNVisitor {
         return beginp;
     }
     void addTempVarsp(AstVar* varsp) {
-        for (AstVar* varp = varsp; varp; varp = VN_AS(varp->nextp(), Var)) {
+        for (AstVar* const varp : VNList<AstVar>{varsp}) {
             if (m_ftaskp) {
                 varp->funcLocal(true);
             } else {
@@ -2162,9 +2162,7 @@ class RandomizeVisitor final : public VNVisitor {
         // e.g. a.randomize(a.b, a.c, a.b.d) -> a.randomize(a.b, a.c)
         for (AstArg *argp = nodep->argsp(), *nextp = nullptr; argp; argp = nextp) {
             nextp = VN_AS(argp->nextp(), Arg);
-            for (AstArg *otherArgp = nextp, *otherNextp = nullptr; otherArgp;
-                 otherArgp = otherNextp) {
-                otherNextp = VN_AS(otherArgp->nextp(), Arg);
+            for (AstArg* const otherArgp : VNList<AstArg>{nextp}) {
                 if (AstNodeExpr* const prefixp
                     = sliceToCommonPrefix(argp->exprp(), otherArgp->exprp())) {
                     if (prefixp == argp->exprp()) {

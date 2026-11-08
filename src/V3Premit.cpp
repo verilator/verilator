@@ -492,7 +492,7 @@ class PremitVisitor final : public VNVisitor {
         AstNodeExpr* exprsp = nodep->exprsp();
         if (nodep->exprFormat()) {
             exprsp = VN_AS(exprsp->nextp(), NodeExpr);
-            for (AstNode* argp = exprsp; argp; argp = argp->nextp()) {
+            for (AstNode* const argp : VNList<AstNode>{exprsp}) {
                 const AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
                 if (fargp && fargp->formatAttr().isEnum()) {
                     // Evaluate the format before materializing enum arguments.
@@ -502,9 +502,7 @@ class PremitVisitor final : public VNVisitor {
                 }
             }
         }
-        for (AstNodeExpr *argp = exprsp, *nextp; argp; argp = nextp) {
-            nextp = VN_AS(argp->nextp(), NodeExpr);
-
+        for (AstNodeExpr* const argp : VNList<AstNodeExpr>{exprsp}) {
             AstSFormatArg* const fargp = VN_CAST(argp, SFormatArg);
             AstNodeExpr* const subargp = fargp ? fargp->exprp() : argp;
             if (fargp && fargp->formatAttr().isEnum()) {

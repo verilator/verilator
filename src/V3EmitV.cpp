@@ -70,8 +70,8 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         }
         return false;
     }
-    void iterateAndCommaConstNull(AstNode* nodep) {
-        for (; nodep; nodep = nodep->nextp()) {
+    void iterateAndCommaConstNull(AstNode* nodesp) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
             iterateConst(nodep);
             if (nodep->nextp()) puts(", ");
         }
@@ -84,7 +84,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         m_packedps.clear();
     }
     void emitNodesWithText(AstNode* nodesp, bool tracking, const std::string& separator) {
-        for (AstNode* nodep = nodesp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
             if (const AstText* const textp = VN_CAST(nodep, Text)) {
                 if (tracking) {
                     puts(textp->text());
@@ -357,7 +357,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
     void visit(AstAlias* nodep) override {
         putbs("alias ");
         iterateConst(nodep->itemsp());
-        for (AstNode* itemp = nodep->itemsp()->nextp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : VNList<AstNode>{nodep->itemsp()->nextp()}) {
             putfs(nodep, " = ");
             iterateConst(itemp);
         }
@@ -630,7 +630,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
             putbs(", ");
         }
         putsQuoted(text);
-        for (AstNode* expp = exprsp; expp; expp = expp->nextp()) {
+        for (AstNode* const expp : VNList<AstNode>{exprsp}) {
             puts(", ");
             iterateConstNull(expp);
         }
@@ -1465,7 +1465,7 @@ class EmitVBaseVisitorConst VL_NOT_FINAL : public VNVisitorConst {
         if (!VN_IS(nodep->propp(), SchemaRef)) {
             // Same dumping as in AstSenTree
             putfs(nodep, "@(");
-            for (AstNode* expp = nodep->sensesp(); expp; expp = expp->nextp()) {
+            for (AstNode* const expp : VNList<AstNode>{nodep->sensesp()}) {
                 iterateConst(expp);
                 if (expp->nextp()) putqs(expp->nextp(), " or ");
             }

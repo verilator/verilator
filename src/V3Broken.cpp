@@ -225,11 +225,8 @@ private:
         iterateChildrenConst(nodep);
         processExit(nodep);
     }
-    void processAndIterateList(AstNode* nodep) {
-        while (nodep) {
-            processAndIterate(nodep);
-            nodep = nodep->nextp();
-        }
+    void processAndIterateList(AstNode* nodesp) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) processAndIterate(nodep);
     }
     void pushLocalScope() {
         if (m_cfuncp) m_localsStack.emplace_back();
@@ -248,7 +245,7 @@ private:
 
         // Check each argument
         const char* dp = descrp;
-        for (AstNodeExpr* argp = argsp; argp; argp = VN_AS(argp->nextp(), NodeExpr)) {
+        for (AstNodeExpr* const argp : VNList<AstNodeExpr>{argsp}) {
             if (argp->fileline()->erroringOn()) return;  // Intentionally skip all checks
             const AstNodeExpr* const lvalp = argp->getVAccessTargetRecurse();
             const VAccess access

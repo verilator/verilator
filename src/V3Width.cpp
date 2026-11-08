@@ -245,8 +245,8 @@ std::ostream& operator<<(std::ostream& str, const WidthVP* vup) {
 
 class WidthClearVisitor final {
     // Rather than a VNVisitor, can just quickly touch every node
-    void clearWidthRecurse(AstNode* nodep) {
-        for (; nodep; nodep = nodep->nextp()) {
+    void clearWidthRecurse(AstNode* nodesp) {
+        for (AstNode* const nodep : VNList<AstNode>{nodesp}) {
             nodep->didWidth(false);
             if (AstNode* const refp = nodep->op1p()) clearWidthRecurse(refp);
             if (AstNode* const refp = nodep->op2p()) clearWidthRecurse(refp);
@@ -1629,7 +1629,7 @@ class WidthVisitor final : public VNVisitor {
 
         checkIfExprOk(nodep->itemsp());
         AstNodeDType* const firstItemDtypep = nodep->itemsp()->dtypep();
-        for (AstNode* itemp = nodep->itemsp()->nextp(); itemp; itemp = itemp->nextp()) {
+        for (AstNode* const itemp : VNList<AstNode>{nodep->itemsp()->nextp()}) {
             checkIfExprOk(VN_AS(itemp, NodeExpr));
             if (!firstItemDtypep->similarDType(itemp->dtypep())) {
                 itemp->v3error("Incompatible data types of nets used for net alias. First operand "
@@ -6605,8 +6605,8 @@ class WidthVisitor final : public VNVisitor {
                 }
             }
             AstPatMember* defaultp = nullptr;
-            for (AstPatMember* patp = VN_AS(nodep->itemsp(), PatMember); patp;) {
-                AstPatMember* const nextp = VN_AS(patp->nextp(), PatMember);
+            for (AstPatMember* const patp :
+                 VNList<AstPatMember>{VN_AS(nodep->itemsp(), PatMember)}) {
                 if (patp->isDefault()) {
                     if (defaultp) {
                         VL_DO_DANGLING(pushDeletep(defaultp), defaultp);
@@ -6615,7 +6615,6 @@ class WidthVisitor final : public VNVisitor {
                     defaultp = patp;
                     patp->unlinkFrBack();
                 }
-                patp = nextp;
             }
             while (const AstConstDType* const vdtypep = VN_CAST(dtypep, ConstDType)) {
                 dtypep = vdtypep->subDTypep()->skipRefp();
@@ -7526,7 +7525,7 @@ class WidthVisitor final : public VNVisitor {
         newfl->warnOff(V3ErrorCode::CASEINCOMPLETE, true);  // Side effect of transform
         newfl->warnOff(V3ErrorCode::CASEOVERLAP, true);  // Side effect of transform
         casep->fileline(newfl);
-        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
+        for (CaseItem* const itemp : VNList<CaseItem>{itemsp}) {
             if (itemp->isDefault()) continue;
             bool hit = false;
             for (AstNode* const condp : itemp->condspList()) {
@@ -7556,7 +7555,7 @@ class WidthVisitor final : public VNVisitor {
         //    Signed: Only if expr, and all items signed
         // Take width as maximum across all items, if any is real whole thing is real
         AstNodeDType* subDTypep = exprp->dtypep();
-        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
+        for (CaseItem* const itemp : VNList<CaseItem>{itemsp}) {
             for (AstNode* const condp : itemp->condspList()) {
                 if (condp->dtypep() == subDTypep) continue;
 
@@ -7577,7 +7576,7 @@ class WidthVisitor final : public VNVisitor {
 
         // Apply width
         iterateCheck(casep, "Case expression", exprp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
-        for (CaseItem* itemp = itemsp; itemp; itemp = AstNode::as<CaseItem>(itemp->nextp())) {
+        for (CaseItem* const itemp : VNList<CaseItem>{itemsp}) {
             for (AstNode* const condp : itemp->condspList()) {
                 iterateCheck(casep, "Case Item", condp, CONTEXT_DET, FINAL, subDTypep, EXTEND_EXP);
             }

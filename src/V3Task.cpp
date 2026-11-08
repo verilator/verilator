@@ -2370,7 +2370,7 @@ static V3TaskConnects connectArgs(T_Ref* nodep, const AstNode* calleep, AstNode*
     // Find ports
     int tpinnum = 0;
     AstVar* sformatp = nullptr;
-    for (AstNode* declp = taskDeclsp; declp; declp = declp->nextp()) {
+    for (AstNode* const declp : VNList<AstNode>{taskDeclsp}) {
         if (AstVar* const portp = VN_CAST(declp, Var)) {
             if (portp->isIO() && !portp->isFuncReturn()) {
                 tconnects.emplace_back(portp, static_cast<AstArg*>(nullptr));

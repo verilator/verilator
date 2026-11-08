@@ -206,12 +206,12 @@ class LinkParseVisitor final : public VNVisitor {
         // V3LinkDot hasn't run yet, so have VAR for pre-IEEE 'input' and
         // separate var for pre-IEEE 'integer'.
         std::unordered_map<std::string, AstVar*> portNames;
-        for (AstNode* nodep = nodeListp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodeListp}) {
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isIO() && !varp->isFuncReturn()) portNames.emplace(varp->name(), varp);
             }
         }
-        for (AstNode* nodep = nodeListp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{nodeListp}) {
             if (AstVar* const varp = VN_CAST(nodep, Var)) {
                 if (varp->isIO()) continue;
                 const auto it = portNames.find(varp->name());
@@ -1210,7 +1210,7 @@ class LinkParseVisitor final : public VNVisitor {
     // unwritten.
     static void addArgMemberCopies(AstFunc* funcp, AstNode* argsp, bool readOnlyRefs) {
         AstNodeStmt* copiesp = nullptr;
-        for (AstNode* argp = argsp; argp; argp = argp->nextp()) {
+        for (AstNode* const argp : VNList<AstNode>{argsp}) {
             AstVar* const origVarp = VN_AS(argp, Var);
             AstVar* const paramp = origVarp->cloneTree(false);
             FileLine* const fl = new FileLine{paramp->fileline()};

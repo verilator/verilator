@@ -330,7 +330,7 @@ class DynScopeVisitor final : public VNVisitor {
         if (r.second) m_frameOrder.push_back(nodep);
     }
     void bindInitIterate(AstNode* stmtsp, ForkDynScopeFrame* framep) {
-        for (AstNode* stmtp = stmtsp; stmtp; stmtp = stmtp->nextp()) {
+        for (AstNode* const stmtp : VNList<AstNode>{stmtsp}) {
             if (AstAssign* const asgnp = VN_CAST(stmtp, Assign)) {
                 bindNodeToDynScope(asgnp->lhsp(), framep);
                 iterate(asgnp->rhsp());
@@ -536,15 +536,13 @@ class ForkVisitor final : public VNVisitor {
 
     // METHODS
     AstVar* capture(AstVarRef* refp) {
-        AstVar* varp = nullptr;
-        for (varp = m_capturedVarsp; varp; varp = VN_AS(varp->nextp(), Var)) {
-            if (varp->name() == refp->name()) break;
+        for (AstVar* const varp : VNList<AstVar>{m_capturedVarsp}) {
+            if (varp->name() == refp->name()) return varp;
         }
-        if (varp) return varp;
 
         // Create a local copy to capture
         FileLine* const flp = refp->fileline();
-        varp = new AstVar{flp, VVarType::BLOCKTEMP, refp->name(), refp->dtypep()};
+        AstVar* const varp = new AstVar{flp, VVarType::BLOCKTEMP, refp->name(), refp->dtypep()};
         varp->direction(VDirection::INPUT);
         varp->funcLocal(true);
         varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);

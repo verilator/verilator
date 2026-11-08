@@ -190,7 +190,7 @@ class OutlineVisitor final : public VNVisitor {
         std::vector<AstNodeStmt*> largeps;  // Statements larger than the limit
         for (AstNode* const listp : listps) {
             StmtRange run{nullptr, nullptr, 0};
-            for (AstNode* nodep = listp; nodep; nodep = nodep->nextp()) {
+            for (AstNode* const nodep : VNList<AstNode>{listp}) {
                 AstNodeStmt* const subp = VN_CAST(nodep, NodeStmt);  // Else a declaration
                 if (subp && m_info(subp).m_size > m_limit) largeps.push_back(subp);
                 if (subp && m_info(subp).m_movable && m_info(subp).m_size <= m_limit) {

@@ -1192,7 +1192,7 @@ class TraceVisitor final : public VNVisitor {
                 // If so, all funcs might share the same activity code
                 TraceActivityVertex* const activityVtxp
                     = getActivityVertexp(nodep, callp->funcp()->slow());
-                for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
+                for (AstNode* const nextp : VNList<AstNode>{nodep}) {
                     if (AstStmtExpr* const stmtp = VN_CAST(nextp, StmtExpr)) {
                         if (AstCCall* const ccallp = VN_CAST(stmtp->exprp(), CCall)) {
                             stmtp->user2(true);  // Processed

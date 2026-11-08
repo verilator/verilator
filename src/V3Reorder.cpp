@@ -259,7 +259,7 @@ class ReorderVisitor final : public VNVisitor {
 
         // Mark all the logic for this step by setting Vertex::user() to true
         m_graphp->userClearVertices();
-        for (AstNode* nextp = nodep; nextp; nextp = nextp->nextp()) {
+        for (AstNode* const nextp : VNList<AstNode>{nodep}) {
             nextp->user3u().to<ReorderLogicVertex*>()->user(true);
         }
 
@@ -290,7 +290,7 @@ class ReorderVisitor final : public VNVisitor {
 
         // Add hard orderings between all nodes of same color, in the order they appeared
         std::unordered_map<uint32_t, ReorderLogicVertex*> lastOfColor;
-        for (AstNode* currp = nodep; currp; currp = currp->nextp()) {
+        for (AstNode* const currp : VNList<AstNode>{nodep}) {
             ReorderLogicVertex* const vtxp = currp->user3u().to<ReorderLogicVertex*>();
             const uint32_t color = vtxp->color();
             if (lastOfColor[color]) new ReorderStrictEdge{m_graphp, lastOfColor[color], vtxp};
@@ -312,7 +312,7 @@ class ReorderVisitor final : public VNVisitor {
         // Map the rank numbers into nodes they associate with
         std::multimap<uint32_t, AstNode*> rankMap;
         int currOrder = 0;  // Existing sequence number of assignment
-        for (AstNode* currp = nodep; currp; currp = currp->nextp()) {
+        for (AstNode* const currp : VNList<AstNode>{nodep}) {
             const ReorderLogicVertex* const vtxp = currp->user3u().to<ReorderLogicVertex*>();
             rankMap.emplace(vtxp->rank(), currp);
             currp->user4(++currOrder);  // Record current ordering
@@ -359,7 +359,7 @@ class ReorderVisitor final : public VNVisitor {
         UINFO(9, "  processBlock " << nodep);
 
         // Iterate across current block, making the scoreboard
-        for (AstNode* currp = nodep; currp; currp = currp->nextp()) {
+        for (AstNode* const currp : VNList<AstNode>{nodep}) {
             // Create the logic vertex for this statement
             UASSERT_OBJ(!currp->user3p(), currp, "user3p should not be set");
             ReorderLogicVertex* const vtxp = new ReorderLogicVertex{m_graphp, currp};
@@ -384,7 +384,7 @@ class ReorderVisitor final : public VNVisitor {
         while (nodep->backp()->nextp() == nodep) nodep = nodep->backp();
 
         // Delete vertexes and edges only applying to this block
-        for (AstNode* currp = nodep; currp; currp = currp->nextp()) {
+        for (AstNode* const currp : VNList<AstNode>{nodep}) {
             currp->user3u().to<ReorderLogicVertex*>()->unlinkDelete(m_graphp);
             currp->user3p(nullptr);
         }

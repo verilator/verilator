@@ -175,7 +175,7 @@ class LiftExprVisitor final : public VNVisitor {
     void addStmtps(AstNodeStmt* stmtp) {
         if (!stmtp) return;
         // No need to process again, so mark
-        for (AstNode* nodep = stmtp; nodep; nodep = nodep->nextp()) nodep->user1(1);
+        for (AstNode* const nodep : VNList<AstNode>{stmtp}) nodep->user1(1);
         m_newStmtps = AstNode::addNext(m_newStmtps, stmtp);
     }
 

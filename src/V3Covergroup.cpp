@@ -453,7 +453,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     uint32_t itemDatabaseWeight(AstNode* optionsp) const {
         const AstNodeExpr* weightp = nullptr;  // The option.weight in effect
         uint32_t typeWeight = 1;
-        for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{optionsp}) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
             if (!(optp->optType() == VCoverOptionType::WEIGHT)) continue;
             // V3Width left type_option.weight a non-negative constant
@@ -475,7 +475,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void lendItemWeight(FileLine* fl, AstNodeFuncCovItem* itemp, AstVar* itemVarp,
                         AstNode* optionsp) {
         FileLine* weightFl = fl;
-        for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{optionsp}) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
             if (optp->optType() == VCoverOptionType::WEIGHT && !optp->typeOption()) {
                 weightFl = optp->fileline();
@@ -493,7 +493,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
 
     void generateItemWeight(FileLine* fl, AstNodeFuncCovItem* itemp, AstVar* itemVarp,
                             AstNode* optionsp) {
-        for (AstNode* nodep = optionsp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{optionsp}) {
             const AstCoverOption* const optp = VN_AS(nodep, CoverOption);
             if (!(optp->optType() == VCoverOptionType::WEIGHT)) continue;
             if (!optp->typeOption()) {
@@ -798,7 +798,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
         if (!binRangesp(binp)) runs = coverpointValues(binp, exprp);
         const auto constant
             = [](const AstNode* nodep) { return VN_IS(nodep, Const) || VN_IS(nodep, Unbounded); };
-        for (AstNode* rangep = binRangesp(binp); rangep; rangep = rangep->nextp()) {
+        for (AstNode* const rangep : VNList<AstNode>{binRangesp(binp)}) {
             const AstInsideRange* const irp = VN_CAST(rangep, InsideRange);
             // Else known when constructed
             if (irp ? !constant(irp->lhsp()) || !constant(irp->rhsp()) : !VN_IS(rangep, Const)) {
@@ -848,7 +848,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     // filter's candidates, give, counted up to more than --coverage-max-bins
     static size_t sizedWildcardRuns(const AstCoverBin* binp, AstNodeExpr* exprp) {
         std::vector<std::pair<V3Number, V3Number>> runs;
-        for (AstNode* rangep = binRangesp(binp); rangep; rangep = rangep->nextp()) {
+        for (AstNode* const rangep : VNList<AstNode>{binRangesp(binp)}) {
             if (!VN_IS(rangep, Const)) continue;  // A range, or a value known at construction
             CrossValueRange range{rangep, resolveWidth(rangep, exprp)};
             if (resolveValue(rangep, exprp, true, true, range) && !crossRangeEmpty(range)) {
@@ -888,7 +888,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
     void extractItemOptions(AstNode* optionsp, int& atLeastOut, int& autoBinMaxOut) {
         atLeastOut = m_cgAtLeast;
         autoBinMaxOut = -1;  // -1 = not set at coverpoint level
-        for (AstNode* optionp = optionsp; optionp; optionp = optionp->nextp()) {
+        for (AstNode* const optionp : VNList<AstNode>{optionsp}) {
             AstCoverOption* const optp = VN_AS(optionp, CoverOption);
             // Weights may be non-constant; generateItemWeight() handles them.  A cross keeps
             // its unsupported options, which V3LinkParse warned of.
@@ -1983,7 +1983,7 @@ class FunctionalCoverageVisitor final : public VNVisitor {
             }
         }
         uint32_t element = 0;
-        for (AstNode* rangep = binRangesp(binp); rangep; rangep = rangep->nextp()) {
+        for (AstNode* const rangep : VNList<AstNode>{binRangesp(binp)}) {
             if (VN_IS(rangep, Unbounded)) {  // A parameter of '$'
                 binp->v3error("Bins value may not be '$', which may only bound a range "
                               "(IEEE 1800-2023 6.20.7)");
