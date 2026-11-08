@@ -2831,7 +2831,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         // Map formal parameters to actual arguments using V3Task infrastructure
         const V3TaskConnects tconnects
-            = V3Task::taskConnects(nodep, funcp->stmtsp(), nullptr, false);
+            = V3Task::taskConnects(nodep, funcp->declsp(), nullptr, false);
 
         // Clone return expression, substitute params with args.
         // Track the root via a local pointer: when the root itself is a VarRef to a port
@@ -3745,7 +3745,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             totalVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             totalVarp->funcLocal(true);
             totalVarp->isInternal(true);
-            taskp->addStmtsp(totalVarp);
+            taskp->addDeclsp(totalVarp);
             addStmt(
                 new AstAssign{fl, new AstVarRef{fl, totalVarp, VAccess::WRITE}, totalWeightExprp});
 
@@ -3757,7 +3757,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             bucketVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             bucketVarp->funcLocal(true);
             bucketVarp->isInternal(true);
-            taskp->addStmtsp(bucketVarp);
+            taskp->addDeclsp(bucketVarp);
 
             AstNodeExpr* const randp = new AstRand{fl, nullptr, false};
             randp->dtypeSetUInt64();
@@ -3939,7 +3939,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         AstVar* const sizeOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vsize_ok",
                                               randomizep->findBasicDType(VBasicDTypeKwd::BIT)};
         sizeOkVarp->funcLocal(true);
-        randomizep->addStmtsp(sizeOkVarp);
+        randomizep->addDeclsp(sizeOkVarp);
         // A disabled array keeps its current size. Pin its size proxy before solving so
         // an incompatible size constraint fails instead of resizing the frozen array.
         for (AstVar* const arrVarp : sizeArrayVars) {
@@ -4150,7 +4150,7 @@ public:
                 AstVar* const finalOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vfinal_ok",
                                                        nodep->findBasicDType(VBasicDTypeKwd::BIT)};
                 finalOkVarp->funcLocal(true);
-                randomizep->addStmtsp(finalOkVarp);
+                randomizep->addDeclsp(finalOkVarp);
                 randomizep->addStmtsp(new AstAssign{
                     fl, new AstVarRef{fl, finalOkVarp, VAccess::WRITE}, newSolverCallp(genp)});
 
@@ -4211,7 +4211,7 @@ public:
                 implementConstraintsClear(randomizeFuncp->fileline(), classGenp));
         }
 
-        randomizeFuncp->addStmtsp(localGenp);
+        randomizeFuncp->addDeclsp(localGenp);
 
         // Copy (derive) class constraints if present
         if (classGenp) {
@@ -4349,14 +4349,14 @@ public:
             AstVar* const basicOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vbasic_ok",
                                                    classp->findBasicDType(VBasicDTypeKwd::BIT)};
             basicOkVarp->funcLocal(true);
-            randomizeFuncp->addStmtsp(basicOkVarp);
+            randomizeFuncp->addDeclsp(basicOkVarp);
             randomizeFuncp->addStmtsp(new AstAssign{
                 fl, new AstVarRef{fl, basicOkVarp, VAccess::WRITE}, basicRandomizeFuncCallp});
 
             AstVar* const finalOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vfinal_ok",
                                                    classp->findBasicDType(VBasicDTypeKwd::BIT)};
             finalOkVarp->funcLocal(true);
-            randomizeFuncp->addStmtsp(finalOkVarp);
+            randomizeFuncp->addDeclsp(finalOkVarp);
 
             // First pass: solve to determine sizes
             AstVar* const sizeOkVarp

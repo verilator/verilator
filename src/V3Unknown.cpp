@@ -77,7 +77,7 @@ class UnknownVisitor final : public VNVisitor {
         if (m_ftaskp) {
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-            m_ftaskp->prependStmtsp(varp);
+            m_ftaskp->prependDeclsp(varp);
         } else {
             m_modp->prependStmtsp(varp);
         }

@@ -1086,10 +1086,10 @@ public:
                     // Keeping classOrPackagep will cause a broken link after inlining
                     varrefp->classOrPackagep(nullptr);
                 }
-                funcp->addStmtsp(getVar(varrefp->varp()));
+                funcp->addDeclsp(getVar(varrefp->varp()));
             } else {
                 UASSERT_OBJ(VN_IS(argp->exprp(), ThisRef), argp->exprp(), "Wrong arg expression");
-                funcp->addStmtsp(m_thisp);
+                funcp->addDeclsp(m_thisp);
             }
         }
     }
@@ -1394,19 +1394,17 @@ class RandomizeVisitor final : public VNVisitor {
         AstNodeFTask* const ctorNewp = VN_AS(m_memberMap.findMember(classp, "new"), NodeFTask);
         UASSERT_OBJ(ctorNewp, classp, "No new() in class");
         // Preserve inherited modes set by super.new() and initialize only newly added entries.
-        AstNode* const initFirstp = oldSizeVarp;
-        initFirstp->addNext(
-            new AstAssign{fl, new AstVarRef{fl, oldSizeVarp, VAccess::WRITE}, oldSizep});
+        ctorNewp->addDeclsp(oldSizeVarp);
+        AstNodeStmt* const initFirstp
+            = new AstAssign{fl, new AstVarRef{fl, oldSizeVarp, VAccess::WRITE}, oldSizep};
         initFirstp->addNext(dynarrayNewp->makeStmt());
         initFirstp->addNext(makeModeSetLoop(
             fl, new AstVarRef{fl, modeVarModp, modeVarp, VAccess::WRITE}, new AstConst{fl, 1},
             true, new AstVarRef{fl, oldSizeVarp, VAccess::READ}));
         // Prepend init code before user statements in constructor body, but after
-        // var declarations and super.new(). This ensures that user's constraint_mode()
-        // or rand_mode() calls in the constructor execute after mode arrays are initialized.
-        // Pattern from V3LinkDot::addImplicitSuperNewCall.
+        // super.new(). This ensures that user's constraint_mode() or rand_mode() calls in the
+        // constructor execute after mode arrays are initialized.
         for (AstNode* const stmtp : ctorNewp->stmtspList()) {
-            if (!VN_IS(stmtp, NodeStmt)) continue;  // Skip var declarations
             if (const AstStmtExpr* const sep = VN_CAST(stmtp, StmtExpr)) {
                 if (VN_IS(sep->exprp(), New)) continue;  // Skip super.new()
             }
@@ -1414,7 +1412,7 @@ class RandomizeVisitor final : public VNVisitor {
             stmtp->addHereThisAsNext(initFirstp);
             return;
         }
-        // No user statements (empty constructor or only var decls/super.new)
+        // No user statements (empty constructor or only super.new)
         ctorNewp->addStmtsp(initFirstp);
     }
     void makeStaticModeInit(AstVar* modeVarp, AstClass* classp, uint32_t modeCount) {
@@ -1486,7 +1484,7 @@ class RandomizeVisitor final : public VNVisitor {
         if (!m_ftaskp) {
             m_modp->addStmtsp(varsp);
         } else {
-            m_ftaskp->prependStmtsp(varsp);
+            m_ftaskp->prependDeclsp(varsp);
         }
     }
     AstNodeStmt* wrapIfRandMode(AstClass* classp, AstVar* const varp, AstNodeStmt* stmtp) {
@@ -2562,7 +2560,7 @@ class RandomizeVisitor final : public VNVisitor {
                 refvarp->direction(VDirection::REF);
                 refvarp->funcLocal(true);
                 refvarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                randomizeFuncp->addStmtsp(refvarp);
+                randomizeFuncp->addDeclsp(refvarp);
                 if (withp) {
                     FileLine* const fl = exprp->fileline();
                     AstVar* const prevVarp
@@ -2570,7 +2568,7 @@ class RandomizeVisitor final : public VNVisitor {
                                      exprp->dtypep()};
                     prevVarp->funcLocal(true);
                     prevVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                    randomizeFuncp->addStmtsp(prevVarp);
+                    randomizeFuncp->addDeclsp(prevVarp);
                     randomizeFuncp->addStmtsp(
                         new AstAssign{fl, new AstVarRef{fl, prevVarp, VAccess::WRITE},
                                       new AstVarRef{fl, refvarp, VAccess::READ}});
@@ -2837,7 +2835,7 @@ AstFunc* V3Randomize::newSRandomFunc(VMemberMap& memberMap, AstClass* nodep) {
         ivarp->funcLocal(true);
         ivarp->direction(VDirection::INPUT);
         funcp = new AstFunc{basep->fileline(), "srandom"};
-        funcp->addStmtsp(ivarp);
+        funcp->addDeclsp(ivarp);
         funcp->classMethod(true);
         funcp->isVirtual(false);
         basep->addMembersp(funcp);

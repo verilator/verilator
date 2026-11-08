@@ -54,7 +54,7 @@ class V3Task final {
 public:
     static void taskAll(AstNetlist* nodep) VL_MT_DISABLED;
     /// Return vector of [port, pin-connects-to]  (SLOW)
-    static V3TaskConnects taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
+    static V3TaskConnects taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
                                        V3TaskConnectState* statep = nullptr,
                                        bool makeChanges = true) VL_MT_DISABLED;
     static void taskConnectWrap(AstNodeFTaskRef* nodep, const V3TaskConnects& tconnects,

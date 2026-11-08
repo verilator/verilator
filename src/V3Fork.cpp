@@ -146,12 +146,6 @@ public:
         VNRelinker stmtpHandle;
         stmtp->unlinkFrBackWithNext(&stmtpHandle);
 
-        // Find node after last variable declaration
-        AstNode* initp = stmtp;
-        while (initp && VN_IS(initp, Var)) initp = initp->nextp();
-        UASSERT(stmtp, "Procedure lacks body");
-        UASSERT(initp, "Procedure lacks statements besides declarations");
-
         AstNew* const newp = new AstNew{m_procp->fileline()};
         newp->taskp(VN_AS(memberMap.findMember(m_instance.m_classp, "new"), NodeFTask));
         newp->dtypep(m_instance.m_refDTypep);
@@ -194,19 +188,11 @@ public:
         }
         if (initsp) AstNode::addNext(asgnp, initsp);
 
-        if (initp != stmtp) {
-            initp->addHereThisAsNext(asgnp);
-        } else {
-            AstNode::addNext(asgnp, static_cast<AstNode*>(initp));
-            stmtp = asgnp;
-        }
-
+        stmtpHandle.relink(AstNode::addNext(asgnp, stmtp));
         if (AstBegin* const beginp = VN_CAST(m_procp, Begin)) {
             beginp->prependDeclsp(m_instance.m_handlep);
-            stmtpHandle.relink(stmtp);
         } else {
-            AstNode::addNext(static_cast<AstNode*>(m_instance.m_handlep), stmtp);
-            stmtpHandle.relink(m_instance.m_handlep);
+            VN_AS(m_procp, NodeFTask)->prependDeclsp(m_instance.m_handlep);
         }
         m_modp->addStmtsp(m_instance.m_classp);
     }
@@ -578,14 +564,14 @@ class ForkVisitor final : public VNVisitor {
         FileLine* const flp = itemp->fileline();
         const std::string name = "__VforkTask_" + std::to_string(m_nForkTasks++);
         AstTask* const taskp = new AstTask{flp, name};
-        taskp->addStmtsp(m_capturedVarsp);
+        taskp->addDeclsp(m_capturedVarsp);
         // A branch that spawns another process must hand its captured variables over to it
         if (m_hasNestedFork) {
             taskp->classMethod(VN_IS(m_modp, Class));
             taskp->isStatic(m_ftaskp && m_ftaskp->isStatic());
         }
         m_tasksp = AstNode::addNext(m_tasksp, taskp);
-        if (itemp->declsp()) taskp->addStmtsp(itemp->declsp()->unlinkFrBackWithNext());
+        if (itemp->declsp()) taskp->addDeclsp(itemp->declsp()->unlinkFrBackWithNext());
         if (itemp->stmtsp()) taskp->addStmtsp(itemp->stmtsp()->unlinkFrBackWithNext());
         AstTaskRef* const callp = new AstTaskRef{flp, taskp, m_capturedArgsp};
         itemp->addStmtsp(callp->makeStmt());

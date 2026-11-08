@@ -2948,9 +2948,7 @@ class AssertNfaVisitor final : public VNVisitor {
     }
 
     static AstNodeExpr* getSequenceBodyExprp(const AstSequence* seqp) {
-        AstNode* bodyp = seqp->stmtsp();
-        while (bodyp && VN_IS(bodyp, Var)) bodyp = bodyp->nextp();
-        return VN_CAST(bodyp, NodeExpr);
+        return VN_CAST(seqp->stmtsp(), NodeExpr);
     }
 
     static AstPropSpec* getPropertySpecp(const AstProperty* propp) {
@@ -2959,7 +2957,7 @@ class AssertNfaVisitor final : public VNVisitor {
         // initialisers; the InitialAutomaticStmt variant only appears for
         // task/function-scope automatic lifetime, not properties.
         while (stmtp
-               && (VN_IS(stmtp, Var) || VN_IS(stmtp, InitialStaticStmt)
+               && (VN_IS(stmtp, InitialStaticStmt)
                    || VN_IS(stmtp, InitialAutomaticStmt))) {  // LCOV_EXCL_LINE
             stmtp = stmtp->nextp();
         }
@@ -2984,7 +2982,7 @@ class AssertNfaVisitor final : public VNVisitor {
         UASSERT_OBJ(propSpecp, funcrefp, "Property has no body PropSpec");
         propSpecp = propSpecp->cloneTree(false);
 
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propyp->stmtsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propyp->declsp());
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();
@@ -2992,8 +2990,8 @@ class AssertNfaVisitor final : public VNVisitor {
 
         // Promote property-local variables to module-level temps (IEEE 16.10).
         std::unordered_map<const AstVar*, AstVar*> localVarMap;
-        for (AstNode* const stmtp : propyp->stmtspList()) {
-            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : propyp->declspList()) {
+            if (AstVar* const varp = VN_CAST(declp, Var)) {
                 if (!varp->isIO()) {
                     const string newName = m_propVarNames.get(varp);
                     AstVar* const newVarp = new AstVar{varp->fileline(), VVarType::MODULETEMP,
@@ -3051,7 +3049,7 @@ class AssertNfaVisitor final : public VNVisitor {
         UASSERT_OBJ(bodyExprp, funcrefp, "Sequence has no body expression");
         AstNodeExpr* const clonedp = bodyExprp->cloneTree(false);
 
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->stmtsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->declsp());
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();

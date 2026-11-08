@@ -108,11 +108,13 @@ public:
 class AstNodeFTask VL_NOT_FINAL : public AstNode {
     // Class/package scope
     // @astgen op1 := classOrPackagep : Optional[AstNode]
-    // Statements/Ports/Vars
+    // Ports/Vars/other declarations
+    // @astgen op2 := declsp : List[AstNode]
+    // Statements, or body of a property/sequence
     // @astgen op3 := stmtsp : List[AstNode]
     // Scope name
     // @astgen op4 := scopeNamep : Optional[AstScopeName]
-    // @astgen ptr := m_fvarp : Optional[AstVar]  // Output variable in functions, under stmtsp
+    // @astgen ptr := m_fvarp : Optional[AstVar]  // Output variable in functions, under declsp
     string m_name;  // Name of task
     string m_cname;  // Name of task if DPI import
     // dist-ast-dump-suppress  // Not dumped due to verbosity

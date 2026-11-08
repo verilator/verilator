@@ -285,18 +285,16 @@ private:
         return newp;
     }
     AstNodeExpr* getSequenceBodyExprp(const AstSequence* const seqp) const {
-        // The statements in AstSequence are optional AstVar (ports) followed by body expr.
-        AstNode* bodyp = seqp->stmtsp();
-        while (bodyp && VN_IS(bodyp, Var)) bodyp = bodyp->nextp();
-        return VN_CAST(bodyp, NodeExpr);
+        // The statements in AstSequence are the body expr.
+        return VN_CAST(seqp->stmtsp(), NodeExpr);
     }
     AstPropSpec* getPropertyExprp(const AstProperty* const propp) {
-        // Statements in AstProperty: AstVar (ports/local vars),
-        // AstInitialStaticStmt/AstInitialAutomaticStmt (var init), AstPropSpec (body).
+        // Statements in AstProperty: AstInitialStaticStmt/AstInitialAutomaticStmt (var init),
+        // AstPropSpec (body).
         AstNode* propExprp = propp->stmtsp();
-        while (propExprp
-               && (VN_IS(propExprp, Var) || VN_IS(propExprp, InitialStaticStmt)
-                   || VN_IS(propExprp, InitialAutomaticStmt))) {
+        while (
+            propExprp
+            && (VN_IS(propExprp, InitialStaticStmt) || VN_IS(propExprp, InitialAutomaticStmt))) {
             propExprp = propExprp->nextp();
         }
         return VN_CAST(propExprp, PropSpec);
@@ -310,7 +308,7 @@ private:
         AstNodeExpr* clonedp = bodyExprp->cloneTree(false);
         // Build substitution map, then do a single traversal to replace all formals
         // (textual substitution per IEEE 16.8.2).
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->stmtsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, seqp->declsp());
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();
@@ -343,7 +341,7 @@ private:
         // Build substitution maps for formal arguments and property-local
         // variables, then perform a single foreach to apply all replacements.
         // Map port vars to their actual argument expressions
-        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->stmtsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(funcrefp, propp->declsp());
         std::unordered_map<const AstVar*, AstNodeExpr*> portMap;
         for (const auto& tconnect : tconnects) {
             portMap[tconnect.first] = tconnect.second->exprp();
@@ -353,8 +351,8 @@ private:
         // module-level __Vpropvar temps. Cross-cycle persistence is handled
         // by the match item lowering in visit(AstImplication*).
         std::unordered_map<const AstVar*, AstVar*> localVarMap;
-        for (AstNode* const stmtp : propp->stmtspList()) {
-            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : propp->declspList()) {
+            if (AstVar* const varp = VN_CAST(declp, Var)) {
                 if (!varp->isIO()) {
                     const string newName = m_propVarNames.get(varp);
                     AstVar* const newVarp = new AstVar{varp->fileline(), VVarType::MODULETEMP,

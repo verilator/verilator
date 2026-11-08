@@ -275,7 +275,7 @@ private:
         // The copy of every instance may be called through a virtual interface (see below)
         if (isVirtualIfaceMethodCall(nodep)) m_vifTaskps.insert(nodep->taskp());
         // Do we have to disable inlining the function?
-        const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->declsp());
         if (!taskVtxp->noInline()) {  // Else short-circuit below
             for (const auto& itr : tconnects) {
                 const AstVar* const portp = itr.first;
@@ -747,8 +747,8 @@ class TaskVisitor final : public VNVisitor {
     }
 
     bool hasRefArgument(AstNodeFTask* nodep) {
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            if (AstVar* const varp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : nodep->declspList()) {
+            if (AstVar* const varp = VN_CAST(declp, Var)) {
                 if (varp->isRef() || varp->isConstRef()) return true;
             }
         }
@@ -758,12 +758,18 @@ class TaskVisitor final : public VNVisitor {
     AstNodeStmt* createInlinedFTask(AstNodeFTaskRef* refp, AstVarScope* outvscp) {
         // outvscp is the variable for functions only, if nullptr, it's a task
         UASSERT_OBJ(refp->taskp(), refp, "Unlinked?");
-        AstNode* const newbodysp
-            = refp->taskp()->stmtsp() ? refp->taskp()->stmtsp()->cloneTree(true) : nullptr;
-        AstVar* const fvarp = outvscp ? refp->taskp()->fvarp()->clonep() : nullptr;
+        // Clone the declarations and statements together, so the statements refer to the clones
+        AstNodeFTask* const taskClonep = refp->taskp()->cloneTree(false);
+        AstVar* const fvarp = outvscp ? taskClonep->fvarp() : nullptr;
         AstNodeStmt* const beginp
             = new AstComment{refp->fileline(), "Function: "s + refp->name(), true};
-        if (newbodysp) AstNode::addNext<AstNode, AstNode>(beginp, newbodysp);
+        if (AstNode* const declsp = taskClonep->declsp()) {
+            AstNode::addNext<AstNode, AstNode>(beginp, declsp->unlinkFrBackWithNext());
+        }
+        if (AstNode* const stmtsp = taskClonep->stmtsp()) {
+            AstNode::addNext<AstNode, AstNode>(beginp, stmtsp->unlinkFrBackWithNext());
+        }
+        VL_DO_DANGLING(pushDeletep(taskClonep), taskClonep);
         if (debug() >= 9) beginp->dumpTreeAndNext(cout, "-  newbegi: ");
         //
         // Create input variables
@@ -863,7 +869,7 @@ class TaskVisitor final : public VNVisitor {
 
         // Convert complicated outputs to temp signals
         {
-            const V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->stmtsp());
+            const V3TaskConnects tconnects = V3Task::taskConnects(refp, refp->taskp()->declsp());
             for (const auto& itr : tconnects) {
                 AstVar* const portp = itr.first;
                 AstArg* const argp = itr.second;
@@ -908,8 +914,8 @@ class TaskVisitor final : public VNVisitor {
         dpiproto += rtnvarp ? rtnvarp->dpiArgType(true, true) : "void";
         dpiproto += " " + nodep->cname() + " (";
         string args;
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            if (const AstVar* const portp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : nodep->declspList()) {
+            if (const AstVar* const portp = VN_CAST(declp, Var)) {
                 if (portp->isIO() && !portp->isFuncReturn() && portp != rtnvarp) {
                     if (args != "") {
                         args += ", ";
@@ -1197,8 +1203,8 @@ class TaskVisitor final : public VNVisitor {
         callp->add("(" + EmitCUtil::symClassName() + "*)(__Vscopep->symsp())");
         // Add function arguments
         AstNodeStmt* outCvtsp = nullptr;  // Conversions of output/inout arguments, after the call
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            AstVar* const portp = VN_CAST(stmtp, Var);
+        for (AstNode* const declp : nodep->declspList()) {
+            AstVar* const portp = VN_CAST(declp, Var);
             if (!portp) continue;
             if (!portp->isIO()) continue;
             if (portp->isFuncReturn()) continue;
@@ -1309,8 +1315,8 @@ class TaskVisitor final : public VNVisitor {
 
     static void makePortList(AstNodeFTask* nodep, AstCFunc* dpip) {
         // Copy nodep's list of function I/O to the new dpip c function
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : nodep->declspList()) {
+            if (AstVar* const portp = VN_CAST(declp, Var)) {
                 if (portp->isIO()) {
                     // Move it to new function
                     AstVar* const newPortp = portp->cloneTree(false);
@@ -1325,8 +1331,8 @@ class TaskVisitor final : public VNVisitor {
     // array are of the actual argument of the call the task was replicated for.
     static bool checkDpiArgTypes(const AstNodeFTask* nodep) {
         bool allOk = true;
-        for (const AstNode* const stmtp : nodep->stmtspList()) {
-            const AstVar* const portp = VN_CAST(stmtp, Var);
+        for (const AstNode* const declp : nodep->declspList()) {
+            const AstVar* const portp = VN_CAST(declp, Var);
             if (!portp || !portp->isIO()) continue;
             const AstNodeDType* const dtypep = portp->dtypep()->skipRefp();
             // Of the elements, if passed a dynamic array or queue as an open array
@@ -1418,8 +1424,8 @@ class TaskVisitor final : public VNVisitor {
     // Check DPI can pass the unpacked structure arguments of 'nodep', else report
     bool checkDpiStructArgs(const AstNodeFTask* nodep) {
         bool allOk = true;
-        for (const AstNode* const stmtp : nodep->stmtspList()) {
-            const AstVar* const portp = VN_CAST(stmtp, Var);
+        for (const AstNode* const declp : nodep->declspList()) {
+            const AstVar* const portp = VN_CAST(declp, Var);
             if (portp && portp->isIO() && portp->dtypep()->containsUnpackedStruct()) {
                 allOk = checkDpiStruct(portp, VN_AS(portp->dtypep()->elemDTypep(), StructDType),
                                        false)
@@ -1732,8 +1738,8 @@ class TaskVisitor final : public VNVisitor {
         }
 
         // Move arguments and local variables to function
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : nodep->declspList()) {
+            if (AstVar* const portp = VN_CAST(declp, Var)) {
                 if (portp->isParam() && VN_IS(portp->valuep(), ConsArray)) {
                     // Move array parameters in functions into constant pool
                     portp->unlinkFrBack();
@@ -1770,23 +1776,9 @@ class TaskVisitor final : public VNVisitor {
         if (rtnvarp) cfuncp->addArgsp(rtnvarp);
 
         // Move body
-        AstNode* bodysp = nodep->stmtsp();
-        if (bodysp) {
+        if (AstNode* const bodysp = nodep->stmtsp()) {
             unlinkAndClone(nodep, bodysp, true);
-            AstBegin* const tempp
-                = new AstBegin{nodep->fileline(), "[EditWrapper]", nullptr, false};
-            tempp->addDeclsp(bodysp);
-            VL_DANGLING(bodysp);
-            // If we cloned due to recursion, now need to rip out the variables
-            // (that remained in place) then got cloned
-            for (AstNode* const stmtp : tempp->declspList()) {
-                if (AstVar* const varp = VN_CAST(stmtp, Var)) {
-                    VL_DO_DANGLING(pushDeletep(varp->unlinkFrBack()), varp);
-                }
-            }
-            if (tempp->declsp())
-                cfuncp->addStmtsp(VN_AS(tempp->declsp()->unlinkFrBackWithNext(), NodeStmt));
-            VL_DO_DANGLING(tempp->deleteTree(), tempp);
+            cfuncp->addStmtsp(VN_AS(bodysp, NodeStmt));
         }
         if (nodep->dpiImport()) bodyDpiImportFunc(nodep, rtnvscp, cfuncp, dpiFuncp);
 
@@ -2055,17 +2047,16 @@ class TaskVisitor final : public VNVisitor {
     }
     // If taskp is a getter, return the reference to the member variable it returns
     static AstVarRef* getterVarRefp(AstNodeFTask* taskp) {
-        AstNode* stmtp = taskp->stmtsp();
-        // Skip the return variable itself
+        // Only the return variable is declared, so no arguments or locals
         const AstVar* const fvarp = taskp->fvarp();
-        if (stmtp == fvarp) stmtp = stmtp->nextp();
+        if (taskp->declsp() != fvarp || fvarp->nextp()) return nullptr;
+        AstNode* stmtp = taskp->stmtsp();
         // Skip the default initialization of the function's return value
         if (const AstAssign* const initp = VN_CAST(stmtp, Assign)) {
             const AstVarRef* const lvarrefp = VN_CAST(initp->lhsp(), VarRef);
             if (lvarrefp && lvarrefp->varp() == fvarp && VN_IS(initp->rhsp(), Const))
                 stmtp = initp->nextp();
         }
-        // Arguments are statements too, so a function with any is rejected here
         const AstAssign* const assignp = VN_CAST(stmtp, Assign);
         if (!assignp || assignp->nextp()) return nullptr;
         AstVarRef* const rhsp = VN_CAST(assignp->rhsp(), VarRef);
@@ -2271,8 +2262,8 @@ class TaskVisitor final : public VNVisitor {
 
             // Any variables inside the function still have varscopes pointing to them.
             // We're going to delete the vars, so delete the varscopes.
-            for (AstNode* const stmtp : nodep->stmtspList()) {
-                if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+            for (AstNode* const declp : nodep->declspList()) {
+                if (AstVar* const portp = VN_CAST(declp, Var)) {
                     AstVarScope* const vscp = m_statep->findVarScope(m_scopep, portp);
                     UINFO(9, "   funcremovevsc " << vscp);
                     VL_DO_DANGLING(pushDeletep(vscp->unlinkFrBack()), vscp);
@@ -2362,7 +2353,7 @@ public:
 
 const char* const V3Task::s_dpiTemporaryVarSuffix = "__Vcvt";
 
-V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
+V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskDeclsp,
                                     V3TaskConnectState* statep, bool makeChanges) {
     // Output list will be in order of the port declaration variables (so
     // func calls are made right in C)
@@ -2376,8 +2367,8 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
     // Find ports
     int tpinnum = 0;
     AstVar* sformatp = nullptr;
-    for (AstNode* stmtp = taskStmtsp; stmtp; stmtp = stmtp->nextp()) {
-        if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+    for (AstNode* declp = taskDeclsp; declp; declp = declp->nextp()) {
+        if (AstVar* const portp = VN_CAST(declp, Var)) {
             if (portp->isIO() && !portp->isFuncReturn()) {
                 tconnects.emplace_back(portp, static_cast<AstArg*>(nullptr));
                 nameToIndex.emplace(portp->name(), tpinnum);  // For name based connections
@@ -2544,7 +2535,7 @@ V3TaskConnects V3Task::taskConnects(AstNodeFTaskRef* nodep, AstNode* taskStmtsp,
         // Needed because the default needs symbol table of the called function.
         taskConnectWrap(nodep, tconnects, statep, argWrap);
         // Regenerate all connections, this time connecting to the wrapper
-        return taskConnects(nodep, nodep->taskp()->stmtsp(),
+        return taskConnects(nodep, nodep->taskp()->declsp(),
                             // statep null, so can't recurse forever
                             nullptr);
     }
@@ -2619,7 +2610,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
             newPortp->propagateWrapAttrFrom(portp);
             newPortp->funcLocal(true);
             if (newPortp->valuep()) newPortp->valuep()->unlinkFrBack()->deleteTree();
-            newTaskp->addStmtsp(newPortp);
+            newTaskp->addDeclsp(newPortp);
         } else {  // Defaulting arg
             AstNodeExpr* const valuep = VN_AS(portp->valuep(), NodeExpr);
             if ((portp->isRef() || portp->isConstRef()) && VN_IS(valuep, VarRef)) {
@@ -2635,7 +2626,7 @@ AstNodeFTask* V3Task::taskConnectWrapNew(AstNodeFTask* taskp, const string& newn
                                   portp->dtypep()};
             newPortp->propagateAttrFrom(portp);
             newPortp->funcLocal(true);
-            newTaskp->addStmtsp(newPortp);
+            newTaskp->addDeclsp(newPortp);
             // Runtime-assign it to the default
             if (!VN_IS(valuep, EmptyQueue)) {
                 AstAssign* const newAssignp

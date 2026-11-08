@@ -355,7 +355,7 @@ class LinkLValueVisitor final : public VNVisitor {
         // We'll deal with mismatching pins later
         if (!taskp) return;
         const V3TaskConnects tconnects
-            = V3Task::taskConnects(nodep, taskp->stmtsp(), nullptr, false);
+            = V3Task::taskConnects(nodep, taskp->declsp(), nullptr, false);
         for (const auto& tconnect : tconnects) {
             const AstVar* const portp = tconnect.first;
             const AstArg* const argp = tconnect.second;

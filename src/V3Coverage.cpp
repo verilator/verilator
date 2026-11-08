@@ -868,7 +868,7 @@ class CoverageVisitor final : public VNVisitor {
                         pair.first->second = varp;
                         if (m_ftaskp) {
                             varp->funcLocal(true);
-                            m_ftaskp->prependStmtsp(varp);
+                            m_ftaskp->prependDeclsp(varp);
                         } else {
                             m_modp->prependStmtsp(varp);
                         }

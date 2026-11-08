@@ -4675,36 +4675,51 @@ list_of_argumentsE<argp>:  // IEEE: [list_of_arguments]
         ;
 
 task_declaration<nodeFTaskp>:   // ==IEEE: task_declaration
-                yTASK dynamic_override_specifiersE lifetimeE taskId tfGuts yENDTASK endLabelE
-                        { $$ = $4; $$->addStmtsp($5);
+                task_declarationFront stmtListE yENDTASK endLabelE
+                        { $$ = $1; $$->addStmtsp($2);
+                          GRAMMARP->endLabel($<fl>4, $$, $4); }
+        |       task_declarationFront tf_item_declarationList stmtListE yENDTASK endLabelE
+                        { $$ = $1; $$->addDeclsp($2); $$->addStmtsp($3);
+                          GRAMMARP->endLabel($<fl>5, $$, $5); }
+        ;
+
+task_declarationFront<nodeFTaskp>:  // IEEE: part of task_declaration
+                yTASK dynamic_override_specifiersE lifetimeE taskId tfPortsE ';'
+                        { $$ = $4; $$->addDeclsp($5);
                           $$->baseOverride($2);
-                          $$->lifetime($3);
-                          GRAMMARP->endLabel($<fl>7, $$, $7); }
+                          $$->lifetime($3); }
         ;
 
 task_prototype<nodeFTaskp>:             // ==IEEE: task_prototype
                 yTASK dynamic_override_specifiersE taskId '(' tf_port_listE ')'
-                        { $$ = $3; $$->addStmtsp($5); $$->prototype(true); }
+                        { $$ = $3; $$->addDeclsp($5); $$->prototype(true); }
         |       yTASK dynamic_override_specifiersE taskId
                         { $$ = $3; $$->prototype(true); }
         ;
 
 function_declaration<nodeFTaskp>:       // IEEE: function_declaration + function_body_declaration
-                yFUNCTION dynamic_override_specifiersE lifetimeE funcId funcIsolateE tfGuts yENDFUNCTION endLabelE
-                        { $$ = $4; $$->addStmtsp($6);
+                function_declarationFront stmtListE yENDFUNCTION endLabelE
+                        { $$ = $1; $$->addStmtsp($2);
+                          GRAMMARP->endLabel($<fl>4, $$, $4); }
+        |       function_declarationFront tf_item_declarationList stmtListE yENDFUNCTION endLabelE
+                        { $$ = $1; $$->addDeclsp($2); $$->addStmtsp($3);
+                          GRAMMARP->endLabel($<fl>5, $$, $5); }
+        ;
+
+function_declarationFront<nodeFTaskp>:  // IEEE: part of function_declaration
+                yFUNCTION dynamic_override_specifiersE lifetimeE funcId funcIsolateE tfPortsE ';'
+                        { $$ = $4; $$->addDeclsp($6);
                           $$->baseOverride($2);
-                          $$->lifetime($3);
-                          GRAMMARP->endLabel($<fl>8, $$, $8); }
-        |       yFUNCTION dynamic_override_specifiersE lifetimeE funcIdNew funcIsolateE tfNewGuts yENDFUNCTION endLabelE
-                        { $$ = $4; $$->addStmtsp($6);
+                          $$->lifetime($3); }
+        |       yFUNCTION dynamic_override_specifiersE lifetimeE funcIdNew funcIsolateE tfNewPortsE ';'
+                        { $$ = $4; $$->addDeclsp($6);
                           $$->baseOverride($2);
-                          $$->lifetime($3);
-                          GRAMMARP->endLabel($<fl>8, $$, $8); }
+                          $$->lifetime($3); }
         ;
 
 function_prototype<nodeFTaskp>: // IEEE: function_prototype
                 yFUNCTION dynamic_override_specifiersE funcId '(' tf_port_listE ')'
-                        { $$ = $3; $$->addStmtsp($5); $$->prototype(true); }
+                        { $$ = $3; $$->addDeclsp($5); $$->prototype(true); }
         |       yFUNCTION dynamic_override_specifiersE funcId
                         { $$ = $3; $$->prototype(true); }
         ;
@@ -4713,7 +4728,7 @@ class_constructor_prototype<nodeFTaskp>:        // ==IEEE: class_constructor_pro
         //                      // IEEE has no dynamic_override_specifiersE,
         //                      // but required to avoid conflicts, so we must check after parsing
                 yFUNCTION dynamic_override_specifiersE funcIdNew '(' class_constructor_arg_listE ')' ';'
-                        { $$ = $3; $$->addStmtsp($5); $$->prototype(true); }
+                        { $$ = $3; $$->addDeclsp($5); $$->prototype(true); }
         |       yFUNCTION dynamic_override_specifiersE funcIdNew ';'
                         { $$ = $3; $$->prototype(true); }
         ;
@@ -4822,21 +4837,14 @@ funcIdNew<nodeFTaskp>:          // IEEE: from class_constructor_declaration
                           $$->classMethod(true); }
         ;
 
-tfGuts<nodep>:
-                '(' tf_port_listE ')' ';' tfBodyE       { $$ = addNextNull($2, $5); }
-        |       ';' tfBodyE                             { $$ = $2; }
-        ;
-
-tfNewGuts<nodep>:
-                '(' class_constructor_arg_listE ')' ';' tfBodyE       { $$ = addNextNull($2, $5); }
-        |       ';' tfBodyE                             { $$ = $2; }
-        ;
-
-tfBodyE<nodep>:                 // IEEE: part of function_body_declaration/task_body_declaration
+tfPortsE<nodep>:                // IEEE: part of function_body_declaration/task_body_declaration
                 /* empty */                             { $$ = nullptr; }
-        |       tf_item_declarationList                 { $$ = $1; }
-        |       tf_item_declarationList stmtList        { $$ = addNextNull($1, $2); }
-        |       stmtList                                { $$ = $1; }
+        |       '(' tf_port_listE ')'                   { $$ = $2; }
+        ;
+
+tfNewPortsE<nodep>:             // IEEE: part of class_constructor_declaration
+                /* empty */                             { $$ = nullptr; }
+        |       '(' class_constructor_arg_listE ')'     { $$ = $2; }
         ;
 
 tf_item_declarationList<nodep>:
@@ -5603,7 +5611,7 @@ let_declaration<letp>:  // IEEE: let_declaration
         |       yLET letId '(' let_port_listE ')' '=' expr ';'
                         { $$ = $2;
                           $$->addStmtsp(new AstStmtExpr{$1, $7});
-                          $$->addStmtsp($4); }
+                          $$->addDeclsp($4); }
         ;
 
 let_port_listE<nodep>:   // IEEE: [ let_port_list ]
@@ -6578,9 +6586,18 @@ property_declaration<nodeFTaskp>:  // ==IEEE: property_declaration
                 property_declarationFront property_port_listE ';' property_declarationBody
                         yENDPROPERTY endLabelE
                         { $$ = $1;
-                          $$->addStmtsp($2);
+                          $$->addDeclsp($2);
                           $$->addStmtsp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
+                          GRAMMARP->m_insideProperty = false;
+                          GRAMMARP->m_typedPropertyPort = false; }
+        |       property_declarationFront property_port_listE ';' assertion_variable_declarationList
+                        property_declarationBody yENDPROPERTY endLabelE
+                        { $$ = $1;
+                          $$->addDeclsp($2);
+                          $$->addDeclsp($4);
+                          $$->addStmtsp($5);
+                          GRAMMARP->endLabel($<fl>7, $$, $7);
                           GRAMMARP->m_insideProperty = false;
                           GRAMMARP->m_typedPropertyPort = false; }
         ;
@@ -6648,13 +6665,9 @@ property_port_itemDirE:
         ;
 
 property_declarationBody<nodep>:  // IEEE: part of property_declaration
-                assertion_variable_declarationList property_spec
-                        { $$ = addNextNull($1, $2); }
-        |       assertion_variable_declarationList property_spec ';'
-                        { $$ = addNextNull($1, $2); }
         //                      // IEEE-2012: Incorrectly has yCOVER ySEQUENCE then property_spec here.
         //                      // Fixed in IEEE 1800-2017
-        |       property_spec                           { $$ = $1; }
+                property_spec                           { $$ = $1; }
         |       property_spec ';'                       { $$ = $1; }
         ;
 
@@ -6668,13 +6681,20 @@ sequence_declaration<nodeFTaskp>:  // ==IEEE: sequence_declaration
                 sequence_declarationFront sequence_port_listE ';' sequence_declarationBody
         /*cont*/    yENDSEQUENCE endLabelE
                         { $$ = $1;
-                          $$->addStmtsp($2);
+                          $$->addDeclsp($2);
                           $$->addStmtsp($4);
                           GRAMMARP->endLabel($<fl>6, $$, $6);
                           // Sequence declarations are allowed; they are inlined by V3AssertPre.
                           // Sequences in unsupported contexts are reported by assertPreAll
                           // after inlining.
                         }
+        |       sequence_declarationFront sequence_port_listE ';' assertion_variable_declarationList
+        /*cont*/    sequence_declarationBodyExpr yENDSEQUENCE endLabelE
+                        { $$ = $1;
+                          $$->addDeclsp($2);
+                          $$->addDeclsp($4);
+                          $$->addStmtsp($5);
+                          GRAMMARP->endLabel($<fl>7, $$, $7); }
         ;
 
 sequence_declarationFront<nodeFTaskp>:  // IEEE: part of sequence_declaration
@@ -6712,17 +6732,19 @@ sequence_formal_typeNoDt<nodeDTypep>:  // ==IEEE: sequence_formal_type (w/o data
         ;
 
 sequence_declarationBody<nodep>:  // IEEE: part of sequence_declaration
-        //                      // 1800-2012 makes ';' optional
-                assertion_variable_declarationList sexpr        { $$ = addNextNull($1, $2); }
-        |       assertion_variable_declarationList sexpr ';'    { $$ = addNextNull($1, $2); }
-        |       sexpr                                   { $$ = $1; }
-        |       sexpr ';'                               { $$ = $1; }
+                sequence_declarationBodyExpr            { $$ = $1; }
         //                      // IEEE: clocking_event sequence_expr (16.7)
         //                      // A leading clocking event on a named sequence body.
         |       '@' '(' event_expression ')' sexpr      { $$ = new AstSClocked{$1, $3, $5}; }
         |       '@' '(' event_expression ')' sexpr ';'  { $$ = new AstSClocked{$1, $3, $5}; }
         |       '@' senitemVar sexpr                    { $$ = new AstSClocked{$1, $2, $3}; }
         |       '@' senitemVar sexpr ';'                { $$ = new AstSClocked{$1, $2, $3}; }
+        ;
+
+sequence_declarationBodyExpr<nodeExprp>:  // IEEE: part of sequence_declaration
+        //                      // 1800-2012 makes ';' optional
+                sexpr                                   { $$ = $1; }
+        |       sexpr ';'                               { $$ = $1; }
         ;
 
 property_spec<propSpecp>:               // IEEE: property_spec

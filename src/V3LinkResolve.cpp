@@ -151,7 +151,7 @@ class LinkResolveVisitor final : public VNVisitor {
                 fvarp->fileline(), new AstVarRef{fvarp->fileline(), fvarp, VAccess::WRITE},
                 new AstCReset{fvarp->fileline(), fvarp, false}};
             fvarp->noCReset(true);
-            fvarp->addNextHere(crstp);
+            nodep->prependStmtsp(crstp);
         }
         iterateChildren(nodep);
         if (nodep->dpiExport()) nodep->scopeNamep(new AstScopeName{nodep->fileline(), false});
@@ -175,7 +175,7 @@ class LinkResolveVisitor final : public VNVisitor {
             // cppcheck-suppress constVariablePointer
             AstStmtExpr* const letStmtp = VN_AS(letp->stmtsp(), StmtExpr);
             AstNodeExpr* const newp = letStmtp->exprp()->cloneTree(false);
-            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, letp->stmtsp());
+            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, letp->declsp());
             std::map<const AstVar*, AstNodeExpr*> portToExprs;
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;

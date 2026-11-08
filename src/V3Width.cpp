@@ -4159,7 +4159,7 @@ class WidthVisitor final : public VNVisitor {
             if (m_ftaskp) {
                 varp->funcLocal(true);
                 varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                m_ftaskp->prependStmtsp(varp);
+                m_ftaskp->prependDeclsp(varp);
             } else {
                 m_modep->prependStmtsp(varp);
             }
@@ -8306,10 +8306,10 @@ class WidthVisitor final : public VNVisitor {
         std::vector<AstVar*> ports;
         std::vector<AstAttrOf*> protos;
         AstAttrOf* protop = nullptr;  // Base prototype
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : nodep->declspList()) {
+            if (AstVar* const portp = VN_CAST(declp, Var)) {
                 if (portp->isIO() && !portp->isFuncReturn()) { ports.emplace_back(portp); }
-            } else if (AstAttrOf* const attrp = VN_CAST(stmtp, AttrOf)) {
+            } else if (AstAttrOf* const attrp = VN_CAST(declp, AttrOf)) {
                 if (attrp->attrType() == VAttrType::FUNC_ARG_PROTO) { protos.emplace_back(attrp); }
                 if (attrp->attrType() == VAttrType::FUNC_RETURN_PROTO) { protop = attrp; }
             }
@@ -8387,10 +8387,9 @@ class WidthVisitor final : public VNVisitor {
         // Property call will be replaced by property body in V3AssertPre. Property body has bit
         // dtype, so set it here too
         nodep->dtypeSetBit();
+        userIterateAndNext(nodep->declsp(), nullptr);
         for (AstNode* propStmtp = nodep->stmtsp(); propStmtp; propStmtp = propStmtp->nextp()) {
-            if (VN_IS(propStmtp, Var)) {
-                userIterate(propStmtp, nullptr);
-            } else if (VN_IS(propStmtp, PropSpec)) {
+            if (VN_IS(propStmtp, PropSpec)) {
                 iterateCheckSelf(nodep, "PropSpec", propStmtp, SELF, BOTH);
             } else if (VN_IS(propStmtp, InitialStaticStmt)
                        || VN_IS(propStmtp, InitialAutomaticStmt)) {
@@ -8410,10 +8409,9 @@ class WidthVisitor final : public VNVisitor {
         // Referenced sequences in assertion context will be inlined by V3AssertPre.
         if (nodep->didWidth()) return;
         nodep->dtypeSetBit();
+        userIterateAndNext(nodep->declsp(), nullptr);
         for (AstNode* stmtp = nodep->stmtsp(); stmtp; stmtp = stmtp->nextp()) {
-            if (VN_IS(stmtp, Var)) {
-                userIterate(stmtp, nullptr);
-            } else if (VN_IS(stmtp, NodeExpr)) {
+            if (VN_IS(stmtp, NodeExpr)) {
                 iterateCheckSelf(nodep, "SeqBody", stmtp, SELF, BOTH);
             } else {
                 stmtp->v3fatalSrc("Invalid statement under AstSequence");
@@ -8509,7 +8507,7 @@ class WidthVisitor final : public VNVisitor {
         reloop:
             // taskConnects may create a new task, and change nodep->taskp()
             const V3TaskConnects tconnects
-                = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp(), &m_taskConnectState);
+                = V3Task::taskConnects(nodep, nodep->taskp()->declsp(), &m_taskConnectState);
             if (m_taskConnectState.didWrap()) m_memberMap.clear();  // As added a member
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
@@ -8570,7 +8568,7 @@ class WidthVisitor final : public VNVisitor {
         } while (false);
         // Stage 2
         {
-            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->declsp());
             for (const auto& tconnect : tconnects) {
                 AstVar* const portp = tconnect.first;
                 const AstArg* const argp = tconnect.second;
@@ -8586,7 +8584,7 @@ class WidthVisitor final : public VNVisitor {
         }
         // Stage 3
         {
-            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->declsp());
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
                 const AstArg* const argp = tconnect.second;
@@ -8601,7 +8599,7 @@ class WidthVisitor final : public VNVisitor {
         if (markHasOpenArray(nodep->taskp())) makeOpenArrayShell(nodep);
         // Stage 4
         {
-            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+            const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->declsp());
             for (const auto& tconnect : tconnects) {
                 const AstVar* const portp = tconnect.first;
                 const AstArg* const argp = tconnect.second;
@@ -9857,7 +9855,7 @@ class WidthVisitor final : public VNVisitor {
             varp->funcLocal(true);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             // Declare before use, including in non-inlined class methods.
-            m_ftaskp->prependStmtsp(varp);
+            m_ftaskp->prependDeclsp(varp);
         } else {
             UASSERT_OBJ(m_modep, valuep, "Enum expression without a containing module");
             m_modep->addStmtsp(varp);
@@ -11463,7 +11461,7 @@ class WidthVisitor final : public VNVisitor {
         nodep->taskp(newTaskp);
         nodep->name(nodep->taskp()->name());
         // Replace open array arguments with the callee's task
-        const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+        const V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->declsp());
         for (const auto& tconnect : tconnects) {
             AstVar* const portp = tconnect.first;
             const AstArg* const argp = tconnect.second;
@@ -11482,8 +11480,8 @@ class WidthVisitor final : public VNVisitor {
 
     bool markHasOpenArray(AstNodeFTask* nodep) {
         bool hasOpen = false;
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : nodep->declspList()) {
+            if (AstVar* const portp = VN_CAST(declp, Var)) {
                 if (portp->isFuncReturn()) continue;
                 if (portp->isDpiOpenArray() || hasOpenArrayDTypeRecurse(portp->dtypep())) {
                     portp->isDpiOpenArray(true);

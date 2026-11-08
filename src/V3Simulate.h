@@ -1762,7 +1762,7 @@ private:
             });
         }
         // Apply function call values to function
-        V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->stmtsp());
+        V3TaskConnects tconnects = V3Task::taskConnects(nodep, nodep->taskp()->declsp());
         // Must do this in two steps, eval all params, then apply them
         // Otherwise chained functions may have the wrong results
         std::vector<std::pair<AstVar*, AstNodeExpr*>> portValues;

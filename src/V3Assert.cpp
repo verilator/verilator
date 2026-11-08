@@ -869,7 +869,7 @@ class AssertVisitor final : public VNVisitor {
         } else if (refp) {
             // Match actuals to formal ports, including named/default arguments
             const V3TaskConnects tconnects
-                = V3Task::taskConnects(refp, refp->taskp()->stmtsp(), nullptr, false);
+                = V3Task::taskConnects(refp, refp->taskp()->declsp(), nullptr, false);
             for (const auto& tconnect : tconnects) {
                 AstVar* const portp = tconnect.first;
                 AstArg* const argp = tconnect.second;
@@ -1283,7 +1283,7 @@ class AssertVisitor final : public VNVisitor {
             if (m_ftaskp) {
                 varp->funcLocal(true);
                 varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
-                m_ftaskp->prependStmtsp(varp);
+                m_ftaskp->prependDeclsp(varp);
             } else {
                 m_modp->prependStmtsp(varp);
             }

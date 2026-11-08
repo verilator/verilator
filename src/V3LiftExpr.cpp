@@ -144,7 +144,7 @@ class LiftExprVisitor final : public VNVisitor {
 
         if (m_ftaskp) {
             varp->funcLocal(true);
-            m_ftaskp->prependStmtsp(varp);
+            m_ftaskp->prependDeclsp(varp);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         } else {
             m_modp->prependStmtsp(varp);

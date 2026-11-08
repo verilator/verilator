@@ -49,6 +49,7 @@ private:
         m_curTaskp = nodep;
         UINFO(9, "undriven capture enter ftask " << nodep << " " << nodep->prettyNameQ());
         m_cap.noteTask(nodep);
+        iterateAndNextConstNull(nodep->declsp());
         iterateAndNextConstNull(nodep->stmtsp());
     }
 

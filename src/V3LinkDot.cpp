@@ -1217,8 +1217,8 @@ class LinkDotFindVisitor final : public VNVisitor {
         nodep->isExternDef(true);  // So we check there's a matching extern
         nodep->classOrPackagep()->unlinkFrBack()->deleteTree();
         // Any "Type::" reference in the function's IO are really "MovedToClass::" references
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            if (AstVar* const portp = VN_CAST(stmtp, Var)) {
+        for (AstNode* const declp : nodep->declspList()) {
+            if (AstVar* const portp = VN_CAST(declp, Var)) {
                 if (portp->isIO()) moveExternFuncDeclRefs(portp, classp);
             }
         }
@@ -1678,13 +1678,19 @@ class LinkDotFindVisitor final : public VNVisitor {
             VL_DO_DANGLING(pushDeletep(nodep), nodep);
             return;
         }
-        // Move body statements (non-port declarations) from the out-of-block task
+        // Move non-port declarations and statements from the out-of-block task
         // to the prototype task. Rewrite port.X references to just X in the body.
-        for (AstNode* const stmtp : nodep->stmtspList()) {
+        for (AstNode* const declp : nodep->declspList()) {
             // Skip port declarations -- they already exist in the prototype
-            if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
+            if (const AstVar* const varp = VN_CAST(declp, Var)) {
                 if (varp->isIO()) continue;
             }
+            // Clone this declaration and rewrite port references
+            AstNode* const newDeclp = declp->cloneTree(false);
+            rewriteIfacePortRefsSingle(newDeclp, portName);
+            protoTaskp->addDeclsp(newDeclp);
+        }
+        for (AstNode* const stmtp : nodep->stmtspList()) {
             // Clone this statement and rewrite port references
             AstNode* const newStmtp = stmtp->cloneTree(false);
             rewriteIfacePortRefsSingle(newStmtp, portName);
@@ -3478,16 +3484,8 @@ class LinkDotResolveVisitor final : public VNVisitor {
         newExprp->isImplicit(true);
         AstDot* const superNewp = new AstDot{fl, false, new AstParseRef{fl, "super"}, newExprp};
         AstNodeStmt* const superNewStmtp = superNewp->makeStmt();
-        for (AstNode* const stmtp : nodep->stmtspList()) {
-            // super.new shall be the first statement (IEEE 1800-2023 8.15)
-            // but some nodes (such as variable declarations and typedefs) should stay before
-            if (VN_IS(stmtp, NodeStmt)) {
-                stmtp->addHereThisAsNext(superNewStmtp);
-                return superNewStmtp;
-            }
-        }
-        // There were no statements
-        nodep->addStmtsp(superNewStmtp);
+        // super.new shall be the first statement (IEEE 1800-2023 8.15)
+        nodep->prependStmtsp(superNewStmtp);
         return superNewStmtp;
     }
     void checkNoDot(AstNode* nodep) {
@@ -3732,11 +3730,11 @@ class LinkDotResolveVisitor final : public VNVisitor {
         newp->isVirtual(true);
         newp->lifetime(implp->lifetime());
         AstArg* argsp = nullptr;
-        for (AstNode* const stmtp : implp->stmtspList()) {
-            AstVar* const portp = VN_CAST(stmtp, Var);
+        for (AstNode* const declp : implp->declspList()) {
+            AstVar* const portp = VN_CAST(declp, Var);
             if (!portp || !portp->isIO() || portp->isFuncReturn()) continue;
             AstVar* const newPortp = portp->cloneTree(false);
-            newp->addStmtsp(newPortp);
+            newp->addDeclsp(newPortp);
             argsp = AstNode::addNext(
                 argsp, new AstArg{flp, "", new AstVarRef{flp, newPortp, VAccess::READ}});
         }
@@ -5953,18 +5951,18 @@ class LinkDotResolveVisitor final : public VNVisitor {
                 nodep->isVirtual(protop->isVirtual());
                 nodep->lifetime(protop->lifetime());
                 // Always add an FUNC_RETURN_PROTO even if task, so we can locate the prototype
-                nodep->addStmtsp(new AstAttrOf{protop->fileline(), VAttrType::FUNC_RETURN_PROTO,
+                nodep->addDeclsp(new AstAttrOf{protop->fileline(), VAttrType::FUNC_RETURN_PROTO,
                                                protop->fvarp()
                                                    ? protop->fvarp()->subDTypep()->cloneTree(false)
                                                    : new AstVoidDType{protop->fileline()}});
-                for (AstNode* const stmtp : protop->stmtspList()) {
-                    const AstVar* const portp = VN_CAST(stmtp, Var);
+                for (AstNode* const declp : protop->declspList()) {
+                    const AstVar* const portp = VN_CAST(declp, Var);
                     if (!portp || portp->isFuncReturn()) continue;
                     AstAttrOf* const attrp
                         = new AstAttrOf{protop->fileline(), VAttrType::FUNC_ARG_PROTO,
                                         portp->subDTypep()->cloneTree(false)};
                     attrp->name(portp->name());
-                    nodep->addStmtsp(attrp);
+                    nodep->addDeclsp(attrp);
                 }
             } else {
                 nodep->v3error("extern not found that declares " + nodep->prettyNameQ());

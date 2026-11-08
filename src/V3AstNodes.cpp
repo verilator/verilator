@@ -1948,7 +1948,7 @@ void AstFunc::initFvarp(AstVar* varp) {
     varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
     varp->funcLocal(true);
     varp->funcReturn(true);
-    addStmtsp(varp);
+    addDeclsp(varp);
     fvarp(varp);
 }
 string AstGenBlock::dtypeNameInnerScope(const string& outer) const {
@@ -3264,22 +3264,24 @@ void AstNodeFTask::dumpJson(std::ostream& str) const {
 }
 bool AstNodeFTask::getPurityRecurse() const {
     if (this->dpiImport()) return this->dpiPure();
-    // Check the list of statements if it contains any impure statement
+    // Check the declarations and statements if they contain any impure node
     // or any write reference to a variable that isn't an automatic function local.
-    for (AstNode* const stmtp : this->stmtspList()) {
-        if (const AstVar* const varp = VN_CAST(stmtp, Var)) {
-            if (varp->isInoutOrRef()) return false;
+    for (AstNode* const listp : {this->declsp(), this->stmtsp()}) {
+        for (AstNode* itemp = listp; itemp; itemp = itemp->nextp()) {
+            if (const AstVar* const varp = VN_CAST(itemp, Var)) {
+                if (varp->isInoutOrRef()) return false;
+            }
+            if (!itemp->isPure()) return false;
+            if (itemp->exists([](AstNode* const nodep) {
+                    if (AstNodeVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
+                        return (!varrefp->varp()->isFuncLocal()
+                                || varrefp->varp()->lifetime().isStatic())
+                               && varrefp->access().isWriteOrRW();
+                    }
+                    return !nodep->isPure();
+                }))
+                return false;
         }
-        if (!stmtp->isPure()) return false;
-        if (stmtp->exists([](AstNode* const nodep) {
-                if (AstNodeVarRef* const varrefp = VN_CAST(nodep, VarRef)) {
-                    return (!varrefp->varp()->isFuncLocal()
-                            || varrefp->varp()->lifetime().isStatic())
-                           && varrefp->access().isWriteOrRW();
-                }
-                return !nodep->isPure();
-            }))
-            return false;
     }
     return true;
 }
