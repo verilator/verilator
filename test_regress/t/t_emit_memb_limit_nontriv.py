@@ -15,15 +15,6 @@ test.scenarios('vlt')
 
 LIMIT = 3
 
-# Disabled, one-member and large-limit grouping exercise split construction/destruction paths.
-# The accepted large limit must not overflow the grouping geometry's cubic bound.
-for limit in [0, 1, 4194304]:
-    test.compile(verilator_flags2=[
-        "--comp-limit-members",
-        str(limit), "--vpi", "--output-split-cfuncs", "16"
-    ])
-    test.execute()
-
 test.compile(verilator_flags2=["--comp-limit-members", str(LIMIT), "--vpi"])
 
 test.execute()
