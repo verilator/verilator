@@ -1901,7 +1901,7 @@ public:
         m_cachedCnt = 0;
         m_state = 0;
     }
-    static void clearCacheTree() {
+    VL_ATTR_ALWINLINE static void clearCacheTree() {
         ++s_cachedCntGbl;
         // 64 bits so won't overflow
         // UASSERT_STATIC(s_cachedCntGbl < MAX_CNT, "Overflow of cache counting");

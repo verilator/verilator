@@ -785,13 +785,14 @@ public:
 
 #ifdef VL_DEBUG
     uint64_t editCount() const { return m_editCount; }
+#endif
     void editCountInc() {
-        m_editCount = ++s_editCntGbl;  // Preincrement, so can "watch AstNode::s_editCntGbl=##"
+        ++s_editCntGbl;  // Preincrement, so can "watch AstNode::s_editCntGbl=##"
+#ifdef VL_DEBUG
+        m_editCount = s_editCntGbl;
+#endif
         VIsCached::clearCacheTree();  // Any edit clears all caching
     }
-#else
-    void editCountInc() { ++s_editCntGbl; }
-#endif
     static uint64_t editCountLast() VL_MT_SAFE { return s_editCntLast; }
     static uint64_t editCountGbl() VL_MT_SAFE { return s_editCntGbl; }
     static void editCountSetLast() { s_editCntLast = editCountGbl(); }
