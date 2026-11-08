@@ -1629,8 +1629,8 @@ class Cls;
     int value;
     function new;
         const ref int value;
-        value = value;
         cp_ref: coverpoint value;
+        value = value;
     endfunction
     static int __Vint;
     struct {

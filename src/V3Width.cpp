@@ -4660,8 +4660,8 @@ class WidthVisitor final : public VNVisitor {
         if (pair.second) {
             // Until V3Covergroup, the constructor holds the coverpoints and crosses
             AstFunc* const newp = VN_AS(m_memberMap.findMember(classp, "new"), Func);
-            for (AstNode* const stmtp : newp->stmtspList()) {
-                if (AstNodeFuncCovItem* const itemp = VN_CAST(stmtp, NodeFuncCovItem)) {
+            for (AstNode* const declp : newp->declspList()) {
+                if (AstNodeFuncCovItem* const itemp = VN_CAST(declp, NodeFuncCovItem)) {
                     items.emplace(itemp->name(), itemp);
                 }
             }

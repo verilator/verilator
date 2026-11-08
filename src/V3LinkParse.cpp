@@ -1395,20 +1395,23 @@ class LinkParseVisitor final : public VNVisitor {
             cgClassp->addMembersp(memberp);
         }
 
-        // Create the constructor; detach membersp (coverage body) and use as its body
+        // Create the constructor
         AstFunc* const newFuncp = new AstFunc{nodep->fileline(), "new"};
         newFuncp->fileline()->warnOff(V3ErrorCode::NORETURN, true);
         newFuncp->classMethod(true);
         newFuncp->isConstructor(true);
         newFuncp->dtypep(cgClassp->dtypep());
-        if (AstNode* const bodyp = nodep->membersp()) {
-            bodyp->unlinkFrBackWithNext();
-            newFuncp->addStmtsp(bodyp);
-        }
         cgClassp->addMembersp(newFuncp);
 
         // Add all boilerplate covergroup methods (reads argsp/sampleArgsp from nodep)
         createCovergroupMethods(cgClassp, newFuncp, nodep->argsp(), nodep->sampleArgsp());
+
+        // Detach membersp (coverage body) and use as declarations of the constructor, after its
+        // arguments
+        if (AstNode* const bodyp = nodep->membersp()) {
+            bodyp->unlinkFrBackWithNext();
+            newFuncp->addDeclsp(bodyp);
+        }
 
         // Replace AstCovergroup with AstClass and process the new class normally.
         // Reset the unnamed-coverpoint counter so synthesized names are stable and
@@ -1416,8 +1419,8 @@ class LinkParseVisitor final : public VNVisitor {
         VL_RESTORER(m_coverpointNum);
         VL_RESTORER_CLEAR(m_coverpoints);
         m_coverpointNum = 0;
-        for (const AstNode* const stmtp : newFuncp->stmtspList()) {
-            if (const AstCoverpoint* const pointp = VN_CAST(stmtp, Coverpoint)) {
+        for (const AstNode* const declp : newFuncp->declspList()) {
+            if (const AstCoverpoint* const pointp = VN_CAST(declp, Coverpoint)) {
                 m_coverpoints.emplace(coverpointName(pointp), pointp);
             }
         }

@@ -431,8 +431,8 @@ class FunctionalCoverageVisitor final : public VNVisitor {
                 m_covergroupp->addMembersp(new AstInitialStatic{fl, assignp});
                 VL_DO_DANGLING(pushDeletep(optp->unlinkFrBack()), optp);
             } else {
-                optp->replaceWith(assignp);
-                VL_DO_DANGLING(pushDeletep(optp), optp);
+                m_constructorp->addStmtsp(assignp);
+                VL_DO_DANGLING(pushDeletep(optp->unlinkFrBack()), optp);
             }
         }
         m_cgOptions.clear();
