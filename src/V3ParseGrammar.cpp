@@ -108,8 +108,7 @@ AstAssignW* V3ParseGrammar::createSupplyExpr(FileLine* fileline, const string& n
 
 AstRange* V3ParseGrammar::scrubRangeMulti(AstNodeRange* nrangep) {
     // Remove any UnsizedRange's from list; preserves multi-dim chain via nextp().
-    for (AstNodeRange *nodep = nrangep, *nextp; nodep; nodep = nextp) {
-        nextp = VN_AS(nodep->nextp(), NodeRange);
+    for (AstNodeRange* const nodep : VNList<AstNodeRange>{nrangep}) {
         if (!VN_IS(nodep, Range)) {
             nodep->v3error(
                 "Unsupported or syntax error: Unsized range in instance or other declaration");

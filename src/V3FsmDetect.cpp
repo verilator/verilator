@@ -648,7 +648,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                                 : nullptr);
                 }
             }
-            for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+            for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
                 if (AstCase* const casep = VN_CAST(nodep, Case))
                     candidates.emplace_back(casep, nullptr);
             }
@@ -670,7 +670,7 @@ class FsmDetectVisitor final : public VNVisitor {
                                                 : nullptr);
                 }
             }
-            for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+            for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
                 if (AstIf* const ifp = VN_CAST(nodep, If)) candidates.emplace_back(ifp, nullptr);
             }
             return candidates;
@@ -932,7 +932,7 @@ class FsmDetectVisitor final : public VNVisitor {
     // follow-on FSM-detection work instead of being partially inferred here.
     static AstNode* singleMeaningfulStmt(AstNode* stmtp) {
         AstNode* resultp = nullptr;
-        for (AstNode* nodep = stmtp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{stmtp}) {
             if (isIgnorableStmt(nodep)) continue;
             if (resultp) return nullptr;
             resultp = nodep;
@@ -964,7 +964,7 @@ class FsmDetectVisitor final : public VNVisitor {
         const ComboAlwaysAnalyzer analyzer{m_registerCandidates};
         AstNode* const stmtsp = skipLeadingIgnorableStmt(combo.alwaysp()->stmtsp());
         bool warned = false;
-        for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
             AstCase* const casep = VN_CAST(nodep, Case);
             if (!casep) continue;
             if (analyzer.shouldWarnUnsupported(stmtsp, casep)) {
@@ -1940,7 +1940,7 @@ class FsmDetectVisitor final : public VNVisitor {
         const ComboAlwaysAnalyzer analyzer{m_registerCandidates};
         AstNode* const stmtsp = skipLeadingIgnorableStmt(combo.alwaysp()->stmtsp());
         FsmCaseCandidate firstCand;
-        for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
             AstCase* const casep = VN_CAST(nodep, Case);
             if (!casep) continue;
             const ComboAlwaysAnalyzer::ComboMatch match = analyzer.matchCase(stmtsp, casep);
@@ -1981,7 +1981,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
         // Keep the same priority in paired combinational logic: if-chain
         // support must not change which existing case FSM is instrumented.
-        for (AstNode* nodep = stmtsp; nodep; nodep = nodep->nextp()) {
+        for (AstNode* const nodep : VNList<AstNode>{stmtsp}) {
             AstIf* const ifp = VN_CAST(nodep, If);
             AstNodeAssign* const assp = VN_CAST(nodep, NodeAssign);
             if (!ifp && !(assp && VN_IS(assp->rhsp(), Cond))) continue;

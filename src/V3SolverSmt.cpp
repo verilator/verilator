@@ -3671,7 +3671,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             }
         };
 
-        for (AstNode* const itemp : VNList<AstNodeConstraintItem>{constrItemsp}) {
+        for (AstNodeConstraintItem* const itemp : VNList<AstNodeConstraintItem>{constrItemsp}) {
             // dist can appear inside an if/else or foreach constraint.
             if (AstConstraintIf* const cifp = VN_CAST(itemp, ConstraintIf)) {
                 UASSERT_OBJ(cifp->thensp(), cifp, "constraint if without a then body");
