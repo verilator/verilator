@@ -17,7 +17,7 @@ import shlex
 import shutil
 import subprocess
 import sys
-from typing import Any, NoReturn, Optional
+from typing import Any, NoReturn
 
 
 def fatal(message: str) -> NoReturn:
@@ -143,7 +143,7 @@ def include_directories(flags: list[str]) -> list[str]:
     return dirs
 
 
-def resolve_header(name: str, importer: str, include_dirs: list[str]) -> Optional[str]:
+def resolve_header(name: str, importer: str, include_dirs: list[str]) -> str | None:
     if os.path.isabs(name):
         return name if os.path.isfile(name) else None
     candidate = os.path.join(os.path.dirname(importer), name)
@@ -171,7 +171,7 @@ def compile_header(args: argparse.Namespace, cppflags: list[str], cxxflags: list
         module_flags = ['-fmodules']
     command = (shlex.split(args.cxx) + cppflags + cxxflags + module_flags
                + ['-fmodule-header', '-x', 'c++-header', header['path']])
-    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         sys.stderr.write(result.stdout)
         sys.stderr.write(result.stderr)
@@ -261,10 +261,10 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]],
                 if header is not None and header not in header_deps:
                     header_deps.append(header)
             elif name == 'std':
-                if args.backend == 'gcc':
-                    if not os.path.exists(os.path.join(args.objdir, 'gcm.cache', 'std.gcm')):
-                        fatal("C++ module 'std' is required, but gcm.cache/std.gcm was not found; "
-                              "precompile the std module before building")
+                if args.backend == 'gcc' and not os.path.exists(
+                        os.path.join(args.objdir, 'gcm.cache', 'std.gcm')):
+                    fatal("C++ module 'std' is required, but gcm.cache/std.gcm was not found; "
+                          "precompile the std module before building")
             else:
                 fatal("C++ module '" + name + "' required by '" + module['source']
                       + "' has no provider; precompile it and pass -fmodule-file=" + name
@@ -281,16 +281,16 @@ def resolve_modules(args: argparse.Namespace, modules: list[dict[str, Any]],
 
 def module_flags_lines() -> list[str]:
     return [
-        'VK_MODULE_FLAGS = $(filter-out -fmodule-header% -fmodule-only,'
-        '$(CXXFLAGS) $(CPPFLAGS)) '
-        '$(if $(filter gcc,$(VK_MODULE_BACKEND)),-fmodules)',
+        ('VK_MODULE_FLAGS = $(filter-out -fmodule-header% -fmodule-only,'
+         '$(CXXFLAGS) $(CPPFLAGS)) '
+         '$(if $(filter gcc,$(VK_MODULE_BACKEND)),-fmodules)'),
     ]
 
 
 def gcc_module_target(module: dict[str, Any], module_only: bool) -> str:
     if module_only and module['provides']:
-        return os.path.join('gcm.cache', module['provides'][0] + '.gcm')
-    return module['obj']
+        return os.path.join('gcm.cache', str(module['provides'][0]) + '.gcm')
+    return str(module['obj'])
 
 
 def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any]],
@@ -310,8 +310,8 @@ def generate_gcc(modules: list[dict[str, Any]], headers: dict[str, dict[str, Any
     lines.append('modules: $(VK_MODULE_OBJS) $(VK_MODULE_CMIS)')
     lines.append('')
     for header in sorted(headers.values(), key=lambda entry: entry['cmi']):
-        deps = ' '.join(['$(VM_PREFIX).mk'] + [dep['cmi'] for dep in header['deps']])
-        lines.append(header['cmi'] + ': ' + header['path'] + ' ' + deps)
+        dep_str = ' '.join(['$(VM_PREFIX).mk'] + [dep['cmi'] for dep in header['deps']])
+        lines.append(header['cmi'] + ': ' + header['path'] + ' ' + dep_str)
         lines.append('\t$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODULE_FLAGS) -fmodule-header'
                      ' -x c++-header ' + header['path'])
         lines.append('')
