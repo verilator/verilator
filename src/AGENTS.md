@@ -200,7 +200,7 @@ ______________________________________________________________________
 - Prefer `emplace` over `insert` and check the returned `.second` instead of a
   separate `find()`. `reserve()` strings and vectors when the size is estimable.
 - Beware of `std::map` keyed by a pointer without a sorting function, as iteration
-  order might make the output vary based on memory layout.  See e.g. `AstVarScopeComparator`.
+  order might make the output vary based on memory layout. See e.g. `AstVarScopeComparator`.
 - Add minimal new static or global mutable data -- statics are being eliminated for
   future parallelism.
 - Use Verilator's fixed-width data types for model data (`CData`/`SData`/`IData`/
