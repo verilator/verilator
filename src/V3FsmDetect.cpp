@@ -428,10 +428,10 @@ struct FsmStateComparison final {
 struct FsmIfBranch final {
     AstNode* nodep = nullptr;  // Source if/else-if, or conditional of a folded chain
     AstNode* stmtsp = nullptr;  // Branch body, or nullptr in a folded chain
+    AstNodeExpr* targetp = nullptr;  // Next-state value in a folded chain
     AstNodeExpr* valuep = nullptr;  // Source state value expression
     FsmStateValue fromValue;  // Encoded source state value
     bool hasTopGuard = false;  // Branch condition had extra guard terms
-    AstNodeExpr* targetp = nullptr;  // Next-state value in a folded chain
 };
 
 // If-chains are kept separate from cases until graph construction so the
@@ -1343,8 +1343,13 @@ class FsmDetectVisitor final : public VNVisitor {
             if (chain.compareVscp && chain.compareVscp != cmp.stateVscp) return false;
             if (!seenValues.insert(cmp.value.key()).second) return false;
             chain.compareVscp = cmp.stateVscp;
-            chain.branches.push_back(
-                FsmIfBranch{curp, curp->thensp(), cmp.valuep, cmp.value, hasGuard});
+            FsmIfBranch branch;
+            branch.nodep = curp;
+            branch.stmtsp = curp->thensp();
+            branch.valuep = cmp.valuep;
+            branch.fromValue = cmp.value;
+            branch.hasTopGuard = hasGuard;
+            chain.branches.push_back(branch);
 
             AstNode* const elseNodep
                 = singleMeaningfulBranch(skipLeadingIgnorableStmt(curp->elsesp()));
@@ -1374,8 +1379,13 @@ class FsmDetectVisitor final : public VNVisitor {
             if (chain.compareVscp && chain.compareVscp != cmp.stateVscp) return false;
             if (!seenValues.insert(cmp.value.key()).second) return false;
             chain.compareVscp = cmp.stateVscp;
-            chain.branches.push_back(
-                FsmIfBranch{condp, nullptr, cmp.valuep, cmp.value, hasGuard, condp->thenp()});
+            FsmIfBranch branch;
+            branch.nodep = condp;
+            branch.targetp = condp->thenp();
+            branch.valuep = cmp.valuep;
+            branch.fromValue = cmp.value;
+            branch.hasTopGuard = hasGuard;
+            chain.branches.push_back(branch);
         }
         return chain.branches.size() >= 2;
     }
@@ -1754,8 +1764,7 @@ class FsmDetectVisitor final : public VNVisitor {
 
     static void emitIfChainArcs(FsmGraph& graph, const FsmIfChainCandidate& chain,
                                 AstVarScope* stateVscp, const FsmStateSpace& stateSpace) {
-        for (size_t i = 0; i < chain.branches.size(); ++i) {
-            const FsmIfBranch& branch = chain.branches[i];
+        for (const FsmIfBranch& branch : chain.branches) {
             // Invalid source labels mean the extracted graph would no longer
             // match the resolved state space, so abandon the candidate.
             if (!validateKnownStateValue(branch.nodep, stateSpace, branch.fromValue, "source"))

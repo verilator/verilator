@@ -457,6 +457,28 @@ module fsm_if_else_chain_guard (
   end
 endmodule
 
+module fsm_if_ternary_chain (
+    input logic clk,
+    input logic rst
+);
+  typedef enum logic [1:0] {
+    S0 = 2'd0,
+    S1 = 2'd1,
+    S2 = 2'd2
+  } state_t;
+
+  state_t state_q;
+  state_t state_d;
+
+  // The folded form written directly
+  always_comb state_d = (state_q == S0) ? S1 : (state_q == S1) ? S2 : S0;
+
+  always_ff @(posedge clk) begin
+    if (rst) state_q <= S0;
+    else state_q <= state_d;
+  end
+endmodule
+
 module t (
     input logic clk
 );
@@ -556,6 +578,10 @@ module t (
       .clk(clk),
       .rst(rst),
       .start(start)
+  );
+  fsm_if_ternary_chain ternary_chain_u (
+      .clk(clk),
+      .rst(rst)
   );
 
   initial begin
