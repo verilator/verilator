@@ -1226,10 +1226,22 @@ class WidthVisitor final : public VNVisitor {
             m_streamConcat = false;
             iterateCheckSelf(nodep, "RHS", nodep->rhsp(), SELF, BOTH);
             V3Const::constifyParamsEdit(nodep->rhsp());  // rhsp may change
-            if (const AstConst* const constp = VN_CAST(nodep->rhsp(), Const)) {
-                if (constp->toUInt() == 0) nodep->v3error("Slice size cannot be zero.");
-            } else {
+            const AstConst* const constp = VN_CAST(nodep->rhsp(), Const);
+            bool bad = false;
+            if (!constp) {
                 nodep->v3error("Slice size isn't a constant or basic data type.");
+                bad = true;
+            } else if (!constp->num().fitsInUInt() || constp->toUInt() == 0
+                       || (constp->isSigned() && constp->num().isNegative())) {
+                nodep->v3error("Slice size must be a positive 32-bit value"
+                               " (IEEE 1800-2023 11.4.14.2): "
+                               << constp->prettyNameQ());
+                bad = true;
+            }
+            if (bad) {
+                // Continue with a valid slice size
+                pushDeletep(nodep->rhsp()->unlinkFrBack());
+                nodep->rhsp(new AstConst{nodep->fileline(), 1});
             }
             const AstNodeDType* const lhsDtypep = nodep->lhsp()->dtypep()->skipRefToEnump();
             if (VN_IS(lhsDtypep, DynArrayDType) || VN_IS(lhsDtypep, QueueDType)
