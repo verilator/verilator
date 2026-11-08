@@ -1217,6 +1217,8 @@ class VlTest:
             verilator_flags += ["-CFLAGS -ggdb -LDFLAGS -ggdb"]
         if self.tsan:
             verilator_flags += ["-CFLAGS -fsanitize=thread -CFLAGS -g -LDFLAGS -fsanitize=thread"]
+        if not re.search(r'-unlimited-stack', checkflags):
+            verilator_flags += ["--no-unlimited-stack"]  # Speed up bin/verilator harness
         verilator_flags += ["--x-assign unique"]  # More likely to be buggy
 
         if param['vltmt']:
@@ -1225,7 +1227,6 @@ class VlTest:
             verilator_flags += ["--threads", str(param['threads'])]
         if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["--exe"]
-        if param['make_main'] and param['verilator_make_gmake']:
             verilator_flags += ["../" + self.main_filename]
 
         cmdargs = [
@@ -3115,7 +3116,9 @@ if __name__ == '__main__':
     parser.add_argument('--benchmark', action='store', help='enable benchmarking')
     parser.add_argument('--debug', action='store_const', const=9, help='enable debug')
     # --debugi: see _parameter()
-    parser.add_argument('--driver-clean', action='store_true', help='clean after test passes')
+    parser.add_argument('--driver-clean',
+                        action=argparse.BooleanOptionalAction,
+                        help='clean after test passes, default set when running multiple tests')
     parser.add_argument('--driver-prune',
                         action='store_true',
                         help='clean after test passes, but keep files for test-snap/test-diff')
@@ -3234,9 +3237,14 @@ if __name__ == '__main__':
         Capabilities.warmup_cache()
         # Without this tests such as t_debug_sigsegv_bt_bad.py will occasionally
         # block on input and cause a SIGSTOP, then a "fg" was needed to resume testing.
-        print("== Many jobs; redirecting STDIN", file=sys.stderr)
-        #
+        jmsg = "== Many jobs"
+        jmsg += ": redirecting STDIN"
         sys.stdin = open("/dev/null", 'r', encoding="utf8")  # pylint: disable=consider-using-with
+        if Args.driver_clean is None and not Args.driver_prune:
+            jmsg += "; implying --driver-clean"
+            Args.driver_clean = True
+        #
+        print(jmsg, file=sys.stderr)
     else:
         # Speed up single-test makes
         Args.driver_build_jobs_n = calc_jobs()

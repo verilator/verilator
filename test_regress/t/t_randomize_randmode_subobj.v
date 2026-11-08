@@ -47,7 +47,7 @@ module t;
     OuterClass obj;
     obj = new;
 
-    // Test 1: Normal randomize
+    // Test: Normal randomize
     repeat (20) begin
       randomize_result = obj.randomize();
       `checkd(randomize_result, 1);
@@ -57,7 +57,7 @@ module t;
       `check_range(obj.outer_val, 8'd1, 8'd20);
     end
 
-    // Test 2: rand_mode(0) on val1 -- must hold assigned value
+    // Test: rand_mode(0) on val1 -- must hold assigned value
     void'(obj.nested.val1.rand_mode(0));
     obj.nested.val1 = 8'd42;
     repeat (20) begin
@@ -68,7 +68,7 @@ module t;
       `check_range(obj.nested.val3, 8'd110, 8'd150);
     end
 
-    // Test 3: rand_mode(0) on val2 as well
+    // Test: rand_mode(0) on val2 as well
     void'(obj.nested.val2.rand_mode(0));
     obj.nested.val2 = 8'd77;
     repeat (20) begin
@@ -79,7 +79,7 @@ module t;
       `check_range(obj.nested.val3, 8'd110, 8'd150)
     end
 
-    // Test 4: Re-enable both and verify randomization resumes
+    // Test: Re-enable both and verify randomization resumes
     void'(obj.nested.val1.rand_mode(1));
     void'(obj.nested.val2.rand_mode(1));
     repeat (20) begin

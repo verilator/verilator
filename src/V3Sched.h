@@ -118,14 +118,14 @@ public:
     // Add an AstActive under the given scope
     void add(AstScope* scopep, AstActive* activep) { m_entries.push_back({scopep, activep, {}}); }
 
-    // Add logic
-    void add(AstScope* scopep, AstSenTree* senTreep, AstNode* logicp) {
-        UASSERT_OBJ(!logicp->backp(), logicp, "Already linked");
+    // Add a process
+    void add(AstScope* scopep, AstSenTree* senTreep, AstNodeProcedure* procp) {
+        UASSERT_OBJ(!procp->backp(), procp, "Already linked");
         if (m_entries.empty() || m_entries.back().m_scopep != scopep
             || m_entries.back().m_activep->sentreep() != senTreep) {
-            add(scopep, new AstActive{logicp->fileline(), "", senTreep});
+            add(scopep, new AstActive{procp->fileline(), "", senTreep});
         }
-        m_entries.back().m_activep->addStmtsp(logicp);
+        m_entries.back().m_activep->addProcsp(procp);
     };
 
     // Create copy, with the AstActives cloned
@@ -142,9 +142,8 @@ public:
         for (const Entry& entry : m_entries) {
             AstActive* const activep = entry.m_activep;
             if (v3Global.opt.debugCheck()) {
-                for (AstNode* const nodep : activep->stmtspList()) {
-                    AstNodeProcedure* const procp = VN_CAST(nodep, NodeProcedure);
-                    UASSERT_OBJ(procp && !procp->stmtsp(), activep, "Leftover logic");
+                for (AstNodeProcedure* const procp : activep->procspList()) {
+                    UASSERT_OBJ(!procp->stmtsp(), activep, "Leftover logic");
                 }
             }
             if (activep->backp()) activep->unlinkFrBack();
@@ -153,10 +152,10 @@ public:
         m_entries.clear();
     };
 
-    void foreachLogic(const std::function<void(AstNode*)>& f) const {
+    void foreachProcess(const std::function<void(AstNodeProcedure*)>& f) const {
         for (const Entry& entry : m_entries) {
             const AstActive* const activep = entry.m_activep;
-            for (AstNode* const nodep : activep->stmtspList()) f(nodep);
+            for (AstNodeProcedure* const procp : activep->procspList()) f(procp);
         }
     }
 };

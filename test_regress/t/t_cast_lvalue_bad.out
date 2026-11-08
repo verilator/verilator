@@ -1,0 +1,20 @@
+%Error: t/t_cast_lvalue_bad.v:25:17: Cast is assigned, but a cast is not a variable (IEEE 1800-2023 11.4.14.3, A.8.5).
+   25 |     {<<8{bytes_t'(i)}} = i;   
+      |                 ^
+        ... See the manual at https://verilator.org/verilator_doc.html?v=latest for more assistance.
+%Error: t/t_cast_lvalue_bad.v:26:20: Cast is assigned, but a cast is not a variable (IEEE 1800-2023 11.4.14.3, A.8.5).
+   26 |     {<<8{i, bytes_t'(i)}} = {i, i};   
+      |                    ^
+%Error: t/t_cast_lvalue_bad.v:27:12: Cast is assigned, but a cast is not a variable (IEEE 1800-2023 11.4.14.3, A.8.5).
+   27 |     {>>{int'(i)}} = i;   
+      |            ^
+%Error: t/t_cast_lvalue_bad.v:28:11: Cast is assigned, but a cast is not a variable (IEEE 1800-2023 11.4.14.3, A.8.5).
+   28 |     {>>{15'(v15)}} = v15;   
+      |           ^
+%Error: t/t_cast_lvalue_bad.v:29:10: Cast is assigned, but a cast is not a variable (IEEE 1800-2023 11.4.14.3, A.8.5).
+   29 |     tk(15'(v15));   
+      |          ^
+%Error: t/t_cast_lvalue_bad.v:30:18: Cast is assigned, but a cast is not a variable (IEEE 1800-2023 11.4.14.3, A.8.5).
+   30 |     i = {>>{fo(15'(v15))}};   
+      |                  ^
+%Error: Exiting due to

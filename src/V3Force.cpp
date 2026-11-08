@@ -507,12 +507,15 @@ public:
             helperVars.m_rdVarp
                 = new AstVar{flp, VVarType::WIRE, varp->name() + "__VforceRd", varp->dtypep()};
             helperVars.m_rdVarp->sigPublic(true);
+            varp->forceRdVarp(helperVars.m_rdVarp);
             helperVars.m_enVarp
                 = new AstVar{flp, enValType, varp->name() + "__VforceEn", enDtypep};
             helperVars.m_enVarp->sigUserRWPublic(true);
+            varp->forceEnVarp(helperVars.m_enVarp);
             helperVars.m_valVarp
                 = new AstVar{flp, enValType, varp->name() + "__VforceVal", varp->dtypep()};
             helperVars.m_valVarp->sigUserRWPublic(true);
+            varp->forceValVarp(helperVars.m_valVarp);
             varp->addNextHere(helperVars.m_rdVarp);
             varp->addNextHere(helperVars.m_enVarp);
             varp->addNextHere(helperVars.m_valVarp);
@@ -742,7 +745,7 @@ public:
                     = new AstSenTree{flp, new AstSenItem{flp, AstSenItem::Combo{}}};
                 AstActive* const activep = new AstActive{flp, "force-rhs-update", senTreep};
                 activep->senTreeStorep(activep->sentreep());
-                activep->addStmtsp(alwaysp);
+                activep->addProcsp(alwaysp);
                 scopep->addBlocksp(activep);
             }
 
@@ -769,7 +772,7 @@ public:
                         makeZeroConst(varp, info.m_forceEnVscp->width())};
                 }
                 initStmtp->addNext(createForceRdUpdateStmt(info));
-                activeInitp->addStmtsp(new AstInitial{flp, initStmtp});
+                activeInitp->addProcsp(new AstInitial{flp, initStmtp});
                 scopep->addBlocksp(activeInitp);
 
                 AstSenItem* itemsp = nullptr;
@@ -798,7 +801,7 @@ public:
                 AstActive* const activep
                     = new AstActive{flp, "force-rd-update", new AstSenTree{flp, itemsp}};
                 activep->senTreeStorep(activep->sentreep());
-                activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
+                activep->addProcsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr,
                                                  createForceRdUpdateStmt(info)});
                 scopep->addBlocksp(activep);
             }
@@ -971,7 +974,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
                                            /*hasArraySel=*/true, /*skipRdRefresh=*/true);
                 return forceAssignp;
             });
-        activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, alwaysBodyHeadp});
+        activep->addProcsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, alwaysBodyHeadp});
         nodep->scopep()->addBlocksp(activep);
     }
 
@@ -1064,7 +1067,7 @@ class ForceDiscoveryVisitor final : public VNVisitorConst {
             AstAssignForce* const forceAssignp
                 = new AstAssignForce{flp, new AstVarRef{flp, nodep, VAccess::WRITE}, forceExprp};
             forceAssignp->user2(true);
-            activep->addStmtsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, forceAssignp});
+            activep->addProcsp(new AstAlways{flp, VAlwaysKwd::ALWAYS, nullptr, forceAssignp});
             nodep->scopep()->addBlocksp(activep);
 
             // Clone the RHS for tracking and preserve original var refs as non-replaceable.
@@ -1390,7 +1393,6 @@ class ForceReplaceVisitor final : public VNVisitor {
     }
     void visit(AstDeassign*) override {}
     void visit(AstCFunc* nodep) override { iterateLogic(nodep); }
-    void visit(AstCoverToggle* nodep) override { iterateLogic(nodep); }
     void visit(AstNodeProcedure* nodep) override { iterateLogic(nodep); }
     void visit(AstAlways* nodep) override {
         if (nodep->keyword() == VAlwaysKwd::CONT_ASSIGN) {

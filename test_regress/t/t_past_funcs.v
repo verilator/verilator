@@ -210,8 +210,29 @@ module Test4 (  /*AUTOARG*/
   bit [3:0] ai[2] = '{4'd1, 4'd2};
   bit [3:0] aidly;
   bit [3:0] vdly;
+  // Bit and part selects of a packed vector with a variable index
+  bit [6:0] vec;
+  bit bsdly;
+  bit [1:0] psdly;
+  // Select of a parameter or a variable with an initializer, and of a 4-state vector
+  localparam bit [6:0] P = 7'h2a;
+  bit [6:0] iv = 7'h33;
+  logic [6:0] lv;
+  bit pdly;
+  bit ivdly;
+  logic lvdly;
+  // Index beyond the vector
+  bit odly;
 
   always @(posedge clk) begin
+    vec <= in[6:0] ^ 7'h55;
+    bsdly <= vec[{1'b0, in[1:0]}];
+    psdly <= vec[{1'b0, in[1:0]}+:2];
+    lv <= in[6:0];
+    pdly <= P[{1'b0, in[1:0]}];
+    ivdly <= iv[{1'b0, in[1:0]}];
+    lvdly <= lv[{1'b0, in[1:0]}];
+    odly <= vec[in[2:0]];
     arr[0] <= in[3:0];
     arr[1] <= ~in[3:0];
     m[1][0] <= in[0];
@@ -225,6 +246,10 @@ module Test4 (  /*AUTOARG*/
       `checkd($past(arr[0]), 0);
       `checkd($past(m[1][0]), 0);
       `checkd($past(ai[1]), 2);
+      `checkd($past(vec[{1'b0, in[1:0]}]), 0);
+      `checkd($past(P[{1'b0, in[1:0]}]), 0);
+      `checkd($past(P[1]), 1);
+      `checkd($past(iv[{1'b0, in[1:0]}]), 0);
     end
     if (in > 2) begin
       `checkd($past(arr[0]), dly);
@@ -234,6 +259,13 @@ module Test4 (  /*AUTOARG*/
       `checkd($past(ai[1]), aidly);
       // Variable index
       `checkd($past(arr[in[1]]), vdly);
+      `checkd($past(vec[{1'b0, in[1:0]}]), bsdly);
+      `checkd($stable(vec[{1'b0, in[1:0]}]), vec[{1'b0, in[1:0]}] == bsdly);
+      `checkd($past(vec[{1'b0, in[1:0]}+:2]), psdly);
+      `checkd($past(P[{1'b0, in[1:0]}]), pdly);
+      `checkd($past(iv[{1'b0, in[1:0]}]), ivdly);
+      `checkd($past(lv[{1'b0, in[1:0]}]), lvdly);
+      `checkd($past(vec[in[2:0]]), odly);
     end
   end
 endmodule

@@ -46,7 +46,7 @@ module t_virtual_interface_member_trigger ();
 
   initial begin
 
-    // Test 1: no false loop with member-level trigger
+    // Test: no false loop with member-level trigger
     #1ns;
     vif_loop = intf_loop;
     cl_1 = new(vif_loop);
@@ -55,7 +55,7 @@ module t_virtual_interface_member_trigger ();
     #1ns;
     if (!(cl_1.vif.x == 1 && cl_1.vif.y == 0 && cl_1.vif.z == 1 && s1 == 1 && s2 == 1)) $stop;
 
-    // Test 2: write from module
+    // Test: write from module
     #1ns;
     vif_read = intf_read;
     vif_write = intf_write;
@@ -64,7 +64,7 @@ module t_virtual_interface_member_trigger ();
     #1ns;
     if (vif_read.data !== 8'hA5) $stop;
 
-    // Test 3: write from class
+    // Test: write from class
     #1ns;
     cl_2 = new(vif_write);
     #1ns;

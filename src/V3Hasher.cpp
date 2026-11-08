@@ -259,6 +259,11 @@ class HasherVisitor final : public VNVisitorConst {
             m_hash += nodep->name();
         });
     }
+    void visit(AstSchemaRef* nodep) override {
+        m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
+            m_hash += nodep->name();
+        });
+    }
     void visit(AstFScanF* nodep) override {
         m_hash += hashNodeAndIterate(nodep, HASH_DTYPE, HASH_CHILDREN, [this, nodep]() {  //
             m_hash += nodep->text();

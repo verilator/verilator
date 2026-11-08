@@ -61,7 +61,8 @@ AstVar* RandModeVars::randModeVarp(AstNodeModule* classp) {
     return nullptr;
 }
 
-AstNode* RandModeVars::wrapIfMode(const RandomizeMode mode, AstVar* modeVarp, AstNode* stmtp) {
+AstNodeStmt* RandModeVars::wrapIfMode(const RandomizeMode mode, AstVar* modeVarp,
+                                      AstNodeStmt* stmtp) {
     FileLine* const fl = stmtp->fileline();
     if (mode.usesMode) {
         // user2p can be either AstClass or AstClassPackage (for static constraints)

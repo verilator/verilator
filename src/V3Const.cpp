@@ -1012,43 +1012,9 @@ class ConstVisitor final : public VNVisitor {
         return dtypep->isStreamableFixedAggregate() && dtypep->containsUnpackedStruct();
     }
 
-    AstStructSel* newStructSel(AstNodeExpr* const fromp, const AstMemberDType* const itemp) {
-        AstStructSel* const selp = new AstStructSel{fromp->fileline(), fromp, itemp->name()};
-        selp->dtypeFrom(itemp->dtypep());
-        return selp;
-    }
-
-    void collectFixedAggregateTerms(AstNodeExpr* const fromp, std::vector<AstNodeExpr*>& termps,
-                                    const bool packReal) {
-        const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
-        if (const AstUnpackArrayDType* const unpackDtypep = VN_CAST(dtypep, UnpackArrayDType)) {
-            for (const int idx : unpackDtypep->declRange().seqLeftToRight()) {
-                AstArraySel* const selp
-                    = new AstArraySel{fromp->fileline(), fromp->cloneTreePure(false), idx};
-                collectFixedAggregateTerms(selp, termps, packReal);
-            }
-            VL_DO_DANGLING(pushDeletep(fromp), fromp);
-        } else if (const AstNodeUOrStructDType* const sdtypep
-                   = VN_CAST(dtypep, NodeUOrStructDType)) {
-            if (sdtypep->packed()) {
-                termps.push_back(fromp);
-                return;
-            }
-            for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
-                collectFixedAggregateTerms(newStructSel(fromp->cloneTreePure(false), itemp),
-                                           termps, packReal);
-            }
-            VL_DO_DANGLING(pushDeletep(fromp), fromp);
-        } else if (packReal && dtypep->isDouble()) {
-            termps.push_back(new AstRealToBits{fromp->fileline(), fromp});
-        } else {
-            termps.push_back(fromp);
-        }
-    }
-
     AstNodeExpr* packFixedAggregate(AstNodeExpr* const fromp) {
         std::vector<AstNodeExpr*> termps;
-        collectFixedAggregateTerms(fromp, termps, true);
+        V3Const::collectFixedAggregateTerms(deleter(), fromp, termps, true);
         UASSERT(!termps.empty(), "No stream terms");
         AstNodeExpr* resultp = termps[0];
         for (size_t i = 1; i < termps.size(); ++i) {
@@ -1061,7 +1027,7 @@ class ConstVisitor final : public VNVisitor {
                                        AstNodeExpr* srcp) {
         const int dstWidth = dstp->dtypep()->widthStream();
         std::vector<AstNodeExpr*> termps;
-        collectFixedAggregateTerms(dstp, termps, false);
+        V3Const::collectFixedAggregateTerms(deleter(), dstp, termps, false);
         int srcWidth = srcp->width();
         if (srcWidth < dstWidth) {
             AstExtend* const extendp = new AstExtend{srcp->fileline(), srcp, dstWidth};
@@ -1977,7 +1943,7 @@ class ConstVisitor final : public VNVisitor {
         // The operand values are intentionally discarded
         FileLine* const stmtFlp = new FileLine{flp};
         stmtFlp->warnOff(V3ErrorCode::IGNOREDRETURN, true);
-        AstNode* stmtsp = nullptr;
+        AstNodeStmt* stmtsp = nullptr;
         for (AstNodeExpr* const opp : {nodep->lhsp(), nodep->rhsp()}) {
             if (!opp->isPure()) {
                 stmtsp = AstNode::addNext(stmtsp, new AstStmtExpr{stmtFlp, opp->unlinkFrBack()});
@@ -3513,37 +3479,31 @@ class ConstVisitor final : public VNVisitor {
         }
     }
 
-    bool onlySenItemInSenTree(const AstSenItem* nodep) {
-        // Only one if it's not in a list
-        return (!nodep->nextp() && nodep->backp()->nextp() != nodep);
-    }
     void visit(AstSenItem* nodep) override {
         iterateChildren(nodep);
-        if (m_doNConst
-            && !v3Global.opt.timing().isSetTrue()  // If --timing, V3Sched would turn this into an
-                                                   // infinite loop. See #5080
-            && (VN_IS(nodep->sensp(), Const) || VN_IS(nodep->sensp(), EnumItemRef)
-                || (nodep->varrefp() && nodep->varrefp()->varp()->isParam()))) {
-            // Constants in sensitivity lists may be removed (we'll simplify later)
-            if (nodep->isClocked()) {  // A constant can never get a pos/negedge
-                if (onlySenItemInSenTree(nodep)) {
-                    if (nodep->edgeType() == VEdgeType::ET_CHANGED) {
-                        // TODO: This really is dodgy, as strictly compliant simulators will not
-                        //       execute this block, but but t_func_check relies on it
-                        nodep->replaceWith(
-                            new AstSenItem{nodep->fileline(), AstSenItem::Initial{}});
-                    } else {
-                        nodep->replaceWith(new AstSenItem{nodep->fileline(), AstSenItem::Never{}});
-                    }
-                    VL_DO_DANGLING(pushDeletep(nodep), nodep);
-                } else {
-                    VL_DO_DANGLING(pushDeletep(nodep->unlinkFrBack()), nodep);
-                }
-            } else {  // Otherwise it may compute a result that needs to settle out
-                nodep->replaceWith(new AstSenItem{nodep->fileline(), AstSenItem::Combo{}});
-                VL_DO_DANGLING(pushDeletep(nodep), nodep);
+        if (!m_doNConst) return;
+        if (AstConst* const constp = VN_CAST(nodep->sensp(), Const)) {
+            // posedge/negedge on an expression that folded to constant either
+            // never triggers (posedge 0/negedge 1), or might trigger precisely
+            // once at time 0 (posedge 1/negedge 0), if the static initialization
+            // state of the expression was not that value. We can't check the
+            // latter easily so fire them once regardless by changing them to
+            // a 'change' sensitivity. V3ActiveTop deletes the never cases.
+            if ((nodep->edgeType() == VEdgeType::ET_POSEDGE && constp->num().bitIs1(0))
+                || (nodep->edgeType() == VEdgeType::ET_NEGEDGE && constp->num().bitIs0(0))) {
+                nodep->edgeType(VEdgeType::ET_CHANGED);
             }
-        } else if (m_doNConst && VN_IS(nodep->sensp(), Not)) {
+            if (nodep->edgeType() == VEdgeType::ET_CHANGED
+                && !(constp->dtypep() == constp->findBitDType() && constp->num().isEqOne())) {
+                // A change sensitivity behaves the same on any constant, so use the same constant
+                // for all, which makes them share a trigger. TODO: this is not quite right
+                // if the static initializer is the same as the constant, but oh well.
+                constp->replaceWith(new AstConst{constp->fileline(), AstConst::BitTrue{}});
+                VL_DO_DANGLING(pushDeletep(constp), constp);
+            }
+            return;
+        }
+        if (VN_IS(nodep->sensp(), Not)) {
             // V3Gate may propagate NOTs into clocks... Just deal with it
             AstNode* const sensp = nodep->sensp();
             AstNode* lastSensp = sensp;
@@ -3906,7 +3866,7 @@ class ConstVisitor final : public VNVisitor {
             } else if (!AstNode::afterCommentp(nodep->thensp())) {
                 UINFO(4, "IF({x}) nullptr {...} => IF(NOT{x}}: " << nodep);
                 AstNodeExpr* const condp = nodep->condp();
-                AstNode* const elsesp = nodep->elsesp();
+                AstNodeStmt* const elsesp = nodep->elsesp();
                 condp->unlinkFrBackWithNext();
                 elsesp->unlinkFrBackWithNext();
                 if (nodep->thensp()) {  // Must have been comment
@@ -3922,8 +3882,8 @@ class ConstVisitor final : public VNVisitor {
                 UINFO(4, "IF(NOT {x})  => IF(x) swapped if/else" << nodep);
                 AstNodeExpr* const condp
                     = VN_AS(nodep->condp(), NodeUniop)->lhsp()->unlinkFrBackWithNext();
-                AstNode* const thensp = nodep->thensp()->unlinkFrBackWithNext();
-                AstNode* const elsesp = nodep->elsesp()->unlinkFrBackWithNext();
+                AstNodeStmt* const thensp = nodep->thensp()->unlinkFrBackWithNext();
+                AstNodeStmt* const elsesp = nodep->elsesp()->unlinkFrBackWithNext();
                 AstIf* const ifp = new AstIf{nodep->fileline(), condp, elsesp, thensp};
                 ifp->isBoundsCheck(nodep->isBoundsCheck());  // Copy bounds check info
                 ifp->branchPred(nodep->branchPred().invert());
@@ -4768,6 +4728,34 @@ uint32_t ConstVisitor::s_globalPassNum = 0;
 
 //######################################################################
 // Const class functions
+
+void V3Const::collectFixedAggregateTerms(VNDeleter& deleter, AstNodeExpr* const fromp,
+                                         std::vector<AstNodeExpr*>& termps, const bool packReal,
+                                         const bool warnImpure) {
+    FileLine* const flp = fromp->fileline();
+    const AstNodeDType* const dtypep = fromp->dtypep()->skipRefp();
+    const AstNodeUOrStructDType* const sdtypep = VN_CAST(dtypep, NodeUOrStructDType);
+    if (const AstUnpackArrayDType* const adtypep = VN_CAST(dtypep, UnpackArrayDType)) {
+        for (const int index : adtypep->declRange().seqLeftToRight()) {
+            collectFixedAggregateTerms(
+                deleter,
+                new AstArraySel{flp, fromp->cloneTree(false, warnImpure), index - adtypep->lo()},
+                termps, packReal, warnImpure);
+        }
+    } else if (sdtypep && !sdtypep->packed()) {
+        for (const AstMemberDType* const itemp : sdtypep->memberspList()) {
+            AstStructSel* const selp
+                = new AstStructSel{flp, fromp->cloneTree(false, warnImpure), itemp->name()};
+            selp->dtypeFrom(itemp->dtypep());
+            selp->didWidth(true);
+            collectFixedAggregateTerms(deleter, selp, termps, packReal, warnImpure);
+        }
+    } else {
+        termps.push_back(packReal && dtypep->isDouble() ? new AstRealToBits{flp, fromp} : fromp);
+        return;
+    }
+    deleter.pushDeletep(fromp);
+}
 
 //! Force this cell node's parameter list to become a constant
 void V3Const::constifyParamsEdit(AstNode* nodep) {

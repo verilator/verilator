@@ -36,7 +36,7 @@
 //  AstClass::user3p()      -> AstVar*.  Constrained randomizer variable
 //  AstConstraint::user2p() -> AstTask*. Pointer to constraint setup procedure
 //  AstConstraint::user3p() -> AstTask*. Pointer to resize procedure
-//  AstConstraintForeach::user3p() -> AstNode*. Dist bucket preamble stmts (foreach case)
+//  AstConstraintForeach::user3p() -> AstNodeStmt*. Dist bucket preamble stmts (foreach case)
 //  AstVar::user4p()        -> AstVar*.  Size variable for constrained queues
 //
 //*************************************************************************
@@ -79,7 +79,7 @@ public:
         static const char* const name = "__Vsetup_constraints";
         AstTask* setupAllTaskp = VN_AS(memberMap.findMember(classp, name), Task);
         if (setupAllTaskp) return setupAllTaskp;
-        setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints", nullptr};
+        setupAllTaskp = new AstTask{classp->fileline(), "__Vsetup_constraints"};
         setupAllTaskp->classMethod(true);
         setupAllTaskp->isVirtual(true);
         classp->addMembersp(setupAllTaskp);
@@ -569,10 +569,10 @@ class ConstraintExprVisitor final : public VNVisitor {
         m_wantSingle = true;
 
         {
-            AstBegin* const tempp
-                = new AstBegin{fl, "[EditWrapper]", itemsp->unlinkFrBackWithNext(), false};
-            VL_DO_DANGLING(iterateAndNextNull(tempp->stmtsp()), itemsp);
-            itemsp = tempp->stmtsp();
+            AstBegin* const tempp = new AstBegin{fl, "[EditWrapper]", nullptr, false};
+            tempp->addDeclsp(itemsp->unlinkFrBackWithNext());
+            VL_DO_DANGLING(iterateAndNextNull(tempp->declsp()), itemsp);
+            itemsp = tempp->declsp();
             if (itemsp) itemsp->unlinkFrBackWithNext();
             VL_DO_DANGLING(tempp->deleteTree(), tempp);
         }
@@ -631,7 +631,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Uses foreach to walk all assigns regardless of body organization (JumpBlock nesting etc.).
     // Takes the last assignment to the return variable -- the first is the initializer.
     AstNodeExpr* extractReturnExpr(AstFunc* funcp) {
-        AstVar* const retVarp = VN_CAST(funcp->fvarp(), Var);
+        AstVar* const retVarp = funcp->fvarp();
         if (!retVarp) return nullptr;
         AstNodeExpr* retExprp = nullptr;
         int assignCount = 0;
@@ -678,9 +678,9 @@ class ConstraintExprVisitor final : public VNVisitor {
 
     // Prepend the bucket preamble stmts stored on user3p by lowerDistConstraints to the
     // statements that will become the body of the generated AstForeach, so the per-element
-    // bucket draw is declared and evaluated in the same scope as its references.
-    static AstNode* prependDistPreamble(AstConstraintForeach* nodep, AstNode* bodyp) {
-        AstNode* const preamblep = nodep->user3p();
+    // bucket draw is evaluated in the same scope as its references.
+    static AstNodeStmt* prependDistPreamble(AstConstraintForeach* nodep, AstNodeStmt* bodyp) {
+        AstNodeStmt* const preamblep = VN_AS(nodep->user3p(), NodeStmt);
         if (!preamblep) return bodyp;
         nodep->user3p(nullptr);
         preamblep->addNext(bodyp);
@@ -754,7 +754,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Place a solver-registration statement: into the enclosing foreach body when it
     // references an enclosing foreach index (so it is not hoisted out of the index's
     // scope), otherwise into the init block.
-    void addRegistrationStmt(AstNode* const stmtp, AstBegin* const initp) {
+    void addRegistrationStmt(AstNodeStmt* const stmtp, AstBegin* const initp) {
         if (m_foreachp && referencesForeachIdx(stmtp)) {
             // Appending to the body mid-iteration is safe: visit(AstStmtExpr) is a
             // no-op so the appended node is not re-processed, and prependDistPreamble()
@@ -935,7 +935,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                                                  m_uniqueNames.get("__Vk"), assocDtp->keyDTypep()}
                                     : iterVarp;
 
-        AstNode* const stmtsp
+        AstNodeStmt* const stmtsp
             = new AstAssign{fl, new AstVarRef{fl, iterVarp, VAccess::WRITE}, new AstConst{fl, 0}};
 
         AstNodeExpr* sizep;
@@ -2395,7 +2395,8 @@ class ConstraintExprVisitor final : public VNVisitor {
         } else if (m_wantSingle) {
             AstNodeExpr* const itemp = editSingle(fl, nodep->bodyp());
             AstVar* const textVarp = newTextVarp(nodep);
-            AstNode* const bodyp = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
+            AstNodeStmt* const bodyp
+                = prependDistPreamble(nodep, newTermAppendp(fl, textVarp, itemp));
             nodep->replaceWith(newTextBuildp(
                 fl, textVarp, "", new AstForeach{fl, nodep->headerp()->unlinkFrBack(), bodyp},
                 newTextApplyp(fl, textVarp, "bvand", "#b1")));
@@ -2407,7 +2408,7 @@ class ConstraintExprVisitor final : public VNVisitor {
                 if (const AstVar* const varp = VN_CAST(elemp, Var)) m_foreachIdxVars.insert(varp);
             }
             iterateAndNextNull(nodep->bodyp());
-            AstNode* const bodyp
+            AstNodeStmt* const bodyp
                 = prependDistPreamble(nodep, nodep->bodyp()->unlinkFrBackWithNext());
             nodep->replaceWith(
                 new AstBegin{fl, m_uniqueNames.get("__VrandBlock"),
@@ -2932,7 +2933,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
             // Build loop body based on whether we have a 'with' clause
             AstVar* const textVarp = newTextVarp(nodep);
-            AstNode* bodyp;
+            AstNodeStmt* bodyp;
             if (withp) {
                 // With 'with' clause: evaluate expression for each element
                 const bool randArr = nodep->fromp()->user1();
@@ -3106,7 +3107,7 @@ class ConstraintExprVisitor final : public VNVisitor {
 
         // Map formal parameters to actual arguments using V3Task infrastructure
         const V3TaskConnects tconnects
-            = V3Task::taskConnects(nodep, funcp->stmtsp(), nullptr, false);
+            = V3Task::taskConnects(nodep, funcp->declsp(), nullptr, false);
 
         // Clone return expression, substitute params with args.
         // Track the root via a local pointer: when the root itself is a VarRef to a port
@@ -3154,7 +3155,7 @@ class ConstraintExprVisitor final : public VNVisitor {
     // Build the runtime statement that calls RANDOMIZER_DISABLE_SOFT on the
     // variable referenced by the given AstConstraintExpr.  Parser enforces
     // constraint_primary operand (verilog.y, IEEE 1800-2023 18.5.13).
-    AstNode* buildDisableSoftCallStmt(AstConstraintExpr* nodep) {
+    AstNodeStmt* buildDisableSoftCallStmt(AstConstraintExpr* nodep) {
         std::string varName;
         if (const AstNodeVarRef* const vrefp = VN_CAST(nodep->exprp(), NodeVarRef)) {
             varName = vrefp->name();
@@ -3370,7 +3371,7 @@ class SolverSmtLowering final : public V3SolverLowering {
     }
     AstTask* createPrepareConstrainedArraysTask(AstClass* const classp) {
         static const char* const name = "__Vprepare_constrained_arrays";
-        AstTask* const taskp = new AstTask{classp->fileline(), name, nullptr};
+        AstTask* const taskp = new AstTask{classp->fileline(), name};
         taskp->classMethod(true);
         classp->addMembersp(taskp);
         m_memberMap.insert(classp, taskp);
@@ -3380,7 +3381,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         static constexpr const char* const name = "__Vresize_constrained_arrays";
         AstTask* resizeTaskp = VN_AS(m_memberMap.findMember(classp, name), Task);
         if (resizeTaskp) return resizeTaskp;
-        resizeTaskp = new AstTask{classp->fileline(), name, nullptr};
+        resizeTaskp = new AstTask{classp->fileline(), name};
         resizeTaskp->classMethod(true);
         resizeTaskp->isVirtual(true);
         classp->addMembersp(resizeTaskp);
@@ -3409,21 +3410,21 @@ class SolverSmtLowering final : public V3SolverLowering {
         setp->dtypeSetVoid();
         ftaskp->addStmtsp(setp->makeStmt());
     }
-    AstNode* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp, AstNode* stmtp) {
+    AstNodeStmt* wrapIfConstraintMode(AstClass* classp, AstConstraint* const constrp,
+                                      AstNodeStmt* stmtp) {
         const RandomizeMode rmode = {.asUQuad = constrp->user1()};
         AstVar* const modeVarp = constrp->isStatic() ? getStaticConstraintModeVar(classp)
                                                      : getConstraintModeVar(classp);
         return RandModeVars::wrapIfMode(rmode, modeVarp, stmtp);
     }
     AstTask* newSetupConstraintTask(AstClass* const nodep, const std::string& name) {
-        AstTask* const taskp = new AstTask{nodep->fileline(), name + "_setup_constraint", nullptr};
+        AstTask* const taskp = new AstTask{nodep->fileline(), name + "_setup_constraint"};
         taskp->classMethod(true);
         nodep->addMembersp(taskp);
         return taskp;
     }
     AstTask* newResizeConstrainedArrayTask(AstClass* const nodep, const std::string& name) {
-        AstTask* const taskp
-            = new AstTask{nodep->fileline(), name + "_resize_constrained_array", nullptr};
+        AstTask* const taskp = new AstTask{nodep->fileline(), name + "_resize_constrained_array"};
         taskp->classMethod(true);
         nodep->addMembersp(taskp);
         return taskp;
@@ -3527,8 +3528,7 @@ class SolverSmtLowering final : public V3SolverLowering {
 
     void addUpdateRandVarsBody(AstClass* const nodep, AstFunc* const randomizep) {
         UASSERT_OBJ(!nodep->hasRandVarsUpdate(), nodep, "__VupdateRandVars already exists");
-        AstFunc* const updatep
-            = new AstFunc{nodep->fileline(), "__VupdateRandVars", nullptr, nullptr};
+        AstFunc* const updatep = new AstFunc{nodep->fileline(), "__VupdateRandVars"};
         updatep->classMethod(true);
         updatep->isVirtual(true);
         updatep->keepAlive(true);
@@ -3550,7 +3550,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         FileLine* const fl = logIfp->fileline();
         AstNodeExpr* const condp = logIfp->lhsp()->unlinkFrBack();
         AstNodeExpr* const rhsp = logIfp->rhsp()->unlinkFrBack();
-        AstNode* thenBodyp;
+        AstNodeStmt* thenBodyp;
         if (AstLogIf* const innerLogIfp = VN_CAST(rhsp, LogIf)) {
             thenBodyp = liftLogIfChainToConstraintIf(innerLogIfp);
             VL_DO_DANGLING(pushDeletep(innerLogIfp), innerLogIfp);
@@ -3834,8 +3834,8 @@ class SolverSmtLowering final : public V3SolverLowering {
 
     // Weighted chain while the dist value can still be freshly drawn, membership
     // once it is frozen; membership only when it can never be re-drawn.
-    AstNode* gateFrozenDist(AstNode* chainp, AstDist* distp,
-                            const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
+    AstNodeStmt* gateFrozenDist(AstNodeStmt* chainp, AstDist* distp,
+                                const std::vector<DistBucket>& buckets, AstVar* randModeVarp) {
         FileLine* const fl = distp->fileline();
         AstNodeExpr* gatep = newDistGate(distp->exprp(), randModeVarp, fl);
         if (VN_IS(gatep, Const)) {
@@ -3885,9 +3885,10 @@ class SolverSmtLowering final : public V3SolverLowering {
     }
 
     // Soft weighted bucket chain: select a bucket by bucketVar against cumulative weights.
-    AstNode* buildWeightedBucketChain(AstDist* distp, const std::vector<DistBucket>& buckets,
-                                      AstVar* bucketVarp,
-                                      const std::vector<AstNodeExpr*>& cumSums) {
+    AstConstraintExpr* buildWeightedBucketChain(AstDist* distp,
+                                                const std::vector<DistBucket>& buckets,
+                                                AstVar* bucketVarp,
+                                                const std::vector<AstNodeExpr*>& cumSums) {
         FileLine* const fl = distp->fileline();
         AstNodeExpr* chainp = nullptr;
         for (int i = static_cast<int>(buckets.size()) - 1; i >= 0; --i) {
@@ -3925,9 +3926,10 @@ class SolverSmtLowering final : public V3SolverLowering {
                               AstConstraintForeach* foreachp = nullptr) {
         // When inside a foreach, bucket preamble stmts are stored in foreachp->user3p()
         // (as a linked list) so visit(AstConstraintForeach*) can inject them into the
-        // real AstForeach body. Outside a foreach, they go directly into taskp.
-        AstNode* foreachTailp = nullptr;
-        auto addStmt = [&](AstNode* nodep) {
+        // real AstForeach body. Outside a foreach, they go directly into taskp. The
+        // variables are always declared in taskp, assigned before use in each iteration.
+        AstNodeStmt* foreachTailp = nullptr;
+        auto addStmt = [&](AstNodeStmt* nodep) {
             if (foreachp) {
                 if (!foreachTailp) {
                     foreachp->user3p(nodep);
@@ -4019,7 +4021,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             totalVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             totalVarp->funcLocal(true);
             totalVarp->isInternal(true);
-            addStmt(totalVarp);
+            taskp->addDeclsp(totalVarp);
             addStmt(
                 new AstAssign{fl, new AstVarRef{fl, totalVarp, VAccess::WRITE}, totalWeightExprp});
 
@@ -4031,7 +4033,7 @@ class SolverSmtLowering final : public V3SolverLowering {
             bucketVarp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
             bucketVarp->funcLocal(true);
             bucketVarp->isInternal(true);
-            addStmt(bucketVarp);
+            taskp->addDeclsp(bucketVarp);
 
             AstNodeExpr* const randp = new AstRand{fl, nullptr, false};
             randp->dtypeSetUInt64();
@@ -4055,7 +4057,7 @@ class SolverSmtLowering final : public V3SolverLowering {
                 cumSums.push_back(runningSump->cloneTreePure(true));
             }
 
-            AstNode* chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
+            AstNodeStmt* chainp = buildWeightedBucketChain(distp, buckets, bucketVarp, cumSums);
 
             chainp = gateFrozenDist(chainp, distp, buckets, randModeVarp);
 
@@ -4178,7 +4180,7 @@ class SolverSmtLowering final : public V3SolverLowering {
     }
 
     static void copyVariableRegistrations(AstFunc* const sourcep, AstFunc* const targetp) {
-        for (AstNode* const stmtp : sourcep->stmtspList()) {
+        for (AstNodeStmt* const stmtp : sourcep->stmtspList()) {
             bool hasRegistration = false;
             bool foundClearConstraints = false;
             // stmtp is possibly begin containing a few statements
@@ -4213,7 +4215,7 @@ class SolverSmtLowering final : public V3SolverLowering {
         AstVar* const sizeOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vsize_ok",
                                               randomizep->findBasicDType(VBasicDTypeKwd::BIT)};
         sizeOkVarp->funcLocal(true);
-        randomizep->addStmtsp(sizeOkVarp);
+        randomizep->addDeclsp(sizeOkVarp);
         // A disabled array keeps its current size. Pin its size proxy before solving so
         // an incompatible size constraint fails instead of resizing the frozen array.
         for (AstVar* const arrVarp : sizeArrayVars) {
@@ -4227,7 +4229,7 @@ class SolverSmtLowering final : public V3SolverLowering {
     // Rebuild constraints after resize
     void addConstraintRebuild(AstFunc* const randomizep, AstVar* const setupGenp,
                               AstVar* const solveGenp, const VInsertionSet<AstVar*>& sizeArrayVars,
-                              AstNode* const setupStmtsp) {
+                              AstNodeStmt* const setupStmtsp) {
         FileLine* const fl = randomizep->fileline();
         for (AstVar* const arrVarp : sizeArrayVars) {
             addArrayElemRefresh(fl, arrVarp, randomizep, setupGenp);
@@ -4332,7 +4334,8 @@ public:
                     m_uniqueNames, randomizep,   &sizeArrays,       prepareArraysTaskp};
                 if (constrp->itemsp()) {
                     taskp->addStmtsp(wrapIfConstraintMode(
-                        nodep, constrp, constrp->itemsp()->unlinkFrBackWithNext()));
+                        nodep, constrp,
+                        VN_AS(constrp->itemsp()->unlinkFrBackWithNext(), NodeStmt)));
                 }
             });
 
@@ -4423,7 +4426,7 @@ public:
                 AstVar* const finalOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vfinal_ok",
                                                        nodep->findBasicDType(VBasicDTypeKwd::BIT)};
                 finalOkVarp->funcLocal(true);
-                randomizep->addStmtsp(finalOkVarp);
+                randomizep->addDeclsp(finalOkVarp);
                 randomizep->addStmtsp(new AstAssign{
                     fl, new AstVarRef{fl, finalOkVarp, VAccess::WRITE}, newSolverCallp(genp)});
 
@@ -4484,7 +4487,7 @@ public:
                 implementConstraintsClear(randomizeFuncp->fileline(), classGenp));
         }
 
-        randomizeFuncp->addStmtsp(localGenp);
+        randomizeFuncp->addDeclsp(localGenp);
 
         // Copy (derive) class constraints if present
         if (classGenp) {
@@ -4508,8 +4511,8 @@ public:
         }
 
         // Generate constraint setup code and a hardcoded call to the solver
-        AstBegin* const setupBlockp
-            = new AstBegin{nodep->fileline(), "__Vsetup_constraints", capturedTreep, true};
+        AstBegin* const setupBlockp = new AstBegin{nodep->fileline(), "__Vsetup_constraints",
+                                                   VN_AS(capturedTreep, NodeStmt), true};
         randomizeFuncp->addStmtsp(setupBlockp);
 
         // Pre-scan captured tree for .size on dynamic/assoc arrays and replace
@@ -4518,7 +4521,7 @@ public:
         // so extract the underlying variable from the MemberSel chain.
         // Collect the class-wide resize call and the with-block's own resize
         // statements to run after a successful solver call.
-        AstNode* resizeStmtsp = nullptr;
+        AstNodeStmt* resizeStmtsp = nullptr;
         if (AstTask* const resizeAllTaskp
             = VN_AS(m_memberMap.findMember(classp, "__Vresize_constrained_arrays"), Task)) {
             resizeStmtsp = (new AstTaskRef{nodep->fileline(), resizeAllTaskp})->makeStmt();
@@ -4607,7 +4610,7 @@ public:
         FileLine* const fl = nodep->fileline();
         collectSizeConstrainedArrays(classp, allSizeArrays);
         const bool needsSizePhase = !allSizeArrays.empty();
-        AstVar* const retVarp = VN_AS(randomizeFuncp->fvarp(), Var);
+        AstVar* const retVarp = randomizeFuncp->fvarp();
 
         if (needsSizePhase) {
             // Call __VBasicRand and stash its result FIRST, as its own statement,
@@ -4622,14 +4625,14 @@ public:
             AstVar* const basicOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vbasic_ok",
                                                    classp->findBasicDType(VBasicDTypeKwd::BIT)};
             basicOkVarp->funcLocal(true);
-            randomizeFuncp->addStmtsp(basicOkVarp);
+            randomizeFuncp->addDeclsp(basicOkVarp);
             randomizeFuncp->addStmtsp(new AstAssign{
                 fl, new AstVarRef{fl, basicOkVarp, VAccess::WRITE}, basicRandomizeFuncCallp});
 
             AstVar* const finalOkVarp = new AstVar{fl, VVarType::BLOCKTEMP, "__Vfinal_ok",
                                                    classp->findBasicDType(VBasicDTypeKwd::BIT)};
             finalOkVarp->funcLocal(true);
-            randomizeFuncp->addStmtsp(finalOkVarp);
+            randomizeFuncp->addDeclsp(finalOkVarp);
 
             // First pass: solve to determine sizes
             AstVar* const sizeOkVarp
@@ -4747,7 +4750,7 @@ public:
 
             expandUniqueElementList(capturedClonep);
             AstBegin* const elementSetupBlockp
-                = new AstBegin{fl, "__Vsetup_constraints", capturedClonep, true};
+                = new AstBegin{fl, "__Vsetup_constraints", VN_AS(capturedClonep, NodeStmt), true};
             randomizeFuncp->addStmtsp(elementSetupBlockp);
             ConstraintExprVisitor{
                 classp,       m_memberMap,   capturedClonep,        elementSetupBlockp, localGenp,
@@ -4793,7 +4796,7 @@ public:
         randomizeFuncp->addStmtsp(
             implementConstraintsClearAll(randomizeFuncp->fileline(), stdrandp));
         AstBegin* const setupBlockp
-            = new AstBegin{fl, "__Vsetup_constraints", capturedTreep, true};
+            = new AstBegin{fl, "__Vsetup_constraints", VN_AS(capturedTreep, NodeStmt), true};
         randomizeFuncp->addStmtsp(setupBlockp);
         {
             expandUniqueElementList(capturedTreep);

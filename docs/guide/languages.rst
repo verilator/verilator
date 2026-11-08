@@ -413,8 +413,22 @@ This section describes specific limitations for each language keyword.
    with anything following it until the end of that line.
 
 cast operator
-   Casting is supported only between simple scalar types, signed and
-   unsigned, not arrays nor structs.
+   Casting is supported between simple scalar types, signed and unsigned.
+   Casts between fixed-size unpacked arrays or structures that are
+   assignment compatible (IEEE 1800-2023 6.24.1), e.g. arrays of the same
+   elements with other bounds, are supported. Bit-stream casts (IEEE
+   1800-2023 6.24.3) to and from unpacked arrays and structures, and of
+   streaming concatenations of them, are supported when they have a fixed
+   size. Casts between unpacked arrays or structures and class objects,
+   strings, or dynamically sized arrays are not supported. A streaming
+   concatenation of a dynamically sized array can only be cast when the
+   array is alone in it, and not to an unpacked type, and a streaming
+   concatenation of a string, class object, or unpacked union cannot be
+   cast. As an extension of the standard (IEEE 1800-2023 11.4.14.1), a real
+   in an unpacked structure in a streaming concatenation is streamed as its
+   64 bits, as by ``$realtobits``, also when the streaming concatenation is
+   cast. This is not supported when the structure is in the target of an
+   assignment with other values or in a nested streaming concatenation.
 
 chandle
    Treated as a "longint"; does not yet warn about operations specified as

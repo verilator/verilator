@@ -1461,13 +1461,10 @@ class AstExprStmt final : public AstNodeExpr {
     // Perform a statement, often assignment inside an expression node,
     // the parent gets passed the 'resultp()'.
     // resultp is evaluated AFTER the statement(s).
-    // @astgen op1 := stmtsp : List[AstNode]
+    // @astgen op1 := stmtsp : List[AstNodeStmt]
     // @astgen op2 := resultp : AstNodeExpr
-private:
-    bool m_hasResult = true;  // Returns result via resultp()
-
 public:
-    AstExprStmt(FileLine* fl, AstNode* stmtsp, AstNodeExpr* resultp)
+    AstExprStmt(FileLine* fl, AstNodeStmt* stmtsp, AstNodeExpr* resultp)
         : ASTGEN_SUPER_ExprStmt(fl) {
         addStmtsp(stmtsp);
         this->resultp(resultp);
@@ -1475,18 +1472,11 @@ public:
     }
     ASTGEN_MEMBERS_AstExprStmt;
     // METHODS
-    void dump(std::ostream& str) const override;
-    void dumpJson(std::ostream& str) const override;
     string emitVerilog() override { V3ERROR_NA_RETURN(""); }
     string emitC() override { V3ERROR_NA_RETURN(""); }
     bool cleanOut() const override { return true; }
-    bool isPure() override {
-        if (AstNode::afterCommentp(stmtsp())) return false;
-        return resultp()->isPure();
-    }
+    bool isPure() override;
     bool sameNode(const AstNode*) const override { return true; }
-    bool hasResult() const { return m_hasResult; }
-    void hasResult(bool flag) { m_hasResult = flag; }
 };
 class AstFError final : public AstNodeExpr {
     // @astgen op1 := filep : AstNodeExpr
@@ -2619,6 +2609,32 @@ public:
     }
     bool internal() const { return m_internal; }
     bool isSystemFunc() const override { return true; }
+};
+class AstSchemaRef final : public AstNodeExpr {
+    // A reference to a schema, to be substituted by its body
+    // @astgen op1 := argsp : List[AstArg]
+    //
+    // @astgen ptr := m_schemap : AstNodeSchema  // The definition referenced
+    // @astgen ptr := m_classOrPackagep : Optional[AstNodeModule]  // Package of the definition
+public:
+    AstSchemaRef(FileLine* fl, AstNodeSchema* schemap, AstNodeModule* classOrPackagep,
+                 AstArg* argsp)
+        : ASTGEN_SUPER_SchemaRef(fl)
+        , m_schemap{schemap}
+        , m_classOrPackagep{classOrPackagep} {
+        addArgsp(argsp);
+    }
+    ASTGEN_MEMBERS_AstSchemaRef;
+    std::string name() const override VL_MT_STABLE;
+    bool sameNode(const AstNode* samep) const override {
+        return schemap() == VN_DBG_AS(samep, SchemaRef)->schemap();
+    }
+    AstNodeSchema* schemap() const VL_MT_STABLE { return m_schemap; }
+    AstNodeModule* classOrPackagep() const VL_MT_STABLE { return m_classOrPackagep; }
+    bool isPure() override { return false; }  // Unknown until substituted
+    std::string emitVerilog() final override { V3ERROR_NA_RETURN(""); }
+    std::string emitC() final override { V3ERROR_NA_RETURN(""); }
+    bool cleanOut() const final override { V3ERROR_NA_RETURN(true); }
 };
 class AstScopeName final : public AstNodeExpr {
     // For display %m and DPI context imports

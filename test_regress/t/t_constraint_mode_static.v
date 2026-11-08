@@ -24,25 +24,25 @@ module t;
     obj1 = new();
     obj2 = new();
 
-    // Test 1: Verify static constraint_mode getter works
+    // Test: Verify static constraint_mode getter works
     if (obj1.static_con.constraint_mode() != 1) $stop;
     if (obj2.static_con.constraint_mode() != 1) $stop;
 
-    // Test 2: Disable static constraint on one instance
+    // Test: Disable static constraint on one instance
     obj1.static_con.constraint_mode(0);
 
     // Verify the state is shared across all instances
     if (obj1.static_con.constraint_mode() != 0) $stop;
     if (obj2.static_con.constraint_mode() != 0) $stop;
 
-    // Test 3: Re-enable static constraint via different instance
+    // Test: Re-enable static constraint via different instance
     obj2.static_con.constraint_mode(1);
 
     // Verify state is updated for all instances
     if (obj1.static_con.constraint_mode() != 1) $stop;
     if (obj2.static_con.constraint_mode() != 1) $stop;
 
-    // Test 4: Verify randomization respects constraint mode when enabled
+    // Test: Verify randomization respects constraint mode when enabled
     obj1.static_con.constraint_mode(1);
     obj1.instance_con.constraint_mode(1);
     for (int i = 0; i < 10; i++) begin
@@ -51,7 +51,7 @@ module t;
       if (!(obj1.value > 5)) $stop;
     end
 
-    // Test 5: Disable static constraint and verify randomization changes
+    // Test: Disable static constraint and verify randomization changes
     obj1.static_con.constraint_mode(0);
     // With static_con disabled, value only needs to be > 5
     for (int i = 0; i < 10; i++) begin

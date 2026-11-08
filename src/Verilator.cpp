@@ -33,7 +33,6 @@
 #include "V3Cast.h"
 #include "V3Class.h"
 #include "V3Clean.h"
-#include "V3Clock.h"
 #include "V3Combine.h"
 #include "V3Common.h"
 #include "V3Const.h"
@@ -478,9 +477,6 @@ static void process() {
             // Schedule the logic
             V3Sched::schedule(v3Global.rootp());
             V3Sched::transformForks(v3Global.rootp());
-
-            // Post scheduling transformations - TODO: this should at least be renamed
-            V3Clock::clockAll(v3Global.rootp());
 
             // Cleanup any dly vars or other temps that are simple assignments
             // Life must be done before Subst, as it assumes each CFunc under

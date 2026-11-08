@@ -235,6 +235,16 @@ class SliceVisitor final : public VNVisitor {
         UASSERT_OBJ(!m_assignp || m_okConsArray, nodep,
                     "Array initialization should have been removed earlier");
     }
+    // An array value, e.g. from a cast, may be selected from, or converted whole, e.g. in a stream
+    void iterateOkConsArray(AstNodeExpr* const nodep) {
+        VL_RESTORER(m_okConsArray);
+        m_okConsArray = true;
+        iterateChildren(nodep);
+    }
+    void visit(AstArraySel* nodep) override { iterateOkConsArray(nodep); }
+    void visit(AstCvtArrayToArray* nodep) override { iterateOkConsArray(nodep); }
+    void visit(AstCvtArrayToPacked* nodep) override { iterateOkConsArray(nodep); }
+    void visit(AstCvtUnpackToQueue* nodep) override { iterateOkConsArray(nodep); }
 
     template <typename T_NodeBiop>
     void expandBiOp(T_NodeBiop* biopp) {

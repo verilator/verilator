@@ -321,7 +321,7 @@ module t (/*AUTOARG*/
 
   int cyc;
   int fo;
-  int sum;
+  int sum /*verilator forceable*/;
   real r;
   string str;
   int mod_val;
@@ -734,6 +734,9 @@ endmodule
 package p;
   logic pkgvar;
 endpackage
+
+class ClsParamExt extends ClsParam #(bit, 2);
+endclass
 
 `verilator_config
 threads_group -module "sub"

@@ -100,8 +100,7 @@ class LiftExprVisitor final : public VNVisitor {
     AstNodeModule* m_modp = nullptr;  // Current module
     AstNodeFTask* m_ftaskp = nullptr;  // Current function/task
     bool m_lift = false;  // Lift encountered expressions
-    // Statements lifted out of current node. TODO: Make this an AstNodeStmt* after #6280
-    AstNode* m_newStmtps = nullptr;
+    AstNodeStmt* m_newStmtps = nullptr;  // Statements lifted out of current node
     // Expressions in some special locations need not, or should not be lifted
     AstNodeExpr* m_doNotLiftp = nullptr;
     size_t m_nTmps = 0;  // Sequence numbers for temporary variables
@@ -145,7 +144,7 @@ class LiftExprVisitor final : public VNVisitor {
 
         if (m_ftaskp) {
             varp->funcLocal(true);
-            m_ftaskp->prependStmtsp(varp);
+            m_ftaskp->prependDeclsp(varp);
             varp->lifetime(VLifetime::AUTOMATIC_EXPLICIT);
         } else {
             m_modp->prependStmtsp(varp);
@@ -173,7 +172,7 @@ class LiftExprVisitor final : public VNVisitor {
         return new AstAssign{flp, new AstVarRef{flp, varp, VAccess::WRITE}, nodep->unlinkFrBack()};
     }
 
-    void addStmtps(AstNode* stmtp) {
+    void addStmtps(AstNodeStmt* stmtp) {
         if (!stmtp) return;
         // No need to process again, so mark
         for (AstNode* nodep = stmtp; nodep; nodep = nodep->nextp()) nodep->user1(1);
@@ -181,7 +180,7 @@ class LiftExprVisitor final : public VNVisitor {
     }
 
     // Lift expressions from expression, return lifted statements
-    AstNode* lift(AstNodeExpr* nodep) {
+    AstNodeStmt* lift(AstNodeExpr* nodep) {
         if (!nodep) return nullptr;
         VL_RESTORER(m_lift);
         VL_RESTORER(m_newStmtps);
@@ -192,7 +191,7 @@ class LiftExprVisitor final : public VNVisitor {
     }
 
     // Lift expressions from children of given statement, return lifted statements
-    AstNode* liftChildren(AstNodeStmt* nodep) {
+    AstNodeStmt* liftChildren(AstNodeStmt* nodep) {
         VL_RESTORER(m_lift);
         VL_RESTORER(m_newStmtps);
         m_lift = true;
@@ -255,7 +254,7 @@ class LiftExprVisitor final : public VNVisitor {
             condp->unlinkFrBack(&relinker);
             AstExprStmt* const exprStmtp
                 = new AstExprStmt{condp->fileline(), nullptr, VN_AS(condp, NodeExpr)};
-            if (AstNode* const newStmtps = lift(exprStmtp->resultp())) {
+            if (AstNodeStmt* const newStmtps = lift(exprStmtp->resultp())) {
                 ++m_statLiftedCaseConds;
                 exprStmtp->addStmtsp(newStmtps);
                 relinker.relink(exprStmtp);
@@ -282,7 +281,7 @@ class LiftExprVisitor final : public VNVisitor {
         VL_RESTORER(m_doNotLiftp);
         m_doNotLiftp = nullptr;
         // Keep lifted statements inside the repeatedly evaluated condition.
-        if (AstNode* const newStmtps = lift(nodep->condp())) {
+        if (AstNodeStmt* const newStmtps = lift(nodep->condp())) {
             AstNodeExpr* const condp = nodep->condp()->unlinkFrBack();
             nodep->condp(new AstExprStmt{nodep->fileline(), newStmtps, condp});
         }
@@ -410,13 +409,13 @@ class LiftExprVisitor final : public VNVisitor {
             = nodep->thenp()->dtypep()->skipRefp()->sameTree(nodep->elsep()->dtypep()->skipRefp());
 
         // Lift from the Then branch
-        AstNode* const thenStmtps = lift(nodep->thenp());
+        AstNodeStmt* const thenStmtps = lift(nodep->thenp());
         // If lifted the Then branch, we can reuse the temporary if same type
         if (sameType) varp = getExistingVar(nodep->thenp());
         if (varp) nodep->elsep()->user1p(varp);
 
         // Lift from the Else branch
-        AstNode* const elseStmtps = lift(nodep->elsep());
+        AstNodeStmt* const elseStmtps = lift(nodep->elsep());
         // If lifted the Else branch, we can reuse the temporary if same type
         if (sameType && !varp) varp = getExistingVar(nodep->elsep());
 
@@ -450,7 +449,7 @@ class LiftExprVisitor final : public VNVisitor {
         if (varp) nodep->rhsp()->user1p(varp);
 
         // Lift from RHS, if nothing lifted, then nothing to do
-        AstNode* const rhsStmtps = lift(nodep->rhsp());
+        AstNodeStmt* const rhsStmtps = lift(nodep->rhsp());
         if (!rhsStmtps) return;
 
         // Otherwise convert to an AstIf with a temporary variable
@@ -478,7 +477,7 @@ class LiftExprVisitor final : public VNVisitor {
         if (varp) nodep->rhsp()->user1p(varp);
 
         // Lift from RHS, if nothing lifted, then nothing to do
-        AstNode* const rhsStmtps = lift(nodep->rhsp());
+        AstNodeStmt* const rhsStmtps = lift(nodep->rhsp());
         if (!rhsStmtps) return;
 
         // Otherwise convert to an AstIf with a temporary variable
@@ -501,7 +500,7 @@ class LiftExprVisitor final : public VNVisitor {
         iterate(nodep->lhsp());
 
         // Lift from RHS, if nothing lifted, then nothing to do
-        AstNode* const rhsStmtps = lift(nodep->rhsp());
+        AstNodeStmt* const rhsStmtps = lift(nodep->rhsp());
         if (!rhsStmtps) return;
 
         // Otherwise convert to an AstIf with a temporary variable

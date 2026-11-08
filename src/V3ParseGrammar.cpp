@@ -191,7 +191,7 @@ AstNodeDType* V3ParseGrammar::createArray(AstNodeDType* basep, AstNodeRange* nra
 }
 
 AstVar* V3ParseGrammar::createVariable(FileLine* fileline, const string& name,
-                                       AstNodeRange* arrayp, AstNode* attrsp) {
+                                       AstNodeRange* arrayp, AstAttrOf* attrsp) {
     UINFO(5, "  creVar " << name << "  decl=" << GRAMMARP->m_varDecl << "  io="
                          << GRAMMARP->m_varIO << "  dt=" << (GRAMMARP->m_varDTypep ? "set" : ""));
     if (GRAMMARP->m_varIO == VDirection::NONE  // In non-ANSI port list

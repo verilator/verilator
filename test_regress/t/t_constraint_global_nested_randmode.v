@@ -45,14 +45,14 @@ module t_constraint_global_nested_randmode;
   initial begin
     obj = new();
 
-    // Test 1: Normal randomization of nested object with constraints
+    // Test: Normal randomization of nested object with constraints
     rand_ok = obj.randomize();
     if (rand_ok == 0) $stop;
     if (obj.nested_obj.inner_val1 < 8'd10 || obj.nested_obj.inner_val1 > 8'd50) $stop;
     if (obj.nested_obj.inner_val2 < 8'd100 || obj.nested_obj.inner_val2 > 8'd200) $stop;
     if (obj.outer_val < 8'd1 || obj.outer_val > 8'd20) $stop;
 
-    // Test 2: Multiple randomizations with constraint checking
+    // Test: Multiple randomizations with constraint checking
     change_count = 0;
     prev_val = obj.nested_obj.inner_val1;
     repeat (10) begin
@@ -66,14 +66,14 @@ module t_constraint_global_nested_randmode;
     end
     if (change_count == 0) $stop;
 
-    // Test 3: rand_mode(0) on nested var - must not crash solver
+    // Test: rand_mode(0) on nested var - must not crash solver
     void'(obj.nested_obj.inner_val1.rand_mode(0));
     if (obj.nested_obj.inner_val1.rand_mode() != 0) $stop;
     // Calling randomize must not cause a solver crash
     rand_ok = obj.randomize();
     // (randomize may return 0 due to constraint interaction - separate issue)
 
-    // Test 4: Re-enable rand_mode and verify randomization resumes
+    // Test: Re-enable rand_mode and verify randomization resumes
     void'(obj.nested_obj.inner_val1.rand_mode(1));
     if (obj.nested_obj.inner_val1.rand_mode() != 1) $stop;
     change_count = 0;
@@ -86,12 +86,12 @@ module t_constraint_global_nested_randmode;
     end
     if (change_count == 0) $stop;
 
-    // Test 5: rand_mode(0) on entire nested object - must not crash solver
+    // Test: rand_mode(0) on entire nested object - must not crash solver
     void'(obj.nested_obj.rand_mode(0));
     rand_ok = obj.randomize();
     // (randomize may return 0 due to constraint interaction - separate issue)
 
-    // Test 6: Re-enable nested object and verify randomization resumes
+    // Test: Re-enable nested object and verify randomization resumes
     void'(obj.nested_obj.rand_mode(1));
     change_count = 0;
     prev_val = obj.nested_obj.inner_val1;

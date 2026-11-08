@@ -46,14 +46,14 @@ module t;
     int seen[int];
     int rand_ok;
 
-    // Test 1: randc 16-bit full domain - must not hang
+    // Test: randc 16-bit full domain - must not hang
     full_obj = new();
     for (int i = 0; i < 5; i++) begin
       rand_ok = full_obj.randomize();
       `checkd(rand_ok, 1)
     end
 
-    // Test 2: randc 16-bit with small constrained domain - verify cycling
+    // Test: randc 16-bit with small constrained domain - verify cycling
     small_obj = new();
     for (int i = 0; i < 8; i++) begin
       rand_ok = small_obj.randomize();
@@ -70,7 +70,7 @@ module t;
     end
     `checkd(seen.size(), 8)
 
-    // Test 3: after full cycle, new cycle should start
+    // Test: after full cycle, new cycle should start
     rand_ok = small_obj.randomize();
     `checkd(rand_ok, 1)
     if (small_obj.value > 16'd7) begin
@@ -78,7 +78,7 @@ module t;
       `stop;
     end
 
-    // Test 4: wide enum (60-bit) randc - verify valid enum members only
+    // Test: wide enum (60-bit) randc - verify valid enum members only
     enum_obj = new();
     for (int i = 0; i < 4; i++) begin
       rand_ok = enum_obj.randomize();

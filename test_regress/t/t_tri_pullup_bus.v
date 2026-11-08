@@ -92,7 +92,7 @@ module t;
   end
 
   initial begin
-    // Test 1: Lower bits = 0xF
+    // Test: Lower bits = 0xF
     in_value = 4'hF;
     #1;
     // Expected: 0x5F = 0101_1111
@@ -101,13 +101,13 @@ module t;
     // Bit 6 = 1 (pullup), Bit 7 = 0 (pulldown)
     `checkh(out_value, 8'h5F);
 
-    // Test 2: Lower bits = 0xA
+    // Test: Lower bits = 0xA
     in_value = 4'hA;
     #1;
     // Expected: 0x5A = 0101_1010
     `checkh(out_value, 8'h5A);
 
-    // Test 3: Lower bits = 0x0
+    // Test: Lower bits = 0x0
     in_value = 4'h0;
     #1;
     // Expected: 0x50 = 0101_0000

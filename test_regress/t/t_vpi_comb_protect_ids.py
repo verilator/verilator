@@ -9,15 +9,17 @@
 
 import vltest_bootstrap
 
-test.scenarios('vlt')
+test.scenarios('vlt_all')
 
 test.top_filename = "t/t_vpi_comb_trace.v"
 
 test.compile(make_top_shell=False,
              make_pli=True,
+             threads=2 if test.vltmt else 1,
              verilator_flags2=[
                  "--binary --vpi --public-flat-rw --protect-ids --protect-key SECRET_KEY"
-                 " --no-l2name -Wno-INSECURE +define+NO_T_VPI_DUMP", test.pli_filename
+                 " --no-l2name -Wno-INSECURE +define+NO_T_VPI_DUMP +define+T_VPI_FORCE_PORT",
+                 test.pli_filename
              ])
 
 test.execute(use_libvpi=True, check_finished=True)
