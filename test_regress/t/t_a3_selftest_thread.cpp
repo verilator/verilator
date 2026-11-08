@@ -21,13 +21,16 @@ int main(int argc, char** argv) {
         const VNUser pointer{&value};
         UASSERT_STATIC(integer.toUQuad() == 42 && pointer.to<void*>() == &value,
                        "Valid user-slot conversions changed.");
+#if defined(VL_USER_TYPE_CHECKS) && __cplusplus >= 201703L
         if (argc > 1) {
             if (argv[1][0] == 'p') {
                 (void)integer.to<void*>();
-            } else {
+            } else if (argv[1][0] == 'i') {
                 (void)pointer.toUQuad();
             }
         }
+#endif
+        UASSERT_STATIC(argc == 1 || argv[1][0] != 'd', "Static assertion failed in worker.");
     };
     {
         V3ThreadScope scope;
