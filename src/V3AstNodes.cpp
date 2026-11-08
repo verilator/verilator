@@ -962,6 +962,11 @@ bool AstCMethodHard::getPurity() {
     for (AstNodeExpr* const argp : pinspList()) {
         if (!argp->isPure()) return false;
     }
+    if (withp()) {
+        for (AstNode* const itemp : withp()->exprpList()) {
+            if (!itemp->isPure()) return false;
+        }
+    }
     return true;
 }
 int AstCMethodHard::instrCount() const {
