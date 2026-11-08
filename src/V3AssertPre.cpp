@@ -1102,6 +1102,16 @@ private:
     }
     void visit(AstSEventually* nodep) override {
         UASSERT(v3Global.rootp()->stdPackagep(), "Should be imported");
+        // The process below tests the operand as a boolean at each clock tick
+        if (nodep->exprp()->exists(
+                [](const AstNodeExpr* exprp) { return exprp->isMultiCycleSva(); })) {
+            nodep->v3warn(E_UNSUPPORTED,
+                          "Unsupported: sequence or property operator in the operand of "
+                          "s_eventually");
+            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
+            VL_DO_DANGLING(pushDeletep(nodep), nodep);
+            return;
+        }
 
         AstSenTree* const sentreep = newSenTree(nodep);
         if (!sentreep->sensesp()) {
@@ -1176,13 +1186,7 @@ private:
         iterate(bodyp);
         iterate(finalp);
 
-        if (m_hasCycleDelay) {
-            nodep->v3warn(E_UNSUPPORTED, "Unsupported: cycle delay in s_eventually");
-            nodep->replaceWith(new AstConst{nodep->fileline(), AstConst::BitFalse{}});
-            VL_DO_DANGLING(pushDeletep(nodep), nodep);
-            VL_DO_DANGLING(m_pexprp->deleteTree(), m_pexprp);
-            return;
-        }
+        UASSERT_OBJ(!m_hasCycleDelay, nodep, "Cycle delay in the operand reported above");
 
         nodep->replaceWith(m_pexprp);
         VL_DO_DANGLING(pushDeletep(nodep), nodep);

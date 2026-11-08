@@ -7,6 +7,13 @@
 // verilog_format: off
 `define stop $stop
 `define checkd(gotv,expv) do if ((gotv) !== (expv)) begin $write("%%Error: %s:%0d:  got=%0d exp=%0d\n", `__FILE__,`__LINE__, (gotv), (expv)); `stop; end while(0);
+// With VACUOUS_ON (t_assert_implication_nonover_eventually_vac) vacuous successes run pass actions
+// too, and only the failure counts are checked
+`ifdef VACUOUS_ON
+`define checkp(gotv,expv)
+`else
+`define checkp(gotv,expv) `checkd(gotv,expv)
+`endif
 // verilog_format: on
 
 module t (
@@ -16,7 +23,9 @@ module t (
   int cyc = 0;
   // Vacuous successes also run pass actions (IEEE 1800-2023 20.11). Turn them off, so that the
   // pass counts below count only non-vacuous successes
+`ifndef VACUOUS_ON
   initial $assertvacuousoff;
+`endif
   logic a1 = 0, b1 = 0, c1 = 0, a2 = 0, b2 = 0, a3 = 0, b3 = 0;
   logic [2:0] h = 3'd0;
 
@@ -40,8 +49,8 @@ module t (
 
   // Single-cycle antecedent, b1 after it: every form passes once (only non-vacuous
   // successes are counted) and nothing fails
-  int pass_non = 0, pass_over = 0, pass_func = 0, pass_rose = 0;
-  int fail_non = 0, fail_over = 0, fail_func = 0, fail_rose = 0;
+  int pass_non = 0, pass_over = 0, pass_func = 0, pass_rose = 0, pass_expr = 0;
+  int fail_non = 0, fail_over = 0, fail_func = 0, fail_rose = 0, fail_expr = 0;
   function automatic int burst_len(logic [2:0] hb);
     return (hb == 3'd3) ? 4 : 1;
   endfunction
@@ -54,16 +63,21 @@ module t (
   else fail_func = fail_func + 1;
   assert property (@(posedge clk) $rose(a1) |=> s_eventually b1) pass_rose = pass_rose + 1;
   else fail_rose = fail_rose + 1;
+  // A boolean expression as the operand of s_eventually
+  assert property (@(posedge clk) a1 |=> s_eventually (b1 && !a1)) pass_expr = pass_expr + 1;
+  else fail_expr = fail_expr + 1;
   always @(posedge clk)
     if (cyc == 15) begin
-      `checkd(pass_non, 1);
-      `checkd(pass_over, 1);
-      `checkd(pass_func, 1);
-      `checkd(pass_rose, 1);
+      `checkp(pass_non, 1);
+      `checkp(pass_over, 1);
+      `checkp(pass_func, 1);
+      `checkp(pass_rose, 1);
+      `checkp(pass_expr, 1);
       `checkd(fail_non, 0);
       `checkd(fail_over, 0);
       `checkd(fail_func, 0);
       `checkd(fail_rose, 0);
+      `checkd(fail_expr, 0);
     end
 
   // b2 only in a2's own cycle: |-> passes, |=> starts one cycle later and never passes
@@ -79,8 +93,8 @@ module t (
   else fail2_over = fail2_over + 1;
   always @(posedge clk)
     if (cyc == 15) begin
-      `checkd(pass2_non, 0);
-      `checkd(pass2_over, 1);
+      `checkp(pass2_non, 0);
+      `checkp(pass2_over, 1);
       `checkd(fail2_non, 0);
       `checkd(fail2_over, 0);
     end
@@ -91,7 +105,7 @@ module t (
   else fail3_non = fail3_non + 1;
   always @(posedge clk)
     if (cyc == 15) begin
-      `checkd(pass3_non, 2);
+      `checkp(pass3_non, 2);
       `checkd(fail3_non, 0);
     end
 
@@ -104,13 +118,13 @@ module t (
   else fail_chain0 = fail_chain0 + 1;
   always @(posedge clk)
     if (cyc == 15) begin
-      `checkd(pass_chain, 1);
-      `checkd(pass_chain0, 0);
+      `checkp(pass_chain, 1);
+      `checkp(pass_chain0, 0);
       `checkd(fail_chain, 0);
       `checkd(fail_chain0, 0);
     end
 
-  // Procedural assertions, clocked by their always block, stay on V3AssertPre
+  // Procedural assertions, clocked by their always block: each passes once and nothing fails
   int pass_proc = 0, pass_proc_rep = 0, fail_proc = 0, fail_proc_rep = 0;
   always @(posedge clk) begin
     assert property (a1 |=> s_eventually b1) pass_proc = pass_proc + 1;
@@ -120,8 +134,8 @@ module t (
   end
   always @(posedge clk)
     if (cyc == 15) begin
-      `checkd(pass_proc, 1);
-      `checkd(pass_proc_rep, 1);
+      `checkp(pass_proc, 1);
+      `checkp(pass_proc_rep, 1);
       `checkd(fail_proc, 0);
       `checkd(fail_proc_rep, 0);
     end
@@ -138,13 +152,13 @@ module t (
   cover property (@(posedge clk) a1 |-> s_eventually b1) cov_over = cov_over + 1;
   always @(posedge clk)
     if (cyc == 15) begin
-      `checkd(cov_non, 1);
-      `checkd(cov_over, 1);
+      `checkp(cov_non, 1);
+      `checkp(cov_over, 1);
     end
 endmodule
 
-// A procedural assertion under a default disable iff stays on V3AssertPre. rst stays low:
-// V3AssertPre applies disable iff only when an attempt starts, not while s_eventually waits
+// A procedural assertion under a default disable iff that never disables it (rst stays low)
+// passes once and does not fail
 module sub_default_disable (
     input clk,
     input int cyc,
@@ -160,7 +174,7 @@ module sub_default_disable (
   end
   always @(posedge clk)
     if (cyc == 15) begin
-      `checkd(pass_proc, 1);
+      `checkp(pass_proc, 1);
       `checkd(fail_proc, 0);
     end
 endmodule

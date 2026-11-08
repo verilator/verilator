@@ -7,8 +7,9 @@
                                                                    : ... note: In instance 't'
    14 |   assert property (@(posedge clk) (x or y) #=# b);
       |                                      ^~
-%Error-UNSUPPORTED: t/t_assert_implication_nonover_or_unsup.v:15:38: Unsupported: sequence expression as antecedent of followed-by (#-# / #=#) (IEEE 1800-2023 16.12.9)
+%Error-UNSUPPORTED: t/t_assert_implication_nonover_or_unsup.v:15:44: Unsupported: s_eventually under this property operator
                                                                    : ... note: In instance 't'
+                                                                   : ... Supported: s_eventually of a boolean as the consequent of |-> or |=>
    15 |   assert property (@(posedge clk) (x or y) #-# s_eventually b);
-      |                                      ^~
+      |                                            ^~~
 %Error: Exiting due to

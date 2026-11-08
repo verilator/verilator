@@ -1,9 +1,9 @@
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:20:38: Unsupported: s_eventually after a multi-cycle antecedent
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:20:38: Unsupported: s_eventually after an antecedent with a sequence operator
                                                            : ... note: In instance 't'
    20 |   assert property (@(posedge clk) (a ##1 a) |-> s_eventually b);
       |                                      ^~
                     ... For error description see https://verilator.org/warn/UNSUPPORTED?v=latest
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:21:36: Unsupported: s_eventually after a multi-cycle antecedent
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:21:36: Unsupported: s_eventually after an antecedent with a sequence operator
                                                            : ... note: In instance 't'
    21 |   assert property (@(posedge clk) a[*1:2] |=> s_eventually b);
       |                                    ^~
@@ -13,42 +13,76 @@
       |                                           ^~~
 %Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:23:41: Unsupported: s_eventually under this property operator
                                                            : ... note: In instance 't'
-                                                           : ... Supported: s_eventually as the consequent of |-> or |=>
+                                                           : ... Supported: s_eventually of a boolean as the consequent of |-> or |=>
    23 |   assert property (@(posedge clk) a |=> not s_eventually b);
       |                                         ^~~
 %Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:24:35: Unsupported: s_eventually under this property operator
                                                            : ... note: In instance 't'
-                                                           : ... Supported: s_eventually as the consequent of |-> or |=>
+                                                           : ... Supported: s_eventually of a boolean as the consequent of |-> or |=>
    24 |   assert property (@(posedge clk) not (a |=> s_eventually b));
       |                                   ^~~
 %Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:25:58: Unsupported: s_eventually under this property operator
                                                            : ... note: In instance 't'
-                                                           : ... Supported: s_eventually as the consequent of |-> or |=>
+                                                           : ... Supported: s_eventually of a boolean as the consequent of |-> or |=>
    25 |   assert property (@(posedge clk) a |-> (s_eventually b) and c);
       |                                                          ^~~
 %Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:26:37: Unsupported: s_eventually under this property operator
                                                            : ... note: In instance 't'
-                                                           : ... Supported: s_eventually as the consequent of |-> or |=>
+                                                           : ... Supported: s_eventually of a boolean as the consequent of |-> or |=>
    26 |   assert property (@(posedge clk) a #=# s_eventually b);
       |                                     ^~~
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:27:48: Unsupported: s_eventually with disable iff after a non-overlapped implication
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:27:53: Unsupported: s_eventually with disable iff after a non-overlapped implication
                                                            : ... note: In instance 't'
    27 |   assert property (@(posedge clk) disable iff (c) a |=> s_eventually b);
-      |                                                ^
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:29:35: Unsupported: temporal property if/case with a pass action
+      |                                                     ^~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:28:36: Unsupported: s_eventually after an antecedent with a sequence operator
                                                            : ... note: In instance 't'
-   29 |   assert property (@(posedge clk) case (c) 1'b1: s_eventually b; default: a |=> b; endcase)
+   28 |   assert property (@(posedge clk) a[*1] |=> s_eventually b);
+      |                                    ^~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:34:35: Unsupported: s_eventually under this property operator
+                                                           : ... note: In instance 't'
+                                                           : ... Supported: s_eventually of a boolean as the consequent of |-> or |=>
+   34 |   assert property (@(posedge clk) case (c) 1'b1: s_eventually b; default: a |=> b; endcase)
       |                                   ^~~~
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:49:24: Unsupported: s_eventually with disable iff after a non-overlapped implication
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:36:35: Unsupported: s_eventually under this property operator
+                                                           : ... note: In instance 't'
+                                                           : ... Supported: s_eventually of a boolean as the consequent of |-> or |=>
+   36 |   assert property (@(posedge clk) if (c) s_eventually b else (a[=1]))
+      |                                   ^~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:58:37: Unsupported: s_eventually with disable iff after a non-overlapped implication
                                                            : ... note: In instance 't.u_sub'
-   49 |   default disable iff (rst);
-      |                        ^~~
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:14:35: Unsupported: cycle delay in s_eventually
+   58 |   assert property (@(posedge clk) a |=> s_eventually b);
+      |                                     ^~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:59:37: Unsupported: s_eventually with disable iff after a non-overlapped implication
+                                                           : ... note: In instance 't.u_sub'
+   59 |   assert property (@(posedge clk) b |=> s_eventually a);
+      |                                     ^~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:14:35: Unsupported: sequence or property operator in the operand of s_eventually
                                                            : ... note: In instance 't'
    14 |   assert property (@(posedge clk) s_eventually ##1 1);
       |                                   ^~~~~~~~~~~~
-%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:15:35: Unsupported: cycle delay in s_eventually
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:15:35: Unsupported: sequence or property operator in the operand of s_eventually
                                                            : ... note: In instance 't'
    15 |   assert property (@(negedge clk) s_eventually ##1 1);
       |                                   ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:29:41: Unsupported: sequence or property operator in the operand of s_eventually
+                                                           : ... note: In instance 't'
+   29 |   assert property (@(posedge clk) a |=> s_eventually b[*2]);
+      |                                         ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:30:41: Unsupported: sequence or property operator in the operand of s_eventually
+                                                           : ... note: In instance 't'
+   30 |   assert property (@(posedge clk) a |-> s_eventually b[*2]);
+      |                                         ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:31:41: Unsupported: sequence or property operator in the operand of s_eventually
+                                                           : ... note: In instance 't'
+   31 |   assert property (@(posedge clk) a |-> s_eventually (b or c));
+      |                                         ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:32:41: Unsupported: sequence or property operator in the operand of s_eventually
+                                                           : ... note: In instance 't'
+   32 |   assert property (@(posedge clk) a |-> s_eventually (b ##1 c));
+      |                                         ^~~~~~~~~~~~
+%Error-UNSUPPORTED: t/t_property_s_eventually_unsup.v:38:48: Unsupported: sequence or property operator in the operand of s_eventually
+                                                           : ... note: In instance 't'
+   38 |   always @(posedge clk) assert property (a |=> s_eventually b[*2]);
+      |                                                ^~~~~~~~~~~~
 %Error: Exiting due to
