@@ -1662,28 +1662,27 @@ class FsmDetectVisitor final : public VNVisitor {
                     // would mean the if-chain classifier and emitter disagree.
                     UASSERT_OBJ(visitValuep(branch.valuep), branch.valuep,
                                 "FSM if-chain source values should be prevalidated");
+                    // A guarded target, as a ternary or a nested if/else, has two constants
+                    AstNodeExpr* thenp;
+                    AstNodeExpr* elsep;
                     AstNodeExpr* const targetp = branchTargetp(branch, assignVscp);
                     if (!targetp) {
-                        // A nested if/else: the constant each arm assigns
                         const AstIf* const ifp = VN_AS(branch.stmtsp, If);
-                        for (AstNode* const armp : {ifp->thensp(), ifp->elsesp()}) {
-                            const AstNodeAssign* const assp
-                                = VN_AS(skipLeadingIgnorableStmt(armp), NodeAssign);
-                            if (!visitValuep(assp->rhsp())) return false;
-                        }
-                        continue;
-                    }
-                    FsmStateValue thenValue;
-                    FsmStateValue elseValue;
-                    AstCond* const condp = VN_CAST(targetp, Cond);
-                    if (condp) {
+                        thenp = VN_AS(skipLeadingIgnorableStmt(ifp->thensp()), NodeAssign)->rhsp();
+                        elsep = VN_AS(skipLeadingIgnorableStmt(ifp->elsesp()), NodeAssign)->rhsp();
+                    } else if (AstCond* const condp = VN_CAST(targetp, Cond)) {
+                        FsmStateValue thenValue;
+                        FsmStateValue elseValue;
                         UASSERT_OBJ(condConstTargets(condp, thenValue, elseValue), condp,
                                     "FSM if-chain ternary targets should be prevalidated");
-                        if (!visitValuep(condp->thenp())) return false;
-                        if (!visitValuep(condp->elsep())) return false;
-                    } else if (!addOptionalTargetExprToStateSpace(targetp, stateSpace)) {
-                        return false;
+                        thenp = condp->thenp();
+                        elsep = condp->elsep();
+                    } else {
+                        if (!addOptionalTargetExprToStateSpace(targetp, stateSpace)) return false;
+                        continue;
                     }
+                    if (!visitValuep(thenp)) return false;
+                    if (!visitValuep(elsep)) return false;
                 }
                 return true;
             });
