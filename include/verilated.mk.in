@@ -219,10 +219,8 @@ VK_PCH_SLOW = $(VK_PCH_H).slow.gch
 VK_PCH_I_FAST = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.fast$(CFG_GCH_IF_CLANG)
 VK_PCH_I_SLOW = $(CFG_CXXFLAGS_PCH_I) $(VM_PREFIX)__pch.h.slow$(CFG_GCH_IF_CLANG)
 
-ifneq ($(filter -fmodule-header% -fmodule-only,$(CPPFLAGS) $(CXXFLAGS)),)
-  $(error Unsupported: -fmodule-header/-fmodule-only; use -fmodules, -fmodules-ts, or -fmodule-file for user C++ files)
-endif
 VK_MODULES = $(filter -fmodules -fmodules-ts -fmodule-file%,$(CPPFLAGS) $(CXXFLAGS))
+VK_MODEL_CPPFLAGS = $(filter-out -fmodule-header% -fmodule-only,$(CXXFLAGS) $(CPPFLAGS))
 VK_MODEL_CXXFLAGS =
 VK_USER_PCH_FAST = $(VK_PCH_FAST)
 VK_USER_PCH_I_FAST = $(VK_PCH_I_FAST)
@@ -305,7 +303,7 @@ endif
 %.verilator_deplist.tmp:
 	@echo "" > $@
 
-$(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS)
+$(VM_PREFIX)__ALL.a: $(VK_OBJS) $(VM_HIER_LIBS) | $(VK_MODULE_CMIS)
 
 ######################################################################
 ### Compile rules
@@ -318,24 +316,24 @@ ifneq ($(VM_DEFAULT_RULES),0)
 # These rules put OPT_FAST/OPT_SLOW/OPT_GLOBAL before the other flags to
 # allow USER_CPPFLAGS to override them
   %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
 
   $(VK_OBJS_FAST): %.o: %.cpp $(VK_PCH_FAST)
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_FAST) -c $<
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_FAST) -c $<
 
   $(VK_OBJS_SLOW): %.o: %.cpp $(VK_PCH_SLOW)
-	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_SLOW) -c $<
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(VK_PCH_I_SLOW) -c $<
 
   $(VK_GLOBAL_OBJS): %.o: %.cpp
-	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
+	$(OBJCACHE) $(CXX) $(OPT_GLOBAL) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) -c -o $@ $<
 
 # Precompile a header file
 # PCH's compiler flags must match exactly the rules' above FAST/SLOW
 # arguments used for the .cpp files, or the PCH file won't be used.
   %.fast.gch: %
-	$(OBJCACHE) $(CXX) $(OPT_FAST) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+	$(OBJCACHE) $(CXX) $(OPT_FAST) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
   %.slow.gch: %
-	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(CXXFLAGS) $(CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
+	$(OBJCACHE) $(CXX) $(OPT_SLOW) $(VK_MODEL_CPPFLAGS) $(VK_MODEL_CXXFLAGS) $(CFG_CXXFLAGS_PCH) $< -o $@
 
 endif
 

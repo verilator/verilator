@@ -481,15 +481,20 @@ Summary:
    Build C++ module interface units passed on the command line.  Interface
    units may be ``.cppm`` or ``.ixx`` files.  Verilator generates make rules
    that build the interface units and order the user C++ compilation after
-   them.  The generated model and runtime keep the precompiled header (PCH),
-   so user translation units that use modules must include the Verilator
-   headers explicitly.  ``--compiler-include`` headers must also be included
-   explicitly in those translation units.
+   them.  GCC header units imported by user files are also built.  Modules not
+   built from user files must be precompiled before building the Verilated
+   model, and their CMIs kept in the model object directory or passed with
+   :vlopt:`--cxx-module-file`.  The generated model and runtime keep the
+   precompiled header (PCH), so user translation units that use modules must
+   include the Verilator headers explicitly.  ``--compiler-include`` headers
+   must also be included explicitly in those translation units.
 
    The module backend is detected from the C++ compiler; see
    :vlopt:`--cxx-module-backend` to override it.  GCC emits CMIs under
-   ``gcm.cache``.  Precompile the standard library module in the model object
-   directory:
+   ``gcm.cache``, including the CMIs of header units imported with
+   ``import "header.h";``.  With GCC, :command:`-fmodule-only` builds only the
+   module interface CMIs and does not link the interface units.  Precompile
+   the standard library module in the model object directory:
 
    .. code-block:: bash
 
@@ -498,15 +503,16 @@ Summary:
 
    Clang writes ``.pcm`` files.  Its :command:`-fmodules` option enables
    Clang modules, not C++20 modules, so Verilator does not pass it.  Precompile
-   libc++'s ``std.cppm`` and pass it with :vlopt:`--cxx-module-std`.
+   libc++'s ``std.cppm`` and pass it with :vlopt:`--cxx-module-std`.  Clang
+   header units are not supported.
 
    With MSVC, C++ modules are supported only through CMake.  Pass ``.ixx``
    interface files on the Verilator command line and build with CMake 3.28 or
    newer, which adds them as a ``CXX_MODULES`` file set.  GNU make with MSVC is
    not supported.
 
-   Existing :command:`-CFLAGS -fmodules` style flags remain supported.  The
-   :command:`-fmodule-header` and :command:`-fmodule-only` options are not.
+   Existing :command:`-CFLAGS -fmodules` style flags remain supported,
+   including :command:`-fmodule-header` and :command:`-fmodule-only` for GCC.
 
 .. option:: -D<var>=<value>
 
